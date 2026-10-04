@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALGO/ART — φ Generator</title>
+<meta name="description" content="Golden-ratio algorithmic marker art generator">
+<style>
+:root{--bg:#111;--panel:#191919;--panel2:#222;--text:#f5f1e8;--muted:#aaa39a;--line:#34322e;--accent:#f6c443}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,input,select{font:inherit}.app{min-height:100vh;display:grid;grid-template-rows:auto 1fr}
+header{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:#0d0d0d;position:sticky;top:0;z-index:5}
+.brand{font-weight:900;letter-spacing:.08em;white-space:nowrap}.brand span{color:var(--accent)}
+.seed{display:flex;gap:7px;align-items:center}.seed input{width:150px;background:#1d1d1d;border:1px solid #3a3935;color:#fff;padding:8px 10px;border-radius:8px}
+.actions{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}button{border:1px solid #3a3935;background:#1d1d1d;color:#fff;padding:8px 11px;border-radius:8px;cursor:pointer}
+button:hover{border-color:#777}button.primary{background:var(--accent);color:#111;border-color:var(--accent);font-weight:800}
+main{display:grid;grid-template-columns:minmax(0,1fr) 350px;min-height:0}.stage{display:grid;place-items:center;padding:18px;min-width:0;overflow:auto;background:#151515}
+.canvas-wrap{position:relative;width:min(100%,1400px);box-shadow:0 18px 60px #0008}canvas{display:block;width:100%;height:auto;background:#f5f0e6}
+.stats{position:absolute;left:10px;bottom:10px;background:#111c;color:#eee;padding:6px 9px;border-radius:6px;font-size:12px;backdrop-filter:blur(4px)}
+aside{border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:14px}section{border:1px solid #2f2e2a;background:#141414;border-radius:10px;margin-bottom:10px;overflow:hidden}
+section h3{margin:0;padding:10px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;background:#1d1d1d;color:#dad5cb}.controls{padding:10px 12px;display:grid;gap:10px}
+.control{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center}.control label{font-size:13px;color:#ddd7cc}.control output{font:12px ui-monospace,monospace;color:var(--accent);min-width:34px;text-align:right}
+.control input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}.control select,.control input[type=color]{grid-column:1/-1;width:100%;background:#202020;border:1px solid #3a3935;color:#fff;padding:7px;border-radius:7px}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px}.checks label{font-size:13px;display:flex;gap:7px;align-items:center;color:#ddd7cc}
+.note{font-size:11px;line-height:1.45;color:var(--muted);padding:3px 2px 20px}
+@media(max-width:900px){main{grid-template-columns:1fr}aside{border-left:0;border-top:1px solid var(--line)}header{align-items:flex-start;flex-wrap:wrap}.actions{margin-left:0;width:100%}.stage{padding:10px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">ALGO/<span>ART</span> — φ</div>
+  <div class="seed"><input id="seed" value="PHI-1618"><button id="newSeed">New seed</button></div>
+  <div class="actions">
+    <button id="regenerate">Regenerate</button>
+    <button id="mutate">Mutate</button>
+    <button id="randomise">Randomise</button>
+    <button id="geometry">Show geometry</button>
+    <button class="primary" id="save">Save PNG</button>
+  </div>
+</header>
+<main>
+  <div class="stage">
+    <div class="canvas-wrap">
+      <canvas id="art" width="1400" height="1000"></canvas>
+      <div class="stats" id="stats"></div>
+    </div>
+  </div>
+  <aside>
+    <section><h3>Composition</h3><div class="controls">
+      <div class="control"><label>Mode</label><select id="mode"><option value="field">Golden Field</option><option value="spiral">Golden Spiral</option><option value="rects">Recursive Rectangles</option><option value="burst">Fibonacci Burst</option><option value="network">Phi Network</option><option value="organic">Organic</option><option value="geometric">Geometric</option><option value="scribble">Controlled Scribble</option></select></div>
+      <div class="control"><label>Elements</label><output></output><input id="elements" type="range" min="8" max="140" value="52"></div>
+      <div class="control"><label>Density</label><output></output><input id="density" type="range" min="0" max="100" value="62"></div>
+      <div class="control"><label>Complexity</label><output></output><input id="complexity" type="range" min="0" max="100" value="58"></div>
+      <div class="control"><label>Negative space</label><output></output><input id="negativeSpace" type="range" min="0" max="100" value="24"></div>
+    </div></section>
+    <section><h3>Golden ratio</h3><div class="controls">
+      <div class="control"><label>φ adherence</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="90"></div>
+      <div class="control"><label>Recursion</label><output></output><input id="recursion" type="range" min="1" max="9" value="5"></div>
+      <div class="control"><label>Spiral influence</label><output></output><input id="spiralInfluence" type="range" min="0" max="100" value="65"></div>
+      <div class="control"><label>Golden angle</label><output></output><input id="goldenAngle" type="range" min="0" max="100" value="100"></div>
+      <div class="control"><label>Nesting</label><output></output><input id="nesting" type="range" min="0" max="100" value="38"></div>
+    </div></section>
+    <section><h3>Marker pen</h3><div class="controls">
+      <div class="control"><label>Pen</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine">Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
+      <div class="control"><label>Thickness</label><output></output><input id="thickness" type="range" min="1" max="28" value="9"></div>
+      <div class="control"><label>Wobble</label><output></output><input id="wobble" type="range" min="0" max="100" value="32"></div>
+      <div class="control"><label>Overdraw</label><output></output><input id="overdraw" type="range" min="1" max="10" value="5"></div>
+      <div class="control"><label>Opacity</label><output></output><input id="opacity" type="range" min="10" max="100" value="76"></div>
+      <div class="control"><label>Pressure</label><output></output><input id="pressure" type="range" min="0" max="100" value="44"></div>
+      <div class="control"><label>Dryness</label><output></output><input id="dryness" type="range" min="0" max="100" value="15"></div>
+    </div></section>
+    <section><h3>Geometry</h3><div class="controls">
+      <div class="control"><label>Curved ↔ straight</label><output></output><input id="curveBias" type="range" min="0" max="100" value="55"></div>
+      <div class="control"><label>Shape amount</label><output></output><input id="shapeAmount" type="range" min="0" max="100" value="65"></div>
+      <div class="control"><label>Overlap</label><output></output><input id="overlap" type="range" min="0" max="100" value="48"></div>
+      <div class="control"><label>Rotation</label><output></output><input id="rotation" type="range" min="0" max="100" value="80"></div>
+      <div class="checks"><label><input id="lines" type="checkbox" checked> Lines</label><label><input id="circles" type="checkbox" checked> Ellipses</label><label><input id="rectangles" type="checkbox" checked> Rectangles</label><label><input id="polygons" type="checkbox" checked> Polygons</label><label><input id="arcs" type="checkbox" checked> Arcs</label></div>
+    </div></section>
+    <section><h3>Colour & paper</h3><div class="controls">
+      <div class="control"><label>Palette</label><select id="palette"><option value="spectrum">Full Spectrum</option><option value="golden">Golden-angle hues</option><option value="marker">Classic Markers</option><option value="cmyk">CMYK</option><option value="primary">Primary</option><option value="neon">Neon</option><option value="pastel">Pastel</option><option value="earth">Earth</option><option value="warm">Warm</option><option value="cold">Cold</option><option value="mono">Monochrome</option></select></div>
+      <div class="control"><label>Colours</label><output></output><input id="colourCount" type="range" min="1" max="14" value="8"></div>
+      <div class="control"><label>Saturation</label><output></output><input id="saturation" type="range" min="10" max="100" value="84"></div>
+      <div class="control"><label>Brightness</label><output></output><input id="brightness" type="range" min="20" max="80" value="52"></div>
+      <div class="control"><label>Paper</label><input id="paper" type="color" value="#f5f0e6"></div>
+      <div class="control"><label>Paper grain</label><output></output><input id="grain" type="range" min="0" max="100" value="18"></div>
+    </div></section>
+    <section><h3>Export</h3><div class="controls"><div class="control"><label>PNG scale</label><select id="exportScale"><option value="1">1× — 1400×1000</option><option value="2" selected>2× — 2800×2000</option><option value="3">3× — 4200×3000</option></select></div></div></section>
+    <div class="note">Everything runs locally in the browser. Same seed + same settings = same composition. φ ≈ 1.618034 · golden angle ≈ 137.508°.</div>
+  </aside>
+</main>
+</div>
+<script>
+(function(){
+'use strict';
+var PHI=(1+Math.sqrt(5))/2,INV=1/PHI,GOLD=Math.PI*(3-Math.sqrt(5)),TAU=Math.PI*2,W=1400,H=1000;
+var canvas=document.getElementById('art'),ctx=canvas.getContext('2d'),showGeometry=false;
+function $(id){return document.getElementById(id)}
+var ranges=document.querySelectorAll('input[type=range]');
+ranges.forEach(function(r){var o=r.parentElement.querySelector('output');function sync(){if(o)o.textContent=r.value}sync();r.addEventListener('input',sync)});
+function hash(s){var h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function makeR(seed){var a=hash(seed);function n(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}return{n:n,range:function(x,y){return x+(y-x)*n()},int:function(x,y){return Math.floor(x+(y-x+1)*n())},pick:function(a){return a[Math.floor(n()*a.length)]},chance:function(p){return n()<p},sign:function(){return n()<.5?-1:1}}}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}function lerp(a,b,t){return a+(b-a)*t}
+function read(){var ids=['mode','elements','density','complexity','negativeSpace','phiStrength','recursion','spiralInfluence','goldenAngle','nesting','pen','thickness','wobble','overdraw','opacity','pressure','dryness','curveBias','shapeAmount','overlap','rotation','lines','circles','rectangles','polygons','arcs','palette','colourCount','saturation','brightness','paper','grain'];var s={seed:$('seed').value||'PHI-1618'};ids.forEach(function(id){var e=$(id);s[id]=e.type==='checkbox'?e.checked:(e.type==='range'?+e.value:e.value)});return s}
+function qphi(v,base,strength){var best=v,d=1e9;for(var k=-7;k<=7;k++){var q=base*Math.pow(PHI,k),nd=Math.abs(q-v);if(nd<d){d=nd;best=q}}return lerp(v,best,strength)}
+function hues(s,r){var maps={marker:[350,18,48,78,112,160,195,220,255,286,320],cmyk:[186,315,55,0],primary:[0,55,215],neon:[320,15,62,116,177,215,270],pastel:[350,28,55,105,165,205,255,305],earth:[8,24,39,58,82,112,157,193],warm:[350,8,20,34,48,62],cold:[155,178,196,214,235,258,282],mono:[0]};var out=[],start=r.range(0,360),arr=maps[s.palette];for(var i=0;i<s.colourCount;i++){var h;if(s.palette==='spectrum')h=start+i*360/s.colourCount;else if(s.palette==='golden')h=start+i*137.507764;else h=arr[i%arr.length];var sat=s.saturation,lig=s.brightness;if(s.palette==='pastel'){sat=Math.min(sat,72);lig=Math.max(lig,68)}if(s.palette==='neon'){sat=Math.max(sat,92);lig=clamp(lig,48,62)}if(s.palette==='earth'){sat=Math.min(sat,62);lig=clamp(lig,34,58)}if(s.palette==='mono'){sat=0;lig=18+(i/Math.max(1,s.colourCount-1))*60}out.push('hsl('+((h+360)%360)+' '+sat+'% '+lig+'%)')}return out}
+function paper(s,r){ctx.fillStyle=s.paper;ctx.fillRect(0,0,W,H);ctx.save();ctx.globalAlpha=.035;for(var i=0;i<s.grain*20;i++){ctx.fillStyle=r.chance(.5)?'#000':'#fff';ctx.fillRect(r.range(0,W),r.range(0,H),r.range(.3,1.3),r.range(.3,1.3))}ctx.restore()}
+var pp={fine:[.48,1.05,.65,.65],felt:[1,1,1,1],broad:[1.9,.8,.75,1.15],highlighter:[2.5,.42,.5,.65],dry:[1.1,.76,1.28,.9],paint:[1.45,1.15,.48,1.3],scribble:[.72,.9,1.8,1.25]};
+function stroke(points,col,s,r,curve){var p=pp[s.pen],passes=Math.max(1,Math.round(s.overdraw*p[3])),wob=(s.wobble/100)*7*p[2],base=Math.max(.6,s.thickness*p[0]);ctx.save();ctx.lineCap=(s.pen==='broad'||s.pen==='highlighter')?'butt':'round';ctx.lineJoin='round';if(s.pen==='highlighter')ctx.globalCompositeOperation='multiply';for(var pass=0;pass<passes;pass++){ctx.beginPath();var a={x:points[0].x+r.range(-wob,wob),y:points[0].y+r.range(-wob,wob)};ctx.moveTo(a.x,a.y);ctx.strokeStyle=col;ctx.globalAlpha=clamp((s.opacity/100)*p[1]/Math.pow(passes,.42)*r.range(.82,1.05),.02,.95);ctx.lineWidth=Math.max(.4,base*(1+r.range(-1,1)*(s.pressure/100)*.28));if((s.pen==='dry'||s.dryness>35)&&r.chance((s.dryness/100)*.75)){ctx.setLineDash([r.range(7,24),r.range(1,6),r.range(2,9),r.range(1,7)]);ctx.lineDashOffset=r.range(0,30)}else ctx.setLineDash([]);if(curve&&points.length===4){var p1=points[1],p2=points[2],p3=points[3];ctx.bezierCurveTo(p1.x+r.range(-wob,wob),p1.y+r.range(-wob,wob),p2.x+r.range(-wob,wob),p2.y+r.range(-wob,wob),p3.x+r.range(-wob,wob),p3.y+r.range(-wob,wob))}else{for(var i=1;i<points.length;i++)ctx.lineTo(points[i].x+r.range(-wob,wob),points[i].y+r.range(-wob,wob))}ctx.stroke()}ctx.restore()}
+function drawLine(a,b,col,s,r){if(r.chance(s.curveBias/100)){var dx=b.x-a.x,dy=b.y-a.y,len=Math.max(1,Math.hypot(dx,dy)),bend=r.range(-.34,.34)*(s.complexity/100);var px=-dy/len,py=dx/len;stroke([a,{x:a.x+dx/3+px*len*bend,y:a.y+dy/3+py*len*bend},{x:a.x+dx*2/3-px*len*bend*.5,y:a.y+dy*2/3-py*len*bend*.5},b],col,s,r,true)}else stroke([a,b],col,s,r,false)}
+function ellipse(c,rx,ry,rot,col,s,r){var pts=[],seg=44;for(var i=0;i<=seg;i++){var a=TAU*i/seg,x=Math.cos(a)*rx,y=Math.sin(a)*ry;pts.push({x:c.x+x*Math.cos(rot)-y*Math.sin(rot),y:c.y+x*Math.sin(rot)+y*Math.cos(rot)})}stroke(pts,col,s,r,false)}
+function rect(c,w,h,rot,col,s,r){var pts=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2],[-w/2,-h/2]].map(function(p){return{x:c.x+p[0]*Math.cos(rot)-p[1]*Math.sin(rot),y:c.y+p[0]*Math.sin(rot)+p[1]*Math.cos(rot)}});stroke(pts,col,s,r,false)}
+function poly(c,rad,n,rot,col,s,r){var pts=[];for(var i=0;i<=n;i++){var a=rot+TAU*i/n;pts.push({x:c.x+Math.cos(a)*rad,y:c.y+Math.sin(a)*rad})}stroke(pts,col,s,r,false)}
+function arc(c,rad,start,sweep,col,s,r){var pts=[],seg=26;for(var i=0;i<=seg;i++){var a=start+sweep*i/seg;pts.push({x:c.x+Math.cos(a)*rad,y:c.y+Math.sin(a)*rad})}stroke(pts,col,s,r,false)}
+function goldenPoint(i,count,s,r){var t=i/Math.max(1,count-1),a=i*lerp(r.range(1.7,2.6),GOLD,s.goldenAngle/100),rad=Math.pow(t,INV)*Math.min(W,H)*.43;return{x:W*.5+Math.cos(a)*rad,y:H*.5+Math.sin(a)*rad,a:a,rad:rad}}
+function phiPoint(s,r){var ax=[INV*W,(1-INV)*W,W/2,W/(PHI*PHI),W-W/(PHI*PHI)],ay=[INV*H,(1-INV)*H,H/2,H/(PHI*PHI),H-H/(PHI*PHI)];var p={x:r.pick(ax),y:r.pick(ay)},rand={x:r.range(60,W-60),y:r.range(60,H-60)},t=s.phiStrength/100,j=(1-t)*150;p.x+=r.range(-j,j);p.y+=r.range(-j,j);return{x:lerp(rand.x,p.x,t),y:lerp(rand.y,p.y,t)}}
+function shapes(s){var a=[];if(s.lines)a.push('line');if(s.circles)a.push('circle');if(s.rectangles)a.push('rect');if(s.polygons)a.push('poly');if(s.arcs)a.push('arc');return a.length?a:['line']}
+function element(c,i,s,r,pal){var sh=r.chance(s.shapeAmount/100)?r.pick(shapes(s)):'line',raw=r.range(24,230)*lerp(.7,1.2,s.density/100),size=clamp(qphi(raw,22,s.phiStrength/100),6,430),rot=r.range(0,TAU)*(s.rotation/100),col=pal[i%pal.length],ratio=lerp(r.range(.6,1.7),PHI,s.phiStrength/100);if(sh==='line'){var a={x:c.x-Math.cos(rot)*size/2,y:c.y-Math.sin(rot)*size/2},b={x:c.x+Math.cos(rot)*size/2,y:c.y+Math.sin(rot)*size/2};drawLine(a,b,col,s,r)}else if(sh==='circle')ellipse(c,size/2,size/(2*ratio),rot,col,s,r);else if(sh==='rect')rect(c,size,size/ratio,rot,col,s,r);else if(sh==='poly')poly(c,size/2,r.pick([3,5,8]),rot,col,s,r);else arc(c,size/2,rot,TAU*r.pick([INV,1-INV,.5,.75]),col,s,r);if(r.chance(s.nesting/160)){var nc=pal[(i+1)%pal.length],n=size/PHI;if(sh==='rect')rect(c,n,n/PHI,rot+GOLD,nc,s,r);else if(sh==='circle')ellipse(c,n/2,n/(2*PHI),rot+GOLD,nc,s,r);else if(sh==='poly')poly(c,n/2,5,rot+GOLD,nc,s,r)}}
+function drawField(s,r,pal){for(var i=0;i<s.elements;i++){if(r.chance(s.negativeSpace/260))continue;var p=phiPoint(s,r),sp=goldenPoint(i,s.elements,s,r),c={x:lerp(p.x,sp.x,s.spiralInfluence/180),y:lerp(p.y,sp.y,s.spiralInfluence/180)};element(c,i,s,r,pal)}}
+function drawSpiral(s,r,pal){var prev=null;for(var i=0;i<s.elements;i++){var p=goldenPoint(i,s.elements,s,r);if(prev&&s.lines&&r.chance(.72))drawLine(prev,p,pal[i%pal.length],s,r);if(r.chance(.8))element(p,i,s,r,pal);prev=p}}
+function drawRects(s,r,pal){var x=W*.08,y=H*.08,w=W*.84,h=H*.84,depth=Math.max(2,s.recursion+Math.round(s.complexity/35));for(var i=0;i<depth;i++){var c={x:x+w/2,y:y+h/2};rect(c,w,h,r.range(-.06,.06)*(1-s.phiStrength/100),pal[i%pal.length],s,r);if(r.chance(s.nesting/100))ellipse(c,Math.min(w,h)*.28,Math.min(w,h)*.28/PHI,GOLD*i,pal[(i+1)%pal.length],s,r);w/=PHI;h/=PHI;x=c.x-w/2+(i%2?r.range(-30,30):0);y=c.y-h/2+r.range(-20,20)}}
+function drawBurst(s,r,pal){var c={x:W/2,y:H/2};for(var i=0;i<s.elements;i++){var a=i*lerp(TAU/s.elements,GOLD,s.goldenAngle/100),len=qphi(r.range(80,450),34,s.phiStrength/100),p={x:c.x+Math.cos(a)*len,y:c.y+Math.sin(a)*len};drawLine(c,p,pal[i%pal.length],s,r);if(r.chance(s.shapeAmount/150))element(p,i,s,r,pal)}}
+function drawNetwork(s,r,pal){var pts=[];for(var i=0;i<s.elements;i++)pts.push(phiPoint(s,r));for(var j=0;j<pts.length;j++){var links=1+Math.floor(s.complexity/34);for(var k=1;k<=links;k++){var b=pts[(j+k+r.int(0,5))%pts.length];drawLine(pts[j],b,pal[(j+k)%pal.length],s,r)}if(r.chance(s.shapeAmount/100))element(pts[j],j,s,r,pal)}}
+function drawScribble(s,r,pal){var p=phiPoint(s,r);for(var i=0;i<s.elements*2;i++){var a=i*GOLD+r.range(-.5,.5),len=qphi(r.range(18,160),18,s.phiStrength/100),q={x:clamp(p.x+Math.cos(a)*len,25,W-25),y:clamp(p.y+Math.sin(a)*len,25,H-25)};drawLine(p,q,pal[i%pal.length],s,r);p=q;if(r.chance(.14))p=phiPoint(s,r)}}
+function geometryOverlay(s){ctx.save();ctx.globalAlpha=.38;ctx.lineWidth=1;ctx.strokeStyle='#111';ctx.setLineDash([7,7]);[INV,1-INV].forEach(function(v){ctx.beginPath();ctx.moveTo(W*v,0);ctx.lineTo(W*v,H);ctx.moveTo(0,H*v);ctx.lineTo(W,H*v);ctx.stroke()});ctx.setLineDash([]);ctx.strokeStyle='#b8860b';ctx.beginPath();for(var i=0;i<180;i++){var t=i/179,a=i*GOLD*.12,rr=Math.pow(t,INV)*Math.min(W,H)*.43,x=W/2+Math.cos(a)*rr,y=H/2+Math.sin(a)*rr;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();ctx.restore()}
+function render(target,s,scale){var oldCanvas=canvas,oldCtx=ctx;if(target!==canvas){canvas=target;ctx=target.getContext('2d');target.width=W*scale;target.height=H*scale;ctx.scale(scale,scale)}var r=makeR(s.seed+'|'+JSON.stringify(s));paper(s,r);var pal=hues(s,r);if(s.mode==='field')drawField(s,r,pal);else if(s.mode==='spiral')drawSpiral(s,r,pal);else if(s.mode==='rects')drawRects(s,r,pal);else if(s.mode==='burst')drawBurst(s,r,pal);else if(s.mode==='network')drawNetwork(s,r,pal);else if(s.mode==='scribble')drawScribble(s,r,pal);else if(s.mode==='organic'){var t=Object.assign({},s,{curveBias:Math.max(70,s.curveBias),wobble:Math.max(45,s.wobble)});drawField(t,r,pal)}else if(s.mode==='geometric'){var g=Object.assign({},s,{curveBias:Math.min(12,s.curveBias),shapeAmount:Math.max(82,s.shapeAmount),wobble:Math.min(18,s.wobble)});drawField(g,r,pal)}if(showGeometry)geometryOverlay(s);if(target!==oldCanvas){canvas=oldCanvas;ctx=oldCtx}}
+function regenerate(){var s=read();render(canvas,s,1);$('stats').textContent=s.mode+' · seed '+s.seed+' · φ '+s.phiStrength+'%'}
+function seed(){return Math.random().toString(36).slice(2,7).toUpperCase()+'-'+Math.floor(Math.random()*9999).toString().padStart(4,'0')}
+$('regenerate').onclick=regenerate;$('newSeed').onclick=function(){$('seed').value=seed();regenerate()};
+$('geometry').onclick=function(){showGeometry=!showGeometry;this.textContent=showGeometry?'Hide geometry':'Show geometry';regenerate()};
+$('mutate').onclick=function(){var r=makeR($('seed').value+'mutate'+Date.now());var m=['density','complexity','negativeSpace','phiStrength','spiralInfluence','nesting','wobble','curveBias','shapeAmount','overlap','rotation','saturation','brightness'];for(var i=0;i<5;i++){var id=r.pick(m),e=$(id);e.value=clamp(+e.value+r.int(-14,14),+e.min,+e.max);e.dispatchEvent(new Event('input'))}$('seed').value=$('seed').value.split('~')[0]+'~'+r.int(1,999);regenerate()};
+$('randomise').onclick=function(){var r=makeR(seed()),rr=document.querySelectorAll('input[type=range]');rr.forEach(function(e){e.value=Math.round(+e.min+r.n()*(+e.max-+e.min));e.dispatchEvent(new Event('input'))});var sels=document.querySelectorAll('select:not(#exportScale)');sels.forEach(function(e){e.selectedIndex=r.int(0,e.options.length-1)});$('seed').value=seed();regenerate()};
+$('save').onclick=function(){var s=read(),scale=+$('exportScale').value,out=document.createElement('canvas');var g=showGeometry;showGeometry=false;render(out,s,scale);showGeometry=g;var a=document.createElement('a');a.download='algoart-'+s.seed+'-'+s.mode+'-'+scale+'x.png';a.href=out.toDataURL('image/png');a.click()};
+document.querySelectorAll('aside input, aside select').forEach(function(e){e.addEventListener('change',function(){if(e.id!=='exportScale')regenerate()})});
+window.addEventListener('keydown',function(e){if(e.target.matches('input,select'))return;if(e.key.toLowerCase()==='g')regenerate();if(e.key.toLowerCase()==='n')$('newSeed').click();if(e.key.toLowerCase()==='m')$('mutate').click()});
+regenerate();
+})();
+</script>
+</body>
+</html>
