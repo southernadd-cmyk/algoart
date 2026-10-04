@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ece7d9">
 <title>ALGO/ART — φ Generator</title>
 <meta name="description" content="Golden-ratio algorithmic marker art generator">
 <link rel="stylesheet" href="css/style.css">
@@ -10,16 +11,25 @@
 <body>
 <div class="app" id="app">
   <header class="toolbar">
-    <div class="brand">ALGO/<span>ART</span><b>φ</b></div>
+    <div class="brand-lockup">
+      <div class="brand">ALGO<span>/</span>ART</div>
+      <div class="brand-meta">generative marker system <b>φ</b></div>
+    </div>
+
+    <div class="formula-strip" aria-hidden="true">
+      <span>1.6180339887</span>
+      <i></i>
+      <span>137.507764°</span>
+    </div>
 
     <div class="seed">
-      <span class="toolbar-label">Seed</span>
+      <span class="toolbar-label">SEED</span>
       <input id="seed" value="PHI-1618" aria-label="Seed">
       <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
     </div>
 
     <div class="actions">
-      <button id="regenerate" class="primary">Generate</button>
+      <button id="regenerate" class="primary">GENERATE</button>
       <button id="mutate">Mutate</button>
       <button id="randomise">Randomise</button>
       <button id="geometry">φ Guides</button>
@@ -29,39 +39,60 @@
 
   <main>
     <div class="stage">
-      <button id="inspectorToggle" class="inspector-toggle" aria-label="Open controls" title="Open controls">☰ Controls</button>
+      <div class="stage-index" aria-hidden="true">
+        <span>01</span>
+        <strong>GOLDEN-RATIO<br>DRAWING ENGINE</strong>
+      </div>
+
+      <div class="phi-watermark" aria-hidden="true">φ</div>
+
+      <button id="inspectorToggle" class="inspector-toggle" aria-label="Open controls" title="Open controls">
+        <span>PARAMETERS</span><b>+</b>
+      </button>
 
       <div class="canvas-shell">
         <div class="canvas-wrap">
+          <span class="registration reg-tl" aria-hidden="true"></span>
+          <span class="registration reg-tr" aria-hidden="true"></span>
+          <span class="registration reg-bl" aria-hidden="true"></span>
+          <span class="registration reg-br" aria-hidden="true"></span>
           <canvas id="art" width="1400" height="1000"></canvas>
           <div class="stats" id="stats"></div>
         </div>
       </div>
 
-      <div class="stage-hint">G generate · M mutate · N new seed · [ controls</div>
+      <div class="stage-footer" aria-hidden="true">
+        <span>1400 × 1000 / BROWSER CANVAS</span>
+        <span>G generate · M mutate · N seed · [ parameters</span>
+      </div>
     </div>
 
     <aside id="inspector" class="inspector" aria-label="Art controls">
+      <div class="drawer-handle" aria-hidden="true"></div>
+
       <div class="inspector-head">
         <div>
-          <strong>Controls</strong>
-          <span>Fine tune the generator</span>
+          <span class="panel-number">02</span>
+          <div>
+            <strong>PARAMETERS</strong>
+            <span>shape the system, not the pixels</span>
+          </div>
         </div>
         <button id="inspectorClose" class="icon-btn close-btn" aria-label="Close controls" title="Close controls">×</button>
       </div>
 
       <nav class="tabs" aria-label="Control categories">
-        <button class="tab active" data-tab="composition">Compose</button>
-        <button class="tab" data-tab="phi">φ</button>
-        <button class="tab" data-tab="marker">Pen</button>
-        <button class="tab" data-tab="geometry-panel">Shape</button>
-        <button class="tab" data-tab="colour">Colour</button>
-        <button class="tab" data-tab="export">Export</button>
+        <button class="tab active" data-tab="composition"><span>01</span>Compose</button>
+        <button class="tab" data-tab="phi"><span>02</span>φ</button>
+        <button class="tab" data-tab="marker"><span>03</span>Pen</button>
+        <button class="tab" data-tab="geometry-panel"><span>04</span>Shape</button>
+        <button class="tab" data-tab="colour"><span>05</span>Colour</button>
+        <button class="tab" data-tab="export"><span>06</span>Export</button>
       </nav>
 
       <div class="tab-body">
         <section class="tab-panel active" data-panel="composition">
-          <div class="section-title">Composition</div>
+          <div class="section-title"><span>COMPOSITION</span><b>φ-field</b></div>
           <div class="controls">
             <div class="control"><label>Mode</label><select id="mode"><option value="field">Golden Field</option><option value="spiral">Golden Spiral</option><option value="rects">Recursive Rectangles</option><option value="burst">Fibonacci Burst</option><option value="network">Phi Network</option><option value="organic">Organic</option><option value="geometric">Geometric</option><option value="scribble">Controlled Scribble</option></select></div>
             <div class="control"><label>Elements</label><output></output><input id="elements" type="range" min="8" max="140" value="52"></div>
@@ -72,19 +103,19 @@
         </section>
 
         <section class="tab-panel" data-panel="phi">
-          <div class="section-title">Golden ratio</div>
+          <div class="section-title"><span>GOLDEN RATIO</span><b>1.618…</b></div>
           <div class="controls">
             <div class="control"><label>φ adherence</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="90"></div>
             <div class="control"><label>Recursion</label><output></output><input id="recursion" type="range" min="1" max="9" value="5"></div>
             <div class="control"><label>Spiral influence</label><output></output><input id="spiralInfluence" type="range" min="0" max="100" value="65"></div>
             <div class="control"><label>Golden angle</label><output></output><input id="goldenAngle" type="range" min="0" max="100" value="100"></div>
             <div class="control"><label>Nesting</label><output></output><input id="nesting" type="range" min="0" max="100" value="38"></div>
-            <div class="mini-note">φ ≈ 1.618034 · golden angle ≈ 137.508°</div>
+            <div class="mini-note">φ ≈ 1.618034 · golden angle ≈ 137.508° · deterministic from seed</div>
           </div>
         </section>
 
         <section class="tab-panel" data-panel="marker">
-          <div class="section-title">Marker pen</div>
+          <div class="section-title"><span>MARKER ENGINE</span><b>ink / friction</b></div>
           <div class="controls">
             <div class="control"><label>Pen</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine">Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
             <div class="control"><label>Thickness</label><output></output><input id="thickness" type="range" min="1" max="28" value="9"></div>
@@ -97,7 +128,7 @@
         </section>
 
         <section class="tab-panel" data-panel="geometry-panel">
-          <div class="section-title">Geometry</div>
+          <div class="section-title"><span>GEOMETRY</span><b>line / form</b></div>
           <div class="controls">
             <div class="control"><label>Curved ↔ straight</label><output></output><input id="curveBias" type="range" min="0" max="100" value="55"></div>
             <div class="control"><label>Shape amount</label><output></output><input id="shapeAmount" type="range" min="0" max="100" value="65"></div>
@@ -114,7 +145,7 @@
         </section>
 
         <section class="tab-panel" data-panel="colour">
-          <div class="section-title">Colour & paper</div>
+          <div class="section-title"><span>COLOUR / PAPER</span><b>material</b></div>
           <div class="controls">
             <div class="control"><label>Palette</label><select id="palette"><option value="spectrum">Full Spectrum</option><option value="golden">Golden-angle hues</option><option value="marker">Classic Markers</option><option value="cmyk">CMYK</option><option value="primary">Primary</option><option value="neon">Neon</option><option value="pastel">Pastel</option><option value="earth">Earth</option><option value="warm">Warm</option><option value="cold">Cold</option><option value="mono">Monochrome</option></select></div>
             <div class="control"><label>Colours</label><output></output><input id="colourCount" type="range" min="1" max="14" value="8"></div>
@@ -126,10 +157,10 @@
         </section>
 
         <section class="tab-panel" data-panel="export">
-          <div class="section-title">Export</div>
+          <div class="section-title"><span>OUTPUT</span><b>raster</b></div>
           <div class="controls">
             <div class="control"><label>PNG scale</label><select id="exportScale"><option value="1">1× — 1400×1000</option><option value="2" selected>2× — 2800×2000</option><option value="3">3× — 4200×3000</option></select></div>
-            <button class="primary export-big" id="savePanel">Save PNG</button>
+            <button class="primary export-big" id="savePanel">SAVE ARTWORK</button>
             <div class="mini-note">Same seed + same settings = same composition. Everything runs locally in your browser.</div>
           </div>
         </section>
