@@ -2,6 +2,14 @@ window.AlgoArt=window.AlgoArt||{};
 (function(A){
 'use strict';
 
+function crowdFactor(s){
+  return A.clamp((s.elements-36)/104,0,1);
+}
+
+function elementScale(s){
+  return 1/Math.sqrt(Math.max(1,s.elements/48));
+}
+
 function enabledShapes(s){
   var a=[];
   if(s.lines)a.push('line');
@@ -12,10 +20,16 @@ function enabledShapes(s){
   return a.length?a:['line'];
 }
 
-function element(ctx,c,i,s,r,pal){
+function element(ctx,c,i,s,r,pal,territory){
   var sh=r.chance(s.shapeAmount/100)?r.pick(enabledShapes(s)):'line';
-  var raw=r.range(24,230)*A.lerp(.7,1.2,s.density/100);
-  var size=A.clamp(A.qphi(raw,22,s.phiStrength/100),6,430);
+  var scale=elementScale(s);
+  var raw=r.range(24,230)*A.lerp(.7,1.2,s.density/100)*scale;
+  var size=A.clamp(A.qphi(raw,Math.max(8,22*scale),s.phiStrength/100),6,430*scale);
+
+  if(territory){
+    size=Math.min(size,Math.max(18,territory*A.PHI*.95));
+  }
+
   var rot=r.range(0,A.TAU)*(s.rotation/100);
   var col=pal[i%pal.length];
   var ratio=A.lerp(r.range(.6,1.7),A.PHI,s.phiStrength/100);
@@ -34,7 +48,7 @@ function element(ctx,c,i,s,r,pal){
     A.arc(ctx,c,size/2,rot,A.TAU*r.pick([A.INV,1-A.INV,.5,.75]),col,s,r);
   }
 
-  if(r.chance(s.nesting/160)){
+  if(r.chance((s.nesting/160)*A.lerp(1,.62,crowdFactor(s)))){
     var nc=pal[(i+1)%pal.length],n=size/A.PHI;
     if(sh==='rect'){
       A.rect(ctx,c,n,n/A.PHI,rot+A.GOLD,nc,s,r);
@@ -47,23 +61,49 @@ function element(ctx,c,i,s,r,pal){
 }
 
 function drawField(ctx,s,r,pal){
+  var crowd=crowdFactor(s);
+  var distributed=A.distributedPhiPoints(s.elements,s,r);
+  var phase=r.range(0,A.TAU);
+
   for(var i=0;i<s.elements;i++){
     if(r.chance(s.negativeSpace/260))continue;
-    var p=A.phiPoint(s,r),sp=A.goldenPoint(i,s.elements,s,r);
-    var c={
+
+    var p=A.phiPoint(s,r);
+    var sp=A.goldenCanvasPoint(i,s.elements,s,phase);
+    var old={
       x:A.lerp(p.x,sp.x,s.spiralInfluence/180),
       y:A.lerp(p.y,sp.y,s.spiralInfluence/180)
     };
-    element(ctx,c,i,s,r,pal);
+    var d=distributed[i];
+    var c={
+      x:A.lerp(old.x,d.x,crowd),
+      y:A.lerp(old.y,d.y,crowd)
+    };
+
+    element(ctx,c,i,s,r,pal,d.territory);
   }
 }
 
 function drawSpiral(ctx,s,r,pal){
   var prev=null;
+  var phase=r.range(0,A.TAU);
+  var points=A.distributedPhiPoints(s.elements,s,r);
+  var crowd=crowdFactor(s);
+
   for(var i=0;i<s.elements;i++){
-    var p=A.goldenPoint(i,s.elements,s,r);
-    if(prev&&s.lines&&r.chance(.72))A.drawLine(ctx,prev,p,pal[i%pal.length],s,r);
-    if(r.chance(.8))element(ctx,p,i,s,r,pal);
+    var spiral=A.goldenCanvasPoint(i,s.elements,s,phase);
+    var d=points[i];
+    var p={
+      x:A.lerp(spiral.x,d.x,crowd*.32),
+      y:A.lerp(spiral.y,d.y,crowd*.32)
+    };
+
+    if(prev&&s.lines&&r.chance(A.lerp(.72,.46,crowd))){
+      A.drawLine(ctx,prev,p,pal[i%pal.length],s,r);
+    }
+    if(r.chance(A.lerp(.8,.68,crowd))){
+      element(ctx,p,i,s,r,pal,d.territory);
+    }
     prev=p;
   }
 }
@@ -85,41 +125,103 @@ function drawRects(ctx,s,r,pal){
 }
 
 function drawBurst(ctx,s,r,pal){
-  var c={x:A.W/2,y:A.H/2};
+  var crowd=crowdFactor(s);
+  var hubCount=1+Math.floor(crowd*2.8);
+  var hubs;
+
+  if(hubCount===1){
+    hubs=[{x:A.W/2,y:A.H/2,territory:Math.min(A.W,A.H)*.7}];
+  }else{
+    hubs=A.distributedPhiPoints(hubCount,s,r);
+  }
+
+  var localCounts=[];
+  for(var h=0;h<hubCount;h++)localCounts[h]=0;
+
   for(var i=0;i<s.elements;i++){
-    var a=i*A.lerp(A.TAU/s.elements,A.GOLD,s.goldenAngle/100);
-    var len=A.qphi(r.range(80,450),34,s.phiStrength/100);
-    var p={x:c.x+Math.cos(a)*len,y:c.y+Math.sin(a)*len};
+    var hubIndex=i%hubCount;
+    var c=hubs[hubIndex];
+    var local=localCounts[hubIndex]++;
+    var perHub=Math.ceil(s.elements/hubCount);
+    var a=local*A.lerp(A.TAU/perHub,A.GOLD,s.goldenAngle/100);
+    var len=A.qphi(r.range(70,420)*A.lerp(1,.68,crowd),34,s.phiStrength/100);
+    var p={
+      x:A.clamp(c.x+Math.cos(a)*len,24,A.W-24),
+      y:A.clamp(c.y+Math.sin(a)*len,24,A.H-24)
+    };
+
     A.drawLine(ctx,c,p,pal[i%pal.length],s,r);
-    if(r.chance(s.shapeAmount/150))element(ctx,p,i,s,r,pal);
+    if(r.chance((s.shapeAmount/150)*A.lerp(1,.55,crowd))){
+      element(ctx,p,i,s,r,pal,c.territory);
+    }
   }
 }
 
 function drawNetwork(ctx,s,r,pal){
+  var crowd=crowdFactor(s);
+  var distributed=A.distributedPhiPoints(s.elements,s,r);
   var pts=[];
-  for(var i=0;i<s.elements;i++)pts.push(A.phiPoint(s,r));
+
+  for(var i=0;i<s.elements;i++){
+    var loose=A.phiPoint(s,r);
+    var d=distributed[i];
+    var mix=A.lerp(.28,1,crowd);
+    pts.push({
+      x:A.lerp(loose.x,d.x,mix),
+      y:A.lerp(loose.y,d.y,mix),
+      territory:d.territory
+    });
+  }
+
+  var desired=1+Math.floor(s.complexity/34);
+  var links=Math.max(1,Math.round(desired*A.lerp(1,.48,crowd)));
+  var edges={};
+
   for(var j=0;j<pts.length;j++){
-    var links=1+Math.floor(s.complexity/34);
-    for(var k=1;k<=links;k++){
-      var b=pts[(j+k+r.int(0,5))%pts.length];
-      A.drawLine(ctx,pts[j],b,pal[(j+k)%pal.length],s,r);
+    var nearest=[];
+    for(var k=0;k<pts.length;k++){
+      if(k===j)continue;
+      var dx=pts[j].x-pts[k].x,dy=pts[j].y-pts[k].y;
+      nearest.push({index:k,d:dx*dx+dy*dy});
     }
-    if(r.chance(s.shapeAmount/100))element(ctx,pts[j],j,s,r,pal);
+    nearest.sort(function(a,b){return a.d-b.d});
+
+    for(var n=0;n<links&&n<nearest.length;n++){
+      var other=nearest[n].index;
+      var lo=Math.min(j,other),hi=Math.max(j,other);
+      var key=lo+'-'+hi;
+      if(edges[key])continue;
+      edges[key]=true;
+      A.drawLine(ctx,pts[j],pts[other],pal[(j+n)%pal.length],s,r);
+    }
+
+    if(r.chance((s.shapeAmount/100)*A.lerp(1,.52,crowd))){
+      element(ctx,pts[j],j,s,r,pal,pts[j].territory);
+    }
   }
 }
 
 function drawScribble(ctx,s,r,pal){
-  var p=A.phiPoint(s,r);
-  for(var i=0;i<s.elements*2;i++){
+  var crowd=crowdFactor(s);
+  var segments=Math.round(s.elements*A.lerp(2,1.3,crowd));
+  var anchors=A.distributedPhiPoints(Math.max(2,Math.ceil(segments/14)),s,r);
+  var anchorIndex=0;
+  var p=anchors[0];
+
+  for(var i=0;i<segments;i++){
     var a=i*A.GOLD+r.range(-.5,.5);
-    var len=A.qphi(r.range(18,160),18,s.phiStrength/100);
+    var len=A.qphi(r.range(18,160)*A.lerp(1,.72,crowd),18,s.phiStrength/100);
     var q={
       x:A.clamp(p.x+Math.cos(a)*len,25,A.W-25),
       y:A.clamp(p.y+Math.sin(a)*len,25,A.H-25)
     };
     A.drawLine(ctx,p,q,pal[i%pal.length],s,r);
     p=q;
-    if(r.chance(.14))p=A.phiPoint(s,r);
+
+    if(r.chance(.12+crowd*.17)){
+      anchorIndex=(anchorIndex+1)%anchors.length;
+      p=anchors[anchorIndex];
+    }
   }
 }
 
