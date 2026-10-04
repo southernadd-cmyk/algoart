@@ -7,6 +7,7 @@ function $(id){return document.getElementById(id)}
 var canvas=$('art');
 var showGeometry=false;
 var app=$('app');
+var mobileQuery=window.matchMedia('(max-width:700px)');
 
 var ranges=document.querySelectorAll('input[type=range]');
 ranges.forEach(function(r){
@@ -32,20 +33,32 @@ document.querySelectorAll('.tab').forEach(function(btn){
   btn.addEventListener('click',function(){setTab(btn.dataset.tab)});
 });
 
-function setInspector(open){
+function setInspector(open,remember){
   app.classList.toggle('inspector-closed',!open);
   $('inspectorToggle').setAttribute('aria-expanded',open?'true':'false');
-  try{localStorage.setItem('algoart-inspector',open?'open':'closed')}catch(e){}
+  if(remember!==false){
+    try{localStorage.setItem('algoart-inspector',open?'open':'closed')}catch(e){}
+  }
 }
 
-$('inspectorClose').onclick=function(){setInspector(false)};
-$('inspectorToggle').onclick=function(){setInspector(true)};
+$('inspectorClose').onclick=function(){setInspector(false,true)};
+$('inspectorToggle').onclick=function(){setInspector(true,true)};
 
 try{
   var savedTab=localStorage.getItem('algoart-tab');
   if(savedTab&&document.querySelector('[data-panel="'+savedTab+'"]'))setTab(savedTab);
-  if(localStorage.getItem('algoart-inspector')==='closed')setInspector(false);
-}catch(e){}
+
+  var savedInspector=localStorage.getItem('algoart-inspector');
+  if(savedInspector==='closed'){
+    setInspector(false,false);
+  }else if(savedInspector==='open'){
+    setInspector(true,false);
+  }else if(mobileQuery.matches){
+    setInspector(false,false);
+  }
+}catch(e){
+  if(mobileQuery.matches)setInspector(false,false);
+}
 
 A.readSettings=function(){
   var ids=[
@@ -67,7 +80,7 @@ A.readSettings=function(){
 function regenerate(){
   var s=A.readSettings();
   A.render(canvas,s,1,showGeometry);
-  $('stats').textContent=s.mode+' · '+s.seed+' · φ '+s.phiStrength+'%';
+  $('stats').textContent=s.mode+' / '+s.seed+' / φ '+s.phiStrength+'%';
 }
 
 function newSeedValue(){
@@ -141,7 +154,7 @@ window.addEventListener('keydown',function(e){
   if(key==='g')regenerate();
   if(key==='n')$('newSeed').click();
   if(key==='m')$('mutate').click();
-  if(e.key==='[')setInspector(app.classList.contains('inspector-closed'));
+  if(e.key==='[')setInspector(app.classList.contains('inspector-closed'),true);
 });
 
 regenerate();
