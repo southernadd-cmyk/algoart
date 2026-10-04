@@ -6,6 +6,7 @@ function $(id){return document.getElementById(id)}
 
 var canvas=$('art');
 var showGeometry=false;
+var app=$('app');
 
 var ranges=document.querySelectorAll('input[type=range]');
 ranges.forEach(function(r){
@@ -14,6 +15,37 @@ ranges.forEach(function(r){
   sync();
   r.addEventListener('input',sync);
 });
+
+function setTab(name){
+  document.querySelectorAll('.tab').forEach(function(btn){
+    var active=btn.dataset.tab===name;
+    btn.classList.toggle('active',active);
+    btn.setAttribute('aria-selected',active?'true':'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(panel){
+    panel.classList.toggle('active',panel.dataset.panel===name);
+  });
+  try{localStorage.setItem('algoart-tab',name)}catch(e){}
+}
+
+document.querySelectorAll('.tab').forEach(function(btn){
+  btn.addEventListener('click',function(){setTab(btn.dataset.tab)});
+});
+
+function setInspector(open){
+  app.classList.toggle('inspector-closed',!open);
+  $('inspectorToggle').setAttribute('aria-expanded',open?'true':'false');
+  try{localStorage.setItem('algoart-inspector',open?'open':'closed')}catch(e){}
+}
+
+$('inspectorClose').onclick=function(){setInspector(false)};
+$('inspectorToggle').onclick=function(){setInspector(true)};
+
+try{
+  var savedTab=localStorage.getItem('algoart-tab');
+  if(savedTab&&document.querySelector('[data-panel="'+savedTab+'"]'))setTab(savedTab);
+  if(localStorage.getItem('algoart-inspector')==='closed')setInspector(false);
+}catch(e){}
 
 A.readSettings=function(){
   var ids=[
@@ -35,7 +67,7 @@ A.readSettings=function(){
 function regenerate(){
   var s=A.readSettings();
   A.render(canvas,s,1,showGeometry);
-  $('stats').textContent=s.mode+' · seed '+s.seed+' · φ '+s.phiStrength+'%';
+  $('stats').textContent=s.mode+' · '+s.seed+' · φ '+s.phiStrength+'%';
 }
 
 function newSeedValue(){
@@ -52,7 +84,8 @@ $('newSeed').onclick=function(){
 
 $('geometry').onclick=function(){
   showGeometry=!showGeometry;
-  this.textContent=showGeometry?'Hide geometry':'Show geometry';
+  this.textContent=showGeometry?'Hide φ Guides':'φ Guides';
+  this.classList.toggle('active',showGeometry);
   regenerate();
 };
 
@@ -90,11 +123,13 @@ $('randomise').onclick=function(){
   regenerate();
 };
 
-$('save').onclick=function(){
+function savePNG(){
   A.exportPNG(A.readSettings(),+$('exportScale').value);
-};
+}
+$('save').onclick=savePNG;
+$('savePanel').onclick=savePNG;
 
-document.querySelectorAll('aside input, aside select').forEach(function(e){
+document.querySelectorAll('.inspector input, .inspector select').forEach(function(e){
   e.addEventListener('change',function(){
     if(e.id!=='exportScale')regenerate();
   });
@@ -106,6 +141,7 @@ window.addEventListener('keydown',function(e){
   if(key==='g')regenerate();
   if(key==='n')$('newSeed').click();
   if(key==='m')$('mutate').click();
+  if(e.key==='[')setInspector(app.classList.contains('inspector-closed'));
 });
 
 regenerate();
