@@ -50,7 +50,7 @@ if (command === 'gate') {
     let best = null;
     for (let i = 0; i < SCHEDULE.instagram.length; i++) {
       const delta = Math.abs(current - minutes(SCHEDULE.instagram[i]));
-      if (delta <= 25 && (!best || delta < best.delta)) best = { slot: i, delta };
+      if (delta <= 55 && (!best || delta < best.delta)) best = { slot: i, delta };
     }
     if (best) slot = best.slot;
   }
