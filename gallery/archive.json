@@ -3,14 +3,17 @@
   "days": [
     {
       "date": "2026-10-05",
-      "cover": "2026-10-05-01-spiral-AA-20261005-01-37765.jpg",
-      "count": 5,
+      "cover": "2026-10-05-01-organic-AA-20261005-01-17577.jpg",
+      "count": 9,
       "series": [
+        "Growth Systems",
+        "Constructed Forms",
+        "Automatic Marks",
+        "Orbital Studies",
         "Golden Trajectories",
         "Recursive Divisions",
         "Radiant Systems",
-        "Connected Fields",
-        "Growth Systems"
+        "Connected Fields"
       ]
     }
   ]
