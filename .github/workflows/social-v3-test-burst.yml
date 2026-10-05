@@ -1,9 +1,6 @@
 name: ALGO ART one-off V3 social test burst
 
 on:
-  push:
-    paths:
-      - '.github/workflows/social-v3-test-burst.yml'
   workflow_dispatch:
 
 permissions:
@@ -138,91 +135,6 @@ jobs:
             if [ "$INDEX" -lt 2 ]; then sleep 8; fi
           done
 
-      - name: Append V3 artworks to Daily Gallery
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs/promises';
-          import path from 'node:path';
-
-          const day = process.env.SOCIAL_DATE;
-          const socialDir = path.resolve('social-output', day);
-          const galleryDir = path.resolve('gallery', day);
-          const queuePath = path.join(socialDir, 'queue.json');
-          const metaPath = path.join(galleryDir, 'meta.json');
-
-          const queue = JSON.parse(await fs.readFile(queuePath, 'utf8'));
-          const meta = JSON.parse(await fs.readFile(metaPath, 'utf8'));
-
-          const existing = meta.entries.map((entry) => ({
-            id: entry.id,
-            seed: entry.seed,
-            mode: entry.mode,
-            series: entry.series,
-            imageFile: entry.imageFile,
-            shareUrl: entry.shareUrl,
-            rendererVersion: entry.rendererVersion || 3,
-            settings: entry.settings,
-            copy: { altText: entry.altText }
-          }));
-
-          for (const entry of existing) {
-            await fs.copyFile(
-              path.join(galleryDir, entry.imageFile),
-              path.join(socialDir, entry.imageFile)
-            );
-          }
-
-          const existingSeeds = new Set(existing.map((entry) => entry.seed));
-          const fresh = [];
-
-          for (const item of queue.entries) {
-            if (existingSeeds.has(item.seed)) continue;
-
-            const number = existing.length + fresh.length + 1;
-            const suffix = item.imageFile.replace(/^\\d{4}-\\d{2}-\\d{2}-\\d{2}-/, '');
-            const imageFile = `${day}-${String(number).padStart(2, '0')}-${suffix}`;
-            await fs.rename(
-              path.join(socialDir, item.imageFile),
-              path.join(socialDir, imageFile)
-            );
-
-            fresh.push({
-              ...item,
-              id: `${day}-${String(number).padStart(2, '0')}`,
-              imageFile
-            });
-          }
-
-          queue.entries = [...existing, ...fresh];
-          await fs.writeFile(queuePath, JSON.stringify(queue, null, 2) + '\\n');
-          console.log(`Combined gallery queue now contains ${queue.entries.length} artworks.`);
-          NODE
-
-          npm run gallery:build
-
-          test "$(jq '.count' "gallery/$SOCIAL_DATE/meta.json")" = "12"
-          test "$(find "gallery/$SOCIAL_DATE" -maxdepth 1 -name '*.jpg' | wc -l | tr -d ' ')" = "12"
-          grep -q "Twelve studies" "gallery/$SOCIAL_DATE/index.html"
-          grep -q "LATEST: 12 STUDIES" "gallery/index.html"
-
-      - name: Persist twelve-artwork Daily Gallery
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf node_modules social-output package-lock.json
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add gallery sitemap.xml robots.txt
-          if git diff --cached --quiet; then
-            echo "Daily Gallery already contains all 12 artworks."
-          else
-            git commit -m "Expand October 5 Daily Gallery to twelve artworks"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
-
       - name: Summary
         if: always()
         shell: bash
@@ -233,4 +145,4 @@ jobs:
           echo "- Threads: same 3 artworks" >> "$GITHUB_STEP_SUMMARY"
           echo "- Share links: explicit v=3" >> "$GITHUB_STEP_SUMMARY"
           echo "- Daily automation: unchanged" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Gallery: expanded from 9 to 12 studies using the exact V3 social artworks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Gallery: maintained separately from this one-off social test workflow" >> "$GITHUB_STEP_SUMMARY"
