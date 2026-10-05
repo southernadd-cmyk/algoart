@@ -1092,3 +1092,100 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
   .actions #variations,
   .actions .gallery-nav{font-size:7px;padding-left:2px;padding-right:2px}
 }
+
+
+/* Mobile full-page fit: artwork, footer controls and parameter navigation. */
+@media(max-width:700px){
+  .canvas-wrap{
+    width:min(calc(100vw - 20px),calc((100dvh - var(--header) - 88px)*1.4));
+    max-width:calc(100vw - 20px)
+  }
+  .stats{
+    max-width:calc(100vw - 24px);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap
+  }
+  .stage-footer{
+    left:max(9px,env(safe-area-inset-left));
+    right:max(128px,calc(env(safe-area-inset-right) + 128px));
+    bottom:max(12px,env(safe-area-inset-bottom));
+    min-width:0;
+    overflow:hidden
+  }
+  .stage-footer span{
+    display:block;
+    min-width:0;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap
+  }
+  .inspector-toggle{
+    max-width:116px;
+    right:max(10px,env(safe-area-inset-right));
+    bottom:max(10px,env(safe-area-inset-bottom));
+    overflow:hidden
+  }
+  .tabs{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-auto-rows:34px;
+    overflow:visible;
+    flex-shrink:0
+  }
+  .tab{
+    min-width:0;
+    min-height:34px;
+    width:100%;
+    padding:3px 2px;
+    border-right:1px solid var(--ink);
+    border-bottom:1px solid var(--ink);
+    font-size:8px
+  }
+  .tab:nth-child(3n){border-right:0}
+  .tab:nth-last-child(-n+3){border-bottom:0}
+  .tab span{font-size:6px}
+  .inspector{
+    height:min(66dvh,590px);
+    max-width:100vw
+  }
+  .inspector-head,
+  .tab-body,
+  .tab-panel,
+  .controls,
+  .control,
+  .mode-picker-wrap,
+  .checks{
+    min-width:0;
+    max-width:100%
+  }
+  .control select,
+  .control input,
+  .export-big,
+  .mode-picker{
+    max-width:100%
+  }
+  .ethos-toast{
+    max-width:calc(100vw - max(16px,env(safe-area-inset-left) + env(safe-area-inset-right)));
+  }
+  .variations-overlay,
+  .variations-sheet,
+  .variations-grid,
+  .variation-card{
+    max-width:100vw
+  }
+}
+
+@media(max-width:360px){
+  .stage-footer{
+    right:116px;
+    font-size:5px
+  }
+  .inspector-toggle{
+    max-width:106px;
+    padding:7px 8px;
+    gap:8px;
+    font-size:9px
+  }
+}
