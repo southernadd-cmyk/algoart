@@ -15,6 +15,7 @@ var PEN={
 A.paper=function(ctx,s,r){
   ctx.fillStyle=s.paper;
   ctx.fillRect(0,0,A.W,A.H);
+  if(A.svgRecorder)A.svgRecorder.background=s.paper;
   ctx.save();
   ctx.globalAlpha=.035;
   for(var i=0;i<s.grain*20;i++){
@@ -30,8 +31,23 @@ A.stroke=function(ctx,points,col,s,r,curve){
   var wob=(s.wobble/100)*7*p[2];
   var base=Math.max(.6,s.thickness*p[0]);
 
+  function f(v){return Math.round(v*100)/100}
+  function record(d,alpha,width,lineCap,dash,dashOffset){
+    if(!A.svgRecorder)return;
+    A.svgRecorder.paths.push({
+      d:d,
+      stroke:col,
+      opacity:alpha,
+      width:width,
+      lineCap:lineCap,
+      dash:dash&&dash.length?dash.slice():null,
+      dashOffset:dashOffset||0
+    });
+  }
+
   ctx.save();
-  ctx.lineCap=(s.pen==='broad'||s.pen==='highlighter')?'butt':'round';
+  var lineCap=(s.pen==='broad'||s.pen==='highlighter')?'butt':'round';
+  ctx.lineCap=lineCap;
   ctx.lineJoin='round';
   if(s.pen==='highlighter')ctx.globalCompositeOperation='multiply';
 
@@ -40,29 +56,42 @@ A.stroke=function(ctx,points,col,s,r,curve){
     var a={x:points[0].x+r.range(-wob,wob),y:points[0].y+r.range(-wob,wob)};
     ctx.moveTo(a.x,a.y);
     ctx.strokeStyle=col;
-    ctx.globalAlpha=A.clamp((s.opacity/100)*p[1]/Math.pow(passes,.42)*r.range(.82,1.05),.02,.95);
-    ctx.lineWidth=Math.max(.4,base*(1+r.range(-1,1)*(s.pressure/100)*.28));
 
+    var alpha=A.clamp((s.opacity/100)*p[1]/Math.pow(passes,.42)*r.range(.82,1.05),.02,.95);
+    var width=Math.max(.4,base*(1+r.range(-1,1)*(s.pressure/100)*.28));
+    ctx.globalAlpha=alpha;
+    ctx.lineWidth=width;
+
+    var dash=null,dashOffset=0;
     if((s.pen==='dry'||s.dryness>35)&&r.chance((s.dryness/100)*.75)){
-      ctx.setLineDash([r.range(7,24),r.range(1,6),r.range(2,9),r.range(1,7)]);
-      ctx.lineDashOffset=r.range(0,30);
+      dash=[r.range(7,24),r.range(1,6),r.range(2,9),r.range(1,7)];
+      dashOffset=r.range(0,30);
+      ctx.setLineDash(dash);
+      ctx.lineDashOffset=dashOffset;
     }else{
       ctx.setLineDash([]);
+      ctx.lineDashOffset=0;
     }
+
+    var d='M '+f(a.x)+' '+f(a.y);
 
     if(curve&&points.length===4){
       var p1=points[1],p2=points[2],p3=points[3];
-      ctx.bezierCurveTo(
-        p1.x+r.range(-wob,wob),p1.y+r.range(-wob,wob),
-        p2.x+r.range(-wob,wob),p2.y+r.range(-wob,wob),
-        p3.x+r.range(-wob,wob),p3.y+r.range(-wob,wob)
-      );
+      var c1={x:p1.x+r.range(-wob,wob),y:p1.y+r.range(-wob,wob)};
+      var c2={x:p2.x+r.range(-wob,wob),y:p2.y+r.range(-wob,wob)};
+      var end={x:p3.x+r.range(-wob,wob),y:p3.y+r.range(-wob,wob)};
+      ctx.bezierCurveTo(c1.x,c1.y,c2.x,c2.y,end.x,end.y);
+      d+=' C '+f(c1.x)+' '+f(c1.y)+' '+f(c2.x)+' '+f(c2.y)+' '+f(end.x)+' '+f(end.y);
     }else{
       for(var i=1;i<points.length;i++){
-        ctx.lineTo(points[i].x+r.range(-wob,wob),points[i].y+r.range(-wob,wob));
+        var pt={x:points[i].x+r.range(-wob,wob),y:points[i].y+r.range(-wob,wob)};
+        ctx.lineTo(pt.x,pt.y);
+        d+=' L '+f(pt.x)+' '+f(pt.y);
       }
     }
+
     ctx.stroke();
+    record(d,alpha,width,lineCap,dash,dashOffset);
   }
   ctx.restore();
 };
