@@ -1,0 +1,31 @@
+name: Verify Threads token
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - automation/verify-threads.mjs
+      - .github/workflows/verify-threads.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+      EXPECTED_THREADS_USERNAME: artalgorithm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify token without posting
+        run: node automation/verify-threads.mjs
