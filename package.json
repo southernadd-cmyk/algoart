@@ -5,7 +5,9 @@
   "scripts": {
     "social:generate": "node automation/generate-social.mjs",
     "social:instagram": "node automation/publish-instagram.mjs",
-    "social:threads": "node automation/publish-threads.mjs"
+    "social:threads": "node automation/publish-threads.mjs",
+    "social:pinterest": "node automation/publish-pinterest.mjs",
+    "social:verify-pinterest": "node automation/verify-pinterest.mjs"
   },
   "devDependencies": {
     "playwright": "^1.55.0"
