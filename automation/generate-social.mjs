@@ -135,6 +135,7 @@ function platformAssignment(index) {
 
 const requestedDate = process.env.SOCIAL_DATE;
 const day = requestedDate || dateInZone();
+const generationCount = Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
 const outDir = path.resolve('social-output', day);
 await fs.mkdir(outDir, { recursive: true });
 
@@ -143,7 +144,7 @@ const page = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
 const entries = [];
 
 try {
-  for (let index = 0; index < DAILY_COUNT; index++) {
+  for (let index = 0; index < generationCount; index++) {
     const settings = settingsFor(day, index);
     const query = queryFor(settings);
     const localUrl = `${LOCAL_URL}?${query}`;
@@ -204,6 +205,6 @@ const queue = {
 };
 
 await fs.writeFile(path.join(outDir, 'queue.json'), JSON.stringify(queue, null, 2));
-console.log(`\nDry-run queue written to ${outDir}`);
+console.log(`\nGenerated ${generationCount} artworks into ${outDir}`);
 console.log(`Instagram: ${SCHEDULE.instagram.join(', ')} ${TIME_ZONE}`);
 console.log(`Threads: ${SCHEDULE.threads.join(', ')} ${TIME_ZONE}`);
