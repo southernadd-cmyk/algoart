@@ -143,16 +143,16 @@
             <div class="mode-picker-wrap">
               <div class="mode-picker-label"><span>SERIES</span><b>choose a system</b></div>
               <div class="mode-picker" id="modePicker">
-                <button class="mode-card active" type="button" data-mode="field"><canvas width="140" height="100"></canvas><span>FIELD</span><strong>Orbital Studies</strong></button>
+                <button class="mode-card" type="button" data-mode="field"><canvas width="140" height="100"></canvas><span>FIELD</span><strong>Orbital Studies</strong></button>
                 <button class="mode-card" type="button" data-mode="spiral"><canvas width="140" height="100"></canvas><span>SPIRAL</span><strong>Golden Trajectories</strong></button>
-                <button class="mode-card" type="button" data-mode="rects"><canvas width="140" height="100"></canvas><span>RECTS</span><strong>Recursive Divisions</strong></button>
+                <button class="mode-card active" type="button" data-mode="rects"><canvas width="140" height="100"></canvas><span>RECTS</span><strong>Recursive Divisions</strong></button>
                 <button class="mode-card" type="button" data-mode="burst"><canvas width="140" height="100"></canvas><span>BURST</span><strong>Radiant Systems</strong></button>
                 <button class="mode-card" type="button" data-mode="network"><canvas width="140" height="100"></canvas><span>NETWORK</span><strong>Connected Fields</strong></button>
                 <button class="mode-card" type="button" data-mode="organic"><canvas width="140" height="100"></canvas><span>ORGANIC</span><strong>Growth Systems</strong></button>
                 <button class="mode-card" type="button" data-mode="geometric"><canvas width="140" height="100"></canvas><span>GEOMETRIC</span><strong>Constructed Forms</strong></button>
                 <button class="mode-card" type="button" data-mode="scribble"><canvas width="140" height="100"></canvas><span>SCRIBBLE</span><strong>Automatic Marks</strong></button>
               </div>
-              <select id="mode" class="mode-select-fallback" aria-label="Algorithm series"><option value="field">Golden Field</option><option value="spiral">Golden Spiral</option><option value="rects">Recursive Rectangles</option><option value="burst">Fibonacci Burst</option><option value="network">Phi Network</option><option value="organic">Organic</option><option value="geometric">Geometric</option><option value="scribble">Controlled Scribble</option></select>
+              <select id="mode" class="mode-select-fallback" aria-label="Algorithm series"><option value="field">Golden Field</option><option value="spiral">Golden Spiral</option><option value="rects" selected>Recursive Rectangles</option><option value="burst">Fibonacci Burst</option><option value="network">Phi Network</option><option value="organic">Organic</option><option value="geometric">Geometric</option><option value="scribble">Controlled Scribble</option></select>
             </div>
             <div class="control"><label>Elements</label><output></output><input id="elements" type="range" min="8" max="140" value="52"></div>
             <div class="control"><label>Density</label><output></output><input id="density" type="range" min="0" max="100" value="62"></div>
@@ -164,7 +164,7 @@
         <section class="tab-panel" data-panel="phi">
           <div class="section-title"><span>GOLDEN RATIO</span><b>1.618…</b></div>
           <div class="controls">
-            <div class="control"><label>φ adherence</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="90"></div>
+            <div class="control"><label>φ adherence</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="94"></div>
             <div class="control"><label>Recursion</label><output></output><input id="recursion" type="range" min="1" max="9" value="5"></div>
             <div class="control"><label>Spiral influence</label><output></output><input id="spiralInfluence" type="range" min="0" max="100" value="65"></div>
             <div class="control"><label>Golden angle</label><output></output><input id="goldenAngle" type="range" min="0" max="100" value="100"></div>
@@ -206,8 +206,8 @@
         <section class="tab-panel" data-panel="colour">
           <div class="section-title"><span>COLOUR / PAPER</span><b>material</b></div>
           <div class="controls">
-            <div class="control"><label>Palette</label><select id="palette"><option value="spectrum">Full Spectrum</option><option value="golden">Golden-angle hues</option><option value="marker">Classic Markers</option><option value="cmyk">CMYK</option><option value="primary">Primary</option><option value="neon">Neon</option><option value="pastel">Pastel</option><option value="earth">Earth</option><option value="warm">Warm</option><option value="cold">Cold</option><option value="mono">Monochrome</option></select></div>
-            <div class="control"><label>Colours</label><output></output><input id="colourCount" type="range" min="1" max="14" value="8"></div>
+            <div class="control"><label>Palette</label><select id="palette"><option value="spectrum">Full Spectrum</option><option value="golden">Golden-angle hues</option><option value="marker" selected>Classic Markers</option><option value="cmyk">CMYK</option><option value="primary">Primary</option><option value="neon">Neon</option><option value="pastel">Pastel</option><option value="earth">Earth</option><option value="warm">Warm</option><option value="cold">Cold</option><option value="mono">Monochrome</option></select></div>
+            <div class="control"><label>Colours</label><output></output><input id="colourCount" type="range" min="1" max="14" value="5"></div>
             <div class="control"><label>Saturation</label><output></output><input id="saturation" type="range" min="10" max="100" value="84"></div>
             <div class="control"><label>Brightness</label><output></output><input id="brightness" type="range" min="20" max="80" value="52"></div>
             <div class="control colour-row"><label>Paper</label><input id="paper" type="color" value="#f5f0e6"></div>
