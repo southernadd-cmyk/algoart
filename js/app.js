@@ -11,6 +11,11 @@ var mobileQuery=window.matchMedia('(max-width:700px)');
 var previewTimer=null;
 var variationBatch=0;
 var currentRenderMeta=null;
+var CURRENT_RENDERER_VERSION=2;
+var UNVERSIONED_V2_FIELD_SEEDS={
+  'AA-20261005-04-72522':true
+};
+A.rendererVersion=CURRENT_RENDERER_VERSION;
 
 var SETTING_IDS=[
   'mode','elements','density','complexity','negativeSpace',
@@ -141,6 +146,7 @@ function applySettings(settings){
 
 function settingsToURL(settings){
   var params=new URLSearchParams();
+  params.set('v',String(A.rendererVersion||CURRENT_RENDERER_VERSION));
   Object.keys(PARAM_KEYS).forEach(function(key){
     var value=settings[key];
     if(value==null)return;
@@ -178,6 +184,19 @@ function loadSettingsFromURL(){
       settings[key]=value;
     }
   });
+
+  var explicitVersion=Number(params.get('v'));
+  if(explicitVersion===1||explicitVersion===2){
+    A.rendererVersion=explicitVersion;
+  }else if(found){
+    var requestedMode=settings.mode||$('mode').value;
+    var requestedSeed=settings.seed||$('seed').value;
+    A.rendererVersion=(requestedMode==='field'&&!UNVERSIONED_V2_FIELD_SEEDS[requestedSeed])
+      ?1
+      :CURRENT_RENDERER_VERSION;
+  }else{
+    A.rendererVersion=CURRENT_RENDERER_VERSION;
+  }
 
   if(found)applySettings(settings);
   return found;
