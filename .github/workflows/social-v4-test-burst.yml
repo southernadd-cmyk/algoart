@@ -66,9 +66,9 @@ jobs:
           test -s "social-output/$SOCIAL_DATE/queue.json"
           COUNT="$(jq '.entries | length' "social-output/$SOCIAL_DATE/queue.json")"
           test "$COUNT" = "3"
-          jq -e 'all(.entries[]; .rendererVersion == 3)' "social-output/$SOCIAL_DATE/queue.json" >/dev/null
-          jq -e 'all(.entries[]; (.shareUrl | contains("?v=3&")))' "social-output/$SOCIAL_DATE/queue.json" >/dev/null
-          echo "Verified 3 renderer-v4 artworks with explicit v=3 share URLs."
+          jq -e 'all(.entries[]; .rendererVersion == 4)' "social-output/$SOCIAL_DATE/queue.json" >/dev/null
+          jq -e 'all(.entries[]; (.shareUrl | contains("?v=4&")))' "social-output/$SOCIAL_DATE/queue.json" >/dev/null
+          echo "Verified 3 renderer-v4 artworks with explicit v=4 share URLs."
           jq -r '.entries[] | [.id,.seed,.mode,.shareUrl] | @tsv' "social-output/$SOCIAL_DATE/queue.json"
 
       - name: Ensure public media release
@@ -95,7 +95,7 @@ jobs:
             TH_B64="$(printf '%s' "$ITEM" | jq -r '.threadsCaptionB64')"
             ALT_B64="$(printf '%s' "$ITEM" | jq -r '.altTextB64')"
 
-            printf '%s' "$SHARE_URL" | grep -Fq '?v=3&'
+            printf '%s' "$SHARE_URL" | grep -Fq '?v=4&'
 
             ASSET="${BURST_ID}-${NUM}.jpg"
             IG_MARKER="${BURST_ID}-${NUM}-instagram.txt"
