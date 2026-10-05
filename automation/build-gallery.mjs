@@ -72,7 +72,7 @@ function artworkCard(item, index) {
         <img src="${escapeHtml(item.imageFile)}" width="1400" height="1000" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" alt="${escapeHtml(alt)}">
       </a>
       <div class="art-info">
-        <div class="art-number">0${index + 1}</div>
+        <div class="art-number">${String(index + 1).padStart(2, '0')}</div>
         <div>
           <h2>${escapeHtml(title)}</h2>
           <p>${escapeHtml(artworkDescription(item))}</p>
