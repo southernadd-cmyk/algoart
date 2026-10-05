@@ -144,6 +144,6 @@ jobs:
           echo "- Target: 3 newly generated renderer-v4 artworks" >> "$GITHUB_STEP_SUMMARY"
           echo "- Instagram: same 3 artworks" >> "$GITHUB_STEP_SUMMARY"
           echo "- Threads: same 3 artworks" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Share links: explicit v=3" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Share links: explicit v=4" >> "$GITHUB_STEP_SUMMARY"
           echo "- Daily automation: unchanged" >> "$GITHUB_STEP_SUMMARY"
           echo "- Gallery: maintained separately from this one-off social test workflow" >> "$GITHUB_STEP_SUMMARY"
