@@ -436,39 +436,157 @@ function drawField(ctx,s,r,pal){
 }
 
 function drawSpiral(ctx,s,r,pal){
-  var prev=null;
+  var variants=['SHELL','DOUBLE','BROKEN','OFFSET','VOID','LOOSE'];
+  var variant=variants[A.hash(s.seed+'|spiral-variant')%variants.length];
+  var direction=(A.hash(s.seed+'|spiral-direction')%2===0)?1:-1;
+  var baseStrategy=chooseStrategy(s);
+  var voids=variant==='VOID'
+    ?makeReservedVoids(s,'VOID',A.makeR(s.seed+'|spiral-voids'))
+    :[];
+  var targets=phiTargets();
+  var targetIndex=A.hash(s.seed+'|spiral-centre')%targets.length;
   var phase=r.range(0,A.TAU);
-  var points=A.distributedPhiPoints(s.elements,s,r);
+  var arms=variant==='DOUBLE'?2:1;
+  var perArm=Math.ceil(s.elements/arms);
+  var prev=new Array(arms).fill(null);
   var crowd=crowdFactor(s);
-  var strategy=chooseStrategy(s);
+  var step=A.lerp(A.GOLD*.72,A.GOLD,s.goldenAngle/100);
 
-  for(var i=0;i<s.elements;i++){
-    var spiral=A.goldenCanvasPoint(i,s.elements,s,phase);
-    var d=points[i];
-    var p={
-      x:A.lerp(spiral.x,d.x,crowd*.32),
-      y:A.lerp(spiral.y,d.y,crowd*.32)
-    };
+  var centres=[];
+  if(variant==='DOUBLE'){
+    centres=[
+      {x:A.W*(1-A.INV),y:A.H*A.INV},
+      {x:A.W*A.INV,y:A.H*(1-A.INV)}
+    ];
+  }else if(variant==='OFFSET'||variant==='VOID'){
+    centres=[{
+      x:A.lerp(A.W*.5,targets[targetIndex].x,.72),
+      y:A.lerp(A.H*.5,targets[targetIndex].y,.72)
+    }];
+  }else{
+    centres=[{x:A.W*.5,y:A.H*.5}];
+  }
 
-    if(prev&&s.lines&&r.chance(A.lerp(.72,.46,crowd))){
-      A.drawLine(ctx,prev,p,pal[i%pal.length],s,r);
+  function spiralRadius(t){
+    var exponent=A.INV;
+    var scale=1;
+
+    if(variant==='SHELL'){
+      exponent=.52;
+      scale=.88;
+    }else if(variant==='LOOSE'){
+      exponent=.76;
+      scale=1.04;
+    }else if(variant==='BROKEN'){
+      exponent=.62;
+      scale=.96;
+    }else if(variant==='DOUBLE'){
+      exponent=.66;
+      scale=.7;
+    }else if(variant==='OFFSET'||variant==='VOID'){
+      exponent=.6;
+      scale=.9;
     }
 
-    if(r.chance(A.lerp(.8,.68,crowd))){
-      var tier=i<2?'hero':(i<Math.max(4,Math.round(s.elements*.2))?'medium':'small');
+    return Math.pow(A.clamp(t,0,1),exponent)*scale;
+  }
+
+  function isHero(local){
+    var a=Math.round((perArm-1)*A.INV);
+    var b=Math.round((perArm-1)*(1-A.INV));
+    return local===a||local===b;
+  }
+
+  for(var i=0;i<s.elements;i++){
+    var arm=i%arms;
+    var local=Math.floor(i/arms);
+    var t=(local+.6)/Math.max(1,perArm);
+    var centre=centres[arm%centres.length];
+    var radial=spiralRadius(t);
+    var armPhase=arm===0?0:Math.PI;
+    var angle=phase+armPhase+direction*(local*step);
+
+    if(variant==='BROKEN'){
+      angle+=Math.sin(local*A.GOLD)*.18;
+    }else if(variant==='LOOSE'){
+      angle+=Math.sin(local*A.INV)*.1;
+    }
+
+    var rx=A.W*(variant==='DOUBLE'?.29:.455)*radial;
+    var ry=A.H*(variant==='LOOSE'?.47:(variant==='DOUBLE'?.31:.435))*radial;
+
+    var p={
+      x:centre.x+Math.cos(angle)*rx,
+      y:centre.y+Math.sin(angle)*ry
+    };
+
+    if(variant==='SHELL'){
+      p.x+=Math.cos(angle+A.GOLD)*Math.pow(t,1.4)*A.W*.035;
+      p.y+=Math.sin(angle+A.GOLD)*Math.pow(t,1.4)*A.H*.035;
+    }
+
+    if(crowd>.28&&variant!=='DOUBLE'){
+      var spread=A.goldenCanvasPoint(i,s.elements,s,phase);
+      var mix=crowd*.12;
+      p.x=A.lerp(p.x,spread.x,mix);
+      p.y=A.lerp(p.y,spread.y,mix);
+    }
+
+    p.x=A.clamp(p.x,24,A.W-24);
+    p.y=A.clamp(p.y,24,A.H-24);
+
+    if(pointInVoid(p.x,p.y,voids)){
+      prev[arm]=null;
+      continue;
+    }
+
+    var breakLine=false;
+    if(variant==='BROKEN'){
+      var cycle=4+(A.hash(s.seed+'|spiral-breaks')%4);
+      breakLine=(local%cycle===0)||(local%cycle===cycle-1);
+    }
+
+    var lineChance=A.lerp(.82,.5,crowd);
+    if(variant==='LOOSE')lineChance*=.68;
+    if(variant==='DOUBLE')lineChance*=.78;
+
+    if(prev[arm]&&s.lines&&!breakLine&&r.chance(lineChance)){
+      A.drawLine(ctx,prev[arm],p,pal[i%pal.length],s,r);
+    }
+
+    var tier=isHero(local)?'hero':(local<Math.max(5,Math.round(perArm*.24))?'medium':'small');
+    var drawChance=A.lerp(.88,.7,crowd);
+
+    if(variant==='BROKEN')drawChance=.82;
+    if(variant==='VOID')drawChance=.9;
+
+    if(r.chance(drawChance)){
+      var territory=Math.max(70,Math.min(A.W,A.H)/(2+Math.sqrt(perArm)*.28));
       var temp={
         tier:tier,
         x:p.x,y:p.y,
-        size:makeBaseSize(s,tier,r,d.territory,strategy),
-        rot:r.range(0,A.TAU)*(s.rotation/100),
-        territory:d.territory
+        size:makeBaseSize(s,tier,r,territory,baseStrategy),
+        rot:angle+Math.PI/2,
+        territory:territory
       };
-      drawPlannedElement(ctx,temp,i,s,r,pal,strategy);
+      drawPlannedElement(ctx,temp,i,s,r,pal,baseStrategy);
     }
-    prev=p;
+
+    if(s.arcs&&variant==='SHELL'&&r.chance((s.shapeAmount/100)*.13)){
+      A.arc(
+        ctx,p,
+        Math.max(10,makeBaseSize(s,'small',r,120,baseStrategy)*.62),
+        angle,
+        A.TAU*A.INV,
+        pal[(i+2)%pal.length],
+        s,r
+      );
+    }
+
+    prev[arm]=p;
   }
 
-  return{strategy:strategy,voids:[]};
+  return{strategy:'SPIRAL-'+variant,voids:voids};
 }
 
 function drawRects(ctx,s,r,pal){
