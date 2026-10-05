@@ -1,6 +1,9 @@
 name: ALGO ART social dry run
 
 on:
+  push:
+    paths:
+      - .github/workflows/social-dry-run.yml
   workflow_dispatch:
     inputs:
       date:
