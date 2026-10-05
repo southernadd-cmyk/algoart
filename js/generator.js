@@ -1017,6 +1017,73 @@ function drawSpiral(ctx,s,r,pal){
   };
 }
 
+function drawSpiralV4(ctx,s,r,pal){
+  var variants=['SHELL','DOUBLE','BROKEN','OFFSET','VOID','LOOSE'];
+  var variant=variants[A.hash(s.seed+'|spiral-variant')%variants.length];
+  var direction=(A.hash(s.seed+'|spiral-direction')%2===0)?1:-1;
+  var baseStrategy=chooseStrategy(s);
+  var voids=variant==='VOID'?makeReservedVoids(s,'VOID',A.makeR(s.seed+'|spiral-voids')):[];
+  var targets=phiTargets();
+  var targetIndex=A.hash(s.seed+'|spiral-centre')%targets.length;
+  var phase=r.range(0,A.TAU);
+  var arms=variant==='DOUBLE'?2:1;
+  var perArm=Math.ceil(s.elements/arms);
+  var prev=new Array(arms).fill(null);
+  var crowd=crowdFactor(s);
+  var guidePoints=[];
+  var centres=variant==='DOUBLE'
+    ?[{x:A.W*(1-A.INV),y:A.H*A.INV},{x:A.W*A.INV,y:A.H*(1-A.INV)}]
+    :(variant==='OFFSET'||variant==='VOID')
+      ?[{x:A.lerp(A.W*.5,targets[targetIndex].x,.72),y:A.lerp(A.H*.5,targets[targetIndex].y,.72)}]
+      :[{x:A.W*.5,y:A.H*.5}];
+
+  // True golden logarithmic spiral: radius grows by φ every quarter-turn.
+  var b=2*Math.log(A.PHI)/Math.PI;
+  var turns=variant==='DOUBLE'?1.75:(variant==='LOOSE'?2.05:2.35);
+  var thetaMax=turns*A.TAU;
+  var maxRadius=variant==='DOUBLE'?.31:(variant==='LOOSE'?.46:.43);
+  var minRadius=maxRadius/Math.exp(b*thetaMax);
+
+  function isHero(local){
+    var a=Math.round((perArm-1)*A.INV);
+    var c=Math.round((perArm-1)*(1-A.INV));
+    return local===a||local===c;
+  }
+
+  for(var i=0;i<s.elements;i++){
+    var arm=i%arms,local=Math.floor(i/arms);
+    var u=(local+.6)/Math.max(1,perArm);
+    var centre=centres[arm%centres.length];
+    var theta=u*thetaMax;
+    var radial=minRadius*Math.exp(b*theta);
+    var armPhase=arm===0?0:Math.PI;
+    var angle=phase+armPhase+direction*theta;
+    if(variant==='BROKEN')angle+=Math.sin(local*A.GOLD)*.12;
+    else if(variant==='LOOSE')angle+=Math.sin(local*A.INV)*.07;
+
+    var p={x:centre.x+Math.cos(angle)*A.W*radial,y:centre.y+Math.sin(angle)*A.H*radial};
+    if(variant==='SHELL'){
+      p.x+=Math.cos(angle+A.GOLD)*u*A.W*.018;
+      p.y+=Math.sin(angle+A.GOLD)*u*A.H*.018;
+    }
+    p.x=A.clamp(p.x,24,A.W-24); p.y=A.clamp(p.y,24,A.H-24);
+    if(pointInVoid(p.x,p.y,voids)){prev[arm]=null;continue}
+    guidePoints.push({x:p.x,y:p.y,arm:arm,local:local,theta:theta,radius:radial});
+
+    var breakLine=variant==='BROKEN'&&((local%(4+(A.hash(s.seed+'|spiral-breaks')%4)))===0);
+    var lineChance=A.lerp(.82,.5,crowd)*(variant==='LOOSE'?.68:(variant==='DOUBLE'?.78:1));
+    if(prev[arm]&&s.lines&&!breakLine&&r.chance(lineChance))A.drawLine(ctx,prev[arm],p,pal[i%pal.length],s,r);
+
+    var tier=isHero(local)?'hero':(local<Math.max(5,Math.round(perArm*.24))?'medium':'small');
+    if(r.chance(variant==='BROKEN'?.82:(variant==='VOID'?.9:A.lerp(.88,.7,crowd)))){
+      var territory=Math.max(70,Math.min(A.W,A.H)/(2+Math.sqrt(perArm)*.28));
+      drawPlannedElementV3(ctx,{tier:tier,x:p.x,y:p.y,size:makeBaseSize(s,tier,r,territory,baseStrategy),rot:angle+Math.PI/2,territory:territory},i,s,r,pal,baseStrategy);
+    }
+    prev[arm]=p;
+  }
+  return{strategy:'SPIRAL-'+variant,voids:voids,guide:{type:'spiral',variant:variant,centres:centres,points:guidePoints,arms:arms,direction:direction,golden:true,growth:A.PHI,turns:turns}};
+}
+
 function drawRects(ctx,s,r,pal){
   var variants=['MOSAIC','CASCADE','CROSSCUT','FRAMED'];
   var variant=variants[A.hash(s.seed+'|rect-variant')%variants.length];
@@ -2545,7 +2612,7 @@ A.render=function(target,s,scale,showGeometry){
     else if(A.rendererVersion===2)meta=drawField(ctx,s,r,pal);
     else meta=drawFieldV3(ctx,s,r,pal);
   }else if(s.mode==='spiral'){
-    meta=drawSpiral(ctx,s,r,pal);
+    meta=A.rendererVersion>=4?drawSpiralV4(ctx,s,r,pal):drawSpiral(ctx,s,r,pal);
   }else if(s.mode==='rects'){
     meta=drawRects(ctx,s,r,pal);
   }else if(s.mode==='burst'){
