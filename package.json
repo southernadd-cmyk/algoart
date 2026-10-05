@@ -1,0 +1,13 @@
+{
+  "name": "algoart-social-automation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "social:generate": "node automation/generate-social.mjs",
+    "social:instagram": "node automation/publish-instagram.mjs",
+    "social:threads": "node automation/publish-threads.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}
