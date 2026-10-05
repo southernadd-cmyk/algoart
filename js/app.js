@@ -12,8 +12,8 @@ var previewTimer=null;
 var variationBatch=0;
 var currentRenderMeta=null;
 var CURRENT_RENDERER_VERSION=3;
-var UNVERSIONED_V2_FIELD_SEEDS={
-  'AA-20261005-04-72522':true
+var UNVERSIONED_FIELD_VERSION_BY_SEED={
+  'AA-20261005-04-72522':2
 };
 A.rendererVersion=CURRENT_RENDERER_VERSION;
 
@@ -191,9 +191,11 @@ function loadSettingsFromURL(){
   }else if(found){
     var requestedMode=settings.mode||$('mode').value;
     var requestedSeed=settings.seed||$('seed').value;
-    A.rendererVersion=(requestedMode==='field'&&!UNVERSIONED_V2_FIELD_SEEDS[requestedSeed])
-      ?1
-      :CURRENT_RENDERER_VERSION;
+    if(requestedMode==='field'){
+      A.rendererVersion=UNVERSIONED_FIELD_VERSION_BY_SEED[requestedSeed]||1;
+    }else{
+      A.rendererVersion=CURRENT_RENDERER_VERSION;
+    }
   }else{
     A.rendererVersion=CURRENT_RENDERER_VERSION;
   }
