@@ -1,0 +1,128 @@
+name: ALGO ART nine-post backfill
+
+on:
+  push:
+    paths:
+      - .github/workflows/social-backfill.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: algoart-social-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
+      ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+      SOCIAL_DATE: backfill-2026-10-05-a
+      SOCIAL_COUNT: '9'
+      RELEASE_TAG: algoart-social-live
+      GH_TOKEN: ${{ github.token }}
+      LIVE_PUBLISHING: 'true'
+      IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+      IG_USER_ID: ${{ secrets.IG_USER_ID }}
+      THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+      THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Start local ALGO ART
+        run: |
+          python3 -m http.server 4173 >/tmp/algoart-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/algoart-http.log
+          exit 1
+
+      - name: Generate nine distinct backfill artworks
+        run: npm run social:generate
+
+      - name: Ensure public media release
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG"               --title "ALGO/ART social publishing media"               --notes "Rolling public media host for automated @artalgorithm posts."
+          fi
+
+      - name: Publish nine matching posts to Instagram and Threads
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for INDEX in $(seq 0 8); do
+            NUM=$(printf '%02d' $((INDEX + 1)))
+            export INDEX
+            ITEM="$(node automation/backfill-item.mjs)"
+
+            IMAGE_PATH="$(printf '%s' "$ITEM" | jq -r '.imagePath')"
+            IG_B64="$(printf '%s' "$ITEM" | jq -r '.instagramCaptionB64')"
+            TH_B64="$(printf '%s' "$ITEM" | jq -r '.threadsCaptionB64')"
+            ALT_B64="$(printf '%s' "$ITEM" | jq -r '.altTextB64')"
+
+            ASSET="backfill-2026-10-05-a-${NUM}.jpg"
+            IG_MARKER="backfill-2026-10-05-a-${NUM}-instagram.txt"
+            TH_MARKER="backfill-2026-10-05-a-${NUM}-threads.txt"
+
+            cp "$IMAGE_PATH" "/tmp/$ASSET"
+            gh release upload "$RELEASE_TAG" "/tmp/$ASSET" --clobber
+
+            MEDIA_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/$ASSET"
+            export MEDIA_URL
+            curl -fL --retry 4 --retry-delay 2 -o "/tmp/check-${NUM}.jpg" "$MEDIA_URL"
+            test -s "/tmp/check-${NUM}.jpg"
+
+            ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+
+            if ! printf '%s\n' "$ASSETS" | grep -Fxq "$IG_MARKER"; then
+              export CAPTION="$(printf '%s' "$IG_B64" | base64 --decode)"
+              export ALT_TEXT="$(printf '%s' "$ALT_B64" | base64 --decode)"
+              node automation/publish-instagram.mjs
+              printf 'published backfill item %s to Instagram\n' "$NUM" > "/tmp/$IG_MARKER"
+              gh release upload "$RELEASE_TAG" "/tmp/$IG_MARKER" --clobber
+            else
+              echo "Instagram item $NUM already published; skipping."
+            fi
+
+            ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+
+            if ! printf '%s\n' "$ASSETS" | grep -Fxq "$TH_MARKER"; then
+              export CAPTION="$(printf '%s' "$TH_B64" | base64 --decode)"
+              export ALT_TEXT="$(printf '%s' "$ALT_B64" | base64 --decode)"
+              node automation/publish-threads.mjs
+              printf 'published backfill item %s to Threads\n' "$NUM" > "/tmp/$TH_MARKER"
+              gh release upload "$RELEASE_TAG" "/tmp/$TH_MARKER" --clobber
+            else
+              echo "Threads item $NUM already published; skipping."
+            fi
+
+            echo "Completed backfill artwork $NUM / 09."
+            if [ "$INDEX" -lt 8 ]; then sleep 8; fi
+          done
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### ALGO/ART nine-post backfill" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Target: 9 distinct artworks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Instagram: same 9 artworks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Threads: same 9 artworks" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Recurring 3/day workflow: unchanged" >> "$GITHUB_STEP_SUMMARY"
