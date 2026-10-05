@@ -21,10 +21,6 @@ on:
           - '0'
           - '1'
           - '2'
-  push:
-    paths:
-      - .github/workflows/social-live.yml
-
 permissions:
   contents: write
 
@@ -56,9 +52,7 @@ jobs:
         shell: bash
         run: |
           FORCE_SLOT=""
-          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            FORCE_SLOT="1"
-          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             FORCE_SLOT="${{ inputs.slot }}"
           fi
           FORCE_SLOT="$FORCE_SLOT" node automation/social-slot.mjs gate
