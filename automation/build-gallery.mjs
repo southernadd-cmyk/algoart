@@ -340,6 +340,7 @@ const dayMeta = {
     series: item.series,
     imageFile: item.imageFile,
     shareUrl: item.shareUrl,
+    rendererVersion: item.rendererVersion || 2,
     settings: item.settings,
     altText: item.copy?.altText || artworkDescription(item)
   }))
