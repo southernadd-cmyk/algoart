@@ -243,11 +243,40 @@ $('newSeed').onclick=function(){
   regenerate();
 };
 
-$('geometry').onclick=function(){
-  showGeometry=!showGeometry;
-  this.textContent=showGeometry?'Hide φ Guides':'φ Guides';
-  this.classList.toggle('active',showGeometry);
+function setGeometryVisible(open){
+  showGeometry=!!open;
+  $('geometry').textContent=showGeometry?'Hide System':'Reveal φ';
+  $('geometry').classList.toggle('active',showGeometry);
   regenerate();
+}
+
+$('geometry').onclick=function(){
+  setGeometryVisible(!showGeometry);
+};
+
+function dismissEthos(){
+  var toast=$('ethosToast');
+  if(!toast||toast.hidden)return;
+  toast.classList.add('ethos-out');
+  try{localStorage.setItem('algoart-ethos-seen','1')}catch(e){}
+  setTimeout(function(){
+    toast.hidden=true;
+    toast.classList.remove('ethos-out');
+  },170);
+}
+
+function showEthosIfNeeded(){
+  var toast=$('ethosToast');
+  if(!toast)return;
+  var seen=false;
+  try{seen=localStorage.getItem('algoart-ethos-seen')==='1'}catch(e){}
+  if(!seen)toast.hidden=false;
+}
+
+$('ethosClose').onclick=dismissEthos;
+$('ethosReveal').onclick=function(){
+  setGeometryVisible(true);
+  dismissEthos();
 };
 
 $('mutate').onclick=function(){
@@ -408,5 +437,6 @@ loadSettingsFromURL();
 syncModeCards();
 regenerate();
 setTimeout(renderModePreviews,40);
+setTimeout(showEthosIfNeeded,260);
 
 })(window.AlgoArt);
