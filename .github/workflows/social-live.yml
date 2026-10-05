@@ -118,6 +118,29 @@ jobs:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run social:generate
 
+      - name: Build daily gallery and SEO pages
+        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'))
+        env:
+          SOCIAL_DATE: ${{ steps.gate.outputs.date }}
+        run: npm run gallery:build
+
+      - name: Publish gallery update to GitHub Pages source
+        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'))
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery sitemap.xml robots.txt
+
+          if git diff --cached --quiet; then
+            echo "Daily gallery already up to date."
+            exit 0
+          fi
+
+          git commit -m "Archive ALGO ART gallery ${{ steps.gate.outputs.date }}"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
       - name: Select artwork for this slot
         if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'))
         id: select
