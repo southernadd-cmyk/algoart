@@ -1260,3 +1260,31 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
     letter-spacing:.02em;
   }
 }
+
+
+/* Renderer provenance: shown only while reproducing a legacy shared artwork. */
+.stats{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  max-width:calc(100% - 2px);
+}
+.stats #statsText{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.renderer-chip{
+  flex:0 0 auto;
+  padding:3px 5px;
+  border:1px solid var(--orange);
+  background:var(--ink);
+  color:var(--orange);
+  font:bold 7px/1 Arial,Helvetica,sans-serif;
+  letter-spacing:.08em;
+}
+@media(max-width:700px){
+  .stats{max-width:calc(100vw - 24px)}
+  .renderer-chip{font-size:6px;padding:3px 4px}
+}
