@@ -268,7 +268,7 @@ $('newSeed').onclick=function(){
 
 function setGeometryVisible(open){
   showGeometry=!!open;
-  $('geometry').textContent=showGeometry?'Hide System':'Reveal φ';
+  $('geometry').textContent=showGeometry?'Hide φ':'Reveal φ';
   $('geometry').classList.toggle('active',showGeometry);
   document.querySelector('.canvas-wrap').classList.toggle('reveal-active',showGeometry);
   if(!showGeometry)hideRevealTooltip();
