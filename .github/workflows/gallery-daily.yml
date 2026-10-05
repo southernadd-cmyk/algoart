@@ -5,26 +5,18 @@ on:
     # Early morning UTC; the generator resolves the calendar day in Europe/London.
     - cron: '15 4 * * *'
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/gallery-daily.yml'
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: gallery-daily
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
@@ -84,22 +76,10 @@ jobs:
             echo "Daily gallery already matches the deterministic batch."
           else
             DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
-            git commit -m "Publish ALGO ART daily gallery $DAY [skip ci]"
+            git commit -m "Publish ALGO ART daily gallery $DAY"
             git pull --rebase origin main
             git push origin HEAD:main
           fi
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload site artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      - name: Deploy gallery and site to Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
 
       - name: Summary
         if: always()
