@@ -117,7 +117,7 @@ const PARAM_KEYS = {
 
 function queryFor(s) {
   const q = new URLSearchParams();
-  q.set('v', '2');
+  q.set('v', '3');
   for (const [key, short] of Object.entries(PARAM_KEYS)) {
     let value = s[key];
     if (typeof value === 'boolean') value = value ? '1' : '0';
@@ -182,7 +182,7 @@ try {
       stats: rendered.stats,
       imageFile: filename,
       shareUrl,
-      rendererVersion: 2,
+      rendererVersion: 3,
       settings,
       platforms: platformAssignment(index)
     };
