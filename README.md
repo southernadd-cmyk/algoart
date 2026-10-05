@@ -34,6 +34,19 @@ The unparameterised home page loads the final artwork from the newest Daily Gall
 
 ---
 
+## The idea becomes the machine
+
+> **“The idea becomes a machine that makes the art.”**  
+> — Sol LeWitt
+
+That principle is central to ALGO/ART. The artwork is not conceived first and then reproduced by code. Instead, an idea is formalised as a system: φ proportions, golden-angle turns, recursive rules, hierarchy, constraints, scoring and seeded variation. The system becomes the machine, and individual artworks are deterministic executions of that idea.
+
+Each of the eight modes below is therefore best understood as a different **machine for making art**. They share a mathematical vocabulary, but each interprets it differently.
+
+**Eight ideas. Eight machines for making art.**
+
+---
+
 # The eight generative systems
 
 Each mode has its own compositional logic. They share the same φ toolkit and marker renderer, but they do **not** merely apply different visual skins to one algorithm.
