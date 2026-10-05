@@ -17,24 +17,36 @@ for (const [name, value] of Object.entries({
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
 }
 
-async function post(path, params) {
+async function api(path, params = {}, method = 'POST') {
   const url = new URL(`https://graph.threads.net/v1.0/${path}`);
-  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  for (const [key, value] of Object.entries(params)) {
+    if (value != null && value !== '') url.searchParams.set(key, value);
+  }
   url.searchParams.set('access_token', TOKEN);
-  const response = await fetch(url, { method: 'POST' });
+  const response = await fetch(url, { method });
   const json = await response.json();
   if (!response.ok || json.error) throw new Error(JSON.stringify(json));
   return json;
 }
 
-const container = await post(`${USER_ID}/threads`, {
+const container = await api(`${USER_ID}/threads`, {
   media_type: 'IMAGE',
   image_url: IMAGE_URL,
   text: TEXT,
   alt_text: ALT_TEXT
 });
 
-const published = await post(`${USER_ID}/threads_publish`, {
+for (let attempt = 0; attempt < 30; attempt++) {
+  const state = await api(container.id, { fields: 'id,status,error_message' }, 'GET');
+  if (state.status === 'FINISHED') break;
+  if (state.status === 'ERROR' || state.status === 'EXPIRED') {
+    throw new Error(`Threads container failed: ${JSON.stringify(state)}`);
+  }
+  if (attempt === 29) throw new Error('Timed out waiting for Threads media container.');
+  await new Promise(resolve => setTimeout(resolve, 2000));
+}
+
+const published = await api(`${USER_ID}/threads_publish`, {
   creation_id: container.id
 });
 
