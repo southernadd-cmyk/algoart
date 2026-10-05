@@ -1,0 +1,94 @@
+name: ALGO ART v3 compatibility regression
+
+on:
+  push:
+    paths:
+      - '.github/workflows/v3-regression.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Parse JavaScript
+        run: |
+          node -e "const fs=require('fs'); new Function(fs.readFileSync('js/generator.js','utf8')); new Function(fs.readFileSync('js/app.js','utf8')); console.log('JavaScript parse OK')"
+      - name: Install browser test dependencies
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+      - name: Verify V1 V2 compatibility and V3 routing
+        run: |
+          python3 -m http.server 4173 >/tmp/algoart-v3-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && break
+            sleep 1
+          done
+          cat > v3-check.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import crypto from 'node:crypto';
+
+          const EXPECTED_V1='e6f20dff6198bf50c711ebb175e2e68c3f0efd0aacb883ce12cfafe5833afe73';
+          const EXPECTED_V2='3ff5488a07fb8e56ca6385caf19cf764948d412c5b74137de1ff86a8f87a61f2';
+          const EXPECTED_BURST_V2='3cc0a954703c191e31c89f5e9451c9d46740061dbbccf9d53a64706e4370c0a7';
+
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:1600,height:1200}});
+
+          async function render(url){
+            await page.goto(url,{waitUntil:'networkidle'});
+            const result=await page.evaluate(()=>({
+              data:document.getElementById('art').toDataURL('image/png'),
+              rendererVersion:window.AlgoArt.rendererVersion,
+              href:location.href
+            }));
+            result.hash=crypto.createHash('sha256').update(result.data).digest('hex');
+            return result;
+          }
+
+          const base='http://127.0.0.1:4173/';
+          const legacy='seed=LEGACY-FIELD-CHECK&mode=field&el=52&den=62&cx=58&neg=24&phi=94&rec=5&spi=65&ga=100&nest=38&pen=felt&th=9&wob=32&od=5&op=76&pr=44&dry=15&curve=55&shape=65&overlap=48&rot=80&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=5&sat=84&bri=52&paper=%23f5f0e6&grain=18';
+
+          const v1=await render(base+'?v=1&'+legacy);
+          const v2=await render(base+'?v=2&'+legacy);
+          const v3=await render(base+'?v=3&'+legacy);
+          const implicitOld=await render(base+'?'+legacy);
+
+          if(v1.hash!==EXPECTED_V1) throw new Error('V1 pixel regression: '+v1.hash);
+          if(v2.hash!==EXPECTED_V2) throw new Error('V2 pixel regression: '+v2.hash);
+          if(implicitOld.rendererVersion!==1||implicitOld.hash!==EXPECTED_V1) throw new Error('Old unversioned Field no longer resolves exactly to V1');
+          if(v3.rendererVersion!==3) throw new Error('Explicit V3 did not select V3');
+          if(v3.hash===v2.hash) throw new Error('V3 Field unexpectedly matches V2');
+
+          const burst='seed=AA-20261005-04-72522&mode=field&el=43&den=46&cx=63&neg=30&phi=97&rec=6&spi=54&ga=86&nest=26&pen=broad&th=9&wob=22&od=5&op=87&pr=42&dry=18&curve=47&shape=54&overlap=43&rot=81&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=4&sat=76&bri=49&paper=%23f7f1e7&grain=20';
+          const burstV2=await render(base+'?v=2&'+burst);
+          const burstImplicit=await render(base+'?'+burst);
+          if(burstV2.hash!==EXPECTED_BURST_V2) throw new Error('Published burst V2 pixel regression: '+burstV2.hash);
+          if(burstImplicit.rendererVersion!==2||burstImplicit.hash!==EXPECTED_BURST_V2) throw new Error('Published unversioned V2 exception no longer resolves correctly');
+
+          const rect='seed=AA-20261005-06-49880&mode=rects&el=45&den=58&cx=62&neg=19&phi=91&rec=6&spi=17&ga=97&nest=24&pen=dry&th=8&wob=57&od=5&op=78&pr=28&dry=28&curve=11&shape=53&overlap=29&rot=77&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=7&sat=84&bri=44&paper=%23ece5d5&grain=26';
+          const rectV2=await render(base+'?v=2&'+rect);
+          const rectV3=await render(base+'?v=3&'+rect);
+          if(rectV2.hash!==rectV3.hash) throw new Error('Non-Field renderer changed between V2 and V3');
+
+          const fresh=await render(base);
+          if(fresh.rendererVersion!==3||!fresh.href.includes('v=3')) throw new Error('Fresh generator is not defaulting to V3');
+
+          console.log(JSON.stringify({
+            v1:v1.hash,
+            v2:v2.hash,
+            v3:v3.hash,
+            publishedBurstV2:burstV2.hash,
+            nonFieldStable:rectV2.hash===rectV3.hash,
+            freshVersion:fresh.rendererVersion
+          },null,2));
+          await browser.close();
+          JS
+          node v3-check.mjs
