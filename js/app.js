@@ -259,12 +259,19 @@ function newSeedValue(){
     Math.floor(Math.random()*9999).toString().padStart(4,'0');
 }
 
-$('regenerate').onclick=regenerate;
-
 $('newSeed').onclick=function(){
   $('seed').value=newSeedValue();
   regenerate();
 };
+
+$('seed').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    regenerate();
+    this.blur();
+  }
+});
+$('seed').addEventListener('change',regenerate);
 
 function setGeometryVisible(open){
   showGeometry=!!open;
@@ -719,7 +726,6 @@ window.addEventListener('keydown',function(e){
   if(e.target.matches('input,select'))return;
   var key=e.key.toLowerCase();
   if(key==='escape'&&!$('variationsOverlay').hidden)closeVariations();
-  if(key==='g')regenerate();
   if(key==='n')$('newSeed').click();
   if(key==='m')$('mutate').click();
   if(key==='v')openVariations();
