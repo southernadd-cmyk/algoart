@@ -47,9 +47,11 @@ function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
-function settingsFor(day, index) {
-  const r = rng(`${day}|ALGOART|${index}`);
-  const rotation = hash(day) % MODES.length;
+function settingsFor(day, index, seedSalt = '') {
+  const salt = String(seedSalt || '').trim();
+  const saltKey = salt ? `|${salt}` : '';
+  const r = rng(`${day}|ALGOART|${index}${saltKey}`);
+  const rotation = hash(day + saltKey) % MODES.length;
   const modeInfo = MODES[(index + rotation) % MODES.length];
   const mode = modeInfo[0];
 
@@ -64,7 +66,7 @@ function settingsFor(day, index) {
     scribble:  { elements: 46, density: 56, complexity: 66, negativeSpace: 31, spiralInfluence: 52, curveBias: 72 }
   }[mode];
 
-  const seed = `AA-${day.replaceAll('-', '')}-${String(index + 1).padStart(2, '0')}-${(hash(day + '|' + index) % 100000).toString().padStart(5, '0')}`;
+  const seed = `AA-${day.replaceAll('-', '')}-${String(index + 1).padStart(2, '0')}-${(hash(day + '|' + index + saltKey) % 100000).toString().padStart(5, '0')}`;
 
   return {
     mode,
@@ -135,6 +137,7 @@ function platformAssignment(index) {
 
 const requestedDate = process.env.SOCIAL_DATE;
 const day = requestedDate || dateInZone();
+const seedSalt = String(process.env.SOCIAL_SEED_SALT || '').trim();
 const generationCount = Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
 const outDir = path.resolve('social-output', day);
 await fs.mkdir(outDir, { recursive: true });
@@ -145,7 +148,7 @@ const entries = [];
 
 try {
   for (let index = 0; index < generationCount; index++) {
-    const settings = settingsFor(day, index);
+    const settings = settingsFor(day, index, seedSalt);
     const query = queryFor(settings);
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
