@@ -1191,3 +1191,82 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
     font-size:9px
   }
 }
+
+
+/* Mobile action bar: keep all primary creation controls visible. */
+@media(max-width:820px){
+  :root{--header:126px}
+  .toolbar{
+    grid-template-rows:48px 76px;
+  }
+  .actions{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-rows:repeat(2,32px);
+    grid-template-areas:
+      "generate mutate randomise save"
+      "variations geometry gallery gallery";
+    gap:4px 5px;
+    padding:5px 0 7px;
+  }
+  .actions #regenerate{grid-area:generate}
+  .actions #mutate{grid-area:mutate}
+  .actions #randomise{grid-area:randomise}
+  .actions #save{grid-area:save}
+  .actions #variations{grid-area:variations}
+  .actions #geometry{grid-area:geometry}
+  .actions .gallery-nav{grid-area:gallery}
+
+  .actions #regenerate,
+  .actions #mutate,
+  .actions #randomise,
+  .actions #save,
+  .actions #variations,
+  .actions #geometry,
+  .actions .gallery-nav{
+    display:grid;
+    place-items:center;
+    width:100%;
+    min-width:0;
+    height:32px;
+    margin:0;
+    padding:5px 3px;
+    font-size:8px;
+    line-height:1;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+}
+
+@media(max-width:390px){
+  .actions{
+    gap:4px;
+  }
+  .actions #regenerate,
+  .actions #mutate,
+  .actions #randomise,
+  .actions #save,
+  .actions #variations,
+  .actions #geometry,
+  .actions .gallery-nav{
+    font-size:7px;
+    padding-left:2px;
+    padding-right:2px;
+  }
+}
+
+@media(max-width:340px){
+  :root{--header:124px}
+  .toolbar{grid-template-rows:46px 76px}
+  .brand{font-size:14px}
+  .seed input{font-size:8px}
+  .actions #regenerate,
+  .actions #mutate,
+  .actions #randomise,
+  .actions #save,
+  .actions #variations,
+  .actions #geometry,
+  .actions .gallery-nav{
+    font-size:6px;
+    letter-spacing:.02em;
+  }
+}
