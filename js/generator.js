@@ -507,7 +507,7 @@ function drawPlannedElement(ctx,plan,i,s,r,pal,strategy){
   var colourIndex=Number.isInteger(plan.colourIndex)?plan.colourIndex:i;
   var col=pal[((colourIndex%pal.length)+pal.length)%pal.length];
   var ratio=A.lerp(r.range(.65,1.68),A.PHI,s.phiStrength/100);
-  var tierFactor=plan.tier==='hero'?1.62:(plan.tier==='small'?.76:1);
+  var tierFactor=s.mode==='field'?(plan.tier==='hero'?1.62:(plan.tier==='small'?.76:1)):1;
   var drawSettings=Object.assign({},s,{
     thickness:A.clamp(Math.round(s.thickness*tierFactor),1,28)
   });
