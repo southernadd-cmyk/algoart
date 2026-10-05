@@ -1497,50 +1497,281 @@ function drawOrganic(ctx,s,r,pal){
   return{strategy:strategy,voids:voids};
 }
 
+function drawConstructedShape(ctx,item,index,s,r,pal,style){
+  var shapes=enabledShapes(s);
+  var nonLines=shapes.filter(function(sh){return sh!=='line'});
+  var shape;
+
+  if(item.shape){
+    shape=item.shape;
+  }else if(item.tier==='hero'&&nonLines.length){
+    shape=nonLines[(A.hash(s.seed+'|constructed-hero|'+index))%nonLines.length];
+  }else{
+    shape=shapes[(A.hash(s.seed+'|constructed-shape|'+index))%shapes.length];
+  }
+
+  var c={x:item.x,y:item.y};
+  var size=item.size;
+  var rot=item.rot;
+  var col=pal[index%pal.length];
+  var ratio=A.lerp(r.range(1.12,1.92),A.PHI,s.phiStrength/100);
+
+  if(shape==='line'){
+    var half=size*.72;
+    A.drawLine(
+      ctx,
+      {x:c.x-Math.cos(rot)*half,y:c.y-Math.sin(rot)*half},
+      {x:c.x+Math.cos(rot)*half,y:c.y+Math.sin(rot)*half},
+      col,style,r
+    );
+  }else if(shape==='circle'){
+    A.ellipse(ctx,c,size*.5,size/(2*ratio),rot,col,style,r);
+  }else if(shape==='rect'){
+    A.rect(ctx,c,size,size/ratio,rot,col,style,r);
+  }else if(shape==='poly'){
+    A.poly(ctx,c,size*.5,[3,5,8][index%3],rot,col,style,r);
+  }else{
+    A.arc(ctx,c,size*.5,rot,A.TAU*A.INV,col,style,r);
+  }
+
+  if(item.tier==='hero'&&r.chance(.48+s.nesting/250)){
+    var accent=pal[(index+2)%pal.length];
+    var inner=size/A.PHI;
+    if(shape==='circle'&&s.circles){
+      A.ellipse(ctx,c,inner*.5,inner/(2*A.PHI),rot+A.GOLD,accent,style,r);
+    }else if(shape==='rect'&&s.rectangles){
+      A.rect(ctx,c,inner,inner/A.PHI,rot+A.GOLD*.18,accent,style,r);
+    }else if(s.arcs){
+      A.arc(ctx,c,inner*.52,rot+A.GOLD,A.TAU*(1-A.INV),accent,style,r);
+    }
+  }
+}
+
 function drawGeometric(ctx,s,r,pal){
-  var strategy=chooseStrategy(s);
-  var voids=makeReservedVoids(s,strategy,A.makeR(s.seed+'|geometric-voids'));
-  var count=Math.max(8,Math.min(72,Math.round(s.elements*.58)));
-  var cells=A.goldenCells(count,46);
-  cells.sort(function(a,b){return b.w*b.h-a.w*a.h});
-
+  var variants=['BALANCE','STACK','AXIS','COLLISION','FLOAT','CROP'];
+  var variant=variants[A.hash(s.seed+'|constructed-variant')%variants.length];
+  var crowd=crowdFactor(s);
+  var count=Math.max(7,Math.min(34,Math.round(
+    7+s.elements*.15+s.complexity*.075
+  )));
+  var targets=phiTargets();
+  var points=A.distributedPhiPoints(count,s,A.makeR(s.seed+'|constructed-points|'+variant));
+  var items=[];
+  var voids=[];
   var geometric=Object.assign({},s,{
-    curveBias:Math.min(8,s.curveBias),
-    wobble:Math.min(12,s.wobble)
+    curveBias:Math.min(12,s.curveBias),
+    wobble:Math.min(16,s.wobble),
+    overdraw:Math.max(1,Math.min(s.overdraw,4))
   });
-  var globalRot=r.range(-.045,.045)*(s.rotation/100);
+  var ghostStyle=Object.assign({},geometric,{
+    thickness:Math.max(1,s.thickness*.58),
+    opacity:Math.max(18,s.opacity*.58),
+    overdraw:Math.max(1,Math.round(geometric.overdraw*.65))
+  });
+  var phase=r.range(0,A.TAU);
+  var heroTarget=targets[A.hash(s.seed+'|constructed-focus')%targets.length];
+  var reverse=(A.hash(s.seed+'|constructed-reverse')%2)===1;
+  var horizontal=(A.hash(s.seed+'|constructed-axis')%2)===1;
 
-  for(var i=0;i<cells.length;i++){
-    var cell=cells[i];
-    var c={x:cell.x+cell.w/2,y:cell.y+cell.h/2};
-    if(pointInVoid(c.x,c.y,voids))continue;
+  function qsize(raw,tier){
+    var base=tier==='hero'?55:34;
+    var size=A.qphi(raw,base,s.phiStrength/100);
+    if(tier==='hero')size=Math.max(size,170);
+    if(tier==='small')size=Math.min(size,150);
+    return A.clamp(size,24,variant==='CROP'?470:390);
+  }
 
-    var inset=Math.min(cell.w,cell.h)*A.lerp(.025,.1,s.negativeSpace/100);
-    var w=Math.max(5,cell.w-inset*2);
-    var h=Math.max(5,cell.h-inset*2);
-    var rot=globalRot*(i%2===0?1:-1);
-    var col=pal[i%pal.length];
+  function add(x,y,size,rot,tier,shape){
+    items.push({
+      x:x,y:y,
+      size:qsize(size,tier),
+      rot:rot,
+      tier:tier,
+      shape:shape||null
+    });
+  }
 
-    A.rect(ctx,c,w,h,rot,col,geometric,r);
+  if(variant==='BALANCE'){
+    var pair=(A.hash(s.seed+'|constructed-balance-pair')%2===0)
+      ?[targets[0],targets[3]]
+      :[targets[1],targets[2]];
 
-    if(geometric.lines&&r.chance(.32+geometric.complexity/180)){
-      var diag=i%2===0;
-      var a={x:c.x+(diag?-w:w)/2,y:c.y-h/2};
-      var b={x:c.x+(diag?w:-w)/2,y:c.y+h/2};
-      A.drawLine(ctx,a,b,pal[(i+1)%pal.length],geometric,r);
+    add(pair[0].x,pair[0].y,r.range(235,360),phase,'hero');
+    add(pair[1].x,pair[1].y,r.range(175,285),phase+A.GOLD,'hero');
+
+    for(var bi=2;bi<count;bi++){
+      var bp=points[bi];
+      var side=bi%2;
+      var focus=pair[side];
+      var mix=r.range(.12,.42);
+      add(
+        A.lerp(bp.x,focus.x,mix),
+        A.lerp(bp.y,focus.y,mix),
+        r.range(58,155)*A.lerp(1,.78,crowd),
+        phase+bi*A.GOLD,
+        bi<7?'medium':'small'
+      );
+    }
+  }else if(variant==='STACK'){
+    var stackX=horizontal?A.W*.5:heroTarget.x;
+    var stackY=horizontal?heroTarget.y:A.H*.5;
+    var span=horizontal?A.W*.72:A.H*.72;
+
+    for(var si=0;si<count;si++){
+      var st=count===1?.5:si/(count-1);
+      var offset=(st-.5)*span;
+      var x=horizontal?A.W*.5+offset:stackX+Math.sin(si*A.GOLD)*A.W*.07;
+      var y=horizontal?stackY+Math.sin(si*A.GOLD)*A.H*.075:A.H*.5+offset;
+      var tier=(si===Math.round(count*A.INV)||si===Math.round(count*(1-A.INV)))?'hero':
+        (si%4===0?'medium':'small');
+      var scale=tier==='hero'?r.range(190,300):(tier==='medium'?r.range(95,170):r.range(42,100));
+      add(x,y,scale,phase+(si%2===0?0:A.GOLD),tier);
+    }
+  }else if(variant==='AXIS'){
+    var a1,a2;
+    if(horizontal){
+      a1={x:A.W*.08,y:reverse?A.H*.7:A.H*.3};
+      a2={x:A.W*.92,y:reverse?A.H*.3:A.H*.7};
+    }else{
+      a1={x:reverse?A.W*.7:A.W*.3,y:A.H*.08};
+      a2={x:reverse?A.W*.3:A.W*.7,y:A.H*.92};
+    }
+    var axisAngle=Math.atan2(a2.y-a1.y,a2.x-a1.x);
+    var perp=axisAngle+Math.PI/2;
+
+    if(s.lines){
+      A.drawLine(ctx,a1,a2,pal[0],ghostStyle,r);
     }
 
-    if(geometric.circles&&r.chance(geometric.shapeAmount/145)){
-      var rad=Math.min(w,h)*.31;
-      A.ellipse(ctx,c,rad,rad/A.PHI,rot+A.GOLD*i,pal[(i+2)%pal.length],geometric,r);
+    for(var ai=0;ai<count;ai++){
+      var at=(ai+.5)/count;
+      var baseX=A.lerp(a1.x,a2.x,at);
+      var baseY=A.lerp(a1.y,a2.y,at);
+      var side=(ai%2===0?1:-1);
+      var distance=A.qphi(r.range(22,135),22,s.phiStrength/100)*side;
+      var tier=(ai===Math.round((count-1)*A.INV))?'hero':
+        (ai%5===0?'medium':'small');
+      add(
+        baseX+Math.cos(perp)*distance,
+        baseY+Math.sin(perp)*distance,
+        tier==='hero'?r.range(220,335):(tier==='medium'?r.range(100,175):r.range(48,115)),
+        axisAngle+(ai%3-1)*A.GOLD*.36,
+        tier
+      );
+    }
+  }else if(variant==='COLLISION'){
+    var centre={
+      x:A.lerp(A.W*.5,heroTarget.x,.62),
+      y:A.lerp(A.H*.5,heroTarget.y,.62)
+    };
+    var heroShapes=['circle','rect','poly'].filter(function(sh){
+      return(sh==='circle'&&s.circles)||(sh==='rect'&&s.rectangles)||(sh==='poly'&&s.polygons);
+    });
+    if(!heroShapes.length)heroShapes=enabledShapes(s);
+
+    for(var ci=0;ci<3;ci++){
+      var cr=A.qphi(r.range(28,78),21,s.phiStrength/100);
+      var ca=phase+ci*A.GOLD;
+      add(
+        centre.x+Math.cos(ca)*cr,
+        centre.y+Math.sin(ca)*cr,
+        r.range(230,390)*(ci===0?1:.8),
+        phase+ci*A.GOLD*.7,
+        'hero',
+        heroShapes[ci%heroShapes.length]
+      );
     }
 
-    if(r.chance(geometric.nesting/125)){
-      A.rect(ctx,c,w/A.PHI,h/A.PHI,rot,pal[(i+3)%pal.length],geometric,r);
+    for(var cs=3;cs<count;cs++){
+      var cp=points[cs];
+      var orbit=A.qphi(r.range(135,420),34,s.phiStrength/100);
+      var angle=phase+cs*A.GOLD;
+      var ox=centre.x+Math.cos(angle)*orbit;
+      var oy=centre.y+Math.sin(angle)*orbit*.72;
+      add(
+        A.lerp(cp.x,ox,.68),
+        A.lerp(cp.y,oy,.68),
+        cs%5===0?r.range(95,165):r.range(38,105),
+        angle,
+        cs%5===0?'medium':'small'
+      );
+    }
+  }else if(variant==='FLOAT'){
+    voids=makeReservedVoids(
+      Object.assign({},s,{negativeSpace:Math.max(48,s.negativeSpace)}),
+      'VOID',
+      A.makeR(s.seed+'|constructed-float-voids')
+    );
+    var heroPlaced=false;
+
+    for(var fi=0;fi<count;fi++){
+      var fp=points[fi];
+      if(pointInVoid(fp.x,fp.y,voids))continue;
+      var tier=!heroPlaced?'hero':(fi%5===0?'medium':'small');
+      heroPlaced=true;
+      add(
+        fp.x,fp.y,
+        tier==='hero'?r.range(230,350):(tier==='medium'?r.range(95,165):r.range(34,92)),
+        phase+fi*A.GOLD,
+        tier
+      );
+    }
+  }else{
+    var edges=[
+      {x:-A.W*.08,y:A.H*A.INV,rot:0},
+      {x:A.W*1.08,y:A.H*(1-A.INV),rot:Math.PI},
+      {x:A.W*A.INV,y:-A.H*.1,rot:Math.PI/2},
+      {x:A.W*(1-A.INV),y:A.H*1.1,rot:-Math.PI/2}
+    ];
+    var start=A.hash(s.seed+'|constructed-crop-edge')%edges.length;
+
+    for(var ei=0;ei<Math.min(3,count);ei++){
+      var edge=edges[(start+ei)%edges.length];
+      add(
+        edge.x,edge.y,
+        r.range(300,470),
+        edge.rot+phase*.35+ei*A.GOLD*.28,
+        'hero'
+      );
+    }
+
+    for(var crp=items.length;crp<count;crp++){
+      var pp=points[crp];
+      add(
+        pp.x,pp.y,
+        crp%5===0?r.range(105,180):r.range(42,110),
+        phase+crp*A.GOLD,
+        crp%5===0?'medium':'small'
+      );
     }
   }
 
-  return{strategy:strategy,voids:voids};
+  for(var i=0;i<items.length;i++){
+    var item=items[i];
+
+    if(variant!=='CROP'){
+      item.x=A.clamp(item.x,18,A.W-18);
+      item.y=A.clamp(item.y,18,A.H-18);
+    }
+
+    if(pointInVoid(item.x,item.y,voids))continue;
+    drawConstructedShape(ctx,item,i,s,r,pal,geometric);
+
+    if(s.lines&&variant!=='AXIS'&&item.tier!=='small'&&r.chance(.28+s.complexity/260)){
+      var len=item.size/A.PHI;
+      var angle=item.rot+A.GOLD;
+      A.drawLine(
+        ctx,
+        {x:item.x-Math.cos(angle)*len*.5,y:item.y-Math.sin(angle)*len*.5},
+        {x:item.x+Math.cos(angle)*len*.5,y:item.y+Math.sin(angle)*len*.5},
+        pal[(i+3)%pal.length],
+        ghostStyle,
+        r
+      );
+    }
+  }
+
+  return{strategy:'CONSTRUCTED-'+variant,voids:voids};
 }
 
 A.geometryOverlay=function(ctx,s){
