@@ -2,6 +2,20 @@
 
 Eight short vertical explainers showing the rules behind ALGO/ART in plain English.
 
+## Series philosophy
+
+> **“The idea becomes a machine that makes the art.”**  
+> — Sol LeWitt
+
+This is the framing statement for the series, not a caption repeated on every reel. Use it as a restrained opening to Reel 01 or, preferably, as the closing statement of Reel 08 / the complete eight-film sequence.
+
+Final series card:
+
+**ALGO/ART**  
+**Eight ideas. Eight machines for making art.**
+
+*Mathematics sets the rules. The marker breaks them.*
+
 ## Format
 
 - 9:16 vertical, designed for Instagram Reels / Threads video
