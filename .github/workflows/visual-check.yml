@@ -1,0 +1,55 @@
+name: ALGO ART visual check
+
+on:
+  push:
+    paths:
+      - '.github/workflows/visual-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: |
+          npm install
+          npx playwright install --with-deps chromium
+      - name: Render screenshots
+        run: |
+          python3 -m http.server 4173 >/tmp/algoart-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && break
+            sleep 1
+          done
+
+          cat > /tmp/check.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs/promises';
+
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage({viewport:{width:1600,height:1200}});
+          await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+          await page.screenshot({path:'default.png',fullPage:true});
+
+          const field='http://127.0.0.1:4173/?seed=FIELD-V3-CHECK&mode=field&el=52&den=62&cx=58&neg=24&phi=94&rec=5&spi=65&ga=100&nest=38&pen=felt&th=9&wob=32&od=5&op=76&pr=44&dry=15&curve=55&shape=65&overlap=48&rot=80&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=5&sat=84&bri=52&paper=%23f5f0e6&grain=18';
+          await page.goto(field,{waitUntil:'networkidle'});
+          await page.screenshot({path:'field-v3.png',fullPage:true});
+          await browser.close();
+
+          await fs.stat('default.png');
+          await fs.stat('field-v3.png');
+          JS
+
+          node /tmp/check.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: algoart-visual-check
+          path: |
+            default.png
+            field-v3.png
