@@ -432,6 +432,7 @@ function drawField(ctx,s,r,pal){
   for(var i=0;i<result.layout.length;i++){
     drawPlannedElement(ctx,result.layout[i],i,s,r,pal,result.strategy);
   }
+  result.guide={type:'layout',layout:result.layout};
   return result;
 }
 
@@ -451,6 +452,7 @@ function drawSpiral(ctx,s,r,pal){
   var prev=new Array(arms).fill(null);
   var crowd=crowdFactor(s);
   var step=A.lerp(A.GOLD*.72,A.GOLD,s.goldenAngle/100);
+  var guidePoints=[];
 
   var centres=[];
   if(variant==='DOUBLE'){
@@ -540,6 +542,8 @@ function drawSpiral(ctx,s,r,pal){
       continue;
     }
 
+    guidePoints.push({x:p.x,y:p.y,arm:arm,local:local});
+
     var breakLine=false;
     if(variant==='BROKEN'){
       var cycle=4+(A.hash(s.seed+'|spiral-breaks')%4);
@@ -586,7 +590,19 @@ function drawSpiral(ctx,s,r,pal){
     prev[arm]=p;
   }
 
-  return{strategy:'SPIRAL-'+variant,voids:voids};
+  return{
+    strategy:'SPIRAL-'+variant,
+    voids:voids,
+    guide:{
+      type:'spiral',
+      variant:variant,
+      centres:centres,
+      points:guidePoints,
+      arms:arms,
+      step:step,
+      direction:direction
+    }
+  };
 }
 
 function drawRects(ctx,s,r,pal){
@@ -747,7 +763,11 @@ function drawRects(ctx,s,r,pal){
     }
   }
 
-  return{strategy:'RECT-'+variant,voids:voids};
+  return{
+    strategy:'RECT-'+variant,
+    voids:voids,
+    guide:{type:'rects',variant:variant,root:root,cells:leaves}
+  };
 }
 
 function drawBurst(ctx,s,r,pal){
@@ -857,6 +877,7 @@ function drawBurst(ctx,s,r,pal){
 
   var allocations=allocateCounts(s.elements,hubs);
   var itemIndex=0;
+  var guideRays=[];
 
   function burstTier(local,count,hubIndex){
     var heroA=Math.round((count-1)*A.INV);
@@ -923,6 +944,7 @@ function drawBurst(ctx,s,r,pal){
         x:A.clamp(px,24,A.W-24),
         y:A.clamp(py,24,A.H-24)
       };
+      guideRays.push({hub:hi,x:p.x,y:p.y});
 
       var lineChance=A.lerp(.95,.7,crowd);
       if(variant==='TRIAD')lineChance*=.88;
@@ -985,7 +1007,11 @@ function drawBurst(ctx,s,r,pal){
     }
   }
 
-  return{strategy:'BURST-'+variant,voids:voids};
+  return{
+    strategy:'BURST-'+variant,
+    voids:voids,
+    guide:{type:'burst',variant:variant,hubs:hubs,rays:guideRays}
+  };
 }
 function nearestNeighbours(layout,index,count){
   var a=layout[index],nearest=[];
@@ -1221,7 +1247,8 @@ function drawNetwork(ctx,s,r,pal){
     layout:layout,
     strategy:'NETWORK-'+result.strategy,
     voids:result.voids,
-    score:result.score
+    score:result.score,
+    guide:{type:'network',layout:layout,edges:edges}
   };
 }
 
@@ -1422,7 +1449,11 @@ function drawScribble(ctx,s,r,pal){
     }
   }
 
-  return{strategy:'SCRIBBLE-'+variant,voids:voids};
+  return{
+    strategy:'SCRIBBLE-'+variant,
+    voids:voids,
+    guide:{type:'scribble',variant:variant,anchors:anchors}
+  };
 }
 
 function drawOrganic(ctx,s,r,pal){
@@ -1438,6 +1469,7 @@ function drawOrganic(ctx,s,r,pal){
   var maxSegments=Math.max(12,s.elements);
   var maxDepth=Math.max(3,Math.min(8,2+Math.round(s.recursion*.7)));
   var drawn=0;
+  var guideSegments=[];
 
   for(var ri=0;ri<roots;ri++){
     var rp=rootPts[ri];
@@ -1468,6 +1500,7 @@ function drawOrganic(ctx,s,r,pal){
     ey=A.clamp(ey,24,A.H-24);
 
     A.drawLine(ctx,{x:node.x,y:node.y},{x:ex,y:ey},pal[drawn%pal.length],organic,r);
+    guideSegments.push({x1:node.x,y1:node.y,x2:ex,y2:ey,depth:node.depth});
     drawn++;
 
     if(r.chance(organic.shapeAmount/180)){
@@ -1494,7 +1527,11 @@ function drawOrganic(ctx,s,r,pal){
     }
   }
 
-  return{strategy:strategy,voids:voids};
+  return{
+    strategy:strategy,
+    voids:voids,
+    guide:{type:'organic',roots:rootPts,segments:guideSegments}
+  };
 }
 
 function drawConstructedShape(ctx,item,index,s,r,pal,style){
@@ -1771,35 +1808,276 @@ function drawGeometric(ctx,s,r,pal){
     }
   }
 
-  return{strategy:'CONSTRUCTED-'+variant,voids:voids};
+  return{
+    strategy:'CONSTRUCTED-'+variant,
+    voids:voids,
+    guide:{type:'constructed',variant:variant,items:items}
+  };
 }
 
-A.geometryOverlay=function(ctx,s){
-  ctx.save();
-  ctx.globalAlpha=.38;
-  ctx.lineWidth=1;
-  ctx.strokeStyle='#111';
-  ctx.setLineDash([7,7]);
+A.geometryOverlay=function(ctx,s,meta){
+  meta=meta||{};
+  var guide=meta.guide||null;
+  var targets=phiTargets();
 
-  [A.INV,1-A.INV].forEach(function(v){
+  function line(a,b,color,width,dash,alpha){
+    ctx.save();
+    ctx.globalAlpha=alpha==null?1:alpha;
+    ctx.strokeStyle=color;
+    ctx.lineWidth=width||1;
+    ctx.setLineDash(dash||[]);
     ctx.beginPath();
-    ctx.moveTo(A.W*v,0);
-    ctx.lineTo(A.W*v,A.H);
-    ctx.moveTo(0,A.H*v);
-    ctx.lineTo(A.W,A.H*v);
+    ctx.moveTo(a.x,a.y);
+    ctx.lineTo(b.x,b.y);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  function cross(p,color,size,width){
+    size=size||12;
+    line({x:p.x-size,y:p.y},{x:p.x+size,y:p.y},color,width||2,[],.95);
+    line({x:p.x,y:p.y-size},{x:p.x,y:p.y+size},color,width||2,[],.95);
+  }
+
+  function ring(p,radius,color,width,dash,alpha){
+    ctx.save();
+    ctx.globalAlpha=alpha==null?1:alpha;
+    ctx.strokeStyle=color;
+    ctx.lineWidth=width||1;
+    ctx.setLineDash(dash||[]);
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,Math.max(2,radius),0,A.TAU);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function label(text,x,y,color,bg){
+    ctx.save();
+    ctx.font='bold 13px Courier New, monospace';
+    ctx.textBaseline='middle';
+    var pad=5;
+    var w=ctx.measureText(text).width+pad*2;
+    ctx.fillStyle=bg||'rgba(17,17,15,.88)';
+    ctx.fillRect(x,y-10,w,20);
+    ctx.fillStyle=color||'#d9ff54';
+    ctx.fillText(text,x+pad,y);
+    ctx.restore();
+  }
+
+  function nearestTarget(p){
+    var best=targets[0],bestD=Infinity;
+    for(var i=0;i<targets.length;i++){
+      var dx=p.x-targets[i].x,dy=p.y-targets[i].y;
+      var d=dx*dx+dy*dy;
+      if(d<bestD){bestD=d;best=targets[i]}
+    }
+    return best;
+  }
+
+  function drawLayout(layout,showConnections){
+    if(!layout)return;
+    for(var i=0;i<layout.length;i++){
+      var o=layout[i];
+      var color=o.tier==='hero'?'#ff6138':(o.tier==='medium'?'#2b59ff':'#11110f');
+      var radius=Math.max(5,o.size*.5);
+      ring(o,radius,color,o.tier==='hero'?3:1.4,o.tier==='small'?[5,7]:[],o.tier==='small'?.38:.75);
+      cross(o,color,o.tier==='hero'?14:7,o.tier==='hero'?3:1.5);
+
+      if(o.tier!=='small'){
+        var target=nearestTarget(o);
+        line(o,target,color,1,[7,7],.38);
+      }
+
+      if(o.tier==='hero'){
+        label('HERO / φ-SCALE '+Math.round(o.size),o.x+14,o.y-16,'#11110f','#ff6138');
+      }else if(o.tier==='medium'&&i<10){
+        label('MED '+Math.round(o.size),o.x+9,o.y-11,'#fff','#2b59ff');
+      }
+    }
+  }
+
+  // X-ray wash: artwork remains visible, but the construction becomes dominant.
+  ctx.save();
+  ctx.fillStyle='rgba(245,240,230,.66)';
+  ctx.fillRect(0,0,A.W,A.H);
+  ctx.restore();
+
+  // Overall golden-ratio scaffold.
+  [A.INV,1-A.INV].forEach(function(v,index){
+    line({x:A.W*v,y:0},{x:A.W*v,y:A.H},'#11110f',1,[9,8],.55);
+    line({x:0,y:A.H*v},{x:A.W,y:A.H*v},'#11110f',1,[9,8],.55);
+    label(index===0?'1/φ  0.618':'1−1/φ  0.382',A.W*v+6,24,'#11110f','rgba(217,255,84,.9)');
   });
 
-  ctx.setLineDash([]);
+  for(var t=0;t<targets.length;t++){
+    cross(targets[t],'#ff6138',15,2.5);
+    ring(targets[t],24,'#ff6138',1,[4,5],.75);
+    label('φ'+(t+1),targets[t].x+17,targets[t].y-18,'#11110f','#ff6138');
+  }
+
+  // Golden-angle reference orbit.
+  ctx.save();
   ctx.strokeStyle='#b8860b';
+  ctx.globalAlpha=.52;
+  ctx.lineWidth=2;
   ctx.beginPath();
-  for(var i=0;i<180;i++){
-    var t=i/179,a=i*A.GOLD*.12;
-    var rr=Math.pow(t,A.INV)*Math.min(A.W,A.H)*.43;
-    var x=A.W/2+Math.cos(a)*rr,y=A.H/2+Math.sin(a)*rr;
-    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  for(var g=0;g<190;g++){
+    var gt=g/189;
+    var ga=g*A.GOLD*.12;
+    var gr=Math.pow(gt,A.INV)*Math.min(A.W,A.H)*.43;
+    var gx=A.W/2+Math.cos(ga)*gr;
+    var gy=A.H/2+Math.sin(ga)*gr;
+    if(g===0)ctx.moveTo(gx,gy);else ctx.lineTo(gx,gy);
   }
   ctx.stroke();
+  ctx.restore();
+  label('GOLDEN ANGLE 137.508°',A.W*.5+12,A.H*.5-18,'#fff','#b8860b');
+
+  // Reserved negative-space regions are part of the composition logic.
+  var voids=meta.voids||[];
+  for(var v=0;v<voids.length;v++){
+    var box=voids[v];
+    ctx.save();
+    ctx.fillStyle='rgba(255,97,56,.12)';
+    ctx.strokeStyle='#ff6138';
+    ctx.lineWidth=3;
+    ctx.setLineDash([12,8]);
+    ctx.fillRect(box.x,box.y,box.w,box.h);
+    ctx.strokeRect(box.x,box.y,box.w,box.h);
+    ctx.restore();
+    label('RESERVED VOID',box.x+8,box.y+16,'#11110f','#ff6138');
+  }
+
+  if(guide&&guide.type==='layout'){
+    drawLayout(guide.layout,true);
+  }
+
+  if(guide&&guide.type==='network'){
+    for(var ne=0;ne<guide.edges.length;ne++){
+      var edge=guide.edges[ne];
+      var a=guide.layout[edge.a],b=guide.layout[edge.b];
+      line(a,b,edge.primary?'#ff6138':'#2b59ff',edge.primary?3:1.4,edge.primary?[]:[5,7],edge.primary?.8:.45);
+    }
+    drawLayout(guide.layout,false);
+    label('BACKBONE / LOW-CROSSING φ LINKS',32,A.H-32,'#fff','#2b59ff');
+  }
+
+  if(guide&&guide.type==='spiral'){
+    for(var sc=0;sc<guide.centres.length;sc++){
+      cross(guide.centres[sc],'#2b59ff',18,3);
+      ring(guide.centres[sc],32,'#2b59ff',2,[5,5],.8);
+      label('SPIRAL HUB '+(sc+1),guide.centres[sc].x+20,guide.centres[sc].y-20,'#fff','#2b59ff');
+    }
+
+    for(var arm=0;arm<guide.arms;arm++){
+      var armPts=guide.points.filter(function(p){return p.arm===arm});
+      for(var ap=1;ap<armPts.length;ap++){
+        line(armPts[ap-1],armPts[ap],arm===0?'#ff6138':'#2b59ff',2,[6,5],.62);
+      }
+      for(var arp=0;arp<armPts.length;arp+=Math.max(1,Math.floor(armPts.length/7))){
+        var cp=guide.centres[arm%guide.centres.length];
+        line(cp,armPts[arp],'#b8860b',1,[3,8],.34);
+      }
+    }
+    label('STEP ≈ '+(guide.step*180/Math.PI).toFixed(1)+'°',32,A.H-32,'#11110f','#d9ff54');
+  }
+
+  if(guide&&guide.type==='rects'){
+    ctx.save();
+    ctx.strokeStyle='#2b59ff';
+    ctx.lineWidth=1.5;
+    ctx.globalAlpha=.62;
+    for(var rc=0;rc<guide.cells.length;rc++){
+      var cell=guide.cells[rc];
+      ctx.setLineDash(cell.depth%2?[5,5]:[]);
+      ctx.strokeRect(cell.x,cell.y,cell.w,cell.h);
+      if(rc<10){
+        label('d'+cell.depth,cell.x+4,cell.y+12,'#fff','#2b59ff');
+      }
+    }
+    ctx.restore();
+    ctx.save();
+    ctx.strokeStyle='#ff6138';
+    ctx.lineWidth=3;
+    ctx.strokeRect(guide.root.x,guide.root.y,guide.root.w,guide.root.h);
+    ctx.restore();
+    label('RECURSIVE φ PARTITIONS / '+guide.variant,32,A.H-32,'#11110f','#d9ff54');
+  }
+
+  if(guide&&guide.type==='burst'){
+    for(var bh=0;bh<guide.hubs.length;bh++){
+      var hub=guide.hubs[bh];
+      cross(hub,'#ff6138',18,3);
+      ring(hub,Math.max(24,hub.territory*.12),'#ff6138',2,[6,5],.78);
+      label('HUB '+(bh+1),hub.x+20,hub.y-20,'#11110f','#ff6138');
+    }
+    for(var br=0;br<guide.rays.length;br++){
+      var ray=guide.rays[br];
+      var from=guide.hubs[ray.hub];
+      line(from,ray,'#2b59ff',1,[4,6],.34);
+    }
+    label('GOLDEN-ANGLE RADIATION / '+guide.variant,32,A.H-32,'#fff','#2b59ff');
+  }
+
+  if(guide&&guide.type==='scribble'){
+    for(var sa=0;sa<guide.anchors.length;sa++){
+      var anchor=guide.anchors[sa];
+      ring(anchor,anchor.radius,'#2b59ff',2,[9,7],.64);
+      cross(anchor,'#ff6138',12,2.5);
+      var arrow={
+        x:anchor.x+Math.cos(anchor.flow)*Math.min(90,anchor.radius*.65),
+        y:anchor.y+Math.sin(anchor.flow)*Math.min(90,anchor.radius*.65)
+      };
+      line(anchor,arrow,'#ff6138',3,[],.72);
+      label('TERRITORY '+(sa+1),anchor.x+14,anchor.y-16,'#fff','#2b59ff');
+    }
+    label('WEIGHTED φ TERRITORIES + FLOW / '+guide.variant,32,A.H-32,'#11110f','#d9ff54');
+  }
+
+  if(guide&&guide.type==='organic'){
+    for(var or=0;or<guide.roots.length;or++){
+      cross(guide.roots[or],'#ff6138',15,3);
+      label('ROOT '+(or+1),guide.roots[or].x+17,guide.roots[or].y-16,'#11110f','#ff6138');
+    }
+    for(var os=0;os<guide.segments.length;os++){
+      var seg=guide.segments[os];
+      var alpha=Math.max(.18,.72-seg.depth*.08);
+      line({x:seg.x1,y:seg.y1},{x:seg.x2,y:seg.y2},seg.depth<2?'#2b59ff':'#11110f',Math.max(1,3-seg.depth*.25),seg.depth>2?[4,5]:[],alpha);
+    }
+    label('φ-SCALED BRANCH DECAY',32,A.H-32,'#fff','#2b59ff');
+  }
+
+  if(guide&&guide.type==='constructed'){
+    for(var ci=0;ci<guide.items.length;ci++){
+      var item=guide.items[ci];
+      var col=item.tier==='hero'?'#ff6138':(item.tier==='medium'?'#2b59ff':'#11110f');
+      ring(item,Math.max(5,item.size*.5),col,item.tier==='hero'?3:1.3,item.tier==='small'?[4,6]:[],item.tier==='small'?.28:.68);
+      cross(item,col,item.tier==='hero'?13:6,item.tier==='hero'?3:1.2);
+      var axisLen=item.size*.62;
+      line(
+        {x:item.x-Math.cos(item.rot)*axisLen*.5,y:item.y-Math.sin(item.rot)*axisLen*.5},
+        {x:item.x+Math.cos(item.rot)*axisLen*.5,y:item.y+Math.sin(item.rot)*axisLen*.5},
+        col,1.4,[5,5],.52
+      );
+      if(item.tier==='hero'){
+        label('HERO '+Math.round(item.size),item.x+15,item.y-16,'#11110f','#ff6138');
+      }
+    }
+    label('INDEPENDENT FORMS / '+guide.variant,32,A.H-32,'#11110f','#d9ff54');
+  }
+
+  // Explain what the viewer is seeing.
+  ctx.save();
+  ctx.fillStyle='rgba(17,17,15,.92)';
+  ctx.fillRect(A.W-390,24,360,88);
+  ctx.fillStyle='#d9ff54';
+  ctx.font='900 21px Arial, Helvetica, sans-serif';
+  ctx.fillText('SYSTEM REVEAL',A.W-370,52);
+  ctx.fillStyle='#fff';
+  ctx.font='bold 12px Courier New, monospace';
+  ctx.fillText((meta.strategy||s.mode).toUpperCase(),A.W-370,75);
+  ctx.fillStyle='#ff6138';
+  ctx.fillText('φ '+s.phiStrength+'%  /  SEED '+s.seed,A.W-370,96);
   ctx.restore();
 };
 
@@ -1836,11 +2114,12 @@ A.render=function(target,s,scale,showGeometry){
     meta=drawField(ctx,s,r,pal);
   }
 
-  if(showGeometry)A.geometryOverlay(ctx,s);
+  if(showGeometry)A.geometryOverlay(ctx,s,meta);
 
   A.lastRenderMeta={
     strategy:(meta&&meta.strategy)||chooseStrategy(s),
-    voids:(meta&&meta.voids)||[]
+    voids:(meta&&meta.voids)||[],
+    guide:(meta&&meta.guide)||null
   };
   return A.lastRenderMeta;
 };
