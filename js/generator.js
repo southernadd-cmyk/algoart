@@ -2310,7 +2310,7 @@ A.geometryOverlay=function(ctx,s,meta){
 
   // X-ray wash: artwork remains visible, but the construction becomes dominant.
   ctx.save();
-  ctx.fillStyle='rgba(245,240,230,.66)';
+  ctx.fillStyle='rgba(245,240,230,.48)';
   ctx.fillRect(0,0,A.W,A.H);
   ctx.restore();
 
@@ -2327,23 +2327,44 @@ A.geometryOverlay=function(ctx,s,meta){
     label('φ'+(t+1),targets[t].x+17,targets[t].y-18,'#11110f','#ff6138');
   }
 
-  // Golden-angle reference orbit.
+  // True golden spiral reference: logarithmic growth by φ every quarter-turn.
+  // r(θ + π/2) = φr(θ), therefore b = 2 ln(φ) / π.
+  var spiralB=2*Math.log(A.PHI)/Math.PI;
+  var spiralCx=A.W*.5,spiralCy=A.H*.5;
+  var spiralTurns=2.35;
+  var spiralEnd=spiralTurns*A.TAU;
+  var spiralMax=Math.min(A.W,A.H)*.40;
+  var spiralStart=spiralMax/Math.exp(spiralB*spiralEnd);
+
   ctx.save();
   ctx.strokeStyle='#b8860b';
-  ctx.globalAlpha=.52;
-  ctx.lineWidth=2;
+  ctx.globalAlpha=.46;
+  ctx.lineWidth=2.4;
   ctx.beginPath();
-  for(var g=0;g<190;g++){
-    var gt=g/189;
-    var ga=g*A.GOLD*.12;
-    var gr=Math.pow(gt,A.INV)*Math.min(A.W,A.H)*.43;
-    var gx=A.W/2+Math.cos(ga)*gr;
-    var gy=A.H/2+Math.sin(ga)*gr;
+  for(var g=0;g<=260;g++){
+    var theta=spiralEnd*g/260;
+    var gr=spiralStart*Math.exp(spiralB*theta);
+    var gx=spiralCx+Math.cos(theta-Math.PI/2)*gr;
+    var gy=spiralCy+Math.sin(theta-Math.PI/2)*gr;
     if(g===0)ctx.moveTo(gx,gy);else ctx.lineTo(gx,gy);
   }
   ctx.stroke();
+
+  // Quarter-turn radii make the φ growth visually verifiable.
+  for(var q=0;q<=Math.floor(spiralTurns*4);q++){
+    var qt=q*Math.PI/2;
+    var qr=spiralStart*Math.exp(spiralB*qt);
+    var qx=spiralCx+Math.cos(qt-Math.PI/2)*qr;
+    var qy=spiralCy+Math.sin(qt-Math.PI/2)*qr;
+    ctx.globalAlpha=.24;
+    ctx.setLineDash([4,7]);
+    ctx.beginPath();
+    ctx.moveTo(spiralCx,spiralCy);
+    ctx.lineTo(qx,qy);
+    ctx.stroke();
+  }
   ctx.restore();
-  label('GOLDEN ANGLE 137.508°',A.W*.5+12,A.H*.5-18,'#fff','#b8860b');
+  label('GOLDEN SPIRAL · ×φ / 90°',spiralCx+18,spiralCy-18,'#fff','#b8860b');
 
   // Reserved negative-space regions are part of the composition logic.
   var voids=meta.voids||[];
