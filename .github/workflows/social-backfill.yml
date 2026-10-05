@@ -1,9 +1,6 @@
 name: ALGO ART nine-post backfill
 
 on:
-  push:
-    paths:
-      - .github/workflows/social-backfill.yml
   workflow_dispatch:
 
 permissions:
