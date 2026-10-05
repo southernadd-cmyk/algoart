@@ -52,6 +52,11 @@ function artworkTitle(item, index) {
   return `${item.series} — Study ${String(index + 1).padStart(2, '0')}`;
 }
 
+function countWord(count) {
+  const words = ['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve'];
+  return words[count] || String(count);
+}
+
 function artworkDescription(item) {
   const s = item.settings || {};
   return `${item.series} generative marker artwork using seed ${item.seed}, ${s.phiStrength}% golden-ratio adherence, ${s.pen || 'marker'} pen and the ${s.palette || 'generated'} palette.`;
@@ -90,7 +95,7 @@ function dayPage(queue) {
   const entries = queue.entries;
   const series = [...new Set(entries.map(e => e.series))];
   const title = `ALGO/ART Daily Gallery — ${pretty} | Golden Ratio Generative Art`;
-  const description = `Five deterministic ALGO/ART studies generated on ${pretty}: ${series.join(', ')}. Golden-ratio composition rendered with imperfect digital marker ink.`;
+  const description = `${entries.length} deterministic ALGO/ART studies generated on ${pretty}: ${series.join(', ')}. Golden-ratio composition rendered with imperfect digital marker ink.`;
   const canonical = `${GALLERY_URL}/${date}/`;
   const cover = `${canonical}${entries[0].imageFile}`;
 
@@ -165,7 +170,7 @@ function dayPage(queue) {
 <main>
   <section class="hero">
     <div class="kicker">DAILY ARCHIVE / ${escapeHtml(date)}</div>
-    <h1>Five studies.<br>One deterministic day.</h1>
+    <h1>${countWord(entries.length)} studies.<br>One deterministic day.</h1>
     <p>${escapeHtml(description)}</p>
     <div class="hero-meta"><span>φ / 1.6180339887</span><span>GOLDEN ANGLE / 137.507764°</span><span>SEEDABLE / REMIXABLE</span></div>
   </section>
@@ -173,7 +178,7 @@ function dayPage(queue) {
     ${entries.map(artworkCard).join('\n')}
   </section>
   <section class="about">
-    <span class="section-no">06</span>
+    <span class="section-no">${String(entries.length + 1).padStart(2, '0')}</span>
     <div>
       <h2>MATHEMATICS SETS THE RULES.<br>THE MARKER BREAKS THEM.</h2>
       <p>ALGO/ART separates composition from rendering. φ influences placement, scale, hierarchy, negative space and trajectories; the marker engine adds wobble, pressure, overdraw and dryness. Every image above is deterministic: the exact seed and settings can be reopened and changed in the generator.</p>
@@ -253,7 +258,7 @@ function archivePage(archive) {
     <div class="kicker">PERMANENT DAILY ARCHIVE</div>
     <h1>GENERATED DAILY.<br>BUILT TO BE REMIXED.</h1>
     <p>${escapeHtml(description)}</p>
-    <div class="hero-meta"><span>${days.length} DAILY ${days.length === 1 ? 'EDITION' : 'EDITIONS'}</span><span>5 STUDIES / DAY</span><span>EXACT STATES PRESERVED</span></div>
+    <div class="hero-meta"><span>${days.length} DAILY ${days.length === 1 ? 'EDITION' : 'EDITIONS'}</span><span>LATEST: ${latest ? latest.count : 0} STUDIES</span><span>EXACT STATES PRESERVED</span></div>
   </section>
   <section class="day-grid" aria-label="Daily ALGO/ART galleries">
     ${cards || '<p class="empty">The first daily edition is being generated.</p>'}
@@ -278,7 +283,7 @@ ${days.map(day => `<item>
 <link>${GALLERY_URL}/${day.date}/</link>
 <guid isPermaLink="true">${GALLERY_URL}/${day.date}/</guid>
 <pubDate>${new Date(day.date + 'T12:00:00Z').toUTCString()}</pubDate>
-<description>${escapeXml('Five generative studies: ' + day.series.join(', '))}</description>
+<description>${escapeXml(day.count + ' generative studies: ' + day.series.join(', '))}</description>
 </item>`).join('\n')}
 </channel>
 </rss>`;
@@ -309,6 +314,12 @@ if (!Array.isArray(queue.entries) || queue.entries.length === 0) {
 const galleryRoot = path.resolve('gallery');
 const dayDir = path.join(galleryRoot, day);
 await fs.mkdir(dayDir, { recursive: true });
+
+for (const existing of await fs.readdir(dayDir)) {
+  if (existing.toLowerCase().endsWith('.jpg')) {
+    await fs.rm(path.join(dayDir, existing), { force: true });
+  }
+}
 
 for (const item of queue.entries) {
   const source = path.resolve('social-output', day, item.imageFile);
