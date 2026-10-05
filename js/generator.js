@@ -162,7 +162,9 @@ function applyStrategyPosition(pos,i,total,tier,strategy,s){
     pos.x=A.lerp(pos.x,t.x,.72);
     pos.y=A.lerp(pos.y,t.y,.72);
   }else if(strategy==='ORBIT'){
-    var orbit=A.goldenCanvasPoint(i,total,s,A.GOLD*.5);
+    var orbit=A.rendererVersion>=4
+      ?trueGoldenSpiralPointV4(i,total,A.GOLD*.5,0)
+      :A.goldenCanvasPoint(i,total,s,A.GOLD*.5);
     pos.x=A.lerp(pos.x,orbit.x,.48);
     pos.y=A.lerp(pos.y,orbit.y,.48);
   }else if(strategy==='EDGE'&&tier!=='hero'){
@@ -190,9 +192,26 @@ function applyStrategyPosition(pos,i,total,tier,strategy,s){
   return pos;
 }
 
+function trueGoldenSpiralPointV4(i,total,phase,attempt){
+  total=Math.max(1,total);
+  attempt=attempt||0;
+  var u=(i+.65+attempt*.17)/total;
+  u=A.clamp(u,.02,1);
+  var turns=2.35;
+  var theta=u*turns*A.TAU;
+  var b=2*Math.log(A.PHI)/Math.PI;
+  var maxR=.43;
+  var minR=maxR/Math.exp(b*turns*A.TAU);
+  var radial=minR*Math.exp(b*theta);
+  var angle=phase+theta+attempt*A.GOLD*.035;
+  return{x:A.W*.5+Math.cos(angle)*A.W*radial,y:A.H*.5+Math.sin(angle)*A.H*radial,a:angle,rad:radial};
+}
+
 function candidatePosition(i,total,s,r,tier,distributed,phase,attempt,strategy){
   var d=distributed[(i+attempt*5)%distributed.length];
-  var spiral=A.goldenCanvasPoint(i+attempt*.28,total,s,phase+attempt*A.GOLD*.23);
+  var spiral=A.rendererVersion>=4
+    ?trueGoldenSpiralPointV4(i,total,phase,attempt)
+    :A.goldenCanvasPoint(i+attempt*.28,total,s,phase+attempt*A.GOLD*.23);
   var phi=A.phiPoint(s,r);
   var spiralMix=A.clamp(s.spiralInfluence/100,0,1);
   var x=A.lerp(phi.x,spiral.x,spiralMix*.78);
@@ -385,7 +404,9 @@ function strategyScore(layout,s,strategy,voids){
   }else if(strategy==='ORBIT'){
     var phase=A.GOLD*.5;
     for(i=0;i<layout.length;i++){
-      var gp=A.goldenCanvasPoint(i,layout.length,s,phase);
+      var gp=A.rendererVersion>=4
+        ?trueGoldenSpiralPointV4(i,layout.length,phase,0)
+        :A.goldenCanvasPoint(i,layout.length,s,phase);
       dx=layout[i].x-gp.x;dy=layout[i].y-gp.y;
       score+=Math.max(0,1-Math.sqrt(dx*dx+dy*dy)/420)*1.5;
     }
