@@ -1,0 +1,32 @@
+name: Verify Instagram token
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - automation/verify-instagram.mjs
+      - .github/workflows/verify-instagram.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+      IG_USER_ID: ${{ secrets.IG_USER_ID }}
+      EXPECTED_IG_USERNAME: artalgorithm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify Instagram token without posting
+        run: node automation/verify-instagram.mjs
