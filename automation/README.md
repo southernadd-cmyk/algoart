@@ -92,3 +92,36 @@ Read-only verification workflows are retained for both platforms:
 ```
 
 They verify that the tokens belong to **@artalgorithm** without publishing anything.
+
+
+## Pinterest
+
+Pinterest support is built into the live workflow but is **off by default** so it cannot affect the working Instagram/Threads automation.
+
+Required GitHub Actions secrets:
+
+```
+PINTEREST_ACCESS_TOKEN
+PINTEREST_BOARD_ID
+```
+
+Required repository variable:
+
+```
+PINTEREST_ENABLED=true
+```
+
+Before enabling it, run:
+
+```
+.github/workflows/verify-pinterest.yml
+```
+
+That verifies the token and configured board without creating a Pin.
+
+Once enabled, each featured daily artwork is also published to Pinterest with:
+- the generated artwork image
+- ALGO/ART title/description metadata
+- alt text
+- a direct link to that exact artwork state in the generator
+- duplicate protection using the same rolling GitHub Release markers as Instagram/Threads
