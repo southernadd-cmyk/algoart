@@ -472,22 +472,164 @@ function drawSpiral(ctx,s,r,pal){
 }
 
 function drawRects(ctx,s,r,pal){
-  var x=A.W*.08,y=A.H*.08,w=A.W*.84,h=A.H*.84;
-  var depth=Math.max(2,s.recursion+Math.round(s.complexity/35));
+  var variants=['MOSAIC','CASCADE','CROSSCUT','FRAMED'];
+  var variant=variants[A.hash(s.seed+'|rect-variant')%variants.length];
+  var margin=A.qphi(r.range(42,96),34,s.phiStrength/100);
+  var root={x:margin,y:margin,w:A.W-margin*2,h:A.H-margin*2,depth:0,branch:0};
+  var target=Math.max(7,Math.min(56,
+    Math.round(5+s.recursion*2+s.complexity/9+s.elements/16)
+  ));
+  var active=[root],leaves=[],splitCount=0;
+  var minSide=A.lerp(70,34,s.complexity/100);
 
-  for(var i=0;i<depth;i++){
-    var c={x:x+w/2,y:y+h/2};
-    A.rect(ctx,c,w,h,r.range(-.06,.06)*(1-s.phiStrength/100),pal[i%pal.length],s,r);
-    if(r.chance(s.nesting/100)){
-      A.ellipse(ctx,c,Math.min(w,h)*.28,Math.min(w,h)*.28/A.PHI,A.GOLD*i,pal[(i+1)%pal.length],s,r);
+  function area(cell){return cell.w*cell.h}
+
+  function chooseCellIndex(){
+    if(variant==='CASCADE')return active.length-1;
+
+    if(variant==='CROSSCUT'){
+      var sorted=active.map(function(c,i){return{c:c,i:i}})
+        .sort(function(a,b){return area(b.c)-area(a.c)});
+      var pool=Math.max(1,Math.min(sorted.length,4));
+      return sorted[r.int(0,pool-1)].i;
     }
-    w/=A.PHI;
-    h/=A.PHI;
-    x=c.x-w/2+(i%2?r.range(-30,30):0);
-    y=c.y-h/2+r.range(-20,20);
+
+    var best=0,bestScore=-1;
+    for(var i=0;i<active.length;i++){
+      var score=area(active[i]);
+      if(variant==='FRAMED')score*=1+active[i].depth*.08;
+      score*=r.range(.92,1.08);
+      if(score>bestScore){bestScore=score;best=i}
+    }
+    return best;
   }
 
-  return{strategy:'RECURSIVE',voids:[]};
+  function splitCell(cell){
+    var aspect=cell.w/Math.max(1,cell.h);
+    var vertical;
+
+    if(aspect>A.PHI*.92)vertical=true;
+    else if(aspect<1/(A.PHI*.92))vertical=false;
+    else if(variant==='CROSSCUT')vertical=(splitCount%2===0);
+    else vertical=r.chance(.5);
+
+    var phiCut=r.chance(.5)?A.INV:(1-A.INV);
+    var cut=A.lerp(.5,phiCut,s.phiStrength/100);
+    cut=A.clamp(cut,.28,.72);
+
+    var a,b;
+    if(vertical){
+      var w1=cell.w*cut;
+      a={x:cell.x,y:cell.y,w:w1,h:cell.h,depth:cell.depth+1,branch:splitCount};
+      b={x:cell.x+w1,y:cell.y,w:cell.w-w1,h:cell.h,depth:cell.depth+1,branch:splitCount};
+    }else{
+      var h1=cell.h*cut;
+      a={x:cell.x,y:cell.y,w:cell.w,h:h1,depth:cell.depth+1,branch:splitCount};
+      b={x:cell.x,y:cell.y+h1,w:cell.w,h:cell.h-h1,depth:cell.depth+1,branch:splitCount};
+    }
+    splitCount++;
+    return[a,b];
+  }
+
+  while(active.length&&active.length+leaves.length<target){
+    var index=chooseCellIndex();
+    var cell=active.splice(index,1)[0];
+
+    if(Math.min(cell.w,cell.h)<minSide||cell.depth>=Math.max(4,s.recursion+2)){
+      leaves.push(cell);
+      continue;
+    }
+
+    var children=splitCell(cell);
+
+    if(variant==='CASCADE'){
+      var recurse=r.chance(.5)?0:1;
+      leaves.push(children[1-recurse]);
+      active.push(children[recurse]);
+    }else if(variant==='FRAMED'&&r.chance(.42)){
+      var framed=r.chance(.5)?0:1;
+      leaves.push(children[framed]);
+      active.push(children[1-framed]);
+    }else{
+      active.push(children[0],children[1]);
+    }
+  }
+
+  leaves=leaves.concat(active);
+  leaves.sort(function(a,b){
+    if(variant==='CASCADE')return a.depth-b.depth;
+    return area(b)-area(a);
+  });
+
+  var voidCount=Math.round(leaves.length*(s.negativeSpace/100)*.24);
+  var voids=[];
+  var voidMap={};
+
+  if(voidCount>0){
+    var candidates=leaves.map(function(c,i){return{c:c,i:i}})
+      .sort(function(a,b){return area(b.c)-area(a.c)});
+
+    var start=Math.min(candidates.length-1,r.int(0,Math.min(3,candidates.length-1)));
+    for(var v=0;v<voidCount&&start+v<candidates.length;v++){
+      var chosen=candidates[start+v];
+      voidMap[chosen.i]=true;
+      voids.push({x:chosen.c.x,y:chosen.c.y,w:chosen.c.w,h:chosen.c.h});
+    }
+  }
+
+  var rectStyle=Object.assign({},s,{
+    curveBias:Math.min(8,s.curveBias),
+    wobble:Math.min(18,s.wobble)
+  });
+
+  if(s.rectangles!==false){
+    A.rect(ctx,{x:A.W/2,y:A.H/2},root.w,root.h,0,pal[0],rectStyle,r);
+  }
+
+  for(var i=0;i<leaves.length;i++){
+    if(voidMap[i])continue;
+
+    var leaf=leaves[i];
+    var inset=Math.min(leaf.w,leaf.h)*r.range(.025,.12);
+    var w=Math.max(8,leaf.w-inset*2);
+    var h=Math.max(8,leaf.h-inset*2);
+    var c={x:leaf.x+leaf.w/2,y:leaf.y+leaf.h/2};
+    var rot=r.range(-.045,.045)*(s.rotation/100);
+    var col=pal[i%pal.length];
+
+    if(s.rectangles!==false){
+      A.rect(ctx,c,w,h,rot,col,rectStyle,r);
+    }
+
+    if(s.lines&&r.chance(.24+s.complexity/150)){
+      var diag=(i+leaf.depth)%2===0;
+      var p1={x:c.x+(diag?-w:w)/2,y:c.y-h/2};
+      var p2={x:c.x+(diag?w:-w)/2,y:c.y+h/2};
+      A.drawLine(ctx,p1,p2,pal[(i+1)%pal.length],rectStyle,r);
+    }
+
+    if(s.circles&&r.chance((s.shapeAmount/100)*.46)){
+      var rad=Math.min(w,h)*r.range(.16,.34);
+      A.ellipse(ctx,c,rad,rad/A.PHI,rot+A.GOLD*(i+1),pal[(i+2)%pal.length],rectStyle,r);
+    }
+
+    if(s.arcs&&r.chance((s.shapeAmount/100)*.3)){
+      var arcRad=Math.min(w,h)*r.range(.18,.4);
+      A.arc(ctx,c,arcRad,A.GOLD*i,A.TAU*A.INV,pal[(i+3)%pal.length],rectStyle,r);
+    }
+
+    if(s.polygons&&r.chance((s.shapeAmount/100)*.22)){
+      var polyRad=Math.min(w,h)*r.range(.12,.27);
+      A.poly(ctx,c,polyRad,r.pick([3,5,8]),A.GOLD*i,pal[(i+4)%pal.length],rectStyle,r);
+    }
+
+    if(r.chance((s.nesting/100)*.62)){
+      var nw=w/A.PHI,nh=h/A.PHI;
+      A.rect(ctx,c,nw,nh,rot+A.GOLD*.08,pal[(i+5)%pal.length],rectStyle,r);
+    }
+  }
+
+  return{strategy:'RECT-'+variant,voids:voids};
 }
 
 function drawBurst(ctx,s,r,pal){
