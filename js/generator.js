@@ -628,6 +628,226 @@ function drawField(ctx,s,r,pal){
   return result;
 }
 
+
+function fieldAngleDeltaV3(from,to,period){
+  period=period||A.TAU;
+  var half=period/2;
+  var delta=(to-from+half)%period;
+  if(delta<0)delta+=period;
+  return delta-half;
+}
+
+function fieldLerpAngleV3(from,to,amount,period){
+  return from+fieldAngleDeltaV3(from,to,period)*amount;
+}
+
+function fieldShapeV3(s,strategy,index){
+  var shapeR=A.makeR(s.seed+'|field-shape-v3|'+strategy+'|'+index);
+  return shapeR.chance(s.shapeAmount/100)?shapeR.pick(enabledShapes(s)):'line';
+}
+
+function fieldShapePeriodV3(shape){
+  return(shape==='line'||shape==='rect')?Math.PI:A.TAU;
+}
+
+function reinforceFieldRelationshipsV3(layout,s,strategy){
+  if(!layout.length)return layout;
+
+  var heroIndices=[];
+  for(var h=0;h<layout.length;h++){
+    layout[h]._fieldIndex=h;
+    layout[h].shapeV3=fieldShapeV3(s,strategy,h);
+    if(layout[h].tier==='hero')heroIndices.push(h);
+  }
+  if(!heroIndices.length)return layout;
+
+  var relationR=A.makeR(s.seed+'|field-relationships-v3|'+strategy);
+  var familyCount=Math.max(1,heroIndices.length);
+  var requestedColours=Math.max(1,Math.round(s.colourCount||familyCount));
+  var extraColours=Math.max(0,requestedColours-familyCount);
+  var accentChance=A.clamp((requestedColours-familyCount)/Math.max(4,requestedColours)*.72,.08,.58);
+
+  for(var i=0;i<layout.length;i++){
+    var item=layout[i];
+
+    if(item.tier==='hero'){
+      item.family=heroIndices.indexOf(i);
+      item.colourIndex=item.family;
+      item.relationStrength=1;
+      item.parentHeroIndex=-1;
+      continue;
+    }
+
+    var heroIndex=nearestHeroIndex(layout,i);
+    if(heroIndex<0)continue;
+
+    var hero=layout[heroIndex];
+    var family=heroIndices.indexOf(heroIndex);
+    var dx=item.x-hero.x,dy=item.y-hero.y;
+    var distance=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+    var radial=Math.atan2(dy,dx);
+    var desired=A.qphi(distance,34,1);
+    var snap=item.tier==='medium'?.30:.18;
+
+    if(strategy==='ORBIT')snap*=1.35;
+    if(strategy==='MONUMENT')snap*=.78;
+    if(strategy==='EDGE')snap*=.72;
+
+    if(relationR.chance(item.tier==='medium'?.84:.62)){
+      var adjusted=A.lerp(distance,desired,snap);
+      item.x=A.clamp(hero.x+Math.cos(radial)*adjusted,28,A.W-28);
+      item.y=A.clamp(hero.y+Math.sin(radial)*adjusted,28,A.H-28);
+      dx=item.x-hero.x;
+      dy=item.y-hero.y;
+      distance=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+      radial=Math.atan2(dy,dx);
+    }
+
+    var targetRot=radial;
+    if(strategy==='ORBIT')targetRot=radial+Math.PI/2;
+    else if(strategy==='DIAGONAL')targetRot=(A.hash(s.seed+'|diag')%2)===1?-Math.PI/4:Math.PI/4;
+    else if(strategy==='MONUMENT')targetRot=hero.rot;
+
+    var align=item.tier==='medium'?.46:.26;
+    if(strategy==='ORBIT'||strategy==='DIAGONAL')align+=.14;
+    item.rot=fieldLerpAngleV3(item.rot,targetRot,align,fieldShapePeriodV3(item.shapeV3));
+
+    item.family=Math.max(0,family);
+    item.parentHeroIndex=heroIndex;
+    item.phiDistance=desired;
+    item.relationStrength=item.tier==='medium'?.84:.56;
+
+    if(item.tier==='small'&&extraColours>0&&relationR.chance(accentChance)){
+      item.colourIndex=familyCount+((i+family+A.hash(s.seed+'|field-accent-v3|'+i))%extraColours);
+    }else{
+      item.colourIndex=item.family;
+    }
+  }
+
+  return layout;
+}
+
+function fieldRelationshipScoreV3(layout,s,strategy){
+  var heroes=layout.filter(function(o){return o.tier==='hero'});
+  if(!heroes.length)return 0;
+
+  var score=0,count=0;
+  for(var i=0;i<layout.length;i++){
+    var item=layout[i];
+    if(item.tier==='hero')continue;
+
+    var nearest=null,best=Infinity;
+    for(var h=0;h<heroes.length;h++){
+      var dx=item.x-heroes[h].x,dy=item.y-heroes[h].y;
+      var d=Math.sqrt(dx*dx+dy*dy);
+      if(d<best){best=d;nearest=heroes[h]}
+    }
+    if(!nearest)continue;
+
+    var quant=A.qphi(best,34,1);
+    var distanceFit=1-A.clamp(Math.abs(best-quant)/Math.max(1,quant),0,1);
+    var radial=Math.atan2(item.y-nearest.y,item.x-nearest.x);
+    var targetRot=radial;
+    if(strategy==='ORBIT')targetRot=radial+Math.PI/2;
+    else if(strategy==='DIAGONAL')targetRot=(A.hash(s.seed+'|diag')%2)===1?-Math.PI/4:Math.PI/4;
+    else if(strategy==='MONUMENT')targetRot=nearest.rot;
+
+    var period=fieldShapePeriodV3(item.shapeV3);
+    var delta=Math.abs(fieldAngleDeltaV3(item.rot,targetRot,period));
+    var alignment=1-A.clamp(delta/(period/2),0,1);
+    var weight=item.tier==='medium'?1.45:.7;
+
+    score+=(distanceFit*1.95+alignment*1.05)*weight;
+    count+=weight;
+  }
+
+  if(!count)return 0;
+  return score/count*36*(.45+s.phiStrength/180);
+}
+
+function chooseBestLayoutV3(s){
+  var strategy=chooseStrategy(s);
+  var voidR=A.makeR(s.seed+'|'+s.mode+'|voids|'+strategy);
+  var voids=makeReservedVoids(s,strategy,voidR);
+  var candidates=s.elements>110?4:6;
+  var best=null,bestScore=-Infinity;
+
+  for(var i=0;i<candidates;i++){
+    var layout=makeLayoutPlan(s,i,strategy,voids);
+    layout=reinforceFieldRelationshipsV3(layout,s,strategy);
+    var score=scoreLayout(layout,s,strategy,voids)+fieldRelationshipScoreV3(layout,s,strategy);
+    if(score>bestScore){
+      bestScore=score;
+      best=layout;
+    }
+  }
+
+  return{layout:best||[],strategy:strategy,voids:voids,score:bestScore};
+}
+
+function drawPlannedElementV3(ctx,plan,i,s,r,pal,strategy){
+  var sh=plan.shapeV3||fieldShapeV3(s,strategy,i);
+  var c={x:plan.x,y:plan.y};
+  var size=plan.size;
+  var rot=plan.rot;
+  var colourIndex=Number.isInteger(plan.colourIndex)?plan.colourIndex:i;
+  var col=pal[((colourIndex%pal.length)+pal.length)%pal.length];
+  var ratio=A.lerp(r.range(.65,1.68),A.PHI,s.phiStrength/100);
+  var tierFactor=plan.tier==='hero'?1.62:(plan.tier==='small'?.76:1);
+  var drawSettings=Object.assign({},s,{
+    thickness:A.clamp(Math.round(s.thickness*tierFactor),1,28)
+  });
+
+  if(sh==='line'){
+    var a={x:c.x-Math.cos(rot)*size/2,y:c.y-Math.sin(rot)*size/2};
+    var b={x:c.x+Math.cos(rot)*size/2,y:c.y+Math.sin(rot)*size/2};
+    A.drawLine(ctx,a,b,col,drawSettings,r);
+  }else if(sh==='circle'){
+    A.ellipse(ctx,c,size/2,size/(2*ratio),rot,col,drawSettings,r);
+  }else if(sh==='rect'){
+    A.rect(ctx,c,size,size/ratio,rot,col,drawSettings,r);
+  }else if(sh==='poly'){
+    A.poly(ctx,c,size/2,r.pick([3,5,8]),rot,col,drawSettings,r);
+  }else{
+    A.arc(ctx,c,size/2,rot,A.TAU*r.pick([A.INV,1-A.INV,.5,.75]),col,drawSettings,r);
+  }
+
+  var nest=(s.nesting/160)*A.lerp(1,.65,crowdFactor(s));
+  if(plan.tier==='hero')nest*=1.24;
+  if(plan.tier==='small')nest*=.66;
+
+  if(r.chance(nest)){
+    var nestedIndex=Number.isInteger(plan.colourIndex)?plan.colourIndex+1:i+1;
+    var nc=pal[((nestedIndex%pal.length)+pal.length)%pal.length],n=size/A.PHI;
+    if(sh==='rect'){
+      A.rect(ctx,c,n,n/A.PHI,rot+A.GOLD,nc,drawSettings,r);
+    }else if(sh==='circle'){
+      A.ellipse(ctx,c,n/2,n/(2*A.PHI),rot+A.GOLD,nc,drawSettings,r);
+    }else if(sh==='poly'){
+      A.poly(ctx,c,n/2,5,rot+A.GOLD,nc,drawSettings,r);
+    }
+  }
+}
+
+function drawFieldV3(ctx,s,r,pal){
+  var result=chooseBestLayoutV3(s);
+  var tierRank={small:0,medium:1,hero:2};
+  var ordered=result.layout.slice().sort(function(a,b){
+    var tierDelta=tierRank[a.tier]-tierRank[b.tier];
+    if(tierDelta)return tierDelta;
+    return (a._fieldIndex||0)-(b._fieldIndex||0);
+  });
+
+  for(var i=0;i<ordered.length;i++){
+    var plan=ordered[i];
+    var localR=A.makeR(s.seed+'|field-draw-v3|'+result.strategy+'|'+plan._fieldIndex);
+    drawPlannedElementV3(ctx,plan,plan._fieldIndex,s,localR,pal,result.strategy);
+  }
+
+  result.guide={type:'layout',layout:result.layout,relationships:true,rendererVersion:3};
+  return result;
+}
+
 function drawSpiral(ctx,s,r,pal){
   var variants=['SHELL','DOUBLE','BROKEN','OFFSET','VOID','LOOSE'];
   var variant=variants[A.hash(s.seed+'|spiral-variant')%variants.length];
@@ -2141,6 +2361,19 @@ A.geometryOverlay=function(ctx,s,meta){
   }
 
   if(guide&&guide.type==='layout'){
+    if(guide.relationships){
+      for(var lr=0;lr<guide.layout.length;lr++){
+        var linked=guide.layout[lr];
+        if(linked.parentHeroIndex==null||linked.parentHeroIndex<0)continue;
+        var parent=guide.layout[linked.parentHeroIndex];
+        if(!parent)continue;
+        line(parent,linked,linked.tier==='medium'?'#2b59ff':'#11110f',linked.tier==='medium'?2:1,[5,6],linked.tier==='medium'?.5:.22);
+        if(linked.tier==='medium'&&linked.phiDistance){
+          ring(parent,linked.phiDistance,'#b8860b',1,[3,7],.18);
+        }
+      }
+      label('FIELD FAMILIES / φ-DISTANCE LINKS',32,A.H-32,'#11110f','#d9ff54');
+    }
     drawLayout(guide.layout,true);
   }
 
@@ -2287,7 +2520,9 @@ A.render=function(target,s,scale,showGeometry){
   var meta;
 
   if(s.mode==='field'){
-    meta=(A.rendererVersion===1)?drawFieldLegacy(ctx,s,r,pal):drawField(ctx,s,r,pal);
+    if(A.rendererVersion===1)meta=drawFieldLegacy(ctx,s,r,pal);
+    else if(A.rendererVersion===2)meta=drawField(ctx,s,r,pal);
+    else meta=drawFieldV3(ctx,s,r,pal);
   }else if(s.mode==='spiral'){
     meta=drawSpiral(ctx,s,r,pal);
   }else if(s.mode==='rects'){
