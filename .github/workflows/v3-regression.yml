@@ -1,4 +1,5 @@
 name: ALGO ART v3 compatibility regression
+# retry after resolver pin
 
 on:
   push:
