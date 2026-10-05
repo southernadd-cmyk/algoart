@@ -1,0 +1,179 @@
+name: Repair ALGO ART Daily Gallery to 12 studies
+
+on:
+  push:
+    paths:
+      - '.github/workflows/gallery-append-v3-repair.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: contains(github.event.head_commit.message, 'Run gallery repair')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SOCIAL_DATE: '2026-10-05'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assemble exact twelve-artwork queue
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "social-output/$SOCIAL_DATE"
+
+          cp "gallery/$SOCIAL_DATE/"*.jpg "social-output/$SOCIAL_DATE/"
+
+          curl -fL --retry 4 --retry-delay 2 \
+            -o "social-output/$SOCIAL_DATE/2026-10-05-10-field-AA-20261005-01-21612.jpg" \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/algoart-social-live/v3-live-2026-10-05-c-01.jpg"
+          curl -fL --retry 4 --retry-delay 2 \
+            -o "social-output/$SOCIAL_DATE/2026-10-05-11-spiral-AA-20261005-02-48945.jpg" \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/algoart-social-live/v3-live-2026-10-05-c-02.jpg"
+          curl -fL --retry 4 --retry-delay 2 \
+            -o "social-output/$SOCIAL_DATE/2026-10-05-12-rects-AA-20261005-03-16174.jpg" \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/algoart-social-live/v3-live-2026-10-05-c-03.jpg"
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+
+          const day = process.env.SOCIAL_DATE;
+          const galleryDir = path.resolve('gallery', day);
+          const socialDir = path.resolve('social-output', day);
+          const meta = JSON.parse(await fs.readFile(path.join(galleryDir, 'meta.json'), 'utf8'));
+
+          const existing = meta.entries.map((entry) => ({
+            id: entry.id,
+            seed: entry.seed,
+            mode: entry.mode,
+            series: entry.series,
+            imageFile: entry.imageFile,
+            shareUrl: entry.shareUrl,
+            rendererVersion: entry.rendererVersion || 3,
+            settings: entry.settings,
+            copy: { altText: entry.altText }
+          }));
+
+          const specs = [
+            {
+              id: '2026-10-05-10',
+              seed: 'AA-20261005-01-21612',
+              mode: 'field',
+              series: 'Orbital Studies',
+              imageFile: '2026-10-05-10-field-AA-20261005-01-21612.jpg',
+              shareUrl: 'https://southernadd-cmyk.github.io/algoart/?v=3&seed=AA-20261005-01-21612&mode=field&el=44&den=63&cx=70&neg=35&phi=86&rec=7&spi=55&ga=86&nest=51&pen=broad&th=6&wob=38&od=3&op=86&pr=48&dry=30&curve=52&shape=69&overlap=40&rot=79&ln=1&ci=1&re=1&po=1&ar=1&pal=cmyk&cols=9&sat=67&bri=49&paper=%23ece5d5&grain=19'
+            },
+            {
+              id: '2026-10-05-11',
+              seed: 'AA-20261005-02-48945',
+              mode: 'spiral',
+              series: 'Golden Trajectories',
+              imageFile: '2026-10-05-11-spiral-AA-20261005-02-48945.jpg',
+              shareUrl: 'https://southernadd-cmyk.github.io/algoart/?v=3&seed=AA-20261005-02-48945&mode=spiral&el=50&den=46&cx=69&neg=24&phi=90&rec=4&spi=86&ga=97&nest=33&pen=dry&th=8&wob=22&od=4&op=75&pr=47&dry=24&curve=68&shape=57&overlap=51&rot=73&ln=1&ci=1&re=1&po=1&ar=1&pal=primary&cols=7&sat=64&bri=62&paper=%23f7f1e7&grain=16'
+            },
+            {
+              id: '2026-10-05-12',
+              seed: 'AA-20261005-03-16174',
+              mode: 'rects',
+              series: 'Recursive Divisions',
+              imageFile: '2026-10-05-12-rects-AA-20261005-03-16174.jpg',
+              shareUrl: 'https://southernadd-cmyk.github.io/algoart/?v=3&seed=AA-20261005-03-16174&mode=rects&el=47&den=38&cx=67&neg=26&phi=91&rec=7&spi=22&ga=86&nest=33&pen=paint&th=13&wob=56&od=5&op=70&pr=46&dry=11&curve=3&shape=55&overlap=59&rot=61&ln=1&ci=1&re=1&po=1&ar=1&pal=primary&cols=8&sat=80&bri=57&paper=%23f3eee4&grain=15'
+            }
+          ];
+
+          const number = (params, key) => Number(params.get(key));
+          function settingsFrom(spec) {
+            const p = new URL(spec.shareUrl).searchParams;
+            return {
+              mode: spec.mode,
+              series: spec.series,
+              seed: spec.seed,
+              elements: number(p, 'el'),
+              density: number(p, 'den'),
+              complexity: number(p, 'cx'),
+              negativeSpace: number(p, 'neg'),
+              phiStrength: number(p, 'phi'),
+              recursion: number(p, 'rec'),
+              spiralInfluence: number(p, 'spi'),
+              goldenAngle: number(p, 'ga'),
+              nesting: number(p, 'nest'),
+              pen: p.get('pen'),
+              thickness: number(p, 'th'),
+              wobble: number(p, 'wob'),
+              overdraw: number(p, 'od'),
+              opacity: number(p, 'op'),
+              pressure: number(p, 'pr'),
+              dryness: number(p, 'dry'),
+              curveBias: number(p, 'curve'),
+              shapeAmount: number(p, 'shape'),
+              overlap: number(p, 'overlap'),
+              rotation: number(p, 'rot'),
+              lines: p.get('ln') === '1',
+              circles: p.get('ci') === '1',
+              rectangles: p.get('re') === '1',
+              polygons: p.get('po') === '1',
+              arcs: p.get('ar') === '1',
+              palette: p.get('pal'),
+              colourCount: number(p, 'cols'),
+              saturation: number(p, 'sat'),
+              brightness: number(p, 'bri'),
+              paper: p.get('paper'),
+              grain: number(p, 'grain')
+            };
+          }
+
+          const fresh = specs.map((spec) => {
+            const settings = settingsFrom(spec);
+            return {
+              ...spec,
+              rendererVersion: 3,
+              settings,
+              copy: {
+                altText: `Abstract algorithmic marker artwork from ALGO/ART's ${spec.series} system. Generated from seed ${spec.seed} using golden-ratio composition rules and imperfect ${settings.pen} marker strokes.`
+              }
+            };
+          });
+
+          const queue = {
+            version: 1,
+            date: day,
+            generatedAt: new Date().toISOString(),
+            timezone: 'Europe/London',
+            entries: [...existing, ...fresh]
+          };
+
+          await fs.writeFile(
+            path.join(socialDir, 'queue.json'),
+            JSON.stringify(queue, null, 2) + '\n'
+          );
+
+          console.log(`Prepared ${queue.entries.length} exact gallery entries.`);
+          NODE
+
+      - name: Rebuild and verify Daily Gallery
+        shell: bash
+        run: |
+          set -euo pipefail
+          node automation/build-gallery.mjs
+          test "$(jq '.count' "gallery/$SOCIAL_DATE/meta.json")" = "12"
+          test "$(find "gallery/$SOCIAL_DATE" -maxdepth 1 -name '*.jpg' | wc -l | tr -d ' ')" = "12"
+          grep -q "Twelve studies" "gallery/$SOCIAL_DATE/index.html"
+          grep -q "LATEST: 12 STUDIES" "gallery/index.html"
+          grep -q "2026-10-05-10-field-AA-20261005-01-21612.jpg" "gallery/$SOCIAL_DATE/index.html"
+          grep -q "2026-10-05-11-spiral-AA-20261005-02-48945.jpg" "gallery/$SOCIAL_DATE/index.html"
+          grep -q "2026-10-05-12-rects-AA-20261005-03-16174.jpg" "gallery/$SOCIAL_DATE/index.html"
+
+      - name: Commit gallery update
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery sitemap.xml robots.txt
+          git commit -m "Expand October 5 Daily Gallery to twelve artworks"
+          git pull --rebase origin main
+          git push origin HEAD:main
