@@ -751,43 +751,242 @@ function drawRects(ctx,s,r,pal){
 }
 
 function drawBurst(ctx,s,r,pal){
+  var variants=['SINGLE','TWIN','TRIAD','CROPPED','VOID','SATELLITE'];
+  var variant=variants[A.hash(s.seed+'|burst-variant')%variants.length];
+  var baseStrategy=chooseStrategy(s);
   var crowd=crowdFactor(s);
-  var hubCount=1+Math.floor(crowd*2.8);
-  var hubs=hubCount===1
-    ?[{x:A.W/2,y:A.H/2,territory:Math.min(A.W,A.H)*.7}]
-    :A.distributedPhiPoints(hubCount,s,r);
-  var strategy=chooseStrategy(s);
+  var voids=variant==='VOID'
+    ?makeReservedVoids(s,'VOID',A.makeR(s.seed+'|burst-voids'))
+    :[];
+  var targets=phiTargets();
+  var hubs=[];
+  var distributed=A.distributedPhiPoints(4,s,A.makeR(s.seed+'|burst-hubs'));
 
-  var localCounts=[];
-  for(var h=0;h<hubCount;h++)localCounts[h]=0;
+  function hub(x,y,territory,weight){
+    return{x:x,y:y,territory:territory,weight:weight};
+  }
 
-  for(var i=0;i<s.elements;i++){
-    var hubIndex=i%hubCount;
-    var c=hubs[hubIndex];
-    var local=localCounts[hubIndex]++;
-    var perHub=Math.ceil(s.elements/hubCount);
-    var a=local*A.lerp(A.TAU/perHub,A.GOLD,s.goldenAngle/100);
-    var len=A.qphi(r.range(70,420)*A.lerp(1,.68,crowd),34,s.phiStrength/100);
-    var p={
-      x:A.clamp(c.x+Math.cos(a)*len,24,A.W-24),
-      y:A.clamp(c.y+Math.sin(a)*len,24,A.H-24)
-    };
-
-    A.drawLine(ctx,c,p,pal[i%pal.length],s,r);
-
-    if(r.chance((s.shapeAmount/150)*A.lerp(1,.55,crowd))){
-      var tier=i<hubCount?'hero':(i<hubCount*4?'medium':'small');
-      drawPlannedElement(ctx,{
-        tier:tier,x:p.x,y:p.y,
-        size:makeBaseSize(s,tier,r,c.territory,strategy),
-        rot:a,territory:c.territory
-      },i,s,r,pal,strategy);
+  if(variant==='SINGLE'){
+    var singleTarget=targets[A.hash(s.seed+'|burst-single-centre')%targets.length];
+    var centreMix=baseStrategy==='MONUMENT'?.34:.16;
+    hubs=[hub(
+      A.lerp(A.W*.5,singleTarget.x,centreMix),
+      A.lerp(A.H*.5,singleTarget.y,centreMix),
+      Math.min(A.W,A.H)*.72,
+      1
+    )];
+  }else if(variant==='TWIN'){
+    var diagonal=A.hash(s.seed+'|burst-twin-diagonal')%2;
+    var pair=diagonal===0?[targets[0],targets[3]]:[targets[1],targets[2]];
+    hubs=[
+      hub(pair[0].x,pair[0].y,Math.min(A.W,A.H)*.48,1),
+      hub(pair[1].x,pair[1].y,Math.min(A.W,A.H)*.48,1)
+    ];
+  }else if(variant==='TRIAD'){
+    for(var ti=0;ti<3;ti++){
+      hubs.push(hub(
+        distributed[ti].x,
+        distributed[ti].y,
+        Math.min(A.W,A.H)*.38,
+        ti===0?1.15:.92
+      ));
+    }
+  }else if(variant==='CROPPED'){
+    var edge=A.hash(s.seed+'|burst-crop-edge')%4;
+    var along=.28+(A.hash(s.seed+'|burst-crop-pos')%45)/100;
+    var cx=A.W*.5,cy=A.H*.5;
+    if(edge===0){cx=-A.W*.07;cy=A.H*along}
+    if(edge===1){cx=A.W*1.07;cy=A.H*along}
+    if(edge===2){cx=A.W*along;cy=-A.H*.07}
+    if(edge===3){cx=A.W*along;cy=A.H*1.07}
+    hubs=[hub(cx,cy,Math.min(A.W,A.H)*.96,1)];
+  }else if(variant==='VOID'){
+    var vc=voids.length
+      ?{x:voids[0].x+voids[0].w/2,y:voids[0].y+voids[0].h/2}
+      :{x:A.W*.5,y:A.H*.5};
+    var far=targets[0],farD=-1;
+    for(var ft=0;ft<targets.length;ft++){
+      var fdx=targets[ft].x-vc.x,fdy=targets[ft].y-vc.y;
+      var fd=fdx*fdx+fdy*fdy;
+      if(fd>farD){farD=fd;far=targets[ft]}
+    }
+    hubs=[hub(far.x,far.y,Math.min(A.W,A.H)*.58,1)];
+  }else{
+    var mainTarget=targets[A.hash(s.seed+'|burst-main-target')%targets.length];
+    hubs.push(hub(
+      mainTarget.x,
+      mainTarget.y,
+      Math.min(A.W,A.H)*.56,
+      1.7
+    ));
+    for(var si=0;si<3;si++){
+      var d=distributed[si];
+      hubs.push(hub(
+        d.x,
+        d.y,
+        Math.min(A.W,A.H)*.3,
+        .48
+      ));
     }
   }
 
-  return{strategy:strategy,voids:[]};
-}
+  function allocateCounts(total,items){
+    var n=items.length;
+    var alloc=new Array(n).fill(1);
+    var remaining=Math.max(0,total-n);
+    if(remaining===0)return alloc;
 
+    var totalWeight=0;
+    for(var i=0;i<n;i++)totalWeight+=items[i].weight;
+
+    var fractions=[],used=0;
+    for(var j=0;j<n;j++){
+      var raw=remaining*(items[j].weight/totalWeight);
+      var add=Math.floor(raw);
+      alloc[j]+=add;
+      used+=add;
+      fractions.push({i:j,f:raw-add});
+    }
+
+    fractions.sort(function(a,b){return b.f-a.f});
+    var left=remaining-used;
+    for(var k=0;k<left;k++)alloc[fractions[k%fractions.length].i]++;
+
+    return alloc;
+  }
+
+  var allocations=allocateCounts(s.elements,hubs);
+  var itemIndex=0;
+
+  function burstTier(local,count,hubIndex){
+    var heroA=Math.round((count-1)*A.INV);
+    var heroB=Math.round((count-1)*(1-A.INV));
+
+    if(local===0||local===heroA||local===heroB)return'hero';
+    if(local<Math.max(3,Math.round(count*.24)))return'medium';
+    if(variant==='SATELLITE'&&hubIndex===0&&local<Math.max(5,Math.round(count*.34)))return'medium';
+    return'small';
+  }
+
+  function burstRadius(local,count,h,hubIndex){
+    var t=(local+.7)/Math.max(1,count);
+    var exponent=.66;
+    var scale=1;
+
+    if(variant==='SINGLE'){exponent=.62;scale=1}
+    else if(variant==='TWIN'){exponent=.7;scale=.88}
+    else if(variant==='TRIAD'){exponent=.76;scale=.78}
+    else if(variant==='CROPPED'){exponent=.56;scale=1.12}
+    else if(variant==='VOID'){exponent=.68;scale=.94}
+    else if(variant==='SATELLITE'){
+      exponent=hubIndex===0?.62:.8;
+      scale=hubIndex===0?.95:.66;
+    }
+
+    var raw=Math.pow(t,exponent)*h.territory*scale;
+    return A.qphi(raw,28,s.phiStrength/100);
+  }
+
+  for(var hi=0;hi<hubs.length;hi++){
+    var h=hubs[hi];
+    var count=allocations[hi];
+    var startPhase=r.range(0,A.TAU);
+    var step=A.lerp(A.TAU/Math.max(1,count),A.GOLD,s.goldenAngle/100);
+
+    for(var local=0;local<count;local++){
+      var angle=startPhase+local*step;
+
+      if(variant==='TWIN'&&hi===1)angle+=Math.PI/A.PHI;
+      if(variant==='TRIAD')angle+=hi*(A.TAU/3);
+      if(variant==='SATELLITE'&&hi>0)angle+=hi*A.GOLD*.58;
+      if(variant==='CROPPED')angle+=Math.sin(local*A.INV)*.08;
+
+      var len=burstRadius(local,count,h,hi);
+      var px=h.x+Math.cos(angle)*len;
+      var py=h.y+Math.sin(angle)*len;
+
+      if(variant==='VOID'&&voids.length){
+        var tries=0;
+        while(pointInVoid(px,py,voids)&&tries<5){
+          angle+=A.GOLD*.72;
+          px=h.x+Math.cos(angle)*len;
+          py=h.y+Math.sin(angle)*len;
+          tries++;
+        }
+        if(pointInVoid(px,py,voids)){
+          itemIndex++;
+          continue;
+        }
+      }
+
+      var p={
+        x:A.clamp(px,24,A.W-24),
+        y:A.clamp(py,24,A.H-24)
+      };
+
+      var lineChance=A.lerp(.95,.7,crowd);
+      if(variant==='TRIAD')lineChance*=.88;
+      if(variant==='SATELLITE'&&hi>0)lineChance*=.74;
+      if(variant==='VOID')lineChance*=.9;
+
+      if(s.lines&&r.chance(lineChance)){
+        A.drawLine(ctx,{x:h.x,y:h.y},p,pal[itemIndex%pal.length],s,r);
+      }
+
+      var tier=burstTier(local,count,hi);
+      var shapeChance=(s.shapeAmount/100)*A.lerp(.92,.63,crowd);
+      if(tier==='hero')shapeChance=Math.min(1,shapeChance*1.24);
+
+      if(r.chance(shapeChance)){
+        drawPlannedElement(ctx,{
+          tier:tier,
+          x:p.x,
+          y:p.y,
+          size:makeBaseSize(s,tier,r,h.territory,baseStrategy),
+          rot:angle,
+          territory:h.territory
+        },itemIndex,s,r,pal,baseStrategy);
+      }
+
+      if(variant==='SATELLITE'&&hi===0&&local%Math.max(3,Math.round(count*.16))===0){
+        for(var sh=1;sh<hubs.length;sh++){
+          if(s.lines&&r.chance(.32)){
+            A.drawLine(ctx,p,hubs[sh],pal[(itemIndex+sh)%pal.length],s,r);
+          }
+        }
+      }
+
+      if(variant==='VOID'&&s.arcs&&r.chance((s.shapeAmount/100)*.14)){
+        A.arc(
+          ctx,
+          p,
+          Math.max(10,makeBaseSize(s,'small',r,120,baseStrategy)*.58),
+          angle,
+          A.TAU*A.INV,
+          pal[(itemIndex+2)%pal.length],
+          s,r
+        );
+      }
+
+      if(variant==='TRIAD'&&s.circles&&local===0){
+        var ring=Math.max(14,h.territory/A.PHI/A.PHI/A.PHI);
+        A.ellipse(
+          ctx,
+          {x:h.x,y:h.y},
+          ring,
+          ring/A.PHI,
+          startPhase,
+          pal[(itemIndex+1)%pal.length],
+          s,r
+        );
+      }
+
+      itemIndex++;
+    }
+  }
+
+  return{strategy:'BURST-'+variant,voids:voids};
+}
 function nearestNeighbours(layout,index,count){
   var a=layout[index],nearest=[];
   for(var i=0;i<layout.length;i++){
