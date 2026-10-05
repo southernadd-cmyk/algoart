@@ -33,11 +33,15 @@ document.querySelectorAll('.tab').forEach(function(btn){
   btn.addEventListener('click',function(){setTab(btn.dataset.tab)});
 });
 
+function inspectorStorageKey(){
+  return mobileQuery.matches?'algoart-inspector-mobile':'algoart-inspector-desktop';
+}
+
 function setInspector(open,remember){
   app.classList.toggle('inspector-closed',!open);
   $('inspectorToggle').setAttribute('aria-expanded',open?'true':'false');
   if(remember!==false){
-    try{localStorage.setItem('algoart-inspector',open?'open':'closed')}catch(e){}
+    try{localStorage.setItem(inspectorStorageKey(),open?'open':'closed')}catch(e){}
   }
 }
 
@@ -48,16 +52,33 @@ try{
   var savedTab=localStorage.getItem('algoart-tab');
   if(savedTab&&document.querySelector('[data-panel="'+savedTab+'"]'))setTab(savedTab);
 
-  var savedInspector=localStorage.getItem('algoart-inspector');
+  var savedInspector=localStorage.getItem(inspectorStorageKey());
   if(savedInspector==='closed'){
     setInspector(false,false);
   }else if(savedInspector==='open'){
     setInspector(true,false);
-  }else if(mobileQuery.matches){
-    setInspector(false,false);
+  }else{
+    setInspector(!mobileQuery.matches,false);
   }
 }catch(e){
-  if(mobileQuery.matches)setInspector(false,false);
+  setInspector(!mobileQuery.matches,false);
+}
+
+function applyResponsiveInspectorState(){
+  try{
+    var saved=localStorage.getItem(inspectorStorageKey());
+    if(saved==='open')setInspector(true,false);
+    else if(saved==='closed')setInspector(false,false);
+    else setInspector(!mobileQuery.matches,false);
+  }catch(e){
+    setInspector(!mobileQuery.matches,false);
+  }
+}
+
+if(mobileQuery.addEventListener){
+  mobileQuery.addEventListener('change',applyResponsiveInspectorState);
+}else if(mobileQuery.addListener){
+  mobileQuery.addListener(applyResponsiveInspectorState);
 }
 
 A.readSettings=function(){
@@ -79,8 +100,9 @@ A.readSettings=function(){
 
 function regenerate(){
   var s=A.readSettings();
-  A.render(canvas,s,1,showGeometry);
-  $('stats').textContent=s.mode+' / '+s.seed+' / φ '+s.phiStrength+'%';
+  var meta=A.render(canvas,s,1,showGeometry)||{};
+  var strategy=meta.strategy?(' / '+meta.strategy):'';
+  $('stats').textContent=s.mode+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%';
 }
 
 function newSeedValue(){
