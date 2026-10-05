@@ -17,6 +17,18 @@ var UNVERSIONED_FIELD_VERSION_BY_SEED={
 };
 A.rendererVersion=CURRENT_RENDERER_VERSION;
 
+function useCurrentRenderer(){
+  A.rendererVersion=CURRENT_RENDERER_VERSION;
+}
+
+function syncRendererChip(){
+  var chip=$('rendererChip');
+  if(!chip)return;
+  var legacy=A.rendererVersion<CURRENT_RENDERER_VERSION;
+  chip.hidden=!legacy;
+  chip.textContent=legacy?'LEGACY RENDERER V'+A.rendererVersion:'';
+}
+
 var SETTING_IDS=[
   'mode','elements','density','complexity','negativeSpace',
   'phiStrength','recursion','spiralInfluence','goldenAngle','nesting',
@@ -236,6 +248,7 @@ function scheduleModePreviews(){
 
 document.querySelectorAll('.mode-card').forEach(function(card){
   card.addEventListener('click',function(){
+    useCurrentRenderer();
     $('mode').value=card.dataset.mode;
     syncModeCards();
     regenerate();
@@ -249,7 +262,8 @@ function regenerate(){
   currentRenderMeta=meta;
   var strategy=meta.strategy?(' / '+meta.strategy):'';
   var series=SERIES[s.mode]||{code:s.mode.toUpperCase(),title:s.mode};
-  $('stats').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%';
+  $('statsText').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%';
+  syncRendererChip();
   syncModeCards();
   updateURL(s);
 }
@@ -260,6 +274,7 @@ function newSeedValue(){
 }
 
 $('newSeed').onclick=function(){
+  useCurrentRenderer();
   $('seed').value=newSeedValue();
   regenerate();
 };
@@ -267,11 +282,15 @@ $('newSeed').onclick=function(){
 $('seed').addEventListener('keydown',function(e){
   if(e.key==='Enter'){
     e.preventDefault();
+    useCurrentRenderer();
     regenerate();
     this.blur();
   }
 });
-$('seed').addEventListener('change',regenerate);
+$('seed').addEventListener('change',function(){
+  useCurrentRenderer();
+  regenerate();
+});
 
 function setGeometryVisible(open){
   showGeometry=!!open;
@@ -580,6 +599,7 @@ $('ethosReveal').onclick=function(){
 };
 
 $('mutate').onclick=function(){
+  useCurrentRenderer();
   var r=A.makeR($('seed').value+'mutate'+Date.now());
   var mutable=[
     'density','complexity','negativeSpace','phiStrength','spiralInfluence',
@@ -599,6 +619,7 @@ $('mutate').onclick=function(){
 };
 
 $('randomise').onclick=function(){
+  useCurrentRenderer();
   var r=A.makeR(newSeedValue());
 
   document.querySelectorAll('input[type=range]').forEach(function(e){
@@ -636,6 +657,7 @@ function renderVariations(){
 }
 
 function openVariations(){
+  useCurrentRenderer();
   variationBatch=0;
   $('variationsOverlay').hidden=false;
   renderVariations();
@@ -655,6 +677,7 @@ $('shuffleVariations').onclick=function(){
 document.querySelectorAll('.variation-card').forEach(function(card){
   card.addEventListener('click',function(){
     if(!card.dataset.seed)return;
+    useCurrentRenderer();
     $('seed').value=card.dataset.seed;
     closeVariations();
     regenerate();
@@ -715,6 +738,7 @@ $('copyLink').onclick=copyShareLink;
 document.querySelectorAll('.inspector input, .inspector select').forEach(function(e){
   e.addEventListener('change',function(){
     if(e.id==='exportScale')return;
+    useCurrentRenderer();
     regenerate();
     if(e.id==='palette'||e.id==='pen'||e.id==='phiStrength'||e.id==='complexity'){
       scheduleModePreviews();
