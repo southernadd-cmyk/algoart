@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#ece7d9" stroke-opacity=".06" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="#11110f"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <path d="M0 391H1200M742 0V630" stroke="#d9ff54" stroke-opacity=".18" stroke-width="2" stroke-dasharray="12 10"/>
+  <path d="M0 241H1200M458 0V630" stroke="#ff6138" stroke-opacity=".14" stroke-width="2" stroke-dasharray="12 10"/>
+  <circle cx="742" cy="391" r="140" fill="none" stroke="#2b59ff" stroke-width="8"/>
+  <circle cx="742" cy="391" r="86.5" fill="none" stroke="#ff6138" stroke-width="6"/>
+  <path d="M612 520C705 456 767 368 834 246C876 170 953 126 1047 118" fill="none" stroke="#d9ff54" stroke-width="12" stroke-linecap="round"/>
+  <path d="M602 505C699 448 762 362 824 252C868 176 945 133 1040 125" fill="none" stroke="#ece7d9" stroke-opacity=".45" stroke-width="3"/>
+  <rect x="64" y="62" width="70" height="70" fill="#2b59ff"/>
+  <text x="99" y="106" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#fff">01</text>
+  <text x="64" y="213" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="900" letter-spacing="-5" fill="#ece7d9">ALGO<tspan fill="#ff6138">/</tspan>ART</text>
+  <text x="67" y="268" font-family="'Courier New', monospace" font-size="18" font-weight="700" letter-spacing="3" fill="#d9ff54">GENERATIVE MARKER SYSTEM / φ</text>
+  <text x="67" y="358" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="900" fill="#ece7d9">MATHEMATICS SETS THE RULES.</text>
+  <text x="67" y="409" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="900" fill="#ece7d9">THE MARKER BREAKS THEM.</text>
+  <text x="67" y="475" font-family="'Courier New', monospace" font-size="20" fill="#b8b09f">φ composition · imperfect ink · seeded systems · SVG + PNG</text>
+  <text x="67" y="557" font-family="Georgia, 'Times New Roman', serif" font-size="88" font-weight="700" fill="#d9ff54">φ</text>
+  <path d="M104 560L159 505" stroke="#ff6138" stroke-width="10"/>
+  <text x="1090" y="568" text-anchor="end" font-family="'Courier New', monospace" font-size="16" fill="#746f63">1.6180339887 / 137.507764°</text>
+</svg>
