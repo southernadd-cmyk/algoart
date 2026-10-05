@@ -21,6 +21,12 @@ function useCurrentRenderer(){
   A.rendererVersion=CURRENT_RENDERER_VERSION;
 }
 
+function withRendererVersion(version,fn){
+  var previous=A.rendererVersion;
+  A.rendererVersion=version;
+  try{return fn()}finally{A.rendererVersion=previous}
+}
+
 function syncRendererChip(){
   var chip=$('rendererChip');
   if(!chip)return;
@@ -227,17 +233,19 @@ function syncModeCards(){
 
 function renderModePreviews(){
   var base=A.readSettings();
-  document.querySelectorAll('.mode-card').forEach(function(card){
-    var mode=card.dataset.mode;
-    var preview=Object.assign({},base,{
-      mode:mode,
-      seed:'SERIES-'+mode.toUpperCase(),
-      elements:Math.min(28,Math.max(16,base.elements)),
-      complexity:Math.min(72,base.complexity),
-      overdraw:Math.min(2,base.overdraw),
-      grain:0
+  withRendererVersion(CURRENT_RENDERER_VERSION,function(){
+    document.querySelectorAll('.mode-card').forEach(function(card){
+      var mode=card.dataset.mode;
+      var preview=Object.assign({},base,{
+        mode:mode,
+        seed:'SERIES-'+mode.toUpperCase(),
+        elements:Math.min(28,Math.max(16,base.elements)),
+        complexity:Math.min(72,base.complexity),
+        overdraw:Math.min(2,base.overdraw),
+        grain:0
+      });
+      A.render(card.querySelector('canvas'),preview,.1,false);
     });
-    A.render(card.querySelector('canvas'),preview,.1,false);
   });
 }
 
@@ -646,18 +654,19 @@ function renderVariations(){
   var base=A.readSettings();
   var cards=document.querySelectorAll('.variation-card');
 
-  cards.forEach(function(card,index){
-    var seed=variationSeed(base.seed,index,variationBatch);
-    var settings=Object.assign({},base,{seed:seed});
-    var preview=card.querySelector('canvas');
-    A.render(preview,settings,.28,false);
-    card.dataset.seed=seed;
-    card.querySelector('span').textContent='0'+(index+1)+' / '+seed;
+  withRendererVersion(CURRENT_RENDERER_VERSION,function(){
+    cards.forEach(function(card,index){
+      var seed=variationSeed(base.seed,index,variationBatch);
+      var settings=Object.assign({},base,{seed:seed});
+      var preview=card.querySelector('canvas');
+      A.render(preview,settings,.28,false);
+      card.dataset.seed=seed;
+      card.querySelector('span').textContent='0'+(index+1)+' / '+seed;
+    });
   });
 }
 
 function openVariations(){
-  useCurrentRenderer();
   variationBatch=0;
   $('variationsOverlay').hidden=false;
   renderVariations();
