@@ -133,6 +133,17 @@ button.active{background:var(--orange);color:var(--ink)}
   min-width:0;
 }
 .actions button{font-size:9px;padding:7px 8px}
+.actions .gallery-nav{
+  border:1px solid var(--ink);
+  color:var(--ink);
+  padding:7px 8px;
+  text-decoration:none;
+  text-transform:uppercase;
+  letter-spacing:.045em;
+  font-size:9px;
+  white-space:nowrap;
+}
+.actions .gallery-nav:hover{background:var(--blue);color:#fff}
 
 main{
   min-height:0;
