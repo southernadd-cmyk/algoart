@@ -32,6 +32,7 @@
       <button id="regenerate" class="primary">GENERATE</button>
       <button id="mutate">Mutate</button>
       <button id="randomise">Randomise</button>
+      <button id="variations">4-Up</button>
       <button id="geometry">φ Guides</button>
       <button id="save">Save PNG</button>
     </div>
@@ -61,9 +62,28 @@
         </div>
       </div>
 
+      <div class="variations-overlay" id="variationsOverlay" hidden>
+        <div class="variations-sheet" role="dialog" aria-modal="true" aria-labelledby="variationsTitle">
+          <div class="variations-head">
+            <div><span>03</span><div><strong id="variationsTitle">VARIATIONS</strong><small>same system / four deterministic seeds</small></div></div>
+            <button id="closeVariations" class="icon-btn" aria-label="Close variations">×</button>
+          </div>
+          <div class="variations-grid" id="variationsGrid">
+            <button class="variation-card" type="button" data-index="0"><canvas></canvas><span></span></button>
+            <button class="variation-card" type="button" data-index="1"><canvas></canvas><span></span></button>
+            <button class="variation-card" type="button" data-index="2"><canvas></canvas><span></span></button>
+            <button class="variation-card" type="button" data-index="3"><canvas></canvas><span></span></button>
+          </div>
+          <div class="variations-actions">
+            <button id="shuffleVariations">Shuffle 4</button>
+            <small>Tap an artwork to promote it to the main canvas.</small>
+          </div>
+        </div>
+      </div>
+
       <div class="stage-footer" aria-hidden="true">
         <span>1400 × 1000 / BROWSER CANVAS</span>
-        <span>G generate · M mutate · N seed · [ parameters</span>
+        <span>G generate · M mutate · N seed · V variations · [ parameters</span>
       </div>
     </div>
 
@@ -94,7 +114,20 @@
         <section class="tab-panel active" data-panel="composition">
           <div class="section-title"><span>COMPOSITION</span><b>φ-field</b></div>
           <div class="controls">
-            <div class="control"><label>Mode</label><select id="mode"><option value="field">Golden Field</option><option value="spiral">Golden Spiral</option><option value="rects">Recursive Rectangles</option><option value="burst">Fibonacci Burst</option><option value="network">Phi Network</option><option value="organic">Organic</option><option value="geometric">Geometric</option><option value="scribble">Controlled Scribble</option></select></div>
+            <div class="mode-picker-wrap">
+              <div class="mode-picker-label"><span>SERIES</span><b>choose a system</b></div>
+              <div class="mode-picker" id="modePicker">
+                <button class="mode-card active" type="button" data-mode="field"><canvas width="140" height="100"></canvas><span>FIELD</span><strong>Orbital Studies</strong></button>
+                <button class="mode-card" type="button" data-mode="spiral"><canvas width="140" height="100"></canvas><span>SPIRAL</span><strong>Golden Trajectories</strong></button>
+                <button class="mode-card" type="button" data-mode="rects"><canvas width="140" height="100"></canvas><span>RECTS</span><strong>Recursive Divisions</strong></button>
+                <button class="mode-card" type="button" data-mode="burst"><canvas width="140" height="100"></canvas><span>BURST</span><strong>Radiant Systems</strong></button>
+                <button class="mode-card" type="button" data-mode="network"><canvas width="140" height="100"></canvas><span>NETWORK</span><strong>Connected Fields</strong></button>
+                <button class="mode-card" type="button" data-mode="organic"><canvas width="140" height="100"></canvas><span>ORGANIC</span><strong>Growth Systems</strong></button>
+                <button class="mode-card" type="button" data-mode="geometric"><canvas width="140" height="100"></canvas><span>GEOMETRIC</span><strong>Constructed Forms</strong></button>
+                <button class="mode-card" type="button" data-mode="scribble"><canvas width="140" height="100"></canvas><span>SCRIBBLE</span><strong>Automatic Marks</strong></button>
+              </div>
+              <select id="mode" class="mode-select-fallback" aria-label="Algorithm series"><option value="field">Golden Field</option><option value="spiral">Golden Spiral</option><option value="rects">Recursive Rectangles</option><option value="burst">Fibonacci Burst</option><option value="network">Phi Network</option><option value="organic">Organic</option><option value="geometric">Geometric</option><option value="scribble">Controlled Scribble</option></select>
+            </div>
             <div class="control"><label>Elements</label><output></output><input id="elements" type="range" min="8" max="140" value="52"></div>
             <div class="control"><label>Density</label><output></output><input id="density" type="range" min="0" max="100" value="62"></div>
             <div class="control"><label>Complexity</label><output></output><input id="complexity" type="range" min="0" max="100" value="58"></div>
@@ -157,11 +190,14 @@
         </section>
 
         <section class="tab-panel" data-panel="export">
-          <div class="section-title"><span>OUTPUT</span><b>raster</b></div>
+          <div class="section-title"><span>OUTPUT</span><b>vector + raster</b></div>
           <div class="controls">
             <div class="control"><label>PNG scale</label><select id="exportScale"><option value="1">1× — 1400×1000</option><option value="2" selected>2× — 2800×2000</option><option value="3">3× — 4200×3000</option></select></div>
-            <button class="primary export-big" id="savePanel">SAVE ARTWORK</button>
-            <div class="mini-note">Same seed + same settings = same composition. Everything runs locally in your browser.</div>
+            <button class="primary export-big" id="savePanel">SAVE PNG</button>
+            <button class="export-big" id="saveSVG">SAVE SVG / VECTOR</button>
+            <button class="export-big" id="copyLink">COPY SHARE LINK</button>
+            <div class="share-status" id="shareStatus" aria-live="polite"></div>
+            <div class="mini-note">The URL stores the current seed and parameters, so opening the link recreates the same artwork. SVG exports clean vector marker paths; PNG keeps the paper grain.</div>
           </div>
         </section>
       </div>
