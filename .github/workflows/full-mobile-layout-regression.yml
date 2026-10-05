@@ -84,6 +84,7 @@ jobs:
                   rect('.seed'),
                   rect('#regenerate'),
                   rect('#variations'),
+                  rect('#geometry'),
                   rect('.gallery-nav'),
                   rect('.canvas-shell'),
                   rect('.canvas-wrap'),
@@ -106,6 +107,30 @@ jobs:
               if(item.left < -1 || item.right > base.innerWidth+1){
                 throw new Error(`${size.width}px horizontal clipping: ${JSON.stringify(item)}`);
               }
+            }
+
+            const geometryButton=base.items.find(x=>x.selector==='#geometry');
+            if(!geometryButton||geometryButton.display==='none'||geometryButton.width<40){
+              throw new Error(`${size.width}px Reveal control is not visibly usable`);
+            }
+
+            await page.click('#geometry');
+            const revealOn=await page.evaluate(()=>({
+              text:document.getElementById('geometry').textContent.trim(),
+              active:document.getElementById('geometry').classList.contains('active'),
+              reveal:document.querySelector('.canvas-wrap').classList.contains('reveal-active')
+            }));
+            if(!revealOn.active||!revealOn.reveal||!/^Hide/.test(revealOn.text)){
+              throw new Error(`${size.width}px Reveal could not be switched on: ${JSON.stringify(revealOn)}`);
+            }
+            await page.click('#geometry');
+            const revealOff=await page.evaluate(()=>({
+              text:document.getElementById('geometry').textContent.trim(),
+              active:document.getElementById('geometry').classList.contains('active'),
+              reveal:document.querySelector('.canvas-wrap').classList.contains('reveal-active')
+            }));
+            if(revealOff.active||revealOff.reveal||!/^Reveal/.test(revealOff.text)){
+              throw new Error(`${size.width}px Reveal could not be switched off: ${JSON.stringify(revealOff)}`);
             }
 
             const canvas=base.items.find(x=>x.selector==='.canvas-wrap');
