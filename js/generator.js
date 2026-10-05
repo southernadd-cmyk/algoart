@@ -329,7 +329,7 @@ function reinforceFieldRelationships(layout,s,strategy){
   return layout;
 }
 
-function fieldRelationshipScore(layout,s){
+function fieldRelationshipScore(layout,s,strategy){
   var heroes=layout.filter(function(o){return o.tier==='hero'});
   if(!heroes.length)return 0;
 
@@ -349,7 +349,11 @@ function fieldRelationshipScore(layout,s){
     var quant=A.qphi(best,34,1);
     var distanceFit=1-A.clamp(Math.abs(best-quant)/Math.max(1,quant),0,1);
     var radial=Math.atan2(item.y-nearest.y,item.x-nearest.x);
-    var delta=Math.abs(Math.atan2(Math.sin(item.rot-radial),Math.cos(item.rot-radial)));
+    var targetRot=radial;
+    if(strategy==='ORBIT')targetRot=radial+Math.PI/2;
+    else if(strategy==='DIAGONAL')targetRot=(A.hash(s.seed+'|diag')%2)===1?-Math.PI/4:Math.PI/4;
+    else if(strategy==='MONUMENT')targetRot=nearest.rot;
+    var delta=Math.abs(Math.atan2(Math.sin(item.rot-targetRot),Math.cos(item.rot-targetRot)));
     var alignment=1-A.clamp(delta/Math.PI,0,1);
     var weight=item.tier==='medium'?1.45:.7;
 
@@ -485,7 +489,7 @@ function chooseBestLayout(s){
   for(var i=0;i<candidates;i++){
     var layout=makeLayoutPlan(s,i,strategy,voids);
     layout=reinforceFieldRelationships(layout,s,strategy);
-    var score=scoreLayout(layout,s,strategy,voids)+fieldRelationshipScore(layout,s);
+    var score=scoreLayout(layout,s,strategy,voids)+fieldRelationshipScore(layout,s,strategy);
     if(score>bestScore){
       bestScore=score;
       best=layout;
