@@ -7,16 +7,16 @@ export const ACCOUNTS = {
   threads: '@artalgorithm'
 };
 
-export const DAILY_COUNT = 10;
+export const DAILY_COUNT = 5;
 
 export const SCHEDULE = {
   instagram: ['09:00', '15:00', '20:30'],
-  threads: ['08:15', '11:30', '14:30', '18:00', '21:00']
+  threads: ['09:00', '15:00', '20:30']
 };
 
 export const PLATFORM_SLOTS = {
-  instagram: [0, 4, 8],
-  threads: [1, 3, 5, 7, 9]
+  instagram: [0, 2, 4],
+  threads: [0, 2, 4]
 };
 
 export const MODES = [
