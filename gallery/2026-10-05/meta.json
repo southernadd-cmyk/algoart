@@ -20,7 +20,7 @@
       "mode": "organic",
       "series": "Growth Systems",
       "imageFile": "2026-10-05-01-organic-AA-20261005-01-17577.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?seed=AA-20261005-01-17577&mode=organic&el=39&den=52&cx=51&neg=38&phi=92&rec=8&spi=49&ga=92&nest=43&pen=paint&th=12&wob=46&od=6&op=74&pr=42&dry=31&curve=74&shape=74&overlap=52&rot=71&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=5&sat=73&bri=48&paper=%23f5f0e6&grain=15",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=2&seed=AA-20261005-01-17577&mode=organic&el=39&den=52&cx=51&neg=38&phi=92&rec=8&spi=49&ga=92&nest=43&pen=paint&th=12&wob=46&od=6&op=74&pr=42&dry=31&curve=74&shape=74&overlap=52&rot=71&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=5&sat=73&bri=48&paper=%23f5f0e6&grain=15",
       "settings": {
         "mode": "organic",
         "series": "Growth Systems",
@@ -57,7 +57,8 @@
         "paper": "#f5f0e6",
         "grain": 15
       },
-      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Growth Systems system. Generated from seed AA-20261005-01-17577 using golden-ratio composition rules and imperfect paint marker strokes."
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Growth Systems system. Generated from seed AA-20261005-01-17577 using golden-ratio composition rules and imperfect paint marker strokes.",
+      "rendererVersion": 2
     },
     {
       "id": "2026-10-05-02",
@@ -66,7 +67,7 @@
       "mode": "geometric",
       "series": "Constructed Forms",
       "imageFile": "2026-10-05-02-geometric-AA-20261005-02-35988.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?seed=AA-20261005-02-35988&mode=geometric&el=33&den=61&cx=67&neg=37&phi=98&rec=4&spi=32&ga=89&nest=58&pen=paint&th=11&wob=31&od=3&op=85&pr=47&dry=11&curve=2&shape=50&overlap=32&rot=61&ln=1&ci=1&re=1&po=1&ar=1&pal=cmyk&cols=4&sat=82&bri=59&paper=%23ece5d5&grain=20",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=2&seed=AA-20261005-02-35988&mode=geometric&el=33&den=61&cx=67&neg=37&phi=98&rec=4&spi=32&ga=89&nest=58&pen=paint&th=11&wob=31&od=3&op=85&pr=47&dry=11&curve=2&shape=50&overlap=32&rot=61&ln=1&ci=1&re=1&po=1&ar=1&pal=cmyk&cols=4&sat=82&bri=59&paper=%23ece5d5&grain=20",
       "settings": {
         "mode": "geometric",
         "series": "Constructed Forms",
@@ -103,7 +104,8 @@
         "paper": "#ece5d5",
         "grain": 20
       },
-      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Constructed Forms system. Generated from seed AA-20261005-02-35988 using golden-ratio composition rules and imperfect paint marker strokes."
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Constructed Forms system. Generated from seed AA-20261005-02-35988 using golden-ratio composition rules and imperfect paint marker strokes.",
+      "rendererVersion": 2
     },
     {
       "id": "2026-10-05-03",
@@ -112,7 +114,7 @@
       "mode": "scribble",
       "series": "Automatic Marks",
       "imageFile": "2026-10-05-03-scribble-AA-20261005-03-81935.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?seed=AA-20261005-03-81935&mode=scribble&el=42&den=58&cx=77&neg=21&phi=84&rec=4&spi=57&ga=89&nest=33&pen=fine&th=13&wob=32&od=6&op=83&pr=60&dry=9&curve=79&shape=49&overlap=66&rot=67&ln=1&ci=1&re=1&po=1&ar=1&pal=mono&cols=8&sat=93&bri=59&paper=%23f0eadc&grain=12",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=2&seed=AA-20261005-03-81935&mode=scribble&el=42&den=58&cx=77&neg=21&phi=84&rec=4&spi=57&ga=89&nest=33&pen=fine&th=13&wob=32&od=6&op=83&pr=60&dry=9&curve=79&shape=49&overlap=66&rot=67&ln=1&ci=1&re=1&po=1&ar=1&pal=mono&cols=8&sat=93&bri=59&paper=%23f0eadc&grain=12",
       "settings": {
         "mode": "scribble",
         "series": "Automatic Marks",
@@ -149,7 +151,8 @@
         "paper": "#f0eadc",
         "grain": 12
       },
-      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Automatic Marks system. Generated from seed AA-20261005-03-81935 using golden-ratio composition rules and imperfect fine marker strokes."
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Automatic Marks system. Generated from seed AA-20261005-03-81935 using golden-ratio composition rules and imperfect fine marker strokes.",
+      "rendererVersion": 2
     },
     {
       "id": "2026-10-05-04",
@@ -158,7 +161,7 @@
       "mode": "field",
       "series": "Orbital Studies",
       "imageFile": "2026-10-05-04-field-AA-20261005-04-72522.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?seed=AA-20261005-04-72522&mode=field&el=43&den=46&cx=63&neg=30&phi=97&rec=6&spi=54&ga=86&nest=26&pen=broad&th=9&wob=22&od=5&op=87&pr=42&dry=18&curve=47&shape=54&overlap=43&rot=81&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=4&sat=76&bri=49&paper=%23f7f1e7&grain=20",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=2&seed=AA-20261005-04-72522&mode=field&el=43&den=46&cx=63&neg=30&phi=97&rec=6&spi=54&ga=86&nest=26&pen=broad&th=9&wob=22&od=5&op=87&pr=42&dry=18&curve=47&shape=54&overlap=43&rot=81&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=4&sat=76&bri=49&paper=%23f7f1e7&grain=20",
       "settings": {
         "mode": "field",
         "series": "Orbital Studies",
@@ -195,7 +198,8 @@
         "paper": "#f7f1e7",
         "grain": 20
       },
-      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Orbital Studies system. Generated from seed AA-20261005-04-72522 using golden-ratio composition rules and imperfect broad marker strokes."
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Orbital Studies system. Generated from seed AA-20261005-04-72522 using golden-ratio composition rules and imperfect broad marker strokes.",
+      "rendererVersion": 2
     },
     {
       "id": "2026-10-05-05",
@@ -204,7 +208,7 @@
       "mode": "spiral",
       "series": "Golden Trajectories",
       "imageFile": "2026-10-05-05-spiral-AA-20261005-05-73981.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?seed=AA-20261005-05-73981&mode=spiral&el=46&den=51&cx=69&neg=37&phi=89&rec=6&spi=92&ga=87&nest=54&pen=broad&th=9&wob=58&od=2&op=68&pr=40&dry=20&curve=60&shape=50&overlap=51&rot=76&ln=1&ci=1&re=1&po=1&ar=1&pal=mono&cols=6&sat=72&bri=58&paper=%23f7f1e7&grain=15",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=2&seed=AA-20261005-05-73981&mode=spiral&el=46&den=51&cx=69&neg=37&phi=89&rec=6&spi=92&ga=87&nest=54&pen=broad&th=9&wob=58&od=2&op=68&pr=40&dry=20&curve=60&shape=50&overlap=51&rot=76&ln=1&ci=1&re=1&po=1&ar=1&pal=mono&cols=6&sat=72&bri=58&paper=%23f7f1e7&grain=15",
       "settings": {
         "mode": "spiral",
         "series": "Golden Trajectories",
@@ -241,7 +245,8 @@
         "paper": "#f7f1e7",
         "grain": 15
       },
-      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Golden Trajectories system. Generated from seed AA-20261005-05-73981 using golden-ratio composition rules and imperfect broad marker strokes."
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Golden Trajectories system. Generated from seed AA-20261005-05-73981 using golden-ratio composition rules and imperfect broad marker strokes.",
+      "rendererVersion": 2
     },
     {
       "id": "2026-10-05-06",
@@ -250,7 +255,7 @@
       "mode": "rects",
       "series": "Recursive Divisions",
       "imageFile": "2026-10-05-06-rects-AA-20261005-06-49880.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?seed=AA-20261005-06-49880&mode=rects&el=45&den=58&cx=62&neg=19&phi=91&rec=6&spi=17&ga=97&nest=24&pen=dry&th=8&wob=57&od=5&op=78&pr=28&dry=28&curve=11&shape=53&overlap=29&rot=77&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=7&sat=84&bri=44&paper=%23ece5d5&grain=26",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=2&seed=AA-20261005-06-49880&mode=rects&el=45&den=58&cx=62&neg=19&phi=91&rec=6&spi=17&ga=97&nest=24&pen=dry&th=8&wob=57&od=5&op=78&pr=28&dry=28&curve=11&shape=53&overlap=29&rot=77&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=7&sat=84&bri=44&paper=%23ece5d5&grain=26",
       "settings": {
         "mode": "rects",
         "series": "Recursive Divisions",
@@ -287,7 +292,8 @@
         "paper": "#ece5d5",
         "grain": 26
       },
-      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Recursive Divisions system. Generated from seed AA-20261005-06-49880 using golden-ratio composition rules and imperfect dry marker strokes."
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Recursive Divisions system. Generated from seed AA-20261005-06-49880 using golden-ratio composition rules and imperfect dry marker strokes.",
+      "rendererVersion": 2
     },
     {
       "id": "2026-10-05-07",
@@ -296,7 +302,7 @@
       "mode": "burst",
       "series": "Radiant Systems",
       "imageFile": "2026-10-05-07-burst-AA-20261005-07-29171.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?seed=AA-20261005-07-29171&mode=burst&el=50&den=59&cx=70&neg=21&phi=84&rec=5&spi=49&ga=94&nest=56&pen=scribble&th=12&wob=45&od=4&op=77&pr=50&dry=36&curve=39&shape=65&overlap=37&rot=83&ln=1&ci=1&re=1&po=1&ar=1&pal=pastel&cols=9&sat=89&bri=47&paper=%23f3eee4&grain=28",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=2&seed=AA-20261005-07-29171&mode=burst&el=50&den=59&cx=70&neg=21&phi=84&rec=5&spi=49&ga=94&nest=56&pen=scribble&th=12&wob=45&od=4&op=77&pr=50&dry=36&curve=39&shape=65&overlap=37&rot=83&ln=1&ci=1&re=1&po=1&ar=1&pal=pastel&cols=9&sat=89&bri=47&paper=%23f3eee4&grain=28",
       "settings": {
         "mode": "burst",
         "series": "Radiant Systems",
@@ -333,7 +339,8 @@
         "paper": "#f3eee4",
         "grain": 28
       },
-      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Radiant Systems system. Generated from seed AA-20261005-07-29171 using golden-ratio composition rules and imperfect scribble marker strokes."
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Radiant Systems system. Generated from seed AA-20261005-07-29171 using golden-ratio composition rules and imperfect scribble marker strokes.",
+      "rendererVersion": 2
     },
     {
       "id": "2026-10-05-08",
@@ -342,7 +349,7 @@
       "mode": "network",
       "series": "Connected Fields",
       "imageFile": "2026-10-05-08-network-AA-20261005-08-16798.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?seed=AA-20261005-08-16798&mode=network&el=46&den=63&cx=66&neg=38&phi=95&rec=6&spi=39&ga=93&nest=30&pen=broad&th=9&wob=32&od=6&op=79&pr=66&dry=17&curve=36&shape=75&overlap=47&rot=59&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=6&sat=75&bri=53&paper=%23f5f0e6&grain=16",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=2&seed=AA-20261005-08-16798&mode=network&el=46&den=63&cx=66&neg=38&phi=95&rec=6&spi=39&ga=93&nest=30&pen=broad&th=9&wob=32&od=6&op=79&pr=66&dry=17&curve=36&shape=75&overlap=47&rot=59&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=6&sat=75&bri=53&paper=%23f5f0e6&grain=16",
       "settings": {
         "mode": "network",
         "series": "Connected Fields",
@@ -379,7 +386,8 @@
         "paper": "#f5f0e6",
         "grain": 16
       },
-      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Connected Fields system. Generated from seed AA-20261005-08-16798 using golden-ratio composition rules and imperfect broad marker strokes."
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Connected Fields system. Generated from seed AA-20261005-08-16798 using golden-ratio composition rules and imperfect broad marker strokes.",
+      "rendererVersion": 2
     },
     {
       "id": "2026-10-05-09",
@@ -388,7 +396,7 @@
       "mode": "organic",
       "series": "Growth Systems",
       "imageFile": "2026-10-05-09-organic-AA-20261005-09-34673.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?seed=AA-20261005-09-34673&mode=organic&el=40&den=56&cx=61&neg=25&phi=84&rec=7&spi=58&ga=90&nest=46&pen=felt&th=11&wob=44&od=2&op=79&pr=56&dry=20&curve=90&shape=55&overlap=41&rot=76&ln=1&ci=1&re=1&po=1&ar=1&pal=cmyk&cols=10&sat=88&bri=61&paper=%23f7f1e7&grain=17",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=2&seed=AA-20261005-09-34673&mode=organic&el=40&den=56&cx=61&neg=25&phi=84&rec=7&spi=58&ga=90&nest=46&pen=felt&th=11&wob=44&od=2&op=79&pr=56&dry=20&curve=90&shape=55&overlap=41&rot=76&ln=1&ci=1&re=1&po=1&ar=1&pal=cmyk&cols=10&sat=88&bri=61&paper=%23f7f1e7&grain=17",
       "settings": {
         "mode": "organic",
         "series": "Growth Systems",
@@ -425,7 +433,8 @@
         "paper": "#f7f1e7",
         "grain": 17
       },
-      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Growth Systems system. Generated from seed AA-20261005-09-34673 using golden-ratio composition rules and imperfect felt marker strokes."
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Growth Systems system. Generated from seed AA-20261005-09-34673 using golden-ratio composition rules and imperfect felt marker strokes.",
+      "rendererVersion": 2
     }
   ]
 }
