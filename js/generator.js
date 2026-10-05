@@ -256,6 +256,111 @@ function makeLayoutPlan(s,seedSuffix,strategy,voids){
   return placed;
 }
 
+function nearestHeroIndex(layout,index){
+  var item=layout[index],best=-1,bestDist=Infinity;
+  for(var i=0;i<layout.length;i++){
+    if(layout[i].tier!=='hero')continue;
+    var dx=item.x-layout[i].x,dy=item.y-layout[i].y;
+    var d=dx*dx+dy*dy;
+    if(d<bestDist){bestDist=d;best=i}
+  }
+  return best;
+}
+
+function reinforceFieldRelationships(layout,s,strategy){
+  if(!layout.length)return layout;
+
+  var heroIndices=[];
+  for(var h=0;h<layout.length;h++){
+    layout[h]._fieldIndex=h;
+    if(layout[h].tier==='hero')heroIndices.push(h);
+  }
+  if(!heroIndices.length)return layout;
+
+  var relationR=A.makeR(s.seed+'|field-relationships|'+strategy);
+
+  for(var i=0;i<layout.length;i++){
+    var item=layout[i];
+
+    if(item.tier==='hero'){
+      item.family=heroIndices.indexOf(i);
+      item.colourIndex=item.family;
+      item.relationStrength=1;
+      continue;
+    }
+
+    var heroIndex=nearestHeroIndex(layout,i);
+    if(heroIndex<0)continue;
+
+    var hero=layout[heroIndex];
+    var family=heroIndices.indexOf(heroIndex);
+    var dx=item.x-hero.x,dy=item.y-hero.y;
+    var distance=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+    var radial=Math.atan2(dy,dx);
+    var desired=A.qphi(distance,34,1);
+    var snap=item.tier==='medium'?.2:.12;
+
+    if(strategy==='ORBIT')snap*=1.35;
+    if(strategy==='MONUMENT')snap*=.75;
+    if(strategy==='EDGE')snap*=.7;
+
+    if(relationR.chance(item.tier==='medium'?.72:.48)){
+      var adjusted=A.lerp(distance,desired,snap);
+      item.x=A.clamp(hero.x+Math.cos(radial)*adjusted,28,A.W-28);
+      item.y=A.clamp(hero.y+Math.sin(radial)*adjusted,28,A.H-28);
+    }
+
+    var targetRot=radial;
+    if(strategy==='ORBIT')targetRot=radial+Math.PI/2;
+    else if(strategy==='DIAGONAL')targetRot=(A.hash(s.seed+'|diag')%2)===1?-Math.PI/4:Math.PI/4;
+    else if(strategy==='MONUMENT')targetRot=hero.rot;
+
+    var align=item.tier==='medium'?.46:.26;
+    if(strategy==='ORBIT'||strategy==='DIAGONAL')align+=.14;
+    item.rot=A.lerp(item.rot,targetRot,align);
+
+    item.family=Math.max(0,family);
+    item.colourIndex=item.tier==='medium'
+      ?item.family
+      :(item.family+(relationR.chance(.72)?0:1));
+    item.relationStrength=item.tier==='medium'?.78:.48;
+  }
+
+  return layout;
+}
+
+function fieldRelationshipScore(layout,s){
+  var heroes=layout.filter(function(o){return o.tier==='hero'});
+  if(!heroes.length)return 0;
+
+  var score=0,count=0;
+  for(var i=0;i<layout.length;i++){
+    var item=layout[i];
+    if(item.tier==='hero')continue;
+
+    var nearest=null,best=Infinity;
+    for(var h=0;h<heroes.length;h++){
+      var dx=item.x-heroes[h].x,dy=item.y-heroes[h].y;
+      var d=Math.sqrt(dx*dx+dy*dy);
+      if(d<best){best=d;nearest=heroes[h]}
+    }
+    if(!nearest)continue;
+
+    var quant=A.qphi(best,34,1);
+    var distanceFit=1-A.clamp(Math.abs(best-quant)/Math.max(1,quant),0,1);
+    var radial=Math.atan2(item.y-nearest.y,item.x-nearest.x);
+    var delta=Math.abs(Math.atan2(Math.sin(item.rot-radial),Math.cos(item.rot-radial)));
+    var alignment=1-A.clamp(delta/Math.PI,0,1);
+    var weight=item.tier==='medium'?1.45:.7;
+
+    score+=(distanceFit*1.8+alignment*.9)*weight;
+    count+=weight;
+  }
+
+  if(!count)return 0;
+  return score/count*34*(.45+s.phiStrength/180);
+}
+
 function visualWeight(obj,s){
   var tier=obj.tier==='hero'?1.35:(obj.tier==='medium'?1:.72);
   return obj.size*obj.size*tier*(.55+s.thickness/34)*(.45+s.opacity/150);
@@ -379,7 +484,8 @@ function chooseBestLayout(s){
 
   for(var i=0;i<candidates;i++){
     var layout=makeLayoutPlan(s,i,strategy,voids);
-    var score=scoreLayout(layout,s,strategy,voids);
+    layout=reinforceFieldRelationships(layout,s,strategy);
+    var score=scoreLayout(layout,s,strategy,voids)+fieldRelationshipScore(layout,s);
     if(score>bestScore){
       bestScore=score;
       best=layout;
@@ -394,21 +500,26 @@ function drawPlannedElement(ctx,plan,i,s,r,pal,strategy){
   var c={x:plan.x,y:plan.y};
   var size=plan.size;
   var rot=plan.rot;
-  var col=pal[i%pal.length];
+  var colourIndex=Number.isInteger(plan.colourIndex)?plan.colourIndex:i;
+  var col=pal[((colourIndex%pal.length)+pal.length)%pal.length];
   var ratio=A.lerp(r.range(.65,1.68),A.PHI,s.phiStrength/100);
+  var tierFactor=plan.tier==='hero'?1.62:(plan.tier==='small'?.76:1);
+  var drawSettings=Object.assign({},s,{
+    thickness:A.clamp(Math.round(s.thickness*tierFactor),1,28)
+  });
 
   if(sh==='line'){
     var a={x:c.x-Math.cos(rot)*size/2,y:c.y-Math.sin(rot)*size/2};
     var b={x:c.x+Math.cos(rot)*size/2,y:c.y+Math.sin(rot)*size/2};
-    A.drawLine(ctx,a,b,col,s,r);
+    A.drawLine(ctx,a,b,col,drawSettings,r);
   }else if(sh==='circle'){
-    A.ellipse(ctx,c,size/2,size/(2*ratio),rot,col,s,r);
+    A.ellipse(ctx,c,size/2,size/(2*ratio),rot,col,drawSettings,r);
   }else if(sh==='rect'){
-    A.rect(ctx,c,size,size/ratio,rot,col,s,r);
+    A.rect(ctx,c,size,size/ratio,rot,col,drawSettings,r);
   }else if(sh==='poly'){
-    A.poly(ctx,c,size/2,r.pick([3,5,8]),rot,col,s,r);
+    A.poly(ctx,c,size/2,r.pick([3,5,8]),rot,col,drawSettings,r);
   }else{
-    A.arc(ctx,c,size/2,rot,A.TAU*r.pick([A.INV,1-A.INV,.5,.75]),col,s,r);
+    A.arc(ctx,c,size/2,rot,A.TAU*r.pick([A.INV,1-A.INV,.5,.75]),col,drawSettings,r);
   }
 
   var nest=(s.nesting/160)*A.lerp(1,.65,crowdFactor(s));
@@ -416,22 +527,33 @@ function drawPlannedElement(ctx,plan,i,s,r,pal,strategy){
   if(plan.tier==='small')nest*=.66;
 
   if(r.chance(nest)){
-    var nc=pal[(i+1)%pal.length],n=size/A.PHI;
+    var nestedIndex=Number.isInteger(plan.colourIndex)?plan.colourIndex+1:i+1;
+    var nc=pal[((nestedIndex%pal.length)+pal.length)%pal.length],n=size/A.PHI;
     if(sh==='rect'){
-      A.rect(ctx,c,n,n/A.PHI,rot+A.GOLD,nc,s,r);
+      A.rect(ctx,c,n,n/A.PHI,rot+A.GOLD,nc,drawSettings,r);
     }else if(sh==='circle'){
-      A.ellipse(ctx,c,n/2,n/(2*A.PHI),rot+A.GOLD,nc,s,r);
+      A.ellipse(ctx,c,n/2,n/(2*A.PHI),rot+A.GOLD,nc,drawSettings,r);
     }else if(sh==='poly'){
-      A.poly(ctx,c,n/2,5,rot+A.GOLD,nc,s,r);
+      A.poly(ctx,c,n/2,5,rot+A.GOLD,nc,drawSettings,r);
     }
   }
 }
 
 function drawField(ctx,s,r,pal){
   var result=chooseBestLayout(s);
-  for(var i=0;i<result.layout.length;i++){
-    drawPlannedElement(ctx,result.layout[i],i,s,r,pal,result.strategy);
+  var tierRank={small:0,medium:1,hero:2};
+  var ordered=result.layout.slice().sort(function(a,b){
+    var tierDelta=tierRank[a.tier]-tierRank[b.tier];
+    if(tierDelta)return tierDelta;
+    return (a._fieldIndex||0)-(b._fieldIndex||0);
+  });
+
+  for(var i=0;i<ordered.length;i++){
+    var plan=ordered[i];
+    var localR=A.makeR(s.seed+'|field-draw|'+result.strategy+'|'+plan._fieldIndex);
+    drawPlannedElement(ctx,plan,plan._fieldIndex,s,localR,pal,result.strategy);
   }
+
   result.guide={type:'layout',layout:result.layout};
   return result;
 }
