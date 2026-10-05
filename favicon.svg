@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="7" fill="#11110f"/>
+  <path d="M16 48L48 16" stroke="#ff6138" stroke-width="6" stroke-linecap="square"/>
+  <text x="31" y="44" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#d9ff54">φ</text>
+  <path d="M8 12h10M13 7v10M46 52h10M51 47v10" stroke="#ece7d9" stroke-width="2" opacity=".9"/>
+</svg>
