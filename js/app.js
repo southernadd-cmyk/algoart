@@ -765,10 +765,39 @@ window.addEventListener('keydown',function(e){
   if(e.key==='[')setInspector(app.classList.contains('inspector-closed'),true);
 });
 
-loadSettingsFromURL();
+var loadedFromURL=loadSettingsFromURL();
+
+function loadLatestGalleryDefault(){
+  if(loadedFromURL)return Promise.resolve(false);
+  return fetch('gallery/archive.json',{cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('archive');return r.json();})
+    .then(function(archive){
+      var days=Array.isArray(archive.days)?archive.days.slice():[];
+      days.sort(function(a,b){return String(b.date).localeCompare(String(a.date));});
+      if(!days.length)return false;
+      return fetch('gallery/'+days[0].date+'/meta.json',{cache:'no-store'})
+        .then(function(r){if(!r.ok)throw new Error('meta');return r.json();})
+        .then(function(meta){
+          var entries=Array.isArray(meta.entries)?meta.entries:[];
+          var latest=entries[entries.length-1];
+          if(!latest||!latest.settings)return false;
+          A.rendererVersion=Number(latest.rendererVersion)||CURRENT_RENDERER_VERSION;
+          applySettings(Object.assign({},latest.settings,{seed:latest.seed}));
+          return true;
+        });
+    })
+    .catch(function(){return false;});
+}
+
 syncModeCards();
 regenerate();
-setTimeout(renderModePreviews,40);
+loadLatestGalleryDefault().then(function(changed){
+  if(changed){
+    syncModeCards();
+    regenerate();
+  }
+  setTimeout(renderModePreviews,40);
+});
 setTimeout(showEthosIfNeeded,260);
 
 })(window.AlgoArt);
