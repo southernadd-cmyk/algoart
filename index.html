@@ -37,7 +37,7 @@
 
     <div class="seed">
       <span class="toolbar-label">SEED</span>
-      <input id="seed" value="PHI-1618" aria-label="Seed">
+      <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
       <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
     </div>
 
@@ -151,23 +151,23 @@
                 <button class="mode-card" type="button" data-mode="geometric"><canvas width="140" height="100"></canvas><span>GEOMETRIC</span><strong>Constructed Forms</strong></button>
                 <button class="mode-card" type="button" data-mode="scribble"><canvas width="140" height="100"></canvas><span>SCRIBBLE</span><strong>Automatic Marks</strong></button>
               </div>
-              <select id="mode" class="mode-select-fallback" aria-label="Algorithm series"><option value="field">Golden Field</option><option value="spiral">Golden Spiral</option><option value="rects" selected>Recursive Rectangles</option><option value="burst">Fibonacci Burst</option><option value="network">Phi Network</option><option value="organic">Organic</option><option value="geometric">Geometric</option><option value="scribble">Controlled Scribble</option></select>
+              <select id="mode" class="mode-select-fallback" aria-label="Algorithm series"><option value="field">Golden Field</option><option value="spiral">Golden Spiral</option><option value="rects">Recursive Rectangles</option><option value="burst">Fibonacci Burst</option><option value="network">Phi Network</option><option value="organic" selected>Organic</option><option value="geometric">Geometric</option><option value="scribble">Controlled Scribble</option></select>
             </div>
-            <div class="control"><label>Elements</label><output></output><input id="elements" type="range" min="8" max="140" value="52"></div>
-            <div class="control"><label>Density</label><output></output><input id="density" type="range" min="0" max="100" value="62"></div>
-            <div class="control"><label>Complexity</label><output></output><input id="complexity" type="range" min="0" max="100" value="58"></div>
-            <div class="control"><label>Negative space</label><output></output><input id="negativeSpace" type="range" min="0" max="100" value="24"></div>
+            <div class="control"><label>Elements</label><output></output><input id="elements" type="range" min="8" max="140" value="36"></div>
+            <div class="control"><label>Density</label><output></output><input id="density" type="range" min="0" max="100" value="53"></div>
+            <div class="control"><label>Complexity</label><output></output><input id="complexity" type="range" min="0" max="100" value="71"></div>
+            <div class="control"><label>Negative space</label><output></output><input id="negativeSpace" type="range" min="0" max="100" value="41"></div>
           </div>
         </section>
 
         <section class="tab-panel" data-panel="phi">
           <div class="section-title"><span>GOLDEN RATIO</span><b>1.618…</b></div>
           <div class="controls">
-            <div class="control"><label>φ adherence</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="94"></div>
-            <div class="control"><label>Recursion</label><output></output><input id="recursion" type="range" min="1" max="9" value="5"></div>
-            <div class="control"><label>Spiral influence</label><output></output><input id="spiralInfluence" type="range" min="0" max="100" value="65"></div>
-            <div class="control"><label>Golden angle</label><output></output><input id="goldenAngle" type="range" min="0" max="100" value="100"></div>
-            <div class="control"><label>Nesting</label><output></output><input id="nesting" type="range" min="0" max="100" value="38"></div>
+            <div class="control"><label>φ adherence</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="91"></div>
+            <div class="control"><label>Recursion</label><output></output><input id="recursion" type="range" min="1" max="9" value="4"></div>
+            <div class="control"><label>Spiral influence</label><output></output><input id="spiralInfluence" type="range" min="0" max="100" value="63"></div>
+            <div class="control"><label>Golden angle</label><output></output><input id="goldenAngle" type="range" min="0" max="100" value="93"></div>
+            <div class="control"><label>Nesting</label><output></output><input id="nesting" type="range" min="0" max="100" value="44"></div>
             <div class="mini-note">φ ≈ 1.618034 · golden angle ≈ 137.508° · deterministic from seed</div>
           </div>
         </section>
@@ -175,23 +175,23 @@
         <section class="tab-panel" data-panel="marker">
           <div class="section-title"><span>MARKER ENGINE</span><b>ink / friction</b></div>
           <div class="controls">
-            <div class="control"><label>Pen</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine">Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
-            <div class="control"><label>Thickness</label><output></output><input id="thickness" type="range" min="1" max="28" value="9"></div>
+            <div class="control"><label>Pen</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
+            <div class="control"><label>Thickness</label><output></output><input id="thickness" type="range" min="1" max="28" value="13"></div>
             <div class="control"><label>Wobble</label><output></output><input id="wobble" type="range" min="0" max="100" value="32"></div>
-            <div class="control"><label>Overdraw</label><output></output><input id="overdraw" type="range" min="1" max="10" value="5"></div>
-            <div class="control"><label>Opacity</label><output></output><input id="opacity" type="range" min="10" max="100" value="76"></div>
-            <div class="control"><label>Pressure</label><output></output><input id="pressure" type="range" min="0" max="100" value="44"></div>
-            <div class="control"><label>Dryness</label><output></output><input id="dryness" type="range" min="0" max="100" value="15"></div>
+            <div class="control"><label>Overdraw</label><output></output><input id="overdraw" type="range" min="1" max="10" value="3"></div>
+            <div class="control"><label>Opacity</label><output></output><input id="opacity" type="range" min="10" max="100" value="70"></div>
+            <div class="control"><label>Pressure</label><output></output><input id="pressure" type="range" min="0" max="100" value="36"></div>
+            <div class="control"><label>Dryness</label><output></output><input id="dryness" type="range" min="0" max="100" value="19"></div>
           </div>
         </section>
 
         <section class="tab-panel" data-panel="geometry-panel">
           <div class="section-title"><span>GEOMETRY</span><b>line / form</b></div>
           <div class="controls">
-            <div class="control"><label>Curved ↔ straight</label><output></output><input id="curveBias" type="range" min="0" max="100" value="55"></div>
-            <div class="control"><label>Shape amount</label><output></output><input id="shapeAmount" type="range" min="0" max="100" value="65"></div>
-            <div class="control"><label>Overlap</label><output></output><input id="overlap" type="range" min="0" max="100" value="48"></div>
-            <div class="control"><label>Rotation</label><output></output><input id="rotation" type="range" min="0" max="100" value="80"></div>
+            <div class="control"><label>Curved ↔ straight</label><output></output><input id="curveBias" type="range" min="0" max="100" value="91"></div>
+            <div class="control"><label>Shape amount</label><output></output><input id="shapeAmount" type="range" min="0" max="100" value="68"></div>
+            <div class="control"><label>Overlap</label><output></output><input id="overlap" type="range" min="0" max="100" value="65"></div>
+            <div class="control"><label>Rotation</label><output></output><input id="rotation" type="range" min="0" max="100" value="91"></div>
             <div class="checks">
               <label><input id="lines" type="checkbox" checked> Lines</label>
               <label><input id="circles" type="checkbox" checked> Ellipses</label>
@@ -205,12 +205,12 @@
         <section class="tab-panel" data-panel="colour">
           <div class="section-title"><span>COLOUR / PAPER</span><b>material</b></div>
           <div class="controls">
-            <div class="control"><label>Palette</label><select id="palette"><option value="spectrum">Full Spectrum</option><option value="golden">Golden-angle hues</option><option value="marker" selected>Classic Markers</option><option value="cmyk">CMYK</option><option value="primary">Primary</option><option value="neon">Neon</option><option value="pastel">Pastel</option><option value="earth">Earth</option><option value="warm">Warm</option><option value="cold">Cold</option><option value="mono">Monochrome</option></select></div>
-            <div class="control"><label>Colours</label><output></output><input id="colourCount" type="range" min="1" max="14" value="5"></div>
-            <div class="control"><label>Saturation</label><output></output><input id="saturation" type="range" min="10" max="100" value="84"></div>
-            <div class="control"><label>Brightness</label><output></output><input id="brightness" type="range" min="20" max="80" value="52"></div>
+            <div class="control"><label>Palette</label><select id="palette"><option value="spectrum">Full Spectrum</option><option value="golden">Golden-angle hues</option><option value="marker">Classic Markers</option><option value="cmyk">CMYK</option><option value="primary">Primary</option><option value="neon">Neon</option><option value="pastel">Pastel</option><option value="earth">Earth</option><option value="warm">Warm</option><option value="cold">Cold</option><option value="mono" selected>Monochrome</option></select></div>
+            <div class="control"><label>Colours</label><output></output><input id="colourCount" type="range" min="1" max="14" value="4"></div>
+            <div class="control"><label>Saturation</label><output></output><input id="saturation" type="range" min="10" max="100" value="86"></div>
+            <div class="control"><label>Brightness</label><output></output><input id="brightness" type="range" min="20" max="80" value="59"></div>
             <div class="control colour-row"><label>Paper</label><input id="paper" type="color" value="#f5f0e6"></div>
-            <div class="control"><label>Paper grain</label><output></output><input id="grain" type="range" min="0" max="100" value="18"></div>
+            <div class="control"><label>Paper grain</label><output></output><input id="grain" type="range" min="0" max="100" value="13"></div>
           </div>
         </section>
 
