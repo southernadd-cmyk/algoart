@@ -11,7 +11,7 @@ var mobileQuery=window.matchMedia('(max-width:700px)');
 var previewTimer=null;
 var variationBatch=0;
 var currentRenderMeta=null;
-var CURRENT_RENDERER_VERSION=3;
+var CURRENT_RENDERER_VERSION=4;
 var UNVERSIONED_FIELD_VERSION_BY_SEED={
   'AA-20261005-04-72522':2
 };
@@ -204,7 +204,7 @@ function loadSettingsFromURL(){
   });
 
   var explicitVersion=Number(params.get('v'));
-  if(explicitVersion===1||explicitVersion===2||explicitVersion===3){
+  if(explicitVersion===1||explicitVersion===2||explicitVersion===3||explicitVersion===4){
     A.rendererVersion=explicitVersion;
   }else if(found){
     var requestedMode=settings.mode||$('mode').value;
