@@ -543,6 +543,72 @@ function drawPlannedElement(ctx,plan,i,s,r,pal,strategy){
   }
 }
 
+function chooseBestLayoutLegacy(s){
+  var strategy=chooseStrategy(s);
+  var voidR=A.makeR(s.seed+'|'+s.mode+'|voids|'+strategy);
+  var voids=makeReservedVoids(s,strategy,voidR);
+  var candidates=s.elements>110?4:6;
+  var best=null,bestScore=-Infinity;
+
+  for(var i=0;i<candidates;i++){
+    var layout=makeLayoutPlan(s,i,strategy,voids);
+    var score=scoreLayout(layout,s,strategy,voids);
+    if(score>bestScore){
+      bestScore=score;
+      best=layout;
+    }
+  }
+
+  return{layout:best||[],strategy:strategy,voids:voids,score:bestScore};
+}
+
+function drawPlannedElementLegacy(ctx,plan,i,s,r,pal,strategy){
+  var sh=r.chance(s.shapeAmount/100)?r.pick(enabledShapes(s)):'line';
+  var c={x:plan.x,y:plan.y};
+  var size=plan.size;
+  var rot=plan.rot;
+  var col=pal[i%pal.length];
+  var ratio=A.lerp(r.range(.65,1.68),A.PHI,s.phiStrength/100);
+
+  if(sh==='line'){
+    var a={x:c.x-Math.cos(rot)*size/2,y:c.y-Math.sin(rot)*size/2};
+    var b={x:c.x+Math.cos(rot)*size/2,y:c.y+Math.sin(rot)*size/2};
+    A.drawLine(ctx,a,b,col,s,r);
+  }else if(sh==='circle'){
+    A.ellipse(ctx,c,size/2,size/(2*ratio),rot,col,s,r);
+  }else if(sh==='rect'){
+    A.rect(ctx,c,size,size/ratio,rot,col,s,r);
+  }else if(sh==='poly'){
+    A.poly(ctx,c,size/2,r.pick([3,5,8]),rot,col,s,r);
+  }else{
+    A.arc(ctx,c,size/2,rot,A.TAU*r.pick([A.INV,1-A.INV,.5,.75]),col,s,r);
+  }
+
+  var nest=(s.nesting/160)*A.lerp(1,.65,crowdFactor(s));
+  if(plan.tier==='hero')nest*=1.24;
+  if(plan.tier==='small')nest*=.66;
+
+  if(r.chance(nest)){
+    var nc=pal[(i+1)%pal.length],n=size/A.PHI;
+    if(sh==='rect'){
+      A.rect(ctx,c,n,n/A.PHI,rot+A.GOLD,nc,s,r);
+    }else if(sh==='circle'){
+      A.ellipse(ctx,c,n/2,n/(2*A.PHI),rot+A.GOLD,nc,s,r);
+    }else if(sh==='poly'){
+      A.poly(ctx,c,n/2,5,rot+A.GOLD,nc,s,r);
+    }
+  }
+}
+
+function drawFieldLegacy(ctx,s,r,pal){
+  var result=chooseBestLayoutLegacy(s);
+  for(var i=0;i<result.layout.length;i++){
+    drawPlannedElementLegacy(ctx,result.layout[i],i,s,r,pal,result.strategy);
+  }
+  result.guide={type:'layout',layout:result.layout};
+  return result;
+}
+
 function drawField(ctx,s,r,pal){
   var result=chooseBestLayout(s);
   var tierRank={small:0,medium:1,hero:2};
@@ -2221,7 +2287,7 @@ A.render=function(target,s,scale,showGeometry){
   var meta;
 
   if(s.mode==='field'){
-    meta=drawField(ctx,s,r,pal);
+    meta=(A.rendererVersion===1)?drawFieldLegacy(ctx,s,r,pal):drawField(ctx,s,r,pal);
   }else if(s.mode==='spiral'){
     meta=drawSpiral(ctx,s,r,pal);
   }else if(s.mode==='rects'){
