@@ -117,7 +117,7 @@ const PARAM_KEYS = {
 
 function queryFor(s) {
   const q = new URLSearchParams();
-  q.set('v', String(Number(process.env.SOCIAL_RENDERER_VERSION || 4)));
+  q.set('v', String(Number(process.env.SOCIAL_RENDERER_VERSION || 5)));
   for (const [key, short] of Object.entries(PARAM_KEYS)) {
     let value = s[key];
     if (typeof value === 'boolean') value = value ? '1' : '0';
