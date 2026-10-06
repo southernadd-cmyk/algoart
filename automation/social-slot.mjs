@@ -47,12 +47,12 @@ if (command === 'gate') {
     slot = parsed;
   } else {
     const current = Number(now.hour) * 60 + Number(now.minute);
-    let best = null;
-    for (let i = 0; i < SCHEDULE.instagram.length; i++) {
-      const delta = Math.abs(current - minutes(SCHEDULE.instagram[i]));
-      if (delta <= 55 && (!best || delta < best.delta)) best = { slot: i, delta };
+    for (let i = SCHEDULE.instagram.length - 1; i >= 0; i--) {
+      if (current >= minutes(SCHEDULE.instagram[i])) {
+        slot = i;
+        break;
+      }
     }
-    if (best) slot = best.slot;
   }
 
   if (slot === null) {
