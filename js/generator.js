@@ -2415,36 +2415,126 @@ A.geometryOverlay=function(ctx,s,meta){
     label('φ'+(t+1),targets[t].x+17,targets[t].y-18,'#11110f','#ff6138');
   }
 
-  // True golden spiral reference: logarithmic growth by φ every quarter-turn.
+  // Composition-aware golden frame. Reveal φ should explain this artwork,
+  // not paste a generic diagram over the centre of the canvas.
+  function revealFocus(){
+    var pts=[],heroes=[],i;
+    function add(p,hero){
+      if(!p||!isFinite(p.x)||!isFinite(p.y))return;
+      pts.push(p);
+      if(hero)heroes.push(p);
+    }
+
+    if(guide&&guide.type==='layout'){
+      for(i=0;i<guide.layout.length;i++)add(guide.layout[i],guide.layout[i].tier==='hero');
+    }else if(guide&&guide.type==='network'){
+      for(i=0;i<guide.layout.length;i++)add(guide.layout[i],guide.layout[i].tier==='hero');
+    }else if(guide&&guide.type==='constructed'){
+      for(i=0;i<guide.items.length;i++)add(guide.items[i],guide.items[i].tier==='hero');
+    }else if(guide&&guide.type==='spiral'){
+      // The real spiral system already exposes its construction hubs.
+      for(i=0;i<guide.centres.length;i++)add(guide.centres[i],true);
+      for(i=0;i<guide.points.length;i++)add(guide.points[i],false);
+    }else if(guide&&guide.type==='burst'){
+      for(i=0;i<guide.hubs.length;i++)add(guide.hubs[i],true);
+      for(i=0;i<guide.rays.length;i++)add(guide.rays[i],false);
+    }else if(guide&&guide.type==='scribble'){
+      for(i=0;i<guide.anchors.length;i++)add(guide.anchors[i],i===0);
+    }else if(guide&&guide.type==='organic'){
+      for(i=0;i<guide.roots.length;i++)add(guide.roots[i],true);
+      for(i=0;i<guide.segments.length;i++){
+        add({x:guide.segments[i].x1,y:guide.segments[i].y1},false);
+        add({x:guide.segments[i].x2,y:guide.segments[i].y2},false);
+      }
+    }else if(guide&&guide.type==='rects'){
+      // Recursive rectangles have a genuine root frame, so use it directly.
+      var rr=guide.root;
+      return{cx:rr.x+rr.w*.5,cy:rr.y+rr.h*.5,w:rr.w,h:rr.h,angle:0,anchor:{x:rr.x+rr.w*A.INV,y:rr.y+rr.h*A.INV}};
+    }
+
+    if(!pts.length)return{cx:A.W*.5,cy:A.H*.5,w:A.W*.72,h:A.H*.72,angle:0,anchor:{x:A.W*A.INV,y:A.H*A.INV}};
+
+    var focus=heroes.length?heroes[0]:pts[0];
+    if(heroes.length>1){
+      // Use the largest hero where size exists; this makes the reveal follow
+      // the composition's dominant visual mass.
+      focus=heroes.slice().sort(function(a,b){return(b.size||0)-(a.size||0)})[0];
+    }
+
+    var minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(i=0;i<pts.length;i++){
+      var rad=Math.max(0,(pts[i].size||0)*.5);
+      minX=Math.min(minX,pts[i].x-rad); minY=Math.min(minY,pts[i].y-rad);
+      maxX=Math.max(maxX,pts[i].x+rad); maxY=Math.max(maxY,pts[i].y+rad);
+    }
+    var spanW=A.clamp(maxX-minX,240,A.W*.92);
+    var spanH=A.clamp(maxY-minY,180,A.H*.92);
+    var long=Math.max(spanW,spanH);
+    var frameW,frameH;
+    if(spanW>=spanH){frameW=long;frameH=long/A.PHI}
+    else{frameH=long;frameW=long/A.PHI}
+
+    // Centre the golden frame so the dominant hero lies on a 0.618 intersection.
+    var left=focus.x-frameW*A.INV;
+    var top=focus.y-frameH*A.INV;
+    left=A.clamp(left,18,A.W-frameW-18);
+    top=A.clamp(top,18,A.H-frameH-18);
+
+    return{
+      cx:left+frameW*.5,cy:top+frameH*.5,w:frameW,h:frameH,
+      angle:focus.rot||0,
+      anchor:{x:left+frameW*A.INV,y:top+frameH*A.INV}
+    };
+  }
+
+  var rf=revealFocus();
+  var frameLeft=rf.cx-rf.w*.5,frameTop=rf.cy-rf.h*.5;
+  ctx.save();
+  ctx.strokeStyle='#b8860b';
+  ctx.globalAlpha=.58;
+  ctx.lineWidth=2.2;
+  ctx.setLineDash([]);
+  ctx.strokeRect(frameLeft,frameTop,rf.w,rf.h);
+  ctx.globalAlpha=.32;
+  ctx.setLineDash([7,7]);
+  ctx.beginPath();
+  ctx.moveTo(frameLeft+rf.w*A.INV,frameTop);ctx.lineTo(frameLeft+rf.w*A.INV,frameTop+rf.h);
+  ctx.moveTo(frameLeft,frameTop+rf.h*A.INV);ctx.lineTo(frameLeft+rf.w,frameTop+rf.h*A.INV);
+  ctx.stroke();
+  ctx.restore();
+  cross(rf.anchor,'#b8860b',13,2.5);
+  label('COMPOSITION φ FRAME',frameLeft+8,frameTop+16,'#fff','#b8860b');
+
+  // True golden spiral, now anchored to the artwork's dominant φ intersection.
   // r(θ + π/2) = φr(θ), therefore b = 2 ln(φ) / π.
   var spiralB=2*Math.log(A.PHI)/Math.PI;
-  var spiralCx=A.W*.5,spiralCy=A.H*.5;
-  var spiralTurns=2.35;
+  var spiralCx=rf.anchor.x,spiralCy=rf.anchor.y;
+  var spiralTurns=2.0;
   var spiralEnd=spiralTurns*A.TAU;
-  var spiralMax=Math.min(A.W,A.H)*.40;
+  var spiralMax=Math.min(rf.w,rf.h)*.72;
   var spiralStart=spiralMax/Math.exp(spiralB*spiralEnd);
+  var spiralPhase=(rf.angle||0)-Math.PI/2;
 
   ctx.save();
   ctx.strokeStyle='#b8860b';
-  ctx.globalAlpha=.46;
+  ctx.globalAlpha=.52;
   ctx.lineWidth=2.4;
   ctx.beginPath();
-  for(var g=0;g<=260;g++){
-    var theta=spiralEnd*g/260;
+  for(var g=0;g<=240;g++){
+    var theta=spiralEnd*g/240;
     var gr=spiralStart*Math.exp(spiralB*theta);
-    var gx=spiralCx+Math.cos(theta-Math.PI/2)*gr;
-    var gy=spiralCy+Math.sin(theta-Math.PI/2)*gr;
+    var gx=spiralCx+Math.cos(spiralPhase+theta)*gr;
+    var gy=spiralCy+Math.sin(spiralPhase+theta)*gr;
     if(g===0)ctx.moveTo(gx,gy);else ctx.lineTo(gx,gy);
   }
   ctx.stroke();
 
-  // Quarter-turn radii make the φ growth visually verifiable.
   for(var q=0;q<=Math.floor(spiralTurns*4);q++){
     var qt=q*Math.PI/2;
     var qr=spiralStart*Math.exp(spiralB*qt);
-    var qx=spiralCx+Math.cos(qt-Math.PI/2)*qr;
-    var qy=spiralCy+Math.sin(qt-Math.PI/2)*qr;
-    ctx.globalAlpha=.24;
+    var qx=spiralCx+Math.cos(spiralPhase+qt)*qr;
+    var qy=spiralCy+Math.sin(spiralPhase+qt)*qr;
+    ctx.globalAlpha=.22;
     ctx.setLineDash([4,7]);
     ctx.beginPath();
     ctx.moveTo(spiralCx,spiralCy);
@@ -2452,7 +2542,7 @@ A.geometryOverlay=function(ctx,s,meta){
     ctx.stroke();
   }
   ctx.restore();
-  label('GOLDEN SPIRAL · ×φ / 90°',spiralCx+18,spiralCy-18,'#fff','#b8860b');
+  label('GOLDEN SPIRAL · ANCHORED TO HERO',spiralCx+16,spiralCy-18,'#fff','#b8860b');
 
   // Reserved negative-space regions are part of the composition logic.
   var voids=meta.voids||[];
