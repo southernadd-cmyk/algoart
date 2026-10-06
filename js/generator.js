@@ -1105,6 +1105,113 @@ function drawSpiralV4(ctx,s,r,pal){
   return{strategy:'SPIRAL-'+variant,voids:voids,guide:{type:'spiral',variant:variant,centres:centres,points:guidePoints,arms:arms,direction:direction,golden:true,growth:A.PHI,turns:turns}};
 }
 
+function drawSpiralV5(ctx,s,r,pal){
+  // V5 treats phi as a trajectory grammar, not as a requirement to draw a complete coil.
+  var families=['CLASSIC','SWEEP','FAN','S-CURVE','ECHO','INTERSECT','CASCADE','ORBIT','SCATTER','CROP'];
+  var h=A.hash(s.seed+'|trajectory-v5')%100;
+  var family=h<12?'CLASSIC':families[1+(A.hash(s.seed+'|trajectory-family-v5')%(families.length-1))];
+  var direction=(A.hash(s.seed+'|trajectory-direction-v5')%2===0)?1:-1;
+  var strategy=chooseStrategy(s), targets=phiTargets(), points=[], paths=[], centres=[];
+  var count=Math.max(8,s.elements|0), influence=A.clamp(s.spiralInfluence/100,0,1);
+  var b=2*Math.log(A.PHI)/Math.PI, phase=r.range(0,A.TAU);
+  var phiIndex=A.hash(s.seed+'|trajectory-anchor-v5')%targets.length;
+  var anchor={x:targets[phiIndex].x,y:targets[phiIndex].y};
+  var baseSize=Math.max(55,Math.min(A.W,A.H)/(2+Math.sqrt(count)*.22));
+
+  function addPath(path){if(path.length){paths.push(path);for(var j=0;j<path.length;j++)points.push(path[j]);}}
+  function logPath(cx,cy,startR,endR,turns,startPhase,n,arm){
+    var out=[], tmax=turns*A.TAU, minR=Math.max(.002,startR);
+    for(var j=0;j<n;j++){
+      var u=n===1?0:j/(n-1), theta=u*tmax;
+      var rr=minR*Math.exp(Math.log(Math.max(minR,endR)/minR)*u);
+      var ang=startPhase+direction*theta;
+      out.push({x:cx+Math.cos(ang)*A.W*rr,y:cy+Math.sin(ang)*A.H*rr,arm:arm||0,local:j,theta:theta,radius:rr});
+    }
+    return out;
+  }
+  function bezier(p0,p1,p2,p3,n,arm){
+    var out=[];
+    for(var j=0;j<n;j++){var t=n===1?0:j/(n-1),q=1-t;
+      out.push({x:q*q*q*p0.x+3*q*q*t*p1.x+3*q*t*t*p2.x+t*t*t*p3.x,
+        y:q*q*q*p0.y+3*q*q*t*p1.y+3*q*t*t*p2.y+t*t*t*p3.y,arm:arm||0,local:j,theta:t*A.TAU,radius:t});
+    } return out;
+  }
+
+  if(family==='CLASSIC'){
+    centres=[{x:A.W*.5,y:A.H*.5}];
+    addPath(logPath(centres[0].x,centres[0].y,.012,.43,2.35,phase,count,0));
+  }else if(family==='SWEEP'||family==='CROP'){
+    var side=A.hash(s.seed+'|outside-v5')%4, margin=family==='CROP'?A.W*.55:A.W*.22;
+    var cx=side===0?-margin:side===1?A.W+margin:A.W*.5;
+    var cy=side===2?-margin:side===3?A.H+margin:A.H*.5;
+    centres=[{x:cx,y:cy}];
+    addPath(logPath(cx,cy,.08,family==='CROP'?1.05:.72,family==='CROP'?1.15:1.35,phase,count,0));
+  }else if(family==='FAN'){
+    centres=[anchor]; var arms=3+(A.hash(s.seed+'|fan-arms-v5')%3), each=Math.ceil(count/arms);
+    for(var a=0;a<arms;a++){
+      var ang=phase+a*A.GOLD, end={x:anchor.x+Math.cos(ang)*A.W*.7,y:anchor.y+Math.sin(ang)*A.H*.7};
+      var bend={x:A.lerp(anchor.x,end.x,A.INV)+Math.cos(ang+A.GOLD)*A.W*.12,y:A.lerp(anchor.y,end.y,A.INV)+Math.sin(ang+A.GOLD)*A.H*.12};
+      addPath(bezier(anchor,bend,bend,end,each,a));
+    }
+  }else if(family==='S-CURVE'){
+    centres=[anchor];
+    var rev=(A.hash(s.seed+'|s-rev-v5')%2)===1;
+    var p0={x:rev?A.W+80:-80,y:A.H*(1-A.INV)},p3={x:rev?-80:A.W+80,y:A.H*A.INV};
+    addPath(bezier(p0,{x:A.W*A.INV,y:-A.H*.08},{x:A.W*(1-A.INV),y:A.H*1.08},p3,count,0));
+  }else if(family==='ECHO'){
+    centres=[anchor]; var echoes=2+(A.hash(s.seed+'|echo-count-v5')%4), eachE=Math.ceil(count/echoes);
+    for(var e=0;e<echoes;e++){
+      var off=(e-(echoes-1)/2)*A.W*.055;
+      addPath(bezier({x:-70,y:A.H*.72+off},{x:A.W*.3,y:A.H*.12+off},{x:A.W*.7,y:A.H*.88+off},{x:A.W+70,y:A.H*.28+off},eachE,e));
+    }
+  }else if(family==='INTERSECT'){
+    centres=[targets[0],targets[3]]; var eachI=Math.ceil(count/2);
+    addPath(bezier({x:-60,y:A.H*.22},{x:A.W*.34,y:A.H*.08},{x:A.W*.62,y:A.H*.92},{x:A.W+60,y:A.H*.76},eachI,0));
+    addPath(bezier({x:A.W*.18,y:-60},{x:A.W*.92,y:A.H*.3},{x:A.W*.08,y:A.H*.7},{x:A.W*.82,y:A.H+60},eachI,1));
+  }else if(family==='CASCADE'){
+    centres=[anchor]; var segs=3+(A.hash(s.seed+'|cascade-v5')%3), left=count;
+    var cur={x:A.W*.12,y:A.H*.18};
+    for(var c=0;c<segs;c++){var n=Math.max(3,Math.round(left/(segs-c))),len=A.W*.62/Math.pow(A.PHI,c*.7),ang=phase*.18+c*A.GOLD*.42;
+      var end={x:cur.x+Math.cos(ang)*len,y:cur.y+Math.sin(ang)*len*.7};
+      addPath(bezier(cur,{x:A.lerp(cur.x,end.x,.35),y:cur.y-len*.12},{x:A.lerp(cur.x,end.x,.72),y:end.y+len*.1},end,n,c));
+      cur=end;left-=n;
+    }
+  }else if(family==='ORBIT'){
+    centres=[targets[0],targets[3]]; var orbits=2, eachO=Math.ceil(count/orbits);
+    for(var o=0;o<orbits;o++){var path=[];for(var k=0;k<eachO;k++){var u=k/Math.max(1,eachO-1),ang=phase+u*A.TAU*A.INV*1.35+o*Math.PI;
+      path.push({x:centres[o].x+Math.cos(ang)*A.W*(.18+o*.035),y:centres[o].y+Math.sin(ang)*A.H*(.28-o*.04),arm:o,local:k,theta:ang,radius:.2});}addPath(path);}
+  }else if(family==='SCATTER'){
+    centres=[anchor]; var raw=logPath(anchor.x,anchor.y,.02,.58,1.8,phase,count*2,0), sparse=[];
+    for(var z=0;z<raw.length;z++){var keep=((z*A.GOLD)%A.TAU)<A.TAU*A.INV; if(keep&&r.chance(.48+.38*influence))sparse.push(raw[z]);}
+    addPath(sparse.slice(0,count));
+  }
+
+  // Pull strict trajectories slightly toward phi anchors at low influence, preserving identity without forcing a coil.
+  for(var pi=0;pi<points.length;pi++){
+    var p=points[pi], tgt=targets[(pi+phiIndex)%targets.length], freedom=(1-influence)*.22;
+    p.x=A.lerp(p.x,tgt.x,freedom); p.y=A.lerp(p.y,tgt.y,freedom);
+  }
+
+  var drawIndex=0, prev=null;
+  for(var pa=0;pa<paths.length;pa++){
+    prev=null;
+    for(var q=0;q<paths[pa].length;q++){
+      var p=paths[pa][q], inside=p.x>-45&&p.x<A.W+45&&p.y>-45&&p.y<A.H+45;
+      var sparseGap=family==='SCATTER'&&r.chance(.48);
+      if(inside&&prev&&s.lines&&!sparseGap&&r.chance(A.lerp(.88,.58,crowdFactor(s))))A.drawLine(ctx,prev,p,pal[drawIndex%pal.length],s,r);
+      if(inside&&!sparseGap){
+        var local=q, tier=(q===Math.round((paths[pa].length-1)*A.INV))?'hero':(q%Math.max(2,Math.round(paths[pa].length*A.INV*.18))===0?'medium':'small');
+        if(r.chance(A.lerp(.9,.68,crowdFactor(s)))){
+          drawPlannedElementV3(ctx,{tier:tier,x:A.clamp(p.x,24,A.W-24),y:A.clamp(p.y,24,A.H-24),size:makeBaseSize(s,tier,r,baseSize,strategy),rot:(p.theta||0)+Math.PI/2,territory:baseSize},drawIndex,s,r,pal,strategy);
+        }
+        drawIndex++;
+      }
+      prev=inside?p:null;
+    }
+  }
+  return{strategy:'TRAJECTORY-'+family,voids:[],guide:{type:'spiral',variant:family,centres:centres,points:points,arms:paths.length,direction:direction,golden:true,growth:A.PHI,turns:null}};
+}
+
 function drawRects(ctx,s,r,pal){
   var variants=['MOSAIC','CASCADE','CROSSCUT','FRAMED'];
   var variant=variants[A.hash(s.seed+'|rect-variant')%variants.length];
@@ -2723,7 +2830,7 @@ A.render=function(target,s,scale,showGeometry){
     else if(A.rendererVersion===2)meta=drawField(ctx,s,r,pal);
     else meta=drawFieldV3(ctx,s,r,pal);
   }else if(s.mode==='spiral'){
-    meta=A.rendererVersion>=4?drawSpiralV4(ctx,s,r,pal):drawSpiral(ctx,s,r,pal);
+    meta=A.rendererVersion>=5?drawSpiralV5(ctx,s,r,pal):(A.rendererVersion>=4?drawSpiralV4(ctx,s,r,pal):drawSpiral(ctx,s,r,pal));
   }else if(s.mode==='rects'){
     meta=drawRects(ctx,s,r,pal);
   }else if(s.mode==='burst'){
