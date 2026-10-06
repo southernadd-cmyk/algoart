@@ -70,7 +70,7 @@
       <button id="variations">4-Up</button>
       <button id="geometry">Reveal φ</button>
       <a class="gallery-nav" href="gallery/">Daily Gallery</a>
-      <button id="save">Save PNG</button>
+      <button id="describe" type="button" aria-haspopup="dialog" aria-controls="descriptionOverlay">Describe</button>
     </div>
   </header>
 
@@ -101,13 +101,40 @@
           <span class="registration reg-tr" aria-hidden="true"></span>
           <span class="registration reg-bl" aria-hidden="true"></span>
           <span class="registration reg-br" aria-hidden="true"></span>
-          <canvas id="art" width="1400" height="1000"></canvas>
+          <canvas id="art" width="1400" height="1000" role="img" aria-label="Generated ALGO/ART artwork"></canvas>
           <div class="reveal-tooltip" id="revealTooltip" hidden role="status" aria-live="polite">
             <strong id="revealTooltipTitle"></strong>
             <span id="revealTooltipText"></span>
           </div>
           <div class="stats" id="stats"><span id="statsText"></span><span id="rendererChip" class="renderer-chip" hidden></span></div>
         </div>
+      </div>
+
+      <div class="description-overlay" id="descriptionOverlay" hidden>
+        <section class="description-sheet" role="dialog" aria-modal="true" aria-labelledby="descriptionTitle">
+          <div class="description-head">
+            <div><span>03</span><div><strong id="descriptionTitle">DESCRIBE ARTWORK</strong><small>deterministic accessibility from construction data</small></div></div>
+            <button id="closeDescription" class="icon-btn" type="button" aria-label="Close artwork description">×</button>
+          </div>
+          <div class="description-body">
+            <p class="description-kicker">ACCESSIBILITY / STRUCTURE → LANGUAGE</p>
+            <div class="description-block">
+              <span>ALT TEXT</span>
+              <p id="descriptionAlt"></p>
+              <button id="copyDescription" type="button">COPY ALT TEXT</button>
+              <small id="descriptionCopyStatus" aria-live="polite"></small>
+            </div>
+            <div class="description-block">
+              <span>VISUAL DESCRIPTION</span>
+              <p id="descriptionLong"></p>
+            </div>
+            <div class="description-block description-construction">
+              <span>HOW IT IS BUILT</span>
+              <p id="descriptionConstruction"></p>
+            </div>
+            <p class="description-note">Generated from the artwork’s own construction metadata — not guessed from the finished image.</p>
+          </div>
+        </section>
       </div>
 
       <div class="variations-overlay" id="variationsOverlay" hidden>
@@ -131,7 +158,7 @@
 
       <div class="stage-footer" aria-hidden="true">
         <span>1400 × 1000 / BROWSER CANVAS</span>
-        <span>M mutate · N seed · V variations · [ parameters</span>
+        <span>M mutate · N seed · V variations · D describe · [ parameters</span>
       </div>
     </div>
 
@@ -259,6 +286,7 @@
 <script src="js/marker.js"></script>
 <script src="js/generator.js"></script>
 <script src="js/export.js"></script>
+<script src="js/describe.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

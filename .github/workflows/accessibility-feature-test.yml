@@ -1,0 +1,28 @@
+name: Test deterministic accessibility feature
+on:
+  push:
+    branches:
+      - 'feature/deterministic-describe'
+permissions:
+  contents: read
+jobs:
+  browser-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser test dependencies
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+      - name: Start local ALGO ART
+        run: |
+          python3 -m http.server 4173 >/tmp/algoart-accessibility-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/algoart-accessibility-http.log
+          exit 1
+      - name: Run accessibility and UI regression
+        run: node automation/test-accessibility.mjs
