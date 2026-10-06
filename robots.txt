@@ -1,4 +1,3 @@
-# ALGO/ART
 User-agent: *
 Allow: /
 
