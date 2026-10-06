@@ -8,8 +8,7 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
+  actions: write
 
 concurrency:
   group: gallery-daily
@@ -19,9 +18,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
@@ -71,6 +67,7 @@ jobs:
           echo "Verified gallery/$DAY with $COUNT artwork images."
 
       - name: Persist gallery archive
+        id: gallery_commit
         shell: bash
         run: |
           rm -rf node_modules social-output package-lock.json
@@ -79,24 +76,22 @@ jobs:
           git add gallery sitemap.xml robots.txt
           if git diff --cached --quiet; then
             echo "Daily gallery already matches the deterministic batch."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
             git commit -m "Publish ALGO ART daily gallery $DAY"
             git pull --rebase origin main
             git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload site artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      - name: Deploy gallery and site to Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Explicitly trigger Pages deployment
+        if: steps.gallery_commit.outputs.changed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run deploy-pages.yml --ref main
 
       - name: Summary
         if: always()
