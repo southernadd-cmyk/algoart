@@ -43,6 +43,11 @@ jobs:
       - name: Record real UI interaction
         run: node automation/demo-gif.mjs http://127.0.0.1:4173/
 
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Convert to MP4 and GIF
         run: |
           ffmpeg -y -i output/algoart-demo.webm -c:v libx264 -preset medium -crf 22 -pix_fmt yuv420p -movflags +faststart output/algoart-demo.mp4
