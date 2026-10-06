@@ -23,6 +23,7 @@ on:
           - '2'
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: algoart-social-live
@@ -125,6 +126,7 @@ jobs:
         run: npm run gallery:build
 
       - name: Publish gallery update to GitHub Pages source
+        id: gallery_commit
         if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'))
         shell: bash
         run: |
@@ -134,12 +136,22 @@ jobs:
 
           if git diff --cached --quiet; then
             echo "Daily gallery already up to date."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git commit -m "Archive ALGO ART gallery ${{ steps.gate.outputs.date }}"
           git pull --rebase origin main
           git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Explicitly trigger Pages deployment after gallery commit
+        if: steps.gate.outputs.should_post == 'true' && steps.gallery_commit.outputs.changed == 'true'
+        shell: bash
+        run: |
+          # Commits made with GITHUB_TOKEN do not reliably fan out into another workflow.
+          # Dispatch the Pages workflow explicitly so the just-pushed gallery reaches the live site.
+          gh workflow run deploy-pages.yml --ref main
 
       - name: Select artwork for this slot
         if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'))
