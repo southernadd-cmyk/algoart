@@ -141,7 +141,7 @@ const requestedDate = process.env.SOCIAL_DATE;
 const day = requestedDate || dateInZone();
 const seedSalt = String(process.env.SOCIAL_SEED_SALT || '').trim();
 const generationCount = Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
-const outDir = path.resolve('social-output', day);
+const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day);
 await fs.mkdir(outDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
