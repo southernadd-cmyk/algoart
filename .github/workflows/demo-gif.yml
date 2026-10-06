@@ -1,0 +1,62 @@
+name: Build ALGO ART demo GIF
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/demo-gif-trigger'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start local ALGO ART site
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/algoart-http.log 2>&1 &
+          echo $! > /tmp/algoart-http.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/algoart-http.log
+          exit 1
+
+      - name: Record real UI interaction
+        run: node automation/demo-gif.mjs http://127.0.0.1:4173/
+
+      - name: Convert to MP4 and GIF
+        run: |
+          ffmpeg -y -i output/algoart-demo.webm -c:v libx264 -preset medium -crf 22 -pix_fmt yuv420p -movflags +faststart output/algoart-demo.mp4
+          ffmpeg -y -i output/algoart-demo.webm -filter_complex "fps=10,scale=900:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=160[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3" output/algoart-demo.gif
+          ls -lh output/algoart-demo.* output/algoart-demo-export.png
+
+      - name: Upload demo files
+        uses: actions/upload-artifact@v4
+        with:
+          name: algoart-demo-media
+          path: |
+            output/algoart-demo.gif
+            output/algoart-demo.mp4
+            output/algoart-demo.webm
+            output/algoart-demo-export.png
+          if-no-files-found: error
+          retention-days: 7
