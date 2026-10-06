@@ -6,6 +6,8 @@ ALGO/ART is a deterministic, browser-based generative art system built around th
 
 Live site: https://southernadd-cmyk.github.io/algoart/
 
+**Current renderer: V6.**
+
 ## Core idea: structure first, imperfection second
 
 The project separates **composition** from **rendering**.
@@ -26,11 +28,26 @@ This means the project is not simply drawing a golden spiral over otherwise rand
 
 ALGO/ART uses a seeded pseudo-random generator. Random-looking decisions are derived from the seed and settings rather than uncontrolled randomness.
 
-**renderer version + seed + settings = the same artwork**
+Within a renderer version, the intended model is:
 
-Exact state is stored in share URLs, including the renderer version. This is important because the renderer has evolved while old shared works remain reproducible. V1, V2 and V3 are retained for historical work; **V4 is the current renderer**.
+**renderer version + seed + settings = deterministic artwork state**
 
-The unparameterised home page loads the final artwork from the newest Daily Gallery as its current default. A URL containing explicit artwork settings takes priority, so an old or shared work is not replaced by the gallery default.
+The renderer version is written into share URLs as `v=`, and the interface recognises versions **1 through 6**. New interactions use **V6**, while explicitly versioned links remain identifiable as legacy states in the UI.
+
+### Renderer history
+
+| Version | Main change |
+| --- | --- |
+| **V1** | Original field renderer and earliest deterministic artwork states. |
+| **V2** | Reworked field layout/composition behaviour. |
+| **V3** | Family-aware Field rendering, including shape-aware angular alignment and stronger relationships between hero, medium and supporting forms. |
+| **V4** | Introduced the true golden logarithmic spiral used by Golden Trajectories and by spiral-influenced placement elsewhere. |
+| **V5** | Reimagined Golden Trajectories so φ acts as a **trajectory grammar**, not a requirement to draw one complete textbook coil. It introduced multiple deterministic trajectory families including sweeps, fans, S-curves, echoes, intersections, cascades, orbits, scatter and cropped paths. |
+| **V6** | Current hardened renderer. It keeps the diverse V5 trajectory idea but adds a visible-canvas safety test and deterministic `SAFE-SWEEP` fallback so a valid seed cannot quietly produce an empty/off-canvas Golden Trajectories export. |
+
+V6 is also paired with publication-time image validation: social/gallery automation checks that a rendered canvas contains a meaningful amount of visible artwork before publishing it. A file merely existing is no longer considered proof of a successful render.
+
+The unparameterised home page loads the final artwork from the newest Daily Gallery as its current default. A URL containing explicit artwork settings takes priority, so shared states are not replaced by the gallery default.
 
 ---
 
@@ -89,11 +106,11 @@ The **φ adherence** control determines how strongly the raw layout is pulled to
 
 ## 2. Golden Spiral — *Golden Trajectories*
 
-This is the system in which the golden spiral is most literal.
+Golden Trajectories is the system in which φ is most explicitly treated as **movement through the canvas**.
 
-### V4 spiral mathematics
+### V4: the mathematical foundation
 
-V4 uses a logarithmic spiral:
+V4 introduced a true logarithmic golden spiral:
 
 ```text
 r(θ) = a · e^(bθ)
@@ -107,28 +124,36 @@ Therefore:
 r(θ + π/2) = φ · r(θ)
 ```
 
-In other words, every quarter-turn multiplies the radius by φ.
+Every quarter-turn multiplies the radius by φ. That relationship remains the mathematical foundation of the trajectory system.
 
-The spiral is sampled deterministically and used as the trajectory on which marks and connecting strokes are constructed.
+### V5: from one spiral to a trajectory grammar
 
-### Spiral families
+V5 deliberately moved beyond the idea that every Golden Trajectories work should visibly resemble a complete spiral. The same φ/golden-angle vocabulary can organise very different paths.
 
-The seed chooses one of six variants:
+The deterministic family set introduced in V5 includes:
 
-- **SHELL** — a single spiral with a subtle secondary displacement.
-- **DOUBLE** — two opposed spiral arms.
-- **BROKEN** — deliberate interruptions and angular perturbations.
-- **OFFSET** — the spiral centre is pulled toward a golden-ratio focal point.
-- **VOID** — combines a spiral with protected negative space.
-- **LOOSE** — reduces connections and loosens the trajectory while retaining the underlying growth law.
+- **CLASSIC** — the recognisable logarithmic golden-spiral form.
+- **SWEEP** — a broad curved trajectory entering and moving across the canvas.
+- **FAN** — several golden-angle-related arms from a φ-biased anchor.
+- **S-CURVE** — a long Bézier path moving between golden-section regions.
+- **ECHO** — repeated related trajectories offset from one another.
+- **INTERSECT** — multiple trajectories crossing through the composition.
+- **CASCADE** — successively smaller path segments whose scale decays through φ.
+- **ORBIT** — marks organised around an orbiting/curved path.
+- **SCATTER** — a looser interpretation of the trajectory grammar.
+- **CROP** — deliberately places the trajectory source outside the frame so marks enter from beyond the canvas edge.
 
-Hero points occur at φ-related positions through each arm. Elements are rotated approximately tangent to the spiral so the forms participate in its movement rather than merely sitting on it.
+This is a key conceptual change: **the mathematics defines the rule system; the final picture does not have to look like a diagram of that mathematics.**
 
-### Important geometric detail
+### V6: hardened Golden Trajectories
 
-The internal artwork is 1400 × 1000. The current V4 implementation applies the logarithmic radial value independently to canvas width and height. The underlying radial law is exactly the golden logarithmic law, while its on-canvas appearance is therefore an affine-stretched version on the non-square canvas. Some artistic variants also deliberately perturb the ideal path.
+Testing exposed an important V5 failure mode: some SWEEP/CROP combinations could generate a mathematically valid trajectory whose sampled points all sat outside the drawable canvas. The export existed, but visually it could be blank.
 
-That distinction is intentional to document: ALGO/ART is **φ-governed generative composition**, not a claim that every visible contour is untouched textbook geometry.
+V6 checks how many generated trajectory points actually intersect the visible artwork area. If too few are visible, it deterministically replaces that path with **SAFE-SWEEP**: a φ-informed Bézier trajectory guaranteed to cross the canvas.
+
+That renderer-level protection is reinforced by the automation layer, which samples rendered pixels and rejects near-empty output before an image is allowed into the social feed or gallery.
+
+The result is still deterministic, but now the publishing pipeline distinguishes between **“a render completed”** and **“a visible artwork was actually produced.”**
 
 ---
 
@@ -366,6 +391,8 @@ Recent renderer behaviour also uses colour families to reinforce compositional r
 
 **Reveal φ** is not merely a decorative overlay. The renderer returns guide metadata describing how the current system was constructed, and the interface uses that metadata to expose the hidden composition.
 
+In the current V6 interface, the principal golden frame and explanatory spiral are **composition-aware**. They are positioned from the artwork's dominant hero/focal region rather than simply being pasted into the centre of the canvas. The revealed geometry therefore explains the current composition instead of showing an unrelated generic golden-ratio diagram.
+
 Depending on the mode it can reveal:
 
 - 61.8% / 38.2% divisions
@@ -450,7 +477,13 @@ https://southernadd-cmyk.github.io/algoart/gallery/
 
 Each entry records its image, seed, system/series, renderer version, settings, descriptive metadata and exact remix URL.
 
-The gallery is also connected back to the generator: when the home page is opened **without explicit URL settings**, it reads the newest gallery edition and loads its **last artwork** as the default. This means the front page naturally moves forward as the gallery evolves while exact shared URLs remain stable.
+The normal daily generator creates a **five-work scheduled base set**, but a day is not limited to five entries. Validated test, repair or curated studies can be appended as additional works.
+
+The gallery builder preserves those additional studies when the scheduled base set is regenerated. It no longer deletes the day's existing JPGs and rebuilds blindly from only the five scheduled entries. This matters because curated/validated work must survive later automation runs.
+
+Social/gallery generation also performs visible-pixel validation before accepting a new render. Near-empty output is rejected rather than archived.
+
+The gallery is connected back to the generator: when the home page is opened **without explicit URL settings**, it reads the newest gallery edition and loads its **last artwork** as the default. This means the front page naturally moves forward as the gallery evolves while exact shared URLs remain stable.
 
 The gallery publishes crawlable static HTML plus Open Graph/Twitter metadata, Schema.org structured data, RSS and sitemap information.
 
@@ -458,16 +491,37 @@ The gallery publishes crawlable static HTML plus Open Graph/Twitter metadata, Sc
 
 # Social publishing
 
-The social pipeline uses the same deterministic generator rather than creating unrelated promotional images.
+The social pipeline uses the same deterministic V6 generator rather than creating unrelated promotional images.
 
-A social artwork is generated from a seed/settings state, rendered by the specified renderer version and published with a URL capable of reopening that exact state. Successful social works can therefore become gallery works without losing their generative identity.
+Current automated destinations are:
+
+- **Instagram** — `@artalgorithm`
+- **Threads** — `@artalgorithm`
+- **Bluesky** — `@artalgorithm.bsky.social`
+- **Pinterest** — supported by the workflow but only runs when explicitly enabled/configured
+
+The main London publishing slots are **09:00, 15:00 and 20:30 (Europe/London)**. GitHub Actions uses redundant GMT/BST-aware triggers around each slot; a London-time gate determines which slot is due. This avoids depending on GitHub starting a cron job at one exact minute.
+
+Before publishing, each platform checks a release-hosted completion marker such as:
+
+```text
+done-YYYY-MM-DD-slotN-instagram.txt
+done-YYYY-MM-DD-slotN-threads.txt
+done-YYYY-MM-DD-slotN-bluesky.txt
+```
+
+A successful platform post writes its marker immediately afterwards. If GitHub retries the workflow, already-completed destinations are skipped rather than knowingly posted twice.
+
+A social artwork is generated from a seed/settings state, validated, rendered by the specified renderer version and published with a URL capable of reopening that state. The same validated work can therefore become a gallery entry without losing its generative identity.
 
 This creates a continuous chain:
 
 ```text
 rules + seed + settings
         ↓
-     renderer
+   V6 renderer
+        ↓
+ visible-art validation
         ↓
  exact artwork state
     ↙          ↘
@@ -518,6 +572,23 @@ The public generator itself is static:
 - suitable for GitHub Pages
 
 Automation scripts are used separately to generate gallery/social assets and update the archive.
+
+---
+
+# Current V6 operational safeguards
+
+The current production system includes several safeguards added after real publishing tests:
+
+- **Visible-canvas trajectory fallback** prevents V5-style off-canvas Golden Trajectories from becoming blank V6 exports.
+- **Pixel-level render validation** rejects images with too little visible artwork before publishing.
+- **Per-platform completion markers** make social retries idempotent at the slot/platform level.
+- **Curated-gallery preservation** prevents the scheduled five-image rebuild from deleting additional validated studies.
+- **Explicit Pages dispatch after automation commits** avoids relying on a `GITHUB_TOKEN` push to fan out into another workflow.
+- **Non-cancelling concurrency** prevents a later social run from cancelling a valid publish already in progress.
+- **Composition-aware Reveal φ** anchors explanatory geometry to the generated artwork rather than the viewport centre.
+- **Versioned share URLs** expose the renderer version alongside the deterministic seed/settings state.
+
+These safeguards are operational rather than aesthetic: they are there to make the generated art reproducible, visible and reliably publishable.
 
 ---
 
