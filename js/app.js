@@ -798,6 +798,19 @@ loadLatestGalleryDefault().then(function(changed){
   }
   setTimeout(renderModePreviews,40);
 });
-setTimeout(showEthosIfNeeded,260);
+(function initIntroSplash(){
+  var splash=$('introSplash');
+  if(!splash)return;
+  var seen=false;
+  try{seen=localStorage.getItem('algoart-intro-seen')==='1'}catch(e){}
+  if(!seen)splash.hidden=false;
+  function closeIntro(reveal){
+    splash.hidden=true;
+    try{localStorage.setItem('algoart-intro-seen','1')}catch(e){}
+    if(reveal)setGeometryVisible(true);
+  }
+  $('introEnter').onclick=function(){closeIntro(false)};
+  $('introReveal').onclick=function(){closeIntro(true)};
+})();
 
 })(window.AlgoArt);
