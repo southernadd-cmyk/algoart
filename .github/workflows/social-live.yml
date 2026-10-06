@@ -5,15 +5,15 @@ on:
     paths:
       - '.github/social-trigger'
   schedule:
-    # Redundant off-peak UTC triggers around each London publishing slot.
-    # Both UTC hours are included so this works across GMT/BST without editing the workflow.
-    # The London-time gate chooses the due slot; release markers make retries idempotent.
-    # Morning 09:00 London: 08:xx BST / 09:xx GMT.
-    - cron: '7,17,27 8,9 * * *'
-    # Afternoon 15:00 London: 14:xx BST / 15:xx GMT.
-    - cron: '7,17,27 14,15 * * *'
-    # Evening 20:30 London: 19:xx BST / 20:xx GMT.
-    - cron: '37,47,57 19,20 * * *'
+    # Three off-minute attempts per publishing slot.
+    # GitHub can delay scheduled events; the cron expression is mapped to its intended slot
+    # so a delayed event still publishes the correct artwork instead of being rejected by clock time.
+    - cron: '7,17,27 9 * * *'
+      timezone: 'Europe/London'
+    - cron: '7,17,27 15 * * *'
+      timezone: 'Europe/London'
+    - cron: '37,47,57 20 * * *'
+      timezone: 'Europe/London'
   workflow_dispatch:
     inputs:
       slot:
@@ -57,12 +57,27 @@ jobs:
       - name: Choose London publishing slot
         id: gate
         shell: bash
+        env:
+          TRIGGER_SCHEDULE: ${{ github.event.schedule }}
         run: |
           FORCE_SLOT=""
+          SCHEDULED_SLOT=""
+
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             FORCE_SLOT="${{ inputs.slot }}"
+          elif [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            case "$TRIGGER_SCHEDULE" in
+              "7,17,27 9 * * *") SCHEDULED_SLOT="0" ;;
+              "7,17,27 15 * * *") SCHEDULED_SLOT="1" ;;
+              "37,47,57 20 * * *") SCHEDULED_SLOT="2" ;;
+              *)
+                echo "Unknown scheduled trigger: $TRIGGER_SCHEDULE" >&2
+                exit 1
+                ;;
+            esac
           fi
-          FORCE_SLOT="$FORCE_SLOT" node automation/social-slot.mjs gate
+
+          FORCE_SLOT="$FORCE_SLOT" SCHEDULED_SLOT="$SCHEDULED_SLOT" node automation/social-slot.mjs gate
 
       - name: Ensure media release and check duplicate markers
         if: steps.gate.outputs.should_post == 'true'
