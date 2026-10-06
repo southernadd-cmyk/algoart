@@ -4,12 +4,9 @@ on:
   schedule:
     # Each London slot has a GMT and BST UTC trigger.
     # The gate step only proceeds when the local Europe/London time matches.
-    - cron: '0 8 * * *'
-    - cron: '0 9 * * *'
-    - cron: '0 14 * * *'
-    - cron: '0 15 * * *'
-    - cron: '30 19 * * *'
-    - cron: '30 20 * * *'
+    # Run frequently; social-slot.mjs catches any due/missed London slot within its window.
+    # Duplicate-marker checks make repeated invocations safe.
+    - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       slot:
