@@ -164,11 +164,53 @@ try {
     const rendered = await page.evaluate(() => {
       const canvas = document.getElementById('art');
       const stats = document.getElementById('stats')?.textContent || '';
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const { width, height } = canvas;
+      const data = ctx.getImageData(0, 0, width, height).data;
+
+      // Validate against the actual rendered paper colour. A JPEG existing is not enough:
+      // V5 proved a valid canvas can still contain no artwork.
+      const paper = getComputedStyle(canvas).backgroundColor || '';
+      const paperMatch = paper.match(/\d+/g);
+      let pr = 245, pg = 240, pb = 230;
+      if (paperMatch && paperMatch.length >= 3) {
+        pr = +paperMatch[0]; pg = +paperMatch[1]; pb = +paperMatch[2];
+      } else {
+        const corner = 0;
+        pr = data[corner]; pg = data[corner + 1]; pb = data[corner + 2];
+      }
+
+      let changed = 0, strong = 0, minX = width, minY = height, maxX = -1, maxY = -1;
+      const step = 4;
+      let sampled = 0;
+      for (let y = 0; y < height; y += step) {
+        for (let x = 0; x < width; x += step) {
+          const i = (y * width + x) * 4;
+          const d = Math.abs(data[i] - pr) + Math.abs(data[i + 1] - pg) + Math.abs(data[i + 2] - pb);
+          sampled++;
+          if (d > 34) {
+            changed++;
+            if (x < minX) minX = x; if (x > maxX) maxX = x;
+            if (y < minY) minY = y; if (y > maxY) maxY = y;
+          }
+          if (d > 90) strong++;
+        }
+      }
+      const changedRatio = changed / Math.max(1, sampled);
+      const strongRatio = strong / Math.max(1, sampled);
+      const spanX = maxX >= minX ? (maxX - minX) / width : 0;
+      const spanY = maxY >= minY ? (maxY - minY) / height : 0;
+      const valid = changedRatio >= 0.006 && strongRatio >= 0.0015 && (spanX >= 0.10 || spanY >= 0.10);
       return {
         dataUrl: canvas.toDataURL('image/jpeg', 0.94),
-        stats
+        stats,
+        validation: { valid, changedRatio, strongRatio, spanX, spanY }
       };
     });
+
+    if (!rendered.validation.valid) {
+      throw new Error(`Render validation failed for ${settings.seed}: ${JSON.stringify(rendered.validation)}`);
+    }
 
     const filename = `${day}-${String(index + 1).padStart(2, '0')}-${settings.mode}-${settings.seed}.jpg`;
     const filePath = path.join(outDir, filename);
@@ -183,7 +225,7 @@ try {
       stats: rendered.stats,
       imageFile: filename,
       shareUrl,
-      rendererVersion: Number(process.env.SOCIAL_RENDERER_VERSION || 5),
+      rendererVersion: Number(process.env.SOCIAL_RENDERER_VERSION || 6),
       settings,
       platforms: platformAssignment(index)
     };
