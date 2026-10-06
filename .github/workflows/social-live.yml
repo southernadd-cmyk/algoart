@@ -1,6 +1,9 @@
 name: ALGO ART live social publishing
 
 on:
+  push:
+    paths:
+      - '.github/social-trigger'
   schedule:
     # Each London slot has a GMT and BST UTC trigger.
     # The gate step only proceeds when the local Europe/London time matches.
