@@ -1,13 +1,14 @@
 {
   "version": 1,
   "date": "2026-10-06",
-  "count": 8,
+  "count": 9,
   "series": [
     "Orbital Studies",
     "Golden Trajectories",
     "Recursive Divisions",
     "Radiant Systems",
-    "Connected Fields"
+    "Connected Fields",
+    "Growth Systems"
   ],
   "entries": [
     {
@@ -385,6 +386,53 @@
         "grain": 18
       },
       "altText": "Abstract algorithmic marker artwork from ALGO/ART's Golden Trajectories system. Generated from seed AA-20261006-02-10170 using golden-ratio composition rules and imperfect scribble marker strokes."
+    },
+    {
+      "id": "2026-10-06-01",
+      "title": "Growth Systems — Study 09",
+      "seed": "AA-20261006-01-75932",
+      "mode": "organic",
+      "series": "Growth Systems",
+      "imageFile": "2026-10-06-01-organic-AA-20261006-01-75932.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=6&seed=AA-20261006-01-75932&mode=organic&el=36&den=55&cx=58&neg=41&phi=82&rec=5&spi=60&ga=91&nest=53&pen=scribble&th=7&wob=35&od=2&op=76&pr=44&dry=14&curve=80&shape=67&overlap=53&rot=67&ln=1&ci=1&re=1&po=1&ar=1&pal=golden&cols=10&sat=84&bri=52&paper=%23f0eadc&grain=14",
+      "rendererVersion": 6,
+      "settings": {
+        "mode": "organic",
+        "series": "Growth Systems",
+        "seed": "AA-20261006-01-75932",
+        "elements": 36,
+        "density": 55,
+        "complexity": 58,
+        "negativeSpace": 41,
+        "phiStrength": 82,
+        "recursion": 5,
+        "spiralInfluence": 60,
+        "goldenAngle": 91,
+        "nesting": 53,
+        "pen": "scribble",
+        "thickness": 7,
+        "wobble": 35,
+        "overdraw": 2,
+        "opacity": 76,
+        "pressure": 44,
+        "dryness": 14,
+        "curveBias": 80,
+        "shapeAmount": 67,
+        "overlap": 53,
+        "rotation": 67,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "golden",
+        "colourCount": 10,
+        "saturation": 84,
+        "brightness": 52,
+        "paper": "#f0eadc",
+        "grain": 14
+      },
+      "altText": "Abstract algorithmic marker artwork from ALGO/ART's Growth Systems system. Generated from seed AA-20261006-01-75932 using golden-ratio composition rules and imperfect scribble marker strokes."
     }
   ]
 }
