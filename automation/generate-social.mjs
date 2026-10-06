@@ -52,7 +52,8 @@ function settingsFor(day, index, seedSalt = '') {
   const saltKey = salt ? `|${salt}` : '';
   const r = rng(`${day}|ALGOART|${index}${saltKey}`);
   const rotation = hash(day + saltKey) % MODES.length;
-  const modeInfo = MODES[(index + rotation) % MODES.length];
+  const forcedMode = String(process.env.SOCIAL_FORCE_MODE || '').trim();
+  const modeInfo = forcedMode ? (MODES.find(m => m[0] === forcedMode) || MODES[(index + rotation) % MODES.length]) : MODES[(index + rotation) % MODES.length];
   const mode = modeInfo[0];
 
   const modeDefaults = {
@@ -182,7 +183,7 @@ try {
       stats: rendered.stats,
       imageFile: filename,
       shareUrl,
-      rendererVersion: Number(process.env.SOCIAL_RENDERER_VERSION || 4),
+      rendererVersion: Number(process.env.SOCIAL_RENDERER_VERSION || 5),
       settings,
       platforms: platformAssignment(index)
     };
