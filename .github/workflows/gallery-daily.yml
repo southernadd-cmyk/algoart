@@ -1,6 +1,10 @@
 name: Build ALGO ART daily gallery
 
 on:
+  push:
+    paths:
+      - 'automation/build-gallery.mjs'
+      - '.github/workflows/gallery-daily.yml'
   schedule:
     # Early morning UTC; the generator resolves the calendar day in Europe/London.
     - cron: '15 4 * * *'
@@ -99,5 +103,5 @@ jobs:
         run: |
           echo "### ALGO/ART daily gallery" >> "$GITHUB_STEP_SUMMARY"
           echo "- Archive: https://southernadd-cmyk.github.io/algoart/gallery/" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Five deterministic artworks per day" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Five scheduled base artworks plus any validated curated studies" >> "$GITHUB_STEP_SUMMARY"
           echo "- Static HTML + JSON-LD + Open Graph + RSS + sitemap" >> "$GITHUB_STEP_SUMMARY"

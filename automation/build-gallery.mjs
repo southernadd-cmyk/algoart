@@ -315,16 +315,46 @@ const galleryRoot = path.resolve('gallery');
 const dayDir = path.join(galleryRoot, day);
 await fs.mkdir(dayDir, { recursive: true });
 
-for (const existing of await fs.readdir(dayDir)) {
-  if (existing.toLowerCase().endsWith('.jpg')) {
-    await fs.rm(path.join(dayDir, existing), { force: true });
-  }
+// Preserve curated/repaired studies that are already in the day's gallery.
+// The scheduled queue is the canonical source for its own seeds, but it must
+// never erase additional validated studies that were appended later.
+let existingMeta = { entries: [] };
+try {
+  existingMeta = JSON.parse(await fs.readFile(path.join(dayDir, 'meta.json'), 'utf8'));
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
 }
 
-for (const item of queue.entries) {
+const queuedSeeds = new Set(queue.entries.map(entry => entry.seed).filter(Boolean));
+const queuedFiles = new Set(queue.entries.map(entry => entry.imageFile).filter(Boolean));
+const preservedEntries = [];
+
+for (const entry of Array.isArray(existingMeta.entries) ? existingMeta.entries : []) {
+  if (queuedSeeds.has(entry.seed) || queuedFiles.has(entry.imageFile)) continue;
+  try {
+    await fs.access(path.join(dayDir, entry.imageFile));
+  } catch {
+    continue;
+  }
+  preservedEntries.push({
+    ...entry,
+    copy: { altText: entry.altText || artworkDescription(entry) }
+  });
+}
+
+queue.entries = [...queue.entries, ...preservedEntries];
+
+for (const item of queue.entries.slice(0, queue.entries.length - preservedEntries.length)) {
   const source = path.resolve('social-output', day, item.imageFile);
   const dest = path.join(dayDir, item.imageFile);
   await fs.copyFile(source, dest);
+}
+
+const keepImages = new Set(queue.entries.map(entry => entry.imageFile));
+for (const existing of await fs.readdir(dayDir)) {
+  if (existing.toLowerCase().endsWith('.jpg') && !keepImages.has(existing)) {
+    await fs.rm(path.join(dayDir, existing), { force: true });
+  }
 }
 
 const dayMeta = {
