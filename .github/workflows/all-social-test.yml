@@ -1,0 +1,247 @@
+name: ALGO ART one-off all-social test
+
+on:
+  push:
+    paths:
+      - '.github/all-social-test-trigger'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: algoart-social-live
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
+      ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+      RELEASE_TAG: algoart-social-live
+      GH_TOKEN: ${{ github.token }}
+      SOCIAL_DATE: '2026-10-06'
+      SOCIAL_RENDERER_VERSION: '6'
+      SOCIAL_FORCE_MODE: organic
+      SOCIAL_COUNT: '1'
+      SOCIAL_SEED_SALT: all-social-test-20261006-1
+      SOCIAL_OUTPUT_DIR: social-oneoff-test
+      BLUESKY_HANDLE: artalgorithm.bsky.social
+      BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+      TEST_ID: 2026-10-06-all-social-1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Start local ALGO ART
+        run: |
+          python3 -m http.server 4173 >/tmp/algoart-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/algoart-http.log
+          exit 1
+
+      - name: Generate one validated V6 Growth Systems image
+        run: npm run social:generate
+
+      - name: Append test image to daily gallery
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+
+          const day = process.env.SOCIAL_DATE;
+          const meta = JSON.parse(await fs.readFile(`gallery/${day}/meta.json`, 'utf8'));
+          const test = JSON.parse(await fs.readFile(`social-oneoff-test/${day}/queue.json`, 'utf8'));
+
+          const old = meta.entries.map((e, i) => ({
+            id: e.id || `${day}-${String(i + 1).padStart(2, '0')}`,
+            seed: e.seed,
+            mode: e.mode,
+            series: e.series,
+            imageFile: e.imageFile,
+            shareUrl: e.shareUrl,
+            rendererVersion: e.rendererVersion,
+            settings: e.settings,
+            copy: { altText: e.altText || '' },
+            platforms: { reserve: { status: 'reserve' } }
+          }));
+
+          const existingSeeds = new Set(old.map(e => e.seed));
+          const additions = test.entries.filter(e => !existingSeeds.has(e.seed));
+          const merged = [...old, ...additions];
+
+          const out = path.resolve('social-output', day);
+          await fs.mkdir(out, { recursive: true });
+
+          for (const e of old) {
+            await fs.copyFile(path.resolve('gallery', day, e.imageFile), path.join(out, e.imageFile));
+          }
+          for (const e of additions) {
+            await fs.copyFile(path.resolve('social-oneoff-test', day, e.imageFile), path.join(out, e.imageFile));
+          }
+
+          await fs.writeFile(
+            path.join(out, 'queue.json'),
+            JSON.stringify({ version: 1, date: day, generatedAt: new Date().toISOString(), entries: merged }, null, 2)
+          );
+          NODE
+          npm run gallery:build
+
+      - name: Commit gallery safely
+        id: gallery
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery sitemap.xml robots.txt
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit -m "Add validated all-social test artwork to gallery"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy updated gallery
+        if: steps.gallery.outputs.changed == 'true'
+        run: gh workflow run deploy-pages.yml --ref main
+
+      - name: Prepare test artwork and marker state
+        id: prep
+        shell: bash
+        run: |
+          eval "$(node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const q = JSON.parse(fs.readFileSync(`social-oneoff-test/${process.env.SOCIAL_DATE}/queue.json`, 'utf8'));
+          const e = q.entries[0];
+          const b = s => Buffer.from(s || '').toString('base64');
+          console.log('FILE=' + JSON.stringify(`social-oneoff-test/${process.env.SOCIAL_DATE}/${e.imageFile}`));
+          console.log('ASSET=' + JSON.stringify(`all-social-test-${e.imageFile}`));
+          console.log('IG=' + JSON.stringify(b(e.copy.instagram)));
+          console.log('TH=' + JSON.stringify(b(e.copy.threads)));
+          console.log('BS=' + JSON.stringify(b(e.copy.bluesky)));
+          console.log('ALT=' + JSON.stringify(b(e.copy.altText)));
+          console.log('SEED=' + JSON.stringify(e.seed));
+          NODE
+          )"
+
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+          echo "ig=$IG" >> "$GITHUB_OUTPUT"
+          echo "th=$TH" >> "$GITHUB_OUTPUT"
+          echo "bs=$BS" >> "$GITHUB_OUTPUT"
+          echo "alt=$ALT" >> "$GITHUB_OUTPUT"
+          echo "seed=$SEED" >> "$GITHUB_OUTPUT"
+
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --title "ALGO/ART social publishing media" --notes "Rolling public media host for automated @artalgorithm posts."
+          fi
+
+          ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          for platform in instagram threads bluesky; do
+            marker="done-test-${TEST_ID}-${platform}.txt"
+            if printf '%s\n' "$ASSETS" | grep -Fxq "$marker"; then
+              echo "${platform}_done=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "${platform}_done=false" >> "$GITHUB_OUTPUT"
+            fi
+            echo "${platform}_marker=$marker" >> "$GITHUB_OUTPUT"
+          done
+
+          cp "$FILE" "/tmp/$ASSET"
+          gh release upload "$RELEASE_TAG" "/tmp/$ASSET" --clobber
+          MEDIA_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/$ASSET"
+          echo "media_url=$MEDIA_URL" >> "$GITHUB_OUTPUT"
+          curl -fL --retry 4 --retry-delay 2 -o /tmp/host-check.jpg "$MEDIA_URL"
+          test -s /tmp/host-check.jpg
+
+      - name: Publish to Instagram
+        if: steps.prep.outputs.instagram_done != 'true'
+        env:
+          LIVE_PUBLISHING: 'true'
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          MEDIA_URL: ${{ steps.prep.outputs.media_url }}
+          CAPTION_B64: ${{ steps.prep.outputs.ig }}
+          ALT_TEXT_B64: ${{ steps.prep.outputs.alt }}
+        run: |
+          export CAPTION="$(printf '%s' "$CAPTION_B64" | base64 --decode)"
+          export ALT_TEXT="$(printf '%s' "$ALT_TEXT_B64" | base64 --decode)"
+          npm run social:instagram
+
+      - name: Mark Instagram test complete
+        if: steps.prep.outputs.instagram_done != 'true'
+        run: |
+          MARKER="${{ steps.prep.outputs.instagram_marker }}"
+          printf 'published test %s to Instagram\n' "$TEST_ID" > "/tmp/$MARKER"
+          gh release upload "$RELEASE_TAG" "/tmp/$MARKER" --clobber
+
+      - name: Publish to Threads
+        if: steps.prep.outputs.threads_done != 'true'
+        env:
+          LIVE_PUBLISHING: 'true'
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          MEDIA_URL: ${{ steps.prep.outputs.media_url }}
+          CAPTION_B64: ${{ steps.prep.outputs.th }}
+          ALT_TEXT_B64: ${{ steps.prep.outputs.alt }}
+        run: |
+          export CAPTION="$(printf '%s' "$CAPTION_B64" | base64 --decode)"
+          export ALT_TEXT="$(printf '%s' "$ALT_TEXT_B64" | base64 --decode)"
+          npm run social:threads
+
+      - name: Mark Threads test complete
+        if: steps.prep.outputs.threads_done != 'true'
+        run: |
+          MARKER="${{ steps.prep.outputs.threads_marker }}"
+          printf 'published test %s to Threads\n' "$TEST_ID" > "/tmp/$MARKER"
+          gh release upload "$RELEASE_TAG" "/tmp/$MARKER" --clobber
+
+      - name: Publish to Bluesky
+        if: steps.prep.outputs.bluesky_done != 'true'
+        env:
+          MEDIA_URL: ${{ steps.prep.outputs.media_url }}
+          CAPTION_B64: ${{ steps.prep.outputs.bs }}
+          ALT_TEXT_B64: ${{ steps.prep.outputs.alt }}
+        run: |
+          test -n "$BLUESKY_APP_PASSWORD"
+          export CAPTION="$(printf '%s' "$CAPTION_B64" | base64 --decode)"
+          export ALT_TEXT="$(printf '%s' "$ALT_TEXT_B64" | base64 --decode)"
+          npm run social:bluesky
+
+      - name: Mark Bluesky test complete
+        if: steps.prep.outputs.bluesky_done != 'true'
+        run: |
+          MARKER="${{ steps.prep.outputs.bluesky_marker }}"
+          printf 'published test %s to Bluesky\n' "$TEST_ID" > "/tmp/$MARKER"
+          gh release upload "$RELEASE_TAG" "/tmp/$MARKER" --clobber
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### One-off ALGO/ART all-social test" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Seed: ${{ steps.prep.outputs.seed }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Gallery commit: ${{ steps.gallery.outputs.changed }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Instagram previously complete: ${{ steps.prep.outputs.instagram_done }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Threads previously complete: ${{ steps.prep.outputs.threads_done }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Bluesky previously complete: ${{ steps.prep.outputs.bluesky_done }}" >> "$GITHUB_STEP_SUMMARY"
