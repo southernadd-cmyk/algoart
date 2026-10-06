@@ -1,0 +1,42 @@
+name: ALGO ART retry V6 second Threads post
+
+on:
+  push:
+    paths:
+      - '.github/v6-thread2-trigger'
+
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LIVE_PUBLISHING: 'true'
+      THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+      THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+      MEDIA_URL: https://github.com/southernadd-cmyk/algoart/releases/download/algoart-social-live/v6-repair-1-2026-10-06-02-spiral-AA-20261006-02-10170.jpg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify hosted image
+        run: curl -fL --retry 4 --retry-delay 2 -o /tmp/v6-thread2.jpg "$MEDIA_URL"
+      - name: Build caption and publish only the missing Threads post
+        shell: bash
+        run: |
+          eval "$(node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { makeCaptions } from './automation/captions.mjs';
+          const meta=JSON.parse(fs.readFileSync('gallery/2026-10-06/meta.json','utf8'));
+          const e=meta.entries.find(x=>x.seed==='AA-20261006-02-10170');
+          if(!e) throw new Error('V6 Study 08 metadata not found');
+          const item={...e,stats:'SPIRAL / TRAJECTORY-V6',copy:null};
+          item.copy=makeCaptions(item);
+          const b=s=>Buffer.from(s||'').toString('base64');
+          console.log('CAP='+JSON.stringify(b(item.copy.threads)));
+          console.log('ALT='+JSON.stringify(b(item.copy.altText)));
+          NODE
+          )"
+          export CAPTION="$(printf '%s' "$CAP" | base64 --decode)"
+          export ALT_TEXT="$(printf '%s' "$ALT" | base64 --decode)"
+          node automation/publish-threads.mjs
