@@ -11,7 +11,7 @@ var mobileQuery=window.matchMedia('(max-width:700px)');
 var previewTimer=null;
 var variationBatch=0;
 var currentRenderMeta=null;
-var CURRENT_RENDERER_VERSION=5;
+var CURRENT_RENDERER_VERSION=4;
 var UNVERSIONED_FIELD_VERSION_BY_SEED={
   'AA-20261005-04-72522':2
 };
