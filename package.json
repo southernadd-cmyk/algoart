@@ -6,6 +6,7 @@
     "social:generate": "node automation/generate-social.mjs",
     "social:instagram": "node automation/publish-instagram.mjs",
     "social:threads": "node automation/publish-threads.mjs",
+    "social:bluesky": "node automation/publish-bluesky.mjs",
     "social:pinterest": "node automation/publish-pinterest.mjs",
     "social:verify-pinterest": "node automation/verify-pinterest.mjs",
     "gallery:build": "node automation/build-gallery.mjs"

@@ -125,3 +125,12 @@ Once enabled, each featured daily artwork is also published to Pinterest with:
 - alt text
 - a direct link to that exact artwork state in the generator
 - duplicate protection using the same rolling GitHub Release markers as Instagram/Threads
+
+
+## Bluesky publishing
+
+The live publisher supports the official ALGO/ART Bluesky account at `artalgorithm.bsky.social`.
+
+To enable it, create a Bluesky app password for the account and add it to the GitHub repository as the Actions secret `BLUESKY_APP_PASSWORD`. The workflow automatically detects whether the secret exists; if it is absent, Bluesky is skipped without affecting Instagram, Threads, Pinterest, gallery generation, or Pages deployment.
+
+Bluesky uses the same London publishing slots and selected artwork as Instagram and Threads. Each successful Bluesky post creates its own release marker (`done-YYYY-MM-DD-slotN-bluesky.txt`) so a retried workflow cannot knowingly publish the same slot twice.

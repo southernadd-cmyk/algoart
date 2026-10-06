@@ -100,6 +100,7 @@ if (command === 'select') {
     asset_name: `algoart-${date}-slot${slot + 1}.jpg`,
     instagram_caption_b64: b64(item.copy.instagram),
     threads_caption_b64: b64(item.copy.threads),
+    bluesky_caption_b64: b64(item.copy.bluesky),
     pinterest_title_b64: b64(item.series + ' — ALGO/ART'),
     pinterest_description_b64: b64(
       item.series + ' generated with golden-ratio composition and imperfect digital marker strokes. ' +

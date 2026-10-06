@@ -4,7 +4,8 @@ export const TIME_ZONE = 'Europe/London';
 
 export const ACCOUNTS = {
   instagram: '@artalgorithm',
-  threads: '@artalgorithm'
+  threads: '@artalgorithm',
+  bluesky: '@artalgorithm.bsky.social'
 };
 
 export const DAILY_COUNT = 5;

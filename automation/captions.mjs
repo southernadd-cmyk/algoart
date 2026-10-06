@@ -31,6 +31,17 @@ export function makeCaptions(item) {
       'Open this exact artwork state:',
       item.shareUrl
     ].join('\n'),
+    bluesky: [
+      heading,
+      facts,
+      '',
+      'The idea becomes a machine that makes the art.',
+      '',
+      'Explore & remix:',
+      SITE_URL,
+      '',
+      '#generativeart #creativecoding'
+    ].join('\n'),
     altText:
       `Abstract algorithmic marker artwork from ALGO/ART's ${item.series} system. ` +
       `Generated from seed ${item.seed} using golden-ratio composition rules and imperfect ${item.settings.pen} marker strokes.`
