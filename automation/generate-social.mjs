@@ -204,6 +204,11 @@ try {
       return {
         dataUrl: canvas.toDataURL('image/jpeg', 0.94),
         stats,
+        accessibility: {
+          altText: canvas.getAttribute('aria-label') || '',
+          longDescription: document.getElementById('descriptionLong')?.textContent || '',
+          constructionDescription: document.getElementById('descriptionConstruction')?.textContent || ''
+        },
         validation: { valid, changedRatio, strongRatio, spanX, spanY }
       };
     });
@@ -231,6 +236,14 @@ try {
     };
 
     item.copy = makeCaptions(item);
+    if (rendered.accessibility?.altText) {
+      item.copy.altText = rendered.accessibility.altText;
+    }
+    item.accessibility = {
+      altText: rendered.accessibility?.altText || item.copy.altText,
+      longDescription: rendered.accessibility?.longDescription || '',
+      constructionDescription: rendered.accessibility?.constructionDescription || ''
+    };
     entries.push(item);
     console.log(`Generated ${item.id}: ${item.series} / ${item.seed}`);
   }
