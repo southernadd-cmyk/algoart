@@ -1105,7 +1105,7 @@ function drawSpiralV4(ctx,s,r,pal){
   return{strategy:'SPIRAL-'+variant,voids:voids,guide:{type:'spiral',variant:variant,centres:centres,points:guidePoints,arms:arms,direction:direction,golden:true,growth:A.PHI,turns:turns}};
 }
 
-function drawSpiralV5(ctx,s,r,pal){
+function drawSpiralV6(ctx,s,r,pal){
   // V5 treats phi as a trajectory grammar, not as a requirement to draw a complete coil.
   var families=['CLASSIC','SWEEP','FAN','S-CURVE','ECHO','INTERSECT','CASCADE','ORBIT','SCATTER','CROP'];
   var h=A.hash(s.seed+'|trajectory-v5')%100;
@@ -1184,6 +1184,15 @@ function drawSpiralV5(ctx,s,r,pal){
     centres=[anchor]; var raw=logPath(anchor.x,anchor.y,.02,.58,1.8,phase,count*2,0), sparse=[];
     for(var z=0;z<raw.length;z++){var keep=((z*A.GOLD)%A.TAU)<A.TAU*A.INV; if(keep&&r.chance(.48+.38*influence))sparse.push(raw[z]);}
     addPath(sparse.slice(0,count));
+  }
+
+  // V6 safety: a trajectory family must actually cross the drawable canvas.
+  // V5 CROP/SWEEP seeds could generate every point off-canvas, producing an empty export.
+  var visibleCount=0;
+  for(var vi=0;vi<points.length;vi++)if(points[vi].x>-20&&points[vi].x<A.W+20&&points[vi].y>-20&&points[vi].y<A.H+20)visibleCount++;
+  if(visibleCount<Math.min(4,Math.max(2,Math.floor(count*.12)))){
+    points=[];paths=[];centres=[anchor];family='SAFE-SWEEP';
+    addPath(bezier({x:-20,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H*.08},{x:A.W*(1-A.INV),y:A.H*.92},{x:A.W+20,y:A.H*A.INV},count,0));
   }
 
   // Pull strict trajectories slightly toward phi anchors at low influence, preserving identity without forcing a coil.
@@ -2830,7 +2839,7 @@ A.render=function(target,s,scale,showGeometry){
     else if(A.rendererVersion===2)meta=drawField(ctx,s,r,pal);
     else meta=drawFieldV3(ctx,s,r,pal);
   }else if(s.mode==='spiral'){
-    meta=A.rendererVersion>=5?drawSpiralV5(ctx,s,r,pal):(A.rendererVersion>=4?drawSpiralV4(ctx,s,r,pal):drawSpiral(ctx,s,r,pal));
+    meta=A.rendererVersion>=6?drawSpiralV6(ctx,s,r,pal):(A.rendererVersion>=4?drawSpiralV4(ctx,s,r,pal):drawSpiral(ctx,s,r,pal));
   }else if(s.mode==='rects'){
     meta=drawRects(ctx,s,r,pal);
   }else if(s.mode==='burst'){
