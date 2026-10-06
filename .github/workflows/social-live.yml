@@ -5,11 +5,15 @@ on:
     paths:
       - '.github/social-trigger'
   schedule:
-    # Each London slot has a GMT and BST UTC trigger.
-    # The gate step only proceeds when the local Europe/London time matches.
-    # Run frequently; social-slot.mjs catches any due/missed London slot within its window.
-    # Duplicate-marker checks make repeated invocations safe.
-    - cron: '*/15 * * * *'
+    # Redundant off-peak UTC triggers around each London publishing slot.
+    # Both UTC hours are included so this works across GMT/BST without editing the workflow.
+    # The London-time gate chooses the due slot; release markers make retries idempotent.
+    # Morning 09:00 London: 08:xx BST / 09:xx GMT.
+    - cron: '7,17,27 8,9 * * *'
+    # Afternoon 15:00 London: 14:xx BST / 15:xx GMT.
+    - cron: '7,17,27 14,15 * * *'
+    # Evening 20:30 London: 19:xx BST / 20:xx GMT.
+    - cron: '37,47,57 19,20 * * *'
   workflow_dispatch:
     inputs:
       slot:
