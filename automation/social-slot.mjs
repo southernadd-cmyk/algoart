@@ -33,11 +33,28 @@ function b64(text) {
 
 const command = process.argv[2] || 'gate';
 const now = localParts();
-const date = process.env.SOCIAL_DATE || `${now.year}-${now.month}-${now.day}`;
+
+function isoDate(parts) {
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function shiftIsoDate(dateText, deltaDays) {
+  const [year, month, day] = String(dateText).split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  date.setUTCDate(date.getUTCDate() + deltaDays);
+  return date.toISOString().slice(0, 10);
+}
+
+let date = process.env.SOCIAL_DATE || isoDate(now);
 
 if (command === 'gate') {
   const forced = String(process.env.FORCE_SLOT || '').trim();
+  const scheduled = String(process.env.SCHEDULED_SLOT || '').trim();
   let slot = null;
+
+  if (forced !== '' && scheduled !== '') {
+    throw new Error('FORCE_SLOT and SCHEDULED_SLOT cannot both be set.');
+  }
 
   if (forced !== '') {
     const parsed = Number(forced);
@@ -45,7 +62,22 @@ if (command === 'gate') {
       throw new Error(`Invalid FORCE_SLOT: ${forced}`);
     }
     slot = parsed;
+  } else if (scheduled !== '') {
+    const parsed = Number(scheduled);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed >= SCHEDULE.instagram.length) {
+      throw new Error(`Invalid SCHEDULED_SLOT: ${scheduled}`);
+    }
+    slot = parsed;
+
+    // A delayed scheduled event can arrive after midnight. If the current London clock
+    // is earlier than that slot's nominal time, this trigger must belong to yesterday.
+    const current = Number(now.hour) * 60 + Number(now.minute);
+    const target = minutes(SCHEDULE.instagram[slot]);
+    if (!process.env.SOCIAL_DATE && current < target) {
+      date = shiftIsoDate(date, -1);
+    }
   } else {
+    // Push-based recovery: publish the latest slot that is already due today.
     const current = Number(now.hour) * 60 + Number(now.minute);
     for (let i = SCHEDULE.instagram.length - 1; i >= 0; i--) {
       if (current >= minutes(SCHEDULE.instagram[i])) {
