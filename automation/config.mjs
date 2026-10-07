@@ -11,13 +11,13 @@ export const ACCOUNTS = {
 export const DAILY_COUNT = 5;
 
 export const SCHEDULE = {
-  instagram: ['09:00', '15:00', '20:30'],
-  threads: ['09:00', '15:00', '20:30']
+  instagram: ['09:00', '15:00', '20:30', '12:00'],
+  threads: ['09:00', '15:00', '20:30', '12:00']
 };
 
 export const PLATFORM_SLOTS = {
-  instagram: [0, 2, 4],
-  threads: [0, 2, 4]
+  instagram: [0, 2, 4, 1],
+  threads: [0, 2, 4, 1]
 };
 
 export const MODES = [
