@@ -79,7 +79,9 @@ if (command === 'gate') {
   } else {
     // Push-based recovery: publish the latest slot that is already due today.
     const current = Number(now.hour) * 60 + Number(now.minute);
-    for (let i = SCHEDULE.instagram.length - 1; i >= 0; i--) {
+    // Push recovery considers only the three normal production slots.
+    // Slot 3 is a temporary externally-triggered noon test slot.
+    for (const i of [2, 1, 0]) {
       if (current >= minutes(SCHEDULE.instagram[i])) {
         slot = i;
         break;
