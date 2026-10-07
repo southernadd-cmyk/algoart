@@ -4,16 +4,6 @@ on:
   push:
     paths:
       - '.github/social-trigger'
-  schedule:
-    # Three off-minute attempts per publishing slot.
-    # GitHub can delay scheduled events; the cron expression is mapped to its intended slot
-    # so a delayed event still publishes the correct artwork instead of being rejected by clock time.
-    - cron: '7,17,27 9 * * *'
-      timezone: 'Europe/London'
-    - cron: '7,17,27 15 * * *'
-      timezone: 'Europe/London'
-    - cron: '37,47,57 20 * * *'
-      timezone: 'Europe/London'
   workflow_dispatch:
     inputs:
       slot:
