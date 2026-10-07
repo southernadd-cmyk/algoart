@@ -2,6 +2,18 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-10-07",
+      "cover": "2026-10-07-01-burst-AA-20261007-01-81343.jpg",
+      "count": 5,
+      "series": [
+        "Radiant Systems",
+        "Connected Fields",
+        "Growth Systems",
+        "Constructed Forms",
+        "Automatic Marks"
+      ]
+    },
+    {
       "date": "2026-10-06",
       "cover": "2026-10-06-01-field-AA-20261006-01-37140.jpg",
       "count": 9,
