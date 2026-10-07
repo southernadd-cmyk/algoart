@@ -47,27 +47,12 @@ jobs:
       - name: Choose London publishing slot
         id: gate
         shell: bash
-        env:
-          TRIGGER_SCHEDULE: ${{ github.event.schedule }}
         run: |
           FORCE_SLOT=""
-          SCHEDULED_SLOT=""
-
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             FORCE_SLOT="${{ inputs.slot }}"
-          elif [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
-            case "$TRIGGER_SCHEDULE" in
-              "7,17,27 9 * * *") SCHEDULED_SLOT="0" ;;
-              "7,17,27 15 * * *") SCHEDULED_SLOT="1" ;;
-              "37,47,57 20 * * *") SCHEDULED_SLOT="2" ;;
-              *)
-                echo "Unknown scheduled trigger: $TRIGGER_SCHEDULE" >&2
-                exit 1
-                ;;
-            esac
           fi
-
-          FORCE_SLOT="$FORCE_SLOT" SCHEDULED_SLOT="$SCHEDULED_SLOT" node automation/social-slot.mjs gate
+          FORCE_SLOT="$FORCE_SLOT" node automation/social-slot.mjs gate
 
       - name: Ensure media release and check duplicate markers
         if: steps.gate.outputs.should_post == 'true'
