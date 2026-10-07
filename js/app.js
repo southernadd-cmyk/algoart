@@ -176,8 +176,15 @@ function settingsToURL(settings){
 }
 
 function updateURL(settings){
+  var url=settingsToURL(settings);
+  var series=SERIES[settings.mode]||{title:settings.mode};
+  // Identify the complete artwork state, including its renderer version.
+  // Exclude the page path and fragment so the same piece keeps the same title.
+  var state=url.slice(url.indexOf('?')+1).split('#')[0];
+  var artworkId=A.hash(state).toString(16).toUpperCase().padStart(8,'0');
+  document.title=series.title+' · '+settings.seed+' · '+artworkId+' — ALGO/ART';
   try{
-    history.replaceState(null,'',settingsToURL(settings));
+    history.replaceState(null,'',url);
   }catch(e){}
 }
 
