@@ -3,141 +3,156 @@ window.AlgoArt=window.AlgoArt||{};
 'use strict';
 
 var COMMON={
-  elements:'Sets the number of primary marks or positions to work with; the finished piece can contain additional strokes.',
-  density:'Changes the size and visual weight of marks, rather than adding more elements.',
-  complexity:'Changes the bend of curved line strokes; Elements controls how many primary marks are available.',
-  negativeSpace:'Reserves quiet areas that the composition tries to avoid.',
-  phiStrength:'Pulls positions, sizes and proportions toward golden-ratio relationships. Lower values allow more variation.',
-  recursion:'This system does not use recursive depth as a direct composition control.',
-  spiralInfluence:'This system does not use spiral influence as a direct composition control.',
-  goldenAngle:'This system uses its own fixed angles; this slider does not directly set them.',
-  nesting:'Adds smaller golden-ratio echoes inside selected shapes; not every shape supports nesting.',
-  pen:'Chooses the ink character: each pen changes the balance of width, transparency, wobble and repeated strokes.',
-  thickness:'Sets the base stroke width. The pen and the importance of a mark can adjust its final width.',
-  wobble:'Adds small irregularities to stroke points, making the ink feel less precise.',
-  overdraw:'Sets repeated passes over each stroke. The selected pen can adjust the number of passes.',
-  opacity:'Sets how opaque the ink is. Pen type and repeated passes also affect its appearance.',
-  pressure:'Varies stroke width between ink passes; higher values give more uneven weight.',
-  dryness:'Increases the chance of broken ink and small gaps along strokes.',
-  curveBias:'Higher values make line strokes more likely to curve; lower values favour straight strokes.',
-  shapeAmount:'Raises the chance of using enabled shapes instead of simple line marks.',
-  overlap:'Allows marks to sit closer together and occupy more of their allotted space.',
-  rotation:'Increases the range of initial mark rotations; composition rules can align them afterwards.',
-  palette:'Chooses the family of hues or monochrome tones available to the artwork.',
-  colourCount:'Sets the number of available colours or tones. The composition can use fewer than this maximum.',
-  saturation:'Sets colour intensity. Some palettes constrain it; Monochrome uses no saturation.',
-  brightness:'Sets colour lightness. Some palettes constrain it; Monochrome uses its own tonal range.',
-  paper:'Sets the background colour used on screen and in exports.',
-  grain:'Adds fine light and dark speckles to the paper. PNG includes the grain; SVG keeps a flat background.',
-  exportScale:'Sets the PNG pixel dimensions. Larger sizes retain the same composition with more pixels.'
+  elements:'Adds more marks to the composition.',
+  density:'Makes the marks larger or smaller.',
+  complexity:'Bends curved line strokes more strongly.',
+  negativeSpace:'Leaves more room for the paper to show through.',
+  phiStrength:'Pulls sizes and positions closer to golden-ratio relationships.',
+  recursion:'Adds more rounds of division or growth.',
+  spiralInfluence:'Pulls positions toward a spiral path.',
+  goldenAngle:'Moves spacing toward the 137.5° golden angle.',
+  nesting:'Adds smaller golden-ratio echoes inside larger shapes.',
+  pen:'Chooses the character of the ink: fine, broad, dry, translucent or loose.',
+  thickness:'Makes the ink strokes thicker or thinner.',
+  wobble:'Adds small imperfections to the ink.',
+  overdraw:'Draws over each stroke again. The pen also affects the number of passes.',
+  opacity:'Makes the ink more solid or more transparent.',
+  pressure:'Adds uneven weight to the strokes.',
+  dryness:'Leaves small breaks and gaps in the ink.',
+  curveBias:'Higher values favour curved strokes; lower values favour straight ones.',
+  shapeAmount:'Adds more of the enabled shapes among the line marks.',
+  overlap:'Lets marks sit closer together and fill more of their allotted space.',
+  rotation:'Varies the angles of individual marks.',
+  palette:'Chooses a family of colours or monochrome tones.',
+  colourCount:'Offers more colours or tones for the composition to use.',
+  saturation:'Makes colours more vivid. Some palettes keep their own limits.',
+  brightness:'Makes colours lighter or darker. Some palettes keep their own limits.',
+  paper:'Changes the background colour.',
+  grain:'Adds fine speckles to the paper. PNG keeps this texture; SVG uses a flat background.',
+  exportScale:'Chooses the PNG image size. More pixels keep fine ink detail at larger sizes.'
 };
 
 var SYSTEMS={
   field:{
-    elements:'Sets the number of arranged marks. More elements create more small supporting marks around the dominant forms.',
-    density:'Changes the size of the arranged marks; Elements controls their number.',
-    negativeSpace:'Reserves empty regions and encourages the arranged marks to leave them clear.',
-    spiralInfluence:'Pulls candidate mark positions toward a spiral trajectory before the composition balances their spacing.',
-    phiStrength:'Strengthens golden-ratio positions, size steps and shape proportions across the arranged marks.'
+    elements:'Adds more supporting marks around the dominant forms.',
+    negativeSpace:'Leaves quiet areas between the arranged marks.',
+    spiralInfluence:'Pulls the arranged marks toward a spiral path.',
+    phiStrength:'Brings mark positions, sizes and proportions closer to φ.'
   },
   spiral:{
-    elements:'Sets the number of sampled positions along the trajectory. Some positions become shapes, connecting strokes or gaps.',
-    density:'Changes the size of marks along the trajectory, rather than the number of sampled positions.',
-    complexity:'Changes the bend of curved connecting strokes and line marks; it does not add trajectory points.',
-    negativeSpace:'This system does not reserve empty regions with this slider; gaps come from the trajectory family.',
-    phiStrength:'Strengthens golden-ratio sizes and proportions in the marks. The trajectory family retains its own structure.',
-    spiralInfluence:'Higher values keep points closer to their trajectory; lower values pull them slightly toward golden-ratio anchor positions.',
-    overlap:'Allows marks to fill more of their allotted space along the trajectory; it does not directly move the path.',
-    rotation:'Mark angles follow the trajectory; this slider does not directly rotate the path.'
+    elements:'Adds more positions along the path for shapes and connecting strokes.',
+    complexity:'Bends the connecting strokes and line marks more strongly.',
+    phiStrength:'Brings mark sizes and proportions closer to φ.',
+    spiralInfluence:'Keeps marks closer to their path. Lower values pull them toward nearby φ anchors.',
+    overlap:'Lets the marks fill more of the space along the path.'
   },
   rects:{
-    elements:'Contributes to the target number of rectangular divisions, together with Recursion and Complexity.',
-    density:'This system sizes its marks from the divided cells; Density does not directly scale them.',
-    complexity:'Allows more, smaller divisions and raises the chance of diagonal strokes inside cells.',
-    negativeSpace:'Leaves more of the divided cells empty, creating quiet areas inside the outer frame.',
-    phiStrength:'Moves cell splits from equal halves toward 61.8 / 38.2 divisions and strengthens golden-ratio margins.',
-    recursion:'Raises the subdivision depth limit and target cell count; cell size also limits further divisions.',
-    nesting:'Raises the chance of a smaller golden-ratio rectangle inside a cell.',
-    wobble:'Adds irregular ink to the divisions, capped at 18 to preserve their architectural character.',
-    curveBias:'Affects diagonal strokes inside cells, capped at 8 so they stay mostly straight.',
-    shapeAmount:'Raises the chance of ellipses, arcs and polygons inside cells; it does not replace the rectangular framework.',
-    overlap:'Cell boundaries determine spacing here; Overlap does not directly move the divisions.',
-    rotation:'Adds small tilts to cell outlines; it does not rotate the subdivision grid.'
+    elements:'Asks for more rectangular divisions. Depth and detail also shape the result.',
+    complexity:'Makes finer divisions and adds more diagonal strokes.',
+    negativeSpace:'Leaves more cells empty inside the frame.',
+    phiStrength:'Moves divisions from equal halves toward 61.8 / 38.2 proportions.',
+    recursion:'Lets the rectangles divide through more rounds.',
+    nesting:'Adds smaller golden-ratio rectangles inside the cells.',
+    wobble:'Adds imperfect ink to the outlines, kept gentle with a maximum of 18.',
+    curveBias:'Lets diagonal strokes curve slightly, with a maximum of 8.',
+    shapeAmount:'Adds ellipses, arcs and polygons inside the cells.',
+    rotation:'Adds a slight tilt to the cell outlines.'
   },
   burst:{
-    elements:'Sets the number of radiating marks shared between the composition\'s hubs.',
-    density:'Changes the scale of the radiating marks; Elements controls how many are allocated.',
-    complexity:'Changes the bend of curved rays and line-based marks.',
-    negativeSpace:'Enlarges reserved quiet regions in the VOID family; other burst families do not reserve those regions.',
-    phiStrength:'Strengthens golden-ratio mark sizes and proportions around the radiating hubs.',
-    goldenAngle:'Moves angular spacing from an even division of the circle toward the 137.5° golden-angle step.',
-    overlap:'Relaxes spacing penalties between radiating marks, allowing them to sit closer together.',
-    rotation:'Mark directions follow the rays around their hubs; this slider does not directly rotate the burst.'
+    elements:'Adds more radiating marks around the hubs.',
+    complexity:'Bends curved rays and line marks more strongly.',
+    negativeSpace:'Leaves more quiet space between the radiating marks.',
+    phiStrength:'Brings the radiating mark sizes and proportions closer to φ.',
+    goldenAngle:'Moves ray spacing from equal steps toward the 137.5° golden angle.',
+    overlap:'Lets radiating marks sit closer together.'
   },
   network:{
-    elements:'Sets the number of nodes to place; the system then chooses connections between them.',
-    density:'Changes node-mark sizes. Complexity controls the number and richness of connections.',
-    complexity:'Allows more neighbours and connections per node, and changes the bend of curved links.',
-    negativeSpace:'Reserves quiet regions that node placement tries to avoid; links can still cross them.',
-    phiStrength:'Strengthens golden-ratio node positions, sizes and preferred connection lengths.',
-    spiralInfluence:'Pulls candidate node positions toward a spiral trajectory before spacing is balanced.',
-    shapeAmount:'Raises the chance of visible shapes at nodes. Important nodes remain more strongly emphasised.',
-    overlap:'Allows closer node spacing and more crossings between connections.',
-    rotation:'Changes initial node-mark rotations; it does not rotate the whole network.'
+    elements:'Adds more nodes for the network to connect.',
+    density:'Makes the shapes at the nodes larger or smaller.',
+    complexity:'Adds more neighbours and links to each node.',
+    negativeSpace:'Leaves quiet areas between nodes. Links can still cross them.',
+    phiStrength:'Brings node positions, sizes and link lengths closer to φ.',
+    spiralInfluence:'Pulls node positions toward a spiral path.',
+    shapeAmount:'Draws more shapes at the nodes, keeping the main nodes prominent.',
+    overlap:'Lets nodes sit closer together and allows more crossing links.',
+    rotation:'Varies the angles of the shapes at the nodes.'
   },
   organic:{
-    elements:'Sets the branch-segment budget and, at higher values, adds more starting roots. Depth and branch length can stop growth sooner.',
-    density:'Branch lengths come from the growth rules; Density does not directly scale them.',
-    complexity:'Raises the chance of branching in two directions and widens the turns between branches.',
-    negativeSpace:'Reserves quiet areas that branch endpoints try to avoid.',
-    phiStrength:'Strengthens golden-ratio starting positions and initial lengths. Each generation still shrinks by approximately φ.',
-    recursion:'Raises the allowed number of branch generations; Elements also limits the total growth.',
-    nesting:'This system grows branches rather than adding nested copies of shapes.',
-    wobble:'Adds irregular ink to branches, with a minimum of 42 to preserve the organic character.',
-    curveBias:'Makes branch strokes more likely to curve, with a minimum of 76.',
-    shapeAmount:'Raises the chance of small elliptical marks at branch endpoints.',
-    overlap:'Growth rules determine branch spacing; Overlap does not directly separate the branches.',
-    rotation:'Branch directions come from the growth rules; this slider does not directly rotate them.'
+    elements:'Allows more branch strokes and, at higher values, more starting roots.',
+    complexity:'Adds more forks and wider turns to the branches.',
+    negativeSpace:'Leaves quiet areas that growing branches try to avoid.',
+    phiStrength:'Brings starting positions and lengths closer to φ. New branches shrink by roughly φ.',
+    recursion:'Lets branches grow through more rounds.',
+    wobble:'Adds imperfect ink to the branches, with a minimum of 42.',
+    curveBias:'Favours curved branches, with a minimum of 76.',
+    shapeAmount:'Adds small elliptical marks at branch tips.'
   },
   geometric:{
-    elements:'Contributes to the number of constructed forms, together with Complexity; the composition caps the total at 34.',
-    density:'Form sizes come from the selected composition family; Density does not directly scale them.',
-    complexity:'Adds more constructed forms and raises the chance of supporting line accents.',
-    negativeSpace:'Enlarges reserved quiet regions in the FLOAT family; other constructed families do not reserve those regions.',
-    phiStrength:'Strengthens golden-ratio positions, size steps and shape proportions in the constructed forms.',
-    nesting:'Raises the chance of a smaller shape or arc accent inside a dominant form.',
-    wobble:'Adds irregular ink to constructed forms, capped at 16 to preserve their precise character.',
-    overdraw:'Sets repeated ink passes, capped at 4 before the selected pen adjusts them.',
-    curveBias:'Affects supporting line strokes, capped at 12 to keep the construction mostly straight.',
-    shapeAmount:'This system chooses directly from the enabled shape types; Shape amount does not directly set their mix.',
-    overlap:'The composition family sets form spacing and collisions; Overlap does not directly move them.',
-    rotation:'Form angles come from the composition family; this slider does not directly rotate them.'
+    elements:'Adds more constructed forms, together with Detail, up to 34.',
+    complexity:'Adds more forms and supporting line accents.',
+    negativeSpace:'Leaves more quiet space around the floating forms.',
+    phiStrength:'Brings form positions, sizes and proportions closer to φ.',
+    nesting:'Adds smaller shapes or arcs inside dominant forms.',
+    wobble:'Adds imperfect ink to the forms, kept gentle with a maximum of 16.',
+    overdraw:'Draws over each stroke again, up to 4 passes before the pen adjusts them.',
+    curveBias:'Lets supporting strokes curve slightly, with a maximum of 12.'
   },
   scribble:{
-    elements:'Sets the stroke-segment budget. The system shares those strokes between its gesture anchors.',
-    density:'Expands the gesture areas and increases stroke lengths; it does not add more strokes.',
-    complexity:'Adds gesture anchors where the family allows them, shortens continuous runs and increases turning.',
-    negativeSpace:'Reserves quiet regions and increases breaks between continuous runs of ink.',
-    phiStrength:'Strengthens golden-ratio anchor positions, gesture sizes and stroke lengths.',
-    nesting:'This system makes continuous gestures rather than nested copies of shapes.',
-    wobble:'Adds irregular ink and directional variation, with a minimum ink wobble of 44.',
-    overdraw:'Sets repeated ink passes, with a minimum of 2 before the selected pen adjusts them.',
-    curveBias:'Makes gesture strokes more likely to curve, with a minimum of 58.',
-    shapeAmount:'Raises the chance of occasional arcs and elliptical accents around the gestures.',
-    overlap:'Gesture areas determine spacing; Overlap does not directly separate the strokes.',
-    rotation:'Gesture directions come from their anchors and turning rules; this slider does not directly rotate them.'
+    elements:'Adds more strokes across the gestures.',
+    density:'Expands the gestures and lengthens their strokes.',
+    complexity:'Adds more gesture centres, shorter runs and sharper turns.',
+    negativeSpace:'Leaves quiet areas and more pauses between runs of ink.',
+    phiStrength:'Brings gesture positions, sizes and stroke lengths closer to φ.',
+    wobble:'Adds uneven ink and wandering turns, with a minimum ink wobble of 44.',
+    overdraw:'Draws over each stroke again, with at least 2 passes before the pen adjusts them.',
+    curveBias:'Favours flowing curves, with a minimum of 58.',
+    shapeAmount:'Adds occasional arcs and elliptical accents around the gestures.'
   }
 };
 
-function helpText(mode,id,version){
-  var system=SYSTEMS[mode]||{};
+var LABELS={density:'Scale',complexity:'Bend',negativeSpace:'Empty space',phiStrength:'φ strength',recursion:'Depth',spiralInfluence:'Spiral pull',goldenAngle:'Golden-angle spacing',nesting:'Inner shapes',curveBias:'Curved strokes',rotation:'Angle variation'};
+var SYSTEM_LABELS={
+  field:{elements:'Marks'},
+  spiral:{elements:'Path positions',spiralInfluence:'Follow path'},
+  rects:{elements:'Divisions',complexity:'Detail',recursion:'Division depth',rotation:'Tilt'},
+  burst:{elements:'Radiating marks'},
+  network:{elements:'Nodes',complexity:'Connections',density:'Node scale',shapeAmount:'Node shapes'},
+  organic:{elements:'Growth',complexity:'Branching',recursion:'Growth depth',shapeAmount:'Tip marks'},
+  geometric:{elements:'Forms',complexity:'Detail'},
+  scribble:{elements:'Strokes',density:'Gesture scale',complexity:'Gesture detail',shapeAmount:'Accents'}
+};
+
+// Presentation only: retain every setting and its value for existing artwork URLs.
+var INACTIVE={
+  field:['recursion','goldenAngle'],
+  spiral:['recursion','goldenAngle','negativeSpace','rotation'],
+  rects:['density','spiralInfluence','goldenAngle','overlap'],
+  burst:['recursion','spiralInfluence','rotation'],
+  network:['recursion','goldenAngle'],
+  organic:['density','spiralInfluence','goldenAngle','nesting','overlap','rotation'],
+  geometric:['density','recursion','spiralInfluence','goldenAngle','shapeAmount','overlap','rotation'],
+  scribble:['recursion','spiralInfluence','goldenAngle','nesting','overlap','rotation']
+};
+
+function inactiveControl(mode,id,version,meta){
+  var hidden=(INACTIVE[mode]||[]).indexOf(id)!==-1;
+  if((mode==='field'||mode==='network')&&id==='goldenAngle'&&version<4)hidden=false;
   if(mode==='spiral'&&version<6){
-    if(id==='negativeSpace')return 'Enlarges reserved quiet regions in the VOID spiral family; other spiral families do not reserve them.';
-    if(id==='spiralInfluence')return 'This spiral follows its own path rules; Spiral influence does not directly set its trajectory.';
-    if(id==='goldenAngle'&&version<4)return 'Moves the angular step between spiral positions toward the 137.5° golden angle.';
+    if(id==='negativeSpace')hidden=false;
+    if(id==='spiralInfluence')hidden=true;
+    if(id==='goldenAngle')hidden=version>=4;
   }
-  if(mode==='field'&&version<4&&id==='goldenAngle')return 'Moves the angular step of candidate spiral positions toward the 137.5° golden angle.';
-  return system[id]||COMMON[id]||'';
+  if(meta&&meta.guide){
+    if(mode==='burst'&&meta.guide.type==='burst'&&id==='negativeSpace')hidden=meta.guide.variant!=='VOID';
+    if(mode==='geometric'&&meta.guide.type==='constructed'&&id==='negativeSpace')hidden=meta.guide.variant!=='FLOAT';
+    if(mode==='spiral'&&version<6&&meta.guide.type==='spiral'&&id==='negativeSpace')hidden=meta.guide.variant!=='VOID';
+  }
+  return hidden;
+}
+
+function helpText(mode,id,version){
+  if(mode==='spiral'&&version<6&&id==='negativeSpace')return 'Leaves quiet areas between the spiral marks.';
+  return (SYSTEMS[mode]||{})[id]||COMMON[id]||'';
 }
 
 var entries=[],active=null,pinned=false,hideTimer=null;
@@ -198,7 +213,7 @@ document.querySelectorAll('.control').forEach(function(row){
   button.setAttribute('aria-describedby',hint.id);
   var previous=input.getAttribute('aria-describedby');
   input.setAttribute('aria-describedby',previous?previous+' '+hint.id:hint.id);
-  var entry={id:input.id,button:button,hint:hint};
+  var entry={id:input.id,row:row,label:label,name:label.textContent.trim(),button:button,hint:hint};
   entries.push(entry);
   button.addEventListener('pointerenter',function(e){if(e.pointerType!=='touch')openHelp(entry)});
   button.addEventListener('pointerleave',function(){scheduleClose(entry)});
@@ -213,11 +228,32 @@ document.querySelectorAll('.control').forEach(function(row){
   hint.addEventListener('pointerleave',function(){scheduleClose(entry)});
 });
 
-A.syncControlHelp=function(mode,version){
-  entries.forEach(function(entry){entry.hint.textContent=helpText(mode,entry.id,version||6)});
+var shapeChecks=Array.prototype.map.call(document.querySelectorAll('.checks input'),function(input){
+  return{id:input.id,label:input.parentElement,name:input.parentElement.lastChild.textContent.trim()};
+});
+
+A.syncControlHelp=function(mode,version,meta){
+  version=version||6;
+  var palette=document.getElementById('palette');
+  var monochrome=palette&&palette.value==='mono';
+  entries.forEach(function(entry){
+    entry.row.hidden=inactiveControl(mode,entry.id,version,meta)||(monochrome&&(entry.id==='saturation'||entry.id==='brightness'));
+    entry.label.textContent=monochrome&&entry.id==='colourCount'?'Tones':((SYSTEM_LABELS[mode]||{})[entry.id]||LABELS[entry.id]||entry.name);
+    entry.button.setAttribute('aria-label','About '+entry.label.textContent);
+    entry.hint.textContent=helpText(mode,entry.id,version);
+    if(active===entry&&entry.row.hidden)closeHelp();
+  });
+  shapeChecks.forEach(function(check){
+    var hidden=mode==='organic'||(mode==='scribble'&&(check.id==='rectangles'||check.id==='polygons'));
+    if(mode==='scribble'&&check.id==='lines'&&meta&&meta.guide&&meta.guide.type==='scribble')hidden=meta.guide.variant!=='RIBBON';
+    check.label.hidden=hidden;
+    check.label.lastChild.textContent=' '+(mode==='scribble'&&check.id==='lines'?'Links':check.name);
+  });
+  var checks=document.querySelector('.checks');
+  if(checks)checks.hidden=shapeChecks.every(function(check){return check.label.hidden});
   var mutate=document.getElementById('mutate'),randomise=document.getElementById('randomise');
-  if(mutate)mutate.title='Makes a few small parameter adjustments and changes the seed, keeping the current system, pen and palette.';
-  if(randomise)randomise.title='Chooses a new seed and randomises the sliders, system, pen and palette. Keeps the paper colour and enabled shape types.';
+  if(mutate)mutate.title='Try a few small changes. Keep the current system, pen and palette.';
+  if(randomise)randomise.title='Try a new seed, system, pen, palette and slider settings. Keep the paper colour and shape choices.';
   if(active)placeHelp(active);
 };
 A.closeControlHelp=closeHelp;

@@ -3,13 +3,16 @@
   --paper-2:#ddd6c5;
   --ink:#11110f;
   --soft-ink:#2b2a25;
-  --muted:#746f63;
+  --muted:#625d53;
   --line:#b8b09f;
   --acid:#d9ff54;
   --orange:#ff6138;
   --blue:#2b59ff;
   --header:64px;
   --inspector:326px;
+  --ui-caption:10px;
+  --ui-label:11px;
+  --ui-body:12px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--ink);color:var(--ink);font-family:"Courier New",Courier,monospace}
@@ -1380,4 +1383,100 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
   .description-body{padding:12px}
   .description-block p{font-size:13px}
   .description-construction p{font-size:9px}
+}
+
+/* Shared type sizes keep useful text readable through every responsive layout. */
+.brand-meta,
+.formula-strip,
+.toolbar-label,
+.stage-footer,
+.inspector-head span:not(.panel-number),
+.mode-card span,
+.intro-top,
+.intro-kicker,
+.intro-foot,
+.intro-systems span,
+.renderer-chip{
+  font-size:var(--ui-caption);
+  line-height:1.4;
+  letter-spacing:.06em
+}
+.seed input{font-size:var(--ui-body)}
+.actions #mutate,
+.actions #randomise,
+.actions #describe,
+.actions #variations,
+.actions #geometry,
+.actions .gallery-nav{
+  font-size:var(--ui-label);
+  letter-spacing:.025em
+}
+.tab{font-size:10px;line-height:1.3}
+.tab span{font-size:8px}
+.inspector-head strong{font-size:13px;letter-spacing:.08em}
+.inspector-head span:not(.panel-number){text-transform:none}
+.section-title span{font-size:12px;letter-spacing:.08em}
+.mode-picker-label span{font-size:11px}
+.mode-picker-label b{font-size:12px}
+.controls{gap:14px}
+.control label,
+.control output,
+.control select,
+.checks label,
+.export-big{font-size:var(--ui-body);line-height:1.4}
+.control label{letter-spacing:.035em}
+.control-label{flex-wrap:wrap;row-gap:3px}
+.mode-card span{padding-top:7px}
+.mode-card strong{font-size:12px;line-height:1.35}
+.mini-note,
+.variations-head small,
+.variations-actions small,
+.share-status,
+.description-head small,
+.description-note{
+  font-size:var(--ui-body);
+  line-height:1.5;
+  letter-spacing:0;
+  text-transform:none
+}
+.variations-head strong{font-size:13px;letter-spacing:.08em}
+.variations-head>div>div,
+.description-head>div>div{min-width:0}
+.variations-actions{flex-wrap:wrap}
+.variations-actions small{text-align:left}
+.variation-card span{font-size:10px;max-width:calc(100% - 14px);overflow-wrap:anywhere}
+.share-status{min-height:18px}
+.stats{font-size:10px;line-height:1.4;letter-spacing:.045em}
+.stage-footer{color:#a8a194;flex-wrap:wrap;gap:5px 16px}
+.stage-index strong{font-size:10px}
+.ethos-kicker,
+.ethos-reveal,
+.description-kicker,
+.description-block>span,
+.description-block small{font-size:11px;line-height:1.4}
+.ethos-toast p{font-size:12px;line-height:1.5}
+.reveal-tooltip strong{font-size:12px}
+.reveal-tooltip span{font-size:12px;line-height:1.5}
+.intro-copy>p:not(.intro-kicker):not(.intro-thesis):not(.intro-foot){font-size:13px;line-height:1.6}
+.intro-principles strong{font-size:12px}
+.intro-principles span{font-size:12px;line-height:1.5}
+.description-construction p{font-size:13px;line-height:1.6}
+.inspector-toggle{font-size:11px}
+
+@media(min-width:821px) and (max-width:1100px){
+  .actions{gap:4px;padding-left:7px;padding-right:7px}
+  .actions #mutate,
+  .actions #randomise,
+  .actions #describe,
+  .actions #variations,
+  .actions #geometry,
+  .actions .gallery-nav{font-size:10px;padding-left:6px;padding-right:6px}
+}
+@media(max-width:700px){
+  .tabs{grid-auto-rows:40px}
+  .tab{min-height:40px}
+  .variations-actions small{flex:1 1 180px}
+  .intro-top{flex-wrap:wrap;gap:5px 12px}
+  .intro-principles>div{gap:8px}
+  .stage-footer{display:block}
 }

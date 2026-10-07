@@ -19,7 +19,7 @@
 <meta name="twitter:title" content="ALGO/ART — Golden-ratio generative marker system">
 <meta name="twitter:description" content="The algorithm creates the structure. The marker makes it human.">
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/social-card.svg">
-<link rel="stylesheet" href="css/style.css?v=control-help-20261007">
+<link rel="stylesheet" href="css/style.css?v=polish-20261007">
 </head>
 <body>
 <div class="intro-splash" id="introSplash" hidden>
@@ -113,11 +113,11 @@
       <div class="description-overlay" id="descriptionOverlay" hidden>
         <section class="description-sheet" role="dialog" aria-modal="true" aria-labelledby="descriptionTitle">
           <div class="description-head">
-            <div><span>03</span><div><strong id="descriptionTitle">DESCRIBE ARTWORK</strong><small>deterministic accessibility from construction data</small></div></div>
+            <div><span>03</span><div><strong id="descriptionTitle">ABOUT THIS ARTWORK</strong><small>what you see and how it is built</small></div></div>
             <button id="closeDescription" class="icon-btn" type="button" aria-label="Close artwork description">×</button>
           </div>
           <div class="description-body">
-            <p class="description-kicker">ACCESSIBILITY / STRUCTURE → LANGUAGE</p>
+            <p class="description-kicker">ARTWORK DESCRIPTION</p>
             <div class="description-block">
               <span>ALT TEXT</span>
               <p id="descriptionAlt"></p>
@@ -132,7 +132,7 @@
               <span>HOW IT IS BUILT</span>
               <p id="descriptionConstruction"></p>
             </div>
-            <p class="description-note">Generated from the artwork’s own construction metadata — not guessed from the finished image.</p>
+            <p class="description-note">These descriptions come from the same rules and settings that draw the artwork.</p>
           </div>
         </section>
       </div>
@@ -140,7 +140,7 @@
       <div class="variations-overlay" id="variationsOverlay" hidden>
         <div class="variations-sheet" role="dialog" aria-modal="true" aria-labelledby="variationsTitle">
           <div class="variations-head">
-            <div><span>03</span><div><strong id="variationsTitle">VARIATIONS</strong><small>same system / four deterministic seeds</small></div></div>
+            <div><span>03</span><div><strong id="variationsTitle">VARIATIONS</strong><small>Four versions of the current system.</small></div></div>
             <button id="closeVariations" class="icon-btn" aria-label="Close variations">×</button>
           </div>
           <div class="variations-grid" id="variationsGrid">
@@ -151,13 +151,13 @@
           </div>
           <div class="variations-actions">
             <button id="shuffleVariations">Shuffle 4</button>
-            <small>Tap an artwork to promote it to the main canvas.</small>
+            <small>Choose a variation to use it.</small>
           </div>
         </div>
       </div>
 
       <div class="stage-footer" aria-hidden="true">
-        <span>1400 × 1000 / BROWSER CANVAS</span>
+        <span>ARTWORK · 1400 × 1000</span>
         <span>M mutate · N seed · V variations · D describe · [ parameters</span>
       </div>
     </div>
@@ -170,7 +170,7 @@
           <span class="panel-number">02</span>
           <div>
             <strong>PARAMETERS</strong>
-            <span>shape the system, not the pixels</span>
+            <span>Composition · ink · colour</span>
           </div>
         </div>
         <button id="inspectorClose" class="icon-btn close-btn" aria-label="Close controls" title="Close controls">×</button>
@@ -187,7 +187,7 @@
 
       <div class="tab-body">
         <section class="tab-panel active" data-panel="composition">
-          <div class="section-title"><span>COMPOSITION</span><b>φ-field</b></div>
+          <div class="section-title"><span>COMPOSITION</span><b>8 systems</b></div>
           <div class="controls">
             <div class="mode-picker-wrap">
               <div class="mode-picker-label"><span>SERIES</span><b>choose a system</b></div>
@@ -218,7 +218,7 @@
             <div class="control"><label>Spiral influence</label><output></output><input id="spiralInfluence" type="range" min="0" max="100" value="63"></div>
             <div class="control"><label>Golden angle</label><output></output><input id="goldenAngle" type="range" min="0" max="100" value="93"></div>
             <div class="control"><label>Nesting</label><output></output><input id="nesting" type="range" min="0" max="100" value="44"></div>
-            <div class="mini-note">φ ≈ 1.618034 · golden angle ≈ 137.508° · deterministic from seed</div>
+            <div class="mini-note">φ ≈ 1.618034 · golden angle ≈ 137.508°. The same seed and settings recreate the same artwork.</div>
           </div>
         </section>
 
@@ -267,12 +267,12 @@
         <section class="tab-panel" data-panel="export">
           <div class="section-title"><span>OUTPUT</span><b>vector + raster</b></div>
           <div class="controls">
-            <div class="control"><label>PNG scale</label><select id="exportScale"><option value="1">1× — 1400×1000</option><option value="2" selected>2× — 2800×2000</option><option value="3">3× — 4200×3000</option></select></div>
-            <button class="primary export-big" id="savePanel">SAVE PNG</button>
-            <button class="export-big" id="saveSVG">SAVE SVG / VECTOR</button>
-            <button class="export-big" id="copyLink">COPY SHARE LINK</button>
+            <div class="control"><label>PNG size</label><select id="exportScale"><option value="1">1× — 1400×1000</option><option value="2" selected>2× — 2800×2000</option><option value="3">3× — 4200×3000</option></select></div>
+            <button class="primary export-big" id="savePanel">DOWNLOAD PNG</button>
+            <button class="export-big" id="saveSVG">DOWNLOAD SVG</button>
+            <button class="export-big" id="copyLink">COPY ARTWORK LINK</button>
             <div class="share-status" id="shareStatus" aria-live="polite"></div>
-            <div class="mini-note">The URL stores the current seed and parameters, so opening the link recreates the same artwork. SVG exports clean vector marker paths; PNG keeps the paper grain.</div>
+            <div class="mini-note">Bookmark this page or copy the link to return to this exact artwork. PNG includes paper texture. SVG scales cleanly to any size.</div>
           </div>
         </section>
       </div>
@@ -287,7 +287,7 @@
 <script src="js/generator.js"></script>
 <script src="js/export.js"></script>
 <script src="js/describe.js"></script>
-<script src="js/control-help.js?v=20261007"></script>
-<script src="js/app.js?v=control-help-20261007"></script>
+<script src="js/control-help.js?v=polish-20261007"></script>
+<script src="js/app.js?v=polish-20261007"></script>
 </body>
 </html>
