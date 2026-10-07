@@ -232,6 +232,7 @@ function loadSettingsFromURL(){
 
 function syncModeCards(){
   var mode=$('mode').value;
+  if(A.syncControlHelp)A.syncControlHelp(mode,A.rendererVersion);
   document.querySelectorAll('.mode-card').forEach(function(card){
     var active=card.dataset.mode===mode;
     card.classList.toggle('active',active);
