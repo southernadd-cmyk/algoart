@@ -2,6 +2,18 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-10-08",
+      "cover": "2026-10-08-01-rects-AA-20261008-01-45486.jpg",
+      "count": 5,
+      "series": [
+        "Recursive Divisions",
+        "Radiant Systems",
+        "Connected Fields",
+        "Growth Systems",
+        "Constructed Forms"
+      ]
+    },
+    {
       "date": "2026-10-07",
       "cover": "2026-10-07-01-burst-AA-20261007-01-81343.jpg",
       "count": 5,
