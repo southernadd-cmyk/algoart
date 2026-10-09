@@ -6,7 +6,7 @@ import {scheduleDecision} from '../automation/portrait-slot.mjs';
 import {PORTRAIT_SCHEDULE,PORTRAIT_POST_INDICES} from '../automation/config.mjs';
 
 const day='2099-02-03';
-const env={...process.env,SOCIAL_DATE:day,SOCIAL_COUNT:'5',SOCIAL_RENDERER_VERSION:'6'};
+const env={...process.env,ALGOART_LOCAL_URL:process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:8765/',SOCIAL_DATE:day,SOCIAL_COUNT:'5',SOCIAL_RENDERER_VERSION:'6'};
 function jpegDimensions(bytes){
   // SOF0/SOF2 markers contain the encoded width and height.
   for(let i=2;i<bytes.length-9;i++){
