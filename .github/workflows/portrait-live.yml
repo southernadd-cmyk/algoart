@@ -13,6 +13,10 @@ on:
         required: false
         type: boolean
         default: false
+      repost_deleted:
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       slot:
@@ -27,6 +31,10 @@ on:
           - '2'
       live:
         description: 'Allow real posts on main only (never use on feature branch)'
+        type: boolean
+        default: false
+      repost_deleted:
+        description: 'Repost previously deleted portrait posts despite their old completion markers'
         type: boolean
         default: false
 
@@ -80,7 +88,15 @@ jobs:
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
         id: state
         shell: bash
+        env:
+          REPOST_DELETED: ${{ inputs.repost_deleted }}
         run: |
+          # Explicit opt-in recovery only, with a forced slot. Normal cronjobs
+          # always use their saved completion markers and never repost.
+          if [ "$REPOST_DELETED" = "true" ] && [ -z "${{ inputs.slot }}" ]; then
+            echo "::error::Reposting previously deleted posts requires an explicit slot."
+            exit 1
+          fi
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release create "$RELEASE_TAG"               --title "ALGO/ART portrait publishing media"               --notes "Rolling public media host for automated @artalgorithm posts."
           fi
@@ -93,13 +109,13 @@ jobs:
           BS_MARKER="done-${DATE}-portrait-slot${SLOT}-bluesky.txt"
           ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
 
-          if printf '%s\n' "$ASSETS" | grep -Fxq "$IG_MARKER"; then
+          if [ "$REPOST_DELETED" != "true" ] && printf '%s\n' "$ASSETS" | grep -Fxq "$IG_MARKER"; then
             echo "instagram_done=true" >> "$GITHUB_OUTPUT"
           else
             echo "instagram_done=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if printf '%s\n' "$ASSETS" | grep -Fxq "$TH_MARKER"; then
+          if [ "$REPOST_DELETED" != "true" ] && printf '%s\n' "$ASSETS" | grep -Fxq "$TH_MARKER"; then
             echo "threads_done=true" >> "$GITHUB_OUTPUT"
           else
             echo "threads_done=false" >> "$GITHUB_OUTPUT"
@@ -111,7 +127,7 @@ jobs:
             echo "pinterest_done=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if printf '%s\n' "$ASSETS" | grep -Fxq "$BS_MARKER"; then
+          if [ "$REPOST_DELETED" != "true" ] && printf '%s\n' "$ASSETS" | grep -Fxq "$BS_MARKER"; then
             echo "bluesky_done=true" >> "$GITHUB_OUTPUT"
           else
             echo "bluesky_done=false" >> "$GITHUB_OUTPUT"
@@ -375,6 +391,7 @@ jobs:
           echo "- Date: ${{ steps.gate.outputs.date }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Slot: ${{ steps.gate.outputs.slot }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Target London time: ${{ steps.gate.outputs.target_time }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Explicit repost of deleted platforms: ${{ inputs.repost_deleted }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Instagram already complete before run: ${{ steps.state.outputs.instagram_done }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Threads already complete before run: ${{ steps.state.outputs.threads_done }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Bluesky configured: ${{ env.BLUESKY_APP_PASSWORD != '' }}" >> "$GITHUB_STEP_SUMMARY"
