@@ -266,6 +266,8 @@ jobs:
           test -s /tmp/host-instagram-check.jpg
 
       - name: Publish to Instagram
+        id: publish_instagram
+        continue-on-error: true
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
         env:
           LIVE_PUBLISHING: 'true'
@@ -281,7 +283,7 @@ jobs:
           npm run social:instagram
 
       - name: Mark Instagram slot complete
-        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true' && steps.publish_instagram.outcome == 'success'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.instagram_marker }}"
@@ -289,6 +291,8 @@ jobs:
           gh release upload "$RELEASE_TAG" "/tmp/$MARKER" --clobber
 
       - name: Publish to Threads
+        id: publish_threads
+        continue-on-error: true
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true'
         env:
           LIVE_PUBLISHING: 'true'
@@ -304,7 +308,7 @@ jobs:
           npm run social:threads
 
       - name: Mark Threads slot complete
-        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true' && steps.publish_threads.outcome == 'success'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.threads_marker }}"
@@ -313,6 +317,8 @@ jobs:
 
 
       - name: Publish to Bluesky
+        id: publish_bluesky
+        continue-on-error: true
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'
         env:
           MEDIA_URL: ${{ steps.host.outputs.media_url }}
@@ -325,7 +331,7 @@ jobs:
           npm run social:bluesky
 
       - name: Mark Bluesky slot complete
-        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true' && steps.publish_bluesky.outcome == 'success'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.bluesky_marker }}"
@@ -333,6 +339,8 @@ jobs:
           gh release upload "$RELEASE_TAG" "/tmp/$MARKER" --clobber
 
       - name: Publish to Pinterest
+        id: publish_pinterest
+        continue-on-error: true
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'
         env:
           LIVE_PUBLISHING: 'true'
@@ -351,7 +359,7 @@ jobs:
           npm run social:pinterest
 
       - name: Mark Pinterest slot complete
-        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true' && steps.publish_pinterest.outcome == 'success'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.pinterest_marker }}"
@@ -373,3 +381,17 @@ jobs:
           echo "- Bluesky already complete before run: ${{ steps.state.outputs.bluesky_done }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Pinterest enabled: ${{ vars.PINTEREST_ENABLED }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Pinterest already complete before run: ${{ steps.state.outputs.pinterest_done }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report incomplete portrait social posts
+        if: always()
+        shell: bash
+        env:
+          FAILED_IG: ${{ steps.publish_instagram.outcome == 'failure' }}
+          FAILED_TH: ${{ steps.publish_threads.outcome == 'failure' }}
+          FAILED_BS: ${{ steps.publish_bluesky.outcome == 'failure' }}
+          FAILED_PI: ${{ steps.publish_pinterest.outcome == 'failure' }}
+        run: |
+          if [[ "$FAILED_IG" == "true" || "$FAILED_TH" == "true" || "$FAILED_BS" == "true" || "$FAILED_PI" == "true" ]]; then
+            echo "::error::A portrait destination failed. Successful posts are marked complete; rerunning the same slot retries only missing platforms."
+            exit 1
+          fi
