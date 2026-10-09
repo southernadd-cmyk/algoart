@@ -1,1 +1,4 @@
-recover missed 09:00 London slot on 2026-10-07
+Controlled retry of existing UK 09:00 slot on 2026-10-09 after portrait rollout.
+Triggered at approximately 11:17 BST by user request.
+Existing landscape and portrait completion markers must prevent repeat posts.
+Verify social-live.yml landscape and portrait reusable jobs and ten-image Daily Gallery.
