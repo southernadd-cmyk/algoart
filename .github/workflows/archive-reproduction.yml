@@ -15,7 +15,7 @@ permissions:
 jobs:
   reproduce:
     name: Archive / ${{ matrix.browser }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -31,6 +31,10 @@ jobs:
       - name: Install JavaScript dependencies
         timeout-minutes: 2
         run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Capture generated dependency lockfile
+        run: node --input-type=module -e "import fs from 'node:fs'; console.log('DEPENDENCY_LOCK '+JSON.stringify(JSON.parse(fs.readFileSync('package-lock.json','utf8'))))"
+      - name: Record browser runtime
+        run: npx playwright --version
       - name: Install browser system dependencies
         timeout-minutes: 2
         env:
@@ -47,8 +51,10 @@ jobs:
             sleep 1
           done
           exit 1
-      - name: Check plotter geometry and fixed-order travel
-        run: npm run test:plotter
+      - name: Check visual metrics, geometry and fixed-order travel
+        run: |
+          npm run test:plotter-metrics
+          npm run test:plotter
       - name: Compare plotter previews with canvas artwork
         env:
           ARCHIVE_BROWSER: ${{ matrix.browser }}
