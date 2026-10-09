@@ -253,8 +253,8 @@
       "mode": "spiral",
       "series": "Golden Trajectories",
       "imageFile": "2026-10-06-01-spiral-AA-20261006-01-92180.jpg",
-      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=5&seed=AA-20261006-01-92180&mode=spiral&el=46&den=45&cx=53&neg=20&phi=98&rec=6&spi=82&ga=94&nest=24&pen=fine&th=13&wob=31&od=5&op=79&pr=36&dry=34&curve=64&shape=68&overlap=60&rot=89&ln=1&ci=1&re=1&po=1&ar=1&pal=golden&cols=7&sat=75&bri=52&paper=%23f0eadc&grain=12",
-      "rendererVersion": 5,
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=6&seed=AA-20261006-01-92180&mode=spiral&el=46&den=45&cx=53&neg=20&phi=98&rec=6&spi=82&ga=94&nest=24&pen=fine&th=13&wob=31&od=5&op=79&pr=36&dry=34&curve=64&shape=68&overlap=60&rot=89&ln=1&ci=1&re=1&po=1&ar=1&pal=golden&cols=7&sat=75&bri=52&paper=%23f0eadc&grain=12",
+      "rendererVersion": 6,
       "settings": {
         "mode": "spiral",
         "series": "Golden Trajectories",
@@ -388,7 +388,7 @@
       "altText": "Abstract algorithmic marker artwork from ALGO/ART's Golden Trajectories system. Generated from seed AA-20261006-02-10170 using golden-ratio composition rules and imperfect scribble marker strokes."
     },
     {
-      "id": "2026-10-06-01",
+      "id": "2026-10-06-09",
       "title": "Growth Systems — Study 09",
       "seed": "AA-20261006-01-75932",
       "mode": "organic",
