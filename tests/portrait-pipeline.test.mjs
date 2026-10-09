@@ -16,7 +16,7 @@ function jpegDimensions(bytes){
   }
   throw Error('JPEG does not contain a decodable frame header');
 }
-const node=(file,variables={})=>execFileSync(process.execPath,[file],{
+const node=(file,variables={},args=[])=>execFileSync(process.execPath,[file,...args],{
   cwd:process.cwd(),env:{...env,...variables},encoding:'utf8',timeout:120000
 });
 for(const [utc,phase,slot] of [
@@ -39,6 +39,7 @@ assert.equal(scheduleDecision({force:'build'}).should_post,false);
 
 const queuePath=path.resolve('social-output',day,'portrait','queue.json');
 node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'portrait'});
+node('tests/archive-reproduction.mjs',{},['--queue',queuePath]);
 const portrait=JSON.parse(await fs.readFile(queuePath,'utf8'));
 assert.equal(portrait.orientation,'portrait');
 assert.equal(portrait.entries.length,5);
@@ -73,6 +74,7 @@ let meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'u
 assert.equal(meta.count,5,'Portrait-first gallery should contain five studies');
 
 node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'landscape'});
+node('tests/archive-reproduction.mjs',{},['--queue',path.resolve('social-output',day,'queue.json')]);
 const landscape=JSON.parse(await fs.readFile(path.resolve('social-output',day,'queue.json'),'utf8'));
 assert.equal(landscape.entries.length,5,'Existing landscape base set changed');
 assert.ok(landscape.entries.every(e=>e.rendererVersion===7&&new URL(e.shareUrl).searchParams.get('v')==='7'),'New landscapes must use V7');

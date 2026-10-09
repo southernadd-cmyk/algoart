@@ -124,6 +124,19 @@ jobs:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run social:generate
 
+      - name: Verify exact artwork links and pixels before publishing
+        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        env:
+          SOCIAL_DATE: ${{ steps.gate.outputs.date }}
+        run: npm run test:archive -- --queue "social-output/$SOCIAL_DATE/queue.json"
+
+      - name: Upload publishing verification failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: landscape-prepublish-${{ github.run_id }}
+          path: archive-check-results/
+
       - name: Build daily gallery and SEO pages
         if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
         env:
@@ -303,3 +316,10 @@ jobs:
       live: true
       repost_deleted: ${{ github.event_name == 'push' && github.event.head_commit.message == 'retry-deleted-portrait-slot0-2026-10-09' }}
     secrets: inherit
+
+  archive-check:
+    needs: [publish, portraits]
+    if: ${{ always() && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/archive-reproduction.yml
+    with:
+      checkout_ref: main

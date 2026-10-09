@@ -1,0 +1,60 @@
+name: Archive reproduction
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      checkout_ref:
+        type: string
+        required: false
+        default: ''
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    name: Archive / ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install JavaScript dependencies
+        timeout-minutes: 2
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install browser system dependencies
+        timeout-minutes: 2
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: npx playwright install-deps ${{ matrix.browser }}
+      - name: Download browser runtime
+        timeout-minutes: 2
+        run: npx playwright install ${{ matrix.browser }}
+      - name: Start local editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/archive-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: Reproduce every archived share link
+        env:
+          ARCHIVE_BROWSER: ${{ matrix.browser }}
+          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+        run: npm run test:archive
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: archive-${{ matrix.browser }}-${{ github.run_id }}
+          path: archive-check-results/
+          retention-days: 14

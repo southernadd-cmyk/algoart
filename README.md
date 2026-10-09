@@ -691,3 +691,11 @@ New interactive drawings use V7. Landscape Growth Systems now grows along the ca
 Exact links and archived entries explicitly selecting V1–V6 continue through their original renderer paths. Editing an older drawing opts into V7 as usual; merely opening or exporting it retains its selected version. Newly generated social/gallery artwork uses V7. Existing portrait release queues retain their recorded versions; landscape jobs reuse archived JPEGs, settings and exact links rather than regenerating a previously published day. Publishing times are unchanged.
 
 `npm run test:organic-version` compares all older renderer versions against the pre-V7 source and checks deterministic landscape growth, long-axis coverage, portrait preservation and protected-space behavior. CI runs this alongside the effective-range test.
+
+## Permanent archive reproduction checks
+
+Every push and pull request runs `npm run test:archive` in headless Chromium, Firefox and WebKit. The workflow is also called explicitly after live landscape/portrait posting and daily gallery builds, checking latest main so automation commits cannot bypass it. No posting schedules are changed.
+
+The check opens each exact share URL, verifies actual renderer version, settings, unique IDs and image dimensions, and compares the rendered canvas against the archived local or release-hosted JPEG. Quarter-resolution comparison suppresses minor JPEG/antialiasing noise: Chromium limits are mean RGB difference 2.5/255 and at most 0.8% of pixels with mean difference above 24; Firefox/WebKit limits are 4/255 and 2%. The known Study 06 V5/V6 mismatch must fail these thresholds in each engine. Reports include every entry’s metrics; failures attach original JPEG, new PNG and visual diff for 14 days. Tolerances are global, with no per-artwork exclusions.
+
+Live workflows also run Chromium checks against their actual queue before uploading/publishing new work, including cached portraits and preserved landscape editions. Image generation verifies the renderer really used matches the version being recorded. Checks do not regenerate or modify archived files.
