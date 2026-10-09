@@ -1,0 +1,91 @@
+// Run with: npm run test:orientation
+// Lightweight recording canvas: does not need a browser or image snapshot.
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+
+const scripts=[
+  'js/random.js','js/phi.js','js/palettes.js','js/marker.js','js/generator.js'
+];
+function engine(){
+  const sandbox={window:{AlgoArt:{}}};
+  for(const path of scripts){
+    runInNewContext(readFileSync(new URL('../'+path,import.meta.url),'utf8'),sandbox,{filename:path});
+  }
+  sandbox.window.AlgoArt.rendererVersion=6;
+  return sandbox.window.AlgoArt;
+}
+function capture(){
+  let hash=2166136261>>>0,operations=0;
+  function record(value){
+    for(const c of JSON.stringify(value)){
+      hash=Math.imul(hash^c.charCodeAt(0),16777619)>>>0;
+    }
+    operations++;
+  }
+  const ctx=new Proxy({},{
+    get(obj,key){
+      if(!(key in obj))obj[key]=(...args)=>record([key,...args]);
+      return obj[key];
+    },
+    set(obj,key,value){record([key,value]);obj[key]=value;return true;}
+  });
+  return {
+    canvas:{width:0,height:0,getContext:()=>ctx},
+    state:()=>({hash,operations})
+  };
+}
+const fields=[
+  ['elements',25],['density',32],['complexity',71],['negativeSpace',82],
+  ['phiStrength',95],['recursion',4],['spiralInfluence',63],['goldenAngle',93],['nesting',44],
+  ['pen','felt'],['thickness',12],['wobble',18],['overdraw',1],['opacity',92],
+  ['pressure',25],['dryness',0],['curveBias',60],['shapeAmount',50],
+  ['overlap',40],['rotation',35],['lines',true],['circles',true],
+  ['rectangles',true],['polygons',true],['arcs',true],
+  ['palette','mono'],['colourCount',1],['saturation',75],
+  ['brightness',50],['paper','#ffffff'],['grain',0]
+];
+function settings(mode,orientation,seed='PORTRAIT-TEST-01'){
+  const s={seed,mode};
+  if(orientation)s.orientation=orientation;
+  for(const [key,value] of fields)s[key]=value;
+  return s;
+}
+function render(A,s){
+  const rec=capture();
+  const meta=A.render(rec.canvas,s,1,false);
+  return {...rec.state(),width:rec.canvas.width,height:rec.canvas.height,
+    strategy:meta.strategy,meta};
+}
+// Golden fixtures recorded from main/V6 BEFORE the portrait feature existed.
+// They check the draw commands, not merely the canvas size or metadata.
+const landscapeHashes={
+  field:2018762466,
+  spiral:3287348056,
+  rects:3063879363,
+  burst:2232262246,
+  network:640947790,
+  organic:2426889810,
+  geometric:1067877977,
+  scribble:1969352243
+};
+const A=engine();
+for(const [mode,expected] of Object.entries(landscapeHashes)){
+  const historical=render(A,settings(mode));
+  const explicit=render(A,settings(mode,'landscape'));
+  assert.equal(historical.hash,expected,mode+' historical landscape changed');
+  assert.equal(explicit.hash,expected,mode+' explicit landscape changed');
+  assert.equal(historical.width,1400);
+  assert.equal(historical.height,1000);
+  assert.equal(explicit.operations,historical.operations);
+  for(const seed of ['PORTRAIT-TEST-01','PORTRAIT-TEST-02','PORTRAIT-TEST-03','PORTRAIT-TEST-04']){
+    const p=render(A,settings(mode,'portrait',seed));
+    const repeat=render(A,settings(mode,'portrait',seed));
+    assert.equal(p.width,1000,mode+' portrait width');
+    assert.equal(p.height,1400,mode+' portrait height');
+    assert.equal(p.hash,repeat.hash,mode+' portrait not deterministic');
+    assert.ok(p.operations>50,mode+' unexpectedly empty portrait drawing');
+    assert.ok(p.strategy,mode+' missing composition strategy');
+  }
+}
+console.log('PASS: all 8 modes preserve V6 landscape fixtures and render reproducible portrait compositions across 4 seeds each.');
