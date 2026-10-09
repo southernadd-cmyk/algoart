@@ -13,7 +13,8 @@
     "test:orientation": "node tests/orientation.test.mjs",
     "test:portrait-publishing": "node tests/portrait-publishing.test.mjs",
     "test:control-ranges": "node tests/control-ranges.test.mjs",
-    "test:organic-version": "node tests/organic-version.test.mjs"
+    "test:organic-version": "node tests/organic-version.test.mjs",
+    "test:archive": "node tests/archive-reproduction.mjs"
   },
   "devDependencies": {
     "playwright": "^1.55.0"
