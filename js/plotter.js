@@ -185,11 +185,12 @@ A.createPlotterSVG=function(settings,options){
     if(!layer||layer.colour!==p.stroke){layer={colour:p.stroke,paths:[]};layers.push(layer)}
     layer.paths.push(p);
   });
-  var metadata={generator:'ALGO/ART',rendererVersion:A.rendererVersion,seed:settings.seed,settings:settings,
+  var penColours=Array.from(new Set(paths.map(function(p){return p.stroke})));
+  var metadata={penColours:penColours,generator:'ALGO/ART',rendererVersion:A.rendererVersion,seed:settings.seed,settings:settings,
     paper:paper,pageMm:page,marginMm:margin,paperColour:settings.paper,pathOrder:'preserved',
     penTravelBeforeMm:before*scale,penTravelAfterMm:after*scale,paths:paths.length,svgPaths:compound(paths).length,colourRuns:layers.length};
   var content=layers.map(function(l,i){
-    var pen=Array.from(new Set(paths.map(function(p){return p.stroke}))).indexOf(l.colour)+1;
+    var pen=penColours.indexOf(l.colour)+1;
     var name=String(i+1).padStart(3,'0')+' · Pen '+pen+' · '+l.colour;
     return '<g id="pen-run-'+(i+1)+'" inkscape:groupmode="layer" inkscape:label="'+esc(name)+'" data-pen-colour="'+esc(l.colour)+'" transform="translate('+x+' '+y+') scale('+scale+')">'+compound(l.paths).map(pathTag).join('')+'</g>';
   }).join('');

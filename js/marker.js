@@ -38,7 +38,7 @@ A.stroke=function(ctx,points,col,s,r,curve){
     if(!A.svgRecorder)return;
     A.svgRecorder.paths.push({
       d:d,
-      stroke:col,
+      stroke:A.svgRecorder.precise?ctx.strokeStyle:col,
       opacity:alpha,
       width:width,
       lineCap:lineCap,
