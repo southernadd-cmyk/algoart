@@ -17,21 +17,23 @@ Portrait share links contain `fmt=portrait`. Landscape links deliberately omit `
 Run `npm run test:orientation` to check eight V6 landscape drawing-command fixtures and deterministic portrait rendering for four seeds per system. The existing ChatGPT plugin and scheduled publishing remain on their current production versions until portrait support is separately integrated and approved.
 
 
-## Dual-format daily gallery and portrait social schedule (feature branch)
+## Dual-format daily gallery and shared publishing slots (feature branch)
 
-The production landscape pipeline remains unchanged: five landscape artworks per UK day, with the existing 09:00, 15:00 and 20:30 London posting slots.
+The existing landscape pipeline retains its five scheduled works and three publishing slots at **09:00, 15:00 and 20:30 Europe/London**.
 
-Portrait support adds **five independently seeded 1000 × 1400 works every day**, kept alongside the five landscape studies in the same gallery edition. Three portraits (studies **1, 3 and 5**) are scheduled separately for **11:30, 17:30 and 22:00 London time**; studies 2 and 4 remain in the gallery as unposted reserves. Times are provisional until approval.
+Portrait support adds **five independently seeded 1000 × 1400 works per UK day**. The first landscape publishing job builds and archives five landscapes, then invokes the reusable portrait job in `.github/workflows/portrait-live.yml`. During that same invocation the portrait job generates and archives five portraits. The two orientations appear in one Daily Gallery, normally **ten studies per day**.
 
-- **06:00 London** — build and validate the day's five portrait images. Archive and update the gallery so each normal day contains ten studies.
-- **11:30, 17:30, 22:00 London** — publish one portrait to the same enabled destinations as the landscape posts (Instagram, Threads, Bluesky, and Pinterest if enabled).
-- The complete daily portrait batch is stored in the existing GitHub Release **once**, uploading JPGs before a date-specific manifest. Later jobs reuse the same five exact files rather than regenerating changed artwork.
-- Release completion markers include `portrait` in their names, so retries cannot be confused with landscape posts.
-- The archive preserves already-generated entries from the other orientation, and orientation-aware gallery thumbnails avoid clipping portraits into landscape crops.
+- **09:00 London:** landscape study 1 and portrait study 1.
+- **15:00 London:** landscape study 3 and portrait study 3.
+- **20:30 London:** landscape study 5 and portrait study 5.
+- Studies 2 and 4 of each orientation are gallery-only reserves.
+- The initial portrait batch is stored in the existing GitHub Release (full-size JPGs and uncropped, padded 4:5 Instagram derivatives); a complete manifest is uploaded last. Later jobs reuse those same exact five portraits.
+- Release completion markers include `portrait` in their names, separately from existing landscape markers. Retried jobs skip platforms already marked complete.
+- Gallery builds preserve both orientations and additional curated works. Portrait artwork is displayed at 5:7 aspect rather than cropped to the landscape ratio.
 
-The independent workflow is `.github/workflows/portrait-live.yml`, with the runner-safe selector in `automation/portrait-slot.mjs`. It supports explicit dry-run dispatches, planned GMT/BST-aware cron triggers, and `.github/portrait-trigger` push events for an external scheduler. **Cron times are best-effort:** the working production pipeline previously retired GitHub-only cron triggers because of delayed/missed runs; external trigger integration should be confirmed before relying on fully unattended live portrait publishing.
+**Scheduling:** no new cronjob.com triggers or GitHub cron schedules are introduced. The existing external scheduler dispatches `.github/workflows/social-live.yml` three times a day; it calls the reusable portrait workflow after the landscape job. Both gate functions respect `Europe/London` and daylight-saving changes. The parent workflow also exposes its existing manual slots for recovery; a direct portrait workflow dispatch on the feature branch is dry-run only.
 
-**Safety:** scheduled workflows activate only when the workflow exists on `main`. The feature branch does not publish to public social accounts or overwrite the existing production gallery. Merging and enabling external triggers should follow successful feature-branch integration tests.
+**Safety:** everything remains on `feature/portrait-support` until review and merge. No feature-branch run is allowed to post publicly or update the live gallery. Run `npm run test:portrait-publishing` for scheduler and archive checks; `node tests/portrait-pipeline.test.mjs` (requires Playwright and a local HTTP server) for the ten-artwork browser integration test.
 
 ## Core idea: structure first, imperfection second
 
@@ -539,7 +541,7 @@ The existing three cronjob.com dispatches still fire only `social-live.yml`; no 
 - Keeps original 1000×1400 portrait JPEGs; for Instagram, makes a **1120×1400 padded 4:5 derivative** to retain the complete artwork without cropping.
 - Reuses the existing Instagram, Threads, Bluesky and optionally-enabled Pinterest publishers. Manual feature-branch runs remain dry-run only.
 
-Test the integration with `npm run test:portrait-publishing`. No changes to the existing cronjob.com entries or to the submitted ChatGPT plugin are necessary for this release. GitHub Actions uses redundant GMT/BST-aware triggers around each slot; a London-time gate determines which slot is due. This avoids depending on GitHub starting a cron job at one exact minute.
+Test the integration with `npm run test:portrait-publishing`. No changes to the existing cronjob.com entries or to the submitted ChatGPT plugin are necessary for this release. The existing cronjob.com calls are the source of the three main live triggers; the London-time gate selects the due slot.
 
 Before publishing, each platform checks a release-hosted completion marker such as:
 
@@ -580,7 +582,7 @@ ALGO/ART supports:
 
 SVG export preserves generated marker paths, including the wobble, repeated passes, opacity and dry-marker dash behaviour rather than replacing the artwork with idealised geometric primitives.
 
-The internal artwork coordinate space is **1400 × 1000**.
+The internal artwork coordinate space is **1400 × 1000** for landscape or **1000 × 1400** for portrait.
 
 ---
 
