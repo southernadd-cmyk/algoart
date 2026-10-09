@@ -9,6 +9,11 @@ import {scheduleDecision} from '../automation/portrait-slot.mjs';
 
 const repoRoot=path.resolve(fileURLToPath(new URL('../',import.meta.url)));
 const date='2026-10-09';
+import {socialRendererVersion,archivedLandscapeStudy} from '../automation/renderer-state.mjs';
+assert.equal(socialRendererVersion(''),7);
+assert.equal(socialRendererVersion('6'),6);
+assert.throws(()=>socialRendererVersion('8'));
+assert.throws(()=>socialRendererVersion('invalid'));
 assert.deepEqual(PORTRAIT_SCHEDULE,['09:00','15:00','20:30']);
 assert.deepEqual(PORTRAIT_POST_INDICES,[0,2,4]);
 assert.deepEqual(PLATFORM_SLOTS.instagram.slice(0,3),PORTRAIT_POST_INDICES);
@@ -136,3 +141,22 @@ try{
 }finally{
   await fs.rm(temp,{recursive:true,force:true});
 }
+
+const archiveRoot=await fs.mkdtemp(path.join(os.tmpdir(),'algoart-renderer-upgrade-'));
+try{
+  assert.equal(await archivedLandscapeStudy(date,0,{galleryRoot:archiveRoot}),null);
+  const dir=path.join(archiveRoot,date);
+  await fs.mkdir(dir);
+  const entry={id:date+'-01',orientation:'landscape',imageFile:'old.jpg',rendererVersion:6,
+    settings:{seed:'OLD',mode:'organic'},shareUrl:'https://example.test/?v=6&seed=OLD'};
+  const pixels=Buffer.from('unchanged historical JPEG bytes');
+  await fs.writeFile(path.join(dir,'old.jpg'),pixels);
+  await fs.writeFile(path.join(dir,'meta.json'),JSON.stringify({entries:[entry]}));
+  const saved=await archivedLandscapeStudy(date,0,{galleryRoot:archiveRoot});
+  assert.deepEqual(saved.entry,entry);
+  assert.deepEqual(await fs.readFile(saved.imagePath),pixels);
+  assert.equal(await archivedLandscapeStudy(date,1,{galleryRoot:archiveRoot}),null);
+  await fs.unlink(saved.imagePath);
+  await assert.rejects(()=>archivedLandscapeStudy(date,0,{galleryRoot:archiveRoot}),{code:'ENOENT'});
+}finally{await fs.rm(archiveRoot,{recursive:true,force:true});}
+console.log('PASS: new batches default to V7; archived V6 states/media remain exact; missing archived media fails safely.');
