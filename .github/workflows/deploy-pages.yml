@@ -14,6 +14,8 @@ on:
       - 'social-card.svg'
       - 'robots.txt'
       - 'google*.html'
+      - 'B732C1640DA947DB8E65C914FA8703EE.txt'
+      - '.github/workflows/indexnow-notify.yml'
       - '.github/workflows/deploy-pages.yml'
       - 'sitemap.xml'
       - '.nojekyll'
