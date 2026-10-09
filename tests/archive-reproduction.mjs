@@ -20,6 +20,7 @@ if(queueIndex>=0){
     sources.push({file:path.resolve('gallery',day,'meta.json'),images:path.resolve('gallery',day)});
   }
 }
+if(!sources.length)throw Error('No archive metadata found');
 const report={browser:engine,limits,entries:[],failures:0};
 const browser=await runtime.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1600,height:1200}});
@@ -99,6 +100,7 @@ try{
         if(queueIndex<0&&item.seed==='AA-20261006-01-92180'){
           const wrong=await compare(item,bytes,5);
           report.wrongVersionProbe={id:item.id,mean:wrong.mean,changed:wrong.changed,rejected:!wrong.passed};
+          console.log('Wrong-version probe '+JSON.stringify(report.wrongVersionProbe));
           if(wrong.passed)throw Error('Tolerance failed to detect Study 06 V5 regression');
         }
       }catch(error){
