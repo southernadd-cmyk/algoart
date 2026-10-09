@@ -346,8 +346,26 @@ for (const entry of Array.isArray(existingMeta.entries) ? existingMeta.entries :
 }
 
 queue.entries = [...queue.entries, ...preservedEntries];
+// Always display the existing landscape set first, then the five portraits.
+// Otherwise each publishing slot flips the gallery order as its own queue
+// becomes the input, producing needless commits and changing the cover.
+function galleryOrder(entry) {
+  const orientation = entry.orientation || entry.settings?.orientation;
+  return orientation === 'portrait' ? 1 : 0;
+}
+queue.entries.sort((a, b) =>
+  galleryOrder(a) - galleryOrder(b) ||
+  String(a.id || a.seed).localeCompare(String(b.id || b.seed))
+);
 
-for (const item of queue.entries.slice(0, queue.entries.length - preservedEntries.length)) {
+// Only the freshly generated queue images are copied; preserved gallery
+// studies already exist in dayDir. Sorting must not change that distinction.
+const queuedImageFiles = new Set(
+  queue.entries.filter(item => !preservedEntries.some(old => old.imageFile === item.imageFile))
+    .map(item => item.imageFile)
+);
+for (const item of queue.entries) {
+  if (!queuedImageFiles.has(item.imageFile)) continue;
   const source = path.resolve('social-output', day, ...(galleryOrientation === 'portrait' ? ['portrait'] : []), item.imageFile);
   const dest = path.join(dayDir, item.imageFile);
   await fs.copyFile(source, dest);
