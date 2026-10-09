@@ -7,6 +7,15 @@ import {PORTRAIT_SCHEDULE,PORTRAIT_POST_INDICES} from '../automation/config.mjs'
 
 const day='2099-02-03';
 const env={...process.env,SOCIAL_DATE:day,SOCIAL_COUNT:'5',SOCIAL_RENDERER_VERSION:'6'};
+function jpegDimensions(bytes){
+  // SOF0/SOF2 markers contain the encoded width and height.
+  for(let i=2;i<bytes.length-9;i++){
+    if(bytes[i]===0xff&&[0xc0,0xc1,0xc2].includes(bytes[i+1])){
+      return {width:bytes.readUInt16BE(i+7),height:bytes.readUInt16BE(i+5)};
+    }
+  }
+  throw Error('JPEG does not contain a decodable frame header');
+}
 const node=(file,variables={})=>execFileSync(process.execPath,[file],{
   cwd:process.cwd(),env:{...env,...variables},encoding:'utf8',timeout:120000
 });
@@ -40,7 +49,13 @@ for(const [i,item] of portrait.entries.entries()){
   assert.equal(item.settings.orientation,'portrait');
   assert.equal(new URL(item.shareUrl).searchParams.get('fmt'),'portrait');
   assert.ok(item.imageFile.includes('portrait-'));
-  assert.equal(await fs.stat(path.resolve('social-output',day,'portrait',item.imageFile)).then(x=>x.size>1000),true);
+  const image=await fs.readFile(path.resolve('social-output',day,'portrait',item.imageFile));
+  assert.deepEqual(jpegDimensions(image),{width:1000,height:1400});
+  assert.ok(image.length>1000);
+  assert.ok(item.instagramImageFile,'Portrait is missing Instagram asset');
+  const instagram=await fs.readFile(path.resolve('social-output',day,'portrait',item.instagramImageFile));
+  assert.deepEqual(jpegDimensions(instagram),{width:1120,height:1400},'Instagram image must be uncropped 4:5');
+  assert.ok(instagram.length>1000&&instagram.length<8000000);
   const planned=!!item.platforms.instagram;
   assert.equal(planned,[0,2,4].includes(i),'Unexpected portrait slot at '+i);
 }
@@ -50,6 +65,7 @@ for(let slot=0;slot<3;slot++){
   });
   assert.ok(selected.includes('id='+portrait.entries[PORTRAIT_POST_INDICES[slot]].id));
   assert.ok(selected.includes('asset_name='+portrait.entries[PORTRAIT_POST_INDICES[slot]].imageFile));
+  assert.ok(selected.includes('instagram_asset_name='+portrait.entries[PORTRAIT_POST_INDICES[slot]].instagramImageFile));
 }
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'portrait'});
 let meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
