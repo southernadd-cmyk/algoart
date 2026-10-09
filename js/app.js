@@ -917,7 +917,7 @@ function buildPlotterPreview(download){
     $('plotterPreviewImage').src=plotterPreviewURL;
     $('plotterPreview').hidden=false;
     var m=result.metadata,saved=Math.max(0,m.penTravelBeforeMm-m.penTravelAfterMm);
-    $('plotterSummary').textContent=m.pageMm.join(' × ')+' mm · '+m.paths+' paths · '+m.penColours.length+' pens · '+m.penLayers+' '+(m.layerGrouping==='pens'?'pen layers':'colour runs')+' · '+m.penChanges+' pen changes · '+saved.toFixed(1)+' mm less pen travel';
+    $('plotterSummary').textContent=m.pageMm.join(' × ')+' mm · '+m.paths+' paths · '+m.penColours.length+' pens · '+m.penLayers+' '+(m.layerGrouping==='pens'?'pen layers':'colour runs')+' · '+m.penChanges+' pen changes'+(m.forcedPauses?' / '+m.forcedPauses+' pauses':'')+' · '+(m.penTravelAfterMm/1000).toFixed(2)+' m pen travel · '+saved.toFixed(1)+' mm saved';
     if(download)A.downloadPlotterSVG(result,settings);
   }catch(error){$('plotterStatus').textContent=error.message}
 }
@@ -926,8 +926,10 @@ $('savePlotter').onclick=function(){buildPlotterPreview(true)};
 ['plotterPaper','plotterMargin','plotterGrouping','plotterOptimize'].forEach(function(id){$(id).addEventListener('change',clearPlotterPreview)});
 $('plotterGrouping').addEventListener('change',function(){
   $('plotterGroupingNote').textContent=this.value==='pens'?
-    'One numbered layer per pen means fewer pen changes. Grouping changes which colour sits on top where colours overlap.':
-    'Faithful colour runs preserve overlap order. Repeated colours need more pen changes.';
+    'One layer per pen, light to dark. Travel optimisation can reorder strokes within a pen. Grouping changes which colour sits on top where colours overlap.':
+    'Faithful colour runs preserve overlap order. AxiDraw pauses before each pen change; swap the pen and Resume.';
+  $('plotterOptimizeLabel').textContent=this.value==='pens'?
+    'Reduce pen travel by reordering same-colour strokes':'Reduce pen travel without changing stroke order';
 });
 
 document.querySelectorAll('.inspector input, .inspector select').forEach(function(e){

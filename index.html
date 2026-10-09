@@ -279,8 +279,8 @@
               <div class="control"><label for="plotterPaper">Paper size</label><select id="plotterPaper"><option value="A4">A4</option><option value="A3">A3</option></select></div>
               <div class="control"><label for="plotterMargin">Margin (mm)</label><input id="plotterMargin" type="number" value="10" min="0" max="100" step="1"></div>
               <div class="control"><label for="plotterGrouping">Pen layers</label><select id="plotterGrouping" aria-describedby="plotterGroupingNote"><option value="runs">Faithful colour runs</option><option value="pens">Group by pen</option></select></div>
-              <p class="mini-note" id="plotterGroupingNote">Faithful colour runs preserve overlap order. Repeated colours need more pen changes.</p>
-              <label class="mini-note"><input id="plotterOptimize" type="checkbox" checked> Reduce pen travel while preserving stroke order within each layer</label>
+              <p class="mini-note" id="plotterGroupingNote" aria-live="polite">Faithful colour runs preserve overlap order. AxiDraw pauses before each pen change; swap the pen and Resume.</p>
+              <label class="mini-note"><input id="plotterOptimize" type="checkbox" checked> <span id="plotterOptimizeLabel">Reduce pen travel without changing stroke order</span></label>
               <button class="export-big" id="previewPlotter">PREVIEW PLOTTER SVG</button>
               <figure id="plotterPreview" hidden><img id="plotterPreviewImage" alt="Preview of the plotter SVG on the selected paper"><figcaption id="plotterSummary"></figcaption></figure>
               <div id="plotterStatus" class="share-status" role="status" aria-live="polite"></div>
@@ -305,9 +305,9 @@
 <script src="js/marker.js?v=plotter-20261009"></script>
 <script src="js/generator.js"></script>
 <script src="js/export.js"></script>
-<script src="js/plotter.js?v=plotter-pens-20261009"></script>
+<script src="js/plotter.js?v=plotter-routing-20261009"></script>
 <script src="js/describe.js"></script>
 <script src="js/control-help.js?v=plotter-20261009"></script>
-<script src="js/app.js?v=plotter-pens-20261009"></script>
+<script src="js/app.js?v=plotter-routing-20261009"></script>
 </body>
 </html>

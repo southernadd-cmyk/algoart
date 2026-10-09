@@ -71,6 +71,12 @@ assert.equal(faithful.metadata.pathOrder,'preserved');
 assert.equal(faithful.metadata.penChanges,2);
 assert.equal(grouped.metadata.layerGrouping,'pens');
 assert.equal(grouped.metadata.pathOrder,'preserved-within-pen');
+assert.equal(groupedOptimized.metadata.pathOrder,'reordered-within-pen');
+assert.equal(grouped.metadata.penOrder,'light-to-dark');
+assert.equal(groupedOptimized.metadata.routeOptimization,'nearest-neighbour-and-direction');
+assert.equal(faithful.metadata.forcedPauses,2);assert.equal(grouped.metadata.forcedPauses,0);
+assert.deepEqual(Array.from(faithful.svg.matchAll(/inkscape:label="([^"]+)"/g),m=>m[1]),
+  ['001 · Pen 1 · #ff0000','!002 · Pen 2 · #0000ff','!003 · Pen 1 · #ff0000']);
 assert.equal(grouped.metadata.colourRuns,3,'Original run count was lost');
 assert.equal(grouped.metadata.penLayers,2);
 assert.equal(grouped.metadata.penChanges,1);
@@ -86,7 +92,7 @@ const expectedCommands=[];
 for(const colour of ['#ff0000','#0000ff']){
   const pen=prepared.filter(p=>p.stroke===colour);
   travelBefore+=G.travel(pen,home);
-  const optimal=G.optimize(pen,home);
+  const optimal=G.routePen(pen,home);
   travelAfter+=G.travel(optimal,home);
   expectedCommands.push(...optimal.map(p=>JSON.stringify(p.commands)));
 }
@@ -94,11 +100,37 @@ assert.ok(Math.abs(grouped.metadata.penTravelBeforeMm-travelBefore*pageScale)<1e
 assert.ok(Math.abs(groupedOptimized.metadata.penTravelAfterMm-travelAfter*pageScale)<1e-8);
 assert.ok(groupedOptimized.metadata.penTravelAfterMm<=groupedOptimized.metadata.penTravelBeforeMm+1e-8);
 assert.deepEqual(Array.from(groupedOptimized.svg.matchAll(/<path d="([^"]+)"/g),m=>JSON.stringify(G.commands(m[1]))),expectedCommands,
-  'Direction optimisation did not run independently within each pen');
+  'Routing did not run independently within each pen');
 assert.throws(()=>A.createPlotterSVG(settings,{grouping:'unknown'}),/faithful colour runs/);
 assert.equal(A.svgRecorder,oldRecorder);assert.equal(A.lastRenderMeta,oldMeta);
 assert.equal(A.W,123);assert.equal(A.H,456);assert.equal(A.rendererVersion,6);
-console.log('PASS: one numbered layer per pen, retained per-pen path/style order, original run counts and independent direction optimisation.');
+console.log('PASS: numbered pen layers, light-to-dark ordering, faithful pen-change pauses and independent grouped routing.');
+
+const scattered=[0,95,5,90,10,85].map((x,i)=>({...make('M '+x+' 0 L '+x+' 1'),source:i}));
+const originalScattered=JSON.stringify(scattered);
+const routed=G.routePen(scattered,origin);
+assert.ok(G.travel(routed,origin)<G.travel(G.optimize(scattered,origin),origin)*.4,'Greedy routing did not shorten a scattered pen');
+assert.equal(JSON.stringify(scattered),originalScattered,'Routing mutated source geometry');
+assert.deepEqual(Array.from(routed,p=>p.source).sort((a,b)=>a-b),scattered.map(p=>p.source));
+const canonical=p=>[JSON.stringify(p.commands),JSON.stringify(G.reversed(p.commands))].sort()[0];
+assert.deepEqual(Array.from(routed,canonical).sort(),scattered.map(canonical).sort(),'Routing changed geometry');
+assert.equal(JSON.stringify(G.routePen(scattered,origin)),JSON.stringify(routed),'Routing is not deterministic');
+for(let seed=1;seed<=20;seed++){
+  const pen=Array.from({length:12},(_,i)=>({...make('M '+((seed*17+i*43)%97)+' '+((seed*29+i*19)%83)+' L '+((seed*11+i*31)%101)+' '+((seed*13+i*37)%89)),source:i}));
+  assert.ok(G.travel(G.routePen(pen,origin),origin)<=G.travel(G.optimize(pen,origin),origin)+1e-8,'Grouped route regressed against direction-only route');
+}
+console.log('PASS: deterministic greedy routes cut scattered travel, retain every stroke and never exceed the direction-only fallback.');
+
+const greys=['#2e2e2e','#c7c7c7','#777777','#ffffff','#000000'];
+A.render=canvas=>{
+  canvas.width=100;canvas.height=100;
+  A.svgRecorder.paths=greys.map((stroke,i)=>({d:'M 5 '+(i+5)+' L 95 '+(i+5),stroke,width:2,opacity:.5,lineCap:'round'}));
+};
+const greyResult=A.createPlotterSVG(settings,{grouping:'pens',optimize:false});
+assert.equal(JSON.stringify(greyResult.metadata.penColours),JSON.stringify(['#ffffff','#c7c7c7','#777777','#2e2e2e','#000000']));
+assert.ok(Math.abs(G.luminance('#fff')-1)<1e-10);assert.equal(G.luminance('#000'),0);
+assert.ok(G.luminance('#00ff00')>G.luminance('#ff0000')&&G.luminance('#ff0000')>G.luminance('#0000ff'));
+console.log('PASS: greys and saturated colours use linear relative luminance, lightest pen first.');
 
 A.render=canvas=>{
   canvas.width=100;canvas.height=100;
@@ -128,6 +160,18 @@ assert.equal(dryGrouped.metadata.penLayers,1);assert.equal(dryGrouped.metadata.p
 assert.equal(dryGrouped.metadata.svgPaths,1);
 assert.equal((dryGrouped.svg.match(/stroke-opacity="/g)||[]).length,1);
 console.log('PASS: multiple physical pen lifts retain the single source marker pass opacity.');
+
+A.render=canvas=>{
+  canvas.width=100;canvas.height=100;
+  A.svgRecorder.paths=[
+    {d:'M 5 50 L 95 50',stroke:'#123456',width:20,opacity:.4,lineCap:'round',dash:[6,3]},
+    {d:'M 5 51 L 95 51',stroke:'#123456',width:20,opacity:.4,lineCap:'round',dash:[6,3]},
+    {d:'M 5 52 L 95 52',stroke:'#123456',width:20,opacity:.4,lineCap:'round',dash:[6,3]}
+  ];
+};
+const compoundDry=A.createPlotterSVG(settings,{grouping:'pens'});
+assert.equal(compoundDry.metadata.svgPaths,3,'Routing interleaved fragments and split a source pass');
+assert.equal((compoundDry.svg.match(/stroke-opacity="/g)||[]).length,3);
 
 A.render=canvas=>{canvas.width=100;canvas.height=100;A.svgRecorder.paths=[]};
 const empty=A.createPlotterSVG(settings,{grouping:'pens'});
