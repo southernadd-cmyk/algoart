@@ -741,6 +741,8 @@ function syncDescription(settings,meta){
 
 function openDescription(){
   syncDescription(A.readSettings(),currentRenderMeta);
+  document.body.appendChild($('descriptionOverlay'));
+  document.querySelector('.description-body').scrollTop=0;
   $('descriptionOverlay').hidden=false;
   $('closeDescription').focus();
 }
@@ -809,6 +811,7 @@ function copyShareLink(){
 
 $('describe').onclick=openDescription;
 $('closeDescription').onclick=closeDescription;
+$('closeDescriptionBottom').onclick=closeDescription;
 $('copyDescription').onclick=copyAltDescription;
 $('descriptionOverlay').addEventListener('click',function(e){
   if(e.target===$('descriptionOverlay'))closeDescription();
