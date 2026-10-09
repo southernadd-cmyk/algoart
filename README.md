@@ -683,3 +683,11 @@ The seeded generator makes those decisions reproducible.
 The marker renderer makes them imperfect.
 
 **Mathematics sets the rules. The marker breaks them.**
+
+## Organic canvas scaling — renderer V7
+
+New interactive drawings use V7. Landscape Growth Systems now grows along the canvas’s long axis using canvas-scaled trunks, two early branches and the fuller growth grammar already used in portrait. Protected negative space and Reveal φ coordinates rotate with the construction. Portrait output and all other systems are unchanged from V6.
+
+Exact links and archived entries explicitly selecting V1–V6 continue through their original renderer paths. Editing an older drawing opts into V7 as usual; merely opening or exporting it retains its selected version. The scheduled social generator remains pinned to V6, with existing queues and publishing times unchanged.
+
+`npm run test:organic-version` compares all older renderer versions against the pre-V7 source and checks deterministic landscape growth, long-axis coverage, portrait preservation and protected-space behavior. CI runs this alongside the effective-range test.

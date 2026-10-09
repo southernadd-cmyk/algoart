@@ -2312,6 +2312,39 @@ function drawOrganic(ctx,s,r,pal){
   };
 }
 
+// V7 grows along the long canvas axis. Landscape uses the established
+// portrait growth grammar in a rotated coordinate space; V1–V6 stay untouched.
+function drawOrganicV7(ctx,s,r,pal){
+  if(s.orientation==='portrait')return drawOrganic(ctx,s,r,pal);
+  var width=A.W,height=A.H,meta;
+  var svgStart=A.svgRecorder?A.svgRecorder.paths.length:0;
+  ctx.save();
+  ctx.translate(width,0);
+  ctx.rotate(Math.PI/2);
+  A.W=height;A.H=width;
+  try{
+    meta=drawOrganic(ctx,Object.assign({},s,{orientation:'portrait'}),r,pal);
+  }finally{
+    A.W=width;A.H=height;
+    ctx.restore();
+  }
+  if(A.svgRecorder){
+    for(var pathIndex=svgStart;pathIndex<A.svgRecorder.paths.length;pathIndex++){
+      A.svgRecorder.paths[pathIndex].transform='matrix(0 1 -1 0 '+width+' 0)';
+    }
+  }
+  meta.voids=meta.voids.map(function(v){
+    return{x:width-v.y-v.h,y:v.x,w:v.h,h:v.w};
+  });
+  meta.guide.roots=meta.guide.roots.map(function(p){
+    return Object.assign({},p,{x:width-p.y,y:p.x});
+  });
+  meta.guide.segments=meta.guide.segments.map(function(p){
+    return{x1:width-p.y1,y1:p.x1,x2:width-p.y2,y2:p.x2,depth:p.depth};
+  });
+  return meta;
+}
+
 function drawConstructedShape(ctx,item,index,s,r,pal,style){
   var shapes=enabledShapes(s);
   var nonLines=shapes.filter(function(sh){return sh!=='line'});
@@ -3015,7 +3048,7 @@ A.render=function(target,s,scale,showGeometry){
   }else if(s.mode==='scribble'){
     meta=drawScribble(ctx,s,r,pal);
   }else if(s.mode==='organic'){
-    meta=drawOrganic(ctx,s,r,pal);
+    meta=A.rendererVersion>=7?drawOrganicV7(ctx,s,r,pal):drawOrganic(ctx,s,r,pal);
   }else if(s.mode==='geometric'){
     meta=drawGeometric(ctx,s,r,pal);
   }else{

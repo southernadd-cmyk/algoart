@@ -7,6 +7,11 @@ on:
       - 'js/control-help.js'
       - 'index.html'
       - 'tests/control-ranges.test.mjs'
+      - 'tests/organic-version.test.mjs'
+      - 'js/random.js'
+      - 'js/phi.js'
+      - 'js/palettes.js'
+      - 'js/marker.js'
       - 'package.json'
       - '.github/workflows/control-ranges.yml'
   pull_request:
@@ -16,6 +21,11 @@ on:
       - 'js/control-help.js'
       - 'index.html'
       - 'tests/control-ranges.test.mjs'
+      - 'tests/organic-version.test.mjs'
+      - 'js/random.js'
+      - 'js/phi.js'
+      - 'js/palettes.js'
+      - 'js/marker.js'
       - 'package.json'
       - '.github/workflows/control-ranges.yml'
   workflow_dispatch:
@@ -31,3 +41,6 @@ jobs:
           node-version: '22'
       - name: Check effective ranges and artwork setting preservation
         run: npm run test:control-ranges
+
+      - name: Check renderer compatibility and Organic canvas growth
+        run: npm run test:organic-version
