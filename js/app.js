@@ -301,7 +301,8 @@ function syncCanvasFormat(s){
   });
 }
 
-var dragPreviewTimer=null,dragPreviewPending=false;
+var dragPreviewTimer=null,dragPreviewPending=false,lastCommittedRenderKey=null;
+A.renderTimings={previewMs:0,fullMs:0};
 function scheduleDragPreview(){
   dragPreviewPending=true;
   if(dragPreviewTimer!==null)return;
@@ -309,9 +310,11 @@ function scheduleDragPreview(){
     dragPreviewTimer=null;
     var s=A.readSettings(),previousMeta=A.lastRenderMeta;
     syncCanvasFormat(s);
+    var started=performance.now();
     withRendererVersion(CURRENT_RENDERER_VERSION,function(){A.render(canvas,s,.35,showGeometry)});
+    A.renderTimings.previewMs=performance.now()-started;
     A.lastRenderMeta=previousMeta;
-  },80);
+  },Math.max(80,Math.min(1000,A.renderTimings.previewMs*4)));
 }
 function finishDragPreview(){
   if(!dragPreviewPending)return;
@@ -322,7 +325,10 @@ function regenerate(){
   clearTimeout(dragPreviewTimer);dragPreviewTimer=null;dragPreviewPending=false;
   var s=A.readSettings();
   syncCanvasFormat(s);
+  var started=performance.now();
   var meta=A.render(canvas,s,1,showGeometry)||{};
+  A.renderTimings.fullMs=performance.now()-started;
+  lastCommittedRenderKey=JSON.stringify([A.rendererVersion,s]);
   currentRenderMeta=meta;
   var strategy=meta.strategy?(' / '+meta.strategy):'';
   var series=SERIES[s.mode]||{code:s.mode.toUpperCase(),title:s.mode};
@@ -905,7 +911,9 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
   e.addEventListener('change',function(){
     if(e.id==='exportScale'||e.id==='keyboardShortcuts')return;
     useCurrentRenderer();
-    regenerate();
+    // pointerup/change ordering differs by browser. Do not commit twice.
+    var alreadyCommitted=e.type==='range'&&!dragPreviewPending&&lastCommittedRenderKey===JSON.stringify([A.rendererVersion,A.readSettings()]);
+    if(!alreadyCommitted)regenerate();
     if(e.id==='orientation'||e.id==='palette'||e.id==='pen'||e.id==='phiStrength'||e.id==='complexity'){
       scheduleModePreviews();
     }
