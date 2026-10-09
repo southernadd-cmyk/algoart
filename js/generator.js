@@ -1932,6 +1932,24 @@ function drawScribble(ctx,s,r,pal){
   var voids=(variant==='VOID'||s.negativeSpace>24)
     ?makeReservedVoids(s,variant==='VOID'?'VOID':strategy,A.makeR(s.seed+'|scribble-voids|'+variant))
     :[];
+  var portrait=s.orientation==='portrait';
+  if(portrait&&variant!=='KNOT'){
+    // Give disconnected gestures a vertical rhythm without forcing
+    // everything into a line or destroying the reserved blank regions.
+    for(var aIndex=0;aIndex<anchors.length;aIndex++){
+      var t=aIndex/Math.max(1,anchors.length-1);
+      var desiredX=A.W*(aIndex%2?A.INV:1-A.INV);
+      var desiredY=A.H*(.17+.66*t);
+      var a=anchors[aIndex];
+      a.x=A.lerp(a.x,desiredX,variant==='DUET'?.82:.67);
+      a.y=A.lerp(a.y,desiredY,.85);
+      if(pointInVoid(a.x,a.y,voids)){
+        var otherSide=A.W-(a.x);
+        if(!pointInVoid(otherSide,a.y,voids))a.x=otherSide;
+        else if(!pointInVoid(a.x,A.H*(.12+.74*t),voids))a.y=A.H*(.12+.74*t);
+      }
+    }
+  }
   var counts=allocateScribbleSegments(segments,anchorCount);
   var style=Object.assign({},s,{
     wobble:Math.max(44,s.wobble),
@@ -1951,10 +1969,13 @@ function drawScribble(ctx,s,r,pal){
 
     if(variant==='RIBBON'){
       var diagonal=(A.hash(s.seed+'|scribble-ribbon')%2===0);
-      var x=A.W*(.16+.68*(index/Math.max(1,anchors.length-1)));
-      var y=diagonal
-        ?A.H*(.2+.6*(index/Math.max(1,anchors.length-1)))
-        :A.H*(.8-.6*(index/Math.max(1,anchors.length-1)));
+      var t=index/Math.max(1,anchors.length-1);
+      var x=portrait
+        ?A.W*(diagonal?.34+.29*t:.66-.29*t)
+        :A.W*(.16+.68*t);
+      var y=portrait
+        ?A.H*(.15+.7*t)
+        :(diagonal?A.H*(.2+.6*t):A.H*(.8-.6*t));
       a.x=A.lerp(a.x,x,.62);
       a.y=A.lerp(a.y,y,.62);
     }else if(variant==='KNOT'){
@@ -1971,10 +1992,29 @@ function drawScribble(ctx,s,r,pal){
       34,
       s.phiStrength/100
     );
+    if(portrait){
+      // A slightly larger gesture territory balances the long canvas;
+      // KNOT deliberately stays concentrated at one focal location.
+      a.radius=Math.min(A.W*.35,a.radius*(variant==='KNOT'?1.12:1.38));
+    }
     return a;
   }
 
   for(var ai=0;ai<anchors.length;ai++)prepareAnchor(ai);
+  if(portrait&&variant!=='KNOT'){
+    // Work out the flow after moving all the anchors, otherwise the first
+    // gestures point at the old, pre-reflow coordinates of later anchors.
+    for(var flowIndex=0;flowIndex<anchors.length;flowIndex++){
+      var a=anchors[flowIndex];
+      var neighbour=anchors[Math.min(flowIndex+1,anchors.length-1)];
+      if(flowIndex===anchors.length-1){
+        var previous=anchors[flowIndex-1];
+        a.flow=Math.atan2(a.y-previous.y,a.x-previous.x);
+      }else{
+        a.flow=Math.atan2(neighbour.y-a.y,neighbour.x-a.x);
+      }
+    }
+  }
 
   for(var ai=0;ai<anchors.length;ai++){
     var anchor=anchors[ai];
