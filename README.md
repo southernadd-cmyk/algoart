@@ -8,16 +8,54 @@ Live site: https://southernadd-cmyk.github.io/algoart/
 
 **Current renderer: V6.**
 
-## Portrait format — feature branch
+## Live website updates — 9 October 2026
 
-On `feature/portrait-support`, the generator supports landscape (**1400 × 1000**) and portrait (**1000 × 1400**) canvas formats. The **Canvas format** control is in the Compose panel. The same eight systems are used for both formats; several trajectory families have portrait-specific vertical paths.
+Today's production changes include:
+
+- **Portrait generation and publishing:** both canvas formats are live. The existing 09:00, 15:00 and 20:30 Europe/London triggers publish the selected landscape and portrait studies; no extra cronjobs were introduced.
+- **Exact artwork social links:** Instagram, Threads and Bluesky captions use compact editor links of the form `?art=YYYY-MM-DD-01` or `?art=YYYY-MM-DD-P01`. The editor retrieves the archived renderer version, seed and settings, renders that artwork and expands the URL to its full state. These links depend on retaining the corresponding daily archive metadata. They do not direct readers to a generic gallery or homepage. Explicit artwork links skip the first-visit introduction.
+- **Gallery layout:** landscape and portrait entries have equal-height image frames without cropping the artwork. Edition/study counters include the actual archived entries.
+- **Describe dialog:** the overlay sits above the interface, fits the available mobile viewport and safe areas, and scrolls only its text. A larger top × and persistent bottom Close Description button remain available.
+- **Slider ranges:** controls expose their effective per-system limits instead of offering values that the system silently caps or floors. Constructed Forms' Forms control selects the calculated main-form count; its reachable bounds depend on Detail. Recursive Divisions explicitly describes division amount rather than a literal cell count.
+- **Keyboard and accessibility:** Ctrl/Cmd/Alt combinations are left to the browser. Single-key M, N, V, D and [ shortcuts can be disabled using the saved preference in Export and do not run while typing or using a dialog. Tabs have linked tab/tab-panel roles, selected state, roving focus and Left/Right/Home/End navigation. Both Describe and Variations move focus inside, make the background inert, contain Tab/Shift+Tab, dismiss on Escape and return focus to the opener.
+- **Live slider feedback:** dragging requests a throttled 35%-resolution preview. Release/change restores the full-resolution artwork. Preview frames do not replace the canonical share URL or committed render metadata.
+- **Consistent system names:** cards and dropdown use Orbital Studies, Golden Trajectories, Recursive Divisions, Radiant Systems, Connected Fields, Growth Systems, Constructed Forms and Automatic Marks. Existing internal mode keys remain unchanged.
+- **Search discovery:** Google ownership verification and IndexNow verification are present. `.github/workflows/indexnow-notify.yml` submits sitemap URLs after successful eligible Pages deployments; it skips deployments without relevant sitemap/IndexNow changes.
+
+### Effective slider ranges
+
+| System | Control | Selectable range |
+| --- | --- | --- |
+| Recursive Divisions | Wobble | 0–18 |
+| Recursive Divisions | Curved strokes | 0–8 |
+| Growth Systems | Wobble | 42–100 |
+| Growth Systems | Curved strokes | 76–100 |
+| Constructed Forms | Wobble | 0–16 |
+| Constructed Forms | Curved strokes | 0–12 |
+| Constructed Forms | Overdraw | 1–4 |
+| Automatic Marks | Wobble | 44–100 |
+| Automatic Marks | Curved strokes | 58–100 |
+| Automatic Marks | Overdraw | 2–10 |
+
+Overdraw is the base pass setting; the selected pen can adjust the number of rendered passes. Other systems restore the shared control ranges.
+
+### Preservation of existing artwork
+
+Archived image files, renderer algorithms and the original internal mode keys are unchanged by the slider and accessibility fixes. The UI retains original raw numeric settings separately from effective slider displays, because those raw values also participate in seeded randomness. Opening an old link, switching tabs, disabling shortcuts or inspecting its description does not normalise the artwork's saved parameters. Editing a slider intentionally replaces that parameter.
+
+Compatibility checks passed for 800 setting round trips across all eight systems and both orientations. Logic checks also covered modifier guards, shortcut preferences, dialog focus handling and preview release behaviour. Physical mobile and screen-reader verification remains a manual test; these checks do not claim full WCAG conformance.
+
+
+## Canvas formats
+
+The live generator supports landscape (**1400 × 1000**) and portrait (**1000 × 1400**) canvas formats. The **Canvas format** control is in the Compose panel. The same eight systems are used for both formats; several trajectory families have portrait-specific vertical paths.
 
 Portrait share links contain `fmt=portrait`. Landscape links deliberately omit `fmt`, preserving existing bookmarked states. The renderer also removes the new landscape-only setting from its seeded random key so historical V6 landscape drawings are unchanged. The artwork dimensions, 4-Up previews, mode previews and PNG/SVG output adapt to orientation.
 
-Run `npm run test:orientation` to check eight V6 landscape drawing-command fixtures and deterministic portrait rendering for four seeds per system. The existing ChatGPT plugin and scheduled publishing remain on their current production versions until portrait support is separately integrated and approved.
+Run `npm run test:orientation` to check eight V6 landscape drawing-command fixtures and deterministic portrait rendering. Portrait support is merged into `main` and live on GitHub Pages. Website changes do not update the separately submitted ChatGPT plugin.
 
 
-## Dual-format daily gallery and shared publishing slots (feature branch)
+## Dual-format daily gallery and shared publishing slots
 
 The existing landscape pipeline retains its five scheduled works and three publishing slots at **09:00, 15:00 and 20:30 Europe/London**.
 
@@ -29,11 +67,11 @@ Portrait support adds **five independently seeded 1000 × 1400 works per UK day*
 - Studies 2 and 4 of each orientation are gallery-only reserves.
 - The initial portrait batch is stored in the existing GitHub Release (full-size JPGs and uncropped, padded 4:5 Instagram derivatives); a complete manifest is uploaded last. Later jobs reuse those same exact five portraits.
 - Release completion markers include `portrait` in their names, separately from existing landscape markers. Retried jobs skip platforms already marked complete.
-- Gallery builds preserve both orientations and additional curated works. Portrait artwork is displayed at 5:7 aspect rather than cropped to the landscape ratio.
+- Gallery builds preserve both orientations and additional curated works. Landscape and portrait entries use equal-height image frames; images are contained without cropping. Edition and latest-study counters reflect the archive, including both formats.
 
 **Scheduling:** no new cronjob.com triggers or GitHub cron schedules are introduced. The existing external scheduler dispatches `.github/workflows/social-live.yml` three times a day; it calls the reusable portrait workflow after the landscape job. Both gate functions respect `Europe/London` and daylight-saving changes. The parent workflow also exposes its existing manual slots for recovery; a direct portrait workflow dispatch on the feature branch is dry-run only.
 
-**Safety:** everything remains on `feature/portrait-support` until review and merge. No feature-branch run is allowed to post publicly or update the live gallery. Run `npm run test:portrait-publishing` for scheduler and archive checks; `node tests/portrait-pipeline.test.mjs` (requires Playwright and a local HTTP server) for the ten-artwork browser integration test.
+**Safety:** portrait publishing is live on `main`; feature-branch runs remain dry-run only and cannot post publicly or update the live gallery. Run `npm run test:portrait-publishing` for scheduler and archive checks; `node tests/portrait-pipeline.test.mjs` (requires Playwright and a local HTTP server) for the ten-artwork browser integration test.
 
 ## Core idea: structure first, imperfection second
 
@@ -465,12 +503,12 @@ In the broad symbolic-AI sense this is a top-down approach: human-authored knowl
 
 The interface exposes much of the generative state directly:
 
-- **Elements** — approximate amount of generated content.
-- **Density** — affects scale, territories and how tightly content occupies the canvas.
-- **Complexity** — increases structural elaboration; its exact effect is mode-specific.
+- **Marks / Nodes / Forms / Growth / Division amount** — the amount of generated content, labelled for the selected system. Constructed Forms displays its calculated main-form count; division and growth amounts are not promises of exact final object counts.
+- **Scale / Node scale / Gesture scale** (`density`) — changes mark size, with system-specific territory and spacing effects.
+- **Bend / Detail / Connections / Branching** (`complexity`) — changes curve bend or system-specific structure, as explained by the contextual helper text.
 - **Negative Space** — strengthens deliberately protected empty areas.
 - **φ Adherence** — increases attraction to φ-quantised relationships.
-- **Recursion** — controls recursive depth/generational behaviour where applicable.
+- **Division depth / Growth depth** (`recursion`) — controls recursive depth/generational behaviour where applicable.
 - **Spiral Influence** — controls how strongly general layouts are pulled toward spiral placement.
 - **Golden Angle** — controls the strength of golden-angle stepping in relevant systems.
 - **Nesting** — increases nested forms.
@@ -504,7 +542,7 @@ https://southernadd-cmyk.github.io/algoart/gallery/
 
 Each entry records its image, seed, system/series, renderer version, settings, descriptive metadata and exact remix URL.
 
-The normal daily generator creates a **five-work scheduled base set**, but a day is not limited to five entries. Validated test, repair or curated studies can be appended as additional works.
+The normal daily generator creates **five landscape and five portrait studies**, but a day is not limited to ten entries. Validated test, repair or curated studies can be appended as additional works.
 
 The gallery builder preserves those additional studies when the scheduled base set is regenerated. It no longer deletes the day's existing JPGs and rebuilds blindly from only the five scheduled entries. This matters because curated/validated work must survive later automation runs.
 
@@ -529,9 +567,9 @@ Current automated destinations are:
 
 The main London publishing slots are **09:00, 15:00 and 20:30 (Europe/London)**.
 
-### Portrait daily series (feature branch)
+### Portrait daily series
 
-The existing three cronjob.com dispatches still fire only `social-live.yml`; no new external cronjobs are required. Once portrait support is merged, that workflow runs its normal landscape job and then calls the reusable `portrait-live.yml` workflow.
+The existing three cronjob.com dispatches still fire only `social-live.yml`; no new external cronjobs are required. On `main`, that workflow runs its normal landscape job and then calls the reusable `portrait-live.yml` workflow.
 
 - Generates **five landscape + five portrait** artworks each UK day.
 - Posts landscape studies **1, 3, 5** and portrait studies **1, 3, 5** at the **same three times** (09:00, 15:00, 20:30).
@@ -599,7 +637,8 @@ js/palettes.js     deterministic colour systems
 js/marker.js       imperfect marker rendering
 js/generator.js    the eight composition systems + Reveal metadata
 js/export.js       PNG/SVG export
-js/app.js          controls, URLs, versions, gallery default and interaction
+js/control-help.js contextual labels, helper text and effective slider ranges
+js/app.js          controls, URLs, versions, gallery default, accessibility and interaction
 automation/        gallery/social generation and publishing
 gallery/           permanent daily archive
 ```
