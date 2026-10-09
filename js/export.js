@@ -36,6 +36,7 @@ A.exportSVG=function(settings){
       'stroke-linecap="'+esc(p.lineCap||'round')+'"',
       'stroke-linejoin="round"'
     ];
+    if(p.transform)attrs.push('transform="'+esc(p.transform)+'"');
     if(p.dash&&p.dash.length){
       attrs.push('stroke-dasharray="'+p.dash.map(function(v){return v.toFixed(2)}).join(' ')+'"');
       attrs.push('stroke-dashoffset="'+Number(p.dashOffset||0).toFixed(2)+'"');
