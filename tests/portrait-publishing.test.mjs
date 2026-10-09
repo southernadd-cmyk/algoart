@@ -50,6 +50,16 @@ assert.ok(portraitWorkflow.includes('portrait-slot'), 'Portrait must have separa
 assert.ok(portraitWorkflow.includes('refs/heads/main')&&portraitWorkflow.includes('inputs.live == true'),
   'Feature branch must not publish publicly');
 assert.ok(portraitWorkflow.includes('steps.cached.outputs.ready'), 'Later portrait posts must reuse the frozen batch');
+assert.ok(portraitWorkflow.includes('repost_deleted:'),'Explicit deleted-post recovery input missing');
+assert.ok(portraitWorkflow.includes('REPOST_DELETED:'),'Normal dedup must be overridden only with explicit opt-in');
+assert.ok(portraitWorkflow.includes('[ -z'),'Recovery requires an explicit slot');
+for(const marker of ['IG_MARKER','TH_MARKER','BS_MARKER']){
+  assert.ok(portraitWorkflow.includes('"$REPOST_DELETED" != "true"'),'Recovery flag must override existing markers for '+marker);
+}
+assert.ok(parentWorkflow.includes('repost_deleted:'),'One-time recovery flag is not forwarded');
+assert.ok(parentWorkflow.includes('ops: retest deleted portrait slot0 posts for 2026-10-09'),'Recovery trigger must be exact-match');
+assert.ok(parentWorkflow.includes('needs: publish'),'Normal landscape job must complete before portrait recovery');
+
 
 const temp=await fs.mkdtemp(path.join(os.tmpdir(),'algoart-portrait-schedule-'));
 try{
