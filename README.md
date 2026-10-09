@@ -18,8 +18,8 @@ Today's production changes include:
 - **Describe dialog:** the overlay sits above the interface, fits the available mobile viewport and safe areas, and scrolls only its text. A larger top × and persistent bottom Close Description button remain available.
 - **Slider ranges:** controls expose their effective per-system limits instead of offering values that the system silently caps or floors. Constructed Forms' Forms control selects the calculated main-form count; its reachable bounds depend on Detail. Recursive Divisions explicitly describes division amount rather than a literal cell count.
 - **Keyboard and accessibility:** Ctrl/Cmd/Alt combinations are left to the browser. Single-key M, N, V, D and [ shortcuts can be disabled using the saved preference in Export and do not run while typing or using a dialog. Tabs have linked tab/tab-panel roles, selected state, roving focus and Left/Right/Home/End navigation. Both Describe and Variations move focus inside, make the background inert, contain Tab/Shift+Tab, dismiss on Escape and return focus to the opener.
-- **Live slider feedback:** dragging requests a throttled 35%-resolution preview. Release/change restores the full-resolution artwork. Preview frames do not replace the canonical share URL or committed render metadata.
-- **Consistent system names:** cards and dropdown use Orbital Studies, Golden Trajectories, Recursive Divisions, Radiant Systems, Connected Fields, Growth Systems, Constructed Forms and Automatic Marks. Existing internal mode keys remain unchanged.
+- **Live slider feedback:** dragging requests a 35%-resolution preview with adaptive throttling based on the previous render duration. Release/change restores the full-resolution artwork once, regardless of pointerup/change event order. Preview frames do not replace the canonical share URL or committed render metadata. Lower pixel resolution does not guarantee cheaper layout scoring or marker construction; physical phone benchmarking remains outstanding. Latest render-only timings in milliseconds are available as `window.AlgoArt.renderTimings.previewMs` and `.fullMs` for profiling.
+- **Consistent system names:** cards and the system dropdown use Orbital Studies, Golden Trajectories, Recursive Divisions, Radiant Systems, Connected Fields, Growth Systems, Constructed Forms and Automatic Marks. Existing internal mode keys remain unchanged. The pen dropdown retains pen names, including **Scribble Pen**.
 - **Search discovery:** Google ownership verification and IndexNow verification are present. `.github/workflows/indexnow-notify.yml` submits sitemap URLs after successful eligible Pages deployments; it skips deployments without relevant sitemap/IndexNow changes.
 
 ### Effective slider ranges
@@ -37,13 +37,13 @@ Today's production changes include:
 | Automatic Marks | Curved strokes | 58–100 |
 | Automatic Marks | Overdraw | 2–10 |
 
-Overdraw is the base pass setting; the selected pen can adjust the number of rendered passes. Other systems restore the shared control ranges.
+Overdraw is the base pass setting; the selected pen can adjust the number of rendered passes. Other systems restore the shared control ranges. Run `npm run test:control-ranges` to compare the UI's limits and every calculated Forms value against the renderer's actual expressions; this check fails if a future renderer change leaves the UI out of sync.
 
 ### Preservation of existing artwork
 
 Archived image files, renderer algorithms and the original internal mode keys are unchanged by the slider and accessibility fixes. The UI retains original raw numeric settings separately from effective slider displays, because those raw values also participate in seeded randomness. Opening an old link, switching tabs, disabling shortcuts or inspecting its description does not normalise the artwork's saved parameters. Editing a slider intentionally replaces that parameter.
 
-Compatibility checks passed for 800 setting round trips across all eight systems and both orientations. Logic checks also covered modifier guards, shortcut preferences, dialog focus handling and preview release behaviour. Physical mobile and screen-reader verification remains a manual test; these checks do not claim full WCAG conformance.
+Compatibility checks passed for 800 setting round trips across all eight systems and both orientations. Logic checks also covered modifier guards, shortcut preferences, dialog focus handling and preview release behaviour. On layouts where [ requires AltGr, use the Parameters button: Ctrl/Alt combinations remain reserved for the browser. Physical mobile and screen-reader verification remains a manual test; these checks do not claim full WCAG conformance.
 
 
 ## Canvas formats
