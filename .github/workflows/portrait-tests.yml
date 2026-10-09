@@ -24,6 +24,8 @@ jobs:
         run: npm run test:orientation
       - name: Verify shared posting slots and ten-image gallery preservation
         run: npm run test:portrait-publishing
+      - name: Check caption limits and artwork permalinks
+        run: node tests/portrait-captions.test.mjs
 
   browser-previews:
     runs-on: ubuntu-latest
@@ -32,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feature/portrait-support
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -71,7 +73,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
       - name: Save screenshots and test status in feature branch only
-        if: always() && github.event_name == 'push'
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/feature/portrait-support'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
