@@ -166,7 +166,12 @@ const entries = [];
 
 try {
   for (let index = 0; index < generationCount; index++) {
-    const settings = settingsFor(day, index, seedSalt, orientation);
+    // A few valid portrait seeds produce unusually sparse or off-canvas art.
+    // Try deterministic alternatives so one weak render doesn't cancel the
+    // whole five-work day. Landscape generation stays byte-for-byte unchanged.
+    for (let attempt = 0; attempt < (orientation === 'portrait' ? 8 : 1); attempt++) {
+    const retrySalt = attempt ? seedSalt + '|retry-' + attempt : seedSalt;
+    const settings = settingsFor(day, index, retrySalt, orientation);
     const query = queryFor(settings);
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
@@ -251,6 +256,10 @@ try {
       throw new Error(`Unexpected ${orientation} canvas size: ${canvasSize.join('x')}`);
     }
     if (!rendered.validation.valid) {
+      if (orientation === 'portrait' && attempt < 7) {
+        console.warn(`Portrait ${index + 1} candidate ${settings.seed} was rejected; trying a deterministic alternate: ${JSON.stringify(rendered.validation)}`);
+        continue;
+      }
       throw new Error(`Render validation failed for ${settings.seed}: ${JSON.stringify(rendered.validation)}`);
     }
 
@@ -290,6 +299,8 @@ try {
     };
     entries.push(item);
     console.log(`Generated ${item.id}: ${item.series} / ${item.seed}`);
+    break; // one accepted study per requested daily index
+    } // candidate attempts
   }
 } finally {
   await browser.close();
