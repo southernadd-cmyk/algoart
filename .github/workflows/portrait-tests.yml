@@ -1,0 +1,21 @@
+name: Portrait format regression
+
+on:
+  push:
+    branches:
+      - feature/portrait-support
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  orientation-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify landscape fixtures and portrait determinism
+        run: npm run test:orientation
