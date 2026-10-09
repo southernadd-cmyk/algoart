@@ -1,0 +1,107 @@
+name: Notify Bing via IndexNow
+
+on:
+  workflow_run:
+    workflows: ["Deploy ALGO ART to Pages"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out published site
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 2
+
+      - name: Check whether site URLs changed
+        id: changes
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "notify=true" >> "$GITHUB_OUTPUT"
+          else
+            changed="$(git diff-tree --no-commit-id --name-only -r HEAD)"
+            printf 'Files in deployed commit:\n%s\n' "$changed"
+            if printf '%s\n' "$changed" | grep -Eq '^(sitemap\.xml|\.github/workflows/indexnow-notify\.yml|B732C1640DA947DB8E65C914FA8703EE\.txt)$'; then
+              echo "notify=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "notify=false" >> "$GITHUB_OUTPUT"
+              echo "No sitemap/IndexNow changes; skipping duplicate notification."
+            fi
+          fi
+
+      - name: Submit sitemap URLs to Bing and IndexNow engines
+        if: steps.changes.outputs.notify == 'true'
+        env:
+          INDEXNOW_KEY: "B732C1640DA947DB8E65C914FA8703EE"
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import time
+          from urllib.request import Request, urlopen
+          from urllib.error import HTTPError
+          from xml.etree import ElementTree as ET
+
+          key = os.environ["INDEXNOW_KEY"]
+          prefix = "https://southernadd-cmyk.github.io/algoart/"
+          key_location = f"{prefix}{key}.txt"
+
+          # Wait for the successful GitHub Pages deployment to be publicly reachable.
+          for attempt in range(12):
+              try:
+                  request = Request(key_location, headers={"User-Agent": "ALGOART-IndexNow/1.0"})
+                  with urlopen(request, timeout=15) as response:
+                      found = response.read().decode("utf-8").strip()
+                      if response.status == 200 and found == key:
+                          print("Live IndexNow verification file confirmed:", key_location)
+                          break
+                      raise RuntimeError("Published verification file does not match key")
+              except Exception as exc:
+                  if attempt == 11:
+                      raise RuntimeError(f"Key file not publicly reachable: {exc}")
+                  print(f"Waiting for GitHub Pages key file (attempt {attempt+1}/12): {exc}")
+                  time.sleep(10)
+
+          tree = ET.fromstring(Path("sitemap.xml").read_bytes())
+          namespace = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+          urls = [
+              element.text.strip()
+              for element in tree.findall(".//s:loc", namespace)
+              if element.text and element.text.strip().startswith(prefix)
+          ]
+          urls = list(dict.fromkeys(urls))
+          if not urls:
+              raise RuntimeError("No ALGO/ART URLs found in sitemap.xml")
+
+          payload = {
+              "host": "southernadd-cmyk.github.io",
+              "key": key,
+              "keyLocation": key_location,
+              "urlList": urls,
+          }
+          request = Request(
+              "https://api.indexnow.org/indexnow",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={"Content-Type": "application/json; charset=utf-8", "User-Agent": "ALGOART-IndexNow/1.0"},
+              method="POST",
+          )
+          try:
+              with urlopen(request, timeout=30) as response:
+                  print("IndexNow response status:", response.status)
+                  print("URLs notified:", len(urls))
+                  print(*urls, sep="\n")
+                  if response.status == 202:
+                      print("Accepted pending key validation; this is not confirmation of indexing.")
+          except HTTPError as exc:
+              print("IndexNow HTTP error:", exc.code, exc.read().decode("utf-8", errors="replace")[:1500])
+              raise
+          PY
