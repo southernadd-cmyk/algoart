@@ -72,7 +72,10 @@ async function contactSheet(orientation){
       await img.decode();
       const x=(i%4)*cellWidth,y=Math.floor(i/4)*cellHeight;
       cx.fillStyle='#fff';cx.fillRect(x+7,y+7,cellWidth-14,cellHeight-14);
-      cx.drawImage(img,x+12,y+12,cellWidth-24,cellHeight-39);
+      const maxWidth=cellWidth-24,maxHeight=cellHeight-40;
+      const drawWidth=Math.min(maxWidth,maxHeight*img.width/img.height);
+      const drawHeight=drawWidth*img.height/img.width;
+      cx.drawImage(img,x+(cellWidth-drawWidth)/2,y+12+(maxHeight-drawHeight)/2,drawWidth,drawHeight);
       cx.fillStyle='#111';cx.font='bold 14px monospace';cx.fillText(items[i].mode.toUpperCase(),x+14,y+cellHeight-12);
     }
     return cvs.toDataURL('image/png');
