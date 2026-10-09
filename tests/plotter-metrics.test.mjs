@@ -25,6 +25,12 @@ assert.equal(thresholds.changed,3/4);
 assert.equal(thresholds.severe,1/4);
 assert.deepEqual(PIXEL_THRESHOLDS,{changed:24,severe:48});
 assert.ok(withinLimits(PLOTTER_LIMITS.fidelity,PLOTTER_LIMITS.fidelity));
+// A low mean caused by rearranging same-colour alpha passes is acceptable,
+// but a concentrated missing stroke is still rejected in grouped mode.
+assert.ok(withinLimits({mean:.09,changed:0,severe:0},PLOTTER_LIMITS.groupedDirection));
+assert.equal(withinLimits({mean:.21,changed:0,severe:0},PLOTTER_LIMITS.groupedDirection),false);
+assert.equal(withinLimits({mean:.09,changed:.0002,severe:0},PLOTTER_LIMITS.groupedDirection),false);
+assert.equal(withinLimits({mean:.09,changed:0,severe:.00002},PLOTTER_LIMITS.groupedDirection),false);
 for(const key of Object.keys(PLOTTER_LIMITS.fidelity)){
   assert.equal(withinLimits({...PLOTTER_LIMITS.fidelity,[key]:PLOTTER_LIMITS.fidelity[key]+1e-9},
     PLOTTER_LIMITS.fidelity),false);
