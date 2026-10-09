@@ -68,7 +68,7 @@ try{
   }
   function run(script,env){
     const r=spawnSync(process.execPath,[path.join(repoRoot,script)],{
-      cwd:temp,env:{...process.env,SOCIAL_DATE:date,...env},encoding:'utf8'
+      cwd:temp,env:{...process.env,GITHUB_OUTPUT:'',SOCIAL_DATE:date,...env},encoding:'utf8'
     });
     assert.equal(r.status,0,script+' failed: '+r.stderr+'\n'+r.stdout);
     return r.stdout;
