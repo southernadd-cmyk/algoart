@@ -133,7 +133,7 @@ if (command === 'select') {
     id: item.id,
     image_path: imagePath,
     asset_name: `algoart-${date}-slot${slot + 1}.jpg`,
-    instagram_caption_b64: b64(item.copy.instagram),
+    instagram_caption_b64: b64(makeCaptions(item).instagram),
     threads_caption_b64: b64(makeCaptions(item).threads),
     bluesky_caption_b64: b64(makeCaptions(item).bluesky),
     pinterest_title_b64: b64(item.series + ' — ALGO/ART'),
