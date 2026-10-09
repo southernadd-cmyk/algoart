@@ -41,6 +41,9 @@ jobs:
           echo $! > /tmp/algoart-preview.pid
       - name: Capture 16 real browser compositions and mobile checks
         run: node tests/portrait-preview.mjs
+      - name: Check third-party branch preview URL
+        if: always()
+        run: node tests/external-preview.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
