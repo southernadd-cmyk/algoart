@@ -2,15 +2,17 @@
 // Lightweight recording canvas: does not need a browser or image snapshot.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
 import {runInNewContext} from 'node:vm';
 
 const scripts=[
   'js/random.js','js/phi.js','js/palettes.js','js/marker.js','js/generator.js'
 ];
-function engine(){
+function engine(sources=null){
   const sandbox={window:{AlgoArt:{}}};
-  for(const path of scripts){
-    runInNewContext(readFileSync(new URL('../'+path,import.meta.url),'utf8'),sandbox,{filename:path});
+  for(const [i,file] of scripts.entries()){
+    const code=sources?sources[i]:readFileSync(new URL('../'+file,import.meta.url),'utf8');
+    runInNewContext(code,sandbox,{filename:file});
   }
   sandbox.window.AlgoArt.rendererVersion=6;
   return sandbox.window.AlgoArt;
@@ -57,24 +59,22 @@ function render(A,s){
   return {...rec.state(),width:rec.canvas.width,height:rec.canvas.height,
     strategy:meta.strategy,meta};
 }
-// Golden fixtures recorded from main/V6 BEFORE the portrait feature existed.
-// They check the draw commands, not merely the canvas size or metadata.
-const landscapeHashes={
-  field:2018762466,
-  spiral:3287348056,
-  rects:3063879363,
-  burst:2232262246,
-  network:640947790,
-  organic:2426889810,
-  geometric:1067877977,
-  scribble:1969352243
-};
+// Compare against actual main/V6 source instead of recording fixture hashes
+// from a different JS execution environment. CI can fetch the protected main
+// baseline without committing an old duplicate generator into this branch.
+execFileSync('git',['fetch','--depth=1','origin','main:refs/remotes/origin/main'],{stdio:'pipe'});
+const baselineSources=scripts.map(file=>execFileSync('git',['show','origin/main:'+file],{encoding:'utf8'}));
+const mainEngine=engine(baselineSources);
 const A=engine();
-for(const [mode,expected] of Object.entries(landscapeHashes)){
+const modes=['field','spiral','rects','burst','network','organic','geometric','scribble'];
+for(const mode of modes){
+  const baseline=render(mainEngine,settings(mode));
   const historical=render(A,settings(mode));
   const explicit=render(A,settings(mode,'landscape'));
-  assert.equal(historical.hash,expected,mode+' historical landscape changed');
-  assert.equal(explicit.hash,expected,mode+' explicit landscape changed');
+  assert.equal(historical.hash,baseline.hash,mode+' historical landscape changed from main');
+  assert.equal(explicit.hash,baseline.hash,mode+' explicit landscape changed from main');
+  assert.equal(historical.operations,baseline.operations,mode+' command count changed from main');
+  assert.equal(explicit.strategy,baseline.strategy,mode+' composition strategy changed from main');
   assert.equal(historical.width,1400);
   assert.equal(historical.height,1000);
   assert.equal(explicit.operations,historical.operations);
@@ -88,7 +88,7 @@ for(const [mode,expected] of Object.entries(landscapeHashes)){
     assert.ok(p.strategy,mode+' missing composition strategy');
   }
 }
-console.log('PASS: all 8 modes preserve V6 landscape fixtures and render reproducible portrait compositions across 4 seeds each.');
+console.log('PASS: all 8 modes match live main/V6 landscape drawing commands and render reproducible portrait compositions across 4 seeds each.');
 
 
 // Portrait refinement regression: verify visual territory coverage and
