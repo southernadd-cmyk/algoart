@@ -28,10 +28,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install browser runtime
-        run: |
-          npm install --ignore-scripts --no-audit --no-fund
-          npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Install JavaScript dependencies
+        timeout-minutes: 2
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install browser system dependencies
+        timeout-minutes: 2
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: npx playwright install-deps ${{ matrix.browser }}
+      - name: Download browser runtime
+        timeout-minutes: 2
+        run: npx playwright install ${{ matrix.browser }}
       - name: Start local editor
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/archive-http.log 2>&1 &
