@@ -186,13 +186,13 @@ jobs:
           echo "ready=$READY" >> "$GITHUB_OUTPUT"
 
       - name: Install Playwright
-        if: steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
+        if: steps.gate.outputs.should_run == 'true'
         run: |
           npm install
           npx playwright install --with-deps chromium
 
       - name: Start local ALGO ART
-        if: steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
+        if: steps.gate.outputs.should_run == 'true'
         run: |
           python3 -m http.server 4173 >/tmp/algoart-http.log 2>&1 &
           for i in {1..30}; do
@@ -207,6 +207,19 @@ jobs:
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run social:generate
+
+      - name: Verify exact portrait links and pixels before publishing
+        if: steps.gate.outputs.should_run == 'true'
+        env:
+          SOCIAL_DATE: ${{ steps.gate.outputs.date }}
+        run: npm run test:archive -- --queue "social-output/$SOCIAL_DATE/portrait/queue.json"
+
+      - name: Upload publishing verification failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portrait-prepublish-${{ github.run_id }}
+          path: archive-check-results/
 
       - name: Freeze the complete five-artwork daily portrait batch
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
@@ -412,3 +425,10 @@ jobs:
             echo "::error::A portrait destination failed. Successful posts are marked complete; rerunning the same slot retries only missing platforms."
             exit 1
           fi
+
+  archive-check:
+    needs: publish
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/archive-reproduction.yml
+    with:
+      checkout_ref: main
