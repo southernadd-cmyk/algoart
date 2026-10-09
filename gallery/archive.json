@@ -2,6 +2,18 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-10-09",
+      "cover": "2026-10-09-01-organic-AA-20261009-01-07665.jpg",
+      "count": 5,
+      "series": [
+        "Growth Systems",
+        "Constructed Forms",
+        "Automatic Marks",
+        "Orbital Studies",
+        "Golden Trajectories"
+      ]
+    },
+    {
       "date": "2026-10-08",
       "cover": "2026-10-08-01-rects-AA-20261008-01-45486.jpg",
       "count": 5,
