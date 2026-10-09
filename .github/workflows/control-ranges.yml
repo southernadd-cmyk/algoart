@@ -1,0 +1,33 @@
+name: Control range consistency
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'js/generator.js'
+      - 'js/control-help.js'
+      - 'index.html'
+      - 'tests/control-ranges.test.mjs'
+      - 'package.json'
+      - '.github/workflows/control-ranges.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/generator.js'
+      - 'js/control-help.js'
+      - 'index.html'
+      - 'tests/control-ranges.test.mjs'
+      - 'package.json'
+      - '.github/workflows/control-ranges.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  control-ranges:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check effective ranges and artwork setting preservation
+        run: npm run test:control-ranges

@@ -756,7 +756,8 @@ document.addEventListener('keydown',function(e){
   if(!activeDialog)return;
   if(e.key==='Escape'){
     e.preventDefault();e.stopPropagation();
-    if(activeDialog===$('descriptionOverlay'))closeDescription();
+    if(activeDialog===$('introSplash'))$('introEnter').click();
+    else if(activeDialog===$('descriptionOverlay'))closeDescription();
     else closeVariations();
   }else if(e.key==='Tab'){
     var items=dialogFocusable(),first=items[0],last=items[items.length-1];
@@ -1011,14 +1012,15 @@ loadLatestGalleryDefault().then(function(changed){
   var seen=false;
   try{seen=localStorage.getItem('algoart-intro-seen')==='1'}catch(e){}
   // Deep links must reveal their requested artwork without a first-visit overlay.
-  if(!seen&&!requestedArtworkId&&!loadedFromURL)splash.hidden=false;
+  var shouldOpen=!seen&&!requestedArtworkId&&!loadedFromURL;
   function closeIntro(reveal){
-    splash.hidden=true;
+    endDialog(splash,$('describe'));
     try{localStorage.setItem('algoart-intro-seen','1')}catch(e){}
     if(reveal)setGeometryVisible(true);
   }
   $('introEnter').onclick=function(){closeIntro(false)};
   $('introReveal').onclick=function(){closeIntro(true)};
+  if(shouldOpen)beginDialog(splash,$('introEnter'));
 })();
 
 })(window.AlgoArt);

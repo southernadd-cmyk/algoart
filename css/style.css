@@ -1485,3 +1485,12 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
   .intro-principles>div{gap:8px}
   .stage-footer{display:block}
 }
+
+/* Honour the user's OS/browser motion preference. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation:none!important;
+    transition:none!important;
+    scroll-behavior:auto!important;
+  }
+}

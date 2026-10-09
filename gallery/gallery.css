@@ -194,3 +194,12 @@ footer a:hover{color:var(--acid)}
   .art-number{display:none}
   dl{grid-template-columns:1fr}
 }
+
+/* Honour the user's OS/browser motion preference. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation:none!important;
+    transition:none!important;
+    scroll-behavior:auto!important;
+  }
+}
