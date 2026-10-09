@@ -294,7 +294,7 @@ jobs:
     # dispatches and their times are unchanged. Landscape finishes first
     # so the portrait gallery can preserve its five entries.
     needs: publish
-    if: ${{ always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.slot != '3') }}
+    if: ${{ needs.publish.result == 'success' && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.slot != '3') }}
     uses: ./.github/workflows/portrait-live.yml
     with:
       slot: ${{ github.event_name == 'workflow_dispatch' && inputs.slot || '' }}
