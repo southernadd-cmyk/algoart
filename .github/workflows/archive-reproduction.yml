@@ -30,9 +30,7 @@ jobs:
           node-version: '22'
       - name: Install JavaScript dependencies
         timeout-minutes: 2
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Capture generated dependency lockfile
-        run: node --input-type=module -e "import fs from 'node:fs'; console.log('DEPENDENCY_LOCK '+JSON.stringify(JSON.parse(fs.readFileSync('package-lock.json','utf8'))))"
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Record browser runtime
         run: npx playwright --version
       - name: Install browser system dependencies
