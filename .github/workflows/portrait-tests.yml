@@ -47,7 +47,19 @@ jobs:
       - name: Capture 16 real browser compositions and mobile checks
         run: node tests/portrait-preview.mjs
       - name: Test five portraits, three posts and mixed ten-work gallery
-        run: node tests/portrait-pipeline.test.mjs
+        id: pipeline
+        continue-on-error: true
+        run: |
+          mkdir -p preview/screenshots
+          set +e
+          node tests/portrait-pipeline.test.mjs > preview/screenshots/portrait-pipeline.log 2>&1
+          RESULT=$?
+          echo "code=$RESULT" >> "$GITHUB_OUTPUT"
+          if [ "$RESULT" -eq 0 ]; then
+            echo "PASS — five portraits, three posts and mixed ten-artwork gallery" > preview/screenshots/portrait-ci-status.txt
+          else
+            echo "FAIL (exit $RESULT) — see portrait-pipeline.log" > preview/screenshots/portrait-ci-status.txt
+          fi
       - name: Check third-party branch preview URL
         if: always()
         run: node tests/external-preview.mjs
@@ -58,8 +70,8 @@ jobs:
           path: preview/screenshots/
           if-no-files-found: ignore
           retention-days: 14
-      - name: Save screenshots in feature branch only
-        if: success() && github.event_name == 'push'
+      - name: Save screenshots and test status in feature branch only
+        if: always() && github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -68,3 +80,7 @@ jobs:
             git commit -m "docs: refresh feature-branch portrait previews [skip ci]"
             git push origin HEAD:feature/portrait-support
           fi
+      - name: Require passing end-to-end portrait pipeline
+        if: always()
+        run: |
+          test "${{ steps.pipeline.outputs.code }}" = "0"
