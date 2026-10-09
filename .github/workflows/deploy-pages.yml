@@ -14,6 +14,7 @@ on:
       - 'social-card.svg'
       - 'robots.txt'
       - 'google*.html'
+      - '.github/workflows/deploy-pages.yml'
       - 'sitemap.xml'
       - '.nojekyll'
   workflow_dispatch:
