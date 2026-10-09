@@ -20,22 +20,22 @@ const node=(file,variables={})=>execFileSync(process.execPath,[file],{
   cwd:process.cwd(),env:{...env,...variables},encoding:'utf8',timeout:120000
 });
 for(const [utc,phase,slot] of [
-  ['2026-10-09T04:20:00Z','skip',''],
-  ['2026-10-09T05:20:00Z','build',''],
-  ['2026-10-09T10:45:00Z','post',0],
-  ['2026-10-09T16:45:00Z','post',1],
-  ['2026-10-09T21:45:00Z','post',2],
-  ['2027-01-09T06:20:00Z','build',''],
-  ['2027-01-09T11:45:00Z','post',0],
-  ['2027-01-09T17:45:00Z','post',1],
-  ['2027-01-09T22:45:00Z','post',2]
+  ['2026-10-09T07:59:00Z','skip',''],
+  ['2026-10-09T08:00:00Z','post',0],
+  ['2026-10-09T14:00:00Z','post',1],
+  ['2026-10-09T19:30:00Z','post',2],
+  ['2027-01-09T08:59:00Z','skip',''],
+  ['2027-01-09T09:00:00Z','post',0],
+  ['2027-01-09T15:00:00Z','post',1],
+  ['2027-01-09T20:30:00Z','post',2]
 ]){
   const decision=scheduleDecision({date:new Date(utc)});
   assert.equal(decision.phase,phase,utc);
   assert.equal(decision.slot,slot,utc);
 }
 assert.deepEqual(PORTRAIT_POST_INDICES,[0,2,4]);
-assert.deepEqual(PORTRAIT_SCHEDULE,['11:30','17:30','22:00']);
+assert.deepEqual(PORTRAIT_SCHEDULE,['09:00','15:00','20:30']);
+assert.equal(scheduleDecision({force:'build'}).should_post,false);
 
 const queuePath=path.resolve('social-output',day,'portrait','queue.json');
 node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'portrait'});
