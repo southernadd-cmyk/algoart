@@ -147,7 +147,7 @@ jobs:
               done < <(DAY="$DATE" node --input-type=module -e "
                 import fs from 'node:fs';
                 const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
-                for(const e of q.entries)console.log(e.imageFile);
+                for(const e of q.entries){console.log(e.imageFile);console.log(e.instagramImageFile);}
               ")
             fi
             if [ "$READY" = "true" ]; then
@@ -156,7 +156,7 @@ jobs:
               done < <(DAY="$DATE" node --input-type=module -e "
                 import fs from 'node:fs';
                 const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
-                for(const e of q.entries)console.log(e.imageFile);
+                for(const e of q.entries){console.log(e.imageFile);console.log(e.instagramImageFile);}
               ")
             else
               rm -f "$DIR/queue.json"
@@ -244,18 +244,21 @@ jobs:
           SLOT: ${{ steps.gate.outputs.slot }}
         run: node automation/portrait-slot.mjs select
 
-      - name: Host image publicly
+      - name: Verify frozen portrait media URLs for all platforms
         if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.live == true) && steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
         id: host
         shell: bash
         run: |
           ASSET="${{ steps.select.outputs.asset_name }}"
-          cp "${{ steps.select.outputs.image_path }}" "/tmp/$ASSET"
-          gh release upload "$RELEASE_TAG" "/tmp/$ASSET" --clobber
+          IG_ASSET="${{ steps.select.outputs.instagram_asset_name }}"
           URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/$ASSET"
+          IG_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/$IG_ASSET"
           echo "media_url=$URL" >> "$GITHUB_OUTPUT"
-          curl -fL --retry 4 --retry-delay 2 -o /tmp/host-check.jpg "$URL"
-          test -s /tmp/host-check.jpg
+          echo "instagram_media_url=$IG_URL" >> "$GITHUB_OUTPUT"
+          curl -fL --retry 4 --retry-delay 2 -o /tmp/host-portrait-check.jpg "$URL"
+          curl -fL --retry 4 --retry-delay 2 -o /tmp/host-instagram-check.jpg "$IG_URL"
+          test -s /tmp/host-portrait-check.jpg
+          test -s /tmp/host-instagram-check.jpg
 
       - name: Publish to Instagram
         if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.live == true) && steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
@@ -263,7 +266,7 @@ jobs:
           LIVE_PUBLISHING: 'true'
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          MEDIA_URL: ${{ steps.host.outputs.media_url }}
+          MEDIA_URL: ${{ steps.host.outputs.instagram_media_url }}
           CAPTION_B64: ${{ steps.select.outputs.instagram_caption_b64 }}
           ALT_TEXT_B64: ${{ steps.select.outputs.alt_text_b64 }}
         shell: bash
