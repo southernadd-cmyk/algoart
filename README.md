@@ -7,6 +7,7 @@ ALGO/ART is a deterministic, browser-based generative art system built around th
 Live site: https://southernadd-cmyk.github.io/algoart/
 
 **Current renderer: V6.**
+<img width="1400" height="1000" alt="image" src="https://github.com/user-attachments/assets/e8015ddb-3cbd-4b3a-9475-697435c327c0" />
 
 ## Live website updates — 9 October 2026
 
