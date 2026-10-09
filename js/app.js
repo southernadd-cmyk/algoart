@@ -322,6 +322,7 @@ function finishDragPreview(){
 }
 
 function regenerate(){
+  if($('plotterPreview'))clearPlotterPreview();
   clearTimeout(dragPreviewTimer);dragPreviewTimer=null;dragPreviewPending=false;
   var s=A.readSettings();
   syncCanvasFormat(s);
@@ -902,6 +903,28 @@ $('savePanel').onclick=savePNG;
 $('saveSVG').onclick=saveSVG;
 $('copyLink').onclick=copyShareLink;
 
+var plotterPreviewURL=null;
+function clearPlotterPreview(){
+  if(plotterPreviewURL){URL.revokeObjectURL(plotterPreviewURL);plotterPreviewURL=null}
+  $('plotterPreview').hidden=true;$('plotterSummary').textContent='';$('plotterStatus').textContent='';
+}
+function buildPlotterPreview(download){
+  try{
+    var settings=A.readSettings();
+    var result=A.createPlotterSVG(settings,{paper:$('plotterPaper').value,margin:$('plotterMargin').value,optimize:$('plotterOptimize').checked});
+    clearPlotterPreview();
+    plotterPreviewURL=URL.createObjectURL(new Blob([result.preview],{type:'image/svg+xml'}));
+    $('plotterPreviewImage').src=plotterPreviewURL;
+    $('plotterPreview').hidden=false;
+    var m=result.metadata,saved=Math.max(0,m.penTravelBeforeMm-m.penTravelAfterMm);
+    $('plotterSummary').textContent=m.pageMm.join(' × ')+' mm · '+m.paths+' paths · '+m.colourRuns+' pen runs · '+saved.toFixed(1)+' mm less pen travel';
+    if(download)A.downloadPlotterSVG(result,settings);
+  }catch(error){$('plotterStatus').textContent=error.message}
+}
+$('previewPlotter').onclick=function(){buildPlotterPreview(false)};
+$('savePlotter').onclick=function(){buildPlotterPreview(true)};
+['plotterPaper','plotterMargin','plotterOptimize'].forEach(function(id){$(id).addEventListener('change',clearPlotterPreview)});
+
 document.querySelectorAll('.inspector input, .inspector select').forEach(function(e){
   if(e.type==='range'){
     e.addEventListener('input',scheduleDragPreview);
@@ -910,7 +933,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     e.addEventListener('blur',finishDragPreview);
   }
   e.addEventListener('change',function(){
-    if(e.id==='exportScale'||e.id==='keyboardShortcuts')return;
+    if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id.indexOf('plotter')===0)return;
     useCurrentRenderer();
     // pointerup/change ordering differs by browser. Do not commit twice.
     var alreadyCommitted=e.type==='range'&&!dragPreviewPending&&lastCommittedRenderKey===JSON.stringify([A.rendererVersion,A.readSettings()]);
