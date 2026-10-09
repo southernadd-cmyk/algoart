@@ -13,6 +13,7 @@
     {
       "id": "2026-10-09-01",
       "title": "Growth Systems — Study 01",
+      "orientation": "landscape",
       "seed": "AA-20261009-01-07665",
       "mode": "organic",
       "series": "Growth Systems",
@@ -60,6 +61,7 @@
     {
       "id": "2026-10-09-02",
       "title": "Constructed Forms — Study 02",
+      "orientation": "landscape",
       "seed": "AA-20261009-02-30046",
       "mode": "geometric",
       "series": "Constructed Forms",
@@ -107,6 +109,7 @@
     {
       "id": "2026-10-09-03",
       "title": "Automatic Marks — Study 03",
+      "orientation": "landscape",
       "seed": "AA-20261009-03-52427",
       "mode": "scribble",
       "series": "Automatic Marks",
@@ -154,6 +157,7 @@
     {
       "id": "2026-10-09-04",
       "title": "Orbital Studies — Study 04",
+      "orientation": "landscape",
       "seed": "AA-20261009-04-74808",
       "mode": "field",
       "series": "Orbital Studies",
@@ -201,6 +205,7 @@
     {
       "id": "2026-10-09-05",
       "title": "Golden Trajectories — Study 05",
+      "orientation": "landscape",
       "seed": "AA-20261009-05-18141",
       "mode": "spiral",
       "series": "Golden Trajectories",
