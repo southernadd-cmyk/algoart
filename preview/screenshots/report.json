@@ -10,7 +10,7 @@
       "bottom": 294,
       "left": 262,
       "right": 294,
-      "strategy": "SCRIBBLE-DUET",
+      "strategy": "VOID",
       "voidCount": 1,
       "settingsOrientation": "landscape"
     },
@@ -38,8 +38,8 @@
       "bottom": 1511,
       "left": 1489,
       "right": 1408,
-      "strategy": "SCRIBBLE-DUET",
-      "voidCount": 1,
+      "strategy": "RECT-CROSSCUT",
+      "voidCount": 2,
       "settingsOrientation": "landscape"
     },
     {
@@ -122,7 +122,7 @@
       "bottom": 215,
       "left": 254,
       "right": 256,
-      "strategy": "SCRIBBLE-DUET",
+      "strategy": "VOID",
       "voidCount": 1,
       "settingsOrientation": "portrait"
     },
@@ -136,8 +136,8 @@
       "bottom": 581,
       "left": 542,
       "right": 600,
-      "strategy": "SCRIBBLE-DUET",
-      "voidCount": 1,
+      "strategy": "TRAJECTORY-FAN",
+      "voidCount": 0,
       "settingsOrientation": "portrait"
     },
     {
@@ -150,8 +150,8 @@
       "bottom": 1787,
       "left": 1803,
       "right": 1393,
-      "strategy": "SCRIBBLE-DUET",
-      "voidCount": 1,
+      "strategy": "RECT-CROSSCUT",
+      "voidCount": 2,
       "settingsOrientation": "portrait"
     },
     {
@@ -178,7 +178,7 @@
       "bottom": 441,
       "left": 309,
       "right": 450,
-      "strategy": "SCRIBBLE-DUET",
+      "strategy": "NETWORK-TENSION",
       "voidCount": 1,
       "settingsOrientation": "portrait"
     },
@@ -192,7 +192,7 @@
       "bottom": 131,
       "left": 77,
       "right": 73,
-      "strategy": "SCRIBBLE-DUET",
+      "strategy": "ORBIT",
       "voidCount": 1,
       "settingsOrientation": "portrait"
     },
