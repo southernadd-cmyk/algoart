@@ -525,7 +525,21 @@ Current automated destinations are:
 - **Bluesky** — `@artalgorithm.bsky.social`
 - **Pinterest** — supported by the workflow but only runs when explicitly enabled/configured
 
-The main London publishing slots are **09:00, 15:00 and 20:30 (Europe/London)**. GitHub Actions uses redundant GMT/BST-aware triggers around each slot; a London-time gate determines which slot is due. This avoids depending on GitHub starting a cron job at one exact minute.
+The main London publishing slots are **09:00, 15:00 and 20:30 (Europe/London)**.
+
+### Portrait daily series (feature branch)
+
+The existing three cronjob.com dispatches still fire only `social-live.yml`; no new external cronjobs are required. Once portrait support is merged, that workflow runs its normal landscape job and then calls the reusable `portrait-live.yml` workflow.
+
+- Generates **five landscape + five portrait** artworks each UK day.
+- Posts landscape studies **1, 3, 5** and portrait studies **1, 3, 5** at the **same three times** (09:00, 15:00, 20:30).
+- Preserves both formats in one stable ten-image Daily Gallery, with landscape first and portrait second.
+- Maintains an immutable daily portrait queue and media on the rolling GitHub release, so later slots reuse the same artwork rather than generating different images.
+- Uses different completion markers (`done-YYYY-MM-DD-portrait-slotN-PLATFORM.txt`) for portrait posts, independent of existing landscape markers.
+- Keeps original 1000×1400 portrait JPEGs; for Instagram, makes a **1120×1400 padded 4:5 derivative** to retain the complete artwork without cropping.
+- Reuses the existing Instagram, Threads, Bluesky and optionally-enabled Pinterest publishers. Manual feature-branch runs remain dry-run only.
+
+Test the integration with `npm run test:portrait-publishing`. No changes to the existing cronjob.com entries or to the submitted ChatGPT plugin are necessary for this release. GitHub Actions uses redundant GMT/BST-aware triggers around each slot; a London-time gate determines which slot is due. This avoids depending on GitHub starting a cron job at one exact minute.
 
 Before publishing, each platform checks a release-hosted completion marker such as:
 
