@@ -26,6 +26,12 @@ try{
   const portraitScribble=archive.entries.find(e=>e.mode==='scribble'&&e.orientation==='portrait');
   samples.push({mode:portraitScribble.mode,orientation:portraitScribble.orientation,pen:portraitScribble.settings.pen,
     version:portraitScribble.rendererVersion,settings:portraitScribble.settings,id:portraitScribble.id});
+  for(const [day,id] of [['2026-10-06','2026-10-06-06'],['2026-10-07','2026-10-07-05'],['2026-10-05','2026-10-05-03']]){
+    const archived=JSON.parse(await fs.readFile(new URL('../gallery/'+day+'/meta.json',import.meta.url),'utf8'));
+    const entry=archived.entries.find(e=>e.id===id);
+    samples.push({mode:entry.mode,orientation:entry.orientation||'landscape',pen:entry.settings.pen,
+      version:entry.rendererVersion,settings:entry.settings,id:entry.id});
+  }
   for(const sample of samples){
     const result=await page.evaluate(async sample=>{
       const {compareRGB,withinLimits,PLOTTER_LIMITS}=await import('/tests/plotter-metrics.mjs');
@@ -49,18 +55,25 @@ try{
       if(layers.length!==optimized.metadata.colourRuns)throw Error('Pen layers are not top-level');
       const inkscape='http://www.inkscape.org/namespaces/inkscape';
       if(layers.some(g=>g.getAttributeNS(inkscape,'groupmode')!=='layer'))throw Error('Invalid Inkscape layer');
+      layers.forEach((g,i)=>{
+        const name=g.getAttributeNS(inkscape,'label');
+        if(name.startsWith('!')!==(i>0)||Number(name.replace(/^!/, '').match(/^\d+/)[0])!==i+1)throw Error('Faithful pen-change pause lost the run number');
+      });
+      if(optimized.metadata.forcedPauses!==Math.max(0,layers.length-1))throw Error('Faithful pause count disagrees');
       const paths=Array.from(file.querySelectorAll('path'));
       if(paths.some(p=>p.hasAttribute('stroke-dasharray')))throw Error('Dry gaps were left as a dash style');
       if(paths.length!==optimized.metadata.svgPaths)throw Error('Path count disagrees');
       const groupedFile=parser.parseFromString(grouped.svg,'image/svg+xml');
       if(groupedFile.querySelector('parsererror'))throw Error('Malformed grouped SVG');
       const penLayers=Array.from(groupedFile.documentElement.children).filter(e=>e.localName==='g');
-      const colours=Array.from(new Set(paths.map(p=>p.getAttribute('stroke'))));
+      const colours=Array.from(new Set(paths.map(p=>p.getAttribute('stroke')))).sort((a,b)=>A.plotterGeometry.luminance(b)-A.plotterGeometry.luminance(a));
       if(penLayers.length!==colours.length||grouped.metadata.penLayers!==colours.length)throw Error('Grouping did not produce one layer per pen');
       if(grouped.metadata.colourRuns!==original.metadata.colourRuns)throw Error('Grouping lost original run count');
       if(grouped.metadata.penChanges!==Math.max(0,colours.length-1))throw Error('Incorrect grouped pen-change count');
       if(grouped.metadata.paths!==original.metadata.paths||grouped.metadata.svgPaths!==original.metadata.svgPaths)throw Error('Grouping lost source paths');
       if(grouped.metadata.pathOrder!=='preserved-within-pen')throw Error('Grouped metadata promises original global order');
+      if(groupedOptimized.metadata.pathOrder!=='reordered-within-pen'||groupedOptimized.metadata.penOrder!=='light-to-dark')throw Error('Grouped route metadata disagrees');
+      if(groupedOptimized.metadata.forcedPauses!==0)throw Error('Grouped layer-mode plots unexpectedly pause');
       const faithfulFile=parser.parseFromString(original.svg,'image/svg+xml');
       const faithfulPaths=Array.from(faithfulFile.querySelectorAll('path'));
       penLayers.forEach((g,i)=>{
@@ -69,9 +82,47 @@ try{
         const actual=Array.from(g.children).map(p=>p.outerHTML);
         if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error('Grouping changed path geometry, style or per-pen order');
       });
+      const routedFile=parser.parseFromString(groupedOptimized.svg,'image/svg+xml');
+      const routedLayers=Array.from(routedFile.documentElement.children).filter(e=>e.localName==='g');
+      // Normalise each subpath's direction and sort compound-pass fragments,
+      // then compare multisets of complete source passes, including styles.
+      // A missing/duplicated stroke or a split dry-marker pass must fail.
+      const signature=p=>{
+        const commands=A.plotterGeometry.commands(p.getAttribute('d')),pieces=[];
+        commands.forEach(c=>{if(c.type==='M')pieces.push([]);pieces[pieces.length-1].push(c)});
+        const shapes=pieces.map(part=>[JSON.stringify(part),JSON.stringify(A.plotterGeometry.reversed(part))].sort()[0]).sort();
+        const styles=Array.from(p.attributes).filter(a=>a.name!=='d').map(a=>[a.name,a.value]).sort();
+        return JSON.stringify([styles,shapes]);
+      };
+      routedLayers.forEach((g,i)=>{
+        if(g.getAttributeNS(inkscape,'label')!==(i+1)+' · '+colours[i])throw Error('Routing changed light-to-dark pen numbering');
+        const expected=Array.from(penLayers[i].children,signature).sort();
+        const actual=Array.from(g.children,signature).sort();
+        if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error('Routing changed source geometry/style or split a compound pass');
+      });
       if(groupedOptimized.metadata.penTravelAfterMm>grouped.metadata.penTravelBeforeMm+1e-7)throw Error('Grouped direction optimisation increased travel');
       const n=optimized.metadata,scale=Math.min((n.pageMm[0]-20)/canvas.width,(n.pageMm[1]-20)/canvas.height);
       const x=(n.pageMm[0]-canvas.width*scale)/2,y=(n.pageMm[1]-canvas.height*scale)/2;
+      const home={x:-x/scale,y:-y/scale};
+      let fixedGroupedTravel=0;
+      penLayers.forEach(g=>{
+        const strokes=[];
+        Array.from(g.children).forEach(p=>{
+          let stroke;
+          A.plotterGeometry.commands(p.getAttribute('d')).forEach(c=>{
+            if(c.type==='M'){stroke={commands:[]};strokes.push(stroke)}
+            stroke.commands.push(c);
+          });
+        });
+        fixedGroupedTravel+=A.plotterGeometry.travel(A.plotterGeometry.optimize(strokes,home),home)*scale;
+      });
+      if(groupedOptimized.metadata.penTravelAfterMm>fixedGroupedTravel+1e-7)throw Error('Grouped routing regressed against direction-only travel');
+      // Real artworks have long source passes that must stay together to preserve
+      // opacity, so attainable savings differ by composition. These minimums
+      // leave modest headroom below measured savings of 17%, 28%, 43%, 36%.
+      const minSaving={'2026-10-09-P04':.12,'2026-10-06-06':.25,'2026-10-07-05':.40,'2026-10-05-03':.30}[sample.id];
+      if(minSaving&&groupedOptimized.metadata.penTravelAfterMm>fixedGroupedTravel*(1-minSaving)+1e-7)throw Error('Archived pen route saved less than '+Math.round(minSaving*100)+'% of travel');
+      if(sample.id==='2026-10-05-03'&&colours[0]!=='#c7c7c7')throw Error('Archived grey Scribble does not start with the lightest grey');
       async function raster(svg){
         const doc=parser.parseFromString(svg,'image/svg+xml');
         doc.documentElement.setAttribute('width',String(canvas.width));
@@ -109,20 +160,21 @@ try{
       const fidelity=difference(canvas,render),direction=difference(baseline,render);
       const grouping=difference(groupedReference,groupedBaseline),groupedDirection=difference(groupedBaseline,groupedRender);
       const metrics=({mean,changed,severe})=>({mean,changed,severe});
-      return{metadata:n,groupedMetadata:groupedOptimized.metadata,fidelity:metrics(fidelity),direction:metrics(direction),
+      return{metadata:n,groupedMetadata:groupedOptimized.metadata,fixedGroupedTravel,fidelity:metrics(fidelity),direction:metrics(direction),
         grouping:metrics(grouping),groupedDirection:metrics(groupedDirection),
         passed:withinLimits(fidelity,PLOTTER_LIMITS.fidelity)&&withinLimits(direction,PLOTTER_LIMITS.direction)&&
-          withinLimits(grouping,PLOTTER_LIMITS.direction)&&withinLimits(groupedDirection,PLOTTER_LIMITS.direction),
+          withinLimits(grouping,PLOTTER_LIMITS.direction)&&withinLimits(groupedDirection,PLOTTER_LIMITS.groupedDirection),
         canvas:canvas.toDataURL(),render:render.toDataURL(),diff:fidelity.diff,svg:optimized.svg,
         grouped:groupedRender.toDataURL(),groupedDiff:groupedDirection.diff,groupedSVG:groupedOptimized.svg};
     },sample);
     const label=sample.id||[sample.version,sample.mode,sample.orientation,sample.pen].join('-');
-    cases.push({sample,passed:result.passed,metadata:result.metadata,groupedMetadata:result.groupedMetadata,
+    cases.push({sample,passed:result.passed,metadata:result.metadata,groupedMetadata:result.groupedMetadata,fixedGroupedTravel:result.fixedGroupedTravel,
       fidelity:result.fidelity,direction:result.direction,grouping:result.grouping,groupedDirection:result.groupedDirection});
     console.log((result.passed?'PASS ':'FAIL ')+label+' '+JSON.stringify({fidelity:result.fidelity,direction:result.direction,
       grouping:result.grouping,groupedDirection:result.groupedDirection}));
-    if(sample.id)console.log('Archived pen changes '+JSON.stringify({id:sample.id,colourRuns:result.metadata.colourRuns,
-      pens:result.groupedMetadata.penColours.length,faithful:result.metadata.penChanges,grouped:result.groupedMetadata.penChanges}));
+    if(sample.id)console.log('Archived plotter route '+JSON.stringify({id:sample.id,colourRuns:result.metadata.colourRuns,
+      colours:result.groupedMetadata.penColours,faithfulChanges:result.metadata.penChanges,groupedChanges:result.groupedMetadata.penChanges,
+      faithfulMm:result.metadata.penTravelAfterMm,previousGroupedMm:result.fixedGroupedTravel,groupedMm:result.groupedMetadata.penTravelAfterMm}));
     if(!result.passed){
       for(const key of ['canvas','render','diff','grouped','groupedDiff'])await fs.writeFile(path.join(output,label+'-'+key+'.png'),Buffer.from(result[key].split(',')[1],'base64'));
       await fs.writeFile(path.join(output,label+'.svg'),result.svg);
@@ -193,6 +245,7 @@ try{
   await page.locator('#plotterGrouping').selectOption('pens');
   if(await page.locator('#plotterPreview').isVisible())throw Error('Grouping left a stale faithful preview');
   if(!(await page.locator('#plotterGroupingNote').textContent()).includes('which colour sits on top'))throw Error('Grouping overlap warning missing');
+  if(!(await page.locator('#plotterGroupingNote').textContent()).includes('light to dark')||!(await page.locator('#plotterOptimizeLabel').textContent()).includes('reordering'))throw Error('Grouped route UI still promises fixed source order');
   await page.locator('#previewPlotter').click();
   await page.locator('#plotterPreviewImage').evaluate(img=>img.decode());
   if(!(await page.locator('#plotterSummary').textContent()).includes('pen changes'))throw Error('Pen changes missing from summary');
@@ -216,6 +269,8 @@ try{
   await page.locator('#plotterGrouping').selectOption('runs');
   if(await page.locator('#plotterPreview').isVisible())throw Error('Returning to faithful mode left a stale grouped preview');
   if(!(await page.locator('#plotterGroupingNote').textContent()).includes('preserve overlap order'))throw Error('Faithful mode note was not restored');
+  if(!(await page.locator('#plotterGroupingNote').textContent()).includes('AxiDraw pauses'))throw Error('Faithful pen-change instruction missing');
+  if(!(await page.locator('#plotterOptimizeLabel').textContent()).includes('without changing stroke order'))throw Error('Faithful route instruction missing');
 }finally{
   await browser.close();
   report.maxima={};

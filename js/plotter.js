@@ -149,6 +149,48 @@ function optimize(paths,origin){
   }
   return result;
 }
+function routePen(paths,origin){
+  // Keep all clipped/dry fragments of a source marker pass together: splitting
+  // a compound pass into separate SVG elements would change its opacity.
+  var blocks=[],block=null;
+  paths.forEach(function(p){
+    if(!block||p.source==null||block.source!==p.source){
+      block={source:p.source,paths:[]};blocks.push(block);
+    }
+    block.paths.push(p);
+  });
+  blocks.forEach(function(b){b.ends=[ends(b.paths[0])[0],ends(b.paths[b.paths.length-1])[1]]});
+  var at=origin,ordered=[];
+  for(var left=blocks.length;left>0;left--){
+    var selected=null,reverse=false,best=Infinity;
+    blocks.forEach(function(b){
+      if(b.used)return;
+      b.ends.forEach(function(pt,dir){
+        var dx=at.x-pt.x,dy=at.y-pt.y,score=dx*dx+dy*dy;
+        if(score<best){best=score;selected=b;reverse=dir===1}
+      });
+    });
+    selected.used=true;
+    var next=reverse?selected.paths.slice().reverse().map(function(p){
+      return Object.assign({},p,{commands:reversed(p.commands)});
+    }):selected.paths;
+    next.forEach(function(p){ordered.push(p)});
+    at=selected.ends[reverse?0:1];
+  }
+  // Exact direction optimisation after greedy ordering, with the old fixed
+  // sequence as a fallback so grouped travel can never regress.
+  var fixed=optimize(paths,origin),routed=optimize(ordered,origin);
+  return travel(routed,origin)<travel(fixed,origin)?routed:fixed;
+}
+function luminance(colour){
+  var hex=colour.slice(1);
+  if(hex.length===3)hex=hex.split('').map(function(c){return c+c}).join('');
+  var rgb=[0,2,4].map(function(i){
+    var value=parseInt(hex.slice(i,i+2),16)/255;
+    return value<=.04045?value/12.92:Math.pow((value+.055)/1.055,2.4);
+  });
+  return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+}
 function compound(paths){
   var passes=[];
   paths.forEach(function(p){
@@ -194,23 +236,30 @@ A.createPlotterSVG=function(settings,options){
   var x=(page[0]-w*scale)/2,y=(page[1]-h*scale)/2;
   var origin=point(-x/scale,-y/scale),paths=prepare(rec.paths,w,h);
   var colourRuns=colourLayers(paths,false).length;
-  var penColours=Array.from(new Set(paths.map(function(p){return p.stroke})));
-  // In grouped mode each pen is a separate layer-mode plot starting at home.
-  // Preserve its source stroke sequence and optimise only stroke direction.
-  var sequences=groupByPen?colourLayers(paths,true).map(function(l){return l.paths}):[paths];
+  var pens=colourLayers(paths,true);
+  if(groupByPen)pens.sort(function(a,b){return luminance(b.colour)-luminance(a.colour)});
+  var penColours=pens.map(function(l){return l.colour});
+  // Each grouped pen is plotted separately from home, lightest pen first.
+  // Faithful mode keeps the full source sequence across pen-change pauses.
+  var sequences=groupByPen?pens.map(function(l){return l.paths}):[paths];
   var before=sequences.reduce(function(sum,seq){return sum+travel(seq,origin)},0);
-  if(options.optimize!==false)sequences=sequences.map(function(seq){return optimize(seq,origin)});
+  var optimized=options.optimize!==false;
+  if(optimized)sequences=sequences.map(function(seq){return groupByPen?routePen(seq,origin):optimize(seq,origin)});
   var after=sequences.reduce(function(sum,seq){return sum+travel(seq,origin)},0);
   paths=[].concat.apply([],sequences);
   var layers=colourLayers(paths,groupByPen);
   var metadata={penColours:penColours,generator:'ALGO/ART',rendererVersion:A.rendererVersion,seed:settings.seed,settings:settings,
     paper:paper,pageMm:page,marginMm:margin,paperColour:settings.paper,layerGrouping:grouping,
-    pathOrder:groupByPen?'preserved-within-pen':'preserved',penLayers:layers.length,penChanges:Math.max(0,layers.length-1),
+    pathOrder:groupByPen?(optimized?'reordered-within-pen':'preserved-within-pen'):'preserved',
+    penOrder:groupByPen?'light-to-dark':'first-appearance',
+    routeOptimization:optimized?(groupByPen?'nearest-neighbour-and-direction':'fixed-order-direction'):'none',
+    penLayers:layers.length,penChanges:Math.max(0,layers.length-1),forcedPauses:groupByPen?0:Math.max(0,layers.length-1),
     penTravelBeforeMm:before*scale,penTravelAfterMm:after*scale,paths:paths.length,
     svgPaths:layers.reduce(function(sum,l){return sum+compound(l.paths).length},0),colourRuns:colourRuns};
   var content=layers.map(function(l,i){
     var pen=penColours.indexOf(l.colour)+1;
     var name=groupByPen?pen+' · '+l.colour:String(i+1).padStart(3,'0')+' · Pen '+pen+' · '+l.colour;
+    if(!groupByPen&&i>0)name='!'+name;
     var id=groupByPen?'pen-'+pen:'pen-run-'+(i+1);
     return '<g id="'+id+'" inkscape:groupmode="layer" inkscape:label="'+esc(name)+'" data-pen-number="'+pen+'" data-pen-colour="'+esc(l.colour)+'"'+(l.paths.every(function(p){return p.blend==='multiply'})?' style="isolation:isolate;mix-blend-mode:multiply"':'')+' transform="translate('+x+' '+y+') scale('+scale+')">'+compound(l.paths).map(pathTag).join('')+'</g>';
   }).join('');
@@ -231,5 +280,5 @@ A.downloadPlotterSVG=function(result,settings){
   setTimeout(function(){URL.revokeObjectURL(url)},1000);
 };
 // Exposed for deterministic geometry/route regression tests.
-A.plotterGeometry={commands:commands,flatten:flatten,cut:cut,reversed:reversed,optimize:optimize,travel:travel,prepare:prepare};
+A.plotterGeometry={commands:commands,flatten:flatten,cut:cut,reversed:reversed,optimize:optimize,routePen:routePen,luminance:luminance,travel:travel,prepare:prepare};
 })(window.AlgoArt);
