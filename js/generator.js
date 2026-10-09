@@ -2194,8 +2194,20 @@ function drawOrganic(ctx,s,r,pal){
       rp.y=A.lerp(rp.y,goalY,.88);
       // Protected voids are intentionally left open even at root level.
       if(pointInVoid(rp.x,rp.y,voids)){
-        rp.x=A.W*(side?.22:.78);
-        if(pointInVoid(rp.x,rp.y,voids))rp.y=A.H*(.86-rootIndex*.2);
+        // A large VOID can cover the lower-right (or lower-left) golden
+        // region entirely. Search nearby alternative φ columns and heights
+        // rather than relocating the root inside a second reserved area.
+        var targetXs=[rp.x,A.W*.22,A.W*.78,A.W*.50,A.W*.12,A.W*.88];
+        var targetYs=[rp.y,A.H*.79,A.H*.68,A.H*.88,A.H*.56];
+        var rootClear=false;
+        for(var yi=0;yi<targetYs.length&&!rootClear;yi++){
+          for(var xi=0;xi<targetXs.length;xi++){
+            if(!pointInVoid(targetXs[xi],targetYs[yi],voids)){
+              rp.x=targetXs[xi];rp.y=targetYs[yi];
+              rootClear=true;break;
+            }
+          }
+        }
       }
     }
   }
