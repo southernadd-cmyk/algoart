@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { TIME_ZONE, SCHEDULE, PLATFORM_SLOTS } from './config.mjs';
+import { makeCaptions } from './captions.mjs';
 
 function localParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -132,9 +133,9 @@ if (command === 'select') {
     id: item.id,
     image_path: imagePath,
     asset_name: `algoart-${date}-slot${slot + 1}.jpg`,
-    instagram_caption_b64: b64(item.copy.instagram),
-    threads_caption_b64: b64(item.copy.threads),
-    bluesky_caption_b64: b64(item.copy.bluesky),
+    instagram_caption_b64: b64(makeCaptions(item).instagram),
+    threads_caption_b64: b64(makeCaptions(item).threads),
+    bluesky_caption_b64: b64(makeCaptions(item).bluesky),
     pinterest_title_b64: b64(item.series + ' — ALGO/ART'),
     pinterest_description_b64: b64(
       item.series + ' generated with golden-ratio composition and imperfect digital marker strokes. ' +

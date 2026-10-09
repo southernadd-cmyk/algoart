@@ -840,9 +840,27 @@ window.addEventListener('keydown',function(e){
   if(e.key==='[')setInspector(app.classList.contains('inspector-closed'),true);
 });
 
+// Compact social URLs open the editor, never the gallery. Resolve the exact
+// daily archive state, then let regenerate() restore the full canonical URL.
+var requestedArtworkId=new URLSearchParams(location.search).get('art');
 var loadedFromURL=loadSettingsFromURL();
 
+function loadExactArchivedArtwork(id){
+  if(!/^\d{4}-\d{2}-\d{2}-(?:P\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
+  var day=id.slice(0,10);
+  return fetch('gallery/'+day+'/meta.json',{cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('Archive unavailable');return r.json();})
+    .then(function(meta){
+      var entry=(Array.isArray(meta.entries)?meta.entries:[]).find(function(e){return e.id===id});
+      if(!entry||!entry.settings||!entry.seed)throw new Error('Archived artwork missing: '+id);
+      A.rendererVersion=Number(entry.rendererVersion)||CURRENT_RENDERER_VERSION;
+      applySettings(Object.assign({},entry.settings,{seed:entry.seed}));
+      return true;
+    });
+}
+
 function loadLatestGalleryDefault(){
+  if(requestedArtworkId)return loadExactArchivedArtwork(requestedArtworkId);
   if(loadedFromURL)return Promise.resolve(false);
   return fetch('gallery/archive.json',{cache:'no-store'})
     .then(function(r){if(!r.ok)throw new Error('archive');return r.json();})
@@ -869,13 +887,17 @@ function loadLatestGalleryDefault(){
 }
 
 syncModeCards();
-regenerate();
+if(!requestedArtworkId)regenerate();
 loadLatestGalleryDefault().then(function(changed){
   if(changed){
     syncModeCards();
     regenerate();
   }
   setTimeout(renderModePreviews,40);
+}).catch(function(error){
+  console.error('Unable to load exact archived artwork:',error);
+  var status=$('shareStatus');
+  if(status)status.textContent='Unable to load this archived artwork. Please try again.';
 });
 (function initIntroSplash(){
   var splash=$('introSplash');
