@@ -72,7 +72,7 @@ jobs:
           FORCE_PORTRAIT_SLOT="$FORCE_SLOT" node automation/portrait-slot.mjs gate
 
       - name: Ensure media release and check duplicate markers
-        if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.live == true) && steps.gate.outputs.should_post == 'true'
+        if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.live == true) && steps.gate.outputs.should_run == 'true'
         id: state
         shell: bash
         run: |
@@ -117,14 +117,61 @@ jobs:
           echo "pinterest_marker=$PI_MARKER" >> "$GITHUB_OUTPUT"
           echo "bluesky_marker=$BS_MARKER" >> "$GITHUB_OUTPUT"
 
+      - name: Restore the five immutable portraits built this morning
+        id: cached
+        if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.live == true) && steps.gate.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          DATE="${{ steps.gate.outputs.date }}"
+          DIR="social-output/$DATE/portrait"
+          MANIFEST="portrait-$DATE-queue.json"
+          mkdir -p "$DIR"
+          READY=false
+          ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          if printf '%s\n' "$ASSETS" | grep -Fxq "$MANIFEST"; then
+            gh release download "$RELEASE_TAG" --pattern "$MANIFEST" -D "$DIR" --clobber
+            mv "$DIR/$MANIFEST" "$DIR/queue.json"
+            # Check the full manifest before trusting it. This is the daily
+            # frozen set: all three later posts reuse these exact same files.
+            if DAY="$DATE" node --input-type=module -e "
+              import fs from 'node:fs';
+              const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
+              if(q.orientation!=='portrait'||q.date!==process.env.DAY||q.entries.length!==5)process.exit(1);
+            "; then
+              READY=true
+              while IFS= read -r IMAGE; do
+                if ! printf '%s\n' "$ASSETS" | grep -Fxq "$IMAGE"; then
+                  READY=false
+                  break
+                fi
+              done < <(DAY="$DATE" node --input-type=module -e "
+                import fs from 'node:fs';
+                const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
+                for(const e of q.entries)console.log(e.imageFile);
+              ")
+            fi
+            if [ "$READY" = "true" ]; then
+              while IFS= read -r IMAGE; do
+                gh release download "$RELEASE_TAG" --pattern "$IMAGE" -D "$DIR" --clobber
+              done < <(DAY="$DATE" node --input-type=module -e "
+                import fs from 'node:fs';
+                const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
+                for(const e of q.entries)console.log(e.imageFile);
+              ")
+            else
+              rm -f "$DIR/queue.json"
+            fi
+          fi
+          echo "ready=$READY" >> "$GITHUB_OUTPUT"
+
       - name: Install Playwright
-        if: steps.gate.outputs.should_run == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.gate.outputs.should_run == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true')) && steps.cached.outputs.ready != 'true'
         run: |
           npm install
           npx playwright install --with-deps chromium
 
       - name: Start local ALGO ART
-        if: steps.gate.outputs.should_run == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.gate.outputs.should_run == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true')) && steps.cached.outputs.ready != 'true'
         run: |
           python3 -m http.server 4173 >/tmp/algoart-http.log 2>&1 &
           for i in {1..30}; do
@@ -135,10 +182,24 @@ jobs:
           exit 1
 
       - name: Generate today's artwork batch
-        if: steps.gate.outputs.should_run == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.gate.outputs.should_run == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true')) && steps.cached.outputs.ready != 'true'
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run social:generate
+
+      - name: Freeze the complete five-artwork daily portrait batch
+        if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.live == true) && steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
+        shell: bash
+        run: |
+          DATE="${{ steps.gate.outputs.date }}"
+          DIR="social-output/$DATE/portrait"
+          # Upload images first, then a manifest last. A manifest is the
+          # atomic completion marker for the entire validated daily batch.
+          for IMAGE in "$DIR"/*.jpg; do
+            gh release upload "$RELEASE_TAG" "$IMAGE" --clobber
+          done
+          cp "$DIR/queue.json" "$DIR/portrait-$DATE-queue.json"
+          gh release upload "$RELEASE_TAG" "$DIR/portrait-$DATE-queue.json" --clobber
 
       - name: Build daily gallery and SEO pages
         if: steps.gate.outputs.should_run == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
