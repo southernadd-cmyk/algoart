@@ -5,7 +5,12 @@ export const PLOTTER_LIMITS=Object.freeze({
   // The measured maximum was 0.353/255. Leave roughly 2x mean headroom,
   // but independently bound both the moderate and severe error tails.
   fidelity:Object.freeze({mean:.75,changed:.002,severe:.001}),
-  direction:Object.freeze({mean:.02,changed:.0001})
+  direction:Object.freeze({mean:.02,changed:.0001}),
+  // Reordering independent passes of the SAME pen is mathematically commutative,
+  // but SVG rasterizers round intermediate alpha/colour blends differently.
+  // Across 58 browser samples the worst mean was 0.087/255, with no severe
+  // pixels. Permit 2x headroom while retaining tight local-damage guards.
+  groupedDirection:Object.freeze({mean:.20,changed:.0001,severe:.00001})
 });
 export function compareRGB(a,b,heat){
   if(a.length!==b.length||!a.length||a.length%4)throw Error('RGB image sizes disagree');
