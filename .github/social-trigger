@@ -1,5 +1,1 @@
-Recover only missing UK 09:00 slot 0 portrait posts on 2026-10-09 after Threads 500-character fix.
-Triggered at approximately 11:34 BST.
-Landscape Instagram/Threads/Bluesky and portrait Instagram marked done should skip.
-Portrait Threads and Bluesky should publish independently and mark success.
-PR https://github.com/southernadd-cmyk/algoart/pull/2 merged (fix 2ca9b3e).
+2026-10-09 · one-time re-publish of deleted portrait social posts for slot 0 using exact ALGO/ART editor artwork links. Preserve existing landscape marker states. All three portrait networks explicitly requested.
