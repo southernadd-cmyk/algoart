@@ -36,7 +36,7 @@ try{
       if(layers.some(g=>g.getAttributeNS(inkscape,'groupmode')!=='layer'))throw Error('Invalid Inkscape layer');
       const paths=Array.from(file.querySelectorAll('path'));
       if(paths.some(p=>p.hasAttribute('stroke-dasharray')))throw Error('Dry gaps were left as a dash style');
-      if(paths.length!==optimized.metadata.paths)throw Error('Path count disagrees');
+      if(paths.length!==optimized.metadata.svgPaths)throw Error('Path count disagrees');
       const n=optimized.metadata,scale=Math.min((n.pageMm[0]-20)/canvas.width,(n.pageMm[1]-20)/canvas.height);
       const x=(n.pageMm[0]-canvas.width*scale)/2,y=(n.pageMm[1]-canvas.height*scale)/2;
       async function raster(svg){
