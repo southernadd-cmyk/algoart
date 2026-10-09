@@ -66,10 +66,11 @@ function artworkCard(item, index) {
   const title = artworkTitle(item, index);
   const s = item.settings || {};
   const alt = item.copy?.altText || artworkDescription(item);
+  const portrait = (item.orientation || s.orientation) === 'portrait';
   return `
-    <article class="art-card">
+    <article class="art-card" data-orientation="${portrait ? 'portrait' : 'landscape'}">
       <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open and remix ${escapeHtml(title)} in ALGO/ART">
-        <img src="${escapeHtml(item.imageFile)}" width="1400" height="1000" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" alt="${escapeHtml(alt)}">
+        <img src="${escapeHtml(item.imageFile)}" width="${portrait ? 1000 : 1400}" height="${portrait ? 1400 : 1000}" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" alt="${escapeHtml(alt)}">
       </a>
       <div class="art-info">
         <div class="art-number">${String(index + 1).padStart(2, '0')}</div>
@@ -304,7 +305,8 @@ ${urls.map(u => `  <url><loc>${escapeXml(u.loc)}</loc><lastmod>${u.lastmod}</las
 }
 
 const day = process.env.SOCIAL_DATE || dateInZone();
-const queuePath = path.resolve('social-output', day, 'queue.json');
+const galleryOrientation = process.env.GALLERY_QUEUE_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
+const queuePath = path.resolve('social-output', day, ...(galleryOrientation === 'portrait' ? ['portrait'] : []), 'queue.json');
 const queue = JSON.parse(await fs.readFile(queuePath, 'utf8'));
 
 if (!Array.isArray(queue.entries) || queue.entries.length === 0) {
@@ -345,7 +347,7 @@ for (const entry of Array.isArray(existingMeta.entries) ? existingMeta.entries :
 queue.entries = [...queue.entries, ...preservedEntries];
 
 for (const item of queue.entries.slice(0, queue.entries.length - preservedEntries.length)) {
-  const source = path.resolve('social-output', day, item.imageFile);
+  const source = path.resolve('social-output', day, ...(galleryOrientation === 'portrait' ? ['portrait'] : []), item.imageFile);
   const dest = path.join(dayDir, item.imageFile);
   await fs.copyFile(source, dest);
 }
@@ -365,6 +367,7 @@ const dayMeta = {
   entries: queue.entries.map((item, index) => ({
     id: item.id,
     title: artworkTitle(item, index),
+    orientation: item.orientation || item.settings?.orientation || 'landscape',
     seed: item.seed,
     mode: item.mode,
     series: item.series,
