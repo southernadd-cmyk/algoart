@@ -67,9 +67,9 @@ async function main(){
       asset_name:assetName,
       instagram_asset_name:item.instagramImageFile,
       instagram_caption_b64:b64(item.copy.instagram),
-      // Recompute the compact permalink even for this morning's frozen queue.
+      // Recompute exact editor links even for this morning's frozen queue.
       threads_caption_b64:b64(makeCaptions(item).threads),
-      bluesky_caption_b64:b64(item.copy.bluesky),
+      bluesky_caption_b64:b64(makeCaptions(item).bluesky),
       pinterest_title_b64:b64('Portrait · '+item.series+' — ALGO/ART'),
       pinterest_description_b64:b64('Portrait study from ALGO/ART. Exact seed and settings available to remix. '+item.shareUrl),
       alt_text_b64:b64(item.copy.altText),
