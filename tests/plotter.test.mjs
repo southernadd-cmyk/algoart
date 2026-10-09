@@ -59,3 +59,14 @@ assert.ok(layered.preview.includes('<rect width="297" height="210" fill="#f5f0e6
 assert.ok(layered.metadata.penTravelAfterMm<=layered.metadata.penTravelBeforeMm+1e-8);
 assert.equal(A.rendererVersion,6);
 console.log('PASS: sequential colour layers, millimetre page, no plotted paper, preview background and preserved legacy version.');
+
+A.render=canvas=>{
+  canvas.width=100;canvas.height=100;
+  A.svgRecorder.paths=[{d:'M 5 50 L 95 50',stroke:'#123456',width:20,opacity:.4,lineCap:'round',dash:[6,3],dashOffset:0}];
+};
+const dry=A.createPlotterSVG({seed:'DRY',paper:'#fff'});
+assert.ok(dry.metadata.paths>1,'Physical dash gaps were lost');
+assert.equal(dry.metadata.svgPaths,1,'One marker pass was split into separately composited elements');
+assert.equal((dry.svg.match(/stroke-opacity="/g)||[]).length,1);
+assert.ok(!dry.svg.includes('stroke-dasharray'));
+console.log('PASS: multiple physical pen lifts retain the single source marker pass opacity.');

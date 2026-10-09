@@ -67,7 +67,7 @@ try{
       }
       const fidelity=difference(canvas,render),direction=difference(baseline,render);
       return{metadata:n,fidelity:{mean:fidelity.mean,changed:fidelity.changed},direction:{mean:direction.mean,changed:direction.changed},
-        passed:fidelity.mean<2&&fidelity.changed<.02&&direction.mean<.3&&direction.changed<.005,
+        passed:fidelity.mean<.5&&fidelity.changed<.002&&direction.mean<.02&&direction.changed<.0001,
         canvas:canvas.toDataURL(),render:render.toDataURL(),diff:fidelity.diff,svg:optimized.svg};
     },sample);
     const label=[sample.version,sample.mode,sample.orientation,sample.pen].join('-');
