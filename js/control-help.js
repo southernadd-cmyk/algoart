@@ -172,7 +172,8 @@ A.readControlValue=function(input){
 A.setControlValue=function(input,value){
   var state=rangeStates[input.id];
   if(!state){input.value=value;return;}
-  state.raw=Math.max(state.min,Math.min(state.max,+value));
+  var bounded=Math.max(state.min,Math.min(state.max,+value));
+  state.raw=state.min+Math.round((bounded-state.min)/state.step)*state.step;
   displayRange(input,state);
 };
 function displayRange(input,state){
@@ -190,7 +191,7 @@ function displayRange(input,state){
   if(output)output.textContent=input.value;
 }
 document.querySelectorAll('input[type=range]').forEach(function(input){
-  var state=rangeStates[input.id]={min:+input.min,max:+input.max,raw:+input.value};
+  var state=rangeStates[input.id]={min:+input.min,max:+input.max,step:+input.step||1,raw:+input.value};
   input.addEventListener('input',function(){
     var mode=document.getElementById('mode').value;
     state.raw=+input.value;
