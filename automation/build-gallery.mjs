@@ -80,6 +80,7 @@ function artworkCard(item, index) {
           <dl>
             <div><dt>Seed</dt><dd>${escapeHtml(item.seed)}</dd></div>
             <div><dt>Series</dt><dd>${escapeHtml(item.series)}</dd></div>
+            <div><dt>Format</dt><dd>${portrait ? 'Portrait · 1000 × 1400' : 'Landscape · 1400 × 1000'}</dd></div>
             <div><dt>φ adherence</dt><dd>${escapeHtml(s.phiStrength)}%</dd></div>
             <div><dt>Pen</dt><dd>${escapeHtml(s.pen)}</dd></div>
             <div><dt>Palette</dt><dd>${escapeHtml(s.palette)}</dd></div>
@@ -195,9 +196,9 @@ function dayPage(queue) {
 function archivePage(archive) {
   const days = [...archive.days].sort((a, b) => b.date.localeCompare(a.date));
   const cards = days.map((day, index) => `
-    <article class="day-card">
+    <article class="day-card${day.coverOrientation === 'portrait' ? ' portrait' : ''}">
       <a href="./${day.date}/">
-        <img src="./${day.date}/${escapeHtml(day.cover)}" width="1400" height="1000" loading="${index < 2 ? 'eager' : 'lazy'}" alt="ALGO/ART daily gallery cover for ${escapeHtml(displayDate(day.date))}">
+        <img src="./${day.date}/${escapeHtml(day.cover)}" width="${day.coverOrientation === 'portrait' ? 1000 : 1400}" height="${day.coverOrientation === 'portrait' ? 1400 : 1000}" loading="${index < 2 ? 'eager' : 'lazy'}" alt="ALGO/ART daily gallery cover for ${escapeHtml(displayDate(day.date))}">
         <div>
           <span>${escapeHtml(day.date)}</span>
           <h2>${escapeHtml(displayDate(day.date))}</h2>
@@ -394,6 +395,7 @@ archive.days = Array.isArray(archive.days) ? archive.days.filter(d => d.date !==
 archive.days.push({
   date: day,
   cover: queue.entries[0].imageFile,
+  coverOrientation: queue.entries[0].orientation || queue.entries[0].settings?.orientation || 'landscape',
   count: queue.entries.length,
   series: [...new Set(queue.entries.map(e => e.series))]
 });
