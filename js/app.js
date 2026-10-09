@@ -904,7 +904,8 @@ loadLatestGalleryDefault().then(function(changed){
   if(!splash)return;
   var seen=false;
   try{seen=localStorage.getItem('algoart-intro-seen')==='1'}catch(e){}
-  if(!seen)splash.hidden=false;
+  // Deep links must reveal their requested artwork without a first-visit overlay.
+  if(!seen&&!requestedArtworkId&&!loadedFromURL)splash.hidden=false;
   function closeIntro(reveal){
     splash.hidden=true;
     try{localStorage.setItem('algoart-intro-seen','1')}catch(e){}

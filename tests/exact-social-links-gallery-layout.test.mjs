@@ -25,6 +25,7 @@ try{
     const short=new URL(base);short.searchParams.set('art',item.id);
     await page.goto(short.href,{waitUntil:'domcontentloaded'});
     await page.waitForFunction(seed=>new URLSearchParams(location.search).get('seed')===seed,item.seed,{timeout:20000});
+    assert.equal(await page.locator('#introSplash').isHidden(),true,'Social artwork link must bypass intro overlay');
     const opened=new URL(page.url());
     assert.equal(opened.searchParams.has('art'),false,'Compact URL must expand into canonical editor settings');
     assert.equal(opened.searchParams.get('mode'),item.mode,'Editor mode not restored');
@@ -40,6 +41,8 @@ try{
     assert.equal(fromShort.width,item.orientation==='portrait'?1000:1400);
     assert.equal(fromShort.height,item.orientation==='portrait'?1400:1000);
   }
+  await page.goto(new URL(base).href,{waitUntil:'domcontentloaded'});
+  assert.equal(await page.locator('#introSplash').isVisible(),true,'Normal homepage must keep first-visit introduction');
   await page.goto(new URL('gallery/'+day+'/',base).href,{waitUntil:'domcontentloaded'});
   await page.locator('.art-card[data-orientation="portrait"] img').first().waitFor();
   const frames=await page.evaluate(()=>{
