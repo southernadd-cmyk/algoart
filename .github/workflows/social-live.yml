@@ -288,3 +288,15 @@ jobs:
           echo "- Bluesky already complete before run: ${{ steps.state.outputs.bluesky_done }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Pinterest enabled: ${{ vars.PINTEREST_ENABLED }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Pinterest already complete before run: ${{ steps.state.outputs.pinterest_done }}" >> "$GITHUB_STEP_SUMMARY"
+
+  portraits:
+    # A second job in the SAME workflow run; the existing cronjob.com
+    # dispatches and their times are unchanged. Landscape finishes first
+    # so the portrait gallery can preserve its five entries.
+    needs: publish
+    if: ${{ always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.slot != '3') }}
+    uses: ./.github/workflows/portrait-live.yml
+    with:
+      slot: ${{ github.event_name == 'workflow_dispatch' && inputs.slot || '' }}
+      live: true
+    secrets: inherit
