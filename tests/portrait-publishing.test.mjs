@@ -81,8 +81,8 @@ try{
     await fs.writeFile(path.join(portraitDir,item.imageFile),'fake-portrait');
     await fs.writeFile(path.join(portraitDir,item.instagramImageFile),'fake-ig-portrait');
   }
-  function run(script,env){
-    const r=spawnSync(process.execPath,[path.join(repoRoot,script)],{
+  function run(script,env,args=[]){
+    const r=spawnSync(process.execPath,[path.join(repoRoot,script),...args],{
       cwd:temp,env:{...process.env,GITHUB_OUTPUT:'',SOCIAL_DATE:date,...env},encoding:'utf8'
     });
     assert.equal(r.status,0,script+' failed: '+r.stderr+'\n'+r.stdout);
@@ -107,7 +107,7 @@ try{
   meta=await validateQueue();
   assert.deepEqual(meta.entries.map(e=>e.id),originalOrder);
   for(const slot of [0,1,2]){
-    const stdout=run('automation/portrait-slot.mjs',{SLOT:String(slot)});
+    const stdout=run('automation/portrait-slot.mjs',{SLOT:String(slot)},['select']);
     const selected=Object.fromEntries(stdout.trim().split('\n').map(row=>{
       const split=row.indexOf('=');return [row.slice(0,split),row.slice(split+1)];
     }));
