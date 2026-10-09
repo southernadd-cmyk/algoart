@@ -8,7 +8,8 @@ function strategyName(stats, fallback) {
 export function makeCaptions(item) {
   const strategy = strategyName(item.stats, item.mode);
   const heading = `${item.series.toUpperCase()} / ${strategy}`;
-  const facts = `Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${item.settings.pen} marker`;
+  const format = item.settings.orientation === 'portrait' ? 'Portrait study · ' : '';
+  const facts = `${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${item.settings.pen} marker`;
 
   return {
     instagram: [
