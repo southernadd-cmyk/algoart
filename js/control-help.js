@@ -110,7 +110,7 @@ var SYSTEMS={
   }
 };
 
-var LABELS={density:'Scale',complexity:'Bend',negativeSpace:'Empty space',phiStrength:'φ strength',recursion:'Depth',spiralInfluence:'Spiral pull',goldenAngle:'Golden-angle spacing',nesting:'Inner shapes',curveBias:'Curved strokes',rotation:'Angle variation'};
+var LABELS={density:'Scale',complexity:'Bend',negativeSpace:'Empty space',phiStrength:'Additional φ Pull',recursion:'Depth',spiralInfluence:'Spiral pull',goldenAngle:'Golden-angle spacing',nesting:'Inner shapes',curveBias:'Curved strokes',rotation:'Angle variation'};
 var SYSTEM_LABELS={
   field:{elements:'Marks'},
   spiral:{elements:'Path positions',spiralInfluence:'Follow path'},
@@ -152,7 +152,8 @@ function inactiveControl(mode,id,version,meta){
 
 function helpText(mode,id,version){
   if(mode==='spiral'&&version<6&&id==='negativeSpace')return 'Leaves quiet areas between the spiral marks.';
-  return (SYSTEMS[mode]||{})[id]||COMMON[id]||'';
+  var description=(SYSTEMS[mode]||{})[id]||COMMON[id]||'';
+  return id==='phiStrength'?description+' At 0%, this additional pull is removed, but the underlying composition still uses φ.':description;
 }
 
 
