@@ -2317,6 +2317,7 @@ function drawOrganic(ctx,s,r,pal){
 function drawOrganicV7(ctx,s,r,pal){
   if(s.orientation==='portrait')return drawOrganic(ctx,s,r,pal);
   var width=A.W,height=A.H,meta;
+  var svgStart=A.svgRecorder?A.svgRecorder.paths.length:0;
   ctx.save();
   ctx.translate(width,0);
   ctx.rotate(Math.PI/2);
@@ -2326,6 +2327,11 @@ function drawOrganicV7(ctx,s,r,pal){
   }finally{
     A.W=width;A.H=height;
     ctx.restore();
+  }
+  if(A.svgRecorder){
+    for(var pathIndex=svgStart;pathIndex<A.svgRecorder.paths.length;pathIndex++){
+      A.svgRecorder.paths[pathIndex].transform='matrix(0 1 -1 0 '+width+' 0)';
+    }
   }
   meta.voids=meta.voids.map(function(v){
     return{x:width-v.y-v.h,y:v.x,w:v.h,h:v.w};
