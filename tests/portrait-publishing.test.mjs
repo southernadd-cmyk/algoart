@@ -36,6 +36,25 @@ for(let slot=0;slot<3;slot++){
   assert.equal(result.target_time,PORTRAIT_SCHEDULE[slot]);
 }
 
+// Guard the orchestration itself, not just the individual slot calculator.
+// There must be exactly one source of live posting triggers: social-live.yml.
+const parentWorkflow=await fs.readFile(path.join(repoRoot,'.github/workflows/social-live.yml'),'utf8');
+const portraitWorkflow=await fs.readFile(path.join(repoRoot,'.github/workflows/portrait-live.yml'),'utf8');
+assert.match(parentWorkflow,/^  portraits:\\s*\\n(?:(?!^  [a-z]).*\\n)*?    needs: publish/m,
+  'Portrait job must follow landscape in the existing workflow');
+assert.match(parentWorkflow,/uses: \\.\\/\\.github\\/workflows\\/portrait-live\\.yml/);
+assert.match(parentWorkflow,/secrets: inherit/);
+assert.match(portraitWorkflow,/^  workflow_call:/m);
+assert.doesNotMatch(portraitWorkflow,/^  schedule:/m,
+  'Portraits must not create a second independent set of cron triggers');
+assert.doesNotMatch(portraitWorkflow,/^  push:/m);
+assert.match(portraitWorkflow,/portrait-slot\\$\\{SLOT\\}/);
+assert.match(portraitWorkflow,/done-\\$\\{DATE\\}-portrait-slot/);
+assert.match(portraitWorkflow,/refs\\/heads\\/main.*inputs\\.live == true/,
+  'Public posting must be gated to main and explicitly live mode');
+assert.match(portraitWorkflow,/steps\\.cached\\.outputs\\.ready/,
+  'Later posts must reuse frozen daily portrait images');
+
 const temp=await fs.mkdtemp(path.join(os.tmpdir(),'algoart-portrait-schedule-'));
 try{
   const dayDir=path.join(temp,'social-output',date);
