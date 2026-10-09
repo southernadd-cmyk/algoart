@@ -2,6 +2,7 @@
 // existing landscape posting times, selectors, and idempotency do not change.
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {TIME_ZONE, PORTRAIT_SCHEDULE, PORTRAIT_POST_INDICES} from './config.mjs';
 
 function localParts(date = new Date()){
@@ -78,6 +79,6 @@ async function main(){
   throw Error('Unknown portrait-slot command: '+command);
 }
 
-if(import.meta.url===new URL('file://'+process.argv[1]).href){
+if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
   await main();
 }
