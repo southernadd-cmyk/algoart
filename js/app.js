@@ -143,7 +143,7 @@ A.readSettings=function(){
   var s={seed:$('seed').value||'PHI-1618'};
   SETTING_IDS.forEach(function(id){
     var e=$(id);
-    s[id]=e.type==='checkbox'?e.checked:(e.type==='range'?+e.value:e.value);
+    s[id]=e.type==='checkbox'?e.checked:(e.type==='range'?(A.readControlValue?A.readControlValue(e):+e.value):e.value);
   });
   return s;
 };
@@ -156,7 +156,8 @@ function applySettings(settings){
     if(e.type==='checkbox'){
       e.checked=!!settings[id];
     }else{
-      e.value=settings[id];
+      if(e.type==='range'&&A.setControlValue)A.setControlValue(e,settings[id]);
+      else e.value=settings[id];
       if(e.type==='range')syncRangeOutput(e);
     }
   });

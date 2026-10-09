@@ -47,7 +47,7 @@ var SYSTEMS={
     overlap:'Lets the marks fill more of the space along the path.'
   },
   rects:{
-    elements:'Asks for more rectangular divisions. Depth and detail also shape the result.',
+    elements:'Controls division amount rather than an exact cell count. Division depth, Detail and minimum cell size determine how many cells can be built.',
     complexity:'Makes finer divisions and adds more diagonal strokes.',
     negativeSpace:'Leaves more cells empty inside the frame.',
     phiStrength:'Moves divisions from equal halves toward 61.8 / 38.2 proportions.',
@@ -88,7 +88,7 @@ var SYSTEMS={
     shapeAmount:'Adds small elliptical marks at branch tips.'
   },
   geometric:{
-    elements:'Adds more constructed forms, together with Detail, up to 34.',
+    elements:'Sets the number of main constructed forms, up to 34. Detail also sets the minimum available count and adds supporting accents.',
     complexity:'Adds more forms and supporting line accents.',
     negativeSpace:'Leaves more quiet space around the floating forms.',
     phiStrength:'Brings form positions, sizes and proportions closer to φ.',
@@ -114,7 +114,7 @@ var LABELS={density:'Scale',complexity:'Bend',negativeSpace:'Empty space',phiStr
 var SYSTEM_LABELS={
   field:{elements:'Marks'},
   spiral:{elements:'Path positions',spiralInfluence:'Follow path'},
-  rects:{elements:'Divisions',complexity:'Detail',recursion:'Division depth',rotation:'Tilt'},
+  rects:{elements:'Division amount',complexity:'Detail',recursion:'Division depth',rotation:'Tilt'},
   burst:{elements:'Radiating marks'},
   network:{elements:'Nodes',complexity:'Connections',density:'Node scale',shapeAmount:'Node shapes'},
   organic:{elements:'Growth',complexity:'Branching',recursion:'Growth depth',shapeAmount:'Tip marks'},
@@ -154,6 +154,54 @@ function helpText(mode,id,version){
   if(mode==='spiral'&&version<6&&id==='negativeSpace')return 'Leaves quiet areas between the spiral marks.';
   return (SYSTEMS[mode]||{})[id]||COMMON[id]||'';
 }
+
+
+/* Keep original artwork settings separate from the effective slider display.
+   The seed includes raw settings, so normalising old links would change the art. */
+var RANGE_LIMITS={
+  rects:{wobble:[0,18],curveBias:[0,8]},
+  organic:{wobble:[42,100],curveBias:[76,100]},
+  geometric:{wobble:[0,16],curveBias:[0,12],overdraw:[1,4]},
+  scribble:{wobble:[44,100],curveBias:[58,100],overdraw:[2,10]}
+};
+var rangeStates={};
+A.readControlValue=function(input){
+  var state=rangeStates[input.id];
+  return state?state.raw:+input.value;
+};
+A.setControlValue=function(input,value){
+  var state=rangeStates[input.id];
+  if(!state){input.value=value;return;}
+  var bounded=Math.max(state.min,Math.min(state.max,+value));
+  state.raw=state.min+Math.round((bounded-state.min)/state.step)*state.step;
+  displayRange(input,state);
+};
+function displayRange(input,state){
+  var mode=document.getElementById('mode').value;
+  var limits=(RANGE_LIMITS[mode]||{})[input.id]||[state.min,state.max];
+  var value=state.raw;
+  if(mode==='geometric'&&input.id==='elements'){
+    var detail=A.readControlValue(document.getElementById('complexity'));
+    limits=[Math.max(7,Math.round(7+state.min*.15+detail*.075)),Math.min(34,Math.round(7+state.max*.15+detail*.075))];
+    value=Math.min(34,Math.round(7+state.raw*.15+detail*.075));
+  }
+  input.min=limits[0];input.max=limits[1];
+  input.value=Math.max(limits[0],Math.min(limits[1],value));
+  var output=input.parentElement.querySelector('output');
+  if(output)output.textContent=input.value;
+}
+document.querySelectorAll('input[type=range]').forEach(function(input){
+  var state=rangeStates[input.id]={min:+input.min,max:+input.max,step:+input.step||1,raw:+input.value};
+  input.addEventListener('input',function(){
+    var mode=document.getElementById('mode').value;
+    state.raw=+input.value;
+    if(mode==='geometric'&&input.id==='elements'){
+      var detail=A.readControlValue(document.getElementById('complexity'));
+      state.raw=Math.max(state.min,Math.min(state.max,Math.round((+input.value-7-detail*.075)/.15)));
+    }
+    if(input.id==='complexity')displayRange(document.getElementById('elements'),rangeStates.elements);
+  });
+});
 
 var entries=[],active=null,pinned=false,hideTimer=null;
 
@@ -237,6 +285,8 @@ A.syncControlHelp=function(mode,version,meta){
   var palette=document.getElementById('palette');
   var monochrome=palette&&palette.value==='mono';
   entries.forEach(function(entry){
+    var rangeInput=document.getElementById(entry.id);
+    if(rangeStates[entry.id])displayRange(rangeInput,rangeStates[entry.id]);
     entry.row.hidden=inactiveControl(mode,entry.id,version,meta)||(monochrome&&(entry.id==='saturation'||entry.id==='brightness'));
     entry.label.textContent=monochrome&&entry.id==='colourCount'?'Tones':((SYSTEM_LABELS[mode]||{})[entry.id]||LABELS[entry.id]||entry.name);
     entry.button.setAttribute('aria-label','About '+entry.label.textContent);
