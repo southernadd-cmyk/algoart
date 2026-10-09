@@ -177,7 +177,7 @@ try {
       return c && c.width > 0 && c.height > 0;
     });
 
-    const rendered = await page.evaluate(() => {
+    const rendered = await page.evaluate((paperColour) => {
       const canvas = document.getElementById('art');
       const stats = document.getElementById('stats')?.textContent || '';
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -217,8 +217,23 @@ try {
       const spanX = maxX >= minX ? (maxX - minX) / width : 0;
       const spanY = maxY >= minY ? (maxY - minY) / height : 0;
       const valid = changedRatio >= 0.006 && strongRatio >= 0.0015 && (spanX >= 0.10 || spanY >= 0.10);
+      // Meta's image-publishing API expects at least a 4:5 aspect ratio.
+      // Preserve the complete 1000x1400 portrait by padding its sides,
+      // never by cropping or stretching the original composition.
+      let instagramDataUrl = null;
+      if (width === 1000 && height === 1400) {
+        const igCanvas = document.createElement('canvas');
+        igCanvas.width = 1120;
+        igCanvas.height = 1400;
+        const ig = igCanvas.getContext('2d');
+        ig.fillStyle = paperColour;
+        ig.fillRect(0, 0, 1120, 1400);
+        ig.drawImage(canvas, 60, 0);
+        instagramDataUrl = igCanvas.toDataURL('image/jpeg', 0.94);
+      }
       return {
         dataUrl: canvas.toDataURL('image/jpeg', 0.94),
+        instagramDataUrl,
         stats,
         accessibility: {
           altText: canvas.getAttribute('aria-label') || '',
@@ -227,7 +242,7 @@ try {
         },
         validation: { valid, changedRatio, strongRatio, spanX, spanY }
       };
-    });
+    }, settings.paper);
 
     // Reject wrong-format exports instead of silently archiving resized images.
     const canvasSize = await page.locator('#art').evaluate(c => [c.width, c.height]);
@@ -242,6 +257,11 @@ try {
     const filename = `${day}-${orientation === 'portrait' ? 'portrait-' : ''}${String(index + 1).padStart(2, '0')}-${settings.mode}-${settings.seed}.jpg`;
     const filePath = path.join(outDir, filename);
     await fs.writeFile(filePath, Buffer.from(rendered.dataUrl.split(',')[1], 'base64'));
+    const instagramImageFile = orientation === 'portrait' ? filename.replace(/\.jpg$/, '-instagram.jpg') : null;
+    if (orientation === 'portrait') {
+      if (!rendered.instagramDataUrl) throw new Error('Missing Instagram-safe 4:5 portrait derivative');
+      await fs.writeFile(path.join(outDir, instagramImageFile), Buffer.from(rendered.instagramDataUrl.split(',')[1], 'base64'));
+    }
 
     const item = {
       id: `${day}-${orientation === 'portrait' ? 'P' : ''}${String(index + 1).padStart(2, '0')}`,
@@ -252,6 +272,7 @@ try {
       series: settings.series,
       stats: rendered.stats,
       imageFile: filename,
+      ...(instagramImageFile ? { instagramImageFile } : {}),
       shareUrl,
       rendererVersion: Number(process.env.SOCIAL_RENDERER_VERSION || 6),
       settings,
