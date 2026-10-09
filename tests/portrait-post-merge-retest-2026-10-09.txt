@@ -1,0 +1,4 @@
+ALGO/ART portrait release — requested post-merge staging re-test (2026-10-09).
+This commit triggers the existing feature-branch GitHub Actions checks.
+It does not publish to live social accounts or change the public gallery.
+Expected: five portrait + five landscape renders, validated at 1000x1400 and 1400x1000; stable ten-work gallery; three slot selections at 09:00 / 15:00 / 20:30 London.
