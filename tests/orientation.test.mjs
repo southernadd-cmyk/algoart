@@ -135,3 +135,45 @@ for(const mode of ['organic','scribble']){
   }
 }
 console.log('PASS: '+refinedChecks+' portrait refinement samples avoid protected voids and retain vertical composition.');
+
+
+// Extended sweep of portrait Organic Growth and Scribble, including the
+// three formerly failing high-void seeds. A larger sample catches endpoint
+// clipping mistakes that a small fixture set can miss.
+let broadCases=0;
+for(const mode of ['organic','scribble']){
+  for(const negativeSpace of [0,15,41,82,100]){
+    for(let i=0;i<60;i++){
+      const seed='BROAD-'+String(i).padStart(3,'0');
+      // Match the real Compose panel's field order: adding a key at another
+      // point in the settings object changes the seeded RNG sequence.
+      const s={orientation:'portrait',elements:36,density:53,complexity:71,
+        negativeSpace,phiStrength:91,recursion:4,spiralInfluence:63,
+        goldenAngle:93,nesting:44,pen:'felt',thickness:12,wobble:15,
+        overdraw:1,opacity:92,pressure:25,dryness:0,curveBias:60,
+        shapeAmount:50,overlap:40,rotation:35,lines:true,circles:true,
+        rectangles:true,polygons:true,arcs:true,palette:'mono',colourCount:1,
+        saturation:75,brightness:50,paper:'#f5f0e6',grain:0,mode,seed};
+      const {meta}=render(A,s),voids=meta.voids||[];
+      if(mode==='organic'){
+        const segments=meta.guide.segments;
+        assert.ok(segments.length>0,'Portrait organic unexpectedly blank: '+seed+' / '+negativeSpace);
+        for(const seg of segments){
+          for(let j=0;j<=32;j++){
+            const t=j/32;
+            const x=seg.x1+(seg.x2-seg.x1)*t,y=seg.y1+(seg.y2-seg.y1)*t;
+            assert.equal(insideVoid(x,y,voids),false,
+              'Organic branch crosses protected void: '+seed+' / '+negativeSpace);
+          }
+        }
+      }else{
+        for(const a of meta.guide.anchors){
+          assert.equal(insideVoid(a.x,a.y,voids),false,
+            'Scribble anchor crosses protected void: '+seed+' / '+negativeSpace);
+        }
+      }
+      broadCases++;
+    }
+  }
+}
+console.log('PASS: '+broadCases+' broad high-void portrait samples with no blank organic output or sampled void crossings.');
