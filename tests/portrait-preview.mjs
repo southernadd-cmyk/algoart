@@ -43,10 +43,15 @@ async function collect(orientation,mode){
         total++;
       }
     }
+    // The UI draws all eight sidebar previews after the main canvas, so
+    // lastRenderMeta points to the final thumbnail. Re-render to obtain
+    // metadata for the requested mode without changing its visible artwork.
+    const state=window.AlgoArt.readSettings();
+    const metadata=window.AlgoArt.render(document.createElement('canvas'),state,0.01,false);
     return {png:c.toDataURL('image/png'),width:w,height:h,inkFraction:ink/total,top,bottom,left,right,
-      strategy:window.AlgoArt.lastRenderMeta.strategy,
-      voidCount:window.AlgoArt.lastRenderMeta.voids.length,
-      settingsOrientation:window.AlgoArt.readSettings().orientation};
+      strategy:metadata.strategy,
+      voidCount:metadata.voids.length,
+      settingsOrientation:state.orientation};
   });
   assert.equal(output.width,orientation==='portrait'?1000:1400);
   assert.equal(output.height,orientation==='portrait'?1400:1000);
