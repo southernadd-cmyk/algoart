@@ -6,6 +6,9 @@ import {
   SCHEDULE, PLATFORM_SLOTS, PORTRAIT_SCHEDULE, PORTRAIT_POST_INDICES, MODES, PALETTES, PENS
 } from './config.mjs';
 import { makeCaptions } from './captions.mjs';
+import { socialRendererVersion, archivedLandscapeStudy } from './renderer-state.mjs';
+
+const rendererVersion=socialRendererVersion();
 
 function dateInZone(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -123,7 +126,7 @@ const PARAM_KEYS = {
 
 function queryFor(s) {
   const q = new URLSearchParams();
-  q.set('v', String(Number(process.env.SOCIAL_RENDERER_VERSION || 6)));
+  q.set('v', String(rendererVersion));
   for (const [key, short] of Object.entries(PARAM_KEYS)) {
     let value = s[key];
     if (value == null || (key === 'orientation' && value !== 'portrait')) continue;
@@ -166,6 +169,20 @@ const entries = [];
 
 try {
   for (let index = 0; index < generationCount; index++) {
+    // Existing landscape editions retain their exact JPEG, settings and version.
+    // Portrait editions are already frozen in the release queue by portrait-live.
+    if(orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
+      const archived=await archivedLandscapeStudy(day,index);
+      if(archived){
+        await fs.copyFile(archived.imagePath,path.join(outDir,archived.entry.imageFile));
+        const item={...archived.entry,platforms:platformAssignment(index,orientation)};
+        item.copy=makeCaptions(item);
+        if(item.altText)item.copy.altText=item.altText;
+        entries.push(item);
+        console.log('Reused archived '+item.id+' / V'+item.rendererVersion);
+        continue;
+      }
+    }
     // A few valid portrait seeds produce unusually sparse or off-canvas art.
     // Try deterministic alternatives so one weak render doesn't cancel the
     // whole five-work day. Landscape generation stays byte-for-byte unchanged.
@@ -283,7 +300,7 @@ try {
       imageFile: filename,
       ...(instagramImageFile ? { instagramImageFile } : {}),
       shareUrl,
-      rendererVersion: Number(process.env.SOCIAL_RENDERER_VERSION || 6),
+      rendererVersion: rendererVersion,
       settings,
       platforms: platformAssignment(index, orientation)
     };

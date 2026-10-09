@@ -93,7 +93,7 @@ Within a renderer version, the intended model is:
 
 **renderer version + seed + settings = deterministic artwork state**
 
-The renderer version is written into share URLs as `v=`, and the interface recognises versions **1 through 6**. New interactions use **V6**, while explicitly versioned links remain identifiable as legacy states in the UI.
+The renderer version is written into share URLs as `v=`, and the interface recognises versions **1 through 7**. New interactions and newly generated social/gallery artwork use **V7**, while explicitly versioned links remain identifiable as legacy states in the UI.
 
 ### Renderer history
 
@@ -552,7 +552,7 @@ The gallery publishes crawlable static HTML plus Open Graph/Twitter metadata, Sc
 
 # Social publishing
 
-The social pipeline uses the same deterministic V6 generator rather than creating unrelated promotional images.
+The social pipeline uses the same deterministic V7 generator rather than creating unrelated promotional images.
 
 Current automated destinations are:
 
@@ -688,6 +688,6 @@ The marker renderer makes them imperfect.
 
 New interactive drawings use V7. Landscape Growth Systems now grows along the canvas’s long axis using canvas-scaled trunks, two early branches and the fuller growth grammar already used in portrait. Protected negative space and Reveal φ coordinates rotate with the construction. Portrait output and all other systems are unchanged from V6.
 
-Exact links and archived entries explicitly selecting V1–V6 continue through their original renderer paths. Editing an older drawing opts into V7 as usual; merely opening or exporting it retains its selected version. The scheduled social generator remains pinned to V6, with existing queues and publishing times unchanged.
+Exact links and archived entries explicitly selecting V1–V6 continue through their original renderer paths. Editing an older drawing opts into V7 as usual; merely opening or exporting it retains its selected version. Newly generated social/gallery artwork uses V7. Existing portrait release queues retain their recorded versions; landscape jobs reuse archived JPEGs, settings and exact links rather than regenerating a previously published day. Publishing times are unchanged.
 
 `npm run test:organic-version` compares all older renderer versions against the pre-V7 source and checks deterministic landscape growth, long-axis coverage, portrait preservation and protected-space behavior. CI runs this alongside the effective-range test.
