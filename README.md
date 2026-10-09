@@ -40,12 +40,6 @@ Today's production changes include:
 
 Overdraw is the base pass setting; the selected pen can adjust the number of rendered passes. Other systems restore the shared control ranges. Run `npm run test:control-ranges` to compare the UI's limits and every calculated Forms value against the renderer's actual expressions; this check fails if a future renderer change leaves the UI out of sync.
 
-### Preservation of existing artwork
-
-Archived image files, renderer algorithms and the original internal mode keys are unchanged by the slider and accessibility fixes. The UI retains original raw numeric settings separately from effective slider displays, because those raw values also participate in seeded randomness. Opening an old link, switching tabs, disabling shortcuts or inspecting its description does not normalise the artwork's saved parameters. Editing a slider intentionally replaces that parameter.
-
-Compatibility checks passed for 800 setting round trips across all eight systems and both orientations. Logic checks also covered modifier guards, shortcut preferences, dialog focus handling and preview release behaviour. On layouts where [ requires AltGr, use the Parameters button: Ctrl/Alt combinations remain reserved for the browser. Physical mobile and screen-reader verification remains a manual test; these checks do not claim full WCAG conformance.
-
 
 ## Canvas formats
 
