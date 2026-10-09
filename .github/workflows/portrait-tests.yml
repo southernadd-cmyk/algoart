@@ -1,4 +1,4 @@
-name: Portrait format regression
+name: Portrait format regression and preview
 
 on:
   push:
@@ -19,3 +19,42 @@ jobs:
           node-version: '22'
       - name: Verify landscape fixtures and portrait determinism
         run: npm run test:orientation
+
+  browser-previews:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/portrait-support
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser testing tools
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Launch isolated local web server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/algoart-preview.log 2>&1 &
+          echo $! > /tmp/algoart-preview.pid
+      - name: Capture 16 real browser compositions and mobile checks
+        run: node tests/portrait-preview.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portrait-comparison-images
+          path: preview/screenshots/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Save screenshots in feature branch only
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f preview/screenshots/
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: refresh feature-branch portrait previews [skip ci]"
+            git push origin HEAD:feature/portrait-support
+          fi
