@@ -6,7 +6,7 @@ import {scheduleDecision} from '../automation/portrait-slot.mjs';
 import {PORTRAIT_SCHEDULE,PORTRAIT_POST_INDICES} from '../automation/config.mjs';
 
 const day='2099-02-03';
-const env={...process.env,GITHUB_OUTPUT:'',ALGOART_LOCAL_URL:process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:8765/',SOCIAL_DATE:day,SOCIAL_COUNT:'5',SOCIAL_RENDERER_VERSION:'6'};
+const env={...process.env,GITHUB_OUTPUT:'',ALGOART_LOCAL_URL:process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:8765/',SOCIAL_DATE:day,SOCIAL_COUNT:'5'};
 function jpegDimensions(bytes){
   // SOF0/SOF2 markers contain the encoded width and height.
   for(let i=2;i<bytes.length-9;i++){
@@ -42,6 +42,7 @@ node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'portrait'});
 const portrait=JSON.parse(await fs.readFile(queuePath,'utf8'));
 assert.equal(portrait.orientation,'portrait');
 assert.equal(portrait.entries.length,5);
+assert.ok(portrait.entries.every(e=>e.rendererVersion===7&&new URL(e.shareUrl).searchParams.get('v')==='7'),'New portraits must use V7');
 assert.equal(new Set(portrait.entries.map(x=>x.seed)).size,5);
 assert.equal(new Set(portrait.entries.map(x=>x.imageFile)).size,5);
 for(const [i,item] of portrait.entries.entries()){
@@ -74,6 +75,7 @@ assert.equal(meta.count,5,'Portrait-first gallery should contain five studies');
 node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'landscape'});
 const landscape=JSON.parse(await fs.readFile(path.resolve('social-output',day,'queue.json'),'utf8'));
 assert.equal(landscape.entries.length,5,'Existing landscape base set changed');
+assert.ok(landscape.entries.every(e=>e.rendererVersion===7&&new URL(e.shareUrl).searchParams.get('v')==='7'),'New landscapes must use V7');
 assert.ok(landscape.entries.every(e=>!new URL(e.shareUrl).searchParams.has('fmt')));
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'landscape'});
 meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
@@ -95,3 +97,14 @@ await fs.writeFile(path.resolve('preview','screenshots','portrait-pipeline-repor
   originalDimensions:'1000x1400',instagramDimensions:'1120x1400',testedAt:new Date().toISOString()
 },null,2)+'\n');
 console.log('PASS: five portraits, three unique posting slots, London BST/GMT timing, ten-work gallery and duplicate-safe rebuild.');
+
+const originalImages=await Promise.all(landscape.entries.map(e=>fs.readFile(path.resolve('social-output',day,e.imageFile))));
+node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'landscape',SOCIAL_RENDERER_VERSION:'6'});
+const reused=JSON.parse(await fs.readFile(path.resolve('social-output',day,'queue.json'),'utf8'));
+for(const [i,item] of reused.entries.entries()){
+  assert.equal(item.rendererVersion,7,'Existing edition was replaced by the override renderer');
+  assert.deepEqual(item.settings,landscape.entries[i].settings);
+  assert.equal(item.shareUrl,landscape.entries[i].shareUrl);
+  assert.deepEqual(await fs.readFile(path.resolve('social-output',day,item.imageFile)),originalImages[i]);
+}
+console.log('PASS: new portrait/landscape queues use V7; reruns preserve archived states and exact JPEG bytes even with another renderer default.');
