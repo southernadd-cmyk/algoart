@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {TIME_ZONE, PORTRAIT_SCHEDULE, PORTRAIT_POST_INDICES} from './config.mjs';
+import {makeCaptions} from './captions.mjs';
 
 function localParts(date = new Date()){
   return Object.fromEntries(new Intl.DateTimeFormat('en-GB',{
@@ -66,7 +67,8 @@ async function main(){
       asset_name:assetName,
       instagram_asset_name:item.instagramImageFile,
       instagram_caption_b64:b64(item.copy.instagram),
-      threads_caption_b64:b64(item.copy.threads),
+      // Recompute the compact permalink even for this morning's frozen queue.
+      threads_caption_b64:b64(makeCaptions(item).threads),
       bluesky_caption_b64:b64(item.copy.bluesky),
       pinterest_title_b64:b64('Portrait · '+item.series+' — ALGO/ART'),
       pinterest_description_b64:b64('Portrait study from ALGO/ART. Exact seed and settings available to remix. '+item.shareUrl),

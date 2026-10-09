@@ -68,7 +68,7 @@ function artworkCard(item, index) {
   const alt = item.copy?.altText || artworkDescription(item);
   const portrait = (item.orientation || s.orientation) === 'portrait';
   return `
-    <article class="art-card" data-orientation="${portrait ? 'portrait' : 'landscape'}">
+    <article id="${escapeHtml(item.id)}" class="art-card" data-orientation="${portrait ? 'portrait' : 'landscape'}">
       <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open and remix ${escapeHtml(title)} in ALGO/ART">
         <img src="${escapeHtml(item.imageFile)}" width="${portrait ? 1000 : 1400}" height="${portrait ? 1400 : 1000}" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" alt="${escapeHtml(alt)}">
       </a>

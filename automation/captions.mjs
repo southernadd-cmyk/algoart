@@ -5,6 +5,15 @@ function strategyName(stats, fallback) {
   return parts.length > 1 ? parts[1].trim() : fallback.toUpperCase();
 }
 
+// Public gallery permalinks stay short enough for Threads' 500-character cap.
+// The gallery card itself always retains the full exact-state remix URL.
+export function artworkGalleryLink(item) {
+  const id = String(item.id || '');
+  const day = id.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return SITE_URL;
+  return new URL(`gallery/${day}/#${encodeURIComponent(id)}`, SITE_URL).href;
+}
+
 export function makeCaptions(item) {
   const strategy = strategyName(item.stats, item.mode);
   const heading = `${item.series.toUpperCase()} / ${strategy}`;
@@ -29,8 +38,8 @@ export function makeCaptions(item) {
       '',
       'The idea becomes a machine that makes the art.',
       '',
-      'Open this exact artwork state:',
-      item.shareUrl
+      'View this artwork and open its exact remix state:',
+      artworkGalleryLink(item)
     ].join('\n'),
     bluesky: [
       heading,

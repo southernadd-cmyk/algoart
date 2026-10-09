@@ -116,6 +116,9 @@ try{
     assert.equal(selected.asset_name,portraits[PORTRAIT_POST_INDICES[slot]].imageFile);
     assert.equal(selected.instagram_asset_name,portraits[PORTRAIT_POST_INDICES[slot]].instagramImageFile);
     assert.equal(selected.scheduled_time,PORTRAIT_SCHEDULE[slot]);
+    const threadsCaption=Buffer.from(selected.threads_caption_b64,'base64').toString('utf8');
+    assert.ok([...threadsCaption].length<=500,'Threads caption must fit the platform limit');
+    assert.ok(threadsCaption.includes(`/gallery/${date}/#${portraits[PORTRAIT_POST_INDICES[slot]].id}`));
   }
   console.log('PASS: three existing slots (BST/GMT), five portrait artworks, three selections, stable ten-artwork gallery and Instagram 4:5 derivatives.');
 }finally{
