@@ -3,6 +3,18 @@ import { readFileSync } from 'node:fs';
 const generator=readFileSync(new URL('../js/generator.js',import.meta.url),'utf8');
 const help=readFileSync(new URL('../js/control-help.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+// A 0% slider removes an extra bias, not the golden-ratio composition itself.
+assert.match(html, /<label>Additional φ Pull<\/label><output><\/output><input id="phiStrength"/);
+const copyStart=help.indexOf('var COMMON=');
+const copyEnd=help.indexOf('/* Keep original artwork settings separate',copyStart);
+assert.ok(copyStart>=0&&copyEnd>copyStart,'Locate control label/help definitions');
+const {LABELS,helpText}=new Function(help.slice(copyStart,copyEnd)+';return {LABELS,helpText};')();
+assert.equal(LABELS.phiStrength,'Additional φ Pull');
+for(const mode of ['field','spiral','rects','burst','network','organic','geometric','scribble']){
+  const tooltip=helpText(mode,'phiStrength',7);
+  assert.ok(tooltip.includes('At 0%')&&tooltip.includes('still uses φ'),mode+' lacks 0% clarification');
+}
+
 const ids={mode:{value:'field'}};
 for(const m of html.matchAll(/<input id="([^"]+)" type="range" min="([^"]+)" max="([^"]+)" value="([^"]+)"/g)){
   const [,id,min,max,value]=m;
