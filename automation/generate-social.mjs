@@ -199,6 +199,9 @@ try {
       return c && c.width > 0 && c.height > 0;
     });
 
+    const actualVersion=await page.evaluate(()=>window.AlgoArt.rendererVersion);
+    if(actualVersion!==rendererVersion)throw new Error('Rendered V'+actualVersion+' but requested V'+rendererVersion);
+
     const rendered = await page.evaluate((paperColour) => {
       const canvas = document.getElementById('art');
       const stats = document.getElementById('stats')?.textContent || '';
