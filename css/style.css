@@ -1494,3 +1494,10 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
     scroll-behavior:auto!important;
   }
 }
+
+.plotter-controls{border:1px solid var(--ink,#11110f);padding:12px;display:grid;gap:12px;min-width:0}
+.plotter-controls legend{font:700 12px 'Courier New',monospace;padding:0 5px}
+.plotter-controls input[type=number]{width:100%;box-sizing:border-box}
+#plotterPreview{margin:0}
+#plotterPreviewImage{display:block;width:100%;height:auto;border:1px solid #777}
+#plotterSummary{font:11px/1.5 'Courier New',monospace;margin-top:6px;overflow-wrap:anywhere}
