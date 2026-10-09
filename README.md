@@ -8,6 +8,33 @@ Live site: https://southernadd-cmyk.github.io/algoart/
 
 **Current renderer: V6.**
 
+## Portrait format — feature branch
+
+On `feature/portrait-support`, the generator supports landscape (**1400 × 1000**) and portrait (**1000 × 1400**) canvas formats. The **Canvas format** control is in the Compose panel. The same eight systems are used for both formats; several trajectory families have portrait-specific vertical paths.
+
+Portrait share links contain `fmt=portrait`. Landscape links deliberately omit `fmt`, preserving existing bookmarked states. The renderer also removes the new landscape-only setting from its seeded random key so historical V6 landscape drawings are unchanged. The artwork dimensions, 4-Up previews, mode previews and PNG/SVG output adapt to orientation.
+
+Run `npm run test:orientation` to check eight V6 landscape drawing-command fixtures and deterministic portrait rendering for four seeds per system. The existing ChatGPT plugin and scheduled publishing remain on their current production versions until portrait support is separately integrated and approved.
+
+
+## Dual-format daily gallery and shared publishing slots (feature branch)
+
+The existing landscape pipeline retains its five scheduled works and three publishing slots at **09:00, 15:00 and 20:30 Europe/London**.
+
+Portrait support adds **five independently seeded 1000 × 1400 works per UK day**. The first landscape publishing job builds and archives five landscapes, then invokes the reusable portrait job in `.github/workflows/portrait-live.yml`. During that same invocation the portrait job generates and archives five portraits. The two orientations appear in one Daily Gallery, normally **ten studies per day**.
+
+- **09:00 London:** landscape study 1 and portrait study 1.
+- **15:00 London:** landscape study 3 and portrait study 3.
+- **20:30 London:** landscape study 5 and portrait study 5.
+- Studies 2 and 4 of each orientation are gallery-only reserves.
+- The initial portrait batch is stored in the existing GitHub Release (full-size JPGs and uncropped, padded 4:5 Instagram derivatives); a complete manifest is uploaded last. Later jobs reuse those same exact five portraits.
+- Release completion markers include `portrait` in their names, separately from existing landscape markers. Retried jobs skip platforms already marked complete.
+- Gallery builds preserve both orientations and additional curated works. Portrait artwork is displayed at 5:7 aspect rather than cropped to the landscape ratio.
+
+**Scheduling:** no new cronjob.com triggers or GitHub cron schedules are introduced. The existing external scheduler dispatches `.github/workflows/social-live.yml` three times a day; it calls the reusable portrait workflow after the landscape job. Both gate functions respect `Europe/London` and daylight-saving changes. The parent workflow also exposes its existing manual slots for recovery; a direct portrait workflow dispatch on the feature branch is dry-run only.
+
+**Safety:** everything remains on `feature/portrait-support` until review and merge. No feature-branch run is allowed to post publicly or update the live gallery. Run `npm run test:portrait-publishing` for scheduler and archive checks; `node tests/portrait-pipeline.test.mjs` (requires Playwright and a local HTTP server) for the ten-artwork browser integration test.
+
 ## Core idea: structure first, imperfection second
 
 The project separates **composition** from **rendering**.
@@ -500,7 +527,21 @@ Current automated destinations are:
 - **Bluesky** — `@artalgorithm.bsky.social`
 - **Pinterest** — supported by the workflow but only runs when explicitly enabled/configured
 
-The main London publishing slots are **09:00, 15:00 and 20:30 (Europe/London)**. GitHub Actions uses redundant GMT/BST-aware triggers around each slot; a London-time gate determines which slot is due. This avoids depending on GitHub starting a cron job at one exact minute.
+The main London publishing slots are **09:00, 15:00 and 20:30 (Europe/London)**.
+
+### Portrait daily series (feature branch)
+
+The existing three cronjob.com dispatches still fire only `social-live.yml`; no new external cronjobs are required. Once portrait support is merged, that workflow runs its normal landscape job and then calls the reusable `portrait-live.yml` workflow.
+
+- Generates **five landscape + five portrait** artworks each UK day.
+- Posts landscape studies **1, 3, 5** and portrait studies **1, 3, 5** at the **same three times** (09:00, 15:00, 20:30).
+- Preserves both formats in one stable ten-image Daily Gallery, with landscape first and portrait second.
+- Maintains an immutable daily portrait queue and media on the rolling GitHub release, so later slots reuse the same artwork rather than generating different images.
+- Uses different completion markers (`done-YYYY-MM-DD-portrait-slotN-PLATFORM.txt`) for portrait posts, independent of existing landscape markers.
+- Keeps original 1000×1400 portrait JPEGs; for Instagram, makes a **1120×1400 padded 4:5 derivative** to retain the complete artwork without cropping.
+- Reuses the existing Instagram, Threads, Bluesky and optionally-enabled Pinterest publishers. Manual feature-branch runs remain dry-run only.
+
+Test the integration with `npm run test:portrait-publishing`. No changes to the existing cronjob.com entries or to the submitted ChatGPT plugin are necessary for this release. The existing cronjob.com calls are the source of the three main live triggers; the London-time gate selects the due slot.
 
 Before publishing, each platform checks a release-hosted completion marker such as:
 
@@ -541,7 +582,7 @@ ALGO/ART supports:
 
 SVG export preserves generated marker paths, including the wobble, repeated passes, opacity and dry-marker dash behaviour rather than replacing the artwork with idealised geometric primitives.
 
-The internal artwork coordinate space is **1400 × 1000**.
+The internal artwork coordinate space is **1400 × 1000** for landscape or **1000 × 1400** for portrait.
 
 ---
 

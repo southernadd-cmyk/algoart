@@ -1,27 +1,41 @@
-name: ALGO ART live social publishing
+name: ALGO ART portrait publishing (same three daily triggers)
 
+# Called by social-live.yml — no extra cronjobs, schedule, or push trigger.
+# Manual runs on the feature branch are safe dry-run previews.
 on:
-  push:
-    paths:
-      - '.github/social-trigger'
+  workflow_call:
+    inputs:
+      slot:
+        required: false
+        type: string
+        default: ''
+      live:
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       slot:
-        description: Live slot to publish now
-        required: true
+        description: 'Build five portraits without publishing, or inspect slot 0/1/2'
         type: choice
-        default: '1'
+        required: true
+        default: 'build'
         options:
+          - build
           - '0'
           - '1'
           - '2'
-          - '3'
+      live:
+        description: 'Allow real posts on main only (never use on feature branch)'
+        type: boolean
+        default: false
+
 permissions:
   contents: write
   actions: write
 
 concurrency:
-  group: algoart-social-live
+  group: algoart-portrait-live
   cancel-in-progress: false
 
 jobs:
@@ -33,43 +47,50 @@ jobs:
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
       RELEASE_TAG: algoart-social-live
       GH_TOKEN: ${{ github.token }}
+      SOCIAL_ORIENTATION: portrait
+      SOCIAL_COUNT: '5'
+      GALLERY_QUEUE_ORIENTATION: portrait
       BLUESKY_HANDLE: artalgorithm.bsky.social
       BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Refresh completed landscape gallery from main
+        if: github.ref == 'refs/heads/main' && inputs.live == true
+        shell: bash
+        run: |
+          # Parent job publishes landscape entries first. Merge on latest main,
+          # not the older dispatch SHA, so the portrait archive contains all 10.
+          git fetch origin main
+          git checkout -B main origin/main
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Choose London publishing slot
+      - name: Choose London portrait build or posting slot
         id: gate
         shell: bash
         run: |
-          FORCE_SLOT=""
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            FORCE_SLOT="${{ inputs.slot }}"
-          fi
-          FORCE_SLOT="$FORCE_SLOT" node automation/social-slot.mjs gate
+          FORCE_PORTRAIT_SLOT="${{ inputs.slot }}" node automation/portrait-slot.mjs gate
 
       - name: Ensure media release and check duplicate markers
-        if: steps.gate.outputs.should_post == 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
         id: state
         shell: bash
         run: |
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG"               --title "ALGO/ART social publishing media"               --notes "Rolling public media host for automated @artalgorithm posts."
+            gh release create "$RELEASE_TAG"               --title "ALGO/ART portrait publishing media"               --notes "Rolling public media host for automated @artalgorithm posts."
           fi
 
           DATE="${{ steps.gate.outputs.date }}"
           SLOT="${{ steps.gate.outputs.slot }}"
-          IG_MARKER="done-${DATE}-slot${SLOT}-instagram.txt"
-          TH_MARKER="done-${DATE}-slot${SLOT}-threads.txt"
-          PI_MARKER="done-${DATE}-slot${SLOT}-pinterest.txt"
-          BS_MARKER="done-${DATE}-slot${SLOT}-bluesky.txt"
+          IG_MARKER="done-${DATE}-portrait-slot${SLOT}-instagram.txt"
+          TH_MARKER="done-${DATE}-portrait-slot${SLOT}-threads.txt"
+          PI_MARKER="done-${DATE}-portrait-slot${SLOT}-pinterest.txt"
+          BS_MARKER="done-${DATE}-portrait-slot${SLOT}-bluesky.txt"
           ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
 
           if printf '%s\n' "$ASSETS" | grep -Fxq "$IG_MARKER"; then
@@ -101,14 +122,61 @@ jobs:
           echo "pinterest_marker=$PI_MARKER" >> "$GITHUB_OUTPUT"
           echo "bluesky_marker=$BS_MARKER" >> "$GITHUB_OUTPUT"
 
+      - name: Restore the five immutable portraits built this morning
+        id: cached
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          DATE="${{ steps.gate.outputs.date }}"
+          DIR="social-output/$DATE/portrait"
+          MANIFEST="portrait-$DATE-queue.json"
+          mkdir -p "$DIR"
+          READY=false
+          ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          if printf '%s\n' "$ASSETS" | grep -Fxq "$MANIFEST"; then
+            gh release download "$RELEASE_TAG" --pattern "$MANIFEST" -D "$DIR" --clobber
+            mv "$DIR/$MANIFEST" "$DIR/queue.json"
+            # Check the full manifest before trusting it. This is the daily
+            # frozen set: all three later posts reuse these exact same files.
+            if DAY="$DATE" node --input-type=module -e "
+              import fs from 'node:fs';
+              const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
+              if(q.orientation!=='portrait'||q.date!==process.env.DAY||q.entries.length!==5)process.exit(1);
+            "; then
+              READY=true
+              while IFS= read -r IMAGE; do
+                if ! printf '%s\n' "$ASSETS" | grep -Fxq "$IMAGE"; then
+                  READY=false
+                  break
+                fi
+              done < <(DAY="$DATE" node --input-type=module -e "
+                import fs from 'node:fs';
+                const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
+                for(const e of q.entries){console.log(e.imageFile);console.log(e.instagramImageFile);}
+              ")
+            fi
+            if [ "$READY" = "true" ]; then
+              while IFS= read -r IMAGE; do
+                gh release download "$RELEASE_TAG" --pattern "$IMAGE" -D "$DIR" --clobber
+              done < <(DAY="$DATE" node --input-type=module -e "
+                import fs from 'node:fs';
+                const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
+                for(const e of q.entries){console.log(e.imageFile);console.log(e.instagramImageFile);}
+              ")
+            else
+              rm -f "$DIR/queue.json"
+            fi
+          fi
+          echo "ready=$READY" >> "$GITHUB_OUTPUT"
+
       - name: Install Playwright
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
         run: |
           npm install
           npx playwright install --with-deps chromium
 
       - name: Start local ALGO ART
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
         run: |
           python3 -m http.server 4173 >/tmp/algoart-http.log 2>&1 &
           for i in {1..30}; do
@@ -119,20 +187,34 @@ jobs:
           exit 1
 
       - name: Generate today's artwork batch
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run social:generate
 
+      - name: Freeze the complete five-artwork daily portrait batch
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
+        shell: bash
+        run: |
+          DATE="${{ steps.gate.outputs.date }}"
+          DIR="social-output/$DATE/portrait"
+          # Upload images first, then a manifest last. A manifest is the
+          # atomic completion marker for the entire validated daily batch.
+          for IMAGE in "$DIR"/*.jpg; do
+            gh release upload "$RELEASE_TAG" "$IMAGE" --clobber
+          done
+          cp "$DIR/queue.json" "$DIR/portrait-$DATE-queue.json"
+          gh release upload "$RELEASE_TAG" "$DIR/portrait-$DATE-queue.json" --clobber
+
       - name: Build daily gallery and SEO pages
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.gate.outputs.should_run == 'true'
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run gallery:build
 
       - name: Publish gallery update to GitHub Pages source
         id: gallery_commit
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -151,7 +233,7 @@ jobs:
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Explicitly trigger Pages deployment after gallery commit
-        if: steps.gate.outputs.should_post == 'true' && steps.gallery_commit.outputs.changed == 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true' && steps.gallery_commit.outputs.changed == 'true'
         continue-on-error: true
         shell: bash
         run: |
@@ -160,33 +242,36 @@ jobs:
           gh workflow run deploy-pages.yml --ref main
 
       - name: Select artwork for this slot
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.gate.outputs.should_post == 'true'
         id: select
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
           SLOT: ${{ steps.gate.outputs.slot }}
-        run: node automation/social-slot.mjs select
+        run: node automation/portrait-slot.mjs select
 
-      - name: Host image publicly
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+      - name: Verify frozen portrait media URLs for all platforms
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true'
         id: host
         shell: bash
         run: |
           ASSET="${{ steps.select.outputs.asset_name }}"
-          cp "${{ steps.select.outputs.image_path }}" "/tmp/$ASSET"
-          gh release upload "$RELEASE_TAG" "/tmp/$ASSET" --clobber
+          IG_ASSET="${{ steps.select.outputs.instagram_asset_name }}"
           URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/$ASSET"
+          IG_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/$IG_ASSET"
           echo "media_url=$URL" >> "$GITHUB_OUTPUT"
-          curl -fL --retry 4 --retry-delay 2 -o /tmp/host-check.jpg "$URL"
-          test -s /tmp/host-check.jpg
+          echo "instagram_media_url=$IG_URL" >> "$GITHUB_OUTPUT"
+          curl -fL --retry 4 --retry-delay 2 -o /tmp/host-portrait-check.jpg "$URL"
+          curl -fL --retry 4 --retry-delay 2 -o /tmp/host-instagram-check.jpg "$IG_URL"
+          test -s /tmp/host-portrait-check.jpg
+          test -s /tmp/host-instagram-check.jpg
 
       - name: Publish to Instagram
-        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
         env:
           LIVE_PUBLISHING: 'true'
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          MEDIA_URL: ${{ steps.host.outputs.media_url }}
+          MEDIA_URL: ${{ steps.host.outputs.instagram_media_url }}
           CAPTION_B64: ${{ steps.select.outputs.instagram_caption_b64 }}
           ALT_TEXT_B64: ${{ steps.select.outputs.alt_text_b64 }}
         shell: bash
@@ -196,7 +281,7 @@ jobs:
           npm run social:instagram
 
       - name: Mark Instagram slot complete
-        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.instagram_marker }}"
@@ -204,7 +289,7 @@ jobs:
           gh release upload "$RELEASE_TAG" "/tmp/$MARKER" --clobber
 
       - name: Publish to Threads
-        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true'
         env:
           LIVE_PUBLISHING: 'true'
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
@@ -219,7 +304,7 @@ jobs:
           npm run social:threads
 
       - name: Mark Threads slot complete
-        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.threads_marker }}"
@@ -228,7 +313,7 @@ jobs:
 
 
       - name: Publish to Bluesky
-        if: steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'
         env:
           MEDIA_URL: ${{ steps.host.outputs.media_url }}
           CAPTION_B64: ${{ steps.select.outputs.bluesky_caption_b64 }}
@@ -240,7 +325,7 @@ jobs:
           npm run social:bluesky
 
       - name: Mark Bluesky slot complete
-        if: steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.bluesky_marker }}"
@@ -248,7 +333,7 @@ jobs:
           gh release upload "$RELEASE_TAG" "/tmp/$MARKER" --clobber
 
       - name: Publish to Pinterest
-        if: steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'
         env:
           LIVE_PUBLISHING: 'true'
           PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
@@ -266,7 +351,7 @@ jobs:
           npm run social:pinterest
 
       - name: Mark Pinterest slot complete
-        if: steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.pinterest_marker }}"
@@ -277,7 +362,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          echo "### ALGO/ART social publishing" >> "$GITHUB_STEP_SUMMARY"
+          echo "### ALGO/ART portrait publishing" >> "$GITHUB_STEP_SUMMARY"
           echo "- Local slot gate: ${{ steps.gate.outputs.should_post }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Date: ${{ steps.gate.outputs.date }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Slot: ${{ steps.gate.outputs.slot }}" >> "$GITHUB_STEP_SUMMARY"
@@ -288,15 +373,3 @@ jobs:
           echo "- Bluesky already complete before run: ${{ steps.state.outputs.bluesky_done }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Pinterest enabled: ${{ vars.PINTEREST_ENABLED }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Pinterest already complete before run: ${{ steps.state.outputs.pinterest_done }}" >> "$GITHUB_STEP_SUMMARY"
-
-  portraits:
-    # A second job in the SAME workflow run; the existing cronjob.com
-    # dispatches and their times are unchanged. Landscape finishes first
-    # so the portrait gallery can preserve its five entries.
-    needs: publish
-    if: ${{ needs.publish.result == 'success' && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.slot != '3') }}
-    uses: ./.github/workflows/portrait-live.yml
-    with:
-      slot: ${{ github.event_name == 'workflow_dispatch' && inputs.slot || '' }}
-      live: true
-    secrets: inherit

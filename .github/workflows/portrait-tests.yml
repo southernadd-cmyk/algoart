@@ -1,0 +1,86 @@
+name: Portrait format regression and preview
+
+on:
+  push:
+    branches:
+      - feature/portrait-support
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  orientation-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify landscape fixtures and portrait determinism
+        run: npm run test:orientation
+      - name: Verify shared posting slots and ten-image gallery preservation
+        run: npm run test:portrait-publishing
+
+  browser-previews:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/portrait-support
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser testing tools
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Launch isolated local web server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/algoart-preview.log 2>&1 &
+          echo $! > /tmp/algoart-preview.pid
+      - name: Capture 16 real browser compositions and mobile checks
+        run: node tests/portrait-preview.mjs
+      - name: Test five portraits, three posts and mixed ten-work gallery
+        id: pipeline
+        continue-on-error: true
+        run: |
+          mkdir -p preview/screenshots
+          set +e
+          node tests/portrait-pipeline.test.mjs > preview/screenshots/portrait-pipeline.log 2>&1
+          RESULT=$?
+          echo "code=$RESULT" >> "$GITHUB_OUTPUT"
+          if [ "$RESULT" -eq 0 ]; then
+            echo "PASS — five portraits, three posts and mixed ten-artwork gallery" > preview/screenshots/portrait-ci-status.txt
+          else
+            echo "FAIL (exit $RESULT) — see portrait-pipeline.log" > preview/screenshots/portrait-ci-status.txt
+          fi
+      - name: Check third-party branch preview URL
+        if: always()
+        run: node tests/external-preview.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portrait-comparison-images
+          path: preview/screenshots/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Save screenshots and test status in feature branch only
+        if: always() && github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f preview/screenshots/
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: refresh feature-branch portrait previews [skip ci]"
+            git push origin HEAD:feature/portrait-support
+          fi
+      - name: Require passing end-to-end portrait pipeline
+        if: always()
+        run: |
+          test "${{ steps.pipeline.outputs.code }}" = "0"

@@ -4,6 +4,14 @@ window.AlgoArt=window.AlgoArt||{};
 
 var STRATEGIES=['BALANCED','VOID','TENSION','ORBIT','EDGE','MONUMENT','DIAGONAL'];
 
+// Old landscape states must retain exactly the same RNG keys as V1–V6.
+function randomSettings(s){
+  if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
+  var original=Object.assign({},s);
+  delete original.orientation;
+  return original;
+}
+
 function crowdFactor(s){
   return A.clamp((s.elements-36)/104,0,1);
 }
@@ -99,6 +107,30 @@ function pointInVoid(x,y,voids){
   for(var i=0;i<voids.length;i++){
     var v=voids[i];
     if(x>=v.x&&x<=v.x+v.w&&y>=v.y&&y<=v.y+v.h)return true;
+  }
+  return false;
+}
+
+// Exact segment/rectangle intersection for protected negative space.
+// Checking only the endpoints (or a few samples) misses thin crossings.
+function segmentCrossesVoid(x1,y1,x2,y2,voids){
+  var dx=x2-x1,dy=y2-y1;
+  for(var i=0;i<voids.length;i++){
+    var v=voids[i],left=v.x,right=v.x+v.w,top=v.y,bottom=v.y+v.h;
+    var p=[-dx,dx,-dy,dy];
+    var q=[x1-left,right-x1,y1-top,bottom-y1];
+    var enter=0,leave=1,miss=false;
+    for(var side=0;side<4;side++){
+      if(p[side]===0){
+        if(q[side]<0){miss=true;break;}
+      }else{
+        var t=q[side]/p[side];
+        if(p[side]<0)enter=Math.max(enter,t);
+        else leave=Math.min(leave,t);
+        if(enter>leave){miss=true;break;}
+      }
+    }
+    if(!miss)return true;
   }
   return false;
 }
@@ -238,7 +270,7 @@ function candidatePosition(i,total,s,r,tier,distributed,phase,attempt,strategy){
 }
 
 function makeLayoutPlan(s,seedSuffix,strategy,voids){
-  var r=A.makeR(s.seed+'|'+JSON.stringify(s)+'|layout|'+seedSuffix+'|'+strategy);
+  var r=A.makeR(s.seed+'|'+JSON.stringify(randomSettings(s))+'|layout|'+seedSuffix+'|'+strategy);
   var tiers=hierarchyPlan(s.elements,strategy);
   var distributed=A.distributedPhiPoints(s.elements,s,r);
   var phase=r.range(0,A.TAU);
@@ -1157,12 +1189,23 @@ function drawSpiralV6(ctx,s,r,pal){
     centres=[anchor];
     var rev=(A.hash(s.seed+'|s-rev-v5')%2)===1;
     var p0={x:rev?A.W+80:-80,y:A.H*(1-A.INV)},p3={x:rev?-80:A.W+80,y:A.H*A.INV};
-    addPath(bezier(p0,{x:A.W*A.INV,y:-A.H*.08},{x:A.W*(1-A.INV),y:A.H*1.08},p3,count,0));
+    if(s.orientation==='portrait'){
+      addPath(bezier({x:A.W*(1-A.INV),y:rev?A.H+80:-80},
+        {x:-A.W*.08,y:A.H*A.INV},{x:A.W*1.08,y:A.H*(1-A.INV)},
+        {x:A.W*A.INV,y:rev?-80:A.H+80},count,0));
+    }else{
+      addPath(bezier(p0,{x:A.W*A.INV,y:-A.H*.08},{x:A.W*(1-A.INV),y:A.H*1.08},p3,count,0));
+    }
   }else if(family==='ECHO'){
     centres=[anchor]; var echoes=2+(A.hash(s.seed+'|echo-count-v5')%4), eachE=Math.ceil(count/echoes);
     for(var e=0;e<echoes;e++){
       var off=(e-(echoes-1)/2)*A.W*.055;
-      addPath(bezier({x:-70,y:A.H*.72+off},{x:A.W*.3,y:A.H*.12+off},{x:A.W*.7,y:A.H*.88+off},{x:A.W+70,y:A.H*.28+off},eachE,e));
+      if(s.orientation==='portrait'){
+        addPath(bezier({x:A.W*.72+off,y:-70},{x:A.W*.12+off,y:A.H*.3},
+          {x:A.W*.88+off,y:A.H*.7},{x:A.W*.28+off,y:A.H+70},eachE,e));
+      }else{
+        addPath(bezier({x:-70,y:A.H*.72+off},{x:A.W*.3,y:A.H*.12+off},{x:A.W*.7,y:A.H*.88+off},{x:A.W+70,y:A.H*.28+off},eachE,e));
+      }
     }
   }else if(family==='INTERSECT'){
     centres=[targets[0],targets[3]]; var eachI=Math.ceil(count/2);
@@ -1170,9 +1213,11 @@ function drawSpiralV6(ctx,s,r,pal){
     addPath(bezier({x:A.W*.18,y:-60},{x:A.W*.92,y:A.H*.3},{x:A.W*.08,y:A.H*.7},{x:A.W*.82,y:A.H+60},eachI,1));
   }else if(family==='CASCADE'){
     centres=[anchor]; var segs=3+(A.hash(s.seed+'|cascade-v5')%3), left=count;
-    var cur={x:A.W*.12,y:A.H*.18};
-    for(var c=0;c<segs;c++){var n=Math.max(3,Math.round(left/(segs-c))),len=A.W*.62/Math.pow(A.PHI,c*.7),ang=phase*.18+c*A.GOLD*.42;
-      var end={x:cur.x+Math.cos(ang)*len,y:cur.y+Math.sin(ang)*len*.7};
+    var cur=s.orientation==='portrait'?{x:A.W*.18,y:A.H*.12}:{x:A.W*.12,y:A.H*.18};
+    for(var c=0;c<segs;c++){var n=Math.max(3,Math.round(left/(segs-c))),len=(s.orientation==='portrait'?A.H:A.W)*.62/Math.pow(A.PHI,c*.7),ang=phase*.18+c*A.GOLD*.42;
+      var end=s.orientation==='portrait'
+        ?{x:cur.x+Math.cos(ang)*len*.7,y:cur.y+Math.sin(ang)*len}
+        :{x:cur.x+Math.cos(ang)*len,y:cur.y+Math.sin(ang)*len*.7};
       addPath(bezier(cur,{x:A.lerp(cur.x,end.x,.35),y:cur.y-len*.12},{x:A.lerp(cur.x,end.x,.72),y:end.y+len*.1},end,n,c));
       cur=end;left-=n;
     }
@@ -1192,7 +1237,12 @@ function drawSpiralV6(ctx,s,r,pal){
   for(var vi=0;vi<points.length;vi++)if(points[vi].x>-20&&points[vi].x<A.W+20&&points[vi].y>-20&&points[vi].y<A.H+20)visibleCount++;
   if(visibleCount<Math.min(4,Math.max(2,Math.floor(count*.12)))){
     points=[];paths=[];centres=[anchor];family='SAFE-SWEEP';
-    addPath(bezier({x:-20,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H*.08},{x:A.W*(1-A.INV),y:A.H*.92},{x:A.W+20,y:A.H*A.INV},count,0));
+    if(s.orientation==='portrait'){
+      addPath(bezier({x:A.W*(1-A.INV),y:-20},{x:A.W*.08,y:A.H*A.INV},
+        {x:A.W*.92,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H+20},count,0));
+    }else{
+      addPath(bezier({x:-20,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H*.08},{x:A.W*(1-A.INV),y:A.H*.92},{x:A.W+20,y:A.H*A.INV},count,0));
+    }
   }
 
   // Pull strict trajectories slightly toward phi anchors at low influence, preserving identity without forcing a coil.
@@ -1906,6 +1956,24 @@ function drawScribble(ctx,s,r,pal){
   var voids=(variant==='VOID'||s.negativeSpace>24)
     ?makeReservedVoids(s,variant==='VOID'?'VOID':strategy,A.makeR(s.seed+'|scribble-voids|'+variant))
     :[];
+  var portrait=s.orientation==='portrait';
+  if(portrait&&variant!=='KNOT'){
+    // Give disconnected gestures a vertical rhythm without forcing
+    // everything into a line or destroying the reserved blank regions.
+    for(var aIndex=0;aIndex<anchors.length;aIndex++){
+      var t=aIndex/Math.max(1,anchors.length-1);
+      var desiredX=A.W*(aIndex%2?A.INV:1-A.INV);
+      var desiredY=A.H*(.17+.66*t);
+      var a=anchors[aIndex];
+      a.x=A.lerp(a.x,desiredX,variant==='DUET'?.82:.67);
+      a.y=A.lerp(a.y,desiredY,.85);
+      if(pointInVoid(a.x,a.y,voids)){
+        var otherSide=A.W-(a.x);
+        if(!pointInVoid(otherSide,a.y,voids))a.x=otherSide;
+        else if(!pointInVoid(a.x,A.H*(.12+.74*t),voids))a.y=A.H*(.12+.74*t);
+      }
+    }
+  }
   var counts=allocateScribbleSegments(segments,anchorCount);
   var style=Object.assign({},s,{
     wobble:Math.max(44,s.wobble),
@@ -1925,10 +1993,13 @@ function drawScribble(ctx,s,r,pal){
 
     if(variant==='RIBBON'){
       var diagonal=(A.hash(s.seed+'|scribble-ribbon')%2===0);
-      var x=A.W*(.16+.68*(index/Math.max(1,anchors.length-1)));
-      var y=diagonal
-        ?A.H*(.2+.6*(index/Math.max(1,anchors.length-1)))
-        :A.H*(.8-.6*(index/Math.max(1,anchors.length-1)));
+      var t=index/Math.max(1,anchors.length-1);
+      var x=portrait
+        ?A.W*(diagonal?.34+.29*t:.66-.29*t)
+        :A.W*(.16+.68*t);
+      var y=portrait
+        ?A.H*(.15+.7*t)
+        :(diagonal?A.H*(.2+.6*t):A.H*(.8-.6*t));
       a.x=A.lerp(a.x,x,.62);
       a.y=A.lerp(a.y,y,.62);
     }else if(variant==='KNOT'){
@@ -1945,10 +2016,48 @@ function drawScribble(ctx,s,r,pal){
       34,
       s.phiStrength/100
     );
+    if(portrait){
+      // A slightly larger gesture territory balances the long canvas;
+      // KNOT deliberately stays concentrated at one focal location.
+      a.radius=Math.min(A.W*.35,a.radius*(variant==='KNOT'?1.12:1.38));
+    }
     return a;
   }
 
   for(var ai=0;ai<anchors.length;ai++)prepareAnchor(ai);
+  if(portrait){
+    // RIBBON and KNOT can move anchors after the initial void check.
+    // Reposition any such anchor just outside the protected territory.
+    for(var ai=0;ai<anchors.length;ai++){
+      var a=anchors[ai];
+      if(!pointInVoid(a.x,a.y,voids))continue;
+      var oldX=a.x,oldY=a.y,relocated=false;
+      for(var distance=28;distance<=252&&!relocated;distance+=28){
+        for(var step=0;step<12;step++){
+          var theta=step*A.TAU/12;
+          var x=A.clamp(oldX+Math.cos(theta)*distance,24,A.W-24);
+          var y=A.clamp(oldY+Math.sin(theta)*distance,24,A.H-24);
+          if(!pointInVoid(x,y,voids)){
+            a.x=x;a.y=y;relocated=true;break;
+          }
+        }
+      }
+    }
+  }
+  if(portrait&&variant!=='KNOT'){
+    // Work out the flow after moving all the anchors, otherwise the first
+    // gestures point at the old, pre-reflow coordinates of later anchors.
+    for(var flowIndex=0;flowIndex<anchors.length;flowIndex++){
+      var a=anchors[flowIndex];
+      var neighbour=anchors[Math.min(flowIndex+1,anchors.length-1)];
+      if(flowIndex===anchors.length-1){
+        var previous=anchors[flowIndex-1];
+        a.flow=Math.atan2(a.y-previous.y,a.x-previous.x);
+      }else{
+        a.flow=Math.atan2(neighbour.y-a.y,neighbour.x-a.x);
+      }
+    }
+  }
 
   for(var ai=0;ai<anchors.length;ai++){
     var anchor=anchors[ai];
@@ -1961,6 +2070,7 @@ function drawScribble(ctx,s,r,pal){
       x:A.clamp(anchor.x+Math.cos(startAngle)*startRadius,24,A.W-24),
       y:A.clamp(anchor.y+Math.sin(startAngle)*startRadius,24,A.H-24)
     };
+    if(portrait&&pointInVoid(p.x,p.y,voids)){p.x=anchor.x;p.y=anchor.y;}
     var runLength=Math.max(3,Math.round(A.lerp(8,4,s.complexity/100)));
     var runPos=0;
 
@@ -1995,14 +2105,16 @@ function drawScribble(ctx,s,r,pal){
       }
 
       var attempts=0;
-      while(pointInVoid(q.x,q.y,voids)&&attempts<5){
+      while((pointInVoid(q.x,q.y,voids)||
+        (portrait&&segmentCrossesVoid(p.x,p.y,q.x,q.y,voids)))&&attempts<(portrait?9:5)){
         angle+=A.GOLD*(attempts%2===0?1:-1);
         q.x=p.x+Math.cos(angle)*len;
         q.y=p.y+Math.sin(angle)*len;
         attempts++;
       }
 
-      if(pointInVoid(q.x,q.y,voids)){
+      if(pointInVoid(q.x,q.y,voids)||
+        (portrait&&segmentCrossesVoid(p.x,p.y,q.x,q.y,voids))){
         runPos=runLength;
         continue;
       }
@@ -2038,6 +2150,7 @@ function drawScribble(ctx,s,r,pal){
           x:A.clamp(anchor.x+Math.cos(resetAngle)*resetRadius,24,A.W-24),
           y:A.clamp(anchor.y+Math.sin(resetAngle)*resetRadius,24,A.H-24)
         };
+        if(portrait&&pointInVoid(p.x,p.y,voids)){p.x=anchor.x;p.y=anchor.y;}
         runLength=Math.max(3,Math.round(A.lerp(9,4,s.complexity/100)+r.range(-1,2)));
         runPos=0;
       }
@@ -2079,8 +2192,38 @@ function drawOrganic(ctx,s,r,pal){
     wobble:Math.max(42,s.wobble)
   });
   var voids=makeReservedVoids(s,strategy,A.makeR(s.seed+'|organic-voids'));
+  var portrait=s.orientation==='portrait';
   var roots=1+Math.floor(s.elements/58);
   var rootPts=A.distributedPhiPoints(roots,organic,r);
+  if(portrait){
+    // A portrait drawing grows from the lower golden regions, rather
+    // than treating the 1000x1400 canvas as a taller random field.
+    for(var rootIndex=0;rootIndex<rootPts.length;rootIndex++){
+      var rp=rootPts[rootIndex];
+      var side=A.hash(s.seed+'|organic-portrait-side|'+rootIndex)%2;
+      var goalX=A.W*(side?A.INV:(1-A.INV));
+      var goalY=A.H*(.78-rootIndex*.17);
+      rp.x=A.lerp(rp.x,goalX,.76);
+      rp.y=A.lerp(rp.y,goalY,.88);
+      // Protected voids are intentionally left open even at root level.
+      if(pointInVoid(rp.x,rp.y,voids)){
+        // A large VOID can cover the lower-right (or lower-left) golden
+        // region entirely. Search nearby alternative φ columns and heights
+        // rather than relocating the root inside a second reserved area.
+        var targetXs=[rp.x,A.W*.22,A.W*.78,A.W*.50,A.W*.12,A.W*.88];
+        var targetYs=[rp.y,A.H*.79,A.H*.68,A.H*.88,A.H*.56];
+        var rootClear=false;
+        for(var yi=0;yi<targetYs.length&&!rootClear;yi++){
+          for(var xi=0;xi<targetXs.length;xi++){
+            if(!pointInVoid(targetXs[xi],targetYs[yi],voids)){
+              rp.x=targetXs[xi];rp.y=targetYs[yi];
+              rootClear=true;break;
+            }
+          }
+        }
+      }
+    }
+  }
   var queue=[];
   var maxSegments=Math.max(12,s.elements);
   var maxDepth=Math.max(3,Math.min(8,2+Math.round(s.recursion*.7)));
@@ -2089,11 +2232,11 @@ function drawOrganic(ctx,s,r,pal){
 
   for(var ri=0;ri<roots;ri++){
     var rp=rootPts[ri];
-    var toward=Math.atan2(A.H*.5-rp.y,A.W*.5-rp.x);
+    var toward=portrait?-Math.PI/2:Math.atan2(A.H*.5-rp.y,A.W*.5-rp.x);
     queue.push({
       x:rp.x,y:rp.y,
-      angle:toward+r.range(-.55,.55),
-      len:A.qphi(r.range(150,300),34,s.phiStrength/100),
+      angle:toward+r.range(portrait?-.28:-.55,portrait?.28:.55),
+      len:A.qphi(portrait?r.range(A.H*.19,A.H*.28):r.range(150,300),34,s.phiStrength/100),
       depth:0,
       branch:ri
     });
@@ -2106,7 +2249,24 @@ function drawOrganic(ctx,s,r,pal){
     var ex=node.x+Math.cos(angle)*len;
     var ey=node.y+Math.sin(angle)*len;
 
-    if(pointInVoid(ex,ey,voids)){
+    if(portrait){
+      // Try different branch directions before drawing; never draw a
+      // segment through intentionally protected negative space.
+      var baseAngle=angle,free=false;
+      for(var attempt=0;attempt<16;attempt++){
+        var turn=attempt===0?0:(attempt%2?1:-1)*
+          A.GOLD*(.20+.12*Math.ceil(attempt/2));
+        var candidate=baseAngle+turn;
+        // Test the endpoint *after* clamping to the canvas. Clamping
+        // changes the segment and can route it across a reserved void.
+        var candidateX=A.clamp(node.x+Math.cos(candidate)*len,24,A.W-24);
+        var candidateY=A.clamp(node.y+Math.sin(candidate)*len,24,A.H-24);
+        if(!segmentCrossesVoid(node.x,node.y,candidateX,candidateY,voids)){
+          angle=candidate;ex=candidateX;ey=candidateY;free=true;break;
+        }
+      }
+      if(!free)continue;
+    }else if(pointInVoid(ex,ey,voids)){
       angle+=A.GOLD*(r.chance(.5)?1:-1)*.55;
       ex=node.x+Math.cos(angle)*len;
       ey=node.y+Math.sin(angle)*len;
@@ -2129,13 +2289,15 @@ function drawOrganic(ctx,s,r,pal){
     var nextLen=len/A.PHI*r.range(.9,1.08);
     if(nextLen<12)continue;
 
-    var branches=r.chance(.35+organic.complexity/180)?2:1;
+    var branches=portrait&&node.depth<2?2:(r.chance((portrait?.52:.35)+organic.complexity/(portrait?230:180))?2:1);
     for(var b=0;b<branches;b++){
       var sign=branches===1?r.sign():(b===0?-1:1);
-      var turn=A.GOLD*A.lerp(.26,.52,organic.complexity/100)*sign;
+      var turn=A.GOLD*A.lerp(portrait?.18:.26,portrait?.38:.52,organic.complexity/100)*sign;
+      var childAngle=angle+turn+r.range(-.12,.12);
+      if(portrait)childAngle=A.lerp(childAngle,-Math.PI/2,.19);
       queue.push({
         x:ex,y:ey,
-        angle:angle+turn+r.range(-.12,.12),
+        angle:childAngle,
         len:nextLen,
         depth:node.depth+1,
         branch:node.branch
@@ -2822,6 +2984,10 @@ A.geometryOverlay=function(ctx,s,meta){
 };
 
 A.render=function(target,s,scale,showGeometry){
+  // Set logical dimensions for every render, including plugin/headless exports.
+  // Absence of orientation preserves the original landscape format.
+  A.W=s.orientation==='portrait'?1000:1400;
+  A.H=s.orientation==='portrait'?1400:1000;
   scale=scale||1;
   target.width=A.W*scale;
   target.height=A.H*scale;
@@ -2829,7 +2995,7 @@ A.render=function(target,s,scale,showGeometry){
   var ctx=target.getContext('2d');
   if(scale!==1)ctx.scale(scale,scale);
 
-  var r=A.makeR(s.seed+'|'+JSON.stringify(s));
+  var r=A.makeR(s.seed+'|'+JSON.stringify(randomSettings(s)));
   A.paper(ctx,s,r);
   var pal=A.hues(s,r);
   var meta;

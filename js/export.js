@@ -8,7 +8,7 @@ A.exportPNG=function(settings,scale){
   A.render(out,settings,scale,false);
 
   var link=document.createElement('a');
-  link.download='algoart-'+settings.seed+'-'+settings.mode+'-'+scale+'x.png';
+  link.download='algoart-'+settings.seed+'-'+settings.mode+(settings.orientation==='portrait'?'-portrait':'')+'-'+scale+'x.png';
   link.href=out.toDataURL('image/png');
   link.click();
 };
@@ -46,6 +46,7 @@ A.exportSVG=function(settings){
   var meta=esc(JSON.stringify({
     seed:settings.seed,
     mode:settings.mode,
+    orientation:settings.orientation||'landscape',
     phiStrength:settings.phiStrength,
     generator:'ALGO/ART'
   }));
@@ -61,7 +62,7 @@ A.exportSVG=function(settings){
   var blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
   var url=URL.createObjectURL(blob);
   var link=document.createElement('a');
-  link.download='algoart-'+settings.seed+'-'+settings.mode+'.svg';
+  link.download='algoart-'+settings.seed+'-'+settings.mode+(settings.orientation==='portrait'?'-portrait':'')+'.svg';
   link.href=url;
   link.click();
   setTimeout(function(){URL.revokeObjectURL(url)},1000);

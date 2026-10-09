@@ -219,10 +219,11 @@ main{
   min-width:0;min-height:0;
   z-index:1;
 }
+.app.orientation-portrait{--canvas-ratio:.7142857143;--canvas-aspect:5/7;--canvas-mobile-preview-aspect:5/7}
 .canvas-wrap{
   position:relative;
-  aspect-ratio:7/5;
-  width:min(calc(100% - 2px),calc((100dvh - var(--header) - 88px)*1.4));
+  aspect-ratio:var(--canvas-aspect,7/5);
+  width:min(calc(100% - 2px),calc((100dvh - var(--header) - 88px)*var(--canvas-ratio,1.4)));
   max-height:calc(100dvh - var(--header) - 88px);
   background:#f5f0e6;
   box-shadow:14px 14px 0 rgba(0,0,0,.38),0 28px 80px #0008;
@@ -606,7 +607,7 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
     align-items:start
   }
   .canvas-wrap{
-    width:min(100%,calc((100dvh - var(--header) - 105px)*1.4));
+    width:min(100%,calc((100dvh - var(--header) - 105px)*var(--canvas-ratio,1.4)));
     max-height:calc(100dvh - var(--header) - 105px);
     box-shadow:7px 7px 0 rgba(0,0,0,.42)
   }
@@ -758,7 +759,7 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
 .mode-card canvas{
   width:100%;
   height:auto;
-  aspect-ratio:7/5;
+  aspect-ratio:var(--canvas-aspect,7/5);
   background:#f5f0e6;
   border-bottom:1px solid var(--ink)
 }
@@ -838,7 +839,7 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
 }
 .variation-card:nth-child(2n){border-right:0}
 .variation-card:nth-last-child(-n+2){border-bottom:0}
-.variation-card canvas{width:100%;height:auto;aspect-ratio:7/5;display:block;background:#f5f0e6}
+.variation-card canvas{width:100%;height:auto;aspect-ratio:var(--canvas-aspect,7/5);display:block;background:#f5f0e6}
 .variation-card span{
   position:absolute;left:7px;bottom:7px;
   background:var(--acid);color:var(--ink);
@@ -877,7 +878,7 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
   .variations-grid{grid-template-columns:1fr}
   .variation-card{border-right:0!important;border-bottom:1px solid var(--ink)!important}
   .variation-card:last-child{border-bottom:0!important}
-  .variation-card canvas{aspect-ratio:7/4.1}
+  .variation-card canvas{aspect-ratio:var(--canvas-mobile-preview-aspect,7/4.1)}
   .variations-actions{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--ink)}
   .mode-picker{grid-template-columns:1fr 1fr}
 }
@@ -1122,7 +1123,7 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
     padding:22px 10px 58px
   }
   .canvas-wrap{
-    width:min(100%,calc((100dvh - var(--header) - 88px)*1.4));
+    width:min(100%,calc((100dvh - var(--header) - 88px)*var(--canvas-ratio,1.4)));
     max-width:100%;
     max-height:calc(100dvh - var(--header) - 88px)
   }
@@ -1144,7 +1145,7 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
 /* Mobile full-page fit: artwork, footer controls and parameter navigation. */
 @media(max-width:700px){
   .canvas-wrap{
-    width:min(calc(100vw - 20px),calc((100dvh - var(--header) - 88px)*1.4));
+    width:min(calc(100vw - 20px),calc((100dvh - var(--header) - 88px)*var(--canvas-ratio,1.4)));
     max-width:calc(100vw - 20px)
   }
   .stats{

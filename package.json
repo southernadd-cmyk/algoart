@@ -9,7 +9,9 @@
     "social:bluesky": "node automation/publish-bluesky.mjs",
     "social:pinterest": "node automation/publish-pinterest.mjs",
     "social:verify-pinterest": "node automation/verify-pinterest.mjs",
-    "gallery:build": "node automation/build-gallery.mjs"
+    "gallery:build": "node automation/build-gallery.mjs",
+    "test:orientation": "node tests/orientation.test.mjs",
+    "test:portrait-publishing": "node tests/portrait-publishing.test.mjs"
   },
   "devDependencies": {
     "playwright": "^1.55.0"

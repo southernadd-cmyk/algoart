@@ -37,7 +37,7 @@ function syncRendererChip(){
 }
 
 var SETTING_IDS=[
-  'mode','elements','density','complexity','negativeSpace',
+  'mode','orientation','elements','density','complexity','negativeSpace',
   'phiStrength','recursion','spiralInfluence','goldenAngle','nesting',
   'pen','thickness','wobble','overdraw','opacity','pressure','dryness',
   'curveBias','shapeAmount','overlap','rotation',
@@ -46,7 +46,7 @@ var SETTING_IDS=[
 ];
 
 var PARAM_KEYS={
-  seed:'seed',mode:'mode',elements:'el',density:'den',complexity:'cx',negativeSpace:'neg',
+  seed:'seed',mode:'mode',orientation:'fmt',elements:'el',density:'den',complexity:'cx',negativeSpace:'neg',
   phiStrength:'phi',recursion:'rec',spiralInfluence:'spi',goldenAngle:'ga',nesting:'nest',
   pen:'pen',thickness:'th',wobble:'wob',overdraw:'od',opacity:'op',pressure:'pr',dryness:'dry',
   curveBias:'curve',shapeAmount:'shape',overlap:'overlap',rotation:'rot',
@@ -168,6 +168,8 @@ function settingsToURL(settings){
   params.set('v',String(A.rendererVersion||CURRENT_RENDERER_VERSION));
   Object.keys(PARAM_KEYS).forEach(function(key){
     var value=settings[key];
+    // Leave historical landscape URLs unchanged, including their artwork IDs.
+    if(key==='orientation'&&value!=='portrait')return;
     if(value==null)return;
     if(typeof value==='boolean')value=value?'1':'0';
     params.set(PARAM_KEYS[key],String(value));
@@ -273,8 +275,20 @@ document.querySelectorAll('.mode-card').forEach(function(card){
   });
 });
 
+function syncCanvasFormat(s){
+  var portrait=s.orientation==='portrait';
+  app.classList.toggle('orientation-portrait',portrait);
+  var w=portrait?1000:1400,h=portrait?1400:1000;
+  $('artworkDimensions').textContent='ARTWORK · '+w+' × '+h;
+  Array.from($('exportScale').options).forEach(function(option){
+    var scale=+option.value;
+    option.textContent=scale+'× — '+(w*scale)+'×'+(h*scale);
+  });
+}
+
 function regenerate(){
   var s=A.readSettings();
+  syncCanvasFormat(s);
   var meta=A.render(canvas,s,1,showGeometry)||{};
   currentRenderMeta=meta;
   var strategy=meta.strategy?(' / '+meta.strategy):'';
@@ -645,7 +659,7 @@ $('randomise').onclick=function(){
     e.dispatchEvent(new Event('input'));
   });
 
-  document.querySelectorAll('select:not(#exportScale)').forEach(function(e){
+  document.querySelectorAll('select:not(#exportScale):not(#orientation)').forEach(function(e){
     e.selectedIndex=r.int(0,e.options.length-1);
   });
 
@@ -808,7 +822,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     if(e.id==='exportScale')return;
     useCurrentRenderer();
     regenerate();
-    if(e.id==='palette'||e.id==='pen'||e.id==='phiStrength'||e.id==='complexity'){
+    if(e.id==='orientation'||e.id==='palette'||e.id==='pen'||e.id==='phiStrength'||e.id==='complexity'){
       scheduleModePreviews();
     }
   });
@@ -840,7 +854,11 @@ function loadLatestGalleryDefault(){
         .then(function(r){if(!r.ok)throw new Error('meta');return r.json();})
         .then(function(meta){
           var entries=Array.isArray(meta.entries)?meta.entries:[];
-          var latest=entries[entries.length-1];
+          // Keep existing unparameterised landscape home-page behaviour.
+          // Portrait works remain available through the gallery and share URLs.
+          var latest=entries.filter(function(e){
+            return (e.orientation||(e.settings&&e.settings.orientation))!=='portrait';
+          }).pop()||entries[entries.length-1];
           if(!latest||!latest.settings)return false;
           A.rendererVersion=Number(latest.rendererVersion)||CURRENT_RENDERER_VERSION;
           applySettings(Object.assign({},latest.settings,{seed:latest.seed}));

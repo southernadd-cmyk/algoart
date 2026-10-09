@@ -10,6 +10,11 @@ export const ACCOUNTS = {
 
 export const DAILY_COUNT = 5;
 
+// Three additional portrait posts per day, separate from landscape slots.
+// Times are local to Europe/London and may be adjusted before release.
+export const PORTRAIT_SCHEDULE = ['09:00', '15:00', '20:30'];
+export const PORTRAIT_POST_INDICES = [0, 2, 4];
+
 export const SCHEDULE = {
   instagram: ['09:00', '15:00', '20:30', '12:00'],
   threads: ['09:00', '15:00', '20:30', '12:00']

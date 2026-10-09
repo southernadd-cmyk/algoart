@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
   SITE_URL, LOCAL_URL, TIME_ZONE, ACCOUNTS, DAILY_COUNT,
-  SCHEDULE, PLATFORM_SLOTS, MODES, PALETTES, PENS
+  SCHEDULE, PLATFORM_SLOTS, PORTRAIT_SCHEDULE, PORTRAIT_POST_INDICES, MODES, PALETTES, PENS
 } from './config.mjs';
 import { makeCaptions } from './captions.mjs';
 
@@ -47,11 +47,13 @@ function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
-function settingsFor(day, index, seedSalt = '') {
+function settingsFor(day, index, seedSalt = '', orientation = 'landscape') {
   const salt = String(seedSalt || '').trim();
   const saltKey = salt ? `|${salt}` : '';
-  const r = rng(`${day}|ALGOART|${index}${saltKey}`);
-  const rotation = hash(day + saltKey) % MODES.length;
+  const portrait = orientation === 'portrait';
+  // Preserve the existing landscape random sequence and seed identifiers.
+  const r = rng(portrait ? `${day}|ALGOART|PORTRAIT|${index}${saltKey}` : `${day}|ALGOART|${index}${saltKey}`);
+  const rotation = hash(day + saltKey + (portrait ? '|portrait' : '')) % MODES.length;
   const forcedMode = String(process.env.SOCIAL_FORCE_MODE || '').trim();
   const modeInfo = forcedMode ? (MODES.find(m => m[0] === forcedMode) || MODES[(index + rotation) % MODES.length]) : MODES[(index + rotation) % MODES.length];
   const mode = modeInfo[0];
@@ -67,10 +69,13 @@ function settingsFor(day, index, seedSalt = '') {
     scribble:  { elements: 46, density: 56, complexity: 66, negativeSpace: 31, spiralInfluence: 52, curveBias: 72 }
   }[mode];
 
-  const seed = `AA-${day.replaceAll('-', '')}-${String(index + 1).padStart(2, '0')}-${(hash(day + '|' + index + saltKey) % 100000).toString().padStart(5, '0')}`;
+  const seed = portrait
+    ? `AP-${day.replaceAll('-', '')}-${String(index + 1).padStart(2, '0')}-${(hash(day + '|portrait|' + index + saltKey) % 100000).toString().padStart(5, '0')}`
+    : `AA-${day.replaceAll('-', '')}-${String(index + 1).padStart(2, '0')}-${(hash(day + '|' + index + saltKey) % 100000).toString().padStart(5, '0')}`;
 
   return {
     mode,
+    ...(portrait ? { orientation: 'portrait' } : {}),
     series: modeInfo[1],
     seed,
     elements: clamp(modeDefaults.elements + int(r, -8, 9), 14, 78),
@@ -108,7 +113,7 @@ function settingsFor(day, index, seedSalt = '') {
 }
 
 const PARAM_KEYS = {
-  seed:'seed', mode:'mode', elements:'el', density:'den', complexity:'cx', negativeSpace:'neg',
+  seed:'seed', mode:'mode', orientation:'fmt', elements:'el', density:'den', complexity:'cx', negativeSpace:'neg',
   phiStrength:'phi', recursion:'rec', spiralInfluence:'spi', goldenAngle:'ga', nesting:'nest',
   pen:'pen', thickness:'th', wobble:'wob', overdraw:'od', opacity:'op', pressure:'pr', dryness:'dry',
   curveBias:'curve', shapeAmount:'shape', overlap:'overlap', rotation:'rot',
@@ -121,14 +126,24 @@ function queryFor(s) {
   q.set('v', String(Number(process.env.SOCIAL_RENDERER_VERSION || 6)));
   for (const [key, short] of Object.entries(PARAM_KEYS)) {
     let value = s[key];
+    if (value == null || (key === 'orientation' && value !== 'portrait')) continue;
     if (typeof value === 'boolean') value = value ? '1' : '0';
     q.set(short, String(value));
   }
   return q.toString();
 }
 
-function platformAssignment(index) {
+function platformAssignment(index, orientation = 'landscape') {
   const out = {};
+  if (orientation === 'portrait') {
+    const slot = PORTRAIT_POST_INDICES.indexOf(index);
+    if (slot >= 0) {
+      for (const platform of ['instagram', 'threads', 'bluesky']) {
+        out[platform] = { scheduledTime: PORTRAIT_SCHEDULE[slot], status: 'pending' };
+      }
+    } else out.reserve = { status: 'reserve' };
+    return out;
+  }
   const igSlot = PLATFORM_SLOTS.instagram.indexOf(index);
   const thSlot = PLATFORM_SLOTS.threads.indexOf(index);
   if (igSlot >= 0) out.instagram = { scheduledTime: SCHEDULE.instagram[igSlot], status: 'pending' };
@@ -140,8 +155,9 @@ function platformAssignment(index) {
 const requestedDate = process.env.SOCIAL_DATE;
 const day = requestedDate || dateInZone();
 const seedSalt = String(process.env.SOCIAL_SEED_SALT || '').trim();
+const orientation = process.env.SOCIAL_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
 const generationCount = Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
-const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day);
+const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day, ...(orientation === 'portrait' ? ['portrait'] : []));
 await fs.mkdir(outDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -150,7 +166,12 @@ const entries = [];
 
 try {
   for (let index = 0; index < generationCount; index++) {
-    const settings = settingsFor(day, index, seedSalt);
+    // A few valid portrait seeds produce unusually sparse or off-canvas art.
+    // Try deterministic alternatives so one weak render doesn't cancel the
+    // whole five-work day. Landscape generation stays byte-for-byte unchanged.
+    for (let attempt = 0; attempt < (orientation === 'portrait' ? 8 : 1); attempt++) {
+    const retrySalt = attempt ? seedSalt + '|retry-' + attempt : seedSalt;
+    const settings = settingsFor(day, index, retrySalt, orientation);
     const query = queryFor(settings);
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
@@ -161,7 +182,7 @@ try {
       return c && c.width > 0 && c.height > 0;
     });
 
-    const rendered = await page.evaluate(() => {
+    const rendered = await page.evaluate((paperColour) => {
       const canvas = document.getElementById('art');
       const stats = document.getElementById('stats')?.textContent || '';
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -201,8 +222,23 @@ try {
       const spanX = maxX >= minX ? (maxX - minX) / width : 0;
       const spanY = maxY >= minY ? (maxY - minY) / height : 0;
       const valid = changedRatio >= 0.006 && strongRatio >= 0.0015 && (spanX >= 0.10 || spanY >= 0.10);
+      // Meta's image-publishing API expects at least a 4:5 aspect ratio.
+      // Preserve the complete 1000x1400 portrait by padding its sides,
+      // never by cropping or stretching the original composition.
+      let instagramDataUrl = null;
+      if (width === 1000 && height === 1400) {
+        const igCanvas = document.createElement('canvas');
+        igCanvas.width = 1120;
+        igCanvas.height = 1400;
+        const ig = igCanvas.getContext('2d');
+        ig.fillStyle = paperColour;
+        ig.fillRect(0, 0, 1120, 1400);
+        ig.drawImage(canvas, 60, 0);
+        instagramDataUrl = igCanvas.toDataURL('image/jpeg', 0.94);
+      }
       return {
         dataUrl: canvas.toDataURL('image/jpeg', 0.94),
+        instagramDataUrl,
         stats,
         accessibility: {
           altText: canvas.getAttribute('aria-label') || '',
@@ -211,28 +247,45 @@ try {
         },
         validation: { valid, changedRatio, strongRatio, spanX, spanY }
       };
-    });
+    }, settings.paper);
 
+    // Reject wrong-format exports instead of silently archiving resized images.
+    const canvasSize = await page.locator('#art').evaluate(c => [c.width, c.height]);
+    const expectedSize = orientation === 'portrait' ? [1000, 1400] : [1400, 1000];
+    if (canvasSize[0] !== expectedSize[0] || canvasSize[1] !== expectedSize[1]) {
+      throw new Error(`Unexpected ${orientation} canvas size: ${canvasSize.join('x')}`);
+    }
     if (!rendered.validation.valid) {
+      if (orientation === 'portrait' && attempt < 7) {
+        console.warn(`Portrait ${index + 1} candidate ${settings.seed} was rejected; trying a deterministic alternate: ${JSON.stringify(rendered.validation)}`);
+        continue;
+      }
       throw new Error(`Render validation failed for ${settings.seed}: ${JSON.stringify(rendered.validation)}`);
     }
 
-    const filename = `${day}-${String(index + 1).padStart(2, '0')}-${settings.mode}-${settings.seed}.jpg`;
+    const filename = `${day}-${orientation === 'portrait' ? 'portrait-' : ''}${String(index + 1).padStart(2, '0')}-${settings.mode}-${settings.seed}.jpg`;
     const filePath = path.join(outDir, filename);
     await fs.writeFile(filePath, Buffer.from(rendered.dataUrl.split(',')[1], 'base64'));
+    const instagramImageFile = orientation === 'portrait' ? filename.replace(/\.jpg$/, '-instagram.jpg') : null;
+    if (orientation === 'portrait') {
+      if (!rendered.instagramDataUrl) throw new Error('Missing Instagram-safe 4:5 portrait derivative');
+      await fs.writeFile(path.join(outDir, instagramImageFile), Buffer.from(rendered.instagramDataUrl.split(',')[1], 'base64'));
+    }
 
     const item = {
-      id: `${day}-${String(index + 1).padStart(2, '0')}`,
+      id: `${day}-${orientation === 'portrait' ? 'P' : ''}${String(index + 1).padStart(2, '0')}`,
+      ...(orientation === 'portrait' ? { orientation } : {}),
       generatedAt: new Date().toISOString(),
       seed: settings.seed,
       mode: settings.mode,
       series: settings.series,
       stats: rendered.stats,
       imageFile: filename,
+      ...(instagramImageFile ? { instagramImageFile } : {}),
       shareUrl,
       rendererVersion: Number(process.env.SOCIAL_RENDERER_VERSION || 6),
       settings,
-      platforms: platformAssignment(index)
+      platforms: platformAssignment(index, orientation)
     };
 
     item.copy = makeCaptions(item);
@@ -246,6 +299,8 @@ try {
     };
     entries.push(item);
     console.log(`Generated ${item.id}: ${item.series} / ${item.seed}`);
+    break; // one accepted study per requested daily index
+    } // candidate attempts
   }
 } finally {
   await browser.close();
@@ -254,12 +309,13 @@ try {
 const queue = {
   version: 1,
   date: day,
+  ...(orientation === 'portrait' ? { orientation } : {}),
   generatedAt: new Date().toISOString(),
   timezone: TIME_ZONE,
   accounts: ACCOUNTS,
   cadence: {
-    instagramPerDay: SCHEDULE.instagram.length,
-    threadsPerDay: SCHEDULE.threads.length
+    instagramPerDay: orientation === 'portrait' ? PORTRAIT_SCHEDULE.length : SCHEDULE.instagram.length,
+    threadsPerDay: orientation === 'portrait' ? PORTRAIT_SCHEDULE.length : SCHEDULE.threads.length
   },
   publishingEnabled: false,
   entries
@@ -267,5 +323,4 @@ const queue = {
 
 await fs.writeFile(path.join(outDir, 'queue.json'), JSON.stringify(queue, null, 2));
 console.log(`\nGenerated ${generationCount} artworks into ${outDir}`);
-console.log(`Instagram: ${SCHEDULE.instagram.join(', ')} ${TIME_ZONE}`);
-console.log(`Threads: ${SCHEDULE.threads.join(', ')} ${TIME_ZONE}`);
+console.log(`${orientation} Instagram/Threads/Bluesky: ${(orientation === 'portrait' ? PORTRAIT_SCHEDULE : SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);

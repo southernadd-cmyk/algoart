@@ -157,7 +157,7 @@
       </div>
 
       <div class="stage-footer" aria-hidden="true">
-        <span>ARTWORK · 1400 × 1000</span>
+        <span id="artworkDimensions">ARTWORK · 1400 × 1000</span>
         <span>M mutate · N seed · V variations · D describe · [ parameters</span>
       </div>
     </div>
@@ -189,6 +189,7 @@
         <section class="tab-panel active" data-panel="composition">
           <div class="section-title"><span>COMPOSITION</span><b>8 systems</b></div>
           <div class="controls">
+            <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
             <div class="mode-picker-wrap">
               <div class="mode-picker-label"><span>SERIES</span><b>choose a system</b></div>
               <div class="mode-picker" id="modePicker">

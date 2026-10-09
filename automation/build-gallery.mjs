@@ -66,10 +66,11 @@ function artworkCard(item, index) {
   const title = artworkTitle(item, index);
   const s = item.settings || {};
   const alt = item.copy?.altText || artworkDescription(item);
+  const portrait = (item.orientation || s.orientation) === 'portrait';
   return `
-    <article class="art-card">
+    <article class="art-card" data-orientation="${portrait ? 'portrait' : 'landscape'}">
       <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open and remix ${escapeHtml(title)} in ALGO/ART">
-        <img src="${escapeHtml(item.imageFile)}" width="1400" height="1000" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" alt="${escapeHtml(alt)}">
+        <img src="${escapeHtml(item.imageFile)}" width="${portrait ? 1000 : 1400}" height="${portrait ? 1400 : 1000}" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" alt="${escapeHtml(alt)}">
       </a>
       <div class="art-info">
         <div class="art-number">${String(index + 1).padStart(2, '0')}</div>
@@ -79,6 +80,7 @@ function artworkCard(item, index) {
           <dl>
             <div><dt>Seed</dt><dd>${escapeHtml(item.seed)}</dd></div>
             <div><dt>Series</dt><dd>${escapeHtml(item.series)}</dd></div>
+            <div><dt>Format</dt><dd>${portrait ? 'Portrait · 1000 × 1400' : 'Landscape · 1400 × 1000'}</dd></div>
             <div><dt>φ adherence</dt><dd>${escapeHtml(s.phiStrength)}%</dd></div>
             <div><dt>Pen</dt><dd>${escapeHtml(s.pen)}</dd></div>
             <div><dt>Palette</dt><dd>${escapeHtml(s.palette)}</dd></div>
@@ -194,9 +196,9 @@ function dayPage(queue) {
 function archivePage(archive) {
   const days = [...archive.days].sort((a, b) => b.date.localeCompare(a.date));
   const cards = days.map((day, index) => `
-    <article class="day-card">
+    <article class="day-card${day.coverOrientation === 'portrait' ? ' portrait' : ''}">
       <a href="./${day.date}/">
-        <img src="./${day.date}/${escapeHtml(day.cover)}" width="1400" height="1000" loading="${index < 2 ? 'eager' : 'lazy'}" alt="ALGO/ART daily gallery cover for ${escapeHtml(displayDate(day.date))}">
+        <img src="./${day.date}/${escapeHtml(day.cover)}" width="${day.coverOrientation === 'portrait' ? 1000 : 1400}" height="${day.coverOrientation === 'portrait' ? 1400 : 1000}" loading="${index < 2 ? 'eager' : 'lazy'}" alt="ALGO/ART daily gallery cover for ${escapeHtml(displayDate(day.date))}">
         <div>
           <span>${escapeHtml(day.date)}</span>
           <h2>${escapeHtml(displayDate(day.date))}</h2>
@@ -304,7 +306,8 @@ ${urls.map(u => `  <url><loc>${escapeXml(u.loc)}</loc><lastmod>${u.lastmod}</las
 }
 
 const day = process.env.SOCIAL_DATE || dateInZone();
-const queuePath = path.resolve('social-output', day, 'queue.json');
+const galleryOrientation = process.env.GALLERY_QUEUE_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
+const queuePath = path.resolve('social-output', day, ...(galleryOrientation === 'portrait' ? ['portrait'] : []), 'queue.json');
 const queue = JSON.parse(await fs.readFile(queuePath, 'utf8'));
 
 if (!Array.isArray(queue.entries) || queue.entries.length === 0) {
@@ -343,9 +346,27 @@ for (const entry of Array.isArray(existingMeta.entries) ? existingMeta.entries :
 }
 
 queue.entries = [...queue.entries, ...preservedEntries];
+// Always display the existing landscape set first, then the five portraits.
+// Otherwise each publishing slot flips the gallery order as its own queue
+// becomes the input, producing needless commits and changing the cover.
+function galleryOrder(entry) {
+  const orientation = entry.orientation || entry.settings?.orientation;
+  return orientation === 'portrait' ? 1 : 0;
+}
+queue.entries.sort((a, b) =>
+  galleryOrder(a) - galleryOrder(b) ||
+  String(a.id || a.seed).localeCompare(String(b.id || b.seed))
+);
 
-for (const item of queue.entries.slice(0, queue.entries.length - preservedEntries.length)) {
-  const source = path.resolve('social-output', day, item.imageFile);
+// Only the freshly generated queue images are copied; preserved gallery
+// studies already exist in dayDir. Sorting must not change that distinction.
+const queuedImageFiles = new Set(
+  queue.entries.filter(item => !preservedEntries.some(old => old.imageFile === item.imageFile))
+    .map(item => item.imageFile)
+);
+for (const item of queue.entries) {
+  if (!queuedImageFiles.has(item.imageFile)) continue;
+  const source = path.resolve('social-output', day, ...(galleryOrientation === 'portrait' ? ['portrait'] : []), item.imageFile);
   const dest = path.join(dayDir, item.imageFile);
   await fs.copyFile(source, dest);
 }
@@ -365,6 +386,7 @@ const dayMeta = {
   entries: queue.entries.map((item, index) => ({
     id: item.id,
     title: artworkTitle(item, index),
+    orientation: item.orientation || item.settings?.orientation || 'landscape',
     seed: item.seed,
     mode: item.mode,
     series: item.series,
@@ -391,6 +413,7 @@ archive.days = Array.isArray(archive.days) ? archive.days.filter(d => d.date !==
 archive.days.push({
   date: day,
   cover: queue.entries[0].imageFile,
+  coverOrientation: queue.entries[0].orientation || queue.entries[0].settings?.orientation || 'landscape',
   count: queue.entries.length,
   series: [...new Set(queue.entries.map(e => e.series))]
 });
