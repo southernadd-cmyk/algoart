@@ -57,7 +57,7 @@ for(const marker of ['IG_MARKER','TH_MARKER','BS_MARKER']){
   assert.ok(portraitWorkflow.includes('"$REPOST_DELETED" != "true"'),'Recovery flag must override existing markers for '+marker);
 }
 assert.ok(parentWorkflow.includes('repost_deleted:'),'One-time recovery flag is not forwarded');
-assert.ok(parentWorkflow.includes('ops: retest deleted portrait slot0 posts for 2026-10-09'),'Recovery trigger must be exact-match');
+assert.ok(parentWorkflow.includes('retry-deleted-portrait-slot0-2026-10-09'),'Recovery trigger must be exact-match');
 assert.ok(parentWorkflow.includes('needs: publish'),'Normal landscape job must complete before portrait recovery');
 
 
