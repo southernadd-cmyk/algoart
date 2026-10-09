@@ -111,6 +111,17 @@ function pointInVoid(x,y,voids){
   return false;
 }
 
+// The centre or end of a stroke may lie outside a reserved area even when
+// the line between them crosses it. Samples preserve these intentional voids.
+function segmentCrossesVoid(x1,y1,x2,y2,voids){
+  if(!voids.length)return false;
+  for(var sample=0;sample<=16;sample++){
+    var t=sample/16;
+    if(pointInVoid(A.lerp(x1,x2,t),A.lerp(y1,y2,t),voids))return true;
+  }
+  return false;
+}
+
 function objectVoidPenalty(obj,voids,s){
   if(!voids.length)return 0;
 
@@ -2001,6 +2012,25 @@ function drawScribble(ctx,s,r,pal){
   }
 
   for(var ai=0;ai<anchors.length;ai++)prepareAnchor(ai);
+  if(portrait){
+    // RIBBON and KNOT can move anchors after the initial void check.
+    // Reposition any such anchor just outside the protected territory.
+    for(var ai=0;ai<anchors.length;ai++){
+      var a=anchors[ai];
+      if(!pointInVoid(a.x,a.y,voids))continue;
+      var oldX=a.x,oldY=a.y,relocated=false;
+      for(var distance=28;distance<=252&&!relocated;distance+=28){
+        for(var step=0;step<12;step++){
+          var theta=step*A.TAU/12;
+          var x=A.clamp(oldX+Math.cos(theta)*distance,24,A.W-24);
+          var y=A.clamp(oldY+Math.sin(theta)*distance,24,A.H-24);
+          if(!pointInVoid(x,y,voids)){
+            a.x=x;a.y=y;relocated=true;break;
+          }
+        }
+      }
+    }
+  }
   if(portrait&&variant!=='KNOT'){
     // Work out the flow after moving all the anchors, otherwise the first
     // gestures point at the old, pre-reflow coordinates of later anchors.
@@ -2027,6 +2057,7 @@ function drawScribble(ctx,s,r,pal){
       x:A.clamp(anchor.x+Math.cos(startAngle)*startRadius,24,A.W-24),
       y:A.clamp(anchor.y+Math.sin(startAngle)*startRadius,24,A.H-24)
     };
+    if(portrait&&pointInVoid(p.x,p.y,voids)){p.x=anchor.x;p.y=anchor.y;}
     var runLength=Math.max(3,Math.round(A.lerp(8,4,s.complexity/100)));
     var runPos=0;
 
@@ -2061,14 +2092,16 @@ function drawScribble(ctx,s,r,pal){
       }
 
       var attempts=0;
-      while(pointInVoid(q.x,q.y,voids)&&attempts<5){
+      while((pointInVoid(q.x,q.y,voids)||
+        (portrait&&segmentCrossesVoid(p.x,p.y,q.x,q.y,voids)))&&attempts<(portrait?9:5)){
         angle+=A.GOLD*(attempts%2===0?1:-1);
         q.x=p.x+Math.cos(angle)*len;
         q.y=p.y+Math.sin(angle)*len;
         attempts++;
       }
 
-      if(pointInVoid(q.x,q.y,voids)){
+      if(pointInVoid(q.x,q.y,voids)||
+        (portrait&&segmentCrossesVoid(p.x,p.y,q.x,q.y,voids))){
         runPos=runLength;
         continue;
       }
@@ -2104,6 +2137,7 @@ function drawScribble(ctx,s,r,pal){
           x:A.clamp(anchor.x+Math.cos(resetAngle)*resetRadius,24,A.W-24),
           y:A.clamp(anchor.y+Math.sin(resetAngle)*resetRadius,24,A.H-24)
         };
+        if(portrait&&pointInVoid(p.x,p.y,voids)){p.x=anchor.x;p.y=anchor.y;}
         runLength=Math.max(3,Math.round(A.lerp(9,4,s.complexity/100)+r.range(-1,2)));
         runPos=0;
       }
@@ -2191,14 +2225,20 @@ function drawOrganic(ctx,s,r,pal){
     var ey=node.y+Math.sin(angle)*len;
 
     if(portrait){
-      // Turn around a reserved opening; test the middle of the segment as
-      // well as its end, otherwise a branch can cut across the empty area.
-      for(var attempt=0;attempt<4&&
-        (pointInVoid(ex,ey,voids)||pointInVoid((node.x+ex)/2,(node.y+ey)/2,voids));attempt++){
-        angle+=A.GOLD*(attempt%2===0?1:-1)*(.55+.20*attempt);
-        ex=node.x+Math.cos(angle)*len;
-        ey=node.y+Math.sin(angle)*len;
+      // Try different branch directions before drawing; never draw a
+      // segment through intentionally protected negative space.
+      var baseAngle=angle,free=false;
+      for(var attempt=0;attempt<16;attempt++){
+        var turn=attempt===0?0:(attempt%2?1:-1)*
+          A.GOLD*(.20+.12*Math.ceil(attempt/2));
+        var candidate=baseAngle+turn;
+        var candidateX=node.x+Math.cos(candidate)*len;
+        var candidateY=node.y+Math.sin(candidate)*len;
+        if(!segmentCrossesVoid(node.x,node.y,candidateX,candidateY,voids)){
+          angle=candidate;ex=candidateX;ey=candidateY;free=true;break;
+        }
       }
+      if(!free)continue;
     }else if(pointInVoid(ex,ey,voids)){
       angle+=A.GOLD*(r.chance(.5)?1:-1)*.55;
       ex=node.x+Math.cos(angle)*len;
