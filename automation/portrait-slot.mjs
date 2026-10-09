@@ -56,10 +56,13 @@ async function main(){
     const imagePath=path.resolve('social-output',day,'portrait',item.imageFile);
     await fs.access(imagePath);
     const assetName=item.imageFile;
+    if(!item.instagramImageFile)throw Error('Portrait is missing Instagram-safe image');
+    await fs.access(path.resolve('social-output',day,'portrait',item.instagramImageFile));
     await output({
       id:item.id,
       image_path:imagePath,
       asset_name:assetName,
+      instagram_asset_name:item.instagramImageFile,
       instagram_caption_b64:b64(item.copy.instagram),
       threads_caption_b64:b64(item.copy.threads),
       bluesky_caption_b64:b64(item.copy.bluesky),
