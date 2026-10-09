@@ -278,12 +278,14 @@
               <legend>Plotter SVG</legend>
               <div class="control"><label for="plotterPaper">Paper size</label><select id="plotterPaper"><option value="A4">A4</option><option value="A3">A3</option></select></div>
               <div class="control"><label for="plotterMargin">Margin (mm)</label><input id="plotterMargin" type="number" value="10" min="0" max="100" step="1"></div>
-              <label class="mini-note"><input id="plotterOptimize" type="checkbox" checked> Reduce pen travel while preserving stroke order</label>
+              <div class="control"><label for="plotterGrouping">Pen layers</label><select id="plotterGrouping" aria-describedby="plotterGroupingNote"><option value="runs">Faithful colour runs</option><option value="pens">Group by pen</option></select></div>
+              <p class="mini-note" id="plotterGroupingNote">Faithful colour runs preserve overlap order. Repeated colours need more pen changes.</p>
+              <label class="mini-note"><input id="plotterOptimize" type="checkbox" checked> Reduce pen travel while preserving stroke order within each layer</label>
               <button class="export-big" id="previewPlotter">PREVIEW PLOTTER SVG</button>
               <figure id="plotterPreview" hidden><img id="plotterPreviewImage" alt="Preview of the plotter SVG on the selected paper"><figcaption id="plotterSummary"></figcaption></figure>
               <div id="plotterStatus" class="share-status" role="status" aria-live="polite"></div>
               <button class="export-big" id="savePlotter">DOWNLOAD PLOTTER SVG</button>
-              <p class="mini-note">Preserves marker paths, wobble, repeated passes and overlap order. Colour runs become numbered pen layers. The preview includes paper texture; the plotter file contains only ink paths. Match pens and paper to the artwork; transparency and stroke width depend on your materials.</p>
+              <p class="mini-note">Preserves marker paths, wobble and repeated passes. The preview includes paper texture; the plotter file contains only ink paths. Match pens and paper to the artwork; transparency and stroke width depend on your materials.</p>
             </fieldset>
             <button class="export-big" id="copyLink">COPY ARTWORK LINK</button>
             <div class="share-status" id="shareStatus" aria-live="polite"></div>
@@ -303,9 +305,9 @@
 <script src="js/marker.js?v=plotter-20261009"></script>
 <script src="js/generator.js"></script>
 <script src="js/export.js"></script>
-<script src="js/plotter.js?v=plotter-20261009"></script>
+<script src="js/plotter.js?v=plotter-pens-20261009"></script>
 <script src="js/describe.js"></script>
 <script src="js/control-help.js?v=plotter-20261009"></script>
-<script src="js/app.js?v=plotter-20261009"></script>
+<script src="js/app.js?v=plotter-pens-20261009"></script>
 </body>
 </html>
