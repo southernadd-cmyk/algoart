@@ -1,1 +1,1 @@
-FAIL (exit 1) — see portrait-pipeline.log
+PASS — five portraits, three posts and mixed ten-artwork gallery

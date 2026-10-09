@@ -1,18 +1,1 @@
-node:internal/modules/run_main:123
-    triggerUncaughtException(
-    ^
-
-AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
-
-  assert.ok(selected.includes('id='+portrait.entries[PORTRAIT_POST_INDICES[slot]].id))
-
-    at file:///home/runner/work/algoart/algoart/tests/portrait-pipeline.test.mjs:66:10 {
-  generatedMessage: true,
-  code: 'ERR_ASSERTION',
-  actual: false,
-  expected: true,
-  operator: '==',
-  diff: 'simple'
-}
-
-Node.js v22.23.3
+PASS: five portraits, three unique posting slots, London BST/GMT timing, ten-work gallery and duplicate-safe rebuild.

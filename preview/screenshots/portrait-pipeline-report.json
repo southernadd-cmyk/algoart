@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "testedDate": "2099-02-03",
+  "portraitCount": 5,
+  "landscapeCount": 5,
+  "combinedGalleryCount": 10,
+  "portraitPostIndices": [
+    0,
+    2,
+    4
+  ],
+  "portraitTimesLondon": [
+    "09:00",
+    "15:00",
+    "20:30"
+  ],
+  "originalDimensions": "1000x1400",
+  "instagramDimensions": "1120x1400",
+  "testedAt": "2026-10-09T09:12:25.037Z"
+}
