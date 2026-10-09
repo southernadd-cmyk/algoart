@@ -22,6 +22,8 @@ jobs:
           node-version: '22'
       - name: Verify landscape fixtures and portrait determinism
         run: npm run test:orientation
+      - name: Verify shared posting slots and ten-image gallery preservation
+        run: npm run test:portrait-publishing
 
   browser-previews:
     runs-on: ubuntu-latest
