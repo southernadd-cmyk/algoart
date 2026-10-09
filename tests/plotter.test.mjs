@@ -55,7 +55,7 @@ assert.ok(layered.svg.includes('width="297mm" height="210mm"'));
 assert.equal((layered.svg.match(/inkscape:groupmode="layer"/g)||[]).length,3);
 assert.equal((layered.svg.match(/<path /g)||[]).length,3);
 assert.ok(!layered.svg.includes('<rect width="100%"'),'Paper became a plot path');
-assert.ok(layered.preview.includes('<rect width="100%"'));
+assert.ok(layered.preview.includes('<rect width="297" height="210" fill="#f5f0e6"'));
 assert.ok(layered.metadata.penTravelAfterMm<=layered.metadata.penTravelBeforeMm+1e-8);
 assert.equal(A.rendererVersion,6);
 console.log('PASS: sequential colour layers, millimetre page, no plotted paper, preview background and preserved legacy version.');

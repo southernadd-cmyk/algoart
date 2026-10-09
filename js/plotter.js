@@ -180,13 +180,14 @@ A.createPlotterSVG=function(settings,options){
     paper:paper,pageMm:page,marginMm:margin,paperColour:settings.paper,pathOrder:'preserved',
     penTravelBeforeMm:before*scale,penTravelAfterMm:after*scale,paths:paths.length,colourRuns:layers.length};
   var content=layers.map(function(l,i){
-    var name=String(i+1).padStart(3,'0')+' · '+l.colour;
+    var pen=Array.from(new Set(paths.map(function(p){return p.stroke}))).indexOf(l.colour)+1;
+    var name=String(i+1).padStart(3,'0')+' · Pen '+pen+' · '+l.colour;
     return '<g id="pen-run-'+(i+1)+'" inkscape:groupmode="layer" inkscape:label="'+esc(name)+'" data-pen-colour="'+esc(l.colour)+'" transform="translate('+x+' '+y+') scale('+scale+')" clip-path="url(#art-bounds)">'+l.paths.map(pathTag).join('')+'</g>';
   }).join('');
   var head='<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="'+NS+'" width="'+page[0]+'mm" height="'+page[1]+'mm" viewBox="0 0 '+page[0]+' '+page[1]+'" style="isolation:isolate">';
   var clip='<defs><clipPath id="art-bounds" clipPathUnits="userSpaceOnUse"><rect width="'+w+'" height="'+h+'"/></clipPath></defs>';
   function svg(preview){
-    var background=preview?'<rect width="100%" height="100%" fill="'+esc(settings.paper)+'"/>':'';
+    var background=preview?'<rect width="'+page[0]+'" height="'+page[1]+'" fill="'+esc(settings.paper)+'"/>':'';
     var grain=preview?rec.paperMarks.map(function(p){return'<rect x="'+p.x+'" y="'+p.y+'" width="'+p.w+'" height="'+p.h+'" fill="'+esc(p.colour)+'" opacity=".035"/>'}).join(''):'';
     return head+'<metadata>'+esc(JSON.stringify(metadata))+'</metadata>'+clip+background+
       (preview?'<g transform="translate('+x+' '+y+') scale('+scale+')" clip-path="url(#art-bounds)">'+grain+'</g>':'')+
