@@ -1,7 +1,6 @@
 window.AlgoArt=window.AlgoArt||{};
 (function(A){
 'use strict';
-var W=A.W||1400,H=A.H||1000;
 var SERIES={field:'Orbital Studies',spiral:'Golden Trajectories',rects:'Recursive Divisions',burst:'Radiant Systems',network:'Connected Fields',organic:'Growth Systems',geometric:'Constructed Forms',scribble:'Automatic Marks'};
 var PALETTE_NAMES={spectrum:'full-spectrum',golden:'golden-angle',marker:'classic marker',cmyk:'CMYK',primary:'primary-colour',neon:'neon',pastel:'pastel',earth:'earth-tone',warm:'warm',cold:'cool',mono:'monochrome'};
 function n(v,fallback){v=Number(v);return Number.isFinite(v)?v:(fallback||0)}
@@ -10,8 +9,8 @@ function words(s){return String(s||'').replace(/^.*?-/,'').replace(/-/g,' ').toL
 function pct(v){return Math.round(n(v))+'%'}
 function clean(text){return String(text||'').replace(/\s+/g,' ').trim()}
 function pointOf(item){if(!item)return null;var x=item.x!=null?item.x:item.cx;var y=item.y!=null?item.y:item.cy;return Number.isFinite(Number(x))&&Number.isFinite(Number(y))?{x:Number(x),y:Number(y)}:null}
-function centroid(items){var pts=(items||[]).map(pointOf).filter(Boolean);if(!pts.length)return{x:W/2,y:H/2};var sx=0,sy=0;pts.forEach(function(p){sx+=p.x;sy+=p.y});return{x:sx/pts.length,y:sy/pts.length}}
-function region(p){p=p||{x:W/2,y:H/2};var hx=p.x<W*.38?'left':(p.x>W*.62?'right':'centre');var vy=p.y<H*.38?'upper':(p.y>H*.62?'lower':'middle');if(hx==='centre'&&vy==='middle')return 'centre';if(hx==='centre')return vy+' centre';if(vy==='middle')return 'centre '+hx;return vy+' '+hx}
+function centroid(items){var pts=(items||[]).map(pointOf).filter(Boolean);if(!pts.length)return{x:A.W/2,y:A.H/2};var sx=0,sy=0;pts.forEach(function(p){sx+=p.x;sy+=p.y});return{x:sx/pts.length,y:sy/pts.length}}
+function region(p){p=p||{x:A.W/2,y:A.H/2};var hx=p.x<A.W*.38?'left':(p.x>A.W*.62?'right':'centre');var vy=p.y<A.H*.38?'upper':(p.y>A.H*.62?'lower':'middle');if(hx==='centre'&&vy==='middle')return 'centre';if(hx==='centre')return vy+' centre';if(vy==='middle')return 'centre '+hx;return vy+' '+hx}
 function voidSummary(voids){if(!voids||!voids.length)return 'No large protected negative-space region is recorded for this composition.';var centres=voids.map(function(v){return{x:n(v.x)+n(v.w)/2,y:n(v.y)+n(v.h)/2}});if(voids.length===1)return 'A protected negative-space region sits around the '+region(centroid(centres))+'.';return voids.length+' protected negative-space regions are recorded, centred overall around the '+region(centroid(centres))+'.'}
 function tierCounts(items){var out={hero:0,medium:0,small:0};(items||[]).forEach(function(item){if(item&&out[item.tier]!=null)out[item.tier]++});return out}
 function maxDepth(items,key){var m=0;(items||[]).forEach(function(item){m=Math.max(m,n(item&&item[key],0))});return m}
