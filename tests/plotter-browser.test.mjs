@@ -162,7 +162,7 @@ try{
       return{metadata:n,groupedMetadata:groupedOptimized.metadata,fixedGroupedTravel,fidelity:metrics(fidelity),direction:metrics(direction),
         grouping:metrics(grouping),groupedDirection:metrics(groupedDirection),
         passed:withinLimits(fidelity,PLOTTER_LIMITS.fidelity)&&withinLimits(direction,PLOTTER_LIMITS.direction)&&
-          withinLimits(grouping,PLOTTER_LIMITS.direction)&&withinLimits(groupedDirection,PLOTTER_LIMITS.direction),
+          withinLimits(grouping,PLOTTER_LIMITS.direction)&&withinLimits(groupedDirection,PLOTTER_LIMITS.groupedDirection),
         canvas:canvas.toDataURL(),render:render.toDataURL(),diff:fidelity.diff,svg:optimized.svg,
         grouped:groupedRender.toDataURL(),groupedDiff:groupedDirection.diff,groupedSVG:groupedOptimized.svg};
     },sample);
