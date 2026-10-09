@@ -716,6 +716,9 @@ function variationSeed(base,index,batch){
 
 function renderVariations(){
   var base=A.readSettings();
+  // The overlay is moved under document.body for modal focus management,
+  // so it cannot inherit the portrait canvas aspect from .app.
+  $('variationsOverlay').classList.toggle('orientation-portrait',base.orientation==='portrait');
   var cards=document.querySelectorAll('.variation-card');
 
   withRendererVersion(CURRENT_RENDERER_VERSION,function(){

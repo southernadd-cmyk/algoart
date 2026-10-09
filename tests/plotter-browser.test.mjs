@@ -271,6 +271,47 @@ try{
   if(!(await page.locator('#plotterGroupingNote').textContent()).includes('preserve overlap order'))throw Error('Faithful mode note was not restored');
   if(!(await page.locator('#plotterGroupingNote').textContent()).includes('AxiDraw pauses'))throw Error('Faithful pen-change instruction missing');
   if(!(await page.locator('#plotterOptimizeLabel').textContent()).includes('without changing stroke order'))throw Error('Faithful route instruction missing');
+  // 4-Up is moved outside .app, so its displayed canvas dimensions need
+  // independent orientation CSS. Check portrait/landscape, shuffle, mobile
+  // and desktop, plus the chosen variation's editor orientation.
+  async function verifyFourUp(orientation){
+    const snapshot=await page.evaluate(()=>{
+      const overlay=document.getElementById('variationsOverlay');
+      return {
+        appOrientation:document.getElementById('orientation').value,
+        portraitClass:overlay.classList.contains('orientation-portrait'),
+        cards:Array.from(overlay.querySelectorAll('.variation-card canvas')).map(canvas=>{
+          const rect=canvas.getBoundingClientRect();
+          return {width:canvas.width,height:canvas.height,displayWidth:rect.width,displayHeight:rect.height};
+        })
+      };
+    });
+    const portrait=orientation==='portrait';
+    if(snapshot.appOrientation!==orientation||snapshot.portraitClass!==portrait||snapshot.cards.length!==4)
+      throw Error('4-Up overlay did not inherit canvas orientation: '+JSON.stringify(snapshot));
+    for(const c of snapshot.cards){
+      if((c.height>c.width)!==portrait||(c.displayHeight>c.displayWidth)!==portrait)
+        throw Error('4-Up option preview has incorrect aspect: '+JSON.stringify(c));
+    }
+  }
+  await page.goto((process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/')+'?v=7&seed=FOUR-UP-PORTRAIT&mode=scribble&fmt=portrait',{waitUntil:'networkidle'});
+  await page.locator('#variations').click();
+  await verifyFourUp('portrait');
+  await page.locator('#shuffleVariations').click();
+  await verifyFourUp('portrait');
+  await page.setViewportSize({width:1600,height:1200});
+  await verifyFourUp('portrait');
+  await page.locator('.variation-card').first().click();
+  if(await page.locator('#orientation').inputValue()!=='portrait')throw Error('4-Up selection dropped portrait orientation');
+  await page.goto((process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/')+'?v=7&seed=FOUR-UP-LANDSCAPE&mode=scribble',{waitUntil:'networkidle'});
+  await page.locator('#variations').click();
+  await verifyFourUp('landscape');
+  await page.setViewportSize({width:390,height:844});
+  await verifyFourUp('landscape');
+  await page.locator('#shuffleVariations').click();
+  await verifyFourUp('landscape');
+  await page.locator('#closeVariations').click();
+  console.log('PASS 4-Up orientation: four canvas previews respect portrait and landscape on desktop, mobile and shuffle');
 }finally{
   await browser.close();
   report.maxima={};
