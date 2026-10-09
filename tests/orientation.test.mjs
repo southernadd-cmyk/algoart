@@ -89,3 +89,49 @@ for(const [mode,expected] of Object.entries(landscapeHashes)){
   }
 }
 console.log('PASS: all 8 modes preserve V6 landscape fixtures and render reproducible portrait compositions across 4 seeds each.');
+
+
+// Portrait refinement regression: verify visual territory coverage and
+// protected negative-space geometry across multiple seeds and densities.
+// KNOT intentionally concentrates its gestures, so it is not forced to
+// fill the vertical canvas like RIBBON or CLUSTERS.
+function insideVoid(x,y,voids){
+  return voids.some(v=>x>=v.x&&x<=v.x+v.w&&y>=v.y&&y<=v.y+v.h);
+}
+let refinedChecks=0;
+const sampleSeeds=['PORTRAIT-PREVIEW-2026',...Array.from({length:11},(_,i)=>'PROBE-'+(i+1))];
+for(const mode of ['organic','scribble']){
+  for(const negativeSpace of [15,41,82]){
+    for(const seed of sampleSeeds){
+      const s=settings(mode,'portrait',seed);
+      s.elements=36;s.density=53;s.complexity=71;s.recursion=4;s.negativeSpace=negativeSpace;
+      const {meta}=render(A,s);
+      const voids=meta.voids||[];
+      if(mode==='organic'){
+        const segments=meta.guide.segments;
+        assert.ok(segments.length>=8,'Portrait organic growth stopped: '+seed+' / '+negativeSpace);
+        const y=segments.flatMap(seg=>[seg.y1,seg.y2]);
+        const verticalSpan=(Math.max(...y)-Math.min(...y))/1400;
+        assert.ok(verticalSpan>.22,'Portrait organic has lost vertical coverage: '+seed);
+        for(const seg of segments){
+          for(let i=0;i<=16;i++){
+            const t=i/16,x=seg.x1+(seg.x2-seg.x1)*t,y=seg.y1+(seg.y2-seg.y1)*t;
+            assert.equal(insideVoid(x,y,voids),false,
+              'Organic branch enters protected negative space: '+seed+'/'+negativeSpace);
+          }
+        }
+      }else{
+        const anchors=meta.guide.anchors;
+        for(const a of anchors)assert.equal(insideVoid(a.x,a.y,voids),false,
+          'Scribble anchor in protected void: '+seed+'/'+negativeSpace);
+        if(meta.guide.variant!=='KNOT'){
+          const y=anchors.map(a=>a.y);
+          const verticalSpan=(Math.max(...y)-Math.min(...y))/1400;
+          assert.ok(verticalSpan>.40,'Portrait scribble loses vertical rhythm: '+seed);
+        }
+      }
+      refinedChecks++;
+    }
+  }
+}
+console.log('PASS: '+refinedChecks+' portrait refinement samples avoid protected voids and retain vertical composition.');
