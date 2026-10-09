@@ -113,6 +113,7 @@ main{max-width:1500px;margin:0 auto}
 .art-card:nth-child(even){border-right:0}
 .art-image-link{display:block;overflow:hidden;border-bottom:1px solid var(--ink);background:#fff}
 .art-image-link img{display:block;width:100%;height:auto;aspect-ratio:1.4/1;object-fit:cover;transition:transform .22s ease}
+.art-card[data-orientation="portrait"] .art-image-link img{aspect-ratio:5/7;object-fit:contain;background:var(--paper)}
 .art-image-link:hover img{transform:scale(1.012)}
 .art-info{display:grid;grid-template-columns:74px 1fr;min-height:260px}
 .art-number{
