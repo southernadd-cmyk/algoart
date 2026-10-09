@@ -794,6 +794,11 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
   background:rgba(17,17,15,.88);
   backdrop-filter:blur(5px)
 }
+/* 4-Up lives directly under <body>, outside .app's portrait variables. */
+.variations-overlay.orientation-portrait{
+  --canvas-aspect:5/7;
+  --canvas-mobile-preview-aspect:5/7;
+}
 .variations-sheet{
   width:min(900px,100%);
   max-height:calc(100dvh - var(--header) - 44px);
