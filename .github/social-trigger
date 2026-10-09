@@ -1,4 +1,5 @@
-Controlled retry of existing UK 09:00 slot on 2026-10-09 after portrait rollout.
-Triggered at approximately 11:17 BST by user request.
-Existing landscape and portrait completion markers must prevent repeat posts.
-Verify social-live.yml landscape and portrait reusable jobs and ten-image Daily Gallery.
+Recover only missing UK 09:00 slot 0 portrait posts on 2026-10-09 after Threads 500-character fix.
+Triggered at approximately 11:34 BST.
+Landscape Instagram/Threads/Bluesky and portrait Instagram marked done should skip.
+Portrait Threads and Bluesky should publish independently and mark success.
+PR https://github.com/southernadd-cmyk/algoart/pull/2 merged (fix 2ca9b3e).
