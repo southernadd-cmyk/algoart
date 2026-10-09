@@ -299,7 +299,7 @@ jobs:
     with:
       # One explicitly requested repair of already-deleted 2026-10-09 portraits.
       # Ordinary scheduled cron dispatches still use normal completion markers.
-      slot: ${{ (github.event_name == 'push' && github.event.head_commit.message == 'ops: retest deleted portrait slot0 posts for 2026-10-09' && '0') || (github.event_name == 'workflow_dispatch' && inputs.slot) || '' }}
+      slot: ${{ (github.event_name == 'push' && github.event.head_commit.message == 'retry-deleted-portrait-slot0-2026-10-09' && '0') || (github.event_name == 'workflow_dispatch' && inputs.slot) || '' }}
       live: true
-      repost_deleted: ${{ github.event_name == 'push' && github.event.head_commit.message == 'ops: retest deleted portrait slot0 posts for 2026-10-09' }}
+      repost_deleted: ${{ github.event_name == 'push' && github.event.head_commit.message == 'retry-deleted-portrait-slot0-2026-10-09' }}
     secrets: inherit
