@@ -4,6 +4,14 @@ window.AlgoArt=window.AlgoArt||{};
 
 var STRATEGIES=['BALANCED','VOID','TENSION','ORBIT','EDGE','MONUMENT','DIAGONAL'];
 
+// Old landscape states must retain exactly the same RNG keys as V1–V6.
+function randomSettings(s){
+  if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
+  var original=Object.assign({},s);
+  delete original.orientation;
+  return original;
+}
+
 function crowdFactor(s){
   return A.clamp((s.elements-36)/104,0,1);
 }
@@ -238,7 +246,7 @@ function candidatePosition(i,total,s,r,tier,distributed,phase,attempt,strategy){
 }
 
 function makeLayoutPlan(s,seedSuffix,strategy,voids){
-  var r=A.makeR(s.seed+'|'+JSON.stringify(s)+'|layout|'+seedSuffix+'|'+strategy);
+  var r=A.makeR(s.seed+'|'+JSON.stringify(randomSettings(s))+'|layout|'+seedSuffix+'|'+strategy);
   var tiers=hierarchyPlan(s.elements,strategy);
   var distributed=A.distributedPhiPoints(s.elements,s,r);
   var phase=r.range(0,A.TAU);
@@ -1157,12 +1165,23 @@ function drawSpiralV6(ctx,s,r,pal){
     centres=[anchor];
     var rev=(A.hash(s.seed+'|s-rev-v5')%2)===1;
     var p0={x:rev?A.W+80:-80,y:A.H*(1-A.INV)},p3={x:rev?-80:A.W+80,y:A.H*A.INV};
-    addPath(bezier(p0,{x:A.W*A.INV,y:-A.H*.08},{x:A.W*(1-A.INV),y:A.H*1.08},p3,count,0));
+    if(s.orientation==='portrait'){
+      addPath(bezier({x:A.W*(1-A.INV),y:rev?A.H+80:-80},
+        {x:-A.W*.08,y:A.H*A.INV},{x:A.W*1.08,y:A.H*(1-A.INV)},
+        {x:A.W*A.INV,y:rev?-80:A.H+80},count,0));
+    }else{
+      addPath(bezier(p0,{x:A.W*A.INV,y:-A.H*.08},{x:A.W*(1-A.INV),y:A.H*1.08},p3,count,0));
+    }
   }else if(family==='ECHO'){
     centres=[anchor]; var echoes=2+(A.hash(s.seed+'|echo-count-v5')%4), eachE=Math.ceil(count/echoes);
     for(var e=0;e<echoes;e++){
       var off=(e-(echoes-1)/2)*A.W*.055;
-      addPath(bezier({x:-70,y:A.H*.72+off},{x:A.W*.3,y:A.H*.12+off},{x:A.W*.7,y:A.H*.88+off},{x:A.W+70,y:A.H*.28+off},eachE,e));
+      if(s.orientation==='portrait'){
+        addPath(bezier({x:A.W*.72+off,y:-70},{x:A.W*.12+off,y:A.H*.3},
+          {x:A.W*.88+off,y:A.H*.7},{x:A.W*.28+off,y:A.H+70},eachE,e));
+      }else{
+        addPath(bezier({x:-70,y:A.H*.72+off},{x:A.W*.3,y:A.H*.12+off},{x:A.W*.7,y:A.H*.88+off},{x:A.W+70,y:A.H*.28+off},eachE,e));
+      }
     }
   }else if(family==='INTERSECT'){
     centres=[targets[0],targets[3]]; var eachI=Math.ceil(count/2);
@@ -1170,9 +1189,11 @@ function drawSpiralV6(ctx,s,r,pal){
     addPath(bezier({x:A.W*.18,y:-60},{x:A.W*.92,y:A.H*.3},{x:A.W*.08,y:A.H*.7},{x:A.W*.82,y:A.H+60},eachI,1));
   }else if(family==='CASCADE'){
     centres=[anchor]; var segs=3+(A.hash(s.seed+'|cascade-v5')%3), left=count;
-    var cur={x:A.W*.12,y:A.H*.18};
-    for(var c=0;c<segs;c++){var n=Math.max(3,Math.round(left/(segs-c))),len=A.W*.62/Math.pow(A.PHI,c*.7),ang=phase*.18+c*A.GOLD*.42;
-      var end={x:cur.x+Math.cos(ang)*len,y:cur.y+Math.sin(ang)*len*.7};
+    var cur=s.orientation==='portrait'?{x:A.W*.18,y:A.H*.12}:{x:A.W*.12,y:A.H*.18};
+    for(var c=0;c<segs;c++){var n=Math.max(3,Math.round(left/(segs-c))),len=(s.orientation==='portrait'?A.H:A.W)*.62/Math.pow(A.PHI,c*.7),ang=phase*.18+c*A.GOLD*.42;
+      var end=s.orientation==='portrait'
+        ?{x:cur.x+Math.cos(ang)*len*.7,y:cur.y+Math.sin(ang)*len}
+        :{x:cur.x+Math.cos(ang)*len,y:cur.y+Math.sin(ang)*len*.7};
       addPath(bezier(cur,{x:A.lerp(cur.x,end.x,.35),y:cur.y-len*.12},{x:A.lerp(cur.x,end.x,.72),y:end.y+len*.1},end,n,c));
       cur=end;left-=n;
     }
@@ -1192,7 +1213,12 @@ function drawSpiralV6(ctx,s,r,pal){
   for(var vi=0;vi<points.length;vi++)if(points[vi].x>-20&&points[vi].x<A.W+20&&points[vi].y>-20&&points[vi].y<A.H+20)visibleCount++;
   if(visibleCount<Math.min(4,Math.max(2,Math.floor(count*.12)))){
     points=[];paths=[];centres=[anchor];family='SAFE-SWEEP';
-    addPath(bezier({x:-20,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H*.08},{x:A.W*(1-A.INV),y:A.H*.92},{x:A.W+20,y:A.H*A.INV},count,0));
+    if(s.orientation==='portrait'){
+      addPath(bezier({x:A.W*(1-A.INV),y:-20},{x:A.W*.08,y:A.H*A.INV},
+        {x:A.W*.92,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H+20},count,0));
+    }else{
+      addPath(bezier({x:-20,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H*.08},{x:A.W*(1-A.INV),y:A.H*.92},{x:A.W+20,y:A.H*A.INV},count,0));
+    }
   }
 
   // Pull strict trajectories slightly toward phi anchors at low influence, preserving identity without forcing a coil.
@@ -2822,6 +2848,10 @@ A.geometryOverlay=function(ctx,s,meta){
 };
 
 A.render=function(target,s,scale,showGeometry){
+  // Set logical dimensions for every render, including plugin/headless exports.
+  // Absence of orientation preserves the original landscape format.
+  A.W=s.orientation==='portrait'?1000:1400;
+  A.H=s.orientation==='portrait'?1400:1000;
   scale=scale||1;
   target.width=A.W*scale;
   target.height=A.H*scale;
@@ -2829,7 +2859,7 @@ A.render=function(target,s,scale,showGeometry){
   var ctx=target.getContext('2d');
   if(scale!==1)ctx.scale(scale,scale);
 
-  var r=A.makeR(s.seed+'|'+JSON.stringify(s));
+  var r=A.makeR(s.seed+'|'+JSON.stringify(randomSettings(s)));
   A.paper(ctx,s,r);
   var pal=A.hues(s,r);
   var meta;
