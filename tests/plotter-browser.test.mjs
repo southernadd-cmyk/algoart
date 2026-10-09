@@ -1,6 +1,8 @@
 import {chromium,firefox,webkit} from 'playwright';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {createRequire} from 'node:module';
+import {PLOTTER_LIMITS,PIXEL_THRESHOLDS} from './plotter-metrics.mjs';
 const engine=process.env.ARCHIVE_BROWSER||'chromium';
 const browser=await {chromium,firefox,webkit}[engine].launch({headless:true});
 const page=await browser.newPage({viewport:{width:1600,height:1200}});
@@ -8,7 +10,12 @@ const output=path.resolve('plotter-check-results',engine);
 await fs.mkdir(output,{recursive:true});
 await page.addInitScript(()=>localStorage.setItem('algoart-intro-seen','1'));
 await page.goto((process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/')+'?v=7&seed=PLOTTER-TEST&mode=field',{waitUntil:'networkidle'});
-const report=[];
+const cases=[];
+const report={browser:engine,browserVersion:browser.version(),
+  playwrightVersion:createRequire(import.meta.url)('playwright/package.json').version,
+  limits:PLOTTER_LIMITS,pixelThresholds:PIXEL_THRESHOLDS,samples:cases,regressionProbes:[]};
+console.log('Plotter runtime '+JSON.stringify({browser:engine,version:report.browserVersion,
+  playwright:report.playwrightVersion,limits:report.limits,pixelThresholds:report.pixelThresholds}));
 try{
   const samples=[];
   for(const orientation of ['landscape','portrait'])for(const mode of ['field','spiral','rects','burst','network','organic','geometric','scribble'])for(const pen of ['felt','dry','highlighter']){
@@ -17,6 +24,7 @@ try{
   for(let version=1;version<=6;version++)samples.push({mode:'spiral',orientation:'landscape',pen:'felt',version});
   for(const sample of samples){
     const result=await page.evaluate(async sample=>{
+      const {compareRGB,withinLimits,PLOTTER_LIMITS}=await import('/tests/plotter-metrics.mjs');
       const A=window.AlgoArt;
       const s={...A.readSettings(),...sample,seed:'PLOTTER-FIDELITY-'+sample.mode,elements:36,recursion:5,negativeSpace:30,grain:18,overdraw:3,dryness:sample.pen==='dry'?78:12,opacity:78};
       delete s.version;
@@ -54,30 +62,77 @@ try{
       const baseline=await raster(original.preview),render=await raster(optimized.preview);
       function difference(a,b){
         const pa=a.getContext('2d').getImageData(0,0,a.width,a.height).data,pb=b.getContext('2d').getImageData(0,0,b.width,b.height).data;
-        let sum=0,changed=0;
         const heat=document.createElement('canvas');heat.width=a.width;heat.height=a.height;
         const ctx=heat.getContext('2d'),data=ctx.createImageData(a.width,a.height);
-        for(let i=0;i<pa.length;i+=4){
-          const d=(Math.abs(pa[i]-pb[i])+Math.abs(pa[i+1]-pb[i+1])+Math.abs(pa[i+2]-pb[i+2]))/3;
-          sum+=d;if(d>24)changed++;
-          data.data[i]=Math.min(255,d*6);data.data[i+3]=255;
-        }
+        const metrics=compareRGB(pa,pb,data.data);
         ctx.putImageData(data,0,0);
-        return{mean:sum/(a.width*a.height),changed:changed/(a.width*a.height),diff:heat.toDataURL()};
+        return{...metrics,diff:heat.toDataURL()};
       }
       const fidelity=difference(canvas,render),direction=difference(baseline,render);
-      return{metadata:n,fidelity:{mean:fidelity.mean,changed:fidelity.changed},direction:{mean:direction.mean,changed:direction.changed},
-        passed:fidelity.mean<.5&&fidelity.changed<.002&&direction.mean<.02&&direction.changed<.0001,
+      const metrics=({mean,changed,severe})=>({mean,changed,severe});
+      return{metadata:n,fidelity:metrics(fidelity),direction:metrics(direction),
+        passed:withinLimits(fidelity,PLOTTER_LIMITS.fidelity)&&withinLimits(direction,PLOTTER_LIMITS.direction),
         canvas:canvas.toDataURL(),render:render.toDataURL(),diff:fidelity.diff,svg:optimized.svg};
     },sample);
     const label=[sample.version,sample.mode,sample.orientation,sample.pen].join('-');
-    report.push({sample,passed:result.passed,metadata:result.metadata,fidelity:result.fidelity,direction:result.direction});
+    cases.push({sample,passed:result.passed,metadata:result.metadata,fidelity:result.fidelity,direction:result.direction});
     console.log((result.passed?'PASS ':'FAIL ')+label+' '+JSON.stringify({fidelity:result.fidelity,direction:result.direction}));
     if(!result.passed){
       for(const key of ['canvas','render','diff'])await fs.writeFile(path.join(output,label+'-'+key+'.png'),Buffer.from(result[key].split(',')[1],'base64'));
       await fs.writeFile(path.join(output,label+'.svg'),result.svg);
     }
   }
+  // Each deliberate SVG defect affects only 0.15% of the image: it must
+  // pass the old mean/moderate-tail checks and fail the new severe tail.
+  report.regressionProbes=await page.evaluate(async()=>{
+    const {compareRGB,withinLimits,PLOTTER_LIMITS}=await import('/tests/plotter-metrics.mjs');
+    const width=1400,height=1000;
+    const root='<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1000" viewBox="0 0 1400 1000" style="isolation:isolate">';
+    const paper='<rect width="1400" height="1000" fill="white"/>';
+    const line='<path d="M100 100 L205 100" fill="none" stroke="black" stroke-width="20"/>';
+    const blue='<rect x="100" y="100" width="50" height="42" fill="#0000ff"/>';
+    const red='<rect x="100" y="100" width="50" height="42" fill="#ff0000" fill-opacity=".8" style="mix-blend-mode:multiply"/>';
+    const pixelData=c=>c.getContext('2d').getImageData(0,0,width,height).data;
+    async function raster(svg){
+      const img=new Image();
+      img.src='data:image/svg+xml;base64,'+btoa(svg);
+      await img.decode();
+      const c=document.createElement('canvas');c.width=width;c.height=height;
+      c.getContext('2d').drawImage(img,0,0);
+      return c;
+    }
+    const result=[];
+    for(const name of ['missing-stroke','missing-multiply-blend']){
+      const reference=document.createElement('canvas');reference.width=width;reference.height=height;
+      const ctx=reference.getContext('2d');
+      ctx.fillStyle='white';ctx.fillRect(0,0,width,height);
+      let intact,broken;
+      if(name==='missing-stroke'){
+        ctx.strokeStyle='black';ctx.lineWidth=20;ctx.beginPath();
+        ctx.moveTo(100,100);ctx.lineTo(205,100);ctx.stroke();
+        intact=root+paper+line+'</svg>';
+        broken=root+paper+'</svg>';
+      }else{
+        ctx.fillStyle='#0000ff';ctx.fillRect(100,100,50,42);
+        ctx.globalCompositeOperation='multiply';ctx.globalAlpha=.8;
+        ctx.fillStyle='#ff0000';ctx.fillRect(100,100,50,42);
+        intact=root+paper+blue+red+'</svg>';
+        broken=intact.replace(' style="mix-blend-mode:multiply"','');
+      }
+      const good=compareRGB(pixelData(reference),pixelData(await raster(intact)));
+      const defect=compareRGB(pixelData(reference),pixelData(await raster(broken)));
+      const meanAndModeratePass=withinLimits(defect,{
+        mean:PLOTTER_LIMITS.fidelity.mean,changed:PLOTTER_LIMITS.fidelity.changed});
+      const rejected=!withinLimits(defect,PLOTTER_LIMITS.fidelity);
+      const row={name,control:good,defect,meanAndModeratePass,rejected};
+      result.push(row);
+      if(!withinLimits(good,PLOTTER_LIMITS.fidelity)||!meanAndModeratePass||!rejected){
+        throw Error('Local regression guard failed: '+JSON.stringify(row));
+      }
+    }
+    return result;
+  });
+  for(const probe of report.regressionProbes)console.log('Local defect probe '+JSON.stringify(probe));
   // End-to-end UI: page options cannot upgrade a legacy renderer or mutate art.
   await page.goto((process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/')+'?v=6&seed=PLOTTER-UI&mode=organic',{waitUntil:'networkidle'});
   await page.locator('[data-tab="export"]').click();
@@ -97,8 +152,12 @@ try{
   if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile preview overflows viewport');
 }finally{
   await browser.close();
+  report.maxima={};
+  for(const kind of ['fidelity','direction'])report.maxima[kind]=Object.fromEntries(
+    ['mean','changed','severe'].map(key=>[key,Math.max(0,...cases.map(row=>row[kind][key]))]));
   await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));
 }
-const failures=report.filter(r=>!r.passed);
-console.log('Plotter / '+engine+': '+report.length+' visual cases, '+failures.length+' failures.');
+const failures=cases.filter(r=>!r.passed);
+console.log('Plotter / '+engine+': '+cases.length+' visual cases, '+failures.length+' failures.');
+console.log('Plotter maxima '+JSON.stringify(report.maxima));
 if(failures.length)process.exitCode=1;
