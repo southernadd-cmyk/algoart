@@ -47,7 +47,21 @@ jobs:
             sleep 1
           done
           exit 1
+      - name: Check plotter geometry and fixed-order travel
+        run: npm run test:plotter
+      - name: Compare plotter previews with canvas artwork
+        env:
+          ARCHIVE_BROWSER: ${{ matrix.browser }}
+          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+        run: npm run test:plotter-browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plotter-${{ matrix.browser }}-${{ github.run_id }}
+          path: plotter-check-results/
+          retention-days: 14
       - name: Reproduce every archived share link
+        if: ${{ !cancelled() }}
         env:
           ARCHIVE_BROWSER: ${{ matrix.browser }}
           ALGOART_LOCAL_URL: http://127.0.0.1:4173/
