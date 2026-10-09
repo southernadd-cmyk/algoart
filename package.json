@@ -14,7 +14,9 @@
     "test:portrait-publishing": "node tests/portrait-publishing.test.mjs",
     "test:control-ranges": "node tests/control-ranges.test.mjs",
     "test:organic-version": "node tests/organic-version.test.mjs",
-    "test:archive": "node tests/archive-reproduction.mjs"
+    "test:archive": "node tests/archive-reproduction.mjs",
+    "test:plotter": "node tests/plotter.test.mjs",
+    "test:plotter-browser": "node tests/plotter-browser.test.mjs"
   },
   "devDependencies": {
     "playwright": "^1.55.0"

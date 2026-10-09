@@ -19,7 +19,7 @@
 <meta name="twitter:title" content="ALGO/ART — Golden-ratio generative marker system">
 <meta name="twitter:description" content="The algorithm creates the structure. The marker makes it human.">
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/social-card.svg">
-<link rel="stylesheet" href="css/style.css?v=organic-v7-20261009">
+<link rel="stylesheet" href="css/style.css?v=plotter-20261009">
 </head>
 <body>
 <div class="intro-splash" id="introSplash" hidden>
@@ -274,6 +274,17 @@
             <div class="control"><label>PNG size</label><select id="exportScale"><option value="1">1× — 1400×1000</option><option value="2" selected>2× — 2800×2000</option><option value="3">3× — 4200×3000</option></select></div>
             <button class="primary export-big" id="savePanel">DOWNLOAD PNG</button>
             <button class="export-big" id="saveSVG">DOWNLOAD SVG</button>
+            <fieldset class="plotter-controls">
+              <legend>Plotter SVG</legend>
+              <div class="control"><label for="plotterPaper">Paper size</label><select id="plotterPaper"><option value="A4">A4</option><option value="A3">A3</option></select></div>
+              <div class="control"><label for="plotterMargin">Margin (mm)</label><input id="plotterMargin" type="number" value="10" min="0" max="100" step="1"></div>
+              <label class="mini-note"><input id="plotterOptimize" type="checkbox" checked> Reduce pen travel while preserving stroke order</label>
+              <button class="export-big" id="previewPlotter">PREVIEW PLOTTER SVG</button>
+              <figure id="plotterPreview" hidden><img id="plotterPreviewImage" alt="Preview of the plotter SVG on the selected paper"><figcaption id="plotterSummary"></figcaption></figure>
+              <div id="plotterStatus" class="share-status" role="status" aria-live="polite"></div>
+              <button class="export-big" id="savePlotter">DOWNLOAD PLOTTER SVG</button>
+              <p class="mini-note">Preserves marker paths, wobble, repeated passes and overlap order. Colour runs become numbered pen layers. The preview includes paper texture; the plotter file contains only ink paths. Match pens and paper to the artwork; transparency and stroke width depend on your materials.</p>
+            </fieldset>
             <button class="export-big" id="copyLink">COPY ARTWORK LINK</button>
             <div class="share-status" id="shareStatus" aria-live="polite"></div>
             <label class="mini-note"><input id="keyboardShortcuts" type="checkbox" checked> Enable single-key shortcuts (M, N, V, D and [)</label>
@@ -289,11 +300,12 @@
 <script src="js/random.js"></script>
 <script src="js/phi.js"></script>
 <script src="js/palettes.js"></script>
-<script src="js/marker.js"></script>
+<script src="js/marker.js?v=plotter-20261009"></script>
 <script src="js/generator.js"></script>
 <script src="js/export.js"></script>
+<script src="js/plotter.js?v=plotter-20261009"></script>
 <script src="js/describe.js"></script>
-<script src="js/control-help.js?v=organic-v7-20261009"></script>
-<script src="js/app.js?v=organic-v7-20261009"></script>
+<script src="js/control-help.js?v=plotter-20261009"></script>
+<script src="js/app.js?v=plotter-20261009"></script>
 </body>
 </html>

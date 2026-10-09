@@ -20,7 +20,9 @@ A.paper=function(ctx,s,r){
   ctx.globalAlpha=.035;
   for(var i=0;i<s.grain*20;i++){
     ctx.fillStyle=r.chance(.5)?'#000':'#fff';
-    ctx.fillRect(r.range(0,A.W),r.range(0,A.H),r.range(.3,1.3),r.range(.3,1.3));
+    var gx=r.range(0,A.W),gy=r.range(0,A.H),gw=r.range(.3,1.3),gh=r.range(.3,1.3);
+    ctx.fillRect(gx,gy,gw,gh);
+    if(A.svgRecorder&&A.svgRecorder.paperMarks)A.svgRecorder.paperMarks.push({x:gx,y:gy,w:gw,h:gh,colour:ctx.fillStyle});
   }
   ctx.restore();
 };
@@ -31,17 +33,18 @@ A.stroke=function(ctx,points,col,s,r,curve){
   var wob=(s.wobble/100)*7*p[2];
   var base=Math.max(.6,s.thickness*p[0]);
 
-  function f(v){return Math.round(v*100)/100}
+  function f(v){return A.svgRecorder&&A.svgRecorder.precise?v:Math.round(v*100)/100}
   function record(d,alpha,width,lineCap,dash,dashOffset){
     if(!A.svgRecorder)return;
     A.svgRecorder.paths.push({
       d:d,
-      stroke:col,
+      stroke:A.svgRecorder.precise?ctx.strokeStyle:col,
       opacity:alpha,
       width:width,
       lineCap:lineCap,
       dash:dash&&dash.length?dash.slice():null,
-      dashOffset:dashOffset||0
+      dashOffset:dashOffset||0,
+      blend:ctx.globalCompositeOperation
     });
   }
 

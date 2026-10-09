@@ -1,0 +1,104 @@
+import {chromium,firefox,webkit} from 'playwright';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+const engine=process.env.ARCHIVE_BROWSER||'chromium';
+const browser=await {chromium,firefox,webkit}[engine].launch({headless:true});
+const page=await browser.newPage({viewport:{width:1600,height:1200}});
+const output=path.resolve('plotter-check-results',engine);
+await fs.mkdir(output,{recursive:true});
+await page.addInitScript(()=>localStorage.setItem('algoart-intro-seen','1'));
+await page.goto((process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/')+'?v=7&seed=PLOTTER-TEST&mode=field',{waitUntil:'networkidle'});
+const report=[];
+try{
+  const samples=[];
+  for(const orientation of ['landscape','portrait'])for(const mode of ['field','spiral','rects','burst','network','organic','geometric','scribble'])for(const pen of ['felt','dry','highlighter']){
+    samples.push({mode,orientation,pen,version:7});
+  }
+  for(let version=1;version<=6;version++)samples.push({mode:'spiral',orientation:'landscape',pen:'felt',version});
+  for(const sample of samples){
+    const result=await page.evaluate(async sample=>{
+      const A=window.AlgoArt;
+      const s={...A.readSettings(),...sample,seed:'PLOTTER-FIDELITY-'+sample.mode,elements:36,recursion:5,negativeSpace:30,grain:18,overdraw:3,dryness:sample.pen==='dry'?78:12,opacity:78};
+      delete s.version;
+      A.rendererVersion=sample.version;
+      const canvas=document.createElement('canvas');
+      A.render(canvas,s,1,false);
+      const beforeVersion=A.rendererVersion,beforeMeta=A.lastRenderMeta;
+      const original=A.createPlotterSVG(s,{paper:'A4',margin:10,optimize:false});
+      const optimized=A.createPlotterSVG(s,{paper:'A4',margin:10,optimize:true});
+      if(A.rendererVersion!==beforeVersion||A.lastRenderMeta!==beforeMeta)throw Error('Export changed artwork state');
+      if(optimized.metadata.penTravelAfterMm>original.metadata.penTravelBeforeMm+1e-7)throw Error('Pen travel increased');
+      const parser=new DOMParser(),file=parser.parseFromString(optimized.svg,'image/svg+xml');
+      if(file.querySelector('parsererror'))throw Error('Malformed SVG');
+      const layers=Array.from(file.documentElement.children).filter(e=>e.localName==='g');
+      if(layers.length!==optimized.metadata.colourRuns)throw Error('Pen layers are not top-level');
+      const inkscape='http://www.inkscape.org/namespaces/inkscape';
+      if(layers.some(g=>g.getAttributeNS(inkscape,'groupmode')!=='layer'))throw Error('Invalid Inkscape layer');
+      const paths=Array.from(file.querySelectorAll('path'));
+      if(paths.some(p=>p.hasAttribute('stroke-dasharray')))throw Error('Dry gaps were left as a dash style');
+      if(paths.length!==optimized.metadata.svgPaths)throw Error('Path count disagrees');
+      const n=optimized.metadata,scale=Math.min((n.pageMm[0]-20)/canvas.width,(n.pageMm[1]-20)/canvas.height);
+      const x=(n.pageMm[0]-canvas.width*scale)/2,y=(n.pageMm[1]-canvas.height*scale)/2;
+      async function raster(svg){
+        const doc=parser.parseFromString(svg,'image/svg+xml');
+        doc.documentElement.setAttribute('width',String(canvas.width));
+        doc.documentElement.setAttribute('height',String(canvas.height));
+        doc.documentElement.setAttribute('viewBox',[x,y,canvas.width*scale,canvas.height*scale].join(' '));
+        const img=new Image();
+        img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(new XMLSerializer().serializeToString(doc))));
+        await img.decode();
+        const c=document.createElement('canvas');c.width=canvas.width;c.height=canvas.height;
+        c.getContext('2d').drawImage(img,0,0);
+        return c;
+      }
+      const baseline=await raster(original.preview),render=await raster(optimized.preview);
+      function difference(a,b){
+        const pa=a.getContext('2d').getImageData(0,0,a.width,a.height).data,pb=b.getContext('2d').getImageData(0,0,b.width,b.height).data;
+        let sum=0,changed=0;
+        const heat=document.createElement('canvas');heat.width=a.width;heat.height=a.height;
+        const ctx=heat.getContext('2d'),data=ctx.createImageData(a.width,a.height);
+        for(let i=0;i<pa.length;i+=4){
+          const d=(Math.abs(pa[i]-pb[i])+Math.abs(pa[i+1]-pb[i+1])+Math.abs(pa[i+2]-pb[i+2]))/3;
+          sum+=d;if(d>24)changed++;
+          data.data[i]=Math.min(255,d*6);data.data[i+3]=255;
+        }
+        ctx.putImageData(data,0,0);
+        return{mean:sum/(a.width*a.height),changed:changed/(a.width*a.height),diff:heat.toDataURL()};
+      }
+      const fidelity=difference(canvas,render),direction=difference(baseline,render);
+      return{metadata:n,fidelity:{mean:fidelity.mean,changed:fidelity.changed},direction:{mean:direction.mean,changed:direction.changed},
+        passed:fidelity.mean<.5&&fidelity.changed<.002&&direction.mean<.02&&direction.changed<.0001,
+        canvas:canvas.toDataURL(),render:render.toDataURL(),diff:fidelity.diff,svg:optimized.svg};
+    },sample);
+    const label=[sample.version,sample.mode,sample.orientation,sample.pen].join('-');
+    report.push({sample,passed:result.passed,metadata:result.metadata,fidelity:result.fidelity,direction:result.direction});
+    console.log((result.passed?'PASS ':'FAIL ')+label+' '+JSON.stringify({fidelity:result.fidelity,direction:result.direction}));
+    if(!result.passed){
+      for(const key of ['canvas','render','diff'])await fs.writeFile(path.join(output,label+'-'+key+'.png'),Buffer.from(result[key].split(',')[1],'base64'));
+      await fs.writeFile(path.join(output,label+'.svg'),result.svg);
+    }
+  }
+  // End-to-end UI: page options cannot upgrade a legacy renderer or mutate art.
+  await page.goto((process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/')+'?v=6&seed=PLOTTER-UI&mode=organic',{waitUntil:'networkidle'});
+  await page.locator('[data-tab="export"]').click();
+  const originalURL=page.url();
+  await page.locator('#plotterPaper').selectOption('A3');
+  await page.locator('#plotterMargin').fill('15');
+  await page.locator('#plotterMargin').dispatchEvent('change');
+  await page.locator('#previewPlotter').click();
+  await page.locator('#plotterPreviewImage').evaluate(img=>img.decode());
+  if(page.url()!==originalURL)throw Error('Plotter options changed artwork URL');
+  if(await page.evaluate(()=>window.AlgoArt.rendererVersion)!==6)throw Error('Plotter export upgraded a legacy drawing');
+  const download=page.waitForEvent('download');
+  await page.locator('#savePlotter').click();
+  const file=await download;
+  if(!file.suggestedFilename().endsWith('-plotter.svg'))throw Error('Plotter download missing');
+  await page.setViewportSize({width:390,height:844});
+  if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile preview overflows viewport');
+}finally{
+  await browser.close();
+  await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));
+}
+const failures=report.filter(r=>!r.passed);
+console.log('Plotter / '+engine+': '+report.length+' visual cases, '+failures.length+' failures.');
+if(failures.length)process.exitCode=1;
