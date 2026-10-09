@@ -87,4 +87,11 @@ meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'
 assert.equal(meta.count,10,'Rebuilding the same portrait day must not duplicate artworks');
 assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,5);
 
+await fs.mkdir(path.resolve('preview','screenshots'),{recursive:true});
+await fs.writeFile(path.resolve('preview','screenshots','portrait-pipeline-report.json'),JSON.stringify({
+  status:'passed',testedDate:day,portraitCount:portrait.entries.length,
+  landscapeCount:landscape.entries.length,combinedGalleryCount:meta.count,
+  portraitPostIndices:PORTRAIT_POST_INDICES,portraitTimesLondon:PORTRAIT_SCHEDULE,
+  originalDimensions:'1000x1400',instagramDimensions:'1120x1400',testedAt:new Date().toISOString()
+},null,2)+'\n');
 console.log('PASS: five portraits, three unique posting slots, London BST/GMT timing, ten-work gallery and duplicate-safe rebuild.');
