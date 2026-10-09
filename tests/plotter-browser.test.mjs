@@ -22,11 +22,16 @@ try{
     samples.push({mode,orientation,pen,version:7});
   }
   for(let version=1;version<=6;version++)samples.push({mode:'spiral',orientation:'landscape',pen:'felt',version});
+  const archive=JSON.parse(await fs.readFile(new URL('../gallery/2026-10-09/meta.json',import.meta.url),'utf8'));
+  const portraitScribble=archive.entries.find(e=>e.mode==='scribble'&&e.orientation==='portrait');
+  samples.push({mode:portraitScribble.mode,orientation:portraitScribble.orientation,pen:portraitScribble.settings.pen,
+    version:portraitScribble.rendererVersion,settings:portraitScribble.settings,id:portraitScribble.id});
   for(const sample of samples){
     const result=await page.evaluate(async sample=>{
       const {compareRGB,withinLimits,PLOTTER_LIMITS}=await import('/tests/plotter-metrics.mjs');
       const A=window.AlgoArt;
-      const s={...A.readSettings(),...sample,seed:'PLOTTER-FIDELITY-'+sample.mode,elements:36,recursion:5,negativeSpace:30,grain:18,overdraw:3,dryness:sample.pen==='dry'?78:12,opacity:78};
+      const s=sample.settings?{...A.readSettings(),...sample.settings,orientation:sample.orientation}:
+        {...A.readSettings(),...sample,seed:'PLOTTER-FIDELITY-'+sample.mode,elements:36,recursion:5,negativeSpace:30,grain:18,overdraw:3,dryness:sample.pen==='dry'?78:12,opacity:78};
       delete s.version;
       A.rendererVersion=sample.version;
       const canvas=document.createElement('canvas');
@@ -34,6 +39,8 @@ try{
       const beforeVersion=A.rendererVersion,beforeMeta=A.lastRenderMeta;
       const original=A.createPlotterSVG(s,{paper:'A4',margin:10,optimize:false});
       const optimized=A.createPlotterSVG(s,{paper:'A4',margin:10,optimize:true});
+      const grouped=A.createPlotterSVG(s,{paper:'A4',margin:10,grouping:'pens',optimize:false});
+      const groupedOptimized=A.createPlotterSVG(s,{paper:'A4',margin:10,grouping:'pens',optimize:true});
       if(A.rendererVersion!==beforeVersion||A.lastRenderMeta!==beforeMeta)throw Error('Export changed artwork state');
       if(optimized.metadata.penTravelAfterMm>original.metadata.penTravelBeforeMm+1e-7)throw Error('Pen travel increased');
       const parser=new DOMParser(),file=parser.parseFromString(optimized.svg,'image/svg+xml');
@@ -45,6 +52,24 @@ try{
       const paths=Array.from(file.querySelectorAll('path'));
       if(paths.some(p=>p.hasAttribute('stroke-dasharray')))throw Error('Dry gaps were left as a dash style');
       if(paths.length!==optimized.metadata.svgPaths)throw Error('Path count disagrees');
+      const groupedFile=parser.parseFromString(grouped.svg,'image/svg+xml');
+      if(groupedFile.querySelector('parsererror'))throw Error('Malformed grouped SVG');
+      const penLayers=Array.from(groupedFile.documentElement.children).filter(e=>e.localName==='g');
+      const colours=Array.from(new Set(paths.map(p=>p.getAttribute('stroke'))));
+      if(penLayers.length!==colours.length||grouped.metadata.penLayers!==colours.length)throw Error('Grouping did not produce one layer per pen');
+      if(grouped.metadata.colourRuns!==original.metadata.colourRuns)throw Error('Grouping lost original run count');
+      if(grouped.metadata.penChanges!==Math.max(0,colours.length-1))throw Error('Incorrect grouped pen-change count');
+      if(grouped.metadata.paths!==original.metadata.paths||grouped.metadata.svgPaths!==original.metadata.svgPaths)throw Error('Grouping lost source paths');
+      if(grouped.metadata.pathOrder!=='preserved-within-pen')throw Error('Grouped metadata promises original global order');
+      const faithfulFile=parser.parseFromString(original.svg,'image/svg+xml');
+      const faithfulPaths=Array.from(faithfulFile.querySelectorAll('path'));
+      penLayers.forEach((g,i)=>{
+        if(g.getAttributeNS(inkscape,'groupmode')!=='layer'||g.getAttributeNS(inkscape,'label')!==(i+1)+' · '+colours[i])throw Error('Pen layer is not AxiDraw-addressable');
+        const expected=faithfulPaths.filter(p=>p.getAttribute('stroke')===colours[i]).map(p=>p.outerHTML);
+        const actual=Array.from(g.children).map(p=>p.outerHTML);
+        if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error('Grouping changed path geometry, style or per-pen order');
+      });
+      if(groupedOptimized.metadata.penTravelAfterMm>grouped.metadata.penTravelBeforeMm+1e-7)throw Error('Grouped direction optimisation increased travel');
       const n=optimized.metadata,scale=Math.min((n.pageMm[0]-20)/canvas.width,(n.pageMm[1]-20)/canvas.height);
       const x=(n.pageMm[0]-canvas.width*scale)/2,y=(n.pageMm[1]-canvas.height*scale)/2;
       async function raster(svg){
@@ -60,6 +85,19 @@ try{
         return c;
       }
       const baseline=await raster(original.preview),render=await raster(optimized.preview);
+      // Build an independent grouped reference by gathering the faithful SVG's
+      // existing paths. Its pixels need not match the original overlap order.
+      const reference=parser.parseFromString(original.preview,'image/svg+xml');
+      const oldLayers=Array.from(reference.documentElement.children).filter(e=>e.getAttributeNS(inkscape,'groupmode')==='layer');
+      const referencePaths=oldLayers.flatMap(g=>Array.from(g.children));
+      oldLayers.forEach(g=>g.remove());
+      colours.forEach(colour=>{
+        const layer=oldLayers.find(g=>g.getAttribute('data-pen-colour')===colour).cloneNode(false);
+        referencePaths.filter(p=>p.getAttribute('stroke')===colour).forEach(p=>layer.appendChild(p));
+        reference.documentElement.appendChild(layer);
+      });
+      const groupedBaseline=await raster(grouped.preview),groupedRender=await raster(groupedOptimized.preview);
+      const groupedReference=await raster(new XMLSerializer().serializeToString(reference));
       function difference(a,b){
         const pa=a.getContext('2d').getImageData(0,0,a.width,a.height).data,pb=b.getContext('2d').getImageData(0,0,b.width,b.height).data;
         const heat=document.createElement('canvas');heat.width=a.width;heat.height=a.height;
@@ -69,17 +107,26 @@ try{
         return{...metrics,diff:heat.toDataURL()};
       }
       const fidelity=difference(canvas,render),direction=difference(baseline,render);
+      const grouping=difference(groupedReference,groupedBaseline),groupedDirection=difference(groupedBaseline,groupedRender);
       const metrics=({mean,changed,severe})=>({mean,changed,severe});
-      return{metadata:n,fidelity:metrics(fidelity),direction:metrics(direction),
-        passed:withinLimits(fidelity,PLOTTER_LIMITS.fidelity)&&withinLimits(direction,PLOTTER_LIMITS.direction),
-        canvas:canvas.toDataURL(),render:render.toDataURL(),diff:fidelity.diff,svg:optimized.svg};
+      return{metadata:n,groupedMetadata:groupedOptimized.metadata,fidelity:metrics(fidelity),direction:metrics(direction),
+        grouping:metrics(grouping),groupedDirection:metrics(groupedDirection),
+        passed:withinLimits(fidelity,PLOTTER_LIMITS.fidelity)&&withinLimits(direction,PLOTTER_LIMITS.direction)&&
+          withinLimits(grouping,PLOTTER_LIMITS.direction)&&withinLimits(groupedDirection,PLOTTER_LIMITS.direction),
+        canvas:canvas.toDataURL(),render:render.toDataURL(),diff:fidelity.diff,svg:optimized.svg,
+        grouped:groupedRender.toDataURL(),groupedDiff:groupedDirection.diff,groupedSVG:groupedOptimized.svg};
     },sample);
-    const label=[sample.version,sample.mode,sample.orientation,sample.pen].join('-');
-    cases.push({sample,passed:result.passed,metadata:result.metadata,fidelity:result.fidelity,direction:result.direction});
-    console.log((result.passed?'PASS ':'FAIL ')+label+' '+JSON.stringify({fidelity:result.fidelity,direction:result.direction}));
+    const label=sample.id||[sample.version,sample.mode,sample.orientation,sample.pen].join('-');
+    cases.push({sample,passed:result.passed,metadata:result.metadata,groupedMetadata:result.groupedMetadata,
+      fidelity:result.fidelity,direction:result.direction,grouping:result.grouping,groupedDirection:result.groupedDirection});
+    console.log((result.passed?'PASS ':'FAIL ')+label+' '+JSON.stringify({fidelity:result.fidelity,direction:result.direction,
+      grouping:result.grouping,groupedDirection:result.groupedDirection}));
+    if(sample.id)console.log('Archived pen changes '+JSON.stringify({id:sample.id,colourRuns:result.metadata.colourRuns,
+      pens:result.groupedMetadata.penColours.length,faithful:result.metadata.penChanges,grouped:result.groupedMetadata.penChanges}));
     if(!result.passed){
-      for(const key of ['canvas','render','diff'])await fs.writeFile(path.join(output,label+'-'+key+'.png'),Buffer.from(result[key].split(',')[1],'base64'));
+      for(const key of ['canvas','render','diff','grouped','groupedDiff'])await fs.writeFile(path.join(output,label+'-'+key+'.png'),Buffer.from(result[key].split(',')[1],'base64'));
       await fs.writeFile(path.join(output,label+'.svg'),result.svg);
+      await fs.writeFile(path.join(output,label+'-grouped.svg'),result.groupedSVG);
     }
   }
   // Each deliberate SVG defect affects only 0.15% of the image: it must
@@ -136,24 +183,43 @@ try{
   // End-to-end UI: page options cannot upgrade a legacy renderer or mutate art.
   await page.goto((process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/')+'?v=6&seed=PLOTTER-UI&mode=organic',{waitUntil:'networkidle'});
   await page.locator('[data-tab="export"]').click();
+  if(await page.locator('#plotterGrouping').inputValue()!=='runs')throw Error('Faithful mode is not the default');
   const originalURL=page.url();
   await page.locator('#plotterPaper').selectOption('A3');
   await page.locator('#plotterMargin').fill('15');
   await page.locator('#plotterMargin').dispatchEvent('change');
   await page.locator('#previewPlotter').click();
   await page.locator('#plotterPreviewImage').evaluate(img=>img.decode());
+  await page.locator('#plotterGrouping').selectOption('pens');
+  if(await page.locator('#plotterPreview').isVisible())throw Error('Grouping left a stale faithful preview');
+  if(!(await page.locator('#plotterGroupingNote').textContent()).includes('which colour sits on top'))throw Error('Grouping overlap warning missing');
+  await page.locator('#previewPlotter').click();
+  await page.locator('#plotterPreviewImage').evaluate(img=>img.decode());
+  if(!(await page.locator('#plotterSummary').textContent()).includes('pen changes'))throw Error('Pen changes missing from summary');
   if(page.url()!==originalURL)throw Error('Plotter options changed artwork URL');
   if(await page.evaluate(()=>window.AlgoArt.rendererVersion)!==6)throw Error('Plotter export upgraded a legacy drawing');
   const download=page.waitForEvent('download');
   await page.locator('#savePlotter').click();
   const file=await download;
   if(!file.suggestedFilename().endsWith('-plotter.svg'))throw Error('Plotter download missing');
+  const downloaded=await fs.readFile(await file.path(),'utf8');
+  await page.evaluate(svg=>{
+    const doc=new DOMParser().parseFromString(svg,'image/svg+xml');
+    const metadata=JSON.parse(doc.querySelector('metadata').textContent);
+    if(metadata.layerGrouping!=='pens'||metadata.penLayers!==metadata.penColours.length)throw Error('Download ignored selected grouping');
+  },downloaded);
+  await page.locator('#plotterPreviewImage').evaluate(img=>img.decode());
+  await page.screenshot({path:path.join(output,'grouped-ui.png')});
   await page.setViewportSize({width:390,height:844});
   if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile preview overflows viewport');
+  await page.screenshot({path:path.join(output,'grouped-ui-mobile.png')});
+  await page.locator('#plotterGrouping').selectOption('runs');
+  if(await page.locator('#plotterPreview').isVisible())throw Error('Returning to faithful mode left a stale grouped preview');
+  if(!(await page.locator('#plotterGroupingNote').textContent()).includes('preserve overlap order'))throw Error('Faithful mode note was not restored');
 }finally{
   await browser.close();
   report.maxima={};
-  for(const kind of ['fidelity','direction'])report.maxima[kind]=Object.fromEntries(
+  for(const kind of ['fidelity','direction','grouping','groupedDirection'])report.maxima[kind]=Object.fromEntries(
     ['mean','changed','severe'].map(key=>[key,Math.max(0,...cases.map(row=>row[kind][key]))]));
   await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));
 }

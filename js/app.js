@@ -911,19 +911,24 @@ function clearPlotterPreview(){
 function buildPlotterPreview(download){
   try{
     var settings=A.readSettings();
-    var result=A.createPlotterSVG(settings,{paper:$('plotterPaper').value,margin:$('plotterMargin').value,optimize:$('plotterOptimize').checked});
+    var result=A.createPlotterSVG(settings,{paper:$('plotterPaper').value,margin:$('plotterMargin').value,grouping:$('plotterGrouping').value,optimize:$('plotterOptimize').checked});
     clearPlotterPreview();
     plotterPreviewURL=URL.createObjectURL(new Blob([result.preview],{type:'image/svg+xml'}));
     $('plotterPreviewImage').src=plotterPreviewURL;
     $('plotterPreview').hidden=false;
     var m=result.metadata,saved=Math.max(0,m.penTravelBeforeMm-m.penTravelAfterMm);
-    $('plotterSummary').textContent=m.pageMm.join(' × ')+' mm · '+m.paths+' paths · '+m.colourRuns+' pen runs · '+saved.toFixed(1)+' mm less pen travel';
+    $('plotterSummary').textContent=m.pageMm.join(' × ')+' mm · '+m.paths+' paths · '+m.penColours.length+' pens · '+m.penLayers+' '+(m.layerGrouping==='pens'?'pen layers':'colour runs')+' · '+m.penChanges+' pen changes · '+saved.toFixed(1)+' mm less pen travel';
     if(download)A.downloadPlotterSVG(result,settings);
   }catch(error){$('plotterStatus').textContent=error.message}
 }
 $('previewPlotter').onclick=function(){buildPlotterPreview(false)};
 $('savePlotter').onclick=function(){buildPlotterPreview(true)};
-['plotterPaper','plotterMargin','plotterOptimize'].forEach(function(id){$(id).addEventListener('change',clearPlotterPreview)});
+['plotterPaper','plotterMargin','plotterGrouping','plotterOptimize'].forEach(function(id){$(id).addEventListener('change',clearPlotterPreview)});
+$('plotterGrouping').addEventListener('change',function(){
+  $('plotterGroupingNote').textContent=this.value==='pens'?
+    'One numbered layer per pen means fewer pen changes. Grouping changes which colour sits on top where colours overlap.':
+    'Faithful colour runs preserve overlap order. Repeated colours need more pen changes.';
+});
 
 document.querySelectorAll('.inspector input, .inspector select').forEach(function(e){
   if(e.type==='range'){

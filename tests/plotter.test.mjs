@@ -41,13 +41,14 @@ assert.equal(A.svgRecorder,oldRecorder);assert.equal(A.lastRenderMeta,oldMeta);a
 assert.throws(()=>A.createPlotterSVG({},{margin:110}),/Margin/);
 console.log('PASS: exhaustive fixed-order route optimality, reversible cubics, rotated coordinates, physical dash breaks, clipping and renderer-state restoration.');
 
+const layerPaths=[
+  {d:'M 5 5 L 25 25',stroke:'#ff0000',width:2,opacity:.5,lineCap:'round'},
+  {d:'M 30 30 C 40 60 60 40 70 70',stroke:'#0000ff',width:3,opacity:.3,lineCap:'round'},
+  {d:'M 80 80 L 90 90',stroke:'#ff0000',width:1,opacity:.7,lineCap:'butt'}
+];
 A.render=(canvas)=>{
   canvas.width=100;canvas.height=100;
-  A.svgRecorder.paths=[
-    {d:'M 5 5 L 25 25',stroke:'#ff0000',width:2,opacity:.5,lineCap:'round'},
-    {d:'M 30 30 C 40 60 60 40 70 70',stroke:'#0000ff',width:3,opacity:.3,lineCap:'round'},
-    {d:'M 80 80 L 90 90',stroke:'#ff0000',width:1,opacity:.7,lineCap:'butt'}
-  ];
+  A.svgRecorder.paths=layerPaths;
 };
 const layered=A.createPlotterSVG({seed:'LAYERS',paper:'#f5f0e6'},{paper:'A4',margin:10});
 assert.equal(layered.metadata.colourRuns,3,'Separated repeated colours were merged');
@@ -60,13 +61,75 @@ assert.ok(layered.metadata.penTravelAfterMm<=layered.metadata.penTravelBeforeMm+
 assert.equal(A.rendererVersion,6);
 console.log('PASS: sequential colour layers, millimetre page, no plotted paper, preview background and preserved legacy version.');
 
+const settings={seed:'LAYERS',paper:'#f5f0e6'};
+const faithful=A.createPlotterSVG(settings,{optimize:false});
+const grouped=A.createPlotterSVG(settings,{grouping:'pens',optimize:false});
+const groupedOptimized=A.createPlotterSVG(settings,{grouping:'pens'});
+const pathTags=svg=>Array.from(svg.matchAll(/<path [^>]*\/>/g),m=>m[0]);
+assert.equal(faithful.metadata.layerGrouping,'runs');
+assert.equal(faithful.metadata.pathOrder,'preserved');
+assert.equal(faithful.metadata.penChanges,2);
+assert.equal(grouped.metadata.layerGrouping,'pens');
+assert.equal(grouped.metadata.pathOrder,'preserved-within-pen');
+assert.equal(grouped.metadata.colourRuns,3,'Original run count was lost');
+assert.equal(grouped.metadata.penLayers,2);
+assert.equal(grouped.metadata.penChanges,1);
+assert.equal((grouped.svg.match(/inkscape:groupmode="layer"/g)||[]).length,2);
+assert.ok(grouped.svg.includes('id="pen-1" inkscape:groupmode="layer" inkscape:label="1 · #ff0000"'));
+assert.ok(grouped.svg.includes('id="pen-2" inkscape:groupmode="layer" inkscape:label="2 · #0000ff"'));
+assert.deepEqual(pathTags(grouped.svg),['#ff0000','#0000ff'].flatMap(colour=>pathTags(faithful.svg).filter(tag=>tag.includes('stroke="'+colour+'"'))),
+  'Grouping changed geometry, style or stroke order within a pen');
+const pageScale=1.9,home={x:-53.5/pageScale,y:-10/pageScale};
+const prepared=G.prepare(layerPaths,100,100);
+let travelBefore=0,travelAfter=0;
+const expectedCommands=[];
+for(const colour of ['#ff0000','#0000ff']){
+  const pen=prepared.filter(p=>p.stroke===colour);
+  travelBefore+=G.travel(pen,home);
+  const optimal=G.optimize(pen,home);
+  travelAfter+=G.travel(optimal,home);
+  expectedCommands.push(...optimal.map(p=>JSON.stringify(p.commands)));
+}
+assert.ok(Math.abs(grouped.metadata.penTravelBeforeMm-travelBefore*pageScale)<1e-8);
+assert.ok(Math.abs(groupedOptimized.metadata.penTravelAfterMm-travelAfter*pageScale)<1e-8);
+assert.ok(groupedOptimized.metadata.penTravelAfterMm<=groupedOptimized.metadata.penTravelBeforeMm+1e-8);
+assert.deepEqual(Array.from(groupedOptimized.svg.matchAll(/<path d="([^"]+)"/g),m=>JSON.stringify(G.commands(m[1]))),expectedCommands,
+  'Direction optimisation did not run independently within each pen');
+assert.throws(()=>A.createPlotterSVG(settings,{grouping:'unknown'}),/faithful colour runs/);
+assert.equal(A.svgRecorder,oldRecorder);assert.equal(A.lastRenderMeta,oldMeta);
+assert.equal(A.W,123);assert.equal(A.H,456);assert.equal(A.rendererVersion,6);
+console.log('PASS: one numbered layer per pen, retained per-pen path/style order, original run counts and independent direction optimisation.');
+
+A.render=canvas=>{
+  canvas.width=100;canvas.height=100;
+  A.svgRecorder.paths=Array.from({length:24},(_,i)=>({
+    d:'M '+(i+1)+' 5 L '+(i+1)+' 95',stroke:'#'+(i%12+1).toString(16).padStart(6,'0'),width:2,opacity:.5,lineCap:'round'
+  }));
+};
+const manyPens=A.createPlotterSVG(settings,{grouping:'pens'});
+const numbered=Array.from(manyPens.svg.matchAll(/inkscape:label="(\d+) · (#[a-f0-9]+)"/g));
+assert.equal(manyPens.metadata.colourRuns,24);
+assert.equal(manyPens.metadata.penLayers,12);assert.equal(manyPens.metadata.penChanges,11);
+assert.equal(numbered.length,12);
+assert.deepEqual(numbered.map(m=>Number(m[1])),Array.from({length:12},(_,i)=>i+1));
+console.log('PASS: multi-digit AxiDraw pen numbers and repeated colours produce exactly one layer per pen.');
+
 A.render=canvas=>{
   canvas.width=100;canvas.height=100;
   A.svgRecorder.paths=[{d:'M 5 50 L 95 50',stroke:'#123456',width:20,opacity:.4,lineCap:'round',dash:[6,3],dashOffset:0}];
 };
 const dry=A.createPlotterSVG({seed:'DRY',paper:'#fff'});
+const dryGrouped=A.createPlotterSVG({seed:'DRY',paper:'#fff'},{grouping:'pens'});
 assert.ok(dry.metadata.paths>1,'Physical dash gaps were lost');
 assert.equal(dry.metadata.svgPaths,1,'One marker pass was split into separately composited elements');
 assert.equal((dry.svg.match(/stroke-opacity="/g)||[]).length,1);
 assert.ok(!dry.svg.includes('stroke-dasharray'));
+assert.equal(dryGrouped.metadata.penLayers,1);assert.equal(dryGrouped.metadata.penChanges,0);
+assert.equal(dryGrouped.metadata.svgPaths,1);
+assert.equal((dryGrouped.svg.match(/stroke-opacity="/g)||[]).length,1);
 console.log('PASS: multiple physical pen lifts retain the single source marker pass opacity.');
+
+A.render=canvas=>{canvas.width=100;canvas.height=100;A.svgRecorder.paths=[]};
+const empty=A.createPlotterSVG(settings,{grouping:'pens'});
+assert.equal(empty.metadata.penLayers,0);assert.equal(empty.metadata.penChanges,0);
+assert.equal(empty.metadata.svgPaths,0);assert.equal(empty.metadata.penTravelAfterMm,0);

@@ -158,6 +158,18 @@ function compound(paths){
   });
   return passes;
 }
+function colourLayers(paths,groupByPen){
+  var layers=[],pens=new Map(),layer=null;
+  paths.forEach(function(p){
+    if(groupByPen)layer=pens.get(p.stroke);
+    if(!layer||layer.colour!==p.stroke){
+      layer={colour:p.stroke,paths:[]};layers.push(layer);
+      if(groupByPen)pens.set(p.stroke,layer);
+    }
+    layer.paths.push(p);
+  });
+  return layers;
+}
 function pathTag(p){
   return '<path d="'+esc(serialize(p.commands))+'" fill="none" stroke="'+esc(p.stroke)+'" stroke-width="'+p.width+'" stroke-opacity="'+p.opacity+'" stroke-linecap="'+esc(p.lineCap)+'" stroke-linejoin="round" clip-path="url(#art-bounds)"'+(p.blend==='multiply'?' style="mix-blend-mode:multiply"':'')+'/>';
 }
@@ -169,6 +181,8 @@ function collect(settings){
 }
 A.createPlotterSVG=function(settings,options){
   options=options||{};
+  var grouping=options.grouping||'runs',groupByPen=grouping==='pens';
+  if(grouping!=='runs'&&!groupByPen)throw Error('Choose faithful colour runs or group by pen');
   var paper=options.paper||'A4',sizes={A4:[297,210],A3:[420,297]};
   if(!sizes[paper])throw Error('Choose A4 or A3 paper');
   var portrait=settings.orientation==='portrait',page=sizes[paper].slice();
@@ -178,21 +192,27 @@ A.createPlotterSVG=function(settings,options){
   var captured=collect(settings),w=captured.w,h=captured.h,rec=captured.rec;
   var scale=Math.min((page[0]-2*margin)/w,(page[1]-2*margin)/h);
   var x=(page[0]-w*scale)/2,y=(page[1]-h*scale)/2;
-  var origin=point(-x/scale,-y/scale),paths=prepare(rec.paths,w,h),before=travel(paths,origin);
-  if(options.optimize!==false)paths=optimize(paths,origin);
-  var after=travel(paths,origin),layers=[],layer=null;
-  paths.forEach(function(p){
-    if(!layer||layer.colour!==p.stroke){layer={colour:p.stroke,paths:[]};layers.push(layer)}
-    layer.paths.push(p);
-  });
+  var origin=point(-x/scale,-y/scale),paths=prepare(rec.paths,w,h);
+  var colourRuns=colourLayers(paths,false).length;
   var penColours=Array.from(new Set(paths.map(function(p){return p.stroke})));
+  // In grouped mode each pen is a separate layer-mode plot starting at home.
+  // Preserve its source stroke sequence and optimise only stroke direction.
+  var sequences=groupByPen?colourLayers(paths,true).map(function(l){return l.paths}):[paths];
+  var before=sequences.reduce(function(sum,seq){return sum+travel(seq,origin)},0);
+  if(options.optimize!==false)sequences=sequences.map(function(seq){return optimize(seq,origin)});
+  var after=sequences.reduce(function(sum,seq){return sum+travel(seq,origin)},0);
+  paths=[].concat.apply([],sequences);
+  var layers=colourLayers(paths,groupByPen);
   var metadata={penColours:penColours,generator:'ALGO/ART',rendererVersion:A.rendererVersion,seed:settings.seed,settings:settings,
-    paper:paper,pageMm:page,marginMm:margin,paperColour:settings.paper,pathOrder:'preserved',
-    penTravelBeforeMm:before*scale,penTravelAfterMm:after*scale,paths:paths.length,svgPaths:compound(paths).length,colourRuns:layers.length};
+    paper:paper,pageMm:page,marginMm:margin,paperColour:settings.paper,layerGrouping:grouping,
+    pathOrder:groupByPen?'preserved-within-pen':'preserved',penLayers:layers.length,penChanges:Math.max(0,layers.length-1),
+    penTravelBeforeMm:before*scale,penTravelAfterMm:after*scale,paths:paths.length,
+    svgPaths:layers.reduce(function(sum,l){return sum+compound(l.paths).length},0),colourRuns:colourRuns};
   var content=layers.map(function(l,i){
     var pen=penColours.indexOf(l.colour)+1;
-    var name=String(i+1).padStart(3,'0')+' · Pen '+pen+' · '+l.colour;
-    return '<g id="pen-run-'+(i+1)+'" inkscape:groupmode="layer" inkscape:label="'+esc(name)+'" data-pen-colour="'+esc(l.colour)+'"'+(l.paths.every(function(p){return p.blend==='multiply'})?' style="isolation:isolate;mix-blend-mode:multiply"':'')+' transform="translate('+x+' '+y+') scale('+scale+')">'+compound(l.paths).map(pathTag).join('')+'</g>';
+    var name=groupByPen?pen+' · '+l.colour:String(i+1).padStart(3,'0')+' · Pen '+pen+' · '+l.colour;
+    var id=groupByPen?'pen-'+pen:'pen-run-'+(i+1);
+    return '<g id="'+id+'" inkscape:groupmode="layer" inkscape:label="'+esc(name)+'" data-pen-number="'+pen+'" data-pen-colour="'+esc(l.colour)+'"'+(l.paths.every(function(p){return p.blend==='multiply'})?' style="isolation:isolate;mix-blend-mode:multiply"':'')+' transform="translate('+x+' '+y+') scale('+scale+')">'+compound(l.paths).map(pathTag).join('')+'</g>';
   }).join('');
   var head='<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="'+NS+'" width="'+page[0]+'mm" height="'+page[1]+'mm" viewBox="0 0 '+page[0]+' '+page[1]+'" style="isolation:isolate">';
   var clip='<defs><clipPath id="art-bounds" clipPathUnits="userSpaceOnUse"><rect width="'+w+'" height="'+h+'"/></clipPath></defs>';
