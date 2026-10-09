@@ -192,7 +192,7 @@ A.createPlotterSVG=function(settings,options){
   var content=layers.map(function(l,i){
     var pen=penColours.indexOf(l.colour)+1;
     var name=String(i+1).padStart(3,'0')+' · Pen '+pen+' · '+l.colour;
-    return '<g id="pen-run-'+(i+1)+'" inkscape:groupmode="layer" inkscape:label="'+esc(name)+'" data-pen-colour="'+esc(l.colour)+'" transform="translate('+x+' '+y+') scale('+scale+')">'+compound(l.paths).map(pathTag).join('')+'</g>';
+    return '<g id="pen-run-'+(i+1)+'" inkscape:groupmode="layer" inkscape:label="'+esc(name)+'" data-pen-colour="'+esc(l.colour)+'"'+(l.paths.every(function(p){return p.blend==='multiply'})?' style="isolation:isolate;mix-blend-mode:multiply"':'')+' transform="translate('+x+' '+y+') scale('+scale+')">'+compound(l.paths).map(pathTag).join('')+'</g>';
   }).join('');
   var head='<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="'+NS+'" width="'+page[0]+'mm" height="'+page[1]+'mm" viewBox="0 0 '+page[0]+' '+page[1]+'" style="isolation:isolate">';
   var clip='<defs><clipPath id="art-bounds" clipPathUnits="userSpaceOnUse"><rect width="'+w+'" height="'+h+'"/></clipPath></defs>';
