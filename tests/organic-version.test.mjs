@@ -102,3 +102,10 @@ for(let i=0;i<20;i++)for(const negativeSpace of [0,41,82,100]){
   cases++;
 }
 console.log('PASS: V1–V6 unchanged across all modes/orientations; V7 changes only landscape Organic; '+cases+' deterministic growth/void samples.');
+
+A.svgRecorder={paths:[]};
+render(A,settings('organic','landscape'));
+assert.ok(A.svgRecorder.paths.length>0);
+assert.ok(A.svgRecorder.paths.every(p=>p.transform==='matrix(0 1 -1 0 1400 0)'), 'SVG rotation missing');
+A.svgRecorder=null;
+console.log('PASS: landscape SVG marker paths carry the same rotation as PNG.');
