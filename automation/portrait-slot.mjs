@@ -22,15 +22,16 @@ async function output(obj){
 export function scheduleDecision({date=new Date(),force='',forcedDate=''}={}){
   const now=localParts(date),clock=Number(now.hour)*60+Number(now.minute);
   const day=forcedDate||dateText(now);
-  if(force==='build')return {should_run:true,should_post:false,phase:'build',date:day,slot:'',target_time:'06:00'};
+  if(force==='build')return {should_run:true,should_post:false,phase:'build',date:day,slot:'',target_time:'manual preview'};
   if(force!==''&&!['0','1','2'].includes(force))throw Error('Invalid portrait slot: '+force);
   if(force!==''){
     const slot=Number(force);
     return {should_run:true,should_post:true,phase:'post',date:day,slot,target_time:PORTRAIT_SCHEDULE[slot]};
   }
-  if(clock<mins('06:00'))return {should_run:false,should_post:false,phase:'skip',date:day,slot:'',target_time:''};
+  // Mirror the established landscape push-recovery gate. The three
+  // external cronjob.com calls dispatch social-live.yml at UK local times.
   const slot=[2,1,0].find(i=>clock>=mins(PORTRAIT_SCHEDULE[i]));
-  if(slot===undefined)return {should_run:true,should_post:false,phase:'build',date:day,slot:'',target_time:'06:00'};
+  if(slot===undefined)return {should_run:false,should_post:false,phase:'skip',date:day,slot:'',target_time:''};
   return {should_run:true,should_post:true,phase:'post',date:day,slot,target_time:PORTRAIT_SCHEDULE[slot]};
 }
 
