@@ -111,13 +111,26 @@ function pointInVoid(x,y,voids){
   return false;
 }
 
-// The centre or end of a stroke may lie outside a reserved area even when
-// the line between them crosses it. Samples preserve these intentional voids.
+// Exact segment/rectangle intersection for protected negative space.
+// Checking only the endpoints (or a few samples) misses thin crossings.
 function segmentCrossesVoid(x1,y1,x2,y2,voids){
-  if(!voids.length)return false;
-  for(var sample=0;sample<=16;sample++){
-    var t=sample/16;
-    if(pointInVoid(A.lerp(x1,x2,t),A.lerp(y1,y2,t),voids))return true;
+  var dx=x2-x1,dy=y2-y1;
+  for(var i=0;i<voids.length;i++){
+    var v=voids[i],left=v.x,right=v.x+v.w,top=v.y,bottom=v.y+v.h;
+    var p=[-dx,dx,-dy,dy];
+    var q=[x1-left,right-x1,y1-top,bottom-y1];
+    var enter=0,leave=1,miss=false;
+    for(var side=0;side<4;side++){
+      if(p[side]===0){
+        if(q[side]<0){miss=true;break;}
+      }else{
+        var t=q[side]/p[side];
+        if(p[side]<0)enter=Math.max(enter,t);
+        else leave=Math.min(leave,t);
+        if(enter>leave){miss=true;break;}
+      }
+    }
+    if(!miss)return true;
   }
   return false;
 }
@@ -2244,8 +2257,10 @@ function drawOrganic(ctx,s,r,pal){
         var turn=attempt===0?0:(attempt%2?1:-1)*
           A.GOLD*(.20+.12*Math.ceil(attempt/2));
         var candidate=baseAngle+turn;
-        var candidateX=node.x+Math.cos(candidate)*len;
-        var candidateY=node.y+Math.sin(candidate)*len;
+        // Test the endpoint *after* clamping to the canvas. Clamping
+        // changes the segment and can route it across a reserved void.
+        var candidateX=A.clamp(node.x+Math.cos(candidate)*len,24,A.W-24);
+        var candidateY=A.clamp(node.y+Math.sin(candidate)*len,24,A.H-24);
         if(!segmentCrossesVoid(node.x,node.y,candidateX,candidateY,voids)){
           angle=candidate;ex=candidateX;ey=candidateY;free=true;break;
         }
