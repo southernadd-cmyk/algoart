@@ -2105,8 +2105,26 @@ function drawOrganic(ctx,s,r,pal){
     wobble:Math.max(42,s.wobble)
   });
   var voids=makeReservedVoids(s,strategy,A.makeR(s.seed+'|organic-voids'));
+  var portrait=s.orientation==='portrait';
   var roots=1+Math.floor(s.elements/58);
   var rootPts=A.distributedPhiPoints(roots,organic,r);
+  if(portrait){
+    // A portrait drawing grows from the lower golden regions, rather
+    // than treating the 1000x1400 canvas as a taller random field.
+    for(var rootIndex=0;rootIndex<rootPts.length;rootIndex++){
+      var rp=rootPts[rootIndex];
+      var side=A.hash(s.seed+'|organic-portrait-side|'+rootIndex)%2;
+      var goalX=A.W*(side?A.INV:(1-A.INV));
+      var goalY=A.H*(.78-rootIndex*.17);
+      rp.x=A.lerp(rp.x,goalX,.76);
+      rp.y=A.lerp(rp.y,goalY,.88);
+      // Protected voids are intentionally left open even at root level.
+      if(pointInVoid(rp.x,rp.y,voids)){
+        rp.x=A.W*(side?.22:.78);
+        if(pointInVoid(rp.x,rp.y,voids))rp.y=A.H*(.86-rootIndex*.2);
+      }
+    }
+  }
   var queue=[];
   var maxSegments=Math.max(12,s.elements);
   var maxDepth=Math.max(3,Math.min(8,2+Math.round(s.recursion*.7)));
@@ -2115,11 +2133,11 @@ function drawOrganic(ctx,s,r,pal){
 
   for(var ri=0;ri<roots;ri++){
     var rp=rootPts[ri];
-    var toward=Math.atan2(A.H*.5-rp.y,A.W*.5-rp.x);
+    var toward=portrait?-Math.PI/2:Math.atan2(A.H*.5-rp.y,A.W*.5-rp.x);
     queue.push({
       x:rp.x,y:rp.y,
-      angle:toward+r.range(-.55,.55),
-      len:A.qphi(r.range(150,300),34,s.phiStrength/100),
+      angle:toward+r.range(portrait?-.28:-.55,portrait?.28:.55),
+      len:A.qphi(portrait?r.range(A.H*.19,A.H*.28):r.range(150,300),34,s.phiStrength/100),
       depth:0,
       branch:ri
     });
@@ -2132,7 +2150,16 @@ function drawOrganic(ctx,s,r,pal){
     var ex=node.x+Math.cos(angle)*len;
     var ey=node.y+Math.sin(angle)*len;
 
-    if(pointInVoid(ex,ey,voids)){
+    if(portrait){
+      // Turn around a reserved opening; test the middle of the segment as
+      // well as its end, otherwise a branch can cut across the empty area.
+      for(var attempt=0;attempt<4&&
+        (pointInVoid(ex,ey,voids)||pointInVoid((node.x+ex)/2,(node.y+ey)/2,voids));attempt++){
+        angle+=A.GOLD*(attempt%2===0?1:-1)*(.55+.20*attempt);
+        ex=node.x+Math.cos(angle)*len;
+        ey=node.y+Math.sin(angle)*len;
+      }
+    }else if(pointInVoid(ex,ey,voids)){
       angle+=A.GOLD*(r.chance(.5)?1:-1)*.55;
       ex=node.x+Math.cos(angle)*len;
       ey=node.y+Math.sin(angle)*len;
@@ -2155,13 +2182,15 @@ function drawOrganic(ctx,s,r,pal){
     var nextLen=len/A.PHI*r.range(.9,1.08);
     if(nextLen<12)continue;
 
-    var branches=r.chance(.35+organic.complexity/180)?2:1;
+    var branches=portrait&&node.depth<2?2:(r.chance((portrait?.52:.35)+organic.complexity/(portrait?230:180))?2:1);
     for(var b=0;b<branches;b++){
       var sign=branches===1?r.sign():(b===0?-1:1);
-      var turn=A.GOLD*A.lerp(.26,.52,organic.complexity/100)*sign;
+      var turn=A.GOLD*A.lerp(portrait?.18:.26,portrait?.38:.52,organic.complexity/100)*sign;
+      var childAngle=angle+turn+r.range(-.12,.12);
+      if(portrait)childAngle=A.lerp(childAngle,-Math.PI/2,.19);
       queue.push({
         x:ex,y:ey,
-        angle:angle+turn+r.range(-.12,.12),
+        angle:childAngle,
         len:nextLen,
         depth:node.depth+1,
         branch:node.branch
