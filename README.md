@@ -8,6 +8,15 @@ Live site: https://southernadd-cmyk.github.io/algoart/
 
 **Current renderer: V6.**
 
+## Portrait format — feature branch
+
+On `feature/portrait-support`, the generator supports landscape (**1400 × 1000**) and portrait (**1000 × 1400**) canvas formats. The **Canvas format** control is in the Compose panel. The same eight systems are used for both formats; several trajectory families have portrait-specific vertical paths.
+
+Portrait share links contain `fmt=portrait`. Landscape links deliberately omit `fmt`, preserving existing bookmarked states. The renderer also removes the new landscape-only setting from its seeded random key so historical V6 landscape drawings are unchanged. The artwork dimensions, 4-Up previews, mode previews and PNG/SVG output adapt to orientation.
+
+Run `npm run test:orientation` to check eight V6 landscape drawing-command fixtures and deterministic portrait rendering for four seeds per system. The existing ChatGPT plugin and scheduled publishing remain on their current production versions until portrait support is separately integrated and approved.
+
+
 ## Core idea: structure first, imperfection second
 
 The project separates **composition** from **rendering**.
