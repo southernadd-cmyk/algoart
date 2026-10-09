@@ -854,7 +854,11 @@ function loadLatestGalleryDefault(){
         .then(function(r){if(!r.ok)throw new Error('meta');return r.json();})
         .then(function(meta){
           var entries=Array.isArray(meta.entries)?meta.entries:[];
-          var latest=entries[entries.length-1];
+          // Keep existing unparameterised landscape home-page behaviour.
+          // Portrait works remain available through the gallery and share URLs.
+          var latest=entries.filter(function(e){
+            return (e.orientation||(e.settings&&e.settings.orientation))!=='portrait';
+          }).pop()||entries[entries.length-1];
           if(!latest||!latest.settings)return false;
           A.rendererVersion=Number(latest.rendererVersion)||CURRENT_RENDERER_VERSION;
           applySettings(Object.assign({},latest.settings,{seed:latest.seed}));
