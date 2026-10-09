@@ -1359,15 +1359,18 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
 @media(max-width:700px){.intro-splash{padding:0;align-items:stretch}.intro-card{width:100%;max-height:100dvh;border:0;box-shadow:none}.intro-top{position:sticky;top:0;background:var(--paper);z-index:2}.intro-body{display:block;min-height:0}.intro-phi{height:105px;border-right:0;border-bottom:2px solid var(--ink);font-size:140px;line-height:.7}.intro-copy{padding:18px 16px 24px;display:block}.intro-copy h1{font-size:48px}.intro-thesis{font-size:17px}.intro-principles>div{grid-template-columns:28px 1fr}.intro-principles span{grid-column:2}.intro-systems{grid-template-columns:repeat(2,1fr)}.intro-systems span:nth-child(2n){border-right:0}.intro-systems span:nth-child(4n){border-right:0}.intro-systems span:nth-last-child(-n+4){border-bottom:1px solid var(--ink)}.intro-systems span:nth-last-child(-n+2){border-bottom:0}.intro-actions{display:grid;grid-template-columns:1fr}.intro-actions button{width:100%;white-space:normal}}
 
 /* Deterministic artwork description / accessibility panel */
-.description-overlay{position:absolute;inset:0;z-index:29;display:grid;place-items:center;padding:22px;background:rgba(245,240,230,.82);backdrop-filter:blur(4px)}
+.description-overlay{position:fixed;inset:0;z-index:1100;display:grid;grid-template-rows:minmax(0,1fr);place-items:center;padding:22px;background:rgba(245,240,230,.82);backdrop-filter:blur(4px)}
 .description-overlay[hidden]{display:none}
-.description-sheet{width:min(720px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;background:var(--paper);border:2px solid var(--ink);box-shadow:10px 10px 0 var(--blue)}
-.description-head{min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;border-bottom:2px solid var(--ink);background:var(--acid)}
+.description-sheet{width:min(720px,100%);min-height:0;max-height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--paper);border:2px solid var(--ink);box-shadow:10px 10px 0 var(--blue)}
+.description-head{flex:0 0 auto;min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;border-bottom:2px solid var(--ink);background:var(--acid)}
 .description-head>div{display:flex;align-items:center;gap:10px;min-width:0}
 .description-head>div>span{width:30px;height:30px;display:grid;place-items:center;flex:0 0 auto;background:var(--ink);color:var(--paper);font-size:8px;font-weight:900}
 .description-head strong{display:block;font:900 14px/1 Arial,sans-serif;letter-spacing:.04em}
 .description-head small{display:block;margin-top:3px;font-size:7px;color:var(--soft-ink);letter-spacing:.06em;text-transform:uppercase}
-.description-body{padding:16px}
+.description-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px}
+.description-head .icon-btn{flex:0 0 44px;width:44px;height:44px}
+.description-actions{flex:0 0 auto;padding:10px 16px;border-top:2px solid var(--ink);background:var(--paper)}
+.description-actions button{width:100%;min-height:44px;background:var(--ink);color:var(--paper)}
 .description-kicker{margin:0 0 10px;font-size:8px;font-weight:900;letter-spacing:.12em;color:var(--blue)}
 .description-block{border-top:2px solid var(--ink);padding:11px 0 12px}
 .description-block>span{display:block;margin-bottom:6px;font-size:7px;font-weight:900;letter-spacing:.12em;color:var(--muted)}
@@ -1377,8 +1380,8 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
 .description-construction p{font:11px/1.55 "Courier New",monospace}
 .description-note{margin:2px 0 0;padding:9px 10px;border-left:4px solid var(--orange);background:rgba(255,250,240,.58);color:var(--muted);font-size:8px;line-height:1.5}
 @media(max-width:700px){
-  .description-overlay{position:fixed;padding:8px max(7px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left));align-items:end}
-  .description-sheet{width:100%;max-height:calc(100dvh - 16px);box-shadow:5px 5px 0 var(--blue)}
+  .description-overlay{position:fixed;padding:max(8px,env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left));height:100vh;height:100dvh;align-items:end}
+  .description-sheet{width:100%;max-height:100%;box-shadow:5px 5px 0 var(--blue)}
   .description-head{min-height:48px;padding:7px}
   .description-head strong{font-size:12px}
   .description-body{padding:12px}
