@@ -17,6 +17,22 @@ Portrait share links contain `fmt=portrait`. Landscape links deliberately omit `
 Run `npm run test:orientation` to check eight V6 landscape drawing-command fixtures and deterministic portrait rendering for four seeds per system. The existing ChatGPT plugin and scheduled publishing remain on their current production versions until portrait support is separately integrated and approved.
 
 
+## Dual-format daily gallery and portrait social schedule (feature branch)
+
+The production landscape pipeline remains unchanged: five landscape artworks per UK day, with the existing 09:00, 15:00 and 20:30 London posting slots.
+
+Portrait support adds **five independently seeded 1000 × 1400 works every day**, kept alongside the five landscape studies in the same gallery edition. Three portraits (studies **1, 3 and 5**) are scheduled separately for **11:30, 17:30 and 22:00 London time**; studies 2 and 4 remain in the gallery as unposted reserves. Times are provisional until approval.
+
+- **06:00 London** — build and validate the day's five portrait images. Archive and update the gallery so each normal day contains ten studies.
+- **11:30, 17:30, 22:00 London** — publish one portrait to the same enabled destinations as the landscape posts (Instagram, Threads, Bluesky, and Pinterest if enabled).
+- The complete daily portrait batch is stored in the existing GitHub Release **once**, uploading JPGs before a date-specific manifest. Later jobs reuse the same five exact files rather than regenerating changed artwork.
+- Release completion markers include `portrait` in their names, so retries cannot be confused with landscape posts.
+- The archive preserves already-generated entries from the other orientation, and orientation-aware gallery thumbnails avoid clipping portraits into landscape crops.
+
+The independent workflow is `.github/workflows/portrait-live.yml`, with the runner-safe selector in `automation/portrait-slot.mjs`. It supports explicit dry-run dispatches, planned GMT/BST-aware cron triggers, and `.github/portrait-trigger` push events for an external scheduler. **Cron times are best-effort:** the working production pipeline previously retired GitHub-only cron triggers because of delayed/missed runs; external trigger integration should be confirmed before relying on fully unattended live portrait publishing.
+
+**Safety:** scheduled workflows activate only when the workflow exists on `main`. The feature branch does not publish to public social accounts or overwrite the existing production gallery. Merging and enabling external triggers should follow successful feature-branch integration tests.
+
 ## Core idea: structure first, imperfection second
 
 The project separates **composition** from **rendering**.
