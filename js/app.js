@@ -80,15 +80,29 @@ function setTab(name){
     var active=btn.dataset.tab===name;
     btn.classList.toggle('active',active);
     btn.setAttribute('aria-selected',active?'true':'false');
+    btn.tabIndex=active?0:-1;
   });
   document.querySelectorAll('.tab-panel').forEach(function(panel){
     panel.classList.toggle('active',panel.dataset.panel===name);
+    panel.hidden=panel.dataset.panel!==name;
   });
   try{localStorage.setItem('algoart-tab',name)}catch(e){}
 }
 
 document.querySelectorAll('.tab').forEach(function(btn){
   btn.addEventListener('click',function(){setTab(btn.dataset.tab)});
+  btn.addEventListener('keydown',function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    var tabs=Array.from(document.querySelectorAll('.tab'));
+    var index=tabs.indexOf(btn),next=index;
+    if(e.key==='ArrowRight')next=(index+1)%tabs.length;
+    else if(e.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;
+    else if(e.key==='Home')next=0;
+    else if(e.key==='End')next=tabs.length-1;
+    else return;
+    e.preventDefault();e.stopPropagation();
+    setTab(tabs[next].dataset.tab);tabs[next].focus();
+  });
 });
 
 function inspectorStorageKey(){
@@ -287,7 +301,25 @@ function syncCanvasFormat(s){
   });
 }
 
+var dragPreviewTimer=null,dragPreviewPending=false;
+function scheduleDragPreview(){
+  dragPreviewPending=true;
+  if(dragPreviewTimer!==null)return;
+  dragPreviewTimer=setTimeout(function(){
+    dragPreviewTimer=null;
+    var s=A.readSettings(),previousMeta=A.lastRenderMeta;
+    syncCanvasFormat(s);
+    withRendererVersion(CURRENT_RENDERER_VERSION,function(){A.render(canvas,s,.35,showGeometry)});
+    A.lastRenderMeta=previousMeta;
+  },80);
+}
+function finishDragPreview(){
+  if(!dragPreviewPending)return;
+  useCurrentRenderer();regenerate();
+}
+
 function regenerate(){
+  clearTimeout(dragPreviewTimer);dragPreviewTimer=null;dragPreviewPending=false;
   var s=A.readSettings();
   syncCanvasFormat(s);
   var meta=A.render(canvas,s,1,showGeometry)||{};
@@ -691,14 +723,59 @@ function renderVariations(){
   });
 }
 
+
+var activeDialog=null,dialogReturnFocus=null;
+function beginDialog(overlay,closeButton){
+  if(activeDialog)return false;
+  dialogReturnFocus=document.activeElement;
+  document.body.appendChild(overlay);
+  overlay.hidden=false;
+  activeDialog=overlay;
+  app.inert=true;
+  closeButton.focus();
+  return true;
+}
+function endDialog(overlay,fallback){
+  if(activeDialog!==overlay)return;
+  overlay.hidden=true;activeDialog=null;app.inert=false;
+  var target=dialogReturnFocus&&dialogReturnFocus.isConnected&&dialogReturnFocus.tabIndex>=0?dialogReturnFocus:fallback;
+  dialogReturnFocus=null;
+  target.focus();
+}
+function dialogFocusable(){
+  return Array.from(activeDialog.querySelectorAll('button,input,select,textarea,a[href],[tabindex]'))
+    .filter(function(el){return !el.disabled&&el.tabIndex>=0&&el.getClientRects().length});
+}
+document.addEventListener('keydown',function(e){
+  if(!activeDialog)return;
+  if(e.key==='Escape'){
+    e.preventDefault();e.stopPropagation();
+    if(activeDialog===$('descriptionOverlay'))closeDescription();
+    else closeVariations();
+  }else if(e.key==='Tab'){
+    var items=dialogFocusable(),first=items[0],last=items[items.length-1];
+    if(!first){e.preventDefault();return;}
+    if(e.shiftKey&&(document.activeElement===first||!activeDialog.contains(document.activeElement))){
+      e.preventDefault();last.focus();
+    }else if(!e.shiftKey&&(document.activeElement===last||!activeDialog.contains(document.activeElement))){
+      e.preventDefault();first.focus();
+    }
+  }
+},true);
+document.addEventListener('focusin',function(e){
+  if(activeDialog&&!activeDialog.contains(e.target)){
+    var first=dialogFocusable()[0];if(first)first.focus();
+  }
+});
+
 function openVariations(){
+  if(!beginDialog($('variationsOverlay'),$('closeVariations')))return;
   variationBatch=0;
-  $('variationsOverlay').hidden=false;
   renderVariations();
 }
 
 function closeVariations(){
-  $('variationsOverlay').hidden=true;
+  endDialog($('variationsOverlay'),$('variations'));
 }
 
 $('variations').onclick=openVariations;
@@ -741,16 +818,13 @@ function syncDescription(settings,meta){
 }
 
 function openDescription(){
+  if(!beginDialog($('descriptionOverlay'),$('closeDescription')))return;
   syncDescription(A.readSettings(),currentRenderMeta);
-  document.body.appendChild($('descriptionOverlay'));
   document.querySelector('.description-body').scrollTop=0;
-  $('descriptionOverlay').hidden=false;
-  $('closeDescription').focus();
 }
 
 function closeDescription(){
-  $('descriptionOverlay').hidden=true;
-  $('describe').focus();
+  endDialog($('descriptionOverlay'),$('describe'));
 }
 
 function copyAltDescription(){
@@ -822,8 +896,14 @@ $('saveSVG').onclick=saveSVG;
 $('copyLink').onclick=copyShareLink;
 
 document.querySelectorAll('.inspector input, .inspector select').forEach(function(e){
+  if(e.type==='range'){
+    e.addEventListener('input',scheduleDragPreview);
+    e.addEventListener('pointerup',finishDragPreview);
+    e.addEventListener('pointercancel',finishDragPreview);
+    e.addEventListener('blur',finishDragPreview);
+  }
   e.addEventListener('change',function(){
-    if(e.id==='exportScale')return;
+    if(e.id==='exportScale'||e.id==='keyboardShortcuts')return;
     useCurrentRenderer();
     regenerate();
     if(e.id==='orientation'||e.id==='palette'||e.id==='pen'||e.id==='phiStrength'||e.id==='complexity'){
@@ -832,16 +912,30 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
   });
 });
 
+var shortcutsEnabled=true;
+try{shortcutsEnabled=localStorage.getItem('algoart-shortcuts')!=='off'}catch(e){}
+$('keyboardShortcuts').checked=shortcutsEnabled;
+function syncShortcutPreference(){
+  $('shortcutLegend').hidden=!shortcutsEnabled;
+  try{localStorage.setItem('algoart-shortcuts',shortcutsEnabled?'on':'off')}catch(e){}
+}
+$('keyboardShortcuts').addEventListener('change',function(){
+  shortcutsEnabled=this.checked;syncShortcutPreference();
+});
+syncShortcutPreference();
+
 window.addEventListener('keydown',function(e){
-  if(e.target.matches('input,select'))return;
+  if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||e.repeat||e.isComposing)return;
+  if(activeDialog||!$('introSplash').hidden)return;
+  if(!shortcutsEnabled||e.target.closest('input,select,textarea,[contenteditable]:not([contenteditable="false"])'))return;
   var key=e.key.toLowerCase();
-  if(key==='escape'&&!$('descriptionOverlay').hidden)closeDescription();
-  else if(key==='escape'&&!$('variationsOverlay').hidden)closeVariations();
   if(key==='n')$('newSeed').click();
-  if(key==='m')$('mutate').click();
-  if(key==='v')openVariations();
-  if(key==='d')openDescription();
-  if(e.key==='[')setInspector(app.classList.contains('inspector-closed'),true);
+  else if(key==='m')$('mutate').click();
+  else if(key==='v')openVariations();
+  else if(key==='d')openDescription();
+  else if(e.key==='[')setInspector(app.classList.contains('inspector-closed'),true);
+  else return;
+  e.preventDefault();
 });
 
 // Compact social URLs open the editor, never the gallery. Resolve the exact

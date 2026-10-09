@@ -19,7 +19,7 @@
 <meta name="twitter:title" content="ALGO/ART — Golden-ratio generative marker system">
 <meta name="twitter:description" content="The algorithm creates the structure. The marker makes it human.">
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/social-card.svg">
-<link rel="stylesheet" href="css/style.css?v=slider-ranges-20261009">
+<link rel="stylesheet" href="css/style.css?v=ui-accessibility-20261009">
 </head>
 <body>
 <div class="intro-splash" id="introSplash" hidden>
@@ -161,7 +161,7 @@
 
       <div class="stage-footer" aria-hidden="true">
         <span id="artworkDimensions">ARTWORK · 1400 × 1000</span>
-        <span>M mutate · N seed · V variations · D describe · [ parameters</span>
+        <span id="shortcutLegend">M mutate · N seed · V variations · D describe · [ parameters</span>
       </div>
     </div>
 
@@ -179,17 +179,17 @@
         <button id="inspectorClose" class="icon-btn close-btn" aria-label="Close controls" title="Close controls">×</button>
       </div>
 
-      <nav class="tabs" aria-label="Control categories">
-        <button class="tab active" data-tab="composition"><span>01</span>Compose</button>
-        <button class="tab" data-tab="phi"><span>02</span>φ</button>
-        <button class="tab" data-tab="marker"><span>03</span>Pen</button>
-        <button class="tab" data-tab="geometry-panel"><span>04</span>Shape</button>
-        <button class="tab" data-tab="colour"><span>05</span>Colour</button>
-        <button class="tab" data-tab="export"><span>06</span>Export</button>
+      <nav class="tabs" role="tablist" aria-label="Control categories">
+        <button class="tab active" data-tab="composition" id="tab-composition" role="tab" aria-controls="panel-composition" aria-selected="true" tabindex="0"><span>01</span>Compose</button>
+        <button class="tab" data-tab="phi" id="tab-phi" role="tab" aria-controls="panel-phi" aria-selected="false" tabindex="-1"><span>02</span>φ</button>
+        <button class="tab" data-tab="marker" id="tab-marker" role="tab" aria-controls="panel-marker" aria-selected="false" tabindex="-1"><span>03</span>Pen</button>
+        <button class="tab" data-tab="geometry-panel" id="tab-geometry-panel" role="tab" aria-controls="panel-geometry-panel" aria-selected="false" tabindex="-1"><span>04</span>Shape</button>
+        <button class="tab" data-tab="colour" id="tab-colour" role="tab" aria-controls="panel-colour" aria-selected="false" tabindex="-1"><span>05</span>Colour</button>
+        <button class="tab" data-tab="export" id="tab-export" role="tab" aria-controls="panel-export" aria-selected="false" tabindex="-1"><span>06</span>Export</button>
       </nav>
 
       <div class="tab-body">
-        <section class="tab-panel active" data-panel="composition">
+        <section class="tab-panel active" data-panel="composition" id="panel-composition" role="tabpanel" aria-labelledby="tab-composition">
           <div class="section-title"><span>COMPOSITION</span><b>8 systems</b></div>
           <div class="controls">
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
@@ -205,7 +205,7 @@
                 <button class="mode-card" type="button" data-mode="geometric"><canvas width="140" height="100"></canvas><span>GEOMETRIC</span><strong>Constructed Forms</strong></button>
                 <button class="mode-card" type="button" data-mode="scribble"><canvas width="140" height="100"></canvas><span>SCRIBBLE</span><strong>Automatic Marks</strong></button>
               </div>
-              <select id="mode" class="mode-select-fallback" aria-label="Algorithm series"><option value="field">Golden Field</option><option value="spiral">Golden Spiral</option><option value="rects">Recursive Rectangles</option><option value="burst">Fibonacci Burst</option><option value="network">Phi Network</option><option value="organic" selected>Organic</option><option value="geometric">Geometric</option><option value="scribble">Controlled Scribble</option></select>
+              <select id="mode" class="mode-select-fallback" aria-label="Algorithm series"><option value="field">Orbital Studies</option><option value="spiral">Golden Trajectories</option><option value="rects">Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic" selected>Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select>
             </div>
             <div class="control"><label>Elements</label><output></output><input id="elements" type="range" min="8" max="140" value="36"></div>
             <div class="control"><label>Scale</label><output></output><input id="density" type="range" min="0" max="100" value="53"></div>
@@ -214,7 +214,7 @@
           </div>
         </section>
 
-        <section class="tab-panel" data-panel="phi">
+        <section class="tab-panel" data-panel="phi" id="panel-phi" role="tabpanel" aria-labelledby="tab-phi" hidden>
           <div class="section-title"><span>GOLDEN RATIO</span><b>1.618…</b></div>
           <div class="controls">
             <div class="control"><label>φ adherence</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="91"></div>
@@ -226,10 +226,10 @@
           </div>
         </section>
 
-        <section class="tab-panel" data-panel="marker">
+        <section class="tab-panel" data-panel="marker" id="panel-marker" role="tabpanel" aria-labelledby="tab-marker" hidden>
           <div class="section-title"><span>MARKER ENGINE</span><b>ink / friction</b></div>
           <div class="controls">
-            <div class="control"><label>Pen</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
+            <div class="control"><label>Pen</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Automatic Marks</option></select></div>
             <div class="control"><label>Thickness</label><output></output><input id="thickness" type="range" min="1" max="28" value="13"></div>
             <div class="control"><label>Wobble</label><output></output><input id="wobble" type="range" min="0" max="100" value="32"></div>
             <div class="control"><label>Overdraw</label><output></output><input id="overdraw" type="range" min="1" max="10" value="3"></div>
@@ -239,7 +239,7 @@
           </div>
         </section>
 
-        <section class="tab-panel" data-panel="geometry-panel">
+        <section class="tab-panel" data-panel="geometry-panel" id="panel-geometry-panel" role="tabpanel" aria-labelledby="tab-geometry-panel" hidden>
           <div class="section-title"><span>GEOMETRY</span><b>line / form</b></div>
           <div class="controls">
             <div class="control"><label>Curved ↔ straight</label><output></output><input id="curveBias" type="range" min="0" max="100" value="91"></div>
@@ -256,7 +256,7 @@
           </div>
         </section>
 
-        <section class="tab-panel" data-panel="colour">
+        <section class="tab-panel" data-panel="colour" id="panel-colour" role="tabpanel" aria-labelledby="tab-colour" hidden>
           <div class="section-title"><span>COLOUR / PAPER</span><b>material</b></div>
           <div class="controls">
             <div class="control"><label>Palette</label><select id="palette"><option value="spectrum">Full Spectrum</option><option value="golden">Golden-angle hues</option><option value="marker">Classic Markers</option><option value="cmyk">CMYK</option><option value="primary">Primary</option><option value="neon">Neon</option><option value="pastel">Pastel</option><option value="earth">Earth</option><option value="warm">Warm</option><option value="cold">Cold</option><option value="mono" selected>Monochrome</option></select></div>
@@ -268,7 +268,7 @@
           </div>
         </section>
 
-        <section class="tab-panel" data-panel="export">
+        <section class="tab-panel" data-panel="export" id="panel-export" role="tabpanel" aria-labelledby="tab-export" hidden>
           <div class="section-title"><span>OUTPUT</span><b>vector + raster</b></div>
           <div class="controls">
             <div class="control"><label>PNG size</label><select id="exportScale"><option value="1">1× — 1400×1000</option><option value="2" selected>2× — 2800×2000</option><option value="3">3× — 4200×3000</option></select></div>
@@ -276,6 +276,8 @@
             <button class="export-big" id="saveSVG">DOWNLOAD SVG</button>
             <button class="export-big" id="copyLink">COPY ARTWORK LINK</button>
             <div class="share-status" id="shareStatus" aria-live="polite"></div>
+            <label class="mini-note"><input id="keyboardShortcuts" type="checkbox" checked> Enable single-key shortcuts (M, N, V, D and [)</label>
+            <div class="mini-note">Browser shortcuts such as Ctrl/Cmd+D keep their usual behaviour. You can turn single-key shortcuts off above.</div>
             <div class="mini-note">Bookmark this page or copy the link to return to this exact artwork. PNG includes paper texture. SVG scales cleanly to any size.</div>
           </div>
         </section>
@@ -291,7 +293,7 @@
 <script src="js/generator.js"></script>
 <script src="js/export.js"></script>
 <script src="js/describe.js"></script>
-<script src="js/control-help.js?v=slider-ranges-20261009"></script>
-<script src="js/app.js?v=slider-ranges-20261009"></script>
+<script src="js/control-help.js?v=ui-accessibility-20261009"></script>
+<script src="js/app.js?v=ui-accessibility-20261009"></script>
 </body>
 </html>
