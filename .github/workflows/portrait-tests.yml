@@ -46,6 +46,8 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/algoart-preview.log 2>&1 &
           echo $! > /tmp/algoart-preview.pid
+      - name: Verify exact social editor links and equal-height gallery frames
+        run: node tests/exact-social-links-gallery-layout.test.mjs
       - name: Capture 16 real browser compositions and mobile checks
         run: node tests/portrait-preview.mjs
       - name: Test five portraits, three posts and mixed ten-work gallery
