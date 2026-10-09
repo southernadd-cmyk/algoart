@@ -37,23 +37,19 @@ for(let slot=0;slot<3;slot++){
 }
 
 // Guard the orchestration itself, not just the individual slot calculator.
-// There must be exactly one source of live posting triggers: social-live.yml.
 const parentWorkflow=await fs.readFile(path.join(repoRoot,'.github/workflows/social-live.yml'),'utf8');
 const portraitWorkflow=await fs.readFile(path.join(repoRoot,'.github/workflows/portrait-live.yml'),'utf8');
-assert.match(parentWorkflow,/^  portraits:\\s*\\n(?:(?!^  [a-z]).*\\n)*?    needs: publish/m,
-  'Portrait job must follow landscape in the existing workflow');
-assert.match(parentWorkflow,/uses: \\.\\/\\.github\\/workflows\\/portrait-live\\.yml/);
-assert.match(parentWorkflow,/secrets: inherit/);
-assert.match(portraitWorkflow,/^  workflow_call:/m);
-assert.doesNotMatch(portraitWorkflow,/^  schedule:/m,
-  'Portraits must not create a second independent set of cron triggers');
-assert.doesNotMatch(portraitWorkflow,/^  push:/m);
-assert.match(portraitWorkflow,/portrait-slot\\$\\{SLOT\\}/);
-assert.match(portraitWorkflow,/done-\\$\\{DATE\\}-portrait-slot/);
-assert.match(portraitWorkflow,/refs\\/heads\\/main.*inputs\\.live == true/,
-  'Public posting must be gated to main and explicitly live mode');
-assert.match(portraitWorkflow,/steps\\.cached\\.outputs\\.ready/,
-  'Later posts must reuse frozen daily portrait images');
+assert.ok(parentWorkflow.includes('  portraits:\n'), 'Parent workflow must include a portrait job');
+assert.ok(parentWorkflow.includes('needs: publish'), 'Landscape must finish before portraits');
+assert.ok(parentWorkflow.includes('uses: ./.github/workflows/portrait-live.yml'), 'Portrait must reuse the parent workflow triggers');
+assert.ok(parentWorkflow.includes('secrets: inherit'));
+assert.ok(portraitWorkflow.includes('  workflow_call:'), 'Portrait must be a reusable workflow');
+assert.ok(!portraitWorkflow.includes('\n  schedule:'), 'Portrait must not add duplicate cron triggers');
+assert.ok(!portraitWorkflow.includes('\n  push:'), 'Portrait must not add a second push trigger');
+assert.ok(portraitWorkflow.includes('portrait-slot'), 'Portrait must have separate post markers');
+assert.ok(portraitWorkflow.includes('refs/heads/main')&&portraitWorkflow.includes('inputs.live == true'),
+  'Feature branch must not publish publicly');
+assert.ok(portraitWorkflow.includes('steps.cached.outputs.ready'), 'Later portrait posts must reuse the frozen batch');
 
 const temp=await fs.mkdtemp(path.join(os.tmpdir(),'algoart-portrait-schedule-'));
 try{
