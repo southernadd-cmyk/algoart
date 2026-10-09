@@ -113,7 +113,7 @@ main{max-width:1500px;margin:0 auto}
 .art-card:nth-child(even){border-right:0}
 .art-image-link{display:block;overflow:hidden;border-bottom:1px solid var(--ink);background:#fff}
 .art-image-link img{display:block;width:100%;height:auto;aspect-ratio:1.4/1;object-fit:cover;transition:transform .22s ease}
-.art-card[data-orientation="portrait"] .art-image-link img{aspect-ratio:5/7;object-fit:contain;background:var(--paper)}
+.art-card[data-orientation="portrait"] .art-image-link img{aspect-ratio:1.4/1;object-fit:contain;background:var(--paper)}
 .art-image-link:hover img{transform:scale(1.012)}
 .art-info{display:grid;grid-template-columns:74px 1fr;min-height:260px}
 .art-number{
@@ -152,7 +152,7 @@ dd{margin:4px 0 0;font-size:10px;overflow-wrap:anywhere}
 .day-card:nth-child(3n){border-right:0}
 .day-card a{display:block;text-decoration:none}
 .day-card img{display:block;width:100%;height:auto;aspect-ratio:1.4/1;object-fit:cover;border-bottom:1px solid var(--ink)}
-.day-card.portrait img{aspect-ratio:5/7;object-fit:contain;background:var(--paper)}
+.day-card.portrait img{aspect-ratio:1.4/1;object-fit:contain;background:var(--paper)}
 .day-card div{padding:22px}
 .day-card span{font-size:9px;color:var(--blue);font-weight:700}
 .day-card h2{margin:7px 0 8px;font:900 26px/1 Arial,sans-serif;letter-spacing:-.035em}
