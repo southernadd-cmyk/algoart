@@ -320,6 +320,50 @@ Pull, and Negative Space 0/24/25/100 (including the original strict
 boundary). Each comparison requires byte-identical recorded drawing
 commands and metadata against the pinned original.
 
+## Tenth extraction: Growth Systems branching and void protection
+
+`ORGANIC_TUNING` names **39 original aesthetic and mechanical
+calibrations** in the Growth Systems branch engine. This is not shared
+with Scribble or any other system. The source's breadth-first branching,
+seeded random consumption, shape drawing order and exact φ mathematics
+are unchanged.
+
+| Part | Original parameters | Purpose |
+| --- | --- | --- |
+| Organic ink | Curve Bias floor 76; Wobble floor 42 | Retain hand-drawn movement |
+| Root count | One additional root per 58 elements | Give larger compositions multiple starting territories |
+| Portrait roots | Height .78 minus .17 per root; x pull .76; y pull .88 | Start near lower golden regions with distinct heights |
+| Trunk direction | Portrait jitter ±.28; legacy landscape ±.55 | Preserve different historical orientation grammar |
+| Trunk size | Portrait .19–.28 of page height; landscape 150–300 px | Different length scales before φ quantisation |
+| Growth budgets | At least 12 segments; depth floor 3, ceiling 8, base 2 + Recursion × .7 | Bound growth and maintain legible compositions |
+| Child length | `len/A.PHI` times .90–1.08; stop below 12 px | Exact φ shrinkage plus an artistic variation |
+| Portrait void detours | 16 attempts, golden-angle deviation .20 + .12 per retry pair, endpoint inset 24 px | Preserve open negative-space regions by checking actual clamped segments |
+| Older landscape void detour | .55 × `A.GOLD` after an obstructed endpoint | Preserve V1–V6 path handling rather than imposing portrait rules |
+| Branch count | Guaranteed split for the first two portrait depths; chance .52/.35 and Complexity divisors 230/180 | Different branching habits in portrait and legacy landscape |
+| Branch directions | Portrait .18–.38 × `A.GOLD`; landscape .26–.52; random turn ±.12; portrait upward attraction .19 | Combine mathematical golden-angle structure with controlled organic asymmetry |
+| Terminal ellipses | Frequency Shape Amount/180; minimum radius 5 px | Occasional leaf- or bud-like detail |
+
+The V7 landscape renderer **rotates the portrait growth grammar** into
+the longer axis, while V1–V6 landscape uses the original independent
+branching behaviour. Its canvas rotation, SVG transformation and
+returned guide-coordinate transformations are unchanged. The portrait
+fallback root positions for multiple protected voids also remain in
+their original source order; this pass does not merge or rationalise them.
+
+The existing Fibonacci quantisation base `34`, mathematical ratio
+`A.PHI`, and golden angle `A.GOLD` are deliberately left in the
+actual formulas. The .20/.12 detour and .18–.52 turn amplitudes
+are *artist-chosen multiples* of the golden angle, not derived
+mathematical identities.
+
+The pinned exact-output suite adds **180 complete Growth Systems
+drawings**: V3/V6/V7; BALANCED/VOID/DIAGONAL strategies;
+landscape/portrait; 0%/100% Additional φ Pull; and element counts
+1, 57, 58, 115 and 116, covering root-count thresholds. Complexity,
+Recursion, density, negative space and ink settings also vary.
+Full drawing-command digests and detailed branch/void/root metadata
+must agree with the original engine exactly.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
