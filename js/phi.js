@@ -15,7 +15,7 @@ A.H=1000;
 var PHI_PLACEMENT_TUNING=Object.freeze({
   radialIndexOffset:.65,           // Avoid putting the first radial sample at the exact centre.
   minimumGoldenAngleFraction:.74,  // Lowest fraction of the golden angle before slider pull.
-  radialWidthFraction:.465,        // Golden-angle samples occupy 46.5% of half-canvas scale.
+  radialWidthFraction:.465,        // Golden-angle radius reaches 46.5% of canvas width.
   radialHeightFraction:.455,       // Independently calibrated vertical radial reach.
   pointBoundaryInsetPx:60,        // Keep the non-φ candidate point inside the canvas.
   pointMaximumJitterPx:150,       // Positional freedom around a φ candidate at low pull.
