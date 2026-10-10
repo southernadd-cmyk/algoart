@@ -768,3 +768,90 @@ for(const variant of burstVariants){
   }
 }
 console.log('PASS: '+burstCalibrationChecks+' Radiant Systems exact drawing and hub/ray/void metadata comparisons against immutable pre-refactor renderer.');
+
+
+// Sixteenth extraction: Golden Trajectories across all three historical
+// grammars. Pin exact drawing command streams and full metadata, including
+// original hero selection, log-spiral progress, Bézier curves, direction,
+// clipping, fallback SAFE-SWEEP and random-number consumption.
+// V1–3 have six legacy families, V4–5 use true logarithmic growth,
+// and V6–7 have ten distinct composition/trajectory families.
+const goldenSpiralVariants=['SHELL','DOUBLE','BROKEN','OFFSET','VOID','LOOSE'];
+const goldenTrajectoryFamilies=['CLASSIC','SWEEP','FAN','S-CURVE','ECHO',
+  'INTERSECT','CASCADE','ORBIT','SCATTER','CROP'];
+function goldenSpiralSeed(variant){
+  for(let i=0;i<1000;i++){
+    const seed='GOLDEN-SPIRAL-CALIBRATION-'+i;
+    if(goldenSpiralVariants[baseline.hash(seed+'|spiral-variant')%goldenSpiralVariants.length]===variant)return seed;
+  }
+  throw Error('Missing pinned historical spiral variant '+variant);
+}
+function goldenTrajectorySeed(family){
+  for(let i=0;i<2000;i++){
+    const seed='GOLDEN-TRAJECTORY-CALIBRATION-'+i;
+    const h=baseline.hash(seed+'|trajectory-v5')%100;
+    const chosen=h<12?'CLASSIC':goldenTrajectoryFamilies[
+      1+(baseline.hash(seed+'|trajectory-family-v5')%(goldenTrajectoryFamilies.length-1))];
+    if(chosen===family)return seed;
+  }
+  throw Error('Missing pinned trajectory family '+family);
+}
+function goldenTrajectorySettings(seed,orientation,phiStrength,rich){
+  return {
+    seed,mode:'spiral',orientation,elements:rich?140:8,
+    density:rich?95:5,complexity:rich?100:0,
+    negativeSpace:rich?100:0,phiStrength,recursion:rich?8:1,
+    spiralInfluence:rich?0:100,goldenAngle:rich?100:0,
+    nesting:rich?100:0,pen:'felt',thickness:rich?24:2,
+    wobble:rich?95:0,overdraw:rich?4:1,
+    opacity:rich?100:25,pressure:25,dryness:15,
+    curveBias:rich?100:0,shapeAmount:rich?100:0,
+    overlap:rich?100:0,rotation:rich?100:0,
+    lines:true,circles:rich,rectangles:true,polygons:rich,arcs:rich,
+    palette:'mono',colourCount:3,saturation:75,
+    brightness:50,paper:'#f5f0e6',grain:0
+  };
+}
+let goldenHistoricalChecks=0;
+for(const variant of goldenSpiralVariants){
+  const seed=goldenSpiralSeed(variant);
+  for(const version of [1,2,3,4,5]){
+    for(const orientation of ['landscape','portrait']){
+      for(const phiStrength of [0,100]){
+        for(const rich of [false,true]){
+          const settings=goldenTrajectorySettings(seed,orientation,phiStrength,rich);
+          const before=capture(baseline,settings,version);
+          const after=capture(current,settings,version);
+          assert.equal(JSON.parse(before.metadata).guide.variant,variant);
+          assert.deepEqual(after,before,
+            `Legacy spiral changed: ${variant}/V${version}/${orientation}/phi${phiStrength}/rich${rich}`);
+          goldenHistoricalChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+goldenHistoricalChecks+' V1–V5 six-family historical spiral drawings match pinned output.');
+
+let goldenTrajectoryChecks=0;
+for(const family of goldenTrajectoryFamilies){
+  const seed=goldenTrajectorySeed(family);
+  for(const version of [6,7]){
+    for(const orientation of ['landscape','portrait']){
+      for(const phiStrength of [0,50,100]){
+        for(const rich of [false,true]){
+          const settings=goldenTrajectorySettings(seed,orientation,phiStrength,rich);
+          const before=capture(baseline,settings,version);
+          const after=capture(current,settings,version);
+          // SAFE-SWEEP can correctly replace off-canvas trajectories.
+          // Compare that actual family and all geometry to the baseline,
+          // rather than incorrectly requiring the pre-fallback family.
+          assert.deepEqual(after,before,
+            `Trajectory family changed: ${family}/V${version}/${orientation}/phi${phiStrength}/rich${rich}`);
+          goldenTrajectoryChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+goldenTrajectoryChecks+' V6–V7 ten-family trajectories reproduce pinned curves, marks, metadata and fallback decisions.');

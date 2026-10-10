@@ -143,6 +143,143 @@ var BURST_TUNING=Object.freeze({
   })
 });
 
+// Golden Trajectories (V6/V7): calibrated visual grammar, not φ identities.
+// `A.INV`, `A.GOLD`, `A.PHI`, logarithmic interpolation and Bézier
+// mathematics remain in the algorithm. Preserve operation and RNG order.
+var TRAJECTORY_TUNING=Object.freeze({
+  selection:Object.freeze({
+    classicHashThreshold:12        // Out of 100 hashed slots.
+  }),
+  layout:Object.freeze({
+    minimumElements:8,             // Minimum trajectory samples.
+    baseSizeFloorPx:55,            // Supporting mark territory floor.
+    baseSizeDivisor:2,
+    baseSizeCrowdGain:.22,
+    logMinimumRadius:.002          // Positive log-path start floor.
+  }),
+  classic:Object.freeze({
+    startRadius:.012,endRadius:.43,turns:2.35
+  }),
+  sweep:Object.freeze({
+    cropOutsideFraction:.55,sweepOutsideFraction:.22,
+    startRadius:.08,cropEndRadius:1.05,sweepEndRadius:.72,
+    cropTurns:1.15,sweepTurns:1.35
+  }),
+  fan:Object.freeze({
+    minimumArms:3,additionalArmOptions:3,
+    endReach:.7,bendNormalOffset:.12
+  }),
+  sCurve:Object.freeze({
+    borderOvershootPx:80,controlOutsideFraction:.08,controlBeyondFraction:1.08
+  }),
+  echo:Object.freeze({
+    minimumEchoes:2,additionalEchoOptions:4,
+    parallelOffset:.055,borderOvershootPx:70,
+    startMajorFraction:.72,controlMinorFraction:.12,
+    firstControlFraction:.3,controlMajorFraction:.88,
+    secondControlFraction:.7,endFraction:.28
+  }),
+  intersect:Object.freeze({
+    pathCount:2,borderOvershootPx:60,
+    firstStartY:.22,firstControlAX:.34,firstControlAY:.08,
+    firstControlBX:.62,firstControlBY:.92,firstEndY:.76,
+    secondStartX:.18,secondControlAX:.92,secondControlAY:.3,
+    secondControlBX:.08,secondControlBY:.7,secondEndX:.82
+  }),
+  cascade:Object.freeze({
+    minimumSegments:3,additionalSegmentOptions:3,
+    minimumSegmentPoints:3,lengthFraction:.62,
+    phiDecayExponent:.7,phaseScale:.18,turnScale:.42,
+    crossAxisLengthScale:.7,controlAAlong:.35,controlACross:.12,
+    controlBAlong:.72,controlBCross:.1
+  }),
+  orbit:Object.freeze({
+    pathCount:2,angularSweepScale:1.35,
+    radiusXStart:.18,radiusXStep:.035,
+    radiusYStart:.28,radiusYStep:.04,
+    guideRadius:.2
+  }),
+  scatter:Object.freeze({
+    startRadius:.02,endRadius:.58,turns:1.8,
+    sourceCountMultiplier:2,chanceBase:.48,influenceChanceGain:.38
+  }),
+  safety:Object.freeze({
+    visibilityMarginPx:20,visibleRequiredMax:4,visibleRequiredMin:2,
+    visibleFraction:.12,fallbackBorderOvershootPx:20,
+    fallbackControlNear:.08,fallbackControlFar:.92,
+    lowInfluenceAnchorMix:.22
+  }),
+  ink:Object.freeze({
+    drawOutsideMarginPx:45,scatterGapChance:.48,
+    lineChanceSparse:.88,lineChanceDense:.58,
+    shapeChanceSparse:.9,shapeChanceDense:.68,
+    canvasInsetPx:24
+  }),
+  tiers:Object.freeze({
+    mediumPeriodFloor:2,mediumPeriodScale:.18
+  })
+});
+
+// Historical V1-V3 Spiral family calibrations: preserve the exact
+// inverse-φ default exponent, golden-angle cadence and φ focal landmarks.
+var SPIRAL_LEGACY_TUNING=Object.freeze({
+  angle:Object.freeze({
+    minimumGoldenTurnScale:.72,brokenWobble:.18,looseWobble:.1
+  }),
+  radius:Object.freeze({
+    shellExponent:.52,shellScale:.88,looseExponent:.76,looseScale:1.04,
+    brokenExponent:.62,brokenScale:.96,doubleExponent:.66,doubleScale:.7,
+    offsetVoidExponent:.6,offsetVoidScale:.9,indexOffset:.6
+  }),
+  geometry:Object.freeze({
+    offcentreMix:.72,
+    doubleHorizontalReach:.29,otherHorizontalReach:.455,
+    looseVerticalReach:.47,doubleVerticalReach:.31,otherVerticalReach:.435,
+    shellEaseExponent:1.4,shellOffsetScale:.035,
+    scatterActivationCrowd:.28,scatterMixScale:.12,canvasInsetPx:24
+  }),
+  tiers:Object.freeze({
+    mediumCountFloor:5,mediumFraction:.24,
+    territoryFloorPx:70,territoryDivisor:2,territoryCrowdScale:.28
+  }),
+  ink:Object.freeze({
+    brokenCycleBase:4,brokenCycleOptions:4,
+    lineChanceSparse:.82,lineChanceDense:.5,
+    looseLineFactor:.68,doubleLineFactor:.78,
+    markChanceSparse:.88,markChanceDense:.7,
+    brokenMarkChance:.82,voidMarkChance:.9,
+    shellArcChanceScale:.13,shellArcMinimumRadiusPx:10,
+    shellArcSourceTerritoryPx:120,shellArcRadiusScale:.62
+  })
+});
+
+// Historical V4-V5 spiral grammar: true logarithmic radius growth by φ
+// per quarter-turn. Tuned turns, canvas reach, offsets, line cadence and
+// stroke frequency are not mathematical φ constants.
+var SPIRAL_LOG_TUNING=Object.freeze({
+  geometry:Object.freeze({
+    offcentreMix:.72,shellOffsetScale:.018,canvasInsetPx:24
+  }),
+  radius:Object.freeze({
+    doubleTurns:1.75,looseTurns:2.05,otherTurns:2.35,
+    doubleReach:.31,looseReach:.46,otherReach:.43,indexOffset:.6
+  }),
+  angle:Object.freeze({
+    brokenWobble:.12,looseWobble:.07
+  }),
+  tiers:Object.freeze({
+    mediumCountFloor:5,mediumFraction:.24,
+    territoryFloorPx:70,territoryDivisor:2,territoryCrowdScale:.28
+  }),
+  ink:Object.freeze({
+    brokenCycleBase:4,brokenCycleOptions:4,
+    lineChanceSparse:.82,lineChanceDense:.5,
+    looseLineFactor:.68,doubleLineFactor:.78,
+    markChanceSparse:.88,markChanceDense:.7,
+    brokenMarkChance:.82,voidMarkChance:.9
+  })
+});
+
 // Legacy artistic/scoring calibration, NOT mathematical φ constants.
 // Every value below is copied verbatim from the original V1–V7 renderer.
 // Keep these independent from A.PHI/A.INV/A.GOLD in phi.js: their values
@@ -1542,6 +1679,7 @@ function drawFieldV3(ctx,s,r,pal){
 }
 
 function drawSpiral(ctx,s,r,pal){
+  var D=SPIRAL_LEGACY_TUNING;
   var variants=['SHELL','DOUBLE','BROKEN','OFFSET','VOID','LOOSE'];
   var variant=variants[A.hash(s.seed+'|spiral-variant')%variants.length];
   var direction=(A.hash(s.seed+'|spiral-direction')%2===0)?1:-1;
@@ -1556,7 +1694,7 @@ function drawSpiral(ctx,s,r,pal){
   var perArm=Math.ceil(s.elements/arms);
   var prev=new Array(arms).fill(null);
   var crowd=crowdFactor(s);
-  var step=A.lerp(A.GOLD*.72,A.GOLD,s.goldenAngle/100);
+  var step=A.lerp(A.GOLD*D.angle.minimumGoldenTurnScale,A.GOLD,s.goldenAngle/100);
   var guidePoints=[];
 
   var centres=[];
@@ -1567,8 +1705,8 @@ function drawSpiral(ctx,s,r,pal){
     ];
   }else if(variant==='OFFSET'||variant==='VOID'){
     centres=[{
-      x:A.lerp(A.W*.5,targets[targetIndex].x,.72),
-      y:A.lerp(A.H*.5,targets[targetIndex].y,.72)
+      x:A.lerp(A.W*.5,targets[targetIndex].x,D.geometry.offcentreMix),
+      y:A.lerp(A.H*.5,targets[targetIndex].y,D.geometry.offcentreMix)
     }];
   }else{
     centres=[{x:A.W*.5,y:A.H*.5}];
@@ -1579,20 +1717,20 @@ function drawSpiral(ctx,s,r,pal){
     var scale=1;
 
     if(variant==='SHELL'){
-      exponent=.52;
-      scale=.88;
+      exponent=D.radius.shellExponent;
+      scale=D.radius.shellScale;
     }else if(variant==='LOOSE'){
-      exponent=.76;
-      scale=1.04;
+      exponent=D.radius.looseExponent;
+      scale=D.radius.looseScale;
     }else if(variant==='BROKEN'){
-      exponent=.62;
-      scale=.96;
+      exponent=D.radius.brokenExponent;
+      scale=D.radius.brokenScale;
     }else if(variant==='DOUBLE'){
-      exponent=.66;
-      scale=.7;
+      exponent=D.radius.doubleExponent;
+      scale=D.radius.doubleScale;
     }else if(variant==='OFFSET'||variant==='VOID'){
-      exponent=.6;
-      scale=.9;
+      exponent=D.radius.offsetVoidExponent;
+      scale=D.radius.offsetVoidScale;
     }
 
     return Math.pow(A.clamp(t,0,1),exponent)*scale;
@@ -1607,20 +1745,20 @@ function drawSpiral(ctx,s,r,pal){
   for(var i=0;i<s.elements;i++){
     var arm=i%arms;
     var local=Math.floor(i/arms);
-    var t=(local+.6)/Math.max(1,perArm);
+    var t=(local+D.radius.indexOffset)/Math.max(1,perArm);
     var centre=centres[arm%centres.length];
     var radial=spiralRadius(t);
     var armPhase=arm===0?0:Math.PI;
     var angle=phase+armPhase+direction*(local*step);
 
     if(variant==='BROKEN'){
-      angle+=Math.sin(local*A.GOLD)*.18;
+      angle+=Math.sin(local*A.GOLD)*D.angle.brokenWobble;
     }else if(variant==='LOOSE'){
-      angle+=Math.sin(local*A.INV)*.1;
+      angle+=Math.sin(local*A.INV)*D.angle.looseWobble;
     }
 
-    var rx=A.W*(variant==='DOUBLE'?.29:.455)*radial;
-    var ry=A.H*(variant==='LOOSE'?.47:(variant==='DOUBLE'?.31:.435))*radial;
+    var rx=A.W*(variant==='DOUBLE'?D.geometry.doubleHorizontalReach:D.geometry.otherHorizontalReach)*radial;
+    var ry=A.H*(variant==='LOOSE'?D.geometry.looseVerticalReach:(variant==='DOUBLE'?D.geometry.doubleVerticalReach:D.geometry.otherVerticalReach))*radial;
 
     var p={
       x:centre.x+Math.cos(angle)*rx,
@@ -1628,19 +1766,19 @@ function drawSpiral(ctx,s,r,pal){
     };
 
     if(variant==='SHELL'){
-      p.x+=Math.cos(angle+A.GOLD)*Math.pow(t,1.4)*A.W*.035;
-      p.y+=Math.sin(angle+A.GOLD)*Math.pow(t,1.4)*A.H*.035;
+      p.x+=Math.cos(angle+A.GOLD)*Math.pow(t,D.geometry.shellEaseExponent)*A.W*D.geometry.shellOffsetScale;
+      p.y+=Math.sin(angle+A.GOLD)*Math.pow(t,D.geometry.shellEaseExponent)*A.H*D.geometry.shellOffsetScale;
     }
 
-    if(crowd>.28&&variant!=='DOUBLE'){
+    if(crowd>D.geometry.scatterActivationCrowd&&variant!=='DOUBLE'){
       var spread=A.goldenCanvasPoint(i,s.elements,s,phase);
-      var mix=crowd*.12;
+      var mix=crowd*D.geometry.scatterMixScale;
       p.x=A.lerp(p.x,spread.x,mix);
       p.y=A.lerp(p.y,spread.y,mix);
     }
 
-    p.x=A.clamp(p.x,24,A.W-24);
-    p.y=A.clamp(p.y,24,A.H-24);
+    p.x=A.clamp(p.x,D.geometry.canvasInsetPx,A.W-D.geometry.canvasInsetPx);
+    p.y=A.clamp(p.y,D.geometry.canvasInsetPx,A.H-D.geometry.canvasInsetPx);
 
     if(pointInVoid(p.x,p.y,voids)){
       prev[arm]=null;
@@ -1651,26 +1789,26 @@ function drawSpiral(ctx,s,r,pal){
 
     var breakLine=false;
     if(variant==='BROKEN'){
-      var cycle=4+(A.hash(s.seed+'|spiral-breaks')%4);
+      var cycle=D.ink.brokenCycleBase+(A.hash(s.seed+'|spiral-breaks')%D.ink.brokenCycleOptions);
       breakLine=(local%cycle===0)||(local%cycle===cycle-1);
     }
 
-    var lineChance=A.lerp(.82,.5,crowd);
-    if(variant==='LOOSE')lineChance*=.68;
-    if(variant==='DOUBLE')lineChance*=.78;
+    var lineChance=A.lerp(D.ink.lineChanceSparse,D.ink.lineChanceDense,crowd);
+    if(variant==='LOOSE')lineChance*=D.ink.looseLineFactor;
+    if(variant==='DOUBLE')lineChance*=D.ink.doubleLineFactor;
 
     if(prev[arm]&&s.lines&&!breakLine&&r.chance(lineChance)){
       A.drawLine(ctx,prev[arm],p,pal[i%pal.length],s,r);
     }
 
-    var tier=isHero(local)?'hero':(local<Math.max(5,Math.round(perArm*.24))?'medium':'small');
-    var drawChance=A.lerp(.88,.7,crowd);
+    var tier=isHero(local)?'hero':(local<Math.max(D.tiers.mediumCountFloor,Math.round(perArm*D.tiers.mediumFraction))?'medium':'small');
+    var drawChance=A.lerp(D.ink.markChanceSparse,D.ink.markChanceDense,crowd);
 
-    if(variant==='BROKEN')drawChance=.82;
-    if(variant==='VOID')drawChance=.9;
+    if(variant==='BROKEN')drawChance=D.ink.brokenMarkChance;
+    if(variant==='VOID')drawChance=D.ink.voidMarkChance;
 
     if(r.chance(drawChance)){
-      var territory=Math.max(70,Math.min(A.W,A.H)/(2+Math.sqrt(perArm)*.28));
+      var territory=Math.max(D.tiers.territoryFloorPx,Math.min(A.W,A.H)/(D.tiers.territoryDivisor+Math.sqrt(perArm)*D.tiers.territoryCrowdScale));
       var temp={
         tier:tier,
         x:p.x,y:p.y,
@@ -1681,10 +1819,10 @@ function drawSpiral(ctx,s,r,pal){
       drawPlannedElement(ctx,temp,i,s,r,pal,baseStrategy);
     }
 
-    if(s.arcs&&variant==='SHELL'&&r.chance((s.shapeAmount/100)*.13)){
+    if(s.arcs&&variant==='SHELL'&&r.chance((s.shapeAmount/100)*D.ink.shellArcChanceScale)){
       A.arc(
         ctx,p,
-        Math.max(10,makeBaseSize(s,'small',r,120,baseStrategy)*.62),
+        Math.max(D.ink.shellArcMinimumRadiusPx,makeBaseSize(s,'small',r,D.ink.shellArcSourceTerritoryPx,baseStrategy)*D.ink.shellArcRadiusScale),
         angle,
         A.TAU*A.INV,
         pal[(i+2)%pal.length],
@@ -1711,6 +1849,7 @@ function drawSpiral(ctx,s,r,pal){
 }
 
 function drawSpiralV4(ctx,s,r,pal){
+  var D=SPIRAL_LOG_TUNING;
   var variants=['SHELL','DOUBLE','BROKEN','OFFSET','VOID','LOOSE'];
   var variant=variants[A.hash(s.seed+'|spiral-variant')%variants.length];
   var direction=(A.hash(s.seed+'|spiral-direction')%2===0)?1:-1;
@@ -1727,14 +1866,14 @@ function drawSpiralV4(ctx,s,r,pal){
   var centres=variant==='DOUBLE'
     ?[{x:A.W*(1-A.INV),y:A.H*A.INV},{x:A.W*A.INV,y:A.H*(1-A.INV)}]
     :(variant==='OFFSET'||variant==='VOID')
-      ?[{x:A.lerp(A.W*.5,targets[targetIndex].x,.72),y:A.lerp(A.H*.5,targets[targetIndex].y,.72)}]
+      ?[{x:A.lerp(A.W*.5,targets[targetIndex].x,D.geometry.offcentreMix),y:A.lerp(A.H*.5,targets[targetIndex].y,D.geometry.offcentreMix)}]
       :[{x:A.W*.5,y:A.H*.5}];
 
   // True golden logarithmic spiral: radius grows by φ every quarter-turn.
   var b=2*Math.log(A.PHI)/Math.PI;
-  var turns=variant==='DOUBLE'?1.75:(variant==='LOOSE'?2.05:2.35);
+  var turns=variant==='DOUBLE'?D.radius.doubleTurns:(variant==='LOOSE'?D.radius.looseTurns:D.radius.otherTurns);
   var thetaMax=turns*A.TAU;
-  var maxRadius=variant==='DOUBLE'?.31:(variant==='LOOSE'?.46:.43);
+  var maxRadius=variant==='DOUBLE'?D.radius.doubleReach:(variant==='LOOSE'?D.radius.looseReach:D.radius.otherReach);
   var minRadius=maxRadius/Math.exp(b*thetaMax);
 
   function isHero(local){
@@ -1745,31 +1884,31 @@ function drawSpiralV4(ctx,s,r,pal){
 
   for(var i=0;i<s.elements;i++){
     var arm=i%arms,local=Math.floor(i/arms);
-    var u=(local+.6)/Math.max(1,perArm);
+    var u=(local+D.radius.indexOffset)/Math.max(1,perArm);
     var centre=centres[arm%centres.length];
     var theta=u*thetaMax;
     var radial=minRadius*Math.exp(b*theta);
     var armPhase=arm===0?0:Math.PI;
     var angle=phase+armPhase+direction*theta;
-    if(variant==='BROKEN')angle+=Math.sin(local*A.GOLD)*.12;
-    else if(variant==='LOOSE')angle+=Math.sin(local*A.INV)*.07;
+    if(variant==='BROKEN')angle+=Math.sin(local*A.GOLD)*D.angle.brokenWobble;
+    else if(variant==='LOOSE')angle+=Math.sin(local*A.INV)*D.angle.looseWobble;
 
     var p={x:centre.x+Math.cos(angle)*A.W*radial,y:centre.y+Math.sin(angle)*A.H*radial};
     if(variant==='SHELL'){
-      p.x+=Math.cos(angle+A.GOLD)*u*A.W*.018;
-      p.y+=Math.sin(angle+A.GOLD)*u*A.H*.018;
+      p.x+=Math.cos(angle+A.GOLD)*u*A.W*D.geometry.shellOffsetScale;
+      p.y+=Math.sin(angle+A.GOLD)*u*A.H*D.geometry.shellOffsetScale;
     }
-    p.x=A.clamp(p.x,24,A.W-24); p.y=A.clamp(p.y,24,A.H-24);
+    p.x=A.clamp(p.x,D.geometry.canvasInsetPx,A.W-D.geometry.canvasInsetPx); p.y=A.clamp(p.y,D.geometry.canvasInsetPx,A.H-D.geometry.canvasInsetPx);
     if(pointInVoid(p.x,p.y,voids)){prev[arm]=null;continue}
     guidePoints.push({x:p.x,y:p.y,arm:arm,local:local,theta:theta,radius:radial});
 
-    var breakLine=variant==='BROKEN'&&((local%(4+(A.hash(s.seed+'|spiral-breaks')%4)))===0);
-    var lineChance=A.lerp(.82,.5,crowd)*(variant==='LOOSE'?.68:(variant==='DOUBLE'?.78:1));
+    var breakLine=variant==='BROKEN'&&((local%(D.ink.brokenCycleBase+(A.hash(s.seed+'|spiral-breaks')%D.ink.brokenCycleOptions)))===0);
+    var lineChance=A.lerp(D.ink.lineChanceSparse,D.ink.lineChanceDense,crowd)*(variant==='LOOSE'?D.ink.looseLineFactor:(variant==='DOUBLE'?D.ink.doubleLineFactor:1));
     if(prev[arm]&&s.lines&&!breakLine&&r.chance(lineChance))A.drawLine(ctx,prev[arm],p,pal[i%pal.length],s,r);
 
-    var tier=isHero(local)?'hero':(local<Math.max(5,Math.round(perArm*.24))?'medium':'small');
-    if(r.chance(variant==='BROKEN'?.82:(variant==='VOID'?.9:A.lerp(.88,.7,crowd)))){
-      var territory=Math.max(70,Math.min(A.W,A.H)/(2+Math.sqrt(perArm)*.28));
+    var tier=isHero(local)?'hero':(local<Math.max(D.tiers.mediumCountFloor,Math.round(perArm*D.tiers.mediumFraction))?'medium':'small');
+    if(r.chance(variant==='BROKEN'?D.ink.brokenMarkChance:(variant==='VOID'?D.ink.voidMarkChance:A.lerp(D.ink.markChanceSparse,D.ink.markChanceDense,crowd)))){
+      var territory=Math.max(D.tiers.territoryFloorPx,Math.min(A.W,A.H)/(D.tiers.territoryDivisor+Math.sqrt(perArm)*D.tiers.territoryCrowdScale));
       drawPlannedElementV3(ctx,{tier:tier,x:p.x,y:p.y,size:makeBaseSize(s,tier,r,territory,baseStrategy),rot:angle+Math.PI/2,territory:territory},i,s,r,pal,baseStrategy);
     }
     prev[arm]=p;
@@ -1778,21 +1917,22 @@ function drawSpiralV4(ctx,s,r,pal){
 }
 
 function drawSpiralV6(ctx,s,r,pal){
+  var D=TRAJECTORY_TUNING;
   // V5 treats phi as a trajectory grammar, not as a requirement to draw a complete coil.
   var families=['CLASSIC','SWEEP','FAN','S-CURVE','ECHO','INTERSECT','CASCADE','ORBIT','SCATTER','CROP'];
   var h=A.hash(s.seed+'|trajectory-v5')%100;
-  var family=h<12?'CLASSIC':families[1+(A.hash(s.seed+'|trajectory-family-v5')%(families.length-1))];
+  var family=h<D.selection.classicHashThreshold?'CLASSIC':families[1+(A.hash(s.seed+'|trajectory-family-v5')%(families.length-1))];
   var direction=(A.hash(s.seed+'|trajectory-direction-v5')%2===0)?1:-1;
   var strategy=chooseStrategy(s), targets=phiTargets(), points=[], paths=[], centres=[];
-  var count=Math.max(8,s.elements|0), influence=A.clamp(s.spiralInfluence/100,0,1);
+  var count=Math.max(D.layout.minimumElements,s.elements|0), influence=A.clamp(s.spiralInfluence/100,0,1);
   var b=2*Math.log(A.PHI)/Math.PI, phase=r.range(0,A.TAU);
   var phiIndex=A.hash(s.seed+'|trajectory-anchor-v5')%targets.length;
   var anchor={x:targets[phiIndex].x,y:targets[phiIndex].y};
-  var baseSize=Math.max(55,Math.min(A.W,A.H)/(2+Math.sqrt(count)*.22));
+  var baseSize=Math.max(D.layout.baseSizeFloorPx,Math.min(A.W,A.H)/(D.layout.baseSizeDivisor+Math.sqrt(count)*D.layout.baseSizeCrowdGain));
 
   function addPath(path){if(path.length){paths.push(path);for(var j=0;j<path.length;j++)points.push(path[j]);}}
   function logPath(cx,cy,startR,endR,turns,startPhase,n,arm){
-    var out=[], tmax=turns*A.TAU, minR=Math.max(.002,startR);
+    var out=[], tmax=turns*A.TAU, minR=Math.max(D.layout.logMinimumRadius,startR);
     for(var j=0;j<n;j++){
       var u=n===1?0:j/(n-1), theta=u*tmax;
       var rr=minR*Math.exp(Math.log(Math.max(minR,endR)/minR)*u);
@@ -1811,83 +1951,83 @@ function drawSpiralV6(ctx,s,r,pal){
 
   if(family==='CLASSIC'){
     centres=[{x:A.W*.5,y:A.H*.5}];
-    addPath(logPath(centres[0].x,centres[0].y,.012,.43,2.35,phase,count,0));
+    addPath(logPath(centres[0].x,centres[0].y,D.classic.startRadius,D.classic.endRadius,D.classic.turns,phase,count,0));
   }else if(family==='SWEEP'||family==='CROP'){
-    var side=A.hash(s.seed+'|outside-v5')%4, margin=family==='CROP'?A.W*.55:A.W*.22;
+    var side=A.hash(s.seed+'|outside-v5')%4, margin=family==='CROP'?A.W*D.sweep.cropOutsideFraction:A.W*D.sweep.sweepOutsideFraction;
     var cx=side===0?-margin:side===1?A.W+margin:A.W*.5;
     var cy=side===2?-margin:side===3?A.H+margin:A.H*.5;
     centres=[{x:cx,y:cy}];
-    addPath(logPath(cx,cy,.08,family==='CROP'?1.05:.72,family==='CROP'?1.15:1.35,phase,count,0));
+    addPath(logPath(cx,cy,D.sweep.startRadius,family==='CROP'?D.sweep.cropEndRadius:D.sweep.sweepEndRadius,family==='CROP'?D.sweep.cropTurns:D.sweep.sweepTurns,phase,count,0));
   }else if(family==='FAN'){
-    centres=[anchor]; var arms=3+(A.hash(s.seed+'|fan-arms-v5')%3), each=Math.ceil(count/arms);
+    centres=[anchor]; var arms=D.fan.minimumArms+(A.hash(s.seed+'|fan-arms-v5')%D.fan.additionalArmOptions), each=Math.ceil(count/arms);
     for(var a=0;a<arms;a++){
-      var ang=phase+a*A.GOLD, end={x:anchor.x+Math.cos(ang)*A.W*.7,y:anchor.y+Math.sin(ang)*A.H*.7};
-      var bend={x:A.lerp(anchor.x,end.x,A.INV)+Math.cos(ang+A.GOLD)*A.W*.12,y:A.lerp(anchor.y,end.y,A.INV)+Math.sin(ang+A.GOLD)*A.H*.12};
+      var ang=phase+a*A.GOLD, end={x:anchor.x+Math.cos(ang)*A.W*D.fan.endReach,y:anchor.y+Math.sin(ang)*A.H*D.fan.endReach};
+      var bend={x:A.lerp(anchor.x,end.x,A.INV)+Math.cos(ang+A.GOLD)*A.W*D.fan.bendNormalOffset,y:A.lerp(anchor.y,end.y,A.INV)+Math.sin(ang+A.GOLD)*A.H*D.fan.bendNormalOffset};
       addPath(bezier(anchor,bend,bend,end,each,a));
     }
   }else if(family==='S-CURVE'){
     centres=[anchor];
     var rev=(A.hash(s.seed+'|s-rev-v5')%2)===1;
-    var p0={x:rev?A.W+80:-80,y:A.H*(1-A.INV)},p3={x:rev?-80:A.W+80,y:A.H*A.INV};
+    var p0={x:rev?A.W+D.sCurve.borderOvershootPx:-D.sCurve.borderOvershootPx,y:A.H*(1-A.INV)},p3={x:rev?-D.sCurve.borderOvershootPx:A.W+D.sCurve.borderOvershootPx,y:A.H*A.INV};
     if(s.orientation==='portrait'){
-      addPath(bezier({x:A.W*(1-A.INV),y:rev?A.H+80:-80},
-        {x:-A.W*.08,y:A.H*A.INV},{x:A.W*1.08,y:A.H*(1-A.INV)},
-        {x:A.W*A.INV,y:rev?-80:A.H+80},count,0));
+      addPath(bezier({x:A.W*(1-A.INV),y:rev?A.H+D.sCurve.borderOvershootPx:-D.sCurve.borderOvershootPx},
+        {x:-A.W*D.sCurve.controlOutsideFraction,y:A.H*A.INV},{x:A.W*D.sCurve.controlBeyondFraction,y:A.H*(1-A.INV)},
+        {x:A.W*A.INV,y:rev?-D.sCurve.borderOvershootPx:A.H+D.sCurve.borderOvershootPx},count,0));
     }else{
-      addPath(bezier(p0,{x:A.W*A.INV,y:-A.H*.08},{x:A.W*(1-A.INV),y:A.H*1.08},p3,count,0));
+      addPath(bezier(p0,{x:A.W*A.INV,y:-A.H*D.sCurve.controlOutsideFraction},{x:A.W*(1-A.INV),y:A.H*D.sCurve.controlBeyondFraction},p3,count,0));
     }
   }else if(family==='ECHO'){
-    centres=[anchor]; var echoes=2+(A.hash(s.seed+'|echo-count-v5')%4), eachE=Math.ceil(count/echoes);
+    centres=[anchor]; var echoes=D.echo.minimumEchoes+(A.hash(s.seed+'|echo-count-v5')%D.echo.additionalEchoOptions), eachE=Math.ceil(count/echoes);
     for(var e=0;e<echoes;e++){
-      var off=(e-(echoes-1)/2)*A.W*.055;
+      var off=(e-(echoes-1)/2)*A.W*D.echo.parallelOffset;
       if(s.orientation==='portrait'){
-        addPath(bezier({x:A.W*.72+off,y:-70},{x:A.W*.12+off,y:A.H*.3},
-          {x:A.W*.88+off,y:A.H*.7},{x:A.W*.28+off,y:A.H+70},eachE,e));
+        addPath(bezier({x:A.W*D.echo.startMajorFraction+off,y:-D.echo.borderOvershootPx},{x:A.W*D.echo.controlMinorFraction+off,y:A.H*D.echo.firstControlFraction},
+          {x:A.W*D.echo.controlMajorFraction+off,y:A.H*D.echo.secondControlFraction},{x:A.W*D.echo.endFraction+off,y:A.H+D.echo.borderOvershootPx},eachE,e));
       }else{
-        addPath(bezier({x:-70,y:A.H*.72+off},{x:A.W*.3,y:A.H*.12+off},{x:A.W*.7,y:A.H*.88+off},{x:A.W+70,y:A.H*.28+off},eachE,e));
+        addPath(bezier({x:-D.echo.borderOvershootPx,y:A.H*D.echo.startMajorFraction+off},{x:A.W*D.echo.firstControlFraction,y:A.H*D.echo.controlMinorFraction+off},{x:A.W*D.echo.secondControlFraction,y:A.H*D.echo.controlMajorFraction+off},{x:A.W+D.echo.borderOvershootPx,y:A.H*D.echo.endFraction+off},eachE,e));
       }
     }
   }else if(family==='INTERSECT'){
-    centres=[targets[0],targets[3]]; var eachI=Math.ceil(count/2);
-    addPath(bezier({x:-60,y:A.H*.22},{x:A.W*.34,y:A.H*.08},{x:A.W*.62,y:A.H*.92},{x:A.W+60,y:A.H*.76},eachI,0));
-    addPath(bezier({x:A.W*.18,y:-60},{x:A.W*.92,y:A.H*.3},{x:A.W*.08,y:A.H*.7},{x:A.W*.82,y:A.H+60},eachI,1));
+    centres=[targets[0],targets[3]]; var eachI=Math.ceil(count/D.intersect.pathCount);
+    addPath(bezier({x:-D.intersect.borderOvershootPx,y:A.H*D.intersect.firstStartY},{x:A.W*D.intersect.firstControlAX,y:A.H*D.intersect.firstControlAY},{x:A.W*D.intersect.firstControlBX,y:A.H*D.intersect.firstControlBY},{x:A.W+D.intersect.borderOvershootPx,y:A.H*D.intersect.firstEndY},eachI,0));
+    addPath(bezier({x:A.W*D.intersect.secondStartX,y:-D.intersect.borderOvershootPx},{x:A.W*D.intersect.secondControlAX,y:A.H*D.intersect.secondControlAY},{x:A.W*D.intersect.secondControlBX,y:A.H*D.intersect.secondControlBY},{x:A.W*D.intersect.secondEndX,y:A.H+D.intersect.borderOvershootPx},eachI,1));
   }else if(family==='CASCADE'){
-    centres=[anchor]; var segs=3+(A.hash(s.seed+'|cascade-v5')%3), left=count;
+    centres=[anchor]; var segs=D.cascade.minimumSegments+(A.hash(s.seed+'|cascade-v5')%D.cascade.additionalSegmentOptions), left=count;
     var cur=s.orientation==='portrait'?{x:A.W*.18,y:A.H*.12}:{x:A.W*.12,y:A.H*.18};
-    for(var c=0;c<segs;c++){var n=Math.max(3,Math.round(left/(segs-c))),len=(s.orientation==='portrait'?A.H:A.W)*.62/Math.pow(A.PHI,c*.7),ang=phase*.18+c*A.GOLD*.42;
+    for(var c=0;c<segs;c++){var n=Math.max(D.cascade.minimumSegmentPoints,Math.round(left/(segs-c))),len=(s.orientation==='portrait'?A.H:A.W)*D.cascade.lengthFraction/Math.pow(A.PHI,c*D.cascade.phiDecayExponent),ang=phase*D.cascade.phaseScale+c*A.GOLD*D.cascade.turnScale;
       var end=s.orientation==='portrait'
-        ?{x:cur.x+Math.cos(ang)*len*.7,y:cur.y+Math.sin(ang)*len}
-        :{x:cur.x+Math.cos(ang)*len,y:cur.y+Math.sin(ang)*len*.7};
-      addPath(bezier(cur,{x:A.lerp(cur.x,end.x,.35),y:cur.y-len*.12},{x:A.lerp(cur.x,end.x,.72),y:end.y+len*.1},end,n,c));
+        ?{x:cur.x+Math.cos(ang)*len*D.cascade.crossAxisLengthScale,y:cur.y+Math.sin(ang)*len}
+        :{x:cur.x+Math.cos(ang)*len,y:cur.y+Math.sin(ang)*len*D.cascade.crossAxisLengthScale};
+      addPath(bezier(cur,{x:A.lerp(cur.x,end.x,D.cascade.controlAAlong),y:cur.y-len*D.cascade.controlACross},{x:A.lerp(cur.x,end.x,D.cascade.controlBAlong),y:end.y+len*D.cascade.controlBCross},end,n,c));
       cur=end;left-=n;
     }
   }else if(family==='ORBIT'){
-    centres=[targets[0],targets[3]]; var orbits=2, eachO=Math.ceil(count/orbits);
-    for(var o=0;o<orbits;o++){var path=[];for(var k=0;k<eachO;k++){var u=k/Math.max(1,eachO-1),ang=phase+u*A.TAU*A.INV*1.35+o*Math.PI;
-      path.push({x:centres[o].x+Math.cos(ang)*A.W*(.18+o*.035),y:centres[o].y+Math.sin(ang)*A.H*(.28-o*.04),arm:o,local:k,theta:ang,radius:.2});}addPath(path);}
+    centres=[targets[0],targets[3]]; var orbits=D.orbit.pathCount, eachO=Math.ceil(count/orbits);
+    for(var o=0;o<orbits;o++){var path=[];for(var k=0;k<eachO;k++){var u=k/Math.max(1,eachO-1),ang=phase+u*A.TAU*A.INV*D.orbit.angularSweepScale+o*Math.PI;
+      path.push({x:centres[o].x+Math.cos(ang)*A.W*(D.orbit.radiusXStart+o*D.orbit.radiusXStep),y:centres[o].y+Math.sin(ang)*A.H*(D.orbit.radiusYStart-o*D.orbit.radiusYStep),arm:o,local:k,theta:ang,radius:D.orbit.guideRadius});}addPath(path);}
   }else if(family==='SCATTER'){
-    centres=[anchor]; var raw=logPath(anchor.x,anchor.y,.02,.58,1.8,phase,count*2,0), sparse=[];
-    for(var z=0;z<raw.length;z++){var keep=((z*A.GOLD)%A.TAU)<A.TAU*A.INV; if(keep&&r.chance(.48+.38*influence))sparse.push(raw[z]);}
+    centres=[anchor]; var raw=logPath(anchor.x,anchor.y,D.scatter.startRadius,D.scatter.endRadius,D.scatter.turns,phase,count*D.scatter.sourceCountMultiplier,0), sparse=[];
+    for(var z=0;z<raw.length;z++){var keep=((z*A.GOLD)%A.TAU)<A.TAU*A.INV; if(keep&&r.chance(D.scatter.chanceBase+D.scatter.influenceChanceGain*influence))sparse.push(raw[z]);}
     addPath(sparse.slice(0,count));
   }
 
   // V6 safety: a trajectory family must actually cross the drawable canvas.
   // V5 CROP/SWEEP seeds could generate every point off-canvas, producing an empty export.
   var visibleCount=0;
-  for(var vi=0;vi<points.length;vi++)if(points[vi].x>-20&&points[vi].x<A.W+20&&points[vi].y>-20&&points[vi].y<A.H+20)visibleCount++;
-  if(visibleCount<Math.min(4,Math.max(2,Math.floor(count*.12)))){
+  for(var vi=0;vi<points.length;vi++)if(points[vi].x>-D.safety.visibilityMarginPx&&points[vi].x<A.W+D.safety.visibilityMarginPx&&points[vi].y>-D.safety.visibilityMarginPx&&points[vi].y<A.H+D.safety.visibilityMarginPx)visibleCount++;
+  if(visibleCount<Math.min(D.safety.visibleRequiredMax,Math.max(D.safety.visibleRequiredMin,Math.floor(count*D.safety.visibleFraction)))){
     points=[];paths=[];centres=[anchor];family='SAFE-SWEEP';
     if(s.orientation==='portrait'){
-      addPath(bezier({x:A.W*(1-A.INV),y:-20},{x:A.W*.08,y:A.H*A.INV},
-        {x:A.W*.92,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H+20},count,0));
+      addPath(bezier({x:A.W*(1-A.INV),y:-D.safety.fallbackBorderOvershootPx},{x:A.W*D.safety.fallbackControlNear,y:A.H*A.INV},
+        {x:A.W*D.safety.fallbackControlFar,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H+D.safety.fallbackBorderOvershootPx},count,0));
     }else{
-      addPath(bezier({x:-20,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H*.08},{x:A.W*(1-A.INV),y:A.H*.92},{x:A.W+20,y:A.H*A.INV},count,0));
+      addPath(bezier({x:-D.safety.fallbackBorderOvershootPx,y:A.H*(1-A.INV)},{x:A.W*A.INV,y:A.H*D.safety.fallbackControlNear},{x:A.W*(1-A.INV),y:A.H*D.safety.fallbackControlFar},{x:A.W+D.safety.fallbackBorderOvershootPx,y:A.H*A.INV},count,0));
     }
   }
 
   // Pull strict trajectories slightly toward phi anchors at low influence, preserving identity without forcing a coil.
   for(var pi=0;pi<points.length;pi++){
-    var p=points[pi], tgt=targets[(pi+phiIndex)%targets.length], freedom=(1-influence)*.22;
+    var p=points[pi], tgt=targets[(pi+phiIndex)%targets.length], freedom=(1-influence)*D.safety.lowInfluenceAnchorMix;
     p.x=A.lerp(p.x,tgt.x,freedom); p.y=A.lerp(p.y,tgt.y,freedom);
   }
 
@@ -1895,13 +2035,13 @@ function drawSpiralV6(ctx,s,r,pal){
   for(var pa=0;pa<paths.length;pa++){
     prev=null;
     for(var q=0;q<paths[pa].length;q++){
-      var p=paths[pa][q], inside=p.x>-45&&p.x<A.W+45&&p.y>-45&&p.y<A.H+45;
-      var sparseGap=family==='SCATTER'&&r.chance(.48);
-      if(inside&&prev&&s.lines&&!sparseGap&&r.chance(A.lerp(.88,.58,crowdFactor(s))))A.drawLine(ctx,prev,p,pal[drawIndex%pal.length],s,r);
+      var p=paths[pa][q], inside=p.x>-D.ink.drawOutsideMarginPx&&p.x<A.W+D.ink.drawOutsideMarginPx&&p.y>-D.ink.drawOutsideMarginPx&&p.y<A.H+D.ink.drawOutsideMarginPx;
+      var sparseGap=family==='SCATTER'&&r.chance(D.ink.scatterGapChance);
+      if(inside&&prev&&s.lines&&!sparseGap&&r.chance(A.lerp(D.ink.lineChanceSparse,D.ink.lineChanceDense,crowdFactor(s))))A.drawLine(ctx,prev,p,pal[drawIndex%pal.length],s,r);
       if(inside&&!sparseGap){
-        var local=q, tier=(q===Math.round((paths[pa].length-1)*A.INV))?'hero':(q%Math.max(2,Math.round(paths[pa].length*A.INV*.18))===0?'medium':'small');
-        if(r.chance(A.lerp(.9,.68,crowdFactor(s)))){
-          drawPlannedElementV3(ctx,{tier:tier,x:A.clamp(p.x,24,A.W-24),y:A.clamp(p.y,24,A.H-24),size:makeBaseSize(s,tier,r,baseSize,strategy),rot:(p.theta||0)+Math.PI/2,territory:baseSize},drawIndex,s,r,pal,strategy);
+        var local=q, tier=(q===Math.round((paths[pa].length-1)*A.INV))?'hero':(q%Math.max(D.tiers.mediumPeriodFloor,Math.round(paths[pa].length*A.INV*D.tiers.mediumPeriodScale))===0?'medium':'small');
+        if(r.chance(A.lerp(D.ink.shapeChanceSparse,D.ink.shapeChanceDense,crowdFactor(s)))){
+          drawPlannedElementV3(ctx,{tier:tier,x:A.clamp(p.x,D.ink.canvasInsetPx,A.W-D.ink.canvasInsetPx),y:A.clamp(p.y,D.ink.canvasInsetPx,A.H-D.ink.canvasInsetPx),size:makeBaseSize(s,tier,r,baseSize,strategy),rot:(p.theta||0)+Math.PI/2,territory:baseSize},drawIndex,s,r,pal,strategy);
         }
         drawIndex++;
       }
