@@ -79,6 +79,48 @@ var HIERARCHY_TUNING=Object.freeze({
   })
 });
 
+// Calibrated bounds and penalties used by the V1–V7 placement planner.
+// These are artistic / geometric safety settings, not consequences of φ.
+// Keep all values, arithmetic order, RNG calls, and legacy render results.
+// A numerical redesign requires a new renderer version.
+var PLACEMENT_TUNING=Object.freeze({
+  voids:Object.freeze({
+    enableThreshold:.08,             // Below this, reserve no protected voids.
+    sourceCellCount:10,               // Sample territories from ten golden cells.
+    sourceCellMarginPx:54,           // Insets used to construct those cells.
+    secondVoidThreshold:.7,          // High negative-space setting creates two voids.
+    voidStrategySecondThreshold:.42, // VOID strategy creates two earlier.
+    firstCellMaxIndex:4,             // Limit which sorted cell begins the selection.
+    cellStride:3,                   // Separate selected void cells in the sorted list.
+    cellPoolLimit:8,                // Avoid stepping beyond the original selection pool.
+    scaleMin:.46,                   // Reserved region scaling at zero empty-space pull.
+    scaleMax:.88,                   // Scaling with maximum empty-space pull.
+    strategyScaleBoost:1.08,        // Make VOID-strategy exclusions slightly larger.
+    widthFloorPx:110,              // Prevent too-narrow protected regions.
+    heightFloorPx:90,              // Prevent too-short protected regions.
+    maxCanvasFraction:.43,         // Maximum width/height of an exclusion.
+    edgeInsetPx:34,                // Keep protected void boundaries inside the canvas.
+    markRadiusFraction:.38,        // Approximate mark footprint used for intersection.
+    paddingMinPx:4,                // Clearance around a void at low negative space.
+    paddingMaxPx:34               // Clearance around a void at high negative space.
+  }),
+  collision:Object.freeze({
+    heroDistanceBoost:1.12,        // Increase pair spacing where a hero is involved.
+    distanceWhenOverlapHigh:.12,   // Desired centre spacing with maximum overlap.
+    distanceWhenOverlapLow:.72,    // Centre spacing with minimum permitted overlap.
+    voidPenaltyMin:4,              // Weight of a void collision at low negative space.
+    voidPenaltyMax:14             // Weight of a void collision at high negative space.
+  }),
+  search:Object.freeze({
+    heroPlacementTries:30,         // Candidate placements considered for each hero.
+    otherPlacementTries:22,        // Candidate placements for supporting marks.
+    shrinkLimit:.28,              // Maximum reduction when testing later candidates.
+    shrinkPerAttempt:.012,        // Progressive shrink rate for retries.
+    elementEdgeInsetPx:28,        // Keep planned element centres away from the edge.
+    acceptablePenalty:.012        // Early-exit threshold for a good enough placement.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -151,26 +193,26 @@ function makeBaseSize(s,tier,r,territory,strategy){
 
 function makeReservedVoids(s,strategy,r){
   var strength=A.clamp(s.negativeSpace/100,0,1);
-  if(strength<.08)return[];
+  if(strength<PLACEMENT_TUNING.voids.enableThreshold)return[];
 
-  var cells=A.goldenCells(10,54).slice();
+  var cells=A.goldenCells(PLACEMENT_TUNING.voids.sourceCellCount,PLACEMENT_TUNING.voids.sourceCellMarginPx).slice();
   cells.sort(function(a,b){return b.w*b.h-a.w*a.h});
 
-  var count=strength>.7?2:1;
-  if(strategy==='VOID'&&strength>.42)count=2;
+  var count=strength>PLACEMENT_TUNING.voids.secondVoidThreshold?2:1;
+  if(strategy==='VOID'&&strength>PLACEMENT_TUNING.voids.voidStrategySecondThreshold)count=2;
 
-  var start=r.int(1,Math.min(4,cells.length-1));
+  var start=r.int(1,Math.min(PLACEMENT_TUNING.voids.firstCellMaxIndex,cells.length-1));
   var out=[];
 
   for(var i=0;i<count;i++){
-    var c=cells[(start+i*3)%Math.min(8,cells.length)];
-    var scale=A.lerp(.46,.88,strength)*(strategy==='VOID'?1.08:1);
-    var w=A.clamp(c.w*scale,110,A.W*.43);
-    var h=A.clamp(c.h*scale,90,A.H*.43);
+    var c=cells[(start+i*PLACEMENT_TUNING.voids.cellStride)%Math.min(PLACEMENT_TUNING.voids.cellPoolLimit,cells.length)];
+    var scale=A.lerp(PLACEMENT_TUNING.voids.scaleMin,PLACEMENT_TUNING.voids.scaleMax,strength)*(strategy==='VOID'?PLACEMENT_TUNING.voids.strategyScaleBoost:1);
+    var w=A.clamp(c.w*scale,PLACEMENT_TUNING.voids.widthFloorPx,A.W*PLACEMENT_TUNING.voids.maxCanvasFraction);
+    var h=A.clamp(c.h*scale,PLACEMENT_TUNING.voids.heightFloorPx,A.H*PLACEMENT_TUNING.voids.maxCanvasFraction);
 
     out.push({
-      x:A.clamp(c.x+c.w/2-w/2,34,A.W-w-34),
-      y:A.clamp(c.y+c.h/2-h/2,34,A.H-h-34),
+      x:A.clamp(c.x+c.w/2-w/2,PLACEMENT_TUNING.voids.edgeInsetPx,A.W-w-PLACEMENT_TUNING.voids.edgeInsetPx),
+      y:A.clamp(c.y+c.h/2-h/2,PLACEMENT_TUNING.voids.edgeInsetPx,A.H-h-PLACEMENT_TUNING.voids.edgeInsetPx),
       w:w,h:h
     });
   }
@@ -213,8 +255,8 @@ function segmentCrossesVoid(x1,y1,x2,y2,voids){
 function objectVoidPenalty(obj,voids,s){
   if(!voids.length)return 0;
 
-  var radius=obj.size*.38;
-  var pad=A.lerp(4,34,s.negativeSpace/100);
+  var radius=obj.size*PLACEMENT_TUNING.voids.markRadiusFraction;
+  var pad=A.lerp(PLACEMENT_TUNING.voids.paddingMinPx,PLACEMENT_TUNING.voids.paddingMaxPx,s.negativeSpace/100);
   var total=0;
 
   for(var i=0;i<voids.length;i++){
@@ -233,8 +275,8 @@ function objectVoidPenalty(obj,voids,s){
 function minDistanceFor(a,b,s){
   var strict=1-overlapAllowance(s);
   var radii=(a.size+b.size)*.5;
-  var tierBoost=(a.tier==='hero'||b.tier==='hero')?1.12:1;
-  return radii*A.lerp(.12,.72,strict)*tierBoost;
+  var tierBoost=(a.tier==='hero'||b.tier==='hero')?PLACEMENT_TUNING.collision.heroDistanceBoost:1;
+  return radii*A.lerp(PLACEMENT_TUNING.collision.distanceWhenOverlapHigh,PLACEMENT_TUNING.collision.distanceWhenOverlapLow,strict)*tierBoost;
 }
 
 function pairPenalty(a,b,s){
@@ -246,7 +288,7 @@ function pairPenalty(a,b,s){
 }
 
 function placementPenalty(obj,placed,s,voids){
-  var p=objectVoidPenalty(obj,voids,s)*A.lerp(4,14,s.negativeSpace/100);
+  var p=objectVoidPenalty(obj,voids,s)*A.lerp(PLACEMENT_TUNING.collision.voidPenaltyMin,PLACEMENT_TUNING.collision.voidPenaltyMax,s.negativeSpace/100);
   for(var i=0;i<placed.length;i++)p+=pairPenalty(obj,placed[i],s);
   return p;
 }
@@ -354,15 +396,15 @@ function makeLayoutPlan(s,seedSuffix,strategy,voids){
   for(var i=0;i<tiers.length;i++){
     var tier=tiers[i];
     var best=null,bestPenalty=Infinity;
-    var tries=tier==='hero'?30:22;
+    var tries=tier==='hero'?PLACEMENT_TUNING.search.heroPlacementTries:PLACEMENT_TUNING.search.otherPlacementTries;
 
     for(var t=0;t<tries;t++){
       var pos=candidatePosition(i,tiers.length,s,r,tier,distributed,phase,t,strategy);
-      var shrink=1-Math.min(.28,t*.012)*(1-overlapAllowance(s));
+      var shrink=1-Math.min(PLACEMENT_TUNING.search.shrinkLimit,t*PLACEMENT_TUNING.search.shrinkPerAttempt)*(1-overlapAllowance(s));
       var obj={
         tier:tier,
-        x:A.clamp(pos.x,28,A.W-28),
-        y:A.clamp(pos.y,28,A.H-28),
+        x:A.clamp(pos.x,PLACEMENT_TUNING.search.elementEdgeInsetPx,A.W-PLACEMENT_TUNING.search.elementEdgeInsetPx),
+        y:A.clamp(pos.y,PLACEMENT_TUNING.search.elementEdgeInsetPx,A.H-PLACEMENT_TUNING.search.elementEdgeInsetPx),
         size:makeBaseSize(s,tier,r,pos.territory,strategy)*shrink,
         rot:r.range(0,A.TAU)*(s.rotation/100),
         territory:pos.territory
@@ -373,7 +415,7 @@ function makeLayoutPlan(s,seedSuffix,strategy,voids){
         bestPenalty=penalty;
         best=obj;
       }
-      if(penalty<.012)break;
+      if(penalty<PLACEMENT_TUNING.search.acceptablePenalty)break;
     }
 
     if(best)placed.push(best);

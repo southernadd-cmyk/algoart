@@ -107,6 +107,41 @@ of additional φ pull, and element counts **1, 23, 24, 69, 70, 140**.
 It checks drawing-command hashes and layout metadata, including the
 24- and 70-element thresholds, so a silent aesthetic drift is a test failure.
 
+## Fourth extraction: placement constraints and collision handling
+
+The 29 artist-calibrated values in `PLACEMENT_TUNING` group the
+**protected negative-space boundaries**, mark-to-mark collision spacing,
+and placement-candidate search budgets. The values remain byte-for-byte
+equivalent to the old literals: the code keeps the same comparisons,
+arithmetic order, canvas clamps and RNG call order.
+
+| Calibration group | Preserved examples | Why they matter |
+| --- | --- | --- |
+| Void activation | .08 | Threshold to reserve any protected blank space |
+| Two-void thresholds | .70 globally, .42 for VOID | Two distinct design rules; both use strict `>` comparisons |
+| Void cell selection | 10 cells, 54 px margin, stride 3, pool of 8 | Deterministic selection from φ-divided territories, not φ constants |
+| Reserved-region bounds | .46–.88 scale, 1.08 VOID boost, 110/90 px floors, .43 canvas cap, 34 px inset | Shape and placement of preserved blank regions |
+| Void clearance | .38 mark-radius fraction, 4–34 px pad | How far an element should stay from an exclusion |
+| Pair spacing | 1.12 hero boost, .12–.72 overlap response | Minimum desired spacing; distinct from EDGE-strategy .12 and φ-related .72 elsewhere |
+| Penalty weights | 4–14 | Influence of negative-space intrusions during placement |
+| Search budgets | 30 hero tries, 22 supporting tries | Candidate-budget limits; reducing these changes random-number consumption |
+| Retry handling | .28 shrink cap, .012 shrink increment, 28 px inset, .012 acceptance threshold | Prevents excessive collision without losing seeded layouts |
+
+**Near-matching values are not automatically interchangeable.** For example,
+the `.12` here is a *pair-spacing* response to Overlap, not the EDGE band
+or a golden-ratio constant. The `.012` shrink increment and acceptance
+threshold are equal by coincidence of their original calibration, and remain
+separate parameters.
+
+Beyond the existing 288 whole-artwork, 36 helper and 216 hierarchy checks,
+the pinned compatibility test now compares **112 additional complete
+compositions**, covering both Field/Network, VOID/EDGE strategies, orientations
+and overlap extremes. Negative Space is sampled at 0, 8, 42, 43, 70, 71 and
+100 to catch differences at the original strict threshold boundaries.
+
+**No changes** to the segment/void intersection algorithm, `A.PHI`,
+`A.INV`, `A.GOLD`, seeded RNG, canvas sizes or version selection.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
