@@ -710,3 +710,61 @@ for(const variant of rectVariants){
   }
 }
 console.log('PASS: '+rectDivisionChecks+' Recursive Divisions variant, recursive split, void and mark compositions match pinned commands and territory metadata.');
+
+
+// Fifteenth extraction: Radiant Systems six-family hub layout, golden-angle
+// ray placement, marked hierarchy, partial void avoidance and secondary ink.
+// Derive actual seeded variant choices from the pinned baseline rather than
+// assuming an arbitrary test seed selects the desired family. Compare complete
+// ordered drawing-command hashes AND hub/ray/void metadata across all old
+// versions, both orientations, full/intermediate/zero extra φ Pull, crowding,
+// blank-space extremes, and auxiliary shape controls. These are not screenshots.
+const burstVariants=['SINGLE','TWIN','TRIAD','CROPPED','VOID','SATELLITE'];
+function seedForBurstVariant(variant){
+  for(let i=0;i<1000;i++){
+    const seed='BURST-CALIBRATION-'+i;
+    if(burstVariants[baseline.hash(seed+'|burst-variant')%burstVariants.length]===variant)return seed;
+  }
+  throw Error('Unable to derive seed for Radiant Systems variant '+variant);
+}
+let burstCalibrationChecks=0;
+for(const variant of burstVariants){
+  const seed=seedForBurstVariant(variant);
+  for(const version of [3,6,7]){
+    for(const orientation of ['landscape','portrait']){
+      for(const phiStrength of [0,50,100]){
+        for(const negativeSpace of [0,100]){
+          for(const rich of [false,true]){
+            const settings={
+              seed,mode:'burst',orientation,
+              elements:rich?140:8,
+              density:rich?100:0,
+              complexity:rich?100:0,
+              negativeSpace,phiStrength,
+              recursion:rich?8:1,
+              spiralInfluence:60,goldenAngle:rich?100:0,
+              nesting:rich?100:0,
+              pen:'felt',thickness:rich?24:2,
+              wobble:rich?95:0,overdraw:rich?4:1,
+              opacity:rich?100:25,pressure:25,dryness:15,
+              curveBias:rich?100:0,shapeAmount:rich?100:0,
+              overlap:rich?100:0,rotation:rich?100:0,
+              lines:rich,circles:rich,rectangles:rich,
+              polygons:rich,arcs:rich,
+              palette:'mono',colourCount:3,saturation:75,
+              brightness:50,paper:'#f5f0e6',grain:0
+            };
+            const before=capture(baseline,settings,version);
+            const after=capture(current,settings,version);
+            assert.equal(JSON.parse(before.metadata).guide.variant,variant,
+              'Expected pinned '+variant+' radial variant');
+            assert.deepEqual(after,before,
+              `Radiant Systems changed: ${variant}/V${version}/${orientation}/phi${phiStrength}/void${negativeSpace}/rich${rich}`);
+            burstCalibrationChecks++;
+          }
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+burstCalibrationChecks+' Radiant Systems exact drawing and hub/ray/void metadata comparisons against immutable pre-refactor renderer.');
