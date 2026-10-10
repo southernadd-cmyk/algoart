@@ -213,6 +213,39 @@ Trajectories tests** cover V3/V4/V6/V7, orientations, Golden Angle at
 compared against the same immutable pre-refactor reference. No renderer
 or algorithm was redesigned.
 
+## Seventh extraction: Constructed Forms engine
+
+`CONSTRUCTED_TUNING` names **27 unchanged engine-specific artistic
+parameters**. This is intentionally **not** a shared configuration for
+Scribble, Growth Systems, or any other drawing engine. It preserves the six
+Constructed Forms substyles: BALANCE, STACK, AXIS, COLLISION, FLOAT and CROP.
+
+| Subsystem | Existing values | Purpose |
+| --- | --- | --- |
+| Form count | 7–34 shapes; base 7; Elements × .15 and Complexity × .075 | Keep collages sparse and legible |
+| Constructed style | Curve Bias cap 12; Wobble cap 16; Overdraw cap 4 | Crisp geometry rather than loose strokes |
+| Ghost guides | Thickness × .58; Opacity floor 18 and × .58; Overdraw × .65 | Subordinate construction lines to the main marks |
+| Form size | Hero floor 170 px; small cap 150 px; overall floor 24 px; CROP cap 470 px versus 390 px otherwise | Keep a clear focal hierarchy without suppressing deliberate cropping |
+| Shape aspect | Random ratio 1.12–1.92 before φ pull | Expressive initial proportions before φ influence |
+| Form handling | Line half-length × .72; hero accent chance .48 + Nesting/250 | Encourage distinct line and nested-form treatments |
+| Nested accents | Arc size × .52; rectangle rotates by Golden Angle × .18 | Independent artistic treatments of inner details |
+| Finish | 18 px uncropped inset; guide chance .28 + Complexity/260 | Allow CROP to extend beyond the canvas while other variants stay framed |
+
+The `34` and `55` Fibonacci numbers still appear as exact existing
+quantisation bases in this engine, and `A.PHI`, `A.INV` and `A.GOLD`
+remain mathematical definitions. The first layer of this extraction
+names the **shared style and sizing** behaviour; individual variant
+layout coordinates and random size ranges remain separate for subsequent
+audits. An identical decimal in another engine is not evidence that
+both engines should share one variable.
+
+The pinned comparison now additionally exercises **144 complete
+Constructed Forms compositions**: all six variants, renderer versions
+V2/V5/V7, both orientations, 0% and 100% Additional φ Pull, and low/high
+complexity with extreme element counts, jitter, overdraw, opacity and
+nesting. As before, drawing-command SHA-256 digests and geometry
+metadata must match the immutable pre-refactor version exactly.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
