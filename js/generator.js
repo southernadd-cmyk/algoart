@@ -432,6 +432,43 @@ var ORGANIC_DETAIL_TUNING=Object.freeze({
   })
 });
 
+// Connected Fields topology calibration. These original artist-chosen
+// network preferences are not derived from φ. Preserve score arithmetic,
+// candidate sort stability, edge addition order and all renderer RNG calls.
+// Actual φ quantisation remains A.qphi(...,34,...) in networkPhiFit().
+var NETWORK_TOPOLOGY_TUNING=Object.freeze({
+  search:Object.freeze({
+    minimumNeighbours:4,         // Lower bound of the candidate neighbourhood.
+    maximumNeighbours:9,         // Upper bound as complexity rises.
+    baseNeighbours:4,            // Base connectivity before Complexity.
+    complexityPerNeighbour:18,   // Add neighbours with higher Complexity.
+    maximumAllowedCrossings:2,   // Crossing tolerance at full Overlap.
+    targetLowMultiplier:1.04,    // Sparse network edge target per node.
+    targetHighMultiplier:1.68,   // Dense network edge target per node.
+    crowdedTargetScale:.8,       // Limit total connections when crowded.
+    heroNeighbourLimit:5,       // Candidate neighbours for each hero.
+    heroAttachmentLimit:2,      // Supporting links attached to each hero.
+    orphanNeighbourLimit:8      // Extra lookup to avoid disconnected nodes.
+  }),
+  degree:Object.freeze({
+    complexityPerExtraDegree:34, // Complexity units granting one extra link.
+    heroBaseDegree:4,            // Heroes can become prominent hubs.
+    mediumBaseDegree:3,          // Medium shapes have fewer connections.
+    mediumExtraDegreeLimit:2,   // Cap extra medium connections.
+    smallBaseDegree:2,           // Small nodes stay less connected.
+    smallExtraDegreeLimit:1     // Cap extra small connections.
+  }),
+  score:Object.freeze({
+    heroEndpointBonus:1.35,     // Encourage links involving a hero.
+    mediumEndpointBonus:.55,    // Encourage links involving a medium node.
+    heroPairBonus:1.4,          // Extra reward between two focal nodes.
+    canvasLengthScale:.58,     // Falloff of preference for short edges.
+    phiFitWeight:2.25,         // Contribution of φ-quantised edge length.
+    proximityWeight:1.4,       // Nearest-neighbour rank preference.
+    shortEdgeWeight:.85        // Preference for short local edges.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -2140,10 +2177,10 @@ function networkEdgeCrossings(edge,edges,layout){
 }
 
 function networkDegreeCap(node,s){
-  var extra=Math.floor(s.complexity/34);
-  if(node.tier==='hero')return 4+extra;
-  if(node.tier==='medium')return 3+Math.min(2,extra);
-  return 2+Math.min(1,extra);
+  var extra=Math.floor(s.complexity/NETWORK_TOPOLOGY_TUNING.degree.complexityPerExtraDegree);
+  if(node.tier==='hero')return NETWORK_TOPOLOGY_TUNING.degree.heroBaseDegree+extra;
+  if(node.tier==='medium')return NETWORK_TOPOLOGY_TUNING.degree.mediumBaseDegree+Math.min(NETWORK_TOPOLOGY_TUNING.degree.mediumExtraDegreeLimit,extra);
+  return NETWORK_TOPOLOGY_TUNING.degree.smallBaseDegree+Math.min(NETWORK_TOPOLOGY_TUNING.degree.smallExtraDegreeLimit,extra);
 }
 
 function networkPhiFit(length,s){
@@ -2154,16 +2191,16 @@ function networkPhiFit(length,s){
 
 function buildNetworkEdges(layout,s){
   var crowd=crowdFactor(s);
-  var searchCount=Math.max(4,Math.min(9,4+Math.floor(s.complexity/18)));
+  var searchCount=Math.max(NETWORK_TOPOLOGY_TUNING.search.minimumNeighbours,Math.min(NETWORK_TOPOLOGY_TUNING.search.maximumNeighbours,NETWORK_TOPOLOGY_TUNING.search.baseNeighbours+Math.floor(s.complexity/NETWORK_TOPOLOGY_TUNING.search.complexityPerNeighbour)));
   var candidateMap={};
   var candidates=[];
   var degrees=new Array(layout.length).fill(0);
   var chosen=[];
   var chosenKeys={};
-  var allowedCrossings=Math.round(A.lerp(0,2,overlapAllowance(s)));
+  var allowedCrossings=Math.round(A.lerp(0,NETWORK_TOPOLOGY_TUNING.search.maximumAllowedCrossings,overlapAllowance(s)));
   var target=Math.max(
     layout.length-1,
-    Math.round(layout.length*A.lerp(1.04,1.68,s.complexity/100)*A.lerp(1,.8,crowd))
+    Math.round(layout.length*A.lerp(NETWORK_TOPOLOGY_TUNING.search.targetLowMultiplier,NETWORK_TOPOLOGY_TUNING.search.targetHighMultiplier,s.complexity/100)*A.lerp(1,NETWORK_TOPOLOGY_TUNING.search.crowdedTargetScale,crowd))
   );
 
   function edgeKey(a,b){
@@ -2177,14 +2214,14 @@ function buildNetworkEdges(layout,s){
     var diagonal=Math.hypot(A.W,A.H);
     var phiFit=networkPhiFit(len,s);
     var importance=0;
-    if(na.tier==='hero'||nb.tier==='hero')importance+=1.35;
-    if(na.tier==='medium'||nb.tier==='medium')importance+=.55;
-    if(na.tier==='hero'&&nb.tier==='hero')importance+=1.4;
+    if(na.tier==='hero'||nb.tier==='hero')importance+=NETWORK_TOPOLOGY_TUNING.score.heroEndpointBonus;
+    if(na.tier==='medium'||nb.tier==='medium')importance+=NETWORK_TOPOLOGY_TUNING.score.mediumEndpointBonus;
+    if(na.tier==='hero'&&nb.tier==='hero')importance+=NETWORK_TOPOLOGY_TUNING.score.heroPairBonus;
     var local=1-rank/Math.max(1,searchCount);
-    var lengthBias=1-A.clamp(len/(diagonal*.58),0,1);
+    var lengthBias=1-A.clamp(len/(diagonal*NETWORK_TOPOLOGY_TUNING.score.canvasLengthScale),0,1);
     return{
       a:a,b:b,len:len,
-      score:phiFit*2.25+local*1.4+lengthBias*.85+importance
+      score:phiFit*NETWORK_TOPOLOGY_TUNING.score.phiFitWeight+local*NETWORK_TOPOLOGY_TUNING.score.proximityWeight+lengthBias*NETWORK_TOPOLOGY_TUNING.score.shortEdgeWeight+importance
     };
   }
 
@@ -2253,9 +2290,9 @@ function buildNetworkEdges(layout,s){
 
   for(var m=0;m<heroes.length;m++){
     var heroIndex=heroes[m];
-    var heroNear=nearestNeighbours(layout,heroIndex,Math.min(5,layout.length-1));
+    var heroNear=nearestNeighbours(layout,heroIndex,Math.min(NETWORK_TOPOLOGY_TUNING.search.heroNeighbourLimit,layout.length-1));
     var attached=0;
-    for(var hn=0;hn<heroNear.length&&attached<2;hn++){
+    for(var hn=0;hn<heroNear.length&&attached<NETWORK_TOPOLOGY_TUNING.search.heroAttachmentLimit;hn++){
       var targetIndex=heroNear[hn].index;
       if(layout[targetIndex].tier==='hero')continue;
       if(addEdge(candidateScore(heroIndex,targetIndex,hn),true,false))attached++;
@@ -2268,7 +2305,7 @@ function buildNetworkEdges(layout,s){
 
   for(var orphan=0;orphan<layout.length;orphan++){
     if(degrees[orphan]>0)continue;
-    var fallback=nearestNeighbours(layout,orphan,Math.min(8,layout.length-1));
+    var fallback=nearestNeighbours(layout,orphan,Math.min(NETWORK_TOPOLOGY_TUNING.search.orphanNeighbourLimit,layout.length-1));
     var best=null,bestCross=Infinity;
     for(var f=0;f<fallback.length;f++){
       var edge=candidateScore(orphan,fallback[f].index,f);
