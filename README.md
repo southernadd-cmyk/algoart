@@ -6,7 +6,7 @@ ALGO/ART is a deterministic, browser-based generative art system built around th
 
 Live site: https://southernadd-cmyk.github.io/algoart/
 
-**Current renderer: V6.**
+**Current renderer: V7.**
 <img width="1400" height="1000" alt="image" src="https://github.com/user-attachments/assets/e8015ddb-3cbd-4b3a-9475-697435c327c0" />
 
 ## Live website updates — 9 October 2026
@@ -104,7 +104,8 @@ The renderer version is written into share URLs as `v=`, and the interface recog
 | **V3** | Family-aware Field rendering, including shape-aware angular alignment and stronger relationships between hero, medium and supporting forms. |
 | **V4** | Introduced the true golden logarithmic spiral used by Golden Trajectories and by spiral-influenced placement elsewhere. |
 | **V5** | Reimagined Golden Trajectories so φ acts as a **trajectory grammar**, not a requirement to draw one complete textbook coil. It introduced multiple deterministic trajectory families including sweeps, fans, S-curves, echoes, intersections, cascades, orbits, scatter and cropped paths. |
-| **V6** | Current hardened renderer. It keeps the diverse V5 trajectory idea but adds a visible-canvas safety test and deterministic `SAFE-SWEEP` fallback so a valid seed cannot quietly produce an empty/off-canvas Golden Trajectories export. |
+| **V6** | Hardened Golden Trajectories. It keeps the diverse V5 trajectory idea but adds a visible-canvas safety test and deterministic `SAFE-SWEEP` fallback so a valid seed cannot quietly produce an empty/off-canvas export. |
+| **V7** | Current renderer. Adds the refined Growth Systems canvas-aware grammar, including landscape long-axis growth, while retaining V1–V6 reproduction for explicitly versioned artwork links. |
 
 V6 is also paired with publication-time image validation: social/gallery automation checks that a rendered canvas contains a meaningful amount of visible artwork before publishing it. A file merely existing is no longer considered proof of a successful render.
 
@@ -452,7 +453,7 @@ Recent renderer behaviour also uses colour families to reinforce compositional r
 
 **Reveal φ** is not merely a decorative overlay. The renderer returns guide metadata describing how the current system was constructed, and the interface uses that metadata to expose the hidden composition.
 
-In the current V6 interface, the principal golden frame and explanatory spiral are **composition-aware**. They are positioned from the artwork's dominant hero/focal region rather than simply being pasted into the centre of the canvas. The revealed geometry therefore explains the current composition instead of showing an unrelated generic golden-ratio diagram.
+In the current V7 interface, the principal golden frame and explanatory spiral are **composition-aware**. They are positioned from the artwork's dominant hero/focal region rather than simply being pasted into the centre of the canvas. The revealed geometry therefore explains the current composition instead of showing an unrelated generic golden-ratio diagram.
 
 Depending on the mode it can reveal:
 
@@ -594,7 +595,8 @@ This creates a continuous chain:
 ```text
 rules + seed + settings
         ↓
-   V6 renderer
+ versioned renderer
+ (V7 for new art)
         ↓
  visible-art validation
         ↓
@@ -651,7 +653,7 @@ Automation scripts are used separately to generate gallery/social assets and upd
 
 ---
 
-# Current V6 operational safeguards
+# Operational safeguards (introduced in V6, retained in V7)
 
 The current production system includes several safeguards added after real publishing tests:
 
