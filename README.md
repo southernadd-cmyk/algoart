@@ -1,5 +1,5 @@
 # ALGO/ART
-<img width="52vw" alt="image" src="https://github.com/user-attachments/assets/70f42727-c269-4fc5-b5c4-6202990000b0" />
+<img width="377px" alt="image" src="https://github.com/user-attachments/assets/70f42727-c269-4fc5-b5c4-6202990000b0" />
 
 **Mathematics sets the rules. The marker breaks them.**
 
