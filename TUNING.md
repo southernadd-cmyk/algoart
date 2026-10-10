@@ -634,6 +634,54 @@ chosen path goes off canvas, and require its outcome to be identical
 to the untouched pinned source. All prior tuning and archive tests
 remain release gates.
 
+## Seventeenth extraction: Orbital Studies candidate ranking
+
+`ORBITAL_SELECTION_TUNING` names the **14 remaining artistic and
+computational values** in Orbital Studies' layout-winner selection. This
+complements the first extraction's **24 existing** `LAYOUT_TUNING`
+strategy/coverage/φ-centroid weights; it does not replace, merge or
+reweight them. Orbital Studies remains the seven-strategy, seeded
+candidate-and-score engine rather than becoming a new formula.
+
+| Scope | Original values | Why these are calibration, not φ identities |
+| --- | --- | --- |
+| Candidate budget | Elements > 110: 4 attempts; otherwise 6 | Search effort and candidate selection, not a mathematical section |
+| Visual hierarchy / centroid | Hero weight 1.35; medium neutral 1; small .72 | Strength of visually dominant marks when calculating centre of mass |
+| Thickness response | Baseline .55 + Thickness / 34 | Weight contributed by visible stroke density |
+| Opacity response | Baseline .45 + Opacity / 150 | Weight contributed by ink opacity |
+| DIAGONAL falloff | Tolerance .55 × canvas height | How much deviation from the target diagonal to allow |
+| Collision scoring | Penalty interpolates 18 → 5 with Overlap | Aesthetic penalty for mark crowding |
+| Protected-space scoring | Penalty interpolates 8 → 26 with Negative Space | Preference for respecting deliberately open areas |
+
+**Mathematics that stays authentic:** `phiTargets()` uses
+`A.INV` and `1-A.INV` to identify the golden-section focal
+regions; the layout sampler uses `A.distributedPhiPoints`, and the
+ORBIT scoring target uses golden-angle placement and the V4
+logarithmic-φ spiral where applicable. Distance/rotation
+relationships are quantified with `A.qphi` in the earlier
+`RELATIONSHIP_TUNING` extraction. These formulas are unchanged.
+
+**Existing tuned values stay independent:** 78 remains the φ-centroid
+**score weight**, not a mathematical identity; separate EDGE occupancy
+bands, visual-mass weights and collision penalties are not merged.
+`s.phiStrength` still governs the strength of *additional* φ
+attraction; a value of 0% does not remove all existing golden
+placement grammar. The three distinct candidate selectors retain
+their V1 (unrelated field), V2 (legacy family relationships) and
+V3/V7 (newer relationships) score paths, strict `>110` threshold,
+per-candidate seed suffix, score comparison using strict `>` and
+first-winner-on-tie logic.
+
+**224 new pinned complete-output comparisons** exercise all seven
+BALANCED, VOID, TENSION, ORBIT, EDGE, MONUMENT and DIAGONAL
+strategies × V1/V2/V3/V7 × 110/111 elements × portrait/landscape ×
+0/100% Additional φ Pull, varying opacity, thickness, density,
+negative space, overlap and drawing controls. They compare the
+complete drawing-operation digest and serialized layout metadata with
+the immutable original `99611b850bd812354701b8fec464a036d9b2c750`,
+alongside the existing compatibility checks and archived link tests.
+No new renderer version or re-tuned visual outputs are introduced.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original

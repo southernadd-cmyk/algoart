@@ -280,6 +280,35 @@ var SPIRAL_LOG_TUNING=Object.freeze({
   })
 });
 
+// Orbital Studies' remaining winner-selection calibration, V1–V7.
+// These are visual-mass preferences, score penalties and computational
+// candidate budgets, NOT numerical consequences of the golden ratio.
+// Previously extracted LAYOUT_TUNING / RELATIONSHIP_TUNING / placement
+// parameters remain independent; preserve comparison strictness, score
+// arithmetic, candidate seed suffixes and first-winning tie behaviour.
+var ORBITAL_SELECTION_TUNING=Object.freeze({
+  candidates:Object.freeze({
+    highCountThreshold:110,            // Above 110 elements test fewer layouts.
+    highCountBudget:4,                 // Original >110 candidate count.
+    standardBudget:6                   // Original <=110 candidate count.
+  }),
+  mass:Object.freeze({
+    heroWeight:1.35,                   // More influential visual centroid.
+    smallWeight:.72,                   // Medium stays the neutral multiplier 1.
+    thicknessBaseline:.55,            // Baseline weight from mark thickness.
+    thicknessDivisor:34,              // Response to stroke thickness slider.
+    opacityBaseline:.45,              // Baseline weight from opacity.
+    opacityDivisor:150                // Response to opacity slider.
+  }),
+  score:Object.freeze({
+    diagonalToleranceHeightFraction:.55, // Diagonal falloff as canvas-height fraction.
+    collisionPenaltyLowOverlap:18,       // Collision penalty when overlap not allowed.
+    collisionPenaltyHighOverlap:5,       // Lower penalty as overlap rises.
+    voidPenaltyLowNegativeSpace:8,      // Reserved-void penalty at low demand.
+    voidPenaltyHighNegativeSpace:26     // Higher priority when blank areas matter.
+  })
+});
+
 // Legacy artistic/scoring calibration, NOT mathematical φ constants.
 // Every value below is copied verbatim from the original V1–V7 renderer.
 // Keep these independent from A.PHI/A.INV/A.GOLD in phi.js: their values
@@ -1194,8 +1223,8 @@ function fieldRelationshipScore(layout,s,strategy){
 }
 
 function visualWeight(obj,s){
-  var tier=obj.tier==='hero'?1.35:(obj.tier==='medium'?1:.72);
-  return obj.size*obj.size*tier*(.55+s.thickness/34)*(.45+s.opacity/150);
+  var tier=obj.tier==='hero'?ORBITAL_SELECTION_TUNING.mass.heroWeight:(obj.tier==='medium'?1:ORBITAL_SELECTION_TUNING.mass.smallWeight);
+  return obj.size*obj.size*tier*(ORBITAL_SELECTION_TUNING.mass.thicknessBaseline+s.thickness/ORBITAL_SELECTION_TUNING.mass.thicknessDivisor)*(ORBITAL_SELECTION_TUNING.mass.opacityBaseline+s.opacity/ORBITAL_SELECTION_TUNING.mass.opacityDivisor);
 }
 
 function strategyScore(layout,s,strategy,voids){
@@ -1235,7 +1264,7 @@ function strategyScore(layout,s,strategy,voids){
     for(i=0;i<layout.length;i++){
       var expected=(layout[i].x/A.W)*A.H;
       if(reverse)expected=A.H-expected;
-      score+=Math.max(0,1-Math.abs(layout[i].y-expected)/(A.H*.55));
+      score+=Math.max(0,1-Math.abs(layout[i].y-expected)/(A.H*ORBITAL_SELECTION_TUNING.score.diagonalToleranceHeightFraction));
     }
     score=score/layout.length*LAYOUT_TUNING.strategy.diagonalAlignmentWeight;
   }else{
@@ -1302,9 +1331,9 @@ function scoreLayout(layout,s,strategy,voids){
 
   var diag=Math.hypot(A.W,A.H);
   var phiScore=(1-bestPhi/diag)*LAYOUT_TUNING.layout.phiCentroidWeight*(s.phiStrength/100);
-  var collisionPenalty=collision*A.lerp(18,5,overlapAllowance(s));
+  var collisionPenalty=collision*A.lerp(ORBITAL_SELECTION_TUNING.score.collisionPenaltyLowOverlap,ORBITAL_SELECTION_TUNING.score.collisionPenaltyHighOverlap,overlapAllowance(s));
   var hierarchyScore=heroes.length>1?heroSpread*LAYOUT_TUNING.layout.heroSeparationWeight:LAYOUT_TUNING.layout.singleHeroHierarchyBonus;
-  var reservedPenalty=voidPenalty*A.lerp(8,26,s.negativeSpace/100);
+  var reservedPenalty=voidPenalty*A.lerp(ORBITAL_SELECTION_TUNING.score.voidPenaltyLowNegativeSpace,ORBITAL_SELECTION_TUNING.score.voidPenaltyHighNegativeSpace,s.negativeSpace/100);
 
   return coverage+edgeScore+phiScore+hierarchyScore+strategyScore(layout,s,strategy,voids)-collisionPenalty-reservedPenalty;
 }
@@ -1313,7 +1342,7 @@ function chooseBestLayout(s){
   var strategy=chooseStrategy(s);
   var voidR=A.makeR(s.seed+'|'+s.mode+'|voids|'+strategy);
   var voids=makeReservedVoids(s,strategy,voidR);
-  var candidates=s.elements>110?4:6;
+  var candidates=s.elements>ORBITAL_SELECTION_TUNING.candidates.highCountThreshold?ORBITAL_SELECTION_TUNING.candidates.highCountBudget:ORBITAL_SELECTION_TUNING.candidates.standardBudget;
   var best=null,bestScore=-Infinity;
 
   for(var i=0;i<candidates;i++){
@@ -1377,7 +1406,7 @@ function chooseBestLayoutLegacy(s){
   var strategy=chooseStrategy(s);
   var voidR=A.makeR(s.seed+'|'+s.mode+'|voids|'+strategy);
   var voids=makeReservedVoids(s,strategy,voidR);
-  var candidates=s.elements>110?4:6;
+  var candidates=s.elements>ORBITAL_SELECTION_TUNING.candidates.highCountThreshold?ORBITAL_SELECTION_TUNING.candidates.highCountBudget:ORBITAL_SELECTION_TUNING.candidates.standardBudget;
   var best=null,bestScore=-Infinity;
 
   for(var i=0;i<candidates;i++){
@@ -1599,7 +1628,7 @@ function chooseBestLayoutV3(s){
   var strategy=chooseStrategy(s);
   var voidR=A.makeR(s.seed+'|'+s.mode+'|voids|'+strategy);
   var voids=makeReservedVoids(s,strategy,voidR);
-  var candidates=s.elements>110?4:6;
+  var candidates=s.elements>ORBITAL_SELECTION_TUNING.candidates.highCountThreshold?ORBITAL_SELECTION_TUNING.candidates.highCountBudget:ORBITAL_SELECTION_TUNING.candidates.standardBudget;
   var best=null,bestScore=-Infinity;
 
   for(var i=0;i<candidates;i++){
