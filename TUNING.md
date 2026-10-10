@@ -22,7 +22,7 @@ every number with `φ` would be less honest and would alter the artwork.
 
 ## First extraction: `LAYOUT_TUNING`
 
-`js/generator.js` groups 26 existing weights and scoring thresholds under
+`js/generator.js` groups 24 existing weights and scoring thresholds under
 `LAYOUT_TUNING.strategy` and `LAYOUT_TUNING.layout`. Every stored number
 and every use stays exactly the same; no ratios, interpolation, or evaluation
 order have deliberately been adjusted. This identifies the calibration,
