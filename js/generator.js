@@ -220,6 +220,66 @@ var TRAJECTORY_TUNING=Object.freeze({
   })
 });
 
+// Historical V1-V3 Spiral family calibrations: preserve the exact
+// inverse-φ default exponent, golden-angle cadence and φ focal landmarks.
+var SPIRAL_LEGACY_TUNING=Object.freeze({
+  angle:Object.freeze({
+    minimumGoldenTurnScale:.72,brokenWobble:.18,looseWobble:.1
+  }),
+  radius:Object.freeze({
+    shellExponent:.52,shellScale:.88,looseExponent:.76,looseScale:1.04,
+    brokenExponent:.62,brokenScale:.96,doubleExponent:.66,doubleScale:.7,
+    offsetVoidExponent:.6,offsetVoidScale:.9,indexOffset:.6
+  }),
+  geometry:Object.freeze({
+    offcentreMix:.72,
+    doubleHorizontalReach:.29,otherHorizontalReach:.455,
+    looseVerticalReach:.47,doubleVerticalReach:.31,otherVerticalReach:.435,
+    shellEaseExponent:1.4,shellOffsetScale:.035,
+    scatterActivationCrowd:.28,scatterMixScale:.12,canvasInsetPx:24
+  }),
+  tiers:Object.freeze({
+    mediumCountFloor:5,mediumFraction:.24,
+    territoryFloorPx:70,territoryDivisor:2,territoryCrowdScale:.28
+  }),
+  ink:Object.freeze({
+    brokenCycleBase:4,brokenCycleOptions:4,
+    lineChanceSparse:.82,lineChanceDense:.5,
+    looseLineFactor:.68,doubleLineFactor:.78,
+    markChanceSparse:.88,markChanceDense:.7,
+    brokenMarkChance:.82,voidMarkChance:.9,
+    shellArcChanceScale:.13,shellArcMinimumRadiusPx:10,
+    shellArcSourceTerritoryPx:120,shellArcRadiusScale:.62
+  })
+});
+
+// Historical V4-V5 spiral grammar: true logarithmic radius growth by φ
+// per quarter-turn. Tuned turns, canvas reach, offsets, line cadence and
+// stroke frequency are not mathematical φ constants.
+var SPIRAL_LOG_TUNING=Object.freeze({
+  geometry:Object.freeze({
+    offcentreMix:.72,shellOffsetScale:.018,canvasInsetPx:24
+  }),
+  radius:Object.freeze({
+    doubleTurns:1.75,looseTurns:2.05,otherTurns:2.35,
+    doubleReach:.31,looseReach:.46,otherReach:.43,indexOffset:.6
+  }),
+  angle:Object.freeze({
+    brokenWobble:.12,looseWobble:.07
+  }),
+  tiers:Object.freeze({
+    mediumCountFloor:5,mediumFraction:.24,
+    territoryFloorPx:70,territoryDivisor:2,territoryCrowdScale:.28
+  }),
+  ink:Object.freeze({
+    brokenCycleBase:4,brokenCycleOptions:4,
+    lineChanceSparse:.82,lineChanceDense:.5,
+    looseLineFactor:.68,doubleLineFactor:.78,
+    markChanceSparse:.88,markChanceDense:.7,
+    brokenMarkChance:.82,voidMarkChance:.9
+  })
+});
+
 // Legacy artistic/scoring calibration, NOT mathematical φ constants.
 // Every value below is copied verbatim from the original V1–V7 renderer.
 // Keep these independent from A.PHI/A.INV/A.GOLD in phi.js: their values
@@ -1619,6 +1679,7 @@ function drawFieldV3(ctx,s,r,pal){
 }
 
 function drawSpiral(ctx,s,r,pal){
+  var D=SPIRAL_LEGACY_TUNING;
   var variants=['SHELL','DOUBLE','BROKEN','OFFSET','VOID','LOOSE'];
   var variant=variants[A.hash(s.seed+'|spiral-variant')%variants.length];
   var direction=(A.hash(s.seed+'|spiral-direction')%2===0)?1:-1;
@@ -1633,7 +1694,7 @@ function drawSpiral(ctx,s,r,pal){
   var perArm=Math.ceil(s.elements/arms);
   var prev=new Array(arms).fill(null);
   var crowd=crowdFactor(s);
-  var step=A.lerp(A.GOLD*.72,A.GOLD,s.goldenAngle/100);
+  var step=A.lerp(A.GOLD*D.angle.minimumGoldenTurnScale,A.GOLD,s.goldenAngle/100);
   var guidePoints=[];
 
   var centres=[];
@@ -1644,8 +1705,8 @@ function drawSpiral(ctx,s,r,pal){
     ];
   }else if(variant==='OFFSET'||variant==='VOID'){
     centres=[{
-      x:A.lerp(A.W*.5,targets[targetIndex].x,.72),
-      y:A.lerp(A.H*.5,targets[targetIndex].y,.72)
+      x:A.lerp(A.W*.5,targets[targetIndex].x,D.geometry.offcentreMix),
+      y:A.lerp(A.H*.5,targets[targetIndex].y,D.geometry.offcentreMix)
     }];
   }else{
     centres=[{x:A.W*.5,y:A.H*.5}];
@@ -1656,20 +1717,20 @@ function drawSpiral(ctx,s,r,pal){
     var scale=1;
 
     if(variant==='SHELL'){
-      exponent=.52;
-      scale=.88;
+      exponent=D.radius.shellExponent;
+      scale=D.radius.shellScale;
     }else if(variant==='LOOSE'){
-      exponent=.76;
-      scale=1.04;
+      exponent=D.radius.looseExponent;
+      scale=D.radius.looseScale;
     }else if(variant==='BROKEN'){
-      exponent=.62;
-      scale=.96;
+      exponent=D.radius.brokenExponent;
+      scale=D.radius.brokenScale;
     }else if(variant==='DOUBLE'){
-      exponent=.66;
-      scale=.7;
+      exponent=D.radius.doubleExponent;
+      scale=D.radius.doubleScale;
     }else if(variant==='OFFSET'||variant==='VOID'){
-      exponent=.6;
-      scale=.9;
+      exponent=D.radius.offsetVoidExponent;
+      scale=D.radius.offsetVoidScale;
     }
 
     return Math.pow(A.clamp(t,0,1),exponent)*scale;
@@ -1684,20 +1745,20 @@ function drawSpiral(ctx,s,r,pal){
   for(var i=0;i<s.elements;i++){
     var arm=i%arms;
     var local=Math.floor(i/arms);
-    var t=(local+.6)/Math.max(1,perArm);
+    var t=(local+D.radius.indexOffset)/Math.max(1,perArm);
     var centre=centres[arm%centres.length];
     var radial=spiralRadius(t);
     var armPhase=arm===0?0:Math.PI;
     var angle=phase+armPhase+direction*(local*step);
 
     if(variant==='BROKEN'){
-      angle+=Math.sin(local*A.GOLD)*.18;
+      angle+=Math.sin(local*A.GOLD)*D.angle.brokenWobble;
     }else if(variant==='LOOSE'){
-      angle+=Math.sin(local*A.INV)*.1;
+      angle+=Math.sin(local*A.INV)*D.angle.looseWobble;
     }
 
-    var rx=A.W*(variant==='DOUBLE'?.29:.455)*radial;
-    var ry=A.H*(variant==='LOOSE'?.47:(variant==='DOUBLE'?.31:.435))*radial;
+    var rx=A.W*(variant==='DOUBLE'?D.geometry.doubleHorizontalReach:D.geometry.otherHorizontalReach)*radial;
+    var ry=A.H*(variant==='LOOSE'?D.geometry.looseVerticalReach:(variant==='DOUBLE'?D.geometry.doubleVerticalReach:D.geometry.otherVerticalReach))*radial;
 
     var p={
       x:centre.x+Math.cos(angle)*rx,
@@ -1705,19 +1766,19 @@ function drawSpiral(ctx,s,r,pal){
     };
 
     if(variant==='SHELL'){
-      p.x+=Math.cos(angle+A.GOLD)*Math.pow(t,1.4)*A.W*.035;
-      p.y+=Math.sin(angle+A.GOLD)*Math.pow(t,1.4)*A.H*.035;
+      p.x+=Math.cos(angle+A.GOLD)*Math.pow(t,D.geometry.shellEaseExponent)*A.W*D.geometry.shellOffsetScale;
+      p.y+=Math.sin(angle+A.GOLD)*Math.pow(t,D.geometry.shellEaseExponent)*A.H*D.geometry.shellOffsetScale;
     }
 
-    if(crowd>.28&&variant!=='DOUBLE'){
+    if(crowd>D.geometry.scatterActivationCrowd&&variant!=='DOUBLE'{
       var spread=A.goldenCanvasPoint(i,s.elements,s,phase);
-      var mix=crowd*.12;
+      var mix=crowd*D.geometry.scatterMixScale;
       p.x=A.lerp(p.x,spread.x,mix);
       p.y=A.lerp(p.y,spread.y,mix);
     }
 
-    p.x=A.clamp(p.x,24,A.W-24);
-    p.y=A.clamp(p.y,24,A.H-24);
+    p.x=A.clamp(p.x,D.geometry.canvasInsetPx,A.W-D.geometry.canvasInsetPx);
+    p.y=A.clamp(p.y,D.geometry.canvasInsetPx,A.H-D.geometry.canvasInsetPx);
 
     if(pointInVoid(p.x,p.y,voids)){
       prev[arm]=null;
@@ -1728,26 +1789,26 @@ function drawSpiral(ctx,s,r,pal){
 
     var breakLine=false;
     if(variant==='BROKEN'){
-      var cycle=4+(A.hash(s.seed+'|spiral-breaks')%4);
+      var cycle=D.ink.brokenCycleBase+(A.hash(s.seed+'|spiral-breaks')%D.ink.brokenCycleOptions);
       breakLine=(local%cycle===0)||(local%cycle===cycle-1);
     }
 
-    var lineChance=A.lerp(.82,.5,crowd);
-    if(variant==='LOOSE')lineChance*=.68;
-    if(variant==='DOUBLE')lineChance*=.78;
+    var lineChance=A.lerp(D.ink.lineChanceSparse,D.ink.lineChanceDense,crowd);
+    if(variant==='LOOSE')lineChance*=D.ink.looseLineFactor;
+    if(variant==='DOUBLE')lineChance*=D.ink.doubleLineFactor;
 
     if(prev[arm]&&s.lines&&!breakLine&&r.chance(lineChance)){
       A.drawLine(ctx,prev[arm],p,pal[i%pal.length],s,r);
     }
 
-    var tier=isHero(local)?'hero':(local<Math.max(5,Math.round(perArm*.24))?'medium':'small');
-    var drawChance=A.lerp(.88,.7,crowd);
+    var tier=isHero(local)?'hero':(local<Math.max(D.tiers.mediumCountFloor,Math.round(perArm*D.tiers.mediumFraction))?'medium':'small');
+    var drawChance=A.lerp(D.ink.markChanceSparse,D.ink.markChanceDense,crowd);
 
-    if(variant==='BROKEN')drawChance=.82;
-    if(variant==='VOID')drawChance=.9;
+    if(variant==='BROKEN')drawChance=D.ink.brokenMarkChance;
+    if(variant==='VOID')drawChance=D.ink.voidMarkChance;
 
     if(r.chance(drawChance)){
-      var territory=Math.max(70,Math.min(A.W,A.H)/(2+Math.sqrt(perArm)*.28));
+      var territory=Math.max(D.tiers.territoryFloorPx,Math.min(A.W,A.H)/(D.tiers.territoryDivisor+Math.sqrt(perArm)*D.tiers.territoryCrowdScale));
       var temp={
         tier:tier,
         x:p.x,y:p.y,
@@ -1758,10 +1819,10 @@ function drawSpiral(ctx,s,r,pal){
       drawPlannedElement(ctx,temp,i,s,r,pal,baseStrategy);
     }
 
-    if(s.arcs&&variant==='SHELL'&&r.chance((s.shapeAmount/100)*.13)){
+    if(s.arcs&&variant==='SHELL'&&r.chance((s.shapeAmount/100)*D.ink.shellArcChanceScale)){
       A.arc(
         ctx,p,
-        Math.max(10,makeBaseSize(s,'small',r,120,baseStrategy)*.62),
+        Math.max(D.ink.shellArcMinimumRadiusPx,makeBaseSize(s,'small',r,D.ink.shellArcSourceTerritoryPx,baseStrategy)*D.ink.shellArcRadiusScale),
         angle,
         A.TAU*A.INV,
         pal[(i+2)%pal.length],
@@ -1788,6 +1849,7 @@ function drawSpiral(ctx,s,r,pal){
 }
 
 function drawSpiralV4(ctx,s,r,pal){
+  var D=SPIRAL_LOG_TUNING;
   var variants=['SHELL','DOUBLE','BROKEN','OFFSET','VOID','LOOSE'];
   var variant=variants[A.hash(s.seed+'|spiral-variant')%variants.length];
   var direction=(A.hash(s.seed+'|spiral-direction')%2===0)?1:-1;
@@ -1804,14 +1866,14 @@ function drawSpiralV4(ctx,s,r,pal){
   var centres=variant==='DOUBLE'
     ?[{x:A.W*(1-A.INV),y:A.H*A.INV},{x:A.W*A.INV,y:A.H*(1-A.INV)}]
     :(variant==='OFFSET'||variant==='VOID')
-      ?[{x:A.lerp(A.W*.5,targets[targetIndex].x,.72),y:A.lerp(A.H*.5,targets[targetIndex].y,.72)}]
+      ?[{x:A.lerp(A.W*.5,targets[targetIndex].x,D.geometry.offcentreMix),y:A.lerp(A.H*.5,targets[targetIndex].y,D.geometry.offcentreMix)}]
       :[{x:A.W*.5,y:A.H*.5}];
 
   // True golden logarithmic spiral: radius grows by φ every quarter-turn.
   var b=2*Math.log(A.PHI)/Math.PI;
-  var turns=variant==='DOUBLE'?1.75:(variant==='LOOSE'?2.05:2.35);
+  var turns=variant==='DOUBLE'?D.radius.doubleTurns:(variant==='LOOSE'?D.radius.looseTurns:D.radius.otherTurns);
   var thetaMax=turns*A.TAU;
-  var maxRadius=variant==='DOUBLE'?.31:(variant==='LOOSE'?.46:.43);
+  var maxRadius=variant==='DOUBLE'?D.radius.doubleReach:(variant==='LOOSE'?D.radius.looseReach:D.radius.otherReach);
   var minRadius=maxRadius/Math.exp(b*thetaMax);
 
   function isHero(local){
@@ -1822,31 +1884,31 @@ function drawSpiralV4(ctx,s,r,pal){
 
   for(var i=0;i<s.elements;i++){
     var arm=i%arms,local=Math.floor(i/arms);
-    var u=(local+.6)/Math.max(1,perArm);
+    var u=(local+D.radius.indexOffset)/Math.max(1,perArm);
     var centre=centres[arm%centres.length];
     var theta=u*thetaMax;
     var radial=minRadius*Math.exp(b*theta);
     var armPhase=arm===0?0:Math.PI;
     var angle=phase+armPhase+direction*theta;
-    if(variant==='BROKEN')angle+=Math.sin(local*A.GOLD)*.12;
-    else if(variant==='LOOSE')angle+=Math.sin(local*A.INV)*.07;
+    if(variant==='BROKEN')angle+=Math.sin(local*A.GOLD)*D.angle.brokenWobble;
+    else if(variant==='LOOSE')angle+=Math.sin(local*A.INV)*D.angle.looseWobble;
 
     var p={x:centre.x+Math.cos(angle)*A.W*radial,y:centre.y+Math.sin(angle)*A.H*radial};
     if(variant==='SHELL'){
-      p.x+=Math.cos(angle+A.GOLD)*u*A.W*.018;
-      p.y+=Math.sin(angle+A.GOLD)*u*A.H*.018;
+      p.x+=Math.cos(angle+A.GOLD)*u*A.W*D.geometry.shellOffsetScale;
+      p.y+=Math.sin(angle+A.GOLD)*u*A.H*D.geometry.shellOffsetScale;
     }
-    p.x=A.clamp(p.x,24,A.W-24); p.y=A.clamp(p.y,24,A.H-24);
+    p.x=A.clamp(p.x,D.geometry.canvasInsetPx,A.W-D.geometry.canvasInsetPx); p.y=A.clamp(p.y,D.geometry.canvasInsetPx,A.H-D.geometry.canvasInsetPx);
     if(pointInVoid(p.x,p.y,voids)){prev[arm]=null;continue}
     guidePoints.push({x:p.x,y:p.y,arm:arm,local:local,theta:theta,radius:radial});
 
-    var breakLine=variant==='BROKEN'&&((local%(4+(A.hash(s.seed+'|spiral-breaks')%4)))===0);
-    var lineChance=A.lerp(.82,.5,crowd)*(variant==='LOOSE'?.68:(variant==='DOUBLE'?.78:1));
+    var breakLine=variant==='BROKEN'&&((local%(D.ink.brokenCycleBase+(A.hash(s.seed+'|spiral-breaks')%D.ink.brokenCycleOptions)))===0);
+    var lineChance=A.lerp(D.ink.lineChanceSparse,D.ink.lineChanceDense,crowd)*(variant==='LOOSE'?D.ink.looseLineFactor:(variant==='DOUBLE'?D.ink.doubleLineFactor:1));
     if(prev[arm]&&s.lines&&!breakLine&&r.chance(lineChance))A.drawLine(ctx,prev[arm],p,pal[i%pal.length],s,r);
 
-    var tier=isHero(local)?'hero':(local<Math.max(5,Math.round(perArm*.24))?'medium':'small');
-    if(r.chance(variant==='BROKEN'?.82:(variant==='VOID'?.9:A.lerp(.88,.7,crowd)))){
-      var territory=Math.max(70,Math.min(A.W,A.H)/(2+Math.sqrt(perArm)*.28));
+    var tier=isHero(local)?'hero':(local<Math.max(D.tiers.mediumCountFloor,Math.round(perArm*D.tiers.mediumFraction))?'medium':'small');
+    if(r.chance(variant==='BROKEN'?D.ink.brokenMarkChance:(variant==='VOID'?D.ink.voidMarkChance:A.lerp(D.ink.markChanceSparse,D.ink.markChanceDense,crowd)))){
+      var territory=Math.max(D.tiers.territoryFloorPx,Math.min(A.W,A.H)/(D.tiers.territoryDivisor+Math.sqrt(perArm)*D.tiers.territoryCrowdScale));
       drawPlannedElementV3(ctx,{tier:tier,x:p.x,y:p.y,size:makeBaseSize(s,tier,r,territory,baseStrategy),rot:angle+Math.PI/2,territory:territory},i,s,r,pal,baseStrategy);
     }
     prev[arm]=p;
