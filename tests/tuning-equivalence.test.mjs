@@ -654,3 +654,59 @@ for(const version of [3,6,7]){
   }
 }
 console.log('PASS: '+networkRenderChecks+' Connected Fields link ink, node visibility and decorative ring compositions reproduce pinned drawings and metadata.');
+
+
+// Fourteenth extraction: Recursive Divisions territory hierarchy and mark
+// calibration. Derive a real seed for each of its four hash-selected
+// variants, then compare COMPLETE drawing commands and sorted cell metadata.
+// Mix legacy/V7 renderers, both orientations, the full and intermediate
+// phi-pull positions, shallow/deep recursion and no/max protected voids.
+// Alter complexity, marks, nesting and shape visibility at the same time:
+// the anchored baseline must detect any change in RNG draw order or
+// the number/order of subdivision leaves, not merely the final appearance.
+const rectVariants=['MOSAIC','CASCADE','CROSSCUT','FRAMED'];
+function seedForRectVariant(variant){
+  for(let i=0;i<1000;i++){
+    const seed='RECT-CALIBRATION-'+i;
+    if(rectVariants[baseline.hash(seed+'|rect-variant')%rectVariants.length]===variant)return seed;
+  }
+  throw Error('Unable to derive a Recursive Divisions seed for '+variant);
+}
+let rectDivisionChecks=0;
+for(const variant of rectVariants){
+  const seed=seedForRectVariant(variant);
+  for(const version of [3,6,7]){
+    for(const orientation of ['landscape','portrait']){
+      for(const phiStrength of [0,50,100]){
+        for(const recursion of [1,8]){
+          for(const negativeSpace of [0,100]){
+            const busy=recursion===8;
+            const settings={
+              seed,mode:'rects',orientation,
+              elements:busy?140:1,density:busy?100:0,
+              complexity:busy?100:0,negativeSpace,phiStrength,
+              recursion,spiralInfluence:60,goldenAngle:80,
+              nesting:negativeSpace,pen:'felt',thickness:busy?24:2,
+              wobble:busy?100:0,overdraw:busy?4:1,
+              opacity:busy?100:20,pressure:25,dryness:15,
+              curveBias:busy?100:0,shapeAmount:phiStrength,
+              overlap:busy?100:0,rotation:busy?100:0,
+              lines:true,circles:true,rectangles:busy,
+              polygons:true,arcs:true,
+              palette:'mono',colourCount:3,saturation:75,
+              brightness:50,paper:'#f5f0e6',grain:0
+            };
+            const before=capture(baseline,settings,version);
+            const after=capture(current,settings,version);
+            assert.equal(JSON.parse(before.metadata).guide.variant,variant,
+              'Expected original '+variant+' subdivision seed');
+            assert.deepEqual(after,before,
+              `Recursive Divisions changed: ${variant}/V${version}/${orientation}/phi${phiStrength}/rec${recursion}/void${negativeSpace}`);
+            rectDivisionChecks++;
+          }
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+rectDivisionChecks+' Recursive Divisions variant, recursive split, void and mark compositions match pinned commands and territory metadata.');
