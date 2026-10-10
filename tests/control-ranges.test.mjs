@@ -3,6 +3,17 @@ import { readFileSync } from 'node:fs';
 const generator=readFileSync(new URL('../js/generator.js',import.meta.url),'utf8');
 const help=readFileSync(new URL('../js/control-help.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+
+const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
+const readme=readFileSync(new URL('../README.md',import.meta.url),'utf8');
+const versionMatch=appSource.match(/\\bCURRENT_RENDERER_VERSION=(\\d+);/);
+assert.ok(versionMatch,'App must declare the current renderer version');
+const currentRenderer=Number(versionMatch[1]);
+assert.match(readme,new RegExp('\\\\*\\\\*Current renderer: V'+currentRenderer+'\\\\.\\\\*\\\\*'),
+  'README must identify the renderer actually selected by the editor');
+assert.match(readme,new RegExp('\\\\| \\\\*\\\\*V'+currentRenderer+'\\\\*\\\\* \\\\|'),
+  'README renderer history must explain the current version');
+
 // A 0% slider removes an extra bias, not the golden-ratio composition itself.
 assert.match(html, /<label>Additional φ Pull<\/label><output><\/output><input id="phiStrength"/);
 const copyStart=help.indexOf('var COMMON=');
