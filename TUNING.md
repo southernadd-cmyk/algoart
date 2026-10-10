@@ -402,6 +402,44 @@ check the resulting drawings and metadata in each of V3/V6/V7 and
 both orientations. This checks both normal operation and actual
 fallback-branch execution against the original renderer.
 
+## Twelfth extraction: Connected Fields network topology and hierarchy
+
+`NETWORK_TOPOLOGY_TUNING` names **24 existing artistic calibration
+values** for Connected Fields' graph selection, node degree limits,
+and edge ranking. Its original nearest-neighbour search, edge
+intersection test, forced hero connections, stable candidate sort
+and orphan-connection fallback are unchanged. These are *design
+preferences*, not new consequences of the golden ratio.
+
+| Area | Original values | Meaning |
+| --- | --- | --- |
+| Nearest-neighbour search | 4–9 candidates; base 4; Complexity/18 | Look locally before widening the possible connections |
+| Crossing tolerance | 0–2 crossings as Overlap grows | Preserve the preference for legible, lightly crossed networks |
+| Desired link population | 1.04–1.68 links per node, crowd factor .80 | Avoid networks that are too sparse or too tangled |
+| Hero attachments | Search up to 5 neighbours; attach up to 2 supporters | Give focal forms distinct supporting connections |
+| Isolated-node recovery | Search up to 8 neighbours | Reconnect orphan marks using the least crossing route found |
+| Degree scaling | One extra allowance per 34 Complexity | Increase branching at higher detail |
+| Degree hierarchy | Hero base 4, medium base 3 + up to 2, small base 2 + up to 1 | Keep heroes more connected than small supporting marks |
+| Node importance score | Hero +1.35, medium +.55, hero pair +1.40 | Prefer structurally important links |
+| Edge fit and locality | Canvas diagonal × .58, φ-fit × 2.25, neighbour rank × 1.40, short-edge reward × .85 | Balance golden-ratio distance preference and readable local connections |
+
+The graph's actual length quantisation stays
+`A.qphi(length,34,1)`. The existing Fibonacci base `34`,
+golden-ratio computation and `s.phiStrength/100` adjustment
+remain unchanged; the score weights are **artist-tuned**.
+This pass leaves Connected Fields' **stroke styling and decorative
+node geometry** for a separate engine-specific refactor. It does
+not deduplicate same-looking numeric values from Scribble, Growth,
+or the shared layout engines.
+
+The pinned exact-output suite adds **240 complete Connected Fields
+compositions**: V3/V6/V7, five strategies (BALANCED, VOID, ORBIT,
+EDGE and MONUMENT), both orientations, φ Pull 0/100, Complexity
+and Overlap 0/100, and element counts 23/24/69/70 on either side
+of the original hero hierarchy thresholds. Exact recorded drawing
+commands and serialized node/edge/crossing metadata are compared
+against the immutable original renderer.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
