@@ -440,6 +440,42 @@ of the original hero hierarchy thresholds. Exact recorded drawing
 commands and serialized node/edge/crossing metadata are compared
 against the immutable original renderer.
 
+## Thirteenth extraction: Connected Fields ink and node hierarchy
+
+`NETWORK_RENDER_TUNING` names **22 original artistic calibration values**
+for the presentation of Connected Fields. It deliberately stays separate
+from `NETWORK_TOPOLOGY_TUNING` (edge selection and graph connectivity).
+The same edges, layout, drawing order, palette indexing, random-number
+consumption and historical renderer versions are retained.
+
+| Visual subsystem | Original values | Meaning |
+| --- | --- | --- |
+| Primary link width | Sparse × 1.12; crowded × .94 | Weight structurally important connections |
+| Primary link opacity | Cap 100; scale × 1.04 | Keep the backbone slightly more visible |
+| Primary link wobble | Minimum 8; scale × .82 | Controlled handmade appearance |
+| Secondary link width | Sparse × .74; crowded × .58 | Make supplementary connections lighter |
+| Secondary link opacity | Floor 18; sparse × .74; crowded × .56 | Fade extra links as the diagram fills |
+| Secondary link wobble | Minimum 6; scale × .72 | Avoid distracting strokes |
+| Visible node chance | Sparse .84; crowded .56 times Shape Amount/100 | Reduce rendered nodes as space fills |
+| Node hierarchy | Hero minimum .88; medium minimum .48; small × .7 | Keep focal forms legible above supporting marks |
+| Hero rings | Base probability .46 + Complexity/250 | Optional halo for strong focal nodes |
+| Hero ring radius and colour | Minimum radius 12 px; palette index +2 | Smallest ring size and companion colour |
+
+The ring still has radius `node.size/A.PHI/A.PHI`, aspect ratio
+`1/A.PHI` and `A.GOLD` rotation. Those are the original
+**mathematical** inputs; the visibility chances, size floor and
+palette offset are **artist-calibrated**. The original stroke sampler,
+drawing primitives, SVG export and φ mathematics are unchanged. No
+identically-valued setting from another engine was merged into this one.
+
+The pinned comparison suite adds **216 complete Connected Fields
+artworks** covering V3/V6/V7, BALANCED/VOID/MONUMENT layout strategies,
+both orientations, 18/72/140 elements, Shape Amount 0/100, and low/high
+ink values (including circles off/on, width, wobble and opacity extremes).
+Complete recorded drawing-command digests and metadata must match the
+original engine; this also guards the random choice to render each node
+and ring without modifying RNG call order.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original

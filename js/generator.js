@@ -469,6 +469,42 @@ var NETWORK_TOPOLOGY_TUNING=Object.freeze({
   })
 });
 
+// Connected Fields ink and node presentation calibration. The values are
+// existing artistic choices, separate from topology and exact φ mathematics.
+// Preserve source draw order, RNG calls, palette indexing and V1–V7 output.
+var NETWORK_RENDER_TUNING=Object.freeze({
+  primary:Object.freeze({
+    thicknessSparse:1.12,         // Make focal links slightly more substantial.
+    thicknessCrowded:.94,        // Ease line weight on crowded networks.
+    opacityCeiling:100,          // Upper opacity bound for structural links.
+    opacityScale:1.04,           // Slight prominence for primary links.
+    wobbleFloor:8,               // Keep primary lines relatively disciplined.
+    wobbleScale:.82              // Preserve some hand movement.
+  }),
+  secondary:Object.freeze({
+    thicknessSparse:.74,         // Subordinate additional links.
+    thicknessCrowded:.58,        // Lighter links as crowding grows.
+    opacityFloor:18,             // Keep background links faint but visible.
+    opacitySparse:.74,           // Ghost ink in sparse networks.
+    opacityCrowded:.56,          // Reduce opacity in dense networks.
+    wobbleFloor:6,               // Secondary links need less stroke movement.
+    wobbleScale:.72
+  }),
+  nodes:Object.freeze({
+    visibleSparse:.84,           // More filled forms where space is available.
+    visibleCrowded:.56,          // Fewer node marks when the graph crowds.
+    heroChanceFloor:.88,         // Focal nodes remain prominent.
+    mediumChanceFloor:.48,       // Medium hierarchy gets intermediate weight.
+    smallChanceScale:.7          // Supporting nodes stay visually quiet.
+  }),
+  rings:Object.freeze({
+    heroBaseChance:.46,          // Optional decoration on focal nodes.
+    complexityDivisor:250,       // More rings with higher Complexity.
+    minimumRadiusPx:12,         // Minimum before φ-shaped concentric mark.
+    paletteForwardOffset:2      // Select a companion pen colour for rings.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -2325,14 +2361,14 @@ function drawNetwork(ctx,s,r,pal){
   var crowd=crowdFactor(s);
   var edges=buildNetworkEdges(layout,s);
   var primaryStyle=Object.assign({},s,{
-    thickness:Math.max(1,s.thickness*A.lerp(1.12,.94,crowd)),
-    opacity:Math.min(100,s.opacity*1.04),
-    wobble:Math.max(8,s.wobble*.82)
+    thickness:Math.max(1,s.thickness*A.lerp(NETWORK_RENDER_TUNING.primary.thicknessSparse,NETWORK_RENDER_TUNING.primary.thicknessCrowded,crowd)),
+    opacity:Math.min(NETWORK_RENDER_TUNING.primary.opacityCeiling,s.opacity*NETWORK_RENDER_TUNING.primary.opacityScale),
+    wobble:Math.max(NETWORK_RENDER_TUNING.primary.wobbleFloor,s.wobble*NETWORK_RENDER_TUNING.primary.wobbleScale)
   });
   var secondaryStyle=Object.assign({},s,{
-    thickness:Math.max(1,s.thickness*A.lerp(.74,.58,crowd)),
-    opacity:Math.max(18,s.opacity*A.lerp(.74,.56,crowd)),
-    wobble:Math.max(6,s.wobble*.72)
+    thickness:Math.max(1,s.thickness*A.lerp(NETWORK_RENDER_TUNING.secondary.thicknessSparse,NETWORK_RENDER_TUNING.secondary.thicknessCrowded,crowd)),
+    opacity:Math.max(NETWORK_RENDER_TUNING.secondary.opacityFloor,s.opacity*A.lerp(NETWORK_RENDER_TUNING.secondary.opacitySparse,NETWORK_RENDER_TUNING.secondary.opacityCrowded,crowd)),
+    wobble:Math.max(NETWORK_RENDER_TUNING.secondary.wobbleFloor,s.wobble*NETWORK_RENDER_TUNING.secondary.wobbleScale)
   });
 
   for(var e=0;e<edges.length;e++){
@@ -2350,24 +2386,24 @@ function drawNetwork(ctx,s,r,pal){
 
   for(var i=0;i<layout.length;i++){
     var node=layout[i];
-    var chance=(s.shapeAmount/100)*A.lerp(.84,.56,crowd);
-    if(node.tier==='hero')chance=Math.max(chance,.88);
-    else if(node.tier==='medium')chance=Math.max(chance,.48);
-    else chance*=.7;
+    var chance=(s.shapeAmount/100)*A.lerp(NETWORK_RENDER_TUNING.nodes.visibleSparse,NETWORK_RENDER_TUNING.nodes.visibleCrowded,crowd);
+    if(node.tier==='hero')chance=Math.max(chance,NETWORK_RENDER_TUNING.nodes.heroChanceFloor);
+    else if(node.tier==='medium')chance=Math.max(chance,NETWORK_RENDER_TUNING.nodes.mediumChanceFloor);
+    else chance*=NETWORK_RENDER_TUNING.nodes.smallChanceScale;
 
     if(r.chance(A.clamp(chance,0,1))){
       drawPlannedElement(ctx,node,i,s,r,pal,result.strategy);
     }
 
-    if(node.tier==='hero'&&s.circles&&r.chance(.46+s.complexity/250)){
-      var ring=Math.max(12,node.size/A.PHI/A.PHI);
+    if(node.tier==='hero'&&s.circles&&r.chance(NETWORK_RENDER_TUNING.rings.heroBaseChance+s.complexity/NETWORK_RENDER_TUNING.rings.complexityDivisor)){
+      var ring=Math.max(NETWORK_RENDER_TUNING.rings.minimumRadiusPx,node.size/A.PHI/A.PHI);
       A.ellipse(
         ctx,
         {x:node.x,y:node.y},
         ring,
         ring/A.PHI,
         node.rot+A.GOLD,
-        pal[(i+2)%pal.length],
+        pal[(i+NETWORK_RENDER_TUNING.rings.paletteForwardOffset)%pal.length],
         secondaryStyle,
         r
       );
