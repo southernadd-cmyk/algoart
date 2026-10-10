@@ -254,6 +254,7 @@ try{
   if(await page.locator('#plotterPreview').isVisible())throw Error('Grouping left a stale faithful preview');
   if(!(await page.locator('#plotterGroupingNote').textContent()).includes('which colour sits on top'))throw Error('Grouping overlap warning missing');
   if(!(await page.locator('#plotterGroupingNote').textContent()).includes('light to dark')||!(await page.locator('#plotterOptimizeLabel').textContent()).includes('reordering'))throw Error('Grouped route UI still promises fixed source order');
+  if(!(await page.locator('#plotterGroupingNote').textContent()).includes('hardware behaviour is untested'))throw Error('Grouped-mode AxiDraw hardware verification caveat missing');
   await page.locator('#previewPlotter').click();
   await page.locator('#plotterPreviewImage').evaluate(img=>img.decode());
   if(!(await page.locator('#plotterSummary').textContent()).includes('pen changes'))throw Error('Pen changes missing from summary');
@@ -277,7 +278,7 @@ try{
   await page.locator('#plotterGrouping').selectOption('runs');
   if(await page.locator('#plotterPreview').isVisible())throw Error('Returning to faithful mode left a stale grouped preview');
   if(!(await page.locator('#plotterGroupingNote').textContent()).includes('preserve overlap order'))throw Error('Faithful mode note was not restored');
-  if(!(await page.locator('#plotterGroupingNote').textContent()).includes('AxiDraw pauses'))throw Error('Faithful pen-change instruction missing');
+  if(!(await page.locator('#plotterGroupingNote').textContent()).includes('hardware behaviour is untested'))throw Error('Faithful-mode AxiDraw hardware verification caveat missing');
   if(!(await page.locator('#plotterOptimizeLabel').textContent()).includes('without changing stroke order'))throw Error('Faithful route instruction missing');
   // 4-Up is moved outside .app, so its displayed canvas dimensions need
   // independent orientation CSS. Check portrait/landscape, shuffle, mobile
