@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     width="210mm" height="297mm" viewBox="0 0 210 297">
+  <title>AxiDraw pause prefix and numbered-layer check</title>
+  <desc>Two Inkscape layers: 1 Pen 1 a horizontal line; !2 Pen 2 a vertical line. Test whether selecting Layer 2 plots only the vertical line and whether the pause is handled correctly.</desc>
+  <g id="pen-1" inkscape:groupmode="layer" inkscape:label="1 · Pen 1 · #c7c7c7" data-pen-number="1" data-pen-colour="#c7c7c7">
+    <path d="M 15 20 L 55 20" fill="none" stroke="#c7c7c7" stroke-width="1" />
+  </g>
+  <g id="pen-2" inkscape:groupmode="layer" inkscape:label="!2 · Pen 2 · #2e2e2e" data-pen-number="2" data-pen-colour="#2e2e2e">
+    <path d="M 75 15 L 75 55" fill="none" stroke="#2e2e2e" stroke-width="1" />
+  </g>
+</svg>
