@@ -570,3 +570,43 @@ for(const seed of rootFallbackSeeds){
   }
 }
 console.log('PASS: '+exercisedFallbackChecks+' forced fallback-root cases match pinned source, from '+rootFallbackSeeds.join(', ')+'.');
+
+
+// Connected Fields topology: exercise the original candidate rank ordering,
+// hero/medium/small degree caps, crowd response, phi-length scoring,
+// crossing allowance and forced orphan connections. Compare complete
+// recorded drawing streams AND exact network edge/degree/crossing metadata.
+// Elements 23/24 and 69/70 straddle the original hero-count boundaries.
+let networkTopologyChecks=0;
+for(const version of [3,6,7]){
+  for(const strategy of ['BALANCED','VOID','ORBIT','EDGE','MONUMENT']){
+    const seed=seedForStrategy('network',strategy);
+    for(const elements of [23,24,69,70]){
+      for(const orientation of ['landscape','portrait']){
+        for(const phiStrength of [0,100]){
+          for(const complexity of [0,100]){
+            const settings={
+              seed,mode:'network',orientation,elements,
+              density:complexity,complexity,
+              negativeSpace:complexity===0?8:85,phiStrength,
+              recursion:4,spiralInfluence:60,goldenAngle:80,
+              nesting:35,pen:'felt',thickness:12,wobble:20,
+              overdraw:2,opacity:85,pressure:25,dryness:15,
+              curveBias:65,shapeAmount:100,
+              overlap:complexity===0?0:100,rotation:35,
+              lines:true,circles:true,rectangles:true,
+              polygons:true,arcs:true,palette:'mono',
+              colourCount:3,saturation:75,brightness:50,
+              paper:'#f5f0e6',grain:0
+            };
+            assert.deepEqual(capture(current,settings,version),
+              capture(baseline,settings,version),
+              `Network topology drift: V${version}/${strategy}/n${elements}/${orientation}/φ${phiStrength}/complexity${complexity}`);
+            networkTopologyChecks++;
+          }
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+networkTopologyChecks+' Connected Fields node-hierarchy, network-geometry and candidate-edge cases match pinned artwork and metadata.');
