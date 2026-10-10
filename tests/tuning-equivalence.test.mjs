@@ -206,3 +206,38 @@ for(const mode of ['field','network']){
   }
 }
 console.log('PASS: '+placementConstraintChecks+' protected-void/collision boundary layouts reproduce pinned drawing commands and metadata.');
+
+
+// Field-family scoring regression: V2 uses the original relationship model;
+// V3 and V7 use the V3 model. The 7 strategy branches (especially ORBIT,
+// MONUMENT, EDGE and DIAGONAL) exercise different snapping/alignment paths.
+// Check entire drawing streams and metadata at both hero-count boundaries.
+let relationshipChecks=0;
+for(const version of [2,3,7]){
+  for(const strategy of allStrategies){
+    const seed=seedForStrategy('field',strategy);
+    for(const elements of [24,70]){
+      for(const orientation of ['landscape','portrait']){
+        for(const phiStrength of [0,100]){
+          const settings={
+            seed,mode:'field',orientation,elements,density:62,
+            complexity:65,negativeSpace:43,phiStrength,recursion:4,
+            spiralInfluence:64,goldenAngle:80,nesting:35,
+            pen:'felt',thickness:12,wobble:19,overdraw:2,
+            opacity:85,pressure:25,dryness:15,curveBias:65,
+            shapeAmount:80,overlap:30,rotation:45,
+            lines:true,circles:true,rectangles:true,polygons:true,
+            arcs:true,palette:'mono',colourCount:3,saturation:75,
+            brightness:50,paper:'#f5f0e6',grain:0
+          };
+          const before=capture(baseline,settings,version);
+          const after=capture(current,settings,version);
+          assert.deepEqual(after,before,
+            `Field family relationship drift: V${version}/${strategy}/n${elements}/${orientation}/φ${phiStrength}`);
+          relationshipChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+relationshipChecks+' legacy/V3 field relationship scoring and alignment compositions reproduce the pinned renderer.');
