@@ -251,6 +251,54 @@ var CONSTRUCTED_TUNING=Object.freeze({
   })
 });
 
+// Automatic Marks / Scribble calibration is deliberately expressive.
+// These original choices control gestures, anchors and ghost ink; they
+// are not exact golden-ratio identities. Preserve all V1–V7 draws, seeds,
+// RNG consumption and the five distinct Scribble compositions.
+var SCRIBBLE_TUNING=Object.freeze({
+  composition:Object.freeze({
+    minimumSegments:12,             // Minimum gestural line count.
+    sparseSegmentMultiplier:1.8,    // Lengthen gestures in less crowded drawings.
+    crowdedSegmentMultiplier:1.16,  // Keep dense canvases from filling entirely.
+    anchorMinimum:2,                // Minimum focal gesture centres.
+    anchorMaximum:7,                // Maximum focal gesture centres.
+    anchorBase:2,                   // Base centre count before complexity and crowd.
+    complexityPerAnchor:28,         // Complexity increment that adds an anchor.
+    crowdedAnchorGain:1.5,         // Additional centres when more crowded.
+    duetAnchorCount:2,             // DUET keeps exactly two call-and-response gestures.
+    knotMaximumAnchors:3,          // KNOT stays concentrated.
+    clusterMinimumAnchors:4,       // CLUSTERS favours multiple territories.
+    nonVoidNegativeSpaceTrigger:24 // Extra protected voids for non-VOID variants.
+  }),
+  portrait:Object.freeze({
+    rhythmStart:.17,               // Leading part of portrait vertical anchor rhythm.
+    rhythmSpan:.66,                // Vertical span of portrait anchors.
+    duetHorizontalPull:.82,       // Keep DUET near opposing φ columns.
+    otherHorizontalPull:.67,      // Gentler x alignment for other variants.
+    verticalPull:.85,             // Keep anchors in the portrait rhythm.
+    fallbackStart:.12,            // Alternative y when protected void blocks anchor.
+    fallbackSpan:.74              // Range of alternative y positions.
+  }),
+  ink:Object.freeze({
+    minimumWobble:44,             // Preserve loose felt-tip character.
+    minimumCurveBias:58,          // Avoid machine-straight drawn gestures.
+    minimumOverdraw:2,            // Rework the main marks at least twice.
+    ghostThicknessScale:.58,     // Ghost connection strokes stay narrower.
+    ghostOpacityFloor:15,        // Minimum visibility for ghost strokes.
+    ghostOpacityScale:.52,       // Ghost ink stays fainter than the marks.
+    ghostOverdrawScale:.55       // More restrained layering for ghost strokes.
+  }),
+  anchors:Object.freeze({
+    canvasInsetPx:30,             // Keep anchor centres away from the edge.
+    minimumRadiusPx:68,          // Gesture territories cannot collapse.
+    radiusDensityMin:.36,       // Territory radius at low Density.
+    radiusDensityMax:.58,       // Territory radius at high Density.
+    portraitRadiusWidthCap:.35, // Keep long-format gestures within the narrow axis.
+    portraitKnotRadiusScale:1.12,// KNOT remains a tighter focal arrangement.
+    portraitOtherRadiusScale:1.38 // Other gestures can breathe vertically.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -2191,16 +2239,16 @@ function drawScribble(ctx,s,r,pal){
   var variant=variants[A.hash(s.seed+'|scribble-variant')%variants.length];
   var strategy=chooseStrategy(s);
   var crowd=crowdFactor(s);
-  var segments=Math.max(12,Math.round(s.elements*A.lerp(1.8,1.16,crowd)));
-  var anchorCount=Math.max(2,Math.min(7,2+Math.floor(s.complexity/28)+Math.round(crowd*1.5)));
+  var segments=Math.max(SCRIBBLE_TUNING.composition.minimumSegments,Math.round(s.elements*A.lerp(SCRIBBLE_TUNING.composition.sparseSegmentMultiplier,SCRIBBLE_TUNING.composition.crowdedSegmentMultiplier,crowd)));
+  var anchorCount=Math.max(SCRIBBLE_TUNING.composition.anchorMinimum,Math.min(SCRIBBLE_TUNING.composition.anchorMaximum,SCRIBBLE_TUNING.composition.anchorBase+Math.floor(s.complexity/SCRIBBLE_TUNING.composition.complexityPerAnchor)+Math.round(crowd*SCRIBBLE_TUNING.composition.crowdedAnchorGain)));
 
-  if(variant==='DUET')anchorCount=2;
-  if(variant==='KNOT')anchorCount=Math.min(3,anchorCount);
-  if(variant==='CLUSTERS')anchorCount=Math.max(4,anchorCount);
+  if(variant==='DUET')anchorCount=SCRIBBLE_TUNING.composition.duetAnchorCount;
+  if(variant==='KNOT')anchorCount=Math.min(SCRIBBLE_TUNING.composition.knotMaximumAnchors,anchorCount);
+  if(variant==='CLUSTERS')anchorCount=Math.max(SCRIBBLE_TUNING.composition.clusterMinimumAnchors,anchorCount);
 
   var anchorR=A.makeR(s.seed+'|scribble-anchors|'+variant);
   var anchors=A.distributedPhiPoints(anchorCount,s,anchorR);
-  var voids=(variant==='VOID'||s.negativeSpace>24)
+  var voids=(variant==='VOID'||s.negativeSpace>SCRIBBLE_TUNING.composition.nonVoidNegativeSpaceTrigger)
     ?makeReservedVoids(s,variant==='VOID'?'VOID':strategy,A.makeR(s.seed+'|scribble-voids|'+variant))
     :[];
   var portrait=s.orientation==='portrait';
@@ -2210,27 +2258,27 @@ function drawScribble(ctx,s,r,pal){
     for(var aIndex=0;aIndex<anchors.length;aIndex++){
       var t=aIndex/Math.max(1,anchors.length-1);
       var desiredX=A.W*(aIndex%2?A.INV:1-A.INV);
-      var desiredY=A.H*(.17+.66*t);
+      var desiredY=A.H*(SCRIBBLE_TUNING.portrait.rhythmStart+SCRIBBLE_TUNING.portrait.rhythmSpan*t);
       var a=anchors[aIndex];
-      a.x=A.lerp(a.x,desiredX,variant==='DUET'?.82:.67);
-      a.y=A.lerp(a.y,desiredY,.85);
+      a.x=A.lerp(a.x,desiredX,variant==='DUET'?SCRIBBLE_TUNING.portrait.duetHorizontalPull:SCRIBBLE_TUNING.portrait.otherHorizontalPull);
+      a.y=A.lerp(a.y,desiredY,SCRIBBLE_TUNING.portrait.verticalPull);
       if(pointInVoid(a.x,a.y,voids)){
         var otherSide=A.W-(a.x);
         if(!pointInVoid(otherSide,a.y,voids))a.x=otherSide;
-        else if(!pointInVoid(a.x,A.H*(.12+.74*t),voids))a.y=A.H*(.12+.74*t);
+        else if(!pointInVoid(a.x,A.H*(SCRIBBLE_TUNING.portrait.fallbackStart+SCRIBBLE_TUNING.portrait.fallbackSpan*t),voids))a.y=A.H*(SCRIBBLE_TUNING.portrait.fallbackStart+SCRIBBLE_TUNING.portrait.fallbackSpan*t);
       }
     }
   }
   var counts=allocateScribbleSegments(segments,anchorCount);
   var style=Object.assign({},s,{
-    wobble:Math.max(44,s.wobble),
-    curveBias:Math.max(58,s.curveBias),
-    overdraw:Math.max(2,s.overdraw)
+    wobble:Math.max(SCRIBBLE_TUNING.ink.minimumWobble,s.wobble),
+    curveBias:Math.max(SCRIBBLE_TUNING.ink.minimumCurveBias,s.curveBias),
+    overdraw:Math.max(SCRIBBLE_TUNING.ink.minimumOverdraw,s.overdraw)
   });
   var ghostStyle=Object.assign({},style,{
-    thickness:Math.max(1,s.thickness*.58),
-    opacity:Math.max(15,s.opacity*.52),
-    overdraw:Math.max(1,Math.round(s.overdraw*.55))
+    thickness:Math.max(1,s.thickness*SCRIBBLE_TUNING.ink.ghostThicknessScale),
+    opacity:Math.max(SCRIBBLE_TUNING.ink.ghostOpacityFloor,s.opacity*SCRIBBLE_TUNING.ink.ghostOpacityScale),
+    overdraw:Math.max(1,Math.round(s.overdraw*SCRIBBLE_TUNING.ink.ghostOverdrawScale))
   });
   var markIndex=0;
 
@@ -2255,18 +2303,18 @@ function drawScribble(ctx,s,r,pal){
       a.y=A.lerp(a.y,target.y,.48);
     }
 
-    a.x=A.clamp(a.x,30,A.W-30);
-    a.y=A.clamp(a.y,30,A.H-30);
+    a.x=A.clamp(a.x,SCRIBBLE_TUNING.anchors.canvasInsetPx,A.W-SCRIBBLE_TUNING.anchors.canvasInsetPx);
+    a.y=A.clamp(a.y,SCRIBBLE_TUNING.anchors.canvasInsetPx,A.H-SCRIBBLE_TUNING.anchors.canvasInsetPx);
     a.flow=Math.atan2(next.y-a.y,next.x-a.x);
     a.radius=A.qphi(
-      Math.max(68,a.territory*A.lerp(.36,.58,s.density/100)),
+      Math.max(SCRIBBLE_TUNING.anchors.minimumRadiusPx,a.territory*A.lerp(SCRIBBLE_TUNING.anchors.radiusDensityMin,SCRIBBLE_TUNING.anchors.radiusDensityMax,s.density/100)),
       34,
       s.phiStrength/100
     );
     if(portrait){
       // A slightly larger gesture territory balances the long canvas;
       // KNOT deliberately stays concentrated at one focal location.
-      a.radius=Math.min(A.W*.35,a.radius*(variant==='KNOT'?1.12:1.38));
+      a.radius=Math.min(A.W*SCRIBBLE_TUNING.anchors.portraitRadiusWidthCap,a.radius*(variant==='KNOT'?SCRIBBLE_TUNING.anchors.portraitKnotRadiusScale:SCRIBBLE_TUNING.anchors.portraitOtherRadiusScale));
     }
     return a;
   }
