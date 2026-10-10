@@ -241,3 +241,67 @@ for(const version of [2,3,7]){
   }
 }
 console.log('PASS: '+relationshipChecks+' legacy/V3 field relationship scoring and alignment compositions reproduce the pinned renderer.');
+
+
+// Dedicated strategy placement + V4 spiral geometry compatibility.
+// V2 exercises pre-V4 candidate stepping; V4 and V7 use the later
+// logarithmic spiral. Exercise all seven strategy attraction branches
+// across portrait/landscape and both endpoints of Additional φ Pull.
+let geometryStrategyChecks=0;
+for(const version of [2,4,7]){
+  for(const strategy of allStrategies){
+    const seed=seedForStrategy('field',strategy);
+    for(const elements of [24,70]){
+      for(const orientation of ['landscape','portrait']){
+        for(const phiStrength of [0,100]){
+          const settings={
+            seed,mode:'field',orientation,elements,density:65,
+            complexity:61,negativeSpace:32,phiStrength,
+            recursion:4,spiralInfluence:100,goldenAngle:80,
+            nesting:36,pen:'felt',thickness:12,wobble:22,
+            overdraw:2,opacity:78,pressure:25,dryness:15,
+            curveBias:65,shapeAmount:55,overlap:45,rotation:30,
+            lines:true,circles:true,rectangles:true,
+            polygons:true,arcs:true,palette:'mono',colourCount:3,
+            saturation:75,brightness:50,paper:'#f5f0e6',grain:0
+          };
+          const before=capture(baseline,settings,version);
+          const after=capture(current,settings,version);
+          assert.deepEqual(after,before,
+            `Strategy geometry changed: V${version}/${strategy}/n${elements}/${orientation}/φ${phiStrength}`);
+          geometryStrategyChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+geometryStrategyChecks+' strategy-specific placement compositions reproduce the pinned pre-refactor engine.');
+
+// Verify Golden Trajectories throughout historical stepping changes and
+// at both ends of Golden Angle and φ Pull. This is independent of the
+// shared field-placement tests above, and guards mode-specific output.
+let spiralGeometryChecks=0;
+for(const version of [3,4,6,7]){
+  for(const orientation of ['landscape','portrait']){
+    for(const goldenAngle of [0,100]){
+      for(const phiStrength of [0,100]){
+        const settings={
+          seed:'GEOMETRY-SPIRAL-ARCHIVE',mode:'spiral',orientation,
+          elements:36,density:44,complexity:61,negativeSpace:32,
+          phiStrength,recursion:4,spiralInfluence:90,goldenAngle,
+          nesting:36,pen:'felt',thickness:12,wobble:22,overdraw:2,
+          opacity:78,pressure:25,dryness:15,curveBias:65,
+          shapeAmount:55,overlap:45,rotation:30,
+          lines:true,circles:true,rectangles:true,polygons:true,
+          arcs:true,palette:'mono',colourCount:3,saturation:75,
+          brightness:50,paper:'#f5f0e6',grain:0
+        };
+        assert.deepEqual(capture(current,settings,version),
+          capture(baseline,settings,version),
+          `Spiral-mode regression: V${version}/${orientation}/angle${goldenAngle}/φ${phiStrength}`);
+        spiralGeometryChecks++;
+      }
+    }
+  }
+}
+console.log('PASS: '+spiralGeometryChecks+' historical spiral-mode drawings reproduce pinned originals.');

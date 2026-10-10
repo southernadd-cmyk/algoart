@@ -170,6 +170,43 @@ var RELATIONSHIP_TUNING=Object.freeze({
   })
 });
 
+// Per-strategy placement and V4 spiral geometry calibration. These values
+// encode deliberate visual judgement; only A.PHI/A.INV/A.GOLD and their
+// formulae are mathematically derived. Similar values in other subsystems
+// are intentionally independent. Do not change old renderer output or RNG.
+var STRATEGY_GEOMETRY_TUNING=Object.freeze({
+  strategy:Object.freeze({
+    tensionHeroPull:.72,          // Guide distant heroes toward opposing φ targets.
+    orbitPull:.48,                // Attraction of marks to the intended orbit.
+    edgeTargetInsetPx:38,        // EDGE strategy's preferred distance from the border.
+    edgePull:.38,                // Attraction toward that border.
+    monumentHeroPull:.68,        // Place MONUMENT hero closer to its φ focal target.
+    monumentSatelliteX:.62,     // Horizontal centre of MONUMENT supporting marks.
+    monumentSatelliteY:.58,     // Vertical centre of MONUMENT supporting marks.
+    monumentSatellitePull:.12,  // Keep those supporting marks loosely positioned.
+    diagonalPull:.42            // Align marks with diagonal flow.
+  }),
+  spiralV4:Object.freeze({
+    indexOffset:.65,             // Avoid starting the spiral at exact zero progress.
+    attemptIndexShift:.17,       // Different point placement on retry.
+    normalizedProgressFloor:.02,// Keep progress strictly above zero.
+    turns:2.35,                  // Number of turns in the logarithmic spiral.
+    maxRadiusFraction:.43,      // Maximum canvas-relative spiral radius.
+    attemptGoldenPhase:.035     // Phase nudge in units of the golden angle.
+  }),
+  candidate:Object.freeze({
+    retryCellStride:5,           // Change the selected spatial cell with each retry.
+    legacyRetryIndexShift:.28,  // Pre-V4 placement adjustment for retries.
+    legacyRetryGoldenPhase:.23,// Pre-V4 phase adjustment (golden-angle units).
+    spiralInfluenceLimit:.78,   // Limit the spiral control's share of the position.
+    territoryMixMin:.16,       // Cell-mixing at low crowding.
+    territoryMixMax:.9,        // Cell-mixing at high crowding.
+    heroTerritoryMix:.62,      // Give dominant marks more freedom from cells.
+    smallTerritoryMix:1.08,   // Bind small marks slightly more to their cells.
+    maximumFreeJitterPx:36    // Additional unquantised position drift at weak φ pull.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -357,34 +394,34 @@ function applyStrategyPosition(pos,i,total,tier,strategy,s){
 
   if(strategy==='TENSION'&&tier==='hero'){
     t=targets[i%2===0?0:3];
-    pos.x=A.lerp(pos.x,t.x,.72);
-    pos.y=A.lerp(pos.y,t.y,.72);
+    pos.x=A.lerp(pos.x,t.x,STRATEGY_GEOMETRY_TUNING.strategy.tensionHeroPull);
+    pos.y=A.lerp(pos.y,t.y,STRATEGY_GEOMETRY_TUNING.strategy.tensionHeroPull);
   }else if(strategy==='ORBIT'){
     var orbit=A.rendererVersion>=4
       ?trueGoldenSpiralPointV4(i,total,A.GOLD*.5,0)
       :A.goldenCanvasPoint(i,total,s,A.GOLD*.5);
-    pos.x=A.lerp(pos.x,orbit.x,.48);
-    pos.y=A.lerp(pos.y,orbit.y,.48);
+    pos.x=A.lerp(pos.x,orbit.x,STRATEGY_GEOMETRY_TUNING.strategy.orbitPull);
+    pos.y=A.lerp(pos.y,orbit.y,STRATEGY_GEOMETRY_TUNING.strategy.orbitPull);
   }else if(strategy==='EDGE'&&tier!=='hero'){
     edge=i%4;
-    if(edge===0)pos.x=A.lerp(pos.x,38,.38);
-    if(edge===1)pos.x=A.lerp(pos.x,A.W-38,.38);
-    if(edge===2)pos.y=A.lerp(pos.y,38,.38);
-    if(edge===3)pos.y=A.lerp(pos.y,A.H-38,.38);
+    if(edge===0)pos.x=A.lerp(pos.x,STRATEGY_GEOMETRY_TUNING.strategy.edgeTargetInsetPx,STRATEGY_GEOMETRY_TUNING.strategy.edgePull);
+    if(edge===1)pos.x=A.lerp(pos.x,A.W-STRATEGY_GEOMETRY_TUNING.strategy.edgeTargetInsetPx,STRATEGY_GEOMETRY_TUNING.strategy.edgePull);
+    if(edge===2)pos.y=A.lerp(pos.y,STRATEGY_GEOMETRY_TUNING.strategy.edgeTargetInsetPx,STRATEGY_GEOMETRY_TUNING.strategy.edgePull);
+    if(edge===3)pos.y=A.lerp(pos.y,A.H-STRATEGY_GEOMETRY_TUNING.strategy.edgeTargetInsetPx,STRATEGY_GEOMETRY_TUNING.strategy.edgePull);
   }else if(strategy==='MONUMENT'){
     if(tier==='hero'){
       t=targets[0];
-      pos.x=A.lerp(pos.x,t.x,.68);
-      pos.y=A.lerp(pos.y,t.y,.68);
+      pos.x=A.lerp(pos.x,t.x,STRATEGY_GEOMETRY_TUNING.strategy.monumentHeroPull);
+      pos.y=A.lerp(pos.y,t.y,STRATEGY_GEOMETRY_TUNING.strategy.monumentHeroPull);
     }else{
-      pos.x=A.lerp(pos.x,A.W*.62,.12);
-      pos.y=A.lerp(pos.y,A.H*.58,.12);
+      pos.x=A.lerp(pos.x,A.W*STRATEGY_GEOMETRY_TUNING.strategy.monumentSatelliteX,STRATEGY_GEOMETRY_TUNING.strategy.monumentSatellitePull);
+      pos.y=A.lerp(pos.y,A.H*STRATEGY_GEOMETRY_TUNING.strategy.monumentSatelliteY,STRATEGY_GEOMETRY_TUNING.strategy.monumentSatellitePull);
     }
   }else if(strategy==='DIAGONAL'){
     var reverse=(A.hash(s.seed+'|diag')%2)===1;
     diagY=(pos.x/A.W)*A.H;
     if(reverse)diagY=A.H-diagY;
-    pos.y=A.lerp(pos.y,diagY,.42);
+    pos.y=A.lerp(pos.y,diagY,STRATEGY_GEOMETRY_TUNING.strategy.diagonalPull);
   }
 
   return pos;
@@ -393,32 +430,32 @@ function applyStrategyPosition(pos,i,total,tier,strategy,s){
 function trueGoldenSpiralPointV4(i,total,phase,attempt){
   total=Math.max(1,total);
   attempt=attempt||0;
-  var u=(i+.65+attempt*.17)/total;
-  u=A.clamp(u,.02,1);
-  var turns=2.35;
+  var u=(i+STRATEGY_GEOMETRY_TUNING.spiralV4.indexOffset+attempt*STRATEGY_GEOMETRY_TUNING.spiralV4.attemptIndexShift)/total;
+  u=A.clamp(u,STRATEGY_GEOMETRY_TUNING.spiralV4.normalizedProgressFloor,1);
+  var turns=STRATEGY_GEOMETRY_TUNING.spiralV4.turns;
   var theta=u*turns*A.TAU;
   var b=2*Math.log(A.PHI)/Math.PI;
-  var maxR=.43;
+  var maxR=STRATEGY_GEOMETRY_TUNING.spiralV4.maxRadiusFraction;
   var minR=maxR/Math.exp(b*turns*A.TAU);
   var radial=minR*Math.exp(b*theta);
-  var angle=phase+theta+attempt*A.GOLD*.035;
+  var angle=phase+theta+attempt*A.GOLD*STRATEGY_GEOMETRY_TUNING.spiralV4.attemptGoldenPhase;
   return{x:A.W*.5+Math.cos(angle)*A.W*radial,y:A.H*.5+Math.sin(angle)*A.H*radial,a:angle,rad:radial};
 }
 
 function candidatePosition(i,total,s,r,tier,distributed,phase,attempt,strategy){
-  var d=distributed[(i+attempt*5)%distributed.length];
+  var d=distributed[(i+attempt*STRATEGY_GEOMETRY_TUNING.candidate.retryCellStride)%distributed.length];
   var spiral=A.rendererVersion>=4
     ?trueGoldenSpiralPointV4(i,total,phase,attempt)
-    :A.goldenCanvasPoint(i+attempt*.28,total,s,phase+attempt*A.GOLD*.23);
+    :A.goldenCanvasPoint(i+attempt*STRATEGY_GEOMETRY_TUNING.candidate.legacyRetryIndexShift,total,s,phase+attempt*A.GOLD*STRATEGY_GEOMETRY_TUNING.candidate.legacyRetryGoldenPhase);
   var phi=A.phiPoint(s,r);
   var spiralMix=A.clamp(s.spiralInfluence/100,0,1);
-  var x=A.lerp(phi.x,spiral.x,spiralMix*.78);
-  var y=A.lerp(phi.y,spiral.y,spiralMix*.78);
+  var x=A.lerp(phi.x,spiral.x,spiralMix*STRATEGY_GEOMETRY_TUNING.candidate.spiralInfluenceLimit);
+  var y=A.lerp(phi.y,spiral.y,spiralMix*STRATEGY_GEOMETRY_TUNING.candidate.spiralInfluenceLimit);
 
   var crowd=crowdFactor(s);
-  var distributionMix=A.lerp(.16,.9,crowd);
-  if(tier==='hero')distributionMix*=.62;
-  if(tier==='small')distributionMix=Math.min(1,distributionMix*1.08);
+  var distributionMix=A.lerp(STRATEGY_GEOMETRY_TUNING.candidate.territoryMixMin,STRATEGY_GEOMETRY_TUNING.candidate.territoryMixMax,crowd);
+  if(tier==='hero')distributionMix*=STRATEGY_GEOMETRY_TUNING.candidate.heroTerritoryMix;
+  if(tier==='small')distributionMix=Math.min(1,distributionMix*STRATEGY_GEOMETRY_TUNING.candidate.smallTerritoryMix);
 
   var pos={
     x:A.lerp(x,d.x,distributionMix),
@@ -428,7 +465,7 @@ function candidatePosition(i,total,s,r,tier,distributed,phase,attempt,strategy){
 
   pos=applyStrategyPosition(pos,i,total,tier,strategy,s);
 
-  var freedom=(1-s.phiStrength/100)*36;
+  var freedom=(1-s.phiStrength/100)*STRATEGY_GEOMETRY_TUNING.candidate.maximumFreeJitterPx;
   pos.x+=r.range(-freedom,freedom);
   pos.y+=r.range(-freedom,freedom);
 
