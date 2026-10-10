@@ -6,12 +6,12 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 
 const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const readme=readFileSync(new URL('../README.md',import.meta.url),'utf8');
-const versionMatch=appSource.match(/\\bCURRENT_RENDERER_VERSION=(\\d+);/);
+const versionMatch=appSource.match(/CURRENT_RENDERER_VERSION=([0-9]+);/);
 assert.ok(versionMatch,'App must declare the current renderer version');
 const currentRenderer=Number(versionMatch[1]);
-assert.match(readme,new RegExp('\\\\*\\\\*Current renderer: V'+currentRenderer+'\\\\.\\\\*\\\\*'),
+assert.ok(readme.includes('**Current renderer: V'+currentRenderer+'.**'),
   'README must identify the renderer actually selected by the editor');
-assert.match(readme,new RegExp('\\\\| \\\\*\\\\*V'+currentRenderer+'\\\\*\\\\* \\\\|'),
+assert.ok(readme.includes('| **V'+currentRenderer+'** |'),
   'README renderer history must explain the current version');
 
 // A 0% slider removes an extra bias, not the golden-ratio composition itself.
