@@ -492,3 +492,81 @@ for(const version of [3,6,7]){
   }
 }
 console.log('PASS: '+organicGrowthChecks+' Growth Systems branch, root and void-avoidance layouts match pinned drawing commands and metadata.');
+
+
+// Eleventh extraction: full output of Growth Systems where roots might need
+// multiple fallback columns/heights. The two nested fallback scans are
+// deliberately order-sensitive (row outside, column inside). Terminal bud
+// size and palette choice must match whether details are disabled or common.
+let growthDetailChecks=0;
+for(const version of [3,6,7]){
+  for(const strategy of ['VOID','BALANCED','ORBIT']){
+    const seed=seedForStrategy('organic',strategy);
+    for(const orientation of ['landscape','portrait']){
+      for(const negativeSpace of [0,42,71,100]){
+        for(const shapeAmount of [0,100]){
+          const settings={
+            seed,mode:'organic',orientation,
+            elements:shapeAmount===0?58:116,
+            density:85,complexity:90,negativeSpace,
+            phiStrength:shapeAmount===0?0:100,recursion:7,
+            spiralInfluence:60,goldenAngle:80,nesting:30,
+            pen:'felt',thickness:18,wobble:70,overdraw:3,
+            opacity:85,pressure:25,dryness:15,curveBias:92,
+            shapeAmount,overlap:65,rotation:40,
+            lines:true,circles:true,rectangles:true,
+            polygons:true,arcs:true,palette:'mono',colourCount:3,
+            saturation:75,brightness:50,paper:'#f5f0e6',grain:0
+          };
+          assert.deepEqual(capture(current,settings,version),
+            capture(baseline,settings,version),
+            `Growth fallback or buds changed: V${version}/${strategy}/${orientation}/void${negativeSpace}/buds${shapeAmount}`);
+          growthDetailChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+growthDetailChecks+' Growth Systems root-fallback, bud and orientation cases reproduce pinned output.');
+
+// Use the original engine to discover two seeds where a portrait root
+// actually selects an alternative fallback column. Ordinary regression
+// seeds can miss this branch altogether, even with strong negative space.
+const forcedFallbackSettings={
+  mode:'organic',orientation:'portrait',elements:175,
+  density:70,complexity:88,negativeSpace:100,phiStrength:85,
+  recursion:6,spiralInfluence:60,goldenAngle:80,nesting:30,
+  pen:'felt',thickness:14,wobble:70,overdraw:2,
+  opacity:78,pressure:25,dryness:15,curveBias:92,
+  shapeAmount:100,overlap:70,rotation:30,
+  lines:true,circles:true,rectangles:true,polygons:true,
+  arcs:true,palette:'mono',colourCount:3,saturation:75,
+  brightness:50,paper:'#f5f0e6',grain:0
+};
+function usesFallbackColumn(render){
+  const meta=JSON.parse(render.metadata);
+  return (meta.guide?.roots||[]).some(root=>
+    [.22,.78,.50,.12,.88].some(fraction=>
+      Math.abs(root.x-render.width*fraction)<1e-8));
+}
+const rootFallbackSeeds=[];
+for(let i=0;i<250&&rootFallbackSeeds.length<2;i++){
+  const seed='ORGANIC-ROOT-FALLBACK-'+i;
+  const sample=capture(baseline,{...forcedFallbackSettings,seed},7);
+  if(usesFallbackColumn(sample))rootFallbackSeeds.push(seed);
+}
+assert.equal(rootFallbackSeeds.length,2,
+  'Expected two pinned-engine Growth roots using alternative fallback columns');
+let exercisedFallbackChecks=0;
+for(const seed of rootFallbackSeeds){
+  for(const version of [3,6,7]){
+    for(const orientation of ['portrait','landscape']){
+      const settings={...forcedFallbackSettings,seed,orientation};
+      assert.deepEqual(capture(current,settings,version),
+        capture(baseline,settings,version),
+        `Actual Growth root fallback changed: V${version}/${orientation}/${seed}`);
+      exercisedFallbackChecks++;
+    }
+  }
+}
+console.log('PASS: '+exercisedFallbackChecks+' forced fallback-root cases match pinned source, from '+rootFallbackSeeds.join(', ')+'.');

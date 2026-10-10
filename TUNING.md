@@ -364,6 +364,44 @@ Recursion, density, negative space and ink settings also vary.
 Full drawing-command digests and detailed branch/void/root metadata
 must agree with the original engine exactly.
 
+## Eleventh extraction: Growth Systems root fallback and terminal buds
+
+`ORGANIC_DETAIL_TUNING` names the remaining **11 original values**
+used for Growth Systems' portrait root fallback priorities and
+occasional branch-end buds. These are artistic coordinates and mark
+presentation choices, **not** derived φ ratios.
+
+| Original calibration | Value(s) | Meaning |
+| --- | --- | --- |
+| Alternative root columns | .22, .78, .50, .12, .88 | Search near-left, near-right, centre, then farther left/right if protected space blocks a root |
+| Alternative root heights | .79, .68, .88, .56 | Search lower and progressively alternate heights if the current row is blocked |
+| Bud radius divisor | 2 | Halve the twice-φ-reduced terminal bud radius |
+| Bud palette offset | 1 | Use the next colour relative to the just-drawn segment |
+
+The fallback search **still includes the current root before those
+alternatives**. It retains the exact original ordering: candidate
+heights are the outer loop, candidate columns the inner loop, and the
+first unblocked position wins. Those scan semantics can change an image
+even if every candidate position stays the same; preserving the
+original array order matters.
+
+Bud drawing still uses `A.PHI` for the radius and aspect ratio, and
+the previously named chance `shapeAmount/180` and 5 px floor.
+The division by 2 and selection of the next palette colour are
+artist-chosen choices, not additional golden-ratio identities.
+The seeded branching queue, random-number consumption, segment and
+void intersection checks, and V7 landscape-coordinate rotation are
+unchanged.
+
+The pinned regression suite adds **144 complete Growth Systems
+compositions**, spanning V3/V6/V7, three strategies, both orientations,
+Negative Space 0/42/71/100 and terminal Shape Amount 0/100. An
+additional **12 targeted cases** derive two seeds whose original
+portrait render actually selects an alternative root column, then
+check the resulting drawings and metadata in each of V3/V6/V7 and
+both orientations. This checks both normal operation and actual
+fallback-branch execution against the original renderer.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
