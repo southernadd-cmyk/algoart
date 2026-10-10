@@ -11,6 +11,7 @@
     "social:verify-pinterest": "node automation/verify-pinterest.mjs",
     "gallery:build": "node automation/build-gallery.mjs",
     "test:orientation": "node tests/orientation.test.mjs",
+    "test:tuning-equivalence": "node tests/tuning-equivalence.test.mjs",
     "test:portrait-publishing": "node tests/portrait-publishing.test.mjs",
     "test:control-ranges": "node tests/control-ranges.test.mjs",
     "test:organic-version": "node tests/organic-version.test.mjs",
