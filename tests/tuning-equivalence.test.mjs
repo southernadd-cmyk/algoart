@@ -855,3 +855,48 @@ for(const family of goldenTrajectoryFamilies){
   }
 }
 console.log('PASS: '+goldenTrajectoryChecks+' V6–V7 ten-family trajectories reproduce pinned curves, marks, metadata and fallback decisions.');
+
+
+// Seventeenth extraction: Orbital Studies' candidate layout budget,
+// weighted visual centroid, diagonal tolerance, collision and void penalties.
+// The strict >110 boundary changes the number of candidates and their RNG
+// activity; compare complete drawing streams and exact returned metadata.
+// Deliberately exercise every seeded layout strategy under all three field
+// renderer grammars: V1 (no relationships), V2 (legacy family relations),
+// and V3/V7 (new family relations). No seed or expected output is rebased.
+let orbitalSelectionChecks=0;
+for(const version of [1,2,3,7]){
+  for(const strategy of allStrategies){
+    const seed=seedForStrategy('field',strategy);
+    for(const elements of [110,111]){
+      for(const orientation of ['landscape','portrait']){
+        for(const phiStrength of [0,100]){
+          const intense=phiStrength===100;
+          const settings={
+            seed,mode:'field',orientation,elements,
+            density:intense?92:5,complexity:intense?100:0,
+            negativeSpace:intense?100:0,phiStrength,
+            recursion:intense?8:1,spiralInfluence:intense?100:0,
+            goldenAngle:intense?100:0,nesting:intense?100:0,
+            pen:'felt',thickness:intense?26:1,wobble:intense?90:0,
+            overdraw:intense?4:1,opacity:intense?100:5,
+            pressure:25,dryness:15,curveBias:65,
+            shapeAmount:intense?100:0,overlap:intense?100:0,
+            rotation:intense?100:0,
+            lines:true,circles:true,rectangles:true,
+            polygons:true,arcs:true,palette:'mono',colourCount:3,
+            saturation:75,brightness:50,paper:'#f5f0e6',grain:0
+          };
+          const before=capture(baseline,settings,version);
+          const after=capture(current,settings,version);
+          assert.equal(before.strategy,strategy,
+            'Expected baseline '+strategy+' Orbital Studies candidate strategy');
+          assert.deepEqual(after,before,
+            `Orbital Studies ranking drift: V${version}/${strategy}/n${elements}/${orientation}/phi${phiStrength}`);
+          orbitalSelectionChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+orbitalSelectionChecks+' Orbital Studies V1/V2/V3/V7 weighted-centroid, candidate-budget, penalty and winner-selection comparisons match pinned drawings and geometry.');
