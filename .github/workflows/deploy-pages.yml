@@ -7,11 +7,13 @@ on:
     paths:
       - 'index.html'
       - 'css/**'
+      - 'fonts/**'
       - 'js/**'
       - 'gallery/**'
       - 'reels/**'
       - 'favicon.svg'
       - 'social-card.svg'
+      - 'social-card.png'
       - 'robots.txt'
       - 'google*.html'
       - 'B732C1640DA947DB8E65C914FA8703EE.txt'
