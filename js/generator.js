@@ -1770,7 +1770,7 @@ function drawSpiral(ctx,s,r,pal){
       p.y+=Math.sin(angle+A.GOLD)*Math.pow(t,D.geometry.shellEaseExponent)*A.H*D.geometry.shellOffsetScale;
     }
 
-    if(crowd>D.geometry.scatterActivationCrowd&&variant!=='DOUBLE'{
+    if(crowd>D.geometry.scatterActivationCrowd&&variant!=='DOUBLE'){
       var spread=A.goldenCanvasPoint(i,s.elements,s,phase);
       var mix=crowd*D.geometry.scatterMixScale;
       p.x=A.lerp(p.x,spread.x,mix);
