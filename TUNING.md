@@ -1,6 +1,6 @@
 # ALGO/ART — mathematical constants and visual calibration
 
-This document describes a **small, behaviour-preserving audit**, not a
+This document records a **series of behaviour-preserving extraction passes**, not a
 re-tuning exercise. The generator's renderer version, seeds, layout decisions,
 score order, and output must remain identical to the pre-refactor engine.
 
@@ -682,6 +682,26 @@ the immutable original `99611b850bd812354701b8fec464a036d9b2c750`,
 alongside the existing compatibility checks and archived link tests.
 No new renderer version or re-tuned visual outputs are introduced.
 
+## Cross-engine audit: 10 October 2026
+
+The closing inventory is in [`CALIBRATION_AUDIT.md`](CALIBRATION_AUDIT.md).
+It checks all eight generators, the shared field/selection path and Reveal φ,
+and assigns the remaining numbers to actual mathematical structure, aesthetic
+calibration or rendering mechanics.
+
+**Audit result:** 503 non-trivial numeric *occurrences* remain outside the
+named generator tuning tables, after excluding occurrences of 0, 1, 2 and
+100. This is **not** a count of unexplained magic numbers: the total
+includes fixed geometry, Fibonacci bases, Bézier coefficients, palette
+indices and display annotations. The largest meaningful follow-up group
+is Constructed Forms (114 occurrences), followed by shared layout/drawing
+code (86) and Automatic Marks (31). Reveal φ also has 215 primarily
+display/annotation occurrences that are not composition parameters.
+
+This final pass makes **no visual change**. Further numerical cleanups
+are optional small, separately tested PRs, not an invitation to
+re-derive historical artistic settings from φ.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
@@ -705,11 +725,16 @@ behaviour belongs in a separately reviewed, explicitly versioned change.
 
 ## Next steps (separate PRs)
 
-1. Inventory and categorise the remaining literals per composition subsystem.
-2. Extract small coherent groups with exact-output equivalence checks.
-3. Document plausible duplicates **without normalising them**.
-4. Experiment with different artistic weights only in a separately versioned
-   renderer, comparing samples and preserving old share links.
+1. Refer to [`CALIBRATION_AUDIT.md`](CALIBRATION_AUDIT.md) before modifying
+   inline numbers. It documents the remaining meaningful groups by risk.
+2. Optionally classify and name Constructed Forms substyle calibration in
+   separate small PRs, with pinned six-variant drawings.
+3. Review V1–V3 shared drawing calibrations independently; **do not**
+   merge equal-looking values across historical renderer versions.
+4. Leave Reveal φ display mechanics and ordinary geometry alone unless a
+   concrete bug or documented maintenance need warrants changing them.
+5. Experiment with new artistic weights only in an explicitly versioned
+   renderer; preserve old seeds, share links and gallery artwork.
 
 These incremental passes do **not** claim to eliminate or rationalise all of the
 remaining tuned values. New numerical designs require explicit versioning.
