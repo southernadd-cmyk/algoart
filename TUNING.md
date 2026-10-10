@@ -623,8 +623,8 @@ The existing Bézier polynomial coefficients, random-number order,
 seed-derived family selection, versions, draw order and use of
 `spiralInfluence`, `goldenAngle` and Additional φ Pull are unchanged.
 
-The pinned output suite adds **384 complete comparison cases**:
-144 over all six historical variants (V3/V4/V5, two orientations,
+The pinned output suite adds **480 complete comparison cases**:
+240 over all six historical variants (V1–V5, two orientations,
 0/100 φ Pull, sparse/dense detail), plus 240 across all ten V6/V7
 trajectory families (two orientations, 0/50/100 φ Pull, sparse/dense
 detail). Each checks the SHA-256 stream of every drawing command
