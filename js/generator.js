@@ -121,6 +121,55 @@ var PLACEMENT_TUNING=Object.freeze({
   })
 });
 
+// Legacy field-family relationships and scoring. These are artist-calibrated
+// preferences, NOT φ-derived identities. Legacy and V3 parameters remain
+// separate even where their numeric values happen to agree: combining them
+// could silently tie together independently versioned rendering behaviours.
+// Keep every number, expression order and seeded RNG call unchanged.
+var RELATIONSHIP_TUNING=Object.freeze({
+  legacy:Object.freeze({
+    mediumDistanceSnap:.2,          // Pull medium elements toward quantised hero distances.
+    smallDistanceSnap:.12,          // Keep smaller elements comparatively free.
+    orbitDistanceSnapBoost:1.35,    // Strengthen radial family structure in ORBIT.
+    monumentDistanceSnapScale:.75, // Weaken snapping near a MONUMENT hero.
+    edgeDistanceSnapScale:.7,      // Avoid over-constraining the EDGE strategy.
+    mediumSnapChance:.72,          // Probability a medium element gets moved.
+    smallSnapChance:.48,           // Probability a small element gets moved.
+    mediumAngleAlignment:.46,      // Orientation attraction for medium marks.
+    smallAngleAlignment:.26,       // Orientation attraction for smaller marks.
+    orbitDiagonalAngleBoost:.14,   // Extra alignment for ORBIT/DIAGONAL.
+    smallAlternateColourChance:.72,// Chance of retaining family's colour on small marks.
+    mediumRelationStrength:.78,    // Metadata strength for medium-family members.
+    smallRelationStrength:.48,     // Metadata strength for smaller family members.
+    mediumScoreWeight:1.45,       // Contribution of medium marks to relationship fit.
+    smallScoreWeight:.7,          // Contribution of smaller marks to relationship fit.
+    distanceFitWeight:1.8,        // Preference for φ-quantised hero distances.
+    angleFitWeight:.9,            // Preference for hero-aligned rotations.
+    relationshipScoreWeight:34,   // Total contribution to candidate layout score.
+    baselinePhiPull:.45          // Existing base strength of the relationship score.
+  }),
+  v3:Object.freeze({
+    mediumDistanceSnap:.30,         // Stronger V3 medium-distance attraction.
+    smallDistanceSnap:.18,          // Stronger V3 small-distance attraction.
+    orbitDistanceSnapBoost:1.35,    // V3 orbit-specific attraction.
+    monumentDistanceSnapScale:.78, // V3 monument-specific attraction.
+    edgeDistanceSnapScale:.72,     // V3 edge-specific attraction.
+    mediumSnapChance:.84,          // V3 probability of snapping medium marks.
+    smallSnapChance:.62,           // V3 probability of snapping small marks.
+    mediumAngleAlignment:.46,      // V3 medium rotation alignment.
+    smallAngleAlignment:.26,       // V3 small rotation alignment.
+    orbitDiagonalAngleBoost:.14,   // V3 extra attraction for ORBIT/DIAGONAL.
+    mediumRelationStrength:.84,    // V3 metadata for medium-family members.
+    smallRelationStrength:.56,     // V3 metadata for smaller family members.
+    mediumScoreWeight:1.45,       // V3 emphasis on medium mark relationships.
+    smallScoreWeight:.7,          // V3 emphasis on smaller mark relationships.
+    distanceFitWeight:1.95,       // V3 reward for φ-quantised distances.
+    angleFitWeight:1.05,          // V3 reward for compatible orientations.
+    relationshipScoreWeight:36,   // V3 final influence on layout selection.
+    baselinePhiPull:.45          // V3 relationship score baseline at low φ pull.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -466,13 +515,13 @@ function reinforceFieldRelationships(layout,s,strategy){
     var distance=Math.max(1,Math.sqrt(dx*dx+dy*dy));
     var radial=Math.atan2(dy,dx);
     var desired=A.qphi(distance,34,1);
-    var snap=item.tier==='medium'?.2:.12;
+    var snap=item.tier==='medium'?RELATIONSHIP_TUNING.legacy.mediumDistanceSnap:RELATIONSHIP_TUNING.legacy.smallDistanceSnap;
 
-    if(strategy==='ORBIT')snap*=1.35;
-    if(strategy==='MONUMENT')snap*=.75;
-    if(strategy==='EDGE')snap*=.7;
+    if(strategy==='ORBIT')snap*=RELATIONSHIP_TUNING.legacy.orbitDistanceSnapBoost;
+    if(strategy==='MONUMENT')snap*=RELATIONSHIP_TUNING.legacy.monumentDistanceSnapScale;
+    if(strategy==='EDGE')snap*=RELATIONSHIP_TUNING.legacy.edgeDistanceSnapScale;
 
-    if(relationR.chance(item.tier==='medium'?.72:.48)){
+    if(relationR.chance(item.tier==='medium'?RELATIONSHIP_TUNING.legacy.mediumSnapChance:RELATIONSHIP_TUNING.legacy.smallSnapChance)){
       var adjusted=A.lerp(distance,desired,snap);
       item.x=A.clamp(hero.x+Math.cos(radial)*adjusted,28,A.W-28);
       item.y=A.clamp(hero.y+Math.sin(radial)*adjusted,28,A.H-28);
@@ -483,15 +532,15 @@ function reinforceFieldRelationships(layout,s,strategy){
     else if(strategy==='DIAGONAL')targetRot=(A.hash(s.seed+'|diag')%2)===1?-Math.PI/4:Math.PI/4;
     else if(strategy==='MONUMENT')targetRot=hero.rot;
 
-    var align=item.tier==='medium'?.46:.26;
-    if(strategy==='ORBIT'||strategy==='DIAGONAL')align+=.14;
+    var align=item.tier==='medium'?RELATIONSHIP_TUNING.legacy.mediumAngleAlignment:RELATIONSHIP_TUNING.legacy.smallAngleAlignment;
+    if(strategy==='ORBIT'||strategy==='DIAGONAL')align+=RELATIONSHIP_TUNING.legacy.orbitDiagonalAngleBoost;
     item.rot=A.lerp(item.rot,targetRot,align);
 
     item.family=Math.max(0,family);
     item.colourIndex=item.tier==='medium'
       ?item.family
-      :(item.family+(relationR.chance(.72)?0:1));
-    item.relationStrength=item.tier==='medium'?.78:.48;
+      :(item.family+(relationR.chance(RELATIONSHIP_TUNING.legacy.smallAlternateColourChance)?0:1));
+    item.relationStrength=item.tier==='medium'?RELATIONSHIP_TUNING.legacy.mediumRelationStrength:RELATIONSHIP_TUNING.legacy.smallRelationStrength;
   }
 
   return layout;
@@ -523,14 +572,14 @@ function fieldRelationshipScore(layout,s,strategy){
     else if(strategy==='MONUMENT')targetRot=nearest.rot;
     var delta=Math.abs(Math.atan2(Math.sin(item.rot-targetRot),Math.cos(item.rot-targetRot)));
     var alignment=1-A.clamp(delta/Math.PI,0,1);
-    var weight=item.tier==='medium'?1.45:.7;
+    var weight=item.tier==='medium'?RELATIONSHIP_TUNING.legacy.mediumScoreWeight:RELATIONSHIP_TUNING.legacy.smallScoreWeight;
 
-    score+=(distanceFit*1.8+alignment*.9)*weight;
+    score+=(distanceFit*RELATIONSHIP_TUNING.legacy.distanceFitWeight+alignment*RELATIONSHIP_TUNING.legacy.angleFitWeight)*weight;
     count+=weight;
   }
 
   if(!count)return 0;
-  return score/count*34*(.45+s.phiStrength/180);
+  return score/count*RELATIONSHIP_TUNING.legacy.relationshipScoreWeight*(RELATIONSHIP_TUNING.legacy.baselinePhiPull+s.phiStrength/180);
 }
 
 function visualWeight(obj,s){
@@ -857,13 +906,13 @@ function reinforceFieldRelationshipsV3(layout,s,strategy){
     var distance=Math.max(1,Math.sqrt(dx*dx+dy*dy));
     var radial=Math.atan2(dy,dx);
     var desired=A.qphi(distance,34,1);
-    var snap=item.tier==='medium'?.30:.18;
+    var snap=item.tier==='medium'?RELATIONSHIP_TUNING.v3.mediumDistanceSnap:RELATIONSHIP_TUNING.v3.smallDistanceSnap;
 
-    if(strategy==='ORBIT')snap*=1.35;
-    if(strategy==='MONUMENT')snap*=.78;
-    if(strategy==='EDGE')snap*=.72;
+    if(strategy==='ORBIT')snap*=RELATIONSHIP_TUNING.v3.orbitDistanceSnapBoost;
+    if(strategy==='MONUMENT')snap*=RELATIONSHIP_TUNING.v3.monumentDistanceSnapScale;
+    if(strategy==='EDGE')snap*=RELATIONSHIP_TUNING.v3.edgeDistanceSnapScale;
 
-    if(relationR.chance(item.tier==='medium'?.84:.62)){
+    if(relationR.chance(item.tier==='medium'?RELATIONSHIP_TUNING.v3.mediumSnapChance:RELATIONSHIP_TUNING.v3.smallSnapChance)){
       var adjusted=A.lerp(distance,desired,snap);
       item.x=A.clamp(hero.x+Math.cos(radial)*adjusted,28,A.W-28);
       item.y=A.clamp(hero.y+Math.sin(radial)*adjusted,28,A.H-28);
@@ -878,14 +927,14 @@ function reinforceFieldRelationshipsV3(layout,s,strategy){
     else if(strategy==='DIAGONAL')targetRot=(A.hash(s.seed+'|diag')%2)===1?-Math.PI/4:Math.PI/4;
     else if(strategy==='MONUMENT')targetRot=hero.rot;
 
-    var align=item.tier==='medium'?.46:.26;
-    if(strategy==='ORBIT'||strategy==='DIAGONAL')align+=.14;
+    var align=item.tier==='medium'?RELATIONSHIP_TUNING.v3.mediumAngleAlignment:RELATIONSHIP_TUNING.v3.smallAngleAlignment;
+    if(strategy==='ORBIT'||strategy==='DIAGONAL')align+=RELATIONSHIP_TUNING.v3.orbitDiagonalAngleBoost;
     item.rot=fieldLerpAngleV3(item.rot,targetRot,align,fieldShapePeriodV3(item.shapeV3));
 
     item.family=Math.max(0,family);
     item.parentHeroIndex=heroIndex;
     item.phiDistance=desired;
-    item.relationStrength=item.tier==='medium'?.84:.56;
+    item.relationStrength=item.tier==='medium'?RELATIONSHIP_TUNING.v3.mediumRelationStrength:RELATIONSHIP_TUNING.v3.smallRelationStrength;
 
     if(item.tier==='small'&&extraColours>0&&relationR.chance(accentChance)){
       item.colourIndex=familyCount+((i+family+A.hash(s.seed+'|field-accent-v3|'+i))%extraColours);
@@ -925,14 +974,14 @@ function fieldRelationshipScoreV3(layout,s,strategy){
     var period=fieldShapePeriodV3(item.shapeV3);
     var delta=Math.abs(fieldAngleDeltaV3(item.rot,targetRot,period));
     var alignment=1-A.clamp(delta/(period/2),0,1);
-    var weight=item.tier==='medium'?1.45:.7;
+    var weight=item.tier==='medium'?RELATIONSHIP_TUNING.v3.mediumScoreWeight:RELATIONSHIP_TUNING.v3.smallScoreWeight;
 
-    score+=(distanceFit*1.95+alignment*1.05)*weight;
+    score+=(distanceFit*RELATIONSHIP_TUNING.v3.distanceFitWeight+alignment*RELATIONSHIP_TUNING.v3.angleFitWeight)*weight;
     count+=weight;
   }
 
   if(!count)return 0;
-  return score/count*36*(.45+s.phiStrength/180);
+  return score/count*RELATIONSHIP_TUNING.v3.relationshipScoreWeight*(RELATIONSHIP_TUNING.v3.baselinePhiPull+s.phiStrength/180);
 }
 
 function chooseBestLayoutV3(s){
