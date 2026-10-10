@@ -279,7 +279,7 @@
               <div class="control"><label for="plotterPaper">Paper size</label><select id="plotterPaper"><option value="A4">A4</option><option value="A3">A3</option></select></div>
               <div class="control"><label for="plotterMargin">Margin (mm)</label><input id="plotterMargin" type="number" value="10" min="0" max="100" step="1"></div>
               <div class="control"><label for="plotterGrouping">Pen layers</label><select id="plotterGrouping" aria-describedby="plotterGroupingNote"><option value="runs">Faithful colour runs</option><option value="pens">Group by pen</option></select></div>
-              <p class="mini-note" id="plotterGroupingNote" aria-live="polite">Faithful colour runs preserve overlap order. Pen IDs are light-to-dark in both modes; run numbers stay sequential. AxiDraw pauses before each pen change; swap the pen and Resume.</p>
+              <p class="mini-note" id="plotterGroupingNote" aria-live="polite">Faithful colour runs preserve overlap order, with light-to-dark Pen IDs and sequential run numbers. The SVG includes AxiDraw pause labels for pen changes; actual hardware behaviour is untested. Swap pens and Resume if prompted.</p>
               <label class="mini-note"><input id="plotterOptimize" type="checkbox" checked> <span id="plotterOptimizeLabel">Reduce pen travel without changing stroke order</span></label>
               <button class="export-big" id="previewPlotter">PREVIEW PLOTTER SVG</button>
               <figure id="plotterPreview" hidden><img id="plotterPreviewImage" alt="Preview of the plotter SVG on the selected paper"><figcaption id="plotterSummary"></figcaption></figure>
