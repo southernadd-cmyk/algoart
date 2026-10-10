@@ -8,6 +8,24 @@ A.TAU=Math.PI*2;
 A.W=1400;
 A.H=1000;
 
+// Artist-calibrated spatial parameters, NOT golden-ratio identities.
+// Keep A.PHI, A.INV and A.GOLD above as the exact mathematical definitions.
+// These are the original V1–V7 literal values: naming them must not
+// change an RNG call, arithmetic grouping, or legacy artwork output.
+var PHI_PLACEMENT_TUNING=Object.freeze({
+  radialIndexOffset:.65,           // Avoid putting the first radial sample at the exact centre.
+  minimumGoldenAngleFraction:.74,  // Lowest fraction of the golden angle before slider pull.
+  radialWidthFraction:.465,        // Golden-angle samples occupy 46.5% of half-canvas scale.
+  radialHeightFraction:.455,       // Independently calibrated vertical radial reach.
+  pointBoundaryInsetPx:60,        // Keep the non-φ candidate point inside the canvas.
+  pointMaximumJitterPx:150,       // Positional freedom around a φ candidate at low pull.
+  cellsDefaultMarginPx:42,        // Golden cell layout default for external callers.
+  cellsDepthTieBreakWeight:.002,  // Slight preference for deeper cells of similar area.
+  distributedCellsMarginPx:42,    // Explicit margin for distributed candidate positions.
+  distributedRandomLow:.22,       // Lower fraction for an unsnapped point inside its cell.
+  distributedRandomHigh:.78       // Upper fraction for an unsnapped point inside its cell.
+});
+
 A.qphi=function(v,base,strength){
   var best=v,d=1e9;
   for(var k=-7;k<=7;k++){
@@ -24,12 +42,12 @@ A.goldenPoint=function(i,count,s,r){
 A.goldenCanvasPoint=function(i,count,s,phase){
   count=Math.max(1,count);
   phase=phase||0;
-  var t=(i+.65)/count;
-  var step=A.lerp(A.GOLD*.74,A.GOLD,s.goldenAngle/100);
+  var t=(i+PHI_PLACEMENT_TUNING.radialIndexOffset)/count;
+  var step=A.lerp(A.GOLD*PHI_PLACEMENT_TUNING.minimumGoldenAngleFraction,A.GOLD,s.goldenAngle/100);
   var a=phase+i*step;
   var radial=Math.pow(t,A.INV);
-  var rx=A.W*.465*radial;
-  var ry=A.H*.455*radial;
+  var rx=A.W*PHI_PLACEMENT_TUNING.radialWidthFraction*radial;
+  var ry=A.H*PHI_PLACEMENT_TUNING.radialHeightFraction*radial;
   return{
     x:A.W*.5+Math.cos(a)*rx,
     y:A.H*.5+Math.sin(a)*ry,
@@ -42,8 +60,8 @@ A.phiPoint=function(s,r){
   var ax=[A.INV*A.W,(1-A.INV)*A.W,A.W/2,A.W/(A.PHI*A.PHI),A.W-A.W/(A.PHI*A.PHI)];
   var ay=[A.INV*A.H,(1-A.INV)*A.H,A.H/2,A.H/(A.PHI*A.PHI),A.H-A.H/(A.PHI*A.PHI)];
   var p={x:r.pick(ax),y:r.pick(ay)};
-  var rand={x:r.range(60,A.W-60),y:r.range(60,A.H-60)};
-  var t=s.phiStrength/100,j=(1-t)*150;
+  var rand={x:r.range(PHI_PLACEMENT_TUNING.pointBoundaryInsetPx,A.W-PHI_PLACEMENT_TUNING.pointBoundaryInsetPx),y:r.range(PHI_PLACEMENT_TUNING.pointBoundaryInsetPx,A.H-PHI_PLACEMENT_TUNING.pointBoundaryInsetPx)};
+  var t=s.phiStrength/100,j=(1-t)*PHI_PLACEMENT_TUNING.pointMaximumJitterPx;
   p.x+=r.range(-j,j);
   p.y+=r.range(-j,j);
   return{x:A.lerp(rand.x,p.x,t),y:A.lerp(rand.y,p.y,t)};
@@ -51,7 +69,7 @@ A.phiPoint=function(s,r){
 
 A.goldenCells=function(count,margin){
   count=Math.max(1,Math.floor(count));
-  margin=margin==null?42:margin;
+  margin=margin==null?PHI_PLACEMENT_TUNING.cellsDefaultMarginPx:margin;
   var cells=[{x:margin,y:margin,w:A.W-margin*2,h:A.H-margin*2,depth:0}];
   var flip=0;
 
@@ -59,7 +77,7 @@ A.goldenCells=function(count,margin){
     var best=0,bestScore=-1;
     for(var i=0;i<cells.length;i++){
       var c=cells[i];
-      var score=c.w*c.h*(1+c.depth*.002);
+      var score=c.w*c.h*(1+c.depth*PHI_PLACEMENT_TUNING.cellsDepthTieBreakWeight);
       if(score>bestScore){bestScore=score;best=i}
     }
 
@@ -85,7 +103,7 @@ A.goldenCells=function(count,margin){
 };
 
 A.distributedPhiPoints=function(count,s,r){
-  var cells=A.goldenCells(count,42);
+  var cells=A.goldenCells(count,PHI_PLACEMENT_TUNING.distributedCellsMarginPx);
 
   for(var i=cells.length-1;i>0;i--){
     var j=r.int(0,i),tmp=cells[i];
@@ -99,8 +117,8 @@ A.distributedPhiPoints=function(count,s,r){
     var yf=(i%3===0)?(1-A.INV):A.INV;
     var phiX=cell.x+cell.w*xf;
     var phiY=cell.y+cell.h*yf;
-    var randomX=cell.x+cell.w*r.range(.22,.78);
-    var randomY=cell.y+cell.h*r.range(.22,.78);
+    var randomX=cell.x+cell.w*r.range(PHI_PLACEMENT_TUNING.distributedRandomLow,PHI_PLACEMENT_TUNING.distributedRandomHigh);
+    var randomY=cell.y+cell.h*r.range(PHI_PLACEMENT_TUNING.distributedRandomLow,PHI_PLACEMENT_TUNING.distributedRandomHigh);
 
     return{
       x:A.lerp(randomX,phiX,strength),
