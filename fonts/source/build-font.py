@@ -47,15 +47,29 @@ for record in data:
     metrics[name]=(round((record['width']+8)*7),0)
 fb.setupGlyphOrder(names);fb.setupCharacterMap(cmap);fb.setupGlyf(glyphs)
 fb.setupHorizontalMetrics(metrics);fb.setupHorizontalHeader(ascent=850,descent=-250)
-fb.setupNameTable({'familyName':'AlgoArt Marker','styleName':'Regular','uniqueFontIdentifier':'AlgoArtMarker-0.1','fullName':'AlgoArt Marker Regular','psName':'AlgoArtMarker-Regular','version':'Version 0.100','manufacturer':'AlgoArt','designer':'Adam Clement / AlgoArt','description':'Original uppercase skeletons drawn through AlgoArt marker.js. Three seeded glyph versions; contextual cycling. Lowercase maps to uppercase.'})
+fb.setupNameTable({'familyName':'AlgoArt Marker','styleName':'Regular','uniqueFontIdentifier':'AlgoArtMarker-0.2','fullName':'AlgoArt Marker Regular','psName':'AlgoArtMarker-Regular','version':'Version 0.200','manufacturer':'AlgoArt','designer':'Adam Clement / AlgoArt','description':'Original uppercase skeletons drawn through AlgoArt marker.js. Three seeded glyph versions; contextual cycling. Lowercase maps to uppercase.'})
 fb.setupOS2(sTypoAscender=850,sTypoDescender=-250,sTypoLineGap=0,usWinAscent=850,usWinDescent=250,sCapHeight=700,sxHeight=700,usWeightClass=400,fsType=0)
 fb.setupPost();fb.setupMaxp()
 fea='languagesystem DFLT dflt;\nlanguagesystem latn dflt;\n'
 for i,cl in enumerate(classes):fea+=f'@v{i} = ['+' '.join(cl)+'];\n'
 fea+='feature calt {\n sub @v0 @v0\' by @v1;\n sub @v1 @v0\' by @v2;\n} calt;\n'
 fea+='feature ss01 { sub @v0 by @v1; } ss01;\nfeature ss02 { sub @v0 by @v2; } ss02;\n'
+# Classes include all alternates so kerning survives contextual substitution.
+kern_pairs = {
+    'AV': -65, 'VA': -55, 'TA': -70, 'AT': -65, 'WA': -60, 'AW': -55,
+    'LT': -75, 'LY': -80, 'LA': -40, 'LV': -65, 'LW': -50, 'TY': -60,
+    'TO': -65, 'YO': -60, 'YA': -75, 'AY': -65, 'FA': -50, 'PA': -40,
+    'RY': -40, 'VT': -55, 'YT': -60, 'TW': -40,
+}
+for char in sorted(set(''.join(kern_pairs))):
+    base = f'uni{ord(char):04X}'
+    fea += f'@kern{char} = [{base} {base}.alt1 {base}.alt2];\n'
+fea += 'feature kern {\n'
+for pair, adjustment in kern_pairs.items():
+    fea += f' pos @kern{pair[0]} @kern{pair[1]} {adjustment};\n'
+fea += '} kern;\n'
 addOpenTypeFeaturesFromString(fb.font,fea)
 (root/'source/alternates.fea').write_text(fea)
 fb.save(root/'AlgoArt-Marker-Regular.ttf')
 font=TTFont(root/'AlgoArt-Marker-Regular.ttf');font.flavor='woff2';font.save(root/'AlgoArt-Marker-Regular.woff2')
-print(f'Built {len(names)} glyphs, {len(cmap)} mapped characters, calt / ss01 / ss02')
+print(f'Built {len(names)} glyphs, {len(cmap)} mapped characters, calt / ss01 / ss02 / kern')
