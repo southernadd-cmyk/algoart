@@ -207,6 +207,50 @@ var STRATEGY_GEOMETRY_TUNING=Object.freeze({
   })
 });
 
+// Constructed Forms artistic calibration, not mathematical φ constants.
+// The six variant layouts retain their separate visual personalities;
+// shared shape/style/size numbers are frozen to preserve V1–V7 art.
+// Fibonacci bases 34 and 55 and exact A.PHI/A.GOLD remain in formulas.
+var CONSTRUCTED_TUNING=Object.freeze({
+  density:Object.freeze({
+    minimumItems:7,                // Spare design at low element counts.
+    maximumItems:34,               // Cap geometric collage complexity.
+    baseItems:7,                   // Initial shapes before controls.
+    elementsGain:.15,              // Additional shapes per Elements setting.
+    complexityGain:.075            // Additional shapes per Complexity setting.
+  }),
+  style:Object.freeze({
+    maximumCurveBias:12,           // Keep shapes crisp and constructed.
+    maximumWobble:16,              // Limit hand jitter on geometry.
+    maximumOverdraw:4,             // Restrict repeated marks.
+    ghostThicknessFraction:.58,    // Lighter auxiliary geometric guides.
+    ghostOpacityFloor:18,         // Prevent guide lines disappearing.
+    ghostOpacityFraction:.58,      // Fade construction guides relative to marks.
+    ghostOverdrawFraction:.65      // Keep guides cleaner than finished forms.
+  }),
+  size:Object.freeze({
+    heroMinimumPx:170,             // Keep focal geometry visually dominant.
+    smallMaximumPx:150,            // Supporting shapes stay subordinate.
+    minimumPx:24,                  // Universal shape size floor.
+    cropMaximumPx:470,             // Allow CROP shapes off canvas.
+    normalMaximumPx:390           // Tighter bounds in other variants.
+  }),
+  mark:Object.freeze({
+    randomRatioMinimum:1.12,       // Lower aspect ratio before φ pull.
+    randomRatioMaximum:1.92,       // Upper aspect ratio before φ pull.
+    lineHalfSizeFraction:.72,      // Half-length of a constructed line.
+    heroAccentBaseChance:.48,      // Chance of nesting within a hero.
+    heroAccentNestingDivisor:250, // Nesting control's addition to chance.
+    innerArcRadiusFraction:.52,    // Inner accent arc relative to φ size.
+    innerRectangleGoldenOffset:.18 // Orientation of rectangular accent.
+  }),
+  finish:Object.freeze({
+    uncroppedInsetPx:18,           // Protect canvas border except in CROP.
+    guideBaseChance:.28,          // Chance to draw construction guide lines.
+    guideComplexityDivisor:260    // Extra guide frequency from Complexity.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -2565,10 +2609,10 @@ function drawConstructedShape(ctx,item,index,s,r,pal,style){
   var size=item.size;
   var rot=item.rot;
   var col=pal[index%pal.length];
-  var ratio=A.lerp(r.range(1.12,1.92),A.PHI,s.phiStrength/100);
+  var ratio=A.lerp(r.range(CONSTRUCTED_TUNING.mark.randomRatioMinimum,CONSTRUCTED_TUNING.mark.randomRatioMaximum),A.PHI,s.phiStrength/100);
 
   if(shape==='line'){
-    var half=size*.72;
+    var half=size*CONSTRUCTED_TUNING.mark.lineHalfSizeFraction;
     A.drawLine(
       ctx,
       {x:c.x-Math.cos(rot)*half,y:c.y-Math.sin(rot)*half},
@@ -2585,15 +2629,15 @@ function drawConstructedShape(ctx,item,index,s,r,pal,style){
     A.arc(ctx,c,size*.5,rot,A.TAU*A.INV,col,style,r);
   }
 
-  if(item.tier==='hero'&&r.chance(.48+s.nesting/250)){
+  if(item.tier==='hero'&&r.chance(CONSTRUCTED_TUNING.mark.heroAccentBaseChance+s.nesting/CONSTRUCTED_TUNING.mark.heroAccentNestingDivisor)){
     var accent=pal[(index+2)%pal.length];
     var inner=size/A.PHI;
     if(shape==='circle'&&s.circles){
       A.ellipse(ctx,c,inner*.5,inner/(2*A.PHI),rot+A.GOLD,accent,style,r);
     }else if(shape==='rect'&&s.rectangles){
-      A.rect(ctx,c,inner,inner/A.PHI,rot+A.GOLD*.18,accent,style,r);
+      A.rect(ctx,c,inner,inner/A.PHI,rot+A.GOLD*CONSTRUCTED_TUNING.mark.innerRectangleGoldenOffset,accent,style,r);
     }else if(s.arcs){
-      A.arc(ctx,c,inner*.52,rot+A.GOLD,A.TAU*(1-A.INV),accent,style,r);
+      A.arc(ctx,c,inner*CONSTRUCTED_TUNING.mark.innerArcRadiusFraction,rot+A.GOLD,A.TAU*(1-A.INV),accent,style,r);
     }
   }
 }
@@ -2602,22 +2646,22 @@ function drawGeometric(ctx,s,r,pal){
   var variants=['BALANCE','STACK','AXIS','COLLISION','FLOAT','CROP'];
   var variant=variants[A.hash(s.seed+'|constructed-variant')%variants.length];
   var crowd=crowdFactor(s);
-  var count=Math.max(7,Math.min(34,Math.round(
-    7+s.elements*.15+s.complexity*.075
+  var count=Math.max(CONSTRUCTED_TUNING.density.minimumItems,Math.min(CONSTRUCTED_TUNING.density.maximumItems,Math.round(
+    CONSTRUCTED_TUNING.density.baseItems+s.elements*CONSTRUCTED_TUNING.density.elementsGain+s.complexity*CONSTRUCTED_TUNING.density.complexityGain
   )));
   var targets=phiTargets();
   var points=A.distributedPhiPoints(count,s,A.makeR(s.seed+'|constructed-points|'+variant));
   var items=[];
   var voids=[];
   var geometric=Object.assign({},s,{
-    curveBias:Math.min(12,s.curveBias),
-    wobble:Math.min(16,s.wobble),
-    overdraw:Math.max(1,Math.min(s.overdraw,4))
+    curveBias:Math.min(CONSTRUCTED_TUNING.style.maximumCurveBias,s.curveBias),
+    wobble:Math.min(CONSTRUCTED_TUNING.style.maximumWobble,s.wobble),
+    overdraw:Math.max(1,Math.min(s.overdraw,CONSTRUCTED_TUNING.style.maximumOverdraw))
   });
   var ghostStyle=Object.assign({},geometric,{
-    thickness:Math.max(1,s.thickness*.58),
-    opacity:Math.max(18,s.opacity*.58),
-    overdraw:Math.max(1,Math.round(geometric.overdraw*.65))
+    thickness:Math.max(1,s.thickness*CONSTRUCTED_TUNING.style.ghostThicknessFraction),
+    opacity:Math.max(CONSTRUCTED_TUNING.style.ghostOpacityFloor,s.opacity*CONSTRUCTED_TUNING.style.ghostOpacityFraction),
+    overdraw:Math.max(1,Math.round(geometric.overdraw*CONSTRUCTED_TUNING.style.ghostOverdrawFraction))
   });
   var phase=r.range(0,A.TAU);
   var heroTarget=targets[A.hash(s.seed+'|constructed-focus')%targets.length];
@@ -2627,9 +2671,9 @@ function drawGeometric(ctx,s,r,pal){
   function qsize(raw,tier){
     var base=tier==='hero'?55:34;
     var size=A.qphi(raw,base,s.phiStrength/100);
-    if(tier==='hero')size=Math.max(size,170);
-    if(tier==='small')size=Math.min(size,150);
-    return A.clamp(size,24,variant==='CROP'?470:390);
+    if(tier==='hero')size=Math.max(size,CONSTRUCTED_TUNING.size.heroMinimumPx);
+    if(tier==='small')size=Math.min(size,CONSTRUCTED_TUNING.size.smallMaximumPx);
+    return A.clamp(size,CONSTRUCTED_TUNING.size.minimumPx,variant==='CROP'?CONSTRUCTED_TUNING.size.cropMaximumPx:CONSTRUCTED_TUNING.size.normalMaximumPx);
   }
 
   function add(x,y,size,rot,tier,shape){
@@ -2801,14 +2845,14 @@ function drawGeometric(ctx,s,r,pal){
     var item=items[i];
 
     if(variant!=='CROP'){
-      item.x=A.clamp(item.x,18,A.W-18);
-      item.y=A.clamp(item.y,18,A.H-18);
+      item.x=A.clamp(item.x,CONSTRUCTED_TUNING.finish.uncroppedInsetPx,A.W-CONSTRUCTED_TUNING.finish.uncroppedInsetPx);
+      item.y=A.clamp(item.y,CONSTRUCTED_TUNING.finish.uncroppedInsetPx,A.H-CONSTRUCTED_TUNING.finish.uncroppedInsetPx);
     }
 
     if(pointInVoid(item.x,item.y,voids))continue;
     drawConstructedShape(ctx,item,i,s,r,pal,geometric);
 
-    if(s.lines&&variant!=='AXIS'&&item.tier!=='small'&&r.chance(.28+s.complexity/260)){
+    if(s.lines&&variant!=='AXIS'&&item.tier!=='small'&&r.chance(CONSTRUCTED_TUNING.finish.guideBaseChance+s.complexity/CONSTRUCTED_TUNING.finish.guideComplexityDivisor)){
       var len=item.size/A.PHI;
       var angle=item.rot+A.GOLD;
       A.drawLine(
