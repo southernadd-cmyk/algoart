@@ -672,9 +672,13 @@ These safeguards are operational rather than aesthetic: they are there to make t
 
 ALGO/ART is not trying to maximise the number of algorithms or imitate a text-to-image model.
 
-Its purpose is to explore a specific relationship:
+Its central guiding question is:
 
-**Can a composition be strongly governed by mathematics while the marks that express it remain visibly human, loose and imperfect?**
+**How far can the golden ratio govern a composition while its marks remain visibly human?**
+
+This brings together two investigations: how much compositional structure φ can create through hierarchy, scale, movement and negative space; and whether mathematical control can coexist with expressive, imperfect marks. The original artistic question remains an important part of that experiment:
+
+*Can a composition be strongly governed by mathematics while the marks that express it remain visibly human, loose and imperfect?*
 
 The golden ratio provides the underlying grammar. The eight systems interpret that grammar differently: as fields, trajectories, divisions, radiance, connections, growth, constructed balance or automatic gesture.
 
