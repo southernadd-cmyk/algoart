@@ -75,3 +75,42 @@ for(const version of [3,6,7]){
   }
 }
 console.log('PASS: '+checked+' V3/V6/V7 seed/orientation/φ configurations produce byte-identical drawing command digests and metadata against pinned pre-refactor source '+BASELINE+'.');
+
+
+// Independently exercise every shared φ placement helper, including
+// helpers/margins that a particular mode or sample seed might never reach.
+// The original V1–V7 helper semantics and RNG draw order must stay identical.
+function placementSample(A,orientation,phiStrength,goldenAngle,seed){
+  A.W=orientation==='portrait'?1000:1400;
+  A.H=orientation==='portrait'?1400:1000;
+  const settings={phiStrength,goldenAngle};
+  return JSON.stringify({
+    goldenCanvas:[
+      A.goldenCanvasPoint(0,1,settings,0),
+      A.goldenCanvasPoint(2,13,settings,A.GOLD*.5),
+      A.goldenCanvasPoint(12,13,settings,0)
+    ],
+    goldenPoint:A.goldenPoint(4,13,settings,A.makeR(seed+'|unused')),
+    phiPoint:A.phiPoint(settings,A.makeR(seed+'|phi-point')),
+    defaultCells:A.goldenCells(11),
+    explicitCells:A.goldenCells(7,64),
+    zeroMarginCells:A.goldenCells(5,0),
+    distributed:A.distributedPhiPoints(13,settings,A.makeR(seed+'|distributed')),
+    quantified:[A.qphi(17,21,phiStrength/100),A.qphi(120,34,phiStrength/100)]
+  });
+}
+let placementChecks=0;
+for(const orientation of ['landscape','portrait']){
+  for(const phiStrength of [0,55,100]){
+    for(const goldenAngle of [0,50,100]){
+      for(const seed of ['PLACEMENT-A','PLACEMENT-B']){
+        const before=placementSample(baseline,orientation,phiStrength,goldenAngle,seed);
+        const after=placementSample(current,orientation,phiStrength,goldenAngle,seed);
+        assert.equal(after,before,
+          `φ helper output or RNG changed: ${orientation}/pull${phiStrength}/angle${goldenAngle}/${seed}`);
+        placementChecks++;
+      }
+    }
+  }
+}
+console.log('PASS: '+placementChecks+' exact φ-helper samples match the pinned pre-refactor engine.');
