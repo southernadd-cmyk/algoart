@@ -815,7 +815,7 @@ function goldenTrajectorySettings(seed,orientation,phiStrength,rich){
 let goldenHistoricalChecks=0;
 for(const variant of goldenSpiralVariants){
   const seed=goldenSpiralSeed(variant);
-  for(const version of [3,4,5]){
+  for(const version of [1,2,3,4,5]){
     for(const orientation of ['landscape','portrait']){
       for(const phiStrength of [0,100]){
         for(const rich of [false,true]){
@@ -831,7 +831,7 @@ for(const variant of goldenSpiralVariants){
     }
   }
 }
-console.log('PASS: '+goldenHistoricalChecks+' V3–V5 six-family historical spiral drawings match pinned output.');
+console.log('PASS: '+goldenHistoricalChecks+' V1–V5 six-family historical spiral drawings match pinned output.');
 
 let goldenTrajectoryChecks=0;
 for(const family of goldenTrajectoryFamilies){
