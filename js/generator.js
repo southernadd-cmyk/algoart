@@ -4,6 +4,65 @@ window.AlgoArt=window.AlgoArt||{};
 
 var STRATEGIES=['BALANCED','VOID','TENSION','ORBIT','EDGE','MONUMENT','DIAGONAL'];
 
+// Recursive Divisions aesthetic calibration. The genuine golden-section
+// cuts, golden-angle relationships, and φ nesting remain mathematical code.
+// Preserve historical branch ordering, RNG calls, and floating-point order.
+var RECT_DIVISION_TUNING=Object.freeze({
+  layout:Object.freeze({
+    marginMinPx:42,                  // Root-frame margin before φ quantisation.
+    marginMaxPx:96,
+    minimumCells:7,                 // Minimum number of partition territories.
+    maximumCells:56,                // Safety cap on subdivisions.
+    baseCells:5,                    // Cells before controls add complexity.
+    recursionCellGain:2,
+    complexityCellsDivisor:9,
+    elementCellsDivisor:16,
+    minimumSideLowComplexityPx:70,  // Prevent splits on narrow territories.
+    minimumSideHighComplexityPx:34
+  }),
+  selection:Object.freeze({
+    crosscutPoolLimit:4,           // Choose among four largest active regions.
+    framedDepthBonus:.08,         // Extra preference for deeper FRAMED cells.
+    scoreJitterMin:.92,           // Seeded variability among similar territories.
+    scoreJitterMax:1.08,
+    framedContinueChance:.42      // Chance to favour one nested FRAMED child.
+  }),
+  split:Object.freeze({
+    aspectPhiTolerance:.92,       // Artist-tuned tolerance around φ-shaped cells.
+    minimumCutFraction:.28,       // Guard against overly narrow partitions.
+    maximumCutFraction:.72,
+    minimumDepthLimit:4,          // Stop at depth floor or Recursion + offset.
+    recursionDepthOffset:2
+  }),
+  voids:Object.freeze({
+    leafFractionAtFullNegativeSpace:.24, // Share of leaf territories held empty.
+    initialCandidateWindow:3      // Maximum start index into largest cells.
+  }),
+  ink:Object.freeze({
+    maximumCurveBias:8,           // Keep partition strokes nearly straight.
+    maximumWobble:18              // Limit hand-drawn variation in this engine.
+  }),
+  marks:Object.freeze({
+    insetFractionMin:.025,        // Inset leaf rectangles from their territories.
+    insetFractionMax:.12,
+    minimumVisibleSidePx:8,       // Keep the remaining rectangle drawable.
+    rotationJitter:.045,          // Small independent leaf rotation amplitude.
+    lineChanceBase:.24,           // Diagonal line frequency, before Complexity.
+    lineComplexityDivisor:150,
+    ellipseChanceScale:.46,       // Shape Amount adjusts secondary detail odds.
+    ellipseRadiusMin:.16,
+    ellipseRadiusMax:.34,
+    arcChanceScale:.3,
+    arcRadiusMin:.18,
+    arcRadiusMax:.4,
+    polygonChanceScale:.22,
+    polygonRadiusMin:.12,
+    polygonRadiusMax:.27,
+    nestingChanceScale:.62,
+    nestedGoldenTurnScale:.08     // Fraction of exact A.GOLD for nested strokes.
+  })
+});
+
 // Legacy artistic/scoring calibration, NOT mathematical φ constants.
 // Every value below is copied verbatim from the original V1–V7 renderer.
 // Keep these independent from A.PHI/A.INV/A.GOLD in phi.js: their values
@@ -1773,15 +1832,16 @@ function drawSpiralV6(ctx,s,r,pal){
 }
 
 function drawRects(ctx,s,r,pal){
+  var D=RECT_DIVISION_TUNING;
   var variants=['MOSAIC','CASCADE','CROSSCUT','FRAMED'];
   var variant=variants[A.hash(s.seed+'|rect-variant')%variants.length];
-  var margin=A.qphi(r.range(42,96),34,s.phiStrength/100);
+  var margin=A.qphi(r.range(D.layout.marginMinPx,D.layout.marginMaxPx),34,s.phiStrength/100);
   var root={x:margin,y:margin,w:A.W-margin*2,h:A.H-margin*2,depth:0,branch:0};
-  var target=Math.max(7,Math.min(56,
-    Math.round(5+s.recursion*2+s.complexity/9+s.elements/16)
+  var target=Math.max(D.layout.minimumCells,Math.min(D.layout.maximumCells,
+    Math.round(D.layout.baseCells+s.recursion*D.layout.recursionCellGain+s.complexity/D.layout.complexityCellsDivisor+s.elements/D.layout.elementCellsDivisor)
   ));
   var active=[root],leaves=[],splitCount=0;
-  var minSide=A.lerp(70,34,s.complexity/100);
+  var minSide=A.lerp(D.layout.minimumSideLowComplexityPx,D.layout.minimumSideHighComplexityPx,s.complexity/100);
 
   function area(cell){return cell.w*cell.h}
 
@@ -1791,15 +1851,15 @@ function drawRects(ctx,s,r,pal){
     if(variant==='CROSSCUT'){
       var sorted=active.map(function(c,i){return{c:c,i:i}})
         .sort(function(a,b){return area(b.c)-area(a.c)});
-      var pool=Math.max(1,Math.min(sorted.length,4));
+      var pool=Math.max(1,Math.min(sorted.length,D.selection.crosscutPoolLimit));
       return sorted[r.int(0,pool-1)].i;
     }
 
     var best=0,bestScore=-1;
     for(var i=0;i<active.length;i++){
       var score=area(active[i]);
-      if(variant==='FRAMED')score*=1+active[i].depth*.08;
-      score*=r.range(.92,1.08);
+      if(variant==='FRAMED')score*=1+active[i].depth*D.selection.framedDepthBonus;
+      score*=r.range(D.selection.scoreJitterMin,D.selection.scoreJitterMax);
       if(score>bestScore){bestScore=score;best=i}
     }
     return best;
@@ -1809,14 +1869,14 @@ function drawRects(ctx,s,r,pal){
     var aspect=cell.w/Math.max(1,cell.h);
     var vertical;
 
-    if(aspect>A.PHI*.92)vertical=true;
-    else if(aspect<1/(A.PHI*.92))vertical=false;
+    if(aspect>A.PHI*D.split.aspectPhiTolerance)vertical=true;
+    else if(aspect<1/(A.PHI*D.split.aspectPhiTolerance))vertical=false;
     else if(variant==='CROSSCUT')vertical=(splitCount%2===0);
     else vertical=r.chance(.5);
 
     var phiCut=r.chance(.5)?A.INV:(1-A.INV);
     var cut=A.lerp(.5,phiCut,s.phiStrength/100);
-    cut=A.clamp(cut,.28,.72);
+    cut=A.clamp(cut,D.split.minimumCutFraction,D.split.maximumCutFraction);
 
     var a,b;
     if(vertical){
@@ -1836,7 +1896,7 @@ function drawRects(ctx,s,r,pal){
     var index=chooseCellIndex();
     var cell=active.splice(index,1)[0];
 
-    if(Math.min(cell.w,cell.h)<minSide||cell.depth>=Math.max(4,s.recursion+2)){
+    if(Math.min(cell.w,cell.h)<minSide||cell.depth>=Math.max(D.split.minimumDepthLimit,s.recursion+D.split.recursionDepthOffset)){
       leaves.push(cell);
       continue;
     }
@@ -1847,7 +1907,7 @@ function drawRects(ctx,s,r,pal){
       var recurse=r.chance(.5)?0:1;
       leaves.push(children[1-recurse]);
       active.push(children[recurse]);
-    }else if(variant==='FRAMED'&&r.chance(.42)){
+    }else if(variant==='FRAMED'&&r.chance(D.selection.framedContinueChance)){
       var framed=r.chance(.5)?0:1;
       leaves.push(children[framed]);
       active.push(children[1-framed]);
@@ -1862,7 +1922,7 @@ function drawRects(ctx,s,r,pal){
     return area(b)-area(a);
   });
 
-  var voidCount=Math.round(leaves.length*(s.negativeSpace/100)*.24);
+  var voidCount=Math.round(leaves.length*(s.negativeSpace/100)*D.voids.leafFractionAtFullNegativeSpace);
   var voids=[];
   var voidMap={};
 
@@ -1870,7 +1930,7 @@ function drawRects(ctx,s,r,pal){
     var candidates=leaves.map(function(c,i){return{c:c,i:i}})
       .sort(function(a,b){return area(b.c)-area(a.c)});
 
-    var start=Math.min(candidates.length-1,r.int(0,Math.min(3,candidates.length-1)));
+    var start=Math.min(candidates.length-1,r.int(0,Math.min(D.voids.initialCandidateWindow,candidates.length-1)));
     for(var v=0;v<voidCount&&start+v<candidates.length;v++){
       var chosen=candidates[start+v];
       voidMap[chosen.i]=true;
@@ -1879,8 +1939,8 @@ function drawRects(ctx,s,r,pal){
   }
 
   var rectStyle=Object.assign({},s,{
-    curveBias:Math.min(8,s.curveBias),
-    wobble:Math.min(18,s.wobble)
+    curveBias:Math.min(D.ink.maximumCurveBias,s.curveBias),
+    wobble:Math.min(D.ink.maximumWobble,s.wobble)
   });
 
   if(s.rectangles!==false){
@@ -1891,42 +1951,42 @@ function drawRects(ctx,s,r,pal){
     if(voidMap[i])continue;
 
     var leaf=leaves[i];
-    var inset=Math.min(leaf.w,leaf.h)*r.range(.025,.12);
-    var w=Math.max(8,leaf.w-inset*2);
-    var h=Math.max(8,leaf.h-inset*2);
+    var inset=Math.min(leaf.w,leaf.h)*r.range(D.marks.insetFractionMin,D.marks.insetFractionMax);
+    var w=Math.max(D.marks.minimumVisibleSidePx,leaf.w-inset*2);
+    var h=Math.max(D.marks.minimumVisibleSidePx,leaf.h-inset*2);
     var c={x:leaf.x+leaf.w/2,y:leaf.y+leaf.h/2};
-    var rot=r.range(-.045,.045)*(s.rotation/100);
+    var rot=r.range(-D.marks.rotationJitter,D.marks.rotationJitter)*(s.rotation/100);
     var col=pal[i%pal.length];
 
     if(s.rectangles!==false){
       A.rect(ctx,c,w,h,rot,col,rectStyle,r);
     }
 
-    if(s.lines&&r.chance(.24+s.complexity/150)){
+    if(s.lines&&r.chance(D.marks.lineChanceBase+s.complexity/D.marks.lineComplexityDivisor)){
       var diag=(i+leaf.depth)%2===0;
       var p1={x:c.x+(diag?-w:w)/2,y:c.y-h/2};
       var p2={x:c.x+(diag?w:-w)/2,y:c.y+h/2};
       A.drawLine(ctx,p1,p2,pal[(i+1)%pal.length],rectStyle,r);
     }
 
-    if(s.circles&&r.chance((s.shapeAmount/100)*.46)){
-      var rad=Math.min(w,h)*r.range(.16,.34);
+    if(s.circles&&r.chance((s.shapeAmount/100)*D.marks.ellipseChanceScale)){
+      var rad=Math.min(w,h)*r.range(D.marks.ellipseRadiusMin,D.marks.ellipseRadiusMax);
       A.ellipse(ctx,c,rad,rad/A.PHI,rot+A.GOLD*(i+1),pal[(i+2)%pal.length],rectStyle,r);
     }
 
-    if(s.arcs&&r.chance((s.shapeAmount/100)*.3)){
-      var arcRad=Math.min(w,h)*r.range(.18,.4);
+    if(s.arcs&&r.chance((s.shapeAmount/100)*D.marks.arcChanceScale)){
+      var arcRad=Math.min(w,h)*r.range(D.marks.arcRadiusMin,D.marks.arcRadiusMax);
       A.arc(ctx,c,arcRad,A.GOLD*i,A.TAU*A.INV,pal[(i+3)%pal.length],rectStyle,r);
     }
 
-    if(s.polygons&&r.chance((s.shapeAmount/100)*.22)){
-      var polyRad=Math.min(w,h)*r.range(.12,.27);
+    if(s.polygons&&r.chance((s.shapeAmount/100)*D.marks.polygonChanceScale)){
+      var polyRad=Math.min(w,h)*r.range(D.marks.polygonRadiusMin,D.marks.polygonRadiusMax);
       A.poly(ctx,c,polyRad,r.pick([3,5,8]),A.GOLD*i,pal[(i+4)%pal.length],rectStyle,r);
     }
 
-    if(r.chance((s.nesting/100)*.62)){
+    if(r.chance((s.nesting/100)*D.marks.nestingChanceScale)){
       var nw=w/A.PHI,nh=h/A.PHI;
-      A.rect(ctx,c,nw,nh,rot+A.GOLD*.08,pal[(i+5)%pal.length],rectStyle,r);
+      A.rect(ctx,c,nw,nh,rot+A.GOLD*D.marks.nestedGoldenTurnScale,pal[(i+5)%pal.length],rectStyle,r);
     }
   }
 
