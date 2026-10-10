@@ -176,6 +176,43 @@ and landscape, and 0%/100% additional φ Pull. It checks exact drawing
 command hashes and layout metadata, catching changes to the legacy or
 V3 family-building code and its random-number consumption.
 
+## Sixth extraction: strategy attraction and spiral placement geometry
+
+`STRATEGY_GEOMETRY_TUNING` gives names to **24 unchanged artistic
+calibrations** in `js/generator.js`: nine values controlling
+strategy-specific placement, six values in the V4 logarithmic-spiral
+placement helper, and nine values in the candidate-position blending
+and retry path. These are not general-purpose φ identities.
+
+| Area | Preserved examples | Role |
+| --- | --- | --- |
+| TENSION and ORBIT | .72 / .48 | Pull toward opposing hero targets or spiral orbit |
+| EDGE | 38 px inset / .38 pull | Prefer the border without forcing every mark to it |
+| MONUMENT | .68 hero pull, .62/.58 satellite centre, .12 satellite pull | Distinguish dominant and supporting forms |
+| DIAGONAL | .42 | Attraction to the designated diagonal |
+| V4 spiral start | .65 index offset, .17 retry shift, .02 progress floor | Avoid zero-radius starts, vary retry positions |
+| V4 spiral reach | 2.35 turns, .43 canvas radius, .035 golden-phase retry nudge | Hand-tuned sweep, spacing and canvas reach |
+| Candidate retries | Cell stride 5; pre-V4 index/phase shifts .28/.23 | Preserve deterministic search across renderer generations |
+| Position blending | .78 spiral limit, .16–.90 cell mix, .62 hero/1.08 small scales | Control how tightly marks follow territorial layouts |
+| Remaining freedom | 36 px | Hand-drawn positional freedom when Additional φ Pull is low |
+
+The expression `b = 2 * Math.log(A.PHI) / Math.PI` is the **actual
+logarithmic-spiral mathematical relationship**, and the golden angle
+`A.GOLD` is unchanged. In contrast, the 2.35-turn extent, .43 canvas
+radius and .035 phase adjustment are artist-chosen geometry. The .65
+spiral-index offset remains independent from the .65 offset in
+`js/phi.js`; they are equal historical values with separate meanings.
+The approximate .62 MONUMENT x-coordinate is **not** silently replaced
+with the more precise `A.INV`, which would alter existing seeded art.
+
+The pinned compatibility suite adds **168 complete V2/V4/V7 Field
+compositions** covering all seven placement strategies, 24/70 elements,
+both orientations, and 0/100% Additional φ Pull. Another **32 Golden
+Trajectories tests** cover V3/V4/V6/V7, orientations, Golden Angle at
+0/100 and φ Pull at 0/100. Exact drawing commands and metadata are
+compared against the same immutable pre-refactor reference. No renderer
+or algorithm was redesigned.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
