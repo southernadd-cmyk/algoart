@@ -410,6 +410,28 @@ var ORGANIC_TUNING=Object.freeze({
   })
 });
 
+// Growth Systems' remaining portrait root fallback priorities and terminal
+// bud presentation. All values and their scan order are historical artistic
+// calibration, not exact φ identities. Keep y-outer/x-inner fallback search,
+// the original branch queue and all RNG choices unchanged.
+var ORGANIC_DETAIL_TUNING=Object.freeze({
+  fallback:Object.freeze({
+    nearLeftX:.22,             // First alternative portrait root column.
+    nearRightX:.78,            // Second alternative column.
+    centreX:.50,               // Then try the middle of the canvas.
+    farLeftX:.12,              // Wider left fallback when voids are large.
+    farRightX:.88,             // Wider right fallback.
+    firstY:.79,                // First alternative portrait root row.
+    secondY:.68,               // Next fallback row, slightly higher.
+    thirdY:.88,                // Lower fallback row.
+    fourthY:.56                // Final, higher fallback row.
+  }),
+  bud:Object.freeze({
+    radiusDivisor:2,           // Halve the phi-reduced terminal radius.
+    paletteForwardOffset:1    // Colour bud with the next palette position.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -2616,8 +2638,8 @@ function drawOrganic(ctx,s,r,pal){
         // A large VOID can cover the lower-right (or lower-left) golden
         // region entirely. Search nearby alternative φ columns and heights
         // rather than relocating the root inside a second reserved area.
-        var targetXs=[rp.x,A.W*.22,A.W*.78,A.W*.50,A.W*.12,A.W*.88];
-        var targetYs=[rp.y,A.H*.79,A.H*.68,A.H*.88,A.H*.56];
+        var targetXs=[rp.x,A.W*ORGANIC_DETAIL_TUNING.fallback.nearLeftX,A.W*ORGANIC_DETAIL_TUNING.fallback.nearRightX,A.W*ORGANIC_DETAIL_TUNING.fallback.centreX,A.W*ORGANIC_DETAIL_TUNING.fallback.farLeftX,A.W*ORGANIC_DETAIL_TUNING.fallback.farRightX];
+        var targetYs=[rp.y,A.H*ORGANIC_DETAIL_TUNING.fallback.firstY,A.H*ORGANIC_DETAIL_TUNING.fallback.secondY,A.H*ORGANIC_DETAIL_TUNING.fallback.thirdY,A.H*ORGANIC_DETAIL_TUNING.fallback.fourthY];
         var rootClear=false;
         for(var yi=0;yi<targetYs.length&&!rootClear;yi++){
           for(var xi=0;xi<targetXs.length;xi++){
@@ -2686,8 +2708,8 @@ function drawOrganic(ctx,s,r,pal){
     drawn++;
 
     if(r.chance(organic.shapeAmount/ORGANIC_TUNING.details.budChanceDivisor)){
-      var rad=Math.max(ORGANIC_TUNING.details.budMinimumRadiusPx,len/A.PHI/A.PHI/2);
-      A.ellipse(ctx,{x:ex,y:ey},rad,rad/A.PHI,angle,pal[(drawn+1)%pal.length],organic,r);
+      var rad=Math.max(ORGANIC_TUNING.details.budMinimumRadiusPx,len/A.PHI/A.PHI/ORGANIC_DETAIL_TUNING.bud.radiusDivisor);
+      A.ellipse(ctx,{x:ex,y:ey},rad,rad/A.PHI,angle,pal[(drawn+ORGANIC_DETAIL_TUNING.bud.paletteForwardOffset)%pal.length],organic,r);
     }
 
     if(node.depth>=maxDepth||drawn>=maxSegments)continue;
