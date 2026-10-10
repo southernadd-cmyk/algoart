@@ -476,6 +476,53 @@ Complete recorded drawing-command digests and metadata must match the
 original engine; this also guards the random choice to render each node
 and ring without modifying RNG call order.
 
+## Fourteenth extraction: Recursive Divisions golden sections and territories
+
+`RECT_DIVISION_TUNING` names **41 original aesthetic and safety values** in
+the Recursive Divisions engine (`drawRects`), separated into root/layout
+budgets, territory selection, split constraints, blank-space allocation,
+ink restraint and interior marks. This is a **naming-only** compatibility
+change, not a proposal to make φ more dominant or to rebalance the variants.
+
+| Part | Historical values | What they actually do |
+| --- | --- | --- |
+| Root and target cells | Margin 42–96 px; 7–56 cells; base 5; Recursion × 2; Complexity / 9; Elements / 16 | Decide the territory budget before any golden cuts |
+| Minimum territory width | 70–34 px as Complexity rises | Prevent cells becoming too narrow to split |
+| Territory priority | CROSSCUT top 4; FRAMED depth × .08; score jitter .92–1.08 | Change which cell splits, not the partition proportion |
+| Split tolerance | φ aspect multiplier .92; clamp .28–.72; depth floor 4, Recursion + 2 | Constrain split direction and stop conditions around the golden split |
+| FRAMED continuation | Chance .42 | Occasionally expand only one child rather than both |
+| Protected blank leaves | .24 of leaves at maximum Negative Space; first candidate window 3 | Withhold drawing in selected large territories |
+| Partition ink | Curve Bias cap 8; Wobble cap 18 | Retain the nearly architectural stroke quality |
+| Leaf marks | Inset .025–.12; side floor 8 px; rotation ±.045 | Place visible marks within their cell boundaries |
+| Secondary shape detail | Line chance .24 + Complexity / 150; ellipse .46, arc .30, polygon .22, nesting .62 | Control the frequency of extra marks, not golden mathematics |
+| Detail dimensions | Ellipse radius .16–.34, arc .18–.40, polygon .12–.27 | Calibrate scale relative to each leaf |
+| Nested turn | .08 × exact golden angle | Artistic amount of rotation applied to a mathematical angle |
+
+**Genuine φ mathematics remains inline:** quantised root margin with
+`A.qphi(...,34,...)` (34 is a Fibonacci base), the randomly chosen
+golden-section ratio `A.INV` or `1-A.INV`, interpolation between
+a half-cut and the golden cut under Additional φ Pull, golden-angle
+`A.GOLD` rotations, `A.TAU*A.INV` for arcs, and nested rectangles
+of width/height divided by `A.PHI`.
+
+The .92 aspect tolerance is **not** the golden ratio, the .28–.72
+split clamp is **not** a 61.8/38.2 division, and the .62 nesting
+probability is **not** silently substituted with the exact `A.INV`.
+Equal-looking numbers used elsewhere in ALGO/ART remain independent.
+Mechanical `50/50` choices, child branch indices, polygon side counts,
+the mean split (`.5`) and palette offsets have not been recast as
+tuning parameters.
+
+The exact-output suite adds **288 full Recursive Divisions comparisons**:
+MOSAIC, CASCADE, CROSSCUT, FRAMED; V3/V6/V7; both orientations;
+Additional φ Pull 0/50/100; shallow/deep Recursion 1/8; and
+Negative Space 0/100. The cases also alternate rectangle visibility,
+complexity, nesting, secondary shape visibility and mark styles.
+Every recorded drawing operation and full root/leaf/void metadata
+must match the pinned original. The engine's RNG calls, cell sorting,
+branch-order choices, φ maths and historical renderer versions remain
+unchanged.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
