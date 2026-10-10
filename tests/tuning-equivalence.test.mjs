@@ -305,3 +305,53 @@ for(const version of [3,4,6,7]){
   }
 }
 console.log('PASS: '+spiralGeometryChecks+' historical spiral-mode drawings reproduce pinned originals.');
+
+
+// Constructed Forms: six deliberately distinct substyles share one drawing
+// engine. Force each substyle through the original variant-selection hash,
+// and exercise both extrema of complexity, item count, nesting, styles,
+// phi pull and canvas orientation. Draw command and geometry metadata must
+// reproduce the pinned pre-refactor engine for earlier and current versions.
+const constructedVariants=['BALANCE','STACK','AXIS','COLLISION','FLOAT','CROP'];
+function constructedVariantSeed(variant){
+  const target=constructedVariants.indexOf(variant);
+  assert.notEqual(target,-1,'Unknown Constructed Forms variant');
+  for(let i=0;i<2000;i++){
+    const seed='CONSTRUCTED-CALIBRATION-'+i;
+    if(baseline.hash(seed+'|constructed-variant')%constructedVariants.length===target)return seed;
+  }
+  throw Error('No deterministic seed for Constructed Forms variant '+variant);
+}
+let constructedChecks=0;
+for(const version of [2,5,7]){
+  for(const variant of constructedVariants){
+    const seed=constructedVariantSeed(variant);
+    for(const orientation of ['landscape','portrait']){
+      for(const phiStrength of [0,100]){
+        for(const complexity of [0,100]){
+          const settings={
+            seed,mode:'geometric',orientation,
+            elements:complexity===0?1:200,
+            density:complexity,complexity,negativeSpace:90,
+            phiStrength,recursion:4,spiralInfluence:60,
+            goldenAngle:80,nesting:complexity,
+            pen:'felt',thickness:complexity===0?5:26,
+            wobble:100,curveBias:100,overdraw:5,
+            opacity:complexity===0?20:95,
+            pressure:25,dryness:15,shapeAmount:100,
+            overlap:45,rotation:30,lines:true,circles:true,
+            rectangles:true,polygons:true,arcs:true,
+            palette:'mono',colourCount:3,saturation:75,
+            brightness:50,paper:'#f5f0e6',grain:0
+          };
+          const before=capture(baseline,settings,version);
+          const after=capture(current,settings,version);
+          assert.deepEqual(after,before,
+            `Constructed Forms drift: V${version}/${variant}/${orientation}/phi${phiStrength}/complexity${complexity}`);
+          constructedChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+constructedChecks+' Constructed Forms variant/geometry/style cases reproduce pinned drawing commands and metadata.');
