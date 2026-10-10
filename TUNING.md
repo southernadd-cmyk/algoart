@@ -572,6 +572,68 @@ and every returned hub, ray and protected-void coordinate against the
 immutable pre-refactor engine. No renderer-version change, tuning change
 or seed remapping is part of this refactor.
 
+## Sixteenth extraction: Golden Trajectories mathematical and expressive paths
+
+Golden Trajectories has **three historical rendering grammars**, not one.
+This audit names **160 existing values** without changing their magnitudes
+or the way they are applied:
+
+- `SPIRAL_LEGACY_TUNING` — **44** artistic values for V1–V3 and the
+  six families SHELL, DOUBLE, BROKEN, OFFSET, VOID and LOOSE.
+- `SPIRAL_LOG_TUNING` — **27** values for V4–V5, which introduce true
+  logarithmic-spiral growth by φ each quarter-turn.
+- `TRAJECTORY_TUNING` — **89** values for V6–V7, which offer ten families:
+  CLASSIC, SWEEP, FAN, S-CURVE, ECHO, INTERSECT, CASCADE, ORBIT,
+  SCATTER and CROP. The visible SAFE-SWEEP safety fallback is retained.
+
+| Calibration domain | Examples retained | Purpose, not mathematical derivation |
+| --- | --- | --- |
+| Historical spiral radius | SHELL exponent .52, DOUBLE .66, LOOSE .76; reach fractions .29–.47 | Choose a visually distinct radial progression |
+| V4/V5 logarithmic extent | DOUBLE 1.75 turns/.31 reach, LOOSE 2.05/.46, other 2.35/.43 | Tune how much of the exact φ logarithmic curve is used |
+| Centre/gesture movement | .72 pull to target; BROKEN sinusoidal wobble .18 legacy vs .12 V4 | Vary spatial tension without changing the golden target |
+| Line/mark density | Line chance .82–.50, drawn-mark chance .88–.70, BROKEN .82, VOID .90 | Prevent overcrowding while retaining family identities |
+| V6+ classic and sweep | CLASSIC radius .012–.43 over 2.35 turns; CROP outside offset .55, SWEEP .22 | Choose the path's artistic scale and how it enters the canvas |
+| FAN / S-CURVE / ECHO | 3–5 fan arms, S-CURVE 80 px overshoot, ECHO 2–5 parallel paths | Establish multiple independently designed Bézier arrangements |
+| INTERSECT / CASCADE | 60 px edge overshoot; 3–5 cascade segments, length × .62 | Arrange intersecting and successive gestural paths |
+| ORBIT / SCATTER | Angular sweep 1.35 × inverse-φ turn; scatter probability .48 + influence × .38 | Decide orbit extent and purposeful discontinuity |
+| Fallback and clipping | 20 px visibility margin; 2–4 visible point threshold; 45 px rendering margin; 24 px output inset | Prevent completely off-canvas or unplotable output |
+| Focal hierarchy | Medium count 5 and 24% of arm in V1–V5; V6+ period `max(2, round(n × A.INV × .18))` | Keep secondary marks subordinate to φ-driven heroes |
+
+**Mathematical φ usage, unchanged:**
+`A.GOLD` determines golden-angle ray/turn increments; `A.INV` and
+`1-A.INV` determine focal positions and hero indices. V1–V3
+use `A.INV` as the default radial exponent while individual variants
+may apply deliberately different artistic exponents. In V4–V5,
+`b = 2*Math.log(A.PHI)/Math.PI` defines a true logarithmic
+spiral whose radius increases by φ over a quarter-turn; the extent
+and initial radius are artistic choices, not golden identities.
+V6–V7 use golden landmarks in a wider compositional grammar:
+logarithmically interpolated paths, φ-guided Bézier control points,
+golden-angle fan branches, golden-decay cascades, inverse-φ orbit
+extents and φ-indexed scatter. **Not every V6–V7 family is itself
+a logarithmic spiral.** The existing legacy term `golden:true` in
+metadata is retained for compatibility, not rewritten to imply otherwise.
+
+Similar-looking fractions are deliberately **not shared**. For example,
+V3's `.72` minimum golden-angle multiplier differs from V4's
+`.72` focal-centre attraction; V6's `.22` base-size crowding
+is independent of its `.22` low-influence anchor attraction.
+The `.62` hand-tuned exponent is *not* replaced by exact `A.INV`.
+The existing Bézier polynomial coefficients, random-number order,
+seed-derived family selection, versions, draw order and use of
+`spiralInfluence`, `goldenAngle` and Additional φ Pull are unchanged.
+
+The pinned output suite adds **384 complete comparison cases**:
+144 over all six historical variants (V3/V4/V5, two orientations,
+0/100 φ Pull, sparse/dense detail), plus 240 across all ten V6/V7
+trajectory families (two orientations, 0/50/100 φ Pull, sparse/dense
+detail). Each checks the SHA-256 stream of every drawing command
+alongside operation count and exact serialized geometry metadata.
+The V6/V7 checks allow the original SAFE-SWEEP fallback when the
+chosen path goes off canvas, and require its outcome to be identical
+to the untouched pinned source. All prior tuning and archive tests
+remain release gates.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
