@@ -280,6 +280,46 @@ Additional φ Pull, and low/high complexity, density, voids and ink
 settings. Drawing-command hashes and returned guide/anchor metadata
 must match the fixed pre-refactor engine exactly.
 
+## Ninth extraction: Automatic Marks stroke movement and controlled randomness
+
+`SCRIBBLE_STROKE_TUNING` names **37 existing artistic values** in the
+Automatic Marks stroke walk: trajectory bias, mark lengths, local direction
+changes, run breaks, void avoidance and secondary ghost details. It is
+separate from `SCRIBBLE_TUNING` (anchors and ink) and from other engines.
+All source values and evaluation order remain exactly unchanged; none are
+mathematical consequences of φ.
+
+| Gesture behaviour | Preserved values | Meaning |
+| --- | --- | --- |
+| Gesture starts | KNOT .12 / others .20 times anchor radius | Different starting distance from the focal point |
+| First run | Minimum 3; length interpolates 8 to 4 | Bounded connected gesture lengths |
+| Flow following | RIBBON .72; CLUSTERS .28; other .46 | Different degrees of alignment to the dominant direction |
+| Golden turns | .11–.31 times `A.GOLD` | Tuned magnitude of an **exact** golden-angle step |
+| Human-looking direction noise | Wobble .18–.48, random angle ±.16; KNOT curl .58 | Locally irregular gesture orientation |
+| Segment size | Random 13–78 px; crowd factor .76; density .90–1.15 | Keep the marks proportional to visual crowding |
+| Territory correction | Base .34 + distance gain .42 | Guide wandering strokes back towards an anchor |
+| Protected void detours | 9 retries in portrait, 5 in landscape | Avoid crossing reserved blank areas |
+| Canvas restraint | 24 px endpoint inset | Prevent gestural strokes running off the page |
+| Run interruption | Chance .035 + Negative Space/650 | Preserve visual pauses and white space |
+| Restart | Radius .08–.42; length interpolation 9 to 4 with jitter −1 to 2 | Begin a fresh loose gesture after a break |
+| Secondary ink | Arc chance scale .075, minimum radius 9 px; RIBBON linking .58 | Occasional auxiliary gestural marks |
+| Focal halos | Chance scale .12, minimum radius 10 px | Deliberately occasional anchor punctuation |
+
+The stroke-length quantisation base `13` and secondary-arc quantisation
+base `9` remain intact **as Fibonacci sequence values**. Their
+same-number random size bounds or minimum visual radii have different
+purposes and are not automatically interchangeable. `A.GOLD`,
+`A.INV`, `A.PHI` and the sinusoidal path functions are unchanged.
+The existing random-number call *order*, number of attempts, branch
+conditions and draw order are preserved, including the subtle difference
+between portrait and landscape void avoidance.
+
+**160 new complete-artwork cases** compare each of the five Scribble
+variants, V2 and V7, portrait/landscape, both extremes of Additional φ
+Pull, and Negative Space 0/24/25/100 (including the original strict
+boundary). Each comparison requires byte-identical recorded drawing
+commands and metadata against the pinned original.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
