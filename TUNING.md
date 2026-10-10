@@ -73,6 +73,40 @@ helper directly across **36** orientation / φ pull / golden-angle / seed
 configurations, including the default and explicit cell margins. It compares
 helper results and random-number consumption via reproducible output.
 
+## Third extraction: element sizing and hierarchy
+
+The 27 existing calibration values in `js/generator.js` are grouped under
+`HIERARCHY_TUNING.tiers`, `HIERARCHY_TUNING.scale` and
+`HIERARCHY_TUNING.size`. They affect **how many heroes / medium marks** are
+planned and the artist-tuned **relative and absolute sizes** of marks. Their
+original values, interpolation, φ quantisation and RNG calls are unchanged.
+
+| Group | Existing parameters | Why they are independent |
+| --- | --- | --- |
+| Hero thresholds | 24 and 70 marks | Jump from one to two to three heroes; these are hierarchy design choices, not golden ratios |
+| Medium share | .16 (MONUMENT), .21 (other) | Different proportions deliberately leave the monumental hero more room |
+| Hero scale | 2.35 (MONUMENT), 1.72 (other) | Distinct emphasis in the hero tier |
+| Supporting scale | .48 (MONUMENT), .56 (other) | Background tiers remain subordinate |
+| Count reference | 48 | Controls inverse-square-root scaling as total element count grows |
+| Density factor range | .76–1.18 | Hand-chosen response to the Density control |
+| Raw mark-size range | 32–215 | Random source sizes before scale and extra φ pull |
+| φ quantisation base | floor 7, scaled base 22 | Tuning of the size grid; 22 is **not** a mathematical φ identity |
+| Hero size floor | 110 (MONUMENT), 72 (other) | Keep heroes visually dominant |
+| Territory fit | floor 20, factors .78–1.22 | Restrict sizes to their intended spatial territory |
+| Final size limits | floor 8, caps 470/410 | Prevent excessively small or huge marks |
+
+The original single-hero rule for MONUMENT, the normal hero counts 1/2/3
+and the minimum-medium target of 2 are also named. Similar-looking numbers
+elsewhere in the engine are **not** deduplicated: different systems may
+intentionally have different visual weights.
+
+The pinned equivalence suite now additionally compares **216 full output
+cases** across Orbital Studies, Connected Fields and Golden Trajectories,
+strategy seeds for BALANCED/MONUMENT/EDGE, both orientations, both extremes
+of additional φ pull, and element counts **1, 23, 24, 69, 70, 140**.
+It checks drawing-command hashes and layout metadata, including the
+24- and 70-element thresholds, so a silent aesthetic drift is a test failure.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
@@ -102,5 +136,5 @@ behaviour belongs in a separately reviewed, explicitly versioned change.
 4. Experiment with different artistic weights only in a separately versioned
    renderer, comparing samples and preserving old share links.
 
-This first PR does **not** claim to eliminate or rationalise all of the
-remaining tuned values.
+These incremental passes do **not** claim to eliminate or rationalise all of the
+remaining tuned values. New numerical designs require explicit versioning.

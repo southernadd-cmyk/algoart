@@ -40,6 +40,45 @@ var LAYOUT_TUNING=Object.freeze({
   })
 });
 
+// Element hierarchy and size calibration. These are legacy artistic
+// choices, not golden-ratio identities. Changing them changes the drawings.
+// Preserve the exact arithmetic and random-number call sequence of V1–V7.
+var HIERARCHY_TUNING=Object.freeze({
+  tiers:Object.freeze({
+    threeHeroesAtCount:70,          // At this many marks, create three heroes.
+    twoHeroesAtCount:24,            // Below this, use one hero; above, two.
+    monumentHeroCount:1,            // MONUMENT keeps a single dominant hero.
+    standardLargeHeroCount:3,      // Higher-count ordinary composition.
+    standardMediumHeroCount:2,     // Middle-count ordinary composition.
+    minimumMediumTarget:2,         // Desired medium marks before fitting to total.
+    monumentMediumFraction:.16,    // MONUMENT reserves a smaller medium share.
+    standardMediumFraction:.21     // Share of supporting medium marks otherwise.
+  }),
+  scale:Object.freeze({
+    monumentHeroMultiplier:2.35,   // Emphasise the MONUMENT focal mark.
+    standardHeroMultiplier:1.72,   // Emphasise heroes in other strategies.
+    monumentSmallMultiplier:.48,   // Suppress MONUMENT supporting marks.
+    standardSmallMultiplier:.56,   // Scale supporting marks otherwise.
+    elementCountReference:48       // Reference count for inverse-sqrt scaling.
+  }),
+  size:Object.freeze({
+    densityMinFactor:.76,          // Scale at minimum Density.
+    densityMaxFactor:1.18,         // Scale at maximum Density.
+    sampledMinPx:32,               // Smallest source size before scale and φ pull.
+    sampledMaxPx:215,              // Largest source size before scale and φ pull.
+    phiBaseMinimumPx:7,           // Floor for the quantisation base.
+    phiBaseScalePx:22,            // Tuned size quantum, not a Fibonacci identity.
+    monumentHeroMinPx:110,        // MONUMENT hero minimum, before count scaling.
+    standardHeroMinPx:72,         // Hero minimum otherwise.
+    territoryMinPx:20,            // Lower bound for territory size cap.
+    territoryFitMin:.78,          // Cap multiplier with little allowed overlap.
+    territoryFitMax:1.22,         // Cap multiplier with generous overlap.
+    finalMinPx:8,                 // Final element-size floor.
+    monumentMaxPx:470,           // Final size ceiling in MONUMENT.
+    standardMaxPx:410            // Final size ceiling otherwise.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -74,10 +113,10 @@ function hierarchyPlan(total,strategy){
   total=Math.max(1,total|0);
   var hero;
 
-  if(strategy==='MONUMENT')hero=1;
-  else hero=total>=70?3:(total>=24?2:1);
+  if(strategy==='MONUMENT')hero=HIERARCHY_TUNING.tiers.monumentHeroCount;
+  else hero=total>=HIERARCHY_TUNING.tiers.threeHeroesAtCount?HIERARCHY_TUNING.tiers.standardLargeHeroCount:(total>=HIERARCHY_TUNING.tiers.twoHeroesAtCount?HIERARCHY_TUNING.tiers.standardMediumHeroCount:1);
 
-  var medium=Math.max(2,Math.round(total*(strategy==='MONUMENT'?.16:.21)));
+  var medium=Math.max(HIERARCHY_TUNING.tiers.minimumMediumTarget,Math.round(total*(strategy==='MONUMENT'?HIERARCHY_TUNING.tiers.monumentMediumFraction:HIERARCHY_TUNING.tiers.standardMediumFraction)));
   if(hero+medium>total)medium=Math.max(0,total-hero);
 
   var tiers=[],i;
@@ -88,26 +127,26 @@ function hierarchyPlan(total,strategy){
 }
 
 function tierScale(tier,strategy){
-  if(tier==='hero')return strategy==='MONUMENT'?2.35:1.72;
+  if(tier==='hero')return strategy==='MONUMENT'?HIERARCHY_TUNING.scale.monumentHeroMultiplier:HIERARCHY_TUNING.scale.standardHeroMultiplier;
   if(tier==='medium')return 1;
-  return strategy==='MONUMENT'?.48:.56;
+  return strategy==='MONUMENT'?HIERARCHY_TUNING.scale.monumentSmallMultiplier:HIERARCHY_TUNING.scale.standardSmallMultiplier;
 }
 
 function baseElementScale(s){
-  return 1/Math.sqrt(Math.max(1,s.elements/48));
+  return 1/Math.sqrt(Math.max(1,s.elements/HIERARCHY_TUNING.scale.elementCountReference));
 }
 
 function makeBaseSize(s,tier,r,territory,strategy){
   var scale=baseElementScale(s);
-  var density=A.lerp(.76,1.18,s.density/100);
-  var raw=r.range(32,215)*density*scale*tierScale(tier,strategy);
-  var base=Math.max(7,22*scale);
+  var density=A.lerp(HIERARCHY_TUNING.size.densityMinFactor,HIERARCHY_TUNING.size.densityMaxFactor,s.density/100);
+  var raw=r.range(HIERARCHY_TUNING.size.sampledMinPx,HIERARCHY_TUNING.size.sampledMaxPx)*density*scale*tierScale(tier,strategy);
+  var base=Math.max(HIERARCHY_TUNING.size.phiBaseMinimumPx,HIERARCHY_TUNING.size.phiBaseScalePx*scale);
   var size=A.qphi(raw,base,s.phiStrength/100);
 
-  if(tier==='hero')size=Math.max(size,(strategy==='MONUMENT'?110:72)*scale);
-  if(territory)size=Math.min(size,Math.max(20,territory*A.lerp(.78,1.22,overlapAllowance(s))));
+  if(tier==='hero')size=Math.max(size,(strategy==='MONUMENT'?HIERARCHY_TUNING.size.monumentHeroMinPx:HIERARCHY_TUNING.size.standardHeroMinPx)*scale);
+  if(territory)size=Math.min(size,Math.max(HIERARCHY_TUNING.size.territoryMinPx,territory*A.lerp(HIERARCHY_TUNING.size.territoryFitMin,HIERARCHY_TUNING.size.territoryFitMax,overlapAllowance(s))));
 
-  return A.clamp(size,8,strategy==='MONUMENT'?470:410);
+  return A.clamp(size,HIERARCHY_TUNING.size.finalMinPx,strategy==='MONUMENT'?HIERARCHY_TUNING.size.monumentMaxPx:HIERARCHY_TUNING.size.standardMaxPx);
 }
 
 function makeReservedVoids(s,strategy,r){

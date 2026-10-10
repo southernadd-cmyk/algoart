@@ -124,3 +124,49 @@ for(const orientation of ['landscape','portrait']){
   }
 }
 console.log('PASS: '+placementChecks+' exact φ-helper samples match the pinned pre-refactor engine.');
+
+
+// Element hierarchy calibration is especially sensitive at 24 and 70
+// elements: hero counts jump there. Cover both sides of each boundary,
+// all dominant layout strategies, very weak/strong φ pull, extreme
+// density and overlap, and portrait/landscape for legacy V6 and V7.
+// These are full drawing-stream comparisons with the pinned original.
+const hierarchyModes=['field','network','spiral'];
+const hierarchyStrategies=['BALANCED','MONUMENT','EDGE'];
+const allStrategies=['BALANCED','VOID','TENSION','ORBIT','EDGE','MONUMENT','DIAGONAL'];
+function seedForStrategy(mode,strategy){
+  for(let i=0;i<1000;i++){
+    const seed='HIERARCHY-EDGE-CASE-'+i;
+    if(allStrategies[baseline.hash(seed+'|'+mode+'|composition-strategy')%allStrategies.length]===strategy)return seed;
+  }
+  throw Error('Unable to select strategy '+mode+'/'+strategy);
+}
+let boundaryChecks=0;
+for(const mode of hierarchyModes){
+  for(const strategy of hierarchyStrategies){
+    const seed=seedForStrategy(mode,strategy);
+    for(const elements of [1,23,24,69,70,140]){
+      for(const orientation of ['landscape','portrait']){
+        for(const phiStrength of [0,100]){
+          const settings={
+            seed,mode,orientation,elements,density:phiStrength===0?0:100,
+            complexity:61,negativeSpace:32,phiStrength,recursion:4,
+            spiralInfluence:60,goldenAngle:80,nesting:36,pen:'felt',
+            thickness:12,wobble:22,overdraw:2,opacity:78,
+            pressure:25,dryness:15,curveBias:65,shapeAmount:55,
+            overlap:elements>=70?100:0,rotation:30,lines:true,
+            circles:true,rectangles:true,polygons:true,arcs:true,
+            palette:'mono',colourCount:1,saturation:75,
+            brightness:50,paper:'#f5f0e6',grain:0
+          };
+          const a=capture(baseline,settings,7);
+          const b=capture(current,settings,7);
+          assert.deepEqual(b,a,
+            `Element sizing drift: ${mode}/${strategy}/n${elements}/${orientation}/φ${phiStrength}`);
+          boundaryChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+boundaryChecks+' element-sizing boundary compositions match pinned baseline drawing commands and metadata.');
