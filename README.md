@@ -1,4 +1,5 @@
 # ALGO/ART
+<img width="52vw" alt="image" src="https://github.com/user-attachments/assets/70f42727-c269-4fc5-b5c4-6202990000b0" />
 
 **Mathematics sets the rules. The marker breaks them.**
 
@@ -8,7 +9,6 @@ ALGO/ART is a browser-based generative art project built around the **golden rat
 
 [Open the editor](https://southernadd-cmyk.github.io/algoart/) · [Browse the Daily Gallery](https://southernadd-cmyk.github.io/algoart/gallery/)
 
-<img width="900" alt="ALGO/ART example showing golden-ratio composition with expressive marker strokes" src="https://github.com/user-attachments/assets/e8015ddb-3cbd-4b3a-9475-697435c327c0" />
 
 ## Using ALGO/ART
 
