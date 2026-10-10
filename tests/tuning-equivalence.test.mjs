@@ -170,3 +170,39 @@ for(const mode of hierarchyModes){
   }
 }
 console.log('PASS: '+boundaryChecks+' element-sizing boundary compositions match pinned baseline drawing commands and metadata.');
+
+
+// Protected-void and collision-threshold regression. Values 8, 42 and 70
+// lie exactly at the enable/second-void boundaries; the next integer
+// should cross the respective strict comparison only where intended.
+// Cover both edge and VOID strategies, crowded / uncrowded layouts,
+// portrait / landscape and both ends of the allowed overlap scale.
+// Compare every drawing command and returned geometry to pinned legacy code.
+let placementConstraintChecks=0;
+for(const mode of ['field','network']){
+  for(const strategy of ['VOID','EDGE']){
+    const seed=seedForStrategy(mode,strategy);
+    for(const negativeSpace of [0,8,42,43,70,71,100]){
+      for(const overlap of [0,100]){
+        for(const orientation of ['landscape','portrait']){
+          const settings={
+            seed,mode,orientation,elements:overlap===0?24:70,
+            density:75,complexity:61,negativeSpace,phiStrength:91,
+            recursion:4,spiralInfluence:60,goldenAngle:80,nesting:36,
+            pen:'felt',thickness:12,wobble:22,overdraw:2,opacity:78,
+            pressure:25,dryness:15,curveBias:65,shapeAmount:55,
+            overlap,rotation:30,lines:true,circles:true,rectangles:true,
+            polygons:true,arcs:true,palette:'mono',colourCount:1,
+            saturation:75,brightness:50,paper:'#f5f0e6',grain:0
+          };
+          const before=capture(baseline,settings,7);
+          const after=capture(current,settings,7);
+          assert.deepEqual(after,before,
+            `Placement changed: ${mode}/${strategy}/void${negativeSpace}/overlap${overlap}/${orientation}`);
+          placementConstraintChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+placementConstraintChecks+' protected-void/collision boundary layouts reproduce pinned drawing commands and metadata.');
