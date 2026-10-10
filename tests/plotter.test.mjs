@@ -73,16 +73,21 @@ assert.equal(grouped.metadata.layerGrouping,'pens');
 assert.equal(grouped.metadata.pathOrder,'preserved-within-pen');
 assert.equal(groupedOptimized.metadata.pathOrder,'reordered-within-pen');
 assert.equal(grouped.metadata.penOrder,'light-to-dark');
+assert.equal(faithful.metadata.penOrder,'light-to-dark');
+assert.equal(faithful.metadata.layerOrder,'source-colour-runs');
+assert.equal(grouped.metadata.layerOrder,'light-to-dark');
+assert.equal(JSON.stringify(faithful.metadata.penColours),JSON.stringify(grouped.metadata.penColours),'Pen identities changed between export modes');
 assert.equal(groupedOptimized.metadata.routeOptimization,'nearest-neighbour-and-direction');
-assert.equal(faithful.metadata.forcedPauses,2);assert.equal(grouped.metadata.forcedPauses,0);
+assert.equal(faithful.metadata.forcedPauses,2);assert.equal(grouped.metadata.forcedPauses,1);
+assert.equal(groupedOptimized.metadata.forcedPauses,1);
 assert.deepEqual(Array.from(faithful.svg.matchAll(/inkscape:label="([^"]+)"/g),m=>m[1]),
   ['001 · Pen 1 · #ff0000','!002 · Pen 2 · #0000ff','!003 · Pen 1 · #ff0000']);
 assert.equal(grouped.metadata.colourRuns,3,'Original run count was lost');
 assert.equal(grouped.metadata.penLayers,2);
 assert.equal(grouped.metadata.penChanges,1);
 assert.equal((grouped.svg.match(/inkscape:groupmode="layer"/g)||[]).length,2);
-assert.ok(grouped.svg.includes('id="pen-1" inkscape:groupmode="layer" inkscape:label="1 · #ff0000"'));
-assert.ok(grouped.svg.includes('id="pen-2" inkscape:groupmode="layer" inkscape:label="2 · #0000ff"'));
+assert.ok(grouped.svg.includes('id="pen-1" inkscape:groupmode="layer" inkscape:label="1 · Pen 1 · #ff0000"'));
+assert.ok(grouped.svg.includes('id="pen-2" inkscape:groupmode="layer" inkscape:label="!2 · Pen 2 · #0000ff"'));
 assert.deepEqual(pathTags(grouped.svg),['#ff0000','#0000ff'].flatMap(colour=>pathTags(faithful.svg).filter(tag=>tag.includes('stroke="'+colour+'"'))),
   'Grouping changed geometry, style or stroke order within a pen');
 const pageScale=1.9,home={x:-53.5/pageScale,y:-10/pageScale};
@@ -127,7 +132,23 @@ A.render=canvas=>{
   A.svgRecorder.paths=greys.map((stroke,i)=>({d:'M 5 '+(i+5)+' L 95 '+(i+5),stroke,width:2,opacity:.5,lineCap:'round'}));
 };
 const greyResult=A.createPlotterSVG(settings,{grouping:'pens',optimize:false});
+const greyFaithful=A.createPlotterSVG(settings,{grouping:'runs',optimize:false});
 assert.equal(JSON.stringify(greyResult.metadata.penColours),JSON.stringify(['#ffffff','#c7c7c7','#777777','#2e2e2e','#000000']));
+assert.equal(JSON.stringify(greyFaithful.metadata.penColours),JSON.stringify(greyResult.metadata.penColours));
+const greyFaithfulLabels=Array.from(greyFaithful.svg.matchAll(/inkscape:label="([^"]+)"/g),m=>m[1]);
+const greyGroupedLabels=Array.from(greyResult.svg.matchAll(/inkscape:label="([^"]+)"/g),m=>m[1]);
+assert.equal(greyFaithfulLabels[0],'001 · Pen 4 · #2e2e2e','Faithful must keep the initial dark run but use shared light-first pen IDs');
+assert.equal(greyFaithfulLabels[1],'!002 · Pen 2 · #c7c7c7');
+assert.equal(greyGroupedLabels[0],'1 · Pen 1 · #ffffff');
+assert.equal(greyGroupedLabels[1],'!2 · Pen 2 · #c7c7c7');
+for(const [i,label] of greyGroupedLabels.entries()){
+  const match=label.match(/^(!?)(\d+) · Pen (\d+) · (#[a-f0-9]+)$/);
+  assert.ok(match,'AxiDraw-readable numbered layer syntax with optional leading pause: '+label);
+  assert.equal(match[1],i?'!':'','Pen change needs a pause on grouped layers 2 onward');
+  assert.equal(Number(match[2]),i+1,'Layer number must survive the optional pause prefix');
+  assert.equal(Number(match[3]),i+1,'Physical pen identity must track the light-to-dark layer number');
+}
+assert.equal(greyResult.metadata.forcedPauses,4);
 assert.ok(Math.abs(G.luminance('#fff')-1)<1e-10);assert.equal(G.luminance('#000'),0);
 assert.ok(G.luminance('#00ff00')>G.luminance('#ff0000')&&G.luminance('#ff0000')>G.luminance('#0000ff'));
 console.log('PASS: greys and saturated colours use linear relative luminance, lightest pen first.');
@@ -139,11 +160,14 @@ A.render=canvas=>{
   }));
 };
 const manyPens=A.createPlotterSVG(settings,{grouping:'pens'});
-const numbered=Array.from(manyPens.svg.matchAll(/inkscape:label="(\d+) · (#[a-f0-9]+)"/g));
+const numbered=Array.from(manyPens.svg.matchAll(/inkscape:label="(!?)(\d+) · Pen (\d+) · (#[a-f0-9]+)"/g));
 assert.equal(manyPens.metadata.colourRuns,24);
 assert.equal(manyPens.metadata.penLayers,12);assert.equal(manyPens.metadata.penChanges,11);
 assert.equal(numbered.length,12);
-assert.deepEqual(numbered.map(m=>Number(m[1])),Array.from({length:12},(_,i)=>i+1));
+assert.deepEqual(numbered.map(m=>Number(m[2])),Array.from({length:12},(_,i)=>i+1));
+assert.deepEqual(numbered.map(m=>Number(m[3])),Array.from({length:12},(_,i)=>i+1));
+assert.deepEqual(numbered.map(m=>m[1]),['',...Array(11).fill('!')]);
+assert.equal(manyPens.metadata.forcedPauses,11);
 console.log('PASS: multi-digit AxiDraw pen numbers and repeated colours produce exactly one layer per pen.');
 
 A.render=canvas=>{
@@ -176,4 +200,5 @@ assert.equal((compoundDry.svg.match(/stroke-opacity="/g)||[]).length,3);
 A.render=canvas=>{canvas.width=100;canvas.height=100;A.svgRecorder.paths=[]};
 const empty=A.createPlotterSVG(settings,{grouping:'pens'});
 assert.equal(empty.metadata.penLayers,0);assert.equal(empty.metadata.penChanges,0);
+assert.equal(empty.metadata.forcedPauses,0);
 assert.equal(empty.metadata.svgPaths,0);assert.equal(empty.metadata.penTravelAfterMm,0);

@@ -237,7 +237,9 @@ A.createPlotterSVG=function(settings,options){
   var origin=point(-x/scale,-y/scale),paths=prepare(rec.paths,w,h);
   var colourRuns=colourLayers(paths,false).length;
   var pens=colourLayers(paths,true);
-  if(groupByPen)pens.sort(function(a,b){return luminance(b.colour)-luminance(a.colour)});
+  // Number physical pens light-to-dark in BOTH export modes. Faithful
+  // layers retain their original run order and their separate run numbers.
+  pens.sort(function(a,b){return luminance(b.colour)-luminance(a.colour)});
   var penColours=pens.map(function(l){return l.colour});
   // Each grouped pen is plotted separately from home, lightest pen first.
   // Faithful mode keeps the full source sequence across pen-change pauses.
@@ -251,15 +253,17 @@ A.createPlotterSVG=function(settings,options){
   var metadata={penColours:penColours,generator:'ALGO/ART',rendererVersion:A.rendererVersion,seed:settings.seed,settings:settings,
     paper:paper,pageMm:page,marginMm:margin,paperColour:settings.paper,layerGrouping:grouping,
     pathOrder:groupByPen?(optimized?'reordered-within-pen':'preserved-within-pen'):'preserved',
-    penOrder:groupByPen?'light-to-dark':'first-appearance',
+    penOrder:'light-to-dark',layerOrder:groupByPen?'light-to-dark':'source-colour-runs',
     routeOptimization:optimized?(groupByPen?'nearest-neighbour-and-direction':'fixed-order-direction'):'none',
-    penLayers:layers.length,penChanges:Math.max(0,layers.length-1),forcedPauses:groupByPen?0:Math.max(0,layers.length-1),
+    penLayers:layers.length,penChanges:Math.max(0,layers.length-1),forcedPauses:Math.max(0,layers.length-1),
     penTravelBeforeMm:before*scale,penTravelAfterMm:after*scale,paths:paths.length,
     svgPaths:layers.reduce(function(sum,l){return sum+compound(l.paths).length},0),colourRuns:colourRuns};
   var content=layers.map(function(l,i){
     var pen=penColours.indexOf(l.colour)+1;
-    var name=groupByPen?pen+' · '+l.colour:String(i+1).padStart(3,'0')+' · Pen '+pen+' · '+l.colour;
-    if(!groupByPen&&i>0)name='!'+name;
+    var name=groupByPen?pen+' · Pen '+pen+' · '+l.colour:String(i+1).padStart(3,'0')+' · Pen '+pen+' · '+l.colour;
+    // AxiDraw pauses on every subsequent top-level layer. The initial
+    // layer MUST be unprefixed so a plot-all job can start normally.
+    if(i>0)name='!'+name;
     var id=groupByPen?'pen-'+pen:'pen-run-'+(i+1);
     return '<g id="'+id+'" inkscape:groupmode="layer" inkscape:label="'+esc(name)+'" data-pen-number="'+pen+'" data-pen-colour="'+esc(l.colour)+'"'+(l.paths.every(function(p){return p.blend==='multiply'})?' style="isolation:isolate;mix-blend-mode:multiply"':'')+' transform="translate('+x+' '+y+') scale('+scale+')">'+compound(l.paths).map(pathTag).join('')+'</g>';
   }).join('');

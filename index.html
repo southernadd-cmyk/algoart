@@ -217,7 +217,7 @@
         <section class="tab-panel" data-panel="phi" id="panel-phi" role="tabpanel" aria-labelledby="tab-phi" hidden>
           <div class="section-title"><span>GOLDEN RATIO</span><b>1.618…</b></div>
           <div class="controls">
-            <div class="control"><label>Additional φ Pull</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="91"></div>
+            <div class="control"><label>Additional φ pull</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="91"></div>
             <div class="control"><label>Recursion</label><output></output><input id="recursion" type="range" min="1" max="9" value="4"></div>
             <div class="control"><label>Spiral influence</label><output></output><input id="spiralInfluence" type="range" min="0" max="100" value="63"></div>
             <div class="control"><label>Golden angle</label><output></output><input id="goldenAngle" type="range" min="0" max="100" value="93"></div>
@@ -279,7 +279,7 @@
               <div class="control"><label for="plotterPaper">Paper size</label><select id="plotterPaper"><option value="A4">A4</option><option value="A3">A3</option></select></div>
               <div class="control"><label for="plotterMargin">Margin (mm)</label><input id="plotterMargin" type="number" value="10" min="0" max="100" step="1"></div>
               <div class="control"><label for="plotterGrouping">Pen layers</label><select id="plotterGrouping" aria-describedby="plotterGroupingNote"><option value="runs">Faithful colour runs</option><option value="pens">Group by pen</option></select></div>
-              <p class="mini-note" id="plotterGroupingNote" aria-live="polite">Faithful colour runs preserve overlap order. AxiDraw pauses before each pen change; swap the pen and Resume.</p>
+              <p class="mini-note" id="plotterGroupingNote" aria-live="polite">Faithful colour runs preserve overlap order, with light-to-dark Pen IDs and sequential run numbers. The SVG includes AxiDraw pause labels for pen changes; actual hardware behaviour is untested. Swap pens and Resume if prompted.</p>
               <label class="mini-note"><input id="plotterOptimize" type="checkbox" checked> <span id="plotterOptimizeLabel">Reduce pen travel without changing stroke order</span></label>
               <button class="export-big" id="previewPlotter">PREVIEW PLOTTER SVG</button>
               <figure id="plotterPreview" hidden><img id="plotterPreviewImage" alt="Preview of the plotter SVG on the selected paper"><figcaption id="plotterSummary"></figcaption></figure>
@@ -305,9 +305,9 @@
 <script src="js/marker.js?v=plotter-20261009"></script>
 <script src="js/generator.js"></script>
 <script src="js/export.js"></script>
-<script src="js/plotter.js?v=plotter-routing-20261009"></script>
+<script src="js/plotter.js?v=plotter-pen-pauses-20261010"></script>
 <script src="js/describe.js"></script>
-<script src="js/control-help.js?v=additional-phi-pull-20261010"></script>
-<script src="js/app.js?v=four-up-orientation-20261009"></script>
+<script src="js/control-help.js?v=additional-phi-pull-label-20261010"></script>
+<script src="js/app.js?v=plotter-pauses-20261010"></script>
 </body>
 </html>

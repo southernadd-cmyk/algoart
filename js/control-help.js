@@ -110,7 +110,7 @@ var SYSTEMS={
   }
 };
 
-var LABELS={density:'Scale',complexity:'Bend',negativeSpace:'Empty space',phiStrength:'Additional φ Pull',recursion:'Depth',spiralInfluence:'Spiral pull',goldenAngle:'Golden-angle spacing',nesting:'Inner shapes',curveBias:'Curved strokes',rotation:'Angle variation'};
+var LABELS={density:'Scale',complexity:'Bend',negativeSpace:'Empty space',phiStrength:'Additional φ pull',recursion:'Depth',spiralInfluence:'Spiral pull',goldenAngle:'Golden-angle spacing',nesting:'Inner shapes',curveBias:'Curved strokes',rotation:'Angle variation'};
 var SYSTEM_LABELS={
   field:{elements:'Marks'},
   spiral:{elements:'Path positions',spiralInfluence:'Follow path'},
