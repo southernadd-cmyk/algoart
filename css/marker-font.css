@@ -22,3 +22,5 @@
 @media(max-width:390px){.brand{font-size:20px;}.actions button,.actions .gallery-nav{font-size:9px;}}
 
 .brand-meta b,#statsText{ text-transform:none; }
+
+@media(max-width:820px){.actions .gallery-nav{white-space:normal;text-align:center;line-height:1.05;}}
