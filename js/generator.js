@@ -63,6 +63,86 @@ var RECT_DIVISION_TUNING=Object.freeze({
   })
 });
 
+// Radiant Systems: artist-calibrated spatial/mark parameters, not φ identities.
+// True golden-angle turns, inverse-φ hierarchy and φ-relative geometry stay
+// in drawBurst(); seeded RNG order and calculation order must remain unchanged.
+var BURST_TUNING=Object.freeze({
+  hubs:Object.freeze({
+    distributedSourceCount:4,         // Candidate golden-cell hub positions.
+    singleMonumentCentreMix:.34,      // MONUMENT centre attraction.
+    singleCentreMix:.16,              // Other strategies keep the hub central.
+    singleTerritoryScale:.72,         // Size of one-hub territory.
+    twinTerritoryScale:.48,           // Equal spans for opposing hubs.
+    triadTerritoryScale:.38,          // Smaller span for three hubs.
+    triadLeadWeight:1.15,             // More rays from first triad hub.
+    triadOtherWeight:.92,
+    cropAlongStart:.28,               // Starting fraction along an edge.
+    cropAlongSteps:45,                // Hash-based discrete position spread.
+    cropOverflowFraction:.07,         // Hub just outside top/left boundary.
+    cropRightBeyondFraction:1.07,     // Beyond opposite edges; separate values.
+    cropBottomBeyondFraction:1.07,
+    cropTerritoryScale:.96,
+    voidTerritoryScale:.58,
+    satelliteMainTerritoryScale:.56,
+    satelliteMainWeight:1.7,
+    satelliteOtherTerritoryScale:.3,
+    satelliteOtherWeight:.48
+  }),
+  tiers:Object.freeze({
+    mediumCountFloor:3,              // Minimum medium-tier threshold per hub.
+    mediumCountFraction:.24,
+    satelliteMediumFloor:5,          // Main satellite hub medium tier.
+    satelliteMediumFraction:.34
+  }),
+  radius:Object.freeze({
+    indexOffset:.7,                  // First ray begins outside hub centre.
+    defaultExponent:.66,             // Historical fallback radial exponent.
+    singleExponent:.62,
+    twinExponent:.7,
+    twinScale:.88,
+    triadExponent:.76,
+    triadScale:.78,
+    croppedExponent:.56,
+    croppedScale:1.12,
+    voidExponent:.68,
+    voidScale:.94,
+    satelliteMainExponent:.62,
+    satelliteOtherExponent:.8,
+    satelliteMainScale:.95,
+    satelliteOtherScale:.66,
+    phiQuantisationBase:28           // Original size-grid base; NOT Fibonacci.
+  }),
+  angle:Object.freeze({
+    satelliteTurnScale:.58,          // Tuned fraction of exact golden turn.
+    croppedWaveAmplitude:.08         // Sinusoidal cropped-ray perturbation.
+  }),
+  avoidance:Object.freeze({
+    voidRetryLimit:5,               // Try alternate golden-angle detours.
+    voidDetourTurnScale:.72,         // Calibrated part of true A.GOLD.
+    canvasInsetPx:24                // Clamp final ray endpoints to page.
+  }),
+  ink:Object.freeze({
+    lineChanceSparse:.95,
+    lineChanceDense:.7,
+    triadLineChanceScale:.88,
+    satelliteLineChanceScale:.74,
+    voidLineChanceScale:.9,
+    shapeChanceSparse:.92,
+    shapeChanceDense:.63,
+    heroShapeChanceBoost:1.24
+  }),
+  details:Object.freeze({
+    satelliteCrosslinkIntervalFloor:3,
+    satelliteCrosslinkIntervalFraction:.16,
+    satelliteCrosslinkChance:.32,
+    voidArcChanceScale:.14,
+    voidArcRadiusFloorPx:10,
+    voidArcSourceTerritoryPx:120,
+    voidArcRadiusScale:.58,
+    triadRingRadiusFloorPx:14
+  })
+});
+
 // Legacy artistic/scoring calibration, NOT mathematical φ constants.
 // Every value below is copied verbatim from the original V1–V7 renderer.
 // Keep these independent from A.PHI/A.INV/A.GOLD in phi.js: their values
@@ -1998,6 +2078,7 @@ function drawRects(ctx,s,r,pal){
 }
 
 function drawBurst(ctx,s,r,pal){
+  var D=BURST_TUNING;
   var variants=['SINGLE','TWIN','TRIAD','CROPPED','VOID','SATELLITE'];
   var variant=variants[A.hash(s.seed+'|burst-variant')%variants.length];
   var baseStrategy=chooseStrategy(s);
@@ -2007,7 +2088,7 @@ function drawBurst(ctx,s,r,pal){
     :[];
   var targets=phiTargets();
   var hubs=[];
-  var distributed=A.distributedPhiPoints(4,s,A.makeR(s.seed+'|burst-hubs'));
+  var distributed=A.distributedPhiPoints(D.hubs.distributedSourceCount,s,A.makeR(s.seed+'|burst-hubs'));
 
   function hub(x,y,territory,weight){
     return{x:x,y:y,territory:territory,weight:weight};
@@ -2015,38 +2096,38 @@ function drawBurst(ctx,s,r,pal){
 
   if(variant==='SINGLE'){
     var singleTarget=targets[A.hash(s.seed+'|burst-single-centre')%targets.length];
-    var centreMix=baseStrategy==='MONUMENT'?.34:.16;
+    var centreMix=baseStrategy==='MONUMENT'?D.hubs.singleMonumentCentreMix:D.hubs.singleCentreMix;
     hubs=[hub(
       A.lerp(A.W*.5,singleTarget.x,centreMix),
       A.lerp(A.H*.5,singleTarget.y,centreMix),
-      Math.min(A.W,A.H)*.72,
+      Math.min(A.W,A.H)*D.hubs.singleTerritoryScale,
       1
     )];
   }else if(variant==='TWIN'){
     var diagonal=A.hash(s.seed+'|burst-twin-diagonal')%2;
     var pair=diagonal===0?[targets[0],targets[3]]:[targets[1],targets[2]];
     hubs=[
-      hub(pair[0].x,pair[0].y,Math.min(A.W,A.H)*.48,1),
-      hub(pair[1].x,pair[1].y,Math.min(A.W,A.H)*.48,1)
+      hub(pair[0].x,pair[0].y,Math.min(A.W,A.H)*D.hubs.twinTerritoryScale,1),
+      hub(pair[1].x,pair[1].y,Math.min(A.W,A.H)*D.hubs.twinTerritoryScale,1)
     ];
   }else if(variant==='TRIAD'){
     for(var ti=0;ti<3;ti++){
       hubs.push(hub(
         distributed[ti].x,
         distributed[ti].y,
-        Math.min(A.W,A.H)*.38,
-        ti===0?1.15:.92
+        Math.min(A.W,A.H)*D.hubs.triadTerritoryScale,
+        ti===0?D.hubs.triadLeadWeight:D.hubs.triadOtherWeight
       ));
     }
   }else if(variant==='CROPPED'){
     var edge=A.hash(s.seed+'|burst-crop-edge')%4;
-    var along=.28+(A.hash(s.seed+'|burst-crop-pos')%45)/100;
+    var along=D.hubs.cropAlongStart+(A.hash(s.seed+'|burst-crop-pos')%D.hubs.cropAlongSteps)/100;
     var cx=A.W*.5,cy=A.H*.5;
-    if(edge===0){cx=-A.W*.07;cy=A.H*along}
-    if(edge===1){cx=A.W*1.07;cy=A.H*along}
-    if(edge===2){cx=A.W*along;cy=-A.H*.07}
-    if(edge===3){cx=A.W*along;cy=A.H*1.07}
-    hubs=[hub(cx,cy,Math.min(A.W,A.H)*.96,1)];
+    if(edge===0){cx=-A.W*D.hubs.cropOverflowFraction;cy=A.H*along}
+    if(edge===1){cx=A.W*D.hubs.cropRightBeyondFraction;cy=A.H*along}
+    if(edge===2){cx=A.W*along;cy=-A.H*D.hubs.cropOverflowFraction}
+    if(edge===3){cx=A.W*along;cy=A.H*D.hubs.cropBottomBeyondFraction}
+    hubs=[hub(cx,cy,Math.min(A.W,A.H)*D.hubs.cropTerritoryScale,1)];
   }else if(variant==='VOID'){
     var vc=voids.length
       ?{x:voids[0].x+voids[0].w/2,y:voids[0].y+voids[0].h/2}
@@ -2057,22 +2138,22 @@ function drawBurst(ctx,s,r,pal){
       var fd=fdx*fdx+fdy*fdy;
       if(fd>farD){farD=fd;far=targets[ft]}
     }
-    hubs=[hub(far.x,far.y,Math.min(A.W,A.H)*.58,1)];
+    hubs=[hub(far.x,far.y,Math.min(A.W,A.H)*D.hubs.voidTerritoryScale,1)];
   }else{
     var mainTarget=targets[A.hash(s.seed+'|burst-main-target')%targets.length];
     hubs.push(hub(
       mainTarget.x,
       mainTarget.y,
-      Math.min(A.W,A.H)*.56,
-      1.7
+      Math.min(A.W,A.H)*D.hubs.satelliteMainTerritoryScale,
+      D.hubs.satelliteMainWeight
     ));
     for(var si=0;si<3;si++){
       var d=distributed[si];
       hubs.push(hub(
         d.x,
         d.y,
-        Math.min(A.W,A.H)*.3,
-        .48
+        Math.min(A.W,A.H)*D.hubs.satelliteOtherTerritoryScale,
+        D.hubs.satelliteOtherWeight
       ));
     }
   }
@@ -2111,28 +2192,28 @@ function drawBurst(ctx,s,r,pal){
     var heroB=Math.round((count-1)*(1-A.INV));
 
     if(local===0||local===heroA||local===heroB)return'hero';
-    if(local<Math.max(3,Math.round(count*.24)))return'medium';
-    if(variant==='SATELLITE'&&hubIndex===0&&local<Math.max(5,Math.round(count*.34)))return'medium';
+    if(local<Math.max(D.tiers.mediumCountFloor,Math.round(count*D.tiers.mediumCountFraction)))return'medium';
+    if(variant==='SATELLITE'&&hubIndex===0&&local<Math.max(D.tiers.satelliteMediumFloor,Math.round(count*D.tiers.satelliteMediumFraction)))return'medium';
     return'small';
   }
 
   function burstRadius(local,count,h,hubIndex){
-    var t=(local+.7)/Math.max(1,count);
-    var exponent=.66;
+    var t=(local+D.radius.indexOffset)/Math.max(1,count);
+    var exponent=D.radius.defaultExponent;
     var scale=1;
 
-    if(variant==='SINGLE'){exponent=.62;scale=1}
-    else if(variant==='TWIN'){exponent=.7;scale=.88}
-    else if(variant==='TRIAD'){exponent=.76;scale=.78}
-    else if(variant==='CROPPED'){exponent=.56;scale=1.12}
-    else if(variant==='VOID'){exponent=.68;scale=.94}
+    if(variant==='SINGLE'){exponent=D.radius.singleExponent;scale=1}
+    else if(variant==='TWIN'){exponent=D.radius.twinExponent;scale=D.radius.twinScale}
+    else if(variant==='TRIAD'){exponent=D.radius.triadExponent;scale=D.radius.triadScale}
+    else if(variant==='CROPPED'){exponent=D.radius.croppedExponent;scale=D.radius.croppedScale}
+    else if(variant==='VOID'){exponent=D.radius.voidExponent;scale=D.radius.voidScale}
     else if(variant==='SATELLITE'){
-      exponent=hubIndex===0?.62:.8;
-      scale=hubIndex===0?.95:.66;
+      exponent=hubIndex===0?D.radius.satelliteMainExponent:D.radius.satelliteOtherExponent;
+      scale=hubIndex===0?D.radius.satelliteMainScale:D.radius.satelliteOtherScale;
     }
 
     var raw=Math.pow(t,exponent)*h.territory*scale;
-    return A.qphi(raw,28,s.phiStrength/100);
+    return A.qphi(raw,D.radius.phiQuantisationBase,s.phiStrength/100);
   }
 
   for(var hi=0;hi<hubs.length;hi++){
@@ -2146,8 +2227,8 @@ function drawBurst(ctx,s,r,pal){
 
       if(variant==='TWIN'&&hi===1)angle+=Math.PI/A.PHI;
       if(variant==='TRIAD')angle+=hi*(A.TAU/3);
-      if(variant==='SATELLITE'&&hi>0)angle+=hi*A.GOLD*.58;
-      if(variant==='CROPPED')angle+=Math.sin(local*A.INV)*.08;
+      if(variant==='SATELLITE'&&hi>0)angle+=hi*A.GOLD*D.angle.satelliteTurnScale;
+      if(variant==='CROPPED')angle+=Math.sin(local*A.INV)*D.angle.croppedWaveAmplitude;
 
       var len=burstRadius(local,count,h,hi);
       var px=h.x+Math.cos(angle)*len;
@@ -2155,8 +2236,8 @@ function drawBurst(ctx,s,r,pal){
 
       if(variant==='VOID'&&voids.length){
         var tries=0;
-        while(pointInVoid(px,py,voids)&&tries<5){
-          angle+=A.GOLD*.72;
+        while(pointInVoid(px,py,voids)&&tries<D.avoidance.voidRetryLimit){
+          angle+=A.GOLD*D.avoidance.voidDetourTurnScale;
           px=h.x+Math.cos(angle)*len;
           py=h.y+Math.sin(angle)*len;
           tries++;
@@ -2168,23 +2249,23 @@ function drawBurst(ctx,s,r,pal){
       }
 
       var p={
-        x:A.clamp(px,24,A.W-24),
-        y:A.clamp(py,24,A.H-24)
+        x:A.clamp(px,D.avoidance.canvasInsetPx,A.W-D.avoidance.canvasInsetPx),
+        y:A.clamp(py,D.avoidance.canvasInsetPx,A.H-D.avoidance.canvasInsetPx)
       };
       guideRays.push({hub:hi,x:p.x,y:p.y});
 
-      var lineChance=A.lerp(.95,.7,crowd);
-      if(variant==='TRIAD')lineChance*=.88;
-      if(variant==='SATELLITE'&&hi>0)lineChance*=.74;
-      if(variant==='VOID')lineChance*=.9;
+      var lineChance=A.lerp(D.ink.lineChanceSparse,D.ink.lineChanceDense,crowd);
+      if(variant==='TRIAD')lineChance*=D.ink.triadLineChanceScale;
+      if(variant==='SATELLITE'&&hi>0)lineChance*=D.ink.satelliteLineChanceScale;
+      if(variant==='VOID')lineChance*=D.ink.voidLineChanceScale;
 
       if(s.lines&&r.chance(lineChance)){
         A.drawLine(ctx,{x:h.x,y:h.y},p,pal[itemIndex%pal.length],s,r);
       }
 
       var tier=burstTier(local,count,hi);
-      var shapeChance=(s.shapeAmount/100)*A.lerp(.92,.63,crowd);
-      if(tier==='hero')shapeChance=Math.min(1,shapeChance*1.24);
+      var shapeChance=(s.shapeAmount/100)*A.lerp(D.ink.shapeChanceSparse,D.ink.shapeChanceDense,crowd);
+      if(tier==='hero')shapeChance=Math.min(1,shapeChance*D.ink.heroShapeChanceBoost);
 
       if(r.chance(shapeChance)){
         drawPlannedElement(ctx,{
@@ -2197,19 +2278,19 @@ function drawBurst(ctx,s,r,pal){
         },itemIndex,s,r,pal,baseStrategy);
       }
 
-      if(variant==='SATELLITE'&&hi===0&&local%Math.max(3,Math.round(count*.16))===0){
+      if(variant==='SATELLITE'&&hi===0&&local%Math.max(D.details.satelliteCrosslinkIntervalFloor,Math.round(count*D.details.satelliteCrosslinkIntervalFraction))===0){
         for(var sh=1;sh<hubs.length;sh++){
-          if(s.lines&&r.chance(.32)){
+          if(s.lines&&r.chance(D.details.satelliteCrosslinkChance)){
             A.drawLine(ctx,p,hubs[sh],pal[(itemIndex+sh)%pal.length],s,r);
           }
         }
       }
 
-      if(variant==='VOID'&&s.arcs&&r.chance((s.shapeAmount/100)*.14)){
+      if(variant==='VOID'&&s.arcs&&r.chance((s.shapeAmount/100)*D.details.voidArcChanceScale)){
         A.arc(
           ctx,
           p,
-          Math.max(10,makeBaseSize(s,'small',r,120,baseStrategy)*.58),
+          Math.max(D.details.voidArcRadiusFloorPx,makeBaseSize(s,'small',r,D.details.voidArcSourceTerritoryPx,baseStrategy)*D.details.voidArcRadiusScale),
           angle,
           A.TAU*A.INV,
           pal[(itemIndex+2)%pal.length],
@@ -2218,7 +2299,7 @@ function drawBurst(ctx,s,r,pal){
       }
 
       if(variant==='TRIAD'&&s.circles&&local===0){
-        var ring=Math.max(14,h.territory/A.PHI/A.PHI/A.PHI);
+        var ring=Math.max(D.details.triadRingRadiusFloorPx,h.territory/A.PHI/A.PHI/A.PHI);
         A.ellipse(
           ctx,
           {x:h.x,y:h.y},
