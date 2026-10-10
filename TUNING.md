@@ -142,6 +142,40 @@ and overlap extremes. Negative Space is sampled at 0, 8, 42, 43, 70, 71 and
 **No changes** to the segment/void intersection algorithm, `A.PHI`,
 `A.INV`, `A.GOLD`, seeded RNG, canvas sizes or version selection.
 
+## Fifth extraction: field-family relationships and scoring
+
+`RELATIONSHIP_TUNING.legacy` and `RELATIONSHIP_TUNING.v3` name **37 existing
+values** across the two different field relationship engines. The original
+focal-point, distance and angle mathematics, seeded random decisions, and
+calculation order are unchanged. Equal values retain distinct names in the
+different renderer generations so a future change cannot accidentally
+alter both.
+
+| Purpose | Legacy | V3 | Why it matters |
+| --- | ---: | ---: | --- |
+| Medium/small φ-distance snap | .20 / .12 | .30 / .18 | Higher V3 attraction to quantised family distances |
+| ORBIT/MONUMENT/EDGE snap factors | 1.35 / .75 / .70 | 1.35 / .78 / .72 | Strategy-specific alignment, not general φ constants |
+| Medium/small snapping probability | .72 / .48 | .84 / .62 | Changes how often seeded placements move |
+| Medium/small rotation alignment | .46 / .26 | .46 / .26 | Keeps nearby marks oriented around their hero |
+| ORBIT/DIAGONAL alignment boost | .14 | .14 | Stronger directional organization |
+| Medium/small relation metadata | .78 / .48 | .84 / .56 | Distinguishes compositional family strengths |
+| Medium/small score weighting | 1.45 / .70 | 1.45 / .70 | Relative contributions to the overall layout ranking |
+| Distance/angular score weights | 1.80 / .90 | 1.95 / 1.05 | Separate aesthetic rewards for proportion and alignment |
+| Overall score weight | 34 | 36 | Impact of family relationships on candidate selection |
+| Baseline φ score contribution | .45 | .45 | Existing nonzero relationship importance at weak φ pull |
+
+The legacy model also independently retains its .72 small-family colour
+choice probability. The Fibonacci quantisation base `34`, exact φ
+constants and existing `s.phiStrength/180` control scaling remain in the
+original formulas: they are deliberately **not** relabelled as artistic
+tuning. The V3 accent-colour system remains outside this extraction.
+
+The pinned engine test includes **168 new full V2/V3/V7 Field
+compositions** spanning all seven strategies, 24/70 elements, portrait
+and landscape, and 0%/100% additional φ Pull. It checks exact drawing
+command hashes and layout metadata, catching changes to the legacy or
+V3 family-building code and its random-number consumption.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
