@@ -299,6 +299,58 @@ var SCRIBBLE_TUNING=Object.freeze({
   })
 });
 
+// Original Automatic Marks gesture-walk calibration. These numbers tune
+// expressive stroke motion, spacing, restarts and secondary details;
+// none are mathematical φ identities. Keep the precise calculations,
+// branch order and seeded random draws for all archived renderer versions.
+var SCRIBBLE_STROKE_TUNING=Object.freeze({
+  motion:Object.freeze({
+    knotStartingRadius:.12,       // Begin KNOT strokes near their focal point.
+    otherStartingRadius:.2,       // Begin other gestures a little farther out.
+    minimumRunLength:3,           // Lowest number of strokes in an ink run.
+    firstRunLong:8,               // Initial run length at low complexity.
+    firstRunShort:4,              // Initial run length at high complexity.
+    ribbonFlowMix:.72,           // Bias RIBBON strokes toward anchor flow.
+    clusterFlowMix:.28,          // Leave CLUSTERS locally less constrained.
+    otherFlowMix:.46,            // Remaining variants balance both directions.
+    goldenTurnLow:.11,           // Golden-angle turning at low complexity.
+    goldenTurnHigh:.31,          // Turning at high complexity.
+    wobbleTurnLow:.18,           // Sinusoidal direction variation at low wobble.
+    wobbleTurnHigh:.48,          // Sinusoidal direction variation at high wobble.
+    randomTurnRange:.16,         // Symmetric free-angle jitter per mark.
+    knotTurnAmplitude:.58,       // KNOT's additional curl.
+    minimumStrokePx:13,          // Random raw segment length (not the Fibonacci grid).
+    maximumStrokePx:78,          // Longest raw random segment length.
+    crowdedStrokeScale:.76,      // Reduce long strokes as mark density increases.
+    densityLengthLow:.9,         // Density multiplier minimum.
+    densityLengthHigh:1.15,      // Density multiplier maximum.
+    returnPullBase:.34,          // Pull runaway strokes toward their anchor.
+    returnPullGain:.42           // Stronger pull farther outside the territory.
+  }),
+  avoidance:Object.freeze({
+    portraitRetryLimit:9,        // More paths around protected voids in portrait.
+    landscapeRetryLimit:5,       // Fewer retries in landscape.
+    canvasStrokeInsetPx:24       // Constrain drawn stroke endpoints to the page.
+  }),
+  breaks:Object.freeze({
+    spontaneousBreakChance:.035, // Baseline probability of ending a stroke run.
+    negativeSpaceBreakDivisor:650,// Increase pauses as blank-space demand rises.
+    resetRadiusLow:.08,          // Start a new gesture near its anchor.
+    resetRadiusHigh:.42,         // Allow a wider fresh starting position.
+    laterRunLong:9,              // New-run length at low complexity.
+    laterRunShort:4,             // New-run length at high complexity.
+    laterRunJitterLow:-1,        // Random adjustment to a new run length.
+    laterRunJitterHigh:2         // Upper adjustment bound (exclusive RNG semantics).
+  }),
+  embellishment:Object.freeze({
+    arcProbabilityScale:.075,    // Occasional ghost ink arc near a stroke end.
+    arcMinimumRadiusPx:9,       // Smallest arc before φ quantisation.
+    ribbonLinkChance:.58,       // Optional ghost connection between RIBBON anchors.
+    haloProbabilityScale:.12,   // Chance of a concentric anchor halo.
+    haloMinimumRadiusPx:10      // Minimum halo size.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -2360,28 +2412,28 @@ function drawScribble(ctx,s,r,pal){
     if(count<=0)continue;
 
     var startAngle=anchor.flow+A.GOLD*(ai+1);
-    var startRadius=anchor.radius*(variant==='KNOT'?.12:.2);
+    var startRadius=anchor.radius*(variant==='KNOT'?SCRIBBLE_STROKE_TUNING.motion.knotStartingRadius:SCRIBBLE_STROKE_TUNING.motion.otherStartingRadius);
     var p={
-      x:A.clamp(anchor.x+Math.cos(startAngle)*startRadius,24,A.W-24),
-      y:A.clamp(anchor.y+Math.sin(startAngle)*startRadius,24,A.H-24)
+      x:A.clamp(anchor.x+Math.cos(startAngle)*startRadius,SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx,A.W-SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx),
+      y:A.clamp(anchor.y+Math.sin(startAngle)*startRadius,SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx,A.H-SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx)
     };
     if(portrait&&pointInVoid(p.x,p.y,voids)){p.x=anchor.x;p.y=anchor.y;}
-    var runLength=Math.max(3,Math.round(A.lerp(8,4,s.complexity/100)));
+    var runLength=Math.max(SCRIBBLE_STROKE_TUNING.motion.minimumRunLength,Math.round(A.lerp(SCRIBBLE_STROKE_TUNING.motion.firstRunLong,SCRIBBLE_STROKE_TUNING.motion.firstRunShort,s.complexity/100)));
     var runPos=0;
 
     for(var local=0;local<count;local++){
       var progress=(local+.5)/Math.max(1,count);
-      var flowMix=variant==='RIBBON'?.72:(variant==='CLUSTERS'?.28:.46);
-      var goldenTurn=((local%2===0)?1:-1)*A.GOLD*A.lerp(.11,.31,s.complexity/100);
+      var flowMix=variant==='RIBBON'?SCRIBBLE_STROKE_TUNING.motion.ribbonFlowMix:(variant==='CLUSTERS'?SCRIBBLE_STROKE_TUNING.motion.clusterFlowMix:SCRIBBLE_STROKE_TUNING.motion.otherFlowMix);
+      var goldenTurn=((local%2===0)?1:-1)*A.GOLD*A.lerp(SCRIBBLE_STROKE_TUNING.motion.goldenTurnLow,SCRIBBLE_STROKE_TUNING.motion.goldenTurnHigh,s.complexity/100);
       var angle=A.lerp(startAngle,anchor.flow,flowMix)+goldenTurn;
-      angle+=Math.sin((local+1)*A.INV+ai*A.GOLD)*A.lerp(.18,.48,s.wobble/100);
-      angle+=r.range(-.16,.16);
+      angle+=Math.sin((local+1)*A.INV+ai*A.GOLD)*A.lerp(SCRIBBLE_STROKE_TUNING.motion.wobbleTurnLow,SCRIBBLE_STROKE_TUNING.motion.wobbleTurnHigh,s.wobble/100);
+      angle+=r.range(-SCRIBBLE_STROKE_TUNING.motion.randomTurnRange,SCRIBBLE_STROKE_TUNING.motion.randomTurnRange);
 
-      if(variant==='KNOT')angle+=Math.sin(progress*A.TAU*2)*.58;
+      if(variant==='KNOT')angle+=Math.sin(progress*A.TAU*2)*SCRIBBLE_STROKE_TUNING.motion.knotTurnAmplitude;
       if(variant==='DUET'&&ai===1)angle+=Math.PI/A.PHI;
 
       var len=A.qphi(
-        r.range(13,78)*A.lerp(1,.76,crowd)*A.lerp(.9,1.15,s.density/100),
+        r.range(SCRIBBLE_STROKE_TUNING.motion.minimumStrokePx,SCRIBBLE_STROKE_TUNING.motion.maximumStrokePx)*A.lerp(1,SCRIBBLE_STROKE_TUNING.motion.crowdedStrokeScale,crowd)*A.lerp(SCRIBBLE_STROKE_TUNING.motion.densityLengthLow,SCRIBBLE_STROKE_TUNING.motion.densityLengthHigh,s.density/100),
         13,
         s.phiStrength/100
       );
@@ -2395,13 +2447,13 @@ function drawScribble(ctx,s,r,pal){
       var dist=Math.sqrt(dx*dx+dy*dy);
       if(dist>anchor.radius){
         var pull=A.clamp((dist-anchor.radius)/Math.max(1,anchor.radius),0,1);
-        q.x=A.lerp(q.x,anchor.x,.34+.42*pull);
-        q.y=A.lerp(q.y,anchor.y,.34+.42*pull);
+        q.x=A.lerp(q.x,anchor.x,SCRIBBLE_STROKE_TUNING.motion.returnPullBase+SCRIBBLE_STROKE_TUNING.motion.returnPullGain*pull);
+        q.y=A.lerp(q.y,anchor.y,SCRIBBLE_STROKE_TUNING.motion.returnPullBase+SCRIBBLE_STROKE_TUNING.motion.returnPullGain*pull);
       }
 
       var attempts=0;
       while((pointInVoid(q.x,q.y,voids)||
-        (portrait&&segmentCrossesVoid(p.x,p.y,q.x,q.y,voids)))&&attempts<(portrait?9:5)){
+        (portrait&&segmentCrossesVoid(p.x,p.y,q.x,q.y,voids)))&&attempts<(portrait?SCRIBBLE_STROKE_TUNING.avoidance.portraitRetryLimit:SCRIBBLE_STROKE_TUNING.avoidance.landscapeRetryLimit)){
         angle+=A.GOLD*(attempts%2===0?1:-1);
         q.x=p.x+Math.cos(angle)*len;
         q.y=p.y+Math.sin(angle)*len;
@@ -2414,13 +2466,13 @@ function drawScribble(ctx,s,r,pal){
         continue;
       }
 
-      q.x=A.clamp(q.x,24,A.W-24);
-      q.y=A.clamp(q.y,24,A.H-24);
+      q.x=A.clamp(q.x,SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx,A.W-SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx);
+      q.y=A.clamp(q.y,SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx,A.H-SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx);
 
       A.drawLine(ctx,p,q,pal[markIndex%pal.length],style,r);
 
-      if(s.arcs&&r.chance((s.shapeAmount/100)*.075)){
-        var loop=A.qphi(Math.max(9,len/A.PHI),9,s.phiStrength/100);
+      if(s.arcs&&r.chance((s.shapeAmount/100)*SCRIBBLE_STROKE_TUNING.embellishment.arcProbabilityScale)){
+        var loop=A.qphi(Math.max(SCRIBBLE_STROKE_TUNING.embellishment.arcMinimumRadiusPx,len/A.PHI),9,s.phiStrength/100);
         A.arc(
           ctx,q,
           loop,
@@ -2437,29 +2489,29 @@ function drawScribble(ctx,s,r,pal){
       runPos++;
 
       var deliberateBreak=runPos>=runLength;
-      var stochasticBreak=r.chance(.035+s.negativeSpace/650);
+      var stochasticBreak=r.chance(SCRIBBLE_STROKE_TUNING.breaks.spontaneousBreakChance+s.negativeSpace/SCRIBBLE_STROKE_TUNING.breaks.negativeSpaceBreakDivisor);
       if(deliberateBreak||stochasticBreak){
         var resetAngle=startAngle+(local+1)*A.GOLD;
-        var resetRadius=anchor.radius*r.range(.08,.42);
+        var resetRadius=anchor.radius*r.range(SCRIBBLE_STROKE_TUNING.breaks.resetRadiusLow,SCRIBBLE_STROKE_TUNING.breaks.resetRadiusHigh);
         p={
-          x:A.clamp(anchor.x+Math.cos(resetAngle)*resetRadius,24,A.W-24),
-          y:A.clamp(anchor.y+Math.sin(resetAngle)*resetRadius,24,A.H-24)
+          x:A.clamp(anchor.x+Math.cos(resetAngle)*resetRadius,SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx,A.W-SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx),
+          y:A.clamp(anchor.y+Math.sin(resetAngle)*resetRadius,SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx,A.H-SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx)
         };
         if(portrait&&pointInVoid(p.x,p.y,voids)){p.x=anchor.x;p.y=anchor.y;}
-        runLength=Math.max(3,Math.round(A.lerp(9,4,s.complexity/100)+r.range(-1,2)));
+        runLength=Math.max(SCRIBBLE_STROKE_TUNING.motion.minimumRunLength,Math.round(A.lerp(SCRIBBLE_STROKE_TUNING.breaks.laterRunLong,SCRIBBLE_STROKE_TUNING.breaks.laterRunShort,s.complexity/100)+r.range(SCRIBBLE_STROKE_TUNING.breaks.laterRunJitterLow,SCRIBBLE_STROKE_TUNING.breaks.laterRunJitterHigh)));
         runPos=0;
       }
     }
 
-    if(ai<anchors.length-1&&variant==='RIBBON'&&s.lines&&r.chance(.58)){
+    if(ai<anchors.length-1&&variant==='RIBBON'&&s.lines&&r.chance(SCRIBBLE_STROKE_TUNING.embellishment.ribbonLinkChance)){
       var next=anchors[ai+1];
       if(!pointInVoid(anchor.x,anchor.y,voids)&&!pointInVoid(next.x,next.y,voids)){
         A.drawLine(ctx,anchor,next,pal[(markIndex+ai)%pal.length],ghostStyle,r);
       }
     }
 
-    if(s.circles&&r.chance((s.shapeAmount/100)*.12)){
-      var halo=Math.max(10,anchor.radius/A.PHI/A.PHI/A.PHI);
+    if(s.circles&&r.chance((s.shapeAmount/100)*SCRIBBLE_STROKE_TUNING.embellishment.haloProbabilityScale)){
+      var halo=Math.max(SCRIBBLE_STROKE_TUNING.embellishment.haloMinimumRadiusPx,anchor.radius/A.PHI/A.PHI/A.PHI);
       A.ellipse(
         ctx,
         {x:anchor.x,y:anchor.y},

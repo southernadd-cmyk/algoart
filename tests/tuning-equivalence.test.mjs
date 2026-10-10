@@ -408,3 +408,45 @@ for(const version of [2,6,7]){
   }
 }
 console.log('PASS: '+scribbleChecks+' Automatic Marks variants, portrait anchors, styles and voids reproduce pinned artworks.');
+
+
+// Ninth extraction: the five Scribble gesture walks must retain their exact
+// random turn and stroke-length sequence, run-break decisions, edge clamps,
+// protected-void detours, and occasional ghost details. Include the strict
+// non-VOID threshold at 24 vs 25, blank and full negative-space demand,
+// both orientations, minimal vs maximal φ pull, and legacy/current engines.
+// A full drawing-command digest and entire returned guide metadata are checked.
+let scribbleStrokeChecks=0;
+for(const version of [2,7]){
+  for(const variant of scribbleVariants){
+    const seed=scribbleVariantSeed(variant);
+    for(const orientation of ['landscape','portrait']){
+      for(const phiStrength of [0,100]){
+        for(const negativeSpace of [0,24,25,100]){
+          const dramatic=negativeSpace>=25;
+          const settings={
+            seed,mode:'scribble',orientation,
+            elements:dramatic?140:24,
+            density:phiStrength,complexity:dramatic?95:15,
+            negativeSpace,phiStrength,recursion:4,
+            spiralInfluence:65,goldenAngle:80,nesting:55,
+            pen:'felt',thickness:dramatic?23:6,
+            wobble:phiStrength,curveBias:dramatic?95:5,
+            overdraw:dramatic?5:1,opacity:dramatic?90:25,
+            pressure:25,dryness:15,shapeAmount:negativeSpace===0?0:100,
+            overlap:dramatic?85:10,rotation:40,
+            lines:true,circles:true,rectangles:true,polygons:true,
+            arcs:true,palette:'mono',colourCount:3,
+            saturation:75,brightness:50,paper:'#f5f0e6',grain:0
+          };
+          const before=capture(baseline,settings,version);
+          const after=capture(current,settings,version);
+          assert.deepEqual(after,before,
+            `Scribble gesture walk drift: V${version}/${variant}/${orientation}/φ${phiStrength}/void${negativeSpace}`);
+          scribbleStrokeChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+scribbleStrokeChecks+' Scribble stroke motion, breaks and embellishments match pinned engine.');
