@@ -610,3 +610,47 @@ for(const version of [3,6,7]){
   }
 }
 console.log('PASS: '+networkTopologyChecks+' Connected Fields node-hierarchy, network-geometry and candidate-edge cases match pinned artwork and metadata.');
+
+
+// Thirteenth extraction: Connected Fields' visual hierarchy, not topology.
+// Exercise primary/secondary pen weight, opacity and wobble floors,
+// node visibility, hero/medium/small hierarchy and optional rings.
+// Explicitly cover faint and bold ink, disabled/enabled rings, low/high
+// Shape Amount, sparse/dense layouts, portrait/landscape and legacy/V7.
+// Compare full source drawing commands, metadata, and seeded RNG behaviour.
+let networkRenderChecks=0;
+for(const version of [3,6,7]){
+  for(const strategy of ['BALANCED','VOID','MONUMENT']){
+    const seed=seedForStrategy('network',strategy);
+    for(const orientation of ['landscape','portrait']){
+      for(const elements of [18,72,140]){
+        for(const shapeAmount of [0,100]){
+          for(const heavyInk of [false,true]){
+            const settings={
+              seed,mode:'network',orientation,elements,
+              density:elements>=72?95:5,
+              complexity:heavyInk?100:0,
+              negativeSpace:strategy==='VOID'?90:18,
+              phiStrength:shapeAmount,recursion:4,
+              spiralInfluence:60,goldenAngle:80,nesting:40,
+              pen:'felt',thickness:heavyInk?24:2,
+              wobble:heavyInk?100:0,overdraw:heavyInk?4:1,
+              opacity:heavyInk?100:20,pressure:25,dryness:15,
+              curveBias:65,shapeAmount,
+              overlap:heavyInk?100:0,rotation:35,
+              lines:true,circles:heavyInk,rectangles:true,
+              polygons:true,arcs:true,palette:'mono',
+              colourCount:3,saturation:75,brightness:50,
+              paper:'#f5f0e6',grain:0
+            };
+            assert.deepEqual(capture(current,settings,version),
+              capture(baseline,settings,version),
+              `Connected Fields ink drift: V${version}/${strategy}/${orientation}/n${elements}/marks${shapeAmount}/bold${heavyInk}`);
+            networkRenderChecks++;
+          }
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+networkRenderChecks+' Connected Fields link ink, node visibility and decorative ring compositions reproduce pinned drawings and metadata.');
