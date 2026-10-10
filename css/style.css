@@ -1506,3 +1506,21 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
 #plotterPreview{margin:0}
 #plotterPreviewImage{display:block;width:100%;height:auto;border:1px solid #777}
 #plotterSummary{font:11px/1.5 'Courier New',monospace;margin-top:6px;overflow-wrap:anywhere}
+
+/* Compact 4-Up: keep all four previews together and size them to viewport height. */
+.variations-sheet{
+  width:min(560px,100%,calc((100dvh - 180px)*1.4));
+  max-height:calc(100dvh - 56px);
+}
+.variations-overlay.orientation-portrait .variations-sheet{
+  width:min(420px,100%,calc((100dvh - 180px)*.7142857));
+}
+.variations-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+.variation-card canvas{aspect-ratio:var(--canvas-aspect,7/5);}
+.variation-card span{max-width:calc(100% - 14px);overflow-wrap:anywhere;font-size:9px;}
+@media(max-width:700px){
+  .variations-sheet{max-height:calc(100dvh - 20px);}
+  .variations-grid .variation-card:nth-child(odd){border-right:1px solid var(--ink)!important;}
+  .variations-grid .variation-card:nth-last-child(-n+2){border-bottom:0!important;}
+  .variations-actions{position:static;gap:8px;}
+}
