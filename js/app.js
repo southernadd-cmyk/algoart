@@ -929,8 +929,8 @@ $('savePlotter').onclick=function(){buildPlotterPreview(true)};
 ['plotterPaper','plotterMargin','plotterGrouping','plotterOptimize'].forEach(function(id){$(id).addEventListener('change',clearPlotterPreview)});
 $('plotterGrouping').addEventListener('change',function(){
   $('plotterGroupingNote').textContent=this.value==='pens'?
-    'One layer per pen, light to dark. AxiDraw pauses before each new pen: change pens and Resume. The Pen numbers match faithful mode. Travel optimisation can reorder strokes within a pen. Grouping changes which colour sits on top where colours overlap.':
-    'Faithful colour runs preserve overlap order, with light-to-dark Pen numbers and sequential run numbers. AxiDraw pauses before each pen change; swap the pen and Resume.';
+    'One layer per pen, light to dark. SVG labels request a pause at each pen change; AxiDraw/Inkscape hardware behaviour is untested. Swap pens and Resume if prompted. Pen numbers match faithful mode. Travel optimisation can reorder strokes within a pen. Grouping changes which colour sits on top where colours overlap.':
+    'Faithful colour runs preserve overlap order, with light-to-dark Pen numbers and sequential run numbers. SVG labels request pen-change pauses; AxiDraw/Inkscape hardware behaviour is untested. Swap pens and Resume if prompted.';
   $('plotterOptimizeLabel').textContent=this.value==='pens'?
     'Reduce pen travel by reordering same-colour strokes':'Reduce pen travel without changing stroke order';
 });
