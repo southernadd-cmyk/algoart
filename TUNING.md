@@ -523,6 +523,55 @@ must match the pinned original. The engine's RNG calls, cell sorting,
 branch-order choices, φ maths and historical renderer versions remain
 unchanged.
 
+## Fifteenth extraction: Radiant Systems golden-angle rays and focal hierarchy
+
+`BURST_TUNING` names **60 historical calibration and safety parameters** in
+Radiant Systems (`drawBurst`): six hub layouts, focal-tier allocation, radial
+falloff, variant angular variation, blank-space clearance, and secondary ink.
+The six families **SINGLE, TWIN, TRIAD, CROPPED, VOID and SATELLITE** retain
+their distinct compositions. This is a naming-only compatibility audit.
+
+| Part | Preserved values | Actual role |
+| --- | --- | --- |
+| Hub distribution | 4 initial golden-cell source points; SINGLE MONUMENT centre pull .34 versus other .16 | Set hub candidate positions and centrality, not define golden ratios |
+| Hub territories | SINGLE .72, TWIN .48, TRIAD .38, CROPPED .96, VOID .58 | Tune visual reach of each family |
+| TRIAD allocation | Lead weight 1.15, others .92 | Influence proportional ray count across hubs |
+| CROPPED offset | Edge start .28, 45 discrete hash positions, .07/1.07 overshoot | Move focal centre beyond the chosen page edge |
+| SATELLITE hierarchy | Main territory .56 and weight 1.7; companions .30 and .48 | Make one hub visibly dominate its satellites |
+| Mark tiers | Medium fraction .24 with floor 3; main SATELLITE .34 with floor 5 | Adjust intermediate marks independently of φ landmark indices |
+| Radial reach | Initial index +.7; exponent .56–.8, scale .66–1.12 by family | Determine ray length progression, not an exponential φ law |
+| Quantisation base | 28 | Retains original `A.qphi` grid resolution; **28 is not Fibonacci** |
+| Angular details | SATELLITE .58 × golden turn; CROPPED sinusoidal .08 | Calibrated gestures laid over exact angular relationships |
+| VOID detours | 5 attempts, .72 × golden turn, 24 px canvas inset | Protect blank areas without a new geometric identity |
+| Ray and mark visibility | .95–.70 line probability, .92–.63 shape probability, variant modifiers .74–.90, hero × 1.24 | Balance visible strokes as crowding and hierarchy vary |
+| Secondary details | SATELLITE links every ≥3 or .16 of rays, chance .32; VOID arc chance .14, floor 10, scale .58; TRIAD ring floor 14 | Control decorative emphasis and drawing budgets |
+
+**Authentic φ usage stays in the formulas:** `phiTargets()` and
+`A.distributedPhiPoints()` supply golden-position anchors;
+`Math.round((count-1)*A.INV)` and its complement place hero indices;
+the ray angle interpolates from uniform spacing to exact `A.GOLD`;
+TWIN's phase shift uses `Math.PI/A.PHI`; VOID re-orients by multiples
+of `A.GOLD`; CROPPED modulates by `Math.sin(local*A.INV)`;
+`A.qphi(...,28,...)` uses φ quantisation with a *chosen* base;
+the TRIAD centre ellipses have repeated `/A.PHI` scaling, and
+VOID auxiliary arcs span `A.TAU*A.INV`.
+
+Values such as the radial exponent `.62` and the turn multiplier
+`.58` are **not** exact φ identities. Similarly, the independent .48
+TWIN hub reach and .48 SATELLITE companion weighting must not be
+silently deduplicated, even though they are numerically equal.
+The original greedy weighted allocation, stable fractional sort,
+branch selection, RNG consumption, draw order and `s.phiStrength`
+control interpretation remain untouched.
+
+The pinned test adds **432 full Radiant Systems cases**:
+all six variants × V3/V6/V7 × both orientations × Additional φ
+Pull 0/50/100 × Negative Space 0/100 × sparse/full-detail settings.
+Each compares SHA-256 drawing-command hashes, operation count,
+and every returned hub, ray and protected-void coordinate against the
+immutable pre-refactor engine. No renderer-version change, tuning change
+or seed remapping is part of this refactor.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
