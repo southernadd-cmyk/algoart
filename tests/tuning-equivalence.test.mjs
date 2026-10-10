@@ -355,3 +355,56 @@ for(const version of [2,5,7]){
   }
 }
 console.log('PASS: '+constructedChecks+' Constructed Forms variant/geometry/style cases reproduce pinned drawing commands and metadata.');
+
+
+// Automatic Marks / Scribble has five independent gestural variants.
+// Use deterministic seeds to force each variant, and compare complete
+// drawing-command streams and metadata against the pinned old renderer.
+// Portrait and landscape exercise different anchor reflow paths;
+// low and high complexity exercise the style floors and anchor counts;
+// empty/strong voids, 0/100 φ Pull and density cover size quantisation.
+const scribbleVariants=['RIBBON','CLUSTERS','KNOT','VOID','DUET'];
+function scribbleVariantSeed(variant){
+  const target=scribbleVariants.indexOf(variant);
+  assert.notEqual(target,-1,'Unknown Automatic Marks variant');
+  for(let i=0;i<2000;i++){
+    const seed='SCRIBBLE-CALIBRATION-'+i;
+    if(baseline.hash(seed+'|scribble-variant')%scribbleVariants.length===target)return seed;
+  }
+  throw Error('No deterministic seed for Scribble variant '+variant);
+}
+let scribbleChecks=0;
+for(const version of [2,6,7]){
+  for(const variant of scribbleVariants){
+    const seed=scribbleVariantSeed(variant);
+    for(const orientation of ['landscape','portrait']){
+      for(const phiStrength of [0,100]){
+        for(const complexity of [0,100]){
+          const settings={
+            seed,mode:'scribble',orientation,
+            elements:complexity===0?12:140,
+            density:complexity,complexity,
+            negativeSpace:complexity===0?8:85,
+            phiStrength,recursion:4,spiralInfluence:65,
+            goldenAngle:80,nesting:complexity,
+            pen:'felt',thickness:complexity===0?5:26,
+            wobble:complexity,curveBias:complexity,
+            overdraw:complexity===0?1:5,
+            opacity:complexity===0?20:95,
+            pressure:25,dryness:15,shapeAmount:100,
+            overlap:45,rotation:30,
+            lines:true,circles:true,rectangles:true,polygons:true,
+            arcs:true,palette:'mono',colourCount:3,
+            saturation:75,brightness:50,paper:'#f5f0e6',grain:0
+          };
+          const before=capture(baseline,settings,version);
+          const after=capture(current,settings,version);
+          assert.deepEqual(after,before,
+            `Scribble changed: V${version}/${variant}/${orientation}/φ${phiStrength}/complexity${complexity}`);
+          scribbleChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+scribbleChecks+' Automatic Marks variants, portrait anchors, styles and voids reproduce pinned artworks.');
