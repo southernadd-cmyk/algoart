@@ -9,6 +9,7 @@ var showGeometry=false;
 var app=$('app');
 var mobileQuery=window.matchMedia('(max-width:700px)');
 var previewTimer=null;
+var modePreviewStateKey=null;
 var variationBatch=0;
 var currentRenderMeta=null;
 var currentDescription=null;
@@ -259,20 +260,28 @@ function syncModeCards(){
 
 function renderModePreviews(){
   var base=A.readSettings();
-  withRendererVersion(CURRENT_RENDERER_VERSION,function(){
-    document.querySelectorAll('.mode-card').forEach(function(card){
-      var mode=card.dataset.mode;
-      var preview=Object.assign({},base,{
-        mode:mode,
-        seed:'SERIES-'+mode.toUpperCase(),
-        elements:Math.min(28,Math.max(16,base.elements)),
-        complexity:Math.min(72,base.complexity),
-        overdraw:Math.min(2,base.overdraw),
-        grain:0
+  // Only the system changes on selection; pen, seed, composition settings
+  // and orientation are identical to the full-resolution artwork.
+  // Exclude the currently selected system from the cache key: switching
+  // cards does not alter what their candidate artwork would look like.
+  var previewState=Object.assign({},base);
+  delete previewState.mode;
+  var key=JSON.stringify([CURRENT_RENDERER_VERSION,previewState]);
+  if(key===modePreviewStateKey)return;
+  var previousMeta=A.lastRenderMeta,previousW=A.W,previousH=A.H;
+  try{
+    withRendererVersion(CURRENT_RENDERER_VERSION,function(){
+      document.querySelectorAll('.mode-card').forEach(function(card){
+        var settings=Object.assign({},base,{mode:card.dataset.mode});
+        A.render(card.querySelector('canvas'),settings,.1,false);
       });
-      A.render(card.querySelector('canvas'),preview,.1,false);
     });
-  });
+    modePreviewStateKey=key;
+  }finally{
+    // Sidebar thumbnails must never replace the selected artwork's metadata.
+    A.lastRenderMeta=previousMeta;
+    A.W=previousW;A.H=previousH;
+  }
 }
 
 function scheduleModePreviews(){
@@ -286,7 +295,6 @@ document.querySelectorAll('.mode-card').forEach(function(card){
     $('mode').value=card.dataset.mode;
     syncModeCards();
     regenerate();
-    scheduleModePreviews();
   });
 });
 
@@ -338,6 +346,7 @@ function regenerate(){
   syncRendererChip();
   syncModeCards();
   updateURL(s);
+  scheduleModePreviews();
 }
 
 function newSeedValue(){
@@ -687,7 +696,6 @@ $('mutate').onclick=function(){
 
   $('seed').value=$('seed').value.split('~')[0]+'~'+r.int(1,999);
   regenerate();
-  scheduleModePreviews();
 };
 
 $('randomise').onclick=function(){
@@ -706,7 +714,6 @@ $('randomise').onclick=function(){
   $('seed').value=newSeedValue();
   syncModeCards();
   regenerate();
-  scheduleModePreviews();
 };
 
 function variationSeed(base,index,batch){
@@ -948,9 +955,6 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     // pointerup/change ordering differs by browser. Do not commit twice.
     var alreadyCommitted=e.type==='range'&&!dragPreviewPending&&lastCommittedRenderKey===JSON.stringify([A.rendererVersion,A.readSettings()]);
     if(!alreadyCommitted)regenerate();
-    if(e.id==='orientation'||e.id==='palette'||e.id==='pen'||e.id==='phiStrength'||e.id==='complexity'){
-      scheduleModePreviews();
-    }
   });
 });
 
@@ -1033,7 +1037,6 @@ loadLatestGalleryDefault().then(function(changed){
     syncModeCards();
     regenerate();
   }
-  setTimeout(renderModePreviews,40);
 }).catch(function(error){
   console.error('Unable to load exact archived artwork:',error);
   var status=$('shareStatus');
