@@ -710,6 +710,24 @@ Live workflows also run Chromium checks against their actual queue before upload
 
 ## Faithful Plotter SVG export
 
+**Hardware/extension validation status: untested.** Neither a physical
+AxiDraw nor an Inkscape/AxiDraw extension instance has been available for
+end-to-end testing. The exported SVG layer labels and simulated pen-change
+metadata have passed automated tests, but this does **not** establish that
+AxiDraw will pause/resume correctly on a real plotter, or that its
+**Plot Layer 2** command will select a label beginning with `!2`.
+The potential abort/pause when plotting just that layer is unresolved.
+Please report real-world results in
+[GitHub issue #40](https://github.com/southernadd-cmyk/algoart/issues/40),
+using the
+[two-layer test fixture](tests/axidraw-layer2-pause.svg).
+Until confirmed, verify on a safe test drawing rather than assuming
+unattended multi-pen plotting works. Removing the `!` prefix for a
+single-layer test may be necessary; doing so deliberately removes that
+layer's automatic pause instruction.
+
+
+
 The Export tab includes a separate Plotter SVG option for A4 or A3 paper with adjustable millimetre margins and a paper/ink preview. The file preserves seeded marker geometry, wobble, overdraw, stroke colours, widths and opacity. **Faithful colour runs** is the default: consecutive colour runs are numbered Inkscape layers, preserving overlap order. Every run after the first starts with AxiDraw's forced-pause prefix (for example, `!002 · Pen 2 · #ff3366`). Each run has a separate sequential three-digit **run/layer number**, while its **Pen N** is consistently numbered by light-to-dark relative luminance in both export modes. The first run has no pause, so plotting can start normally. The `!` requests a pause before that layer during Plot All; after replacing the pen, use Resume. The number after `!` is intended for layer addressing as well, but a real Inkscape/AxiDraw **Layers → plot layer 2** check is still recommended: software-specific layer parsing and pause-at-start behaviour cannot be validated by the SVG tests alone. It pauses where it is, rather than returning home. Repeated colours stay in their original position, requiring another pen change each time they return.
 
 Choose **Group by pen** for one top-level Inkscape layer per used colour, named with its pen number first (for example, `1 · Pen 1 · #ff3366`, `!2 · Pen 2 · #6622bb`). Pens are ordered from light to dark using linear sRGB relative luminance, with stable first-use order for ties. **Plot All** now pauses before every pen after the first, so a single pen cannot silently draw all colours. For intentional separate-layer plotting, use the AxiDraw Layers tab or CLI, with the caveat that a leading `!` can also pause immediately when that numbered layer is selected alone; test this on your installed AxiDraw version before relying on single-layer operation. A drawing using 4–10 pens needs 3–9 changes after loading the first pen, rather than a change between every colour run. Grouping changes which colour sits on top where colours overlap; the UI warns about this and the preview reflects the selected grouping. The preview summary reports pens, layers, pen changes, pauses in either mode and total pen-up travel.
