@@ -351,6 +351,65 @@ var SCRIBBLE_STROKE_TUNING=Object.freeze({
   })
 });
 
+// Growth Systems legacy branching and organic movement calibration.
+// These are artist-selected growth limits and gesture preferences, not
+// mathematically derived φ values. Keep the branch queue, floating-point
+// arithmetic, seeded RNG consumption and original version dispatch intact.
+// V7 landscape deliberately reuses the portrait grammar in rotated space.
+var ORGANIC_TUNING=Object.freeze({
+  style:Object.freeze({
+    minimumCurveBias:76,             // Preserve hand-drawn curved branches.
+    minimumWobble:42                 // Keep the organic ink slightly irregular.
+  }),
+  roots:Object.freeze({
+    elementsPerAdditionalRoot:58,    // Add independent growth centres as density rises.
+    portraitStartHeight:.78,         // First portrait root starts low on the page.
+    portraitHeightStep:.17,          // Separate subsequent roots vertically.
+    portraitHorizontalPull:.76,      // Attract roots to opposing golden columns.
+    portraitVerticalPull:.88,        // Stronger attraction to the lower growth region.
+    portraitAngleJitter:.28,         // Small initial angular deviation in portrait.
+    landscapeAngleJitter:.55,        // Wider initial direction spread in old landscape.
+    portraitLengthMin:.19,           // Trunk length as fraction of tall canvas.
+    portraitLengthMax:.28,
+    landscapeLengthMinPx:150,        // Old landscape initial branch lengths.
+    landscapeLengthMaxPx:300
+  }),
+  limits:Object.freeze({
+    minimumSegments:12,             // Minimum budget for drawn branch segments.
+    minimumDepth:3,                 // Floor for recursive branching depth.
+    maximumDepth:8,                 // Cap recursion to protect legibility.
+    baseDepth:2,                    // Initial depth contribution before Recursion.
+    recursionDepthGain:.7,         // Depth response to Recursion control.
+    childLengthScaleMin:.9,        // Variation around inverse-φ child length.
+    childLengthScaleMax:1.08,
+    minimumChildLengthPx:12        // Stop growing imperceptibly short branches.
+  }),
+  avoidance:Object.freeze({
+    portraitRetryLimit:16,          // Search alternate angles to protect blank regions.
+    retryAngleBase:.20,            // Golden-angle detour on first retry pair.
+    retryAngleGrowth:.12,          // Increase detour on later retry pairs.
+    endpointCanvasInsetPx:24,       // Check final clamped segment against voids.
+    landscapeVoidTurnScale:.55     // Original landscape's simpler void detour.
+  }),
+  branches:Object.freeze({
+    portraitGuaranteedSplitDepth:2, // First two portrait generations split.
+    portraitSplitChance:.52,        // Else chance of two child branches.
+    landscapeSplitChance:.35,
+    portraitComplexityDivisor:230,  // Complexity contribution to splitting.
+    landscapeComplexityDivisor:180,
+    portraitTurnMin:.18,           // Angular spread from golden angle.
+    portraitTurnMax:.38,
+    landscapeTurnMin:.26,
+    landscapeTurnMax:.52,
+    directionJitter:.12,           // Per-child free angular perturbation.
+    portraitUpwardPull:.19         // Bias branches toward the page's upper end.
+  }),
+  details:Object.freeze({
+    budChanceDivisor:180,           // Frequency of occasional branch-end ellipses.
+    budMinimumRadiusPx:5           // Minimum bud size before φ-based scaling.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -2535,12 +2594,12 @@ function drawScribble(ctx,s,r,pal){
 function drawOrganic(ctx,s,r,pal){
   var strategy=chooseStrategy(s);
   var organic=Object.assign({},s,{
-    curveBias:Math.max(76,s.curveBias),
-    wobble:Math.max(42,s.wobble)
+    curveBias:Math.max(ORGANIC_TUNING.style.minimumCurveBias,s.curveBias),
+    wobble:Math.max(ORGANIC_TUNING.style.minimumWobble,s.wobble)
   });
   var voids=makeReservedVoids(s,strategy,A.makeR(s.seed+'|organic-voids'));
   var portrait=s.orientation==='portrait';
-  var roots=1+Math.floor(s.elements/58);
+  var roots=1+Math.floor(s.elements/ORGANIC_TUNING.roots.elementsPerAdditionalRoot);
   var rootPts=A.distributedPhiPoints(roots,organic,r);
   if(portrait){
     // A portrait drawing grows from the lower golden regions, rather
@@ -2549,9 +2608,9 @@ function drawOrganic(ctx,s,r,pal){
       var rp=rootPts[rootIndex];
       var side=A.hash(s.seed+'|organic-portrait-side|'+rootIndex)%2;
       var goalX=A.W*(side?A.INV:(1-A.INV));
-      var goalY=A.H*(.78-rootIndex*.17);
-      rp.x=A.lerp(rp.x,goalX,.76);
-      rp.y=A.lerp(rp.y,goalY,.88);
+      var goalY=A.H*(ORGANIC_TUNING.roots.portraitStartHeight-rootIndex*ORGANIC_TUNING.roots.portraitHeightStep);
+      rp.x=A.lerp(rp.x,goalX,ORGANIC_TUNING.roots.portraitHorizontalPull);
+      rp.y=A.lerp(rp.y,goalY,ORGANIC_TUNING.roots.portraitVerticalPull);
       // Protected voids are intentionally left open even at root level.
       if(pointInVoid(rp.x,rp.y,voids)){
         // A large VOID can cover the lower-right (or lower-left) golden
@@ -2572,8 +2631,8 @@ function drawOrganic(ctx,s,r,pal){
     }
   }
   var queue=[];
-  var maxSegments=Math.max(12,s.elements);
-  var maxDepth=Math.max(3,Math.min(8,2+Math.round(s.recursion*.7)));
+  var maxSegments=Math.max(ORGANIC_TUNING.limits.minimumSegments,s.elements);
+  var maxDepth=Math.max(ORGANIC_TUNING.limits.minimumDepth,Math.min(ORGANIC_TUNING.limits.maximumDepth,ORGANIC_TUNING.limits.baseDepth+Math.round(s.recursion*ORGANIC_TUNING.limits.recursionDepthGain)));
   var drawn=0;
   var guideSegments=[];
 
@@ -2582,8 +2641,8 @@ function drawOrganic(ctx,s,r,pal){
     var toward=portrait?-Math.PI/2:Math.atan2(A.H*.5-rp.y,A.W*.5-rp.x);
     queue.push({
       x:rp.x,y:rp.y,
-      angle:toward+r.range(portrait?-.28:-.55,portrait?.28:.55),
-      len:A.qphi(portrait?r.range(A.H*.19,A.H*.28):r.range(150,300),34,s.phiStrength/100),
+      angle:toward+r.range(portrait?-ORGANIC_TUNING.roots.portraitAngleJitter:-ORGANIC_TUNING.roots.landscapeAngleJitter,portrait?ORGANIC_TUNING.roots.portraitAngleJitter:ORGANIC_TUNING.roots.landscapeAngleJitter),
+      len:A.qphi(portrait?r.range(A.H*ORGANIC_TUNING.roots.portraitLengthMin,A.H*ORGANIC_TUNING.roots.portraitLengthMax):r.range(ORGANIC_TUNING.roots.landscapeLengthMinPx,ORGANIC_TUNING.roots.landscapeLengthMaxPx),34,s.phiStrength/100),
       depth:0,
       branch:ri
     });
@@ -2600,48 +2659,48 @@ function drawOrganic(ctx,s,r,pal){
       // Try different branch directions before drawing; never draw a
       // segment through intentionally protected negative space.
       var baseAngle=angle,free=false;
-      for(var attempt=0;attempt<16;attempt++){
+      for(var attempt=0;attempt<ORGANIC_TUNING.avoidance.portraitRetryLimit;attempt++){
         var turn=attempt===0?0:(attempt%2?1:-1)*
-          A.GOLD*(.20+.12*Math.ceil(attempt/2));
+          A.GOLD*(ORGANIC_TUNING.avoidance.retryAngleBase+ORGANIC_TUNING.avoidance.retryAngleGrowth*Math.ceil(attempt/2));
         var candidate=baseAngle+turn;
         // Test the endpoint *after* clamping to the canvas. Clamping
         // changes the segment and can route it across a reserved void.
-        var candidateX=A.clamp(node.x+Math.cos(candidate)*len,24,A.W-24);
-        var candidateY=A.clamp(node.y+Math.sin(candidate)*len,24,A.H-24);
+        var candidateX=A.clamp(node.x+Math.cos(candidate)*len,ORGANIC_TUNING.avoidance.endpointCanvasInsetPx,A.W-ORGANIC_TUNING.avoidance.endpointCanvasInsetPx);
+        var candidateY=A.clamp(node.y+Math.sin(candidate)*len,ORGANIC_TUNING.avoidance.endpointCanvasInsetPx,A.H-ORGANIC_TUNING.avoidance.endpointCanvasInsetPx);
         if(!segmentCrossesVoid(node.x,node.y,candidateX,candidateY,voids)){
           angle=candidate;ex=candidateX;ey=candidateY;free=true;break;
         }
       }
       if(!free)continue;
     }else if(pointInVoid(ex,ey,voids)){
-      angle+=A.GOLD*(r.chance(.5)?1:-1)*.55;
+      angle+=A.GOLD*(r.chance(.5)?1:-1)*ORGANIC_TUNING.avoidance.landscapeVoidTurnScale;
       ex=node.x+Math.cos(angle)*len;
       ey=node.y+Math.sin(angle)*len;
     }
 
-    ex=A.clamp(ex,24,A.W-24);
-    ey=A.clamp(ey,24,A.H-24);
+    ex=A.clamp(ex,ORGANIC_TUNING.avoidance.endpointCanvasInsetPx,A.W-ORGANIC_TUNING.avoidance.endpointCanvasInsetPx);
+    ey=A.clamp(ey,ORGANIC_TUNING.avoidance.endpointCanvasInsetPx,A.H-ORGANIC_TUNING.avoidance.endpointCanvasInsetPx);
 
     A.drawLine(ctx,{x:node.x,y:node.y},{x:ex,y:ey},pal[drawn%pal.length],organic,r);
     guideSegments.push({x1:node.x,y1:node.y,x2:ex,y2:ey,depth:node.depth});
     drawn++;
 
-    if(r.chance(organic.shapeAmount/180)){
-      var rad=Math.max(5,len/A.PHI/A.PHI/2);
+    if(r.chance(organic.shapeAmount/ORGANIC_TUNING.details.budChanceDivisor)){
+      var rad=Math.max(ORGANIC_TUNING.details.budMinimumRadiusPx,len/A.PHI/A.PHI/2);
       A.ellipse(ctx,{x:ex,y:ey},rad,rad/A.PHI,angle,pal[(drawn+1)%pal.length],organic,r);
     }
 
     if(node.depth>=maxDepth||drawn>=maxSegments)continue;
 
-    var nextLen=len/A.PHI*r.range(.9,1.08);
-    if(nextLen<12)continue;
+    var nextLen=len/A.PHI*r.range(ORGANIC_TUNING.limits.childLengthScaleMin,ORGANIC_TUNING.limits.childLengthScaleMax);
+    if(nextLen<ORGANIC_TUNING.limits.minimumChildLengthPx)continue;
 
-    var branches=portrait&&node.depth<2?2:(r.chance((portrait?.52:.35)+organic.complexity/(portrait?230:180))?2:1);
+    var branches=portrait&&node.depth<ORGANIC_TUNING.branches.portraitGuaranteedSplitDepth?2:(r.chance((portrait?ORGANIC_TUNING.branches.portraitSplitChance:ORGANIC_TUNING.branches.landscapeSplitChance)+organic.complexity/(portrait?ORGANIC_TUNING.branches.portraitComplexityDivisor:ORGANIC_TUNING.branches.landscapeComplexityDivisor))?2:1);
     for(var b=0;b<branches;b++){
       var sign=branches===1?r.sign():(b===0?-1:1);
-      var turn=A.GOLD*A.lerp(portrait?.18:.26,portrait?.38:.52,organic.complexity/100)*sign;
-      var childAngle=angle+turn+r.range(-.12,.12);
-      if(portrait)childAngle=A.lerp(childAngle,-Math.PI/2,.19);
+      var turn=A.GOLD*A.lerp(portrait?ORGANIC_TUNING.branches.portraitTurnMin:ORGANIC_TUNING.branches.landscapeTurnMin,portrait?ORGANIC_TUNING.branches.portraitTurnMax:ORGANIC_TUNING.branches.landscapeTurnMax,organic.complexity/100)*sign;
+      var childAngle=angle+turn+r.range(-ORGANIC_TUNING.branches.directionJitter,ORGANIC_TUNING.branches.directionJitter);
+      if(portrait)childAngle=A.lerp(childAngle,-Math.PI/2,ORGANIC_TUNING.branches.portraitUpwardPull);
       queue.push({
         x:ex,y:ey,
         angle:childAngle,

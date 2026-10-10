@@ -450,3 +450,45 @@ for(const version of [2,7]){
   }
 }
 console.log('PASS: '+scribbleStrokeChecks+' Scribble stroke motion, breaks and embellishments match pinned engine.');
+
+
+// Growth Systems branch calibration: preserve the original portrait grammar,
+// the legacy landscape behaviour and V7's rotation of the portrait grammar.
+// Root count jumps at 58 and 116 elements. Sample either side of both
+// boundaries, high/low recursion and branch complexity, protected voids,
+// and each principal layout strategy. Compare complete command streams and
+// returned root/branch/void metadata with the pinned pre-refactor engine.
+let organicGrowthChecks=0;
+for(const version of [3,6,7]){
+  for(const strategy of ['BALANCED','VOID','DIAGONAL']){
+    const seed=seedForStrategy('organic',strategy);
+    for(const elements of [1,57,58,115,116]){
+      for(const orientation of ['landscape','portrait']){
+        for(const phiStrength of [0,100]){
+          const rich=elements>=58;
+          const settings={
+            seed,mode:'organic',orientation,elements,
+            density:rich?88:10,complexity:rich?100:0,
+            negativeSpace:phiStrength===0?0:100,phiStrength,
+            recursion:phiStrength===0?1:8,spiralInfluence:65,
+            goldenAngle:80,nesting:40,pen:'felt',
+            thickness:rich?25:5,wobble:rich?85:5,
+            overdraw:rich?4:1,opacity:rich?90:40,
+            pressure:25,dryness:15,curveBias:rich?95:5,
+            shapeAmount:rich?100:0,overlap:rich?90:10,
+            rotation:35,lines:true,circles:true,
+            rectangles:true,polygons:true,arcs:true,
+            palette:'mono',colourCount:3,saturation:75,
+            brightness:50,paper:'#f5f0e6',grain:0
+          };
+          const before=capture(baseline,settings,version);
+          const after=capture(current,settings,version);
+          assert.deepEqual(after,before,
+            `Growth Systems drift: V${version}/${strategy}/n${elements}/${orientation}/φ${phiStrength}`);
+          organicGrowthChecks++;
+        }
+      }
+    }
+  }
+}
+console.log('PASS: '+organicGrowthChecks+' Growth Systems branch, root and void-avoidance layouts match pinned drawing commands and metadata.');
