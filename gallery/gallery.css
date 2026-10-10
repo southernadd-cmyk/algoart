@@ -206,7 +206,7 @@ footer a:hover{color:var(--acid)}
 
 /* AlgoArt's own marker alphabet: headings only, preserving readable captions. */
 @font-face{font-family:'AlgoArt Marker';src:url('../fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010') format('woff2');font-weight:400;font-style:normal;font-display:swap;}
-.site-head .brand,.hero h1,.day-card h2,.art-card h2,.about h2,.site-head nav a{font-family:'AlgoArt Marker',sans-serif;font-weight:400;font-style:normal;letter-spacing:.015em;font-variant-ligatures:contextual;font-kerning:normal;}
+.site-head .brand,.hero h1,.day-card h2,.art-card h2,.about h2,.site-head nav a{font-family:'AlgoArt Marker',sans-serif;font-weight:400;font-style:normal;letter-spacing:0;font-variant-ligatures:contextual;font-feature-settings:"calt" 1;font-kerning:normal;}
 .site-head .brand{font-size:32px;letter-spacing:0;}
 .hero h1{line-height:1.12;letter-spacing:0;}
 @media(max-width:700px){.site-head .brand{font-size:25px;}.site-head nav a{font-size:13px;}}

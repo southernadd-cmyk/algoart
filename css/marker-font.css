@@ -1,5 +1,5 @@
 @font-face { font-family: 'AlgoArt Marker'; src: url('../fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010') format('woff2'); font-weight:400; font-style:normal; font-display:swap; }
-.brand,.intro-copy h1,.intro-principles strong,.intro-systems span,.intro-actions button,.inspector-head strong,.section-title span,.mode-card strong,.ethos-toast strong,.stage-index strong,.description-head strong,.variations-head strong,.actions button,.actions .gallery-nav,.tab {font-family:'AlgoArt Marker',sans-serif;font-weight:400;font-style:normal;font-variant-ligatures:contextual;font-kerning:normal;letter-spacing:.015em;}
+.brand,.intro-copy h1,.intro-principles strong,.intro-systems span,.intro-actions button,.inspector-head strong,.section-title span,.mode-card strong,.ethos-toast strong,.stage-index strong,.description-head strong,.variations-head strong,.actions button,.actions .gallery-nav,.tab {font-family:'AlgoArt Marker',sans-serif;font-weight:400;font-style:normal;font-variant-ligatures:contextual;font-feature-settings:"calt" 1;font-kerning:normal;letter-spacing:0;}
 .brand{font-size:30px;line-height:1;letter-spacing:0;}
 .intro-copy h1{font-size:76px;line-height:1;letter-spacing:0;}
 .intro-phi{font-family:'AlgoArt Marker',sans-serif;font-weight:400;letter-spacing:0;font-size:300px;}
@@ -7,8 +7,8 @@
 .intro-principles>div{grid-template-columns:30px 180px 1fr;}
 .intro-systems span{font-size:13px;}
 .intro-actions button{font-size:16px;}
-.inspector-head strong{font-size:19px;letter-spacing:.015em;}
-.section-title span{font-size:18px;letter-spacing:.015em;}
+.inspector-head strong{font-size:19px;letter-spacing:0;}
+.section-title span{font-size:18px;letter-spacing:0;}
 .mode-card strong{font-size:13px;line-height:1.15;}
 .actions button,.actions .gallery-nav{font-size:14px;letter-spacing:0;}
 .tab{font-size:13px;letter-spacing:0;padding-left:3px;padding-right:3px;}
@@ -42,3 +42,7 @@
   .actions{grid-column:1 / -1;grid-row:2;margin:0;width:100%;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;padding:8px 9px;border-top:1px solid var(--ink);}
   .actions #mutate,.actions #randomise,.actions #describe,.actions #variations,.actions #geometry,.actions .gallery-nav{display:grid;place-items:center;width:100%;min-width:0;min-height:36px;padding:6px 4px;white-space:normal;text-align:center;line-height:1.15;}
 }
+
+/* Match ID selectors in the base stylesheet: tracking can suppress contextual shaping. */
+.actions #mutate,.actions #randomise,.actions #describe,.actions #variations,.actions #geometry,.actions .gallery-nav{letter-spacing:0;font-feature-settings:"calt" 1;}
+.tab span{letter-spacing:0;}
