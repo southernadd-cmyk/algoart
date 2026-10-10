@@ -246,6 +246,40 @@ complexity with extreme element counts, jitter, overdraw, opacity and
 nesting. As before, drawing-command SHA-256 digests and geometry
 metadata must match the immutable pre-refactor version exactly.
 
+## Eighth extraction: Automatic Marks (Scribble) anchor gestures
+
+`SCRIBBLE_TUNING` names **33 original artistic calibration values**
+within Automatic Marks, separate from Constructed Forms and the other
+drawing engines. This initial Scribble pass is deliberately restricted
+to gesture count, anchor hierarchy and territory, portrait rhythm,
+and expressive ink. The five variants **RIBBON, CLUSTERS, KNOT, VOID,
+DUET** retain their different compositional identities.
+
+| Subsystem | Original values | Purpose |
+| --- | --- | --- |
+| Gesture population | Minimum 12, crowded/sparse multipliers 1.16/1.8 | Keep dense studies expressive instead of saturating the page |
+| Anchor hierarchy | 2–7 centres; base 2; Complexity/28; crowd gain 1.5 | Determine how many independent gestures are composed |
+| Variant exceptions | DUET 2, KNOT max 3, CLUSTERS min 4 | Preserve the different mark-grouping styles |
+| Extra blank-space rule | Non-VOID Negative Space greater than 24 | Reserve exclusions without forcing every variant into a void |
+| Portrait rhythm | Start .17 and span .66 of page height; x pulls .82/.67; y pull .85 | Encourage balanced vertical gestures while retaining variation |
+| Portrait escape | Alternative height start .12, span .74 | Avoid erasing or filling intentionally protected regions |
+| Ink style floors | Wobble 44, Curve Bias 58, Overdraw 2 | Scribble remains gestural and visibly hand-drawn |
+| Ghost ink | Width × .58; opacity floor 15 and × .52; overdraw × .55 | Secondary connections remain subdued |
+| Anchor territories | 30 px inset, 68 px minimum radius, density factors .36–.58 | Keep gestures inside coherent territories without pinning every stroke |
+| Portrait radius | Canvas-width cap × .35, KNOT × 1.12, other variants × 1.38 | Keep KNOT compact and distribute other gestures across long pages |
+
+The φ-distributed anchor helper and `A.qphi(...,34,...)` remain
+unchanged. The existing Fibonacci quantisation base `34`, exact φ
+constants and golden-angle stepping are *not* treated as artist-tuned
+numbers. The subsequent stroke paths, their golden turns and
+random-walk decisions remain intact in this pass.
+
+A further **120 whole-artwork comparisons** now cover all five Scribble
+variants, V2/V6/V7 renderers, portrait and landscape, 0% and 100%
+Additional φ Pull, and low/high complexity, density, voids and ink
+settings. Drawing-command hashes and returned guide/anchor metadata
+must match the fixed pre-refactor engine exactly.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
