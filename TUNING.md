@@ -44,6 +44,35 @@ be an approximation or a hand-tuned ratio depending on context; do not
 globally replace it with `A.INV` without proving the intent and checking
 the numerical results.
 
+## Second extraction: shared φ placement helpers
+
+The 11 **artistically calibrated** values in `js/phi.js` are now named in
+`PHI_PLACEMENT_TUNING`. The actual mathematical formulas for `A.PHI`,
+`A.INV`, `A.GOLD`, Fibonacci quantisation, golden-section cell cuts and
+golden-angle stepping have **not** been rewritten.
+
+| Calibration | Preserved value | Meaning |
+| --- | ---: | --- |
+| `radialIndexOffset` | .65 | Off-centre index for radial point distribution |
+| `minimumGoldenAngleFraction` | .74 | Starting golden-angle step, before extra slider pull |
+| `radialWidthFraction` / `radialHeightFraction` | .465 / .455 | Independently tuned canvas-relative radial limits |
+| `pointBoundaryInsetPx` | 60 | Bounds for random alternative focal positions |
+| `pointMaximumJitterPx` | 150 | Maximum φ-target displacement at weak pull |
+| `cellsDefaultMarginPx` / `distributedCellsMarginPx` | 42 / 42 | Fallback cell margin versus explicit distributed-point margin; **distinct purposes**, equal historical values |
+| `cellsDepthTieBreakWeight` | .002 | Small depth preference during cell subdivision |
+| `distributedRandomLow` / `distributedRandomHigh` | .22 / .78 | Sampling interval within golden cells before pull |
+
+The different radial axis fractions and the two cell margins remain
+**separate**. Their similar values do not prove that one should be calculated
+from the other. Even a mathematically equivalent-looking transformation (such
+as replacing `.74` with a function of φ) would produce different floating
+point values and could break old artwork.
+
+The pinned equivalence test additionally exercises every shared placement
+helper directly across **36** orientation / φ pull / golden-angle / seed
+configurations, including the default and explicit cell margins. It compares
+helper results and random-number consumption via reproducible output.
+
 ## Strict compatibility check
 
 Run `npm run test:tuning-equivalence`. It loads the pinned, original
