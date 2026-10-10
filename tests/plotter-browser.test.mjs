@@ -57,7 +57,9 @@ try{
       if(layers.some(g=>g.getAttributeNS(inkscape,'groupmode')!=='layer'))throw Error('Invalid Inkscape layer');
       layers.forEach((g,i)=>{
         const name=g.getAttributeNS(inkscape,'label');
-        if(name.startsWith('!')!==(i>0)||Number(name.replace(/^!/, '').match(/^\d+/)[0])!==i+1)throw Error('Faithful pen-change pause lost the run number');
+        const match=name.match(/^(!?)(\d+) · Pen (\d+) · (#[a-f0-9]+)$/);
+        if(!match||Boolean(match[1])!==(i>0)||Number(match[2])!==i+1)throw Error('Faithful pause/run addressing changed');
+        if(Number(match[3])!==optimized.metadata.penColours.indexOf(match[4])+1)throw Error('Faithful pen ID differs from sorted light-to-dark pen palette');
       });
       if(optimized.metadata.forcedPauses!==Math.max(0,layers.length-1))throw Error('Faithful pause count disagrees');
       const paths=Array.from(file.querySelectorAll('path'));
@@ -73,11 +75,17 @@ try{
       if(grouped.metadata.paths!==original.metadata.paths||grouped.metadata.svgPaths!==original.metadata.svgPaths)throw Error('Grouping lost source paths');
       if(grouped.metadata.pathOrder!=='preserved-within-pen')throw Error('Grouped metadata promises original global order');
       if(groupedOptimized.metadata.pathOrder!=='reordered-within-pen'||groupedOptimized.metadata.penOrder!=='light-to-dark')throw Error('Grouped route metadata disagrees');
-      if(groupedOptimized.metadata.forcedPauses!==0)throw Error('Grouped layer-mode plots unexpectedly pause');
+      if(groupedOptimized.metadata.forcedPauses!==Math.max(0,colours.length-1)||grouped.metadata.forcedPauses!==Math.max(0,colours.length-1))throw Error('Grouped plot-all mode does not pause before every pen swap');
+      if(JSON.stringify(optimized.metadata.penColours)!==JSON.stringify(colours)||JSON.stringify(grouped.metadata.penColours)!==JSON.stringify(colours))throw Error('Same physical pen has different number between modes');
+      if(optimized.metadata.layerOrder!=='source-colour-runs'||grouped.metadata.layerOrder!=='light-to-dark')throw Error('Pen IDs must be separate from faithful plot run order');
       const faithfulFile=parser.parseFromString(original.svg,'image/svg+xml');
       const faithfulPaths=Array.from(faithfulFile.querySelectorAll('path'));
       penLayers.forEach((g,i)=>{
-        if(g.getAttributeNS(inkscape,'groupmode')!=='layer'||g.getAttributeNS(inkscape,'label')!==(i+1)+' · '+colours[i])throw Error('Pen layer is not AxiDraw-addressable');
+        const label=g.getAttributeNS(inkscape,'label');
+        const expectedLabel=(i?'!':'')+(i+1)+' · Pen '+(i+1)+' · '+colours[i];
+        if(g.getAttributeNS(inkscape,'groupmode')!=='layer'||label!==expectedLabel)throw Error('Pen layer is not AxiDraw-addressable: '+label);
+        const numberAfterPause=label.match(/^!?(\d+)/);
+        if(!numberAfterPause||Number(numberAfterPause[1])!==i+1)throw Error('AxiDraw numeric layer selector lost a number after !');
         const expected=faithfulPaths.filter(p=>p.getAttribute('stroke')===colours[i]).map(p=>p.outerHTML);
         const actual=Array.from(g.children).map(p=>p.outerHTML);
         if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error('Grouping changed path geometry, style or per-pen order');
@@ -95,7 +103,7 @@ try{
         return JSON.stringify([styles,shapes]);
       };
       routedLayers.forEach((g,i)=>{
-        if(g.getAttributeNS(inkscape,'label')!==(i+1)+' · '+colours[i])throw Error('Routing changed light-to-dark pen numbering');
+        if(g.getAttributeNS(inkscape,'label')!==(i?'!':'')+(i+1)+' · Pen '+(i+1)+' · '+colours[i])throw Error('Routing changed light-to-dark pen numbering or pauses');
         const expected=Array.from(penLayers[i].children,signature).sort();
         const actual=Array.from(g.children,signature).sort();
         if(JSON.stringify(actual)!==JSON.stringify(expected))throw Error('Routing changed source geometry/style or split a compound pass');
