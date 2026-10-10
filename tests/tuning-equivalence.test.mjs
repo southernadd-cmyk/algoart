@@ -84,19 +84,29 @@ function placementSample(A,orientation,phiStrength,goldenAngle,seed){
   A.W=orientation==='portrait'?1000:1400;
   A.H=orientation==='portrait'?1400:1000;
   const settings={phiStrength,goldenAngle};
+  const rngCalls=[];
+  function tracedR(seed){
+    const rng=A.makeR(seed);
+    return Object.fromEntries(Object.keys(rng).map(method=>[method,(...args)=>{
+      const value=rng[method](...args);
+      rngCalls.push([seed,method,args,value]);
+      return value;
+    }]));
+  }
   return JSON.stringify({
     goldenCanvas:[
       A.goldenCanvasPoint(0,1,settings,0),
       A.goldenCanvasPoint(2,13,settings,A.GOLD*.5),
       A.goldenCanvasPoint(12,13,settings,0)
     ],
-    goldenPoint:A.goldenPoint(4,13,settings,A.makeR(seed+'|unused')),
-    phiPoint:A.phiPoint(settings,A.makeR(seed+'|phi-point')),
+    goldenPoint:A.goldenPoint(4,13,settings,tracedR(seed+'|unused')),
+    phiPoint:A.phiPoint(settings,tracedR(seed+'|phi-point')),
     defaultCells:A.goldenCells(11),
     explicitCells:A.goldenCells(7,64),
     zeroMarginCells:A.goldenCells(5,0),
-    distributed:A.distributedPhiPoints(13,settings,A.makeR(seed+'|distributed')),
-    quantified:[A.qphi(17,21,phiStrength/100),A.qphi(120,34,phiStrength/100)]
+    distributed:A.distributedPhiPoints(13,settings,tracedR(seed+'|distributed')),
+    quantified:[A.qphi(17,21,phiStrength/100),A.qphi(120,34,phiStrength/100)],
+    rngCalls
   });
 }
 let placementChecks=0;
