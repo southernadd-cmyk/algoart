@@ -35,6 +35,11 @@ const tuningEnd=generator.indexOf('// Old landscape states',tuningStart);
 assert.ok(tuningStart>=0&&tuningEnd>tuningStart,
   'Locate production Constructed Forms tuning for isolated expression checks');
 const rendererSetup=generator.slice(tuningStart,tuningEnd);
+const rectTuningStart=generator.indexOf('var RECT_DIVISION_TUNING=');
+const rectTuningEnd=generator.indexOf('// Legacy artistic/scoring calibration',rectTuningStart);
+assert.ok(rectTuningStart>=0&&rectTuningEnd>rectTuningStart,
+  'Locate Recursive Divisions calibration for isolated style checks');
+const rectRendererSetup=generator.slice(rectTuningStart,rectTuningEnd)+';var D=RECT_DIVISION_TUNING;';
 const styleNames={rects:'rectStyle',organic:'organic',geometric:'geometric',scribble:'style'};
 for(const [mode,controls] of Object.entries(api.RANGE_LIMITS)){
   const styleName=styleNames[mode];
@@ -46,7 +51,7 @@ for(const [mode,controls] of Object.entries(api.RANGE_LIMITS)){
   for(const [id,[min,max]] of Object.entries(controls)){
     const expression=block[1].match(new RegExp('\\b'+id+':([^\\n]+)'));
     assert(expression,'Locate renderer expression '+mode+'/'+id);
-    const renderer=new Function('s',rendererSetup+';return '+expression[1].replace(/,$/,''));
+    const renderer=new Function('s',rendererSetup+(mode==='rects'?rectRendererSetup:'')+';return '+expression[1].replace(/,$/,''));
     assert.equal(renderer({[id]:api.rangeStates[id].min}),min,mode+'/'+id+' minimum must match renderer');
     assert.equal(renderer({[id]:api.rangeStates[id].max}),max,mode+'/'+id+' maximum must match renderer');
     for(let raw=api.rangeStates[id].min;raw<=api.rangeStates[id].max;raw++){
