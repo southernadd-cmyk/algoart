@@ -53,6 +53,7 @@ jobs:
         run: |
           npm run test:plotter-metrics
           npm run test:plotter
+          npm run test:tuning-equivalence
       - name: Compare plotter previews with canvas artwork
         env:
           ARCHIVE_BROWSER: ${{ matrix.browser }}

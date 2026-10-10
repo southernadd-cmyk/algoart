@@ -4,6 +4,42 @@ window.AlgoArt=window.AlgoArt||{};
 
 var STRATEGIES=['BALANCED','VOID','TENSION','ORBIT','EDGE','MONUMENT','DIAGONAL'];
 
+// Legacy artistic/scoring calibration, NOT mathematical φ constants.
+// Every value below is copied verbatim from the original V1–V7 renderer.
+// Keep these independent from A.PHI/A.INV/A.GOLD in phi.js: their values
+// document aesthetic judgement, not a derived mathematical identity.
+// Changing any number is a visual redesign and requires a new renderer version.
+var LAYOUT_TUNING=Object.freeze({
+  strategy:Object.freeze({
+    voidPenaltyWeight:24,           // Discourage placing marks in protected voids.
+    voidRegionReward:18,            // Reward making explicit negative-space regions.
+    tensionSeparationWeight:55,     // Prefer distant hero forms for TENSION.
+    orbitMatchDistancePx:420,       // Distance over which ORBIT alignment decays.
+    orbitMatchWeight:1.5,           // Reward a match to the intended orbit.
+    edgeOuterBandLow:.12,           // EDGE-specific outer 12%: narrower than global edge scoring.
+    edgeOuterBandHigh:.88,          // EDGE-specific outer strip, opposite side.
+    edgeBonusWeight:45,            // Reward the proportion of marks in EDGE outer strip.
+    monumentHeroBonusCap:55,        // Cap the MONUMENT hero-size reward.
+    monumentHeroScaleWeight:14,     // Weight the hero-to-average size ratio.
+    diagonalAlignmentWeight:40,     // Reward line-up with the selected diagonal.
+    balancedCentreBonus:24,        // Reward a central mass in BALANCED.
+    balancedDistanceDivisorPx:18   // Falloff of central-mass reward in canvas pixels.
+  }),
+  layout:Object.freeze({
+    edgeOccupancyBandLow:.15,       // Global edge-occupancy measure: outer 15%.
+    edgeOccupancyBandHigh:.85,      // Global edge-occupancy measure, opposite side.
+    coverageWeight:86,             // Weight spread across both canvas axes.
+    edgePreferredForEdge:.36,      // Global occupancy target for EDGE compositions.
+    edgePreferredBase:.18,         // Base occupancy target for other compositions.
+    edgePreferredCrowdGain:.16,    // Extra edge occupancy sought as density grows.
+    edgeBaselineScore:28,          // Score given at exact occupancy target.
+    edgeDeviationPenalty:65,       // Penalty per unit distance from target occupancy.
+    phiCentroidWeight:78,          // Extra φ-focal attraction (affected by φ Pull).
+    heroSeparationWeight:34,       // Reward distance among multiple heroes.
+    singleHeroHierarchyBonus:12    // Baseline hierarchy reward if only one hero.
+  })
+});
+
 // Old landscape states must retain exactly the same RNG keys as V1–V6.
 function randomSettings(s){
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
@@ -427,12 +463,12 @@ function strategyScore(layout,s,strategy,voids){
   var heroes=layout.filter(function(o){return o.tier==='hero'});
 
   if(strategy==='VOID'){
-    for(i=0;i<layout.length;i++)score-=objectVoidPenalty(layout[i],voids,s)*24;
-    score+=voids.length*18;
+    for(i=0;i<layout.length;i++)score-=objectVoidPenalty(layout[i],voids,s)*LAYOUT_TUNING.strategy.voidPenaltyWeight;
+    score+=voids.length*LAYOUT_TUNING.strategy.voidRegionReward;
   }else if(strategy==='TENSION'&&heroes.length>1){
     dx=heroes[0].x-heroes[1].x;
     dy=heroes[0].y-heroes[1].y;
-    score+=Math.sqrt(dx*dx+dy*dy)/Math.hypot(A.W,A.H)*55;
+    score+=Math.sqrt(dx*dx+dy*dy)/Math.hypot(A.W,A.H)*LAYOUT_TUNING.strategy.tensionSeparationWeight;
   }else if(strategy==='ORBIT'){
     var phase=A.GOLD*.5;
     for(i=0;i<layout.length;i++){
@@ -440,19 +476,19 @@ function strategyScore(layout,s,strategy,voids){
         ?trueGoldenSpiralPointV4(i,layout.length,phase,0)
         :A.goldenCanvasPoint(i,layout.length,s,phase);
       dx=layout[i].x-gp.x;dy=layout[i].y-gp.y;
-      score+=Math.max(0,1-Math.sqrt(dx*dx+dy*dy)/420)*1.5;
+      score+=Math.max(0,1-Math.sqrt(dx*dx+dy*dy)/LAYOUT_TUNING.strategy.orbitMatchDistancePx)*LAYOUT_TUNING.strategy.orbitMatchWeight;
     }
   }else if(strategy==='EDGE'){
     var edge=0;
     for(i=0;i<layout.length;i++){
-      if(layout[i].x<A.W*.12||layout[i].x>A.W*.88||layout[i].y<A.H*.12||layout[i].y>A.H*.88)edge++;
+      if(layout[i].x<A.W*LAYOUT_TUNING.strategy.edgeOuterBandLow||layout[i].x>A.W*LAYOUT_TUNING.strategy.edgeOuterBandHigh||layout[i].y<A.H*LAYOUT_TUNING.strategy.edgeOuterBandLow||layout[i].y>A.H*LAYOUT_TUNING.strategy.edgeOuterBandHigh)edge++;
     }
-    score+=edge/layout.length*45;
+    score+=edge/layout.length*LAYOUT_TUNING.strategy.edgeBonusWeight;
   }else if(strategy==='MONUMENT'&&heroes.length){
     var avg=0;
     for(i=0;i<layout.length;i++)avg+=layout[i].size;
     avg/=layout.length;
-    score+=Math.min(55,(heroes[0].size/Math.max(1,avg))*14);
+    score+=Math.min(LAYOUT_TUNING.strategy.monumentHeroBonusCap,(heroes[0].size/Math.max(1,avg))*LAYOUT_TUNING.strategy.monumentHeroScaleWeight);
   }else if(strategy==='DIAGONAL'){
     var reverse=(A.hash(s.seed+'|diag')%2)===1;
     for(i=0;i<layout.length;i++){
@@ -460,13 +496,13 @@ function strategyScore(layout,s,strategy,voids){
       if(reverse)expected=A.H-expected;
       score+=Math.max(0,1-Math.abs(layout[i].y-expected)/(A.H*.55));
     }
-    score=score/layout.length*40;
+    score=score/layout.length*LAYOUT_TUNING.strategy.diagonalAlignmentWeight;
   }else{
     var cx=0,cy=0;
     for(i=0;i<layout.length;i++){cx+=layout[i].x;cy+=layout[i].y}
     cx/=layout.length;cy/=layout.length;
     dx=cx-A.W*.5;dy=cy-A.H*.5;
-    score+=Math.max(0,24-Math.sqrt(dx*dx+dy*dy)/18);
+    score+=Math.max(0,LAYOUT_TUNING.strategy.balancedCentreBonus-Math.sqrt(dx*dx+dy*dy)/LAYOUT_TUNING.strategy.balancedDistanceDivisorPx);
   }
 
   return score;
@@ -492,7 +528,7 @@ function scoreLayout(layout,s,strategy,voids){
     wx+=a.x*w;
     wy+=a.y*w;
 
-    if(a.x<A.W*.15||a.x>A.W*.85||a.y<A.H*.15||a.y>A.H*.85)edgeHits++;
+    if(a.x<A.W*LAYOUT_TUNING.layout.edgeOccupancyBandLow||a.x>A.W*LAYOUT_TUNING.layout.edgeOccupancyBandHigh||a.y<A.H*LAYOUT_TUNING.layout.edgeOccupancyBandLow||a.y>A.H*LAYOUT_TUNING.layout.edgeOccupancyBandHigh)edgeHits++;
     if(a.tier==='hero')heroes.push(a);
     voidPenalty+=objectVoidPenalty(a,voids,s);
 
@@ -508,11 +544,11 @@ function scoreLayout(layout,s,strategy,voids){
 
   var coverageX=A.clamp((maxX-minX)/A.W,0,1);
   var coverageY=A.clamp((maxY-minY)/A.H,0,1);
-  var coverage=(coverageX+coverageY)*86;
+  var coverage=(coverageX+coverageY)*LAYOUT_TUNING.layout.coverageWeight;
 
-  var edgeTarget=strategy==='EDGE'?.36:(.18+.16*crowdFactor(s));
+  var edgeTarget=strategy==='EDGE'?LAYOUT_TUNING.layout.edgePreferredForEdge:(LAYOUT_TUNING.layout.edgePreferredBase+LAYOUT_TUNING.layout.edgePreferredCrowdGain*crowdFactor(s));
   var edgeRatio=edgeHits/layout.length;
-  var edgeScore=28-Math.abs(edgeRatio-edgeTarget)*65;
+  var edgeScore=LAYOUT_TUNING.layout.edgeBaselineScore-Math.abs(edgeRatio-edgeTarget)*LAYOUT_TUNING.layout.edgeDeviationPenalty;
 
   var cx=wx/Math.max(1,totalWeight),cy=wy/Math.max(1,totalWeight);
   var targets=phiTargets();
@@ -524,9 +560,9 @@ function scoreLayout(layout,s,strategy,voids){
   }
 
   var diag=Math.hypot(A.W,A.H);
-  var phiScore=(1-bestPhi/diag)*78*(s.phiStrength/100);
+  var phiScore=(1-bestPhi/diag)*LAYOUT_TUNING.layout.phiCentroidWeight*(s.phiStrength/100);
   var collisionPenalty=collision*A.lerp(18,5,overlapAllowance(s));
-  var hierarchyScore=heroes.length>1?heroSpread*34:12;
+  var hierarchyScore=heroes.length>1?heroSpread*LAYOUT_TUNING.layout.heroSeparationWeight:LAYOUT_TUNING.layout.singleHeroHierarchyBonus;
   var reservedPenalty=voidPenalty*A.lerp(8,26,s.negativeSpace/100);
 
   return coverage+edgeScore+phiScore+hierarchyScore+strategyScore(layout,s,strategy,voids)-collisionPenalty-reservedPenalty;
