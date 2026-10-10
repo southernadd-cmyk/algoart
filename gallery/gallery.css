@@ -211,5 +211,5 @@ footer a:hover{color:var(--acid)}
 .hero h1{line-height:1.12;letter-spacing:0;}
 @media(max-width:700px){.site-head .brand{font-size:25px;}.site-head nav a{font-size:13px;}}
 
-/* Small navigation labels use a text face; marker lettering is for display sizes. */
-.site-head nav a{font-family:Arial,Helvetica,sans-serif;}
+/* Give the marker navigation enough size to read clearly. */
+.site-head nav a{font-size:13px;}
