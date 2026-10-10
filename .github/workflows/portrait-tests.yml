@@ -48,6 +48,8 @@ jobs:
           echo $! > /tmp/algoart-preview.pid
       - name: Verify exact social editor links and equal-height gallery frames
         run: node tests/exact-social-links-gallery-layout.test.mjs
+      - name: Verify system thumbnails match the artwork selected by each card
+        run: node tests/mode-card-previews.mjs
       - name: Capture 16 real browser compositions and mobile checks
         run: node tests/portrait-preview.mjs
       - name: Test five portraits, three posts and mixed ten-work gallery
