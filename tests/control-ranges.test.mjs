@@ -27,6 +27,14 @@ const A={};
 const start=help.indexOf('var RANGE_LIMITS='),end=help.indexOf('\nvar entries=',start);
 assert(start>=0&&end>start,'Locate actual UI range implementation');
 const api=new Function('A','document',help.slice(start,end)+';return {RANGE_LIMITS,rangeStates,displayRange};')(A,document);
+// Evaluate extracted renderer expressions with the actual immutable
+// Constructed Forms calibration. This is source code from the renderer,
+// not a duplicated test constant, so the UI/renderer range check stays real.
+const tuningStart=generator.indexOf('var CONSTRUCTED_TUNING=');
+const tuningEnd=generator.indexOf('// Old landscape states',tuningStart);
+assert.ok(tuningStart>=0&&tuningEnd>tuningStart,
+  'Locate production Constructed Forms tuning for isolated expression checks');
+const rendererSetup=generator.slice(tuningStart,tuningEnd);
 const styleNames={rects:'rectStyle',organic:'organic',geometric:'geometric',scribble:'style'};
 for(const [mode,controls] of Object.entries(api.RANGE_LIMITS)){
   const styleName=styleNames[mode];
@@ -38,7 +46,7 @@ for(const [mode,controls] of Object.entries(api.RANGE_LIMITS)){
   for(const [id,[min,max]] of Object.entries(controls)){
     const expression=block[1].match(new RegExp('\\b'+id+':([^\\n]+)'));
     assert(expression,'Locate renderer expression '+mode+'/'+id);
-    const renderer=new Function('s','return '+expression[1].replace(/,$/,''));
+    const renderer=new Function('s',rendererSetup+';return '+expression[1].replace(/,$/,''));
     assert.equal(renderer({[id]:api.rangeStates[id].min}),min,mode+'/'+id+' minimum must match renderer');
     assert.equal(renderer({[id]:api.rangeStates[id].max}),max,mode+'/'+id+' maximum must match renderer');
     for(let raw=api.rangeStates[id].min;raw<=api.rangeStates[id].max;raw++){
@@ -50,7 +58,7 @@ for(const [mode,controls] of Object.entries(api.RANGE_LIMITS)){
 }
 const expression=generator.slice(generator.indexOf('function drawGeometric')).match(/var count=([^;]*);/);
 assert(expression,'Locate actual constructed-form count');
-const formCount=new Function('s','return '+expression[1]);
+const formCount=new Function('s',rendererSetup+';return '+expression[1]);
 ids.mode.value='geometric';
 for(let detail=0;detail<=100;detail++){
   A.setControlValue(ids.complexity,detail);
