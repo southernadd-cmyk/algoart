@@ -28,3 +28,6 @@
 /* Match the base control selectors so their small-size rules cannot win. */
 .actions #mutate,.actions #randomise,.actions #describe,.actions #variations,.actions #geometry,.actions .gallery-nav{font-size:14px;}
 @media(max-width:1100px){.actions #mutate,.actions #randomise,.actions #describe,.actions #variations,.actions #geometry,.actions .gallery-nav{font-size:13px;}}
+
+/* Allocate extra room to the longer labels at display size. */
+@media(min-width:701px){.tabs{display:grid;grid-template-columns:1.25fr .65fr .8fr 1fr 1.15fr 1.15fr;}}
