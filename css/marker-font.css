@@ -46,3 +46,22 @@
 /* Match ID selectors in the base stylesheet: tracking can suppress contextual shaping. */
 .actions #mutate,.actions #randomise,.actions #describe,.actions #variations,.actions #geometry,.actions .gallery-nav{letter-spacing:0;font-feature-settings:"calt" 1;}
 .tab span{letter-spacing:0;}
+
+/* Mobile headings must fit their actual columns, not desktop display sizes. */
+@media(max-width:820px){
+  .toolbar{grid-template-columns:112px minmax(0,1fr);}
+  .brand-lockup{min-width:0;}
+  .brand{font-size:18px;white-space:nowrap;}
+}
+@media(max-width:700px){
+  .toolbar{grid-template-columns:100px minmax(0,1fr);}
+  .brand{font-size:16px;}
+  .inspector-head strong{font-size:16px;}
+  .section-title span{font-size:15px;}
+  .tab{font-size:12px;}
+  .actions #mutate,.actions #randomise,.actions #describe,.actions #variations,.actions #geometry,.actions .gallery-nav{font-size:12px;}
+}
+@media(max-width:340px){
+  .toolbar{grid-template-columns:94px minmax(0,1fr);}
+  .brand{font-size:15px;}
+}
