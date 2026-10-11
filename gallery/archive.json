@@ -2,6 +2,19 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-10-11",
+      "cover": "2026-10-11-01-field-AA-20261011-01-49900.jpg",
+      "coverOrientation": "landscape",
+      "count": 5,
+      "series": [
+        "Orbital Studies",
+        "Golden Trajectories",
+        "Recursive Divisions",
+        "Radiant Systems",
+        "Connected Fields"
+      ]
+    },
+    {
       "date": "2026-10-10",
       "cover": "2026-10-10-01-burst-AA-20261010-01-33911.jpg",
       "coverOrientation": "landscape",
