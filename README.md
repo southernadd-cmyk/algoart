@@ -1,5 +1,5 @@
 # ALGO/ART
-<img width="377"  alt="AlgoArt-GitHub-Social-Card" src="https://github.com/user-attachments/assets/7b018dc7-c17e-4197-9ccb-aca998e33b00" />
+<img src="https://github.com/southernadd-cmyk/algoart/raw/main/social-card.png" alt="Social card" width="377">
 
 **Mathematics sets the rules. The marker breaks them.**
 
