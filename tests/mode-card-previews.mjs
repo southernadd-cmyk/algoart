@@ -47,6 +47,10 @@ for(const orientation of ['landscape','portrait']){
     });
   },{orientation,count:modes.length},{timeout:90000});
 
+  // A legacy permalink opens with its archived renderer; selecting a new
+  // system deliberately upgrades the composition to the current renderer.
+  assert.equal(await page.evaluate(()=>window.AlgoArt.rendererVersion),7,'Legacy V7 link did not load V7');
+  const currentRendererVersion=await page.evaluate(()=>Math.max(...window.AlgoArt.supportedRendererVersions));
   const initial=await snapshot();
   assert.deepEqual(initial.map(c=>c.mode),modes);
   assert.ok(initial.every(c=>c.alpha===255),'A thumbnail has not finished rendering');
@@ -83,7 +87,7 @@ for(const orientation of ['landscape','portrait']){
     },mode);
     assert.equal(match.mismatched,0,orientation+' '+mode+' thumbnail differs from exact selected render');
     assert.deepEqual(match.dimensions,[orientation==='portrait'?100:140,orientation==='portrait'?140:100,orientation==='portrait'?100:140,orientation==='portrait'?140:100]);
-    assert.equal(match.renderer,7);
+    assert.equal(match.renderer,currentRendererVersion,'Mode selection did not upgrade to the current renderer');
     assert.equal(match.mode,mode);
     assert.equal(match.seed,seed);
     assert.equal(match.cardPressed,'true');
