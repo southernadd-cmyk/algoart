@@ -182,9 +182,10 @@ function applySettings(settings){
   syncModeCards();
 }
 
+var watercolorVersion=2; // New selections use v2; historical ?watercolor=1 stays v1.
 function oilEnabled(){return Boolean($('oilRender')&&$('oilRender').checked)}
 function renderArtwork(target,settings,scale,reveal){
-  return oilEnabled()?A.renderOil(target,settings,scale,reveal):A.render(target,settings,scale,reveal);
+  return oilEnabled()?A.renderOil(target,settings,scale,reveal,watercolorVersion):A.render(target,settings,scale,reveal);
 }
 
 function settingsToURL(settings){
@@ -198,7 +199,7 @@ function settingsToURL(settings){
     if(typeof value==='boolean')value=value?'1':'0';
     params.set(PARAM_KEYS[key],String(value));
   });
-  if(oilEnabled())params.set('watercolor','1');
+  if(oilEnabled())params.set('watercolor',String(watercolorVersion));
   return location.pathname+'?'+params.toString()+location.hash;
 }
 
@@ -240,8 +241,9 @@ function loadSettingsFromURL(){
 
   // Preserve early oil-prototype links while issuing new Watercolor URLs.
   if(params.has('watercolor')||params.has('oil')){
-    $('oilRender').checked=(params.has('watercolor')
-      ?params.get('watercolor'):params.get('oil'))==='1';
+    var materialCode=params.has('watercolor')?params.get('watercolor'):params.get('oil');
+    $('oilRender').checked=materialCode==='1'||materialCode==='2';
+    watercolorVersion=materialCode==='2'?2:1;
     found=true;
   }
 
@@ -877,7 +879,7 @@ function copyAltDescription(){
 }
 
 function savePNG(){
-  A.exportPNG(Object.assign({},A.readSettings(),{oilRender:oilEnabled()}),+$('exportScale').value);
+  A.exportPNG(Object.assign({},A.readSettings(),{oilRender:oilEnabled(),watercolorVersion:watercolorVersion}),+$('exportScale').value);
 }
 
 function saveSVG(){
@@ -1015,7 +1017,11 @@ function loadExactArchivedArtwork(id){
       var entry=(Array.isArray(meta.entries)?meta.entries:[]).find(function(e){return e.id===id});
       if(!entry||!entry.settings||!entry.seed)throw new Error('Archived artwork missing: '+id);
       A.rendererVersion=Number(entry.rendererVersion)||CURRENT_RENDERER_VERSION;
-      if($('oilRender'))$('oilRender').checked=entry.material==='watercolor'||new URL(entry.shareUrl||location.href).searchParams.get('watercolor')==='1';
+      if($('oilRender')){
+         var archiveWatercolor=new URL(entry.shareUrl||location.href).searchParams.get('watercolor');
+         $('oilRender').checked=entry.material==='watercolor'||archiveWatercolor==='1'||archiveWatercolor==='2';
+         watercolorVersion=archiveWatercolor==='2'?2:1;
+       }
       applySettings(Object.assign({},entry.settings,{seed:entry.seed}));
       return true;
     });
