@@ -124,10 +124,18 @@ function oilPaint(ctx,w,h,paths,meta,seed,quality){
     var length=0;
     for(j=1;j<ps.length;j++)length+=dist(ps[j-1],ps[j]);
     if(length<5)continue;
-    lines.push({pts:ps,length:length,width:paths[i].width||4});
+    // Coalesce adjacent points before applying brush geometry. This keeps
+    // dense ellipse curves from producing thousands of redundant paint dabs.
+    var simplified=[ps[0]],last=ps[0],spacing=quality<.4?32:17;
+    for(var pi=1;pi<ps.length;pi++){
+      if(dist(ps[pi],last)>=spacing||pi===ps.length-1){
+        simplified.push(ps[pi]);last=ps[pi];
+      }
+    }
+    if(simplified.length>=2)lines.push({pts:simplified,length:length,width:paths[i].width||4});
   }
   // Bound the total number of independently painted paths for browser use.
-  var stride=Math.max(1,Math.ceil(lines.length/(quality<.4?135:550)));
+  var stride=Math.max(1,Math.ceil(lines.length/(quality<.4?55:220)));
   var selected=lines.filter(function(_,index){return index%stride===0});
   // Large contiguous painted territories grow FROM the source mark geometry.
   for(i=0;i<selected.length;i++){
@@ -176,7 +184,7 @@ function oilPaint(ctx,w,h,paths,meta,seed,quality){
     if(!pts.length)continue;
     centres.push(pts[0],pts[pts.length-1],pts[Math.floor(pts.length/2)]);
   }
-  var step=Math.max(1,Math.ceil(centres.length/(quality<.4?80:320)));
+  var step=Math.max(1,Math.ceil(centres.length/(quality<.4?60:260)));
   for(i=0;i<centres.length;i+=step){
     var centre=centres[i];
     if(inVoid(centre.x,centre.y,voids)&&r.chance(.8))continue;
