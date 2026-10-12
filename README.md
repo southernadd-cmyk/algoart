@@ -92,21 +92,23 @@ not a ninth composition engine, a new seed, or an image-generation model.
 Switching it off restores the original marker drawing with the same
 seed, golden-ratio geometry, orientation, controls and hierarchy.
 
-The renderer derives pigment washes and connected color fields from the
-original SVG-recorded paths. Separate pigment and relief buffers add
-layering, bristle variation and textured paper-like surface effects.
+Watercolor v2 uses the same SVG-recorded geometry with ragged, recursively
+subdivided wash boundaries, selectively pooled pigment edges, graded translucent
+pigment and correlated paper grain. It avoids height-map lighting and soft,
+Gaussian-like colored backgrounds. The original v1 pigment and relief buffers
+are preserved unchanged for archival reproducibility.
 The result is best understood as expressive watercolor / mixed-media washes;
 we are **not** claiming a physical watercolor-fluid simulation.
 It requires no trained model, network call, third-party image asset or install.
 
-- **Share links:** new links use `?watercolor=1` to preserve the selected
-  material without changing the composition's random-seed input.
-  Earlier prototype `?oil=1` links also load this same painter for compatibility.
+- **Share links:** new checkbox selections use `?watercolor=2`; previous
+  `?watercolor=1` and prototype `?oil=1` links continue rendering v1 exactly.
+  The material revision never enters V8 composition seed input.
 - **Export:** watercolor is available as PNG; SVG and plotter SVG preserve
   the original marker vectors rather than pretending to be vector watercolor.
-- **Implementation:** the experimental internal modules
-  `js/oil-render.js`, `js/oil-material.js`, and `js/oil-surface.js`
-  retain their historical filenames for compatibility and provenance.
+- **Implementation:** `js/watercolor-v2.js` is a separate watercolour material
+  renderer, while `js/oil-render.js`, `js/oil-material.js` and
+  `js/oil-surface.js` retain their historical names for compatibility.
   OIL-4 was the technical prototype name; the public style is now **Watercolor**.
   The brushwork separates pigment color from height/lighting, informed by
   published techniques from MIT-licensed
@@ -119,10 +121,17 @@ It requires no trained model, network call, third-party image asset or install.
   This watercolor checkbox must not silently change into an oil effect.
 - **Preservation:** published V1–V8 marker renderers, archived artworks and
   existing seeded compositions stay unchanged.
-- **Tests:** `npm run test:oil-render` still uses its historical internal name
+- **Tests:** `npm run test:watercolor-v2` checks v1/v2 determinism and V8
+  immutability; the Watercolor v2 preview workflow captures real browser PNG
+  comparisons in both orientations. `npm run test:oil-render` still uses its historical internal name
   and checks deterministic materials, reversibility and original geometry.
   Full-resolution export and low-memory mobile performance deserve further
   validation before increasing the material's complexity.
+
+Watercolor v2 is initially an editor-only refinement. Existing daily gallery and
+social automation continues publishing the historical v1 material until v2 browser
+previews are visually approved. The v2 release must update publishing URLs,
+version metadata and archive tests together; never retroactively repaint images.
 
 ## Daily watercolor publication
 
