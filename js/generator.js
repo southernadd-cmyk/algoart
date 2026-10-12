@@ -3182,7 +3182,9 @@ function drawOrganicV8(ctx,s,r,pal){
         if(Math.abs(dx)>=Math.abs(dy))root={x:dx>0?inset:A.W-inset,y:A.H*fraction,edge:dx>0?'left':'right'};
         else root={x:A.W*fraction,y:dy>0?inset:A.H-inset,edge:dy>0?'top':'bottom'};
       }else{
-        root={x:A.W*(.5-dx*(1-A.INV)),y:A.H*(.5-dy*(1-A.INV)),edge:null};
+        // Interior roots sit on the golden intersection behind the direction of
+        // travel, so each form grows from a 38.2%/61.8% station across the page.
+        root={x:A.W*(dx>=0?1-A.INV:A.INV),y:A.H*(dy>=0?1-A.INV:A.INV),edge:null};
       }
       if(!pointInVoid(root.x,root.y,voids)&&!roots.some(function(p){return Math.hypot(p.x-root.x,p.y-root.y)<Math.min(A.W,A.H)*.12}))break;
     }
