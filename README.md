@@ -102,6 +102,21 @@ The painter has a separate random stream from the preserved V8 engine.
 
 - Oil and marker views share the same composition. `?oil=1` preserves the
   selected material in share URLs without entering the composition RNG input.
+- **OIL-4 material-buffer experiment:** `js/oil-material.js` deposits
+  procedural paint into a pigment buffer and independent height buffer,
+  derives fine ridges from deterministic bristles, and shades the height
+  gradient under a fixed light to suggest impasto. Existing `js/oil-surface.js`
+  supplies low-frequency underpainting from the original φ geometry.
+  `js/oil-render.js` retains the earlier OIL-3 renderer as a fallback.
+- This is an original implementation **informed by principles**, not copied
+  source, from MIT-licensed [PigmentLab](https://github.com/wieslawsoltes/PigmentLab)
+  and [Wet Paint Flow](https://github.com/simonxxooxxoo/wet-paint-flow):
+  separating material colour, raised paint thickness and surface lighting.
+  No third-party code or image assets are bundled.
+- Canvas2D remains the only runtime API requirement. Material buffers
+  are resolution-adaptive for editor previews, with a higher working
+  resolution for full-size PNG exports; this is **not yet validated** for
+  gallery-scale production printing or low-memory mobile browsers.
 - Oil can be saved as a high-resolution **PNG**; SVG and plotter SVG deliberately
   retain the original marker-vector construction, not a falsely vectorised painting.
 - Published V1–V8 marker renderers and archived artwork remain unchanged.
