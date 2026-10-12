@@ -319,11 +319,11 @@ try {
     };
 
     item.copy = makeCaptions(item);
-    if (rendered.accessibility?.altText) {
+    if (!watercolor && rendered.accessibility?.altText) {
       item.copy.altText = rendered.accessibility.altText;
     }
     item.accessibility = {
-      altText: rendered.accessibility?.altText || item.copy.altText,
+      altText: watercolor ? item.copy.altText : (rendered.accessibility?.altText || item.copy.altText),
       longDescription: rendered.accessibility?.longDescription || '',
       constructionDescription: rendered.accessibility?.constructionDescription || ''
     };
