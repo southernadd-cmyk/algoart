@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'js/oil-render.js'
+      - 'js/oil-surface.js'
       - 'js/app.js'
       - 'js/generator.js'
       - 'js/marker.js'
