@@ -13,7 +13,10 @@ var modePreviewStateKey=null;
 var variationBatch=0;
 var currentRenderMeta=null;
 var currentDescription=null;
-var CURRENT_RENDERER_VERSION=7;
+// Keep the URL parser aligned with the renderer versions implemented in generator.js.
+var SUPPORTED_RENDERER_VERSIONS=Object.freeze([1,2,3,4,5,6,7]);
+var CURRENT_RENDERER_VERSION=SUPPORTED_RENDERER_VERSIONS[SUPPORTED_RENDERER_VERSIONS.length-1];
+A.supportedRendererVersions=SUPPORTED_RENDERER_VERSIONS;
 var UNVERSIONED_FIELD_VERSION_BY_SEED={
   'AA-20261005-04-72522':2
 };
@@ -230,7 +233,7 @@ function loadSettingsFromURL(){
   });
 
   var explicitVersion=Number(params.get('v'));
-  if(explicitVersion===1||explicitVersion===2||explicitVersion===3||explicitVersion===4||explicitVersion===5||explicitVersion===6||explicitVersion===7){
+  if(SUPPORTED_RENDERER_VERSIONS.includes(explicitVersion)){
     A.rendererVersion=explicitVersion;
   }else if(found){
     var requestedMode=settings.mode||$('mode').value;
