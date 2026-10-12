@@ -77,7 +77,6 @@ jobs:
           path: preview/screenshots/
           if-no-files-found: ignore
           retention-days: 14
-          fi
       - name: Require passing end-to-end portrait pipeline
         if: always()
         run: |
