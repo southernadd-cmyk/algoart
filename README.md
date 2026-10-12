@@ -91,3 +91,5 @@ Plotter SVG supports faithful colour runs and grouping by pen, with light-to-dar
 - **[Tuning History](TUNING.md)** — numerical extraction and exact-output compatibility notes.
 
 New visual behaviour should use explicit renderer versioning so previously shared and archived artworks remain reproducible.
+
+The supported renderer versions are declared in `js/app.js` and validated when the editor renders. When introducing V8 or later, update this list together with the renderer's version-specific dispatch and archive regression fixtures. Do not silently interpret an unknown `?v=` as a new renderer; legacy URLs and pinned outputs must stay stable.
