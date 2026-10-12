@@ -1,0 +1,43 @@
+name: Procedural oil preview samples
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/oil-render.js'
+      - 'js/app.js'
+      - 'js/generator.js'
+      - 'js/marker.js'
+      - 'tests/oil-preview.mjs'
+      - '.github/workflows/oil-previews.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  samples:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start local renderer
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-preview-server.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: Capture marker and oil paintings
+        run: node tests/oil-preview.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: procedural-oil-samples
+          path: oil-check-results/
+          retention-days: 30
