@@ -381,7 +381,7 @@ function paint(ctx,w,h,paths,meta,seed,quality){
 // The checkbox changes only the material. The unmodified V8 composition
 // (and its historic RNG sequence) is rendered offscreen to obtain vector
 // geometry. Turning Oil off reproduces precisely the original marker work.
-A.renderOil=function(target,s,scale,showGeometry){
+A.renderOil=function(target,s,scale,showGeometry,watercolorVersion){
   scale=scale||1;
   var w=s.orientation==='portrait'?1000:1400;
   var h=s.orientation==='portrait'?1400:1000;
@@ -394,7 +394,13 @@ A.renderOil=function(target,s,scale,showGeometry){
   target.width=w*scale;target.height=h*scale;
   var ctx=target.getContext('2d');
   if(scale!==1)ctx.scale(scale,scale);
-  paint(ctx,w,h,rec.paths,meta,s.seed+'|'+s.mode+'|'+A.rendererVersion,scale);
+  if(Number(watercolorVersion)===2&&A.watercolorV2){
+    A.watercolorV2(ctx,w,h,skeleton(rec.paths,scale<.4?95:250),meta,
+      s.seed+'|'+s.mode+'|'+A.rendererVersion,scale);
+  }else{
+    // Immutable watercolor v1 for existing archived images and shared links.
+    paint(ctx,w,h,rec.paths,meta,s.seed+'|'+s.mode+'|'+A.rendererVersion,scale);
+  }
   if(showGeometry)A.geometryOverlay(ctx,s,meta);
   A.lastRenderMeta=meta;
   return meta;
