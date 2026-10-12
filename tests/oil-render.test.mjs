@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 
-const names=['random','phi','palettes','marker','generator','oil-surface','oil-render'];
+const names=['random','phi','palettes','marker','generator','oil-surface','oil-material','oil-render'];
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const exportCode=readFileSync(new URL('../js/export.js',import.meta.url),'utf8');
@@ -27,7 +27,10 @@ function record(value){
 function context(){
   return new Proxy({}, {
     get(o,key){
-      if(key==='createImageData')return (w,h)=>({width:w,height:h,data:new Uint8ClampedArray(w*h*4)});
+      if(key==='createImageData'||key==='getImageData')return (x,y,w,h)=>{
+        if(key==='createImageData'){h=w;w=y}
+        return {width:w,height:h,data:new Uint8ClampedArray(w*h*4)};
+      };
       if(key in o)return o[key];
       return (...args)=>record(String(key)+'|'+args.join(','));
     },
