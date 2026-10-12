@@ -1,4 +1,4 @@
-// ALGO/ART — experimental procedural oil-material engine, version OIL-2.
+// ALGO/ART — experimental procedural oil-material engine, version OIL-3.
 // A material treatment of existing geometry, never a new composition mode.
 // No trained models, photo filters, services or external assets are used.
 // The original OIL-1 experiment is frozen in experiments/torn-paper-v1.js.
@@ -196,7 +196,7 @@ function sweepRegion(ctx,points,half,col,r,alpha){
   // Broad body texture is CLIPPED to the same mass so it reads as paint
   // deposited over a continuous surface, not loose scraps.
   ctx.clip();
-  var strokes=Math.min(56,Math.max(8,Math.floor(n*3.2)));
+  var strokes=Math.min(38,Math.max(8,Math.floor(n*2.4)));
   for(i=0;i<strokes;i++){
     var ix=r.int(0,n-2),a=points[ix],b=points[ix+1];
     var length=dist(a,b),theta=tang(a,b),normal=theta+Math.PI/2;
@@ -211,7 +211,7 @@ function sweepRegion(ctx,points,half,col,r,alpha){
   ctx.restore();
   // Ragged margins and partial repaint blur the notion of a flat cut edge.
   for(i=0;i<n-1;i++){
-    if(r.chance(.37))continue;
+    if(r.chance(.70))continue;
     var t=r.range(0,1),q=p(points[i],points[i+1],t);
     var ang=tang(points[i],points[i+1]),side=r.chance(.5)?1:-1;
     var pt=move(q,ang+Math.PI/2,side*half*r.range(.55,1.05));
@@ -242,10 +242,10 @@ function junctions(chains,w,h){
       add(b,a,clamp(length/40,.5,2));
     }
   }
-  var out=nodeList.filter(function(n){return n.count>=2&&n.rays.length>=2});
+  var out=nodeList.filter(function(n){return n.count>=3&&n.rays.length>=3});
   out.forEach(function(n){n.x/=n.count;n.y/=n.count;n.score*=Math.min(3,n.rays.length);});
   out.sort(function(a,b){return b.score-a.score});
-  return out.slice(0,65);
+  return out.slice(0,32);
 }
 function paintPlanes(ctx,nodes,r,voids,level){
   for(var i=0;i<Math.min(nodes.length,Math.ceil(38*level));i++){
@@ -278,21 +278,22 @@ function paintPlanes(ctx,nodes,r,voids,level){
   }
 }
 function spine(ctx,chains,r,voids,level){
-  // Source curves become raised, sometimes broken pigment ridges rather than
-  // uniformly outlining all the individual elements.
+  // Reserve a few larger continuous raised ridges instead of re-stamping
+  // every little source segment as a rectangular piece. Dark lines are
+  // discontinuous only where a separate paint layer interrupts them.
   for(var i=0;i<chains.length;i++){
-    if(i>Math.ceil(34*level))break;
+    if(i>Math.ceil(22*level))break;
     var pts=chains[i].pts;
     for(var j=1;j<pts.length;j++){
       var a=pts[j-1],b=pts[j],length=dist(a,b);
       if(length<7)continue;
       var count=Math.max(1,Math.ceil(length/70));
       for(var k=0;k<count;k++){
-        if(r.chance(i<12?.28:.62))continue;
+        if(r.chance(i<12?.30:.72))continue;
         var p1=p(a,b,k/count),p2=p(a,b,(k+1)/count);
         if(inVoid((p1.x+p2.x)/2,(p1.y+p2.y)/2,voids)&&r.chance(.7))continue;
         var ang=tang(p1,p2),normal=ang+Math.PI/2;
-        var w=r.range(4,15)*(i<12?1.2:.75);
+        var w=r.range(3.5,11)*(i<10?1.3:.75);
         var from=move(p1,normal,r.range(-12,12));
         var to=move(p2,normal,r.range(-12,12));
         brush(ctx,from,to,w,pick(r,COLOR.deep),r.range(.72,.98),r,true);
@@ -307,8 +308,8 @@ function spine(ctx,chains,r,voids,level){
 }
 function impasto(ctx,chains,nodes,r,level){
   // Knife flecks cluster at real joints, not at invented central focal points.
-  for(var i=0;i<Math.min(nodes.length,Math.ceil(55*level));i++){
-    var n=nodes[i],count=r.int(3,9);
+  for(var i=0;i<Math.min(nodes.length,Math.ceil(25*level));i++){
+    var n=nodes[i],count=r.int(2,6);
     for(var j=0;j<count;j++){
       var a={x:n.x+r.range(-30,30),y:n.y+r.range(-30,30)};
       var theta=r.range(0,Math.PI*2),length=r.range(5,38);
@@ -318,7 +319,7 @@ function impasto(ctx,chains,nodes,r,level){
     }
   }
   // Scumbled paint and light-catching dry-brush filaments.
-  for(i=0;i<Math.ceil(115*level);i++){
+  for(i=0;i<Math.ceil(38*level);i++){
     if(!chains.length)break;
     var ch=pick(r,chains),pts=ch.pts;
     var pos=pick(r,pts),angle=r.range(0,Math.PI*2);
@@ -353,7 +354,7 @@ function paint(ctx,w,h,paths,meta,seed,quality){
   var nodes=junctions(chains,w,h);
   paintPlanes(ctx,nodes,r,voids,level);
   // Deep, continuous underpainting follows whole chains, not detached dabs.
-  var total=Math.min(chains.length,Math.ceil(34*level));
+  var total=Math.min(chains.length,Math.ceil(25*level));
   for(var i=total-1;i>=0;i--){
     var line=chains[i],pts=line.pts;
     if(pts.length<2)continue;
@@ -362,7 +363,7 @@ function paint(ctx,w,h,paths,meta,seed,quality){
     sweepRegion(ctx,pts,width/2,toneFor(r,i),r,r.range(.53,.88));
   }
   // Let some smaller supporting planes join the larger ones.
-  for(i=total;i<Math.min(chains.length,total+Math.ceil(9*level));i++){
+  for(i=total;i<Math.min(chains.length,total+Math.ceil(5*level));i++){
     line=chains[i];
     sweepRegion(ctx,line.pts,r.range(17,44),pick(r,COLOR.ground),r,r.range(.39,.68));
   }
