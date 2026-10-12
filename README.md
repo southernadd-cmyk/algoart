@@ -67,6 +67,8 @@ npm ci
 npm run test:control-ranges
 npm run test:orientation
 npm run test:organic-version
+npm run test:growth-v8
+npm run test:renderer-lock
 npm run test:plotter
 npm run test:tuning-equivalence
 ```
@@ -92,6 +94,8 @@ Plotter SVG supports faithful colour runs and grouping by pen, with light-to-dar
 - **[Calibration Audit](CALIBRATION_AUDIT.md)** — which numbers are genuine φ mathematics, artistic calibration or rendering mechanics.
 - **[Tuning History](TUNING.md)** — numerical extraction and exact-output compatibility notes.
 
-New visual behaviour should use explicit renderer versioning so previously shared and archived artworks remain reproducible.
+**Published renderer versions are immutable.** The V8 output is locked against the permanently pinned source commit `395e473a826d7c481fde2e0198f753467332b04b` by `npm run test:renderer-lock`. The check compares 144 representative renderings in the same runtime, including native canvas operations, Reveal metadata and plotter SVG pen paths. It runs on pull requests through the archive-reproduction workflow. Never refresh the reference commit to make changed V8 output pass: introduce V9 for changed rendering behaviour, preserve the V8 code path, and add a corresponding lock for V9 after publication. Archived JPEG reproduction remains a separate browser regression check.
+
+The guard freezes the documented V8 baseline as of 12 October 2026; it cannot retroactively restore any V8 links shared between V8's first publication and the interior-root amendment `da79010`.
 
 The supported renderer versions are declared in `js/app.js` and validated when the editor renders. When introducing V9 or later, update this list together with the renderer's version-specific dispatch and archive regression fixtures. Do not silently interpret an unknown `?v=` as a new renderer; legacy URLs and pinned outputs must stay stable.
