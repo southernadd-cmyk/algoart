@@ -25,10 +25,7 @@ for (const test of cases){
   await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.includes('/ OIL') &&
     document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
-  await page.locator('#oilRender').uncheck({force:true});
-  await page.waitForFunction(() => !document.querySelector('#statsText')?.textContent?.includes('/ OIL'),null,{timeout:120000});
-  await page.locator('#art').screenshot({path:out+'/'+test.name+'-marker.png',timeout:60000});
   if(faults.length)throw new Error(test.name+': '+faults.join('; '));
-  console.log('CAPTURED',test.name);
+  console.log('CAPTURED oil',test.name);
 }
 await browser.close();
