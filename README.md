@@ -84,6 +84,46 @@ The tuning-equivalence test compares generated drawings with a pinned historical
 
 V8 expands Growth Systems with seeded golden-angle root directions, entries at the 38.2% and 61.8% stations on all four edges, and interior-root alternatives. Two to four growth forms appear more often, especially in landscape. Branch lengths diminish by φ, with space-aware turns and a shared segment budget. Other engines retain their V7 output. New social batches use V8; existing editions keep their recorded renderer and media.
 
+## Procedural watercolor render
+
+The **Watercolor Render** checkbox in Compose repaints the existing ALGO/ART
+composition as layered procedural watercolor. It is a **material option**,
+not a ninth composition engine, a new seed, or an image-generation model.
+Switching it off restores the original marker drawing with the same
+seed, golden-ratio geometry, orientation, controls and hierarchy.
+
+The renderer derives pigment washes and connected color fields from the
+original SVG-recorded paths. Separate pigment and relief buffers add
+layering, bristle variation and textured paper-like surface effects.
+The result is best understood as expressive watercolor / mixed-media washes;
+we are **not** claiming a physical watercolor-fluid simulation.
+It requires no trained model, network call, third-party image asset or install.
+
+- **Share links:** new links use `?watercolor=1` to preserve the selected
+  material without changing the composition's random-seed input.
+  Earlier prototype `?oil=1` links also load this same painter for compatibility.
+- **Export:** watercolor is available as PNG; SVG and plotter SVG preserve
+  the original marker vectors rather than pretending to be vector watercolor.
+- **Implementation:** the experimental internal modules
+  `js/oil-render.js`, `js/oil-material.js`, and `js/oil-surface.js`
+  retain their historical filenames for compatibility and provenance.
+  OIL-4 was the technical prototype name; the public style is now **Watercolor**.
+  The brushwork separates pigment color from height/lighting, informed by
+  published techniques from MIT-licensed
+  [PigmentLab](https://github.com/wieslawsoltes/PigmentLab) and
+  [Wet Paint Flow](https://github.com/simonxxooxxoo/wet-paint-flow).
+  Their code and assets are not bundled.
+- **Torn Paper:** the earlier, more collage-like treatment is preserved,
+  **not loaded**, in `experiments/torn-paper-v1.js` for a possible future option.
+- **Oil Paint:** richer, opaque impasto is a **separate future renderer**.
+  This watercolor checkbox must not silently change into an oil effect.
+- **Preservation:** published V1–V8 marker renderers, archived artworks and
+  existing seeded compositions stay unchanged.
+- **Tests:** `npm run test:oil-render` still uses its historical internal name
+  and checks deterministic materials, reversibility and original geometry.
+  Full-resolution export and low-memory mobile performance deserve further
+  validation before increasing the material's complexity.
+
 ## Plotter compatibility
 
 Plotter SVG supports faithful colour runs and grouping by pen, with light-to-dark pen identities and pen-change pause labels. **Actual Inkscape/AxiDraw behaviour has not been hardware-tested.** See [issue #40](https://github.com/southernadd-cmyk/algoart/issues/40) to help verify pauses, Resume and individually selected numbered layers.

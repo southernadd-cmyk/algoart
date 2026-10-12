@@ -182,6 +182,11 @@ function applySettings(settings){
   syncModeCards();
 }
 
+function oilEnabled(){return Boolean($('oilRender')&&$('oilRender').checked)}
+function renderArtwork(target,settings,scale,reveal){
+  return oilEnabled()?A.renderOil(target,settings,scale,reveal):A.render(target,settings,scale,reveal);
+}
+
 function settingsToURL(settings){
   var params=new URLSearchParams();
   params.set('v',String(A.rendererVersion||CURRENT_RENDERER_VERSION));
@@ -193,6 +198,7 @@ function settingsToURL(settings){
     if(typeof value==='boolean')value=value?'1':'0';
     params.set(PARAM_KEYS[key],String(value));
   });
+  if(oilEnabled())params.set('watercolor','1');
   return location.pathname+'?'+params.toString()+location.hash;
 }
 
@@ -232,6 +238,13 @@ function loadSettingsFromURL(){
     }
   });
 
+  // Preserve early oil-prototype links while issuing new Watercolor URLs.
+  if(params.has('watercolor')||params.has('oil')){
+    $('oilRender').checked=(params.has('watercolor')
+      ?params.get('watercolor'):params.get('oil'))==='1';
+    found=true;
+  }
+
   var explicitVersion=Number(params.get('v'));
   if(SUPPORTED_RENDERER_VERSIONS.includes(explicitVersion)){
     A.rendererVersion=explicitVersion;
@@ -269,14 +282,14 @@ function renderModePreviews(){
   // cards does not alter what their candidate artwork would look like.
   var previewState=Object.assign({},base);
   delete previewState.mode;
-  var key=JSON.stringify([CURRENT_RENDERER_VERSION,previewState]);
+  var key=JSON.stringify([CURRENT_RENDERER_VERSION,previewState,oilEnabled()]);
   if(key===modePreviewStateKey)return;
   var previousMeta=A.lastRenderMeta,previousW=A.W,previousH=A.H;
   try{
     withRendererVersion(CURRENT_RENDERER_VERSION,function(){
       document.querySelectorAll('.mode-card').forEach(function(card){
         var settings=Object.assign({},base,{mode:card.dataset.mode});
-        A.render(card.querySelector('canvas'),settings,.1,false);
+        renderArtwork(card.querySelector('canvas'),settings,.1,false);
       });
     });
     modePreviewStateKey=key;
@@ -322,7 +335,7 @@ function scheduleDragPreview(){
     var s=A.readSettings(),previousMeta=A.lastRenderMeta;
     syncCanvasFormat(s);
     var started=performance.now();
-    withRendererVersion(CURRENT_RENDERER_VERSION,function(){A.render(canvas,s,.35,showGeometry)});
+    withRendererVersion(CURRENT_RENDERER_VERSION,function(){renderArtwork(canvas,s,.35,showGeometry)});
     A.renderTimings.previewMs=performance.now()-started;
     A.lastRenderMeta=previousMeta;
   },Math.max(80,Math.min(1000,A.renderTimings.previewMs*4)));
@@ -338,13 +351,13 @@ function regenerate(){
   var s=A.readSettings();
   syncCanvasFormat(s);
   var started=performance.now();
-  var meta=A.render(canvas,s,1,showGeometry)||{};
+  var meta=renderArtwork(canvas,s,1,showGeometry)||{};
   A.renderTimings.fullMs=performance.now()-started;
-  lastCommittedRenderKey=JSON.stringify([A.rendererVersion,s]);
+  lastCommittedRenderKey=JSON.stringify([A.rendererVersion,s,oilEnabled()]);
   currentRenderMeta=meta;
   var strategy=meta.strategy?(' / '+meta.strategy):'';
   var series=SERIES[s.mode]||{code:s.mode.toUpperCase(),title:s.mode};
-  $('statsText').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%';
+  $('statsText').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%'+(oilEnabled()?' / WATERCOLOR':'');
   syncDescription(s,meta);
   syncRendererChip();
   syncModeCards();
@@ -736,7 +749,7 @@ function renderVariations(){
       var seed=variationSeed(base.seed,index,variationBatch);
       var settings=Object.assign({},base,{seed:seed});
       var preview=card.querySelector('canvas');
-      A.render(preview,settings,.28,false);
+      renderArtwork(preview,settings,.28,false);
       card.dataset.seed=seed;
       card.querySelector('span').textContent='0'+(index+1)+' / '+seed;
     });
@@ -864,7 +877,7 @@ function copyAltDescription(){
 }
 
 function savePNG(){
-  A.exportPNG(A.readSettings(),+$('exportScale').value);
+  A.exportPNG(Object.assign({},A.readSettings(),{oilRender:oilEnabled()}),+$('exportScale').value);
 }
 
 function saveSVG(){
@@ -954,9 +967,10 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
   }
   e.addEventListener('change',function(){
     if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id.indexOf('plotter')===0)return;
-    useCurrentRenderer();
+    // A material toggle must preserve the selected (including legacy) composer.
+    if(e.id!=='oilRender')useCurrentRenderer();
     // pointerup/change ordering differs by browser. Do not commit twice.
-    var alreadyCommitted=e.type==='range'&&!dragPreviewPending&&lastCommittedRenderKey===JSON.stringify([A.rendererVersion,A.readSettings()]);
+    var alreadyCommitted=e.type==='range'&&!dragPreviewPending&&lastCommittedRenderKey===JSON.stringify([A.rendererVersion,A.readSettings(),oilEnabled()]);
     if(!alreadyCommitted)regenerate();
   });
 });

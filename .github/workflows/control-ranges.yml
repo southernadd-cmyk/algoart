@@ -16,6 +16,12 @@ on:
       - 'js/phi.js'
       - 'js/palettes.js'
       - 'js/marker.js'
+      - 'js/oil-render.js'
+      - 'js/oil-surface.js'
+      - 'js/oil-material.js'
+      - 'tests/oil-render.test.mjs'
+      - 'js/export.js'
+      - 'css/style.css'
       - 'package.json'
       - '.github/workflows/control-ranges.yml'
   pull_request:
@@ -34,6 +40,12 @@ on:
       - 'js/phi.js'
       - 'js/palettes.js'
       - 'js/marker.js'
+      - 'js/oil-render.js'
+      - 'js/oil-surface.js'
+      - 'js/oil-material.js'
+      - 'tests/oil-render.test.mjs'
+      - 'js/export.js'
+      - 'css/style.css'
       - 'package.json'
       - '.github/workflows/control-ranges.yml'
   workflow_dispatch:
@@ -59,3 +71,6 @@ jobs:
 
       - name: Prove published V8 renderer remains unchanged
         run: npm run test:renderer-lock
+
+      - name: Prove oil painting is procedural and does not mutate V8 marks
+        run: npm run test:oil-render

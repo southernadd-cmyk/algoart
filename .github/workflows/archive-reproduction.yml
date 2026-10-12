@@ -95,6 +95,17 @@ jobs:
           name: plotter-${{ matrix.browser }}-${{ github.run_id }}
           path: plotter-check-results/
           retention-days: 14
+      - name: Capture actual procedural oil previews for review
+        if: ${{ matrix.browser == 'chromium' }}
+        env:
+          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+        run: node tests/oil-preview.mjs
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && matrix.browser == 'chromium' }}
+        with:
+          name: procedural-oil-previews
+          path: oil-check-results/
+          retention-days: 14
       - name: Reproduce every archived share link
         if: ${{ !cancelled() }}
         env:
