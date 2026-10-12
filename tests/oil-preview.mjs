@@ -16,13 +16,13 @@ const cases=[
 ];
 for (const test of cases){
   const url=new URL(root);
-  const values={v:8,oil:1,...test,pen:'fine',th:11,wob:34,od:3,op:72,pr:36,dry:19,ln:1,ci:1,re:1,po:1,ar:1,pal:'mono',cols:4,sat:88,bri:61,paper:'#f5f0e6',grain:13};
+  const values={v:8,watercolor:1,...test,pen:'fine',th:11,wob:34,od:3,op:72,pr:36,dry:19,ln:1,ci:1,re:1,po:1,ar:1,pal:'mono',cols:4,sat:88,bri:61,paper:'#f5f0e6',grain:13};
   delete values.name;
   for(const [k,v] of Object.entries(values))url.searchParams.set(k,String(v));
   const faults=[];
   page.on('pageerror',error=>faults.push(error.message));
   await page.goto(url.toString(),{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.trim().endsWith(' / OIL') &&
+  await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.trim().endsWith(' / WATERCOLOR') &&
     document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
   // Dispatch the exact change the checkbox produces; avoids screenshot
@@ -38,11 +38,11 @@ for (const test of cases){
     url:location.href,
     version:window.AlgoArt?.rendererVersion
   }));
-  if(toggleState.checked||toggleState.stats?.trim().endsWith(' / OIL'))
+  if(toggleState.checked||toggleState.stats?.trim().endsWith(' / WATERCOLOR'))
     throw new Error(test.name+' failed to restore marker: '+JSON.stringify(toggleState)+
       ' page errors: '+JSON.stringify(faults));
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-marker.png',timeout:60000});
   if(faults.length)throw new Error(test.name+': '+faults.join('; '));
-  console.log('CAPTURED oil and restored marker',test.name);
+  console.log('CAPTURED watercolor and restored marker',test.name);
 }
 await browser.close();
