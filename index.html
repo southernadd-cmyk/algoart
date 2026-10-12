@@ -194,6 +194,7 @@
         <section class="tab-panel active" data-panel="composition" id="panel-composition" role="tabpanel" aria-labelledby="tab-composition">
           <div class="section-title"><span>COMPOSITION</span></div>
           <div class="controls">
+            <div class="control"><label class="oil-toggle"><input id="oilRender" type="checkbox"> <span><strong>OIL RENDER</strong><small>Repaint this composition in procedural oils</small></span></label><p class="mini-note">Same φ geometry, seed and settings. Switch off to restore the marker drawing. Oil is available in PNG; SVG and plotter exports retain the original marker paths.</p></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
             <div class="mode-picker-wrap">
               <div class="mode-picker-label"><span>SERIES</span></div>
@@ -306,10 +307,11 @@
 <script src="js/palettes.js"></script>
 <script src="js/marker.js?v=plotter-20261009"></script>
 <script src="js/generator.js"></script>
+<script src="js/oil-render.js?v=oil-prototype-1"></script>
 <script src="js/export.js"></script>
 <script src="js/plotter.js?v=plotter-pen-pauses-20261010"></script>
 <script src="js/describe.js"></script>
 <script src="js/control-help.js?v=additional-phi-pull-label-20261010"></script>
-<script src="js/app.js?v=mode-preview-fidelity-20261010"></script>
+<script src="js/app.js?v=oil-prototype-1"></script>
 </body>
 </html>
