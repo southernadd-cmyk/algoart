@@ -22,9 +22,11 @@ for (const test of cases){
   const faults=[];
   page.on('pageerror',error=>faults.push(error.message));
   await page.goto(url.toString(),{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(()=>document.querySelector('#art').width>=1000 && document.querySelector('#art').height>=1000,{timeout:60000});
+  await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.includes('/ OIL') &&
+    document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
   await page.locator('#oilRender').uncheck({force:true});
+  await page.waitForFunction(() => !document.querySelector('#statsText')?.textContent?.includes('/ OIL'),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-marker.png',timeout:60000});
   if(faults.length)throw new Error(test.name+': '+faults.join('; '));
   console.log('CAPTURED',test.name);
