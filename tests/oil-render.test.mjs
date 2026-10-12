@@ -27,10 +27,12 @@ function record(value){
 function context(){
   return new Proxy({}, {
     get(o,key){
-      if(key==='createImageData'||key==='getImageData')return (x,y,w,h)=>{
-        if(key==='createImageData'){h=w;w=y}
-        return {width:w,height:h,data:new Uint8ClampedArray(w*h*4)};
-      };
+      if(key==='createImageData')return (w,h)=>({
+        width:w,height:h,data:new Uint8ClampedArray(w*h*4)
+      });
+      if(key==='getImageData')return (x,y,w,h)=>({
+        width:w,height:h,data:new Uint8ClampedArray(w*h*4)
+      });
       if(key in o)return o[key];
       return (...args)=>record(String(key)+'|'+args.join(','));
     },
@@ -89,6 +91,9 @@ function test(mode,orientation){
     assert.equal(target.width,(orientation==='portrait'?1000:1400)*.2);
     assert.equal(target.height,(orientation==='portrait'?1400:1000)*.2);
     assert(operationCount>100,'Expected procedural paint brushwork');
+    assert.equal(A.lastOilMaterialStats?.version,4,'Expected material-buffer oil renderer');
+    assert.equal(A.lastOilMaterialStats?.buffer,'pigment+height');
+    assert(A.lastOilMaterialStats.width>0&&A.lastOilMaterialStats.height>0);
     snapshots.push([outputHash,operationCount,oil.strategy]);
   }
   assert.deepEqual(snapshots[0],snapshots[1],'Oil output must be deterministic');
