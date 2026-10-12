@@ -45,13 +45,15 @@ for(let slot=0;slot<3;slot++){
 const parentWorkflow=await fs.readFile(path.join(repoRoot,'.github/workflows/social-live.yml'),'utf8');
 const portraitWorkflow=await fs.readFile(path.join(repoRoot,'.github/workflows/portrait-live.yml'),'utf8');
 assert.ok(parentWorkflow.includes('  portraits:\n'), 'Parent workflow must include a portrait job');
-assert.ok(parentWorkflow.includes('needs: publish'), 'Landscape must finish before portraits');
+assert.ok(parentWorkflow.includes('needs: [publish, portrait-plan]'), 'Landscape must finish before portraits');
 assert.ok(parentWorkflow.includes('uses: ./.github/workflows/portrait-live.yml'), 'Portrait must reuse the parent workflow triggers');
 assert.ok(parentWorkflow.includes('secrets: inherit'));
 assert.ok(parentWorkflow.includes('  portraits-retry:\n'),'Failed portraits need a bounded automatic retry');
 assert.ok(parentWorkflow.includes("needs.portraits.result == 'failure'"));
-assert.ok(parentWorkflow.includes('slot: ${{ needs.portraits.outputs.slot }}'),'Retry must preserve the failed slot');
-assert.ok(parentWorkflow.includes('date: ${{ needs.portraits.outputs.date }}'),'Retry must preserve the failed date');
+assert.ok(parentWorkflow.includes('  portrait-plan:\n'),'Resolve the date and slot independently of publishing failures');
+assert.ok(parentWorkflow.includes('slot: ${{ needs.portrait-plan.outputs.slot }}'),'Retry must preserve the failed slot');
+assert.ok(parentWorkflow.includes('date: ${{ needs.portrait-plan.outputs.date }}'),'Retry must preserve the failed date');
+assert.ok(!parentWorkflow.includes('needs.portraits.outputs.'),'A failed reusable workflow must not be relied on for retry outputs');
 assert.ok(parentWorkflow.includes('repost_deleted: false'),'Automatic retry must honour successful-platform markers');
 assert.ok(!parentWorkflow.includes("needs.publish.result == 'success'"),'A landscape failure must not block independent portraits');
 assert.ok(portraitWorkflow.includes('  workflow_call:'), 'Portrait must be a reusable workflow');
@@ -69,7 +71,7 @@ for(const marker of ['IG_MARKER','TH_MARKER','BS_MARKER']){
 }
 assert.ok(parentWorkflow.includes('repost_deleted:'),'One-time recovery flag is not forwarded');
 assert.ok(parentWorkflow.includes('retry-deleted-portrait-slot0-2026-10-09'),'Recovery trigger must be exact-match');
-assert.ok(parentWorkflow.includes('needs: publish'),'Normal landscape job must complete before portrait recovery');
+assert.ok(parentWorkflow.includes('needs: [publish, portrait-plan]'),'Normal landscape job must complete before portrait recovery');
 
 
 const temp=await fs.mkdtemp(path.join(os.tmpdir(),'algoart-portrait-schedule-'));

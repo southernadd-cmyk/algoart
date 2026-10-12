@@ -21,13 +21,6 @@ on:
         required: false
         type: string
         default: ''
-    outputs:
-      slot:
-        description: 'Resolved portrait slot, retained for a retry'
-        value: ${{ jobs.publish.outputs.slot }}
-      date:
-        description: 'Resolved London date, retained for a retry'
-        value: ${{ jobs.publish.outputs.date }}
   workflow_dispatch:
     inputs:
       slot:
@@ -61,9 +54,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    outputs:
-      slot: ${{ steps.gate.outputs.slot }}
-      date: ${{ steps.gate.outputs.date }}
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/

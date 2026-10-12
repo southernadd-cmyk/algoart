@@ -302,17 +302,34 @@ jobs:
           echo "- Pinterest enabled: ${{ vars.PINTEREST_ENABLED }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Pinterest already complete before run: ${{ steps.state.outputs.pinterest_done }}" >> "$GITHUB_STEP_SUMMARY"
 
+  portrait-plan:
+    # Resolve once in an independent successful job: failed reusable workflows
+    # need not expose outputs, and retries must retain the same date and slot.
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.slot != '3') }}
+    outputs:
+      should_run: ${{ steps.gate.outputs.should_run }}
+      date: ${{ steps.gate.outputs.date }}
+      slot: ${{ steps.gate.outputs.slot }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve London portrait date and slot
+        id: gate
+        env:
+          FORCE_PORTRAIT_SLOT: ${{ (github.event_name == 'push' && github.event.head_commit.message == 'retry-deleted-portrait-slot0-2026-10-09' && '0') || (github.event_name == 'workflow_dispatch' && inputs.slot) || '' }}
+        run: node automation/portrait-slot.mjs gate
+
   portraits:
     # A second job in the SAME workflow run; the existing cronjob.com
     # dispatches and their times are unchanged. Landscape finishes first
     # so the portrait gallery can preserve its five entries.
-    needs: publish
-    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.slot != '3') }}
+    needs: [publish, portrait-plan]
+    if: ${{ !cancelled() && needs.portrait-plan.outputs.should_run == 'true' }}
     uses: ./.github/workflows/portrait-live.yml
     with:
-      # One explicitly requested repair of already-deleted 2026-10-09 portraits.
-      # Ordinary scheduled cron dispatches still use normal completion markers.
-      slot: ${{ (github.event_name == 'push' && github.event.head_commit.message == 'retry-deleted-portrait-slot0-2026-10-09' && '0') || (github.event_name == 'workflow_dispatch' && inputs.slot) || '' }}
+      slot: ${{ needs.portrait-plan.outputs.slot }}
+      date: ${{ needs.portrait-plan.outputs.date }}
       live: true
       repost_deleted: ${{ github.event_name == 'push' && github.event.head_commit.message == 'retry-deleted-portrait-slot0-2026-10-09' }}
     secrets: inherit
@@ -320,12 +337,12 @@ jobs:
   portraits-retry:
     # One bounded retry in the same scheduled run. Keep the original date/slot
     # and honour completion markers, including after a partial platform failure.
-    needs: portraits
-    if: ${{ always() && !cancelled() && needs.portraits.result == 'failure' && needs.portraits.outputs.date != '' && needs.portraits.outputs.slot != '' }}
+    needs: [portraits, portrait-plan]
+    if: ${{ !cancelled() && needs.portraits.result == 'failure' && needs.portrait-plan.outputs.should_run == 'true' }}
     uses: ./.github/workflows/portrait-live.yml
     with:
-      slot: ${{ needs.portraits.outputs.slot }}
-      date: ${{ needs.portraits.outputs.date }}
+      slot: ${{ needs.portrait-plan.outputs.slot }}
+      date: ${{ needs.portrait-plan.outputs.date }}
       live: true
       repost_deleted: false
     secrets: inherit
