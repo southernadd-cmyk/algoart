@@ -9,6 +9,7 @@ on:
       - 'tests/control-ranges.test.mjs'
       - 'tests/organic-version.test.mjs'
       - 'tests/growth-v8.test.mjs'
+      - 'tests/renderer-lock.test.mjs'
       - 'tests/fixtures/**'
       - 'js/app.js'
       - 'js/random.js'
@@ -26,6 +27,7 @@ on:
       - 'tests/control-ranges.test.mjs'
       - 'tests/organic-version.test.mjs'
       - 'tests/growth-v8.test.mjs'
+      - 'tests/renderer-lock.test.mjs'
       - 'tests/fixtures/**'
       - 'js/app.js'
       - 'js/random.js'
@@ -54,3 +56,6 @@ jobs:
 
       - name: Check V8 growth and V1–V7 recording fixtures
         run: npm run test:growth-v8
+
+      - name: Prove published V8 renderer remains unchanged
+        run: npm run test:renderer-lock
