@@ -2,6 +2,7 @@
 // Lightweight recording canvas: does not need a browser or image snapshot.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
 
 import {runInNewContext} from 'node:vm';
 
@@ -63,12 +64,16 @@ function render(A,s){
 
 const A=engine();
 const modes=['field','spiral','rects','burst','network','organic','geometric','scribble'];
-const fixtures=JSON.parse(readFileSync(new URL('./fixtures/render-v1-v7.json',import.meta.url)));
+const fixture=JSON.parse(readFileSync(new URL('./fixtures/render-v1-v7.json',import.meta.url)));
+const fixtures=fixture.cases;
+// Compare in one JS runtime: transcendental math differs slightly across V8 releases.
+execFileSync('git',['fetch','--depth=1','origin',fixture.baselineRef],{stdio:'pipe'});
+const previous=engine(scripts.map(file=>execFileSync('git',['show',fixture.baselineRef+':'+file],{encoding:'utf8'})));
 for(const f of fixtures){
-  A.rendererVersion=f.version;
+  previous.rendererVersion=A.rendererVersion=f.version;
   const out=render(A,settings(f.mode,f.orientation));
-  assert.equal(out.hash,f.hash,`V${f.version} ${f.mode} ${f.orientation} changed`);
-  assert.equal(out.operations,f.operations);
+  const old=render(previous,settings(f.mode,f.orientation));
+  assert.equal(JSON.stringify(out),JSON.stringify(old),`V${f.version} ${f.mode} ${f.orientation} changed`);
 }
 A.rendererVersion=8;
 const sides=new Set();let edge=0,interior=0,multiple=0,cases=0;
@@ -100,7 +105,8 @@ for(const orientation of ['landscape','portrait'])for(let i=0;i<24;i++)for(const
 assert.equal(sides.size,4);assert.ok(edge>0&&interior>0);assert.ok(multiple>cases*.8);
 for(const mode of modes.filter(m=>m!=='organic'))for(const orientation of ['landscape','portrait']){
   const f=fixtures.find(f=>f.version===7&&f.mode===mode&&f.orientation===orientation);
-  assert.equal(render(A,settings(mode,orientation)).hash,f.hash,'V8 changed '+mode);
+  previous.rendererVersion=7;
+  assert.equal(JSON.stringify(render(A,settings(mode,orientation))),JSON.stringify(render(previous,settings(mode,orientation))),'V8 changed '+mode);
 }
 A.svgRecorder={paths:[]};render(A,settings('organic','landscape'));
 assert.ok(A.svgRecorder.paths.length>0);assert.ok(A.svgRecorder.paths.every(p=>!p.transform));
