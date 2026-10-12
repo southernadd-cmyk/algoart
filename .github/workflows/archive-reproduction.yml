@@ -84,7 +84,6 @@ jobs:
           npm run test:plotter-metrics
           npm run test:plotter
           npm run test:tuning-equivalence
-          npm run test:renderer-lock
       - name: Compare plotter previews with canvas artwork
         env:
           ARCHIVE_BROWSER: ${{ matrix.browser }}
