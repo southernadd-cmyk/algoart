@@ -90,5 +90,36 @@ try{
   const html=await fs.readFile(path.join(temp,'gallery',day,'index.html'),'utf8');
   assert.equal((html.match(/data-material="watercolor"/g)||[]).length,4);
   for(const e of entries)assert(html.includes(e.shareUrl.replaceAll('&','&amp;')));
+  // Simulate the pre-existing ten marker works and prove every watercolor
+  // rebuild preserves them (and every watercolor JPEG) in one 14-work day.
+  const dayDir=path.join(temp,'gallery',day);
+  const ten=Array.from({length:10},(_,i)=>{
+    const portrait=i>=5;
+    const id=day+'-'+(portrait?'P':'')+String(i%5+1).padStart(2,'0');
+    const seed='MARKER-'+i;
+    return {id,seed,mode:'field',series:'Orbital Studies',
+      orientation:portrait?'portrait':'landscape',rendererVersion:8,
+      imageFile:id+'.jpg',
+      settings:{seed,mode:'field',orientation:portrait?'portrait':'landscape',phiStrength:90,pen:'fine',palette:'mono'},
+      shareUrl:'https://example.test/?v=8&seed='+seed+'&mode=field',
+      altText:'Historical marker artwork'};
+  });
+  for(const e of ten)await fs.writeFile(path.join(dayDir,e.imageFile),'original-marker-'+e.seed);
+  const merged=JSON.parse(await fs.readFile(path.join(dayDir,'meta.json'),'utf8'));
+  merged.entries.push(...ten);
+  merged.count=merged.entries.length;
+  await fs.writeFile(path.join(dayDir,'meta.json'),JSON.stringify(merged));
+  build('landscape');build('portrait');
+  const full=JSON.parse(await fs.readFile(path.join(dayDir,'meta.json'),'utf8'));
+  assert.equal(full.count,14,'Ten marker plus four watercolor studies must survive rebuilds');
+  assert.equal(full.entries.filter(e=>e.material==='watercolor').length,4);
+  assert.equal(full.entries.filter(e=>e.material!=='watercolor').length,10);
+  assert.equal(new Set(full.entries.map(e=>e.id)).size,14);
+  assert(full.entries.slice(0,10).every(e=>e.material!=='watercolor'));
+  assert(full.entries.slice(10).every(e=>e.material==='watercolor'));
+  for(const e of ten){
+    assert.equal(await fs.readFile(path.join(dayDir,e.imageFile),'utf8'),'original-marker-'+e.seed);
+  }
+  console.log('PASS: 14-study mixed archive survives repeated watercolor updates with marker images untouched.');
   console.log('PASS: exactly four watercolor studies (2+2), independent ids, reversible exact links, no afternoon selection, and duplicate-safe gallery.');
 }finally{await fs.rm(temp,{recursive:true,force:true})}
