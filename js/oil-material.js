@@ -79,7 +79,7 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness){
   pig.save();pig.globalAlpha=opacity;pig.fillStyle=col;pig.fill();pig.clip();
   // Dry and wet streaks share the original tangent; the noise is material,
   // not another geometry generator. All stripes remain inside the paint mass.
-  var count=Math.round(clamp(width/4,6,27)),i;
+  var count=Math.round(clamp(width/13,3,9)),i;
   for(i=0;i<count;i++){
     var offset=(i/(count-1)-.5)*width*.95,ps=[];
     for(var j=0;j<pts.length;j++){
@@ -89,7 +89,7 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness){
     }
     var alternate=i%8===0?C.ochre:(i%3===0?C.cream:C.umber);
     var tint=lerpHex(col,r.pick(alternate),r.range(.035,.31));
-    pathStroke(pig,ps,r.range(.7,3.7),tint,r.range(.09,.48));
+    pathStroke(pig,ps,r.range(.7,3.7),tint,r.range(.05,.23));
   }
   pig.restore();
   // Grayscale height accumulates with lighter blending: real deposited paint
@@ -126,20 +126,64 @@ function insideVoid(pt,voids){
   }
   return false;
 }
+function paintPlanes(pig,height,chains,voids,r,allowance){
+  // Solid pigment planes grow off existing structure segments, giving the
+  // viewer a painted field instead of many parallel geometric wireframes.
+  var n=Math.min(chains.length,Math.ceil(31*allowance));
+  for(var i=n-1;i>=0;i--){
+    var pts=chains[i].pts;
+    if(pts.length<2)continue;
+    var j=r.int(1,pts.length-1),a=pts[j-1],b=pts[j],len=dist(a,b);
+    if(len<18)continue;
+    var middle=point(a,b,.5);
+    if(insideVoid(middle,voids)&&r.chance(.9))continue;
+    var normal=angle(a,b)+PI/2,side=r.chance(.5)?1:-1;
+    var span=clamp(Math.sqrt(chains[i].length)*r.range(3.8,9.2),80,270);
+    var pA=shift(a,normal,side*span*r.range(.35,.65));
+    var pB=shift(b,normal,side*span*r.range(.68,1.2));
+    var apex=shift(point(pA,pB,.5),normal,side*r.range(0,span*.3));
+    var warm=r.chance(.21);
+    var col=warm?r.pick(C.ochre):(r.chance(.55)?r.pick(C.cream):r.pick(C.blue));
+    var mixcol=lerpHex(col,r.pick(C.cream),r.range(.06,.38));
+    function shape(ctx){
+      ctx.beginPath();ctx.moveTo(a.x,a.y);
+      ctx.quadraticCurveTo(middle.x+normal*0,middle.y,b.x,b.y);
+      ctx.quadraticCurveTo(pB.x,pB.y,apex.x,apex.y);
+      ctx.quadraticCurveTo(pA.x,pA.y,a.x,a.y);ctx.closePath();
+    }
+    pig.save();shape(pig);pig.fillStyle=mixcol;
+    pig.globalAlpha=r.range(.36,.77);pig.fill();pig.clip();
+    // Broad, restrained scumbles inside the SAME painted plane.
+    for(var k=0;k<r.int(3,7);k++){
+      var c=point(a,b,r.range(.10,.9));
+      var offset=shift(c,normal,side*r.range(span*.1,span*.88));
+      var tangent=angle(a,b)+r.range(-.25,.25);
+      var e=shift(offset,tangent,r.range(30,115));
+      pathStroke(pig,[offset,e],r.range(6,25),
+        lerpHex(col,r.pick(k%2?C.cream:C.umber),r.range(.1,.55)),
+        r.range(.11,.32));
+    }
+    pig.restore();
+    height.save();height.globalCompositeOperation='lighter';shape(height);
+    height.fillStyle='rgb(38,38,38)';height.globalAlpha=r.range(.18,.48);
+    height.fill();height.restore();
+  }
+}
 function deposit(pig,height,w,h,chains,voids,seed,quality){
   var r=A.makeR(seed+'|paint-dab-4'),n=chains.length;
   var allowance=quality<.4?.5:1;
+  paintPlanes(pig,height,chains,voids,r,allowance);
   // Localised translucent glazes knit separate paths together without
   // replacing the original geometry with a noise texture.
-  var broad=Math.min(n,Math.round(31*allowance));
+  var broad=Math.min(n,Math.round(24*allowance));
   for(var i=broad-1;i>=0;i--){
     var ch=chains[i],pts=ch.pts;
     if(pts.length<2)continue;
     var mid=pts[Math.floor(pts.length/2)];
     if(insideVoid(mid,voids)&&r.chance(.82))continue;
-    var width=clamp(60+Math.sqrt(ch.length)*r.range(2.8,5.7),65,175);
+    var width=clamp(85+Math.sqrt(ch.length)*r.range(4.8,8.2),85,235);
     var muted=lerpHex(palette(i,r),r.pick(C.cream),r.range(.32,.73));
-    paintRibbon(pig,height,pts,width,r,muted,r.range(.21,.48),r.range(.25,.58));
+    paintRibbon(pig,height,pts,width,r,muted,r.range(.40,.69),r.range(.35,.80));
   }
   // Main painterly ribbons at two scales. Rhythm and large-scale direction
   // use the same φ-composed source segments.
@@ -151,7 +195,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     width=clamp(Math.sqrt(ch.length)*r.range(1.4,3.1),14,i<22?96:61);
     if(i>=broad&&r.chance(.32))continue;
     var hue=palette(i,r);
-    paintRibbon(pig,height,pts,width,r,hue,r.range(.45,.83),
+    paintRibbon(pig,height,pts,width,r,hue,r.range(.69,.94),
       r.range(.58,1.5));
   }
   // Broken small strokes and half-covered edges build material variation.
@@ -160,7 +204,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     ch=chains[i];pts=ch.pts;
     var skip=quality<.4?2:1;
     for(var j=1;j<pts.length;j+=skip){
-      if(r.chance(.67))continue;
+      if(r.chance(.84))continue;
       var a=pts[j-1],b=pts[j],d=dist(a,b);
       if(d<4)continue;
       if(insideVoid(point(a,b,.5),voids)&&r.chance(.85))continue;
@@ -168,7 +212,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
       var off=r.range(-14,14);
       var base=linePath(shift(a,normal,off),shift(b,normal,off),d*.10,r);
       var shade=r.chance(.35)?r.pick(C.umber):(r.chance(.45)?r.pick(C.ochre):r.pick(C.cream));
-      paintRibbon(pig,height,base,r.range(4,19),r,shade,
+      paintRibbon(pig,height,base,r.range(5,20),r,shade,
         r.range(.45,.90),r.range(.30,1.4));
     }
   }
