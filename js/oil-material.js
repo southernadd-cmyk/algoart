@@ -18,8 +18,13 @@ var C={
 function clamp(x,a,b){return Math.min(b,Math.max(a,x))}
 function mix(a,b,t){return a+(b-a)*t}
 function lerpHex(a,b,t){
-  function col(hex,k){return parseInt(hex.slice(k,k+2),16)}
-  var cs=[1,3,5].map(function(k){return Math.round(mix(col(a,k),col(b,k),t))});
+  function colour(v){
+    if(v[0]==='#')return [1,3,5].map(function(k){return parseInt(v.slice(k,k+2),16)});
+    var m=v.match(/[0-9]+/g);
+    return m&&m.length>=3?m.slice(0,3).map(Number):[180,170,155];
+  }
+  var c=colour(a),d=colour(b);
+  var cs=c.map(function(x,i){return Math.round(mix(x,d[i],t))});
   return 'rgb('+cs.join(',')+')';
 }
 function point(a,b,t){return{x:mix(a.x,b.x,t),y:mix(a.y,b.y,t)}}
