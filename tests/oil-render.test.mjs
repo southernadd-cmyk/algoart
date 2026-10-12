@@ -10,8 +10,11 @@ const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const exportCode=readFileSync(new URL('../js/export.js',import.meta.url),'utf8');
 
 assert.match(html,/id="oilRender" type="checkbox"/);
+assert.match(html,/WATERCOLOR RENDER/);
+assert.match(app,/params\.has\('oil'\)/);
+assert.match(exportCode,/-watercolor/);
 assert.match(html,/js\/oil-render\.js/);
-assert.match(app,/if\(oilEnabled\(\)\)params\.set\('oil','1'\)/);
+assert.match(app,/if\\(oilEnabled\\(\\)\\)params\\.set\\('watercolor','1'\\)/);
 assert.match(app,/if\(e\.id!=='oilRender'\)useCurrentRenderer\(\)/);
 assert.match(exportCode,/delete compositionSettings\.oilRender/);
 // The checkbox must NEVER be part of the V8 seed input.
