@@ -3828,6 +3828,9 @@ A.geometryOverlay=function(ctx,s,meta){
 };
 
 A.render=function(target,s,scale,showGeometry){
+  // Reject future/invalid renderer versions rather than silently drawing as V7.
+  if(A.supportedRendererVersions && !A.supportedRendererVersions.includes(A.rendererVersion))
+    throw new Error('Unsupported renderer version: '+A.rendererVersion);
   // Set logical dimensions for every render, including plugin/headless exports.
   // Absence of orientation preserves the original landscape format.
   A.W=s.orientation==='portrait'?1000:1400;
