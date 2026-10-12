@@ -1,0 +1,67 @@
+name: Watercolor v2 wet-wash previews
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/watercolor-v2.js'
+      - 'js/oil-render.js'
+      - 'js/app.js'
+      - 'js/export.js'
+      - 'index.html'
+      - 'tests/watercolor-v2.test.mjs'
+      - 'tests/watercolor-v2-preview.mjs'
+      - 'package.json'
+      - '.github/workflows/watercolor-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watercolor-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  wet-wash-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Deterministic wet-wash and legacy material regression
+        run: npm run test:watercolor-v2
+      - name: Preserve v1 Watercolor and historic V8 geometry
+        run: npm run test:oil-render && npm run test:renderer-lock
+      - name: Preserve daily watercolor publishing
+        run: npm run test:watercolor-publishing
+
+  real-browser-previews:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Start local renderer
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/watercolor-v2-preview.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: Capture and compare Watercolor v1, v2 and V8 marker
+        run: node tests/watercolor-v2-preview.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: watercolor-v2-before-after-pngs
+          path: watercolor-v2-check-results/
+          retention-days: 30
