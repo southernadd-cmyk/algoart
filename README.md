@@ -124,6 +124,32 @@ It requires no trained model, network call, third-party image asset or install.
   Full-resolution export and low-memory mobile performance deserve further
   validation before increasing the material's complexity.
 
+## Daily watercolor publication
+
+The daily gallery includes **four additional deterministic watercolor studies**:
+two portrait and two landscape. The 04:15 UTC gallery build creates all four,
+and the existing London social slots publish them to configured platforms:
+
+| London slot | Watercolor additions |
+| --- | --- |
+| 09:00 | One portrait + one landscape |
+| 15:00 | None (existing marker posts only) |
+| 20:30 | One portrait + one landscape |
+
+The ordinary five-landscape and five-portrait marker batches and their
+publishing times are unchanged, giving **14 total studies** per complete day.
+Watercolor batches use separate `AWL`/`AWP` seeds, `WL`/`WP` archive IDs,
+`?watercolor=1` editor links, gallery medium labels, and independent media
+release manifests / per-platform completion markers. Existing social triggers
+are reused; there are **no additional cron jobs**. IG portraits use the same
+uncropped 4:5 padded image handling as marker portraits. Failed destinations
+are retried without reposting destinations already marked successful.
+
+Run `npm run test:watercolor-publishing` to check slot selection, short links,
+duplicate-safe gallery merging and the combined 14-work archive. The separate
+browser workflow `watercolor-tests.yml` renders and verifies four real studies.
+Historical gallery entries remain byte-for-byte unchanged.
+
 ## Plotter compatibility
 
 Plotter SVG supports faithful colour runs and grouping by pen, with light-to-dark pen identities and pen-change pause labels. **Actual Inkscape/AxiDraw behaviour has not been hardware-tested.** See [issue #40](https://github.com/southernadd-cmyk/algoart/issues/40) to help verify pauses, Resume and individually selected numbered layers.

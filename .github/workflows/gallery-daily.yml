@@ -51,7 +51,31 @@ jobs:
       - name: Generate deterministic daily batch
         run: npm run social:generate
 
-      - name: Build crawlable gallery
+      - name: Build marker gallery
+        run: npm run gallery:build
+
+      - name: Generate two landscape watercolor studies
+        env:
+          SOCIAL_MATERIAL: watercolor
+          SOCIAL_ORIENTATION: landscape
+        run: npm run social:generate
+
+      - name: Archive landscape watercolors
+        env:
+          GALLERY_QUEUE_MATERIAL: watercolor
+          GALLERY_QUEUE_ORIENTATION: landscape
+        run: npm run gallery:build
+
+      - name: Generate two portrait watercolor studies
+        env:
+          SOCIAL_MATERIAL: watercolor
+          SOCIAL_ORIENTATION: portrait
+        run: npm run social:generate
+
+      - name: Archive portrait watercolors
+        env:
+          GALLERY_QUEUE_MATERIAL: watercolor
+          GALLERY_QUEUE_ORIENTATION: portrait
         run: npm run gallery:build
 
       - name: Verify gallery output
@@ -65,7 +89,7 @@ jobs:
           DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
           test -s "gallery/$DAY/index.html"
           COUNT="$(find "gallery/$DAY" -maxdepth 1 -name '*.jpg' | wc -l)"
-          test "$COUNT" -ge 5
+          test "$COUNT" -ge 9
           echo "Verified gallery/$DAY with $COUNT artwork images."
 
       - name: Persist gallery archive
@@ -101,7 +125,7 @@ jobs:
         run: |
           echo "### ALGO/ART daily gallery" >> "$GITHUB_STEP_SUMMARY"
           echo "- Archive: https://southernadd-cmyk.github.io/algoart/gallery/" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Five scheduled base artworks plus any validated curated studies" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Five marker landscapes plus four watercolor studies (two portrait, two landscape); marker portraits follow via social publishing" >> "$GITHUB_STEP_SUMMARY"
           echo "- Static HTML + JSON-LD + Open Graph + RSS + sitemap" >> "$GITHUB_STEP_SUMMARY"
 
   archive-check:

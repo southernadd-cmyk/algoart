@@ -10,7 +10,7 @@ function strategyName(stats, fallback) {
 // full share URL. This keeps Threads/Bluesky within their caption limits.
 export function editorArtworkLink(item) {
   const id=String(item.id||'');
-  if (!/^\d{4}-\d{2}-\d{2}-(?:P\d{2}|\d{2})$/.test(id)) {
+  if (!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|P)\d{2}|\d{2})$/.test(id)) {
     throw new Error('Cannot link artwork without a valid daily archive ID: '+id);
   }
   const url=new URL(SITE_URL);
@@ -20,9 +20,10 @@ export function editorArtworkLink(item) {
 
 export function makeCaptions(item) {
   const strategy = strategyName(item.stats, item.mode);
-  const heading = `${item.series.toUpperCase()} / ${strategy}`;
+  const heading = `${item.series.toUpperCase()} / ${strategy}${item.material==='watercolor'?' / WATERCOLOR':''}`;
   const format = item.settings.orientation === 'portrait' ? 'Portrait study · ' : '';
-  const facts = `${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${item.settings.pen} marker`;
+  const watercolor = item.material === 'watercolor';
+  const facts = `${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${watercolor ? 'procedural watercolor' : item.settings.pen+' marker'}`;
 
   return {
     instagram: [
@@ -56,8 +57,9 @@ export function makeCaptions(item) {
       '',
       '#generativeart #creativecoding'
     ].join('\n'),
-    altText:
-      `Abstract algorithmic marker artwork from ALGO/ART's ${item.series} system. ` +
-      `Generated from seed ${item.seed} using golden-ratio composition rules and imperfect ${item.settings.pen} marker strokes.`
+    altText: watercolor
+      ? `Procedural watercolor artwork from ALGO/ART's ${item.series} system, ${format.toLowerCase()}seed ${item.seed}. Golden-ratio composition with translucent washes and painterly pigment.`
+      : `Abstract algorithmic marker artwork from ALGO/ART's ${item.series} system. ` +
+        `Generated from seed ${item.seed} using golden-ratio composition rules and imperfect ${item.settings.pen} marker strokes.`
   };
 }

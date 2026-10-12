@@ -1007,7 +1007,7 @@ var requestedArtworkId=new URLSearchParams(location.search).get('art');
 var loadedFromURL=loadSettingsFromURL();
 
 function loadExactArchivedArtwork(id){
-  if(!/^\d{4}-\d{2}-\d{2}-(?:P\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
+  if(!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|P)\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
   var day=id.slice(0,10);
   return fetch('gallery/'+day+'/meta.json',{cache:'no-store'})
     .then(function(r){if(!r.ok)throw new Error('Archive unavailable');return r.json();})
@@ -1015,6 +1015,7 @@ function loadExactArchivedArtwork(id){
       var entry=(Array.isArray(meta.entries)?meta.entries:[]).find(function(e){return e.id===id});
       if(!entry||!entry.settings||!entry.seed)throw new Error('Archived artwork missing: '+id);
       A.rendererVersion=Number(entry.rendererVersion)||CURRENT_RENDERER_VERSION;
+      if($('oilRender'))$('oilRender').checked=entry.material==='watercolor'||new URL(entry.shareUrl||location.href).searchParams.get('watercolor')==='1';
       applySettings(Object.assign({},entry.settings,{seed:entry.seed}));
       return true;
     });
@@ -1036,7 +1037,8 @@ function loadLatestGalleryDefault(){
           // Keep existing unparameterised landscape home-page behaviour.
           // Portrait works remain available through the gallery and share URLs.
           var latest=entries.filter(function(e){
-            return (e.orientation||(e.settings&&e.settings.orientation))!=='portrait';
+            return e.material!=='watercolor' &&
+              (e.orientation||(e.settings&&e.settings.orientation))!=='portrait';
           }).pop()||entries[entries.length-1];
           if(!latest||!latest.settings)return false;
           A.rendererVersion=Number(latest.rendererVersion)||CURRENT_RENDERER_VERSION;

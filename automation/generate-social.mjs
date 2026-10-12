@@ -159,8 +159,11 @@ const requestedDate = process.env.SOCIAL_DATE;
 const day = requestedDate || dateInZone();
 const seedSalt = String(process.env.SOCIAL_SEED_SALT || '').trim();
 const orientation = process.env.SOCIAL_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
-const generationCount = Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
-const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day, ...(orientation === 'portrait' ? ['portrait'] : []));
+const material = process.env.SOCIAL_MATERIAL === 'watercolor' ? 'watercolor' : 'marker';
+const watercolor = material === 'watercolor';
+const generationCount = watercolor ? 2 : Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
+const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day,
+  ...(watercolor ? ['watercolor',orientation] : orientation === 'portrait' ? ['portrait'] : []));
 await fs.mkdir(outDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -171,7 +174,7 @@ try {
   for (let index = 0; index < generationCount; index++) {
     // Existing landscape editions retain their exact JPEG, settings and version.
     // Portrait editions are already frozen in the release queue by portrait-live.
-    if(orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
+    if(!watercolor&&orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
       const archived=await archivedLandscapeStudy(day,index);
       if(archived){
         await fs.copyFile(archived.imagePath,path.join(outDir,archived.entry.imageFile));
@@ -188,8 +191,14 @@ try {
     // whole five-work day. Landscape generation stays byte-for-byte unchanged.
     for (let attempt = 0; attempt < (orientation === 'portrait' ? 8 : 1); attempt++) {
     const retrySalt = attempt ? seedSalt + '|retry-' + attempt : seedSalt;
-    const settings = settingsFor(day, index, retrySalt, orientation);
-    const query = queryFor(settings);
+    const settings = settingsFor(day, index, watercolor ? 'WATERCOLOR|1|'+retrySalt : retrySalt, orientation);
+    if(watercolor){
+      // Isolate new study IDs and seeds without touching existing AA/AP work.
+      settings.seed = 'AW'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
+        '-'+String(index+1).padStart(2,'0')+'-'+
+        (hash(day+'|watercolor|'+orientation+'|'+index+'|'+retrySalt)%100000).toString().padStart(5,'0');
+    }
+    const query = queryFor(settings)+(watercolor?'&watercolor=1':'');
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
 
@@ -283,18 +292,19 @@ try {
       throw new Error(`Render validation failed for ${settings.seed}: ${JSON.stringify(rendered.validation)}`);
     }
 
-    const filename = `${day}-${orientation === 'portrait' ? 'portrait-' : ''}${String(index + 1).padStart(2, '0')}-${settings.mode}-${settings.seed}.jpg`;
+    const filename = `${day}-${watercolor ? 'watercolor-'+orientation+'-' : orientation === 'portrait' ? 'portrait-' : ''}${String(index + 1).padStart(2, '0')}-${settings.mode}-${settings.seed}.jpg`;
     const filePath = path.join(outDir, filename);
     await fs.writeFile(filePath, Buffer.from(rendered.dataUrl.split(',')[1], 'base64'));
-    const instagramImageFile = orientation === 'portrait' ? filename.replace(/\.jpg$/, '-instagram.jpg') : null;
+    const instagramImageFile = orientation === 'portrait' ? filename.replace(/\.jpg$/, '-instagram.jpg') : (watercolor ? filename : null);
     if (orientation === 'portrait') {
       if (!rendered.instagramDataUrl) throw new Error('Missing Instagram-safe 4:5 portrait derivative');
       await fs.writeFile(path.join(outDir, instagramImageFile), Buffer.from(rendered.instagramDataUrl.split(',')[1], 'base64'));
     }
 
     const item = {
-      id: `${day}-${orientation === 'portrait' ? 'P' : ''}${String(index + 1).padStart(2, '0')}`,
-      ...(orientation === 'portrait' ? { orientation } : {}),
+      id: `${day}-${watercolor ? (orientation === 'portrait' ? 'WP' : 'WL') : (orientation === 'portrait' ? 'P' : '')}${String(index + 1).padStart(2, '0')}`,
+       ...(orientation === 'portrait' || watercolor ? { orientation } : {}),
+      ...(watercolor ? { material: 'watercolor' } : {}),
       generatedAt: new Date().toISOString(),
       seed: settings.seed,
       mode: settings.mode,
@@ -305,15 +315,15 @@ try {
       shareUrl,
       rendererVersion: rendererVersion,
       settings,
-      platforms: platformAssignment(index, orientation)
+      platforms: watercolor ? {instagram:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},threads:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},bluesky:{scheduledTime:index===0?'09:00':'20:30',status:'pending'}} : platformAssignment(index, orientation)
     };
 
     item.copy = makeCaptions(item);
-    if (rendered.accessibility?.altText) {
+    if (!watercolor && rendered.accessibility?.altText) {
       item.copy.altText = rendered.accessibility.altText;
     }
     item.accessibility = {
-      altText: rendered.accessibility?.altText || item.copy.altText,
+      altText: watercolor ? item.copy.altText : (rendered.accessibility?.altText || item.copy.altText),
       longDescription: rendered.accessibility?.longDescription || '',
       constructionDescription: rendered.accessibility?.constructionDescription || ''
     };
@@ -329,13 +339,14 @@ try {
 const queue = {
   version: 1,
   date: day,
-  ...(orientation === 'portrait' ? { orientation } : {}),
+  ...(watercolor ? {material:'watercolor'} : {}),
+  ...(orientation === 'portrait' || watercolor ? { orientation } : {}),
   generatedAt: new Date().toISOString(),
   timezone: TIME_ZONE,
   accounts: ACCOUNTS,
   cadence: {
-    instagramPerDay: orientation === 'portrait' ? PORTRAIT_SCHEDULE.length : SCHEDULE.instagram.length,
-    threadsPerDay: orientation === 'portrait' ? PORTRAIT_SCHEDULE.length : SCHEDULE.threads.length
+    instagramPerDay: watercolor ? 2 : orientation === 'portrait' ? PORTRAIT_SCHEDULE.length : SCHEDULE.instagram.length,
+    threadsPerDay: watercolor ? 2 : orientation === 'portrait' ? PORTRAIT_SCHEDULE.length : SCHEDULE.threads.length
   },
   publishingEnabled: false,
   entries
@@ -343,4 +354,4 @@ const queue = {
 
 await fs.writeFile(path.join(outDir, 'queue.json'), JSON.stringify(queue, null, 2));
 console.log(`\nGenerated ${generationCount} artworks into ${outDir}`);
-console.log(`${orientation} Instagram/Threads/Bluesky: ${(orientation === 'portrait' ? PORTRAIT_SCHEDULE : SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);
+console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(watercolor ? ['09:00','20:30'] : orientation === 'portrait' ? PORTRAIT_SCHEDULE : SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);

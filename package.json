@@ -13,6 +13,7 @@
     "test:orientation": "node tests/orientation.test.mjs",
     "test:tuning-equivalence": "node tests/tuning-equivalence.test.mjs",
     "test:portrait-publishing": "node tests/portrait-publishing.test.mjs",
+    "test:watercolor-publishing": "node tests/watercolor-publishing.test.mjs",
     "test:control-ranges": "node tests/control-ranges.test.mjs",
     "test:organic-version": "node tests/organic-version.test.mjs",
     "test:growth-v8": "node tests/growth-v8.test.mjs",
