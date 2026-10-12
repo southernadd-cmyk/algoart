@@ -1,8 +1,30 @@
 name: Archive reproduction
+# Automatically test code changes, not every gallery/social-output commit or push
+# to an intermediate working branch. Daily gallery uses workflow_call below.
 on:
   push:
+    branches: [main]
+    paths:
+      - 'js/**'
+      - 'css/**'
+      - 'fonts/**'
+      - 'index.html'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/archive-reproduction.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'js/**'
+      - 'css/**'
+      - 'fonts/**'
+      - 'index.html'
+      - 'tests/**'
+      - 'gallery/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/archive-reproduction.yml'
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -12,6 +34,11 @@ on:
         default: ''
 permissions:
   contents: read
+# Cancel superseded PR test runs, but never interrupt the main-branch
+# archive reproducibility checks or the daily gallery's explicit call.
+concurrency:
+  group: archive-reproduction-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   reproduce:
     name: Archive / ${{ matrix.browser }}

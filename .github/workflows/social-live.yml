@@ -347,9 +347,3 @@ jobs:
       repost_deleted: false
     secrets: inherit
 
-  archive-check:
-    needs: [publish, portraits, portraits-retry]
-    if: ${{ always() && github.ref == 'refs/heads/main' }}
-    uses: ./.github/workflows/archive-reproduction.yml
-    with:
-      checkout_ref: main

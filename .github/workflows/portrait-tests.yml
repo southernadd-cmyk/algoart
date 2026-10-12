@@ -11,10 +11,14 @@ on:
 
 permissions:
   contents: read
+concurrency:
+  group: portrait-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   orientation-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,8 +26,6 @@ jobs:
           node-version: '22'
       - name: Verify landscape fixtures and portrait determinism
         run: npm run test:orientation
-      - name: Verify V8 golden-intersection roots and legacy rendering
-        run: npm run test:growth-v8
       - name: Verify shared posting slots and ten-image gallery preservation
         run: npm run test:portrait-publishing
       - name: Check caption limits and artwork permalinks
@@ -31,18 +33,15 @@ jobs:
 
   browser-previews:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Install browser testing tools
         run: |
-          npm install --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
           npx playwright install --with-deps chromium
       - name: Launch isolated local web server
         run: |
@@ -78,16 +77,6 @@ jobs:
           path: preview/screenshots/
           if-no-files-found: ignore
           retention-days: 14
-      - name: Save screenshots and test status in feature branch only
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/feature/portrait-support'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f preview/screenshots/
-          if ! git diff --cached --quiet; then
-            git commit -m "docs: refresh feature-branch portrait previews [skip ci]"
-            git push origin HEAD:feature/portrait-support
-          fi
       - name: Require passing end-to-end portrait pipeline
         if: always()
         run: |

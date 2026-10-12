@@ -1,10 +1,8 @@
 name: Build ALGO ART daily gallery
 
+# Only scheduled or explicit gallery builds may write new gallery assets.
+# Editing this workflow or its generator must not trigger a live build.
 on:
-  push:
-    paths:
-      - 'automation/build-gallery.mjs'
-      - '.github/workflows/gallery-daily.yml'
   schedule:
     # Early morning UTC; the generator resolves the calendar day in Europe/London.
     - cron: '15 4 * * *'
@@ -108,7 +106,7 @@ jobs:
 
   archive-check:
     needs: build
-    if: ${{ always() }}
+    if: ${{ needs.build.result == 'success' }}
     uses: ./.github/workflows/archive-reproduction.yml
     with:
       checkout_ref: main
