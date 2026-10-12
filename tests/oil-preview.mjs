@@ -22,7 +22,7 @@ for (const test of cases){
   const faults=[];
   page.on('pageerror',error=>faults.push(error.message));
   await page.goto(url.toString(),{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.includes('/ OIL') &&
+  await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.trim().endsWith(' / OIL') &&
     document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
   // Dispatch the exact change the checkbox produces; avoids screenshot
@@ -38,7 +38,7 @@ for (const test of cases){
     url:location.href,
     version:window.AlgoArt?.rendererVersion
   }));
-  if(toggleState.checked||toggleState.stats?.includes('/ OIL'))
+  if(toggleState.checked||toggleState.stats?.trim().endsWith(' / OIL'))
     throw new Error(test.name+' failed to restore marker: '+JSON.stringify(toggleState)+
       ' page errors: '+JSON.stringify(faults));
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-marker.png',timeout:60000});
