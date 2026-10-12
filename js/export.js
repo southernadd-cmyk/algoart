@@ -5,12 +5,14 @@ window.AlgoArt=window.AlgoArt||{};
 A.exportPNG=function(settings,scale){
   scale=Number(scale)||1;
   var out=document.createElement('canvas');
+  // Oil is display/export metadata only. Never allow this key into the
+  // published renderer's seed/JSON settings, including when unchecked.
+  var compositionSettings=Object.assign({},settings);
+  delete compositionSettings.oilRender;
   if(settings.oilRender){
-    var compositionSettings=Object.assign({},settings);
-    delete compositionSettings.oilRender;
     A.renderOil(out,compositionSettings,scale,false);
   }else{
-    A.render(out,settings,scale,false);
+    A.render(out,compositionSettings,scale,false);
   }
 
   var link=document.createElement('a');
