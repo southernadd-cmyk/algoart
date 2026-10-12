@@ -76,7 +76,10 @@ jobs:
             sleep 1
           done
           exit 1
+      # These deterministic Node checks are browser-independent.
+      # Run them once rather than repeating the expensive suite for all 3 browsers.
       - name: Check visual metrics, geometry and fixed-order travel
+        if: ${{ matrix.browser == 'chromium' }}
         run: |
           npm run test:plotter-metrics
           npm run test:plotter
