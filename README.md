@@ -84,6 +84,29 @@ The tuning-equivalence test compares generated drawings with a pinned historical
 
 V8 expands Growth Systems with seeded golden-angle root directions, entries at the 38.2% and 61.8% stations on all four edges, and interior-root alternatives. Two to four growth forms appear more often, especially in landscape. Branch lengths diminish by φ, with space-aware turns and a shared segment budget. Other engines retain their V7 output. New social batches use V8; existing editions keep their recorded renderer and media.
 
+## Procedural oil render (experimental)
+
+The optional **Oil Render** checkbox in Compose is a material/rendering
+switch, **not** a ninth composition engine or an image-generation model.
+It reuses the identical seed, system, φ geometry and settings. Turning it off
+restores the original marker drawing without shifting the underlying marks.
+
+The separate `js/oil-render.js` painter captures the original SVG-recorded
+geometry from an offscreen render and interprets those paths procedurally as
+layered pigment, broad surfaces, palette-knife-like edges and deterministic
+canvas grain. No trained model, network call or raster style transfer is used.
+The painter has a separate random stream from the preserved V8 engine.
+
+- Oil and marker views share the same composition. `?oil=1` preserves the
+  selected material in share URLs without entering the composition RNG input.
+- Oil can be saved as a high-resolution **PNG**; SVG and plotter SVG deliberately
+  retain the original marker-vector construction, not a falsely vectorised painting.
+- Published V1–V8 marker renderers and archived artwork remain unchanged.
+  The independent oil appearance is **experimental** and should be visually
+  calibrated and version-locked before releasing it as a permanent shareable medium.
+- Run `npm run test:oil-render` for oil determinism, toggle-reversibility and
+  composition-preservation checks.
+
 ## Plotter compatibility
 
 Plotter SVG supports faithful colour runs and grouping by pen, with light-to-dark pen identities and pen-change pause labels. **Actual Inkscape/AxiDraw behaviour has not been hardware-tested.** See [issue #40](https://github.com/southernadd-cmyk/algoart/issues/40) to help verify pauses, Resume and individually selected numbered layers.
