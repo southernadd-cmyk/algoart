@@ -9,17 +9,17 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const exportCode=readFileSync(new URL('../js/export.js',import.meta.url),'utf8');
 
-assert.match(html,/id="oilRender" type="checkbox"/);
-assert.match(html,/WATERCOLOR RENDER/);
+assert.match(html,/id="materialStyle"/);
+assert.match(html,/Tissue &amp; Graphite/);
 assert.match(app,/params\.has\('oil'\)/);
-assert.match(exportCode,/-watercolor/);
+assert.match(exportCode,/-tissue-graphite/);
 assert.match(html,/js\/oil-render\.js/);
 assert.match(app,/if\(oilEnabled\(\)\)params\.set\('watercolor','1'\)/);
-assert.match(app,/if\(e\.id!=='oilRender'\)useCurrentRenderer\(\)/);
+assert.match(app,/if\(e\.id!=='materialStyle'\)useCurrentRenderer\(\)/);
 assert.match(exportCode,/delete compositionSettings\.oilRender/);
 // The checkbox must NEVER be part of the V8 seed input.
 const settingBlock=app.slice(app.indexOf('var SETTING_IDS='),app.indexOf('var PARAM_KEYS='));
-assert.doesNotMatch(settingBlock,/oilRender/);
+assert.doesNotMatch(settingBlock,/oilRender|materialStyle/);
 
 let outputHash=0,operationCount=0,paintTrace=false;
 function record(value){
