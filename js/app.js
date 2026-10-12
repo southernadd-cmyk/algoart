@@ -198,7 +198,7 @@ function settingsToURL(settings){
     if(typeof value==='boolean')value=value?'1':'0';
     params.set(PARAM_KEYS[key],String(value));
   });
-  if(oilEnabled())params.set('oil','1');
+  if(oilEnabled())params.set('watercolor','1');
   return location.pathname+'?'+params.toString()+location.hash;
 }
 
@@ -238,8 +238,10 @@ function loadSettingsFromURL(){
     }
   });
 
-  if(params.has('oil')){
-    $('oilRender').checked=params.get('oil')==='1';
+  // Preserve early oil-prototype links while issuing new Watercolor URLs.
+  if(params.has('watercolor')||params.has('oil')){
+    $('oilRender').checked=(params.has('watercolor')
+      ?params.get('watercolor'):params.get('oil'))==='1';
     found=true;
   }
 
@@ -355,7 +357,7 @@ function regenerate(){
   currentRenderMeta=meta;
   var strategy=meta.strategy?(' / '+meta.strategy):'';
   var series=SERIES[s.mode]||{code:s.mode.toUpperCase(),title:s.mode};
-  $('statsText').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%'+(oilEnabled()?' / OIL':'');
+  $('statsText').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%'+(oilEnabled()?' / WATERCOLOR':'');
   syncDescription(s,meta);
   syncRendererChip();
   syncModeCards();
