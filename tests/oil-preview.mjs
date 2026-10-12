@@ -25,7 +25,16 @@ for (const test of cases){
   await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.includes('/ OIL') &&
     document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
+  // Dispatch the exact change the checkbox produces; avoids screenshot
+  // automation clicking a label twice and checks marker restoration.
+  await page.evaluate(() => {
+    const toggle=document.querySelector('#oilRender');
+    toggle.checked=false;
+    toggle.dispatchEvent(new Event('change',{bubbles:true}));
+  });
+  await page.waitForFunction(()=>!document.querySelector('#statsText')?.textContent?.includes('/ OIL'),null,{timeout:60000});
+  await page.locator('#art').screenshot({path:out+'/'+test.name+'-marker.png',timeout:60000});
   if(faults.length)throw new Error(test.name+': '+faults.join('; '));
-  console.log('CAPTURED oil',test.name);
+  console.log('CAPTURED oil and restored marker',test.name);
 }
 await browser.close();
