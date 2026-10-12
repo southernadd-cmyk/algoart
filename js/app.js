@@ -1037,7 +1037,8 @@ function loadLatestGalleryDefault(){
           // Keep existing unparameterised landscape home-page behaviour.
           // Portrait works remain available through the gallery and share URLs.
           var latest=entries.filter(function(e){
-            return (e.orientation||(e.settings&&e.settings.orientation))!=='portrait';
+            return e.material!=='watercolor' &&
+              (e.orientation||(e.settings&&e.settings.orientation))!=='portrait';
           }).pop()||entries[entries.length-1];
           if(!latest||!latest.settings)return false;
           A.rendererVersion=Number(latest.rendererVersion)||CURRENT_RENDERER_VERSION;
