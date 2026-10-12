@@ -92,9 +92,12 @@ It reuses the identical seed, system, φ geometry and settings. Turning it off
 restores the original marker drawing without shifting the underlying marks.
 
 The separate `js/oil-render.js` painter captures the original SVG-recorded
-geometry from an offscreen render and interprets those paths procedurally as
-layered pigment, broad surfaces, palette-knife-like edges and deterministic
-canvas grain. No trained model, network call or raster style transfer is used.
+geometry from an offscreen render and interprets the existing paths as
+continuous painted masses, pigment planes between branching edges,
+underpainting, loaded bristle strokes, broken dark ridges, impasto and grain.
+The earlier OIL-1 polygon-ribbon prototype, which looks closer to torn paper,
+is preserved separately at `experiments/torn-paper-v1.js` for a possible future
+**Torn Paper** material. It is not loaded or selectable. No trained model, network call or raster style transfer is used.
 The painter has a separate random stream from the preserved V8 engine.
 
 - Oil and marker views share the same composition. `?oil=1` preserves the
