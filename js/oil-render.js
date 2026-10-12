@@ -99,7 +99,7 @@ function brush(ctx,a,b,w,col,alpha,r,bristles){
   var mid=move(p(a,b,.5),theta+Math.PI/2,r.range(-w*.18,w*.18));
   ctx.save();
   ctx.globalAlpha=clamp(alpha,0,1);ctx.strokeStyle=col;
-  ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=Math.max(.65,w);
+  ctx.lineCap=w>6?'butt':'round';ctx.lineJoin='round';ctx.lineWidth=Math.max(.65,w);
   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(mid.x,mid.y,b.x,b.y);ctx.stroke();
   if(bristles){
     // Relief is directional, rather than indiscriminate pixel noise.
@@ -138,22 +138,22 @@ function irregularPatch(ctx,c,rx,ry,angle,col,alpha,r){
   ctx.restore();
 }
 function paintGround(ctx,w,h,chains,r,level){
-  ctx.fillStyle=COLOR.canvas;ctx.fillRect(0,0,w,h);
+  // The pigmented raster already forms a continuous ground; these are glazes.
   // Interlocking underpainting fields are muted and continuous.
-  for(var i=0;i<Math.round(46*level);i++){
+  for(var i=0;i<Math.round(27*level);i++){
     var c={x:r.range(-w*.1,w*1.1),y:r.range(-h*.1,h*1.1)};
     var size=r.range(95,380);
     irregularPatch(ctx,c,size,size*r.range(.5,1.5),
-      r.range(-Math.PI,Math.PI),pick(r,COLOR.ground),r.range(.14,.51),r);
+      r.range(-Math.PI,Math.PI),pick(r,COLOR.ground),r.range(.10,.29),r);
   }
   // Broad dry-wet directional scumbles visible through subsequent paint.
-  for(i=0;i<Math.round(95*level);i++){
+  for(i=0;i<Math.round(68*level);i++){
     var anchor=chains.length?pick(r,chains):null;
     var q=anchor?pick(r,anchor.pts):{x:r.range(0,w),y:r.range(0,h)};
     var at=move(q,r.range(0,Math.PI*2),r.range(0,190));
     var theta=r.range(-.9,.9),len=r.range(70,350);
     brush(ctx,at,move(at,theta,len),r.range(30,130),
-      pick(r,COLOR.ground),r.range(.06,.20),r,false);
+      pick(r,COLOR.ground),r.range(.04,.14),r,false);
   }
 }
 function toneFor(r,index){
@@ -281,18 +281,18 @@ function spine(ctx,chains,r,voids,level){
   // Source curves become raised, sometimes broken pigment ridges rather than
   // uniformly outlining all the individual elements.
   for(var i=0;i<chains.length;i++){
-    if(i>Math.ceil(95*level))break;
+    if(i>Math.ceil(34*level))break;
     var pts=chains[i].pts;
     for(var j=1;j<pts.length;j++){
       var a=pts[j-1],b=pts[j],length=dist(a,b);
       if(length<7)continue;
       var count=Math.max(1,Math.ceil(length/70));
       for(var k=0;k<count;k++){
-        if(r.chance(i<18?.10:.43))continue;
+        if(r.chance(i<12?.28:.62))continue;
         var p1=p(a,b,k/count),p2=p(a,b,(k+1)/count);
         if(inVoid((p1.x+p2.x)/2,(p1.y+p2.y)/2,voids)&&r.chance(.7))continue;
         var ang=tang(p1,p2),normal=ang+Math.PI/2;
-        var w=r.range(6,24)*(i<14?1.35:.75);
+        var w=r.range(4,15)*(i<12?1.2:.75);
         var from=move(p1,normal,r.range(-12,12));
         var to=move(p2,normal,r.range(-12,12));
         brush(ctx,from,to,w,pick(r,COLOR.deep),r.range(.72,.98),r,true);
@@ -308,7 +308,7 @@ function spine(ctx,chains,r,voids,level){
 function impasto(ctx,chains,nodes,r,level){
   // Knife flecks cluster at real joints, not at invented central focal points.
   for(var i=0;i<Math.min(nodes.length,Math.ceil(55*level));i++){
-    var n=nodes[i],count=r.int(4,14);
+    var n=nodes[i],count=r.int(3,9);
     for(var j=0;j<count;j++){
       var a={x:n.x+r.range(-30,30),y:n.y+r.range(-30,30)};
       var theta=r.range(0,Math.PI*2),length=r.range(5,38);
@@ -347,11 +347,13 @@ function paint(ctx,w,h,paths,meta,seed,quality){
   var level=quality<.4?.40:quality<.85?.68:1;
   var chains=skeleton(paths,quality<.4?95:250);
   var voids=meta.voids||[];
+  if(A.oilSurface)A.oilSurface(ctx,w,h,chains,seed,quality);
+  else{ctx.fillStyle=COLOR.canvas;ctx.fillRect(0,0,w,h)}
   paintGround(ctx,w,h,chains,r,level);
   var nodes=junctions(chains,w,h);
   paintPlanes(ctx,nodes,r,voids,level);
   // Deep, continuous underpainting follows whole chains, not detached dabs.
-  var total=Math.min(chains.length,Math.ceil(54*level));
+  var total=Math.min(chains.length,Math.ceil(34*level));
   for(var i=total-1;i>=0;i--){
     var line=chains[i],pts=line.pts;
     if(pts.length<2)continue;
@@ -360,7 +362,7 @@ function paint(ctx,w,h,paths,meta,seed,quality){
     sweepRegion(ctx,pts,width/2,toneFor(r,i),r,r.range(.53,.88));
   }
   // Let some smaller supporting planes join the larger ones.
-  for(i=total;i<Math.min(chains.length,total+Math.ceil(18*level));i++){
+  for(i=total;i<Math.min(chains.length,total+Math.ceil(9*level));i++){
     line=chains[i];
     sweepRegion(ctx,line.pts,r.range(17,44),pick(r,COLOR.ground),r,r.range(.39,.68));
   }
