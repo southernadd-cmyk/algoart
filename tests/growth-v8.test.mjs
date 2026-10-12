@@ -1,4 +1,4 @@
-// Run with: npm run test:orientation
+// Run with: npm run test:growth-v8
 // Lightweight recording canvas: does not need a browser or image snapshot.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -67,7 +67,9 @@ const modes=['field','spiral','rects','burst','network','organic','geometric','s
 const fixture=JSON.parse(readFileSync(new URL('./fixtures/render-v1-v7.json',import.meta.url)));
 const fixtures=fixture.cases;
 // Compare in one JS runtime: transcendental math differs slightly across V8 releases.
-execFileSync('git',['fetch','--depth=1','origin',fixture.baselineRef],{stdio:'pipe'});
+// Fetch the baseline only when it is missing, so full local clones run offline.
+try{execFileSync('git',['cat-file','-e',fixture.baselineRef+'^{commit}'],{stdio:'pipe'})}
+catch{execFileSync('git',['fetch','--depth=1','origin',fixture.baselineRef],{stdio:'pipe'})}
 const previous=engine(scripts.map(file=>execFileSync('git',['show',fixture.baselineRef+':'+file],{encoding:'utf8'})));
 for(const f of fixtures){
   previous.rendererVersion=A.rendererVersion=f.version;
@@ -76,7 +78,7 @@ for(const f of fixtures){
   assert.equal(JSON.stringify(out),JSON.stringify(old),`V${f.version} ${f.mode} ${f.orientation} changed`);
 }
 A.rendererVersion=8;
-const sides=new Set();let edge=0,interior=0,multiple=0,cases=0;
+const sides=new Set();let edge=0,interior=0,interiorRoots=0,multiple=0,cases=0;
 for(const orientation of ['landscape','portrait'])for(let i=0;i<24;i++)for(const negativeSpace of [0,82,100]){
   const s=settings('organic',orientation,'V8-GROWTH-'+i);s.negativeSpace=negativeSpace;s.elements=36;
   const out=render(A,s),again=render(A,s),g=out.meta.guide;
@@ -91,6 +93,11 @@ for(const orientation of ['landscape','portrait'])for(let i=0;i<24;i++)for(const
       sides.add(root.edge);
       const f=(root.edge==='left'||root.edge==='right')?root.y/out.height:root.x/out.width;
       assert.ok(Math.min(Math.abs(f-A.INV),Math.abs(f-(1-A.INV)))<1e-8);
+    }else{
+      // Interior roots must sit on a golden intersection, not a ring around the centre.
+      interiorRoots++;
+      for(const f of [root.x/out.width,root.y/out.height])
+        assert.ok(Math.min(Math.abs(f-A.INV),Math.abs(f-(1-A.INV)))<1e-8,'Interior root off golden station');
     }
   }
   for(const seg of g.segments){
@@ -102,7 +109,7 @@ for(const orientation of ['landscape','portrait'])for(let i=0;i<24;i++)for(const
   }
   cases++;
 }
-assert.equal(sides.size,4);assert.ok(edge>0&&interior>0);assert.ok(multiple>cases*.8);
+assert.equal(sides.size,4);assert.ok(edge>0&&interior>0&&interiorRoots>0);assert.ok(multiple>cases*.8);
 for(const mode of modes.filter(m=>m!=='organic'))for(const orientation of ['landscape','portrait']){
   const f=fixtures.find(f=>f.version===7&&f.mode===mode&&f.orientation===orientation);
   previous.rendererVersion=7;
@@ -110,4 +117,4 @@ for(const mode of modes.filter(m=>m!=='organic'))for(const orientation of ['land
 }
 A.svgRecorder={paths:[]};render(A,settings('organic','landscape'));
 assert.ok(A.svgRecorder.paths.length>0);assert.ok(A.svgRecorder.paths.every(p=>!p.transform));
-console.log(`PASS: 112 legacy fixtures; ${cases} V8 cases, all four edges, interior variants, ${multiple} multi-root compositions, native SVG geometry.`);
+console.log(`PASS: 112 legacy fixtures; ${cases} V8 cases, all four edges, ${interiorRoots} interior roots on golden intersections, ${multiple} multi-root compositions, native SVG geometry.`);
