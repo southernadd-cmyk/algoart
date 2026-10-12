@@ -32,7 +32,15 @@ for (const test of cases){
     toggle.checked=false;
     toggle.dispatchEvent(new Event('change',{bubbles:true}));
   });
-  await page.waitForFunction(()=>!document.querySelector('#statsText')?.textContent?.includes('/ OIL'),null,{timeout:60000});
+  const toggleState=await page.evaluate(() => ({
+    checked:document.querySelector('#oilRender')?.checked,
+    stats:document.querySelector('#statsText')?.textContent,
+    url:location.href,
+    version:window.AlgoArt?.rendererVersion
+  }));
+  if(toggleState.checked||toggleState.stats?.includes('/ OIL'))
+    throw new Error(test.name+' failed to restore marker: '+JSON.stringify(toggleState)+
+      ' page errors: '+JSON.stringify(faults));
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-marker.png',timeout:60000});
   if(faults.length)throw new Error(test.name+': '+faults.join('; '));
   console.log('CAPTURED oil and restored marker',test.name);
