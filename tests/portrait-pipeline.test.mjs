@@ -43,7 +43,7 @@ node('tests/archive-reproduction.mjs',{},['--queue',queuePath]);
 const portrait=JSON.parse(await fs.readFile(queuePath,'utf8'));
 assert.equal(portrait.orientation,'portrait');
 assert.equal(portrait.entries.length,5);
-assert.ok(portrait.entries.every(e=>e.rendererVersion===7&&new URL(e.shareUrl).searchParams.get('v')==='7'),'New portraits must use V7');
+assert.ok(portrait.entries.every(e=>e.rendererVersion===8&&new URL(e.shareUrl).searchParams.get('v')==='8'),'New portraits must use V8');
 assert.equal(new Set(portrait.entries.map(x=>x.seed)).size,5);
 assert.equal(new Set(portrait.entries.map(x=>x.imageFile)).size,5);
 for(const [i,item] of portrait.entries.entries()){
@@ -77,7 +77,7 @@ node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'landscape'});
 node('tests/archive-reproduction.mjs',{},['--queue',path.resolve('social-output',day,'queue.json')]);
 const landscape=JSON.parse(await fs.readFile(path.resolve('social-output',day,'queue.json'),'utf8'));
 assert.equal(landscape.entries.length,5,'Existing landscape base set changed');
-assert.ok(landscape.entries.every(e=>e.rendererVersion===7&&new URL(e.shareUrl).searchParams.get('v')==='7'),'New landscapes must use V7');
+assert.ok(landscape.entries.every(e=>e.rendererVersion===8&&new URL(e.shareUrl).searchParams.get('v')==='8'),'New landscapes must use V8');
 assert.ok(landscape.entries.every(e=>!new URL(e.shareUrl).searchParams.has('fmt')));
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'landscape'});
 meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
@@ -104,9 +104,9 @@ const originalImages=await Promise.all(landscape.entries.map(e=>fs.readFile(path
 node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'landscape',SOCIAL_RENDERER_VERSION:'6'});
 const reused=JSON.parse(await fs.readFile(path.resolve('social-output',day,'queue.json'),'utf8'));
 for(const [i,item] of reused.entries.entries()){
-  assert.equal(item.rendererVersion,7,'Existing edition was replaced by the override renderer');
+  assert.equal(item.rendererVersion,8,'Existing edition was replaced by the override renderer');
   assert.deepEqual(item.settings,landscape.entries[i].settings);
   assert.equal(item.shareUrl,landscape.entries[i].shareUrl);
   assert.deepEqual(await fs.readFile(path.resolve('social-output',day,item.imageFile)),originalImages[i]);
 }
-console.log('PASS: new portrait/landscape queues use V7; reruns preserve archived states and exact JPEG bytes even with another renderer default.');
+console.log('PASS: new portrait/landscape queues use V8; reruns preserve archived states and exact JPEG bytes even with another renderer default.');

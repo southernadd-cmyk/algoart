@@ -10,9 +10,9 @@ import {scheduleDecision} from '../automation/portrait-slot.mjs';
 const repoRoot=path.resolve(fileURLToPath(new URL('../',import.meta.url)));
 const date='2026-10-09';
 import {socialRendererVersion,archivedLandscapeStudy} from '../automation/renderer-state.mjs';
-assert.equal(socialRendererVersion(''),7);
+assert.equal(socialRendererVersion(''),8);
 assert.equal(socialRendererVersion('6'),6);
-assert.throws(()=>socialRendererVersion('8'));
+assert.throws(()=>socialRendererVersion('9'));
 assert.throws(()=>socialRendererVersion('invalid'));
 assert.deepEqual(PORTRAIT_SCHEDULE,['09:00','15:00','20:30']);
 assert.deepEqual(PORTRAIT_POST_INDICES,[0,2,4]);
@@ -167,4 +167,4 @@ try{
   await fs.unlink(saved.imagePath);
   await assert.rejects(()=>archivedLandscapeStudy(date,0,{galleryRoot:archiveRoot}),{code:'ENOENT'});
 }finally{await fs.rm(archiveRoot,{recursive:true,force:true});}
-console.log('PASS: new batches default to V7; archived V6 states/media remain exact; missing archived media fails safely.');
+console.log('PASS: new batches default to V8; archived V6 states/media remain exact; missing archived media fails safely.');

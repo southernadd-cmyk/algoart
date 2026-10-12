@@ -73,12 +73,14 @@ npm run test:tuning-equivalence
 
 The tuning-equivalence test compares generated drawings with a pinned historical Git commit; it needs that commit available in the local Git history. Browser-based archive and plotter-fidelity checks run in GitHub Actions across Chromium, Firefox and WebKit (see [the archive workflow](.github/workflows/archive-reproduction.yml)).
 
-**Current renderer: V7.**
+**Current renderer: V8.**
 
 | Renderer | Status |
 | --- | --- |
-| **V7** | Current editor and new artwork generation |
-| V1–V6 | Preserved for historical seeded artworks and exact shared links |
+| **V8** | Current editor and new artwork generation |
+| V1–V7 | Preserved for historical seeded artworks and exact shared links |
+
+V8 expands Growth Systems with seeded golden-angle root directions, entries at the 38.2% and 61.8% stations on all four edges, and interior-root alternatives. Two to four growth forms appear more often, especially in landscape. Branch lengths diminish by φ, with space-aware turns and a shared segment budget. Other engines retain their V7 output. New social batches use V8; existing editions keep their recorded renderer and media.
 
 ## Plotter compatibility
 
@@ -92,4 +94,4 @@ Plotter SVG supports faithful colour runs and grouping by pen, with light-to-dar
 
 New visual behaviour should use explicit renderer versioning so previously shared and archived artworks remain reproducible.
 
-The supported renderer versions are declared in `js/app.js` and validated when the editor renders. When introducing V8 or later, update this list together with the renderer's version-specific dispatch and archive regression fixtures. Do not silently interpret an unknown `?v=` as a new renderer; legacy URLs and pinned outputs must stay stable.
+The supported renderer versions are declared in `js/app.js` and validated when the editor renders. When introducing V9 or later, update this list together with the renderer's version-specific dispatch and archive regression fixtures. Do not silently interpret an unknown `?v=` as a new renderer; legacy URLs and pinned outputs must stay stable.

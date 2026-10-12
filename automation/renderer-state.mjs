@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export const CURRENT_SOCIAL_RENDERER_VERSION=7;
+export const CURRENT_SOCIAL_RENDERER_VERSION=8;
 export function socialRendererVersion(value=process.env.SOCIAL_RENDERER_VERSION){
   const version=Number(value||CURRENT_SOCIAL_RENDERER_VERSION);
   if(!Number.isInteger(version)||version<1||version>CURRENT_SOCIAL_RENDERER_VERSION){

@@ -8,6 +8,9 @@ on:
       - 'index.html'
       - 'tests/control-ranges.test.mjs'
       - 'tests/organic-version.test.mjs'
+      - 'tests/growth-v8.test.mjs'
+      - 'tests/fixtures/**'
+      - 'js/app.js'
       - 'js/random.js'
       - 'js/phi.js'
       - 'js/palettes.js'
@@ -22,6 +25,9 @@ on:
       - 'index.html'
       - 'tests/control-ranges.test.mjs'
       - 'tests/organic-version.test.mjs'
+      - 'tests/growth-v8.test.mjs'
+      - 'tests/fixtures/**'
+      - 'js/app.js'
       - 'js/random.js'
       - 'js/phi.js'
       - 'js/palettes.js'
@@ -44,3 +50,6 @@ jobs:
 
       - name: Check renderer compatibility and Organic canvas growth
         run: npm run test:organic-version
+
+      - name: Check V8 growth and V1–V7 recording fixtures
+        run: npm run test:growth-v8

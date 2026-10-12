@@ -1,0 +1,786 @@
+[
+  {
+    "version": 1,
+    "mode": "field",
+    "orientation": "landscape",
+    "hash": 1587034841,
+    "operations": 712
+  },
+  {
+    "version": 1,
+    "mode": "field",
+    "orientation": "portrait",
+    "hash": 2928882194,
+    "operations": 500
+  },
+  {
+    "version": 1,
+    "mode": "spiral",
+    "orientation": "landscape",
+    "hash": 3750188573,
+    "operations": 716
+  },
+  {
+    "version": 1,
+    "mode": "spiral",
+    "orientation": "portrait",
+    "hash": 37264461,
+    "operations": 616
+  },
+  {
+    "version": 1,
+    "mode": "rects",
+    "orientation": "landscape",
+    "hash": 3193168304,
+    "operations": 596
+  },
+  {
+    "version": 1,
+    "mode": "rects",
+    "orientation": "portrait",
+    "hash": 979477185,
+    "operations": 1000
+  },
+  {
+    "version": 1,
+    "mode": "burst",
+    "orientation": "landscape",
+    "hash": 2552535715,
+    "operations": 620
+  },
+  {
+    "version": 1,
+    "mode": "burst",
+    "orientation": "portrait",
+    "hash": 658322961,
+    "operations": 482
+  },
+  {
+    "version": 1,
+    "mode": "network",
+    "orientation": "landscape",
+    "hash": 1167440592,
+    "operations": 940
+  },
+  {
+    "version": 1,
+    "mode": "network",
+    "orientation": "portrait",
+    "hash": 2165802330,
+    "operations": 607
+  },
+  {
+    "version": 1,
+    "mode": "organic",
+    "orientation": "landscape",
+    "hash": 2426889810,
+    "operations": 666
+  },
+  {
+    "version": 1,
+    "mode": "organic",
+    "orientation": "portrait",
+    "hash": 503698987,
+    "operations": 666
+  },
+  {
+    "version": 1,
+    "mode": "geometric",
+    "orientation": "landscape",
+    "hash": 2383104078,
+    "operations": 583
+  },
+  {
+    "version": 1,
+    "mode": "geometric",
+    "orientation": "portrait",
+    "hash": 1465084871,
+    "operations": 532
+  },
+  {
+    "version": 1,
+    "mode": "scribble",
+    "orientation": "landscape",
+    "hash": 1969352243,
+    "operations": 1127
+  },
+  {
+    "version": 1,
+    "mode": "scribble",
+    "orientation": "portrait",
+    "hash": 4286511848,
+    "operations": 1089
+  },
+  {
+    "version": 2,
+    "mode": "field",
+    "orientation": "landscape",
+    "hash": 439094077,
+    "operations": 593
+  },
+  {
+    "version": 2,
+    "mode": "field",
+    "orientation": "portrait",
+    "hash": 2047669669,
+    "operations": 593
+  },
+  {
+    "version": 2,
+    "mode": "spiral",
+    "orientation": "landscape",
+    "hash": 3750188573,
+    "operations": 716
+  },
+  {
+    "version": 2,
+    "mode": "spiral",
+    "orientation": "portrait",
+    "hash": 37264461,
+    "operations": 616
+  },
+  {
+    "version": 2,
+    "mode": "rects",
+    "orientation": "landscape",
+    "hash": 3193168304,
+    "operations": 596
+  },
+  {
+    "version": 2,
+    "mode": "rects",
+    "orientation": "portrait",
+    "hash": 979477185,
+    "operations": 1000
+  },
+  {
+    "version": 2,
+    "mode": "burst",
+    "orientation": "landscape",
+    "hash": 2552535715,
+    "operations": 620
+  },
+  {
+    "version": 2,
+    "mode": "burst",
+    "orientation": "portrait",
+    "hash": 658322961,
+    "operations": 482
+  },
+  {
+    "version": 2,
+    "mode": "network",
+    "orientation": "landscape",
+    "hash": 1167440592,
+    "operations": 940
+  },
+  {
+    "version": 2,
+    "mode": "network",
+    "orientation": "portrait",
+    "hash": 2165802330,
+    "operations": 607
+  },
+  {
+    "version": 2,
+    "mode": "organic",
+    "orientation": "landscape",
+    "hash": 2426889810,
+    "operations": 666
+  },
+  {
+    "version": 2,
+    "mode": "organic",
+    "orientation": "portrait",
+    "hash": 503698987,
+    "operations": 666
+  },
+  {
+    "version": 2,
+    "mode": "geometric",
+    "orientation": "landscape",
+    "hash": 2383104078,
+    "operations": 583
+  },
+  {
+    "version": 2,
+    "mode": "geometric",
+    "orientation": "portrait",
+    "hash": 1465084871,
+    "operations": 532
+  },
+  {
+    "version": 2,
+    "mode": "scribble",
+    "orientation": "landscape",
+    "hash": 1969352243,
+    "operations": 1127
+  },
+  {
+    "version": 2,
+    "mode": "scribble",
+    "orientation": "portrait",
+    "hash": 4286511848,
+    "operations": 1089
+  },
+  {
+    "version": 3,
+    "mode": "field",
+    "orientation": "landscape",
+    "hash": 2771115136,
+    "operations": 717
+  },
+  {
+    "version": 3,
+    "mode": "field",
+    "orientation": "portrait",
+    "hash": 897853868,
+    "operations": 717
+  },
+  {
+    "version": 3,
+    "mode": "spiral",
+    "orientation": "landscape",
+    "hash": 3750188573,
+    "operations": 716
+  },
+  {
+    "version": 3,
+    "mode": "spiral",
+    "orientation": "portrait",
+    "hash": 37264461,
+    "operations": 616
+  },
+  {
+    "version": 3,
+    "mode": "rects",
+    "orientation": "landscape",
+    "hash": 3193168304,
+    "operations": 596
+  },
+  {
+    "version": 3,
+    "mode": "rects",
+    "orientation": "portrait",
+    "hash": 979477185,
+    "operations": 1000
+  },
+  {
+    "version": 3,
+    "mode": "burst",
+    "orientation": "landscape",
+    "hash": 2552535715,
+    "operations": 620
+  },
+  {
+    "version": 3,
+    "mode": "burst",
+    "orientation": "portrait",
+    "hash": 658322961,
+    "operations": 482
+  },
+  {
+    "version": 3,
+    "mode": "network",
+    "orientation": "landscape",
+    "hash": 1167440592,
+    "operations": 940
+  },
+  {
+    "version": 3,
+    "mode": "network",
+    "orientation": "portrait",
+    "hash": 2165802330,
+    "operations": 607
+  },
+  {
+    "version": 3,
+    "mode": "organic",
+    "orientation": "landscape",
+    "hash": 2426889810,
+    "operations": 666
+  },
+  {
+    "version": 3,
+    "mode": "organic",
+    "orientation": "portrait",
+    "hash": 503698987,
+    "operations": 666
+  },
+  {
+    "version": 3,
+    "mode": "geometric",
+    "orientation": "landscape",
+    "hash": 2383104078,
+    "operations": 583
+  },
+  {
+    "version": 3,
+    "mode": "geometric",
+    "orientation": "portrait",
+    "hash": 1465084871,
+    "operations": 532
+  },
+  {
+    "version": 3,
+    "mode": "scribble",
+    "orientation": "landscape",
+    "hash": 1969352243,
+    "operations": 1127
+  },
+  {
+    "version": 3,
+    "mode": "scribble",
+    "orientation": "portrait",
+    "hash": 4286511848,
+    "operations": 1089
+  },
+  {
+    "version": 4,
+    "mode": "field",
+    "orientation": "landscape",
+    "hash": 1745522610,
+    "operations": 717
+  },
+  {
+    "version": 4,
+    "mode": "field",
+    "orientation": "portrait",
+    "hash": 4011690,
+    "operations": 717
+  },
+  {
+    "version": 4,
+    "mode": "spiral",
+    "orientation": "landscape",
+    "hash": 1711693825,
+    "operations": 722
+  },
+  {
+    "version": 4,
+    "mode": "spiral",
+    "orientation": "portrait",
+    "hash": 619450543,
+    "operations": 818
+  },
+  {
+    "version": 4,
+    "mode": "rects",
+    "orientation": "landscape",
+    "hash": 3193168304,
+    "operations": 596
+  },
+  {
+    "version": 4,
+    "mode": "rects",
+    "orientation": "portrait",
+    "hash": 979477185,
+    "operations": 1000
+  },
+  {
+    "version": 4,
+    "mode": "burst",
+    "orientation": "landscape",
+    "hash": 2552535715,
+    "operations": 620
+  },
+  {
+    "version": 4,
+    "mode": "burst",
+    "orientation": "portrait",
+    "hash": 658322961,
+    "operations": 482
+  },
+  {
+    "version": 4,
+    "mode": "network",
+    "orientation": "landscape",
+    "hash": 1793960146,
+    "operations": 940
+  },
+  {
+    "version": 4,
+    "mode": "network",
+    "orientation": "portrait",
+    "hash": 1611520504,
+    "operations": 607
+  },
+  {
+    "version": 4,
+    "mode": "organic",
+    "orientation": "landscape",
+    "hash": 2426889810,
+    "operations": 666
+  },
+  {
+    "version": 4,
+    "mode": "organic",
+    "orientation": "portrait",
+    "hash": 503698987,
+    "operations": 666
+  },
+  {
+    "version": 4,
+    "mode": "geometric",
+    "orientation": "landscape",
+    "hash": 2383104078,
+    "operations": 583
+  },
+  {
+    "version": 4,
+    "mode": "geometric",
+    "orientation": "portrait",
+    "hash": 1465084871,
+    "operations": 532
+  },
+  {
+    "version": 4,
+    "mode": "scribble",
+    "orientation": "landscape",
+    "hash": 1969352243,
+    "operations": 1127
+  },
+  {
+    "version": 4,
+    "mode": "scribble",
+    "orientation": "portrait",
+    "hash": 4286511848,
+    "operations": 1089
+  },
+  {
+    "version": 5,
+    "mode": "field",
+    "orientation": "landscape",
+    "hash": 1745522610,
+    "operations": 717
+  },
+  {
+    "version": 5,
+    "mode": "field",
+    "orientation": "portrait",
+    "hash": 4011690,
+    "operations": 717
+  },
+  {
+    "version": 5,
+    "mode": "spiral",
+    "orientation": "landscape",
+    "hash": 1711693825,
+    "operations": 722
+  },
+  {
+    "version": 5,
+    "mode": "spiral",
+    "orientation": "portrait",
+    "hash": 619450543,
+    "operations": 818
+  },
+  {
+    "version": 5,
+    "mode": "rects",
+    "orientation": "landscape",
+    "hash": 3193168304,
+    "operations": 596
+  },
+  {
+    "version": 5,
+    "mode": "rects",
+    "orientation": "portrait",
+    "hash": 979477185,
+    "operations": 1000
+  },
+  {
+    "version": 5,
+    "mode": "burst",
+    "orientation": "landscape",
+    "hash": 2552535715,
+    "operations": 620
+  },
+  {
+    "version": 5,
+    "mode": "burst",
+    "orientation": "portrait",
+    "hash": 658322961,
+    "operations": 482
+  },
+  {
+    "version": 5,
+    "mode": "network",
+    "orientation": "landscape",
+    "hash": 1793960146,
+    "operations": 940
+  },
+  {
+    "version": 5,
+    "mode": "network",
+    "orientation": "portrait",
+    "hash": 1611520504,
+    "operations": 607
+  },
+  {
+    "version": 5,
+    "mode": "organic",
+    "orientation": "landscape",
+    "hash": 2426889810,
+    "operations": 666
+  },
+  {
+    "version": 5,
+    "mode": "organic",
+    "orientation": "portrait",
+    "hash": 503698987,
+    "operations": 666
+  },
+  {
+    "version": 5,
+    "mode": "geometric",
+    "orientation": "landscape",
+    "hash": 2383104078,
+    "operations": 583
+  },
+  {
+    "version": 5,
+    "mode": "geometric",
+    "orientation": "portrait",
+    "hash": 1465084871,
+    "operations": 532
+  },
+  {
+    "version": 5,
+    "mode": "scribble",
+    "orientation": "landscape",
+    "hash": 1969352243,
+    "operations": 1127
+  },
+  {
+    "version": 5,
+    "mode": "scribble",
+    "orientation": "portrait",
+    "hash": 4286511848,
+    "operations": 1089
+  },
+  {
+    "version": 6,
+    "mode": "field",
+    "orientation": "landscape",
+    "hash": 1745522610,
+    "operations": 717
+  },
+  {
+    "version": 6,
+    "mode": "field",
+    "orientation": "portrait",
+    "hash": 4011690,
+    "operations": 717
+  },
+  {
+    "version": 6,
+    "mode": "spiral",
+    "orientation": "landscape",
+    "hash": 3287348056,
+    "operations": 109
+  },
+  {
+    "version": 6,
+    "mode": "spiral",
+    "orientation": "portrait",
+    "hash": 1109817189,
+    "operations": 173
+  },
+  {
+    "version": 6,
+    "mode": "rects",
+    "orientation": "landscape",
+    "hash": 3193168304,
+    "operations": 596
+  },
+  {
+    "version": 6,
+    "mode": "rects",
+    "orientation": "portrait",
+    "hash": 979477185,
+    "operations": 1000
+  },
+  {
+    "version": 6,
+    "mode": "burst",
+    "orientation": "landscape",
+    "hash": 2552535715,
+    "operations": 620
+  },
+  {
+    "version": 6,
+    "mode": "burst",
+    "orientation": "portrait",
+    "hash": 658322961,
+    "operations": 482
+  },
+  {
+    "version": 6,
+    "mode": "network",
+    "orientation": "landscape",
+    "hash": 1793960146,
+    "operations": 940
+  },
+  {
+    "version": 6,
+    "mode": "network",
+    "orientation": "portrait",
+    "hash": 1611520504,
+    "operations": 607
+  },
+  {
+    "version": 6,
+    "mode": "organic",
+    "orientation": "landscape",
+    "hash": 2426889810,
+    "operations": 666
+  },
+  {
+    "version": 6,
+    "mode": "organic",
+    "orientation": "portrait",
+    "hash": 503698987,
+    "operations": 666
+  },
+  {
+    "version": 6,
+    "mode": "geometric",
+    "orientation": "landscape",
+    "hash": 2383104078,
+    "operations": 583
+  },
+  {
+    "version": 6,
+    "mode": "geometric",
+    "orientation": "portrait",
+    "hash": 1465084871,
+    "operations": 532
+  },
+  {
+    "version": 6,
+    "mode": "scribble",
+    "orientation": "landscape",
+    "hash": 1969352243,
+    "operations": 1127
+  },
+  {
+    "version": 6,
+    "mode": "scribble",
+    "orientation": "portrait",
+    "hash": 4286511848,
+    "operations": 1089
+  },
+  {
+    "version": 7,
+    "mode": "field",
+    "orientation": "landscape",
+    "hash": 1745522610,
+    "operations": 717
+  },
+  {
+    "version": 7,
+    "mode": "field",
+    "orientation": "portrait",
+    "hash": 4011690,
+    "operations": 717
+  },
+  {
+    "version": 7,
+    "mode": "spiral",
+    "orientation": "landscape",
+    "hash": 3287348056,
+    "operations": 109
+  },
+  {
+    "version": 7,
+    "mode": "spiral",
+    "orientation": "portrait",
+    "hash": 1109817189,
+    "operations": 173
+  },
+  {
+    "version": 7,
+    "mode": "rects",
+    "orientation": "landscape",
+    "hash": 3193168304,
+    "operations": 596
+  },
+  {
+    "version": 7,
+    "mode": "rects",
+    "orientation": "portrait",
+    "hash": 979477185,
+    "operations": 1000
+  },
+  {
+    "version": 7,
+    "mode": "burst",
+    "orientation": "landscape",
+    "hash": 2552535715,
+    "operations": 620
+  },
+  {
+    "version": 7,
+    "mode": "burst",
+    "orientation": "portrait",
+    "hash": 658322961,
+    "operations": 482
+  },
+  {
+    "version": 7,
+    "mode": "network",
+    "orientation": "landscape",
+    "hash": 1793960146,
+    "operations": 940
+  },
+  {
+    "version": 7,
+    "mode": "network",
+    "orientation": "portrait",
+    "hash": 1611520504,
+    "operations": 607
+  },
+  {
+    "version": 7,
+    "mode": "organic",
+    "orientation": "landscape",
+    "hash": 1882617043,
+    "operations": 670
+  },
+  {
+    "version": 7,
+    "mode": "organic",
+    "orientation": "portrait",
+    "hash": 503698987,
+    "operations": 666
+  },
+  {
+    "version": 7,
+    "mode": "geometric",
+    "orientation": "landscape",
+    "hash": 2383104078,
+    "operations": 583
+  },
+  {
+    "version": 7,
+    "mode": "geometric",
+    "orientation": "portrait",
+    "hash": 1465084871,
+    "operations": 532
+  },
+  {
+    "version": 7,
+    "mode": "scribble",
+    "orientation": "landscape",
+    "hash": 1969352243,
+    "operations": 1127
+  },
+  {
+    "version": 7,
+    "mode": "scribble",
+    "orientation": "portrait",
+    "hash": 4286511848,
+    "operations": 1089
+  }
+]

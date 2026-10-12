@@ -151,6 +151,8 @@ function inactiveControl(mode,id,version,meta){
 }
 
 function helpText(mode,id,version){
+  if(mode==='organic'&&version>=8&&id==='elements')return 'Allows more branch strokes and up to four starting roots, with multiple forms more frequent in landscape.';
+  if(mode==='organic'&&version>=8&&id==='phiStrength')return 'Brings trunk lengths closer to powers of φ. Roots already use golden-angle directions and golden edge positions. At 0% the structure still uses φ.';
   if(mode==='spiral'&&version<6&&id==='negativeSpace')return 'Leaves quiet areas between the spiral marks.';
   var description=(SYSTEMS[mode]||{})[id]||COMMON[id]||'';
   return id==='phiStrength'?description+' At 0%, this additional pull is removed, but the underlying composition still uses φ.':description;

@@ -6,9 +6,9 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 
 const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const readme=readFileSync(new URL('../README.md',import.meta.url),'utf8');
-const versionMatch=appSource.match(/CURRENT_RENDERER_VERSION=([0-9]+);/);
+const versionMatch=appSource.match(/SUPPORTED_RENDERER_VERSIONS=Object\.freeze\(\[([0-9,]+)\]\)/);
 assert.ok(versionMatch,'App must declare the current renderer version');
-const currentRenderer=Number(versionMatch[1]);
+const currentRenderer=Number(versionMatch[1].split(',').at(-1));
 assert.ok(readme.includes('**Current renderer: V'+currentRenderer+'.**'),
   'README must identify the renderer actually selected by the editor');
 assert.ok(readme.includes('| **V'+currentRenderer+'** |'),
