@@ -22,23 +22,23 @@ for (const test of cases){
   const faults=[];
   page.on('pageerror',error=>faults.push(error.message));
   await page.goto(url.toString(),{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.trim().endsWith(' / WATERCOLOR') &&
+  await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.trim().endsWith(' / TISSUE & GRAPHITE') &&
     document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
   // Dispatch the exact change the checkbox produces; avoids screenshot
   // automation clicking a label twice and checks marker restoration.
   await page.evaluate(() => {
-    const toggle=document.querySelector('#oilRender');
-    toggle.checked=false;
-    toggle.dispatchEvent(new Event('change',{bubbles:true}));
+    const select=document.querySelector('#materialStyle');
+    select.value='marker';
+    select.dispatchEvent(new Event('change',{bubbles:true}));
   });
   const toggleState=await page.evaluate(() => ({
-    checked:document.querySelector('#oilRender')?.checked,
+    selected:document.querySelector('#materialStyle')?.value,
     stats:document.querySelector('#statsText')?.textContent,
     url:location.href,
     version:window.AlgoArt?.rendererVersion
   }));
-  if(toggleState.checked||toggleState.stats?.trim().endsWith(' / WATERCOLOR'))
+  if(toggleState.selected!=='marker'||toggleState.stats?.trim().endsWith(' / TISSUE & GRAPHITE'))
     throw new Error(test.name+' failed to restore marker: '+JSON.stringify(toggleState)+
       ' page errors: '+JSON.stringify(faults));
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-marker.png',timeout:60000});

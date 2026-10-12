@@ -5,7 +5,7 @@ window.AlgoArt=window.AlgoArt||{};
 A.exportPNG=function(settings,scale){
   scale=Number(scale)||1;
   var out=document.createElement('canvas');
-  // Watercolor is display/export metadata only. Never allow this key into the
+  // Tissue & Graphite is display/export metadata only. Never allow this key into the
   // published renderer's seed/JSON settings, including when unchecked.
   var compositionSettings=Object.assign({},settings);
   delete compositionSettings.oilRender;
@@ -16,7 +16,7 @@ A.exportPNG=function(settings,scale){
   }
 
   var link=document.createElement('a');
-  link.download='algoart-'+settings.seed+'-'+settings.mode+(settings.orientation==='portrait'?'-portrait':'')+(settings.oilRender?'-watercolor':'')+'-'+scale+'x.png';
+  link.download='algoart-'+settings.seed+'-'+settings.mode+(settings.orientation==='portrait'?'-portrait':'')+(settings.oilRender?'-tissue-graphite':'')+'-'+scale+'x.png';
   link.href=out.toDataURL('image/png');
   link.click();
 };

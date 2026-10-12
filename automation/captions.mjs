@@ -20,10 +20,10 @@ export function editorArtworkLink(item) {
 
 export function makeCaptions(item) {
   const strategy = strategyName(item.stats, item.mode);
-  const heading = `${item.series.toUpperCase()} / ${strategy}${item.material==='watercolor'?' / WATERCOLOR':''}`;
+  const heading = `${item.series.toUpperCase()} / ${strategy}${item.material==='watercolor'?' / TISSUE & GRAPHITE':''}`;
   const format = item.settings.orientation === 'portrait' ? 'Portrait study · ' : '';
   const watercolor = item.material === 'watercolor';
-  const facts = `${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${watercolor ? 'procedural watercolor' : item.settings.pen+' marker'}`;
+  const facts = `${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${watercolor ? 'tissue & graphite' : item.settings.pen+' marker'}`;
 
   return {
     instagram: [
@@ -58,7 +58,7 @@ export function makeCaptions(item) {
       '#generativeart #creativecoding'
     ].join('\n'),
     altText: watercolor
-      ? `Procedural watercolor artwork from ALGO/ART's ${item.series} system, ${format.toLowerCase()}seed ${item.seed}. Golden-ratio composition with translucent washes and painterly pigment.`
+      ? `Tissue and graphite artwork from ALGO/ART's ${item.series} system, ${format.toLowerCase()}seed ${item.seed}. Golden-ratio composition with layered translucent colour, textured paper and darker marks.`
       : `Abstract algorithmic marker artwork from ALGO/ART's ${item.series} system. ` +
         `Generated from seed ${item.seed} using golden-ratio composition rules and imperfect ${item.settings.pen} marker strokes.`
   };

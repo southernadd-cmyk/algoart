@@ -182,7 +182,8 @@ function applySettings(settings){
   syncModeCards();
 }
 
-function oilEnabled(){return Boolean($('oilRender')&&$('oilRender').checked)}
+// Historical internal name retained for the existing (unchanged) material engine.
+function oilEnabled(){return $('materialStyle').value==='tissue'}
 function renderArtwork(target,settings,scale,reveal){
   return oilEnabled()?A.renderOil(target,settings,scale,reveal):A.render(target,settings,scale,reveal);
 }
@@ -240,8 +241,8 @@ function loadSettingsFromURL(){
 
   // Preserve early oil-prototype links while issuing new Watercolor URLs.
   if(params.has('watercolor')||params.has('oil')){
-    $('oilRender').checked=(params.has('watercolor')
-      ?params.get('watercolor'):params.get('oil'))==='1';
+    $('materialStyle').value=(params.has('watercolor')
+      ?params.get('watercolor'):params.get('oil'))==='1'?'tissue':'marker';
     found=true;
   }
 
@@ -357,7 +358,7 @@ function regenerate(){
   currentRenderMeta=meta;
   var strategy=meta.strategy?(' / '+meta.strategy):'';
   var series=SERIES[s.mode]||{code:s.mode.toUpperCase(),title:s.mode};
-  $('statsText').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%'+(oilEnabled()?' / WATERCOLOR':'');
+  $('statsText').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%'+(oilEnabled()?' / TISSUE & GRAPHITE':'');
   syncDescription(s,meta);
   syncRendererChip();
   syncModeCards();
@@ -968,7 +969,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
   e.addEventListener('change',function(){
     if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
-    if(e.id!=='oilRender')useCurrentRenderer();
+    if(e.id!=='materialStyle')useCurrentRenderer();
     // pointerup/change ordering differs by browser. Do not commit twice.
     var alreadyCommitted=e.type==='range'&&!dragPreviewPending&&lastCommittedRenderKey===JSON.stringify([A.rendererVersion,A.readSettings(),oilEnabled()]);
     if(!alreadyCommitted)regenerate();
@@ -1015,7 +1016,7 @@ function loadExactArchivedArtwork(id){
       var entry=(Array.isArray(meta.entries)?meta.entries:[]).find(function(e){return e.id===id});
       if(!entry||!entry.settings||!entry.seed)throw new Error('Archived artwork missing: '+id);
       A.rendererVersion=Number(entry.rendererVersion)||CURRENT_RENDERER_VERSION;
-      if($('oilRender'))$('oilRender').checked=entry.material==='watercolor'||new URL(entry.shareUrl||location.href).searchParams.get('watercolor')==='1';
+      $('materialStyle').value=entry.material==='watercolor'||new URL(entry.shareUrl||location.href).searchParams.get('watercolor')==='1'?'tissue':'marker';
       applySettings(Object.assign({},entry.settings,{seed:entry.seed}));
       return true;
     });

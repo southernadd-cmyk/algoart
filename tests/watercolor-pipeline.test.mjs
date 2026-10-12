@@ -30,7 +30,7 @@ for(const orientation of ['landscape','portrait']){
     assert.equal(e.rendererVersion,8);
     assert.equal(new URL(e.shareUrl).searchParams.get('watercolor'),'1');
     assert.equal(new URL(e.shareUrl).searchParams.get('seed'),e.seed);
-    assert(e.copy.altText.includes('watercolor'));
+    assert(e.copy.altText.includes('Tissue and graphite'));
     assert((await fs.stat(path.join(dir,e.imageFile))).size>5000);
     assert((await fs.stat(path.join(dir,e.instagramImageFile))).size>5000);
   }
@@ -51,9 +51,9 @@ try{
    await page.waitForFunction(seed=>{
      const q=new URLSearchParams(location.search);
      return q.get('seed')===seed && q.get('watercolor')==='1' &&
-       document.querySelector('#statsText')?.textContent?.endsWith('/ WATERCOLOR');
+       document.querySelector('#statsText')?.textContent?.endsWith('/ TISSUE & GRAPHITE');
    },e.seed,{timeout:60000});
-   assert.equal(await page.locator('#oilRender').isChecked(),true);
+   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
    assert.equal(errors.length,0,errors.join(' | '));
    await page.locator('#art').screenshot({path:path.join(outDir,e.id+'.png')});
  }

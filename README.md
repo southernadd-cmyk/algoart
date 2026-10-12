@@ -84,53 +84,54 @@ The tuning-equivalence test compares generated drawings with a pinned historical
 
 V8 expands Growth Systems with seeded golden-angle root directions, entries at the 38.2% and 61.8% stations on all four edges, and interior-root alternatives. Two to four growth forms appear more often, especially in landscape. Branch lengths diminish by φ, with space-aware turns and a shared segment budget. Other engines retain their V7 output. New social batches use V8; existing editions keep their recorded renderer and media.
 
-## Procedural watercolor render
+## Drawing materials: Marker / Tissue & Graphite
 
-The **Watercolor Render** checkbox in Compose repaints the existing ALGO/ART
-composition as layered procedural watercolor. It is a **material option**,
-not a ninth composition engine, a new seed, or an image-generation model.
-Switching it off restores the original marker drawing with the same
-seed, golden-ratio geometry, orientation, controls and hierarchy.
+**Drawing material** in Compose currently offers two choices:
 
-The renderer derives pigment washes and connected color fields from the
-original SVG-recorded paths. Separate pigment and relief buffers add
-layering, bristle variation and textured paper-like surface effects.
-The result is best understood as expressive watercolor / mixed-media washes;
-we are **not** claiming a physical watercolor-fluid simulation.
-It requires no trained model, network call, third-party image asset or install.
+- **Marker drawing:** the established deterministic ALGO/ART marker work.
+- **Tissue & Graphite:** the original material formerly described in the UI
+  as Watercolor v1. It uses translucent colour, layered pigment planes,
+  textured paper and dark, graphite-like structural marks.
 
-- **Share links:** new links use `?watercolor=1` to preserve the selected
-  material without changing the composition's random-seed input.
-  Earlier prototype `?oil=1` links also load this same painter for compatibility.
-- **Export:** watercolor is available as PNG; SVG and plotter SVG preserve
-  the original marker vectors rather than pretending to be vector watercolor.
-- **Implementation:** the experimental internal modules
-  `js/oil-render.js`, `js/oil-material.js`, and `js/oil-surface.js`
-  retain their historical filenames for compatibility and provenance.
-  OIL-4 was the technical prototype name; the public style is now **Watercolor**.
-  The brushwork separates pigment color from height/lighting, informed by
-  published techniques from MIT-licensed
-  [PigmentLab](https://github.com/wieslawsoltes/PigmentLab) and
-  [Wet Paint Flow](https://github.com/simonxxooxxoo/wet-paint-flow).
-  Their code and assets are not bundled.
-- **Torn Paper:** the earlier, more collage-like treatment is preserved,
-  **not loaded**, in `experiments/torn-paper-v1.js` for a possible future option.
-- **Oil Paint:** richer, opaque impasto is a **separate future renderer**.
-  This watercolor checkbox must not silently change into an oil effect.
-- **Preservation:** published V1–V8 marker renderers, archived artworks and
-  existing seeded compositions stay unchanged.
-- **Tests:** `npm run test:oil-render` still uses its historical internal name
-  and checks deterministic materials, reversibility and original geometry.
-  Full-resolution export and low-memory mobile performance deserve further
-  validation before increasing the material's complexity.
+Both choices preserve the same seed, φ geometry, orientation, composer controls
+and the original V1–V8 marker vectors. Switching material does not create a
+new composition engine or modify the generator's random sequence.
+
+**Watercolour v2 remains experimental** in its separate draft pull request.
+When its wash behaviour is visually finished, add **Watercolour** as a *third*
+material choice beside Marker and Tissue & Graphite; never replace or silently
+change the original material.
+
+- **Legacy links and archives:** `?watercolor=1` and prototype `?oil=1`
+  deliberately continue selecting **Tissue & Graphite**, producing the same
+  pixels as before. The historical internal material name `watercolor`,
+  archive IDs, seeds, queue paths and publishing schedule are unchanged.
+  Do not recategorise historical archives, overwrite saved media, or retroactively
+  repaint past works. The public-facing editor, new gallery labels and new
+  social captions use **Tissue & Graphite**.
+- **Export:** the selected material is exported as PNG (new Tissue & Graphite
+  filenames end `-tissue-graphite`). SVG/plotter exports still use the original
+  marker geometry rather than rasterised pigment.
+- **Implementation:** historical modules `js/oil-render.js`,
+  `js/oil-material.js` and `js/oil-surface.js` keep their technical names.
+  They use Canvas2D without trained models, remote assets or installs, drawing
+  technique inspiration from [PigmentLab](https://github.com/wieslawsoltes/PigmentLab)
+  and [Wet Paint Flow](https://github.com/simonxxooxxoo/wet-paint-flow)
+  without bundling their code or assets.
+- **Torn Paper:** the earlier collage prototype stays archived and disabled
+  in `experiments/torn-paper-v1.js`. Opaque impasto/oil remains a separate
+  possible future style.
+- **Tests:** `npm run test:oil-render` is intentionally still named after
+  the original internal painter; it checks deterministic materials and exact
+  marker restoration, alongside the archive and social publishing suites.
 
 ## Daily watercolor publication
 
-The daily gallery includes **four additional deterministic watercolor studies**:
+The daily gallery includes **four additional deterministic Tissue & Graphite studies** (historically called watercolour):
 two portrait and two landscape. The 04:15 UTC gallery build creates all four,
 and the existing London social slots publish them to configured platforms:
 
-| London slot | Watercolor additions |
+| London slot | Tissue & Graphite additions |
 | --- | --- |
 | 09:00 | One portrait + one landscape |
 | 15:00 | None (existing marker posts only) |

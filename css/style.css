@@ -1527,12 +1527,7 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
 
 
 /* Opt-in material renderer: visible but not a ninth composition system. */
-.oil-render-control{display:block;min-width:0}
-.oil-toggle{display:flex;align-items:center;gap:11px;cursor:pointer;padding:11px;border:1px solid var(--ink);background:#e8ded0;min-width:0}
-.oil-toggle input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--orange);cursor:pointer}
-.oil-toggle span{display:flex;flex-direction:column;gap:3px;min-width:0}
-.oil-toggle strong{font-size:11px;letter-spacing:.04em;line-height:1.25}
-.oil-toggle small{font-size:9px;font-weight:400;letter-spacing:0;line-height:1.45;color:var(--muted)}
-.oil-toggle:has(input:checked){background:#e1bb92;border-color:#7e4c28}
-.oil-toggle:focus-within{outline:2px solid var(--blue);outline-offset:2px}
-.oil-render-control .mini-note{display:block;line-height:1.45;margin:6px 0 0;border-left:2px solid #a57a53;padding:8px;font-size:9px}
+.material-render-control{display:block;min-width:0}
+.material-render-control select{display:block;width:100%;min-width:0;background:#e8ded0;border:1px solid var(--ink);padding:11px;cursor:pointer;font-size:12px}
+.material-render-control select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.material-render-control .mini-note{display:block;line-height:1.45;margin:6px 0 0;border-left:2px solid #a57a53;padding:8px;font-size:9px}

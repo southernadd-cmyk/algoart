@@ -49,7 +49,7 @@ function slugText(value = '') {
 }
 
 function artworkTitle(item, index) {
-  return `${item.series} — ${item.material==='watercolor'?'Watercolor ':''}Study ${String(index + 1).padStart(2, '0')}`;
+  return `${item.series} — ${item.material==='watercolor'?'Tissue & Graphite ':''}Study ${String(index + 1).padStart(2, '0')}`;
 }
 
 function countWord(count) {
@@ -60,7 +60,7 @@ function countWord(count) {
 function artworkDescription(item) {
   const s = item.settings || {};
   return item.material==='watercolor'
-    ? `${item.series} procedural watercolor artwork using seed ${item.seed} and ${s.phiStrength}% golden-ratio adherence.`
+    ? `${item.series} Tissue & Graphite artwork using seed ${item.seed} and ${s.phiStrength}% golden-ratio adherence.`
     : `${item.series} generative marker artwork using seed ${item.seed}, ${s.phiStrength}% golden-ratio adherence, ${s.pen || 'marker'} pen and the ${s.palette || 'generated'} palette.`;
 }
 
@@ -84,7 +84,7 @@ function artworkCard(item, index) {
             <div><dt>Series</dt><dd>${escapeHtml(item.series)}</dd></div>
             <div><dt>Format</dt><dd>${portrait ? 'Portrait · 1000 × 1400' : 'Landscape · 1400 × 1000'}</dd></div>
             <div><dt>φ adherence</dt><dd>${escapeHtml(s.phiStrength)}%</dd></div>
-            <div><dt>Medium</dt><dd>${item.material==='watercolor'?'Watercolor':escapeHtml(s.pen+' marker')}</dd></div>
+            <div><dt>Medium</dt><dd>${item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
             <div><dt>Palette</dt><dd>${escapeHtml(s.palette)}</dd></div>
           </dl>
           <a class="remix" href="${escapeHtml(item.shareUrl)}">OPEN EXACT ARTWORK + REMIX →</a>
@@ -99,7 +99,7 @@ function dayPage(queue) {
   const entries = queue.entries;
   const series = [...new Set(entries.map(e => e.series))];
   const title = `ALGO/ART Daily Gallery — ${pretty} | Golden Ratio Generative Art`;
-  const description = `${entries.length} deterministic ALGO/ART studies generated on ${pretty}: ${series.join(', ')}. Golden-ratio compositions in digital marker and procedural watercolor.`;
+  const description = `${entries.length} deterministic ALGO/ART studies generated on ${pretty}: ${series.join(', ')}. Golden-ratio compositions in digital marker and Tissue & Graphite.`;
   const canonical = `${GALLERY_URL}/${date}/`;
   const cover = `${canonical}${entries[0].imageFile}`;
 
@@ -127,7 +127,7 @@ function dayPage(queue) {
           description: artworkDescription(item),
           image: `${canonical}${item.imageFile}`,
           url: item.shareUrl,
-          artform: item.material==='watercolor'?'Procedural watercolor art':'Generative digital marker art',
+          artform: item.material==='watercolor'?'Tissue and graphite generative art':'Generative digital marker art',
           artMedium: 'Browser canvas and deterministic algorithm',
           creator: {
             '@type': 'Organization',
