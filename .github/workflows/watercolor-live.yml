@@ -47,7 +47,7 @@ on:
         type: boolean
         default: false
       repost_deleted:
-        description: 'Repost previously deleted portrait posts despite their old completion markers'
+        description: 'Repost previously deleted watercolor posts despite their old completion markers'
         type: boolean
         default: false
 
@@ -115,7 +115,7 @@ jobs:
             exit 1
           fi
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG"               --title "ALGO/ART portrait publishing media"               --notes "Rolling public media host for automated @artalgorithm posts."
+            gh release create "$RELEASE_TAG"               --title "ALGO/ART watercolor publishing media"               --notes "Rolling public media host for automated @artalgorithm posts."
           fi
 
           DATE="${{ steps.gate.outputs.date }}"
@@ -173,7 +173,7 @@ jobs:
             # frozen set: all three later posts reuse these exact same files.
             if DAY="$DATE" node --input-type=module -e "
               import fs from 'node:fs';
-              const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
+              const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/watercolor/${{ inputs.orientation }}/queue.json'));
               if(q.material!=='watercolor'||q.orientation!=='${{ inputs.orientation }}'||q.date!==process.env.DAY||q.entries.length!==2)process.exit(1);
             "; then
               READY=true
@@ -184,8 +184,8 @@ jobs:
                 fi
               done < <(DAY="$DATE" node --input-type=module -e "
                 import fs from 'node:fs';
-                const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
-                for(const e of q.entries){console.log(e.imageFile);console.log(e.instagramImageFile);}
+                const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/watercolor/${{ inputs.orientation }}/queue.json'));
+                for(const e of q.entries){console.log(e.imageFile);if(e.instagramImageFile&&e.instagramImageFile!==e.imageFile)console.log(e.instagramImageFile);}
               ")
             fi
             if [ "$READY" = "true" ]; then
@@ -193,7 +193,7 @@ jobs:
                 gh release download "$RELEASE_TAG" --pattern "$IMAGE" -D "$DIR" --clobber
               done < <(DAY="$DATE" node --input-type=module -e "
                 import fs from 'node:fs';
-                const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/portrait/queue.json'));
+                const q=JSON.parse(fs.readFileSync('social-output/'+process.env.DAY+'/watercolor/${{ inputs.orientation }}/queue.json'));
                 for(const e of q.entries){console.log(e.imageFile);console.log(e.instagramImageFile);}
               ")
             else
@@ -421,6 +421,7 @@ jobs:
           echo "- Date: ${{ steps.gate.outputs.date }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Slot: ${{ steps.gate.outputs.slot }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Target London time: ${{ steps.gate.outputs.target_time }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Format: ${{ inputs.orientation }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Explicit repost of deleted platforms: ${{ inputs.repost_deleted }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Instagram already complete before run: ${{ steps.state.outputs.instagram_done }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Threads already complete before run: ${{ steps.state.outputs.threads_done }}" >> "$GITHUB_STEP_SUMMARY"
