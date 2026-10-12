@@ -295,7 +295,7 @@ try {
     const filename = `${day}-${watercolor ? 'watercolor-'+orientation+'-' : orientation === 'portrait' ? 'portrait-' : ''}${String(index + 1).padStart(2, '0')}-${settings.mode}-${settings.seed}.jpg`;
     const filePath = path.join(outDir, filename);
     await fs.writeFile(filePath, Buffer.from(rendered.dataUrl.split(',')[1], 'base64'));
-    const instagramImageFile = orientation === 'portrait' ? filename.replace(/\.jpg$/, '-instagram.jpg') : null;
+    const instagramImageFile = orientation === 'portrait' ? filename.replace(/\.jpg$/, '-instagram.jpg') : (watercolor ? filename : null);
     if (orientation === 'portrait') {
       if (!rendered.instagramDataUrl) throw new Error('Missing Instagram-safe 4:5 portrait derivative');
       await fs.writeFile(path.join(outDir, instagramImageFile), Buffer.from(rendered.instagramDataUrl.split(',')[1], 'base64'));
@@ -354,4 +354,4 @@ const queue = {
 
 await fs.writeFile(path.join(outDir, 'queue.json'), JSON.stringify(queue, null, 2));
 console.log(`\nGenerated ${generationCount} artworks into ${outDir}`);
-console.log(`${orientation} Instagram/Threads/Bluesky: ${(orientation === 'portrait' ? PORTRAIT_SCHEDULE : SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);
+console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(watercolor ? ['09:00','20:30'] : orientation === 'portrait' ? PORTRAIT_SCHEDULE : SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);
