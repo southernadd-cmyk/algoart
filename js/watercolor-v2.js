@@ -90,14 +90,14 @@ function wash(ctx,poly,ink,r,strength,quality,kind){
   var centre=centroid(poly),rect=bounds(poly);
   var span=Math.max(rect.x1-rect.x0,rect.y1-rect.y0);
   if(span<13)return;
-  var jitter=clamp(span*.016,1.3,9),edge=ragged(poly,r,jitter);
+  var jitter=clamp(span*.029,2.1,15),edge=ragged(poly,r,jitter);
   ctx.save();
   // Directional uneven pigment, retaining pale interior rather than a flat fill.
   var theta=r.range(-PI,PI),dx=Math.cos(theta)*span*.5,dy=Math.sin(theta)*span*.5;
   var gradient=ctx.createLinearGradient(centre.x-dx,centre.y-dy,centre.x+dx,centre.y+dy);
-  gradient.addColorStop(0,rgba(ink,kind==='graded'?.74:.90));
-  gradient.addColorStop(.40,rgba(ink,kind==='graded'?.24:.62));
-  gradient.addColorStop(.70,rgba(ink,kind==='graded'?.40:.52));
+  gradient.addColorStop(0,rgba(ink,kind==='graded'?.84:.96));
+  gradient.addColorStop(.40,rgba(ink,kind==='graded'?.30:.67));
+  gradient.addColorStop(.70,rgba(ink,kind==='graded'?.45:.59));
   gradient.addColorStop(1,rgba(ink,.80));
   outline(ctx,edge);ctx.globalAlpha=strength;ctx.fillStyle=gradient;ctx.fill();
   // Fine additional glazes follow *almost* the same boundary, not independent stamps.
@@ -115,11 +115,11 @@ function wash(ctx,poly,ink,r,strength,quality,kind){
   outline(ctx,edge);ctx.clip();
   ctx.strokeStyle=ink;ctx.lineCap='round';ctx.lineJoin='round';
   for(var k=0;k<edge.length;k++){
-    if(!r.chance(kind==='bloom'?.64:.37))continue;
+    if(!r.chance(kind==='bloom'?.72:.60))continue;
     var next=edge[(k+1)%edge.length];
     ctx.beginPath();ctx.moveTo(edge[k].x,edge[k].y);ctx.lineTo(next.x,next.y);
-    ctx.globalAlpha=strength*r.range(.34,.94);
-    ctx.lineWidth=r.range(kind==='bloom'?2.3:1.1,kind==='bloom'?6:3.3);
+    ctx.globalAlpha=clamp(strength*r.range(.55,1.12),0,.76);
+    ctx.lineWidth=r.range(kind==='bloom'?2.5:1.4,kind==='bloom'?7:4.6);
     ctx.stroke();
   }
   // Sparse coherent deposits near a few localised pigment accumulation points.
@@ -132,7 +132,7 @@ function wash(ctx,poly,ink,r,strength,quality,kind){
         var p=move(base,r.range(0,PI*2),r.range(2,19));
         ctx.beginPath();ctx.moveTo(p.x,p.y);
         ctx.lineTo(p.x+r.range(-3,3),p.y+r.range(-3,3));
-        ctx.globalAlpha=strength*r.range(.05,.14);
+        ctx.globalAlpha=strength*r.range(.12,.30);
         ctx.lineWidth=r.range(.4,1.35);
         ctx.stroke();
       }
@@ -173,24 +173,32 @@ function inVoid(p,voids){
   return voids.some(function(v){return p.x>=v.x&&p.x<=v.x+v.w&&p.y>=v.y&&p.y<=v.y+v.h});
 }
 function structure(ctx,chains,r,quality){
-  // A few clean shards and discontinuous skeleton segments preserve the
-  // hard/soft tension without turning pooled edges into rigid outlines.
+  // Sparse but expressive structure: each selected source segment receives
+  // one diffuse pigment halo and one interrupted fine ink line. No polygons
+  // are redrawn as complete opaque outlines; original φ structure remains.
   ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-  var count=Math.min(chains.length,quality<.4?12:24);
+  var count=Math.min(chains.length,quality<.4?18:38);
   for(var i=0;i<count;i++){
     var pts=chains[i].pts;
-    if(pts.length<2||r.chance(.34))continue;
-    ctx.strokeStyle=r.pick(['#364b4a','#544d43','#ad683c','#6d7e67']);
-    ctx.globalAlpha=r.range(.20,.55);ctx.lineWidth=r.range(.65,2.3);
-    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+    if(pts.length<2||r.chance(.18))continue;
+    ctx.strokeStyle=r.pick(['#364b4a','#544d43','#ad683c','#6d7e67','#657e7d']);
     for(var j=1;j<pts.length;j++){
-      if(r.chance(.11)){ctx.stroke();ctx.beginPath();ctx.moveTo(pts[j].x,pts[j].y)}
-      else ctx.lineTo(pts[j].x,pts[j].y);
+      if(r.chance(.13))continue;
+      var a=pts[j-1],b=pts[j],length=Math.hypot(b.x-a.x,b.y-a.y);
+      if(length<2)continue;
+      var curve=point(a,b,.5),normal=direction(a,b)+PI/2;
+      curve=move(curve,normal,r.range(-2.5,2.5));
+      ctx.beginPath();ctx.moveTo(a.x,a.y);
+      ctx.quadraticCurveTo(curve.x,curve.y,b.x,b.y);
+      ctx.globalAlpha=r.range(.08,.19);
+      ctx.lineWidth=r.range(4,10);ctx.stroke();
+      ctx.globalAlpha=r.range(.30,.73);
+      ctx.lineWidth=r.range(.8,2.75);ctx.stroke();
     }
-    ctx.stroke();
   }
   ctx.restore();
 }
+
 A.watercolorV2=function(ctx,w,h,chains,meta,seed,quality){
   var r=A.makeR(seed+'|watercolor-wet-washes-v2'),paperSeed=A.hash(seed+'|wc-paper-v2');
   paper(ctx,w,h,paperSeed,quality);
@@ -204,14 +212,14 @@ A.watercolorV2=function(ctx,w,h,chains,meta,seed,quality){
     if(inVoid(anchor,voids)&&r.chance(.84))continue;
     var width=clamp(Math.sqrt(ch.length)*r.range(2.2,5.1),26,i<14?125:75);
     var ink=INKS[i%INKS.length];
-    if(i%9===7)ink=r.pick(['#bc803f','#b97349','#ce9a5b']);
+    if(i%7===2||i%9===7)ink=r.pick(['#bc803f','#b97349','#ce9a5b']);
     var kind=i%5===0?'graded':i%7===0?'flat':'pooled';
     var form=i%4===0?plane(pts,width*PHI,r):ribbon(pts,width*.5,r);
-    wash(ctx,form,ink,r,r.range(.16,.36),quality,kind);
+    wash(ctx,form,ink,r,r.range(.31,.58),quality,kind);
     painted++;
     if(i<19&&r.chance(.27)){
       var p=pts[r.int(0,pts.length-1)];
-      wash(ctx,bloom(p,r.range(38,115),r),ink,r,r.range(.065,.15),quality,'bloom');
+      wash(ctx,bloom(p,r.range(38,115),r),ink,r,r.range(.10,.22),quality,'bloom');
       blooms++;
     }
   }
