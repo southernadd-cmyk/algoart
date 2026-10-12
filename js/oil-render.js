@@ -344,6 +344,12 @@ function finish(ctx,w,h,r,level){
   ctx.restore();
 }
 function paint(ctx,w,h,paths,meta,seed,quality){
+  // OIL-4: separate pigment and height buffers, shaded as material.
+  // Preserve the OIL-3 implementation below as an experimental fallback.
+  if(A.oilMaterial){
+    A.oilMaterial(ctx,w,h,skeleton(paths,quality<.4?95:250),meta,seed,quality);
+    return;
+  }
   var r=A.makeR(seed+'|oil-material-v2');
   var level=quality<.4?.40:quality<.85?.68:1;
   var chains=skeleton(paths,quality<.4?95:250);
