@@ -71,6 +71,11 @@ jobs:
           ARCHIVE_BROWSER: ${{ matrix.browser }}
           ALGOART_LOCAL_URL: http://127.0.0.1:4173/
         run: npm run test:archive
+      - name: Reject changed artwork without rejecting JPEG compression
+        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
+        env:
+          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+        run: node tests/archive-jpeg.test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

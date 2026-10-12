@@ -307,7 +307,7 @@ jobs:
     # dispatches and their times are unchanged. Landscape finishes first
     # so the portrait gallery can preserve its five entries.
     needs: publish
-    if: ${{ needs.publish.result == 'success' && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.slot != '3') }}
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.slot != '3') }}
     uses: ./.github/workflows/portrait-live.yml
     with:
       # One explicitly requested repair of already-deleted 2026-10-09 portraits.
@@ -317,8 +317,21 @@ jobs:
       repost_deleted: ${{ github.event_name == 'push' && github.event.head_commit.message == 'retry-deleted-portrait-slot0-2026-10-09' }}
     secrets: inherit
 
+  portraits-retry:
+    # One bounded retry in the same scheduled run. Keep the original date/slot
+    # and honour completion markers, including after a partial platform failure.
+    needs: portraits
+    if: ${{ always() && !cancelled() && needs.portraits.result == 'failure' && needs.portraits.outputs.date != '' && needs.portraits.outputs.slot != '' }}
+    uses: ./.github/workflows/portrait-live.yml
+    with:
+      slot: ${{ needs.portraits.outputs.slot }}
+      date: ${{ needs.portraits.outputs.date }}
+      live: true
+      repost_deleted: false
+    secrets: inherit
+
   archive-check:
-    needs: [publish, portraits]
+    needs: [publish, portraits, portraits-retry]
     if: ${{ always() && github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/archive-reproduction.yml
     with:

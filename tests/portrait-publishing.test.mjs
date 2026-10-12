@@ -48,6 +48,12 @@ assert.ok(parentWorkflow.includes('  portraits:\n'), 'Parent workflow must inclu
 assert.ok(parentWorkflow.includes('needs: publish'), 'Landscape must finish before portraits');
 assert.ok(parentWorkflow.includes('uses: ./.github/workflows/portrait-live.yml'), 'Portrait must reuse the parent workflow triggers');
 assert.ok(parentWorkflow.includes('secrets: inherit'));
+assert.ok(parentWorkflow.includes('  portraits-retry:\n'),'Failed portraits need a bounded automatic retry');
+assert.ok(parentWorkflow.includes("needs.portraits.result == 'failure'"));
+assert.ok(parentWorkflow.includes('slot: ${{ needs.portraits.outputs.slot }}'),'Retry must preserve the failed slot');
+assert.ok(parentWorkflow.includes('date: ${{ needs.portraits.outputs.date }}'),'Retry must preserve the failed date');
+assert.ok(parentWorkflow.includes('repost_deleted: false'),'Automatic retry must honour successful-platform markers');
+assert.ok(!parentWorkflow.includes("needs.publish.result == 'success'"),'A landscape failure must not block independent portraits');
 assert.ok(portraitWorkflow.includes('  workflow_call:'), 'Portrait must be a reusable workflow');
 assert.ok(!portraitWorkflow.includes('\n  schedule:'), 'Portrait must not add duplicate cron triggers');
 assert.ok(!portraitWorkflow.includes('\n  push:'), 'Portrait must not add a second push trigger');

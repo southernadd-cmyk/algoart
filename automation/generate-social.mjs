@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
-  SITE_URL, LOCAL_URL, TIME_ZONE, ACCOUNTS, DAILY_COUNT,
+  SITE_URL, LOCAL_URL, TIME_ZONE, ACCOUNTS, DAILY_COUNT, ARTWORK_JPEG_QUALITY,
   SCHEDULE, PLATFORM_SLOTS, PORTRAIT_SCHEDULE, PORTRAIT_POST_INDICES, MODES, PALETTES, PENS
 } from './config.mjs';
 import { makeCaptions } from './captions.mjs';
@@ -202,7 +202,7 @@ try {
     const actualVersion=await page.evaluate(()=>window.AlgoArt.rendererVersion);
     if(actualVersion!==rendererVersion)throw new Error('Rendered V'+actualVersion+' but requested V'+rendererVersion);
 
-    const rendered = await page.evaluate((paperColour) => {
+    const rendered = await page.evaluate(({paperColour,jpegQuality}) => {
       const canvas = document.getElementById('art');
       const stats = document.getElementById('stats')?.textContent || '';
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -254,10 +254,10 @@ try {
         ig.fillStyle = paperColour;
         ig.fillRect(0, 0, 1120, 1400);
         ig.drawImage(canvas, 60, 0);
-        instagramDataUrl = igCanvas.toDataURL('image/jpeg', 0.94);
+        instagramDataUrl = igCanvas.toDataURL('image/jpeg', jpegQuality);
       }
       return {
-        dataUrl: canvas.toDataURL('image/jpeg', 0.94),
+        dataUrl: canvas.toDataURL('image/jpeg', jpegQuality),
         instagramDataUrl,
         stats,
         accessibility: {
@@ -267,7 +267,7 @@ try {
         },
         validation: { valid, changedRatio, strongRatio, spanX, spanY }
       };
-    }, settings.paper);
+    }, {paperColour:settings.paper,jpegQuality:ARTWORK_JPEG_QUALITY});
 
     // Reject wrong-format exports instead of silently archiving resized images.
     const canvasSize = await page.locator('#art').evaluate(c => [c.width, c.height]);

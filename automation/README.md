@@ -135,6 +135,12 @@ To enable it, create a Bluesky app password for the account and add it to the Gi
 
 Bluesky uses the same London publishing slots and selected artwork as Instagram and Threads. Each successful Bluesky post creates its own release marker (`done-YYYY-MM-DD-slotN-bluesky.txt`) so a retried workflow cannot knowingly publish the same slot twice.
 
+### Portrait verification and recovery
+
+Archive checks compare the stored JPEG with a fresh JPEG export at the same 0.94 quality, then measure the pixels using the existing tolerances. This avoids treating JPEG colour compression as an artwork mismatch. The regression check rebuilds all five 12 October 2026 portraits, demonstrates the former false positive, and confirms a changed seed still fails.
+
+Portrait publishing runs even if the landscape job fails. A failed portrait job gets one automatic retry in the same scheduled run, preserving its original London date and slot. Per-platform completion markers are honoured on retry, so successful destinations are skipped. The five-work batch is validated and frozen before any social post.
+
 ### Renderer upgrades and existing editions
 
 New social/gallery batches default to V7. An explicit `SOCIAL_RENDERER_VERSION` can select an older supported renderer for test or recovery generation. Landscape jobs reuse archived daily JPEGs, settings, links and renderer versions, including editions created before an upgrade. Portrait jobs reuse their frozen release queue. A renderer update does not rewrite historical editions or change the 09:00, 15:00 and 20:30 Europe/London posting times.

@@ -9,6 +9,8 @@ export const ACCOUNTS = {
 };
 
 export const DAILY_COUNT = 5;
+// Keep archive verification and social exports in the same lossy image format.
+export const ARTWORK_JPEG_QUALITY = 0.94;
 
 // Three additional portrait posts per day, separate from landscape slots.
 // Times are local to Europe/London and may be adjusted before release.

@@ -1,6 +1,7 @@
 import {chromium,firefox,webkit} from 'playwright';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {ARTWORK_JPEG_QUALITY} from '../automation/config.mjs';
 
 const engine=process.env.ARCHIVE_BROWSER||'chromium';
 const runtime={chromium,firefox,webkit}[engine];
@@ -42,7 +43,7 @@ async function compare(item,bytes,overrideVersion){
   local.search=original.search;
   await page.goto(local.href,{waitUntil:'networkidle'});
   await page.waitForFunction(()=>window.AlgoArt?.lastRenderMeta&&document.getElementById('art')?.width>0);
-  return page.evaluate(async ({data,expected,limits,overrideVersion})=>{
+  return page.evaluate(async ({data,expected,limits,overrideVersion,jpegQuality})=>{
     const A=window.AlgoArt,art=document.getElementById('art');
     if(!overrideVersion&&A.rendererVersion!==expected.rendererVersion)throw Error('Actual renderer version does not match recorded version');
     const actual=A.readSettings();
@@ -54,11 +55,17 @@ async function compare(item,bytes,overrideVersion){
     img.src='data:image/jpeg;base64,'+data;
     await img.decode();
     if(img.naturalWidth!==art.width||img.naturalHeight!==art.height)throw Error('Archived/rendered dimensions disagree');
+    // Compare two equivalent JPEG exports. Comparing the archived JPEG with
+    // raw canvas pixels measures chroma subsampling/compression as a render
+    // regression (2026-10-12-P03), even when the exported bytes are identical.
+    const renderedImage=new Image();
+    renderedImage.src=art.toDataURL('image/jpeg',jpegQuality);
+    await renderedImage.decode();
     const w=Math.round(art.width/4),h=Math.round(art.height/4);
     const small=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
     const old=small(),fresh=small(),diff=small();
     old.getContext('2d').drawImage(img,0,0,w,h);
-    fresh.getContext('2d').drawImage(art,0,0,w,h);
+    fresh.getContext('2d').drawImage(renderedImage,0,0,w,h);
     const a=old.getContext('2d').getImageData(0,0,w,h).data;
     const b=fresh.getContext('2d').getImageData(0,0,w,h).data;
     const ctx=diff.getContext('2d'),heat=ctx.createImageData(w,h);
@@ -73,7 +80,7 @@ async function compare(item,bytes,overrideVersion){
     return {mean,changed:ratio,passed:mean<=limits.mean&&ratio<=limits.changed,
       actualVersion:A.rendererVersion,width:art.width,height:art.height,
       render:art.toDataURL('image/png'),diff:diff.toDataURL('image/png')};
-  },{data:bytes.toString('base64'),expected:item,limits,overrideVersion});
+  },{data:bytes.toString('base64'),expected:item,limits,overrideVersion,jpegQuality:ARTWORK_JPEG_QUALITY});
 }
 try{
   const allIds=new Set();
