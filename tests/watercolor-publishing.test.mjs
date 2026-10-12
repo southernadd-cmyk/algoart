@@ -38,7 +38,7 @@ try{
       e.copy=makeCaptions(e);
       for(const platform of ['threads','bluesky','instagram']){
         assert(e.copy[platform].includes('/?art='+id));
-        assert(e.copy[platform].toLowerCase().includes('watercolor'));
+        assert(e.copy[platform].toLowerCase().includes('tissue & graphite'));
       }
       assert(editorArtworkLink(e).includes('?art='+id));
       assert.equal(new URL(e.shareUrl).searchParams.get('watercolor'),'1');
