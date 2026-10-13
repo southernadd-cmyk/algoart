@@ -67,9 +67,11 @@ try{
   assert.equal(restored.names.pen.label,tissue.names.pen.label);
 
   // A different profile remains a stable serialized pen ID in both materials.
+  await page.locator('#tab-marker').click();
   await page.locator('#pen').selectOption('paint');
   assert.equal(new URL(page.url()).searchParams.get('pen'),'paint');
   assert.equal((await snapshot()).options.find(x=>x.value==='paint').text,'Dense marks');
+  await page.locator('#tab-composition').click();
   await page.locator('#materialStyle').selectOption('marker');
   assert.equal((await snapshot()).options.find(x=>x.value==='paint').text,'Paint Pen');
 
