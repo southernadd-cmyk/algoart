@@ -166,7 +166,9 @@ for(const fixture of priorCases){
       'Previously tiny '+fixture.mode+' should be reframed');
     assert(result.stats.after.width>result.stats.before.width*1.20,
       'Reframe needs measurable width gain: '+fixture.mode);
-  }else if(result.stats.kind==='frame-inset'){
+  }else if(fixture.mode==='rects'){
+    assert.equal(result.stats.kind,'frame-inset','Previously clipped RECT frame needs inset');
+    assert(result.stats.factor<=.88);
     assert(result.stats.factor<1);
     assert(result.stats.after.minX>0&&result.stats.after.maxX<1);
   }
