@@ -96,6 +96,13 @@ assert(A.lastOilMaterialStats.graphitePaths>0,'New Tissue v3 needs actual charco
 assert.notDeepEqual(graphiteV3,seededV2,'Graphite revision must differ visibly from old v2');
 assert.deepEqual(paint(s,2),seededV2,'Graphite v3 must not change previous tissue=2 links');
 assert.deepEqual(paint(s,3),graphiteV3,'Graphite v3 must remain deterministic');
+const paperGraphiteV4=paint(s,4);
+assert.equal(A.lastOilMaterialStats.tissuePaletteVersion,4);
+assert(A.lastOilMaterialStats.graphitePaths>0,'Tissue v4 needs visible graphite strokes');
+assert(A.lastOilMaterialStats.graphiteHatchPaths>25,'Tissue v4 needs fine pencil hatching');
+assert.notDeepEqual(paperGraphiteV4,graphiteV3,'v4 should restore a more subdued, detailed look');
+assert.deepEqual(paint(s,4),paperGraphiteV4,'Original-look v4 must remain deterministic');
+assert.deepEqual(paint(s,3),graphiteV3,'Older Tissue v3 links must stay unchanged');
 const historic=paint(s,1);
 assert.equal(A.lastOilMaterialStats.tissuePaletteVersion,1);
 paint(s,2);
