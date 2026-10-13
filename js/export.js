@@ -29,6 +29,47 @@ A.downloadBlob=function(blob,filename){
   return name;
 };
 
+// Mobile Chrome may silently discard an anchor.click() started from the
+// asynchronous canvas.toBlob callback: transient user activation has ended.
+// At 1× use the already-committed artwork, encode and click synchronously
+// within the original Download button gesture. Re-render only if the Reveal
+// overlay is visible, since exports must not include composition guides.
+A.exportPNGDirect=function(settings,visibleCanvas,showGeometry){
+  var portrait=settings.orientation==='portrait';
+  var width=portrait?1000:1400,height=portrait?1400:1000;
+  var canvas=visibleCanvas;
+  if(showGeometry||!canvas||canvas.width!==width||canvas.height!==height){
+    canvas=document.createElement('canvas');
+    var clean=Object.assign({},settings);
+    delete clean.oilRender;delete clean.tissuePaletteVersion;
+    if(settings.oilRender)
+      A.renderOil(canvas,clean,1,false,settings.tissuePaletteVersion>=2?settings.tissuePaletteVersion:1);
+    else A.render(canvas,clean,1,false);
+  }
+  var filename='algoart-'+settings.seed+'-'+settings.mode+
+    (portrait?'-portrait':'')+
+    (settings.oilRender?'-tissue-graphite':'')+'-1x.png';
+  // Data URL does use more short-lived memory than toBlob, but ONLY at 1×
+  // on mobile, and avoids an asynchronous, gesture-less download click.
+  var dataURL=canvas.toDataURL('image/png');
+  if(!dataURL.startsWith('data:image/png;base64,'))
+    throw new Error('Could not encode PNG. Try reloading the artwork.');
+  var count=(downloadCounts[filename]||0)+1;
+  var name=count===1?filename:filename.replace(/(\\.[^./]+)$/, ' ('+count+')$1');
+  var link=document.createElement('a');
+  link.download=name;link.href=dataURL;
+  link.style.cssText='position:fixed;left:-10000px;width:1px;height:1px';
+  document.body.appendChild(link);
+  try{
+    link.click();
+    downloadCounts[filename]=count;
+  }finally{
+    // Retain the linked URL until the browser has consumed it.
+    setTimeout(function(){link.remove();link.removeAttribute('href')},60000);
+  }
+  return {filename:name,bytes:Math.floor((dataURL.length-dataURL.indexOf(',')-1)*3/4)};
+};
+
 A.exportPNG=function(settings,scale){
   scale=Number(scale)||1;
   var pixels=(settings.orientation==='portrait'?1000:1400)*
