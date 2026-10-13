@@ -87,9 +87,9 @@ Historical renderer and material versions remain available so saved links reprod
 ## Drawing materials
 
 - **Marker drawing:** expressive ink with wobble, uneven weight, pressure and dryness.
-- **Tissue & Graphite:** translucent torn tissue and fine graphite, with colours chosen by the seed, on fixed cream paper.
+- **Tissue & Graphite:** translucent torn tissue and fine graphite, with colours chosen by the seed, on your selected paper colour (cream by default).
 
-Both materials use the same seeded composition. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** offers marker tools for those base paths, rather than suggesting Tissue & Graphite uses a marker for its visible finish. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
+Both materials use the same seeded composition. From renderer V9, changing paper colour does not change the artwork's geometry or selected pigment colours, and switching materials preserves the paper choice. Published V1–V8 compositions remain version-locked. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** offers marker tools for those base paths, rather than suggesting Tissue & Graphite uses a marker for its visible finish. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
 
 ## Daily gallery and publication
 
