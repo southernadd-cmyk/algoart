@@ -10,6 +10,7 @@ on:
       - 'js/generator.js'
       - 'js/marker.js'
       - 'tests/oil-preview.mjs'
+      - 'tests/tissue-colour-browser.mjs'
       - '.github/workflows/oil-previews.yml'
   workflow_dispatch:
 permissions:
@@ -35,8 +36,10 @@ jobs:
             sleep 1
           done
           exit 1
-      - name: Capture marker and oil paintings
+      - name: Capture legacy Tissue & Graphite and Marker
         run: node tests/oil-preview.mjs
+      - name: Check Randomise preserves the material and Colour controls
+        run: node tests/tissue-colour-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
