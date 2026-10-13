@@ -9,8 +9,9 @@ A.exportPNG=function(settings,scale){
   // published renderer's seed/JSON settings, including when unchecked.
   var compositionSettings=Object.assign({},settings);
   delete compositionSettings.oilRender;
+  delete compositionSettings.tissuePaletteVersion;
   if(settings.oilRender){
-    A.renderOil(out,compositionSettings,scale,false);
+    A.renderOil(out,compositionSettings,scale,false,settings.tissuePaletteVersion===2?2:1);
   }else{
     A.render(out,compositionSettings,scale,false);
   }

@@ -343,11 +343,60 @@ function finish(ctx,w,h,r,level){
   }
   ctx.restore();
 }
-function paint(ctx,w,h,paths,meta,seed,quality){
+// Convert the *actual recorded Marker strokes* into an RGB ink kit.
+// Marker already chose these colours from seed + palette/colour controls;
+// no second arbitrary palette is introduced.
+function tissueStrokeRGB(value){
+  var m=String(value||'').trim().match(/^hsl\(\s*([\d.]+)(?:deg)?\s+([\d.]+)%\s+([\d.]+)%\s*\)$/i);
+  if(m){
+    var h=((+m[1]%360)+360)%360/60,s=+m[2]/100,l=+m[3]/100;
+    var chroma=(1-Math.abs(2*l-1))*s,x=chroma*(1-Math.abs(h%2-1)),v=l-chroma/2;
+    var t=h<1?[chroma,x,0]:h<2?[x,chroma,0]:h<3?[0,chroma,x]:
+      h<4?[0,x,chroma]:h<5?[x,0,chroma]:[chroma,0,x];
+    return t.map(function(k){return Math.round(Math.max(0,Math.min(255,(k+v)*255)))});
+  }
+  m=String(value||'').trim().match(/^#([\da-f]{6})$/i);
+  if(m)return [0,2,4].map(function(i){return parseInt(m[1].slice(i,i+2),16)});
+  m=String(value||'').trim().match(/^rgb\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)\s*\)$/i);
+  return m?[+m[1],+m[2],+m[3]]:null;
+}
+function tissueHex(rgb){
+  return '#'+rgb.map(function(n){return Math.round(Math.max(0,Math.min(255,n))).toString(16).padStart(2,'0')}).join('');
+}
+function tissueBlend(a,b,t){return a.map(function(n,i){return Math.round(n*(1-t)+b[i]*t)})}
+function tissueKit(paths,s){
+  var inks=[],seen={},count=Math.max(1,Math.min(24,Math.round(s.colourCount||4)));
+  for(var i=0;i<paths.length;i++){
+    var value=paths[i].stroke;
+    if(!value||seen[value])continue;
+    var rgb=tissueStrokeRGB(value);
+    if(!rgb)continue;
+    seen[value]=true;inks.push(rgb);
+    if(inks.length>=count)break;
+  }
+  // E.g. a genuinely empty composition or an early archived strategy.
+  if(!inks.length){
+    var backup=A.hues(s,A.makeR(s.seed+'|tissue-fallback-palette'));
+    inks=backup.map(tissueStrokeRGB).filter(Boolean);
+  }
+  var paper=tissueStrokeRGB(s.paper)||[242,235,221],dark=[26,27,27];
+  return {
+    paperRGB:paper,
+    paper:tissueHex(paper),
+    inkRGB:inks,
+    ink:inks.map(tissueHex),
+    cream:inks.map(function(col){return tissueHex(tissueBlend(col,paper,.83))}),
+    soft:inks.map(function(col){return tissueHex(tissueBlend(col,paper,.38))}),
+    deep:inks.map(function(col){return tissueHex(tissueBlend(col,dark,.58))})
+  };
+}
+A.tissueKitFromPaths=tissueKit;
+
+function paint(ctx,w,h,paths,meta,seed,quality,kit){
   // OIL-4: separate pigment and height buffers, shaded as material.
   // Preserve the OIL-3 implementation below as an experimental fallback.
   if(A.oilMaterial){
-    A.oilMaterial(ctx,w,h,skeleton(paths,quality<.4?95:250),meta,seed,quality);
+    A.oilMaterial(ctx,w,h,skeleton(paths,quality<.4?95:250),meta,seed,quality,kit);
     return;
   }
   var r=A.makeR(seed+'|oil-material-v2');
@@ -381,7 +430,7 @@ function paint(ctx,w,h,paths,meta,seed,quality){
 // The checkbox changes only the material. The unmodified V8 composition
 // (and its historic RNG sequence) is rendered offscreen to obtain vector
 // geometry. Turning Oil off reproduces precisely the original marker work.
-A.renderOil=function(target,s,scale,showGeometry){
+A.renderOil=function(target,s,scale,showGeometry,materialRevision){
   scale=scale||1;
   var w=s.orientation==='portrait'?1000:1400;
   var h=s.orientation==='portrait'?1400:1000;
@@ -394,7 +443,8 @@ A.renderOil=function(target,s,scale,showGeometry){
   target.width=w*scale;target.height=h*scale;
   var ctx=target.getContext('2d');
   if(scale!==1)ctx.scale(scale,scale);
-  paint(ctx,w,h,rec.paths,meta,s.seed+'|'+s.mode+'|'+A.rendererVersion,scale);
+  paint(ctx,w,h,rec.paths,meta,s.seed+'|'+s.mode+'|'+A.rendererVersion,scale,
+    materialRevision===2?tissueKit(rec.paths,s):null);
   if(showGeometry)A.geometryOverlay(ctx,s,meta);
   A.lastRenderMeta=meta;
   return meta;
