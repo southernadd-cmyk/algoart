@@ -173,8 +173,11 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
     phase:r.range(-Math.PI,Math.PI)};
   if(!ribbon(pig,pts,width*.5,r))return;
   pig.save();
-  pig.globalCompositeOperation='multiply';
-  pig.globalAlpha=opacity*(edgeState==='dry'?.51:edgeState==='damp'?.40:.30);
+  // Dried pigment is deposited onto the existing sheet rather than
+  // infinitely multiplied into black as separate dark glazes stack.
+  // Damp/wet layers still glaze subtractively and mix before paper flow.
+  pig.globalCompositeOperation=edgeState==='dry'?'source-over':'multiply';
+  pig.globalAlpha=opacity*(edgeState==='dry'?.45:edgeState==='damp'?.40:.30);
   pig.fillStyle=col;
   pig.fill();
   pig.save();
