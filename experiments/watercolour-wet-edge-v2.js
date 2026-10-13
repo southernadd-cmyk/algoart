@@ -575,7 +575,15 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     var cx=Math.round(pos.x*ratio),cy=Math.round(pos.y*ratio);
     if(cx<20||cy<20||cx>=w-20||cy>=h-20)continue;
     var index=(cy*w+cx)*3;
-    if(Math.max(source[index],source[index+1],source[index+2])<.085)continue;
+    var localDensity=Math.max(source[index],source[index+1],source[index+2]);
+    // Backruns need a sufficiently damp, overlapping wash, not bare paper
+    // or a single faint trace. Reject flat/pale candidates.
+    var overlap=0;
+    for(var oy=-5;oy<=5;oy+=5)for(var ox=-5;ox<=5;ox+=5){
+      var nidx=((cy+oy)*w+cx+ox)*3;
+      if(Math.max(source[nidx],source[nidx+1],source[nidx+2])>.072)overlap++;
+    }
+    if(localDensity<.14||overlap<7)continue;
     var radius=clamp(Math.sqrt(ch.length)*rand.range(.30,.65)*ratio,10,30);
     if(drops.some(function(d){return Math.hypot(cx-d.x,cy-d.y)<radius*2.7}))continue;
     drops.push({x:cx,y:cy,r:radius,phase:rand.range(0,Math.PI*2)});
@@ -583,10 +591,12 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
   for(y=0;y<h;y++)for(x=0;x<w;x++){
     pi=y*w+x;var p=pi*3,out=pi*4;
     var grit=(hashNoise(x,y,seedValue^0x4251)-.5);
-    var scale=(tooth[pi]-.5)*.58+grit*.17;
-    // Pigment catches in the most absorbent paper hollows and separates
-    // into small granules. Paper without pigment remains exactly cream.
-    var settle=clamp(1+scale,.69,1.37);
+    // Loaded/dark washes granulate more strongly than faint tints; lighter
+    // washes remain smooth and unpainted paper stays exactly #f5f0e6.
+    var concentration=clamp(Math.max(source[p],source[p+1],source[p+2])*3.8,0,1);
+    var grainStrength=.18+.82*concentration;
+    var scale=((tooth[pi]-.5)*.78+grit*.32)*grainStrength;
+    var settle=clamp(1+scale,.62,1.46);
     var bloom=1;
     for(var d=0;d<drops.length;d++){
       var drop=drops[d],dx=x-drop.x,dy=y-drop.y;
@@ -606,7 +616,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
-  return {paperModel:'seeded fibre-warped edges + anisotropic capillary flow + paper absorption',
+  return {paperModel:'V2e concentration-weighted tooth + seeded fibre-warped capillary flow + paper absorption',
     diffusionPasses:passes,waterBlooms:drops.length};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
