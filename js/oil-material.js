@@ -24,7 +24,7 @@ function coloursForInk(kit){
     blue:kit.ink,
     // Keep the original dark graphite pigment. Pigment washes remain
     // seeded, while pencil structural strokes must not inherit their hue.
-    umber:originalC.umber,
+    umber:kit.revision>=3?originalC.umber:kit.deep,
     olive:kit.soft,
     ochre:kit.ink.length>1?kit.ink.slice(1).concat(kit.ink[0]):kit.ink
   };
@@ -322,10 +322,10 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   shade(pctx,hctx,fctx,sw,sh,seed,kit);
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);
-  var graphitePaths=kit?graphiteOverlay(ctx,chains,seed,quality):0;
+  var graphitePaths=kit&&kit.revision>=3?graphiteOverlay(ctx,chains,seed,quality):0;
   ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
-    version:4,tissuePaletteVersion:kit?2:1,
+    version:4,tissuePaletteVersion:kit?kit.revision:1,
     ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} )};
   }finally{C=originalC}
 };
