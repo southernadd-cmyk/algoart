@@ -13,7 +13,7 @@ ALGO/ART is a browser-based generative art project built around the **golden rat
 ## Using ALGO/ART
 
 1. Open the [editor](https://southernadd-cmyk.github.io/algoart/) and choose one of the eight composition systems.
-2. Adjust the composition, **Additional φ pull**, colour, paper and marker controls, or use **Randomise**, **Mutate** or **4-Up Variations** to explore.
+2. Adjust the composition, **Additional φ pull**, colour, paper and **Materials** controls, or use **Randomise**, **Mutate** or **4-Up Variations** to explore.
 3. Choose **landscape (1400 × 1000)** or **portrait (1000 × 1400)**.
 4. Export as **PNG**, **SVG** or **Plotter SVG**, or copy a share link to reopen the same artwork.
 
@@ -89,7 +89,7 @@ Historical renderer and material versions remain available so saved links reprod
 - **Marker drawing:** expressive ink with wobble, uneven weight, pressure and dryness.
 - **Tissue & Graphite:** translucent torn tissue and fine graphite, with colours chosen by the seed, on fixed cream paper.
 
-Both materials use the same seeded composition. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
+Both materials use the same seeded composition. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** offers marker tools for those base paths, rather than suggesting Tissue & Graphite uses a marker for its visible finish. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
 
 ## Daily gallery and publication
 

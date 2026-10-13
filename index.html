@@ -88,8 +88,8 @@
       <aside class="ethos-toast" id="ethosToast" hidden aria-label="About ALGO ART">
         <button class="ethos-close" id="ethosClose" type="button" aria-label="Dismiss">×</button>
         <span class="ethos-kicker">WHY ALGO/ART?</span>
-        <strong>MATHEMATICS SETS THE RULES.<br>THE MARKER BREAKS THEM.</strong>
-        <p>φ shapes the composition, scale and spacing. Imperfect digital ink adds wobble, pressure, overdraw and dryness.</p>
+        <strong>MATHEMATICS SETS THE RULES.<br>MATERIALS GIVE THEM TEXTURE.</strong>
+        <p>φ shapes the composition, scale and spacing. Marker ink adds wobble, pressure and uneven strokes; torn tissue and graphite add translucent layers and pencil texture.</p>
         <button class="ethos-reveal" id="ethosReveal" type="button">REVEAL THE SYSTEM →</button>
       </aside>
 
@@ -184,7 +184,7 @@
       <nav class="tabs" role="tablist" aria-label="Control categories">
         <button class="tab active" data-tab="composition" id="tab-composition" role="tab" aria-controls="panel-composition" aria-selected="true" tabindex="0"><span>01</span>Compose</button>
         <button class="tab" data-tab="phi" id="tab-phi" role="tab" aria-controls="panel-phi" aria-selected="false" tabindex="-1"><span>02</span>φ</button>
-        <button class="tab" data-tab="marker" id="tab-marker" role="tab" aria-controls="panel-marker" aria-selected="false" tabindex="-1"><span>03</span>Pen</button>
+        <button class="tab" data-tab="marker" id="tab-marker" role="tab" aria-controls="panel-marker" aria-selected="false" tabindex="-1"><span>03</span>Materials</button>
         <button class="tab" data-tab="geometry-panel" id="tab-geometry-panel" role="tab" aria-controls="panel-geometry-panel" aria-selected="false" tabindex="-1"><span>04</span>Shape</button>
         <button class="tab" data-tab="colour" id="tab-colour" role="tab" aria-controls="panel-colour" aria-selected="false" tabindex="-1"><span>05</span>Colour</button>
         <button class="tab" data-tab="export" id="tab-export" role="tab" aria-controls="panel-export" aria-selected="false" tabindex="-1"><span>06</span>Export</button>
@@ -194,7 +194,7 @@
         <section class="tab-panel active" data-panel="composition" id="panel-composition" role="tabpanel" aria-labelledby="tab-composition">
           <div class="section-title"><span>COMPOSITION</span></div>
           <div class="controls">
-            <div class="control material-render-control"><label for="materialStyle">DRAWING MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option></select><p class="mini-note">Translucent torn tissue and fine graphite, with colours chosen by the seed. Paper stays the standard cream. Randomise keeps the selected material. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p></div>
+            <div class="control material-render-control"><label for="materialStyle">MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option></select><p class="mini-note">Translucent torn tissue and fine graphite, with colours chosen by the seed. Paper stays the standard cream. Randomise keeps the selected material. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
             <div class="mode-picker-wrap">
               <div class="mode-picker-label"><span>SERIES</span></div>
@@ -230,15 +230,16 @@
         </section>
 
         <section class="tab-panel" data-panel="marker" id="panel-marker" role="tabpanel" aria-labelledby="tab-marker" hidden>
-          <div class="section-title"><span>MARKER ENGINE</span><b>ink / friction</b></div>
+          <div class="section-title"><span>MATERIAL CONTROLS</span><b>strokes / texture</b></div>
           <div class="controls">
-            <div class="control"><label>Pen</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
-            <div class="control"><label>Thickness</label><output></output><input id="thickness" type="range" min="1" max="28" value="13"></div>
+            <div class="mini-note" id="materialControlsNote">Choose Marker or Tissue &amp; Graphite in Compose. These settings shape the underlying marker strokes. Tissue PNGs use their own torn-paper and graphite finish; SVG and plotter exports use marker paths.</div>
+            <div class="control"><label>Mark-making tool</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
+            <div class="control"><label>Stroke width</label><output></output><input id="thickness" type="range" min="1" max="28" value="13"></div>
             <div class="control"><label>Wobble</label><output></output><input id="wobble" type="range" min="0" max="100" value="32"></div>
-            <div class="control"><label>Overdraw</label><output></output><input id="overdraw" type="range" min="1" max="10" value="3"></div>
+            <div class="control"><label>Repeat passes</label><output></output><input id="overdraw" type="range" min="1" max="10" value="3"></div>
             <div class="control"><label>Opacity</label><output></output><input id="opacity" type="range" min="10" max="100" value="70"></div>
-            <div class="control"><label>Pressure</label><output></output><input id="pressure" type="range" min="0" max="100" value="36"></div>
-            <div class="control"><label>Dryness</label><output></output><input id="dryness" type="range" min="0" max="100" value="19"></div>
+            <div class="control"><label>Stroke pressure</label><output></output><input id="pressure" type="range" min="0" max="100" value="36"></div>
+            <div class="control"><label>Dry texture</label><output></output><input id="dryness" type="range" min="0" max="100" value="19"></div>
           </div>
         </section>
 
@@ -318,8 +319,8 @@
 <script src="js/oil-render.js?v=tissue-original-look-v4"></script>
 <script src="js/export.js?v=mobile-randomise-gesture-20261013"></script>
 <script src="js/plotter.js?v=mobile-export-20261013"></script>
-<script src="js/describe.js"></script>
-<script src="js/control-help.js?v=additional-phi-pull-label-20261010"></script>
-<script src="js/app.js?v=tissue-light-v6"></script>
+<script src="js/describe.js?v=materials-copy-20261013"></script>
+<script src="js/control-help.js?v=materials-copy-20261013"></script>
+<script src="js/app.js?v=materials-copy-20261013"></script>
 </body>
 </html>

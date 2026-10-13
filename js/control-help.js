@@ -3,6 +3,7 @@ window.AlgoArt=window.AlgoArt||{};
 'use strict';
 
 var COMMON={
+  materialStyle:'Choose Marker drawing or Tissue & Graphite. The same composition is used for both. PNG exports show the chosen material; SVG exports retain underlying marker paths.',
   elements:'Adds more marks to the composition.',
   density:'Makes the marks larger or smaller.',
   complexity:'Bends curved line strokes more strongly.',
@@ -12,13 +13,13 @@ var COMMON={
   spiralInfluence:'Pulls positions toward a spiral path.',
   goldenAngle:'Moves spacing toward the 137.5° golden angle.',
   nesting:'Adds smaller golden-ratio echoes inside larger shapes.',
-  pen:'Chooses the character of the ink: fine, broad, dry, translucent or loose.',
-  thickness:'Makes the ink strokes thicker or thinner.',
+  pen:'Chooses the underlying marker tool, such as fine, broad, dry or highlighter. Tissue & Graphite uses the same composition with its own material finish.',
+  thickness:'Sets the width of the underlying marker strokes.',
   wobble:'Adds small imperfections to the ink.',
-  overdraw:'Draws over each stroke again. The pen also affects the number of passes.',
+  overdraw:'Repeats underlying marker strokes. The selected tool also affects the number of passes.',
   opacity:'Makes the ink more solid or more transparent.',
-  pressure:'Adds uneven weight to the strokes.',
-  dryness:'Leaves small breaks and gaps in the ink.',
+  pressure:'Varies the weight of the underlying strokes.',
+  dryness:'Adds breaks and gaps to the underlying marker strokes.',
   curveBias:'Higher values favour curved strokes; lower values favour straight ones.',
   shapeAmount:'Adds more of the enabled shapes among the line marks.',
   overlap:'Lets marks sit closer together and fill more of their allotted space.',
@@ -94,7 +95,7 @@ var SYSTEMS={
     phiStrength:'Brings form positions, sizes and proportions closer to φ.',
     nesting:'Adds smaller shapes or arcs inside dominant forms.',
     wobble:'Adds imperfect ink to the forms, kept gentle with a maximum of 16.',
-    overdraw:'Draws over each stroke again, up to 4 passes before the pen adjusts them.',
+    overdraw:'Draws over each stroke again, up to 4 passes before the selected marker tool adjusts them.',
     curveBias:'Lets supporting strokes curve slightly, with a maximum of 12.'
   },
   scribble:{
@@ -104,7 +105,7 @@ var SYSTEMS={
     negativeSpace:'Leaves quiet areas and more pauses between runs of ink.',
     phiStrength:'Brings gesture positions, sizes and stroke lengths closer to φ.',
     wobble:'Adds uneven ink and wandering turns, with a minimum ink wobble of 44.',
-    overdraw:'Draws over each stroke again, with at least 2 passes before the pen adjusts them.',
+    overdraw:'Draws over each stroke again, with at least 2 passes before the selected marker tool adjusts them.',
     curveBias:'Favours flowing curves, with a minimum of 58.',
     shapeAmount:'Adds occasional arcs and elliptical accents around the gestures.'
   }
@@ -287,13 +288,16 @@ A.syncControlHelp=function(mode,version,meta){
   version=version||6;
   var palette=document.getElementById('palette');
   var monochrome=palette&&palette.value==='mono';
+  var tissue=document.getElementById('materialStyle')?.value==='tissue';
   entries.forEach(function(entry){
     var rangeInput=document.getElementById(entry.id);
     if(rangeStates[entry.id])displayRange(rangeInput,rangeStates[entry.id]);
     entry.row.hidden=inactiveControl(mode,entry.id,version,meta)||(monochrome&&(entry.id==='saturation'||entry.id==='brightness'));
     entry.label.textContent=monochrome&&entry.id==='colourCount'?'Tones':((SYSTEM_LABELS[mode]||{})[entry.id]||LABELS[entry.id]||entry.name);
     entry.button.setAttribute('aria-label','About '+entry.label.textContent);
-    entry.hint.textContent=helpText(mode,entry.id,version);
+    entry.hint.textContent=tissue&&entry.id==='paper'?'Tissue & Graphite uses fixed cream paper. This colour control applies to Marker drawing.':
+      tissue&&entry.id==='grain'?'Tissue & Graphite has its own paper finish. This grain setting applies to Marker drawing.':
+      helpText(mode,entry.id,version);
     if(active===entry&&entry.row.hidden)closeHelp();
   });
   shapeChecks.forEach(function(check){
@@ -305,8 +309,8 @@ A.syncControlHelp=function(mode,version,meta){
   var checks=document.querySelector('.checks');
   if(checks)checks.hidden=shapeChecks.every(function(check){return check.label.hidden});
   var mutate=document.getElementById('mutate'),randomise=document.getElementById('randomise');
-  if(mutate)mutate.title='Try a few small changes. Keep the current system, pen and palette.';
-  if(randomise)randomise.title='Try a new seed, system, pen, palette and slider settings. Keep the paper colour and shape choices.';
+  if(mutate)mutate.title='Try a few small changes. Keep the current system, material, mark-making tool and palette.';
+  if(randomise)randomise.title='Try a new seed, system, mark-making tool, palette and slider settings. Keep the selected material, paper colour and shape choices.';
   if(active)placeHelp(active);
 };
 A.closeControlHelp=closeHelp;
