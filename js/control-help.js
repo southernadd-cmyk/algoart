@@ -209,6 +209,41 @@ document.querySelectorAll('input[type=range]').forEach(function(input){
 
 var entries=[],active=null,pinned=false,hideTimer=null;
 
+// Presentation only. Profile names describe the *source marks* converted
+// into tissue and graphite, not seven new brushes or changes to artwork data.
+var TISSUE_PROFILES={
+  felt:'Balanced marks',
+  fine:'Fine contours',
+  broad:'Wide bands',
+  highlighter:'Flat-edged bands',
+  dry:'Broken marks',
+  paint:'Dense marks',
+  scribble:'Loose gestures'
+};
+var TISSUE_LABELS={
+  pen:'Source mark profile',
+  thickness:'Source stroke width',
+  wobble:'Source irregularity',
+  overdraw:'Source repetitions',
+  opacity:'Source transparency',
+  pressure:'Width variation',
+  dryness:'Source break-up'
+};
+var TISSUE_HELP={
+  pen:'Selects the underlying mark profile used to build the tissue layout. These are not literal pens or watercolour brushes. The profile affects source stroke width, shape and repetition; Tissue & Graphite supplies its own visual finish.',
+  thickness:'Sets the width of the underlying source strokes; this is not the thickness of the tissue paper.',
+  wobble:'Introduces irregularities into the source mark geometry used to form tissue shapes.',
+  overdraw:'Repeats source strokes before they are converted to tissue geometry. Near-identical marks may be combined by the tissue renderer.',
+  opacity:'Sets the transparency of underlying source ink. Tissue & Graphite applies its own pigment translucency instead of using marker ink opacity directly.',
+  pressure:'Varies the width of source strokes. This is not pressure applied to a graphite pencil.',
+  dryness:'Adds gaps and breaks to source strokes at higher values. This does not simulate a separate dry brush.'
+};
+var penControl=document.getElementById('pen'),MARKER_PROFILES={};
+if(penControl)Array.prototype.forEach.call(penControl.options,function(option){
+  MARKER_PROFILES[option.value]=option.textContent;
+});
+
+
 function closeHelp(){
   clearTimeout(hideTimer);
   if(active)active.hint.hidden=true;
@@ -289,14 +324,25 @@ A.syncControlHelp=function(mode,version,meta){
   var palette=document.getElementById('palette');
   var monochrome=palette&&palette.value==='mono';
   var tissue=document.getElementById('materialStyle')?.value==='tissue';
+  // Change only visible text. Never replace option nodes or their stable
+  // values: the existing seed, URL, saved images and exports use these IDs.
+  if(penControl)Array.prototype.forEach.call(penControl.options,function(option){
+    option.textContent=tissue?(TISSUE_PROFILES[option.value]||MARKER_PROFILES[option.value]):
+      MARKER_PROFILES[option.value];
+  });
+  var controlsNote=document.getElementById('materialControlsNote');
+  if(controlsNote)controlsNote.textContent=tissue?
+    'These settings shape the source marks used to arrange the tissue and graphite. Profiles describe those marks, not physical brushes or highlighters. Tissue PNGs apply their own material finish; SVG and plotter exports use the underlying marker paths.':
+    'Choose Marker or Tissue & Graphite in Compose. Marker tools control the visible ink strokes. Tissue & Graphite converts their source paths into torn-paper and graphite artwork; SVG and plotter exports use marker paths.';
   entries.forEach(function(entry){
     var rangeInput=document.getElementById(entry.id);
     if(rangeStates[entry.id])displayRange(rangeInput,rangeStates[entry.id]);
     entry.row.hidden=inactiveControl(mode,entry.id,version,meta)||(monochrome&&(entry.id==='saturation'||entry.id==='brightness'));
-    entry.label.textContent=monochrome&&entry.id==='colourCount'?'Tones':((SYSTEM_LABELS[mode]||{})[entry.id]||LABELS[entry.id]||entry.name);
+    entry.label.textContent=monochrome&&entry.id==='colourCount'?'Tones':
+      (tissue&&TISSUE_LABELS[entry.id]||((SYSTEM_LABELS[mode]||{})[entry.id]||LABELS[entry.id]||entry.name));
     entry.button.setAttribute('aria-label','About '+entry.label.textContent);
     entry.hint.textContent=tissue&&entry.id==='grain'?'Tissue & Graphite has its own paper finish. This grain setting applies to Marker drawing.':
-      helpText(mode,entry.id,version);
+      (tissue&&TISSUE_HELP[entry.id]||helpText(mode,entry.id,version));
     if(active===entry&&entry.row.hidden)closeHelp();
   });
   shapeChecks.forEach(function(check){
@@ -308,8 +354,8 @@ A.syncControlHelp=function(mode,version,meta){
   var checks=document.querySelector('.checks');
   if(checks)checks.hidden=shapeChecks.every(function(check){return check.label.hidden});
   var mutate=document.getElementById('mutate'),randomise=document.getElementById('randomise');
-  if(mutate)mutate.title='Try a few small changes. Keep the current system, material, mark-making tool and palette.';
-  if(randomise)randomise.title='Try a new seed, system, mark-making tool, palette and slider settings. Keep the selected material, paper colour and shape choices.';
+  if(mutate)mutate.title='Try a few small changes. Keep the current system, material, '+(tissue?'source mark profile':'mark-making tool')+' and palette.';
+  if(randomise)randomise.title='Try a new seed, system, '+(tissue?'source mark profile':'mark-making tool')+', palette and slider settings. Keep the selected material, paper colour and shape choices.';
   if(active)placeHelp(active);
 };
 A.closeControlHelp=closeHelp;

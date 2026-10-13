@@ -7,10 +7,12 @@ on:
       - 'js/oil-surface.js'
       - 'js/oil-material.js'
       - 'js/app.js'
+      - 'js/control-help.js'
       - 'js/generator.js'
       - 'js/marker.js'
       - 'tests/oil-preview.mjs'
       - 'tests/tissue-colour-browser.mjs'
+      - 'tests/materials-profile-browser.mjs'
       - 'tests/tissue-v6.test.mjs'
       - 'tests/fixtures/tissue-v6-settings.json'
       - 'tests/mobile-export-paper.test.mjs'
@@ -49,6 +51,8 @@ jobs:
         run: node tests/oil-preview.mjs
       - name: Check Randomise preserves the material and Colour controls
         run: node tests/tissue-colour-browser.mjs
+      - name: Check material-specific profile names and stable source parameters
+        run: node tests/materials-profile-browser.mjs
       - name: Verify V6 pale tissue, V5 corner preservation and deterministic pixels
         run: node tests/tissue-v6.test.mjs
       - name: Check closed tissue outlines cannot fill the canvas corner
