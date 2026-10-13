@@ -61,8 +61,21 @@ try{
     'Changing paper cannot change the seeded ink palette');
   const darkCorner=await page.evaluate(()=>Array.from(document.querySelector('#art')
     .getContext('2d').getImageData(3,3,1,1).data).slice(0,3));
-  assert(darkCorner.reduce((a,b)=>a+b,0)<creamCorner.reduce((a,b)=>a+b,0)-150,
-    'Tissue background must actually follow the paper picker');
+  // A composition may legitimately cover its corner with pigment, so the
+  // proof of the chosen background samples an unpainted sheet as well.
+  const bareSheet=await page.evaluate(()=>{
+    const A=window.AlgoArt,s=A.readSettings(),kit=A.tissueKitFromPaths([],s,6);
+    const canvas=document.createElement('canvas');canvas.width=300;canvas.height=200;
+    const ctx=canvas.getContext('2d');
+    A.oilMaterial(ctx,300,200,[],{},s.seed,1,kit);
+    return {paper:kit.paper,pixel:Array.from(ctx.getImageData(150,100,1,1).data).slice(0,3)};
+  });
+  assert.equal(bareSheet.paper,'#20334a');
+  assert(bareSheet.pixel.every((channel,i)=>Math.abs(channel-[32,51,74][i])<=8),
+    'An unpainted Tissue sheet must use the selected colour: '+JSON.stringify(bareSheet));
+  assert.notDeepEqual(darkCorner,creamCorner,
+    'Changing Tissue paper must update the visible canvas corner (before: '+
+      JSON.stringify(creamCorner)+', after: '+JSON.stringify(darkCorner)+')');
   await page.locator('#tab-composition').click();
   await page.locator('#materialStyle').selectOption('marker');
   assert.equal(await page.locator('#paper').inputValue(),'#20334a',
