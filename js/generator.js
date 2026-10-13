@@ -810,8 +810,13 @@ var NETWORK_RENDER_TUNING=Object.freeze({
   })
 });
 
-// Old landscape states must retain exactly the same RNG keys as V1–V6.
+// V1–V8 are locked: preserve their exact settings/RNG keys for archived art.
+// From V9, paper colour is a substrate choice, not a composition parameter.
+// Replacing it with the existing cream default keeps cream V8 images identical
+// and prevents changes of paper colour from re-seeding any of the eight engines.
 function randomSettings(s){
+  if(A.rendererVersion>=9&&s.paper!=null&&s.paper.toLowerCase()!=='#f5f0e6')
+    s=Object.assign({},s,{paper:'#f5f0e6'});
   if(s.orientation==='portrait'||!Object.prototype.hasOwnProperty.call(s,'orientation'))return s;
   var original=Object.assign({},s);
   delete original.orientation;
