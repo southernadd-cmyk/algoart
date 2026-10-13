@@ -55,7 +55,7 @@ A.exportPNGDirect=function(settings,visibleCanvas,showGeometry){
   if(!dataURL.startsWith('data:image/png;base64,'))
     throw new Error('Could not encode PNG. Try reloading the artwork.');
   var count=(downloadCounts[filename]||0)+1;
-  var name=count===1?filename:filename.replace(/(\\.[^./]+)$/, ' ('+count+')$1');
+  var name=count===1?filename:filename.replace(/(\.[^./]+)$/, ' ('+count+')$1');
   var link=document.createElement('a');
   link.download=name;link.href=dataURL;
   link.style.cssText='position:fixed;left:-10000px;width:1px;height:1px';
