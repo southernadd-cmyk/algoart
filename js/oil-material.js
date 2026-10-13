@@ -62,10 +62,12 @@ function palette(i,r){
   if(group===7)return r.pick(C.umber);
   return r.pick(C.ochre);
 }
-// Only experimental material revision 5 uses torn contours. Source V4
+// Material revisions 5 and 6 share the approved torn contours. Source V4
 // pigment, geometry, coverage, graphite and RNG sequence remain unchanged.
 // The serration displaces the EXISTING edge: it draws no additional strokes.
 var tissueTornEdges=false;
+var tissueLightEnabled=false;
+var lightTissueStats={pieces:0};
 function tornTrace(ctx,edge,half,side){
   var step=7.5,depth=clamp(half*.068,1.2,3.3);
   for(var i=1;i<edge.length;i++){
@@ -241,6 +243,84 @@ function paintPlanes(pig,height,chains,voids,r,allowance){
     height.fill();height.restore();
   }
 }
+// Pale translucent scraps along existing source chains. This is an additive
+// material pass, not a global whitening/blur or a replacement composition.
+// It runs between the existing colour masses and final V1 pencil details.
+function addLightTissue(pig,height,w,h,chains,voids,seed,quality){
+  var phi=1.61803398875,r=A.makeR(seed+'|light-tissue-v6'),candidates=[];
+  var sw=pig.canvas.width,sh=pig.canvas.height,ratio=sw/w;
+  var pixels=pig.getImageData(0,0,sw,sh).data;
+  function luminance(pt){
+    var x=clamp(Math.round(pt.x*ratio),0,sw-1),y=clamp(Math.round(pt.y*ratio),0,sh-1);
+    var k=(y*sw+x)*4;
+    return pixels[k]*.2126+pixels[k+1]*.7152+pixels[k+2]*.0722;
+  }
+  function section(pts,start,end){
+    var result=[],travel=0;
+    for(var j=1;j<pts.length;j++){
+      var len=dist(pts[j-1],pts[j]);
+      if(len>.001&&travel+len>start&&travel<end){
+        var lo=clamp((start-travel)/len,0,1),hi=clamp((end-travel)/len,0,1);
+        if(!result.length)result.push(point(pts[j-1],pts[j],lo));
+        result.push(point(pts[j-1],pts[j],hi));
+      }
+      travel+=len;if(travel>=end)break;
+    }
+    return result;
+  }
+  for(var i=0;i<Math.min(chains.length,112);i++){
+    var ch=chains[i];
+    if(ch.length<70||ch.pts.length<2)continue;
+    var length=0;
+    for(var j=1;j<ch.pts.length;j++)length+=dist(ch.pts[j-1],ch.pts[j]);
+    var span=clamp(Math.sqrt(ch.length)*r.range(4.8,7.4),90,230);
+    span=Math.min(span,length*.82);
+    for(var t=0;t<2;t++){
+      var fraction=(t?1/phi:1/(phi*phi))+r.range(-.075,.075);
+      var centre=clamp(length*fraction,span*.5,length-span*.5);
+      var pts=section(ch.pts,centre-span*.5,centre+span*.5);
+      if(pts.length<2)continue;
+      var middle=pts[Math.floor(pts.length/2)],width=clamp(span/(phi*phi)*r.range(.7,1.15),27,76);
+      if(insideVoid(middle,voids))continue;
+      // Keep intended paper reserves and canvas corners unpainted.
+      if(pts.some(function(pt){return pt.x<width||pt.y<width||pt.x>w-width||pt.y>h-width||insideVoid(pt,voids)}))continue;
+      var dir=angle(pts[0],pts[pts.length-1]),normal=dir+PI/2;
+      var sample=[middle,shift(middle,normal,width*.25),shift(middle,normal,-width*.25)];
+      var darkness=sample.reduce(function(sum,pt){return sum+Math.max(0,241-luminance(pt))},0)/sample.length;
+      if(darkness<15)continue;
+      candidates.push({pts:pts,centre:middle,width:width,darkness:darkness,score:darkness+r.range(-6,6)});
+    }
+  }
+  candidates.sort(function(a,b){return b.score-a.score});
+  var selected=[],count=quality<.4?4:8;
+  for(i=0;i<candidates.length&&selected.length<count;i++){
+    var candidate=candidates[i];
+    if(selected.some(function(other){return dist(candidate.centre,other.centre)<Math.max(115,(candidate.width+other.width)*phi)}))continue;
+    selected.push(candidate);
+  }
+  for(i=0;i<selected.length;i++){
+    var item=selected[i],pts=item.pts,width=item.width;
+    // Same V5 torn-contour function; its path is shared by pigment and height.
+    var outlineSeed=seed+'|light-tissue-outline|'+i;
+    pig.save();ribbon(pig,pts,width*.5,A.makeR(outlineSeed));
+    var pale=lerpHex(C.cream[i%C.cream.length],'#fffaf0',r.range(.78,.93));
+    var opacity=clamp(.30+item.darkness*.002,.34,.56);
+    pig.globalAlpha=opacity;pig.fillStyle=pale;pig.fill();pig.clip();
+    // Fine fibres are inside the scrap, with no added edge halo or blur.
+    for(j=0;j<22;j++){
+      var k=r.int(1,pts.length-1),a=pts[k-1],b=pts[k],dir=angle(a,b);
+      var q=shift(point(a,b,r.n()),dir+PI/2,r.range(-width*.43,width*.43));
+      pathStroke(pig,[q,shift(q,dir,r.range(3,20))],r.range(.4,.9),
+        j%3?'#fffdf5':lerpHex(pale,C.cream[i%C.cream.length],.18),r.range(.035,.10));
+    }
+    pig.restore();
+    height.save();ribbon(height,pts,width*.5,A.makeR(outlineSeed));
+    height.globalCompositeOperation='lighter';height.globalAlpha=.22;
+    height.fillStyle='rgb(21,21,21)';height.fill();height.restore();
+  }
+  return {pieces:selected.length,candidates:candidates.length,pass:'pale tissue before unchanged pencil details'};
+}
+
 function deposit(pig,height,w,h,chains,voids,seed,quality){
   var r=A.makeR(seed+'|paint-dab-4'),n=chains.length;
   var allowance=quality<.4?.5:1;
@@ -270,6 +350,9 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     paintRibbon(pig,height,pts,width,r,hue,r.range(.69,.94),
       r.range(.58,1.5));
   }
+  // V6 adds approved pale tissue with an independent seeded RNG.
+  // All original V5 pigment and pencil operations retain their exact sequence.
+  if(tissueLightEnabled)lightTissueStats=addLightTissue(pig,height,w,h,chains,voids,seed,quality);
   // Broken small strokes and half-covered edges build material variation.
   var detail=Math.min(n,Math.ceil(112*allowance));
   for(i=0;i<detail;i++){
@@ -366,7 +449,9 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   // Keep legacy C byte-identical for v1; protect against any synchronous
   // invocation after a seeded-material render by restoring it in finally.
   C=kit?coloursForInk(kit):originalC;
-  tissueTornEdges=Boolean(kit&&kit.revision===5);
+  tissueTornEdges=Boolean(kit&&kit.revision>=5);
+  tissueLightEnabled=Boolean(kit&&kit.revision===6);
+  lightTissueStats={pieces:0};
   try{
   // Work buffers are resolution-adaptive, but every pixel is re-rasterised
   // deterministically; no random browser texture or remote assets.
@@ -390,7 +475,8 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
     version:4,tissuePaletteVersion:kit?kit.revision:1,
+    ...(tissueLightEnabled?{lightTissue:lightTissueStats}:{}),
     ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} )};
-  }finally{C=originalC;tissueTornEdges=false}
+  }finally{C=originalC;tissueTornEdges=false;tissueLightEnabled=false}
 };
 })(window.AlgoArt);
