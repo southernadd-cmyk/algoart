@@ -67,10 +67,14 @@ try{
   });
   const reference=[245,240,230];
   const distances=paper.map(p=>p.map((v,i)=>Math.abs(v-reference[i])));
-  assert(distances.filter(d=>d.every(v=>v<=13)).length>=5,
-    'Tissue paper is washed out or not cream: '+JSON.stringify(paper));
-  assert(paper.filter(p=>p.every(v=>v>=253)).length<=1,
-    'Tissue paper must not clip to pure white: '+JSON.stringify(paper));
+  // Broad pigment washes may colour some corners (the point of this
+  // material); what must stay visible is *cream* unpainted paper, never white.
+  assert(distances.some(d=>d.every(v=>v<=13)),
+    'No true cream reserve is visible: '+JSON.stringify(paper));
+  assert(paper.filter(p=>p.every(v=>v>=250)).length<=1,
+    'Tissue paper must not clip to white: '+JSON.stringify(paper));
+  assert(paper.filter(p=>p[0]>=p[1]&&p[1]>=p[2]&&p[2]<=240).length>=6,
+    'The reserve should be cream/warm paper, not bleached: '+JSON.stringify(paper));
   await page.locator('#art').screenshot({path:path.join(out,'tissue-cream-paper.png')});
   await openExport();
   assert.equal(await page.locator('#exportScale').inputValue(),'1',
