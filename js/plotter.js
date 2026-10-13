@@ -279,9 +279,8 @@ A.createPlotterSVG=function(settings,options){
   return{svg:svg(false),preview:svg(true),metadata:metadata};
 };
 A.downloadPlotterSVG=function(result,settings){
-  var blob=new Blob([result.svg],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.download='algoart-'+settings.seed+'-'+settings.mode+'-plotter.svg';link.href=url;link.click();
-  setTimeout(function(){URL.revokeObjectURL(url)},1000);
+  var blob=new Blob([result.svg],{type:'image/svg+xml;charset=utf-8'});
+  A.downloadBlob(blob,'algoart-'+settings.seed+'-'+settings.mode+'-plotter.svg');
 };
 // Exposed for deterministic geometry/route regression tests.
 A.plotterGeometry={commands:commands,flatten:flatten,cut:cut,reversed:reversed,optimize:optimize,routePen:routePen,luminance:luminance,travel:travel,prepare:prepare};
