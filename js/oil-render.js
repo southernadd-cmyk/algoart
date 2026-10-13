@@ -396,7 +396,7 @@ function tissueKit(paths,s,revision){
   // The paper is independent of the selected inks and material RNG.
   // Preserve the approved cream as the fallback and as the pigment-mixing
   // reference; changing the sheet must not recolour the paint itself.
-  var paper=revision>=4?(tissueStrokeRGB(s.paper)||[245,240,230]):
+  var paper=revision>=4?(A.rendererVersion>=9?(tissueStrokeRGB(s.paper)||[245,240,230]):[245,240,230]):
     (tissueStrokeRGB(s.paper)||[242,235,221]);
   var pigmentPaper=revision>=4?[245,240,230]:paper,dark=[26,27,27];
   return {
