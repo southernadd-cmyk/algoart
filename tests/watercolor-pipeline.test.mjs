@@ -28,7 +28,9 @@ for(const orientation of ['landscape','portrait']){
     assert.equal(e.material,'watercolor');
     assert.equal(e.orientation,orientation);
     assert.equal(e.rendererVersion,8);
-    assert.equal(new URL(e.shareUrl).searchParams.get('watercolor'),'1');
+    assert.equal(new URL(e.shareUrl).searchParams.get('tissue'),'2');
+    assert.equal(new URL(e.shareUrl).searchParams.has('watercolor'),false);
+    assert.equal(e.settings.paper,'#f5f0e6','New Tissue editions must use default neutral paper');
     assert.equal(new URL(e.shareUrl).searchParams.get('seed'),e.seed);
     assert(e.copy.altText.includes('Tissue and graphite'));
     assert((await fs.stat(path.join(dir,e.imageFile))).size>5000);
@@ -50,10 +52,11 @@ try{
    await page.goto(local.href,{waitUntil:'domcontentloaded'});
    await page.waitForFunction(seed=>{
      const q=new URLSearchParams(location.search);
-     return q.get('seed')===seed && q.get('watercolor')==='1' &&
+     return q.get('seed')===seed && q.get('tissue')==='2' &&
        document.querySelector('#statsText')?.textContent?.endsWith('/ TISSUE & GRAPHITE');
    },e.seed,{timeout:60000});
    assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
+    assert.equal(await page.locator('#paper').inputValue(),'#f5f0e6');
    assert.equal(errors.length,0,errors.join(' | '));
    await page.locator('#art').screenshot({path:path.join(outDir,e.id+'.png')});
  }
