@@ -209,10 +209,55 @@ function thinLineMicroBleed(ctx,pts,width,colour,opacity,r,wetness){
   activeMicroBleedCount+=strokes;
   return strokes;
 }
+// Watercolour is a material, not a neat geometric stroke followed by a glow.
+// Route every ACTIVE fine mark through this seeded stroke renderer. Even dry
+// paint wicks very slightly into paper. Only a minority of tiny segments pool;
+// neighbouring segments do not share an identical opacity or a perfect rim.
+var activeThinStrokeCount=0,activeDryThinStrokeCount=0;
+function paintThinWatercolourStroke(ctx,pts,width,colour,opacity,r,wetness){
+  if(!pts||pts.length<2)return false;
+  var wet=clamp(wetness,.18,1),fine=clamp(width,.45,12.5);
+  // A readable center with deliberately nonuniform pigment uptake.
+  thinLineMicroBleed(ctx,pts,fine,colour,opacity,
+    A.makeR('wick|'+r.range(0,1000000)+'|'+pts.length),wet);
+  ctx.save();ctx.globalCompositeOperation='source-over';
+  ctx.strokeStyle=colour;ctx.lineCap='round';ctx.lineJoin='round';
+  var drew=false;
+  for(var j=1;j<pts.length;j++){
+    var a=pts[j-1],b=pts[j],len=dist(a,b);
+    if(len<.07)continue;
+    var pieces=Math.min(90,Math.max(1,Math.ceil(len/5.5)));
+    var tangent=angle(a,b),normal=tangent+PI/2;
+    var drift=r.range(-.18,.18);
+    for(var k=0;k<pieces;k++){
+      var t0=k/pieces,t1=(k+1)/pieces;
+      var p0=point(a,b,t0),p1=point(a,b,t1);
+      var tooth=r.range(.52,1.0);
+      var shade=r.range(.58,1);
+      if(r.chance(.12))shade*=.32; // local skips: not continuous vector ink
+      drift=clamp(drift+r.range(-.11,.11),-.34,.34);
+      var offset=drift*wet;
+      p0=shift(p0,normal,offset);
+      p1=shift(p1,normal,offset+r.range(-.09,.09)*wet);
+      ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);
+      ctx.lineWidth=fine*tooth;
+      ctx.globalAlpha=opacity*shade*(wet>.75?.86:1);
+      ctx.stroke();drew=true;
+    }
+  }
+  ctx.restore();
+  if(drew){activeThinStrokeCount++;if(wet<=.32)activeDryThinStrokeCount++;}
+  return drew;
+}
 function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
   // Dry edges are sharp by default; damp and wet shapes carry only a
   // little/the full feather. Each wash gets its own torn-edge frequencies.
   var edgeState=state||'damp';
+  if(width<=12.5){
+    paintThinWatercolourStroke(pig,pts,width,col,opacity,r,
+      edgeState==='dry'?.23:edgeState==='damp'?.60:1);
+    return;
+  }
   activeEdgeWave={frequency:r.range(.20,.66),secondary:r.range(.92,2.19),
     phase:r.range(-Math.PI,Math.PI)};
   if(!ribbon(pig,pts,width*.5,r))return;
@@ -260,15 +305,20 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
   pig.restore();
   // This narrow wet/damp edge treatment is separate from the fill. It
   // moves a little pigment laterally, not a symmetric canvas shadow.
-  if(edgeState!=='dry'&&width<=23)
+  if(width<=23)
     thinLineMicroBleed(pig,pts,width,col,opacity,r,
-      edgeState==='wet'?1:.58);
+      edgeState==='dry'?.23:edgeState==='damp'?.60:1);
 }
 // An actual filled, transparent pigment pool on a source vector path:
 // a second tinted wash moves into the *same* clipped wet shape, instead
 // of surrounding a thin outline with an evenly blurred halo.
 function paintColourPool(ctx,pts,width,r,colourA,colourB,opacity){
   if(pts.length<2)return false;
+  if(width<=12.5){
+    paintThinWatercolourStroke(ctx,pts,width,
+      lerpHex(colourA,colourB,.35),opacity,r,.88);
+    return true;
+  }
   activeEdgeWave={frequency:r.range(.17,.65),secondary:r.range(.9,2.5),
     phase:r.range(-PI,PI)};
   if(!ribbon(ctx,pts,width*.5,r))return false;
@@ -546,11 +596,10 @@ function finishDryAccents(ctx,chains,seed,quality,kit,voids,stats){
     var hue=kit.ink.length?pigmentInk(pen.pick(kit.ink)):'#625951';
     var width=clamp(chains[i].width*.17+pen.range(.3,1.15),.65,2.6);
     var inkOpacity=pen.range(.27,.52);
-    // Draw micro-bleed underneath a readable crisp core; only some details
-    // have enough residual water to wick into the paper.
-    if(pen.chance(.64))thinLineMicroBleed(ctx,pts,width,hue,inkOpacity,
-      A.makeR(seed+'|v2h-ink-wick|'+i),pen.range(.48,.90));
-    pathStroke(ctx,pts,width,hue,inkOpacity);
+    // All fine details, including nominally dry ink, must carry real
+    // watercolor edge transport. No raw continuous vector pathStroke().
+    paintThinWatercolourStroke(ctx,pts,width,hue,inkOpacity,
+      A.makeR(seed+'|v2i-all-ink|'+i),pen.range(.22,.76));
     rendered++;
   }
   ctx.restore();
@@ -811,6 +860,7 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     pctx.fillStyle=kit.paper;
     pctx.fillRect(0,0,w,h);
     activeMicroBleedCount=0;
+    activeThinStrokeCount=0;activeDryThinStrokeCount=0;
     var washStats=deposit(pctx,null,w,h,chains,meta.voids||[],seed,quality,kit);
     var washMicroBleeds=activeMicroBleedCount;
     pctx.setTransform(1,0,0,1,0,0);
@@ -824,17 +874,19 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     }
     var dryDetail=finishDryAccents(ctx,chains,seed,quality,kit,meta.voids||[],washStats);
     var microBleedTotal=activeMicroBleedCount;
+    var thinStrokeTotal=activeThinStrokeCount,dryThinTotal=activeDryThinStrokeCount;
     ctx.restore();
     A.lastWatercolourExperimentStats={
       width:sw,height:sh,chains:chains.length,
       paper:kit.paper,inkColours:kit.ink.slice(),
-      effect:'V2h tiny asymmetric edge wicks on thin damp/wet lines and ink details; V2g mixed washes',
+      effect:'V2i unified watercolour thin-line routing, including dry details and all ink accents',
       washStates:{dry:washStats.dry,damp:washStats.damp,wet:washStats.wet},
       widthCaps:{broad:127,hero:67},washWidths:{broadMax:washStats.broadWidthMax,
         heroMax:washStats.heroWidthMax},
       chromaticAccents:washStats.chromaticAccents,dryDetails:dryDetail,
       filledPools:washStats.filledPools,mixedPigmentPools:washStats.mixedPigmentPools,
       microBleedCount:microBleedTotal,microBleedWashCount:washMicroBleeds,
+      watercolorThinStrokeCount:thinStrokeTotal,dryThinStrokeCount:dryThinTotal,
       paperFlow:paperStats,
       referenceMaterial:'Tissue & Graphite V6'
     };
