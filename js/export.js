@@ -47,7 +47,7 @@ A.exportPNG=function(settings,scale){
   return new Promise(function(resolve,reject){
     try{
       if(settings.oilRender)
-        A.renderOil(out,compositionSettings,scale,false,settings.tissuePaletteVersion===2?2:1);
+        A.renderOil(out,compositionSettings,scale,false,settings.tissuePaletteVersion>=2?settings.tissuePaletteVersion:1);
       else A.render(out,compositionSettings,scale,false);
       if(typeof out.toBlob!=='function')
         throw new Error('This browser cannot encode PNG downloads.');
