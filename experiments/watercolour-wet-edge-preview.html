@@ -75,6 +75,8 @@ canvas{display:block;width:100%;height:auto;border:1px solid #6b6558;background:
       try{
         A.oilMaterial=identity;
         const before=A.renderOil(left,s,scale,false,6);
+        window.__currentPreviewSettings={...s};
+        window.__currentPreviewScale=scale;
         A.oilMaterial=A.watercolourMaterialExperiment;
         const after=A.renderOil(right,s,scale,false,6);
         if(before.strategy!==after.strategy)throw new Error('Composition strategy changed');
