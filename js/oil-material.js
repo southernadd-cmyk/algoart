@@ -62,10 +62,9 @@ function palette(i,r){
   if(group===7)return r.pick(C.umber);
   return r.pick(C.ochre);
 }
-// Only experimental material revision 5 uses torn contours. Source V4
-// pigment, geometry, coverage, graphite and RNG sequence remain unchanged.
-// The serration displaces the EXISTING edge: it draws no additional strokes.
-var tissueTornEdges=false;
+// V4 and V5 share the closed-path seam repair. Only V5 has torn edges.
+// No added strokes, washes, colour changes or modification to versions 1–3.
+var tissueTornEdges=false,tissueCloseLoops=false;
 function tornTrace(ctx,edge,half,side){
   var step=7.5,depth=clamp(half*.068,1.2,3.3);
   for(var i=1;i<edge.length;i++){
@@ -88,11 +87,10 @@ function tornTrace(ctx,edge,half,side){
 function ribbon(ctx,pts,half,r){
   var left=[],right=[],n=pts.length,i;
   if(n<2)return false;
-  // V5: a closed rectangle/circle repeats its start at the end. The old
-  // open-strip treatment used two different end normals there, creating
-  // an incorrectly filled triangular corner on very broad washes. Close
-  // the two contour loops instead. V1–V4 remain byte-for-byte unchanged.
-  var closed=tissueTornEdges&&n>=4&&dist(pts[0],pts[n-1])<18;
+  // V4/V5: rectangles and circles repeat the first vertex at the end.
+  // Using open-strip end normals there creates false triangular corner fills.
+  // Repair the seam in both materials; historic v1–v3 are unchanged.
+  var closed=tissueCloseLoops&&n>=4&&dist(pts[0],pts[n-1])<18;
   var unique=closed?n-1:n;
   for(i=0;i<n;i++){
     var before=closed?pts[(i+unique-1)%unique]:pts[Math.max(0,i-1)];
@@ -121,6 +119,22 @@ function ribbon(ctx,pts,half,r){
     }else{
       ctx.lineTo(right[n-1].x,right[n-1].y);
       tornTrace(ctx,right.slice().reverse(),half,-1);
+    }
+  }else if(closed){
+    // Smooth V4 tissue follows the same sealed annulus as torn V5.
+    // Trace the full outer loop, cross only at its start, then return via
+    // the reversed inner loop. Connecting opposite endpoints makes a
+    // diagonal fill and was the source of the false square/corner.
+    for(i=1;i<n;i++){
+      var m=point(left[i-1],left[i],.5);
+      ctx.quadraticCurveTo(m.x,m.y,left[i].x,left[i].y);
+    }
+    m=point(left[n-1],left[0],.5);
+    ctx.quadraticCurveTo(m.x,m.y,left[0].x,left[0].y);
+    ctx.lineTo(right[0].x,right[0].y);
+    for(i=n-1;i>=0;i--){
+      m=point(right[(i+1)%n],right[i],.5);
+      ctx.quadraticCurveTo(m.x,m.y,right[i].x,right[i].y);
     }
   }else{
     for(i=1;i<n;i++){
@@ -367,6 +381,7 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   // invocation after a seeded-material render by restoring it in finally.
   C=kit?coloursForInk(kit):originalC;
   tissueTornEdges=Boolean(kit&&kit.revision===5);
+  tissueCloseLoops=Boolean(kit&&kit.revision>=4);
   try{
   // Work buffers are resolution-adaptive, but every pixel is re-rasterised
   // deterministically; no random browser texture or remote assets.
@@ -391,6 +406,6 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
     version:4,tissuePaletteVersion:kit?kit.revision:1,
     ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} )};
-  }finally{C=originalC;tissueTornEdges=false}
+  }finally{C=originalC;tissueTornEdges=false;tissueCloseLoops=false}
 };
 })(window.AlgoArt);
