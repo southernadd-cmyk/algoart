@@ -74,7 +74,7 @@ for(const palette of ['earth','neon','mono','golden']){
   assert(colourKit.ink.length<=s.colourCount);
   assert.equal(colourKit.paper,s.paper,'Paper must follow composition settings');
   const restoredKit=A.tissueKitFromPaths(source,s,4);
-  assert.equal(restoredKit.paper,s.paper,'Tissue V4+ must honour the selected paper');
+  assert.equal(restoredKit.paper,'#f5f0e6','Published V8 Tissue revisions retain fixed cream paper');
   if(palette==='mono'){
     assert(colourKit.inkRGB.every(([r,g,b])=>r===g&&g===b),
       'Monochrome must stay genuinely monochrome');
