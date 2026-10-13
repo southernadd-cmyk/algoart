@@ -13,6 +13,10 @@ assert.ok(readme.includes('**Current renderer: V'+currentRenderer+'.**'),
   'README must identify the renderer actually selected by the editor');
 assert.ok(readme.includes('| **V'+currentRenderer+'** |'),
   'README renderer history must explain the current version');
+if(currentRenderer>=9){
+  assert.match(generator,/A\.rendererVersion>=9&&s\.paper!=null/,
+    'V9 must keep chosen paper colour out of the composition RNG');
+}
 
 // A 0% slider removes an extra bias, not the golden-ratio composition itself.
 assert.match(html, /<label>Additional φ pull<\/label><output><\/output><input id="phiStrength"/);
