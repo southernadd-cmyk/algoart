@@ -29,6 +29,10 @@ for (const test of cases){
   // renders as browser artifacts; the legacy image remains v1 byte-exact.
   const newMaterial=new URL(page.url());
   newMaterial.searchParams.delete('watercolor');
+  // The historical reference ignored 'mono' and always used its fixed hues.
+  // Choose seeded multi-hue for the new renderer so the comparison assesses
+  // material technique, not whether Monochrome correctly suppresses colour.
+  newMaterial.searchParams.set('pal','golden');
   newMaterial.searchParams.set('tissue','4');
   await page.goto(newMaterial.href,{waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(()=>window.AlgoArt?.lastOilMaterialStats?.tissuePaletteVersion===4,
