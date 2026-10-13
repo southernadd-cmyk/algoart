@@ -90,8 +90,9 @@ V8 expands Growth Systems with seeded golden-angle root directions, entries at t
 
 - **Marker drawing:** the established deterministic ALGO/ART marker work.
 - **Tissue & Graphite:** layered pigment is derived from the **seeded Marker
-  palette**, with distinct **dark charcoal graphite linework** over the washes.
-  Palette, Saturation, Brightness and Colour count remain respected. **Randomise
+  palette**, with the **original Watercolour V1 texture and graphite treatment**.
+  Seeded Marker hues colour the paint; V1 pigment lightness and saturation
+  preserve its muted character. Paper stays at the default cream `#f5f0e6`. **Randomise
   keeps the selected drawing material**.
 
 Both choices preserve the same seed, φ geometry, orientation, composer controls
@@ -106,9 +107,10 @@ change the original material.
 - **Legacy links and archives:** `?watercolor=1` and prototype `?oil=1`
   deliberately continue selecting **Tissue & Graphite**, producing the same
   historical fixed-palette pixels as before. Previous **`?tissue=2`**
-  links reproduce the colour-wash-only revision. New **`?tissue=3`** links
-  restore charcoal graphite lines over seeded washes without changing V8
-  composition geometry or previously saved images.
+  links reproduce the colour-wash-only revision. Earlier **`?tissue=3`** links retain the first graphite pass. New
+  **`?tissue=4`** returns to the earlier material's softly coloured washes,
+  neutral paper and original internal graphite texture, while
+  preserving seeded palette hues and the same V8 geometry.
   Randomising an old artwork starts a new seed-driven Tissue image.
   The historical internal material name `watercolor`,
   archive IDs, seeds, queue paths and publishing schedule are unchanged.
@@ -132,7 +134,7 @@ change the original material.
   palette variation, determinism and unchanged geometry. The real-browser
   regression confirms that Randomise never changes the selected material.
   From **14 October 2026**, new daily Tissue & Graphite editions use
-  `?tissue=3` with palette-matched pigments, restored graphite strokes
+  `?tissue=4` with muted palette-matched washes, original V1 graphite texture,
   and **fixed default `#f5f0e6` cream paper**.
   Their previous dates, URLs, saved JPEGs and original v1 pigments remain untouched.
   Marker editions retain their own paper-colour choices.
@@ -152,7 +154,7 @@ and the existing London social slots publish them to configured platforms:
 The ordinary five-landscape and five-portrait marker batches and their
 publishing times are unchanged, giving **14 total studies** per complete day.
 Watercolor batches use separate `AWL`/`AWP` seeds, `WL`/`WP` archive IDs,
-`?tissue=3` editor links for editions on or after 14 October 2026
+`?tissue=4` editor links for editions on or after 14 October 2026
 (and historical `?watercolor=1` links before that date), gallery medium labels,
 and independent media
 release manifests / per-platform completion markers. Existing social triggers
@@ -165,8 +167,8 @@ duplicate-safe gallery merging and the combined 14-work archive. The separate
 browser workflow `watercolor-tests.yml` renders and verifies four real studies.
 Historical gallery entries remain byte-for-byte unchanged. The 14 October
 cutover is in `automation/tissue-edition.mjs`: the two portrait and two landscape
-new Tissue editions use seeded colour washes plus dark charcoal graphite
-marks on the default **cream** paper (`#f5f0e6`), and the usual 09:00 / 20:30 social slots use the same
+new Tissue editions use quiet, translucent seeded washes and fine pencil
+hatching on the default **cream** paper (`#f5f0e6`), and the usual 09:00 / 20:30 social slots use the same
 frozen JPEGs and links. Starting 14 October, newly generated Marker gallery
 studies also use that same cream paper. For Tissue v2/v3, the paint lighting
 preserves the visible paper colour instead of washing it out to white.

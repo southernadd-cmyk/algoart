@@ -19,6 +19,15 @@ var C={
 // Revised material derives *every* coloured layer from recorded Marker inks.
 var originalC=C;
 function coloursForInk(kit){
+  if(kit.revision>=4){
+    var seeded={};
+    Object.keys(originalC).forEach(function(group,groupIndex){
+      seeded[group]=group==='umber'?originalC.umber:originalC[group].map(function(col,i){
+        return A.seededV1Pigment(col,kit.inkRGB[(groupIndex+i)%kit.inkRGB.length]);
+      });
+    });
+    return seeded;
+  }
   return {
     cream:kit.cream,
     blue:kit.ink,
@@ -292,6 +301,11 @@ function shade(pig,height,out,w,h,seed,kit){
       var light=kit?(1+raised*(.055*(diffuse-.78)+.045*bump*spec-.010*cavity))
         :(.90+.19*diffuse+.14*bump*spec-.027*cavity);
       var shine=kit?raised*2.2*bump*spec:(9+26*bump)*spec;
+      if(kit&&kit.revision>=4){
+        // V1 relief on pigment; bare paper keeps its default cream base.
+        light=1+raised*((.90+.19*diffuse+.14*bump*spec-.027*cavity)-1);
+        shine=raised*(9+26*bump)*spec;
+      }
       px[k]=clamp(Math.round(px[k]*light+shine),0,255);
       px[k+1]=clamp(Math.round(px[k+1]*light+shine*.91),0,255);
       px[k+2]=clamp(Math.round(px[k+2]*light+shine*.77),0,255);
@@ -322,7 +336,7 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   shade(pctx,hctx,fctx,sw,sh,seed,kit);
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);
-  var graphitePaths=kit&&kit.revision>=3?graphiteOverlay(ctx,chains,seed,quality):0;
+  var graphitePaths=kit&&kit.revision===3?graphiteOverlay(ctx,chains,seed,quality):0;
   ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
     version:4,tissuePaletteVersion:kit?kit.revision:1,

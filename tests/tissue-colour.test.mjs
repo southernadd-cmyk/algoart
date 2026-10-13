@@ -6,14 +6,16 @@ import {runInNewContext} from 'node:vm';
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 assert.match(app,/select:not\(#exportScale\):not\(#orientation\):not\(#materialStyle\)/,
   'Randomise must never randomise the selected drawing material');
-assert.match(app,/tissuePaletteVersion=3/);
+assert.match(app,/tissuePaletteVersion=4/);
 assert.match(app,/params\.set\(tissuePaletteVersion>=2\?'tissue':'watercolor'/);
 const exports=readFileSync(new URL('../js/export.js',import.meta.url),'utf8');
 assert.match(exports,/delete compositionSettings\.tissuePaletteVersion/);
 
+let geometryOnly=false;
 let painting=false,ops=0,hash=2166136261;
 function trace(value){
   if(!painting)return;
+  if(geometryOnly&&/^(fillStyle|strokeStyle)=/.test(String(value)))return;
   ops++;
   for(const ch of String(value))hash=Math.imul(hash^ch.charCodeAt(0),16777619)>>>0;
 }
@@ -71,6 +73,8 @@ for(const palette of ['earth','neon','mono','golden']){
   assert(colourKit.ink.length>0,'Expected seeded source inks');
   assert(colourKit.ink.length<=s.colourCount);
   assert.equal(colourKit.paper,s.paper,'Paper must follow composition settings');
+  const restoredKit=A.tissueKitFromPaths(source,s,4);
+  assert.equal(restoredKit.paper,'#f5f0e6','New material always uses default paper');
   if(palette==='mono'){
     assert(colourKit.inkRGB.every(([r,g,b])=>r===g&&g===b),
       'Monochrome must stay genuinely monochrome');
@@ -96,6 +100,13 @@ assert(A.lastOilMaterialStats.graphitePaths>0,'New Tissue v3 needs actual charco
 assert.notDeepEqual(graphiteV3,seededV2,'Graphite revision must differ visibly from old v2');
 assert.deepEqual(paint(s,2),seededV2,'Graphite v3 must not change previous tissue=2 links');
 assert.deepEqual(paint(s,3),graphiteV3,'Graphite v3 must remain deterministic');
+const paperGraphiteV4=paint(s,4);
+assert.equal(A.lastOilMaterialStats.tissuePaletteVersion,4);
+assert.equal(A.lastOilMaterialStats.graphitePaths,0,'V1 texture must not acquire contour overlays');
+assert.equal(A.lastOilMaterialStats.graphiteHatchPaths,undefined,'No invented cross-hatching');
+assert.notDeepEqual(paperGraphiteV4,graphiteV3,'v4 should restore a more subdued, detailed look');
+assert.deepEqual(paint(s,4),paperGraphiteV4,'Original-look v4 must remain deterministic');
+assert.deepEqual(paint(s,3),graphiteV3,'Older Tissue v3 links must stay unchanged');
 const historic=paint(s,1);
 assert.equal(A.lastOilMaterialStats.tissuePaletteVersion,1);
 paint(s,2);
@@ -107,3 +118,12 @@ assert.equal(JSON.stringify(marker(s)),markerGeometry,
 console.log('PASS Tissue follows actual seeded Marker palette and paper');
 console.log('PASS palettes diverge, repeat deterministically, and v1 stays reproducible');
 console.log('PASS Randomise excludes selected drawing material');
+
+geometryOnly=true;
+assert.deepEqual(paint(s,4),paint(s,1),
+  'V1 and new material must execute identical drawing operations, apart from pigment colour');
+geometryOnly=false;
+const next={...s,seed:s.seed+'-NEXT'};
+assert.notDeepEqual(Array.from(A.tissueKitFromPaths(marker(s),s,4).ink),
+  Array.from(A.tissueKitFromPaths(marker(next),next,4).ink),'Seed must change pigment palette');
+console.log('PASS exact V1 drawing operations retained; seed changes paint, paper stays default');

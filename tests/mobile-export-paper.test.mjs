@@ -22,7 +22,7 @@ async function load(material,fmt='landscape'){
   u.searchParams.set('mode','rects');u.searchParams.set('pal','golden');
   u.searchParams.set('paper','#f5f0e6');
   if(fmt==='portrait')u.searchParams.set('fmt','portrait');
-  if(material==='tissue')u.searchParams.set('tissue','3');
+  if(material==='tissue')u.searchParams.set('tissue','4');
   await page.goto(u.href,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#art')?.width>0);
 }
@@ -52,8 +52,8 @@ async function checkDownload(button,extension,name){
 try{
   await load('tissue');
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  assert((await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.graphitePaths))>0,
-    'New Tissue artwork must include charcoal graphite strokes');
+  assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.graphitePaths),0,
+    'Original V1 graphite must not gain extra contour overlays');
   // The old lighting would clip the cream foreground to (255,255,255).
   // Test *actual canvas pixels* in several paper-reserve corner regions.
   const paper=await page.evaluate(()=>{
@@ -75,8 +75,25 @@ try{
     'No true cream reserve is visible: '+JSON.stringify(paper));
   assert(paper.filter(p=>p.every(v=>v>=250)).length<=1,
     'Tissue paper must not clip to white: '+JSON.stringify(paper));
-  assert(paper.filter(p=>p[0]>=p[1]&&p[1]>=p[2]&&p[2]<=240).length>=6,
-    'The reserve should be cream/warm paper, not bleached: '+JSON.stringify(paper));
+  // A corner may contain a legitimate seeded wash. Measure paper separately
+  // with no pigment chains so changing paint hues cannot invalidate this test.
+  const reserves=await page.evaluate(()=>{
+    const A=window.AlgoArt,settings=A.readSettings();
+    return ['PAPER-A','PAPER-B'].map(seed=>{
+      const s={...settings,seed,paper:'#123456'};
+      const kit=A.tissueKitFromPaths([],s,4);
+      const c=document.createElement('canvas');c.width=300;c.height=200;
+      const ctx=c.getContext('2d');
+      A.oilMaterial(ctx,300,200,[],{},seed,1,kit);
+      return {paper:kit.paper,samples:[[20,20],[150,100],[280,180]].map(([x,y])=>
+        Array.from(ctx.getImageData(x,y,1,1).data).slice(0,3))};
+    });
+  });
+  for(const reserve of reserves){
+    assert.equal(reserve.paper,'#f5f0e6','Seed/custom colour must not change paper');
+    assert(reserve.samples.every(p=>p.every((v,i)=>Math.abs(v-reference[i])<=5)),
+      'Bare paper must remain default cream with subtle grain: '+JSON.stringify(reserve));
+  }
   await page.locator('#art').screenshot({path:path.join(out,'tissue-cream-paper.png')});
   await openExport();
   assert.equal(await page.locator('#exportScale').inputValue(),'1',

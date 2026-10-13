@@ -364,6 +364,20 @@ function tissueHex(rgb){
   return '#'+rgb.map(function(n){return Math.round(Math.max(0,Math.min(255,n))).toString(16).padStart(2,'0')}).join('');
 }
 function tissueBlend(a,b,t){return a.map(function(n,i){return Math.round(n*(1-t)+b[i]*t)})}
+// Change hue only: retain each V1 pigment's saturation/lightness and each
+// palette group's length. This leaves all V1 RNG choices and drawing passes intact.
+function seededV1Pigment(hex,ink){
+  var rgb=tissueStrokeRGB(hex).map(function(v){return v/255});
+  var hi=Math.max.apply(null,rgb),lo=Math.min.apply(null,rgb),l=(hi+lo)/2;
+  var sat=hi===lo?0:(hi-lo)/(1-Math.abs(2*l-1));
+  var top=Math.max.apply(null,ink),bottom=Math.min.apply(null,ink),delta=top-bottom;
+  if(!delta)return tissueHex([l*255,l*255,l*255]);
+  var h=top===ink[0]?((ink[1]-ink[2])/delta)%6:
+    top===ink[1]?(ink[2]-ink[0])/delta+2:(ink[0]-ink[1])/delta+4;
+  h=(h*60+360)%360;
+  return tissueHex(tissueStrokeRGB('hsl('+h+' '+sat*100+'% '+l*100+'%)'));
+}
+A.seededV1Pigment=seededV1Pigment;
 function tissueKit(paths,s,revision){
   var inks=[],seen={},count=Math.max(1,Math.min(24,Math.round(s.colourCount||4)));
   for(var i=0;i<paths.length;i++){
@@ -379,7 +393,7 @@ function tissueKit(paths,s,revision){
     var backup=A.hues(s,A.makeR(s.seed+'|tissue-fallback-palette'));
     inks=backup.map(tissueStrokeRGB).filter(Boolean);
   }
-  var paper=tissueStrokeRGB(s.paper)||[242,235,221],dark=[26,27,27];
+  var paper=revision>=4?[245,240,230]:(tissueStrokeRGB(s.paper)||[242,235,221]),dark=[26,27,27];
   return {
     revision:revision||2,
     paperRGB:paper,
