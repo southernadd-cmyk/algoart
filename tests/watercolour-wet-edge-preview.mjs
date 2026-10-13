@@ -13,6 +13,36 @@ try{
   const page=await browser.newPage({viewport:{width:1580,height:1050}});
   const faults=[];
   page.on('pageerror',e=>faults.push(String(e.message)));
+  // Non-tiled tooth regression: fixed-seed reproduction, another seed
+  // produces a different sheet, and no tile-sized offset repeats the field.
+  const paper=await page.evaluate(async()=>{
+    await new Promise(resolve=>{
+      if(window.AlgoArt?.sampleWatercolourPaperTooth){resolve();return;}
+      const script=document.createElement('script');
+      script.src='experiments/watercolour-wet-edge-v2.js';
+      script.onload=resolve;document.head.append(script);
+    });
+    const fn=window.AlgoArt.sampleWatercolourPaperTooth;
+    const base=[],changedSeed=[],offsets=[64,128,256,512].map(()=>[]);
+    for(let iy=0;iy<16;iy++)for(let ix=0;ix<16;ix++){
+      const x=21+ix*19.73,y=31+iy*17.41;
+      const a=fn('tooth-sheet-alpha',x,y);
+      base.push(a);changedSeed.push(fn('tooth-sheet-beta',x,y));
+      for(let j=0;j<offsets.length;j++)
+        offsets[j].push(fn('tooth-sheet-alpha',x+[64,128,256,512][j],y));
+    }
+    const meanDiff=(other)=>base.reduce((sum,a,i)=>sum+Math.abs(a-other[i]),0)/base.length;
+    return {same:fn('tooth-sheet-alpha',21,31)===base[0],
+      distinct:meanDiff(changedSeed),
+      translations:offsets.map(meanDiff),
+      range:[Math.min(...base),Math.max(...base)]};
+  });
+  assert(paper.same,'Same seed/coordinates must replay pixel-exact tooth');
+  assert(paper.distinct>.018,'Different seeds should give different paper');
+  for(const delta of paper.translations)
+    assert(delta>.018,'Paper repeats too closely at a regular tile offset: '+delta);
+  assert(paper.range[1]-paper.range[0]>.06,'Paper tooth should be visibly non-flat');
+  console.log('PASS non-tiling deterministic paper field',JSON.stringify(paper));
   for(let i=0;i<4;i++){
     const url=new URL('experiments/watercolour-wet-edge-preview.html',root);
     url.searchParams.set('case',String(i));
@@ -48,6 +78,8 @@ try{
         restoredV6,repeatWet,paperFlow,
         washStates:A.lastWatercolourExperimentStats?.washStates,
         dryDetails:A.lastWatercolourExperimentStats?.dryDetails,
+        widthCaps:A.lastWatercolourExperimentStats?.widthCaps,
+        washWidths:A.lastWatercolourExperimentStats?.washWidths,
         width:left.width,height:left.height,
         tissueBytes:tissueBefore.length,wetBytes:experimentalBefore.length,
         different:tissueBefore!==experimentalBefore,
@@ -67,6 +99,10 @@ try{
     assert.match(result.paperFlow.paperModel,/capillary flow/);
     assert(result.paperFlow.diffusionPasses>=3);
     assert(result.paperFlow.waterBlooms>=0&&result.paperFlow.waterBlooms<=4);
+    assert.equal(result.widthCaps.broad,127);
+    assert.equal(result.widthCaps.hero,67);
+    assert(result.washWidths.broadMax<=127);
+    assert(result.washWidths.heroMax<=67);
     assert.equal(result.different,true,'Watercolour should visually differ from V6');
     assert.equal(result.paper,'#f5f0e6');
     assert.equal(result.rendererVersion,8);
