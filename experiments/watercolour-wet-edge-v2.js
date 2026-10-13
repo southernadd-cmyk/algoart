@@ -165,6 +165,50 @@ function pathStroke(ctx,pts,width,col,alpha){
   }
   ctx.stroke();ctx.restore();
 }
+// Watercolour-only edge transport on existing *thin* paths, inspired by the
+// separation of dab opacity, pickup and smudge in Krita/MyPaint. Never blur the
+// entire line: let small, seeded, one-sided capillary deposits escape it.
+// Source path, core geometry, colour, orientation and canvas remain unchanged.
+var activeMicroBleedCount=0;
+function thinLineMicroBleed(ctx,pts,width,colour,opacity,r,wetness){
+  if(pts.length<2||wetness<=0||width>23)return 0;
+  var strokes=0,side=r.chance(.5)?1:-1;
+  ctx.save();
+  ctx.globalCompositeOperation='source-over';
+  ctx.fillStyle=colour;
+  for(var j=1;j<pts.length;j++){
+    var a=pts[j-1],b=pts[j],length=dist(a,b);
+    if(length<.5)continue;
+    var count=Math.min(9,Math.max(1,Math.ceil(length/18)));
+    for(var k=0;k<count;k++){
+      // One in roughly 2–4 sections wicks into paper; neighbouring bands
+      // share a side bias but vary in radius and wetness.
+      if(!r.chance(wetness>.7?.41:.27))continue;
+      if(r.chance(.19))side=-side;
+      var t=(k+r.range(.18,.83))/count;
+      var p=point(a,b,t),normal=angle(a,b)+PI/2;
+      var spill=clamp(.42+width*.047,.46,1.50)*wetness;
+      var edge=shift(p,normal,side*(width*.48+spill*r.range(.45,1.25)));
+      var grain=r.range(.38,.93)*wetness;
+      var rx=clamp(spill*r.range(.63,1.30),.34,1.85);
+      var ry=clamp(Math.min(length/count,6)*r.range(.27,.60),.42,3.1);
+      ctx.save();ctx.translate(edge.x,edge.y);ctx.rotate(angle(a,b));
+      ctx.beginPath();ctx.ellipse(0,0,ry,rx,0,0,PI*2);
+      ctx.globalAlpha=opacity*grain*.24;ctx.fill();ctx.restore();
+      // Darker drying bank on a minority of deposits, adjacent to the core.
+      if(r.chance(.40)){
+        var rim=shift(p,normal,side*(width*.46+spill*.2));
+        ctx.beginPath();ctx.ellipse(rim.x,rim.y,clamp(spill*.36,.25,.77),
+          clamp(ry*.63,.4,2.2),angle(a,b),0,PI*2);
+        ctx.globalAlpha=opacity*wetness*r.range(.16,.29);ctx.fill();
+      }
+      strokes++;
+    }
+  }
+  ctx.restore();
+  activeMicroBleedCount+=strokes;
+  return strokes;
+}
 function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
   // Dry edges are sharp by default; damp and wet shapes carry only a
   // little/the full feather. Each wash gets its own torn-edge frequencies.
@@ -214,6 +258,11 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
   }
   pig.restore();
   pig.restore();
+  // This narrow wet/damp edge treatment is separate from the fill. It
+  // moves a little pigment laterally, not a symmetric canvas shadow.
+  if(edgeState!=='dry'&&width<=23)
+    thinLineMicroBleed(pig,pts,width,col,opacity,r,
+      edgeState==='wet'?1:.58);
 }
 // An actual filled, transparent pigment pool on a source vector path:
 // a second tinted wash moves into the *same* clipped wet shape, instead
@@ -496,7 +545,12 @@ function finishDryAccents(ctx,chains,seed,quality,kit,voids,stats){
     if(insideVoid(middle,voids))continue;
     var hue=kit.ink.length?pigmentInk(pen.pick(kit.ink)):'#625951';
     var width=clamp(chains[i].width*.17+pen.range(.3,1.15),.65,2.6);
-    pathStroke(ctx,pts,width,hue,pen.range(.27,.52));
+    var inkOpacity=pen.range(.27,.52);
+    // Draw micro-bleed underneath a readable crisp core; only some details
+    // have enough residual water to wick into the paper.
+    if(pen.chance(.64))thinLineMicroBleed(ctx,pts,width,hue,inkOpacity,
+      A.makeR(seed+'|v2h-ink-wick|'+i),pen.range(.48,.90));
+    pathStroke(ctx,pts,width,hue,inkOpacity);
     rendered++;
   }
   ctx.restore();
@@ -756,7 +810,9 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     pctx.scale(ratio,ratio);
     pctx.fillStyle=kit.paper;
     pctx.fillRect(0,0,w,h);
+    activeMicroBleedCount=0;
     var washStats=deposit(pctx,null,w,h,chains,meta.voids||[],seed,quality,kit);
+    var washMicroBleeds=activeMicroBleedCount;
     pctx.setTransform(1,0,0,1,0,0);
     var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,chains);
     ctx.save();ctx.imageSmoothingEnabled=true;
@@ -767,16 +823,18 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
         A.makeR(seed+'|v2e-dry-outline|'+mark.key),mark.col,mark.opacity,0,'dry');
     }
     var dryDetail=finishDryAccents(ctx,chains,seed,quality,kit,meta.voids||[],washStats);
+    var microBleedTotal=activeMicroBleedCount;
     ctx.restore();
     A.lastWatercolourExperimentStats={
       width:sw,height:sh,chains:chains.length,
       paper:kit.paper,inkColours:kit.ink.slice(),
-      effect:'V2g asymmetric pigment pooling, mixed transparent colour washes and visible seeded paper tooth',
+      effect:'V2h tiny asymmetric edge wicks on thin damp/wet lines and ink details; V2g mixed washes',
       washStates:{dry:washStats.dry,damp:washStats.damp,wet:washStats.wet},
       widthCaps:{broad:127,hero:67},washWidths:{broadMax:washStats.broadWidthMax,
         heroMax:washStats.heroWidthMax},
       chromaticAccents:washStats.chromaticAccents,dryDetails:dryDetail,
       filledPools:washStats.filledPools,mixedPigmentPools:washStats.mixedPigmentPools,
+      microBleedCount:microBleedTotal,microBleedWashCount:washMicroBleeds,
       paperFlow:paperStats,
       referenceMaterial:'Tissue & Graphite V6'
     };
