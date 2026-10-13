@@ -7,6 +7,7 @@ on:
       - 'experiments/watercolour-wet-edge-v2.js'
       - 'experiments/watercolour-wet-edge-preview.html'
       - 'tests/watercolour-wet-edge-preview.mjs'
+      - 'tests/watercolour-eight-random.mjs'
       - '.github/workflows/watercolour-wet-edge-experiment.yml'
       - 'js/oil-*.js'
       - 'js/generator.js'
@@ -42,5 +43,15 @@ jobs:
         with:
           name: watercolour-wet-edge-comparison
           path: watercolour-wet-edge-previews/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Render eight new random full-size V2d watercolours
+        run: node tests/watercolour-eight-random.mjs
+      - name: Upload eight independent images and reproducible manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-eight-random-v2d
+          path: watercolour-eight-random/
           if-no-files-found: warn
           retention-days: 14
