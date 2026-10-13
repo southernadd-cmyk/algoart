@@ -31,7 +31,7 @@ for(const day of ['2026-10-05','2026-10-06','2026-10-07','2026-10-08','2026-10-0
 // Contrast assertions are independent of headless-browser background heuristics.
 // Text colours must satisfy WCAG AA (4.5:1 normal; 3:1 large text) on real panel backgrounds.
 const palette=read('gallery/gallery.css');
-const vars=Object.fromEntries([...palette.matchAll(/--([a-z-]+):\s*(#[0-9a-f]{6})/gi)].map(([,k,v])=>[k,v]));
+const vars=Object.fromEntries([...palette.matchAll(/--([a-z0-9-]+):\s*(#[0-9a-f]{6})/gi)].map(([,k,v])=>[k,v]));
 function luminance(hex){
  const values=[1,3,5].map(n=>parseInt(hex.slice(n,n+2),16)/255).map(n=>n<=0.04045?n/12.92:((n+0.055)/1.055)**2.4);
  return values[0]*0.2126+values[1]*0.7152+values[2]*0.0722;
