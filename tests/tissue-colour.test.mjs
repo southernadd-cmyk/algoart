@@ -71,6 +71,14 @@ for(const palette of ['earth','neon','mono','golden']){
   assert(colourKit.ink.length>0,'Expected seeded source inks');
   assert(colourKit.ink.length<=s.colourCount);
   assert.equal(colourKit.paper,s.paper,'Paper must follow composition settings');
+  const mutedKit=A.tissueKitFromPaths(source,s,4);
+  assert.equal(mutedKit.washRGB.length,colourKit.inkRGB.length);
+  for(let k=0;k<mutedKit.washRGB.length;k++){
+    const original=colourKit.inkRGB[k],wash=mutedKit.washRGB[k];
+    assert(Math.max(...wash)-Math.min(...wash) <=
+      (Math.max(...original)-Math.min(...original))*.23+2,
+      'Muted underpainting must not use the raw Marker chroma');
+  }
   if(palette==='mono'){
     assert(colourKit.inkRGB.every(([r,g,b])=>r===g&&g===b),
       'Monochrome must stay genuinely monochrome');
