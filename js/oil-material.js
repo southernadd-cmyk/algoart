@@ -22,7 +22,9 @@ function coloursForInk(kit){
   return {
     cream:kit.cream,
     blue:kit.ink,
-    umber:kit.deep,
+    // Keep the original dark graphite pigment. Pigment washes remain
+    // seeded, while pencil structural strokes must not inherit their hue.
+    umber:originalC.umber,
     olive:kit.soft,
     ochre:kit.ink.length>1?kit.ink.slice(1).concat(kit.ink[0]):kit.ink
   };
@@ -229,6 +231,34 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     }
   }
 }
+// Bring back the distinct pencil/graphite linework lost when dark umbers
+// were converted to seed-tinted pigments. It follows existing vector chains,
+// adds no new composition geometry, and never touches historical v1 output.
+function graphiteOverlay(ctx,chains,seed,quality){
+  var r=A.makeR(seed+'|graphite-linework-v2'),n=Math.min(chains.length,quality<.4?24:85);
+  var drawn=0;
+  ctx.save();
+  ctx.globalCompositeOperation='multiply';
+  for(var i=0;i<n;i++){
+    var path=chains[i].pts;
+    if(path.length<2||r.chance(i<15?.10:.36))continue;
+    var graphite=r.pick(originalC.umber);
+    var weight=Math.max(.65,Math.min(3.4,chains[i].width*.24+r.range(.1,1.05)));
+    var alpha=r.range(.26,.63)*(i<18?1:.76);
+    pathStroke(ctx,path,weight,graphite,alpha);drawn++;
+    // The second, slightly wandering pass is dry pencil grain along the
+    // same sampled marks, not an opaque outline around every colour field.
+    if(i<24&&r.chance(.48)){
+      var lean=r.range(-2.2,2.2),offset=path.map(function(pt,j){
+        var a=path[Math.max(0,j-1)],b=path[Math.min(path.length-1,j+1)];
+        return shift(pt,angle(a,b)+PI/2,lean);
+      });
+      pathStroke(ctx,offset,Math.max(.5,weight*.44),graphite,alpha*.40);
+    }
+  }
+  ctx.restore();
+  return drawn;
+}
 function hashNoise(x,y,seed){
   var k=(Math.imul(x,374761393)^Math.imul(y,668265263)^seed)|0;
   k=Math.imul(k^(k>>>13),1274126177);
@@ -291,10 +321,12 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   pctx.setTransform(1,0,0,1,0,0);hctx.setTransform(1,0,0,1,0,0);
   shade(pctx,hctx,fctx,sw,sh,seed,kit);
   ctx.save();ctx.imageSmoothingEnabled=true;
-  ctx.drawImage(final,0,0,w,h);ctx.restore();
+  ctx.drawImage(final,0,0,w,h);
+  var graphitePaths=kit?graphiteOverlay(ctx,chains,seed,quality):0;
+  ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
     version:4,tissuePaletteVersion:kit?2:1,
-    ...(kit?{inkColours:kit.ink.slice()}:{} )};
+    ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} )};
   }finally{C=originalC}
 };
 })(window.AlgoArt);
