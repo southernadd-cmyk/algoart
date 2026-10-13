@@ -4,10 +4,20 @@ import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {watercolorSlot} from '../automation/watercolor-slot.mjs';
+import {tissueEditionForDate,validateTissueShareUrl} from '../automation/tissue-edition.mjs';
 import {makeCaptions,editorArtworkLink} from '../automation/captions.mjs';
 
 const root=path.resolve(new URL('..',import.meta.url).pathname);
-const day='2099-02-04';
+const day='2099-02-04'; // New editions must use the seeded Tissue palette.
+assert.equal(tissueEditionForDate('2026-10-13').suffix,'&watercolor=1');
+assert.equal(tissueEditionForDate('2026-10-14').suffix,'&tissue=2');
+assert.equal(tissueEditionForDate('2026-10-15').suffix,'&tissue=2');
+assert.equal(tissueEditionForDate(day).suffix,'&tissue=2');
+assert.throws(()=>tissueEditionForDate('2026-10-32'));
+const historic=new URL('https://southernadd-cmyk.github.io/algoart/?watercolor=1');
+assert.equal(validateTissueShareUrl('2026-10-13',historic.href).edition,'historical');
+assert.throws(()=>validateTissueShareUrl('2026-10-14',historic.href));
+assert.throws(()=>validateTissueShareUrl('2026-10-13','https://southernadd-cmyk.github.io/algoart/?tissue=2'));
 assert.equal(watercolorSlot('0').target_time,'09:00');
 assert.equal(watercolorSlot('2').target_time,'20:30');
 assert.equal(watercolorSlot('build').should_post,false);
@@ -29,7 +39,7 @@ try{
       url.searchParams.set('seed',seed);
       url.searchParams.set('mode','organic');
       if(orientation==='portrait')url.searchParams.set('fmt','portrait');
-      url.searchParams.set('watercolor','1');
+      url.searchParams.set('tissue','2');
       const e={
         id,seed,mode:'organic',series:'Growth Systems',orientation,material:'watercolor',
         imageFile:file,instagramImageFile:ig,rendererVersion:8,shareUrl:url.href,
@@ -41,7 +51,8 @@ try{
         assert(e.copy[platform].toLowerCase().includes('tissue & graphite'));
       }
       assert(editorArtworkLink(e).includes('?art='+id));
-      assert.equal(new URL(e.shareUrl).searchParams.get('watercolor'),'1');
+      assert.equal(new URL(e.shareUrl).searchParams.get('tissue'),'2');
+      assert.equal(validateTissueShareUrl(day,e.shareUrl).edition,'seeded');
       await fs.writeFile(path.join(dir,file),'fake-wash-'+id);
       await fs.writeFile(path.join(dir,ig),'fake-instagram-'+id);
       q.push(e);entries.push(e);

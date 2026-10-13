@@ -130,8 +130,10 @@ change the original material.
   material; `npm run test:tissue-colour` verifies seeded Marker inks, real
   palette variation, determinism and unchanged geometry. The real-browser
   regression confirms that Randomise never changes the selected material.
-  Existing daily social jobs intentionally keep their historical `?watercolor=1`
-  material until a separate, archive-safe publishing migration.
+  From **14 October 2026**, new daily Tissue & Graphite editions use
+  `?tissue=2` and palette-matched inks on **fixed default `#f5f0e6` paper**.
+  Their previous dates, URLs, saved JPEGs and original v1 pigments remain untouched.
+  Marker editions retain their own paper-colour choices.
 
 ## Daily watercolor publication
 
@@ -148,7 +150,9 @@ and the existing London social slots publish them to configured platforms:
 The ordinary five-landscape and five-portrait marker batches and their
 publishing times are unchanged, giving **14 total studies** per complete day.
 Watercolor batches use separate `AWL`/`AWP` seeds, `WL`/`WP` archive IDs,
-`?watercolor=1` editor links, gallery medium labels, and independent media
+`?tissue=2` editor links for editions on or after 14 October 2026
+(and historical `?watercolor=1` links before that date), gallery medium labels,
+and independent media
 release manifests / per-platform completion markers. Existing social triggers
 are reused; there are **no additional cron jobs**. IG portraits use the same
 uncropped 4:5 padded image handling as marker portraits. Failed destinations
@@ -157,7 +161,10 @@ are retried without reposting destinations already marked successful.
 Run `npm run test:watercolor-publishing` to check slot selection, short links,
 duplicate-safe gallery merging and the combined 14-work archive. The separate
 browser workflow `watercolor-tests.yml` renders and verifies four real studies.
-Historical gallery entries remain byte-for-byte unchanged.
+Historical gallery entries remain byte-for-byte unchanged. The 14 October
+cutover is in `automation/tissue-edition.mjs`: the two portrait and two landscape
+new Tissue editions use the full seeded-colour palette on the default neutral
+paper, and the usual 09:00 / 20:30 social slots use the same frozen JPEGs and links.
 
 ## Plotter compatibility
 

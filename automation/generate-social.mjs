@@ -7,6 +7,7 @@ import {
 } from './config.mjs';
 import { makeCaptions } from './captions.mjs';
 import { socialRendererVersion, archivedLandscapeStudy } from './renderer-state.mjs';
+import { tissueEditionForDate, validateTissueShareUrl } from './tissue-edition.mjs';
 
 const rendererVersion=socialRendererVersion();
 
@@ -161,6 +162,7 @@ const seedSalt = String(process.env.SOCIAL_SEED_SALT || '').trim();
 const orientation = process.env.SOCIAL_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
 const material = process.env.SOCIAL_MATERIAL === 'watercolor' ? 'watercolor' : 'marker';
 const watercolor = material === 'watercolor';
+const tissueEdition = watercolor ? tissueEditionForDate(day) : null;
 const generationCount = watercolor ? 2 : Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
 const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day,
   ...(watercolor ? ['watercolor',orientation] : orientation === 'portrait' ? ['portrait'] : []));
@@ -197,10 +199,17 @@ try {
       settings.seed = 'AW'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
         '-'+String(index+1).padStart(2,'0')+'-'+
         (hash(day+'|watercolor|'+orientation+'|'+index+'|'+retrySalt)%100000).toString().padStart(5,'0');
+      // New seeded Tissue & Graphite editions use one consistent, neutral paper.
+      // The randomly selected paper remains available for historical v1 links
+      // and ordinary marker work; do not retroactively repaint those images.
+      if(tissueEdition.edition==='seeded')settings.paper='#f5f0e6';
     }
-    const query = queryFor(settings)+(watercolor?'&watercolor=1':'');
+    // The cutoff changes only the MATERIAL; V8's settings, daily seed and
+    // archive IDs retain the exact same deterministic generation algorithm.
+    const query = queryFor(settings)+(watercolor?tissueEdition.suffix:'');
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
+    if(watercolor)validateTissueShareUrl(day,shareUrl);
 
     await page.goto(localUrl, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => {
