@@ -82,6 +82,8 @@ try{
         mixedPigmentPools:A.lastWatercolourExperimentStats?.mixedPigmentPools,
         microBleedCount:A.lastWatercolourExperimentStats?.microBleedCount,
         microBleedWashCount:A.lastWatercolourExperimentStats?.microBleedWashCount,
+        watercolorThinStrokeCount:A.lastWatercolourExperimentStats?.watercolorThinStrokeCount,
+        dryThinStrokeCount:A.lastWatercolourExperimentStats?.dryThinStrokeCount,
         width:left.width,height:left.height,
         tissueBytes:tissueBefore.length,wetBytes:experimentalBefore.length,
         different:tissueBefore!==experimentalBefore,
@@ -109,6 +111,8 @@ try{
     assert.equal(result.filledPools,result.mixedPigmentPools);
     assert(result.microBleedCount>0,'Expected ink/wet microbleeds on the thin strokes');
     assert(result.microBleedWashCount>=0);
+    assert(result.watercolorThinStrokeCount>0,'All watercolor outlines should use the fine-stroke painter');
+    assert(result.dryThinStrokeCount>0,'Even dry fine watercolor strokes must be routed through wet-edged painter');
     assert.equal(result.different,true,'Watercolour should visually differ from V6');
     assert.equal(result.paper,'#f5f0e6');
     assert.equal(result.rendererVersion,8);
