@@ -29,8 +29,8 @@
 .actions #mutate,.actions #randomise,.actions #describe,.actions #variations,.actions #geometry,.actions .gallery-nav{font-size:14px;}
 @media(max-width:1100px){.actions #mutate,.actions #randomise,.actions #describe,.actions #variations,.actions #geometry,.actions .gallery-nav{font-size:13px;}}
 
-/* Allocate extra room to the longer labels at display size. */
-@media(min-width:701px){.tabs{display:grid;grid-template-columns:1.25fr .65fr .8fr 1fr 1.15fr 1.15fr;}}
+/* Keep all six desktop tab labels legible within the shared 3-by-2 grid. */
+@media(min-width:701px){.tab{font-size:12px;white-space:normal;overflow-wrap:anywhere;text-align:center;}}
 
 /* Give the action bar its own row before the desktop header becomes crowded. */
 @media(min-width:821px) and (max-width:1250px){
