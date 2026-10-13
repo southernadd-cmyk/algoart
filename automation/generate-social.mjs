@@ -194,6 +194,9 @@ try {
     for (let attempt = 0; attempt < (orientation === 'portrait' ? 8 : 1); attempt++) {
     const retrySalt = attempt ? seedSalt + '|retry-' + attempt : seedSalt;
     const settings = settingsFor(day, index, watercolor ? 'WATERCOLOR|1|'+retrySalt : retrySalt, orientation);
+    // All NEW daily gallery images use the same original Marker cream paper.
+    // Keep the RNG draw and all archive settings for earlier dates unchanged.
+    if(day>='2026-10-14')settings.paper='#f5f0e6';
     if(watercolor){
       // Isolate new study IDs and seeds without touching existing AA/AP work.
       settings.seed = 'AW'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
