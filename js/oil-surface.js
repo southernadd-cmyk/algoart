@@ -36,7 +36,11 @@ function distanceSq(x,y,seg){
 }
 A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
   var base=kit?kit.paperRGB:BASE;
-  var pigments=kit?(kit.revision>=4?kit.washRGB:kit.inkRGB):PIGMENTS;
+  var v1=kit&&kit.revision>=4;
+  var pigments=v1?PIGMENTS.map(function(col,i){
+    var hex='#'+col.map(function(n){return n.toString(16).padStart(2,'0')}).join('');
+    return rgb(A.seededV1Pigment(hex,kit.inkRGB[i%kit.inkRGB.length]));
+  }):(kit?kit.inkRGB:PIGMENTS);
   var S=A.hash(seed+'|ground-field|1')>>>0;
   var segments=[],i,j,c,pts;
   for(i=0;i<Math.min(26,chains.length);i++){
@@ -51,7 +55,7 @@ A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
   }
   // Coarse distance field captures structure; fine raster provides pigment grain.
   var grid=20,cols=Math.ceil(w/grid)+2,rows=Math.ceil(h/grid)+2;
-  var fields=new Array(cols*rows),reach=kit?(kit.revision>=4?154:118):170;
+  var fields=new Array(cols*rows),reach=kit&&!v1?118:170;
   for(j=0;j<rows;j++)for(i=0;i<cols;i++){
     var x=i*grid,y=j*grid,nearest=Infinity,chosen=-1;
     for(var k=0;k<segments.length;k++){
@@ -66,14 +70,13 @@ A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
     var reachTint=chosen<0?0:clamp(.08+t*.78,0,.86);
     // Pale reserve areas persist, even among several nearby paths.
     var atmospheric=clamp(t*.8+.15*noise(x,y,215,S^141),0,1);
-    var shade=kit?(kit.revision>=4?
-      (.10+atmospheric*.72)*reachTint:
-      (.08+atmospheric*.60)*reachTint):
-      (.11+atmospheric*.87)*reachTint;
+    if(v1&&t===0)reachTint=0;
+    var shade=kit&&!v1?(.08+atmospheric*.60)*reachTint:(.11+atmospheric*.87)*reachTint;
     fields[j*cols+i]=[
       lerp(base[0],pigment[0],shade),
       lerp(base[1],pigment[1],shade),
-      lerp(base[2],pigment[2],shade)
+      lerp(base[2],pigment[2],shade),
+      shade
     ];
   }
   var pixelRatio=quality<.5?3:(quality<.95?2.5:2);
@@ -95,10 +98,13 @@ A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
       // Directional light from top-left gives subtle oil relief.
       var relief=(noise(xx+3,yy-4,22,S^456)-medium)*13+fine*4.5;
       var fleck=mixhash(i,j,S^441)-.5;
-      var grain=kit?(kit.revision>=4?
-        (height*8.7+relief*.54+fleck*2.3):
-        (height*5+relief*.24+fleck*1.8)):
-        (height*14+relief+fleck*3.5);
+      var grain=kit&&!v1?(height*5+relief*.24+fleck*1.8):(height*14+relief+fleck*3.5);
+      if(v1){
+        // Retain V1 pigment grain inside the wash. Bare paper uses restrained
+        // grain: V1's global highlight used to bleach this noise to white.
+        var coverage=lerp(lerp(a[3],b[3],tx),lerp(d[3],e[3],tx),ty);
+        grain*=.18+.82*clamp(coverage*3,0,1);
+      }
       var id=(j*rw+i)*4;
       for(k=0;k<3;k++){
         var base=lerp(lerp(a[k],b[k],tx),lerp(d[k],e[k],tx),ty);

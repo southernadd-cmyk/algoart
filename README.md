@@ -90,8 +90,9 @@ V8 expands Growth Systems with seeded golden-angle root directions, entries at t
 
 - **Marker drawing:** the established deterministic ALGO/ART marker work.
 - **Tissue & Graphite:** layered pigment is derived from the **seeded Marker
-  palette**, with distinct **dark charcoal graphite linework** over the washes.
-  Palette, Saturation, Brightness and Colour count remain respected. **Randomise
+  palette**, with the **original Watercolour V1 texture and graphite treatment**.
+  Seeded Marker hues colour the paint; V1 pigment lightness and saturation
+  preserve its muted character. Paper stays at the default cream `#f5f0e6`. **Randomise
   keeps the selected drawing material**.
 
 Both choices preserve the same seed, φ geometry, orientation, composer controls
@@ -108,7 +109,7 @@ change the original material.
   historical fixed-palette pixels as before. Previous **`?tissue=2`**
   links reproduce the colour-wash-only revision. Earlier **`?tissue=3`** links retain the first graphite pass. New
   **`?tissue=4`** returns to the earlier material's softly coloured washes,
-  neutral paper, fine internal cross-hatching and understated graphite, while
+  neutral paper and original internal graphite texture, while
   preserving seeded palette hues and the same V8 geometry.
   Randomising an old artwork starts a new seed-driven Tissue image.
   The historical internal material name `watercolor`,
@@ -133,7 +134,7 @@ change the original material.
   palette variation, determinism and unchanged geometry. The real-browser
   regression confirms that Randomise never changes the selected material.
   From **14 October 2026**, new daily Tissue & Graphite editions use
-  `?tissue=4` with muted palette-matched washes, fine graphite hatching,
+  `?tissue=4` with muted palette-matched washes, original V1 graphite texture,
   and **fixed default `#f5f0e6` cream paper**.
   Their previous dates, URLs, saved JPEGs and original v1 pigments remain untouched.
   Marker editions retain their own paper-colour choices.

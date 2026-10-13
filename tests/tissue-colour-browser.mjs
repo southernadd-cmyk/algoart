@@ -56,8 +56,8 @@ try{
   await open({tissue:4,pal:'cold'});
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
   assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),4);
-  assert((await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.graphitePaths))>0);
-  assert((await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.graphiteHatchPaths))>25);
+  assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.graphitePaths),0);
+
   await page.locator('#art').screenshot({path:'oil-check-results/tissue-seeded-cold.png'});
   await open({tissue:4,pal:'warm'});
   await page.locator('#art').screenshot({path:'oil-check-results/tissue-seeded-warm.png'});

@@ -18,34 +18,21 @@ var C={
 // The first material revision is frozen for all historical share links.
 // Revised material derives *every* coloured layer from recorded Marker inks.
 var originalC=C;
-function subduedPigments(kit){
-  // Restore the light/dark cadence of the original graphite paintings
-  // WITHOUT returning to the old hard-coded palette. Hue comes exclusively
-  // from the actual recorded Marker inks; only chroma and luminance are
-  // restrained for this paper-and-graphite material.
-  function tint(ink,luminance,chroma){
-    var grey=ink[0]*.2126+ink[1]*.7152+ink[2]*.0722;
-    return '#'+ink.map(function(v){
-      return Math.round(clamp(luminance+(v-grey)*chroma,0,255))
-        .toString(16).padStart(2,'0');
-    }).join('');
-  }
-  var inks=kit.inkRGB.length?kit.inkRGB:[[135,141,139]];
-  return {
-    cream:inks.map(function(v){return tint(v,222,.085)}),
-    blue:inks.map(function(v,i){return tint(v,i%2?166:155,.25)}),
-    umber:originalC.umber,
-    olive:inks.map(function(v,i){return tint(v,i%2?177:164,.17)}),
-    ochre:inks.map(function(v,i){return tint(v,i%2?158:145,.31)})
-  };
-}
 function coloursForInk(kit){
-  if(kit.revision>=4)return subduedPigments(kit);
+  if(kit.revision>=4){
+    var seeded={};
+    Object.keys(originalC).forEach(function(group,groupIndex){
+      seeded[group]=group==='umber'?originalC.umber:originalC[group].map(function(col,i){
+        return A.seededV1Pigment(col,kit.inkRGB[(groupIndex+i)%kit.inkRGB.length]);
+      });
+    });
+    return seeded;
+  }
   return {
     cream:kit.cream,
     blue:kit.ink,
-    // v3 retains the charcoal marks; v2 retains its original ink-tinted
-    // shadows for exact reproducibility.
+    // Keep the original dark graphite pigment. Pigment washes remain
+    // seeded, while pencil structural strokes must not inherit their hue.
     umber:kit.revision>=3?originalC.umber:kit.deep,
     olive:kit.soft,
     ochre:kit.ink.length>1?kit.ink.slice(1).concat(kit.ink[0]):kit.ink
@@ -162,7 +149,7 @@ function insideVoid(pt,voids){
   }
   return false;
 }
-function paintPlanes(pig,height,chains,voids,r,allowance,kit){
+function paintPlanes(pig,height,chains,voids,r,allowance){
   // Solid pigment planes grow off existing structure segments, giving the
   // viewer a painted field instead of many parallel geometric wireframes.
   var n=Math.min(chains.length,Math.ceil(31*allowance));
@@ -188,8 +175,7 @@ function paintPlanes(pig,height,chains,voids,r,allowance,kit){
       ctx.quadraticCurveTo(pA.x,pA.y,a.x,a.y);ctx.closePath();
     }
     pig.save();shape(pig);pig.fillStyle=mixcol;
-    pig.globalAlpha=r.range(.36,.77)*(kit&&kit.revision>=4?.79:1);
-    pig.fill();pig.clip();
+    pig.globalAlpha=r.range(.36,.77);pig.fill();pig.clip();
     // Broad, restrained scumbles inside the SAME painted plane.
     for(var k=0;k<r.int(3,7);k++){
       var c=point(a,b,r.range(.10,.9));
@@ -206,10 +192,10 @@ function paintPlanes(pig,height,chains,voids,r,allowance,kit){
     height.fill();height.restore();
   }
 }
-function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
+function deposit(pig,height,w,h,chains,voids,seed,quality){
   var r=A.makeR(seed+'|paint-dab-4'),n=chains.length;
   var allowance=quality<.4?.5:1;
-  paintPlanes(pig,height,chains,voids,r,allowance,kit);
+  paintPlanes(pig,height,chains,voids,r,allowance);
   // Localised translucent glazes knit separate paths together without
   // replacing the original geometry with a noise texture.
   var broad=Math.min(n,Math.round(24*allowance));
@@ -220,8 +206,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     if(insideVoid(mid,voids)&&r.chance(.82))continue;
     var width=clamp(85+Math.sqrt(ch.length)*r.range(4.8,8.2),85,235);
     var muted=lerpHex(palette(i,r),r.pick(C.cream),r.range(.32,.73));
-    paintRibbon(pig,height,pts,width,r,muted,
-      r.range(.40,.69)*(kit&&kit.revision>=4?.82:1),r.range(.35,.80));
+    paintRibbon(pig,height,pts,width,r,muted,r.range(.40,.69),r.range(.35,.80));
   }
   // Main painterly ribbons at two scales. Rhythm and large-scale direction
   // use the same φ-composed source segments.
@@ -233,8 +218,8 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     width=clamp(Math.sqrt(ch.length)*r.range(1.4,3.1),14,i<22?96:61);
     if(i>=broad&&r.chance(.32))continue;
     var hue=palette(i,r);
-    paintRibbon(pig,height,pts,width,r,hue,
-      r.range(.69,.94)*(kit&&kit.revision>=4?.86:1),r.range(.58,1.5));
+    paintRibbon(pig,height,pts,width,r,hue,r.range(.69,.94),
+      r.range(.58,1.5));
   }
   // Broken small strokes and half-covered edges build material variation.
   var detail=Math.min(n,Math.ceil(112*allowance));
@@ -258,7 +243,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
 // Bring back the distinct pencil/graphite linework lost when dark umbers
 // were converted to seed-tinted pigments. It follows existing vector chains,
 // adds no new composition geometry, and never touches historical v1 output.
-function graphiteOverlay(ctx,chains,seed,quality,revision){
+function graphiteOverlay(ctx,chains,seed,quality){
   var r=A.makeR(seed+'|graphite-linework-v2'),n=Math.min(chains.length,quality<.4?24:85);
   var drawn=0;
   ctx.save();
@@ -269,9 +254,6 @@ function graphiteOverlay(ctx,chains,seed,quality,revision){
     var graphite=r.pick(originalC.umber);
     var weight=Math.max(.65,Math.min(3.4,chains[i].width*.24+r.range(.1,1.05)));
     var alpha=r.range(.26,.63)*(i<18?1:.76);
-    // v4 is pencil hatching carried within painted masses, not a thick
-    // outline enclosing every geometrical ribbon (as in v3).
-    if(revision>=4){weight=Math.max(.45,weight*.53);alpha*=.52}
     pathStroke(ctx,path,weight,graphite,alpha);drawn++;
     // The second, slightly wandering pass is dry pencil grain along the
     // same sampled marks, not an opaque outline around every colour field.
@@ -285,47 +267,6 @@ function graphiteOverlay(ctx,chains,seed,quality,revision){
   }
   ctx.restore();
   return drawn;
-}
-// Dry pencil studies in the reference images contain many fine, imperfect
-// crossing lines, not just the major contour paths. Derive their positions,
-// direction and length from existing chains; no new independent geometry.
-function graphiteHatching(ctx,chains,seed,quality){
-  var r=A.makeR(seed+'|woven-pencil-v4');
-  var strokes=0,max=Math.min(chains.length,quality<.4?24:68);
-  ctx.save();
-  ctx.lineCap='round';
-  ctx.lineJoin='round';
-  ctx.globalCompositeOperation='multiply';
-  for(var pass=0;pass<2;pass++){
-    ctx.strokeStyle=pass===0?'#51544d':'#817e71';
-    ctx.globalAlpha=pass===0?.30:.20;
-    ctx.lineWidth=pass===0?.72:.55;
-    ctx.beginPath();
-    for(var i=0;i<max;i++){
-      var p=chains[i].pts,hop=Math.max(1,Math.ceil(p.length/11));
-      for(var j=hop;j<p.length;j+=hop){
-        var a=p[Math.max(0,j-hop)],b=p[j];
-        var length=dist(a,b);
-        if(length<12)continue;
-        var tangent=angle(a,b),normal=tangent+PI/2;
-        for(var k=0;k<5;k++){
-          if(r.chance(.15))continue;
-          var base=point(a,b,r.range(.05,.95));
-          var offset=r.range(-58,58);
-          var centre=shift(base,normal,offset);
-          var direction=tangent+(pass===0?PI/3:-PI/3)+r.range(-.24,.24);
-          var size=r.range(35,130);
-          var dx=Math.cos(direction)*size*.5,dy=Math.sin(direction)*size*.5;
-          ctx.moveTo(centre.x-dx,centre.y-dy);
-          ctx.lineTo(centre.x+dx,centre.y+dy);
-          strokes++;
-        }
-      }
-    }
-    ctx.stroke();
-  }
-  ctx.restore();
-  return strokes;
 }
 function hashNoise(x,y,seed){
   var k=(Math.imul(x,374761393)^Math.imul(y,668265263)^seed)|0;
@@ -360,6 +301,11 @@ function shade(pig,height,out,w,h,seed,kit){
       var light=kit?(1+raised*(.055*(diffuse-.78)+.045*bump*spec-.010*cavity))
         :(.90+.19*diffuse+.14*bump*spec-.027*cavity);
       var shine=kit?raised*2.2*bump*spec:(9+26*bump)*spec;
+      if(kit&&kit.revision>=4){
+        // V1 relief on pigment; bare paper keeps its default cream base.
+        light=1+raised*((.90+.19*diffuse+.14*bump*spec-.027*cavity)-1);
+        shine=raised*(9+26*bump)*spec;
+      }
       px[k]=clamp(Math.round(px[k]*light+shine),0,255);
       px[k+1]=clamp(Math.round(px[k+1]*light+shine*.91),0,255);
       px[k+2]=clamp(Math.round(px[k+2]*light+shine*.77),0,255);
@@ -384,21 +330,17 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   else{pctx.fillStyle='#f2ebdd';pctx.fillRect(0,0,w,h)}
   hctx.fillStyle='rgb(13,13,13)';hctx.fillRect(0,0,w,h);
   var voids=meta.voids||[];
-  deposit(pctx,hctx,w,h,chains,voids,seed,quality,kit);
+  deposit(pctx,hctx,w,h,chains,voids,seed,quality);
   // Restore transforms before readback in case this is reused later.
   pctx.setTransform(1,0,0,1,0,0);hctx.setTransform(1,0,0,1,0,0);
   shade(pctx,hctx,fctx,sw,sh,seed,kit);
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);
-  var graphitePaths=kit&&kit.revision>=3?
-    graphiteOverlay(ctx,chains,seed,quality,kit.revision):0;
-  var graphiteHatchPaths=kit&&kit.revision>=4?
-    graphiteHatching(ctx,chains,seed,quality):0;
+  var graphitePaths=kit&&kit.revision===3?graphiteOverlay(ctx,chains,seed,quality):0;
   ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
     version:4,tissuePaletteVersion:kit?kit.revision:1,
-    ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths,
-      graphiteHatchPaths:graphiteHatchPaths}:{} )};
+    ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} )};
   }finally{C=originalC}
 };
 })(window.AlgoArt);
