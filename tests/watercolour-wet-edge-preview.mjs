@@ -15,13 +15,11 @@ try{
   page.on('pageerror',e=>faults.push(String(e.message)));
   // Non-tiled tooth regression: fixed-seed reproduction, another seed
   // produces a different sheet, and no tile-sized offset repeats the field.
-  const paper=await page.evaluate(async()=>{
-    await new Promise(resolve=>{
-      if(window.AlgoArt?.sampleWatercolourPaperTooth){resolve();return;}
-      const script=document.createElement('script');
-      script.src='experiments/watercolour-wet-edge-v2.js';
-      script.onload=resolve;document.head.append(script);
-    });
+  await page.goto(new URL('experiments/watercolour-wet-edge-preview.html',root).href,
+    {waitUntil:'load',timeout:60000});
+  await page.waitForFunction(()=>window.__previewReady===true||!!window.__previewError,
+    null,{timeout:120000});
+  const paper=await page.evaluate(()=>{
     const fn=window.AlgoArt.sampleWatercolourPaperTooth;
     const base=[],changedSeed=[],offsets=[64,128,256,512].map(()=>[]);
     for(let iy=0;iy<16;iy++)for(let ix=0;ix<16;ix++){
