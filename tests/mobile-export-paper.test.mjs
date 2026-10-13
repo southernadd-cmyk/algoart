@@ -84,7 +84,8 @@ try{
   const png=await checkDownload('#savePanel','.png','tissue-mobile-landscape');
   assert.match(await page.locator('#exportStatus').textContent(),/download started/i);
   const svg=await checkDownload('#saveSVG','.svg','tissue-mobile-svg');
-  console.log('PASS Tissue mobile 1x PNG and SVG downloads',png,svg);
+  const plotter=await checkDownload('#savePlotter','.svg','tissue-mobile-plotter');
+  console.log('PASS Tissue mobile 1x PNG, SVG and plotter SVG downloads',png,svg,plotter);
   await load('marker','portrait');
   await openExport();
   assert.equal(await page.locator('#exportScale').inputValue(),'1');
