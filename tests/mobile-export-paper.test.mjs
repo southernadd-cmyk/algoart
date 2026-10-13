@@ -22,7 +22,7 @@ async function load(material,fmt='landscape'){
   u.searchParams.set('mode','rects');u.searchParams.set('pal','golden');
   u.searchParams.set('paper','#f5f0e6');
   if(fmt==='portrait')u.searchParams.set('fmt','portrait');
-  if(material==='tissue')u.searchParams.set('tissue','3');
+  if(material==='tissue')u.searchParams.set('tissue','4');
   await page.goto(u.href,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#art')?.width>0);
 }
