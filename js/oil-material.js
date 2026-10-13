@@ -234,7 +234,7 @@ function hashNoise(x,y,seed){
   k=Math.imul(k^(k>>>13),1274126177);
   return ((k^(k>>>16))>>>0)/4294967295;
 }
-function shade(pig,height,out,w,h,seed){
+function shade(pig,height,out,w,h,seed,kit){
   var source=pig.getImageData(0,0,w,h);
   var hg=height.getImageData(0,0,w,h).data;
   var px=source.data;
@@ -254,8 +254,14 @@ function shade(pig,height,out,w,h,seed){
       var spec=Math.pow(clamp((diffuse-.67)/.33,0,1),7);
       var cavity=clamp(Math.abs(dx)+Math.abs(dy),0,6);
       var bump=center/255;
-      var light=.90+.19*diffuse+.14*bump*spec-.027*cavity;
-      var shine=(9+26*bump)*spec;
+      // Historical Tissue v1 lighting remains byte-for-byte untouched.
+      // The v2 paper already contains the exact chosen cream colour:
+      // the old 1.09× diffuse boost + specular shine clipped cream to white.
+      // Keep v2 paper neutral; apply restrained relief only to raised pigment.
+      var raised=kit?clamp((center-13)/48,0,1):1;
+      var light=kit?(1+raised*(.055*(diffuse-.78)+.045*bump*spec-.010*cavity))
+        :(.90+.19*diffuse+.14*bump*spec-.027*cavity);
+      var shine=kit?raised*2.2*bump*spec:(9+26*bump)*spec;
       px[k]=clamp(Math.round(px[k]*light+shine),0,255);
       px[k+1]=clamp(Math.round(px[k+1]*light+shine*.91),0,255);
       px[k+2]=clamp(Math.round(px[k+2]*light+shine*.77),0,255);
@@ -283,7 +289,7 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   deposit(pctx,hctx,w,h,chains,voids,seed,quality);
   // Restore transforms before readback in case this is reused later.
   pctx.setTransform(1,0,0,1,0,0);hctx.setTransform(1,0,0,1,0,0);
-  shade(pctx,hctx,fctx,sw,sh,seed);
+  shade(pctx,hctx,fctx,sw,sh,seed,kit);
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
