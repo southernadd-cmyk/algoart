@@ -353,7 +353,7 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
   position:relative;
   z-index:1;
   display:grid;
-  grid-template-columns:repeat(6,1fr);
+  grid-template-columns:repeat(3,minmax(0,1fr));
   border-bottom:2px solid var(--ink);
   background:var(--paper-2)
 }
@@ -374,6 +374,8 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
   box-shadow:none!important;
   transform:none!important
 }
+.tab:nth-child(3n){border-right:0}
+.tab:nth-child(-n+3){border-bottom:1px solid var(--ink)}
 .tab:last-child{border-right:0}
 .tab span{
   display:block;
