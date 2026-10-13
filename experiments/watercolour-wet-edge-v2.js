@@ -878,7 +878,7 @@ function fitMaterialComposition(chains,voids,seed,w,h){
     factor=clamp(.71/Math.max(.01,fraction),1,1.84);
     kind='compact-source-reframe';
   }else if(mode==='rects'&&
-    (bounds.minX<38||bounds.maxX>w-38||bounds.minY<38||bounds.maxY>h-38)){
+    (bounds.minX<90||bounds.maxX>w-90||bounds.minY<90||bounds.maxY>h-90)){
     factor=.88;kind='frame-inset';
   }
   var cx=(bounds.minX+bounds.maxX)*.5,cy=(bounds.minY+bounds.maxY)*.5;
