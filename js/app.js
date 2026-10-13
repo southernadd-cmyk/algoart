@@ -14,7 +14,7 @@ var variationBatch=0;
 var currentRenderMeta=null;
 var currentDescription=null;
 // Keep the URL parser aligned with the renderer versions implemented in generator.js.
-var SUPPORTED_RENDERER_VERSIONS=Object.freeze([1,2,3,4,5,6,7,8]);
+var SUPPORTED_RENDERER_VERSIONS=Object.freeze([1,2,3,4,5,6,7,8,9]);
 var CURRENT_RENDERER_VERSION=SUPPORTED_RENDERER_VERSIONS[SUPPORTED_RENDERER_VERSIONS.length-1];
 A.supportedRendererVersions=SUPPORTED_RENDERER_VERSIONS;
 var UNVERSIONED_FIELD_VERSION_BY_SEED={

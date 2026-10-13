@@ -75,11 +75,12 @@ npm run test:tuning-equivalence
 
 The tuning-equivalence test compares generated drawings with a pinned historical Git commit; it needs that commit available in the local Git history. Browser-based archive and plotter-fidelity checks run in GitHub Actions across Chromium, Firefox and WebKit (see [the archive workflow](.github/workflows/archive-reproduction.yml)).
 
-**Current renderer: V8.**
+**Current renderer: V9.**
 
 | Renderer | Status |
 | --- | --- |
-| **V8** | Current editor and new artwork generation |
+| **V9** | Current editor; paper colour no longer changes seeded composition or pigments |
+| V8 | Preserved with its original paper-seeded geometry and historic Tissue cream background |
 | V1–V7 | Preserved for historical seeded artworks and exact shared links |
 
 Historical renderer and material versions remain available so saved links reproduce their original artwork. See [Renderer and material history](MATERIAL_HISTORY.md) for revision details, compatibility rules and implementation notes.
@@ -87,9 +88,9 @@ Historical renderer and material versions remain available so saved links reprod
 ## Drawing materials
 
 - **Marker drawing:** expressive ink with wobble, uneven weight, pressure and dryness.
-- **Tissue & Graphite:** translucent torn tissue and fine graphite, with colours chosen by the seed, on fixed cream paper.
+- **Tissue & Graphite:** translucent torn tissue and fine graphite, with colours chosen by the seed, on your selected paper colour (cream by default).
 
-Both materials use the same seeded composition. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** offers marker tools for those base paths, rather than suggesting Tissue & Graphite uses a marker for its visible finish. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
+Both materials use the same seeded composition. From renderer V9, changing paper colour does not change the artwork's geometry or selected pigment colours, and switching materials preserves the paper choice. Published V1–V8 compositions remain version-locked. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** offers marker tools for those base paths, rather than suggesting Tissue & Graphite uses a marker for its visible finish. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
 
 ## Daily gallery and publication
 

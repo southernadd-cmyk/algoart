@@ -295,8 +295,7 @@ A.syncControlHelp=function(mode,version,meta){
     entry.row.hidden=inactiveControl(mode,entry.id,version,meta)||(monochrome&&(entry.id==='saturation'||entry.id==='brightness'));
     entry.label.textContent=monochrome&&entry.id==='colourCount'?'Tones':((SYSTEM_LABELS[mode]||{})[entry.id]||LABELS[entry.id]||entry.name);
     entry.button.setAttribute('aria-label','About '+entry.label.textContent);
-    entry.hint.textContent=tissue&&entry.id==='paper'?'Tissue & Graphite uses fixed cream paper. This colour control applies to Marker drawing.':
-      tissue&&entry.id==='grain'?'Tissue & Graphite has its own paper finish. This grain setting applies to Marker drawing.':
+    entry.hint.textContent=tissue&&entry.id==='grain'?'Tissue & Graphite has its own paper finish. This grain setting applies to Marker drawing.':
       helpText(mode,entry.id,version);
     if(active===entry&&entry.row.hidden)closeHelp();
   });

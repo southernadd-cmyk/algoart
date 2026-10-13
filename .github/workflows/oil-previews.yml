@@ -30,6 +30,11 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Lock published V8 and verify V9 paper independence
+        run: |
+          npm run test:renderer-lock
+          npm run test:tissue-colour
+          node tests/materials-ui.test.mjs
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Start local renderer

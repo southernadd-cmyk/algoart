@@ -50,6 +50,40 @@ try{
   assert(mono?.length>0);
   assert(mono.every(c=>/^#([a-f0-9]{2})\1\1$/i.test(c)),
     'Changing Colour → Monochrome must give truly monochrome Tissue inks');
+  // The same paper picker works in both materials, without recolouring inks.
+  const creamCorner=await page.evaluate(()=>Array.from(document.querySelector('#art')
+    .getContext('2d').getImageData(3,3,1,1).data).slice(0,3));
+  await page.locator('#paper').fill('#20334a');
+  await page.waitForFunction(()=>new URL(location.href).searchParams.get('paper')==='#20334a');
+  assert.equal(new URL(page.url()).searchParams.get('v'),'9');
+  assert.equal(await page.locator('#paper').inputValue(),'#20334a');
+  assert.deepEqual(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours),mono,
+    'Changing paper cannot change the seeded ink palette');
+  const darkCorner=await page.evaluate(()=>Array.from(document.querySelector('#art')
+    .getContext('2d').getImageData(3,3,1,1).data).slice(0,3));
+  // A composition may legitimately cover its corner with pigment, so the
+  // proof of the chosen background samples an unpainted sheet as well.
+  const bareSheet=await page.evaluate(()=>{
+    const A=window.AlgoArt,s=A.readSettings(),kit=A.tissueKitFromPaths([],s,6);
+    const canvas=document.createElement('canvas');canvas.width=300;canvas.height=200;
+    const ctx=canvas.getContext('2d');
+    A.oilMaterial(ctx,300,200,[],{},s.seed,1,kit);
+    return {paper:kit.paper,pixel:Array.from(ctx.getImageData(150,100,1,1).data).slice(0,3)};
+  });
+  assert.equal(bareSheet.paper,'#20334a');
+  assert(bareSheet.pixel.every((channel,i)=>Math.abs(channel-[32,51,74][i])<=8),
+    'An unpainted Tissue sheet must use the selected colour: '+JSON.stringify(bareSheet));
+  assert.notDeepEqual(darkCorner,creamCorner,
+    'Changing Tissue paper must update the visible canvas corner (before: '+
+      JSON.stringify(creamCorner)+', after: '+JSON.stringify(darkCorner)+')');
+  await page.locator('#tab-composition').click();
+  await page.locator('#materialStyle').selectOption('marker');
+  assert.equal(await page.locator('#paper').inputValue(),'#20334a',
+    'Switching to Marker cannot reset chosen paper');
+  await page.locator('#materialStyle').selectOption('tissue');
+  assert.equal(await page.locator('#paper').inputValue(),'#20334a',
+    'Switching back to Tissue cannot reset chosen paper');
+  assert.deepEqual(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours),mono);
   await open({tissue:2,pal:'cold'});
   assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent torn tissue and fine graphite\./,
     'Shared Tissue links should restore the matching note');
