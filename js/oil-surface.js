@@ -92,7 +92,7 @@ A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
       // Directional light from top-left gives subtle oil relief.
       var relief=(noise(xx+3,yy-4,22,S^456)-medium)*13+fine*4.5;
       var fleck=mixhash(i,j,S^441)-.5;
-      var grain=height*14+relief+fleck*3.5;
+      var grain=kit?(height*5+relief*.24+fleck*1.8):(height*14+relief+fleck*3.5);
       var id=(j*rw+i)*4;
       for(k=0;k<3;k++){
         var base=lerp(lerp(a[k],b[k],tx),lerp(d[k],e[k],tx),ty);
