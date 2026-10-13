@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {makeCaptions} from './captions.mjs';
+import {validateTissueShareUrl} from './tissue-edition.mjs';
 
 const TIMES=['09:00',null,'20:30'];
 const b64=x=>Buffer.from(String(x||''),'utf8').toString('base64');
@@ -39,7 +40,9 @@ async function main(){
       throw Error('Expected frozen two-study watercolor queue for '+orientation);
     const item=queue.entries[index];
     if(item.material!=='watercolor'||item.orientation!==orientation)throw Error('Watercolor selection mismatch');
-    if(new URL(item.shareUrl).searchParams.get('watercolor')!=='1')throw Error('Share link is not watercolor');
+    // Each archived queue stays pinned to the material revision for its day;
+    // publication must never silently fall back to the historical painter.
+    validateTissueShareUrl(date,item.shareUrl);
     const imagePath=path.join(dir,item.imageFile),igPath=path.join(dir,item.instagramImageFile||item.imageFile);
     await fs.access(imagePath);await fs.access(igPath);
     const captions=makeCaptions(item);
@@ -48,8 +51,8 @@ async function main(){
       instagram_asset_name:item.instagramImageFile||item.imageFile,
       instagram_caption_b64:b64(captions.instagram),threads_caption_b64:b64(captions.threads),
       bluesky_caption_b64:b64(captions.bluesky),
-      pinterest_title_b64:b64('Watercolor · '+item.series+' — ALGO/ART'),
-      pinterest_description_b64:b64('Procedural watercolor study. Open the exact artwork in ALGO/ART: '+item.shareUrl),
+      pinterest_title_b64:b64('Tissue & Graphite · '+item.series+' — ALGO/ART'),
+      pinterest_description_b64:b64('Tissue & Graphite study. Open the exact artwork in ALGO/ART: '+item.shareUrl),
       alt_text_b64:b64(captions.altText),share_url:item.shareUrl,scheduled_time:s.target_time
     });
     return;
