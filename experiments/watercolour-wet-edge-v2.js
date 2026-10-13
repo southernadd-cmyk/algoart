@@ -53,6 +53,17 @@ function lerpHex(a,b,t){
   var cs=c.map(function(x,i){return Math.round(mix(x,d[i],t))});
   return 'rgb('+cs.join(',')+')';
 }
+// Take only the electronic edge off cyan and neon green, preserving the
+// original seed-derived warm/red/violet hues and intentional vivid accents.
+function pigmentInk(col){
+  var nums=col[0]==='#'?[1,3,5].map(function(i){return parseInt(col.slice(i,i+2),16)})
+    :(col.match(/[0-9]+/g)||[]).slice(0,3).map(Number);
+  if(nums.length!==3||nums.some(function(n){return !Number.isFinite(n)}))return col;
+  var r=nums[0],g=nums[1],b=nums[2],spread=Math.max(r,g,b)-Math.min(r,g,b);
+  if(spread<72||r>g*.91)return col;
+  if(g<r*1.13||(b<g*.42&&g<r*1.7))return col;
+  return lerpHex(col,'#9b907f',b>g*.74?.12:.095);
+}
 function point(a,b,t){return{x:mix(a.x,b.x,t),y:mix(a.y,b.y,t)}}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function angle(a,b){return Math.atan2(b.y-a.y,b.x-a.x)}
@@ -170,33 +181,84 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
   pig.clip(); // wet rims never sit as artificial dark halos beyond the wash
   pig.strokeStyle=col;
   pig.lineJoin='round';
-  var feather=edgeState==='wet'?clamp(width*.073,2,10):
-    edgeState==='damp'?clamp(width*.023,.65,3):0;
+  // The displaced boundary itself supplies the softness. Blurring every
+  // perimeter made the narrow marks look like vector strokes with a glow.
+  var feather=edgeState==='wet'?clamp(width*.018,.3,1.25):
+    edgeState==='damp'?clamp(width*.006,0,.45):0;
   if(feather>0){
     if('filter' in pig)pig.filter='blur('+feather+'px)';
     else{pig.shadowColor=col;pig.shadowBlur=feather;}
   }
   pig.lineWidth=edgeState==='dry'?clamp(width*.062,1.25,5.8):
     clamp(width*(edgeState==='wet'?.19:.11),2,23);
-  pig.globalAlpha=opacity*(edgeState==='dry'?.63:edgeState==='damp'?.37:.30);
+  pig.globalAlpha=opacity*(edgeState==='dry'?.63:edgeState==='damp'?.29:.24);
   pig.stroke();
   pig.filter='none';pig.shadowBlur=0;
   // Sparse irregular pooling. No second complete contour/parallel CAD line.
   if(edgeState!=='dry'){
     for(var i=1;i<pts.length-1;i++){
-      if(!r.chance(edgeState==='wet'?.30:.15))continue;
+      if(!r.chance(edgeState==='wet'?.43:.20))continue;
       var before=pts[i-1],after=pts[i+1],tangent=angle(before,after);
       var sign=r.chance(.5)?1:-1;
-      var q=shift(pts[i],tangent+PI/2,sign*width*.44);
+      var wobble=.76+.42*r.n();
+      var q=shift(pts[i],tangent+PI/2,sign*width*.44*wobble);
       pig.beginPath();
-      pig.ellipse(q.x,q.y,clamp(width*.07,2,11),
-        clamp(width*.012,.65,2.2),tangent,0,PI*2);
-      pig.globalAlpha=opacity*r.range(.045,.11);
+      pig.ellipse(q.x,q.y,clamp(width*r.range(.035,.115),1.8,11),
+        clamp(width*r.range(.009,.035),.6,3.0),tangent,0,PI*2);
+      pig.globalAlpha=opacity*r.range(.13,.31);
       pig.fillStyle=col;pig.fill();
     }
   }
   pig.restore();
   pig.restore();
+}
+// An actual filled, transparent pigment pool on a source vector path:
+// a second tinted wash moves into the *same* clipped wet shape, instead
+// of surrounding a thin outline with an evenly blurred halo.
+function paintColourPool(ctx,pts,width,r,colourA,colourB,opacity){
+  if(pts.length<2)return false;
+  activeEdgeWave={frequency:r.range(.17,.65),secondary:r.range(.9,2.5),
+    phase:r.range(-PI,PI)};
+  if(!ribbon(ctx,pts,width*.5,r))return false;
+  var minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  for(var i=0;i<pts.length;i++){
+    minX=Math.min(minX,pts[i].x);maxX=Math.max(maxX,pts[i].x);
+    minY=Math.min(minY,pts[i].y);maxY=Math.max(maxY,pts[i].y);
+  }
+  var a=pts[0],b=pts[pts.length-1],ang=angle(a,b),middle=point(a,b,.5);
+  var nx=Math.cos(ang+PI/2),ny=Math.sin(ang+PI/2);
+  ctx.save();ctx.globalCompositeOperation='multiply';
+  ctx.globalAlpha=opacity*.57;ctx.fillStyle=colourA;ctx.fill();
+  ctx.clip();
+  var shiftSide=r.chance(.5)?1:-1;
+  var center=shift(middle,ang+PI/2,shiftSide*width*r.range(.02,.18));
+  var radius=width*r.range(.53,.95);
+  var blend=ctx.createRadialGradient(center.x,center.y,0,
+    center.x,center.y,radius);
+  blend.addColorStop(0,colourB);
+  blend.addColorStop(.40,lerpHex(colourA,colourB,.62));
+  blend.addColorStop(1,colourA);
+  ctx.globalAlpha=opacity*.26;
+  ctx.fillStyle=blend;
+  ctx.fillRect(minX-width,minY-width,
+    Math.max(1,maxX-minX+width*2),Math.max(1,maxY-minY+width*2));
+  // Capillary pooling is deliberately lopsided and discontinuous.
+  // Unlike an outer glow it stays inside the real wash and is strongest
+  // on scattered wet banks where water has evaporated.
+  ctx.globalAlpha=1;
+  for(var k=0;k<Math.min(13,pts.length);k++){
+    var j=r.int(0,pts.length-1),before=pts[Math.max(0,j-1)];
+    var after=pts[Math.min(pts.length-1,j+1)],tangent=angle(before,after);
+    var side=r.chance(.70)?shiftSide:-shiftSide;
+    var local=shift(pts[j],tangent+PI/2,side*width*r.range(.27,.47));
+    var rad=width*r.range(.07,.23);
+    var deposit=ctx.createRadialGradient(local.x,local.y,0,local.x,local.y,rad);
+    deposit.addColorStop(0,colourB);
+    deposit.addColorStop(1,lerpHex(colourA,colourB,.15));
+    ctx.globalAlpha=opacity*r.range(.08,.24);
+    ctx.fillStyle=deposit;ctx.beginPath();ctx.arc(local.x,local.y,rad,0,PI*2);ctx.fill();
+  }
+  ctx.restore();return true;
 }
 function linePath(a,b,centre,r){
   // Third point gives the loaded brush a soft change of angle. The direction
@@ -336,7 +398,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
   var r=A.makeR(seed+'|wet-edge-watercolour-v2'),n=chains.length;
   var allowance=quality<.4?.65:1;
   var stats={dry:0,damp:0,wet:0,chromaticAccents:0,dryDeposits:[],
-    broadWidthMax:0,heroWidthMax:0};
+    broadWidthMax:0,heroWidthMax:0,filledPools:0,mixedPigmentPools:0};
   var broad=Math.min(n,Math.ceil(21*allowance));
   for(var i=broad-1;i>=0;i--){
     var ch=chains[i],pts=ch.pts;
@@ -347,10 +409,20 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     var width=clamp(49+Math.sqrt(ch.length)*r.range(2.0,3.85),50,127);
     stats.broadWidthMax=Math.max(stats.broadWidthMax,width);
     var wash=kit.ink.length&&r.chance(.29)?
-      lerpHex(r.pick(kit.ink),r.pick(C.cream),r.range(.08,.20)):
+      lerpHex(pigmentInk(r.pick(kit.ink)),r.pick(C.cream),r.range(.08,.20)):
       lerpHex(palette(i,r),r.pick(C.cream),r.range(.12,.37));
     var state=A.makeR(seed+'|water-state-broad-v2e|'+i).chance(.48)?'wet':'damp';
-    paintRibbon(pig,null,pts,width,r,wash,r.range(.41,.70),0,state);
+    // Retain overall sparse geometry but let a few existing strokes become
+    // coloured *areas*. No new positions, objects or generator changes.
+    var poolChoice=A.makeR(seed+'|v2g-pool|'+i);
+    if(poolChoice.chance(.37)){
+      var other=kit.ink.length>1?pigmentInk(poolChoice.pick(kit.ink)):
+        pigmentInk(poolChoice.pick(C.ochre));
+      var mixed=paintColourPool(pig,pts,width,r,wash,other,r.range(.47,.76));
+      if(mixed){stats.filledPools++;stats.mixedPigmentPools++;}
+    }else{
+      paintRibbon(pig,null,pts,width,r,wash,r.range(.41,.70),0,state);
+    }
     stats[state]++;
   }
   var hero=Math.min(n,Math.ceil(68*allowance));
@@ -369,7 +441,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     // Retain selected vivid ink even for damp/wet washes; the old material
     // palette blended all coloured groups toward desaturated tissue hues.
     var accent=i<43&&kit.ink.length&&stateR.chance(.55);
-    var pigment=accent?stateR.pick(kit.ink):palette(i,r);
+    var pigment=pigmentInk(accent?stateR.pick(kit.ink):palette(i,r));
     if(accent)stats.chromaticAccents++;
     var opacity=r.range(.55,.80);
     if(state==='dry'){
@@ -378,7 +450,14 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
       stats.dryDeposits.push({pts:pts,width:width,col:pigment,opacity:opacity,
         key:'hero-'+i});
     }else{
-      paintRibbon(pig,null,pts,width,r,pigment,opacity,0,state);
+      var vividPool=A.makeR(seed+'|v2g-hero-pool|'+i);
+      if(i<36&&vividPool.chance(.23)){
+        var second=kit.ink.length>1?
+          pigmentInk(vividPool.pick(kit.ink)):pigmentInk(vividPool.pick(C.ochre));
+        if(paintColourPool(pig,pts,width,r,pigment,second,opacity)){
+          stats.filledPools++;stats.mixedPigmentPools++;
+        }
+      }else paintRibbon(pig,null,pts,width,r,pigment,opacity,0,state);
     }
     stats[state]++;
   }
@@ -412,7 +491,7 @@ function finishDryAccents(ctx,chains,seed,quality,kit,voids,stats){
     if(pts.length<2||pen.chance(i<13?.39:.70))continue;
     var middle=pts[Math.floor(pts.length/2)];
     if(insideVoid(middle,voids))continue;
-    var hue=kit.ink.length?pen.pick(kit.ink):'#625951';
+    var hue=kit.ink.length?pigmentInk(pen.pick(kit.ink)):'#625951';
     var width=clamp(chains[i].width*.17+pen.range(.3,1.15),.65,2.6);
     pathStroke(ctx,pts,width,hue,pen.range(.27,.52));
     rendered++;
@@ -546,7 +625,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
   var frame=ctx.getImageData(0,0,w,h),px=frame.data;
   var total=w*h;
   var source=new Float32Array(total*3),next=new Float32Array(total*3);
-  var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total);
+  var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total),paperGrain=new Uint8Array(total);
   var seedValue=A.hash(seed+'|paper-flow-v2f')>>>0,pi=0;
   for(var y=0;y<h;y++)for(var x=0;x<w;x++,pi++){
     var j=pi*3,loaded=0;
@@ -564,6 +643,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     tooth[pi]=surface.tooth;
     water[pi]=clamp(loaded*3.1,0,1);
     fibres[pi]=surface.fibre;
+    paperGrain[pi]=Math.round(surface.grain*255);
   }
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
@@ -643,13 +723,18 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
         .10*Math.exp(-Math.pow((radial-.98)/.21,2));
     }
     for(c=0;c<3;c++){
-      var amount=source[p+c]*settle*bloom;
-      px[out+c]=clamp(Math.round(paper[c]*Math.exp(-amount)),0,255);
+      // A gentle upper bound on optical density stops dark overlapping
+      // glazes collapsing into electronic near-black. Glazes still stack.
+      var amount=Math.min(.89,source[p+c]*settle*bloom);
+      // Base cream stays nominally unchanged; its very subtle tooth
+      // shading is continuous across blank and painted sheet, not a tile.
+      var paperShade=(tooth[pi]-.5)*4.8+(paperGrain[pi]/255-.5)*2.4;
+      px[out+c]=clamp(Math.round(paper[c]*Math.exp(-amount)+paperShade),0,255);
     }
     px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
-  return {paperModel:'V2f non-tiled rotated domain-warped multiscale tooth + pigment-dependent capillary flow',
+  return {paperModel:'V2g non-tiled rotated domain-warped multiscale tooth + visible paper fibre shading',
     diffusionPasses:passes,waterBlooms:drops.length};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
@@ -683,11 +768,12 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     A.lastWatercolourExperimentStats={
       width:sw,height:sh,chains:chains.length,
       paper:kit.paper,inkColours:kit.ink.slice(),
-      effect:'V2f narrower selective washes, vibrant seeded colour, dry/damp/wet edges and non-tiled tooth',
+      effect:'V2g asymmetric pigment pooling, mixed transparent colour washes and visible seeded paper tooth',
       washStates:{dry:washStats.dry,damp:washStats.damp,wet:washStats.wet},
       widthCaps:{broad:127,hero:67},washWidths:{broadMax:washStats.broadWidthMax,
         heroMax:washStats.heroWidthMax},
       chromaticAccents:washStats.chromaticAccents,dryDetails:dryDetail,
+      filledPools:washStats.filledPools,mixedPigmentPools:washStats.mixedPigmentPools,
       paperFlow:paperStats,
       referenceMaterial:'Tissue & Graphite V6'
     };
