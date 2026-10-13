@@ -17,4 +17,11 @@ assert.match(app,/pen:'pen'/);
 assert.match(app,/\?A\.describeArtwork\(s,m,oilEnabled\(\)\?'tissue':'marker'\)/);
 assert.match(description,/material==='tissue'\?'Abstract algorithmic tissue and graphite artwork'/);
 assert.doesNotMatch(description,/(geometric marker forms|branching marker|Loose marker strokes)/);
-console.log('PASS: Material labels, descriptions, and unchanged URL parameters');
+// Both stylesheets must preserve the roomy two-row desktop tab layout.
+const style=read('css/style.css'),markerStyle=read('css/marker-font.css');
+assert(style.includes('grid-template-columns:repeat(3,minmax(0,1fr));'));
+assert(style.includes('.tab:nth-child(3n){border-right:0}'));
+assert(style.includes('.tab:nth-child(-n+3){border-bottom:1px solid var(--ink)}'));
+assert(!markerStyle.includes('grid-template-columns:1.25fr'));
+assert(markerStyle.includes('.tab{font-size:12px;white-space:normal;overflow-wrap:anywhere;text-align:center;}'));
+console.log('PASS: Material labels, descriptions, unchanged URL parameters, and readable desktop tabs');
