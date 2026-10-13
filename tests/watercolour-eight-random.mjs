@@ -1,4 +1,4 @@
-// Eight fresh, genuinely random V2i studies — ONE from each V8 engine.
+// Eight fresh, genuinely random V2j studies — ONE from each V8 engine.
 // This is a screenshot/artwork sampler, not a production publishing path.
 // Each image and its full seed/settings are saved for deterministic reproduction.
 import { chromium } from 'playwright';
@@ -27,7 +27,7 @@ function randInt(low,high){return low+randomBytes(4).readUInt32BE(0)%(high-low+1
 const palettes=['golden','earth','warm','mono'];
 const scenarios=engines.map((engine,index)=>({
   ...engine,
-  seed:'WC-V2I-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
+  seed:'WC-V2J-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
   elements:randInt(18,42),
   density:randInt(43,73),
   complexity:randInt(43,81),
@@ -99,6 +99,10 @@ try{
     assert(result.material.microBleedCount>0,'No microbleed on '+scenario.mode);
     assert(result.material.watercolorThinStrokeCount>0,'No watercolour fine lines on '+scenario.mode);
     assert(result.material.dryThinStrokeCount>0,'Dry fine lines bypass watercolour on '+scenario.mode);
+    assert(result.material.pigmentSpreadMax<=112,'Pigment gamut too electronic: '+scenario.mode);
+    assert(result.material.compositionPresentation.factor>0);
+    if(result.material.compositionPresentation.kind==='compact-source-reframe')
+      assert(result.material.compositionPresentation.after.width>=result.material.compositionPresentation.before.width*1.15);
     const png=Buffer.from(result.data,'base64');
     assert(png.length>15000,'Unexpected blank or tiny png: '+scenario.mode);
     const filename=String(i+1).padStart(2,'0')+'-'+scenario.mode+'-'+scenario.orientation+'.png';
@@ -110,7 +114,9 @@ try{
       filledPools:result.material.filledPools,mixedPigmentPools:result.material.mixedPigmentPools,
       microBleedCount:result.material.microBleedCount,
       watercolorThinStrokeCount:result.material.watercolorThinStrokeCount,
-      dryThinStrokeCount:result.material.dryThinStrokeCount});
+      dryThinStrokeCount:result.material.dryThinStrokeCount,
+      compositionPresentation:result.material.compositionPresentation,
+      pigmentSpreadMax:result.material.pigmentSpreadMax});
     console.log('RENDERED',filename,png.length+' bytes',
       'seed='+scenario.seed,'paths='+result.material.chains,
       'washStates='+JSON.stringify(result.material.washStates),
@@ -120,12 +126,58 @@ try{
   assert.equal(new Set(manifest.map(x=>x.seed)).size,8);
   assert.equal(errors.length,0,'Browser errors: '+errors.join('; '));
   await writeFile(output+'/manifest.json',JSON.stringify({
-    description:'8 unique random studies in experimental Watercolour V2i',
-    material:'watercolour-v2i-paper-diffusion',rendererVersion:8,
+    description:'8 unique random studies in experimental Watercolour V2j',
+    material:'watercolour-v2j-paper-diffusion',rendererVersion:8,
     revision:'experimental branch only; no production changes',
     samples:manifest
   },null,2));
-  console.log('PASS: 8 new independent, reproducible V2i watercolour PNGs');
+  console.log('PASS: 8 new independent, reproducible V2j watercolour PNGs');
+// Fixed V2i seeds from the user's visual review. These are NOT the random
+// gallery; they are four extra regression images proving the compact-cluster
+// and edge-clipped-frame conditions have been addressed on exact inputs.
+const priorCases=[
+  {name:'prior-field',seed:'WC-V2I-FIELD-0F3FFB0E1D',mode:'field',orientation:'landscape',elements:28,density:45,complexity:76,negativeSpace:61,phiStrength:90,recursion:3,spiralInfluence:48,goldenAngle:94,nesting:60,curveBias:77,shapeAmount:63,overlap:72,rotation:65,palette:'golden',colourCount:5,saturation:92,brightness:55},
+  {name:'prior-network',seed:'WC-V2I-NETWORK-8D3CABC0BA',mode:'network',orientation:'landscape',elements:18,density:68,complexity:80,negativeSpace:48,phiStrength:93,recursion:3,spiralInfluence:56,goldenAngle:97,nesting:42,curveBias:52,shapeAmount:51,overlap:45,rotation:70,palette:'golden',colourCount:4,saturation:82,brightness:55},
+  {name:'prior-scribble',seed:'WC-V2I-SCRIBBLE-1F9904EA55',mode:'scribble',orientation:'portrait',elements:42,density:46,complexity:73,negativeSpace:50,phiStrength:88,recursion:5,spiralInfluence:44,goldenAngle:82,nesting:39,curveBias:64,shapeAmount:65,overlap:76,rotation:59,palette:'earth',colourCount:4,saturation:87,brightness:56},
+  {name:'prior-rects',seed:'WC-V2I-RECTS-1E442E7959',mode:'rects',orientation:'landscape',elements:34,density:61,complexity:54,negativeSpace:46,phiStrength:95,recursion:5,spiralInfluence:53,goldenAngle:94,nesting:43,curveBias:39,shapeAmount:73,overlap:42,rotation:47,palette:'warm',colourCount:3,saturation:78,brightness:73}
+];
+const fixedDir=output+'/fixed';
+await mkdir(fixedDir,{recursive:true});
+const fixedManifest=[];
+for(const fixture of priorCases){
+  const result=await page.evaluate((scene)=>{
+    const A=window.AlgoArt,original=A.oilMaterial;
+    const settings={...window.__currentPreviewSettings,...scene,
+      pen:'fine',paper:'#f5f0e6',grain:13};
+    delete settings.name;
+    const canvas=document.createElement('canvas');
+    try{
+      A.oilMaterial=A.watercolourMaterialExperiment;
+      A.renderOil(canvas,settings,1,false,6);
+      return {data:canvas.toDataURL('image/png').split(',')[1],
+        stats:A.lastWatercolourExperimentStats.compositionPresentation,
+        pigmentSpreadMax:A.lastWatercolourExperimentStats.pigmentSpreadMax,
+        width:canvas.width,height:canvas.height};
+    }finally{A.oilMaterial=original;}
+  },fixture);
+  assert(result.pigmentSpreadMax<=112);
+  if(fixture.mode!=='rects'){
+    assert.equal(result.stats.kind,'compact-source-reframe',
+      'Previously tiny '+fixture.mode+' should be reframed');
+    assert(result.stats.after.width>result.stats.before.width*1.20,
+      'Reframe needs measurable width gain: '+fixture.mode);
+  }else if(result.stats.kind==='frame-inset'){
+    assert(result.stats.factor<1);
+    assert(result.stats.after.minX>0&&result.stats.after.maxX<1);
+  }
+  const filename=fixture.name+'.png';
+  await writeFile(fixedDir+'/'+filename,Buffer.from(result.data,'base64'));
+  fixedManifest.push({filename,seed:fixture.seed,mode:fixture.mode,
+    bounds:result.stats,pigmentSpreadMax:result.pigmentSpreadMax});
+  console.log('FIXED V2I REGRESSION',fixture.name,JSON.stringify(result.stats));
+}
+await writeFile(fixedDir+'/manifest.json',JSON.stringify(fixedManifest,null,2));
+
 }finally{
   await browser.close();
 }
