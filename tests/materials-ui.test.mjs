@@ -17,6 +17,17 @@ assert.match(html,/<label>Stroke width<\/label>.*?<input id="thickness"/);
 assert.match(html,/<label>Repeat passes<\/label>.*?<input id="overdraw"/);
 assert.match(html,/SVG and plotter exports use marker paths/);
 assert.match(help,/materialStyle:'Choose Marker drawing or Tissue & Graphite/);
+assert.match(help,/var TISSUE_PROFILES=/);
+for(const profile of ['felt','fine','broad','highlighter','dry','paint','scribble']){
+  assert.match(help,new RegExp('\\b'+profile+":'"),'Every source profile must have a Tissue label: '+profile);
+}
+assert.match(help,/var TISSUE_LABELS=/);
+assert.match(help,/var TISSUE_HELP=/);
+assert.match(help,/option\.textContent=tissue\?/);
+assert.match(help,/option\.value/);
+assert.match(help,/materialControlsNote/);
+assert.doesNotMatch(help,/option\.value\s*=/,'Material labels must never change serialized option values');
+assert.doesNotMatch(help,/new Option\(/,'Never replace option nodes and lose their selected state');
 assert.match(help,/Keep the selected material, paper colour and shape choices/);
 assert.match(app,/pen:'pen'/);
 assert.match(app,/\?A\.describeArtwork\(s,m,oilEnabled\(\)\?'tissue':'marker'\)/);
