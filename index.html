@@ -4,20 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ece7d9">
-<title>ALGO/ART — Golden-ratio generative marker system</title>
-<meta name="description" content="The algorithm creates the structure. The marker makes it human. Create seeded generative art composed with φ and rendered as imperfect digital marker ink.">
+<title>ALGO/ART — Golden-ratio generative drawing system</title>
+<meta name="description" content="The algorithm creates the structure. The materials bring the human texture. Create seeded generative art composed with φ, in marker ink or translucent tissue and graphite.">
 <link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <meta property="og:type" content="website">
-<meta property="og:title" content="ALGO/ART — Golden-ratio generative marker system">
-<meta property="og:description" content="The algorithm creates the structure. The marker makes it human. Seeded φ compositions rendered with imperfect digital ink.">
+<meta property="og:title" content="ALGO/ART — Golden-ratio generative drawing system">
+<meta property="og:description" content="The algorithm creates the structure. The materials bring the human texture. Seeded φ compositions in marker ink or translucent tissue and graphite.">
 <meta property="og:url" content="https://southernadd-cmyk.github.io/algoart/">
 <meta property="og:image" content="https://southernadd-cmyk.github.io/algoart/social-card.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ALGO/ART — Golden-ratio generative marker system">
-<meta name="twitter:description" content="The algorithm creates the structure. The marker makes it human.">
+<meta name="twitter:title" content="ALGO/ART — Golden-ratio generative drawing system">
+<meta name="twitter:description" content="The algorithm creates the structure. The materials bring the human texture.">
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/social-card.png">
 <link rel="stylesheet" href="css/style.css?v=material-picker-1">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
@@ -31,14 +31,14 @@
     <div class="intro-body">
       <div class="intro-phi" aria-hidden="true">φ</div>
       <div class="intro-copy">
-        <p class="intro-kicker">DETERMINISTIC GENERATIVE MARKER SYSTEM</p>
+        <p class="intro-kicker">DETERMINISTIC GENERATIVE DRAWING SYSTEM</p>
         <h1 id="introTitle">ALGO<span>/</span>ART</h1>
         <p class="intro-thesis">How far can the golden ratio govern a composition while its marks remain visibly human?<br>Move the sliders. See what you think.</p>
         <p>AlgoArt is built around the <strong>Golden Ratio</strong>. Eight different systems interpret the same mathematical language — arranging, spiralling, dividing, radiating, connecting, growing, constructing and scribbling.</p>
         <div class="intro-principles">
           <div><b>01</b><strong>φ PROPOSES THE COMPOSITION.</strong><span>1.618 proportions, 61.8 / 38.2 divisions and the 137.5° golden angle shape position, scale, spacing and movement.</span></div>
           <div><b>02</b><strong>THE ALGORITHM CREATES THE STRUCTURE.</strong><span>Every artwork is deterministic. The same seed and settings always rebuild the same image.</span></div>
-          <div><b>03</b><strong>THE MARKER MAKES IT HUMAN.</strong><span>Precise geometry is rendered with wobble, uneven weight, overdraw, pressure and dryness instead of machine-perfect lines.</span></div>
+          <div><b>03</b><strong>THE MATERIALS BRING THE HUMAN TEXTURE.</strong><span>Choose imperfect marker ink or translucent torn tissue and fine graphite. Wobble, layering and uneven marks give mathematical structures a hand-drawn character.</span></div>
         </div>
         <div class="intro-systems" aria-label="Eight systems"><span>ARRANGE</span><span>SPIRAL</span><span>DIVIDE</span><span>RADIATE</span><span>CONNECT</span><span>GROW</span><span>CONSTRUCT</span><span>SCRIBBLE</span></div>
         <div class="intro-actions"><button id="introEnter" class="intro-enter" type="button">ENTER ALGO/ART →</button><button id="introReveal" type="button">ENTER + REVEAL φ</button></div>
@@ -51,7 +51,7 @@
   <header class="toolbar">
     <div class="brand-lockup">
       <div class="brand">ALGO<span>/</span>ART</div>
-      <div class="brand-meta">generative marker system <b>φ</b></div>
+      <div class="brand-meta">generative drawing system <b>φ</b></div>
     </div>
 
     <div class="formula-strip" aria-hidden="true">
@@ -194,7 +194,7 @@
         <section class="tab-panel active" data-panel="composition" id="panel-composition" role="tabpanel" aria-labelledby="tab-composition">
           <div class="section-title"><span>COMPOSITION</span></div>
           <div class="controls">
-            <div class="control material-render-control"><label for="materialStyle">DRAWING MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option></select><p class="mini-note">Tissue &amp; Graphite keeps the original Watercolour V1 texture and graphite, with muted paint hues derived from the seed, torn edges and selected pale tissue layers. Paper stays the standard cream. Randomise keeps the selected material. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p></div>
+            <div class="control material-render-control"><label for="materialStyle">DRAWING MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option></select><p class="mini-note">Translucent torn tissue and fine graphite, with colours chosen by the seed. Paper stays the standard cream. Randomise keeps the selected material. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
             <div class="mode-picker-wrap">
               <div class="mode-picker-label"><span>SERIES</span></div>

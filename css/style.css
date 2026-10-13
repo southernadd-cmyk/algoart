@@ -1534,3 +1534,16 @@ canvas{display:block;width:100%;height:100%;background:#f5f0e6}
 
 #pngDownload{display:block;box-sizing:border-box;text-align:center;background:var(--orange);color:var(--ink);border:1px solid currentColor;text-decoration:none;font-weight:bold}
 #pngOpen{display:block;margin:10px 0;font-size:12px;text-decoration:underline}
+
+/* Use the phone's width and centre the complete artwork above footer controls. */
+@media(max-width:700px){
+  .canvas-shell{
+    padding:16px max(6px,env(safe-area-inset-right)) 58px max(6px,env(safe-area-inset-left));
+    align-items:center;
+  }
+  .canvas-wrap{
+    width:min(100%,calc((100dvh - var(--header) - 74px)*var(--canvas-ratio,1.4)));
+    max-width:100%;
+    max-height:calc(100dvh - var(--header) - 74px);
+  }
+}
