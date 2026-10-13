@@ -51,7 +51,7 @@ A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
   }
   // Coarse distance field captures structure; fine raster provides pigment grain.
   var grid=20,cols=Math.ceil(w/grid)+2,rows=Math.ceil(h/grid)+2;
-  var fields=new Array(cols*rows),reach=170;
+  var fields=new Array(cols*rows),reach=kit?118:170;
   for(j=0;j<rows;j++)for(i=0;i<cols;i++){
     var x=i*grid,y=j*grid,nearest=Infinity,chosen=-1;
     for(var k=0;k<segments.length;k++){
@@ -66,7 +66,7 @@ A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
     var reachTint=chosen<0?0:clamp(.08+t*.78,0,.86);
     // Pale reserve areas persist, even among several nearby paths.
     var atmospheric=clamp(t*.8+.15*noise(x,y,215,S^141),0,1);
-    var shade=(.11+atmospheric*.87)*reachTint;
+    var shade=kit?(.08+atmospheric*.60)*reachTint:(.11+atmospheric*.87)*reachTint;
     fields[j*cols+i]=[
       lerp(base[0],pigment[0],shade),
       lerp(base[1],pigment[1],shade),
