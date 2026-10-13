@@ -322,6 +322,7 @@ document.querySelectorAll('.mode-card').forEach(function(card){
   });
 });
 
+var mobileExportInitialised=false;
 function syncCanvasFormat(s){
   var portrait=s.orientation==='portrait';
   app.classList.toggle('orientation-portrait',portrait);
@@ -330,7 +331,13 @@ function syncCanvasFormat(s){
   Array.from($('exportScale').options).forEach(function(option){
     var scale=+option.value;
     option.textContent=scale+'× — '+(w*scale)+'×'+(h*scale);
+    option.disabled=mobileQuery.matches&&scale>2;
   });
+  // High-res 2×/3× allocations can exceed mobile WebView memory budgets.
+  if(mobileQuery.matches){
+    if(!mobileExportInitialised||+$('exportScale').value>2)$('exportScale').value='1';
+    mobileExportInitialised=true;
+  }
 }
 
 var dragPreviewTimer=null,dragPreviewPending=false,lastCommittedRenderKey=null;
@@ -888,12 +895,35 @@ function copyAltDescription(){
   }
 }
 
+var exportBusy=false;
+function exportFeedback(message){
+  var label=$('exportStatus');
+  if(label)label.textContent=message;
+}
 function savePNG(){
-  A.exportPNG(Object.assign({},A.readSettings(),{oilRender:oilEnabled(),tissuePaletteVersion:tissuePaletteVersion}),+$('exportScale').value);
+  if(exportBusy)return;
+  exportBusy=true;
+  var button=$('savePanel');
+  button.disabled=true;
+  exportFeedback('Preparing PNG…');
+  A.exportPNG(Object.assign({},A.readSettings(),{
+    oilRender:oilEnabled(),tissuePaletteVersion:tissuePaletteVersion
+  }),+$('exportScale').value).then(function(){
+    exportFeedback('PNG download started.');
+  }).catch(function(error){
+    exportFeedback('PNG export failed: '+error.message);
+  }).finally(function(){
+    exportBusy=false;button.disabled=false;
+  });
 }
 
 function saveSVG(){
-  A.exportSVG(A.readSettings());
+  try{
+    A.exportSVG(A.readSettings());
+    exportFeedback('SVG download started.');
+  }catch(error){
+    exportFeedback('SVG export failed: '+error.message);
+  }
 }
 
 function fallbackCopy(text){
