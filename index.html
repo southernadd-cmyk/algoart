@@ -276,6 +276,10 @@
           <div class="controls">
             <div class="control"><label>PNG size</label><select id="exportScale"><option value="1">1× — 1400×1000</option><option value="2" selected>2× — 2800×2000</option><option value="3">3× — 4200×3000</option></select></div>
             <button class="primary export-big" id="savePanel">DOWNLOAD PNG</button>
+            <div id="pngReady" hidden>
+              <a id="pngDownload" class="export-big" download>DOWNLOAD PNG</a>
+              <a id="pngOpen" target="_blank" rel="noopener">Open PNG to save manually</a>
+            </div>
             <div id="exportStatus" class="share-status" role="status" aria-live="polite"></div>
             <p class="mini-note">On phones, 1× is the default for reliable downloads; 2× is available if your device has enough memory.</p>
             <button class="export-big" id="saveSVG">DOWNLOAD SVG</button>

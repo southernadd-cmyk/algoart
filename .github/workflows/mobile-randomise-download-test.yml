@@ -1,7 +1,9 @@
 name: Mobile randomise repeated-download regression
 on:
   push:
-    branches: [fix/mobile-randomise-repeat-download]
+    branches: [fix/mobile-randomise-repeat-download, fix/mobile-explicit-png-download]
+  pull_request:
+    paths: ['js/export.js', 'js/app.js', 'tests/mobile*', '.github/workflows/mobile-randomise-download-test.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,6 +28,8 @@ jobs:
             sleep 1
           done
           exit 1
+      - name: Explicit mobile PNG links and stale export rejection
+        run: node tests/mobile-png-link.test.mjs
       - name: Android-size PNG randomise PNG without refresh
         run: node tests/mobile-export-paper.test.mjs
       - name: Check export material reproducibility

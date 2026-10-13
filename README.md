@@ -178,10 +178,13 @@ hatching on the default **cream** paper (`#f5f0e6`), and the usual 09:00 / 20:30
 frozen JPEGs and links. Starting 14 October, newly generated Marker gallery
 studies also use that same cream paper. For Tissue v2/v3, the paint lighting
 preserves the visible paper colour instead of washing it out to white.
-On mobile the PNG export defaults to 1× and uses a Blob download rather than
-a memory-heavy base64 data URL; 3× is disabled on small screens. Repeated
-PNG, SVG and plotter SVG downloads retain their link while mobile browsers
-consume the file and use numbered filenames to avoid collisions.
+On mobile PNG export defaults to 1×; 3× is disabled on small screens. Tap
+**Prepare PNG**, then the visible **Download PNG** link. The PNG is encoded
+before the download tap, with no hidden programmatic click. **Open PNG to save
+manually** also opens the prepared image. Changing the artwork or export size
+clears the prepared file. Desktop PNG export remains one click.
+Touch-emulated browser tests cover repeated exports and closing/reopening the
+panel around Randomise; they do not verify Android Chrome’s download manager.
 
 ## Plotter compatibility
 
