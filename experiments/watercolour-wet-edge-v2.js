@@ -69,6 +69,8 @@ function palette(i,r){
 // pigment, geometry, coverage, graphite and RNG sequence remain unchanged.
 // The serration displaces the EXISTING edge: it draws no additional strokes.
 var tissueTornEdges=false;
+// One independent, seeded ragged-edge wavelength and phase per wash.
+var activeEdgeWave={frequency:.39,secondary:1.43,phase:0};
 var tissueLightEnabled=false;
 var lightTissueStats={pieces:0};
 function tornTrace(ctx,edge,half,side){
@@ -81,9 +83,10 @@ function tornTrace(ctx,edge,half,side){
     var divisions=Math.max(1,Math.ceil(dist/step));
     for(var j=1;j<=divisions;j++){
       var t=j/divisions,x=a.x+dx*t,y=a.y+dy*t;
-      var rough=.54*Math.sin(x*.39+y*.61+i*.29)+
-        .28*Math.sin(x*1.43-y*.86+i*1.89)+
-        .18*Math.sin(x*3.11+y*2.77+i*.41);
+      var wave=activeEdgeWave;
+      var rough=.51*Math.sin(x*wave.frequency+y*(wave.frequency*1.53)+wave.phase)+
+        .31*Math.sin(x*wave.secondary-y*(wave.secondary*.61)+wave.phase*1.37)+
+        .18*Math.sin(x*3.11+y*2.77+i*.41+wave.phase);
       // Irregular but short local tears: no uniform sawtooth and no halos.
       var offset=side*depth*rough;
       ctx.lineTo(x+normalX*offset,y+normalY*offset);
@@ -151,43 +154,46 @@ function pathStroke(ctx,pts,width,col,alpha){
   }
   ctx.stroke();ctx.restore();
 }
-function paintRibbon(pig,height,pts,width,r,col,opacity,thickness){
-  // ONE seed-defined ribbon perimeter is used for both the translucent body
-  // and its internally clipped capillary edge. No hard polygon planes.
+function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
+  // Dry edges are sharp by default; damp and wet shapes carry only a
+  // little/the full feather. Each wash gets its own torn-edge frequencies.
+  var edgeState=state||'damp';
+  activeEdgeWave={frequency:r.range(.20,.66),secondary:r.range(.92,2.19),
+    phase:r.range(-Math.PI,Math.PI)};
   if(!ribbon(pig,pts,width*.5,r))return;
   pig.save();
   pig.globalCompositeOperation='multiply';
-  // Bare paper shows through the thin centre; unlike vellum/tissue,
-  // repeated washes absorb more light instead of bleaching their overlaps.
-  pig.globalAlpha=opacity*.33;
+  pig.globalAlpha=opacity*(edgeState==='dry'?.51:edgeState==='damp'?.40:.30);
   pig.fillStyle=col;
   pig.fill();
   pig.save();
-  pig.clip();
+  pig.clip(); // wet rims never sit as artificial dark halos beyond the wash
   pig.strokeStyle=col;
   pig.lineJoin='round';
-  // A single feathered capillary deposit: earlier concentric bands looked
-  // like translucent CAD outlines rather than water carried to a wet edge.
-  // The clip keeps any filter/shadow from escaping the perimeter.
-  var feather=clamp(width*.082,2.3,12);
-  if('filter' in pig)pig.filter='blur('+feather+'px)';
-  else{pig.shadowColor=col;pig.shadowBlur=feather;}
-  pig.lineWidth=clamp(width*.19,3,30);
-  pig.globalAlpha=opacity*.39;
+  var feather=edgeState==='wet'?clamp(width*.073,2,10):
+    edgeState==='damp'?clamp(width*.023,.65,3):0;
+  if(feather>0){
+    if('filter' in pig)pig.filter='blur('+feather+'px)';
+    else{pig.shadowColor=col;pig.shadowBlur=feather;}
+  }
+  pig.lineWidth=edgeState==='dry'?clamp(width*.062,1.25,5.8):
+    clamp(width*(edgeState==='wet'?.19:.11),2,23);
+  pig.globalAlpha=opacity*(edgeState==='dry'?.63:edgeState==='damp'?.37:.30);
   pig.stroke();
-  // Local pigment concentration where the water sits a little longer.
-  // These irregular deposits do not repeat the whole edge contour.
   pig.filter='none';pig.shadowBlur=0;
-  for(var i=1;i<pts.length-1;i++){
-    if(!r.chance(.39))continue;
-    var before=pts[i-1],after=pts[i+1],tangent=angle(before,after);
-    var sign=r.chance(.5)?1:-1;
-    var q=shift(pts[i],tangent+PI/2,sign*width*.44);
-    pig.beginPath();
-    pig.ellipse(q.x,q.y,clamp(width*.065,2,12),
-      clamp(width*.014,.8,2.6),tangent,0,PI*2);
-    pig.globalAlpha=opacity*r.range(.055,.12);
-    pig.fillStyle=col;pig.fill();
+  // Sparse irregular pooling. No second complete contour/parallel CAD line.
+  if(edgeState!=='dry'){
+    for(var i=1;i<pts.length-1;i++){
+      if(!r.chance(edgeState==='wet'?.30:.15))continue;
+      var before=pts[i-1],after=pts[i+1],tangent=angle(before,after);
+      var sign=r.chance(.5)?1:-1;
+      var q=shift(pts[i],tangent+PI/2,sign*width*.44);
+      pig.beginPath();
+      pig.ellipse(q.x,q.y,clamp(width*.07,2,11),
+        clamp(width*.012,.65,2.2),tangent,0,PI*2);
+      pig.globalAlpha=opacity*r.range(.045,.11);
+      pig.fillStyle=col;pig.fill();
+    }
   }
   pig.restore();
   pig.restore();
@@ -326,11 +332,10 @@ function addLightTissue(pig,height,w,h,chains,voids,seed,quality){
   return {pieces:selected.length,candidates:candidates.length,pass:'pale tissue before unchanged pencil details'};
 }
 
-function deposit(pig,height,w,h,chains,voids,seed,quality){
+function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
   var r=A.makeR(seed+'|wet-edge-watercolour-v2'),n=chains.length;
   var allowance=quality<.4?.65:1;
-  // V6's actual compositional skeleton is kept. Broad fluid washes join
-  // existing paths; no triangular paint planes or separate opaque scraps.
+  var stats={dry:0,damp:0,wet:0,chromaticAccents:0,dryDeposits:[]};
   var broad=Math.min(n,Math.ceil(25*allowance));
   for(var i=broad-1;i>=0;i--){
     var ch=chains[i],pts=ch.pts;
@@ -338,11 +343,11 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     var middle=pts[Math.floor(pts.length/2)];
     if(insideVoid(middle,voids)&&r.chance(.85))continue;
     var width=clamp(72+Math.sqrt(ch.length)*r.range(3.0,5.7),75,188);
-    var wash=lerpHex(palette(i,r),r.pick(C.cream),r.range(.14,.48));
-    paintRibbon(pig,null,pts,width,r,wash,r.range(.41,.70),0);
+    var wash=lerpHex(palette(i,r),r.pick(C.cream),r.range(.14,.42));
+    var state=A.makeR(seed+'|water-state-broad-v2e|'+i).chance(.48)?'wet':'damp';
+    paintRibbon(pig,null,pts,width,r,wash,r.range(.41,.70),0,state);
+    stats[state]++;
   }
-  // More concentrated washes preserve the hierarchy established by φ
-  // while depositing subtle, dark wet edges around transparent centres.
   var hero=Math.min(n,Math.ceil(68*allowance));
   for(i=0;i<hero;i++){
     ch=chains[i];pts=ch.pts;
@@ -350,11 +355,24 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     if(insideVoid(pts[0],voids)&&r.chance(.8))continue;
     width=clamp(Math.sqrt(ch.length)*r.range(1.15,2.45),15,i<22?84:56);
     if(i>=broad&&r.chance(.23))continue;
-    var pigment=palette(i,r);
-    paintRibbon(pig,null,pts,width,r,pigment,r.range(.55,.80),0);
+    // Most important structures dry crisply; the remaining washes retain
+    // authentic damp/wet-in-wet edges instead of a universal blur.
+    var stateR=A.makeR(seed+'|water-state-hero-v2e|'+i);
+    var roll=stateR.n(),state=roll<.57?'dry':roll<.82?'damp':'wet';
+    var accent=state==='dry'&&i<28&&stateR.chance(.34);
+    var pigment=accent&&kit.ink.length?stateR.pick(kit.ink):palette(i,r);
+    var opacity=r.range(.55,.80);
+    if(state==='dry'){
+      // Drawing after water transport ensures these true dried edges and
+      // saturated seeded-ink accents survive the wet diffusion phase.
+      stats.dryDeposits.push({pts:pts,width:width,col:pigment,opacity:opacity,
+        key:'hero-'+i});
+      if(accent)stats.chromaticAccents++;
+    }else{
+      paintRibbon(pig,null,pts,width,r,pigment,opacity,0,state);
+    }
+    stats[state]++;
   }
-  // A few partial wet marks add irregular rhythm without turning the sheet
-  // into the angular collage-like planes seen in the earlier v2 draft.
   var details=Math.min(n,Math.ceil(52*allowance));
   for(i=0;i<details;i++){
     ch=chains[i];pts=ch.pts;
@@ -365,9 +383,35 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     var normal=angle(p0,p1)+PI/2;
     var trace=linePath(shift(p0,normal,r.range(-7,7)),
       shift(p1,normal,r.range(-7,7)),dist(p0,p1)*.09,r);
-    paintRibbon(pig,null,trace,r.range(7,21),r,palette(i,r),r.range(.34,.57),0);
+    var detailState=A.makeR(seed+'|water-state-detail-v2e|'+i).chance(.65)?'dry':'damp';
+    if(detailState==='dry'){
+      stats.dryDeposits.push({pts:trace,width:r.range(6,17),
+        col:palette(i,r),opacity:r.range(.35,.60),key:'detail-'+i});
+    }else{
+      paintRibbon(pig,null,trace,r.range(7,21),r,palette(i,r),r.range(.34,.57),0,'damp');
+    }
+    stats[detailState]++;
   }
+  return stats;
 }
+function finishDryAccents(ctx,chains,seed,quality,kit,voids,stats){
+  var rendered=0,pen=A.makeR(seed+'|v2e-fine-dry-ink'),count=Math.min(chains.length,quality<.4?17:34);
+  ctx.save();
+  ctx.globalCompositeOperation='multiply';
+  for(var i=0;i<count;i++){
+    var pts=chains[i].pts;
+    if(pts.length<2||pen.chance(i<13?.39:.70))continue;
+    var middle=pts[Math.floor(pts.length/2)];
+    if(insideVoid(middle,voids))continue;
+    var hue=kit.ink.length?pen.pick(kit.ink):'#625951';
+    var width=clamp(chains[i].width*.17+pen.range(.3,1.15),.65,2.6);
+    pathStroke(ctx,pts,width,hue,pen.range(.27,.52));
+    rendered++;
+  }
+  ctx.restore();
+  return rendered;
+}
+
 // Bring back the distinct pencil/graphite linework lost when dark umbers
 // were converted to seed-tinted pigments. It follows existing vector chains,
 // adds no new composition geometry, and never touches historical v1 output.
@@ -581,16 +625,24 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     pctx.scale(ratio,ratio);
     pctx.fillStyle=kit.paper;
     pctx.fillRect(0,0,w,h);
-    deposit(pctx,null,w,h,chains,meta.voids||[],seed,quality);
+    var washStats=deposit(pctx,null,w,h,chains,meta.voids||[],seed,quality,kit);
     pctx.setTransform(1,0,0,1,0,0);
     var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,chains);
     ctx.save();ctx.imageSmoothingEnabled=true;
     ctx.drawImage(layer,0,0,w,h);
+    for(var i=0;i<washStats.dryDeposits.length;i++){
+      var mark=washStats.dryDeposits[i];
+      paintRibbon(ctx,null,mark.pts,mark.width,
+        A.makeR(seed+'|v2e-dry-outline|'+mark.key),mark.col,mark.opacity,0,'dry');
+    }
+    var dryDetail=finishDryAccents(ctx,chains,seed,quality,kit,meta.voids||[],washStats);
     ctx.restore();
     A.lastWatercolourExperimentStats={
       width:sw,height:sh,chains:chains.length,
       paper:kit.paper,inkColours:kit.ink.slice(),
-      effect:'clipped pooled edges + pale centres + subtractive overlaps + paper-driven diffusion',
+      effect:'V2e selective crisp/damp/wet edges, chromatic dry accents and paper-flow pigment',
+      washStates:{dry:washStats.dry,damp:washStats.damp,wet:washStats.wet},
+      chromaticAccents:washStats.chromaticAccents,dryDetails:dryDetail,
       paperFlow:paperStats,
       referenceMaterial:'Tissue & Graphite V6'
     };
