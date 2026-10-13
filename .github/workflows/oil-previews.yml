@@ -11,6 +11,8 @@ on:
       - 'js/marker.js'
       - 'tests/oil-preview.mjs'
       - 'tests/tissue-colour-browser.mjs'
+      - 'tests/mobile-export-paper.test.mjs'
+      - 'js/export.js'
       - '.github/workflows/oil-previews.yml'
   workflow_dispatch:
 permissions:
@@ -40,6 +42,8 @@ jobs:
         run: node tests/oil-preview.mjs
       - name: Check Randomise preserves the material and Colour controls
         run: node tests/tissue-colour-browser.mjs
+      - name: Verify actual cream paper and real mobile PNG/SVG downloads
+        run: node tests/mobile-export-paper.test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
