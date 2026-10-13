@@ -907,10 +907,24 @@ function savePNG(){
   var button=$('savePanel');
   button.disabled=true;
   exportFeedback('Preparing PNG…');
-  A.exportPNG(Object.assign({},A.readSettings(),{
+  var settings=Object.assign({},A.readSettings(),{
     oilRender:oilEnabled(),tissuePaletteVersion:tissuePaletteVersion
-  }),+$('exportScale').value).then(function(){
-    exportFeedback('PNG download started.');
+  });
+  if(mobileQuery.matches&&+$('exportScale').value===1){
+    // Android loses download permission when the user-click callback returns
+    // before toBlob finishes. Keep the encode and link click in this gesture.
+    try{
+      A.exportPNGDirect(settings,canvas,showGeometry);
+      exportFeedback('PNG download requested. Check Downloads if it does not appear.');
+    }catch(error){
+      exportFeedback('PNG export failed: '+error.message);
+    }finally{
+      exportBusy=false;button.disabled=false;
+    }
+    return;
+  }
+  A.exportPNG(settings,+$('exportScale').value).then(function(){
+    exportFeedback('PNG download requested. Check Downloads if it does not appear.');
   }).catch(function(error){
     exportFeedback('PNG export failed: '+error.message);
   }).finally(function(){
