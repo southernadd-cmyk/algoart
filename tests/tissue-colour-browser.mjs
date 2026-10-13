@@ -41,6 +41,7 @@ try{
   await page.locator('#materialStyle').selectOption('tissue');
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'2');
+  await page.locator('#tab-colour').click();
   await page.locator('#palette').selectOption('mono');
   const mono=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
   assert(mono?.length>0);
