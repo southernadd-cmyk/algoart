@@ -1,0 +1,64 @@
+name: Experimental tissue V5 comparison plates
+
+on:
+  push:
+    branches:
+      - experiment/tissue-hybrid-v5-review
+    paths:
+      - 'js/tissue-hybrid.js'
+      - 'js/oil-material.js'
+      - 'index.html'
+      - 'tests/tissue-hybrid-preview.mjs'
+      - '.github/workflows/tissue-hybrid-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tissue-hybrid-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render-comparisons:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Start test renderer
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tissue-v5.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: Render four matched visual pairs and isolated-feature test
+        run: node tests/tissue-hybrid-preview.mjs
+      - name: Verify historic tissue regressions
+        run: npm run test:tissue-colour
+      - name: Publish comparison PNGs on review branch only
+        if: success()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/tissue-review/*.png
+          if ! git diff --cached --quiet; then
+            git commit -m 'Add test-only V4 and hybrid V5 comparison plates [skip ci]'
+            git push origin HEAD:experiment/tissue-hybrid-v5-review
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tissue-v4-v5-comparison-plates
+          path: tests/tissue-review/*.png
+          retention-days: 14
