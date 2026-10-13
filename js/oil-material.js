@@ -113,9 +113,15 @@ function ribbon(ctx,pts,half,r){
     // Trace both loops continuously; for open paths retain the exact V5
     // torn-edge treatment already approved.
     tornTrace(ctx,closed?left.concat(left[0]):left,half,1);
-    ctx.lineTo(right[n-1].x,right[n-1].y);
-    var backward=right.slice().reverse();
-    tornTrace(ctx,closed?backward.concat(backward[0]):backward,half,-1);
+    if(closed){
+      // Join adjacent inner/outer corners, never opposite corners.
+      // Opposite-corner closure would introduce a diagonal false pigment plane.
+      ctx.lineTo(right[0].x,right[0].y);
+      tornTrace(ctx,[right[0]].concat(right.slice().reverse()),half,-1);
+    }else{
+      ctx.lineTo(right[n-1].x,right[n-1].y);
+      tornTrace(ctx,right.slice().reverse(),half,-1);
+    }
   }else{
     for(i=1;i<n;i++){
       var m=point(left[i-1],left[i],.5);
