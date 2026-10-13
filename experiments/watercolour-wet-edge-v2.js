@@ -159,7 +159,7 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness){
   pig.globalCompositeOperation='multiply';
   // Bare paper shows through the thin centre; unlike vellum/tissue,
   // repeated washes absorb more light instead of bleaching their overlaps.
-  pig.globalAlpha=opacity*.27;
+  pig.globalAlpha=opacity*.33;
   pig.fillStyle=col;
   pig.fill();
   pig.save();
@@ -173,7 +173,7 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness){
   if('filter' in pig)pig.filter='blur('+feather+'px)';
   else{pig.shadowColor=col;pig.shadowBlur=feather;}
   pig.lineWidth=clamp(width*.19,3,30);
-  pig.globalAlpha=opacity*.47;
+  pig.globalAlpha=opacity*.39;
   pig.stroke();
   // Local pigment concentration where the water sits a little longer.
   // These irregular deposits do not repeat the whole edge contour.
@@ -459,14 +459,24 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
   var frame=ctx.getImageData(0,0,w,h),px=frame.data;
   var total=w*h;
   var source=new Float32Array(total*3),next=new Float32Array(total*3);
-  var tooth=new Float32Array(total),water=new Float32Array(total);
+  var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total);
   var seedValue=A.hash(seed+'|paper-flow-v3')>>>0,pi=0;
   for(var y=0;y<h;y++)for(var x=0;x<w;x++,pi++){
-    var i=pi*4,j=pi*3,loaded=0;
+    var j=pi*3,loaded=0;
+    // The paper's fibres distort the advancing wet interface by a few
+    // millimetres on the logical sheet. Two smoothed scales give ragged
+    // wet edges without introducing independent shapes or jagged pixels.
+    var wx=(paperNoise(x,y,Math.max(6,17*ratio),seedValue^0x5821)-.5)*13*ratio+
+      (paperNoise(x,y,Math.max(15,56*ratio),seedValue^0x6522)-.5)*12*ratio;
+    var wy=(paperNoise(x,y,Math.max(6,17*ratio),seedValue^0x7931)-.5)*13*ratio+
+      (paperNoise(x,y,Math.max(15,56*ratio),seedValue^0x8942)-.5)*12*ratio;
+    var sx=clamp(x+wx,0,w-1.0001),sy=clamp(y+wy,0,h-1.0001);
+    var x0=Math.floor(sx),y0=Math.floor(sy),tx=sx-x0,ty=sy-y0;
+    var q00=(y0*w+x0)*4,q01=q00+4,q10=q00+w*4,q11=q10+4;
     for(var c=0;c<3;c++){
-      // Lambert/Beer-inspired optical density: preserve actual seeded hue,
-      // darken overlapping layers and avoid inventing new pigment colours.
-      var density=Math.max(0,Math.log((paper[c]+1)/(px[i+c]+1)));
+      var sample=mix(mix(px[q00+c],px[q01+c],tx),
+        mix(px[q10+c],px[q11+c],tx),ty);
+      var density=Math.max(0,Math.log((paper[c]+1)/(sample+1)));
       source[j+c]=density;if(density>loaded)loaded=density;
     }
     var broad=paperNoise(x,y,Math.max(9,31*ratio),seedValue^0x7151);
@@ -476,6 +486,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     // heavily pigment lodges in the fibre network.
     tooth[pi]=clamp(.21+.57*broad+.17*small+.05*fibre,.12,.95);
     water[pi]=clamp(loaded*3.1,0,1);
+    fibres[pi]=paperNoise(x,y,Math.max(7,21*ratio),seedValue^0x9331);
   }
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
@@ -483,16 +494,19 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     for(y=0;y<h;y++)for(x=0;x<w;x++){
       pi=y*w+x;var k=pi*3,v=source[k],u=source[k+1],z=source[k+2];
       var here=tooth[pi],wet=water[pi];
-      var stretch=paperNoise(x,y,Math.max(7,21*ratio),seedValue^0x9331);
       var sum0=0,sum1=0,sum2=0;
+      var stride=round<2?2:1; // long wet capillaries followed by fine settling
       // Fibre direction favours east/west in some regions and north/south
       // in others; the same interface gets the same flux from both sides.
       for(var side=0;side<4;side++){
-        var nx=x+(side===0?1:side===1?-1:0);
-        var ny=y+(side===2?1:side===3?-1:0);
+        var nx=x+(side===0?stride:side===1?-stride:0);
+        var ny=y+(side===2?stride:side===3?-stride:0);
         if(nx<0||ny<0||nx>=w||ny>=h)continue;
         var q=ny*w+nx;
-        var anis=side<2?(.80+.32*stretch):(.80+.32*(1-stretch));
+        // Interface mobility is symmetric: pigment is redistributed,
+        // not created, when a pair of paper fibres exchange wash water.
+        var stretch=(fibres[pi]+fibres[q])*.5;
+        var anis=side<2?(.74+.48*stretch):(.74+.48*(1-stretch));
         var transport=(.067+.045*(here+tooth[q]))*anis*
           (.53+.47*Math.max(wet,water[q]));
         var other=q*3;
@@ -518,17 +532,17 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     if(cx<20||cy<20||cx>=w-20||cy>=h-20)continue;
     var index=(cy*w+cx)*3;
     if(Math.max(source[index],source[index+1],source[index+2])<.085)continue;
-    var radius=clamp(Math.sqrt(ch.length)*rand.range(.22,.48)*ratio,7,19);
+    var radius=clamp(Math.sqrt(ch.length)*rand.range(.30,.65)*ratio,10,30);
     if(drops.some(function(d){return Math.hypot(cx-d.x,cy-d.y)<radius*2.7}))continue;
     drops.push({x:cx,y:cy,r:radius,phase:rand.range(0,Math.PI*2)});
   }
   for(y=0;y<h;y++)for(x=0;x<w;x++){
     pi=y*w+x;var p=pi*3,out=pi*4;
     var grit=(hashNoise(x,y,seedValue^0x4251)-.5);
-    var scale=(tooth[pi]-.5)*.29+grit*.13;
+    var scale=(tooth[pi]-.5)*.58+grit*.17;
     // Pigment catches in the most absorbent paper hollows and separates
     // into small granules. Paper without pigment remains exactly cream.
-    var settle=clamp(1+scale,.78,1.23);
+    var settle=clamp(1+scale,.69,1.37);
     var bloom=1;
     for(var d=0;d<drops.length;d++){
       var drop=drops[d],dx=x-drop.x,dy=y-drop.y;
@@ -538,8 +552,8 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
         .07*Math.sin(theta*9-drop.phase*1.3);
       var radial=Math.hypot(dx,dy)/(drop.r*(1+ripple));
       // A soft low-concentration interior and a weak, irregular outer rim.
-      bloom*=1-.17*Math.exp(-Math.pow(radial/.67,4))+
-        .075*Math.exp(-Math.pow((radial-.98)/.21,2));
+      bloom*=1-.27*Math.exp(-Math.pow(radial/.67,4))+
+        .10*Math.exp(-Math.pow((radial-.98)/.21,2));
     }
     for(c=0;c<3;c++){
       var amount=source[p+c]*settle*bloom;
@@ -548,10 +562,10 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
-  return {paperModel:'anisotropic capillary pigment transfer + paper absorption',
+  return {paperModel:'seeded fibre-warped edges + anisotropic capillary flow + paper absorption',
     diffusionPasses:passes,waterBlooms:drops.length};
 }
-function qualityForFlow(w,h){return w*h>1100000?2:4}
+function qualityForFlow(w,h){return w*h>1100000?3:5}
 A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
   if(!kit||kit.revision!==6)
     throw new Error('Wet-edge experiment requires current V6 seeded tissue ink kit');
