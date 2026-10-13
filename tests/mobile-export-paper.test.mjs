@@ -131,7 +131,7 @@ try{
   const secondPlotter=await checkDownload('#savePlotter','.svg','tissue-mobile-plotter-repeat');
   assert.match(secondPlotter.filename,/ \(2\)\.svg$/);
   const thirdPng=await checkDownload('#savePanel','.png','tissue-mobile-landscape-third');
-  assert.match(thirdPng.filename,/ \(3\)\.png$/);
+  assert.match(thirdPng.filename,/ \(2\)\.png$/,'Second export for latest randomised seed needs a distinct filename');
   const liveDownloadLinks=await page.locator('a[download]').count();
   assert(liveDownloadLinks>=9,'Mobile download anchors must remain attached for browser consumption');
   console.log('PASS Tissue mobile repeated PNG, SVG and plotter downloads without reload',
