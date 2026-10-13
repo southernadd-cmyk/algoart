@@ -163,8 +163,13 @@ duplicate-safe gallery merging and the combined 14-work archive. The separate
 browser workflow `watercolor-tests.yml` renders and verifies four real studies.
 Historical gallery entries remain byte-for-byte unchanged. The 14 October
 cutover is in `automation/tissue-edition.mjs`: the two portrait and two landscape
-new Tissue editions use the full seeded-colour palette on the default neutral
-paper, and the usual 09:00 / 20:30 social slots use the same frozen JPEGs and links.
+new Tissue editions use the full seeded-colour palette on the default **cream**
+paper (`#f5f0e6`), and the usual 09:00 / 20:30 social slots use the same
+frozen JPEGs and links. Starting 14 October, newly generated Marker gallery
+studies also use that same cream paper. For Tissue v2, the paint lighting
+preserves the visible paper colour instead of washing it out to white.
+On mobile the PNG export defaults to 1× and uses a Blob download rather than
+a memory-heavy base64 data URL; 3× is disabled on small screens.
 
 ## Plotter compatibility
 
