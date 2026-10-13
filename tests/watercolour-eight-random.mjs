@@ -1,4 +1,4 @@
-// Eight fresh, genuinely random V2g studies — ONE from each V8 engine.
+// Eight fresh, genuinely random V2h studies — ONE from each V8 engine.
 // This is a screenshot/artwork sampler, not a production publishing path.
 // Each image and its full seed/settings are saved for deterministic reproduction.
 import { chromium } from 'playwright';
@@ -27,7 +27,7 @@ function randInt(low,high){return low+randomBytes(4).readUInt32BE(0)%(high-low+1
 const palettes=['golden','earth','warm','mono'];
 const scenarios=engines.map((engine,index)=>({
   ...engine,
-  seed:'WC-V2G-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
+  seed:'WC-V2H-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
   elements:randInt(18,42),
   density:randInt(43,73),
   complexity:randInt(43,81),
@@ -96,6 +96,7 @@ try{
     assert(result.material.chromaticAccents>=0);
     assert(result.material.filledPools>=0&&result.material.mixedPigmentPools>=0);
     assert.equal(result.material.filledPools,result.material.mixedPigmentPools);
+    assert(result.material.microBleedCount>0,'No microbleed on '+scenario.mode);
     const png=Buffer.from(result.data,'base64');
     assert(png.length>15000,'Unexpected blank or tiny png: '+scenario.mode);
     const filename=String(i+1).padStart(2,'0')+'-'+scenario.mode+'-'+scenario.orientation+'.png';
@@ -104,7 +105,8 @@ try{
       width:result.width,height:result.height,pngBytes:png.length,
       geometry:result.meta,paperFlow:result.material.paperFlow,
       washWidths:result.material.washWidths,chromaticAccents:result.material.chromaticAccents,
-      filledPools:result.material.filledPools,mixedPigmentPools:result.material.mixedPigmentPools});
+      filledPools:result.material.filledPools,mixedPigmentPools:result.material.mixedPigmentPools,
+      microBleedCount:result.material.microBleedCount});
     console.log('RENDERED',filename,png.length+' bytes',
       'seed='+scenario.seed,'paths='+result.material.chains,
       'washStates='+JSON.stringify(result.material.washStates),
@@ -114,12 +116,12 @@ try{
   assert.equal(new Set(manifest.map(x=>x.seed)).size,8);
   assert.equal(errors.length,0,'Browser errors: '+errors.join('; '));
   await writeFile(output+'/manifest.json',JSON.stringify({
-    description:'8 unique random studies in experimental Watercolour V2g',
-    material:'watercolour-v2g-paper-diffusion',rendererVersion:8,
+    description:'8 unique random studies in experimental Watercolour V2h',
+    material:'watercolour-v2h-paper-diffusion',rendererVersion:8,
     revision:'experimental branch only; no production changes',
     samples:manifest
   },null,2));
-  console.log('PASS: 8 new independent, reproducible V2g watercolour PNGs');
+  console.log('PASS: 8 new independent, reproducible V2h watercolour PNGs');
 }finally{
   await browser.close();
 }
