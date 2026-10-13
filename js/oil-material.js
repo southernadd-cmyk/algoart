@@ -15,6 +15,18 @@ var C={
   olive:['#6d7e67','#929788','#a6a895'],
   ochre:['#bc803f','#ce9a5b','#a9623e','#ddba80']
 };
+// The first material revision is frozen for all historical share links.
+// Revised material derives *every* coloured layer from recorded Marker inks.
+var originalC=C;
+function coloursForInk(kit){
+  return {
+    cream:kit.cream,
+    blue:kit.ink,
+    umber:kit.deep,
+    olive:kit.soft,
+    ochre:kit.ink.length>1?kit.ink.slice(1).concat(kit.ink[0]):kit.ink
+  };
+}
 function clamp(x,a,b){return Math.min(b,Math.max(a,x))}
 function mix(a,b,t){return a+(b-a)*t}
 function lerpHex(a,b,t){
@@ -251,7 +263,11 @@ function shade(pig,height,out,w,h,seed){
   }
   out.putImageData(source,0,0);
 }
-A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality){
+A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
+  // Keep legacy C byte-identical for v1; protect against any synchronous
+  // invocation after a seeded-material render by restoring it in finally.
+  C=kit?coloursForInk(kit):originalC;
+  try{
   // Work buffers are resolution-adaptive, but every pixel is re-rasterised
   // deterministically; no random browser texture or remote assets.
   var ratio=quality<.30?.32:(quality<.65?.53:(quality<1.5?.78:1.18));
@@ -260,7 +276,7 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality){
   var pc=layer(),hc=layer(),final=layer();
   var pctx=pc.getContext('2d'),hctx=hc.getContext('2d'),fctx=final.getContext('2d');
   pctx.scale(ratio,ratio);hctx.scale(ratio,ratio);
-  if(A.oilSurface)A.oilSurface(pctx,w,h,chains,seed,quality);
+  if(A.oilSurface)A.oilSurface(pctx,w,h,chains,seed,quality,kit);
   else{pctx.fillStyle='#f2ebdd';pctx.fillRect(0,0,w,h)}
   hctx.fillStyle='rgb(13,13,13)';hctx.fillRect(0,0,w,h);
   var voids=meta.voids||[];
@@ -270,6 +286,9 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality){
   shade(pctx,hctx,fctx,sw,sh,seed);
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);ctx.restore();
-  A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',version:4};
+  A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
+    version:4,tissuePaletteVersion:kit?2:1,
+    ...(kit?{inkColours:kit.ink.slice()}:{} )};
+  }finally{C=originalC}
 };
 })(window.AlgoArt);
