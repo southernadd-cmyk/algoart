@@ -29,7 +29,7 @@ for(const orientation of ['landscape','portrait']){
     assert.equal(e.material,'watercolor');
     assert.equal(e.orientation,orientation);
     assert.equal(e.rendererVersion,8);
-    assert.equal(new URL(e.shareUrl).searchParams.get('tissue'),'3');
+    assert.equal(new URL(e.shareUrl).searchParams.get('tissue'),'4');
     assert.equal(new URL(e.shareUrl).searchParams.has('watercolor'),false);
     assert.equal(e.settings.paper,'#f5f0e6','New Tissue editions must use default neutral paper');
     assert.equal(new URL(e.shareUrl).searchParams.get('seed'),e.seed);
@@ -60,7 +60,7 @@ try{
    await page.goto(local.href,{waitUntil:'domcontentloaded'});
    await page.waitForFunction(seed=>{
      const q=new URLSearchParams(location.search);
-     return q.get('seed')===seed && q.get('tissue')==='3' &&
+     return q.get('seed')===seed && q.get('tissue')==='4' &&
        document.querySelector('#statsText')?.textContent?.endsWith('/ TISSUE & GRAPHITE');
    },e.seed,{timeout:60000});
    assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
