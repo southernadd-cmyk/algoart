@@ -5,7 +5,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {chromium} from 'playwright';
-const day='2099-02-06';
+// Exercise the exact first seeded-colour publication day, not a generic future date.
+const day='2026-10-14';
 const site=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const outDir=path.resolve('watercolor-check-results');
 await fs.mkdir(outDir,{recursive:true});
