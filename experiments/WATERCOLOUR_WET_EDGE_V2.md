@@ -36,3 +36,19 @@ node tests/watercolour-wet-edge-preview.mjs
 The test writes four paired browser-rendered PNG studies to `watercolour-wet-edge-previews/` (ignored/uncommitted). Use the same seeds for subsequent iterations. When imagery is approved, integrate as a **third material choice** named Watercolour while preserving all archival Tissue links and exact V6 pixels.
 
 Suggested visual-review questions: Are edges naturally pooled but not outlined? Is the interior still too solid? Do overlaps deepen without becoming mud? Does Recursive Divisions stop resembling a hard collage? Does the fixed cream paper survive? Is the pigment texture detailed enough at full-size export?
+
+## V2c/V2d — paper-driven fluid diffusion (13 October 2026)
+
+The V2b feathered edge still looked too much like stacked translucent ribbons,
+particularly on Recursive Divisions. We therefore added a **seed-deterministic
+paper-flow pass** to the isolated experiment only:
+
+1. Recover the actual painted RGB as three optical pigment densities (Beer–Lambert-inspired), retaining seed-selected hues and multiply-darkened overlaps.
+2. Warp wash boundaries gently with two smoothly varying fibre/wetness scales. This roughens otherwise uniformly straight edges; it is not a global blurred filter.
+3. Exchange pigment locally through multiple 4-neighbour capillary passes with symmetric, anisotropic transport driven by the paper's absorbency and moisture.
+4. Deposit more pigment into absorbent paper valleys and granular tooth. Unpainted pixels return to exactly the standard `#f5f0e6` paper.
+5. Seed up to four small clear-water backruns inside already-painted areas (lightened irregular centres, slight pigment rings). Their positions depend on existing V8 paths, not random new focal shapes.
+
+The V2d pass increases edge displacement and pigment granulation relative to the initially too-subtle V2c prototype; the visual result is distinctly more wavy, diffused and paper-bound, especially in geometric modes. Compare the four rendered pairs in the [successful CI image artifact](https://github.com/southernadd-cmyk/algoart/actions/runs/38466869493). Both a repeated wet-render and a fresh production V6 replay are pixel-identical for their respective same-seed outputs.
+
+This is still a visual experiment: currently it can soften structured geometry more than desired. Evaluate the image at normal viewing size **and** export-scale detail before considering a third Material option. No change is authorised for production, current V6, gallery, social, or historic links.
