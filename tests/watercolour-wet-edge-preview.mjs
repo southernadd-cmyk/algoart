@@ -78,6 +78,8 @@ try{
         dryDetails:A.lastWatercolourExperimentStats?.dryDetails,
         widthCaps:A.lastWatercolourExperimentStats?.widthCaps,
         washWidths:A.lastWatercolourExperimentStats?.washWidths,
+        filledPools:A.lastWatercolourExperimentStats?.filledPools,
+        mixedPigmentPools:A.lastWatercolourExperimentStats?.mixedPigmentPools,
         width:left.width,height:left.height,
         tissueBytes:tissueBefore.length,wetBytes:experimentalBefore.length,
         different:tissueBefore!==experimentalBefore,
@@ -101,6 +103,8 @@ try{
     assert.equal(result.widthCaps.hero,67);
     assert(result.washWidths.broadMax<=127);
     assert(result.washWidths.heroMax<=67);
+    assert(result.filledPools>=0&&result.mixedPigmentPools>=0);
+    assert.equal(result.filledPools,result.mixedPigmentPools);
     assert.equal(result.different,true,'Watercolour should visually differ from V6');
     assert.equal(result.paper,'#f5f0e6');
     assert.equal(result.rendererVersion,8);
