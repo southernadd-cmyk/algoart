@@ -20,6 +20,7 @@ try{
   }
   await open({watercolor:1});
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
+  assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent torn tissue and fine graphite\./);
   assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),1,
     'Archived v1 URL must use original pigment version');
   await page.locator('#randomise').click();
@@ -34,12 +35,14 @@ try{
   assert.notEqual(page.url(),firstURL,'Randomise should change the composition');
   assert(second?.length>0);
   await page.locator('#materialStyle').selectOption('marker');
+  assert.match(await page.locator('#materialStyleNote').innerText(),/^Marker ink with hand-drawn wobble, pressure and imperfect strokes\./);
   await page.locator('#randomise').click();
   assert.equal(await page.locator('#materialStyle').inputValue(),'marker',
     'Marker must remain selected after Randomise');
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
   await page.locator('#materialStyle').selectOption('tissue');
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
+  assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent torn tissue and fine graphite\./);
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'6');
   await page.locator('#tab-colour').click();
   await page.locator('#palette').selectOption('mono');
@@ -48,6 +51,8 @@ try{
   assert(mono.every(c=>/^#([a-f0-9]{2})\1\1$/i.test(c)),
     'Changing Colour → Monochrome must give truly monochrome Tissue inks');
   await open({tissue:2,pal:'cold'});
+  assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent torn tissue and fine graphite\./,
+    'Shared Tissue links should restore the matching note');
   assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),2,
     'Existing tissue=2 share links must retain original output');
   await open({tissue:3,pal:'cold'});

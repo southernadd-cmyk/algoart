@@ -187,6 +187,14 @@ function applySettings(settings){
 // keep the original fixed pigment palette for archival reproducibility.
 var tissuePaletteVersion=6;
 function oilEnabled(){return $('materialStyle').value==='tissue'}
+function syncMaterialNote(){
+  var note=$('materialStyleNote');
+  if(!note)return;
+  note.textContent=(oilEnabled()
+    ?'Translucent torn tissue and fine graphite.'
+    :'Marker ink with hand-drawn wobble, pressure and imperfect strokes.')+
+    ' PNG saves the visible material; SVG and plotter exports retain the original marker paths.';
+}
 function renderArtwork(target,settings,scale,reveal){
   return oilEnabled()?A.renderOil(target,settings,scale,reveal,tissuePaletteVersion):A.render(target,settings,scale,reveal);
 }
@@ -363,6 +371,7 @@ function finishDragPreview(){
 }
 
 function regenerate(){
+  syncMaterialNote();
   clearPreparedPNG();
   if($('plotterPreview'))clearPlotterPreview();
   clearTimeout(dragPreviewTimer);dragPreviewTimer=null;dragPreviewPending=false;
