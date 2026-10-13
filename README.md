@@ -89,9 +89,11 @@ V8 expands Growth Systems with seeded golden-angle root directions, entries at t
 **Drawing material** in Compose currently offers two choices:
 
 - **Marker drawing:** the established deterministic ALGO/ART marker work.
-- **Tissue & Graphite:** the original material formerly described in the UI
-  as Watercolor v1. It uses translucent colour, layered pigment planes,
-  textured paper and dark, graphite-like structural marks.
+- **Tissue & Graphite:** the layered translucent colour and darker
+  graphite-like structural marks now take their hues from the **actual seeded
+  Marker strokes**, respecting Palette, Saturation, Brightness, Colour count
+  and Paper. **Randomise keeps the selected drawing material** while changing
+  the composition, controls and seed.
 
 Both choices preserve the same seed, φ geometry, orientation, composer controls
 and the original V1–V8 marker vectors. Switching material does not create a
@@ -104,7 +106,10 @@ change the original material.
 
 - **Legacy links and archives:** `?watercolor=1` and prototype `?oil=1`
   deliberately continue selecting **Tissue & Graphite**, producing the same
-  pixels as before. The historical internal material name `watercolor`,
+  historical fixed-palette pixels as before. New Tissue & Graphite artworks
+  use **`?tissue=2`** for seeded colour, without changing V8 seed calculations.
+  Randomising an old artwork starts a new seed-driven Tissue image.
+  The historical internal material name `watercolor`,
   archive IDs, seeds, queue paths and publishing schedule are unchanged.
   Do not recategorise historical archives, overwrite saved media, or retroactively
   repaint past works. The public-facing editor, new gallery labels and new
@@ -121,9 +126,12 @@ change the original material.
 - **Torn Paper:** the earlier collage prototype stays archived and disabled
   in `experiments/torn-paper-v1.js`. Opaque impasto/oil remains a separate
   possible future style.
-- **Tests:** `npm run test:oil-render` is intentionally still named after
-  the original internal painter; it checks deterministic materials and exact
-  marker restoration, alongside the archive and social publishing suites.
+- **Tests:** `npm run test:oil-render` verifies the unchanged historical
+  material; `npm run test:tissue-colour` verifies seeded Marker inks, real
+  palette variation, determinism and unchanged geometry. The real-browser
+  regression confirms that Randomise never changes the selected material.
+  Existing daily social jobs intentionally keep their historical `?watercolor=1`
+  material until a separate, archive-safe publishing migration.
 
 ## Daily watercolor publication
 
