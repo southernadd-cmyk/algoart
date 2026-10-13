@@ -734,7 +734,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
-  return {paperModel:'V2g non-tiled rotated domain-warped multiscale tooth + visible paper fibre shading',
+  return {paperModel:'V2g non-tiled rotated tooth + visible fibre shading + capillary flow',
     diffusionPasses:passes,waterBlooms:drops.length};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
