@@ -810,6 +810,7 @@ var NETWORK_RENDER_TUNING=Object.freeze({
   })
 });
 
+// Old landscape states must retain exactly the same RNG keys as V1–V6.
 // V1–V8 are locked: preserve their exact settings/RNG keys for archived art.
 // From V9, paper colour is a substrate choice, not a composition parameter.
 // Replacing it with the existing cream default keeps cream V8 images identical
