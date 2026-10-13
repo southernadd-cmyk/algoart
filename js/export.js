@@ -2,24 +2,53 @@ window.AlgoArt=window.AlgoArt||{};
 (function(A){
 'use strict';
 
+// Blob URLs avoid base64 copies of multi-megapixel PNGs on mobile.
+// Attach the link to the document: some Android browsers ignore detached
+// anchors. Keep the blob alive long enough for the download to begin.
+A.downloadBlob=function(blob,filename){
+  if(!blob||!blob.size)throw new Error('Export file could not be encoded.');
+  var url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download=filename;link.style.display='none';
+  document.body.appendChild(link);
+  try{link.click()}finally{
+    link.remove();
+    setTimeout(function(){URL.revokeObjectURL(url)},60000);
+  }
+};
+
 A.exportPNG=function(settings,scale){
   scale=Number(scale)||1;
+  var pixels=(settings.orientation==='portrait'?1000:1400)*
+    (settings.orientation==='portrait'?1400:1000)*scale*scale;
+  if(!Number.isFinite(scale)||scale<1||pixels>14000000)
+    return Promise.reject(new Error('PNG resolution is too large. Choose a smaller size.'));
   var out=document.createElement('canvas');
-  // Tissue & Graphite is display/export metadata only. Never allow this key into the
-  // published renderer's seed/JSON settings, including when unchecked.
   var compositionSettings=Object.assign({},settings);
   delete compositionSettings.oilRender;
   delete compositionSettings.tissuePaletteVersion;
-  if(settings.oilRender){
-    A.renderOil(out,compositionSettings,scale,false,settings.tissuePaletteVersion===2?2:1);
-  }else{
-    A.render(out,compositionSettings,scale,false);
-  }
-
-  var link=document.createElement('a');
-  link.download='algoart-'+settings.seed+'-'+settings.mode+(settings.orientation==='portrait'?'-portrait':'')+(settings.oilRender?'-tissue-graphite':'')+'-'+scale+'x.png';
-  link.href=out.toDataURL('image/png');
-  link.click();
+  var filename='algoart-'+settings.seed+'-'+settings.mode+
+    (settings.orientation==='portrait'?'-portrait':'')+
+    (settings.oilRender?'-tissue-graphite':'')+'-'+scale+'x.png';
+  // Paint synchronously but encode off the main thread where supported.
+  // This avoids holding a very large PNG data URL and its base64 clone.
+  return new Promise(function(resolve,reject){
+    try{
+      if(settings.oilRender)
+        A.renderOil(out,compositionSettings,scale,false,settings.tissuePaletteVersion===2?2:1);
+      else A.render(out,compositionSettings,scale,false);
+      if(typeof out.toBlob!=='function')
+        throw new Error('This browser cannot encode PNG downloads.');
+      out.toBlob(function(blob){
+        // Release the offscreen raster as soon as encoding completes.
+        out.width=1;out.height=1;
+        if(!blob){reject(new Error('PNG encoding failed. Try 1× resolution.'));return}
+        try{A.downloadBlob(blob,filename);resolve({filename:filename,bytes:blob.size})}
+        catch(error){reject(error)}
+      },'image/png');
+    }catch(error){
+      out.width=1;out.height=1;reject(error);
+    }
+  });
 };
 
 function esc(v){
@@ -70,12 +99,8 @@ A.exportSVG=function(settings){
   ].join('');
 
   var blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
-  var url=URL.createObjectURL(blob);
-  var link=document.createElement('a');
-  link.download='algoart-'+settings.seed+'-'+settings.mode+(settings.orientation==='portrait'?'-portrait':'')+'.svg';
-  link.href=url;
-  link.click();
-  setTimeout(function(){URL.revokeObjectURL(url)},1000);
+  A.downloadBlob(blob,'algoart-'+settings.seed+'-'+settings.mode+
+    (settings.orientation==='portrait'?'-portrait':'')+'.svg');
 };
 
 })(window.AlgoArt);

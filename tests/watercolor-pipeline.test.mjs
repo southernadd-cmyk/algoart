@@ -44,6 +44,13 @@ const meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),
 assert.equal(meta.entries.length,4);
 assert.equal(meta.entries.filter(e=>e.orientation==='portrait'&&e.material==='watercolor').length,2);
 assert.equal(meta.entries.filter(e=>e.orientation==='landscape'&&e.material==='watercolor').length,2);
+// The standard Marker gallery must also keep the original cream paper on
+// new days; its rendering material, seed algorithm and archive IDs are intact.
+run('automation/generate-social.mjs',{
+  SOCIAL_ORIENTATION:'landscape',SOCIAL_MATERIAL:'marker',SOCIAL_COUNT:'1'
+});
+const markerQueue=JSON.parse(await fs.readFile(path.resolve('social-output',day,'queue.json'),'utf8'));
+assert.equal(markerQueue.entries[0].settings.paper,'#f5f0e6');
 const b=await chromium.launch();
 const page=await b.newPage({viewport:{width:1460,height:980}});
 try{
