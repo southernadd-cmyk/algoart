@@ -336,11 +336,15 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   shade(pctx,hctx,fctx,sw,sh,seed,kit);
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);
+  // V5 review only; V4 and all historic output remain unchanged.
+  var hybridStats=kit&&kit.revision===5&&A.tissueHybridOverlay?
+    A.tissueHybridOverlay(ctx,w,h,chains,seed,kit):null;
   var graphitePaths=kit&&kit.revision===3?graphiteOverlay(ctx,chains,seed,quality):0;
   ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
     version:4,tissuePaletteVersion:kit?kit.revision:1,
-    ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} )};
+    ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths,
+      ...(hybridStats?{hybridStats:hybridStats}:{} )}:{} )};
   }finally{C=originalC}
 };
 })(window.AlgoArt);
