@@ -6,6 +6,8 @@ const SITE_ORIGIN = 'https://southernadd-cmyk.github.io';
 const SITE_PATH = '/algoart';
 const SITE_URL = SITE_ORIGIN + SITE_PATH;
 const GALLERY_URL = SITE_URL + '/gallery';
+const GALLERY_DESCRIPTION = 'A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing and Tissue & Graphite.';
+const FEED_DESCRIPTION = 'Daily deterministic golden-ratio generative artworks from ALGO/ART in Marker drawing and Tissue & Graphite.';
 
 function dateInZone(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -149,7 +151,7 @@ function dayPage(queue) {
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="${canonical}">
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
-<link rel="stylesheet" href="../gallery.css">
+<link rel="stylesheet" href="../gallery.css?v=20261013-site-quality">
 <link rel="alternate" type="application/rss+xml" title="ALGO/ART Daily Gallery" href="../feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ALGO/ART">
@@ -185,7 +187,7 @@ function dayPage(queue) {
     <span class="section-no">${String(entries.length + 1).padStart(2, '0')}</span>
     <div>
       <h2>MATHEMATICS SETS THE RULES.<br>THE MARKER BREAKS THEM.</h2>
-      <p>ALGO/ART separates composition from rendering. φ influences placement, scale, hierarchy, negative space and trajectories; the marker engine adds wobble, pressure, overdraw and dryness. Every image above is deterministic: the exact seed and settings can be reopened and changed in the generator.</p>
+      <p>ALGO/ART separates composition from rendering. φ influences placement, scale, hierarchy, negative space and trajectories. The chosen material adds hand-drawn texture, from marker wobble and overdraw to translucent torn tissue and graphite. Every image above is deterministic: the exact seed and settings can be reopened and changed in the generator.</p>
       <a class="remix primary" href="../../">MAKE YOUR OWN →</a>
     </div>
   </section>
@@ -211,7 +213,7 @@ function archivePage(archive) {
 
   const latest = days[0];
   const latestImage = latest ? `${GALLERY_URL}/${latest.date}/${latest.cover}` : SITE_URL + '/social-card.svg';
-  const description = 'A growing daily archive of deterministic golden-ratio generative artworks created by ALGO/ART and rendered with imperfect digital marker strokes.';
+  const description = GALLERY_DESCRIPTION;
 
   const structured = {
     '@context': 'https://schema.org',
@@ -237,7 +239,7 @@ function archivePage(archive) {
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="${GALLERY_URL}/">
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-<link rel="stylesheet" href="gallery.css">
+<link rel="stylesheet" href="gallery.css?v=20261013-site-quality">
 <link rel="alternate" type="application/rss+xml" title="ALGO/ART Daily Gallery" href="feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ALGO/ART">
@@ -280,7 +282,7 @@ function rss(archive) {
 <channel>
 <title>ALGO/ART Daily Gallery</title>
 <link>${GALLERY_URL}/</link>
-<description>Daily deterministic golden-ratio generative marker art from ALGO/ART.</description>
+<description>${escapeXml(FEED_DESCRIPTION)}</description>
 <language>en-gb</language>
 ${days.map(day => `<item>
 <title>ALGO/ART Daily Gallery — ${escapeXml(displayDate(day.date))}</title>

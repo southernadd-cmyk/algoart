@@ -13,7 +13,7 @@ ALGO/ART is a browser-based generative art project built around the **golden rat
 ## Using ALGO/ART
 
 1. Open the [editor](https://southernadd-cmyk.github.io/algoart/) and choose one of the eight composition systems.
-2. Adjust the composition, **Additional φ pull**, colour, paper and **Materials** controls, or use **Randomise**, **Mutate** or **4-Up Variations** to explore.
+2. Adjust the composition, **Additional φ pull**, colour, paper and **Materials** controls. **Randomise** explores across all eight systems; **Mutate** changes the current system's settings, while **4-Up Variations** shows alternatives within the selected system.
 3. Choose **landscape (1400 × 1000)** or **portrait (1000 × 1400)**.
 4. Export as **PNG**, **SVG** or **Plotter SVG**, or copy a share link to reopen the same artwork.
 
