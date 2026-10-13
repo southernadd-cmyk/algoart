@@ -75,11 +75,12 @@ npm run test:tuning-equivalence
 
 The tuning-equivalence test compares generated drawings with a pinned historical Git commit; it needs that commit available in the local Git history. Browser-based archive and plotter-fidelity checks run in GitHub Actions across Chromium, Firefox and WebKit (see [the archive workflow](.github/workflows/archive-reproduction.yml)).
 
-**Current renderer: V8.**
+**Current renderer: V9.**
 
 | Renderer | Status |
 | --- | --- |
-| **V8** | Current editor and new artwork generation |
+| **V9** | Current editor; paper colour no longer changes seeded composition or pigments |
+| V8 | Preserved with its original paper-seeded geometry and historic Tissue cream background |
 | V1–V7 | Preserved for historical seeded artworks and exact shared links |
 
 Historical renderer and material versions remain available so saved links reproduce their original artwork. See [Renderer and material history](MATERIAL_HISTORY.md) for revision details, compatibility rules and implementation notes.
