@@ -1,6 +1,6 @@
 // Public naming changed from Watercolor to Tissue & Graphite.
 // Keep the historical internal queues/IDs named "watercolor" permanently.
-// Only newly generated editions from 14 October 2026 use seeded-colour v2.
+// Only newly generated editions from 14 October 2026 use seeded colour + graphite v3.
 export const SEEDED_TISSUE_START_DATE='2026-10-14';
 
 export function tissueEditionForDate(date){
@@ -13,8 +13,8 @@ export function tissueEditionForDate(date){
   return {
     edition:seeded?'seeded':'historical',
     param:seeded?'tissue':'watercolor',
-    value:seeded?'2':'1',
-    suffix:seeded?'&tissue=2':'&watercolor=1'
+    value:seeded?'3':'1',
+    suffix:seeded?'&tissue=3':'&watercolor=1'
   };
 }
 export function validateTissueShareUrl(date,shareUrl){

@@ -6,8 +6,8 @@ import {runInNewContext} from 'node:vm';
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 assert.match(app,/select:not\(#exportScale\):not\(#orientation\):not\(#materialStyle\)/,
   'Randomise must never randomise the selected drawing material');
-assert.match(app,/tissuePaletteVersion=2/);
-assert.match(app,/params\.set\(tissuePaletteVersion===2\?'tissue':'watercolor'/);
+assert.match(app,/tissuePaletteVersion=3/);
+assert.match(app,/params\.set\(tissuePaletteVersion>=2\?'tissue':'watercolor'/);
 const exports=readFileSync(new URL('../js/export.js',import.meta.url),'utf8');
 assert.match(exports,/delete compositionSettings\.tissuePaletteVersion/);
 
@@ -77,6 +77,7 @@ for(const palette of ['earth','neon','mono','golden']){
   }
   const first=paint(s,2),version=A.lastOilMaterialStats;
   assert.equal(version.tissuePaletteVersion,2);
+  assert.equal(version.graphitePaths,0,'Historic tissue=2 must not gain graphite');
   assert.deepEqual(Array.from(version.inkColours),Array.from(colourKit.ink),
     'Tissue pigments must originate from the actual source Marker strokes');
   assert(first[1]>200);
@@ -88,6 +89,13 @@ assert.notDeepEqual(all[0].inks,all[1].inks,'Palette settings must affect Tissue
 assert.notDeepEqual(all[1].inks,all[2].inks,'Monochrome must not be fixed teal/umber');
 assert.notEqual(all[0].signature,all[1].signature,'Different ink palettes change output');
 const s=settings('neon','portrait');
+const seededV2=paint(s,2);
+const graphiteV3=paint(s,3);
+assert.equal(A.lastOilMaterialStats.tissuePaletteVersion,3);
+assert(A.lastOilMaterialStats.graphitePaths>0,'New Tissue v3 needs actual charcoal strokes');
+assert.notDeepEqual(graphiteV3,seededV2,'Graphite revision must differ visibly from old v2');
+assert.deepEqual(paint(s,2),seededV2,'Graphite v3 must not change previous tissue=2 links');
+assert.deepEqual(paint(s,3),graphiteV3,'Graphite v3 must remain deterministic');
 const historic=paint(s,1);
 assert.equal(A.lastOilMaterialStats.tissuePaletteVersion,1);
 paint(s,2);

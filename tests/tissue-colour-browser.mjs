@@ -24,7 +24,7 @@ try{
     'Archived v1 URL must use original pigment version');
   await page.locator('#randomise').click();
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  assert.equal(new URL(page.url()).searchParams.get('tissue'),'2');
+  assert.equal(new URL(page.url()).searchParams.get('tissue'),'3');
   const initial=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
   assert(initial?.length>0,'New tissue should record a source palette');
   const firstURL=page.url();
@@ -40,7 +40,7 @@ try{
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
   await page.locator('#materialStyle').selectOption('tissue');
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  assert.equal(new URL(page.url()).searchParams.get('tissue'),'2');
+  assert.equal(new URL(page.url()).searchParams.get('tissue'),'3');
   await page.locator('#tab-colour').click();
   await page.locator('#palette').selectOption('mono');
   const mono=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
@@ -48,10 +48,14 @@ try{
   assert(mono.every(c=>/^#([a-f0-9]{2})\1\1$/i.test(c)),
     'Changing Colour → Monochrome must give truly monochrome Tissue inks');
   await open({tissue:2,pal:'cold'});
+  assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),2,
+    'Existing tissue=2 share links must retain original output');
+  await open({tissue:3,pal:'cold'});
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),2);
+  assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),3);
+  assert((await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.graphitePaths))>0);
   await page.locator('#art').screenshot({path:'oil-check-results/tissue-seeded-cold.png'});
-  await open({tissue:2,pal:'warm'});
+  await open({tissue:3,pal:'warm'});
   await page.locator('#art').screenshot({path:'oil-check-results/tissue-seeded-warm.png'});
   assert.deepEqual(errors,[]);
   console.log('PASS: Randomise preserves Marker or Tissue selection');

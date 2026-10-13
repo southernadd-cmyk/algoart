@@ -364,7 +364,7 @@ function tissueHex(rgb){
   return '#'+rgb.map(function(n){return Math.round(Math.max(0,Math.min(255,n))).toString(16).padStart(2,'0')}).join('');
 }
 function tissueBlend(a,b,t){return a.map(function(n,i){return Math.round(n*(1-t)+b[i]*t)})}
-function tissueKit(paths,s){
+function tissueKit(paths,s,revision){
   var inks=[],seen={},count=Math.max(1,Math.min(24,Math.round(s.colourCount||4)));
   for(var i=0;i<paths.length;i++){
     var value=paths[i].stroke;
@@ -381,6 +381,7 @@ function tissueKit(paths,s){
   }
   var paper=tissueStrokeRGB(s.paper)||[242,235,221],dark=[26,27,27];
   return {
+    revision:revision||2,
     paperRGB:paper,
     paper:tissueHex(paper),
     inkRGB:inks,
@@ -444,7 +445,7 @@ A.renderOil=function(target,s,scale,showGeometry,materialRevision){
   var ctx=target.getContext('2d');
   if(scale!==1)ctx.scale(scale,scale);
   paint(ctx,w,h,rec.paths,meta,s.seed+'|'+s.mode+'|'+A.rendererVersion,scale,
-    materialRevision===2?tissueKit(rec.paths,s):null);
+    materialRevision>=2?tissueKit(rec.paths,s,materialRevision):null);
   if(showGeometry)A.geometryOverlay(ctx,s,meta);
   A.lastRenderMeta=meta;
   return meta;

@@ -14,7 +14,7 @@ assert.match(html,/Tissue &amp; Graphite/);
 assert.match(app,/params\.has\('oil'\)/);
 assert.match(exportCode,/-tissue-graphite/);
 assert.match(html,/js\/oil-render\.js/);
-assert.match(app,/if\(oilEnabled\(\)\)params\.set\(tissuePaletteVersion===2\?'tissue':'watercolor'/);
+assert.match(app,/if\(oilEnabled\(\)\)params\.set\(tissuePaletteVersion>=2\?'tissue':'watercolor'/);
 assert.match(app,/if\(e\.id!=='materialStyle'\)useCurrentRenderer\(\)/);
 assert.match(exportCode,/delete compositionSettings\.oilRender/);
 // The checkbox must NEVER be part of the V8 seed input.

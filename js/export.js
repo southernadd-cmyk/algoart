@@ -2,18 +2,31 @@ window.AlgoArt=window.AlgoArt||{};
 (function(A){
 'use strict';
 
-// Blob URLs avoid base64 copies of multi-megapixel PNGs on mobile.
-// Attach the link to the document: some Android browsers ignore detached
-// anchors. Keep the blob alive long enough for the download to begin.
+// Retain each connected download anchor until Android/iOS has consumed its
+// blob URL. Removing it immediately after click can make subsequent downloads
+// appear stuck in mobile WebViews until the document is refreshed.
+var downloadCounts=Object.create(null);
 A.downloadBlob=function(blob,filename){
   if(!blob||!blob.size)throw new Error('Export file could not be encoded.');
+  var count=(downloadCounts[filename]||0)+1;
+  // Android's download UI can collapse repeated downloads with identical
+  // filenames. Give consecutive exports separate filenames, like (2).png.
+  var name=count===1?filename:filename.replace(/(\.[^./]+)$/, ' ('+count+')$1');
   var url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download=filename;link.style.display='none';
+  link.href=url;link.download=name;
+  link.style.position='fixed';link.style.left='-10000px';
+  link.style.width='1px';link.style.height='1px';
   document.body.appendChild(link);
-  try{link.click()}finally{
-    link.remove();
-    setTimeout(function(){URL.revokeObjectURL(url)},60000);
+  try{
+    link.click();
+    downloadCounts[filename]=count;
+  }finally{
+    setTimeout(function(){
+      link.remove();
+      URL.revokeObjectURL(url);
+    },60000);
   }
+  return name;
 };
 
 A.exportPNG=function(settings,scale){
@@ -34,7 +47,7 @@ A.exportPNG=function(settings,scale){
   return new Promise(function(resolve,reject){
     try{
       if(settings.oilRender)
-        A.renderOil(out,compositionSettings,scale,false,settings.tissuePaletteVersion===2?2:1);
+        A.renderOil(out,compositionSettings,scale,false,settings.tissuePaletteVersion>=2?settings.tissuePaletteVersion:1);
       else A.render(out,compositionSettings,scale,false);
       if(typeof out.toBlob!=='function')
         throw new Error('This browser cannot encode PNG downloads.');

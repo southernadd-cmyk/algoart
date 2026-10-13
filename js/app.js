@@ -185,7 +185,7 @@ function applySettings(settings){
 // Historical internal name retained for the existing (unchanged) material engine.
 // New Tissue & Graphite uses composition-derived colour. Historical URLs
 // keep the original fixed pigment palette for archival reproducibility.
-var tissuePaletteVersion=2;
+var tissuePaletteVersion=3;
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function renderArtwork(target,settings,scale,reveal){
   return oilEnabled()?A.renderOil(target,settings,scale,reveal,tissuePaletteVersion):A.render(target,settings,scale,reveal);
@@ -202,7 +202,8 @@ function settingsToURL(settings){
     if(typeof value==='boolean')value=value?'1':'0';
     params.set(PARAM_KEYS[key],String(value));
   });
-  if(oilEnabled())params.set(tissuePaletteVersion===2?'tissue':'watercolor',tissuePaletteVersion===2?'2':'1');
+  if(oilEnabled())params.set(tissuePaletteVersion>=2?'tissue':'watercolor',
+    String(tissuePaletteVersion>=2?tissuePaletteVersion:1));
   return location.pathname+'?'+params.toString()+location.hash;
 }
 
@@ -242,14 +243,14 @@ function loadSettingsFromURL(){
     }
   });
 
-  // Old ?watercolor=1 and ?oil=1 images are immutable. The new
-  // ?tissue=2 format follows the composition's seeded Marker colours.
+  // Historical watercolor=1 and tissue=2 remain pixel-exact.
+  // New tissue=3 restores distinct graphite marks over seeded colour.
   if(params.has('tissue')||params.has('watercolor')||params.has('oil')){
     var tissueCode=params.get('tissue');
     var oldCode=params.has('watercolor')?params.get('watercolor'):params.get('oil');
-    var isSeedPalette=tissueCode==='2';
-    $('materialStyle').value=isSeedPalette||oldCode==='1'?'tissue':'marker';
-    tissuePaletteVersion=isSeedPalette?2:1;
+    var tissueRevision=tissueCode==='2'?2:(tissueCode==='3'?3:1);
+    $('materialStyle').value=tissueRevision>=2||oldCode==='1'?'tissue':'marker';
+    tissuePaletteVersion=tissueRevision;
     found=true;
   }
 
@@ -746,7 +747,7 @@ $('randomise').onclick=function(){
   $('seed').value=newSeedValue();
   // A new random composition uses the current Tissue & Graphite colour system
   // even when Randomise was clicked on a historical v1 share link.
-  if(oilEnabled())tissuePaletteVersion=2;
+  if(oilEnabled())tissuePaletteVersion=3;
   syncModeCards();
   regenerate();
 };
@@ -1010,7 +1011,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
   e.addEventListener('change',function(){
     if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
-    if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=2;
+    if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=3;
     if(e.id!=='materialStyle')useCurrentRenderer();
     // pointerup/change ordering differs by browser. Do not commit twice.
     var alreadyCommitted=e.type==='range'&&!dragPreviewPending&&lastCommittedRenderKey===JSON.stringify([A.rendererVersion,A.readSettings(),oilEnabled(),tissuePaletteVersion]);
@@ -1059,9 +1060,10 @@ function loadExactArchivedArtwork(id){
       if(!entry||!entry.settings||!entry.seed)throw new Error('Archived artwork missing: '+id);
       A.rendererVersion=Number(entry.rendererVersion)||CURRENT_RENDERER_VERSION;
       var archivedMaterialURL=new URL(entry.shareUrl||location.href);
-      var isTissueV2=archivedMaterialURL.searchParams.get('tissue')==='2';
-      tissuePaletteVersion=isTissueV2?2:1;
-      $('materialStyle').value=isTissueV2||entry.material==='watercolor'||
+      var archivedTissueCode=archivedMaterialURL.searchParams.get('tissue');
+      var archivedTissueVersion=archivedTissueCode==='3'?3:(archivedTissueCode==='2'?2:1);
+      tissuePaletteVersion=archivedTissueVersion;
+      $('materialStyle').value=archivedTissueVersion>=2||entry.material==='watercolor'||
         archivedMaterialURL.searchParams.get('watercolor')==='1'?'tissue':'marker';
       applySettings(Object.assign({},entry.settings,{seed:entry.seed}));
       return true;
