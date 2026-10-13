@@ -25,6 +25,15 @@ for (const test of cases){
   await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.trim().endsWith(' / TISSUE & GRAPHITE') &&
     document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
+  // Compare v4 directly against this exact old pigment study. Preserve both
+  // renders as browser artifacts; the legacy image remains v1 byte-exact.
+  const newMaterial=new URL(page.url());
+  newMaterial.searchParams.delete('watercolor');
+  newMaterial.searchParams.set('tissue','4');
+  await page.goto(newMaterial.href,{waitUntil:'domcontentloaded',timeout:60000});
+  await page.waitForFunction(()=>window.AlgoArt?.lastOilMaterialStats?.tissuePaletteVersion===4,
+    null,{timeout:120000});
+  await page.locator('#art').screenshot({path:out+'/'+test.name+'-original-look-v4.png',timeout:60000});
   // Dispatch the exact change the checkbox produces; avoids screenshot
   // automation clicking a label twice and checks marker restoration.
   await page.evaluate(() => {
