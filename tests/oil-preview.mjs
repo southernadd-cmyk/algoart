@@ -16,7 +16,7 @@ const cases=[
 ];
 for (const test of cases){
   const url=new URL(root);
-  const values={v:8,watercolor:1,...test,pen:'fine',th:11,wob:34,od:3,op:72,pr:36,dry:19,ln:1,ci:1,re:1,po:1,ar:1,pal:'mono',cols:4,sat:88,bri:61,paper:'#f5f0e6',grain:13};
+  const values={v:8,watercolor:1,...test,pen:'fine',th:11,wob:34,od:3,op:72,pr:36,dry:19,ln:1,ci:1,re:1,po:1,ar:1,pal:'golden',cols:4,sat:88,bri:61,paper:'#f5f0e6',grain:13};
   delete values.name;
   for(const [k,v] of Object.entries(values))url.searchParams.set(k,String(v));
   const faults=[];
@@ -29,10 +29,8 @@ for (const test of cases){
   // renders as browser artifacts; the legacy image remains v1 byte-exact.
   const newMaterial=new URL(page.url());
   newMaterial.searchParams.delete('watercolor');
-  // The historical reference ignored 'mono' and always used its fixed hues.
-  // Choose seeded multi-hue for the new renderer so the comparison assesses
-  // material technique, not whether Monochrome correctly suppresses colour.
-  newMaterial.searchParams.set('pal','golden');
+  // Keep palette and all other composition settings identical so this
+  // comparison isolates the MATERIAL rather than changing Marker geometry.
   newMaterial.searchParams.set('tissue','4');
   await page.goto(newMaterial.href,{waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(()=>window.AlgoArt?.lastOilMaterialStats?.tissuePaletteVersion===4,
