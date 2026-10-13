@@ -39,7 +39,7 @@ try{
       const pts=poly.map(([x,y])=>({x,y}));
       const half=key==='thick'?114:(key==='medium'?44:48);
       A.tissueRibbonGeometryTest(ctx,pts,half,5);
-      ctx.fillStyle='rgb(36,91,142)';ctx.fill('evenodd');
+      ctx.fillStyle='rgb(36,91,142)';ctx.fill();
       const corners=[[5,5],[10,40],[40,10],[0,0]].map(([x,y])=>
          Array.from(ctx.getImageData(x,y,1,1).data).slice(0,3));
       const centre=Array.from(ctx.getImageData(275,275,1,1).data).slice(0,3);
