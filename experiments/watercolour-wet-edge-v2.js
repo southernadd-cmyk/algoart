@@ -55,15 +55,27 @@ function lerpHex(a,b,t){
 }
 // Take only the electronic edge off cyan and neon green, preserving the
 // original seed-derived warm/red/violet hues and intentional vivid accents.
+// Material-specific pigment gamut: retain each seed's hues and relative
+// brightness but limit electronic RGB chroma (especially violet/green).
+// The generator and archived Marker/Tissue palettes are never modified.
 function pigmentInk(col){
   var nums=col[0]==='#'?[1,3,5].map(function(i){return parseInt(col.slice(i,i+2),16)})
     :(col.match(/[0-9]+/g)||[]).slice(0,3).map(Number);
   if(nums.length!==3||nums.some(function(n){return !Number.isFinite(n)}))return col;
-  var r=nums[0],g=nums[1],b=nums[2],spread=Math.max(r,g,b)-Math.min(r,g,b);
-  if(spread<72||r>g*.91)return col;
-  if(g<r*1.13||(b<g*.42&&g<r*1.7))return col;
-  return lerpHex(col,'#9b907f',b>g*.74?.12:.095);
+  var low=Math.min.apply(null,nums),high=Math.max.apply(null,nums);
+  var spread=high-low;
+  if(spread<=111)return col;
+  var neutral=nums[0]*.2126+nums[1]*.7152+nums[2]*.0722;
+  var factor=111/spread;
+  var result=nums.map(function(v){return clamp(Math.round(neutral+(v-neutral)*factor),0,255)});
+  return 'rgb('+result.join(',')+')';
 }
+function pigmentSpread(col){
+  var numbers=col[0]==='#'?[1,3,5].map(function(i){return parseInt(col.slice(i,i+2),16)})
+    :(col.match(/[0-9]+/g)||[]).slice(0,3).map(Number);
+  return Math.max.apply(null,numbers)-Math.min.apply(null,numbers);
+}
+
 function point(a,b,t){return{x:mix(a.x,b.x,t),y:mix(a.y,b.y,t)}}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function angle(a,b){return Math.atan2(b.y-a.y,b.x-a.x)}
@@ -281,9 +293,9 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
     if('filter' in pig)pig.filter='blur('+feather+'px)';
     else{pig.shadowColor=col;pig.shadowBlur=feather;}
   }
-  pig.lineWidth=edgeState==='dry'?clamp(width*.062,1.25,5.8):
+  pig.lineWidth=edgeState==='dry'?clamp(width*.043,.8,3.2):
     clamp(width*(edgeState==='wet'?.19:.11),2,23);
-  pig.globalAlpha=opacity*(edgeState==='dry'?.63:edgeState==='damp'?.29:.24);
+  pig.globalAlpha=opacity*(edgeState==='dry'?.32:edgeState==='damp'?.29:.24);
   pig.stroke();
   pig.filter='none';pig.shadowBlur=0;
   // Sparse irregular pooling. No second complete contour/parallel CAD line.
@@ -305,7 +317,7 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
   pig.restore();
   // This narrow wet/damp edge treatment is separate from the fill. It
   // moves a little pigment laterally, not a symmetric canvas shadow.
-  if(width<=23)
+  if(width<=30)
     thinLineMicroBleed(pig,pts,width,col,opacity,r,
       edgeState==='dry'?.23:edgeState==='damp'?.60:1);
 }
@@ -844,13 +856,77 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     diffusionPasses:passes,waterBlooms:drops.length};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
+// All changes here are an EXPERIMENTAL presentation-space adjustment.
+// The original V8 generator is still called with the exact source seed and
+// settings; no paths are added/deleted and their internal relative positions
+// and rotations survive a uniform similarity transform.
+function fitMaterialComposition(chains,voids,seed,w,h){
+  var mode=seed.split('|').slice(-2)[0];
+  var bounds={minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity};
+  for(var i=0;i<chains.length;i++)for(var j=0;j<chains[i].pts.length;j++){
+    var p=chains[i].pts[j];
+    bounds.minX=Math.min(bounds.minX,p.x);
+    bounds.minY=Math.min(bounds.minY,p.y);
+    bounds.maxX=Math.max(bounds.maxX,p.x);
+    bounds.maxY=Math.max(bounds.maxY,p.y);
+  }
+  if(!isFinite(bounds.minX))
+    return {chains:chains,voids:voids,stats:{mode:mode,kind:'none',factor:1,before:null,after:null}};
+  var bw=bounds.maxX-bounds.minX,bh=bounds.maxY-bounds.minY;
+  var fraction=Math.max(bw/w,bh/h),factor=1,kind='none';
+  if((mode==='field'||mode==='network'||mode==='scribble')&&fraction<.57){
+    factor=clamp(.71/Math.max(.01,fraction),1,1.84);
+    kind='compact-source-reframe';
+  }else if(mode==='rects'&&
+    (bounds.minX<38||bounds.maxX>w-38||bounds.minY<38||bounds.maxY>h-38)){
+    factor=.88;kind='frame-inset';
+  }
+  var cx=(bounds.minX+bounds.maxX)*.5,cy=(bounds.minY+bounds.maxY)*.5;
+  // Ensure washes have room to pool at the frame edge. Never crop the paths.
+  var safe=kind==='frame-inset'?82:40;
+  if(factor>1){
+    factor=Math.min(factor,(w-2*safe)/Math.max(1,bw),(h-2*safe)/Math.max(1,bh));
+  }
+  if(Math.abs(factor-1)<.012)factor=1;
+  var targetX=kind==='frame-inset'?w*.5:clamp(cx,safe+bw*factor*.5,w-safe-bw*factor*.5);
+  var targetY=kind==='frame-inset'?h*.5:clamp(cy,safe+bh*factor*.5,h-safe-bh*factor*.5);
+  if(kind==='none'||factor===1) {
+    return {chains:chains,voids:voids,stats:{mode:mode,kind:'none',factor:1,
+      before:{width:bw/w,height:bh/h,minX:bounds.minX/w,minY:bounds.minY/h,
+        maxX:bounds.maxX/w,maxY:bounds.maxY/h},
+      after:{width:bw/w,height:bh/h,minX:bounds.minX/w,minY:bounds.minY/h,
+        maxX:bounds.maxX/w,maxY:bounds.maxY/h}}};
+  }
+  function transform(p){return{x:targetX+(p.x-cx)*factor,y:targetY+(p.y-cy)*factor}}
+  var moved=chains.map(function(chain){
+    return {pts:chain.pts.map(transform),length:chain.length*factor,
+      width:chain.width*factor};
+  });
+  var movedVoids=voids.map(function(v){
+    var q=transform({x:v.x,y:v.y});
+    return{x:q.x,y:q.y,w:v.w*factor,h:v.h*factor};
+  });
+  return {chains:moved,voids:movedVoids,
+    stats:{mode:mode,kind:kind,factor:factor,
+      before:{width:bw/w,height:bh/h,minX:bounds.minX/w,minY:bounds.minY/h,
+        maxX:bounds.maxX/w,maxY:bounds.maxY/h},
+      after:{width:bw*factor/w,height:bh*factor/h,
+        minX:(targetX-bw*factor*.5)/w,minY:(targetY-bh*factor*.5)/h,
+        maxX:(targetX+bw*factor*.5)/w,maxY:(targetY+bh*factor*.5)/h}}};
+}
 A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
   if(!kit||kit.revision!==6)
     throw new Error('Wet-edge experiment requires current V6 seeded tissue ink kit');
   C=coloursForInk(kit);
+  Object.keys(C).forEach(function(group){
+    C[group]=C[group].map(pigmentInk);
+  });
   tissueTornEdges=true; // reuse V6's approved repaired, ragged contours
   tissueLightEnabled=false;
   try{
+    var presentation=fitMaterialComposition(chains,meta.voids||[],seed,w,h);
+    chains=presentation.chains;
+    var presentationVoids=presentation.voids;
     var ratio=quality<.30?.32:(quality<.65?.53:(quality<1.5?.78:1.18));
     var sw=Math.max(1,Math.round(w*ratio)),sh=Math.max(1,Math.round(h*ratio));
     var layer=document.createElement('canvas');
@@ -861,7 +937,7 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     pctx.fillRect(0,0,w,h);
     activeMicroBleedCount=0;
     activeThinStrokeCount=0;activeDryThinStrokeCount=0;
-    var washStats=deposit(pctx,null,w,h,chains,meta.voids||[],seed,quality,kit);
+    var washStats=deposit(pctx,null,w,h,chains,presentationVoids,seed,quality,kit);
     var washMicroBleeds=activeMicroBleedCount;
     pctx.setTransform(1,0,0,1,0,0);
     var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,chains);
@@ -872,14 +948,16 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       paintRibbon(ctx,null,mark.pts,mark.width,
         A.makeR(seed+'|v2e-dry-outline|'+mark.key),mark.col,mark.opacity,0,'dry');
     }
-    var dryDetail=finishDryAccents(ctx,chains,seed,quality,kit,meta.voids||[],washStats);
+    var dryDetail=finishDryAccents(ctx,chains,seed,quality,kit,presentationVoids,washStats);
     var microBleedTotal=activeMicroBleedCount;
     var thinStrokeTotal=activeThinStrokeCount,dryThinTotal=activeDryThinStrokeCount;
     ctx.restore();
     A.lastWatercolourExperimentStats={
       width:sw,height:sh,chains:chains.length,
-      paper:kit.paper,inkColours:kit.ink.slice(),
-      effect:'V2i unified watercolour thin-line routing, including dry details and all ink accents',
+      paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
+      pigmentSpreadMax:Math.max.apply(null,kit.ink.map(function(v){return pigmentSpread(pigmentInk(v))})),
+      compositionPresentation:presentation.stats,
+      effect:'V2j compact-source material framing, pigment gamut and reduced geometric dry outlines',
       washStates:{dry:washStats.dry,damp:washStats.damp,wet:washStats.wet},
       widthCaps:{broad:127,hero:67},washWidths:{broadMax:washStats.broadWidthMax,
         heroMax:washStats.heroWidthMax},
