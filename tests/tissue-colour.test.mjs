@@ -77,6 +77,7 @@ for(const palette of ['earth','neon','mono','golden']){
   }
   const first=paint(s,2),version=A.lastOilMaterialStats;
   assert.equal(version.tissuePaletteVersion,2);
+  assert(version.graphitePaths>0,'Seeded Tissue must retain visible graphite linework');
   assert.deepEqual(Array.from(version.inkColours),Array.from(colourKit.ink),
     'Tissue pigments must originate from the actual source Marker strokes');
   assert(first[1]>200);
