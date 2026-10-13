@@ -88,22 +88,40 @@ function tornTrace(ctx,edge,half,side){
 function ribbon(ctx,pts,half,r){
   var left=[],right=[],n=pts.length,i;
   if(n<2)return false;
+  // V5: a closed rectangle/circle repeats its start at the end. The old
+  // open-strip treatment used two different end normals there, creating
+  // an incorrectly filled triangular corner on very broad washes. Close
+  // the two contour loops instead. V1–V4 remain byte-for-byte unchanged.
+  var closed=tissueTornEdges&&n>=4&&dist(pts[0],pts[n-1])<18;
+  var unique=closed?n-1:n;
   for(i=0;i<n;i++){
-    var before=pts[Math.max(0,i-1)],after=pts[Math.min(n-1,i+1)];
+    var before=closed?pts[(i+unique-1)%unique]:pts[Math.max(0,i-1)];
+    var after=closed?pts[(i+1)%unique]:pts[Math.min(n-1,i+1)];
     var normal=angle(before,after)+PI/2;
-    var taper=Math.min(1,.45+Math.min(i,n-i-1)*.47);
+    var taper=closed?1:Math.min(1,.45+Math.min(i,n-i-1)*.47);
     var width=half*taper*(.88+.12*Math.sin(i*1.37)+r.range(-.095,.095));
-    // Independent irregularities along the two edges prevent flat cut-outs.
     left.push(shift(pts[i],normal,width));
     right.push(shift(pts[i],normal,-width*r.range(.80,1.12)));
   }
+  if(closed){
+    // Consume the same RNG samples as the old ribbon: later layers retain
+    // their seed-selected colours/positions, only this seam is repaired.
+    left.pop();right.pop();n=unique;
+  }
   ctx.beginPath();ctx.moveTo(left[0].x,left[0].y);
   if(tissueTornEdges){
-    // Follow the same ribbon outline with narrow, non-repeating tears.
-    // No overlay, blur, multiply, accent chips, hatching or extra linework.
-    tornTrace(ctx,left,half,1);
-    ctx.lineTo(right[n-1].x,right[n-1].y);
-    tornTrace(ctx,right.slice().reverse(),half,-1);
+    // Trace both loops continuously; for open paths retain the exact V5
+    // torn-edge treatment already approved.
+    tornTrace(ctx,closed?left.concat(left[0]):left,half,1);
+    if(closed){
+      // Join adjacent inner/outer corners, never opposite corners.
+      // Opposite-corner closure would introduce a diagonal false pigment plane.
+      ctx.lineTo(right[0].x,right[0].y);
+      tornTrace(ctx,[right[0]].concat(right.slice().reverse()),half,-1);
+    }else{
+      ctx.lineTo(right[n-1].x,right[n-1].y);
+      tornTrace(ctx,right.slice().reverse(),half,-1);
+    }
   }else{
     for(i=1;i<n;i++){
       var m=point(left[i-1],left[i],.5);
