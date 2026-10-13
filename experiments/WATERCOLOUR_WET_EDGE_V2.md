@@ -13,7 +13,7 @@ The new renderer is cloned from V6, not a change to it. The public `index.html`,
 
 ## What's different in this experiment
 
-- **Wet pigment accumulation:** torn, seed-deterministic ribbon boundaries get 3 nested, clipped pigment bands. Colour is heaviest along the perimeter, tapering towards a pale interior. Avoid a dark stroke/halo outside the wash.
+- **Wet pigment accumulation:** torn, seed-deterministic ribbon boundaries get a single feathered, clipped pigment rim with seeded, uneven pooling. The edge holds more colour than the pale interior, but avoids the three concentric outlines that read as CAD geometry.
 - **Subtractive overlaps:** Canvas `multiply` blending deepens overlapping seeded hues rather than bleaching them.
 - **Transparent centres:** low-opacity wash bodies let cream paper show through.
 - **Paper granulation:** deterministic fine/coarse grain lifts small amounts of pigment; no unrelated bright strokes.
