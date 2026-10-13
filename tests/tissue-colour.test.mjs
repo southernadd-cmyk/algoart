@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 assert.match(app,/select:not\(#exportScale\):not\(#orientation\):not\(#materialStyle\)/,
   'Randomise must never randomise the selected drawing material');
-assert.match(app,/tissuePaletteVersion=5/);
+assert.match(app,/tissuePaletteVersion=6/);
 assert.match(app,/params\.set\(tissuePaletteVersion>=2\?'tissue':'watercolor'/);
 const exports=readFileSync(new URL('../js/export.js',import.meta.url),'utf8');
 assert.match(exports,/delete compositionSettings\.tissuePaletteVersion/);

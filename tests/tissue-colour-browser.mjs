@@ -24,7 +24,7 @@ try{
     'Archived v1 URL must use original pigment version');
   await page.locator('#randomise').click();
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  assert.equal(new URL(page.url()).searchParams.get('tissue'),'5');
+  assert.equal(new URL(page.url()).searchParams.get('tissue'),'6');
   const initial=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
   assert(initial?.length>0,'New tissue should record a source palette');
   const firstURL=page.url();
@@ -40,7 +40,7 @@ try{
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
   await page.locator('#materialStyle').selectOption('tissue');
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  assert.equal(new URL(page.url()).searchParams.get('tissue'),'5');
+  assert.equal(new URL(page.url()).searchParams.get('tissue'),'6');
   await page.locator('#tab-colour').click();
   await page.locator('#palette').selectOption('mono');
   const mono=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
@@ -61,6 +61,8 @@ try{
   await page.locator('#art').screenshot({path:'oil-check-results/tissue-seeded-cold.png'});
   await open({tissue:5,pal:'warm'});
   assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),5);
+  await open({tissue:6,pal:'warm'});
+  assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),6);
   await open({tissue:4,pal:'warm'});
   await page.locator('#art').screenshot({path:'oil-check-results/tissue-seeded-warm.png'});
   assert.deepEqual(errors,[]);

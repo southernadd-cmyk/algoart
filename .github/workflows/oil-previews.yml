@@ -11,6 +11,8 @@ on:
       - 'js/marker.js'
       - 'tests/oil-preview.mjs'
       - 'tests/tissue-colour-browser.mjs'
+      - 'tests/tissue-v6.test.mjs'
+      - 'tests/fixtures/tissue-v6-settings.json'
       - 'tests/mobile-export-paper.test.mjs'
       - 'js/export.js'
       - '.github/workflows/oil-previews.yml'
@@ -42,6 +44,10 @@ jobs:
         run: node tests/oil-preview.mjs
       - name: Check Randomise preserves the material and Colour controls
         run: node tests/tissue-colour-browser.mjs
+      - name: Verify V6 pale tissue, V5 corner preservation and deterministic pixels
+        run: node tests/tissue-v6.test.mjs
+      - name: Check closed tissue outlines cannot fill the canvas corner
+        run: node tests/tissue-v5-corner.test.mjs
       - name: Verify actual cream paper and real mobile PNG/SVG downloads
         run: node tests/mobile-export-paper.test.mjs
       - uses: actions/upload-artifact@v4
