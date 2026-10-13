@@ -199,6 +199,10 @@ try {
       settings.seed = 'AW'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
         '-'+String(index+1).padStart(2,'0')+'-'+
         (hash(day+'|watercolor|'+orientation+'|'+index+'|'+retrySalt)%100000).toString().padStart(5,'0');
+      // New seeded Tissue & Graphite editions use one consistent, neutral paper.
+      // The randomly selected paper remains available for historical v1 links
+      // and ordinary marker work; do not retroactively repaint those images.
+      if(tissueEdition.edition==='seeded')settings.paper='#f5f0e6';
     }
     // The cutoff changes only the MATERIAL; V8's settings, daily seed and
     // archive IDs retain the exact same deterministic generation algorithm.
