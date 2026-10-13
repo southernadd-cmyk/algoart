@@ -335,15 +335,20 @@ function addLightTissue(pig,height,w,h,chains,voids,seed,quality){
 function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
   var r=A.makeR(seed+'|wet-edge-watercolour-v2'),n=chains.length;
   var allowance=quality<.4?.65:1;
-  var stats={dry:0,damp:0,wet:0,chromaticAccents:0,dryDeposits:[]};
-  var broad=Math.min(n,Math.ceil(25*allowance));
+  var stats={dry:0,damp:0,wet:0,chromaticAccents:0,dryDeposits:[],
+    broadWidthMax:0,heroWidthMax:0};
+  var broad=Math.min(n,Math.ceil(21*allowance));
   for(var i=broad-1;i>=0;i--){
     var ch=chains[i],pts=ch.pts;
-    if(pts.length<2)continue;
+    if(pts.length<2||r.chance(.17))continue; // leave genuine negative space
     var middle=pts[Math.floor(pts.length/2)];
     if(insideVoid(middle,voids)&&r.chance(.85))continue;
-    var width=clamp(72+Math.sqrt(ch.length)*r.range(3.0,5.7),75,188);
-    var wash=lerpHex(palette(i,r),r.pick(C.cream),r.range(.14,.42));
+    // ~30% less breadth than V2e, and never a giant veil across the page.
+    var width=clamp(49+Math.sqrt(ch.length)*r.range(2.0,3.85),50,127);
+    stats.broadWidthMax=Math.max(stats.broadWidthMax,width);
+    var wash=kit.ink.length&&r.chance(.29)?
+      lerpHex(r.pick(kit.ink),r.pick(C.cream),r.range(.08,.20)):
+      lerpHex(palette(i,r),r.pick(C.cream),r.range(.12,.37));
     var state=A.makeR(seed+'|water-state-broad-v2e|'+i).chance(.48)?'wet':'damp';
     paintRibbon(pig,null,pts,width,r,wash,r.range(.41,.70),0,state);
     stats[state]++;
@@ -353,21 +358,25 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     ch=chains[i];pts=ch.pts;
     if(pts.length<2)continue;
     if(insideVoid(pts[0],voids)&&r.chance(.8))continue;
-    width=clamp(Math.sqrt(ch.length)*r.range(1.15,2.45),15,i<22?84:56);
+    // Slimmer structural strokes stay readable beside the larger washes.
+    width=clamp(Math.sqrt(ch.length)*r.range(.90,1.84),11,i<22?67:44);
+    stats.heroWidthMax=Math.max(stats.heroWidthMax,width);
     if(i>=broad&&r.chance(.23))continue;
     // Most important structures dry crisply; the remaining washes retain
     // authentic damp/wet-in-wet edges instead of a universal blur.
     var stateR=A.makeR(seed+'|water-state-hero-v2e|'+i);
     var roll=stateR.n(),state=roll<.57?'dry':roll<.82?'damp':'wet';
-    var accent=state==='dry'&&i<28&&stateR.chance(.34);
-    var pigment=accent&&kit.ink.length?stateR.pick(kit.ink):palette(i,r);
+    // Retain selected vivid ink even for damp/wet washes; the old material
+    // palette blended all coloured groups toward desaturated tissue hues.
+    var accent=i<43&&kit.ink.length&&stateR.chance(.55);
+    var pigment=accent?stateR.pick(kit.ink):palette(i,r);
+    if(accent)stats.chromaticAccents++;
     var opacity=r.range(.55,.80);
     if(state==='dry'){
       // Drawing after water transport ensures these true dried edges and
       // saturated seeded-ink accents survive the wet diffusion phase.
       stats.dryDeposits.push({pts:pts,width:width,col:pigment,opacity:opacity,
         key:'hero-'+i});
-      if(accent)stats.chromaticAccents++;
     }else{
       paintRibbon(pig,null,pts,width,r,pigment,opacity,0,state);
     }
@@ -385,10 +394,10 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
       shift(p1,normal,r.range(-7,7)),dist(p0,p1)*.09,r);
     var detailState=A.makeR(seed+'|water-state-detail-v2e|'+i).chance(.65)?'dry':'damp';
     if(detailState==='dry'){
-      stats.dryDeposits.push({pts:trace,width:r.range(6,17),
+      stats.dryDeposits.push({pts:trace,width:r.range(4.5,12),
         col:palette(i,r),opacity:r.range(.35,.60),key:'detail-'+i});
     }else{
-      paintRibbon(pig,null,trace,r.range(7,21),r,palette(i,r),r.range(.34,.57),0,'damp');
+      paintRibbon(pig,null,trace,r.range(5,15),r,palette(i,r),r.range(.34,.57),0,'damp');
     }
     stats[detailState]++;
   }
@@ -496,6 +505,40 @@ function paperNoise(x,y,cell,seed){
   var c=hashNoise(ix,iy+1,seed),d=hashNoise(ix+1,iy+1,seed);
   return mix(mix(a,b,tx),mix(c,d,tx),ty);
 }
+// The paper is a continuous procedural field, NOT a tiled bitmap. A
+// seed-chosen rotation prevents a visible axis grid; incommensurate scales
+// and two domain-warped coordinates disrupt repeated noise landmarks.
+function materialPaperField(x,y,ratio,seedValue){
+  var theta=((seedValue>>>0)%65521)/65521*PI*2;
+  var ca=Math.cos(theta),sa=Math.sin(theta);
+  var u=x*ca-y*sa,v=x*sa+y*ca;
+  var wa=(paperNoise(u*.81+v*.17,v*.92-u*.11,
+    Math.max(12,89*ratio),seedValue^0x519327)-.5)*22*ratio;
+  var wb=(paperNoise(u*.67-v*.22,v*.78+u*.24,
+    Math.max(12,73*ratio),seedValue^0x627419)-.5)*23*ratio;
+  var fx=u+wa,fy=v+wb;
+  var broad=paperNoise(fx*.87+fy*.24,fy*.97-fx*.19,
+    Math.max(8,59*ratio),seedValue^0x7151);
+  var medium=paperNoise(fx*1.19-fy*.31,fy*1.08+fx*.16,
+    Math.max(3,16.7*ratio),seedValue^0x9127);
+  var grain=paperNoise(fx*1.47+fy*.33,fy*.93-fx*.21,
+    Math.max(1.4,4.3*ratio),seedValue^0x3181);
+  var granular=hashNoise(Math.floor(fx*1.43),Math.floor(fy*1.87),
+    seedValue^0x4251);
+  return {
+    tooth:clamp(.17+.51*broad+.24*medium+.08*grain+
+      .06*(granular-.5),.09,.96),
+    fibre:clamp(.39+.35*medium+.26*grain,.1,.95),
+    grain:granular,
+    warpX:wa*.41+(grain-.5)*6*ratio,
+    warpY:wb*.41+(medium-.5)*5*ratio
+  };
+}
+// Published solely on the experimental branch for deterministic, non-tiling
+// regression checks, not an editor API or a production material interface.
+A.sampleWatercolourPaperTooth=function(seed,x,y){
+  return materialPaperField(x,y,1,A.hash(seed+'|paper-flow-v2f')>>>0).tooth;
+};
 // Unlike a global blur, pigment moves only along water-loaded, paper-
 // dependent capillaries. Optical density is transferred (and conserved by
 // the symmetric 4-neighbour stencil) before settling into paper valleys.
@@ -504,17 +547,12 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
   var total=w*h;
   var source=new Float32Array(total*3),next=new Float32Array(total*3);
   var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total);
-  var seedValue=A.hash(seed+'|paper-flow-v3')>>>0,pi=0;
+  var seedValue=A.hash(seed+'|paper-flow-v2f')>>>0,pi=0;
   for(var y=0;y<h;y++)for(var x=0;x<w;x++,pi++){
     var j=pi*3,loaded=0;
-    // The paper's fibres distort the advancing wet interface by a few
-    // millimetres on the logical sheet. Two smoothed scales give ragged
-    // wet edges without introducing independent shapes or jagged pixels.
-    var wx=(paperNoise(x,y,Math.max(6,17*ratio),seedValue^0x5821)-.5)*13*ratio+
-      (paperNoise(x,y,Math.max(15,56*ratio),seedValue^0x6522)-.5)*12*ratio;
-    var wy=(paperNoise(x,y,Math.max(6,17*ratio),seedValue^0x7931)-.5)*13*ratio+
-      (paperNoise(x,y,Math.max(15,56*ratio),seedValue^0x8942)-.5)*12*ratio;
-    var sx=clamp(x+wx,0,w-1.0001),sy=clamp(y+wy,0,h-1.0001);
+    var surface=materialPaperField(x,y,ratio,seedValue);
+    var sx=clamp(x+surface.warpX,0,w-1.0001);
+    var sy=clamp(y+surface.warpY,0,h-1.0001);
     var x0=Math.floor(sx),y0=Math.floor(sy),tx=sx-x0,ty=sy-y0;
     var q00=(y0*w+x0)*4,q01=q00+4,q10=q00+w*4,q11=q10+4;
     for(var c=0;c<3;c++){
@@ -523,14 +561,9 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
       var density=Math.max(0,Math.log((paper[c]+1)/(sample+1)));
       source[j+c]=density;if(density>loaded)loaded=density;
     }
-    var broad=paperNoise(x,y,Math.max(9,31*ratio),seedValue^0x7151);
-    var small=paperNoise(x,y,Math.max(2.5,7.4*ratio),seedValue^0x9127);
-    var fibre=hashNoise(x>>1,y>>1,seedValue^0x3181);
-    // Local absorbency affects *both* how fast water spreads and how
-    // heavily pigment lodges in the fibre network.
-    tooth[pi]=clamp(.21+.57*broad+.17*small+.05*fibre,.12,.95);
+    tooth[pi]=surface.tooth;
     water[pi]=clamp(loaded*3.1,0,1);
-    fibres[pi]=paperNoise(x,y,Math.max(7,21*ratio),seedValue^0x9331);
+    fibres[pi]=surface.fibre;
   }
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
@@ -616,7 +649,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
-  return {paperModel:'V2e concentration-weighted tooth + seeded fibre-warped capillary flow + paper absorption',
+  return {paperModel:'V2f non-tiled rotated domain-warped multiscale tooth + pigment-dependent capillary flow',
     diffusionPasses:passes,waterBlooms:drops.length};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
@@ -650,8 +683,10 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     A.lastWatercolourExperimentStats={
       width:sw,height:sh,chains:chains.length,
       paper:kit.paper,inkColours:kit.ink.slice(),
-      effect:'V2e selective crisp/damp/wet edges, chromatic dry accents and paper-flow pigment',
+      effect:'V2f narrower selective washes, vibrant seeded colour, dry/damp/wet edges and non-tiled tooth',
       washStates:{dry:washStats.dry,damp:washStats.damp,wet:washStats.wet},
+      widthCaps:{broad:127,hero:67},washWidths:{broadMax:washStats.broadWidthMax,
+        heroMax:washStats.heroWidthMax},
       chromaticAccents:washStats.chromaticAccents,dryDetails:dryDetail,
       paperFlow:paperStats,
       referenceMaterial:'Tissue & Graphite V6'
