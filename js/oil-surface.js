@@ -36,7 +36,7 @@ function distanceSq(x,y,seg){
 }
 A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
   var base=kit?kit.paperRGB:BASE;
-  var pigments=kit?kit.inkRGB:PIGMENTS;
+  var pigments=kit?(kit.revision>=4?kit.washRGB:kit.inkRGB):PIGMENTS;
   var S=A.hash(seed+'|ground-field|1')>>>0;
   var segments=[],i,j,c,pts;
   for(i=0;i<Math.min(26,chains.length);i++){
