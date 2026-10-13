@@ -22,7 +22,7 @@ async function load(material,fmt='landscape'){
   u.searchParams.set('mode','rects');u.searchParams.set('pal','golden');
   u.searchParams.set('paper','#f5f0e6');
   if(fmt==='portrait')u.searchParams.set('fmt','portrait');
-  if(material==='tissue')u.searchParams.set('tissue','2');
+  if(material==='tissue')u.searchParams.set('tissue','3');
   await page.goto(u.href,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#art')?.width>0);
 }
@@ -52,6 +52,8 @@ async function checkDownload(button,extension,name){
 try{
   await load('tissue');
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
+  assert((await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.graphitePaths))>0,
+    'New Tissue artwork must include charcoal graphite strokes');
   // The old lighting would clip the cream foreground to (255,255,255).
   // Test *actual canvas pixels* in several paper-reserve corner regions.
   const paper=await page.evaluate(()=>{
