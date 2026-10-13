@@ -72,5 +72,7 @@ jobs:
       - name: Prove published V8 renderer remains unchanged
         run: npm run test:renderer-lock
 
-      - name: Prove oil painting is procedural and does not mutate V8 marks
+      - name: Prove historical Tissue material and V8 marks are unchanged
         run: npm run test:oil-render
+      - name: Check seeded Tissue colours, paper and Randomise material lock
+        run: npm run test:tissue-colour
