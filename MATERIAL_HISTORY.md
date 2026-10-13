@@ -2,6 +2,8 @@
 
 This technical record preserves revision details and compatibility rules. See the [README](README.md) for current usage.
 
+V9 makes paper colour an independent visual choice. Both Marker and Tissue & Graphite default to the established cream `#f5f0e6`; selecting a different paper colour changes the substrate without changing V9 geometry or its seed-selected pigment palette. The Paper picker persists across materials. Published V1–V8 renderings remain locked, including the fixed cream in Tissue revisions 4–6 under V8 links.
+
 V8 expands Growth Systems with seeded golden-angle root directions, entries at the 38.2% and 61.8% stations on all four edges, and interior-root alternatives. Two to four growth forms appear more often, especially in landscape. Branch lengths diminish by φ, with space-aware turns and a shared segment budget. Other engines retain their V7 output. New social batches use V8; existing editions keep their recorded renderer and media.
 
 ## Drawing materials: Marker / Tissue & Graphite
@@ -14,7 +16,7 @@ V8 expands Growth Systems with seeded golden-angle root directions, entries at t
   Seeded Marker hues colour the paint; V1 pigment lightness and saturation
   preserve its muted character. V6 retains the approved torn edges and adds selected pale, translucent tissue
   layers over denser coloured marks, before the original pencil details.
-  Paper stays at the default cream `#f5f0e6`. **Randomise
+  Paper defaults to cream `#f5f0e6` and is selectable for V9 artwork. **Randomise
   keeps the selected drawing material**.
 
 Both choices preserve the same seed, φ geometry, orientation, composer controls
@@ -35,7 +37,7 @@ change the original material.
   preserving seeded palette hues and the same V8 geometry.
   **`?tissue=5`** retains the torn-edge revision and its closed-contour corner
   fix. Current **`?tissue=6`** adds the approved pale tissue pass while keeping
-  fixed cream paper, seeded paint hues, the V5 torn contours and original
+  the historic V8 fixed-cream backdrop, seeded paint hues, the V5 torn contours and original
   graphite operations. Earlier material links remain unchanged.
   Randomising an old artwork starts a new seed-driven Tissue image.
   The historical internal material name `watercolor`,
@@ -61,9 +63,9 @@ change the original material.
   regression confirms that Randomise never changes the selected material.
   From **14 October 2026**, new daily Tissue & Graphite editions use
   `?tissue=6` with muted palette-matched washes, pale tissue, original V1 graphite texture,
-  and **fixed default `#f5f0e6` cream paper**.
+  and **default `#f5f0e6` cream paper (editable in V9)**.
   Their previous dates, URLs, saved JPEGs and original v1 pigments remain untouched.
-  Marker editions retain their own paper-colour choices.
+  Both materials use the same paper-colour choice from V9 onwards.
 
 ## Publication compatibility and cutover
 
