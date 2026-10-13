@@ -441,24 +441,117 @@ function shade(pig,height,out,w,h,seed,kit){
   }
   out.putImageData(source,0,0);
 }
-// Dye-free paper stays fixed at the stable V6 cream while seeded pigment is
-// deposited only within actual composition-guided wet washes.
-function granulateWatercolour(ctx,w,h,seed,paper){
+// Deterministic, bilinear-smoothed texture drives capillary transport.
+// A low-frequency flow field changes permeability across the water edge;
+// it does not draw new composition geometry or modify the fixed paper.
+function paperNoise(x,y,cell,seed){
+  var u=x/cell,v=y/cell,ix=Math.floor(u),iy=Math.floor(v);
+  var tx=u-ix,ty=v-iy;
+  tx=tx*tx*(3-2*tx);ty=ty*ty*(3-2*ty);
+  var a=hashNoise(ix,iy,seed),b=hashNoise(ix+1,iy,seed);
+  var c=hashNoise(ix,iy+1,seed),d=hashNoise(ix+1,iy+1,seed);
+  return mix(mix(a,b,tx),mix(c,d,tx),ty);
+}
+// Unlike a global blur, pigment moves only along water-loaded, paper-
+// dependent capillaries. Optical density is transferred (and conserved by
+// the symmetric 4-neighbour stencil) before settling into paper valleys.
+function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
   var frame=ctx.getImageData(0,0,w,h),px=frame.data;
-  var n=A.hash(seed+'|watercolour-granulation-v2')>>>0;
-  for(var y=0;y<h;y++)for(var x=0;x<w;x++){
-    var k=(y*w+x)*4;
-    // Independent grain scales model paper tooth and pigment sediment:
-    // they remove a little pigment, never add unrelated bright strokes.
-    var fine=hashNoise(x,y,n);
-    var coarse=hashNoise(x>>3,y>>3,n^0x7151);
-    var granule=hashNoise(x>>1,y>>1,n^0x3195);
-    var lift=clamp(.018+Math.max(0,fine-.26)*.19+
-      Math.max(0,coarse-.46)*.15+(granule>.968?.17:0),0,.27);
-    for(var z=0;z<3;z++)px[k+z]=Math.round(px[k+z]+(paper[z]-px[k+z])*lift);
+  var total=w*h;
+  var source=new Float32Array(total*3),next=new Float32Array(total*3);
+  var tooth=new Float32Array(total),water=new Float32Array(total);
+  var seedValue=A.hash(seed+'|paper-flow-v3')>>>0,pi=0;
+  for(var y=0;y<h;y++)for(var x=0;x<w;x++,pi++){
+    var i=pi*4,j=pi*3,loaded=0;
+    for(var c=0;c<3;c++){
+      // Lambert/Beer-inspired optical density: preserve actual seeded hue,
+      // darken overlapping layers and avoid inventing new pigment colours.
+      var density=Math.max(0,Math.log((paper[c]+1)/(px[i+c]+1)));
+      source[j+c]=density;if(density>loaded)loaded=density;
+    }
+    var broad=paperNoise(x,y,Math.max(9,31*ratio),seedValue^0x7151);
+    var small=paperNoise(x,y,Math.max(2.5,7.4*ratio),seedValue^0x9127);
+    var fibre=hashNoise(x>>1,y>>1,seedValue^0x3181);
+    // Local absorbency affects *both* how fast water spreads and how
+    // heavily pigment lodges in the fibre network.
+    tooth[pi]=clamp(.21+.57*broad+.17*small+.05*fibre,.12,.95);
+    water[pi]=clamp(loaded*3.1,0,1);
+  }
+  var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
+  var passes=steps;
+  for(var round=0;round<passes;round++){
+    for(y=0;y<h;y++)for(x=0;x<w;x++){
+      pi=y*w+x;var k=pi*3,v=source[k],u=source[k+1],z=source[k+2];
+      var here=tooth[pi],wet=water[pi];
+      var stretch=paperNoise(x,y,Math.max(7,21*ratio),seedValue^0x9331);
+      var sum0=0,sum1=0,sum2=0;
+      // Fibre direction favours east/west in some regions and north/south
+      // in others; the same interface gets the same flux from both sides.
+      for(var side=0;side<4;side++){
+        var nx=x+(side===0?1:side===1?-1:0);
+        var ny=y+(side===2?1:side===3?-1:0);
+        if(nx<0||ny<0||nx>=w||ny>=h)continue;
+        var q=ny*w+nx;
+        var anis=side<2?(.80+.32*stretch):(.80+.32*(1-stretch));
+        var transport=(.067+.045*(here+tooth[q]))*anis*
+          (.53+.47*Math.max(wet,water[q]));
+        var other=q*3;
+        sum0+=(source[other]-v)*transport;
+        sum1+=(source[other+1]-u)*transport;
+        sum2+=(source[other+2]-z)*transport;
+      }
+      next[k]=Math.max(0,v+sum0);
+      next[k+1]=Math.max(0,u+sum1);
+      next[k+2]=Math.max(0,z+sum2);
+    }
+    var swap=next;next=source;source=swap;
+  }
+  // Keep bloom centres on real painted geometry, and reject paper/voids.
+  // A clear-water droplet pushes pigment outward into a ragged, low-contrast
+  // cauliflower rim; there is no drawn circle/stroke or stock texture.
+  var drops=[],rand=A.makeR(seed+'|water-blooms-v3');
+  for(var cidx=0;cidx<Math.min(35,chains.length)&&drops.length<4;cidx++){
+    var ch=chains[cidx],points=ch.pts;
+    if(points.length<3||rand.chance(.71))continue;
+    var pos=points[Math.floor(points.length*rand.range(.25,.75))];
+    var cx=Math.round(pos.x*ratio),cy=Math.round(pos.y*ratio);
+    if(cx<20||cy<20||cx>=w-20||cy>=h-20)continue;
+    var index=(cy*w+cx)*3;
+    if(Math.max(source[index],source[index+1],source[index+2])<.085)continue;
+    var radius=clamp(Math.sqrt(ch.length)*rand.range(.22,.48)*ratio,7,19);
+    if(drops.some(function(d){return Math.hypot(cx-d.x,cy-d.y)<radius*2.7}))continue;
+    drops.push({x:cx,y:cy,r:radius,phase:rand.range(0,Math.PI*2)});
+  }
+  for(y=0;y<h;y++)for(x=0;x<w;x++){
+    pi=y*w+x;var p=pi*3,out=pi*4;
+    var grit=(hashNoise(x,y,seedValue^0x4251)-.5);
+    var scale=(tooth[pi]-.5)*.29+grit*.13;
+    // Pigment catches in the most absorbent paper hollows and separates
+    // into small granules. Paper without pigment remains exactly cream.
+    var settle=clamp(1+scale,.78,1.23);
+    var bloom=1;
+    for(var d=0;d<drops.length;d++){
+      var drop=drops[d],dx=x-drop.x,dy=y-drop.y;
+      if(Math.abs(dx)>drop.r*1.3||Math.abs(dy)>drop.r*1.3)continue;
+      var theta=Math.atan2(dy,dx);
+      var ripple=.11*Math.sin(theta*5+drop.phase)+
+        .07*Math.sin(theta*9-drop.phase*1.3);
+      var radial=Math.hypot(dx,dy)/(drop.r*(1+ripple));
+      // A soft low-concentration interior and a weak, irregular outer rim.
+      bloom*=1-.17*Math.exp(-Math.pow(radial/.67,4))+
+        .075*Math.exp(-Math.pow((radial-.98)/.21,2));
+    }
+    for(c=0;c<3;c++){
+      var amount=source[p+c]*settle*bloom;
+      px[out+c]=clamp(Math.round(paper[c]*Math.exp(-amount)),0,255);
+    }
+    px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
+  return {paperModel:'anisotropic capillary pigment transfer + paper absorption',
+    diffusionPasses:passes,waterBlooms:drops.length};
 }
+function qualityForFlow(w,h){return w*h>1100000?2:4}
 A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
   if(!kit||kit.revision!==6)
     throw new Error('Wet-edge experiment requires current V6 seeded tissue ink kit');
@@ -476,14 +569,15 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     pctx.fillRect(0,0,w,h);
     deposit(pctx,null,w,h,chains,meta.voids||[],seed,quality);
     pctx.setTransform(1,0,0,1,0,0);
-    granulateWatercolour(pctx,sw,sh,seed,kit.paperRGB);
+    var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,chains);
     ctx.save();ctx.imageSmoothingEnabled=true;
     ctx.drawImage(layer,0,0,w,h);
     ctx.restore();
     A.lastWatercolourExperimentStats={
       width:sw,height:sh,chains:chains.length,
       paper:kit.paper,inkColours:kit.ink.slice(),
-      effect:'clipped pooled edges + pale centres + subtractive overlaps + grain',
+      effect:'clipped pooled edges + pale centres + subtractive overlaps + paper-driven diffusion',
+      paperFlow:paperStats,
       referenceMaterial:'Tissue & Graphite V6'
     };
   }finally{
