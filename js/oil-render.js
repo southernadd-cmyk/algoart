@@ -385,6 +385,15 @@ function tissueKit(paths,s,revision){
     paperRGB:paper,
     paper:tissueHex(paper),
     inkRGB:inks,
+    // The v4 washed ground must NOT use raw bright Marker ink colours. Keep
+    // its hue but scale chroma toward grey and anchor the pigment luminance.
+    // Earlier v2/v3 kits and visuals are deliberately unchanged.
+    ...(revision>=4?{washRGB:inks.map(function(rgb){
+      var grey=rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
+      return rgb.map(function(channel){
+        return Math.round(Math.max(0,Math.min(255,162+(channel-grey)*.22)));
+      });
+    })}:{}),
     ink:inks.map(tissueHex),
     cream:inks.map(function(col){return tissueHex(tissueBlend(col,paper,.83))}),
     soft:inks.map(function(col){return tissueHex(tissueBlend(col,paper,.38))}),
