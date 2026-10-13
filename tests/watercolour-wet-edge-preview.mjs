@@ -46,6 +46,8 @@ try{
       const now={sameIdentity:typeof original==='function',
         wetMaterialIndependent:original!==A.watercolourMaterialExperiment,
         restoredV6,repeatWet,paperFlow,
+        washStates:A.lastWatercolourExperimentStats?.washStates,
+        dryDetails:A.lastWatercolourExperimentStats?.dryDetails,
         width:left.width,height:left.height,
         tissueBytes:tissueBefore.length,wetBytes:experimentalBefore.length,
         different:tissueBefore!==experimentalBefore,
@@ -57,6 +59,11 @@ try{
     assert.equal(result.wetMaterialIndependent,true);
     assert.equal(result.restoredV6,true,'Stable V6 replay must remain pixel-identical');
     assert.equal(result.repeatWet,true,'Paper/water diffusion must be deterministic');
+    // V2e must not soften every edge: both dried and damp/wet marks exist.
+    const states=result.washStates||{};
+    assert(states.dry>0,'Expected hard dry edges');
+    assert(states.damp+states.wet>0,'Expected damp/wet watercolour');
+    assert(result.dryDetails>=0);
     assert.match(result.paperFlow.paperModel,/capillary flow/);
     assert(result.paperFlow.diffusionPasses>=3);
     assert(result.paperFlow.waterBlooms>=0&&result.paperFlow.waterBlooms<=4);
