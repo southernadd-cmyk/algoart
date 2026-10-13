@@ -103,10 +103,27 @@ try{
   // Regression for Android needing a full reload between exports: repeat the
   // *same material, same filename, same tab* without any navigation.
   const png=await checkDownload('#savePanel','.png','tissue-mobile-landscape');
-  assert.match(await page.locator('#exportStatus').textContent(),/download started/i);
+  assert.match(await page.locator('#exportStatus').textContent(),/download requested/i);
   await page.locator('#savePanel').waitFor({state:'visible'});
   const secondPng=await checkDownload('#savePanel','.png','tissue-mobile-landscape-repeat');
   assert.match(secondPng.filename,/ \(2\)\.png$/,'Repeat export must have a distinct filename');
+  // Exact Android failure report: PNG -> Randomise -> PNG again, no reload.
+  const oldSeed=await page.locator('#seed').inputValue();
+  await page.locator('#randomise').click();
+  const newSeed=await page.locator('#seed').inputValue();
+  assert.notEqual(newSeed,oldSeed,'Randomise must change the composition');
+  assert.equal(await page.locator('#materialStyle').inputValue(),'tissue',
+    'Randomise must retain Tissue material');
+  const afterRandomise=await checkDownload('#savePanel','.png','tissue-mobile-after-randomise');
+  assert(afterRandomise.filename.includes(newSeed),
+    'Second PNG should encode the randomised composition instead of the old seed');
+  assert.match(await page.locator('#exportStatus').textContent(),/download requested/i);
+  // And again without refreshing or returning to the home screen.
+  await page.locator('#randomise').click();
+  const newerSeed=await page.locator('#seed').inputValue();
+  assert.notEqual(newerSeed,newSeed);
+  const thirdSeed=await checkDownload('#savePanel','.png','tissue-mobile-after-second-randomise');
+  assert(thirdSeed.filename.includes(newerSeed));
   const svg=await checkDownload('#saveSVG','.svg','tissue-mobile-svg');
   const secondSvg=await checkDownload('#saveSVG','.svg','tissue-mobile-svg-repeat');
   assert.match(secondSvg.filename,/ \(2\)\.svg$/);
@@ -116,7 +133,7 @@ try{
   const thirdPng=await checkDownload('#savePanel','.png','tissue-mobile-landscape-third');
   assert.match(thirdPng.filename,/ \(3\)\.png$/);
   const liveDownloadLinks=await page.locator('a[download]').count();
-  assert(liveDownloadLinks>=7,'Mobile download anchors must remain attached for browser consumption');
+  assert(liveDownloadLinks>=9,'Mobile download anchors must remain attached for browser consumption');
   console.log('PASS Tissue mobile repeated PNG, SVG and plotter downloads without reload',
     png,secondPng,svg,secondSvg,plotter,secondPlotter,thirdPng);
   await load('marker','portrait');
