@@ -162,7 +162,7 @@ function insideVoid(pt,voids){
   }
   return false;
 }
-function paintPlanes(pig,height,chains,voids,r,allowance){
+function paintPlanes(pig,height,chains,voids,r,allowance,kit){
   // Solid pigment planes grow off existing structure segments, giving the
   // viewer a painted field instead of many parallel geometric wireframes.
   var n=Math.min(chains.length,Math.ceil(31*allowance));
@@ -188,7 +188,8 @@ function paintPlanes(pig,height,chains,voids,r,allowance){
       ctx.quadraticCurveTo(pA.x,pA.y,a.x,a.y);ctx.closePath();
     }
     pig.save();shape(pig);pig.fillStyle=mixcol;
-    pig.globalAlpha=r.range(.36,.77);pig.fill();pig.clip();
+    pig.globalAlpha=r.range(.36,.77)*(kit&&kit.revision>=4?.79:1);
+    pig.fill();pig.clip();
     // Broad, restrained scumbles inside the SAME painted plane.
     for(var k=0;k<r.int(3,7);k++){
       var c=point(a,b,r.range(.10,.9));
@@ -205,10 +206,10 @@ function paintPlanes(pig,height,chains,voids,r,allowance){
     height.fill();height.restore();
   }
 }
-function deposit(pig,height,w,h,chains,voids,seed,quality){
+function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
   var r=A.makeR(seed+'|paint-dab-4'),n=chains.length;
   var allowance=quality<.4?.5:1;
-  paintPlanes(pig,height,chains,voids,r,allowance);
+  paintPlanes(pig,height,chains,voids,r,allowance,kit);
   // Localised translucent glazes knit separate paths together without
   // replacing the original geometry with a noise texture.
   var broad=Math.min(n,Math.round(24*allowance));
@@ -219,7 +220,8 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     if(insideVoid(mid,voids)&&r.chance(.82))continue;
     var width=clamp(85+Math.sqrt(ch.length)*r.range(4.8,8.2),85,235);
     var muted=lerpHex(palette(i,r),r.pick(C.cream),r.range(.32,.73));
-    paintRibbon(pig,height,pts,width,r,muted,r.range(.40,.69),r.range(.35,.80));
+    paintRibbon(pig,height,pts,width,r,muted,
+      r.range(.40,.69)*(kit&&kit.revision>=4?.82:1),r.range(.35,.80));
   }
   // Main painterly ribbons at two scales. Rhythm and large-scale direction
   // use the same φ-composed source segments.
@@ -231,8 +233,8 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     width=clamp(Math.sqrt(ch.length)*r.range(1.4,3.1),14,i<22?96:61);
     if(i>=broad&&r.chance(.32))continue;
     var hue=palette(i,r);
-    paintRibbon(pig,height,pts,width,r,hue,r.range(.69,.94),
-      r.range(.58,1.5));
+    paintRibbon(pig,height,pts,width,r,hue,
+      r.range(.69,.94)*(kit&&kit.revision>=4?.86:1),r.range(.58,1.5));
   }
   // Broken small strokes and half-covered edges build material variation.
   var detail=Math.min(n,Math.ceil(112*allowance));
@@ -296,8 +298,8 @@ function graphiteHatching(ctx,chains,seed,quality){
   ctx.globalCompositeOperation='multiply';
   for(var pass=0;pass<2;pass++){
     ctx.strokeStyle=pass===0?'#51544d':'#817e71';
-    ctx.globalAlpha=pass===0?.16:.12;
-    ctx.lineWidth=pass===0?.62:.48;
+    ctx.globalAlpha=pass===0?.30:.20;
+    ctx.lineWidth=pass===0?.72:.55;
     ctx.beginPath();
     for(var i=0;i<max;i++){
       var p=chains[i].pts,hop=Math.max(1,Math.ceil(p.length/11));
@@ -306,13 +308,13 @@ function graphiteHatching(ctx,chains,seed,quality){
         var length=dist(a,b);
         if(length<12)continue;
         var tangent=angle(a,b),normal=tangent+PI/2;
-        for(var k=0;k<3;k++){
-          if(r.chance(.20))continue;
+        for(var k=0;k<5;k++){
+          if(r.chance(.15))continue;
           var base=point(a,b,r.range(.05,.95));
-          var offset=r.range(-48,48);
+          var offset=r.range(-58,58);
           var centre=shift(base,normal,offset);
           var direction=tangent+(pass===0?PI/3:-PI/3)+r.range(-.24,.24);
-          var size=r.range(11,65);
+          var size=r.range(35,130);
           var dx=Math.cos(direction)*size*.5,dy=Math.sin(direction)*size*.5;
           ctx.moveTo(centre.x-dx,centre.y-dy);
           ctx.lineTo(centre.x+dx,centre.y+dy);
@@ -382,7 +384,7 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   else{pctx.fillStyle='#f2ebdd';pctx.fillRect(0,0,w,h)}
   hctx.fillStyle='rgb(13,13,13)';hctx.fillRect(0,0,w,h);
   var voids=meta.voids||[];
-  deposit(pctx,hctx,w,h,chains,voids,seed,quality);
+  deposit(pctx,hctx,w,h,chains,voids,seed,quality,kit);
   // Restore transforms before readback in case this is reused later.
   pctx.setTransform(1,0,0,1,0,0);hctx.setTransform(1,0,0,1,0,0);
   shade(pctx,hctx,fctx,sw,sh,seed,kit);
