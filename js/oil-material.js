@@ -62,6 +62,29 @@ function palette(i,r){
   if(group===7)return r.pick(C.umber);
   return r.pick(C.ochre);
 }
+// Only experimental material revision 5 uses torn contours. Source V4
+// pigment, geometry, coverage, graphite and RNG sequence remain unchanged.
+// The serration displaces the EXISTING edge: it draws no additional strokes.
+var tissueTornEdges=false;
+function tornTrace(ctx,edge,half,side){
+  var step=7.5,depth=clamp(half*.068,1.2,3.3);
+  for(var i=1;i<edge.length;i++){
+    var a=edge[i-1],b=edge[i],dx=b.x-a.x,dy=b.y-a.y;
+    var dist=Math.hypot(dx,dy);
+    if(dist<.00001)continue;
+    var normalX=-dy/dist,normalY=dx/dist;
+    var divisions=Math.max(1,Math.ceil(dist/step));
+    for(var j=1;j<=divisions;j++){
+      var t=j/divisions,x=a.x+dx*t,y=a.y+dy*t;
+      var rough=.54*Math.sin(x*.39+y*.61+i*.29)+
+        .28*Math.sin(x*1.43-y*.86+i*1.89)+
+        .18*Math.sin(x*3.11+y*2.77+i*.41);
+      // Irregular but short local tears: no uniform sawtooth and no halos.
+      var offset=side*depth*rough;
+      ctx.lineTo(x+normalX*offset,y+normalY*offset);
+    }
+  }
+}
 function ribbon(ctx,pts,half,r){
   var left=[],right=[],n=pts.length,i;
   if(n<2)return false;
@@ -75,14 +98,22 @@ function ribbon(ctx,pts,half,r){
     right.push(shift(pts[i],normal,-width*r.range(.80,1.12)));
   }
   ctx.beginPath();ctx.moveTo(left[0].x,left[0].y);
-  for(i=1;i<n;i++){
-    var m=point(left[i-1],left[i],.5);
-    ctx.quadraticCurveTo(m.x,m.y,left[i].x,left[i].y);
-  }
-  ctx.lineTo(right[n-1].x,right[n-1].y);
-  for(i=n-2;i>=0;i--){
-    m=point(right[i+1],right[i],.5);
-    ctx.quadraticCurveTo(m.x,m.y,right[i].x,right[i].y);
+  if(tissueTornEdges){
+    // Follow the same ribbon outline with narrow, non-repeating tears.
+    // No overlay, blur, multiply, accent chips, hatching or extra linework.
+    tornTrace(ctx,left,half,1);
+    ctx.lineTo(right[n-1].x,right[n-1].y);
+    tornTrace(ctx,right.slice().reverse(),half,-1);
+  }else{
+    for(i=1;i<n;i++){
+      var m=point(left[i-1],left[i],.5);
+      ctx.quadraticCurveTo(m.x,m.y,left[i].x,left[i].y);
+    }
+    ctx.lineTo(right[n-1].x,right[n-1].y);
+    for(i=n-2;i>=0;i--){
+      m=point(right[i+1],right[i],.5);
+      ctx.quadraticCurveTo(m.x,m.y,right[i].x,right[i].y);
+    }
   }
   ctx.closePath();return true;
 }
@@ -317,6 +348,7 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   // Keep legacy C byte-identical for v1; protect against any synchronous
   // invocation after a seeded-material render by restoring it in finally.
   C=kit?coloursForInk(kit):originalC;
+  tissueTornEdges=Boolean(kit&&kit.revision===5);
   try{
   // Work buffers are resolution-adaptive, but every pixel is re-rasterised
   // deterministically; no random browser texture or remote assets.
@@ -341,6 +373,6 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
     version:4,tissuePaletteVersion:kit?kit.revision:1,
     ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} )};
-  }finally{C=originalC}
+  }finally{C=originalC;tissueTornEdges=false}
 };
 })(window.AlgoArt);

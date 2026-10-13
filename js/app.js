@@ -185,7 +185,7 @@ function applySettings(settings){
 // Historical internal name retained for the existing (unchanged) material engine.
 // New Tissue & Graphite uses composition-derived colour. Historical URLs
 // keep the original fixed pigment palette for archival reproducibility.
-var tissuePaletteVersion=4;
+var tissuePaletteVersion=5;
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function renderArtwork(target,settings,scale,reveal){
   return oilEnabled()?A.renderOil(target,settings,scale,reveal,tissuePaletteVersion):A.render(target,settings,scale,reveal);
@@ -248,7 +248,7 @@ function loadSettingsFromURL(){
   if(params.has('tissue')||params.has('watercolor')||params.has('oil')){
     var tissueCode=params.get('tissue');
     var oldCode=params.has('watercolor')?params.get('watercolor'):params.get('oil');
-    var tissueRevision=tissueCode==='4'?4:(tissueCode==='3'?3:(tissueCode==='2'?2:1));
+    var tissueRevision=tissueCode==='5'?5:(tissueCode==='4'?4:(tissueCode==='3'?3:(tissueCode==='2'?2:1)));
     $('materialStyle').value=tissueRevision>=2||oldCode==='1'?'tissue':'marker';
     tissuePaletteVersion=tissueRevision;
     found=true;
@@ -747,7 +747,7 @@ $('randomise').onclick=function(){
   $('seed').value=newSeedValue();
   // A new random composition uses the current Tissue & Graphite colour system
   // even when Randomise was clicked on a historical v1 share link.
-  if(oilEnabled())tissuePaletteVersion=4;
+  if(oilEnabled())tissuePaletteVersion=5;
   syncModeCards();
   regenerate();
 };
@@ -1025,7 +1025,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
   e.addEventListener('change',function(){
     if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
-    if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=4;
+    if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=5;
     if(e.id!=='materialStyle')useCurrentRenderer();
     // pointerup/change ordering differs by browser. Do not commit twice.
     var alreadyCommitted=e.type==='range'&&!dragPreviewPending&&lastCommittedRenderKey===JSON.stringify([A.rendererVersion,A.readSettings(),oilEnabled(),tissuePaletteVersion]);
@@ -1075,8 +1075,8 @@ function loadExactArchivedArtwork(id){
       A.rendererVersion=Number(entry.rendererVersion)||CURRENT_RENDERER_VERSION;
       var archivedMaterialURL=new URL(entry.shareUrl||location.href);
       var archivedTissueCode=archivedMaterialURL.searchParams.get('tissue');
-      var archivedTissueVersion=archivedTissueCode==='4'?4:
-        (archivedTissueCode==='3'?3:(archivedTissueCode==='2'?2:1));
+      var archivedTissueVersion=archivedTissueCode==='5'?5:(archivedTissueCode==='4'?4:
+        (archivedTissueCode==='3'?3:(archivedTissueCode==='2'?2:1)));
       tissuePaletteVersion=archivedTissueVersion;
       $('materialStyle').value=archivedTissueVersion>=2||entry.material==='watercolor'||
         archivedMaterialURL.searchParams.get('watercolor')==='1'?'tissue':'marker';

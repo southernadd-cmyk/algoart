@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 assert.match(app,/select:not\(#exportScale\):not\(#orientation\):not\(#materialStyle\)/,
   'Randomise must never randomise the selected drawing material');
-assert.match(app,/tissuePaletteVersion=4/);
+assert.match(app,/tissuePaletteVersion=5/);
 assert.match(app,/params\.set\(tissuePaletteVersion>=2\?'tissue':'watercolor'/);
 const exports=readFileSync(new URL('../js/export.js',import.meta.url),'utf8');
 assert.match(exports,/delete compositionSettings\.tissuePaletteVersion/);
@@ -106,6 +106,12 @@ assert.equal(A.lastOilMaterialStats.graphitePaths,0,'V1 texture must not acquire
 assert.equal(A.lastOilMaterialStats.graphiteHatchPaths,undefined,'No invented cross-hatching');
 assert.notDeepEqual(paperGraphiteV4,graphiteV3,'v4 should restore a more subdued, detailed look');
 assert.deepEqual(paint(s,4),paperGraphiteV4,'Original-look v4 must remain deterministic');
+const tornV5=paint(s,5);
+assert.equal(A.lastOilMaterialStats.tissuePaletteVersion,5);
+assert.equal(A.lastOilMaterialStats.graphitePaths,0,'Torn V5 must not add linework');
+assert.notDeepEqual(tornV5,paperGraphiteV4,'V5 torn contours must change actual drawing geometry');
+assert.deepEqual(paint(s,5),tornV5,'V5 must render deterministically');
+assert.deepEqual(paint(s,4),paperGraphiteV4,'V5 must not alter historical V4 pixels');
 assert.deepEqual(paint(s,3),graphiteV3,'Older Tissue v3 links must stay unchanged');
 const historic=paint(s,1);
 assert.equal(A.lastOilMaterialStats.tissuePaletteVersion,1);
