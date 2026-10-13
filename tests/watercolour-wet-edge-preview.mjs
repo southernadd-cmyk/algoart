@@ -26,9 +26,15 @@ try{
       const original=A.oilMaterial;
       const tissueBefore=left.toDataURL('image/png');
       const experimentalBefore=right.toDataURL('image/png');
-      // The public V6 entrypoint remains separate from the wet-edge function.
+      // A true post-experiment V6 replay must be pixel-identical,
+      // proving that the old mode remains untouched even in this page.
+      const check=document.createElement('canvas');
+      A.renderOil(check,window.__currentPreviewSettings,
+        window.__currentPreviewScale,false,6);
+      const restoredV6=check.toDataURL('image/png')===tissueBefore;
       const now={sameIdentity:typeof original==='function',
         wetMaterialIndependent:original!==A.watercolourMaterialExperiment,
+        restoredV6,
         width:left.width,height:left.height,
         tissueBytes:tissueBefore.length,wetBytes:experimentalBefore.length,
         different:tissueBefore!==experimentalBefore,
@@ -38,6 +44,7 @@ try{
     });
     assert.equal(result.sameIdentity,true);
     assert.equal(result.wetMaterialIndependent,true);
+    assert.equal(result.restoredV6,true,'Stable V6 replay must remain pixel-identical');
     assert.equal(result.different,true,'Watercolour should visually differ from V6');
     assert.equal(result.paper,'#f5f0e6');
     assert.equal(result.rendererVersion,8);
