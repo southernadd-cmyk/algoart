@@ -34,7 +34,9 @@ function distanceSq(x,y,seg){
   var nx=x-seg.a.x-t*px,ny=y-seg.a.y-t*py;
   return nx*nx+ny*ny;
 }
-A.oilSurface=function(ctx,w,h,chains,seed,quality){
+A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
+  var base=kit?kit.paperRGB:BASE;
+  var pigments=kit?kit.inkRGB:PIGMENTS;
   var S=A.hash(seed+'|ground-field|1')>>>0;
   var segments=[],i,j,c,pts;
   for(i=0;i<Math.min(26,chains.length);i++){
@@ -60,15 +62,15 @@ A.oilSurface=function(ctx,w,h,chains,seed,quality){
     var effective=Math.sqrt(nearest)+gn*32+an*14;
     var t=clamp((reach-effective)/reach,0,1);
     t=smooth(t);
-    var pigment=chosen<0?BASE:PIGMENTS[(segments[chosen].group+A.hash(seed+'|tone|'+segments[chosen].group))%PIGMENTS.length];
+    var pigment=chosen<0?base:pigments[(segments[chosen].group+A.hash(seed+'|tone|'+segments[chosen].group))%pigments.length];
     var reachTint=chosen<0?0:clamp(.08+t*.78,0,.86);
     // Pale reserve areas persist, even among several nearby paths.
     var atmospheric=clamp(t*.8+.15*noise(x,y,215,S^141),0,1);
     var shade=(.11+atmospheric*.87)*reachTint;
     fields[j*cols+i]=[
-      lerp(BASE[0],pigment[0],shade),
-      lerp(BASE[1],pigment[1],shade),
-      lerp(BASE[2],pigment[2],shade)
+      lerp(base[0],pigment[0],shade),
+      lerp(base[1],pigment[1],shade),
+      lerp(base[2],pigment[2],shade)
     ];
   }
   var pixelRatio=quality<.5?3:(quality<.95?2.5:2);
