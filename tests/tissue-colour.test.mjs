@@ -74,7 +74,7 @@ for(const palette of ['earth','neon','mono','golden']){
   assert(colourKit.ink.length<=s.colourCount);
   assert.equal(colourKit.paper,s.paper,'Paper must follow composition settings');
   const restoredKit=A.tissueKitFromPaths(source,s,4);
-  assert.equal(restoredKit.paper,'#f5f0e6','New material always uses default paper');
+  assert.equal(restoredKit.paper,s.paper,'Tissue V4+ must honour the selected paper');
   if(palette==='mono'){
     assert(colourKit.inkRGB.every(([r,g,b])=>r===g&&g===b),
       'Monochrome must stay genuinely monochrome');
@@ -133,3 +133,29 @@ const next={...s,seed:s.seed+'-NEXT'};
 assert.notDeepEqual(Array.from(A.tissueKitFromPaths(marker(s),s,4).ink),
   Array.from(A.tissueKitFromPaths(marker(next),next,4).ink),'Seed must change pigment palette');
 console.log('PASS exact V1 drawing operations retained; seed changes paint, paper stays default');
+
+const cream={...s,paper:'#f5f0e6'},blue={...s,paper:'#1b3b59'};
+A.rendererVersion=8;
+const lockedCreamGeometry=JSON.stringify(marker(cream));
+A.rendererVersion=9;
+assert.equal(JSON.stringify(marker(cream)),lockedCreamGeometry,
+  'V9 must preserve all original V8 geometry on default cream paper');
+const creamPaths=JSON.stringify(marker(cream));
+const bluePaths=JSON.stringify(marker(blue));
+assert.equal(bluePaths,creamPaths,
+  'Changing paper must not alter any vector path in V9');
+for(const revision of [4,5,6]){
+  const creamKit=A.tissueKitFromPaths(marker(cream),cream,revision);
+  const blueKit=A.tissueKitFromPaths(marker(blue),blue,revision);
+  assert.equal(creamKit.paper,'#f5f0e6');
+  assert.equal(blueKit.paper,'#1b3b59');
+  assert.deepEqual(Array.from(creamKit.ink),Array.from(blueKit.ink),
+    'Paper colour must not change selected pigment colours');
+  assert.deepEqual(Array.from(creamKit.cream),Array.from(blueKit.cream),
+    'Paper colour must not recolour Tissue material pigment mixes');
+  assert.deepEqual(Array.from(creamKit.soft),Array.from(blueKit.soft));
+  assert.deepEqual(Array.from(creamKit.deep),Array.from(blueKit.deep));
+}
+assert.deepEqual(paint(cream,6),paint(cream,6),'V9 tissue stays deterministic');
+assert.deepEqual(paint(blue,6),paint(blue,6),'V9 tissue with custom paper stays deterministic');
+console.log('PASS V9 paper colour is independent of geometry and pigment; default cream preserves V8 marks');
