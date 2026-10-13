@@ -344,6 +344,7 @@ function syncCanvasFormat(s){
 var dragPreviewTimer=null,dragPreviewPending=false,lastCommittedRenderKey=null;
 A.renderTimings={previewMs:0,fullMs:0};
 function scheduleDragPreview(){
+  clearPreparedPNG();
   dragPreviewPending=true;
   if(dragPreviewTimer!==null)return;
   dragPreviewTimer=setTimeout(function(){
@@ -362,6 +363,7 @@ function finishDragPreview(){
 }
 
 function regenerate(){
+  clearPreparedPNG();
   if($('plotterPreview'))clearPlotterPreview();
   clearTimeout(dragPreviewTimer);dragPreviewTimer=null;dragPreviewPending=false;
   var s=A.readSettings();
@@ -896,7 +898,22 @@ function copyAltDescription(){
   }
 }
 
-var exportBusy=false;
+var exportBusy=false,preparedPNGURL=null,pngGeneration=0;
+function clearPreparedPNG(){
+  pngGeneration++;
+  if(preparedPNGURL){
+    // Allow an in-flight browser download to finish consuming the old URL.
+    var oldURL=preparedPNGURL;
+    setTimeout(function(){URL.revokeObjectURL(oldURL)},60000);
+    preparedPNGURL=null;
+  }
+  $('pngReady').hidden=true;
+  $('pngDownload').removeAttribute('href');
+  $('pngOpen').removeAttribute('href');
+  exportFeedback('');
+}
+$('exportScale').addEventListener('change',clearPreparedPNG);
+$('savePanel').textContent=mobileQuery.matches?'PREPARE PNG':'DOWNLOAD PNG';
 function exportFeedback(message){
   var label=$('exportStatus');
   if(label)label.textContent=message;
@@ -910,17 +927,24 @@ function savePNG(){
   var settings=Object.assign({},A.readSettings(),{
     oilRender:oilEnabled(),tissuePaletteVersion:tissuePaletteVersion
   });
-  if(mobileQuery.matches&&+$('exportScale').value===1){
-    // Android loses download permission when the user-click callback returns
-    // before toBlob finishes. Keep the encode and link click in this gesture.
-    try{
-      A.exportPNGDirect(settings,canvas,showGeometry);
-      exportFeedback('PNG download requested. Check Downloads if it does not appear.');
-    }catch(error){
-      exportFeedback('PNG export failed: '+error.message);
-    }finally{
+  if(mobileQuery.matches){
+    clearPreparedPNG();
+    var generation=pngGeneration;
+    exportFeedback('Preparing PNG…');
+    A.preparePNG(settings,+$('exportScale').value).then(function(file){
+      // Randomise/settings changes while encoding must not publish a stale PNG.
+      if(generation!==pngGeneration)return;
+      preparedPNGURL=URL.createObjectURL(file.blob);
+      $('pngDownload').href=preparedPNGURL;
+      $('pngDownload').download=file.filename;
+      $('pngOpen').href=preparedPNGURL;
+      $('pngReady').hidden=false;
+      exportFeedback('PNG ready. Tap DOWNLOAD PNG, or open the image to save it.');
+    }).catch(function(error){
+      if(generation===pngGeneration)exportFeedback('PNG export failed: '+error.message);
+    }).finally(function(){
       exportBusy=false;button.disabled=false;
-    }
+    });
     return;
   }
   A.exportPNG(settings,+$('exportScale').value).then(function(){
