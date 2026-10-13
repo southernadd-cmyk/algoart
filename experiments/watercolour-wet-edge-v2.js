@@ -166,17 +166,28 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness){
   pig.clip();
   pig.strokeStyle=col;
   pig.lineJoin='round';
-  // Wide/medium/narrow bands get progressively more pigment towards the
-  // ragged outline. Clipping prevents an artificial outside halo.
-  var bands=[
-    {width:width*.33,alpha:opacity*.075},
-    {width:width*.15,alpha:opacity*.14},
-    {width:Math.max(2,width*.035),alpha:opacity*.33}
-  ];
-  for(var i=0;i<bands.length;i++){
-    pig.lineWidth=bands[i].width;
-    pig.globalAlpha=bands[i].alpha;
-    pig.stroke();
+  // A single feathered capillary deposit: earlier concentric bands looked
+  // like translucent CAD outlines rather than water carried to a wet edge.
+  // The clip keeps any filter/shadow from escaping the perimeter.
+  var feather=clamp(width*.082,2.3,12);
+  if('filter' in pig)pig.filter='blur('+feather+'px)';
+  else{pig.shadowColor=col;pig.shadowBlur=feather;}
+  pig.lineWidth=clamp(width*.19,3,30);
+  pig.globalAlpha=opacity*.47;
+  pig.stroke();
+  // Local pigment concentration where the water sits a little longer.
+  // These irregular deposits do not repeat the whole edge contour.
+  pig.filter='none';pig.shadowBlur=0;
+  for(var i=1;i<pts.length-1;i++){
+    if(!r.chance(.39))continue;
+    var before=pts[i-1],after=pts[i+1],tangent=angle(before,after);
+    var sign=r.chance(.5)?1:-1;
+    var q=shift(pts[i],tangent+PI/2,sign*width*.44);
+    pig.beginPath();
+    pig.ellipse(q.x,q.y,clamp(width*.065,2,12),
+      clamp(width*.014,.8,2.6),tangent,0,PI*2);
+    pig.globalAlpha=opacity*r.range(.055,.12);
+    pig.fillStyle=col;pig.fill();
   }
   pig.restore();
   pig.restore();
