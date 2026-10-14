@@ -69,6 +69,7 @@ try{
   assert.match(await page.locator('#materialControlsNote').textContent(),/Watercolour PNGs/);
 
   // Actual desktop download, not just a successful Canvas render.
+  await page.locator('#tab-export').click();
   const [download]=await Promise.all([
     page.waitForEvent('download',{timeout:180000}),
     page.locator('#savePanel').click()
@@ -77,6 +78,7 @@ try{
   const stream=await download.createReadStream();
   let size=0;for await (const chunk of stream)size+=chunk.length;
   assert(size>20000,'Export file is blank');
+  await page.locator('#tab-composition').click();
 
   await page.locator('#materialStyle').selectOption('tissue');
   assert.equal(new URL(page.url()).searchParams.get('material'),null);
