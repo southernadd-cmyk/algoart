@@ -1,0 +1,54 @@
+name: Experimental Watercolour V2S source fidelity
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/oil-render.js'
+      - 'experiments/watercolour-v2s-fidelity.js'
+      - 'experiments/WATERCOLOUR_V2S_FIDELITY.md'
+      - 'tests/watercolour-v2s-fidelity.mjs'
+      - '.github/workflows/watercolour-v2s-experiment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser automation dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Parse experimental and existing material scripts
+        run: |
+          node --check js/oil-render.js
+          node --check experiments/watercolour-v2s-fidelity.js
+          node --check tests/watercolour-v2s-fidelity.mjs
+          node tests/materials-ui.test.mjs
+          node tests/tissue-colour.test.mjs
+      - name: Start local, unreleased ALGO ART editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/v2s-fidelity.log 2>&1 &
+          for i in {1..35}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/v2s-fidelity.log
+          exit 1
+      - name: Render same-seed V2R and V2S comparisons and verify fallback
+        run: node tests/watercolour-v2s-fidelity.mjs
+      - name: Archive full resolution six-study image pairs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-v2r-v2s-matched
+          path: watercolour-v2r-v2s-matched/
+          if-no-files-found: warn
+          retention-days: 14
