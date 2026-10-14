@@ -3983,7 +3983,8 @@ A.render=function(target,s,scale,showGeometry){
     strategy:(meta&&meta.strategy)||chooseStrategy(s),
     voids:phiFrame?A.phiSheetFit.transformVoids((meta&&meta.voids)||[],phiFrame):
       (meta&&meta.voids)||[],
-    guide:(meta&&meta.guide)||null
+    guide:phiFrame?A.phiSheetFit.transformGuide((meta&&meta.guide)||null,phiFrame):
+      (meta&&meta.guide)||null
   };
   if(phiFrame)A.lastRenderMeta.phiSheetFrame=phiFrame;
   return A.lastRenderMeta;
