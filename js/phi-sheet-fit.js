@@ -88,6 +88,37 @@ function transformVoids(voids,fit){
       w:v.w*fit.scale,h:v.h*fit.scale};
   });
 }
+function transformGuide(guide,fit){
+  // Interactive hit-testing uses the fitted positions; the reveal layer is
+  // drawn during the same Canvas transform using the raw generator guide.
+  // Numbers not representing coordinates, such as edge indices, remain.
+  if(!guide)return guide;
+  function walk(value){
+    if(Array.isArray(value))return value.map(walk);
+    if(!value||typeof value!=='object')return value;
+    var copied={};
+    Object.keys(value).forEach(function(key){copied[key]=walk(value[key])});
+    if(typeof value.x==='number'&&typeof value.y==='number'){
+      copied.x=value.x*fit.scale+fit.tx;
+      copied.y=value.y*fit.scale+fit.ty;
+    }
+    if(typeof value.x1==='number'&&typeof value.y1==='number'){
+      copied.x1=value.x1*fit.scale+fit.tx;
+      copied.y1=value.y1*fit.scale+fit.ty;
+    }
+    if(typeof value.x2==='number'&&typeof value.y2==='number'){
+      copied.x2=value.x2*fit.scale+fit.tx;
+      copied.y2=value.y2*fit.scale+fit.ty;
+    }
+    for(var i=0,keys=['w','h','radius','territory','size'];i<keys.length;i++){
+      var dim=keys[i];
+      if(typeof value[dim]==='number')copied[dim]=value[dim]*fit.scale;
+    }
+    return copied;
+  }
+  return walk(guide);
+}
 A.phiSheetFit={PHI:PHI,INV:INV,INV2:INV2,bounds:bounds,plan:plan,
-  transformRecorded:transformRecorded,transformVoids:transformVoids};
+  svgPath:svgPath,transformRecorded:transformRecorded,
+  transformVoids:transformVoids,transformGuide:transformGuide};
 })(window.AlgoArt);
