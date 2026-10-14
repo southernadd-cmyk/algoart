@@ -40,7 +40,10 @@ try{
     });
     assert(a.v7identical,'V7 pigment/blooms not deterministic');
     assert(a.v6unchanged,'V7 contaminated historic V6 renderer');
-    assert.notEqual(a.v6.png,a.v7.png,'New tissue hue/blooms had no visible effect');
+    if(c.palette==='mono')assert.equal(a.v6.png,a.v7.png,
+      'Neutral Marker palette must not darken the historical tissue artwork');
+    else assert.notEqual(a.v6.png,a.v7.png,
+      'Chromatic source ink must visibly recolour tissue and blooms');
     assert.equal(a.v7.stats.tissuePaletteVersion,7);
     assert(a.v7.stats.sourceMatchedChains>0,'Original marker ink not preserved');
     assert.deepEqual(a.v7.stats.atmosphericBloomColours,a.v7.stats.inkColours,
