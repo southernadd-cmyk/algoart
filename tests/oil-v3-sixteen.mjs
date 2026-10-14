@@ -161,7 +161,7 @@ try{
   }
   // Compare exactly the same seed in the previous and new paint engine.
   const pairs=result.map(e=>({v2:'/'+root+'/'+e.v2File,
-    v2:'/'+root+'/'+e.file,name:e.group+' '+e.number+' '+e.mode}));
+    v3:'/'+root+'/'+e.file,name:e.group+' '+e.number+' '+e.mode}));
   const sideBySide=await page.evaluate(async inputs=>{
     const width=570,height=220,cols=2;
     const out=document.createElement('canvas');
@@ -171,7 +171,7 @@ try{
     for(let i=0;i<inputs.length;i++){
       let p=inputs[i],baseX=(i%2)*width,y=Math.floor(i/2)*height;
       for(let k=0;k<2;k++){
-        const im=new Image();im.src=k?p.v2:p.v2;
+        const im=new Image();im.src=k?p.v3:p.v2;
         await new Promise((resolve,reject)=>{im.onload=resolve;im.onerror=reject});
         let zoom=Math.min(274/im.width,184/im.height);
         const x=baseX+5+k*282;
@@ -180,11 +180,11 @@ try{
           y+4+(184-im.height*zoom)/2,im.width*zoom,im.height*zoom);
       }
       g.fillStyle='#222';g.font='12px sans-serif';
-      g.fillText(p.name+' — V2 left, V2 right',baseX+8,y+210);
+      g.fillText(p.name+' — V2 left, V3 right',baseX+8,y+210);
     }
     return out.toDataURL('image/jpeg',.92).split(',')[1];
   },pairs);
-  await writeFile(root+'/oil-v2-v2-matched-contact-sheet.jpg',
+  await writeFile(root+'/oil-v2-v3-matched-contact-sheet.jpg',
     Buffer.from(sideBySide,'base64'));
   // Four 100% pixel crops; inspect bristle relief without downscaling.
   for(const n of [1,2,4,7]){
