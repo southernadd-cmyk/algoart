@@ -6,7 +6,7 @@ import { mkdir,writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
-const folder='watercolour-same-seed-v2k-v2m';
+const folder='watercolour-same-seed-v2l-v2m';
 await mkdir(folder,{recursive:true});
 const keys=['mode','orientation','seed','elements','density','complexity',
   'negativeSpace','phiStrength','recursion','spiralInfluence','goldenAngle',
