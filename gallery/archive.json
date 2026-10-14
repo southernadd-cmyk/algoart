@@ -2,6 +2,19 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-10-14",
+      "cover": "2026-10-14-01-scribble-AA-20261014-01-22539.jpg",
+      "coverOrientation": "landscape",
+      "count": 5,
+      "series": [
+        "Automatic Marks",
+        "Orbital Studies",
+        "Golden Trajectories",
+        "Recursive Divisions",
+        "Radiant Systems"
+      ]
+    },
+    {
       "date": "2026-10-13",
       "cover": "2026-10-13-01-geometric-AA-20261013-01-63386.jpg",
       "coverOrientation": "landscape",
