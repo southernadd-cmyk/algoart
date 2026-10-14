@@ -151,3 +151,9 @@ V2O water/pigment conservation, determinism and V6 reproduction.
 zoom in on the lower-left grey burst polygon and the straight grey
 Recursive Divisions bars, and reject if the new texture looks jagged,
 loss of hard edges, or any new optical outlines. No release unless reviewed.
+
+V2P additionally re-renders exact V2O gallery seeds
+`WC-V2O-BURST-36D948DEEE` and `WC-V2O-RECTS-22DA084F28`
+(with every archived control preserved). These specifically target the grey
+burst polygon's comb ticks and the straight grey block edges in Recursive
+Divisions. See the `watercolour-v2o-targeted-v2p` Actions artifact.
