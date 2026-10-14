@@ -200,7 +200,11 @@ function syncMaterialNote(){
   var toggle=$('watercolourFit');
   if(toggle)toggle.checked=watercolourFitToSheet;
   var phiToggle=$('phiSheetFit');
-  if(phiToggle)phiToggle.checked=phiSheetFraming;
+  if(phiToggle){
+    phiToggle.checked=phiSheetFraming;
+    // V2R must be byte-stable; it has its own historical presentation.
+    phiToggle.disabled=watercolourEnabled()&&watercolourMaterialRevision==='v2r';
+  }
   var phiInfo=$('phiSheetInfo');
   if(phiInfo&&!phiSheetFraming)
     phiInfo.textContent='Off · original source geometry and placement.';
@@ -219,7 +223,8 @@ function syncMaterialNote(){
     ' PNG saves the visible material; SVG and plotter exports retain the original marker paths.';
 }
 function renderArtwork(target,settings,scale,reveal){
-  A.phiFramingEnabled=phiSheetFraming;
+  A.phiFramingEnabled=phiSheetFraming&&
+    !(watercolourEnabled()&&watercolourMaterialRevision==='v2r');
   if(watercolourEnabled()){
     if(watercolourMaterialRevision==='v2r')
       return A.renderWatercolourV2R(target,settings,scale,reveal);
@@ -241,7 +246,8 @@ function settingsToURL(settings){
     if(typeof value==='boolean')value=value?'1':'0';
     params.set(PARAM_KEYS[key],String(value));
   });
-  if(phiSheetFraming)params.set('sheet','phi');
+  if(phiSheetFraming&&!(watercolourEnabled()&&watercolourMaterialRevision==='v2r'))
+    params.set('sheet','phi');
   if(watercolourEnabled()){
     params.set('material','watercolour-'+watercolourMaterialRevision);
     if(watercolourMaterialRevision==='v2s')
