@@ -23,7 +23,7 @@ var C={
 var originalC=C;
 // Draft-only material controls, not a live editor setting. One rim and one
 // irregular capillary falloff, with no concentric cosmetic stroke passes.
-A.watercolourV2kOptions={edgeDarkening:.55,interiorMottle:.24};
+A.watercolourV2kOptions={edgeDarkening:.55,interiorMottle:.24,paleEdgePooling:.68};
 function coloursForInk(kit){
   if(kit.revision>=4){
     var seeded={};
@@ -294,19 +294,11 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
   pig.globalAlpha=opacity*(edgeState==='dry'?.45:edgeState==='damp'?.40:.30);
   pig.fillStyle=col;
   pig.fill();
+  // V2L: no vector polygon stroke along the inner wash contour. A single
+  // density-gradient pigment bank is laid down later in paper space, after
+  // capillary transport. This also reaches transparent/pale washes.
   pig.save();
-  pig.clip(); // wet rims never sit as artificial dark halos beyond the wash
-  pig.strokeStyle=col;
-  pig.lineJoin='round';
-  // V2k: ONE drying rim. No wide, equally-spaced nested stroke bands,
-  // and no symmetrical shadow blur. Paper-flow adds the sole soft falloff.
-  var edgeFactor=clamp(A.watercolourV2kOptions.edgeDarkening,0,1);
-  pig.filter='none';pig.shadowBlur=0;
-  pig.lineWidth=edgeState==='dry'?clamp(width*.023,.62,1.9):
-    clamp(width*.035,.8,2.9);
-  pig.globalAlpha=opacity*edgeFactor*(edgeState==='dry'?.57:.88);
-  pig.stroke();
-  pig.filter='none';pig.shadowBlur=0;
+  pig.clip();
   // Sparse irregular pooling. No second complete contour/parallel CAD line.
   if(edgeState!=='dry'){
     for(var i=1;i<pts.length-1;i++){
@@ -353,12 +345,8 @@ function paintColourPool(ctx,pts,width,r,colourA,colourB,opacity){
   ctx.save();ctx.globalCompositeOperation='multiply';
   ctx.globalAlpha=opacity*.57;ctx.fillStyle=colourA;ctx.fill();
   ctx.clip();
-  // The colour pool receives only one narrow pigment-loaded drying rim.
-  // The adjacent blur arises through paper transport, never parallel bands.
-  ctx.strokeStyle=colourA;
-  ctx.lineWidth=clamp(width*.028,.7,2.7);
-  ctx.globalAlpha=opacity*clamp(A.watercolourV2kOptions.edgeDarkening,0,1)*.65;
-  ctx.stroke();
+  // V2L: avoid a second perfectly aligned polygon outline. Pigment banks
+  // form from concentration gradients across the real paper-flow raster.
   var shiftSide=r.chance(.5)?1:-1;
   var center=shift(middle,ang+PI/2,shiftSide*width*r.range(.02,.18));
   var radius=width*r.range(.53,.95);
@@ -844,6 +832,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     if(drops.some(function(d){return Math.hypot(cx-d.x,cy-d.y)<radius*2.7}))continue;
     drops.push({x:cx,y:cy,r:radius,phase:rand.range(0,Math.PI*2)});
   }
+  var edgeBankPixels=0,paleEdgeBankPixels=0;
   for(y=0;y<h;y++)for(x=0;x<w;x++){
     pi=y*w+x;var p=pi*3,out=pi*4;
     var grit=(hashNoise(x,y,seedValue^0x4251)-.5);
@@ -859,6 +848,23 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
       clamp(A.watercolourV2kOptions.interiorMottle,0,.6)*
       concentration*(.75+.7*earth);
     var settle=clamp(1+scale+mottle,.58,1.48);
+    // ONE pigment-loaded drying bank at the *inner* water boundary. Measure
+    // the downhill concentration gradient in paper space, rather than drawing
+    // the source polygon again. On thin pale washes this stays visible;
+    // noisy paper absorbency interrupts the rim to prevent a CAD contour.
+    var loaded=Math.max(source[p],source[p+1],source[p+2]);
+    var lowest=loaded,step=2;
+    if(x>=step){var n=(pi-step)*3;lowest=Math.min(lowest,Math.max(source[n],source[n+1],source[n+2]));}
+    if(x+step<w){n=(pi+step)*3;lowest=Math.min(lowest,Math.max(source[n],source[n+1],source[n+2]));}
+    if(y>=step){n=(pi-step*w)*3;lowest=Math.min(lowest,Math.max(source[n],source[n+1],source[n+2]));}
+    if(y+step<h){n=(pi+step*w)*3;lowest=Math.min(lowest,Math.max(source[n],source[n+1],source[n+2]));}
+    var gradient=clamp((loaded-lowest)/(.018+loaded*.36),0,1);
+    var irregular=clamp(.45+.9*tooth[pi]+.28*(formation[pi]-.5),.38,1.35);
+    var pale=clamp((.16-loaded)/.16,0,1);
+    var bank=loaded>.013?gradient*irregular*
+      clamp(A.watercolourV2kOptions.edgeDarkening,0,1)*
+      (.085+.13*pale*clamp(A.watercolourV2kOptions.paleEdgePooling,0,1)):0;
+    if(bank>.008){edgeBankPixels++;if(pale>.35)paleEdgeBankPixels++;}
     var bloom=1;
     for(var d=0;d<drops.length;d++){
       var drop=drops[d],dx=x-drop.x,dy=y-drop.y;
@@ -874,7 +880,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     for(c=0;c<3;c++){
       // A gentle upper bound on optical density stops dark overlapping
       // glazes collapsing into electronic near-black. Glazes still stack.
-      var amount=Math.min(.89,source[p+c]*settle*bloom);
+      var amount=Math.min(.89,source[p+c]*settle*bloom+bank*(.55+.45*clamp(source[p+c]/Math.max(.02,loaded),0,1)));
       // Base cream stays nominally unchanged; its very subtle tooth
       // shading is continuous across blank and painted sheet, not a tile.
       var paperShade=(tooth[pi]-.5)*4.8+(paperGrain[pi]/255-.5)*2.4;
@@ -883,8 +889,9 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
-  return {paperModel:'V2g non-tiled rotated tooth + visible fibre shading + capillary flow',
-    diffusionPasses:passes,waterBlooms:drops.length};
+  return {paperModel:'V2L non-tiled tooth + capillary flow + single inner pigment bank',
+    diffusionPasses:passes,waterBlooms:drops.length,edgeBankPixels:edgeBankPixels,
+    paleEdgeBankPixels:paleEdgeBankPixels};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
 // All changes here are an EXPERIMENTAL presentation-space adjustment.
@@ -988,9 +995,10 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
       pigmentSpreadMax:Math.max.apply(null,kit.ink.map(function(v){return pigmentSpread(pigmentInk(v))})),
       compositionPresentation:presentation.stats,
-      effect:'V2k single irregular drying rim, non-tiled pigment mottle, warm gamut and tapered wet ink',
+      effect:'V2L raster-only single drying bank including pale washes; no vector wash contours',
       edgeDarkening:A.watercolourV2kOptions.edgeDarkening,
       interiorMottle:A.watercolourV2kOptions.interiorMottle,
+      paleEdgePooling:A.watercolourV2kOptions.paleEdgePooling,
       washStates:{dry:washStats.dry,damp:washStats.damp,wet:washStats.wet},
       widthCaps:{broad:127,hero:67},washWidths:{broadMax:washStats.broadWidthMax,
         heroMax:washStats.heroWidthMax},
