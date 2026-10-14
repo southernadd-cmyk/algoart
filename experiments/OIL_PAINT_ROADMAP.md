@@ -1,9 +1,9 @@
-# ALGO/ART — Procedural Oil Paint Roadmap (after V3c)
+# ALGO/ART — Oil Material & Shared Interpretation Roadmap (after V3c)
 
 **Status:** planning document, 15 October 2026. **Not approval to deploy.**
-**Baseline:** V3c on \`experiment/oil-paint-v3c-organic-tips-and-masses\` (draft PR #85).
+**Baseline:** V3c on `experiment/oil-paint-v3c-organic-tips-and-masses` (draft PR #85).
 **Comparators:** frozen V1, V2, V3, V3b and V3c studies. Same 8 fixed + 8 seeded-random cases.
-**North star:** the golden ratio proposes composition; paint creates the surface. Render original ALGO/ART source geometry, not a generated or retrieved reference image.
+**North star:** the golden ratio proposes composition; each material decides how its marks or regions physically express that composition. Render original ALGO/ART source geometry, not a generated or retrieved reference image.
 
 ## 1. Diagnosis from actual renders
 
@@ -13,12 +13,12 @@ but normal-sized images still often resemble thick ink/marker drawings. V3c runs
 ~170.6 ms on average for 16 tests at 0.7 scale versus V3b ~144.5 ms (separate
 CI runs, not controlled performance benchmarks).
 
-Key causes in current \`js/oil-paint-v3.js\`:
+Key causes in current `js/oil-paint-v3.js`:
 
-1. **Line-following paradigm:** \`getChains()\` extracts Marker paths and \`paintOne()\`
+1. **Line-following paradigm:** `getChains()` extracts Marker paths and `paintOne()`
    independently follows each path. V3c patches decorate those chains rather than
    replacing marks with painterly planes. Main blocker for painted appearance.
-2. **Segmented contact:** \`sample(pts,7)\` followed by independently randomized
+2. **Segmented contact:** `sample(pts,7)` followed by independently randomized
    contact decisions per sampled point can create short gaps and regular disconnected
    marks. The old 2×2 pixel hash was fixed in V3c, but not every blocky-looking tip
    originates from that hash.
@@ -34,11 +34,11 @@ Key causes in current \`js/oil-paint-v3.js\`:
 6. **Weak visual test hierarchy:** CI confirms pixels exist and are deterministic,
    but cannot tell whether they look like convincing oils.
 
-**Architectural change:** introduce a deterministic **paint plan** between the
+**Architectural change:** introduce a deterministic, optional **composition interpretation plan** between the
 φ-governed source geometry and the pigment/height rasterizer:
 
-\`ALGO/ART source & metadata -> mark/region planner -> paint passes ->
-brush contacts & pigment transfers -> height-aware finishing -> export\`.
+`ALGO/ART source & metadata -> mark/region planner -> paint passes ->
+brush contacts & pigment transfers -> height-aware finishing -> export`.
 
 Do not start with fluid dynamics, whole-image AI stylization, a global blur, or
 further decorative grain. Treat abstract source shapes as constraints, *not*
@@ -88,30 +88,83 @@ the eight engines.
   changing load across long and short brush strokes, no checkerboard or repetitive
   stamp sequence; acceptable speed on test cards.
 
-### V5: Translate geometry into a layered *painting plan* (main artistic leap)
+### V5: Shared composition interpretation for **every material** (main architectural leap)
 
-**Aim:** stop tracing each Marker path as a thick line.
+**Aim:** separate what ALGO/ART composes from how a chosen material expresses it.
+The planner is **material-agnostic**. Oil paint is the first demanding test,
+but the resulting system should be available **optionally** for Marker,
+Tissue & Graphite, Watercolour and Oil Paint. This is an explicit change to
+the earlier oil-only V5 proposal.
 
-- Derive deterministic local regions from nearby related source paths (spatial
-  overlap, tangent, hue, shared φ territory and importance), while preserving
-  source focal points and geometric relationships.
-- Construct **three passes:** (1) broad, selectively opaque colour blocking,
-  (2) medium directional marks that create weight/volume and overlap, (3) a
-  minority of small accent/edge strokes. Bigger brushes first, smaller where
-  contrast or structure demands it. Never paint in every gap.
-- Create source-derived region masks and **protected negative-space** regions.
-  Avoid global convex hulls and keep disjoint islands separate. Painted shapes
-  may expand organically around source marks without moving their centres.
-- Region orientation/brush choice may vary by engine: rectilinear for Constructed
-  Forms/Recursive Divisions, curved sweeps for Golden Trajectories/Growth Systems,
-  masses punctuated by flicks for Automatic Marks/Radiant Systems, directional
-  connections for Connected Fields/Orbital Studies.
-- Each pass has its own paint load, scale and source-derived colour; use
-  per-region independent RNG so changes do not re-randomize unrelated regions.
-- **Gate:** dramatic and observable shift away from marker-line drawing at
-  normal screen size, while φ composition, intentional voids and palette remain
-  recognizable across all eight engines. If this fails, **do not** spend another
-  iteration polishing highlights or canvas grain.
+**Public-facing concept (names provisional):**
+- **Faithful paths (default):** original path-led material rendering exactly as
+  before. Historical images, established seeds and share URLs must remain
+  pixel-identical; no migration of archived renderer versions.
+- **Interpreted areas (opt-in):** use the source's focal structure, φ territories,
+  related geometry and negative spaces to plan coherent regions, broad masses,
+  medium gesture passes and selective fine detail. This is not an indiscriminate
+  "fill polygons" mode and not a new source composition.
+- A **hybrid/strength** control can come later, once the two distinct modes work
+  and remain predictable. Do not introduce multiple controls prematurely.
+
+**Pipeline:**
+`eight source engines -> source geometry & metadata -> optional shared
+interpretation planner -> material-specific deposition/rendering -> export`.
+
+**Planner responsibilities:**
+1. Capture source paths/primitives, order, source colours, scale, bounds,
+   mode/territory and any hierarchy/focal/negative-space metadata. The current
+   recorder is primarily path-based; add explicit descriptors only when needed,
+   rather than pretending that every curve is already a filled region.
+2. Group spatially/tangentially/semantically related shapes into bounded,
+   deterministic candidate regions. Keep disjoint clusters separate, preserve
+   protected voids, important accents and dominant φ relationships.
+3. Output a **non-material-specific plan** of source-linked regions, layered
+   masses, directional gestures, and accents with stable IDs and per-region
+   random streams. Geometry is generated once, *before* material simulation.
+4. Give the material adapter freedom to **express** the plan but not to silently
+   invent unrelated structure or move focal masses. Audit coverage/negative
+   space and original source path lineage in debug views.
+5. Keep plan-version, interpretation mode and optional strength explicit in
+   share state; use deterministic sub-seeds so switching material/approach
+   never changes the underlying ALGO/ART source composition. A saved painting
+   must not silently become a different picture after updates.
+
+**Material adapters (same plan, different physical expression):**
+
+| Material | What "Interpreted areas" should produce | What it must preserve |
+|---|---|---|
+| Marker | Broader drawn or filled marker masses, overlapping stroke groups, selected linework | Visible human-marker character, deliberate gaps and original fine path mode |
+| Tissue & Graphite | Larger overlapping translucent/torn pieces for broad regions; graphite following selected structure, edges and details | Darkening-overlap/paper-cut character, graphite identity and source-related piece placement |
+| Watercolour | Wash regions, gradual overlaps, pigment rims and dry-brush accents; local water/pigment behaviour | Transparent wash behaviour, seed palette, clean reserved white/cream areas and wet-edge logic |
+| Oil (experimental) | Opaque broad colour blocking, mid-scale loaded strokes, selective impasto detail | Oil bristle physics, additive paint relief, direction, physical overpainting and φ structure |
+
+**Rollout and scope discipline:** prove the planner in **one engine and two
+contrasting materials** (suggest Oil + Tissue & Graphite, then Watercolour
+and Marker) before claiming it is truly material-independent. Expand to the
+eight engines using matched seeds and both sparse/dense cases; gate other
+materials independently. Oil itself remains unreleased while the shared
+planner can mature. Do **not** put oil-specific paint load, wetness or
+bristle geometry inside the shared planner.
+
+**Tests/gate:**
+- Existing default renders, historical versions, SVG/plotter exports and
+  production social/gallery runs do not change.
+- Matched source seed + settings = same focal placement, φ envelope, palette
+  family and intentional voids across *all* material adapters, even when
+  the material's mark shapes differ.
+- Planner produces stable output independent of material selection, identical
+  across repeated runs; toggling interpretation changes only the rendering
+  strategy, not the source geometry/seed.
+- For each adapter, visually convincing material-specific regions rather than
+  identical region silhouettes with cosmetic textures. No erosion of the
+  original eight-engine identities.
+- Oil benchmark: clear departure from tracing every Marker path at normal
+  screen size; if that fails, do not spend another version polishing lighting.
+
+**Decision:** V5 becomes an **optional shared ALGO/ART interpretation feature**,
+not an oil-only rendering component and **not a default behaviour change**.
+Keep production integration behind separate explicit review gates.
 
 ### V6: Local wet paint transfer and layered colour
 
@@ -149,8 +202,12 @@ over a digital line.
 - **Gate:** better oil impression at normal and close inspection, stable
   performance with no repeated-download regressions.
 
-### V8: Integration only after visual approval
+### V8: Production integration only after material-by-material approval
 
+- Integrate the **optional shared interpretation switch** into each existing
+  material only after that adapter passes its own visual and regression gates.
+  Keep Faithful paths as the default and encode interpretation/version in
+  share URLs without changing the underlying seed.
 - Maintain oil as a separately versioned material rather than rename historical
   Tissue & Graphite modules, and preserve SVG/plotter source paths.
 - Make material-aware parameter controls and exports match the new semantics.
