@@ -3,7 +3,7 @@ window.AlgoArt=window.AlgoArt||{};
 'use strict';
 
 var COMMON={
-  materialStyle:'Choose Marker drawing or Tissue & Graphite. The same composition is used for both. PNG exports show the chosen material; SVG exports retain underlying marker paths.',
+  materialStyle:'Choose Marker drawing, Tissue & Graphite, or Watercolour. All three share the same underlying composition. PNG exports show the selected material; SVG and plotter exports retain the original marker paths.',
   elements:'Adds more marks to the composition.',
   density:'Makes the marks larger or smaller.',
   complexity:'Bends curved line strokes more strongly.',
@@ -238,6 +238,17 @@ var TISSUE_HELP={
   pressure:'Varies the width of source strokes. This is not pressure applied to a graphite pencil.',
   dryness:'Adds gaps and breaks to source strokes at higher values. This does not simulate a separate dry brush.'
 };
+// Watercolour uses the SAME persisted source mark profiles, but its
+// explanations must describe paint/brush behaviour rather than tissue sheets.
+var WATERCOLOUR_HELP={
+  pen:'Selects the source mark profile used to arrange watercolour washes and fine dry brush strokes. This controls source geometry; the watercolour renderer supplies the physical-looking paint finish.',
+  thickness:'Sets the width of the original source strokes. The resulting watercolour wash and dry brush scale from that geometry.',
+  wobble:'Adds irregularity to the source mark geometry beneath the watercolour.',
+  overdraw:'Repeats source strokes. Watercolour combines the resulting paths into washes and brushwork; this does not change the number of drying stages.',
+  opacity:'Controls underlying source ink transparency. Watercolour uses its own pigment density and translucent glazing.',
+  pressure:'Varies source stroke width, which informs the later watercolour brush footprint.',
+  dryness:'Breaks up source strokes at higher values. It does not change the moisture or evaporation rate in the watercolour renderer.'
+};
 var penControl=document.getElementById('pen'),MARKER_PROFILES={};
 if(penControl)Array.prototype.forEach.call(penControl.options,function(option){
   MARKER_PROFILES[option.value]=option.textContent;
@@ -323,26 +334,32 @@ A.syncControlHelp=function(mode,version,meta){
   version=version||6;
   var palette=document.getElementById('palette');
   var monochrome=palette&&palette.value==='mono';
-  var tissue=document.getElementById('materialStyle')?.value==='tissue';
+  var selectedMaterial=document.getElementById('materialStyle')?.value;
+  var tissue=selectedMaterial==='tissue';
+  var watercolour=selectedMaterial==='watercolour';
+  var painted=tissue||watercolour;
   // Change only visible text. Never replace option nodes or their stable
   // values: the existing seed, URL, saved images and exports use these IDs.
   if(penControl)Array.prototype.forEach.call(penControl.options,function(option){
-    option.textContent=tissue?(TISSUE_PROFILES[option.value]||MARKER_PROFILES[option.value]):
+    option.textContent=painted?(TISSUE_PROFILES[option.value]||MARKER_PROFILES[option.value]):
       MARKER_PROFILES[option.value];
   });
   var controlsNote=document.getElementById('materialControlsNote');
-  if(controlsNote)controlsNote.textContent=tissue?
-    'These settings shape the source marks used to arrange the tissue and graphite. Profiles describe those marks, not physical brushes or highlighters. Tissue PNGs apply their own material finish; SVG and plotter exports use the underlying marker paths.':
-    'Choose Marker or Tissue & Graphite in Compose. Marker tools control the visible ink strokes. Tissue & Graphite converts their source paths into torn-paper and graphite artwork; SVG and plotter exports use marker paths.';
+  if(controlsNote)controlsNote.textContent=watercolour?
+    'These source mark profiles organise watercolour shapes and dry brushwork. They are not literal highlighters or pens. Watercolour PNGs include paper texture, flowing washes and dry brush; SVG and plotter exports retain the underlying marker paths.':
+    tissue?'These settings shape the source marks used to arrange the tissue and graphite. Profiles describe those marks, not physical brushes or highlighters. Tissue PNGs apply their own material finish; SVG and plotter exports use the underlying marker paths.':
+    'Choose Marker, Tissue & Graphite, or Watercolour in Compose. Marker tools control the visible ink strokes. Other materials convert the same source paths into textured artwork; SVG and plotter exports use marker paths.';
   entries.forEach(function(entry){
     var rangeInput=document.getElementById(entry.id);
     if(rangeStates[entry.id])displayRange(rangeInput,rangeStates[entry.id]);
     entry.row.hidden=inactiveControl(mode,entry.id,version,meta)||(monochrome&&(entry.id==='saturation'||entry.id==='brightness'));
     entry.label.textContent=monochrome&&entry.id==='colourCount'?'Tones':
-      (tissue&&TISSUE_LABELS[entry.id]||((SYSTEM_LABELS[mode]||{})[entry.id]||LABELS[entry.id]||entry.name));
+      (painted&&TISSUE_LABELS[entry.id]||((SYSTEM_LABELS[mode]||{})[entry.id]||LABELS[entry.id]||entry.name));
     entry.button.setAttribute('aria-label','About '+entry.label.textContent);
-    entry.hint.textContent=tissue&&entry.id==='grain'?'Tissue & Graphite has its own paper finish. This grain setting applies to Marker drawing.':
-      (tissue&&TISSUE_HELP[entry.id]||helpText(mode,entry.id,version));
+    entry.hint.textContent=painted&&entry.id==='grain'?
+      'This material simulates its own paper texture. This grain setting applies to Marker drawing.':
+      (watercolour&&WATERCOLOUR_HELP[entry.id]||
+        tissue&&TISSUE_HELP[entry.id]||helpText(mode,entry.id,version));
     if(active===entry&&entry.row.hidden)closeHelp();
   });
   shapeChecks.forEach(function(check){
@@ -354,8 +371,8 @@ A.syncControlHelp=function(mode,version,meta){
   var checks=document.querySelector('.checks');
   if(checks)checks.hidden=shapeChecks.every(function(check){return check.label.hidden});
   var mutate=document.getElementById('mutate'),randomise=document.getElementById('randomise');
-  if(mutate)mutate.title='Try a few small changes. Keep the current system, material, '+(tissue?'source mark profile':'mark-making tool')+' and palette.';
-  if(randomise)randomise.title='Try a new seed, system, '+(tissue?'source mark profile':'mark-making tool')+', palette and slider settings. Keep the selected material, paper colour and shape choices.';
+  if(mutate)mutate.title='Try a few small changes. Keep the current system, material, '+(painted?'source mark profile':'mark-making tool')+' and palette.';
+  if(randomise)randomise.title='Try a new seed, system, '+(painted?'source mark profile':'mark-making tool')+', palette and slider settings. Keep the selected material, paper colour and shape choices.';
   if(active)placeHelp(active);
 };
 A.closeControlHelp=closeHelp;

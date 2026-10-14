@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ece7d9">
 <title>ALGO/ART — Golden-ratio generative drawing system</title>
-<meta name="description" content="The algorithm creates the structure. The materials bring the human texture. Create seeded generative art composed with φ, in marker ink or translucent tissue and graphite.">
+<meta name="description" content="The algorithm creates the structure. The materials bring the human texture. Create seeded generative art composed with φ, in marker ink, translucent tissue and graphite, or watercolour.">
 <link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <meta property="og:type" content="website">
 <meta property="og:title" content="ALGO/ART — Golden-ratio generative drawing system">
-<meta property="og:description" content="The algorithm creates the structure. The materials bring the human texture. Seeded φ compositions in marker ink or translucent tissue and graphite.">
+<meta property="og:description" content="The algorithm creates the structure. The materials bring the human texture. Seeded φ compositions in marker ink, translucent tissue and graphite, or watercolour.">
 <meta property="og:url" content="https://southernadd-cmyk.github.io/algoart/">
 <meta property="og:image" content="https://southernadd-cmyk.github.io/algoart/social-card.png">
 <meta property="og:image:width" content="1280">
@@ -19,9 +19,9 @@
 <meta name="twitter:title" content="ALGO/ART — Golden-ratio generative drawing system">
 <meta name="twitter:description" content="The algorithm creates the structure. The materials bring the human texture.">
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/social-card.png">
-<link rel="stylesheet" href="css/style.css?v=20261014-material-profiles">
+<link rel="stylesheet" href="css/style.css?v=20261014-watercolour-v2r">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/marker-font.css?v=20261014-material-profiles">
+<link rel="stylesheet" href="css/marker-font.css?v=20261014-watercolour-v2r">
 </head>
 <body>
 <div class="intro-splash" id="introSplash" hidden>
@@ -38,7 +38,7 @@
         <div class="intro-principles">
           <div><b>01</b><strong>φ PROPOSES THE COMPOSITION.</strong><span>1.618 proportions, 61.8 / 38.2 divisions and the 137.5° golden angle shape position, scale, spacing and movement.</span></div>
           <div><b>02</b><strong>THE ALGORITHM CREATES THE STRUCTURE.</strong><span>Every artwork is deterministic. The same seed and settings always rebuild the same image.</span></div>
-          <div><b>03</b><strong>THE MATERIALS BRING THE HUMAN TEXTURE.</strong><span>Choose imperfect marker ink or translucent torn tissue and fine graphite. Wobble, layering and uneven marks give mathematical structures a hand-drawn character.</span></div>
+          <div><b>03</b><strong>THE MATERIALS BRING THE HUMAN TEXTURE.</strong><span>Choose imperfect marker ink, translucent torn tissue and graphite, or layered watercolour washes. Wobble, layering and uneven marks give mathematical structures a hand-drawn character.</span></div>
         </div>
         <div class="intro-systems" aria-label="Eight systems"><span>ARRANGE</span><span>SPIRAL</span><span>DIVIDE</span><span>RADIATE</span><span>CONNECT</span><span>GROW</span><span>CONSTRUCT</span><span>SCRIBBLE</span></div>
         <div class="intro-actions"><button id="introEnter" class="intro-enter" type="button">ENTER ALGO/ART →</button><button id="introReveal" type="button">ENTER + REVEAL φ</button></div>
@@ -89,7 +89,7 @@
         <button class="ethos-close" id="ethosClose" type="button" aria-label="Dismiss">×</button>
         <span class="ethos-kicker">WHY ALGO/ART?</span>
         <strong>MATHEMATICS SETS THE RULES.<br>MATERIALS GIVE THEM TEXTURE.</strong>
-        <p>φ shapes the composition, scale and spacing. Marker ink adds wobble, pressure and uneven strokes; torn tissue and graphite add translucent layers and pencil texture.</p>
+        <p>φ shapes the composition, scale and spacing. Marker ink adds wobble and uneven strokes, tissue and graphite add translucent layers, and watercolour adds flowing pigments with dry-brush details.</p>
         <button class="ethos-reveal" id="ethosReveal" type="button">REVEAL THE SYSTEM →</button>
       </aside>
 
@@ -194,7 +194,7 @@
         <section class="tab-panel active" data-panel="composition" id="panel-composition" role="tabpanel" aria-labelledby="tab-composition">
           <div class="section-title"><span>COMPOSITION</span></div>
           <div class="controls">
-            <div class="control material-render-control"><label for="materialStyle">MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p></div>
+            <div class="control material-render-control"><label for="materialStyle">MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
             <div class="mode-picker-wrap">
               <div class="mode-picker-label"><span>SERIES</span></div>
@@ -232,7 +232,7 @@
         <section class="tab-panel" data-panel="marker" id="panel-marker" role="tabpanel" aria-labelledby="tab-marker" hidden>
           <div class="section-title"><span>MATERIAL CONTROLS</span><b>strokes / texture</b></div>
           <div class="controls">
-            <div class="mini-note" id="materialControlsNote">Choose Marker or Tissue &amp; Graphite in Compose. These settings shape the underlying marker strokes. Tissue PNGs use their own torn-paper and graphite finish; SVG and plotter exports use marker paths.</div>
+            <div class="mini-note" id="materialControlsNote">Choose Marker, Tissue &amp; Graphite, or Watercolour in Compose. These settings shape the underlying marker strokes. Tissue PNGs use their own torn-paper and graphite finish; SVG and plotter exports use marker paths.</div>
             <div class="control"><label>Mark-making tool</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
             <div class="control"><label>Stroke width</label><output></output><input id="thickness" type="range" min="1" max="28" value="13"></div>
             <div class="control"><label>Wobble</label><output></output><input id="wobble" type="range" min="0" max="100" value="32"></div>
@@ -309,18 +309,19 @@
   </main>
 </div>
 
-<script src="js/random.js?v=20261014-material-profiles"></script>
-<script src="js/phi.js?v=20261014-material-profiles"></script>
-<script src="js/palettes.js?v=20261014-material-profiles"></script>
-<script src="js/marker.js?v=20261014-material-profiles"></script>
-<script src="js/generator.js?v=20261014-material-profiles"></script>
-<script src="js/oil-surface.js?v=20261014-material-profiles"></script>
-<script src="js/oil-material.js?v=20261014-material-profiles"></script>
-<script src="js/oil-render.js?v=20261014-material-profiles"></script>
-<script src="js/export.js?v=20261014-material-profiles"></script>
-<script src="js/plotter.js?v=20261014-material-profiles"></script>
-<script src="js/describe.js?v=20261014-material-profiles"></script>
-<script src="js/control-help.js?v=20261014-material-profiles"></script>
-<script src="js/app.js?v=20261014-material-profiles"></script>
+<script src="js/random.js?v=20261014-watercolour-v2r"></script>
+<script src="js/phi.js?v=20261014-watercolour-v2r"></script>
+<script src="js/palettes.js?v=20261014-watercolour-v2r"></script>
+<script src="js/marker.js?v=20261014-watercolour-v2r"></script>
+<script src="js/generator.js?v=20261014-watercolour-v2r"></script>
+<script src="js/oil-surface.js?v=20261014-watercolour-v2r"></script>
+<script src="js/oil-material.js?v=20261014-watercolour-v2r"></script>
+<script src="js/oil-render.js?v=20261014-watercolour-v2r"></script>
+<script src="js/watercolour-v2r.js?v=20261014-watercolour-v2r"></script>
+<script src="js/export.js?v=20261014-watercolour-v2r"></script>
+<script src="js/plotter.js?v=20261014-watercolour-v2r"></script>
+<script src="js/describe.js?v=20261014-watercolour-v2r"></script>
+<script src="js/control-help.js?v=20261014-watercolour-v2r"></script>
+<script src="js/app.js?v=20261014-watercolour-v2r"></script>
 </body>
 </html>
