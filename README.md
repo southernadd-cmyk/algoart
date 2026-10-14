@@ -3,7 +3,7 @@
 
 **Mathematics sets the structure. Materials bring the texture.**
 
-ALGO/ART is a browser-based generative art project built around the **golden ratio (φ ≈ 1.618)**. Eight composition systems use mathematical rules, seeded randomness and deliberate visual calibration; a separate material renderer adds imperfect marker ink or translucent tissue and fine graphite.
+ALGO/ART is a browser-based generative art project built around the **golden ratio (φ ≈ 1.618)**. Eight composition systems use mathematical rules, seeded randomness and deliberate visual calibration; a separate material renderer adds imperfect marker ink translucent tissue and fine graphite, or textured watercolour pigments.
 
 **Guiding question:** *How far can the golden ratio govern a composition while its marks remain visibly human?*
 
@@ -17,7 +17,7 @@ ALGO/ART is a browser-based generative art project built around the **golden rat
 3. Choose **landscape (1400 × 1000)** or **portrait (1000 × 1400)**.
 4. Export as **PNG**, **SVG** or **Plotter SVG**, or copy a share link to reopen the same artwork.
 
-Artworks are deterministic: the **renderer version + seed + settings** identify a reproducible state, including through shared URLs.
+Artworks are deterministic: the **renderer version + seed + settings** identify a reproducible state, including through shared URLs. Choose **Marker drawing**, **Tissue & Graphite** or **Watercolour (V2R)** in Compose. Material selection does not alter source geometry; PNG exports the selected material, while SVG and plotter files preserve the underlying marker paths.
 
 ## The eight systems
 
@@ -33,6 +33,24 @@ Artworks are deterministic: the **renderer version + seed + settings** identify 
 | **Automatic Marks** | Organises loose, gestural strokes around φ-weighted anchors and negative space. |
 
 The golden ratio governs aspects of composition; not every stroke or tuning value is a mathematical identity. The tension between those rules and the hand-drawn appearance is part of the experiment.
+
+### Watercolour V2R material (14 October 2026)
+
+The **Watercolour** material is a deterministic alternative to Marker drawing
+and Tissue & Graphite. It moves optical pigment through a seeded anisotropic
+paper-fibre field with soft wet-in-wet washes, discontinuous drying banks,
+subtractive glazes and continuous textured dry brush. It uses the current
+seed-derived Tissue & Graphite pigment kit and respects the selected paper
+colour, composition, seed, orientation, hue settings and source mark profiles.
+
+New watercolour share links have `material=watercolour-v2r`. Historical links
+with `watercolor=1` and `tissue=2..6` are unchanged, as are existing default
+Marker URLs. Randomise and Mutate retain the selected material. PNG exports the
+visible watercolour; SVG and plotter SVG preserve the underlying marker paths.
+
+Watercolour is more computationally intensive than Marker, especially at 2×
+on mobile; 1× is the safer mobile export choice. The separate experimental V2Q
+multi-stage drying system was not included in this release.
 
 ## Run locally
 
@@ -53,6 +71,7 @@ Then visit **http://localhost:8000/**. On Windows, `py -m http.server 8000` is a
 | `index.html`, `css/` | Editor interface and styles |
 | `js/phi.js`, `js/random.js` | φ geometry and seeded randomness |
 | `js/generator.js`, `js/marker.js` | Compositions and expressive mark rendering |
+| `js/watercolour-v2r.js` | Seeded paper-fibre pigment transport and V2R dry-brush rendering |
 | `js/app.js`, `js/control-help.js` | User controls, versioned URLs and interface guidance |
 | `js/export.js`, `js/plotter.js` | Image, SVG and plotter exports |
 | `gallery/`, `automation/` | Daily archive and optional publishing workflows |
