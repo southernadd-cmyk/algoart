@@ -1,4 +1,4 @@
-// EXACT V2j eight-engine samples re-rendered under V2N; compare with V2L output. Their settings
+// EXACT V2j eight-engine samples re-rendered under V2O; compare with V2L output. Their settings
 // and seed strings were copied verbatim from the V2j random manifest.
 // Compare against archived V2L matched-seed artifact in run 38554077327, never randomise.
 import { chromium } from 'playwright';
@@ -6,7 +6,7 @@ import { mkdir,writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
-const folder='watercolour-same-seed-v2l-v2n';
+const folder='watercolour-same-seed-v2l-v2o';
 await mkdir(folder,{recursive:true});
 const keys=['mode','orientation','seed','elements','density','complexity',
   'negativeSpace','phiStrength','recursion','spiralInfluence','goldenAngle',
@@ -47,6 +47,12 @@ try{
     assert.equal(result.stats.interiorMottle,.24);
     assert.equal(result.stats.paleEdgePooling,.75);
     assert.equal(result.stats.edgeBandRadius,8);
+    assert(result.stats.softWashCount>0);
+    assert(result.stats.softWashCount<result.stats.areaWashCount);
+    assert(result.stats.paperFlow.softMaskPixels>0);
+    assert(result.stats.paperFlow.softBoundaryPixels>0);
+    assert(result.stats.paperFlow.softFluxPixels>0);
+    assert(result.stats.paperFlow.softConservationError<.00002);
     assert(result.stats.paperFlow.wetMaskPixels>0);
     assert(result.stats.paperFlow.transferPixels>0);
     assert(result.stats.paperFlow.donorPixels>0);
@@ -65,11 +71,11 @@ try{
         waterBlooms:result.stats.paperFlow.waterBlooms,
         pigmentSpreadMax:result.stats.pigmentSpreadMax,
         compositionPresentation:result.stats.compositionPresentation}});
-    console.log('FIXED V2L BASELINE V2N RENDER',filename,scenario.seed,bytes.length);
+    console.log('FIXED V2L BASELINE V2O RENDER',filename,scenario.seed,bytes.length);
   }
   await writeFile(folder+'/manifest.json',JSON.stringify({
-    baseline:'V2L: GitHub Actions run 38554077327; V2M: run 38560317047',
-    version:'V2N',note:'Exactly same seeds and generation controls as archived V2L matched-seed set',
+    baseline:'V2N: GitHub Actions run 38588604167 (same eight seeds); V2M: 38560317047',
+    version:'V2O',note:'Exactly same seeds and generation controls as archived V2L matched-seed set',
     samples:manifest},null,2));
-  console.log('PASS: 8 V2N images with exact archived V2L seeds');
+  console.log('PASS: 8 V2O images with exact archived V2L seeds');
 }finally{await browser.close()}
