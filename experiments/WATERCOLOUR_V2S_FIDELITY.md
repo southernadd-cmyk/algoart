@@ -9,6 +9,7 @@ Can we keep the V2R pigment/wet edge behaviour while restoring visible original 
 ## What changes
 
 - **Source lineage:** guarded provenance in `js/oil-render.js` attaches original ink and original SVG path index to sampled chains **only** while `A.watercolourV2sActive` is set; grabs up to 700 source chains. For any existing renderer the guarded code does not execute. No change to original geometry, palette generator or SVG export.
+- **Monochrome protection:** when a source ink has effectively zero chroma, V2S leaves V2R's existing grey material palette intact, avoiding unnecessarily darkened Recursive Divisions frames.
 - **Matching source hue:** the opt-in V2S renderer prefers its own source chain's recorded ink for broad/hero/detail colours. Existing wetness/random layout choices are unchanged. Near-pigment source colours may still be gently desaturated through the existing V2R `pigmentInk` gamut filter. This is *not* a guarantee of identical marker colour values, which would be physically implausible.
 - **Original missing gestures:** a limited, deterministic choice of existing supporting paths renders in thin translucent dry brush after the original V2R transport. Every path is derived from the SVG recorder; no fabricated positions. The same V2R presentation transform is used, so paths do not shift relative to the layout.
 - **No wash physics changes:** V2R V2P-derived paper-fibre transport, soft/hard boundaries, granulation and density cap are copied byte-equivalently. No V2Q three-stage drying.
