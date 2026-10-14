@@ -41,7 +41,10 @@ for(const orientation of ['landscape','portrait']){
   run('automation/build-gallery.mjs',{GALLERY_QUEUE_MATERIAL:'watercolor',GALLERY_QUEUE_ORIENTATION:orientation});
 }
 const meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
-assert.equal(meta.entries.length,4);
+// Existing mixed galleries already contain ten marker studies. Only the
+// newly generated four Tissue editions should be asserted/opened here.
+const watercolorEntries=meta.entries.filter(e=>e.material==='watercolor');
+assert.equal(watercolorEntries.length,4);
 assert.equal(meta.entries.filter(e=>e.orientation==='portrait'&&e.material==='watercolor').length,2);
 assert.equal(meta.entries.filter(e=>e.orientation==='landscape'&&e.material==='watercolor').length,2);
 // The standard Marker gallery must also keep the original cream paper on
@@ -54,7 +57,7 @@ assert.equal(markerQueue.entries[0].settings.paper,'#f5f0e6');
 const b=await chromium.launch();
 const page=await b.newPage({viewport:{width:1460,height:980}});
 try{
- for(const e of meta.entries){
+ for(const e of watercolorEntries){
    const local=new URL(site);local.searchParams.set('art',e.id);
    const errors=[];page.on('pageerror',x=>errors.push(String(x)));
    await page.goto(local.href,{waitUntil:'domcontentloaded'});
@@ -69,4 +72,4 @@ try{
    await page.locator('#art').screenshot({path:path.join(outDir,e.id+'.png')});
  }
 }finally{await b.close()}
-console.log('PASS: real watercolor JPEGs, 4 gallery entries, 4 share links, exact archive pixels and short-link restoration.');
+console.log('PASS: four new watercolor JPEGs and share links coexist with ten existing marker entries; exact archive pixels and short-link restoration.');
