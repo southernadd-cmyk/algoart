@@ -34,23 +34,29 @@ Artworks are deterministic: the **renderer version + seed + settings** identify 
 
 The golden ratio governs aspects of composition; not every stroke or tuning value is a mathematical identity. The tension between those rules and the hand-drawn appearance is part of the experiment.
 
-### Watercolour V2R material (14 October 2026)
+### Source-colour matching: Watercolour V2S and Tissue & Graphite V7 (14 October 2026)
 
-The **Watercolour** material is a deterministic alternative to Marker drawing
-and Tissue & Graphite. It moves optical pigment through a seeded anisotropic
-paper-fibre field with soft wet-in-wet washes, discontinuous drying banks,
-subtractive glazes and continuous textured dry brush. It uses the current
-seed-derived Tissue & Graphite pigment kit and respects the selected paper
-colour, composition, seed, orientation, hue settings and source mark profiles.
+The default Watercolour material is now **V2S**. It keeps V2R's conserved
+pigment transport, wet and dry edge physics, paper tooth and dry brush, but
+matches the colour of each source Marker chain and restores selected
+original open strokes. Chromatic source hues are translated into pigment
+hues; monochrome compositions keep V2R's approved greys. Existing
+`material=watercolour-v2r` URLs still invoke the original V2R renderer,
+while new compositions use `material=watercolour-v2s`. No existing saved
+artwork is silently re-rendered.
 
-New watercolour share links have `material=watercolour-v2r`. Historical links
-with `watercolor=1` and `tissue=2..6` are unchanged, as are existing default
-Marker URLs. Randomise and Mutate retain the selected material. PNG exports the
-visible watercolour; SVG and plotter SVG preserve the underlying marker paths.
+**Tissue & Graphite V7** uses the same original Marker strokes to select
+tissue pigments. The larger atmospheric paper blooms are coloured by the
+nearest source strokes, rather than substituting the old generic
+ochre/olive/teal groups. Pencil/graphite and the V6 pale tissue treatment
+remain. Newly chosen Tissue artworks use `tissue=7`; `tissue=1..6`
+and legacy `watercolor=1` still reproduce their previous versions.
 
-Watercolour is more computationally intensive than Marker, especially at 2×
-on mobile; 1× is the safer mobile export choice. The separate experimental V2Q
-multi-stage drying system was not included in this release.
+New daily Tissue & Graphite images use V7 **from 15 October 2026**.
+The earlier scheduled editions (including 14 October V6) keep their original
+seed, renderer, JPEG, social posts and short links. Marker compositions and
+the SVG/plotter path export are unchanged. Paper colour remains independently
+selectable, cream by default.
 
 ## Run locally
 
@@ -71,7 +77,9 @@ Then visit **http://localhost:8000/**. On Windows, `py -m http.server 8000` is a
 | `index.html`, `css/` | Editor interface and styles |
 | `js/phi.js`, `js/random.js` | φ geometry and seeded randomness |
 | `js/generator.js`, `js/marker.js` | Compositions and expressive mark rendering |
-| `js/watercolour-v2r.js` | Seeded paper-fibre pigment transport and V2R dry-brush rendering |
+| `js/watercolour-v2r.js` | Frozen released V2R Watercolour renderer for saved links |
+| `js/watercolour-v2s.js` | New source-colour-matched Watercolour with original open-line recovery |
+| `js/oil-material.js`, `js/oil-surface.js` | Historical Tissue renderers and V7 marker-colour-matched tissue blooms |
 | `js/app.js`, `js/control-help.js` | User controls, versioned URLs and interface guidance |
 | `js/export.js`, `js/plotter.js` | Image, SVG and plotter exports |
 | `gallery/`, `automation/` | Daily archive and optional publishing workflows |
@@ -107,7 +115,7 @@ Historical renderer and material versions remain available so saved links reprod
 ## Drawing materials
 
 - **Marker drawing:** expressive ink with wobble, uneven weight, pressure and dryness.
-- **Tissue & Graphite:** translucent torn tissue and fine graphite, with colours chosen by the seed, on your selected paper colour (cream by default).
+- **Tissue & Graphite:** translucent torn tissue, colour-matched atmospheric blooms and fine graphite, using the original seeded Marker palette on your selected paper (cream by default).
 
 Both materials use the same seeded composition. From renderer V9, changing paper colour does not change the artwork's geometry or selected pigment colours, and switching materials preserves the paper choice. Published V1–V8 compositions remain version-locked. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** is labelled **Source mark profile** for Tissue & Graphite. Its seven choices use material-appropriate names such as Fine contours, Wide bands and Flat-edged bands, while retaining the exact underlying pen IDs and seeded source paths. The Materials sliders likewise describe source marks in Tissue mode; they do not simulate physical paper thickness, brushes or graphite pressure. Switching materials restores the original Marker labels without changing any setting values. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
 

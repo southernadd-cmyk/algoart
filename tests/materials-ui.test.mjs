@@ -9,7 +9,7 @@ assert.match(html,/id="materialStyle".*?<option value="marker">Marker drawing<\/
 assert.match(html,/<span>MATERIAL CONTROLS<\/span>/);
 assert.match(html,/id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble/);
 assert.match(app,/function syncMaterialNote\(\)/);
-assert.match(app,/Translucent torn tissue and fine graphite/);
+assert.match(app,/Translucent tissue matched to source Marker colours/);
 assert.match(app,/Marker ink with hand-drawn wobble, pressure and imperfect strokes/);
 assert.match(app,/function regenerate\(\)\{\s*syncMaterialNote\(\)/);
 assert.match(html,/<label>Mark-making tool<\/label><select id="pen">/);
@@ -34,7 +34,8 @@ assert.match(app,/\?A\.describeArtwork\(s,m,watercolourEnabled\(\)\?'watercolour
 assert.match(description,/material==='tissue'\?'Abstract algorithmic tissue and graphite artwork'/);
 assert.match(description,/material==='watercolour'\?'Abstract algorithmic watercolour artwork'/);
 assert.match(read('js/watercolour-v2r.js'),/A\.renderWatercolourV2R=function/);
-assert.match(app,/params\.set\('material','watercolour-v2r'\)/);
+assert.match(read('js/watercolour-v2s.js'),/A\.renderWatercolourV2S=function/);
+assert.match(app,/params\.set\('material','watercolour-'\+watercolourMaterialRevision\)/);
 assert.match(app,/watercolourRender:watercolourEnabled\(\)/);
 assert.match(read('js/export.js'),/A\.renderWatercolourV2R\(out,compositionSettings/);
 assert.doesNotMatch(description,/(geometric marker forms|branching marker|Loose marker strokes)/);

@@ -39,16 +39,20 @@ A.preparePNG=function(settings,scale){
   var compositionSettings=Object.assign({},settings);
   delete compositionSettings.oilRender;
   delete compositionSettings.watercolourRender;
+  delete compositionSettings.watercolourRevision;
   delete compositionSettings.tissuePaletteVersion;
   var filename='algoart-'+settings.seed+'-'+settings.mode+
     (settings.orientation==='portrait'?'-portrait':'')+
-    (settings.watercolourRender?'-watercolour-v2r':settings.oilRender?'-tissue-graphite':'')+'-'+scale+'x.png';
+    (settings.watercolourRender?'-watercolour-'+(settings.watercolourRevision||'v2r'):settings.oilRender?'-tissue-graphite':'')+'-'+scale+'x.png';
   // Paint synchronously but encode off the main thread where supported.
   // This avoids holding a very large PNG data URL and its base64 clone.
   return new Promise(function(resolve,reject){
     try{
-      if(settings.watercolourRender)
-        A.renderWatercolourV2R(out,compositionSettings,scale,false);
+      if(settings.watercolourRender){
+        if(settings.watercolourRevision==='v2s')
+          A.renderWatercolourV2S(out,compositionSettings,scale,false);
+        else A.renderWatercolourV2R(out,compositionSettings,scale,false);
+      }
       else if(settings.oilRender)
         A.renderOil(out,compositionSettings,scale,false,settings.tissuePaletteVersion>=2?settings.tissuePaletteVersion:1);
       else A.render(out,compositionSettings,scale,false);

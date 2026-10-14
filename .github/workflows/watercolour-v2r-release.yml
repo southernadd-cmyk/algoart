@@ -1,9 +1,16 @@
-name: Watercolour V2R material release checks
+name: Watercolour V2S and Tissue V7 release checks
 on:
   pull_request:
     branches: [main]
     paths:
       - 'js/watercolour-v2r.js'
+      - 'js/watercolour-v2s.js'
+      - 'js/oil-render.js'
+      - 'js/oil-material.js'
+      - 'js/oil-surface.js'
+      - 'automation/tissue-edition.mjs'
+      - 'tests/tissue-v7-visual.mjs'
+      - 'tests/tissue-colour.test.mjs'
       - 'js/app.js'
       - 'js/export.js'
       - 'js/control-help.js'
@@ -30,6 +37,10 @@ jobs:
       - name: Check JavaScript parser and material/renderer regressions
         run: |
           node --check js/watercolour-v2r.js
+          node --check js/watercolour-v2s.js
+          node --check js/oil-render.js
+          node --check js/oil-material.js
+          node --check js/oil-surface.js
           node --check js/app.js
           node --check js/export.js
           node --check js/control-help.js
@@ -60,7 +71,17 @@ jobs:
           exit 1
       - name: Browser test of all three materials and historic links
         run: node tests/materials-profile-browser.mjs
-      - name: Watercolour 1x PNG download and exact V6 replay
+      - name: Watercolour V2S 1x PNG, legacy V2R links and exact Tissue V6 replay
         run: node tests/watercolour-material-release.mjs
+      - name: Compare V6 and V7 source-pigment and bloom colours
+        run: node tests/tissue-v7-visual.mjs
+      - name: Upload Tissue V6 and V7 matching-source palette comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tissue-v6-v7-source-hue-compare
+          path: tissue-v6-v7-matched/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Existing mobile paper and repeat-download regression
         run: node tests/mobile-export-paper.test.mjs

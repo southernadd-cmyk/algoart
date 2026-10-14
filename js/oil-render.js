@@ -60,7 +60,7 @@ function parsePath(src){
   }
   return pts;
 }
-function skeleton(paths,limit){
+function skeleton(paths,limit,kit){
   // Repeated marker passes and near-identical colours must not create
   // duplicate painted walls. Round chain bounds, then retain first encounter.
   var seen={},chains=[];
@@ -80,7 +80,19 @@ function skeleton(paths,limit){
         simplified.push(pts[j]);prev=pts[j];
       }
     }
-    if(simplified.length>=2)chains.push({pts:simplified,length:length,width:paths[i].width||4});
+    if(simplified.length>=2){
+      var chain={pts:simplified,length:length,width:paths[i].width||4};
+      if(A.watercolourV2sActive){
+        chain.sourceIndex=i;
+        chain.sourceInk=paths[i].stroke||null;
+      }
+      if(kit&&kit.revision>=7){
+        // Store original Marker hue on the selected source chain.
+        // Older materials never receive this metadata.
+        chain.sourceRGB=tissueStrokeRGB(paths[i].stroke);
+      }
+      chains.push(chain);
+    }
   }
   chains.sort(function(a,b){return b.length-a.length});
   if(chains.length>limit){
@@ -416,7 +428,11 @@ function paint(ctx,w,h,paths,meta,seed,quality,kit){
   // OIL-4: separate pigment and height buffers, shaded as material.
   // Preserve the OIL-3 implementation below as an experimental fallback.
   if(A.oilMaterial){
-    A.oilMaterial(ctx,w,h,skeleton(paths,quality<.4?95:250),meta,seed,quality,kit);
+    // V2S-only provenance. Historical Marker/Tissue/V2R chains, RNG and
+    // output stay exactly as before when this opt-in flag is absent.
+    if(A.watercolourV2sActive)
+      A.watercolourV2sAllChains=skeleton(paths,Math.min(700,paths.length));
+    A.oilMaterial(ctx,w,h,skeleton(paths,quality<.4?95:250,kit),meta,seed,quality,kit);
     return;
   }
   var r=A.makeR(seed+'|oil-material-v2');

@@ -20,12 +20,12 @@ try{
   }
   await open({watercolor:1});
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent torn tissue and fine graphite\./);
+  assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms\./);
   assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),1,
     'Archived v1 URL must use original pigment version');
   await page.locator('#randomise').click();
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  assert.equal(new URL(page.url()).searchParams.get('tissue'),'6');
+  assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
   const initial=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
   assert(initial?.length>0,'New tissue should record a source palette');
   const firstURL=page.url();
@@ -42,8 +42,8 @@ try{
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
   await page.locator('#materialStyle').selectOption('tissue');
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent torn tissue and fine graphite\./);
-  assert.equal(new URL(page.url()).searchParams.get('tissue'),'6');
+  assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms\./);
+  assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
   await page.locator('#tab-colour').click();
   await page.locator('#palette').selectOption('mono');
   const mono=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
@@ -85,7 +85,7 @@ try{
     'Switching back to Tissue cannot reset chosen paper');
   assert.deepEqual(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours),mono);
   await open({tissue:2,pal:'cold'});
-  assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent torn tissue and fine graphite\./,
+  assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms\./,
     'Shared Tissue links should restore the matching note');
   assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),2,
     'Existing tissue=2 share links must retain original output');
