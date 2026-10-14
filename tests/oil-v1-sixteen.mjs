@@ -31,8 +31,15 @@ function rng(seed){let state=seed>>>0;return()=>{state+=0x6D2B79F5;
   let a=state;a=Math.imul(a^(a>>>15),a|1);a^=a+Math.imul(a^(a>>>7),a|61);
   return ((a^(a>>>14))>>>0)/4294967296}};
 const rand=rng(0x0a17beef);
+// Shuffle the complete eight-engine set using a seeded permutation.
+// Random settings/seeds are independent of the frozen fixed studies.
+const shuffled=[0,1,2,3,4,5,6,7];
+for(let i=shuffled.length-1;i>0;i--){
+  const j=Math.floor(rand()*(i+1));
+  const swap=shuffled[i];shuffled[i]=shuffled[j];shuffled[j]=swap;
+}
 const random=Array.from({length:8},(_,i)=>{
-  const index=Math.floor(rand()*8),[mode,label]=modes[index];
+  const index=shuffled[i],[mode,label]=modes[index];
   const density=['sparse','sparse','medium','medium','dense','dense','layered','layered'][i];
   const amount=density==='sparse'?[16,30]:density==='medium'?[31,49]:
     density==='dense'?[50,69]:[65,78];
