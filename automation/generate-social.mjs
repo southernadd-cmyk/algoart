@@ -125,9 +125,9 @@ const PARAM_KEYS = {
   palette:'pal', colourCount:'cols', saturation:'sat', brightness:'bri', paper:'paper', grain:'grain'
 };
 
-function queryFor(s) {
+function queryFor(s,version=rendererVersion) {
   const q = new URLSearchParams();
-  q.set('v', String(rendererVersion));
+  q.set('v', String(version));
   for (const [key, short] of Object.entries(PARAM_KEYS)) {
     let value = s[key];
     if (value == null || (key === 'orientation' && value !== 'portrait')) continue;
@@ -160,12 +160,17 @@ const requestedDate = process.env.SOCIAL_DATE;
 const day = requestedDate || dateInZone();
 const seedSalt = String(process.env.SOCIAL_SEED_SALT || '').trim();
 const orientation = process.env.SOCIAL_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
-const material = process.env.SOCIAL_MATERIAL === 'watercolor' ? 'watercolor' : 'marker';
-const watercolor = material === 'watercolor';
+// "watercolor" remains the historic Tissue & Graphite queue. New British
+// "watercolour" is a distinct V2S paint medium, never an alias of Tissue.
+const material = process.env.SOCIAL_MATERIAL === 'watercolour' ? 'watercolour' :
+  process.env.SOCIAL_MATERIAL === 'watercolor' ? 'watercolor' : 'marker';
+const watercolor = material === 'watercolor',watercolour = material === 'watercolour';
 const tissueEdition = watercolor ? tissueEditionForDate(day) : null;
-const generationCount = watercolor ? 2 : Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
+const generationCount = watercolour ? 1 : watercolor ? 2 :
+  Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
 const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day,
-  ...(watercolor ? ['watercolor',orientation] : orientation === 'portrait' ? ['portrait'] : []));
+  ...(watercolour?['watercolour',orientation]:watercolor?['watercolor',orientation]:
+    orientation==='portrait'?['portrait']:[]));
 await fs.mkdir(outDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -176,7 +181,7 @@ try {
   for (let index = 0; index < generationCount; index++) {
     // Existing landscape editions retain their exact JPEG, settings and version.
     // Portrait editions are already frozen in the release queue by portrait-live.
-    if(!watercolor&&orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
+    if(!watercolor&&!watercolour&&orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
       const archived=await archivedLandscapeStudy(day,index);
       if(archived){
         await fs.copyFile(archived.imagePath,path.join(outDir,archived.entry.imageFile));
@@ -193,10 +198,19 @@ try {
     // whole five-work day. Landscape generation stays byte-for-byte unchanged.
     for (let attempt = 0; attempt < (orientation === 'portrait' ? 8 : 1); attempt++) {
     const retrySalt = attempt ? seedSalt + '|retry-' + attempt : seedSalt;
-    const settings = settingsFor(day, index, watercolor ? 'WATERCOLOR|1|'+retrySalt : retrySalt, orientation);
+    const settings = settingsFor(day,index,watercolour?'WATERCOLOUR|V2S|1|'+retrySalt:
+      watercolor?'WATERCOLOR|1|'+retrySalt:retrySalt,orientation);
     // All NEW daily gallery images use the same original Marker cream paper.
     // Keep the RNG draw and all archive settings for earlier dates unchanged.
     if(day>='2026-10-14')settings.paper='#f5f0e6';
+    if(watercolour){
+      // Completely independent seed namespace: no collisions with existing
+      // AA/AP or historic Tissue AWL/AWP images.
+      settings.seed='CW'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
+        '-01-'+(hash(day+'|watercolour-v2s|'+orientation+'|'+retrySalt)%100000)
+          .toString().padStart(5,'0');
+      settings.paper='#f5f0e6';
+    }
     if(watercolor){
       // Isolate new study IDs and seeds without touching existing AA/AP work.
       settings.seed = 'AW'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
@@ -209,7 +223,9 @@ try {
     }
     // The cutoff changes only the MATERIAL; V8's settings, daily seed and
     // archive IDs retain the exact same deterministic generation algorithm.
-    const query = queryFor(settings)+(watercolor?tissueEdition.suffix:'');
+    const itemVersion=watercolour?9:rendererVersion;
+    const query=queryFor(settings,itemVersion)+(watercolour?'&material=watercolour-v2s&fit=0':
+      watercolor?tissueEdition.suffix:'');
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
     if(watercolor)validateTissueShareUrl(day,shareUrl);
@@ -221,7 +237,7 @@ try {
     });
 
     const actualVersion=await page.evaluate(()=>window.AlgoArt.rendererVersion);
-    if(actualVersion!==rendererVersion)throw new Error('Rendered V'+actualVersion+' but requested V'+rendererVersion);
+    if(actualVersion!==itemVersion)throw new Error('Rendered V'+actualVersion+' but requested V'+itemVersion);
 
     const rendered = await page.evaluate(({paperColour,jpegQuality}) => {
       const canvas = document.getElementById('art');
@@ -304,19 +320,23 @@ try {
       throw new Error(`Render validation failed for ${settings.seed}: ${JSON.stringify(rendered.validation)}`);
     }
 
-    const filename = `${day}-${watercolor ? 'watercolor-'+orientation+'-' : orientation === 'portrait' ? 'portrait-' : ''}${String(index + 1).padStart(2, '0')}-${settings.mode}-${settings.seed}.jpg`;
+    const filename=`${day}-${watercolour?'watercolour-'+orientation+'-':
+      watercolor?'watercolor-'+orientation+'-':orientation==='portrait'?'portrait-':''}${String(index+1).padStart(2,'0')}-${settings.mode}-${settings.seed}.jpg`;
     const filePath = path.join(outDir, filename);
     await fs.writeFile(filePath, Buffer.from(rendered.dataUrl.split(',')[1], 'base64'));
-    const instagramImageFile = orientation === 'portrait' ? filename.replace(/\.jpg$/, '-instagram.jpg') : (watercolor ? filename : null);
+    const instagramImageFile=orientation==='portrait'?
+      filename.replace(/\.jpg$/,'-instagram.jpg'):(watercolor||watercolour?filename:null);
     if (orientation === 'portrait') {
       if (!rendered.instagramDataUrl) throw new Error('Missing Instagram-safe 4:5 portrait derivative');
       await fs.writeFile(path.join(outDir, instagramImageFile), Buffer.from(rendered.instagramDataUrl.split(',')[1], 'base64'));
     }
 
     const item = {
-      id: `${day}-${watercolor ? (orientation === 'portrait' ? 'WP' : 'WL') : (orientation === 'portrait' ? 'P' : '')}${String(index + 1).padStart(2, '0')}`,
-       ...(orientation === 'portrait' || watercolor ? { orientation } : {}),
-      ...(watercolor ? { material: 'watercolor' } : {}),
+      id: `${day}-${watercolour?(orientation==='portrait'?'CP':'CL'):
+        watercolor?(orientation==='portrait'?'WP':'WL'):
+        orientation==='portrait'?'P':''}${String(index+1).padStart(2,'0')}`,
+      ...(orientation==='portrait'||watercolor||watercolour?{orientation}:{}),
+      ...(watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
       generatedAt: new Date().toISOString(),
       seed: settings.seed,
       mode: settings.mode,
@@ -325,17 +345,20 @@ try {
       imageFile: filename,
       ...(instagramImageFile ? { instagramImageFile } : {}),
       shareUrl,
-      rendererVersion: rendererVersion,
+      rendererVersion:itemVersion,
       settings,
-      platforms: watercolor ? {instagram:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},threads:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},bluesky:{scheduledTime:index===0?'09:00':'20:30',status:'pending'}} : platformAssignment(index, orientation)
+      platforms:watercolour?Object.fromEntries(['instagram','threads','bluesky'].map(p=>
+        [p,{scheduledTime:'15:00',status:'pending'}])):
+        watercolor?{instagram:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},threads:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},bluesky:{scheduledTime:index===0?'09:00':'20:30',status:'pending'}}:
+        platformAssignment(index,orientation)
     };
 
     item.copy = makeCaptions(item);
-    if (!watercolor && rendered.accessibility?.altText) {
+    if (!watercolor && !watercolour && rendered.accessibility?.altText) {
       item.copy.altText = rendered.accessibility.altText;
     }
     item.accessibility = {
-      altText: watercolor ? item.copy.altText : (rendered.accessibility?.altText || item.copy.altText),
+      altText:watercolor||watercolour?item.copy.altText:(rendered.accessibility?.altText||item.copy.altText),
       longDescription: rendered.accessibility?.longDescription || '',
       constructionDescription: rendered.accessibility?.constructionDescription || ''
     };
@@ -351,14 +374,14 @@ try {
 const queue = {
   version: 1,
   date: day,
-  ...(watercolor ? {material:'watercolor'} : {}),
-  ...(orientation === 'portrait' || watercolor ? { orientation } : {}),
+  ...(watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
+  ...(orientation==='portrait'||watercolor||watercolour?{orientation}:{}),
   generatedAt: new Date().toISOString(),
   timezone: TIME_ZONE,
   accounts: ACCOUNTS,
   cadence: {
-    instagramPerDay: watercolor ? 2 : orientation === 'portrait' ? PORTRAIT_SCHEDULE.length : SCHEDULE.instagram.length,
-    threadsPerDay: watercolor ? 2 : orientation === 'portrait' ? PORTRAIT_SCHEDULE.length : SCHEDULE.threads.length
+    instagramPerDay:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.instagram.length,
+    threadsPerDay:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.threads.length
   },
   publishingEnabled: false,
   entries
@@ -366,4 +389,5 @@ const queue = {
 
 await fs.writeFile(path.join(outDir, 'queue.json'), JSON.stringify(queue, null, 2));
 console.log(`\nGenerated ${generationCount} artworks into ${outDir}`);
-console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(watercolor ? ['09:00','20:30'] : orientation === 'portrait' ? PORTRAIT_SCHEDULE : SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);
+console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(watercolour?['15:00']:
+  watercolor?['09:00','20:30']:orientation==='portrait'?PORTRAIT_SCHEDULE:SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);
