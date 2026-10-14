@@ -10,7 +10,7 @@ function strategyName(stats, fallback) {
 // full share URL. This keeps Threads/Bluesky within their caption limits.
 export function editorArtworkLink(item) {
   const id=String(item.id||'');
-  if (!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|P)\d{2}|\d{2})$/.test(id)) {
+  if (!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|CL|CP|P)\d{2}|\d{2})$/.test(id)) {
     throw new Error('Cannot link artwork without a valid daily archive ID: '+id);
   }
   const url=new URL(SITE_URL);
@@ -20,10 +20,13 @@ export function editorArtworkLink(item) {
 
 export function makeCaptions(item) {
   const strategy = strategyName(item.stats, item.mode);
-  const heading = `${item.series.toUpperCase()} / ${strategy}${item.material==='watercolor'?' / TISSUE & GRAPHITE':''}`;
+  const watercolour=item.material==='watercolour';
+  const heading=`${item.series.toUpperCase()} / ${strategy}${watercolour?' / WATERCOLOUR V2S':
+    item.material==='watercolor'?' / TISSUE & GRAPHITE':''}`;
   const format = item.settings.orientation === 'portrait' ? 'Portrait study · ' : '';
   const watercolor = item.material === 'watercolor';
-  const facts = `${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${watercolor ? 'tissue & graphite' : item.settings.pen+' marker'}`;
+  const facts=`${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${watercolour?'watercolour':
+    watercolor?'tissue & graphite':item.settings.pen+' marker'}`;
 
   return {
     instagram: [
@@ -57,7 +60,9 @@ export function makeCaptions(item) {
       '',
       '#generativeart #creativecoding'
     ].join('\n'),
-    altText: watercolor
+    altText:watercolour?
+      `Watercolour painting from ALGO/ART's ${item.series} system, ${format.toLowerCase()}seed ${item.seed}. Golden-ratio geometry translated into source-colour matched wet pigment washes and fine dry brush on textured paper.`:
+      watercolor
       ? `Tissue and graphite artwork from ALGO/ART's ${item.series} system, ${format.toLowerCase()}seed ${item.seed}. Golden-ratio composition with layered translucent colour, textured paper and darker marks.`
       : `Abstract algorithmic marker artwork from ALGO/ART's ${item.series} system. ` +
         `Generated from seed ${item.seed} using golden-ratio composition rules and imperfect ${item.settings.pen} marker strokes.`

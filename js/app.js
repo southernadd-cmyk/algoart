@@ -1147,7 +1147,7 @@ var requestedArtworkId=new URLSearchParams(location.search).get('art');
 var loadedFromURL=loadSettingsFromURL();
 
 function loadExactArchivedArtwork(id){
-  if(!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|P)\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
+  if(!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|CL|CP|P)\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
   var day=id.slice(0,10);
   return fetch('gallery/'+day+'/meta.json',{cache:'no-store'})
     .then(function(r){if(!r.ok)throw new Error('Archive unavailable');return r.json();})
@@ -1190,7 +1190,7 @@ function loadLatestGalleryDefault(){
           // Keep existing unparameterised landscape home-page behaviour.
           // Portrait works remain available through the gallery and share URLs.
           var latest=entries.filter(function(e){
-            return e.material!=='watercolor' &&
+            return e.material!=='watercolor'&&e.material!=='watercolour' &&
               (e.orientation||(e.settings&&e.settings.orientation))!=='portrait';
           }).pop()||entries[entries.length-1];
           if(!latest||!latest.settings)return false;

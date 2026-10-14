@@ -12,10 +12,14 @@ const versions=new Set(scripts.map(x=>new URL(x,'https://example.invalid').searc
 assert.equal(versions.size,1, 'Every editor script must share one release cache version');
 
 const gallery=read('gallery/index.html'),source=read('automation/build-gallery.mjs'),rss=read('gallery/feed.xml');
-const description='A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing and Tissue & Graphite.';
-assert(source.includes(description),'Daily gallery generator must retain material-aware description');
-assert(gallery.includes(description),'Gallery JSON-LD must match generated description');
-assert(gallery.includes(description.replaceAll('&','&amp;')),'Gallery HTML descriptions must be escaped');
+const previousDescription='A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing and Tissue & Graphite.';
+const description='A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing, Tissue & Graphite, and Watercolour V2S.';
+assert(source.includes(description),'Daily gallery generator must label three materials');
+assert(gallery.includes(previousDescription)||gallery.includes(description),
+  'Current gallery must retain the published description until next scheduled gallery build');
+assert(gallery.includes(previousDescription.replaceAll('&','&amp;'))||
+       gallery.includes(description.replaceAll('&','&amp;')),
+  'Published gallery HTML descriptions must stay escaped');
 assert(!source.includes('imperfect digital marker strokes')&&!gallery.includes('imperfect digital marker strokes'));
 assert(source.includes('escapeXml(FEED_DESCRIPTION)'),'RSS description must be XML-escaped');
 assert(rss.includes('Marker drawing and Tissue &amp; Graphite'),'Published RSS must name both materials');
@@ -44,4 +48,4 @@ for(const background of ['paper','paper2']){
 }
 assert(palette.includes('.brand span{color:var(--orange-text)'));
 assert(palette.includes('color:var(--orange-text)}'));
-console.log('PASS site quality: both materials in gallery/RSS, contrast-safe labels, editor heading and coherent script cache version');
+console.log('PASS site quality: three material generator, preserved archive and RSS, contrast-safe gallery and coherent script cache version');
