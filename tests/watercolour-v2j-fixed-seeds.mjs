@@ -6,7 +6,7 @@ import { mkdir,writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
-const folder='watercolour-same-seed-v2l-v2p';
+const folder='watercolour-same-seed-v2o-v2p';
 await mkdir(folder,{recursive:true});
 const keys=['mode','orientation','seed','elements','density','complexity',
   'negativeSpace','phiStrength','recursion','spiralInfluence','goldenAngle',
@@ -75,7 +75,7 @@ try{
         waterBlooms:result.stats.paperFlow.waterBlooms,
         pigmentSpreadMax:result.stats.pigmentSpreadMax,
         compositionPresentation:result.stats.compositionPresentation}});
-    console.log('FIXED V2L BASELINE V2P RENDER',filename,scenario.seed,bytes.length);
+    console.log('FIXED V2O BASELINE V2P RENDER',filename,scenario.seed,bytes.length);
   }
   await writeFile(folder+'/manifest.json',JSON.stringify({
     baseline:'V2O: GitHub Actions run 38594738739 (identical eight fixed seeds); V2N: 38588604167',
