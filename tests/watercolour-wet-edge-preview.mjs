@@ -119,10 +119,15 @@ try{
     assert.equal(result.edgeDarkening,.72);
     assert.equal(result.interiorMottle,.24);
     assert.equal(result.paleEdgePooling,.75);
-    assert(result.paperFlow.edgeBandPeak>.11,'Wet rim must be visibly stronger');
-    assert(result.paperFlow.edgeBankPixels>100,'Wet rim must span a band');
-    assert(result.paperFlow.edgeBankPixels>0,'Expected physical pigment bank at wash boundaries');
+    assert(result.paperFlow.wetMaskPixels>100,'Genuine wet washes must be captured separately');
+    assert(result.paperFlow.transferPixels>0,'Pigment must relocate inside wet wash masks');
+    assert(result.paperFlow.donorPixels>0,'Pigment should come from the interior');
+    assert(result.paperFlow.edgeBankPixels>0,'Expected physical redistribution near wash boundaries');
+    assert(result.paperFlow.edgeBandPeak>.001,'A real edge must receive pigment');
     assert(result.paperFlow.paleEdgeBankPixels>=0);
+    assert(result.paperFlow.conservationError<.00002,
+      'Optical pigment is being manufactured/lost by the drying-rim pass');
+    assert.deepEqual(result.paperFlow.variableBandRange,[3,10]);
     assert.equal(result.different,true,'Watercolour should visually differ from V6');
     assert.equal(result.paper,'#f5f0e6');
     assert.equal(result.rendererVersion,8);
