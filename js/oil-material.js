@@ -18,8 +18,13 @@ var C={
 // The first material revision is frozen for all historical share links.
 // Revised material derives *every* coloured layer from recorded Marker inks.
 var originalC=C;
+function sourceHasChroma(kit){
+  return kit&&kit.inkRGB&&kit.inkRGB.some(function(c){
+    return Math.max.apply(null,c)-Math.min.apply(null,c)>=18;
+  });
+}
 function coloursForInk(kit){
-  if(kit.revision>=7){
+  if(kit.revision>=7&&sourceHasChroma(kit)){
     // Explicit Marker-source palette, rather than V1's preset ochre/olive
     // groups. All tissue translucent shades remain tied to these hues.
     return {cream:kit.cream,blue:kit.ink,olive:kit.soft,
@@ -474,7 +479,7 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   C=kit?coloursForInk(kit):originalC;
   tissueTornEdges=Boolean(kit&&kit.revision>=5);
   tissueLightEnabled=Boolean(kit&&kit.revision>=6);
-  tissueV7Active=Boolean(kit&&kit.revision>=7);
+  tissueV7Active=Boolean(kit&&kit.revision>=7&&sourceHasChroma(kit));
   lightTissueStats={pieces:0};
   try{
   // Work buffers are resolution-adaptive, but every pixel is re-rasterised
@@ -501,8 +506,9 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
     version:4,tissuePaletteVersion:kit?kit.revision:1,
     ...(tissueLightEnabled?{lightTissue:lightTissueStats}:{}),
     ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} ),
-    ...(tissueV7Active?{sourceMatchedChains:chains.filter(function(ch){return !!ch.sourceRGB}).length,
-      atmosphericBloomColours:kit.ink.slice(),sourcePaletteVersion:7}:{} )};
+    ...(kit&&kit.revision>=7?{sourceMatchedChains:chains.filter(function(ch){return !!ch.sourceRGB}).length,
+      atmosphericBloomColours:kit.ink.slice(),sourcePaletteVersion:7,
+      chromaticSourcePalette:tissueV7Active}:{} )};
   }finally{C=originalC;tissueTornEdges=false;tissueLightEnabled=false;tissueV7Active=false}
 };
 })(window.AlgoArt);
