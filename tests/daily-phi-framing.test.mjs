@@ -121,7 +121,7 @@ try{
   await page.waitForFunction(seed=>document.getElementById('seed')?.value===seed,
     latestMarker.seed,{timeout:120000});
   assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi',
-    'Home editor's latest daily study must reproduce the framed gallery cover');
+    "Home editor must reproduce the same framed gallery cover");
   assert.equal(await page.locator('#phiSheetFit').isChecked(),true);
   assert.deepEqual(errors,[]);
 }finally{await browser.close()}
