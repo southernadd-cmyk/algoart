@@ -8,6 +8,7 @@ on:
       - 'js/app.js'
       - 'index.html'
       - 'tests/phi-sheet-fit.test.mjs'
+      - 'tests/phi-sheet-preview.mjs'
       - '.github/workflows/phi-sheet-fit-test.yml'
   workflow_dispatch:
 
@@ -31,6 +32,7 @@ jobs:
           node --check js/generator.js
           node --check js/app.js
           node --check tests/phi-sheet-fit.test.mjs
+          node --check tests/phi-sheet-preview.mjs
           node tests/renderer-lock.test.mjs
           node tests/materials-ui.test.mjs
           node tests/site-quality.test.mjs
@@ -45,6 +47,16 @@ jobs:
           exit 1
       - name: Shared φ fitted source and media browser verification
         run: node tests/phi-sheet-fit.test.mjs
+      - name: Render 18 matched Marker/Tissue/Watercolour φ framing comparisons
+        run: node tests/phi-sheet-preview.mjs
+      - name: Upload visual φ framing comparisons and timings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-phi-sheet-visual-pairs
+          path: phi-sheet-framing-compare/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Historical Watercolour V2S fit behaviour
         run: node tests/watercolour-fit.test.mjs
       - name: Material PNG and legacy reproduction
