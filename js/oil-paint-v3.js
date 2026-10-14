@@ -1,5 +1,6 @@
 // ALGO/ART experimental OIL PAINT V3. Real Canvas2D material translation.
-// V3b experimental branch: independently contacting/depleting bristles.
+// V3c experimental branch: organic bristle contact tips, continuous tooth and
+// source-local impasto patches. Not the production material.
 // Separate from the historical oil-* files that now implement Tissue & Graphite.
 // No model inference, external asset, image filter or change to source generator.
 // All marks, direction, colour and hierarchy come from recorded Marker paths.
@@ -35,6 +36,17 @@ function hash(x,y,s){
   var n=(Math.imul(x,374761393)^Math.imul(y,668265263)^s)|0;
   n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295;
 }
+
+/* Smooth, continuous canvas tooth. Earlier (x>>1,y>>1) hash produced
+ * conspicuous square cells in close-up: no raster-aligned block noise. */
+function smoothTooth(x,y,seed){
+  var gx=x/5.5,gy=y/5.5,ix=Math.floor(gx),iy=Math.floor(gy),
+      fx=gx-ix,fy=gy-iy;
+  fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);
+  return lerp(lerp(hash(ix,iy,seed),hash(ix+1,iy,seed),fx),
+    lerp(hash(ix,iy+1,seed),hash(ix+1,iy+1,seed),fx),fy);
+}
+
 function parsePath(src){
   var t=String(src.d||'').match(/[MLC]|[-+]?(?:\d*\.?\d+)(?:e[-+]?\d+)?/gi)||[];
   var pts=[],i=0,cmd='',prev=null;
@@ -197,7 +209,7 @@ function addPaintHeight(previous,ink,loaded){
   return Math.min(18,previous+ink*loaded);
 }
 function opticalRelief(value){return Math.log1p(Math.max(0,value)*.66)}
-A.oilPaintV3Test={addPaintHeight:addPaintHeight,opticalRelief:opticalRelief};
+A.oilPaintV3Test={addPaintHeight:addPaintHeight,opticalRelief:opticalRelief,smoothTooth:smoothTooth};
 // One deposited bristle contact is drawn into pigment AND relief support.
 // Unlike V3's decorative inner bands, there is no fully opaque ribbon.
 function depositBristle(pig,mask,points,width,pigment,alpha,load){
@@ -215,7 +227,37 @@ function depositBristle(pig,mask,points,width,pigment,alpha,load){
   pig.lineWidth=width;pig.strokeStyle=css(pigment);pig.stroke(path);
   mask.globalAlpha=minmax(load,0,1);
   mask.lineWidth=width;mask.strokeStyle='#ffffff';mask.stroke(path);
+  // Stamp a final smooth oval bristle tip at fractional coordinates; unlike
+  // a pixel brush, contact never snaps to a square tile.
+  if(points.length>=3&&width>1.4){
+    var tip=points[points.length-1],previous=points[points.length-2],
+        angle=tangent(previous,tip),major=width*.68,minor=width*.46;
+    pig.beginPath();pig.ellipse(tip.x,tip.y,major,minor,angle,0,TAU);
+    pig.fillStyle=css(pigment);pig.fill();
+    mask.beginPath();mask.ellipse(tip.x,tip.y,major,minor,angle,0,TAU);
+    mask.fillStyle='#ffffff';mask.fill();
+  }
   return true;
+}
+// Opaque impasto colour is deposited in rounded, hand-shaped local patches,
+// never as a convex hull spanning unrelated golden-ratio negative space.
+function depositPaintPatch(pig,mask,center,angle,length,width,color,opacity,height,r){
+  var halfL=length*.5,halfW=width*.5,normal=angle+PI/2;
+  function pos(lateral,longitudinal){
+    return shift(shift(center,angle,longitudinal),normal,lateral);
+  }
+  var tipA=pos(r.range(-.14,.10)*halfW,-halfL),
+      upper1=pos(-halfW*r.range(.58,.86),-halfL*.85),
+      upper2=pos(-halfW*r.range(.83,1.08),halfL*.46),
+      tipB=pos(r.range(-.10,.15)*halfW,halfL),
+      lower1=pos(halfW*r.range(.74,.98),halfL*.65),
+      lower2=pos(halfW*r.range(.58,.92),-halfL*.42);
+  var path=new Path2D();path.moveTo(tipA.x,tipA.y);
+  path.bezierCurveTo(upper1.x,upper1.y,upper2.x,upper2.y,tipB.x,tipB.y);
+  path.bezierCurveTo(lower1.x,lower1.y,lower2.x,lower2.y,tipA.x,tipA.y);
+  path.closePath();
+  pig.globalAlpha=opacity;pig.fillStyle=css(color);pig.fill(path);
+  mask.globalAlpha=height;mask.fillStyle='#ffffff';mask.fill(path);
 }
 function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
   var pts=ch.pts;if(pts.length<2)return 0;
@@ -239,26 +281,36 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
       pickups.push(Array.from(pig.getImageData(cx,cy,1,1).data).slice(0,3));
     }
   }
-  // Local opaque, source-conforming block-in, only for aligned nearby marks;
-  // no convex-hull fill, blurred wash, global atmosphere or palette change.
-  if(ch.mass){
-    var block=mix(rgb,[239,233,215],.10);
-    curvedStroke(pig,pts,width*1.26,css(block),.49);
-    if(r.chance(.55)){
-      var shifted=pts.map(function(p,i){
-        var before=pts[Math.max(0,i-1)],after=pts[Math.min(pts.length-1,i+1)];
-        return shift(p,tangent(before,after)+PI/2,width*.12);
-      });
-      curvedStroke(pig,shifted,width*.84,css(rgb),.58);
-    }
-  }
-  var x0=minmax(Math.floor(bnd.minX*scale)-4,0,sw-1),
-      y0=minmax(Math.floor(bnd.minY*scale)-4,0,sh-1),
-      x1=minmax(Math.ceil(bnd.maxX*scale)+4,x0+1,sw),
-      y1=minmax(Math.ceil(bnd.maxY*scale)+4,y0+1,sh);
+  var x0=minmax(Math.floor((bnd.minX-width*.70)*scale)-4,0,sw-1),
+      y0=minmax(Math.floor((bnd.minY-width*.70)*scale)-4,0,sh-1),
+      x1=minmax(Math.ceil((bnd.maxX+width*.70)*scale)+4,x0+1,sw),
+      y1=minmax(Math.ceil((bnd.maxY+width*.70)*scale)+4,y0+1,sh);
   // Empty a local, bounded relief mask; no readback of the full canvas.
   mask.save();mask.setTransform(1,0,0,1,0,0);
   mask.clearRect(x0,y0,x1-x0,y1-y0);mask.restore();
+  // Interlocking palette-controlled local paint masses. These go down
+  // before the bounded bristle pass, and are included in the height readback.
+  var patchCount=ch.mass?Math.min(8,Math.max(2,
+    Math.round(ch.length/(width*1.15)))):ch.length>110?
+    Math.min(3,Math.floor(ch.length/110)):0;
+  var patchDeposits=0;
+  if(patchCount){
+    pig.save();mask.save();
+    for(var patch=0;patch<patchCount;patch++){
+      var at=r.int(0,pts.length-2),
+          anchor=between(pts[at],pts[at+1],r.range(.12,.88)),
+          theta=tangent(pts[at],pts[at+1]),
+          origin=shift(anchor,theta+PI/2,r.range(-.20,.20)*width),
+          length=width*(ch.mass?r.range(.92,1.79):r.range(.62,1.15)),
+          breadth=width*(ch.mass?r.range(.82,1.40):r.range(.45,.72)),
+          blend=mix(rgb,r.chance(.5)?[246,224,189]:[78,55,41],
+            r.range(.025,.12));
+      depositPaintPatch(pig,mask,origin,theta+r.range(-.16,.16),
+        length,breadth,blend,r.range(.70,.95),r.range(.38,.78),r);
+      patchDeposits++;
+    }
+    pig.restore();mask.restore();
+  }
   pig.save();mask.save();
   pig.clip(body.path);mask.clip(body.path);
   // Low-contact underpaint gives bristles a continuous colour relationship,
@@ -273,10 +325,10 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
   var runs=0,broken=0,charged=0,bankBase=(.60+thickness*.38)*load;
   for(var hair=0;hair<n;hair++){
     if(r.chance(.045+drag*.04))continue;
-    var lateral=((hair+.5)/n-.5)*width*.94,
+    var lateral=((hair+r.range(.08,.94))/n-.5)*width*.94,
         pitch=r.range(.11,.25),phase=r.range(0,TAU),
         shear=r.range(-.10,.10),fuzz=r.range(.2,1.3),
-        hairWidth=width/n*r.range(.67,1.46),
+        hairWidth=width/n*r.range(.89,1.70),
         charge=r.range(.85,1.13),
         hairColor=mix(rgb,hair%4===0?[57,42,38]:[249,240,225],
           hair%4===0?r.range(.06,.20):r.range(.025,.12)),
@@ -354,7 +406,7 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
     }
   }
   return {profile:profile,dragMarks:broken,bristleRuns:runs,
-    pickupMarks:pickupCount,bristleContacts:charged};
+    pickupMarks:pickupCount,bristleContacts:charged,paintPatches:patchDeposits};
 }
 function ground(ctx,w,h,seed,r){
   // Primed canvas, not watercolour paper. Tooth is faint and deterministic.
@@ -384,9 +436,11 @@ function finish(pig,field,w,h,seed,options){
     if(ht>=17.999)capped++;
     if((x+y*13)%17===0)dist.push(ht);
     var mapped=opticalRelief(ht);
-    var dx=(opticalRelief(field[p+1])-opticalRelief(field[p-1]))*.5,
-        dy=(opticalRelief(field[p+w])-opticalRelief(field[p-w]))*.5;
-    var tooth=(hash(x>>1,y>>1,hs)-.5)*(.23-.08*Math.min(mapped,1.8));
+    var dx=(opticalRelief((field[p+1]+field[p+1-w]+field[p+1+w])/3)-
+          opticalRelief((field[p-1]+field[p-1-w]+field[p-1+w])/3))*.5,
+        dy=(opticalRelief((field[p+w]+field[p-1+w]+field[p+1+w])/3)-
+          opticalRelief((field[p-w]+field[p-1-w]+field[p+1-w])/3))*.5;
+    var tooth=(smoothTooth(x,y,hs)-.5)*(.23-.08*Math.min(mapped,1.8));
     var slope=-dx*.58-dy*.66;
     // Krita-inspired separate lightness/height shading; don't change
     // the material hue or apply whitening to the whole painted surface.
@@ -439,14 +493,14 @@ A.renderOilPaintV3=function(target,settings,scale,opts){
     settings.orientation+'|'+(opts.phiFraming?'phi':'plain'));
   ground(ctx,w,h,settings.seed,r);
   phase.planMs=+(performance.now()-start-phase.captureMs).toFixed(2);
-  var profiles={flat:0,filbert:0},dragMarks=0,painted=0,massArea=0,bristleRuns=0,pickupMarks=0,bristleContacts=0;
+  var profiles={flat:0,filbert:0},dragMarks=0,painted=0,massArea=0,bristleRuns=0,pickupMarks=0,bristleContacts=0,paintPatches=0;
   var paintStart=performance.now();
   for(var i=0;i<chains.length;i++){
     var result=paintOne(ctx,mask,chains[i],r,i,opts,field,sw,sh,scale,settings.mode);
     if(result){
       painted++;profiles[result.profile]++;dragMarks+=result.dragMarks;
       bristleRuns+=result.bristleRuns;pickupMarks+=result.pickupMarks;
-      bristleContacts+=result.bristleContacts;
+      bristleContacts+=result.bristleContacts;paintPatches+=result.paintPatches;
       if(chains[i].mass)
         massArea+=chains[i].length*(chains[i].width*1.7+6)*1.35/(w*h);
     }
@@ -464,7 +518,9 @@ A.renderOilPaintV3=function(target,settings,scale,opts){
     eligiblePaths:chains.eligibleCount,paintedPaths:painted,
     droppedPaths:chains.droppedCount,massGroups:massGroups,
     massAreaRatio:+Math.min(.3,massArea).toFixed(4),profiles:profiles,dragMarks:dragMarks,
-    revision:'3b-bristle-tip',bristleRuns:bristleRuns,pickupMarks:pickupMarks,
+    revision:'3c-organic-tips-and-masses',brushTip:'smooth oval bristle terminals',
+    squarePixelTooth:false,paintPatches:paintPatches,
+    bristleRuns:bristleRuns,pickupMarks:pickupMarks,
     bristleContacts:bristleContacts,
     borrowedTechniques:['independent bristle-tip contact and exhaustion','local pigment pickup',
       'separate paint-height lightness map','non-saturating height response'],
