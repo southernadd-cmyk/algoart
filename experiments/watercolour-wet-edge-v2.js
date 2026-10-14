@@ -107,7 +107,16 @@ var tissueTornEdges=false;
 var activeEdgeWave={frequency:.39,secondary:1.43,phase:0};
 var tissueLightEnabled=false;
 // V2N: raster coverage of the actual damp/wet ribbons, independent of pigment and dry ink.
-var activeWashMaskCtx=null,activePigmentLayerCtx=null;
+var activeWashMaskCtx=null,activeSoftMaskCtx=null,activePigmentLayerCtx=null;
+var activeSoftForShape=false;
+function selectSoftEdge(seed,group,index,state){
+  return state!=='dry'&&((A.hash(seed+'|v2o-soft-edge|'+group+'|'+index)>>>0)/4294967296)<.28;
+}
+function pigmentLuma(col){
+  var v=col[0]==='#'?[1,3,5].map(function(i){return parseInt(col.slice(i,i+2),16)}):
+    (col.match(/[0-9]+/g)||[]).slice(0,3).map(Number);
+  return v.length===3?v[0]*.2126+v[1]*.7152+v[2]*.0722:0;
+}
 
 var lightTissueStats={pieces:0};
 function tornTrace(ctx,edge,half,side,mirror){
@@ -117,15 +126,20 @@ function tornTrace(ctx,edge,half,side,mirror){
     var dist=Math.hypot(dx,dy);
     if(dist<.00001)continue;
     var normalX=-dy/dist,normalY=dx/dist;
-    var divisions=Math.max(1,Math.ceil(dist/step));
+    var divisions=Math.max(1,Math.ceil(dist/(step*(.81+.34*Math.abs(Math.sin(
+      a.x*.19+b.y*.13+activeEdgeWave.phase))))));
     for(var j=1;j<=divisions;j++){
-      var t=j/divisions,x=a.x+dx*t,y=a.y+dy*t;
+      // Subpixel-seeded variable spacing without regularly repeated hair ticks.
+      var t=(j+(j<divisions?.18*Math.sin(i*1.83+j*1.21+
+        activeEdgeWave.phase):0))/divisions;
+      var x=a.x+dx*t,y=a.y+dy*t;
       var wave=activeEdgeWave;
       var rough=.51*Math.sin(x*wave.frequency+y*(wave.frequency*1.53)+wave.phase)+
         .31*Math.sin(x*wave.secondary-y*(wave.secondary*.61)+wave.phase*1.37)+
-        .18*Math.sin(x*3.11+y*2.77+i*.41+wave.phase);
+        .12*Math.sin(x*.83+y*.71+i*.41+wave.phase)+
+        .06*Math.sin(x*1.73-y*.27+i*.83+wave.phase*.43);
       // Irregular but short local tears: no uniform sawtooth and no halos.
-      var offset=side*depth*rough;
+      var offset=side*depth*(activeSoftForShape?.70:1)*rough;
       ctx.lineTo(x+normalX*offset,y+normalY*offset);
       if(mirror)mirror.lineTo(x+normalX*offset,y+normalY*offset);
     }
@@ -154,7 +168,19 @@ function ribbon(ctx,pts,half,r){
     // their seed-selected colours/positions, only this seam is repaired.
     left.pop();right.pop();n=unique;
   }
-  var mirror=activeWashMaskCtx&&ctx===activePigmentLayerCtx?activeWashMaskCtx:null;
+  var mirror=null;
+  if(activeWashMaskCtx&&ctx===activePigmentLayerCtx){
+    var m1=activeWashMaskCtx,m2=activeSoftMaskCtx;
+    mirror={
+      beginPath:function(){m1.beginPath();m2.beginPath();},
+      moveTo:function(x,y){m1.moveTo(x,y);m2.moveTo(x,y);},
+      lineTo:function(x,y){m1.lineTo(x,y);m2.lineTo(x,y);},
+      quadraticCurveTo:function(x,y,u,v){
+        m1.quadraticCurveTo(x,y,u,v);m2.quadraticCurveTo(x,y,u,v);
+      },
+      closePath:function(){m1.closePath();m2.closePath();}
+    };
+  }
   ctx.beginPath();ctx.moveTo(left[0].x,left[0].y);
   if(mirror){mirror.beginPath();mirror.moveTo(left[0].x,left[0].y);}
   if(tissueTornEdges){
@@ -190,7 +216,7 @@ function ribbon(ctx,pts,half,r){
 }
 // Record only genuine damp/wet *area* paths. Tiny ink strokes and deferred
 // dry accents have no coverage here, even where their pigment is dark.
-function registerWetWash(wetness){
+function registerWetWash(wetness,soft){
   if(!activeWashMaskCtx)return;
   activeWashMaskCtx.save();
   activeWashMaskCtx.globalCompositeOperation='source-over';
@@ -198,6 +224,14 @@ function registerWetWash(wetness){
   activeWashMaskCtx.fillStyle='#ffffff';
   activeWashMaskCtx.fill();
   activeWashMaskCtx.restore();
+  if(soft&&activeSoftMaskCtx){
+    activeSoftMaskCtx.save();
+    activeSoftMaskCtx.globalCompositeOperation='source-over';
+    activeSoftMaskCtx.globalAlpha=clamp(wetness,0,1);
+    activeSoftMaskCtx.fillStyle='#ffffff';
+    activeSoftMaskCtx.fill();
+    activeSoftMaskCtx.restore();
+  }
 }
 function pathStroke(ctx,pts,width,col,alpha){
   if(pts.length<2)return;
@@ -301,7 +335,7 @@ function paintThinWatercolourStroke(ctx,pts,width,colour,opacity,r,wetness){
   if(drew){activeThinStrokeCount++;if(wet<=.32)activeDryThinStrokeCount++;}
   return drew;
 }
-function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
+function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state,softEdge){
   // Dry edges are sharp by default; damp and wet shapes carry only a
   // little/the full feather. Each wash gets its own torn-edge frequencies.
   var edgeState=state||'damp';
@@ -312,8 +346,12 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
   }
   activeEdgeWave={frequency:r.range(.20,.66),secondary:r.range(.92,2.19),
     phase:r.range(-Math.PI,Math.PI)};
-  if(!ribbon(pig,pts,width*.5,r))return;
-  registerWetWash(edgeState==='wet'?.90:edgeState==='damp'?.56:0);
+  activeSoftForShape=!!softEdge;
+  var madeRibbon=ribbon(pig,pts,width*.5,r);
+  activeSoftForShape=false;
+  if(!madeRibbon)return;
+  if(edgeState!=='dry')
+    registerWetWash(edgeState==='wet'?.90:.56,!!softEdge);
   pig.save();
   // Dried pigment is deposited onto the existing sheet rather than
   // infinitely multiplied into black as separate dark glazes stack.
@@ -353,7 +391,7 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
 // An actual filled, transparent pigment pool on a source vector path:
 // a second tinted wash moves into the *same* clipped wet shape, instead
 // of surrounding a thin outline with an evenly blurred halo.
-function paintColourPool(ctx,pts,width,r,colourA,colourB,opacity){
+function paintColourPool(ctx,pts,width,r,colourA,colourB,opacity,softEdge){
   if(pts.length<2)return false;
   if(width<=12.5){
     paintThinWatercolourStroke(ctx,pts,width,
@@ -362,8 +400,11 @@ function paintColourPool(ctx,pts,width,r,colourA,colourB,opacity){
   }
   activeEdgeWave={frequency:r.range(.17,.65),secondary:r.range(.9,2.5),
     phase:r.range(-PI,PI)};
-  if(!ribbon(ctx,pts,width*.5,r))return false;
-  registerWetWash(.84);
+  activeSoftForShape=!!softEdge;
+  var madePool=ribbon(ctx,pts,width*.5,r);
+  activeSoftForShape=false;
+  if(!madePool)return false;
+  registerWetWash(.84,!!softEdge);
   var minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
   for(var i=0;i<pts.length;i++){
     minX=Math.min(minX,pts[i].x);maxX=Math.max(maxX,pts[i].x);
@@ -544,7 +585,8 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
   var r=A.makeR(seed+'|wet-edge-watercolour-v2'),n=chains.length;
   var allowance=quality<.4?.65:1;
   var stats={dry:0,damp:0,wet:0,chromaticAccents:0,dryDeposits:[],
-    broadWidthMax:0,heroWidthMax:0,filledPools:0,mixedPigmentPools:0};
+    broadWidthMax:0,heroWidthMax:0,filledPools:0,mixedPigmentPools:0,
+    softWashCount:0,areaWashCount:0,paleFormBoosts:0};
   var broad=Math.min(n,Math.ceil(21*allowance));
   for(var i=broad-1;i>=0;i--){
     var ch=chains[i],pts=ch.pts;
@@ -558,16 +600,19 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
       lerpHex(pigmentInk(r.pick(kit.ink)),r.pick(C.cream),r.range(.08,.20)):
       lerpHex(palette(i,r),r.pick(C.cream),r.range(.12,.37));
     var state=A.makeR(seed+'|water-state-broad-v2e|'+i).chance(.48)?'wet':'damp';
+    var isSoft=selectSoftEdge(seed,'broad',i,state);
+    stats.areaWashCount++;
+    if(isSoft)stats.softWashCount++;
     // Retain overall sparse geometry but let a few existing strokes become
     // coloured *areas*. No new positions, objects or generator changes.
     var poolChoice=A.makeR(seed+'|v2g-pool|'+i);
     if(poolChoice.chance(.37)){
       var other=kit.ink.length>1?pigmentInk(poolChoice.pick(kit.ink)):
         pigmentInk(poolChoice.pick(C.ochre));
-      var mixed=paintColourPool(pig,pts,width,r,wash,other,r.range(.47,.76));
+      var mixed=paintColourPool(pig,pts,width,r,wash,other,r.range(.47,.76),isSoft);
       if(mixed){stats.filledPools++;stats.mixedPigmentPools++;}
     }else{
-      paintRibbon(pig,null,pts,width,r,wash,r.range(.41,.70),0,state);
+      paintRibbon(pig,null,pts,width,r,wash,r.range(.41,.70),0,state,isSoft);
     }
     stats[state]++;
   }
@@ -590,6 +635,17 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     var pigment=pigmentInk(accent?stateR.pick(kit.ink):palette(i,r));
     if(accent)stats.chromaticAccents++;
     var opacity=r.range(.55,.80);
+    if(state!=='dry'&&i<22&&pigmentLuma(pigment)>159){
+      // Preserve the visual hierarchy of selected pale, φ-placed hero forms.
+      // Only strengthen the original pigment, never draw an extra outline.
+      opacity=Math.min(.84,Math.max(.68,opacity*1.10));
+      stats.paleFormBoosts++;
+    }
+    var isSoftHero=selectSoftEdge(seed,'hero',i,state);
+    if(state!=='dry'&&width>12.5){
+      stats.areaWashCount++;
+      if(isSoftHero)stats.softWashCount++;
+    }
     if(state==='dry'){
       // Drawing after water transport ensures these true dried edges and
       // saturated seeded-ink accents survive the wet diffusion phase.
@@ -600,10 +656,10 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
       if(i<36&&vividPool.chance(.23)){
         var second=kit.ink.length>1?
           pigmentInk(vividPool.pick(kit.ink)):pigmentInk(vividPool.pick(C.ochre));
-        if(paintColourPool(pig,pts,width,r,pigment,second,opacity)){
+        if(paintColourPool(pig,pts,width,r,pigment,second,opacity,isSoftHero)){
           stats.filledPools++;stats.mixedPigmentPools++;
         }
-      }else paintRibbon(pig,null,pts,width,r,pigment,opacity,0,state);
+      }else paintRibbon(pig,null,pts,width,r,pigment,opacity,0,state,isSoftHero);
     }
     stats[state]++;
   }
@@ -622,7 +678,9 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
       stats.dryDeposits.push({pts:trace,width:r.range(4.5,12),
         col:palette(i,r),opacity:r.range(.35,.60),key:'detail-'+i});
     }else{
-      paintRibbon(pig,null,trace,r.range(5,15),r,palette(i,r),r.range(.34,.57),0,'damp');
+      var traceWidth=r.range(5,15),traceSoft=selectSoftEdge(seed,'detail',i,'damp');
+      if(traceWidth>12.5){stats.areaWashCount++;if(traceSoft)stats.softWashCount++;}
+      paintRibbon(pig,null,trace,traceWidth,r,palette(i,r),r.range(.34,.57),0,'damp',traceSoft);
     }
     stats[detailState]++;
   }
@@ -780,11 +838,12 @@ A.sampleWatercolourPaperTooth=function(seed,x,y){
 // Unlike a global blur, pigment moves only along water-loaded, paper-
 // dependent capillaries. Optical density is transferred (and conserved by
 // the symmetric 4-neighbour stencil) before settling into paper valleys.
-function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx){
+function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx){
   var frame=ctx.getImageData(0,0,w,h),px=frame.data;
   var wetPixels=wetMaskCtx.getImageData(0,0,w,h).data;
+  var softPixels=softMaskCtx.getImageData(0,0,w,h).data;
   var total=w*h;
-  var wetCoverage=new Float32Array(total);
+  var wetCoverage=new Float32Array(total),softCoverage=new Float32Array(total);
   var source=new Float32Array(total*3),next=new Float32Array(total*3);
   var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total),formation=new Float32Array(total),paperGrain=new Uint8Array(total);
   var seedValue=A.hash(seed+'|paper-flow-v2f')>>>0,pi=0;
@@ -803,6 +862,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx){
     }
     tooth[pi]=surface.tooth;
     wetCoverage[pi]=wetPixels[pi*4+3]/255;
+    softCoverage[pi]=softPixels[pi*4+3]/255;
     water[pi]=clamp(loaded*3.1,0,1);
     fibres[pi]=surface.fibre;
     formation[pi]=surface.formation;
@@ -840,6 +900,64 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx){
     }
     var swap=next;next=source;source=swap;
   }
+  // V2O: wet-in-wet shapes get a short conservative *local* diffusion around
+  // their true alpha-mask boundaries. Other washes and dry fine strokes keep
+  // V2N's structure. This moves pigment; it does not blur the final bitmap.
+  var softZone=new Float32Array(total),softMaskPixels=0,softBoundaryPixels=0;
+  for(y=1;y<h-1;y++)for(x=1;x<w-1;x++){
+    pi=y*w+x;
+    var inside=softCoverage[pi]>.12;
+    if(inside)softMaskPixels++;
+    if(inside!== (softCoverage[pi-1]>.12)||
+       inside!== (softCoverage[pi+1]>.12)||
+       inside!== (softCoverage[pi-w]>.12)||
+       inside!== (softCoverage[pi+w]>.12)){
+      softZone[pi]=1;softBoundaryPixels++;
+    }
+  }
+  var cardinal=[-1,1,-w,w],softFluxPixels=0;
+  for(var expansion=0;expansion<3;expansion++){
+    var expanded=softZone.slice();
+    for(y=1;y<h-1;y++)for(x=1;x<w-1;x++){
+      pi=y*w+x;var nextWeight=softZone[pi]-.23;
+      if(nextWeight<=0)continue;
+      for(var edge=0;edge<4;edge++){
+        var adj=pi+cardinal[edge];
+        if(nextWeight>expanded[adj])expanded[adj]=nextWeight;
+      }
+    }
+    softZone=expanded;
+  }
+  var softBefore=source.slice();
+  for(var softPass=0;softPass<3;softPass++){
+    next.set(source);
+    for(y=1;y<h-1;y++)for(x=1;x<w-1;x++){
+      pi=y*w+x;
+      if(softZone[pi]<.1)continue;
+      var p=pi*3,flow0=0,flow1=0,flow2=0;
+      for(var side=0;side<4;side++){
+        var q=pi+cardinal[side],strength=Math.min(softZone[pi],softZone[q]);
+        if(strength<.1)continue;
+        var mobility=.105*strength*(.65+.35*(tooth[pi]+tooth[q])*.5);
+        var from=q*3;
+        flow0+=(source[from]-source[p])*mobility;
+        flow1+=(source[from+1]-source[p+1])*mobility;
+        flow2+=(source[from+2]-source[p+2])*mobility;
+      }
+      next[p]=Math.max(0,source[p]+flow0);
+      next[p+1]=Math.max(0,source[p+1]+flow1);
+      next[p+2]=Math.max(0,source[p+2]+flow2);
+      softFluxPixels++;
+    }
+    var softSwap=source;source=next;next=softSwap;
+  }
+  var softMassBefore=0,softMassAfter=0;
+  for(var softIndex=0;softIndex<source.length;softIndex++){
+    softMassBefore+=softBefore[softIndex];
+    softMassAfter+=source[softIndex];
+  }
+  var softConservationError=Math.abs(softMassBefore-softMassAfter)/
+    Math.max(1,softMassBefore);
   // Keep bloom centres on real painted geometry, and reject paper/voids.
   // A clear-water droplet pushes pigment outward into a ragged, low-contrast
   // cauliflower rim; there is no drawn circle/stroke or stock texture.
@@ -901,7 +1019,8 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx){
     for(y=1;y<h-1;y++)for(x=1;x<w-1;x++){
       pi=y*w+x;
       var depth=edgeDistance[pi],wetness=wetCoverage[pi];
-      if(wetness<.12||depth<1.5||depth>bandRadius+2)continue;
+      if(wetness<.12||depth<1.5||depth>bandRadius+2||
+        softZone[pi]>.38)continue;
       var localWidth=clamp(bandRadius*(.55+.78*formation[pi]+
         (tooth[pi]-.5)*.33),3,10);
       var peak=clamp(localWidth*(.31+.16*fibres[pi]),1.3,4.8);
@@ -983,12 +1102,15 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx){
     px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
-  return {paperModel:'V2N conserved pigment movement within wet wash masks + capillary flow',
+  return {paperModel:'V2O selected soft wet-in-wet washes and conserved V2N pigment banks + capillary flow',
     diffusionPasses:passes,waterBlooms:drops.length,edgeBankPixels:edgeBankPixels,
     paleEdgeBankPixels:paleEdgeBankPixels,edgeBandPeak:+bandPeak.toFixed(4),
     edgeBandRadius:bandRadius,wetMaskPixels:wetMaskPixels,donorPixels:donorPixels,
     transferPixels:transferPixels,relocatedMass:+movedMass.toFixed(2),
-    conservationError:+conservationError.toFixed(8),variableBandRange:[3,10]};
+    conservationError:+conservationError.toFixed(8),variableBandRange:[3,10],
+    softMaskPixels:softMaskPixels,softBoundaryPixels:softBoundaryPixels,
+    softFluxPixels:softFluxPixels,
+    softConservationError:+softConservationError.toFixed(8)};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
 // All changes here are an EXPERIMENTAL presentation-space adjustment.
@@ -1076,13 +1198,20 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     wetCanvas.width=sw;wetCanvas.height=sh;
     var wetCtx=wetCanvas.getContext('2d');
     wetCtx.scale(ratio,ratio);
-    activeWashMaskCtx=wetCtx;activePigmentLayerCtx=pctx;
+    var softCanvas=document.createElement('canvas');
+    softCanvas.width=sw;softCanvas.height=sh;
+    var softCtx=softCanvas.getContext('2d');
+    softCtx.scale(ratio,ratio);
+    activeWashMaskCtx=wetCtx;activeSoftMaskCtx=softCtx;
+    activePigmentLayerCtx=pctx;
     var washStats=deposit(pctx,null,w,h,chains,presentationVoids,seed,quality,kit);
     var washMicroBleeds=activeMicroBleedCount;
-    activeWashMaskCtx=null;activePigmentLayerCtx=null;
+    activeWashMaskCtx=null;activeSoftMaskCtx=null;activePigmentLayerCtx=null;
     pctx.setTransform(1,0,0,1,0,0);
     wetCtx.setTransform(1,0,0,1,0,0);
-    var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,chains,wetCtx);
+    softCtx.setTransform(1,0,0,1,0,0);
+    var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,
+      chains,wetCtx,softCtx);
     ctx.save();ctx.imageSmoothingEnabled=true;
     ctx.drawImage(layer,0,0,w,h);
     for(var i=0;i<washStats.dryDeposits.length;i++){
@@ -1099,7 +1228,7 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
       pigmentSpreadMax:Math.max.apply(null,kit.ink.map(function(v){return pigmentSpread(pigmentInk(v))})),
       compositionPresentation:presentation.stats,
-      effect:'V2N conserved wet-mask pigment pooling with variable-width discontinuous drying banks',
+      effect:'V2O soft/damp/dry edge variety; restrained feathers; protected pale heroes',
       edgeDarkening:A.watercolourV2kOptions.edgeDarkening,
       interiorMottle:A.watercolourV2kOptions.interiorMottle,
       paleEdgePooling:A.watercolourV2kOptions.paleEdgePooling,
@@ -1109,13 +1238,16 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
         heroMax:washStats.heroWidthMax},
       chromaticAccents:washStats.chromaticAccents,dryDetails:dryDetail,
       filledPools:washStats.filledPools,mixedPigmentPools:washStats.mixedPigmentPools,
+      softWashCount:washStats.softWashCount,areaWashCount:washStats.areaWashCount,
+      paleFormBoosts:washStats.paleFormBoosts,
       microBleedCount:microBleedTotal,microBleedWashCount:washMicroBleeds,
       watercolorThinStrokeCount:thinStrokeTotal,dryThinStrokeCount:dryThinTotal,
       paperFlow:paperStats,
       referenceMaterial:'Tissue & Graphite V6'
     };
   }finally{
-    activeWashMaskCtx=null;activePigmentLayerCtx=null;
+    activeWashMaskCtx=null;activeSoftMaskCtx=null;activePigmentLayerCtx=null;
+    activeSoftForShape=false;
     C=originalC;
     tissueTornEdges=false;
     tissueLightEnabled=false;
