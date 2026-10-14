@@ -84,6 +84,9 @@ try{
         microBleedWashCount:A.lastWatercolourExperimentStats?.microBleedWashCount,
         watercolorThinStrokeCount:A.lastWatercolourExperimentStats?.watercolorThinStrokeCount,
         dryThinStrokeCount:A.lastWatercolourExperimentStats?.dryThinStrokeCount,
+        softWashCount:A.lastWatercolourExperimentStats?.softWashCount,
+        areaWashCount:A.lastWatercolourExperimentStats?.areaWashCount,
+        paleFormBoosts:A.lastWatercolourExperimentStats?.paleFormBoosts,
         edgeDarkening:A.lastWatercolourExperimentStats?.edgeDarkening,
         interiorMottle:A.lastWatercolourExperimentStats?.interiorMottle,
         paleEdgePooling:A.lastWatercolourExperimentStats?.paleEdgePooling,
@@ -120,6 +123,13 @@ try{
     assert.equal(result.interiorMottle,.24);
     assert.equal(result.paleEdgePooling,.75);
     assert(result.paperFlow.wetMaskPixels>100,'Genuine wet washes must be captured separately');
+    assert(result.softWashCount>0&&result.areaWashCount>result.softWashCount,
+      'Must have both soft and hard/damp wet washes');
+    assert(result.paperFlow.softMaskPixels>100,'Selected soft wash areas must be captured');
+    assert(result.paperFlow.softBoundaryPixels>0,'Soft washes must have a boundary');
+    assert(result.paperFlow.softFluxPixels>0,'Selected soft edges must actually diffuse');
+    assert(result.paperFlow.softConservationError<.00002,
+      'Soft wet-in-wet diffusion must conserve optical pigment');
     assert(result.paperFlow.transferPixels>0,'Pigment must relocate inside wet wash masks');
     assert(result.paperFlow.donorPixels>0,'Pigment should come from the interior');
     assert(result.paperFlow.edgeBankPixels>0,'Expected physical redistribution near wash boundaries');
