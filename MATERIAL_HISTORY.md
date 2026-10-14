@@ -6,11 +6,12 @@ V9 makes paper colour an independent visual choice. Both Marker and Tissue & Gra
 
 V8 expands Growth Systems with seeded golden-angle root directions, entries at the 38.2% and 61.8% stations on all four edges, and interior-root alternatives. Two to four growth forms appear more often, especially in landscape. Branch lengths diminish by φ, with space-aware turns and a shared segment budget. Other engines retain their V7 output. New social batches use V8; existing editions keep their recorded renderer and media.
 
-## Drawing materials: Marker / Tissue & Graphite
+## Drawing materials: Marker / Tissue & Graphite / Watercolour
 
-**Drawing material** in Compose currently offers two choices:
+**Drawing material** in Compose currently offers three choices:
 
 - **Marker drawing:** the established deterministic ALGO/ART marker work.
+- **Watercolour:** V2R remains frozen at `material=watercolour-v2r`; new V2S at `material=watercolour-v2s` retains Marker stroke hues and eligible original open linework, with V2R pigment physics preserved.
 - **Tissue & Graphite:** layered pigment is derived from the **seeded Marker
   palette**, with the **original Watercolour V1 texture and graphite treatment**.
   Seeded Marker hues colour the paint; V1 pigment lightness and saturation
@@ -23,10 +24,11 @@ Both choices preserve the same seed, φ geometry, orientation, composer controls
 and the original V1–V8 marker vectors. Switching material does not create a
 new composition engine or modify the generator's random sequence.
 
-**Watercolour v2 remains experimental** in its separate draft pull request.
-When its wash behaviour is visually finished, add **Watercolour** as a *third*
-material choice beside Marker and Tissue & Graphite; never replace or silently
-change the original material.
+The Watercolour V2R/V2S renderers are separate, versioned files; a saved V2R link
+never upgrades silently. Approved Watercolour V2S matches each source Marker hue
+(HSL source inks are converted deterministically to RGB), restores some omitted
+open gestures, and preserves the V2R monochrome treatment. V2S is not the
+experimental V2Q staged-drying renderer.
 
 - **Legacy links and archives:** `?watercolor=1` and prototype `?oil=1`
   deliberately continue selecting **Tissue & Graphite**, producing the same
@@ -36,9 +38,12 @@ change the original material.
   neutral paper and original internal graphite texture, while
   preserving seeded palette hues and the same V8 geometry.
   **`?tissue=5`** retains the torn-edge revision and its closed-contour corner
-  fix. Current **`?tissue=6`** adds the approved pale tissue pass while keeping
+  fix. **`?tissue=6`** adds the approved pale tissue pass while keeping
   the historic V8 fixed-cream backdrop, seeded paint hues, the V5 torn contours and original
-  graphite operations. Earlier material links remain unchanged.
+  graphite operations. **`?tissue=7`** retains pale tissue and graphite but matches broad and
+  fine tissue pieces to their original Marker stroke inks; atmospheric blooms
+  use the nearest source stroke's RGB rather than the preset V1 palette.
+  Earlier material links remain unchanged.
   Randomising an old artwork starts a new seed-driven Tissue image.
   The historical internal material name `watercolor`,
   archive IDs, seeds, queue paths and publishing schedule are unchanged.
@@ -61,16 +66,16 @@ change the original material.
   material; `npm run test:tissue-colour` verifies seeded Marker inks, real
   palette variation, determinism and unchanged geometry. The real-browser
   regression confirms that Randomise never changes the selected material.
-  From **14 October 2026**, new daily Tissue & Graphite editions use
+  From **14 October 2026**, initial daily Tissue & Graphite editions used
   `?tissue=6` with muted palette-matched washes, pale tissue, original V1 graphite texture,
   and **default `#f5f0e6` cream paper (editable in V9)**.
-  Their previous dates, URLs, saved JPEGs and original v1 pigments remain untouched.
+  From **15 October 2026**, newly generated Tissue daily editions use `?tissue=7` and the original colour-matched blooms. Earlier dates, URLs, saved JPEGs and original pigments remain untouched.
   Both materials use the same paper-colour choice from V9 onwards.
 
 ## Publication compatibility and cutover
 
 Watercolor batches use separate `AWL`/`AWP` seeds, `WL`/`WP` archive IDs,
-`?tissue=6` editor links for editions on or after 14 October 2026
+`?tissue=6` editor links for 14 October 2026 and `?tissue=7` from 15 October onward
 (and historical `?watercolor=1` links before that date), gallery medium labels,
 and independent media
 release manifests / per-platform completion markers. Existing social triggers
