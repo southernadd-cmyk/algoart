@@ -70,6 +70,7 @@ try{
 
   // Actual desktop download, not just a successful Canvas render.
   await page.locator('#tab-export').click();
+  await page.locator('#exportScale').selectOption('1');
   const [download]=await Promise.all([
     page.waitForEvent('download',{timeout:180000}),
     page.locator('#savePanel').click()
