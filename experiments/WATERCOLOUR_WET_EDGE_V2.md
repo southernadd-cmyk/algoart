@@ -52,3 +52,34 @@ paper-flow pass** to the isolated experiment only:
 The V2d pass increases edge displacement and pigment granulation relative to the initially too-subtle V2c prototype; the visual result is distinctly more wavy, diffused and paper-bound, especially in geometric modes. Compare the four rendered pairs in the [successful CI image artifact](https://github.com/southernadd-cmyk/algoart/actions/runs/38466869493). Both a repeated wet-render and a fresh production V6 replay are pixel-identical for their respective same-seed outputs.
 
 This is still a visual experiment: currently it can soften structured geometry more than desired. Evaluate the image at normal viewing size **and** export-scale detail before considering a third Material option. No change is authorised for production, current V6, gallery, social, or historic links.
+
+## V2N — wet-mask pigment transport (14 October 2026)
+
+**Draft experiment only. Not a release.** V2M's final-composite pigment boundary
+could outline dry marks and treated a newly added optical-density band as if it
+were transported paint. V2N tests a different mechanism:
+
+1. Mirror each genuine wet/damp filled ribbon into a same-resolution alpha mask,
+   preserving its seeded irregular contour without consuming extra RNG.
+   Exclude dry details and narrow line strokes.
+2. Build the two-pass inward chamfer distance field from this wet-wash mask,
+   not from the final composited pigment colours.
+3. Shift existing RGB optical pigment densities incrementally toward the drying
+   front along descending distance gradients. Each transfer subtracts from
+   one pixel and adds exactly the same amount to a neighbouring pixel.
+4. Modulate pooling coherently using paper tooth, fibre direction, formation,
+   and smooth seeded flow fields; bank width varies approximately 3–10 px
+   with gaps rather than one uniformly dark contour.
+5. Apply the normal capillary-flow granulation and wash rendering afterward.
+   No additive dark stroke, global blur, new geometry, or fresh pigment
+   is invented at the rim. Subsequent dry drawing remains outside this pass.
+
+Check `paperFlow.wetMaskPixels`, `transferPixels`, `donorPixels`,
+`edgeBankPixels`, and `conservationError`. The browser test asserts
+same-seed replay and archival V6 pixel identity. Fixed-seed comparisons
+are intended to be judged against retained V2L and V2M Actions artifacts,
+not against random replacement seeds.
+
+**Do not claim visual success from numerical checks alone.** At normal size
+inspect pale-wash edges, sample 06 for rings/halos, thin stroke junctions,
+and overall colour balance before authorising any release.
