@@ -13,6 +13,26 @@ try{
   url.search='?v=9&seed=PHI-SHEET-20261014&mode=field&pal=neon&material=watercolour-v2s&fit=0';
   await page.goto(url.href,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent.includes('PHI-SHEET'));
+  // Synthetic bounds verify the asymmetric φ rule independently of modes.
+  const envelopes=await page.evaluate(()=>{
+    const A=window.AlgoArt,w=1400,h=1000;
+    function sample(coverage){
+      const x=(w-w*coverage)/2,y=(h-h*coverage)/2;
+      return A.phiSheetFit.plan([{d:'M '+x+' '+y+' L '+(w-x)+' '+(h-y),width:0}],w,h);
+    }
+    return {sparse:sample(.42),mid:sample(.74),full:sample(.97)};
+  });
+  assert(envelopes.sparse.scale>1.4&&envelopes.sparse.scale<1.62,
+    'Sparse artwork should visibly enlarge towards 1/φ coverage');
+  assert.equal(envelopes.sparse.adjustment,'expand');
+  assert.equal(envelopes.mid.scale,1,
+    'Comfortably sized artwork must not shrink');
+  assert.equal(envelopes.mid.adjustment,'reposition-only');
+  assert(envelopes.full.scale>.85&&envelopes.full.scale<.93,
+    'Large artwork must shrink gently, not by a third');
+  assert.equal(envelopes.full.adjustment,'gentle-reduce');
+  assert(Math.abs(envelopes.full.upperCover-
+    (1-Math.pow((Math.sqrt(5)-1)/2,4)))<1e-12);
   assert.equal(await page.locator('#phiSheetFit').isChecked(),false);
   await page.locator('#phiSheetFit').check();
   assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi');
