@@ -56,6 +56,10 @@ function sourcePigment(ch){
     rgb=[+m[1],+m[2],+m[3]];
   }
   if(!rgb)return null;
+  // Monochrome source inks already map correctly in V2R. Replacing the
+  // engineered grey wash with raw dark Marker greys makes the φ frames
+  // unnecessarily heavy. Only override where a real source hue exists.
+  if(Math.max.apply(null,rgb)-Math.min.apply(null,rgb)<18)return null;
   return pigmentInk('rgb('+rgb.join(',')+')');
 }
 function paintSourceOpenLines(ctx,chains,presentation,seed,w,h){
