@@ -1,0 +1,66 @@
+name: Watercolour V2R material release checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/watercolour-v2r.js'
+      - 'js/app.js'
+      - 'js/export.js'
+      - 'js/control-help.js'
+      - 'js/describe.js'
+      - 'index.html'
+      - 'tests/watercolour-material-release.mjs'
+      - 'tests/materials-ui.test.mjs'
+      - '.github/workflows/watercolour-v2r-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stable-materials:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check JavaScript parser and material/renderer regressions
+        run: |
+          node --check js/watercolour-v2r.js
+          node --check js/app.js
+          node --check js/export.js
+          node --check js/control-help.js
+          node --check js/describe.js
+          node tests/materials-ui.test.mjs
+          node tests/renderer-lock.test.mjs
+          node tests/tissue-colour.test.mjs
+          node tests/oil-render.test.mjs
+          node tests/watercolor-publishing.test.mjs
+  browser-materials:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Start static editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/watercolour-v2r-test.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/watercolour-v2r-test.log
+          exit 1
+      - name: Browser test of all three materials and historic links
+        run: node tests/materials-profile-browser.mjs
+      - name: Watercolour 1x PNG download and exact V6 replay
+        run: node tests/watercolour-material-release.mjs
+      - name: Existing mobile paper and repeat-download regression
+        run: node tests/mobile-export-paper.test.mjs
