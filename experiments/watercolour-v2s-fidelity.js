@@ -77,6 +77,12 @@ function paintSourceOpenLines(ctx,chains,presentation,seed,w,h){
   for(var i=23;i<original.length&&painted<limit;i++){
     var ch=original[i],ink=sourcePigment(ch);
     if(!ink||ch.pts.length<2||ch.length<11)continue;
+    // Only recover genuinely open strokes. Repainting closed loops as
+    // thin outlines hardens watercolour rings and violates the original
+    // intent of this source-gesture recovery pass.
+    var firstPoint=ch.pts[0],lastPoint=ch.pts[ch.pts.length-1];
+    if(dist(firstPoint,lastPoint)<Math.min(36,Math.max(7,ch.length*.15)))
+      continue;
     var spread=pigmentSpread(ink);
     // Do not duplicate all structural masses as uniform fine outlines.
     // Prefer coloured/source-distinct interior and peripheral gestures,
@@ -1399,8 +1405,16 @@ function fitMaterialComposition(chains,voids,seed,w,h){
   }
   function transform(p){return{x:targetX+(p.x-cx)*factor,y:targetY+(p.y-cy)*factor}}
   var moved=chains.map(function(chain){
-    return {pts:chain.pts.map(transform),length:chain.length*factor,
+    var transformed={pts:chain.pts.map(transform),length:chain.length*factor,
       width:chain.width*factor};
+    // V2S-only source hue lineage must survive Field / Rects framing.
+    // Without this the paint pass loses original HSL colours in relocated
+    // layouts even though the supplementary raw strokes retain them.
+    if(A.watercolourV2sActive){
+      transformed.sourceInk=chain.sourceInk;
+      transformed.sourceIndex=chain.sourceIndex;
+    }
+    return transformed;
   });
   var movedVoids=voids.map(function(v){
     var q=transform({x:v.x,y:v.y});
