@@ -57,6 +57,17 @@ remain unchanged. Historical Watercolour-only `fit=0/1` still works and
 is not compounded with shared framing. This is a **φ-inspired framing
 convention**, not an objective rule of the golden ratio.
 
+**From 15 October 2026**, all *new* scheduled Marker, Tissue & Graphite,
+and Watercolour V2S gallery/social images explicitly enable shared φ framing
+(`sheet=phi`). Both portrait and landscape studies use exactly the same
+source-space transform in the generated JPEG, editor share URL, and SVG/plotter
+paths. The 09:00, 15:00 and 20:30 UK publishing slots remain as scheduled.
+This is a prospective automation choice: the interactive editor keeps its
+checkbox opt-in, and existing archived images, media releases and links are
+never retroactively rewritten. The cutoff is defined in
+`automation/phi-framing.mjs` and verified by
+`tests/daily-phi-framing.test.mjs`.
+
 ### φ-native Watercolour layouts and rendering efficiency (14 October 2026)
 
 New Watercolour V2S artwork defaults to the original Marker generator's φ
