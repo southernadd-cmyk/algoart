@@ -75,3 +75,36 @@ Open-source references informing the original, non-copied implementation:
 **Release status:** experimental only. Do not merge into main, enable in
 production, or add this material to scheduled gallery/social workflows before
 real renders are evaluated.
+
+## V3c — organic brush tips and overlapping oil masses (experimental)
+
+**Motivation:** V3b still shows evenly spaced bristle tracks and a blocky, square-pixel
+surface. Its previous 2×2-pixel hash grain is especially conspicuous in cropped tips.
+These are renderer artefacts, not genuine irregular paint deposits.
+
+Changes in the real Canvas2D renderer on branch `experiment/oil-paint-v3c-organic-tips-and-masses`:
+
+- Replace raster-cell hash grain with **smoothly interpolated continuous canvas tooth**,
+  plus blended gradients of neighbouring paint-height cells; no 2×2 solid pixel squares.
+- Stamp **round/elliptical fractional-position bristle terminals**, preserving smooth
+  anti-aliased tips. Give individual hairs irregular spacing and widths rather than
+  uniform comb/grid spacing.
+- Add **source-local opaque overlapping impasto patches**, deposited as irregular
+  two-sided Bézier contours with pointed ends, varied orientation and thickness.
+  These follow existing path tangents and source colour; dense related chains
+  receive more broad massing, sparse chains remain more open.
+- Register exactly the same new deposits in both the colour and the additive
+  paint-height buffers, without global Gaussian blur or whole-canvas filling.
+- Preserve original seeds, composition geometry, phi framing, V1/V2/V3/V3b
+  comparator branches and historic rendering.
+
+Implementation ideas are consistent with
+[MyPaint's subpixel ellipses and anti-alias brush dab geometry](https://github-wiki-see.page/m/mypaint/libmypaint/wiki/Using-Brushlib)
+and [Krita's bristle shape, random offsets and anti-aliasing controls](https://docs.krita.org/en/reference_manual/brushes/brush_engines/bristle_engine.html).
+Source is new and not copied.
+
+**Evaluate actual 16-study renders against V3b** before treating this as a
+painterly success. Gate also checks deterministic repeatability, colour/relief
+alignment, absent grid artifact, patch deposition counts and runtime. The
+workflow renders the same settings under V3c versus V2; existing V3b reference
+image artifacts are the additional baseline. **No release or live deployment.**
