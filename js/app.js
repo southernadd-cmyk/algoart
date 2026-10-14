@@ -196,10 +196,10 @@ function materialKey(){return $('materialStyle').value+'|'+
     '|phi:'+phiSheetFraming+'|historic-fit:'+watercolourFitToSheet}
 function syncMaterialNote(){
   var control=$('watercolourFitControl');
-  // Only expose the historic Watercolour-only option for artwork that
-  // actually uses it. New works have a single common φ framing checkbox.
+  // Preserve access to the historical V2S material-only fit (fit=0/1).
+  // Do not display it while the mutually exclusive shared φ fit is active.
   if(control)control.hidden=!(watercolourEnabled()&&
-    watercolourMaterialRevision==='v2s'&&watercolourFitToSheet&&!phiSheetFraming);
+    watercolourMaterialRevision==='v2s'&&!phiSheetFraming);
   var toggle=$('watercolourFit');
   if(toggle)toggle.checked=watercolourFitToSheet;
   var phiToggle=$('phiSheetFit');
