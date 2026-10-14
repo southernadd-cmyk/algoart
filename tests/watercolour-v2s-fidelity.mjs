@@ -66,7 +66,9 @@ try{
       washStates:sample.v2s.stats.washStates}));
     // A monochrome Rects piece is allowed to remain byte-identical:
     // retaining successful geometric work is a goal, not a failure.
-    if(c.mode!=='rects')assert(changed,
+    if(c.mode==='rects')assert(!changed,
+      'V2S must preserve V2R monochrome frame wash and negative space pixel-for-pixel');
+    else assert(changed,
       'Source fidelity should visibly affect '+c.mode);
     assert.deepEqual(sample.v2r.stats.compositionPresentation,
       sample.v2s.stats.compositionPresentation,
