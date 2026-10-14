@@ -86,10 +86,16 @@ try{
     assert.equal(stats.seed,item.seed);
     assert.equal(stats.phiFraming,true);
     assert(stats.sourceColours.length>0);
-    const image=page.locator('#oil-v1-stage');
-    const size=await image.evaluate(c=>[c.width,c.height]);
-    assert.deepEqual(size,item.orientation==='portrait'?[700,980]:[980,700]);
-    await image.screenshot({path:path.join(root,item.group,filename),timeout:45000});
+    // Never screenshot the DOM: ALGO/ART has an introductory overlay
+    // that can physically cover an otherwise-correct painted canvas.
+    // Export the true renderer pixels, not a screenshot of the webpage.
+    const rendered=await page.locator('#oil-v1-stage').evaluate(c=>({
+      size:[c.width,c.height],raw:c.toDataURL('image/png').split(',')[1]
+    }));
+    assert.deepEqual(rendered.size,item.orientation==='portrait'?[700,980]:[980,700]);
+    const bytes=Buffer.from(rendered.raw,'base64');
+    assert(bytes.length>18000,'Oil paint canvas seems empty: '+filename);
+    await writeFile(path.join(root,item.group,filename),bytes);
     console.log('OIL V1 '+item.group+' '+item.number+'/8 '+item.mode+' '+item.orientation+
       ' paths '+stats.paintedPaths+' '+stats.ms+'ms');
     result.push({...item,file:item.group+'/'+filename,stats:stats});
