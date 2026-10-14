@@ -1,4 +1,4 @@
-// EXACT V2j eight-engine samples re-rendered under V2P; compare with V2L output. Their settings
+// EXACT V2j eight-engine samples re-rendered under V2Q; compare with V2L output. Their settings
 // and seed strings were copied verbatim from the V2j random manifest.
 // Compare against archived V2L matched-seed artifact in run 38554077327, never randomise.
 import { chromium } from 'playwright';
@@ -6,7 +6,7 @@ import { mkdir,writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
-const folder='watercolour-same-seed-v2o-v2p';
+const folder='watercolour-v2p-v2q-fixed';
 await mkdir(folder,{recursive:true});
 const keys=['mode','orientation','seed','elements','density','complexity',
   'negativeSpace','phiStrength','recursion','spiralInfluence','goldenAngle',
@@ -23,63 +23,80 @@ try{
     {waitUntil:'load',timeout:60000});
   await page.waitForFunction(()=>window.__previewReady===true||!!window.__previewError,
     null,{timeout:120000});
-  const error=await page.evaluate(()=>window.__previewError||'');
-  assert(!error,error);
+  assert(!(await page.evaluate(()=>window.__previewError||'')));
   const manifest=[];
-  for(const [i,scenario] of cases.entries()){
-    const result=await page.evaluate(scene=>{
+  for(const [i,scene] of cases.entries()){
+    const images=await page.evaluate(scene=>{
       const A=window.AlgoArt,original=A.oilMaterial;
+      const before=A.watercolourV2qOptions.layeredDrying;
       const settings={...window.__currentPreviewSettings,...scene,
         pen:'fine',paper:'#f5f0e6',grain:13};
-      const canvas=document.createElement('canvas');
-      try{
-        A.oilMaterial=A.watercolourMaterialExperiment;
+      const render=enabled=>{
+        A.watercolourV2qOptions.layeredDrying=enabled;
+        const canvas=document.createElement('canvas'),start=performance.now();
         A.renderOil(canvas,settings,1,false,6);
         return {png:canvas.toDataURL('image/png').split(',')[1],
-          width:canvas.width,height:canvas.height,
-          stats:A.lastWatercolourExperimentStats};
-      }finally{A.oilMaterial=original;}
-    },scenario);
-    assert.equal(result.width,scenario.orientation==='portrait'?1000:1400);
-    assert.equal(result.height,scenario.orientation==='portrait'?1400:1000);
-    assert.equal(result.stats.paper,'#f5f0e6');
-    assert.equal(result.stats.edgeDarkening,.72);
-    assert.equal(result.stats.interiorMottle,.24);
-    assert.equal(result.stats.paleEdgePooling,.75);
-    assert.equal(result.stats.edgeBandRadius,8);
-    assert(result.stats.softWashCount>0);
-    assert(result.stats.softWashCount<result.stats.areaWashCount);
-    assert(result.stats.edgeTexture.samples>100);
-    assert(result.stats.edgeTexture.drySamples>0);
-    assert(result.stats.edgeTexture.maxDryDisplacement<=1.251);
-    assert(result.stats.edgeTexture.maxWetDisplacement<=2.301);
-    assert(result.stats.paperFlow.softMaskPixels>0);
-    assert(result.stats.paperFlow.softBoundaryPixels>0);
-    assert(result.stats.paperFlow.softFluxPixels>0);
-    assert(result.stats.paperFlow.softConservationError<.00002);
-    assert(result.stats.paperFlow.wetMaskPixels>0);
-    assert(result.stats.paperFlow.transferPixels>0);
-    assert(result.stats.paperFlow.donorPixels>0);
-    assert(result.stats.paperFlow.edgeBankPixels>0);
-    assert(result.stats.paperFlow.edgeBandPeak>.001);
-    assert(result.stats.paperFlow.conservationError<.00002);
-    assert(result.stats.watercolorThinStrokeCount>0);
-    const bytes=Buffer.from(result.png,'base64');
-    assert(bytes.length>15000);
-    const filename=String(i+1).padStart(2,'0')+'-'+scenario.mode+'-'+scenario.orientation+'.png';
-    await writeFile(folder+'/'+filename,bytes);
-    manifest.push({...scenario,filename,width:result.width,height:result.height,
-      bytes:bytes.length,edgeDarkening:result.stats.edgeDarkening,
-      interiorMottle:result.stats.interiorMottle,materialStats:{
-        microBleedCount:result.stats.microBleedCount,
-        waterBlooms:result.stats.paperFlow.waterBlooms,
-        pigmentSpreadMax:result.stats.pigmentSpreadMax,
-        compositionPresentation:result.stats.compositionPresentation}});
-    console.log('FIXED V2O BASELINE V2P RENDER',filename,scenario.seed,bytes.length);
+          stats:A.lastWatercolourExperimentStats,width:canvas.width,
+          height:canvas.height,elapsedMs:Math.round(performance.now()-start)};
+      };
+      try{
+        A.oilMaterial=A.watercolourMaterialExperiment;
+        const v2p=render(false),v2q=render(true);
+        const qRepeat=render(true);
+        return {v2p,v2q,
+          repeat:qRepeat.png===v2q.png,
+          paper:A.lastWatercolourExperimentStats.paper};
+      }finally{A.watercolourV2qOptions.layeredDrying=before;A.oilMaterial=original;}
+    },scene);
+    const {v2p,v2q}=images;
+    const sf=v2q.stats.paperFlow;
+    assert(images.repeat,'V2Q must replay pixel-identically');
+    assert.equal(v2p.stats.layeredDrying,false);
+    assert.equal(v2q.stats.layeredDrying,true);
+    assert.equal(v2q.stats.paper,'#f5f0e6');
+    assert.equal(v2p.stats.paper,'#f5f0e6');
+    assert.equal(v2p.stats.compositionPresentation.factor,v2q.stats.compositionPresentation.factor);
+    assert.equal(v2p.stats.softWashCount,v2q.stats.softWashCount);
+    assert.equal(v2p.stats.areaWashCount,v2q.stats.areaWashCount);
+    assert.equal(sf.stageCount,3);
+    assert.equal(sf.frozenLayers,2);
+    assert.equal(sf.wetOnly,true);
+    assert.equal(sf.fixedPixelChanges,0);
+    assert.equal(sf.stages.length,3);
+    assert.deepEqual(sf.stages.map(s=>s.name),['broad','hero','details']);
+    for(const stage of sf.stages){
+      assert.equal(stage.transport.fixedPixelChanges,0);
+      assert.equal(stage.transport.wetOnly,true);
+      assert(stage.addedMass>=0);
+      assert(stage.transport.conservationError<.00002);
+    }
+    assert(sf.mobilePixels>0);
+    assert(sf.softConservationError<.00002);
+    assert(sf.conservationError<.00002);
+    assert(sf.transferPixels>0);
+    assert(sf.edgeBankPixels>0);
+    assert(sf.softMaskPixels>0);
+    assert.notEqual(v2p.png,v2q.png,'Layered drying must produce a real difference');
+    assert.equal(v2q.width,scene.orientation==='portrait'?1000:1400);
+    assert.equal(v2q.height,scene.orientation==='portrait'?1400:1000);
+    const name=String(i+1).padStart(2,'0')+'-'+scene.mode+'-'+scene.orientation;
+    const baseline=Buffer.from(v2p.png,'base64'),layered=Buffer.from(v2q.png,'base64');
+    assert(baseline.length>15000&&layered.length>15000);
+    await writeFile(folder+'/'+name+'-v2p.png',baseline);
+    await writeFile(folder+'/'+name+'-v2q.png',layered);
+    manifest.push({...scene,name,baseline:name+'-v2p.png',layered:name+'-v2q.png',
+      size:[v2q.width,v2q.height],bytes:[baseline.length,layered.length],
+      renderMs:{v2p:v2p.elapsedMs,v2q:v2q.elapsedMs},
+      stageStats:sf.stages.map(v=>({name:v.name,mobilePixels:v.transport.mobilePixels,
+        fixedPixelChanges:v.transport.fixedPixelChanges,addedMass:v.addedMass})),
+      paper:'#f5f0e6'});
+    console.log('PASS V2P vs V2Q',name,scene.seed,
+      'V2P='+v2p.elapsedMs+'ms V2Q='+v2q.elapsedMs+'ms',
+      'stages='+sf.stageCount,'frozen='+sf.frozenLayers);
   }
   await writeFile(folder+'/manifest.json',JSON.stringify({
-    baseline:'V2O: GitHub Actions run 38594738739 (identical eight fixed seeds); V2N: 38588604167',
-    version:'V2P',note:'Exactly same seeds and generation controls as archived V2L matched-seed set',
+    baseline:'V2P commit 0b16e1732347e7ea5817dc757af56d4f49e5cf9f, same branch toggled off',
+    version:'V2Q',note:'Both files from each exact archived seed/settings; independent drying vs one composite post-pass',
     samples:manifest},null,2));
-  console.log('PASS: 8 V2P images with exact archived V2L seeds');
+  console.log('PASS 8 exact-seed V2P/V2Q comparisons, three-stage freeze and deterministic replay');
 }finally{await browser.close()}
