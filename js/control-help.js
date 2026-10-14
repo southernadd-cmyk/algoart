@@ -238,6 +238,17 @@ var TISSUE_HELP={
   pressure:'Varies the width of source strokes. This is not pressure applied to a graphite pencil.',
   dryness:'Adds gaps and breaks to source strokes at higher values. This does not simulate a separate dry brush.'
 };
+// Watercolour uses the SAME persisted source mark profiles, but its
+// explanations must describe paint/brush behaviour rather than tissue sheets.
+var WATERCOLOUR_HELP={
+  pen:'Selects the source mark profile used to arrange watercolour washes and fine dry brush strokes. This controls source geometry; the watercolour renderer supplies the physical-looking paint finish.',
+  thickness:'Sets the width of the original source strokes. The resulting watercolour wash and dry brush scale from that geometry.',
+  wobble:'Adds irregularity to the source mark geometry beneath the watercolour.',
+  overdraw:'Repeats source strokes. Watercolour combines the resulting paths into washes and brushwork; this does not change the number of drying stages.',
+  opacity:'Controls underlying source ink transparency. Watercolour uses its own pigment density and translucent glazing.',
+  pressure:'Varies source stroke width, which informs the later watercolour brush footprint.',
+  dryness:'Breaks up source strokes at higher values. It does not change the moisture or evaporation rate in the watercolour renderer.'
+};
 var penControl=document.getElementById('pen'),MARKER_PROFILES={};
 if(penControl)Array.prototype.forEach.call(penControl.options,function(option){
   MARKER_PROFILES[option.value]=option.textContent;
@@ -347,7 +358,8 @@ A.syncControlHelp=function(mode,version,meta){
     entry.button.setAttribute('aria-label','About '+entry.label.textContent);
     entry.hint.textContent=painted&&entry.id==='grain'?
       'This material simulates its own paper texture. This grain setting applies to Marker drawing.':
-      (painted&&TISSUE_HELP[entry.id]||helpText(mode,entry.id,version));
+      (watercolour&&WATERCOLOUR_HELP[entry.id]||
+        tissue&&TISSUE_HELP[entry.id]||helpText(mode,entry.id,version));
     if(active===entry&&entry.row.hidden)closeHelp();
   });
   shapeChecks.forEach(function(check){
