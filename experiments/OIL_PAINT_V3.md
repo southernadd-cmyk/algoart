@@ -31,3 +31,16 @@ Thickness 0.90, drag 0.72, bristles 0.92, local massing 0.44, relief 0.87, phiFr
 `.github/workflows/oil-v3-sixteen-tests.yml` runs old-material regression, V3 physics/determinism, V3 8-fixed/8-random renderer PNGs, the 16 matched **V2 versus V3** reference paintings, 100% paint texture crops, separate contact sheets and a JSON manifest. Require observable improvement in oil paint quality at normal size; source geometry remains recognizable. Evaluate both the reduction of height saturation and the extra rendering cost. Do **not** merge on successful CI alone.
 
 Known trade-offs: still procedural oil approximation rather than spectral paint chemistry or physical viscosity simulation; colour pickup is restrained, not a globally advected flow field.
+
+## First actual V3 render — 14 October 2026
+
+The dedicated GitHub Actions run **38647938844** passed and produced archive **11932134682**, containing 16 V3 images, 16 matched V2 reference images, two V3 contact sheets, one paired V2/V3 contact sheet, four original-resolution texture crops, and a settings/timings manifest.
+
+- **Performance:** average V3 render **190.8 ms**, average V2 render **139.8 ms** over the same 16 seeds and CI Chromium environment. V3 is approximately **36.5% slower**; print-resolution/mobile speed is not established.
+- **Height distribution:** V3 raw height P95 is roughly 1.50–6.36 rather than the previous V2 saturation at 4 in most samples. 15/16 V3 studies have zero pixels at the new ceiling; the remaining dense Radiant study had ~0.175% capped pixels. The saturation problem is substantially improved, but the uncompressed height map alone cannot guarantee a painterly result.
+- **Visual finding:** at full frame, the images still resemble thick/striated marker strokes. The source geometry is highly faithful, but the long parallel colour bands and concentric rings look engraved rather than dragged through thick oil. This is **not yet a convincing oil painting material**, particularly on the sparse studies. The changed shading improves local edge/surface differentiation but does not alter the painting strategy sufficiently.
+- **Decision:** leave PR #83 a draft. No production release.
+
+## More promising next structural experiment
+
+The research suggests the next version must stop treating each source line as a **uniform filled ribbon with decorative grooves**. Instead, render a deposited **bristle-tip footprint** moving over the source path, with variable contact/density, partial pigment exhaustion, pressure-driven splay, and actual multi-bristle pigment pickup/smearing where it crosses wet earlier deposits. Krita's bristle engine supports scale/shear/density/connected hairs, ink depletion and colour soak; MyPaint handles directional/asymmetric brush tips and opacity accumulation. Preserve the source phi envelope and palette, but replace visually literal path tracing with overlapping **local painted strokes and broad block-in planes**. Benchmark before increasing complexity; avoid a full fluid simulation for now.
