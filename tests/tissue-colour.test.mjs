@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 assert.match(app,/select:not\(#exportScale\):not\(#orientation\):not\(#materialStyle\)/,
   'Randomise must never randomise the selected drawing material');
-assert.match(app,/tissuePaletteVersion=6/);
+assert.match(app,/tissuePaletteVersion=7/);
 assert.match(app,/params\.set\(tissuePaletteVersion>=2\?'tissue':'watercolor'/);
 const exports=readFileSync(new URL('../js/export.js',import.meta.url),'utf8');
 assert.match(exports,/delete compositionSettings\.tissuePaletteVersion/);
@@ -158,4 +158,16 @@ for(const revision of [4,5,6]){
 }
 assert.deepEqual(paint(cream,6),paint(cream,6),'V9 tissue stays deterministic');
 assert.deepEqual(paint(blue,6),paint(blue,6),'V9 tissue with custom paper stays deterministic');
+for(const p of ['earth','neon','mono','golden']){
+  const sample=settings(p);
+  const old=paint(sample,6);
+  const next=paint(sample,7),newStats=A.lastOilMaterialStats;
+  assert(newStats.sourceMatchedChains>0,'Tissue V7 lost source hue lineage');
+  assert.deepEqual(Array.from(newStats.atmosphericBloomColours),
+    Array.from(A.tissueKitFromPaths(marker(sample),sample,7).ink));
+  assert.notDeepEqual(next,old,'V7 hue-matched colour and blooms must change the artwork');
+  assert.deepEqual(paint(sample,6),old,'Tissue V7 contaminated a V6 render');
+  assert.deepEqual(paint(sample,7),next,'Tissue V7 must be deterministic');
+}
+console.log('PASS Tissue V7 source-hue matching, bloom palette and byte-stable V6 fallback');
 console.log('PASS V9 paper colour is independent of geometry and pigment; default cream preserves V8 marks');
