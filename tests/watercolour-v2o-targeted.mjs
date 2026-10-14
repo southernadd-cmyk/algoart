@@ -22,7 +22,7 @@ await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true});
 try{
   const page=await browser.newPage({viewport:{width:1400,height:950}});
-  await page.goto(new URL('experiments/watercolour-wet-edge-preview.html',root),
+  await page.goto(new URL('experiments/watercolour-wet-edge-preview.html',root).href,
     {waitUntil:'load',timeout:60000});
   await page.waitForFunction(()=>window.__previewReady===true||!!window.__previewError,
     null,{timeout:120000});
