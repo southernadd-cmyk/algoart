@@ -8,6 +8,7 @@ on:
       - 'experiments/watercolour-wet-edge-preview.html'
       - 'tests/watercolour-wet-edge-preview.mjs'
       - 'tests/watercolour-eight-random.mjs'
+      - 'tests/watercolour-v2j-fixed-seeds.mjs'
       - '.github/workflows/watercolour-wet-edge-experiment.yml'
       - 'js/oil-*.js'
       - 'js/generator.js'
@@ -45,13 +46,23 @@ jobs:
           path: watercolour-wet-edge-previews/
           if-no-files-found: warn
           retention-days: 14
-      - name: Render eight new random full-size V2j watercolours
+      - name: Render eight V2k studies using archived exact V2j seeds
+        run: node tests/watercolour-v2j-fixed-seeds.mjs
+      - name: Upload fixed-seed V2j-to-V2k visual comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-eight-fixed-v2j-v2k
+          path: watercolour-same-seed-v2j-v2k/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Render eight new random full-size V2k watercolours
         run: node tests/watercolour-eight-random.mjs
       - name: Upload eight independent images and reproducible manifest
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: watercolour-eight-random-v2j
+          name: watercolour-eight-random-v2k
           path: watercolour-eight-random/
           if-no-files-found: warn
           retention-days: 14
