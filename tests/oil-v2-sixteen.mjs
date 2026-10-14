@@ -159,11 +159,52 @@ try{
     },items);
     await writeFile(root+'/oil-v2-'+group+'-contact-sheet.jpg',Buffer.from(image,'base64'));
   }
+  // Compare exactly the same seed in the previous and new paint engine.
+  const pairs=result.map(e=>({v1:'/'+root+'/'+e.v1File,
+    v2:'/'+root+'/'+e.file,name:e.group+' '+e.number+' '+e.mode}));
+  const sideBySide=await page.evaluate(async inputs=>{
+    const width=570,height=220,cols=2;
+    const out=document.createElement('canvas');
+    out.width=cols*width;out.height=Math.ceil(inputs.length/cols)*height;
+    const g=out.getContext('2d');g.fillStyle='#e7e1d7';
+    g.fillRect(0,0,out.width,out.height);
+    for(let i=0;i<inputs.length;i++){
+      let p=inputs[i],baseX=(i%2)*width,y=Math.floor(i/2)*height;
+      for(let k=0;k<2;k++){
+        const im=new Image();im.src=k?p.v2:p.v1;
+        await new Promise((resolve,reject)=>{im.onload=resolve;im.onerror=reject});
+        let zoom=Math.min(274/im.width,184/im.height);
+        const x=baseX+5+k*282;
+        g.fillStyle='#f5f0e6';g.fillRect(x,y+3,278,186);
+        g.drawImage(im,x+(278-im.width*zoom)/2,
+          y+4+(184-im.height*zoom)/2,im.width*zoom,im.height*zoom);
+      }
+      g.fillStyle='#222';g.font='12px sans-serif';
+      g.fillText(p.name+' — V1 left, V2 right',baseX+8,y+210);
+    }
+    return out.toDataURL('image/jpeg',.92).split(',')[1];
+  },pairs);
+  await writeFile(root+'/oil-v1-v2-matched-contact-sheet.jpg',
+    Buffer.from(sideBySide,'base64'));
+  // Four 100% pixel crops; inspect bristle relief without downscaling.
+  for(const n of [1,2,4,7]){
+    const study=result[n];
+    const crop=await page.evaluate(async uri=>{
+      const im=new Image();im.src=uri;
+      await new Promise((resolve,reject)=>{im.onload=resolve;im.onerror=reject});
+      const out=document.createElement('canvas');out.width=360;out.height=280;
+      out.getContext('2d').drawImage(im,Math.max(0,Math.floor((im.width-360)/2)),
+        Math.max(0,Math.floor((im.height-280)/2)),360,280,0,0,360,280);
+      return out.toDataURL('image/png').split(',')[1];
+    },'/'+root+'/'+study.file);
+    await writeFile(root+'/crops/oil-v2-'+study.mode+'-100pct.png',
+      Buffer.from(crop,'base64'));
+  }
   await writeFile(root+'/oil-v2-manifest.json',JSON.stringify({
     material:'Oil Paint V2 · deterministic Canvas2D renderer, not AI images',
     rendererFile:'js/oil-paint-v2.js',baselineFile:'js/oil-paint-v1.js',
     options:{thickness:.86,drag:.62,bristles:.90,massing:.44,relief:.78},phiFraming:true,
     status:'experiment-only, no changes to live materials or publishing',images:result
   },null,2));
-  console.log('PASS: 8 fixed, 8 random, 2 contact sheets, repeatability, source colours');
+  console.log('PASS: 8 fixed, 8 random, two contact sheets, V1/V2 matched pairs, four 100% crops, repeatability, source colours');
 }finally{await browser.close()}
