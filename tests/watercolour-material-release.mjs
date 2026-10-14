@@ -1,4 +1,4 @@
-// Release integration: Watercolour V2R must be a genuinely third material,
+// Release integration: Watercolour V2S must be a genuinely third material,
 // preserving historical Tissue links, source settings, URL replay and PNG export.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
@@ -33,7 +33,7 @@ try{
   assert.equal(await page.locator('#materialStyle').inputValue(),'marker');
 
   await page.locator('#materialStyle').selectOption('tissue');
-  assert.equal(new URL(page.url()).searchParams.get('tissue'),'6');
+  assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
   const tissueSnapshot=await page.evaluate(()=>{
     const A=window.AlgoArt,settings=A.readSettings(),output=document.createElement('canvas');
     A.renderOil(output,settings,.34,false,6);
@@ -41,7 +41,7 @@ try{
   });
 
   await page.locator('#materialStyle').selectOption('watercolour');
-  assert.equal(new URL(page.url()).searchParams.get('material'),'watercolour-v2r');
+  assert.equal(new URL(page.url()).searchParams.get('material'),'watercolour-v2s');
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
   assert.equal(new URL(page.url()).searchParams.get('paper'),'#d9c7b9');
   assert.match(await page.locator('#materialStyleNote').textContent(),/Watercolour pigments/);
@@ -49,9 +49,9 @@ try{
   const water=await page.evaluate(()=>{
     const A=window.AlgoArt,settings=A.readSettings(),savedMaterial=A.oilMaterial;
     const a=document.createElement('canvas'),b=document.createElement('canvas');
-    A.renderWatercolourV2R(a,settings,.34,false);
+    A.renderWatercolourV2S(a,settings,.34,false);
     const stats=A.lastWatercolourExperimentStats;
-    A.renderWatercolourV2R(b,settings,.34,false);
+    A.renderWatercolourV2S(b,settings,.34,false);
     const same=a.toDataURL('image/png')===b.toDataURL('image/png');
     const restored=A.oilMaterial===savedMaterial;
     return {settings,version:A.rendererVersion,same,restored,stats,
@@ -75,7 +75,7 @@ try{
     page.waitForEvent('download',{timeout:180000}),
     page.locator('#savePanel').click()
   ]);
-  assert.match(download.suggestedFilename(),/-watercolour-v2r-1x\.png$/);
+  assert.match(download.suggestedFilename(),/-watercolour-v2s-1x\.png$/);
   const stream=await download.createReadStream();
   let size=0;for await (const chunk of stream)size+=chunk.length;
   assert(size>20000,'Export file is blank');
@@ -104,8 +104,28 @@ try{
   // Randomise keeps the material, the chosen paper, and the serialized type.
   await page.locator('#randomise').click();
   assert.equal(await page.locator('#materialStyle').inputValue(),'watercolour');
-  assert.equal(new URL(page.url()).searchParams.get('material'),'watercolour-v2r');
+  assert.equal(new URL(page.url()).searchParams.get('material'),'watercolour-v2s');
   assert.equal(new URL(page.url()).searchParams.get('paper'),'#d9c7b9');
+  // Historical Watercolour V2R is a separate material revision.
+  const oldShare=new URL(page.url());
+  oldShare.searchParams.set('material','watercolour-v2r');
+  await page.goto(oldShare.href,{waitUntil:'domcontentloaded'});await stable();
+  assert.equal(await page.locator('#materialStyle').inputValue(),'watercolour');
+  assert.equal(new URL(page.url()).searchParams.get('material'),'watercolour-v2r');
+  const previous=await page.evaluate(()=>{
+    const A=window.AlgoArt,c=document.createElement('canvas');
+    A.renderWatercolourV2R(c,A.readSettings(),.34,false);
+    return c.toDataURL('image/png').length;
+  });
+  assert(previous>20000,'Historical V2R failed to render');
+  // Historical V6 tissue share links must reload with revision 6, not
+  // silently adopt the new default version 7.
+  const oldTissue=new URL(page.url());
+  oldTissue.searchParams.delete('material');
+  oldTissue.searchParams.set('tissue','6');
+  await page.goto(oldTissue.href,{waitUntil:'domcontentloaded'});await stable();
+  assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
+  assert.equal(new URL(page.url()).searchParams.get('tissue'),'6');
   assert.deepEqual(errors,[]);
   console.log('PASS watercolour material URL, old Tissue pixel identity, determinism, renderer restoration, user paper, PNG download, randomise',size);
 }finally{await browser.close()}
