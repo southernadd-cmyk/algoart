@@ -1,4 +1,4 @@
-// Eight fresh, genuinely random V2P studies — ONE from each V8 engine.
+// Eight fresh, genuinely random V2Q studies — ONE from each V8 engine.
 // This is a screenshot/artwork sampler, not a production publishing path.
 // Each image and its full seed/settings are saved for deterministic reproduction.
 import { chromium } from 'playwright';
@@ -27,7 +27,7 @@ function randInt(low,high){return low+randomBytes(4).readUInt32BE(0)%(high-low+1
 const palettes=['golden','earth','warm','mono'];
 const scenarios=engines.map((engine,index)=>({
   ...engine,
-  seed:'WC-V2P-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
+  seed:'WC-V2Q-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
   elements:randInt(18,42),
   density:randInt(43,73),
   complexity:randInt(43,81),
@@ -89,6 +89,14 @@ try{
     assert(result.material.washStates.wet+result.material.washStates.damp>0,
       'Expected water-mobile translucent washes: '+scenario.mode);
     assert(result.material.paperFlow.diffusionPasses>=3);
+    assert.equal(result.material.layeredDrying,true);
+    assert.equal(result.material.paperFlow.stageCount,3);
+    assert.equal(result.material.paperFlow.wetOnly,true);
+    assert.equal(result.material.paperFlow.frozenLayers,2);
+    assert.equal(result.material.paperFlow.fixedPixelChanges,0);
+    assert.equal(result.material.paperFlow.stages.length,3);
+    for(const step of result.material.paperFlow.stages)
+      assert.equal(step.transport.fixedPixelChanges,0);
     assert.equal(result.material.widthCaps.broad,127);
     assert.equal(result.material.widthCaps.hero,67);
     assert(result.material.washWidths.broadMax<=127);
@@ -157,12 +165,12 @@ try{
   assert.equal(new Set(manifest.map(x=>x.seed)).size,8);
   assert.equal(errors.length,0,'Browser errors: '+errors.join('; '));
   await writeFile(output+'/manifest.json',JSON.stringify({
-    description:'8 unique random studies in experimental Watercolour V2P',
-    material:'watercolour-v2p-paper-diffusion',rendererVersion:8,
+    description:'8 unique random studies in experimental Watercolour V2Q',
+    material:'watercolour-v2q-paper-diffusion',rendererVersion:8,
     revision:'experimental branch only; no production changes',
     samples:manifest
   },null,2));
-  console.log('PASS: 8 new independent, reproducible V2P watercolour PNGs');
+  console.log('PASS: 8 new independent, reproducible V2Q watercolour PNGs');
 // Fixed V2i seeds from the user's visual review. These are NOT the random
 // gallery; they are four extra regression images proving the compact-cluster
 // and edge-clipped-frame conditions have been addressed on exact inputs.
