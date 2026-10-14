@@ -345,13 +345,14 @@ function finish(pig,field,w,h,seed,options){
   var pixels=pig.getImageData(0,0,w,h),out=pixels.data,
       hs=A.hash(seed+'|oil-impasto-v3-height')>>>0,
       relief=minmax(options.relief??.87,0,1),
-      peak=0,active=0,dist=[];
+      peak=0,active=0,capped=0,dist=[];
   // One finishing pass. Height gradients use neighbours inside field.
   // Colour exposure/opacity are already resolved by source-over strokes.
   for(var y=1;y<h-1;y++)for(var x=1;x<w-1;x++){
     var p=y*w+x,i=p*4,ht=field[p];
     if(ht<.035)continue;
     active++;if(ht>peak)peak=ht;
+    if(ht>=17.999)capped++;
     if((x+y*13)%17===0)dist.push(ht);
     var mapped=opticalRelief(ht);
     var dx=(opticalRelief(field[p+1])-opticalRelief(field[p-1]))*.5,
@@ -371,7 +372,9 @@ function finish(pig,field,w,h,seed,options){
   dist.sort(function(a,b){return a-b});
   return {heightPeak:+peak.toFixed(3),heightP95:dist.length?
     +dist[Math.floor(dist.length*.95)].toFixed(3):0,
-    heightActivePixels:active,heightBytes:field.byteLength};
+    heightActivePixels:active,heightAtCap:capped,
+    heightAtCapFraction:active?+(capped/active).toFixed(5):0,
+    heightBytes:field.byteLength};
 }
 
 A.renderOilPaintV3=function(target,settings,scale,opts){
