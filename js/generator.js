@@ -3908,6 +3908,26 @@ A.render=function(target,s,scale,showGeometry){
   // Reject future/invalid renderer versions rather than silently drawing as the latest version.
   if(A.supportedRendererVersions && !A.supportedRendererVersions.includes(A.rendererVersion))
     throw new Error('Unsupported renderer version: '+A.rendererVersion);
+  // Source geometry is sampled once into the existing precise SVG
+  // recorder before generating a φ-fitted version. Replaying with the
+  // same settings leaves the generator's seeded RNG untouched. This
+  // branch is strictly opt-in: legacy work follows the old code path.
+  var phiFrame=null;
+  if(A.phiFramingEnabled&&!A._phiSheetProbe&&A.phiSheetFit){
+    var previousRecorder=A.svgRecorder,previewMeta=A.lastRenderMeta;
+    var collector={precise:true,paths:[],paperMarks:[]};
+    A._phiSheetProbe=true;
+    try{
+      A.svgRecorder=collector;
+      A.render(document.createElement('canvas'),s,.12,false);
+      var logicalW=s.orientation==='portrait'?1000:1400;
+      var logicalH=s.orientation==='portrait'?1400:1000;
+      phiFrame=A.phiSheetFit.plan(collector.paths,logicalW,logicalH);
+    }finally{
+      A.svgRecorder=previousRecorder;A._phiSheetProbe=false;
+      A.lastRenderMeta=previewMeta;
+    }
+  }
   // Set logical dimensions for every render, including plugin/headless exports.
   // Absence of orientation preserves the original landscape format.
   A.W=s.orientation==='portrait'?1000:1400;
@@ -3921,6 +3941,12 @@ A.render=function(target,s,scale,showGeometry){
 
   var r=A.makeR(s.seed+'|'+JSON.stringify(randomSettings(s)));
   A.paper(ctx,s,r);
+  var firstRecorded=A.svgRecorder&&A.svgRecorder.paths?
+    A.svgRecorder.paths.length:0;
+  if(phiFrame){
+    ctx.save();
+    ctx.transform(phiFrame.scale,0,0,phiFrame.scale,phiFrame.tx,phiFrame.ty);
+  }
   var pal=A.hues(s,r);
   var meta;
 
@@ -3947,12 +3973,19 @@ A.render=function(target,s,scale,showGeometry){
   }
 
   if(showGeometry)A.geometryOverlay(ctx,s,meta);
-
+  if(phiFrame){
+    ctx.restore();
+    if(A.svgRecorder&&A.svgRecorder.paths)
+      A.phiSheetFit.transformRecorded(A.svgRecorder.paths,firstRecorded,phiFrame);
+  }
+  A.lastPhiSheetFrame=phiFrame;
   A.lastRenderMeta={
     strategy:(meta&&meta.strategy)||chooseStrategy(s),
-    voids:(meta&&meta.voids)||[],
+    voids:phiFrame?A.phiSheetFit.transformVoids((meta&&meta.voids)||[],phiFrame):
+      (meta&&meta.voids)||[],
     guide:(meta&&meta.guide)||null
   };
+  if(phiFrame)A.lastRenderMeta.phiSheetFrame=phiFrame;
   return A.lastRenderMeta;
 };
 
