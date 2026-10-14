@@ -1,0 +1,63 @@
+name: Shared phi sheet framing experiment
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/phi-sheet-fit.js'
+      - 'js/generator.js'
+      - 'js/app.js'
+      - 'index.html'
+      - 'tests/phi-sheet-fit.test.mjs'
+      - 'tests/phi-sheet-preview.mjs'
+      - '.github/workflows/phi-sheet-fit-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: JavaScript syntax and historical source tests
+        run: |
+          node --check js/phi-sheet-fit.js
+          node --check js/generator.js
+          node --check js/app.js
+          node --check tests/phi-sheet-fit.test.mjs
+          node --check tests/phi-sheet-preview.mjs
+          node tests/renderer-lock.test.mjs
+          node tests/materials-ui.test.mjs
+          node tests/site-quality.test.mjs
+      - name: Start local site
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-sheet.log 2>&1 &
+          for i in {1..35}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/phi-sheet.log
+          exit 1
+      - name: Shared φ fitted source and media browser verification
+        run: node tests/phi-sheet-fit.test.mjs
+      - name: Render 18 matched Marker/Tissue/Watercolour φ framing comparisons
+        run: node tests/phi-sheet-preview.mjs
+      - name: Upload visual φ framing comparisons and timings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-phi-sheet-visual-pairs
+          path: phi-sheet-framing-compare/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Historical Watercolour V2S fit behaviour
+        run: node tests/watercolour-fit.test.mjs
+      - name: Material PNG and legacy reproduction
+        run: node tests/watercolour-material-release.mjs

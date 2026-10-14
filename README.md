@@ -34,6 +34,29 @@ Artworks are deterministic: the **renderer version + seed + settings** identify 
 
 The golden ratio governs aspects of composition; not every stroke or tuning value is a mathematical identity. The tension between those rules and the hand-drawn appearance is part of the experiment.
 
+### Optional φ framing shared across all three materials (14 October 2026)
+
+**φ framing** is a separate opt-in composition treatment for Marker,
+Tissue & Graphite, and Watercolour V2S. It operates on the source strokes
+before selecting the material, so the framed composition's PNG, SVG and
+plotter paths share the same positions.
+
+The rule is deliberately asymmetric, rather than forcing every image to
+occupy 61.8% of the page:
+
+- **Sparse, below 1/φ ≈ 61.8% coverage:** enlarge, with at most φ× scaling.
+- **Comfortably sized, 61.8–85.4%:** retain the original scale.
+- **Full, above 1−1/φ⁴ ≈ 85.4%:** reduce gently towards 85.4%, never by
+  more than 1/φ⁴ ≈ 14.6%.
+- Move modestly toward the nearest golden-ratio focal point: φ⁻³ for
+  sparse designs, φ⁻⁴ otherwise; never stretch individual shapes.
+
+The checkbox reports actual size and displacement. It is optional and
+saved only as `sheet=phi`; existing share links without this parameter
+remain unchanged. Historical Watercolour-only `fit=0/1` still works and
+is not compounded with shared framing. This is a **φ-inspired framing
+convention**, not an objective rule of the golden ratio.
+
 ### φ-native Watercolour layouts and rendering efficiency (14 October 2026)
 
 New Watercolour V2S artwork defaults to the original Marker generator's φ
