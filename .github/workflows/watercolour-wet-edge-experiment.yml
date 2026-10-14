@@ -11,6 +11,8 @@ on:
       - 'tests/watercolour-eight-random.mjs'
       - 'tests/watercolour-v2j-fixed-seeds.mjs'
       - 'tests/watercolour-v2o-targeted.mjs'
+      - 'tests/watercolour-v2r-paired.mjs'
+      - 'experiments/WATERCOLOUR_DRY_MEDIA_V2R.md'
       - '.github/workflows/watercolour-wet-edge-experiment.yml'
       - 'js/oil-*.js'
       - 'js/generator.js'
@@ -66,6 +68,16 @@ jobs:
         with:
           name: watercolour-v2o-targeted-v2p
           path: watercolour-v2o-targeted-v2p/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Compare ten exact-seed V2P versus V2R dry-media renders
+        run: node tests/watercolour-v2r-paired.mjs
+      - name: Upload ten paired V2P and V2R PNGs with timing and material metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-v2p-v2r-paired
+          path: watercolour-v2p-v2r-pairs/
           if-no-files-found: warn
           retention-days: 14
       - name: Render eight new random full-size V2P watercolours
