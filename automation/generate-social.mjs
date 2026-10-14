@@ -8,6 +8,7 @@ import {
 import { makeCaptions } from './captions.mjs';
 import { socialRendererVersion, archivedLandscapeStudy } from './renderer-state.mjs';
 import { tissueEditionForDate, validateTissueShareUrl } from './tissue-edition.mjs';
+import { appendDailyPhiFraming, dailyPhiFramingForDate } from './phi-framing.mjs';
 
 const rendererVersion=socialRendererVersion();
 
@@ -224,8 +225,12 @@ try {
     // The cutoff changes only the MATERIAL; V8's settings, daily seed and
     // archive IDs retain the exact same deterministic generation algorithm.
     const itemVersion=watercolour?9:rendererVersion;
-    const query=queryFor(settings,itemVersion)+(watercolour?'&material=watercolour-v2s&fit=0':
-      watercolor?tissueEdition.suffix:'');
+    // From 15 October all NEW Marker, Tissue and Watercolour editions share
+    // the same φ-derived source fit, in their PNG/SVG and exact share URL.
+    // Earlier dates and already-frozen gallery/release assets stay untouched.
+    const query=appendDailyPhiFraming(
+      queryFor(settings,itemVersion)+(watercolour?'&material=watercolour-v2s&fit=0':
+      watercolor?tissueEdition.suffix:''),day);
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
     if(watercolor)validateTissueShareUrl(day,shareUrl);
@@ -238,6 +243,14 @@ try {
 
     const actualVersion=await page.evaluate(()=>window.AlgoArt.rendererVersion);
     if(actualVersion!==itemVersion)throw new Error('Rendered V'+actualVersion+' but requested V'+itemVersion);
+    if(dailyPhiFramingForDate(day)){
+      const frame=await page.evaluate(()=>({
+        enabled:!!window.AlgoArt.phiFramingEnabled,
+        transform:window.AlgoArt.lastPhiSheetFrame
+      }));
+      if(!frame.enabled||frame.transform?.kind!=='phi-sheet')
+        throw new Error('Daily '+material+' image did not apply shared φ framing: '+settings.seed);
+    }
 
     const rendered = await page.evaluate(({paperColour,jpegQuality}) => {
       const canvas = document.getElementById('art');
