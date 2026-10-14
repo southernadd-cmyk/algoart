@@ -25,6 +25,8 @@ var originalC=C;
 // irregular capillary falloff, with no concentric cosmetic stroke passes.
 A.watercolourV2kOptions={edgeDarkening:.72,interiorMottle:.24,paleEdgePooling:.75,
   edgeBandRadius:8};
+// Isolated V2R dry-mark experiment. Toggle off to reproduce V2P exactly.
+A.watercolourV2rOptions={dryMedia:true};
 function coloursForInk(kit){
   if(kit.revision>=4){
     var seeded={};
@@ -108,7 +110,10 @@ var activeEdgeWave={frequency:.39,secondary:1.43,phase:0};
 var tissueLightEnabled=false;
 // V2N: raster coverage of the actual damp/wet ribbons, independent of pigment and dry ink.
 var activeWashMaskCtx=null,activeSoftMaskCtx=null,activePigmentLayerCtx=null;
-var activeSoftForShape=false,activeEdgeDry=false;
+var activeSoftForShape=false,activeEdgeDry=false,activeDryMediaPhase=false;
+var dryMediaStats={continuousDryStrokes:0,continuousSamples:0,
+  dryBrushHoles:0,dryBrushRejected:0,dryShardCount:0,
+  dryShardHoles:0,dryShardRejected:0};
 var activeEdgePaperSeed=0,activeEdgeRatio=1;
 var activeEdgeTextureStats={samples:0,drySamples:0,wickSamples:0,
   maxDryDisplacement:0,maxWetDisplacement:0};
@@ -322,6 +327,117 @@ function thinLineMicroBleed(ctx,pts,width,colour,opacity,r,wetness){
   activeMicroBleedCount+=strokes;
   return strokes;
 }
+// V2R: one continuous dry-brush footprint, not a run of square-ended
+// segments. Polygon fill + even-odd paper-grain apertures preserve the
+// already-dried washes beneath without painting cream over them.
+function paintContinuousDryBrush(ctx,pts,width,colour,opacity){
+  var path=[],travel=0,length=0;
+  for(var j=1;j<pts.length;j++)length+=dist(pts[j-1],pts[j]);
+  if(length<.09)return false;
+  for(j=1;j<pts.length;j++){
+    var a=pts[j-1],b=pts[j],span=dist(a,b);
+    if(span<.05)continue;
+    var divisions=Math.max(1,Math.ceil(span/2.6)),normal=angle(a,b)+PI/2;
+    for(var k=0;k<=divisions;k++){
+      if(j>1&&k===0)continue;
+      var t=k/divisions,p=point(a,b,t),progress=clamp((travel+t*span)/length,0,1);
+      var paper=materialPaperField(p.x*activeEdgeRatio,p.y*activeEdgeRatio,
+        activeEdgeRatio,activeEdgePaperSeed);
+      var pressure=.62+.38*Math.pow(Math.max(0,Math.sin(PI*progress)),.48);
+      var localWidth=width*pressure*(.71+.18*paper.tooth);
+      // Gentle continuous drift; paper fibres affect the brush footprint.
+      var sideDrift=(paper.fibre-.5)*.27;
+      var left=shift(p,normal,sideDrift+localWidth*.5);
+      var right=shift(p,normal,sideDrift-localWidth*.5);
+      path.push({left:left,right:right,p:p,angle:angle(a,b),tooth:paper.tooth,
+        localWidth:localWidth});
+    }
+    travel+=span;
+  }
+  if(path.length<2)return false;
+  ctx.save();ctx.globalCompositeOperation='source-over';
+  ctx.globalAlpha=opacity*.76;ctx.fillStyle=colour;ctx.beginPath();
+  ctx.moveTo(path[0].left.x,path[0].left.y);
+  for(j=1;j<path.length;j++)ctx.lineTo(path[j].left.x,path[j].left.y);
+  for(j=path.length-1;j>=0;j--)ctx.lineTo(path[j].right.x,path[j].right.y);
+  ctx.closePath();
+  // Irregular elongated grain apertures: pigment drags along the fibre.
+  // Test every aperture against the unmodified brush path. Even-odd
+  // holes outside a silhouette would otherwise paint unwanted specks.
+  var apertures=[];
+  for(j=3;j<path.length-3;j++){
+    var sample=path[j],x=sample.p.x,y=sample.p.y;
+    var noise=hashNoise(Math.round(x*1.73),Math.round(y*1.49),
+      activeEdgePaperSeed^0x63e41);
+    if(sample.tooth>.65||noise<.68)continue;
+    var major=.70+noise*1.65,minor=Math.min(sample.localWidth*.26,.46);
+    if(minor<.10)continue;
+    var tx=Math.cos(sample.angle)*major,ty=Math.sin(sample.angle)*major;
+    var nx=-Math.sin(sample.angle)*minor,ny=Math.cos(sample.angle)*minor;
+    if(!ctx.isPointInPath(x+tx,y+ty)||
+       !ctx.isPointInPath(x-tx,y-ty)||
+       !ctx.isPointInPath(x+nx,y+ny)||
+       !ctx.isPointInPath(x-nx,y-ny)){
+      dryMediaStats.dryBrushRejected++;continue;
+    }
+    apertures.push({x:x,y:y,major:major,minor:minor,theta:sample.angle});
+  }
+  for(j=0;j<apertures.length;j++){
+    var hole=apertures[j],tx=Math.cos(hole.theta)*hole.major,
+      ty=Math.sin(hole.theta)*hole.major;
+    ctx.moveTo(hole.x+tx,hole.y+ty);
+    ctx.ellipse(hole.x,hole.y,hole.major,hole.minor,hole.theta,0,PI*2);
+    dryMediaStats.dryBrushHoles++;
+  }
+  ctx.fill('evenodd');ctx.restore();
+  dryMediaStats.continuousDryStrokes++;
+  dryMediaStats.continuousSamples+=path.length;
+  return true;
+}
+// V2R: a few small transparent voids inside crisp dry filled shapes, sourced
+// from the same paper tooth field. Canvas evenodd paths keep underlying
+// coloured glazes visible; no bitmap noise or detached dots are overpainted.
+function addDryShardGrain(ctx,pts,width){
+  var minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(var j=0;j<pts.length;j++){
+    minX=Math.min(minX,pts[j].x);maxX=Math.max(maxX,pts[j].x);
+    minY=Math.min(minY,pts[j].y);maxY=Math.max(maxY,pts[j].y);
+  }
+  var reach=width*.52+1.5,step=6.1,added=0,apertures=[];
+  for(var y=Math.floor((minY-reach)/step)*step;y<maxY+reach;y+=step){
+    for(var x=Math.floor((minX-reach)/step)*step;x<maxX+reach;x+=step){
+      var p=materialPaperField(x*activeEdgeRatio,y*activeEdgeRatio,
+        activeEdgeRatio,activeEdgePaperSeed);
+      if(p.tooth>.57)continue;
+      var jitter=hashNoise(Math.round(x*1.23),Math.round(y*.93),
+        activeEdgePaperSeed^0x5783);
+      if(jitter<.57)continue;
+      var dx=(hashNoise(Math.round(x),Math.round(y),
+        activeEdgePaperSeed^0x38971)-.5)*2.4;
+      var dy=(hashNoise(Math.round(y),Math.round(x),
+        activeEdgePaperSeed^0x17831)-.5)*2.4;
+      var radius=(.24+.76*(.57-p.tooth))*(.53+.73*jitter);
+      var cx=x+dx,cy=y+dy,ry=clamp(radius*(.55+.4*p.fibre),.13,1.1);
+      // Use only apertures wholly inside the original polygon contour.
+      if(!ctx.isPointInPath(cx-radius,cy)||
+         !ctx.isPointInPath(cx+radius,cy)||
+         !ctx.isPointInPath(cx,cy-ry)||
+         !ctx.isPointInPath(cx,cy+ry)){
+        dryMediaStats.dryShardRejected++;continue;
+      }
+      apertures.push({x:cx,y:cy,rx:radius,ry:ry,theta:p.fibre*PI});
+    }
+  }
+  for(var ap=0;ap<apertures.length;ap++){
+    var item=apertures[ap];
+    ctx.moveTo(item.x+item.rx*Math.cos(item.theta),
+      item.y+item.rx*Math.sin(item.theta));
+    ctx.ellipse(item.x,item.y,item.rx,item.ry,item.theta,0,PI*2);
+    added++;
+  }
+  dryMediaStats.dryShardCount++;
+  dryMediaStats.dryShardHoles+=added;
+}
 // Watercolour is a material, not a neat geometric stroke followed by a glow.
 // Route every ACTIVE fine mark through this seeded stroke renderer. Even dry
 // paint wicks very slightly into paper. Only a minority of tiny segments pool;
@@ -330,6 +446,11 @@ var activeThinStrokeCount=0,activeDryThinStrokeCount=0;
 function paintThinWatercolourStroke(ctx,pts,width,colour,opacity,r,wetness){
   if(!pts||pts.length<2)return false;
   var wet=clamp(wetness,.18,1),fine=clamp(width,.45,12.5);
+  if(activeDryMediaPhase&&A.watercolourV2rOptions.dryMedia){
+    var painted=paintContinuousDryBrush(ctx,pts,fine,colour,opacity);
+    if(painted){activeThinStrokeCount++;activeDryThinStrokeCount++;}
+    return painted;
+  }
   // A readable center with deliberately nonuniform pigment uptake.
   thinLineMicroBleed(ctx,pts,fine,colour,opacity,
     A.makeR('wick|'+r.range(0,1000000)+'|'+pts.length),wet);
@@ -392,7 +513,10 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state,softEdge
   pig.globalCompositeOperation=edgeState==='dry'?'source-over':'multiply';
   pig.globalAlpha=opacity*(edgeState==='dry'?.45:edgeState==='damp'?.40:.30);
   pig.fillStyle=col;
-  pig.fill();
+  var texturedDry=edgeState==='dry'&&activeDryMediaPhase&&
+    A.watercolourV2rOptions.dryMedia;
+  if(texturedDry)addDryShardGrain(pig,pts,width);
+  if(texturedDry)pig.fill('evenodd');else pig.fill();
   // V2L: no vector polygon stroke along the inner wash contour. A single
   // density-gradient pigment bank is laid down later in paper space, after
   // capillary transport. This also reaches transparent/pale washes.
@@ -1229,6 +1353,9 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     pctx.fillRect(0,0,w,h);
     activeMicroBleedCount=0;
     activeThinStrokeCount=0;activeDryThinStrokeCount=0;
+    dryMediaStats={continuousDryStrokes:0,continuousSamples:0,
+      dryBrushHoles:0,dryBrushRejected:0,dryShardCount:0,
+  dryShardHoles:0,dryShardRejected:0};
     activeEdgeRatio=ratio;activeEdgePaperSeed=A.hash(seed+'|paper-flow-v2f')>>>0;
     activeEdgeTextureStats={samples:0,drySamples:0,wickSamples:0,
       maxDryDisplacement:0,maxWetDisplacement:0};
@@ -1252,12 +1379,14 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       chains,wetCtx,softCtx);
     ctx.save();ctx.imageSmoothingEnabled=true;
     ctx.drawImage(layer,0,0,w,h);
+    activeDryMediaPhase=true;
     for(var i=0;i<washStats.dryDeposits.length;i++){
       var mark=washStats.dryDeposits[i];
       paintRibbon(ctx,null,mark.pts,mark.width,
         A.makeR(seed+'|v2e-dry-outline|'+mark.key),mark.col,mark.opacity,0,'dry');
     }
     var dryDetail=finishDryAccents(ctx,chains,seed,quality,kit,presentationVoids,washStats);
+    activeDryMediaPhase=false;
     var microBleedTotal=activeMicroBleedCount;
     var thinStrokeTotal=activeThinStrokeCount,dryThinTotal=activeDryThinStrokeCount;
     ctx.restore();
@@ -1266,7 +1395,9 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
       pigmentSpreadMax:Math.max.apply(null,kit.ink.map(function(v){return pigmentSpread(pigmentInk(v))})),
       compositionPresentation:presentation.stats,
-      effect:'V2P paper-guided contour irregularity, no periodic combs, preserved V2O washes',
+      effect:A.watercolourV2rOptions.dryMedia?
+        'V2R continuous fibre-drag dry marks and transparent shard granulation':
+        'V2P reference dry-mark renderer',
       edgeDarkening:A.watercolourV2kOptions.edgeDarkening,
       interiorMottle:A.watercolourV2kOptions.interiorMottle,
       paleEdgePooling:A.watercolourV2kOptions.paleEdgePooling,
@@ -1281,12 +1412,14 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       edgeTexture:activeEdgeTextureStats,
       microBleedCount:microBleedTotal,microBleedWashCount:washMicroBleeds,
       watercolorThinStrokeCount:thinStrokeTotal,dryThinStrokeCount:dryThinTotal,
+      dryMediaEnabled:!!A.watercolourV2rOptions.dryMedia,
+      dryMedia:dryMediaStats,
       paperFlow:paperStats,
       referenceMaterial:'Tissue & Graphite V6'
     };
   }finally{
     activeWashMaskCtx=null;activeSoftMaskCtx=null;activePigmentLayerCtx=null;
-    activeSoftForShape=false;activeEdgeDry=false;
+    activeSoftForShape=false;activeEdgeDry=false;activeDryMediaPhase=false;
     activeEdgeRatio=1;activeEdgePaperSeed=0;
     C=originalC;
     tissueTornEdges=false;
