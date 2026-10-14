@@ -1,4 +1,5 @@
 // ALGO/ART experimental OIL PAINT V3. Real Canvas2D material translation.
+// V3b experimental branch: independently contacting/depleting bristles.
 // Separate from the historical oil-* files that now implement Tissue & Graphite.
 // No model inference, external asset, image filter or change to source generator.
 // All marks, direction, colour and hierarchy come from recorded Marker paths.
@@ -197,124 +198,151 @@ function addPaintHeight(previous,ink,loaded){
 }
 function opticalRelief(value){return Math.log1p(Math.max(0,value)*.66)}
 A.oilPaintV3Test={addPaintHeight:addPaintHeight,opticalRelief:opticalRelief};
+// One deposited bristle contact is drawn into pigment AND relief support.
+// Unlike V3's decorative inner bands, there is no fully opaque ribbon.
+function depositBristle(pig,mask,points,width,pigment,alpha,load){
+  if(points.length<2)return false;
+  var path=new Path2D(),i;
+  path.moveTo(points[0].x,points[0].y);
+  for(i=1;i<points.length-1;i++){
+    var mid=between(points[i],points[i+1],.5);
+    path.quadraticCurveTo(points[i].x,points[i].y,mid.x,mid.y);
+  }
+  path.lineTo(points[points.length-1].x,points[points.length-1].y);
+  pig.lineCap=mask.lineCap='round';
+  pig.lineJoin=mask.lineJoin='round';
+  pig.globalAlpha=minmax(alpha,0,1);
+  pig.lineWidth=width;pig.strokeStyle=css(pigment);pig.stroke(path);
+  mask.globalAlpha=minmax(load,0,1);
+  mask.lineWidth=width;mask.strokeStyle='#ffffff';mask.stroke(path);
+  return true;
+}
 function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
   var pts=ch.pts;if(pts.length<2)return 0;
-  var thickness=minmax(options.thickness??.90,0,1);
-  var drag=minmax(options.drag??.72,0,1);
-  var bristles=minmax(options.bristles??.92,0,1);
-  var profile=profileFor(ch,mode,r,options.profile);
-  // MyPaint-inspired local paint loading: thickness alters the span
-  // of the brush and a small quantity of underlying pigment is carried.
-  var nominal=minmax(6+ch.width*1.8,9,58);
-  var width=nominal*(1.02+thickness*1.08)*r.range(.90,1.08);
-  var load=r.range(.80,1.25);
-  var body=strokeBody(pts,width,r.int(0,0x7fffffff),load,profile);
-  var rgb=ch.rgb,middle=pts[Math.floor(pts.length*.53)],
-    sx=minmax(Math.round(middle.x*scale),0,sw-1),
-    sy=minmax(Math.round(middle.y*scale),0,sh-1);
-  var underLoad=field[sy*sw+sx];
-  var pickup=underLoad>.16&&r.chance(.62)?
-    Array.from(pig.getImageData(sx,sy,1,1).data).slice(0,3):null;
-  if(pickup)rgb=mix(rgb,pickup,r.range(.07,.19));
-  var shade=mix(rgb,[45,30,28],.31),
-    light=mix(rgb,[252,245,230],.46);
-  // Broad source-conforming block-in only for eligible neighbouring chains.
-  // No arbitrary polygon fill or atmospheric bloom.
+  var thickness=minmax(options.thickness??.90,0,1),
+      drag=minmax(options.drag??.72,0,1),
+      bristles=minmax(options.bristles??.92,0,1),
+      profile=profileFor(ch,mode,r,options.profile);
+  var nominal=minmax(6+ch.width*1.8,9,58),
+      width=nominal*(1.02+thickness*1.08)*r.range(.90,1.08),
+      load=r.range(.80,1.25),
+      body=strokeBody(pts,width,r.int(0,0x7fffffff),load,profile),
+      rgb=ch.rgb,bnd=body.bounds;
+  // Pick up pigment at an existing crossing, not from the pristine ground.
+  // Preserve the source hue by limiting local transfer to 9–20%.
+  var pickups=[],pickupCount=0;
+  for(var scan=0;scan<3;scan++){
+    var check=pts[Math.floor((.19+scan*.30)*(pts.length-1))];
+    var cx=minmax(Math.round(check.x*scale),0,sw-1),
+        cy=minmax(Math.round(check.y*scale),0,sh-1);
+    if(field[cy*sw+cx]>.20){
+      pickups.push(Array.from(pig.getImageData(cx,cy,1,1).data).slice(0,3));
+    }
+  }
+  // Local opaque, source-conforming block-in, only for aligned nearby marks;
+  // no convex-hull fill, blurred wash, global atmosphere or palette change.
   if(ch.mass){
-    curvedStroke(pig,pts,width*1.42,css(mix(rgb,[247,241,232],.23)),.28);
-  }else if(ch.length>100&&index%7===0){
-    curvedStroke(pig,pts,width*1.16,css(mix(rgb,[247,241,232],.30)),.14);
-  }
-  pig.save();pig.globalAlpha=.86+r.range(0,.10);
-  pig.fillStyle=css(rgb);pig.fill(body.path);
-  pig.clip(body.path);
-  // Broader bristle bundles visibly move paint, not just hairline etching.
-  // Each bundle follows the stroke tangents inside the same contour.
-  for(var bundle=0;bundle<7;bundle++){
-    if(r.chance(.12))continue;
-    var offsetBroad=((bundle+.5)/7-.5)*width*.77;
-    var broad=[];
-    for(var bi=0;bi<pts.length;bi++){
-      var before=pts[Math.max(0,bi-1)],after=pts[Math.min(pts.length-1,bi+1)];
-      broad.push(shift(pts[bi],tangent(before,after)+PI/2,offsetBroad));
-    }
-    var raised=bundle===1||bundle===4||bundle===6;
-    curvedStroke(pig,broad,Math.max(2.2,width*r.range(.085,.165)),
-      css(raised?light:shade),raised?r.range(.26,.53):r.range(.14,.33));
-  }
-  // Lateral deposit: pigmented shadow bank on one side, brighter loaded
-  // ridges on the other, changing with actual brush direction.
-  var grooves=Math.max(5,Math.min(27,Math.round(width/(2.45-bristles*.55))));
-  for(var j=0;j<grooves;j++){
-    var offset=((j+.5)/grooves-.5)*width*.92;
-    var start=Math.floor(r.range(.03,.20)*(pts.length-1));
-    var end=Math.ceil(r.range(.80,.99)*(pts.length-1));
-    if(end<=start+1||r.chance(.06+drag*.13))continue;
-    var track=[];
-    for(var k=start;k<=end;k++){
-      var a=pts[Math.max(0,k-1)],b=pts[Math.min(pts.length-1,k+1)];
-      var normal=tangent(a,b)+PI/2;
-      track.push(shift(pts[k],normal,offset+r.range(-.30,.30)));
-    }
-    curvedStroke(pig,track,r.range(.8,3.4),
-      css(j%3===0?shade:j%4===0?light:mix(rgb,light,.20)),
-      r.range(.32,.81)*bristles);
-  }
-  // Broken pickup follows the brush's actual tangent and remains clipped
-  // to pigment support. Dryness increases near some stroke ends.
-  var skipped=0;
-  for(j=0;j<Math.min(22,Math.ceil(ch.length/34));j++){
-    var endBiased=r.chance(.43),idx=endBiased?
-      r.int(Math.floor((pts.length-2)*.66),pts.length-2):
-      r.int(0,pts.length-2);
-    a=pts[idx];b=pts[Math.min(pts.length-1,idx+1)];
-    var angle=tangent(a,b),perp=angle+PI/2;
-    var startP=shift(a,perp,r.range(-width*.43,width*.43));
-    if(r.chance(drag*(endBiased?.96:.70))){
-      curvedStroke(pig,[startP,shift(startP,angle,r.range(12,54))],
-        r.range(1,3.4),css(r.chance(.33)?
-          (pickup||[245,240,230]):light),r.range(.29,.68));
-      skipped++;
+    var block=mix(rgb,[239,233,215],.10);
+    curvedStroke(pig,pts,width*1.26,css(block),.49);
+    if(r.chance(.55)){
+      var shifted=pts.map(function(p,i){
+        var before=pts[Math.max(0,i-1)],after=pts[Math.min(pts.length-1,i+1)];
+        return shift(p,tangent(before,after)+PI/2,width*.12);
+      });
+      curvedStroke(pig,shifted,width*.84,css(rgb),.58);
     }
   }
-  pig.restore();
-  // Height is independent *additive scalar paint mass*, never an alpha
-  // source-over composite of successive strokes. This local mask and the
-  // colour pass use exactly the SAME saved Path2D.
-  var bnd=body.bounds;
   var x0=minmax(Math.floor(bnd.minX*scale)-4,0,sw-1),
       y0=minmax(Math.floor(bnd.minY*scale)-4,0,sh-1),
       x1=minmax(Math.ceil(bnd.maxX*scale)+4,x0+1,sw),
       y1=minmax(Math.ceil(bnd.maxY*scale)+4,y0+1,sh);
+  // Empty a local, bounded relief mask; no readback of the full canvas.
   mask.save();mask.setTransform(1,0,0,1,0,0);
   mask.clearRect(x0,y0,x1-x0,y1-y0);mask.restore();
-  mask.save();mask.fillStyle='#fff';mask.globalAlpha=.34;mask.fill(body.path);
-  mask.clip(body.path);
-  // Continuous loaded centre and separate side banks. The same Path2D
-  // is used for both pigment and height to keep contour registration.
-  curvedStroke(mask,pts,width*.20,'#ffffff',.67);
-  for(var bank of [-.32,.32]){
-    var bankPoints=[];
-    for(var t=0;t<pts.length;t++){
-      var ta=pts[Math.max(0,t-1)],tb=pts[Math.min(pts.length-1,t+1)];
-      bankPoints.push(shift(pts[t],tangent(ta,tb)+PI/2,bank*width));
+  pig.save();mask.save();
+  pig.clip(body.path);mask.clip(body.path);
+  // Low-contact underpaint gives bristles a continuous colour relationship,
+  // without hiding the fragmented footprint underneath an opaque ribbon.
+  pig.globalAlpha=.16+thickness*.13;
+  pig.fillStyle=css(mix(rgb,[245,240,230],.12));pig.fill(body.path);
+  mask.globalAlpha=.075+thickness*.065;
+  mask.fillStyle='#ffffff';mask.fill(body.path);
+  // A brush tip has independently connected hairs. Each hair moves along
+  // the actual source tangent with pressure-driven splay and decreasing load.
+  var n=Math.max(8,Math.min(24,Math.round(width/(5.1-bristles*.7))));
+  var runs=0,broken=0,charged=0,bankBase=(.60+thickness*.38)*load;
+  for(var hair=0;hair<n;hair++){
+    if(r.chance(.045+drag*.04))continue;
+    var lateral=((hair+.5)/n-.5)*width*.94,
+        pitch=r.range(.11,.25),phase=r.range(0,TAU),
+        shear=r.range(-.10,.10),fuzz=r.range(.2,1.3),
+        hairWidth=width/n*r.range(.67,1.46),
+        charge=r.range(.85,1.13),
+        hairColor=mix(rgb,hair%4===0?[57,42,38]:[249,240,225],
+          hair%4===0?r.range(.06,.20):r.range(.025,.12)),
+        path=[],visits=0,pigmentSample=null;
+    if(pickups.length&&r.chance(.27)){
+      pigmentSample=pickups[r.int(0,pickups.length-1)];
+      hairColor=mix(hairColor,pigmentSample,r.range(.09,.20));
+      pickupCount++;
     }
-    curvedStroke(mask,bankPoints,Math.max(1.8,width*.075),'#ffffff',.54);
-  }
-  for(j=0;j<Math.min(grooves,16);j++){
-    if(r.chance(.20))continue;
-    offset=((j+.5)/Math.min(grooves,16)-.5)*width*.80;
-    var heightTrack=[];
-    for(k=0;k<pts.length;k++){
-      a=pts[Math.max(0,k-1)];b=pts[Math.min(pts.length-1,k+1)];
-      normal=tangent(a,b)+PI/2;
-      heightTrack.push(shift(pts[k],normal,offset));
+    // Runs are connected while hairs remain in contact. When a hair lifts,
+    // the underlying bristle path is genuinely absent from both buffers.
+    function flush(){
+      if(path.length>=2){
+        var a=minmax(.63+charge*.26,0,1),
+            h=minmax(bankBase*(.32+charge*.44),.1,1);
+        if(depositBristle(pig,mask,path,hairWidth,hairColor,a,h))runs++;
+      }
+      path=[];
     }
-    curvedStroke(mask,heightTrack,r.range(.85,2.8),'#ffffff',.36);
+    for(var p=0;p<pts.length;p++){
+      var before=pts[Math.max(0,p-1)],after=pts[Math.min(pts.length-1,p+1)],
+          angle=tangent(before,after),progress=p/(pts.length-1),
+          pressure=minmax(.72+.19*Math.sin(p*pitch+phase)+
+            .12*Math.sin(progress*TAU*1.8+phase*.6),.28,1.03),
+          splay=1+(pressure-.6)*.26,
+          waviness=Math.sin(p*.38+phase)*fuzz+
+            Math.sin(p*.13+hair*.8)*fuzz*.44,
+          offset=lateral*splay+waviness,
+          displacement=width*shear*(progress-.5)*.52,
+          point=shift(shift(pts[p],angle+PI/2,offset),
+            angle,displacement);
+      charge*=.987-r.range(0,.005);
+      // Tiny irregular reloading pulses do not reset all hairs together.
+      if(p>0&&p%19===0&&r.chance(.31))charge=Math.min(1.08,charge+.21);
+      var contact=r.next()>.055+drag*.045+(1-charge)*.13 &&
+        pressure>.34 && (p<pts.length-1||r.chance(.76));
+      if(!contact){
+        if(path.length)broken++;
+        flush();continue;
+      }
+      path.push(point);visits++;
+    }
+    flush();
+    charged+=visits;
   }
-  mask.restore();
+  // Small broad dragged passages/knife edges break parallel combing.
+  // They obey the same source stroke mask and feed the same height field.
+  var flicks=Math.min(ch.mass?7:4,Math.max(1,Math.floor(ch.length/55)));
+  for(var f=0;f<flicks;f++){
+    var startIndex=r.int(0,pts.length-2),a=pts[startIndex],
+        b=pts[Math.min(pts.length-1,startIndex+r.int(1,3))],
+        ang=tangent(a,b),normal=ang+PI/2,
+        offset=r.range(-.32,.32)*width,
+        start=shift(a,normal,offset),
+        end=shift(b,normal,offset+r.range(-.07,.07)*width),
+        flickColour=mix(rgb,r.chance(.55)?[247,235,217]:[54,43,41],
+          r.range(.06,.20));
+    if(depositBristle(pig,mask,[start,end],
+      width*r.range(.07,.20),flickColour,r.range(.48,.85),
+      bankBase*r.range(.40,.75)))runs++;
+  }
+  pig.restore();mask.restore();
+  // One local alpha readback per source mark. Height is added to the
+  // existing paint load independently of colour/opacity compositing.
   var src=mask.getImageData(x0,y0,x1-x0,y1-y0).data,
-      rw=x1-x0,rh=y1-y0,bodyLoad=(.48+thickness*.49)*load;
+      rw=x1-x0,rh=y1-y0,bodyLoad=(.54+thickness*.59)*load;
   for(var yy=0;yy<rh;yy++){
     var row=(yy+y0)*sw+x0,subrow=yy*rw;
     for(var xx=0;xx<rw;xx++){
@@ -325,7 +353,8 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
       }
     }
   }
-  return {profile:profile,dragMarks:skipped};
+  return {profile:profile,dragMarks:broken,bristleRuns:runs,
+    pickupMarks:pickupCount,bristleContacts:charged};
 }
 function ground(ctx,w,h,seed,r){
   // Primed canvas, not watercolour paper. Tooth is faint and deterministic.
@@ -410,12 +439,14 @@ A.renderOilPaintV3=function(target,settings,scale,opts){
     settings.orientation+'|'+(opts.phiFraming?'phi':'plain'));
   ground(ctx,w,h,settings.seed,r);
   phase.planMs=+(performance.now()-start-phase.captureMs).toFixed(2);
-  var profiles={flat:0,filbert:0},dragMarks=0,painted=0,massArea=0;
+  var profiles={flat:0,filbert:0},dragMarks=0,painted=0,massArea=0,bristleRuns=0,pickupMarks=0,bristleContacts=0;
   var paintStart=performance.now();
   for(var i=0;i<chains.length;i++){
     var result=paintOne(ctx,mask,chains[i],r,i,opts,field,sw,sh,scale,settings.mode);
     if(result){
       painted++;profiles[result.profile]++;dragMarks+=result.dragMarks;
+      bristleRuns+=result.bristleRuns;pickupMarks+=result.pickupMarks;
+      bristleContacts+=result.bristleContacts;
       if(chains[i].mass)
         massArea+=chains[i].length*(chains[i].width*1.7+6)*1.35/(w*h);
     }
@@ -433,7 +464,9 @@ A.renderOilPaintV3=function(target,settings,scale,opts){
     eligiblePaths:chains.eligibleCount,paintedPaths:painted,
     droppedPaths:chains.droppedCount,massGroups:massGroups,
     massAreaRatio:+Math.min(.3,massArea).toFixed(4),profiles:profiles,dragMarks:dragMarks,
-    borrowedTechniques:['directional loaded bristle bundles','local pigment pickup',
+    revision:'3b-bristle-tip',bristleRuns:bristleRuns,pickupMarks:pickupMarks,
+    bristleContacts:bristleContacts,
+    borrowedTechniques:['independent bristle-tip contact and exhaustion','local pigment pickup',
       'separate paint-height lightness map','non-saturating height response'],
     sourceColours:[...new Set(chains.map(function(c){return css(c.rgb)}))].slice(0,32),
     height:shaded,phases:phase,sourceMeta:sourceMeta&&sourceMeta.strategy};
