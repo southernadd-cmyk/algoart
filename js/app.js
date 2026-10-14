@@ -196,7 +196,10 @@ function materialKey(){return $('materialStyle').value+'|'+
     '|phi:'+phiSheetFraming+'|historic-fit:'+watercolourFitToSheet}
 function syncMaterialNote(){
   var control=$('watercolourFitControl');
-  if(control)control.hidden=!(watercolourEnabled()&&watercolourMaterialRevision==='v2s');
+  // Only expose the historic Watercolour-only option for artwork that
+  // actually uses it. New works have a single common φ framing checkbox.
+  if(control)control.hidden=!(watercolourEnabled()&&
+    watercolourMaterialRevision==='v2s'&&watercolourFitToSheet&&!phiSheetFraming);
   var toggle=$('watercolourFit');
   if(toggle)toggle.checked=watercolourFitToSheet;
   var phiToggle=$('phiSheetFit');
@@ -444,8 +447,11 @@ function regenerate(){
   if(info&&phiSheetFraming){
     var fit=A.lastPhiSheetFrame;
     info.textContent=fit&&fit.kind==='phi-sheet'?
-      'Applied · '+fit.scale.toFixed(2)+'× scale; '+Math.round(fit.beforeCover*100)+
-        '% → '+Math.round(fit.afterCover*100)+'% sheet coverage. Same source paths in PNG and SVG.':
+      'Applied · '+fit.scale.toFixed(2)+'× size; '+Math.round(fit.beforeCover*100)+
+        '% → '+Math.round(fit.afterCover*100)+'% longest-axis coverage; shifted '+
+        Math.round(fit.fittedCentroid.x-fit.originalCentroid.x)+'px horizontally / '+
+        Math.round(fit.fittedCentroid.y-fit.originalCentroid.y)+
+        'px vertically. Same paths in PNG and SVG.':
       'No adjustment · this artwork has no measurable strokes.';
   }
   var strategy=meta.strategy?(' / '+meta.strategy):'';
