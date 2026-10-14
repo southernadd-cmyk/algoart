@@ -30,7 +30,10 @@ try {
     });
     const t1=A.renderOilPaintV3(c1,s,.34,opts);
     const t2=A.renderOilPaintV3(c2,s,.34,opts);
-    return {accumulation,old,t1,t2,equal:c1.toDataURL('image/png')===
+    const smooth=A.oilPaintV3Test.smoothTooth;
+    const surfaceSamples=[smooth(3,8,123),smooth(4,8,123),
+      smooth(5,8,123),smooth(6,8,123)];
+    return {accumulation,old,t1,t2,surfaceSamples,equal:c1.toDataURL('image/png')===
       c2.toDataURL('image/png'),dimensions:[c1.width,c1.height],
       fitUnchanged:A.phiFramingEnabled===before.fit,
       recorderUnchanged:A.svgRecorder===before.recorder};
@@ -51,12 +54,17 @@ try {
   assert(d.t1.height.heightBytes===476*340*4);
   assert(d.t1.height.heightAtCapFraction<.25,'V3 surface height still mostly saturated');
   assert(d.t1.height.heightPeak>0&&d.t1.height.heightPeak<=18);
-  assert.equal(d.t1.revision,'3b-bristle-tip');
+  assert.equal(d.t1.revision,'3c-organic-tips-and-masses');
   assert(d.t1.bristleRuns>d.t1.paintedPaths,
     'Each paint path must have multiple actual bristle deposits');
   assert(d.t1.bristleContacts>d.t1.paintedPaths,
     'Missing pressure-driven bristle contact');
   assert(Number.isInteger(d.t1.pickupMarks)&&d.t1.pickupMarks>=0);
+  assert(d.t1.paintPatches>0,'Oil material is missing local mass deposits');
+  assert.equal(d.t1.squarePixelTooth,false,
+    'Surface texture must not be generated in square raster cells');
+  assert(d.surfaceSamples.every((v,i,a)=>i===0||Math.abs(v-a[i-1])>1e-7),
+    'Canvas tooth still snaps into raster-grid blocks');
 
 
   assert(d.t1.phases.totalMs>0&&d.t1.phases.paintMs>0);
