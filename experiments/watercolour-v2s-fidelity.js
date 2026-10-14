@@ -901,11 +901,13 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     var detailState=A.makeR(seed+'|water-state-detail-v2e|'+i).chance(.65)?'dry':'damp';
     if(detailState==='dry'){
       stats.dryDeposits.push({pts:trace,width:r.range(4.5,12),
-        col:sourcePigment(ch)||palette(i,r),opacity:r.range(.35,.60),key:'detail-'+i});
+        col:(function(base){return sourcePigment(ch)||base})(palette(i,r)),
+        opacity:r.range(.35,.60),key:'detail-'+i});
     }else{
       var traceWidth=r.range(5,15),traceSoft=selectSoftEdge(seed,'detail',i,'damp');
       if(traceWidth>12.5){stats.areaWashCount++;if(traceSoft)stats.softWashCount++;}
-      paintRibbon(pig,null,trace,traceWidth,r,sourcePigment(ch)||palette(i,r),
+      paintRibbon(pig,null,trace,traceWidth,r,
+        (function(base){return sourcePigment(ch)||base})(palette(i,r)),
         r.range(.34,.57),0,'damp',traceSoft);
     }
     stats[detailState]++;
