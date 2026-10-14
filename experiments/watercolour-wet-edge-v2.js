@@ -600,7 +600,9 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
       lerpHex(pigmentInk(r.pick(kit.ink)),r.pick(C.cream),r.range(.08,.20)):
       lerpHex(palette(i,r),r.pick(C.cream),r.range(.12,.37));
     var state=A.makeR(seed+'|water-state-broad-v2e|'+i).chance(.48)?'wet':'damp';
-    var isSoft=selectSoftEdge(seed,'broad',i,state);
+    // Sparse modes must contain at least one genuine soft-edge wash.
+    // The remaining washes use independent ~28% seeded choices.
+    var isSoft=stats.areaWashCount===0||selectSoftEdge(seed,'broad',i,state);
     stats.areaWashCount++;
     if(isSoft)stats.softWashCount++;
     // Retain overall sparse geometry but let a few existing strokes become
