@@ -10,6 +10,8 @@ const host=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const root='oil-v2-results';
 await mkdir(path.join(root,'fixed'),{recursive:true});
 await mkdir(path.join(root,'random'),{recursive:true});
+await mkdir(path.join(root,'comparison'),{recursive:true});
+await mkdir(path.join(root,'crops'),{recursive:true});
 const modes=[
   ['field','Orbital Studies'],['spiral','Golden Trajectories'],
   ['rects','Recursive Divisions'],['burst','Radiant Systems'],
@@ -84,6 +86,8 @@ try{
     },item);
     assert.equal(stats.material,'oil-paint-v2');
     assert(stats.sourcePaths>0&&stats.paintedPaths>0,'Empty Oil V2: '+filename);
+    assert(stats.height.heightActivePixels>100&&stats.height.heightP95>0);
+    assert(stats.profiles.flat+stats.profiles.filbert===stats.paintedPaths);
     assert.equal(stats.seed,item.seed);
     assert.equal(stats.phiFraming,true);
     assert(stats.sourceColours.length>0);
@@ -97,9 +101,22 @@ try{
     const bytes=Buffer.from(rendered.raw,'base64');
     assert(bytes.length>18000,'Oil paint canvas seems empty: '+filename);
     await writeFile(path.join(root,item.group,filename),bytes);
+    const baseline=await page.evaluate(entry=>{
+      const A=window.AlgoArt,config={...A.readSettings(),...entry,
+        paper:'#f5f0e6',grain:13,colourCount:4,saturation:89,brightness:62,
+        pen:'fine',thickness:13,wobble:38,overdraw:3,opacity:75,
+        lines:true,circles:true,rectangles:true,polygons:true,arcs:true};
+      const canvas=document.createElement('canvas'),start=performance.now();
+      const stats=A.renderOilPaintV1(canvas,config,.7,
+        {phiFraming:true,thickness:.8,drag:.54,bristles:.88});
+      return {raw:canvas.toDataURL('image/png').split(',')[1],stats,
+        ms:Math.round(performance.now()-start)};
+    },item);
+    const v1Name=filename.replace('oil-v2','oil-v1');
+    await writeFile(path.join(root,'comparison',v1Name),Buffer.from(baseline.raw,'base64'));
     console.log('OIL V2 '+item.group+' '+item.number+'/8 '+item.mode+' '+item.orientation+
       ' paths '+stats.paintedPaths+' '+stats.ms+'ms');
-    result.push({...item,file:item.group+'/'+filename,stats:stats});
+    result.push({...item,file:item.group+'/'+filename,v1File:'comparison/'+v1Name,stats:stats,v1Stats:baseline.stats,v1Ms:baseline.ms});
   }
   // Strict seed/geometry/material determinism regression (the same browser).
   const repeat=await page.evaluate(entry=>{
@@ -143,8 +160,9 @@ try{
     await writeFile(root+'/oil-v2-'+group+'-contact-sheet.jpg',Buffer.from(image,'base64'));
   }
   await writeFile(root+'/oil-v2-manifest.json',JSON.stringify({
-    material:'Oil Paint V1 · deterministic Canvas2D renderer, not AI images',
-    rendererFile:'js/oil-paint-v1.js',phiFraming:true,
+    material:'Oil Paint V2 · deterministic Canvas2D renderer, not AI images',
+    rendererFile:'js/oil-paint-v2.js',baselineFile:'js/oil-paint-v1.js',
+    options:{thickness:.86,drag:.62,bristles:.90,massing:.44,relief:.78},phiFraming:true,
     status:'experiment-only, no changes to live materials or publishing',images:result
   },null,2));
   console.log('PASS: 8 fixed, 8 random, 2 contact sheets, repeatability, source colours');
