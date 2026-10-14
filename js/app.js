@@ -187,31 +187,43 @@ function applySettings(settings){
 // keep the original fixed pigment palette for archival reproducibility.
 var tissuePaletteVersion=7;
 var watercolourMaterialRevision='v2s';
-var watercolourFitToSheet=false; // New artworks respect the φ source frame.
+var watercolourFitToSheet=false; // Legacy watercolour-specific fit.
+var phiSheetFraming=false; // Shared optional φ source-geometry transform.
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
-function materialKey(){return $('materialStyle').value+'|'+(oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')}
+function materialKey(){return $('materialStyle').value+'|'+
+    (oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
+    '|phi:'+phiSheetFraming+'|historic-fit:'+watercolourFitToSheet}
 function syncMaterialNote(){
   var control=$('watercolourFitControl');
   if(control)control.hidden=!(watercolourEnabled()&&watercolourMaterialRevision==='v2s');
   var toggle=$('watercolourFit');
   if(toggle)toggle.checked=watercolourFitToSheet;
+  var phiToggle=$('phiSheetFit');
+  if(phiToggle)phiToggle.checked=phiSheetFraming;
+  var phiInfo=$('phiSheetInfo');
+  if(phiInfo&&!phiSheetFraming)
+    phiInfo.textContent='Off · original source geometry and placement.';
   var note=$('materialStyleNote');
   if(!note)return;
   note.textContent=(watercolourEnabled()
     ?'Watercolour pigments on textured paper, with wet washes, drying edges and expressive dry brushwork.'+
       (watercolourMaterialRevision==='v2s'?
-      (watercolourFitToSheet?' Fit to sheet is ON and rescales/recentres some modes relative to φ source geometry.':' Source scale and placement match the Marker/plotter φ composition.') :
+      (phiSheetFraming?' Shared φ framing applies to the source geometry and SVG/plotter too.':
+      watercolourFitToSheet?' Legacy Watercolour fit-to-sheet is ON and changes its PNG, not its source SVG.':
+        ' Source scale and placement match the Marker/plotter φ composition.') :
       ' Archived V2R includes automatic fitting and may differ from the Marker/plotter layout.')
     :oilEnabled()?'Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms.'
     :'Marker ink with hand-drawn wobble, pressure and imperfect strokes.')+
+    (phiSheetFraming?' Optional shared φ framing is on and affects all media, SVG and plotter exports.':'')+
     ' PNG saves the visible material; SVG and plotter exports retain the original marker paths.';
 }
 function renderArtwork(target,settings,scale,reveal){
+  A.phiFramingEnabled=phiSheetFraming;
   if(watercolourEnabled()){
     if(watercolourMaterialRevision==='v2r')
       return A.renderWatercolourV2R(target,settings,scale,reveal);
-    A.watercolourV2sOptions.fitToSheet=watercolourFitToSheet;
+    A.watercolourV2sOptions.fitToSheet=watercolourFitToSheet&&!phiSheetFraming;
     return A.renderWatercolourV2S(target,settings,scale,reveal);
   }
   return oilEnabled()?A.renderOil(target,settings,scale,reveal,tissuePaletteVersion):
@@ -229,6 +241,7 @@ function settingsToURL(settings){
     if(typeof value==='boolean')value=value?'1':'0';
     params.set(PARAM_KEYS[key],String(value));
   });
+  if(phiSheetFraming)params.set('sheet','phi');
   if(watercolourEnabled()){
     params.set('material','watercolour-'+watercolourMaterialRevision);
     if(watercolourMaterialRevision==='v2s')
@@ -296,6 +309,10 @@ function loadSettingsFromURL(){
       (params.has('fit')?params.get('fit')==='1':true):true;
     found=true;
   }
+
+  // New opt-in framing exists on Marker, Tissue and Watercolour; unmarked
+  // historical URLs stay pixel-for-pixel unchanged.
+  phiSheetFraming=params.get('sheet')==='phi';
 
   var explicitVersion=Number(params.get('v'));
   if(SUPPORTED_RENDERER_VERSIONS.includes(explicitVersion)){
@@ -417,6 +434,14 @@ function regenerate(){
   A.renderTimings.fullMs=performance.now()-started;
   lastCommittedRenderKey=JSON.stringify([A.rendererVersion,s,materialKey(),tissuePaletteVersion]);
   currentRenderMeta=meta;
+  var info=$('phiSheetInfo');
+  if(info&&phiSheetFraming){
+    var fit=A.lastPhiSheetFrame;
+    info.textContent=fit&&fit.kind==='phi-sheet'?
+      'Applied · '+fit.scale.toFixed(2)+'× scale; '+Math.round(fit.beforeCover*100)+
+        '% → '+Math.round(fit.afterCover*100)+'% sheet coverage. Same source paths in PNG and SVG.':
+      'No adjustment · this artwork has no measurable strokes.';
+  }
   var strategy=meta.strategy?(' / '+meta.strategy):'';
   var series=SERIES[s.mode]||{code:s.mode.toUpperCase(),title:s.mode};
   $('statsText').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%'+(watercolourEnabled()?' / WATERCOLOUR':oilEnabled()?' / TISSUE & GRAPHITE':'');
@@ -1095,7 +1120,8 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     e.addEventListener('blur',finishDragPreview);
   }
   e.addEventListener('change',function(){
-    if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id==='watercolourFit'||e.id.indexOf('plotter')===0)return;
+    if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id==='watercolourFit'||
+       e.id==='phiSheetFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
     if(e.id==='materialStyle'&&watercolourEnabled()){
@@ -1112,6 +1138,13 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
 $('watercolourFit').addEventListener('change',function(){
   if(!watercolourEnabled()||watercolourMaterialRevision!=='v2s')return;
   watercolourFitToSheet=this.checked;
+  if(this.checked)phiSheetFraming=false; // Never compound two fit transforms.
+  regenerate();
+});
+$('phiSheetFit').addEventListener('change',function(){
+  phiSheetFraming=this.checked;
+  if(phiSheetFraming&&watercolourEnabled()&&watercolourMaterialRevision==='v2s')
+    watercolourFitToSheet=false;
   regenerate();
 });
 
