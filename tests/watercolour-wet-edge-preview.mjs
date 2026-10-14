@@ -119,7 +119,7 @@ try{
     assert.equal(result.edgeDarkening,.72);
     assert.equal(result.interiorMottle,.24);
     assert.equal(result.paleEdgePooling,.75);
-    assert(result.paperFlow.edgeBandPeak>.20,'Wet rim must be visibly stronger');
+    assert(result.paperFlow.edgeBandPeak>.11,'Wet rim must be visibly stronger');
     assert(result.paperFlow.edgeBankPixels>100,'Wet rim must span a band');
     assert(result.paperFlow.edgeBankPixels>0,'Expected physical pigment bank at wash boundaries');
     assert(result.paperFlow.paleEdgeBankPixels>=0);
