@@ -112,7 +112,8 @@ var tissueLightEnabled=false;
 var activeWashMaskCtx=null,activeSoftMaskCtx=null,activePigmentLayerCtx=null;
 var activeSoftForShape=false,activeEdgeDry=false,activeDryMediaPhase=false;
 var dryMediaStats={continuousDryStrokes:0,continuousSamples:0,
-  dryBrushHoles:0,dryShardCount:0,dryShardHoles:0};
+  dryBrushHoles:0,dryBrushRejected:0,dryShardCount:0,
+  dryShardHoles:0,dryShardRejected:0};
 var activeEdgePaperSeed=0,activeEdgeRatio=1;
 var activeEdgeTextureStats={samples:0,drySamples:0,wickSamples:0,
   maxDryDisplacement:0,maxWetDisplacement:0};
@@ -343,7 +344,7 @@ function paintContinuousDryBrush(ctx,pts,width,colour,opacity){
       var paper=materialPaperField(p.x*activeEdgeRatio,p.y*activeEdgeRatio,
         activeEdgeRatio,activeEdgePaperSeed);
       var pressure=.62+.38*Math.pow(Math.max(0,Math.sin(PI*progress)),.48);
-      var localWidth=width*pressure*(.87+.18*paper.tooth);
+      var localWidth=width*pressure*(.71+.18*paper.tooth);
       // Gentle continuous drift; paper fibres affect the brush footprint.
       var sideDrift=(paper.fibre-.5)*.27;
       var left=shift(p,normal,sideDrift+localWidth*.5);
@@ -355,23 +356,37 @@ function paintContinuousDryBrush(ctx,pts,width,colour,opacity){
   }
   if(path.length<2)return false;
   ctx.save();ctx.globalCompositeOperation='source-over';
-  ctx.globalAlpha=opacity*.93;ctx.fillStyle=colour;ctx.beginPath();
+  ctx.globalAlpha=opacity*.76;ctx.fillStyle=colour;ctx.beginPath();
   ctx.moveTo(path[0].left.x,path[0].left.y);
   for(j=1;j<path.length;j++)ctx.lineTo(path[j].left.x,path[j].left.y);
   for(j=path.length-1;j>=0;j--)ctx.lineTo(path[j].right.x,path[j].right.y);
   ctx.closePath();
-  // Pigment skips paper peaks within the same continuous footprint. These
-  // are transparent holes, not eraser strokes over earlier painting.
+  // Irregular elongated grain apertures: pigment drags along the fibre.
+  // Test every aperture against the unmodified brush path. Even-odd
+  // holes outside a silhouette would otherwise paint unwanted specks.
+  var apertures=[];
   for(j=3;j<path.length-3;j++){
-    var sample=path[j];
-    var seedNoise=hashNoise(Math.round(sample.p.x*1.73),
-      Math.round(sample.p.y*1.49),activeEdgePaperSeed^0x63e41);
-    if(sample.tooth>.57||seedNoise<.79)continue;
-    var hole=Math.min(sample.localWidth*.27,.43);
-    if(hole<.10)continue;
-    ctx.moveTo(sample.p.x+hole,sample.p.y);
-    ctx.ellipse(sample.p.x,sample.p.y,hole,
-      Math.min(1.1,hole*(1.4+sample.tooth)),sample.angle,0,PI*2);
+    var sample=path[j],x=sample.p.x,y=sample.p.y;
+    var noise=hashNoise(Math.round(x*1.73),Math.round(y*1.49),
+      activeEdgePaperSeed^0x63e41);
+    if(sample.tooth>.65||noise<.68)continue;
+    var major=.70+noise*1.65,minor=Math.min(sample.localWidth*.26,.46);
+    if(minor<.10)continue;
+    var tx=Math.cos(sample.angle)*major,ty=Math.sin(sample.angle)*major;
+    var nx=-Math.sin(sample.angle)*minor,ny=Math.cos(sample.angle)*minor;
+    if(!ctx.isPointInPath(x+tx,y+ty)||
+       !ctx.isPointInPath(x-tx,y-ty)||
+       !ctx.isPointInPath(x+nx,y+ny)||
+       !ctx.isPointInPath(x-nx,y-ny)){
+      dryMediaStats.dryBrushRejected++;continue;
+    }
+    apertures.push({x:x,y:y,major:major,minor:minor,theta:sample.angle});
+  }
+  for(j=0;j<apertures.length;j++){
+    var hole=apertures[j],tx=Math.cos(hole.theta)*hole.major,
+      ty=Math.sin(hole.theta)*hole.major;
+    ctx.moveTo(hole.x+tx,hole.y+ty);
+    ctx.ellipse(hole.x,hole.y,hole.major,hole.minor,hole.theta,0,PI*2);
     dryMediaStats.dryBrushHoles++;
   }
   ctx.fill('evenodd');ctx.restore();
@@ -388,7 +403,7 @@ function addDryShardGrain(ctx,pts,width){
     minX=Math.min(minX,pts[j].x);maxX=Math.max(maxX,pts[j].x);
     minY=Math.min(minY,pts[j].y);maxY=Math.max(maxY,pts[j].y);
   }
-  var reach=width*.52+1.5,step=6.1,added=0;
+  var reach=width*.52+1.5,step=6.1,added=0,apertures=[];
   for(var y=Math.floor((minY-reach)/step)*step;y<maxY+reach;y+=step){
     for(var x=Math.floor((minX-reach)/step)*step;x<maxX+reach;x+=step){
       var p=materialPaperField(x*activeEdgeRatio,y*activeEdgeRatio,
@@ -401,13 +416,24 @@ function addDryShardGrain(ctx,pts,width){
         activeEdgePaperSeed^0x38971)-.5)*2.4;
       var dy=(hashNoise(Math.round(y),Math.round(x),
         activeEdgePaperSeed^0x17831)-.5)*2.4;
-      var radius=(.24+.76*(.57-p.tooth))* (.53+.73*jitter);
-      ctx.moveTo(x+dx+radius,y+dy);
-      ctx.ellipse(x+dx,y+dy,radius,
-        clamp(radius*(.55+.4*p.fibre),.13,1.1),
-        p.fibre*PI,0,PI*2);
-      added++;
+      var radius=(.24+.76*(.57-p.tooth))*(.53+.73*jitter);
+      var cx=x+dx,cy=y+dy,ry=clamp(radius*(.55+.4*p.fibre),.13,1.1);
+      // Use only apertures wholly inside the original polygon contour.
+      if(!ctx.isPointInPath(cx-radius,cy)||
+         !ctx.isPointInPath(cx+radius,cy)||
+         !ctx.isPointInPath(cx,cy-ry)||
+         !ctx.isPointInPath(cx,cy+ry)){
+        dryMediaStats.dryShardRejected++;continue;
+      }
+      apertures.push({x:cx,y:cy,rx:radius,ry:ry,theta:p.fibre*PI});
     }
+  }
+  for(var ap=0;ap<apertures.length;ap++){
+    var item=apertures[ap];
+    ctx.moveTo(item.x+item.rx*Math.cos(item.theta),
+      item.y+item.rx*Math.sin(item.theta));
+    ctx.ellipse(item.x,item.y,item.rx,item.ry,item.theta,0,PI*2);
+    added++;
   }
   dryMediaStats.dryShardCount++;
   dryMediaStats.dryShardHoles+=added;
@@ -1328,7 +1354,8 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     activeMicroBleedCount=0;
     activeThinStrokeCount=0;activeDryThinStrokeCount=0;
     dryMediaStats={continuousDryStrokes:0,continuousSamples:0,
-      dryBrushHoles:0,dryShardCount:0,dryShardHoles:0};
+      dryBrushHoles:0,dryBrushRejected:0,dryShardCount:0,
+  dryShardHoles:0,dryShardRejected:0};
     activeEdgeRatio=ratio;activeEdgePaperSeed=A.hash(seed+'|paper-flow-v2f')>>>0;
     activeEdgeTextureStats={samples:0,drySamples:0,wickSamples:0,
       maxDryDisplacement:0,maxWetDisplacement:0};
