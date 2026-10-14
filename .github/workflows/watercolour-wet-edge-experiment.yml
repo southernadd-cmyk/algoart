@@ -10,6 +10,7 @@ on:
       - 'tests/watercolour-wet-edge-preview.mjs'
       - 'tests/watercolour-eight-random.mjs'
       - 'tests/watercolour-v2j-fixed-seeds.mjs'
+      - 'tests/watercolour-v2o-targeted.mjs'
       - '.github/workflows/watercolour-wet-edge-experiment.yml'
       - 'js/oil-*.js'
       - 'js/generator.js'
@@ -49,12 +50,22 @@ jobs:
           retention-days: 14
       - name: Render eight V2P studies using archived exact V2j seeds
         run: node tests/watercolour-v2j-fixed-seeds.mjs
-      - name: Upload fixed-seed V2L-to-V2P visual comparisons
+      - name: Upload fixed-seed V2O-to-V2P visual comparisons
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: watercolour-eight-fixed-v2l-v2p
-          path: watercolour-same-seed-v2l-v2p/
+          name: watercolour-eight-fixed-v2o-v2p
+          path: watercolour-same-seed-v2o-v2p/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Re-render exact V2O random burst and rects problem cases in V2P
+        run: node tests/watercolour-v2o-targeted.mjs
+      - name: Upload targeted burst/rects V2O-V2P pairs for edge review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-v2o-targeted-v2p
+          path: watercolour-v2o-targeted-v2p/
           if-no-files-found: warn
           retention-days: 14
       - name: Render eight new random full-size V2P watercolours
