@@ -108,7 +108,10 @@ var activeEdgeWave={frequency:.39,secondary:1.43,phase:0};
 var tissueLightEnabled=false;
 // V2N: raster coverage of the actual damp/wet ribbons, independent of pigment and dry ink.
 var activeWashMaskCtx=null,activeSoftMaskCtx=null,activePigmentLayerCtx=null;
-var activeSoftForShape=false;
+var activeSoftForShape=false,activeEdgeDry=false;
+var activeEdgePaperSeed=0,activeEdgeRatio=1;
+var activeEdgeTextureStats={samples:0,drySamples:0,wickSamples:0,
+  maxDryDisplacement:0,maxWetDisplacement:0};
 function selectSoftEdge(seed,group,index,state){
   return state!=='dry'&&((A.hash(seed+'|v2o-soft-edge|'+group+'|'+index)>>>0)/4294967296)<.28;
 }
@@ -119,29 +122,58 @@ function pigmentLuma(col){
 }
 
 var lightTissueStats={pieces:0};
+// V2P: displaced contour follows the SAME non-tiled paper field as the wash.
+// Replace regularly oscillating V2O wavelets: there are no short parallel
+// pen strokes or tick marks, only one irregular, continuous painted boundary.
 function tornTrace(ctx,edge,half,side,mirror){
-  var step=7.5,depth=clamp(half*.068,1.2,3.3);
+  var ratio=activeEdgeRatio,seed=activeEdgePaperSeed;
+  var depth=clamp(half*.068,1.2,3.3);
+  // Dry edges must remain crisp, while wet and soft-wet edges may wick.
+  var reach=activeEdgeDry?1.25:activeSoftForShape?1.55:2.30;
   for(var i=1;i<edge.length;i++){
     var a=edge[i-1],b=edge[i],dx=b.x-a.x,dy=b.y-a.y;
-    var dist=Math.hypot(dx,dy);
-    if(dist<.00001)continue;
-    var normalX=-dy/dist,normalY=dx/dist;
-    var divisions=Math.max(1,Math.ceil(dist/(step*(.81+.34*Math.abs(Math.sin(
-      a.x*.19+b.y*.13+activeEdgeWave.phase))))));
-    for(var j=1;j<=divisions;j++){
-      // Subpixel-seeded variable spacing without regularly repeated hair ticks.
-      var t=(j+(j<divisions?.18*Math.sin(i*1.83+j*1.21+
-        activeEdgeWave.phase):0))/divisions;
-      var x=a.x+dx*t,y=a.y+dy*t;
-      var wave=activeEdgeWave;
-      var rough=.51*Math.sin(x*wave.frequency+y*(wave.frequency*1.53)+wave.phase)+
-        .31*Math.sin(x*wave.secondary-y*(wave.secondary*.61)+wave.phase*1.37)+
-        .12*Math.sin(x*.83+y*.71+i*.41+wave.phase)+
-        .06*Math.sin(x*1.73-y*.27+i*.83+wave.phase*.43);
-      // Irregular but short local tears: no uniform sawtooth and no halos.
-      var offset=side*depth*(activeSoftForShape?.70:1)*rough;
-      ctx.lineTo(x+normalX*offset,y+normalY*offset);
-      if(mirror)mirror.lineTo(x+normalX*offset,y+normalY*offset);
+    var length=Math.hypot(dx,dy);
+    if(length<.00001)continue;
+    var nx=-dy/length,ny=dx/length,travel=0;
+    while(travel<length){
+      // Continuous paper granularity controls sampling spacing (2.7-5.1px)
+      // without a repetitive comb or jumps in the contour's end position.
+      var prior=Math.min(1,travel/length);
+      var sx=(a.x+dx*prior)*ratio,sy=(a.y+dy*prior)*ratio;
+      var spacing=3.9+2.4*(paperNoise(sx*.91+sy*.13,
+        sy*.96-sx*.17,Math.max(3,12*ratio),seed^0x29271)-.5);
+      travel=Math.min(length,travel+spacing);
+      var t=travel/length,x=a.x+dx*t,y=a.y+dy*t,wx=x*ratio,wy=y*ratio;
+      var paper=materialPaperField(wx,wy,ratio,seed);
+      // Broad formation plus finer fibre displacement creates correlated,
+      // branching-looking bleed with variable length, never isolated hairs.
+      var longWave=paperNoise(wx*.84+wy*.18,wy*.91-wx*.14,
+        Math.max(5,24*ratio),seed^0x62873);
+      var medium=paperNoise(wx*1.07-wy*.24,wy*.97+wx*.11,
+        Math.max(2.6,10*ratio),seed^0x41795);
+      var fine=paperNoise(wx*1.29+wy*.12,wy*1.23-wx*.25,
+        Math.max(1.3,4.7*ratio),seed^0x90351);
+      var absorption=clamp(.57*medium+.30*fine+.13*(1-paper.tooth),0,1);
+      // Sparse capillary projections are shaped into the existing contour,
+      // not drawn as repeated perpendicular strokes.
+      var wick=clamp((absorption-.65)*3.1,0,1);
+      var shape=(longWave-.5)*1.35+(medium-.5)*1.2+
+        (fine-.5)*.30+(paper.fibre-.5)*.22+
+        (activeEdgeDry?0:wick*.22);
+      var offset=clamp(shape*depth*.78,-reach,reach);
+      if(activeSoftForShape)offset*=.78;
+      activeEdgeTextureStats.samples++;
+      if(activeEdgeDry){
+        activeEdgeTextureStats.drySamples++;
+        activeEdgeTextureStats.maxDryDisplacement=Math.max(
+          activeEdgeTextureStats.maxDryDisplacement,Math.abs(offset));
+      }else{
+        if(wick>.20)activeEdgeTextureStats.wickSamples++;
+        activeEdgeTextureStats.maxWetDisplacement=Math.max(
+          activeEdgeTextureStats.maxWetDisplacement,Math.abs(offset));
+      }
+      ctx.lineTo(x+nx*offset*side,y+ny*offset*side);
+      if(mirror)mirror.lineTo(x+nx*offset*side,y+ny*offset*side);
     }
   }
 }
@@ -347,8 +379,9 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state,softEdge
   activeEdgeWave={frequency:r.range(.20,.66),secondary:r.range(.92,2.19),
     phase:r.range(-Math.PI,Math.PI)};
   activeSoftForShape=!!softEdge;
+  activeEdgeDry=edgeState==='dry';
   var madeRibbon=ribbon(pig,pts,width*.5,r);
-  activeSoftForShape=false;
+  activeSoftForShape=false;activeEdgeDry=false;
   if(!madeRibbon)return;
   if(edgeState!=='dry')
     registerWetWash(edgeState==='wet'?.90:.56,!!softEdge);
@@ -400,7 +433,7 @@ function paintColourPool(ctx,pts,width,r,colourA,colourB,opacity,softEdge){
   }
   activeEdgeWave={frequency:r.range(.17,.65),secondary:r.range(.9,2.5),
     phase:r.range(-PI,PI)};
-  activeSoftForShape=!!softEdge;
+  activeSoftForShape=!!softEdge;activeEdgeDry=false;
   var madePool=ribbon(ctx,pts,width*.5,r);
   activeSoftForShape=false;
   if(!madePool)return false;
@@ -1196,6 +1229,9 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     pctx.fillRect(0,0,w,h);
     activeMicroBleedCount=0;
     activeThinStrokeCount=0;activeDryThinStrokeCount=0;
+    activeEdgeRatio=ratio;activeEdgePaperSeed=A.hash(seed+'|paper-flow-v2f')>>>0;
+    activeEdgeTextureStats={samples:0,drySamples:0,wickSamples:0,
+      maxDryDisplacement:0,maxWetDisplacement:0};
     var wetCanvas=document.createElement('canvas');
     wetCanvas.width=sw;wetCanvas.height=sh;
     var wetCtx=wetCanvas.getContext('2d');
@@ -1230,7 +1266,7 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
       pigmentSpreadMax:Math.max.apply(null,kit.ink.map(function(v){return pigmentSpread(pigmentInk(v))})),
       compositionPresentation:presentation.stats,
-      effect:'V2O soft/damp/dry edge variety; restrained feathers; protected pale heroes',
+      effect:'V2P paper-guided contour irregularity, no periodic combs, preserved V2O washes',
       edgeDarkening:A.watercolourV2kOptions.edgeDarkening,
       interiorMottle:A.watercolourV2kOptions.interiorMottle,
       paleEdgePooling:A.watercolourV2kOptions.paleEdgePooling,
@@ -1242,6 +1278,7 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       filledPools:washStats.filledPools,mixedPigmentPools:washStats.mixedPigmentPools,
       softWashCount:washStats.softWashCount,areaWashCount:washStats.areaWashCount,
       paleFormBoosts:washStats.paleFormBoosts,
+      edgeTexture:activeEdgeTextureStats,
       microBleedCount:microBleedTotal,microBleedWashCount:washMicroBleeds,
       watercolorThinStrokeCount:thinStrokeTotal,dryThinStrokeCount:dryThinTotal,
       paperFlow:paperStats,
@@ -1249,7 +1286,8 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     };
   }finally{
     activeWashMaskCtx=null;activeSoftMaskCtx=null;activePigmentLayerCtx=null;
-    activeSoftForShape=false;
+    activeSoftForShape=false;activeEdgeDry=false;
+    activeEdgeRatio=1;activeEdgePaperSeed=0;
     C=originalC;
     tissueTornEdges=false;
     tissueLightEnabled=false;
