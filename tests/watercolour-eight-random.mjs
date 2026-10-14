@@ -1,4 +1,4 @@
-// Eight fresh, genuinely random V2O studies — ONE from each V8 engine.
+// Eight fresh, genuinely random V2P studies — ONE from each V8 engine.
 // This is a screenshot/artwork sampler, not a production publishing path.
 // Each image and its full seed/settings are saved for deterministic reproduction.
 import { chromium } from 'playwright';
@@ -27,7 +27,7 @@ function randInt(low,high){return low+randomBytes(4).readUInt32BE(0)%(high-low+1
 const palettes=['golden','earth','warm','mono'];
 const scenarios=engines.map((engine,index)=>({
   ...engine,
-  seed:'WC-V2O-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
+  seed:'WC-V2P-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
   elements:randInt(18,42),
   density:randInt(43,73),
   complexity:randInt(43,81),
@@ -104,6 +104,14 @@ try{
     assert.equal(result.material.interiorMottle,.24);
     assert.equal(result.material.paleEdgePooling,.75);
     assert.equal(result.material.edgeBandRadius,8);
+    assert(result.material.edgeTexture.samples>100,
+      'No paper-guided edge sampling: '+scenario.mode);
+    assert(result.material.edgeTexture.drySamples>0,
+      'No crisp dry edge samples: '+scenario.mode);
+    assert(result.material.edgeTexture.maxDryDisplacement<=1.251,
+      'Dry edge displaced too far: '+scenario.mode);
+    assert(result.material.edgeTexture.maxWetDisplacement<=2.301,
+      'Wet edge displaced too far: '+scenario.mode);
     assert(result.material.softWashCount>0,'No mixed soft edge washes: '+scenario.mode);
     assert(result.material.softWashCount<result.material.areaWashCount,
       'All washes became soft: '+scenario.mode);
@@ -134,6 +142,7 @@ try{
       filledPools:result.material.filledPools,mixedPigmentPools:result.material.mixedPigmentPools,
       softWashCount:result.material.softWashCount,areaWashCount:result.material.areaWashCount,
       paleFormBoosts:result.material.paleFormBoosts,
+      edgeTexture:result.material.edgeTexture,
       microBleedCount:result.material.microBleedCount,
       watercolorThinStrokeCount:result.material.watercolorThinStrokeCount,
       dryThinStrokeCount:result.material.dryThinStrokeCount,
@@ -148,12 +157,12 @@ try{
   assert.equal(new Set(manifest.map(x=>x.seed)).size,8);
   assert.equal(errors.length,0,'Browser errors: '+errors.join('; '));
   await writeFile(output+'/manifest.json',JSON.stringify({
-    description:'8 unique random studies in experimental Watercolour V2O',
-    material:'watercolour-v2o-paper-diffusion',rendererVersion:8,
+    description:'8 unique random studies in experimental Watercolour V2P',
+    material:'watercolour-v2p-paper-diffusion',rendererVersion:8,
     revision:'experimental branch only; no production changes',
     samples:manifest
   },null,2));
-  console.log('PASS: 8 new independent, reproducible V2O watercolour PNGs');
+  console.log('PASS: 8 new independent, reproducible V2P watercolour PNGs');
 // Fixed V2i seeds from the user's visual review. These are NOT the random
 // gallery; they are four extra regression images proving the compact-cluster
 // and edge-clipped-frame conditions have been addressed on exact inputs.
