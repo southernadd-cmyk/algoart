@@ -25,6 +25,8 @@ var originalC=C;
 // irregular capillary falloff, with no concentric cosmetic stroke passes.
 A.watercolourV2kOptions={edgeDarkening:.72,interiorMottle:.24,paleEdgePooling:.75,
   edgeBandRadius:8};
+// Draft-only reversible V2Q switch: false restores the V2P post-pass.
+A.watercolourV2qOptions={layeredDrying:true};
 function coloursForInk(kit){
   if(kit.revision>=4){
     var seeded={};
@@ -614,7 +616,7 @@ function addLightTissue(pig,height,w,h,chains,voids,seed,quality){
   return {pieces:selected.length,candidates:candidates.length,pass:'pale tissue before unchanged pencil details'};
 }
 
-function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
+function deposit(pig,height,w,h,chains,voids,seed,quality,kit,flushStage){
   var r=A.makeR(seed+'|wet-edge-watercolour-v2'),n=chains.length;
   var allowance=quality<.4?.65:1;
   var stats={dry:0,damp:0,wet:0,chromaticAccents:0,dryDeposits:[],
@@ -651,6 +653,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     }
     stats[state]++;
   }
+  if(flushStage)pig=flushStage('broad',pig);
   var hero=Math.min(n,Math.ceil(68*allowance));
   for(i=0;i<hero;i++){
     ch=chains[i];pts=ch.pts;
@@ -698,6 +701,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     }
     stats[state]++;
   }
+  if(flushStage)pig=flushStage('hero',pig);
   var details=Math.min(n,Math.ceil(52*allowance));
   for(i=0;i<details;i++){
     ch=chains[i];pts=ch.pts;
@@ -719,6 +723,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     }
     stats[detailState]++;
   }
+  if(flushStage)flushStage('details',pig);
   return stats;
 }
 function finishDryAccents(ctx,chains,seed,quality,kit,voids,stats){
@@ -873,11 +878,12 @@ A.sampleWatercolourPaperTooth=function(seed,x,y){
 // Unlike a global blur, pigment moves only along water-loaded, paper-
 // dependent capillaries. Optical density is transferred (and conserved by
 // the symmetric 4-neighbour stencil) before settling into paper valleys.
-function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx){
+function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx,stageOptions){
   var frame=ctx.getImageData(0,0,w,h),px=frame.data;
   var wetPixels=wetMaskCtx.getImageData(0,0,w,h).data;
   var softPixels=softMaskCtx.getImageData(0,0,w,h).data;
-  var total=w*h;
+  var total=w*h,wetOnly=!!(stageOptions&&stageOptions.wetOnly);
+  var mobileZone=wetOnly?new Uint8Array(total):null,mobilePixels=0;
   var wetCoverage=new Float32Array(total),softCoverage=new Float32Array(total);
   var source=new Float32Array(total*3),next=new Float32Array(total*3);
   var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total),formation=new Float32Array(total),paperGrain=new Uint8Array(total);
@@ -898,11 +904,27 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     tooth[pi]=surface.tooth;
     wetCoverage[pi]=wetPixels[pi*4+3]/255;
     softCoverage[pi]=softPixels[pi*4+3]/255;
+    if(wetOnly&&wetCoverage[pi]>.075)mobileZone[pi]=1;
     water[pi]=clamp(loaded*3.1,0,1);
     fibres[pi]=surface.fibre;
     formation[pi]=surface.formation;
     paperGrain[pi]=Math.round(surface.grain*255);
   }
+  if(wetOnly){
+    // True wet-only mobility, plus a short 2px capillary fringe.
+    // Paint from prior stages is absent from this layer altogether.
+    for(var reach=0;reach<2;reach++){
+      var expanded=mobileZone.slice();
+      for(y=1;y<h-1;y++)for(x=1;x<w-1;x++){
+        pi=y*w+x;
+        if(!mobileZone[pi])continue;
+        expanded[pi-1]=expanded[pi+1]=expanded[pi-w]=expanded[pi+w]=1;
+      }
+      mobileZone=expanded;
+    }
+    for(var mi=0;mi<total;mi++)mobilePixels+=mobileZone[mi];
+  }
+  var fixedBefore=wetOnly?source.slice():null;
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
   for(var round=0;round<passes;round++){
@@ -918,6 +940,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
         var ny=y+(side===2?stride:side===3?-stride:0);
         if(nx<0||ny<0||nx>=w||ny>=h)continue;
         var q=ny*w+nx;
+        if(wetOnly&&(!mobileZone[pi]||!mobileZone[q]))continue;
         // Interface mobility is symmetric: pigment is redistributed,
         // not created, when a pair of paper fibres exchange wash water.
         var stretch=(fibres[pi]+fibres[q])*.5;
@@ -934,6 +957,13 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
       next[k+2]=Math.max(0,z+sum2);
     }
     var swap=next;next=source;source=swap;
+  }
+  var fixedPixelChanges=0;
+  if(wetOnly)for(var fp=0;fp<total;fp++){
+    if(mobileZone[fp])continue;
+    var fj=fp*3;
+    if(source[fj]!==fixedBefore[fj]||source[fj+1]!==fixedBefore[fj+1]||
+      source[fj+2]!==fixedBefore[fj+2])fixedPixelChanges++;
   }
   // V2O: wet-in-wet shapes get a short conservative *local* diffusion around
   // their true alpha-mask boundaries. Other washes and dry fine strokes keep
@@ -996,7 +1026,8 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   // Keep bloom centres on real painted geometry, and reject paper/voids.
   // A clear-water droplet pushes pigment outward into a ragged, low-contrast
   // cauliflower rim; there is no drawn circle/stroke or stock texture.
-  var drops=[],rand=A.makeR(seed+'|water-blooms-v3');
+  var drops=[],rand=A.makeR(seed+'|water-blooms-v3'+
+    (stageOptions?'|'+stageOptions.stageId:''));
   for(var cidx=0;cidx<Math.min(35,chains.length)&&drops.length<4;cidx++){
     var ch=chains[cidx],points=ch.pts;
     if(points.length<3||rand.chance(.71))continue;
@@ -1145,7 +1176,8 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     conservationError:+conservationError.toFixed(8),variableBandRange:[3,10],
     softMaskPixels:softMaskPixels,softBoundaryPixels:softBoundaryPixels,
     softFluxPixels:softFluxPixels,
-    softConservationError:+softConservationError.toFixed(8)};
+    softConservationError:+softConservationError.toFixed(8),
+    wetOnly:wetOnly,mobilePixels:mobilePixels,fixedPixelChanges:fixedPixelChanges};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
 // All changes here are an EXPERIMENTAL presentation-space adjustment.
@@ -1221,35 +1253,101 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
     var presentationVoids=presentation.voids;
     var ratio=quality<.30?.32:(quality<.65?.53:(quality<1.5?.78:1.18));
     var sw=Math.max(1,Math.round(w*ratio)),sh=Math.max(1,Math.round(h*ratio));
-    var layer=document.createElement('canvas');
-    layer.width=sw;layer.height=sh;
+    var layered=!!A.watercolourV2qOptions.layeredDrying;
+    var layer=document.createElement('canvas');layer.width=sw;layer.height=sh;
     var pctx=layer.getContext('2d');
-    pctx.scale(ratio,ratio);
-    pctx.fillStyle=kit.paper;
-    pctx.fillRect(0,0,w,h);
+    pctx.scale(ratio,ratio);pctx.fillStyle=kit.paper;pctx.fillRect(0,0,w,h);
     activeMicroBleedCount=0;
     activeThinStrokeCount=0;activeDryThinStrokeCount=0;
     activeEdgeRatio=ratio;activeEdgePaperSeed=A.hash(seed+'|paper-flow-v2f')>>>0;
     activeEdgeTextureStats={samples:0,drySamples:0,wickSamples:0,
       maxDryDisplacement:0,maxWetDisplacement:0};
-    var wetCanvas=document.createElement('canvas');
-    wetCanvas.width=sw;wetCanvas.height=sh;
-    var wetCtx=wetCanvas.getContext('2d');
-    wetCtx.scale(ratio,ratio);
-    var softCanvas=document.createElement('canvas');
-    softCanvas.width=sw;softCanvas.height=sh;
-    var softCtx=softCanvas.getContext('2d');
-    softCtx.scale(ratio,ratio);
-    activeWashMaskCtx=wetCtx;activeSoftMaskCtx=softCtx;
-    activePigmentLayerCtx=pctx;
-    var washStats=deposit(pctx,null,w,h,chains,presentationVoids,seed,quality,kit);
+    var wetCanvas=document.createElement('canvas');wetCanvas.width=sw;wetCanvas.height=sh;
+    var wetCtx=wetCanvas.getContext('2d');wetCtx.scale(ratio,ratio);
+    var softCanvas=document.createElement('canvas');softCanvas.width=sw;softCanvas.height=sh;
+    var softCtx=softCanvas.getContext('2d');softCtx.scale(ratio,ratio);
+    activeWashMaskCtx=wetCtx;activeSoftMaskCtx=softCtx;activePigmentLayerCtx=pctx;
+    var paperStats,stages=[],layeredPigmentMass=0;
+    var accCanvas=null,accCtx=null,accDensity=null,accFrame=null,accPx=null;
+    if(layered){
+      accCanvas=document.createElement('canvas');accCanvas.width=sw;accCanvas.height=sh;
+      accCtx=accCanvas.getContext('2d');
+      accFrame=accCtx.createImageData(sw,sh);accPx=accFrame.data;
+      accDensity=new Float32Array(sw*sh*3);
+    }
+    function newStageContext(){
+      var c=document.createElement('canvas');c.width=sw;c.height=sh;
+      var p=c.getContext('2d');p.scale(ratio,ratio);
+      p.fillStyle=kit.paper;p.fillRect(0,0,w,h);
+      var wt=document.createElement('canvas');wt.width=sw;wt.height=sh;
+      var wc=wt.getContext('2d');wc.scale(ratio,ratio);
+      var st=document.createElement('canvas');st.width=sw;st.height=sh;
+      var sc=st.getContext('2d');sc.scale(ratio,ratio);
+      return {pctx:p,wetCtx:wc,softCtx:sc};
+    }
+    function finishStage(name,paintedCtx){
+      paintedCtx.setTransform(1,0,0,1,0,0);
+      wetCtx.setTransform(1,0,0,1,0,0);
+      softCtx.setTransform(1,0,0,1,0,0);
+      var transport=flowThroughPaper(paintedCtx,sw,sh,seed,kit.paperRGB,
+        ratio,chains,wetCtx,softCtx,{wetOnly:true,stageId:name});
+      if(transport.fixedPixelChanges!==0)
+        throw new Error('V2Q wet-only pass moved pigment outside mobile mask');
+      var img=paintedCtx.getImageData(0,0,sw,sh).data,addedMass=0;
+      for(var index=0;index<sw*sh;index++){
+        var pixel=index*4,density=index*3;
+        for(var c=0;c<3;c++){
+          // Accumulate only per-stage settled optical density, never repaint
+          // or retransport an earlier stage. Glazes cap at V2P's .89.
+          var d=Math.max(0,Math.log((kit.paperRGB[c]+1)/(img[pixel+c]+1)));
+          addedMass+=d;
+          accDensity[density+c]=Math.min(.89,accDensity[density+c]+d);
+          accPx[pixel+c]=Math.round(kit.paperRGB[c]*Math.exp(-accDensity[density+c]));
+        }
+        accPx[pixel+3]=255;
+      }
+      layeredPigmentMass+=addedMass;
+      stages.push({name:name,transport:transport,addedMass:+addedMass.toFixed(2)});
+      if(name==='details')return paintedCtx;
+      var nextStage=newStageContext();
+      wetCtx=nextStage.wetCtx;softCtx=nextStage.softCtx;
+      activeWashMaskCtx=wetCtx;activeSoftMaskCtx=softCtx;
+      activePigmentLayerCtx=nextStage.pctx;
+      return nextStage.pctx;
+    }
+    var washStats=deposit(pctx,null,w,h,chains,presentationVoids,seed,
+      quality,kit,layered?finishStage:null);
     var washMicroBleeds=activeMicroBleedCount;
     activeWashMaskCtx=null;activeSoftMaskCtx=null;activePigmentLayerCtx=null;
-    pctx.setTransform(1,0,0,1,0,0);
-    wetCtx.setTransform(1,0,0,1,0,0);
-    softCtx.setTransform(1,0,0,1,0,0);
-    var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,
-      chains,wetCtx,softCtx);
+    if(layered){
+      accCtx.putImageData(accFrame,0,0);layer=accCanvas;
+      var first=stages[0].transport;
+      var sum=function(key){return stages.reduce(function(v,t){
+        return v+(t.transport[key]||0);},0);};
+      var maximum=function(key){return Math.max.apply(null,stages.map(
+        function(t){return t.transport[key]||0;}));};
+      paperStats={
+        paperModel:'V2Q 3 independent wet-only stages + frozen optical glazes and capillary flow',
+        stages:stages,stageCount:stages.length,wetOnly:true,
+        frozenLayers:Math.max(0,stages.length-1),
+        diffusionPasses:first.diffusionPasses,waterBlooms:maximum('waterBlooms'),
+        waterBloomsTotal:sum('waterBlooms'),edgeBankPixels:sum('edgeBankPixels'),
+        paleEdgeBankPixels:sum('paleEdgeBankPixels'),edgeBandPeak:maximum('edgeBandPeak'),
+        edgeBandRadius:first.edgeBandRadius,wetMaskPixels:sum('wetMaskPixels'),
+        donorPixels:sum('donorPixels'),transferPixels:sum('transferPixels'),
+        relocatedMass:sum('relocatedMass'),conservationError:maximum('conservationError'),
+        variableBandRange:first.variableBandRange,softMaskPixels:sum('softMaskPixels'),
+        softBoundaryPixels:sum('softBoundaryPixels'),softFluxPixels:sum('softFluxPixels'),
+        softConservationError:maximum('softConservationError'),
+        mobilePixels:sum('mobilePixels'),fixedPixelChanges:sum('fixedPixelChanges'),
+        layeredPigmentMass:+layeredPigmentMass.toFixed(2)};
+    }else{
+      pctx.setTransform(1,0,0,1,0,0);
+      wetCtx.setTransform(1,0,0,1,0,0);
+      softCtx.setTransform(1,0,0,1,0,0);
+      paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,
+        chains,wetCtx,softCtx);
+    }
     ctx.save();ctx.imageSmoothingEnabled=true;
     ctx.drawImage(layer,0,0,w,h);
     for(var i=0;i<washStats.dryDeposits.length;i++){
@@ -1266,7 +1364,8 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
       pigmentSpreadMax:Math.max.apply(null,kit.ink.map(function(v){return pigmentSpread(pigmentInk(v))})),
       compositionPresentation:presentation.stats,
-      effect:'V2P paper-guided contour irregularity, no periodic combs, preserved V2O washes',
+      effect:layered?'V2Q independently dried watercolour layers with wet-only flow':
+        'V2P reversible baseline post-pass',
       edgeDarkening:A.watercolourV2kOptions.edgeDarkening,
       interiorMottle:A.watercolourV2kOptions.interiorMottle,
       paleEdgePooling:A.watercolourV2kOptions.paleEdgePooling,
@@ -1281,7 +1380,7 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       edgeTexture:activeEdgeTextureStats,
       microBleedCount:microBleedTotal,microBleedWashCount:washMicroBleeds,
       watercolorThinStrokeCount:thinStrokeTotal,dryThinStrokeCount:dryThinTotal,
-      paperFlow:paperStats,
+      paperFlow:paperStats,layeredDrying:layered,
       referenceMaterial:'Tissue & Graphite V6'
     };
   }finally{
