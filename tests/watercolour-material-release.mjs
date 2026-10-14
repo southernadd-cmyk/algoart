@@ -13,8 +13,9 @@ await context.addInitScript(()=>{
 const page=await context.newPage(),errors=[];
 page.on('pageerror',error=>errors.push(error.message));
 async function stable(){
-  await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent.includes('WC-RELEASE-V2R-001'),
-    null,{timeout:180000});
+  const seed=new URL(page.url()).searchParams.get('seed');
+  await page.waitForFunction(expected=>document.querySelector('#statsText')?.textContent.includes(expected),
+    seed,{timeout:180000});
 }
 try{
   const url=new URL(root);
