@@ -99,8 +99,8 @@ const browser=await chromium.launch({headless:true});
 try{
   const page=await browser.newPage({viewport:{width:1250,height:880}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  for(const material of ['marker','watercolor','watercolour']){
-    const item=sample.find(x=>x.material===material);
+  // Validate short exact links for both canvas formats in all materials.
+  for(const item of sample.filter(x=>x.material==='marker'||x.id.endsWith('01'))){
     const link=new URL(host);link.searchParams.set('art',item.id);
     await page.goto(link.href,{waitUntil:'domcontentloaded',timeout:60000});
     await page.waitForFunction(seed=>document.getElementById('seed')?.value===seed,
@@ -114,6 +114,15 @@ try{
     assert.equal(status.enabled,true);
     assert.equal(status.kind,'phi-sheet');
   }
+  // A bare home URL also loads the most recent daily Marker cover. It
+  // must retain exactly the same source-space framing as its gallery JPEG.
+  const latestMarker=sample.find(x=>x.material==='marker'&&x.orientation==='landscape');
+  await page.goto(host,{waitUntil:'domcontentloaded',timeout:60000});
+  await page.waitForFunction(seed=>document.getElementById('seed')?.value===seed,
+    latestMarker.seed,{timeout:120000});
+  assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi',
+    'Home editor's latest daily study must reproduce the framed gallery cover');
+  assert.equal(await page.locator('#phiSheetFit').isChecked(),true);
   assert.deepEqual(errors,[]);
 }finally{await browser.close()}
 console.log('PASS: 15 October 8 Marker/Tissue/Watercolour portrait/landscape artworks, shared phi source transform, exact editor links, stable gallery and historical cutoff.');
