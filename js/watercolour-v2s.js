@@ -1049,12 +1049,19 @@ function paperNoise(x,y,cell,seed){
 // point results for identical seeds; no change in noise sampling or quality.
 var paperRotationSeed=null,paperRotationCos=1,paperRotationSin=0;
 function materialPaperField(x,y,ratio,seedValue){
-  if(seedValue!==paperRotationSeed){
+  // Benchmark switch is test-only; default always caches.
+  var ca,sa;
+  if(A.watercolourV2sOptions.paperRotationCache===false){
     var theta=((seedValue>>>0)%65521)/65521*PI*2;
-    paperRotationCos=Math.cos(theta);paperRotationSin=Math.sin(theta);
-    paperRotationSeed=seedValue;
+    ca=Math.cos(theta);sa=Math.sin(theta);
+  }else{
+    if(seedValue!==paperRotationSeed){
+      var theta=((seedValue>>>0)%65521)/65521*PI*2;
+      paperRotationCos=Math.cos(theta);paperRotationSin=Math.sin(theta);
+      paperRotationSeed=seedValue;
+    }
+    ca=paperRotationCos;sa=paperRotationSin;
   }
-  var ca=paperRotationCos,sa=paperRotationSin;
   var u=x*ca-y*sa,v=x*sa+y*ca;
   var wa=(paperNoise(u*.81+v*.17,v*.92-u*.11,
     Math.max(12,89*ratio),seedValue^0x519327)-.5)*22*ratio;
