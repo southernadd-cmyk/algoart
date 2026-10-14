@@ -1,19 +1,8 @@
-// Stable independently versioned Watercolour V2S. Preserve the V2R renderer and its historical share links.
-// Source from approved V2S experiment PR #74; production independently versioned.
-// ALGO/ART Watercolour V2R material (released renderer).
-// Isolated from the historical Tissue & Graphite V1–V6 renderer. Source:
-// experiment/watercolour-dry-media-v2r at commit 60b787601cc0b530126a394a5f11d109adb2620f.
-// The V2P wet-wash physics and V2R dry media run only when selected.
-// This file never replaces the existing A.oilMaterial or any historical renderer.
-// ALGO/ART isolated WATERCOLOUR V2 WET-EDGE EXPERIMENT.
-// COPIED from stable Tissue & Graphite V6 material; this file never replaces it.
-// Uses the same V8 geometry and seeded V6 ink kit, but different wash physics.
-// No publication, production selector or historical-material changes.
-// Original implementation informed by the height/pigment separation in
-// PigmentLab (https://github.com/wieslawsoltes/PigmentLab) and Wet Paint Flow
-// (https://github.com/simonxxooxxoo/wet-paint-flow). No source code or assets
-// are copied. Source compositions and V8 marker output remain untouched.
-// Browser Canvas2D only; no trained models, GPU requirement, network or installs.
+// Watercolour V2S: versioned source-hue watercolour, preserves V2R historical links.
+// By default NEW paintings use their exact Marker φ placement. Historical V2S
+// links without a fit parameter retain the original published fitted image.
+// No geometry changes to Marker or Tissue; SVG paths remain untouched.
+// Pigment-flow algorithm derives from V2R; credits retained below.
 window.AlgoArt=window.AlgoArt||{};
 (function(A){
 'use strict';
@@ -34,7 +23,7 @@ A.watercolourV2kOptions={edgeDarkening:.72,interiorMottle:.24,paleEdgePooling:.7
   edgeBandRadius:8};
 // Isolated V2R dry-mark experiment. Toggle off to reproduce V2P exactly.
 A.watercolourV2rOptions=A.watercolourV2rOptions||{dryMedia:true};
-A.watercolourV2sOptions={fidelity:true};
+A.watercolourV2sOptions={fidelity:true,fitToSheet:true};
 function sourcePigment(ch){
   if(!A.watercolourV2sOptions.fidelity||!ch||!ch.sourceInk)return null;
   var ink=String(ch.sourceInk).trim(),rgb=null;
@@ -1055,9 +1044,24 @@ function paperNoise(x,y,cell,seed){
 // The paper is a continuous procedural field, NOT a tiled bitmap. A
 // seed-chosen rotation prevents a visible axis grid; incommensurate scales
 // and two domain-warped coordinates disrupt repeated noise landmarks.
+// Pure memoization only: sin/cos formerly recalculated for every pigment
+// pixel (hundreds of thousands to millions). Reuse the exact same floating-
+// point results for identical seeds; no change in noise sampling or quality.
+var paperRotationSeed=null,paperRotationCos=1,paperRotationSin=0;
 function materialPaperField(x,y,ratio,seedValue){
-  var theta=((seedValue>>>0)%65521)/65521*PI*2;
-  var ca=Math.cos(theta),sa=Math.sin(theta);
+  // Benchmark switch is test-only; default always caches.
+  var ca,sa;
+  if(A.watercolourV2sOptions.paperRotationCache===false){
+    var theta=((seedValue>>>0)%65521)/65521*PI*2;
+    ca=Math.cos(theta);sa=Math.sin(theta);
+  }else{
+    if(seedValue!==paperRotationSeed){
+      var theta=((seedValue>>>0)%65521)/65521*PI*2;
+      paperRotationCos=Math.cos(theta);paperRotationSin=Math.sin(theta);
+      paperRotationSeed=seedValue;
+    }
+    ca=paperRotationCos;sa=paperRotationSin;
+  }
   var u=x*ca-y*sa,v=x*sa+y*ca;
   var wa=(paperNoise(u*.81+v*.17,v*.92-u*.11,
     Math.max(12,89*ratio),seedValue^0x519327)-.5)*22*ratio;
@@ -1365,12 +1369,18 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     softConservationError:+softConservationError.toFixed(8)};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
-// All changes here are an EXPERIMENTAL presentation-space adjustment.
+// Optional presentation-space adjustment; legacy V2S artwork retains it by default.
 // The original V8 generator is still called with the exact source seed and
 // settings; no paths are added/deleted and their internal relative positions
 // and rotations survive a uniform similarity transform.
 function fitMaterialComposition(chains,voids,seed,w,h){
   var mode=seed.split('|').slice(-2)[0];
+  // A newly created V2S artwork opts OUT via fit=0. Legacy share links
+  // without this parameter keep the previous fitted composition exactly.
+  // Do not touch source φ geometry when fitting is disabled.
+  if(A.watercolourV2sOptions.fitToSheet===false)
+    return {chains:chains,voids:voids,stats:{mode:mode,kind:'source-exact',
+      factor:1,before:null,after:null}};
   var bounds={minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity};
   for(var i=0;i<chains.length;i++)for(var j=0;j<chains[i].pts.length;j++){
     var p=chains[i].pts[j];
@@ -1497,6 +1507,7 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
       paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
       pigmentSpreadMax:Math.max.apply(null,kit.ink.map(function(v){return pigmentSpread(pigmentInk(v))})),
       compositionPresentation:presentation.stats,
+      fitToSheet:A.watercolourV2sOptions.fitToSheet!==false,
       v2sFidelity:!!A.watercolourV2sOptions.fidelity,
       preservedLines:preservedLines,
       sourceHueMatches:chains.filter(function(ch){return !!sourcePigment(ch)}).length,

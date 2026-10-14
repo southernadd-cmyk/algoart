@@ -187,22 +187,33 @@ function applySettings(settings){
 // keep the original fixed pigment palette for archival reproducibility.
 var tissuePaletteVersion=7;
 var watercolourMaterialRevision='v2s';
+var watercolourFitToSheet=false; // New artworks respect the φ source frame.
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
 function materialKey(){return $('materialStyle').value+'|'+(oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')}
 function syncMaterialNote(){
+  var control=$('watercolourFitControl');
+  if(control)control.hidden=!(watercolourEnabled()&&watercolourMaterialRevision==='v2s');
+  var toggle=$('watercolourFit');
+  if(toggle)toggle.checked=watercolourFitToSheet;
   var note=$('materialStyleNote');
   if(!note)return;
   note.textContent=(watercolourEnabled()
-    ?'Watercolour pigments on textured paper, with wet washes, drying edges and expressive dry brushwork.'
+    ?'Watercolour pigments on textured paper, with wet washes, drying edges and expressive dry brushwork.'+
+      (watercolourMaterialRevision==='v2s'?
+      (watercolourFitToSheet?' Fit to sheet is ON and rescales/recentres some modes relative to φ source geometry.':' Source scale and placement match the Marker/plotter φ composition.') :
+      ' Archived V2R includes automatic fitting and may differ from the Marker/plotter layout.')
     :oilEnabled()?'Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms.'
     :'Marker ink with hand-drawn wobble, pressure and imperfect strokes.')+
     ' PNG saves the visible material; SVG and plotter exports retain the original marker paths.';
 }
 function renderArtwork(target,settings,scale,reveal){
-  if(watercolourEnabled())return watercolourMaterialRevision==='v2r'?
-    A.renderWatercolourV2R(target,settings,scale,reveal):
-    A.renderWatercolourV2S(target,settings,scale,reveal);
+  if(watercolourEnabled()){
+    if(watercolourMaterialRevision==='v2r')
+      return A.renderWatercolourV2R(target,settings,scale,reveal);
+    A.watercolourV2sOptions.fitToSheet=watercolourFitToSheet;
+    return A.renderWatercolourV2S(target,settings,scale,reveal);
+  }
   return oilEnabled()?A.renderOil(target,settings,scale,reveal,tissuePaletteVersion):
     A.render(target,settings,scale,reveal);
 }
@@ -218,7 +229,11 @@ function settingsToURL(settings){
     if(typeof value==='boolean')value=value?'1':'0';
     params.set(PARAM_KEYS[key],String(value));
   });
-  if(watercolourEnabled())params.set('material','watercolour-'+watercolourMaterialRevision);
+  if(watercolourEnabled()){
+    params.set('material','watercolour-'+watercolourMaterialRevision);
+    if(watercolourMaterialRevision==='v2s')
+      params.set('fit',watercolourFitToSheet?'1':'0');
+  }
   else if(oilEnabled())params.set(tissuePaletteVersion>=2?'tissue':'watercolor',
     String(tissuePaletteVersion>=2?tissuePaletteVersion:1));
   return location.pathname+'?'+params.toString()+location.hash;
@@ -275,6 +290,10 @@ function loadSettingsFromURL(){
   if(params.get('material')==='watercolour-v2r'||params.get('material')==='watercolour-v2s'){
     $('materialStyle').value='watercolour';
     watercolourMaterialRevision=params.get('material')==='watercolour-v2r'?'v2r':'v2s';
+    // No 'fit' on an older V2S link means the previously released image
+    // used implicit fitting. Preserve those pixels and its share URL.
+    watercolourFitToSheet=watercolourMaterialRevision==='v2s'?
+      (params.has('fit')?params.get('fit')==='1':true):true;
     found=true;
   }
 
@@ -953,6 +972,7 @@ function savePNG(){
   var settings=Object.assign({},A.readSettings(),{
     oilRender:oilEnabled(),watercolourRender:watercolourEnabled(),
     watercolourRevision:watercolourMaterialRevision,
+    watercolourFitToSheet:watercolourFitToSheet,
     tissuePaletteVersion:tissuePaletteVersion
   });
   if(mobileQuery.matches){
@@ -1075,15 +1095,24 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     e.addEventListener('blur',finishDragPreview);
   }
   e.addEventListener('change',function(){
-    if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id.indexOf('plotter')===0)return;
+    if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id==='watercolourFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
-    if(e.id==='materialStyle'&&watercolourEnabled())watercolourMaterialRevision='v2s';
+    if(e.id==='materialStyle'&&watercolourEnabled()){
+      watercolourMaterialRevision='v2s';
+      watercolourFitToSheet=false;
+    }
     if(e.id!=='materialStyle')useCurrentRenderer();
     // pointerup/change ordering differs by browser. Do not commit twice.
     var alreadyCommitted=e.type==='range'&&!dragPreviewPending&&lastCommittedRenderKey===JSON.stringify([A.rendererVersion,A.readSettings(),materialKey(),tissuePaletteVersion]);
     if(!alreadyCommitted)regenerate();
   });
+});
+
+$('watercolourFit').addEventListener('change',function(){
+  if(!watercolourEnabled()||watercolourMaterialRevision!=='v2s')return;
+  watercolourFitToSheet=this.checked;
+  regenerate();
 });
 
 var shortcutsEnabled=true;
@@ -1132,8 +1161,11 @@ function loadExactArchivedArtwork(id){
         (archivedTissueCode==='3'?3:(archivedTissueCode==='2'?2:1)))));
       tissuePaletteVersion=archivedTissueVersion;
       var archivedWater=archivedMaterialURL.searchParams.get('material');
-      if(archivedWater==='watercolour-v2r'||archivedWater==='watercolour-v2s')
+      if(archivedWater==='watercolour-v2r'||archivedWater==='watercolour-v2s'){
         watercolourMaterialRevision=archivedWater==='watercolour-v2r'?'v2r':'v2s';
+        watercolourFitToSheet=archivedMaterialURL.searchParams.has('fit')?
+          archivedMaterialURL.searchParams.get('fit')==='1':true;
+      }
       $('materialStyle').value=archivedWater==='watercolour-v2r'||archivedWater==='watercolour-v2s'
         ?'watercolour':archivedTissueVersion>=2||entry.material==='watercolor'||
           archivedMaterialURL.searchParams.get('watercolor')==='1'?'tissue':'marker';

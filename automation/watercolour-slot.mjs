@@ -25,6 +25,7 @@ export function validateWatercolourItem(item,day,orientation){
     throw Error('Invalid Watercolour V2S artwork identity');
   const link=new URL(item.shareUrl);
   if(link.searchParams.get('material')!=='watercolour-v2s'||
+     link.searchParams.get('fit')!=='0'||
      link.searchParams.get('v')!=='9'||
      link.searchParams.get('seed')!==item.seed||
      link.searchParams.get('mode')!==item.mode||

@@ -224,7 +224,7 @@ try {
     // The cutoff changes only the MATERIAL; V8's settings, daily seed and
     // archive IDs retain the exact same deterministic generation algorithm.
     const itemVersion=watercolour?9:rendererVersion;
-    const query=queryFor(settings,itemVersion)+(watercolour?'&material=watercolour-v2s':
+    const query=queryFor(settings,itemVersion)+(watercolour?'&material=watercolour-v2s&fit=0':
       watercolor?tissueEdition.suffix:'');
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;

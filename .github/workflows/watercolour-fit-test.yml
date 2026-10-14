@@ -1,0 +1,47 @@
+name: Watercolour φ-native fitting and pixel-equivalent CPU cache
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/watercolour-v2s.js'
+      - 'js/app.js'
+      - 'js/export.js'
+      - 'index.html'
+      - 'tests/watercolour-fit.test.mjs'
+      - '.github/workflows/watercolour-fit-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  material-fidelity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Validate source and pre-existing material tests
+        run: |
+          node --check js/watercolour-v2s.js
+          node --check js/app.js
+          node --check js/export.js
+          node tests/materials-ui.test.mjs
+          node tests/tissue-colour.test.mjs
+          node tests/site-quality.test.mjs
+      - name: Start local static editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/fit-v2s.log 2>&1 &
+          for i in {1..35}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/fit-v2s.log; exit 1
+      - name: Check original φ geometry, legacy fitted pixels and cached paper parity
+        run: npm run test:watercolour-fit
+      - name: Watercolour material PNG and legacy renderer regression
+        run: npm run test:watercolour-release

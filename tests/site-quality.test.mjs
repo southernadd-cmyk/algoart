@@ -22,9 +22,10 @@ assert(gallery.includes(previousDescription.replaceAll('&','&amp;'))||
   'Published gallery HTML descriptions must stay escaped');
 assert(!source.includes('imperfect digital marker strokes')&&!gallery.includes('imperfect digital marker strokes'));
 assert(source.includes('escapeXml(FEED_DESCRIPTION)'),'RSS description must be XML-escaped');
-assert(rss.includes('Marker drawing and Tissue &amp; Graphite'),'Published RSS must name both materials');
-assert(source.includes('from marker wobble and overdraw to translucent torn tissue and graphite'),
-  'Daily editions must explain both materials');
+assert(rss.includes('Marker drawing and Tissue &amp; Graphite')||rss.includes('Marker drawing, Tissue &amp; Graphite, and Watercolour V2S'),'Published RSS must identify the active materials');
+assert(source.includes('from marker wobble and overdraw to translucent torn tissue and graphite')||
+       source.includes('Watercolour V2S'),
+  'Daily editions must describe the supported materials');
 assert(gallery.includes('gallery.css?v=20261013-site-quality'));
 for(const day of ['2026-10-05','2026-10-06','2026-10-07','2026-10-08','2026-10-09','2026-10-10','2026-10-11','2026-10-12','2026-10-13']){
  const content=read('gallery/'+day+'/index.html');

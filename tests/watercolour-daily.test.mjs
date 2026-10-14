@@ -47,6 +47,8 @@ for(const orientation of ['landscape','portrait']){
     await fs.access(path.join(dir,item.instagramImageFile));
   }
   assert.equal(new URL(item.shareUrl).searchParams.get('material'),'watercolour-v2s');
+  assert.equal(new URL(item.shareUrl).searchParams.get('fit'),'0',
+    'New Watercolour artwork must preserve φ source placement');
   const copy=makeCaptions(item);
   assert.match(copy.instagram,/WATERCOLOUR V2S/);
   assert.match(copy.altText,/Watercolour painting/);
@@ -85,6 +87,7 @@ try{
     await page.waitForFunction(seed=>document.querySelector('#seed')?.value===seed,item.seed,{timeout:100000});
     const url=new URL(page.url());
     assert.equal(url.searchParams.get('material'),'watercolour-v2s');
+    assert.equal(url.searchParams.get('fit'),'0');
     assert.equal(url.searchParams.get('fmt'),item.orientation==='portrait'?'portrait':null);
     assert.equal(await page.locator('#materialStyle').inputValue(),'watercolour');
     const dims=await page.locator('#art').evaluate(c=>[c.width,c.height]);
