@@ -36,8 +36,8 @@ function distanceSq(x,y,seg){
 }
 A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
   var base=kit?kit.paperRGB:BASE;
-  var v1=kit&&kit.revision>=4;
-  var pigments=v1?PIGMENTS.map(function(col,i){
+  var v1=kit&&kit.revision>=4,sourceV7=kit&&kit.revision>=7;
+  var pigments=v1&&!sourceV7?PIGMENTS.map(function(col,i){
     var hex='#'+col.map(function(n){return n.toString(16).padStart(2,'0')}).join('');
     return rgb(A.seededV1Pigment(hex,kit.inkRGB[i%kit.inkRGB.length]));
   }):(kit?kit.inkRGB:PIGMENTS);
@@ -49,7 +49,8 @@ A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
     for(j=skip;j<pts.length;j+=skip){
       var a=pts[j-skip],b=pts[j],dx=b.x-a.x,dy=b.y-a.y;
       if(dx*dx+dy*dy>25){
-        segments.push({a:a,b:b,d:dx*dx+dy*dy,group:i,importance:Math.sqrt(c.length)});
+        segments.push({a:a,b:b,d:dx*dx+dy*dy,group:i,importance:Math.sqrt(c.length),
+          sourceRGB:sourceV7?c.sourceRGB:null});
       }
     }
   }
@@ -67,6 +68,11 @@ A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
     var t=clamp((reach-effective)/reach,0,1);
     t=smooth(t);
     var pigment=chosen<0?base:pigments[(segments[chosen].group+A.hash(seed+'|tone|'+segments[chosen].group))%pigments.length];
+    // V7 bloom colour comes from the marker stroke physically nearest the
+    // paper location. The same spatially coherent field drives all diffusion;
+    // it does not seed unrelated ochre/green hues over pink source geometry.
+    if(sourceV7&&chosen>=0&&segments[chosen].sourceRGB)
+      pigment=segments[chosen].sourceRGB;
     var reachTint=chosen<0?0:clamp(.08+t*.78,0,.86);
     // Pale reserve areas persist, even among several nearby paths.
     var atmospheric=clamp(t*.8+.15*noise(x,y,215,S^141),0,1);
