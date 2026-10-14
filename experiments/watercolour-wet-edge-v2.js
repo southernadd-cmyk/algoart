@@ -21,6 +21,9 @@ var C={
 // The first material revision is frozen for all historical share links.
 // Revised material derives *every* coloured layer from recorded Marker inks.
 var originalC=C;
+// Draft-only material controls, not a live editor setting. One rim and one
+// irregular capillary falloff, with no concentric cosmetic stroke passes.
+A.watercolourV2kOptions={edgeDarkening:.55,interiorMottle:.24};
 function coloursForInk(kit){
   if(kit.revision>=4){
     var seeded={};
@@ -68,6 +71,13 @@ function pigmentInk(col){
   var neutral=nums[0]*.2126+nums[1]*.7152+nums[2]*.0722;
   var factor=111/spread;
   var result=nums.map(function(v){return clamp(Math.round(neutral+(v-neutral)*factor),0,255)});
+  // Subdue isolated synthetic-looking cyan/mint while leaving the seed's
+  // chromatic relationships intact. Near-monochrome inks are unaffected.
+  if(nums[0]<nums[1]*.88&&
+    (nums[2]>nums[0]*1.11||nums[1]>nums[2]*1.18)){
+    var earth=[136,129,116],strength=.16;
+    result=result.map(function(v,i){return Math.round(mix(v,earth[i],strength))});
+  }
   return 'rgb('+result.join(',')+')';
 }
 function pigmentSpread(col){
@@ -252,7 +262,10 @@ function paintThinWatercolourStroke(ctx,pts,width,colour,opacity,r,wetness){
       p0=shift(p0,normal,offset);
       p1=shift(p1,normal,offset+r.range(-.09,.09)*wet);
       ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);
-      ctx.lineWidth=fine*tooth;
+      // A natural taper at either end replaces uniform-width vector ink.
+      var along=(j+(k+.5)/pieces)/(pts.length-1);
+      var taper=.56+.44*Math.pow(Math.max(0,Math.sin(PI*along)),.62);
+      ctx.lineWidth=fine*tooth*taper;
       ctx.globalAlpha=opacity*shade*(wet>.75?.86:1);
       ctx.stroke();drew=true;
     }
@@ -285,17 +298,13 @@ function paintRibbon(pig,height,pts,width,r,col,opacity,thickness,state){
   pig.clip(); // wet rims never sit as artificial dark halos beyond the wash
   pig.strokeStyle=col;
   pig.lineJoin='round';
-  // The displaced boundary itself supplies the softness. Blurring every
-  // perimeter made the narrow marks look like vector strokes with a glow.
-  var feather=edgeState==='wet'?clamp(width*.018,.3,1.25):
-    edgeState==='damp'?clamp(width*.006,0,.45):0;
-  if(feather>0){
-    if('filter' in pig)pig.filter='blur('+feather+'px)';
-    else{pig.shadowColor=col;pig.shadowBlur=feather;}
-  }
-  pig.lineWidth=edgeState==='dry'?clamp(width*.043,.8,3.2):
-    clamp(width*(edgeState==='wet'?.19:.11),2,23);
-  pig.globalAlpha=opacity*(edgeState==='dry'?.32:edgeState==='damp'?.29:.24);
+  // V2k: ONE drying rim. No wide, equally-spaced nested stroke bands,
+  // and no symmetrical shadow blur. Paper-flow adds the sole soft falloff.
+  var edgeFactor=clamp(A.watercolourV2kOptions.edgeDarkening,0,1);
+  pig.filter='none';pig.shadowBlur=0;
+  pig.lineWidth=edgeState==='dry'?clamp(width*.023,.62,1.9):
+    clamp(width*.035,.8,2.9);
+  pig.globalAlpha=opacity*edgeFactor*(edgeState==='dry'?.57:.88);
   pig.stroke();
   pig.filter='none';pig.shadowBlur=0;
   // Sparse irregular pooling. No second complete contour/parallel CAD line.
@@ -344,6 +353,12 @@ function paintColourPool(ctx,pts,width,r,colourA,colourB,opacity){
   ctx.save();ctx.globalCompositeOperation='multiply';
   ctx.globalAlpha=opacity*.57;ctx.fillStyle=colourA;ctx.fill();
   ctx.clip();
+  // The colour pool receives only one narrow pigment-loaded drying rim.
+  // The adjacent blur arises through paper transport, never parallel bands.
+  ctx.strokeStyle=colourA;
+  ctx.lineWidth=clamp(width*.028,.7,2.7);
+  ctx.globalAlpha=opacity*clamp(A.watercolourV2kOptions.edgeDarkening,0,1)*.65;
+  ctx.stroke();
   var shiftSide=r.chance(.5)?1:-1;
   var center=shift(middle,ang+PI/2,shiftSide*width*r.range(.02,.18));
   var radius=width*r.range(.53,.95);
@@ -608,10 +623,18 @@ function finishDryAccents(ctx,chains,seed,quality,kit,voids,stats){
     var hue=kit.ink.length?pigmentInk(pen.pick(kit.ink)):'#625951';
     var width=clamp(chains[i].width*.17+pen.range(.3,1.15),.65,2.6);
     var inkOpacity=pen.range(.27,.52);
-    // All fine details, including nominally dry ink, must carry real
-    // watercolor edge transport. No raw continuous vector pathStroke().
+    // When the ink crosses an existing wash, reduce contrast and let it
+    // wick more. Sampling the rendered sheet is stable for the same seed.
+    var sx=clamp(Math.round(middle.x),0,ctx.canvas.width-1);
+    var sy=clamp(Math.round(middle.y),0,ctx.canvas.height-1);
+    var inkUnder=ctx.getImageData(sx,sy,1,1).data;
+    var darkness=(kit.paperRGB[0]-inkUnder[0]+
+      kit.paperRGB[1]-inkUnder[1]+kit.paperRGB[2]-inkUnder[2])/3;
+    var crossing=clamp(darkness/46,0,1);
+    var wetness=clamp(pen.range(.22,.76)+crossing*.22,.18,1);
+    inkOpacity*=1-.22*crossing;
     paintThinWatercolourStroke(ctx,pts,width,hue,inkOpacity,
-      A.makeR(seed+'|v2i-all-ink|'+i),pen.range(.22,.76));
+      A.makeR(seed+'|v2i-all-ink|'+i),wetness);
     rendered++;
   }
   ctx.restore();
@@ -727,6 +750,7 @@ function materialPaperField(x,y,ratio,seedValue){
       .06*(granular-.5),.09,.96),
     fibre:clamp(.39+.35*medium+.26*grain,.1,.95),
     grain:granular,
+    formation:clamp(broad*.76+medium*.24,0,1),
     warpX:wa*.41+(grain-.5)*6*ratio,
     warpY:wb*.41+(medium-.5)*5*ratio
   };
@@ -743,7 +767,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
   var frame=ctx.getImageData(0,0,w,h),px=frame.data;
   var total=w*h;
   var source=new Float32Array(total*3),next=new Float32Array(total*3);
-  var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total),paperGrain=new Uint8Array(total);
+  var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total),formation=new Float32Array(total),paperGrain=new Uint8Array(total);
   var seedValue=A.hash(seed+'|paper-flow-v2f')>>>0,pi=0;
   for(var y=0;y<h;y++)for(var x=0;x<w;x++,pi++){
     var j=pi*3,loaded=0;
@@ -761,6 +785,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     tooth[pi]=surface.tooth;
     water[pi]=clamp(loaded*3.1,0,1);
     fibres[pi]=surface.fibre;
+    formation[pi]=surface.formation;
     paperGrain[pi]=Math.round(surface.grain*255);
   }
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
@@ -827,7 +852,13 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     var concentration=clamp(Math.max(source[p],source[p+1],source[p+2])*3.8,0,1);
     var grainStrength=.18+.82*concentration;
     var scale=((tooth[pi]-.5)*.78+grit*.32)*grainStrength;
-    var settle=clamp(1+scale,.62,1.46);
+    // Fibre-driven *low-frequency* uneven pigment concentration, strongest
+    // in darker earth glazes. The field is non-tiling and tied to the seed.
+    var earth=clamp((source[p+2]-source[p])*3.3,0,1);
+    var mottle=(formation[pi]-.5)*
+      clamp(A.watercolourV2kOptions.interiorMottle,0,.6)*
+      concentration*(.75+.7*earth);
+    var settle=clamp(1+scale+mottle,.58,1.48);
     var bloom=1;
     for(var d=0;d<drops.length;d++){
       var drop=drops[d],dx=x-drop.x,dy=y-drop.y;
@@ -957,7 +988,9 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
       pigmentSpreadMax:Math.max.apply(null,kit.ink.map(function(v){return pigmentSpread(pigmentInk(v))})),
       compositionPresentation:presentation.stats,
-      effect:'V2j compact-source material framing, pigment gamut and reduced geometric dry outlines',
+      effect:'V2k single irregular drying rim, non-tiled pigment mottle, warm gamut and tapered wet ink',
+      edgeDarkening:A.watercolourV2kOptions.edgeDarkening,
+      interiorMottle:A.watercolourV2kOptions.interiorMottle,
       washStates:{dry:washStats.dry,damp:washStats.damp,wet:washStats.wet},
       widthCaps:{broad:127,hero:67},washWidths:{broadMax:washStats.broadWidthMax,
         heroMax:washStats.heroWidthMax},
