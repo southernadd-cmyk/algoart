@@ -87,6 +87,7 @@ try{
         softWashCount:A.lastWatercolourExperimentStats?.softWashCount,
         areaWashCount:A.lastWatercolourExperimentStats?.areaWashCount,
         paleFormBoosts:A.lastWatercolourExperimentStats?.paleFormBoosts,
+        edgeTexture:A.lastWatercolourExperimentStats?.edgeTexture,
         edgeDarkening:A.lastWatercolourExperimentStats?.edgeDarkening,
         interiorMottle:A.lastWatercolourExperimentStats?.interiorMottle,
         paleEdgePooling:A.lastWatercolourExperimentStats?.paleEdgePooling,
@@ -125,6 +126,12 @@ try{
     assert(result.paperFlow.wetMaskPixels>100,'Genuine wet washes must be captured separately');
     assert(result.softWashCount>0&&result.areaWashCount>result.softWashCount,
       'Must have both soft and hard/damp wet washes');
+    assert(result.edgeTexture.samples>100,'Paper-guided boundary sampling missing');
+    assert(result.edgeTexture.drySamples>0,'Expected crisp dry edge samples');
+    assert(result.edgeTexture.maxDryDisplacement<=1.251,
+      'Dry edge texture must stay within 1.25 logical px');
+    assert(result.edgeTexture.maxWetDisplacement<=2.301,
+      'Wet edge texture must stay within 2.30 logical px');
     assert(result.paperFlow.softMaskPixels>100,'Selected soft wash areas must be captured');
     assert(result.paperFlow.softBoundaryPixels>0,'Soft washes must have a boundary');
     assert(result.paperFlow.softFluxPixels>0,'Selected soft edges must actually diffuse');
