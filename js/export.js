@@ -40,6 +40,7 @@ A.preparePNG=function(settings,scale){
   delete compositionSettings.oilRender;
   delete compositionSettings.watercolourRender;
   delete compositionSettings.watercolourRevision;
+  delete compositionSettings.watercolourFitToSheet;
   delete compositionSettings.tissuePaletteVersion;
   var filename='algoart-'+settings.seed+'-'+settings.mode+
     (settings.orientation==='portrait'?'-portrait':'')+
@@ -49,8 +50,15 @@ A.preparePNG=function(settings,scale){
   return new Promise(function(resolve,reject){
     try{
       if(settings.watercolourRender){
-        if(settings.watercolourRevision==='v2s')
-          A.renderWatercolourV2S(out,compositionSettings,scale,false);
+        if(settings.watercolourRevision==='v2s'){
+          var previousFit=A.watercolourV2sOptions.fitToSheet;
+          try{
+            A.watercolourV2sOptions.fitToSheet=settings.watercolourFitToSheet!==false;
+            A.renderWatercolourV2S(out,compositionSettings,scale,false);
+          }finally{
+            A.watercolourV2sOptions.fitToSheet=previousFit;
+          }
+        }
         else A.renderWatercolourV2R(out,compositionSettings,scale,false);
       }
       else if(settings.oilRender)
