@@ -1,3 +1,9 @@
+# Watercolour V2S — frozen historical experiment
+
+This document records the pre-release experiment, **not** current deployment guidance. Watercolour V2S is now a versioned production material in `js/watercolour-v2s.js`. The experiment copy `experiments/watercolour-v2s-fidelity.js` is frozen and must not be used as a production source. Historical V2R share URLs continue to render unchanged. New V2S artwork can explicitly select φ-native vs fitted sheet layout; see README and browser tests.
+
+---
+
 # V2S — source fidelity experiment (not a release)
 
 **Fork:** `experiment/watercolour-v2s-fidelity` from production main on 14 October 2026. **Status: hold for review.** The currently live `js/watercolour-v2r.js`, gallery jobs, `material=watercolour-v2r` URLs and materials menu must not change.
