@@ -19,6 +19,13 @@ var C={
 // Revised material derives *every* coloured layer from recorded Marker inks.
 var originalC=C;
 function coloursForInk(kit){
+  if(kit.revision>=7){
+    // Explicit Marker-source palette, rather than V1's preset ochre/olive
+    // groups. All tissue translucent shades remain tied to these hues.
+    return {cream:kit.cream,blue:kit.ink,olive:kit.soft,
+      ochre:kit.ink.length>1?kit.ink.slice(1).concat(kit.ink[0]):kit.ink,
+      umber:originalC.umber};
+  }
   if(kit.revision>=4){
     var seeded={};
     Object.keys(originalC).forEach(function(group,groupIndex){
@@ -54,6 +61,13 @@ function point(a,b,t){return{x:mix(a.x,b.x,t),y:mix(a.y,b.y,t)}}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
 function angle(a,b){return Math.atan2(b.y-a.y,b.x-a.x)}
 function shift(pt,dir,d){return{x:pt.x+Math.cos(dir)*d,y:pt.y+Math.sin(dir)*d}}
+var tissueV7Active=false;
+function sourceTissueHue(chain,lighten){
+  if(!tissueV7Active||!chain||!chain.sourceRGB)return null;
+  var rgb=chain.sourceRGB;
+  var hex='#'+rgb.map(function(c){return Math.round(clamp(c,0,255)).toString(16).padStart(2,'0')}).join('');
+  return lighten?lerpHex(hex,'#f5f0e6',lighten):hex;
+}
 function palette(i,r){
   var group=i%9;
   if(group<3)return r.pick(C.blue);
@@ -288,7 +302,8 @@ function addLightTissue(pig,height,w,h,chains,voids,seed,quality){
       var sample=[middle,shift(middle,normal,width*.25),shift(middle,normal,-width*.25)];
       var darkness=sample.reduce(function(sum,pt){return sum+Math.max(0,241-luminance(pt))},0)/sample.length;
       if(darkness<15)continue;
-      candidates.push({pts:pts,centre:middle,width:width,darkness:darkness,score:darkness+r.range(-6,6)});
+      candidates.push({pts:pts,centre:middle,width:width,darkness:darkness,score:darkness+r.range(-6,6),
+        sourceRGB:ch.sourceRGB});
     }
   }
   candidates.sort(function(a,b){return b.score-a.score});
@@ -304,6 +319,8 @@ function addLightTissue(pig,height,w,h,chains,voids,seed,quality){
     var outlineSeed=seed+'|light-tissue-outline|'+i;
     pig.save();ribbon(pig,pts,width*.5,A.makeR(outlineSeed));
     var pale=lerpHex(C.cream[i%C.cream.length],'#fffaf0',r.range(.78,.93));
+    if(tissueV7Active&&item.sourceRGB)
+      pale=lerpHex(sourceTissueHue(item,.76),'#fffaf0',.13);
     var opacity=clamp(.30+item.darkness*.002,.34,.56);
     pig.globalAlpha=opacity;pig.fillStyle=pale;pig.fill();pig.clip();
     // Fine fibres are inside the scrap, with no added edge halo or blur.
@@ -335,6 +352,8 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     if(insideVoid(mid,voids)&&r.chance(.82))continue;
     var width=clamp(85+Math.sqrt(ch.length)*r.range(4.8,8.2),85,235);
     var muted=lerpHex(palette(i,r),r.pick(C.cream),r.range(.32,.73));
+    var sourceMuted=sourceTissueHue(ch,.46);
+    if(sourceMuted)muted=sourceMuted;
     paintRibbon(pig,height,pts,width,r,muted,r.range(.40,.69),r.range(.35,.80));
   }
   // Main painterly ribbons at two scales. Rhythm and large-scale direction
@@ -347,6 +366,8 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     width=clamp(Math.sqrt(ch.length)*r.range(1.4,3.1),14,i<22?96:61);
     if(i>=broad&&r.chance(.32))continue;
     var hue=palette(i,r);
+    var sourceHue=sourceTissueHue(ch,.14);
+    if(sourceHue)hue=sourceHue;
     paintRibbon(pig,height,pts,width,r,hue,r.range(.69,.94),
       r.range(.58,1.5));
   }
@@ -367,6 +388,8 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
       var off=r.range(-14,14);
       var base=linePath(shift(a,normal,off),shift(b,normal,off),d*.10,r);
       var shade=r.chance(.35)?r.pick(C.umber):(r.chance(.45)?r.pick(C.ochre):r.pick(C.cream));
+      var sourceShade=sourceTissueHue(ch,.30);
+      if(sourceShade)shade=sourceShade;
       paintRibbon(pig,height,base,r.range(5,20),r,shade,
         r.range(.45,.90),r.range(.30,1.4));
     }
@@ -450,7 +473,8 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   // invocation after a seeded-material render by restoring it in finally.
   C=kit?coloursForInk(kit):originalC;
   tissueTornEdges=Boolean(kit&&kit.revision>=5);
-  tissueLightEnabled=Boolean(kit&&kit.revision===6);
+  tissueLightEnabled=Boolean(kit&&kit.revision>=6);
+  tissueV7Active=Boolean(kit&&kit.revision>=7);
   lightTissueStats={pieces:0};
   try{
   // Work buffers are resolution-adaptive, but every pixel is re-rasterised
@@ -476,7 +500,9 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
     version:4,tissuePaletteVersion:kit?kit.revision:1,
     ...(tissueLightEnabled?{lightTissue:lightTissueStats}:{}),
-    ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} )};
-  }finally{C=originalC;tissueTornEdges=false;tissueLightEnabled=false}
+    ...(kit?{inkColours:kit.ink.slice(),graphitePaths:graphitePaths}:{} ),
+    ...(tissueV7Active?{sourceMatchedChains:chains.filter(function(ch){return !!ch.sourceRGB}).length,
+      atmosphericBloomColours:kit.ink.slice(),sourcePaletteVersion:7}:{} )};
+  }finally{C=originalC;tissueTornEdges=false;tissueLightEnabled=false;tissueV7Active=false}
 };
 })(window.AlgoArt);
