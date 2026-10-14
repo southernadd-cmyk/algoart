@@ -10,6 +10,7 @@ on:
       - 'tests/watercolour-wet-edge-preview.mjs'
       - 'tests/watercolour-eight-random.mjs'
       - 'tests/watercolour-v2j-fixed-seeds.mjs'
+      - 'experiments/WATERCOLOUR_LAYERED_V2Q.md'
       - 'tests/watercolour-v2o-targeted.mjs'
       - '.github/workflows/watercolour-wet-edge-experiment.yml'
       - 'js/oil-*.js'
@@ -48,33 +49,33 @@ jobs:
           path: watercolour-wet-edge-previews/
           if-no-files-found: warn
           retention-days: 14
-      - name: Render eight V2P studies using archived exact V2j seeds
+      - name: Render eight matched V2P and V2Q layers using archived exact V2j seeds
         run: node tests/watercolour-v2j-fixed-seeds.mjs
-      - name: Upload fixed-seed V2O-to-V2P visual comparisons
+      - name: Upload exact V2P-V2Q frozen-layer visual comparisons
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: watercolour-eight-fixed-v2o-v2p
-          path: watercolour-same-seed-v2o-v2p/
+          name: watercolour-v2p-v2q-fixed
+          path: watercolour-v2p-v2q-fixed/
           if-no-files-found: warn
           retention-days: 14
-      - name: Re-render exact V2O random burst and rects problem cases in V2P
+      - name: Re-render historical V2O random burst and rects cases in V2Q
         run: node tests/watercolour-v2o-targeted.mjs
-      - name: Upload targeted burst/rects V2O-V2P pairs for edge review
+      - name: Upload targeted burst and rects frozen-layer studies
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: watercolour-v2o-targeted-v2p
-          path: watercolour-v2o-targeted-v2p/
+          name: watercolour-v2o-targeted-v2q
+          path: watercolour-v2o-targeted-v2q/
           if-no-files-found: warn
           retention-days: 14
-      - name: Render eight new random full-size V2P watercolours
+      - name: Render eight new random full-size V2Q layered watercolours
         run: node tests/watercolour-eight-random.mjs
       - name: Upload eight independent images and reproducible manifest
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: watercolour-eight-random-v2p
+          name: watercolour-eight-random-v2q
           path: watercolour-eight-random/
           if-no-files-found: warn
           retention-days: 14
