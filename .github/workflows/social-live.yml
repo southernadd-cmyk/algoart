@@ -395,3 +395,49 @@ jobs:
       orientation: portrait
       live: true
     secrets: inherit
+
+  watercolour-v2s-landscape:
+    # Existing 15:00 UK afternoon slot; not a fourth cron trigger.
+    needs: [publish, portrait-plan, portraits, portraits-retry]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '1' }}
+    uses: ./.github/workflows/watercolour-live.yml
+    with:
+      slot: '1'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: landscape
+      live: true
+    secrets: inherit
+
+  watercolour-v2s-landscape-retry:
+    needs: [watercolour-v2s-landscape, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.watercolour-v2s-landscape.result == 'failure' && needs.portrait-plan.outputs.slot == '1' }}
+    uses: ./.github/workflows/watercolour-live.yml
+    with:
+      slot: '1'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: landscape
+      live: true
+    secrets: inherit
+
+  watercolour-v2s-portrait:
+    # Serialize landscape and portrait gallery edits.
+    needs: [watercolour-v2s-landscape, watercolour-v2s-landscape-retry, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '1' }}
+    uses: ./.github/workflows/watercolour-live.yml
+    with:
+      slot: '1'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: portrait
+      live: true
+    secrets: inherit
+
+  watercolour-v2s-portrait-retry:
+    needs: [watercolour-v2s-portrait, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.watercolour-v2s-portrait.result == 'failure' && needs.portrait-plan.outputs.slot == '1' }}
+    uses: ./.github/workflows/watercolour-live.yml
+    with:
+      slot: '1'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: portrait
+      live: true
+    secrets: inherit
