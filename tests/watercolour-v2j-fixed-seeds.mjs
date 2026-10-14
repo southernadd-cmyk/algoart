@@ -1,12 +1,12 @@
-// EXACT V2j eight-engine samples re-rendered under V2L; compare with V2K output. Their settings
+// EXACT V2j eight-engine samples re-rendered under V2M; compare with V2L output. Their settings
 // and seed strings were copied verbatim from the V2j random manifest.
-// Compare against archived V2K matched-seed artifact in run 38544110937, never randomise.
+// Compare against archived V2L matched-seed artifact in run 38554077327, never randomise.
 import { chromium } from 'playwright';
 import { mkdir,writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
-const folder='watercolour-same-seed-v2k-v2l';
+const folder='watercolour-same-seed-v2k-v2m';
 await mkdir(folder,{recursive:true});
 const keys=['mode','orientation','seed','elements','density','complexity',
   'negativeSpace','phiStrength','recursion','spiralInfluence','goldenAngle',
@@ -43,9 +43,11 @@ try{
     assert.equal(result.width,scenario.orientation==='portrait'?1000:1400);
     assert.equal(result.height,scenario.orientation==='portrait'?1400:1000);
     assert.equal(result.stats.paper,'#f5f0e6');
-    assert.equal(result.stats.edgeDarkening,.55);
+    assert.equal(result.stats.edgeDarkening,.72);
     assert.equal(result.stats.interiorMottle,.24);
-    assert.equal(result.stats.paleEdgePooling,.68);
+    assert.equal(result.stats.paleEdgePooling,.75);
+    assert.equal(result.stats.edgeBandRadius,8);
+    assert(result.stats.paperFlow.edgeBandPeak>.20);
     assert(result.stats.paperFlow.edgeBankPixels>0);
     assert(result.stats.watercolorThinStrokeCount>0);
     const bytes=Buffer.from(result.png,'base64');
@@ -59,11 +61,11 @@ try{
         waterBlooms:result.stats.paperFlow.waterBlooms,
         pigmentSpreadMax:result.stats.pigmentSpreadMax,
         compositionPresentation:result.stats.compositionPresentation}});
-    console.log('FIXED V2K BASELINE V2L RENDER',filename,scenario.seed,bytes.length);
+    console.log('FIXED V2L BASELINE V2M RENDER',filename,scenario.seed,bytes.length);
   }
   await writeFile(folder+'/manifest.json',JSON.stringify({
-    baseline:'GitHub Actions run 38544110937 watercolour-eight-fixed-v2j-v2k',
-    version:'V2L',note:'Exactly same seeds and generation controls as archived V2K matched-seed set',
+    baseline:'GitHub Actions run 38554077327 watercolour-eight-fixed-v2j-v2l',
+    version:'V2M',note:'Exactly same seeds and generation controls as archived V2L matched-seed set',
     samples:manifest},null,2));
-  console.log('PASS: 8 V2L images with exact archived V2K seeds');
+  console.log('PASS: 8 V2M images with exact archived V2L seeds');
 }finally{await browser.close()}
