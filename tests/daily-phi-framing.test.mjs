@@ -106,7 +106,7 @@ try{
     await page.waitForFunction(seed=>document.getElementById('seed')?.value===seed,
       item.seed,{timeout:120000});
     assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi',
-      'Short editor link lost fit setting for '+material);
+      'Short editor link lost fit setting for '+item.material);
     const status=await page.evaluate(()=>({
       enabled:window.AlgoArt.phiFramingEnabled,
       kind:window.AlgoArt.lastPhiSheetFrame?.kind
