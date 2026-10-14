@@ -38,11 +38,25 @@ A.watercolourV2rOptions={dryMedia:true};
 A.watercolourV2sOptions={fidelity:true};
 function sourcePigment(ch){
   if(!A.watercolourV2sOptions.fidelity||!ch||!ch.sourceInk)return null;
-  var ink=ch.sourceInk;
-  if(!/^#[0-9a-f]{6}$/i.test(ink)&&
-     !/^rgb\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/i.test(ink))
-    return null;
-  return pigmentInk(ink);
+  var ink=String(ch.sourceInk).trim(),rgb=null;
+  // The Marker engine serializes chromatic inks as CSS hsl(...)!
+  // Share the same deterministic HSL->sRGB model as the V6 tissueKit;
+  // do not silently drop source hue by accepting only #hex/rgb.
+  var m=ink.match(/^hsl\(\s*([\d.]+)(?:deg)?\s+([\d.]+)%\s+([\d.]+)%\s*\)$/i);
+  if(m){
+    var h=((+m[1]%360)+360)%360/60,sat=+m[2]/100,light=+m[3]/100;
+    var chroma=(1-Math.abs(2*light-1))*sat;
+    var x=chroma*(1-Math.abs(h%2-1)),base=light-chroma/2;
+    var t=h<1?[chroma,x,0]:h<2?[x,chroma,0]:h<3?[0,chroma,x]:
+      h<4?[0,x,chroma]:h<5?[x,0,chroma]:[chroma,0,x];
+    rgb=t.map(function(v){return Math.round(clamp((v+base)*255,0,255))});
+  }else if((m=ink.match(/^#([0-9a-f]{6})$/i))){
+    rgb=[0,2,4].map(function(i){return parseInt(m[1].slice(i,i+2),16)});
+  }else if((m=ink.match(/^rgb\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)\s*\)$/i))){
+    rgb=[+m[1],+m[2],+m[3]];
+  }
+  if(!rgb)return null;
+  return pigmentInk('rgb('+rgb.join(',')+')');
 }
 function paintSourceOpenLines(ctx,chains,presentation,seed,w,h){
   // All drawn geometry comes from the original recorded SVG paths.
