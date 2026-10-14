@@ -311,7 +311,7 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
       charge*=.987-r.range(0,.005);
       // Tiny irregular reloading pulses do not reset all hairs together.
       if(p>0&&p%19===0&&r.chance(.31))charge=Math.min(1.08,charge+.21);
-      var contact=r.next()>.055+drag*.045+(1-charge)*.13 &&
+      var contact=r.range(0,1)>.055+drag*.045+(1-charge)*.13 &&
         pressure>.34 && (p<pts.length-1||r.chance(.76));
       if(!contact){
         if(path.length)broken++;
