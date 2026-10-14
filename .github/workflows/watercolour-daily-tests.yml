@@ -1,0 +1,67 @@
+name: Daily V2S Watercolour gallery and afternoon publishing
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'automation/generate-social.mjs'
+      - 'automation/build-gallery.mjs'
+      - 'automation/captions.mjs'
+      - 'automation/watercolour-slot.mjs'
+      - 'tests/watercolour-daily.test.mjs'
+      - '.github/workflows/social-live.yml'
+      - '.github/workflows/gallery-daily.yml'
+      - '.github/workflows/watercolour-live.yml'
+      - '.github/workflows/watercolour-daily-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Validate workflow YAML and source JavaScript
+        run: |
+          python3 - <<'PY'
+          import yaml
+          for file in ['.github/workflows/social-live.yml','.github/workflows/watercolour-live.yml','.github/workflows/gallery-daily.yml']:
+              data=yaml.safe_load(open(file))
+              assert isinstance(data['jobs'],dict) and data['jobs']
+              print('VALID',file)
+          PY
+          node --check automation/generate-social.mjs
+          node --check automation/build-gallery.mjs
+          node --check automation/captions.mjs
+          node --check automation/watercolour-slot.mjs
+          node --check tests/watercolour-daily.test.mjs
+          node tests/watercolor-publishing.test.mjs
+          node tests/portrait-publishing.test.mjs
+      - name: Start local editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-v2s-daily.log 2>&1 &
+          for i in {1..35}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/algoart-v2s-daily.log
+          exit 1
+      - name: Render two V2S formats and verify immutable gallery links
+        run: node tests/watercolour-daily.test.mjs
+      - name: Archive dry-run error artefacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-v2s-daily-failure
+          path: |
+            social-output/2026-10-14/watercolour/
+            gallery/2026-10-14/meta.json
+          if-no-files-found: warn
+          retention-days: 7
