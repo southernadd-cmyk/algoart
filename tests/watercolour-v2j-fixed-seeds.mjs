@@ -1,12 +1,12 @@
-// EXACT V2j eight-engine samples re-rendered under V2k. Their settings
+// EXACT V2j eight-engine samples re-rendered under V2L; compare with V2K output. Their settings
 // and seed strings were copied verbatim from the V2j random manifest.
-// Compare against the archived 38480948896 V2j artifact, never randomise these.
+// Compare against archived V2K matched-seed artifact in run 38544110937, never randomise.
 import { chromium } from 'playwright';
 import { mkdir,writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
-const folder='watercolour-same-seed-v2j-v2k';
+const folder='watercolour-same-seed-v2k-v2l';
 await mkdir(folder,{recursive:true});
 const keys=['mode','orientation','seed','elements','density','complexity',
   'negativeSpace','phiStrength','recursion','spiralInfluence','goldenAngle',
@@ -45,6 +45,8 @@ try{
     assert.equal(result.stats.paper,'#f5f0e6');
     assert.equal(result.stats.edgeDarkening,.55);
     assert.equal(result.stats.interiorMottle,.24);
+    assert.equal(result.stats.paleEdgePooling,.68);
+    assert(result.stats.paperFlow.edgeBankPixels>0);
     assert(result.stats.watercolorThinStrokeCount>0);
     const bytes=Buffer.from(result.png,'base64');
     assert(bytes.length>15000);
@@ -57,11 +59,11 @@ try{
         waterBlooms:result.stats.paperFlow.waterBlooms,
         pigmentSpreadMax:result.stats.pigmentSpreadMax,
         compositionPresentation:result.stats.compositionPresentation}});
-    console.log('FIXED V2J SEED V2K RENDER',filename,scenario.seed,bytes.length);
+    console.log('FIXED V2K BASELINE V2L RENDER',filename,scenario.seed,bytes.length);
   }
   await writeFile(folder+'/manifest.json',JSON.stringify({
-    baseline:'GitHub Actions run 38480948896 watercolour-eight-random-v2j',
-    version:'V2k',note:'Exactly same seeds and generation controls as prior V2j',
+    baseline:'GitHub Actions run 38544110937 watercolour-eight-fixed-v2j-v2k',
+    version:'V2L',note:'Exactly same seeds and generation controls as archived V2K matched-seed set',
     samples:manifest},null,2));
-  console.log('PASS: 8 V2k images with the exact archived V2j seeds');
+  console.log('PASS: 8 V2L images with exact archived V2K seeds');
 }finally{await browser.close()}
