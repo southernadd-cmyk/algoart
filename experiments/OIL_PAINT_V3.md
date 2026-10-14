@@ -44,3 +44,34 @@ The dedicated GitHub Actions run **38647938844** passed and produced archive **1
 ## More promising next structural experiment
 
 The research suggests the next version must stop treating each source line as a **uniform filled ribbon with decorative grooves**. Instead, render a deposited **bristle-tip footprint** moving over the source path, with variable contact/density, partial pigment exhaustion, pressure-driven splay, and actual multi-bristle pigment pickup/smearing where it crosses wet earlier deposits. Krita's bristle engine supports scale/shear/density/connected hairs, ink depletion and colour soak; MyPaint handles directional/asymmetric brush tips and opacity accumulation. Preserve the source phi envelope and palette, but replace visually literal path tracing with overlapping **local painted strokes and broad block-in planes**. Benchmark before increasing complexity; avoid a full fluid simulation for now.
+
+## V3b — bristle-footprint experiment (unreleased)
+
+Implemented on `experiment/oil-paint-v3b-bristle-footprints` after the first visual review. The untouched
+V3 source remains available on `experiment/oil-paint-v3-loaded-brush`.
+
+The first V3 used a nearly opaque silhouette plus several uniform internal
+ribbons. This made grooves visible but left the strokes unmistakably digital.
+V3b changes the **deposit** model: each brush tip consists of independently
+contacting hairs with correlated pressure/splay, charge exhaustion, partial
+lift-off, different bristle colours, and local crossing pigment pickup.
+The same deposited footprints drive the local scalar heightmap; relief is not
+painted independently as a generic emboss filter. Broad block-in remains
+restricted to locally related source marks, and sparse passages can show
+broken contact. The original seed, source geometry, colour palette and
+golden-ratio framing remain unchanged.
+
+The revised physics test now verifies distinct bristle contact runs, relief,
+determinism, compatibility and absence of global renderer-state mutations.
+The 16-study Actions run must be visually inspected before this experiment
+can be judged an improvement. The V3b changes may affect performance.
+
+Open-source references informing the original, non-copied implementation:
+[Krita bristle brush engine](https://docs.krita.org/en/reference_manual/brushes/brush_engines/bristle_engine.html)
+(independent hairs, depletion and soak) and
+[Krita colour smudge engine](https://docs.krita.org/en/reference_manual/brushes/brush_engines/color_smudge_engine.html)
+(separate thickness and smearing).
+
+**Release status:** experimental only. Do not merge into main, enable in
+production, or add this material to scheduled gallery/social workflows before
+real renders are evaluated.
