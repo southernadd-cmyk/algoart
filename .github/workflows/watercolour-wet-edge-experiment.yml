@@ -47,23 +47,23 @@ jobs:
           path: watercolour-wet-edge-previews/
           if-no-files-found: warn
           retention-days: 14
-      - name: Render eight V2O studies using archived exact V2j seeds
+      - name: Render eight V2P studies using archived exact V2j seeds
         run: node tests/watercolour-v2j-fixed-seeds.mjs
-      - name: Upload fixed-seed V2L-to-V2O visual comparisons
+      - name: Upload fixed-seed V2L-to-V2P visual comparisons
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: watercolour-eight-fixed-v2l-v2o
-          path: watercolour-same-seed-v2l-v2o/
+          name: watercolour-eight-fixed-v2l-v2p
+          path: watercolour-same-seed-v2l-v2p/
           if-no-files-found: warn
           retention-days: 14
-      - name: Render eight new random full-size V2O watercolours
+      - name: Render eight new random full-size V2P watercolours
         run: node tests/watercolour-eight-random.mjs
       - name: Upload eight independent images and reproducible manifest
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: watercolour-eight-random-v2o
+          name: watercolour-eight-random-v2p
           path: watercolour-eight-random/
           if-no-files-found: warn
           retention-days: 14
