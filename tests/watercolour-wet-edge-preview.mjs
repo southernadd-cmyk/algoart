@@ -86,6 +86,7 @@ try{
         dryThinStrokeCount:A.lastWatercolourExperimentStats?.dryThinStrokeCount,
         edgeDarkening:A.lastWatercolourExperimentStats?.edgeDarkening,
         interiorMottle:A.lastWatercolourExperimentStats?.interiorMottle,
+        paleEdgePooling:A.lastWatercolourExperimentStats?.paleEdgePooling,
         width:left.width,height:left.height,
         tissueBytes:tissueBefore.length,wetBytes:experimentalBefore.length,
         different:tissueBefore!==experimentalBefore,
@@ -117,6 +118,9 @@ try{
     assert(result.dryThinStrokeCount>0,'Even dry fine watercolor strokes must be routed through wet-edged painter');
     assert.equal(result.edgeDarkening,.55);
     assert.equal(result.interiorMottle,.24);
+    assert.equal(result.paleEdgePooling,.68);
+    assert(result.paperFlow.edgeBankPixels>0,'Expected physical pigment bank at wash boundaries');
+    assert(result.paperFlow.paleEdgeBankPixels>=0);
     assert.equal(result.different,true,'Watercolour should visually differ from V6');
     assert.equal(result.paper,'#f5f0e6');
     assert.equal(result.rendererVersion,8);
