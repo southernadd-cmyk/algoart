@@ -39,3 +39,13 @@ Do not merge until the 16 oil images have been reviewed. Compare them with V1 at
 ## Known limits
 
 A physically accurate fluid solver, real color-pigment spectral mixing and dry-time are out of scope; massing is deliberately conservative. Limited source-path significance ranking may still drop marks on extreme seeds; each omission is explicitly counted. Run on mobile later before release, because height field + source recorder + two canvases occupy memory.
+
+## First real V2 render result — 16 matched paintings (14 October 2026)
+
+The dedicated CI run **38646181598 passed** and uploaded artifact **11932561559**, `oil-v2-16-real-engine-renders`. The archive contains 8 fixed V2 images, 8 identical-seed random V2 images, all 16 V1 baseline PNGs, three contact sheets, four 100%-resolution texture crops, and the reproducibility/timing manifest. The additive-height/determinism test and older material regression tests also passed.
+
+**Measured performance on GitHub Actions Chromium, at 0.7 preview scale** (16 images, as recorded in the manifest): V2 average **131.2 ms** (median **123.5 ms**), V1 average **71.8 ms** (median **66.5 ms**). V2 is approximately **1.83× slower** on this hardware. Maximum V2 **280.8 ms** for the sampled random portrait Rects image. These are not mobile or full-print benchmarks.
+
+**Visual inspection:** V2 has more substantial loaded brush bodies, higher overlap mass, distinct directional filaments and visible ridge/drag detail, but still often reads as thicker textured Marker rather than convincing thick oil impasto at gallery-thumbnail size. The strong V1 reference style is **not** yet achieved. In 14/16 studies the active-height P95 reaches the current cap of 4, so height saturation/relief modeling deserves careful investigation before release. Avoid describing this as production-ready oil painting.
+
+**Decision:** keep experimental PR only, no live selector, gallery or social scheduling changes. Review the real PNGs and crops before a further visual iteration.
