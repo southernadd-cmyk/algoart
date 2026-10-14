@@ -958,13 +958,6 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     }
     var swap=next;next=source;source=swap;
   }
-  var fixedPixelChanges=0;
-  if(wetOnly)for(var fp=0;fp<total;fp++){
-    if(mobileZone[fp])continue;
-    var fj=fp*3;
-    if(source[fj]!==fixedBefore[fj]||source[fj+1]!==fixedBefore[fj+1]||
-      source[fj+2]!==fixedBefore[fj+2])fixedPixelChanges++;
-  }
   // V2O: wet-in-wet shapes get a short conservative *local* diffusion around
   // their true alpha-mask boundaries. Other washes and dry fine strokes keep
   // V2N's structure. This moves pigment; it does not blur the final bitmap.
@@ -998,11 +991,11 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     next.set(source);
     for(y=1;y<h-1;y++)for(x=1;x<w-1;x++){
       pi=y*w+x;
-      if(softZone[pi]<.1)continue;
+      if(softZone[pi]<.1||(wetOnly&&!mobileZone[pi]))continue;
       var p=pi*3,flow0=0,flow1=0,flow2=0;
       for(var side=0;side<4;side++){
         var q=pi+cardinal[side],strength=Math.min(softZone[pi],softZone[q]);
-        if(strength<.1)continue;
+        if(strength<.1||(wetOnly&&!mobileZone[q]))continue;
         var mobility=.105*strength*(.65+.35*(tooth[pi]+tooth[q])*.5);
         var from=q*3;
         flow0+=(source[from]-source[p])*mobility;
@@ -1015,6 +1008,13 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
       softFluxPixels++;
     }
     var softSwap=source;source=next;next=softSwap;
+  }
+  var fixedPixelChanges=0;
+  if(wetOnly)for(var fp=0;fp<total;fp++){
+    if(mobileZone[fp])continue;
+    var fj=fp*3;
+    if(source[fj]!==fixedBefore[fj]||source[fj+1]!==fixedBefore[fj+1]||
+      source[fj+2]!==fixedBefore[fj+2])fixedPixelChanges++;
   }
   var softMassBefore=0,softMassAfter=0;
   for(var softIndex=0;softIndex<source.length;softIndex++){
