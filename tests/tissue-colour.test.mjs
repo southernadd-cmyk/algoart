@@ -165,7 +165,10 @@ for(const p of ['earth','neon','mono','golden']){
   assert(newStats.sourceMatchedChains>0,'Tissue V7 lost source hue lineage');
   assert.deepEqual(Array.from(newStats.atmosphericBloomColours),
     Array.from(A.tissueKitFromPaths(marker(sample),sample,7).ink));
-  assert.notDeepEqual(next,old,'V7 hue-matched colour and blooms must change the artwork');
+  if(p==='mono')assert.deepEqual(next,old,
+    'Achromatic Tissue V7 must preserve approved V6 greys pixel-for-pixel');
+  else assert.notDeepEqual(next,old,
+    'V7 hue-matched pigments and blooms must change coloured artwork');
   assert.deepEqual(paint(sample,6),old,'Tissue V7 contaminated a V6 render');
   assert.deepEqual(paint(sample,7),next,'Tissue V7 must be deterministic');
 }
