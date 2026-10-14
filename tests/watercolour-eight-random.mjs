@@ -104,8 +104,7 @@ try{
     assert.equal(result.material.interiorMottle,.24);
     assert.equal(result.material.paleEdgePooling,.75);
     assert.equal(result.material.edgeBandRadius,8);
-    assert(result.material.paperFlow.edgeBandPixels===undefined||
-      result.material.paperFlow.edgeBankPixels>100);
+    assert(result.material.paperFlow.edgeBankPixels>100);
     assert(result.material.paperFlow.edgeBandPeak>.20,
       'Pigment band is too weak: '+scenario.mode);
     assert(result.material.paperFlow.edgeBankPixels>0,'Expected paper-space edge banks: '+scenario.mode);
