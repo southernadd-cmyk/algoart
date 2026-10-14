@@ -1,0 +1,55 @@
+name: Daily φ framing from 15 October
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'automation/phi-framing.mjs'
+      - 'automation/generate-social.mjs'
+      - 'tests/daily-phi-framing.test.mjs'
+      - '.github/workflows/daily-phi-framing-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  daily-phi-dry-run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser testing
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Validate generator and publishing contracts
+        run: |
+          node --check automation/phi-framing.mjs
+          node --check automation/generate-social.mjs
+          node --check tests/daily-phi-framing.test.mjs
+          node tests/portrait-publishing.test.mjs
+          node tests/watercolor-publishing.test.mjs
+      - name: Start local unreleased editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/daily-phi.log 2>&1 &
+          for i in {1..35}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/daily-phi.log
+          exit 1
+      - name: Build and verify eight images across all daily materials and both formats
+        run: node tests/daily-phi-framing.test.mjs
+      - name: Save generated sample queues on test failure only
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phi-daily-validation-failure
+          path: |
+            social-output/2026-10-15/
+            gallery/2026-10-15/meta.json
+          if-no-files-found: warn
+          retention-days: 5
