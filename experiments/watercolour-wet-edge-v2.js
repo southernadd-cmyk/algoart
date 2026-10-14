@@ -941,7 +941,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx){
     }
     if(gain>.003){
       edgeBankPixels++;
-      if(Math.max.apply(null,[beforeBank[offset],beforeBank[offset+1],beforeBank[offset+2]])<.17)
+      if(Math.max(beforeBank[offset],beforeBank[offset+1],beforeBank[offset+2])<.17)
         paleEdgeBankPixels++;
     }
     if(loss>.003)donorPixels++;
