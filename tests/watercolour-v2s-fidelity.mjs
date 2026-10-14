@@ -9,9 +9,9 @@ import {mkdir,writeFile} from 'node:fs/promises';
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const dir='watercolour-v2r-v2s-matched';
 const cases=[
-  {mode:'spiral',seed:'BDS8W-3918',label:'Spiral: retain dry brush and open rhythms'},
-  {mode:'rects',seed:'LEH92-6799',label:'Rects: preserve negative space and subdivision hierarchy'},
-  {mode:'field',seed:'3XHXQ-4616',label:'Field: recover source pink gestures and palette'}
+  {mode:'spiral',seed:'BDS8W-3918',palette:'earth',label:'Spiral: retain dry brush and open rhythms'},
+  {mode:'rects',seed:'LEH92-6799',palette:'mono',label:'Rects: preserve negative space and subdivision hierarchy'},
+  {mode:'field',seed:'3XHXQ-4616',palette:'neon',label:'Field: recover source pink gestures and palette'}
 ];
 await mkdir(dir,{recursive:true});
 const browser=await chromium.launch({headless:true});
@@ -23,7 +23,7 @@ try{
   for(const [i,c] of cases.entries()){
     const url=new URL(root);
     url.search='?v=9&seed='+encodeURIComponent(c.seed)+'&mode='+c.mode+
-      '&material=watercolour-v2r&paper=%23f5f0e6';
+      '&pal='+c.palette+'&material=watercolour-v2r&paper=%23f5f0e6';
     await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:60000});
     await page.waitForFunction(seed=>
       document.querySelector('#statsText')?.textContent.includes(seed),
@@ -96,7 +96,7 @@ try{
       await writeFile(dir+'/'+file,png);
       files.push({name,file,bytes:png.length});
     }
-    results.push({mode:c.mode,seed:c.seed,label:c.label,settings:sample.settings,
+    results.push({mode:c.mode,seed:c.seed,palette:c.palette,label:c.label,settings:sample.settings,
       files,renderMs:{v2r:sample.v2r.ms,v2s:sample.v2s.ms},
       visiblyChanged:changed,sourceColourCount:sample.v2s.stats.sourceHueMatches,
       recoveredLines:sample.v2s.stats.preservedLines,
