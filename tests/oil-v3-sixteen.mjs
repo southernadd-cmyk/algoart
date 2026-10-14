@@ -201,9 +201,9 @@ try{
       Buffer.from(crop,'base64'));
   }
   await writeFile(root+'/oil-v3-manifest.json',JSON.stringify({
-    material:'Oil Paint V2 · deterministic Canvas2D renderer, not AI images',
+    material:'Oil Paint V3 · deterministic Canvas2D renderer, not AI images',
     rendererFile:'js/oil-paint-v3.js',baselineFile:'js/oil-paint-v2.js',
-    options:{thickness:.86,drag:.62,bristles:.90,massing:.44,relief:.78},phiFraming:true,
+    options:{thickness:.90,drag:.72,bristles:.92,massing:.44,relief:.87},phiFraming:true,
     status:'experiment-only, no changes to live materials or publishing',images:result
   },null,2));
   console.log('PASS: 8 fixed, 8 random, V2/V3 paired images, four detail crops and real material pixels');
