@@ -1201,6 +1201,10 @@ function loadExactArchivedArtwork(id){
       if(!entry||!entry.settings||!entry.seed)throw new Error('Archived artwork missing: '+id);
       A.rendererVersion=Number(entry.rendererVersion)||CURRENT_RENDERER_VERSION;
       var archivedMaterialURL=new URL(entry.shareUrl||location.href);
+      // Short ?art= links must restore the *complete* material/framing state
+      // recorded in the canonical image, not only its seed and sliders.
+      // In particular, sheet=phi fits Marker/Tissue/Watercolour equally.
+      phiSheetFraming=archivedMaterialURL.searchParams.get('sheet')==='phi';
       var archivedTissueCode=archivedMaterialURL.searchParams.get('tissue');
       var archivedTissueVersion=archivedTissueCode==='7'?7:(archivedTissueCode==='6'?6:(archivedTissueCode==='5'?5:(archivedTissueCode==='4'?4:
         (archivedTissueCode==='3'?3:(archivedTissueCode==='2'?2:1)))));
@@ -1240,6 +1244,10 @@ function loadLatestGalleryDefault(){
           }).pop()||entries[entries.length-1];
           if(!latest||!latest.settings)return false;
           A.rendererVersion=Number(latest.rendererVersion)||CURRENT_RENDERER_VERSION;
+          // The default editor canvas must show the same framed picture
+          // as the latest daily gallery cover (old covers remain unfitted).
+          var latestURL=new URL(latest.shareUrl||location.href);
+          phiSheetFraming=latestURL.searchParams.get('sheet')==='phi';
           applySettings(Object.assign({},latest.settings,{seed:latest.seed}));
           return true;
         });
