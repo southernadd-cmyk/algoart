@@ -1,7 +1,8 @@
 // Public naming changed from Watercolor to Tissue & Graphite.
 // Keep the historical internal queues/IDs named "watercolor" permanently.
-// Editions from 14 October 2026 use seeded colour and V6 pale tissue and the approved torn contours.
+// Editions from 14 October 2026 use V6; editions from 15 October use V7 source-matched pigment and blooms.
 export const SEEDED_TISSUE_START_DATE='2026-10-14';
+export const SOURCE_MATCHED_TISSUE_START_DATE='2026-10-15';
 
 export function tissueEditionForDate(date){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date))||
@@ -10,11 +11,12 @@ export function tissueEditionForDate(date){
     throw new Error('Invalid Tissue & Graphite edition date: '+date);
   }
   const seeded=String(date)>=SEEDED_TISSUE_START_DATE;
+  const revision=String(date)>=SOURCE_MATCHED_TISSUE_START_DATE?'7':'6';
   return {
     edition:seeded?'seeded':'historical',
     param:seeded?'tissue':'watercolor',
-    value:seeded?'6':'1',
-    suffix:seeded?'&tissue=6':'&watercolor=1'
+    value:seeded?revision:'1',
+    suffix:seeded?'&tissue='+revision:'&watercolor=1'
   };
 }
 export function validateTissueShareUrl(date,shareUrl){
