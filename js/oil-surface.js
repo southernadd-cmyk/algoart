@@ -36,7 +36,10 @@ function distanceSq(x,y,seg){
 }
 A.oilSurface=function(ctx,w,h,chains,seed,quality,kit){
   var base=kit?kit.paperRGB:BASE;
-  var v1=kit&&kit.revision>=4,sourceV7=kit&&kit.revision>=7;
+  var v1=kit&&kit.revision>=4,
+    sourceV7=kit&&kit.revision>=7&&kit.inkRGB.some(function(c){
+      return Math.max.apply(null,c)-Math.min.apply(null,c)>=18;
+    });
   var pigments=v1&&!sourceV7?PIGMENTS.map(function(col,i){
     var hex='#'+col.map(function(n){return n.toString(16).padStart(2,'0')}).join('');
     return rgb(A.seededV1Pigment(hex,kit.inkRGB[i%kit.inkRGB.length]));
