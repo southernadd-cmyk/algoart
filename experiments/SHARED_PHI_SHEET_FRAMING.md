@@ -4,11 +4,12 @@
 
 ## Mathematical rationale
 
-The golden ratio does not mathematically *require* a particular canvas margin or cropping rule. Here it provides a deliberate **framing convention**, not a claim that φ dictates all artistic decisions:
+The golden ratio does not mathematically *require* a particular canvas margin or cropping rule. This asymmetric rule **prioritises enlarging sparse layouts and preserves full compositions** rather than uniformly forcing every work to 61.8%. Here it provides a deliberate **framing convention**, not a claim that φ dictates all artistic decisions:
 
-- **Envelope:** aim for artwork's longest normalized bounds at `1/φ ≈ 0.618` of the sheet, leaving `1/φ² ≈ 0.382` of that dimension as unoccupied surroundings.
-- **Scale cap:** multiply uniformly by at most `φ ≈ 1.618`, or reduce no further than `1/φ` in a single optional step.
-- **Placement:** find the nearest focal landmark among the four `(1/φ², 1/φ)` combinations; move the existing artwork centre only `1/φ²` of the way toward that landmark, then clamp so content remains on the sheet.
+- **Sparse artwork:** below `1/φ ≈ 0.618` coverage, enlarge towards 61.8% of the longest canvas dimension (maximum factor `φ ≈ 1.618`).
+- **Comfortably sized artwork:** from 61.8% through `1 − 1/φ⁴ ≈ 85.4%`, **do not rescale** at all. Keep the generator's deliberate size.
+- **Full-page artwork:** above 85.4%, reduce gently towards that upper limit, with an absolute reduction cap of `1/φ⁴ ≈ 14.6%`. A nearly full-frame work is reduced by only ~10% rather than ~34%.
+- **Placement:** move towards the closest of the four `(1/φ², 1/φ)` golden focal landmarks by only `1/φ³ ≈ 23.6%` for sparse compositions, or `1/φ⁴ ≈ 14.6%` for denser ones, clamped safely to the page.
 - **No distortion:** identical x/y scaling preserves angles, internal φ relationships, mark widths and relative focal hierarchy; any chosen global size/position change is user-visible.
 
 The transform is computed from the **original SVG marker stroke recorder**, before choosing the visible material. Canvas marks and recorded SVG paths receive the exact same transform. Tissue and Watercolour then receive the same fitted source paths. This prevents the historic Watercolour-only problem where a coloured PNG and its plotter source have different layouts.
