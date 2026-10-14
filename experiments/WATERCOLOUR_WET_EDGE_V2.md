@@ -83,3 +83,40 @@ not against random replacement seeds.
 **Do not claim visual success from numerical checks alone.** At normal size
 inspect pale-wash edges, sample 06 for rings/halos, thin stroke junctions,
 and overall colour balance before authorising any release.
+
+## V2O — edge variety, feather refinement, pale hero preservation (14 October 2026)
+
+**Status: draft experiment; V2N is the comparison baseline at commit
+`213374309c2679e1156de0e799160fd20f8a6b7f`, with eight fixed-seed PNGs
+from Actions run `38588604167`. Do not merge, publish or alter the material selector.**
+
+The V2N review preferred the narrow, discontinuous drying marks to V2M's
+heavy rims. V2O deliberately avoids changing composition, seed or palette:
+
+1. Each filled wash independently chooses a **soft wet-in-wet edge ~28% of
+   the time** through a separately seeded hash (no changes to the existing
+   geometry/colour RNG sequence). Remaining damp/wet shapes keep V2N's
+   conservative tide-line movement. Deferred dry strokes remain crisp.
+2. Captured true wash geometry is mirrored into a *second*, selected-soft
+   alpha mask at the same raster resolution. A three-pixel boundary zone
+   receives three additional mild, symmetric pigment diffusion passes.
+   The conservation regression verifies no pigment is invented here.
+   V2N's tide-line redistribution is suppressed at these soft boundaries.
+3. The torn-contour micro-variation has seed-deterministic, non-uniform
+   sampling spacing and less high-frequency oscillation. This addresses
+   regularly spaced tick/hair-like whiskers without extra drawn geometry.
+4. Only pale, early hero forms (luma >159, first 22 existing paths) receive
+   a small opacity floor/boost if damp or wet, helping maintain the
+   intentional φ hierarchy without an artificial outline.
+
+Metrics: `softWashCount/areaWashCount`, `paleFormBoosts`,
+`softMaskPixels`, `softBoundaryPixels`, `softFluxPixels`,
+`softConservationError`, and V2N's conserved edge-bank metrics.
+Automated browser checks validate determinism and historical V6 isolation.
+Workflow produces eight **exact V2N-matched seeds** plus eight fresh V2O
+random studies and four V6/V2O pairs.
+
+**Visual acceptance**: no repeated hair-like ticks; soft and hard borders
+coexist; the bright forms in burst/field retain legibility; V2N's appealing
+narrow tide-lines are still present elsewhere. Reject if V2O looks uniformly
+fuzzy, loses structure, or makes the whole sheet appreciably muddier.
