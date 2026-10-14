@@ -1,4 +1,4 @@
-// EXACT V2j eight-engine samples re-rendered under V2O; compare with V2L output. Their settings
+// EXACT V2j eight-engine samples re-rendered under V2P; compare with V2L output. Their settings
 // and seed strings were copied verbatim from the V2j random manifest.
 // Compare against archived V2L matched-seed artifact in run 38554077327, never randomise.
 import { chromium } from 'playwright';
@@ -6,7 +6,7 @@ import { mkdir,writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
-const folder='watercolour-same-seed-v2l-v2o';
+const folder='watercolour-same-seed-v2l-v2p';
 await mkdir(folder,{recursive:true});
 const keys=['mode','orientation','seed','elements','density','complexity',
   'negativeSpace','phiStrength','recursion','spiralInfluence','goldenAngle',
@@ -49,6 +49,10 @@ try{
     assert.equal(result.stats.edgeBandRadius,8);
     assert(result.stats.softWashCount>0);
     assert(result.stats.softWashCount<result.stats.areaWashCount);
+    assert(result.stats.edgeTexture.samples>100);
+    assert(result.stats.edgeTexture.drySamples>0);
+    assert(result.stats.edgeTexture.maxDryDisplacement<=1.251);
+    assert(result.stats.edgeTexture.maxWetDisplacement<=2.301);
     assert(result.stats.paperFlow.softMaskPixels>0);
     assert(result.stats.paperFlow.softBoundaryPixels>0);
     assert(result.stats.paperFlow.softFluxPixels>0);
@@ -71,11 +75,11 @@ try{
         waterBlooms:result.stats.paperFlow.waterBlooms,
         pigmentSpreadMax:result.stats.pigmentSpreadMax,
         compositionPresentation:result.stats.compositionPresentation}});
-    console.log('FIXED V2L BASELINE V2O RENDER',filename,scenario.seed,bytes.length);
+    console.log('FIXED V2L BASELINE V2P RENDER',filename,scenario.seed,bytes.length);
   }
   await writeFile(folder+'/manifest.json',JSON.stringify({
-    baseline:'V2N: GitHub Actions run 38588604167 (same eight seeds); V2M: 38560317047',
-    version:'V2O',note:'Exactly same seeds and generation controls as archived V2L matched-seed set',
+    baseline:'V2O: GitHub Actions run 38594738739 (identical eight fixed seeds); V2N: 38588604167',
+    version:'V2P',note:'Exactly same seeds and generation controls as archived V2L matched-seed set',
     samples:manifest},null,2));
-  console.log('PASS: 8 V2O images with exact archived V2L seeds');
+  console.log('PASS: 8 V2P images with exact archived V2L seeds');
 }finally{await browser.close()}
