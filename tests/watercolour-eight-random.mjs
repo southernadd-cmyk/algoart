@@ -1,4 +1,4 @@
-// Eight fresh, genuinely random V2k studies — ONE from each V8 engine.
+// Eight fresh, genuinely random V2L studies — ONE from each V8 engine.
 // This is a screenshot/artwork sampler, not a production publishing path.
 // Each image and its full seed/settings are saved for deterministic reproduction.
 import { chromium } from 'playwright';
@@ -27,7 +27,7 @@ function randInt(low,high){return low+randomBytes(4).readUInt32BE(0)%(high-low+1
 const palettes=['golden','earth','warm','mono'];
 const scenarios=engines.map((engine,index)=>({
   ...engine,
-  seed:'WC-V2K-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
+  seed:'WC-V2L-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
   elements:randInt(18,42),
   density:randInt(43,73),
   complexity:randInt(43,81),
@@ -102,6 +102,9 @@ try{
     assert(result.material.pigmentSpreadMax<=112,'Pigment gamut too electronic: '+scenario.mode);
     assert.equal(result.material.edgeDarkening,.55);
     assert.equal(result.material.interiorMottle,.24);
+    assert.equal(result.material.paleEdgePooling,.68);
+    assert(result.material.paperFlow.edgeBankPixels>0,'Expected paper-space edge banks: '+scenario.mode);
+    assert(result.material.paperFlow.paleEdgeBankPixels>=0);
     assert(result.material.compositionPresentation.factor>0);
     if(result.material.compositionPresentation.kind==='compact-source-reframe')
       assert(result.material.compositionPresentation.after.width>=result.material.compositionPresentation.before.width*1.15);
@@ -128,12 +131,12 @@ try{
   assert.equal(new Set(manifest.map(x=>x.seed)).size,8);
   assert.equal(errors.length,0,'Browser errors: '+errors.join('; '));
   await writeFile(output+'/manifest.json',JSON.stringify({
-    description:'8 unique random studies in experimental Watercolour V2k',
-    material:'watercolour-v2k-paper-diffusion',rendererVersion:8,
+    description:'8 unique random studies in experimental Watercolour V2L',
+    material:'watercolour-v2l-paper-diffusion',rendererVersion:8,
     revision:'experimental branch only; no production changes',
     samples:manifest
   },null,2));
-  console.log('PASS: 8 new independent, reproducible V2k watercolour PNGs');
+  console.log('PASS: 8 new independent, reproducible V2L watercolour PNGs');
 // Fixed V2i seeds from the user's visual review. These are NOT the random
 // gallery; they are four extra regression images proving the compact-cluster
 // and edge-clipped-frame conditions have been addressed on exact inputs.
