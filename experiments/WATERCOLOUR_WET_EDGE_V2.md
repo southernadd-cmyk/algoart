@@ -120,3 +120,34 @@ random studies and four V6/V2O pairs.
 coexist; the bright forms in burst/field retain legibility; V2N's appealing
 narrow tide-lines are still present elsewhere. Reject if V2O looks uniformly
 fuzzy, loses structure, or makes the whole sheet appreciably muddier.
+
+## V2P — paper-fibre edge polish (14 October 2026)
+
+**Status:** isolated draft visual experiment, NOT a release. Preserve approved
+V2O baseline at commit `cf0df2f00d2ff74b44da4a375103c62b8df943ba`.
+Its eight matched-seed studies are in Actions run `38594738739`.
+
+Based on review of V2O: wet-in-wet edge variety, pale focal-form protection and
+V2N-conserved pigment are worth keeping. The two remaining edge artefacts were
+short *parallel hairs* on burst outlines and perfectly smooth dry block edges
+in Recursive Divisions.
+
+V2P replaces the periodic sine contour oscillation with continuous seeded
+paper-fibre variation. It samples the **existing watercolour paper field** and
+three smoothly correlated, non-repeating scales (around 5/10/24 px). Sampling
+spacing itself varies from ~2.7–5.1 px. Occasional absorbent pockets cause
+projections in the *original fill boundary*, never detached drawn hairs or
+new composition geometry. Dry linework is capped at 1.25 logical pixels
+of displacement; soft wet-in-wet and ordinary damp/wet washes keep separate
+limits (1.55 and 2.30px, respectively). Source curves, material seed RNG,
+opacity, pigmented wash interiors, palettes and framing are not changed.
+
+The same shape polygon is sent to pigment and both wet/soft mask canvases, so
+edge transport still sees the actual rendered boundary. Automated tests
+verify `edgeTexture.samples`, `drySamples` and displacement bounds alongside
+V2O water/pigment conservation, determinism and V6 reproduction.
+
+**Visual acceptance:** compare all eight V2O/V2P pairs at natural size,
+zoom in on the lower-left grey burst polygon and the straight grey
+Recursive Divisions bars, and reject if the new texture looks jagged,
+loss of hard edges, or any new optical outlines. No release unless reviewed.
