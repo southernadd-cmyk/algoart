@@ -34,6 +34,23 @@ Artworks are deterministic: the **renderer version + seed + settings** identify 
 
 The golden ratio governs aspects of composition; not every stroke or tuning value is a mathematical identity. The tension between those rules and the hand-drawn appearance is part of the experiment.
 
+### φ-native Watercolour layouts and rendering efficiency (14 October 2026)
+
+New Watercolour V2S artwork defaults to the original Marker generator's φ
+scale and placement, consistent with SVG/plotter export. The optional
+**Fit to sheet** control can enlarge/recentre compact Field, Network or
+Scribble work, or inset edge-reaching Rects. It visibly changes watercolour
+placement, **not** SVG source geometry, and the control explains this.
+
+V2S share links now record `fit=0` (φ-native) or `fit=1` (fitted).
+Old V2S links without `fit` preserve the original auto-fitted rendition,
+and V2R links always use the frozen V2R renderer.
+
+The CPU paper-field rotation is memoized by seed, removing repeated trigonometric
+work per pixel. Browser tests compare cached and uncached results pixel-for-pixel
+at both fitting settings and report timings. This does not lower resolution,
+reduce simulation steps, or alter pigment physics.
+
 ### Source-colour matching: Watercolour V2S and Tissue & Graphite V7 (14 October 2026)
 
 The default Watercolour material is now **V2S**. It keeps V2R's conserved
