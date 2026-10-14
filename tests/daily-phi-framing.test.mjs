@@ -105,6 +105,8 @@ try{
     await page.goto(link.href,{waitUntil:'domcontentloaded',timeout:60000});
     await page.waitForFunction(seed=>document.getElementById('seed')?.value===seed,
       item.seed,{timeout:120000});
+    await page.waitForFunction(()=>new URL(location.href).searchParams.get('sheet')==='phi',
+      null,{timeout:120000});
     assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi',
       'Short editor link lost fit setting for '+item.material);
     const status=await page.evaluate(()=>({
@@ -120,6 +122,8 @@ try{
   await page.goto(host,{waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(seed=>document.getElementById('seed')?.value===seed,
     latestMarker.seed,{timeout:120000});
+  await page.waitForFunction(()=>new URL(location.href).searchParams.get('sheet')==='phi',
+    null,{timeout:120000});
   assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi',
     "Home editor must reproduce the same framed gallery cover");
   assert.equal(await page.locator('#phiSheetFit').isChecked(),true);
