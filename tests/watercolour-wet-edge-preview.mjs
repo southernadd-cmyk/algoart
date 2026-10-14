@@ -53,6 +53,7 @@ try{
         right=document.querySelector('#experimental');
       const original=A.oilMaterial;
       const paperFlow=A.lastWatercolourExperimentStats?.paperFlow;
+      const layeredDrying=A.lastWatercolourExperimentStats?.layeredDrying;
       const tissueBefore=left.toDataURL('image/png');
       const experimentalBefore=right.toDataURL('image/png');
       // A true post-experiment V6 replay must be pixel-identical,
@@ -64,14 +65,25 @@ try{
       // Repeat watercolour with the same original settings/seed to verify
       // paper absorption, fibre drift and blooms never depend on time.
       const wetReplay=document.createElement('canvas');
-      let repeatWet=false;
+      let repeatWet=false,legacyReplay=false,legacyDifferent=false;
       try{
         A.oilMaterial=A.watercolourMaterialExperiment;
         A.renderOil(wetReplay,window.__currentPreviewSettings,
           window.__currentPreviewScale,false,6);
         repeatWet=wetReplay.toDataURL('image/png')===experimentalBefore;
-      }finally{A.oilMaterial=original;}
-      const now={sameIdentity:typeof original==='function',
+        A.watercolourV2qOptions.layeredDrying=false;
+        const legacy=document.createElement('canvas');
+        A.renderOil(legacy,window.__currentPreviewSettings,
+          window.__currentPreviewScale,false,6);
+        const legacyBytes=legacy.toDataURL('image/png');
+        legacyDifferent=legacyBytes!==experimentalBefore;
+        const legacyCopy=document.createElement('canvas');
+        A.renderOil(legacyCopy,window.__currentPreviewSettings,
+          window.__currentPreviewScale,false,6);
+        legacyReplay=legacyCopy.toDataURL('image/png')===legacyBytes;
+      }finally{A.watercolourV2qOptions.layeredDrying=true;A.oilMaterial=original;}
+      const now={sameIdentity:typeof original==='function',layeredDrying,
+        legacyDifferent,legacyReplay,
         wetMaterialIndependent:original!==A.watercolourMaterialExperiment,
         restoredV6,repeatWet,paperFlow,
         washStates:A.lastWatercolourExperimentStats?.washStates,
@@ -102,6 +114,21 @@ try{
     assert.equal(result.wetMaterialIndependent,true);
     assert.equal(result.restoredV6,true,'Stable V6 replay must remain pixel-identical');
     assert.equal(result.repeatWet,true,'Paper/water diffusion must be deterministic');
+    assert.equal(result.layeredDrying,true);
+    assert.equal(result.legacyReplay,true,'V2P fallback must be deterministic');
+    assert.equal(result.legacyDifferent,true,'New drying stages must not match V2P output');
+    assert.equal(result.paperFlow.stageCount,3,'Expected three frozen wash stages');
+    assert.equal(result.paperFlow.frozenLayers,2);
+    assert.equal(result.paperFlow.wetOnly,true);
+    assert.equal(result.paperFlow.fixedPixelChanges,0,
+      'A pigment pixel outside the wet mask was moved');
+    assert(result.paperFlow.mobilePixels>0);
+    assert.equal(result.paperFlow.stages.map(s=>s.name).join(','),'broad,hero,details');
+    for(const step of result.paperFlow.stages){
+      assert.equal(step.transport.fixedPixelChanges,0);
+      assert.equal(step.transport.wetOnly,true);
+      assert(step.addedMass>=0);
+    }
     // V2e must not soften every edge: both dried and damp/wet marks exist.
     const states=result.washStates||{};
     assert(states.dry>0,'Expected hard dry edges');
