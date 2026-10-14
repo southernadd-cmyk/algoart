@@ -181,7 +181,7 @@ try {
   for (let index = 0; index < generationCount; index++) {
     // Existing landscape editions retain their exact JPEG, settings and version.
     // Portrait editions are already frozen in the release queue by portrait-live.
-    if(!watercolor&&orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
+    if(!watercolor&&!watercolour&&orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
       const archived=await archivedLandscapeStudy(day,index);
       if(archived){
         await fs.copyFile(archived.imagePath,path.join(outDir,archived.entry.imageFile));
