@@ -189,6 +189,10 @@ function strokeBody(pts,width,seed,load,profile){
   return {path:path,bounds:{minX:minX-width*.24,maxX:maxX+width*.24,
     minY:minY-width*.24,maxY:maxY+width*.24}};
 }
+function addPaintHeight(previous,ink,loaded){
+  return Math.min(4,previous+ink*loaded);
+}
+A.oilPaintV2Test={addPaintHeight:addPaintHeight};
 function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
   var pts=ch.pts;if(pts.length<2)return 0;
   var thickness=minmax(options.thickness??.86,0,1);
@@ -278,7 +282,7 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
       var ink=src[(subrow+xx)*4+3]/255;
       if(ink>.008){
         var at=row+xx;
-        field[at]=Math.min(4,field[at]+ink*bodyLoad);
+        field[at]=addPaintHeight(field[at],ink,bodyLoad);
       }
     }
   }
@@ -360,12 +364,14 @@ A.renderOilPaintV2=function(target,settings,scale,opts){
     settings.orientation+'|'+(opts.phiFraming?'phi':'plain'));
   ground(ctx,w,h,settings.seed,r);
   phase.planMs=+(performance.now()-start-phase.captureMs).toFixed(2);
-  var profiles={flat:0,filbert:0},dragMarks=0,painted=0;
+  var profiles={flat:0,filbert:0},dragMarks=0,painted=0,massArea=0;
   var paintStart=performance.now();
   for(var i=0;i<chains.length;i++){
     var result=paintOne(ctx,mask,chains[i],r,i,opts,field,sw,sh,scale,settings.mode);
     if(result){
       painted++;profiles[result.profile]++;dragMarks+=result.dragMarks;
+      if(chains[i].mass)
+        massArea+=chains[i].length*(chains[i].width*1.7+6)*1.35/(w*h);
     }
   }
   phase.paintMs=+(performance.now()-paintStart).toFixed(2);
@@ -380,7 +386,7 @@ A.renderOilPaintV2=function(target,settings,scale,opts){
     width:sw,height:sh,sourcePaths:rec.paths.length,
     eligiblePaths:chains.eligibleCount,paintedPaths:painted,
     droppedPaths:chains.droppedCount,massGroups:massGroups,
-    massAreaRatio:0,profiles:profiles,dragMarks:dragMarks,
+    massAreaRatio:+Math.min(.3,massArea).toFixed(4),profiles:profiles,dragMarks:dragMarks,
     sourceColours:[...new Set(chains.map(function(c){return css(c.rgb)}))].slice(0,32),
     height:shaded,phases:phase,sourceMeta:sourceMeta&&sourceMeta.strategy};
   return A.lastOilPaintV2Stats;
