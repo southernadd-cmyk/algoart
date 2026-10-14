@@ -37,7 +37,7 @@ try {
   });
   assert.deepEqual(d.accumulation,[.5,1,4.4],
     'Oil V3 height must add at overlaps with a safe maximum');
-  assert.equal(d.equal,true,'V2 images change between identical seed runs');
+  assert.equal(d.equal,true,'V3b images change between identical seed runs');
   assert.equal(d.fitUnchanged,true);
   assert.equal(d.recorderUnchanged,true);
   assert.deepEqual(d.dimensions,[476,340]);
@@ -51,6 +51,13 @@ try {
   assert(d.t1.height.heightBytes===476*340*4);
   assert(d.t1.height.heightAtCapFraction<.25,'V3 surface height still mostly saturated');
   assert(d.t1.height.heightPeak>0&&d.t1.height.heightPeak<=18);
+  assert.equal(d.t1.revision,'3b-bristle-tip');
+  assert(d.t1.bristleRuns>d.t1.paintedPaths,
+    'Each paint path must have multiple actual bristle deposits');
+  assert(d.t1.bristleContacts>d.t1.paintedPaths,
+    'Missing pressure-driven bristle contact');
+  assert(Number.isInteger(d.t1.pickupMarks)&&d.t1.pickupMarks>=0);
+
 
   assert(d.t1.phases.totalMs>0&&d.t1.phases.paintMs>0);
   assert(d.t1.sourceColours.length>0&&d.old.sourceColours.length>0);
