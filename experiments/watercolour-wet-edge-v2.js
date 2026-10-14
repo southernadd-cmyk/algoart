@@ -23,7 +23,8 @@ var C={
 var originalC=C;
 // Draft-only material controls, not a live editor setting. One rim and one
 // irregular capillary falloff, with no concentric cosmetic stroke passes.
-A.watercolourV2kOptions={edgeDarkening:.55,interiorMottle:.24,paleEdgePooling:.68};
+A.watercolourV2kOptions={edgeDarkening:.72,interiorMottle:.24,paleEdgePooling:.75,
+  edgeBandRadius:8};
 function coloursForInk(kit){
   if(kit.revision>=4){
     var seeded={};
@@ -209,6 +210,8 @@ function thinLineMicroBleed(ctx,pts,width,colour,opacity,r,wetness){
       if(r.chance(.19))side=-side;
       var t=(k+r.range(.18,.83))/count;
       var p=point(a,b,t),normal=angle(a,b)+PI/2;
+       // Avoid overlapping puddles where thin source paths meet.
+       if(Math.min(dist(p,a),dist(p,b))<Math.max(2.3,width*1.15))continue;
       var spill=clamp(.42+width*.047,.46,1.50)*wetness;
       var edge=shift(p,normal,side*(width*.48+spill*r.range(.45,1.25)));
       var grain=r.range(.38,.93)*wetness;
@@ -243,7 +246,7 @@ function paintThinWatercolourStroke(ctx,pts,width,colour,opacity,r,wetness){
   thinLineMicroBleed(ctx,pts,fine,colour,opacity,
     A.makeR('wick|'+r.range(0,1000000)+'|'+pts.length),wet);
   ctx.save();ctx.globalCompositeOperation='source-over';
-  ctx.strokeStyle=colour;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.strokeStyle=colour;ctx.lineCap='butt';ctx.lineJoin='round';
   var drew=false;
   for(var j=1;j<pts.length;j++){
     var a=pts[j-1],b=pts[j],len=dist(a,b);
@@ -261,7 +264,9 @@ function paintThinWatercolourStroke(ctx,pts,width,colour,opacity,r,wetness){
       var offset=drift*wet;
       p0=shift(p0,normal,offset);
       p1=shift(p1,normal,offset+r.range(-.09,.09)*wet);
-      ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);
+      // Every micro-section is a deposited stroke, not a rounded dab.
+       ctx.lineCap='butt';
+       ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);
       // A natural taper at either end replaces uniform-width vector ink.
       var along=(j+(k+.5)/pieces)/(pts.length-1);
       var taper=.56+.44*Math.pow(Math.max(0,Math.sin(PI*along)),.62);
@@ -832,39 +837,58 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     if(drops.some(function(d){return Math.hypot(cx-d.x,cy-d.y)<radius*2.7}))continue;
     drops.push({x:cx,y:cy,r:radius,phase:rand.range(0,Math.PI*2)});
   }
-  var edgeBankPixels=0,paleEdgeBankPixels=0;
+  // V2M: the V2L two-pixel derivative made a one-pixel seam. Find actual
+  // distance INSIDE the settled wash using a two-pass chamfer distance field.
+  // Only the final pigment image is modified: no stacked polygon outlines.
+  var bandRadius=clamp(A.watercolourV2kOptions.edgeBandRadius,3,12);
+  var distanceLimit=bandRadius+2,edgeDistance=new Float32Array(total);
+  for(var i=0;i<total;i++){
+    var o=i*3,mask=Math.max(source[o],source[o+1],source[o+2]);
+    edgeDistance[i]=mask>.022?distanceLimit:0;
+  }
+  for(y=0;y<h;y++)for(x=0;x<w;x++){
+    pi=y*w+x;if(!edgeDistance[pi])continue;
+    var near=edgeDistance[pi];
+    if(x>0)near=Math.min(near,edgeDistance[pi-1]+1);
+    if(y>0)near=Math.min(near,edgeDistance[pi-w]+1);
+    if(x>0&&y>0)near=Math.min(near,edgeDistance[pi-w-1]+1.414);
+    if(x+1<w&&y>0)near=Math.min(near,edgeDistance[pi-w+1]+1.414);
+    edgeDistance[pi]=near;
+  }
+  for(y=h-1;y>=0;y--)for(x=w-1;x>=0;x--){
+    pi=y*w+x;if(!edgeDistance[pi])continue;
+    var near=edgeDistance[pi];
+    if(x+1<w)near=Math.min(near,edgeDistance[pi+1]+1);
+    if(y+1<h)near=Math.min(near,edgeDistance[pi+w]+1);
+    if(x+1<w&&y+1<h)near=Math.min(near,edgeDistance[pi+w+1]+1.414);
+    if(x>0&&y+1<h)near=Math.min(near,edgeDistance[pi+w-1]+1.414);
+    edgeDistance[pi]=near;
+  }
+  var edgeBankPixels=0,paleEdgeBankPixels=0,bandPeak=0;
   for(y=0;y<h;y++)for(x=0;x<w;x++){
     pi=y*w+x;var p=pi*3,out=pi*4;
     var grit=(hashNoise(x,y,seedValue^0x4251)-.5);
-    // Loaded/dark washes granulate more strongly than faint tints; lighter
-    // washes remain smooth and unpainted paper stays exactly #f5f0e6.
     var concentration=clamp(Math.max(source[p],source[p+1],source[p+2])*3.8,0,1);
     var grainStrength=.18+.82*concentration;
     var scale=((tooth[pi]-.5)*.78+grit*.32)*grainStrength;
-    // Fibre-driven *low-frequency* uneven pigment concentration, strongest
-    // in darker earth glazes. The field is non-tiling and tied to the seed.
     var earth=clamp((source[p+2]-source[p])*3.3,0,1);
     var mottle=(formation[pi]-.5)*
       clamp(A.watercolourV2kOptions.interiorMottle,0,.6)*
       concentration*(.75+.7*earth);
     var settle=clamp(1+scale+mottle,.58,1.48);
-    // ONE pigment-loaded drying bank at the *inner* water boundary. Measure
-    // the downhill concentration gradient in paper space, rather than drawing
-    // the source polygon again. On thin pale washes this stays visible;
-    // noisy paper absorbency interrupts the rim to prevent a CAD contour.
     var loaded=Math.max(source[p],source[p+1],source[p+2]);
-    var lowest=loaded,step=2;
-    if(x>=step){var n=(pi-step)*3;lowest=Math.min(lowest,Math.max(source[n],source[n+1],source[n+2]));}
-    if(x+step<w){n=(pi+step)*3;lowest=Math.min(lowest,Math.max(source[n],source[n+1],source[n+2]));}
-    if(y>=step){n=(pi-step*w)*3;lowest=Math.min(lowest,Math.max(source[n],source[n+1],source[n+2]));}
-    if(y+step<h){n=(pi+step*w)*3;lowest=Math.min(lowest,Math.max(source[n],source[n+1],source[n+2]));}
-    var gradient=clamp((loaded-lowest)/(.018+loaded*.36),0,1);
-    var irregular=clamp(.45+.9*tooth[pi]+.28*(formation[pi]-.5),.38,1.35);
-    var pale=clamp((.16-loaded)/.16,0,1);
-    var bank=loaded>.013?gradient*irregular*
-      clamp(A.watercolourV2kOptions.edgeDarkening,0,1)*
-      (.085+.13*pale*clamp(A.watercolourV2kOptions.paleEdgePooling,0,1)):0;
-    if(bank>.008){edgeBankPixels++;if(pale>.35)paleEdgeBankPixels++;}
+    var pale=clamp((.17-loaded)/.17,0,1);
+    var depth=edgeDistance[pi]+(tooth[pi]-.5)*.6+(formation[pi]-.5)*.35;
+    var u=(depth-2.15)/(bandRadius*.39);
+    var edgeProfile=edgeDistance[pi]>0&&edgeDistance[pi]<bandRadius+1?
+      Math.exp(-u*u):0;
+    // More of the SAME pigment accumulates at a single drying bank; it
+    // remains strong on pale washes, and is never diluted by layer alpha.
+    var bank=edgeProfile*clamp(A.watercolourV2kOptions.edgeDarkening,0,1)*
+      (.17+.21*pale*clamp(A.watercolourV2kOptions.paleEdgePooling,0,1))*
+      clamp((loaded-.012)/.027,0,1);
+    if(bank>.024){edgeBankPixels++;if(pale>.35)paleEdgeBankPixels++;}
+    bandPeak=Math.max(bandPeak,bank);
     var bloom=1;
     for(var d=0;d<drops.length;d++){
       var drop=drops[d],dx=x-drop.x,dy=y-drop.y;
@@ -880,7 +904,8 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     for(c=0;c<3;c++){
       // A gentle upper bound on optical density stops dark overlapping
       // glazes collapsing into electronic near-black. Glazes still stack.
-      var amount=Math.min(.89,source[p+c]*settle*bloom+bank*(.55+.45*clamp(source[p+c]/Math.max(.02,loaded),0,1)));
+      var pigmentRatio=clamp(source[p+c]/Math.max(.008,loaded),.22,1);
+      var amount=Math.min(.89,source[p+c]*settle*bloom+bank*pigmentRatio);
       // Base cream stays nominally unchanged; its very subtle tooth
       // shading is continuous across blank and painted sheet, not a tile.
       var paperShade=(tooth[pi]-.5)*4.8+(paperGrain[pi]/255-.5)*2.4;
@@ -889,9 +914,10 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains){
     px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
-  return {paperModel:'V2L non-tiled tooth + capillary flow + single inner pigment bank',
+  return {paperModel:'V2M paper-space distance band + capillary flow; one rim after compositing',
     diffusionPasses:passes,waterBlooms:drops.length,edgeBankPixels:edgeBankPixels,
-    paleEdgeBankPixels:paleEdgeBankPixels};
+    paleEdgeBankPixels:paleEdgeBankPixels,edgeBandPeak:+bandPeak.toFixed(3),
+    edgeBandRadius:bandRadius};
 }
 function qualityForFlow(w,h){return w*h>1100000?3:5}
 // All changes here are an EXPERIMENTAL presentation-space adjustment.
@@ -995,10 +1021,11 @@ A.watercolourMaterialExperiment=function(ctx,w,h,chains,meta,seed,quality,kit){
       paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
       pigmentSpreadMax:Math.max.apply(null,kit.ink.map(function(v){return pigmentSpread(pigmentInk(v))})),
       compositionPresentation:presentation.stats,
-      effect:'V2L raster-only single drying bank including pale washes; no vector wash contours',
+      effect:'V2M wide pigmented drying bank after diffusion, un-beaded fine lines',
       edgeDarkening:A.watercolourV2kOptions.edgeDarkening,
       interiorMottle:A.watercolourV2kOptions.interiorMottle,
       paleEdgePooling:A.watercolourV2kOptions.paleEdgePooling,
+      edgeBandRadius:A.watercolourV2kOptions.edgeBandRadius,
       washStates:{dry:washStats.dry,damp:washStats.damp,wet:washStats.wet},
       widthCaps:{broad:127,hero:67},washWidths:{broadMax:washStats.broadWidthMax,
         heroMax:washStats.heroWidthMax},
