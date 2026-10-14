@@ -344,7 +344,7 @@ function ground(ctx,w,h,seed,r){
 function finish(pig,field,w,h,seed,options){
   var pixels=pig.getImageData(0,0,w,h),out=pixels.data,
       hs=A.hash(seed+'|oil-impasto-v3-height')>>>0,
-      relief=minmax(options.relief??.78,0,1),
+      relief=minmax(options.relief??.87,0,1),
       peak=0,active=0,dist=[];
   // One finishing pass. Height gradients use neighbours inside field.
   // Colour exposure/opacity are already resolved by source-over strokes.
@@ -353,12 +353,16 @@ function finish(pig,field,w,h,seed,options){
     if(ht<.035)continue;
     active++;if(ht>peak)peak=ht;
     if((x+y*13)%17===0)dist.push(ht);
-    var dx=(field[p+1]-field[p-1])*.5,
-        dy=(field[p+w]-field[p-w])*.5;
-    var tooth=(hash(x>>1,y>>1,hs)-.5)*(.30-.15*Math.min(ht,1));
-    var slope=-dx*.45-dy*.56;
-    var shade=minmax(1+slope*(.22+.26*relief)+.04*Math.min(ht,2)+tooth*.07,.70,1.32);
-    var shine=Math.pow(minmax(.50+slope*.8,0,1),6)*Math.min(ht,2.3)*(5+17*relief);
+    var mapped=opticalRelief(ht);
+    var dx=(opticalRelief(field[p+1])-opticalRelief(field[p-1]))*.5,
+        dy=(opticalRelief(field[p+w])-opticalRelief(field[p-w]))*.5;
+    var tooth=(hash(x>>1,y>>1,hs)-.5)*(.23-.08*Math.min(mapped,1.8));
+    var slope=-dx*.58-dy*.66;
+    // Krita-inspired separate lightness/height shading; don't change
+    // the material hue or apply whitening to the whole painted surface.
+    var shade=minmax(1+slope*(.31+.29*relief)+.016*mapped+tooth*.06,.66,1.31);
+    var shine=Math.pow(minmax(.47+slope*1.02,0,1),5)*
+      Math.min(mapped,2.5)*(8+19*relief);
     out[i]=minmax(Math.round(out[i]*shade+shine),0,255);
     out[i+1]=minmax(Math.round(out[i+1]*shade+shine*.86),0,255);
     out[i+2]=minmax(Math.round(out[i+2]*shade+shine*.72),0,255);
@@ -426,6 +430,8 @@ A.renderOilPaintV3=function(target,settings,scale,opts){
     eligiblePaths:chains.eligibleCount,paintedPaths:painted,
     droppedPaths:chains.droppedCount,massGroups:massGroups,
     massAreaRatio:+Math.min(.3,massArea).toFixed(4),profiles:profiles,dragMarks:dragMarks,
+    borrowedTechniques:['directional loaded bristle bundles','local pigment pickup',
+      'separate paint-height lightness map','non-saturating height response'],
     sourceColours:[...new Set(chains.map(function(c){return css(c.rgb)}))].slice(0,32),
     height:shaded,phases:phase,sourceMeta:sourceMeta&&sourceMeta.strategy};
   return A.lastOilPaintV3Stats;
