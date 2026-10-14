@@ -1,4 +1,4 @@
-// Eight fresh, genuinely random V2M studies — ONE from each V8 engine.
+// Eight fresh, genuinely random V2N studies — ONE from each V8 engine.
 // This is a screenshot/artwork sampler, not a production publishing path.
 // Each image and its full seed/settings are saved for deterministic reproduction.
 import { chromium } from 'playwright';
@@ -27,7 +27,7 @@ function randInt(low,high){return low+randomBytes(4).readUInt32BE(0)%(high-low+1
 const palettes=['golden','earth','warm','mono'];
 const scenarios=engines.map((engine,index)=>({
   ...engine,
-  seed:'WC-V2M-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
+  seed:'WC-V2N-'+engine.mode.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
   elements:randInt(18,42),
   density:randInt(43,73),
   complexity:randInt(43,81),
@@ -104,11 +104,14 @@ try{
     assert.equal(result.material.interiorMottle,.24);
     assert.equal(result.material.paleEdgePooling,.75);
     assert.equal(result.material.edgeBandRadius,8);
-    assert(result.material.paperFlow.edgeBankPixels>100);
-    assert(result.material.paperFlow.edgeBandPeak>.11,
-      'Pigment band is too weak: '+scenario.mode);
-    assert(result.material.paperFlow.edgeBankPixels>0,'Expected paper-space edge banks: '+scenario.mode);
+    assert(result.material.paperFlow.wetMaskPixels>0,'Wet mask absent: '+scenario.mode);
+    assert(result.material.paperFlow.transferPixels>0,'No interior pigment transfer: '+scenario.mode);
+    assert(result.material.paperFlow.donorPixels>0,'No source pigment depletion: '+scenario.mode);
+    assert(result.material.paperFlow.edgeBankPixels>0,'No receiving drying rim: '+scenario.mode);
+    assert(result.material.paperFlow.edgeBandPeak>.001,'Transferred pigment imperceptible: '+scenario.mode);
     assert(result.material.paperFlow.paleEdgeBankPixels>=0);
+    assert(result.material.paperFlow.conservationError<.00002,'Pigment not conserved: '+scenario.mode);
+    assert.deepEqual(result.material.paperFlow.variableBandRange,[3,10]);
     assert(result.material.compositionPresentation.factor>0);
     if(result.material.compositionPresentation.kind==='compact-source-reframe')
       assert(result.material.compositionPresentation.after.width>=result.material.compositionPresentation.before.width*1.15);
@@ -135,12 +138,12 @@ try{
   assert.equal(new Set(manifest.map(x=>x.seed)).size,8);
   assert.equal(errors.length,0,'Browser errors: '+errors.join('; '));
   await writeFile(output+'/manifest.json',JSON.stringify({
-    description:'8 unique random studies in experimental Watercolour V2M',
-    material:'watercolour-v2m-paper-diffusion',rendererVersion:8,
+    description:'8 unique random studies in experimental Watercolour V2N',
+    material:'watercolour-v2n-paper-diffusion',rendererVersion:8,
     revision:'experimental branch only; no production changes',
     samples:manifest
   },null,2));
-  console.log('PASS: 8 new independent, reproducible V2M watercolour PNGs');
+  console.log('PASS: 8 new independent, reproducible V2N watercolour PNGs');
 // Fixed V2i seeds from the user's visual review. These are NOT the random
 // gallery; they are four extra regression images proving the compact-cluster
 // and edge-clipped-frame conditions have been addressed on exact inputs.
