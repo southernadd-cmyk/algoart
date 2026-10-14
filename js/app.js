@@ -1095,7 +1095,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     e.addEventListener('blur',finishDragPreview);
   }
   e.addEventListener('change',function(){
-    if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id.indexOf('plotter')===0)return;
+    if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id==='watercolourFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
     if(e.id==='materialStyle'&&watercolourEnabled()){
