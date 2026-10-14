@@ -33,9 +33,14 @@ function plan(paths,w,h){
   var current=Math.max(bw/w,bh/h);
   if(!Number.isFinite(current)||current<1e-8)return {kind:'empty',
     scale:1,tx:0,ty:0,targetCover:INV,beforeCover:current,afterCover:current};
-  // 1/φ content occupancy gives 1/φ² remaining for surrounding space.
-  // Uniform scaling preserves all local φ ratios, angles and stroke hierarchy.
-  var scale=clamp(INV/current,INV,PHI);
+  // Asymmetric φ framing. Increase sparse content towards 1/φ coverage,
+  // but DO NOT force established, page-filling art back down to 1/φ.
+  // Above the high-water mark 1-1/φ^4 (~85.4%), shrink only enough to
+  // approach that margin, with at most a 1/φ^4 (~14.6%) reduction.
+  // A comfortable midrange composition keeps its original size.
+  var upper=1-Math.pow(INV,4);
+  var scale=current<INV?Math.min(PHI,INV/current):
+    current>upper?Math.max(upper,upper/current):1;
   if(Math.abs(scale-1)<.012)scale=1;
   var cx=(b.minX+b.maxX)*.5,cy=(b.minY+b.maxY)*.5;
   // Φ focal landmarks, not a forced centre. Move 1/φ² of the distance
@@ -47,8 +52,13 @@ function plan(paths,w,h){
     var d=(tx-cx)*(tx-cx)+(ty-cy)*(ty-cy);
     if(d<dist){dist=d;nearest={x:tx,y:ty}}
   }
-  var desiredX=cx*INV+nearest.x*INV2;
-  var desiredY=cy*INV+nearest.y*INV2;
+  // Content already comfortably composed is only nudged by φ^-4.
+  // Sparse marks can move φ^-3 toward the closest golden focal landmark.
+  // Unlike hard recentring, this preserves most of the generator's original
+  // spatial decisions, especially where the canvas is already well used.
+  var pull=current<INV?Math.pow(INV,3):Math.pow(INV,4);
+  var desiredX=cx*(1-pull)+nearest.x*pull;
+  var desiredY=cy*(1-pull)+nearest.y*pull;
   // Keep a modest φ²-derived safety rim where it is physically possible.
   var safety=Math.min(w,h)*INV2*.1;
   var minX=safety+bw*scale*.5,maxX=w-safety-bw*scale*.5;
@@ -57,7 +67,8 @@ function plan(paths,w,h){
   var newCy=minY<=maxY?clamp(desiredY,minY,maxY):h*.5;
   var dx=newCx-cx*scale,dy=newCy-cy*scale;
   return {kind:'phi-sheet',scale:scale,tx:dx,ty:dy,
-    targetCover:INV,beforeCover:current,afterCover:current*scale,
+    targetCover:INV,upperCover:upper,beforeCover:current,
+    afterCover:current*scale,adjustment:scale>1?'expand':scale<1?'gentle-reduce':'reposition-only',
     anchor:nearest,originalCentroid:{x:cx,y:cy},
     fittedCentroid:{x:newCx,y:newCy},bounds:b};
 }
