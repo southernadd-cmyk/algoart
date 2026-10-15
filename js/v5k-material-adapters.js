@@ -36,8 +36,8 @@ function physicalEdgePath(area,material){
   const poly=area.contour||[],out=new Path2D();
   if(poly.length<3)return massContour(area);
   const r=rng(area.seed+'|v5k|physical-edge|'+material),
-      step=material==='tissue'?6.5:9.5,
-      edgeDepth=material==='tissue'?3.1:5.7,
+      step=material==='tissue'?6.0:8.0,
+      edgeDepth=material==='tissue'?7.1:13.3,
       center={x:area.x,y:area.y};
   for(let i=0;i<poly.length;i++){
     const a=poly[i],b=poly[(i+1)%poly.length],
