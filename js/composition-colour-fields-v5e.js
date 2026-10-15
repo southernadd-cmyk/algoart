@@ -79,6 +79,32 @@ function broadContour(sourcePoints,margin,seed,plan){
     return [];
   return outline;
 }
+
+function localPalette(source,centre,sourcePoints,first,reach){
+  var chains=source.chains||A.compositionV5Test.extract(source.paths||[]),
+      hits=[];
+  for(var i=0;i<chains.length;i++){
+    var c=chains[i],minimum=Infinity,stride=Math.max(1,Math.floor(c.pts.length/24));
+    for(var j=0;j<c.pts.length;j+=stride){
+      var p=c.pts[j];for(var k=0;k<sourcePoints.length;k++){
+        minimum=Math.min(minimum,d(p,sourcePoints[k]));
+      }
+    }
+    if(minimum<=reach)hits.push({distance:minimum,rgb:c.rgb,index:c.sourceIndex,
+      weight:Math.sqrt(c.length)});
+  }
+  hits.sort(function(a,b){return a.distance-b.distance||
+    b.weight-a.weight||a.index-b.index});
+  var palette=[first];
+  for(var i=0;i<hits.length&&palette.length<4;i++){
+    var rgb=hits[i].rgb;
+    if(palette.some(function(a){return Math.hypot(a[0]-rgb[0],
+      a[1]-rgb[1],a[2]-rgb[2])<55}))continue;
+    palette.push(rgb);
+  }
+  return palette;
+}
+
 function makeField(plan,src,guideId,points,margin,mode,groupIndex){
   var contour=broadContour(points,margin,hash(plan.seed+'|'+guideId),plan);
   if(contour.length<6)return null;
@@ -86,7 +112,8 @@ function makeField(plan,src,guideId,points,margin,mode,groupIndex){
     Math.max(margin*1.4,90));
   if(!colour||!colour.sources.length)return null;
   var box=bounds(contour),cx=box.x+box.w/2,cy=box.y+box.h/2,
-      surface=Math.round(box.w*box.h);
+      surface=Math.round(box.w*box.h),
+      colours=localPalette(src,{x:cx,y:cy},points,colour.rgb,margin*1.8);
   if(surface<9000)return null;
   return {id:'F'+plan.colourFields.length,kind:'source-colour-field',
     role:'painted',guideId:guideId,guideIndex:groupIndex,
@@ -94,7 +121,8 @@ function makeField(plan,src,guideId,points,margin,mode,groupIndex){
     width:+box.w.toFixed(2),height:+box.h.toFixed(2),
     box:box,area:surface,contour:contour,sourcePoints:points.length,
     sources:colour.sources.slice(),sourceIndices:colour.sources.slice(),
-    rgb:colour.rgb,seed:hash(plan.seed+'|v5e-field|'+guideId),
+    rgb:colour.rgb,palette:colours,
+    seed:hash(plan.seed+'|v5e-field|'+guideId),
     fillFraction:.83};
 }
 function organicGroups(guide,plan){
