@@ -126,16 +126,28 @@ function makeField(plan,src,guideId,points,margin,mode,groupIndex){
     fillFraction:.83};
 }
 function organicGroups(guide,plan){
-  var groups=new Map();
-  for(var i=0;i<(guide.segments||[]).length;i++){
-    var seg=guide.segments[i];if(seg.depth>3)continue;
-    var key=seg.branch;
-    if(!groups.has(key))groups.set(key,[]);
-    groups.get(key).push({x:seg.x1,y:seg.y1});
-    groups.get(key).push({x:seg.x2,y:seg.y2});
+  var groups=new Map(),segs=guide.segments||[];
+  for(var i=0;i<segs.length;i++){
+    var seg=segs[i];if(seg.depth>4)continue;
+    var key=seg.branch,entry=groups.get(key)||{root:[],crown:[]};
+    if(seg.depth<=1){
+      entry.root.push({x:seg.x1,y:seg.y1},{x:seg.x2,y:seg.y2});
+    }
+    if(seg.depth>=1){
+      entry.crown.push({x:seg.x1,y:seg.y1},{x:seg.x2,y:seg.y2});
+    }
+    groups.set(key,entry);
   }
-  return [...groups].map(function(v){return{id:'growth-branch-'+v[0],
-    points:v[1],padding:75+Math.min(30,v[1].length*.70)}});
+  // More than one source-derived colour field per growth hierarchy:
+  // split basal branches and canopy instead of a huge uniform shape.
+  var out=[];
+  for(const [branch,data] of groups){
+    if(data.crown.length>=4)out.push({
+      id:'growth-'+branch+'-canopy',points:data.crown,padding:70});
+    if(data.root.length>=4)out.push({
+      id:'growth-'+branch+'-base',points:data.root,padding:75});
+  }
+  return out;
 }
 function trajectoryGroups(guide){
   var groups=new Map(),raw=guide.points||[];
@@ -163,18 +175,26 @@ function constructedGroups(guide){
   var items=(guide.items||[]).filter(function(i){return i&&
       Number.isFinite(i.x)&&Number.isFinite(i.y)&&i.size>=25}),
       heroes=items.filter(function(i){return i.tier==='hero'})
-        .sort(function(a,b){return b.size-a.size});
-  if(!heroes.length)heroes=items.slice().sort(function(a,b){
-    return b.size-a.size}).slice(0,2);
-  return heroes.slice(0,3).map(function(hero,index){
+        .sort(function(a,b){return b.size-a.size}),
+      chosen=heroes.slice(0,2);
+  if(!chosen.length)chosen=items.slice().sort(function(a,b){
+    return b.size-a.size}).slice(0,1);
+  // One hero does not imply only one colour field: nearby major supporting
+  // objects can have their own physically painted areas.
+  var extras=items.filter(function(v){return !chosen.includes(v)})
+    .sort(function(a,b){return b.size-a.size});
+  for(var k=0;k<extras.length&&chosen.length<4;k++){
+    var candidate=extras[k],separated=chosen.every(function(h){
+      return d(h,candidate)>Math.max(74,Math.min(h.size,candidate.size)*.55)});
+    if(separated)chosen.push(candidate);
+  }
+  return chosen.map(function(anchor,index){
     var satellites=items.filter(function(v){
-      return v!==hero&&d(v,hero)<Math.max(180,hero.size*1.18)})
-      .sort(function(a,b){return d(a,hero)-d(b,hero)}).slice(0,6);
-    var points=[hero].concat(satellites).map(function(i){return{x:i.x,y:i.y}});
-    // Use actual field of influence around the source's prominent form,
-    // rather than linearly tracing the perimeters of its marks.
-    return{id:'constructed-hero-'+index,
-      points:points,padding:clamp(hero.size*.45,72,125)};
+      return v!==anchor&&d(v,anchor)<Math.max(110,anchor.size*.84)})
+      .sort(function(a,b){return d(a,anchor)-d(b,anchor)}).slice(0,3);
+    var points=[anchor].concat(satellites).map(function(i){return{x:i.x,y:i.y}});
+    return{id:'constructed-field-'+index,points:points,
+      padding:clamp(anchor.size*.40,65,107)};
   });
 }
 function interpret(source,settings,opts){
@@ -197,7 +217,7 @@ function interpret(source,settings,opts){
     // Focal fields can overlap slightly like true painted colour, but
     // prevent redundant identical-sized fields swallowing all negative space.
     var near=plan.colourFields.some(function(old){
-      return d(old,candidate)<Math.min(old.width,old.height)*.39});
+      return d(old,candidate)<Math.min(old.width,old.height)*.19});
     if(!near)plan.colourFields.push(candidate);
   }
   plan.fieldStats={type:type||'unknown',count:plan.colourFields.length,
