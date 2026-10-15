@@ -48,12 +48,13 @@ function broadContour(sourcePoints,margin,seed,plan){
   var points=sourcePoints.filter(function(p){return Number.isFinite(p.x)&&
     Number.isFinite(p.y)&&p.x>=0&&p.y>=0&&
     p.x<=plan.width&&p.y<=plan.height});
-  if(points.length<2)return [];
+  if(!points.length)return [];
   var raw=hull(points),bb=bounds(points),cx=bb.x+bb.w*.5,cy=bb.y+bb.h*.5,
       random=A.makeR(String(seed)),outline=[];
   if(raw.length<3||bb.w<20||bb.h<20){
-    var angle=Math.atan2(points[points.length-1].y-points[0].y,
-      points[points.length-1].x-points[0].x),
+    var angle=points.length===1?(seed%29)*Math.PI/29:
+      Math.atan2(points[points.length-1].y-points[0].y,
+        points[points.length-1].x-points[0].x),
         rx=Math.max(70,Math.hypot(bb.w,bb.h)*.52+margin*.55),
         ry=Math.max(54,Math.min(90,margin*.9));
     for(var k=0;k<20;k++){
