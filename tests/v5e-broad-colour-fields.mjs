@@ -312,3 +312,6 @@ await import('./v5h-semantic-guide-fields.mjs');
 
 // V5i checks observed area exposure from recorded source guides; no release.
 await import('./v5i-visible-source-fields.mjs');
+
+// V5j never changes source geometry; compare complete Oil/Tissue physical images.
+await import('./v5j-material-legibility.mjs');
