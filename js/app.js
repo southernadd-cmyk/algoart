@@ -1130,23 +1130,81 @@ $('copyLink').onclick=copyShareLink;
  function showSocialStatus(message){
    $('socialShareStatus').textContent=message;
  }
+ function previewJPEG(){
+   // Exact currently visible painting, including selected paper colour,
+   // material, seed and canvas framing. No re-render or seed changes.
+   var src=$('art'),c=document.createElement('canvas');
+   c.width=1200;c.height=630;
+   var ctx=c.getContext('2d');
+   ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,c.width,c.height);
+   var scale=Math.min(c.width/src.width,c.height/src.height);
+   ctx.drawImage(src,(c.width-src.width*scale)/2,
+     (c.height-src.height*scale)/2,
+     src.width*scale,src.height*scale);
+   var encoded=c.toDataURL('image/jpeg',.78).split(',')[1];
+   // Avoid accidentally exhausting the free hosting server.
+   if(encoded.length>380000)encoded=c.toDataURL('image/jpeg',.58).split(',')[1];
+   return encoded;
+ }
+ function preloadSocialImage(intents){
+   var token=new URL(intents.artworkURL).searchParams.get('c');
+   if(!token)throw Error('This artwork cannot be shared with an image preview');
+   return fetch('https://algoart-composition-plugin.onrender.com/share/preload?c='+
+     encodeURIComponent(token),{
+       method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({jpeg:previewJPEG()})
+     }).then(function(response){
+       if(!response.ok)throw Error('Preview service returned '+response.status);
+       return response.json();
+     }).then(function(result){
+       if(!result.ok)throw Error('Artwork preview not ready');
+       return result;
+     });
+ }
+ var socialSharePending=false;
  function sharePostLink(event,service){
-   // Set the URL during the originating click so native anchor navigation
-   // opens a real composer as a user gesture (no popup blockers).
+   event.preventDefault();
+   if(socialSharePending)return;
    var intents=currentSocialIntents();
    if(service==='bluesky'&&[...intents.caption].length>300){
-     event.preventDefault();
-     showSocialStatus('This artwork link is too long for Bluesky. Use Copy Artwork Link instead.');
+     showSocialStatus('The artwork link is too long for Bluesky. Use Copy Artwork Link instead.');
      return;
    }
-   event.currentTarget.href=intents[service];
-   showSocialStatus(service==='threads'?
-     'Opening a Threads draft with this artwork\'s preview. Nothing is posted automatically.':
-     'Opening a Bluesky draft with this artwork\'s preview. Nothing is posted automatically.');
+   var newTab=window.open('about:blank','_blank');
+   if(newTab){
+     newTab.opener=null;
+     try{
+       newTab.document.title='Preparing ALGO/ART artwork';
+       newTab.document.body.textContent='Preparing the artwork image for '+service+'…';
+     }catch(e){}
+   }
+   socialSharePending=true;
+   var btn=event.currentTarget;
+   btn.setAttribute('aria-busy','true');
+   showSocialStatus('Preparing your actual artwork image for '+service+'…');
+   // Do not navigate to the social composer until the image is already
+   // available to its crawler. Previously fresh Render renders took
+   // 14–90 seconds; platforms gave up with "image not found".
+   preloadSocialImage(intents).then(function(){
+     showSocialStatus('Artwork preview prepared. Opening the '+service+' draft; nothing posted automatically.');
+     return intents[service];
+   }).catch(function(error){
+     console.warn('ALGO/ART share image preload:',error);
+     showSocialStatus('Artwork preview unavailable. Opening a draft with the direct artwork link instead; you can attach a PNG from Export.');
+     var caption='ALGO/ART '+intents.artworkURL;
+     return service==='threads'?
+       'https://www.threads.com/intent/post?text='+encodeURIComponent(caption):
+       'https://bsky.app/intent/compose?text='+encodeURIComponent(caption);
+   }).then(function(target){
+     if(newTab&&!newTab.closed)newTab.location.replace(target);
+     else window.location.assign(target);
+   }).finally(function(){
+     socialSharePending=false;
+     btn.removeAttribute('aria-busy');
+   });
  }
  $('shareThreads').addEventListener('click',function(event){sharePostLink(event,'threads')});
  $('shareBluesky').addEventListener('click',function(event){sharePostLink(event,'bluesky')});
-
 
 
 var plotterPreviewURL=null;
