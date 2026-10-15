@@ -459,6 +459,17 @@ A.renderInterpretedV5G=function(target,settings,scale,opts){
   if(interpretation==='faithful')return {
     version:'v5g-prototype',interpretation:interpretation,material:material,
     sourceSeed:settings.seed,plan:null,baseline:sourceMeta};
+  if(material==='tissue'){
+    // V7's faithful renderer may leave an inherited clip or transform on
+    // the target 2D context. Never paint the new fields through that state:
+    // preserve the exact pixels, reset the presentation context, then
+    // draw connected paper areas over the whole physical sheet.
+    var faithfulCopy=document.createElement('canvas');
+    faithfulCopy.width=target.width;faithfulCopy.height=target.height;
+    faithfulCopy.getContext('2d').drawImage(target,0,0);
+    target.width=target.width; // resets clip, transform and composite state
+    target.getContext('2d').drawImage(faithfulCopy,0,0);
+  }
   if(!A.planCompositionV5)throw Error('Shared V5 planner not loaded');
   var plan=A.planCompositionV5(settings,{phiFraming:opts.phiFraming===true,
     maxRegions:opts.maxRegions||28});
