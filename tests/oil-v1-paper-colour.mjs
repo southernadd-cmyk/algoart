@@ -56,6 +56,7 @@ try{
  assert.deepEqual(result.cream.dims,[220,308]);
 
  const original=await page.locator('#art').evaluate(c=>c.toDataURL());
+ await page.locator('#tab-colour').click(); // Paper control lives in the Colour tab.
  await page.locator('#paper').fill('#79bfe3');
  await page.waitForFunction(()=>
    new URLSearchParams(location.search).get('paper')==='#79bfe3');
