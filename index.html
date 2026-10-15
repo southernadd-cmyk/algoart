@@ -38,7 +38,7 @@
         <div class="intro-principles">
           <div><b>01</b><strong>φ PROPOSES THE COMPOSITION.</strong><span>1.618 proportions, 61.8 / 38.2 divisions and the 137.5° golden angle shape position, scale, spacing and movement.</span></div>
           <div><b>02</b><strong>THE ALGORITHM CREATES THE STRUCTURE.</strong><span>Every artwork is deterministic. The same seed and settings always rebuild the same image.</span></div>
-          <div><b>03</b><strong>THE MATERIALS BRING THE HUMAN TEXTURE.</strong><span>Choose imperfect marker ink, translucent torn tissue and graphite, or layered watercolour washes. Wobble, layering and uneven marks give mathematical structures a hand-drawn character.</span></div>
+          <div><b>03</b><strong>THE MATERIALS BRING THE HUMAN TEXTURE.</strong><span>Choose imperfect marker ink, translucent torn tissue and graphite, layered watercolour washes, or source-connected oil paint. Wobble, layering and uneven marks give mathematical structures a hand-drawn character.</span></div>
         </div>
         <div class="intro-systems" aria-label="Eight systems"><span>ARRANGE</span><span>SPIRAL</span><span>DIVIDE</span><span>RADIATE</span><span>CONNECT</span><span>GROW</span><span>CONSTRUCT</span><span>SCRIBBLE</span></div>
         <div class="intro-actions"><button id="introEnter" class="intro-enter" type="button">ENTER ALGO/ART →</button><button id="introReveal" type="button">ENTER + REVEAL φ</button></div>
@@ -89,7 +89,7 @@
         <button class="ethos-close" id="ethosClose" type="button" aria-label="Dismiss">×</button>
         <span class="ethos-kicker">WHY ALGO/ART?</span>
         <strong>MATHEMATICS SETS THE RULES.<br>MATERIALS GIVE THEM TEXTURE.</strong>
-        <p>φ shapes the composition, scale and spacing. Marker ink adds wobble and uneven strokes, tissue and graphite add translucent layers, and watercolour adds flowing pigments with dry-brush details.</p>
+        <p>φ shapes the composition, scale and spacing. Marker ink adds wobble and uneven strokes, tissue and graphite add translucent layers, watercolour adds flowing pigments, and oil paint uses real loaded-bristle contacts across connected forms.</p>
         <button class="ethos-reveal" id="ethosReveal" type="button">REVEAL THE SYSTEM →</button>
       </aside>
 
@@ -194,7 +194,7 @@
         <section class="tab-panel active" data-panel="composition" id="panel-composition" role="tabpanel" aria-labelledby="tab-composition">
           <div class="section-title"><span>COMPOSITION</span></div>
           <div class="controls">
-            <div class="control material-render-control"><label for="materialStyle">MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p>
+            <div class="control material-render-control"><label for="materialStyle">MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p>
 <label class="mini-note"><input id="phiSheetFit" type="checkbox"> φ framing (all materials · enlarge sparse work, gently contain full compositions)</label>
 <p class="mini-note" id="phiSheetInfo" role="status" aria-live="polite">Off · original φ composition and sheet placement.</p>
 <label class="mini-note" id="watercolourFitControl" hidden><input id="watercolourFit" type="checkbox"> Legacy Watercolour-only fit (older V2S links)</label></div>
@@ -323,10 +323,14 @@
 <script src="js/oil-render.js?v=20261014-phi-sheet"></script>
 <script src="js/watercolour-v2r.js?v=20261014-phi-sheet"></script>
 <script src="js/watercolour-v2s.js?v=20261014-phi-sheet"></script>
-<script src="js/export.js?v=20261014-phi-sheet"></script>
+<script src="js/oil-v1-core-a.js?v=20261015-oil-v1"></script>
+<script src="js/oil-v1-core-b.js?v=20261015-oil-v1"></script>
+<script src="js/oil-v1-core-c.js?v=20261015-oil-v1"></script>
+<script src="js/oil-paint-v1.js?v=20261015-oil-v1"></script>
+<script src="js/export.js?v=20261015-oil-v1"></script>
 <script src="js/plotter.js?v=20261014-phi-sheet"></script>
-<script src="js/describe.js?v=20261014-phi-sheet"></script>
-<script src="js/control-help.js?v=20261014-phi-sheet"></script>
-<script src="js/app.js?v=20261014-phi-sheet"></script>
+<script src="js/describe.js?v=20261015-oil-v1"></script>
+<script src="js/control-help.js?v=20261015-oil-v1"></script>
+<script src="js/app.js?v=20261015-oil-v1"></script>
 </body>
 </html>
