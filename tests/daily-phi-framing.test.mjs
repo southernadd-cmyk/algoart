@@ -8,7 +8,7 @@ import {chromium} from 'playwright';
 import {dailyPhiFramingForDate,appendDailyPhiFraming} from '../automation/phi-framing.mjs';
 
 const repo=process.cwd();
-const date='2026-10-15';
+const date='2026-10-16'; // Test the first clean future day, never overwrite an already published archive.
 const host=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 assert.equal(dailyPhiFramingForDate('2026-10-14'),false);
 assert.equal(dailyPhiFramingForDate(date),true);
@@ -19,8 +19,8 @@ assert.equal(new URLSearchParams(appendDailyPhiFraming('v=8&seed=A',date)).get('
 // Previously saved studies are not rewritten or silently attributed the
 // newly introduced shared framing option.
 const oldGallery=JSON.parse(await fs.readFile('gallery/2026-10-14/meta.json','utf8'));
-const alreadyToday=JSON.parse(await fs.readFile('gallery/'+date+'/meta.json','utf8'));
-const existingIds=new Set(alreadyToday.entries.map(e=>e.id));
+const existingIds=new Set(); // The 16 October gallery does not yet exist in the repository.
+const published15=await fs.readFile('gallery/2026-10-15/meta.json','utf8');
 const oldJson=JSON.stringify(oldGallery);
 assert(oldGallery.entries.every(e=>!new URL(e.shareUrl).searchParams.has('sheet')),
   'Already published historical artwork must not change fit');
@@ -100,6 +100,8 @@ gallery=JSON.parse(await fs.readFile(path.join('gallery',date,'meta.json'),'utf8
 assert.equal(gallery.entries.length,existingIds.size+8,'Rebuilding same daily queue must not duplicate studies');
 assert.equal(JSON.stringify(JSON.parse(await fs.readFile('gallery/2026-10-14/meta.json','utf8'))),
   oldJson,'Historical gallery JSON must remain unchanged');
+assert.equal(await fs.readFile('gallery/2026-10-15/meta.json','utf8'),published15,
+  'Previously published 15 October gallery must remain unchanged');
 const browser=await chromium.launch({headless:true});
 try{
   const page=await browser.newPage({viewport:{width:1250,height:880}});
@@ -134,4 +136,4 @@ try{
   assert.equal(await page.locator('#phiSheetFit').isChecked(),true);
   assert.deepEqual(errors,[]);
 }finally{await browser.close()}
-console.log('PASS: 15 October 8 Marker/Tissue/Watercolour portrait/landscape artworks, shared phi source transform, exact editor links, stable gallery and historical cutoff.');
+console.log('PASS: 16 October 8 Marker/Tissue/Watercolour portrait/landscape artworks, shared phi source transform, exact editor links, stable gallery and historical cutoff.');
