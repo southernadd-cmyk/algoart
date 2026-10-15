@@ -174,6 +174,7 @@ function interpret(source,settings,opts){
   plan.interpretation='source-guide-connected-areas';
   return plan;
 }
+A.compositionV5gFromSource=A.planCompositionV5FromSource;
 A.planCompositionV5FromSource=interpret;
 A.planCompositionV5=function(settings,opts){
   return interpret(A.captureCompositionV5(settings,opts),settings,opts);
