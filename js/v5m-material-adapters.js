@@ -470,8 +470,10 @@ function tissueColourField(ctx,area,plan){
     }
     // Short discontinuous pressed-paper wrinkles parallel to original
     // branch/trajectory directions. No full-length dark graphite outlines.
-    if(axis.length>1){
-      for(let i=0;i<12;i++){
+    // Placed Constructed Forms supply a real guide orientation even when
+    // they have no polyline axis. Use that physical direction as well.
+    if(axis.length>1||Number.isFinite(guide.angle)){
+      for(let i=0;i<(axis.length>1?12:6);i++){
         const t=r.range(.06,.94),p=sampleAxis(axis,t,origin,fallback),
           direction=p.angle+r.range(-.23,.23),
           off=r.range(-24,24),normal=direction+PI/2,
