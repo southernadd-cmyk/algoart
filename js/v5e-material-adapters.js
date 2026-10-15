@@ -121,33 +121,35 @@ function oilGuideTerritory(ctx,mask,cell,painter){
 
 
 function oilColourField(ctx,mask,field,painter){
-  var poly=massContour(field),r=rng(field.seed+'|oil-field'),
-      box=field.box,colour=field.rgb,
-      // Broad strokes across the FIELD (2D area), not along its original
-      // path. Source lines remain details on top of the colour blocking.
-      stripes=clamp(Math.round(box.h/45),4,14),painted=0;
+  var shape=massContour(field),r=rng(field.seed+'|oil-colour-field-v2'),
+      box=field.box,colour=field.rgb,palette=field.palette||[colour],
+      // Real 2D pigment fields receive overlapping dabs in more than one
+      // direction. Their coverage is no longer a neat comb of line strokes.
+      count=clamp(Math.round(box.w*box.h/17500),7,22),painted=0;
   ctx.save();mask.save();
-  ctx.clip(poly);mask.clip(poly);
-  ctx.globalAlpha=.78;
-  ctx.fillStyle=hex(blend(colour,[245,229,208],.095));
-  ctx.fill(poly);
-  mask.globalAlpha=.34;mask.fillStyle='#fff';mask.fill(poly);
+  ctx.clip(shape);mask.clip(shape);
+  // Keep this first layer translucent: subsequent loaded-bristle deposits
+  // build the opacity and preserve multiple original pigment families.
+  ctx.globalAlpha=.48;ctx.fillStyle=hex(blend(colour,[245,230,209],.11));
+  ctx.fill(shape);
+  mask.globalAlpha=.21;mask.fillStyle='#fff';mask.fill(shape);
   ctx.globalAlpha=1;mask.globalAlpha=1;
-  for(var i=0;i<stripes;i++){
-    var y=box.y+(i+.45)*box.h/stripes,
-        sway=r.range(-.035,.035)*box.h,
-        x1=box.x-22,x2=box.x+box.w+22,
-        inverse=i%2===1,centre={x:(x1+x2)*.5,y:y+sway},
-        pts=[
-          {x:inverse?x2:x1,y:y+sway},
-          centre,
-          {x:inverse?x1:x2,y:y+sway+r.range(-11,11)}
-        ],width=clamp(box.h/stripes*1.23,35,95),
-        mix=blend(colour,i%4===0?[247,234,209]:[76,57,47],
-          i%4===0?.085:.034);
-    painter(ctx,mask,pts,width*r.range(.87,1.22),mix,
-      i%4===0?'flat':'filbert',r,
-      {thickness:.94,drag:.42,bristles:.92});
+  for(var i=0;i<count;i++){
+    var t=(i+.35)/count,px=box.x+box.w*(.16+.70*r.range(0,1)),
+        py=box.y+box.h*(.12+.74*t),
+        angle=r.range(-.70,.70)+(i%3===0?-.15:.15),
+        length=clamp(box.w*r.range(.34,.76),95,330),
+        width=clamp(box.h*r.range(.09,.22),40,130),
+        hue=palette[i%palette.length],
+        pigment=blend(hue,i%4===0?[247,234,213]:[58,45,36],
+          i%4===0?.065:.025),
+        dx=Math.cos(angle)*length*.5,dy=Math.sin(angle)*length*.5,
+        pts=[{x:px-dx,y:py-dy},
+          {x:px+r.range(-14,14),y:py+r.range(-11,11)},
+          {x:px+dx,y:py+dy}];
+    painter(ctx,mask,pts,width,pigment,
+      i%5===0?'flat':'filbert',r,
+      {thickness:.95,drag:.52,bristles:.93});
     painted++;
   }
   ctx.restore();mask.restore();
@@ -320,17 +322,17 @@ function tissueGuideTerritory(ctx,cell){
 
 
 function tissueColourField(ctx,field){
-  var contour=field.contour||[],colour=field.rgb,
-      r=rng(field.seed+'|tissue-field'),pieces=0;
-  // The same large semantic field is cut into independently torn,
-  // transparent sheets. Do not imitate an opaque oil underpaint polygon.
-  for(var layer=0;layer<3;layer++){
-    var scale=[1.03,.94,.78][layer],p=new Path2D();
+  var contour=field.contour||[],r=rng(field.seed+'|tissue-colour-field-v2'),
+      palette=field.palette||[field.rgb],pieces=0;
+  // Paper uses its own broad shape and several distinct seeded source hues.
+  // Actual material cuts vary, with translucent overlapping pigment.
+  for(var layer=0;layer<4;layer++){
+    var scale=[1.03,.94,.84,.67][layer],p=new Path2D();
     for(var i=0;i<contour.length;i++){
       var a=contour[i],b=contour[(i+1)%contour.length],n=3;
       for(var j=0;j<n;j++){
         var t=j/n,x=a.x+(b.x-a.x)*t,
-            y=a.y+(b.y-a.y)*t,fringe=layer===0?3.5:4.8,
+            y=a.y+(b.y-a.y)*t,fringe=layer===0?3.5:5,
             dx=r.range(-fringe,fringe),dy=r.range(-fringe,fringe);
         x=field.x+(x-field.x)*scale+dx;
         y=field.y+(y-field.y)*scale+dy;
@@ -339,17 +341,17 @@ function tissueColourField(ctx,field){
     }
     p.closePath();
     ctx.globalCompositeOperation='multiply';
-    ctx.globalAlpha=[.36,.27,.20][layer];
-    ctx.fillStyle=hex(blend(colour,[245,240,230],layer*.10));
+    ctx.globalAlpha=[.29,.24,.20,.16][layer];
+    ctx.fillStyle=hex(blend(palette[layer%palette.length],
+      [245,240,230],layer*.085));
     ctx.fill(p);
     ctx.globalCompositeOperation='source-over';
     ctx.globalAlpha=.42;ctx.lineWidth=.85;
-    ctx.strokeStyle='rgba(247,242,231,.52)';
+    ctx.strokeStyle='rgba(247,242,231,.48)';
     ctx.stroke(p);
     pieces++;
   }
-  ctx.globalCompositeOperation='source-over';
-  ctx.globalAlpha=1;
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
   return pieces;
 }
 
