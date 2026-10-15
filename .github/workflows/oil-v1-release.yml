@@ -11,6 +11,7 @@ on:
       - 'js/describe.js'
       - 'js/control-help.js'
       - 'tests/oil-v1-release-browser.mjs'
+      - 'tests/oil-v1-reveal-editor-parity.mjs'
       - 'tests/materials-ui.test.mjs'
       - '.github/workflows/oil-v1-release.yml'
   workflow_dispatch:
@@ -39,6 +40,7 @@ jobs:
           node --check js/export.js
           node --check js/describe.js
           node --check tests/oil-v1-release-browser.mjs
+          node --check tests/oil-v1-reveal-editor-parity.mjs
           npm run test:renderer-lock
           npm run test:oil-render
           node tests/materials-ui.test.mjs
@@ -54,3 +56,5 @@ jobs:
         run: npm run test:watercolour-release
       - name: Actual Chrome Oil release, PNG and share-link tests
         run: node tests/oil-v1-release-browser.mjs
+      - name: Oil Reveal, tooltip, editor and all eight engines parity
+        run: node tests/oil-v1-reveal-editor-parity.mjs
