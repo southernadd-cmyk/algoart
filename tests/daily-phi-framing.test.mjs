@@ -19,6 +19,8 @@ assert.equal(new URLSearchParams(appendDailyPhiFraming('v=8&seed=A',date)).get('
 // Previously saved studies are not rewritten or silently attributed the
 // newly introduced shared framing option.
 const oldGallery=JSON.parse(await fs.readFile('gallery/2026-10-14/meta.json','utf8'));
+const alreadyToday=JSON.parse(await fs.readFile('gallery/'+date+'/meta.json','utf8'));
+const existingIds=new Set(alreadyToday.entries.map(e=>e.id));
 const oldJson=JSON.stringify(oldGallery);
 assert(oldGallery.entries.every(e=>!new URL(e.shareUrl).searchParams.has('sheet')),
   'Already published historical artwork must not change fit');
@@ -83,8 +85,11 @@ for(const c of cases){
   });
 }
 let gallery=JSON.parse(await fs.readFile(path.join('gallery',date,'meta.json'),'utf8'));
-assert.equal(gallery.entries.length,8,'6 material/format queues must create 8 studies');
-assert.equal(new Set(gallery.entries.map(e=>e.id)).size,8,'No duplicate ids');
+assert.equal(gallery.entries.length,existingIds.size+8,
+  'Six material/format queues must append eight studies without deleting the existing daily gallery');
+assert.equal(new Set(gallery.entries.map(e=>e.id)).size,existingIds.size+8,'No duplicate ids');
+for(const id of existingIds)assert(gallery.entries.some(e=>e.id===id),
+  'Previously archived 15 October study disappeared: '+id);
 for(const entry of gallery.entries){
   assert.equal(new URL(entry.shareUrl).searchParams.get('sheet'),'phi');
   await fs.access(path.join('gallery',date,entry.imageFile));
@@ -92,7 +97,7 @@ for(const entry of gallery.entries){
 run('automation/build-gallery.mjs',{GALLERY_QUEUE_MATERIAL:'watercolour',
   GALLERY_QUEUE_ORIENTATION:'portrait'});
 gallery=JSON.parse(await fs.readFile(path.join('gallery',date,'meta.json'),'utf8'));
-assert.equal(gallery.entries.length,8,'Rebuilding same daily queue must not duplicate studies');
+assert.equal(gallery.entries.length,existingIds.size+8,'Rebuilding same daily queue must not duplicate studies');
 assert.equal(JSON.stringify(JSON.parse(await fs.readFile('gallery/2026-10-14/meta.json','utf8'))),
   oldJson,'Historical gallery JSON must remain unchanged');
 const browser=await chromium.launch({headless:true});
@@ -118,7 +123,7 @@ try{
   }
   // A bare home URL also loads the most recent daily Marker cover. It
   // must retain exactly the same source-space framing as its gallery JPEG.
-  const latestMarker=sample.find(x=>x.material==='marker'&&x.orientation==='landscape');
+  const latestMarker=gallery.entries[0]; // The default cover is the first archived study, not a new test seed.
   await page.goto(host,{waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(seed=>document.getElementById('seed')?.value===seed,
     latestMarker.seed,{timeout:120000});
