@@ -94,3 +94,28 @@ Actual V5a source-region counts: Growth **26**, Recursive Divisions **17**, Gold
 - Faithful remains the exact default; no shared-plan settings migrate historical render seeds.
 
 **V5b visual gate:** the interpreted sheet should now read as areas of colour—not just chunky paths—while preserving the original geometry and sparse negative space. The regions must be visibly different physically in Tissue versus Oil. Passing CI alone is insufficient.
+
+## Actual V5b render and visual review — 15 October
+
+[Passing V5b test run 38733455670](https://github.com/southernadd-cmyk/algoart/actions/runs/38733455670) generated 12 real source-seeded PNG paintings and the full four-column material comparison sheet. The six faithful variants remained **byte-identical** to the earlier renderers, with deterministic source plan and no change to original composition settings.
+
+| Engine | Regions | Oil changed pixels V5a → V5b | Tissue changed pixels V5a → V5b |
+|---|---:|---:|---:|
+| Growth Systems | 26 | 10,907 → **22,160** | 2,874 → **3,771** |
+| Recursive Divisions | 17 | 3,797 → **5,995** | 1,180 → **1,281** |
+| Golden Trajectories | 26 | 7,279 → **13,316** | 1,929 → **2,339** |
+
+These measurements represent image difference versus faithful output at the same 0.4 rendering scale, not a painterliness score. Oil now changes roughly 1.6–2× as many visibly different pixels. Tissue changes much less.
+
+### Human visual assessment
+
+**Shared planner and data contract: PASSED as a proof of concept.**
+Material-neutral composition region contours, source indices, colour hierarchy, independent reproducibility, exact original faithful mode, and adapter-specific rendering have been demonstrated on real images.
+
+**Oil interpretation: PARTIAL SUCCESS.** The regions visibly add overlapping colour masses and the source's focal hierarchy remains identifiable. Still, sparse compositions mostly read as *thickened lines*, and Recursive Divisions does not become an arrangement of broad painted planes. Passing numeric coverage doesn't mean the right artistic result.
+
+**Tissue & Graphite: NOT YET A GOOD INTERPRETATION.** The V5b differences are too modest at normal scale; some extra small paper fragments appear detached from the main composition, particularly in Growth Systems and Golden Trajectories. The basic tissue source rendering already has broad washed regions, so adding local cut-paper decorations isn't an adequate V5 adapter strategy.
+
+**Root cause:** source-path proximity isn't enough to infer the larger semantic **territories**, enclosure, hierarchy and relationship between separate marks. A source line may frame an area rather than itself becoming a coloured area. The next planner must distinguish **filled territories versus strokes versus deliberately empty framed interiors** before applying any material treatment. Keep the shared plan separate from brush/paper physics.
+
+**Decision:** keep [draft PR #91](https://github.com/southernadd-cmyk/algoart/pull/91) unreleased. Do **not** turn V5 on by default, add Watercolour/Marker from this immature grouping method, change historical link semantics or alter scheduled posts. V5c should focus on a stronger territory/semantic planner and explicit negative-space support masks; only then expand the two other adapters, with faithful pixel identity guarded throughout.
