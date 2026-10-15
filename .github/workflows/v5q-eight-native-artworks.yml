@@ -1,0 +1,51 @@
+name: V5q — eight native full-size artworks across four materials
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/v5q-four-material-interpretation.js'
+      - 'tests/v5q-eight-native-artworks.mjs'
+      - '.github/workflows/v5q-eight-native-artworks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  four-material-seed-trials:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Syntax and unchanged live renderer regression
+        run: |
+          node --check js/v5q-four-material-interpretation.js
+          node --check tests/v5q-eight-native-artworks.mjs
+          npm run test:renderer-lock
+      - name: Serve actual ALGO/ART code
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v5q-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/v5q-http.log; exit 1
+      - name: Generate two actual full-size images per material
+        run: node tests/v5q-eight-native-artworks.mjs
+      - name: Verify eight PNGs and source metadata
+        run: |
+          test $(find v5e-results/v5q-gallery -maxdepth 1 -name '*.png' | wc -l) -eq 8
+          test -s v5e-results/v5q-gallery/manifest.json
+      - name: Upload all eight actual ALGO/ART artworks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5q-eight-native-four-material-artworks
+          path: v5e-results/v5q-gallery/
+          if-no-files-found: warn
+          retention-days: 30
