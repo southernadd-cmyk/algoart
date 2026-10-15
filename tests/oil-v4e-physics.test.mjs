@@ -95,6 +95,8 @@ try {
     'Synthetic crossing should actually sample earlier pigment');
   assert(d.wet.cases[1].second.wetDragMarks>0,
     'Synthetic crossing must physically drag previous pigment');
+  assert(d.wet.pixelsChanged>=400,
+    'Directional dragged pigment still affects too little of the crossing');
   assert(d.wet.colourDifference>300,
     'With and without wet transfer should visibly differ');
   assert(d.lighting.shade>.71&&d.lighting.shade<1.24);
