@@ -63,6 +63,17 @@ function permitted(a,b,plan){
    Math.abs(a.guideIndex-b.guideIndex)>80)return false;
  return true;
 }
+// Golden Trajectories can use TWO directed, original-guide anchored territories
+// for a related pair of spiral sections. Reach is exactly phi^-2 from EACH
+// recorded arm section towards the other, leaving phi-derived negative space
+// between the two territories. This does not cut up a completed colour area.
+function goldenArmConnection(anchor,related){
+  const reach=1/(PHI*PHI);
+  const target=related.contour.map(p=>pt(
+    anchor.x+(p.x-anchor.x)*reach,
+    anchor.y+(p.y-anchor.y)*reach));
+  return convexOutline(anchor.contour.concat(target));
+}
 function candidates(plan,opts){
  const guides=plan.territories.filter(t=>t.role==='painted'&&t.kind!=='rect-cell'&&
    t.sources?.length&&t.contour?.length>=4);
@@ -74,26 +85,30 @@ function candidates(plan,opts){
   // paint. Never construct regions from random seeds or a raster partition.
   for(let j=i+1;j<guides.length;j++){
    const b=guides[j];if(!permitted(a,b,plan))continue;
-   const contour=convexOutline(a.contour.concat(b.contour)),bb=bounds(contour);
-   if(contour.length<4||bb.w>plan.width*.52||bb.h>plan.height*.56)continue;
-   const physical=polygonArea(contour);
-   if(physical>maxArea||physical<3200)continue;
-   if(A.compositionV5cTest.intersectsProtected(contour,plan.protectedVoids))
-     continue;
-   const occupancy=cellsFor(contour,plan,10);
-   if(occupancy.cells.length<35)continue;
-   // Keep the recorded relationship as the only source of candidate's
-   // geometry; spatial occupancy merely measures later obscuration.
-   const pigment=[a.rgb.slice()];
-   if(Math.hypot(...a.rgb.map((v,k)=>v-b.rgb[k]))>37)
-     pigment.push(b.rgb.slice());
-   all.push({a,b,contour,box:bb,cellSet:new Set(occupancy.cells),
-     ...occupancy,area:occupancy.cells.length*100,
-     palette:pigment,rgb:a.rgb.slice(),
-     guideIds:[a.guideId,b.guideId],
-     pairKey:[a.guideId,b.guideId].sort().join('|'),
-     sources:[...new Set(a.sources.concat(b.sources))],
-     centre:{x:bb.x+bb.w*.5,y:bb.y+bb.h*.5}});
+   const configurations=a.kind==='trajectory-ribbon'?
+     [[a,b,goldenArmConnection(a,b)],[b,a,goldenArmConnection(b,a)]]:
+     [[a,b,convexOutline(a.contour.concat(b.contour))]];
+   for(const [origin,other,contour] of configurations){
+     const bb=bounds(contour);
+     if(contour.length<4||bb.w>plan.width*.52||bb.h>plan.height*.56)continue;
+     const physical=polygonArea(contour);
+     if(physical>maxArea||physical<3200)continue;
+     if(A.compositionV5cTest.intersectsProtected(contour,plan.protectedVoids))
+       continue;
+     const occupancy=cellsFor(contour,plan,10);
+     if(occupancy.cells.length<35)continue;
+     const pigment=[origin.rgb.slice()];
+     if(Math.hypot(...origin.rgb.map((v,k)=>v-other.rgb[k]))>37)
+       pigment.push(other.rgb.slice());
+     all.push({a:origin,b:other,contour,box:bb,
+       cellSet:new Set(occupancy.cells),
+       ...occupancy,area:occupancy.cells.length*100,
+       palette:pigment,rgb:origin.rgb.slice(),
+       guideIds:[origin.guideId,other.guideId],
+       pairKey:origin.guideId+'|'+other.guideId,
+       sources:[...new Set(origin.sources.concat(other.sources))],
+       centre:{x:bb.x+bb.w*.5,y:bb.y+bb.h*.5}});
+   }
   }
  }
  return all;
