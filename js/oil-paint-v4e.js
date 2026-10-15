@@ -550,6 +550,52 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
     pressureMin:b.pressureMin,pressureMax:b.pressureMax};
 }
 // Expose actual brush strokes to the lab, not an unrelated fake preview.
+
+function drawWetCrossingLab(target,opts){
+  opts=opts||{};
+  var width=930,height=410,targetSeed=opts.seed||'OIL-V4E-CROSS',
+      cases=[],drawings=[];
+  target.width=width;target.height=height;
+  var finalCtx=target.getContext('2d');
+  for(var caseIndex=0;caseIndex<2;caseIndex++){
+    var w=450,h=370,pig=document.createElement('canvas'),
+        mcanvas=document.createElement('canvas');
+    pig.width=mcanvas.width=w;pig.height=mcanvas.height=h;
+    var ctx=pig.getContext('2d',{willReadFrequently:true}),
+        mask=mcanvas.getContext('2d',{willReadFrequently:true}),
+        field=new Float32Array(w*h),
+        base={thickness:.90,drag:.48,bristles:.92,massing:0,
+          profile:'filbert',wetDrag:caseIndex===0?0:1},
+        r1=A.makeR(targetSeed+'|first'),r2=A.makeR(targetSeed+'|second');
+    ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,w,h);
+    var horizontal=Array.from({length:37},function(_,i){
+      var t=i/36;return{x:54+t*338,y:176+14*Math.sin(t*TAU*.65)}});
+    var diagonal=Array.from({length:41},function(_,i){
+      var t=i/40;return{x:221+16*Math.sin(t*PI),y:42+t*285}});
+    var first=paintOne(ctx,mask,{pts:horizontal,width:8, length:340,mass:false,
+      rgb:[185,56,40]},r1,0,base,field,w,h,1,'organic');
+    var second=paintOne(ctx,mask,{pts:diagonal,width:8,length:290,mass:false,
+      rgb:[35,77,165]},r2,1,base,field,w,h,1,'organic');
+    ctx.setTransform(1,0,0,1,0,0);
+    var hstats=finish(ctx,field,w,h,targetSeed,base);
+    finalCtx.drawImage(pig,caseIndex*465,26);
+    finalCtx.font='bold 15px sans-serif';finalCtx.fillStyle='#45382e';
+    finalCtx.fillText(caseIndex===0?'NO TRANSFER · CONTROL':'LOCAL WET TRANSFER',
+      caseIndex*465+12,18);
+    drawings.push(ctx.getImageData(0,0,w,h).data);
+    cases.push({wetDrag:base.wetDrag,first:first,second:second,
+      shade:hstats.meanSpecular});
+  }
+  var diff=0;
+  for(var i=0;i<drawings[0].length;i+=4){
+    diff+=Math.abs(drawings[0][i]-drawings[1][i])+
+      Math.abs(drawings[0][i+1]-drawings[1][i+1])+
+      Math.abs(drawings[0][i+2]-drawings[1][i+2]);
+  }
+  return {material:'oil-v4e-wet-crossing-lab',cases:cases,
+    colourDifference:diff,width:target.width,height:target.height};
+}
+
 function drawBrushLab(target,opts){
   opts=opts||{};
   var w=1200,h=870,r=A.makeR((opts.seed||'OIL-V4-LAB-001')+'|oil-brush-lab'),
@@ -747,5 +793,6 @@ A.renderOilPaintV4E=function(target,settings,scale,opts){
 A.oilPaintV4ETest={pressureAt:pressureAt,buildBrushFrames:buildBrushFrames,
   drawBrushLab:drawBrushLab,drawContactBrush:drawContactBrushV4e,
   sampleWetCrossings:sampleWetCrossings,dragCrossingPigment:dragCrossingPigment,
-  surfaceLighting:surfaceLighting,addPaintHeight:addPaintHeight};
+  surfaceLighting:surfaceLighting,drawWetCrossingLab:drawWetCrossingLab,
+  addPaintHeight:addPaintHeight};
 })(window.AlgoArt);
