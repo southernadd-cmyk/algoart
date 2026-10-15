@@ -1,7 +1,7 @@
 {
   "version": 1,
   "date": "2026-10-15",
-  "count": 15,
+  "count": 16,
   "series": [
     "Connected Fields",
     "Growth Systems",
@@ -743,6 +743,56 @@
         "grain": 12
       },
       "altText": "Watercolour painting from ALGO/ART's Automatic Marks system, seed CWL-20261015-01-31782. Golden-ratio geometry translated into source-colour matched wet pigment washes and fine dry brush on textured paper."
+    },
+    {
+      "id": "2026-10-15-CP01",
+      "title": "Constructed Forms — Watercolour Study 16",
+      "orientation": "portrait",
+      "material": "watercolour",
+      "seed": "CWP-20261015-01-01998",
+      "mode": "geometric",
+      "series": "Constructed Forms",
+      "imageFile": "2026-10-15-watercolour-portrait-01-geometric-CWP-20261015-01-01998.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=CWP-20261015-01-01998&mode=geometric&fmt=portrait&el=31&den=42&cx=64&neg=38&phi=96&rec=5&spi=20&ga=90&nest=26&pen=fine&th=5&wob=29&od=5&op=67&pr=64&dry=38&curve=18&shape=51&overlap=53&rot=94&ln=1&ci=1&re=1&po=1&ar=1&pal=pastel&cols=7&sat=71&bri=57&paper=%23f5f0e6&grain=14&material=watercolour-v2s&fit=0&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "geometric",
+        "orientation": "portrait",
+        "series": "Constructed Forms",
+        "seed": "CWP-20261015-01-01998",
+        "elements": 31,
+        "density": 42,
+        "complexity": 64,
+        "negativeSpace": 38,
+        "phiStrength": 96,
+        "recursion": 5,
+        "spiralInfluence": 20,
+        "goldenAngle": 90,
+        "nesting": 26,
+        "pen": "fine",
+        "thickness": 5,
+        "wobble": 29,
+        "overdraw": 5,
+        "opacity": 67,
+        "pressure": 64,
+        "dryness": 38,
+        "curveBias": 18,
+        "shapeAmount": 51,
+        "overlap": 53,
+        "rotation": 94,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "pastel",
+        "colourCount": 7,
+        "saturation": 71,
+        "brightness": 57,
+        "paper": "#f5f0e6",
+        "grain": 14
+      },
+      "altText": "Watercolour painting from ALGO/ART's Constructed Forms system, portrait study · seed CWP-20261015-01-01998. Golden-ratio geometry translated into source-colour matched wet pigment washes and fine dry brush on textured paper."
     }
   ]
 }
