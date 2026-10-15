@@ -190,12 +190,20 @@ function constructedGroups(guide){
     if(separated)chosen.push(candidate);
   }
   return chosen.map(function(anchor,index){
-    var satellites=items.filter(function(v){
-      return v!==anchor&&d(v,anchor)<Math.max(110,anchor.size*.84)})
-      .sort(function(a,b){return d(a,anchor)-d(b,anchor)}).slice(0,3);
-    var points=[anchor].concat(satellites).map(function(i){return{x:i.x,y:i.y}});
+    var primary=index===0,
+        radius=primary?Math.max(190,anchor.size*1.23):
+          Math.max(115,anchor.size*.85),
+        satellites=items.filter(function(v){
+          return v!==anchor&&d(v,anchor)<radius})
+          .sort(function(a,b){return d(a,anchor)-d(b)})
+          .slice(0,primary?7:3),
+        points=[anchor].concat(satellites).map(function(i){
+          return{x:i.x,y:i.y}});
     return{id:'constructed-field-'+index,points:points,
-      padding:clamp(anchor.size*.40,65,107)};
+      // Broad primary compositional colour plane + smaller supporting fields.
+      // The primary field should cover spaces BETWEEN original objects.
+      padding:primary?clamp(anchor.size*.55,85,150):
+        clamp(anchor.size*.43,68,112)};
   });
 }
 function interpret(source,settings,opts){
