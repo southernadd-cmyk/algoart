@@ -249,6 +249,17 @@ var WATERCOLOUR_HELP={
   pressure:'Varies source stroke width, which informs the later watercolour brush footprint.',
   dryness:'Breaks up source strokes at higher values. It does not change the moisture or evaporation rate in the watercolour renderer.'
 };
+// Oil Paint v1 uses original source-mark IDs to construct its real loaded
+// V4e-bristle paint contacts. Present source profiles, not fake brush presets.
+var OIL_HELP={
+  pen:'Selects the source mark profile that builds the Oil Paint composition. Oil Paint v1 applies loaded bristle contacts and source-linked colour masses afterwards; this is not a literal brush-tip selector.',
+  thickness:'Changes the width of source marks from which loaded oil brush strokes are generated.',
+  wobble:'Adjusts irregularity in the original source paths followed by Oil Paint.',
+  overdraw:'Repeats source mark geometry. Oil Paint has its own pigment layering and loaded-bristle passes.',
+  opacity:'Controls the source mark transparency; Oil Paint combines that with its own physical pigment loading.',
+  pressure:'Changes source-mark pressure variation before the Oil Paint interpretation.',
+  dryness:'Changes interruptions in source marks. Oil Paint has independent brush drag and paint-load behaviour.'
+};
 var penControl=document.getElementById('pen'),MARKER_PROFILES={};
 if(penControl)Array.prototype.forEach.call(penControl.options,function(option){
   MARKER_PROFILES[option.value]=option.textContent;
@@ -337,7 +348,8 @@ A.syncControlHelp=function(mode,version,meta){
   var selectedMaterial=document.getElementById('materialStyle')?.value;
   var tissue=selectedMaterial==='tissue';
   var watercolour=selectedMaterial==='watercolour';
-  var painted=tissue||watercolour;
+  var oil=selectedMaterial==='oil';
+  var painted=tissue||watercolour||oil;
   // Change only visible text. Never replace option nodes or their stable
   // values: the existing seed, URL, saved images and exports use these IDs.
   if(penControl)Array.prototype.forEach.call(penControl.options,function(option){
@@ -345,7 +357,9 @@ A.syncControlHelp=function(mode,version,meta){
       MARKER_PROFILES[option.value];
   });
   var controlsNote=document.getElementById('materialControlsNote');
-  if(controlsNote)controlsNote.textContent=watercolour?
+  if(controlsNote)controlsNote.textContent=oil?
+    'These settings control the original source marks and geometry that Oil Paint v1 translates into loaded-bristle oil strokes and larger connected colour masses. Source profiles are not literal brush types. PNG exports show Oil Paint; SVG and plotter exports retain the original marker paths.':
+    watercolour?
     'These source mark profiles organise watercolour shapes and dry brushwork. They are not literal highlighters or pens. Watercolour PNGs include paper texture, flowing washes and dry brush; SVG and plotter exports retain the underlying marker paths.':
     tissue?'These settings shape the source marks used to arrange the tissue and graphite. Profiles describe those marks, not physical brushes or highlighters. Tissue PNGs apply their own material finish; SVG and plotter exports use the underlying marker paths.':
     'Choose Marker, Tissue & Graphite, or Watercolour in Compose. Marker tools control the visible ink strokes. Other materials convert the same source paths into textured artwork; SVG and plotter exports use marker paths.';
@@ -358,7 +372,7 @@ A.syncControlHelp=function(mode,version,meta){
     entry.button.setAttribute('aria-label','About '+entry.label.textContent);
     entry.hint.textContent=painted&&entry.id==='grain'?
       'This material simulates its own paper texture. This grain setting applies to Marker drawing.':
-      (watercolour&&WATERCOLOUR_HELP[entry.id]||
+      (oil&&OIL_HELP[entry.id]||watercolour&&WATERCOLOUR_HELP[entry.id]||
         tissue&&TISSUE_HELP[entry.id]||helpText(mode,entry.id,version));
     if(active===entry&&entry.row.hidden)closeHelp();
   });
