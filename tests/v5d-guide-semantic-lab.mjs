@@ -127,12 +127,19 @@ try{
                 interpreted.width,interpreted.height).data,
               reference=faithful.getContext('2d').getImageData(0,0,
                 faithful.width,faithful.height).data;
-        let changedPixels=0;
-        for(let j=0;j<image.length;j+=4)if(
-          Math.abs(image[j]-reference[j])+
-          Math.abs(image[j+1]-reference[j+1])+
-          Math.abs(image[j+2]-reference[j+2])>18)changedPixels++;
+        const referenceV5c=v5c.getContext('2d').getImageData(0,0,
+          v5c.width,v5c.height).data;
+        let changedPixels=0,changedFromV5c=0;
+        for(let j=0;j<image.length;j+=4){
+          if(Math.abs(image[j]-reference[j])+
+            Math.abs(image[j+1]-reference[j+1])+
+            Math.abs(image[j+2]-reference[j+2])>18)changedPixels++;
+          if(Math.abs(image[j]-referenceV5c[j])+
+            Math.abs(image[j+1]-referenceV5c[j+1])+
+            Math.abs(image[j+2]-referenceV5c[j+2])>18)changedFromV5c++;
+        }
         renders[material]={preserved,equal,changed,changedPixels,
+          changedFromV5c,
           stats:output,v5c:v5c.toDataURL('image/png').split(',')[1],
           faithful:faithful.toDataURL('image/png').split(',')[1],
           interpreted:interpreted.toDataURL('image/png').split(',')[1],
@@ -201,6 +208,10 @@ try{
       assert(out.changed,material+' interpreted mode does not alter image');
       assert(out.changedPixels>700,
         material+' interpretation did not create visible painted regions');
+      if(entry.mode==='rects')assert.equal(out.changedFromV5c,0,
+        'V5d must leave the approved V5c φ-cell interpretation pixel-identical');
+      else assert(out.changedFromV5c>180,
+        material+' new guide interpretation has no material image effect');
       assert.equal(out.stats.plan.regions.length,payload.plan.regions.length);
       assert.deepEqual(out.stats.plan.territories,payload.plan.territories,
         'Material must not change semantic cell roles or boundary contours');
@@ -212,8 +223,13 @@ try{
         assert(bytes.length>14000,material+' missing actual pixels');
         await writeFile(path.join(folder,prefix+'-'+mode+'.png'),bytes);
       }
-      console.log('V5 '+entry.mode+' '+material+' regions '+payload.plan.regions.length+
-        ' changedPixels '+out.changedPixels+' paint '+JSON.stringify(out.stats.work));
+      console.log('V5d '+entry.mode+' '+material+
+        ' guide '+payload.plan.guideSemantics+
+        ' plan '+JSON.stringify(payload.plan.guideStats)+
+        ' roles '+JSON.stringify(payload.plan.territoryStats)+
+        ' versusV5c '+out.changedFromV5c+
+        ' versusFaithful '+out.changedPixels+
+        ' paint '+JSON.stringify(out.stats.work));
     }
     results.push({
       seed:payload.settings.seed,mode:entry.mode,
@@ -223,6 +239,7 @@ try{
         faithfulByteIdentical:payload.renders[m].preserved,
         repeatByteIdentical:payload.renders[m].equal,
         changedPixels:payload.renders[m].changedPixels,
+        changedFromV5c:payload.renders[m].changedFromV5c,
         work:payload.renders[m].stats.work,
         renderMs:payload.renders[m].stats.renderMs
       }]))
