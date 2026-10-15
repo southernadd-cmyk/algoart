@@ -162,6 +162,7 @@ try{
    else{
      assert(q.changed>1000,material+' still identical to V5j');
      assert(q.interiorCoverage>.28,material+' lacks real 2D pigment interiors');
+     if(material==='tissue')console.log('DIAG V5k '+entry.mode+' exterior pigment: '+q.outsideOld.toFixed(3)+' → '+q.outsideNew.toFixed(3));
      if(material==='tissue')assert(q.outsideNew<q.outsideOld,
        'Tissue bloom outside guide-derived fields increased');
      if(material==='oil')assert(q.fieldStrokes>=8,
