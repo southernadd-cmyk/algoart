@@ -1,0 +1,71 @@
+name: Oil Paint V4c — contact physics, real brush lab and 16 comparisons
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/oil-paint-v4c.js'
+      - 'tests/oil-v4c-physics.test.mjs'
+      - 'tests/oil-v4c-brush-lab.mjs'
+      - 'tests/oil-v4c-sixteen.mjs'
+      - 'experiments/OIL_PAINT_V4C.md'
+      - '.github/workflows/oil-v4c-contact-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v4c-contact-lab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies and Chromium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Check version isolation and archived materials
+        run: |
+          node --check js/oil-paint-v4c.js
+          node --check tests/oil-v4c-physics.test.mjs
+          node --check tests/oil-v4c-brush-lab.mjs
+          node --check tests/oil-v4c-sixteen.mjs
+          npm run test:renderer-lock
+          node tests/oil-render.test.mjs
+          node tests/materials-ui.test.mjs
+      - name: Local-only preview server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/oil-v4c-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/oil-v4c-http.log; exit 1
+      - name: Require physics, repeatability and physical load decline
+        run: node tests/oil-v4c-physics.test.mjs
+      - name: Render real brush contact laboratory first
+        run: node tests/oil-v4c-brush-lab.mjs
+      - name: Render 16 V4c images with frozen V4b comparator
+        run: node tests/oil-v4c-sixteen.mjs
+      - name: Require actual source images and detail crops
+        run: |
+          test $(find oil-v4c-results/fixed -name '*.png' | wc -l) -eq 8
+          test $(find oil-v4c-results/random -name '*.png' | wc -l) -eq 8
+          test $(find oil-v4c-results/comparison -name '*.png' | wc -l) -eq 16
+          test $(find oil-v4c-results/crops -name '*.png' | wc -l) -eq 4
+          test $(find oil-v4c-results/lab -name '*.png' | wc -l) -eq 9
+          test -s oil-v4c-results/lab/oil-v4c-brush-lab.png
+          test -s oil-v4c-results/lab/oil-v4c-lab-manifest.json
+          test -s oil-v4c-results/oil-v4b-v4c-matched-contact-sheet.jpg
+          test -s oil-v4c-results/oil-v4c-manifest.json
+      - name: Upload only experimental image comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oil-v4c-contact-lab-16-real-paintings
+          path: oil-v4c-results/
+          if-no-files-found: warn
+          retention-days: 30
