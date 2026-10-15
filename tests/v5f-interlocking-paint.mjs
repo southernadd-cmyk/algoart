@@ -132,7 +132,7 @@ try{
               reference=faithful.getContext('2d').getImageData(0,0,
                 faithful.width,faithful.height).data;
         const referenceV5e=v5e.getContext('2d').getImageData(0,0,
-          v5d.width,v5d.height).data;
+          v5e.width,v5e.height).data;
         let changedPixels=0,changedFromV5e=0;
         for(let j=0;j<image.length;j+=4){
           if(Math.abs(image[j]-reference[j])+
