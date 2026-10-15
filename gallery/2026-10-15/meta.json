@@ -1,7 +1,7 @@
 {
   "version": 1,
   "date": "2026-10-15",
-  "count": 14,
+  "count": 15,
   "series": [
     "Connected Fields",
     "Growth Systems",
@@ -694,6 +694,55 @@
         "grain": 14
       },
       "altText": "Tissue and graphite artwork from ALGO/ART's Radiant Systems system, portrait study · seed AWP-20261015-02-77654. Golden-ratio composition with layered translucent colour, textured paper and darker marks."
+    },
+    {
+      "id": "2026-10-15-CL01",
+      "title": "Automatic Marks — Watercolour Study 15",
+      "orientation": "landscape",
+      "material": "watercolour",
+      "seed": "CWL-20261015-01-31782",
+      "mode": "scribble",
+      "series": "Automatic Marks",
+      "imageFile": "2026-10-15-watercolour-landscape-01-scribble-CWL-20261015-01-31782.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=CWL-20261015-01-31782&mode=scribble&el=49&den=51&cx=66&neg=21&phi=94&rec=7&spi=50&ga=96&nest=30&pen=dry&th=12&wob=25&od=3&op=87&pr=54&dry=27&curve=75&shape=64&overlap=41&rot=85&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=10&sat=68&bri=55&paper=%23f5f0e6&grain=12&material=watercolour-v2s&fit=0&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "scribble",
+        "series": "Automatic Marks",
+        "seed": "CWL-20261015-01-31782",
+        "elements": 49,
+        "density": 51,
+        "complexity": 66,
+        "negativeSpace": 21,
+        "phiStrength": 94,
+        "recursion": 7,
+        "spiralInfluence": 50,
+        "goldenAngle": 96,
+        "nesting": 30,
+        "pen": "dry",
+        "thickness": 12,
+        "wobble": 25,
+        "overdraw": 3,
+        "opacity": 87,
+        "pressure": 54,
+        "dryness": 27,
+        "curveBias": 75,
+        "shapeAmount": 64,
+        "overlap": 41,
+        "rotation": 85,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "marker",
+        "colourCount": 10,
+        "saturation": 68,
+        "brightness": 55,
+        "paper": "#f5f0e6",
+        "grain": 12
+      },
+      "altText": "Watercolour painting from ALGO/ART's Automatic Marks system, seed CWL-20261015-01-31782. Golden-ratio geometry translated into source-colour matched wet pigment washes and fine dry brush on textured paper."
     }
   ]
 }
