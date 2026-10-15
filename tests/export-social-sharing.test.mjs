@@ -104,6 +104,8 @@ try{
  const mobilePage=await mobile.newPage();
  const mo=new URL(base);mo.search='?v=9&seed=MOBILE-SHARE-TEST&mode=spiral&material=watercolour-v2s';
  await mobilePage.goto(mo.href,{waitUntil:'domcontentloaded',timeout:70000});
+ // Mobile inspector defaults to collapsed. Open it as a real user would.
+ await mobilePage.locator('#inspectorToggle').click();
  await mobilePage.locator('#tab-export').click();
  await mobilePage.locator('#shareInstagram').click();
  await mobilePage.waitForFunction(()=>window.__sharedFiles.length>0,null,{timeout:90000});
