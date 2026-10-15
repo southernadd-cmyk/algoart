@@ -6,8 +6,8 @@ const SITE_ORIGIN = 'https://southernadd-cmyk.github.io';
 const SITE_PATH = '/algoart';
 const SITE_URL = SITE_ORIGIN + SITE_PATH;
 const GALLERY_URL = SITE_URL + '/gallery';
-const GALLERY_DESCRIPTION = 'A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing, Tissue & Graphite, and Watercolour V2S.';
-const FEED_DESCRIPTION = 'Daily deterministic golden-ratio generative artworks from ALGO/ART in Marker drawing, Tissue & Graphite, and Watercolour V2S.';
+const GALLERY_DESCRIPTION = 'A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v1.';
+const FEED_DESCRIPTION = 'Daily deterministic golden-ratio generative artworks from ALGO/ART in Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v1.';
 
 function dateInZone(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -51,7 +51,7 @@ function slugText(value = '') {
 }
 
 function artworkTitle(item, index) {
-  return `${item.series} — ${item.material==='watercolour'?'Watercolour ':item.material==='watercolor'?'Tissue & Graphite ':''}Study ${String(index + 1).padStart(2, '0')}`;
+  return `${item.series} — ${item.material==='oil'?'Oil Paint ':item.material==='watercolour'?'Watercolour ':item.material==='watercolor'?'Tissue & Graphite ':''}Study ${String(index + 1).padStart(2, '0')}`;
 }
 
 function countWord(count) {
@@ -61,7 +61,9 @@ function countWord(count) {
 
 function artworkDescription(item) {
   const s = item.settings || {};
-  return item.material==='watercolour'?
+  return item.material==='oil'?
+    `${item.series} Oil Paint v1 artwork using seed ${item.seed}, ${s.palette} palette, source-connected colour masses and real loaded bristle paint.`:
+    item.material==='watercolour'?
     `${item.series} Watercolour V2S artwork using seed ${item.seed}, source-matched pigment, and ${s.phiStrength}% golden-ratio adherence.`:
     item.material==='watercolor'
     ? `${item.series} Tissue & Graphite artwork using seed ${item.seed} and ${s.phiStrength}% golden-ratio adherence.`
@@ -74,7 +76,7 @@ function artworkCard(item, index) {
   const alt = item.copy?.altText || artworkDescription(item);
   const portrait = (item.orientation || s.orientation) === 'portrait';
   return `
-    <article id="${escapeHtml(item.id)}" class="art-card" data-orientation="${portrait ? 'portrait' : 'landscape'}" data-material="${item.material==='watercolour'?'watercolour':item.material==='watercolor'?'watercolor':'marker'}">
+    <article id="${escapeHtml(item.id)}" class="art-card" data-orientation="${portrait ? 'portrait' : 'landscape'}" data-material="${item.material==='oil'?'oil':item.material==='watercolour'?'watercolour':item.material==='watercolor'?'watercolor':'marker'}">
       <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open and remix ${escapeHtml(title)} in ALGO/ART">
         <img src="${escapeHtml(item.imageFile)}" width="${portrait ? 1000 : 1400}" height="${portrait ? 1400 : 1000}" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" alt="${escapeHtml(alt)}">
       </a>
@@ -88,7 +90,7 @@ function artworkCard(item, index) {
             <div><dt>Series</dt><dd>${escapeHtml(item.series)}</dd></div>
             <div><dt>Format</dt><dd>${portrait ? 'Portrait · 1000 × 1400' : 'Landscape · 1400 × 1000'}</dd></div>
             <div><dt>φ adherence</dt><dd>${escapeHtml(s.phiStrength)}%</dd></div>
-            <div><dt>Medium</dt><dd>${item.material==='watercolour'?'Watercolour V2S':item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
+            <div><dt>Medium</dt><dd>${item.material==='oil'?'Oil Paint v1':item.material==='watercolour'?'Watercolour V2S':item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
             <div><dt>Palette</dt><dd>${escapeHtml(s.palette)}</dd></div>
           </dl>
           <a class="remix" href="${escapeHtml(item.shareUrl)}">OPEN EXACT ARTWORK + REMIX →</a>
@@ -103,7 +105,7 @@ function dayPage(queue) {
   const entries = queue.entries;
   const series = [...new Set(entries.map(e => e.series))];
   const title = `ALGO/ART Daily Gallery — ${pretty} | Golden Ratio Generative Art`;
-  const description = `${entries.length} deterministic ALGO/ART studies generated on ${pretty}: ${series.join(', ')}. Golden-ratio compositions in digital marker, Tissue & Graphite, and Watercolour.`;
+  const description = `${entries.length} deterministic ALGO/ART studies generated on ${pretty}: ${series.join(', ')}. Golden-ratio compositions in digital marker, Tissue & Graphite, Watercolour and Oil Paint.`;
   const canonical = `${GALLERY_URL}/${date}/`;
   const cover = `${canonical}${entries[0].imageFile}`;
 
@@ -131,7 +133,7 @@ function dayPage(queue) {
           description: artworkDescription(item),
           image: `${canonical}${item.imageFile}`,
           url: item.shareUrl,
-          artform:item.material==='watercolour'?'Generative watercolour painting':
+          artform:item.material==='oil'?'Generative oil painting':item.material==='watercolour'?'Generative watercolour painting':
             item.material==='watercolor'?'Tissue and graphite generative art':'Generative digital marker art',
           artMedium: 'Browser canvas and deterministic algorithm',
           creator: {
@@ -314,10 +316,11 @@ ${urls.map(u => `  <url><loc>${escapeXml(u.loc)}</loc><lastmod>${u.lastmod}</las
 
 const day = process.env.SOCIAL_DATE || dateInZone();
 const galleryOrientation = process.env.GALLERY_QUEUE_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
-const galleryMaterial=process.env.GALLERY_QUEUE_MATERIAL==='watercolour'?'watercolour':
+const galleryMaterial=process.env.GALLERY_QUEUE_MATERIAL==='oil'?'oil':
+  process.env.GALLERY_QUEUE_MATERIAL==='watercolour'?'watercolour':
   process.env.GALLERY_QUEUE_MATERIAL==='watercolor'?'watercolor':'marker';
 const queuePath = path.resolve('social-output', day,
-  ...(galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
+  ...(galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
     galleryMaterial==='watercolor'?['watercolor',galleryOrientation]:
     galleryOrientation==='portrait'?['portrait']:[]),'queue.json');
 const queue = JSON.parse(await fs.readFile(queuePath, 'utf8'));
@@ -366,7 +369,7 @@ function galleryOrder(entry) {
   // Stable order: Marker landscapes, Marker portraits, historical Tissue
   // landscapes/portraits, then V2S Watercolour landscape/portrait.
   const orientation=entry.orientation||entry.settings?.orientation;
-  const tier=entry.material==='watercolour'?4:entry.material==='watercolor'?2:0;
+  const tier=entry.material==='oil'?6:entry.material==='watercolour'?4:entry.material==='watercolor'?2:0;
   return tier+(orientation==='portrait'?1:0);
 }
 queue.entries.sort((a, b) =>
@@ -383,7 +386,7 @@ const queuedImageFiles = new Set(
 for (const item of queue.entries) {
   if (!queuedImageFiles.has(item.imageFile)) continue;
   const source = path.resolve('social-output', day,
-    ...(galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
+    ...(galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
       galleryMaterial==='watercolor'?['watercolor',galleryOrientation]:
       galleryOrientation==='portrait'?['portrait']:[]),item.imageFile);
   const dest = path.join(dayDir, item.imageFile);
@@ -406,7 +409,7 @@ const dayMeta = {
     id: item.id,
     title: artworkTitle(item, index),
     orientation: item.orientation || item.settings?.orientation || 'landscape',
-    ...(item.material==='watercolour'?{material:'watercolour'}:
+    ...(item.material==='oil'?{material:'oil'}:item.material==='watercolour'?{material:'watercolour'}:
       item.material==='watercolor'?{material:'watercolor'}:{}),
     seed: item.seed,
     mode: item.mode,

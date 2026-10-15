@@ -431,6 +431,53 @@ jobs:
       live: true
     secrets: inherit
 
+
+  oil-v1-landscape:
+    # Same existing 15:00 UK afternoon dispatch. Keep gallery writes
+    # serialised after the previous watercolour publishing jobs.
+    needs: [portrait-plan, watercolour-v2s-portrait, watercolour-v2s-portrait-retry]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '1' }}
+    uses: ./.github/workflows/oil-live.yml
+    with:
+      slot: '1'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: landscape
+      live: true
+    secrets: inherit
+
+  oil-v1-landscape-retry:
+    needs: [oil-v1-landscape, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.oil-v1-landscape.result == 'failure' && needs.portrait-plan.outputs.slot == '1' }}
+    uses: ./.github/workflows/oil-live.yml
+    with:
+      slot: '1'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: landscape
+      live: true
+    secrets: inherit
+
+  oil-v1-portrait:
+    needs: [oil-v1-landscape, oil-v1-landscape-retry, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '1' }}
+    uses: ./.github/workflows/oil-live.yml
+    with:
+      slot: '1'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: portrait
+      live: true
+    secrets: inherit
+
+  oil-v1-portrait-retry:
+    needs: [oil-v1-portrait, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.oil-v1-portrait.result == 'failure' && needs.portrait-plan.outputs.slot == '1' }}
+    uses: ./.github/workflows/oil-live.yml
+    with:
+      slot: '1'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: portrait
+      live: true
+    secrets: inherit
+
   watercolour-v2s-portrait-retry:
     needs: [watercolour-v2s-portrait, portrait-plan]
     if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.watercolour-v2s-portrait.result == 'failure' && needs.portrait-plan.outputs.slot == '1' }}

@@ -1,0 +1,59 @@
+name: Oil Paint v1 — daily gallery and 15:00 publishing dry run
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'automation/generate-social.mjs'
+      - 'automation/build-gallery.mjs'
+      - 'automation/captions.mjs'
+      - 'automation/oil-slot.mjs'
+      - 'js/app.js'
+      - 'tests/oil-daily.test.mjs'
+      - '.github/workflows/oil-daily-tests.yml'
+      - '.github/workflows/oil-live.yml'
+      - '.github/workflows/social-live.yml'
+      - '.github/workflows/gallery-daily.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dry-run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install ALGO/ART and Chromium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Check pipeline syntax and existing renderer locks
+        run: |
+          node --check automation/generate-social.mjs
+          node --check automation/build-gallery.mjs
+          node --check automation/captions.mjs
+          node --check automation/oil-slot.mjs
+          node --check tests/oil-daily.test.mjs
+          npm run test:renderer-lock
+          node tests/social-caption-limits.test.mjs
+      - name: Serve actual editor and source geometry
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-gallery-test-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/oil-gallery-test-http.log; exit 1
+      - name: Generate and verify both Oil paintings without publishing
+        run: node tests/oil-daily.test.mjs
+      - name: Preserve preview images and generated JSON from dry run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oil-daily-two-studies-dry-run
+          path: |
+            social-output/2026-10-15/oil/
+          if-no-files-found: warn
+          retention-days: 14

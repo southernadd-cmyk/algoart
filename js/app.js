@@ -1211,7 +1211,7 @@ var requestedArtworkId=new URLSearchParams(location.search).get('art');
 var loadedFromURL=loadSettingsFromURL();
 
 function loadExactArchivedArtwork(id){
-  if(!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|CL|CP|P)\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
+  if(!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|CL|CP|OL|OP|P)\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
   var day=id.slice(0,10);
   return fetch('gallery/'+day+'/meta.json',{cache:'no-store'})
     .then(function(r){if(!r.ok)throw new Error('Archive unavailable');return r.json();})
