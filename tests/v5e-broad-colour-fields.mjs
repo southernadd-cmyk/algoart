@@ -137,8 +137,8 @@ try{
             Math.abs(image[j+1]-reference[j+1])+
             Math.abs(image[j+2]-reference[j+2])>18)changedPixels++;
           if(Math.abs(image[j]-referenceV5d[j])+
-            Math.abs(image[j+1]-referenceV5c[j+1])+
-            Math.abs(image[j+2]-referenceV5c[j+2])>18)changedFromV5d++;
+            Math.abs(image[j+1]-referenceV5d[j+1])+
+            Math.abs(image[j+2]-referenceV5d[j+2])>18)changedFromV5d++;
         }
         renders[material]={preserved,equal,changed,changedPixels,
           changedFromV5d,
