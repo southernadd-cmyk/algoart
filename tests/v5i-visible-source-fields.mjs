@@ -43,7 +43,7 @@ try{
    const start=A.planCompositionV5(settings,opts),
          repeat=A.planCompositionV5(settings,opts);
    const flat=document.createElement('canvas');
-   A.renderConnectedPlanV5H(flat,start,.4);
+   A.renderConnectedPlanV5I(flat,start,.4);
    const guideKinds=start.connectedFields.map(f=>f.relationKind);
    const distinctPairs=new Set(start.connectedFields.map(f=>
      f.guideIds.join('→'))).size===start.connectedFields.length;
