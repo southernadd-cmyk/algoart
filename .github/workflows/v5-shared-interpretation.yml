@@ -1,0 +1,57 @@
+name: V5 — shared optional composition interpretation lab
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/composition-interpret-v5.js'
+      - 'js/v5-material-adapters.js'
+      - 'tests/v5-shared-interpretation.mjs'
+      - 'experiments/V5_SHARED_INTERPRETATION.md'
+      - '.github/workflows/v5-shared-interpretation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  material-neutral-v5:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Verify archived renderer and standalone V5 syntax
+        run: |
+          node --check js/composition-interpret-v5.js
+          node --check js/v5-material-adapters.js
+          node --check tests/v5-shared-interpretation.mjs
+          npm run test:renderer-lock
+          node tests/materials-ui.test.mjs
+          node tests/oil-render.test.mjs
+      - name: Serve local test editor only
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/v5-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/v5-http.log; exit 1
+      - name: Render identical source plan in Oil and Tissue, with exact faithful comparisons
+        run: node tests/v5-shared-interpretation.mjs
+      - name: Require complete review set
+        run: |
+          test $(find v5-results -maxdepth 1 -name '*.png' | wc -l) -eq 12
+          test -s v5-results/v5-oil-tissue-faithful-vs-areas.jpg
+          test -s v5-results/v5-manifest.json
+      - name: Upload procedural V5 material comparison images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5-oil-tissue-shared-composition-pilot
+          path: v5-results/
+          if-no-files-found: warn
+          retention-days: 30

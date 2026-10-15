@@ -1,0 +1,63 @@
+name: V5e — broad source-derived fields of colour
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/composition-colour-fields-v5e.js'
+      - 'js/v5e-material-adapters.js'
+      - 'tests/v5e-broad-colour-fields.mjs'
+      - 'experiments/V5E_BROAD_COLOUR_FIELDS.md'
+      - '.github/workflows/v5e-broad-fields.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v5c-regions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Confirm source, scripts and archived materials
+        run: |
+          node --check js/composition-interpret-v5.js
+          node --check js/composition-territories-v5c.js
+          node --check js/composition-guides-v5d.js
+          node --check js/composition-colour-fields-v5e.js
+          node --check js/v5-material-adapters.js
+          node --check js/v5c-material-adapters.js
+          node --check js/v5d-material-adapters.js
+          node --check js/v5e-material-adapters.js
+          node --check tests/v5e-broad-colour-fields.mjs
+          npm run test:renderer-lock
+          node tests/materials-ui.test.mjs
+          node tests/oil-render.test.mjs
+      - name: Start private local browser test server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v5c-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/v5c-http.log; exit 1
+      - name: Validate semantic territories and render six triple comparisons
+        run: node tests/v5e-broad-colour-fields.mjs
+      - name: Require real and complete V5d evidence
+        run: |
+          test $(find v5e-results -maxdepth 1 -name '*.png' | wc -l) -eq 24
+          test -s v5e-results/v5e-faithful-v5d-v5e-oil-tissue.jpg
+          test -s v5e-results/v5-manifest.json
+      - name: Upload V5d procedural renderer images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5e-broad-colour-fields-oil-tissue-pilot
+          path: v5e-results/
+          if-no-files-found: warn
+          retention-days: 30
