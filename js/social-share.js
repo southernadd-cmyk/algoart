@@ -47,10 +47,17 @@
   }
   function intents(fullURL,settingKeys){
     var shortURL=compact(fullURL,settingKeys),
-        caption='Made with ALGO/ART: '+shortURL;
+        // GitHub Pages has one static OG image for every query string.
+        // Our already-hosted Render service responds with unique SSR tags
+        // and a real ALGO/ART canvas preview for each compact artwork.
+        token=new URL(shortURL).searchParams.get('c'),
+        previewURL=token?'https://algoart-composition-plugin.onrender.com/share?c='+
+          encodeURIComponent(token):shortURL,
+        caption='ALGO/ART '+previewURL;
     return{
       fullURL:fullURL,
       artworkURL:shortURL,
+      previewURL:previewURL,
       caption:caption,
       threads:'https://www.threads.com/intent/post?text='+encodeURIComponent(caption),
       bluesky:'https://bsky.app/intent/compose?text='+encodeURIComponent(caption)

@@ -6,6 +6,7 @@ on:
       - 'index.html'
       - 'js/app.js'
       - 'js/social-share.js'
+      - 'js/social-marker-icons.js'
       - 'css/style.css'
       - 'tests/export-social-sharing.test.mjs'
       - '.github/workflows/export-social-sharing.yml'
@@ -28,6 +29,7 @@ jobs:
       - name: Verify unchanged renderer and editor
         run: |
           node --check js/social-share.js
+          node --check js/social-marker-icons.js
           node --check js/app.js
           node --check tests/export-social-sharing.test.mjs
           npm run test:renderer-lock

@@ -1,123 +1,145 @@
-// Browser checks for real Export sharing actions. No social API calls/posts.
-// Verify exact source parameters, intentional platform limitations and
-// Instagram's real native-PNG fallback rather than a fake upload link.
+// Tests actual client-side ALGO/ART marker icon strokes, exact social
+// composition share links and unchanged reader/editor settings. No posts.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 const base=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
-const context=await browser.newContext({viewport:{width:1370,height:990},acceptDownloads:true});
-await context.route('https://www.instagram.com/**',route=>route.fulfill({
- status:200,contentType:'text/html',body:'<!doctype html><title>Instagram (test stub)</title>'
-}));
-const page=await context.newPage();
-page.setDefaultTimeout(70000);
-const errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.addInitScript(()=>localStorage.setItem('algoart-intro-seen','1'));
+const desktop=await browser.newContext({viewport:{width:1370,height:950}});
+const page=await desktop.newPage();
+page.setDefaultTimeout(90000);
+const errs=[];page.on('pageerror',err=>errs.push(err.message));
 try{
- const start=new URL(base);
- start.search='?v=9&seed=SOCIAL-SHARE-%CE%A6%7E221&mode=organic&fmt=portrait&el=53&den=61&cx=66&neg=49&phi=83&rec=4&spi=48&ga=93&nest=55&pen=fine&th=14&wob=43&od=3&op=70&pr=35&dry=20&curve=92&shape=59&overlap=57&rot=62&ln=1&ci=1&re=1&po=1&ar=1&pal=earth&cols=4&sat=89&bri=68&paper=%23f5f0e6&grain=13&sheet=phi&material=oil-v1';
- await page.goto(start.href,{waitUntil:'domcontentloaded',timeout:70000});
+ const url=new URL(base);
+ url.search='?v=9&seed=SOCIAL-%CE%A6-20261015&mode=organic&fmt=portrait&el=53&den=61&cx=66&neg=49&phi=83&rec=4&spi=48&ga=93&nest=55&pen=fine&th=14&wob=43&od=3&op=70&pr=35&dry=20&curve=92&shape=59&overlap=57&rot=62&ln=1&ci=1&re=1&po=1&ar=1&pal=earth&cols=4&sat=89&bri=68&paper=%23f5f0e6&grain=13&sheet=phi&material=oil-v1';
+ await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:90000});
  await page.waitForFunction(()=>document.querySelector('#materialStyle')?.value==='oil');
  await page.locator('#tab-export').click();
- const layout=await page.evaluate(()=>{
-   const ids=[...document.querySelector('#panel-export .controls').children].map(x=>x.id);
-   const buttons=[...document.querySelectorAll('.social-share-options a,.social-share-options button')].map(x=>x.id);
-   return{ids,buttons,heading:document.querySelector('#socialShareHeading')?.textContent};
+ assert.equal(await page.locator('#shareInstagram').count(),0,
+  'Instagram button must be fully removed, not visually hidden');
+ const first=await page.locator('#panel-export .controls').evaluate(
+  el=>el.firstElementChild?.id);
+ assert.equal(first,'copyLink');
+ const buttons=await page.locator('.social-share-options a').evaluateAll(
+  elements=>elements.map(e=>e.id));
+ assert.deepEqual(buttons,['shareThreads','shareBluesky']);
+ assert.match(await page.locator('.social-share-note').textContent(),
+  /exact artwork link and its own image preview/);
+
+ const art=await page.evaluate(()=>{
+  const A=window.AlgoArt;
+  const canvases=[...document.querySelectorAll('canvas[data-social-marker]')];
+  const font=getComputedStyle(document.querySelector('#shareThreads')).fontFamily;
+  const inspect=canvases.map(c=>{
+    const ctx=c.getContext('2d'),p=ctx.getImageData(0,0,c.width,c.height).data;
+    let opaque=0;
+    for(let i=3;i<p.length;i+=4)if(p[i]>20)opaque++;
+    return{kind:c.dataset.socialMarker,opaque,png:c.toDataURL()};
+  });
+  let calls=0;
+  const orig=A.stroke,recorder=A.svgRecorder;
+  A.stroke=function(){calls++;return orig.apply(this,arguments)};
+  const sentinel={paths:[],precise:true};
+  A.svgRecorder=sentinel;
+  try{A.drawSocialMarkerIcons()}finally{
+    A.stroke=orig;
+    A.svgRecorder=recorder;
+  }
+  const redrawn=canvases.map(c=>c.toDataURL());
+  const keys=Object.keys({
+   seed:1,mode:1,orientation:1,elements:1,density:1,complexity:1,
+   negativeSpace:1,phiStrength:1,recursion:1,spiralInfluence:1,goldenAngle:1,
+   nesting:1,pen:1,thickness:1,wobble:1,overdraw:1,opacity:1,pressure:1,
+   dryness:1,curveBias:1,shapeAmount:1,overlap:1,rotation:1,
+   lines:1,circles:1,rectangles:1,polygons:1,arcs:1,palette:1,colourCount:1,
+   saturation:1,brightness:1,paper:1,grain:1
+  });
+  const params={seed:'seed',mode:'mode',orientation:'fmt',
+   elements:'el',density:'den',complexity:'cx',negativeSpace:'neg',
+   phiStrength:'phi',recursion:'rec',spiralInfluence:'spi',
+   goldenAngle:'ga',nesting:'nest',pen:'pen',thickness:'th',wobble:'wob',
+   overdraw:'od',opacity:'op',pressure:'pr',dryness:'dry',curveBias:'curve',
+   shapeAmount:'shape',overlap:'overlap',rotation:'rot',lines:'ln',
+   circles:'ci',rectangles:'re',polygons:'po',arcs:'ar',palette:'pal',
+   colourCount:'cols',saturation:'sat',brightness:'bri',paper:'paper',
+   grain:'grain'};
+  const paramKeys=keys.map(k=>params[k]);
+  const intents=A.socialShare.intents(location.href,paramKeys);
+  const token=new URL(intents.previewURL).searchParams.get('c');
+  const restored=A.socialShare.expand(token,paramKeys);
+  return{
+   inspect,redrawn,calls,recorderPaths:sentinel.paths.length,font,
+   intents,original:Object.fromEntries(new URLSearchParams(location.search)),
+   restored:restored&&Object.fromEntries(restored)
+  };
  });
- assert.equal(layout.ids[0],'copyLink','Copy Artwork Link must come first');
- assert.deepEqual(layout.buttons,['shareInstagram','shareThreads','shareBluesky']);
- assert.match(layout.heading,/SHARE TO SOCIALS/);
- const data=await page.evaluate(()=>{
-   const A=window.AlgoArt,s=A.readSettings();
-   const names=['v','seed','mode','fmt','el','den','cx','neg','phi','rec','spi',
-    'ga','nest','pen','th','wob','od','op','pr','dry','curve','shape','overlap','rot',
-    'ln','ci','re','po','ar','pal','cols','sat','bri','paper','grain',
-    'sheet','material','fit','tissue','watercolor'];
-   const params=new URLSearchParams(location.search);
-   const links=A.socialShare.intents(location.href,names.slice(1,35));
-   const expected=A.socialShare.expand(new URL(links.artworkURL).searchParams.get('c'),names.slice(1,35));
-   return{full:location.href,links,src:Object.fromEntries(params),
-     round:expected&&Object.fromEntries(expected),
-     length:[...links.caption].length,
-     seed:s.seed,material:document.querySelector('#materialStyle').value,
-     pngSize:document.querySelector('#exportScale').value};
- });
- assert.equal(data.seed,'SOCIAL-SHARE-Φ~221');
- assert.equal(data.material,'oil');
- assert(data.links.artworkURL.includes('?c='),'Share link not compact');
- assert(data.length<300,'Bluesky share composer would exceed 300 characters');
- for(const [key,val] of Object.entries(data.src))assert.equal(data.round[key],val,
-   'Compact share cannot reconstruct '+key);
- const q=new URL(data.links.artworkURL);
- assert.equal(q.pathname,new URL(data.full).pathname);
- for(const [id,domain,param] of [
-  ['shareThreads','www.threads.com','text'],
-  ['shareBluesky','bsky.app','text']]){
-   await page.locator('#'+id).evaluate(el=>el.addEventListener('click',e=>e.preventDefault()));
-   await page.locator('#'+id).click();
-   const href=await page.locator('#'+id).getAttribute('href');
-   const u=new URL(href);
-   assert.equal(u.hostname,domain);
-   assert(u.pathname.includes('intent/'),'Share URL does not open a composer');
-   assert(u.searchParams.get(param).includes(data.links.artworkURL));
+ assert.match(art.font,/AlgoArt Marker/);
+ assert.deepEqual(art.inspect.map(x=>x.kind),['threads','bluesky']);
+ for(let i=0;i<2;i++){
+   assert(art.inspect[i].opaque>130,'Marker-drawn logo is blank');
+   assert.equal(art.inspect[i].png,art.redrawn[i],
+     'Social marker logos are not deterministic');
  }
- await page.goto(data.links.artworkURL,{waitUntil:'domcontentloaded',timeout:70000});
- await page.waitForFunction(()=>document.querySelector('#seed')?.value==='SOCIAL-SHARE-Φ~221');
- const recovered=await page.evaluate(()=>({
-   params:Object.fromEntries(new URLSearchParams(location.search)),
-   material:document.querySelector('#materialStyle').value,
-   paper:document.querySelector('#paper').value,
-   version:window.AlgoArt.rendererVersion
- }));
- assert.equal(recovered.material,'oil');
- assert.equal(recovered.version,9);
- for(const [key,val] of Object.entries(data.src))assert.equal(recovered.params[key],val,
-  'Shared URL did not restore original state '+key);
+ assert(art.calls>=6,'Icons were not inked by the actual ALGO/ART marker engine');
+ assert.equal(art.recorderPaths,0,
+   'Toolbar ink must not alter saved SVG artwork');
+ assert(art.intents.artworkURL.includes('?c='));
+ assert.equal(new URL(art.intents.previewURL).host,
+   'algoart-composition-plugin.onrender.com');
+ assert(new URL(art.intents.previewURL).pathname==='/share');
+ assert([...art.intents.caption].length<300,
+   'Selected artwork link is too long for Bluesky');
+ // Validate the deployed live service supplies actual image-specific
+ // crawler metadata and a real JPEG, not the site's generic social card.
+ const card=await fetch(art.intents.previewURL,{signal:AbortSignal.timeout(90000)});
+ assert.equal(card.status,200,'Live OG endpoint failed');
+ const pageHTML=await card.text();
+ assert.match(pageHTML,/property="og:image"/);
+ assert.match(pageHTML,/name="twitter:image"/);
+ assert(!pageHTML.includes('social-card.png'));
+ const imageURL=pageHTML.match(/property="og:image" content="([^"]+)"/)?.[1];
+ assert(imageURL&&imageURL.includes('/share/image?c='));
+ const response=await fetch(imageURL,{signal:AbortSignal.timeout(120000)});
+ assert.equal(response.status,200,'Artwork image preview returned an error');
+ assert.match(response.headers.get('content-type')||'',/image\/jpeg/);
+ const bytes=new Uint8Array(await response.arrayBuffer());
+ assert(bytes.length>14000,'Real artwork share image was empty');
+ assert.equal(bytes[0],255);assert.equal(bytes[1],216);
 
- await page.locator('#tab-export').click();
- const [popup,download]=await Promise.all([
-   page.waitForEvent('popup',{timeout:60000}),
-   page.waitForEvent('download',{timeout:60000}),
-   page.locator('#shareInstagram').click()
- ]).then(([p,d])=>[p,d]);
- assert.equal(new URL(popup.url()).hostname,'www.instagram.com');
- assert.match(download.suggestedFilename(),/oil-paint-v1-1x\.png$/);
- assert.match(await page.locator('#socialShareStatus').textContent(),
-  /PNG downloaded|Open Instagram/);
- await popup.close();
+ for(const [key,value] of Object.entries(art.original))
+   assert.equal(art.restored[key],value,'Compact link lost '+key);
+ for(const [id,host] of [['shareThreads','www.threads.com'],
+    ['shareBluesky','bsky.app']]){
+   await page.locator('#'+id).evaluate(el=>el.addEventListener('click',
+     e=>e.preventDefault()));
+   await page.locator('#'+id).click();
+   const uri=new URL(await page.locator('#'+id).getAttribute('href'));
+   assert.equal(uri.hostname,host);
+   assert(uri.searchParams.get('text').includes(art.intents.previewURL));
+ }
+ await page.goto(art.intents.artworkURL,{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>
+  document.querySelector('#seed')?.value==='SOCIAL-Φ-20261015',
+  null,{timeout:90000});
+ assert.equal(await page.locator('#materialStyle').inputValue(),'oil');
+ assert.equal(await page.locator('#paper').inputValue(),'#f5f0e6');
+ const restoredSettings=Object.fromEntries(new URL(page.url()).searchParams);
+ for(const [k,value] of Object.entries(art.original))
+   assert.equal(restoredSettings[k],value,'Artist link failed on '+k);
 
- // Phone share sheet: native transfer of actual generated PNG to app
- // without claiming that Instagram auto-posted the content.
+ // Mobile inspector still exposes two usable inked actions, no Instagram.
  const mobile=await browser.newContext({viewport:{width:390,height:844},
-   isMobile:true,hasTouch:true,acceptDownloads:true});
+   hasTouch:true,isMobile:true});
  await mobile.addInitScript(()=>{
    localStorage.setItem('algoart-intro-seen','1');
-   window.__sharedFiles=[];
-   Object.defineProperty(navigator,'canShare',{configurable:true,
-     value:data=>!!data.files?.length});
-   Object.defineProperty(navigator,'share',{configurable:true,
-     value:data=>{window.__sharedFiles.push({
-       count:data.files.length,size:data.files[0].size,
-       name:data.files[0].name,text:data.text
-     });return Promise.resolve()}});
  });
- const mobilePage=await mobile.newPage();
- const mo=new URL(base);mo.search='?v=9&seed=MOBILE-SHARE-TEST&mode=spiral&material=watercolour-v2s';
- await mobilePage.goto(mo.href,{waitUntil:'domcontentloaded',timeout:70000});
- // Mobile inspector defaults to collapsed. Open it as a real user would.
- await mobilePage.locator('#inspectorToggle').click();
- await mobilePage.locator('#tab-export').click();
- await mobilePage.locator('#shareInstagram').click();
- await mobilePage.waitForFunction(()=>window.__sharedFiles.length>0,null,{timeout:90000});
- const transfer=await mobilePage.evaluate(()=>window.__sharedFiles[0]);
- assert.match(transfer.name,/watercolour-v2s.*1x\.png$/);
- assert(transfer.size>20000,'No actual image was shared');
- assert(transfer.text.includes('ALGO/ART')&&transfer.text.includes('?c='),
-   'Native share must contain branded exact artwork link');
+ const mp=await mobile.newPage();
+ await mp.goto(new URL(base).href,{waitUntil:'domcontentloaded'});
+ await mp.locator('#inspectorToggle').click();
+ await mp.locator('#tab-export').click();
+ assert.equal(await mp.locator('#shareThreads').isVisible(),true);
+ assert.equal(await mp.locator('#shareBluesky').isVisible(),true);
+ assert.equal(await mp.locator('#shareInstagram').count(),0);
  await mobile.close();
- assert.deepEqual(errors,[],'Browser errors');
- console.log('PASS Export sharing: Copy Link first, exact compact URL with Unicode, genuine Threads/Bluesky intents, desktop Instagram PNG+website, mobile native PNG share',JSON.stringify({
-  fullLength:data.full.length,compactLength:data.links.artworkURL.length,
-  blueskyCaptionLength:data.length,desktopPNG:download.suggestedFilename(),
-  mobileFileBytes:transfer.size}));
+ assert.deepEqual(errs,[]);
+ console.log('PASS: Instagram removed; authentic deterministic A.stroke logos; Marker font; exact OG social links, Unicode seed, Bluesky limit, restored source settings and mobile layout');
 }finally{await browser.close()}
