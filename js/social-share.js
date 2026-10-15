@@ -53,13 +53,20 @@
         token=new URL(shortURL).searchParams.get('c'),
         previewURL=token?'https://algoart-composition-plugin.onrender.com/share?c='+
           encodeURIComponent(token):shortURL,
-        caption='ALGO/ART '+previewURL;
+        caption='ALGO/ART '+previewURL,
+        // Meta/Threads may cache the old (unversioned) generic preview
+        // for this artwork. Only Threads gets a new page-cache identity;
+        // Bluesky retains its already-working URL.
+        threadsPreviewURL=token?previewURL+'&pv=2':previewURL,
+        threadsCaption='ALGO/ART '+threadsPreviewURL;
     return{
       fullURL:fullURL,
       artworkURL:shortURL,
       previewURL:previewURL,
       caption:caption,
-      threads:'https://www.threads.com/intent/post?text='+encodeURIComponent(caption),
+      threadsPreviewURL:threadsPreviewURL,
+      threadsCaption:threadsCaption,
+      threads:'https://www.threads.com/intent/post?text='+encodeURIComponent(threadsCaption),
       bluesky:'https://bsky.app/intent/compose?text='+encodeURIComponent(caption)
     };
   }
