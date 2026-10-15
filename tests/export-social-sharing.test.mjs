@@ -112,6 +112,9 @@ try{
  // Mobile inspector still exposes two usable inked actions, no Instagram.
  const mobile=await browser.newContext({viewport:{width:390,height:844},
    hasTouch:true,isMobile:true});
+ await mobile.addInitScript(()=>{
+   localStorage.setItem('algoart-intro-seen','1');
+ });
  const mp=await mobile.newPage();
  await mp.goto(new URL(base).href,{waitUntil:'domcontentloaded'});
  await mp.locator('#inspectorToggle').click();
