@@ -371,7 +371,8 @@ function renderModePreviews(){
   delete previewState.mode;
   var key=JSON.stringify([CURRENT_RENDERER_VERSION,previewState,materialKey(),tissuePaletteVersion]);
   if(key===modePreviewStateKey)return;
-  var previousMeta=A.lastRenderMeta,previousW=A.W,previousH=A.H;
+  var previousMeta=A.lastRenderMeta,previousW=A.W,previousH=A.H,
+      previousFrame=A.lastPhiSheetFrame;
   try{
     withRendererVersion(CURRENT_RENDERER_VERSION,function(){
       document.querySelectorAll('.mode-card').forEach(function(card){
@@ -383,7 +384,7 @@ function renderModePreviews(){
   }finally{
     // Sidebar thumbnails must never replace the selected artwork's metadata.
     A.lastRenderMeta=previousMeta;
-    A.W=previousW;A.H=previousH;
+    A.W=previousW;A.H=previousH;A.lastPhiSheetFrame=previousFrame;
   }
 }
 
@@ -851,12 +852,14 @@ function variationSeed(base,index,batch){
 }
 
 function renderVariations(){
-  var base=A.readSettings();
+  var base=A.readSettings(),selectedMeta=A.lastRenderMeta,
+      selectedFrame=A.lastPhiSheetFrame,selectedW=A.W,selectedH=A.H;
   // The overlay is moved under document.body for modal focus management,
   // so it cannot inherit the portrait canvas aspect from .app.
   $('variationsOverlay').classList.toggle('orientation-portrait',base.orientation==='portrait');
   var cards=document.querySelectorAll('.variation-card');
 
+  try{
   withRendererVersion(CURRENT_RENDERER_VERSION,function(){
     cards.forEach(function(card,index){
       var seed=variationSeed(base.seed,index,variationBatch);
@@ -867,6 +870,13 @@ function renderVariations(){
       card.querySelector('span').textContent='0'+(index+1)+' / '+seed;
     });
   });
+  }finally{
+    // Previewing four other seeds must never replace the selected
+    // artwork's Reveal guide, φ frame or dimensions.
+    A.lastRenderMeta=selectedMeta;
+    A.lastPhiSheetFrame=selectedFrame;
+    A.W=selectedW;A.H=selectedH;
+  }
 }
 
 

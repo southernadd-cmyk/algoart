@@ -115,8 +115,36 @@ A.renderOilPaintV1=function(target,settings,scale,reveal){
  const applied=plan&&plan.connectedFields.length?
    paintMaterialConnections(target,plan,scale,'oil'):
    {broadFields:0,sourceLinks:0,materialContacts:0,junctionPools:0};
- return {...base,material:'oil',version:'oil-paint-v1',
-   strategy:base.baseline?.strategy||'',work:{...base.work,oilV1:applied},
-   sourceMeta:base.baseline};
+ // V4e already captured the actual V8 source's guide and void metadata.
+ // Before this fix Oil v1 discarded it, and ignored `reveal`: the button
+ // changed state but no scaffold was drawn and hover hit-testing failed.
+ // The V5p areas result reports its plan/work, not its baseline stats.
+ // Read the dedicated V4e capture created by that same synchronous render.
+ // (The previous fix erroneously expected `base.baseline` to be present.)
+ const oilStats=A.lastOilPaintV4EStats;
+ const sourceMeta=oilStats&&oilStats.sourceRenderMeta;
+ if(!sourceMeta||!sourceMeta.guide)
+   throw Error('Oil Paint v1 cannot recover the source composition metadata');
+ const meta={
+   strategy:sourceMeta.strategy,
+   guide:sourceMeta.guide,
+   voids:sourceMeta.voids||[]
+ };
+ if(sourceMeta.phiSheetFrame)meta.phiSheetFrame=sourceMeta.phiSheetFrame;
+ if(reveal){
+   // Render LAST, above the finished oil painting. A.geometryOverlay
+   // draws in original logical canvas coordinates, while V4e painting
+   // rendered at the requested physical pixel scale.
+   const ctx=target.getContext('2d');
+   ctx.save();ctx.setTransform(scale,0,0,scale,0,0);
+   A.W=settings.orientation==='portrait'?1000:1400;
+   A.H=settings.orientation==='portrait'?1400:1000;
+   A.geometryOverlay(ctx,settings,meta);
+   ctx.restore();
+ }
+ A.lastRenderMeta=meta;
+ A.lastPhiSheetFrame=meta.phiSheetFrame||null;
+ return {...base,...meta,material:'oil',version:'oil-paint-v1',
+   work:{...base.work,oilV1:applied},sourceMeta:oilStats};
 };
 })(window.AlgoArt);
