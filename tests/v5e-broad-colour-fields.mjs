@@ -309,3 +309,6 @@ await import('./v5g-connected-areas.mjs');
 // Source-guide interpretation regression: retain V5e/f/g archived tests,
 // then require 4+ geometry-derived fields rather than a merged mega-mask.
 await import('./v5h-semantic-guide-fields.mjs');
+
+// V5i checks observed area exposure from recorded source guides; no release.
+await import('./v5i-visible-source-fields.mjs');
