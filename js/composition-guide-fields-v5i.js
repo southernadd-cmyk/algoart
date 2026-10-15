@@ -237,6 +237,48 @@ A.renderInterpretedV5I=(target,settings,scale,opts)=>{
  const stats=A.renderInterpretedV5G(target,settings,scale,opts);
  stats.version=VERSION;return stats;
 };
-A.renderConnectedPlanV5I=A.renderConnectedPlanV5H;
+// Debug-only source ownership view. Number only regions that are *actually*
+// visible after subsequent fields have been layered. Labels never reach Oil,
+// Tissue, the production app, the gallery or the social renderer.
+A.renderConnectedPlanV5I=function(target,plan,scale){
+ scale=scale||1;target.width=Math.round(plan.width*scale);
+ target.height=Math.round(plan.height*scale);
+ const ctx=target.getContext('2d');ctx.scale(scale,scale);
+ ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,plan.width,plan.height);
+ const shapes=[];
+ for(const field of plan.connectedFields){
+  const poly=field.contour,p=new Path2D();p.moveTo(poly[0].x,poly[0].y);
+  for(let i=1;i<poly.length;i++)p.lineTo(poly[i].x,poly[i].y);
+  p.closePath();
+  const c=field.rgb;
+  ctx.fillStyle='rgb('+c.join(',')+')';ctx.fill(p);
+  ctx.lineWidth=2.6;ctx.strokeStyle='rgba(37,34,30,.83)';ctx.stroke(p);
+  shapes.push(p);
+ }
+ const later=new Set();
+ for(let i=plan.connectedFields.length-1;i>=0;i--){
+  const f=plan.connectedFields[i];
+  const visible=f.cells.filter(id=>!later.has(id));
+  if(visible.length){
+   let best=null,bestDist=Infinity;
+   for(const idx of visible){
+    const x=((idx%f.gridWidth)+.5)*f.gridCell,
+          y=(Math.floor(idx/f.gridWidth)+.5)*f.gridCell,
+          d=Math.hypot(x-f.x,y-f.y);
+    if(d<bestDist){best={x,y};bestDist=d}
+   }
+   if(best){
+    ctx.beginPath();ctx.arc(best.x,best.y,15,0,Math.PI*2);
+    ctx.fillStyle='#f5f0e6';ctx.fill();
+    ctx.lineWidth=1.8;ctx.strokeStyle='#222';ctx.stroke();
+    ctx.fillStyle='#222';ctx.font='bold 17px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(String(i+1),best.x,best.y);
+   }
+  }
+  for(const idx of f.cells)later.add(idx);
+ }
+ return{areas:plan.connectedFields.length,stats:plan.connectedStats};
+};
 A.compositionV5Version=VERSION;
 })(window.AlgoArt);
