@@ -224,7 +224,9 @@ try{
       if(entry.mode==='rects')assert.equal(out.changedFromV5d,0,
         'V5e must preserve V5c/V5d phi-rectangle territory output identically');
       else assert(out.changedFromV5d>(material==='oil'?2500:900),
-        material+' V5e has not added a substantial new two-dimensional field');
+        material+' V5e has not added a substantial new two-dimensional field: '+
+          JSON.stringify({mode:entry.mode,fields:out.stats.colourFields,
+            fieldStats:out.stats.fieldStats,delta:out.changedFromV5d}));
       assert.equal(out.stats.plan.regions.length,payload.plan.regions.length);
       assert.deepEqual(out.stats.plan.territories,payload.plan.territories,
         'Material must not change semantic cell roles or boundary contours');
