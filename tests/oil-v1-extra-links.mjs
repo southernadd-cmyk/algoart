@@ -14,7 +14,10 @@ try{
    textContent.includes('OIL PAINT'));
  const starting=await page.evaluate(()=>({
    material:document.querySelector('#materialStyle').value,
-   sourceMeta:window.AlgoArt.lastRenderMeta?.guide?.type
+   sourceMeta:window.AlgoArt.lastRenderMeta?.guide?.type,
+   selectedGuide:JSON.stringify(window.AlgoArt.lastRenderMeta?.guide),
+   selectedFrame:JSON.stringify(window.AlgoArt.lastPhiSheetFrame),
+   dims:[window.AlgoArt.W,window.AlgoArt.H]
  }));
  assert.equal(starting.material,'oil');
  assert.equal(starting.sourceMeta,'spiral');
@@ -31,8 +34,15 @@ try{
  }
  await page.locator('#closeVariations').click();
  assert.equal(await page.locator('#materialStyle').inputValue(),'oil');
- assert.equal(await page.evaluate(()=>window.AlgoArt.lastRenderMeta?.guide?.type),
-   'spiral','Oil 4-Up overwrote selected canvas guide metadata');
+ assert.equal(await page.evaluate(()=>
+   JSON.stringify(window.AlgoArt.lastRenderMeta?.guide)),
+   starting.selectedGuide,'Oil 4-Up changed the selected guide positions');
+ assert.equal(await page.evaluate(()=>
+   JSON.stringify(window.AlgoArt.lastPhiSheetFrame)),
+   starting.selectedFrame,'Oil 4-Up changed the selected φ framing state');
+ assert.deepEqual(await page.evaluate(()=>
+   [window.AlgoArt.W,window.AlgoArt.H]),
+   starting.dims,'Oil 4-Up changed the selected source dimensions');
 
  await page.locator('#phiSheetFit').check();
  await page.waitForFunction(()=>document.querySelector('#phiSheetFit')?.checked);
