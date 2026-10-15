@@ -245,7 +245,7 @@ function paintPlanes(pig,height,chains,voids,r,allowance){
       ctx.quadraticCurveTo(pA.x,pA.y,a.x,a.y);ctx.closePath();
     }
     pig.save();shape(pig);pig.fillStyle=mixcol;
-    pig.globalAlpha=(function(a){return A.tissueV5kReduceAtmosphere?Math.min(.18,a*.38):a})(r.range(.36,.77));pig.fill();pig.clip();
+    pig.globalAlpha=(function(a){return A.tissueV5kReduceAtmosphere?Math.min(.10,a*.20):a})(r.range(.36,.77));pig.fill();pig.clip();
     // Broad, restrained scumbles inside the SAME painted plane.
     for(var k=0;k<r.int(3,7);k++){
       var c=point(a,b,r.range(.10,.9));
@@ -359,7 +359,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     var muted=lerpHex(palette(i,r),r.pick(C.cream),r.range(.32,.73));
     var sourceMuted=sourceTissueHue(ch,.46);
     if(sourceMuted)muted=sourceMuted;
-    paintRibbon(pig,height,pts,width,r,muted,(function(a){return A.tissueV5kReduceAtmosphere?a*.32:a})(r.range(.40,.69)),r.range(.35,.80));
+    paintRibbon(pig,height,pts,width,r,muted,(function(a){return A.tissueV5kReduceAtmosphere?a*.14:a})(r.range(.40,.69)),r.range(.35,.80));
   }
   // Main painterly ribbons at two scales. Rhythm and large-scale direction
   // use the same φ-composed source segments.
