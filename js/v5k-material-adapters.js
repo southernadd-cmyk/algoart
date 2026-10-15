@@ -74,7 +74,8 @@ function baseline(target,s,scale,material,opts){
       A.phiFramingEnabled=opts.phiFraming===true;
       // The faithful material is NEVER altered. The field interpretation
       // alone lowers V7's broad atmospheric glaze, preserving source RNG.
-      A.tissueV5kReduceAtmosphere=opts.interpretation==='areas';
+      A.tissueV5kReduceAtmosphere=opts.interpretation==='areas'&&
+        opts.hasConnectedFields===true;
       return A.renderOil(target,s,scale,false,7);
     }finally{A.phiFramingEnabled=fit;A.lastRenderMeta=meta;
       A.tissueV5kReduceAtmosphere=atmosphere}
@@ -526,13 +527,17 @@ A.renderInterpretedV5K=function(target,settings,scale,opts){
       interpretation=opts.interpretation||'faithful';
   if(interpretation!=='faithful'&&interpretation!=='areas')
     throw Error('Unknown composition interpretation');
-  var start=performance.now(),sourceMeta=baseline(target,settings,scale,material,opts);
+  var start=performance.now(),plan=null;
+  if(interpretation==='areas'){
+    if(!A.planCompositionV5)throw Error('Shared V5 planner not loaded');
+    plan=A.planCompositionV5(settings,{phiFraming:opts.phiFraming===true,
+      maxRegions:opts.maxRegions||28});
+  }
+  var sourceMeta=baseline(target,settings,scale,material,
+    {...opts,hasConnectedFields:!!(plan&&plan.connectedFields.length)});
   if(interpretation==='faithful')return {
     version:'v5k-prototype',interpretation:interpretation,material:material,
     sourceSeed:settings.seed,plan:null,baseline:sourceMeta};
-  if(!A.planCompositionV5)throw Error('Shared V5 planner not loaded');
-  var plan=A.planCompositionV5(settings,{phiFraming:opts.phiFraming===true,
-    maxRegions:opts.maxRegions||28});
   if(material==='tissue'&&plan.connectedFields.length){
     // V7's faithful renderer may leave an inherited clip or transform on
     // the target 2D context. Never paint the new fields through that state:
