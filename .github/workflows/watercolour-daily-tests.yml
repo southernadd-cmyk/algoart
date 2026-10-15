@@ -8,6 +8,7 @@ on:
       - 'automation/captions.mjs'
       - 'automation/watercolour-slot.mjs'
       - 'tests/watercolour-daily.test.mjs'
+      - 'tests/social-caption-limits.test.mjs'
       - '.github/workflows/social-live.yml'
       - '.github/workflows/gallery-daily.yml'
       - '.github/workflows/watercolour-live.yml'
@@ -42,6 +43,8 @@ jobs:
           node --check automation/captions.mjs
           node --check automation/watercolour-slot.mjs
           node --check tests/watercolour-daily.test.mjs
+          node --check tests/social-caption-limits.test.mjs
+          node tests/social-caption-limits.test.mjs
           node tests/watercolor-publishing.test.mjs
           node tests/portrait-publishing.test.mjs
       - name: Start local editor
