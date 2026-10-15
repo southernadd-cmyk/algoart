@@ -1,0 +1,61 @@
+name: V5d — source-guide semantic masses (growth trajectories forms)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/composition-guides-v5d.js'
+      - 'js/v5d-material-adapters.js'
+      - 'tests/v5d-guide-semantic-lab.mjs'
+      - 'experiments/V5D_GUIDE_MASSES.md'
+      - '.github/workflows/v5d-guide-semantic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v5c-regions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Confirm source, scripts and archived materials
+        run: |
+          node --check js/composition-interpret-v5.js
+          node --check js/composition-territories-v5c.js
+          node --check js/composition-guides-v5d.js
+          node --check js/v5-material-adapters.js
+          node --check js/v5c-material-adapters.js
+          node --check js/v5d-material-adapters.js
+          node --check tests/v5d-guide-semantic-lab.mjs
+          npm run test:renderer-lock
+          node tests/materials-ui.test.mjs
+          node tests/oil-render.test.mjs
+      - name: Start private local browser test server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v5c-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/v5c-http.log; exit 1
+      - name: Validate semantic territories and render six triple comparisons
+        run: node tests/v5d-guide-semantic-lab.mjs
+      - name: Require real and complete V5c evidence
+        run: |
+          test $(find v5d-results -maxdepth 1 -name '*.png' | wc -l) -eq 24
+          test -s v5d-results/v5d-faithful-v5c-v5d-oil-tissue.jpg
+          test -s v5d-results/v5-manifest.json
+      - name: Upload V5c procedural renderer images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5d-guide-masses-oil-tissue-pilot
+          path: v5d-results/
+          if-no-files-found: warn
+          retention-days: 30
