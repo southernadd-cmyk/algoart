@@ -1,0 +1,52 @@
+name: V5p — torn tissue edges, guide-linked sheets, junction pooling
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/v5p-material-adapters.js'
+      - 'tests/v5p-tissue-edge-layers.mjs'
+      - '.github/workflows/v5p-tissue-edge-layers.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v5p-material-prototype:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium and dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Syntax and immutable faithful renderer regression
+        run: |
+          node --check js/v5p-material-adapters.js
+          node --check tests/v5p-tissue-edge-layers.mjs
+          npm run test:renderer-lock
+      - name: Start isolated local browser test server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v5p-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/v5p-http.log; exit 1
+      - name: Render original V7, V5o and V5p stages with browser
+        run: node tests/v5p-tissue-edge-layers.mjs
+      - name: Require all comparison artwork and evidence
+        run: |
+          test $(find v5e-results/v5p -maxdepth 1 -name '*.png' | wc -l) -eq 32
+          test -s v5e-results/v5p/v5p-contact-sheet.jpg
+          test -s v5e-results/v5p/v5p-evidence.json
+      - name: Upload original rendered artwork
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5p-torn-tissue-lamination-pooling
+          path: v5e-results/v5p/
+          if-no-files-found: warn
+          retention-days: 30
