@@ -88,6 +88,23 @@ try{
  assert(new URL(art.intents.previewURL).pathname==='/share');
  assert([...art.intents.caption].length<300,
    'Selected artwork link is too long for Bluesky');
+ // Validate the deployed live service supplies actual image-specific
+ // crawler metadata and a real JPEG, not the site's generic social card.
+ const card=await fetch(art.intents.previewURL,{signal:AbortSignal.timeout(90000)});
+ assert.equal(card.status,200,'Live OG endpoint failed');
+ const pageHTML=await card.text();
+ assert.match(pageHTML,/property="og:image"/);
+ assert.match(pageHTML,/name="twitter:image"/);
+ assert(!pageHTML.includes('social-card.png'));
+ const imageURL=pageHTML.match(/property="og:image" content="([^"]+)"/)?.[1];
+ assert(imageURL&&imageURL.includes('/share/image?c='));
+ const response=await fetch(imageURL,{signal:AbortSignal.timeout(120000)});
+ assert.equal(response.status,200,'Artwork image preview returned an error');
+ assert.match(response.headers.get('content-type')||'',/image\/jpeg/);
+ const bytes=new Uint8Array(await response.arrayBuffer());
+ assert(bytes.length>14000,'Real artwork share image was empty');
+ assert.equal(bytes[0],255);assert.equal(bytes[1],216);
+
  for(const [key,value] of Object.entries(art.original))
    assert.equal(art.restored[key],value,'Compact link lost '+key);
  for(const [id,host] of [['shareThreads','www.threads.com'],
