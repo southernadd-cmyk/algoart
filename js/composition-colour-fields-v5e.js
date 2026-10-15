@@ -195,7 +195,7 @@ function constructedGroups(guide){
           Math.max(115,anchor.size*.85),
         satellites=items.filter(function(v){
           return v!==anchor&&d(v,anchor)<radius})
-          .sort(function(a,b){return d(a,anchor)-d(b)})
+          .sort(function(a,b){return d(a,anchor)-d(b,anchor)})
           .slice(0,primary?7:3),
         points=[anchor].concat(satellites).map(function(i){
           return{x:i.x,y:i.y}});
