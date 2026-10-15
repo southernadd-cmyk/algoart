@@ -2,6 +2,19 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-10-15",
+      "cover": "2026-10-15-01-network-AA-20261015-01-71232.jpg",
+      "coverOrientation": "landscape",
+      "count": 5,
+      "series": [
+        "Connected Fields",
+        "Growth Systems",
+        "Constructed Forms",
+        "Automatic Marks",
+        "Orbital Studies"
+      ]
+    },
+    {
       "date": "2026-10-14",
       "cover": "2026-10-14-01-scribble-AA-20261014-01-22539.jpg",
       "coverOrientation": "landscape",
