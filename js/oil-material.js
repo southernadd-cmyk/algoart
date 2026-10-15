@@ -232,6 +232,8 @@ function paintPlanes(pig,height,chains,voids,r,allowance){
     if(insideVoid(middle,voids)&&r.chance(.9))continue;
     var normal=angle(a,b)+PI/2,side=r.chance(.5)?1:-1;
     var span=clamp(Math.sqrt(chains[i].length)*r.range(3.8,9.2),80,270);
+    // Narrow atmosphere around the existing source path, not a broad aura.
+    if(A.tissueV5kReduceAtmosphere)span*=.57;
     var pA=shift(a,normal,side*span*r.range(.35,.65));
     var pB=shift(b,normal,side*span*r.range(.68,1.2));
     var apex=shift(point(pA,pB,.5),normal,side*r.range(0,span*.3));
@@ -245,7 +247,7 @@ function paintPlanes(pig,height,chains,voids,r,allowance){
       ctx.quadraticCurveTo(pA.x,pA.y,a.x,a.y);ctx.closePath();
     }
     pig.save();shape(pig);pig.fillStyle=mixcol;
-    pig.globalAlpha=r.range(.36,.77);pig.fill();pig.clip();
+    pig.globalAlpha=(function(a){return A.tissueV5kReduceAtmosphere?Math.min(.10,a*.20):a})(r.range(.36,.77));pig.fill();pig.clip();
     // Broad, restrained scumbles inside the SAME painted plane.
     for(var k=0;k<r.int(3,7);k++){
       var c=point(a,b,r.range(.10,.9));
@@ -356,10 +358,11 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     var mid=pts[Math.floor(pts.length/2)];
     if(insideVoid(mid,voids)&&r.chance(.82))continue;
     var width=clamp(85+Math.sqrt(ch.length)*r.range(4.8,8.2),85,235);
+    if(A.tissueV5kReduceAtmosphere)width*=.55;
     var muted=lerpHex(palette(i,r),r.pick(C.cream),r.range(.32,.73));
     var sourceMuted=sourceTissueHue(ch,.46);
     if(sourceMuted)muted=sourceMuted;
-    paintRibbon(pig,height,pts,width,r,muted,r.range(.40,.69),r.range(.35,.80));
+    paintRibbon(pig,height,pts,width,r,muted,(function(a){return A.tissueV5kReduceAtmosphere?a*.14:a})(r.range(.40,.69)),r.range(.35,.80));
   }
   // Main painterly ribbons at two scales. Rhythm and large-scale direction
   // use the same φ-composed source segments.
