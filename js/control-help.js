@@ -3,7 +3,7 @@ window.AlgoArt=window.AlgoArt||{};
 'use strict';
 
 var COMMON={
-  materialStyle:'Choose Marker drawing, Tissue & Graphite, or Watercolour. All three share the same underlying composition. PNG exports show the selected material; SVG and plotter exports retain the original marker paths.',
+  materialStyle:'Choose Marker drawing, Tissue & Graphite, Watercolour, or Oil Paint. All four share the same underlying composition. PNG exports show the selected material; SVG and plotter exports retain the original marker paths.',
   elements:'Adds more marks to the composition.',
   density:'Makes the marks larger or smaller.',
   complexity:'Bends curved line strokes more strongly.',
