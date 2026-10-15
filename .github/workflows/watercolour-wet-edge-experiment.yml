@@ -1,0 +1,80 @@
+name: Watercolour wet-edge experiment (not a release)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'experiments/watercolour-wet-edge-v2.js'
+      - 'experiments/WATERCOLOUR_WET_EDGE_V2.md'
+      - 'experiments/watercolour-wet-edge-preview.html'
+      - 'tests/watercolour-wet-edge-preview.mjs'
+      - 'tests/watercolour-eight-random.mjs'
+      - 'tests/watercolour-v2j-fixed-seeds.mjs'
+      - 'tests/watercolour-v2o-targeted.mjs'
+      - '.github/workflows/watercolour-wet-edge-experiment.yml'
+      - 'js/oil-*.js'
+      - 'js/generator.js'
+
+permissions:
+  contents: read
+
+jobs:
+  comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start local site
+        run: |
+          python3 -m http.server 4173 > /tmp/algoart-preview-server.log 2>&1 &
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:4173/experiments/watercolour-wet-edge-preview.html -o /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/algoart-preview-server.log
+          exit 1
+      - name: Render and check four real same-seed comparisons
+        run: node tests/watercolour-wet-edge-preview.mjs
+      - name: Upload paired PNG samples for visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-wet-edge-comparison
+          path: watercolour-wet-edge-previews/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Render eight V2P studies using archived exact V2j seeds
+        run: node tests/watercolour-v2j-fixed-seeds.mjs
+      - name: Upload fixed-seed V2O-to-V2P visual comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-eight-fixed-v2o-v2p
+          path: watercolour-same-seed-v2o-v2p/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Re-render exact V2O random burst and rects problem cases in V2P
+        run: node tests/watercolour-v2o-targeted.mjs
+      - name: Upload targeted burst/rects V2O-V2P pairs for edge review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-v2o-targeted-v2p
+          path: watercolour-v2o-targeted-v2p/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Render eight new random full-size V2P watercolours
+        run: node tests/watercolour-eight-random.mjs
+      - name: Upload eight independent images and reproducible manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watercolour-eight-random-v2p
+          path: watercolour-eight-random/
+          if-no-files-found: warn
+          retention-days: 14
