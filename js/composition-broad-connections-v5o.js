@@ -87,7 +87,7 @@ function candidates(plan){
     fraction=physical/maxArea;
   // True linked masses can be larger than old V5i 2-3% territories,
   // but must not swallow an entire portrait or its retained voids.
-  if(fraction<.030||fraction>.115||b.w>plan.width*.69||
+  if(fraction<(plan.guideStats?.kind==='constructed'?.018:.030)||fraction>.115||b.w>plan.width*.69||
        b.h>plan.height*.72)return;
   if(A.compositionV5cTest.intersectsProtected(contour,plan.protectedVoids))return;
   // Framed guide centres are explicitly NOT part of the painted mass.
