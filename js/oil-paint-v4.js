@@ -343,8 +343,13 @@ function drawLoadedBrushV4(pig,mask,points,width,rgb,profile,r,options){
     // Correlated, smooth pressure along the brush, not a pixel stamp lattice.
     half=width*.5*pressure;
     var bend=Math.sin(f.s*.054+phase)*width*.013;
-    edgesL.push(shift(f,normal,-half+bend));
-    edgesR.push(shift(f,normal,half+bend));
+    // Independent smooth edge disturbance, never pixel-level square jitter.
+    var edgeL=width*(.031*Math.sin(f.s*.121+phase*.83)+
+      .016*Math.sin(f.s*.273+phase*.23));
+    var edgeR=width*(.027*Math.sin(f.s*.143-phase*.91)+
+      .017*Math.sin(f.s*.251+phase*.37));
+    edgesL.push(shift(f,normal,-half+bend+edgeL));
+    edgesR.push(shift(f,normal,half+bend+edgeR));
   }
   var shape=new Path2D();
   shape.moveTo(edgesL[0].x,edgesL[0].y);
@@ -369,12 +374,30 @@ function drawLoadedBrushV4(pig,mask,points,width,rgb,profile,r,options){
     profile==='dry'?.70:profile==='knife'?.98:.93,
     profile==='dry'?.18:profile==='knife'?.67:.42+.20*intensity);
   pig.clip(shape);mask.clip(shape);
+  // Local, partially overlapping impasto islands replace uninterrupted
+  // perfectly straight banks. A brush deposits variable *volumes*, not ink.
+  var dabs=Math.min(15,Math.max(3,Math.ceil(total/(width*1.65))));
+  for(var d=0;d<dabs;d++){
+    var u=(d+r.range(.10,.90))/dabs,
+        anchor=frames[Math.floor(u*(frames.length-1))],
+        sideways=r.range(-.24,.24)*width,
+        location=shift(anchor,anchor.angle+PI/2,sideways),
+        warm=r.chance(.52),c=mix(rgb,warm?[252,243,219]:[64,45,36],
+          r.range(.045,.17)),
+        factor=profile==='knife'?1.16:profile==='dry'?.56:1;
+    depositPaintPatch(pig,mask,location,anchor.angle+r.range(-.17,.17),
+      width*r.range(.52,1.44)*factor,width*r.range(.25,.76)*factor,
+      c,r.range(profile==='dry'?.31:.55,profile==='dry'?.61:.92),
+      r.range(.22,.65),r);
+  }
   // Lumpy, correlated bristle clusters move with the curved stroke direction.
   // Positions sampled continuously; no repeated square grid or binary jitter.
   var bundles=profile==='knife'?3:profile==='dry'?14:
     profile==='flat'?9:11;
   var runs=0,contacts=0;
   for(var k=0;k<bundles;k++){
+    var segmentStart=k%5===0?0:r.range(0,.36)*total,
+        segmentEnd=k%5===0?total:r.range(.58,1)*total;
     var lateral=r.range(-.47,.47),
         wiggle=r.range(.002,.025)*width,
         offsetPhase=r.range(0,TAU),
@@ -403,7 +426,7 @@ function drawLoadedBrushV4(pig,mask,points,width,rgb,profile,r,options){
         .29*Math.sin(f.s*.10+offsetPhase*.6);
       var grounded=profile!=='dry'||lift>-.31;
       if(profile==='filbert')grounded=lift>-.93;
-      if(!grounded){flush();continue}
+      if(f.s<segmentStart||f.s>segmentEnd||!grounded){flush();continue}
       // Connected contact: a narrow bristle path with correlated splay.
       var spread=pressure*(1+.09*Math.sin(f.s*.033+offsetPhase));
       var q=shift(f,f.angle+PI/2,
@@ -663,7 +686,7 @@ A.renderOilPaintV4=function(target,settings,scale,opts){
     eligiblePaths:chains.eligibleCount,paintedPaths:painted,
     droppedPaths:chains.droppedCount,massGroups:massGroups,
     massAreaRatio:+Math.min(.3,massArea).toFixed(4),profiles:profiles,dragMarks:dragMarks,
-    revision:'4-brush-lab',brushTip:'continuous curved pressure and organic contact',
+    revision:'4b-local-loaded-brush',brushTip:'continuous pressure, irregular loaded deposits and partial bristle trails',
     squarePixelTooth:false,pressureRange:[+pressureMin.toFixed(3),+pressureMax.toFixed(3)],
     paintPatches:paintPatches,
     bristleRuns:bristleRuns,pickupMarks:pickupMarks,
