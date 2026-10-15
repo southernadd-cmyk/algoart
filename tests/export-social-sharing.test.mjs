@@ -119,16 +119,49 @@ try{
 
  for(const [key,value] of Object.entries(art.original))
    assert.equal(art.restored[key],value,'Compact link lost '+key);
+ // Real canvas is captured before the social platform can scrape it.
+ // Stub ONLY the network transport, preserving the actual JPEG pixels,
+ // exact compact token and popup/composer navigation.
+ let uploads=[];
+ await desktop.route('https://algoart-composition-plugin.onrender.com/share/preload?c=*',
+   async route=>{
+     const req=route.request(),headers={
+       'access-control-allow-origin':new URL(base).origin,
+       'access-control-allow-headers':'content-type',
+       'access-control-allow-methods':'POST, OPTIONS'};
+     if(req.method()==='OPTIONS'){
+       await route.fulfill({status:204,headers});return;
+     }
+     const data=req.postDataJSON();
+     const image=Buffer.from(data.jpeg,'base64');
+     assert(image.length>15000,'Real selected Oil painting was not uploaded');
+     assert.equal(image[0],255);assert.equal(image[1],216);
+     uploads.push({token:new URL(req.url()).searchParams.get('c'),size:image.length});
+     await route.fulfill({status:200,contentType:'application/json',
+       headers,body:JSON.stringify({ok:true,bytes:image.length})});
+   });
+ for(const domain of ['www.threads.com','bsky.app']){
+   await desktop.route('https://'+domain+'/**',route=>route.fulfill({
+     status:200,contentType:'text/html',body:'<!doctype html><title>Social draft test</title>'
+   }));
+ }
  for(const [id,host] of [['shareThreads','www.threads.com'],
     ['shareBluesky','bsky.app']]){
-   await page.locator('#'+id).evaluate(el=>el.addEventListener('click',
-     e=>e.preventDefault()));
-   await page.locator('#'+id).click();
-   const uri=new URL(await page.locator('#'+id).getAttribute('href'));
-   assert.equal(uri.hostname,host);
+   const [popup]=await Promise.all([
+     page.waitForEvent('popup',{timeout:30000}),
+     page.locator('#'+id).click()
+   ]);
+   await popup.waitForURL(u=>u.hostname===host,{timeout:30000});
+   const uri=new URL(popup.url());
    assert(uri.searchParams.get('text').includes(
      id==='shareThreads'?art.intents.threadsPreviewURL:art.intents.previewURL));
+   assert.match(await page.locator('#socialShareStatus').textContent(),
+     /preview prepared/i);
+   await popup.close();
  }
+ assert.equal(uploads.length,2,'Both services must preload the actual current image');
+ assert(uploads.every(x=>x.token===new URL(art.intents.artworkURL).searchParams.get('c')),
+   'Preloaded image does not match the exact artwork share link');
  await page.goto(art.intents.artworkURL,{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>
   document.querySelector('#seed')?.value==='SOCIAL-Φ-20261015',
