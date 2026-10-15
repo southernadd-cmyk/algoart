@@ -87,7 +87,7 @@ function candidates(plan){
     fraction=physical/maxArea;
   // True linked masses can be larger than old V5i 2-3% territories,
   // but must not swallow an entire portrait or its retained voids.
-  if(fraction<.035||fraction>.155||b.w>plan.width*.69||
+  if(fraction<.030||fraction>.115||b.w>plan.width*.69||
        b.h>plan.height*.72)return;
   if(A.compositionV5cTest.intersectsProtected(contour,plan.protectedVoids))return;
   // Framed guide centres are explicitly NOT part of the painted mass.
@@ -146,16 +146,32 @@ function enrich(source,settings,opts){
    const unique=c.guideIds.filter(g=>!existing.has(g)).length;
    const size=c.area/(plan.width*plan.height);
    return {...c,set:cells,novelty:novelty/cells.size,
-      score:size*135+unique*2.8+c.guideCount*1.5+
-        novelty/cells.size*3.3};
- }).filter(c=>c.novelty>=.28).sort((a,b)=>b.score-a.score||
+      score:size*115+unique*3+c.guideCount*.42+
+        novelty/cells.size*5.5};
+ }).filter(c=>c.novelty>=.20).sort((a,b)=>b.score-a.score||
     a.id.localeCompare(b.id));
- for(const c of ranked){
+ // Prefer several distinct medium/large source-connected relationships.
+ // Four-guide spans can lead the hierarchy, but after that, select linked
+ // two/three-guide bridges before any more large four-guide envelopes.
+ const preferred=[...ranked.filter(c=>c.guideCount<=3),
+   ...ranked.filter(c=>c.guideCount===4)];
+ const first=ranked[0];
+ if(first&&first.guideCount===4)preferred.unshift(first);
+ const placed=new Set();
+ for(const c of preferred){
    if(large.length>=target)break;
-   if(large.some(old=>ratio(c.set,old.set)>.49||
-     ratio(old.set,c.set)>.63))continue;
-   if(large.length>0&&c.guideIds.every(g=>
-     large.some(old=>old.guideIds.includes(g))))continue;
+   if(placed.has(c.id))continue;
+   placed.add(c.id);
+   // Refuse nearly identical coverage, but permit distinct, overlapping
+   // links where the source graph really shares a branch/arm/form.
+   if(large.some(other=>ratio(c.set,other.set)>.76&&
+     ratio(other.set,c.set)>.76))continue;
+   const idEdges=c.guideIds.flatMap((id,i)=>c.guideIds.slice(i+1)
+     .map(z=>[id,z].sort().join('|')));
+   const existingEdges=new Set(large.flatMap(f=>
+     f.guideIds.flatMap((id,i)=>f.guideIds.slice(i+1)
+       .map(z=>[id,z].sort().join('|')))));
+   if(large.length&&idEdges.every(e=>existingEdges.has(e)))continue;
    large.push(c);
  }
  // Larger, source-owned spans lie BELOW the old small connected fields;
