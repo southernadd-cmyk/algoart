@@ -483,14 +483,14 @@ function dragCrossingPigment(pig,mask,crossings,pts,width,rgb,r,options){
   for(var i=0;i<crossings.length;i++){
     var crossing=crossings[i],at=crossing.at,p=pts[at],
         before=pts[Math.max(0,at-1)],after=pts[Math.min(pts.length-1,at+1)],
-        angle=tangent(before,after),colour=mix(rgb,crossing.colour,.42+.34*strength),
-        length=width*(.50+.76*strength),band=width*(.09+.10*strength),
+        angle=tangent(before,after),colour=mix(rgb,crossing.colour,.48+.36*strength),
+        length=width*(.72+1.20*strength),band=width*(.14+.17*strength),
         ahead=shift(p,angle,length*.49);
-    for(var j=0;j<2;j++){
-      var centre=shift(ahead,angle+PI/2,(j-.5)*band*r.range(.30,.80));
+    for(var j=0;j<3;j++){
+      var centre=shift(ahead,angle+PI/2,(j-1)*band*r.range(.38,.85));
       depositPaintPatch(pig,mask,centre,angle+r.range(-.06,.06),
-        length*r.range(.65,.96),band*r.range(.60,1.10),colour,
-        strength*r.range(.41,.70),strength*r.range(.22,.45),r);
+        length*r.range(.72,1.04),band*r.range(.62,1.12),colour,
+        strength*r.range(.46,.75),strength*r.range(.24,.47),r);
       drawn++;
     }
   }
@@ -586,14 +586,17 @@ function drawWetCrossingLab(target,opts){
     cases.push({wetDrag:base.wetDrag,first:first,second:second,
       shade:hstats.meanSpecular});
   }
-  var diff=0;
+  var diff=0,pixelsChanged=0;
   for(var i=0;i<drawings[0].length;i+=4){
-    diff+=Math.abs(drawings[0][i]-drawings[1][i])+
+    var change=Math.abs(drawings[0][i]-drawings[1][i])+
       Math.abs(drawings[0][i+1]-drawings[1][i+1])+
       Math.abs(drawings[0][i+2]-drawings[1][i+2]);
+    diff+=change;
+    if(change>12)pixelsChanged++;
   }
   return {material:'oil-v4e-wet-crossing-lab',cases:cases,
-    colourDifference:diff,width:target.width,height:target.height};
+    colourDifference:diff,pixelsChanged:pixelsChanged,
+    width:target.width,height:target.height};
 }
 
 function drawBrushLab(target,opts){
