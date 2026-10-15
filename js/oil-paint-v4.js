@@ -668,7 +668,7 @@ A.renderOilPaintV4=function(target,settings,scale,opts){
       'separate paint-height lightness map','non-saturating height response'],
     sourceColours:[...new Set(chains.map(function(c){return css(c.rgb)}))].slice(0,32),
     height:shaded,phases:phase,sourceMeta:sourceMeta&&sourceMeta.strategy};
-  return A.lastOilPaintV3Stats;
+  return A.lastOilPaintV4Stats;
 };
 
 A.oilPaintV4Test={pressureAt:pressureAt,buildBrushFrames:buildBrushFrames,
