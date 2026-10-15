@@ -32,14 +32,15 @@ function shapeFromRect(c,seed){
   ];
 }
 function sourceSupport(cell,chains){
-  var hits=[],totalInside=0,strokeWeight=0,colors=[0,0,0],
-      cx=cell.x+cell.w*.5,cy=cell.y+cell.h*.5,
+  var hits=[],totalInside=0,cx=cell.x+cell.w*.5,
+      cy=cell.y+cell.h*.5,
       inset=Math.min(cell.w,cell.h)*.045,
       interior=rect(cell,inset);
   for(var i=0;i<chains.length;i++){
-    var c=chains[i],n=c.pts.length;
-    var insideCount=0,insideStrong=0;
+    var c=chains[i],n=c.pts.length,
+        insideCount=0,insideStrong=0,samples=0;
     for(var j=0;j<n;j+=Math.max(1,Math.floor(n/14))){
+      samples++;
       var p=c.pts[j];
       if(inside(p,cell,-1.5)){
         insideCount++;
@@ -47,17 +48,36 @@ function sourceSupport(cell,chains){
       }
     }
     if(!insideCount)continue;
-    // The source path is actually present in or along this cell.
-    var weight=Math.min(16,insideCount)*Math.sqrt(Math.max(3,c.length));
-    hits.push({id:c.sourceIndex,weight:weight,inner:insideStrong});
-    strokeWeight+=weight;
+    // Long perimeter or global framing strokes are often present in many
+    // cells. A mark mostly LOCAL to this cell should dominate its colour.
+    var locality=insideCount/Math.max(samples,1),
+        weight=Math.sqrt(Math.max(3,c.length))*insideCount*
+          (.14+.86*locality*locality)*
+          (1+.075*insideStrong);
+    hits.push({id:c.sourceIndex,weight:weight,
+      inner:insideStrong,rgb:c.rgb,locality:locality});
     totalInside+=insideStrong;
-    for(var k=0;k<3;k++)colors[k]+=c.rgb[k]*weight;
   }
   hits.sort(function(a,b){return b.weight-a.weight||a.id-b.id});
+  // Average only hues genuinely belonging to the dominant pigment family,
+  // never all unrelated nearby hues: the latter created brown/grey soup
+  // in the first V5c Recursive Divisions colour planes.
+  var colour=null;
+  if(hits.length){
+    var best=hits[0],sum=0,acc=[0,0,0];
+    for(i=0;i<hits.length;i++){
+      var h=hits[i],d=Math.hypot(
+        best.rgb[0]-h.rgb[0],best.rgb[1]-h.rgb[1],best.rgb[2]-h.rgb[2]);
+      if(d>62)continue;
+      var weight=h.weight;
+      sum+=weight;
+      for(var k=0;k<3;k++)acc[k]+=h.rgb[k]*weight;
+    }
+    colour=acc.map(function(v){return Math.round(v/Math.max(sum,.0001))});
+  }
   return {sources:hits.slice(0,12).map(function(v){return v.id}),
-    rgb:strokeWeight?colors.map(function(v){return Math.round(v/strokeWeight)}):null,
-    strokes:hits.length,inside:totalInside,weight:strokeWeight,
+    rgb:colour,strokes:hits.length,inside:totalInside,
+    weight:hits.reduce(function(a,v){return a+v.weight},0),
     centre:{x:cx,y:cy}};
 }
 function hasInteriorCut(cell,protectedVoids){
