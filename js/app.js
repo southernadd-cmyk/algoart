@@ -1141,60 +1141,12 @@ $('copyLink').onclick=copyShareLink;
    }
    event.currentTarget.href=intents[service];
    showSocialStatus(service==='threads'?
-     'Opening a Threads draft with your artwork link. Nothing is posted automatically.':
-     'Opening a Bluesky draft with your artwork link. Nothing is posted automatically.');
+     'Opening a Threads draft with this artwork\'s preview. Nothing is posted automatically.':
+     'Opening a Bluesky draft with this artwork\'s preview. Nothing is posted automatically.');
  }
  $('shareThreads').addEventListener('click',function(event){sharePostLink(event,'threads')});
  $('shareBluesky').addEventListener('click',function(event){sharePostLink(event,'bluesky')});
 
- var instagramSharing=false;
- $('shareInstagram').addEventListener('click',function(){
-   if(instagramSharing)return;
-   var shareURL=currentSocialIntents().artworkURL;
-   var settings=Object.assign({},A.readSettings(),{
-     oilRender:oilEnabled(),oilPaintRender:oilPaintEnabled(),
-     watercolourRender:watercolourEnabled(),
-     watercolourRevision:watercolourMaterialRevision,
-     watercolourFitToSheet:watercolourFitToSheet,
-     tissuePaletteVersion:tissuePaletteVersion
-   });
-   // 1x is chosen intentionally: Instagram needs an image, not a long
-   // URL, and mobile share targets are more reliable with smaller PNGs.
-   var canTrySheet=typeof navigator.share==='function'&&
-     typeof navigator.canShare==='function'&&typeof File==='function';
-   // Desktop: open Instagram within the synchronous click. Creating the
-   // image is asynchronous; opening it afterwards would be popup-blocked.
-   var tab=null;
-   if(!canTrySheet)tab=window.open('https://www.instagram.com/','_blank','noopener');
-   var btn=$('shareInstagram');
-   instagramSharing=true;btn.disabled=true;
-   showSocialStatus('Preparing this artwork as a PNG for Instagram…');
-   A.preparePNG(settings,1).then(function(file){
-     var image=new File([file.blob],file.filename,{type:'image/png'});
-     if(canTrySheet&&navigator.canShare({files:[image]})){
-       return navigator.share({files:[image],
-         title:'ALGO/ART artwork',text:'Created with ALGO/ART. '+shareURL})
-       .then(function(){showSocialStatus('Share sheet closed. Posting is completed in the chosen app.')})
-       .catch(function(err){
-         if(err&&err.name==='AbortError'){
-           showSocialStatus('Share cancelled. Nothing was posted.');
-           return;
-         }
-         // In particular, browser activation may be lost during toBlob.
-         A.downloadBlob(file.blob,file.filename);
-         showSocialStatus('Image downloaded. Open Instagram and upload the PNG.');
-       });
-     }
-     A.downloadBlob(file.blob,file.filename);
-     showSocialStatus(tab?
-       'PNG downloaded. Upload it in the Instagram tab; links cannot auto-attach images.':
-       'PNG downloaded. Open Instagram to upload it, or use your phone share menu.');
-   }).catch(function(err){
-     showSocialStatus('Unable to prepare Instagram image: '+err.message);
-   }).finally(function(){
-     instagramSharing=false;btn.disabled=false;
-   });
- });
 
 
 var plotterPreviewURL=null;
