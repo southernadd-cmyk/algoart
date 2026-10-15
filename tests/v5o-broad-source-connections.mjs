@@ -167,6 +167,13 @@ try{
       'Recursive Divisions original φ cells should not be retouched');
   }else{
     console.log('V5o DIAGNOSTIC '+entry.mode+' '+JSON.stringify(sample.broad));
+     assert(sample.broad.count>=2,'Each source system needs two or more new real-guide connections');
+     assert(sample.broad.totalCount>=sample.originalFields+2,
+       'Not enough actual linked colour fields');
+     assert(sample.broad.maxSpanFraction>=.04,
+       'Larger connected mass insufficient relative to original composition');
+     assert(sample.broad.newSpans.every(x=>x.guideCount>=2&&x.sourceCount>0),
+       'New field lacks authentic source-guide provenance');
      assert(sample.stats.visibleFields>=4&&
        sample.stats.minimumVisibleFraction>=.65,
        'V5o has lost four visibly source-linked fields');
