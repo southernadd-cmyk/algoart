@@ -111,7 +111,7 @@ function planFromSource(source,settings,opts){
   // but short accents are retained in an independent detail layer.
   for(var i=0;i<chains.length;i++){
     var c=chains[i],stride=Math.max(1,Math.floor(c.pts.length/3));
-    for(var j=1;j<c.pts.length;j+=stride){
+    for(var j=0;j<c.pts.length-1;j+=stride){
       var p=c.pts[j],q=c.pts[Math.min(j+stride,c.pts.length-1)],
           angle=Math.atan2(q.y-p.y,q.x-p.x);
       if(!Number.isFinite(angle)||dist(p,q)<3)continue;
