@@ -1,0 +1,50 @@
+name: Oil Paint V1 — 16 real procedural paintings
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/oil-paint-v1.js'
+      - 'tests/oil-v1-sixteen.mjs'
+      - 'experiments/OIL_PAINT_V1.md'
+      - '.github/workflows/oil-v1-sixteen-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oil-v1-samples:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install reproducible browser
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Validate syntax and preserve existing engines
+        run: |
+          node --check js/oil-paint-v1.js
+          node --check tests/oil-v1-sixteen.mjs
+          npm run test:renderer-lock
+          node tests/oil-render.test.mjs
+          node tests/materials-ui.test.mjs
+      - name: Start local ALGO/ART editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-v1-http.log 2>&1 &
+          for i in {1..35}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/oil-v1-http.log; exit 1
+      - name: Paint 8 fixed plus 8 seeded-random studies with V1 engine
+        run: node tests/oil-v1-sixteen.mjs
+      - name: Archive 16 PNGs, contact sheets, seeds, and timing
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oil-v1-16-real-engine-renders
+          path: oil-v1-results/
+          if-no-files-found: warn
+          retention-days: 30
