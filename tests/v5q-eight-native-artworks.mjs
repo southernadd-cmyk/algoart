@@ -15,7 +15,8 @@ const palettes=['earth','neon','golden','mono','pastel'];
 const cases=materials.flatMap((material,i)=>[0,1].map(j=>({
  material,mode:modes[i][j],
  orientation:(i+j)%2===0?'portrait':'landscape',
- seed:'V5Q-'+material.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase(),
+ seedCandidates:Array.from({length:30},()=>
+  'V5Q-'+material.toUpperCase()+'-'+randomBytes(5).toString('hex').toUpperCase()),
  palette:palettes[(i*2+j)%palettes.length],
  density:56+((i*17+j*11)%23),
  elements:36+((i*19+j*9)%27),
@@ -55,6 +56,17 @@ try{
      lines:true,circles:true,rectangles:true,polygons:true,arcs:true};
    const opts={phiFraming:true,interpretation:'areas',maxRegions:28,
      material:input.material};
+   // Random seeds can produce NO eligible V5o connected areas. Reject
+   // those up front: all eight renders MUST exercise the new actual engine.
+   let trials=0,eligible=0;
+   for(const candidate of input.seedCandidates){
+     trials++;settings.seed=candidate;
+     const trial=A.planCompositionV5(settings,opts);
+     eligible=trial.broadConnectionStats?.count||0;
+     if(eligible>=2)break;
+   }
+   if(eligible<2)throw Error('No genuinely connected random seed for '+
+     input.material+'/'+input.mode+' after '+trials+' tries');
    const full=document.createElement('canvas'),
      start=performance.now(),
      out=A.renderInterpretedV5Q(full,settings,1,opts);
@@ -89,27 +101,28 @@ try{
        pools:work.junctionPools||0
      }:null,
      elapsedMs:Math.round(performance.now()-start),
-     material:input.material
+     material:input.material,seed:settings.seed,seedTrials:trials
    };
   },item);
   assert(sample.width>=750&&sample.height>=700,
    'Not full-size source render '+item.material+' '+item.seed+
     ' '+sample.width+'x'+sample.height);
-  assert(sample.plan?.broadConnections>=1,
-   'No V5o connection geometry used in '+item.material+' '+item.seed);
+  assert(sample.plan?.broadConnections>=2,
+   'No V5o connection geometry used in '+item.material+' '+sample.seed);
   assert(sample.work&&
     (sample.work.contacts>0||sample.work.layers>0),
-   'No new source-connected material effect '+item.material);
+   'No new source-connected material effect '+item.material+'/'+sample.seed);
   assert(sample.colouredFraction>.025,
-   'Render unexpectedly empty '+item.material);
+   'Render unexpectedly empty '+item.material+'/'+sample.seed);
   const filename=(i+1).toString().padStart(2,'0')+'-'+
     item.material+'-'+item.mode+'-'+item.orientation+'-'+
-    item.seed+'.png';
+    sample.seed+'.png';
   const bytes=Buffer.from(sample.png,'base64');
   assert(bytes.length>50000,'Artwork output too small: '+filename);
   await writeFile(path.join(dir,filename),bytes);
   const{png,...meta}=sample;
-  results.push({...item,file:filename,...meta,bytes:bytes.length});
+  const{seedCandidates,...wanted}=item;
+  results.push({...wanted,file:filename,...meta,bytes:bytes.length});
   console.log('V5q REAL ARTWORK '+filename+' '+meta.width+'x'+meta.height+
    ' broad '+meta.plan.broadConnections+' '+meta.elapsedMs+'ms');
  }
