@@ -1,0 +1,52 @@
+name: V5n — full guide coverage on unchanged V7
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/v5n-material-adapters.js'
+      - 'tests/v5n-source-guide-coverage.mjs'
+      - '.github/workflows/v5n-source-guide-coverage.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v5n-source-tissue:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium and dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Syntax and faithful-material regression
+        run: |
+          node --check js/v5n-material-adapters.js
+          node --check tests/v5n-source-guide-coverage.mjs
+          npm run test:renderer-lock
+      - name: Start isolated local preview server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v5n-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/v5n-http.log; exit 1
+      - name: Render source-geometry, Oil and Tissue comparisons
+        run: node tests/v5n-source-guide-coverage.mjs
+      - name: Require actual image comparisons and metadata
+        run: |
+          test $(find v5e-results/v5n -maxdepth 1 -name '*.png' | wc -l) -eq 32
+          test -s v5e-results/v5n/v5n-material-comparison.jpg
+          test -s v5e-results/v5n/v5n-evidence.json
+      - name: Upload V5n real-browser images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5n-complete-source-guide-coverage
+          path: v5e-results/v5n/
+          if-no-files-found: warn
+          retention-days: 30
