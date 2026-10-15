@@ -46,7 +46,7 @@ try{
    A.renderConnectedPlanV5H(flat,start,.4);
    const guideKinds=start.connectedFields.map(f=>f.relationKind);
    const distinctPairs=new Set(start.connectedFields.map(f=>
-     f.guideIds.slice().sort().join('|'))).size===start.connectedFields.length;
+     f.guideIds.join('→'))).size===start.connectedFields.length;
    const linked=start.connectedFields.every(f=>
     f.guideIds.length===2&&f.sources.length>0&&
     f.members.length===2&&f.components===1&&
