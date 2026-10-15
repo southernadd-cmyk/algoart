@@ -113,6 +113,7 @@ try{
        v5f:v5f.toDataURL('image/png').split(',')[1],
        v5g:v5g.toDataURL('image/png').split(',')[1],
        deterministic:v5g.toDataURL()===repeat.toDataURL(),
+       dimensions:{width:v5g.width,height:v5g.height},interiorSamples:interior,
        versusV5f:againstV5f,versusFaithful:againstFaithful,
        interiorCoverage:interior?interiorDiff/interior:0
      };
@@ -135,6 +136,9 @@ try{
   }
   for(const material of ['oil','tissue']){
    const q=out.renders[material];
+   console.log('DEBUG V5g '+entry.mode+' '+material+
+     ' '+JSON.stringify({dimensions:q.dimensions,interiorSamples:q.interiorSamples,
+       delta:q.versusV5f,coverage:q.interiorCoverage}));
    assert(q.deterministic,material+' is not deterministic');
    if(entry.mode==='rects'){
     assert.equal(q.versusV5f,0,'Historical phi cells changed for '+material);
