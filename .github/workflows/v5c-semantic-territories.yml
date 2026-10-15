@@ -1,0 +1,59 @@
+name: V5c — semantic phi territories, framed voids and material adapters
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/composition-territories-v5c.js'
+      - 'js/v5c-material-adapters.js'
+      - 'tests/v5c-semantic-territory-lab.mjs'
+      - 'experiments/V5C_SEMANTIC_TERRITORIES.md'
+      - '.github/workflows/v5c-semantic-territories.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v5c-regions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Confirm source, scripts and archived materials
+        run: |
+          node --check js/composition-interpret-v5.js
+          node --check js/composition-territories-v5c.js
+          node --check js/v5-material-adapters.js
+          node --check js/v5c-material-adapters.js
+          node --check tests/v5c-semantic-territory-lab.mjs
+          npm run test:renderer-lock
+          node tests/materials-ui.test.mjs
+          node tests/oil-render.test.mjs
+      - name: Start private local browser test server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v5c-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/v5c-http.log; exit 1
+      - name: Validate semantic territories and render six triple comparisons
+        run: node tests/v5c-semantic-territory-lab.mjs
+      - name: Require real and complete V5c evidence
+        run: |
+          test $(find v5c-results -maxdepth 1 -name '*.png' | wc -l) -eq 18
+          test -s v5c-results/v5c-faithful-v5b-v5c-oil-tissue.jpg
+          test -s v5c-results/v5-manifest.json
+      - name: Upload V5c procedural renderer images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5c-semantic-territories-oil-tissue-pilot
+          path: v5c-results/
+          if-no-files-found: warn
+          retention-days: 30
