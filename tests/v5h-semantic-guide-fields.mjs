@@ -45,6 +45,8 @@ try{
    const flat=document.createElement('canvas');
    A.renderConnectedPlanV5H(flat,start,.4);
    const guideKinds=start.connectedFields.map(f=>f.relationKind);
+   const distinctPairs=new Set(start.connectedFields.map(f=>
+     f.guideIds.slice().sort().join('|'))).size===start.connectedFields.length;
    const linked=start.connectedFields.every(f=>
     f.guideIds.length===2&&f.sources.length>0&&
     f.members.length===2&&f.components===1&&
@@ -61,7 +63,7 @@ try{
      return seen.size===mask.size;
    });
    const result={mode:entry.mode,plan:start,flat:flat.toDataURL('image/png').split(',')[1],
-    linked,trueConnected,guideKinds,deterministic:JSON.stringify(start)===JSON.stringify(repeat),
+    linked,distinctPairs,trueConnected,guideKinds,deterministic:JSON.stringify(start)===JSON.stringify(repeat),
     material:{}};
    for(const material of ['oil','tissue']){
      const faithful=document.createElement('canvas'),
@@ -107,7 +109,7 @@ try{
    }
    return result;
   },entry);
-  assert(out.deterministic&&out.linked&&out.trueConnected,
+  assert(out.deterministic&&out.linked&&out.distinctPairs&&out.trueConnected,
     entry.mode+' guide ownership / connectivity failed');
   if(entry.mode==='rects'){
     assert.equal(out.plan.connectedFields.length,0,
