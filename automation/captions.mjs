@@ -40,7 +40,7 @@ export function makeCaptions(item) {
     item.material==='watercolor'?' / TISSUE & GRAPHITE':''}`;
   const format = item.settings.orientation === 'portrait' ? 'Portrait study · ' : '';
   const watercolor = item.material === 'watercolor';
-  const facts=`${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${oil?'oil painting':watercolour?'watercolour':
+  const facts=`${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${oil?'oil painting · '+item.settings.palette+' palette':watercolour?'watercolour':
     watercolor?'tissue & graphite':item.settings.pen+' marker'}`;
 
   const link=editorArtworkLink(item);
