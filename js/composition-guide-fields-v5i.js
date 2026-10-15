@@ -85,7 +85,7 @@ function candidates(plan,opts){
   // paint. Never construct regions from random seeds or a raster partition.
   for(let j=i+1;j<guides.length;j++){
    const b=guides[j];if(!permitted(a,b,plan))continue;
-   const configurations=a.kind==='trajectory-ribbon'?
+   const configurations=(a.kind==='trajectory-ribbon'||a.kind==='constructed-focal-form')?
      [[a,b,goldenArmConnection(a,b)],[b,a,goldenArmConnection(b,a)]]:
      [[a,b,convexOutline(a.contour.concat(b.contour))]];
    for(const [origin,other,contour] of configurations){
@@ -160,11 +160,15 @@ function selectFields(plan,opts){
      chosen.every(f=>!f.guideIds.includes(id))).length;
    const rgbDistance=chosen.length?
      Math.min(...chosen.map(f=>Math.hypot(...f.rgb.map((v,k)=>v-candidate.rgb[k])))):75;
-   const score=fresh*100+
-     newGuideCount*3000+Math.min(distance,210)*18+
+   // Penalise the single huge field that V5h/V5g selected. The chosen
+   // geometry must remain readable as multiple autonomous colour forms.
+   const targetArea=Math.min(plan.width*plan.height*.016,24000);
+   const usable=Math.min(fresh,220);
+   const score=usable*100+
+     newGuideCount*4400+Math.min(distance,250)*36+
      Math.min(rgbDistance,140)*8+
-     Math.min(candidate.area/100,250)-
-     shared*40-
+     Math.max(0,3500-Math.abs(candidate.area-targetArea)*.13)-
+     shared*65-
      // Tie breaker is deterministic, anchored to real guide indices.
      (candidate.a.guideIndex+candidate.b.guideIndex)*.01;
    if(score>bestScore){best=candidate;bestScore=score}
