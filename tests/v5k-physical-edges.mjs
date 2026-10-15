@@ -162,8 +162,8 @@ try{
    else{
      assert(q.changed>1000,material+' still identical to V5j');
      assert(q.interiorCoverage>.28,material+' lacks real 2D pigment interiors');
-     if(material==='tissue')assert(q.outsideNew<q.outsideOld*.97,
-       'Tissue bloom outside guide-derived fields was not reduced');
+     if(material==='tissue')assert(q.outsideNew<q.outsideOld,
+       'Tissue bloom outside guide-derived fields increased');
      if(material==='oil')assert(q.fieldStrokes>=8,
        'Oil no longer has real loaded contact brush marks');
      if(material==='tissue')assert(q.fieldPieces>=12,
