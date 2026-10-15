@@ -34,8 +34,8 @@ try{
     'ln','ci','re','po','ar','pal','cols','sat','bri','paper','grain',
     'sheet','material','fit','tissue','watercolor'];
    const params=new URLSearchParams(location.search);
-   const links=A.socialShare.intents(location.href,names.slice(1,36));
-   const expected=A.socialShare.expand(new URL(links.artworkURL).searchParams.get('c'),names.slice(1,36));
+   const links=A.socialShare.intents(location.href,names.slice(1,35));
+   const expected=A.socialShare.expand(new URL(links.artworkURL).searchParams.get('c'),names.slice(1,35));
    return{full:location.href,links,src:Object.fromEntries(params),
      round:expected&&Object.fromEntries(expected),
      length:[...links.caption].length,
@@ -106,7 +106,7 @@ try{
  await mobilePage.goto(mo.href,{waitUntil:'domcontentloaded',timeout:70000});
  await mobilePage.locator('#tab-export').click();
  await mobilePage.locator('#shareInstagram').click();
- await mobilePage.waitForFunction(()=>window.__sharedFiles.length>0,{timeout:90000});
+ await mobilePage.waitForFunction(()=>window.__sharedFiles.length>0,null,{timeout:90000});
  const transfer=await mobilePage.evaluate(()=>window.__sharedFiles[0]);
  assert.match(transfer.name,/watercolour-v2s.*1x\.png$/);
  assert(transfer.size>20000,'No actual image was shared');
