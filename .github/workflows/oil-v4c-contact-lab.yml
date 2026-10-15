@@ -60,7 +60,7 @@ jobs:
           test -s oil-v4c-results/lab/oil-v4c-brush-lab.png
           test -s oil-v4c-results/lab/oil-v4c-lab-manifest.json
           test -s oil-v4c-results/oil-v4b-v4c-matched-contact-sheet.jpg
-          test -s oil-v4c-results/oil-v4-manifest.json
+          test -s oil-v4c-results/oil-v4c-manifest.json
       - name: Upload only experimental image comparisons
         if: always()
         uses: actions/upload-artifact@v4
