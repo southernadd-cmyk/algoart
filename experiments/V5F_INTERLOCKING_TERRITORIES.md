@@ -70,3 +70,44 @@ unexecuted. Do not report V5f as visually validated or release-ready.
 4. Does Tissue still look like torn material rather than cloudy paint?
 
 Do not merge V5f without viewing the rendered source images.
+
+## Actual browser results — 15 October 2026
+
+[Passing V5e + V5f CI run 38765248423](https://github.com/southernadd-cmyk/algoart/actions/runs/38765248423).
+The existing V5e workflow invokes the new V5f browser test **only on this
+experimental branch**. The original frozen V5e assertions run first and pass;
+the new test then writes another 24 renderer-created PNGs, a contact sheet,
+and manifest into the nested `v5e-results/v5f/` artifact directory.
+The reusable download is [artifact 11987137752](https://github.com/southernadd-cmyk/algoart/actions/runs/38765248423/artifacts/11987137752).
+This avoids changing or installing another Actions workflow.
+
+Pixel differences versus frozen V5e at scale 0.40 (sum of RGB delta >18):
+
+| Engine | Oil | Tissue | V5c rectangles unchanged? |
+|---|---:|---:|---|
+| Growth Systems | 61,458 | 12,031 | — |
+| Golden Trajectories | 54,472 | 11,400 | — |
+| Constructed Forms | 9,484 | 2,885 | — |
+| Recursive Divisions | 0 | 0 | **yes, identical** |
+
+All original Faithful modes remain byte-identical to the unchanged material
+renderers. Plan and image repeatability, source IDs, 40-point bounded local
+contours, protected voids and material-independent geometry passed.
+
+### Visual assessment of the actual contact sheet — HOLD
+
+**V5f has improved the geometry but not yet produced convincing oil.**
+Growth and Trajectories replace single smooth cutouts with separate nested,
+overlapping colour-rich gestures. However, viewed at the same sheet scale,
+the local masses still resemble grouped flat, graphic clusters in places.
+Their edges break up more organically, yet the balance of volumes, paint
+movement, wet transitions and true chromatic blending remains insufficient.
+Constructed Forms changes rather modestly and keeps its mark-based appearance.
+Tissue gains some individually torn local shapes but not an unambiguous leap
+in physical realism.
+
+**Decision:** keep PR experimental and unmerged. Passing pixel-delta tests
+means the renderer changed, **not** that the oil painting problem is solved.
+Next investigation should focus on stroke-overlap physics, pigment mixing
+and transitions between source-linked regions, not additional decorative
+noise or inflated colour polygons.
