@@ -5,7 +5,7 @@ on:
     paths:
       - 'js/v5m-material-adapters.js'
       - 'tests/v5m-tissue-material-deposition.mjs'
-      - '.github/workflows/v5m-source-tissue.yml'
+      - '.github/workflows/v5m-tissue-deposition.yml'
   workflow_dispatch:
 permissions:
   contents: read
