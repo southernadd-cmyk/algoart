@@ -46,6 +46,7 @@ try{
     'All brush profiles must deposit actual directional marks');
   assert(result.stats.height.heightP95>.07,'Actual deposited paint relief is missing');
   assert(result.wet.colourDifference>300);
+  assert(result.wet.pixelsChanged>=400,'Wet pigment must be visibly carried');
   assert(result.wet.cases[1].second.wetDragMarks>0);
   assert.deepEqual(errors,[]);
   await writeFile(root+'/oil-v4e-brush-lab.png',Buffer.from(result.raw,'base64'));
