@@ -63,7 +63,7 @@ function linked(a,b,plan){
  if(d>limit)return false;
  if(a.kind==='organic-branch')return (
    a.branch===b.branch||
-   (Math.abs(a.depth-b.depth)<=1&&Math.abs(a.guideIndex-b.guideIndex)<=9);
+   (Math.abs(a.depth-b.depth)<=1&&Math.abs(a.guideIndex-b.guideIndex)<=9));
  if(a.kind==='trajectory-ribbon')return (
    a.arm===b.arm&&Math.abs(a.guideIndex-b.guideIndex)<=100);
  if(a.kind==='constructed-focal-form')return (
