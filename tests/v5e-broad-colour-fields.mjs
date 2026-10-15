@@ -297,3 +297,7 @@ try{
   assert.deepEqual(faults,[],'Browser exceptions');
   console.log('PASS V5e: broad field layers create significant source-derived coverage without changing faithful/rectangular behaviour');
 }finally{await browser.close()}
+
+// V5f experimental branch only: retain all frozen V5e assertions, then
+// run the additional 24-frame interlocking-territory comparison in CI.
+await import('./v5f-interlocking-paint.mjs');
