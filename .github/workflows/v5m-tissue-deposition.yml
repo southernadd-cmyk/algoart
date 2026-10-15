@@ -1,0 +1,52 @@
+name: V5m — original V7 with source-guided pigment deposits
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/v5m-material-adapters.js'
+      - 'tests/v5m-tissue-material-deposition.mjs'
+      - '.github/workflows/v5m-source-tissue.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v5m-source-tissue:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium and dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Syntax and faithful-material regression
+        run: |
+          node --check js/v5m-material-adapters.js
+          node --check tests/v5m-tissue-material-deposition.mjs
+          npm run test:renderer-lock
+      - name: Start isolated local preview server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v5m-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/v5m-http.log; exit 1
+      - name: Render source-geometry, Oil and Tissue comparisons
+        run: node tests/v5m-tissue-material-deposition.mjs
+      - name: Require actual image comparisons and metadata
+        run: |
+          test $(find v5e-results/v5m -maxdepth 1 -name '*.png' | wc -l) -eq 32
+          test -s v5e-results/v5m/v5m-material-comparison.jpg
+          test -s v5e-results/v5m/v5m-evidence.json
+      - name: Upload V5m real-browser images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5m-v7-soft-guided-tissue-comparison
+          path: v5e-results/v5m/
+          if-no-files-found: warn
+          retention-days: 30
