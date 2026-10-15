@@ -118,7 +118,11 @@ A.renderOilPaintV1=function(target,settings,scale,reveal){
  // V4e already captured the actual V8 source's guide and void metadata.
  // Before this fix Oil v1 discarded it, and ignored `reveal`: the button
  // changed state but no scaffold was drawn and hover hit-testing failed.
- const sourceMeta=base.baseline&&base.baseline.sourceRenderMeta;
+ // The V5p areas result reports its plan/work, not its baseline stats.
+ // Read the dedicated V4e capture created by that same synchronous render.
+ // (The previous fix erroneously expected `base.baseline` to be present.)
+ const oilStats=A.lastOilPaintV4EStats;
+ const sourceMeta=oilStats&&oilStats.sourceRenderMeta;
  if(!sourceMeta||!sourceMeta.guide)
    throw Error('Oil Paint v1 cannot recover the source composition metadata');
  const meta={
@@ -141,6 +145,6 @@ A.renderOilPaintV1=function(target,settings,scale,reveal){
  A.lastRenderMeta=meta;
  A.lastPhiSheetFrame=meta.phiSheetFrame||null;
  return {...base,...meta,material:'oil',version:'oil-paint-v1',
-   work:{...base.work,oilV1:applied},sourceMeta:base.baseline};
+   work:{...base.work,oilV1:applied},sourceMeta:oilStats};
 };
 })(window.AlgoArt);
