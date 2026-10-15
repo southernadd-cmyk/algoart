@@ -163,14 +163,15 @@ const seedSalt = String(process.env.SOCIAL_SEED_SALT || '').trim();
 const orientation = process.env.SOCIAL_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
 // "watercolor" remains the historic Tissue & Graphite queue. New British
 // "watercolour" is a distinct V2S paint medium, never an alias of Tissue.
-const material = process.env.SOCIAL_MATERIAL === 'watercolour' ? 'watercolour' :
+const material = process.env.SOCIAL_MATERIAL === 'oil' ? 'oil' :
+  process.env.SOCIAL_MATERIAL === 'watercolour' ? 'watercolour' :
   process.env.SOCIAL_MATERIAL === 'watercolor' ? 'watercolor' : 'marker';
-const watercolor = material === 'watercolor',watercolour = material === 'watercolour';
+const watercolor = material === 'watercolor',watercolour = material === 'watercolour',oil = material === 'oil';
 const tissueEdition = watercolor ? tissueEditionForDate(day) : null;
-const generationCount = watercolour ? 1 : watercolor ? 2 :
+const generationCount = oil ? 1 : watercolour ? 1 : watercolor ? 2 :
   Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
 const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day,
-  ...(watercolour?['watercolour',orientation]:watercolor?['watercolor',orientation]:
+  ...(oil?['oil',orientation]:watercolour?['watercolour',orientation]:watercolor?['watercolor',orientation]:
     orientation==='portrait'?['portrait']:[]));
 await fs.mkdir(outDir, { recursive: true });
 
@@ -182,7 +183,7 @@ try {
   for (let index = 0; index < generationCount; index++) {
     // Existing landscape editions retain their exact JPEG, settings and version.
     // Portrait editions are already frozen in the release queue by portrait-live.
-    if(!watercolor&&!watercolour&&orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
+    if(!oil&&!watercolor&&!watercolour&&orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
       const archived=await archivedLandscapeStudy(day,index);
       if(archived){
         await fs.copyFile(archived.imagePath,path.join(outDir,archived.entry.imageFile));
@@ -197,13 +198,25 @@ try {
     // A few valid portrait seeds produce unusually sparse or off-canvas art.
     // Try deterministic alternatives so one weak render doesn't cancel the
     // whole five-work day. Landscape generation stays byte-for-byte unchanged.
-    for (let attempt = 0; attempt < (orientation === 'portrait' ? 8 : 1); attempt++) {
+    for (let attempt = 0; attempt < (oil ? 24 : orientation === 'portrait' ? 8 : 1); attempt++) {
     const retrySalt = attempt ? seedSalt + '|retry-' + attempt : seedSalt;
-    const settings = settingsFor(day,index,watercolour?'WATERCOLOUR|V2S|1|'+retrySalt:
+    const settings = settingsFor(day,index,oil?'OIL|V1|'+retrySalt:watercolour?'WATERCOLOUR|V2S|1|'+retrySalt:
       watercolor?'WATERCOLOR|1|'+retrySalt:retrySalt,orientation);
     // All NEW daily gallery images use the same original Marker cream paper.
     // Keep the RNG draw and all archive settings for earlier dates unchanged.
     if(day>='2026-10-14')settings.paper='#f5f0e6';
+    if(oil){
+      // New random palette for each day's image, recorded in its seed URL.
+      const pickOil=rng(day+'|oil-v1|'+orientation+'|'+retrySalt);
+      const oilModes=MODES.filter(m=>['organic','spiral','geometric'].includes(m[0]));
+      const chosen=oilModes[Math.floor(pickOil()*oilModes.length)];
+      settings.mode=chosen[0];settings.series=chosen[1];
+      settings.seed='O'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
+        '-01-'+(hash(day+'|oil-v1|'+orientation+'|'+retrySalt)%100000)
+          .toString().padStart(5,'0');
+      settings.palette=PALETTES[Math.floor(pickOil()*PALETTES.length)];
+      settings.paper='#f5f0e6';
+    }
     if(watercolour){
       // Completely independent seed namespace: no collisions with existing
       // AA/AP or historic Tissue AWL/AWP images.
@@ -224,16 +237,22 @@ try {
     }
     // The cutoff changes only the MATERIAL; V8's settings, daily seed and
     // archive IDs retain the exact same deterministic generation algorithm.
-    const itemVersion=watercolour?9:rendererVersion;
+    const itemVersion=oil||watercolour?9:rendererVersion;
     // From 15 October all NEW Marker, Tissue and Watercolour editions share
     // the same φ-derived source fit, in their PNG/SVG and exact share URL.
     // Earlier dates and already-frozen gallery/release assets stay untouched.
     const query=appendDailyPhiFraming(
-      queryFor(settings,itemVersion)+(watercolour?'&material=watercolour-v2s&fit=0':
+      queryFor(settings,itemVersion)+(oil?'&material=oil-v1':watercolour?'&material=watercolour-v2s&fit=0':
       watercolor?tissueEdition.suffix:''),day);
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
     if(watercolor)validateTissueShareUrl(day,shareUrl);
+    if(oil){
+      const q=new URL(shareUrl).searchParams;
+      if(q.get('material')!=='oil-v1'||q.get('seed')!==settings.seed||
+         q.get('pal')!==settings.palette)
+        throw Error('Oil image URL does not preserve exact seed and randomly chosen palette');
+    }
 
     await page.goto(localUrl, { waitUntil: 'networkidle' });
     await page.waitForFunction(() => {
@@ -325,31 +344,43 @@ try {
     if (canvasSize[0] !== expectedSize[0] || canvasSize[1] !== expectedSize[1]) {
       throw new Error(`Unexpected ${orientation} canvas size: ${canvasSize.join('x')}`);
     }
+    if(oil){
+      const links=await page.evaluate(()=>{
+        const A=window.AlgoArt;
+        const plan=A.planCompositionV5(A.readSettings(),
+          {phiFraming:A.phiFramingEnabled===true,maxRegions:28});
+        return plan.broadConnectionStats?.count||0;
+      });
+      if(links<2){
+        if(attempt<23){console.warn('Oil seed lacks source-connected fields: '+settings.seed);continue;}
+        throw Error('Unable to find Oil seed with source-connected fields');
+      }
+    }
     if (!rendered.validation.valid) {
-      if (orientation === 'portrait' && attempt < 7) {
+      if ((oil && attempt<23) || (orientation === 'portrait' && attempt < 7)) {
         console.warn(`Portrait ${index + 1} candidate ${settings.seed} was rejected; trying a deterministic alternate: ${JSON.stringify(rendered.validation)}`);
         continue;
       }
       throw new Error(`Render validation failed for ${settings.seed}: ${JSON.stringify(rendered.validation)}`);
     }
 
-    const filename=`${day}-${watercolour?'watercolour-'+orientation+'-':
+    const filename=`${day}-${oil?'oil-'+orientation+'-':watercolour?'watercolour-'+orientation+'-':
       watercolor?'watercolor-'+orientation+'-':orientation==='portrait'?'portrait-':''}${String(index+1).padStart(2,'0')}-${settings.mode}-${settings.seed}.jpg`;
     const filePath = path.join(outDir, filename);
     await fs.writeFile(filePath, Buffer.from(rendered.dataUrl.split(',')[1], 'base64'));
     const instagramImageFile=orientation==='portrait'?
-      filename.replace(/\.jpg$/,'-instagram.jpg'):(watercolor||watercolour?filename:null);
+      filename.replace(/\.jpg$/,'-instagram.jpg'):(oil||watercolor||watercolour?filename:null);
     if (orientation === 'portrait') {
       if (!rendered.instagramDataUrl) throw new Error('Missing Instagram-safe 4:5 portrait derivative');
       await fs.writeFile(path.join(outDir, instagramImageFile), Buffer.from(rendered.instagramDataUrl.split(',')[1], 'base64'));
     }
 
     const item = {
-      id: `${day}-${watercolour?(orientation==='portrait'?'CP':'CL'):
+      id: `${day}-${oil?(orientation==='portrait'?'OP':'OL'):watercolour?(orientation==='portrait'?'CP':'CL'):
         watercolor?(orientation==='portrait'?'WP':'WL'):
         orientation==='portrait'?'P':''}${String(index+1).padStart(2,'0')}`,
-      ...(orientation==='portrait'||watercolor||watercolour?{orientation}:{}),
-      ...(watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
+      ...(orientation==='portrait'||watercolor||watercolour||oil?{orientation}:{}),
+      ...(oil?{material:'oil'}:watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
       generatedAt: new Date().toISOString(),
       seed: settings.seed,
       mode: settings.mode,
@@ -360,18 +391,20 @@ try {
       shareUrl,
       rendererVersion:itemVersion,
       settings,
-      platforms:watercolour?Object.fromEntries(['instagram','threads','bluesky'].map(p=>
+      platforms:oil?Object.fromEntries(['instagram','threads','bluesky'].map(p=>
+         [p,{scheduledTime:'15:00',status:'pending'}])):
+         watercolour?Object.fromEntries(['instagram','threads','bluesky'].map(p=>
         [p,{scheduledTime:'15:00',status:'pending'}])):
         watercolor?{instagram:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},threads:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},bluesky:{scheduledTime:index===0?'09:00':'20:30',status:'pending'}}:
         platformAssignment(index,orientation)
     };
 
     item.copy = makeCaptions(item);
-    if (!watercolor && !watercolour && rendered.accessibility?.altText) {
+    if (!oil && !watercolor && !watercolour && rendered.accessibility?.altText) {
       item.copy.altText = rendered.accessibility.altText;
     }
     item.accessibility = {
-      altText:watercolor||watercolour?item.copy.altText:(rendered.accessibility?.altText||item.copy.altText),
+      altText:oil||watercolor||watercolour?item.copy.altText:(rendered.accessibility?.altText||item.copy.altText),
       longDescription: rendered.accessibility?.longDescription || '',
       constructionDescription: rendered.accessibility?.constructionDescription || ''
     };
@@ -393,8 +426,8 @@ const queue = {
   timezone: TIME_ZONE,
   accounts: ACCOUNTS,
   cadence: {
-    instagramPerDay:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.instagram.length,
-    threadsPerDay:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.threads.length
+    instagramPerDay:oil?1:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.instagram.length,
+    threadsPerDay:oil?1:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.threads.length
   },
   publishingEnabled: false,
   entries
@@ -402,5 +435,5 @@ const queue = {
 
 await fs.writeFile(path.join(outDir, 'queue.json'), JSON.stringify(queue, null, 2));
 console.log(`\nGenerated ${generationCount} artworks into ${outDir}`);
-console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(watercolour?['15:00']:
+console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(oil?['15:00']:watercolour?['15:00']:
   watercolor?['09:00','20:30']:orientation==='portrait'?PORTRAIT_SCHEDULE:SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);
