@@ -329,6 +329,15 @@ function tissueGuideTerritory(ctx,cell){
 function tissueColourField(ctx,area){
   var base=area.contour||[],r=rng(area.seed+'|v5g-connected-paper'),
       palette=area.palette||[area.rgb],pieces=0;
+  // Always lay one fully occupied, contiguous paper field first.
+  // Its physical tissue edge is refined by the individually torn overlays;
+  // this prevents translucent splotches from replacing genuine filled areas.
+  ctx.save();
+  ctx.globalCompositeOperation='multiply';
+  ctx.globalAlpha=.84;
+  ctx.fillStyle=hex(blend(palette[0],[245,240,231],.065));
+  ctx.fill(massContour(area));
+  ctx.restore();
   // Real, large, CONNECTED pieces. No airbrush, soft glow, line
   // expansion or partly transparent aura around the Faithful marks.
   // The original source defines one common silhouette for ALL materials.
@@ -369,7 +378,7 @@ function tissueAdapter(target,plan,scale){
   for(var fi=0;fi<(plan.connectedFields||[]).length;fi++){
     fieldPieces+=tissueColourField(ctx,plan.connectedFields[fi]);
   }
-  for(var ti=0;ti<(plan.territories||[]).length;ti++){
+  for(var ti=0;ti<((plan.connectedFields||[]).length?0:(plan.territories||[]).length);ti++){
     var cell=plan.territories[ti];
     if(cell.role==='painted')territoryPieces+=cell.kind==='rect-cell'?
       tissueTerritory(ctx,cell):tissueGuideTerritory(ctx,cell);
