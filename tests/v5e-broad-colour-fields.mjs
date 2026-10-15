@@ -315,3 +315,6 @@ await import('./v5i-visible-source-fields.mjs');
 
 // V5j never changes source geometry; compare complete Oil/Tissue physical images.
 await import('./v5j-material-legibility.mjs');
+
+// V5k: physical edges only; no source-region geometry edits or live changes.
+await import('./v5k-physical-edges.mjs');
