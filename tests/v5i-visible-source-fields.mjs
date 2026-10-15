@@ -62,7 +62,10 @@ try{
      }
      return seen.size===mask.size;
    });
-   const result={mode:entry.mode,plan:start,flat:flat.toDataURL('image/png').split(',')[1],
+   const candidates=A.compositionV5iTest.candidates(start,opts).map(f=>({
+     a:f.a.guideId,b:f.b.guideId,area:f.area,
+     centre:f.centre,box:f.box}));
+   const result={mode:entry.mode,candidates,plan:start,flat:flat.toDataURL('image/png').split(',')[1],
     linked,distinctPairs,trueConnected,guideKinds,deterministic:JSON.stringify(start)===JSON.stringify(repeat),
     material:{}};
    for(const material of ['oil','tissue']){
@@ -111,6 +114,13 @@ try{
   },entry);
   assert(out.deterministic&&out.linked&&out.distinctPairs&&out.trueConnected,
     entry.mode+' guide ownership / connectivity failed');
+  console.log('DIAG V5i '+entry.mode+': '+JSON.stringify({
+    painted:out.plan.territories.filter(f=>f.role==='painted').length,
+    candidateCount:out.candidates.length,
+    examples:out.candidates.slice(0,20),
+    chosen:out.plan.connectedFields.map(f=>f.guideIds),
+    exposure:out.plan.connectedStats.exposedFractions
+  }));
   if(entry.mode==='rects'){
     assert.equal(out.plan.connectedFields.length,0,
       'V5c source φ cells must be retained unchanged');
