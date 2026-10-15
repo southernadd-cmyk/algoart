@@ -4,7 +4,7 @@
 window.AlgoArt=window.AlgoArt||{};
 (function(A){
 'use strict';
-var VERSION='v5-plan-1',PI=Math.PI;
+var VERSION='v5b-plan-2',PI=Math.PI;
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function lerp(a,b,t){return a+(b-a)*t}
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
@@ -143,9 +143,9 @@ function planFromSource(source,settings,opts){
       if(neighbours.length>=12)break;
     }
     if(neighbours.length<2)continue;
-    var spread=Math.min(64,14+neighbours.length*3.3),
-        length=clamp(a.length*.8+neighbours.length*3.8,38,142),
-        breadth=clamp(spread*.8,21,62),
+    var spread=Math.min(97,20+neighbours.length*4.9),
+        length=clamp(a.length*.85+neighbours.length*5.0,42,185),
+        breadth=clamp(spread*.9,28,88),
         tooNear=regions.some(function(v){return Math.hypot(v.x-a.x,v.y-a.y)<
           Math.max(28,Math.min(v.width,breadth)*.82)});
     if(tooNear)continue;
@@ -158,12 +158,30 @@ function planFromSource(source,settings,opts){
         y2=a.y+Math.sin(a.angle)*length*.42;
     if(inVoid(a.x,a.y,voids,radius)||inVoid(x1,y1,voids,radius)||
       inVoid(x2,y2,voids,radius))continue;
+    var contour=[],shapeRand=seeded(seed+'|outline|'+a.sourceIndex+'|'+i);
+    // A material-neutral, source-local area footprint; curved tapered
+    // boundary is a *composition* polygon, not oil bristles or tissue tears.
+    for(var edge=0;edge<2;edge++){
+      for(var tIndex=0;tIndex<=10;tIndex++){
+        var t=edge===0?tIndex/10:(10-tIndex)/10,
+            taper=Math.pow(Math.max(.07,Math.sin(PI*t)),.30),
+            tangentDistance=(t-.5)*length,
+            sideDistance=(edge===0?-1:1)*breadth*.52*taper*
+              (.89+.16*shapeRand());
+        contour.push({
+          x:+(a.x+Math.cos(a.angle)*tangentDistance-
+            Math.sin(a.angle)*sideDistance).toFixed(2),
+          y:+(a.y+Math.sin(a.angle)*tangentDistance+
+            Math.cos(a.angle)*sideDistance).toFixed(2)
+        });
+      }
+    }
     regions.push({id:'R'+regions.length,pass:'mass',x:+a.x.toFixed(2),
       y:+a.y.toFixed(2),angle:+a.angle.toFixed(5),
       length:+length.toFixed(2),width:+breadth.toFixed(2),
       rgb:colorSum.map(function(v){return Math.round(v/weighted)}),
       sources:[...new Set(neighbours.map(function(n){return n.candidate.sourceIndex}))].slice(0,12),
-      density:neighbours.length,seed:hash(seed+'|region|'+a.sourceIndex+'|'+j)});
+      contour:contour,density:neighbours.length,seed:hash(seed+'|region|'+a.sourceIndex+'|'+j)});
   }
   // Separate medium and accent gestures. These represent the same
   // geometry but with less broad coverage; adapters decide their material.
