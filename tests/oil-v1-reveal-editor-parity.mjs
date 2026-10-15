@@ -31,6 +31,14 @@ try{
       hasGuide:!!window.AlgoArt.lastRenderMeta?.guide};
  });
  assert(ui.hasGuide,'Oil lost source guide in app after initial rendering');
+ const materialControls=await page.evaluate(()=>({
+   note:document.querySelector('#materialControlsNote')?.textContent,
+   help:document.querySelector('#control-help-pen')?.textContent,
+   profile:document.querySelector('#pen option')?.textContent
+ }));
+ assert.match(materialControls.note,/Oil Paint v1/);
+ assert.match(materialControls.help,/loaded bristle|Oil Paint v1/i);
+ assert.doesNotMatch(materialControls.profile||'',/Highlighter/);
  const canvas=page.locator('.canvas-wrap canvas').first();
  const initial=await canvas.evaluate(el=>el.toDataURL());
  await page.locator('#geometry').click();
