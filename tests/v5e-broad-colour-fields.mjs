@@ -301,3 +301,7 @@ try{
 // V5f experimental branch only: retain all frozen V5e assertions, then
 // run the additional 24-frame interlocking-territory comparison in CI.
 await import('./v5f-interlocking-paint.mjs');
+
+// Run genuine connected AREA previews and physical paint comparisons on
+// V5g only; frozen experimental history remains unchanged.
+await import('./v5g-connected-areas.mjs');
