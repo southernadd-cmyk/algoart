@@ -1,0 +1,55 @@
+name: Oil Paint v1 — production release regression
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'js/oil-v1-core-*.js'
+      - 'js/oil-paint-v1.js'
+      - 'js/app.js'
+      - 'js/export.js'
+      - 'js/describe.js'
+      - 'js/control-help.js'
+      - 'tests/oil-v1-release-browser.mjs'
+      - 'tests/materials-ui.test.mjs'
+      - '.github/workflows/oil-v1-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oil-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Syntax and unchanged existing renderers
+        run: |
+          node --check js/oil-v1-core-a.js
+          node --check js/oil-v1-core-b.js
+          node --check js/oil-v1-core-c.js
+          node --check js/oil-paint-v1.js
+          node --check js/app.js
+          node --check js/export.js
+          node --check js/describe.js
+          node --check tests/oil-v1-release-browser.mjs
+          npm run test:renderer-lock
+          npm run test:oil-render
+          npm run test:watercolour-release
+          node tests/materials-ui.test.mjs
+      - name: Start live-style local page server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/oil-release-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/oil-release-http.log; exit 1
+      - name: Actual Chrome Oil release, PNG and share-link tests
+        run: node tests/oil-v1-release-browser.mjs
