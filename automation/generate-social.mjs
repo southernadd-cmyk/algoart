@@ -420,8 +420,8 @@ try {
 const queue = {
   version: 1,
   date: day,
-  ...(watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
-  ...(orientation==='portrait'||watercolor||watercolour?{orientation}:{}),
+  ...(oil?{material:'oil'}:watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
+  ...(orientation==='portrait'||watercolor||watercolour||oil?{orientation}:{}),
   generatedAt: new Date().toISOString(),
   timezone: TIME_ZONE,
   accounts: ACCOUNTS,
