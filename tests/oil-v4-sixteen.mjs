@@ -112,7 +112,9 @@ try{
       return {raw:canvas.toDataURL('image/png').split(',')[1],stats,
         ms:Math.round(performance.now()-start)};
     },item);
-    const v3cName=filename.replace('oil-v3','oil-v2');
+    assert.equal(baseline.stats.material,'oil-paint-v3',
+      'Baseline must use frozen V3c renderer, not current V4 brush');
+    const v3cName=filename.replace('oil-v4','oil-v3c');
     await writeFile(path.join(root,'comparison',v3cName),Buffer.from(baseline.raw,'base64'));
     console.log('OIL V4 '+item.group+' '+item.number+'/8 '+item.mode+' '+item.orientation+
       ' paths '+stats.paintedPaths+' '+stats.ms+'ms');
