@@ -305,3 +305,7 @@ await import('./v5f-interlocking-paint.mjs');
 // Run genuine connected AREA previews and physical paint comparisons on
 // V5g only; frozen experimental history remains unchanged.
 await import('./v5g-connected-areas.mjs');
+
+// Source-guide interpretation regression: retain V5e/f/g archived tests,
+// then require 4+ geometry-derived fields rather than a merged mega-mask.
+await import('./v5h-semantic-guide-fields.mjs');
