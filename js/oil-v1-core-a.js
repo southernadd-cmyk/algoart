@@ -792,6 +792,10 @@ A.renderOilPaintV4E=function(target,settings,scale,opts){
     borrowedTechniques:['continuous pressure, arc-length contact and filbert/flat/dry/knife tips','local pigment pickup',
       'separate paint-height lightness map','non-saturating height response'],
     sourceColours:[...new Set(chains.map(function(c){return css(c.rgb)}))].slice(0,32),
+    // Keep the V8 composition metadata captured by the REAL source renderer.
+    // Reveal, hit-testing and Describe use its guide/voids/strategy; this
+    // changes no pigment pixels and does not alter historic material paths.
+    sourceRenderMeta:sourceMeta,
     height:shaded,phases:phase,sourceMeta:sourceMeta&&sourceMeta.strategy};
   return A.lastOilPaintV4EStats;
 };
