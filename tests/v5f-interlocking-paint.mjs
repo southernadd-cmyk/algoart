@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
-const folder='v5f-results',server=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
+const folder='v5e-results/v5f',server=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 await mkdir(folder,{recursive:true});
 const cases=[
   {seed:'V5-MASS-ORGANIC-20261015',mode:'organic',orientation:'portrait',
