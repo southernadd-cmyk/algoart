@@ -63,7 +63,7 @@ try {
   assert(d.t1.height.heightBytes===476*340*4);
   assert(d.t1.height.heightAtCapFraction<.25,'V4 surface height still mostly saturated');
   assert(d.t1.height.heightPeak>0&&d.t1.height.heightPeak<=18);
-  assert.equal(d.t1.revision,'4-brush-lab');
+  assert.equal(d.t1.revision,'4b-local-loaded-brush');
   assert(d.t1.bristleRuns>d.t1.paintedPaths,
     'Each paint path must have multiple actual bristle deposits');
   assert(d.t1.bristleContacts>d.t1.paintedPaths,
