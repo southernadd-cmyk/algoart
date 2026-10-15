@@ -28,8 +28,8 @@ try{
   'v5c-material-adapters.js','composition-guides-v5d.js',
   'v5d-material-adapters.js','composition-colour-fields-v5e.js',
   'v5e-material-adapters.js','composition-interlocking-v5f.js',
-  'v5f-material-adapters.js','composition-connected-v5h.js',
-  'v5h-material-adapters.js','composition-guide-fields-v5i.js'])
+  'v5f-material-adapters.js','composition-connected-v5g.js',
+  'v5g-material-adapters.js','composition-guide-fields-v5h.js','composition-guide-fields-v5i.js'])
    await page.addScriptTag({url:'/js/'+name});
  for(const entry of cases){
   const out=await page.evaluate(entry=>{
@@ -70,16 +70,16 @@ try{
            old=document.createElement('canvas'),
            fresh=document.createElement('canvas'),
            again=document.createElement('canvas');
-     A.renderInterpretedV5H(faithful,settings,.4,
+     A.renderInterpretedV5I(faithful,settings,.4,
        {...opts,material,interpretation:'faithful'});
      const planner=A.planCompositionV5;
      try{
        A.planCompositionV5=(s,o)=>A.compositionV5hFromSource(
          A.captureCompositionV5(s,o),s,o);
-       A.renderInterpretedV5G(old,settings,.4,{...opts,material});
+       A.renderInterpretedV5H(old,settings,.4,{...opts,material});
      }finally{A.planCompositionV5=planner}
-     A.renderInterpretedV5H(fresh,settings,.4,{...opts,material});
-     A.renderInterpretedV5H(again,settings,.4,{...opts,material});
+     A.renderInterpretedV5I(fresh,settings,.4,{...opts,material});
+     A.renderInterpretedV5I(again,settings,.4,{...opts,material});
      const a=fresh.getContext('2d').getImageData(0,0,fresh.width,fresh.height).data,
            b=old.getContext('2d').getImageData(0,0,old.width,old.height).data,
            f=faithful.getContext('2d').getImageData(0,0,faithful.width,faithful.height).data;
