@@ -12,6 +12,7 @@ on:
       - 'js/control-help.js'
       - 'tests/oil-v1-release-browser.mjs'
       - 'tests/oil-v1-reveal-editor-parity.mjs'
+      - 'tests/oil-v1-extra-links.mjs'
       - 'tests/materials-ui.test.mjs'
       - '.github/workflows/oil-v1-release.yml'
   workflow_dispatch:
@@ -41,6 +42,7 @@ jobs:
           node --check js/describe.js
           node --check tests/oil-v1-release-browser.mjs
           node --check tests/oil-v1-reveal-editor-parity.mjs
+          node --check tests/oil-v1-extra-links.mjs
           npm run test:renderer-lock
           npm run test:oil-render
           node tests/materials-ui.test.mjs
@@ -58,3 +60,5 @@ jobs:
         run: node tests/oil-v1-release-browser.mjs
       - name: Oil Reveal, tooltip, editor and all eight engines parity
         run: node tests/oil-v1-reveal-editor-parity.mjs
+      - name: Oil 4-Up, phi framing, SVG and plotter action audit
+        run: node tests/oil-v1-extra-links.mjs
