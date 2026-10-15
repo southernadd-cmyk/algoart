@@ -661,9 +661,10 @@ function drawBrushLab(target,opts){
   return {material:'oil-paint-v4-brush-lab',width:target.width,height:target.height,
     studies:stats.length, profiles:profiles, stats:stats,height:surface};
 }
-function ground(ctx,w,h,seed,r){
-  // Primed canvas, not watercolour paper. Tooth is faint and deterministic.
-  ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,w,h);
+function ground(ctx,w,h,seed,r,paper){
+  // Actual primed oil canvas uses the selected Paper colour. Keep its tooth
+  // and seeded brushwork unchanged; missing Paper retains legacy cream.
+  ctx.fillStyle=paper||'#f5f0e6';ctx.fillRect(0,0,w,h);
   ctx.save();
   for(var i=0;i<Math.ceil(w/5);i++){
     var x=i*5+r.range(-.4,.4);
@@ -750,7 +751,7 @@ A.renderOilPaintV4E=function(target,settings,scale,opts){
   ctx.scale(scale,scale);mask.scale(scale,scale);
   var r=A.makeR(settings.seed+'|oil-paint-v4e|'+settings.mode+'|'+
     settings.orientation+'|'+(opts.phiFraming?'phi':'plain'));
-  ground(ctx,w,h,settings.seed,r);
+  ground(ctx,w,h,settings.seed,r,settings.paper);
   phase.planMs=+(performance.now()-start-phase.captureMs).toFixed(2);
   var profiles={flat:0,filbert:0,dry:0,knife:0},dragMarks=0,painted=0,massArea=0,bristleRuns=0,pickupMarks=0,wetDragMarks=0,bristleContacts=0,paintPatches=0,contactFootprints=0,loadStart=0,loadEnd=0,pressureMin=2,pressureMax=0;
   var paintStart=performance.now();
