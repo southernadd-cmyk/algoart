@@ -430,7 +430,7 @@ function tissueColourField(ctx,area,plan){
   for(let gi=0;gi<guides.length;gi++){
     const guide=guides[gi],axis=guide.axis||[],
       origin={x:guide.x||area.x,y:guide.y||area.y},
-      fallback=guide.angle||0,
+      fallback=(guide.kind==='constructed-focal-form'&&guide.contour?.length)?Math.atan2(guide.contour[0].y-guide.y,guide.contour[0].x-guide.x):(guide.angle||0),
       base=colours[(gi+1)%colours.length]||pigment;
     // Independent wet-pigment deposits follow the ACTUAL guide's tangent.
     // Each has a feathered transversal profile, not a uniform polygon fill
