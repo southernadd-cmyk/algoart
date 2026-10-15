@@ -112,7 +112,8 @@ try{
  const transfer=await mobilePage.evaluate(()=>window.__sharedFiles[0]);
  assert.match(transfer.name,/watercolour-v2s.*1x\.png$/);
  assert(transfer.size>20000,'No actual image was shared');
- assert(transfer.text.includes('algoart'));
+ assert(transfer.text.includes('ALGO/ART')&&transfer.text.includes('?c='),
+   'Native share must contain branded exact artwork link');
  await mobile.close();
  assert.deepEqual(errors,[],'Browser errors');
  console.log('PASS Export sharing: Copy Link first, exact compact URL with Unicode, genuine Threads/Bluesky intents, desktop Instagram PNG+website, mobile native PNG share',JSON.stringify({
