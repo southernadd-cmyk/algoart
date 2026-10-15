@@ -21,6 +21,13 @@ function clippedToVoids(ctx,plan){
   }
   ctx.clip(p,'evenodd');
 }
+function massContour(region){
+  var pts=region.contour||[],path=new Path2D();
+  if(pts.length<3)return path;
+  path.moveTo(pts[0].x,pts[0].y);
+  for(var i=1;i<pts.length;i++)path.lineTo(pts[i].x,pts[i].y);
+  path.closePath();return path;
+}
 function baseline(target,s,scale,material,opts){
   if(material==='oil'){
     return A.renderOilPaintV4E(target,s,scale,{
@@ -54,7 +61,15 @@ function oilAdapter(target,plan,scale){
   var deposits=0;
   for(var i=0;i<plan.regions.length;i++){
     var a=plan.regions[i],r=rng(a.seed+'|oil-v5'),
-        profiles=['filbert','flat','knife'],
+        // Paint a broad, plan-derived loaded colour mass beneath the bristle
+        // gestures. It is not a thickened Marker source line: this is the
+        // optional V5 area translated by Oil's material adapter.
+        area=massContour(a);
+    ctx.globalAlpha=.73;
+    ctx.fillStyle=hex(blend(a.rgb,[243,228,205],.075));
+    ctx.fill(area);
+    mask.globalAlpha=.46;mask.fillStyle='#fff';mask.fill(area);
+    var profiles=['filbert','flat','knife'],
         profile=profiles[i%3],steps=2;
     for(var k=0;k<steps;k++){
       var offset=(k-.5)*a.width*.31,
@@ -106,7 +121,21 @@ function tissueAdapter(target,plan,scale){
   var ctx=target.getContext('2d'),pieces=0,lines=0;
   ctx.save();ctx.scale(scale,scale);clippedToVoids(ctx,plan);
   function irregularPiece(region,k){
-    var r=rng(region.seed+'|tissue-v5|'+k),p=new Path2D(),
+    var r=rng(region.seed+'|tissue-v5b|'+k),p=new Path2D(),
+        outline=region.contour||[];
+    if(outline.length>=3){
+      for(var index=0;index<outline.length;index++){
+        var v=outline[index],shrink=k===0?1.08:.91,
+            along=v.x-region.x,across=v.y-region.y,
+            // Different physical cut from same planned shape; this edge
+            // belongs to the paper adapter, never the shared planner.
+            rag=r.range(-2.9,2.9);
+        var x=region.x+along*shrink+rag,
+            y=region.y+across*shrink+r.range(-2.9,2.9);
+        if(index===0)p.moveTo(x,y);else p.lineTo(x,y);
+      }
+      p.closePath();return p;
+    }
         n=16,side=region.angle+PI/2,
         length=region.length*(k===0?1.08:.83),
         breadth=region.width*(k===0?1.65:1.31),
@@ -132,11 +161,11 @@ function tissueAdapter(target,plan,scale){
       var p=irregularPiece(v,k),t=rng(v.seed+'|shade|'+k),
           ratio=k===0?.10:.065;
       ctx.globalCompositeOperation='multiply';
-      ctx.globalAlpha=k===0?.40:.31;
+      ctx.globalAlpha=k===0?.48:.35;
       ctx.fillStyle=hex(blend(colour,[245,240,230],ratio));ctx.fill(p);
       ctx.globalCompositeOperation='source-over';
       ctx.strokeStyle='rgba(245,239,227,.45)';
-      ctx.globalAlpha=.34;ctx.lineWidth=1.7;ctx.stroke(p);
+      ctx.globalAlpha=.31;ctx.lineWidth=1.5;ctx.stroke(p);
       pieces++;
     }
   }
@@ -160,14 +189,14 @@ A.renderInterpretedV5=function(target,settings,scale,opts){
     throw Error('Unknown composition interpretation');
   var start=performance.now(),sourceMeta=baseline(target,settings,scale,material,opts);
   if(interpretation==='faithful')return {
-    version:'v5-prototype',interpretation:interpretation,material:material,
+    version:'v5b-prototype',interpretation:interpretation,material:material,
     sourceSeed:settings.seed,plan:null,baseline:sourceMeta};
   if(!A.planCompositionV5)throw Error('Shared V5 planner not loaded');
   var plan=A.planCompositionV5(settings,{phiFraming:opts.phiFraming===true,
     maxRegions:opts.maxRegions||28});
   var work=material==='oil'?oilAdapter(target,plan,scale):
     tissueAdapter(target,plan,scale);
-  var stats={version:'v5-prototype',interpretation:'areas',
+  var stats={version:'v5b-prototype',interpretation:'areas',
     material:material,sourceSeed:settings.seed,
     regions:plan.regions.length,gestures:plan.gestures.length,
     accents:plan.accents.length,plan:plan,work:work,
