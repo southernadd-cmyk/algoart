@@ -5,7 +5,7 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const html=read('index.html'),help=read('js/control-help.js'),app=read('js/app.js'),description=read('js/describe.js');
 assert.match(html,/data-tab="marker"[^>]*><span>03<\/span>Materials<\/button>/);
 assert.match(html,/<section class="tab-panel" data-panel="marker"/);
-assert.match(html,/id="materialStyle".*?<option value="marker">Marker drawing<\/option><option value="tissue">Tissue &amp; Graphite<\/option><option value="watercolour">Watercolour<\/option>/);
+assert.match(html,/id="materialStyle".*?<option value="marker">Marker drawing<\/option><option value="tissue">Tissue &amp; Graphite<\/option><option value="watercolour">Watercolour<\/option><option value="oil">Oil Paint<\/option>/);
 assert.match(html,/<span>MATERIAL CONTROLS<\/span>/);
 assert.match(html,/id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble/);
 assert.match(app,/function syncMaterialNote\(\)/);
@@ -16,7 +16,7 @@ assert.match(html,/<label>Mark-making tool<\/label><select id="pen">/);
 assert.match(html,/<label>Stroke width<\/label>.*?<input id="thickness"/);
 assert.match(html,/<label>Repeat passes<\/label>.*?<input id="overdraw"/);
 assert.match(html,/SVG and plotter exports use marker paths/);
-assert.match(help,/materialStyle:'Choose Marker drawing, Tissue & Graphite, or Watercolour/);
+assert.match(help,/materialStyle:'Choose Marker drawing, Tissue & Graphite, Watercolour, or Oil Paint/);
 assert.match(help,/var TISSUE_PROFILES=/);
 for(const profile of ['felt','fine','broad','highlighter','dry','paint','scribble']){
   assert.match(help,new RegExp('\\b'+profile+":'"),'Every source profile must have a Tissue label: '+profile);
@@ -30,7 +30,9 @@ assert.doesNotMatch(help,/option\.value\s*=/,'Material labels must never change 
 assert.doesNotMatch(help,/new Option\(/,'Never replace option nodes and lose their selected state');
 assert.match(help,/Keep the selected material, paper colour and shape choices/);
 assert.match(app,/pen:'pen'/);
-assert.match(app,/\?A\.describeArtwork\(s,m,watercolourEnabled\(\)\?'watercolour':oilEnabled\(\)\?'tissue':'marker'\)/);
+assert.match(app,/if\(oilPaintEnabled\(\)\)return A\.renderOilPaintV1/);
+assert.match(app,/params\.set\('material','oil-v1'\)/);
+assert.match(app,/\?A\.describeArtwork\(s,m,oilPaintEnabled\(\)\?'oil':watercolourEnabled\(\)\?'watercolour':oilEnabled\(\)\?'tissue':'marker'\)/);
 assert.match(description,/material==='tissue'\?'Abstract algorithmic tissue and graphite artwork'/);
 assert.match(description,/material==='watercolour'\?'Abstract algorithmic watercolour artwork'/);
 assert.match(read('js/watercolour-v2r.js'),/A\.renderWatercolourV2R=function/);

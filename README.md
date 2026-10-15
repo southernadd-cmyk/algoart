@@ -17,7 +17,7 @@ ALGO/ART is a browser-based generative art project built around the **golden rat
 3. Choose **landscape (1400 × 1000)** or **portrait (1000 × 1400)**.
 4. Export as **PNG**, **SVG** or **Plotter SVG**, or copy a share link to reopen the same artwork.
 
-Artworks are deterministic: the **renderer version + seed + settings** identify a reproducible state, including through shared URLs. Choose **Marker drawing**, **Tissue & Graphite** or **Watercolour (V2R)** in Compose. Material selection does not alter source geometry; PNG exports the selected material, while SVG and plotter files preserve the underlying marker paths.
+Artworks are deterministic: the **renderer version + seed + settings** identify a reproducible state, including through shared URLs. Choose **Marker drawing**, **Tissue & Graphite**, **Watercolour (V2S)** or **Oil Paint v1** in Compose. Material selection does not alter source geometry; PNG exports the selected material, while SVG and plotter files preserve the underlying marker paths.
 
 ## The eight systems
 
@@ -34,10 +34,10 @@ Artworks are deterministic: the **renderer version + seed + settings** identify 
 
 The golden ratio governs aspects of composition; not every stroke or tuning value is a mathematical identity. The tension between those rules and the hand-drawn appearance is part of the experiment.
 
-### Optional φ framing shared across all three materials (14 October 2026)
+### Optional φ framing shared across the materials (14 October 2026)
 
 **φ framing** is a separate opt-in composition treatment for Marker,
-Tissue & Graphite, and Watercolour V2S. It operates on the source strokes
+Tissue & Graphite, Watercolour V2S and Oil Paint v1. It operates on the source strokes
 before selecting the material, so the framed composition's PNG, SVG and
 plotter paths share the same positions.
 
@@ -130,6 +130,7 @@ Then visit **http://localhost:8000/**. On Windows, `py -m http.server 8000` is a
 | `js/generator.js`, `js/marker.js` | Compositions and expressive mark rendering |
 | `js/watercolour-v2r.js` | Frozen released V2R Watercolour renderer for saved links |
 | `js/watercolour-v2s.js` | New source-colour-matched Watercolour with original open-line recovery |
+| `js/oil-v1-core-*.js`, `js/oil-paint-v1.js` | Released V5o source-connected Oil Paint v1: existing mathematical guide ownership and loaded V4e bristle contacts, Oil only |
 | `js/oil-material.js`, `js/oil-surface.js` | Historical Tissue renderers and V7 marker-colour-matched tissue blooms |
 | `js/app.js`, `js/control-help.js` | User controls, versioned URLs and interface guidance |
 | `js/export.js`, `js/plotter.js` | Image, SVG and plotter exports |
@@ -167,8 +168,10 @@ Historical renderer and material versions remain available so saved links reprod
 
 - **Marker drawing:** expressive ink with wobble, uneven weight, pressure and dryness.
 - **Tissue & Graphite:** translucent torn tissue, colour-matched atmospheric blooms and fine graphite, using the original seeded Marker palette on your selected paper (cream by default).
+- **Watercolour:** source-colour pigments and dry-brush details; V2S is current and V2R remains available for historic links.
+- **Oil Paint v1 (15 October 2026):** actual loaded-bristle oil paint, connected masses selected from the original golden-ratio composition guide relationships, source-owned colour and preserved negative space. This is the tested Oil-only V5o/V5p/V5q interpretation, not a visual filter or AI-generated image. Oil is now selectable directly; newly shared Oil URLs use `material=oil-v1`. Marker, Watercolour and Tissue renderers, old URLs and scheduled publishing remain unchanged.
 
-Both materials use the same seeded composition. From renderer V9, changing paper colour does not change the artwork's geometry or selected pigment colours, and switching materials preserves the paper choice. Published V1–V8 compositions remain version-locked. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** is labelled **Source mark profile** for Tissue & Graphite. Its seven choices use material-appropriate names such as Fine contours, Wide bands and Flat-edged bands, while retaining the exact underlying pen IDs and seeded source paths. The Materials sliders likewise describe source marks in Tissue mode; they do not simulate physical paper thickness, brushes or graphite pressure. Switching materials restores the original Marker labels without changing any setting values. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
+All materials use the same seeded composition. From renderer V9, changing paper colour does not change the artwork's geometry or selected pigment colours, and switching materials preserves the paper choice. Published V1–V8 compositions remain version-locked. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** is labelled **Source mark profile** for Tissue & Graphite. Its seven choices use material-appropriate names such as Fine contours, Wide bands and Flat-edged bands, while retaining the exact underlying pen IDs and seeded source paths. The Materials sliders likewise describe source marks in Tissue mode; they do not simulate physical paper thickness, brushes or graphite pressure. Switching materials restores the original Marker labels without changing any setting values. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
 
 ## Daily gallery and publication
 
