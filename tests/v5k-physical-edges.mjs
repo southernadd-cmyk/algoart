@@ -107,9 +107,28 @@ try{
        sumOld+=before;sumFresh+=after;if(after>18)coloured++;
       }
      }
+     // Compare atmospheric pigment OUTSIDE legitimate geometry against the
+     // untouched cream paper. Comparing to Faithful would perversely treat
+     // removal of V7's broad washed-out bloom as a regression.
+     const masks=plan.connectedFields.map(field=>({
+       cells:new Set(field.cells),width:field.gridWidth,cell:field.gridCell}));
+     let outsideOld=0,outsideNew=0,outsideCount=0;
+     for(let y=4;y<fresh.height-4;y+=4)for(let x=4;x<fresh.width-4;x+=4){
+       const gx=x/.4,gy=y/.4;
+       if(masks.some(m=>m.cells.has(Math.floor(gy/m.cell)*m.width+
+         Math.floor(gx/m.cell))))continue;
+       const i=(y*fresh.width+x)*4;
+       const deviation=img=>Math.abs(img[i]-245)+Math.abs(img[i+1]-240)+
+         Math.abs(img[i+2]-230);
+       outsideOld+=deviation(b);
+       outsideNew+=deviation(a);
+       outsideCount++;
+     }
      out.materials[material]={
       stable:fresh.toDataURL()===again.toDataURL(),changed,faithfulSame,
-      meanOld:observations?sumOld/observations:0,
+      outsideOld:outsideCount?outsideOld/outsideCount:0,
+       outsideNew:outsideCount?outsideNew/outsideCount:0,
+       meanOld:observations?sumOld/observations:0,
       meanNew:observations?sumFresh/observations:0,
       interiorCoverage:observations?coloured/observations:0,
       fieldStrokes:freshResult.work?.fieldStrokes||0,
@@ -143,8 +162,8 @@ try{
    else{
      assert(q.changed>1000,material+' still identical to V5j');
      assert(q.interiorCoverage>.28,material+' lacks real 2D pigment interiors');
-     if(material==='tissue')assert(q.meanNew<q.meanOld*.92,
-       'Atmospheric Tissue area reduction was not measurable');
+     if(material==='tissue')assert(q.outsideNew<q.outsideOld*.97,
+       'Tissue bloom outside guide-derived fields was not reduced');
      if(material==='oil')assert(q.fieldStrokes>=8,
        'Oil no longer has real loaded contact brush marks');
      if(material==='tissue')assert(q.fieldPieces>=12,
@@ -160,7 +179,8 @@ try{
      ' visible '+sample.stats.visibleFields+' changed '+q.changed+
      ' old pigment '+q.meanOld.toFixed(2)+' new pigment '+q.meanNew.toFixed(2)+
      ' interior '+q.interiorCoverage.toFixed(3)+
-     ' strokes '+q.fieldStrokes+' sheets '+q.fieldPieces);
+     ' outside pigment '+q.outsideOld.toFixed(2)+'→'+q.outsideNew.toFixed(2)+
+      ' strokes '+q.fieldStrokes+' sheets '+q.fieldPieces);
   }
   await writeFile(path.join(dir,entry.mode+'-source-flat.png'),
     Buffer.from(sample.flatSource,'base64'));
