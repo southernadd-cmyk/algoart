@@ -289,13 +289,17 @@ function buildBrushFrames(points,width){
 }
 function pressureAt(s,total,phase,profile){
   var t=minmax(total>0?s/total:0,0,1);
-  // Brush starts/ends remain loaded, except deliberate tapered filberts.
-  var taper=profile==='filbert'?
-    (.28+.72*Math.min(1,t*12,(1-t)*10)):
-    profile==='dry'?(.38+.62*Math.min(1,t*10,(1-t)*5)):
-    profile==='knife'?(.70+.30*Math.min(1,t*15,(1-t)*10)):
-    (.55+.45*Math.min(1,t*12,(1-t)*12));
-  var modulation=.83+.11*Math.sin(s*.023+phase)+.065*Math.sin(s*.055-phase*.41);
+  // C1-continuous eased onset/lift over a finite travel distance; even short
+  // strokes must not step suddenly through rectangular pressure levels.
+  function ease(q){q=minmax(q,0,1);return q*q*(3-2*q)}
+  var start=ease(t*(profile==='knife'?8:5)),
+      end=ease((1-t)*(profile==='dry'?4:5)),
+      ramp=Math.min(start,end);
+  var base=profile==='filbert'?.28:profile==='dry'?.38:
+    profile==='knife'?.70:.55;
+  var taper=base+(1-base)*ramp;
+  var modulation=.83+.11*Math.sin(s*.023+phase)+
+    .065*Math.sin(s*.055-phase*.41);
   return minmax(taper*modulation,.10,1.04);
 }
 function markPath(pts){
