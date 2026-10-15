@@ -18,6 +18,20 @@ export function editorArtworkLink(item) {
   return url.href;
 }
 
+// Platform limits are enforced before queuing or sending a post.
+// Never truncate a URL, seed, or source artwork identity to fit a caption.
+export const SOCIAL_CAPTION_LIMITS=Object.freeze({bluesky:300,threads:500});
+export function socialGraphemes(value){
+  return [...new Intl.Segmenter('en',{granularity:'grapheme'}).segment(String(value))].length;
+}
+function fittedCaption(platform,versions){
+  const max=SOCIAL_CAPTION_LIMITS[platform];
+  for(const version of versions){
+    if(socialGraphemes(version)<=max)return version;
+  }
+  throw new Error(platform+' artwork link exceeds '+max+' graphemes; cannot publish safely.');
+}
+
 export function makeCaptions(item) {
   const strategy = strategyName(item.stats, item.mode);
   const watercolour=item.material==='watercolour';
@@ -28,6 +42,24 @@ export function makeCaptions(item) {
   const facts=`${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${watercolour?'watercolour':
     watercolor?'tissue & graphite':item.settings.pen+' marker'}`;
 
+  const link=editorArtworkLink(item);
+  const story='The idea becomes a machine that makes the art.';
+  const instruction='Open this exact image in the ALGO/ART editor:';
+  const threads=fittedCaption('threads',[
+    [heading,facts,'',story,'',instruction,link].join('\n'),
+    [heading,facts,'',story,'',link].join('\n'),
+    [heading,facts,'',link].join('\n'),
+    [heading,link].join('\n'),
+    link
+  ]);
+  const bluesky=fittedCaption('bluesky',[
+    [heading,facts,'',story,'',instruction,link,'','#generativeart #creativecoding'].join('\n'),
+    [heading,facts,'',story,'',link,'','#generativeart #creativecoding'].join('\n'),
+    [heading,facts,'',link,'','#generativeart #creativecoding'].join('\n'),
+    [heading,facts,'',link].join('\n'),
+    [heading,link].join('\n'),
+    link
+  ]);
   return {
     instagram: [
       heading,
@@ -40,26 +72,8 @@ export function makeCaptions(item) {
       '',
       '#generativeart #algorithmicart #creativecoding #digitalart #generativedesign'
     ].join('\n'),
-    threads: [
-      heading,
-      facts,
-      '',
-      'The idea becomes a machine that makes the art.',
-      '',
-      'Open this exact image in the ALGO/ART editor:',
-      editorArtworkLink(item)
-    ].join('\n'),
-    bluesky: [
-      heading,
-      facts,
-      '',
-      'The idea becomes a machine that makes the art.',
-      '',
-      'Open this exact image in the ALGO/ART editor:',
-      editorArtworkLink(item),
-      '',
-      '#generativeart #creativecoding'
-    ].join('\n'),
+    threads,
+    bluesky,
     altText:watercolour?
       `Watercolour painting from ALGO/ART's ${item.series} system, ${format.toLowerCase()}seed ${item.seed}. Golden-ratio geometry translated into source-colour matched wet pigment washes and fine dry brush on textured paper.`:
       watercolor
