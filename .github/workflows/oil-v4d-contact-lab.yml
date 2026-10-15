@@ -1,0 +1,70 @@
+name: Oil Paint V4d — loaded tuft contact and 16 comparisons
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/oil-paint-v4d.js'
+      - 'tests/oil-v4d-physics.test.mjs'
+      - 'tests/oil-v4d-brush-lab.mjs'
+      - 'tests/oil-v4d-sixteen.mjs'
+      - 'experiments/OIL_PAINT_V4D.md'
+      - '.github/workflows/oil-v4d-contact-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v4d-lab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Preserve older materials and verify source
+        run: |
+          node --check js/oil-paint-v4d.js
+          node --check tests/oil-v4d-physics.test.mjs
+          node --check tests/oil-v4d-brush-lab.mjs
+          node --check tests/oil-v4d-sixteen.mjs
+          npm run test:renderer-lock
+          node tests/oil-render.test.mjs
+          node tests/materials-ui.test.mjs
+      - name: Start local test editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-v4d-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/oil-v4d-http.log; exit 1
+      - name: Test continuous physical pressure and paint volume
+        run: node tests/oil-v4d-physics.test.mjs
+      - name: Render actual brush contact diagnostic sheet and crops
+        run: node tests/oil-v4d-brush-lab.mjs
+      - name: Render 16 same-seed V4d and V4c artworks
+        run: node tests/oil-v4d-sixteen.mjs
+      - name: Verify all review files
+        run: |
+          test $(find oil-v4d-results/fixed -name '*.png' | wc -l) -eq 8
+          test $(find oil-v4d-results/random -name '*.png' | wc -l) -eq 8
+          test $(find oil-v4d-results/comparison -name '*.png' | wc -l) -eq 16
+          test $(find oil-v4d-results/crops -name '*.png' | wc -l) -eq 4
+          test $(find oil-v4d-results/lab -name '*.png' | wc -l) -eq 9
+          test -s oil-v4d-results/lab/oil-v4d-brush-lab.png
+          test -s oil-v4d-results/oil-v4c-v4d-matched-contact-sheet.jpg
+          test -s oil-v4d-results/oil-v4d-manifest.json
+      - name: Upload real V4d and V4c comparison pixels
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oil-v4d-loaded-tuften-16-real-images
+          path: oil-v4d-results/
+          if-no-files-found: warn
+          retention-days: 30
