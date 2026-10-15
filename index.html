@@ -19,7 +19,7 @@
 <meta name="twitter:title" content="ALGO/ART — Golden-ratio generative drawing system">
 <meta name="twitter:description" content="The algorithm creates the structure. The materials bring the human texture.">
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/social-card.png">
-<link rel="stylesheet" href="css/style.css?v=20261014-phi-sheet">
+<link rel="stylesheet" href="css/style.css?v=20261016-export-socials">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/marker-font.css?v=20261014-phi-sheet">
 </head>
@@ -278,6 +278,18 @@
         <section class="tab-panel" data-panel="export" id="panel-export" role="tabpanel" aria-labelledby="tab-export" hidden>
           <div class="section-title"><span>OUTPUT</span><b>vector + raster</b></div>
           <div class="controls">
+            <button class="primary export-big" id="copyLink" type="button">COPY ARTWORK LINK</button>
+            <div class="share-status" id="shareStatus" role="status" aria-live="polite"></div>
+            <div class="social-share-panel" aria-labelledby="socialShareHeading">
+              <div id="socialShareHeading" class="social-share-heading">SHARE TO SOCIALS</div>
+              <div class="social-share-options">
+                <button id="shareInstagram" class="export-big" type="button">INSTAGRAM</button>
+                <a id="shareThreads" class="export-big" href="https://www.threads.com/" target="_blank" rel="noopener noreferrer">THREADS</a>
+                <a id="shareBluesky" class="export-big" href="https://bsky.app/" target="_blank" rel="noopener noreferrer">BLUESKY</a>
+              </div>
+              <p class="mini-note social-share-note">Threads and Bluesky open a draft with your exact artwork link. Instagram uses your device's image share sheet where available; otherwise, a PNG download is prepared for upload.</p>
+              <div class="share-status" id="socialShareStatus" role="status" aria-live="polite"></div>
+            </div>
             <div class="control"><label>PNG size</label><select id="exportScale"><option value="1">1× — 1400×1000</option><option value="2" selected>2× — 2800×2000</option><option value="3">3× — 4200×3000</option></select></div>
             <button class="primary export-big" id="savePanel">DOWNLOAD PNG</button>
             <div id="pngReady" hidden>
@@ -300,8 +312,6 @@
               <button class="export-big" id="savePlotter">DOWNLOAD PLOTTER SVG</button>
               <p class="mini-note">Preserves marker paths, wobble and repeated passes. The preview includes paper texture; the plotter file contains only ink paths. Match pens and paper to the artwork; transparency and stroke width depend on your materials.</p>
             </fieldset>
-            <button class="export-big" id="copyLink">COPY ARTWORK LINK</button>
-            <div class="share-status" id="shareStatus" aria-live="polite"></div>
             <label class="mini-note"><input id="keyboardShortcuts" type="checkbox" checked> Enable single-key shortcuts (M, N, V, D and [)</label>
             <div class="mini-note">Browser shortcuts such as Ctrl/Cmd+D keep their usual behaviour. You can turn single-key shortcuts off above.</div>
             <div class="mini-note">Bookmark this page or copy the link to return to this exact artwork. PNG includes paper texture. SVG scales cleanly to any size.</div>
@@ -312,25 +322,26 @@
   </main>
 </div>
 
-<script src="js/random.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/phi.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/palettes.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/marker.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/phi-sheet-fit.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/generator.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/oil-surface.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/oil-material.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/oil-render.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/watercolour-v2r.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/watercolour-v2s.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/oil-v1-core-a.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/oil-v1-core-b.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/oil-v1-core-c.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/oil-paint-v1.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/export.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/plotter.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/describe.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/control-help.js?v=20261015-oil-v1-reveal-fix"></script>
-<script src="js/app.js?v=20261015-oil-v1-reveal-fix"></script>
+<script src="js/random.js?v=20261016-export-socials"></script>
+<script src="js/phi.js?v=20261016-export-socials"></script>
+<script src="js/palettes.js?v=20261016-export-socials"></script>
+<script src="js/marker.js?v=20261016-export-socials"></script>
+<script src="js/phi-sheet-fit.js?v=20261016-export-socials"></script>
+<script src="js/generator.js?v=20261016-export-socials"></script>
+<script src="js/oil-surface.js?v=20261016-export-socials"></script>
+<script src="js/oil-material.js?v=20261016-export-socials"></script>
+<script src="js/oil-render.js?v=20261016-export-socials"></script>
+<script src="js/watercolour-v2r.js?v=20261016-export-socials"></script>
+<script src="js/watercolour-v2s.js?v=20261016-export-socials"></script>
+<script src="js/oil-v1-core-a.js?v=20261016-export-socials"></script>
+<script src="js/oil-v1-core-b.js?v=20261016-export-socials"></script>
+<script src="js/oil-v1-core-c.js?v=20261016-export-socials"></script>
+<script src="js/oil-paint-v1.js?v=20261016-export-socials"></script>
+<script src="js/export.js?v=20261016-export-socials"></script>
+<script src="js/plotter.js?v=20261016-export-socials"></script>
+<script src="js/describe.js?v=20261016-export-socials"></script>
+<script src="js/control-help.js?v=20261016-export-socials"></script>
+<script src="js/social-share.js?v=20261016-export-socials"></script>
+<script src="js/app.js?v=20261016-export-socials"></script>
 </body>
 </html>
