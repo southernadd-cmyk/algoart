@@ -88,14 +88,26 @@ try{
  assert(new URL(art.intents.previewURL).pathname==='/share');
  assert([...art.intents.caption].length<300,
    'Selected artwork link is too long for Bluesky');
+ assert([...art.intents.threadsCaption].length<500,
+   'Versioned Threads artwork link is too long');
+ assert.equal(art.intents.threadsPreviewURL,art.intents.previewURL+'&pv=2',
+   'Threads must get a fresh cache key');
+ assert.equal(art.intents.bluesky.includes(encodeURIComponent(art.intents.caption)),true,
+   'The working Bluesky share must remain unchanged');
  // Validate the deployed live service supplies actual image-specific
  // crawler metadata and a real JPEG, not the site's generic social card.
- const card=await fetch(art.intents.previewURL,{signal:AbortSignal.timeout(90000)});
+ const card=await fetch(art.intents.threadsPreviewURL,
+   {signal:AbortSignal.timeout(90000),
+    headers:{'user-agent':'facebookexternalhit/1.1'}});
  assert.equal(card.status,200,'Live OG endpoint failed');
  const pageHTML=await card.text();
  assert.match(pageHTML,/property="og:image"/);
  assert.match(pageHTML,/name="twitter:image"/);
  assert(!pageHTML.includes('social-card.png'));
+ assert(!/<meta\s+http-equiv=["']refresh/i.test(pageHTML),
+   'A crawler-visible meta refresh would lead Threads to GitHub Pages');
+ assert(pageHTML.includes('&amp;pv=2'),
+   'A cached unversioned OG canonical could defeat the Threads fix');
  const imageURL=pageHTML.match(/property="og:image" content="([^"]+)"/)?.[1];
  assert(imageURL&&imageURL.includes('/share/image?c='));
  const response=await fetch(imageURL,{signal:AbortSignal.timeout(120000)});
@@ -114,7 +126,8 @@ try{
    await page.locator('#'+id).click();
    const uri=new URL(await page.locator('#'+id).getAttribute('href'));
    assert.equal(uri.hostname,host);
-   assert(uri.searchParams.get('text').includes(art.intents.previewURL));
+   assert(uri.searchParams.get('text').includes(
+     id==='shareThreads'?art.intents.threadsPreviewURL:art.intents.previewURL));
  }
  await page.goto(art.intents.artworkURL,{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>
