@@ -3,7 +3,7 @@
 
 **Mathematics sets the structure. Materials bring the texture.**
 
-ALGO/ART is a browser-based generative art project built around the **golden ratio (φ ≈ 1.618)**. Eight composition systems use mathematical rules, seeded randomness and deliberate visual calibration; a separate material renderer adds imperfect marker ink translucent tissue and fine graphite, or textured watercolour pigments.
+ALGO/ART is a browser-based generative art project built around the **golden ratio (φ ≈ 1.618)**. Eight composition systems use mathematical rules, seeded randomness and deliberate visual calibration; a separate material layer interprets those compositions as expressive marker ink, translucent tissue and graphite, textured watercolour, or loaded-bristle oil paint.
 
 **Guiding question:** *How far can the golden ratio govern a composition while its marks remain visibly human?*
 
@@ -166,6 +166,9 @@ Historical renderer and material versions remain available so saved links reprod
 
 ## Drawing materials
 
+**Four released material choices** are available in Compose. Oil Paint v1 was released on 15 October 2026, and is distinct from the older internal `oil-*` modules that render Tissue & Graphite.
+
+
 - **Marker drawing:** expressive ink with wobble, uneven weight, pressure and dryness.
 - **Tissue & Graphite:** translucent torn tissue, colour-matched atmospheric blooms and fine graphite, using the original seeded Marker palette on your selected paper (cream by default).
 - **Watercolour:** source-colour pigments and dry-brush details; V2S is current and V2R remains available for historic links.
@@ -182,12 +185,12 @@ and the existing London social slots publish them to configured platforms:
 | London slot | Tissue & Graphite additions |
 | --- | --- |
 | 09:00 | One portrait + one landscape |
-| 15:00 | None (existing marker posts only) |
+| 15:00 | None (existing marker and new Oil Paint v1 posts) |
 | 20:30 | One portrait + one landscape |
 
-The ordinary five-landscape and five-portrait marker batches and their
-publishing times are unchanged, giving **14 total studies** per complete day.
-Material batches have independent publication records and reuse the existing social triggers. Failed destinations are retried without reposting successful ones. Historical gallery entries and their saved media remain unchanged.
+Oil Paint v1 adds a separate daily portrait and landscape pair, generated each morning with independently seeded colour palettes and published in the existing **15:00 UK** social slot to configured Instagram, Threads and Bluesky accounts. No new social trigger is required. The ordinary five-landscape and five-portrait marker batches and their
+publishing times are unchanged, giving **14 Marker and Tissue studies** per complete day, plus **two Oil Paint v1 studies** (one portrait and one landscape), for **16 total studies** per complete day when all batches succeed.
+Oil's daily pair has independent archive records and safe-retry publishing state. Material batches have independent publication records and reuse the existing social triggers. Failed destinations are retried without reposting successful ones. Historical gallery entries and their saved media remain unchanged.
 
 Run `npm run test:watercolor-publishing` to check slot selection, short links, duplicate prevention and the combined archive. See [publication compatibility](MATERIAL_HISTORY.md#publication-compatibility-and-cutover) for historical IDs and cutover details.
 
@@ -208,6 +211,7 @@ Plotter SVG supports faithful colour runs and grouping by pen, with light-to-dar
 ## Further documentation
 
 - **[Development Log](DEVELOPMENT_LOG.md)** — the full original README, preserved verbatim, including design decisions, renderer history, gallery/social workflows and detailed tests.
+- **[Renderer and Material History](MATERIAL_HISTORY.md)** — material-version cutovers, legacy URL rules, and the Oil v1 release.
 - **[Calibration Audit](CALIBRATION_AUDIT.md)** — which numbers are genuine φ mathematics, artistic calibration or rendering mechanics.
 - **[Tuning History](TUNING.md)** — numerical extraction and exact-output compatibility notes.
 
