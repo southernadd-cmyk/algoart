@@ -41,7 +41,6 @@ jobs:
           node --check tests/oil-v1-release-browser.mjs
           npm run test:renderer-lock
           npm run test:oil-render
-          npm run test:watercolour-release
           node tests/materials-ui.test.mjs
       - name: Start live-style local page server
         run: |
@@ -51,5 +50,7 @@ jobs:
             sleep 1
           done
           cat /tmp/oil-release-http.log; exit 1
+      - name: Verify unchanged original Watercolour material in real browser
+        run: npm run test:watercolour-release
       - name: Actual Chrome Oil release, PNG and share-link tests
         run: node tests/oil-v1-release-browser.mjs
