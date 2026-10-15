@@ -68,7 +68,7 @@ function proximity(a,b){
   }
   return d*bias;
 }
-function pairFor(a,items,plan){
+function pairFor(a,items,plan,used){
   var options=items.filter(b=>b!==a&&b.kind===a.kind)
     .map(b=>({b:b,score:proximity(a,b),gap:dist(a,b)}))
     .sort((x,y)=>x.score-y.score||x.gap-y.gap||
@@ -77,6 +77,8 @@ function pairFor(a,items,plan){
   // and never bridge distant unrelated parts of a whole picture.
   for(var i=0;i<options.length;i++){
     var option=options[i],b=option.b;
+    var pairKey=[a.guideId,b.guideId].sort().join('|');
+    if(used&&used.has(pairKey))continue;
     if(a.kind==='organic-branch'&&
        a.branch!==b.branch&&Math.abs(a.depth-b.depth)>1)continue;
     if(a.kind==='trajectory-ribbon'&&a.arm!==b.arm)continue;
@@ -90,7 +92,7 @@ function pairFor(a,items,plan){
       continue;
     if(A.compositionV5cTest.intersectsProtected(outline,
       plan.protectedVoids))continue;
-    return{b:b,contour:outline};
+    return{b:b,contour:outline,pairKey:pairKey};
   }
   return null;
 }
@@ -116,15 +118,16 @@ function connectedFields(plan,opts){
   var guides=(plan.territories||[]).filter(t=>t.role==='painted'&&
     t.kind!=='rect-cell'&&t.sources&&t.sources.length);
   if(!guides.length)return[];
-  var fields=[],max=Math.min(9,opts.maxConnectedFields||8);
+  var fields=[],usedPairs=new Set(),max=Math.min(9,opts.maxConnectedFields||8);
   // Source hierarchy order is retained. No global closure, Voronoi partition,
   // random splitting, or field invented without a guide connection.
   for(var i=0;i<guides.length&&fields.length<max;i++){
-    var a=guides[i],relation=pairFor(a,guides,plan);
+    var a=guides[i],relation=pairFor(a,guides,plan,usedPairs);
     if(!relation)continue;
     var b=relation.b,outline=relation.contour,
         occ=occupied(outline,plan);
     if(!occ)continue;
+    usedPairs.add(relation.pairKey);
     var bb=bounds(outline),surface=occ.cells.length*144,
         provenance=[...new Set(a.sources.concat(b.sources))],
         palette=[a.rgb.slice()];
