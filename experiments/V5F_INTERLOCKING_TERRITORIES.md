@@ -49,15 +49,13 @@ not a marker, and source graphite/details remain as before.
 
 Run the browser test in an actual ALGO/ART browser environment; it renders
 **4 original engines × 2 materials × 3 interpretations = 24 PNGs**.
-Inspect contact sheet `v5f-results/v5f-faithful-v5e-v5f-oil-tissue.jpg`.
+Inspect contact sheet `v5e-results/v5f/v5f-faithful-v5e-v5f-oil-tissue.jpg`.
 Require deterministic plans and images, byte-identical Faithful output,
 unchanged V5c rectangles, protected voids, credible source provenance,
 significant difference versus frozen V5e and critically a human check
 that Oil looks more painterly rather than merely producing different polygons.
 
-**Current limitation:** No CI run is claimed as passing. The attempted
-dedicated workflow creation was blocked, so the browser comparison remains
-unexecuted. Do not report V5f as visually validated or release-ready.
+**Current finding:** The source-rendered 24-image comparison and compatibility checks passed (run 38765248423); the visual gate did not. It is still experimental and must not be released.
 
 ## Next visual questions
 
