@@ -1,0 +1,69 @@
+name: Oil Paint V4e — wet crossing physics and surface lighting
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/oil-paint-v4e.js'
+      - 'tests/oil-v4e-physics.test.mjs'
+      - 'tests/oil-v4e-brush-lab.mjs'
+      - 'tests/oil-v4e-sixteen.mjs'
+      - 'experiments/OIL_PAINT_V4E.md'
+      - '.github/workflows/oil-v4e-wet-light.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oil-v4e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Preserve historic materials and code syntax
+        run: |
+          node --check js/oil-paint-v4e.js
+          node --check tests/oil-v4e-physics.test.mjs
+          node --check tests/oil-v4e-brush-lab.mjs
+          node --check tests/oil-v4e-sixteen.mjs
+          npm run test:renderer-lock
+          node tests/oil-render.test.mjs
+          node tests/materials-ui.test.mjs
+      - name: Launch offline local experiment server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-v4e.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/oil-v4e.log; exit 1
+      - name: Check local pigment transfer, lighting and invariants
+        run: node tests/oil-v4e-physics.test.mjs
+      - name: Render brush and two-colour crossing diagnostics
+        run: node tests/oil-v4e-brush-lab.mjs
+      - name: Render 16 same-seed oil paintings against V4d
+        run: node tests/oil-v4e-sixteen.mjs
+      - name: Assert actual image review deliverables
+        run: |
+          test $(find oil-v4e-results/fixed -name '*.png' | wc -l) -eq 8
+          test $(find oil-v4e-results/random -name '*.png' | wc -l) -eq 8
+          test $(find oil-v4e-results/comparison -name '*.png' | wc -l) -eq 16
+          test $(find oil-v4e-results/crops -name '*.png' | wc -l) -eq 4
+          test $(find oil-v4e-results/lab -name '*.png' | wc -l) -eq 10
+          test -s oil-v4e-results/lab/oil-v4e-brush-lab.png
+          test -s oil-v4e-results/lab/oil-v4e-wet-crossing.png
+          test -s oil-v4e-results/oil-v4d-v4e-matched-contact-sheet.jpg
+          test -s oil-v4e-results/oil-v4e-manifest.json
+      - name: Upload experimental V4e and V4d pixel comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oil-v4e-wet-drag-16-comparison-renders
+          path: oil-v4e-results/
+          if-no-files-found: warn
+          retention-days: 30
