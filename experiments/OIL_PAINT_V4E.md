@@ -48,3 +48,31 @@ across a wet intersection.
 subtractive colour or a fluid solver. Geometry still comes from Marker paths;
 the optional material-agnostic V5 region interpretation will address wider
 painted masses independently. No production, gallery or social integration.
+
+## Actual browser results — 15 October 2026
+
+The first implementation passed [Actions run 38702701336](https://github.com/southernadd-cmyk/algoart/actions/runs/38702701336), but the real red/blue crossing demonstration changed only **196 of 166,500 pixels** by more than four RGB levels (~0.12%). The colour transfer was technically present but nearly invisible at normal size. **Do not mistake CI success for meaningful painterly effect.**
+
+### Targeted correction
+
+In the same isolated V4e branch, increase the bounded tangent-directed transport distance and tuft width, carry slightly more underlying pigment, and deposit three thinner irregular paint trails per crossing. Do not blur a whole stroke. Added a physical crossing coverage assertion (`pixelsChanged >= 400`, where an RGB-difference sum exceeds 12).
+
+[Actions run 38703245870](https://github.com/southernadd-cmyk/algoart/actions/runs/38703245870) **passed** all physics, historical-material locks, deterministic rendering, wet crossing and 16 matched source images. Real observations:
+
+| Metric | Refined V4e |
+|---|---:|
+| Matched source studies | 16 |
+| V4e mean render, same run | 131.5 ms |
+| Frozen V4d mean render, same run | 124.25 ms |
+| V4e overhead versus V4d | ~5.8% |
+| Wet intersection detections, 16 images | 3,751 |
+| Pigment drag deposits, 16 images | 11,253 |
+| Mean paint height P95 | 3.808 |
+| Cross-lab visibly changed pixels (RGB difference sum >12) | 800 |
+| Crossing pixels (450×370) | 166,500 |
+
+The refined two-colour test genuinely carries red pigment *downward in the direction of the blue brush* at the intersection. The difference is local and now visible at ordinary size, rather than a barely measurable colour tint. The changed region is still limited to ~0.48% of the crossing canvas, not a blanket smear.
+
+**Visual finding:** V4e's directional colour transport makes crossings more credible in the diagnostic study. Height-normal shading is more tied to geometry, with restrained highlights. However, most of the 16 full compositions show only subtle improvement: **the main artistic limitation remains translating source paths into painted masses**. The existing line-based geometry remains unmistakable in sparse and geometric engines. The paint engine should not try to solve this through endless grain and micro-tweaks.
+
+**Decision: hold as draft PR #89; do not merge, publish or add to gallery/social.** V4e is an experimental material-level success for local transport, not an acceptable full oil-paint renderer. The next meaningful structural milestone is V5's optional, **shared material-agnostic interpretation planner** (faithful source paths as default, region-based/painterly option across all materials), followed by material-specific polish. Leave all historic source seeds and default behaviour intact.
