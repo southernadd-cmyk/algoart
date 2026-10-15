@@ -10,7 +10,7 @@ function strategyName(stats, fallback) {
 // full share URL. This keeps Threads/Bluesky within their caption limits.
 export function editorArtworkLink(item) {
   const id=String(item.id||'');
-  if (!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|CL|CP|P)\d{2}|\d{2})$/.test(id)) {
+  if (!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|CL|CP|OL|OP|P)\d{2}|\d{2})$/.test(id)) {
     throw new Error('Cannot link artwork without a valid daily archive ID: '+id);
   }
   const url=new URL(SITE_URL);
@@ -35,11 +35,12 @@ function fittedCaption(platform,versions){
 export function makeCaptions(item) {
   const strategy = strategyName(item.stats, item.mode);
   const watercolour=item.material==='watercolour';
-  const heading=`${item.series.toUpperCase()} / ${strategy}${watercolour?' / WATERCOLOUR V2S':
+  const oil=item.material==='oil';
+  const heading=`${item.series.toUpperCase()} / ${strategy}${oil?' / OIL PAINT V1':watercolour?' / WATERCOLOUR V2S':
     item.material==='watercolor'?' / TISSUE & GRAPHITE':''}`;
   const format = item.settings.orientation === 'portrait' ? 'Portrait study · ' : '';
   const watercolor = item.material === 'watercolor';
-  const facts=`${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${watercolour?'watercolour':
+  const facts=`${format}Seed ${item.seed} · φ ${item.settings.phiStrength}% · ${oil?'oil painting':watercolour?'watercolour':
     watercolor?'tissue & graphite':item.settings.pen+' marker'}`;
 
   const link=editorArtworkLink(item);
@@ -74,7 +75,9 @@ export function makeCaptions(item) {
     ].join('\n'),
     threads,
     bluesky,
-    altText:watercolour?
+    altText:oil?
+      `Oil painting from ALGO/ART's ${item.series} system, ${format.toLowerCase()}seed ${item.seed}, ${item.settings.palette} colour palette. Source-linked golden-ratio colour masses rendered with physical loaded bristle strokes.`:
+      watercolour?
       `Watercolour painting from ALGO/ART's ${item.series} system, ${format.toLowerCase()}seed ${item.seed}. Golden-ratio geometry translated into source-colour matched wet pigment washes and fine dry brush on textured paper.`:
       watercolor
       ? `Tissue and graphite artwork from ALGO/ART's ${item.series} system, ${format.toLowerCase()}seed ${item.seed}. Golden-ratio composition with layered translucent colour, textured paper and darker marks.`
