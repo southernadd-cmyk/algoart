@@ -181,6 +181,8 @@ try{
        'Physical tissue deposits must follow real source guide axes');
      if(material==='tissue')assert(q.edgeTouches>=20,
        'Torn fibre edge sampling missing');
+     if(material==='tissue')assert(q.sourceFolds>=18,
+       'Guide-owned tissue creases missing for this engine');
      if(material==='oil')assert(q.fieldStrokes>=8,
        'Oil no longer has real loaded contact brush marks');
      if(material==='tissue')assert(q.fieldPieces>=4,
