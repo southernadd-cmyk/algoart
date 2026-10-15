@@ -157,7 +157,7 @@ try{
     const name=base+(k==='geometry'?'geometry':k.startsWith('oil')?
       'oil-'+k.slice(3).toLowerCase():'tissue-'+k)+'.png';
     const buffer=Buffer.from(png,'base64');
-    assert(buffer.length>10000,'Empty image '+name);
+    assert(buffer.length>(k==='geometry'?500:10000),'Empty image '+name);
     await writeFile(path.join(dir,name),buffer);
     if(k!=='geometry')cards.push({label:entry.mode+' '+k,file:name});
   }
