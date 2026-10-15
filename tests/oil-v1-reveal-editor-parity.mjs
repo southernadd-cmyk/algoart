@@ -67,7 +67,7 @@ try{
       const visible=document.createElement('canvas');
       const reveal=A.renderOilPaintV1(visible,s,.21,true);
       const m=first.meta;
-      assert(m.guide,'Missing metadata for mode '+mode);
+      if(!m.guide)throw Error('Missing metadata for mode '+mode);
       output.push({mode,guide:m.guide?.type,
         voidCount:m.voids?.length,nonEmpty:m.strategy?.length>0,
         repeats:first.img===second.img,
