@@ -1,0 +1,71 @@
+name: Oil Paint V4 — real brush laboratory and 16 images
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/oil-paint-v4.js'
+      - 'tests/oil-v4-physics.test.mjs'
+      - 'tests/oil-v4-brush-lab.mjs'
+      - 'tests/oil-v4-sixteen.mjs'
+      - 'experiments/OIL_PAINT_V4.md'
+      - '.github/workflows/oil-v4-brush-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v4-real-render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Check source and historical material regressions
+        run: |
+          node --check js/oil-paint-v4.js
+          node --check tests/oil-v4-physics.test.mjs
+          node --check tests/oil-v4-brush-lab.mjs
+          node --check tests/oil-v4-sixteen.mjs
+          npm run test:renderer-lock
+          node tests/oil-render.test.mjs
+          node tests/materials-ui.test.mjs
+      - name: Start local test editor only
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/oil-v4-server.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/oil-v4-server.log; exit 1
+      - name: Test pressure/contact/height and original renderer compatibility
+        run: node tests/oil-v4-physics.test.mjs
+      - name: Render four real brush profiles and diagnostic tip crops
+        run: node tests/oil-v4-brush-lab.mjs
+      - name: Render 16 matched V4 and V3c artworks
+        run: node tests/oil-v4-sixteen.mjs
+      - name: Require all original engine artworks and brush lab outputs
+        run: |
+          test $(find oil-v4-results/fixed -name '*.png' | wc -l) -eq 8
+          test $(find oil-v4-results/random -name '*.png' | wc -l) -eq 8
+          test $(find oil-v4-results/comparison -name '*.png' | wc -l) -eq 16
+          test $(find oil-v4-results/crops -name '*.png' | wc -l) -eq 4
+          test $(find oil-v4-results/lab -name '*.png' | wc -l) -eq 9
+          test -s oil-v4-results/lab/oil-v4-brush-lab.png
+          test -s oil-v4-results/lab/oil-v4-lab-manifest.json
+          test -s oil-v4-results/oil-v3c-v4-matched-contact-sheet.jpg
+          test -s oil-v4-results/oil-v4-manifest.json
+      - name: Upload V4 actual renderer pixels and V3c comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oil-v4-brush-lab-16-actual-renders
+          path: oil-v4-results/
+          if-no-files-found: warn
+          retention-days: 30

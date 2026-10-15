@@ -1,0 +1,67 @@
+name: Oil Paint V2 — 16 actual impasto images
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/oil-paint-v2.js'
+      - 'tests/oil-v2-sixteen.mjs'
+      - 'tests/oil-v2-physics.test.mjs'
+      - 'experiments/OIL_PAINT_V2.md'
+      - '.github/workflows/oil-v2-sixteen-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  oil-v2-samples:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies and Chromium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Preserve old materials and check source
+        run: |
+          node --check js/oil-paint-v1.js
+          node --check js/oil-paint-v2.js
+          node --check tests/oil-v2-sixteen.mjs
+          node --check tests/oil-v2-physics.test.mjs
+          npm run test:renderer-lock
+          node tests/oil-render.test.mjs
+          node tests/materials-ui.test.mjs
+      - name: Start local editor, no live release
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/oil-v2-http.log 2>&1 &
+          for i in {1..35}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/oil-v2-http.log; exit 1
+      - name: Check V2 height accumulation, source fidelity and determinism
+        run: node tests/oil-v2-physics.test.mjs
+      - name: Render sixteen actual V2 paintings and matched V1 baselines
+        run: node tests/oil-v2-sixteen.mjs
+      - name: Require complete review deliverables
+        run: |
+          test $(find oil-v2-results/fixed -name '*.png' | wc -l) -eq 8
+          test $(find oil-v2-results/random -name '*.png' | wc -l) -eq 8
+          test $(find oil-v2-results/comparison -name '*.png' | wc -l) -eq 16
+          test $(find oil-v2-results/crops -name '*.png' | wc -l) -eq 4
+          test -s oil-v2-results/oil-v2-fixed-contact-sheet.jpg
+          test -s oil-v2-results/oil-v2-random-contact-sheet.jpg
+          test -s oil-v2-results/oil-v1-v2-matched-contact-sheet.jpg
+          test -s oil-v2-results/oil-v2-manifest.json
+      - name: Upload Oil V2 actual image artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oil-v2-16-real-engine-renders
+          path: oil-v2-results/
+          if-no-files-found: warn
+          retention-days: 30
