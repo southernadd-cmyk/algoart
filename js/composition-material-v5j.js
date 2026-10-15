@@ -24,7 +24,7 @@ function variants(field){
         kind,amount:t,change:delta(source,field.rgb)});
     }
   }
-  return result;
+  return result.filter(v=>delta(v.rgb,field.rgb)<=74);
 }
 function assign(fields){
   const painted=[];
