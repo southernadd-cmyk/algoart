@@ -1105,9 +1105,12 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   var source=new Float32Array(total*3),next=new Float32Array(total*3);
   var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total),formation=new Float32Array(total),paperGrain=new Uint8Array(total);
   var seedValue=A.hash(seed+'|paper-flow-v2f')>>>0,pi=0;
+  var fieldCallMs=0,fieldCallCount=0;
   for(var y=0;y<h;y++)for(var x=0;x<w;x++,pi++){
     var j=pi*3,loaded=0;
+    var fieldStart=profile?performance.now():0;
     var surface=materialPaperField(x,y,ratio,seedValue);
+    if(profile){fieldCallMs+=performance.now()-fieldStart;fieldCallCount++;}
     var sx=clamp(x+surface.warpX,0,w-1.0001);
     var sy=clamp(y+surface.warpY,0,h-1.0001);
     var x0=Math.floor(sx),y0=Math.floor(sy),tx=sx-x0,ty=sy-y0;
@@ -1126,7 +1129,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     formation[pi]=surface.formation;
     paperGrain[pi]=Math.round(surface.grain*255);
   }
-  if(profile){profile.stages.paperPreparationMs=performance.now()-profileStart;profileStart=performance.now();}
+  if(profile){profile.stages.paperPreparationMs=performance.now()-profileStart;profile.stages.materialPaperFieldMeasuredMs=fieldCallMs;profile.stages.materialPaperFieldCalls=fieldCallCount;profileStart=performance.now();}
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
   // The paper, fibre and water fields are constant during diffusion.
