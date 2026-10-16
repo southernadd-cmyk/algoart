@@ -50,37 +50,11 @@ function approvedEdges(f,plan){
 // Oil V2: 30 staggered fine hairs per contact, batched into 3 paths.
 // Coarse Oil V1 contacts retain the paint mass; these are fine brush-tip
 // ridges with visibly different filament lengths and broken endpoints.
-function fineBristleTip(ctx,a,middle,b,breadth,paintRGB,seed){
- const r=rand(seed+'|oil-v2-filaments');
- const dx=b.x-a.x,dy=b.y-a.y,len=Math.max(1,Math.hypot(dx,dy));
- const nx=-dy/len,ny=dx/len;
- const count=30,groups=[new Path2D(),new Path2D(),new Path2D()];
- for(let i=0;i<count;i++){
-   const lane=(i+.5)/count-.5;
-   const offset=lane*breadth*.88;
-   const start=r.range(0,.15)+(i%7)*.008;
-   const end=clamp(r.range(.68,1.15)+(i%5)*.012,.68,1.2);
-   const shift=r.range(-.09,.09)*breadth;
-   const p=groups[i%3];
-   p.moveTo(a.x+dx*start+nx*offset,a.y+dy*start+ny*offset);
-   p.quadraticCurveTo(middle.x+nx*offset,middle.y+ny*offset,
-     a.x+dx*end+nx*(offset+shift),a.y+dy*end+ny*(offset+shift));
- }
- ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
- const shades=[mix(paintRGB,[255,246,220],.21),mix(paintRGB,[40,35,29],.16),paintRGB];
- for(let i=0;i<3;i++){
-   ctx.strokeStyle=rgba(shades[i],i===2?.32:.22);
-   ctx.lineWidth=i===1?.65:i===2?.48:.8;
-   ctx.stroke(groups[i]);
- }
- ctx.restore();
- return count;
-}
 function overlayOil(ctx,mask,field,edges,rr){
  const palette=field.paintPalette||field.palette||[field.rgb],
        paint=A.oilPaintV4ETest?.drawContactBrush;
  if(typeof paint!=='function')throw Error('Oil V4e loaded contact brush unavailable');
- let strokes=0,pools=0,filaments=0;
+ let strokes=0,pools=0;
  // Pigment and height are painted together by the actual V4e physical
  // brush, retaining directional bristle marks and skips.
  for(let i=0;i<edges.length;i++){
@@ -100,11 +74,11 @@ function overlayOil(ctx,mask,field,edges,rr){
        c,layer%3===0?'flat':'filbert',rr,{
          thickness:rr.range(.66,.92),drag:rr.range(.42,.81),
          bristles:rr.range(.85,.99)});
-     filaments+=fineBristleTip(ctx,a,middle,b,strokeWidth,c,field.seed+'|'+i+'|'+layer);
+     // V2 tips now belong to the core oil-contact renderer, not an overlay.
      strokes++;
    }
  }
- return {strokes,pools,filaments};
+ return {strokes,pools};
 }
 
 function paintMaterialConnections(target,plan,scale,material){
@@ -115,7 +89,7 @@ function paintMaterialConnections(target,plan,scale,material){
  const mask=maskCanvas.getContext('2d');
  ctx.scale(scale,scale);mask.scale(scale,scale);
  ctx.save();mask.save();voidClip(ctx,plan);voidClip(mask,plan);
- let broad=0,links=0,strokes=0,pools=0,filaments=0;
+ let broad=0,links=0,strokes=0,pools=0;
  for(const field of plan.connectedFields){
    if(field.kind!=='guide-chain-colour-mass')continue;
    const edges=approvedEdges(field,plan);
@@ -124,7 +98,7 @@ function paintMaterialConnections(target,plan,scale,material){
    ctx.save();mask.save();ctx.clip(boundary);mask.clip(boundary);
    const rr=rand(field.seed+'|v5q|'+material),
      result=overlayOil(ctx,mask,field,edges,rr);
-   broad++;links+=edges.length;strokes+=result.strokes;pools+=result.pools;filaments+=result.filaments;
+   broad++;links+=edges.length;strokes+=result.strokes;pools+=result.pools;
    ctx.restore();mask.restore();
  }
  ctx.restore();mask.restore();
@@ -134,10 +108,11 @@ function paintMaterialConnections(target,plan,scale,material){
  out.globalAlpha=.78;
  out.drawImage(pass,0,0);out.restore();
  return{broadFields:broad,sourceLinks:links,materialContacts:strokes,
-   junctionPools:pools,visibleFineFilaments:filaments,sourceFieldCount:plan.connectedFields.length};
+   junctionPools:pools,sourceFieldCount:plan.connectedFields.length};
 }
 
 A.renderOilPaintV2=function(target,settings,scale,reveal){
+ A.oilV2TipStats={filaments:0,brushContacts:0,detailedTips:0};
  scale=scale||1;
  const opts={material:'oil',interpretation:'areas',
    phiFraming:A.phiFramingEnabled===true,maxRegions:28};
@@ -175,7 +150,8 @@ A.renderOilPaintV2=function(target,settings,scale,reveal){
  }
  A.lastRenderMeta=meta;
  A.lastPhiSheetFrame=meta.phiSheetFrame||null;
- return {...base,...meta,material:'oil',version:'oil-paint-v2',
-   work:{...base.work,oilV2:applied},sourceMeta:oilStats};
+ return {...base,...meta,material:'oil',version:'oil-paint-v2-tip-v3',
+   work:{...base.work,oilV2:{...applied,visibleFineFilaments:A.oilV2TipStats.filaments,
+      detailedTips:A.oilV2TipStats.detailedTips,brushContacts:A.oilV2TipStats.brushContacts}},sourceMeta:oilStats};
 };
 })(window.AlgoArt);
