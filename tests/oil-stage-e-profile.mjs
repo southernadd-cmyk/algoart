@@ -39,6 +39,7 @@ try{
     A.oilStageCScale=job.scale;
     A.oilStageEMaskScanExperimental=scan;
     A.oilStageEBatchWetSample=scan;
+    A.oilStageETightMaskExperimental=scan;
     A.oilStageEProfile={};
     A.oilStageCStats={};
     try{
@@ -51,7 +52,8 @@ try{
        dims:[c.width,c.height]};
     }finally{
      A.oilStageEMaskScanExperimental=false;
-     A.oilStageEBatchWetSample=false;A.oilStageEProfile=null;
+     A.oilStageEBatchWetSample=false;
+     A.oilStageETightMaskExperimental=false;A.oilStageEProfile=null;
      A.oilPerfExperimental=false;A.oilBrushPerfExperimental=false;
      A.oilStageCExperimental=false;A.oilStageDRefinement=false;
      A.oilStageCScale=null;A.oilStageCStats=null;
