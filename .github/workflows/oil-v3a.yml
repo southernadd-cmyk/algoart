@@ -1,0 +1,40 @@
+name: Oil V3a experimental comparison
+on:
+  pull_request:
+    paths:
+      - 'js/oil-brush-v3.js'
+      - 'js/oil-paint-v3.js'
+      - 'tests/oil-v3a-comparison.mjs'
+      - '.github/workflows/oil-v3a.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node --check js/oil-brush-v3.js
+          node --check js/oil-paint-v3.js
+          node --check tests/oil-v3a-comparison.mjs
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-v3a-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - run: node tests/oil-v3a-comparison.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-v3a-v2-comparison
+          path: oil-v3a-results/
+          if-no-files-found: warn
