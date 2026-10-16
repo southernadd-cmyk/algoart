@@ -834,6 +834,28 @@ function surfaceLighting(field,w,h,x,y,relief){
         minmax(ridge,0,1.4)*centre*(4+12*relief);
   return {shade:shade,shine:minmax(spec,0,27)};
 }
+// Stage E: exact alternative to repeated opticalRelief() calls.
+// The calling adapter precomputes Math.log1p(height*.66) once per pixel.
+// Float64 precision preserves the original numerical formula and allows
+// bit-for-bit oil RGB output; keep release V1 on the original function.
+function surfaceLightingCached(optical,w,h,x,y,relief){
+  var p=y*w+x,centre=optical[p],
+      lx=optical[p-1],rx=optical[p+1],
+      ty=optical[p-w],by=optical[p+w],
+      lx3=optical[p-3],rx3=optical[p+3],
+      ty3=optical[p-w*3],by3=optical[p+w*3],
+      dx=(rx-lx)*.35+(rx3-lx3)*.05,
+      dy=(by-ty)*.35+(by3-ty3)*.05,
+      nx=-dx*(.74+.38*relief),ny=-dy*(.74+.38*relief),nz=1,
+      length=1/Math.hypot(nx,ny,nz);
+  nx*=length;ny*=length;nz*=length;
+  var diffuse=nx*(-.43)+ny*(-.52)+nz*.74,
+      shade=minmax(1+(diffuse-.74)*(.37+.32*relief),.72,1.23),
+      ridge=Math.hypot(dx,dy),
+      spec=Math.pow(minmax(nx*(-.24)+ny*(-.30)+nz*.92,0,1),18)*
+        minmax(ridge,0,1.4)*centre*(4+12*relief);
+  return {shade:shade,shine:minmax(spec,0,27)};
+}
 function finish(pig,field,w,h,seed,options){
   var pixels=pig.getImageData(0,0,w,h),out=pixels.data,
       relief=minmax(options.relief??.87,0,1),
@@ -954,7 +976,8 @@ A.renderOilPaintV4E=function(target,settings,scale,opts){
 A.oilPaintV4ETest={pressureAt:pressureAt,buildBrushFrames:buildBrushFrames,
   drawBrushLab:drawBrushLab,drawContactBrush:drawContactBrushV4e,
   sampleWetCrossings:sampleWetCrossings,dragCrossingPigment:dragCrossingPigment,
-  surfaceLighting:surfaceLighting,drawWetCrossingLab:drawWetCrossingLab,
+  surfaceLighting:surfaceLighting,surfaceLightingCached:surfaceLightingCached,
+  drawWetCrossingLab:drawWetCrossingLab,
   addPaintHeight:addPaintHeight};
 })(window.AlgoArt);
 
