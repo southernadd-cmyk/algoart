@@ -1,0 +1,24 @@
+name: Oil V3 Randomise diagnostic
+on:
+  pull_request:
+    branches: [main]
+    paths: ['tests/oil-v3-randomise.mjs', '.github/workflows/oil-v3-randomise.yml', 'js/app.js', 'js/oil-brush-v3.js', 'js/oil-paint-v3.js']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Start site
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-v3-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - run: node tests/oil-v3-randomise.mjs
