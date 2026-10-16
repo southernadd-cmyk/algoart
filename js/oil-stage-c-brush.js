@@ -25,24 +25,40 @@ function makeRibbon(frames,first,last,offset,width,r,options){
   const left=[],right=[],count=frames.length;
   const end=Math.max(first+1,Math.min(count-1,last));
   const xscale=options.xscale||1;
-  const stride=(A.oilStageCScale||1)<=1?2:1;
+  const refined=options.refined===true;
+  // Detail is concentrated at the ends of hairs. Fewer vertices in the
+  // interior keep path construction affordable, including on mobile.
+  const stride=refined?((A.oilStageCScale||1)<=1?3:2):
+    ((A.oilStageCScale||1)<=1?2:1);
   for(let i=first;i<=end;i+=stride){
     const frame=frames[i],u=(i-first)/Math.max(1,end-first);
     const begin=Math.min(1,u*5),finish=Math.min(1,(1-u)*7);
     const edge=options.body ? (.08+.92*Math.min(1,(1-u)*5)) :
       (.22+.78*Math.min(begin,finish));
     const wave=.96+.055*Math.sin(frame.s*.063+options.phase);
+    // Bristle tension follows the CURVED brush tangent. Two correlated
+    // frequencies give non-identical bends without independent jitter at
+    // each sample (which would produce a pixel-grid sawtooth).
+    const bend=refined?(options.bendAmplitude||0)*(.24+.76*u*u)*
+      (.68*Math.sin(frame.s*.027+options.phase*.91)+
+       .32*Math.sin(frame.s*.081+options.phase*1.71)):0;
     const lateral=offset+options.splay*
-      Math.sin(frame.s*.039+options.phase);
-    const half=width*.5*edge*wave*xscale;
+      Math.sin(frame.s*.039+options.phase)+bend;
+    // Less pressure and exhausted pigment narrow the actual contact.
+    const contact=refined?(.70+.30*frame.pressure)*
+      (1-.24*u*(options.depletion||0)):1;
+    const half=width*.5*edge*wave*xscale*contact;
     left.push(shift(frame,frame.nx,frame.ny,lateral-half));
     right.push(shift(frame,frame.nx,frame.ny,lateral+half));
   }
   // Keep each hair's actual terminal station, even at adaptive sampling.
   if((end-first)%stride!==0){
     const frame=frames[end],u=1,edge=options.body?.08:.22,
-      lateral=offset+options.splay*Math.sin(frame.s*.039+options.phase),
-      half=width*.5*edge;
+      lateral=offset+options.splay*Math.sin(frame.s*.039+options.phase)+
+        (refined?(options.bendAmplitude||0)*.58*
+        Math.sin(frame.s*.027+options.phase*.91):0),
+      half=width*.5*edge*(refined?(.70+.30*frame.pressure)*
+        (1-.24*(options.depletion||0)):1);
     left.push(shift(frame,frame.nx,frame.ny,lateral-half));
     right.push(shift(frame,frame.nx,frame.ny,lateral+half));
   }
@@ -54,17 +70,22 @@ function makeRibbon(frames,first,last,offset,width,r,options){
   // End position and direction depend on this hair's terminal contact.
   // Staggered, non-square tips; not radial rays or a common flush edge.
   const terminalOffset=offset+options.splay*
-    Math.sin(lastFrame.s*.039+options.phase);
+    Math.sin(lastFrame.s*.039+options.phase)+
+    (refined?(options.bendAmplitude||0)*.58*
+    Math.sin(lastFrame.s*.027+options.phase*.91):0);
   const tipLength=options.tipLength;
+  // Each bristle bends at its own lifting tip. The exit angle remains
+  // predominantly longitudinal, avoiding the radial "sunray" artifact.
+  const terminalLean=refined?options.tipLean*1.30:options.tipLean;
   path.quadraticCurveTo(
     lastFrame.x+lastFrame.tx*tipLength*.68+
-      lastFrame.nx*(terminalOffset+options.tipLean),
+      lastFrame.nx*(terminalOffset+terminalLean),
     lastFrame.y+lastFrame.ty*tipLength*.68+
-      lastFrame.ny*(terminalOffset+options.tipLean),
+      lastFrame.ny*(terminalOffset+terminalLean),
     lastFrame.x+lastFrame.tx*tipLength+
-      lastFrame.nx*(terminalOffset+options.tipLean*.45),
+      lastFrame.nx*(terminalOffset+terminalLean*.45),
     lastFrame.y+lastFrame.ty*tipLength+
-      lastFrame.ny*(terminalOffset+options.tipLean*.45));
+      lastFrame.ny*(terminalOffset+terminalLean*.45));
   path.lineTo(right[right.length-1].x,right[right.length-1].y);
   for(let i=right.length-2;i>=0;i--)path.lineTo(right[i].x,right[i].y);
   path.closePath();
@@ -72,6 +93,7 @@ function makeRibbon(frames,first,last,offset,width,r,options){
 }
 function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   const start=performance.now();
+  const refined=A.oilStageDRefinement===true;
   const original=A.oilPaintV4ETest;
   const frames=original.buildBrushFrames(points,width);
   if(frames.length<3)return {
@@ -96,6 +118,17 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     pMax=Math.max(pMax,frame.pressure);
   }
   let runs=0,contacts=0,footprints=0,loadStart=0,loadEnd=0;
+  let exhausted=0,bent=0,gaps=0;
+  // Find a travel station in O(log N) rather than scanning the complete
+  // sampled stroke once for every physical hair.
+  function atDistance(d){
+    let lo=0,hi=frames.length-1;
+    while(lo<hi){
+      const mid=(lo+hi)>>1;
+      if(frames[mid].s<d)lo=mid+1;else hi=mid;
+    }
+    return lo;
+  }
   // Fine hairs alone leave postage-stamp holes in the body of a flat brush.
   // Thin translucent under-contacts provide a coherent loaded paint mass,
   // but stop before the end so the *individual bristle tips* stay visible.
@@ -120,8 +153,10 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   // Batch *real individual hair silhouettes*, not cosmetic highlight lines:
   // three colour/height layers each hold a set of disjoint, independently
   // length-varied hair contacts. Geometry is unchanged by batching.
-  const grouped=[new Path2D(),new Path2D(),new Path2D()];
-  const groupCounts=[0,0,0],batch=A.oilStageCNoBatch!==true;
+  const groupTotal=refined?6:3;
+  const grouped=Array.from({length:groupTotal},()=>new Path2D());
+  const groupCounts=Array(groupTotal).fill(0);
+  const batch=A.oilStageCNoBatch!==true;
   for(let hair=0;hair<sourceCount;hair++){
     const lane=(hair+.5)/sourceCount-.5;
     const outer=Math.abs(lane)*2;
@@ -136,8 +171,15 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     const endRetreat=width*r.range(0,profile==='dry'?.80:.55)*
       (.62+.38*outer);
     const terminalDistance=Math.max(total*.63,total-endRetreat);
-    const begin=Math.max(0,frames.findIndex(f=>f.s>=startDistance));
-    let last=frames.findIndex(f=>f.s>=terminalDistance);
+    // Broad, loaded paint already occupies the heel. Fine physical
+    // filaments begin farther along the stroke where they matter visibly.
+    const contactStart=refined?Math.min(total*.43,
+      Math.max(startDistance,total*(profile==='dry'?.32:.26))):
+      startDistance;
+    const begin=refined?atDistance(contactStart):
+      Math.max(0,frames.findIndex(f=>f.s>=startDistance));
+    let last=refined?atDistance(terminalDistance):
+      frames.findIndex(f=>f.s>=terminalDistance);
     if(last<0)last=frames.length-1;
     last=Math.max(begin+2,Math.min(last,frames.length-1));
     const initial=r.range(.71,1.25)*(profile==='dry'?.75:1.0);
@@ -149,6 +191,12 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     const wavePhase=r.range(0,TAU);
     const splay=r.range(.002,.018)*width;
     const tipLean=r.range(-.027,.027)*width;
+    const bendAmplitude=refined?width*r.range(.006,.022):0;
+    const depletion=refined?clamp(
+      .23+.39*(frames[last]?.s||total)/total+
+      .19*outer+r.range(-.13,.13),.08,.94):0;
+    if(refined&&bendAmplitude) bent++;
+    if(refined&&depletion>.57)exhausted++;
     // Some dry paint-starved hairs lift before touching the end. No
     // per-frame independent RNG means no square-pixel / sawtooth edges.
     const missing=profile==='dry'?.16:.045;
@@ -163,6 +211,7 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
       const gap=r.range(.028,.095);
       skipFirst=Math.floor(begin+(effectiveEnd-begin)*middle);
       skipLast=Math.min(effectiveEnd,skipFirst+Math.max(1,Math.round(frames.length*gap)));
+      if(refined)gaps++;
     }
     const fragments=skipFirst>=0?
       [[begin,Math.max(begin+1,skipFirst-1)],
@@ -172,16 +221,20 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
       if(end-first<2)continue;
       const path=makeRibbon(frames,first,end,lateral,filamentWidth,r,{
         phase:wavePhase,splay,tipLength:end===effectiveEnd?tipLength:filamentWidth*.28,
-        tipLean,body:false,xscale:1
+        tipLean,body:false,xscale:1,refined,bendAmplitude,depletion
       });
       if(!path)continue;
       // Depletion is tied to travel/pressure, not random light-colored pen lines.
       const averageS=(frames[first].s+frames[end].s)*.5/total;
-      const averageLoad=clamp(initial*(1-.54*averageS),.10,1.36);
+      const averageLoad=clamp(initial*(1-(refined?.67:.54)*averageS)*
+        (refined?(1-.24*depletion):1),.10,1.36);
       const alpha=clamp((.67+.23*averageLoad)*(.72+.28*thickness),.34,.97);
       const relief=clamp((.21+.43*averageLoad)*(.62+.38*thickness),.12,.85);
       if(batch){
-        const group=hair%3;
+        // Three source-palette tone bands by two actual load levels:
+        // dry tips are lighter and thinner, rather than all 30 hairs
+        // sharing a single opaque overlay or three decorative stripes.
+        const group=refined?(hair%3+(averageLoad<.56?3:0)):hair%3;
         grouped[group].addPath(path);
         groupCounts[group]++;
       }else{
@@ -194,13 +247,16 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     loadEnd+=initial*(1-.54*frames[effectiveEnd].s/total);
   }
   if(batch){
-    for(let g=0;g<3;g++){
+    for(let g=0;g<groupTotal;g++){
       if(!groupCounts[g])continue;
-      const colour=g===0?rgb:g===1?mix(rgb,[247,233,209],.046):
-        mix(rgb,[52,44,35],.05);
+      const tone=g%3;
+      const isDry=refined&&g>=3;
+      const colour=tone===0?(isDry?mix(rgb,[243,225,196],.105):rgb):
+        tone===1?mix(rgb,[247,233,209],isDry?.10:.046):
+        mix(rgb,[52,44,35],isDry?.020:.05);
       deposit(pig,mask,grouped[g],colour,
-        (.72+.09*thickness)*(profile==='dry'?.75:1),
-        (.33+.19*thickness)*(profile==='dry'?.72:1));
+        (.72+.09*thickness)*(profile==='dry'?.75:1)*(isDry?.46:1),
+        (.33+.19*thickness)*(profile==='dry'?.72:1)*(isDry?.45:1));
     }
   }
   // Stats are captured independently from V1. Drawn filament runs have
@@ -216,6 +272,10 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     s.batchPaintCalls=(s.batchPaintCalls||0)+
       (batch?groupCounts.filter(Boolean).length:runs);
     s.batchEnabled=batch;
+    s.refined=refined;
+    s.bent=(s.bent||0)+bent;
+    s.exhausted=(s.exhausted||0)+exhausted;
+    s.dryGaps=(s.dryGaps||0)+gaps;
   }
   return {bristleRuns:runs,bristleContacts:contacts,
     contactFootprints:footprints,
