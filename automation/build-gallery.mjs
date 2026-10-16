@@ -90,7 +90,7 @@ function artworkCard(item, index) {
             <div><dt>Series</dt><dd>${escapeHtml(item.series)}</dd></div>
             <div><dt>Format</dt><dd>${portrait ? 'Portrait · 1000 × 1400' : 'Landscape · 1400 × 1000'}</dd></div>
             <div><dt>φ adherence</dt><dd>${escapeHtml(s.phiStrength)}%</dd></div>
-            <div><dt>Medium</dt><dd>${item.material==='oil'?'Oil Paint v1':item.material==='watercolour'?'Watercolour V2S':item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
+            <div><dt>Medium</dt><dd>${item.material==='oil'?(item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v3'?'Oil Paint v3':'Oil Paint v1'):item.material==='watercolour'?'Watercolour V2S':item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
             <div><dt>Palette</dt><dd>${escapeHtml(s.palette)}</dd></div>
           </dl>
           <a class="remix" href="${escapeHtml(item.shareUrl)}">OPEN EXACT ARTWORK + REMIX →</a>
