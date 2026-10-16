@@ -250,8 +250,10 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     const contactStart=refined?Math.min(total*.43,
       Math.max(startDistance,total*(profile==='dry'?.32:.26))):
       startDistance;
-    const begin=refined?atDistance(contactStart):
-      Math.max(0,frames.findIndex(f=>f.s>=startDistance));
+    // Very short strokes can be shorter than a bristle's start offset.
+    // Keep at least three sampled frames available for the terminal ribbon.
+    const begin=Math.min(frames.length-3,refined?atDistance(contactStart):
+      Math.max(0,frames.findIndex(f=>f.s>=startDistance)));
     let last=refined?atDistance(terminalDistance):
       frames.findIndex(f=>f.s>=terminalDistance);
     if(last<0)last=frames.length-1;
