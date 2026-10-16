@@ -52,22 +52,26 @@ A.preparePNG=function(settings,scale){
   return new Promise(function(resolve,reject){
     try{
       if(settings.oilPaintRender){
-        const oilRenderer=settings.oilPaintRevision==='v2'?
-          A.renderOilPaintV2:A.renderOilPaintV1;
+        const oilRenderer=settings.oilPaintRevision==='v4'?A.renderOilPaintV4:
+          settings.oilPaintRevision==='v3'?A.renderOilPaintV3:
+          settings.oilPaintRevision==='v2'?A.renderOilPaintV2:A.renderOilPaintV1;
         oilRenderer(out,compositionSettings,scale,false);
       }
       else if(settings.watercolourRender){
-        if(settings.watercolourRevision==='v2s'){
+        if(settings.watercolourRevision==='v2s'||settings.watercolourRevision==='v2t'){
           var previousFit=A.watercolourV2sOptions.fitToSheet;
           try{
             A.watercolourV2sOptions.fitToSheet=settings.watercolourFitToSheet!==false;
-            A.renderWatercolourV2S(out,compositionSettings,scale,false);
+            (settings.watercolourRevision==='v2t'?A.renderWatercolourV2T:
+              A.renderWatercolourV2S)(out,compositionSettings,scale,false);
           }finally{
             A.watercolourV2sOptions.fitToSheet=previousFit;
           }
         }
         else A.renderWatercolourV2R(out,compositionSettings,scale,false);
       }
+      else if(settings.oilRender&&settings.tissuePaletteVersion===8)
+        A.renderTissueV8(out,compositionSettings,scale,false);
       else if(settings.oilRender)
         A.renderOil(out,compositionSettings,scale,false,settings.tissuePaletteVersion>=2?settings.tissuePaletteVersion:1);
       else A.render(out,compositionSettings,scale,false);
