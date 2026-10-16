@@ -37,7 +37,7 @@ try{
     const started=performance.now();
     const result=(version==='v2'?A.renderOilPaintV2:A.renderOilPaintV3)(c,settings,.45,false);
     return {ms:performance.now()-started,png:c.toDataURL('image/png'),
-      width:c.width,height:c.height,version:result.version};
+      width:c.width,height:c.height,version:result.version,v3BrushCalls:result.v3BrushCalls||0};
    }
    run('v2');run('v3');
    return {v2:run('v2'),v3:run('v3')};
@@ -52,6 +52,7 @@ try{
     Buffer.from(data.slice(data.indexOf(',')+1),'base64'));
    delete v.png;
   }
+  assert(result.v3.v3BrushCalls>0,'V3 physical brush was never invoked for '+key);
   assert(!equal,'V3 produced identical pixels to V2 for '+key);
   report.push({case:key,spec,hashes,...result,relativeTime: +(result.v3.ms/result.v2.ms).toFixed(3)});
   console.log(JSON.stringify(report[report.length-1]));
