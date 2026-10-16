@@ -5,7 +5,8 @@
 //   Tissue V8       = Tissue V7 drawing code (tissue=8)
 //   Watercolour V2T = Watercolour V2S code  (material=watercolour-v2t)
 // Pixels may differ from the predecessor on browsers that GPU-accelerate
-// canvases; on CPU-only browsers they are expected to match it exactly.
+// canvases; on CPU-only browsers they are expected to match it exactly
+// (for Oil: match V3's first render in a freshly loaded page).
 window.AlgoArt=window.AlgoArt||{};
 (function(A){
 'use strict';
@@ -16,6 +17,9 @@ function require(name){
 A.renderOilPaintV4=function(target,settings,scale,reveal){
   require('renderOilPaintV3');require('renderViaCPUCanvas');
   const result=A.renderViaCPUCanvas(function(canvas){
+    // Every V4 render starts from an empty tooth scratch: deterministic, and
+    // equal to Oil V3's first render in a freshly loaded page.
+    A.oilPaintV4ETest.resetToothSlot('cpu');
     return A.renderOilPaintV3(canvas,settings,scale,reveal);
   },target,'oil-paint-v4');
   return {...result,version:'oil-paint-v4',canvasBackend:'cpu',

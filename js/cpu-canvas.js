@@ -80,7 +80,8 @@ A.renderViaCPUCanvas=function(render,target,label){
   out.imageSmoothingEnabled=false;
   out.drawImage(internal,0,0);
   out.restore();
-  internal.width=1;internal.height=1; // release the internal raster
+  // The internal canvas is simply dropped (no resize-to-1x1), exactly like
+  // the old pipelines' own intermediate canvases; garbage collection frees it.
   record.ms=+(performance.now()-started).toFixed(2);
   A.lastCPUCanvasRender=record;
   return meta;

@@ -387,5 +387,14 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
 if(!A.oilPaintV4ETest?.buildBrushFrames)
   throw Error('Oil Stage C must load after genuine Oil V1 core scripts');
 A.oilPaintV4ETest.drawContactBrushV3=drawContactBrushV2;
+// Oil V3's output depends on the tooth scratch left over from the PREVIOUS
+// render in the page (scratch size affects anti-aliasing), so the first V3
+// render after loading differs from later renders of the same seed. Oil V4
+// clears its own (CPU) slot before every render, making each V4 render equal
+// to a first render. The default (V3) slot is never touched here.
+A.oilPaintV4ETest.resetToothSlot=function(name){
+  const slot=toothSlots[name];if(!slot)throw Error('Unknown tooth slot '+name);
+  slot.scratch=null;slot.ctx=null;slot.patterns.length=0;
+};
 A.oilPaintStageV3Test={makeRibbon,drawContactBrushV3:drawContactBrushV2};
 })(window.AlgoArt);
