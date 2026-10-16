@@ -472,7 +472,14 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
     var end=frames[frames.length-1],tipAngle=end.angle,
         tangentX=Math.cos(tipAngle),tangentY=Math.sin(tipAngle),
         normalX=-tangentY,normalY=tangentX,
-        tipPaths=[new Path2D(),new Path2D(),new Path2D()];
+        tipPaths=[new Path2D(),new Path2D(),new Path2D()],
+        // Angles belong to the stroke, not to individual hairs. Cache the
+        // identical normal values once per sampled frame instead of doing
+        // two trig calls per frame per bristle (no seed or pixel changes).
+        tipFrameNormals=frames.map(function(f){
+          var normal=f.angle+PI/2;
+          return {x:Math.cos(normal),y:Math.sin(normal)};
+        });
     for(var hair=0;hair<strandCount;hair++){
       var lane=(hair+.5)/strandCount-.5,
           outer=Math.abs(lane)*2,
@@ -487,15 +494,15 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
           baseWidth=Math.min(1.8,Math.max(.38,
             width/strandCount*r.range(.30,.62)));
       for(var step=startAt;step<frames.length;step++){
-        var f=frames[step],normal=f.angle+PI/2,
+        var f=frames[step],normal=tipFrameNormals[step],
             progress=(f.s-frames[startAt].s)/
               Math.max(.001,total-frames[startAt].s),
             wobble=width*.008*Math.sin(f.s*.055+seedPhase)+
               splay*progress,
             offset=position+wobble;
         positions.push({
-          x:f.x+Math.cos(normal)*offset,
-          y:f.y+Math.sin(normal)*offset,
+          x:f.x+normal.x*offset,
+          y:f.y+normal.y*offset,
           a:f.angle, t:progress*.78
         });
       }
