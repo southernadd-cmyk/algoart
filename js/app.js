@@ -189,14 +189,16 @@ var tissuePaletteVersion=7;
 var watercolourMaterialRevision='v2s';
 var watercolourFitToSheet=false; // Legacy watercolour-specific fit.
 var phiSheetFraming=false; // Shared optional φ source-geometry transform.
-var legacyOilV1Link=false; // Historical Oil v1 links only; never a visible selector choice.
+var legacyOilV1Link=false;
+var legacyOilV2Link=false; // Historical Oil v1 links only; never a visible selector choice.
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
 function oilPaintEnabled(){return $('materialStyle').value==='oil'}
-function oilPaintV2Enabled(){return oilPaintEnabled()&&!legacyOilV1Link}
+function oilPaintV2Enabled(){return oilPaintEnabled()&&legacyOilV2Link&&!legacyOilV1Link}
+function oilPaintV3Enabled(){return oilPaintEnabled()&&!legacyOilV1Link&&!legacyOilV2Link}
 function oilPaintV1Enabled(){return legacyOilV1Link===true}
 function materialKey(){return $('materialStyle').value+'|'+
-    (oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
+    (oilPaintV3Enabled()?'oil-paint-v3':oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
     '|phi:'+phiSheetFraming+'|historic-fit:'+watercolourFitToSheet}
 function syncMaterialNote(){
   var control=$('watercolourFitControl');
@@ -224,6 +226,7 @@ function syncMaterialNote(){
       watercolourFitToSheet?' Legacy Watercolour fit-to-sheet is ON and changes its PNG, not its source SVG.':
         ' Source scale and placement match the Marker/plotter φ composition.') :
       ' Archived V2R includes automatic fitting and may differ from the Marker/plotter layout.')
+    :oilPaintV3Enabled()?'Oil Paint v3: adaptive physical bristles with canvas-tooth contact and relief following the same φ composition.'
     :oilPaintV2Enabled()?'Oil Paint v2: individually varied loaded bristles, connected colour fields and relief following the same φ composition.'
     :oilPaintV1Enabled()?'Oil Paint v1 (legacy): original loaded-bristle paint and connected colour fields. Saved V1 links retain their original appearance.'
     :oilEnabled()?'Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms.'
@@ -234,6 +237,7 @@ function syncMaterialNote(){
 function renderArtwork(target,settings,scale,reveal){
   A.phiFramingEnabled=phiSheetFraming&&
     !(watercolourEnabled()&&watercolourMaterialRevision==='v2r');
+  if(oilPaintV3Enabled())return A.renderOilPaintV3(target,settings,scale,reveal);
   if(oilPaintV2Enabled())return A.renderOilPaintV2(target,settings,scale,reveal);
   if(oilPaintV1Enabled())return A.renderOilPaintV1(target,settings,scale,reveal);
   if(watercolourEnabled()){
@@ -259,7 +263,8 @@ function settingsToURL(settings){
   });
   if(phiSheetFraming&&!(watercolourEnabled()&&watercolourMaterialRevision==='v2r'))
     params.set('sheet','phi');
-  if(oilPaintV2Enabled())params.set('material','oil-v2');
+  if(oilPaintV3Enabled())params.set('material','oil-v3');
+  else if(oilPaintV2Enabled())params.set('material','oil-v2');
   else if(oilPaintV1Enabled())params.set('material','oil-v1');
   else if(watercolourEnabled()){
     params.set('material','watercolour-'+watercolourMaterialRevision);
@@ -335,9 +340,10 @@ function loadSettingsFromURL(){
     found=true;
   }
 
-  if(params.get('material')==='oil-v1'||params.get('material')==='oil-v2'){
+  if(['oil-v1','oil-v2','oil-v3'].includes(params.get('material'))){
     $('materialStyle').value='oil';
     legacyOilV1Link=params.get('material')==='oil-v1';
+    legacyOilV2Link=params.get('material')==='oil-v2';
     found=true;
   }
 
@@ -1256,7 +1262,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id==='watercolourFit'||
        e.id==='phiSheetFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
-    if(e.id==='materialStyle')legacyOilV1Link=false;
+    if(e.id==='materialStyle'){legacyOilV1Link=false;legacyOilV2Link=false;}
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
     if(e.id==='materialStyle'&&watercolourEnabled()){
       watercolourMaterialRevision='v2s';
@@ -1338,7 +1344,8 @@ function loadExactArchivedArtwork(id){
           archivedMaterialURL.searchParams.get('fit')==='1':true;
       }
       legacyOilV1Link=archivedWater==='oil-v1';
-      $('materialStyle').value=archivedWater==='oil-v1'||archivedWater==='oil-v2'?'oil':
+      legacyOilV2Link=archivedWater==='oil-v2';
+      $('materialStyle').value=['oil-v1','oil-v2','oil-v3'].includes(archivedWater)?'oil':
         archivedWater==='watercolour-v2r'||archivedWater==='watercolour-v2s'
         ?'watercolour':archivedTissueVersion>=2||entry.material==='watercolor'||
           archivedMaterialURL.searchParams.get('watercolor')==='1'?'tissue':'marker';
