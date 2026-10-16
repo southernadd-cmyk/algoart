@@ -3,6 +3,7 @@
 import {chromium} from 'playwright';
 import {mkdir,writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 const base=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const output='oil-v3a-results';
 await mkdir(output,{recursive:true});
@@ -36,19 +37,24 @@ try{
     const started=performance.now();
     const result=(version==='v2'?A.renderOilPaintV2:A.renderOilPaintV3)(c,settings,.45,false);
     return {ms:performance.now()-started,png:c.toDataURL('image/png'),
-      width:c.width,height:c.height,version:result.version};
+      width:c.width,height:c.height,version:result.version,v3BrushCalls:result.v3BrushCalls||0};
    }
    run('v2');run('v3');
    return {v2:run('v2'),v3:run('v3')};
   },spec);
   const key=spec.mode+'-'+spec.orientation;
+  const equal=result.v2.png===result.v3.png;
+  const sha=data=>createHash('sha256').update(data).digest('hex');
+  const hashes={v2:sha(result.v2.png),v3:sha(result.v3.png)};
   for(const version of ['v2','v3']){
    const v=result[version],data=v.png;
    await writeFile(output+'/'+key+'-'+version+'.png',
     Buffer.from(data.slice(data.indexOf(',')+1),'base64'));
    delete v.png;
   }
-  report.push({case:key,spec,...result});
+  assert(result.v3.v3BrushCalls>0,'V3 physical brush was never invoked for '+key);
+  assert(!equal,'V3 produced identical pixels to V2 for '+key);
+  report.push({case:key,spec,hashes,...result,relativeTime: +(result.v3.ms/result.v2.ms).toFixed(3)});
   console.log(JSON.stringify(report[report.length-1]));
  }
  await writeFile(output+'/report.json',JSON.stringify({cases:report,errors},null,2));
