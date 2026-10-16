@@ -25,15 +25,24 @@ function makeRibbon(frames,first,last,offset,width,r,options){
   const left=[],right=[],count=frames.length;
   const end=Math.max(first+1,Math.min(count-1,last));
   const xscale=options.xscale||1;
-  for(let i=first;i<=end;i++){
+  const stride=(A.oilStageCScale||1)<=1?2:1;
+  for(let i=first;i<=end;i+=stride){
     const frame=frames[i],u=(i-first)/Math.max(1,end-first);
     const begin=Math.min(1,u*5),finish=Math.min(1,(1-u)*7);
-    const edge=options.body ? (.78+.22*Math.min(begin,finish)) :
+    const edge=options.body ? (.08+.92*Math.min(1,(1-u)*5)) :
       (.22+.78*Math.min(begin,finish));
     const wave=.96+.055*Math.sin(frame.s*.063+options.phase);
     const lateral=offset+options.splay*
       Math.sin(frame.s*.039+options.phase);
     const half=width*.5*edge*wave*xscale;
+    left.push(shift(frame,frame.nx,frame.ny,lateral-half));
+    right.push(shift(frame,frame.nx,frame.ny,lateral+half));
+  }
+  // Keep each hair's actual terminal station, even at adaptive sampling.
+  if((end-first)%stride!==0){
+    const frame=frames[end],u=1,edge=options.body?.08:.22,
+      lateral=offset+options.splay*Math.sin(frame.s*.039+options.phase),
+      half=width*.5*edge;
     left.push(shift(frame,frame.nx,frame.ny,lateral-half));
     right.push(shift(frame,frame.nx,frame.ny,lateral+half));
   }
