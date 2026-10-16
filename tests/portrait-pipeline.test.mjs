@@ -84,14 +84,12 @@ meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'
 assert.equal(meta.count,4,'Gallery must cap marker studies at four (two landscape and two portrait)');
 assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,2);
 assert.equal(meta.entries.filter(x=>x.orientation==='landscape').length,2);
-assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,2);
-assert.equal(meta.entries.filter(x=>x.orientation==='landscape').length,2);
 assert.equal(new Set(meta.entries.map(x=>x.seed)).size,4);
 
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'portrait'});
 meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
 assert.equal(meta.count,4,'Rebuilding the same portrait day must not duplicate artworks');
-assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,5);
+assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,2);
 
 await fs.mkdir(path.resolve('preview','screenshots'),{recursive:true});
 await fs.writeFile(path.resolve('preview','screenshots','portrait-pipeline-report.json'),JSON.stringify({
@@ -100,7 +98,7 @@ await fs.writeFile(path.resolve('preview','screenshots','portrait-pipeline-repor
   portraitPostIndices:PORTRAIT_POST_INDICES,portraitTimesLondon:PORTRAIT_SCHEDULE,
   originalDimensions:'1000x1400',instagramDimensions:'1120x1400',testedAt:new Date().toISOString()
 },null,2)+'\n');
-console.log('PASS: five portraits, three unique posting slots, London BST/GMT timing, ten-work gallery and duplicate-safe rebuild.');
+console.log('PASS: five portraits, three unique posting slots, London BST/GMT timing, four-artwork gallery cap and duplicate-safe rebuild.');
 
 const originalImages=await Promise.all(landscape.entries.map(e=>fs.readFile(path.resolve('social-output',day,e.imageFile))));
 node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'landscape',SOCIAL_RENDERER_VERSION:'6'});
