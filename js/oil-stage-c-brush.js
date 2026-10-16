@@ -143,7 +143,7 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     if(r.chance(profile==='dry'?.28:dryness*.085)){
       const middle=r.range(.29,.67);
       const gap=r.range(.028,.095);
-      skipFirst=Math.floor((begin+effectiveEnd)*middle);
+      skipFirst=Math.floor(begin+(effectiveEnd-begin)*middle);
       skipLast=Math.min(effectiveEnd,skipFirst+Math.max(1,Math.round(frames.length*gap)));
     }
     const fragments=skipFirst>=0?
