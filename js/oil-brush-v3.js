@@ -49,7 +49,7 @@ function depositToothed(pig,mask,path,color,opacity,height,level,box){
   if(!toothScratch||toothScratch.width<w||toothScratch.height<h){
     toothScratch=document.createElement('canvas');
     toothScratch.width=w;toothScratch.height=h;
-    toothScratchCtx=toothScratch.getContext('2d');
+    toothScratchCtx=toothScratch.getContext('2d',A.oilCPUScratchExperimental===true?{willReadFrequently:true}:undefined);
     scratchPatterns.length=0;
   }
   const s=toothScratchCtx,m=pig.getTransform();
