@@ -22,15 +22,15 @@ export function validateOilItem(item,day,orientation){
   if(!item||item.material!=='oil'||item.orientation!==orientation||
      item.rendererVersion!==9||
      !new RegExp('^'+day+'-'+(orientation==='portrait'?'OP':'OL')+'01$').test(item.id))
-    throw Error('Invalid Oil v1 artwork identity');
+    throw Error('Invalid Oil artwork identity');
   const link=new URL(item.shareUrl);
-  if(link.searchParams.get('material')!=='oil-v1'||
+  if(link.searchParams.get('material')!==(day>='2026-10-17'?'oil-v3':'oil-v1')||
      link.searchParams.get('v')!=='9'||
      link.searchParams.get('seed')!==item.seed||
      link.searchParams.get('mode')!==item.mode||
      link.searchParams.get('fmt')!==(orientation==='portrait'?'portrait':null)){
     // URLSearchParams returns null when landscape format is omitted.
-    throw Error('v1 Oil share URL does not reproduce saved artwork');
+    throw Error('Oil share URL does not reproduce saved artwork');
   }
 }
 async function output(values){
