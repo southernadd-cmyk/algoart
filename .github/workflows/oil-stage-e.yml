@@ -1,0 +1,42 @@
+name: Oil V2 Stage E - Profiling and Mask Optimisation
+on:
+  push:
+    branches: [experiment/oil-v2-performance-baseline]
+    paths:
+      - 'js/oil-v1-core-a.js'
+      - 'js/oil-stage-c-brush.js'
+      - 'tests/oil-stage-e-profile.mjs'
+      - '.github/workflows/oil-stage-e.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oil-stage-e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Check experimental code syntax
+        run: |
+          node --check js/oil-v1-core-a.js
+          node --check js/oil-stage-c-brush.js
+          node --check tests/oil-stage-e-profile.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Start real ALGO/ART renderer
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-oil-e.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - name: Real render profile, 4 preview and 2 full-res images
+        run: node tests/oil-stage-e-profile.mjs
+      - name: Upload comparisons and measured timings
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-v2-stage-e-real-renderer-benchmark
+          path: oil-stage-e-profiling/
+          retention-days: 30
