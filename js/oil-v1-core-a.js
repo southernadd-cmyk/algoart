@@ -635,16 +635,34 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
   var dragged=dragCrossingPigment(pig,mask,crossings,pts,width,rgb,r,options);
   if(stageE)stageE.wetDragMs=(stageE.wetDragMs||0)+performance.now()-profileStart;
   profileStart=stageE?performance.now():0;
-  var pixels=mask.getImageData(x0,y0,x1-x0,y1-y0).data,
-      bw=x1-x0,bh=y1-y0,amount=.50+thickness*.62;
-  if(stageE)stageE.maskReadMs=(stageE.maskReadMs||0)+performance.now()-profileStart;
+  var readX0=x0,readY0=y0,readX1=x1,readY1=y1;
+  // Experimental *read-only* bounds: preserve the original, wider
+  // clearing rectangle, so stale height-mask pixels never leak into
+  // subsequent brush contacts. Only shrink no-pickup, no-massing marks.
+  // Exact-PNG CI gates whether the inner margins contain all relief.
+  if(A.oilStageETightMaskExperimental===true &&
+     A.oilStageDRefinement===true && A.oilStageCExperimental===true &&
+     crossings.length===0 && !ch.mass){
+    var insetEdge=width*.70;
+    readX0=Math.max(x0,minmax(Math.floor((Math.min.apply(null,xs)-insetEdge)*scale)-3,0,sw-1));
+    readY0=Math.max(y0,minmax(Math.floor((Math.min.apply(null,ys)-insetEdge)*scale)-3,0,sh-1));
+    readX1=Math.min(x1,minmax(Math.ceil((Math.max.apply(null,xs)+insetEdge)*scale)+3,readX0+1,sw));
+    readY1=Math.min(y1,minmax(Math.ceil((Math.max.apply(null,ys)+insetEdge)*scale)+3,readY0+1,sh));
+  }
+  var pixels=mask.getImageData(readX0,readY0,readX1-readX0,readY1-readY0).data,
+      bw=readX1-readX0,bh=readY1-readY0,amount=.50+thickness*.62;
+  if(stageE){
+    stageE.maskReadMs=(stageE.maskReadMs||0)+performance.now()-profileStart;
+    stageE.maskPixelsSaved=(stageE.maskPixelsSaved||0)+
+      (x1-x0)*(y1-y0)-bw*bh;
+  }
   profileStart=stageE?performance.now():0;
   if(A.oilStageEMaskScanExperimental===true){
     // Exactly the same pixels and row-major update order, with one
     // incremental byte index per sample (avoids repeated multiplications).
     // Preserve alpha threshold and Float32 field accumulation unchanged.
     for(var yy=0;yy<bh;yy++){
-      var fieldIndex=(yy+y0)*sw+x0,
+      var fieldIndex=(yy+readY0)*sw+readX0,
           endFieldIndex=fieldIndex+bw,
           alphaIndex=(yy*bw)*4+3;
       for(;fieldIndex<endFieldIndex;fieldIndex++,alphaIndex+=4){
@@ -654,7 +672,7 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
     }
   }else{
     for(var yy=0;yy<bh;yy++){
-      var row=(yy+y0)*sw+x0,trow=yy*bw;
+      var row=(yy+readY0)*sw+readX0,trow=yy*bw;
       for(var xx=0;xx<bw;xx++){
         var ink=pixels[(trow+xx)*4+3]/255;
         if(ink>.008){var index2=row+xx;
