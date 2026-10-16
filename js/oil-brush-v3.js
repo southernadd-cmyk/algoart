@@ -1,4 +1,4 @@
-// ALGO/ART Oil Paint V3a experimental bristle contacts — not a released material.
+// ALGO/ART Oil Paint V3b experimental bristle contacts — not a released material.
 // Only Oil V2 activates this renderer. V1 keeps its historical paths/pixels.
 // Source mathematics, seeded palettes, protected voids and marks are unchanged.
 window.AlgoArt=window.AlgoArt||{};
@@ -8,7 +8,12 @@ const PI=Math.PI,TAU=2*PI;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const shift=(p,nx,ny,d)=>({x:p.x+nx*d,y:p.y+ny*d});
 const css=c=>'rgb('+c.map(x=>Math.round(clamp(x,0,255))).join(',')+')';
-const mix=(a,b,t)=>a.map((v,i)=>Math.round(v*(1-t)+b[i]*t));
+// Approximate opaque-pigment mixing in linear-light K/S space. No spectral claims.
+const linear=v=>{v=clamp(v/255,0,1);return v<=.04045?v/12.92:((v+.055)/1.055)**2.4};
+const srgb=v=>255*(v<=.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-.055);
+const mix=(a,b,t)=>a.map((v,i)=>{const Ra=Math.max(.001,linear(v)),Rb=Math.max(.001,linear(b[i]));
+ const k=(1-t)*(1-Ra)**2/(2*Ra)+t*(1-Rb)**2/(2*Rb);
+ return Math.round(clamp(srgb(1+k-Math.sqrt(k*k+2*k)),0,255));});
 function deposit(pig,mask,path,color,opacity,height){
   // A true paint footprint: BOTH pigment and height originate in the exact
   // same bristle contour. No highlight lines painted over a fake solid tip.
@@ -34,15 +39,15 @@ function makeRibbon(frames,first,last,offset,width,r,options){
     const begin=Math.min(1,u*5),finish=Math.min(1,(1-u)*7);
     const edge=options.body ? (.08+.92*Math.min(1,(1-u)*5)) :
       (.22+.78*Math.min(begin,finish));
-    const wave=.96+.055*Math.sin(frame.s*.063+options.phase);
+    const wave=.96+.055*Math.sin(frame.s*(options.frequency||.063)+options.phase);
     // Bristle tension follows the CURVED brush tangent. Two correlated
     // frequencies give non-identical bends without independent jitter at
     // each sample (which would produce a pixel-grid sawtooth).
     const bend=refined?(options.bendAmplitude||0)*(.24+.76*u*u)*
-      (.68*Math.sin(frame.s*.027+options.phase*.91)+
-       .32*Math.sin(frame.s*.081+options.phase*1.71)):0;
+      (.68*Math.sin(frame.s*(options.frequency||.063)*.43+options.phase*.91)+
+       .32*Math.sin(frame.s*(options.frequency||.063)*1.29+options.phase*1.71)):0;
     const lateral=offset+options.splay*
-      Math.sin(frame.s*.039+options.phase)+bend;
+      Math.sin(frame.s*(options.frequency||.063)*.62+options.phase)+bend;
     // Less pressure and exhausted pigment narrow the actual contact.
     const contact=refined?(.70+.30*frame.pressure)*
       (1-.24*u*(options.depletion||0)):1;
@@ -53,9 +58,9 @@ function makeRibbon(frames,first,last,offset,width,r,options){
   // Keep each hair's actual terminal station, even at adaptive sampling.
   if((end-first)%stride!==0){
     const frame=frames[end],u=1,edge=options.body?.08:.22,
-      lateral=offset+options.splay*Math.sin(frame.s*.039+options.phase)+
+      lateral=offset+options.splay*Math.sin(frame.s*(options.frequency||.063)*.62+options.phase)+
         (refined?(options.bendAmplitude||0)*.58*
-        Math.sin(frame.s*.027+options.phase*.91):0),
+        Math.sin(frame.s*(options.frequency||.063)*.43+options.phase*.91):0),
       half=width*.5*edge*(refined?(.70+.30*frame.pressure)*
         (1-.24*(options.depletion||0)):1);
     left.push(shift(frame,frame.nx,frame.ny,lateral-half));
@@ -101,6 +106,8 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   };
   const total=Math.max(.001,frames[frames.length-1].s);
   const phase=r.range(0,TAU);
+  // Brush-scale and stroke-specific wavelengths prevent canvas-wide stripes.
+  const frequency=clamp(.063*32/Math.max(width,8)*r.range(.70,1.40),.009,.16);
   const thickness=clamp(options.thickness??.90,0,1);
   const dryness=clamp(options.drag??.72,0,1);
   const sourceCount=profile==='knife'?26:profile==='dry'?34:
@@ -137,7 +144,7 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     const body=makeRibbon(frames,0,idx,
       (b-(baseBodies-1)/2)*width*.24,
       width*(profile==='knife'?.39:.42),r,{
-       body:true,phase:r.range(0,TAU),splay:width*.012,
+       body:true,phase:r.range(0,TAU),frequency,splay:width*.012,
        tipLength:width*r.range(.06,.17),tipLean:r.range(-.02,.02)*width
       });
     if(!body)continue;
@@ -184,7 +191,7 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     const initial=r.range(.71,1.25)*(profile==='dry'?.75:1.0);
     const tipLength=width*r.range(.035,.58)*
       (1-.28*outer)*(profile==='knife'?.58:1);
-    const tone=r.range(.009,.067);
+    const tone=r.range(.009,.067); // stochastic, non-uniform pigment loading
     const target=r.chance(.44)?[51,40,32]:[255,237,209];
     const colour=mix(rgb,target,tone);
     const wavePhase=r.range(0,TAU);
@@ -252,7 +259,7 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     for(const [first,end] of fragments){
       if(end-first<2)continue;
       const path=makeRibbon(frames,first,end,lateral,filamentWidth,r,{
-        phase:wavePhase,splay,tipLength:end===effectiveEnd?tipLength:filamentWidth*.28,
+        phase:wavePhase,frequency,splay,tipLength:end===effectiveEnd?tipLength:filamentWidth*.28,
         tipLean,body:false,xscale:1,refined,bendAmplitude,depletion
       });
       if(!path)continue;
@@ -266,7 +273,9 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
         // Three source-palette tone bands by two actual load levels:
         // dry tips are lighter and thinner, rather than all 30 hairs
         // sharing a single opaque overlay or three decorative stripes.
-        const band=clamp(Math.floor(3*(.5+.5*Math.sin(lane*7.3+phase))),0,2);
+        // Low-frequency lateral bands: correlated, but non-periodic across hairs.
+        const drift=Math.sin(lane*5.3+phase)*.70+Math.sin(lane*11.7-phase*.63)*.30;
+        const band=clamp(Math.floor(1.5+1.45*drift),0,2);
         const group=(averageLoad<.56?6:0)+band*2+(hair&1);
         grouped[group].addPath(path);
         groupCounts[group]++;
