@@ -92,18 +92,27 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   // but stop before the end so the *individual bristle tips* stay visible.
   const baseBodies=profile==='dry'?2:3;
   for(let b=0;b<baseBodies;b++){
-    const idx=Math.floor(frames.length*(.64+r.range(0,.10)));
+    const idx=Math.floor(frames.length*(.78+r.range(0,.095)));
     const body=makeRibbon(frames,0,idx,
       (b-(baseBodies-1)/2)*width*.24,
-      width*(profile==='knife'?.32:.35),r,{
+      width*(profile==='knife'?.39:.42),r,{
        body:true,phase:r.range(0,TAU),splay:width*.012,
-       tipLength:width*r.range(.05,.16),tipLean:r.range(-.02,.02)*width
+       tipLength:width*r.range(.06,.17),tipLean:r.range(-.02,.02)*width
       });
     if(!body)continue;
     const col=mix(rgb,b===1?[247,228,200]:[52,43,39],b===1?.035:.025);
-    deposit(pig,mask,body,col,.37+.08*thickness,.16+.14*thickness);
+    // Connected, loaded body stays opaque. The final 15-22% of travel
+    // exposes individual hairs, not a brush-wide flush polygon.
+    deposit(pig,mask,body,col,profile==='dry'?.23:(.67+.13*thickness),
+      profile==='dry'?.14:(.37+.18*thickness));
     footprints++;
   }
+  // Hundreds of Path2D fill calls per brush defeat the fast Stage B core.
+  // Batch *real individual hair silhouettes*, not cosmetic highlight lines:
+  // three colour/height layers each hold a set of disjoint, independently
+  // length-varied hair contacts. Geometry is unchanged by batching.
+  const grouped=[new Path2D(),new Path2D(),new Path2D()];
+  const groupCounts=[0,0,0],batch=A.oilStageCNoBatch!==true;
   for(let hair=0;hair<sourceCount;hair++){
     const lane=(hair+.5)/sourceCount-.5;
     const outer=Math.abs(lane)*2;
@@ -162,12 +171,28 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
       const averageLoad=clamp(initial*(1-.54*averageS),.10,1.36);
       const alpha=clamp((.67+.23*averageLoad)*(.72+.28*thickness),.34,.97);
       const relief=clamp((.21+.43*averageLoad)*(.62+.38*thickness),.12,.85);
-      deposit(pig,mask,path,colour,alpha,relief);
+      if(batch){
+        const group=hair%3;
+        grouped[group].addPath(path);
+        groupCounts[group]++;
+      }else{
+        deposit(pig,mask,path,colour,alpha,relief);
+      }
       runs++;footprints++;
       contacts+=end-first+1;
     }
     loadStart+=initial;
     loadEnd+=initial*(1-.54*frames[effectiveEnd].s/total);
+  }
+  if(batch){
+    for(let g=0;g<3;g++){
+      if(!groupCounts[g])continue;
+      const colour=g===0?rgb:g===1?mix(rgb,[247,233,209],.046):
+        mix(rgb,[52,44,35],.05);
+      deposit(pig,mask,grouped[g],colour,
+        (.72+.09*thickness)*(profile==='dry'?.75:1),
+        (.33+.19*thickness)*(profile==='dry'?.72:1));
+    }
   }
   // Stats are captured independently from V1. Drawn filament runs have
   // real pigment/relief support; they are not three grouped highlight paths.
@@ -179,6 +204,9 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     s.footprints=(s.footprints||0)+footprints;
     s.brushMs=(s.brushMs||0)+performance.now()-start;
     s.tipVaried=(s.tipVaried||0)+sourceCount;
+    s.batchPaintCalls=(s.batchPaintCalls||0)+
+      (batch?groupCounts.filter(Boolean).length:runs);
+    s.batchEnabled=batch;
   }
   return {bristleRuns:runs,bristleContacts:contacts,
     contactFootprints:footprints,
