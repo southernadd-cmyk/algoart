@@ -1,4 +1,4 @@
-// ALGO/ART Oil Paint V3d experimental corrected dense brush contacts — not a released material.
+// ALGO/ART Oil Paint V3e experimental bounded tooth compositing contacts — not a released material.
 // Only Oil V2 activates this renderer. V1 keeps its historical paths/pixels.
 // Source mathematics, seeded palettes, protected voids and marks are unchanged.
 window.AlgoArt=window.AlgoArt||{};
@@ -32,35 +32,37 @@ function toothStencil(level){
   }
   g.putImageData(img,0,0);return toothStencils[level]=c;
 }
+// Reuse bounded tiles rather than a full-resolution scratch surface.
+let toothScratchCtx=null;
 function depositToothed(pig,mask,path,color,opacity,height,level,box){
   const W=pig.canvas.width,H=pig.canvas.height;
-  if(!toothScratch||toothScratch.width!==W||toothScratch.height!==H){
-    toothScratch=document.createElement('canvas');
-    toothScratch.width=W;toothScratch.height=H;
-  }
-  const s=toothScratch.getContext('2d',{willReadFrequently:false});
-  const m=pig.getTransform();
   const x=clamp(Math.floor(box.x),0,W),y=clamp(Math.floor(box.y),0,H);
   const right=clamp(Math.ceil(box.x+box.w),x,W);
   const bottom=clamp(Math.ceil(box.y+box.h),y,H);
-  if(right<=x||bottom<=y)return;
-  s.save();s.setTransform(1,0,0,1,0,0);s.globalAlpha=1;
-  s.globalCompositeOperation='source-over';s.clearRect(x,y,right-x,bottom-y);
-  s.setTransform(m);s.fillStyle='#fff';s.fill(path);
-  s.setTransform(1,0,0,1,0,0);
+  const w=right-x,h=bottom-y;if(w<=0||h<=0)return;
+  // Allocate only the stroke bounding box, not the entire artwork.
+  if(!toothScratch||toothScratch.width<w||toothScratch.height<h){
+    toothScratch=document.createElement('canvas');
+    toothScratch.width=w;toothScratch.height=h;
+    toothScratchCtx=toothScratch.getContext('2d');
+  }
+  const s=toothScratchCtx,m=pig.getTransform();
+  s.setTransform(1,0,0,1,-x,-y);
+  s.globalAlpha=1;s.globalCompositeOperation='source-over';
+  s.clearRect(x,y,w,h);
+  s.setTransform(m.a,m.b,m.c,m.d,m.e-x,m.f-y);
+  s.fillStyle='#fff';s.fill(path);
+  s.setTransform(1,0,0,1,-x,-y);
   s.globalCompositeOperation='destination-in';
   s.fillStyle=s.createPattern(toothStencil(level),'repeat');
-  s.fillRect(x,y,right-x,bottom-y);
-  s.globalCompositeOperation='source-in';s.fillStyle=css(color);
-  s.fillRect(x,y,right-x,bottom-y);
-  s.restore();
+  s.fillRect(x,y,w,h);
+  s.globalCompositeOperation='source-in';
+  s.fillStyle=css(color);s.fillRect(x,y,w,h);
+  s.globalCompositeOperation='source-over';
   for(const [ctx,alpha] of [[pig,opacity],[mask,height]]){
     ctx.save();ctx.setTransform(1,0,0,1,0,0);
     ctx.globalAlpha=clamp(alpha,0,1);
-    if(ctx===mask){
-      // Preserve identical relief support without contaminating the mask RGB.
-      ctx.drawImage(toothScratch,x,y,right-x,bottom-y,x,y,right-x,bottom-y);
-    }else ctx.drawImage(toothScratch,x,y,right-x,bottom-y,x,y,right-x,bottom-y);
+    ctx.drawImage(toothScratch,0,0,w,h,x,y,w,h);
     ctx.restore();
   }
 }
