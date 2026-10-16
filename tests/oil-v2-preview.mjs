@@ -30,7 +30,19 @@ try{
    return {baselineMs:baseline.elapsed,v1:baseline.canvas.toDataURL('image/png'),
       size:[baseline.canvas.width,baseline.canvas.height]};
   },{spec:cases[i]});
+  await page.evaluate(()=>{
+    const A=window.AlgoArt;
+    window.__oilV2SavedPlanner={
+      planCompositionV5:A.planCompositionV5,
+      captureCompositionV5:A.captureCompositionV5,
+      planCompositionV5FromSource:A.planCompositionV5FromSource
+    };
+  });
   await page.addScriptTag({url:new URL('js/oil-v2-core-a.js',root).href});
+  await page.evaluate(()=>{
+    Object.assign(window.AlgoArt,window.__oilV2SavedPlanner);
+    delete window.__oilV2SavedPlanner;
+  });
   await page.addScriptTag({url:new URL('js/oil-paint-v2.js',root).href});
   const after=await page.evaluate(({spec})=>{
    const A=window.AlgoArt,s={...A.readSettings(),...spec},canvas=document.createElement('canvas');
