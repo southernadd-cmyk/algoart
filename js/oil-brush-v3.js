@@ -1,4 +1,4 @@
-// ALGO/ART Oil Paint V3e experimental bounded tooth compositing contacts — not a released material.
+// ALGO/ART Oil Paint V3f experimental cached tooth compositing contacts — not a released material.
 // Only Oil V2 activates this renderer. V1 keeps its historical paths/pixels.
 // Source mathematics, seeded palettes, protected voids and marks are unchanged.
 window.AlgoArt=window.AlgoArt||{};
@@ -34,6 +34,11 @@ function toothStencil(level){
 }
 // Reuse bounded tiles rather than a full-resolution scratch surface.
 let toothScratchCtx=null;
+const scratchPatterns=[];
+function cachedToothPattern(ctx,level){
+  // Patterns belong to a context. Recreate only on scratch resize.
+  return scratchPatterns[level]||(scratchPatterns[level]=ctx.createPattern(toothStencil(level),'repeat'));
+}
 function depositToothed(pig,mask,path,color,opacity,height,level,box){
   const W=pig.canvas.width,H=pig.canvas.height;
   const x=clamp(Math.floor(box.x),0,W),y=clamp(Math.floor(box.y),0,H);
@@ -45,6 +50,7 @@ function depositToothed(pig,mask,path,color,opacity,height,level,box){
     toothScratch=document.createElement('canvas');
     toothScratch.width=w;toothScratch.height=h;
     toothScratchCtx=toothScratch.getContext('2d');
+    scratchPatterns.length=0;
   }
   const s=toothScratchCtx,m=pig.getTransform();
   s.setTransform(1,0,0,1,-x,-y);
@@ -54,7 +60,7 @@ function depositToothed(pig,mask,path,color,opacity,height,level,box){
   s.fillStyle='#fff';s.fill(path);
   s.setTransform(1,0,0,1,-x,-y);
   s.globalCompositeOperation='destination-in';
-  s.fillStyle=s.createPattern(toothStencil(level),'repeat');
+  s.fillStyle=cachedToothPattern(s,level);
   s.fillRect(x,y,w,h);
   s.globalCompositeOperation='source-in';
   s.fillStyle=css(color);s.fillRect(x,y,w,h);
