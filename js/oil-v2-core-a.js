@@ -349,6 +349,10 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
   // One coherent pressure profile per stroke, reused by every bristle.
   // Previously pressureAt recalculated trigonometry in both contact and fill loops.
   var framePressures=frames.map(function(f){return pressureAt(f.s,total,phase,profile)});
+  // Precompute normals and path-length fractions once for every tuft.
+  // These depend only on the stroke geometry, not on per-bristle randomness.
+  var frameNormals=frames.map(function(f){return [Math.cos(f.angle+PI/2),Math.sin(f.angle+PI/2)]});
+  var frameFractions=frames.map(function(f){return f.s/total});
   // Adjacent hairs belong to uneven clusters: widths and lateral positions
   // are chosen once per tuft, not snapped to a grid or a raster cell.
   for(var tuft=0;tuft<count;tuft++){
@@ -417,7 +421,7 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       strip=[];
     }
     for(var i=0;i<frames.length;i++){
-      var p=frames[i],t=p.s/total,
+      var p=frames[i],t=frameFractions[i],
           pressureHere=framePressures[i];
       pMin=Math.min(pMin,pressureHere);
       pMax=Math.max(pMax,pressureHere);
