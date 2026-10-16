@@ -168,7 +168,7 @@ const material = process.env.SOCIAL_MATERIAL === 'oil' ? 'oil' :
   process.env.SOCIAL_MATERIAL === 'watercolor' ? 'watercolor' : 'marker';
 const watercolor = material === 'watercolor',watercolour = material === 'watercolour',oil = material === 'oil';
 const tissueEdition = watercolor ? tissueEditionForDate(day) : null;
-const generationCount = oil || watercolour ? Math.max(1, Number(process.env.SOCIAL_COUNT || 1)) : watercolor ? 2 :
+const generationCount = oil || watercolour ? (day >= '2026-10-17' ? Math.max(1, Number(process.env.SOCIAL_COUNT || 1)) : 1) : watercolor ? 2 :
   Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
 const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day,
   ...(oil?['oil',orientation]:watercolour?['watercolour',orientation]:watercolor?['watercolor',orientation]:
@@ -212,7 +212,7 @@ try {
       const chosen=oilModes[Math.floor(pickOil()*oilModes.length)];
       settings.mode=chosen[0];settings.series=chosen[1];
       settings.seed='O'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
-        '-'+String(index+1).padStart(2,'0')+'-'+(hash(day+'|oil-v1|'+orientation+'|'+index+'|'+retrySalt)%100000)
+        '-'+String(index+1).padStart(2,'0')+'-'+(hash(day+'|oil-v1|'+orientation+'|'+(index ? index+'|' : '')+retrySalt)%100000)
           .toString().padStart(5,'0');
       settings.palette=PALETTES[Math.floor(pickOil()*PALETTES.length)];
       settings.paper='#f5f0e6';
@@ -221,7 +221,7 @@ try {
       // Completely independent seed namespace: no collisions with existing
       // AA/AP or historic Tissue AWL/AWP images.
       settings.seed='CW'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
-        '-'+String(index+1).padStart(2,'0')+'-'+(hash(day+'|watercolour-v2s|'+orientation+'|'+index+'|'+retrySalt)%100000)
+        '-'+String(index+1).padStart(2,'0')+'-'+(hash(day+'|watercolour-v2s|'+orientation+'|'+(index ? index+'|' : '')+retrySalt)%100000)
           .toString().padStart(5,'0');
       settings.paper='#f5f0e6';
     }
