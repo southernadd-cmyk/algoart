@@ -856,6 +856,28 @@ function surfaceLightingCached(optical,w,h,x,y,relief){
         minmax(ridge,0,1.4)*centre*(4+12*relief);
   return {shade:shade,shine:minmax(spec,0,27)};
 }
+// Seven-row sliding cache version: only heights at y-3, y-1, y, y+1,
+// and y+3 are required by the physical ridge-lighting formula.
+// The caller updates the ring after each raster row. Output is exactly
+// equivalent to surfaceLighting() and uses O(width), not O(width*height), RAM.
+function surfaceLightingCachedRows(rows,x,y,relief){
+  var centre=rows[y%7][x],
+      lx=rows[y%7][x-1],rx=rows[y%7][x+1],
+      ty=rows[(y-1)%7][x],by=rows[(y+1)%7][x],
+      lx3=rows[y%7][x-3],rx3=rows[y%7][x+3],
+      ty3=rows[(y-3)%7][x],by3=rows[(y+3)%7][x],
+      dx=(rx-lx)*.35+(rx3-lx3)*.05,
+      dy=(by-ty)*.35+(by3-ty3)*.05,
+      nx=-dx*(.74+.38*relief),ny=-dy*(.74+.38*relief),nz=1,
+      length=1/Math.hypot(nx,ny,nz);
+  nx*=length;ny*=length;nz*=length;
+  var diffuse=nx*(-.43)+ny*(-.52)+nz*.74,
+      shade=minmax(1+(diffuse-.74)*(.37+.32*relief),.72,1.23),
+      ridge=Math.hypot(dx,dy),
+      spec=Math.pow(minmax(nx*(-.24)+ny*(-.30)+nz*.92,0,1),18)*
+        minmax(ridge,0,1.4)*centre*(4+12*relief);
+  return {shade:shade,shine:minmax(spec,0,27)};
+}
 function finish(pig,field,w,h,seed,options){
   var pixels=pig.getImageData(0,0,w,h),out=pixels.data,
       relief=minmax(options.relief??.87,0,1),
@@ -977,6 +999,7 @@ A.oilPaintV4ETest={pressureAt:pressureAt,buildBrushFrames:buildBrushFrames,
   drawBrushLab:drawBrushLab,drawContactBrush:drawContactBrushV4e,
   sampleWetCrossings:sampleWetCrossings,dragCrossingPigment:dragCrossingPigment,
   surfaceLighting:surfaceLighting,surfaceLightingCached:surfaceLightingCached,
+  surfaceLightingCachedRows:surfaceLightingCachedRows,
   drawWetCrossingLab:drawWetCrossingLab,
   addPaintHeight:addPaintHeight};
 })(window.AlgoArt);
