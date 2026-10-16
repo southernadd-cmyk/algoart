@@ -1,4 +1,4 @@
-name: Oil V2 Stage C - Genuine Bristle Renders
+name: Oil V2 Stages C-D - Genuine Bristle Renders
 on:
   push:
     branches: [experiment/oil-v2-performance-baseline]
@@ -6,6 +6,7 @@ on:
       - 'js/oil-v1-core-a.js'
       - 'js/oil-stage-c-brush.js'
       - 'tests/oil-stage-c-preview.mjs'
+      - 'tests/oil-stage-d-preview.mjs'
       - '.github/workflows/oil-stage-c.yml'
   workflow_dispatch:
 permissions:
@@ -26,6 +27,7 @@ jobs:
           node --check js/oil-v1-core-a.js
           node --check js/oil-stage-c-brush.js
           node --check tests/oil-stage-c-preview.mjs
+          node --check tests/oil-stage-d-preview.mjs
       - run: npx playwright install --with-deps chromium
       - name: Start actual ALGO/ART application
         run: |
@@ -33,10 +35,14 @@ jobs:
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
       - name: Render and inspect real oil-brush images
         run: node tests/oil-stage-c-preview.mjs
+      - name: Compare refined Stage D versus Stage C and v1
+        run: node tests/oil-stage-d-preview.mjs
       - name: Publish test results and comparison images
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: oil-v2-stage-c-genuine-renderer
-          path: oil-stage-c-results/
+          path: |
+            oil-stage-c-results/
+            oil-stage-d-results/
           retention-days: 30
