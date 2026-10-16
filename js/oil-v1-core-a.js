@@ -341,7 +341,7 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
     // A genuine 30-hair footprint is useful only if it can resolve at
     // output pixel size. Small contacts retain the proven fast V1 brush.
     var physicalWidth=width*(A.oilStageCScale||1);
-    if(physicalWidth>=34 || A.oilStageCForceDetail===true)
+    if(physicalWidth>=20 || A.oilStageCForceDetail===true)
       return A.oilPaintV4ETest.drawContactBrushV2(
         pig,mask,points,width,rgb,profile,r,options);
     if(A.oilStageCStats)
