@@ -57,7 +57,7 @@ try{
     const started=performance.now();
     const result=(version==='v2'?A.renderOilPaintV2:A.renderOilPaintV3)(c,settings,.45,false);
     return {ms:performance.now()-started,png:c.toDataURL('image/png'),
-      width:c.width,height:c.height,version:result.version,v3BrushCalls:result.v3BrushCalls||0};
+      width:c.width,height:c.height,version:result.version,v3BrushCalls:result.v3BrushCalls||0,v3BrushMetrics:result.v3BrushMetrics||null};
    }
    run('v2');run('v3');
    return {v2:run('v2'),v3:run('v3')};
