@@ -7,6 +7,7 @@ on:
       - 'js/oil-stage-c-brush.js'
       - 'tests/oil-stage-c-preview.mjs'
       - 'tests/oil-stage-d-preview.mjs'
+      - 'tests/oil-stage-d-export.mjs'
       - '.github/workflows/oil-stage-c.yml'
   workflow_dispatch:
 permissions:
@@ -28,6 +29,7 @@ jobs:
           node --check js/oil-stage-c-brush.js
           node --check tests/oil-stage-c-preview.mjs
           node --check tests/oil-stage-d-preview.mjs
+          node --check tests/oil-stage-d-export.mjs
       - run: npx playwright install --with-deps chromium
       - name: Start actual ALGO/ART application
         run: |
@@ -37,6 +39,8 @@ jobs:
         run: node tests/oil-stage-c-preview.mjs
       - name: Compare refined Stage D versus Stage C and v1
         run: node tests/oil-stage-d-preview.mjs
+      - name: Check full-resolution Oil export
+        run: node tests/oil-stage-d-export.mjs
       - name: Publish test results and comparison images
         uses: actions/upload-artifact@v4
         if: always()
@@ -45,4 +49,5 @@ jobs:
           path: |
             oil-stage-c-results/
             oil-stage-d-results/
+            oil-stage-d-export-results/
           retention-days: 30
