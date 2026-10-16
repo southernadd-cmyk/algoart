@@ -189,11 +189,12 @@ var tissuePaletteVersion=7;
 var watercolourMaterialRevision='v2s';
 var watercolourFitToSheet=false; // Legacy watercolour-specific fit.
 var phiSheetFraming=false; // Shared optional φ source-geometry transform.
+var legacyOilV1Link=false; // Historical Oil v1 links only; never a visible selector choice.
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
-function oilPaintEnabled(){return $('materialStyle').value==='oil'||$('materialStyle').value==='oil-v1'}
-function oilPaintV2Enabled(){return $('materialStyle').value==='oil'}
-function oilPaintV1Enabled(){return $('materialStyle').value==='oil-v1'}
+function oilPaintEnabled(){return $('materialStyle').value==='oil'}
+function oilPaintV2Enabled(){return oilPaintEnabled()&&!legacyOilV1Link}
+function oilPaintV1Enabled(){return legacyOilV1Link===true}
 function materialKey(){return $('materialStyle').value+'|'+
     (oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
     '|phi:'+phiSheetFraming+'|historic-fit:'+watercolourFitToSheet}
@@ -335,7 +336,8 @@ function loadSettingsFromURL(){
   }
 
   if(params.get('material')==='oil-v1'||params.get('material')==='oil-v2'){
-    $('materialStyle').value=params.get('material')==='oil-v1'?'oil-v1':'oil';
+    $('materialStyle').value='oil';
+    legacyOilV1Link=params.get('material')==='oil-v1';
     found=true;
   }
 
@@ -1254,6 +1256,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id==='watercolourFit'||
        e.id==='phiSheetFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
+    if(e.id==='materialStyle')legacyOilV1Link=false;
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
     if(e.id==='materialStyle'&&watercolourEnabled()){
       watercolourMaterialRevision='v2s';
@@ -1334,8 +1337,8 @@ function loadExactArchivedArtwork(id){
         watercolourFitToSheet=archivedMaterialURL.searchParams.has('fit')?
           archivedMaterialURL.searchParams.get('fit')==='1':true;
       }
-      $('materialStyle').value=archivedWater==='oil-v1'?'oil-v1':
-        archivedWater==='oil-v2'?'oil':
+      legacyOilV1Link=archivedWater==='oil-v1';
+      $('materialStyle').value=archivedWater==='oil-v1'||archivedWater==='oil-v2'?'oil':
         archivedWater==='watercolour-v2r'||archivedWater==='watercolour-v2s'
         ?'watercolour':archivedTissueVersion>=2||entry.material==='watercolor'||
           archivedMaterialURL.searchParams.get('watercolor')==='1'?'tissue':'marker';
