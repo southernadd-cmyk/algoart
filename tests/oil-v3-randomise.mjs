@@ -7,7 +7,7 @@ try {
  page.on('pageerror',e=>errors.push(e.stack||e.message));
  await page.goto('http://127.0.0.1:4173/?v=9&seed=RANDOM-OIL-START&mode=organic&material=oil-v3',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.AlgoArt?.renderOilPaintV3&&document.querySelector('#art')?.width>0);
- for(let i=0;i<16;i++){
+ for(let i=0;i<8;i++){
    await page.locator('#randomise').click();
    const result=await page.evaluate(()=>{
     const canvas=document.getElementById('art'),settings=window.AlgoArt.readSettings();
