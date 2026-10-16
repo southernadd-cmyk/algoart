@@ -295,3 +295,64 @@ Chromium in CI; mobile performance and other engines remain untested.
 **Decision:** Retain Stage D on its experiment branch. The test is strong
 enough to continue with visual refinement and more varied pressure/colour
 pickup, but not enough to release or upgrade historic Oil V1 share URLs.
+
+## Stage E — measured bottlenecks and exact-pixel optimisations
+
+Stage E continues on the **same experiment branch** and is not enabled
+in the live editor, historical `oil-v1` gallery, or social pipeline.
+
+Profiling used real ALGO/ART Stage D paintings at 0.65× in four source
+modes and native 1× export in Organic/Rects; it measured paint sampling,
+brush contacts, canvas mask readback and height-field scanning separately.
+
+### Findings
+
+- The per-stroke relief-mask **readback** alone consumed roughly 40–120ms
+  across tested images, versus 4–22ms for the JavaScript alpha-scan.
+- Sampling existing pigment at stroke crossings consumed ~35–105ms,
+  mostly in synchronous Canvas readbacks. The measured repeat calls are
+  expensive, but changing the number of calls does not necessarily help.
+- Incremental row-major scan indexing passed exact-image fidelity in
+  all six images, but overall speed varied between approximately
+  −3% and +9% in separate single-run CI samples. No confirmed gain.
+- Bounded batched wet-pigment sampling (up to 65,536 pixels per readback)
+  also produced **identical pixels**, but did not consistently improve
+  sampling time. It is not suitable as a default without further work.
+- Reducing readback bounds only on marks without cross-pigment pickup,
+  while keeping the wider mask clear rectangle, preserved all pixels.
+  But it saved only ~1–2% of readback pixels and did not improve net
+  speed significantly. These ideas remain disabled by default.
+
+Benchmark runs:
+- https://github.com/southernadd-cmyk/algoart/actions/runs/38905972114
+- https://github.com/southernadd-cmyk/algoart/actions/runs/38906312365
+- https://github.com/southernadd-cmyk/algoart/actions/runs/38906710087
+
+### Oil area adapter — full-precision optical-height caching
+
+The final V5p oil adapter shades each painted pixel with nine
+`Math.log1p` optical-height lookups. A one-time `Float64Array` cache
+for the lighting pass preserves those exact numerical results.
+
+The experiment passed exact PNG equality and preserved guide, void and
+strategy metadata on six real ALGO/ART paintings. Its preview render
+speed improvement was ~−0.4 to +3.4% and native-resolution improvements
+were ~2.6–3.1% across the tested cases. This is limited CI evidence, not
+a promise of a production speedup.
+
+Run: https://github.com/southernadd-cmyk/algoart/actions/runs/38907299661
+
+The full-size cache adds ~11.2 MB at 1400×1000 or 1000×1400, so its
+cost must be reduced for mobile and higher-resolution images.
+
+### Sliding optical-height cache experiment
+
+Stage E now includes an optional seven-row `Float64Array` window.
+It keeps the required y±1/y±3 neighbourhood for identical local ridge
+lighting, while reducing extra cache memory from O(width×height) to
+O(7×width), ~78.4 KB at a 1400-pixel width. CI separately compares
+original, full-frame cache and sliding-window results on all six seeds.
+
+**Decision:** All Stage E flags default off. Keep the physically
+improved Stage D brush as the visual reference and only advance
+optimisations that survive exact-pixel, memory and consistent-speed tests.
