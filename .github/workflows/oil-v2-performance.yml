@@ -1,4 +1,4 @@
-name: Oil V2 Shared-Capture Experiment
+name: Oil V2 Performance and Brush Optimisation
 on:
   push:
     branches: [experiment/oil-v2-performance-baseline]
@@ -7,6 +7,7 @@ on:
       - 'js/oil-v1-core-c.js'
       - 'js/oil-paint-v1.js'
       - 'tests/oil-performance-baseline.mjs'
+      - 'tests/oil-brush-performance.mjs'
       - '.github/workflows/oil-v2-performance.yml'
   workflow_dispatch:
 permissions:
@@ -28,6 +29,7 @@ jobs:
           node --check js/oil-v1-core-c.js
           node --check js/oil-paint-v1.js
           node --check tests/oil-performance-baseline.mjs
+          node --check tests/oil-brush-performance.mjs
       - run: npx playwright install --with-deps chromium
       - name: Start genuine ALGO/ART app locally
         run: |
@@ -35,10 +37,14 @@ jobs:
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
       - name: Benchmark and require identical Oil pixels
         run: node tests/oil-performance-baseline.mjs
+      - name: Compare Oil V1 versus optimised brush
+        run: node tests/oil-brush-performance.mjs
       - name: Upload real renderer comparisons and metrics
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: oil-v2-stage-a-b-perf-and-images
-          path: oil-performance-results/
+          path: |
+            oil-performance-results/
+            oil-brush-performance-results/
           retention-days: 30
