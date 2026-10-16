@@ -105,7 +105,7 @@ try{
  assert.equal(await page.locator('#materialStyle').inputValue(),'marker');
  await page.locator('#materialStyle').selectOption('oil');
  assert.equal(await page.locator('#materialStyle').inputValue(),'oil');
- assert.match(page.url(),/material=oil-v2/);
+ assert.match(page.url(),/material=oil-v3/);
  // Persist Oil across randomise; any seed may have no *broad* fields
  // but Reveal and metadata must still work for those valid compositions.
  await page.locator('#randomise').count(); // no-op for older UI ids

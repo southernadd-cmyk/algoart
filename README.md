@@ -17,7 +17,7 @@ ALGO/ART is a browser-based generative art project built around the **golden rat
 3. Choose **landscape (1400 × 1000)** or **portrait (1000 × 1400)**.
 4. Export as **PNG**, **SVG** or **Plotter SVG**, or copy a share link to reopen the same artwork.
 
-Artworks are deterministic: the **renderer version + seed + settings** identify a reproducible state, including through shared URLs. Choose **Marker drawing**, **Tissue & Graphite**, **Watercolour (V2S)** or **Oil Paint v1** in Compose. Material selection does not alter source geometry; PNG exports the selected material, while SVG and plotter files preserve the underlying marker paths.
+Artworks are deterministic: the **renderer version + seed + settings** identify a reproducible state, including through shared URLs. Choose **Marker drawing**, **Tissue & Graphite**, **Watercolour (V2S)** or **Oil Paint v3** in Compose. Material selection does not alter source geometry; PNG exports the selected material, while SVG and plotter files preserve the underlying marker paths.
 
 ## The eight systems
 
@@ -37,7 +37,7 @@ The golden ratio governs aspects of composition; not every stroke or tuning valu
 ### Optional φ framing shared across the materials (14 October 2026)
 
 **φ framing** is a separate opt-in composition treatment for Marker,
-Tissue & Graphite, Watercolour V2S and Oil Paint v1. It operates on the source strokes
+Tissue & Graphite, Watercolour V2S and Oil Paint v3. It operates on the source strokes
 before selecting the material, so the framed composition's PNG, SVG and
 plotter paths share the same positions.
 
@@ -166,13 +166,13 @@ Historical renderer and material versions remain available so saved links reprod
 
 ## Drawing materials
 
-**Four released material choices** are available in Compose. Oil Paint v1 was released on 15 October 2026, and is distinct from the older internal `oil-*` modules that render Tissue & Graphite.
+**Four released material choices** are available in Compose. Oil Paint v3 is now the active Oil material; Oil Paint v1 was released on 15 October 2026, and is distinct from the older internal `oil-*` modules that render Tissue & Graphite.
 
 
 - **Marker drawing:** expressive ink with wobble, uneven weight, pressure and dryness.
 - **Tissue & Graphite:** translucent torn tissue, colour-matched atmospheric blooms and fine graphite, using the original seeded Marker palette on your selected paper (cream by default).
 - **Watercolour:** source-colour pigments and dry-brush details; V2S is current and V2R remains available for historic links.
-- **Oil Paint v1 (15 October 2026):** actual loaded-bristle oil paint, connected masses selected from the original golden-ratio composition guide relationships, source-owned colour and preserved negative space. This is the tested Oil-only V5o/V5p/V5q interpretation, not a visual filter or AI-generated image. Oil is now selectable directly; newly shared Oil URLs use `material=oil-v1`. Marker, Watercolour and Tissue renderers, old URLs and scheduled publishing remain unchanged.
+- **Oil Paint v1 (15 October 2026):** actual loaded-bristle oil paint, connected masses selected from the original golden-ratio composition guide relationships, source-owned colour and preserved negative space. This is the tested Oil-only V5o/V5p/V5q interpretation, not a visual filter or AI-generated image. Oil is now selectable directly; newly shared Oil URLs use `material=oil-v3`. Marker, Watercolour and Tissue renderers, old URLs and scheduled publishing remain unchanged.
 
 All materials use the same seeded composition. From renderer V9, changing paper colour does not change the artwork's geometry or selected pigment colours, and switching materials preserves the paper choice. Published V1–V8 compositions remain version-locked. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** is labelled **Source mark profile** for Tissue & Graphite. Its seven choices use material-appropriate names such as Fine contours, Wide bands and Flat-edged bands, while retaining the exact underlying pen IDs and seeded source paths. The Materials sliders likewise describe source marks in Tissue mode; they do not simulate physical paper thickness, brushes or graphite pressure. Switching materials restores the original Marker labels without changing any setting values. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
 
@@ -220,3 +220,8 @@ Plotter SVG supports faithful colour runs and grouping by pen, with light-to-dar
 The guard freezes the documented V8 baseline as of 12 October 2026; it cannot retroactively restore any V8 links shared between V8's first publication and the interior-root amendment `da79010`.
 
 The supported renderer versions are declared in `js/app.js` and validated when the editor renders. When introducing V9 or later, update this list together with the renderer's version-specific dispatch and archive regression fixtures. Do not silently interpret an unknown `?v=` as a new renderer; legacy URLs and pinned outputs must stay stable.
+
+
+### Oil Paint V3 release (16 October 2026)
+
+Oil Paint V3 is the default Oil material in Compose, using the adaptive V3h brush with denser loaded bristle contacts, canvas-tooth dry-brush breakup and a faster twelve-hair path for narrow strokes. Newly created share links use `material=oil-v3`; existing `oil-v1` and `oil-v2` links retain their original renderers. Oil artworks generated for the daily gallery on and after 17 October 2026 use Oil V3 for portrait and landscape, with version-labelled captions. Historical gallery records remain unchanged.

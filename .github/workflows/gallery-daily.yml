@@ -104,27 +104,27 @@ jobs:
           GALLERY_QUEUE_ORIENTATION: portrait
         run: npm run gallery:build
 
-      - name: Generate daily Oil Paint v1 landscape
+      - name: Generate daily Oil Paint v3 landscape
         env:
           SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: oil
           SOCIAL_ORIENTATION: landscape
         run: npm run social:generate
 
-      - name: Archive daily Oil Paint v1 landscape
+      - name: Archive daily Oil Paint v3 landscape
         env:
           GALLERY_QUEUE_MATERIAL: oil
           GALLERY_QUEUE_ORIENTATION: landscape
         run: npm run gallery:build
 
-      - name: Generate daily Oil Paint v1 portrait
+      - name: Generate daily Oil Paint v3 portrait
         env:
           SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: oil
           SOCIAL_ORIENTATION: portrait
         run: npm run social:generate
 
-      - name: Archive daily Oil Paint v1 portrait
+      - name: Archive daily Oil Paint v3 portrait
         env:
           GALLERY_QUEUE_MATERIAL: oil
           GALLERY_QUEUE_ORIENTATION: portrait

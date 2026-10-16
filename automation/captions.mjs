@@ -36,7 +36,7 @@ export function makeCaptions(item) {
   const strategy = strategyName(item.stats, item.mode);
   const watercolour=item.material==='watercolour';
   const oil=item.material==='oil';
-  const heading=`${item.series.toUpperCase()} / ${strategy}${oil?' / OIL PAINT V1':watercolour?' / WATERCOLOUR V2S':
+  const heading=`${item.series.toUpperCase()} / ${strategy}${oil?(item.shareUrl?.includes('material=oil-v3')?' / OIL PAINT V3':' / OIL PAINT V1'):watercolour?' / WATERCOLOUR V2S':
     item.material==='watercolor'?' / TISSUE & GRAPHITE':''}`;
   const format = item.settings.orientation === 'portrait' ? 'Portrait study · ' : '';
   const watercolor = item.material === 'watercolor';

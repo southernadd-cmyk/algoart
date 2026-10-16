@@ -242,14 +242,14 @@ try {
     // the same φ-derived source fit, in their PNG/SVG and exact share URL.
     // Earlier dates and already-frozen gallery/release assets stay untouched.
     const query=appendDailyPhiFraming(
-      queryFor(settings,itemVersion)+(oil?'&material=oil-v1':watercolour?'&material=watercolour-v2s&fit=0':
+      queryFor(settings,itemVersion)+(oil?'&material='+ (day>='2026-10-17'?'oil-v3':'oil-v1'):watercolour?'&material=watercolour-v2s&fit=0':
       watercolor?tissueEdition.suffix:''),day);
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
     if(watercolor)validateTissueShareUrl(day,shareUrl);
     if(oil){
       const q=new URL(shareUrl).searchParams;
-      if(q.get('material')!=='oil-v1'||q.get('seed')!==settings.seed||
+      if(q.get('material')!==(day>='2026-10-17'?'oil-v3':'oil-v1')||q.get('seed')!==settings.seed||
          q.get('pal')!==settings.palette)
         throw Error('Oil image URL does not preserve exact seed and randomly chosen palette');
     }

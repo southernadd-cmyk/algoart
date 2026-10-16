@@ -432,7 +432,7 @@ jobs:
     secrets: inherit
 
 
-  oil-v1-landscape:
+  oil-v3-landscape:
     # Same existing 15:00 UK afternoon dispatch. Keep gallery writes
     # serialised after the previous watercolour publishing jobs.
     needs: [portrait-plan, watercolour-v2s-portrait, watercolour-v2s-portrait-retry]
@@ -445,9 +445,9 @@ jobs:
       live: true
     secrets: inherit
 
-  oil-v1-landscape-retry:
-    needs: [oil-v1-landscape, portrait-plan]
-    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.oil-v1-landscape.result == 'failure' && needs.portrait-plan.outputs.slot == '1' }}
+  oil-v3-landscape-retry:
+    needs: [oil-v3-landscape, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.oil-v3-landscape.result == 'failure' && needs.portrait-plan.outputs.slot == '1' }}
     uses: ./.github/workflows/oil-live.yml
     with:
       slot: '1'
@@ -456,8 +456,8 @@ jobs:
       live: true
     secrets: inherit
 
-  oil-v1-portrait:
-    needs: [oil-v1-landscape, oil-v1-landscape-retry, portrait-plan]
+  oil-v3-portrait:
+    needs: [oil-v3-landscape, oil-v3-landscape-retry, portrait-plan]
     if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '1' }}
     uses: ./.github/workflows/oil-live.yml
     with:
@@ -467,9 +467,9 @@ jobs:
       live: true
     secrets: inherit
 
-  oil-v1-portrait-retry:
-    needs: [oil-v1-portrait, portrait-plan]
-    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.oil-v1-portrait.result == 'failure' && needs.portrait-plan.outputs.slot == '1' }}
+  oil-v3-portrait-retry:
+    needs: [oil-v3-portrait, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.oil-v3-portrait.result == 'failure' && needs.portrait-plan.outputs.slot == '1' }}
     uses: ./.github/workflows/oil-live.yml
     with:
       slot: '1'

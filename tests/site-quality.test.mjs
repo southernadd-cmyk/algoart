@@ -14,7 +14,7 @@ assert.equal(versions.size,1, 'Every editor script must share one release cache 
 const gallery=read('gallery/index.html'),source=read('automation/build-gallery.mjs'),rss=read('gallery/feed.xml');
 const previousDescription='A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing and Tissue & Graphite.';
 const description='A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing, Tissue & Graphite, and Watercolour V2S.';
-assert(source.includes('Watercolour V2S and Oil Paint v1'), 'Daily gallery generator must describe all four materials');
+assert(source.includes('Watercolour V2S and Oil Paint v3'), 'Daily gallery generator must describe all four materials');
 assert(gallery.includes(previousDescription)||gallery.includes(description)||gallery.includes('Watercolour V2S and Oil Paint v1'),
   'Current gallery must retain the published description until next scheduled gallery build');
 assert(gallery.includes(previousDescription.replaceAll('&','&amp;'))||

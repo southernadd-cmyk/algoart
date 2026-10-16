@@ -19,13 +19,13 @@ try{
  assert.equal(legacy.exportVersion,'oil-paint-v1');
  await page.locator('#materialStyle').selectOption('marker');
  await page.locator('#materialStyle').selectOption('oil');
- await page.waitForFunction(()=>location.search.includes('material=oil-v2'));
+ await page.waitForFunction(()=>location.search.includes('material=oil-v3'));
  const now=await page.evaluate(()=>{
   const A=window.AlgoArt,s=A.readSettings(),c=document.createElement('canvas');
-  return {version:A.renderOilPaintV2(c,s,.2,false).version,oilOptions:[...document.querySelector('#materialStyle').options].filter(o=>o.value.startsWith('oil')).length};
+  return {version:A.renderOilPaintV3(c,s,.2,false).version,oilOptions:[...document.querySelector('#materialStyle').options].filter(o=>o.value.startsWith('oil')).length};
  });
- assert.equal(now.version,'oil-paint-v2');
+ assert.equal(now.version,'oil-paint-v3');
  assert.equal(now.oilOptions,1);
  assert.deepEqual(errors,[]);
- console.log('PASS: one Oil Paint option, legacy link still V1, new selection V2');
+ console.log('PASS: one Oil Paint option, legacy link still V1, new selection V3');
 }finally{await browser.close()}

@@ -8,7 +8,7 @@ import {chromium} from 'playwright';
 import {dailyPhiFramingForDate,appendDailyPhiFraming} from '../automation/phi-framing.mjs';
 
 const repo=process.cwd();
-const date='2026-10-16'; // Test the first clean future day, never overwrite an already published archive.
+const date='2099-10-16'; // Isolated future fixture: never reuse published artwork IDs.
 const host=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 assert.equal(dailyPhiFramingForDate('2026-10-14'),false);
 assert.equal(dailyPhiFramingForDate(date),true);
@@ -19,7 +19,9 @@ assert.equal(new URLSearchParams(appendDailyPhiFraming('v=8&seed=A',date)).get('
 // Previously saved studies are not rewritten or silently attributed the
 // newly introduced shared framing option.
 const oldGallery=JSON.parse(await fs.readFile('gallery/2026-10-14/meta.json','utf8'));
-const existingIds=new Set(); // The 16 October gallery does not yet exist in the repository.
+const existingGallery=await fs.readFile('gallery/'+date+'/meta.json','utf8')
+  .then(JSON.parse).catch(error=>{if(error.code==='ENOENT')return {entries:[]};throw error;});
+const existingIds=new Set(existingGallery.entries.map(e=>e.id)); // Preserve any existing fixture studies.
 const published15=await fs.readFile('gallery/2026-10-15/meta.json','utf8');
 const oldJson=JSON.stringify(oldGallery);
 assert(oldGallery.entries.every(e=>!new URL(e.shareUrl).searchParams.has('sheet')),
@@ -61,7 +63,7 @@ for(const c of cases){
   for(const entry of queue.entries){
     const url=new URL(entry.shareUrl);
     assert.equal(url.searchParams.get('sheet'),'phi',
-      '15 October '+material+' '+orientation+' must use shared geometry');
+      'Fixture '+material+' '+orientation+' must use shared geometry');
     assert.equal(url.searchParams.get('seed'),entry.seed);
     assert.equal(url.searchParams.get('mode'),entry.mode);
     if(material==='watercolour'){
@@ -89,7 +91,7 @@ assert.equal(gallery.entries.length,existingIds.size+8,
   'Six material/format queues must append eight studies without deleting the existing daily gallery');
 assert.equal(new Set(gallery.entries.map(e=>e.id)).size,existingIds.size+8,'No duplicate ids');
 for(const id of existingIds)assert(gallery.entries.some(e=>e.id===id),
-  'Previously archived 15 October study disappeared: '+id);
+  'Previously archived fixture study disappeared: '+id);
 for(const entry of gallery.entries){
   assert.equal(new URL(entry.shareUrl).searchParams.get('sheet'),'phi');
   await fs.access(path.join('gallery',date,entry.imageFile));
@@ -136,4 +138,4 @@ try{
   assert.equal(await page.locator('#phiSheetFit').isChecked(),true);
   assert.deepEqual(errors,[]);
 }finally{await browser.close()}
-console.log('PASS: 16 October 8 Marker/Tissue/Watercolour portrait/landscape artworks, shared phi source transform, exact editor links, stable gallery and historical cutoff.');
+console.log('PASS: isolated future fixture 8 Marker/Tissue/Watercolour portrait/landscape artworks, shared phi source transform, exact editor links, stable gallery and historical cutoff.');
