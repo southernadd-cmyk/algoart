@@ -1048,7 +1048,7 @@ function paperNoise(x,y,cell,seed){
 // pixel (hundreds of thousands to millions). Reuse the exact same floating-
 // point results for identical seeds; no change in noise sampling or quality.
 var paperRotationSeed=null,paperRotationCos=1,paperRotationSin=0;
-function materialPaperField(x,y,ratio,seedValue){
+function materialPaperField(x,y,ratio,seedValue,scratch){
   // Benchmark switch is test-only; default always caches.
   var ca,sa;
   if(A.watercolourV2sOptions.paperRotationCache===false){
@@ -1076,15 +1076,17 @@ function materialPaperField(x,y,ratio,seedValue){
     Math.max(1.4,4.3*ratio),seedValue^0x3181);
   var granular=hashNoise(Math.floor(fx*1.43),Math.floor(fy*1.87),
     seedValue^0x4251);
-  return {
-    tooth:clamp(.17+.51*broad+.24*medium+.08*grain+
-      .06*(granular-.5),.09,.96),
-    fibre:clamp(.39+.35*medium+.26*grain,.1,.95),
-    grain:granular,
-    formation:clamp(broad*.76+medium*.24,0,1),
-    warpX:wa*.41+(grain-.5)*6*ratio,
-    warpY:wb*.41+(medium-.5)*5*ratio
-  };
+  // One private scratch object can be reused by the caller: its fields
+  // are consumed immediately, with no references escaping the pixel loop.
+  var surface=scratch||{};
+  surface.tooth=clamp(.17+.51*broad+.24*medium+.08*grain+
+      .06*(granular-.5),.09,.96);
+  surface.fibre=clamp(.39+.35*medium+.26*grain,.1,.95);
+  surface.grain=granular;
+  surface.formation=clamp(broad*.76+medium*.24,0,1);
+  surface.warpX=wa*.41+(grain-.5)*6*ratio;
+  surface.warpY=wb*.41+(medium-.5)*5*ratio;
+  return surface;
 }
 // Published solely on the experimental branch for deterministic, non-tiling
 // regression checks, not an editor API or a production material interface.
@@ -1103,9 +1105,12 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   var source=new Float32Array(total*3),next=new Float32Array(total*3);
   var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total),formation=new Float32Array(total),paperGrain=new Uint8Array(total);
   var seedValue=A.hash(seed+'|paper-flow-v2f')>>>0,pi=0;
+  // Both improvements are independent, strictly opt-in test switches.
+  var scratch=A.watercolourScratchPaperExperimental?{}:null;
+  var skipZeroLog=!!A.watercolourSkipZeroDensityLogExperimental;
   for(var y=0;y<h;y++)for(var x=0;x<w;x++,pi++){
     var j=pi*3,loaded=0;
-    var surface=materialPaperField(x,y,ratio,seedValue);
+    var surface=materialPaperField(x,y,ratio,seedValue,scratch);
     var sx=clamp(x+surface.warpX,0,w-1.0001);
     var sy=clamp(y+surface.warpY,0,h-1.0001);
     var x0=Math.floor(sx),y0=Math.floor(sy),tx=sx-x0,ty=sy-y0;
@@ -1113,7 +1118,10 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     for(var c=0;c<3;c++){
       var sample=mix(mix(px[q00+c],px[q01+c],tx),
         mix(px[q10+c],px[q11+c],tx),ty);
-      var density=Math.max(0,Math.log((paper[c]+1)/(sample+1)));
+      // For sample >= paper, the original Math.max(0,log(...)) is exactly 0.
+      // No change to painted channels or any downstream numerical operation.
+      var density=skipZeroLog&&sample>=paper[c]?0:
+        Math.max(0,Math.log((paper[c]+1)/(sample+1)));
       source[j+c]=density;if(density>loaded)loaded=density;
     }
     tooth[pi]=surface.tooth;
