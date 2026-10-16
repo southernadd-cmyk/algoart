@@ -3,6 +3,7 @@
 import {chromium} from 'playwright';
 import {mkdir,writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 const base=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const output='oil-v3a-results';
 await mkdir(output,{recursive:true});
@@ -42,13 +43,17 @@ try{
    return {v2:run('v2'),v3:run('v3')};
   },spec);
   const key=spec.mode+'-'+spec.orientation;
+  const equal=result.v2.png===result.v3.png;
+  const sha=data=>createHash('sha256').update(data).digest('hex');
+  const hashes={v2:sha(result.v2.png),v3:sha(result.v3.png)};
   for(const version of ['v2','v3']){
    const v=result[version],data=v.png;
    await writeFile(output+'/'+key+'-'+version+'.png',
     Buffer.from(data.slice(data.indexOf(',')+1),'base64'));
    delete v.png;
   }
-  report.push({case:key,spec,...result});
+  assert(!equal,'V3 produced identical pixels to V2 for '+key);
+  report.push({case:key,spec,hashes,...result,relativeTime: +(result.v3.ms/result.v2.ms).toFixed(3)});
   console.log(JSON.stringify(report[report.length-1]));
  }
  await writeFile(output+'/report.json',JSON.stringify({cases:report,errors},null,2));
