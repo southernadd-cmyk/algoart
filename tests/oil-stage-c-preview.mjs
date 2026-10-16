@@ -33,7 +33,7 @@ try{
       complexity:65,negativeSpace:52};
    const doRender=stageC=>{
     A.oilBrushPerfExperimental=true;A.oilPerfExperimental=true;
-    A.oilStageCExperimental=stageC;A.oilStageCStats={};
+    A.oilStageCExperimental=stageC;A.oilStageCScale=.65;A.oilStageCStats={};
     let canvas=document.createElement('canvas');
     try{
       const start=performance.now();
@@ -47,7 +47,7 @@ try{
        work:meta.work?.oilV1};
     }finally{
       A.oilBrushPerfExperimental=false;A.oilPerfExperimental=false;
-      A.oilStageCExperimental=false;A.oilStageCStats=null;
+      A.oilStageCExperimental=false;A.oilStageCScale=null;A.oilStageCStats=null;
     }
    };
    // Warm both render paths.
@@ -67,6 +67,7 @@ try{
     v1Ms:+data.v1.ms.toFixed(1),v2Ms:+data.v2.ms.toFixed(1),
     overheadPercent:+(100*(data.v2.ms-data.v1.ms)/data.v1.ms).toFixed(1),
     v2BrushCalls:data.v2.oilStats?.brushCalls||0,
+    v2FallbackCalls:data.v2.oilStats?.fallbackCalls||0,
     v2PhysicalHairs:one,v2HairRuns:data.v2.oilStats?.runs||0,
     v2HairFootprints:data.v2.oilStats?.footprints||0,
     v2BrushMs:+(data.v2.oilStats?.brushMs||0).toFixed(1),
@@ -93,7 +94,7 @@ try{
      {color:[189,133,54],profile:'flat',y:490,width:67}
     ];
     ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,1120,590);
-    A.oilStageCExperimental=stageC;A.oilStageCStats={};
+    A.oilStageCExperimental=stageC;A.oilStageCScale=1;A.oilStageCStats={};
     for(let i=0;i<swatches.length;i++){
       const q=swatches[i];
       const points=Array.from({length:41},(_,j)=>{
@@ -104,7 +105,7 @@ try{
          q.width,q.color,q.profile,A.makeR('OIL-STAGE-C-LAB-'+i),
          {thickness:.88,drag:.58,bristles:.95});
     }
-    A.oilStageCExperimental=false;
+    A.oilStageCExperimental=false;A.oilStageCScale=null;
     const stats=A.oilStageCStats;
     A.oilStageCStats=null;
     return {png:canvas.toDataURL('image/png'),stats};
