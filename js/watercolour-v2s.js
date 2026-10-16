@@ -1048,6 +1048,9 @@ function paperNoise(x,y,cell,seed){
 // pixel (hundreds of thousands to millions). Reuse the exact same floating-
 // point results for identical seeds; no change in noise sampling or quality.
 var paperRotationSeed=null,paperRotationCos=1,paperRotationSin=0;
+// Precompute only resolution-dependent cell widths; retain the original
+// division and interpolation order for exact output pixels.
+var paperFieldCells=null;
 function materialPaperField(x,y,ratio,seedValue){
   // Benchmark switch is test-only; default always caches.
   var ca,sa;
@@ -1064,16 +1067,16 @@ function materialPaperField(x,y,ratio,seedValue){
   }
   var u=x*ca-y*sa,v=x*sa+y*ca;
   var wa=(paperNoise(u*.81+v*.17,v*.92-u*.11,
-    Math.max(12,89*ratio),seedValue^0x519327)-.5)*22*ratio;
+    paperFieldCells?paperFieldCells[0]:Math.max(12,89*ratio),seedValue^0x519327)-.5)*22*ratio;
   var wb=(paperNoise(u*.67-v*.22,v*.78+u*.24,
-    Math.max(12,73*ratio),seedValue^0x627419)-.5)*23*ratio;
+    paperFieldCells?paperFieldCells[1]:Math.max(12,73*ratio),seedValue^0x627419)-.5)*23*ratio;
   var fx=u+wa,fy=v+wb;
   var broad=paperNoise(fx*.87+fy*.24,fy*.97-fx*.19,
-    Math.max(8,59*ratio),seedValue^0x7151);
+    paperFieldCells?paperFieldCells[2]:Math.max(8,59*ratio),seedValue^0x7151);
   var medium=paperNoise(fx*1.19-fy*.31,fy*1.08+fx*.16,
-    Math.max(3,16.7*ratio),seedValue^0x9127);
+    paperFieldCells?paperFieldCells[3]:Math.max(3,16.7*ratio),seedValue^0x9127);
   var grain=paperNoise(fx*1.47+fy*.33,fy*.93-fx*.21,
-    Math.max(1.4,4.3*ratio),seedValue^0x3181);
+    paperFieldCells?paperFieldCells[4]:Math.max(1.4,4.3*ratio),seedValue^0x3181);
   var granular=hashNoise(Math.floor(fx*1.43),Math.floor(fy*1.87),
     seedValue^0x4251);
   return {
@@ -1105,6 +1108,10 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   var source=new Float32Array(total*3),next=new Float32Array(total*3);
   var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total),formation=new Float32Array(total),paperGrain=new Uint8Array(total);
   var seedValue=A.hash(seed+'|paper-flow-v2f')>>>0,pi=0;
+  // Scoped only to the synchronous paper-flow pixel traversal.
+  if(A.watercolourPaperCellsExperimental)paperFieldCells=[
+    Math.max(12,89*ratio),Math.max(12,73*ratio),Math.max(8,59*ratio),
+    Math.max(3,16.7*ratio),Math.max(1.4,4.3*ratio)];
   var fieldCallMs=0,fieldCallCount=0;
   for(var y=0;y<h;y++)for(var x=0;x<w;x++,pi++){
     var j=pi*3,loaded=0;
@@ -1129,6 +1136,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     formation[pi]=surface.formation;
     paperGrain[pi]=Math.round(surface.grain*255);
   }
+  paperFieldCells=null;
   if(profile){profile.stages.paperPreparationMs=performance.now()-profileStart;profile.stages.materialPaperFieldSampleMs=fieldCallMs;profile.stages.materialPaperFieldSamples=fieldCallCount;profile.stages.materialPaperFieldEstimatedMs=fieldCallMs*total/Math.max(1,fieldCallCount);profileStart=performance.now();}
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
