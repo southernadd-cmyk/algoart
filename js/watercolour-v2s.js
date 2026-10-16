@@ -1346,13 +1346,13 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
       bloom*=1-.27*Math.exp(-Math.pow(radial/.67,4))+
         .10*Math.exp(-Math.pow((radial-.98)/.21,2));
     }
+    // Paper shading is independent of the pigment channel. Calculate it
+    // once per pixel, preserving the exact expression and output pixels.
+    var paperShade=(tooth[pi]-.5)*4.8+(paperGrain[pi]/255-.5)*2.4;
     for(c=0;c<3;c++){
       // A gentle upper bound on optical density stops dark overlapping
       // glazes collapsing into electronic near-black. Glazes still stack.
       var amount=Math.min(.89,source[p+c]*settle*bloom);
-      // Base cream stays nominally unchanged; its very subtle tooth
-      // shading is continuous across blank and painted sheet, not a tile.
-      var paperShade=(tooth[pi]-.5)*4.8+(paperGrain[pi]/255-.5)*2.4;
       px[out+c]=clamp(Math.round(paper[c]*Math.exp(-amount)+paperShade),0,255);
     }
     px[out+3]=255;
