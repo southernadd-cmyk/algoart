@@ -1,7 +1,11 @@
 // Cross-material timing baseline. No production rendering changes.
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
-import {writeFile,mkdir} from 'node:fs/promises';
+import {writeFile,mkdir,readFile} from 'node:fs/promises';
+const fixture=JSON.parse(await readFile(new URL('./fixtures/all-materials-baseline.json',import.meta.url),'utf8'));
+const reference=new Map(fixture.rows.map(r=>[[r.mode,r.orientation,r.scale,r.material].join('|'),r]));
+const performanceWarnings=[];
+const FAST_REGRESSION_THRESHOLD=.15; // alert, not a noisy runner-dependent CI failure
 const browser=await chromium.launch({headless:true});
 const results=[];
 try {
@@ -51,10 +55,29 @@ try {
     }
     return rows;
   },{mode,orientation});
-  for(const row of result){console.log('MATERIAL_BENCH '+JSON.stringify(row));results.push(row);
-    assert(row.exact,'Nondeterministic pixels: '+JSON.stringify(row));}
+  for(const row of result){
+    console.log('MATERIAL_BENCH '+JSON.stringify(row));results.push(row);
+    assert(row.exact,'Nondeterministic pixels: '+JSON.stringify(row));
+    const base=reference.get([row.mode,row.orientation,row.scale,row.material].join('|'));
+    assert(base,'Missing baseline for '+JSON.stringify(row));
+    assert.deepEqual([row.hash,row.width,row.height],[base.hash,base.width,base.height],
+      'Changed pixels/dimensions relative to frozen baseline: '+JSON.stringify(row));
+    const ratio=row.ms/base.ms;
+    if(ratio>1+FAST_REGRESSION_THRESHOLD)performanceWarnings.push({
+      case:[row.mode,row.orientation,row.scale,row.material].join('|'),
+      baselineMs:base.ms,observedMs:row.ms,ratio:+ratio.toFixed(3)});
+  }
   assert.deepEqual(errors,[],'Browser errors during '+mode);
  }
  await mkdir('material-benchmark-results',{recursive:true});
- await writeFile('material-benchmark-results/baseline.json',JSON.stringify(results,null,2));
+ await writeFile('material-benchmark-results/observed.json',JSON.stringify(results,null,2));
+ await writeFile('material-benchmark-results/performance-warnings.json',JSON.stringify(performanceWarnings,null,2));
+ const aggregate={};
+ for(const row of results){const previous=aggregate[row.material]||{baselineMs:0,observedMs:0,cases:0};
+   const base=reference.get([row.mode,row.orientation,row.scale,row.material].join('|'));
+   previous.baselineMs+=base.ms;previous.observedMs+=row.ms;previous.cases++;
+   aggregate[row.material]=previous;
+ }
+ console.log('MATERIAL_SUMMARY '+JSON.stringify({aggregate,performanceWarnings}));
+ assert.equal(results.length,reference.size,'Benchmark coverage changed');
 }finally{await browser.close()}
