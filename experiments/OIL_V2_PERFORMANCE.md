@@ -204,3 +204,65 @@ paint depletion. This is not yet approved as final-quality Oil V2.
    original geometry and 30 individually staggered tips.
 5. Compare physically detailed bristle-tip crops at 1:1 scale and
    whole paintings before deciding whether to release `oil-v2`.
+
+## Stage D — refined contact geometry and load response
+
+Stage D remains a **branch-only experiment**. The original V1 renderer and
+all published material links remain unchanged. The experimental Stage C
+brush is dynamically loaded by Playwright; Stage D is selected only by
+`A.oilStageDRefinement===true`.
+
+The implementation follows these constraints:
+
+- Bristle count remains 26–34 physical hairs on eligible contacts; each
+  produces a real pigment-and-height footprint, not cosmetic tip lines.
+- Individual bristle paths acquire two correlated curvature components,
+  pressure-driven narrowing, and independently bent terminal tips.
+- Effective load decreases along the stroke, including the thin shoulder
+  filaments; dry contacts are batched separately with weaker pigment and
+  relief rather than rendered as opaque lines.
+- Broad under-contacts retain a coherent loaded body. Hair detail starts
+  farther along the path, where it is actually visible, cutting unnecessary
+  path construction.
+- A width threshold of 22 physical pixels (at test render resolution)
+  retains more detail in narrow compositions while falling back to the
+  faster original V1 brush on sub-resolution contacts.
+- The performance-only Stage B reuse and fast-frame flags remain active
+  for comparison but are not production defaults.
+
+### Confirmed genuine-renderer test (16 October 2026)
+
+Run: https://github.com/southernadd-cmyk/algoart/actions/runs/38898178210
+
+The test produced original Oil V1, Stage C and refined Stage D paintings
+from the **same recorded ALGO/ART source composition**. All four seeds
+passed image change, determinism and composition metadata checks.
+
+| Mode | Stage C time (ms) | Stage D time (ms) | D vs C | D vs V1 |
+| --- | ---: | ---: | ---: | ---: |
+| Organic landscape | 352.3 | 309.1 | 12.3% faster | 3.4% faster |
+| Rects portrait | 291.5 | 242.2 | 16.9% faster | 2.6% faster |
+| Network landscape | 226.2 | 187.7 | 17.0% faster | 7.8% slower |
+| Burst portrait | 334.4 | 282.0 | 15.7% faster | 2.9% slower |
+
+These timings come from **one warmed GitHub Actions browser trial per
+variant at 0.65×**, so they must not be treated as established device-wide
+performance gains. The test also generated a physically grounded brush
+lab at 1×. The changed pixels and preserved guide/void metadata are
+verified; subjective visual quality still requires review.
+
+The previous 24-pixel detail cutoff was rejected because it enabled
+only one refined contact in Organic. The final tested 22-pixel threshold
+produced 16, 43, 54 and 47 refined brush calls respectively. These
+are meaningful but still deliberately limited at preview resolution.
+
+### Remaining development before an Oil V2 release
+
+1. Compare high-resolution oil artworks, not just close-up brush labs;
+   verify the performance envelope at 1× export and on mobile.
+2. Review tip bends and dry contact interruptions at enlarged crops.
+   An individual hair count is not a guarantee of realistic oil paint.
+3. Avoid release until renderer versioning keeps all existing Oil V1 share
+   links, archived studies and gallery rendering locked to their old pixels.
+4. Consider dirty-region relief work and paint/height buffer reuse as the
+   next engineering improvements if full-resolution output is expensive.
