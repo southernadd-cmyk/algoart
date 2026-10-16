@@ -93,3 +93,46 @@ same runs. Removing redundant captures is architecturally clean but
   bristle detail at preview and export sizes, not just hair counts.
 - Extend benchmarks to all eight engines, larger exports and mobile
   before any release decision.
+
+## Stage B: cached pressure and tangent-normal calculations
+
+GitHub Actions: https://github.com/southernadd-cmyk/algoart/actions/runs/38882249321
+
+A separate switch, `A.oilBrushPerfExperimental===true`, changes only
+the brush arithmetic, while default Oil v1 still follows the original code.
+The branch caches per-frame pressure, relative travel and the brush normal,
+and reuses those values across the bristle footprints. It does not change
+brush count, contact sampling, load, colour, boundaries or output size.
+
+The same genuine browser renderer produced **exactly identical PNG bytes**
+on all four tested 0.45-scale paintings, with or without the earlier
+single-source-capture change. Contact counts were unchanged.
+
+| Case | Brush baseline ms | Brush optimized ms | Brush gain | Total baseline ms | Both optimizations ms | Total gain |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Organic landscape | 187.7 | 123.2 | 34.4% | 460.9 | 394.8 | 14.3% |
+| Rects portrait | 123.7 | 85.7 | 30.7% | 325.5 | 277.8 | 14.7% |
+| Network landscape | 76.6 | 53.1 | 30.7% | 204.1 | 168.0 | 17.7% |
+| Burst portrait | 169.1 | 116.4 | 31.2% | 405.2 | 353.9 | 12.7% |
+
+Each cell is the **median of three warmed browser samples** in one
+GitHub Actions runner, with experimental/baseline variants interleaved.
+These are promising results, not production guarantees or statistical
+performance certification.
+
+Output metadata also matches. Examples: Organic had 430 brush calls,
+23,445 centreline frames, 5,627 tufts, and 247,187 active bristle
+contacts in both versions; no contacts were cut to obtain these gains.
+
+The high proportion of time in contact rendering justifies spending some
+of the recovered compute on **genuine, individually varied bristle
+footprints** for a separately versioned Oil V2. This experiment does
+not by itself improve appearance, and no production material switch,
+historical links, daily gallery or social artwork have been changed.
+
+### Next acceptance gate
+
+Repeat across all eight modes, both canvas orientations where
+applicable, and at export resolution; inspect 1:1 bristle-tip crops
+and whole images for *visible* detail. Only promote after the
+geometry and timing results meet the agreed visual/performance targets.
