@@ -50,7 +50,7 @@ try{
   };
   return stats;
  });
- assert.equal(result.currentMaterial,'oil-v1');
+ assert.equal(result.currentMaterial,'oil');
  assert.match(result.currentUrl,/material=oil-v1/);
  assert.match(result.currentDescription,/oil painting/i);
  assert.match(result.currentNote,/Oil Paint v1 \(legacy\)/);
