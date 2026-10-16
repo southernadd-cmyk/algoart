@@ -334,7 +334,12 @@ function strokeMatched(pig,mask,path,width,color,alpha,height){
 // Each tuft is a connected, pressure-driven paint footprint. Its *actual*
 // deposited geometry is used both for colour and for the relief mask.
 function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
-  var frames=buildBrushFrames(points,width);
+  // Stage B experiment: cache frame-local quantities across all bristle tufts.
+  // Historical Oil v1 uses the untouched calculations unless explicitly
+  // opted in by the performance test (not a UI/share-link parameter).
+  var optFrames=A.oilBrushPerfExperimental===true,
+      perf=A.oilBrushPerfStats||null,startMs=perf?performance.now():0,
+      frames=buildBrushFrames(points,width);
   if(frames.length<2)return {
     bristleRuns:0,bristleContacts:0,contactFootprints:0,loadStart:0,
     loadEnd:0,pressureMin:0,pressureMax:0};
@@ -346,6 +351,15 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       contacts=0,runs=0,footprints=0,
       pMin=2,pMax=0,loadStart=0,loadEnd=0,
       maxPaint=profile==='dry'?.78:profile==='knife'?1.18:1.10;
+  if(optFrames){
+    for(var fi=0;fi<frames.length;fi++){
+      var frame=frames[fi],normal=frame.angle+PI/2;
+      frame.cachedPressure=pressureAt(frame.s,total,phase,profile);
+      frame.cachedFraction=frame.s/total;
+      frame.normalX=Math.cos(normal);
+      frame.normalY=Math.sin(normal);
+    }
+  }
   // Adjacent hairs belong to uneven clusters: widths and lateral positions
   // are chosen once per tuft, not snapped to a grid or a raster cell.
   for(var tuft=0;tuft<count;tuft++){
@@ -374,16 +388,27 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       for(var k=0;k<strip.length;k++){
         var item=strip[k],turn=item.angle+PI/2,
             // Independent, smoothly varying splay / changing contact width.
-            pressure=pressureAt(item.s,total,phase,profile),
+            pressure=optFrames?item.cachedPressure:
+              pressureAt(item.s,total,phase,profile),
             charge=minmax(item.load,0,1.35),
             taper=Math.min(1,(k+1)/4,(strip.length-k)/4),
             lateralDrift=jitter*Math.sin(item.s*.047+phaseT)+
               jitter*.55*Math.sin(item.s*.103+phaseT*.42),
             normalWidth=bundleWidth*pressure*(.56+.44*taper)*
               (.60+.40*charge)*(.92+.13*Math.sin(item.s*.061+phaseT)),
-            q=shift(item,turn,side*width*pressure+lateralDrift);
-        left.push(shift(q,turn,-normalWidth*.51));
-        right.push(shift(q,turn,normalWidth*.49));
+            q=optFrames?null:shift(item,turn,side*width*pressure+lateralDrift);
+        if(optFrames){
+          var lateral=side*width*pressure+lateralDrift,
+              qx=item.x+item.normalX*lateral,
+              qy=item.y+item.normalY*lateral;
+          left.push({x:qx+item.normalX*(-normalWidth*.51),
+                     y:qy+item.normalY*(-normalWidth*.51)});
+          right.push({x:qx+item.normalX*(normalWidth*.49),
+                      y:qy+item.normalY*(normalWidth*.49)});
+        }else{
+          left.push(shift(q,turn,-normalWidth*.51));
+          right.push(shift(q,turn,normalWidth*.49));
+        }
         avgLoad+=item.load;avgS+=item.s;
       }
       avgLoad/=strip.length;avgS/=strip.length;
@@ -414,8 +439,9 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       strip=[];
     }
     for(var i=0;i<frames.length;i++){
-      var p=frames[i],t=p.s/total,
-          pressureHere=pressureAt(p.s,total,phase,profile);
+      var p=frames[i],t=optFrames?p.cachedFraction:p.s/total,
+          pressureHere=optFrames?p.cachedPressure:
+            pressureAt(p.s,total,phase,profile);
       pMin=Math.min(pMin,pressureHere);
       pMax=Math.max(pMax,pressureHere);
       // Loading is monotone on average but correlated pressure pockets
@@ -435,7 +461,12 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       if(!active){finishStrip();continue}
       // Subpixel path samples are interpolated geometrically between source
       // points; intact runs don't leave random single-pixel gaps.
-      strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load});
+      if(optFrames){
+        strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load,
+          cachedPressure:pressureHere,normalX:p.normalX,normalY:p.normalY});
+      }else{
+        strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load});
+      }
       contacts++;
     }
     finishStrip();
@@ -456,6 +487,14 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       width*r.range(.38,.89),width*r.range(.29,.60)*mass,
       colour2,r.range(.60,.86),r.range(.33,.73)*mass,r);
     footprints++;
+  }
+  if(perf){
+    perf.calls=(perf.calls||0)+1;
+    perf.totalMs=(perf.totalMs||0)+performance.now()-startMs;
+    perf.frames=(perf.frames||0)+frames.length;
+    perf.tufts=(perf.tufts||0)+count;
+    perf.contacts=(perf.contacts||0)+contacts;
+    perf.runs=(perf.runs||0)+runs;
   }
   return {bristleRuns:runs,bristleContacts:contacts,
     contactFootprints:footprints,loadStart:+(loadStart/count).toFixed(3),
