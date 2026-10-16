@@ -775,12 +775,21 @@ function ground(ctx,w,h,seed,r,paper){
 function surfaceLighting(field,w,h,x,y,relief,preparedRelief){
   // Caller can supply precomputed log-height values. A nine-neighbour
   // lighting kernel otherwise evaluates log1p up to nine times per pixel.
-  var v=preparedRelief||field,optic=preparedRelief?function(n){return n}:opticalRelief;
-  var p=y*w+x,centre=optic(v[p]),
-      lx=optic(v[p-1]),rx=optic(v[p+1]),
-      ty=optic(v[p-w]),by=optic(v[p+w]),
-      lx3=optic(v[p-3]),rx3=optic(v[p+3]),
-      ty3=optic(v[p-w*3]),by3=optic(v[p+w*3]),
+  var p=y*w+x,v=preparedRelief||field,
+      centre,lx,rx,ty,by,lx3,rx3,ty3,by3;
+  if(preparedRelief){
+    centre=v[p];lx=v[p-1];rx=v[p+1];
+    ty=v[p-w];by=v[p+w];
+    lx3=v[p-3];rx3=v[p+3];
+    ty3=v[p-w*3];by3=v[p+w*3];
+  }else{
+    centre=opticalRelief(v[p]);
+    lx=opticalRelief(v[p-1]);rx=opticalRelief(v[p+1]);
+    ty=opticalRelief(v[p-w]);by=opticalRelief(v[p+w]);
+    lx3=opticalRelief(v[p-3]);rx3=opticalRelief(v[p+3]);
+    ty3=opticalRelief(v[p-w*3]);by3=opticalRelief(v[p+w*3]);
+  }
+  var
       dx=(rx-lx)*.35+(rx3-lx3)*.05,
       dy=(by-ty)*.35+(by3-ty3)*.05,
       nx=-dx*(.74+.38*relief),ny=-dy*(.74+.38*relief),nz=1,
