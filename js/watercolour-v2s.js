@@ -1126,26 +1126,38 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   }
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
+  // The paper, fibre and water fields are constant during diffusion.
+  // Cache symmetric interface mobility separately for the two stencil
+  // strides. Float64 retains the original JS arithmetic precision.
+  function interfaceMobility(stride){
+    var weights=new Float64Array(total*4);
+    for(var yy=0;yy<h;yy++)for(var xx=0;xx<w;xx++){
+      var cell=yy*w+xx,here=tooth[cell],wet=water[cell];
+      for(var side=0;side<4;side++){
+        var nx=xx+(side===0?stride:side===1?-stride:0);
+        var ny=yy+(side===2?stride:side===3?-stride:0);
+        if(nx<0||ny<0||nx>=w||ny>=h)continue;
+        var q=ny*w+nx;
+        var stretch=(fibres[cell]+fibres[q])*.5;
+        var anis=side<2?(.74+.48*stretch):(.74+.48*(1-stretch));
+        weights[cell*4+side]=(.067+.045*(here+tooth[q]))*anis*
+          (.53+.47*Math.max(wet,water[q]));
+      }
+    }
+    return weights;
+  }
+  var wideMobility=interfaceMobility(2),fineMobility=interfaceMobility(1);
   for(var round=0;round<passes;round++){
+    var stride=round<2?2:1;
+    var mobility=round<2?wideMobility:fineMobility;
     for(y=0;y<h;y++)for(x=0;x<w;x++){
       pi=y*w+x;var k=pi*3,v=source[k],u=source[k+1],z=source[k+2];
-      var here=tooth[pi],wet=water[pi];
       var sum0=0,sum1=0,sum2=0;
-      var stride=round<2?2:1; // long wet capillaries followed by fine settling
-      // Fibre direction favours east/west in some regions and north/south
-      // in others; the same interface gets the same flux from both sides.
       for(var side=0;side<4;side++){
         var nx=x+(side===0?stride:side===1?-stride:0);
         var ny=y+(side===2?stride:side===3?-stride:0);
         if(nx<0||ny<0||nx>=w||ny>=h)continue;
-        var q=ny*w+nx;
-        // Interface mobility is symmetric: pigment is redistributed,
-        // not created, when a pair of paper fibres exchange wash water.
-        var stretch=(fibres[pi]+fibres[q])*.5;
-        var anis=side<2?(.74+.48*stretch):(.74+.48*(1-stretch));
-        var transport=(.067+.045*(here+tooth[q]))*anis*
-          (.53+.47*Math.max(wet,water[q]));
-        var other=q*3;
+        var other=(ny*w+nx)*3,transport=mobility[pi*4+side];
         sum0+=(source[other]-v)*transport;
         sum1+=(source[other+1]-u)*transport;
         sum2+=(source[other+2]-z)*transport;
