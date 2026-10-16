@@ -101,8 +101,8 @@ try{
   const html=await fs.readFile(path.join(temp,'gallery',day,'index.html'),'utf8');
   assert.equal((html.match(/data-material="watercolor"/g)||[]).length,4);
   for(const e of entries)assert(html.includes(e.shareUrl.replaceAll('&','&amp;')));
-  // Simulate the pre-existing ten marker works and prove every watercolor
-  // rebuild preserves them (and every watercolor JPEG) in one 14-work day.
+  // Simulate ten historical marker works: the post-cutoff gallery retains
+  // four marker entries and four watercolor entries, with retained bytes stable.
   const dayDir=path.join(temp,'gallery',day);
   const ten=Array.from({length:10},(_,i)=>{
     const portrait=i>=5;
@@ -122,15 +122,18 @@ try{
   await fs.writeFile(path.join(dayDir,'meta.json'),JSON.stringify(merged));
   build('landscape');build('portrait');
   const full=JSON.parse(await fs.readFile(path.join(dayDir,'meta.json'),'utf8'));
-  assert.equal(full.count,14,'Ten marker plus four watercolor studies must survive rebuilds');
+  assert.equal(full.count,8,'Post-17 October archive caps marker and watercolor materials at four each');
   assert.equal(full.entries.filter(e=>e.material==='watercolor').length,4);
-  assert.equal(full.entries.filter(e=>e.material!=='watercolor').length,10);
-  assert.equal(new Set(full.entries.map(e=>e.id)).size,14);
-  assert(full.entries.slice(0,10).every(e=>e.material!=='watercolor'));
-  assert(full.entries.slice(10).every(e=>e.material==='watercolor'));
-  for(const e of ten){
+  assert.equal(full.entries.filter(e=>e.material!=='watercolor').length,4);
+  assert.equal(new Set(full.entries.map(e=>e.id)).size,8);
+  assert(full.entries.slice(0,4).every(e=>e.material!=='watercolor'));
+  assert(full.entries.slice(4).every(e=>e.material==='watercolor'));
+  const retainedMarkers=full.entries.filter(e=>e.material!=='watercolor');
+  for(const e of retainedMarkers){
     assert.equal(await fs.readFile(path.join(dayDir,e.imageFile),'utf8'),'original-marker-'+e.seed);
   }
-  console.log('PASS: 14-study mixed archive survives repeated watercolor updates with marker images untouched.');
+  assert.equal(retainedMarkers.filter(e=>e.orientation==='landscape').length,2);
+  assert.equal(retainedMarkers.filter(e=>e.orientation==='portrait').length,2);
+  console.log('PASS: capped 8-study mixed archive survives repeated watercolor updates with historical marker image files untouched.');
   console.log('PASS: exactly four watercolor studies (2+2), independent ids, reversible exact links, no afternoon selection, and duplicate-safe gallery.');
 }finally{await fs.rm(temp,{recursive:true,force:true})}

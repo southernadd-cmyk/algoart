@@ -30,7 +30,9 @@ assert.doesNotMatch(help,/option\.value\s*=/,'Material labels must never change 
 assert.doesNotMatch(help,/new Option\(/,'Never replace option nodes and lose their selected state');
 assert.match(help,/Keep the selected material, paper colour and shape choices/);
 assert.match(app,/pen:'pen'/);
-assert.match(app,/if\(oilPaintEnabled\(\)\)return A\.renderOilPaintV1/);
+assert.match(app,/if\(oilPaintV2Enabled\(\)\)return A\.renderOilPaintV2/);
+assert.match(app,/if\(oilPaintV1Enabled\(\)\)return A\.renderOilPaintV1/);
+assert.match(app,/params\.set\('material','oil-v2'\)/);
 assert.match(app,/params\.set\('material','oil-v1'\)/);
 assert.match(app,/\?A\.describeArtwork\(s,m,oilPaintEnabled\(\)\?'oil':watercolourEnabled\(\)\?'watercolour':oilEnabled\(\)\?'tissue':'marker'\)/);
 assert.match(description,/material==='tissue'\?'Abstract algorithmic tissue and graphite artwork'/);

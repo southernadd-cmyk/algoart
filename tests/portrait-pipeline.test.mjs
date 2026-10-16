@@ -71,7 +71,7 @@ for(let slot=0;slot<3;slot++){
 }
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'portrait'});
 let meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
-assert.equal(meta.count,5,'Portrait-first gallery should contain five studies');
+assert.equal(meta.count,4,'Post-17 October gallery must cap marker studies at four');
 
 node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'landscape'});
 node('tests/archive-reproduction.mjs',{},['--queue',path.resolve('social-output',day,'queue.json')]);
@@ -81,15 +81,15 @@ assert.ok(landscape.entries.every(e=>e.rendererVersion===8&&new URL(e.shareUrl).
 assert.ok(landscape.entries.every(e=>!new URL(e.shareUrl).searchParams.has('fmt')));
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'landscape'});
 meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
-assert.equal(meta.count,10,'Gallery should combine five landscapes and five portraits');
-assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,5);
-assert.equal(meta.entries.filter(x=>x.orientation==='landscape').length,5);
-assert.equal(new Set(meta.entries.map(x=>x.seed)).size,10);
+assert.equal(meta.count,4,'Gallery must cap marker studies at four (two landscape and two portrait)');
+assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,2);
+assert.equal(meta.entries.filter(x=>x.orientation==='landscape').length,2);
+assert.equal(new Set(meta.entries.map(x=>x.seed)).size,4);
 
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'portrait'});
 meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
-assert.equal(meta.count,10,'Rebuilding the same portrait day must not duplicate artworks');
-assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,5);
+assert.equal(meta.count,4,'Rebuilding the same portrait day must not duplicate artworks');
+assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,2);
 
 await fs.mkdir(path.resolve('preview','screenshots'),{recursive:true});
 await fs.writeFile(path.resolve('preview','screenshots','portrait-pipeline-report.json'),JSON.stringify({
@@ -98,15 +98,23 @@ await fs.writeFile(path.resolve('preview','screenshots','portrait-pipeline-repor
   portraitPostIndices:PORTRAIT_POST_INDICES,portraitTimesLondon:PORTRAIT_SCHEDULE,
   originalDimensions:'1000x1400',instagramDimensions:'1120x1400',testedAt:new Date().toISOString()
 },null,2)+'\n');
-console.log('PASS: five portraits, three unique posting slots, London BST/GMT timing, ten-work gallery and duplicate-safe rebuild.');
+console.log('PASS: five portraits, three unique posting slots, London BST/GMT timing, four-artwork gallery cap and duplicate-safe rebuild.');
 
+// Only the two landscapes retained in the capped gallery are archived.
+// Unselected queue entries are not archived and may honour a new renderer
+// override on rerun; they must not be mistaken for preserved editions.
+const archivedLandscapeIds=new Set(meta.entries.filter(e=>e.orientation==='landscape').map(e=>e.id));
 const originalImages=await Promise.all(landscape.entries.map(e=>fs.readFile(path.resolve('social-output',day,e.imageFile))));
 node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'landscape',SOCIAL_RENDERER_VERSION:'6'});
 const reused=JSON.parse(await fs.readFile(path.resolve('social-output',day,'queue.json'),'utf8'));
 for(const [i,item] of reused.entries.entries()){
-  assert.equal(item.rendererVersion,8,'Existing edition was replaced by the override renderer');
-  assert.deepEqual(item.settings,landscape.entries[i].settings);
-  assert.equal(item.shareUrl,landscape.entries[i].shareUrl);
-  assert.deepEqual(await fs.readFile(path.resolve('social-output',day,item.imageFile)),originalImages[i]);
+  if(archivedLandscapeIds.has(item.id)){
+    assert.equal(item.rendererVersion,8,'Archived gallery edition was replaced by the override renderer');
+    assert.deepEqual(item.settings,landscape.entries[i].settings);
+    assert.equal(item.shareUrl,landscape.entries[i].shareUrl);
+    assert.deepEqual(await fs.readFile(path.resolve('social-output',day,item.imageFile)),originalImages[i]);
+  }else{
+    assert.equal(item.rendererVersion,6,'Unarchived queue item should use explicitly requested V6');
+  }
 }
 console.log('PASS: new portrait/landscape queues use V8; reruns preserve archived states and exact JPEG bytes even with another renderer default.');
