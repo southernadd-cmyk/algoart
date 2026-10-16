@@ -20,6 +20,7 @@ jobs:
           node --check js/oil-v2-core-a.js
           node --check js/oil-paint-v2.js
           node --check tests/oil-v2-preview.mjs
+          node --check tests/oil-v2-warmed-benchmark.mjs
       - run: npx playwright install --with-deps chromium
       - name: Serve actual ALGO/ART
         run: |
@@ -27,6 +28,8 @@ jobs:
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
       - name: Generate four full-colour V1 vs V2 cases and brush-tip crops
         run: node tests/oil-v2-preview.mjs
+      - name: Warmed isolated V1 vs V2 medians and per-phase costs
+        run: node tests/oil-v2-warmed-benchmark.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
