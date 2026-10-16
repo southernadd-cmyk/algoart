@@ -1,0 +1,28 @@
+name: Watercolour Exact Pixel Performance
+on:
+  push:
+    branches: [experiment/watercolour-exact-performance-20261016]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'js/watercolour-v2s.js'
+      - 'tests/watercolour-exact-performance.mjs'
+      - '.github/workflows/material-performance-parity.yml'
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start local site
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/algoart-server.log 2>&1 &
+      - name: Pixel parity and timings
+        run: node tests/watercolour-exact-performance.mjs
