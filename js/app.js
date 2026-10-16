@@ -191,9 +191,11 @@ var watercolourFitToSheet=false; // Legacy watercolour-specific fit.
 var phiSheetFraming=false; // Shared optional φ source-geometry transform.
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
- function oilPaintEnabled(){return $('materialStyle').value==='oil'}
+function oilPaintEnabled(){return $('materialStyle').value==='oil'||$('materialStyle').value==='oil-v1'}
+function oilPaintV2Enabled(){return $('materialStyle').value==='oil'}
+function oilPaintV1Enabled(){return $('materialStyle').value==='oil-v1'}
 function materialKey(){return $('materialStyle').value+'|'+
-    (oilPaintEnabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
+    (oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
     '|phi:'+phiSheetFraming+'|historic-fit:'+watercolourFitToSheet}
 function syncMaterialNote(){
   var control=$('watercolourFitControl');
@@ -221,7 +223,8 @@ function syncMaterialNote(){
       watercolourFitToSheet?' Legacy Watercolour fit-to-sheet is ON and changes its PNG, not its source SVG.':
         ' Source scale and placement match the Marker/plotter φ composition.') :
       ' Archived V2R includes automatic fitting and may differ from the Marker/plotter layout.')
-    :oilPaintEnabled()?'Oil paint made with loaded bristle marks and large colour fields linked by the existing φ composition guides.'
+    :oilPaintV2Enabled()?'Oil Paint v2: individually varied loaded bristles, connected colour fields and relief following the same φ composition.'
+    :oilPaintV1Enabled()?'Oil Paint v1 (legacy): original loaded-bristle paint and connected colour fields. Saved V1 links retain their original appearance.'
     :oilEnabled()?'Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms.'
     :'Marker ink with hand-drawn wobble, pressure and imperfect strokes.')+
     (phiSheetFraming?' Optional shared φ framing is on and affects all media, SVG and plotter exports.':'')+
@@ -230,7 +233,8 @@ function syncMaterialNote(){
 function renderArtwork(target,settings,scale,reveal){
   A.phiFramingEnabled=phiSheetFraming&&
     !(watercolourEnabled()&&watercolourMaterialRevision==='v2r');
-  if(oilPaintEnabled())return A.renderOilPaintV1(target,settings,scale,reveal);
+  if(oilPaintV2Enabled())return A.renderOilPaintV2(target,settings,scale,reveal);
+  if(oilPaintV1Enabled())return A.renderOilPaintV1(target,settings,scale,reveal);
   if(watercolourEnabled()){
     if(watercolourMaterialRevision==='v2r')
       return A.renderWatercolourV2R(target,settings,scale,reveal);
@@ -254,7 +258,8 @@ function settingsToURL(settings){
   });
   if(phiSheetFraming&&!(watercolourEnabled()&&watercolourMaterialRevision==='v2r'))
     params.set('sheet','phi');
-  if(oilPaintEnabled())params.set('material','oil-v1');
+  if(oilPaintV2Enabled())params.set('material','oil-v2');
+  else if(oilPaintV1Enabled())params.set('material','oil-v1');
   else if(watercolourEnabled()){
     params.set('material','watercolour-'+watercolourMaterialRevision);
     if(watercolourMaterialRevision==='v2s')
@@ -329,8 +334,8 @@ function loadSettingsFromURL(){
     found=true;
   }
 
-  if(params.get('material')==='oil-v1'){
-    $('materialStyle').value='oil';
+  if(params.get('material')==='oil-v1'||params.get('material')==='oil-v2'){
+    $('materialStyle').value=params.get('material')==='oil-v1'?'oil-v1':'oil';
     found=true;
   }
 
@@ -1032,7 +1037,9 @@ function savePNG(){
   button.disabled=true;
   exportFeedback('Preparing PNG…');
   var settings=Object.assign({},A.readSettings(),{
-    oilRender:oilEnabled(),oilPaintRender:oilPaintEnabled(),watercolourRender:watercolourEnabled(),
+    oilRender:oilEnabled(),oilPaintRender:oilPaintEnabled(),
+    oilPaintRevision:oilPaintV2Enabled()?'v2':'v1',
+    watercolourRender:watercolourEnabled(),
     watercolourRevision:watercolourMaterialRevision,
     watercolourFitToSheet:watercolourFitToSheet,
     tissuePaletteVersion:tissuePaletteVersion
@@ -1327,7 +1334,8 @@ function loadExactArchivedArtwork(id){
         watercolourFitToSheet=archivedMaterialURL.searchParams.has('fit')?
           archivedMaterialURL.searchParams.get('fit')==='1':true;
       }
-      $('materialStyle').value=archivedWater==='oil-v1'?'oil':
+      $('materialStyle').value=archivedWater==='oil-v1'?'oil-v1':
+        archivedWater==='oil-v2'?'oil':
         archivedWater==='watercolour-v2r'||archivedWater==='watercolour-v2s'
         ?'watercolour':archivedTissueVersion>=2||entry.material==='watercolor'||
           archivedMaterialURL.searchParams.get('watercolor')==='1'?'tissue':'marker';
