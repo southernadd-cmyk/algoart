@@ -337,9 +337,16 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
   // Stage C uses its own material-contact geometry, never a decorative
   // overlay. Not loaded or enabled by the published app.
   if(A.oilStageCExperimental===true && A.oilPaintV4ETest &&
-     typeof A.oilPaintV4ETest.drawContactBrushV2==='function')
-    return A.oilPaintV4ETest.drawContactBrushV2(
-      pig,mask,points,width,rgb,profile,r,options);
+     typeof A.oilPaintV4ETest.drawContactBrushV2==='function'){
+    // A genuine 30-hair footprint is useful only if it can resolve at
+    // output pixel size. Small contacts retain the proven fast V1 brush.
+    var physicalWidth=width*(A.oilStageCScale||1);
+    if(physicalWidth>=34 || A.oilStageCForceDetail===true)
+      return A.oilPaintV4ETest.drawContactBrushV2(
+        pig,mask,points,width,rgb,profile,r,options);
+    if(A.oilStageCStats)
+      A.oilStageCStats.fallbackCalls=(A.oilStageCStats.fallbackCalls||0)+1;
+  }
   // Stage B experiment: cache frame-local quantities across all bristle tufts.
   // Historical Oil v1 uses the untouched calculations unless explicitly
   // opted in by the performance test (not a UI/share-link parameter).
