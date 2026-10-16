@@ -3942,7 +3942,9 @@ function oilAdapter(target,plan,scale){
     var aVal=frame[i*4+3]/255;
     if(aVal>.007){field[i]=aVal*1.42;peak=Math.max(peak,field[i]);}
   }
-  var cached=A.oilStageECachedLightingExperimental===true,heights=null;
+  var cached=A.oilStageECachedLightingExperimental===true,
+      rolling=A.oilStageERollingLightingExperimental===true&&h>10,
+      heights=null,rows=null;
   if(cached){
     // Float64 preserves the original Math.log1p without quantisation.
     // PNG parity is the release gate, not a visually approximate cache.
@@ -3950,22 +3952,38 @@ function oilAdapter(target,plan,scale){
     for(i=0;i<field.length;i++){
       if(field[i]>0)heights[i]=Math.log1p(field[i]*.66);
     }
+  }else if(rolling){
+    // Seven-row sliding window instead of 11.2 MB at 1400x1000.
+    // Reuse the row 7 behind; neighbouring normals need at most +/-3.
+    rows=Array.from({length:7},function(){return new Float64Array(w)});
+    function fillOpticalRow(row){
+      var targetRow=rows[row%7],sourceStart=row*w;
+      for(var xx=0;xx<w;xx++){
+        var hVal=field[sourceStart+xx];
+        targetRow[xx]=hVal>0?Math.log1p(hVal*.66):0;
+      }
+    }
+    for(var initialRow=1;initialRow<=7;initialRow++)fillOpticalRow(initialRow);
   }
   if(adapterProfile){
     adapterProfile.heightPrepMs=performance.now()-adapterStart;
-    adapterProfile.extraHeightBytes=heights?heights.byteLength:0;
+    adapterProfile.extraHeightBytes=heights?heights.byteLength:rows?7*w*8:0;
   }
   adapterStart=performance.now();
   var sample=0;
-  for(var y=4;y<h-4;y++)for(var x=4;x<w-4;x++){
-    var index=y*w+x; if(field[index]<.06)continue;
-    var light=cached?
-        A.oilPaintV4ETest.surfaceLightingCached(heights,w,h,x,y,.88):
-        A.oilPaintV4ETest.surfaceLighting(field,w,h,x,y,.88),
-        z=index*4;
-    for(var c=0;c<3;c++)pixels[z+c]=clamp(Math.round(
-      pixels[z+c]*light.shade+light.shine*(c===0?1:c===1?.87:.77)),0,255);
-    sample++;
+  for(var y=4;y<h-4;y++){
+    for(var x=4;x<w-4;x++){
+      var index=y*w+x; if(field[index]<.06)continue;
+      var light=cached?
+          A.oilPaintV4ETest.surfaceLightingCached(heights,w,h,x,y,.88):
+          rolling?A.oilPaintV4ETest.surfaceLightingCachedRows(rows,x,y,.88):
+          A.oilPaintV4ETest.surfaceLighting(field,w,h,x,y,.88),
+          z=index*4;
+      for(var c=0;c<3;c++)pixels[z+c]=clamp(Math.round(
+        pixels[z+c]*light.shade+light.shine*(c===0?1:c===1?.87:.77)),0,255);
+      sample++;
+    }
+    if(rolling&&y+4<h)fillOpticalRow(y+4);
   }
   if(adapterProfile){
     adapterProfile.shadeMs=performance.now()-adapterStart;
