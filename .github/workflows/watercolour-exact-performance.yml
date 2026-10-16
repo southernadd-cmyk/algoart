@@ -24,5 +24,7 @@ jobs:
       - name: Start local site
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/algoart-server.log 2>&1 &
+      - name: Real renderer phase profile (preview and native export)
+        run: node tests/watercolour-phase-profile.mjs
       - name: Pixel parity and timings
         run: node tests/watercolour-exact-performance.mjs
