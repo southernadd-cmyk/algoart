@@ -1,4 +1,4 @@
-// ALGO/ART Oil Paint V3f experimental cached tooth compositing contacts — not a released material.
+// ALGO/ART Oil Paint V3h experimental cached tooth compositing contacts — not a released material.
 // Only Oil V2 activates this renderer. V1 keeps its historical paths/pixels.
 // Source mathematics, seeded palettes, protected voids and marks are unchanged.
 window.AlgoArt=window.AlgoArt||{};
@@ -168,8 +168,10 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   const frequency=clamp(.063*32/Math.max(width,8)*r.range(.70,1.40),.009,.16);
   const thickness=clamp(options.thickness??.90,0,1);
   const dryness=clamp(options.drag??.72,0,1);
-  const sourceCount=profile==='knife'?26:profile==='dry'?34:
-    profile==='flat'?32:30;
+  const physicalWidth=width*(A.oilStageCScale||1);
+  const narrow=physicalWidth<22;
+  const sourceCount=narrow?12:(profile==='knife'?26:profile==='dry'?34:
+    profile==='flat'?32:30);
   // The count is physical, NOT 3 batched cosmetic lines. Even the
   // fine endings deposit pigment and relief in their own silhouettes.
   let pMin=2,pMax=0;
@@ -217,7 +219,7 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   // Batch *real individual hair silhouettes*, not cosmetic highlight lines:
   // three colour/height layers each hold a set of disjoint, independently
   // length-varied hair contacts. Geometry is unchanged by batching.
-  const groupTotal=12;
+  const groupTotal=narrow?4:12;
   const grouped=Array.from({length:groupTotal},()=>new Path2D());
   const groupCounts=Array(groupTotal).fill(0);
   const m=pig.getTransform(),margin=width*1.7;
@@ -309,7 +311,8 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
         // Low-frequency lateral bands: correlated, but non-periodic across hairs.
         const drift=Math.sin(lane*5.3+phase)*.70+Math.sin(lane*11.7-phase*.63)*.30;
         const band=clamp(Math.floor(1.5+1.45*drift),0,2);
-        const group=(averageLoad<.56?6:0)+band*2+(hair&1);
+        const group=narrow?((averageLoad<.56?2:0)+(hair&1)):
+          ((averageLoad<.56?6:0)+band*2+(hair&1));
         grouped[group].addPath(path);
         groupCounts[group]++;
       }else{
@@ -324,8 +327,8 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   if(batch){
     for(let g=0;g<groupTotal;g++){
       if(!groupCounts[g])continue;
-      const tone=Math.floor((g%6)/2);
-      const isDry=g>=6;
+      const tone=narrow?0:Math.floor((g%6)/2);
+      const isDry=narrow?g>=2:g>=6;
       const colour=tone===0?(isDry?mix(rgb,[243,225,196],.105):rgb):
         tone===1?mix(rgb,[247,233,209],isDry?.10:.046):
         mix(rgb,[52,44,35],isDry?.020:.05);
@@ -343,6 +346,7 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   if(A.oilStageCStats){
     const s=A.oilStageCStats;
     s.brushCalls=(s.brushCalls||0)+1;
+    if(narrow)s.narrowBrushCalls=(s.narrowBrushCalls||0)+1;
     if(profile==='dry')s.dryRuns=(s.dryRuns||0)+1;
     s.toothDeposits=(s.toothDeposits||0)+toothDeposits;
     s.physicalHairs=(s.physicalHairs||0)+sourceCount;
