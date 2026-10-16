@@ -24,3 +24,5 @@ jobs:
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
       - name: Pixel-exact paper preparation optimisations
         run: node tests/watercolour-hotpath-exact.mjs
+      - name: Pixel-exact zero-pigment diffusion benchmark
+        run: node tests/watercolour-diffusion-exact.mjs
