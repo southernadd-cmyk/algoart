@@ -1134,12 +1134,40 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   }
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
+  var emptyRegionFastPath=!!A.watercolourBlankDiffusionExperimental;
+  var skippedDiffusion=0;
   for(var round=0;round<passes;round++){
+    var stride=round<2?2:1; // long wet capillaries followed by fine settling
     for(y=0;y<h;y++)for(x=0;x<w;x++){
       pi=y*w+x;var k=pi*3,v=source[k],u=source[k+1],z=source[k+2];
+      // If this pixel and all existing stencil neighbours have zero
+      // pigment, every original delta and output channel is exactly zero.
+      // Empty checks must use THIS PASS's source, since pigment spreads.
+      if(emptyRegionFastPath&&v===0&&u===0&&z===0){
+        var noPigment=true,neighbor;
+        if(x+stride<w){
+          neighbor=k+stride*3;
+          if(source[neighbor]!==0||source[neighbor+1]!==0||source[neighbor+2]!==0)noPigment=false;
+        }
+        if(noPigment&&x>=stride){
+          neighbor=k-stride*3;
+          if(source[neighbor]!==0||source[neighbor+1]!==0||source[neighbor+2]!==0)noPigment=false;
+        }
+        if(noPigment&&y+stride<h){
+          neighbor=k+stride*w*3;
+          if(source[neighbor]!==0||source[neighbor+1]!==0||source[neighbor+2]!==0)noPigment=false;
+        }
+        if(noPigment&&y>=stride){
+          neighbor=k-stride*w*3;
+          if(source[neighbor]!==0||source[neighbor+1]!==0||source[neighbor+2]!==0)noPigment=false;
+        }
+        if(noPigment){
+          next[k]=0;next[k+1]=0;next[k+2]=0;
+          skippedDiffusion++;continue;
+        }
+      }
       var here=tooth[pi],wet=water[pi];
       var sum0=0,sum1=0,sum2=0;
-      var stride=round<2?2:1; // long wet capillaries followed by fine settling
       // Fibre direction favours east/west in some regions and north/south
       // in others; the same interface gets the same flux from both sides.
       for(var side=0;side<4;side++){
@@ -1164,6 +1192,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     }
     var swap=next;next=source;source=swap;
   }
+  if(emptyRegionFastPath)A.lastWatercolourSkippedEmptyDiffusion=skippedDiffusion;
   // V2O: wet-in-wet shapes get a short conservative *local* diffusion around
   // their true alpha-mask boundaries. Other washes and dry fine strokes keep
   // V2N's structure. This moves pigment; it does not blur the final bitmap.
