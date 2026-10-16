@@ -1095,6 +1095,8 @@ A.sampleWatercolourPaperTooth=function(seed,x,y){
 // dependent capillaries. Optical density is transferred (and conserved by
 // the symmetric 4-neighbour stencil) before settling into paper valleys.
 function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx){
+  var profile=A.watercolourProfileEnabled?{pixels:w*h,stages:{}}:null;
+  var profileStart=profile?performance.now():0;
   var frame=ctx.getImageData(0,0,w,h),px=frame.data;
   var wetPixels=wetMaskCtx.getImageData(0,0,w,h).data;
   var softPixels=softMaskCtx.getImageData(0,0,w,h).data;
@@ -1124,6 +1126,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     formation[pi]=surface.formation;
     paperGrain[pi]=Math.round(surface.grain*255);
   }
+  if(profile){profile.stages.paperPreparationMs=performance.now()-profileStart;profileStart=performance.now();}
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
   // The paper, fibre and water fields are constant during diffusion.
@@ -1171,6 +1174,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   // V2O: wet-in-wet shapes get a short conservative *local* diffusion around
   // their true alpha-mask boundaries. Other washes and dry fine strokes keep
   // V2N's structure. This moves pigment; it does not blur the final bitmap.
+  if(profile){profile.stages.bulkDiffusionMs=performance.now()-profileStart;profileStart=performance.now();}
   var softZone=new Float32Array(total),softMaskPixels=0,softBoundaryPixels=0;
   for(y=1;y<h-1;y++)for(x=1;x<w-1;x++){
     pi=y*w+x;
@@ -1229,6 +1233,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   // Keep bloom centres on real painted geometry, and reject paper/voids.
   // A clear-water droplet pushes pigment outward into a ragged, low-contrast
   // cauliflower rim; there is no drawn circle/stroke or stock texture.
+  if(profile){profile.stages.softEdgeFlowMs=performance.now()-profileStart;profileStart=performance.now();}
   var drops=[],rand=A.makeR(seed+'|water-blooms-v3');
   for(var cidx=0;cidx<Math.min(35,chains.length)&&drops.length<4;cidx++){
     var ch=chains[cidx],points=ch.pts;
@@ -1280,6 +1285,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   // V2N: conserve optical pigment while moving some density from the
   // wash interior toward its drying front. No additive contour stroke.
   // Locally variable 3-10px banks with coherent gaps follow fibre/formation.
+  if(profile){profile.stages.edgeDistanceMs=performance.now()-profileStart;profileStart=performance.now();}
   var beforeBank=source.slice(),movedMass=0,transferPixels=0;
   var neighbourSteps=[-1,1,-w,w],redistributionPasses=5;
   for(var round=0;round<redistributionPasses;round++){
@@ -1315,6 +1321,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     }
     var bankSwap=source;source=next;next=bankSwap;
   }
+  if(profile){profile.stages.edgeRedistributionMs=performance.now()-profileStart;profileStart=performance.now();}
   var edgeBankPixels=0,paleEdgeBankPixels=0,donorPixels=0,bandPeak=0;
   var massBefore=0,massAfter=0,wetMaskPixels=0;
   for(var index=0;index<total;index++){
@@ -1335,6 +1342,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     if(gain>bandPeak)bandPeak=gain;
   }
   var conservationError=Math.abs(massAfter-massBefore)/Math.max(1,massBefore);
+  if(profile){profile.stages.edgeAccountingMs=performance.now()-profileStart;profileStart=performance.now();}
   for(y=0;y<h;y++)for(x=0;x<w;x++){
     pi=y*w+x;var p=pi*3,out=pi*4;
     var grit=(hashNoise(x,y,seedValue^0x4251)-.5);
@@ -1370,6 +1378,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
     px[out+3]=255;
   }
   ctx.putImageData(frame,0,0);
+  if(profile){profile.stages.finalColourMs=performance.now()-profileStart;A.lastWatercolourFlowProfile=profile;}
   return {paperModel:'V2O selected soft wet-in-wet washes and conserved V2N pigment banks + capillary flow',
     diffusionPasses:passes,waterBlooms:drops.length,edgeBankPixels:edgeBankPixels,
     paleEdgeBankPixels:paleEdgeBankPixels,edgeBandPeak:+bandPeak.toFixed(4),
@@ -1492,7 +1501,10 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
     softCtx.scale(ratio,ratio);
     activeWashMaskCtx=wetCtx;activeSoftMaskCtx=softCtx;
     activePigmentLayerCtx=pctx;
+    var renderProfile=A.watercolourProfileEnabled?{stages:{}}:null;
+    var stageStart=renderProfile?performance.now():0;
     var washStats=deposit(pctx,null,w,h,chains,presentationVoids,seed,quality,kit);
+    if(renderProfile){renderProfile.stages.washConstructionMs=performance.now()-stageStart;stageStart=performance.now();}
     var washMicroBleeds=activeMicroBleedCount;
     activeWashMaskCtx=null;activeSoftMaskCtx=null;activePigmentLayerCtx=null;
     pctx.setTransform(1,0,0,1,0,0);
@@ -1500,6 +1512,7 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
     softCtx.setTransform(1,0,0,1,0,0);
     var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,
       chains,wetCtx,softCtx);
+    if(renderProfile){renderProfile.stages.paperFlowMs=performance.now()-stageStart;renderProfile.flow=A.lastWatercolourFlowProfile;stageStart=performance.now();}
     ctx.save();ctx.imageSmoothingEnabled=true;
     ctx.drawImage(layer,0,0,w,h);
     activeDryMediaPhase=true;
@@ -1514,6 +1527,7 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
     var microBleedTotal=activeMicroBleedCount;
     var thinStrokeTotal=activeThinStrokeCount,dryThinTotal=activeDryThinStrokeCount;
     ctx.restore();
+    if(renderProfile){renderProfile.stages.dryMarksAndCompositingMs=performance.now()-stageStart;A.lastWatercolourDetailedProfile=renderProfile;}
     A.lastWatercolourExperimentStats={
       width:sw,height:sh,chains:chains.length,
       paper:kit.paper,inkColours:kit.ink.slice().map(pigmentInk),
