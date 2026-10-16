@@ -24,9 +24,9 @@ try{
       skipped:A.lastWatercolourSkippedEmptyDiffusion||0};
   };
   try{
-   for(const [i,mode] of ['organic','rects','network','burst'].entries()){
-    for(const scale of [.42,1]){
-     const settings={...base,mode,seed:'DIFFUSION-'+mode+'-'+scale,orientation:i%2?'portrait':'landscape'};
+   for(const mode of ['organic','rects','network','burst','spiral','field','geometric','scribble']){
+    for(const orientation of ['landscape','portrait'])for(const scale of [.42,1]){
+     const settings={...base,mode,seed:'DIFFUSION-'+mode+'-'+orientation+'-'+scale,orientation};
      const times=Object.fromEntries(options.map(o=>[o.name,[]]));
      let matches=true,skipped=0;
      for(const o of options)render(settings,scale,o);
