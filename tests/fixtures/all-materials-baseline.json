@@ -1,0 +1,330 @@
+{
+  "reference": "GitHub Actions run 38966586485 / Chrome headless Ubuntu 24.04",
+  "scale": [
+    0.45,
+    1
+  ],
+  "note": "Exact per-pixel FNV32 hash comparisons are only meaningful for equal settings, browser, platform, and browser version.",
+  "rows": [
+    {
+      "mode": "organic",
+      "orientation": "landscape",
+      "scale": 0.45,
+      "material": "marker",
+      "ms": 1.85,
+      "hash": 695415605,
+      "width": 630,
+      "height": 450
+    },
+    {
+      "mode": "organic",
+      "orientation": "landscape",
+      "scale": 0.45,
+      "material": "tissue",
+      "ms": 117.35,
+      "hash": 1724988461,
+      "width": 630,
+      "height": 450
+    },
+    {
+      "mode": "organic",
+      "orientation": "landscape",
+      "scale": 0.45,
+      "material": "watercolour",
+      "ms": 265.05,
+      "hash": 3774860605,
+      "width": 630,
+      "height": 450
+    },
+    {
+      "mode": "organic",
+      "orientation": "landscape",
+      "scale": 0.45,
+      "material": "oil-v3",
+      "ms": 1114.7,
+      "hash": 1164197083,
+      "width": 630,
+      "height": 450
+    },
+    {
+      "mode": "organic",
+      "orientation": "landscape",
+      "scale": 1,
+      "material": "marker",
+      "ms": 3.55,
+      "hash": 1718948540,
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "mode": "organic",
+      "orientation": "landscape",
+      "scale": 1,
+      "material": "tissue",
+      "ms": 208.1,
+      "hash": 31393679,
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "mode": "organic",
+      "orientation": "landscape",
+      "scale": 1,
+      "material": "watercolour",
+      "ms": 605.4,
+      "hash": 1163745653,
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "mode": "organic",
+      "orientation": "landscape",
+      "scale": 1,
+      "material": "oil-v3",
+      "ms": 1636.65,
+      "hash": 3307407494,
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "mode": "rects",
+      "orientation": "portrait",
+      "scale": 0.45,
+      "material": "marker",
+      "ms": 1.3,
+      "hash": 1703869249,
+      "width": 450,
+      "height": 630
+    },
+    {
+      "mode": "rects",
+      "orientation": "portrait",
+      "scale": 0.45,
+      "material": "tissue",
+      "ms": 139.85,
+      "hash": 4213035387,
+      "width": 450,
+      "height": 630
+    },
+    {
+      "mode": "rects",
+      "orientation": "portrait",
+      "scale": 0.45,
+      "material": "watercolour",
+      "ms": 349.6,
+      "hash": 2726895893,
+      "width": 450,
+      "height": 630
+    },
+    {
+      "mode": "rects",
+      "orientation": "portrait",
+      "scale": 0.45,
+      "material": "oil-v3",
+      "ms": 250.4,
+      "hash": 2031983907,
+      "width": 450,
+      "height": 630
+    },
+    {
+      "mode": "rects",
+      "orientation": "portrait",
+      "scale": 1,
+      "material": "marker",
+      "ms": 2.55,
+      "hash": 2949638699,
+      "width": 1000,
+      "height": 1400
+    },
+    {
+      "mode": "rects",
+      "orientation": "portrait",
+      "scale": 1,
+      "material": "tissue",
+      "ms": 256.25,
+      "hash": 464254137,
+      "width": 1000,
+      "height": 1400
+    },
+    {
+      "mode": "rects",
+      "orientation": "portrait",
+      "scale": 1,
+      "material": "watercolour",
+      "ms": 667.1,
+      "hash": 203891501,
+      "width": 1000,
+      "height": 1400
+    },
+    {
+      "mode": "rects",
+      "orientation": "portrait",
+      "scale": 1,
+      "material": "oil-v3",
+      "ms": 4220.9,
+      "hash": 895077005,
+      "width": 1000,
+      "height": 1400
+    },
+    {
+      "mode": "network",
+      "orientation": "landscape",
+      "scale": 0.45,
+      "material": "marker",
+      "ms": 5.45,
+      "hash": 2339367081,
+      "width": 630,
+      "height": 450
+    },
+    {
+      "mode": "network",
+      "orientation": "landscape",
+      "scale": 0.45,
+      "material": "tissue",
+      "ms": 99.15,
+      "hash": 1315953692,
+      "width": 630,
+      "height": 450
+    },
+    {
+      "mode": "network",
+      "orientation": "landscape",
+      "scale": 0.45,
+      "material": "watercolour",
+      "ms": 240.75,
+      "hash": 1447566965,
+      "width": 630,
+      "height": 450
+    },
+    {
+      "mode": "network",
+      "orientation": "landscape",
+      "scale": 0.45,
+      "material": "oil-v3",
+      "ms": 1759.55,
+      "hash": 1938961990,
+      "width": 630,
+      "height": 450
+    },
+    {
+      "mode": "network",
+      "orientation": "landscape",
+      "scale": 1,
+      "material": "marker",
+      "ms": 7.3,
+      "hash": 3653774666,
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "mode": "network",
+      "orientation": "landscape",
+      "scale": 1,
+      "material": "tissue",
+      "ms": 184.6,
+      "hash": 981812128,
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "mode": "network",
+      "orientation": "landscape",
+      "scale": 1,
+      "material": "watercolour",
+      "ms": 494.95,
+      "hash": 1862720779,
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "mode": "network",
+      "orientation": "landscape",
+      "scale": 1,
+      "material": "oil-v3",
+      "ms": 7201.3,
+      "hash": 3026853936,
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "mode": "burst",
+      "orientation": "portrait",
+      "scale": 0.45,
+      "material": "marker",
+      "ms": 1.25,
+      "hash": 3262476656,
+      "width": 450,
+      "height": 630
+    },
+    {
+      "mode": "burst",
+      "orientation": "portrait",
+      "scale": 0.45,
+      "material": "tissue",
+      "ms": 134.75,
+      "hash": 2282411287,
+      "width": 450,
+      "height": 630
+    },
+    {
+      "mode": "burst",
+      "orientation": "portrait",
+      "scale": 0.45,
+      "material": "watercolour",
+      "ms": 324.2,
+      "hash": 349987716,
+      "width": 450,
+      "height": 630
+    },
+    {
+      "mode": "burst",
+      "orientation": "portrait",
+      "scale": 0.45,
+      "material": "oil-v3",
+      "ms": 1770.4,
+      "hash": 2085176863,
+      "width": 450,
+      "height": 630
+    },
+    {
+      "mode": "burst",
+      "orientation": "portrait",
+      "scale": 1,
+      "material": "marker",
+      "ms": 4.75,
+      "hash": 2840330804,
+      "width": 1000,
+      "height": 1400
+    },
+    {
+      "mode": "burst",
+      "orientation": "portrait",
+      "scale": 1,
+      "material": "tissue",
+      "ms": 253.95,
+      "hash": 351898703,
+      "width": 1000,
+      "height": 1400
+    },
+    {
+      "mode": "burst",
+      "orientation": "portrait",
+      "scale": 1,
+      "material": "watercolour",
+      "ms": 642.2,
+      "hash": 1860288537,
+      "width": 1000,
+      "height": 1400
+    },
+    {
+      "mode": "burst",
+      "orientation": "portrait",
+      "scale": 1,
+      "material": "oil-v3",
+      "ms": 7338.9,
+      "hash": 1323803333,
+      "width": 1000,
+      "height": 1400
+    }
+  ]
+}
