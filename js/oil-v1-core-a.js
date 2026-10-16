@@ -334,6 +334,12 @@ function strokeMatched(pig,mask,path,width,color,alpha,height){
 // Each tuft is a connected, pressure-driven paint footprint. Its *actual*
 // deposited geometry is used both for colour and for the relief mask.
 function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
+  // Stage C uses its own material-contact geometry, never a decorative
+  // overlay. Not loaded or enabled by the published app.
+  if(A.oilStageCExperimental===true && A.oilPaintV4ETest &&
+     typeof A.oilPaintV4ETest.drawContactBrushV2==='function')
+    return A.oilPaintV4ETest.drawContactBrushV2(
+      pig,mask,points,width,rgb,profile,r,options);
   // Stage B experiment: cache frame-local quantities across all bristle tufts.
   // Historical Oil v1 uses the untouched calculations unless explicitly
   // opted in by the performance test (not a UI/share-link parameter).
