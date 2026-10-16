@@ -356,3 +356,42 @@ original, full-frame cache and sliding-window results on all six seeds.
 **Decision:** All Stage E flags default off. Keep the physically
 improved Stage D brush as the visual reference and only advance
 optimisations that survive exact-pixel, memory and consistent-speed tests.
+
+### Stage E result — selective seven-row lighting at export resolution
+
+**Acceptance test:** https://github.com/southernadd-cmyk/algoart/actions/runs/38908434892
+
+The seven-row cache and original V5p lighting were compared in Chrome
+using **the real ALGO/ART renderer**, exactly matched settings and
+actual PNG bytes. Two preview compositions and two 1× exports passed:
+
+| Source | Resolution | Adaptive selection | Original ms | Adaptive ms | Median gain | Extra RAM |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| Organic landscape | 910×650 | unchanged original lighting | 472.1 | 449.4 | +4.8%* | 0 |
+| Rects portrait | 650×910 | unchanged original lighting | 425.1 | 414.9 | +2.4%* | 0 |
+| Organic landscape | 1400×1000 | seven-row optical cache | 595.1 | 566.8 | +4.8% | 78,400 bytes |
+| Rects portrait | 1000×1400 | seven-row optical cache | 681.2 | 640.3 | +6.0% | 56,000 bytes |
+
+*The preview codepaths are identical by design; apparent preview timing
+changes reflect runner variation rather than a caused improvement.*
+
+All four cases passed exact PNG equality, unchanged source geometry,
+unchanged painted-pixel counts, and strict cache-selection checks.
+Measurements are medians of three warmed browser timings in one CI run,
+not guarantees about mobile hardware.
+
+The full-frame optical cache also passes exact PNG equality but needs
+11.2 MB at 1×. This was rejected for the low-memory default in favour
+of seven rows, reducing the additional cache by over 99%.
+
+**Implementation:** `A.oilStageEAdaptiveLightingExperimental=true`
+automatically selects the rolling cache when the canvas has at least
+900,000 pixels, and otherwise retains the existing renderer. This switch
+is **test-only** and OFF by default, so live `oil-v1` behaviour remains
+unchanged. Previous Stage E bounded-mask/batched-wet-read switches
+also stay OFF due inconsistent speed gains.
+
+**Further optimisation target:** reduce the `getImageData` readbacks in
+V4e stroke accumulation and the final V5p area pass without compromising
+physical wet pigment pickups; verify actual quality with overlap crops
+and full-colour, all-engine image comparisons. Do not release Oil V2 yet.
