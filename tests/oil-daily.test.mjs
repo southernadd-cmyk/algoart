@@ -109,3 +109,29 @@ try{
  assert.deepEqual(errors,[]);
 }finally{await browser.close()}
 console.log('PASS: 2 genuine randomly coloured Oil Paint v1 full-resolution studies; correct 15:00 links, immutable old gallery, idempotent writes and true source connections');
+
+
+// Tomorrow's Oil V3 cutover: exercise real generation and gallery assembly.
+const v3Date='2026-10-17';
+for(const orientation of ['landscape','portrait']){
+  const env={SOCIAL_DATE:v3Date,SOCIAL_MATERIAL:'oil',SOCIAL_ORIENTATION:orientation};
+  run('automation/generate-social.mjs',env);
+  const dir=path.join('social-output',v3Date,'oil',orientation);
+  const queue=JSON.parse(await fs.readFile(path.join(dir,'queue.json'),'utf8'));
+  assert.equal(queue.entries.length,1);
+  const item=queue.entries[0];
+  validateOilItem(item,v3Date,orientation);
+  assert.equal(new URL(item.shareUrl).searchParams.get('material'),'oil-v3');
+  assert.match(makeCaptions(item).instagram,/OIL PAINT V3/);
+  run('automation/build-gallery.mjs',{
+    SOCIAL_DATE:v3Date,GALLERY_QUEUE_MATERIAL:'oil',
+    GALLERY_QUEUE_ORIENTATION:orientation
+  });
+}
+const v3Gallery=JSON.parse(await fs.readFile('gallery/'+v3Date+'/meta.json','utf8'));
+assert.equal(v3Gallery.entries.filter(x=>x.material==='oil').length,2);
+assert(v3Gallery.entries.filter(x=>x.material==='oil').every(x=>
+  new URL(x.shareUrl).searchParams.get('material')==='oil-v3'));
+const v3Html=await fs.readFile('gallery/'+v3Date+'/index.html','utf8');
+assert(v3Html.includes('Oil Paint v3'),'Tomorrow gallery must label Oil V3');
+console.log('PASS: 17 October portrait and landscape Oil V3 generation, captions and gallery');
