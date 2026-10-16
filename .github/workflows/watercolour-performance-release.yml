@@ -1,0 +1,30 @@
+name: Watercolour V2S performance release parity
+on:
+  push:
+    branches: [release/watercolour-v2s-performance-20261016]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --check js/watercolour-v2s.js && node --check tests/watercolour-release-parity.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Start local renderer
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-watercolour-release.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - name: Pixel parity against prior release across 16 compositions
+        run: node tests/watercolour-release-parity.mjs
+      - name: Existing watercolour material regression
+        run: node tests/watercolour-material-release.mjs
