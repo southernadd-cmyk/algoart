@@ -144,7 +144,9 @@ jobs:
         id: gallery_commit
         shell: bash
         run: |
-          rm -rf node_modules social-output package-lock.json
+          rm -rf node_modules social-output
+          # npm install can modify the tracked lockfile. Restore it before rebase.
+          git restore --worktree package-lock.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add gallery sitemap.xml robots.txt
