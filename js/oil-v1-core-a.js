@@ -517,13 +517,50 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
 
 function sampleWetCrossings(pig,field,pts,width,scale,sw,sh){
   var crossings=[],last=null,n=Math.min(20,Math.max(8,Math.round(pts.length/3)));
+  // Stage E experiment: replace many synchronous 1x1 canvas readbacks
+  // with one bounded read of the candidate region. Pixels are sampled
+  // at the EXACT same integer locations in the SAME order. The width
+  // cap avoids copying huge mostly-empty bounding rectangles.
+  var batch=A.oilStageEBatchWetSample===true,buffer=null,minX=sw,
+      minY=sh,maxX=-1,maxY=-1,samples=null,regionWidth=0,
+      profile=A.oilStageEProfile||null;
+  if(batch){
+    samples=[];
+    for(var j=1;j<n;j++){
+      var position=Math.floor((j/n)*(pts.length-1)),
+          point=pts[position],px=minmax(Math.round(point.x*scale),0,sw-1),
+          py=minmax(Math.round(point.y*scale),0,sh-1);
+      if(field[py*sw+px]<.23)continue;
+      samples.push({at:position,p:point,x:px,y:py});
+      if(px<minX)minX=px;if(px>maxX)maxX=px;
+      if(py<minY)minY=py;if(py>maxY)maxY=py;
+    }
+    if(!samples.length)return crossings;
+    regionWidth=maxX-minX+1;
+    var regionHeight=maxY-minY+1,area=regionWidth*regionHeight;
+    if(area<=65536){
+      buffer=pig.getImageData(minX,minY,regionWidth,regionHeight).data;
+      if(profile){
+        profile.wetBatchCalls=(profile.wetBatchCalls||0)+1;
+        profile.wetBatchPixels=(profile.wetBatchPixels||0)+area;
+      }
+    }else if(profile)profile.wetBatchFallbacks=(profile.wetBatchFallbacks||0)+1;
+  }
   for(var i=1;i<n;i++){
     var at=Math.floor((i/n)*(pts.length-1));
     var p=pts[at],cx=minmax(Math.round(p.x*scale),0,sw-1),
         cy=minmax(Math.round(p.y*scale),0,sh-1);
     if(field[cy*sw+cx]<.23)continue;
     if(last&&dist(last,p)<width*.64)continue;
-    var pixel=pig.getImageData(cx,cy,1,1).data;
+    var pixel;
+    if(buffer){
+      var byteOffset=4*((cy-minY)*regionWidth+(cx-minX));
+      pixel=buffer.subarray(byteOffset,byteOffset+4);
+    }else{
+      pixel=pig.getImageData(cx,cy,1,1).data;
+      if(profile&&batch)
+        profile.wetSinglePixelCalls=(profile.wetSinglePixelCalls||0)+1;
+    }
     if(pixel[3]<140)continue;
     crossings.push({at:at,colour:[pixel[0],pixel[1],pixel[2]]});
     last=p;
