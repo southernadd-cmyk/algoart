@@ -11,10 +11,10 @@ try{
  await page.waitForFunction(()=>typeof window.AlgoArt?.renderOilPaintV1==='function');
 
  const cases=[
-  {mode:'organic',orientation:'landscape',seed:'OIL-V2-MULTICOLOUR-01',palette:'rainbow',colourCount:8},
-  {mode:'rects',orientation:'portrait',seed:'OIL-V2-MULTICOLOUR-02',palette:'rainbow',colourCount:8},
-  {mode:'network',orientation:'landscape',seed:'OIL-V2-MULTICOLOUR-03',palette:'rainbow',colourCount:8},
-  {mode:'burst',orientation:'portrait',seed:'OIL-V2-MULTICOLOUR-04',palette:'rainbow',colourCount:8}
+  {mode:'organic',orientation:'landscape',seed:'OIL-V2-MULTICOLOUR-01',palette:'golden',colourCount:8,saturation:86,brightness:55},
+  {mode:'rects',orientation:'portrait',seed:'OIL-V2-MULTICOLOUR-02',palette:'golden',colourCount:8,saturation:86,brightness:55},
+  {mode:'network',orientation:'landscape',seed:'OIL-V2-MULTICOLOUR-03',palette:'golden',colourCount:8,saturation:86,brightness:55},
+  {mode:'burst',orientation:'portrait',seed:'OIL-V2-MULTICOLOUR-04',palette:'golden',colourCount:8,saturation:86,brightness:55}
  ];
  const records=[];
  for(let i=0;i<cases.length;i++){
