@@ -223,10 +223,24 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   const grouped=Array.from({length:groupTotal},()=>new Path2D());
   const groupCounts=Array(groupTotal).fill(0);
   const m=pig.getTransform(),margin=width*1.7;
-  const minX=Math.min(...frames.map(f=>f.x))-margin;
-  const minY=Math.min(...frames.map(f=>f.y))-margin;
-  const maxX=Math.max(...frames.map(f=>f.x))+margin;
-  const maxY=Math.max(...frames.map(f=>f.y))+margin;
+  // Experimental allocation-free bounds: scan frames once rather than
+  // creating four full stroke-sized arrays. Pixel geometry is unchanged.
+  let minX,maxX,minY,maxY;
+  if(A.oilV3BoundsFastExperimental===true){
+    minX=Infinity;maxX=-Infinity;minY=Infinity;maxY=-Infinity;
+    for(const frame of frames){
+      if(frame.x<minX)minX=frame.x;
+      if(frame.x>maxX)maxX=frame.x;
+      if(frame.y<minY)minY=frame.y;
+      if(frame.y>maxY)maxY=frame.y;
+    }
+    minX-=margin;maxX+=margin;minY-=margin;maxY+=margin;
+  }else{
+    minX=Math.min(...frames.map(f=>f.x))-margin;
+    minY=Math.min(...frames.map(f=>f.y))-margin;
+    maxX=Math.max(...frames.map(f=>f.x))+margin;
+    maxY=Math.max(...frames.map(f=>f.y))+margin;
+  }
   const box={x:minX*m.a+m.e,y:minY*m.d+m.f,
     w:(maxX-minX)*m.a,h:(maxY-minY)*m.d};
   let toothDeposits=0;
