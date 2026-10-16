@@ -40,6 +40,7 @@ function cachedToothPattern(ctx,level){
   return scratchPatterns[level]||(scratchPatterns[level]=ctx.createPattern(toothStencil(level),'repeat'));
 }
 function depositToothed(pig,mask,path,color,opacity,height,level,box){
+  const profile=A.oilV3StageProfile;const start=profile?performance.now():0;
   const W=pig.canvas.width,H=pig.canvas.height;
   const x=clamp(Math.floor(box.x),0,W),y=clamp(Math.floor(box.y),0,H);
   const right=clamp(Math.ceil(box.x+box.w),x,W);
@@ -65,14 +66,18 @@ function depositToothed(pig,mask,path,color,opacity,height,level,box){
   s.globalCompositeOperation='source-in';
   s.fillStyle=css(color);s.fillRect(x,y,w,h);
   s.globalCompositeOperation='source-over';
+  if(profile)profile.toothMs+=(performance.now()-start);
+  const compositeStart=profile?performance.now():0;
   for(const [ctx,alpha] of [[pig,opacity],[mask,height]]){
     ctx.save();ctx.setTransform(1,0,0,1,0,0);
     ctx.globalAlpha=clamp(alpha,0,1);
     ctx.drawImage(toothScratch,0,0,w,h,x,y,w,h);
     ctx.restore();
   }
+  if(profile)profile.compositeMs+=performance.now()-compositeStart;
 }
 function deposit(pig,mask,path,color,opacity,height){
+  const profile=A.oilV3StageProfile;const start=profile?performance.now():0;
   // A true paint footprint: BOTH pigment and height originate in the exact
   // same bristle contour. No highlight lines painted over a fake solid tip.
   pig.globalAlpha=clamp(opacity,0,1);
@@ -81,8 +86,11 @@ function deposit(pig,mask,path,color,opacity,height){
   mask.globalAlpha=clamp(height,0,1);
   mask.fillStyle='#fff';
   mask.fill(path);
+  if(profile)profile.depositMs+=performance.now()-start;
 }
 function makeRibbon(frames,first,last,offset,width,r,options){
+  const profile=A.oilV3StageProfile;const started=profile?performance.now():0;
+  const finish=p=>{if(profile)profile.pathMs+=performance.now()-started;return p};
   // Body / hair is a tapered physical strip in tangential coordinates.
   const left=[],right=[],count=frames.length;
   const end=Math.max(first+1,Math.min(count-1,last));
@@ -125,7 +133,7 @@ function makeRibbon(frames,first,last,offset,width,r,options){
     right.push(shift(frame,frame.nx,frame.ny,lateral+half));
   }
   const path=new Path2D();
-  if(left.length<2)return null;
+  if(left.length<2)return finish(null);
   path.moveTo(left[0].x,left[0].y);
   for(let i=1;i<left.length;i++)path.lineTo(left[i].x,left[i].y);
   const lastFrame=frames[end];
@@ -151,10 +159,12 @@ function makeRibbon(frames,first,last,offset,width,r,options){
   path.lineTo(right[right.length-1].x,right[right.length-1].y);
   for(let i=right.length-2;i>=0;i--)path.lineTo(right[i].x,right[i].y);
   path.closePath();
-  return path;
+  return finish(path);
 }
 function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   const start=performance.now();
+  const profileStats=A.oilV3StageProfile;
+  if(profileStats)profileStats.brushCalls++;
   const refined=A.oilStageDRefinement===true;
   const original=A.oilPaintV4ETest;
   const frames=original.buildBrushFrames(points,width);
