@@ -65,11 +65,27 @@ function depositToothed(pig,mask,path,color,opacity,height,level,box){
   s.globalCompositeOperation='source-in';
   s.fillStyle=css(color);s.fillRect(x,y,w,h);
   s.globalCompositeOperation='source-over';
-  for(const [ctx,alpha] of [[pig,opacity],[mask,height]]){
-    ctx.save();ctx.setTransform(1,0,0,1,0,0);
-    ctx.globalAlpha=clamp(alpha,0,1);
-    ctx.drawImage(toothScratch,0,0,w,h,x,y,w,h);
-    ctx.restore();
+  const profile=A.oilV3CompositeProfile;
+  for(const [kind,ctx,alpha] of [['pigment',pig,opacity],['relief',mask,height]]){
+    const started=profile?performance.now():0;
+    if(A.oilV3CompositeStateExperimental===true){
+      // Experiment: avoid repeated save/restore while retaining both state values.
+      const transform=ctx.getTransform(),oldAlpha=ctx.globalAlpha;
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.globalAlpha=clamp(alpha,0,1);
+      ctx.drawImage(toothScratch,0,0,w,h,x,y,w,h);
+      ctx.globalAlpha=oldAlpha;
+      ctx.setTransform(transform);
+    }else{
+      ctx.save();ctx.setTransform(1,0,0,1,0,0);
+      ctx.globalAlpha=clamp(alpha,0,1);
+      ctx.drawImage(toothScratch,0,0,w,h,x,y,w,h);
+      ctx.restore();
+    }
+    if(profile){
+      profile[kind+'Ms']+=performance.now()-started;
+      profile[kind+'Calls']++;
+    }
   }
 }
 function deposit(pig,mask,path,color,opacity,height){
