@@ -71,7 +71,7 @@ for(let slot=0;slot<3;slot++){
 }
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'portrait'});
 let meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
-assert.equal(meta.count,5,'Portrait-first gallery should contain five studies');
+assert.equal(meta.count,4,'Post-17 October gallery must cap marker studies at four');
 
 node('automation/generate-social.mjs',{SOCIAL_ORIENTATION:'landscape'});
 node('tests/archive-reproduction.mjs',{},['--queue',path.resolve('social-output',day,'queue.json')]);
@@ -81,14 +81,16 @@ assert.ok(landscape.entries.every(e=>e.rendererVersion===8&&new URL(e.shareUrl).
 assert.ok(landscape.entries.every(e=>!new URL(e.shareUrl).searchParams.has('fmt')));
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'landscape'});
 meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
-assert.equal(meta.count,10,'Gallery should combine five landscapes and five portraits');
-assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,5);
-assert.equal(meta.entries.filter(x=>x.orientation==='landscape').length,5);
-assert.equal(new Set(meta.entries.map(x=>x.seed)).size,10);
+assert.equal(meta.count,4,'Gallery must cap marker studies at four (two landscape and two portrait)');
+assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,2);
+assert.equal(meta.entries.filter(x=>x.orientation==='landscape').length,2);
+assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,2);
+assert.equal(meta.entries.filter(x=>x.orientation==='landscape').length,2);
+assert.equal(new Set(meta.entries.map(x=>x.seed)).size,4);
 
 node('automation/build-gallery.mjs',{GALLERY_QUEUE_ORIENTATION:'portrait'});
 meta=JSON.parse(await fs.readFile(path.resolve('gallery',day,'meta.json'),'utf8'));
-assert.equal(meta.count,10,'Rebuilding the same portrait day must not duplicate artworks');
+assert.equal(meta.count,4,'Rebuilding the same portrait day must not duplicate artworks');
 assert.equal(meta.entries.filter(x=>x.orientation==='portrait').length,5);
 
 await fs.mkdir(path.resolve('preview','screenshots'),{recursive:true});
