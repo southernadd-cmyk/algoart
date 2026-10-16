@@ -136,3 +136,71 @@ Repeat across all eight modes, both canvas orientations where
 applicable, and at export resolution; inspect 1:1 bristle-tip crops
 and whole images for *visible* detail. Only promote after the
 geometry and timing results meet the agreed visual/performance targets.
+
+## Stage C — genuine finer bristle contacts (experimental, not released)
+
+Experiment source: `js/oil-stage-c-brush.js`. The public site does not load
+this script. The V1 core only calls it when `A.oilStageCExperimental`
+is set explicitly in the test. When absent, historic Oil v1 pixels and
+the Stage B performance experiment remain unaffected.
+
+**Visual model:** 26–34 distinct seeded bristles per sufficiently wide
+stroke, each a real pigment-and-relief silhouette with different width,
+start/lift position, tip length, lean, and optional dry contact gaps.
+Translucent connected under-contacts restore the loaded brush body,
+stopping before the staggered hair endings. Three pigment/relief colour
+batches reduce Canvas2D fill calls while retaining 30 separately
+constructed individual hair contours; the batches are *not* decorative
+overlays on a fake brush.
+
+**Measured performance lesson:**
+
+- Rendering 30+ contacts indiscriminately (first Stage C prototype)
+  changed every image but increased total render time by **25–45%**,
+  and the brush body was too line-like. Rejected.
+- Higher-opacity body deposits and batching made the loaded paint
+  more continuous but were not enough to control global cost: **25–55%**
+  overhead in the next single-run sample. Rejected.
+- Detail is now output-resolution-aware: widths under **20 physical
+  pixels** retain the proven Stage B V1 contact. Eligible strokes use
+  the 30-hair brush, with reduced path sampling at preview scale.
+  For a larger export more strokes qualify automatically.
+- One intermediate 34px threshold eliminated *all* Stage C contact
+  detail in Organic, so CI rejected that variant.
+
+Current passing test: https://github.com/southernadd-cmyk/algoart/actions/runs/38892998827
+
+| Real composition | Detailed / fallback calls | Stage B ms | Stage C ms | C overhead |
+| --- | ---: | ---: | ---: | ---: |
+| Organic landscape | 104 / 346 | 270.2 | 278.3 | +3.0% |
+| Rects portrait | 82 / 65 | 214.6 | 257.6 | +20.0% |
+| Network landscape | 80 / 143 | 169.2 | 169.8 | +0.4% |
+| Burst portrait | 103 / 113 | 257.2 | 287.7 | +11.9% |
+
+These times are **single warm-browser CI comparisons** at render scale
+0.65 and may vary with runtime conditions. They establish an encouraging
+direction, not final mobile/export performance certification.
+
+**Invariants verified (4/4):** Changed physical-bristle PNG, identical
+source composition metadata and protected voids, deterministic rerender,
+and hundreds/thousands of genuine fine hair contacts. The test writes
+4 pairs of full images, 2 brush-lab images, and JSON performance metrics
+as a GitHub Actions artifact. Only ALGO/ART's genuine renderer is used.
+
+**Visual judgement:** The loaded body and staggered endings are improved
+relative to the thin parallel-line prototype, but some tips remain too
+regular and the body-to-tip transition needs more irregular physical
+paint depletion. This is not yet approved as final-quality Oil V2.
+
+### Next-stage acceptance before release
+
+1. Broaden visual tests to all eight source modes and both orientations,
+   including muted and strongly saturated source palettes.
+2. Evaluate 1.0x and larger PNGs plus mobile performance.
+3. Optimise the remaining high-cost Rects path (currently +20% once,
+   above the desired 10–15% ceiling).
+4. Break up excessively straight, parallel hair contact bands with
+   correlated load/bend and less uniform ridge lighting, retaining the
+   original geometry and 30 individually staggered tips.
+5. Compare physically detailed bristle-tip crops at 1:1 scale and
+   whole paintings before deciding whether to release `oil-v2`.
