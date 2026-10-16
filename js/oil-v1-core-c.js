@@ -3932,21 +3932,44 @@ function oilAdapter(target,plan,scale){
   ctx.restore();mask.restore();
   // Contact-height pass matches the pigment layer, then locally shades its
   // actual ridges; no whole-image emboss, RGB haze or blurred screenshot.
+  var adapterProfile=A.oilStageEAdapterProfile||null,adapterStart=performance.now();
   var frame=mask.getImageData(0,0,w,h).data,
       paint=ctx.getImageData(0,0,w,h),
       pixels=paint.data,field=new Float32Array(w*h),peak=0;
+  if(adapterProfile)adapterProfile.canvasReadMs=performance.now()-adapterStart;
+  adapterStart=performance.now();
   for(i=0;i<field.length;i++){
     var aVal=frame[i*4+3]/255;
     if(aVal>.007){field[i]=aVal*1.42;peak=Math.max(peak,field[i]);}
   }
+  var cached=A.oilStageECachedLightingExperimental===true,heights=null;
+  if(cached){
+    // Float64 preserves the original Math.log1p without quantisation.
+    // PNG parity is the release gate, not a visually approximate cache.
+    heights=new Float64Array(field.length);
+    for(i=0;i<field.length;i++){
+      if(field[i]>0)heights[i]=Math.log1p(field[i]*.66);
+    }
+  }
+  if(adapterProfile){
+    adapterProfile.heightPrepMs=performance.now()-adapterStart;
+    adapterProfile.extraHeightBytes=heights?heights.byteLength:0;
+  }
+  adapterStart=performance.now();
   var sample=0;
   for(var y=4;y<h-4;y++)for(var x=4;x<w-4;x++){
     var index=y*w+x; if(field[index]<.06)continue;
-    var light=A.oilPaintV4ETest.surfaceLighting(field,w,h,x,y,.88),
+    var light=cached?
+        A.oilPaintV4ETest.surfaceLightingCached(heights,w,h,x,y,.88):
+        A.oilPaintV4ETest.surfaceLighting(field,w,h,x,y,.88),
         z=index*4;
     for(var c=0;c<3;c++)pixels[z+c]=clamp(Math.round(
       pixels[z+c]*light.shade+light.shine*(c===0?1:c===1?.87:.77)),0,255);
     sample++;
+  }
+  if(adapterProfile){
+    adapterProfile.shadeMs=performance.now()-adapterStart;
+    adapterProfile.raisedPixels=sample;
   }
   ctx.putImageData(paint,0,0);
   target.getContext('2d').drawImage(canvas,0,0);
