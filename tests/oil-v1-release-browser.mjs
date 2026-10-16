@@ -50,10 +50,10 @@ try{
   };
   return stats;
  });
- assert.equal(result.currentMaterial,'oil');
+ assert.equal(result.currentMaterial,'oil-v1');
  assert.match(result.currentUrl,/material=oil-v1/);
  assert.match(result.currentDescription,/oil painting/i);
- assert.match(result.currentNote,/Oil paint made with loaded bristle/);
+ assert.match(result.currentNote,/Oil Paint v1 \(legacy\)/);
  assert.equal(result.oilVersion,'oil-paint-v1');
  assert(result.oilBroad>=1,'No source connections on selected oil test seed');
  assert(result.oilContacts>=4,'No actual V4e oil-bristle contact pass');
