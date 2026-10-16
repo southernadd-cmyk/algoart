@@ -1,0 +1,29 @@
+name: All materials exact-performance baseline
+on:
+  pull_request:
+    branches: [main]
+    paths: ['tests/all-materials-benchmark.mjs','.github/workflows/all-materials-benchmark.yml','js/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Start local editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-bench.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - run: node tests/all-materials-benchmark.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-materials-performance-baseline
+          path: material-benchmark-results/
