@@ -1,4 +1,4 @@
-// ALGO/ART Oil Paint V3b experimental bristle contacts — not a released material.
+// ALGO/ART Oil Paint V3c experimental dense brush contacts — not a released material.
 // Only Oil V2 activates this renderer. V1 keeps its historical paths/pixels.
 // Source mathematics, seeded palettes, protected voids and marks are unchanged.
 window.AlgoArt=window.AlgoArt||{};
@@ -140,19 +140,19 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   // but stop before the end so the *individual bristle tips* stay visible.
   const baseBodies=profile==='dry'?2:3;
   for(let b=0;b<baseBodies;b++){
-    const idx=Math.floor(frames.length*(.78+r.range(0,.095)));
+    const idx=Math.floor(frames.length*(.89+r.range(0,.045)));
     const body=makeRibbon(frames,0,idx,
-      (b-(baseBodies-1)/2)*width*.24,
-      width*(profile==='knife'?.39:.42),r,{
-       body:true,phase:r.range(0,TAU),frequency,splay:width*.012,
-       tipLength:width*r.range(.06,.17),tipLean:r.range(-.02,.02)*width
+      (b-(baseBodies-1)/2)*width*.21,
+      width*(profile==='knife'?.41:.46),r,{
+       body:true,phase:r.range(0,TAU),frequency,splay:width*.010,
+       tipLength:width*r.range(.05,.12),tipLean:r.range(-.016,.016)*width
       });
     if(!body)continue;
     const col=mix(rgb,b===1?[247,228,200]:[52,43,39],b===1?.035:.025);
     // Connected, loaded body stays opaque. The final 15-22% of travel
     // exposes individual hairs, not a brush-wide flush polygon.
-    deposit(pig,mask,body,col,profile==='dry'?.23:(.67+.13*thickness),
-      profile==='dry'?.14:(.37+.18*thickness));
+    deposit(pig,mask,body,col,profile==='dry'?.28:(.72+.12*thickness),
+      profile==='dry'?.18:(.42+.16*thickness));
     footprints++;
   }
   // Hundreds of Path2D fill calls per brush defeat the fast Stage B core.
@@ -166,13 +166,13 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   for(let hair=0;hair<sourceCount;hair++){
     const lane=(hair+.5)/sourceCount-.5;
     const outer=Math.abs(lane)*2;
-    const lateral=(lane*.955+r.range(-.011,.011))*width;
+    const lateral=(lane*.86+r.range(-.008,.008))*width;
     // Widths are narrower than their spacing; overlapping hairs sometimes
     // join, but their ends remain separate and staggered. Central hairs
     // are more likely to carry paint beyond the brush body.
     const filamentWidth=(width/sourceCount)*
-      r.range(profile==='dry'?.38:.67,profile==='knife'?1.14:1.27)*
-      (1-.20*Math.pow(outer,1.65));
+      r.range(profile==='dry'?.48:.80,profile==='knife'?1.22:1.40)*
+      (1-.12*Math.pow(outer,1.45));
     const startDistance=width*r.range(0,profile==='dry'?.35:.19);
     const endRetreat=width*r.range(0,profile==='dry'?.80:.55)*
       (.62+.38*outer);
@@ -205,14 +205,14 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     if(refined&&depletion>.57)exhausted++;
     // Some dry paint-starved hairs lift before touching the end. No
     // per-frame independent RNG means no square-pixel / sawtooth edges.
-    const missing=profile==='dry'?.16:.045;
+    const missing=profile==='dry'?.10:.04;
     const skipped=r.chance(missing);
     if(skipped){loadStart+=initial;loadEnd+=0;continue}
     let effectiveEnd=last;
     // One coherent break along a minority of dry strands, rather than
     // thousands of random per-frame contact decisions.
     let skipFirst=-1,skipLast=-1;
-    if(r.chance(profile==='dry'?.28:dryness*.085)){
+    if(r.chance(profile==='dry'?.18:dryness*.07)){
       const middle=r.range(.29,.67);
       const gap=r.range(.028,.095);
       skipFirst=Math.floor(begin+(effectiveEnd-begin)*middle);
@@ -239,7 +239,7 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
         const weave=.5+.5*Math.cos(x*2*PI/5)*Math.cos(y*2*PI/6);
         return .78*weave+.22*smooth;
       };
-      const threshold=clamp(.38+.32*(1-initial*.7),.35,.76);
+      const threshold=clamp(.30+.22*(1-initial*.7),.28,.58);
       const contact=[];
       for(const [a,b] of fragments){
         let run=-1;
@@ -254,7 +254,14 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
           }
         }
       }
-      fragments=contact;
+      // Bridge tiny holes caused by sampled tooth while retaining real gaps.
+      const merged=[];
+      for(const seg of contact){
+        if(merged.length&&seg[0]-merged[merged.length-1][1]<=3)
+          merged[merged.length-1][1]=seg[1];
+        else merged.push(seg.slice());
+      }
+      fragments=merged;
     }
     for(const [first,end] of fragments){
       if(end-first<2)continue;
