@@ -1,0 +1,54 @@
+name: CPU canvas backend benchmark and re-baseline
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'js/cpu-canvas.js'
+      - 'js/cpu-material-versions.js'
+      - 'js/oil-brush-v3.js'
+      - 'tests/cpu-context-rebaseline.mjs'
+      - 'tests/fixtures/cpu-context-reference.json'
+      - '.github/workflows/cpu-context-rebaseline.yml'
+  workflow_dispatch:
+    inputs:
+      write_fixture:
+        description: 'Regenerate the new-version reference fixture (uploaded as an artifact)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        # default = GitHub's usual headless Chromium (CPU canvases in practice);
+        # swiftshader = forced GPU-accelerated canvases via software GPU.
+        profile: [default, swiftshader]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Start site
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/cpu-context-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - name: Benchmark old vs new versions
+        env:
+          BROWSER_PROFILE: ${{ matrix.profile }}
+          WRITE_FIXTURE: ${{ inputs.write_fixture && matrix.profile == 'default' && '1' || '0' }}
+        run: node tests/cpu-context-rebaseline.mjs
+      - name: Job summary
+        if: always()
+        run: cat cpu-context-results/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cpu-context-${{ matrix.profile }}
+          path: cpu-context-results/
+          if-no-files-found: warn
