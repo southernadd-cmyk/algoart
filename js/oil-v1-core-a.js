@@ -729,13 +729,23 @@ A.renderOilPaintV4E=function(target,settings,scale,opts){
       oldFit=A.phiFramingEnabled,scratch=document.createElement('canvas'),
       sourceMeta,phase={};
   var start=performance.now();
-  try{
-    A.svgRecorder=rec;
-    A.phiFramingEnabled=opts.phiFraming===true;
-    sourceMeta=A.render(scratch,settings,Math.min(.22,scale),false);
-  }finally{
-    A.svgRecorder=oldRecorder;A.phiFramingEnabled=oldFit;
-    A.lastRenderMeta=oldMeta;
+  // Experimental only: the V5 planner already captured these exact marker
+  // paths. Reuse them rather than running the source generator a second time.
+  // Oil V1 and every other material keep the original capture path by default.
+  if(opts.reuseCompositionCapture===true &&
+     opts.sourceCapture && Array.isArray(opts.sourceCapture.paths) &&
+     opts.sourceCapture.meta){
+    rec.paths=opts.sourceCapture.paths;
+    sourceMeta=opts.sourceCapture.meta;
+  }else{
+    try{
+      A.svgRecorder=rec;
+      A.phiFramingEnabled=opts.phiFraming===true;
+      sourceMeta=A.render(scratch,settings,Math.min(.22,scale),false);
+    }finally{
+      A.svgRecorder=oldRecorder;A.phiFramingEnabled=oldFit;
+      A.lastRenderMeta=oldMeta;
+    }
   }
   phase.captureMs=+(performance.now()-start).toFixed(2);
   var chains=getChains(rec.paths),
