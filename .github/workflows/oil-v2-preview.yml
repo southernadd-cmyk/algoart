@@ -1,0 +1,35 @@
+name: Oil V2 Bristle Preview
+on:
+  push:
+    branches: [experiment/oil-v2-bristle-tips]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - js/oil-paint-v2.js
+      - tests/oil-v2-preview.mjs
+      - .github/workflows/oil-v2-preview.yml
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start actual ALGO/ART app
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-oil-v2.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - name: Generate Oil V2 actual-renderer comparisons
+        run: node tests/oil-v2-preview.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-v2-real-renderer-four-preview-pairs
+          path: oil-v2-preview-results/
+          retention-days: 30
