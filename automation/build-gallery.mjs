@@ -377,6 +377,25 @@ queue.entries.sort((a, b) =>
   String(a.id || a.seed).localeCompare(String(b.id || b.seed))
 );
 
+// From 17 October cap each material at four gallery entries, preferring
+// two landscape and two portrait studies when both are available.
+if (day >= '2026-10-17') {
+  const materialOf = e => e.material === 'oil' ? 'oil' :
+    e.material === 'watercolour' ? 'watercolour' :
+    e.material === 'watercolor' ? 'tissue' : 'marker';
+  const chosen = [];
+  for (const material of ['marker', 'tissue', 'watercolour', 'oil']) {
+    const items = queue.entries.filter(e => materialOf(e) === material);
+    const landscapes = items.filter(e => (e.orientation || e.settings?.orientation) !== 'portrait');
+    const portraits = items.filter(e => (e.orientation || e.settings?.orientation) === 'portrait');
+    const preferred = [...landscapes.slice(0, 2), ...portraits.slice(0, 2)];
+    const used = new Set(preferred.map(e => e.imageFile));
+    chosen.push(...preferred, ...items.filter(e => !used.has(e.imageFile)).slice(0, 4 - preferred.length));
+  }
+  queue.entries = chosen;
+}
+
+
 // Only the freshly generated queue images are copied; preserved gallery
 // studies already exist in dayDir. Sorting must not change that distinction.
 const queuedImageFiles = new Set(
