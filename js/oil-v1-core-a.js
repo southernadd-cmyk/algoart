@@ -584,19 +584,52 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
     }
     pig.restore();mask.restore();
   }
+  // Profiling and a logically equivalent tight mask scan are opt-in
+  // experiments only. Standard published Oil v1 follows the old path.
+  var stageE=A.oilStageEProfile||null,
+      profileStart=stageE?performance.now():0;
   // Sample true crossings before new paint is deposited; transfer locally.
   var crossings=sampleWetCrossings(pig,field,pts,width,scale,sw,sh);
+  if(stageE)stageE.wetSampleMs=(stageE.wetSampleMs||0)+performance.now()-profileStart;
+  profileStart=stageE?performance.now():0;
   var b=drawContactBrushV4e(pig,mask,pts,width,rgb,profile,r,options);
+  if(stageE)stageE.contactMs=(stageE.contactMs||0)+performance.now()-profileStart;
+  profileStart=stageE?performance.now():0;
   var dragged=dragCrossingPigment(pig,mask,crossings,pts,width,rgb,r,options);
+  if(stageE)stageE.wetDragMs=(stageE.wetDragMs||0)+performance.now()-profileStart;
+  profileStart=stageE?performance.now():0;
   var pixels=mask.getImageData(x0,y0,x1-x0,y1-y0).data,
       bw=x1-x0,bh=y1-y0,amount=.50+thickness*.62;
-  for(var yy=0;yy<bh;yy++){
-    var row=(yy+y0)*sw+x0,trow=yy*bw;
-    for(var xx=0;xx<bw;xx++){
-      var ink=pixels[(trow+xx)*4+3]/255;
-      if(ink>.008){var index2=row+xx;
-        field[index2]=addPaintHeight(field[index2],ink,amount)}
+  if(stageE)stageE.maskReadMs=(stageE.maskReadMs||0)+performance.now()-profileStart;
+  profileStart=stageE?performance.now():0;
+  if(A.oilStageEMaskScanExperimental===true){
+    // Exactly the same pixels and row-major update order, with one
+    // incremental byte index per sample (avoids repeated multiplications).
+    // Preserve alpha threshold and Float32 field accumulation unchanged.
+    for(var yy=0;yy<bh;yy++){
+      var fieldIndex=(yy+y0)*sw+x0,
+          endFieldIndex=fieldIndex+bw,
+          alphaIndex=(yy*bw)*4+3;
+      for(;fieldIndex<endFieldIndex;fieldIndex++,alphaIndex+=4){
+        var ink=pixels[alphaIndex]/255;
+        if(ink>.008)field[fieldIndex]=addPaintHeight(field[fieldIndex],ink,amount);
+      }
     }
+  }else{
+    for(var yy=0;yy<bh;yy++){
+      var row=(yy+y0)*sw+x0,trow=yy*bw;
+      for(var xx=0;xx<bw;xx++){
+        var ink=pixels[(trow+xx)*4+3]/255;
+        if(ink>.008){var index2=row+xx;
+          field[index2]=addPaintHeight(field[index2],ink,amount)}
+      }
+    }
+  }
+  if(stageE){
+    stageE.maskScanMs=(stageE.maskScanMs||0)+performance.now()-profileStart;
+    stageE.maskReadPixels=(stageE.maskReadPixels||0)+bw*bh;
+    stageE.strokes=(stageE.strokes||0)+1;
+    stageE.wetCrossings=(stageE.wetCrossings||0)+crossings.length;
   }
   return {profile:profile,bristleRuns:b.bristleRuns,
     bristleContacts:b.bristleContacts,contactFootprints:b.contactFootprints,
