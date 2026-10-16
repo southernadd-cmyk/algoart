@@ -346,6 +346,9 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       contacts=0,runs=0,footprints=0,
       pMin=2,pMax=0,loadStart=0,loadEnd=0,
       maxPaint=profile==='dry'?.78:profile==='knife'?1.18:1.10;
+  // Batch the distinct fine-hair footprints into three colour/height runs.
+  // Each strand still contributes its individual outline and ending.
+  var filamentBatches=[new Path2D(),new Path2D(),new Path2D()];
   // Adjacent hairs belong to uneven clusters: widths and lateral positions
   // are chosen once per tuft, not snapped to a grid or a raster cell.
   for(var tuft=0;tuft<count;tuft++){
@@ -410,7 +413,7 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       // The reservoir limits both pigment opacity and deposited thickness.
       var coverage=minmax(.59+.46*avgLoad,.26,.995),
           relief=minmax((.12+.69*Math.pow(avgLoad,1.2))*(.56+.44*thickness),.06,.98);
-      fillMatched(pig,mask,path,colour,coverage,relief);
+      filamentBatches[tuft%3].addPath(path);
       runs++;footprints++;
       strip=[];
     }
@@ -440,6 +443,12 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       contacts++;
     }
     finishStrip();
+  }
+  // Three Canvas calls for the fine deposit layer, instead of one per hair.
+  for(var group=0;group<filamentBatches.length;group++){
+    var tint=group===0?mix(rgb,[252,237,215],.065):
+      group===1?mix(rgb,[64,46,37],.055):rgb;
+    fillMatched(pig,mask,filamentBatches[group],tint,.81,.73);
   }
   // Load thickens visibly at the heel, selected turns and the toe. Unlike
   // V4b, these are deposited atop real bristle footprints, with no overall
