@@ -45,7 +45,9 @@ try{
     return {elapsed,canvas,stats};
    };
    const baseline=render(A.renderOilPaintV1);
-   return {baselineMs:baseline.elapsed,v1:baseline.canvas.toDataURL('image/png'),
+   const baselineSamples=[baseline.elapsed];
+   for(let repeat=0;repeat<2;repeat++)baselineSamples.push(render(A.renderOilPaintV1).elapsed);
+   return {baselineMs:baseline.elapsed,baselineSamples,v1:baseline.canvas.toDataURL('image/png'),
       size:[baseline.canvas.width,baseline.canvas.height],
       brushLab:firstCase?brushLab():null};
   },{spec:cases[i],firstCase:i===0});
@@ -84,7 +86,13 @@ try{
    };
    const s={...A.readSettings(),...spec},canvas=document.createElement('canvas');
    const start=performance.now(),stats=A.renderOilPaintV2(canvas,s,.75,false);
-   return {v2Ms:performance.now()-start,
+   const v2Ms=performance.now()-start,v2Samples=[v2Ms];
+   for(let repeat=0;repeat<2;repeat++){
+     const sample=document.createElement('canvas'),t=performance.now();
+     A.renderOilPaintV2(sample,s,.75,false);
+     v2Samples.push(performance.now()-t);
+   }
+   return {v2Ms,v2Samples,
       filaments:stats.work.oilV2.visibleFineFilaments||0,
       v2:canvas.toDataURL('image/png'),size:[canvas.width,canvas.height],
       brushLab:firstCase?brushLab():null,
@@ -104,8 +112,14 @@ try{
   }
   if(entry.v1===entry.v2)throw Error('V2 pixels unchanged for '+name);
   if(entry.filaments<20||entry.detailedTips<1)throw Error('V2 V4 bristles missing for '+name);
+  const median=values=>[...values].sort((a,b)=>a-b)[1];
+  const v1Median=median(entry.baselineSamples),v2Median=median(entry.v2Samples);
   records.push({name,baselineMs:+entry.baselineMs.toFixed(1),v2Ms:+entry.v2Ms.toFixed(1),
     overheadPct:+((entry.v2Ms-entry.baselineMs)/entry.baselineMs*100).toFixed(1),
+    v1SamplesMs:entry.baselineSamples.map(v=>+v.toFixed(1)),
+    v2SamplesMs:entry.v2Samples.map(v=>+v.toFixed(1)),
+    v1MedianMs:+v1Median.toFixed(1),v2MedianMs:+v2Median.toFixed(1),
+    medianOverheadPct:+((v2Median-v1Median)/v1Median*100).toFixed(1),
     filaments:entry.filaments,detailedTips:entry.detailedTips,
     brushContacts:entry.brushContacts,size:entry.size});
   console.log('CAPTURED genuine ALGO/ART oil v1/v2',JSON.stringify(records.at(-1)));
