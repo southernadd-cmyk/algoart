@@ -45,9 +45,10 @@ try{
     return {elapsed,canvas,stats};
    };
    const baseline=render(A.renderOilPaintV1);
+   const baselinePhases={...A.lastOilPaintV4EStats.phases};
    const baselineSamples=[baseline.elapsed];
    for(let repeat=0;repeat<2;repeat++)baselineSamples.push(render(A.renderOilPaintV1).elapsed);
-   return {baselineMs:baseline.elapsed,baselineSamples,v1:baseline.canvas.toDataURL('image/png'),
+   return {baselineMs:baseline.elapsed,baselineSamples,baselinePhases,v1:baseline.canvas.toDataURL('image/png'),
       size:[baseline.canvas.width,baseline.canvas.height],
       brushLab:firstCase?brushLab():null};
   },{spec:cases[i],firstCase:i===0});
@@ -87,12 +88,13 @@ try{
    const s={...A.readSettings(),...spec},canvas=document.createElement('canvas');
    const start=performance.now(),stats=A.renderOilPaintV2(canvas,s,.75,false);
    const v2Ms=performance.now()-start,v2Samples=[v2Ms];
+   const v2Phases={...A.lastOilPaintV4EStats.phases};
    for(let repeat=0;repeat<2;repeat++){
      const sample=document.createElement('canvas'),t=performance.now();
      A.renderOilPaintV2(sample,s,.75,false);
      v2Samples.push(performance.now()-t);
    }
-   return {v2Ms,v2Samples,
+   return {v2Ms,v2Samples,v2Phases,
       filaments:stats.work.oilV2.visibleFineFilaments||0,
       v2:canvas.toDataURL('image/png'),size:[canvas.width,canvas.height],
       brushLab:firstCase?brushLab():null,
@@ -120,6 +122,7 @@ try{
     v2SamplesMs:entry.v2Samples.map(v=>+v.toFixed(1)),
     v1MedianMs:+v1Median.toFixed(1),v2MedianMs:+v2Median.toFixed(1),
     medianOverheadPct:+((v2Median-v1Median)/v1Median*100).toFixed(1),
+    v1Phases:entry.baselinePhases,v2Phases:entry.v2Phases,
     filaments:entry.filaments,detailedTips:entry.detailedTips,
     brushContacts:entry.brushContacts,size:entry.size});
   console.log('CAPTURED genuine ALGO/ART oil v1/v2',JSON.stringify(records.at(-1)));
