@@ -346,6 +346,14 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       contacts=0,runs=0,footprints=0,
       pMin=2,pMax=0,loadStart=0,loadEnd=0,
       maxPaint=profile==='dry'?.78:profile==='knife'?1.18:1.10;
+  // Sample pressure and path-dependent trigonometry once per trajectory.
+  // All 30 hairs share these values; individual paint load, jitter and
+  // staggered endpoints remain per hair.
+  var sharedFrames=frames.map(function(f){
+    var pressure=pressureAt(f.s,total,phase,profile);
+    return {pressure:pressure,turn:f.angle+PI/2,
+      sin047:Math.sin(f.s*.047),sin103:Math.sin(f.s*.103)};
+  });
   // Batch the distinct fine-hair footprints into three colour/height runs.
   // Each strand still contributes its individual outline and ending.
   var filamentBatches=[new Path2D(),new Path2D(),new Path2D()];
@@ -378,7 +386,7 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       for(var k=0;k<strip.length;k++){
         var item=strip[k],turn=item.angle+PI/2,
             // Independent, smoothly varying splay / changing contact width.
-            pressure=pressureAt(item.s,total,phase,profile),
+            pressure=item.pressure,
             charge=minmax(item.load,0,1.35),
             taper=Math.min(1,(k+1)/4,(strip.length-k)/4),
             lateralDrift=jitter*Math.sin(item.s*.047+phaseT)+
@@ -419,7 +427,7 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
     }
     for(var i=0;i<frames.length;i++){
       var p=frames[i],t=p.s/total,
-          pressureHere=pressureAt(p.s,total,phase,profile);
+          pressureHere=sharedFrames[i].pressure;
       pMin=Math.min(pMin,pressureHere);
       pMax=Math.max(pMax,pressureHere);
       // Loading is monotone on average but correlated pressure pockets
@@ -439,7 +447,7 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       if(!active){finishStrip();continue}
       // Subpixel path samples are interpolated geometrically between source
       // points; intact runs don't leave random single-pixel gaps.
-      strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load});
+      strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load,pressure:pressureHere});
       contacts++;
     }
     finishStrip();
