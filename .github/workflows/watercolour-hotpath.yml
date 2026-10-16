@@ -1,0 +1,26 @@
+name: Watercolour Hotpath — Exact Pixel Parity and Speed
+on:
+  push:
+    branches: [experiment/watercolour-measured-hotpaths-20261016]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --check js/watercolour-v2s.js && node --check tests/watercolour-hotpath-exact.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Start local renderer
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-watercolour.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - name: Pixel-exact paper preparation optimisations
+        run: node tests/watercolour-hotpath-exact.mjs
