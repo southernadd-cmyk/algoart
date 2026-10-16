@@ -1,0 +1,35 @@
+name: Oil V2 V4 Real Renderer Benchmarks
+on:
+  push:
+    branches: [experiment/oil-v2-bristle-performance-20261016]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  previews:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Syntax check
+        run: |
+          node --check js/oil-v2-core-a.js
+          node --check js/oil-paint-v2.js
+          node --check tests/oil-v2-preview.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Serve actual ALGO/ART
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-oil-v2.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - name: Generate four full-colour V1 vs V2 cases and brush-tip crops
+        run: node tests/oil-v2-preview.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-v2-v4-real-renderer
+          path: oil-v2-preview-results/
+          retention-days: 30
