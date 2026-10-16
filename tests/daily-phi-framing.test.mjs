@@ -19,7 +19,8 @@ assert.equal(new URLSearchParams(appendDailyPhiFraming('v=8&seed=A',date)).get('
 // Previously saved studies are not rewritten or silently attributed the
 // newly introduced shared framing option.
 const oldGallery=JSON.parse(await fs.readFile('gallery/2026-10-14/meta.json','utf8'));
-const existingIds=new Set(); // The 16 October gallery does not yet exist in the repository.
+const existingGallery=JSON.parse(await fs.readFile('gallery/'+date+'/meta.json','utf8'));
+const existingIds=new Set(existingGallery.entries.map(e=>e.id)); // Preserve today's already published studies.
 const published15=await fs.readFile('gallery/2026-10-15/meta.json','utf8');
 const oldJson=JSON.stringify(oldGallery);
 assert(oldGallery.entries.every(e=>!new URL(e.shareUrl).searchParams.has('sheet')),
