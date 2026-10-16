@@ -38,6 +38,7 @@ try{
     A.oilStageDRefinement=true;
     A.oilStageCScale=job.scale;
     A.oilStageEMaskScanExperimental=scan;
+    A.oilStageEBatchWetSample=scan;
     A.oilStageEProfile={};
     A.oilStageCStats={};
     try{
@@ -49,7 +50,8 @@ try{
        png:save?c.toDataURL('image/png'):null,
        dims:[c.width,c.height]};
     }finally{
-     A.oilStageEMaskScanExperimental=false;A.oilStageEProfile=null;
+     A.oilStageEMaskScanExperimental=false;
+     A.oilStageEBatchWetSample=false;A.oilStageEProfile=null;
      A.oilPerfExperimental=false;A.oilBrushPerfExperimental=false;
      A.oilStageCExperimental=false;A.oilStageDRefinement=false;
      A.oilStageCScale=null;A.oilStageCStats=null;
@@ -90,4 +92,4 @@ try{
  await browser.close();
 }
 assert(ok,'Mask optimisation must not change oil image pixels or geometry');
-console.log('PASS: real Oil Stage D masks are pixel-identical across preview/export cases');
+console.log('PASS: batched wet pigment samples and height scans are exactly pixel-identical');
