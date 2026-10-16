@@ -472,7 +472,8 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
   // regardless of how many physical bristles contribute.
   var tipHairs=0;
   if(profile!=='knife'&&width>=14&&frames.length>=3){
-    var strandCount=Math.min(36,Math.max(16,Math.round(width*.70)));
+    // Larger, overlapping physical bristle deposits: fewer paths and a less comb-like tip.
+    var strandCount=Math.min(18,Math.max(8,Math.round(width*.32)));
     var end=frames[frames.length-1],tipAngle=end.angle,
         tangentX=Math.cos(tipAngle),tangentY=Math.sin(tipAngle),
         normalX=-tangentY,normalY=tangentX,
@@ -487,16 +488,16 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
     for(var hair=0;hair<strandCount;hair++){
       var lane=(hair+.5)/strandCount-.5,
           outer=Math.abs(lane)*2,
-          position=(lane*.93+r.range(-.008,.008))*width,
-          lift=width*r.range(.12,.78)*(1-.32*outer),
+          position=(lane*.86+r.range(-.018,.018))*width,
+          lift=width*r.range(.16,.86)*(1-.32*outer),
           trail=Math.min(total*.39,width*r.range(.55,1.30)),
           startAt=frames.length-2;
-      if(r.chance(.11))continue; // depleted gaps are actual unpainted gaps
+      if(r.chance(.075))continue; // occasional depleted bristle, rather than regular comb gaps
       while(startAt>0&&frames[startAt].s>total-trail)startAt--;
       var positions=[],seedPhase=r.range(0,TAU),
-          splay=r.range(-.013,.013)*width,
-          baseWidth=Math.min(1.8,Math.max(.38,
-            width/strandCount*r.range(.30,.62)));
+          splay=r.range(-.024,.024)*width,
+          baseWidth=Math.min(5.4,Math.max(1.0,
+            width/strandCount*r.range(.78,1.18)));
       for(var step=startAt;step<frames.length;step++){
         var f=frames[step],normal=tipFrameNormals[step],
             progress=(f.s-frames[startAt].s)/
