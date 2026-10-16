@@ -1033,25 +1033,12 @@ function shade(pig,height,out,w,h,seed,kit){
 // Deterministic, bilinear-smoothed texture drives capillary transport.
 // A low-frequency flow field changes permeability across the water edge;
 // it does not draw new composition geometry or modify the fixed paper.
-// Optional experiment: reuse the exact seeded lattice values sampled by the
-// neighbouring paper pixels. No interpolation arithmetic is changed.
-var paperLatticeCache=null;
-function paperLatticeHash(ix,iy,seed){
-  if(!paperLatticeCache)return hashNoise(ix,iy,seed);
-  var key=seed+','+ix+','+iy;
-  var value=paperLatticeCache.get(key);
-  if(value!==undefined)return value;
-  value=hashNoise(ix,iy,seed);
-  if(paperLatticeCache.size>=32768)paperLatticeCache.clear();
-  paperLatticeCache.set(key,value);
-  return value;
-}
 function paperNoise(x,y,cell,seed){
   var u=x/cell,v=y/cell,ix=Math.floor(u),iy=Math.floor(v);
   var tx=u-ix,ty=v-iy;
   tx=tx*tx*(3-2*tx);ty=ty*ty*(3-2*ty);
-  var a=paperLatticeHash(ix,iy,seed),b=paperLatticeHash(ix+1,iy,seed);
-  var c=paperLatticeHash(ix,iy+1,seed),d=paperLatticeHash(ix+1,iy+1,seed);
+  var a=hashNoise(ix,iy,seed),b=hashNoise(ix+1,iy,seed);
+  var c=hashNoise(ix,iy+1,seed),d=hashNoise(ix+1,iy+1,seed);
   return mix(mix(a,b,tx),mix(c,d,tx),ty);
 }
 // The paper is a continuous procedural field, NOT a tiled bitmap. A
@@ -1526,12 +1513,8 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
     pctx.setTransform(1,0,0,1,0,0);
     wetCtx.setTransform(1,0,0,1,0,0);
     softCtx.setTransform(1,0,0,1,0,0);
-    if(A.watercolourLatticeCacheExperimental)paperLatticeCache=new Map();
-    var paperStats;
-    try{
-      paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,
-        chains,wetCtx,softCtx);
-    }finally{paperLatticeCache=null;}
+    var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,
+      chains,wetCtx,softCtx);
     if(renderProfile){renderProfile.stages.paperFlowMs=performance.now()-stageStart;renderProfile.flow=A.lastWatercolourFlowProfile;stageStart=performance.now();}
     ctx.save();ctx.imageSmoothingEnabled=true;
     ctx.drawImage(layer,0,0,w,h);
