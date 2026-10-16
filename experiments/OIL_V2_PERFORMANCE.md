@@ -54,3 +54,42 @@ Speed gains are reported rather than assumed; CI timings are indicative only.
    per-pixel relief work and surface allocations separately.
 4. Redesign bristle geometry as a separately versioned V2 feature, not a
    hidden change to existing Oil v1 share links.
+
+## Stage A/B measured results (16 October 2026)
+
+GitHub Actions: https://github.com/southernadd-cmyk/algoart/actions/runs/38881321025
+
+The actual ALGO/ART browser renderer passed **exact PNG equality** on all four
+seeded 0.45-scale canvases (630×450 or 450×630). The original V1 path called
+`A.render()` twice per image; experimental capture reuse called it once.
+Existing v1 output is unchanged.
+
+| Case | V1 total (ms) | Reuse total (ms) | Difference | V4e paint (ms), baseline | V4e relief (ms), baseline |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Organic landscape | 405.75 | 403.00 | 0.7% faster | 138.1 | 14.9 |
+| Rects portrait | 267.15 | 269.85 | 1.0% slower | 150.8 | 30.9 |
+| Network landscape | 209.85 | 216.45 | 3.1% slower | 134.9 | 11.2 |
+| Burst portrait | 300.50 | 309.40 | 3.0% slower | 208.5 | 19.6 |
+
+These are limited CI timings (two post-warmup samples per path), **not
+statistically established speed regressions**. Source capture in the
+baseline took only ~2–8 ms; V4e brush painting took ~135–209 ms on the
+same runs. Removing redundant captures is architecturally clean but
+**does not materially improve total render time** at this tested size.
+
+### Decision / next steps
+
+- Keep this exact-match experiment separate. **Do not promote to V1 or
+  release V2 based on this change alone.**
+- Prioritise profiling and optimising `drawContactBrushV4e`:
+  shared curve sampling and pressure frames, contact/path allocations,
+  clipping/compositing and brush-footprint density.
+- Profile the second oil material adapter separately; the outer totals
+  exceed V4e phases because broad areas and connection brushes add work.
+- Test tile/dirty-region relief shading and minimise full-buffer transfers
+  once per-stroke profiling identifies the actual cost.
+- Only after recovering time, develop the uneven-length 30-hair real
+  contact model as a separately versioned Oil V2. Test *visible*
+  bristle detail at preview and export sizes, not just hair counts.
+- Extend benchmarks to all eight engines, larger exports and mobile
+  before any release decision.
