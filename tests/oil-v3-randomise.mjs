@@ -7,8 +7,23 @@ try {
  page.on('pageerror',e=>errors.push(e.stack||e.message));
  await page.goto('http://127.0.0.1:4173/?v=9&seed=RANDOM-OIL-START&mode=organic&material=oil-v3',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.AlgoArt?.renderOilPaintV3&&document.querySelector('#art')?.width>0);
- for(let i=0;i<8;i++){
-   await page.locator('#randomise').click();
+ // Direct short-stroke coverage for the formerly out-of-bounds bristle index.
+ const short=await page.evaluate(()=>{
+   const A=window.AlgoArt,brush=A.oilPaintV4ETest.drawContactBrushV3,results=[];
+   for(const width of [12,32,90,200]){
+     const p=document.createElement('canvas'),h=document.createElement('canvas');
+     p.width=h.width=256;p.height=h.height=256;
+     const points=[{x:60,y:70},{x:61,y:70.5},{x:62,y:71}];
+     const result=brush(p.getContext('2d'),h.getContext('2d'),points,width,
+        [120,80,45],'dry',A.makeR('short-stroke-'+width),{});
+     results.push({width,bristleRuns:result.bristleRuns});
+   }
+   return results;
+ });
+ console.log('short stroke coverage',JSON.stringify(short));
+ assert.equal(short.length,4);
+ for(let i=0;i<3;i++){
+   await page.evaluate(()=>document.getElementById('randomise').click());
    const result=await page.evaluate(()=>{
     const canvas=document.getElementById('art'),settings=window.AlgoArt.readSettings();
     const c=document.createElement('canvas');c.width=24;c.height=24;
