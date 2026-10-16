@@ -341,22 +341,11 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
   var total=Math.max(frames[frames.length-1].s,.001),phase=r.range(0,TAU),
       thickness=minmax(options.thickness??.90,0,1),
       dryness=minmax(options.drag??.72,0,1),
-      // Oil V2: finer independent pigment-contact hairs, not painted overlay lines.
-      count=profile==='knife'?18:profile==='dry'?34:30,
+      count=profile==='dry'?19:profile==='knife'?6:
+        profile==='flat'?11:14,
       contacts=0,runs=0,footprints=0,
       pMin=2,pMax=0,loadStart=0,loadEnd=0,
       maxPaint=profile==='dry'?.78:profile==='knife'?1.18:1.10;
-  // Sample pressure and path-dependent trigonometry once per trajectory.
-  // All 30 hairs share these values; individual paint load, jitter and
-  // staggered endpoints remain per hair.
-  var sharedFrames=frames.map(function(f){
-    var pressure=pressureAt(f.s,total,phase,profile);
-    return {pressure:pressure,turn:f.angle+PI/2,
-      sin047:Math.sin(f.s*.047),sin103:Math.sin(f.s*.103)};
-  });
-  // Batch the distinct fine-hair footprints into three colour/height runs.
-  // Each strand still contributes its individual outline and ending.
-  var filamentBatches=[new Path2D(),new Path2D(),new Path2D()];
   // Adjacent hairs belong to uneven clusters: widths and lateral positions
   // are chosen once per tuft, not snapped to a grid or a raster cell.
   for(var tuft=0;tuft<count;tuft++){
@@ -364,8 +353,8 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
         side=lane*.91+r.range(-.038,.038),
         core=Math.abs(lane)<.21,
         bundleWidth=width*(profile==='knife'?r.range(.25,.38):
-          profile==='dry'?r.range(.017,.031):
-          profile==='flat'?r.range(.024,.048):r.range(.026,.053))*(core?1.19:1),
+          profile==='dry'?r.range(.067,.12):
+          profile==='flat'?r.range(.145,.255):r.range(.155,.265))*(core?1.19:1),
         phaseT=r.range(0,TAU),jitter=r.range(.005,.027)*width,
         initial=r.range(.93,1.31)*maxPaint,
         colour=mix(rgb,r.chance(.30)?[64,46,37]:[252,237,215],
@@ -373,9 +362,8 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
         startFraction=core?r.range(0,.028):
           profile==='knife'?r.range(0,.06):
           profile==='dry'?r.range(0,.18):r.range(0,.11),
-        // Outer filaments release earlier; interior filaments have distinct tails.
-        stopFraction=core?r.range(.86,1):
-          profile==='dry'?r.range(.64,1):r.range(.69,1),
+        stopFraction=core?r.range(.94,1):
+          profile==='dry'?r.range(.72,1):r.range(.82,1),
         strip=[];
     // Outer hairs are finer, often exhaust first and visibly separate.
     var outer=Math.abs(lane)*2,outerWeight=1-.33*Math.pow(outer,1.8);
@@ -386,7 +374,7 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       for(var k=0;k<strip.length;k++){
         var item=strip[k],turn=item.angle+PI/2,
             // Independent, smoothly varying splay / changing contact width.
-            pressure=item.pressure,
+            pressure=pressureAt(item.s,total,phase,profile),
             charge=minmax(item.load,0,1.35),
             taper=Math.min(1,(k+1)/4,(strip.length-k)/4),
             lateralDrift=jitter*Math.sin(item.s*.047+phaseT)+
@@ -421,13 +409,13 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       // The reservoir limits both pigment opacity and deposited thickness.
       var coverage=minmax(.59+.46*avgLoad,.26,.995),
           relief=minmax((.12+.69*Math.pow(avgLoad,1.2))*(.56+.44*thickness),.06,.98);
-      filamentBatches[tuft%3].addPath(path);
+      fillMatched(pig,mask,path,colour,coverage,relief);
       runs++;footprints++;
       strip=[];
     }
     for(var i=0;i<frames.length;i++){
       var p=frames[i],t=p.s/total,
-          pressureHere=sharedFrames[i].pressure;
+          pressureHere=pressureAt(p.s,total,phase,profile);
       pMin=Math.min(pMin,pressureHere);
       pMax=Math.max(pMax,pressureHere);
       // Loading is monotone on average but correlated pressure pockets
@@ -447,16 +435,10 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       if(!active){finishStrip();continue}
       // Subpixel path samples are interpolated geometrically between source
       // points; intact runs don't leave random single-pixel gaps.
-      strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load,pressure:pressureHere});
+      strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load});
       contacts++;
     }
     finishStrip();
-  }
-  // Three Canvas calls for the fine deposit layer, instead of one per hair.
-  for(var group=0;group<filamentBatches.length;group++){
-    var tint=group===0?mix(rgb,[252,237,215],.065):
-      group===1?mix(rgb,[64,46,37],.055):rgb;
-    fillMatched(pig,mask,filamentBatches[group],tint,.81,.73);
   }
   // Load thickens visibly at the heel, selected turns and the toe. Unlike
   // V4b, these are deposited atop real bristle footprints, with no overall
@@ -474,6 +456,41 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       width*r.range(.38,.89),width*r.range(.29,.60)*mass,
       colour2,r.range(.60,.86),r.range(.33,.73)*mass,r);
     footprints++;
+  }
+  // V2: light fine-tip detail follows existing bristle deposits. Each of
+  // three Path2D groups contains ten independently staggered fine strands.
+  // Main paint/relief geometry and physical contacts remain V1 cost.
+  if(width>=7&&profile!=='knife'){
+    var filaments=[new Path2D(),new Path2D(),new Path2D()];
+    var head=frames[0],tail=frames[frames.length-1];
+    var distance=Math.max(1,total),startIndex=Math.max(0,frames.length-14);
+    for(var fine=0;fine<30;fine++){
+      var lane=(fine+.5)/30-.5,offset=lane*width*.82;
+      var tailFraction=r.range(.68,1.12);
+      var firstIndex=Math.max(0,Math.floor(startIndex*.35));
+      var pth=filaments[fine%3],beg=frames[firstIndex];
+      var norm=beg.angle+PI/2;
+      pth.moveTo(beg.x+Math.cos(norm)*offset,beg.y+Math.sin(norm)*offset);
+      for(var ix=firstIndex+1;ix<frames.length;ix+=2){
+        var f=frames[ix],t=f.s/distance;
+        if(t>tailFraction)break;
+        norm=f.angle+PI/2;
+        var wav=Math.sin(f.s*.057+fine*1.73)*width*.006;
+        pth.lineTo(f.x+Math.cos(norm)*(offset+wav),f.y+Math.sin(norm)*(offset+wav));
+      }
+      if(tailFraction>1){
+        var extra=(tailFraction-1)*Math.min(90,width*2);
+        var theta=tail.angle,perp=theta+PI/2;
+        pth.lineTo(tail.x+Math.cos(theta)*extra+Math.cos(perp)*offset,
+          tail.y+Math.sin(theta)*extra+Math.sin(perp)*offset);
+      }
+    }
+    for(var group=0;group<3;group++){
+      strokeMatched(pig,mask,filaments[group],Math.max(.35,Math.min(.95,width/70)),
+        group===0?mix(rgb,[249,232,204],.17):
+          group===1?mix(rgb,[61,45,37],.13):rgb,
+        group===0?.27:.22,.12);
+    }
   }
   return {bristleRuns:runs,bristleContacts:contacts,
     contactFootprints:footprints,loadStart:+(loadStart/count).toFixed(3),
