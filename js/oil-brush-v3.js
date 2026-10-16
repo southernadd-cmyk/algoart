@@ -1,4 +1,4 @@
-// ALGO/ART Oil Paint V3b experimental bristle contacts — not a released material.
+// ALGO/ART Oil Paint V3d experimental corrected dense brush contacts — not a released material.
 // Only Oil V2 activates this renderer. V1 keeps its historical paths/pixels.
 // Source mathematics, seeded palettes, protected voids and marks are unchanged.
 window.AlgoArt=window.AlgoArt||{};
@@ -11,9 +11,59 @@ const css=c=>'rgb('+c.map(x=>Math.round(clamp(x,0,255))).join(',')+')';
 // Approximate opaque-pigment mixing in linear-light K/S space. No spectral claims.
 const linear=v=>{v=clamp(v/255,0,1);return v<=.04045?v/12.92:((v+.055)/1.055)**2.4};
 const srgb=v=>255*(v<=.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-.055);
-const mix=(a,b,t)=>a.map((v,i)=>{const Ra=Math.max(.001,linear(v)),Rb=Math.max(.001,linear(b[i]));
+const mixPaint=(a,b,t)=>a.map((v,i)=>{const Ra=Math.max(.001,linear(v)),Rb=Math.max(.001,linear(b[i]));
  const k=(1-t)*(1-Ra)**2/(2*Ra)+t*(1-Rb)**2/(2*Rb);
  return Math.round(clamp(srgb(1+k-Math.sqrt(k*k+2*k)),0,255));});
+// Small tone adjustments should not use high-tint-strength K/S darkening.
+const mix=(a,b,t)=>a.map((v,i)=>Math.round(clamp(srgb((1-t)*linear(v)+t*linear(b[i])),0,255)));
+const toothStencils=[];
+let toothScratch=null;
+function toothStencil(level){
+  if(toothStencils[level])return toothStencils[level];
+  const c=document.createElement('canvas');c.width=30;c.height=30;
+  const g=c.getContext('2d'),img=g.createImageData(30,30);
+  const threshold=.32+.075*level;
+  for(let y=0;y<30;y++)for(let x=0;x<30;x++){
+    // Fixed canvas-space ground weave. No stroke phase or per-hair seed.
+    const tooth=.5+.5*Math.cos(x*2*Math.PI/5)*Math.cos(y*2*Math.PI/6);
+    const alpha=clamp((tooth-threshold)*5,0,1);
+    const i=(y*30+x)*4;img.data[i]=img.data[i+1]=img.data[i+2]=255;
+    img.data[i+3]=Math.round(alpha*255);
+  }
+  g.putImageData(img,0,0);return toothStencils[level]=c;
+}
+function depositToothed(pig,mask,path,color,opacity,height,level,box){
+  const W=pig.canvas.width,H=pig.canvas.height;
+  if(!toothScratch||toothScratch.width!==W||toothScratch.height!==H){
+    toothScratch=document.createElement('canvas');
+    toothScratch.width=W;toothScratch.height=H;
+  }
+  const s=toothScratch.getContext('2d',{willReadFrequently:false});
+  const m=pig.getTransform();
+  const x=clamp(Math.floor(box.x),0,W),y=clamp(Math.floor(box.y),0,H);
+  const right=clamp(Math.ceil(box.x+box.w),x,W);
+  const bottom=clamp(Math.ceil(box.y+box.h),y,H);
+  if(right<=x||bottom<=y)return;
+  s.save();s.setTransform(1,0,0,1,0,0);s.globalAlpha=1;
+  s.globalCompositeOperation='source-over';s.clearRect(x,y,right-x,bottom-y);
+  s.setTransform(m);s.fillStyle='#fff';s.fill(path);
+  s.setTransform(1,0,0,1,0,0);
+  s.globalCompositeOperation='destination-in';
+  s.fillStyle=s.createPattern(toothStencil(level),'repeat');
+  s.fillRect(x,y,right-x,bottom-y);
+  s.globalCompositeOperation='source-in';s.fillStyle=css(color);
+  s.fillRect(x,y,right-x,bottom-y);
+  s.restore();
+  for(const [ctx,alpha] of [[pig,opacity],[mask,height]]){
+    ctx.save();ctx.setTransform(1,0,0,1,0,0);
+    ctx.globalAlpha=clamp(alpha,0,1);
+    if(ctx===mask){
+      // Preserve identical relief support without contaminating the mask RGB.
+      ctx.drawImage(toothScratch,x,y,right-x,bottom-y,x,y,right-x,bottom-y);
+    }else ctx.drawImage(toothScratch,x,y,right-x,bottom-y,x,y,right-x,bottom-y);
+    ctx.restore();
+  }
+}
 function deposit(pig,mask,path,color,opacity,height){
   // A true paint footprint: BOTH pigment and height originate in the exact
   // same bristle contour. No highlight lines painted over a fake solid tip.
@@ -74,9 +124,9 @@ function makeRibbon(frames,first,last,offset,width,r,options){
   // End position and direction depend on this hair's terminal contact.
   // Staggered, non-square tips; not radial rays or a common flush edge.
   const terminalOffset=offset+options.splay*
-    Math.sin(lastFrame.s*.039+options.phase)+
+    Math.sin(lastFrame.s*(options.frequency||.063)*.62+options.phase)+
     (refined?(options.bendAmplitude||0)*.58*
-    Math.sin(lastFrame.s*.027+options.phase*.91):0);
+    Math.sin(lastFrame.s*(options.frequency||.063)*.43+options.phase*.91):0);
   const tipLength=options.tipLength;
   // Each bristle bends at its own lifting tip. The exit angle remains
   // predominantly longitudinal, avoiding the radial "sunray" artifact.
@@ -140,19 +190,19 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   // but stop before the end so the *individual bristle tips* stay visible.
   const baseBodies=profile==='dry'?2:3;
   for(let b=0;b<baseBodies;b++){
-    const idx=Math.floor(frames.length*(.78+r.range(0,.095)));
+    const idx=Math.floor(frames.length*(.89+r.range(0,.045)));
     const body=makeRibbon(frames,0,idx,
-      (b-(baseBodies-1)/2)*width*.24,
-      width*(profile==='knife'?.39:.42),r,{
-       body:true,phase:r.range(0,TAU),frequency,splay:width*.012,
-       tipLength:width*r.range(.06,.17),tipLean:r.range(-.02,.02)*width
+      (b-(baseBodies-1)/2)*width*.21,
+      width*(profile==='knife'?.41:.46),r,{
+       body:true,phase:r.range(0,TAU),frequency,splay:width*.010,
+       tipLength:width*r.range(.05,.12),tipLean:r.range(-.016,.016)*width
       });
     if(!body)continue;
     const col=mix(rgb,b===1?[247,228,200]:[52,43,39],b===1?.035:.025);
     // Connected, loaded body stays opaque. The final 15-22% of travel
     // exposes individual hairs, not a brush-wide flush polygon.
-    deposit(pig,mask,body,col,profile==='dry'?.23:(.67+.13*thickness),
-      profile==='dry'?.14:(.37+.18*thickness));
+    deposit(pig,mask,body,col,profile==='dry'?.28:(.72+.12*thickness),
+      profile==='dry'?.18:(.42+.16*thickness));
     footprints++;
   }
   // Hundreds of Path2D fill calls per brush defeat the fast Stage B core.
@@ -162,17 +212,25 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   const groupTotal=12;
   const grouped=Array.from({length:groupTotal},()=>new Path2D());
   const groupCounts=Array(groupTotal).fill(0);
+  const m=pig.getTransform(),margin=width*1.7;
+  const minX=Math.min(...frames.map(f=>f.x))-margin;
+  const minY=Math.min(...frames.map(f=>f.y))-margin;
+  const maxX=Math.max(...frames.map(f=>f.x))+margin;
+  const maxY=Math.max(...frames.map(f=>f.y))+margin;
+  const box={x:minX*m.a+m.e,y:minY*m.d+m.f,
+    w:(maxX-minX)*m.a,h:(maxY-minY)*m.d};
+  let toothDeposits=0;
   const batch=A.oilStageCNoBatch!==true;
   for(let hair=0;hair<sourceCount;hair++){
     const lane=(hair+.5)/sourceCount-.5;
     const outer=Math.abs(lane)*2;
-    const lateral=(lane*.955+r.range(-.011,.011))*width;
+    const lateral=(lane*.86+r.range(-.008,.008))*width;
     // Widths are narrower than their spacing; overlapping hairs sometimes
     // join, but their ends remain separate and staggered. Central hairs
     // are more likely to carry paint beyond the brush body.
     const filamentWidth=(width/sourceCount)*
-      r.range(profile==='dry'?.38:.67,profile==='knife'?1.14:1.27)*
-      (1-.20*Math.pow(outer,1.65));
+      r.range(profile==='dry'?.48:.80,profile==='knife'?1.22:1.40)*
+      (1-.12*Math.pow(outer,1.45));
     const startDistance=width*r.range(0,profile==='dry'?.35:.19);
     const endRetreat=width*r.range(0,profile==='dry'?.80:.55)*
       (.62+.38*outer);
@@ -205,14 +263,14 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
     if(refined&&depletion>.57)exhausted++;
     // Some dry paint-starved hairs lift before touching the end. No
     // per-frame independent RNG means no square-pixel / sawtooth edges.
-    const missing=profile==='dry'?.16:.045;
+    const missing=profile==='dry'?.10:.04;
     const skipped=r.chance(missing);
     if(skipped){loadStart+=initial;loadEnd+=0;continue}
     let effectiveEnd=last;
     // One coherent break along a minority of dry strands, rather than
     // thousands of random per-frame contact decisions.
     let skipFirst=-1,skipLast=-1;
-    if(r.chance(profile==='dry'?.28:dryness*.085)){
+    if(r.chance(profile==='dry'?.18:dryness*.07)){
       const middle=r.range(.29,.67);
       const gap=r.range(.028,.095);
       skipFirst=Math.floor(begin+(effectiveEnd-begin)*middle);
@@ -223,39 +281,6 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
       [[begin,Math.max(begin+1,skipFirst-1)],
        [Math.min(skipLast+1,effectiveEnd),effectiveEnd]]:
       [[begin,effectiveEnd]];
-    // Dry brush contact is determined in canvas coordinates: stable weave
-    // peaks and a smooth seeded tooth component, not independent frame RNG.
-    // Preserve 2+ frame runs so the original ribbon geometry remains valid.
-    if(profile==='dry'){
-      const toothSeed=Math.floor(phase*1000000)>>>0;
-      const hash=(x,y)=>{let n=(Math.imul(x,374761393)^Math.imul(y,668265263)^toothSeed)|0;
-        n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295;};
-      const tooth=(x,y)=>{
-        const gx=x/5.5,gy=y/5.5,ix=Math.floor(gx),iy=Math.floor(gy);
-        let fx=gx-ix,fy=gy-iy;fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);
-        const a=hash(ix,iy)*(1-fx)+hash(ix+1,iy)*fx;
-        const b=hash(ix,iy+1)*(1-fx)+hash(ix+1,iy+1)*fx;
-        const smooth=a*(1-fy)+b*fy;
-        const weave=.5+.5*Math.cos(x*2*PI/5)*Math.cos(y*2*PI/6);
-        return .78*weave+.22*smooth;
-      };
-      const threshold=clamp(.38+.32*(1-initial*.7),.35,.76);
-      const contact=[];
-      for(const [a,b] of fragments){
-        let run=-1;
-        for(let i=a;i<=b;i++){
-          const f=frames[i],x=f.x+f.nx*lateral,y=f.y+f.ny*lateral;
-          const hit=tooth(x,y)>threshold;
-          if(hit&&run<0)run=i;
-          if((!hit||i===b)&&run>=0){
-            const end=hit&&i===b?i:i-1;
-            if(end-run>=2)contact.push([run,end]);
-            run=-1;
-          }
-        }
-      }
-      fragments=contact;
-    }
     for(const [first,end] of fragments){
       if(end-first<2)continue;
       const path=makeRibbon(frames,first,end,lateral,filamentWidth,r,{
@@ -296,9 +321,13 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
       const colour=tone===0?(isDry?mix(rgb,[243,225,196],.105):rgb):
         tone===1?mix(rgb,[247,233,209],isDry?.10:.046):
         mix(rgb,[52,44,35],isDry?.020:.05);
-      deposit(pig,mask,grouped[g],colour,
-        (.72+.09*thickness)*(profile==='dry'?.75:1)*(isDry?.46:1),
-        (.33+.19*thickness)*(profile==='dry'?.72:1)*(isDry?.45:1));
+      const alpha=(.72+.09*thickness)*(profile==='dry'?.75:1)*(isDry?.46:1);
+      const relief=(.33+.19*thickness)*(profile==='dry'?.72:1)*(isDry?.45:1);
+      if(profile==='dry'||isDry){
+        depositToothed(pig,mask,grouped[g],colour,alpha,relief,
+          profile==='dry'?(isDry?2:1):1,box);
+        toothDeposits++;
+      }else deposit(pig,mask,grouped[g],colour,alpha,relief);
     }
   }
   // Stats are captured independently from V1. Drawn filament runs have
@@ -306,6 +335,8 @@ function drawContactBrushV2(pig,mask,points,width,rgb,profile,r,options={}){
   if(A.oilStageCStats){
     const s=A.oilStageCStats;
     s.brushCalls=(s.brushCalls||0)+1;
+    if(profile==='dry')s.dryRuns=(s.dryRuns||0)+1;
+    s.toothDeposits=(s.toothDeposits||0)+toothDeposits;
     s.physicalHairs=(s.physicalHairs||0)+sourceCount;
     s.runs=(s.runs||0)+runs;
     s.footprints=(s.footprints||0)+footprints;

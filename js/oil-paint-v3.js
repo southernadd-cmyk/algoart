@@ -1,4 +1,4 @@
-// Oil Paint V3b experimental material; V1 and V2 remain unchanged.
+// Oil Paint V3c experimental material; V1 and V2 remain unchanged.
 window.AlgoArt=window.AlgoArt||{};
 (function(A){
 'use strict';
@@ -6,7 +6,7 @@ A.renderOilPaintV3=function(target,settings,scale,reveal){
   const core=A.oilPaintV4ETest;
   if(typeof A.renderOilPaintV2!=='function'||
      typeof core?.drawContactBrushV3!=='function')
-    throw Error('Oil V3b requires Oil V2 and oil-brush-v3.js');
+    throw Error('Oil V3c requires Oil V2 and oil-brush-v3.js');
   // The V5 interpretation planner caches core.drawContactBrush (NOT the
   // internal drawContactBrushV2 delegate) when building its paint layers.
   const original=core.drawContactBrush;
@@ -21,7 +21,7 @@ A.renderOilPaintV3=function(target,settings,scale,reveal){
     core.drawContactBrush=instrumented;
     core.drawContactBrushV2=instrumented;
     const result=A.renderOilPaintV2(target,settings,scale,reveal);
-    return {...result,version:'oil-paint-v3b-experimental',
+    return {...result,version:'oil-paint-v3c-experimental',
       v3BrushCalls:A.oilV3BrushCalls};
   }finally{
     core.drawContactBrush=original;
