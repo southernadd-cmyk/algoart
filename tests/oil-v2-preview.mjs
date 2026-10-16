@@ -99,8 +99,8 @@ try{
   await writeFile(out+'/'+name+'-oil-v1.png',fromDataUrl(entry.v1));
   await writeFile(out+'/'+name+'-oil-v2.png',fromDataUrl(entry.v2));
   if(i===0){
-    await writeFile(out+'/brush-tip-v1-lab.png',fromDataUrl(entry.brushLab));
-    await writeFile(out+'/brush-tip-v2-v3-lab.png',fromDataUrl(entry.brushLab));
+    await writeFile(out+'/brush-tip-v1-lab.png',fromDataUrl(before.brushLab));
+    await writeFile(out+'/brush-tip-v2-v3-lab.png',fromDataUrl(after.brushLab));
   }
   if(entry.v1===entry.v2)throw Error('V2 pixels unchanged for '+name);
   records.push({name,baselineMs:+entry.baselineMs.toFixed(1),v2Ms:+entry.v2Ms.toFixed(1),
