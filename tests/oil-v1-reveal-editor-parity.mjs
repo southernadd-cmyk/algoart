@@ -6,7 +6,7 @@ const origin=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1540,height:1040}});
 page.setDefaultTimeout(90000);
-const errors=[];page.on('pageerror',e=>errors.push(e.message));
+const errors=[];page.on('pageerror',e=>errors.push(e.stack||e.message));
 try{
  const modes=['field','spiral','rects','burst','network',
    'organic','geometric','scribble'];
