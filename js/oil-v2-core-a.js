@@ -443,54 +443,79 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
   // Load thickens visibly at the heel, selected turns and the toe. Unlike
   // V4b, these are deposited atop real bristle footprints, with no overall
   // hard-edged filled silhouette and no clipping back to a vector polygon.
-  var bulges=profile==='dry'?1:profile==='knife'?4:3;
+  var bulges=profile==='dry'?1:profile==='knife'?4:2;
   for(var n=0;n<bulges;n++){
-    var at=n===0?.12:n===bulges-1?.86:r.range(.30,.70),
+    var at=profile==='knife'?(n===0?.12:n===bulges-1?.86:r.range(.30,.70)):
+      (bulges===1?.48:n===0?.32:.66),
         j=Math.floor(at*(frames.length-1)),f=frames[j],
         lateral=r.range(-.18,.18)*width,
         location=shift(f,f.angle+PI/2,lateral),
         mass=(1-.55*at)*(profile==='knife'?1.2:1),
         colour2=mix(rgb,r.chance(.58)?[248,228,201]:[67,48,39],
           r.range(.035,.12));
-    depositPaintPatch(pig,mask,location,f.angle+r.range(-.16,.16),
-      width*r.range(.38,.89),width*r.range(.29,.60)*mass,
-      colour2,r.range(.60,.86),r.range(.33,.73)*mass,r);
+    // V2: narrow longitudinal smears instead of round, end-dominating discs.
+    depositPaintPatch(pig,mask,location,f.angle+r.range(-.10,.10),
+      width*r.range(.48,.82),width*r.range(.16,.32)*mass,
+      colour2,r.range(.42,.64),r.range(.24,.46)*mass,r);
     footprints++;
   }
-  // V2: light fine-tip detail follows existing bristle deposits. Each of
-  // three Path2D groups contains ten independently staggered fine strands.
-  // Main paint/relief geometry and physical contacts remain V1 cost.
-  if(width>=7&&profile!=='knife'){
-    var filaments=[new Path2D(),new Path2D(),new Path2D()];
-    var head=frames[0],tail=frames[frames.length-1];
-    var distance=Math.max(1,total),startIndex=Math.max(0,frames.length-14);
-    for(var fine=0;fine<30;fine++){
-      var lane=(fine+.5)/30-.5,offset=lane*width*.82;
-      var tailFraction=r.range(.68,1.12);
-      var firstIndex=Math.max(0,Math.floor(startIndex*.35));
-      var pth=filaments[fine%3],beg=frames[firstIndex];
-      var norm=beg.angle+PI/2;
-      pth.moveTo(beg.x+Math.cos(norm)*offset,beg.y+Math.sin(norm)*offset);
-      for(var ix=firstIndex+1;ix<frames.length;ix+=2){
-        var f=frames[ix],t=f.s/distance;
-        if(t>tailFraction)break;
-        norm=f.angle+PI/2;
-        var wav=Math.sin(f.s*.057+fine*1.73)*width*.006;
-        pth.lineTo(f.x+Math.cos(norm)*(offset+wav),f.y+Math.sin(norm)*(offset+wav));
+  // Oil V2 directional tip (V3 experiment). Main colour and relief come
+  // from the tested V1 bristle footprints; only the final lifting edge
+  // gets narrow paint/relief contacts. No radial rays or full-length lines.
+  // LOD prevents subpixel filaments joining into three thick stripes.
+  var tipHairs=0;
+  if(profile!=='knife'&&width>=10&&frames.length>=3){
+    var strandCount=Math.min(30,Math.max(10,Math.round(width*.82)));
+    var tipDistance=Math.min(total*.34,Math.max(12,width*.92));
+    var first=frames.length-2;
+    while(first>0&&frames[first].s>total-tipDistance)first--;
+    var origin=frames[first],end=frames[frames.length-1];
+    var tipAngle=end.angle,tangentX=Math.cos(tipAngle),tangentY=Math.sin(tipAngle);
+    var normalX=-tangentY,normalY=tangentX;
+    // All strands share one tangent. Splay is deliberately tiny so that
+    // filaments stay parallel, rather than forming a starburst.
+    var tips=[new Path2D(),new Path2D(),new Path2D()];
+    for(var hair=0;hair<strandCount;hair++){
+      var lane=(hair+.5)/strandCount-.5;
+      var position=(lane*.91+r.range(-.009,.009))*width;
+      var outer=Math.abs(lane)*2;
+      // More short, dry hairs at the shoulders, but long central hairs.
+      var extension=width*r.range(.08,.65)*(1-.34*outer);
+      if(r.chance(.14))continue; // missing/paint-starved bristle
+      var path=tips[hair%3];
+      var x=origin.x+normalX*position,y=origin.y+normalY*position;
+      path.moveTo(x,y);
+      // Only the last portion of the actual source path is traced.
+      for(var step=first+1;step<frames.length;step+=2){
+        var f=frames[step],a=f.angle+PI/2;
+        var wobble=Math.sin(f.s*.046+hair*1.37)*width*.007;
+        path.lineTo(f.x+Math.cos(a)*(position+wobble),
+          f.y+Math.sin(a)*(position+wobble));
       }
-      if(tailFraction>1){
-        var extra=(tailFraction-1)*Math.min(90,width*2);
-        var theta=tail.angle,perp=theta+PI/2;
-        pth.lineTo(tail.x+Math.cos(theta)*extra+Math.cos(perp)*offset,
-          tail.y+Math.sin(theta)*extra+Math.sin(perp)*offset);
-      }
+      var wobbleEnd=Math.sin(end.s*.046+hair*1.37)*width*.007;
+      path.lineTo(end.x+normalX*(position+wobbleEnd),
+        end.y+normalY*(position+wobbleEnd));
+      path.lineTo(end.x+tangentX*extension+
+          normalX*(position+r.range(-.014,.014)*width),
+        end.y+tangentY*extension+
+          normalY*(position+r.range(-.014,.014)*width));
+      tipHairs++;
     }
-    for(var group=0;group<3;group++){
-      strokeMatched(pig,mask,filaments[group],Math.max(.35,Math.min(.95,width/70)),
-        group===0?mix(rgb,[249,232,204],.17):
-          group===1?mix(rgb,[61,45,37],.13):rgb,
-        group===0?.27:.22,.12);
+    // Three pigment-and-height strokes total, irrespective of hair count.
+    // Three modest tonal variants read as oil-grooves, not marker outlines.
+    var widthOnCanvas=Math.min(.82,Math.max(.42,width/56));
+    for(var colourGroup=0;colourGroup<3;colourGroup++){
+      var ink=colourGroup===0?mix(rgb,[254,240,217],.09):
+        colourGroup===1?mix(rgb,[58,43,34],.08):rgb;
+      strokeMatched(pig,mask,tips[colourGroup],
+        widthOnCanvas*(colourGroup===1?.74:1),
+        ink,colourGroup===2?.69:.56,.15);
     }
+  }
+  if(A.oilV2TipStats){
+    A.oilV2TipStats.brushContacts++;
+    A.oilV2TipStats.filaments+=tipHairs;
+    if(tipHairs)A.oilV2TipStats.detailedTips++;
   }
   return {bristleRuns:runs,bristleContacts:contacts,
     contactFootprints:footprints,loadStart:+(loadStart/count).toFixed(3),

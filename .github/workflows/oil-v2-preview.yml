@@ -1,11 +1,12 @@
-name: Oil V2 Bristle Preview
+name: Oil V2 Directional Tip V3
 on:
   push:
-    branches: [experiment/oil-v2-bristle-tips]
+    branches: [experiment/oil-v2-directional-tip-v3]
   workflow_dispatch:
   pull_request:
     paths:
       - js/oil-paint-v2.js
+      - js/oil-v2-core-a.js
       - tests/oil-v2-preview.mjs
       - .github/workflows/oil-v2-preview.yml
 permissions:
@@ -20,6 +21,11 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
+      - name: Check experimental JavaScript syntax
+        run: |
+          node --check js/oil-v2-core-a.js
+          node --check js/oil-paint-v2.js
+          node --check tests/oil-v2-preview.mjs
       - run: npx playwright install --with-deps chromium
       - name: Start actual ALGO/ART app
         run: |
@@ -30,6 +36,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: oil-v2-real-renderer-four-preview-pairs
+          name: oil-v2-v3-real-renderer-previews
           path: oil-v2-preview-results/
           retention-days: 30
