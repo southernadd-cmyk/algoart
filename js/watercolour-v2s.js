@@ -1106,8 +1106,8 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   var tooth=new Float32Array(total),water=new Float32Array(total),fibres=new Float32Array(total),formation=new Float32Array(total),paperGrain=new Uint8Array(total);
   var seedValue=A.hash(seed+'|paper-flow-v2f')>>>0,pi=0;
   // Both improvements are independent, strictly opt-in test switches.
-  var scratch=A.watercolourScratchPaperExperimental?{}:null;
-  var skipZeroLog=!!A.watercolourSkipZeroDensityLogExperimental;
+  var scratch={};
+  var skipZeroLog=true;
   for(var y=0;y<h;y++)for(var x=0;x<w;x++,pi++){
     var j=pi*3,loaded=0;
     var surface=materialPaperField(x,y,ratio,seedValue,scratch);
@@ -1134,7 +1134,7 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
   }
   var steps=qualityForFlow(w,h); // resolution-adaptive, never dependent on clock time
   var passes=steps;
-  var emptyRegionFastPath=!!A.watercolourBlankDiffusionExperimental;
+  var emptyRegionFastPath=true;
   var skippedDiffusion=0;
   for(var round=0;round<passes;round++){
     var stride=round<2?2:1; // long wet capillaries followed by fine settling
