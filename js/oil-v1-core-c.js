@@ -3943,7 +3943,10 @@ function oilAdapter(target,plan,scale){
     if(aVal>.007){field[i]=aVal*1.42;peak=Math.max(peak,field[i]);}
   }
   var cached=A.oilStageECachedLightingExperimental===true,
-      rolling=A.oilStageERollingLightingExperimental===true&&h>10,
+      // Never pay for a rolling cache in tiny previews; the larger export
+      // pass amortises its row setup and uses only 7*width*8 extra bytes.
+      rolling=!cached&&h>10&&(A.oilStageERollingLightingExperimental===true||
+        (A.oilStageEAdaptiveLightingExperimental===true&&w*h>=900000)),
       heights=null,rows=null,fillOpticalRow=null;
   if(cached){
     // Float64 preserves the original Math.log1p without quantisation.
