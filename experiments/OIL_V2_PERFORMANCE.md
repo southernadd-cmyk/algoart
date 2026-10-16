@@ -266,3 +266,32 @@ are meaningful but still deliberately limited at preview resolution.
    links, archived studies and gallery rendering locked to their old pixels.
 4. Consider dirty-region relief work and paint/height buffer reuse as the
    next engineering improvements if full-resolution output is expensive.
+
+### Stage D 1× export validation
+
+GitHub Actions: https://github.com/southernadd-cmyk/algoart/actions/runs/38898600125
+
+At native output dimensions, the Playwright suite generated deterministic
+full-colour artwork for both a landscape Growth Systems seed (1400×1000)
+and portrait Recursive Divisions seed (1000×1400). In both cases the
+refined output differs visibly from V1, but its source guide/void/strategy
+metadata matches exactly:
+
+| Case | V1 ms | Stage D ms | Overhead | Individual refined hairs |
+| --- | ---: | ---: | ---: | ---: |
+| Organic landscape | 626.5 | 586.1 | −6.4% | 7,888 |
+| Rects portrait | 523.5 | 567.7 | +8.4% | 3,654 |
+
+Both passed deterministic repeatability and retained exactly the original
+ALGO/ART composition geometry. The 1× paint detail threshold (22 physical
+pixels) triggered 258 and 119 individual-bristle brush contacts respectively.
+
+A second preview-resolution CI run also passed all eight-stage tests but
+showed smaller/inconsistent speed gains than the first run, confirming
+that CI timing noise is significant. **Do not promise a production speedup
+based solely on the results above.** All tests still run on desktop
+Chromium in CI; mobile performance and other engines remain untested.
+
+**Decision:** Retain Stage D on its experiment branch. The test is strong
+enough to continue with visual refinement and more varied pressure/colour
+pickup, but not enough to release or upgrade historic Oil V1 share URLs.
