@@ -3699,7 +3699,9 @@ function baseline(target,s,scale,material,opts){
     return A.renderOilPaintV4E(target,s,scale,{
       phiFraming:opts.phiFraming===true,
       thickness:.90,drag:.72,bristles:.92,massing:.44,relief:.87,
-      wetDrag:.72});
+      wetDrag:.72,
+      reuseCompositionCapture:opts.reuseCompositionCapture===true,
+      sourceCapture:opts.sourceCapture||null});
   }
   if(material==='tissue'){
     var fit=A.phiFramingEnabled,meta=A.lastRenderMeta,
@@ -3930,21 +3932,65 @@ function oilAdapter(target,plan,scale){
   ctx.restore();mask.restore();
   // Contact-height pass matches the pigment layer, then locally shades its
   // actual ridges; no whole-image emboss, RGB haze or blurred screenshot.
+  var adapterProfile=A.oilStageEAdapterProfile||null,adapterStart=performance.now();
   var frame=mask.getImageData(0,0,w,h).data,
       paint=ctx.getImageData(0,0,w,h),
       pixels=paint.data,field=new Float32Array(w*h),peak=0;
+  if(adapterProfile)adapterProfile.canvasReadMs=performance.now()-adapterStart;
+  adapterStart=performance.now();
   for(i=0;i<field.length;i++){
     var aVal=frame[i*4+3]/255;
     if(aVal>.007){field[i]=aVal*1.42;peak=Math.max(peak,field[i]);}
   }
+  var cached=A.oilStageECachedLightingExperimental===true,
+      // Never pay for a rolling cache in tiny previews; the larger export
+      // pass amortises its row setup and uses only 7*width*8 extra bytes.
+      rolling=!cached&&h>10&&(A.oilStageERollingLightingExperimental===true||
+        (A.oilStageEAdaptiveLightingExperimental===true&&w*h>=900000)),
+      heights=null,rows=null,fillOpticalRow=null;
+  if(cached){
+    // Float64 preserves the original Math.log1p without quantisation.
+    // PNG parity is the release gate, not a visually approximate cache.
+    heights=new Float64Array(field.length);
+    for(i=0;i<field.length;i++){
+      if(field[i]>0)heights[i]=Math.log1p(field[i]*.66);
+    }
+  }else if(rolling){
+    // Seven-row sliding window instead of 11.2 MB at 1400x1000.
+    // Reuse the row 7 behind; neighbouring normals need at most +/-3.
+    rows=Array.from({length:7},function(){return new Float64Array(w)});
+    fillOpticalRow=function(row){
+      var targetRow=rows[row%7],sourceStart=row*w;
+      for(var xx=0;xx<w;xx++){
+        var hVal=field[sourceStart+xx];
+        targetRow[xx]=hVal>0?Math.log1p(hVal*.66):0;
+      }
+    };
+    for(var initialRow=1;initialRow<=7;initialRow++)fillOpticalRow(initialRow);
+  }
+  if(adapterProfile){
+    adapterProfile.heightPrepMs=performance.now()-adapterStart;
+    adapterProfile.extraHeightBytes=heights?heights.byteLength:rows?7*w*8:0;
+  }
+  adapterStart=performance.now();
   var sample=0;
-  for(var y=4;y<h-4;y++)for(var x=4;x<w-4;x++){
-    var index=y*w+x; if(field[index]<.06)continue;
-    var light=A.oilPaintV4ETest.surfaceLighting(field,w,h,x,y,.88),
-        z=index*4;
-    for(var c=0;c<3;c++)pixels[z+c]=clamp(Math.round(
-      pixels[z+c]*light.shade+light.shine*(c===0?1:c===1?.87:.77)),0,255);
-    sample++;
+  for(var y=4;y<h-4;y++){
+    for(var x=4;x<w-4;x++){
+      var index=y*w+x; if(field[index]<.06)continue;
+      var light=cached?
+          A.oilPaintV4ETest.surfaceLightingCached(heights,w,h,x,y,.88):
+          rolling?A.oilPaintV4ETest.surfaceLightingCachedRows(rows,x,y,.88):
+          A.oilPaintV4ETest.surfaceLighting(field,w,h,x,y,.88),
+          z=index*4;
+      for(var c=0;c<3;c++)pixels[z+c]=clamp(Math.round(
+        pixels[z+c]*light.shade+light.shine*(c===0?1:c===1?.87:.77)),0,255);
+      sample++;
+    }
+    if(rolling&&y+4<h)fillOpticalRow(y+4);
+  }
+  if(adapterProfile){
+    adapterProfile.shadeMs=performance.now()-adapterStart;
+    adapterProfile.raisedPixels=sample;
   }
   ctx.putImageData(paint,0,0);
   target.getContext('2d').drawImage(canvas,0,0);
@@ -4491,14 +4537,22 @@ A.renderInterpretedV5P=function(target,settings,scale,opts){
       interpretation=opts.interpretation||'faithful';
   if(interpretation!=='faithful'&&interpretation!=='areas')
     throw Error('Unknown composition interpretation');
-  var start=performance.now(),plan=null;
+  var start=performance.now(),plan=null,sharedCapture=null;
   if(interpretation==='areas'){
     if(!A.planCompositionV5)throw Error('Shared V5 planner not loaded');
-    plan=A.planCompositionV5(settings,{phiFraming:opts.phiFraming===true,
-      maxRegions:opts.maxRegions||28});
+    var planOptions={phiFraming:opts.phiFraming===true,
+      maxRegions:opts.maxRegions||28};
+    if(material==='oil'&&opts.reuseCompositionCapture===true&&
+       A.captureCompositionV5&&A.planCompositionV5FromSource){
+      sharedCapture=A.captureCompositionV5(settings,planOptions);
+      plan=A.planCompositionV5FromSource(sharedCapture,settings,planOptions);
+    }else{
+      plan=A.planCompositionV5(settings,planOptions);
+    }
   }
   var sourceMeta=baseline(target,settings,scale,material,
-    {...opts,hasConnectedFields:!!(plan&&plan.connectedFields.length)});
+    {...opts,sourceCapture:sharedCapture,
+      hasConnectedFields:!!(plan&&plan.connectedFields.length)});
   if(interpretation==='faithful')return {
     version:'v5p-prototype',interpretation:interpretation,material:material,
     sourceSeed:settings.seed,plan:null,baseline:sourceMeta};

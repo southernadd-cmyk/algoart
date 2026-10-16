@@ -109,7 +109,9 @@ function paintMaterialConnections(target,plan,scale,material){
 A.renderOilPaintV1=function(target,settings,scale,reveal){
  scale=scale||1;
  const opts={material:'oil',interpretation:'areas',
-   phiFraming:A.phiFramingEnabled===true,maxRegions:28};
+   phiFraming:A.phiFramingEnabled===true,maxRegions:28,
+   // Test-only switch; default and released V1 links remain untouched.
+   reuseCompositionCapture:A.oilPerfExperimental===true};
  const base=A.renderInterpretedV5P(target,settings,scale,opts);
  const plan=base.plan;
  const applied=plan&&plan.connectedFields.length?

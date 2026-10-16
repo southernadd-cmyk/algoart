@@ -1,0 +1,30 @@
+name: Oil V2 Release Compatibility
+on:
+  push:
+    branches: [release/oil-v2]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: |
+          node --check js/app.js
+          node --check js/oil-brush-v2.js
+          node --check js/oil-paint-v2.js
+          node --check tests/oil-v2-single-selector.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Start editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - run: node tests/oil-v2-single-selector.mjs
+      - run: node tests/oil-v1-release-browser.mjs

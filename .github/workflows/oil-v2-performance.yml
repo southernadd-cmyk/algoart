@@ -1,0 +1,50 @@
+name: Oil V2 Performance and Brush Optimisation
+on:
+  push:
+    branches: [experiment/oil-v2-performance-baseline]
+    paths:
+      - 'js/oil-v1-core-a.js'
+      - 'js/oil-v1-core-c.js'
+      - 'js/oil-paint-v1.js'
+      - 'tests/oil-performance-baseline.mjs'
+      - 'tests/oil-brush-performance.mjs'
+      - '.github/workflows/oil-v2-performance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oil-performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate source and benchmark syntax
+        run: |
+          node --check js/oil-v1-core-a.js
+          node --check js/oil-v1-core-c.js
+          node --check js/oil-paint-v1.js
+          node --check tests/oil-performance-baseline.mjs
+          node --check tests/oil-brush-performance.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Start genuine ALGO/ART app locally
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-oil-perf.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - name: Benchmark and require identical Oil pixels
+        run: node tests/oil-performance-baseline.mjs
+      - name: Compare Oil V1 versus optimised brush
+        run: node tests/oil-brush-performance.mjs
+      - name: Upload real renderer comparisons and metrics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-v2-stage-a-b-perf-and-images
+          path: |
+            oil-performance-results/
+            oil-brush-performance-results/
+          retention-days: 30

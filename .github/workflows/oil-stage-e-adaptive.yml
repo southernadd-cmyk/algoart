@@ -1,0 +1,41 @@
+name: Oil V2 Adaptive Lighting Acceptance
+on:
+  push:
+    branches: [experiment/oil-v2-performance-baseline]
+    paths:
+      - 'js/oil-v1-core-a.js'
+      - 'js/oil-v1-core-c.js'
+      - 'js/oil-stage-c-brush.js'
+      - 'tests/oil-stage-e-adaptive.mjs'
+      - '.github/workflows/oil-stage-e-adaptive.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-oil-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: |
+          node --check js/oil-v1-core-a.js
+          node --check js/oil-v1-core-c.js
+          node --check tests/oil-stage-e-adaptive.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Start real ALGO/ART editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-e.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - name: Pixel-exact adaptive cache, 2 previews and 2 native exports
+        run: node tests/oil-stage-e-adaptive.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-v2-adaptive-exact-renders
+          path: oil-stage-e-adaptive-results/
+          retention-days: 30

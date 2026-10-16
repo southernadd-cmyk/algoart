@@ -334,7 +334,25 @@ function strokeMatched(pig,mask,path,width,color,alpha,height){
 // Each tuft is a connected, pressure-driven paint footprint. Its *actual*
 // deposited geometry is used both for colour and for the relief mask.
 function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
-  var frames=buildBrushFrames(points,width);
+  // Stage C uses its own material-contact geometry, never a decorative
+  // overlay. Not loaded or enabled by the published app.
+  if(A.oilStageCExperimental===true && A.oilPaintV4ETest &&
+     typeof A.oilPaintV4ETest.drawContactBrushV2==='function'){
+    // A genuine 30-hair footprint is useful only if it can resolve at
+    // output pixel size. Small contacts retain the proven fast V1 brush.
+    var physicalWidth=width*(A.oilStageCScale||1);
+    if(physicalWidth>=(A.oilStageDRefinement===true?22:20) || A.oilStageCForceDetail===true)
+      return A.oilPaintV4ETest.drawContactBrushV2(
+        pig,mask,points,width,rgb,profile,r,options);
+    if(A.oilStageCStats)
+      A.oilStageCStats.fallbackCalls=(A.oilStageCStats.fallbackCalls||0)+1;
+  }
+  // Stage B experiment: cache frame-local quantities across all bristle tufts.
+  // Historical Oil v1 uses the untouched calculations unless explicitly
+  // opted in by the performance test (not a UI/share-link parameter).
+  var optFrames=A.oilBrushPerfExperimental===true,
+      perf=A.oilBrushPerfStats||null,startMs=perf?performance.now():0,
+      frames=buildBrushFrames(points,width);
   if(frames.length<2)return {
     bristleRuns:0,bristleContacts:0,contactFootprints:0,loadStart:0,
     loadEnd:0,pressureMin:0,pressureMax:0};
@@ -346,6 +364,15 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       contacts=0,runs=0,footprints=0,
       pMin=2,pMax=0,loadStart=0,loadEnd=0,
       maxPaint=profile==='dry'?.78:profile==='knife'?1.18:1.10;
+  if(optFrames){
+    for(var fi=0;fi<frames.length;fi++){
+      var frame=frames[fi],normal=frame.angle+PI/2;
+      frame.cachedPressure=pressureAt(frame.s,total,phase,profile);
+      frame.cachedFraction=frame.s/total;
+      frame.normalX=Math.cos(normal);
+      frame.normalY=Math.sin(normal);
+    }
+  }
   // Adjacent hairs belong to uneven clusters: widths and lateral positions
   // are chosen once per tuft, not snapped to a grid or a raster cell.
   for(var tuft=0;tuft<count;tuft++){
@@ -374,16 +401,27 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       for(var k=0;k<strip.length;k++){
         var item=strip[k],turn=item.angle+PI/2,
             // Independent, smoothly varying splay / changing contact width.
-            pressure=pressureAt(item.s,total,phase,profile),
+            pressure=optFrames?item.cachedPressure:
+              pressureAt(item.s,total,phase,profile),
             charge=minmax(item.load,0,1.35),
             taper=Math.min(1,(k+1)/4,(strip.length-k)/4),
             lateralDrift=jitter*Math.sin(item.s*.047+phaseT)+
               jitter*.55*Math.sin(item.s*.103+phaseT*.42),
             normalWidth=bundleWidth*pressure*(.56+.44*taper)*
               (.60+.40*charge)*(.92+.13*Math.sin(item.s*.061+phaseT)),
-            q=shift(item,turn,side*width*pressure+lateralDrift);
-        left.push(shift(q,turn,-normalWidth*.51));
-        right.push(shift(q,turn,normalWidth*.49));
+            q=optFrames?null:shift(item,turn,side*width*pressure+lateralDrift);
+        if(optFrames){
+          var lateral=side*width*pressure+lateralDrift,
+              qx=item.x+item.normalX*lateral,
+              qy=item.y+item.normalY*lateral;
+          left.push({x:qx+item.normalX*(-normalWidth*.51),
+                     y:qy+item.normalY*(-normalWidth*.51)});
+          right.push({x:qx+item.normalX*(normalWidth*.49),
+                      y:qy+item.normalY*(normalWidth*.49)});
+        }else{
+          left.push(shift(q,turn,-normalWidth*.51));
+          right.push(shift(q,turn,normalWidth*.49));
+        }
         avgLoad+=item.load;avgS+=item.s;
       }
       avgLoad/=strip.length;avgS/=strip.length;
@@ -414,8 +452,9 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       strip=[];
     }
     for(var i=0;i<frames.length;i++){
-      var p=frames[i],t=p.s/total,
-          pressureHere=pressureAt(p.s,total,phase,profile);
+      var p=frames[i],t=optFrames?p.cachedFraction:p.s/total,
+          pressureHere=optFrames?p.cachedPressure:
+            pressureAt(p.s,total,phase,profile);
       pMin=Math.min(pMin,pressureHere);
       pMax=Math.max(pMax,pressureHere);
       // Loading is monotone on average but correlated pressure pockets
@@ -435,7 +474,12 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       if(!active){finishStrip();continue}
       // Subpixel path samples are interpolated geometrically between source
       // points; intact runs don't leave random single-pixel gaps.
-      strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load});
+      if(optFrames){
+        strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load,
+          cachedPressure:pressureHere,normalX:p.normalX,normalY:p.normalY});
+      }else{
+        strip.push({x:p.x,y:p.y,angle:p.angle,s:p.s,load:load});
+      }
       contacts++;
     }
     finishStrip();
@@ -457,6 +501,14 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
       colour2,r.range(.60,.86),r.range(.33,.73)*mass,r);
     footprints++;
   }
+  if(perf){
+    perf.calls=(perf.calls||0)+1;
+    perf.totalMs=(perf.totalMs||0)+performance.now()-startMs;
+    perf.frames=(perf.frames||0)+frames.length;
+    perf.tufts=(perf.tufts||0)+count;
+    perf.contacts=(perf.contacts||0)+contacts;
+    perf.runs=(perf.runs||0)+runs;
+  }
   return {bristleRuns:runs,bristleContacts:contacts,
     contactFootprints:footprints,loadStart:+(loadStart/count).toFixed(3),
     loadEnd:+(loadEnd/count).toFixed(3),
@@ -465,13 +517,50 @@ function drawContactBrushV4e(pig,mask,points,width,rgb,profile,r,options){
 
 function sampleWetCrossings(pig,field,pts,width,scale,sw,sh){
   var crossings=[],last=null,n=Math.min(20,Math.max(8,Math.round(pts.length/3)));
+  // Stage E experiment: replace many synchronous 1x1 canvas readbacks
+  // with one bounded read of the candidate region. Pixels are sampled
+  // at the EXACT same integer locations in the SAME order. The width
+  // cap avoids copying huge mostly-empty bounding rectangles.
+  var batch=A.oilStageEBatchWetSample===true,buffer=null,minX=sw,
+      minY=sh,maxX=-1,maxY=-1,samples=null,regionWidth=0,
+      profile=A.oilStageEProfile||null;
+  if(batch){
+    samples=[];
+    for(var j=1;j<n;j++){
+      var position=Math.floor((j/n)*(pts.length-1)),
+          point=pts[position],px=minmax(Math.round(point.x*scale),0,sw-1),
+          py=minmax(Math.round(point.y*scale),0,sh-1);
+      if(field[py*sw+px]<.23)continue;
+      samples.push({at:position,p:point,x:px,y:py});
+      if(px<minX)minX=px;if(px>maxX)maxX=px;
+      if(py<minY)minY=py;if(py>maxY)maxY=py;
+    }
+    if(!samples.length)return crossings;
+    regionWidth=maxX-minX+1;
+    var regionHeight=maxY-minY+1,area=regionWidth*regionHeight;
+    if(area<=65536){
+      buffer=pig.getImageData(minX,minY,regionWidth,regionHeight).data;
+      if(profile){
+        profile.wetBatchCalls=(profile.wetBatchCalls||0)+1;
+        profile.wetBatchPixels=(profile.wetBatchPixels||0)+area;
+      }
+    }else if(profile)profile.wetBatchFallbacks=(profile.wetBatchFallbacks||0)+1;
+  }
   for(var i=1;i<n;i++){
     var at=Math.floor((i/n)*(pts.length-1));
     var p=pts[at],cx=minmax(Math.round(p.x*scale),0,sw-1),
         cy=minmax(Math.round(p.y*scale),0,sh-1);
     if(field[cy*sw+cx]<.23)continue;
     if(last&&dist(last,p)<width*.64)continue;
-    var pixel=pig.getImageData(cx,cy,1,1).data;
+    var pixel;
+    if(buffer){
+      var byteOffset=4*((cy-minY)*regionWidth+(cx-minX));
+      pixel=buffer.subarray(byteOffset,byteOffset+4);
+    }else{
+      pixel=pig.getImageData(cx,cy,1,1).data;
+      if(profile&&batch)
+        profile.wetSinglePixelCalls=(profile.wetSinglePixelCalls||0)+1;
+    }
     if(pixel[3]<140)continue;
     crossings.push({at:at,colour:[pixel[0],pixel[1],pixel[2]]});
     last=p;
@@ -532,19 +621,70 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
     }
     pig.restore();mask.restore();
   }
+  // Profiling and a logically equivalent tight mask scan are opt-in
+  // experiments only. Standard published Oil v1 follows the old path.
+  var stageE=A.oilStageEProfile||null,
+      profileStart=stageE?performance.now():0;
   // Sample true crossings before new paint is deposited; transfer locally.
   var crossings=sampleWetCrossings(pig,field,pts,width,scale,sw,sh);
+  if(stageE)stageE.wetSampleMs=(stageE.wetSampleMs||0)+performance.now()-profileStart;
+  profileStart=stageE?performance.now():0;
   var b=drawContactBrushV4e(pig,mask,pts,width,rgb,profile,r,options);
+  if(stageE)stageE.contactMs=(stageE.contactMs||0)+performance.now()-profileStart;
+  profileStart=stageE?performance.now():0;
   var dragged=dragCrossingPigment(pig,mask,crossings,pts,width,rgb,r,options);
-  var pixels=mask.getImageData(x0,y0,x1-x0,y1-y0).data,
-      bw=x1-x0,bh=y1-y0,amount=.50+thickness*.62;
-  for(var yy=0;yy<bh;yy++){
-    var row=(yy+y0)*sw+x0,trow=yy*bw;
-    for(var xx=0;xx<bw;xx++){
-      var ink=pixels[(trow+xx)*4+3]/255;
-      if(ink>.008){var index2=row+xx;
-        field[index2]=addPaintHeight(field[index2],ink,amount)}
+  if(stageE)stageE.wetDragMs=(stageE.wetDragMs||0)+performance.now()-profileStart;
+  profileStart=stageE?performance.now():0;
+  var readX0=x0,readY0=y0,readX1=x1,readY1=y1;
+  // Experimental *read-only* bounds: preserve the original, wider
+  // clearing rectangle, so stale height-mask pixels never leak into
+  // subsequent brush contacts. Only shrink no-pickup, no-massing marks.
+  // Exact-PNG CI gates whether the inner margins contain all relief.
+  if(A.oilStageETightMaskExperimental===true &&
+     A.oilStageDRefinement===true && A.oilStageCExperimental===true &&
+     crossings.length===0 && !ch.mass){
+    var insetEdge=width*.70;
+    readX0=Math.max(x0,minmax(Math.floor((Math.min.apply(null,xs)-insetEdge)*scale)-3,0,sw-1));
+    readY0=Math.max(y0,minmax(Math.floor((Math.min.apply(null,ys)-insetEdge)*scale)-3,0,sh-1));
+    readX1=Math.min(x1,minmax(Math.ceil((Math.max.apply(null,xs)+insetEdge)*scale)+3,readX0+1,sw));
+    readY1=Math.min(y1,minmax(Math.ceil((Math.max.apply(null,ys)+insetEdge)*scale)+3,readY0+1,sh));
+  }
+  var pixels=mask.getImageData(readX0,readY0,readX1-readX0,readY1-readY0).data,
+      bw=readX1-readX0,bh=readY1-readY0,amount=.50+thickness*.62;
+  if(stageE){
+    stageE.maskReadMs=(stageE.maskReadMs||0)+performance.now()-profileStart;
+    stageE.maskPixelsSaved=(stageE.maskPixelsSaved||0)+
+      (x1-x0)*(y1-y0)-bw*bh;
+  }
+  profileStart=stageE?performance.now():0;
+  if(A.oilStageEMaskScanExperimental===true){
+    // Exactly the same pixels and row-major update order, with one
+    // incremental byte index per sample (avoids repeated multiplications).
+    // Preserve alpha threshold and Float32 field accumulation unchanged.
+    for(var yy=0;yy<bh;yy++){
+      var fieldIndex=(yy+readY0)*sw+readX0,
+          endFieldIndex=fieldIndex+bw,
+          alphaIndex=(yy*bw)*4+3;
+      for(;fieldIndex<endFieldIndex;fieldIndex++,alphaIndex+=4){
+        var ink=pixels[alphaIndex]/255;
+        if(ink>.008)field[fieldIndex]=addPaintHeight(field[fieldIndex],ink,amount);
+      }
     }
+  }else{
+    for(var yy=0;yy<bh;yy++){
+      var row=(yy+readY0)*sw+readX0,trow=yy*bw;
+      for(var xx=0;xx<bw;xx++){
+        var ink=pixels[(trow+xx)*4+3]/255;
+        if(ink>.008){var index2=row+xx;
+          field[index2]=addPaintHeight(field[index2],ink,amount)}
+      }
+    }
+  }
+  if(stageE){
+    stageE.maskScanMs=(stageE.maskScanMs||0)+performance.now()-profileStart;
+    stageE.maskReadPixels=(stageE.maskReadPixels||0)+bw*bh;
+    stageE.strokes=(stageE.strokes||0)+1;
+    stageE.wetCrossings=(stageE.wetCrossings||0)+crossings.length;
   }
   return {profile:profile,bristleRuns:b.bristleRuns,
     bristleContacts:b.bristleContacts,contactFootprints:b.contactFootprints,
@@ -694,6 +834,50 @@ function surfaceLighting(field,w,h,x,y,relief){
         minmax(ridge,0,1.4)*centre*(4+12*relief);
   return {shade:shade,shine:minmax(spec,0,27)};
 }
+// Stage E: exact alternative to repeated opticalRelief() calls.
+// The calling adapter precomputes Math.log1p(height*.66) once per pixel.
+// Float64 precision preserves the original numerical formula and allows
+// bit-for-bit oil RGB output; keep release V1 on the original function.
+function surfaceLightingCached(optical,w,h,x,y,relief){
+  var p=y*w+x,centre=optical[p],
+      lx=optical[p-1],rx=optical[p+1],
+      ty=optical[p-w],by=optical[p+w],
+      lx3=optical[p-3],rx3=optical[p+3],
+      ty3=optical[p-w*3],by3=optical[p+w*3],
+      dx=(rx-lx)*.35+(rx3-lx3)*.05,
+      dy=(by-ty)*.35+(by3-ty3)*.05,
+      nx=-dx*(.74+.38*relief),ny=-dy*(.74+.38*relief),nz=1,
+      length=1/Math.hypot(nx,ny,nz);
+  nx*=length;ny*=length;nz*=length;
+  var diffuse=nx*(-.43)+ny*(-.52)+nz*.74,
+      shade=minmax(1+(diffuse-.74)*(.37+.32*relief),.72,1.23),
+      ridge=Math.hypot(dx,dy),
+      spec=Math.pow(minmax(nx*(-.24)+ny*(-.30)+nz*.92,0,1),18)*
+        minmax(ridge,0,1.4)*centre*(4+12*relief);
+  return {shade:shade,shine:minmax(spec,0,27)};
+}
+// Seven-row sliding cache version: only heights at y-3, y-1, y, y+1,
+// and y+3 are required by the physical ridge-lighting formula.
+// The caller updates the ring after each raster row. Output is exactly
+// equivalent to surfaceLighting() and uses O(width), not O(width*height), RAM.
+function surfaceLightingCachedRows(rows,x,y,relief){
+  var centre=rows[y%7][x],
+      lx=rows[y%7][x-1],rx=rows[y%7][x+1],
+      ty=rows[(y-1)%7][x],by=rows[(y+1)%7][x],
+      lx3=rows[y%7][x-3],rx3=rows[y%7][x+3],
+      ty3=rows[(y-3)%7][x],by3=rows[(y+3)%7][x],
+      dx=(rx-lx)*.35+(rx3-lx3)*.05,
+      dy=(by-ty)*.35+(by3-ty3)*.05,
+      nx=-dx*(.74+.38*relief),ny=-dy*(.74+.38*relief),nz=1,
+      length=1/Math.hypot(nx,ny,nz);
+  nx*=length;ny*=length;nz*=length;
+  var diffuse=nx*(-.43)+ny*(-.52)+nz*.74,
+      shade=minmax(1+(diffuse-.74)*(.37+.32*relief),.72,1.23),
+      ridge=Math.hypot(dx,dy),
+      spec=Math.pow(minmax(nx*(-.24)+ny*(-.30)+nz*.92,0,1),18)*
+        minmax(ridge,0,1.4)*centre*(4+12*relief);
+  return {shade:shade,shine:minmax(spec,0,27)};
+}
 function finish(pig,field,w,h,seed,options){
   var pixels=pig.getImageData(0,0,w,h),out=pixels.data,
       relief=minmax(options.relief??.87,0,1),
@@ -729,13 +913,23 @@ A.renderOilPaintV4E=function(target,settings,scale,opts){
       oldFit=A.phiFramingEnabled,scratch=document.createElement('canvas'),
       sourceMeta,phase={};
   var start=performance.now();
-  try{
-    A.svgRecorder=rec;
-    A.phiFramingEnabled=opts.phiFraming===true;
-    sourceMeta=A.render(scratch,settings,Math.min(.22,scale),false);
-  }finally{
-    A.svgRecorder=oldRecorder;A.phiFramingEnabled=oldFit;
-    A.lastRenderMeta=oldMeta;
+  // Experimental only: the V5 planner already captured these exact marker
+  // paths. Reuse them rather than running the source generator a second time.
+  // Oil V1 and every other material keep the original capture path by default.
+  if(opts.reuseCompositionCapture===true &&
+     opts.sourceCapture && Array.isArray(opts.sourceCapture.paths) &&
+     opts.sourceCapture.meta){
+    rec.paths=opts.sourceCapture.paths;
+    sourceMeta=opts.sourceCapture.meta;
+  }else{
+    try{
+      A.svgRecorder=rec;
+      A.phiFramingEnabled=opts.phiFraming===true;
+      sourceMeta=A.render(scratch,settings,Math.min(.22,scale),false);
+    }finally{
+      A.svgRecorder=oldRecorder;A.phiFramingEnabled=oldFit;
+      A.lastRenderMeta=oldMeta;
+    }
   }
   phase.captureMs=+(performance.now()-start).toFixed(2);
   var chains=getChains(rec.paths),
@@ -804,7 +998,9 @@ A.renderOilPaintV4E=function(target,settings,scale,opts){
 A.oilPaintV4ETest={pressureAt:pressureAt,buildBrushFrames:buildBrushFrames,
   drawBrushLab:drawBrushLab,drawContactBrush:drawContactBrushV4e,
   sampleWetCrossings:sampleWetCrossings,dragCrossingPigment:dragCrossingPigment,
-  surfaceLighting:surfaceLighting,drawWetCrossingLab:drawWetCrossingLab,
+  surfaceLighting:surfaceLighting,surfaceLightingCached:surfaceLightingCached,
+  surfaceLightingCachedRows:surfaceLightingCachedRows,
+  drawWetCrossingLab:drawWetCrossingLab,
   addPaintHeight:addPaintHeight};
 })(window.AlgoArt);
 
