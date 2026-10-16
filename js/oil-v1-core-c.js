@@ -3944,7 +3944,7 @@ function oilAdapter(target,plan,scale){
   }
   var cached=A.oilStageECachedLightingExperimental===true,
       rolling=A.oilStageERollingLightingExperimental===true&&h>10,
-      heights=null,rows=null;
+      heights=null,rows=null,fillOpticalRow=null;
   if(cached){
     // Float64 preserves the original Math.log1p without quantisation.
     // PNG parity is the release gate, not a visually approximate cache.
@@ -3956,13 +3956,13 @@ function oilAdapter(target,plan,scale){
     // Seven-row sliding window instead of 11.2 MB at 1400x1000.
     // Reuse the row 7 behind; neighbouring normals need at most +/-3.
     rows=Array.from({length:7},function(){return new Float64Array(w)});
-    function fillOpticalRow(row){
+    fillOpticalRow=function(row){
       var targetRow=rows[row%7],sourceStart=row*w;
       for(var xx=0;xx<w;xx++){
         var hVal=field[sourceStart+xx];
         targetRow[xx]=hVal>0?Math.log1p(hVal*.66):0;
       }
-    }
+    };
     for(var initialRow=1;initialRow<=7;initialRow++)fillOpticalRow(initialRow);
   }
   if(adapterProfile){
