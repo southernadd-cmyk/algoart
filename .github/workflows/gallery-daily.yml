@@ -80,6 +80,7 @@ jobs:
 
       - name: Generate daily V2S Watercolour landscape
         env:
+          SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: watercolour
           SOCIAL_ORIENTATION: landscape
         run: npm run social:generate
@@ -92,6 +93,7 @@ jobs:
 
       - name: Generate daily V2S Watercolour portrait
         env:
+          SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: watercolour
           SOCIAL_ORIENTATION: portrait
         run: npm run social:generate
@@ -104,6 +106,7 @@ jobs:
 
       - name: Generate daily Oil Paint v1 landscape
         env:
+          SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: oil
           SOCIAL_ORIENTATION: landscape
         run: npm run social:generate
@@ -116,6 +119,7 @@ jobs:
 
       - name: Generate daily Oil Paint v1 portrait
         env:
+          SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: oil
           SOCIAL_ORIENTATION: portrait
         run: npm run social:generate
@@ -137,7 +141,7 @@ jobs:
           DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
           test -s "gallery/$DAY/index.html"
           COUNT="$(find "gallery/$DAY" -maxdepth 1 -name '*.jpg' | wc -l)"
-          test "$COUNT" -ge 13
+          test "$COUNT" -ge 16
           echo "Verified gallery/$DAY with $COUNT artwork images."
 
       - name: Persist gallery archive
@@ -175,7 +179,7 @@ jobs:
         run: |
           echo "### ALGO/ART daily gallery" >> "$GITHUB_STEP_SUMMARY"
           echo "- Archive: https://southernadd-cmyk.github.io/algoart/gallery/" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Five marker landscapes, four Tissue studies, two Watercolour V2S, and two Oil Paint v1 studies (portrait + landscape each); marker portraits are added by social publishing" >> "$GITHUB_STEP_SUMMARY"
+          echo "- From 17 October: four gallery artworks each in Marker, Tissue & Graphite, Watercolour, and Oil Paint" >> "$GITHUB_STEP_SUMMARY"
           echo "- Static HTML + JSON-LD + Open Graph + RSS + sitemap" >> "$GITHUB_STEP_SUMMARY"
 
   archive-check:
