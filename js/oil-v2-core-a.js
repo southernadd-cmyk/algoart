@@ -772,24 +772,12 @@ function ground(ctx,w,h,seed,r,paper){
   }
   ctx.restore();
 }
-function surfaceLighting(field,w,h,x,y,relief,preparedRelief){
-  // Caller can supply precomputed log-height values. A nine-neighbour
-  // lighting kernel otherwise evaluates log1p up to nine times per pixel.
-  var p=y*w+x,v=preparedRelief||field,
-      centre,lx,rx,ty,by,lx3,rx3,ty3,by3;
-  if(preparedRelief){
-    centre=v[p];lx=v[p-1];rx=v[p+1];
-    ty=v[p-w];by=v[p+w];
-    lx3=v[p-3];rx3=v[p+3];
-    ty3=v[p-w*3];by3=v[p+w*3];
-  }else{
-    centre=opticalRelief(v[p]);
-    lx=opticalRelief(v[p-1]);rx=opticalRelief(v[p+1]);
-    ty=opticalRelief(v[p-w]);by=opticalRelief(v[p+w]);
-    lx3=opticalRelief(v[p-3]);rx3=opticalRelief(v[p+3]);
-    ty3=opticalRelief(v[p-w*3]);by3=opticalRelief(v[p+w*3]);
-  }
-  var
+function surfaceLighting(field,w,h,x,y,relief){
+  var p=y*w+x,centre=opticalRelief(field[p]),
+      lx=opticalRelief(field[p-1]),rx=opticalRelief(field[p+1]),
+      ty=opticalRelief(field[p-w]),by=opticalRelief(field[p+w]),
+      lx3=opticalRelief(field[p-3]),rx3=opticalRelief(field[p+3]),
+      ty3=opticalRelief(field[p-w*3]),by3=opticalRelief(field[p+w*3]),
       dx=(rx-lx)*.35+(rx3-lx3)*.05,
       dy=(by-ty)*.35+(by3-ty3)*.05,
       nx=-dx*(.74+.38*relief),ny=-dy*(.74+.38*relief),nz=1,
@@ -806,17 +794,13 @@ function finish(pig,field,w,h,seed,options){
   var pixels=pig.getImageData(0,0,w,h),out=pixels.data,
       relief=minmax(options.relief??.87,0,1),
       peak=0,active=0,capped=0,dist=[],shininess=0;
-  // Compute optical height once per pixel, rather than nine times per
-  // illuminated pixel. This preserves the existing lighting equations.
-  var optical=new Float32Array(field.length);
-  for(var k=0;k<field.length;k++)optical[k]=opticalRelief(field[k]);
   for(var y=3;y<h-3;y++)for(var x=3;x<w-3;x++){
     var p=y*w+x,i=p*4,ht=field[p];
     if(ht<.035)continue;
     active++;if(ht>peak)peak=ht;
     if(ht>=17.999)capped++;
     if((x+y*13)%17===0)dist.push(ht);
-    var light=surfaceLighting(field,w,h,x,y,relief,optical);
+    var light=surfaceLighting(field,w,h,x,y,relief);
     shininess+=light.shine;
     out[i]=minmax(Math.round(out[i]*light.shade+light.shine),0,255);
     out[i+1]=minmax(Math.round(out[i+1]*light.shade+light.shine*.88),0,255);
