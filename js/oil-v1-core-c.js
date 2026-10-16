@@ -3699,7 +3699,9 @@ function baseline(target,s,scale,material,opts){
     return A.renderOilPaintV4E(target,s,scale,{
       phiFraming:opts.phiFraming===true,
       thickness:.90,drag:.72,bristles:.92,massing:.44,relief:.87,
-      wetDrag:.72});
+      wetDrag:.72,
+      reuseCompositionCapture:opts.reuseCompositionCapture===true,
+      sourceCapture:opts.sourceCapture||null});
   }
   if(material==='tissue'){
     var fit=A.phiFramingEnabled,meta=A.lastRenderMeta,
@@ -4491,14 +4493,22 @@ A.renderInterpretedV5P=function(target,settings,scale,opts){
       interpretation=opts.interpretation||'faithful';
   if(interpretation!=='faithful'&&interpretation!=='areas')
     throw Error('Unknown composition interpretation');
-  var start=performance.now(),plan=null;
+  var start=performance.now(),plan=null,sharedCapture=null;
   if(interpretation==='areas'){
     if(!A.planCompositionV5)throw Error('Shared V5 planner not loaded');
-    plan=A.planCompositionV5(settings,{phiFraming:opts.phiFraming===true,
-      maxRegions:opts.maxRegions||28});
+    var planOptions={phiFraming:opts.phiFraming===true,
+      maxRegions:opts.maxRegions||28};
+    if(material==='oil'&&opts.reuseCompositionCapture===true&&
+       A.captureCompositionV5&&A.planCompositionV5FromSource){
+      sharedCapture=A.captureCompositionV5(settings,planOptions);
+      plan=A.planCompositionV5FromSource(sharedCapture,settings,planOptions);
+    }else{
+      plan=A.planCompositionV5(settings,planOptions);
+    }
   }
   var sourceMeta=baseline(target,settings,scale,material,
-    {...opts,hasConnectedFields:!!(plan&&plan.connectedFields.length)});
+    {...opts,sourceCapture:sharedCapture,
+      hasConnectedFields:!!(plan&&plan.connectedFields.length)});
   if(interpretation==='faithful')return {
     version:'v5p-prototype',interpretation:interpretation,material:material,
     sourceSeed:settings.seed,plan:null,baseline:sourceMeta};
