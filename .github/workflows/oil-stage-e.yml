@@ -4,8 +4,10 @@ on:
     branches: [experiment/oil-v2-performance-baseline]
     paths:
       - 'js/oil-v1-core-a.js'
+      - 'js/oil-v1-core-c.js'
       - 'js/oil-stage-c-brush.js'
       - 'tests/oil-stage-e-profile.mjs'
+      - 'tests/oil-stage-e-lighting.mjs'
       - '.github/workflows/oil-stage-e.yml'
   workflow_dispatch:
 permissions:
@@ -24,8 +26,10 @@ jobs:
       - name: Check experimental code syntax
         run: |
           node --check js/oil-v1-core-a.js
+          node --check js/oil-v1-core-c.js
           node --check js/oil-stage-c-brush.js
           node --check tests/oil-stage-e-profile.mjs
+          node --check tests/oil-stage-e-lighting.mjs
       - run: npx playwright install --with-deps chromium
       - name: Start real ALGO/ART renderer
         run: |
@@ -33,10 +37,14 @@ jobs:
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
       - name: Real render profile, 4 preview and 2 full-res images
         run: node tests/oil-stage-e-profile.mjs
+      - name: Compare exact full-precision oil area lighting
+        run: node tests/oil-stage-e-lighting.mjs
       - name: Upload comparisons and measured timings
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: oil-v2-stage-e-real-renderer-benchmark
-          path: oil-stage-e-profiling/
+          path: |
+            oil-stage-e-profiling/
+            oil-stage-e-lighting-results/
           retention-days: 30
