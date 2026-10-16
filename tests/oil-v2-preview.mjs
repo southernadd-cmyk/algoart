@@ -38,7 +38,7 @@ try{
        {thickness:.75,drag:.72,bristles:.90});
      return canvas.toDataURL('image/png');
    };
-   const A=window.AlgoArt,s={...A.readSettings(),...spec};
+   const s={...A.readSettings(),...spec};
    const render=fn=>{
     const canvas=document.createElement('canvas'),start=performance.now();
     const stats=fn(canvas,s,.75,false),elapsed=performance.now()-start;
@@ -82,7 +82,7 @@ try{
        {thickness:.75,drag:.72,bristles:.90});
      return canvas.toDataURL('image/png');
    };
-   const A=window.AlgoArt,s={...A.readSettings(),...spec},canvas=document.createElement('canvas');
+   const s={...A.readSettings(),...spec},canvas=document.createElement('canvas');
    const start=performance.now(),stats=A.renderOilPaintV2(canvas,s,.75,false);
    return {v2Ms:performance.now()-start,
       filaments:stats.work.oilV2.visibleFineFilaments||0,
