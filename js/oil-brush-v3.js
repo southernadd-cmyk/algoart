@@ -16,10 +16,20 @@ const mixPaint=(a,b,t)=>a.map((v,i)=>{const Ra=Math.max(.001,linear(v)),Rb=Math.
  return Math.round(clamp(srgb(1+k-Math.sqrt(k*k+2*k)),0,255));});
 // Small tone adjustments should not use high-tint-strength K/S darkening.
 const mix=(a,b,t)=>a.map((v,i)=>Math.round(clamp(srgb((1-t)*linear(v)+t*linear(b[i])),0,255)));
-const toothStencils=[];
-let toothScratch=null;
+// Module caches are kept per canvas backend. Oil V3 always uses the
+// 'default' slot exactly as before; Oil V4 renders inside withCPUCanvases()
+// and uses the 'cpu' slot, so a canvas created by one version is never
+// reused by the other within the same page (no mixed backends).
+const toothSlots={
+  default:{stencils:[],scratch:null,ctx:null,patterns:[]},
+  cpu:{stencils:[],scratch:null,ctx:null,patterns:[]}
+};
+function toothSlot(){
+  return A.cpuCanvasBackendActive===true?toothSlots.cpu:toothSlots.default;
+}
 function toothStencil(level){
-  if(toothStencils[level])return toothStencils[level];
+  const slot=toothSlot();
+  if(slot.stencils[level])return slot.stencils[level];
   const c=document.createElement('canvas');c.width=30;c.height=30;
   const g=c.getContext('2d'),img=g.createImageData(30,30);
   const threshold=.32+.075*level;
@@ -30,14 +40,13 @@ function toothStencil(level){
     const i=(y*30+x)*4;img.data[i]=img.data[i+1]=img.data[i+2]=255;
     img.data[i+3]=Math.round(alpha*255);
   }
-  g.putImageData(img,0,0);return toothStencils[level]=c;
+  g.putImageData(img,0,0);return slot.stencils[level]=c;
 }
 // Reuse bounded tiles rather than a full-resolution scratch surface.
-let toothScratchCtx=null;
-const scratchPatterns=[];
 function cachedToothPattern(ctx,level){
   // Patterns belong to a context. Recreate only on scratch resize.
-  return scratchPatterns[level]||(scratchPatterns[level]=ctx.createPattern(toothStencil(level),'repeat'));
+  const slot=toothSlot();
+  return slot.patterns[level]||(slot.patterns[level]=ctx.createPattern(toothStencil(level),'repeat'));
 }
 function depositToothed(pig,mask,path,color,opacity,height,level,box){
   const W=pig.canvas.width,H=pig.canvas.height;
@@ -45,14 +54,19 @@ function depositToothed(pig,mask,path,color,opacity,height,level,box){
   const right=clamp(Math.ceil(box.x+box.w),x,W);
   const bottom=clamp(Math.ceil(box.y+box.h),y,H);
   const w=right-x,h=bottom-y;if(w<=0||h<=0)return;
+  const slot=toothSlot();
   // Allocate only the stroke bounding box, not the entire artwork.
-  if(!toothScratch||toothScratch.width<w||toothScratch.height<h){
-    toothScratch=document.createElement('canvas');
-    toothScratch.width=w;toothScratch.height=h;
-    toothScratchCtx=toothScratch.getContext('2d');
-    scratchPatterns.length=0;
+  if(!slot.scratch||slot.scratch.width<w||slot.scratch.height<h){
+    // Both slots use the historical resize rule. Growing to the larger of
+    // old/new sizes was tested and CHANGES pixels (scratch size affects
+    // anti-aliasing at its edge), so V4 must not alter it.
+    slot.scratch=document.createElement('canvas');
+    slot.scratch.width=w;slot.scratch.height=h;
+    slot.ctx=slot.scratch.getContext('2d');
+    slot.patterns.length=0;
   }
-  const s=toothScratchCtx,m=pig.getTransform();
+  const toothScratch=slot.scratch;
+  const s=slot.ctx,m=pig.getTransform();
   s.setTransform(1,0,0,1,-x,-y);
   s.globalAlpha=1;s.globalCompositeOperation='source-over';
   s.clearRect(x,y,w,h);
