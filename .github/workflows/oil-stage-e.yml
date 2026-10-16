@@ -8,6 +8,7 @@ on:
       - 'js/oil-stage-c-brush.js'
       - 'tests/oil-stage-e-profile.mjs'
       - 'tests/oil-stage-e-lighting.mjs'
+      - 'tests/oil-stage-e-adaptive.mjs'
       - '.github/workflows/oil-stage-e.yml'
   workflow_dispatch:
 permissions:
@@ -30,6 +31,7 @@ jobs:
           node --check js/oil-stage-c-brush.js
           node --check tests/oil-stage-e-profile.mjs
           node --check tests/oil-stage-e-lighting.mjs
+          node --check tests/oil-stage-e-adaptive.mjs
       - run: npx playwright install --with-deps chromium
       - name: Start real ALGO/ART renderer
         run: |
@@ -39,6 +41,8 @@ jobs:
         run: node tests/oil-stage-e-profile.mjs
       - name: Compare exact full-precision oil area lighting
         run: node tests/oil-stage-e-lighting.mjs
+      - name: Check automatic preview versus export cache selection
+        run: node tests/oil-stage-e-adaptive.mjs
       - name: Upload comparisons and measured timings
         uses: actions/upload-artifact@v4
         if: always()
@@ -47,4 +51,5 @@ jobs:
           path: |
             oil-stage-e-profiling/
             oil-stage-e-lighting-results/
+            oil-stage-e-adaptive-results/
           retention-days: 30
