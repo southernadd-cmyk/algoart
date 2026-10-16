@@ -25,6 +25,26 @@ try{
   {mode:'network',orientation:'landscape',seed:'OIL-V3A-NET-03',profile:'dry'},
   {mode:'burst',orientation:'portrait',seed:'OIL-V3A-BURST-04',profile:'filbert'}
  ];
+ // Directly exercise dry contact, independently of V5 profile selection.
+ const dryProbe=await page.evaluate(()=>{
+   const A=window.AlgoArt,oldStats=A.oilStageCStats;
+   const c=document.createElement('canvas'),h=document.createElement('canvas');
+   c.width=h.width=500;c.height=h.height=250;
+   const p=c.getContext('2d'),m=h.getContext('2d');
+   const points=Array.from({length:65},(_,i)=>({x:20+i*6,y:110+12*Math.sin(i*.1)}));
+   const random=(()=>{let v=123456789;return{
+     range:(a,b)=>{v=(Math.imul(v,1664525)+1013904223)>>>0;return a+(b-a)*(v/4294967296);},
+     chance(t){return this.range(0,1)<t;}
+   };})();
+   A.oilStageCStats={};A.oilStageCScale=1;A.oilStageDRefinement=true;
+   try{
+     A.oilPaintV4ETest.drawContactBrushV3(p,m,points,34,[200,80,50],'dry',random,{thickness:.9,drag:.8});
+     return {...A.oilStageCStats,nonEmpty:p.getImageData(0,0,500,250).data.some((v,i)=>i%4===3&&v>0)};
+   }finally{A.oilStageCStats=oldStats;}
+ });
+ assert(dryProbe.dryRuns>0&&dryProbe.toothDeposits>0&&dryProbe.nonEmpty,
+   'Dry brush tooth renderer was not actually exercised');
+ await writeFile(output+'/dry-probe.json',JSON.stringify(dryProbe,null,2));
  const report=[];
  for(const spec of cases){
   const result=await page.evaluate(spec=>{
