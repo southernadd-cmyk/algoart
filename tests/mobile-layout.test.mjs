@@ -6,7 +6,7 @@ const browser=await chromium.launch();
 try{
  for(const [width,height] of [[320,568],[390,844],[430,932]]){
   const page=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true});
-  await page.addInitScript(()=>{localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open');localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1')});
+  await page.addInitScript(()=>{localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','closed');localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1')});
   for(const fmt of ['landscape','portrait']){
    await page.goto(`http://127.0.0.1:4173/?v=8&seed=LAYOUT&mode=rects&fmt=${fmt}`);
    await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true&&document.querySelector('#statsText')?.textContent?.includes('LAYOUT'),{timeout:120000});
