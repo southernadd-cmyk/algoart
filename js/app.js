@@ -192,6 +192,7 @@ var phiSheetFraming=false; // Shared optional φ source-geometry transform.
 var legacyOilV1Link=false;
 var legacyOilV2Link=false; // Historical Oil v1 links only; never a visible selector choice.
 var oilV4Link=true; // Oil V4 is the default; explicit oil-v1/v2/v3 URLs preserve historical versions.
+function actionPaintingEnabled(){return $('materialStyle').value==='action'}
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
 function oilPaintEnabled(){return $('materialStyle').value==='oil'}
@@ -202,7 +203,7 @@ function oilPaintV4Enabled(){return oilPaintEnabled()&&oilV4Link&&!legacyOilV1Li
 function watercolourV2SFamily(){return watercolourMaterialRevision==='v2s'||watercolourMaterialRevision==='v2t'}
 function oilPaintV1Enabled(){return legacyOilV1Link===true}
 function materialKey(){return $('materialStyle').value+'|'+
-    (oilPaintV4Enabled()?'oil-paint-v4':oilPaintV3Enabled()?'oil-paint-v3':oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
+    (actionPaintingEnabled()?'action-v1':oilPaintV4Enabled()?'oil-paint-v4':oilPaintV3Enabled()?'oil-paint-v3':oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
     '|phi:'+phiSheetFraming+'|historic-fit:'+watercolourFitToSheet}
 function syncMaterialNote(){
   var control=$('watercolourFitControl');
@@ -223,7 +224,8 @@ function syncMaterialNote(){
     phiInfo.textContent='Off · original source geometry and placement.';
   var note=$('materialStyleNote');
   if(!note)return;
-  note.textContent=(watercolourEnabled()
+  note.textContent=(actionPaintingEnabled()?'Action Painting: geometry-guided flowing paint, irregular pools and radial splashes. Palette and Colours settings are respected.'
+    :watercolourEnabled()
     ?'Watercolour pigments on textured paper, with wet washes, drying edges and expressive dry brushwork.'+
       (watercolourV2SFamily()?
       (phiSheetFraming?' Shared φ framing applies to the source geometry and SVG/plotter too.':
@@ -244,6 +246,7 @@ function syncMaterialNote(){
 function renderArtwork(target,settings,scale,reveal){
   A.phiFramingEnabled=phiSheetFraming&&
     !(watercolourEnabled()&&watercolourMaterialRevision==='v2r');
+  if(actionPaintingEnabled())return A.renderActionPainting(target,settings,scale,reveal);
   if(oilPaintV4Enabled())return A.renderOilPaintV4(target,settings,scale,reveal);
   if(oilPaintV3Enabled())return A.renderOilPaintV3(target,settings,scale,reveal);
   if(oilPaintV2Enabled())return A.renderOilPaintV2(target,settings,scale,reveal);
@@ -275,7 +278,8 @@ function settingsToURL(settings){
   });
   if(phiSheetFraming&&!(watercolourEnabled()&&watercolourMaterialRevision==='v2r'))
     params.set('sheet','phi');
-  if(oilPaintV4Enabled())params.set('material','oil-v4');
+  if(actionPaintingEnabled())params.set('material','action-v1');
+  else if(oilPaintV4Enabled())params.set('material','oil-v4');
   else if(oilPaintV3Enabled())params.set('material','oil-v3');
   else if(oilPaintV2Enabled())params.set('material','oil-v2');
   else if(oilPaintV1Enabled())params.set('material','oil-v1');
@@ -353,6 +357,7 @@ function loadSettingsFromURL(){
     found=true;
   }
 
+  if(params.get('material')==='action-v1'){$('materialStyle').value='action';found=true;}
   if(['oil-v1','oil-v2','oil-v3','oil-v4'].includes(params.get('material'))){
     $('materialStyle').value='oil';
     legacyOilV1Link=params.get('material')==='oil-v1';
@@ -1400,7 +1405,7 @@ var requestedArtworkId=new URLSearchParams(location.search).get('art');
 var loadedFromURL=loadSettingsFromURL();
 
 function loadExactArchivedArtwork(id){
-  if(!/^\d{4}-\d{2}-\d{2}-(?:(?:WL|WP|CL|CP|OL|OP|P)\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
+  if(!/^\d{4}-\d{2}-\d{2}-(?:(?:ACL|ACP|WL|WP|CL|CP|OL|OP|P)\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
   var day=id.slice(0,10);
   return fetch('gallery/'+day+'/meta.json',{cache:'no-store'})
     .then(function(r){if(!r.ok)throw new Error('Archive unavailable');return r.json();})
