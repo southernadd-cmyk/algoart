@@ -90,6 +90,7 @@ try{
   await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:75000});
   await page.waitForFunction(seed=>document.querySelector('#seed')?.value===seed,
      item.seed,{timeout:105000});
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true&&new URL(location.href).searchParams.has('material'),{timeout:120000});
   const u=new URL(page.url());
   assert.equal(u.searchParams.get('material'),'oil-v1');
   assert.equal(u.searchParams.get('pal'),item.settings.palette);
