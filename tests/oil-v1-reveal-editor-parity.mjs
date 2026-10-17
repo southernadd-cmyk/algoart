@@ -42,6 +42,7 @@ try{
  const canvas=page.locator('.canvas-wrap canvas').first();
  const initial=await canvas.evaluate(el=>el.toDataURL());
  await page.locator('#geometry').click();
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
  assert.match(await page.locator('#geometry').textContent(),/Hide φ/);
  const revealed=await canvas.evaluate(el=>el.toDataURL());
  assert.notEqual(revealed,initial,'Reveal did not paint anything over Oil');
@@ -60,6 +61,7 @@ try{
    null,'Source-derived Oil hover tooltip did not appear');
  assert.match(await page.locator('#revealTooltipTitle').textContent(),/Spiral hub/);
  await page.locator('#geometry').click();
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
  assert.equal(await canvas.evaluate(el=>el.toDataURL()),initial,
    'Hiding Reveal must recover the exact Oil painting');
  const result=await page.evaluate(async all=>{
@@ -96,14 +98,18 @@ try{
  // Check release material URL, switch behaviour, and existing renderers.
  assert.match(page.url(),/material=oil-v1/);
  await page.locator('#materialStyle').selectOption('tissue');
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
  assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
  assert.match(page.url(),/tissue=7/);
  await page.locator('#materialStyle').selectOption('watercolour');
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
  assert.equal(await page.locator('#materialStyle').inputValue(),'watercolour');
  assert.match(page.url(),/material=watercolour-v2s/);
  await page.locator('#materialStyle').selectOption('marker');
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
  assert.equal(await page.locator('#materialStyle').inputValue(),'marker');
  await page.locator('#materialStyle').selectOption('oil');
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
  assert.equal(await page.locator('#materialStyle').inputValue(),'oil');
  assert.match(page.url(),/material=oil-v4/); // New Oil selections use V4; explicit V3 links remain historical.
  // Persist Oil across randomise; any seed may have no *broad* fields
