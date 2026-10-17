@@ -127,6 +127,120 @@ function drawSourceLead(ctx,paths,w,h,options){
   ctx.restore();
   return drawn;
 }
+
+// Build physical pane regions from the actual engine marks. The reduced
+// resolution topology mask is flood-filled, so lead forms the TRUE boundary
+// between independently coloured glass regions (not a Voronoi overlay).
+function geometryPanes(paths,w,h,seed,options){
+  const divisor=3,gw=Math.ceil(w/divisor),gh=Math.ceil(h/divisor);
+  const mask=document.createElement('canvas');mask.width=gw;mask.height=gh;
+  const m=mask.getContext('2d',{willReadFrequently:true});
+  m.scale(1/divisor,1/divisor);m.fillStyle='#fff';m.fillRect(0,0,w,h);
+  m.strokeStyle='#000';m.lineJoin='round';m.lineCap='round';
+  const lead=options.leadWidth||8;
+  // Real marker geometry creates the principal pane edges.
+  const eligible=paths.filter(p=>p?.d&&/[MLC]/i.test(p.d));
+  const limit=options.maxStructurePaths||220,step=Math.max(1,Math.ceil(eligible.length/limit));
+  let strokes=0;
+  const ends=[];
+  for(let i=0;i<eligible.length;i+=step){
+    const p=eligible[i];
+    let path;try{path=new Path2D(p.d)}catch(_){continue}
+    m.save();
+    if(p.transform?.startsWith('matrix(')){
+      const v=p.transform.slice(7,-1).split(/[ ,]+/).map(Number);
+      if(v.length===6&&v.every(Number.isFinite))m.transform(...v);
+    }
+    m.lineWidth=Math.max(7,Math.min(17,(Number(p.width)||3)*.42+lead));
+    m.stroke(path);m.restore();strokes++;
+    const tokens=p.d.match(/[MLC]|[-+]?(?:\\d*\\.?\\d+)(?:[eE][-+]?\\d+)?/gi)||[];
+    let points=[],idx=0;
+    while(idx<tokens.length){
+      const cmd=tokens[idx++];
+      if(cmd==='M'||cmd==='L')points.push({x:+tokens[idx++],y:+tokens[idx++]});
+      else if(cmd==='C'){idx+=4;points.push({x:+tokens[idx++],y:+tokens[idx++]})}
+      else break;
+    }
+    if(points.length>1&&distance(points[0],points[points.length-1])>12)
+      ends.push(points[0],points[points.length-1]);
+  }
+  // Open source strokes do not independently create closed glass panes.
+  // Extend their ends to their closest frame edges, generating closures
+  // from actual geometry rather than unrelated polygons.
+  const rand=rng(seed+'|closures');
+  m.lineWidth=Math.max(6,lead*.9);
+  for(let i=0;i<Math.min(ends.length,220);i++){
+    const p=ends[i];
+    if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.y<0||p.x>w||p.y>h)continue;
+    let q=null,best=Infinity;
+    for(const edge of [{x:0,y:p.y},{x:w,y:p.y},{x:p.x,y:0},{x:p.x,y:h}]){
+      const d=distance(p,edge);
+      if(d<best){best=d;q=edge}
+    }
+    if(best>Math.min(w,h)*.24)continue;
+    m.beginPath();m.moveTo(p.x,p.y);m.lineTo(q.x,q.y);m.stroke();
+  }
+  // Black sheet frame supplies the outer boundary for every enclosed face.
+  m.lineWidth=Math.max(8,lead);m.strokeRect(0,0,w,h);
+  const pixels=m.getImageData(0,0,gw,gh).data;
+  const labels=new Int32Array(gw*gh),queue=new Int32Array(gw*gh),areas=[0];
+  // Flood fill white regions, with dark anti-alias pixels acting as boundaries.
+  let regions=0;
+  for(let y=1;y<gh-1;y++)for(let x=1;x<gw-1;x++){
+    const start=y*gw+x;if(labels[start]!==0)continue;
+    if(pixels[start*4]<126){labels[start]=-1;continue}
+    const id=++regions;let head=0,tail=1;queue[0]=start;labels[start]=id;
+    while(head<tail){
+      const at=queue[head++],xx=at%gw,yy=(at/gw)|0;
+      for(const n of [at-1,at+1,at-gw,at+gw]){
+        if(n<0||n>=labels.length||labels[n]!==0)continue;
+        if(Math.abs(n%gw-xx)+Math.abs(((n/gw)|0)-yy)!==1)continue;
+        if(pixels[n*4]<126){labels[n]=-1;continue}
+        labels[n]=id;queue[tail++]=n;
+      }
+    }
+    areas[id]=tail;
+  }
+  return {mask,labels,areas,regions,strokes,gw,gh,divisor};
+}
+function renderGeometryGlass(ctx,source,topology,w,h,seed,options){
+  const {labels,areas,gw,gh,divisor}=topology;
+  const rand=rng(seed+'|pane-colours'),src=source.getContext('2d',{willReadFrequently:true});
+  // Sample colour at a representative pixel from each actual bounded region.
+  const palette=Array.from({length:topology.regions+1},(_,i)=>{
+    const fallback=['#315c8d','#b9554d','#b79a4b','#52766a','#765785'];
+    return fallback[Math.floor(rand()*fallback.length)];
+  });
+  const samplePixel=new Array(topology.regions+1);
+  for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){
+    const id=labels[y*gw+x];
+    if(id>0&&!samplePixel[id]&&areas[id]>2)samplePixel[id]={x,y};
+  }
+  for(let id=1;id<samplePixel.length;id++)if(samplePixel[id]){
+    const p=samplePixel[id],pixel=src.getImageData(Math.min(w-1,p.x*divisor),Math.min(h-1,p.y*divisor),1,1).data;
+    palette[id]='rgb('+[0,1,2].map(i=>Math.min(255,Math.round(pixel[i]*(.66+rand()*.25)+rand()*28))).join(',')+')';
+  }
+  const low=document.createElement('canvas');low.width=gw;low.height=gh;
+  const c=low.getContext('2d'),img=c.createImageData(gw,gh);
+  const rgb=palette.map(color=>{
+    const el=document.createElement('canvas').getContext('2d');el.fillStyle=color;
+    const v=el.fillStyle.match(/\\d+/g)?.map(Number)||[70,110,140];return v;
+  });
+  for(let k=0;k<labels.length;k++){
+    const id=labels[k],j=k*4;
+    if(id<1){img.data[j]=19;img.data[j+1]=21;img.data[j+2]=20;}
+    else {const v=rgb[id],grain=((k*1103515245+seedHash(seed))>>>25)%13-6;
+      img.data[j]=Math.max(0,Math.min(255,v[0]+grain));img.data[j+1]=Math.max(0,Math.min(255,v[1]+grain));img.data[j+2]=Math.max(0,Math.min(255,v[2]+grain));}
+    img.data[j+3]=255;
+  }
+  c.putImageData(img,0,0);
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(low,0,0,w,h);
+  // The exact same geometry mask produces the dark lead, raised highlights
+  // and distinct coloured panes; no misleading overlaid Voronoi grid.
+  ctx.save();ctx.globalCompositeOperation='screen';ctx.globalAlpha=.12;
+  const glow=ctx.createLinearGradient(0,0,w,h);glow.addColorStop(0,'#faf5bb');glow.addColorStop(1,'#131839');
+  ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);ctx.restore();
+}
 A.stainedGlassV1={
   generate:function(output,settings,options={}){
     const scale=options.scale||1,w=settings.orientation==='portrait'?1000:1400,h=settings.orientation==='portrait'?1400:1000;
@@ -138,6 +252,16 @@ A.stainedGlassV1={
       meta=A.render(source,settings,1,false);
     }finally{
       A.svgRecorder=previous;A.lastRenderMeta=priorMeta;A.lastPhiSheetFrame=priorFrame;A.W=priorW;A.H=priorH;
+    }
+    if(options.enginePanes!==false){
+      output.width=Math.round(w*scale);output.height=Math.round(h*scale);
+      const ctx=output.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
+      const topology=geometryPanes(collector.paths,w,h,settings.seed,options);
+      renderGeometryGlass(ctx,source,topology,w,h,settings.seed+'|'+settings.mode,options);
+      ctx.setTransform(1,0,0,1,0,0);
+      return {version:'stained-glass-v3',mode:settings.mode,seed:settings.seed,
+        pieces:topology.regions,structuralPaths:topology.strokes,seams:'engine-defined',
+        sourcePaths:collector.paths.length,width:output.width,height:output.height};
     }
     const count=Math.max(20,Math.min(130,options.pieces||72));
     const sites=sampleSource(collector.paths,w,h,settings.seed+'|'+settings.mode,count);
