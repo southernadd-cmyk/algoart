@@ -191,7 +191,7 @@ var watercolourFitToSheet=false; // Legacy watercolour-specific fit.
 var phiSheetFraming=false; // Shared optional φ source-geometry transform.
 var legacyOilV1Link=false;
 var legacyOilV2Link=false; // Historical Oil v1 links only; never a visible selector choice.
-var oilV4Link=false; // Oil V4 (CPU canvas backend) preview: material=oil-v4 links only.
+var oilV4Link=true; // Oil V4 is the default; explicit oil-v1/v2/v3 URLs preserve historical versions.
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
 function oilPaintEnabled(){return $('materialStyle').value==='oil'}
@@ -231,7 +231,7 @@ function syncMaterialNote(){
         ' Source scale and placement match the Marker/plotter φ composition.')+
       (watercolourMaterialRevision==='v2t'?' Watercolour V2T preview: V2S drawing on a CPU canvas backend.':'') :
       ' Archived V2R includes automatic fitting and may differ from the Marker/plotter layout.')
-    :oilPaintV4Enabled()?'Oil Paint v4 (preview): Oil v3 brushwork rendered on a CPU canvas backend for faster, device-consistent output.'
+    :oilPaintV4Enabled()?'Oil Paint v4: consistent oil brushwork rendered on CPU-backed canvases.'
     :oilPaintV3Enabled()?'Oil Paint v3: adaptive physical bristles with canvas-tooth contact and relief following the same φ composition.'
     :oilPaintV2Enabled()?'Oil Paint v2: individually varied loaded bristles, connected colour fields and relief following the same φ composition.'
     :oilPaintV1Enabled()?'Oil Paint v1 (legacy): original loaded-bristle paint and connected colour fields. Saved V1 links retain their original appearance.'
@@ -1279,7 +1279,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id==='watercolourFit'||
        e.id==='phiSheetFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
-    if(e.id==='materialStyle'){legacyOilV1Link=false;legacyOilV2Link=false;oilV4Link=false;}
+    if(e.id==='materialStyle'){legacyOilV1Link=false;legacyOilV2Link=false;oilV4Link=true;}
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
     if(e.id==='materialStyle'&&watercolourEnabled()){
       watercolourMaterialRevision='v2s';
