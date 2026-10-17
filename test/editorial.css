@@ -577,3 +577,11 @@ button{font-family:Georgia,serif}
   .editorial-preview #inspector .inspector-head > .seed{gap:3px!important;grid-template-columns:max-content minmax(0,1fr) 28px!important}
   .editorial-preview #inspector .inspector-head > .seed #newSeed{width:28px!important;min-width:28px!important}
 }
+
+@media(max-width:760px){
+ .editorial-preview #inspector{grid-template-rows:auto auto auto minmax(0,1fr)!important}
+ .editorial-preview #inspector > .drawer-handle{grid-row:1!important}
+ .editorial-preview #inspector > .inspector-head{grid-row:2!important}
+ .editorial-preview #inspector > .tabs{grid-row:3!important}
+ .editorial-preview #inspector > .tab-body{grid-row:4!important}
+}
