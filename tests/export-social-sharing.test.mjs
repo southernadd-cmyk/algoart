@@ -176,7 +176,7 @@ try{
  const mobile=await browser.newContext({viewport:{width:390,height:844},
    hasTouch:true,isMobile:true});
  await mobile.addInitScript(()=>{
-   localStorage.setItem('algoart-intro-seen','1');
+   localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open');localStorage.setItem('algoart-intro-seen','1');
  });
  const mp=await mobile.newPage();
  await mp.goto(new URL(base).href,{waitUntil:'domcontentloaded'});
