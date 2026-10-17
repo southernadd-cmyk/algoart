@@ -24,31 +24,35 @@
 <link rel="stylesheet" href="css/style.css?v=20261017-creating-mobile-overlay">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/marker-font.css?v=20261014-phi-sheet">
-<link rel="stylesheet" href="test/editorial.css?v=4">
+<link rel="stylesheet" href="test/editorial.css?v=6">
 </head>
 <body>
-<div class="intro-splash" id="introSplash" hidden>
-  <div class="intro-grid" aria-hidden="true"></div>
-  <section class="intro-card" role="dialog" aria-modal="true" aria-labelledby="introTitle">
-    <div class="intro-top"><span>00 / INTRODUCTION</span><span>φ = 1.6180339887…</span></div>
-    <div class="intro-body">
-      <div class="intro-phi" aria-hidden="true">φ</div>
-      <div class="intro-copy">
-        
-        <p class="score-heading">ALGO/ART</p><h1 id="introTitle">Proportion piece</h1>
-        <p class="intro-thesis">Take a picture made from one number.<br>Move a slider until it looks better.<br>Move it until it looks worse.<br>Ask whether the number did that,<br>or you did.</p>
-        <p class="score-note">Keep the one you settle on by bookmarking it.</p><p class="score-date">2026 autumn</p>
-        <div class="intro-principles">
-          <div><b>01</b><strong>φ PROPOSES THE COMPOSITION.</strong><span>1.618 proportions, 61.8 / 38.2 divisions and the 137.5° golden angle shape position, scale, spacing and movement.</span></div>
-          <div><b>02</b><strong>THE ALGORITHM CREATES THE STRUCTURE.</strong><span>Every artwork is deterministic. The same seed and settings always rebuild the same image.</span></div>
-          <div><b>03</b><strong>THE MATERIALS BRING THE HUMAN TEXTURE.</strong><span>Choose imperfect marker ink, translucent torn tissue and graphite, layered watercolour washes, source-connected oil paint, or gestural Action Painting. Wobble, layering and uneven marks give mathematical structures a hand-drawn character.</span></div>
+<div class="intro-splash editorial-welcome" id="introSplash" hidden>
+  <div class="welcome-composition" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="welcome-wordmark">ALGO<span>/</span>ART</div>
+    <div class="welcome-layout">
+      <div class="welcome-left">
+        <section class="intro-card">
+          <div class="intro-copy">
+            <h1 id="introTitle">PROPORTION PIECE</h1>
+            <p class="intro-thesis">TAKE A PICTURE MADE FROM ONE NUMBER.<br>MOVE A SLIDER UNTIL IT LOOKS BETTER.<br>MOVE IT UNTIL IT LOOKS WORSE.<br>ASK WHETHER THE NUMBER DID THAT,<br>OR YOU DID.</p>
+            <p class="score-note">KEEP THE ONE YOU SETTLE ON<br>BY BOOKMARKING IT.</p>
+            <p class="score-date">2026 AUTUMN</p>
+          </div>
+        </section>
+        <p class="welcome-description">Every mark starts with the golden ratio and its 137.5° angle. Eight ways of arranging a drawing, and five materials to draw in. Change the seed or the controls to make your own.</p>
+        <div class="intro-actions">
+          <button id="introEnter" class="intro-enter" type="button">BEGIN</button>
+          <a class="welcome-gallery-link" href="test/gallery/">SEE WHAT IT DREW TODAY</a>
+          <button id="introReveal" type="button">BEGIN WITH φ VISIBLE</button>
         </div>
-        <div class="intro-systems" aria-label="Eight systems"><span>ARRANGE</span><span>SPIRAL</span><span>DIVIDE</span><span>RADIATE</span><span>CONNECT</span><span>GROW</span><span>CONSTRUCT</span><span>SCRIBBLE</span></div>
-        <div class="intro-actions"><button id="introEnter" class="intro-enter" type="button">begin</button><button id="introReveal" type="button">begin with φ visible</button></div>
-        <p class="intro-foot">These drawings come from code and a seed. Your choices change the result.</p>
       </div>
+      <figure class="welcome-right">
+        <img src="gallery/2026-10-17/2026-10-17-portrait-01-spiral-AP-20261017-01-30869.jpg" alt="A portrait-format Golden Trajectories drawing, made by ALGO/ART">
+        <figcaption>Golden Trajectories, 17 October.</figcaption>
+      </figure>
     </div>
-  </section>
+  </div>
 </div>
 <div class="app editorial-preview" id="app">
   <header class="toolbar">
@@ -63,20 +67,8 @@
       <span>137.507764°</span>
     </div>
 
-    <div class="seed">
-      <span class="toolbar-label">Seed</span>
-      <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
-      <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
-    </div>
-
-    <div class="actions">
-      <button id="mutate">Mutate</button>
-      <button id="randomise">Another</button>
-      <button id="variations">Four at once</button>
-      <button id="geometry">Show the φ</button>
-      <a class="gallery-nav" href="gallery/">Today’s gallery</a>
-      <button id="describe" type="button" aria-haspopup="dialog" aria-controls="descriptionOverlay">Describe</button>
-    </div>
+    <p class="studio-question">How far can one mathematical proportion carry a composition?</p>
+    <a class="studio-gallery-link" href="test/gallery/">today’s gallery</a>
   </header>
 
   <main>
@@ -170,6 +162,15 @@
         </div>
       </div>
 
+          <div class="actions">
+      <button id="mutate">Mutate</button>
+      <button id="randomise">Another</button>
+      <button id="variations">Four at once</button>
+      <button id="geometry">Show the φ</button>
+
+      <button id="describe" type="button" aria-haspopup="dialog" aria-controls="descriptionOverlay">Describe</button>
+    </div>
+
       <div class="stage-footer" aria-hidden="true">
         <span id="artworkDimensions">ARTWORK · 1400 × 1000</span>
         <span id="shortcutLegend">M mutate · N seed · V variations · D describe · [ parameters</span>
@@ -178,12 +179,17 @@
 
     <aside id="inspector" class="inspector" aria-label="Art controls">
       <div class="drawer-handle" aria-hidden="true"></div>
+      <div class="seed">
+      <span class="toolbar-label">Seed</span>
+      <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
+      <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
+    </div>
 
       <div class="inspector-head">
         <div>
           <span class="panel-number"></span>
           <div>
-            <strong>PARAMETERS</strong>
+            <strong>Composition</strong>
             <span>Change a setting and see what it does</span>
           </div>
         </div>
