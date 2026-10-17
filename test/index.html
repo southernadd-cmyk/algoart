@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="css/style.css?v=20261017-creating-mobile-overlay">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/marker-font.css?v=20261014-phi-sheet">
-<link rel="stylesheet" href="test/editorial.css?v=2">
+<link rel="stylesheet" href="test/editorial.css?v=3">
 </head>
 <body>
 <div class="intro-splash" id="introSplash" hidden>
@@ -35,9 +35,9 @@
       <div class="intro-phi" aria-hidden="true">φ</div>
       <div class="intro-copy">
         
-        <h1 id="introTitle">ALGO<span>/</span>ART</h1>
-        <p class="intro-thesis">The golden ratio sets out the drawing. Change the controls and see where it goes.</p>
-        <p>There are eight ways to arrange the marks. Each starts with the same proportions, but each takes the drawing somewhere different.</p>
+        <h1 id="introTitle">PROPORTION PIECE</h1>
+        <p class="intro-thesis">Take a picture made from one number.<br>Move a slider until it looks better.<br>Move it until it looks worse.<br>Ask whether the number did that,<br>or you did.</p>
+        <p class="intro-keep">Keep the one you settle on<br>by bookmarking it.</p><p class="intro-date">2026 autumn</p>
         <div class="intro-principles">
           <div><b>01</b><strong>φ PROPOSES THE COMPOSITION.</strong><span>1.618 proportions, 61.8 / 38.2 divisions and the 137.5° golden angle shape position, scale, spacing and movement.</span></div>
           <div><b>02</b><strong>THE ALGORITHM CREATES THE STRUCTURE.</strong><span>Every artwork is deterministic. The same seed and settings always rebuild the same image.</span></div>
@@ -64,7 +64,7 @@
     </div>
 
     <div class="seed">
-      <span class="toolbar-label">SEED</span>
+      <span class="toolbar-label">Seed</span>
       <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
       <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
     </div>
@@ -183,7 +183,7 @@
         <div>
           <span class="panel-number"></span>
           <div>
-            <strong>Composition and materials</strong>
+            <strong>PARAMETERS</strong>
             <span>Change a setting and see what it does</span>
           </div>
         </div>
@@ -204,8 +204,8 @@
           <div class="section-title"><span>COMPOSITION</span></div>
           <div class="controls">
             <div class="control material-render-control"><label for="materialStyle">MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p>
-<label class="mini-note"><input id="phiSheetFit" type="checkbox"> φ framing (all materials · enlarge sparse work, gently contain full compositions)</label>
-<p class="mini-note" id="phiSheetInfo" role="status" aria-live="polite">Off · original φ composition and sheet placement.</p>
+<label class="mini-note"><input id="phiSheetFit" type="checkbox"> Fit to φ</label>
+<p class="mini-note" id="phiSheetInfo" role="status" aria-live="polite" hidden></p>
 <label class="mini-note" id="watercolourFitControl" hidden><input id="watercolourFit" type="checkbox"> Legacy Watercolour-only fit (older V2S links)</label></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
             <div class="mode-picker-wrap">
@@ -364,5 +364,6 @@
 <script src="js/action-painting-v1.js?v=20261017-creating-mobile-overlay"></script>
 <script src="js/app.js?v=20261017-creating-mobile-overlay"></script>
 <script src="test/editorial-pigment.js?v=1"></script>
+<script src="test/editorial-text.js?v=1"></script>
 </body>
 </html>
