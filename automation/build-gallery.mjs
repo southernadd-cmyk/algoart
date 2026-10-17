@@ -51,7 +51,7 @@ function slugText(value = '') {
 }
 
 function artworkTitle(item, index) {
-  return `${item.series} — ${item.material==='oil'?'Oil Paint ':item.material==='watercolour'?'Watercolour ':item.material==='watercolor'?'Tissue & Graphite ':''}Study ${String(index + 1).padStart(2, '0')}`;
+  return `${item.series} — ${item.material==='action'?'Action Painting ':item.material==='oil'?'Oil Paint ':item.material==='watercolour'?'Watercolour ':item.material==='watercolor'?'Tissue & Graphite ':''}Study ${String(index + 1).padStart(2, '0')}`;
 }
 
 function countWord(count) {
@@ -61,7 +61,7 @@ function countWord(count) {
 
 function artworkDescription(item) {
   const s = item.settings || {};
-  return item.material==='oil'?
+  return item.material==='action'?`${item.series} Action Painting using seed ${item.seed}, the ${s.palette} palette and geometry-guided flowing paint.`:item.material==='oil'?
     `${item.series} Oil Paint artwork using seed ${item.seed}, ${s.palette} palette, source-connected colour masses and real loaded bristle paint.`:
     item.material==='watercolour'?
     `${item.series} Watercolour V2S artwork using seed ${item.seed}, source-matched pigment, and ${s.phiStrength}% golden-ratio adherence.`:
@@ -76,7 +76,7 @@ function artworkCard(item, index) {
   const alt = item.copy?.altText || artworkDescription(item);
   const portrait = (item.orientation || s.orientation) === 'portrait';
   return `
-    <article id="${escapeHtml(item.id)}" class="art-card" data-orientation="${portrait ? 'portrait' : 'landscape'}" data-material="${item.material==='oil'?'oil':item.material==='watercolour'?'watercolour':item.material==='watercolor'?'watercolor':'marker'}">
+    <article id="${escapeHtml(item.id)}" class="art-card" data-orientation="${portrait ? 'portrait' : 'landscape'}" data-material="${item.material==='action'?'action':item.material==='oil'?'oil':item.material==='watercolour'?'watercolour':item.material==='watercolor'?'watercolor':'marker'}">
       <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open and remix ${escapeHtml(title)} in ALGO/ART">
         <img src="${escapeHtml(item.imageFile)}" width="${portrait ? 1000 : 1400}" height="${portrait ? 1400 : 1000}" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" alt="${escapeHtml(alt)}">
       </a>
@@ -90,7 +90,7 @@ function artworkCard(item, index) {
             <div><dt>Series</dt><dd>${escapeHtml(item.series)}</dd></div>
             <div><dt>Format</dt><dd>${portrait ? 'Portrait · 1000 × 1400' : 'Landscape · 1400 × 1000'}</dd></div>
             <div><dt>φ adherence</dt><dd>${escapeHtml(s.phiStrength)}%</dd></div>
-            <div><dt>Medium</dt><dd>${item.material==='oil'?(item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v4'?'Oil Paint v4':item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v3'?'Oil Paint v3':'Oil Paint v1'):item.material==='watercolour'?'Watercolour V2S':item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
+            <div><dt>Medium</dt><dd>${item.material==='action'?'Action Painting v1':item.material==='oil'?(item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v4'?'Oil Paint v4':item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v3'?'Oil Paint v3':'Oil Paint v1'):item.material==='watercolour'?'Watercolour V2S':item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
             <div><dt>Palette</dt><dd>${escapeHtml(s.palette)}</dd></div>
           </dl>
           <a class="remix" href="${escapeHtml(item.shareUrl)}">OPEN EXACT ARTWORK + REMIX →</a>
@@ -133,7 +133,7 @@ function dayPage(queue) {
           description: artworkDescription(item),
           image: `${canonical}${item.imageFile}`,
           url: item.shareUrl,
-          artform:item.material==='oil'?'Generative oil painting':item.material==='watercolour'?'Generative watercolour painting':
+          artform:item.material==='action'?'Generative action painting':item.material==='oil'?'Generative oil painting':item.material==='watercolour'?'Generative watercolour painting':
             item.material==='watercolor'?'Tissue and graphite generative art':'Generative digital marker art',
           artMedium: 'Browser canvas and deterministic algorithm',
           creator: {
@@ -316,11 +316,11 @@ ${urls.map(u => `  <url><loc>${escapeXml(u.loc)}</loc><lastmod>${u.lastmod}</las
 
 const day = process.env.SOCIAL_DATE || dateInZone();
 const galleryOrientation = process.env.GALLERY_QUEUE_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
-const galleryMaterial=process.env.GALLERY_QUEUE_MATERIAL==='oil'?'oil':
+const galleryMaterial=process.env.GALLERY_QUEUE_MATERIAL==='action'?'action':process.env.GALLERY_QUEUE_MATERIAL==='oil'?'oil':
   process.env.GALLERY_QUEUE_MATERIAL==='watercolour'?'watercolour':
   process.env.GALLERY_QUEUE_MATERIAL==='watercolor'?'watercolor':'marker';
 const queuePath = path.resolve('social-output', day,
-  ...(galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
+  ...(galleryMaterial==='action'?['action',galleryOrientation]:galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
     galleryMaterial==='watercolor'?['watercolor',galleryOrientation]:
     galleryOrientation==='portrait'?['portrait']:[]),'queue.json');
 const queue = JSON.parse(await fs.readFile(queuePath, 'utf8'));
@@ -369,7 +369,7 @@ function galleryOrder(entry) {
   // Stable order: Marker landscapes, Marker portraits, historical Tissue
   // landscapes/portraits, then V2S Watercolour landscape/portrait.
   const orientation=entry.orientation||entry.settings?.orientation;
-  const tier=entry.material==='oil'?6:entry.material==='watercolour'?4:entry.material==='watercolor'?2:0;
+  const tier=entry.material==='action'?8:entry.material==='oil'?6:entry.material==='watercolour'?4:entry.material==='watercolor'?2:0;
   return tier+(orientation==='portrait'?1:0);
 }
 queue.entries.sort((a, b) =>
@@ -380,11 +380,11 @@ queue.entries.sort((a, b) =>
 // From 17 October cap each material at four gallery entries, preferring
 // two landscape and two portrait studies when both are available.
 if (day >= '2026-10-17') {
-  const materialOf = e => e.material === 'oil' ? 'oil' :
+  const materialOf = e => e.material === 'action' ? 'action' : e.material === 'oil' ? 'oil' :
     e.material === 'watercolour' ? 'watercolour' :
     e.material === 'watercolor' ? 'tissue' : 'marker';
   const chosen = [];
-  for (const material of ['marker', 'tissue', 'watercolour', 'oil']) {
+  for (const material of ['marker', 'tissue', 'watercolour', 'oil', 'action']) {
     const items = queue.entries.filter(e => materialOf(e) === material);
     const landscapes = items.filter(e => (e.orientation || e.settings?.orientation) !== 'portrait');
     const portraits = items.filter(e => (e.orientation || e.settings?.orientation) === 'portrait');
@@ -405,7 +405,7 @@ const queuedImageFiles = new Set(
 for (const item of queue.entries) {
   if (!queuedImageFiles.has(item.imageFile)) continue;
   const source = path.resolve('social-output', day,
-    ...(galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
+    ...(galleryMaterial==='action'?['action',galleryOrientation]:galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
       galleryMaterial==='watercolor'?['watercolor',galleryOrientation]:
       galleryOrientation==='portrait'?['portrait']:[]),item.imageFile);
   const dest = path.join(dayDir, item.imageFile);
@@ -428,7 +428,7 @@ const dayMeta = {
     id: item.id,
     title: artworkTitle(item, index),
     orientation: item.orientation || item.settings?.orientation || 'landscape',
-    ...(item.material==='oil'?{material:'oil'}:item.material==='watercolour'?{material:'watercolour'}:
+    ...(item.material==='action'?{material:'action'}:item.material==='oil'?{material:'oil'}:item.material==='watercolour'?{material:'watercolour'}:
       item.material==='watercolor'?{material:'watercolor'}:{}),
     seed: item.seed,
     mode: item.mode,
