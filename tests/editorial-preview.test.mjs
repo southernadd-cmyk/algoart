@@ -1,6 +1,8 @@
 import {chromium,devices} from 'playwright';
 import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
 const browser=await chromium.launch({headless:true});
+await mkdir('editorial-preview-results',{recursive:true});
 try{
  for(const mobile of [false,true]){
   const context=await browser.newContext(mobile?{...devices['Pixel 7']}:{viewport:{width:1440,height:900}});
@@ -20,6 +22,7 @@ try{
   assert(state.art>0);
   assert(state.controls&&state.inspector);
   assert.deepEqual(errors,[]);
+  await page.screenshot({path:'editorial-preview-results/'+(mobile?'mobile-390':'desktop-1440')+'.png',fullPage:true});
   console.log(mobile?'MOBILE':'DESKTOP',state);
   await context.close();
  }
