@@ -12,18 +12,20 @@ const versions=new Set(scripts.map(x=>new URL(x,'https://example.invalid').searc
 assert.equal(versions.size,1, 'Every editor script must share one release cache version');
 
 const gallery=read('gallery/index.html'),source=read('automation/build-gallery.mjs'),rss=read('gallery/feed.xml');
-const previousDescription='A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing and Tissue & Graphite.';
-const description='A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing, Tissue & Graphite, and Watercolour V2S.';
-assert(source.includes('Watercolour V2S and Oil Paint v3'), 'Daily gallery generator must describe all four materials');
-assert(gallery.includes(previousDescription)||gallery.includes(description)||gallery.includes('Watercolour V2S and Oil Paint v1'),
-  'Current gallery must retain the published description until next scheduled gallery build');
-assert(gallery.includes(previousDescription.replaceAll('&','&amp;'))||
-       gallery.includes(description.replaceAll('&','&amp;'))||
-       gallery.includes('Watercolour V2S and Oil Paint v1'),
-  'Published gallery HTML descriptions must stay escaped');
+// Generated gallery and RSS descriptions must agree with their current source.
+const extractDescription=name=>source.split('const '+name+" = '")[1]?.split("'")[0];
+const galleryDescription=extractDescription('GALLERY_DESCRIPTION');
+const feedDescription=extractDescription('FEED_DESCRIPTION');
+assert(galleryDescription&&feedDescription,'Gallery generator must declare descriptions');
+assert(gallery.includes(galleryDescription.replaceAll('&','&amp;')),
+  'Published gallery description must match generator and be HTML-escaped');
+assert(rss.includes(feedDescription.replaceAll('&','&amp;')),
+  'Published RSS description must match generator and be XML-escaped');
+assert(source.includes('Watercolour V2S and Oil Paint v3'),
+  'Daily gallery generator must describe all four materials');
 assert(!source.includes('imperfect digital marker strokes')&&!gallery.includes('imperfect digital marker strokes'));
 assert(source.includes('escapeXml(FEED_DESCRIPTION)'),'RSS description must be XML-escaped');
-assert(rss.includes('Marker drawing and Tissue &amp; Graphite')||rss.includes('Marker drawing, Tissue &amp; Graphite, and Watercolour V2S')||rss.includes('Watercolour V2S and Oil Paint v1'),'Published RSS must identify the active materials');
+
 assert(source.includes('from marker wobble and overdraw to translucent torn tissue and graphite')||
        source.includes('Watercolour V2S'),
   'Daily editions must describe the supported materials');
