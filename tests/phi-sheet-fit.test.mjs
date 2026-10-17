@@ -34,6 +34,7 @@ try{
   assert(Math.abs(envelopes.full.upperCover-
     (1-Math.pow((Math.sqrt(5)-1)/2,4)))<1e-12);
   assert.equal(await page.locator('#phiSheetFit').isChecked(),false);
+  await page.locator('#inspectorToggle').click();
   await page.locator('#phiSheetFit').check();
   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi');
