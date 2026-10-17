@@ -523,7 +523,11 @@ function scheduleCreatingRender(){
   var generation=++creatingGeneration;
   creatingPending=true;
   var overlay=$('creatingOverlay');
-  if(overlay){overlay.hidden=false;overlay.setAttribute('aria-hidden','false');}
+  // Render outside the transformed canvas/inspector stacking contexts on mobile.
+  if(overlay){
+    if(overlay.parentNode!==document.body)document.body.appendChild(overlay);
+    overlay.hidden=false;overlay.setAttribute('aria-hidden','false');
+  }
   // Two paints give the browser a chance to display the marker overlay before
   // synchronous work blocks the main thread. Latest request wins.
   requestAnimationFrame(function(){
