@@ -70,15 +70,9 @@ function fling(ctx,r,from,to,color,weight,energy,w,h,via){
    scatter(ctx,r,spot.x,spot.y,2+Math.floor(r()*5),color,between(r,8,40))}
  ctx.restore();
 }
-var KITS=[
-['#14161b','#f0d3a3','#b12d24','#e8bd35','#33678c','#ece8de'],
-['#121f23','#1854a0','#ee4635','#f1c94b','#f4f2e9','#639984'],
-['#342f2c','#c9443c','#d6a34a','#274a57','#eee7d5','#8c6b7b'],
-['#161619','#e9e2d6','#db4025','#f0c33a','#487aa2','#718c56']
-];
 function samplePaths(paths){var anchors=[];for(var i=0;i<paths.length;i++){var p=paths[i].pts;if(!p.length)continue;anchors.push(p[0],p[Math.floor(p.length/2)],p[p.length-1]);if(p.length>9)anchors.push(p[Math.floor(p.length*.618)])}return anchors}
 A.actionPaintingFromPaths=function(target,sourcePaths,s,scale,options){options=options||{};scale=scale||1;
-var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v4|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=KITS[((options.palette||0)%KITS.length+KITS.length)%KITS.length];
+var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v4|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=A.hues(s,A.makeR(String(s.seed)+'|action-palette'));
 target.width=Math.round(w*scale);target.height=Math.round(h*scale);var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
 ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h);if(!anchors.length)return {pathCount:0,anchorCount:0};
 var layers=options.layers||5,density=options.density||1;
@@ -102,9 +96,9 @@ function cell(p){return Math.max(0,Math.min(cellsY-1,Math.floor(p.y/h*cellsY)))*
  Math.max(0,Math.min(cellsX-1,Math.floor(p.x/w*cellsX)))}
 var passes=layers*3,skipped=0;
 for(var layer=0;layer<passes;layer++){
- var ix=layer%3===0?0:layer%3===2?palette.length-1:1+Math.floor(r()*Math.max(1,palette.length-2));
- if(layer>passes-3)ix=layer%2===0?0:palette.length-2;
- var colour=palette[ix],count=Math.min(95,Math.floor((7+anchors.length*.065)*density));
+ var ix=layer%3===0?0:layer%3===2?palette.length-1:Math.floor(r()*palette.length);
+ if(layer>passes-3)ix=layer%2===0?0:Math.max(0,palette.length-2);
+ var colour=palette[ix%palette.length],count=Math.min(95,Math.floor((7+anchors.length*.065)*density));
  ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
  for(var i=0;i<count;i++){
   var a=select(),b=select(),via=select(),ca=cell(a),cb=cell(b),cm=cell(via);
