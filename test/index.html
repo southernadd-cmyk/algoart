@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="css/style.css?v=20261017-creating-mobile-overlay">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/marker-font.css?v=20261014-phi-sheet">
-<link rel="stylesheet" href="test/editorial.css?v=5">
+<link rel="stylesheet" href="test/editorial.css?v=6">
 </head>
 <body>
 <div class="intro-splash editorial-welcome" id="introSplash" hidden>
@@ -67,20 +67,8 @@
       <span>137.507764°</span>
     </div>
 
-    <div class="seed">
-      <span class="toolbar-label">Seed</span>
-      <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
-      <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
-    </div>
-
-    <div class="actions">
-      <button id="mutate">Mutate</button>
-      <button id="randomise">Another</button>
-      <button id="variations">Four at once</button>
-      <button id="geometry">Show the φ</button>
-      <a class="gallery-nav" href="gallery/">Today’s gallery</a>
-      <button id="describe" type="button" aria-haspopup="dialog" aria-controls="descriptionOverlay">Describe</button>
-    </div>
+    <p class="studio-question">How far can one mathematical proportion carry a composition?</p>
+    <a class="studio-gallery-link" href="gallery/">today’s gallery</a>
   </header>
 
   <main>
@@ -174,6 +162,15 @@
         </div>
       </div>
 
+          <div class="actions">
+      <button id="mutate">Mutate</button>
+      <button id="randomise">Another</button>
+      <button id="variations">Four at once</button>
+      <button id="geometry">Show the φ</button>
+
+      <button id="describe" type="button" aria-haspopup="dialog" aria-controls="descriptionOverlay">Describe</button>
+    </div>
+
       <div class="stage-footer" aria-hidden="true">
         <span id="artworkDimensions">ARTWORK · 1400 × 1000</span>
         <span id="shortcutLegend">M mutate · N seed · V variations · D describe · [ parameters</span>
@@ -182,12 +179,17 @@
 
     <aside id="inspector" class="inspector" aria-label="Art controls">
       <div class="drawer-handle" aria-hidden="true"></div>
+      <div class="seed">
+      <span class="toolbar-label">Seed</span>
+      <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
+      <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
+    </div>
 
       <div class="inspector-head">
         <div>
           <span class="panel-number"></span>
           <div>
-            <strong>PARAMETERS</strong>
+            <strong>Composition</strong>
             <span>Change a setting and see what it does</span>
           </div>
         </div>
