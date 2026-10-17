@@ -96,6 +96,37 @@ function colour(sourceCtx,x,y,random){
   const colour=['r','g','b'].map((_,i)=>Math.min(255,Math.round(rgba[i]*boost+28+random()*17)));
   return 'rgb('+colour.join(',')+')';
 }
+
+// Preserve the original engine's strokes as structural lead, rather than
+// allowing a generic Voronoi field to erase the system's identity.
+function drawSourceLead(ctx,paths,w,h,options){
+  const maxPaths=options.maxStructurePaths||220;
+  const eligible=paths.filter(p=>p&&p.d&&/[MLC]/i.test(p.d));
+  // Keep a deterministic spread across the drawing sequence: later layers
+  // can be just as important as early focal marks.
+  const step=Math.max(1,Math.ceil(eligible.length/maxPaths));
+  let drawn=0;
+  ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
+  for(let i=0;i<eligible.length;i+=step){
+    const p=eligible[i];
+    let path;try{path=new Path2D(p.d)}catch(_){continue}
+    ctx.save();
+    // Some engine drawings use a portrait orientation transform in SVG.
+    if(p.transform&&p.transform.startsWith('matrix(')){
+      const vals=p.transform.slice(7,-1).split(/[ ,]+/).map(Number);
+      if(vals.length===6&&vals.every(Number.isFinite))ctx.transform(...vals);
+    }
+    // Narrow but visible lead follows source strokes; prioritise engine
+    // geometry over the generic cell boundaries underneath.
+    const width=Math.max(3.2,Math.min(9,(Number(p.width)||2)*.55+2.3));
+    ctx.strokeStyle='rgba(14,16,15,.94)';ctx.lineWidth=width+2.4;ctx.stroke(path);
+    ctx.strokeStyle='rgba(190,185,158,.65)';ctx.lineWidth=Math.max(.8,width*.23);
+    ctx.translate(-1,-1);ctx.stroke(path);
+    ctx.restore();drawn++;
+  }
+  ctx.restore();
+  return drawn;
+}
 A.stainedGlassV1={
   generate:function(output,settings,options={}){
     const scale=options.scale||1,w=settings.orientation==='portrait'?1000:1400,h=settings.orientation==='portrait'?1400:1000;
@@ -140,12 +171,13 @@ A.stainedGlassV1={
     ctx.lineJoin='round';ctx.lineCap='round';
     for(const [p,q] of edges){
       ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);
-      ctx.strokeStyle='#171916';ctx.lineWidth=options.leadWidth||8;ctx.stroke();
+      ctx.strokeStyle='rgba(23,25,22,.78)';ctx.lineWidth=(options.leadWidth||8)*.66;ctx.stroke();
       ctx.strokeStyle='rgba(196,198,180,.38)';ctx.lineWidth=1.45;
       ctx.translate(-1.2,-1.2);ctx.stroke();ctx.translate(1.2,1.2);
     }
+    const structuralPaths=options.engineLead===false?0:drawSourceLead(ctx,collector.paths,w,h,options);
     ctx.setTransform(1,0,0,1,0,0);
-    return {version:'stained-glass-v1',mode:settings.mode,seed:settings.seed,
+    return {structuralPaths,version:'stained-glass-v2',mode:settings.mode,seed:settings.seed,
       pieces:cells.length,seams:edges.length,sourcePaths:collector.paths.length,
       compositionStrategy:meta?.strategy,width:output.width,height:output.height};
   }
