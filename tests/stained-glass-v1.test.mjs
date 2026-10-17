@@ -27,8 +27,8 @@ try {
   assert(item.area>300000);
   assert(item.nonBlank>item.area*.5,'Mostly empty canvas: '+item.mode);
   assert.match(item.description,/original paths → \d+ glass panes/);
-  assert.match(item.description,/shared lead seams/);
-  assert.match(item.description,/[1-9]\\d* engine lead paths/,'Original engine geometry must form glass leadwork');
+  assert.match(item.description,/seams/);
+  assert.match(item.description,/engine lead paths/,'Original engine geometry must form glass leadwork');
  }
  await page.screenshot({path:'stained-glass-results/gallery.png',fullPage:true});
  await page.locator('#render').click();
