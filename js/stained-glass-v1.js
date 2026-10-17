@@ -153,7 +153,7 @@ function geometryPanes(paths,w,h,seed,options){
     }
     m.lineWidth=Math.max(7,Math.min(17,(Number(p.width)||3)*.42+lead));
     m.stroke(path);m.restore();strokes++;
-    const tokens=p.d.match(/[MLC]|[-+]?(?:\\d*\\.?\\d+)(?:[eE][-+]?\\d+)?/gi)||[];
+    const tokens=p.d.match(/[MLC]|[-+]?(?:\d*\.?\d+)(?:[eE][-+]?\d+)?/gi)||[];
     let points=[],idx=0;
     while(idx<tokens.length){
       const cmd=tokens[idx++];
