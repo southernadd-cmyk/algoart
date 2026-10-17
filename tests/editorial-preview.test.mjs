@@ -1,0 +1,26 @@
+import {chromium,devices} from 'playwright';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({headless:true});
+try{
+ for(const mobile of [false,true]){
+  const context=await browser.newContext(mobile?{...devices['Pixel 7']}:{viewport:{width:1440,height:900}});
+  const page=await context.newPage(),errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>{localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1')});
+  await page.goto('http://127.0.0.1:4173/test/',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent?.trim()?.length>0&&document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
+  const state=await page.evaluate(()=>({
+   path:location.pathname,art:document.getElementById('art').width,
+   controls:['seed','materialStyle','palette','colourCount','elements','density','complexity','negativeSpace','plotterPaper','orientation'].every(id=>!!document.getElementById(id)),
+   paper:getComputedStyle(document.body).backgroundColor,
+   inspector:!!document.querySelector('#inspector .tabs'),
+   columns:getComputedStyle(document.querySelector('#app main')).gridTemplateColumns
+  }));
+  assert.equal(state.path,'/test/');
+  assert(state.art>0);
+  assert(state.controls&&state.inspector);
+  assert.deepEqual(errors,[]);
+  console.log(mobile?'MOBILE':'DESKTOP',state);
+  await context.close();
+ }
+}finally{await browser.close()}
