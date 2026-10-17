@@ -89,6 +89,7 @@ try{
     const u=new URL(host);u.searchParams.set('art',item.id);
     await page.goto(u.href,{waitUntil:'domcontentloaded',timeout:60000});
     await page.waitForFunction(seed=>document.querySelector('#seed')?.value===seed,item.seed,{timeout:100000});
+    await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true && new URL(location.href).searchParams.get('material')==='watercolour-v2s',{timeout:120000});
     const url=new URL(page.url());
     assert.equal(url.searchParams.get('material'),'watercolour-v2s');
     assert.equal(url.searchParams.get('fit'),'0');
