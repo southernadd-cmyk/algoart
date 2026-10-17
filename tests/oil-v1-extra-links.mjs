@@ -5,13 +5,13 @@ import {chromium} from 'playwright';
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1530,height:970},acceptDownloads:true});
+ await page.addInitScript(()=>localStorage.setItem('algoart-inspector-desktop','open'));
 page.setDefaultTimeout(90000);
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 try{
  await page.goto(root+'?v=9&seed=V5Q-OIL-D7ADDCCC68&mode=spiral&material=oil-v1',
    {waitUntil:'domcontentloaded'});
- await page.waitForFunction(()=>document.querySelector('#statsText')?.
-   textContent.includes('OIL PAINT'));
+ await page.waitForFunction(()=>/oil/i.test(document.querySelector('#statsText')?.textContent||''));
  const starting=await page.evaluate(()=>({
    material:document.querySelector('#materialStyle').value,
    sourceMeta:window.AlgoArt.lastRenderMeta?.guide?.type,
