@@ -24,28 +24,34 @@ try{
   assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),1,
     'Archived v1 URL must use original pigment version');
   await page.locator('#randomise').click();
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
   const initial=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
   assert(initial?.length>0,'New tissue should record a source palette');
   const firstURL=page.url();
   await page.locator('#randomise').click();
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
   const second=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
   assert.notEqual(page.url(),firstURL,'Randomise should change the composition');
   assert(second?.length>0);
   await page.locator('#materialStyle').selectOption('marker');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   assert.match(await page.locator('#materialStyleNote').innerText(),/^Marker ink with hand-drawn wobble, pressure and imperfect strokes\./);
   await page.locator('#randomise').click();
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   assert.equal(await page.locator('#materialStyle').inputValue(),'marker',
     'Marker must remain selected after Randomise');
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
   await page.locator('#materialStyle').selectOption('tissue');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
   assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms\./);
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
   await page.locator('#tab-colour').click();
   await page.locator('#palette').selectOption('mono');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   const mono=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
   assert(mono?.length>0);
   assert(mono.every(c=>/^#([a-f0-9]{2})\1\1$/i.test(c)),
@@ -78,9 +84,11 @@ try{
       JSON.stringify(creamCorner)+', after: '+JSON.stringify(darkCorner)+')');
   await page.locator('#tab-composition').click();
   await page.locator('#materialStyle').selectOption('marker');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   assert.equal(await page.locator('#paper').inputValue(),'#20334a',
     'Switching to Marker cannot reset chosen paper');
   await page.locator('#materialStyle').selectOption('tissue');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   assert.equal(await page.locator('#paper').inputValue(),'#20334a',
     'Switching back to Tissue cannot reset chosen paper');
   assert.deepEqual(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours),mono);
