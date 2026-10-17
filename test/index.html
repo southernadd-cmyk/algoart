@@ -204,7 +204,7 @@
           <div class="section-title"><span>Composition</span></div>
           <div class="controls">
             <div class="control material-render-control"><label for="materialStyle">Material</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p>
-<label class="mini-note"><input id="phiSheetFit" type="checkbox"> φ framing (all materials · enlarge sparse work, gently contain full compositions)</label>
+<label class="mini-note"><input id="phiSheetFit" type="checkbox"> Fit to φ</label>
 <p class="mini-note" id="phiSheetInfo" role="status" aria-live="polite">Off · original φ composition and sheet placement.</p>
 <label class="mini-note" id="watercolourFitControl" hidden><input id="watercolourFit" type="checkbox"> Legacy Watercolour-only fit (older V2S links)</label></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
@@ -242,7 +242,7 @@
         </section>
 
         <section class="tab-panel" data-panel="marker" id="panel-marker" role="tabpanel" aria-labelledby="tab-marker" hidden>
-          <div class="section-title"><span>MATERIAL CONTROLS</span><b>strokes / texture</b></div>
+          <div class="section-title"><span>Material controls</span><b>strokes / texture</b></div>
           <div class="controls">
             <div class="mini-note" id="materialControlsNote">Choose Marker, Tissue &amp; Graphite, Watercolour, or Oil Paint in Compose. These settings shape the underlying marker strokes. Tissue PNGs use their own torn-paper and graphite finish; SVG and plotter exports use marker paths.</div>
             <div class="control"><label>Mark-making tool</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
@@ -364,5 +364,6 @@
 <script src="js/action-painting-v1.js?v=20261017-creating-mobile-overlay"></script>
 <script src="js/app.js?v=20261017-creating-mobile-overlay"></script>
 <script src="test/editorial-pigment.js?v=1"></script>
+<script src="test/editorial-copy.js?v=1"></script>
 </body>
 </html>
