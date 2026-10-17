@@ -23,7 +23,8 @@ for (const test of cases){
   const faults=[];
   page.on('pageerror',error=>faults.push(error.message));
   await page.goto(url.toString(),{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(() => /tissue and graphite/i.test(document.querySelector('#statsText')?.textContent||'') &&
+  await page.waitForFunction(() => document.querySelector('#materialStyle')?.value==='tissue' &&
+    document.getElementById('creatingOverlay')?.hidden===true &&
     document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
   // Compare v4 directly against this exact old pigment study. Preserve both
