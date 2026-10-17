@@ -8,6 +8,7 @@ const out='oil-check-results';
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch();
 const page=await browser.newPage({viewport:{width:1480,height:1000},deviceScaleFactor:1});
+await page.addInitScript(()=>{localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open')});
 const cases=[
   {name:'01-growth-portrait',mode:'organic',fmt:'portrait',seed:'OIL-DEMO-GROWTH-419',el:36,den:52,cx:71,neg:52,phi:93,rec:4,spi:57,ga:94,nest:58,curve:86,shape:68,overlap:60,rot:63},
   {name:'02-connected-landscape',mode:'network',fmt:'landscape',seed:'OIL-DEMO-CONNECTED-628',el:24,den:64,cx:52,neg:59,phi:96,rec:5,spi:51,ga:88,nest:47,curve:77,shape:65,overlap:58,rot:46},
