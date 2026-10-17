@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALGO/ART — Stained Glass V1 Laboratory</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#121311;color:#eee9dc;font:13px/1.5 system-ui,sans-serif}
+header{padding:20px 24px;border-bottom:1px solid #47443c;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+h1{font-size:20px;margin:0}small{color:#aaa392}main{padding:20px;max-width:1600px;margin:auto}
+.controls{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:16px}
+label{display:flex;flex-direction:column;gap:5px;color:#c5bdad}select,input,button{background:#22231f;color:#f2eee2;padding:9px;border:1px solid #666457}
+button{background:#e1eabb;color:#171a10;font-weight:bold;cursor:pointer}button:disabled{opacity:.55;cursor:wait}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+article{border:1px solid #514c40;background:#191a17;padding:12px}article h2{font-size:14px;margin:0 0 8px}article canvas{width:100%;height:auto;display:block;background:#f4f0e5}
+article p{font-size:11px;color:#b6aa97;overflow-wrap:anywhere}
+#host{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-100px;top:-100px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}main{padding:10px}}
+</style></head>
+<body><header><div><h1>ALGO/ART · Stained Glass V1</h1><small>Isolated geometry and material prototype — not part of the production editor</small></div><span id="status" role="status">Loading source renderer…</span></header>
+<main><div class="controls">
+<label>Seed<input id="seed" value="GLASS-STUDY-01"></label>
+<label>Glass pieces<select id="pieces"><option>48</option><option selected>72</option><option>110</option></select></label>
+<label>Lead width<select id="lead"><option>5</option><option selected>8</option><option>12</option></select></label>
+<label>Orientation<select id="format"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label>
+<button id="render" disabled>RENDER FOUR STUDIES</button>
+</div><div class="grid" id="gallery"></div></main>
+<iframe id="host" title="Hidden original ALGO/ART geometry renderer" src="../index.html?v=9&seed=GLASS-SOURCE-01&mode=field"></iframe>
+<script>
+const host=document.getElementById('host'),gallery=document.getElementById('gallery'),button=document.getElementById('render'),status=document.getElementById('status');
+const modes=['field','rects','network','organic'];
+function ready(){
+ const A=host.contentWindow?.AlgoArt;
+ return A&&typeof A.render==='function'&&typeof A.readSettings==='function'&&A.stainedGlassV1&&
+   host.contentDocument?.querySelector('#statsText')?.textContent?.includes('GLASS-SOURCE-01');
+}
+function inject(){
+ const d=host.contentDocument,script=d.createElement('script');
+ script.src='../js/stained-glass-v1.js';
+ script.onload=()=>{button.disabled=false;status.textContent='Ready · four engines';render()};
+ d.body.appendChild(script);
+}
+host.addEventListener('load',()=>{
+ const tick=()=>{if(host.contentWindow?.AlgoArt?.readSettings&&host.contentWindow?.AlgoArt?.render)inject();else setTimeout(tick,120)};
+ tick();
+});
+async function render(){
+ if(!ready())return;
+ button.disabled=true;status.textContent='Rendering studies…';
+ const A=host.contentWindow.AlgoArt,base=A.readSettings();
+ gallery.replaceChildren();
+ for(const mode of modes){
+   const article=document.createElement('article'),h2=document.createElement('h2'),canvas=document.createElement('canvas'),info=document.createElement('p');
+   h2.textContent=mode.toUpperCase();article.append(h2,canvas,info);gallery.append(article);
+   const s={...base,mode,seed:document.getElementById('seed').value,orientation:document.getElementById('format').value};
+   // Independent source render, same output on every run for the same settings.
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+   const start=performance.now();
+   try{const meta=A.stainedGlassV1.generate(canvas,s,{scale:.7,pieces:+document.getElementById('pieces').value,leadWidth:+document.getElementById('lead').value});
+     info.textContent=meta.sourcePaths+' original paths → '+meta.pieces+' glass panes · '+meta.seams+' shared lead seams · '+Math.round(performance.now()-start)+'ms';
+     canvas.dataset.ready='true';
+   }catch(e){info.textContent=e.stack||e.message;console.error(e)}
+ }
+ status.textContent='Four studies complete';button.disabled=false;
+}
+button.addEventListener('click',render);
+window.renderGlassStudies=render;
+</script></body></html>
