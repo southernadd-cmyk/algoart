@@ -17,9 +17,16 @@ try{
       document.getElementById('newSeed').click();
       const shown=!overlay.hidden&&overlay.getAttribute('aria-hidden')==='false';
       document.getElementById('newSeed').click();
-      return {shown};
+      const box=overlay.getBoundingClientRect();
+      const topAtPanel=document.elementFromPoint(window.innerWidth/2,window.innerHeight-30);
+      return {shown,fullViewport:box.width>=innerWidth-1&&box.height>=innerHeight-1,
+        aboveParameters:topAtPanel===overlay||overlay.contains(topAtPanel),
+        atDocumentRoot:overlay.parentElement===document.body};
     });
     assert(output.shown,'Overlay must show synchronously before heavy rendering');
+    assert(output.fullViewport,'Overlay must cover whole viewport including Parameters');
+    assert(output.aboveParameters,'Overlay must be topmost over mobile Parameters area');
+    assert(output.atDocumentRoot,'Overlay must not be clipped by canvas wrapping');
     await page.waitForFunction(()=>document.getElementById('creatingOverlay').hidden,{timeout:90000});
     assert.deepEqual(errors,[],'No browser errors');
     const state=await page.evaluate(()=>{
