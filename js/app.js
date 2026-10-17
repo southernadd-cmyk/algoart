@@ -421,9 +421,46 @@ function renderModePreviews(){
   }
 }
 
+// On narrow screens, a single eight-render burst can stall touch input for
+// seconds. Render exactly the same thumbnails, but yield between each one.
+// A generation token prevents obsolete work from overwriting a newer state.
+var mobilePreviewGeneration=0;
+function renderMobileModePreviews(generation){
+  if(generation!==mobilePreviewGeneration)return;
+  var base=A.readSettings();
+  var previewState=Object.assign({},base);
+  delete previewState.mode;
+  var key=JSON.stringify([CURRENT_RENDERER_VERSION,previewState,materialKey(),tissuePaletteVersion]);
+  if(key===modePreviewStateKey)return;
+  var cards=Array.from(document.querySelectorAll('.mode-card'));
+  var index=0;
+  function next(){
+    if(generation!==mobilePreviewGeneration)return;
+    // A change to controls invalidates the remaining thumbnails.
+    var latest=A.readSettings(),state=Object.assign({},latest);
+    delete state.mode;
+    if(JSON.stringify([CURRENT_RENDERER_VERSION,state,materialKey(),tissuePaletteVersion])!==key)return;
+    if(index>=cards.length){modePreviewStateKey=key;return;}
+    var card=cards[index++];
+    var oldMeta=A.lastRenderMeta,oldW=A.W,oldH=A.H,oldFrame=A.lastPhiSheetFrame;
+    try{
+      withRendererVersion(CURRENT_RENDERER_VERSION,function(){
+        renderArtwork(card.querySelector('canvas'),Object.assign({},base,{mode:card.dataset.mode}),.1,false);
+      });
+    }finally{
+      A.lastRenderMeta=oldMeta;A.W=oldW;A.H=oldH;A.lastPhiSheetFrame=oldFrame;
+    }
+    previewTimer=setTimeout(next,0);
+  }
+  next();
+}
 function scheduleModePreviews(){
   clearTimeout(previewTimer);
-  previewTimer=setTimeout(renderModePreviews,180);
+  var generation=++mobilePreviewGeneration;
+  previewTimer=setTimeout(function(){
+    if(mobileQuery.matches)renderMobileModePreviews(generation);
+    else renderModePreviews();
+  },180);
 }
 
 document.querySelectorAll('.mode-card').forEach(function(card){
