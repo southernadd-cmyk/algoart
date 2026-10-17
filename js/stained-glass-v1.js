@@ -224,7 +224,8 @@ function renderGeometryGlass(ctx,source,topology,w,h,seed,options){
   const c=low.getContext('2d'),img=c.createImageData(gw,gh);
   const rgb=palette.map(color=>{
     const el=document.createElement('canvas').getContext('2d');el.fillStyle=color;
-    const v=el.fillStyle.match(/\\d+/g)?.map(Number)||[70,110,140];return v;
+    const hex=el.fillStyle.match(/^#([0-9a-f]{6})$/i);if(hex)return [0,2,4].map(i=>parseInt(hex[1].slice(i,i+2),16));
+    const v=el.fillStyle.match(/[0-9]+/g)?.map(Number)||[70,110,140];return v;
   });
   for(let k=0;k<labels.length;k++){
     const id=labels[k],j=k*4;
