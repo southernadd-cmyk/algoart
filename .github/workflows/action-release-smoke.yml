@@ -1,0 +1,41 @@
+name: Action Painting Release Smoke
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'js/action-painting-v1.js'
+      - 'js/app.js'
+      - 'index.html'
+      - 'automation/**'
+      - 'tests/action-release-smoke.mjs'
+      - '.github/workflows/action-release-smoke.yml'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/action-painting-v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Serve editor
+        run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/action-http.log 2>&1 &
+      - name: Generate independent queues
+        run: |
+          SOCIAL_DATE=2026-10-18 SOCIAL_MATERIAL=action SOCIAL_COUNT=2 SOCIAL_ORIENTATION=landscape node automation/generate-social.mjs
+          SOCIAL_DATE=2026-10-18 SOCIAL_MATERIAL=action SOCIAL_COUNT=2 SOCIAL_ORIENTATION=portrait node automation/generate-social.mjs
+      - name: Validate queue, links, images
+        run: node tests/action-release-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: action-release-smoke-output
+          path: social-output/2026-10-18/action/
+          if-no-files-found: warn
