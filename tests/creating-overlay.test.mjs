@@ -10,10 +10,11 @@ try{
     await page.waitForFunction(()=>document.querySelector('#art').width>0,{timeout:20000});
     const output=await page.evaluate(()=>{
       const overlay=document.getElementById('creatingOverlay');
-      const icon=document.getElementById('creatingMarker');
-      if(!overlay||!icon||!window.AlgoArt.stroke)throw Error('Creating UI missing');
-      const rgba=icon.getContext('2d').getImageData(0,0,icon.width,icon.height).data;
-      if(!rgba.some((v,i)=>i%4===3&&v>0))throw Error('Marker icon has no ink');
+      const icon=document.querySelector('.creating-phi');
+      if(!overlay||!icon||icon.textContent!=='φ')throw Error('Single phi icon missing');
+      const style=getComputedStyle(icon);
+      if(style.backgroundColor!=='rgba(0, 0, 0, 0)'||!style.fontFamily.includes('AlgoArt Marker'))
+        throw Error('Phi must have a transparent background and marker font');
       document.getElementById('newSeed').click();
       const shown=!overlay.hidden&&overlay.getAttribute('aria-hidden')==='false';
       document.getElementById('newSeed').click();
