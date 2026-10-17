@@ -1171,10 +1171,20 @@ function flowThroughPaper(ctx,w,h,seed,paper,ratio,chains,wetMaskCtx,softMaskCtx
       // Fibre direction favours east/west in some regions and north/south
       // in others; the same interface gets the same flux from both sides.
       for(var side=0;side<4;side++){
-        var nx=x+(side===0?stride:side===1?-stride:0);
-        var ny=y+(side===2?stride:side===3?-stride:0);
-        if(nx<0||ny<0||nx>=w||ny>=h)continue;
-        var q=ny*w+nx;
+        // Experimental V2T fast path: use the already-known pixel index.
+        // Keep V2S's original path untouched for historical comparisons.
+        var q;
+        if(A.watercolourV2TFastNeighbours){
+          if(side===0){if(x+stride>=w)continue;q=pi+stride;}
+          else if(side===1){if(x<stride)continue;q=pi-stride;}
+          else if(side===2){if(y+stride>=h)continue;q=pi+stride*w;}
+          else {if(y<stride)continue;q=pi-stride*w;}
+        }else{
+          var nx=x+(side===0?stride:side===1?-stride:0);
+          var ny=y+(side===2?stride:side===3?-stride:0);
+          if(nx<0||ny<0||nx>=w||ny>=h)continue;
+          q=ny*w+nx;
+        }
         // Interface mobility is symmetric: pigment is redistributed,
         // not created, when a pair of paper fibres exchange wash water.
         var stretch=(fibres[pi]+fibres[q])*.5;
