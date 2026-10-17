@@ -10,6 +10,13 @@ try{
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1')});
   await page.goto('http://127.0.0.1:4173/test/',{waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>document.getElementById('introSplash').hidden=false);
+  const intro=await page.evaluate(()=>({width:document.querySelector('.welcome-composition').scrollWidth,viewport:innerWidth,scrollHeight:document.querySelector('#introSplash').scrollHeight,height:innerHeight,artwork:document.querySelector('.welcome-right img').complete}));
+  assert(intro.width<=intro.viewport,'Welcome composition must fit viewport');
+  assert(intro.scrollHeight<=intro.height+2,'Welcome screen must not vertically scroll');
+  assert(intro.artwork,'Welcome artwork must load');
+  await page.screenshot({path:'editorial-preview-results/'+(mobile?'welcome-mobile':'welcome-desktop')+'.png'});
+  await page.evaluate(()=>document.getElementById('introSplash').hidden=true);
   await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent?.trim()?.length>0&&document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   const state=await page.evaluate(()=>({
    path:location.pathname,art:document.getElementById('art').width,
