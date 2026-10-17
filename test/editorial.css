@@ -191,3 +191,17 @@ button{font-family:Georgia,serif}
  .editorial-preview .inspector .inspector-head{grid-row:2}
  .editorial-preview .inspector .tabs{grid-row:3}
 }
+
+/* Headings in ALGO/ART's own uppercase marker lettering.
+   Sentence-case labels and actions stay in Georgia because marker lacks lowercase. */
+.editorial-preview .inspector-head strong,
+.editorial-preview .section-title span,
+.editorial-preview .mode-picker-label span,
+.editorial-preview .stage .inspector-toggle span{
+ font-family:"AlgoArt Marker",monospace!important;
+ font-style:normal!important;font-weight:400!important;
+ text-transform:none!important;letter-spacing:0!important;
+ font-size:15px!important;line-height:1.45!important;
+}
+.editorial-preview .inspector-head strong{font-size:21px!important}
+.editorial-preview .mode-picker-label span{font-size:14px!important}
