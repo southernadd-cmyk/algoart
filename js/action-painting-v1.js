@@ -82,7 +82,7 @@ function actionPaintPalette(s){
  return base.map(function(value,i){
   var round=Math.floor(i/cycle);
   if(!round)return value;
-  var parts=/^hsl\\(([\\d.]+) ([\\d.]+)% ([\\d.]+)%\\)$/.exec(value);
+  var parts=/^hsl\(([\d.]+) ([\d.]+)% ([\d.]+)%\)$/.exec(value);
   if(!parts)return value;
   var hue=(+parts[1]+[0,21,-24,42,-43,63][round%6])%360;
   var light=Math.max(26,Math.min(74,+parts[3]+(round%2?-7:8)));
