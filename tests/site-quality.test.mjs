@@ -15,7 +15,7 @@ const gallery=read('gallery/index.html'),source=read('automation/build-gallery.m
 // Compare published output with the generator's current description instead of
 // a frozen list of past material versions. Scheduled publishing may advance
 // independently of a feature branch, but generated metadata must be coherent.
-const extractDescription=(name)=>source.match(new RegExp('const '+name+' = \\'([^\\']+)\\';'))?.[1];
+const extractDescription=(name)=>source.split('const '+name+" = '")[1]?.split("'")[0];
 const galleryDescription=extractDescription('GALLERY_DESCRIPTION');
 const feedDescription=extractDescription('FEED_DESCRIPTION');
 assert(galleryDescription&&feedDescription,'Gallery generator must declare both descriptions');
