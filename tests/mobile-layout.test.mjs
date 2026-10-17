@@ -22,6 +22,8 @@ try{
    if(fmt==='landscape')assert(geometry.w>=width-32,'Landscape should use available phone width');
    await page.screenshot({path:`oil-check-results/layout-${width}-${fmt}.png`});
    await page.locator('#inspectorToggle').tap();
+   const seedOrder=await page.locator('#inspector').evaluate(el=>({heading:el.querySelector('.inspector-head').getBoundingClientRect().top,seed:el.querySelector(':scope > .seed').getBoundingClientRect().top,dom:[...el.children].map(x=>x.className)}));
+   assert(seedOrder.seed>seedOrder.heading,'Seed must appear below Parameters heading: '+JSON.stringify(seedOrder));
    const drawer=await page.locator('#inspector').evaluate(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,viewport:document.documentElement.clientWidth};});
    assert(Math.abs(drawer.left)<1 && Math.abs(drawer.right-drawer.viewport)<1, 'Mobile parameters drawer must span viewport: '+JSON.stringify(drawer));
    const inner=await page.locator('#inspector').evaluate(el=>{const d=el.getBoundingClientRect(),h=el.querySelector('.inspector-head').getBoundingClientRect(),t=el.querySelector('.tabs').getBoundingClientRect(),b=el.querySelector('.tab-body').getBoundingClientRect();return {drawer:d.width,head:h.width,tabs:t.width,body:b.width};});
