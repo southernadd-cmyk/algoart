@@ -1,5 +1,7 @@
 name: Action Painting Release Smoke
 on:
+  push:
+    branches: [experiment/action-painting-v1]
   pull_request:
     paths:
       - 'js/action-painting-v1.js'
