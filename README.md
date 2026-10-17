@@ -166,13 +166,14 @@ Historical renderer and material versions remain available so saved links reprod
 
 ## Drawing materials
 
-**Four released material choices** are available in Compose. Oil Paint v3 is now the active Oil material; Oil Paint v1 was released on 15 October 2026, and is distinct from the older internal `oil-*` modules that render Tissue & Graphite.
+**Five released material choices** are available in Compose. Oil Paint v4 is now the active Oil material; Oil Paint v1 was released on 15 October 2026, and is distinct from the older internal `oil-*` modules that render Tissue & Graphite.
 
 
 - **Marker drawing:** expressive ink with wobble, uneven weight, pressure and dryness.
 - **Tissue & Graphite:** translucent torn tissue, colour-matched atmospheric blooms and fine graphite, using the original seeded Marker palette on your selected paper (cream by default).
 - **Watercolour:** source-colour pigments and dry-brush details; V2S is current and V2R remains available for historic links.
-- **Oil Paint v1 (15 October 2026):** actual loaded-bristle oil paint, connected masses selected from the original golden-ratio composition guide relationships, source-owned colour and preserved negative space. This is the tested Oil-only V5o/V5p/V5q interpretation, not a visual filter or AI-generated image. Oil is now selectable directly; newly shared Oil URLs use `material=oil-v3`. Marker, Watercolour and Tissue renderers, old URLs and scheduled publishing remain unchanged.
+- **Action Painting v1 (17 October 2026):** curved poured-paint gestures, irregular pools and spatter reinterpreting the same source geometry. Its visible composition can differ considerably from Marker. Saved URLs use `material=action-v1`.
+- **Oil Paint (v4 current; v1 first released 15 October 2026):** actual loaded-bristle oil paint, connected masses selected from the original golden-ratio composition guide relationships, source-owned colour and preserved negative space. This is the tested Oil-only V5o/V5p/V5q interpretation, not a visual filter or AI-generated image. Oil is now selectable directly; newly shared Oil URLs use `material=oil-v4`. Marker, Watercolour and Tissue renderers, old URLs and scheduled publishing remain unchanged.
 
 All materials use the same seeded composition. From renderer V9, changing paper colour does not change the artwork's geometry or selected pigment colours, and switching materials preserves the paper choice. Published V1–V8 compositions remain version-locked. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** is labelled **Source mark profile** for Tissue & Graphite. Its seven choices use material-appropriate names such as Fine contours, Wide bands and Flat-edged bands, while retaining the exact underlying pen IDs and seeded source paths. The Materials sliders likewise describe source marks in Tissue mode; they do not simulate physical paper thickness, brushes or graphite pressure. Switching materials restores the original Marker labels without changing any setting values. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
 
