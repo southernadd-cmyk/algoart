@@ -27,9 +27,16 @@ async function load(material,fmt='landscape'){
   await page.waitForFunction(()=>document.querySelector('#art')?.width>0);
 }
 async function openExport(){
-  if(await page.locator('#inspectorToggle').isVisible())await page.locator('#inspectorToggle').click();
+  if(await page.locator('#app').evaluate(el=>el.classList.contains('inspector-closed')))await page.locator('#inspectorToggle').click();
   await page.locator('#tab-export').click();
   await page.locator('#savePanel').waitFor({state:'visible'});
+}
+async function changeArtwork(){
+  // The drawer covers stage actions on small screens. Close it before changing a drawing.
+  if(!await page.locator('#app').evaluate(el=>el.classList.contains('inspector-closed')))
+    await page.locator('#inspectorClose').click();
+  await page.locator('#randomise').click();
+  await openExport();
 }
 async function checkDownload(button,extension,name){
   if(button==='#savePanel'){
@@ -114,7 +121,7 @@ try{
   assert.equal(secondPng.filename,png.filename,'Native link retains the artwork filename');
   // Exact Android failure report: PNG -> Randomise -> PNG again, no reload.
   const oldSeed=await page.locator('#seed').inputValue();
-  await page.locator('#randomise').click();
+  await changeArtwork();
   const newSeed=await page.locator('#seed').inputValue();
   assert.notEqual(newSeed,oldSeed,'Randomise must change the composition');
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue',
@@ -124,7 +131,7 @@ try{
     'Second PNG should encode the randomised composition instead of the old seed');
   assert.match(await page.locator('#exportStatus').textContent(),/PNG ready/i);
   // And again without refreshing or returning to the home screen.
-  await page.locator('#randomise').click();
+  await changeArtwork();
   const newerSeed=await page.locator('#seed').inputValue();
   assert.notEqual(newerSeed,newSeed);
   const thirdSeed=await checkDownload('#savePanel','.png','tissue-mobile-after-second-randomise');
