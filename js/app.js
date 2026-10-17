@@ -990,7 +990,7 @@ function beginDialog(overlay,closeButton){
   overlay.hidden=false;
   activeDialog=overlay;
   app.inert=true;
-  closeButton.focus();
+  closeButton.focus({preventScroll:true});
   return true;
 }
 function endDialog(overlay,fallback){
