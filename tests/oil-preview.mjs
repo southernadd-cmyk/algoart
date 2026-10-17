@@ -23,7 +23,7 @@ for (const test of cases){
   const faults=[];
   page.on('pageerror',error=>faults.push(error.message));
   await page.goto(url.toString(),{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.trim().endsWith(' / TISSUE & GRAPHITE') &&
+  await page.waitForFunction(() => /tissue and graphite/i.test(document.querySelector('#statsText')?.textContent||'') &&
     document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
   // Compare v4 directly against this exact old pigment study. Preserve both
@@ -51,7 +51,7 @@ for (const test of cases){
     url:location.href,
     version:window.AlgoArt?.rendererVersion
   }));
-  if(toggleState.selected!=='marker'||toggleState.stats?.trim().endsWith(' / TISSUE & GRAPHITE'))
+  if(toggleState.selected!=='marker'||/tissue and graphite/i.test(toggleState.stats||''))
     throw new Error(test.name+' failed to restore marker: '+JSON.stringify(toggleState)+
       ' page errors: '+JSON.stringify(faults));
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-marker.png',timeout:60000});
