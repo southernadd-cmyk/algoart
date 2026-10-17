@@ -426,7 +426,7 @@ try {
 const queue = {
   version: 1,
   date: day,
-  ...(oil?{material:'oil'}:watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
+  ...(action?{material:'action'}:oil?{material:'oil'}:watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
   ...(orientation==='portrait'||watercolor||watercolour||oil||action?{orientation}:{}),
   generatedAt: new Date().toISOString(),
   timezone: TIME_ZONE,
