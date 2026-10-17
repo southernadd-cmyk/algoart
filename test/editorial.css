@@ -352,3 +352,12 @@ button{font-family:Georgia,serif}
   }
   .editorial-preview #inspector > .drawer-handle {width:42px!important;justify-self:center!important;}
 }
+
+/* Place the seed immediately beneath the Parameters heading on mobile. */
+@media(max-width:760px){
+ .editorial-preview #inspector > .drawer-handle{grid-row:1!important}
+ .editorial-preview #inspector > .inspector-head{grid-row:2!important}
+ .editorial-preview #inspector > .seed{grid-row:3!important;margin:8px 0 12px!important}
+ .editorial-preview #inspector > .tabs{grid-row:4!important}
+ .editorial-preview #inspector > .tab-body{grid-row:5!important}
+}
