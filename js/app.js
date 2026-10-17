@@ -516,10 +516,8 @@ function finishDragPreview(){
   useCurrentRenderer();regenerate();
 }
 
-var creatingGeneration=0,creatingPending=false,creatingInitial=true;
+var creatingGeneration=0,creatingPending=false;
 function scheduleCreatingRender(){
-  // Preserve the original synchronous initial render for URL and archive state.
-  if(creatingInitial){creatingInitial=false;return commitRegenerate();}
   var generation=++creatingGeneration;
   creatingPending=true;
   var overlay=$('creatingOverlay');

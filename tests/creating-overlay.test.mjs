@@ -6,8 +6,23 @@ try{
     const context=await browser.newContext(mobile?{...devices['Pixel 7']}:{viewport:{width:1440,height:900}});
     const page=await context.newPage();
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
+    await page.addInitScript(()=>{
+      window.__initialCreatingShown=false;
+      const observer=new MutationObserver(()=>{
+        const overlay=document.getElementById('creatingOverlay');
+        if(overlay&&!overlay.hidden&&overlay.getAttribute('aria-hidden')==='false')
+          window.__initialCreatingShown=true;
+      });
+      observer.observe(document,{subtree:true,childList:true,attributes:true,
+        attributeFilter:['hidden','aria-hidden']});
+    });
+
     await page.goto(process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/',{waitUntil:'load'});
     await page.waitForFunction(()=>document.querySelector('#art').width>0,{timeout:20000});
+    await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden,{timeout:90000});
+    assert.equal(await page.evaluate(()=>window.__initialCreatingShown),true,
+      'CREATING overlay must appear during first page render');
+
     const output=await page.evaluate(()=>{
       const overlay=document.getElementById('creatingOverlay');
       const icon=document.querySelector('.creating-phi');

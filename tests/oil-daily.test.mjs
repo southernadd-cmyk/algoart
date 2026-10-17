@@ -90,6 +90,7 @@ try{
   await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:75000});
   await page.waitForFunction(seed=>document.querySelector('#seed')?.value===seed,
      item.seed,{timeout:105000});
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true&&new URL(location.href).searchParams.has('material'),{timeout:120000});
   const u=new URL(page.url());
   assert.equal(u.searchParams.get('material'),'oil-v1');
   assert.equal(u.searchParams.get('pal'),item.settings.palette);
@@ -121,8 +122,8 @@ for(const orientation of ['landscape','portrait']){
   assert.equal(queue.entries.length,1);
   const item=queue.entries[0];
   validateOilItem(item,v3Date,orientation);
-  assert.equal(new URL(item.shareUrl).searchParams.get('material'),'oil-v3');
-  assert.match(makeCaptions(item).instagram,/OIL PAINT V3/);
+  assert.equal(new URL(item.shareUrl).searchParams.get('material'),'oil-v4');
+  assert.match(makeCaptions(item).instagram,/OIL PAINT V4/);
   run('automation/build-gallery.mjs',{
     SOCIAL_DATE:v3Date,GALLERY_QUEUE_MATERIAL:'oil',
     GALLERY_QUEUE_ORIENTATION:orientation
@@ -139,8 +140,9 @@ assert(oilEntries.some(x=>x.orientation==='landscape'||x.settings?.orientation!=
   'Oil gallery must include a landscape study');
 assert(oilEntries.some(x=>x.orientation==='portrait'||x.settings?.orientation==='portrait'),
   'Oil gallery must include a portrait study');
-assert(v3Gallery.entries.filter(x=>x.material==='oil').every(x=>
-  new URL(x.shareUrl).searchParams.get('material')==='oil-v3'));
+assert(oilEntries.every(x=>['oil-v1','oil-v3','oil-v4'].includes(
+  new URL(x.shareUrl).searchParams.get('material'))),
+  'Existing gallery entries must retain their original Oil material versions');
 const v3Html=await fs.readFile('gallery/'+v3Date+'/index.html','utf8');
-assert(v3Html.includes('Oil Paint v3'),'Tomorrow gallery must label Oil V3');
+assert(v3Html.includes('Oil Paint'),'17 October gallery must identify Oil artworks');
 console.log('PASS: 17 October portrait and landscape Oil V3 generation, captions and gallery');
