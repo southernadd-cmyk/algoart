@@ -140,7 +140,7 @@ function geometryPanes(paths,w,h,seed,options){
   const lead=options.leadWidth||8;
   // Real marker geometry creates the principal pane edges.
   const eligible=paths.filter(p=>p?.d&&/[MLC]/i.test(p.d));
-  const limit=options.maxStructurePaths||220,step=Math.max(1,Math.ceil(eligible.length/limit));
+  const limit=options.maxStructurePaths||68,step=Math.max(1,Math.ceil(eligible.length/limit));
   let strokes=0;
   const ends=[];
   for(let i=0;i<eligible.length;i+=step){
@@ -169,7 +169,7 @@ function geometryPanes(paths,w,h,seed,options){
   // from actual geometry rather than unrelated polygons.
   const rand=rng(seed+'|closures');
   m.lineWidth=Math.max(6,lead*.9);
-  for(let i=0;i<Math.min(ends.length,220);i++){
+  for(let i=0;i<Math.min(ends.length,36);i++){
     const p=ends[i];
     if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.y<0||p.x>w||p.y>h)continue;
     let q=null,best=Infinity;
@@ -177,7 +177,7 @@ function geometryPanes(paths,w,h,seed,options){
       const d=distance(p,edge);
       if(d<best){best=d;q=edge}
     }
-    if(best>Math.min(w,h)*.24)continue;
+    if(best>Math.min(w,h)*.15)continue;
     m.beginPath();m.moveTo(p.x,p.y);m.lineTo(q.x,q.y);m.stroke();
   }
   // Black sheet frame supplies the outer boundary for every enclosed face.
@@ -212,13 +212,12 @@ function balancePaneTopology(topology,sourcePaths,w,h,seed,options){
  const target=Math.max(topology.regions+Math.min(42,Math.ceil(topology.regions*.35)),Math.min(125,options.pieces||72));
  const eligible=Array.from({length:topology.regions},(_,i)=>i+1)
   .filter(id=>areas[id]>72).sort((a,b)=>areas[b]-areas[a]);
- const sitesByRegion=new Map(),positionsByRegion=new Map();
+ const sitesByRegion=new Map();
  // Place at most one extra subdivision site at a time, weighted toward
  // largest source-defined faces. Clamp to avoid fracturing recognizable motifs.
  const capacity=new Map();
  for(const id of eligible)capacity.set(id,Math.min(6,Math.floor(areas[id]/1000)+1));
  let budget=Math.max(0,target-topology.regions);
- const rand=rng(seed+'|hybrid-divisions');
  const sampled=sampleSource(sourcePaths,w,h,seed+'|hybrid',Math.max(target*2,80));
  const points=sampled.map(p=>({x:p.x/divisor,y:p.y/divisor}));
  for(let id of eligible){
@@ -283,6 +282,7 @@ function balancePaneTopology(topology,sourcePaths,w,h,seed,options){
 function renderGeometryGlass(ctx,source,topology,w,h,seed,options){
   const {labels,areas,gw,gh,divisor}=topology;
   const rand=rng(seed+'|pane-colours'),src=source.getContext('2d',{willReadFrequently:true});
+  const sourcePixels=src.getImageData(0,0,w,h).data;
   // Sample colour at a representative pixel from each actual bounded region.
   const palette=Array.from({length:topology.regions+1},(_,i)=>{
     const fallback=['#315c8d','#b9554d','#b79a4b','#52766a','#765785'];
@@ -294,7 +294,8 @@ function renderGeometryGlass(ctx,source,topology,w,h,seed,options){
     if(id>0&&!samplePixel[id]&&(topology.hybridLead||areas[id]>2))samplePixel[id]={x,y};
   }
   for(let id=1;id<samplePixel.length;id++)if(samplePixel[id]){
-    const p=samplePixel[id],pixel=src.getImageData(Math.min(w-1,p.x*divisor),Math.min(h-1,p.y*divisor),1,1).data;
+    const p=samplePixel[id],px=Math.min(w-1,p.x*divisor),py=Math.min(h-1,p.y*divisor);
+    const pixel=sourcePixels.subarray((py*w+px)*4,(py*w+px)*4+4);
     palette[id]='rgb('+[0,1,2].map(i=>Math.min(255,Math.round(pixel[i]*(.66+rand()*.25)+rand()*28))).join(',')+')';
   }
   const low=document.createElement('canvas');low.width=gw;low.height=gh;
@@ -338,7 +339,7 @@ A.stainedGlassV1={
       const topology=options.enginePanes==='hybrid'?balancePaneTopology(baseTopology,collector.paths,w,h,settings.seed,options):baseTopology;
       renderGeometryGlass(ctx,source,topology,w,h,settings.seed+'|'+settings.mode,options);
       ctx.setTransform(1,0,0,1,0,0);
-      return {version:'stained-glass-v3',mode:settings.mode,seed:settings.seed,
+      return {version:options.enginePanes==='hybrid'?'stained-glass-v5':'stained-glass-v3',mode:settings.mode,seed:settings.seed,
         pieces:topology.regions,engineRegions:topology.engineRegions||topology.regions,secondaryPanes:topology.secondaryPanes||0,structuralPaths:topology.strokes,seams:'engine-defined',
         sourcePaths:collector.paths.length,width:output.width,height:output.height};
     }
