@@ -209,7 +209,7 @@ function geometryPanes(paths,w,h,seed,options){
 // unsplit source-paint regions; secondary sites can never cross source lead.
 function balancePaneTopology(topology,sourcePaths,w,h,seed,options){
  const {gw,gh,labels,areas,divisor}=topology;
- const target=Math.max(24,Math.min(125,options.pieces||72));
+ const target=Math.max(topology.regions+Math.min(42,Math.ceil(topology.regions*.35)),Math.min(125,options.pieces||72));
  const eligible=Array.from({length:topology.regions},(_,i)=>i+1)
   .filter(id=>areas[id]>72).sort((a,b)=>areas[b]-areas[a]);
  const sitesByRegion=new Map(),positionsByRegion=new Map();
@@ -291,7 +291,7 @@ function renderGeometryGlass(ctx,source,topology,w,h,seed,options){
   const samplePixel=new Array(topology.regions+1);
   for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){
     const id=labels[y*gw+x];
-    if(id>0&&!samplePixel[id]&&areas[id]>2)samplePixel[id]={x,y};
+    if(id>0&&!samplePixel[id]&&(topology.hybridLead||areas[id]>2))samplePixel[id]={x,y};
   }
   for(let id=1;id<samplePixel.length;id++)if(samplePixel[id]){
     const p=samplePixel[id],pixel=src.getImageData(Math.min(w-1,p.x*divisor),Math.min(h-1,p.y*divisor),1,1).data;
