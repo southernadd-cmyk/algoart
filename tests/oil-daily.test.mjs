@@ -140,8 +140,8 @@ assert(oilEntries.some(x=>x.orientation==='landscape'||x.settings?.orientation!=
   'Oil gallery must include a landscape study');
 assert(oilEntries.some(x=>x.orientation==='portrait'||x.settings?.orientation==='portrait'),
   'Oil gallery must include a portrait study');
-assert(v3Gallery.entries.filter(x=>x.material==='oil').every(x=>
-  new URL(x.shareUrl).searchParams.get('material')==='oil-v3'));
+assert(oilEntries.every(x=>new URL(x.shareUrl).searchParams.get('material')===
+  (x.date<'2026-10-17'?'oil-v1':'oil-v4')));
 const v3Html=await fs.readFile('gallery/'+v3Date+'/index.html','utf8');
-assert(v3Html.includes('Oil Paint v3'),'Tomorrow gallery must label Oil V3');
+assert(v3Html.includes('Oil Paint v4'),'17 October gallery must label Oil V4');
 console.log('PASS: 17 October portrait and landscape Oil V3 generation, captions and gallery');
