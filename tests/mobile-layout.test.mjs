@@ -22,6 +22,8 @@ try{
    if(fmt==='landscape')assert(geometry.w>=width-32,'Landscape should use available phone width');
    await page.screenshot({path:`oil-check-results/layout-${width}-${fmt}.png`});
    await page.locator('#inspectorToggle').tap();
+   const drawer=await page.locator('#inspector').evaluate(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,viewport:document.documentElement.clientWidth};});
+   assert(Math.abs(drawer.left)<1 && Math.abs(drawer.right-drawer.viewport)<1, 'Mobile parameters drawer must span viewport: '+JSON.stringify(drawer));
    await page.locator('#tab-export').tap();
    await page.locator('#savePanel').waitFor({state:'visible'});
    await page.locator('#inspectorClose').tap();
