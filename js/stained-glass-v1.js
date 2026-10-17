@@ -203,6 +203,83 @@ function geometryPanes(paths,w,h,seed,options){
   }
   return {mask,labels,areas,regions,strokes,gw,gh,divisor};
 }
+// Hybrid topology: source-engine barriers remain absolute. Only larger
+// enclosed regions receive a small number of secondary glass seams.
+// This prevents both V1's homogeneous Voronoi pattern and V3's excessive
+// unsplit source-paint regions; secondary sites can never cross source lead.
+function balancePaneTopology(topology,sourcePaths,w,h,seed,options){
+ const {gw,gh,labels,areas,divisor}=topology;
+ const target=Math.max(24,Math.min(125,options.pieces||72));
+ const eligible=Array.from({length:topology.regions},(_,i)=>i+1)
+  .filter(id=>areas[id]>72).sort((a,b)=>areas[b]-areas[a]);
+ const sitesByRegion=new Map(),positionsByRegion=new Map();
+ // Place at most one extra subdivision site at a time, weighted toward
+ // largest source-defined faces. Clamp to avoid fracturing recognizable motifs.
+ const capacity=new Map();
+ for(const id of eligible)capacity.set(id,Math.min(6,Math.floor(areas[id]/1000)+1));
+ let budget=Math.max(0,target-topology.regions);
+ const rand=rng(seed+'|hybrid-divisions');
+ const sampled=sampleSource(sourcePaths,w,h,seed+'|hybrid',Math.max(target*2,80));
+ const points=sampled.map(p=>({x:p.x/divisor,y:p.y/divisor}));
+ for(let id of eligible){
+  if(!budget)break;
+  const n=Math.min(capacity.get(id),budget+1);
+  if(n<2)continue;
+  const candidates=[];
+  for(const p of points){
+   const x=Math.floor(p.x),y=Math.floor(p.y);
+   if(x>=0&&y>=0&&x<gw&&y<gh&&labels[y*gw+x]===id)candidates.push(p);
+  }
+  // Supplement from the actual face bounds instead of placing a global grid.
+  let chosen=candidates.slice(0,1);
+  if(!chosen.length){
+   for(let k=0;k<labels.length;k++)if(labels[k]===id){chosen=[{x:k%gw,y:(k/gw)|0}];break}
+  }
+  for(let k=1;k<n;k++){
+   let best=null,score=-1;
+   for(const p of candidates){
+    const d=Math.min(...chosen.map(q=>(p.x-q.x)**2+(p.y-q.y)**2));
+    if(d>score){score=d;best=p}
+   }
+   if(!best||score<180)break;
+   chosen.push(best);
+  }
+  // A deterministic scan provides secondary sites if source samples are sparse.
+  if(chosen.length<2){
+   for(let k=0;k<labels.length;k+=Math.max(1,Math.floor(labels.length/1700))){
+    if(labels[k]!==id)continue;
+    const p={x:k%gw,y:(k/gw)|0};
+    if(chosen.every(q=>distance(p,q)>24))chosen.push(p);
+    if(chosen.length>=n)break;
+   }
+  }
+  if(chosen.length>1){sitesByRegion.set(id,chosen);budget-=chosen.length-1}
+ }
+ const hybrid=new Int32Array(labels.length),offset=new Map();let counter=0;
+ for(let id=1;id<=topology.regions;id++){
+  const sites=sitesByRegion.get(id);offset.set(id,counter+1);
+  counter+=sites?sites.length:1;
+ }
+ for(let k=0;k<labels.length;k++){
+  const id=labels[k];if(id<=0){hybrid[k]=id;continue}
+  const sites=sitesByRegion.get(id);
+  if(!sites){hybrid[k]=offset.get(id);continue}
+  const x=k%gw,y=(k/gw)|0;let index=0,min=Infinity;
+  for(let i=0;i<sites.length;i++){const p=sites[i],d=(x-p.x)**2+(y-p.y)**2;
+   if(d<min){min=d;index=i}}
+  hybrid[k]=offset.get(id)+index;
+ }
+ // Exactly one seam layer, using both source boundaries and interior divisions.
+ const lead=new Uint8Array(labels.length);
+ for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){
+  const i=y*gw+x,id=hybrid[i];
+  if(id<1){lead[i]=1;continue}
+  if(x+1<gw&&hybrid[i+1]!==id)lead[i]=1;
+  if(y+1<gh&&hybrid[i+gw]!==id)lead[i]=1;
+ }
+ return {...topology,labels:hybrid,regions:counter,hybridLead:lead,
+   secondaryPanes:counter-topology.regions,engineRegions:topology.regions};
+}
 function renderGeometryGlass(ctx,source,topology,w,h,seed,options){
   const {labels,areas,gw,gh,divisor}=topology;
   const rand=rng(seed+'|pane-colours'),src=source.getContext('2d',{willReadFrequently:true});
@@ -229,7 +306,7 @@ function renderGeometryGlass(ctx,source,topology,w,h,seed,options){
   });
   for(let k=0;k<labels.length;k++){
     const id=labels[k],j=k*4;
-    if(id<1){img.data[j]=19;img.data[j+1]=21;img.data[j+2]=20;}
+    if(id<1||topology.hybridLead?.[k]){img.data[j]=19;img.data[j+1]=21;img.data[j+2]=20;}
     else {const v=rgb[id],grain=((k*1103515245+seedHash(seed))>>>25)%13-6;
       img.data[j]=Math.max(0,Math.min(255,v[0]+grain));img.data[j+1]=Math.max(0,Math.min(255,v[1]+grain));img.data[j+2]=Math.max(0,Math.min(255,v[2]+grain));}
     img.data[j+3]=255;
@@ -257,11 +334,12 @@ A.stainedGlassV1={
     if(options.enginePanes!==false){
       output.width=Math.round(w*scale);output.height=Math.round(h*scale);
       const ctx=output.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
-      const topology=geometryPanes(collector.paths,w,h,settings.seed,options);
+      const baseTopology=geometryPanes(collector.paths,w,h,settings.seed,options);
+      const topology=options.enginePanes==='hybrid'?balancePaneTopology(baseTopology,collector.paths,w,h,settings.seed,options):baseTopology;
       renderGeometryGlass(ctx,source,topology,w,h,settings.seed+'|'+settings.mode,options);
       ctx.setTransform(1,0,0,1,0,0);
       return {version:'stained-glass-v3',mode:settings.mode,seed:settings.seed,
-        pieces:topology.regions,structuralPaths:topology.strokes,seams:'engine-defined',
+        pieces:topology.regions,engineRegions:topology.engineRegions||topology.regions,secondaryPanes:topology.secondaryPanes||0,structuralPaths:topology.strokes,seams:'engine-defined',
         sourcePaths:collector.paths.length,width:output.width,height:output.height};
     }
     const count=Math.max(20,Math.min(130,options.pieces||72));
