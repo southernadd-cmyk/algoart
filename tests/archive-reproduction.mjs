@@ -25,7 +25,7 @@ if(!sources.length)throw Error('No archive metadata found');
 const report={browser:engine,limits,entries:[],failures:0};
 const browser=await runtime.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1600,height:1200}});
-await page.addInitScript(()=>localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open');localStorage.setItem('algoart-intro-seen','1'));
+await page.addInitScript(()=>{localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-intro-seen','1')});
 async function bytesFor(source,item){
   if(/^https?:/.test(item.imageFile)){
     const response=await fetch(item.imageFile,{signal:AbortSignal.timeout(60000)});
