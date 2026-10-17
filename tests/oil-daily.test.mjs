@@ -123,7 +123,7 @@ for(const orientation of ['landscape','portrait']){
   const item=queue.entries[0];
   validateOilItem(item,v3Date,orientation);
   assert.equal(new URL(item.shareUrl).searchParams.get('material'),'oil-v4');
-  assert.match(makeCaptions(item).instagram,/OIL PAINT V3/);
+  assert.match(makeCaptions(item).instagram,/OIL PAINT V4/);
   run('automation/build-gallery.mjs',{
     SOCIAL_DATE:v3Date,GALLERY_QUEUE_MATERIAL:'oil',
     GALLERY_QUEUE_ORIENTATION:orientation
