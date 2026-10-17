@@ -518,3 +518,6 @@ button{font-family:Georgia,serif}
 @media(max-width:360px){
   .editorial-preview #inspector > .seed{column-gap:7px!important}
 }
+
+/* Base mobile stylesheet hides toolbar labels: restore this label in drawer. */
+.editorial-preview #inspector > .seed .toolbar-label {display:block!important;visibility:visible!important;align-self:center!important;}
