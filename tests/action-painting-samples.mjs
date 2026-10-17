@@ -14,5 +14,7 @@ try{
   await fs.writeFile('action-painting-samples/study-'+String(i+1).padStart(2,'0')+'.png',Buffer.from(b,'base64'));
  }
  const summary=await page.locator('#status').textContent();console.log(summary);
- if(!summary.includes('source paths'))throw Error('No source-path evidence');
+ if(!summary.includes('different seeds'))throw Error('Four-seed render status missing');
+ const labels=await page.locator('main figcaption').allTextContents();
+ if(new Set(labels).size!==4||!labels.every(t=>t.includes('ACTION-PAINT-V3-')))throw Error('Distinct V3 seed labels missing');
 }finally{await browser.close()}
