@@ -242,6 +242,7 @@ try{
   for(const probe of report.regressionProbes)console.log('Local defect probe '+JSON.stringify(probe));
   // End-to-end UI: page options cannot upgrade a legacy renderer or mutate art.
   await page.goto((process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/')+'?v=6&seed=PLOTTER-UI&mode=organic',{waitUntil:'networkidle'});
+  await page.locator('#inspectorToggle').click();
   await page.locator('[data-tab="export"]').click();
   if(await page.locator('#plotterGrouping').inputValue()!=='runs')throw Error('Faithful mode is not the default');
   const originalURL=page.url();
