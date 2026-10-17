@@ -226,7 +226,7 @@ try {
       const paletteIndex=orientation==='portrait'?(firstPalette+1+Math.floor(pair()*(PALETTES.length-1)))%PALETTES.length:firstPalette;
       settings.mode=MODES[modeIndex][0];settings.series=MODES[modeIndex][1];
       settings.palette=PALETTES[paletteIndex];
-      settings.seed='AC'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+'-'+String(index+1).padStart(2,'0')+'-'+String(hash(day+'|action-v1|'+orientation+'|'+index+'|'+retrySalt)%100000).padStart(5,'0');
+      settings.seed='AC'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+'-'+String(index+1).padStart(2,'0')+'-'+String(hash(day+'|'+(day>='2026-10-18'?'action-v2':'action-v1')+'|'+orientation+'|'+index+'|'+retrySalt)%100000).padStart(5,'0');
       settings.paper='#f5f0e6';
     }
     if(watercolour){
@@ -254,13 +254,13 @@ try {
     // the same φ-derived source fit, in their PNG/SVG and exact share URL.
     // Earlier dates and already-frozen gallery/release assets stay untouched.
     const query=appendDailyPhiFraming(
-      queryFor(settings,itemVersion)+(action?'&material=action-v1':oil?'&material='+ (day>='2026-10-17'?'oil-v4':'oil-v1'):watercolour?'&material=watercolour-v2s&fit=0':
+      queryFor(settings,itemVersion)+(action?'&material='+(day>='2026-10-18'?'action-v2':'action-v1'):oil?'&material='+ (day>='2026-10-17'?'oil-v4':'oil-v1'):watercolour?'&material=watercolour-v2s&fit=0':
       watercolor?tissueEdition.suffix:''),day);
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
     if(watercolor)validateTissueShareUrl(day,shareUrl);
     if(action){const params=new URL(shareUrl).searchParams;
-      if(params.get('material')!=='action-v1'||params.get('seed')!==settings.seed||params.get('pal')!==settings.palette)throw Error('Action share URL seed/palette mismatch');}
+      if(params.get('material')!==(day>='2026-10-18'?'action-v2':'action-v1')||params.get('seed')!==settings.seed||params.get('pal')!==settings.palette)throw Error('Action share URL seed/palette mismatch');}
     if(oil){
       const q=new URL(shareUrl).searchParams;
       if(q.get('material')!==(day>='2026-10-17'?'oil-v4':'oil-v1')||q.get('seed')!==settings.seed||
