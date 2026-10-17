@@ -34,7 +34,7 @@ assert.match(app,/if\(oilPaintV2Enabled\(\)\)return A\.renderOilPaintV2/);
 assert.match(app,/if\(oilPaintV1Enabled\(\)\)return A\.renderOilPaintV1/);
 assert.match(app,/params\.set\('material','oil-v2'\)/);
 assert.match(app,/params\.set\('material','oil-v1'\)/);
-assert.match(app,/\\?A\\.describeArtwork\\(s,m,actionPaintingEnabled\\(\\)\\?'action':oilPaintEnabled\\(\\)\\?'oil':watercolourEnabled\\(\\)\\?'watercolour':oilEnabled\\(\\)\\?'tissue':'marker'\\)/);
+assert(app.includes("?A.describeArtwork(s,m,actionPaintingEnabled()?'action':oilPaintEnabled()?'oil':watercolourEnabled()?'watercolour':oilEnabled()?'tissue':'marker')"),'Description must select the right material for all renderers');
 assert.match(description,/material==='tissue'\?'Abstract algorithmic tissue and graphite artwork'/);
 assert.match(description,/material==='watercolour'\?'Abstract algorithmic watercolour artwork'/);
 assert.match(read('js/watercolour-v2r.js'),/A\.renderWatercolourV2R=function/);
