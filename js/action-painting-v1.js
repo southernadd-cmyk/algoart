@@ -71,8 +71,31 @@ function fling(ctx,r,from,to,color,weight,energy,w,h,via){
  ctx.restore();
 }
 function samplePaths(paths){var anchors=[];for(var i=0;i<paths.length;i++){var p=paths[i].pts;if(!p.length)continue;anchors.push(p[0],p[Math.floor(p.length/2)],p[p.length-1]);if(p.length>9)anchors.push(p[Math.floor(p.length*.618)])}return anchors}
+// Action Painting needs a full working rack of pigments, even when a
+// traditional named palette has only 3 anchor hues. Other materials continue
+// using A.hues unchanged. Explicit Monochrome remains monochromatic.
+function actionPaintPalette(s){
+ var count=s.palette==='mono'?Math.max(1,s.colourCount):Math.max(8,s.colourCount);
+ var base=A.hues(Object.assign({},s,{colourCount:count}),A.makeR(String(s.seed)+'|action-palette'));
+ if(s.palette==='mono'||s.palette==='spectrum'||s.palette==='golden')return base;
+ var cycle={primary:3,cmyk:4,warm:6,cold:7,neon:7,pastel:8,earth:8,marker:11}[s.palette]||count;
+ return base.map(function(value,i){
+  var round=Math.floor(i/cycle);
+  if(!round)return value;
+  var parts=/^hsl\(([\d.]+) ([\d.]+)% ([\d.]+)%\)$/.exec(value);
+  if(!parts)return value;
+  var hue=(+parts[1]+[0,21,-24,42,-43,63][round%6])%360;
+  var light=Math.max(26,Math.min(74,+parts[3]+(round%2?-7:8)));
+  return 'hsl('+hue+' '+parts[2]+'% '+light+'%)';
+ });
+}
+function paintLayerOrder(length,r){
+ var indices=Array.from({length:length},function(_,i){return i});
+ for(var i=indices.length-1;i>0;i--){var j=Math.floor(r()*(i+1)),tmp=indices[i];indices[i]=indices[j];indices[j]=tmp}
+ return indices;
+}
 A.actionPaintingFromPaths=function(target,sourcePaths,s,scale,options){options=options||{};scale=scale||1;
-var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v4|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=A.hues(s,A.makeR(String(s.seed)+'|action-palette'));
+var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v4|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=actionPaintPalette(s);
 target.width=Math.round(w*scale);target.height=Math.round(h*scale);var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
 ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h);if(!anchors.length)return {pathCount:0,anchorCount:0};
 var layers=options.layers||5,density=options.density||1;
@@ -94,11 +117,11 @@ function select(){
 var cellsX=21,cellsY=15,occupancy=new Uint16Array(cellsX*cellsY);
 function cell(p){return Math.max(0,Math.min(cellsY-1,Math.floor(p.y/h*cellsY)))*cellsX+
  Math.max(0,Math.min(cellsX-1,Math.floor(p.x/w*cellsX)))}
-var passes=layers*3,skipped=0;
+var passes=layers*3,skipped=0,order=paintLayerOrder(palette.length,r);
 for(var layer=0;layer<passes;layer++){
- var ix=layer%3===0?0:layer%3===2?palette.length-1:Math.floor(r()*palette.length);
- if(layer>passes-3)ix=layer%2===0?0:Math.max(0,palette.length-2);
- var colour=palette[ix%palette.length],count=Math.min(95,Math.floor((7+anchors.length*.065)*density));
+ if(layer&&layer%palette.length===0)order=paintLayerOrder(palette.length,r);
+ var ix=order[layer%palette.length];
+ var colour=palette[ix],count=Math.min(95,Math.floor((7+anchors.length*.065)*density));
  ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
  for(var i=0;i<count;i++){
   var a=select(),b=select(),via=select(),ca=cell(a),cb=cell(b),cm=cell(via);
