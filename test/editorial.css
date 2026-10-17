@@ -143,3 +143,49 @@ button{font-family:Georgia,serif}
  .editorial-preview .canvas-shell{height:auto;min-height:0;display:flex;justify-content:center;align-items:flex-start;padding:8px 12px 30px}
  .editorial-preview .canvas-wrap{width:min(calc(100vw - 24px),calc((100dvh - var(--header) - 95px)*var(--canvas-ratio,1.4)));max-height:calc(100dvh - var(--header) - 95px)}
 }
+
+/* v3: instruction notepad, as in the design study */
+.intro-splash{background:#e8e1d1!important;place-items:center}
+.intro-card{position:relative;width:min(630px,calc(100vw - 28px));max-width:630px;max-height:90dvh;overflow:auto;transform:rotate(-.4deg);background:#faf8f0;box-shadow:0 12px 32px #544c3d21!important;border:0!important;padding:20px 0 16px 54px}
+.intro-card:before{content:"";position:absolute;top:0;bottom:0;left:34px;width:1px;background:#c9aa9b;pointer-events:none}
+.intro-card:after{content:"";position:absolute;inset:0 0 auto;height:19px;background:repeating-linear-gradient(90deg,transparent 0 23px,#e0d8ca 23px 25px,transparent 25px 47px);border-bottom:1px solid #e2dacf;pointer-events:none}
+.intro-body{padding:40px clamp(20px,5vw,58px) 22px 18px!important}
+#introTitle{font:400 clamp(17px,2.2vw,24px) Georgia,serif!important;letter-spacing:.055em!important;text-transform:uppercase;color:var(--ink)}
+.intro-thesis{font:clamp(17px,2.15vw,22px)/1.8 Georgia,serif!important;max-width:none;margin:25px 0 36px}
+.intro-keep{font:18px/1.7 Georgia,serif;margin:0 0 30px}
+.intro-date{font:italic 13px Georgia,serif;color:#51493f}
+.intro-actions{margin:28px 0 16px}
+.intro-actions button{font:16px Georgia,serif!important;color:var(--ink)!important;box-shadow:none!important}
+.intro-principles,.intro-systems,.intro-foot{display:none!important}
+/* All-uppercase labels use our own lettering, not the fallback serif. */
+.editorial-preview .inspector-head strong,.editorial-preview .section-title span,
+.editorial-preview .mode-picker-label span,
+.editorial-preview .stage .inspector-toggle span{font-family:"AlgoArt Marker",monospace!important;font-weight:400!important;letter-spacing:0!important;font-size:clamp(13px,1.15vw,17px)!important}
+.editorial-preview .inspector-head strong{font-size:20px!important}
+.editorial-preview .section-title span{text-transform:none!important}
+.editorial-preview .mode-picker-label span{text-transform:none!important}
+.editorial-preview .control input[type=range]::-webkit-slider-thumb{
+ appearance:none!important;-webkit-appearance:none!important;border:1px solid #faf8f0!important;
+ border-radius:50%!important;width:14px!important;height:14px!important;background:var(--pigment)!important;box-shadow:0 0 0 1px var(--pigment)!important
+}
+.editorial-preview .control input[type=range]::-moz-range-thumb{
+ border:1px solid #faf8f0!important;border-radius:50%!important;width:13px!important;height:13px!important;background:var(--pigment)!important
+}
+.editorial-preview #phiSheetInfo{display:none!important}
+.editorial-preview .stats{font:italic 13px/1.5 Georgia,serif!important;text-transform:none;letter-spacing:0;color:#51493f}
+@media(max-width:760px){
+ .editorial-preview{grid-template-columns:minmax(0,1fr)!important;min-width:0!important;max-width:100vw!important}
+ .editorial-preview .toolbar{min-width:0!important;max-width:100vw!important;height:auto!important;min-height:0!important;display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:6px 12px!important;padding:10px 14px!important}
+ .editorial-preview .seed{margin-left:auto!important;min-width:0!important;flex:0 1 210px!important}
+ .editorial-preview .toolbar .actions{display:flex!important;flex:1 0 100%!important;flex-wrap:wrap!important;justify-content:flex-start!important;gap:2px 16px!important;overflow:visible!important;padding:0!important;grid-template-areas:none!important}
+ .editorial-preview .toolbar .actions>*{grid-area:auto!important;width:auto!important;min-width:0!important;flex:none!important;display:inline-flex!important;min-height:36px!important;align-items:center!important}
+ .editorial-preview .tabs{height:auto!important;min-height:0!important;grid-template-rows:none!important}
+ .editorial-preview .inspector{grid-template-rows:auto auto auto minmax(0,1fr)!important}
+ .editorial-preview .canvas-shell{place-items:start center!important;padding-top:22px!important}
+ .editorial-preview .stage{justify-content:flex-start!important;align-items:center!important}
+ .editorial-preview .canvas-wrap{max-width:calc(100vw - 26px)!important}
+ .intro-card{padding-left:33px}
+ .intro-card:before{left:23px}
+ .intro-body{padding:32px 15px 22px 10px!important}
+ .intro-thesis{font-size:16px!important}
+}
