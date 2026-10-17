@@ -17,6 +17,14 @@ try{
   assert(intro.artwork,'Welcome artwork must load');
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'welcome-mobile':'welcome-desktop')+'.png'});
   await page.evaluate(()=>document.getElementById('introSplash').hidden=true);
+  await page.goto('http://127.0.0.1:4173/test/gallery/',{waitUntil:'domcontentloaded'});
+  await page.locator('.exhibition .work img').first().waitFor();
+  const gallery=await page.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth,count:document.querySelectorAll('.exhibition .work').length,broken:[...document.querySelectorAll('.exhibition img')].filter(i=>!i.complete||!i.naturalWidth).length}));
+  await page.waitForFunction(()=>[...document.querySelectorAll('.exhibition img')].every(i=>i.complete),{timeout:30000});
+  assert(gallery.width<=gallery.viewport+2,'Gallery overflows viewport');
+  assert.equal(gallery.count,6);
+  await page.screenshot({path:'editorial-preview-results/'+(mobile?'gallery-mobile':'gallery-desktop')+'.png',fullPage:true});
+  await page.goto('http://127.0.0.1:4173/test/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent?.trim()?.length>0&&document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   const state=await page.evaluate(()=>({
    path:location.pathname,art:document.getElementById('art').width,
