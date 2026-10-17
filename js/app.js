@@ -134,10 +134,10 @@ try{
   }else if(savedInspector==='open'){
     setInspector(true,false);
   }else{
-    setInspector(!mobileQuery.matches,false);
+    setInspector(false,false);
   }
 }catch(e){
-  setInspector(!mobileQuery.matches,false);
+  setInspector(false,false);
 }
 
 function applyResponsiveInspectorState(){
@@ -145,9 +145,9 @@ function applyResponsiveInspectorState(){
     var saved=localStorage.getItem(inspectorStorageKey());
     if(saved==='open')setInspector(true,false);
     else if(saved==='closed')setInspector(false,false);
-    else setInspector(!mobileQuery.matches,false);
+    else setInspector(false,false);
   }catch(e){
-    setInspector(!mobileQuery.matches,false);
+    setInspector(false,false);
   }
 }
 
