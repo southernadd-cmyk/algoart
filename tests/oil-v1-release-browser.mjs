@@ -6,12 +6,12 @@ const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
 try{
  const page=await browser.newPage({viewport:{width:1450,height:960}});
+ await page.addInitScript(()=>localStorage.setItem('algoart-inspector-desktop','open'));
  page.setDefaultTimeout(90000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(root+'?v=9&seed=V5Q-OIL-D7ADDCCC68&mode=spiral&material=oil-v1',
    {waitUntil:'domcontentloaded',timeout:90000});
- await page.waitForFunction(()=>document.querySelector('#statsText')?.
-   textContent.includes('OIL PAINT'),null,{timeout:90000});
+ await page.waitForFunction(()=>/oil/i.test(document.querySelector('#statsText')?.textContent||''),null,{timeout:90000});
  const result=await page.evaluate(async()=>{
   const A=window.AlgoArt,sel=document.querySelector('#materialStyle');
   const nativeSeed=A.readSettings();

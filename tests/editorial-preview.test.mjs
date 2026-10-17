@@ -44,6 +44,15 @@ try{
   }
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'mobile-390':'desktop-1440')+'.png',fullPage:true});
   console.log(mobile?'MOBILE':'DESKTOP',state);
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
+  const prod=await page.evaluate(()=>({welcome:!!document.querySelector('.welcome-layout'),controls:!!document.querySelector('#materialStyle'),sheet:!!document.querySelector('.studio-question'),width:document.documentElement.scrollWidth,viewport:innerWidth}));
+  assert(prod.welcome&&prod.controls&&prod.sheet,'Production studio must use editorial layout and preserve controls');
+  assert(prod.width<=prod.viewport+2,'Production studio horizontal overflow');
+  await page.goto('http://127.0.0.1:4173/gallery/2026-10-17/',{waitUntil:'domcontentloaded'});
+  const day=await page.evaluate(()=>({css:[...document.styleSheets].some(x=>x.href?.includes('editorial.css')),cards:document.querySelectorAll('.art-card').length,width:document.documentElement.scrollWidth,viewport:innerWidth,remix:!!document.querySelector('.art-card .remix')}));
+  assert(day.css&&day.cards===16&&day.remix,'Full-day gallery must retain all works and links with editorial style');
+  assert(day.width<=day.viewport+2,'Full-day gallery horizontal overflow');
+  await page.screenshot({path:'editorial-preview-results/'+(mobile?'release-day-mobile':'release-day-desktop')+'.png',fullPage:true});
   await context.close();
  }
 }finally{await browser.close()}

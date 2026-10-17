@@ -157,6 +157,7 @@ function dayPage(queue) {
 <link rel="canonical" href="${canonical}">
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="stylesheet" href="../gallery.css?v=20261013-site-quality">
+<link rel="stylesheet" href="../editorial.css?v=20261017-release">
 <link rel="alternate" type="application/rss+xml" title="ALGO/ART Daily Gallery" href="../feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ALGO/ART">
@@ -245,6 +246,7 @@ function archivePage(archive) {
 <link rel="canonical" href="${GALLERY_URL}/">
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <link rel="stylesheet" href="gallery.css?v=20261013-site-quality">
+<link rel="stylesheet" href="editorial.css?v=20261017-release">
 <link rel="alternate" type="application/rss+xml" title="ALGO/ART Daily Gallery" href="feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ALGO/ART">

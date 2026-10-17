@@ -8,6 +8,7 @@ const out='oil-check-results';
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch();
 const page=await browser.newPage({viewport:{width:1480,height:1000},deviceScaleFactor:1});
+await page.addInitScript(()=>{localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open')});
 const cases=[
   {name:'01-growth-portrait',mode:'organic',fmt:'portrait',seed:'OIL-DEMO-GROWTH-419',el:36,den:52,cx:71,neg:52,phi:93,rec:4,spi:57,ga:94,nest:58,curve:86,shape:68,overlap:60,rot:63},
   {name:'02-connected-landscape',mode:'network',fmt:'landscape',seed:'OIL-DEMO-CONNECTED-628',el:24,den:64,cx:52,neg:59,phi:96,rec:5,spi:51,ga:88,nest:47,curve:77,shape:65,overlap:58,rot:46},
@@ -22,7 +23,8 @@ for (const test of cases){
   const faults=[];
   page.on('pageerror',error=>faults.push(error.message));
   await page.goto(url.toString(),{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(() => document.querySelector('#statsText')?.textContent?.trim().endsWith(' / TISSUE & GRAPHITE') &&
+  await page.waitForFunction(() => document.querySelector('#materialStyle')?.value==='tissue' &&
+    document.getElementById('creatingOverlay')?.hidden===true &&
     document.querySelector('#art')?.height === (document.querySelector('#orientation')?.value==='portrait'?1400:1000),null,{timeout:120000});
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-oil.png',timeout:60000});
   // Compare v4 directly against this exact old pigment study. Preserve both
@@ -50,7 +52,7 @@ for (const test of cases){
     url:location.href,
     version:window.AlgoArt?.rendererVersion
   }));
-  if(toggleState.selected!=='marker'||toggleState.stats?.trim().endsWith(' / TISSUE & GRAPHITE'))
+  if(toggleState.selected!=='marker'||/tissue and graphite/i.test(toggleState.stats||''))
     throw new Error(test.name+' failed to restore marker: '+JSON.stringify(toggleState)+
       ' page errors: '+JSON.stringify(faults));
   await page.locator('#art').screenshot({path:out+'/'+test.name+'-marker.png',timeout:60000});

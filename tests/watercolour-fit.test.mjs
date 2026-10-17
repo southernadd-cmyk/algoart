@@ -7,6 +7,7 @@ const base=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const b=await chromium.launch({headless:true});
 try{
   const page=await b.newPage({viewport:{width:1450,height:930}});
+ await page.addInitScript(()=>localStorage.setItem('algoart-inspector-desktop','open'));
   page.setDefaultTimeout(180000);
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   async function visit(args){

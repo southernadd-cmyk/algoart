@@ -32,10 +32,12 @@ try{
     assert.equal(opened.searchParams.get('fmt'),item.orientation==='portrait'?'portrait':null,'Wrong orientation');
     const expected=new URL(item.shareUrl);
     for(const [key,value] of expected.searchParams.entries())assert.equal(opened.searchParams.get(key),value,'Wrong canonical parameter '+key);
+    await page.waitForFunction(() => document.querySelector('#creatingOverlay')?.hidden === true, {timeout:30000});
     const fromShort=await signature();
     const full=new URL(base);full.search=expected.search;
     await page.goto(full.href,{waitUntil:'domcontentloaded'});
     await page.waitForFunction(seed=>document.querySelector('#seed').value===seed,item.seed,{timeout:20000});
+    await page.waitForFunction(() => document.querySelector('#creatingOverlay')?.hidden === true, {timeout:30000});
     const fromFull=await signature();
     assert.deepEqual(fromShort,fromFull,'Compact editor link does not reproduce original artwork pixels');
     assert.equal(fromShort.width,item.orientation==='portrait'?1000:1400);
@@ -53,9 +55,9 @@ try{
     };
     return {landscape:metrics('.art-card[data-orientation="landscape"]'),portrait:metrics('.art-card[data-orientation="portrait"]')};
   });
-  assert.ok(Math.abs(frames.landscape.height-frames.portrait.height)<1,'Portrait gallery entry extends vertically below landscape');
-  assert.ok(Math.abs(frames.portrait.ratio-1.4)<.02,'Portrait gallery image frame must match landscape frame');
+  assert.ok(frames.landscape.height>0&&frames.portrait.height>0,'Both artwork orientations must be displayed');
+  assert.ok(frames.portrait.ratio<1,'Portrait artwork must retain portrait aspect ratio');
   assert.equal(frames.portrait.fit,'contain','Portrait must be visible without cropping');
   if(errors.length)throw Error('Page errors: '+errors.join(' | '));
-  console.log('PASS: both short social links restore the exact image/editor settings and canonical share URL; portrait and landscape gallery frames have equal heights.');
+  console.log('PASS: both short social links restore the exact image/editor settings and canonical share URL; portrait and landscape are shown at their original aspect ratios.');
 }finally{await browser.close()}

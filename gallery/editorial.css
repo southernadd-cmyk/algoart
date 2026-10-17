@@ -1,0 +1,54 @@
+/* Editorial gallery: work hung on paper rather than cards. Shared by index and full-day pages. */
+:root{--paper:#e8e1d1;--paper2:#e8e1d1;--ink:#403931;--soft:#51493f;--muted:#5d5549;--line:#c9bdab;--acid:#e8e1d1;--orange:#b65368;--blue:#51493f}
+html,body{background:var(--paper)!important;color:var(--ink);font-family:Georgia,'Times New Roman',serif!important}
+body{background:var(--paper)!important}
+.site-head{position:relative;top:auto;min-height:76px;align-items:center;border:0;background:var(--paper);padding:0 clamp(20px,4vw,65px)}
+.site-head .brand{border:0;width:auto;min-width:0;padding:0;font:27px 'AlgoArt Marker',monospace}
+.site-head .brand span{color:#b65368}
+.site-head .formula{display:none}
+.site-head nav{gap:23px}
+.site-head nav a{border:0!important;padding:0!important;font:italic 14px Georgia,serif!important;text-transform:none;letter-spacing:0;color:var(--ink)}
+.site-head nav a:hover,.site-head nav a.active{background:transparent;text-decoration:underline}
+main{max-width:1350px;padding:0 clamp(20px,4vw,65px)}
+.hero,.hero.archive-hero{min-height:0;border:0;overflow:visible;padding:clamp(28px,4vw,58px) 0 32px}
+.hero:after{display:none}
+.hero .kicker{display:none}
+.hero h1{font:400 clamp(31px,3.6vw,49px)/1.15 Georgia,serif!important;letter-spacing:0;max-width:100%;margin:0 0 12px;text-transform:none}
+.hero p{font:14px/1.6 Georgia,serif;color:var(--soft);max-width:690px;margin:0}
+.hero-meta{display:none}
+.grid,.day-grid{border:0!important;background:transparent;display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:clamp(25px,4.5vw,60px) clamp(9px,1.2vw,19px);align-items:center;padding:30px 0 42px}
+.art-card,.day-card{background:transparent!important;border:0!important;min-width:0;align-self:center}
+.art-card:nth-child(6n+1),.day-card:nth-child(6n+1){grid-column:span 5}
+.art-card:nth-child(6n+2),.day-card:nth-child(6n+2){grid-column:span 4}
+.art-card:nth-child(6n+3),.day-card:nth-child(6n+3){grid-column:span 3}
+.art-card:nth-child(6n+4),.day-card:nth-child(6n+4){grid-column:span 2}
+.art-card:nth-child(6n+5),.day-card:nth-child(6n+5){grid-column:span 4}
+.art-card:nth-child(6n),.day-card:nth-child(6n){grid-column:span 6}
+.art-image-link{aspect-ratio:auto;overflow:visible;border:0!important;display:block;background:transparent}
+.art-image-link img,.art-card[data-orientation="portrait"] .art-image-link img{position:relative;inset:auto;display:block;width:100%;height:auto;aspect-ratio:auto;object-fit:contain;background:#f8f4e9;box-shadow:0 7px 16px #5547341d}
+.art-image-link:hover img{transform:rotate(-.35deg)}
+.art-info{display:block;min-height:0}
+.art-info>div:last-child{padding:10px 0 0!important}
+.art-info h2{font:italic 14px/1.4 Georgia,serif!important;letter-spacing:0!important;margin:0 0 4px}
+.art-info p{display:none}
+.art-number{display:none}
+.art-info dl{border:0;display:block;margin:4px 0 8px}
+.art-info dl div{border:0;padding:0;display:none}
+.art-info dl div:first-child{display:block}
+.art-info dt{display:none}
+.art-info dd{font:12px/1.4 Georgia,serif;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.remix,.remix.primary{display:inline-block;border:0;background:transparent!important;padding:2px 0;font:italic 12px Georgia,serif;letter-spacing:0;text-decoration:underline;text-underline-offset:3px}
+.day-card a{background:none}
+.day-card img,.day-card.portrait img{height:auto;aspect-ratio:auto;object-fit:contain;background:#f9f5eb;border:0;box-shadow:0 7px 16px #5547341d}
+.day-card div{padding:10px 0}
+.day-card span{font:12px Georgia,serif;color:var(--muted)}
+.day-card h2{font:italic 16px Georgia,serif!important;letter-spacing:0!important;margin:2px 0 6px}
+.day-card p{font:12px/1.5 Georgia,serif;color:var(--muted)}
+.about{border-top:1px solid var(--line);border-bottom:0;background:transparent;grid-template-columns:1fr;padding:30px 0 60px}
+.about .section-no{display:none}
+.about>div{padding:0}
+.about h2{font:400 23px/1.3 Georgia,serif!important;letter-spacing:0!important}
+.about p{font:14px/1.6 Georgia,serif}
+footer{background:transparent;color:var(--soft);font:italic 12px Georgia,serif;letter-spacing:0;border-top:1px solid var(--line);margin:0 clamp(20px,4vw,65px);padding:20px 0}
+footer a:hover{color:#b65368}
+@media(max-width:780px){.site-head{padding:0 18px}.site-head .brand{font-size:24px}.site-head nav{gap:12px}.site-head nav a{font-size:12px!important}main{padding:0 18px}.grid,.day-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:24px 10px}.art-card:nth-child(n),.day-card:nth-child(n){grid-column:span 4}.art-card:nth-child(5n+1),.day-card:nth-child(5n+1){grid-column:span 5}.art-card:nth-child(5n+2),.day-card:nth-child(5n+2){grid-column:span 3}.hero h1{font-size:30px}.art-info h2{font-size:13px!important}footer{margin:0 18px}}

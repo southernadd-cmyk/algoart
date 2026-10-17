@@ -11,6 +11,7 @@ const folder=new URL('../preview/screenshots/',import.meta.url);
 await mkdir(folder,{recursive:true});
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1440,height:980},deviceScaleFactor:1});
+await page.addInitScript(()=>{localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','closed')});
 const observations=[];
 const images={landscape:[],portrait:[]};
 const JS_ERRORS=[];

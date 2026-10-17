@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1540,height:1000}});
+ await page.addInitScript(()=>localStorage.setItem('algoart-inspector-desktop','open'));
 page.setDefaultTimeout(90000);
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));

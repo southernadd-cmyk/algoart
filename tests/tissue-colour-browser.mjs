@@ -49,6 +49,8 @@ try{
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
   assert.match(await page.locator('#materialStyleNote').innerText(),/^Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms\./);
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
+  // The editorial studio starts with its inspector closed; open it as a user would.
+  await page.locator('#inspectorToggle').click();
   await page.locator('#tab-colour').click();
   await page.locator('#palette').selectOption('mono');
   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});

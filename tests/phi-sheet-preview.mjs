@@ -13,6 +13,7 @@ const cases=[
 const browser=await chromium.launch({headless:true});
 try{
   const page=await browser.newPage({viewport:{width:1200,height:850}});
+await page.addInitScript(()=>{localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open')});
   page.setDefaultTimeout(180000);
   await page.goto(base,{waitUntil:'domcontentloaded'});
   const manifest=[];

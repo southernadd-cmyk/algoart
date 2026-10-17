@@ -50,6 +50,7 @@ try{
   assert.deepEqual(errors,[]);
   // Desktop remains a one-click export.
   const desktop=await browser.newPage({acceptDownloads:true});
+  await desktop.addInitScript(()=>localStorage.setItem('algoart-inspector-desktop','open'));
   await desktop.addInitScript(()=>{localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1')});
   await desktop.goto('http://127.0.0.1:4173/?v=8&seed=DESKTOP&mode=rects');
   await desktop.locator('#tab-export').click();

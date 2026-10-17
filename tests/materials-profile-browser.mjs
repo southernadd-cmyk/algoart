@@ -6,7 +6,7 @@ const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const browser=await chromium.launch();
 const context=await browser.newContext({viewport:{width:1200,height:900}});
 await context.addInitScript(()=>{
-  localStorage.setItem('algoart-intro-seen','1');
+  localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open');localStorage.setItem('algoart-intro-seen','1');
   localStorage.setItem('algoart-ethos-seen','1');
 });
 const page=await context.newPage();
