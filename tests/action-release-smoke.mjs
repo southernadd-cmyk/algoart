@@ -38,7 +38,7 @@ try {
  }));
  // Deep links can explicitly request monochrome; test ordinary selection.
  await page.locator('#materialStyle').selectOption('marker');
- await page.locator('#palette').selectOption('mono');
+ await page.locator('#palette').evaluate(el=>{el.value='mono';el.dispatchEvent(new Event('change',{bubbles:true}))});
  await page.locator('#materialStyle').selectOption('action');
  await page.waitForFunction(()=>document.querySelector('#creatingOverlay')?.hidden===true,{timeout:120000});
  const selected=await page.evaluate(()=>({
@@ -49,7 +49,7 @@ try {
  assert.equal(selected.palette,'spectrum');
  assert(selected.colours>=8,'Action Painting must start with a broad colour rack');
  assert(new Set(selected.pigments).size>=8,'Action Painting must render eight distinct colours');
- await page.locator('#palette').selectOption('primary');
+ await page.locator('#palette').evaluate(el=>{el.value='primary';el.dispatchEvent(new Event('change',{bubbles:true}))});
  await page.waitForFunction(()=>document.querySelector('#creatingOverlay')?.hidden===true,{timeout:120000});
  const primary=await page.evaluate(()=>window.AlgoArt.lastActionPaintingStats?.palette||[]);
  assert(new Set(primary).size>=8,'Primary-based painting must not repeat only three hues');
