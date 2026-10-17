@@ -1,0 +1,301 @@
+{
+  "note": "New-version (CPU canvas backend) reference hashes, FNV-1a over RGBA. Written by tests/cpu-context-rebaseline.mjs with WRITE_FIXTURE=1.",
+  "generated": "2026-10-17T00:12:21.681Z",
+  "probe": {
+    "profile": "default",
+    "browserVersion": "156.0.8078.4",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+    "plainCanvasesCpu": true,
+    "differingBytes": 0
+  },
+  "references": {
+    "oil|field|landscape|1": {
+      "version": "oil-v4",
+      "hash": 2713298183,
+      "width": 1400,
+      "height": 1000
+    },
+    "oil|spiral|landscape|1": {
+      "version": "oil-v4",
+      "hash": 934047729,
+      "width": 1400,
+      "height": 1000
+    },
+    "oil|rects|landscape|1": {
+      "version": "oil-v4",
+      "hash": 2957730812,
+      "width": 1400,
+      "height": 1000
+    },
+    "oil|burst|landscape|1": {
+      "version": "oil-v4",
+      "hash": 4114982866,
+      "width": 1400,
+      "height": 1000
+    },
+    "oil|network|landscape|1": {
+      "version": "oil-v4",
+      "hash": 1541842516,
+      "width": 1400,
+      "height": 1000
+    },
+    "oil|organic|landscape|1": {
+      "version": "oil-v4",
+      "hash": 3307407494,
+      "width": 1400,
+      "height": 1000
+    },
+    "oil|geometric|landscape|1": {
+      "version": "oil-v4",
+      "hash": 4117893848,
+      "width": 1400,
+      "height": 1000
+    },
+    "oil|scribble|landscape|1": {
+      "version": "oil-v4",
+      "hash": 2695195185,
+      "width": 1400,
+      "height": 1000
+    },
+    "oil|field|portrait|1": {
+      "version": "oil-v4",
+      "hash": 2209834501,
+      "width": 1000,
+      "height": 1400
+    },
+    "oil|spiral|portrait|1": {
+      "version": "oil-v4",
+      "hash": 3013951481,
+      "width": 1000,
+      "height": 1400
+    },
+    "oil|rects|portrait|1": {
+      "version": "oil-v4",
+      "hash": 895077005,
+      "width": 1000,
+      "height": 1400
+    },
+    "oil|burst|portrait|1": {
+      "version": "oil-v4",
+      "hash": 1737378744,
+      "width": 1000,
+      "height": 1400
+    },
+    "oil|network|portrait|1": {
+      "version": "oil-v4",
+      "hash": 237121725,
+      "width": 1000,
+      "height": 1400
+    },
+    "oil|organic|portrait|1": {
+      "version": "oil-v4",
+      "hash": 2845238427,
+      "width": 1000,
+      "height": 1400
+    },
+    "oil|geometric|portrait|1": {
+      "version": "oil-v4",
+      "hash": 2108836659,
+      "width": 1000,
+      "height": 1400
+    },
+    "oil|scribble|portrait|1": {
+      "version": "oil-v4",
+      "hash": 3043452446,
+      "width": 1000,
+      "height": 1400
+    },
+    "tissue|field|landscape|1": {
+      "version": "tissue-8",
+      "hash": 3475001410,
+      "width": 1400,
+      "height": 1000
+    },
+    "tissue|spiral|landscape|1": {
+      "version": "tissue-8",
+      "hash": 4293597635,
+      "width": 1400,
+      "height": 1000
+    },
+    "tissue|rects|landscape|1": {
+      "version": "tissue-8",
+      "hash": 4084298206,
+      "width": 1400,
+      "height": 1000
+    },
+    "tissue|burst|landscape|1": {
+      "version": "tissue-8",
+      "hash": 1591630250,
+      "width": 1400,
+      "height": 1000
+    },
+    "tissue|network|landscape|1": {
+      "version": "tissue-8",
+      "hash": 981812128,
+      "width": 1400,
+      "height": 1000
+    },
+    "tissue|organic|landscape|1": {
+      "version": "tissue-8",
+      "hash": 31393679,
+      "width": 1400,
+      "height": 1000
+    },
+    "tissue|geometric|landscape|1": {
+      "version": "tissue-8",
+      "hash": 2175518579,
+      "width": 1400,
+      "height": 1000
+    },
+    "tissue|scribble|landscape|1": {
+      "version": "tissue-8",
+      "hash": 264653033,
+      "width": 1400,
+      "height": 1000
+    },
+    "tissue|field|portrait|1": {
+      "version": "tissue-8",
+      "hash": 872993613,
+      "width": 1000,
+      "height": 1400
+    },
+    "tissue|spiral|portrait|1": {
+      "version": "tissue-8",
+      "hash": 1837440134,
+      "width": 1000,
+      "height": 1400
+    },
+    "tissue|rects|portrait|1": {
+      "version": "tissue-8",
+      "hash": 464254137,
+      "width": 1000,
+      "height": 1400
+    },
+    "tissue|burst|portrait|1": {
+      "version": "tissue-8",
+      "hash": 351898703,
+      "width": 1000,
+      "height": 1400
+    },
+    "tissue|network|portrait|1": {
+      "version": "tissue-8",
+      "hash": 3674055974,
+      "width": 1000,
+      "height": 1400
+    },
+    "tissue|organic|portrait|1": {
+      "version": "tissue-8",
+      "hash": 4051501604,
+      "width": 1000,
+      "height": 1400
+    },
+    "tissue|geometric|portrait|1": {
+      "version": "tissue-8",
+      "hash": 1892975405,
+      "width": 1000,
+      "height": 1400
+    },
+    "tissue|scribble|portrait|1": {
+      "version": "tissue-8",
+      "hash": 84810844,
+      "width": 1000,
+      "height": 1400
+    },
+    "watercolour|field|landscape|1": {
+      "version": "watercolour-v2t",
+      "hash": 2381987067,
+      "width": 1400,
+      "height": 1000
+    },
+    "watercolour|spiral|landscape|1": {
+      "version": "watercolour-v2t",
+      "hash": 1785540944,
+      "width": 1400,
+      "height": 1000
+    },
+    "watercolour|rects|landscape|1": {
+      "version": "watercolour-v2t",
+      "hash": 3510815600,
+      "width": 1400,
+      "height": 1000
+    },
+    "watercolour|burst|landscape|1": {
+      "version": "watercolour-v2t",
+      "hash": 3718752081,
+      "width": 1400,
+      "height": 1000
+    },
+    "watercolour|network|landscape|1": {
+      "version": "watercolour-v2t",
+      "hash": 2891772846,
+      "width": 1400,
+      "height": 1000
+    },
+    "watercolour|organic|landscape|1": {
+      "version": "watercolour-v2t",
+      "hash": 1163745653,
+      "width": 1400,
+      "height": 1000
+    },
+    "watercolour|geometric|landscape|1": {
+      "version": "watercolour-v2t",
+      "hash": 2801895417,
+      "width": 1400,
+      "height": 1000
+    },
+    "watercolour|scribble|landscape|1": {
+      "version": "watercolour-v2t",
+      "hash": 1344056565,
+      "width": 1400,
+      "height": 1000
+    },
+    "watercolour|field|portrait|1": {
+      "version": "watercolour-v2t",
+      "hash": 2945541228,
+      "width": 1000,
+      "height": 1400
+    },
+    "watercolour|spiral|portrait|1": {
+      "version": "watercolour-v2t",
+      "hash": 305882944,
+      "width": 1000,
+      "height": 1400
+    },
+    "watercolour|rects|portrait|1": {
+      "version": "watercolour-v2t",
+      "hash": 1811032090,
+      "width": 1000,
+      "height": 1400
+    },
+    "watercolour|burst|portrait|1": {
+      "version": "watercolour-v2t",
+      "hash": 1860288537,
+      "width": 1000,
+      "height": 1400
+    },
+    "watercolour|network|portrait|1": {
+      "version": "watercolour-v2t",
+      "hash": 3315999096,
+      "width": 1000,
+      "height": 1400
+    },
+    "watercolour|organic|portrait|1": {
+      "version": "watercolour-v2t",
+      "hash": 4009813004,
+      "width": 1000,
+      "height": 1400
+    },
+    "watercolour|geometric|portrait|1": {
+      "version": "watercolour-v2t",
+      "hash": 3275431527,
+      "width": 1000,
+      "height": 1400
+    },
+    "watercolour|scribble|portrait|1": {
+      "version": "watercolour-v2t",
+      "hash": 19615272,
+      "width": 1000,
+      "height": 1400
+    }
+  }
+}
