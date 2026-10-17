@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="css/style.css?v=20261017-creating-mobile-overlay">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/marker-font.css?v=20261014-phi-sheet">
-<link rel="stylesheet" href="test/editorial.css?v=20261018-mobile-seed-order-v5">
+<link rel="stylesheet" href="test/editorial.css?v=20261018-parameters-handmade-v1">
 </head>
 <body>
 <div class="intro-splash editorial-welcome" id="introSplash" hidden>
@@ -180,21 +180,17 @@
     <aside id="inspector" class="inspector" aria-label="Art controls">
       <div class="drawer-handle" aria-hidden="true"></div>
       <div class="inspector-head">
-        <div>
-          <span class="panel-number"></span>
-          <div>
-            <strong>PARAMETERS</strong>
-            <span>Change a setting and see what it does</span>
-          </div>
+        <div class="inspector-title">
+          <strong>PARAMETERS</strong>
+          <span>Change a setting and see what it does</span>
+        </div>
+        <div class="seed">
+          <span class="toolbar-label">Seed</span>
+          <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
+          <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
         </div>
         <button id="inspectorClose" class="icon-btn close-btn" aria-label="Close controls" title="Close controls">×</button>
       </div>
-
-      <div class="seed">
-      <span class="toolbar-label">Seed</span>
-      <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
-      <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
-    </div>
 
       <nav class="tabs" role="tablist" aria-label="Control categories">
         <button class="tab active" data-tab="composition" id="tab-composition" role="tab" aria-controls="panel-composition" aria-selected="true" tabindex="0"><span>01</span>Compose</button>

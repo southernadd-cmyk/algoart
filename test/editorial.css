@@ -361,3 +361,227 @@ button{font-family:Georgia,serif}
  .editorial-preview #inspector > .tabs{grid-row:4!important}
  .editorial-preview #inspector > .tab-body{grid-row:5!important}
 }
+
+/* PARAMETERS / handmade editorial refinement.
+   Quiet paper, ink rules, and one restrained berry-pencil annotation colour. */
+.editorial-preview #inspector {
+  --drawer-rule:rgba(69,57,46,.28);
+  --drawer-annotation:#a9485d;
+}
+.editorial-preview #inspector .inspector-head {
+  align-items:center;
+  padding:11px 0 13px;
+  border-bottom:1px solid var(--drawer-rule);
+}
+.editorial-preview #inspector .inspector-head strong {
+  font:400 clamp(20px,2vw,26px)/1.2 "AlgoArt Marker",monospace!important;
+  letter-spacing:0!important;
+}
+.editorial-preview #inspector .inspector-head .close-btn {
+  width:38px;height:38px;min-height:38px;
+  display:grid;place-items:center;
+  border:1px solid transparent!important;
+  font:25px/1 Georgia,serif!important;
+}
+.editorial-preview #inspector .inspector-head .close-btn:focus-visible {
+  outline:2px solid var(--drawer-annotation);
+}
+.editorial-preview #inspector > .seed {
+  margin:11px 0 15px!important;
+  padding:0 0 13px!important;
+  border-bottom:1px solid var(--drawer-rule)!important;
+}
+.editorial-preview #inspector > .seed .toolbar-label {
+  font:400 13px/1.35 "AlgoArt Marker",monospace!important;
+  letter-spacing:0!important;
+  text-transform:uppercase!important;
+}
+.editorial-preview #inspector > .seed input {
+  font:15px/1.5 Georgia,serif!important;
+  min-height:35px;
+}
+.editorial-preview #inspector > .seed #newSeed {
+  width:38px;min-width:38px;min-height:38px;
+  font:25px/1 Georgia,serif!important;
+  border-bottom:1px solid var(--drawer-rule)!important;
+}
+.editorial-preview #inspector .tabs {
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  column-gap:clamp(8px,1.4vw,18px)!important;
+  row-gap:2px!important;
+  padding:7px 0 13px!important;
+  border-bottom:1px solid var(--drawer-rule)!important;
+}
+.editorial-preview #inspector .tab {
+  display:flex!important;
+  width:100%!important;
+  justify-content:flex-start!important;
+  min-width:0!important;
+  min-height:40px!important;
+  padding:7px 2px!important;
+  font:17px/1.25 Georgia,serif!important;
+  text-align:left!important;
+  text-decoration:none!important;
+  border-bottom:1px solid transparent!important;
+  color:var(--ink)!important;
+}
+.editorial-preview #inspector .tab.active {
+  color:var(--drawer-annotation)!important;
+  border-bottom:2px solid var(--drawer-annotation)!important;
+}
+.editorial-preview #inspector .tab:hover {color:var(--drawer-annotation)!important}
+.editorial-preview #inspector .tab-panel {padding:19px 0 30px!important}
+.editorial-preview #inspector .section-title {
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:12px;min-height:37px;margin:0 0 14px;
+  padding:0 0 9px;border-bottom:1px solid var(--drawer-rule);
+}
+.editorial-preview #inspector .section-title span {
+  font:400 16px/1.3 "AlgoArt Marker",monospace!important;
+  text-transform:uppercase!important;letter-spacing:0!important;
+  color:var(--ink)!important;
+}
+.editorial-preview #inspector .section-title b,
+.editorial-preview #inspector .mode-picker-label b {
+  font:400 13px/1.5 "AlgoArt Marker",monospace!important;
+  text-transform:uppercase!important;letter-spacing:0!important;
+  color:var(--drawer-annotation)!important;
+}
+.editorial-preview #inspector .controls {gap:18px!important}
+.editorial-preview #inspector .control {
+  row-gap:8px;
+  padding:0 0 15px;
+  border-bottom:1px solid rgba(69,57,46,.15);
+}
+.editorial-preview #inspector .control label,
+.editorial-preview #inspector .control-label {
+  font:16px/1.35 Georgia,serif!important;
+  color:var(--ink)!important;
+}
+.editorial-preview #inspector .control output {
+  font:400 14px/1.3 "AlgoArt Marker",monospace!important;
+  color:var(--drawer-annotation)!important;
+  letter-spacing:0!important;
+}
+.editorial-preview #inspector .mini-note {
+  font:14px/1.55 Georgia,serif!important;
+  color:var(--soft-ink)!important;
+  font-style:normal!important;
+  max-width:64ch;
+}
+.editorial-preview #inspector .control select {
+  min-height:44px;
+  font:16px/1.35 Georgia,serif!important;
+}
+.editorial-preview #inspector .control input[type=range] {min-height:30px}
+.editorial-preview #inspector .export-big,
+.editorial-preview #inspector #savePanel,
+.editorial-preview #inspector #pngDownload {
+  min-height:48px;
+  font:400 17px/1.3 "AlgoArt Marker",monospace!important;
+  letter-spacing:0!important;
+  text-transform:uppercase!important;
+}
+@media(max-width:760px){
+  .editorial-preview #inspector {padding:14px 20px max(14px,env(safe-area-inset-bottom))!important}
+  .editorial-preview #inspector .inspector-head {padding:6px 0 9px}
+  .editorial-preview #inspector .tabs {column-gap:10px!important}
+  .editorial-preview #inspector .tab {font-size:17px!important;min-height:43px!important}
+  .editorial-preview #inspector .tab-panel {padding-top:15px!important}
+}
+@media(max-width:360px){
+  .editorial-preview #inspector {padding-left:14px!important;padding-right:14px!important}
+  .editorial-preview #inspector .tab {font-size:15px!important}
+}
+
+/* Seed control: one deliberate editorial row at all screen sizes. */
+.editorial-preview #inspector > .seed {
+  display:grid!important;
+  grid-template-columns:max-content minmax(0,1fr) 38px!important;
+  grid-template-rows:minmax(42px,auto)!important;
+  align-items:center!important;
+  column-gap:12px!important;
+}
+.editorial-preview #inspector > .seed .toolbar-label {
+  grid-column:1!important;grid-row:1!important;
+  white-space:nowrap!important;
+}
+.editorial-preview #inspector > .seed #seed {
+  grid-column:2!important;grid-row:1!important;
+  width:100%!important;min-width:0!important;max-width:none!important;
+}
+.editorial-preview #inspector > .seed #newSeed {
+  grid-column:3!important;grid-row:1!important;
+  margin:0!important;justify-self:end!important;
+}
+@media(max-width:360px){
+  .editorial-preview #inspector > .seed{column-gap:7px!important}
+}
+
+/* Base mobile stylesheet hides toolbar labels: restore this label in drawer. */
+.editorial-preview #inspector > .seed .toolbar-label {display:block!important;visibility:visible!important;align-self:center!important;}
+
+/* Integrated Parameters heading and seed toolbar (one header line). */
+.editorial-preview #inspector > .inspector-head {
+  display:grid!important;
+  grid-template-columns:max-content minmax(0,1fr) 32px!important;
+  align-items:center!important;
+  column-gap:clamp(6px,1.1vw,16px)!important;
+  grid-row:2!important;
+  min-width:0!important;
+}
+.editorial-preview #inspector .inspector-head > .inspector-title {
+  display:block!important;min-width:0!important;
+}
+.editorial-preview #inspector .inspector-head .inspector-title strong {
+  display:block!important;
+  font:400 clamp(15px,1.6vw,24px)/1.2 "AlgoArt Marker",monospace!important;
+  white-space:nowrap!important;
+}
+.editorial-preview #inspector .inspector-head .inspector-title > span{display:none!important}
+.editorial-preview #inspector .inspector-head > .seed {
+  display:grid!important;
+  grid-template-columns:max-content minmax(0,1fr) 32px!important;
+  grid-template-rows:36px!important;
+  align-items:center!important;
+  gap:5px!important;
+  margin:0!important;padding:0!important;
+  border:0!important;
+  width:100%!important;min-width:0!important;max-width:none!important;
+}
+.editorial-preview #inspector .inspector-head > .seed .toolbar-label {
+  display:block!important;visibility:visible!important;
+  grid-column:1!important;grid-row:1!important;
+  font:400 11px/1.2 "AlgoArt Marker",monospace!important;
+  text-transform:uppercase!important;
+}
+.editorial-preview #inspector .inspector-head > .seed #seed {
+  grid-column:2!important;grid-row:1!important;
+  width:100%!important;min-width:0!important;
+  font:12px/1.3 Georgia,serif!important;
+  padding:3px 1px!important;
+}
+.editorial-preview #inspector .inspector-head > .seed #newSeed {
+  grid-column:3!important;grid-row:1!important;
+  width:32px!important;min-width:32px!important;
+  min-height:32px!important;margin:0!important;padding:0!important;
+  font:22px/1 Georgia,serif!important;
+}
+.editorial-preview #inspector .inspector-head > #inspectorClose {
+  grid-column:3!important;grid-row:1!important;
+  width:32px!important;min-height:32px!important;
+}
+@media(max-width:360px){
+  .editorial-preview #inspector > .inspector-head{column-gap:5px!important}
+  .editorial-preview #inspector .inspector-head > .seed{gap:3px!important;grid-template-columns:max-content minmax(0,1fr) 28px!important}
+  .editorial-preview #inspector .inspector-head > .seed #newSeed{width:28px!important;min-width:28px!important}
+}
+
+@media(max-width:760px){
+ .editorial-preview #inspector{grid-template-rows:auto auto auto minmax(0,1fr)!important}
+ .editorial-preview #inspector > .drawer-handle{grid-row:1!important}
+ .editorial-preview #inspector > .inspector-head{grid-row:2!important}
+ .editorial-preview #inspector > .tabs{grid-row:3!important}
+ .editorial-preview #inspector > .tab-body{grid-row:4!important}
+}

@@ -8,8 +8,8 @@ try{
   const page=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true});
   await page.addInitScript(()=>{localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','closed');localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1')});
   for(const fmt of ['landscape','portrait']){
-   await page.goto(`http://127.0.0.1:4173/?v=8&seed=LAYOUT&mode=rects&fmt=${fmt}`);
-   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true&&document.querySelector('#statsText')?.textContent?.includes('LAYOUT'),{timeout:120000});
+   await page.goto(`http://127.0.0.1:4173/?v=8&seed=AA-20261018-01-04217&mode=rects&fmt=${fmt}`);
+   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true&&document.querySelector('#statsText')?.textContent?.includes('AA-20261018-01-04217'),{timeout:120000});
    const geometry=await page.evaluate(()=>{
     const c=document.querySelector('#art').getBoundingClientRect(),shell=document.querySelector('.canvas-shell'),s=shell.getBoundingClientRect(),css=getComputedStyle(shell);
     return {x:c.x,y:c.y,w:c.width,h:c.height,centre:c.y+c.height/2,expected:s.y+parseFloat(css.paddingTop)+(s.height-parseFloat(css.paddingTop)-parseFloat(css.paddingBottom))/2,overflow:document.documentElement.scrollWidth>innerWidth};
@@ -22,13 +22,22 @@ try{
    if(fmt==='landscape')assert(geometry.w>=width-32,'Landscape should use available phone width');
    await page.screenshot({path:`oil-check-results/layout-${width}-${fmt}.png`});
    await page.locator('#inspectorToggle').tap();
-   const seedOrder=await page.locator('#inspector').evaluate(el=>({heading:el.querySelector('.inspector-head').getBoundingClientRect().top,seed:el.querySelector(':scope > .seed').getBoundingClientRect().top,dom:[...el.children].map(x=>x.className)}));
-   assert(seedOrder.seed>seedOrder.heading,'Seed must appear below Parameters heading: '+JSON.stringify(seedOrder));
+   const seedOrder=await page.locator('#inspector').evaluate(el=>({heading:el.querySelector('.inspector-title').getBoundingClientRect(),seed:el.querySelector('.inspector-head > .seed').getBoundingClientRect()}));
+   assert(Math.abs((seedOrder.seed.y+seedOrder.seed.height/2)-(seedOrder.heading.y+seedOrder.heading.height/2))<20,'Seed must share Parameters header row: '+JSON.stringify(seedOrder));
+   const seedRow=await page.locator('#inspector .inspector-head > .seed').evaluate(el=>{const label=el.querySelector('.toolbar-label').getBoundingClientRect(),input=el.querySelector('#seed').getBoundingClientRect(),button=el.querySelector('#newSeed').getBoundingClientRect();return {label:{x:label.left,y:label.top,h:label.height},input:{x:input.left,y:input.top,h:input.height},button:{x:button.left,y:button.top,h:button.height}};});
+   assert(seedRow.label.x<seedRow.input.x&&seedRow.input.x<seedRow.button.x,'Seed label, field and regenerate must be in that order: '+JSON.stringify(seedRow));
+   const centers=[seedRow.label,seedRow.input,seedRow.button].map(x=>x.y+x.h/2);
+   assert(Math.max(...centers)-Math.min(...centers)<14,'Seed controls must share one horizontal row: '+JSON.stringify(seedRow));
    const drawer=await page.locator('#inspector').evaluate(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,viewport:document.documentElement.clientWidth};});
    assert(Math.abs(drawer.left)<1 && Math.abs(drawer.right-drawer.viewport)<1, 'Mobile parameters drawer must span viewport: '+JSON.stringify(drawer));
    const inner=await page.locator('#inspector').evaluate(el=>{const d=el.getBoundingClientRect(),h=el.querySelector('.inspector-head').getBoundingClientRect(),t=el.querySelector('.tabs').getBoundingClientRect(),b=el.querySelector('.tab-body').getBoundingClientRect();return {drawer:d.width,head:h.width,tabs:t.width,body:b.width};});
    for(const [part,value] of Object.entries(inner))if(part!=='drawer')assert(value>=inner.drawer-48,'Mobile panel '+part+' is narrower than available drawer space: '+JSON.stringify(inner));
+   await page.locator('#tab-composition').tap();
+   await page.screenshot({path:`oil-check-results/drawer-${width}-${fmt}-compose.png`});
+   await page.locator('#tab-colour').tap();
+   await page.screenshot({path:`oil-check-results/drawer-${width}-${fmt}-colour.png`});
    await page.locator('#tab-export').tap();
+   await page.screenshot({path:`oil-check-results/drawer-${width}-${fmt}-export.png`});
    await page.locator('#savePanel').waitFor({state:'visible'});
    await page.locator('#inspectorClose').tap();
   }
