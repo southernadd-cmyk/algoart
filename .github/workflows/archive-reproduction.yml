@@ -2,20 +2,8 @@ name: Archive reproduction
 # Automatically test code changes, not every gallery/social-output commit or push
 # to an intermediate working branch. Daily gallery uses workflow_call below.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'js/**'
-      - 'css/**'
-      - 'fonts/**'
-      - 'index.html'
-      - 'tests/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/archive-reproduction.yml'
-  # UI scheduling edits get focused mobile/browser checks. The exhaustive
-  # three-browser archive suite runs for rendering/archive changes, on main,
-  # and via manual dispatch / the daily gallery's workflow_call.
+  # PRs validate changes before merge; daily workflow_call verifies archives.
+  # Do not repeat the expensive 3-browser suite on every main push.
   pull_request:
     branches: [main]
     paths:

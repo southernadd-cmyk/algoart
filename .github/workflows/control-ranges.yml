@@ -1,36 +1,6 @@
 name: Control range consistency
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'js/generator.js'
-      - 'js/control-help.js'
-      - 'index.html'
-      - 'tests/control-ranges.test.mjs'
-      - 'tests/materials-ui.test.mjs'
-      - 'tests/organic-version.test.mjs'
-      - 'tests/growth-v8.test.mjs'
-      - 'tests/renderer-lock.test.mjs'
-      - 'tests/fixtures/**'
-      - 'js/app.js'
-      - 'js/random.js'
-      - 'js/phi.js'
-      - 'js/palettes.js'
-      - 'js/marker.js'
-      - 'js/oil-render.js'
-      - 'js/oil-surface.js'
-      - 'js/oil-material.js'
-      - 'tests/oil-render.test.mjs'
-      - 'js/export.js'
-      - 'css/style.css'
-      - 'gallery/gallery.css'
-      - 'automation/build-gallery.mjs'
-      - 'gallery/index.html'
-      - 'gallery/feed.xml'
-      - 'gallery/*/index.html'
-      - 'tests/site-quality.test.mjs'
-      - 'package.json'
-      - '.github/workflows/control-ranges.yml'
+  # Run on pull requests, not again on main after the same checks pass.
   pull_request:
     branches: [main]
     paths:
