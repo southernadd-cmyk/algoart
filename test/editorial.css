@@ -326,6 +326,7 @@ button{font-family:Georgia,serif}
     position:fixed!important;
     display:grid!important;
     grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-columns:minmax(0,1fr)!important;
     box-sizing:border-box!important;
     left:0!important;
     right:0!important;
@@ -336,4 +337,18 @@ button{font-family:Georgia,serif}
     margin:0!important;
     border-radius:0!important;
   }
+}
+
+@media (max-width:760px) {
+  .editorial-preview #inspector > .drawer-handle,
+  .editorial-preview #inspector > .seed,
+  .editorial-preview #inspector > .inspector-head,
+  .editorial-preview #inspector > .tabs,
+  .editorial-preview #inspector > .tab-body {
+    grid-column:1 / -1!important;
+    justify-self:stretch!important;
+    min-width:0!important;
+    width:100%!important;
+  }
+  .editorial-preview #inspector > .drawer-handle {width:42px!important;justify-self:center!important;}
 }
