@@ -6,12 +6,12 @@ on:
       - 'js/cpu-canvas.js'
       - 'js/cpu-material-versions.js'
       - 'js/oil-brush-v3.js'
-      - 'js/app.js'
       - 'js/export.js'
       - 'tests/cpu-canvas-wrapper.test.mjs'
       - 'tests/cpu-context-rebaseline.mjs'
       - 'tests/fixtures/cpu-context-reference.json'
       - '.github/workflows/cpu-context-rebaseline.yml'
+  # Full suite remains manually runnable for cross-cutting UI changes.
   workflow_dispatch:
     inputs:
       write_fixture:

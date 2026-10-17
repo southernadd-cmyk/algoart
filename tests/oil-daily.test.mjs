@@ -129,7 +129,16 @@ for(const orientation of ['landscape','portrait']){
   });
 }
 const v3Gallery=JSON.parse(await fs.readFile('gallery/'+v3Date+'/meta.json','utf8'));
-assert.equal(v3Gallery.entries.filter(x=>x.material==='oil').length,2);
+// The 17 October gallery already includes the scheduled second Oil studies.
+// A dry run must preserve them, not assume the archive starts with zero Oil.
+const oilEntries=v3Gallery.entries.filter(x=>x.material==='oil');
+assert(oilEntries.length>=2,'Both Oil orientations must remain in the archive');
+assert.equal(new Set(oilEntries.map(x=>x.id)).size,oilEntries.length,
+  'Oil gallery dry run must not duplicate existing studies');
+assert(oilEntries.some(x=>x.orientation==='landscape'||x.settings?.orientation!=='portrait'),
+  'Oil gallery must include a landscape study');
+assert(oilEntries.some(x=>x.orientation==='portrait'||x.settings?.orientation==='portrait'),
+  'Oil gallery must include a portrait study');
 assert(v3Gallery.entries.filter(x=>x.material==='oil').every(x=>
   new URL(x.shareUrl).searchParams.get('material')==='oil-v3'));
 const v3Html=await fs.readFile('gallery/'+v3Date+'/index.html','utf8');

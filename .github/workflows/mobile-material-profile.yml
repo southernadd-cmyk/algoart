@@ -1,0 +1,39 @@
+name: Mobile material profiling (measurement only)
+on:
+  pull_request:
+    paths:
+      - 'tests/mobile-material-profile.mjs'
+      - '.github/workflows/mobile-material-profile.yml'
+  workflow_dispatch:
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [mobile, desktop]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Serve editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/algoart-server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Profile material render workloads
+        env:
+          PROFILE_DEVICE: ${{ matrix.device }}
+          PROFILE_REPETITIONS: '3'
+        run: node tests/mobile-material-profile.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-material-profile-${{ matrix.device }}
+          path: mobile-profile-results/report.json
+          if-no-files-found: ignore

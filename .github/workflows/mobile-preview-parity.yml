@@ -1,0 +1,25 @@
+name: Mobile deferred preview pixel parity
+on:
+  pull_request:
+    paths:
+      - 'js/app.js'
+      - 'tests/mobile-preview-parity.mjs'
+      - '.github/workflows/mobile-preview-parity.yml'
+  workflow_dispatch:
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/algoart-server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - run: node tests/mobile-preview-parity.mjs
