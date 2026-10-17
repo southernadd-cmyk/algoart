@@ -22,6 +22,11 @@ try{
   assert(state.art>0);
   assert(state.controls&&state.inspector);
   assert.deepEqual(errors,[]);
+  if(mobile){
+   const layout=await page.evaluate(()=>({width:document.documentElement.scrollWidth,screen:innerWidth,actions:[...document.querySelectorAll('.toolbar .actions > *')].map(el=>({text:el.textContent.trim(),right:el.getBoundingClientRect().right,top:el.getBoundingClientRect().top})),tabs:document.querySelector('.tabs')?.getBoundingClientRect().toJSON()}));
+   assert(layout.width<=layout.screen+2,'mobile document overflows viewport: '+JSON.stringify(layout));
+   assert(layout.actions.every(x=>x.right<=layout.screen+2),'mobile toolbar action clipped: '+JSON.stringify(layout.actions));
+  }
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'mobile-390':'desktop-1440')+'.png',fullPage:true});
   console.log(mobile?'MOBILE':'DESKTOP',state);
   await context.close();
