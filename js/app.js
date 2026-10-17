@@ -532,7 +532,7 @@ function initCreatingMarker(){
 }
 initCreatingMarker();
 var creatingGeneration=0,creatingPending=false,creatingInitial=true;
-function regenerate(){
+function scheduleCreatingRender(){
   // Preserve the original synchronous initial render for URL and archive state.
   if(creatingInitial){creatingInitial=false;return commitRegenerate();}
   var generation=++creatingGeneration;
@@ -554,7 +554,7 @@ function regenerate(){
     });
   });
 }
-function commitRegenerate(){
+function regenerate(){
   syncMaterialNote();
   clearPreparedPNG();
   if($('plotterPreview'))clearPlotterPreview();
@@ -586,6 +586,9 @@ function commitRegenerate(){
   updateURL(s);
   scheduleModePreviews();
 }
+// Keep the canonical renderer function intact for material and archive checks.
+var commitRegenerate=regenerate;
+regenerate=scheduleCreatingRender;
 
 function newSeedValue(){
   return Math.random().toString(36).slice(2,7).toUpperCase()+'-'+
