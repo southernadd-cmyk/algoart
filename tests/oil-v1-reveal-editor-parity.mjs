@@ -5,6 +5,7 @@ import {chromium} from 'playwright';
 const origin=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:1540,height:1040}});
+ await page.addInitScript(()=>localStorage.setItem('algoart-inspector-desktop','open'));
 page.setDefaultTimeout(90000);
 const errors=[];page.on('pageerror',e=>errors.push(e.stack||e.message));
 try{
@@ -12,8 +13,7 @@ try{
    'organic','geometric','scribble'];
  await page.goto(origin+'?v=9&seed=V5Q-OIL-D7ADDCCC68&mode=spiral&material=oil-v1',
    {waitUntil:'domcontentloaded',timeout:90000});
- await page.waitForFunction(()=>document.querySelector('#statsText')?.
-   textContent.includes('OIL PAINT'));
+ await page.waitForFunction(()=>/oil/i.test(document.querySelector('#statsText')?.textContent||''));
  const meta=await page.evaluate(()=>{
   const A=window.AlgoArt,m=A.lastRenderMeta;
   return{type:m?.guide?.type,voids:m?.voids?.length,
