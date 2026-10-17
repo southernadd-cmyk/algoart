@@ -34,7 +34,7 @@ on:
         default: 'build'
         options:
           - build
-          - '1'
+          - '0'
       orientation:
         type: choice
         default: landscape
