@@ -17,8 +17,6 @@ jobs:
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: release/action-painting-v1
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
