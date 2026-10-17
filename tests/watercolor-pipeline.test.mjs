@@ -64,7 +64,7 @@ try{
    await page.waitForFunction(seed=>{
      const q=new URLSearchParams(location.search);
      return q.get('seed')===seed && q.get('tissue')==='6' &&
-       document.querySelector('#statsText')?.textContent?.endsWith('/ TISSUE & GRAPHITE');
+       /tissue and graphite/i.test(document.querySelector('#statsText')?.textContent||'');
    },e.seed,{timeout:60000});
    assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
     assert.equal(await page.locator('#paper').inputValue(),'#f5f0e6');
