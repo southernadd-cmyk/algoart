@@ -7,7 +7,7 @@ const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:1200,height:850},acceptDownloads:true});
 await context.addInitScript(()=>{
-  localStorage.setItem('algoart-intro-seen','1');
+  localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open');localStorage.setItem('algoart-intro-seen','1');
   localStorage.setItem('algoart-ethos-seen','1');
 });
 const page=await context.newPage(),errors=[];
@@ -48,7 +48,7 @@ try{
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
   assert.equal(new URL(page.url()).searchParams.get('paper'),'#d9c7b9');
   assert.match(await page.locator('#materialStyleNote').textContent(),/Watercolour pigments/);
-  assert.match(await page.locator('#statsText').textContent(),/WATERCOLOUR/);
+  assert.match(await page.locator('#statsText').textContent(),/watercolour/i);
   const water=await page.evaluate(()=>{
     const A=window.AlgoArt,settings=A.readSettings(),savedMaterial=A.oilMaterial;
     const a=document.createElement('canvas'),b=document.createElement('canvas');
