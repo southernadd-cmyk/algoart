@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const generator=fs.readFileSync('automation/generate-social.mjs','utf8');
+const gallery=fs.readFileSync('automation/build-gallery.mjs','utf8');
+const app=fs.readFileSync('js/app.js','utf8');
+assert.match(generator,/day>='2026-10-17'\?'oil-v4':'oil-v1'/,'New oil social/gallery generation must request V4');
+assert.equal((generator.match(/day>='2026-10-17'\?'oil-v4':'oil-v1'/g)||[]).length,2,'Generation and URL validation must agree');
+assert.match(gallery,/get\('material'\)==='oil-v4'\?'Oil Paint v4'/,'Gallery must label V4 without mislabelling legacy artwork');
+assert.match(app,/function oilPaintV4Enabled\(/,'V4 renderer must exist in editor');
+assert.match(app,/if\(oilPaintV4Enabled\(\)\)return A\.renderOilPaintV4/,'Editor must use V4 when requested');
+console.log('Oil V4 future publication version assertions passed');
