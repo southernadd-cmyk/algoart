@@ -1,0 +1,29 @@
+name: Oil V4 focused GPU release gate
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/oil-v4-gpu-gate.mjs'
+      - '.github/workflows/oil-v4-gpu-gate.yml'
+      - 'tests/fixtures/cpu-context-reference.json'
+      - 'js/oil-brush-v3.js'
+      - 'js/cpu-canvas.js'
+      - 'js/cpu-material-versions.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oil-v4-gpu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-gate-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - run: node tests/oil-v4-gpu-gate.mjs
