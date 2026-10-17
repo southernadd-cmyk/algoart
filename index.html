@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
+
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ece7d9">
@@ -22,36 +24,41 @@
 <link rel="stylesheet" href="css/style.css?v=20261017-creating-mobile-overlay">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/marker-font.css?v=20261014-phi-sheet">
+<link rel="stylesheet" href="test/editorial.css?v=6">
 </head>
 <body>
-<div class="intro-splash" id="introSplash" hidden>
-  <div class="intro-grid" aria-hidden="true"></div>
-  <section class="intro-card" role="dialog" aria-modal="true" aria-labelledby="introTitle">
-    <div class="intro-top"><span>00 / INTRODUCTION</span><span>φ = 1.6180339887…</span></div>
-    <div class="intro-body">
-      <div class="intro-phi" aria-hidden="true">φ</div>
-      <div class="intro-copy">
-        <p class="intro-kicker">DETERMINISTIC GENERATIVE DRAWING SYSTEM</p>
-        <h1 id="introTitle">ALGO<span>/</span>ART</h1>
-        <p class="intro-thesis">How far can the golden ratio govern a composition while its marks remain visibly human?<br>Move the sliders. See what you think.</p>
-        <p>AlgoArt is built around the <strong>Golden Ratio</strong>. Eight different systems interpret the same mathematical language — arranging, spiralling, dividing, radiating, connecting, growing, constructing and scribbling.</p>
-        <div class="intro-principles">
-          <div><b>01</b><strong>φ PROPOSES THE COMPOSITION.</strong><span>1.618 proportions, 61.8 / 38.2 divisions and the 137.5° golden angle shape position, scale, spacing and movement.</span></div>
-          <div><b>02</b><strong>THE ALGORITHM CREATES THE STRUCTURE.</strong><span>Every artwork is deterministic. The same seed and settings always rebuild the same image.</span></div>
-          <div><b>03</b><strong>THE MATERIALS BRING THE HUMAN TEXTURE.</strong><span>Choose imperfect marker ink, translucent torn tissue and graphite, layered watercolour washes, source-connected oil paint, or gestural Action Painting. Wobble, layering and uneven marks give mathematical structures a hand-drawn character.</span></div>
+<div class="intro-splash editorial-welcome" id="introSplash" hidden>
+  <div class="welcome-composition" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="welcome-wordmark">ALGO<span>/</span>ART</div>
+    <div class="welcome-layout">
+      <div class="welcome-left">
+        <section class="intro-card">
+          <div class="intro-copy">
+            <h1 id="introTitle">PROPORTION PIECE</h1>
+            <p class="intro-thesis">TAKE A PICTURE MADE FROM ONE NUMBER.<br>MOVE A SLIDER UNTIL IT LOOKS BETTER.<br>MOVE IT UNTIL IT LOOKS WORSE.<br>ASK WHETHER THE NUMBER DID THAT,<br>OR YOU DID.</p>
+            <p class="score-note">KEEP THE ONE YOU SETTLE ON<br>BY BOOKMARKING IT.</p>
+            <p class="score-date">2026 AUTUMN</p>
+          </div>
+        </section>
+        <p class="welcome-description">Every mark starts with the golden ratio and its 137.5° angle. Eight ways of arranging a drawing, and five materials to draw in. Change the seed or the controls to make your own.</p>
+        <div class="intro-actions">
+          <button id="introEnter" class="intro-enter" type="button">BEGIN</button>
+          <a class="welcome-gallery-link" href="gallery/">SEE WHAT IT DREW TODAY</a>
+          <button id="introReveal" type="button">BEGIN WITH φ VISIBLE</button>
         </div>
-        <div class="intro-systems" aria-label="Eight systems"><span>ARRANGE</span><span>SPIRAL</span><span>DIVIDE</span><span>RADIATE</span><span>CONNECT</span><span>GROW</span><span>CONSTRUCT</span><span>SCRIBBLE</span></div>
-        <div class="intro-actions"><button id="introEnter" class="intro-enter" type="button">ENTER ALGO/ART →</button><button id="introReveal" type="button">ENTER + REVEAL φ</button></div>
-        <p class="intro-foot">NO PROMPTS · NO TRAINED MODEL · CODE, MATHEMATICS + EMERGENCE</p>
       </div>
+      <figure class="welcome-right">
+        <img src="gallery/2026-10-17/2026-10-17-portrait-01-spiral-AP-20261017-01-30869.jpg" alt="A portrait-format Golden Trajectories drawing, made by ALGO/ART">
+        <figcaption>Golden Trajectories, 17 October.</figcaption>
+      </figure>
     </div>
-  </section>
+  </div>
 </div>
-<div class="app" id="app">
+<div class="app editorial-preview" id="app">
   <header class="toolbar">
     <div class="brand-lockup">
       <h1 class="brand">ALGO<span>/</span>ART</h1>
-      <div class="brand-meta">generative drawing system <b>φ</b></div>
+      <div class="brand-meta">drawings made with a little maths <b>φ</b></div>
     </div>
 
     <div class="formula-strip" aria-hidden="true">
@@ -60,27 +67,15 @@
       <span>137.507764°</span>
     </div>
 
-    <div class="seed">
-      <span class="toolbar-label">SEED</span>
-      <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
-      <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
-    </div>
-
-    <div class="actions">
-      <button id="mutate">Mutate</button>
-      <button id="randomise">Randomise</button>
-      <button id="variations">4-Up</button>
-      <button id="geometry">Reveal φ</button>
-      <a class="gallery-nav" href="gallery/">Daily Gallery</a>
-      <button id="describe" type="button" aria-haspopup="dialog" aria-controls="descriptionOverlay">Describe</button>
-    </div>
+    <p class="studio-question">How far can one mathematical proportion carry a composition?</p>
+    <a class="studio-gallery-link" href="gallery/">today’s gallery</a>
   </header>
 
   <main>
     <div class="stage">
       <div class="stage-index" aria-hidden="true">
         <span>01</span>
-        <strong>GOLDEN-RATIO<br>DRAWING ENGINE</strong>
+        <strong></strong>
       </div>
 
       <div class="phi-watermark" aria-hidden="true">φ</div>
@@ -88,13 +83,13 @@
       <aside class="ethos-toast" id="ethosToast" hidden aria-label="About ALGO ART">
         <button class="ethos-close" id="ethosClose" type="button" aria-label="Dismiss">×</button>
         <span class="ethos-kicker">WHY ALGO/ART?</span>
-        <strong>MATHEMATICS SETS THE RULES.<br>MATERIALS GIVE THEM TEXTURE.</strong>
+        <strong>The proportions come from the maths.<br>The marks depend on the material.</strong>
         <p>φ shapes the composition, scale and spacing. Marker ink adds wobble and uneven strokes, tissue and graphite add translucent layers, watercolour adds flowing pigments, and oil paint uses real loaded-bristle contacts across connected forms.</p>
         <button class="ethos-reveal" id="ethosReveal" type="button">REVEAL THE SYSTEM →</button>
       </aside>
 
       <button id="inspectorToggle" class="inspector-toggle" aria-label="Open controls" title="Open controls">
-        <span>PARAMETERS</span><b>+</b>
+        <span>Parameters</span><b>+</b>
       </button>
 
       <div class="canvas-shell">
@@ -167,6 +162,15 @@
         </div>
       </div>
 
+          <div class="actions">
+      <button id="mutate">Mutate</button>
+      <button id="randomise">Another</button>
+      <button id="variations">Four at once</button>
+      <button id="geometry">Show the φ</button>
+
+      <button id="describe" type="button" aria-haspopup="dialog" aria-controls="descriptionOverlay">Describe</button>
+    </div>
+
       <div class="stage-footer" aria-hidden="true">
         <span id="artworkDimensions">ARTWORK · 1400 × 1000</span>
         <span id="shortcutLegend">M mutate · N seed · V variations · D describe · [ parameters</span>
@@ -175,13 +179,18 @@
 
     <aside id="inspector" class="inspector" aria-label="Art controls">
       <div class="drawer-handle" aria-hidden="true"></div>
+      <div class="seed">
+      <span class="toolbar-label">Seed</span>
+      <input id="seed" value="AA-20261005-03-55769" aria-label="Seed">
+      <button id="newSeed" class="icon-btn" title="New seed (N)" aria-label="New seed">↻</button>
+    </div>
 
       <div class="inspector-head">
         <div>
-          <span class="panel-number">02</span>
+          <span class="panel-number"></span>
           <div>
-            <strong>PARAMETERS</strong>
-            <span>Shape the system, not the pixels</span>
+            <strong>Composition</strong>
+            <span>Change a setting and see what it does</span>
           </div>
         </div>
         <button id="inspectorClose" class="icon-btn close-btn" aria-label="Close controls" title="Close controls">×</button>
@@ -200,8 +209,8 @@
         <section class="tab-panel active" data-panel="composition" id="panel-composition" role="tabpanel" aria-labelledby="tab-composition">
           <div class="section-title"><span>COMPOSITION</span></div>
           <div class="controls">
-            <div class="control material-render-control"><label for="materialStyle">MATERIAL</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p>
-<label class="mini-note"><input id="phiSheetFit" type="checkbox"> φ framing (all materials · enlarge sparse work, gently contain full compositions)</label>
+            <div class="control material-render-control"><label for="materialStyle">Material</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p>
+<label class="mini-note"><input id="phiSheetFit" type="checkbox"> Fit to φ</label>
 <p class="mini-note" id="phiSheetInfo" role="status" aria-live="polite">Off · original φ composition and sheet placement.</p>
 <label class="mini-note" id="watercolourFitControl" hidden><input id="watercolourFit" type="checkbox"> Legacy Watercolour-only fit (older V2S links)</label></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
@@ -360,5 +369,7 @@
 <script src="js/social-marker-icons.js?v=20261017-creating-mobile-overlay"></script>
 <script src="js/action-painting-v1.js?v=20261017-creating-mobile-overlay"></script>
 <script src="js/app.js?v=20261017-creating-mobile-overlay"></script>
+<script src="test/editorial-pigment.js?v=1"></script>
+<script src="test/editorial-copy.js?v=1"></script>
 </body>
 </html>
