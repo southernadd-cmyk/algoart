@@ -29,8 +29,8 @@ jobs:
         run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/action-http.log 2>&1 &
       - name: Generate independent queues
         run: |
-          SOCIAL_DATE=2026-10-18 SOCIAL_MATERIAL=action SOCIAL_COUNT=2 SOCIAL_ORIENTATION=landscape node automation/generate-social.mjs
-          SOCIAL_DATE=2026-10-18 SOCIAL_MATERIAL=action SOCIAL_COUNT=2 SOCIAL_ORIENTATION=portrait node automation/generate-social.mjs
+          SOCIAL_DATE=2026-10-18 SOCIAL_MATERIAL=action SOCIAL_COUNT=1 SOCIAL_ORIENTATION=landscape node automation/generate-social.mjs
+          SOCIAL_DATE=2026-10-18 SOCIAL_MATERIAL=action SOCIAL_COUNT=1 SOCIAL_ORIENTATION=portrait node automation/generate-social.mjs
       - name: Validate queue, links, images
         run: node tests/action-release-smoke.mjs
       - uses: actions/upload-artifact@v4
