@@ -494,3 +494,27 @@ button{font-family:Georgia,serif}
   .editorial-preview #inspector {padding-left:14px!important;padding-right:14px!important}
   .editorial-preview #inspector .tab {font-size:15px!important}
 }
+
+/* Seed control: one deliberate editorial row at all screen sizes. */
+.editorial-preview #inspector > .seed {
+  display:grid!important;
+  grid-template-columns:max-content minmax(0,1fr) 38px!important;
+  grid-template-rows:minmax(42px,auto)!important;
+  align-items:center!important;
+  column-gap:12px!important;
+}
+.editorial-preview #inspector > .seed .toolbar-label {
+  grid-column:1!important;grid-row:1!important;
+  white-space:nowrap!important;
+}
+.editorial-preview #inspector > .seed #seed {
+  grid-column:2!important;grid-row:1!important;
+  width:100%!important;min-width:0!important;max-width:none!important;
+}
+.editorial-preview #inspector > .seed #newSeed {
+  grid-column:3!important;grid-row:1!important;
+  margin:0!important;justify-self:end!important;
+}
+@media(max-width:360px){
+  .editorial-preview #inspector > .seed{column-gap:7px!important}
+}
