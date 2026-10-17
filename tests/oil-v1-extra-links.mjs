@@ -46,6 +46,7 @@ try{
 
  await page.locator('#phiSheetFit').check();
  await page.waitForFunction(()=>document.querySelector('#phiSheetFit')?.checked);
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
  assert.match(page.url(),/sheet=phi/);
  assert.match(page.url(),/material=oil-v1/);
  assert.equal(await page.evaluate(()=>window.AlgoArt.lastRenderMeta?.guide?.type),
