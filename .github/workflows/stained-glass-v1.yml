@@ -1,0 +1,33 @@
+name: Stained Glass V1 experiment
+on:
+  pull_request:
+    paths:
+      - 'js/stained-glass-v1.js'
+      - 'experiments/stained-glass-v1.html'
+      - 'tests/stained-glass-v1.test.mjs'
+      - '.github/workflows/stained-glass-v1.yml'
+  workflow_dispatch:
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/stained-glass.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - run: node tests/stained-glass-v1.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stained-glass-v1-samples
+          path: stained-glass-results/
+          if-no-files-found: ignore
