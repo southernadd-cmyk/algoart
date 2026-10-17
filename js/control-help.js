@@ -349,7 +349,8 @@ A.syncControlHelp=function(mode,version,meta){
   var tissue=selectedMaterial==='tissue';
   var watercolour=selectedMaterial==='watercolour';
   var oil=selectedMaterial==='oil';
-  var painted=tissue||watercolour||oil;
+  var action=selectedMaterial==='action';
+  var painted=tissue||watercolour||oil||action;
   // Change only visible text. Never replace option nodes or their stable
   // values: the existing seed, URL, saved images and exports use these IDs.
   if(penControl)Array.prototype.forEach.call(penControl.options,function(option){
@@ -357,12 +358,12 @@ A.syncControlHelp=function(mode,version,meta){
       MARKER_PROFILES[option.value];
   });
   var controlsNote=document.getElementById('materialControlsNote');
-  if(controlsNote)controlsNote.textContent=oil?
+  if(controlsNote)controlsNote.textContent=action?'Action Painting translates φ-derived source paths into curved thrown-paint gestures, droplets and irregular pools. It can substantially change the visible focal mass and negative space, even though the underlying geometry is unchanged. Colour and palette controls remain active. SVG and plotter exports preserve source paths, not thrown paint.':oil?
     'These settings control the original source marks and geometry that Oil Paint v1 translates into loaded-bristle oil strokes and larger connected colour masses. Source profiles are not literal brush types. PNG exports show Oil Paint; SVG and plotter exports retain the original marker paths.':
     watercolour?
     'These source mark profiles organise watercolour shapes and dry brushwork. They are not literal highlighters or pens. Watercolour PNGs include paper texture, flowing washes and dry brush; SVG and plotter exports retain the underlying marker paths.':
     tissue?'These settings shape the source marks used to arrange the tissue and graphite. Profiles describe those marks, not physical brushes or highlighters. Tissue PNGs apply their own material finish; SVG and plotter exports use the underlying marker paths.':
-    'Choose Marker, Tissue & Graphite, or Watercolour in Compose. Marker tools control the visible ink strokes. Other materials convert the same source paths into textured artwork; SVG and plotter exports use marker paths.';
+    'Choose Marker, Tissue & Graphite, Watercolour, Oil Paint, or Action Painting in Compose. Marker tools control the visible ink strokes. Other materials convert the same source paths into textured artwork; SVG and plotter exports use marker paths.';
   entries.forEach(function(entry){
     var rangeInput=document.getElementById(entry.id);
     if(rangeStates[entry.id])displayRange(rangeInput,rangeStates[entry.id]);
