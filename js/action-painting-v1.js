@@ -1,4 +1,4 @@
-// Experimental ALGO/ART Action Painting V3.
+// Experimental ALGO/ART Action Painting V4.
 // Geometry is produced by the existing marker renderer; no new composition engine.
 window.AlgoArt=window.AlgoArt||{};
 (function(A){
@@ -15,16 +15,20 @@ return p}
 function dedupe(paths){var out=[],seen=new Set();for(var k=0;k<paths.length;k++){var pts=pathPoints(paths[k].d);if(pts.length<2)continue;var a=pts[0],b=pts[pts.length-1],key=[Math.round(a.x/12),Math.round(a.y/12),Math.round(b.x/12),Math.round(b.y/12)].join(':');if(seen.has(key))continue;seen.add(key);out.push({pts:pts,color:paths[k].stroke||'#252525'})}return out}
 function scatter(ctx,r,x,y,amount,c,width){ctx.fillStyle=c;for(var i=0;i<amount;i++){var angle=r()*Math.PI*2,rad=Math.pow(r(),.7)*width,sz=Math.pow(r(),2.1)*between(r,.6,7);ctx.beginPath();ctx.ellipse(x+Math.cos(angle)*rad,y+Math.sin(angle)*rad,sz,sz*between(r,.6,1.5),angle,0,Math.PI*2);ctx.fill()}}
 function pool(ctx,r,p,heading,weight,color){
-  // Accumulate irregular paint at a slowdown, not a fixed stroke endpoint.
-  var rx=weight*between(r,.9,2.7),ry=rx*between(r,.38,1.1);
-  var teeth=9+Math.floor(r()*8),angle=heading+between(r,-.7,.7);
-  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);ctx.beginPath();
-  for(var j=0;j<=teeth;j++){var t=j*2*Math.PI/teeth,mod=between(r,.73,1.21);
-    var x=Math.cos(t)*rx*mod,y=Math.sin(t)*ry*mod;
-    if(!j)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
-  ctx.closePath();ctx.globalAlpha=between(r,.5,.92);ctx.fillStyle=color;ctx.fill();
-  if(r()<.22){ctx.beginPath();ctx.ellipse(rx*.72,ry*.2,rx*.3,ry*.26,angle*.1,0,Math.PI*2);ctx.fill()}
-  ctx.restore();
+ // Smooth irregular paint footprint: cubic-like quadratic joins instead of polygon edges.
+ var rx=weight*between(r,.9,2.7),ry=rx*between(r,.38,1.1);
+ var n=14+Math.floor(r()*9),angle=heading+between(r,-.7,.7),points=[];
+ // Low-frequency modulation keeps pools organic rather than spiky or faceted.
+ var phase=r()*6.283185307,second=r()*6.283185307;
+ for(var j=0;j<n;j++){var t=j*2*Math.PI/n,mod=1+.14*Math.sin(t*3+phase)+.08*Math.cos(t*5+second)+between(r,-.035,.035);
+  points.push({x:Math.cos(t)*rx*mod,y:Math.sin(t)*ry*mod})}
+ ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);ctx.beginPath();
+ var prev=points[n-1],first=points[0];ctx.moveTo((prev.x+first.x)/2,(prev.y+first.y)/2);
+ for(j=0;j<n;j++){var v=points[j],next=points[(j+1)%n];
+  ctx.quadraticCurveTo(v.x,v.y,(v.x+next.x)/2,(v.y+next.y)/2)}
+ ctx.closePath();ctx.globalAlpha=between(r,.5,.92);ctx.fillStyle=color;ctx.fill();
+ if(r()<.22){ctx.beginPath();ctx.ellipse(rx*.72,ry*.2,rx*.3,ry*.26,angle*.1,0,Math.PI*2);ctx.fill()}
+ ctx.restore();
 }
 function fling(ctx,r,from,to,color,weight,energy,w,h,via){
  var dx=to.x-from.x,dy=to.y-from.y,len=Math.hypot(dx,dy);if(len<5)return;
@@ -36,6 +40,11 @@ function fling(ctx,r,from,to,color,weight,energy,w,h,via){
  var p1={x:mid.x-dx*.35+nx*spread,y:mid.y-dy*.35+ny*spread};
  var p2={x:mid.x+dx*(fold?-.34:.22)-nx*spread*.9,y:mid.y+dy*(fold?-.34:.22)-ny*spread*.9};
  var p3={x:to.x+dx*between(r,.05,.27),y:to.y+dy*between(r,.05,.27)};
+ // Small perpendicular deflection breaks the remaining ruler-straight needles.
+ // Preserve strong long skeins and underlying anchors; no random walk.
+ var arch=between(r,.035,.11)*len*(r()<.5?-1:1);
+ p1.x+=nx*arch;p1.y+=ny*arch;
+ p2.x+=nx*arch*.75;p2.y+=ny*arch*.75;
  var pts=[],N=Math.min(105,Math.max(28,Math.ceil(len/8)));
  for(var k=0;k<=N;k++){var t=k/N,u=1-t;
    pts.push({x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,
@@ -69,7 +78,7 @@ var KITS=[
 ];
 function samplePaths(paths){var anchors=[];for(var i=0;i<paths.length;i++){var p=paths[i].pts;if(!p.length)continue;anchors.push(p[0],p[Math.floor(p.length/2)],p[p.length-1]);if(p.length>9)anchors.push(p[Math.floor(p.length*.618)])}return anchors}
 A.actionPaintingFromPaths=function(target,sourcePaths,s,scale,options){options=options||{};scale=scale||1;
-var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v3|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=KITS[((options.palette||0)%KITS.length+KITS.length)%KITS.length];
+var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v4|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=KITS[((options.palette||0)%KITS.length+KITS.length)%KITS.length];
 target.width=Math.round(w*scale);target.height=Math.round(h*scale);var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
 ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h);if(!anchors.length)return {pathCount:0,anchorCount:0};
 var layers=options.layers||5,density=options.density||1;
