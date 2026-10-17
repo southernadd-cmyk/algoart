@@ -488,3 +488,26 @@ jobs:
       orientation: portrait
       live: true
     secrets: inherit
+
+  action-landscape:
+    # Two morning Action Painting studies, serialised to preserve the gallery.
+    needs: [publish, portrait-plan, portraits, portraits-retry]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '0' }}
+    uses: ./.github/workflows/action-live.yml
+    with:
+      slot: '0'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: landscape
+      live: true
+    secrets: inherit
+
+  action-portrait:
+    needs: [action-landscape, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '0' && needs.action-landscape.result == 'success' }}
+    uses: ./.github/workflows/action-live.yml
+    with:
+      slot: '0'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: portrait
+      live: true
+    secrets: inherit
