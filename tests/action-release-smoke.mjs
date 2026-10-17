@@ -10,9 +10,9 @@ for(const orientation of ['landscape','portrait']){
  for(const item of queue.entries){
   pair.push(item);
   assert.equal(item.material,'action');
-  assert.equal(new URL(item.shareUrl).searchParams.get('material'),'action-v1');
+  assert.equal(new URL(item.shareUrl).searchParams.get('material'),'action-v2');
   assert.match(item.id,/^2026-10-18-AC[LP]01$/);
-  assert.match(item.copy.instagram,/ACTION PAINTING V1/);
+  assert.match(item.copy.instagram,/ACTION PAINTING V2/);
   assert.equal(item.platforms.instagram.scheduledTime,'09:00');
   assert.equal(item.platforms.threads.scheduledTime,'09:00');
   assert.equal(item.platforms.bluesky.scheduledTime,'09:00');
