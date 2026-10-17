@@ -205,3 +205,63 @@ button{font-family:Georgia,serif}
 }
 .editorial-preview .inspector-head strong{font-size:21px!important}
 .editorial-preview .mode-picker-label span{font-size:14px!important}
+
+/* Slide-two welcome composition, separate from the studio. */
+.editorial-welcome{position:fixed!important;inset:0!important;z-index:1000!important;display:block!important;overflow:hidden!important;background:#e8e1d1!important;padding:0!important}
+.editorial-welcome[hidden]{display:none!important}
+.welcome-composition{width:min(1180px,calc(100vw - 9vw));height:100dvh;margin:0 auto;display:flex;flex-direction:column;justify-content:flex-start;box-sizing:border-box;padding:clamp(14px,3.6vh,36px) 0}
+.welcome-wordmark{font:24px "AlgoArt Marker",monospace;line-height:1.3;flex:0 0 auto}
+.welcome-wordmark span{color:#b95670}
+.welcome-layout{display:grid;grid-template-columns:minmax(0,1.618fr) minmax(0,1fr);align-items:center;column-gap:clamp(35px,5.5vw,90px);flex:1;min-height:0}
+.welcome-left{min-width:0;align-self:center}
+.editorial-welcome .intro-card{display:block!important;position:relative!important;transform:rotate(-.55deg)!important;background:#f8f5ec!important;background-image:none!important;border:0!important;border-radius:0!important;width:100%!important;max-width:none!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important;padding:clamp(30px,4vw,60px) clamp(26px,4.1vw,60px)!important;box-shadow:0 12px 22px rgba(75,60,43,.13)!important}
+.editorial-welcome .intro-card:before,.editorial-welcome .intro-card:after{display:none!important}
+.editorial-welcome .intro-copy{max-width:none!important}
+.editorial-welcome #introTitle{font:400 clamp(15px,1.42vw,19px)/1.4 "AlgoArt Marker",monospace!important;letter-spacing:0!important;color:#312c27;margin:0 0 clamp(24px,3.5vh,40px)!important}
+.editorial-welcome .intro-thesis{font:400 clamp(12px,1.31vw,17px)/1.9 "AlgoArt Marker",monospace!important;margin:0 0 clamp(22px,3.8vh,38px)!important;max-width:none!important;white-space:nowrap}
+.editorial-welcome .score-note{font:400 clamp(12px,1.31vw,17px)/1.9 "AlgoArt Marker",monospace!important;max-width:none;margin:0 0 clamp(20px,3vh,34px)!important}
+.editorial-welcome .score-date{font:400 clamp(12px,1.2vw,16px)/1.5 "AlgoArt Marker",monospace!important;margin:0!important}
+.welcome-description{font:clamp(14px,1.3vw,18px)/1.6 Georgia,serif;color:#39332d;max-width:680px;margin:clamp(20px,3.7vh,38px) 0 clamp(20px,3.2vh,32px)}
+.editorial-welcome .intro-actions{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:12px 27px!important;margin:0!important}
+.editorial-welcome .intro-actions button,.editorial-welcome .welcome-gallery-link{width:auto!important;min-width:0!important;max-width:100%;background:none!important;border:0!important;border-radius:0!important;padding:0!important;box-shadow:none!important;color:#302c29!important;text-decoration:none;font:italic clamp(13px,1.2vw,16px) Georgia,serif!important;text-transform:none!important;letter-spacing:0!important}
+.editorial-welcome .intro-actions #introEnter{font:clamp(22px,2.2vw,31px) "AlgoArt Marker",monospace!important;text-decoration:underline wavy #bd526d 2px!important;text-underline-offset:8px!important}
+.editorial-welcome .intro-actions #introReveal{font-size:12px!important;opacity:.85}
+.editorial-welcome .intro-actions button:focus-visible,.editorial-welcome .intro-actions a:focus-visible{outline:2px solid #aa4960!important;outline-offset:6px!important}
+.welcome-right{width:100%;margin:0;align-self:center;transform:rotate(.6deg)}
+.welcome-right img{display:block;width:100%;height:auto;max-height:min(57vh,550px);object-fit:contain;object-position:center;background:#f9f6ee;box-shadow:0 11px 23px rgba(75,60,43,.14)}
+.welcome-right figcaption{font:italic 13px/1.5 Georgia,serif;color:#51483d;margin-top:13px}
+@media(max-width:800px){
+ .welcome-composition{width:calc(100vw - 38px);padding:12px 0 18px}
+ .welcome-wordmark{font-size:20px}
+ .welcome-layout{column-gap:18px;grid-template-columns:minmax(0,1.5fr) minmax(0,.7fr)}
+ .editorial-welcome .intro-card{padding:28px 22px!important}
+ .editorial-welcome .intro-thesis,.editorial-welcome .score-note{white-space:normal;font-size:11px!important;line-height:1.85!important}
+ .editorial-welcome #introTitle{font-size:15px!important}
+ .welcome-description{font-size:12px}
+}
+@media(max-width:590px){
+ .welcome-composition{width:calc(100vw - 30px);padding:10px 0;justify-content:flex-start}
+ .welcome-wordmark{font-size:19px;margin-bottom:12px}
+ .welcome-layout{display:grid;grid-template-columns:1fr minmax(0,.46fr);column-gap:12px;align-content:center}
+ .editorial-welcome .intro-card{padding:clamp(15px,3vh,26px) 14px!important}
+ .editorial-welcome #introTitle{font-size:12px!important;margin-bottom:15px!important}
+ .editorial-welcome .intro-thesis{font-size:9px!important;line-height:1.85!important;margin-bottom:14px!important}
+ .editorial-welcome .score-note{font-size:9px!important;line-height:1.8!important;margin-bottom:10px!important}
+ .editorial-welcome .score-date{font-size:9px!important}
+ .welcome-description{font-size:11px;line-height:1.45;margin:17px 0}
+ .editorial-welcome .intro-actions{gap:10px 16px!important}
+ .editorial-welcome .intro-actions #introEnter{font-size:22px!important}
+ .editorial-welcome .welcome-gallery-link{font-size:11px!important}
+ .editorial-welcome .intro-actions #introReveal{font-size:10px!important}
+ .welcome-right{align-self:center}
+ .welcome-right img{max-height:33vh}
+ .welcome-right figcaption{font-size:10px}
+}
+@media(max-height:640px){
+ .welcome-composition{padding-top:8px;padding-bottom:8px}
+ .editorial-welcome .intro-card{padding-top:16px!important;padding-bottom:16px!important}
+ .editorial-welcome #introTitle{margin-bottom:12px!important}
+ .editorial-welcome .intro-thesis{margin-bottom:10px!important;line-height:1.55!important}
+ .editorial-welcome .score-note{margin-bottom:8px!important;line-height:1.55!important}
+ .welcome-description{margin:10px 0;font-size:12px}
+}
