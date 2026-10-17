@@ -1,4 +1,4 @@
-// Experimental ALGO/ART Action Painting V2.
+// Experimental ALGO/ART Action Painting V3.
 // Geometry is produced by the existing marker renderer; no new composition engine.
 window.AlgoArt=window.AlgoArt||{};
 (function(A){
@@ -14,32 +14,52 @@ else if(cmd==='C'&&q){if(i+5>=t.length)break;var a={x:n(),y:n()},b={x:n(),y:n()}
 return p}
 function dedupe(paths){var out=[],seen=new Set();for(var k=0;k<paths.length;k++){var pts=pathPoints(paths[k].d);if(pts.length<2)continue;var a=pts[0],b=pts[pts.length-1],key=[Math.round(a.x/12),Math.round(a.y/12),Math.round(b.x/12),Math.round(b.y/12)].join(':');if(seen.has(key))continue;seen.add(key);out.push({pts:pts,color:paths[k].stroke||'#252525'})}return out}
 function scatter(ctx,r,x,y,amount,c,width){ctx.fillStyle=c;for(var i=0;i<amount;i++){var angle=r()*Math.PI*2,rad=Math.pow(r(),.7)*width,sz=Math.pow(r(),2.1)*between(r,.6,7);ctx.beginPath();ctx.ellipse(x+Math.cos(angle)*rad,y+Math.sin(angle)*rad,sz,sz*between(r,.6,1.5),angle,0,Math.PI*2);ctx.fill()}}
-function fling(ctx,r,from,to,color,weight,energy,w,h){
-var dx=to.x-from.x,dy=to.y-from.y,len=Math.hypot(dx,dy);if(len<5)return;
-var nx=-dy/len,ny=dx/len,dir=between(r,-1,1),lateral=dir*between(r,.16,.58)*len*energy;
-var overshoot=between(r,.1,.38)*len;
-var p0={x:from.x-dx/len*overshoot*.25,y:from.y-dy/len*overshoot*.25};
-var p1={x:from.x+dx*.22+nx*lateral,y:from.y+dy*.22+ny*lateral};
-var p2={x:to.x-dx*.16-nx*lateral*.55,y:to.y-dy*.16-ny*lateral*.55};
-var p3={x:to.x+dx/len*overshoot,y:to.y+dy/len*overshoot};
-var pts=[],samples=Math.min(80,Math.max(18,Math.ceil(len/12)));
-for(var i=0;i<=samples;i++){var t=i/samples,u=1-t;pts.push({x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y})}
-ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineCap='round';ctx.lineJoin='round';
-for(i=1;i<pts.length;i++){
- var a=pts[Math.max(0,i-1)],b=pts[i],prev=pts[Math.max(0,i-2)],next=pts[Math.min(pts.length-1,i+1)];
- var ax=a.x-prev.x,ay=a.y-prev.y,bx=next.x-b.x,by=next.y-b.y;
- var angle=Math.atan2(ax*by-ay*bx,ax*bx+ay*by);
- var bend=Math.min(1,Math.abs(angle)*2.7);
- var width=weight*(.34+1.75*bend)*(i<3||i>pts.length-4?1.23:1);
- if(r()<.035*(1-bend))continue;
- ctx.globalAlpha=between(r,.65,.96);ctx.lineWidth=Math.max(.45,width);
- ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
- if(bend>.3&&r()<.38){ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(b.x,b.y,Math.max(1,width*between(r,.5,1.3)),0,Math.PI*2);ctx.fill()}
- if(r()<.12*energy)scatter(ctx,r,b.x,b.y,2+Math.floor(r()*6),color,between(r,6,30)*energy);
+function pool(ctx,r,p,heading,weight,color){
+  // Accumulate irregular paint at a slowdown, not a fixed stroke endpoint.
+  var rx=weight*between(r,.9,2.7),ry=rx*between(r,.38,1.1);
+  var teeth=9+Math.floor(r()*8),angle=heading+between(r,-.7,.7);
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);ctx.beginPath();
+  for(var j=0;j<=teeth;j++){var t=j*2*Math.PI/teeth,mod=between(r,.73,1.21);
+    var x=Math.cos(t)*rx*mod,y=Math.sin(t)*ry*mod;
+    if(!j)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+  ctx.closePath();ctx.globalAlpha=between(r,.5,.92);ctx.fillStyle=color;ctx.fill();
+  if(r()<.22){ctx.beginPath();ctx.ellipse(rx*.72,ry*.2,rx*.3,ry*.26,angle*.1,0,Math.PI*2);ctx.fill()}
+  ctx.restore();
 }
-ctx.globalAlpha=.88;
-for(var j=0;j<Math.floor(energy*8);j++){var spot=pts[Math.floor(r()*pts.length)];scatter(ctx,r,spot.x,spot.y,2+Math.floor(r()*8),color,between(r,6,45)*energy)}
-ctx.restore();
+function fling(ctx,r,from,to,color,weight,energy,w,h,via){
+ var dx=to.x-from.x,dy=to.y-from.y,len=Math.hypot(dx,dy);if(len<5)return;
+ var nx=-dy/len,ny=dx/len,sign=r()<.5?-1:1;
+ // Multi-anchor curved skeins: loops have the same chance in dark and light passes.
+ var mid=via||{x:(from.x+to.x)/2,y:(from.y+to.y)/2};
+ var spread=between(r,.2,.7)*len*sign,fold=r()<.46;
+ var p0={x:from.x-dx*between(r,.03,.16),y:from.y-dy*between(r,.03,.16)};
+ var p1={x:mid.x-dx*.35+nx*spread,y:mid.y-dy*.35+ny*spread};
+ var p2={x:mid.x+dx*(fold?-.34:.22)-nx*spread*.9,y:mid.y+dy*(fold?-.34:.22)-ny*spread*.9};
+ var p3={x:to.x+dx*between(r,.05,.27),y:to.y+dy*between(r,.05,.27)};
+ var pts=[],N=Math.min(105,Math.max(28,Math.ceil(len/8)));
+ for(var k=0;k<=N;k++){var t=k/N,u=1-t;
+   pts.push({x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,
+             y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y})}
+ ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineCap='round';ctx.lineJoin='round';
+ // Continuous ribbons with local curvature-dependent slowing and paint deposits.
+ for(var i=1;i<pts.length;i++){
+   var p=pts[i],q=pts[i-1],before=pts[Math.max(0,i-2)],after=pts[Math.min(N,i+1)];
+   var ax=q.x-before.x,ay=q.y-before.y,bx=after.x-p.x,by=after.y-p.y;
+   var curvature=Math.min(1,Math.abs(Math.atan2(ax*by-ay*bx,ax*bx+ay*by))*3.8);
+   var speed=Math.hypot(p.x-q.x,p.y-q.y);
+   var thickness=weight*(.3+curvature*.85+Math.min(.55,2/Math.max(2,speed)))*(r()<.05?.6:1);
+   if(r()<.025&&!curvature)continue;
+   ctx.globalAlpha=between(r,.53,.92);ctx.lineWidth=Math.max(.5,thickness);
+   ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+   if(i>3&&i<N-3&&((curvature>.27&&r()<.13)||(speed<2.5&&r()<.15)))
+     pool(ctx,r,p,Math.atan2(p.y-q.y,p.x-q.x),Math.max(1.2,thickness),color);
+   if(r()<.09*energy)scatter(ctx,r,p.x,p.y,2+Math.floor(r()*5),color,between(r,5,24));
+ }
+ // Not every gesture pools, and no endpoint is privileged.
+ if(r()<.24){var at=pts[2+Math.floor(r()*(N-4))];pool(ctx,r,at,between(r,-3.14,3.14),weight,color)}
+ for(var j=0;j<Math.floor(energy*6);j++){var spot=pts[Math.floor(r()*pts.length)];
+   scatter(ctx,r,spot.x,spot.y,2+Math.floor(r()*5),color,between(r,8,40))}
+ ctx.restore();
 }
 var KITS=[
 ['#14161b','#f0d3a3','#b12d24','#e8bd35','#33678c','#ece8de'],
@@ -49,25 +69,48 @@ var KITS=[
 ];
 function samplePaths(paths){var anchors=[];for(var i=0;i<paths.length;i++){var p=paths[i].pts;if(!p.length)continue;anchors.push(p[0],p[Math.floor(p.length/2)],p[p.length-1]);if(p.length>9)anchors.push(p[Math.floor(p.length*.618)])}return anchors}
 A.actionPaintingFromPaths=function(target,sourcePaths,s,scale,options){options=options||{};scale=scale||1;
-var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v2|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=KITS[((options.palette||0)%KITS.length+KITS.length)%KITS.length];
+var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v3|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=KITS[((options.palette||0)%KITS.length+KITS.length)%KITS.length];
 target.width=Math.round(w*scale);target.height=Math.round(h*scale);var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
 ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h);if(!anchors.length)return {pathCount:0,anchorCount:0};
 var layers=options.layers||5,density=options.density||1;
-// Weave the same palette throughout the painting: dark, colours, light, then dark accents.
-var passes=layers*3;
-for(var layer=0;layer<passes;layer++){var ix=layer%3===0?0:layer%3===2?palette.length-1:1+Math.floor(r()*Math.max(1,palette.length-2));
-if(layer>passes-3)ix=layer%2===0?0:palette.length-2;
-var colour=palette[ix],count=Math.min(95,Math.floor((7+anchors.length*.065)*density));
-ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
-for(var i=0;i<count;i++){var a=anchors[Math.floor(r()*anchors.length)],b=anchors[Math.floor(r()*anchors.length)];
-if(Math.hypot(a.x-b.x,a.y-b.y)<w*.07)b=anchors[Math.floor(r()*anchors.length)];
-// A few wandering gestures break the mass edge without replacing its geometric origin.
-if(r()<.14){var theta=r()*Math.PI*2; b={x:b.x+Math.cos(theta)*w*between(r,.10,.32),y:b.y+Math.sin(theta)*h*between(r,.10,.32)}}
-var weight=between(r,1,layer%3===0?11:6),energy=between(r,.5,1.25);
-fling(ctx,r,a,b,colour,weight,energy,w,h);
-if(i%4===0){var at=anchors[Math.floor(r()*anchors.length)];ctx.globalAlpha=between(r,.5,.95);scatter(ctx,r,at.x,at.y,3+Math.floor(r()*12),colour,between(r,9,48));ctx.globalAlpha=1}
-}ctx.restore()}
-return {pathCount:paths.length,anchorCount:anchors.length,layers:layers,palette:palette.slice()}}
+var archetypes=['off-centre knot','double cluster','diagonal band','hooked crescent','edge-loaded','woven strip'];
+var archetype=archetypes[hash(s.seed+'|mass')%archetypes.length];
+var cx=anchors.reduce((sum,p)=>sum+p.x,0)/anchors.length,cy=anchors.reduce((sum,p)=>sum+p.y,0)/anchors.length;
+var ordered=anchors.slice().sort((a,b)=>a.x-b.x),left=ordered[Math.floor(ordered.length*.25)],right=ordered[Math.floor(ordered.length*.75)];
+function select(){
+ var p=anchors[Math.floor(r()*anchors.length)],q={x:p.x,y:p.y};
+ if(archetype==='off-centre knot'){q.x+=(p.x-cx)*.24+w*.12;q.y+=(p.y-cy)*.2-h*.11}
+ if(archetype==='diagonal band'){q.x+=(p.y-cy)*.34;q.y+=(p.x-cx)*.18}
+ if(archetype==='double cluster'){var c=r()<.5?left:right;q.x=c.x+(p.x-cx)*.55;q.y=c.y+(p.y-cy)*.55}
+ if(archetype==='edge-loaded'){q.x+=(p.x-cx)*.25+(p.x<cx?-w*.09:w*.09)}
+ if(archetype==='woven strip'){q.y=cy+(p.y-cy)*.32;q.x+=(p.y-cy)*.25}
+ if(archetype==='hooked crescent'){var theta=Math.atan2(p.y-cy,p.x-cx)+.38,rad=Math.hypot(p.x-cx,p.y-cy);q.x=cx+Math.cos(theta)*rad;q.y=cy+Math.sin(theta)*rad}
+ return q
+}
+// Coarse occupancy prevents late opaque paint collapsing into an unreadable centre.
+var cellsX=21,cellsY=15,occupancy=new Uint16Array(cellsX*cellsY);
+function cell(p){return Math.max(0,Math.min(cellsY-1,Math.floor(p.y/h*cellsY)))*cellsX+
+ Math.max(0,Math.min(cellsX-1,Math.floor(p.x/w*cellsX)))}
+var passes=layers*3,skipped=0;
+for(var layer=0;layer<passes;layer++){
+ var ix=layer%3===0?0:layer%3===2?palette.length-1:1+Math.floor(r()*Math.max(1,palette.length-2));
+ if(layer>passes-3)ix=layer%2===0?0:palette.length-2;
+ var colour=palette[ix],count=Math.min(95,Math.floor((7+anchors.length*.065)*density));
+ ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
+ for(var i=0;i<count;i++){
+  var a=select(),b=select(),via=select(),ca=cell(a),cb=cell(b),cm=cell(via);
+  var crowded=Math.max(occupancy[ca],occupancy[cb],occupancy[cm]);
+  if(crowded>20&&r()<Math.min(.82,(crowded-20)/36)){skipped++;continue}
+  // New gestures may escape the φ mass; origin and intermediate anchors remain derived.
+  if(r()<.19){var theta=r()*Math.PI*2;b={x:b.x+Math.cos(theta)*w*between(r,.10,.30),y:b.y+Math.sin(theta)*h*between(r,.10,.30)}}
+  var weight=between(r,.8,layer%3===0?9:6),energy=between(r,.55,1.35);
+  if(crowded>14)weight*=.55;
+  fling(ctx,r,a,b,colour,weight,energy,w,h,via);
+  occupancy[ca]++;occupancy[cb]++;occupancy[cm]++;
+  if(i%5===0&&crowded<17){var at=select();ctx.globalAlpha=between(r,.3,.75);
+   scatter(ctx,r,at.x,at.y,3+Math.floor(r()*9),colour,between(r,9,38));ctx.globalAlpha=1}
+ }ctx.restore()}
+return {pathCount:paths.length,anchorCount:anchors.length,layers:layers,archetype:archetype,skippedCrowded:skipped,palette:palette.slice()}}
 A.renderActionPainting=function(target,s,scale,showGeometry,options){scale=scale||1;var prior=A.svgRecorder,rec={precise:true,paths:[],paperMarks:[]},scratch=document.createElement('canvas'),meta;
 try{A.svgRecorder=rec;meta=A.render(scratch,s,Math.min(1,Math.max(.1,scale)),false)}finally{A.svgRecorder=prior}
 var stats=A.actionPaintingFromPaths(target,rec.paths,s,scale,options);if(showGeometry)A.geometryOverlay(target.getContext('2d'),s,meta);A.lastRenderMeta=meta;A.lastActionPaintingStats=stats;return meta}
