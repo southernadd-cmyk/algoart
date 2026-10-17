@@ -1,0 +1,26 @@
+name: Future Oil V4 Publishing Guard
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'automation/generate-social.mjs'
+      - 'automation/build-gallery.mjs'
+      - 'js/app.js'
+      - 'tests/oil-future-version.test.mjs'
+      - '.github/workflows/oil-future-version.yml'
+  pull_request:
+    paths:
+      - 'automation/generate-social.mjs'
+      - 'automation/build-gallery.mjs'
+      - 'js/app.js'
+      - 'tests/oil-future-version.test.mjs'
+      - '.github/workflows/oil-future-version.yml'
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/oil-future-version.test.mjs
