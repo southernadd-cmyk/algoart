@@ -75,7 +75,7 @@ function samplePaths(paths){var anchors=[];for(var i=0;i<paths.length;i++){var p
 // traditional named palette has only 3 anchor hues. Other materials continue
 // using A.hues unchanged. Explicit Monochrome remains monochromatic.
 function actionPaintPalette(s){
- var count=s.palette==='mono'?Math.max(1,s.colourCount):Math.max(8,s.colourCount);
+ var count=Math.max(1,Math.min(14,Math.round(Number(s.colourCount)||1)));
  var base=A.hues(Object.assign({},s,{colourCount:count}),A.makeR(String(s.seed)+'|action-palette'));
  if(s.palette==='mono'||s.palette==='spectrum'||s.palette==='golden')return base;
  var cycle={primary:3,cmyk:4,warm:6,cold:7,neon:7,pastel:8,earth:8,marker:11}[s.palette]||count;
