@@ -8,8 +8,8 @@ try{
   const page=await browser.newPage({viewport:{width,height},isMobile:true,hasTouch:true});
   await page.addInitScript(()=>{localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','closed');localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1')});
   for(const fmt of ['landscape','portrait']){
-   await page.goto(`http://127.0.0.1:4173/?v=8&seed=LAYOUT&mode=rects&fmt=${fmt}`);
-   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true&&document.querySelector('#statsText')?.textContent?.includes('LAYOUT'),{timeout:120000});
+   await page.goto(`http://127.0.0.1:4173/?v=8&seed=AA-20261018-01-04217&mode=rects&fmt=${fmt}`);
+   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true&&document.querySelector('#statsText')?.textContent?.includes('AA-20261018-01-04217'),{timeout:120000});
    const geometry=await page.evaluate(()=>{
     const c=document.querySelector('#art').getBoundingClientRect(),shell=document.querySelector('.canvas-shell'),s=shell.getBoundingClientRect(),css=getComputedStyle(shell);
     return {x:c.x,y:c.y,w:c.width,h:c.height,centre:c.y+c.height/2,expected:s.y+parseFloat(css.paddingTop)+(s.height-parseFloat(css.paddingTop)-parseFloat(css.paddingBottom))/2,overflow:document.documentElement.scrollWidth>innerWidth};
