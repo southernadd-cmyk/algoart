@@ -1350,17 +1350,6 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
        e.id==='phiSheetFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
     if(e.id==='materialStyle'){legacyOilV1Link=false;legacyOilV2Link=false;oilV4Link=true;}
-    if(e.id==='materialStyle'&&actionPaintingEnabled()){
-      // The editor's generic Monochrome / four-colour initial settings
-      // are unsuitable for the Action Painting material's default look.
-      // Selecting Monochrome later remains an explicit supported choice.
-      if($('palette').value==='mono')$('palette').value='spectrum';
-      if(+$('colourCount').value<8){
-        if(A.setControlValue)A.setControlValue($('colourCount'),9);
-        else $('colourCount').value=9;
-        syncRangeOutput($('colourCount'));
-      }
-    }
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
     if(e.id==='materialStyle'&&watercolourEnabled()){
       watercolourMaterialRevision='v2s';
