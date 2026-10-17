@@ -29,6 +29,10 @@ try {
   assert.match(item.description,/original paths → \d+ glass panes/);
   assert.match(item.description,/seams/);
   assert.match(item.description,/engine lead paths/,'Original engine geometry must form glass leadwork');
+  const lead=Number(item.description.match(/(\d+) engine lead paths/)?.[1]||0);
+  assert(lead>0&&lead<=68,'V5 must use a limited number of actual source paths: '+item.mode);
+  const panes=Number(item.description.match(/→ (\d+) glass panes/)?.[1]||0);
+  assert(panes>=2,'Engine-defined pane topology must produce more than one region: '+item.mode);
  }
  await page.screenshot({path:'stained-glass-results/gallery.png',fullPage:true});
  await page.locator('#render').click();
