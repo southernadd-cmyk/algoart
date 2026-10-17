@@ -2,6 +2,9 @@ name: Mobile randomise repeated-download regression
 on:
   push:
     branches: [fix/mobile-randomise-repeat-download, fix/mobile-explicit-png-download]
+  push:
+    branches: [main]
+    paths: ['index.html', 'test/editorial.css', 'tests/mobile-layout.test.mjs', '.github/workflows/mobile-randomise-download-test.yml']
   pull_request:
     paths: ['index.html', 'css/**', 'js/export.js', 'js/app.js', 'tests/mobile*', '.github/workflows/mobile-randomise-download-test.yml']
   workflow_dispatch:
