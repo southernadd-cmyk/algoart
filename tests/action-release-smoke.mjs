@@ -31,27 +31,44 @@ try {
  const page=await browser.newPage({viewport:{width:1440,height:900}});
  await page.goto('http://127.0.0.1:4173/?seed=ACTION-COLOR-TEST&material=action-v1',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.querySelector('#creatingOverlay')?.hidden===true,{timeout:120000});
- // The material picker must no longer inherit generic monochrome defaults.
- const settings=await page.evaluate(()=>({
-   palette:document.getElementById('palette').value,
-   colours:+document.getElementById('colourCount').value
- }));
- // Deep links can explicitly request monochrome; test ordinary selection.
- await page.locator('#materialStyle').selectOption('marker');
- await page.locator('#palette').evaluate(el=>{el.value='mono';el.dispatchEvent(new Event('change',{bubbles:true}))});
- await page.locator('#materialStyle').selectOption('action');
+ // Use actual editor controls and verify the renderer sees the exact count.
+ for(const palette of ['spectrum','primary','cmyk','mono']){
+  for(const count of [1,2,3,4,9,14]){
+   await page.evaluate(({palette,count})=>{
+    const p=document.getElementById('palette');
+    p.value=palette;p.dispatchEvent(new Event('change',{bubbles:true}));
+    const c=document.getElementById('colourCount');
+    if(window.AlgoArt.setControlValue)window.AlgoArt.setControlValue(c,count);
+    else c.value=String(count);
+    c.dispatchEvent(new Event('change',{bubbles:true}));
+   },{palette,count});
+   await page.waitForFunction(({palette,count})=>{
+    const stats=window.AlgoArt.lastActionPaintingStats;
+    return document.getElementById('creatingOverlay')?.hidden===true &&
+      document.getElementById('palette').value===palette &&
+      +document.getElementById('colourCount').value===count &&
+      stats?.palette?.length===count;
+   },{palette,count},{timeout:120000});
+   const actual=await page.evaluate(()=>window.AlgoArt.lastActionPaintingStats.palette);
+   assert.equal(actual.length,count,palette+' must obey Colours slider='+count);
+  }
+ }
+ // Changing material must not silently change the user's palette/count.
+ await page.evaluate(()=>{
+  const p=document.getElementById('palette'),c=document.getElementById('colourCount');
+  p.value='primary';p.dispatchEvent(new Event('change',{bubbles:true}));
+  if(window.AlgoArt.setControlValue)window.AlgoArt.setControlValue(c,3);
+  else c.value='3';
+  c.dispatchEvent(new Event('change',{bubbles:true}));
+  const material=document.getElementById('materialStyle');
+  material.value='marker';material.dispatchEvent(new Event('change',{bubbles:true}));
+  material.value='action';material.dispatchEvent(new Event('change',{bubbles:true}));
+ });
  await page.waitForFunction(()=>document.querySelector('#creatingOverlay')?.hidden===true,{timeout:120000});
- const selected=await page.evaluate(()=>({
-   palette:document.getElementById('palette').value,
-   colours:+document.getElementById('colourCount').value,
-   pigments:window.AlgoArt.lastActionPaintingStats?.palette||[]
+ const preserved=await page.evaluate(()=>({
+  palette:document.getElementById('palette').value,
+  count:+document.getElementById('colourCount').value
  }));
- assert.equal(selected.palette,'spectrum');
- assert(selected.colours>=8,'Action Painting must start with a broad colour rack');
- assert(new Set(selected.pigments).size>=8,'Action Painting must render eight distinct colours');
- await page.locator('#palette').evaluate(el=>{el.value='primary';el.dispatchEvent(new Event('change',{bubbles:true}))});
- await page.waitForFunction(()=>document.querySelector('#creatingOverlay')?.hidden===true,{timeout:120000});
- const primary=await page.evaluate(()=>window.AlgoArt.lastActionPaintingStats?.palette||[]);
- assert(new Set(primary).size>=8,'Primary-based painting must not repeat only three hues');
- console.log('PASS: Action Painting uses a diverse palette and explicit monochrome remains selectable');
+ assert.deepEqual(preserved,{palette:'primary',count:3});
+ console.log('PASS: Action Painting honours the exact Colours slider and preserves material choices');
 }finally{await browser.close()}
