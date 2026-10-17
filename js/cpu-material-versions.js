@@ -35,7 +35,13 @@ A.renderTissueV8=function(target,settings,scale,reveal){
 A.renderWatercolourV2T=function(target,settings,scale,reveal){
   require('renderWatercolourV2S');require('renderViaCPUCanvas');
   return A.renderViaCPUCanvas(function(canvas){
-    return A.renderWatercolourV2S(canvas,settings,scale,reveal);
+    const previous=A.watercolourV2TFastNeighbours;
+    A.watercolourV2TFastNeighbours=true;
+    try{
+      return A.renderWatercolourV2S(canvas,settings,scale,reveal);
+    }finally{
+      A.watercolourV2TFastNeighbours=previous;
+    }
   },target,'watercolour-v2t');
 };
 A.cpuMaterialVersions={
