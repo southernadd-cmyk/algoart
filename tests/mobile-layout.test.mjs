@@ -22,9 +22,9 @@ try{
    if(fmt==='landscape')assert(geometry.w>=width-32,'Landscape should use available phone width');
    await page.screenshot({path:`oil-check-results/layout-${width}-${fmt}.png`});
    await page.locator('#inspectorToggle').tap();
-   const seedOrder=await page.locator('#inspector').evaluate(el=>({heading:el.querySelector('.inspector-head').getBoundingClientRect().top,seed:el.querySelector(':scope > .seed').getBoundingClientRect().top,dom:[...el.children].map(x=>x.className)}));
-   assert(seedOrder.seed>seedOrder.heading,'Seed must appear below Parameters heading: '+JSON.stringify(seedOrder));
-   const seedRow=await page.locator('#inspector > .seed').evaluate(el=>{const label=el.querySelector('.toolbar-label').getBoundingClientRect(),input=el.querySelector('#seed').getBoundingClientRect(),button=el.querySelector('#newSeed').getBoundingClientRect();return {label:{x:label.left,y:label.top,h:label.height},input:{x:input.left,y:input.top,h:input.height},button:{x:button.left,y:button.top,h:button.height}};});
+   const seedOrder=await page.locator('#inspector').evaluate(el=>({heading:el.querySelector('.inspector-title').getBoundingClientRect(),seed:el.querySelector('.inspector-head > .seed').getBoundingClientRect()}));
+   assert(Math.abs((seedOrder.seed.y+seedOrder.seed.height/2)-(seedOrder.heading.y+seedOrder.heading.height/2))<20,'Seed must share Parameters header row: '+JSON.stringify(seedOrder));
+   const seedRow=await page.locator('#inspector .inspector-head > .seed').evaluate(el=>{const label=el.querySelector('.toolbar-label').getBoundingClientRect(),input=el.querySelector('#seed').getBoundingClientRect(),button=el.querySelector('#newSeed').getBoundingClientRect();return {label:{x:label.left,y:label.top,h:label.height},input:{x:input.left,y:input.top,h:input.height},button:{x:button.left,y:button.top,h:button.height}};});
    assert(seedRow.label.x<seedRow.input.x&&seedRow.input.x<seedRow.button.x,'Seed label, field and regenerate must be in that order: '+JSON.stringify(seedRow));
    const centers=[seedRow.label,seedRow.input,seedRow.button].map(x=>x.y+x.h/2);
    assert(Math.max(...centers)-Math.min(...centers)<14,'Seed controls must share one horizontal row: '+JSON.stringify(seedRow));
