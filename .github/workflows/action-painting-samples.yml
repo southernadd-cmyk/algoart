@@ -1,0 +1,31 @@
+name: Action Painting V1 Samples
+on:
+  pull_request:
+    paths:
+      - 'js/action-painting-v1.js'
+      - 'experiments/action-painting-v1.html'
+      - 'tests/action-painting-samples.mjs'
+      - '.github/workflows/action-painting-samples.yml'
+  workflow_dispatch:
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start static site
+        run: python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/algo-http.log 2>&1 &
+      - name: Render studies from existing geometry
+        run: node tests/action-painting-samples.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: action-painting-v1-studies
+          path: action-painting-samples/*.png
+          if-no-files-found: warn
