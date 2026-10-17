@@ -511,26 +511,6 @@ function finishDragPreview(){
   useCurrentRenderer();regenerate();
 }
 
-// A marker-engine sketch is drawn ONCE for the UI; never recorded as artwork.
-function initCreatingMarker(){
-  var marker=$('creatingMarker');
-  if(!marker||typeof A.stroke!=='function'||typeof A.makeR!=='function')return;
-  var ctx=marker.getContext('2d');
-  var points=[],n=70;
-  for(var i=0;i<=n;i++){
-    var angle=i/n*Math.PI*1.86-Math.PI*.45;
-    var radius=38+2.4*Math.sin(angle*5);
-    points.push({x:64+radius*Math.cos(angle),y:64+radius*Math.sin(angle)});
-  }
-  var oldRecorder=A.svgRecorder;
-  try{
-    A.svgRecorder=null;
-    A.stroke(ctx,points,'#171613',{pen:'felt',thickness:4,overdraw:2,
-      wobble:16,pressure:38,dryness:12,opacity:92},
-      A.makeR('ALGOART-CREATING-ICON-V1'),false);
-  }finally{A.svgRecorder=oldRecorder;}
-}
-initCreatingMarker();
 var creatingGeneration=0,creatingPending=false,creatingInitial=true;
 function scheduleCreatingRender(){
   // Preserve the original synchronous initial render for URL and archive state.
