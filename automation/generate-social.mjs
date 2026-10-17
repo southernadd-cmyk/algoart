@@ -168,7 +168,7 @@ const material = process.env.SOCIAL_MATERIAL === 'action' ? 'action' : process.e
   process.env.SOCIAL_MATERIAL === 'watercolor' ? 'watercolor' : 'marker';
 const watercolor = material === 'watercolor',watercolour = material === 'watercolour',oil = material === 'oil',action=material==='action';
 const tissueEdition = watercolor ? tissueEditionForDate(day) : null;
-const generationCount = action?Math.max(1,Number(process.env.SOCIAL_COUNT||2)):oil || watercolour ? (day >= '2026-10-17' ? Math.max(1, Number(process.env.SOCIAL_COUNT || 1)) : 1) : watercolor ? 2 :
+const generationCount = action?1:oil || watercolour ? (day >= '2026-10-17' ? Math.max(1, Number(process.env.SOCIAL_COUNT || 1)) : 1) : watercolor ? 2 :
   Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
 const outDir = path.resolve(process.env.SOCIAL_OUTPUT_DIR || 'social-output', day,
   ...(action?['action',orientation]:oil?['oil',orientation]:watercolour?['watercolour',orientation]:watercolor?['watercolor',orientation]:
@@ -183,7 +183,7 @@ try {
   for (let index = 0; index < generationCount; index++) {
     // Existing landscape editions retain their exact JPEG, settings and version.
     // Portrait editions are already frozen in the release queue by portrait-live.
-    if(!oil&&!watercolor&&!watercolour&&orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
+    if(!action&&!oil&&!watercolor&&!watercolour&&orientation==='landscape'&&!seedSalt&&!process.env.SOCIAL_FORCE_MODE){
       const archived=await archivedLandscapeStudy(day,index);
       if(archived){
         await fs.copyFile(archived.imagePath,path.join(outDir,archived.entry.imageFile));
@@ -218,6 +218,14 @@ try {
       settings.paper='#f5f0e6';
     }
     if(action){
+      // Choose reproducible distinct systems and palettes for the day's pair.
+      const pair=rng(day+'|action-pair-v1');
+      const firstMode=Math.floor(pair()*MODES.length);
+      const firstPalette=Math.floor(pair()*PALETTES.length);
+      const modeIndex=orientation==='portrait'?(firstMode+1+Math.floor(pair()*(MODES.length-1)))%MODES.length:firstMode;
+      const paletteIndex=orientation==='portrait'?(firstPalette+1+Math.floor(pair()*(PALETTES.length-1)))%PALETTES.length:firstPalette;
+      settings.mode=MODES[modeIndex][0];settings.series=MODES[modeIndex][1];
+      settings.palette=PALETTES[paletteIndex];
       settings.seed='AC'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+'-'+String(index+1).padStart(2,'0')+'-'+String(hash(day+'|action-v1|'+orientation+'|'+index+'|'+retrySalt)%100000).padStart(5,'0');
       settings.paper='#f5f0e6';
     }
@@ -397,7 +405,7 @@ try {
       shareUrl,
       rendererVersion:itemVersion,
       settings,
-      platforms:action?Object.fromEntries(['instagram','threads','bluesky'].map(p=>[p,{scheduledTime:'15:00',status:'pending'}])):oil?Object.fromEntries(['instagram','threads','bluesky'].map(p=>
+      platforms:action?Object.fromEntries(['instagram','threads','bluesky'].map(p=>[p,{scheduledTime:'09:00',status:'pending'}])):oil?Object.fromEntries(['instagram','threads','bluesky'].map(p=>
          [p,{scheduledTime:'15:00',status:'pending'}])):
          watercolour?Object.fromEntries(['instagram','threads','bluesky'].map(p=>
         [p,{scheduledTime:'15:00',status:'pending'}])):
@@ -432,8 +440,8 @@ const queue = {
   timezone: TIME_ZONE,
   accounts: ACCOUNTS,
   cadence: {
-    instagramPerDay:action?2:oil?1:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.instagram.length,
-    threadsPerDay:action?2:oil?1:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.threads.length
+    instagramPerDay:action?1:oil?1:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.instagram.length,
+    threadsPerDay:action?1:oil?1:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.threads.length
   },
   publishingEnabled: false,
   entries
@@ -441,5 +449,5 @@ const queue = {
 
 await fs.writeFile(path.join(outDir, 'queue.json'), JSON.stringify(queue, null, 2));
 console.log(`\nGenerated ${generationCount} artworks into ${outDir}`);
-console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(action?['15:00']:oil?['15:00']:watercolour?['15:00']:
+console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(action?['09:00']:oil?['15:00']:watercolour?['15:00']:
   watercolor?['09:00','20:30']:orientation==='portrait'?PORTRAIT_SCHEDULE:SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);
