@@ -28,7 +28,12 @@ try{
    assert(Math.abs(drawer.left)<1 && Math.abs(drawer.right-drawer.viewport)<1, 'Mobile parameters drawer must span viewport: '+JSON.stringify(drawer));
    const inner=await page.locator('#inspector').evaluate(el=>{const d=el.getBoundingClientRect(),h=el.querySelector('.inspector-head').getBoundingClientRect(),t=el.querySelector('.tabs').getBoundingClientRect(),b=el.querySelector('.tab-body').getBoundingClientRect();return {drawer:d.width,head:h.width,tabs:t.width,body:b.width};});
    for(const [part,value] of Object.entries(inner))if(part!=='drawer')assert(value>=inner.drawer-48,'Mobile panel '+part+' is narrower than available drawer space: '+JSON.stringify(inner));
+   await page.locator('#tab-composition').tap();
+   await page.screenshot({path:`oil-check-results/drawer-${width}-${fmt}-compose.png`});
+   await page.locator('#tab-colour').tap();
+   await page.screenshot({path:`oil-check-results/drawer-${width}-${fmt}-colour.png`});
    await page.locator('#tab-export').tap();
+   await page.screenshot({path:`oil-check-results/drawer-${width}-${fmt}-export.png`});
    await page.locator('#savePanel').waitFor({state:'visible'});
    await page.locator('#inspectorClose').tap();
   }
