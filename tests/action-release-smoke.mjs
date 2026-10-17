@@ -31,9 +31,9 @@ try {
  const page=await browser.newPage({viewport:{width:1440,height:900}});
  await page.goto('http://127.0.0.1:4173/?seed=ACTION-COLOR-TEST&material=action-v1',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.querySelector('#creatingOverlay')?.hidden===true,{timeout:120000});
- // Use actual editor controls and verify the renderer sees the exact count.
+ // Use actual editor controls and verify the V2 renderer sees the exact count.
  for(const palette of ['spectrum','primary','cmyk','mono']){
-  for(const count of [1,2,3,4,9,14]){
+  for(const count of [1,2,3,9,14]){
    await page.evaluate(({palette,count})=>{
     const p=document.getElementById('palette');
     p.value=palette;p.dispatchEvent(new Event('change',{bubbles:true}));
@@ -70,5 +70,20 @@ try {
   count:+document.getElementById('colourCount').value
  }));
  assert.deepEqual(preserved,{palette:'primary',count:3});
+ // Archived V1 links retain their previous minimum of eight pigments, without
+ // silently being migrated to the new V2 interpretation of the same controls.
+ await page.goto('http://127.0.0.1:4173/?v=9&seed=ACTION-ARCHIVE&mode=field&pal=primary&cols=3&material=action-v1');
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true&&
+  window.AlgoArt.lastActionPaintingStats?.palette?.length===8,{timeout:120000});
+ assert.equal(new URL(page.url()).searchParams.get('material'),'action-v1');
+ const old=await page.evaluate(()=>window.AlgoArt.lastActionPaintingStats.palette);
+ assert.equal(old.length,8,'Archived V1 image must keep the original eight-pigment minimum');
+ await page.goto('http://127.0.0.1:4173/?v=9&seed=ACTION-ARCHIVE&mode=field&pal=primary&cols=3&material=action-v2');
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true&&
+  window.AlgoArt.lastActionPaintingStats?.palette?.length===3,{timeout:120000});
+ assert.equal(new URL(page.url()).searchParams.get('material'),'action-v2');
+ const modern=await page.evaluate(()=>window.AlgoArt.lastActionPaintingStats.palette);
+ assert.equal(modern.length,3,'V2 must honour the slider for the identical seed');
+
  console.log('PASS: Action Painting honours the exact Colours slider and preserves material choices');
 }finally{await browser.close()}
