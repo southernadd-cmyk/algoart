@@ -15,4 +15,4 @@ for(const orientation of ['landscape','portrait']){
   await fs.access(folder+'/'+item.imageFile);
  }
 }
-console.log('Action Painting portrait and landscape social queues validated');
+console.log('Action Painting portrait and landscape social queues validated (release gate)');
