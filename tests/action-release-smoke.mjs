@@ -29,7 +29,7 @@ import {chromium} from 'playwright';
 const browser=await chromium.launch({headless:true});
 try {
  const page=await browser.newPage({viewport:{width:1440,height:900}});
- await page.goto('http://127.0.0.1:4173/?seed=ACTION-COLOR-TEST&material=action-v1',{waitUntil:'domcontentloaded'});
+ await page.goto('http://127.0.0.1:4173/?seed=ACTION-COLOR-TEST&material=action-v2',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.querySelector('#creatingOverlay')?.hidden===true,{timeout:120000});
  // Use actual editor controls and verify the V2 renderer sees the exact count.
  for(const palette of ['spectrum','primary','cmyk','mono']){
