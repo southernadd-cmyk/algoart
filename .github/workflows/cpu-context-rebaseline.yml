@@ -32,7 +32,7 @@ jobs:
         # swiftshader = forced GPU-accelerated canvases (software GPU): verifies
         #   the same new-version hashes on a GPU backend; fewer timing samples.
         # While writing the fixture there is nothing to verify SwiftShader against.
-        profile: [default]
+        profile: ${{ inputs.write_fixture && fromJSON('["default"]') || fromJSON('["default","swiftshader"]') }}
         material: [oil, tissue, watercolour]
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
           BROWSER_PROFILE: ${{ matrix.profile }}
           MATERIALS: ${{ matrix.material }}
           REQUIRE_FULL_MATRIX: '1'
-          WRITE_FIXTURE: '1'
+          WRITE_FIXTURE: ${{ inputs.write_fixture && '1' || '0' }}
           WARM_SAMPLES: ${{ matrix.profile == 'swiftshader' && '2' || '5' }}
           COLD_SAMPLES: ${{ matrix.profile == 'swiftshader' && '1' || '3' }}
           COLD_LEVELS: ${{ matrix.profile == 'swiftshader' && 'page' || 'page,context,browser' }}
@@ -69,7 +69,7 @@ jobs:
           path: cpu-context-results/
           if-no-files-found: warn
   merge-fixture:
-    if: ${{ always() && github.event_name == 'pull_request' }}
+    if: ${{ inputs.write_fixture }}
     needs: benchmark
     runs-on: ubuntu-latest
     steps:
