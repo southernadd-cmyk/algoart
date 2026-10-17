@@ -74,8 +74,11 @@ function samplePaths(paths){var anchors=[];for(var i=0;i<paths.length;i++){var p
 // Action Painting needs a full working rack of pigments, even when a
 // traditional named palette has only 3 anchor hues. Other materials continue
 // using A.hues unchanged. Explicit Monochrome remains monochromatic.
-function actionPaintPalette(s){
- var count=s.palette==='mono'?Math.max(1,s.colourCount):Math.max(8,s.colourCount);
+function actionPaintPalette(s,version){
+ // V1 preserves the historical eight-pigment minimum for archived links.
+ // V2 takes its pigment count exclusively from the Colours control.
+ var count=version===1?(s.palette==='mono'?Math.max(1,s.colourCount):Math.max(8,s.colourCount)):
+   Math.max(1,Math.min(14,Math.round(Number(s.colourCount)||1)));
  var base=A.hues(Object.assign({},s,{colourCount:count}),A.makeR(String(s.seed)+'|action-palette'));
  if(s.palette==='mono'||s.palette==='spectrum'||s.palette==='golden')return base;
  var cycle={primary:3,cmyk:4,warm:6,cold:7,neon:7,pastel:8,earth:8,marker:11}[s.palette]||count;
@@ -95,7 +98,7 @@ function paintLayerOrder(length,r){
  return indices;
 }
 A.actionPaintingFromPaths=function(target,sourcePaths,s,scale,options){options=options||{};scale=scale||1;
-var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v4|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=actionPaintPalette(s);
+var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v4|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=actionPaintPalette(s,options.version||2);
 target.width=Math.round(w*scale);target.height=Math.round(h*scale);var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
 ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h);if(!anchors.length)return {pathCount:0,anchorCount:0};
 var layers=options.layers||5,density=options.density||1;

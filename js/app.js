@@ -192,6 +192,7 @@ var phiSheetFraming=false; // Shared optional φ source-geometry transform.
 var legacyOilV1Link=false;
 var legacyOilV2Link=false; // Historical Oil v1 links only; never a visible selector choice.
 var oilV4Link=true; // Oil V4 is the default; explicit oil-v1/v2/v3 URLs preserve historical versions.
+var actionPaintingRevision=2; // action-v1 deep links preserve the prior pigment rack.
 function actionPaintingEnabled(){return $('materialStyle').value==='action'}
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
@@ -203,7 +204,7 @@ function oilPaintV4Enabled(){return oilPaintEnabled()&&oilV4Link&&!legacyOilV1Li
 function watercolourV2SFamily(){return watercolourMaterialRevision==='v2s'||watercolourMaterialRevision==='v2t'}
 function oilPaintV1Enabled(){return legacyOilV1Link===true}
 function materialKey(){return $('materialStyle').value+'|'+
-    (actionPaintingEnabled()?'action-v1':oilPaintV4Enabled()?'oil-paint-v4':oilPaintV3Enabled()?'oil-paint-v3':oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
+    (actionPaintingEnabled()?'action-v'+actionPaintingRevision:oilPaintV4Enabled()?'oil-paint-v4':oilPaintV3Enabled()?'oil-paint-v3':oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
     '|phi:'+phiSheetFraming+'|historic-fit:'+watercolourFitToSheet}
 function syncMaterialNote(){
   var control=$('watercolourFitControl');
@@ -246,7 +247,7 @@ function syncMaterialNote(){
 function renderArtwork(target,settings,scale,reveal){
   A.phiFramingEnabled=phiSheetFraming&&
     !(watercolourEnabled()&&watercolourMaterialRevision==='v2r');
-  if(actionPaintingEnabled())return A.renderActionPainting(target,settings,scale,reveal);
+  if(actionPaintingEnabled())return A.renderActionPainting(target,settings,scale,reveal,{version:actionPaintingRevision});
   if(oilPaintV4Enabled())return A.renderOilPaintV4(target,settings,scale,reveal);
   if(oilPaintV3Enabled())return A.renderOilPaintV3(target,settings,scale,reveal);
   if(oilPaintV2Enabled())return A.renderOilPaintV2(target,settings,scale,reveal);
@@ -278,7 +279,7 @@ function settingsToURL(settings){
   });
   if(phiSheetFraming&&!(watercolourEnabled()&&watercolourMaterialRevision==='v2r'))
     params.set('sheet','phi');
-  if(actionPaintingEnabled())params.set('material','action-v1');
+  if(actionPaintingEnabled())params.set('material','action-v'+actionPaintingRevision);
   else if(oilPaintV4Enabled())params.set('material','oil-v4');
   else if(oilPaintV3Enabled())params.set('material','oil-v3');
   else if(oilPaintV2Enabled())params.set('material','oil-v2');
@@ -357,7 +358,9 @@ function loadSettingsFromURL(){
     found=true;
   }
 
-  if(params.get('material')==='action-v1'){$('materialStyle').value='action';found=true;}
+  if(['action-v1','action-v2'].includes(params.get('material'))){
+    $('materialStyle').value='action';actionPaintingRevision=params.get('material')==='action-v1'?1:2;found=true;
+  }
   if(['oil-v1','oil-v2','oil-v3','oil-v4'].includes(params.get('material'))){
     $('materialStyle').value='oil';
     legacyOilV1Link=params.get('material')==='oil-v1';
@@ -1350,17 +1353,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
        e.id==='phiSheetFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
     if(e.id==='materialStyle'){legacyOilV1Link=false;legacyOilV2Link=false;oilV4Link=true;}
-    if(e.id==='materialStyle'&&actionPaintingEnabled()){
-      // The editor's generic Monochrome / four-colour initial settings
-      // are unsuitable for the Action Painting material's default look.
-      // Selecting Monochrome later remains an explicit supported choice.
-      if($('palette').value==='mono')$('palette').value='spectrum';
-      if(+$('colourCount').value<8){
-        if(A.setControlValue)A.setControlValue($('colourCount'),9);
-        else $('colourCount').value=9;
-        syncRangeOutput($('colourCount'));
-      }
-    }
+    if(e.id==='materialStyle'&&actionPaintingEnabled())actionPaintingRevision=2;
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
     if(e.id==='materialStyle'&&watercolourEnabled()){
       watercolourMaterialRevision='v2s';
