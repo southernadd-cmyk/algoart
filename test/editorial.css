@@ -189,3 +189,6 @@ button{font-family:Georgia,serif}
  .intro-body{padding:32px 15px 22px 10px!important}
  .intro-thesis{font-size:16px!important}
 }
+
+/* Notepad title is lettering, while the instruction itself stays serif. */
+#introTitle{font-family:"AlgoArt Marker",monospace!important;font-weight:400!important;letter-spacing:0!important}
