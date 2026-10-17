@@ -48,6 +48,7 @@ try{
   assert.equal(tissue.settings.paper,'#dbcab1');
 
   await page.locator('#materialStyle').selectOption('marker');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   const marker=await snapshot();
   assert.equal(marker.names.pen.label,'Mark-making tool');
   assert.equal(marker.options.find(x=>x.value==='highlighter').text,'Highlighter');
@@ -61,6 +62,7 @@ try{
   assert.equal(new URL(page.url()).searchParams.get('paper'),'#dbcab1');
 
   await page.locator('#materialStyle').selectOption('tissue');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   const restored=await snapshot();
   assert.deepEqual(restored.settings,tissue.settings);
   assert.deepEqual(restored.options,tissue.options);
@@ -69,10 +71,12 @@ try{
   // A different profile remains a stable serialized pen ID in both materials.
   await page.locator('#tab-marker').click();
   await page.locator('#pen').selectOption('paint');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.get('pen'),'paint');
   assert.equal((await snapshot()).options.find(x=>x.value==='paint').text,'Dense marks');
   await page.locator('#tab-composition').click();
   await page.locator('#materialStyle').selectOption('marker');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal((await snapshot()).options.find(x=>x.value==='paint').text,'Paint Pen');
 
   // Historical links: labels may adapt, but no old renderer is silently upgraded.
@@ -83,6 +87,7 @@ try{
   assert.equal((await snapshot()).version,8);
   assert.equal((await snapshot()).options.find(x=>x.value==='highlighter').text,'Flat-edged bands');
   await page.locator('#materialStyle').selectOption('marker');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal((await snapshot()).version,8);
   assert.equal((await snapshot()).settings.pen,'highlighter');
   assert.deepEqual(errors,[]);

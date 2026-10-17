@@ -64,6 +64,7 @@ for(const orientation of ['landscape','portrait']){
     // Clicking the system card must not change seed, pen, elements,
     // bend, overdraw, texture or any other setting except mode.
     await page.locator('.mode-card[data-mode="'+mode+'"]').click();
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
     const match=await page.evaluate(mode=>{
       const A=window.AlgoArt,s=A.readSettings();
       const card=document.querySelector('.mode-card[data-mode="'+mode+'"] canvas');

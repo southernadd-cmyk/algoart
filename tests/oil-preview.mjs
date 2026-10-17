@@ -43,6 +43,7 @@ for (const test of cases){
     select.value='marker';
     select.dispatchEvent(new Event('change',{bubbles:true}));
   });
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
   const toggleState=await page.evaluate(() => ({
     selected:document.querySelector('#materialStyle')?.value,
     stats:document.querySelector('#statsText')?.textContent,

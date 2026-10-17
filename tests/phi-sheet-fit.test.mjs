@@ -35,6 +35,7 @@ try{
     (1-Math.pow((Math.sqrt(5)-1)/2,4)))<1e-12);
   assert.equal(await page.locator('#phiSheetFit').isChecked(),false);
   await page.locator('#phiSheetFit').check();
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi');
   assert.match(await page.locator('#phiSheetInfo').textContent(),/Applied/);
   const first=await page.evaluate(()=>{
@@ -90,12 +91,15 @@ try{
   // Sidebar should keep the option when material changes; no retroactive
   // upgrade to historical V2R or Tissue revision share links.
   await page.locator('#materialStyle').selectOption('marker');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(await page.locator('#phiSheetFit').isChecked(),true);
   assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi');
   await page.locator('#materialStyle').selectOption('tissue');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(await page.locator('#phiSheetFit').isChecked(),true);
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
   await page.locator('#phiSheetFit').uncheck();
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.has('sheet'),false);
   await page.goto(new URL('?v=9&seed=PHI-SHEET-20261014&mode=field&pal=neon&material=watercolour-v2s&fit=1',base).href);
   await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent.includes('PHI-SHEET'));

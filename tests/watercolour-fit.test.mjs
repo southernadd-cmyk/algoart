@@ -60,14 +60,17 @@ try{
   await visit('&fit=0');
   const before=new URL(page.url());
   await page.locator('#watercolourFit').check();
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   const after=new URL(page.url());
   assert.equal(after.searchParams.get('fit'),'1');
   for(const key of ['seed','mode','v','pal'])assert.equal(after.searchParams.get(key),before.searchParams.get(key));
   await page.locator('#watercolourFit').uncheck();
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.get('fit'),'0');
 
   // The fit toggle must not be shown on Marker or Tissue.
   await page.locator('#materialStyle').selectOption('marker');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(await page.locator('#watercolourFitControl').isVisible(),false);
   assert.deepEqual(errors,[]);
   console.log('PASS V2S fit opt-in, immutable legacy URLs, unchanged φ geometry, pixel-perfect cached paper rotation');

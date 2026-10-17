@@ -34,6 +34,7 @@ try{
   assert.equal(await page.locator('#materialStyle').inputValue(),'marker');
 
   await page.locator('#materialStyle').selectOption('tissue');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
   const tissueSnapshot=await page.evaluate(()=>{
     const A=window.AlgoArt,settings=A.readSettings(),output=document.createElement('canvas');
@@ -42,6 +43,7 @@ try{
   });
 
   await page.locator('#materialStyle').selectOption('watercolour');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.get('material'),'watercolour-v2s');
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
   assert.equal(new URL(page.url()).searchParams.get('paper'),'#d9c7b9');
@@ -83,6 +85,7 @@ try{
   await page.locator('#tab-composition').click();
 
   await page.locator('#materialStyle').selectOption('tissue');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.get('material'),null);
   const tissueReplay=await page.evaluate(()=>{
     const A=window.AlgoArt,output=document.createElement('canvas');
@@ -91,11 +94,13 @@ try{
   });
   assert.equal(tissueReplay,tissueSnapshot,'Historical Tissue V6 pixels changed');
   await page.locator('#materialStyle').selectOption('marker');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.has('material'),false);
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
 
   // A new share URL reopens the selected watercolour and the same controls.
   await page.locator('#materialStyle').selectOption('watercolour');
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   const shared=page.url();
   await page.goto(shared,{waitUntil:'domcontentloaded'});await stable();
   assert.equal(await page.locator('#materialStyle').inputValue(),'watercolour');
@@ -104,6 +109,7 @@ try{
 
   // Randomise keeps the material, the chosen paper, and the serialized type.
   await page.locator('#randomise').click();
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(await page.locator('#materialStyle').inputValue(),'watercolour');
   assert.equal(new URL(page.url()).searchParams.get('material'),'watercolour-v2s');
   assert.equal(new URL(page.url()).searchParams.get('paper'),'#d9c7b9');
