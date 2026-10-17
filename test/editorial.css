@@ -178,3 +178,16 @@ button{font-family:Georgia,serif}
  .score-heading{margin-bottom:32px}
  .intro-thesis{font-size:16px;line-height:1.7}
 }
+
+/* Leave developer-facing fit diagnostics out of the studio. */
+.editorial-preview #phiSheetInfo{display:none!important}
+.editorial-preview .stage{overflow:hidden}
+.editorial-preview .stats{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:760px){
+ .editorial-preview .toolbar{box-sizing:border-box}
+ .editorial-preview .toolbar .actions{width:100%;min-width:0}
+ .editorial-preview .brand-lockup{min-width:0}
+ .editorial-preview .inspector .drawer-handle{grid-row:1}
+ .editorial-preview .inspector .inspector-head{grid-row:2}
+ .editorial-preview .inspector .tabs{grid-row:3}
+}
