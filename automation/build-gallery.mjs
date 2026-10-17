@@ -6,8 +6,8 @@ const SITE_ORIGIN = 'https://southernadd-cmyk.github.io';
 const SITE_PATH = '/algoart';
 const SITE_URL = SITE_ORIGIN + SITE_PATH;
 const GALLERY_URL = SITE_URL + '/gallery';
-const GALLERY_DESCRIPTION = 'A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v3.';
-const FEED_DESCRIPTION = 'Daily deterministic golden-ratio generative artworks from ALGO/ART in Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v3.';
+const GALLERY_DESCRIPTION = 'A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v4 and Action Painting v1.';
+const FEED_DESCRIPTION = 'Daily deterministic golden-ratio generative artworks from ALGO/ART in Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v4 and Action Painting v1.';
 
 function dateInZone(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -64,10 +64,10 @@ function artworkDescription(item) {
   return item.material==='action'?`${item.series} Action Painting using seed ${item.seed}, the ${s.palette} palette and geometry-guided flowing paint.`:item.material==='oil'?
     `${item.series} Oil Paint artwork using seed ${item.seed}, ${s.palette} palette, source-connected colour masses and real loaded bristle paint.`:
     item.material==='watercolour'?
-    `${item.series} Watercolour V2S artwork using seed ${item.seed}, source-matched pigment, and ${s.phiStrength}% golden-ratio adherence.`:
+    `${item.series} Watercolour V2S artwork using seed ${item.seed}, source-matched pigment, and ${s.phiStrength}% Additional φ pull.`:
     item.material==='watercolor'
-    ? `${item.series} Tissue & Graphite artwork using seed ${item.seed} and ${s.phiStrength}% golden-ratio adherence.`
-    : `${item.series} generative marker artwork using seed ${item.seed}, ${s.phiStrength}% golden-ratio adherence, ${s.pen || 'marker'} pen and the ${s.palette || 'generated'} palette.`;
+    ? `${item.series} Tissue & Graphite artwork using seed ${item.seed} and ${s.phiStrength}% Additional φ pull.`
+    : `${item.series} generative marker artwork using seed ${item.seed}, ${s.phiStrength}% Additional φ pull, ${s.pen || 'marker'} pen and the ${s.palette || 'generated'} palette.`;
 }
 
 function artworkCard(item, index) {
@@ -89,7 +89,7 @@ function artworkCard(item, index) {
             <div><dt>Seed</dt><dd>${escapeHtml(item.seed)}</dd></div>
             <div><dt>Series</dt><dd>${escapeHtml(item.series)}</dd></div>
             <div><dt>Format</dt><dd>${portrait ? 'Portrait · 1000 × 1400' : 'Landscape · 1400 × 1000'}</dd></div>
-            <div><dt>φ adherence</dt><dd>${escapeHtml(s.phiStrength)}%</dd></div>
+            <div><dt>Additional φ pull</dt><dd>${escapeHtml(s.phiStrength)}%</dd></div>
             <div><dt>Medium</dt><dd>${item.material==='action'?'Action Painting v1':item.material==='oil'?(item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v4'?'Oil Paint v4':item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v3'?'Oil Paint v3':'Oil Paint v1'):item.material==='watercolour'?'Watercolour V2S':item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
             <div><dt>Palette</dt><dd>${escapeHtml(s.palette)}</dd></div>
           </dl>
