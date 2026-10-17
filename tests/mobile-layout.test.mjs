@@ -24,6 +24,8 @@ try{
    await page.locator('#inspectorToggle').tap();
    const drawer=await page.locator('#inspector').evaluate(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,viewport:document.documentElement.clientWidth};});
    assert(Math.abs(drawer.left)<1 && Math.abs(drawer.right-drawer.viewport)<1, 'Mobile parameters drawer must span viewport: '+JSON.stringify(drawer));
+   const inner=await page.locator('#inspector').evaluate(el=>{const d=el.getBoundingClientRect(),h=el.querySelector('.inspector-head').getBoundingClientRect(),t=el.querySelector('.tabs').getBoundingClientRect(),b=el.querySelector('.tab-body').getBoundingClientRect();return {drawer:d.width,head:h.width,tabs:t.width,body:b.width};});
+   for(const [part,value] of Object.entries(inner))assert(Math.abs(value-inner.drawer)<2,'Mobile panel '+part+' is narrower than drawer: '+JSON.stringify(inner));
    await page.locator('#tab-export').tap();
    await page.locator('#savePanel').waitFor({state:'visible'});
    await page.locator('#inspectorClose').tap();
