@@ -16,12 +16,16 @@ try{
    controls:['seed','materialStyle','palette','colourCount','elements','density','complexity','negativeSpace','plotterPaper','orientation'].every(id=>!!document.getElementById(id)),
    paper:getComputedStyle(document.body).backgroundColor,
    inspector:!!document.querySelector('#inspector .tabs'),
-   columns:getComputedStyle(document.querySelector('#app main')).gridTemplateColumns
+   columns:getComputedStyle(document.querySelector('#app main')).gridTemplateColumns,
+   width:document.documentElement.scrollWidth,
+   viewport:window.innerWidth,
+   actionRects:[...document.querySelectorAll('.toolbar .actions>*')].map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width}})
   }));
   assert.equal(state.path,'/test/');
   assert(state.art>0);
   assert(state.controls&&state.inspector);
   assert.deepEqual(errors,[]);
+  if(mobile){assert(state.width<=state.viewport+2,'Page must not overflow mobile width');assert(state.actionRects.every(r=>r.x>=-2&&r.right<=state.viewport+2),'Every toolbar action must fit phone screen');}
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'mobile-390':'desktop-1440')+'.png',fullPage:true});
   console.log(mobile?'MOBILE':'DESKTOP',state);
   await context.close();
