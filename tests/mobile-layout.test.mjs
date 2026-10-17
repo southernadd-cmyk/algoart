@@ -24,6 +24,10 @@ try{
    await page.locator('#inspectorToggle').tap();
    const seedOrder=await page.locator('#inspector').evaluate(el=>({heading:el.querySelector('.inspector-head').getBoundingClientRect().top,seed:el.querySelector(':scope > .seed').getBoundingClientRect().top,dom:[...el.children].map(x=>x.className)}));
    assert(seedOrder.seed>seedOrder.heading,'Seed must appear below Parameters heading: '+JSON.stringify(seedOrder));
+   const seedRow=await page.locator('#inspector > .seed').evaluate(el=>{const label=el.querySelector('.toolbar-label').getBoundingClientRect(),input=el.querySelector('#seed').getBoundingClientRect(),button=el.querySelector('#newSeed').getBoundingClientRect();return {label:{x:label.left,y:label.top,h:label.height},input:{x:input.left,y:input.top,h:input.height},button:{x:button.left,y:button.top,h:button.height}};});
+   assert(seedRow.label.x<seedRow.input.x&&seedRow.input.x<seedRow.button.x,'Seed label, field and regenerate must be in that order: '+JSON.stringify(seedRow));
+   const centers=[seedRow.label,seedRow.input,seedRow.button].map(x=>x.y+x.h/2);
+   assert(Math.max(...centers)-Math.min(...centers)<14,'Seed controls must share one horizontal row: '+JSON.stringify(seedRow));
    const drawer=await page.locator('#inspector').evaluate(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,viewport:document.documentElement.clientWidth};});
    assert(Math.abs(drawer.left)<1 && Math.abs(drawer.right-drawer.viewport)<1, 'Mobile parameters drawer must span viewport: '+JSON.stringify(drawer));
    const inner=await page.locator('#inspector').evaluate(el=>{const d=el.getBoundingClientRect(),h=el.querySelector('.inspector-head').getBoundingClientRect(),t=el.querySelector('.tabs').getBoundingClientRect(),b=el.querySelector('.tab-body').getBoundingClientRect();return {drawer:d.width,head:h.width,tabs:t.width,body:b.width};});
