@@ -1,4 +1,4 @@
-// Experimental ALGO/ART Action Painting V1.
+// Experimental ALGO/ART Action Painting V2.
 // Geometry is produced by the existing marker renderer; no new composition engine.
 window.AlgoArt=window.AlgoArt||{};
 (function(A){
@@ -14,14 +14,33 @@ else if(cmd==='C'&&q){if(i+5>=t.length)break;var a={x:n(),y:n()},b={x:n(),y:n()}
 return p}
 function dedupe(paths){var out=[],seen=new Set();for(var k=0;k<paths.length;k++){var pts=pathPoints(paths[k].d);if(pts.length<2)continue;var a=pts[0],b=pts[pts.length-1],key=[Math.round(a.x/12),Math.round(a.y/12),Math.round(b.x/12),Math.round(b.y/12)].join(':');if(seen.has(key))continue;seen.add(key);out.push({pts:pts,color:paths[k].stroke||'#252525'})}return out}
 function scatter(ctx,r,x,y,amount,c,width){ctx.fillStyle=c;for(var i=0;i<amount;i++){var angle=r()*Math.PI*2,rad=Math.pow(r(),.7)*width,sz=Math.pow(r(),2.1)*between(r,.6,7);ctx.beginPath();ctx.ellipse(x+Math.cos(angle)*rad,y+Math.sin(angle)*rad,sz,sz*between(r,.6,1.5),angle,0,Math.PI*2);ctx.fill()}}
-function fling(ctx,r,from,to,color,weight,energy){var dx=to.x-from.x,dy=to.y-from.y,len=Math.hypot(dx,dy);if(len<5)return;var nx=-dy/len,ny=dx/len;var lateral=between(r,-1,1)*Math.min(150,len*.23)*energy;
-var mid={x:(from.x+to.x)/2+nx*lateral,y:(from.y+to.y)/2+ny*lateral},jitter=Math.min(36,weight*1.8);ctx.strokeStyle=color;ctx.lineCap='round';ctx.lineJoin='round';
-ctx.globalAlpha=between(r,.65,.94);ctx.lineWidth=weight;ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.quadraticCurveTo(mid.x,mid.y,to.x,to.y);ctx.stroke();
-ctx.globalAlpha=between(r,.25,.48);ctx.lineWidth=Math.max(.5,weight*.3);ctx.beginPath();ctx.moveTo(from.x+nx*jitter*.45,from.y+ny*jitter*.45);ctx.quadraticCurveTo(mid.x+nx*jitter,mid.y+ny*jitter,to.x+nx*jitter*.25,to.y+ny*jitter*.25);ctx.stroke();
-ctx.globalAlpha=.88;var drops=2+Math.floor(energy*7);for(var j=0;j<drops;j++){var t=between(r,.08,.96),u=1-t,x=u*u*from.x+2*u*t*mid.x+t*t*to.x,y=u*u*from.y+2*u*t*mid.y+t*t*to.y;
-if(r()<.65){var droplen=between(r,4,36)*energy+weight;ctx.lineWidth=Math.max(.7,weight*between(r,.12,.44));ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+between(r,-6,6),y+droplen*.55,x+between(r,-10,10),y+droplen);ctx.stroke();ctx.beginPath();ctx.arc(x,y+droplen,ctx.lineWidth*.68,0,Math.PI*2);ctx.fillStyle=color;ctx.fill()}
-if(r()<.58)scatter(ctx,r,x,y,2+Math.floor(r()*5),color,between(r,6,27)*energy)}
-ctx.globalAlpha=1}
+function fling(ctx,r,from,to,color,weight,energy,w,h){
+var dx=to.x-from.x,dy=to.y-from.y,len=Math.hypot(dx,dy);if(len<5)return;
+var nx=-dy/len,ny=dx/len,dir=between(r,-1,1),lateral=dir*between(r,.16,.58)*len*energy;
+var overshoot=between(r,.1,.38)*len;
+var p0={x:from.x-dx/len*overshoot*.25,y:from.y-dy/len*overshoot*.25};
+var p1={x:from.x+dx*.22+nx*lateral,y:from.y+dy*.22+ny*lateral};
+var p2={x:to.x-dx*.16-nx*lateral*.55,y:to.y-dy*.16-ny*lateral*.55};
+var p3={x:to.x+dx/len*overshoot,y:to.y+dy/len*overshoot};
+var pts=[],samples=Math.min(80,Math.max(18,Math.ceil(len/12)));
+for(var i=0;i<=samples;i++){var t=i/samples,u=1-t;pts.push({x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y})}
+ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineCap='round';ctx.lineJoin='round';
+for(i=1;i<pts.length;i++){
+ var a=pts[Math.max(0,i-1)],b=pts[i],prev=pts[Math.max(0,i-2)],next=pts[Math.min(pts.length-1,i+1)];
+ var ax=a.x-prev.x,ay=a.y-prev.y,bx=next.x-b.x,by=next.y-b.y;
+ var angle=Math.atan2(ax*by-ay*bx,ax*bx+ay*by);
+ var bend=Math.min(1,Math.abs(angle)*2.7);
+ var width=weight*(.34+1.75*bend)*(i<3||i>pts.length-4?1.23:1);
+ if(r()<.035*(1-bend))continue;
+ ctx.globalAlpha=between(r,.65,.96);ctx.lineWidth=Math.max(.45,width);
+ ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+ if(bend>.3&&r()<.38){ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(b.x,b.y,Math.max(1,width*between(r,.5,1.3)),0,Math.PI*2);ctx.fill()}
+ if(r()<.12*energy)scatter(ctx,r,b.x,b.y,2+Math.floor(r()*6),color,between(r,6,30)*energy);
+}
+ctx.globalAlpha=.88;
+for(var j=0;j<Math.floor(energy*8);j++){var spot=pts[Math.floor(r()*pts.length)];scatter(ctx,r,spot.x,spot.y,2+Math.floor(r()*8),color,between(r,6,45)*energy)}
+ctx.restore();
+}
 var KITS=[
 ['#14161b','#f0d3a3','#b12d24','#e8bd35','#33678c','#ece8de'],
 ['#121f23','#1854a0','#ee4635','#f1c94b','#f4f2e9','#639984'],
@@ -30,17 +49,23 @@ var KITS=[
 ];
 function samplePaths(paths){var anchors=[];for(var i=0;i<paths.length;i++){var p=paths[i].pts;if(!p.length)continue;anchors.push(p[0],p[Math.floor(p.length/2)],p[p.length-1]);if(p.length>9)anchors.push(p[Math.floor(p.length*.618)])}return anchors}
 A.actionPaintingFromPaths=function(target,sourcePaths,s,scale,options){options=options||{};scale=scale||1;
-var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v1|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=KITS[((options.palette||0)%KITS.length+KITS.length)%KITS.length];
+var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v2|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=KITS[((options.palette||0)%KITS.length+KITS.length)%KITS.length];
 target.width=Math.round(w*scale);target.height=Math.round(h*scale);var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
 ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h);if(!anchors.length)return {pathCount:0,anchorCount:0};
 var layers=options.layers||5,density=options.density||1;
-for(var layer=0;layer<layers;layer++){var colour=palette[layer%palette.length],count=Math.min(175,Math.floor((15+anchors.length*.16)*density));
+// Weave the same palette throughout the painting: dark, colours, light, then dark accents.
+var passes=layers*3;
+for(var layer=0;layer<passes;layer++){var ix=layer%3===0?0:layer%3===2?palette.length-1:1+Math.floor(r()*Math.max(1,palette.length-2));
+if(layer>passes-3)ix=layer%2===0?0:palette.length-2;
+var colour=palette[ix],count=Math.min(95,Math.floor((7+anchors.length*.065)*density));
 ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
 for(var i=0;i<count;i++){var a=anchors[Math.floor(r()*anchors.length)],b=anchors[Math.floor(r()*anchors.length)];
-if(Math.hypot(a.x-b.x,a.y-b.y)<w*.07){b=anchors[Math.floor(r()*anchors.length)]}
-var weight=between(r,1,layer%3===0?13:6.5),energy=between(r,.48,1.28);
-fling(ctx,r,a,b,colour,weight,energy);
-if(i%3===0){var at=anchors[Math.floor(r()*anchors.length)];ctx.globalAlpha=between(r,.5,.95);scatter(ctx,r,at.x,at.y,3+Math.floor(r()*16),colour,between(r,9,52));ctx.globalAlpha=1}
+if(Math.hypot(a.x-b.x,a.y-b.y)<w*.07)b=anchors[Math.floor(r()*anchors.length)];
+// A few wandering gestures break the mass edge without replacing its geometric origin.
+if(r()<.14){var theta=r()*Math.PI*2; b={x:b.x+Math.cos(theta)*w*between(r,.10,.32),y:b.y+Math.sin(theta)*h*between(r,.10,.32)}}
+var weight=between(r,1,layer%3===0?11:6),energy=between(r,.5,1.25);
+fling(ctx,r,a,b,colour,weight,energy,w,h);
+if(i%4===0){var at=anchors[Math.floor(r()*anchors.length)];ctx.globalAlpha=between(r,.5,.95);scatter(ctx,r,at.x,at.y,3+Math.floor(r()*12),colour,between(r,9,48));ctx.globalAlpha=1}
 }ctx.restore()}
 return {pathCount:paths.length,anchorCount:anchors.length,layers:layers,palette:palette.slice()}}
 A.renderActionPainting=function(target,s,scale,showGeometry,options){scale=scale||1;var prior=A.svgRecorder,rec={precise:true,paths:[],paperMarks:[]},scratch=document.createElement('canvas'),meta;
