@@ -1,0 +1,33 @@
+name: Pixel-exact materials hotspot profiling
+on:
+  pull_request:
+    paths:
+      - 'tests/material-hotspots.mjs'
+      - '.github/workflows/material-hotspots.yml'
+  workflow_dispatch:
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Start local editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/algoart-hotspots.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Collect function-level hotspots and hash all output
+        env:
+          PROFILE_CPU_THROTTLE: '4'
+        run: node tests/material-hotspots.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: material-hotspots
+          path: material-hotspots-results/
+          if-no-files-found: ignore
