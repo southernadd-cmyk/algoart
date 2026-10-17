@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="css/style.css?v=20261017-creating-mobile-overlay">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/marker-font.css?v=20261014-phi-sheet">
-<link rel="stylesheet" href="test/editorial.css?v=3">
+<link rel="stylesheet" href="test/editorial.css?v=4">
 </head>
 <body>
 <div class="intro-splash" id="introSplash" hidden>
@@ -183,7 +183,7 @@
         <div>
           <span class="panel-number"></span>
           <div>
-            <strong>Composition and materials</strong>
+            <strong>PARAMETERS</strong>
             <span>Change a setting and see what it does</span>
           </div>
         </div>
@@ -201,7 +201,7 @@
 
       <div class="tab-body">
         <section class="tab-panel active" data-panel="composition" id="panel-composition" role="tabpanel" aria-labelledby="tab-composition">
-          <div class="section-title"><span>Composition</span></div>
+          <div class="section-title"><span>COMPOSITION</span></div>
           <div class="controls">
             <div class="control material-render-control"><label for="materialStyle">Material</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p>
 <label class="mini-note"><input id="phiSheetFit" type="checkbox"> Fit to φ</label>
@@ -209,7 +209,7 @@
 <label class="mini-note" id="watercolourFitControl" hidden><input id="watercolourFit" type="checkbox"> Legacy Watercolour-only fit (older V2S links)</label></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
             <div class="mode-picker-wrap">
-              <div class="mode-picker-label"><span>Series</span></div>
+              <div class="mode-picker-label"><span>SERIES</span></div>
               <div class="mode-picker" id="modePicker">
                 <button class="mode-card" type="button" data-mode="field"><canvas width="140" height="100"></canvas><span>FIELD</span><strong>Orbital Studies</strong></button>
                 <button class="mode-card" type="button" data-mode="spiral"><canvas width="140" height="100"></canvas><span>SPIRAL</span><strong>Golden Trajectories</strong></button>
@@ -242,7 +242,7 @@
         </section>
 
         <section class="tab-panel" data-panel="marker" id="panel-marker" role="tabpanel" aria-labelledby="tab-marker" hidden>
-          <div class="section-title"><span>Material controls</span><b>strokes / texture</b></div>
+          <div class="section-title"><span>MATERIAL CONTROLS</span><b>strokes / texture</b></div>
           <div class="controls">
             <div class="mini-note" id="materialControlsNote">Choose Marker, Tissue &amp; Graphite, Watercolour, or Oil Paint in Compose. These settings shape the underlying marker strokes. Tissue PNGs use their own torn-paper and graphite finish; SVG and plotter exports use marker paths.</div>
             <div class="control"><label>Mark-making tool</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
