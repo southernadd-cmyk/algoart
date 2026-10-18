@@ -1486,6 +1486,54 @@ loadLatestGalleryDefault().then(function(changed){
   var status=$('shareStatus');
   if(status)status.textContent='Unable to load this archived artwork. Please try again.';
 });
+/* Sample artwork from the newest daily gallery; keep the bundled image as a fallback. */
+var welcomeArtworkPromise=null;
+var welcomeLastArtwork=-1;
+function loadWelcomeArtworks(){
+  if(welcomeArtworkPromise)return welcomeArtworkPromise;
+  welcomeArtworkPromise=fetch('gallery/',{cache:'no-cache'}).then(function(response){
+    if(!response.ok)throw new Error('Gallery unavailable');
+    return response.text();
+  }).then(function(markup){
+    var documentIndex=new DOMParser().parseFromString(markup,'text/html');
+    var latest=documentIndex.querySelector('.day-card a[href]');
+    if(!latest)throw new Error('No daily gallery');
+    var url=new URL(latest.getAttribute('href'),new URL('gallery/',location.href));
+    if(url.origin!==location.origin||!url.pathname.startsWith(new URL('gallery/',location.href).pathname))throw new Error('Invalid gallery link');
+    return fetch(url.href,{cache:'no-cache'}).then(function(response){
+      if(!response.ok)throw new Error('Daily gallery unavailable');
+      return response.text().then(function(page){return {page:page,url:url};});
+    });
+  }).then(function(result){
+    var day=new DOMParser().parseFromString(result.page,'text/html');
+    return Array.prototype.map.call(day.querySelectorAll('.art-card'),function(card){
+      var img=card.querySelector('.art-image-link img[src]');
+      var heading=card.querySelector('.art-info h2');
+      if(!img||!heading)return null;
+      var imageUrl=new URL(img.getAttribute('src'),result.url);
+      if(imageUrl.origin!==location.origin)return null;
+      return {src:imageUrl.href,alt:img.alt||'An ALGO/ART gallery drawing',title:heading.textContent.trim()};
+    }).filter(Boolean);
+  }).catch(function(){return [];});
+  return welcomeArtworkPromise;
+}
+function chooseWelcomeArtwork(){
+  var splash=document.getElementById('introSplash');
+  if(!splash)return;
+  var image=splash.querySelector('.welcome-right img');
+  var caption=splash.querySelector('.welcome-right figcaption');
+  if(!image||!caption)return;
+  loadWelcomeArtworks().then(function(artworks){
+    if(!artworks.length||splash.hidden)return;
+    var index=Math.floor(Math.random()*artworks.length);
+    if(artworks.length>1&&index===welcomeLastArtwork)index=(index+1)%artworks.length;
+    welcomeLastArtwork=index;
+    var selected=artworks[index];
+    image.src=selected.src;
+    image.alt=selected.alt;
+    caption.textContent=selected.title;
+  });
+}
 (function initIntroSplash(){
   var splash=$('introSplash');
   if(!splash)return;
@@ -1501,9 +1549,9 @@ loadLatestGalleryDefault().then(function(changed){
   $('introEnter').onclick=function(){closeIntro(false)};
   var welcomeLogo=$('welcomeLogo');
   if(welcomeLogo)welcomeLogo.addEventListener('click',function(){
-    if(splash.hidden)beginDialog(splash,$('introEnter'));
+    if(splash.hidden){beginDialog(splash,$('introEnter'));chooseWelcomeArtwork();}
   });
-  if(shouldOpen)beginDialog(splash,$('introEnter'));
+  if(shouldOpen){beginDialog(splash,$('introEnter'));chooseWelcomeArtwork();}
 })();
 
 })(window.AlgoArt);
