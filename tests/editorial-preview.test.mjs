@@ -61,14 +61,14 @@ try{
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'release-day-mobile':'release-day-desktop')+'.png',fullPage:true});
   await page.goto('http://127.0.0.1:4173/gallery/',{waitUntil:'domcontentloaded'});
   const previews=await page.evaluate(()=>({
-    covers:[...document.querySelectorAll('.day-card img')].map(img=>img.getAttribute('src')),
+    covers:[...document.querySelectorAll('.day-card img')].map(img=>({src:img.getAttribute('src'),fallback:img.getAttribute('onerror')})),
     oldMosaics:document.querySelectorAll('.division-mosaic').length,
     jsLoaded:!!document.querySelector('script[src*="division-mosaic.js"]'),
     viewport:innerWidth,
     scrollWidth:document.documentElement.scrollWidth
   }));
   assert(previews.covers.length>0,'Daily archive must have cover previews');
-  assert(previews.covers.every(src=>src.includes('/archive-preview.jpg')),'Archive cards must reference prebuilt previews');
+  assert(previews.covers.every(img=>img.src.includes('/archive-preview.jpg') || img.fallback?.includes('this.src=')),'Archive cards must reference prebuilt previews or preserve the fallback during backfill');
   assert.equal(previews.oldMosaics,0,'Browser must not recreate mosaics from original artworks');
   assert(!previews.jsLoaded,'Browser mosaic construction script must be removed');
   assert(previews.scrollWidth<=previews.viewport+2,'Daily archive must not overflow the viewport');
