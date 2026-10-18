@@ -1127,6 +1127,7 @@ function savePNG(){
   button.disabled=true;
   exportFeedback('Preparing PNG…');
   var settings=Object.assign({},A.readSettings(),{
+    actionPaintingRender:actionPaintingEnabled(),actionPaintingRevision:actionPaintingRevision,
     oilRender:oilEnabled(),oilPaintRender:oilPaintEnabled(),
     // Previously V3 exported as 'v1', so the PNG was painted by Oil V1.
     oilPaintRevision:oilPaintV4Enabled()?'v4':oilPaintV3Enabled()?'v3':
