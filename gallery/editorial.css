@@ -61,3 +61,10 @@ footer a:hover{color:#b65368}
   letter-spacing:0!important;
   font-feature-settings:'calt' 1;
 }
+
+/* Archive captions: the artwork and date are the only visible tile metadata. */
+.day-card div{padding:13px 0 6px}
+.day-card h2{font-size:clamp(15px,1.55vw,20px)!important;line-height:1.35;margin:0}
+.day-card p,.day-card span{display:none}
+.day-grid{row-gap:clamp(30px,5vw,65px)}
+.hero p{font-size:16px;line-height:1.65}
