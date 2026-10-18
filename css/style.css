@@ -2309,3 +2309,14 @@ button{font-family:Georgia,serif}
 .editorial-preview .canvas-wrap .stats:has(.renderer-chip:not([hidden])){flex-wrap:wrap;column-gap:8px;row-gap:4px;max-width:min(540px,calc(100vw - 24px));width:max-content;overflow:visible}
 .editorial-preview .canvas-wrap .stats:has(.renderer-chip:not([hidden])) #statsText{flex:1 1 100%;min-width:0;max-width:100%;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word}
 .editorial-preview .canvas-wrap .stats:has(.renderer-chip:not([hidden])) .renderer-chip{margin-inline:auto;flex:0 0 auto}
+
+/* Android intro fit: inset the content and leave breathing room below the browser chrome. */
+@media(max-width:590px){
+ .editorial-welcome .welcome-composition{width:100%;max-width:100%;height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);padding:8px 12px 16px;overflow-x:hidden;box-sizing:border-box}
+ .editorial-welcome .welcome-layout{width:100%;max-width:100%;gap:8px;box-sizing:border-box}
+ .editorial-welcome .welcome-left{min-width:0;width:100%;max-width:100%}
+ .editorial-welcome .intro-card{width:calc(100% - 4px)!important;margin-inline:auto;box-sizing:border-box;padding:12px 14px!important}
+ .editorial-welcome .welcome-right{width:min(100%,380px);max-width:380px}
+ .editorial-welcome .welcome-right img{max-height:30dvh;width:100%;height:auto;object-fit:contain}
+ .editorial-welcome .welcome-description{margin:9px 2px 10px}
+}
