@@ -140,7 +140,7 @@ A.exportSVG=function(settings){
     mode:settings.mode,
     orientation:settings.orientation||'landscape',
     phiStrength:settings.phiStrength,
-    generator:'ALGO/ART'
+    generator:'PROPORTION PIECE'
   }));
 
   var svg=[
