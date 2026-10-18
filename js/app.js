@@ -565,9 +565,9 @@ function regenerate(){
         'px vertically. Same paths in PNG and SVG.':
       'No adjustment · this artwork has no measurable strokes.';
   }
-  var strategy=meta.strategy?(' / '+meta.strategy):'';
   var series=SERIES[s.mode]||{code:s.mode.toUpperCase(),title:s.mode};
-  $('statsText').textContent=series.code+' · '+series.title.toUpperCase()+strategy+' / '+s.seed+' / φ '+s.phiStrength+'%'+(oilPaintEnabled()?' / OIL PAINT':watercolourEnabled()?' / WATERCOLOUR':oilEnabled()?' / TISSUE & GRAPHITE':'');
+  var materialName=actionPaintingEnabled()?'Action painting':oilPaintEnabled()?'Oil paint':watercolourEnabled()?'Watercolour':oilEnabled()?'Tissue & graphite':'Marker';
+  $('statsText').textContent=series.title+' · '+materialName;
   syncDescription(s,meta);
   syncRendererChip();
   syncModeCards();
