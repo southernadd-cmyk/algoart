@@ -1,0 +1,5 @@
+/* Golden-ratio recursive mosaics in the daily archive. */
+.day-card .division-mosaic{position:relative;width:100%;aspect-ratio:7/5;overflow:hidden;background:#f7f2e8;box-shadow:0 7px 16px #5547341d}
+.day-card .division-tile{position:absolute;display:block;overflow:hidden;box-sizing:border-box;border:1px solid #eee8dc;background:#f7f2e8}
+.day-card .division-mosaic .division-tile img{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;aspect-ratio:auto!important;object-fit:cover!important;object-position:center!important;border:0!important;box-shadow:none!important;background:transparent!important}
+@media(max-width:780px){.day-card .division-tile{border-width:.5px}}
