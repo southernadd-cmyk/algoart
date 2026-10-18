@@ -53,7 +53,16 @@ async function checkDownload(button,extension,name){
   const dest=path.join(out,name+extension);
   await download.saveAs(dest);
   const contents=await fs.readFile(dest);
-  assert(contents.length>5000,'File too small: '+contents.length);
+  // A valid sparse SVG/plotter export can be well below 5 KB.
+  // PNG stays size-guarded; SVG must contain real vector drawing instructions.
+  if(extension==='.png')assert(contents.length>5000,'PNG too small: '+contents.length);
+  if(extension==='.svg'){
+    const xml=contents.toString('utf8');
+    assert.match(xml,/<svg\\b[^>]*>/i,'SVG document missing root');
+    assert.match(xml,/<\\/(?:svg)>\\s*$/i,'SVG document incomplete');
+    assert.match(xml,/<(?:path|line|polyline|polygon|rect|circle|ellipse)\\b/i,
+      'SVG contains no drawable geometry');
+  }
   if(extension==='.png'){
     assert.equal(contents.subarray(1,4).toString(),'PNG');
     const width=contents.readUInt32BE(16),height=contents.readUInt32BE(20);
