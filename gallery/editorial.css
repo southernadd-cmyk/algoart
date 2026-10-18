@@ -52,3 +52,12 @@ main{max-width:1350px;padding:0 clamp(20px,4vw,65px)}
 footer{background:transparent;color:var(--soft);font:italic 12px Georgia,serif;letter-spacing:0;border-top:1px solid var(--line);margin:0 clamp(20px,4vw,65px);padding:20px 0}
 footer a:hover{color:#b65368}
 @media(max-width:780px){.site-head{padding:0 18px}.site-head .brand{font-size:24px}.site-head nav{gap:12px}.site-head nav a{font-size:12px!important}main{padding:0 18px}.grid,.day-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:24px 10px}.art-card:nth-child(n),.day-card:nth-child(n){grid-column:span 4}.art-card:nth-child(5n+1),.day-card:nth-child(5n+1){grid-column:span 5}.art-card:nth-child(5n+2),.day-card:nth-child(5n+2){grid-column:span 3}.hero h1{font-size:30px}.art-info h2{font-size:13px!important}footer{margin:0 18px}}
+
+/* Gallery headings use the same hand-drawn marker lettering as ALGO/ART. */
+.hero h1,.day-card h2,.art-info h2,.about h2{
+  font-family:'AlgoArt Marker',monospace!important;
+  font-style:normal!important;
+  font-weight:400!important;
+  letter-spacing:0!important;
+  font-feature-settings:'calt' 1;
+}
