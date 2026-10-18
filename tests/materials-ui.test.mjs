@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const html=read('index.html'),help=read('js/control-help.js'),app=read('js/app.js'),description=read('js/describe.js');
-assert.match(html,/data-tab="marker"[^>]*><span>03<\/span>Materials<\/button>/);
+assert.match(html,/data-tab="marker"[^>]*>Materials<\/button>/);
 assert.match(html,/<section class="tab-panel" data-panel="marker"/);
 assert.match(html,/id="materialStyle".*?<option value="marker">Marker drawing<\/option><option value="tissue">Tissue &amp; Graphite<\/option><option value="watercolour">Watercolour<\/option><option value="oil">Oil Paint<\/option>/);
-assert.match(html,/<span>MATERIAL CONTROLS<\/span>/);
-assert.match(html,/id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble/);
+assert.doesNotMatch(html,/<div class="section-title">/);
+assert.match(html,/id="materialStyleNote" aria-live="polite">Marker ink can wobble/);
 assert.match(app,/function syncMaterialNote\(\)/);
 assert.match(app,/Translucent tissue matched to source Marker colours/);
 assert.match(app,/Marker ink with hand-drawn wobble, pressure and imperfect strokes/);
@@ -15,7 +15,7 @@ assert.match(app,/function regenerate\(\)\{\s*syncMaterialNote\(\)/);
 assert.match(html,/<label>Mark-making tool<\/label><select id="pen">/);
 assert.match(html,/<label>Stroke width<\/label>.*?<input id="thickness"/);
 assert.match(html,/<label>Repeat passes<\/label>.*?<input id="overdraw"/);
-assert.match(html,/SVG and plotter exports use marker paths/);
+assert.match(html,/id="materialControlsNote">Choose a material in Compose/);
 assert.match(help,/materialStyle:'Choose Marker drawing, Tissue & Graphite, Watercolour, or Oil Paint/);
 assert.match(help,/var TISSUE_PROFILES=/);
 for(const profile of ['felt','fine','broad','highlighter','dry','paint','scribble']){
@@ -43,11 +43,11 @@ assert.match(app,/params\.set\('material','watercolour-'\+watercolourMaterialRev
 assert.match(app,/watercolourRender:watercolourEnabled\(\)/);
 assert.match(read('js/export.js'),/A\.renderWatercolourV2R\(out,compositionSettings/);
 assert.doesNotMatch(description,/(geometric marker forms|branching marker|Loose marker strokes)/);
-// Both stylesheets must preserve the roomy two-row desktop tab layout.
+// Consolidated production stylesheet must preserve legible editorial tab layout.
 const style=read('css/style.css'),markerStyle=read('css/marker-font.css');
-assert(style.includes('grid-template-columns:repeat(3,minmax(0,1fr));'));
-assert(style.includes('.tab:nth-child(3n){border-right:0}'));
-assert(style.includes('.tab:nth-child(-n+3){border-bottom:1px solid var(--ink)}'));
+assert(style.includes('.tabs{display:flex;flex-wrap:wrap;'));
+assert(style.includes('.tab.active{background:transparent;'));
+assert(style.includes('.tab span{display:none}'));
 assert(!markerStyle.includes('grid-template-columns:1.25fr'));
 assert(markerStyle.includes('.tab{font-size:12px;white-space:normal;overflow-wrap:anywhere;text-align:center;}'));
-console.log('PASS: Material labels, descriptions, unchanged URL parameters, and readable desktop tabs');
+console.log('PASS: Material labels, descriptions, unchanged URL parameters, and editorial tabs');
