@@ -21,7 +21,7 @@ assert(gallery.includes(galleryDescription.replaceAll('&','&amp;')),
   'Published gallery description must match generator and be HTML-escaped');
 assert(rss.includes(feedDescription.replaceAll('&','&amp;')),
   'Published RSS description must match generator and be XML-escaped');
-assert(source.includes('Watercolour V2S and Oil Paint v4 and Action Painting v1'),
+assert(source.includes('A fresh set of ALGO/ART drawings every day'),
   'Daily gallery generator must describe all four materials');
 assert(!source.includes('imperfect digital marker strokes')&&!gallery.includes('imperfect digital marker strokes'));
 assert(source.includes('escapeXml(FEED_DESCRIPTION)'),'RSS description must be XML-escaped');
