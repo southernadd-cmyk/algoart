@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const html=read('index.html'),help=read('js/control-help.js'),app=read('js/app.js'),description=read('js/describe.js');
-assert.match(html,/data-tab="marker"[^>]*>Materials<\/button>/);
+assert.match(html,/data-tab="marker"[^>]*>Marks<\/button>/);
 assert.match(html,/<section class="tab-panel" data-panel="marker"/);
 assert.match(html,/id="materialStyle".*?<option value="marker">Marker drawing<\/option><option value="tissue">Tissue &amp; Graphite<\/option><option value="watercolour">Watercolour<\/option><option value="oil">Oil Paint<\/option>/);
 assert.doesNotMatch(html,/<div class="section-title">/);
