@@ -1538,7 +1538,8 @@ function chooseWelcomeArtwork(){
         // A fit-content grid item otherwise retains a narrow portrait intrinsic size.
         var maxHeight=window.innerWidth<=590?window.innerHeight*.30:
           window.innerWidth<=760?window.innerHeight*.34:Math.min(window.innerHeight*.48,550);
-        var paperWidth=Math.max(1,Math.round(maxHeight*(portrait?5/7:7/5)));
+        var ratio=width/height;
+        var paperWidth=Math.max(1,Math.round(maxHeight*ratio));
         frame.style.setProperty('--welcome-paper-width','min(100%, '+paperWidth+'px)');
         frame.style.aspectRatio='auto';
         image.style.width='100%';
