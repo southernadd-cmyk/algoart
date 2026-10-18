@@ -134,8 +134,28 @@ try{
         if(url.searchParams.get('seed')!==item.seed||item.settings.seed!==item.seed)throw Error('URL/metadata seed mismatch');
         bytes=await bytesFor(source,item);
         result=await compare(item,bytes);
-        row.metrics={mean:result.mean,changed:result.changed};
-        if(!result.passed)throw Error('Pixel comparison failed');
+        row.metrics={mean:result.mean,meanPercentOfChannelRange:+(result.mean/255*100).toFixed(3),changed:result.changed};
+        if(!result.passed){
+          // Diagnose a borderline cross-browser archive mismatch without
+          // changing the published reference or relaxing either threshold.
+          const originalPng=result.render;
+          await page.reload({waitUntil:'networkidle'});
+          await page.waitForFunction(()=>window.AlgoArt?.lastRenderMeta&&document.getElementById('art')?.width>0);
+          const repeat=await page.evaluate(async previous=>{
+            const first=new Image();first.src=previous;await first.decode();
+            const art=document.getElementById('art');
+            const c=document.createElement('canvas');c.width=art.width;c.height=art.height;
+            const ctx=c.getContext('2d');ctx.drawImage(first,0,0);
+            const a=ctx.getImageData(0,0,c.width,c.height).data;
+            const b=art.getContext('2d').getImageData(0,0,c.width,c.height).data;
+            let changedChannels=0,maxDelta=0;
+            for(let i=0;i<a.length;i++)if(a[i]!==b[i]){changedChannels++;maxDelta=Math.max(maxDelta,Math.abs(a[i]-b[i]));}
+            return {changedChannels,maxDelta};
+          },originalPng);
+          row.repeatRender=repeat;
+          console.error('REPEAT_RENDER '+row.id+' '+JSON.stringify(repeat));
+          throw Error('Pixel comparison failed');
+        }
         row.passed=true;
         // Prove these tolerances reject the known wrong-version regression.
         if(queueIndex<0&&item.seed==='AA-20261006-01-92180'){
