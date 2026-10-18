@@ -51,8 +51,8 @@ async function main(){
       instagram_asset_name:item.instagramImageFile||item.imageFile,
       instagram_caption_b64:b64(captions.instagram),threads_caption_b64:b64(captions.threads),
       bluesky_caption_b64:b64(captions.bluesky),
-      pinterest_title_b64:b64('Tissue & Graphite · '+item.series+' — ALGO/ART'),
-      pinterest_description_b64:b64('Tissue & Graphite study. Open the exact artwork in ALGO/ART: '+item.shareUrl),
+      pinterest_title_b64:b64('Tissue & Graphite · '+item.series+' — PROPORTION PIECE'),
+      pinterest_description_b64:b64('Tissue & Graphite study. Open the exact artwork in PROPORTION PIECE: '+item.shareUrl),
       alt_text_b64:b64(captions.altText),share_url:item.shareUrl,scheduled_time:s.target_time
     });
     return;
