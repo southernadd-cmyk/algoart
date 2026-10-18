@@ -422,7 +422,7 @@ for (const item of queue.entries) {
 
 const keepImages = new Set(queue.entries.map(entry => entry.imageFile));
 for (const existing of await fs.readdir(dayDir)) {
-  if (existing.toLowerCase().endsWith('.jpg') && !keepImages.has(existing)) {
+  if (existing.toLowerCase().endsWith('.jpg') && existing !== 'archive-preview.jpg' && !keepImages.has(existing)) {
     await fs.rm(path.join(dayDir, existing), { force: true });
   }
 }
