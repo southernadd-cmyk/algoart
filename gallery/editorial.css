@@ -68,3 +68,12 @@ footer a:hover{color:#b65368}
 .day-card p,.day-card span{display:none}
 .day-grid{row-gap:clamp(30px,5vw,65px)}
 .hero p{font-size:16px;line-height:1.65}
+
+/* Shared editorial type scale: captions stay legible without competing with the artwork. */
+:root{--editorial-body-font:"Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
+.hero p,.about p{font-family:var(--editorial-body-font);font-size:16px;line-height:1.65}
+.art-info dd{font-family:var(--editorial-body-font);font-size:13px;line-height:1.5;overflow-wrap:break-word}
+.remix,.remix.primary{font-family:var(--editorial-body-font);font-size:13px;line-height:1.5}
+.day-card h2{font-size:clamp(15px,1.55vw,20px)!important;line-height:1.35}
+footer{font-family:var(--editorial-body-font);font-size:13px;line-height:1.5}
+@media(max-width:780px){.hero p,.about p{font-size:15px}.art-info dd,.remix,.remix.primary{font-size:12px}}
