@@ -67,7 +67,7 @@ async function main(){
       instagram_caption_b64:b64(copy.instagram),
       threads_caption_b64:b64(copy.threads),
       bluesky_caption_b64:b64(copy.bluesky),
-      pinterest_title_b64:b64('Watercolour · '+item.series+' — ALGO/ART'),
+      pinterest_title_b64:b64('Watercolour · '+item.series+' — PROPORTION PIECE'),
       pinterest_description_b64:b64('Watercolour V2S study. Open the exact artwork: '+item.shareUrl),
       alt_text_b64:b64(copy.altText),share_url:item.shareUrl,
       scheduled_time:gate.target_time
