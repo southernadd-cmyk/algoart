@@ -2224,3 +2224,8 @@ button{font-family:Georgia,serif}
     content:"Show φ";font-size:clamp(11px,3vw,14px);
   }
 }
+
+/* Match the shared two-row global header at tablet widths. */
+@media (min-width:761px) and (max-width:850px){
+  .editorial-preview.app{grid-template-rows:86px minmax(0,1fr)!important;}
+}
