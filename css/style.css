@@ -2241,3 +2241,11 @@ button{font-family:Georgia,serif}
  .editorial-welcome .welcome-right img{display:block;width:100%;max-height:24vh;object-fit:contain}
  .editorial-welcome .welcome-right figcaption{margin-top:5px}
 }
+
+/* Keep the seed and action comfortably inside the mobile parameters header. */
+@media(max-width:590px){
+ .editorial-preview .inspector-head{min-width:0}
+ .editorial-preview .inspector-head .seed{min-width:0;flex:1 1 auto}
+ .editorial-preview .inspector-head #seed{min-width:0;width:100%;max-width:100%;flex:1 1 auto}
+ .editorial-preview #inspectorToggle{max-width:calc(100vw - 20px)}
+}
