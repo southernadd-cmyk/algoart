@@ -1,6 +1,6 @@
-# ALGO/ART
+# PROPORTION PIECE
 
-> ALGO/ART is an interactive, deterministic generative drawing machine built around the golden ratio (φ). It creates artwork procedurally in JavaScript, using eight composition systems and five drawing materials; it does not use an AI image-generation model.
+> PROPORTION PIECE is an interactive, deterministic generative drawing machine built around the golden ratio (φ). It creates artwork procedurally in JavaScript, using eight composition systems and five drawing materials; it does not use an AI image-generation model.
 
 Explore the editor at https://southernadd-cmyk.github.io/algoart/ and the dated, reproducible artwork archive at https://southernadd-cmyk.github.io/algoart/gallery/.
 
@@ -14,9 +14,9 @@ Visitors can change controls or seeds, randomise or mutate drawings, compare var
 
 ## Start here
 
-- [How ALGO/ART works](https://southernadd-cmyk.github.io/algoart/about/): Accessible project explanation, materials, composition systems and questions.
+- [How PROPORTION PIECE works](https://southernadd-cmyk.github.io/algoart/about/): Accessible project explanation, materials, composition systems and questions.
 
-- [Interactive ALGO/ART editor](https://southernadd-cmyk.github.io/algoart/): Create and explore seeded compositions.
+- [Interactive PROPORTION PIECE editor](https://southernadd-cmyk.github.io/algoart/): Create and explore seeded compositions.
 - [Daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/): Browse archived works with reproducible settings.
 - [Project README](https://github.com/southernadd-cmyk/algoart/blob/main/README.md): Overview, systems, materials, examples, exports and local development.
 - [Source repository](https://github.com/southernadd-cmyk/algoart): Static HTML, CSS and JavaScript implementation.
