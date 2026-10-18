@@ -10,7 +10,7 @@ assert.doesNotMatch(html,/<div class="section-title">/);
 assert.match(html,/id="materialStyleNote" aria-live="polite">Marker ink can wobble/);
 assert.match(app,/function syncMaterialNote\(\)/);
 assert.match(app,/Tissue & Graphite — thin layers of colour, pencil-like shading and soft edges/);
-assert.match(app,/Marker ink with hand-drawn wobble, pressure and imperfect strokes/);
+assert.match(app,/Marker Drawing — uneven lines, changing pressure and the odd dry patch of ink/);
 assert.match(app,/function regenerate\(\)\{\s*syncMaterialNote\(\)/);
 assert.match(html,/<label>Mark-making tool<\/label><select id="pen">/);
 assert.match(html,/<label>Stroke width<\/label>.*?<input id="thickness"/);
