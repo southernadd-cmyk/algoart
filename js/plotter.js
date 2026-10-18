@@ -250,7 +250,7 @@ A.createPlotterSVG=function(settings,options){
   var after=sequences.reduce(function(sum,seq){return sum+travel(seq,origin)},0);
   paths=[].concat.apply([],sequences);
   var layers=colourLayers(paths,groupByPen);
-  var metadata={penColours:penColours,generator:'ALGO/ART',rendererVersion:A.rendererVersion,seed:settings.seed,settings:settings,
+  var metadata={penColours:penColours,generator:'PROPORTION PIECE',rendererVersion:A.rendererVersion,seed:settings.seed,settings:settings,
     paper:paper,pageMm:page,marginMm:margin,paperColour:settings.paper,layerGrouping:grouping,
     pathOrder:groupByPen?(optimized?'reordered-within-pen':'preserved-within-pen'):'preserved',
     penOrder:'light-to-dark',layerOrder:groupByPen?'light-to-dark':'source-colour-runs',
