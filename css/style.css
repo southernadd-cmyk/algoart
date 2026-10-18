@@ -1733,7 +1733,7 @@ button{font-family:Georgia,serif}
 .editorial-preview .control input[type=range]::-moz-range-thumb{border-radius:50%!important;width:13px!important;height:13px!important;background:var(--pigment)!important;border:1px solid #f8f2e7!important}
 .editorial-preview .mini-note{font-size:12px;font-style:italic}
 .editorial-preview .stats{font:italic 13px/1.5 Georgia,serif!important;text-transform:none!important;letter-spacing:0!important}
-.editorial-preview .stats #statsText{font:inherit!important;text-transform:none!important;letter-spacing:0!important}
+.editorial-preview .stats #statsText{font:inherit!important;text-transform:none!important;letter-spacing:0!important;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word;max-width:100%}
 @media(max-width:760px){
  .editorial-preview{grid-template-columns:minmax(0,1fr);min-width:0;width:100vw}
  .editorial-preview .toolbar{min-width:0;max-width:100vw;width:100%;height:auto;min-height:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:10px 14px}
