@@ -2419,3 +2419,16 @@ button{font-family:Georgia,serif}
 @media(prefers-reduced-motion:reduce){
   .editorial-welcome .welcome-right.welcome-loading::before{animation:none}
 }
+
+/* The decoded image determines paper width; never let fit-content preserve portrait width. */
+.editorial-welcome .welcome-right.welcome-portrait,
+.editorial-welcome .welcome-right.welcome-landscape{
+  width:var(--welcome-paper-width, auto)!important;
+  max-width:100%!important;
+}
+.editorial-welcome .welcome-right.welcome-portrait img,
+.editorial-welcome .welcome-right.welcome-landscape img{
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+}
