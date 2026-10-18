@@ -158,7 +158,7 @@ function dayPage(queue) {
 <link rel="canonical" href="${canonical}">
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="stylesheet" href="../gallery.css?v=20261013-site-quality">
-<link rel="stylesheet" href="../editorial.css?v=20261017-release">\n<link rel="stylesheet" href="../../css/nav-lettering.css?v=7">\n<script defer src="../../js/nav-lettering.js?v=2"></script>
+<link rel="stylesheet" href="../editorial.css?v=20261017-release">\n<link rel="stylesheet" href="../../css/nav-lettering.css?v=8">\n<script defer src="../../js/nav-lettering.js?v=2"></script>
 <link rel="alternate" type="application/rss+xml" title="ALGO/ART Daily Gallery" href="../feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ALGO/ART">
@@ -175,10 +175,11 @@ function dayPage(queue) {
 <script type="application/ld+json">${jsonLd(structured)}</script>
 </head>
 <body>
-<header class="site-head">
-  <a class="brand" href="../../">ALGO<span>/</span>ART</a>
-  <div class="formula">1.6180339887 <i></i> 137.507764°</div>
-  <nav aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../" aria-current="page">daily gallery</a><a data-algo-nav href="../../about/">how it works</a></nav>
+<header class="algo-global-header">
+  <div class="algo-global-brand"><a class="brand" href="../../">ALGO<span>/</span>ART</a></div>
+  <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
+  <p class="algo-global-question">Can one number compose a drawing?</p>
+  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../" aria-current="page">daily gallery</a><a data-algo-nav href="../../about/">how it works</a></nav>
 </header>
 <main>
   <section class="hero">
@@ -247,7 +248,7 @@ function archivePage(archive) {
 <link rel="canonical" href="${GALLERY_URL}/">
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <link rel="stylesheet" href="gallery.css?v=20261013-site-quality">
-<link rel="stylesheet" href="editorial.css?v=20261017-release">\n<link rel="stylesheet" href="../css/nav-lettering.css?v=7">\n<script defer src="../js/nav-lettering.js?v=2"></script>
+<link rel="stylesheet" href="editorial.css?v=20261017-release">\n<link rel="stylesheet" href="../css/nav-lettering.css?v=8">\n<script defer src="../js/nav-lettering.js?v=2"></script>
 
 <link rel="alternate" type="application/rss+xml" title="ALGO/ART Daily Gallery" href="feed.xml">
 <meta property="og:type" content="website">
@@ -263,10 +264,11 @@ function archivePage(archive) {
 <script type="application/ld+json">${jsonLd(structured)}</script>
 </head>
 <body>
-<header class="site-head">
-  <a class="brand" href="../">ALGO<span>/</span>ART</a>
-  <div class="formula">1.6180339887 <i></i> 137.507764°</div>
-  <nav aria-label="Site navigation"><a data-algo-nav href="../">try it out</a><a data-algo-nav href="./" aria-current="page">daily gallery</a><a data-algo-nav href="../about/">how it works</a></nav>
+<header class="algo-global-header">
+  <div class="algo-global-brand"><a class="brand" href="../">ALGO<span>/</span>ART</a></div>
+  <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
+  <p class="algo-global-question">Can one number compose a drawing?</p>
+  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../">try it out</a><a data-algo-nav href="./" aria-current="page">daily gallery</a><a data-algo-nav href="../about/">how it works</a></nav>
 </header>
 <main>
   <section class="hero archive-hero">
