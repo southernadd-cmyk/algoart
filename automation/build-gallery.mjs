@@ -51,6 +51,8 @@ function slugText(value = '') {
   return String(value).replace(/[^a-zA-Z0-9 _./:%+-]/g, '').trim();
 }
 
+function materialLabel(item) { return item.material==='action'?'Action painting':item.material==='oil'?'Oil paint':item.material==='watercolour'?'Watercolour':item.material==='watercolor'?'Tissue & graphite':'Marker'; }
+
 function artworkTitle(item, index) {
   return `${item.series} — ${item.material==='action'?'Action Painting ':item.material==='oil'?'Oil Paint ':item.material==='watercolour'?'Watercolour ':item.material==='watercolor'?'Tissue & Graphite ':''}Study ${String(index + 1).padStart(2, '0')}`;
 }
@@ -84,8 +86,8 @@ function artworkCard(item, index) {
       <div class="art-info">
         <div class="art-number">${String(index + 1).padStart(2, '0')}</div>
         <div>
-          <h2>${escapeHtml(title)}</h2>
-          <p>${escapeHtml(artworkDescription(item))}</p>
+          <h2>${escapeHtml(item.series)} · ${escapeHtml(materialLabel(item))} · ${escapeHtml(displayDate(item.date || item.id.slice(0,10)))}</h2>
+          
           <dl>
             <div><dt>Seed</dt><dd>${escapeHtml(item.seed)}</dd></div>
             <div><dt>Series</dt><dd>${escapeHtml(item.series)}</dd></div>
@@ -94,7 +96,7 @@ function artworkCard(item, index) {
             <div><dt>Medium</dt><dd>${item.material==='action'?'Action Painting v1':item.material==='oil'?(item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v4'?'Oil Paint v4':item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v3'?'Oil Paint v3':'Oil Paint v1'):item.material==='watercolour'?'Watercolour V2S':item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
             <div><dt>Palette</dt><dd>${escapeHtml(s.palette)}</dd></div>
           </dl>
-          <a class="remix" href="${escapeHtml(item.shareUrl)}">OPEN EXACT ARTWORK + REMIX →</a>
+          <a class="remix" href="${escapeHtml(item.shareUrl)}">Open this drawing →</a>
         </div>
       </div>
     </article>`;
@@ -106,7 +108,7 @@ function dayPage(queue) {
   const entries = queue.entries;
   const series = [...new Set(entries.map(e => e.series))];
   const title = `ALGO/ART Daily Gallery — ${pretty} | Golden Ratio Generative Art`;
-  const description = `${entries.length} deterministic ALGO/ART studies generated on ${pretty}: ${series.join(', ')}. Golden-ratio compositions in digital marker, Tissue & Graphite, Watercolour and Oil Paint.`;
+  const description = `${entries.length} drawings made on ${pretty}. Five materials, different compositions, and room to make each one your own.`;
   const canonical = `${GALLERY_URL}/${date}/`;
   const cover = `${canonical}${entries[0].imageFile}`;
 
@@ -184,9 +186,9 @@ function dayPage(queue) {
 <main>
   <section class="hero">
     <div class="kicker">DAILY ARCHIVE / ${escapeHtml(date)}</div>
-    <h1>${countWord(entries.length)} studies.<br>One deterministic day.</h1>
+    <h1>Drawings from<br>${escapeHtml(pretty)}.</h1>
     <p>${escapeHtml(description)}</p>
-    <div class="hero-meta"><span>φ / 1.6180339887</span><span>GOLDEN ANGLE / 137.507764°</span><span>SEEDABLE / REMIXABLE</span></div>
+    <div class="hero-meta"><span>${entries.length} drawings</span><span>Five materials</span><span>Each one can be revisited</span></div>
   </section>
   <section class="grid" aria-label="Artwork generated on ${escapeHtml(pretty)}">
     ${entries.map(artworkCard).join('\n')}
@@ -194,8 +196,8 @@ function dayPage(queue) {
   <section class="about">
     <span class="section-no">${String(entries.length + 1).padStart(2, '0')}</span>
     <div>
-      <h2>MATHEMATICS SETS THE RULES.<br>THE MARKER BREAKS THEM.</h2>
-      <p>ALGO/ART separates composition from rendering. φ influences placement, scale, hierarchy, negative space and trajectories. The chosen material adds hand-drawn texture, from marker wobble and overdraw to translucent torn tissue and graphite. Every image above is deterministic: the exact seed and settings can be reopened and changed in the generator.</p>
+      <h2>THE SAME PROPORTION.<br>DIFFERENT MARKS.</h2>
+      <p>The golden ratio helps arrange each drawing. The material changes how those arrangements feel. Open a piece to see its settings, then change whatever you like.</p>
       <a class="remix primary" href="../../">MAKE YOUR OWN →</a>
     </div>
   </section>
