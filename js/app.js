@@ -1489,6 +1489,7 @@ loadLatestGalleryDefault().then(function(changed){
 /* Sample artwork from the newest daily gallery; keep the bundled image as a fallback. */
 var welcomeArtworkPromise=null;
 var welcomeLastArtwork=-1;
+var welcomeSelectedArtworkUrl=null;
 function loadWelcomeArtworks(){
   if(welcomeArtworkPromise)return welcomeArtworkPromise;
   welcomeArtworkPromise=fetch('gallery/',{cache:'no-cache'}).then(function(response){
@@ -1512,7 +1513,9 @@ function loadWelcomeArtworks(){
       if(!img||!heading)return null;
       var imageUrl=new URL(img.getAttribute('src'),result.url);
       if(imageUrl.origin!==location.origin)return null;
-      return {src:imageUrl.href,alt:img.alt||'An ALGO/ART gallery drawing',title:heading.textContent.trim()};
+      var link=card.querySelector('.art-image-link[href]');
+      var artUrl=link?new URL(link.getAttribute('href'),result.url):null;
+      return {src:imageUrl.href,alt:img.alt||'An ALGO/ART gallery drawing',title:heading.textContent.trim(),artUrl:artUrl&&artUrl.origin===location.origin?artUrl.href:null};
     }).filter(Boolean);
   }).catch(function(){return [];});
   return welcomeArtworkPromise;
@@ -1529,6 +1532,7 @@ function chooseWelcomeArtwork(){
     if(artworks.length>1&&index===welcomeLastArtwork)index=(index+1)%artworks.length;
     welcomeLastArtwork=index;
     var selected=artworks[index];
+    welcomeSelectedArtworkUrl=selected.artUrl;
     image.src=selected.src;
     image.alt=selected.alt;
     caption.textContent=selected.title;
@@ -1543,15 +1547,20 @@ function chooseWelcomeArtwork(){
   var shouldOpen=!seen&&!requestedArtworkId&&!loadedFromURL;
   function closeIntro(reveal){
     endDialog(splash,$('describe'));
+    if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
     try{localStorage.setItem('algoart-intro-seen','1')}catch(e){}
     if(reveal)setGeometryVisible(true);
   }
-  $('introEnter').onclick=function(){closeIntro(false)};
+  $('introEnter').onclick=function(){
+    var chosen=welcomeSelectedArtworkUrl;
+    closeIntro(false);
+    if(chosen)location.assign(chosen);
+  };
   var welcomeLogo=$('welcomeLogo');
   if(welcomeLogo)welcomeLogo.addEventListener('click',function(){
-    if(splash.hidden){beginDialog(splash,$('introEnter'));chooseWelcomeArtwork();}
+    if(splash.hidden){welcomeSelectedArtworkUrl=null;beginDialog(splash,$('introEnter'));chooseWelcomeArtwork();}
   });
-  if(shouldOpen){beginDialog(splash,$('introEnter'));chooseWelcomeArtwork();}
+  if(shouldOpen){welcomeSelectedArtworkUrl=null;beginDialog(splash,$('introEnter'));chooseWelcomeArtwork();}
 })();
 
 })(window.AlgoArt);

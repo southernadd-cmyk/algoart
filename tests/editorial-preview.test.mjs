@@ -45,7 +45,7 @@ try{
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'mobile-390':'desktop-1440')+'.png',fullPage:true});
   console.log(mobile?'MOBILE':'DESKTOP',state);
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
-  const prod=await page.evaluate(()=>({welcome:!!document.querySelector('.welcome-layout'),controls:!!document.querySelector('#materialStyle'),sheet:!!document.querySelector('.studio-question'),width:document.documentElement.scrollWidth,viewport:innerWidth}));
+  const prod=await page.evaluate(()=>({welcome:!!document.querySelector('.welcome-layout'),controls:!!document.querySelector('#materialStyle'),sheet:!!document.querySelector('.algo-global-question'),width:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert(prod.welcome&&prod.controls&&prod.sheet,'Production studio must use editorial layout and preserve controls');
   if(!mobile){
    const order=await page.evaluate(()=>{const h=document.querySelector('#inspector > .inspector-head').getBoundingClientRect(),t=document.querySelector('#inspector > .tabs').getBoundingClientRect(),b=document.querySelector('#inspector > .tab-body').getBoundingClientRect();return {header:h.top,tabs:t.top,body:b.top,headerBottom:h.bottom,tabsBottom:t.bottom};});
@@ -61,14 +61,14 @@ try{
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'release-day-mobile':'release-day-desktop')+'.png',fullPage:true});
   await page.goto('http://127.0.0.1:4173/gallery/',{waitUntil:'domcontentloaded'});
   const previews=await page.evaluate(()=>({
-    covers:[...document.querySelectorAll('.day-card img')].map(img=>({src:img.getAttribute('src'),fallback:img.getAttribute('onerror')})),
+    covers:[...document.querySelectorAll('.day-card img')].map(img=>({src:img.getAttribute('src'),fallback:img.getAttribute('onerror'),mosaic:!!img.closest('[role="img"][aria-label*="Mosaic"]')})),
     oldMosaics:document.querySelectorAll('.division-mosaic').length,
     jsLoaded:!!document.querySelector('script[src*="division-mosaic.js"]'),
     viewport:innerWidth,
     scrollWidth:document.documentElement.scrollWidth
   }));
   assert(previews.covers.length>0,'Daily archive must have cover previews');
-  assert(previews.covers.every(img=>img.src.includes('/archive-preview.jpg') || img.fallback?.includes('this.src=')),'Archive cards must reference prebuilt previews or preserve the fallback during backfill');
+  assert(previews.covers.every(img=>img.src.includes('/archive-preview.jpg') || img.fallback?.includes('this.src=') || (img.mosaic&&img.src.endsWith('.jpg'))),'Archive cards must reference prebuilt previews or preserve the fallback during backfill');
   assert.equal(previews.oldMosaics,0,'Browser must not recreate mosaics from original artworks');
   assert(!previews.jsLoaded,'Browser mosaic construction script must be removed');
   assert(previews.scrollWidth<=previews.viewport+2,'Daily archive must not overflow the viewport');

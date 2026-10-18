@@ -206,7 +206,8 @@ function dayPage(queue) {
 }
 
 function archivePage(archive) {
-  const days = [...archive.days].sort((a, b) => b.date.localeCompare(a.date));
+  const days = [...new Map([...archive.days].map(day => [day.date, day])).values()]
+    .sort((a, b) => b.date.localeCompare(a.date));
   const cards = days.map((day, index) => `
     <article class="day-card">
       <a href="./${day.date}/">
