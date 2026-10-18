@@ -2367,3 +2367,28 @@ button{font-family:Georgia,serif}
  .editorial-welcome .welcome-right{width:fit-content;max-width:100%;aspect-ratio:auto}
  .editorial-welcome .welcome-right img{width:auto;max-width:100%;height:auto;max-height:30dvh;aspect-ratio:auto}
 }
+
+/* Orientation-specific welcome paper: override older fixed 4:3 mobile rules. */
+.editorial-welcome .welcome-right.welcome-portrait,
+.editorial-welcome .welcome-right.welcome-landscape{
+  aspect-ratio:auto!important;
+  width:fit-content!important;
+  max-width:100%!important;
+  min-height:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.editorial-welcome .welcome-right.welcome-portrait img,
+.editorial-welcome .welcome-right.welcome-landscape img{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:100%!important;
+  max-height:min(48vh,550px)!important;
+  object-fit:contain!important;
+  background:#f9f6ee!important;
+}
+@media(max-width:590px){
+ .editorial-welcome .welcome-right.welcome-portrait img,
+ .editorial-welcome .welcome-right.welcome-landscape img{max-height:30dvh!important}
+}
