@@ -245,3 +245,9 @@ body .algo-global-header .algo-site-nav{grid-column:4!important;grid-row:1!impor
  body .algo-global-header .algo-site-nav{grid-column:2!important;grid-row:1!important;width:auto!important;justify-content:flex-end!important;gap:8px!important}
  body .algo-global-header .algo-global-question{grid-column:1/-1!important;grid-row:2!important;order:unset!important;flex:auto!important;white-space:nowrap!important}
 }
+
+/* Desktop editor has no document scrollbar; the archive and explainer do.
+   Reserve exactly the missing scrollbar gutter so right-aligned links match. */
+@media(min-width:851px){
+  html:has(.editorial-preview){scrollbar-gutter:stable!important}
+}
