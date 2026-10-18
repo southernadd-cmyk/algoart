@@ -14,9 +14,9 @@
 :root{--paper:#e8e1d1;--ink:#403931;--line:#c9bdab;--rose:#b65368}*{box-sizing:border-box}
 html,body{margin:0;background:var(--paper);color:var(--ink)}body{font:15px/1.7 Georgia,'Times New Roman',serif}
 a{color:inherit;text-underline-offset:4px}a:hover{color:var(--rose)}
-header{display:flex;justify-content:space-between;align-items:center;gap:20px;max-width:1350px;margin:auto;padding:23px clamp(20px,4vw,65px)}
+header{display:flex;justify-content:space-between;align-items:center;gap:20px;max-width:none;min-height:76px;margin:0;padding:0 clamp(20px,4vw,65px)}
 header .wordmark{font:30px 'AlgoArt Marker',sans-serif;text-decoration:none}header .wordmark span{color:var(--rose)}
-nav{display:flex;gap:24px;flex-wrap:wrap}nav a{font:italic 14px Georgia,serif;text-decoration:none}nav a[aria-current]{text-decoration:underline}
+header nav{display:flex;align-items:center;gap:23px;flex-wrap:nowrap;margin-left:auto}header nav a{text-decoration:none}header nav a[aria-current="page"]{text-decoration:underline;text-underline-offset:4px}
 main{max-width:1350px;margin:auto;padding:0 clamp(20px,4vw,65px) 70px}
 .hero{border-top:1px solid var(--line);display:grid;grid-template-columns:1.35fr 1fr;align-items:center;gap:clamp(32px,7vw,105px);padding:clamp(45px,7vw,95px) 0}
 .kicker{font:16px 'AlgoArt Marker',sans-serif;color:var(--rose)}
@@ -29,9 +29,9 @@ h2{font:normal clamp(25px,3vw,39px)/1.15 'AlgoArt Marker',sans-serif;margin:0}.p
 .systems{columns:2;padding-left:19px}.systems li{break-inside:avoid;margin-bottom:9px}
 .cta{display:inline-block;font:22px 'AlgoArt Marker',sans-serif;text-decoration:none;border-bottom:2px solid var(--ink);margin-top:12px}
 footer{max-width:1220px;margin:0 auto;border-top:1px solid var(--line);padding:22px 0 45px;font:italic 12px Georgia,serif}
-@media(max-width:760px){header{flex-direction:column;align-items:start}.hero,.section{grid-template-columns:1fr}.hero figure{max-width:390px;margin:auto}.section{gap:17px}.systems{columns:1}footer{margin:0 20px}}
+@media(max-width:760px){header{min-height:76px;padding:0 18px;flex-direction:row;align-items:center;gap:12px}header .wordmark{font-size:24px}header nav{gap:12px;min-width:0}.hero,.section{grid-template-columns:1fr}.hero figure{max-width:390px;margin:auto}.section{gap:17px}.systems{columns:1}footer{margin:0 20px}}
 </style>
-<link rel="stylesheet" href="../css/nav-lettering.css?v=2">
+<link rel="stylesheet" href="../css/nav-lettering.css?v=3">
 <script defer src="../js/nav-lettering.js?v=1"></script>
 </head>
 <body>
