@@ -2,6 +2,11 @@ name: Action Painting Release Smoke
 on:
   push:
     branches: [main]
+    paths:
+      - 'js/action-painting-v1.js'
+      - 'automation/**'
+      - 'tests/action-release-smoke.mjs'
+      - '.github/workflows/action-release-smoke.yml'
   pull_request:
     paths:
       - 'js/action-painting-v1.js'

@@ -3,7 +3,6 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'index.html'
       - 'js/oil-v1-core-*.js'
       - 'js/oil-paint-v1.js'
       - 'js/app.js'

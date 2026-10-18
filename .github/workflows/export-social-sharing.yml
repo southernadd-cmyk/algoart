@@ -3,7 +3,6 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'index.html'
       - 'js/app.js'
       - 'js/social-share.js'
       - 'js/social-marker-icons.js'
