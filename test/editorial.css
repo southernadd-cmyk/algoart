@@ -603,3 +603,7 @@ button{font-family:Georgia,serif}
     min-height:0!important;
   }
 }
+
+/* Navigation tabs name each panel; remove redundant repeated section captions. */
+.editorial-preview #inspector .tab-panel > .section-title {display:none!important}
+.editorial-preview #inspector .tab-panel {padding-top:12px!important}
