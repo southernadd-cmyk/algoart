@@ -6,7 +6,6 @@ on:
       - 'js/app.js'
       - 'js/social-share.js'
       - 'js/social-marker-icons.js'
-      - 'css/style.css'
       - 'tests/export-social-sharing.test.mjs'
       - '.github/workflows/export-social-sharing.yml'
   workflow_dispatch:
