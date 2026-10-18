@@ -7,7 +7,7 @@ const SITE_ORIGIN = 'https://southernadd-cmyk.github.io';
 const SITE_PATH = '/algoart';
 const SITE_URL = SITE_ORIGIN + SITE_PATH;
 const GALLERY_URL = SITE_URL + '/gallery';
-const GALLERY_DESCRIPTION = 'A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART.';
+const GALLERY_DESCRIPTION = 'A new set of drawings every day. Open any piece, change its controls and make it your own.';
 const FEED_DESCRIPTION = 'Daily deterministic golden-ratio generative artworks from ALGO/ART in Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v4 and Action Painting v1.';
 
 function dateInZone(date = new Date()) {
@@ -212,7 +212,7 @@ function archivePage(archive) {
       <a href="./${day.date}/">
         <img src="./${day.date}/archive-preview.jpg" width="840" height="600" loading="${index < 2 ? 'eager' : 'lazy'}" decoding="async" ${index === 0 ? 'fetchpriority="high"' : 'fetchpriority="low"'} onerror="this.onerror=null;this.src=\'./${day.date}/${escapeHtml(day.cover)}\'" alt="Recursive Divisions mosaic showing the artworks from ${escapeHtml(displayDate(day.date))}">
         <div>
-          <span>${escapeHtml(day.date)}</span>
+          <span>DAILY EDITION</span>
           <h2>${escapeHtml(displayDate(day.date))}</h2>
           <p>${escapeHtml(day.series.join(' · '))}</p>
         </div>
