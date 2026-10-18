@@ -49,16 +49,16 @@
     var shortURL=compact(fullURL,settingKeys),
         // GitHub Pages has one static OG image for every query string.
         // Our already-hosted Render service responds with unique SSR tags
-        // and a real ALGO/ART canvas preview for each compact artwork.
+        // and a real PROPORTION PIECE canvas preview for each compact artwork.
         token=new URL(shortURL).searchParams.get('c'),
         previewURL=token?'https://algoart-composition-plugin.onrender.com/share?c='+
           encodeURIComponent(token):shortURL,
-        caption='ALGO/ART '+previewURL,
+        caption='PROPORTION PIECE '+previewURL,
         // Meta/Threads may cache the old (unversioned) generic preview
         // for this artwork. Only Threads gets a new page-cache identity;
         // Bluesky retains its already-working URL.
         threadsPreviewURL=token?previewURL+'&pv=2':previewURL,
-        threadsCaption='ALGO/ART '+threadsPreviewURL;
+        threadsCaption='PROPORTION PIECE '+threadsPreviewURL;
     return{
       fullURL:fullURL,
       artworkURL:shortURL,
