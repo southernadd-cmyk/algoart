@@ -58,9 +58,9 @@ async function checkDownload(button,extension,name){
   if(extension==='.png')assert(contents.length>5000,'PNG too small: '+contents.length);
   if(extension==='.svg'){
     const xml=contents.toString('utf8');
-    assert.match(xml,/<svg\\b[^>]*>/i,'SVG document missing root');
-    assert.match(xml,/<\\/(?:svg)>\\s*$/i,'SVG document incomplete');
-    assert.match(xml,/<(?:path|line|polyline|polygon|rect|circle|ellipse)\\b/i,
+    assert.match(xml,/<svg\b[^>]*>/i,'SVG document missing root');
+    assert.match(xml,/<\/svg>\s*$/i,'SVG document incomplete');
+    assert.match(xml,/<(?:path|line|polyline|polygon|rect|circle|ellipse)\b/i,
       'SVG contains no drawable geometry');
   }
   if(extension==='.png'){
