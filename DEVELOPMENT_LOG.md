@@ -8,8 +8,36 @@ Live site: https://southernadd-cmyk.github.io/algoart/
 
 For the non-visual review of remaining numeric constants and genuine φ geometry, see [Cross-engine calibration audit](CALIBRATION_AUDIT.md) and [Tuning history](TUNING.md).
 
-**Current renderer: V7.**
+**Current editor renderer: V9 (18 October 2026).** Earlier entries below are a chronological record and may refer to older defaults.
 <img width="1400" height="1000" alt="image" src="https://github.com/user-attachments/assets/e8015ddb-3cbd-4b3a-9475-697435c327c0" />
+
+## 18 October 2026 — Editorial design, gallery lettering and a changing welcome image
+
+This pass was less about adding drawing features and more about making the project look and read like itself. The interface had accumulated numbers, labels, repeated φ symbols and explanatory copy that looked more like a software specification than an art project. The question on the live editor was shortened to **“Can one number compose a drawing?”** The existing eight series names were deliberately retained: renaming the underlying drawing practices for stylistic novelty would have lost continuity with the archive.
+
+The welcome screen remains a physical-looking paper composition, and clicking the logo reopens it. A new selection routine now reads the latest daily gallery and chooses an artwork for its right-hand side, updating the caption and image description. It avoids immediately repeating the previous selection when possible. The existing image remains available while gallery metadata loads or if fetching fails. This is a gallery image, not a fresh render, so opening the introduction does not require generating another full drawing.
+
+A marker-drawn lowercase φ favicon was confirmed in the repository and linked from the main page. The gallery hero heading, edition dates, artwork titles and About heading were switched to the project's marker font, while keeping body text readable in serif. We removed an orphaned stage number, the decorative stage watermark and unused hidden Reveal buttons together with their JS handlers. **The drawing-progress overlay and its animated φ remain intact**, including its purpose on mobile.
+
+The cleanup also exposed a technical debt problem: the editor stylesheet contained **450 occurrences of `!important`** at the time of inspection. Obsolete selectors were removed, but specificity and responsive rules still require a cautious consolidation pass; no completed refactor should be inferred from the editorial commit. Mobile parameters, seed placement, one-row canvas actions and overlay layering are particularly important regression cases.
+
+The editorial cleanup ([PR #165](https://github.com/southernadd-cmyk/algoart/pull/165)), gallery font change ([PR #166](https://github.com/southernadd-cmyk/algoart/pull/166)) and random welcome artwork ([PR #167](https://github.com/southernadd-cmyk/algoart/pull/167)) were merged after CI. PR #165 and #167 each reported 18 successful checks; the gallery font change passed its three reported workflows, including archive checks in Chromium, Firefox and WebKit. These tests show no known failures in those runs, not an independently confirmed GitHub Pages publication or device-by-device visual sign-off.
+
+**Documentation decision:** keep this dated record for why things changed, but make the README a usable entrance to the project. Historical material names and publishing counts must not be mistaken for present-day defaults. The current list is five materials, including Action Painting; the exact Oil version should be verified in code before maintaining a single definitive claim in overview text. Renderer version V9 is separate from material versioning.
+
+### Images from this phase
+
+The gallery itself provides a better visual record than a generated promotional render. These two studies show how different mark-making materials interpret source compositions:
+
+| Marker drawing | Oil Paint |
+| --- | --- |
+| [![Recursive Divisions marker study from 17 October 2026](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-01-rects-AA-20261017-01-84718.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) | [![Constructed Forms oil paint study from 17 October 2026](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-oil-portrait-01-geometric-OP-20261017-01-14273.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) |
+
+The gallery entry retains the seed, source geometry and material selection; these are dated examples, not a claim about the latest engine output.
+
+**Next:** consolidate the CSS cascade with screenshot comparisons; keep testing the welcome/gallery image path as the daily archive changes; follow up on plotter hardware validation, source-matched material fidelity and rendering performance.
+
+---
 
 ## Live website updates — 9 October 2026
 
