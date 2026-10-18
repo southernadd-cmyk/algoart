@@ -1,5 +1,4 @@
 # ALGO/ART
-<img src="https://github.com/southernadd-cmyk/algoart/raw/main/social-card.png" alt="Social card" width="377">
 
 **Mathematics sets the structure. Materials bring the texture.**
 
