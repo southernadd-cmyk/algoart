@@ -2,8 +2,8 @@ name: Creating overlay UI regression
 on:
   pull_request:
     paths:
-      - 'css/style.css'
       - 'js/app.js'
+      - 'js/export.js'
       - 'tests/creating-overlay.test.mjs'
       - '.github/workflows/creating-overlay.yml'
   workflow_dispatch:
