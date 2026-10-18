@@ -2299,3 +2299,8 @@ button{font-family:Georgia,serif}
  .editorial-welcome .welcome-right img{display:block;width:100%;height:auto;max-height:none;aspect-ratio:4 / 3;object-fit:contain;background:#f9f6ee;box-shadow:0 7px 16px rgba(75,60,43,.14)}
  .editorial-welcome .welcome-right figcaption{margin-top:7px;font-size:11px}
 }
+
+/* Editorial supporting copy: match About, Press and Gallery without altering marker lettering or navigation. */
+.editorial-welcome .welcome-description{font-family:"Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;line-height:1.55}
+.editorial-welcome .welcome-right figcaption{font-family:"Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;font-size:13px;line-height:1.45}
+@media(max-width:590px){.editorial-welcome .welcome-description{font-size:13px;line-height:1.5}.editorial-welcome .welcome-right figcaption{font-size:12px;line-height:1.45}}
