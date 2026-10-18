@@ -349,9 +349,9 @@ jobs:
 
 
   watercolor-landscape:
-    # Wait until the original marker portrait job finishes (including retry).
-    # Reuse the existing morning/evening triggers; no afternoon watercolor.
-    needs: [publish, portrait-plan, portraits, portraits-retry]
+    # Action Painting and Tissue both update the same archive files at 09:00.
+    # Wait for Action landscape/portrait before writing the Tissue gallery.
+    needs: [publish, portrait-plan, portraits, portraits-retry, action-landscape, action-portrait]
     if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && (needs.portrait-plan.outputs.slot == '0' || needs.portrait-plan.outputs.slot == '2') }}
     uses: ./.github/workflows/watercolor-live.yml
     with:

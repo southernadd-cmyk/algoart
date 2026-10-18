@@ -1,4 +1,4 @@
-// New Action v1: exactly one portrait and one landscape at the
+// Action painting: exactly one portrait and one landscape at the
 // existing 09:00 Europe/London afternoon trigger. Historical "watercolor"
 // remains Tissue & Graphite at the morning/evening slots.
 import fs from 'node:fs/promises';
@@ -24,7 +24,7 @@ export function validateActionItem(item,day,orientation){
      !new RegExp('^'+day+'-'+(orientation==='portrait'?'ACP':'ACL')+'01$').test(item.id))
     throw Error('Invalid Action artwork identity');
   const link=new URL(item.shareUrl);
-  if(link.searchParams.get('material')!==(day>='2026-10-17'?'action-v1':'action-v1')||
+  if(!['action-v1','action-v2'].includes(link.searchParams.get('material'))||
      link.searchParams.get('v')!=='9'||
      link.searchParams.get('seed')!==item.seed||
      link.searchParams.get('mode')!==item.mode||
