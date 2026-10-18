@@ -2220,3 +2220,40 @@ button{font-family:Georgia,serif}
 .brand .welcome-logo-trigger{appearance:none;border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;margin:0;cursor:pointer;text-align:left}
 .brand .welcome-logo-trigger span{color:inherit}
 .brand .welcome-logo-trigger:focus-visible{outline:2px solid currentColor;outline-offset:5px}
+
+/* Keep the five canvas tools visible in one comfortably separated mobile row. */
+@media(max-width:760px){
+  .editorial-preview .stage>.actions{
+    display:flex!important;
+    flex-flow:row nowrap!important;
+    justify-content:space-between!important;
+    align-items:center!important;
+    width:100%!important;
+    min-width:0!important;
+    gap:clamp(3px,1.5vw,9px)!important;
+    padding:28px 0 12px!important;
+    overflow:visible!important;
+  }
+  .editorial-preview .stage>.actions>button{
+    display:inline-flex!important;
+    flex:0 1 auto!important;
+    justify-content:center!important;
+    align-items:center!important;
+    width:auto!important;
+    min-width:0!important;
+    min-height:44px!important;
+    padding:6px 2px!important;
+    font-size:clamp(11px,3vw,14px)!important;
+    line-height:1.15!important;
+    white-space:nowrap!important;
+  }
+  /* Only abbreviate the visual labels: original button text remains accessible. */
+  .editorial-preview .stage>.actions #variations,
+  .editorial-preview .stage>.actions #geometry{font-size:0!important}
+  .editorial-preview .stage>.actions #variations::after{
+    content:"Four";font-size:clamp(11px,3vw,14px);
+  }
+  .editorial-preview .stage>.actions #geometry::after{
+    content:"Show φ";font-size:clamp(11px,3vw,14px);
+  }
+}
