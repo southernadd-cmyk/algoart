@@ -11,6 +11,8 @@ on:
       - 'fonts/**'
       - 'js/**'
       - 'gallery/**'
+      - 'press/**'
+      - 'about/**'
       - 'reels/**'
       - 'favicon.svg'
       - 'social-card.svg'
