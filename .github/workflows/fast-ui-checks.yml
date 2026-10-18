@@ -1,0 +1,40 @@
+name: Fast UI and copy checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'about/**'
+      - 'press/**'
+      - 'css/**'
+      - 'fonts/**'
+      - 'js/app.js'
+      - 'js/control-help.js'
+      - 'gallery/index.html'
+      - 'gallery/gallery.css'
+      - 'tests/site-quality.test.mjs'
+      - 'tests/materials-ui.test.mjs'
+      - '.github/workflows/fast-ui-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: fast-ui-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  ui-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify JavaScript parses
+        run: |
+          node --check js/app.js
+          node --check js/control-help.js
+      - name: Verify published UI contracts
+        run: |
+          node tests/materials-ui.test.mjs
+          node tests/site-quality.test.mjs
