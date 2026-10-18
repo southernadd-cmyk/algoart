@@ -195,6 +195,18 @@ try{
       console.log((row.passed?'PASS ':'FAIL ')+row.id+' '+JSON.stringify(row.metrics||{}));
     }
   }
+  // Representative mode must still prove that the known wrong-version
+  // regression is rejected, even when its old study is not in the sample.
+  if(representative){
+    const probe=archiveItems.find(({item})=>item.seed==='AA-20261006-01-92180');
+    if(!probe)throw Error('Known wrong-version regression fixture missing');
+    const bytes=await bytesFor(probe.source,probe.item);
+    const wrong=await compare(probe.item,bytes,5);
+    report.wrongVersionProbe={id:probe.item.id,mean:wrong.mean,changed:wrong.changed,
+      structural:wrong.structural,rejected:!wrong.passed};
+    console.log('Wrong-version probe '+JSON.stringify(report.wrongVersionProbe));
+    if(wrong.passed){report.failures++;throw Error('Structural thresholds missed known V5 regression');}
+  }
 }finally{
   await browser.close();
   await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));
