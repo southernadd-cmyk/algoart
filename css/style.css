@@ -2337,3 +2337,33 @@ button{font-family:Georgia,serif}
 /* Keep the welcome caption beneath the paper, rather than overlapping its edge. */
 .editorial-welcome .welcome-right{overflow:visible}
 .editorial-welcome .welcome-right figcaption{position:relative;display:block;margin-top:10px;padding-top:3px;clear:both}
+
+/* Welcome artwork paper follows the source image's actual orientation. */
+.editorial-welcome .welcome-right{
+  aspect-ratio:auto;
+  width:fit-content;
+  max-width:100%;
+  min-height:0;
+  background:transparent;
+  box-shadow:none;
+  justify-content:flex-start;
+}
+.editorial-welcome .welcome-right img{
+  display:block;
+  width:auto;
+  height:auto;
+  max-width:100%;
+  max-height:min(48vh,550px);
+  aspect-ratio:auto;
+  object-fit:contain;
+  background:#f9f6ee;
+  box-shadow:0 11px 23px rgba(75,60,43,.14);
+}
+@media(max-width:760px){
+ .editorial-welcome .welcome-right{width:fit-content;max-width:100%;min-height:0;aspect-ratio:auto}
+ .editorial-welcome .welcome-right img{width:auto;max-width:100%;height:auto;max-height:34vh;aspect-ratio:auto}
+}
+@media(max-width:590px){
+ .editorial-welcome .welcome-right{width:fit-content;max-width:100%;aspect-ratio:auto}
+ .editorial-welcome .welcome-right img{width:auto;max-width:100%;height:auto;max-height:30dvh;aspect-ratio:auto}
+}
