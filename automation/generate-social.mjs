@@ -219,7 +219,12 @@ try {
       const chosen=variedOil
         ?oilModes[(oilRotation+index+orientationOffset)%oilModes.length]
         :oilModes[Math.floor(pickOil()*oilModes.length)];
-      settings.mode=chosen[0];settings.series=chosen[1];
+      // Preserve the rotated mode for twelve attempts. If Golden
+      // Trajectories cannot meet the source-connection gate, fall back to
+      // Constructed Forms for the remaining deterministic retries.
+      const retryMode=variedOil&&chosen[0]==='spiral'&&attempt>=12
+        ?oilModes.find(m=>m[0]==='geometric'):chosen;
+      settings.mode=retryMode[0];settings.series=retryMode[1];
       settings.seed='O'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
         '-'+String(index+1).padStart(2,'0')+'-'+(hash(day+'|oil-v1|'+orientation+'|'+(index ? index+'|' : '')+retrySalt)%100000)
           .toString().padStart(5,'0');
