@@ -1547,6 +1547,7 @@ function chooseWelcomeArtwork(){
   var shouldOpen=!seen&&!requestedArtworkId&&!loadedFromURL;
   function closeIntro(reveal){
     endDialog(splash,$('describe'));
+    if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
     try{localStorage.setItem('algoart-intro-seen','1')}catch(e){}
     if(reveal)setGeometryVisible(true);
   }
