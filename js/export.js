@@ -37,6 +37,8 @@ A.preparePNG=function(settings,scale){
     return Promise.reject(new Error('PNG resolution is too large. Choose a smaller size.'));
   var out=document.createElement('canvas');
   var compositionSettings=Object.assign({},settings);
+  delete compositionSettings.actionPaintingRender;
+  delete compositionSettings.actionPaintingRevision;
   delete compositionSettings.oilRender;
   delete compositionSettings.oilPaintRender;
   delete compositionSettings.oilPaintRevision;
@@ -46,12 +48,15 @@ A.preparePNG=function(settings,scale){
   delete compositionSettings.tissuePaletteVersion;
   var filename='algoart-'+settings.seed+'-'+settings.mode+
     (settings.orientation==='portrait'?'-portrait':'')+
-    (settings.oilPaintRender?'-oil-paint-'+(settings.oilPaintRevision||'v1'):settings.watercolourRender?'-watercolour-'+(settings.watercolourRevision||'v2r'):settings.oilRender?'-tissue-graphite':'')+'-'+scale+'x.png';
+    (settings.actionPaintingRender?'-action-v'+(settings.actionPaintingRevision||2):settings.oilPaintRender?'-oil-paint-'+(settings.oilPaintRevision||'v1'):settings.watercolourRender?'-watercolour-'+(settings.watercolourRevision||'v2r'):settings.oilRender?'-tissue-graphite':'')+'-'+scale+'x.png';
   // Paint synchronously but encode off the main thread where supported.
   // This avoids holding a very large PNG data URL and its base64 clone.
   return new Promise(function(resolve,reject){
     try{
-      if(settings.oilPaintRender){
+      if(settings.actionPaintingRender){
+        A.renderActionPainting(out,compositionSettings,scale,false,{version:settings.actionPaintingRevision||2});
+      }
+      else if(settings.oilPaintRender){
         const oilRenderer=settings.oilPaintRevision==='v4'?A.renderOilPaintV4:
           settings.oilPaintRevision==='v3'?A.renderOilPaintV3:
           settings.oilPaintRevision==='v2'?A.renderOilPaintV2:A.renderOilPaintV1;
