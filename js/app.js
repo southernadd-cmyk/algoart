@@ -1501,38 +1501,56 @@ function chooseWelcomeArtwork(){
   var image=splash.querySelector('.welcome-right img');
   var caption=splash.querySelector('.welcome-right figcaption');
   if(!image||!caption)return;
+  // Invalidate all previous selections immediately, before the gallery fetch resolves.
+  var serial=++welcomeSelectionSerial;
+  var frame=image.parentElement;
+  welcomeSelectedArtworkUrl=null;
+  welcomePreparedArtworkUrl=null;
+  frame.classList.remove('welcome-portrait','welcome-landscape');
+  frame.classList.add('welcome-loading');
+  frame.style.aspectRatio='';
+  image.onload=null;
+  image.onerror=null;
+  image.removeAttribute('src');
+  image.style.visibility='hidden';
+  image.style.aspectRatio='';
+  image.style.width='';
+  image.style.height='';
+  caption.textContent='';
   loadWelcomeArtworks().then(function(artworks){
-    if(!artworks.length||splash.hidden)return;
+    if(serial!==welcomeSelectionSerial||!artworks.length||splash.hidden)return;
     var index=Math.floor(Math.random()*artworks.length);
     if(artworks.length>1&&index===welcomeLastArtwork)index=(index+1)%artworks.length;
     welcomeLastArtwork=index;
     var selected=artworks[index];
     welcomeSelectedArtworkUrl=selected.artUrl;
-    welcomePreparedArtworkUrl=null;
-    var serial=++welcomeSelectionSerial;
-    image.style.visibility='hidden';
-    // Use the selected gallery image's dimensions; confirm against decoded pixels.
-    function setWelcomeOrientation(width,height){
-      if(serial!==welcomeSelectionSerial)return;
-      var portrait=height>width;
-      image.style.aspectRatio=width>0&&height>0?width+' / '+height:'auto';
-      image.style.width='auto';
-      image.style.height='auto';
-      image.parentElement.classList.toggle('welcome-portrait',portrait);
-      image.parentElement.classList.toggle('welcome-landscape',!portrait);
-    }
-    if(selected.width&&selected.height)setWelcomeOrientation(selected.width,selected.height);
-    image.onload=function(){
-      if(serial!==welcomeSelectionSerial)return;
-      if(image.naturalWidth&&image.naturalHeight)setWelcomeOrientation(image.naturalWidth,image.naturalHeight);
+    var candidate=new Image();
+    candidate.decoding='async';
+    candidate.onload=function(){
+      if(serial!==welcomeSelectionSerial||splash.hidden)return;
+      var width=candidate.naturalWidth||selected.width;
+      var height=candidate.naturalHeight||selected.height;
+      if(width>0&&height>0){
+        var portrait=height>width;
+        frame.style.aspectRatio=width+' / '+height;
+        image.style.aspectRatio=width+' / '+height;
+        frame.classList.toggle('welcome-portrait',portrait);
+        frame.classList.toggle('welcome-landscape',!portrait);
+      }
+      image.alt=selected.alt;
+      image.src=candidate.src;
       image.style.visibility='visible';
+      caption.textContent=selected.title;
+      frame.classList.remove('welcome-loading');
     };
-    image.onerror=function(){image.style.visibility='hidden';};
-    image.alt=selected.alt;
-    caption.textContent=selected.title;
-    image.src=selected.src;
-    // Render the exact selected artwork behind the splash before BEGIN is
-    // clicked. No second navigation or second render is needed on entry.
+    candidate.onerror=function(){
+      if(serial===welcomeSelectionSerial){
+        frame.classList.remove('welcome-loading');
+        caption.textContent='Artwork could not be loaded.';
+      }
+    };
+    candidate.src=selected.src;
+    // Prepare the corresponding editor state without blocking image download.
     if(selected.artUrl)Promise.resolve().then(function(){
       if(serial!==welcomeSelectionSerial||splash.hidden)return;
       var selectedUrl=new URL(selected.artUrl,location.href);
@@ -1542,7 +1560,6 @@ function chooseWelcomeArtwork(){
       commitRegenerate();
       if(serial===welcomeSelectionSerial)welcomePreparedArtworkUrl=selectedUrl.href;
     }).catch(function(error){console.warn('Welcome artwork pre-render failed:',error)});
-
   });
 }
 (function initIntroSplash(){
