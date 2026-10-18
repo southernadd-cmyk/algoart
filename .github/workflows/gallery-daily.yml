@@ -133,6 +133,32 @@ jobs:
           GALLERY_QUEUE_ORIENTATION: portrait
         run: npm run gallery:build
 
+      - name: Generate Action Painting landscape
+        env:
+          SOCIAL_MATERIAL: action
+          SOCIAL_ORIENTATION: landscape
+          SOCIAL_COUNT: '1'
+        run: npm run social:generate
+
+      - name: Archive Action Painting landscape
+        env:
+          GALLERY_QUEUE_MATERIAL: action
+          GALLERY_QUEUE_ORIENTATION: landscape
+        run: npm run gallery:build
+
+      - name: Generate Action Painting portrait
+        env:
+          SOCIAL_MATERIAL: action
+          SOCIAL_ORIENTATION: portrait
+          SOCIAL_COUNT: '1'
+        run: npm run social:generate
+
+      - name: Archive Action Painting portrait
+        env:
+          GALLERY_QUEUE_MATERIAL: action
+          GALLERY_QUEUE_ORIENTATION: portrait
+        run: npm run gallery:build
+
       - name: Verify gallery output
         shell: bash
         run: |
@@ -147,7 +173,8 @@ jobs:
           # New materials add artwork without changing the historical batch size.
           # Require the established baseline; do not reject additional material batches.
           if [[ "$DAY" > "2026-10-16" ]]; then
-            test "$COUNT" -ge 16
+            test "$COUNT" -ge 18
+            DAY="$DAY" node --input-type=module -e "import fs from 'node:fs'; const day=process.env.DAY; const m=JSON.parse(fs.readFileSync('gallery/'+day+'/meta.json')); for(const orientation of ['landscape','portrait']) {if(!m.entries.some(e=>e.material==='action' && e.orientation===orientation))throw Error('Missing Action Painting '+orientation+' in '+day)}"
           else
             test "$COUNT" -ge 13
           fi
