@@ -14,6 +14,8 @@ Visitors can change controls or seeds, randomise or mutate drawings, compare var
 
 ## Start here
 
+- [How ALGO/ART works](https://southernadd-cmyk.github.io/algoart/about/): Accessible project explanation, materials, composition systems and questions.
+
 - [Interactive ALGO/ART editor](https://southernadd-cmyk.github.io/algoart/): Create and explore seeded compositions.
 - [Daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/): Browse archived works with reproducible settings.
 - [Project README](https://github.com/southernadd-cmyk/algoart/blob/main/README.md): Overview, systems, materials, examples, exports and local development.
