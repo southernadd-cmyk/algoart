@@ -251,3 +251,10 @@ body .algo-global-header .algo-site-nav{grid-column:4!important;grid-row:1!impor
 @media(min-width:851px){
   html:has(.editorial-preview){scrollbar-gutter:stable!important}
 }
+
+/* Proportion Piece wordmark: keep the longer title inside the shared header tracks. */
+body .algo-global-header .algo-global-brand .brand{font-size:19px!important}
+@media(min-width:1101px){body .algo-global-header{grid-template-columns:240px 208px minmax(100px,1fr) 330px!important}}
+@media(min-width:851px) and (max-width:1100px){body .algo-global-header{grid-template-columns:205px 150px minmax(70px,1fr) 300px!important}}
+@media(max-width:850px){body .algo-global-header .algo-global-brand .brand{font-size:13px!important}}
+@media(max-width:390px){body .algo-global-header .algo-global-brand .brand{font-size:11px!important}}
