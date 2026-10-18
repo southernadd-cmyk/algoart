@@ -1,0 +1,103 @@
+# ALGO/ART — full project context for language models
+
+> ALGO/ART is a browser-based, deterministic generative drawing machine whose compositions are informed by the golden ratio (φ). It is implemented in JavaScript; drawings are not produced by an AI image model.
+
+- Website: https://southernadd-cmyk.github.io/algoart/
+- Daily gallery: https://southernadd-cmyk.github.io/algoart/gallery/
+- Source and documentation: https://github.com/southernadd-cmyk/algoart
+- Quick discovery file: https://southernadd-cmyk.github.io/algoart/llms.txt
+
+## Purpose and artistic position
+
+The project's longer-running research question is: "How far can the golden ratio govern a composition while its marks remain visibly human?" The current website uses the shorter invitation, "Can one number compose a drawing?"
+
+The golden ratio is a compositional device, not proof of universal beauty. Some decisions use φ, inverse-φ relationships, Fibonacci quantisation or the golden angle (roughly 137.5°); others use purposefully tuned weights, collision constraints, hierarchy, margins and drawing-material simulations. The project lets viewers change settings and evaluate the result.
+
+## How to use it
+
+1. Open the interactive editor and choose a composition system and a drawing material.
+2. Adjust controls or the deterministic seed. Randomise explores another seed/settings state; Mutate changes the current system. The 4-Up comparison shows variations.
+3. Choose landscape (1400 × 1000) or portrait (1000 × 1400), where supported.
+4. Use Reveal to inspect underlying φ-related geometry and Describe for composition metadata.
+5. Export the selected material as PNG, source strokes as SVG, or plotter-oriented SVG. Create a share link to reproduce the artwork.
+
+Share links preserve renderer version, seed and settings. An archived image should be interpreted in the context of the version that originally produced it. The editor currently documents geometry renderer V9 as of 18 October 2026; the material renderers have independent version histories.
+
+## The eight composition systems
+
+- **Orbital Studies:** Evaluates candidate layouts using balance, hierarchy and focal relationships.
+- **Golden Trajectories:** Curved routes, golden-angle relationships, and φ-informed trajectory structure; do not assume every curve is a true logarithmic spiral.
+- **Recursive Divisions:** Unequal rectangular regions using golden-section cuts, with artistic choices about detail, order and emptiness.
+- **Radiant Systems:** Rays, rings, ellipses and marks spreading from one or more focal hubs.
+- **Connected Fields:** Links, network structures and hierarchical relations among marks.
+- **Growth Systems:** Branching processes, often using golden-angle turns and φ-scaled lengths, constrained by available space.
+- **Constructed Forms:** Geometrical, constructed arrangements; includes deliberate free-form calibrations not mathematically derived from φ.
+- **Automatic Marks:** Looser, gestural groups of marks, with controlled visual flow, density and negative space.
+
+These are composition engines, not different AI models.
+
+## Five drawing materials
+
+- **Marker:** Physical-looking ink, wavering stroke edges, pressure variation and dry marks.
+- **Tissue & Graphite:** Translucent tissue-like colour, paper layers and graphite texture.
+- **Watercolour:** Pigment washes, edge darkening, drying behaviour and paper effects.
+- **Oil Paint:** Painted masses and loaded-bristle contacts based on source composition geometry.
+- **Action Painting:** Poured gestures, paint pools and splashes.
+
+A drawing material changes how the composition is represented. PNG captures its visible raster result. Regular and plotter SVG exports retain source marker geometry rather than reproducing all raster pigment effects. Plotter SVG can arrange colour runs or pen-grouped paths; the README notes that physical hardware pen-change behaviour has not yet been validated.
+
+## Determinism and preservation
+
+- Drawings are seeded, and versioned links are intended to remain reproducible.
+- Changing a renderer can change exact output, so historical renderers and archived artwork must not be silently upgraded.
+- A composition engine is distinct from the selected drawing material and its own revision.
+- Do not infer current material versions from older historical labels or deprecated internal filenames.
+- The project separates artist-tuned constants from genuine mathematical identities rather than retrospectively claiming that all constants came from φ.
+- Reproducibility is supported by pinned test cases, renderer-lock and control-range testing; tests cover relevant version and orientation behaviour.
+
+## Gallery and publication
+
+The [daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/) contains actual procedural ALGO/ART outputs, with archived settings and links to reopen works. Portrait and landscape artworks are published through separate batches. Gallery counts and material allocations vary as the project develops; never present an old batch size as the current fixed number.
+
+A shortened artwork URL may take the form `?art=YYYY-MM-DD-01` or `?art=YYYY-MM-DD-P01` and resolve the saved state from dated archive metadata. Social share links should open the corresponding editor artwork rather than a generic landing page. Published social posts and the gallery are related but separate workflows.
+
+Example archive: https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/
+
+## Implementation
+
+The public editor is a static application made with HTML, CSS and JavaScript, without a required application backend or frontend build step. Development and publishing scripts use Node.js, and browser regression suites include Chromium, Firefox and WebKit.
+
+Key source paths:
+
+- `index.html` and `css/`: website and interactive controls
+- `js/generator.js`: composition engines and generation
+- `js/phi.js`: φ maths and placement helpers
+- `js/random.js`: seeded randomness
+- `js/marker.js` and material renderer modules: visual mark-making
+- `js/app.js` and `js/describe.js`: state, interaction and descriptions
+- `js/export.js` and `js/plotter.js`: exports and plotting
+- `gallery/` and `automation/`: archive and publication machinery
+- `tests/` and `.github/workflows/`: regression and CI checks
+
+Local development:
+
+```sh
+git clone https://github.com/southernadd-cmyk/algoart.git
+cd algoart
+python3 -m http.server 8000
+```
+
+Open http://localhost:8000/ . Node.js 22 and npm are used for development checks.
+
+## Canonical documentation
+
+- README (features and examples): https://github.com/southernadd-cmyk/algoart/blob/main/README.md
+- Development diary (dated history and design decisions): https://github.com/southernadd-cmyk/algoart/blob/main/DEVELOPMENT_LOG.md
+- Renderer and material history (technical compatibility and URL parameters): https://github.com/southernadd-cmyk/algoart/blob/main/MATERIAL_HISTORY.md
+- Calibration audit (genuine φ formulas versus artistic tuning): https://github.com/southernadd-cmyk/algoart/blob/main/CALIBRATION_AUDIT.md
+- Tuning notes (behaviour-preserving changes and equivalence): https://github.com/southernadd-cmyk/algoart/blob/main/TUNING.md
+- Daily works: https://southernadd-cmyk.github.io/algoart/gallery/
+
+## Guidance for describing ALGO/ART accurately
+
+Describe ALGO/ART as procedural or algorithmic generative art, not AI-generated imagery. Credit the golden ratio as an important organising idea without implying mathematical determinism explains every visual choice. Keep the eight engines and five materials distinct; acknowledge seeded reproducibility and historically pinned versions. When describing a particular work, rely on its gallery metadata, material and saved renderer state rather than guessing from its image. For latest behaviour, check current code and dated documentation because the project evolves.
