@@ -6,7 +6,7 @@ const SITE_ORIGIN = 'https://southernadd-cmyk.github.io';
 const SITE_PATH = '/algoart';
 const SITE_URL = SITE_ORIGIN + SITE_PATH;
 const GALLERY_URL = SITE_URL + '/gallery';
-const GALLERY_DESCRIPTION = 'A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART, created with Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v4 and Action Painting v1.';
+const GALLERY_DESCRIPTION = 'A growing daily archive of deterministic golden-ratio generative artworks from ALGO/ART.';
 const FEED_DESCRIPTION = 'Daily deterministic golden-ratio generative artworks from ALGO/ART in Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v4 and Action Painting v1.';
 
 function dateInZone(date = new Date()) {
