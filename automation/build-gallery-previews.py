@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Build compact deterministic daily gallery mosaics. Requires Pillow (pip install Pillow)."""
+"""Build compact deterministic daily gallery mosaics. Requires Pillow (pip install Pillow).
+
+The preview workflow also repairs any missing day mosaics after gallery updates.
+"""
 import argparse
 import json
 import math
