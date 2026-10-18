@@ -5,14 +5,12 @@ on:
     paths:
       - 'automation/generate-social.mjs'
       - 'automation/build-gallery.mjs'
-      - 'js/app.js'
       - 'tests/oil-future-version.test.mjs'
       - '.github/workflows/oil-future-version.yml'
   pull_request:
     paths:
       - 'automation/generate-social.mjs'
       - 'automation/build-gallery.mjs'
-      - 'js/app.js'
       - 'tests/oil-future-version.test.mjs'
       - '.github/workflows/oil-future-version.yml'
 jobs:

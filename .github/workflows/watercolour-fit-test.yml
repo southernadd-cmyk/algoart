@@ -4,7 +4,6 @@ on:
     branches: [main]
     paths:
       - 'js/watercolour-v2s.js'
-      - 'js/app.js'
       - 'js/export.js'
       - 'tests/watercolour-fit.test.mjs'
       - '.github/workflows/watercolour-fit-test.yml'

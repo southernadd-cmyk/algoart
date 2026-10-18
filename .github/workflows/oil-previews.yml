@@ -6,7 +6,6 @@ on:
       - 'js/oil-render.js'
       - 'js/oil-surface.js'
       - 'js/oil-material.js'
-      - 'js/app.js'
       - 'js/control-help.js'
       - 'js/generator.js'
       - 'js/marker.js'

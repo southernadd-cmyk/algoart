@@ -8,7 +8,6 @@ on:
     branches:
       - main
     paths:
-      - 'js/app.js'
       - 'js/generator.js'
       - 'js/export.js'
       - 'js/phi-sheet-fit.js'

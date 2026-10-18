@@ -5,7 +5,6 @@ on:
     paths:
       - 'js/oil-v1-core-*.js'
       - 'js/oil-paint-v1.js'
-      - 'js/app.js'
       - 'js/export.js'
       - 'js/describe.js'
       - 'js/control-help.js'

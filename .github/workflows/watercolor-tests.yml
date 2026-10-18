@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'automation/**'
-      - 'js/app.js'
       - 'tests/watercolor-*.test.mjs'
       - '.github/workflows/watercolor-live.yml'
       - '.github/workflows/social-live.yml'
