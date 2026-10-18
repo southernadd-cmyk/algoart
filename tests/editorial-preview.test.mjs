@@ -45,7 +45,7 @@ try{
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'mobile-390':'desktop-1440')+'.png',fullPage:true});
   console.log(mobile?'MOBILE':'DESKTOP',state);
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
-  const prod=await page.evaluate(()=>({welcome:!!document.querySelector('.welcome-layout'),controls:!!document.querySelector('#materialStyle'),sheet:!!document.querySelector('.studio-question'),width:document.documentElement.scrollWidth,viewport:innerWidth}));
+  const prod=await page.evaluate(()=>({welcome:!!document.querySelector('.welcome-layout'),controls:!!document.querySelector('#materialStyle'),sheet:!!document.querySelector('.algo-global-question'),width:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert(prod.welcome&&prod.controls&&prod.sheet,'Production studio must use editorial layout and preserve controls');
   if(!mobile){
    const order=await page.evaluate(()=>{const h=document.querySelector('#inspector > .inspector-head').getBoundingClientRect(),t=document.querySelector('#inspector > .tabs').getBoundingClientRect(),b=document.querySelector('#inspector > .tab-body').getBoundingClientRect();return {header:h.top,tabs:t.top,body:b.top,headerBottom:h.bottom,tabsBottom:t.bottom};});
