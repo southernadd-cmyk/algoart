@@ -21,6 +21,39 @@ if(queueIndex>=0){
     sources.push({file:path.resolve('gallery',day,'meta.json'),images:path.resolve('gallery',day)});
   }
 }
+
+// PR smoke coverage: choose representative archived artworks across every
+// material and composition engine, with both orientations where available.
+// Full archive validation remains available with --all (and workflow_dispatch).
+const representative=process.argv.includes('--representative');
+const archiveItems=[];
+for(const source of sources){
+  const metadata=JSON.parse(await fs.readFile(source.file,'utf8'));
+  for(const item of metadata.entries||[])archiveItems.push({source,item});
+}
+const materialOf=item=>{
+  const u=new URL(item.shareUrl);
+  const m=u.searchParams.get('material')||item.material||'marker';
+  return m.startsWith('watercolour')?'watercolour':
+    m.startsWith('watercolor')||m.startsWith('tissue')?'tissue':
+    m.startsWith('oil')?'oil':m.startsWith('action')?'action':'marker';
+};
+const selectedIds=new Set();
+if(representative){
+  const groups=new Map();
+  // Include materials, engines, and orientations, prefer newest editions.
+  for(const {item} of [...archiveItems].reverse()){
+    const mat=materialOf(item),mode=item.settings?.mode||new URL(item.shareUrl).searchParams.get('mode');
+    const orientation=item.settings?.orientation||new URL(item.shareUrl).searchParams.get('fmt')||'landscape';
+    for(const key of ['material:'+mat,'mode:'+mode,'orientation:'+orientation,
+                      'combination:'+mat+'|'+mode]){
+      if(!groups.has(key))groups.set(key,item.id);
+    }
+  }
+  for(const id of groups.values())selectedIds.add(id);
+  console.log('Representative archive selection: '+selectedIds.size+' artworks; '+groups.size+' covered categories');
+}
+
 if(!sources.length)throw Error('No archive metadata found');
 const report={browser:engine,limits,entries:[],failures:0};
 const browser=await runtime.launch({headless:true});
@@ -89,6 +122,7 @@ try{
     if(!Array.isArray(meta.entries)||!meta.entries.length)throw Error('Empty archive '+source.file);
     if(meta.count!==undefined&&meta.count!==meta.entries.length)throw Error('Archive count disagrees '+source.file);
     for(const item of meta.entries){
+      if(representative&&!selectedIds.has(item.id))continue;
       const row={id:item.id,seed:item.seed,url:item.shareUrl,version:item.rendererVersion};
       let bytes,result;
       try{
