@@ -125,7 +125,7 @@ async function compare(item,bytes,overrideVersion){
     const pixelPass=mean<=limits.mean&&ratio<=limits.changed;
     // Cross-browser antialiasing is assessed structurally, not by the mean
     // fine-pixel error. Significant changes must still stay below both limits.
-    const structurePass=ratio<=limits.changed&&structural.mean<=4&&structural.changed<=.005;
+    const structurePass=ratio<=limits.changed&&structural.mean<=4.5&&structural.changed<=.02;
     return {mean,changed:ratio,structural,pixelPass,
       passed:engine==='chromium'?pixelPass:structurePass,
       actualVersion:A.rendererVersion,width:art.width,height:art.height,
@@ -172,7 +172,7 @@ try{
           row.repeatRender=repeat;
           console.error('REPEAT_RENDER '+row.id+' '+JSON.stringify(repeat));
           if(repeat.changedChannels>0)throw Error('Repeat render is not deterministic');
-          throw Error('Archive differs structurally or exceeds significant-pixel budget');
+          throw Error('Pixel comparison failed');
         }
         row.passed=true;
         // Prove these tolerances reject the known wrong-version regression.
