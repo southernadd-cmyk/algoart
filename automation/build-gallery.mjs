@@ -7,7 +7,7 @@ const SITE_ORIGIN = 'https://southernadd-cmyk.github.io';
 const SITE_PATH = '/algoart';
 const SITE_URL = SITE_ORIGIN + SITE_PATH;
 const GALLERY_URL = SITE_URL + '/gallery';
-const GALLERY_DESCRIPTION = 'A new set of drawings every day. Open any piece, change its controls and make it your own.';
+const GALLERY_DESCRIPTION = 'A fresh collection each day. Open a drawing to see its seed and try another version.';
 const FEED_DESCRIPTION = 'A fresh set of ALGO/ART drawings every day. Browse marker, tissue and graphite, watercolour, oil paint and action painting, then open any piece to make it your own.';
 
 function dateInZone(date = new Date()) {
@@ -272,7 +272,7 @@ function archivePage(archive) {
 <main>
   <section class="hero archive-hero">
     <div class="kicker">PERMANENT DAILY ARCHIVE</div>
-    <h1>GENERATED DAILY.<br>BUILT TO BE REMIXED.</h1>
+    <h1>A DRAWING A DAY.<br>AND THEN SOME.</h1>
     <p>${escapeHtml(description)}</p>
     <div class="hero-meta"><span>${days.length} DAILY ${days.length === 1 ? 'EDITION' : 'EDITIONS'}</span><span>LATEST: ${latest ? latest.count : 0} STUDIES</span><span>EXACT STATES PRESERVED</span></div>
   </section>
