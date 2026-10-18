@@ -1,116 +1,71 @@
 # ALGO/ART
 
-**Mathematics sets the structure. Materials bring the texture.**
+**Can one number compose a drawing?**
 
-ALGO/ART is a browser-based generative art project built around the **golden ratio (φ ≈ 1.618)**. Eight composition systems use mathematical rules, seeded randomness and deliberate visual calibration; a separate material layer interprets those compositions as expressive marker ink, translucent tissue and graphite, textured watercolour, or loaded-bristle oil paint.
+ALGO/ART is an experimental drawing machine built around the golden ratio. It uses eight composition systems, repeatable seeds and five ways of making marks. Change the controls, compare the results and decide whether the mathematics helped.
 
-**Guiding question:** *How far can the golden ratio govern a composition while its marks remain visibly human?*
+There is no image-generation model behind the drawings. The compositions and marks are produced in JavaScript.
 
-[Open the editor](https://southernadd-cmyk.github.io/algoart/) · [Browse the Daily Gallery](https://southernadd-cmyk.github.io/algoart/gallery/)
+**[Open ALGO/ART](https://southernadd-cmyk.github.io/algoart/)** · **[Daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/)**
 
+## Make a drawing
 
-## Using ALGO/ART
+1. Choose a composition system and a drawing material in **Compose**.
+2. Change the parameters or seed. **Randomise** explores new settings; **Mutate** changes the current system; **4-Up** compares variations.
+3. Work in landscape (1400 × 1000) or portrait (1000 × 1400).
+4. Use **Reveal** to inspect the underlying proportion, **Describe** for the drawing's details, or **Export** to save and share it.
 
-1. Open the [editor](https://southernadd-cmyk.github.io/algoart/) and choose one of the eight composition systems.
-2. Adjust the composition, **Additional φ pull**, colour, paper and **Materials** controls. **Randomise** explores across all eight systems; **Mutate** changes the current system's settings, while **4-Up Variations** shows alternatives within the selected system.
-3. Choose **landscape (1400 × 1000)** or **portrait (1000 × 1400)**.
-4. Export as **PNG**, **SVG** or **Plotter SVG**, or copy a share link to reopen the same artwork.
+The first-visit welcome page shows an artwork selected from the newest daily gallery. You can open it again by clicking the ALGO/ART logo.
 
-Artworks are deterministic: the **renderer version + seed + settings** identify a reproducible state, including through shared URLs. Choose **Marker drawing**, **Tissue & Graphite**, **Watercolour (V2S)** or **Oil Paint v3** in Compose. Material selection does not alter source geometry; PNG exports the selected material, while SVG and plotter files preserve the underlying marker paths.
+A full-state link stores the renderer version, seed and settings. Old artworks are deliberately kept on their original renderers rather than silently updated.
 
-## The eight systems
+## Eight composition systems
 
-| System | Composition approach |
+| System | What it does |
 | --- | --- |
-| **Orbital Studies** | Scores candidate layouts using φ-related focal points, hierarchy and visual relationships. |
-| **Golden Trajectories** | Uses golden-angle movement and φ-informed expressive paths. |
-| **Recursive Divisions** | Divides the canvas into territories at golden sections. |
-| **Radiant Systems** | Builds radial arrangements around focal points with golden-angle steps. |
-| **Connected Fields** | Creates networks with φ-weighted distances and hierarchy. |
-| **Growth Systems** | Grows branching structures with golden-angle turns and φ-based decay. |
-| **Constructed Forms** | Arranges independent geometric shapes around φ-guided positions and scales. |
-| **Automatic Marks** | Organises loose, gestural strokes around φ-weighted anchors and negative space. |
+| Orbital Studies | Scores possible arrangements for balance, hierarchy and focal relationships. |
+| Golden Trajectories | Carries marks along curved paths informed by the golden angle. |
+| Recursive Divisions | Breaks the drawing surface into unequal rectangular territories. |
+| Radiant Systems | Sends forms and strokes outward from focal points. |
+| Connected Fields | Builds networks of marks and connections. |
+| Growth Systems | Branches outwards, changing direction and scale as it grows. |
+| Constructed Forms | Arranges geometric forms at different sizes and positions. |
+| Automatic Marks | Makes looser, gestural groups of strokes with controlled space between them. |
 
-The golden ratio governs aspects of composition; not every stroke or tuning value is a mathematical identity. The tension between those rules and the hand-drawn appearance is part of the experiment.
+φ informs proportion, placement and relationships; it is not a claim that every visual decision follows an inevitable mathematical rule. Some numbers are artistic calibration. [The calibration audit](CALIBRATION_AUDIT.md) distinguishes these.
 
-### Optional φ framing shared across the materials (14 October 2026)
+## Five drawing materials
 
-**φ framing** is a separate opt-in composition treatment for Marker,
-Tissue & Graphite, Watercolour V2S and Oil Paint v3. It operates on the source strokes
-before selecting the material, so the framed composition's PNG, SVG and
-plotter paths share the same positions.
+| Material | Character |
+| --- | --- |
+| Marker | Wobbly ink, pressure changes and dry strokes. |
+| Tissue & Graphite | Transparent colour, paper-like layers and fine pencil marks. |
+| Watercolour | Pigment flow, drying edges and paper texture. |
+| Oil Paint | Connected painted forms and loaded-bristle marks. |
+| Action Painting | Poured gestures, pools and scattered splashes. |
 
-The rule is deliberately asymmetric, rather than forcing every image to
-occupy 61.8% of the page:
+Materials interpret the same underlying composition differently, so the resulting image may change considerably. PNG captures the chosen material; ordinary SVG and plotter SVG preserve source marker geometry rather than imitating the material's raster texture.
 
-- **Sparse, below 1/φ ≈ 61.8% coverage:** enlarge, with at most φ× scaling.
-- **Comfortably sized, 61.8–85.4%:** retain the original scale.
-- **Full, above 1−1/φ⁴ ≈ 85.4%:** reduce gently towards 85.4%, never by
-  more than 1/φ⁴ ≈ 14.6%.
-- Move modestly toward the nearest golden-ratio focal point: φ⁻³ for
-  sparse designs, φ⁻⁴ otherwise; never stretch individual shapes.
+Current editor geometry is **renderer V9**. Watercolour **V2S** and Tissue & Graphite **V7** have version-preserving historical variants; the repository also retains earlier Oil revisions. Consult [Renderer and Material History](MATERIAL_HISTORY.md) for exact URL identifiers and cutover behaviour. Do not assume that an experimental brush version is the same thing as a published material version.
 
-The checkbox reports actual size and displacement. It is optional and
-saved only as `sheet=phi`; existing share links without this parameter
-remain unchanged. Historical Watercolour-only `fit=0/1` still works and
-is not compounded with shared framing. This is a **φ-inspired framing
-convention**, not an objective rule of the golden ratio.
+Optional φ sheet framing adjusts the scale and placement of the source composition without stretching individual forms. It is opt-in in the editor and recorded in links as `sheet=phi`. Historical links keep their earlier behaviour.
 
-**From 15 October 2026**, all *new* scheduled Marker, Tissue & Graphite,
-and Watercolour V2S gallery/social images explicitly enable shared φ framing
-(`sheet=phi`). Both portrait and landscape studies use exactly the same
-source-space transform in the generated JPEG, editor share URL, and SVG/plotter
-paths. The 09:00, 15:00 and 20:30 UK publishing slots remain as scheduled.
-This is a prospective automation choice: the interactive editor keeps its
-checkbox opt-in, and existing archived images, media releases and links are
-never retroactively rewritten. The cutoff is defined in
-`automation/phi-framing.mjs` and verified by
-`tests/daily-phi-framing.test.mjs`.
+## The daily gallery
 
-### φ-native Watercolour layouts and rendering efficiency (14 October 2026)
+The [gallery](https://southernadd-cmyk.github.io/algoart/gallery/) is a dated archive, not a selection of AI-generated example pictures. Entries retain their seed and settings so they can be opened in the editor.
 
-New Watercolour V2S artwork defaults to the original Marker generator's φ
-scale and placement, consistent with SVG/plotter export. The optional
-**Fit to sheet** control can enlarge/recentre compact Field, Network or
-Scribble work, or inset edge-reaching Rects. It visibly changes watercolour
-placement, **not** SVG source geometry, and the control explains this.
+The publishing process creates landscape and portrait studies in separate material batches. Social publishing uses the existing **09:00, 15:00 and 20:30 UK** slots with independent records for each platform. Counts and material mixes have changed during development; use the actual gallery edition rather than a hard-coded claim about the number of pieces made each day. Older files and shared links must remain usable.
 
-V2S share links now record `fit=0` (φ-native) or `fit=1` (fitted).
-Old V2S links without `fit` preserve the original auto-fitted rendition,
-and V2R links always use the frozen V2R renderer.
+## Save, share and plot
 
-The CPU paper-field rotation is memoized by seed, removing repeated trigonometric
-work per pixel. Browser tests compare cached and uncached results pixel-for-pixel
-at both fitting settings and report timings. This does not lower resolution,
-reduce simulation steps, or alter pigment physics.
+- **PNG:** exports the visible drawing material. On phones, use the prepared download if the browser needs a separate save tap.
+- **SVG:** keeps the vector source strokes.
+- **Plotter SVG:** provides faithful colour runs or pen-grouped layers and optional travel reduction. Digital previews are tested, but physical AxiDraw/Inkscape pen-change behaviour **has not been verified on hardware**.
+- **Share link:** reopens the same seeded artwork. Threads and Bluesky sharing are available from the editor; publication to social accounts is a separate automated process.
 
-### Source-colour matching: Watercolour V2S and Tissue & Graphite V7 (14 October 2026)
+## Run it locally
 
-The default Watercolour material is now **V2S**. It keeps V2R's conserved
-pigment transport, wet and dry edge physics, paper tooth and dry brush, but
-matches the colour of each source Marker chain and restores selected
-original open strokes. Chromatic source hues are translated into pigment
-hues; monochrome compositions keep V2R's approved greys. Existing
-`material=watercolour-v2r` URLs still invoke the original V2R renderer,
-while new compositions use `material=watercolour-v2s`. No existing saved
-artwork is silently re-rendered.
-
-**Tissue & Graphite V7** uses the same original Marker strokes to select
-tissue pigments. The larger atmospheric paper blooms are coloured by the
-nearest source strokes, rather than substituting the old generic
-ochre/olive/teal groups. Pencil/graphite and the V6 pale tissue treatment
-remain. Newly chosen Tissue artworks use `tissue=7`; `tissue=1..6`
-and legacy `watercolor=1` still reproduce their previous versions.
-
-New daily Tissue & Graphite images use V7 **from 15 October 2026**.
-The earlier scheduled editions (including 14 October V6) keep their original
-seed, renderer, JPEG, social posts and short links. Marker compositions and
-the SVG/plotter path export are unchanged. Paper colour remains independently
-selectable, cream by default.
-
-## Run locally
-
-The interactive editor is **static HTML, CSS and JavaScript**. It requires no JavaScript framework, build step, backend or API key. Serve the repository from a local HTTP server so gallery and other file requests work normally:
+The editor is static HTML, CSS and JavaScript. It does not need a backend or a frontend build process.
 
 ```bash
 git clone https://github.com/southernadd-cmyk/algoart.git
@@ -118,110 +73,41 @@ cd algoart
 python3 -m http.server 8000
 ```
 
-Then visit **http://localhost:8000/**. On Windows, `py -m http.server 8000` is an alternative if Python is installed.
+Open `http://localhost:8000/`. On Windows with Python installed, `py -m http.server 8000` is an alternative.
 
-### Project layout
-
-| Path | Purpose |
-| --- | --- |
-| `index.html`, `css/` | Editor interface and styles |
-| `js/phi.js`, `js/random.js` | φ geometry and seeded randomness |
-| `js/generator.js`, `js/marker.js` | Compositions and expressive mark rendering |
-| `js/watercolour-v2r.js` | Frozen released V2R Watercolour renderer for saved links |
-| `js/watercolour-v2s.js` | New source-colour-matched Watercolour with original open-line recovery |
-| `js/oil-v1-core-*.js`, `js/oil-paint-v1.js` | Released V5o source-connected Oil Paint v1: existing mathematical guide ownership and loaded V4e bristle contacts, Oil only |
-| `js/oil-material.js`, `js/oil-surface.js` | Historical Tissue renderers and V7 marker-colour-matched tissue blooms |
-| `js/app.js`, `js/control-help.js` | User controls, versioned URLs and interface guidance |
-| `js/export.js`, `js/plotter.js` | Image, SVG and plotter exports |
-| `gallery/`, `automation/` | Daily archive and optional publishing workflows |
-| `tests/` | Determinism, geometry, export and browser regression checks |
-
-## Development and tests
-
-For automated tests and gallery/social tooling, use **Node.js 22** and npm:
+Node.js 22 and npm are used for development checks and the gallery/publishing scripts:
 
 ```bash
 npm ci
 npm run test:control-ranges
-npm run test:orientation
-npm run test:organic-version
-npm run test:growth-v8
 npm run test:renderer-lock
 npm run test:plotter
-npm run test:tuning-equivalence
+npm run test:orientation
 ```
 
-The tuning-equivalence test compares generated drawings with a pinned historical Git commit; it needs that commit available in the local Git history. Browser-based archive and plotter-fidelity checks run in GitHub Actions across Chromium, Firefox and WebKit (see [the archive workflow](.github/workflows/archive-reproduction.yml)).
+Browser regression workflows also exercise Chromium, Firefox and WebKit. Some tests require pinned Git history or Playwright's browser installations. Do not regenerate an old baseline to make a breaking renderer change pass; publish a new renderer version instead.
 
-**Current renderer: V9.**
+## Where to look
 
-| Renderer | Status |
+| Location | Purpose |
 | --- | --- |
-| **V9** | Current editor; paper colour no longer changes seeded composition or pigments |
-| V8 | Preserved with its original paper-seeded geometry and historic Tissue cream background |
-| V1–V7 | Preserved for historical seeded artworks and exact shared links |
+| `index.html`, `css/` | Welcome page, editor and visual styling |
+| `js/generator.js`, `js/phi.js`, `js/random.js` | Composition, proportions and determinism |
+| `js/marker.js`, `js/*paint*.js`, `js/*watercolour*.js` | Mark-making and material rendering |
+| `js/app.js`, `js/describe.js` | Editor state, saved links and descriptions |
+| `js/export.js`, `js/plotter.js` | Exports and pen paths |
+| `gallery/`, `automation/` | Archived studies and scheduled publishing |
+| `tests/`, `.github/workflows/` | Automated verification |
 
-Historical renderer and material versions remain available so saved links reproduce their original artwork. See [Renderer and material history](MATERIAL_HISTORY.md) for revision details, compatibility rules and implementation notes.
+## Notes from development
 
-## Drawing materials
+**[Development diary](DEVELOPMENT_LOG.md)** records the experiments, failed approaches, technical decisions and releases. **[Material history](MATERIAL_HISTORY.md)** covers version compatibility in more detail. **[Calibration audit](CALIBRATION_AUDIT.md)** separates golden-ratio mathematics from artistic tuning; **[Tuning notes](TUNING.md)** document the exact-output constraints.
 
-**Five released material choices** are available in Compose. Oil Paint v4 is now the active Oil material; Oil Paint v1 was released on 15 October 2026, and is distinct from the older internal `oil-*` modules that render Tissue & Graphite.
+### Work still worth doing
 
+- Consolidate accumulated CSS overrides without disturbing the mobile controls or drawing overlay.
+- Continue improving the physical character and performance of the material renderers.
+- Verify plotter pauses and pen handling on real hardware.
+- Keep gallery images, share metadata and social previews aligned with the version that actually produced each picture.
 
-- **Marker drawing:** expressive ink with wobble, uneven weight, pressure and dryness.
-- **Tissue & Graphite:** translucent torn tissue, colour-matched atmospheric blooms and fine graphite, using the original seeded Marker palette on your selected paper (cream by default).
-- **Watercolour:** source-colour pigments and dry-brush details; V2S is current and V2R remains available for historic links.
-- **Action Painting v1 (17 October 2026):** curved poured-paint gestures, irregular pools and spatter reinterpreting the same source geometry. Its visible composition can differ considerably from Marker. Saved URLs use `material=action-v1`.
-- **Oil Paint (v4 current; v1 first released 15 October 2026):** actual loaded-bristle oil paint, connected masses selected from the original golden-ratio composition guide relationships, source-owned colour and preserved negative space. This is the tested Oil-only V5o/V5p/V5q interpretation, not a visual filter or AI-generated image. Oil is now selectable directly; newly shared Oil URLs use `material=oil-v4`. Marker, Watercolour and Tissue renderers, old URLs and scheduled publishing remain unchanged.
-
-All materials use the same seeded composition. From renderer V9, changing paper colour does not change the artwork's geometry or selected pigment colours, and switching materials preserves the paper choice. Published V1–V8 compositions remain version-locked. Choose the material in **Compose**, and adjust underlying stroke settings in **Materials** (formerly **Pen**). The **Mark-making tool** is labelled **Source mark profile** for Tissue & Graphite. Its seven choices use material-appropriate names such as Fine contours, Wide bands and Flat-edged bands, while retaining the exact underlying pen IDs and seeded source paths. The Materials sliders likewise describe source marks in Tissue mode; they do not simulate physical paper thickness, brushes or graphite pressure. Switching materials restores the original Marker labels without changing any setting values. **Randomise keeps the selected material.** PNG exports include the selected material; SVG and plotter exports retain the original marker paths.
-
-## Daily gallery and publication
-
-The daily gallery includes **four additional deterministic Tissue & Graphite studies** (historically called watercolour):
-two portrait and two landscape. The 04:15 UTC gallery build creates all four,
-and the existing London social slots publish them to configured platforms:
-
-| London slot | Tissue & Graphite additions |
-| --- | --- |
-| 09:00 | One portrait + one landscape |
-| 15:00 | None (existing marker and new Oil Paint v1 posts) |
-| 20:30 | One portrait + one landscape |
-
-Oil Paint v1 adds a separate daily portrait and landscape pair, generated each morning with independently seeded colour palettes and published in the existing **15:00 UK** social slot to configured Instagram, Threads and Bluesky accounts. No new social trigger is required. The ordinary five-landscape and five-portrait marker batches and their
-publishing times are unchanged, giving **14 Marker and Tissue studies** per complete day, plus **two Oil Paint v1 studies** (one portrait and one landscape), for **16 total studies** per complete day when all batches succeed.
-Oil's daily pair has independent archive records and safe-retry publishing state. Material batches have independent publication records and reuse the existing social triggers. Failed destinations are retried without reposting successful ones. Historical gallery entries and their saved media remain unchanged.
-
-Run `npm run test:watercolor-publishing` to check slot selection, short links, duplicate prevention and the combined archive. See [publication compatibility](MATERIAL_HISTORY.md#publication-compatibility-and-cutover) for historical IDs and cutover details.
-
-## PNG export on phones
-
-On mobile PNG export defaults to 1×; 3× is disabled on small screens. Tap
-**Prepare PNG**, then the visible **Download PNG** link. The PNG is encoded
-before the download tap, with no hidden programmatic click. **Open PNG to save
-manually** also opens the prepared image. Changing the artwork or export size
-clears the prepared file. Desktop PNG export remains one click.
-Touch-emulated browser tests cover repeated exports and closing/reopening the
-panel around Randomise; they do not verify Android Chrome’s download manager.
-
-## Plotter compatibility
-
-Plotter SVG supports faithful colour runs and grouping by pen, with light-to-dark pen identities and pen-change pause labels. **Actual Inkscape/AxiDraw behaviour has not been hardware-tested.** See [issue #40](https://github.com/southernadd-cmyk/algoart/issues/40) to help verify pauses, Resume and individually selected numbered layers.
-
-## Further documentation
-
-- **[Development Log](DEVELOPMENT_LOG.md)** — the full original README, preserved verbatim, including design decisions, renderer history, gallery/social workflows and detailed tests.
-- **[Renderer and Material History](MATERIAL_HISTORY.md)** — material-version cutovers, legacy URL rules, and the Oil v1 release.
-- **[Calibration Audit](CALIBRATION_AUDIT.md)** — which numbers are genuine φ mathematics, artistic calibration or rendering mechanics.
-- **[Tuning History](TUNING.md)** — numerical extraction and exact-output compatibility notes.
-
-**Published renderer versions are immutable.** The V8 output is locked against the permanently pinned source commit `395e473a826d7c481fde2e0198f753467332b04b` by `npm run test:renderer-lock`. The check compares 144 representative renderings in the same runtime, including native canvas operations, Reveal metadata and plotter SVG pen paths. It runs on pull requests through the lightweight control-range regression workflow (not the browser matrix). Never refresh the reference commit to make changed V8 output pass: introduce V9 for changed rendering behaviour, preserve the V8 code path, and add a corresponding lock for V9 after publication. Archived JPEG reproduction remains a separate browser regression check.
-
-The guard freezes the documented V8 baseline as of 12 October 2026; it cannot retroactively restore any V8 links shared between V8's first publication and the interior-root amendment `da79010`.
-
-The supported renderer versions are declared in `js/app.js` and validated when the editor renders. When introducing V9 or later, update this list together with the renderer's version-specific dispatch and archive regression fixtures. Do not silently interpret an unknown `?v=` as a new renderer; legacy URLs and pinned outputs must stay stable.
-
-
-### Oil Paint V3 release (16 October 2026)
-
-Oil Paint V3 is the default Oil material in Compose, using the adaptive V3h brush with denser loaded bristle contacts, canvas-tooth dry-brush breakup and a faster twelve-hair path for narrow strokes. Newly created share links use `material=oil-v3`; existing `oil-v1` and `oil-v2` links retain their original renderers. Oil artworks generated for the daily gallery on and after 17 October 2026 use Oil V3 for portrait and landscape, with version-labelled captions. Historical gallery records remain unchanged.
+ALGO/ART is an ongoing experiment. The intention is not to prove that φ makes better art, but to make that claim something you can test by looking and drawing.
