@@ -247,6 +247,14 @@ jobs:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run gallery:build
 
+      - name: Build and verify daily archive preview before publishing
+        if: steps.gate.outputs.should_run == 'true' && github.ref == 'refs/heads/main' && inputs.live == true
+        shell: bash
+        run: |
+          python -m pip install 'Pillow==11.3.0'
+          python automation/build-gallery-previews.py --date "${{ steps.gate.outputs.date }}" --force
+          test -s "gallery/${{ steps.gate.outputs.date }}/archive-preview.jpg"
+
       - name: Publish gallery update to GitHub Pages source
         id: gallery_commit
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
