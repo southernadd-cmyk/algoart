@@ -10,7 +10,6 @@ on:
   pull_request:
     paths:
       - 'js/action-painting-v1.js'
-      - 'js/app.js'
       - 'automation/**'
       - 'tests/action-release-smoke.mjs'
       - '.github/workflows/action-release-smoke.yml'
