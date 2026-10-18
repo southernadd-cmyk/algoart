@@ -1,7 +1,7 @@
 {
   "version": 1,
   "date": "2026-10-18",
-  "count": 17,
+  "count": 18,
   "series": [
     "Radiant Systems",
     "Connected Fields",
@@ -847,6 +847,56 @@
         "grain": 13
       },
       "altText": "Action painting from ALGO/ART's Growth Systems system, seed ACL-20261018-01-67793. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
+    },
+    {
+      "id": "2026-10-18-ACP01",
+      "title": "Connected Fields — Action Painting Study 18",
+      "orientation": "portrait",
+      "material": "action",
+      "seed": "ACP-20261018-01-15023",
+      "mode": "network",
+      "series": "Connected Fields",
+      "imageFile": "2026-10-18-action-portrait-01-network-ACP-20261018-01-15023.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACP-20261018-01-15023&mode=network&fmt=portrait&el=53&den=51&cx=58&neg=43&phi=99&rec=8&spi=59&ga=90&nest=38&pen=broad&th=12&wob=44&od=3&op=88&pr=48&dry=29&curve=81&shape=60&overlap=57&rot=88&ln=1&ci=1&re=1&po=1&ar=1&pal=golden&cols=6&sat=68&bri=54&paper=%23f5f0e6&grain=27&material=action-v2&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "network",
+        "orientation": "portrait",
+        "series": "Connected Fields",
+        "seed": "ACP-20261018-01-15023",
+        "elements": 53,
+        "density": 51,
+        "complexity": 58,
+        "negativeSpace": 43,
+        "phiStrength": 99,
+        "recursion": 8,
+        "spiralInfluence": 59,
+        "goldenAngle": 90,
+        "nesting": 38,
+        "pen": "broad",
+        "thickness": 12,
+        "wobble": 44,
+        "overdraw": 3,
+        "opacity": 88,
+        "pressure": 48,
+        "dryness": 29,
+        "curveBias": 81,
+        "shapeAmount": 60,
+        "overlap": 57,
+        "rotation": 88,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "golden",
+        "colourCount": 6,
+        "saturation": 68,
+        "brightness": 54,
+        "paper": "#f5f0e6",
+        "grain": 27
+      },
+      "altText": "Action painting from ALGO/ART's Connected Fields system, seed ACP-20261018-01-15023. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
