@@ -905,10 +905,6 @@ function showEthosIfNeeded(){
 }
 
 $('ethosClose').onclick=dismissEthos;
-$('ethosReveal').onclick=function(){
-  setGeometryVisible(true);
-  dismissEthos();
-};
 
 $('mutate').onclick=function(){
   useCurrentRenderer();
@@ -1503,7 +1499,6 @@ loadLatestGalleryDefault().then(function(changed){
     if(reveal)setGeometryVisible(true);
   }
   $('introEnter').onclick=function(){closeIntro(false)};
-  $('introReveal').onclick=function(){closeIntro(true)};
   var welcomeLogo=$('welcomeLogo');
   if(welcomeLogo)welcomeLogo.addEventListener('click',function(){
     if(splash.hidden)beginDialog(splash,$('introEnter'));
