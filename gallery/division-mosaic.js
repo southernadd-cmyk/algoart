@@ -46,7 +46,8 @@
       const img = document.createElement('img');
       img.src = './' + date + '/' + entry.imageFile;
       img.alt = '';
-      img.loading = 'lazy';
+      img.loading = card === document.querySelector('.day-card') ? 'eager' : 'lazy';
+      img.fetchPriority = 'low';
       img.decoding = 'async';
       tile.append(img);
       mosaic.append(tile);
@@ -55,14 +56,44 @@
     card.classList.remove('portrait');
     card.classList.add('has-division-mosaic');
   }
-  document.querySelectorAll('.day-card').forEach(card => {
+  // Keep initial navigation responsive. The old implementation fetched metadata
+  // for every day at once and immediately constructed hundreds of full-size images.
+  const cards = [...document.querySelectorAll('.day-card')];
+  const jobs = [];
+  const queued = new WeakSet();
+  let active = 0;
+  const LIMIT = 2;
+  function pump() {
+    while (active < LIMIT && jobs.length) {
+      const {card,date} = jobs.shift();
+      active++;
+      fetch('./' + date + '/meta.json', {priority:'low'})
+        .then(response => { if (!response.ok) throw new Error('metadata unavailable'); return response.json(); })
+        .then(meta => { if (Array.isArray(meta.entries)) build(card,date,meta.entries); })
+        .catch(() => { /* The existing single-image cover remains available. */ })
+        .finally(() => { active--; pump(); });
+    }
+  }
+  function enqueue(card) {
+    if (queued.has(card)) return;
     const link = card.querySelector('a[href]');
-    const match = link?.getAttribute('href')?.match(/^\.\/([0-9]{4}-[0-9]{2}-[0-9]{2})\/$/);
+    const match = link?.getAttribute('href')?.match(/^\\.\\/([0-9]{4}-[0-9]{2}-[0-9]{2})\\/$/);
     if (!match) return;
-    const date = match[1];
-    fetch('./' + date + '/meta.json')
-      .then(response => { if (!response.ok) throw new Error('metadata unavailable'); return response.json(); })
-      .then(meta => { if (Array.isArray(meta.entries)) build(card,date,meta.entries); })
-      .catch(() => { /* Keep the existing single-image cover as a fallback. */ });
-  });
+    queued.add(card);
+    jobs.push({card,date:match[1]});
+    pump();
+  }
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        observer.unobserve(entry.target);
+        enqueue(entry.target);
+      }
+    }, {rootMargin:'400px 0px'});
+    cards.forEach(card => observer.observe(card));
+  } else {
+    // Small, deferred batches on older browsers.
+    cards.forEach((card,i) => setTimeout(() => enqueue(card),i*250));
+  }
 })();
