@@ -15,7 +15,6 @@ on:
       - 'js/export.js'
       - 'js/control-help.js'
       - 'js/describe.js'
-      - 'index.html'
       - 'tests/watercolour-material-release.mjs'
       - 'tests/materials-ui.test.mjs'
       - '.github/workflows/watercolour-v2r-release.yml'
