@@ -180,3 +180,38 @@ body>header:not(.site-head):not(.toolbar) [data-algo-nav] .algo-nav-ink{
  body>.site-head [data-algo-nav] .algo-nav-ink,
  body>header:not(.site-head):not(.toolbar) [data-algo-nav] .algo-nav-ink{height:9px!important}
 }
+
+
+/* SINGLE HEADER — one selector and one DOM structure across all three pages. */
+body .algo-global-header,body .algo-global-header.toolbar,body>.algo-global-header{
+ display:flex!important;position:relative!important;align-items:center!important;
+ flex-direction:row!important;flex-wrap:nowrap!important;align-content:center!important;
+ box-sizing:border-box!important;width:100%!important;max-width:none!important;
+ height:72px!important;min-height:72px!important;
+ margin:0!important;padding:0 clamp(12px,2.2vw,32px)!important;
+ gap:clamp(10px,1.7vw,24px)!important;
+ background:#ece7d9!important;border:0!important;border-bottom:1px solid #b8b09f!important;
+ box-shadow:none!important;z-index:10;
+}
+body .algo-global-header .algo-global-brand{display:flex!important;align-items:center!important;flex:0 0 auto!important;min-width:0!important;padding:0!important;border:0!important}
+body .algo-global-header .algo-global-brand .brand{
+ display:block!important;width:auto!important;min-width:0!important;margin:0!important;padding:0!important;border:0!important;
+ color:#403931!important;font:normal 27px/1 'AlgoArt Marker',sans-serif!important;letter-spacing:0!important;text-decoration:none!important;white-space:nowrap!important
+}
+body .algo-global-header .algo-global-brand .brand span{color:#b65368!important}
+body .algo-global-header .algo-global-numbers{display:flex!important;align-items:center!important;gap:9px!important;flex:0 0 auto!important;min-width:0!important;white-space:nowrap!important;color:#403931!important;font:10px/1.2 'Courier New',monospace!important}
+body .algo-global-header .algo-number-slash{font-size:19px!important;line-height:1!important}
+body .algo-global-header .algo-global-question{display:block!important;flex:1 1 auto!important;min-width:0!important;max-width:none!important;margin:0!important;padding:0!important;color:#403931!important;font:italic 13px/1.3 Georgia,serif!important;white-space:nowrap!important;text-align:center!important}
+body .algo-global-header .algo-site-nav{display:flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:flex-end!important;gap:clamp(8px,1vw,18px)!important;min-width:0!important;margin:0!important;padding:0!important}
+body .algo-global-header .algo-site-nav [data-algo-nav]{border:0!important;padding:3px 0!important;margin:0!important;background:none!important;color:#403931!important;min-width:0!important}
+body .algo-global-header .algo-site-nav .algo-nav-ink{height:15px!important;width:auto!important;max-width:100%!important}
+body .algo-global-header .welcome-logo-trigger{font:inherit!important;color:inherit!important}
+@media(max-width:1100px){body .algo-global-header .algo-global-question{font-size:11px!important}body .algo-global-header .algo-global-numbers{font-size:9px!important;gap:5px!important}}
+@media(max-width:850px){body .algo-global-header,body .algo-global-header.toolbar{height:86px!important;min-height:86px!important;flex-wrap:wrap!important;align-content:center!important;justify-content:space-between!important;row-gap:8px!important;padding:8px 12px!important}
+body .algo-global-header .algo-global-brand .brand{font-size:20px!important}
+body .algo-global-header .algo-global-numbers{display:none!important}
+body .algo-global-header .algo-global-question{order:3!important;flex:0 0 100%!important;text-align:left!important;font-size:12px!important}
+body .algo-global-header .algo-site-nav{margin-left:auto!important;gap:8px!important}
+body .algo-global-header .algo-site-nav .algo-nav-ink{height:10px!important}
+}
+@media(max-width:390px){body .algo-global-header .algo-global-brand .brand{font-size:16px!important}body .algo-global-header .algo-site-nav{gap:5px!important}body .algo-global-header .algo-site-nav .algo-nav-ink{height:9px!important}}
