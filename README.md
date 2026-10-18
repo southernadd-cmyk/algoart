@@ -58,9 +58,15 @@ A full-state link stores the renderer version, seed and settings. Old artworks a
 
 Materials interpret the same underlying composition differently, so the resulting image may change considerably. PNG captures the chosen material; ordinary SVG and plotter SVG preserve source marker geometry rather than imitating the material's raster texture.
 
-Current editor geometry is **renderer V9**. Watercolour **V2S** and Tissue & Graphite **V7** have version-preserving historical variants; the repository also retains earlier Oil revisions. Consult [Renderer and Material History](MATERIAL_HISTORY.md) for exact URL identifiers and cutover behaviour. Do not assume that an experimental brush version is the same thing as a published material version.
+**Current renderer: V9.** Current editor geometry uses renderer V9. Watercolour **V2S** and Tissue & Graphite **V7** have version-preserving historical variants; the repository also retains earlier Oil revisions. Consult [Renderer and Material History](MATERIAL_HISTORY.md) for exact URL identifiers and cutover behaviour. Do not assume that an experimental brush version is the same thing as a published material version.
 
 Optional φ sheet framing adjusts the scale and placement of the source composition without stretching individual forms. It is opt-in in the editor and recorded in links as `sheet=phi`. Historical links keep their earlier behaviour.
+
+## Renderer history at a glance
+
+| Version | Role |
+| --- | --- |
+| **V9** | Current editor geometry; preserves the deterministic composition and recorded material settings. |
 
 ## The daily gallery
 
