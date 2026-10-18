@@ -1490,7 +1490,7 @@ function loadWelcomeArtworks(){
       if(imageUrl.origin!==location.origin)return null;
       var link=card.querySelector('.art-image-link[href]');
       var artUrl=link?new URL(link.getAttribute('href'),result.url):null;
-      return {src:imageUrl.href,alt:img.alt||'An ALGO/ART gallery drawing',title:heading.textContent.trim(),artUrl:artUrl&&artUrl.origin===location.origin?artUrl.href:null};
+      return {src:imageUrl.href,alt:img.alt||'An ALGO/ART gallery drawing',title:heading.textContent.trim(),width:Number(img.getAttribute('width'))||0,height:Number(img.getAttribute('height'))||0,artUrl:artUrl&&artUrl.origin===location.origin?artUrl.href:null};
     }).filter(Boolean);
   }).catch(function(){return [];});
   return welcomeArtworkPromise;
@@ -1511,8 +1511,21 @@ function chooseWelcomeArtwork(){
     welcomePreparedArtworkUrl=null;
     var serial=++welcomeSelectionSerial;
     image.style.visibility='hidden';
+    // Use the selected gallery image's dimensions; confirm against decoded pixels.
+    function setWelcomeOrientation(width,height){
+      if(serial!==welcomeSelectionSerial)return;
+      var portrait=height>width;
+      image.style.aspectRatio=width>0&&height>0?width+' / '+height:'auto';
+      image.style.width='auto';
+      image.style.height='auto';
+      image.parentElement.classList.toggle('welcome-portrait',portrait);
+      image.parentElement.classList.toggle('welcome-landscape',!portrait);
+    }
+    if(selected.width&&selected.height)setWelcomeOrientation(selected.width,selected.height);
     image.onload=function(){
-      if(serial===welcomeSelectionSerial)image.style.visibility='visible';
+      if(serial!==welcomeSelectionSerial)return;
+      if(image.naturalWidth&&image.naturalHeight)setWelcomeOrientation(image.naturalWidth,image.naturalHeight);
+      image.style.visibility='visible';
     };
     image.onerror=function(){image.style.visibility='hidden';};
     image.alt=selected.alt;
