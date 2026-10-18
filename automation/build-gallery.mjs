@@ -178,7 +178,7 @@ function dayPage(queue) {
 </head>
 <body>
 <header class="algo-global-header">
-  <div class="algo-global-brand"><a class="brand" href="../../">ALGO<span>/</span>ART</a></div>
+  <div class="algo-global-brand"><a class="brand" href="../../">PROPORTION PIECE</a></div>
   <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
   <p class="algo-global-question">Can one number compose a drawing?</p>
   <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../" aria-current="page">daily gallery</a><a data-algo-nav href="../../about/">how it works</a></nav>
@@ -266,7 +266,7 @@ function archivePage(archive) {
 </head>
 <body>
 <header class="algo-global-header">
-  <div class="algo-global-brand"><a class="brand" href="../">ALGO<span>/</span>ART</a></div>
+  <div class="algo-global-brand"><a class="brand" href="../">PROPORTION PIECE</a></div>
   <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
   <p class="algo-global-question">Can one number compose a drawing?</p>
   <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../">try it out</a><a data-algo-nav href="./" aria-current="page">daily gallery</a><a data-algo-nav href="../about/">how it works</a></nav>
@@ -282,7 +282,7 @@ function archivePage(archive) {
     ${cards || '<p class="empty">The first daily edition is being generated.</p>'}
   </section>
 </main>
-<footer><a href="../">← OPEN GENERATOR</a><span>@artalgorithm</span><span>PROPORTION PIECE DAILY ARCHIVE</span></footer>
+<footer><a href="../">← Make a drawing</a><span>@artalgorithm</span><span>PROPORTION PIECE DAILY ARCHIVE</span></footer>
 
 </body>
 </html>`;
