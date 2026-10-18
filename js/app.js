@@ -225,24 +225,22 @@ function syncMaterialNote(){
     phiInfo.textContent='Off · original source geometry and placement.';
   var note=$('materialStyleNote');
   if(!note)return;
-  note.textContent=(actionPaintingEnabled()?'Action Painting: geometry-guided flowing paint, irregular pools and radial splashes. Palette and Colours settings are respected.'
+  note.textContent=(actionPaintingEnabled()
+    ?'Action Painting — poured colour, splashes and paint that runs into unexpected places.'
     :watercolourEnabled()
-    ?'Watercolour pigments on textured paper, with wet washes, drying edges and expressive dry brushwork.'+
-      (watercolourV2SFamily()?
-      (phiSheetFraming?' Shared φ framing applies to the source geometry and SVG/plotter too.':
-      watercolourFitToSheet?' Legacy Watercolour fit-to-sheet is ON and changes its PNG, not its source SVG.':
-        ' Source scale and placement match the Marker/plotter φ composition.')+
-      (watercolourMaterialRevision==='v2t'?' Watercolour V2T preview: V2S drawing on a CPU canvas backend.':'') :
-      ' Archived V2R includes automatic fitting and may differ from the Marker/plotter layout.')
-    :oilPaintV4Enabled()?'Oil Paint v4: consistent oil brushwork rendered on CPU-backed canvases.'
-    :oilPaintV3Enabled()?'Oil Paint v3: adaptive physical bristles with canvas-tooth contact and relief following the same φ composition.'
-    :oilPaintV2Enabled()?'Oil Paint v2: individually varied loaded bristles, connected colour fields and relief following the same φ composition.'
-    :oilPaintV1Enabled()?'Oil Paint v1 (legacy): original loaded-bristle paint and connected colour fields. Saved V1 links retain their original appearance.'
-    :oilEnabled()?'Translucent tissue matched to source Marker colours, with fine graphite and colour-matched blooms.'+
-      (tissuePaletteVersion===8?' Tissue V8 preview: V7 drawing on a CPU canvas backend.':'')
-    :'Marker ink with hand-drawn wobble, pressure and imperfect strokes.')+
-    (phiSheetFraming&&!(watercolourEnabled()&&watercolourV2SFamily())?' Optional shared φ framing is on and affects all media, SVG and plotter exports.':'')+
-    ' PNG saves the visible material; SVG and plotter exports retain the original marker paths.';
+    ?'Watercolour — soft washes, colours bleeding together and dry brush marks on paper.'+
+      (watercolourV2SFamily()
+        ?(phiSheetFraming?' Fit to φ is on for the drawing and its exports.':
+          watercolourFitToSheet?' The older watercolour fit changes the PNG only, not the SVG.':'')
+        :( ' Older saved watercolour links may place the drawing differently.'))
+    :oilPaintEnabled()
+    ?'Oil Paint — thick brushstrokes, visible bristle marks and colour built up in layers.'
+    :oilEnabled()
+    ?'Tissue & Graphite — thin layers of colour, pencil-like shading and soft edges.'
+    :'Marker Drawing — uneven lines, changing pressure and the odd dry patch of ink.')+
+    (phiSheetFraming&&!(watercolourEnabled()&&watercolourV2SFamily())
+      ?' Fit to φ is on for the drawing and its exports.':'')+
+    ' PNG keeps the paint and paper textures. SVG and plotter files keep the drawn lines.';
 }
 function renderArtwork(target,settings,scale,reveal){
   A.phiFramingEnabled=phiSheetFraming&&
