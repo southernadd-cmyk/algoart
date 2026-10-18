@@ -26,5 +26,13 @@ jobs:
           git add social-card.png
           if ! git diff --cached --quiet; then
             git commit -m "Refresh social preview PNG for PROPORTION PIECE"
-            git push
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase origin main
+              if git push origin HEAD:main; then
+                exit 0
+              fi
+              echo "Remote moved during push (attempt $attempt); retrying"
+            done
+            echo "Could not push preview after five attempts" >&2
+            exit 1
           fi
