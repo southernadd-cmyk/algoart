@@ -13,3 +13,10 @@
 .toolbar .algo-site-nav [data-algo-nav][aria-current="page"]{border-bottom:2px solid var(--orange)}
 @media(max-width:1100px){.toolbar .formula-strip,.toolbar .studio-question{display:none}.toolbar .algo-site-nav{gap:12px;padding:0 12px}}
 @media(max-width:700px){.toolbar .algo-site-nav{gap:6px;padding:0 5px;justify-content:flex-end}.toolbar .algo-site-nav [data-algo-nav] .algo-nav-ink{height:11px}}
+
+/* Match the editorial Gallery and How It Works top bars exactly. */
+.site-head nav,body>header:not(.site-head):not(.toolbar) nav{display:flex;align-items:center;gap:23px;flex-wrap:nowrap;margin-left:auto}
+.site-head nav [data-algo-nav],body>header:not(.site-head):not(.toolbar) nav [data-algo-nav]{font-style:normal!important;text-transform:none!important;padding:0!important;border:0!important;min-width:0}
+.site-head nav [data-algo-nav] .algo-nav-ink,body>header:not(.site-head):not(.toolbar) nav [data-algo-nav] .algo-nav-ink{height:17px}
+@media(max-width:780px){.site-head nav,body>header:not(.site-head):not(.toolbar) nav{gap:10px}.site-head nav [data-algo-nav] .algo-nav-ink,body>header:not(.site-head):not(.toolbar) nav [data-algo-nav] .algo-nav-ink{height:11px}}
+@media(max-width:390px){.site-head nav,body>header:not(.site-head):not(.toolbar) nav{gap:6px}.site-head nav [data-algo-nav] .algo-nav-ink,body>header:not(.site-head):not(.toolbar) nav [data-algo-nav] .algo-nav-ink{height:9px}body>header:not(.site-head):not(.toolbar) .wordmark{font-size:20px}}
