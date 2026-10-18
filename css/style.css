@@ -2304,3 +2304,8 @@ button{font-family:Georgia,serif}
 .editorial-welcome .welcome-description{font-family:"Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;line-height:1.55}
 .editorial-welcome .welcome-right figcaption{font-family:"Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;font-size:13px;line-height:1.45}
 @media(max-width:590px){.editorial-welcome .welcome-description{font-size:13px;line-height:1.5}.editorial-welcome .welcome-right figcaption{font-size:12px;line-height:1.45}}
+
+/* A legacy renderer badge must never squeeze or truncate the artwork caption. */
+.editorial-preview .canvas-wrap .stats:has(.renderer-chip:not([hidden])){flex-wrap:wrap;column-gap:8px;row-gap:4px;max-width:min(540px,calc(100vw - 24px));width:max-content;overflow:visible}
+.editorial-preview .canvas-wrap .stats:has(.renderer-chip:not([hidden])) #statsText{flex:1 1 100%;min-width:0;max-width:100%;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word}
+.editorial-preview .canvas-wrap .stats:has(.renderer-chip:not([hidden])) .renderer-chip{margin-inline:auto;flex:0 0 auto}
