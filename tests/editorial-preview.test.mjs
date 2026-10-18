@@ -47,6 +47,12 @@ try{
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
   const prod=await page.evaluate(()=>({welcome:!!document.querySelector('.welcome-layout'),controls:!!document.querySelector('#materialStyle'),sheet:!!document.querySelector('.studio-question'),width:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert(prod.welcome&&prod.controls&&prod.sheet,'Production studio must use editorial layout and preserve controls');
+  if(!mobile){
+   const order=await page.evaluate(()=>{const h=document.querySelector('#inspector > .inspector-head').getBoundingClientRect(),t=document.querySelector('#inspector > .tabs').getBoundingClientRect(),b=document.querySelector('#inspector > .tab-body').getBoundingClientRect();return {header:h.top,tabs:t.top,body:b.top,headerBottom:h.bottom,tabsBottom:t.bottom};});
+   assert(order.headerBottom<=order.tabs+3&&order.tabsBottom<=order.body+3,'Desktop Parameters header must precede tabs and content: '+JSON.stringify(order));
+   await page.screenshot({path:'editorial-preview-results/production-parameters-desktop.png'});
+  }
+
   assert(prod.width<=prod.viewport+2,'Production studio horizontal overflow');
   await page.goto('http://127.0.0.1:4173/gallery/2026-10-17/',{waitUntil:'domcontentloaded'});
   const day=await page.evaluate(()=>({css:[...document.styleSheets].some(x=>x.href?.includes('editorial.css')),cards:document.querySelectorAll('.art-card').length,width:document.documentElement.scrollWidth,viewport:innerWidth,remix:!!document.querySelector('.art-card .remix')}));
