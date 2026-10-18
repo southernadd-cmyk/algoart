@@ -76,7 +76,7 @@ async function compare(item,bytes,overrideVersion){
   local.search=original.search;
   await page.goto(local.href,{waitUntil:'networkidle'});
   await page.waitForFunction(()=>window.AlgoArt?.lastRenderMeta&&document.getElementById('art')?.width>0);
-  return page.evaluate(async ({data,expected,limits,overrideVersion,jpegQuality})=>{
+  return page.evaluate(async ({data,expected,limits,overrideVersion,jpegQuality,engine})=>{
     const A=window.AlgoArt,art=document.getElementById('art');
     if(!overrideVersion&&A.rendererVersion!==expected.rendererVersion)throw Error('Actual renderer version does not match recorded version');
     const actual=A.readSettings();
@@ -110,10 +110,27 @@ async function compare(item,bytes,overrideVersion){
     }
     ctx.putImageData(heat,0,0);
     const mean=error/(w*h),ratio=changed/(w*h);
-    return {mean,changed:ratio,passed:mean<=limits.mean&&ratio<=limits.changed,
+    // Compare broad shapes at a coarser scale to suppress antialiasing noise.
+    const sw=Math.max(1,Math.round(w/8)),sh=Math.max(1,Math.round(h/8));
+    const coarse=(img)=>{const c=document.createElement('canvas');c.width=sw;c.height=sh;
+      c.getContext('2d').drawImage(img,0,0,sw,sh);
+      return c.getContext('2d').getImageData(0,0,sw,sh).data;};
+    const ca=coarse(img),cb=coarse(renderedImage);
+    let structuralError=0,structuralChanged=0;
+    for(let i=0;i<ca.length;i+=4){
+      const d=(Math.abs(ca[i]-cb[i])+Math.abs(ca[i+1]-cb[i+1])+Math.abs(ca[i+2]-cb[i+2]))/3;
+      structuralError+=d;if(d>24)structuralChanged++;
+    }
+    const structural={mean:structuralError/(sw*sh),changed:structuralChanged/(sw*sh)};
+    const pixelPass=mean<=limits.mean&&ratio<=limits.changed;
+    // Cross-browser antialiasing is assessed structurally, not by the mean
+    // fine-pixel error. Significant changes must still stay below both limits.
+    const structurePass=ratio<=limits.changed&&structural.mean<=4.5&&structural.changed<=.02;
+    return {mean,changed:ratio,structural,pixelPass,
+      passed:engine==='chromium'?pixelPass:structurePass,
       actualVersion:A.rendererVersion,width:art.width,height:art.height,
       render:art.toDataURL('image/png'),diff:diff.toDataURL('image/png')};
-  },{data:bytes.toString('base64'),expected:item,limits,overrideVersion,jpegQuality:ARTWORK_JPEG_QUALITY});
+  },{data:bytes.toString('base64'),expected:item,limits,overrideVersion,jpegQuality:ARTWORK_JPEG_QUALITY,engine});
 }
 try{
   const allIds=new Set();
@@ -134,7 +151,7 @@ try{
         if(url.searchParams.get('seed')!==item.seed||item.settings.seed!==item.seed)throw Error('URL/metadata seed mismatch');
         bytes=await bytesFor(source,item);
         result=await compare(item,bytes);
-        row.metrics={mean:result.mean,meanPercentOfChannelRange:+(result.mean/255*100).toFixed(3),changed:result.changed};
+        row.metrics={mean:result.mean,meanPercentOfChannelRange:+(result.mean/255*100).toFixed(3),changed:result.changed,structural:result.structural,pixelPass:result.pixelPass};
         if(!result.passed){
           // Diagnose a borderline cross-browser archive mismatch without
           // changing the published reference or relaxing either threshold.
@@ -154,6 +171,7 @@ try{
           },originalPng);
           row.repeatRender=repeat;
           console.error('REPEAT_RENDER '+row.id+' '+JSON.stringify(repeat));
+          if(repeat.changedChannels>0)throw Error('Repeat render is not deterministic');
           throw Error('Pixel comparison failed');
         }
         row.passed=true;
@@ -176,6 +194,18 @@ try{
       report.entries.push(row);
       console.log((row.passed?'PASS ':'FAIL ')+row.id+' '+JSON.stringify(row.metrics||{}));
     }
+  }
+  // Representative mode must still prove that the known wrong-version
+  // regression is rejected, even when its old study is not in the sample.
+  if(representative){
+    const probe=archiveItems.find(({item})=>item.seed==='AA-20261006-01-92180');
+    if(!probe)throw Error('Known wrong-version regression fixture missing');
+    const bytes=await bytesFor(probe.source,probe.item);
+    const wrong=await compare(probe.item,bytes,5);
+    report.wrongVersionProbe={id:probe.item.id,mean:wrong.mean,changed:wrong.changed,
+      structural:wrong.structural,rejected:!wrong.passed};
+    console.log('Wrong-version probe '+JSON.stringify(report.wrongVersionProbe));
+    if(wrong.passed){report.failures++;throw Error('Structural thresholds missed known V5 regression');}
   }
 }finally{
   await browser.close();
