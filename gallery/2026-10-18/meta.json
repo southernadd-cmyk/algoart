@@ -1,11 +1,12 @@
 {
   "version": 1,
   "date": "2026-10-18",
-  "count": 4,
+  "count": 5,
   "series": [
     "Radiant Systems",
     "Connected Fields",
-    "Recursive Divisions"
+    "Recursive Divisions",
+    "Growth Systems"
   ],
   "entries": [
     {
@@ -201,6 +202,55 @@
         "grain": 21
       },
       "altText": "Abstract algorithmic marker artwork from ALGO/ART’s Radiant Systems series. 1 radiating hub organise 49 outward marks, concentrating visual energy around the centre."
+    },
+    {
+      "id": "2026-10-18-ACL01",
+      "title": "Growth Systems — Action Painting Study 05",
+      "orientation": "landscape",
+      "material": "action",
+      "seed": "ACL-20261018-01-67793",
+      "mode": "organic",
+      "series": "Growth Systems",
+      "imageFile": "2026-10-18-action-landscape-01-organic-ACL-20261018-01-67793.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACL-20261018-01-67793&mode=organic&el=44&den=52&cx=67&neg=31&phi=95&rec=5&spi=48&ga=91&nest=62&pen=broad&th=7&wob=47&od=6&op=66&pr=53&dry=16&curve=49&shape=52&overlap=51&rot=74&ln=1&ci=1&re=1&po=1&ar=1&pal=mono&cols=7&sat=66&bri=45&paper=%23f5f0e6&grain=13&material=action-v2&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "organic",
+        "series": "Growth Systems",
+        "seed": "ACL-20261018-01-67793",
+        "elements": 44,
+        "density": 52,
+        "complexity": 67,
+        "negativeSpace": 31,
+        "phiStrength": 95,
+        "recursion": 5,
+        "spiralInfluence": 48,
+        "goldenAngle": 91,
+        "nesting": 62,
+        "pen": "broad",
+        "thickness": 7,
+        "wobble": 47,
+        "overdraw": 6,
+        "opacity": 66,
+        "pressure": 53,
+        "dryness": 16,
+        "curveBias": 49,
+        "shapeAmount": 52,
+        "overlap": 51,
+        "rotation": 74,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "mono",
+        "colourCount": 7,
+        "saturation": 66,
+        "brightness": 45,
+        "paper": "#f5f0e6",
+        "grain": 13
+      },
+      "altText": "Action painting from ALGO/ART's Growth Systems system, seed ACL-20261018-01-67793. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
