@@ -21,6 +21,11 @@
    }
    return p;
  }
+ const instagram=[
+   combine(bezier([17,9],[10,9],[9,15],[9,22],12),bezier([9,22],[9,34],[9,42],[9,48],14),bezier([9,48],[9,55],[15,56],[22,56],12),bezier([22,56],[35,56],[43,56],[48,56],12),bezier([48,56],[55,56],[56,49],[56,42],12),bezier([56,42],[56,30],[56,22],[56,17],12),bezier([56,17],[56,10],[49,9],[42,9],12),bezier([42,9],[31,9],[24,9],[17,9],12)),
+   combine(bezier([32,21],[18,21],[17,42],[32,43],24),bezier([32,43],[47,43],[47,21],[32,21],24)),
+   bezier([46,17],[46,17],[47,18],[47,18],3)
+ ];
  const threads=[
    combine(
      bezier([53,27],[49,13],[39,10],[30,10],17),
@@ -60,7 +65,7 @@
      pressure:31,dryness:17,opacity:89
    };
    const ink=kind==='bluesky'?'#145cb6':'#161613';
-   const paths=kind==='bluesky'?butterfly:threads;
+   const paths=kind==='bluesky'?butterfly:kind==='instagram'?instagram:threads;
    const oldRecorder=A.svgRecorder;
    // Toolbar sketch marks must never enter an artwork's exported SVG.
    try{
