@@ -5,3 +5,10 @@
 [data-algo-nav]:hover .algo-nav-ink,[data-algo-nav][aria-current="page"] .algo-nav-ink,[data-algo-nav].active .algo-nav-ink{filter:drop-shadow(.5px .5px 0 currentColor)}
 [data-algo-nav]:focus-visible{outline:2px solid currentColor;outline-offset:5px}
 @media(max-width:650px){[data-algo-nav] .algo-nav-ink{height:18px}}
+
+/* Shared three-link top navigation; typography is exclusively nav-lettering.css. */
+.toolbar .algo-site-nav{display:flex;align-items:center;gap:clamp(8px,1.1vw,22px);margin-left:auto;padding:0 18px;min-width:0}
+.toolbar .algo-site-nav [data-algo-nav]{color:var(--ink);padding:6px 0}
+.toolbar .algo-site-nav [data-algo-nav][aria-current="page"]{border-bottom:2px solid var(--orange)}
+@media(max-width:1100px){.toolbar .formula-strip,.toolbar .studio-question{display:none}.toolbar .algo-site-nav{gap:12px;padding:0 12px}}
+@media(max-width:700px){.toolbar .algo-site-nav{gap:6px;padding:0 5px;justify-content:flex-end}.toolbar .algo-site-nav [data-algo-nav] .algo-nav-ink{height:15px}}
