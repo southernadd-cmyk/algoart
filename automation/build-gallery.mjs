@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { TIME_ZONE } from './config.mjs';
 
 const SITE_ORIGIN = 'https://southernadd-cmyk.github.io';
@@ -208,7 +209,7 @@ function archivePage(archive) {
   const cards = days.map((day, index) => `
     <article class="day-card${day.coverOrientation === 'portrait' ? ' portrait' : ''}">
       <a href="./${day.date}/">
-        <img src="./${day.date}/${escapeHtml(day.cover)}" width="${day.coverOrientation === 'portrait' ? 1000 : 1400}" height="${day.coverOrientation === 'portrait' ? 1400 : 1000}" loading="${index < 2 ? 'eager' : 'lazy'}" alt="ALGO/ART daily gallery cover for ${escapeHtml(displayDate(day.date))}">
+        <img src="./${day.date}/archive-preview.jpg" width="840" height="600" loading="${index < 2 ? 'eager' : 'lazy'}" decoding="async" ${index === 0 ? 'fetchpriority="high"' : 'fetchpriority="low"'} onerror="this.onerror=null;this.src=\'./${day.date}/${escapeHtml(day.cover)}\'" alt="Recursive Divisions mosaic showing the artworks from ${escapeHtml(displayDate(day.date))}">
         <div>
           <span>${escapeHtml(day.date)}</span>
           <h2>${escapeHtml(displayDate(day.date))}</h2>
@@ -247,7 +248,7 @@ function archivePage(archive) {
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <link rel="stylesheet" href="gallery.css?v=20261013-site-quality">
 <link rel="stylesheet" href="editorial.css?v=20261017-release">
-<link rel="stylesheet" href="division-mosaic.css?v=20261018">
+
 <link rel="alternate" type="application/rss+xml" title="ALGO/ART Daily Gallery" href="feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ALGO/ART">
@@ -279,7 +280,7 @@ function archivePage(archive) {
   </section>
 </main>
 <footer><a href="../">← OPEN GENERATOR</a><span>@artalgorithm</span><span>ALGO/ART DAILY ARCHIVE</span></footer>
-<script src="division-mosaic.js?v=20261018" defer></script>
+
 </body>
 </html>`;
 }
@@ -447,6 +448,15 @@ const dayMeta = {
 
 await fs.writeFile(path.join(dayDir, 'index.html'), dayPage(queue));
 await fs.writeFile(path.join(dayDir, 'meta.json'), JSON.stringify(dayMeta, null, 2) + '\n');
+// Compose the daily cover once during the build, rather than making each visitor
+// download every full-resolution artwork. Missing Pillow leaves the old cover as
+// a fallback; CI's gallery-preview job installs the image dependency.
+const previewBuild = spawnSync('python3', ['automation/build-gallery-previews.py', '--date', day], {encoding:'utf8'});
+if (previewBuild.status !== 0) {
+  console.warn('Gallery preview not generated (single-image fallback remains):', (previewBuild.stderr || previewBuild.error?.message || '').trim());
+} else {
+  console.log(previewBuild.stdout.trim());
+}
 
 const archivePath = path.join(galleryRoot, 'archive.json');
 let archive = { version: 1, days: [] };
