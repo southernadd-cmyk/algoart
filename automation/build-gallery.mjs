@@ -266,7 +266,7 @@ function archivePage(archive) {
 <header class="site-head">
   <a class="brand" href="../">ALGO<span>/</span>ART</a>
   <div class="formula">1.6180339887 <i></i> 137.507764°</div>
-  <nav><a class="active" href="./">DAILY GALLERY</a><a href="../">GENERATOR</a></nav>
+  <nav aria-label="Site navigation"><a data-algo-nav href="../">try it out</a><a data-algo-nav href="./" aria-current="page">daily gallery</a><a data-algo-nav href="../about/">how it works</a></nav>
 </header>
 <main>
   <section class="hero archive-hero">
