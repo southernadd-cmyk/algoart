@@ -153,7 +153,7 @@ try{
   const secondPlotter=await checkDownload('#savePlotter','.svg','tissue-mobile-plotter-repeat');
   assert.match(secondPlotter.filename,/(?:-2| \(2\))\.svg$/);
   const thirdPng=await checkDownload('#savePanel','.png','tissue-mobile-landscape-third');
-  assert.equal(thirdPng.filename.replace(/-\d+(?=\.png$)/,''),thirdSeed.filename.replace(/-\d+(?=\.png$)/''),
+  assert.equal(thirdPng.filename.replace(/-\d+(?=\.png$)/,''),thirdSeed.filename.replace(/-\d+(?=\.png$)/,''),
     'Later PNG should preserve the same artwork identity');
   const liveDownloadLinks=await page.locator('a[download]').count();
   assert(liveDownloadLinks>=5,'Mobile download anchors must remain attached for browser consumption');
