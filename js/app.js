@@ -1490,7 +1490,7 @@ function loadWelcomeArtworks(){
       if(imageUrl.origin!==location.origin)return null;
       var link=card.querySelector('.art-image-link[href]');
       var artUrl=link?new URL(link.getAttribute('href'),result.url):null;
-      return {src:imageUrl.href,alt:img.alt||'An PROPORTION PIECE gallery drawing',title:heading.textContent.trim(),width:Number(img.getAttribute('width'))||0,height:Number(img.getAttribute('height'))||0,artUrl:artUrl&&artUrl.origin===location.origin?artUrl.href:null};
+      return {src:imageUrl.href,alt:img.alt||'An PROPORTION PIECE gallery drawing',title:heading.textContent.trim(),orientation:card.getAttribute('data-orientation')||(artUrl&&artUrl.searchParams.get('fmt')==='portrait'?'portrait':'landscape'),width:Number(img.getAttribute('width'))||0,height:Number(img.getAttribute('height'))||0,artUrl:artUrl&&artUrl.origin===location.origin?artUrl.href:null};
     }).filter(Boolean);
   }).catch(function(){return [];});
   return welcomeArtworkPromise;
@@ -1533,12 +1533,12 @@ function chooseWelcomeArtwork(){
       var width=candidate.naturalWidth||selected.width;
       var height=candidate.naturalHeight||selected.height;
       if(width>0&&height>0){
-        var portrait=height>width;
+        var portrait=selected.orientation==='portrait';
         // Explicitly size the entire paper from the NEW decoded image ratio.
         // A fit-content grid item otherwise retains a narrow portrait intrinsic size.
         var maxHeight=window.innerWidth<=590?window.innerHeight*.30:
           window.innerWidth<=760?window.innerHeight*.34:Math.min(window.innerHeight*.48,550);
-        var paperWidth=Math.max(1,Math.round(maxHeight*width/height));
+        var paperWidth=Math.max(1,Math.round(maxHeight*(portrait?5/7:7/5)));
         frame.style.setProperty('--welcome-paper-width','min(100%, '+paperWidth+'px)');
         frame.style.aspectRatio='auto';
         image.style.width='100%';
