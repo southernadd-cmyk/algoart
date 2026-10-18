@@ -585,3 +585,21 @@ button{font-family:Georgia,serif}
  .editorial-preview #inspector > .tabs{grid-row:3!important}
  .editorial-preview #inspector > .tab-body{grid-row:4!important}
 }
+
+/* Keep document order intact in desktop grid: heading, navigation, content. */
+@media(min-width:761px){
+  .editorial-preview #inspector{
+    grid-template-rows:auto auto minmax(0,1fr)!important;
+  }
+  .editorial-preview #inspector > .drawer-handle{display:none!important}
+  .editorial-preview #inspector > .inspector-head{
+    grid-row:1!important;grid-column:1/-1!important;
+  }
+  .editorial-preview #inspector > .tabs{
+    grid-row:2!important;grid-column:1/-1!important;
+  }
+  .editorial-preview #inspector > .tab-body{
+    grid-row:3!important;grid-column:1/-1!important;
+    min-height:0!important;
+  }
+}
