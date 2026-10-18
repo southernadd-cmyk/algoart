@@ -100,12 +100,17 @@ jobs:
           name: procedural-oil-previews
           path: oil-check-results/
           retention-days: 14
-      - name: Reproduce every archived share link
+      - name: Reproduce representative archive coverage on PRs; full archive on explicit runs
         if: ${{ !cancelled() }}
         env:
           ARCHIVE_BROWSER: ${{ matrix.browser }}
           ALGOART_LOCAL_URL: http://127.0.0.1:4173/
-        run: npm run test:archive
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node tests/archive-reproduction.mjs --representative
+          else
+            npm run test:archive
+          fi
       - name: Reject changed artwork without rejecting JPEG compression
         if: ${{ !cancelled() && matrix.browser == 'chromium' }}
         env:
