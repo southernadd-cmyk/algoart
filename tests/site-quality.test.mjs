@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 const read = path => readFileSync(new URL('../'+path, import.meta.url), 'utf8');
 
 const editor=read('index.html'), baseCSS=read('css/style.css');
-assert(editor.includes('<h1 class="brand">ALGO<span>/</span>ART</h1>'));
+assert(editor.includes('<h1 class="brand"><button type="button" id="welcomeLogo" class="welcome-logo-trigger" aria-label="Show ALGO/ART introduction">ALGO<span>/</span>ART</button></h1>'));
 assert.match(baseCSS, /\.brand\{\s*margin:0;/);
 const scripts=[...editor.matchAll(/<script src="(js\/[^"]+\.js\?v=[^"]+)"\s*><\/script>/g)].map(x=>x[1]);
 const allScripts=[...editor.matchAll(/<script src="(js\/[^"]+)"\s*><\/script>/g)].map(x=>x[1]);
