@@ -2257,3 +2257,24 @@ button{font-family:Georgia,serif}
  .editorial-welcome .score-date{font-size:8px!important;line-height:1.5!important;letter-spacing:0!important}
  .editorial-welcome .welcome-right img{width:auto;max-width:100%;max-height:24vh}
 }
+
+/* Allow the handmade lowercase artwork label to extend beyond a portrait sheet. */
+.editorial-preview .canvas-wrap .stats{
+  left:50%;
+  transform:translateX(-50%);
+  width:max-content;
+  max-width:min(460px,calc(100vw - 32px));
+  justify-content:center;
+  white-space:normal;
+  overflow:visible;
+  text-align:center;
+}
+.editorial-preview .canvas-wrap .stats #statsText{
+  font:400 11px/1.45 "AlgoArt Marker",monospace!important;
+  text-transform:lowercase!important;
+  font-style:normal!important;
+  letter-spacing:0!important;
+  white-space:normal;
+  overflow-wrap:break-word;
+  text-overflow:clip;
+}
