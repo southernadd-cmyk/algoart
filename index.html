@@ -7,19 +7,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ece7d9">
 <title>ALGO/ART — Golden-ratio generative drawing system</title>
-<meta name="description" content="The algorithm creates the structure. The materials bring the human texture. Create seeded generative art composed with φ, in marker ink, translucent tissue and graphite, watercolour, or oil paint.">
+<meta name="description" content="Make and change seeded drawings shaped by the golden ratio. Explore eight compositions using marker, tissue and graphite, watercolour, oil paint, or action painting.">
 <link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <meta property="og:type" content="website">
 <meta property="og:title" content="ALGO/ART — Golden-ratio generative drawing system">
-<meta property="og:description" content="The algorithm creates the structure. The materials bring the human texture. Seeded φ compositions in marker ink, translucent tissue and graphite, watercolour, or oil paint.">
+<meta property="og:description" content="Eight ways of composing a drawing, five ways of making its marks. Change the seed and see what happens.">
 <meta property="og:url" content="https://southernadd-cmyk.github.io/algoart/">
 <meta property="og:image" content="https://southernadd-cmyk.github.io/algoart/social-card.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ALGO/ART — Golden-ratio generative drawing system">
-<meta name="twitter:description" content="The algorithm creates the structure. The materials bring the human texture.">
+<meta name="twitter:description" content="Eight compositions. Five drawing materials.">
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/social-card.png">
 <link rel="stylesheet" href="css/style.css?v=20261017-creating-mobile-overlay">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
@@ -44,7 +44,7 @@
         <div class="intro-actions">
           <button id="introEnter" class="intro-enter" type="button">BEGIN</button>
           <a class="welcome-gallery-link" href="gallery/">SEE WHAT IT DREW TODAY</a>
-          <button id="introReveal" type="button">BEGIN WITH φ VISIBLE</button>
+          <button id="introReveal" type="button" style="display:none" tabindex="-1" aria-hidden="true">BEGIN WITH φ VISIBLE</button>
         </div>
       </div>
       <figure class="welcome-right">
@@ -67,7 +67,7 @@
       <span>137.507764°</span>
     </div>
 
-    <p class="studio-question">How far can one mathematical proportion carry a composition?</p>
+    <p class="studio-question">How far can the golden ratio govern a composition while its marks remain visibly human?</p>
     <a class="studio-gallery-link" href="gallery/">today’s gallery</a>
   </header>
 
@@ -83,9 +83,9 @@
       <aside class="ethos-toast" id="ethosToast" hidden aria-label="About ALGO ART">
         <button class="ethos-close" id="ethosClose" type="button" aria-label="Dismiss">×</button>
         <span class="ethos-kicker">WHY ALGO/ART?</span>
-        <strong>The proportions come from the maths.<br>The marks depend on the material.</strong>
-        <p>φ shapes the composition, scale and spacing. Marker ink adds wobble and uneven strokes, tissue and graphite add translucent layers, watercolour adds flowing pigments, and oil paint uses real loaded-bristle contacts across connected forms.</p>
-        <button class="ethos-reveal" id="ethosReveal" type="button">REVEAL THE SYSTEM →</button>
+        <strong>What changes when you change the material?</strong>
+        <p>φ shapes the composition, scale and spacing. Marker ink adds wobble and uneven strokes, tissue and graphite add translucent layers, watercolour adds flowing pigments, and oil paint leaves thick, uneven strokes, and action painting scatters marks across the page.</p>
+        <button class="ethos-reveal" id="ethosReveal" type="button" style="display:none" tabindex="-1" aria-hidden="true">REVEAL THE SYSTEM →</button>
       </aside>
 
       <button id="inspectorToggle" class="inspector-toggle" aria-label="Open controls" title="Open controls">
@@ -116,7 +116,7 @@
       <div class="description-overlay" id="descriptionOverlay" hidden>
         <section class="description-sheet" role="dialog" aria-modal="true" aria-labelledby="descriptionTitle">
           <div class="description-head">
-            <div><span>03</span><div><strong id="descriptionTitle">ABOUT THIS ARTWORK</strong><small>what you see and how it is built</small></div></div>
+            <div><div><strong id="descriptionTitle">ABOUT THIS ARTWORK</strong></div></div>
             <button id="closeDescription" class="icon-btn" type="button" aria-label="Close artwork description">×</button>
           </div>
           <div class="description-body">
@@ -146,7 +146,7 @@
       <div class="variations-overlay" id="variationsOverlay" hidden>
         <div class="variations-sheet" role="dialog" aria-modal="true" aria-labelledby="variationsTitle">
           <div class="variations-head">
-            <div><span>03</span><div><strong id="variationsTitle">VARIATIONS</strong><small>Four versions of the current system.</small></div></div>
+            <div><div><strong id="variationsTitle">VARIATIONS</strong></div></div>
             <button id="closeVariations" class="icon-btn" aria-label="Close variations">×</button>
           </div>
           <div class="variations-grid" id="variationsGrid">
@@ -156,8 +156,8 @@
             <button class="variation-card" type="button" data-index="3"><canvas></canvas><span></span></button>
           </div>
           <div class="variations-actions">
-            <button id="shuffleVariations">Shuffle 4</button>
-            <small>Choose a variation to use it.</small>
+            <button id="shuffleVariations">SHUFFLE FOUR</button>
+            
           </div>
         </div>
       </div>
@@ -182,7 +182,7 @@
       <div class="inspector-head">
         <div class="inspector-title">
           <strong>PARAMETERS</strong>
-          <span>Change a setting and see what it does</span>
+          
         </div>
         <div class="seed">
           <span class="toolbar-label">Seed</span>
@@ -193,22 +193,22 @@
       </div>
 
       <nav class="tabs" role="tablist" aria-label="Control categories">
-        <button class="tab active" data-tab="composition" id="tab-composition" role="tab" aria-controls="panel-composition" aria-selected="true" tabindex="0"><span>01</span>Compose</button>
-        <button class="tab" data-tab="phi" id="tab-phi" role="tab" aria-controls="panel-phi" aria-selected="false" tabindex="-1"><span>02</span>φ</button>
-        <button class="tab" data-tab="marker" id="tab-marker" role="tab" aria-controls="panel-marker" aria-selected="false" tabindex="-1"><span>03</span>Materials</button>
-        <button class="tab" data-tab="geometry-panel" id="tab-geometry-panel" role="tab" aria-controls="panel-geometry-panel" aria-selected="false" tabindex="-1"><span>04</span>Shape</button>
-        <button class="tab" data-tab="colour" id="tab-colour" role="tab" aria-controls="panel-colour" aria-selected="false" tabindex="-1"><span>05</span>Colour</button>
-        <button class="tab" data-tab="export" id="tab-export" role="tab" aria-controls="panel-export" aria-selected="false" tabindex="-1"><span>06</span>Export</button>
+        <button class="tab active" data-tab="composition" id="tab-composition" role="tab" aria-controls="panel-composition" aria-selected="true" tabindex="0">Compose</button>
+        <button class="tab" data-tab="phi" id="tab-phi" role="tab" aria-controls="panel-phi" aria-selected="false" tabindex="-1">φ</button>
+        <button class="tab" data-tab="marker" id="tab-marker" role="tab" aria-controls="panel-marker" aria-selected="false" tabindex="-1">Materials</button>
+        <button class="tab" data-tab="geometry-panel" id="tab-geometry-panel" role="tab" aria-controls="panel-geometry-panel" aria-selected="false" tabindex="-1">Shape</button>
+        <button class="tab" data-tab="colour" id="tab-colour" role="tab" aria-controls="panel-colour" aria-selected="false" tabindex="-1">Colour</button>
+        <button class="tab" data-tab="export" id="tab-export" role="tab" aria-controls="panel-export" aria-selected="false" tabindex="-1">Export</button>
       </nav>
 
       <div class="tab-body">
         <section class="tab-panel active" data-panel="composition" id="panel-composition" role="tabpanel" aria-labelledby="tab-composition">
-          <div class="section-title"><span>COMPOSITION</span></div>
+          
           <div class="controls">
-            <div class="control material-render-control"><label for="materialStyle">Material</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink with hand-drawn wobble, pressure and imperfect strokes. PNG saves the visible material; SVG and plotter exports retain the original marker paths.</p>
+            <div class="control material-render-control"><label for="materialStyle">Material</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink can wobble, run dry or change pressure.</p>
 <label class="mini-note"><input id="phiSheetFit" type="checkbox"> Fit to φ</label>
 <p class="mini-note" id="phiSheetInfo" role="status" aria-live="polite">Off · original φ composition and sheet placement.</p>
-<label class="mini-note" id="watercolourFitControl" hidden><input id="watercolourFit" type="checkbox"> Legacy Watercolour-only fit (older V2S links)</label></div>
+<label class="mini-note" id="watercolourFitControl" hidden><input id="watercolourFit" type="checkbox"> Watercolour fit (older links)</label></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
             <div class="mode-picker-wrap">
               <div class="mode-picker-label"><span>SERIES</span></div>
@@ -232,7 +232,7 @@
         </section>
 
         <section class="tab-panel" data-panel="phi" id="panel-phi" role="tabpanel" aria-labelledby="tab-phi" hidden>
-          <div class="section-title"><span>GOLDEN RATIO</span><b>1.618…</b></div>
+          
           <div class="controls">
             <div class="control"><label>Additional φ pull</label><output></output><input id="phiStrength" type="range" min="0" max="100" value="91"></div>
             <div class="control"><label>Recursion</label><output></output><input id="recursion" type="range" min="1" max="9" value="4"></div>
@@ -244,9 +244,9 @@
         </section>
 
         <section class="tab-panel" data-panel="marker" id="panel-marker" role="tabpanel" aria-labelledby="tab-marker" hidden>
-          <div class="section-title"><span>MATERIAL CONTROLS</span><b>strokes / texture</b></div>
+          
           <div class="controls">
-            <div class="mini-note" id="materialControlsNote">Choose Marker, Tissue &amp; Graphite, Watercolour, or Oil Paint in Compose. These settings shape the underlying marker strokes. Tissue PNGs use their own torn-paper and graphite finish; SVG and plotter exports use marker paths.</div>
+            <div class="mini-note" id="materialControlsNote">Choose a material in Compose. These controls change how the marks are made.</div>
             <div class="control"><label>Mark-making tool</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
             <div class="control"><label>Stroke width</label><output></output><input id="thickness" type="range" min="1" max="28" value="13"></div>
             <div class="control"><label>Wobble</label><output></output><input id="wobble" type="range" min="0" max="100" value="32"></div>
@@ -258,7 +258,7 @@
         </section>
 
         <section class="tab-panel" data-panel="geometry-panel" id="panel-geometry-panel" role="tabpanel" aria-labelledby="tab-geometry-panel" hidden>
-          <div class="section-title"><span>GEOMETRY</span><b>line / form</b></div>
+          
           <div class="controls">
             <div class="control"><label>Curved ↔ straight</label><output></output><input id="curveBias" type="range" min="0" max="100" value="91"></div>
             <div class="control"><label>Shape amount</label><output></output><input id="shapeAmount" type="range" min="0" max="100" value="68"></div>
@@ -275,7 +275,7 @@
         </section>
 
         <section class="tab-panel" data-panel="colour" id="panel-colour" role="tabpanel" aria-labelledby="tab-colour" hidden>
-          <div class="section-title"><span>COLOUR / PAPER</span><b>material</b></div>
+          
           <div class="controls">
             <div class="control"><label>Palette</label><select id="palette"><option value="spectrum">Full Spectrum</option><option value="golden">Golden-angle hues</option><option value="marker">Classic Markers</option><option value="cmyk">CMYK</option><option value="primary">Primary</option><option value="neon">Neon</option><option value="pastel">Pastel</option><option value="earth">Earth</option><option value="warm">Warm</option><option value="cold">Cold</option><option value="mono" selected>Monochrome</option></select></div>
             <div class="control"><label>Colours</label><output></output><input id="colourCount" type="range" min="1" max="14" value="4"></div>
@@ -287,7 +287,7 @@
         </section>
 
         <section class="tab-panel" data-panel="export" id="panel-export" role="tabpanel" aria-labelledby="tab-export" hidden>
-          <div class="section-title"><span>OUTPUT</span><b>vector + raster</b></div>
+          
           <div class="controls">
             <button class="primary export-big" id="copyLink" type="button">COPY ARTWORK LINK</button>
             <div class="share-status" id="shareStatus" role="status" aria-live="polite"></div>
