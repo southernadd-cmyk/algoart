@@ -1,12 +1,14 @@
-# ALGO/ART
+# PROPORTION PIECE
 
-**Can one number compose a drawing?**
+**How far can the golden ratio govern a composition while its marks remain visibly human?**
 
-ALGO/ART is a free, browser-based drawing experiment built around the golden ratio (φ ≈ 1.618). Eight composition systems set out the shapes and relationships; five drawing materials give those structures different characters. Change a seed, move a control, and see what changes. Sometimes the result looks measured. Sometimes it doesn't.
+*Previously presented as ALGO/ART. Existing repository, artwork links and archived seeds are unchanged.*
+
+PROPORTION PIECE is an ongoing artwork and free, browser-based drawing experiment built around the golden ratio (φ ≈ 1.618). Eight composition systems set out the shapes and relationships; five drawing materials give those structures different characters. Change a seed, move a control, and see what changes. Sometimes the result looks measured. Sometimes it doesn't.
 
 The drawings are made with seeded JavaScript, not an AI image generator. You can return to a drawing using its saved settings and renderer version.
 
-**[Try ALGO/ART](https://southernadd-cmyk.github.io/algoart/)** · **[Browse the daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/)** · **[How it works](https://southernadd-cmyk.github.io/algoart/about/)**
+**[Try PROPORTION PIECE](https://southernadd-cmyk.github.io/algoart/)** · **[Browse the daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/)** · **[How it works](https://southernadd-cmyk.github.io/algoart/about/)**
 
 ## Five materials, five drawings
 
@@ -27,7 +29,7 @@ These are actual archived outputs from 18 October 2026, with material and compos
 3. Switch between landscape (1400 × 1000) and portrait (1000 × 1400).
 4. Use **Reveal / Show the φ** to examine the structure, **Describe** to read the drawing's settings, and **Export** to save it.
 
-The welcome screen pairs a short instruction piece with an artwork selected from the gallery. Click the ALGO/ART logo to revisit it. The invitation is to experiment, not to accept the mathematics as a guarantee of a good composition.
+The welcome screen pairs a short instruction piece with an artwork selected from the gallery. Click the PROPORTION PIECE title to revisit it. The invitation is to experiment, not to accept the mathematics as a guarantee of a good composition.
 
 ## Eight ways to compose
 
@@ -107,4 +109,4 @@ Browser regression workflows also cover Chromium, Firefox and WebKit. Some check
 
 The [development diary](DEVELOPMENT_LOG.md) records experiments and changes of direction. [Renderer and material history](MATERIAL_HISTORY.md) explains version compatibility (including the current V9 geometry renderer and older saved states). The [calibration audit](CALIBRATION_AUDIT.md) distinguishes the mathematics from artistic decisions; [tuning notes](TUNING.md) document exact-output constraints.
 
-ALGO/ART doesn't set out to prove that φ makes better art. It gives you a way to test what the number contributes — and what you contribute by changing it.
+PROPORTION PIECE doesn't set out to prove that φ makes better art. It gives you a way to test what the number contributes — and what you contribute by changing it.
