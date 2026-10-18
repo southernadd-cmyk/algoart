@@ -8,7 +8,7 @@ const SITE_PATH = '/algoart';
 const SITE_URL = SITE_ORIGIN + SITE_PATH;
 const GALLERY_URL = SITE_URL + '/gallery';
 const GALLERY_DESCRIPTION = 'A fresh collection each day. Open a drawing to see its seed and try another version.';
-const FEED_DESCRIPTION = 'A fresh set of ALGO/ART drawings every day. Browse marker, tissue and graphite, watercolour, oil paint and action painting, then open any piece to make it your own.';
+const FEED_DESCRIPTION = 'A fresh set of PROPORTION PIECE drawings every day. Browse marker, tissue and graphite, watercolour, oil paint and action painting, then open any piece to make it your own.';
 
 function dateInZone(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -80,7 +80,7 @@ function artworkCard(item, index) {
   const portrait = (item.orientation || s.orientation) === 'portrait';
   return `
     <article id="${escapeHtml(item.id)}" class="art-card" data-orientation="${portrait ? 'portrait' : 'landscape'}" data-material="${item.material==='action'?'action':item.material==='oil'?'oil':item.material==='watercolour'?'watercolour':item.material==='watercolor'?'watercolor':'marker'}">
-      <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open and remix ${escapeHtml(title)} in ALGO/ART">
+      <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open and remix ${escapeHtml(title)} in PROPORTION PIECE">
         <img src="${escapeHtml(item.imageFile)}" width="${portrait ? 1000 : 1400}" height="${portrait ? 1400 : 1000}" loading="${index === 0 ? 'eager' : 'lazy'}" decoding="async" alt="${escapeHtml(alt)}">
       </a>
       <div class="art-info">
@@ -107,7 +107,7 @@ function dayPage(queue) {
   const pretty = displayDate(date);
   const entries = queue.entries;
   const series = [...new Set(entries.map(e => e.series))];
-  const title = `ALGO/ART Daily Gallery — ${pretty} | Golden Ratio Generative Art`;
+  const title = `PROPORTION PIECE Daily Gallery — ${pretty} | Golden Ratio Generative Art`;
   const description = `${entries.length} drawings made on ${pretty}. Different materials, different compositions, and room to make each one your own.`;
   const canonical = `${GALLERY_URL}/${date}/`;
   const cover = `${canonical}${entries[0].imageFile}`;
@@ -115,12 +115,12 @@ function dayPage(queue) {
   const structured = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: `ALGO/ART Daily Gallery — ${pretty}`,
+    name: `PROPORTION PIECE Daily Gallery — ${pretty}`,
     description,
     url: canonical,
     isPartOf: {
       '@type': 'WebSite',
-      name: 'ALGO/ART',
+      name: 'PROPORTION PIECE',
       url: SITE_URL + '/'
     },
     about: ['generative art', 'algorithmic art', 'golden ratio', 'creative coding', 'digital marker art'],
@@ -141,7 +141,7 @@ function dayPage(queue) {
           artMedium: 'Browser canvas and deterministic algorithm',
           creator: {
             '@type': 'Organization',
-            name: 'ALGO/ART',
+            name: 'PROPORTION PIECE',
             url: SITE_URL + '/'
           }
         }
@@ -161,9 +161,9 @@ function dayPage(queue) {
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="stylesheet" href="../gallery.css?v=20261013-site-quality">
 <link rel="stylesheet" href="../editorial.css?v=20261017-release">\n<link rel="stylesheet" href="../../css/nav-lettering.css?v=11">\n<script defer src="../../js/nav-lettering.js?v=2"></script>
-<link rel="alternate" type="application/rss+xml" title="ALGO/ART Daily Gallery" href="../feed.xml">
+<link rel="alternate" type="application/rss+xml" title="PROPORTION PIECE Daily Gallery" href="../feed.xml">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="ALGO/ART">
+<meta property="og:site_name" content="PROPORTION PIECE">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${canonical}">
@@ -202,7 +202,7 @@ function dayPage(queue) {
     </div>
   </section>
 </main>
-<footer><a href="../">← ALL DAILY GALLERIES</a><span>@artalgorithm</span><span>ALGO/ART / ${escapeHtml(date)}</span></footer>
+<footer><a href="../">← ALL DAILY GALLERIES</a><span>@artalgorithm</span><span>PROPORTION PIECE / ${escapeHtml(date)}</span></footer>
 </body>
 </html>`;
 }
@@ -227,13 +227,13 @@ function archivePage(archive) {
   const structured = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'ALGO/ART Daily Gallery',
+    name: 'PROPORTION PIECE Daily Gallery',
     description,
     url: GALLERY_URL + '/',
-    isPartOf: { '@type': 'WebSite', name: 'ALGO/ART', url: SITE_URL + '/' },
+    isPartOf: { '@type': 'WebSite', name: 'PROPORTION PIECE', url: SITE_URL + '/' },
     hasPart: days.map(day => ({
       '@type': 'CollectionPage',
-      name: `ALGO/ART Daily Gallery — ${displayDate(day.date)}`,
+      name: `PROPORTION PIECE Daily Gallery — ${displayDate(day.date)}`,
       url: `${GALLERY_URL}/${day.date}/`
     }))
   };
@@ -243,7 +243,7 @@ function archivePage(archive) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALGO/ART Daily Gallery | Golden Ratio Generative Art Archive</title>
+<title>PROPORTION PIECE Daily Gallery | Golden Ratio Generative Art Archive</title>
 <meta name="description" content="${escapeHtml(description)}">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="${GALLERY_URL}/">
@@ -251,15 +251,15 @@ function archivePage(archive) {
 <link rel="stylesheet" href="gallery.css?v=20261013-site-quality">
 <link rel="stylesheet" href="editorial.css?v=20261017-release">\n<link rel="stylesheet" href="../css/nav-lettering.css?v=11">\n<script defer src="../js/nav-lettering.js?v=2"></script>
 
-<link rel="alternate" type="application/rss+xml" title="ALGO/ART Daily Gallery" href="feed.xml">
+<link rel="alternate" type="application/rss+xml" title="PROPORTION PIECE Daily Gallery" href="feed.xml">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="ALGO/ART">
-<meta property="og:title" content="ALGO/ART Daily Gallery">
+<meta property="og:site_name" content="PROPORTION PIECE">
+<meta property="og:title" content="PROPORTION PIECE Daily Gallery">
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${GALLERY_URL}/">
 <meta property="og:image" content="${latestImage}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ALGO/ART Daily Gallery">
+<meta name="twitter:title" content="PROPORTION PIECE Daily Gallery">
 <meta name="twitter:description" content="${escapeHtml(description)}">
 <meta name="twitter:image" content="${latestImage}">
 <script type="application/ld+json">${jsonLd(structured)}</script>
@@ -278,11 +278,11 @@ function archivePage(archive) {
     <p>${escapeHtml(description)}</p>
     <div class="hero-meta"><span>${days.length} DAILY ${days.length === 1 ? 'EDITION' : 'EDITIONS'}</span><span>LATEST: ${latest ? latest.count : 0} STUDIES</span><span>EXACT STATES PRESERVED</span></div>
   </section>
-  <section class="day-grid" aria-label="Daily ALGO/ART galleries">
+  <section class="day-grid" aria-label="Daily PROPORTION PIECE galleries">
     ${cards || '<p class="empty">The first daily edition is being generated.</p>'}
   </section>
 </main>
-<footer><a href="../">← OPEN GENERATOR</a><span>@artalgorithm</span><span>ALGO/ART DAILY ARCHIVE</span></footer>
+<footer><a href="../">← OPEN GENERATOR</a><span>@artalgorithm</span><span>PROPORTION PIECE DAILY ARCHIVE</span></footer>
 
 </body>
 </html>`;
@@ -293,12 +293,12 @@ function rss(archive) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
 <channel>
-<title>ALGO/ART Daily Gallery</title>
+<title>PROPORTION PIECE Daily Gallery</title>
 <link>${GALLERY_URL}/</link>
 <description>${escapeXml(FEED_DESCRIPTION)}</description>
 <language>en-gb</language>
 ${days.map(day => `<item>
-<title>ALGO/ART Daily Gallery — ${escapeXml(displayDate(day.date))}</title>
+<title>PROPORTION PIECE Daily Gallery — ${escapeXml(displayDate(day.date))}</title>
 <link>${GALLERY_URL}/${day.date}/</link>
 <guid isPermaLink="true">${GALLERY_URL}/${day.date}/</guid>
 <pubDate>${new Date(day.date + 'T12:00:00Z').toUTCString()}</pubDate>
@@ -486,5 +486,5 @@ await fs.writeFile(path.join(galleryRoot, 'feed.xml'), rss(archive));
 await fs.writeFile(path.resolve('sitemap.xml'), sitemap(archive));
 await fs.writeFile(path.resolve('robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 
-console.log(`Built ALGO/ART daily gallery for ${day} with ${queue.entries.length} artworks.`);
+console.log(`Built PROPORTION PIECE daily gallery for ${day} with ${queue.entries.length} artworks.`);
 console.log(`Gallery URL: ${GALLERY_URL}/${day}/`);
