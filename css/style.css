@@ -2323,8 +2323,8 @@ button{font-family:Georgia,serif}
 
 /* Legacy renderer provenance sits opposite the Parameters control, not in the caption. */
 .editorial-preview .stage{position:relative}
-.editorial-preview .stage .renderer-chip-corner:not([hidden]){display:block;position:absolute;left:clamp(12px,2vw,24px);bottom:clamp(12px,2vw,24px);z-index:12;max-width:calc(100% - 110px);font-size:var(--ui-caption);line-height:1.4;padding:5px 8px;white-space:normal;overflow-wrap:break-word;pointer-events:none}
-@media(max-width:700px){.editorial-preview .stage .renderer-chip-corner:not([hidden]){left:12px;bottom:12px;max-width:calc(100% - 95px);font-size:10px}}
+.editorial-preview .stage .renderer-chip-corner:not([hidden]){display:block;position:absolute;left:clamp(12px,2vw,24px);top:clamp(12px,2vw,24px);bottom:auto;z-index:12;max-width:calc(100% - 110px);font-size:var(--ui-caption);line-height:1.4;padding:5px 8px;white-space:normal;overflow-wrap:break-word;pointer-events:none}
+@media(max-width:700px){.editorial-preview .stage .renderer-chip-corner:not([hidden]){left:12px;top:auto;bottom:12px;max-width:calc(100% - 95px);font-size:10px}}
 
 /* Match the site's editorial serif across editor controls and supporting text. */
 .editorial-preview, .editorial-preview input, .editorial-preview select,
