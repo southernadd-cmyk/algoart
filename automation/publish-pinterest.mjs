@@ -2,7 +2,7 @@ const TOKEN = process.env.PINTEREST_ACCESS_TOKEN;
 const BOARD_ID = process.env.PINTEREST_BOARD_ID;
 const IMAGE_URL = process.env.MEDIA_URL;
 const LINK = process.env.SHARE_URL;
-const TITLE = process.env.PINTEREST_TITLE || 'ALGO/ART generative artwork';
+const TITLE = process.env.PINTEREST_TITLE || 'PROPORTION PIECE generative artwork';
 const DESCRIPTION = process.env.PINTEREST_DESCRIPTION || '';
 const ALT_TEXT = process.env.ALT_TEXT || '';
 const LIVE = process.env.LIVE_PUBLISHING === 'true';
