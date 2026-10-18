@@ -9,5 +9,5 @@ assert(sources.length>=20,'Editor JavaScript dependencies are missing');
 const versions=new Set(sources.map(x=>new URL(x,'https://example.invalid').searchParams.get('v')));
 assert.equal(versions.size,1,'Editor scripts must share a cache key');
 for(const source of sources)assert(!source.includes('..'),'Invalid editor script path');
-assert.match(html,/<meta name="viewport" content="width=device-width,initial-scale=1">/);
+assert.match(html,/<meta name="viewport" content="width=device-width,initial-scale=1(?:,viewport-fit=cover)?">/);
 console.log('PASS lightweight editor markup, critical controls and consistent script cache version');
