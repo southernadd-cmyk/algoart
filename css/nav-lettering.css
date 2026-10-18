@@ -215,3 +215,33 @@ body .algo-global-header .algo-site-nav{margin-left:auto!important;gap:8px!impor
 body .algo-global-header .algo-site-nav .algo-nav-ink{height:10px!important}
 }
 @media(max-width:390px){body .algo-global-header .algo-global-brand .brand{font-size:16px!important}body .algo-global-header .algo-site-nav{gap:5px!important}body .algo-global-header .algo-site-nav .algo-nav-ink{height:9px!important}}
+
+/* Header position lock: identical track coordinates on editor, gallery and about. */
+body .algo-global-header{
+ display:grid!important;
+ grid-template-columns:180px 208px minmax(180px,1fr) 330px!important;
+ column-gap:14px!important;
+ justify-content:stretch!important;
+}
+body .algo-global-header .algo-global-brand{grid-column:1!important;grid-row:1!important}
+body .algo-global-header .algo-global-brand h1{margin:0!important;padding:0!important;font:inherit!important}
+body .algo-global-header .algo-global-numbers{grid-column:2!important;grid-row:1!important}
+body .algo-global-header .algo-global-question{grid-column:3!important;grid-row:1!important;text-align:left!important}
+body .algo-global-header .algo-site-nav{grid-column:4!important;grid-row:1!important;width:330px!important;justify-content:space-between!important;gap:0!important}
+@media(max-width:1100px) and (min-width:851px){
+ body .algo-global-header{grid-template-columns:160px 186px minmax(150px,1fr) 300px!important;column-gap:10px!important}
+ body .algo-global-header .algo-site-nav{width:300px!important}
+}
+@media(max-width:850px){
+ body .algo-global-header{
+  display:grid!important;
+  grid-template-columns:minmax(90px,1fr) minmax(0,auto)!important;
+  grid-template-rows:34px 24px!important;
+  align-content:center!important;
+  column-gap:8px!important;row-gap:4px!important;
+ }
+ body .algo-global-header .algo-global-brand{grid-column:1!important;grid-row:1!important}
+ body .algo-global-header .algo-global-numbers{display:none!important}
+ body .algo-global-header .algo-site-nav{grid-column:2!important;grid-row:1!important;width:auto!important;justify-content:flex-end!important;gap:8px!important}
+ body .algo-global-header .algo-global-question{grid-column:1/-1!important;grid-row:2!important;order:unset!important;flex:auto!important;white-space:nowrap!important}
+}
