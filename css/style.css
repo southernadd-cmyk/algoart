@@ -2392,3 +2392,30 @@ button{font-family:Georgia,serif}
  .editorial-welcome .welcome-right.welcome-portrait img,
  .editorial-welcome .welcome-right.welcome-landscape img{max-height:30dvh!important}
 }
+
+/* Welcome paper stays predictable during a new selection and clears when the image arrives. */
+.editorial-welcome .welcome-right.welcome-loading{
+  width:min(100%,390px)!important;
+  min-height:190px!important;
+  aspect-ratio:4 / 3!important;
+  position:relative;
+  background:#f9f6ee!important;
+}
+.editorial-welcome .welcome-right.welcome-loading::before{
+  content:"MAKING THE PICTURE";
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  font:13px "AlgoArt Marker",monospace;
+  letter-spacing:0;
+  color:#655c51;
+  animation:welcome-paper-pulse 1.3s ease-in-out infinite alternate;
+}
+@keyframes welcome-paper-pulse{from{opacity:.45}to{opacity:1}}
+@media(max-width:590px){
+  .editorial-welcome .welcome-right.welcome-loading{min-height:150px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .editorial-welcome .welcome-right.welcome-loading::before{animation:none}
+}
