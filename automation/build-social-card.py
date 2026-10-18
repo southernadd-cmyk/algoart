@@ -30,6 +30,9 @@ d.text((43, 295), 'AN ONGOING', font=font(26), fill=ink)
 d.text((43, 333), 'DRAWING EXPERIMENT', font=font(26), fill=ink)
 d.text((43, 436), 'ONE NUMBER PROPOSES', font=font(23), fill=ink)
 d.text((43, 471), 'THE COMPOSITION.', font=font(23), fill=ink)
-d.text((43, 563), '1.6180339887  /  137.507764°', font=font(17), fill=ink)
+d.text((43, 563), '1.6180339887  /  137.507764', font=font(17), fill=ink)
+# The marker font has no degree glyph: draw it as a small ink circle instead.
+angle_end = d.textbbox((43, 563), '1.6180339887  /  137.507764', font=font(17))[2]
+d.ellipse((angle_end + 2, 565, angle_end + 7, 570), outline=ink, width=1)
 im.save(OUTPUT, optimize=True)
 print(f'Built {OUTPUT.name}: {im.width}x{im.height}, real marker artwork {ART.name}')
