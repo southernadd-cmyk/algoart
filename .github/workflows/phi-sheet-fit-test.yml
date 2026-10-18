@@ -6,7 +6,6 @@ on:
       - 'js/phi-sheet-fit.js'
       - 'js/generator.js'
       - 'js/app.js'
-      - 'index.html'
       - 'tests/phi-sheet-fit.test.mjs'
       - 'tests/phi-sheet-preview.mjs'
       - '.github/workflows/phi-sheet-fit-test.yml'
