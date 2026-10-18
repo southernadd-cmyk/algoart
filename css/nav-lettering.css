@@ -20,3 +20,8 @@
 .site-head nav [data-algo-nav] .algo-nav-ink,body>header:not(.site-head):not(.toolbar) nav [data-algo-nav] .algo-nav-ink{height:17px}
 @media(max-width:780px){.site-head nav,body>header:not(.site-head):not(.toolbar) nav{gap:10px}.site-head nav [data-algo-nav] .algo-nav-ink,body>header:not(.site-head):not(.toolbar) nav [data-algo-nav] .algo-nav-ink{height:11px}}
 @media(max-width:390px){.site-head nav,body>header:not(.site-head):not(.toolbar) nav{gap:6px}.site-head nav [data-algo-nav] .algo-nav-ink,body>header:not(.site-head):not(.toolbar) nav [data-algo-nav] .algo-nav-ink{height:9px}body>header:not(.site-head):not(.toolbar) .wordmark{font-size:20px}}
+
+/* Reserve the navigation appearance before JS draws the marker strokes.
+   This prevents a serif/uppercase fallback flash; text remains in the DOM for accessibility. */
+[data-algo-nav]:not(:has(.algo-nav-ink)){font-size:0!important;letter-spacing:0!important}
+@supports not selector(:has(*)){[data-algo-nav]{font-size:0!important}}
