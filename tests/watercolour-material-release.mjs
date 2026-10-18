@@ -47,7 +47,7 @@ try{
   assert.equal(new URL(page.url()).searchParams.get('material'),'watercolour-v2s');
   assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
   assert.equal(new URL(page.url()).searchParams.get('paper'),'#d9c7b9');
-  assert.match(await page.locator('#materialStyleNote').textContent(),/Watercolour pigments/);
+  assert.match(await page.locator('#materialStyleNote').textContent(),/Watercolour — soft washes, colours bleeding together and dry brush marks on paper/);
   assert.match(await page.locator('#statsText').textContent(),/watercolour/i);
   const water=await page.evaluate(()=>{
     const A=window.AlgoArt,settings=A.readSettings(),savedMaterial=A.oilMaterial;

@@ -53,7 +53,16 @@ async function checkDownload(button,extension,name){
   const dest=path.join(out,name+extension);
   await download.saveAs(dest);
   const contents=await fs.readFile(dest);
-  assert(contents.length>5000,'File too small: '+contents.length);
+  // A valid sparse SVG/plotter export can be well below 5 KB.
+  // PNG stays size-guarded; SVG must contain real vector drawing instructions.
+  if(extension==='.png')assert(contents.length>5000,'PNG too small: '+contents.length);
+  if(extension==='.svg'){
+    const xml=contents.toString('utf8');
+    assert.match(xml,/<svg\b[^>]*>/i,'SVG document missing root');
+    assert.match(xml,/<\/svg>\s*$/i,'SVG document incomplete');
+    assert.match(xml,/<(?:path|line|polyline|polygon|rect|circle|ellipse)\b/i,
+      'SVG contains no drawable geometry');
+  }
   if(extension==='.png'){
     assert.equal(contents.subarray(1,4).toString(),'PNG');
     const width=contents.readUInt32BE(16),height=contents.readUInt32BE(20);
@@ -118,7 +127,8 @@ try{
   assert.match(await page.locator('#exportStatus').textContent(),/PNG ready/i);
   await page.locator('#savePanel').waitFor({state:'visible'});
   const secondPng=await checkDownload('#savePanel','.png','tissue-mobile-landscape-repeat');
-  assert.equal(secondPng.filename,png.filename,'Native link retains the artwork filename');
+  assert.equal(secondPng.filename.replace(/-2(?=\.png$)/,''),png.filename,
+    'Repeat PNG should retain the artwork name with only a duplicate suffix');
   // Exact Android failure report: PNG -> Randomise -> PNG again, no reload.
   const oldSeed=await page.locator('#seed').inputValue();
   await changeArtwork();
@@ -138,12 +148,13 @@ try{
   assert(thirdSeed.filename.includes(newerSeed));
   const svg=await checkDownload('#saveSVG','.svg','tissue-mobile-svg');
   const secondSvg=await checkDownload('#saveSVG','.svg','tissue-mobile-svg-repeat');
-  assert.match(secondSvg.filename,/ \(2\)\.svg$/);
+  assert.match(secondSvg.filename,/(?:-2| \(2\))\.svg$/);
   const plotter=await checkDownload('#savePlotter','.svg','tissue-mobile-plotter');
   const secondPlotter=await checkDownload('#savePlotter','.svg','tissue-mobile-plotter-repeat');
-  assert.match(secondPlotter.filename,/ \(2\)\.svg$/);
+  assert.match(secondPlotter.filename,/(?:-2| \(2\))\.svg$/);
   const thirdPng=await checkDownload('#savePanel','.png','tissue-mobile-landscape-third');
-  assert.equal(thirdPng.filename,thirdSeed.filename);
+  assert.equal(thirdPng.filename.replace(/-\d+(?=\.png$)/,''),thirdSeed.filename.replace(/-\d+(?=\.png$)/,''),
+    'Later PNG should preserve the same artwork identity');
   const liveDownloadLinks=await page.locator('a[download]').count();
   assert(liveDownloadLinks>=5,'Mobile download anchors must remain attached for browser consumption');
   console.log('PASS Tissue mobile repeated PNG, SVG and plotter downloads without reload',

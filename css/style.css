@@ -2236,8 +2236,8 @@ button{font-family:Georgia,serif}
  .editorial-welcome .welcome-layout{display:flex;flex-direction:column;align-items:stretch;gap:12px}
  .editorial-welcome .welcome-left{width:100%;min-width:0;align-self:stretch}
  .editorial-welcome .intro-card{width:100%;box-sizing:border-box}
- .editorial-welcome .intro-thesis{font-size:clamp(8px,2.35vw,11px)!important;white-space:nowrap!important;line-height:1.7!important;letter-spacing:-.025em}
- .editorial-welcome .welcome-right{width:min(100%,320px);align-self:center;margin:0}
+ .editorial-welcome .intro-thesis{font-size:clamp(9px,2.7vw,12px)!important;white-space:nowrap!important;line-height:1.65!important;letter-spacing:-.015em}
+ .editorial-welcome .welcome-right{width:fit-content;max-width:min(100%,320px);align-self:center;margin:0}
  .editorial-welcome .welcome-right img{display:block;width:100%;max-height:24vh;object-fit:contain}
  .editorial-welcome .welcome-right figcaption{margin-top:5px}
 }
@@ -2248,4 +2248,12 @@ button{font-family:Georgia,serif}
  .editorial-preview .inspector-head .seed{min-width:0;flex:1 1 auto}
  .editorial-preview .inspector-head #seed{min-width:0;width:100%;max-width:100%;flex:1 1 auto}
  .editorial-preview #inspectorToggle{max-width:calc(100vw - 20px)}
+}
+
+/* Portrait artwork should not sit inside a wide landscape-shaped mount. */
+.editorial-welcome .welcome-right{width:fit-content;max-width:100%}
+.editorial-welcome .welcome-right img{display:block;width:auto;max-width:100%;height:auto;max-height:40vh;object-fit:contain}
+@media(max-width:590px){
+ .editorial-welcome .score-date{font-size:8px!important;line-height:1.5!important;letter-spacing:0!important}
+ .editorial-welcome .welcome-right img{width:auto;max-width:100%;max-height:24vh}
 }

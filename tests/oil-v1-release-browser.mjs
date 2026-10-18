@@ -53,7 +53,7 @@ try{
  assert.equal(result.currentMaterial,'oil');
  assert.match(result.currentUrl,/material=oil-v1/);
  assert.match(result.currentDescription,/oil painting/i);
- assert.match(result.currentNote,/Oil Paint v1 \(legacy\)/);
+ assert.match(result.currentNote,/Oil Paint — thick brushstrokes, visible bristle marks and colour built up in layers/);
  assert.equal(result.oilVersion,'oil-paint-v1');
  assert(result.oilBroad>=1,'No source connections on selected oil test seed');
  assert(result.oilContacts>=4,'No actual V4e oil-bristle contact pass');

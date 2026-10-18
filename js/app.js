@@ -240,7 +240,7 @@ function syncMaterialNote(){
     :'Marker Drawing — uneven lines, changing pressure and the odd dry patch of ink.')+
     (phiSheetFraming&&!(watercolourEnabled()&&watercolourV2SFamily())
       ?' Fit to φ is on for the drawing and its exports.':'')+
-    ' PNG keeps the paint and paper textures. SVG and plotter files keep the drawn lines.';
+    '';
 }
 function renderArtwork(target,settings,scale,reveal){
   A.phiFramingEnabled=phiSheetFraming&&
@@ -1464,7 +1464,7 @@ function loadLatestGalleryDefault(){
             return e.material!=='watercolor'&&e.material!=='watercolour' &&
               (e.orientation||(e.settings&&e.settings.orientation))!=='portrait';
           }).pop()||entries[entries.length-1];
-          if(!latest||!latest.settings)return false;
+          if(!latest||!latest.settings||welcomeSelectedArtworkUrl)return false;
           A.rendererVersion=Number(latest.rendererVersion)||CURRENT_RENDERER_VERSION;
           // The default editor canvas must show the same framed picture
           // as the latest daily gallery cover (old covers remain unfitted).
@@ -1493,6 +1493,8 @@ loadLatestGalleryDefault().then(function(changed){
 var welcomeArtworkPromise=null;
 var welcomeLastArtwork=-1;
 var welcomeSelectedArtworkUrl=null;
+var welcomePreparedArtworkUrl=null;
+var welcomeSelectionSerial=0;
 function loadWelcomeArtworks(){
   if(welcomeArtworkPromise)return welcomeArtworkPromise;
   welcomeArtworkPromise=fetch('gallery/',{cache:'no-cache'}).then(function(response){
@@ -1536,9 +1538,23 @@ function chooseWelcomeArtwork(){
     welcomeLastArtwork=index;
     var selected=artworks[index];
     welcomeSelectedArtworkUrl=selected.artUrl;
+    welcomePreparedArtworkUrl=null;
+    var serial=++welcomeSelectionSerial;
     image.src=selected.src;
     image.alt=selected.alt;
     caption.textContent=selected.title;
+    // Render the exact selected artwork behind the splash before BEGIN is
+    // clicked. No second navigation or second render is needed on entry.
+    if(selected.artUrl)Promise.resolve().then(function(){
+      if(serial!==welcomeSelectionSerial||splash.hidden)return;
+      var selectedUrl=new URL(selected.artUrl,location.href);
+      if(selectedUrl.origin!==location.origin)return;
+      history.replaceState(null,'',selectedUrl.href);
+      if(!loadSettingsFromURL())return;
+      commitRegenerate();
+      if(serial===welcomeSelectionSerial)welcomePreparedArtworkUrl=selectedUrl.href;
+    }).catch(function(error){console.warn('Welcome artwork pre-render failed:',error)});
+
   });
 }
 (function initIntroSplash(){
@@ -1556,8 +1572,9 @@ function chooseWelcomeArtwork(){
   }
   $('introEnter').onclick=function(){
     var chosen=welcomeSelectedArtworkUrl;
+    var ready=chosen&&welcomePreparedArtworkUrl===chosen;
     closeIntro(false);
-    if(chosen)location.assign(chosen);
+    if(chosen&&!ready)location.assign(chosen);
   };
   var welcomeLogo=$('welcomeLogo');
   if(welcomeLogo)welcomeLogo.addEventListener('click',function(){

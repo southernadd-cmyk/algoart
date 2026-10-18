@@ -25,7 +25,7 @@ try{
   url=await visit('&fit=0');
   assert.equal(url.searchParams.get('fit'),'0');
   assert.equal(await page.locator('#watercolourFit').isChecked(),false);
-  assert.match(await page.locator('#materialStyleNote').textContent(),/match the Marker\/plotter φ composition/);
+  assert.match(await page.locator('#materialStyleNote').textContent(),/Watercolour — soft washes, colours bleeding together and dry brush marks on paper/);
 
   const experiment=await page.evaluate(()=>{
     const A=window.AlgoArt,settings=A.readSettings();
