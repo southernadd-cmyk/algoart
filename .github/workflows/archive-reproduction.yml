@@ -1,121 +1,92 @@
-name: Archive reproduction
-# Automatically test code changes, not every gallery/social-output commit or push
-# to an intermediate working branch. Daily gallery uses workflow_call below.
+name: Portrait format regression and preview
+
 on:
-  # PRs validate changes before merge; daily workflow_call verifies archives.
-  # Do not repeat the expensive 3-browser suite on every main push.
+  push:
+    branches:
+      - feature/portrait-support
   pull_request:
-    branches: [main]
+    branches:
+      - main
     paths:
-      # Archive reproduction is a renderer/data contract, not a copy or styling test.
-      - 'js/**'
-      - 'automation/config.mjs'
-      - 'tests/archive-reproduction.mjs'
-      - 'tests/archive-jpeg.test.mjs'
-      - 'gallery/*/meta.json'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/archive-reproduction.yml'
+      - 'js/app.js'
+      - 'js/generator.js'
+      - 'js/export.js'
+      - 'js/phi-sheet-fit.js'
+      - 'automation/**'
+      - 'tests/orientation.test.mjs'
+      - 'tests/portrait-*.mjs'
+      - '.github/workflows/portrait-tests.yml'
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      checkout_ref:
-        type: string
-        required: false
-        default: ''
+
 permissions:
   contents: read
-# Cancel superseded PR test runs, but never interrupt the main-branch
-# archive reproducibility checks or the daily gallery's explicit call.
 concurrency:
-  group: archive-reproduction-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: portrait-tests-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  reproduce:
-    name: Archive / ${{ matrix.browser }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
+  orientation-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.checkout_ref || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install JavaScript dependencies
-        timeout-minutes: 2
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Record browser runtime
-        run: npx playwright --version
-      - name: Install browser system dependencies
-        timeout-minutes: 2
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: npx playwright install-deps ${{ matrix.browser }}
-      - name: Download browser runtime
-        timeout-minutes: 2
-        run: npx playwright install ${{ matrix.browser }}
-      - name: Start local editor
-        run: |
-          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/archive-http.log 2>&1 &
-          for i in {1..30}; do
-            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
-            sleep 1
-          done
-          exit 1
-      # These deterministic Node checks are browser-independent.
-      # Run them once rather than repeating the expensive suite for all 3 browsers.
-      - name: Check visual metrics, geometry and fixed-order travel
-        if: ${{ matrix.browser == 'chromium' }}
-        run: |
-          npm run test:plotter-metrics
-          npm run test:plotter
-          npm run test:tuning-equivalence
-      - name: Compare plotter previews with canvas artwork
-        env:
-          ARCHIVE_BROWSER: ${{ matrix.browser }}
-          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
-        run: npm run test:plotter-browser
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - name: Verify landscape fixtures and portrait determinism
+        run: npm run test:orientation
+      - name: Verify shared posting slots and ten-image gallery preservation
+        run: npm run test:portrait-publishing
+      - name: Check caption limits and artwork permalinks
+        run: node tests/portrait-captions.test.mjs
+
+  browser-previews:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          name: plotter-${{ matrix.browser }}-${{ github.run_id }}
-          path: plotter-check-results/
-          retention-days: 14
-      - name: Capture actual procedural oil previews for review
-        if: ${{ matrix.browser == 'chromium' }}
-        env:
-          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
-        run: node tests/oil-preview.mjs
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() && matrix.browser == 'chromium' }}
-        with:
-          name: procedural-oil-previews
-          path: oil-check-results/
-          retention-days: 14
-      - name: Reproduce representative archive coverage on PRs; full archive on explicit runs
-        if: ${{ !cancelled() }}
-        env:
-          ARCHIVE_BROWSER: ${{ matrix.browser }}
-          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+          node-version: '22'
+      - name: Install browser testing tools
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            node tests/archive-reproduction.mjs --representative
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Launch isolated local web server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/algoart-preview.log 2>&1 &
+          echo $! > /tmp/algoart-preview.pid
+      - name: Verify exact social editor links and equal-height gallery frames
+        run: node tests/exact-social-links-gallery-layout.test.mjs
+      - name: Verify system thumbnails match the artwork selected by each card
+        run: node tests/mode-card-previews.mjs
+      - name: Capture 16 real browser compositions and mobile checks
+        run: node tests/portrait-preview.mjs
+      - name: Test five portraits, three posts and mixed ten-work gallery
+        id: pipeline
+        continue-on-error: true
+        run: |
+          mkdir -p preview/screenshots
+          set +e
+          node tests/portrait-pipeline.test.mjs > preview/screenshots/portrait-pipeline.log 2>&1
+          RESULT=$?
+          echo "code=$RESULT" >> "$GITHUB_OUTPUT"
+          if [ "$RESULT" -eq 0 ]; then
+            echo "PASS — five portraits, three posts and mixed ten-artwork gallery" > preview/screenshots/portrait-ci-status.txt
           else
-            npm run test:archive
+            echo "FAIL (exit $RESULT) — see portrait-pipeline.log" > preview/screenshots/portrait-ci-status.txt
           fi
-      - name: Reject changed artwork without rejecting JPEG compression
-        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
-        env:
-          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
-        run: node tests/archive-jpeg.test.mjs
+      - name: Check third-party branch preview URL
+        if: always()
+        run: node tests/external-preview.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: archive-${{ matrix.browser }}-${{ github.run_id }}
-          path: archive-check-results/
+          name: portrait-comparison-images
+          path: preview/screenshots/
+          if-no-files-found: ignore
           retention-days: 14
+      - name: Require passing end-to-end portrait pipeline
+        if: always()
+        run: |
+          test "${{ steps.pipeline.outputs.code }}" = "0"
