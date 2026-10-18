@@ -1100,7 +1100,7 @@ function copyAltDescription(){
   }
 }
 
-var exportBusy=false,preparedPNGURL=null,pngGeneration=0;
+var exportBusy=false,preparedPNGURL=null,pngGeneration=0,mobilePNGDownloadCount=0;
 function clearPreparedPNG(){
   pngGeneration++;
   if(preparedPNGURL){
@@ -1146,7 +1146,11 @@ function savePNG(){
       if(generation!==pngGeneration)return;
       preparedPNGURL=URL.createObjectURL(file.blob);
       $('pngDownload').href=preparedPNGURL;
-      $('pngDownload').download=file.filename;
+      // Android Chrome may silently ignore repeat downloads with identical names.
+      // Every freshly prepared file gets a unique download name.
+      mobilePNGDownloadCount++;
+      $('pngDownload').download=mobilePNGDownloadCount===1?file.filename:
+        file.filename.replace(/\.png$/i,'-'+mobilePNGDownloadCount+'.png');
       $('pngOpen').href=preparedPNGURL;
       $('pngReady').hidden=false;
       exportFeedback('PNG ready. Tap DOWNLOAD PNG, or open the image to save it.');
