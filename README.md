@@ -18,7 +18,11 @@ These are real archived ALGO/ART outputs, not mockups. Click an image to see its
 | **Watercolour — Growth Systems** | **Oil Paint — Constructed Forms** |
 | [![A watercolour study based on branching Growth Systems geometry](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-watercolour-landscape-01-organic-CWL-20261017-01-67512.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) | [![A portrait oil paint study using Constructed Forms geometry](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-oil-portrait-01-geometric-OP-20261017-01-14273.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) |
 
-These examples cover four of the five materials. Action Painting was added subsequently; the [live gallery](/algoart/gallery/) is the place to browse newly archived work.
+**Action Painting — Growth Systems (18 October 2026)**
+
+[![Action Painting from ALGO/ART Growth Systems, with geometry-guided flowing paint and a monochrome palette](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-18/2026-10-18-action-landscape-01-organic-ACL-20261018-01-67793.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-18/#2026-10-18-ACL01)
+
+All five drawing materials are represented above. Each image links to its dated gallery entry, where you can open and remix the original artwork.
 
 ## Make a drawing
 
