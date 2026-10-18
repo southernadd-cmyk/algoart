@@ -7,15 +7,12 @@ on:
   pull_request:
     branches: [main]
     paths:
+      # Archive reproduction is a renderer/data contract, not a copy or styling test.
       - 'js/**'
-      - '!js/app.js'
-      - 'css/**'
-      - 'fonts/**'
-      - 'index.html'
-      - 'tests/**'
-      - '!tests/mobile-material-profile.mjs'
-      - '!tests/mobile-preview-parity.mjs'
-      - 'gallery/**'
+      - 'automation/config.mjs'
+      - 'tests/archive-reproduction.mjs'
+      - 'tests/archive-jpeg.test.mjs'
+      - 'gallery/*/meta.json'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/archive-reproduction.yml'
