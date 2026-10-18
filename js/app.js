@@ -315,6 +315,23 @@ function loadSettingsFromURL(){
   }
   var settings={};
   var found=false;
+  // Each artwork URL is a complete state snapshot. Omitted fmt means landscape;
+  // omitted material means marker. Never inherit these from the previous artwork.
+  var hasArtworkSettings=Array.from(params.keys()).some(function(key){
+    return key==='v'||key==='material'||key==='tissue'||key==='watercolor'||
+      key==='oil'||Object.keys(PARAM_KEYS).some(function(name){return PARAM_KEYS[name]===key;});
+  });
+  if(hasArtworkSettings){
+    settings.orientation=params.get('fmt')==='portrait'?'portrait':'landscape';
+    $('materialStyle').value='marker';
+    legacyOilV1Link=false;
+    legacyOilV2Link=false;
+    oilV4Link=true;
+    actionPaintingRevision=2;
+    tissuePaletteVersion=7;
+    watercolourMaterialRevision='v2s';
+    watercolourFitToSheet=false;
+  }
 
   Object.keys(PARAM_KEYS).forEach(function(key){
     var short=PARAM_KEYS[key];
