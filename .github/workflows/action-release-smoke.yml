@@ -11,7 +11,6 @@ on:
     paths:
       - 'js/action-painting-v1.js'
       - 'js/app.js'
-      - 'index.html'
       - 'automation/**'
       - 'tests/action-release-smoke.mjs'
       - '.github/workflows/action-release-smoke.yml'
