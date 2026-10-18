@@ -86,7 +86,7 @@ def main():
         try:
             result=generate(day,args.force)
             print(f"{day}: {result}")
-            if result.startswith(("invalid", "missing artwork")):
+            if result.startswith(("invalid", "missing artwork", "missing metadata", "no entries")):
                 failures.append(day)
         except Exception as ex:
             failures.append(day)

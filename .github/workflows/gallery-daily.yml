@@ -159,6 +159,14 @@ jobs:
           GALLERY_QUEUE_ORIENTATION: portrait
         run: npm run gallery:build
 
+      # Build the preview from the FINAL archive (including late Action Painting slots).
+      # Never publish a gallery page that references an image we have not generated.
+      - name: Build final daily gallery mosaic
+        shell: bash
+        run: |
+          DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
+          python3 automation/build-gallery-previews.py --date "$DAY" --force
+
       - name: Verify gallery output
         shell: bash
         run: |
@@ -169,6 +177,19 @@ jobs:
           test -s robots.txt
           DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
           test -s "gallery/$DAY/index.html"
+          test -s "gallery/$DAY/archive-preview.jpg"
+          DAY="$DAY" python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from PIL import Image
+          date = os.environ['DAY']
+          preview = Path('gallery') / date / 'archive-preview.jpg'
+          with Image.open(preview) as image:
+              image.verify()
+          with Image.open(preview) as image:
+              assert image.size == (840, 600), f'{preview}: {image.size}'
+          print(f'Verified complete mosaic: {preview}')
+          PY
           COUNT="$(find "gallery/$DAY" -maxdepth 1 -name '*.jpg' | wc -l)"
           # New materials add artwork without changing the historical batch size.
           # Require the established baseline; do not reject additional material batches.
