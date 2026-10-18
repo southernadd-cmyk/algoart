@@ -6,7 +6,6 @@ on:
       - 'js/watercolour-v2s.js'
       - 'js/app.js'
       - 'js/export.js'
-      - 'index.html'
       - 'tests/watercolour-fit.test.mjs'
       - '.github/workflows/watercolour-fit-test.yml'
   workflow_dispatch:
