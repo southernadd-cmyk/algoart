@@ -180,7 +180,7 @@
       <nav class="tabs" role="tablist" aria-label="Control categories">
         <button class="tab active" data-tab="composition" id="tab-composition" role="tab" aria-controls="panel-composition" aria-selected="true" tabindex="0">Compose</button>
         <button class="tab" data-tab="phi" id="tab-phi" role="tab" aria-controls="panel-phi" aria-selected="false" tabindex="-1">φ</button>
-        <button class="tab" data-tab="marker" id="tab-marker" role="tab" aria-controls="panel-marker" aria-selected="false" tabindex="-1">Materials</button>
+        <button class="tab" data-tab="marker" id="tab-marker" role="tab" aria-controls="panel-marker" aria-selected="false" tabindex="-1">Marks</button>
         <button class="tab" data-tab="geometry-panel" id="tab-geometry-panel" role="tab" aria-controls="panel-geometry-panel" aria-selected="false" tabindex="-1">Shape</button>
         <button class="tab" data-tab="colour" id="tab-colour" role="tab" aria-controls="panel-colour" aria-selected="false" tabindex="-1">Colour</button>
         <button class="tab" data-tab="export" id="tab-export" role="tab" aria-controls="panel-export" aria-selected="false" tabindex="-1">Export</button>
@@ -231,7 +231,7 @@
         <section class="tab-panel" data-panel="marker" id="panel-marker" role="tabpanel" aria-labelledby="tab-marker" hidden>
           
           <div class="controls">
-            <div class="mini-note" id="materialControlsNote">Choose a material in Compose. These controls change how the marks are made.</div>
+            <div class="mini-note" id="materialControlsNote">Choose a material in Compose, then adjust its marks here.</div>
             <div class="control"><label>Mark-making tool</label><select id="pen"><option value="felt">Felt Tip</option><option value="fine" selected>Fine Marker</option><option value="broad">Broad Marker</option><option value="highlighter">Highlighter</option><option value="dry">Dry Marker</option><option value="paint">Paint Pen</option><option value="scribble">Scribble Pen</option></select></div>
             <div class="control"><label>Stroke width</label><output></output><input id="thickness" type="range" min="1" max="28" value="13"></div>
             <div class="control"><label>Wobble</label><output></output><input id="wobble" type="range" min="0" max="100" value="32"></div>
@@ -298,6 +298,7 @@
             <div id="exportStatus" class="share-status" role="status" aria-live="polite"></div>
             <p class="mini-note">On phones, 1× is the default for reliable downloads; 2× is available if your device has enough memory.</p>
             <button class="export-big" id="saveSVG">DOWNLOAD SVG</button>
+            <p class="mini-note">PNG saves the visible material and its paint texture. SVG and plotter SVG preserve the underlying vector marks, not the raster paint texture.</p>
             <fieldset class="plotter-controls">
               <legend>Plotter SVG</legend>
               <div class="control"><label for="plotterPaper">Paper size</label><select id="plotterPaper"><option value="A4">A4</option><option value="A3">A3</option></select></div>
