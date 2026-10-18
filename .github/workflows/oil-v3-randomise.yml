@@ -2,7 +2,7 @@ name: Oil V3 Randomise diagnostic
 on:
   pull_request:
     branches: [main]
-    paths: ['tests/oil-v3-randomise.mjs', '.github/workflows/oil-v3-randomise.yml', 'js/app.js', 'js/oil-brush-v3.js', 'js/oil-paint-v3.js']
+    paths: ['tests/oil-v3-randomise.mjs', '.github/workflows/oil-v3-randomise.yml', 'js/oil-brush-v3.js', 'js/oil-paint-v3.js']
   workflow_dispatch:
 permissions:
   contents: read
