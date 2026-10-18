@@ -8,7 +8,7 @@ const SITE_PATH = '/algoart';
 const SITE_URL = SITE_ORIGIN + SITE_PATH;
 const GALLERY_URL = SITE_URL + '/gallery';
 const GALLERY_DESCRIPTION = 'A new set of drawings every day. Open any piece, change its controls and make it your own.';
-const FEED_DESCRIPTION = 'Daily deterministic golden-ratio generative artworks from ALGO/ART in Marker drawing, Tissue & Graphite, Watercolour V2S and Oil Paint v4 and Action Painting v1.';
+const FEED_DESCRIPTION = 'A fresh set of ALGO/ART drawings every day. Browse marker, tissue and graphite, watercolour, oil paint and action painting, then open any piece to make it your own.';
 
 function dateInZone(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
