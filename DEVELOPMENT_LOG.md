@@ -25,6 +25,16 @@ The editorial cleanup ([PR #165](https://github.com/southernadd-cmyk/algoart/pul
 
 **Documentation decision:** keep this dated record for why things changed, but make the README a usable entrance to the project. Historical material names and publishing counts must not be mistaken for present-day defaults. The current list is five materials, including Action Painting; the exact Oil version should be verified in code before maintaining a single definitive claim in overview text. Renderer version V9 is separate from material versioning.
 
+### Images from this phase
+
+The gallery itself provides a better visual record than a generated promotional render. These two studies show how different mark-making materials interpret source compositions:
+
+| Marker drawing | Oil Paint |
+| --- | --- |
+| [![Recursive Divisions marker study from 17 October 2026](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-01-rects-AA-20261017-01-84718.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) | [![Constructed Forms oil paint study from 17 October 2026](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-oil-portrait-01-geometric-OP-20261017-01-14273.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) |
+
+The gallery entry retains the seed, source geometry and material selection; these are dated examples, not a claim about the latest engine output.
+
 **Next:** consolidate the CSS cascade with screenshot comparisons; keep testing the welcome/gallery image path as the daily archive changes; follow up on plotter hardware validation, source-matched material fidelity and rendering performance.
 
 ---
