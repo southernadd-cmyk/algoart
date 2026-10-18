@@ -2229,3 +2229,18 @@ button{font-family:Georgia,serif}
 @media (min-width:761px) and (max-width:850px){
   .editorial-preview.app{grid-template-rows:86px minmax(0,1fr)!important;}
 }
+
+/* Phone welcome: preserve the instruction score's authored lines. */
+@media (max-width:590px){
+ .editorial-welcome .welcome-composition{height:auto;max-height:100%;overflow-y:auto;justify-content:flex-start;padding:10px 0 16px}
+ .editorial-welcome .welcome-layout{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+ .editorial-welcome .welcome-left{width:100%;align-self:stretch}
+ .editorial-welcome .intro-thesis{font-size:clamp(8px,2.35vw,11px)!important;white-space:nowrap!important;line-height:1.7!important;letter-spacing:-.025em}
+ .editorial-welcome .welcome-right{width:min(100%,320px);align-self:center;margin:0}
+ .editorial-welcome .welcome-right img{display:block;width:100%;max-height:24vh;object-fit:contain}
+ .editorial-welcome .welcome-right figcaption{margin-top:5px}
+ .editorial-preview .inspector-head{min-width:0}
+ .editorial-preview .inspector-head .seed{min-width:0;flex:1 1 auto}
+ .editorial-preview .inspector-head #seed{min-width:0;width:100%;max-width:100%;flex:1 1 auto}
+ .editorial-preview #inspectorToggle{max-width:calc(100vw - 20px)}
+}
