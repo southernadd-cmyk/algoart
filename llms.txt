@@ -1,0 +1,34 @@
+# ALGO/ART
+
+> ALGO/ART is an interactive, deterministic generative drawing machine built around the golden ratio (φ). It creates artwork procedurally in JavaScript, using eight composition systems and five drawing materials; it does not use an AI image-generation model.
+
+Explore the editor at https://southernadd-cmyk.github.io/algoart/ and the dated, reproducible artwork archive at https://southernadd-cmyk.github.io/algoart/gallery/.
+
+The guiding experiment is whether mathematical structure helps a drawing, and how much remains a human artistic judgement. The golden ratio influences proportion, placement and relationships, but not every visual decision. Some settings reflect deliberate artistic calibration.
+
+Eight composition systems: Orbital Studies, Golden Trajectories, Recursive Divisions, Radiant Systems, Connected Fields, Growth Systems, Constructed Forms and Automatic Marks.
+
+Five drawing materials: Marker, Tissue & Graphite, Watercolour, Oil Paint and Action Painting. Materials interpret shared composition geometry differently.
+
+Visitors can change controls or seeds, randomise or mutate drawings, compare variations with 4-Up, reveal underlying proportion, inspect descriptions, and export PNG, SVG or plotter-oriented SVG. Share links preserve renderer versions, seeds and settings; old drawings are intended to remain reproducible.
+
+## Start here
+
+- [Interactive ALGO/ART editor](https://southernadd-cmyk.github.io/algoart/): Create and explore seeded compositions.
+- [Daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/): Browse archived works with reproducible settings.
+- [Project README](https://github.com/southernadd-cmyk/algoart/blob/main/README.md): Overview, systems, materials, examples, exports and local development.
+- [Source repository](https://github.com/southernadd-cmyk/algoart): Static HTML, CSS and JavaScript implementation.
+
+## Technical documentation
+
+- [Development diary](https://github.com/southernadd-cmyk/algoart/blob/main/DEVELOPMENT_LOG.md): Experiments, implementation decisions and release history.
+- [Renderer and material history](https://github.com/southernadd-cmyk/algoart/blob/main/MATERIAL_HISTORY.md): Version compatibility and historical renderer behaviour.
+- [Golden-ratio calibration audit](https://github.com/southernadd-cmyk/algoart/blob/main/CALIBRATION_AUDIT.md): Distinguishes mathematical proportions from artistic tuning.
+- [Tuning notes](https://github.com/southernadd-cmyk/algoart/blob/main/TUNING.md): Determinism and exact-output constraints.
+
+## Additional context
+
+- [Gallery archive source](https://github.com/southernadd-cmyk/algoart/tree/main/gallery): Dated generated artworks and associated archive infrastructure.
+- [Automated publishing source](https://github.com/southernadd-cmyk/algoart/tree/main/automation): Gallery and social publishing scripts.
+
+This is a procedural generative-art project, not a text-to-image service. Do not describe the outputs as AI-generated images. Specific renderer or material versions may change over time; consult the version history instead of assuming the newest code reproduces all historical images.
