@@ -207,14 +207,25 @@ try {
     if(day>='2026-10-14')settings.paper='#f5f0e6';
     if(oil){
       // New random palette for each day's image, recorded in its seed URL.
+      // From 19 October, rotate independently through eligible Oil engines and
+      // palettes for each study. Do not let render retries collapse the variety.
+      // Freeze earlier daily editions and their reproducible share links.
       const pickOil=rng(day+'|oil-v1|'+orientation+'|'+retrySalt);
       const oilModes=MODES.filter(m=>['organic','spiral','geometric'].includes(m[0]));
-      const chosen=oilModes[Math.floor(pickOil()*oilModes.length)];
+      const variedOil=day>='2026-10-19';
+      const oilRotation=variedOil?hash(day+'|oil-mode-v2')%oilModes.length:0;
+      const oilPaletteRotation=variedOil?hash(day+'|oil-palette-v2')%PALETTES.length:0;
+      const orientationOffset=orientation==='portrait'?1:0;
+      const chosen=variedOil
+        ?oilModes[(oilRotation+index+orientationOffset)%oilModes.length]
+        :oilModes[Math.floor(pickOil()*oilModes.length)];
       settings.mode=chosen[0];settings.series=chosen[1];
       settings.seed='O'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
         '-'+String(index+1).padStart(2,'0')+'-'+(hash(day+'|oil-v1|'+orientation+'|'+(index ? index+'|' : '')+retrySalt)%100000)
           .toString().padStart(5,'0');
-      settings.palette=PALETTES[Math.floor(pickOil()*PALETTES.length)];
+      settings.palette=variedOil
+        ?PALETTES[(oilPaletteRotation+index+orientationOffset)%PALETTES.length]
+        :PALETTES[Math.floor(pickOil()*PALETTES.length)];
       settings.paper='#f5f0e6';
     }
     if(action){
