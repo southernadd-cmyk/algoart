@@ -2278,3 +2278,8 @@ button{font-family:Georgia,serif}
   overflow-wrap:break-word;
   text-overflow:clip;
 }
+
+/* Welcome artwork: reserve a paper canvas before the gallery image arrives. */
+.editorial-welcome .welcome-right{background:#f9f6ee;min-height:220px;aspect-ratio:4 / 3;box-shadow:0 11px 23px rgba(75,60,43,.14);display:flex;flex-direction:column;justify-content:center}
+.editorial-welcome .welcome-right img{min-height:0;aspect-ratio:4 / 3;object-fit:contain;box-shadow:none;background:transparent}
+@media(max-width:760px){.editorial-welcome .welcome-right{min-height:160px;width:min(100%,390px);max-width:390px}.editorial-welcome .welcome-right img{width:100%;max-height:40vh}}
