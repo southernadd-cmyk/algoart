@@ -1509,6 +1509,8 @@ function chooseWelcomeArtwork(){
   frame.classList.remove('welcome-portrait','welcome-landscape');
   frame.classList.add('welcome-loading');
   frame.style.aspectRatio='';
+  frame.style.width='';
+  frame.style.removeProperty('--welcome-paper-width');
   image.onload=null;
   image.onerror=null;
   image.removeAttribute('src');
@@ -1532,7 +1534,15 @@ function chooseWelcomeArtwork(){
       var height=candidate.naturalHeight||selected.height;
       if(width>0&&height>0){
         var portrait=height>width;
-        frame.style.aspectRatio=width+' / '+height;
+        // Explicitly size the entire paper from the NEW decoded image ratio.
+        // A fit-content grid item otherwise retains a narrow portrait intrinsic size.
+        var maxHeight=window.innerWidth<=590?window.innerHeight*.30:
+          window.innerWidth<=760?window.innerHeight*.34:Math.min(window.innerHeight*.48,550);
+        var paperWidth=Math.max(1,Math.round(maxHeight*width/height));
+        frame.style.setProperty('--welcome-paper-width','min(100%, '+paperWidth+'px)');
+        frame.style.aspectRatio='auto';
+        image.style.width='100%';
+        image.style.height='auto';
         image.style.aspectRatio=width+' / '+height;
         frame.classList.toggle('welcome-portrait',portrait);
         frame.classList.toggle('welcome-landscape',!portrait);
