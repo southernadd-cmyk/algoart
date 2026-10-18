@@ -8,6 +8,18 @@ There is no image-generation model behind the drawings. The compositions and mar
 
 **[Open ALGO/ART](https://southernadd-cmyk.github.io/algoart/)** · **[Daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/)**
 
+## Examples from the daily gallery
+
+These are real archived ALGO/ART outputs, not mockups. Click an image to see its original gallery entry and the link to reproduce it.
+
+| Marker — Recursive Divisions | Tissue & Graphite — Golden Trajectories |
+| --- | --- |
+| [![A landscape marker composition of nested rectangular territories](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-01-rects-AA-20261017-01-84718.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) | [![A landscape Golden Trajectories drawing in translucent tissue and graphite](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-watercolor-landscape-01-spiral-AWL-20261017-01-02707.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) |
+| **Watercolour — Growth Systems** | **Oil Paint — Constructed Forms** |
+| [![A watercolour study based on branching Growth Systems geometry](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-watercolour-landscape-01-organic-CWL-20261017-01-67512.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) | [![A portrait oil paint study using Constructed Forms geometry](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/2026-10-17-oil-portrait-01-geometric-OP-20261017-01-14273.jpg)](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-17/) |
+
+These examples cover four of the five materials. Action Painting was added subsequently; the [live gallery](/algoart/gallery/) is the place to browse newly archived work.
+
 ## Make a drawing
 
 1. Choose a composition system and a drawing material in **Compose**.
