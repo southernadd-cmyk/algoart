@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="css/style.css?v=20261018-welcome-card-alignment">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/marker-font.css?v=20261014-phi-sheet">
-<link rel="stylesheet" href="css/nav-lettering.css?v=7">
+<link rel="stylesheet" href="css/nav-lettering.css?v=8">
 <script defer src="js/nav-lettering.js?v=2"></script>
 </head>
 <body>
@@ -56,21 +56,12 @@
   </div>
 </div>
 <div class="app editorial-preview" id="app">
-  <header class="toolbar">
-    <div class="brand-lockup">
-      <h1 class="brand"><button type="button" id="welcomeLogo" class="welcome-logo-trigger" aria-label="Show ALGO/ART introduction">ALGO<span>/</span>ART</button></h1>
-      <div class="brand-meta">drawings made with a little maths <b>φ</b></div>
-    </div>
-
-    <div class="formula-strip" aria-hidden="true">
-      <span>1.6180339887</span>
-      <i></i>
-      <span>137.507764°</span>
-    </div>
-
-    <p class="studio-question">Can one number compose a drawing?</p>
-    <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="./" aria-current="page">try it out</a><a data-algo-nav href="gallery/">daily gallery</a><a data-algo-nav href="about/">how it works</a></nav>
-  </header>
+  <header class="algo-global-header toolbar">
+  <div class="algo-global-brand"><h1 class="brand"><button type="button" id="welcomeLogo" class="welcome-logo-trigger" aria-label="Show ALGO/ART introduction">ALGO<span>/</span>ART</button></h1></div>
+  <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
+  <p class="algo-global-question">Can one number compose a drawing?</p>
+  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="./" aria-current="page">try it out</a><a data-algo-nav href="gallery/">daily gallery</a><a data-algo-nav href="about/">how it works</a></nav>
+</header>
 
   <main>
     <div class="stage">
