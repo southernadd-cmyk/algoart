@@ -1,0 +1,30 @@
+name: Refresh Proportion Piece social preview
+on:
+  push:
+    paths:
+      - .github/workflows/refresh-social-preview.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Render social-card.svg to PNG
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y librsvg2-bin
+          rsvg-convert -w 1200 -h 630 social-card.svg -o social-card.png
+          file social-card.png
+      - name: Commit preview image
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add social-card.png
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh social preview PNG for PROPORTION PIECE"
+            git push
+          fi
