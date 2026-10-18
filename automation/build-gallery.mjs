@@ -51,7 +51,7 @@ function slugText(value = '') {
   return String(value).replace(/[^a-zA-Z0-9 _./:%+-]/g, '').trim();
 }
 
-function materialLabel(item) { return item.material==='action'?'Action painting':item.material==='oil'?'Oil paint':item.material==='watercolour'?'Watercolour':item.material==='watercolor'?'Tissue & graphite':'Marker'; }
+function materialLabel(item) { return item.material==='action'?'Action Painting':item.material==='oil'?'Oil Paint':item.material==='watercolour'?'Watercolour':item.material==='watercolor'?'Tissue & Graphite':'Marker'; }
 
 function artworkTitle(item, index) {
   return `${item.series} — ${item.material==='action'?'Action Painting ':item.material==='oil'?'Oil Paint ':item.material==='watercolour'?'Watercolour ':item.material==='watercolor'?'Tissue & Graphite ':''}Study ${String(index + 1).padStart(2, '0')}`;
@@ -86,14 +86,14 @@ function artworkCard(item, index) {
       <div class="art-info">
         <div class="art-number">${String(index + 1).padStart(2, '0')}</div>
         <div>
-          <h2>${escapeHtml(item.series)} · ${escapeHtml(materialLabel(item))} · ${escapeHtml(displayDate(item.date || item.id.slice(0,10)))}</h2>
+          <h2>${escapeHtml(item.series)} · ${escapeHtml(materialLabel(item))}</h2>
           
           <dl>
             <div><dt>Seed</dt><dd>${escapeHtml(item.seed)}</dd></div>
             <div><dt>Series</dt><dd>${escapeHtml(item.series)}</dd></div>
             <div><dt>Format</dt><dd>${portrait ? 'Portrait · 1000 × 1400' : 'Landscape · 1400 × 1000'}</dd></div>
             <div><dt>Additional φ pull</dt><dd>${escapeHtml(s.phiStrength)}%</dd></div>
-            <div><dt>Medium</dt><dd>${item.material==='action'?'Action Painting v1':item.material==='oil'?(item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v4'?'Oil Paint v4':item.shareUrl&&new URL(item.shareUrl).searchParams.get('material')==='oil-v3'?'Oil Paint v3':'Oil Paint v1'):item.material==='watercolour'?'Watercolour V2S':item.material==='watercolor'?'Tissue &amp; Graphite':escapeHtml(s.pen+' marker')}</dd></div>
+            <div><dt>Material</dt><dd>${escapeHtml(materialLabel(item))}</dd></div>
             <div><dt>Palette</dt><dd>${escapeHtml(s.palette)}</dd></div>
           </dl>
           <a class="remix" href="${escapeHtml(item.shareUrl)}">Open this drawing →</a>
@@ -108,7 +108,7 @@ function dayPage(queue) {
   const entries = queue.entries;
   const series = [...new Set(entries.map(e => e.series))];
   const title = `ALGO/ART Daily Gallery — ${pretty} | Golden Ratio Generative Art`;
-  const description = `${entries.length} drawings made on ${pretty}. Five materials, different compositions, and room to make each one your own.`;
+  const description = `${entries.length} drawings made on ${pretty}. Different materials, different compositions, and room to make each one your own.`;
   const canonical = `${GALLERY_URL}/${date}/`;
   const cover = `${canonical}${entries[0].imageFile}`;
 
@@ -188,7 +188,7 @@ function dayPage(queue) {
     <div class="kicker">DAILY ARCHIVE / ${escapeHtml(date)}</div>
     <h1>Drawings from<br>${escapeHtml(pretty)}.</h1>
     <p>${escapeHtml(description)}</p>
-    <div class="hero-meta"><span>${entries.length} drawings</span><span>Five materials</span><span>Each one can be revisited</span></div>
+    <div class="hero-meta"><span>${entries.length} drawings</span><span>Different materials</span><span>Each one can be revisited</span></div>
   </section>
   <section class="grid" aria-label="Artwork generated on ${escapeHtml(pretty)}">
     ${entries.map(artworkCard).join('\n')}
