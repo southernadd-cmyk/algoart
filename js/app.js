@@ -1459,7 +1459,7 @@ else loadExactArchivedArtwork(requestedArtworkId).then(function(changed){
   var status=$('shareStatus');
   if(status)status.textContent='Unable to load this archived artwork. Please try again.';
 });
-/* Sample artwork from the newest daily gallery; keep the bundled image as a fallback. */
+/* Select a random daily gallery artwork for the welcome, without a stale initial image. */
 var welcomeArtworkPromise=null;
 var welcomeLastArtwork=-1;
 var welcomeSelectedArtworkUrl=null;
@@ -1510,9 +1510,14 @@ function chooseWelcomeArtwork(){
     welcomeSelectedArtworkUrl=selected.artUrl;
     welcomePreparedArtworkUrl=null;
     var serial=++welcomeSelectionSerial;
-    image.src=selected.src;
+    image.style.visibility='hidden';
+    image.onload=function(){
+      if(serial===welcomeSelectionSerial)image.style.visibility='visible';
+    };
+    image.onerror=function(){image.style.visibility='hidden';};
     image.alt=selected.alt;
     caption.textContent=selected.title;
+    image.src=selected.src;
     // Render the exact selected artwork behind the splash before BEGIN is
     // clicked. No second navigation or second render is needed on entry.
     if(selected.artUrl)Promise.resolve().then(function(){
