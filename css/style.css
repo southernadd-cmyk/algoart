@@ -2211,3 +2211,12 @@ button{font-family:Georgia,serif}
 /* Navigation tabs name each panel; remove redundant repeated section captions. */
 .editorial-preview #inspector .tab-panel > .section-title {display:none!important}
 .editorial-preview #inspector .tab-panel {padding-top:12px!important}
+
+/* The paper and its lettering rotate as one physical sheet. */
+.editorial-welcome .intro-card{transform:rotate(-.55deg)!important;transform-origin:50% 50%!important}
+.editorial-welcome .intro-card .intro-copy,
+.editorial-welcome .intro-card .intro-copy>*{transform:none!important;rotate:none!important}
+/* Keep the existing custom lettering when the heading becomes a button. */
+.brand .welcome-logo-trigger{appearance:none;border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;margin:0;cursor:pointer;text-align:left}
+.brand .welcome-logo-trigger span{color:inherit}
+.brand .welcome-logo-trigger:focus-visible{outline:2px solid currentColor;outline-offset:5px}
