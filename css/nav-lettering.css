@@ -25,3 +25,20 @@
    This prevents a serif/uppercase fallback flash; text remains in the DOM for accessibility. */
 [data-algo-nav]:not(:has(.algo-nav-ink)){font-size:0!important;letter-spacing:0!important}
 @supports not selector(:has(*)){[data-algo-nav]{font-size:0!important}}
+
+/* Compact editor header: keep wordmark and all three links on one mobile row. */
+@media(max-width:760px){
+ .editorial-preview .toolbar{flex-wrap:nowrap!important;justify-content:space-between!important;gap:6px!important;padding:5px 10px!important}
+ .editorial-preview .toolbar .brand-lockup{width:auto!important;min-width:0!important;max-width:104px!important;flex:0 0 auto!important;padding:0!important;border:0!important}
+ .editorial-preview .toolbar .brand{font-size:16px!important;line-height:1!important;white-space:nowrap!important}
+ .editorial-preview .toolbar .brand-meta{display:none!important}
+ .editorial-preview .toolbar .algo-site-nav{flex:0 1 auto!important;min-width:0!important;gap:6px!important;padding:0!important;margin-left:auto!important}
+ .editorial-preview .toolbar .algo-site-nav [data-algo-nav]{min-width:0!important;padding:4px 0!important}
+ .editorial-preview .toolbar .algo-site-nav .algo-nav-ink{height:9px!important}
+}
+@media(max-width:390px){
+ .editorial-preview .toolbar .brand{font-size:14px!important}
+ .editorial-preview .toolbar .brand-lockup{max-width:90px!important}
+ .editorial-preview .toolbar .algo-site-nav{gap:4px!important}
+ .editorial-preview .toolbar .algo-site-nav .algo-nav-ink{height:8px!important}
+}
