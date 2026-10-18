@@ -136,10 +136,10 @@ if (command === 'select') {
     instagram_caption_b64: b64(makeCaptions(item).instagram),
     threads_caption_b64: b64(makeCaptions(item).threads),
     bluesky_caption_b64: b64(makeCaptions(item).bluesky),
-    pinterest_title_b64: b64(item.series + ' — ALGO/ART'),
+    pinterest_title_b64: b64(item.series + ' — PROPORTION PIECE'),
     pinterest_description_b64: b64(
       item.series + ' generated with golden-ratio composition and imperfect digital marker strokes. ' +
-      'Open this exact artwork state in ALGO/ART and remix it.'
+      'Open this exact artwork state in PROPORTION PIECE and remix it.'
     ),
     alt_text_b64: b64(item.copy.altText),
     share_url: item.shareUrl
