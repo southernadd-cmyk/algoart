@@ -8,7 +8,10 @@ on:
     branches:
       - main
     paths:
-      - 'js/**'
+      - 'js/app.js'
+      - 'js/generator.js'
+      - 'js/export.js'
+      - 'js/phi-sheet-fit.js'
       - 'automation/**'
       - 'tests/orientation.test.mjs'
       - 'tests/portrait-*.mjs'
