@@ -1,0 +1,7 @@
+/* Navigation-only custom lowercase marker alphabet. Existing heading font is unchanged. */
+[data-algo-nav]{text-transform:none!important;font-style:normal!important;font-variant:normal!important;letter-spacing:0!important;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none;position:relative;line-height:1}
+[data-algo-nav] .algo-nav-ink{display:block;width:auto;height:23px;max-width:100%;overflow:visible;flex-shrink:1}
+[data-algo-nav] .algo-nav-readable{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+[data-algo-nav]:hover .algo-nav-ink,[data-algo-nav][aria-current="page"] .algo-nav-ink,[data-algo-nav].active .algo-nav-ink{filter:drop-shadow(.5px .5px 0 currentColor)}
+[data-algo-nav]:focus-visible{outline:2px solid currentColor;outline-offset:5px}
+@media(max-width:650px){[data-algo-nav] .algo-nav-ink{height:18px}}
