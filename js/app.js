@@ -1445,41 +1445,11 @@ function loadExactArchivedArtwork(id){
     });
 }
 
-function loadLatestGalleryDefault(){
-  if(requestedArtworkId)return loadExactArchivedArtwork(requestedArtworkId);
-  if(loadedFromURL)return Promise.resolve(false);
-  return fetch('gallery/archive.json',{cache:'no-store'})
-    .then(function(r){if(!r.ok)throw new Error('archive');return r.json();})
-    .then(function(archive){
-      var days=Array.isArray(archive.days)?archive.days.slice():[];
-      days.sort(function(a,b){return String(b.date).localeCompare(String(a.date));});
-      if(!days.length)return false;
-      return fetch('gallery/'+days[0].date+'/meta.json',{cache:'no-store'})
-        .then(function(r){if(!r.ok)throw new Error('meta');return r.json();})
-        .then(function(meta){
-          var entries=Array.isArray(meta.entries)?meta.entries:[];
-          // Keep existing unparameterised landscape home-page behaviour.
-          // Portrait works remain available through the gallery and share URLs.
-          var latest=entries.filter(function(e){
-            return e.material!=='watercolor'&&e.material!=='watercolour' &&
-              (e.orientation||(e.settings&&e.settings.orientation))!=='portrait';
-          }).pop()||entries[entries.length-1];
-          if(!latest||!latest.settings||welcomeSelectedArtworkUrl)return false;
-          A.rendererVersion=Number(latest.rendererVersion)||CURRENT_RENDERER_VERSION;
-          // The default editor canvas must show the same framed picture
-          // as the latest daily gallery cover (old covers remain unfitted).
-          var latestURL=new URL(latest.shareUrl||location.href);
-          phiSheetFraming=latestURL.searchParams.get('sheet')==='phi';
-          applySettings(Object.assign({},latest.settings,{seed:latest.seed}));
-          return true;
-        });
-    })
-    .catch(function(){return false;});
-}
-
+// Only an explicitly requested archive ID should load archived artwork here.
+// The welcome screen chooses and pre-renders its own random gallery artwork.
 syncModeCards();
 if(!requestedArtworkId)regenerate();
-loadLatestGalleryDefault().then(function(changed){
+else loadExactArchivedArtwork(requestedArtworkId).then(function(changed){
   if(changed){
     syncModeCards();
     regenerate();
