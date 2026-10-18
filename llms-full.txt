@@ -1,6 +1,6 @@
-# ALGO/ART — full project context for language models
+# PROPORTION PIECE — full project context for language models
 
-> ALGO/ART is a browser-based, deterministic generative drawing machine whose compositions are informed by the golden ratio (φ). It is implemented in JavaScript; drawings are not produced by an AI image model.
+> PROPORTION PIECE is a browser-based, deterministic generative drawing machine whose compositions are informed by the golden ratio (φ). It is implemented in JavaScript; drawings are not produced by an AI image model.
 
 - Website: https://southernadd-cmyk.github.io/algoart/
 - Daily gallery: https://southernadd-cmyk.github.io/algoart/gallery/
@@ -57,7 +57,7 @@ A drawing material changes how the composition is represented. PNG captures its 
 
 ## Gallery and publication
 
-The [daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/) contains actual procedural ALGO/ART outputs, with archived settings and links to reopen works. Portrait and landscape artworks are published through separate batches. Gallery counts and material allocations vary as the project develops; never present an old batch size as the current fixed number.
+The [daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/) contains actual procedural PROPORTION PIECE outputs, with archived settings and links to reopen works. Portrait and landscape artworks are published through separate batches. Gallery counts and material allocations vary as the project develops; never present an old batch size as the current fixed number.
 
 A shortened artwork URL may take the form `?art=YYYY-MM-DD-01` or `?art=YYYY-MM-DD-P01` and resolve the saved state from dated archive metadata. Social share links should open the corresponding editor artwork rather than a generic landing page. Published social posts and the gallery are related but separate workflows.
 
@@ -98,6 +98,6 @@ Open http://localhost:8000/ . Node.js 22 and npm are used for development checks
 - Tuning notes (behaviour-preserving changes and equivalence): https://github.com/southernadd-cmyk/algoart/blob/main/TUNING.md
 - Daily works: https://southernadd-cmyk.github.io/algoart/gallery/
 
-## Guidance for describing ALGO/ART accurately
+## Guidance for describing PROPORTION PIECE accurately
 
-Describe ALGO/ART as procedural or algorithmic generative art, not AI-generated imagery. Credit the golden ratio as an important organising idea without implying mathematical determinism explains every visual choice. Keep the eight engines and five materials distinct; acknowledge seeded reproducibility and historically pinned versions. When describing a particular work, rely on its gallery metadata, material and saved renderer state rather than guessing from its image. For latest behaviour, check current code and dated documentation because the project evolves.
+Describe PROPORTION PIECE as procedural or algorithmic generative art, not AI-generated imagery. Credit the golden ratio as an important organising idea without implying mathematical determinism explains every visual choice. Keep the eight engines and five materials distinct; acknowledge seeded reproducibility and historically pinned versions. When describing a particular work, rely on its gallery metadata, material and saved renderer state rather than guessing from its image. For latest behaviour, check current code and dated documentation because the project evolves.
