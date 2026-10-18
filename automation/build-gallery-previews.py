@@ -4,6 +4,9 @@ import argparse
 import json
 import math
 from pathlib import Path
+from urllib.parse import urlparse
+from urllib.request import urlopen
+from io import BytesIO
 from PIL import Image, ImageOps, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1] / "gallery"
@@ -36,6 +39,10 @@ def generate(date, force=False):
     images = []
     for entry in entries:
         name = entry.get("imageFile", "")
+        parsed = urlparse(name)
+        if parsed.scheme in ("https",) and parsed.netloc == "github.com" and parsed.path.startswith("/southernadd-cmyk/algoart/releases/download/"):
+            images.append(name)
+            continue
         if Path(name).name != name or not name.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
             return "invalid source filename"
         p = day_dir / name
@@ -43,7 +50,7 @@ def generate(date, force=False):
             return "missing artwork: " + name
         images.append(p)
     output = day_dir / "archive-preview.jpg"
-    newest = max([meta_path.stat().st_mtime] + [p.stat().st_mtime for p in images])
+    newest = max([meta_path.stat().st_mtime] + [p.stat().st_mtime for p in images if isinstance(p, Path)])
     if not force and output.exists() and output.stat().st_mtime >= newest:
         return "up to date"
     canvas = Image.new("RGB", (WIDTH, HEIGHT), "#f7f2e8")
@@ -53,7 +60,15 @@ def generate(date, force=False):
         left, top = min(WIDTH-1,max(0,left)), min(HEIGHT-1,max(0,top))
         right, bottom = min(WIDTH,max(left+1,right)), min(HEIGHT,max(top+1,bottom))
         target_w, target_h = max(1,right-left-2*GAP), max(1,bottom-top-2*GAP)
-        with Image.open(path) as source:
+        if isinstance(path, str):
+            with urlopen(path, timeout=20) as response:
+                raw = response.read(12_000_001)
+            if len(raw) > 12_000_000:
+                raise ValueError("Remote artwork exceeds 12 MB")
+            source_image = Image.open(BytesIO(raw))
+        else:
+            source_image = Image.open(path)
+        with source_image as source:
             source = ImageOps.exif_transpose(source).convert("RGB")
             tile = ImageOps.fit(source, (target_w,target_h), method=Image.Resampling.LANCZOS, centering=(0.5,0.5))
             canvas.paste(tile, (left+GAP,top+GAP))
