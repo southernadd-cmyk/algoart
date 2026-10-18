@@ -60,17 +60,18 @@ try{
   assert(day.width<=day.viewport+2,'Full-day gallery horizontal overflow');
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'release-day-mobile':'release-day-desktop')+'.png',fullPage:true});
   await page.goto('http://127.0.0.1:4173/gallery/',{waitUntil:'domcontentloaded'});
-  await page.locator('.day-card:first-child .division-mosaic').waitFor({timeout:30000});
-  const mosaic=await page.evaluate(async()=>{
-    const card=document.querySelector('.day-card');
-    const day=card.querySelector('a').getAttribute('href').split('/')[1];
-    const meta=await (await fetch('./'+day+'/meta.json')).json();
-    const tiles=card.querySelectorAll('.division-mosaic .division-tile');
-    return {tiles:tiles.length,expected:meta.entries.length,images:[...tiles].map(tile=>tile.querySelector('img')?.getAttribute('src')),viewport:innerWidth,scrollWidth:document.documentElement.scrollWidth};
-  });
-  assert.equal(mosaic.tiles,mosaic.expected,'Every artwork in daily metadata must appear in the mosaic');
-  assert(mosaic.images.every(Boolean),'Every recursive rectangle must contain an artwork image');
-  assert(mosaic.scrollWidth<=mosaic.viewport+2,'Daily archive mosaic must not overflow the viewport');
+  const previews=await page.evaluate(()=>({
+    covers:[...document.querySelectorAll('.day-card img')].map(img=>({src:img.getAttribute('src'),fallback:img.getAttribute('onerror')})),
+    oldMosaics:document.querySelectorAll('.division-mosaic').length,
+    jsLoaded:!!document.querySelector('script[src*="division-mosaic.js"]'),
+    viewport:innerWidth,
+    scrollWidth:document.documentElement.scrollWidth
+  }));
+  assert(previews.covers.length>0,'Daily archive must have cover previews');
+  assert(previews.covers.every(img=>img.src.includes('/archive-preview.jpg') || img.fallback?.includes('this.src=')),'Archive cards must reference prebuilt previews or preserve the fallback during backfill');
+  assert.equal(previews.oldMosaics,0,'Browser must not recreate mosaics from original artworks');
+  assert(!previews.jsLoaded,'Browser mosaic construction script must be removed');
+  assert(previews.scrollWidth<=previews.viewport+2,'Daily archive must not overflow the viewport');
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'archive-mosaics-mobile':'archive-mosaics-desktop')+'.png',fullPage:true});
   await context.close();
  }
