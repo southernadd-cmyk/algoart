@@ -38,6 +38,9 @@ jobs:
           npm install
           npx playwright install --with-deps chromium
 
+      - name: Install gallery preview dependency
+        run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
+
       - name: Start local ALGO ART
         run: |
           python3 -m http.server 4173 >/tmp/algoart-gallery-http.log 2>&1 &
@@ -141,8 +144,10 @@ jobs:
           DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
           test -s "gallery/$DAY/index.html"
           COUNT="$(find "gallery/$DAY" -maxdepth 1 -name '*.jpg' | wc -l)"
+          # New materials add artwork without changing the historical batch size.
+          # Require the established baseline; do not reject additional material batches.
           if [[ "$DAY" > "2026-10-16" ]]; then
-            test "$COUNT" -eq 16
+            test "$COUNT" -ge 16
           else
             test "$COUNT" -ge 13
           fi
