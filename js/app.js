@@ -949,17 +949,26 @@ $('randomise').onclick=function(){
     e.dispatchEvent(new Event('input'));
   });
 
-  // Drawing material is a rendering choice, never a randomisable parameter.
+  // Randomise composition controls; choose a different drawing material below.
   document.querySelectorAll('select:not(#exportScale):not(#orientation):not(#materialStyle)').forEach(function(e){
     e.selectedIndex=r.int(0,e.options.length-1);
   });
 
   $('seed').value=newSeedValue();
-  // A new random composition uses the current Tissue & Graphite colour system
-  // even when Randomise was clicked on a historical v1 share link.
-  // Opt-in CPU-backend previews (Tissue V8, Watercolour V2T) stay selected.
-  if(oilEnabled()&&tissuePaletteVersion!==8)tissuePaletteVersion=7;
-  if(watercolourEnabled()&&watercolourMaterialRevision!=='v2t')watercolourMaterialRevision='v2s';
+  // Another starts a fresh artwork, including a new material. Exclude the
+  // previous material so repeated clicks cannot appear locked to one medium.
+  var material=$('materialStyle');
+  var nextMaterials=Array.from(material.options).filter(function(option){
+    return !option.disabled&&option.value!==material.value;
+  });
+  if(nextMaterials.length)material.value=r.pick(nextMaterials).value;
+  legacyOilV1Link=false;
+  legacyOilV2Link=false;
+  oilV4Link=true;
+  actionPaintingRevision=2;
+  tissuePaletteVersion=7;
+  watercolourMaterialRevision='v2s';
+  watercolourFitToSheet=false;
   syncModeCards();
   regenerate();
 };
