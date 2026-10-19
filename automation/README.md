@@ -6,10 +6,9 @@ This folder documents the publishing automation for **PROPORTION PIECE**. The ex
 
 ## Live cadence
 
-- Generate **5 unique artworks per day**
-- Publish the same featured artwork to **Instagram and Threads 3 times per day**
-- Keep **2 reserve artworks** per day
-- Time zone: `Europe/London`
+The original Marker schedule generates five works per orientation, with studies 1, 3 and 5 selected for the three daily publishing slots and studies 2 and 4 reserved. The current live workflow also orchestrates portrait, Tissue & Graphite, Watercolour, Oil Paint and Action Painting editions. Material-specific generation and posting counts vary; the workflow and its material-specific jobs are authoritative, rather than a fixed total in this document.
+
+The existing Instagram, Threads and Bluesky accounts retain their original identifiers. Publishing uses `Europe/London` for local scheduling.
 
 Live posting times:
 
@@ -49,7 +48,7 @@ For each date / slot / platform, the live workflow writes a completion marker af
 
 ## Artwork generation
 
-The generator launches the real PROPORTION PIECE site in Chromium, passes deterministic settings through the site's share URL format, and captures the actual 1400×1000 artwork canvas as JPEG.
+The generator launches the PROPORTION PIECE site in Chromium, passes deterministic settings through the site's share URL format, and captures actual landscape (1400 × 1000) or portrait (1000 × 1400) artworks as JPEG.
 
 Output:
 
@@ -145,4 +144,4 @@ Portrait publishing runs even if the landscape job fails. A failed portrait job 
 
 ### Renderer upgrades and existing editions
 
-New social/gallery batches default to V7. An explicit `SOCIAL_RENDERER_VERSION` can select an older supported renderer for test or recovery generation. Landscape jobs reuse archived daily JPEGs, settings, links and renderer versions, including editions created before an upgrade. Portrait jobs reuse their frozen release queue. A renderer update does not rewrite historical editions or change the 09:00, 15:00 and 20:30 Europe/London posting times.
+The current editor and newly generated Oil, Watercolour and Action studies use the V9 geometry renderer; other material queues resolve their renderer version from the generator settings and existing publication rules. Check `automation/generate-social.mjs` before changing version defaults. An explicit `SOCIAL_RENDERER_VERSION` can select an older supported renderer for test or recovery generation. Landscape jobs reuse archived daily JPEGs, settings, links and renderer versions, including editions created before an upgrade. Portrait jobs reuse their frozen release queue. A renderer update does not rewrite historical editions or change the 09:00, 15:00 and 20:30 Europe/London posting times.
