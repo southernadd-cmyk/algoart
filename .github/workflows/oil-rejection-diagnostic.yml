@@ -1,5 +1,11 @@
 name: Oil rejection diagnostic only
 on:
+  push:
+    branches:
+      - diagnostics/oil-rejected-renders-20261020
+    paths:
+      - 'automation/generate-social.mjs'
+      - '.github/workflows/oil-rejection-diagnostic.yml'
   workflow_dispatch:
 permissions:
   contents: read
