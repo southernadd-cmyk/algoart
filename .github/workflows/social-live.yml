@@ -137,6 +137,10 @@ jobs:
           name: landscape-prepublish-${{ github.run_id }}
           path: archive-check-results/
 
+      - name: Install gallery preview dependency
+        if: steps.gate.outputs.should_post == 'true'
+        run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
+
       - name: Build daily gallery and SEO pages
         if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
         env:
