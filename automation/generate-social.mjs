@@ -393,6 +393,7 @@ try {
         await fs.writeFile(path.join(diagnosticDir,'results.json'),JSON.stringify(diagnosticRows,null,2));
         console.log('Diagnostic: '+diagnosticRows.length+' candidate images saved to '+diagnosticDir);
       }
+      if(attempt===23)break;
       continue;
     }
     if(oil){
