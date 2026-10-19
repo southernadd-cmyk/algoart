@@ -1,4 +1,4 @@
-name: ALGO ART portrait publishing (same three daily triggers)
+name: PROPORTION PIECE portrait publishing (same three daily triggers)
 
 # Called by social-live.yml — no extra cronjobs, schedule, or push trigger.
 # Manual runs on the feature branch are safe dry-run previews.
@@ -104,7 +104,7 @@ jobs:
             exit 1
           fi
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG"               --title "ALGO/ART portrait publishing media"               --notes "Rolling public media host for automated @artalgorithm posts."
+            gh release create "$RELEASE_TAG"               --title "PROPORTION PIECE portrait publishing media"               --notes "Rolling public media host for automated @artalgorithm posts."
           fi
 
           DATE="${{ steps.gate.outputs.date }}"
@@ -197,7 +197,7 @@ jobs:
           npm install
           npx playwright install --with-deps chromium
 
-      - name: Start local ALGO ART
+      - name: Start local PROPORTION PIECE
         if: steps.gate.outputs.should_run == 'true'
         run: |
           python3 -m http.server 4173 >/tmp/algoart-http.log 2>&1 &
@@ -270,7 +270,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Archive ALGO ART gallery ${{ steps.gate.outputs.date }}"
+          git commit -m "Archive PROPORTION PIECE gallery ${{ steps.gate.outputs.date }}"
           git pull --rebase origin main
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -413,7 +413,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          echo "### ALGO/ART portrait publishing" >> "$GITHUB_STEP_SUMMARY"
+          echo "### PROPORTION PIECE portrait publishing" >> "$GITHUB_STEP_SUMMARY"
           echo "- Local slot gate: ${{ steps.gate.outputs.should_post }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Date: ${{ steps.gate.outputs.date }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Slot: ${{ steps.gate.outputs.slot }}" >> "$GITHUB_STEP_SUMMARY"
