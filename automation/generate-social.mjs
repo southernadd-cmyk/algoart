@@ -178,6 +178,8 @@ await fs.mkdir(outDir, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
 const entries = [];
+const oilDiagnostic = process.env.OIL_REJECTION_DIAGNOSTIC === '1' && oil;
+const diagnosticRows = [];
 
 try {
   for (let index = 0; index < generationCount; index++) {
@@ -222,7 +224,7 @@ try {
       // Preserve the rotated mode for twelve attempts. If Golden
       // Trajectories cannot meet the source-connection gate, fall back to
       // Constructed Forms for the remaining deterministic retries.
-      const retryMode=variedOil&&chosen[0]==='spiral'&&attempt>=12
+      const retryMode=!oilDiagnostic&&variedOil&&chosen[0]==='spiral'&&attempt>=12
         ?oilModes.find(m=>m[0]==='geometric'):chosen;
       settings.mode=retryMode[0];settings.series=retryMode[1];
       settings.seed='O'+(orientation==='portrait'?'P':'L')+'-'+day.replaceAll('-','')+
@@ -374,6 +376,25 @@ try {
     if (canvasSize[0] !== expectedSize[0] || canvasSize[1] !== expectedSize[1]) {
       throw new Error(`Unexpected ${orientation} canvas size: ${canvasSize.join('x')}`);
     }
+    if(oilDiagnostic){
+      const links=await page.evaluate(()=>{
+        const A=window.AlgoArt;
+        return A.planCompositionV5(A.readSettings(),{phiFraming:A.phiFramingEnabled===true,maxRegions:28}).broadConnectionStats?.count||0;
+      });
+      const reasons=[];
+      if(links<2)reasons.push('source-connections');
+      if(!rendered.validation.valid)reasons.push('visible-ink');
+      const diagnosticDir=path.resolve('oil-check-results/rejected-2026-10-20',orientation);
+      await fs.mkdir(diagnosticDir,{recursive:true});
+      const imageName=String(attempt+1).padStart(2,'0')+'-'+settings.mode+'.jpg';
+      await fs.writeFile(path.join(diagnosticDir,imageName),Buffer.from(rendered.dataUrl.split(',')[1],'base64'));
+      diagnosticRows.push({attempt:attempt+1,seed:settings.seed,mode:settings.mode,links,...rendered.validation,reasons,image:imageName});
+      if(attempt===23){
+        await fs.writeFile(path.join(diagnosticDir,'results.json'),JSON.stringify(diagnosticRows,null,2));
+        console.log('Diagnostic: '+diagnosticRows.length+' candidate images saved to '+diagnosticDir);
+      }
+      continue;
+    }
     if(oil){
       const links=await page.evaluate(()=>{
         const A=window.AlgoArt;
@@ -394,76 +415,3 @@ try {
       throw new Error(`Render validation failed for ${settings.seed}: ${JSON.stringify(rendered.validation)}`);
     }
 
-    const filename=`${day}-${action?'action-'+orientation+'-':oil?'oil-'+orientation+'-':watercolour?'watercolour-'+orientation+'-':
-      watercolor?'watercolor-'+orientation+'-':orientation==='portrait'?'portrait-':''}${String(index+1).padStart(2,'0')}-${settings.mode}-${settings.seed}.jpg`;
-    const filePath = path.join(outDir, filename);
-    await fs.writeFile(filePath, Buffer.from(rendered.dataUrl.split(',')[1], 'base64'));
-    const instagramImageFile=orientation==='portrait'?
-      filename.replace(/\.jpg$/,'-instagram.jpg'):(action||oil||watercolor||watercolour?filename:null);
-    if (orientation === 'portrait') {
-      if (!rendered.instagramDataUrl) throw new Error('Missing Instagram-safe 4:5 portrait derivative');
-      await fs.writeFile(path.join(outDir, instagramImageFile), Buffer.from(rendered.instagramDataUrl.split(',')[1], 'base64'));
-    }
-
-    const item = {
-      id: `${day}-${action?(orientation==='portrait'?'ACP':'ACL'):oil?(orientation==='portrait'?'OP':'OL'):watercolour?(orientation==='portrait'?'CP':'CL'):
-        watercolor?(orientation==='portrait'?'WP':'WL'):
-        orientation==='portrait'?'P':''}${String(index+1).padStart(2,'0')}`,
-      ...(orientation==='portrait'||watercolor||watercolour||oil||action?{orientation}:{}),
-      ...(action?{material:'action'}:oil?{material:'oil'}:watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
-      generatedAt: new Date().toISOString(),
-      seed: settings.seed,
-      mode: settings.mode,
-      series: settings.series,
-      stats: rendered.stats,
-      imageFile: filename,
-      ...(instagramImageFile ? { instagramImageFile } : {}),
-      shareUrl,
-      rendererVersion:itemVersion,
-      settings,
-      platforms:action?Object.fromEntries(['instagram','threads','bluesky'].map(p=>[p,{scheduledTime:'09:00',status:'pending'}])):oil?Object.fromEntries(['instagram','threads','bluesky'].map(p=>
-         [p,{scheduledTime:'15:00',status:'pending'}])):
-         watercolour?Object.fromEntries(['instagram','threads','bluesky'].map(p=>
-        [p,{scheduledTime:'15:00',status:'pending'}])):
-        watercolor?{instagram:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},threads:{scheduledTime:index===0?'09:00':'20:30',status:'pending'},bluesky:{scheduledTime:index===0?'09:00':'20:30',status:'pending'}}:
-        platformAssignment(index,orientation)
-    };
-
-    item.copy = makeCaptions(item);
-    if (!oil && !action && !watercolor && !watercolour && rendered.accessibility?.altText) {
-      item.copy.altText = rendered.accessibility.altText;
-    }
-    item.accessibility = {
-      altText:action||oil||watercolor||watercolour?item.copy.altText:(rendered.accessibility?.altText||item.copy.altText),
-      longDescription: rendered.accessibility?.longDescription || '',
-      constructionDescription: rendered.accessibility?.constructionDescription || ''
-    };
-    entries.push(item);
-    console.log(`Generated ${item.id}: ${item.series} / ${item.seed}`);
-    break; // one accepted study per requested daily index
-    } // candidate attempts
-  }
-} finally {
-  await browser.close();
-}
-
-const queue = {
-  version: 1,
-  date: day,
-  ...(action?{material:'action'}:oil?{material:'oil'}:watercolour?{material:'watercolour'}:watercolor?{material:'watercolor'}:{}),
-  ...(orientation==='portrait'||watercolor||watercolour||oil||action?{orientation}:{}),
-  generatedAt: new Date().toISOString(),
-  timezone: TIME_ZONE,
-  accounts: ACCOUNTS,
-  cadence: {
-    instagramPerDay:action?1:oil?1:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.instagram.length,
-    threadsPerDay:action?1:oil?1:watercolour?1:watercolor?2:orientation==='portrait'?PORTRAIT_SCHEDULE.length:SCHEDULE.threads.length
-  },
-  publishingEnabled: false,
-  entries
-};
-
-await fs.writeFile(path.join(outDir, 'queue.json'), JSON.stringify(queue, null, 2));
-console.log(`\nGenerated ${generationCount} artworks into ${outDir}`);
-console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(action?['09:00']:oil?['15:00']:watercolour?['15:00']:
-  watercolor?['09:00','20:30']:orientation==='portrait'?PORTRAIT_SCHEDULE:SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);
