@@ -46,6 +46,20 @@ jobs:
             sleep 1
           done
           exit 1
+      - name: Capture rejected Golden Trajectories candidates for 20 October
+        env:
+          SOCIAL_DATE: '2026-10-20'
+          SOCIAL_MATERIAL: oil
+          SOCIAL_ORIENTATION: landscape
+          OIL_REJECTION_DIAGNOSTIC: '1'
+          ALGOART_LOCAL_URL: 'http://127.0.0.1:4173/'
+        run: node automation/generate-social.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-trajectories-rejected-2026-10-20
+          path: oil-check-results/rejected-2026-10-20/
+          retention-days: 30
       - name: Capture legacy Tissue & Graphite and Marker
         run: node tests/oil-preview.mjs
       - name: Check Randomise preserves the material and Colour controls
