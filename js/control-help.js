@@ -387,7 +387,7 @@ A.syncControlHelp=function(mode,version,meta){
   if(checks)checks.hidden=shapeChecks.every(function(check){return check.label.hidden});
   var mutate=document.getElementById('mutate'),randomise=document.getElementById('randomise');
   if(mutate)mutate.title='Try a few small changes. Keep the current system, material, '+(painted?'source mark profile':'mark-making tool')+' and palette.';
-  if(randomise)randomise.title='Try a new seed, system, '+(painted?'source mark profile':'mark-making tool')+', palette and slider settings. Keep the selected material, paper colour and shape choices.';
+  if(randomise)randomise.title='Try a fresh drawing with a different material, new seed, system, mark-making tool, palette and slider settings. Keep the canvas format and paper colour.';
   if(active)placeHelp(active);
 };
 A.closeControlHelp=closeHelp;
