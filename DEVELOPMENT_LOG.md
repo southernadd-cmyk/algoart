@@ -1,10 +1,12 @@
-# ALGO/ART — φ Generator
+# PROPORTION PIECE — Development diary
 
 **Mathematics sets the rules. The marker breaks them.**
 
-ALGO/ART is a deterministic, browser-based generative art system built around the golden ratio. It does not use a trained image model. Instead, mathematical and aesthetic knowledge is explicitly encoded into the generator: φ-based proportions, golden-angle turns, recursive divisions, hierarchy, negative space, layout scoring and seeded variation. A separate marker engine then deliberately introduces physical-looking imperfection.
+PROPORTION PIECE (originally ALGO/ART) is a deterministic, browser-based generative art system built around the golden ratio. It does not use a trained image model. Instead, mathematical and aesthetic knowledge is explicitly encoded into the generator: φ-based proportions, golden-angle turns, recursive divisions, hierarchy, negative space, layout scoring and seeded variation. A separate marker engine then deliberately introduces physical-looking imperfection.
 
 Live site: https://southernadd-cmyk.github.io/algoart/
+
+**Naming note (19 October 2026):** The project is now called **PROPORTION PIECE**. Earlier diary entries retain the name **ALGO/ART** when describing work published under that name. Repository paths, historical artwork URLs, internal identifiers and social account handles have not been renamed.
 
 For the non-visual review of remaining numeric constants and genuine φ geometry, see [Cross-engine calibration audit](CALIBRATION_AUDIT.md) and [Tuning history](TUNING.md).
 
