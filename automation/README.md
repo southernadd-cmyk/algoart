@@ -1,6 +1,8 @@
-# ALGO/ART social automation
+# PROPORTION PIECE — social automation
 
-This folder contains the live automation layer for **@artalgorithm** on Instagram and Threads.
+This folder documents the publishing automation for **PROPORTION PIECE**. The existing **@artalgorithm** account identifiers are intentionally unchanged; they are not the project's public display name.
+
+**Historical note:** The cadence and renderer details below describe the workflows at the time they were documented. Check the current workflow and generator files for up-to-date counts, materials and renderer defaults.
 
 ## Live cadence
 
@@ -47,7 +49,7 @@ For each date / slot / platform, the live workflow writes a completion marker af
 
 ## Artwork generation
 
-The generator launches the real ALGO/ART site in Chromium, passes deterministic settings through the site's share URL format, and captures the actual 1400×1000 artwork canvas as JPEG.
+The generator launches the real PROPORTION PIECE site in Chromium, passes deterministic settings through the site's share URL format, and captures the actual 1400×1000 artwork canvas as JPEG.
 
 Output:
 
@@ -121,7 +123,7 @@ That verifies the token and configured board without creating a Pin.
 
 Once enabled, each featured daily artwork is also published to Pinterest with:
 - the generated artwork image
-- ALGO/ART title/description metadata
+- PROPORTION PIECE title/description metadata
 - alt text
 - a direct link to that exact artwork state in the generator
 - duplicate protection using the same rolling GitHub Release markers as Instagram/Threads
@@ -129,7 +131,7 @@ Once enabled, each featured daily artwork is also published to Pinterest with:
 
 ## Bluesky publishing
 
-The live publisher supports the official ALGO/ART Bluesky account at `artalgorithm.bsky.social`.
+The live publisher supports the PROPORTION PIECE Bluesky account at `artalgorithm.bsky.social`.
 
 To enable it, create a Bluesky app password for the account and add it to the GitHub repository as the Actions secret `BLUESKY_APP_PASSWORD`. The workflow automatically detects whether the secret exists; if it is absent, Bluesky is skipped without affecting Instagram, Threads, Pinterest, gallery generation, or Pages deployment.
 
