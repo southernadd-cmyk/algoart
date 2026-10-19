@@ -391,6 +391,19 @@ try {
       diagnosticRows.push({attempt:attempt+1,seed:settings.seed,mode:settings.mode,links,...rendered.validation,reasons,image:imageName});
       if(attempt===23){
         await fs.writeFile(path.join(diagnosticDir,'results.json'),JSON.stringify(diagnosticRows,null,2));
+        const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const tiles=diagnosticRows.map(row=>
+          '<article><img src="'+esc(row.image)+'" alt="Candidate '+row.attempt+'"><h2>Attempt '+row.attempt+
+          ' — '+esc(row.reasons.join(', ')||'ACCEPTED')+'</h2><p>Connections: '+row.links+
+          ' · Coverage: '+(row.changedRatio*100).toFixed(2)+'% · Strong ink: '+
+          (row.strongRatio*100).toFixed(2)+'% · Span: '+(row.spanX*100).toFixed(1)+
+          '% × '+(row.spanY*100).toFixed(1)+'%</p><p>'+esc(row.seed)+'</p></article>').join('');
+        const contactSheet='<!doctype html><html><head><meta charset="utf-8"><title>Oil rejection diagnostic</title>'+
+          '<style>body{font:14px system-ui;background:#eee;color:#222;padding:20px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}article{background:white;padding:12px;border-radius:8px}img{display:block;width:100%}h2{font-size:16px}p{overflow-wrap:anywhere}</style>'+
+          '</head><body><h1>Golden Trajectories: 24 oil candidates, 20 October 2026</h1><p>These are candidates, including any that passed. Current production thresholds were measured but never applied to discard images.</p><main>'+
+          tiles+'</main></body></html>';
+        await fs.writeFile(path.join(diagnosticDir,'index.html'),contactSheet);
+
         console.log('Diagnostic: '+diagnosticRows.length+' candidate images saved to '+diagnosticDir);
       }
       if(attempt===23)break;
