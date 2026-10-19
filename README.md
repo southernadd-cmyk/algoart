@@ -107,6 +107,6 @@ Browser regression workflows also cover Chromium, Firefox and WebKit. Some check
 | `gallery/`, `automation/` | Archived artwork and publishing |
 | `tests/`, `.github/workflows/` | Regression checks |
 
-The [development diary](DEVELOPMENT_LOG.md) records experiments and changes of direction. [Renderer and material history](MATERIAL_HISTORY.md) explains version compatibility (including the current V9 geometry renderer and older saved states). The [calibration audit](CALIBRATION_AUDIT.md) distinguishes the mathematics from artistic decisions; [tuning notes](TUNING.md) document exact-output constraints.
+The [development diary](DEVELOPMENT_LOG.md) records experiments and changes of direction, retaining the original ALGO/ART name in historical entries. The [publishing documentation](automation/README.md) explains the existing social automation and account identifiers. [Renderer and material history](MATERIAL_HISTORY.md) explains version compatibility (including the current V9 geometry renderer and older saved states). The [calibration audit](CALIBRATION_AUDIT.md) distinguishes the mathematics from artistic decisions; [tuning notes](TUNING.md) document exact-output constraints.
 
 PROPORTION PIECE doesn't set out to prove that φ makes better art. It gives you a way to test what the number contributes — and what you contribute by changing it.
