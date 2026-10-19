@@ -1,0 +1,41 @@
+name: Oil rejection diagnostic only
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rejected-renders:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Start local renderer
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-diagnostic-server.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: Capture all 24 Golden Trajectories candidates
+        env:
+          SOCIAL_DATE: '2026-10-20'
+          SOCIAL_MATERIAL: oil
+          SOCIAL_ORIENTATION: landscape
+          OIL_REJECTION_DIAGNOSTIC: '1'
+          ALGOART_LOCAL_URL: 'http://127.0.0.1:4173/'
+        run: node automation/generate-social.mjs
+      - name: Upload candidate images and measurements
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golden-trajectories-rejected-2026-10-20
+          path: oil-check-results/rejected-2026-10-20/
+          retention-days: 30
+          if-no-files-found: error
