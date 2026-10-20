@@ -218,7 +218,9 @@ jobs:
         if: steps.gate.outputs.should_run == 'true'
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
-        run: npm run test:archive -- --queue "social-output/$SOCIAL_DATE/portrait/queue.json"
+        run: |
+          python3 -m pip install --break-system-packages 'Pillow>=10,<13'
+          npm run test:archive -- --queue "social-output/$SOCIAL_DATE/portrait/queue.json"
 
       - name: Upload publishing verification failures
         if: failure()
