@@ -1,11 +1,12 @@
 {
   "version": 1,
   "date": "2026-10-20",
-  "count": 5,
+  "count": 6,
   "series": [
     "Orbital Studies",
     "Golden Trajectories",
-    "Automatic Marks"
+    "Automatic Marks",
+    "Connected Fields"
   ],
   "entries": [
     {
@@ -250,6 +251,56 @@
         "grain": 26
       },
       "altText": "Action painting from PROPORTION PIECE's Orbital Studies system, seed ACL-20261020-01-57184. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
+    },
+    {
+      "id": "2026-10-20-ACP01",
+      "title": "Connected Fields — Action Painting Study 06",
+      "orientation": "portrait",
+      "material": "action",
+      "seed": "ACP-20261020-01-12876",
+      "mode": "network",
+      "series": "Connected Fields",
+      "imageFile": "2026-10-20-action-portrait-01-network-ACP-20261020-01-12876.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACP-20261020-01-12876&mode=network&fmt=portrait&el=50&den=61&cx=70&neg=34&phi=85&rec=4&spi=52&ga=95&nest=26&pen=broad&th=11&wob=23&od=3&op=64&pr=28&dry=36&curve=28&shape=58&overlap=49&rot=81&ln=1&ci=1&re=1&po=1&ar=1&pal=cmyk&cols=4&sat=73&bri=56&paper=%23f5f0e6&grain=16&material=action-v2&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "network",
+        "orientation": "portrait",
+        "series": "Connected Fields",
+        "seed": "ACP-20261020-01-12876",
+        "elements": 50,
+        "density": 61,
+        "complexity": 70,
+        "negativeSpace": 34,
+        "phiStrength": 85,
+        "recursion": 4,
+        "spiralInfluence": 52,
+        "goldenAngle": 95,
+        "nesting": 26,
+        "pen": "broad",
+        "thickness": 11,
+        "wobble": 23,
+        "overdraw": 3,
+        "opacity": 64,
+        "pressure": 28,
+        "dryness": 36,
+        "curveBias": 28,
+        "shapeAmount": 58,
+        "overlap": 49,
+        "rotation": 81,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "cmyk",
+        "colourCount": 4,
+        "saturation": 73,
+        "brightness": 56,
+        "paper": "#f5f0e6",
+        "grain": 16
+      },
+      "altText": "Action painting from PROPORTION PIECE's Connected Fields system, seed ACP-20261020-01-12876. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
