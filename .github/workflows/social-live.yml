@@ -128,7 +128,9 @@ jobs:
         if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
-        run: npm run test:archive -- --queue "social-output/$SOCIAL_DATE/queue.json"
+        run: |
+          python3 -m pip install --break-system-packages 'Pillow>=10,<13'
+          npm run test:archive -- --queue "social-output/$SOCIAL_DATE/queue.json"
 
       - name: Upload publishing verification failures
         if: failure()
