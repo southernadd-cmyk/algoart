@@ -48,6 +48,7 @@ let container;
 let ready = false;
 
 for (let creationAttempt = 0; creationAttempt < 3 && !ready; creationAttempt++) {
+  console.log(`Preparing Threads media (attempt ${creationAttempt + 1}/3).`);
   container = await api(`${USER_ID}/threads`, {
     media_type: 'IMAGE',
     image_url: IMAGE_URL,
@@ -55,20 +56,17 @@ for (let creationAttempt = 0; creationAttempt < 3 && !ready; creationAttempt++) 
     alt_text: ALT_TEXT
   });
 
-  let missing = false;
   for (let attempt = 0; attempt < 30; attempt++) {
     let state;
     try {
       state = await api(container.id, { fields: 'id,status,error_message' }, 'GET');
     } catch (error) {
       if (!mediaNotFound(error)) throw error;
-      // Allow Meta's container status endpoint time to become consistent.
-      if (attempt < 5) {
-        await sleep(3000);
-        continue;
-      }
-      missing = true;
-      break;
+      // Newly created containers can be temporarily invisible to Meta's status API.
+      // Poll the full readiness window before abandoning this container.
+      console.warn(`Threads container ${container.id} not visible yet (poll ${attempt + 1}/30).`);
+      await sleep(3000);
+      continue;
     }
 
     if (state.status === 'FINISHED') {
