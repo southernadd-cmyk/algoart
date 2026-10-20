@@ -29,22 +29,65 @@ async function api(path, params = {}, method = 'POST') {
   return json;
 }
 
-const container = await api(`${USER_ID}/threads`, {
-  media_type: 'IMAGE',
-  image_url: IMAGE_URL,
-  text: TEXT,
-  alt_text: ALT_TEXT
-});
-
-for (let attempt = 0; attempt < 30; attempt++) {
-  const state = await api(container.id, { fields: 'id,status,error_message' }, 'GET');
-  if (state.status === 'FINISHED') break;
-  if (state.status === 'ERROR' || state.status === 'EXPIRED') {
-    throw new Error(`Threads container failed: ${JSON.stringify(state)}`);
+// Threads can briefly return code 24 (Media Not Found) when a newly created
+// media container has not propagated to its status endpoint. Retry creation
+// only for that specific pre-publication failure; never retry an ambiguous
+// threads_publish request, which could create a duplicate post.
+function mediaNotFound(error) {
+  try {
+    const payload = JSON.parse(error.message);
+    return payload?.error?.code === 24 &&
+      payload?.error?.error_subcode === 4279009;
+  } catch {
+    return false;
   }
-  if (attempt === 29) throw new Error('Timed out waiting for Threads media container.');
-  await new Promise(resolve => setTimeout(resolve, 2000));
 }
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+let container;
+let ready = false;
+
+for (let creationAttempt = 0; creationAttempt < 3 && !ready; creationAttempt++) {
+  container = await api(`${USER_ID}/threads`, {
+    media_type: 'IMAGE',
+    image_url: IMAGE_URL,
+    text: TEXT,
+    alt_text: ALT_TEXT
+  });
+
+  let missing = false;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    let state;
+    try {
+      state = await api(container.id, { fields: 'id,status,error_message' }, 'GET');
+    } catch (error) {
+      if (!mediaNotFound(error)) throw error;
+      // Allow Meta's container status endpoint time to become consistent.
+      if (attempt < 5) {
+        await sleep(3000);
+        continue;
+      }
+      missing = true;
+      break;
+    }
+
+    if (state.status === 'FINISHED') {
+      ready = true;
+      break;
+    }
+    if (state.status === 'ERROR' || state.status === 'EXPIRED') {
+      throw new Error(`Threads container failed: ${JSON.stringify(state)}`);
+    }
+    await sleep(2000);
+  }
+
+  if (!ready && creationAttempt < 2) {
+    console.warn(`Threads media not ready (container ${container.id}, attempt ${creationAttempt + 1}); recreating after delay.`);
+    await sleep(5000);
+  }
+}
+
+if (!ready) throw new Error('Threads media container did not become ready after 3 attempts.');
 
 const published = await api(`${USER_ID}/threads_publish`, {
   creation_id: container.id
