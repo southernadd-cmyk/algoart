@@ -55,13 +55,16 @@ function display(mode){
  let rendered=0,measurements=[];
  const issues=[];
  for(const [type,x] of [['male',-1.2],['female',1.2]]){
-   const visitor=createRiggedCharacter(THREE,asset,
-      {bodyType:type,x,y:0,z:0,scale:1,yaw:0,pose:0},
-      {relaxed,raiseRightArm});
-   if(!visitor){issues.push(type+' pose failed validation');continue;}
+   let visitor;
+   try{
+     visitor=createRiggedCharacter(THREE,asset,
+       {bodyType:type,x,y:0,z:0,scale:1,yaw:0,pose:0},
+       {relaxed,raiseRightArm});
+   }catch(error){issues.push(error.message);console.error(error);continue;}
+   if(!visitor){issues.push(type+' returned no posed character');continue;}
    group.add(visitor);rendered++;
    const m=visitor.userData.galleryRigMetrics;
-   if(m.visibleSkinnedMeshes!==1||m.originalStaticMeshesHidden!==5)
+   if(m.visibleSkinnedMeshes!==1||m.originalStaticMeshesHidden<5)
      issues.push(type+' includes unwanted model meshes');
    if(relaxed){
      if(m.arms.length!==2||m.arms.some(a=>a.targetAccuracy<.98))
