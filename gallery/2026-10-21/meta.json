@@ -1,12 +1,13 @@
 {
   "version": 1,
   "date": "2026-10-21",
-  "count": 5,
+  "count": 6,
   "series": [
     "Radiant Systems",
     "Connected Fields",
     "Recursive Divisions",
-    "Orbital Studies"
+    "Orbital Studies",
+    "Automatic Marks"
   ],
   "entries": [
     {
@@ -251,6 +252,56 @@
         "grain": 23
       },
       "altText": "Action painting from PROPORTION PIECE's Orbital Studies system, seed ACL-20261021-01-30641. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
+    },
+    {
+      "id": "2026-10-21-ACP01",
+      "title": "Automatic Marks — Action Painting Study 06",
+      "orientation": "portrait",
+      "material": "action",
+      "seed": "ACP-20261021-01-64367",
+      "mode": "scribble",
+      "series": "Automatic Marks",
+      "imageFile": "2026-10-21-action-portrait-01-scribble-ACP-20261021-01-64367.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACP-20261021-01-64367&mode=scribble&fmt=portrait&el=51&den=48&cx=76&neg=22&phi=85&rec=8&spi=57&ga=96&nest=53&pen=felt&th=10&wob=30&od=5&op=75&pr=37&dry=35&curve=77&shape=57&overlap=29&rot=59&ln=1&ci=1&re=1&po=1&ar=1&pal=cold&cols=8&sat=88&bri=50&paper=%23f5f0e6&grain=12&material=action-v2&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "scribble",
+        "orientation": "portrait",
+        "series": "Automatic Marks",
+        "seed": "ACP-20261021-01-64367",
+        "elements": 51,
+        "density": 48,
+        "complexity": 76,
+        "negativeSpace": 22,
+        "phiStrength": 85,
+        "recursion": 8,
+        "spiralInfluence": 57,
+        "goldenAngle": 96,
+        "nesting": 53,
+        "pen": "felt",
+        "thickness": 10,
+        "wobble": 30,
+        "overdraw": 5,
+        "opacity": 75,
+        "pressure": 37,
+        "dryness": 35,
+        "curveBias": 77,
+        "shapeAmount": 57,
+        "overlap": 29,
+        "rotation": 59,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "cold",
+        "colourCount": 8,
+        "saturation": 88,
+        "brightness": 50,
+        "paper": "#f5f0e6",
+        "grain": 12
+      },
+      "altText": "Action painting from PROPORTION PIECE's Automatic Marks system, seed ACP-20261021-01-64367. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
