@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
-import { planGalleryHangs } from './hanging-v2.mjs';
+import { planGalleryHangs } from './hanging-v3.mjs';
+import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
+import { createPortraitSculpture } from './sculpture-render.mjs';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -15,6 +17,7 @@ const ray = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 const clock = new THREE.Clock();
 const artPlanes = [];
+const sculpturePlacements=[];
 let focused = null;
 let lastFocusCheck = 0;
 let yaw = Math.PI, pitch = 0;
@@ -201,9 +204,8 @@ function loadArtworkTexture(url, material) {
   image.onerror = () => { status.textContent = 'One artwork could not be loaded; other works remain available.'; };
   image.src = url;
 }
-// Phase 1: keep actual archive images, but curate them at distinct sizes and
-// across side walls and available end-wall wings. Gallery planning lives in
-// hanging.mjs so overlap and circulation clearance can be tested without WebGL.
+// Stage 2: landscape images occupy walls. Portraits become freestanding
+// layered engine-specific sculptures, with a clear walking route around them.
 function hangArt(room, study, hang) {
   const width = hang.width, height = hang.height;
   const rotation = {
@@ -237,12 +239,24 @@ function hangArt(room, study, hang) {
 }
 function constructGallery(layout, studies) {
   const hangs=planGalleryHangs(layout,studies);
+  const sculptures=planGallerySculptures(layout,studies);
+  validateSculpturePlacement(layout,sculptures);
+  sculpturePlacements.push(...sculptures);
   const byId=new Map(studies.map(study=>[study.id,study]));
+  const quality=matchMedia('(pointer:coarse)').matches?'mobile':'desktop';
   for(const room of layout.rooms){
     addRoom(room,room.index,layout.rooms.length);
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
       hangArt(room,byId.get(hanging.studyId),hanging);
+    for(const placement of sculptures.filter(p=>p.roomIndex===room.index)){
+      const exhibit=createPortraitSculpture({
+        scene,study:byId.get(placement.studyId),placement,quality,labelTexture
+      });
+      artPlanes.push(...exhibit.selectable);
+    }
   }
+  if(hangs.length+sculptures.length!==studies.length)
+    throw new Error('An archived study was omitted from the exhibition');
   for(const hall of layout.corridors)addBridge(hall);
   // Ground is an understated field underneath the branched architecture.
   block(250,.4,250,0,-1.15,0,new THREE.MeshStandardMaterial({color:'#9aa69f',roughness:1}));
@@ -301,7 +315,7 @@ async function load() {
     if (!studyList.length) throw new Error('No artwork records found for this edition.');
     plan=buildLayout(date,studyList.length,studyList);
     constructGallery(plan,studyList);
-    status.textContent=readableDate(date)+' · '+studyList.length+' drawings';
+    status.textContent=readableDate(date)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures';
     enter.disabled=false;
     enter.textContent='Enter the gallery';
     camera.updateProjectionMatrix();
@@ -443,8 +457,8 @@ function updateMovement(dt) {
     ahead/=length;side/=length;
     const dx=(Math.cos(yaw)*side-Math.sin(yaw)*ahead)*dt*speed;
     const dz=(-Math.sin(yaw)*side-Math.cos(yaw)*ahead)*dt*speed;
-    if (canStand(plan,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
-    if (canStand(plan,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
+    if (canStand(plan,rig.position.x+dx,rig.position.z) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
+    if (canStand(plan,rig.position.x,rig.position.z+dz) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
   }
   const part=footprintAt(plan,rig.position.x,rig.position.z);
   if(part)rig.position.y=part.y;
@@ -461,7 +475,7 @@ function detectArt() {
   focused=hit?.object||null;
   const text=focused ? ' · E to inspect this drawing' : '';
   const current=footprintAt(plan,rig.position.x,rig.position.z)?.room ?? -1;
-  status.textContent=readableDate(exhibitDate)+' · '+studyList.length+' drawings'+(current>=0?' · Gallery '+(current+1):' · Walkway')+text;
+  status.textContent=readableDate(exhibitDate)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures'+(current>=0?' · Gallery '+(current+1):' · Walkway')+text;
 }
 function tick() {
   if (!renderer) return;
