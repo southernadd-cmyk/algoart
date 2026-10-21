@@ -33,8 +33,8 @@ let touchX = 0, touchY = 0;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#c2cbc5');
 scene.fog = new THREE.Fog('#c2cbc5', 48, 165);
-scene.add(new THREE.HemisphereLight('#ffffff', '#92998c', 1.95));
-const sun = new THREE.DirectionalLight('#fff7ec', 2.2);
+scene.add(new THREE.HemisphereLight('#f6f7f5', '#92998c', 1.15));
+const sun = new THREE.DirectionalLight('#fff9f0', 1.65);
 sun.position.set(-18, 30, 12);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(76, 1, 0.07, 210);
@@ -52,7 +52,7 @@ try {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 1.02;
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType('local-floor');
   const xrButton = VRButton.createButton(renderer);
@@ -75,6 +75,7 @@ setSculptureArchitecturalMaterials({plinth:galleryFinish.plinth,metal:galleryFin
 const dark = new THREE.MeshStandardMaterial({color: '#393b35', metalness: .16, roughness: .74});
 const bridgeSurface=galleryFinish.stoneBridge;
 const frame = new THREE.MeshStandardMaterial({color: '#34322e', roughness: .85});
+const roofFinish=galleryFinish.plinth;
 const skylightGlass = new THREE.MeshPhysicalMaterial({color:'#d5e1df',metalness:.06,roughness:.22,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false});
 
 function block(w, h, d, x, y, z, material = wall) {
@@ -135,7 +136,7 @@ function addRoom(room, index, count) {
   block(room.width+.42,.36,room.depth+.42,room.x,room.y-.22,room.z,surface);
   for(const side of ['north','south','east','west'])addWallWithOpening(room,side);
   const roofStrip=(room.width-3.5)/2;
-  block(roofStrip,.21,room.depth+.45,room.x-(room.width+3.5)/4,ceiling+.1,room.z);
+  block(roofStrip,.21,room.depth+.45,room.x-(room.width+3.5)/4,ceiling+.1,room.z,roofFinish);
   block(roofStrip,.21,room.depth+.45,room.x+(room.width+3.5)/4,ceiling+.1,room.z);
   // A continuous glazed skylight seals the centre opening between the roof slabs.
   // Light still reaches the drawings and the sky is visible from inside.
@@ -152,9 +153,17 @@ function addRoom(room, index, count) {
   const insetZ=room.z-(1/PHI-.5)*room.depth*.44;
   block(.023,.02,room.depth-1.15,insetX,room.y+.018,room.z,join);
   block(room.width-1.15,.02,.023,room.x,room.y+.018,insetZ,join);
-  const light=new THREE.PointLight('#fff5e8',17,13);
-  light.position.set(room.x,ceiling-.55,room.z);
+  // Soft, lower-output fill plus wall grazers: artworks stay readable without
+  // the over-bright central bulb effect.
+  const light=new THREE.PointLight('#fff5e9',6.5,14,2);
+  light.position.set(room.x,ceiling-.65,room.z);
   scene.add(light);
+  for(const side of [-1,1]){
+    const wash=new THREE.SpotLight('#fff7ed',9,room.width*.85,Math.PI/4,.85,1.8);
+    wash.position.set(room.x+side*(room.width/2-.85),ceiling-.48,room.z);
+    wash.target.position.set(room.x+side*(room.width/2-.85),room.y+2.1,room.z);
+    scene.add(wash,wash.target);
+  }
 
 }
 function makeRoomLabel(text) {
