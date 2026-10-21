@@ -85,3 +85,6 @@ a{color:inherit}
 .lift-arrow{position:absolute;inset:0;display:grid;place-items:center;font-size:38px;background:rgba(31,40,38,.55)}
 .lift-arrival{position:fixed;top:18%;left:50%;transform:translateX(-50%);z-index:12;background:#303b38;color:#fff;padding:16px 28px;font:20px Georgia,serif;box-shadow:0 12px 40px #0005}
 @media(prefers-reduced-motion:reduce){.lift-doors>div,.lift-motion,.lift-track-lines{animation:none!important}.lift-doors>div{transform:none}.lift-motion{opacity:1}}
+
+.lift-animation.descending .lift-arrow{transform:rotate(180deg)}
+.lift-animation.descending .lift-track-lines{animation-direction:reverse}
