@@ -150,10 +150,11 @@ function addRoom(room, index, count) {
   for(const side of ['north','south','east','west'])addWallWithOpening(room,side);
   const roofStrip=(room.width-3.5)/2;
   block(roofStrip,.21,room.depth+.45,room.x-(room.width+3.5)/4,ceiling+.1,room.z,roofFinish);
-  block(roofStrip,.21,room.depth+.45,room.x+(room.width+3.5)/4,ceiling+.1,room.z);
+  block(roofStrip,.21,room.depth+.45,room.x+(room.width+3.5)/4,ceiling+.1,room.z,roofFinish);
   // A continuous glazed skylight seals the centre opening between the roof slabs.
   // Light still reaches the drawings and the sky is visible from inside.
-  block(3.5,.085,room.depth+.38,room.x,ceiling+.105,room.z,skylightGlass);
+  block(3.5,.085,room.depth+.38,room.x,ceiling+.105,room.z,
+    currentFloor===archiveDates.length-1?skylightGlass:roofFinish);
   for(const sx of [-1,1])block(.075,.13,room.depth+.43,room.x+sx*1.755,ceiling+.11,room.z,join);
   for(let i=1;i<4;i++)block(3.57,.13,.067,room.x,ceiling+.11,room.z-room.depth/2+room.depth*i/4,join);
   for(const z of [room.z-room.depth/2,room.z+room.depth/2])
@@ -462,27 +463,43 @@ function constructGallery(layout, studies) {
   // The daily landscape follows this exhibition's date and artwork seed;
   // it never occupies rooms, walkways or the visitor collision footprint.
   createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower});
-  // Previous floors remain below the current exhibition as a stacked tower.
-  if(currentFloor>0){
+  // Keep the present exhibition traversable; show simplified occupied
+  // building mass both below and above it without loading other exhibitions.
+  const below=currentFloor,above=Math.max(0,archiveDates.length-1-currentFloor);
+  if(below||above){
     const tower=new THREE.Group();
-    const bodyMaterial=new THREE.MeshStandardMaterial({color:'#a9aea9',roughness:.88});
-    const bandMaterial=new THREE.MeshStandardMaterial({color:'#4e5755',metalness:.45,roughness:.5});
-    const height=currentFloor*FLOOR_SPACING;
-    // Repeat lightweight supporting volumes below every gallery wing, not
-    // only beneath the entrance room, so the upper gallery is not suspended.
+    const cladding=new THREE.MeshStandardMaterial({color:'#aeb4b0',roughness:.89});
+    const bandsMaterial=new THREE.MeshStandardMaterial({color:'#68716f',metalness:.24,roughness:.62});
+    const topMaterial=new THREE.MeshStandardMaterial({color:'#858f8c',roughness:.85});
+    const bands=[];
     for(const room of layout.rooms){
-      const shell=new THREE.Mesh(new THREE.BoxGeometry(room.width+.35,height,room.depth+.35),bodyMaterial);
-      shell.position.set(room.x,height/2-.26,room.z);
-      tower.add(shell);
+      const addMass=(height,centre)=>{
+        if(height<=0)return;
+        const mesh=new THREE.Mesh(new THREE.BoxGeometry(room.width+.35,height,room.depth+.35),cladding);
+        mesh.position.set(room.x,centre,room.z);tower.add(mesh);
+      };
+      if(below)addMass(below*FLOOR_SPACING,below*FLOOR_SPACING/2-.26);
+      if(above)addMass(above*FLOOR_SPACING,room.y+FLOOR_SPACING+above*FLOOR_SPACING/2-.26);
+      for(let level=1;level<archiveDates.length;level++){
+        if(level===currentFloor || level===currentFloor+1)continue;
+        bands.push({room,y:level*FLOOR_SPACING-.18});
+      }
+      if(above){
+        const roof=new THREE.Mesh(new THREE.BoxGeometry(room.width+.6,.26,room.depth+.6),topMaterial);
+        roof.position.set(room.x,(archiveDates.length)*FLOOR_SPACING-.13,room.z);
+        tower.add(roof);
+      }
     }
-    const bands=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.13,1),bandMaterial,currentFloor*layout.rooms.length);
-    const transform=new THREE.Object3D();let n=0;
-    for(const room of layout.rooms)for(let i=0;i<currentFloor;i++){
-      transform.position.set(room.x,(i+1)*FLOOR_SPACING-.18,room.z);
-      transform.scale.set(room.width+.48,1,room.depth+.48);
-      transform.updateMatrix();bands.setMatrixAt(n++,transform.matrix);
+    if(bands.length){
+      const instances=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.13,1),bandsMaterial,bands.length);
+      const obj=new THREE.Object3D();
+      for(let i=0;i<bands.length;i++){
+        const {room,y}=bands[i];obj.position.set(room.x,y,room.z);
+        obj.scale.set(room.width+.48,1,room.depth+.48);obj.updateMatrix();
+        instances.setMatrixAt(i,obj.matrix);
+      }
+      instances.instanceMatrix.needsUpdate=true;tower.add(instances);
     }
-    bands.instanceMatrix.needsUpdate=true;tower.add(bands);
     scene.add(tower);
   }
   const first=layout.rooms[0];
