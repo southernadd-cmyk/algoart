@@ -493,13 +493,18 @@ async function load() {
     if (!studyList.length) throw new Error('No artwork records found for this edition.');
     plan=buildLayout(date,studyList.length,studyList);
     currentFloor=archiveDates.indexOf(date);
+    if(currentFloor<0)throw new Error('Selected exhibition is missing from the floor directory');
+    const floorName=currentFloor===0?'Ground floor':'Floor '+currentFloor;
+    $('startFloor').textContent=floorName+' · '+readableDate(date);
+    $('floorIndicator').textContent=currentFloor===0?'G':String(currentFloor);
+    $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
     const elevation=Math.max(0,currentFloor)*FLOOR_SPACING;
     camera.far=Math.max(210,elevation+240);
     camera.updateProjectionMatrix();
     for(const room of plan.rooms)room.y+=elevation;
     for(const hall of plan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
     constructGallery(plan,studyList);
-    status.textContent=readableDate(date)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures';
+    status.textContent=floorName+' · '+readableDate(date)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures';
     enter.disabled=false;
     enter.textContent='Enter the gallery';
     let arrival=null;
@@ -674,7 +679,7 @@ function detectArt() {
   focused=hit?.object||null;
   const text=nearLift()?' · Archive lift':(focused ? ' · E to inspect this drawing' : '');
   const current=footprintAt(plan,rig.position.x,rig.position.z)?.room ?? -1;
-  status.textContent=readableDate(exhibitDate)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures'+(current>=0?' · Gallery '+(current+1):' · Walkway')+text;
+  status.textContent='Floor '+(currentFloor===0?'G':currentFloor)+' · '+readableDate(exhibitDate)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures'+(current>=0?' · Gallery '+(current+1):' · Walkway')+text;
 }
 function tick() {
   if (!renderer) return;
