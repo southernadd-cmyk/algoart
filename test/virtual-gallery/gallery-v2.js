@@ -29,6 +29,9 @@ let archiveDates=[];
 let liftPosition=null;
 let liftWasNear=false;
 let liftTravelling=false;
+let editionObjects=[];
+let liftDoors=[];
+let liftCabinPosition=null;
 let currentFloor=0;
 const FLOOR_SPACING=6.2;
 let plan = null;
@@ -281,35 +284,63 @@ function hangArt(room, study, hang) {
   scene.add(caption);
 }
 function addArchiveLift(room){
-  // A compact lift cabin is cut into the visitor's visual route without
-  // introducing an inaccessible secondary room into collision geometry.
+  // Cabin is built INTO the gallery, with visible interior surfaces and
+  // a clear approach on a wall reserved by the hanging curator.
   const side=room.liftWall;
-  const isNS=side==='north'||side==='south';
-  const sign=side==='north'||side==='west'?-1:1;
-  const wallOffset=(isNS?room.depth:room.width)/2-.22;
-  const centre=new THREE.Vector3(room.x,room.y,room.z);
-  if(isNS)centre.z+=sign*wallOffset;
-  else centre.x+=sign*wallOffset;
-  const front=new THREE.Vector3(isNS?0:-sign,0,isNS?-sign:0);
-  // Face the cabin towards the gallery centre; visitors interact nearby.
-  const horizontal=isNS?2.05:.15,depth=isNS?.15:2.05;
-  block(horizontal,2.75,depth,centre.x,room.y+1.42,centre.z,dark);
-  const panel=centre.clone().addScaledVector(front,.095);
-  const door=new THREE.Mesh(new THREE.PlaneGeometry(isNS?1.5:1.5,2.25),
-    new THREE.MeshStandardMaterial({color:'#858b87',metalness:.67,roughness:.37,side:THREE.DoubleSide}));
-  door.position.set(panel.x,room.y+1.34,panel.z);
-  door.rotation.y=isNS?(side==='north'?0:Math.PI):(side==='east'?-Math.PI/2:Math.PI/2);
-  scene.add(door);
-  const header=labelTexture('ARCHIVE LIFT','CHOOSE A FLOOR');
-  const label=new THREE.Mesh(new THREE.PlaneGeometry(1.65,.38),
-    new THREE.MeshBasicMaterial({map:header,side:THREE.DoubleSide}));
-  label.position.set(panel.x+front.x*.025,room.y+3.07,panel.z+front.z*.025);
-  label.rotation.y=door.rotation.y;
-  scene.add(label);
-  liftPosition=centre.clone().addScaledVector(front,1.12);
+  const normal=new THREE.Vector3(side==='east'?-1:side==='west'?1:0,0,
+    side==='north'?1:side==='south'?-1:0); // towards room centre
+  const tangent=new THREE.Vector3(normal.z,0,-normal.x);
+  const offset=(side==='north'||side==='south'?room.depth:room.width)/2-.3;
+  const doorCentre=new THREE.Vector3(room.x,room.y,room.z).addScaledVector(normal,-offset);
+  const depth=1.9, width=2.3, height=2.65;
+  const origin=doorCentre.clone().addScaledVector(normal,depth*.5);
+  const metal=new THREE.MeshStandardMaterial({color:'#a2a9aa',metalness:.72,roughness:.34});
+  const brushed=new THREE.MeshStandardMaterial({color:'#c4c8c5',metalness:.64,roughness:.42});
+  const rubber=new THREE.MeshStandardMaterial({color:'#343a38',metalness:.06,roughness:.88});
+  const glass=new THREE.MeshStandardMaterial({color:'#f3f1e4',emissive:'#fff9e5',emissiveIntensity:.55,roughness:.8});
+  const local=(u,v,w)=>origin.clone().addScaledVector(tangent,u).addScaledVector(normal,w).add(new THREE.Vector3(0,v,0));
+  const part=(w,h,d,u,v,z,material)=>{
+    const p=local(u,v,z);const mesh=block(w,h,d,p.x,p.y,p.z,material);
+    mesh.rotation.y=Math.atan2(normal.x,normal.z);
+    return mesh;
+  };
+  part(width,.14,depth,0,.035,0,rubber);
+  part(width,.14,depth,0,height,0,brushed);
+  part(width,.15,.12,0,height+.08,-depth*.5,metal);
+  part(width, height,.11,0,height*.5,depth*.5,brushed);
+  for(const u of [-1,1]){
+    part(.11,height,depth,u*width*.5,height*.5,0,metal);
+    part(.055,.07,depth,u*(width*.5-.1),1.04,0,metal);
+  }
+  // Two independently animated sliding leaves.
+  liftDoors=[];
+  for(const u of [-1,1]){
+    const leaf=part(.92,2.3,.075,u*.47,1.2,-depth*.5+.02,metal);
+    leaf.userData.closed=leaf.position.clone();
+    leaf.userData.open=leaf.position.clone().addScaledVector(tangent,u*.91);
+    leaf.position.copy(leaf.userData.open);
+    liftDoors.push(leaf);
+  }
+  part(.85,.065,.58,0,height-.11,0,glass);
+  const lamp=new THREE.PointLight('#fff9ed',3.8,4,2);
+  lamp.position.copy(local(0,height-.28,0));scene.add(lamp);
+  // The controls are positioned on the inside side wall, not floating in space.
+  part(.04,.9,.52,width*.5-.07,1.48,-.02,rubber);
+  for(let i=0;i<4;i++)part(.055,.055,.055,width*.5-.115,1.7-i*.19,.1,glass);
+  liftCabinPosition=local(0,0,0);
+  liftPosition=local(0,0,-.12);
+  const heading=new THREE.Mesh(new THREE.PlaneGeometry(1.8,.36),
+    new THREE.MeshBasicMaterial({map:labelTexture('ARCHIVE LIFT','SELECT FLOOR'),side:THREE.DoubleSide}));
+  heading.position.copy(local(0,2.91,-depth*.5+.03));
+  heading.rotation.y=Math.atan2(normal.x,normal.z);
+  scene.add(heading);
 }
+function setLiftDoors(closed){
+  for(const leaf of liftDoors)leaf.position.copy(closed?leaf.userData.closed:leaf.userData.open);
+}
+
 function nearLift(){
-  return liftPosition&&Math.hypot(rig.position.x-liftPosition.x,rig.position.z-liftPosition.z)<2.6;
+  return liftPosition&&Math.hypot(rig.position.x-liftPosition.x,rig.position.z-liftPosition.z)<1.15;
 }
 function openLift(){
   if(!welcome.hidden||!liftPosition||liftTravelling)return;
@@ -321,23 +352,33 @@ async function travelLift(date,index){
   if(liftTravelling)return;
   liftTravelling=true;
   $('lift').hidden=true;
+  document.exitPointerLock?.();
   const overlay=$('liftAnimation');
   overlay.hidden=false;
+  setLiftDoors(true);
   const current=Math.max(0,archiveDates.indexOf(exhibitDate));
-  const direction=index>current?'Ascending':'Descending';
-  $('liftDirection').textContent=direction+' · '+Math.abs(index-current)+' floors';
+  $('liftDirection').textContent=(index>current?'Ascending':'Descending')+' · '+Math.abs(index-current)+' floors';
   overlay.classList.toggle('descending',index<current);
   overlay.classList.toggle('ascending',index>current);
   $('liftDestination').textContent='Floor '+(index===0?'G':index)+' · '+readableDate(date);
-  // Never block navigation on an archive fetch: gallery assets and the 3D
-  // scene are loaded by the destination page. Keep travel time bounded.
-  try {
-    sessionStorage.setItem('pp-lift-arrival',date);
-  } catch (_) { /* private browsing can deny session storage */ }
-  window.setTimeout(()=>{
-    location.assign('?date='+encodeURIComponent(date));
-  },1450);
+  const begin=performance.now();
+  try{
+    await loadEdition(date,{viaLift:true});
+    // Keep doors closed long enough to make the ride perceptible.
+    await new Promise(resolve=>setTimeout(resolve,Math.max(0,1300-(performance.now()-begin))));
+    overlay.hidden=true;
+    $('liftArrival').hidden=false;
+    $('liftArrival').textContent='Doors opening · floor '+(index===0?'G':index);
+    setLiftDoors(false);
+    setTimeout(()=>$('liftArrival').hidden=true,1800);
+  }catch(error){
+    overlay.hidden=true;setLiftDoors(false);
+    errorBox.textContent='Lift could not reach that floor: '+error.message;
+    errorBox.hidden=false;
+    $('lift').hidden=false;
+  }finally{liftTravelling=false;}
 }
+
 function renderLiftCalendar(){
   const dates=archiveDates;
   const picker=$('liftMonth');
@@ -475,56 +516,58 @@ async function latestDate() {
 function readableDate(date) {
   return new Intl.DateTimeFormat('en-GB',{dateStyle:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
 }
-async function load() {
-  try {
-    if (!renderer) return;
+async function loadEdition(date,{viaLift=false}={}) {
+  if(!renderer)return;
+  const url = new URL('../../gallery/'+date+'/', location.href);
+  const res=await fetch(url,{cache:'no-store'});
+  if(!res.ok)throw new Error('The edition for '+readableDate(date)+' is not available.');
+  const studies=readArchive(await res.text(),res.url);
+  if(!studies.length)throw new Error('No artworks for this edition');
+  const nextPlan=buildLayout(date,studies.length,studies);
+  const nextFloor=archiveDates.indexOf(date);
+  if(nextFloor<0)throw new Error('Archive floor missing');
+  const elevation=nextFloor*FLOOR_SPACING;
+  for(const room of nextPlan.rooms)room.y+=elevation;
+  for(const hall of nextPlan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
+  // Snapshot persistent scene content so only this edition gets removed.
+  for(const object of editionObjects){scene.remove(object);object.traverse?.(child=>child.geometry?.dispose());}
+  editionObjects=[];artPlanes.length=0;sculpturePlacements.length=0;
+  liftPosition=null;liftWasNear=false;liftDoors=[];
+  const previous=new Set(scene.children);
+  exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
+  camera.far=Math.max(210,elevation+240);camera.updateProjectionMatrix();
+  constructGallery(plan,studyList);
+  editionObjects=scene.children.filter(object=>!previous.has(object));
+  if(viaLift&&liftCabinPosition){
+    rig.position.copy(liftCabinPosition);
+    const towards=new THREE.Vector3(plan.rooms[0].x-liftCabinPosition.x,0,plan.rooms[0].z-liftCabinPosition.z);
+    yaw=Math.atan2(-towards.x,-towards.z);
+    rig.rotation.y=yaw;pitch=0;camera.rotation.x=0;
+    liftWasNear=true;welcome.hidden=true;
+    history.replaceState(null,'','?date='+date);
+  }
+  $('liftMonth').value=date.slice(0,7);
+  $('edition').value=date;
+  $('archiveLink').href='../../gallery/'+date+'/';
+  $('welcomeArchive').href='../../gallery/'+date+'/';
+  const floorName=nextFloor===0?'Ground floor':'Floor '+nextFloor;
+  $('startFloor').textContent=floorName+' · '+readableDate(date);
+  $('floorIndicator').textContent=nextFloor===0?'G':String(nextFloor);
+  $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
+  status.textContent=floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
+  enter.disabled=false;enter.textContent='Enter the gallery';
+}
+async function load(){
+  try{
     archiveDates=await loadArchiveDates();
-    const qp = new URLSearchParams(location.search).get('date');
-    const date = qp && archiveDates.includes(qp) ? qp : archiveDates.at(-1);
-    $('liftMonth').value=date.slice(0,7);
-    exhibitDate = date;
-    $('edition').value=date;
-    $('archiveLink').href='../../gallery/'+date+'/';
-    $('welcomeArchive').href='../../gallery/'+date+'/';
-    const url = new URL('../../gallery/'+date+'/', location.href);
-    const res=await fetch(url,{cache:'no-store'});
-    if (!res.ok) throw new Error('The edition for '+readableDate(date)+' is not available.');
-    studyList=readArchive(await res.text(),res.url);
-    if (!studyList.length) throw new Error('No artwork records found for this edition.');
-    plan=buildLayout(date,studyList.length,studyList);
-    currentFloor=archiveDates.indexOf(date);
-    if(currentFloor<0)throw new Error('Selected exhibition is missing from the floor directory');
-    const floorName=currentFloor===0?'Ground floor':'Floor '+currentFloor;
-    $('startFloor').textContent=floorName+' · '+readableDate(date);
-    $('floorIndicator').textContent=currentFloor===0?'G':String(currentFloor);
-    $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
-    const elevation=Math.max(0,currentFloor)*FLOOR_SPACING;
-    camera.far=Math.max(210,elevation+240);
-    camera.updateProjectionMatrix();
-    for(const room of plan.rooms)room.y+=elevation;
-    for(const hall of plan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
-    constructGallery(plan,studyList);
-    status.textContent=floorName+' · '+readableDate(date)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures';
-    enter.disabled=false;
-    enter.textContent='Enter the gallery';
-    let arrival=null;
-    try{arrival=sessionStorage.getItem('pp-lift-arrival');}catch(_){}
-    if(arrival===date){
-      try{sessionStorage.removeItem('pp-lift-arrival');}catch(_){}
-      welcome.hidden=true;
-      $('liftArrival').hidden=false;
-      $('liftArrival').textContent='Doors opening · floor '+(currentFloor===0?'G':currentFloor);
-      setTimeout(()=>$('liftArrival').hidden=true,2400);
-    }
-    camera.updateProjectionMatrix();
-  } catch (e) {
-    enter.textContent='Gallery unavailable';
-    errorBox.textContent = e.message;
-    errorBox.hidden = false;
-    status.textContent='Unable to build exhibition';
-    console.error(e);
+    const qp=new URLSearchParams(location.search).get('date');
+    await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates.at(-1));
+  }catch(e){
+    enter.textContent='Gallery unavailable';errorBox.textContent=e.message;
+    errorBox.hidden=false;console.error(e);
   }
 }
+
 function resize() {
   if (!renderer) return;
   camera.aspect=innerWidth/innerHeight;
