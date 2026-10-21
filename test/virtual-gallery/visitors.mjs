@@ -102,7 +102,7 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={})
  if(!selected)fail('mesh selection','expected '+expected+'; found '+skinned.map(m=>m.name).join(', '));
  const bones=selected.skeleton?.bones;
  if(!bones?.length)fail('skeleton','skinned mesh has no bones');
- const named=name=>bones.find(b=>b.name.replace(/_\\d+$/,'')===name);
+ const named=name=>bones.find(b=>b.name.replace(/_\d+$/,'')===name);
  for(const name of ['upper_arm.L','upper_arm.R','forearm.L','forearm.R','hand.L','hand.R']){
    if(!named(name))fail('bone lookup',name+' absent; names: '+bones.map(b=>b.name).filter(n=>/arm|hand/.test(n)).join(', '));
  }
