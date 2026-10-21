@@ -2,16 +2,10 @@
 // Pixel segmentation is used only where the SVG doesn't encode the
 // material-specific washes, deposits, pools or splatters.
 // The resulting polygons follow ACTUAL visible pigment pixels.
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-function paperRgb(hex){
-  const h=String(hex||'#f5f0e6').match(/^#([0-9a-f]{6})$/i)?.[1];
-  return h?[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]:[245,240,230];
-}
+import {estimatePaper,pigmentOpacity} from './paper-isolation.mjs';
 export function pigmentGrid(imageData,material='marker',paper='#f5f0e6'){
   const {width:w,height:h,data}=imageData;
-  const rgb=paperRgb(paper);
-  const thresholds={marker:33,tissue:17,watercolour:19,oil:22,action:22};
-  const threshold=thresholds[material]||24;
+  const rgb=estimatePaper(imageData,paper);
   const mask=new Uint8Array(w*h);
   const groups=Array.from({length:6},()=>new Uint8Array(w*h));
   let inkCount=0;
@@ -19,10 +13,9 @@ export function pigmentGrid(imageData,material='marker',paper='#f5f0e6'){
     const i=y*w+x,o=i*4,a=data[o+3];
     if(a<48)continue;
     const r=data[o],g=data[o+1],b=data[o+2];
-    const diff=Math.max(Math.abs(r-rgb[0]),Math.abs(g-rgb[1]),Math.abs(b-rgb[2]));
-    if(diff<threshold)continue;
-    // Marked-pixel threshold tolerates subtle wash values without allowing
-    // white JPEG grain to create thousands of floating 3D flecks.
+    // Trace only pixels that would survive the paper alpha cutout. This
+    // prevents paper from becoming a solid, disconnected off-white sculpture.
+    if(pigmentOpacity(r,g,b,rgb,material)<.24)continue;
     mask[i]=1;inkCount++;
     const mx=Math.max(r,g,b),mn=Math.min(r,g,b),range=mx-mn;
     const lum=(r+g+b)/3;
@@ -68,7 +61,7 @@ export function tracePigmentRegions(grid,material='watercolour',quality='desktop
     const seen=new Uint8Array(w*h);
     for(let i=0;i<bitmap.length;i++){
       if(bitmap[i]!==1||seen[i])continue;
-      const queue=[i],pixels=[],seenBase=i,xx=i%w,yy=Math.floor(i/w);
+      const queue=[i],pixels=[];
       seen[i]=1;
       for(let k=0;k<queue.length;k++){
         const v=queue[k],x=v%w,y=(v-x)/w;
@@ -77,7 +70,7 @@ export function tracePigmentRegions(grid,material='watercolour',quality='desktop
           if(n>=0&&bitmap[n]===1&&!seen[n]){seen[n]=1;queue.push(n);}
         }
       }
-      if(pixels.length<Math.max(7,Math.round(w*h*.00022)))continue;
+      if(pixels.length<Math.max(12,Math.round(w*h*.00036)))continue;
       if(pixels.length>w*h*.78)continue;
       // Extract actual boundary edges of this connected pigment component.
       const pixelSet=new Set(pixels);
@@ -117,8 +110,11 @@ export function tracePigmentRegions(grid,material='watercolour',quality='desktop
         points=points.filter((_,n)=>n%step===0);
       }
       if(points.length<4)continue;
+      // This pixel is guaranteed to be INSIDE the actual pigment component,
+      // unlike a polygon bounding-box centre that can land on bare paper.
+      const inner=pixels[Math.floor(pixels.length/2)];
       regions.push({points,area:pixels.length,batch,coverage:pixels.length/(w*h),
-        centroid:{x:xx/w,y:yy/h}});
+        centroid:{x:(inner%w+.5)/w,y:(Math.floor(inner/w)+.5)/h}});
     }
   }
   const ranks=regions.sort((a,b)=>b.area-a.area||a.batch-b.batch).slice(0,limit);
