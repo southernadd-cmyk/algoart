@@ -6,6 +6,7 @@ import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } fr
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=texture-pass-20261021';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
+import { createExteriorLandscape } from './environment-render.mjs';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -73,6 +74,7 @@ setSculptureArchitecturalMaterials({plinth:galleryFinish.plinth,metal:galleryFin
 const dark = new THREE.MeshStandardMaterial({color: '#393b35', metalness: .16, roughness: .74});
 const bridgeSurface=galleryFinish.stoneBridge;
 const frame = new THREE.MeshStandardMaterial({color: '#34322e', roughness: .85});
+const skylightGlass = new THREE.MeshPhysicalMaterial({color:'#d5e1df',metalness:.06,roughness:.22,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false});
 
 function block(w, h, d, x, y, z, material = wall) {
   const geometry=new THREE.BoxGeometry(w,h,d);
@@ -134,6 +136,11 @@ function addRoom(room, index, count) {
   const roofStrip=(room.width-3.5)/2;
   block(roofStrip,.21,room.depth+.45,room.x-(room.width+3.5)/4,ceiling+.1,room.z);
   block(roofStrip,.21,room.depth+.45,room.x+(room.width+3.5)/4,ceiling+.1,room.z);
+  // A continuous glazed skylight seals the centre opening between the roof slabs.
+  // Light still reaches the drawings and the sky is visible from inside.
+  block(3.5,.085,room.depth+.38,room.x,ceiling+.105,room.z,skylightGlass);
+  for(const sx of [-1,1])block(.075,.13,room.depth+.43,room.x+sx*1.755,ceiling+.11,room.z,join);
+  for(let i=1;i<4;i++)block(3.57,.13,.067,room.x,ceiling+.11,room.z-room.depth/2+room.depth*i/4,join);
   for(const z of [room.z-room.depth/2,room.z+room.depth/2])
     block(room.width+.47,.2,.37,room.x,ceiling+.15,z,join);
   for(const x of [room.x-room.width/2,room.x+room.width/2])
@@ -276,8 +283,9 @@ function constructGallery(layout, studies) {
   if(hangs.length+sculptures.length!==studies.length)
     throw new Error('An archived study was omitted from the exhibition');
   for(const hall of layout.corridors)addBridge(hall);
-  // Ground is an understated field underneath the branched architecture.
-  block(250,.4,250,0,-1.15,0,new THREE.MeshStandardMaterial({color:'#9aa69f',roughness:1}));
+  // The daily landscape follows this exhibition's date and artwork seed;
+  // it never occupies rooms, walkways or the visitor collision footprint.
+  createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower});
   const first=layout.rooms[0];
   rig.position.set(first.x,first.y,first.z);
   const initial=layout.rooms[first.neighbours[0]];
