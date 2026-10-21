@@ -68,3 +68,20 @@ a{color:inherit}
 .lift-days button.lift-current{box-shadow:inset 0 0 0 3px #f4dfad}
 .lift-note{margin:17px 0 0}#liftTravel{font-weight:700;color:#373f3a}
 @media(max-width:480px){.lift-panel{padding:18px}.lift-days{gap:3px}.lift-panel h2{font-size:27px}}
+
+/* Lift journey is a short animated vestibule, covering the destination fetch. */
+.lift-animation{position:fixed;inset:0;z-index:15;background:#242b2b;overflow:hidden;display:grid;place-items:center;color:#f1eee7}
+.lift-doors{position:absolute;inset:0;display:flex;pointer-events:none}
+.lift-doors>div{width:50%;background:linear-gradient(90deg,#777d7c,#b4b8b2 65%,#68716f);animation:lift-close .7s ease-out both;border-right:2px solid #3a4543}
+.lift-doors>div:first-child{transform:translateX(-100%)}
+.lift-doors>div:last-child{transform:translateX(100%)}
+@keyframes lift-close{to{transform:translateX(0)}}
+.lift-motion{position:relative;z-index:1;text-align:center;animation:lift-display .3s ease 700ms both;padding:28px;background:rgba(34,41,40,.93);min-width:min(360px,92vw)}
+@keyframes lift-display{from{opacity:0}to{opacity:1}}
+.lift-motion>span{font-size:13px;letter-spacing:.04em}.lift-motion strong{font:normal 29px Georgia,serif;display:block;margin:12px 0}
+.lift-motion p{font-size:12px;color:#c3cbc5}.lift-track{position:relative;height:145px;overflow:hidden;border-left:2px solid #9ba8a1;border-right:2px solid #9ba8a1;margin:20px auto;width:62px}
+.lift-track-lines{position:absolute;inset:-140px 0;background:repeating-linear-gradient(to bottom,transparent 0 21px,#82948c 22px 25px,transparent 26px 43px);animation:lift-rise .55s linear infinite}
+@keyframes lift-rise{to{transform:translateY(43px)}}
+.lift-arrow{position:absolute;inset:0;display:grid;place-items:center;font-size:38px;background:rgba(31,40,38,.55)}
+.lift-arrival{position:fixed;top:18%;left:50%;transform:translateX(-50%);z-index:12;background:#303b38;color:#fff;padding:16px 28px;font:20px Georgia,serif;box-shadow:0 12px 40px #0005}
+@media(prefers-reduced-motion:reduce){.lift-doors>div,.lift-motion,.lift-track-lines{animation:none!important}.lift-doors>div{transform:none}.lift-motion{opacity:1}}
