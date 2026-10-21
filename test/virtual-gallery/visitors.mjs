@@ -94,10 +94,13 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={})
  // CRITICAL: Source scene ALSO holds five unrelated static meshes:
  // Man/Woman (NonRig), and three HighPoly objects. Previous code hid only
  // the opposite skinned mesh, leaving those default-pose duplicates visible.
+ let staticMeshesHidden=0;
  copy.traverse(node=>{if(node.isMesh){
    node.visible=selected.includes(node);
+   if(!node.isSkinnedMesh)staticMeshesHidden++;
    if(node.isSkinnedMesh)node.frustumCulled=false;
  }});
+ if(staticMeshesHidden!==5||skinned.length!==2)return null;
  const bones=new Set(selected[0].skeleton.bones);
  const named=name=>[...bones].find(b=>b.name.replace(/_\d+$/,'')===name);
  copy.updateMatrixWorld(true);
@@ -132,6 +135,7 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={})
    const finalShoulder=upper.getWorldPosition(new THREE.Vector3());
    const actual=finalElbow.sub(finalShoulder).normalize();
    if(!Number.isFinite(actual.y)||actual.dot(target)<.98)return null;
+   if(side==='R'&&raiseRightArm ? actual.y<.1 : actual.y>=-.98 || -actual.y-beforeDown<.05)return null;
    const wrist=named('hand.'+side);
    if(!wrist)return null;
    const wristPoint=wrist.getWorldPosition(new THREE.Vector3());
@@ -165,7 +169,7 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={})
  holder.add(copy);
  holder.userData.galleryRiggedVisitor=true;
  holder.userData.galleryRigPose=relaxed?(raiseRightArm?'arm-raised':'relaxed'):'original';
- holder.userData.galleryRigMetrics={bodyType:person.bodyType,sourceSkinnedMeshes:skinned.length,visibleSkinnedMeshes:selected.length,originalStaticMeshesHidden:5,arms,heightMetres:+(size.y*scale).toFixed(3)};
+ holder.userData.galleryRigMetrics={bodyType:person.bodyType,sourceSkinnedMeshes:skinned.length,visibleSkinnedMeshes:selected.length,originalStaticMeshesHidden:staticMeshesHidden,arms,heightMetres:+(size.y*scale).toFixed(3)};
  return holder;
 }
 
