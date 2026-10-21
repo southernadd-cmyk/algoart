@@ -5,20 +5,20 @@
 // Three.js is passed in so this module can be unit-tested without WebGL.
 export const MATERIAL_SOURCES=Object.freeze({
   walls:Object.freeze({
-    asset:'concrete',author:'Poly Haven',license:'CC0-1.0',
-    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete/concrete_diff_1k.png',
-    normal:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete/concrete_nor_gl_1k.png',
+    asset:'plastered_wall_02',author:'Poly Haven',license:'CC0-1.0',
+    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plastered_wall_02/plastered_wall_02_diff_1k.jpg',
+    normal:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plastered_wall_02/plastered_wall_02_nor_gl_1k.jpg',
     tileMeters:2.7
   }),
   floors:Object.freeze({
     asset:'concrete_floor',author:'Poly Haven',license:'CC0-1.0',
-    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_floor/concrete_floor_diff_1k.png',
-    normal:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_floor/concrete_floor_nor_gl_1k.png',
+    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor/concrete_floor_diff_1k.jpg',
+    normal:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor/concrete_floor_nor_gl_1k.jpg',
     tileMeters:2.25
   }),
   timber:Object.freeze({
     asset:'wood_floor',author:'Poly Haven',license:'CC0-1.0',
-    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/wood_floor/wood_floor_diff_1k.png',
+    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor/wood_floor_diff_1k.jpg',
     tileMeters:2.3
   })
 });
