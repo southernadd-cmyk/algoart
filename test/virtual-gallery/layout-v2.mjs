@@ -103,7 +103,20 @@ export function buildLayout(date, artworkCount, artworkStates = []) {
   return {date,rooms,corridors,artworkCount:count,doorWidth:DOOR_WIDTH,pattern:PATTERNS.indexOf(pattern),orientation,reflect};
 }
 
+// The lift is an external room connected through the reserved blank wall.
+function liftFootprint(room,x,z,padding=0){
+  if(!room.liftWall)return false;
+  const dx=x-room.x,dz=z-room.z;
+  const side=room.liftWall;
+  const along=(side==='north'||side==='south')?dx:dz;
+  const outward=side==='north'?-dz:side==='south'?dz:side==='east'?dx:-dx;
+  const boundary=(side==='north'||side==='south'?room.depth:room.width)/2;
+  // Extend slightly across the doorway so movement crosses the wall seamlessly.
+  return Math.abs(along)<=1.10-padding &&
+    outward>=boundary-.66 && outward<=boundary+2.16-padding;
+}
 export function footprintAt(layout,x,z) {
+  for(const room of layout.rooms)if(liftFootprint(room,x,z))return {x,z,y:room.y,room:room.index,zone:'lift'};
   for (const room of layout.rooms) {
     if (Math.abs(x-room.x)<=room.width/2 && Math.abs(z-room.z)<=room.depth/2)
       return {x:room.x,z:room.z,y:room.y,room:room.index,zone:'room'};
@@ -122,6 +135,7 @@ export function footprintAt(layout,x,z) {
   return null;
 }
 export function canStand(layout,x,z,padding=.42) {
+  for(const room of layout.rooms)if(liftFootprint(room,x,z,padding))return true;
   for (const room of layout.rooms) {
     if(Math.abs(x-room.x)<=room.width/2-padding && Math.abs(z-room.z)<=room.depth/2-padding)return true;
   }
