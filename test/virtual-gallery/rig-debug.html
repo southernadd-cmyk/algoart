@@ -19,13 +19,15 @@ small{display:block;color:#52605a}canvas{width:100%;height:100%;display:block}
  <div><strong>Gallery visitor rig test</strong><small>Same pose function used by the virtual gallery</small></div>
  <button id="relaxed" aria-pressed="true">Arms lowered</button>
  <button id="original" aria-pressed="false">Original rest pose</button>
+ <button id="raise" aria-pressed="false">Raise right arm</button>
  <span id="status">Loading rigged characters…</span><span id="error"></span>
+ <small id="diagnostics" aria-live="polite">The test checks each skinned skeleton's joints and wrist positions.</small>
 </header>
 <canvas id="view" aria-label="3D male and female pose comparison"></canvas>
 </main>
 <script type="module">
 import * as THREE from 'three';
-import {loadRiggedCharacterAsset,createRiggedCharacter} from './visitors.mjs?v=verified-rig-test-20261021';
+import {loadRiggedCharacterAsset,createRiggedCharacter} from './visitors.mjs?v=wrist-checked-raise-arm-20261022';
 const canvas=document.querySelector('#view'),status=document.querySelector('#status');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
@@ -47,24 +49,43 @@ renderer.setSize(w,h);camera.aspect=w/Math.max(1,h);camera.updateProjectionMatri
 window.addEventListener('resize',resize);resize();
 renderer.setAnimationLoop(()=>renderer.render(scene,camera));
 let asset;
-function display(relaxed){
+function display(mode){
+ const relaxed=mode!=='original',raiseRightArm=mode==='raise';
  group.clear();
- let rendered=0;
+ let rendered=0,measurements=[];
+ const issues=[];
  for(const [type,x] of [['male',-1.2],['female',1.2]]){
-  const visitor=createRiggedCharacter(THREE,asset,{bodyType:type,x,y:0,z:0,scale:1,yaw:0,pose:0},{relaxed});
-  if(visitor){group.add(visitor);rendered++;}
+   const visitor=createRiggedCharacter(THREE,asset,
+      {bodyType:type,x,y:0,z:0,scale:1,yaw:0,pose:0},
+      {relaxed,raiseRightArm});
+   if(!visitor){issues.push(type+' pose failed validation');continue;}
+   group.add(visitor);rendered++;
+   const m=visitor.userData.galleryRigMetrics;
+   if(m.visibleSkinnedMeshes!==1||m.originalStaticMeshesHidden!==5)
+     issues.push(type+' includes unwanted model meshes');
+   if(relaxed){
+     if(m.arms.length!==2||m.arms.some(a=>a.targetAccuracy<.98))
+       issues.push(type+' joint movement did not reach target');
+     measurements.push(type+': '+m.arms.map(a=>
+       a.side+' shoulder '+(a.targetAccuracy*100).toFixed(1)+'%').join(', '));
+   }else measurements.push(type+': original bone transforms');
  }
- status.textContent=rendered+'/2 rigged characters visible · '+(relaxed?'verified standing pose':'original A-pose');
- if(rendered!==2)document.querySelector('#error').textContent='Pose validation failed: see developer console';
- for(const [name,pressed] of [['relaxed',relaxed],['original',!relaxed]])
-  document.getElementById(name).setAttribute('aria-pressed',String(pressed));
+ const pass=rendered===2&&issues.length===0;
+ status.textContent=(pass?'PASS':'FAIL')+' · '+rendered+'/2 characters · '+
+   ({relaxed:'arms lowered',original:'rest pose',raise:'right arm raised'}[mode]);
+ document.querySelector('#diagnostics').textContent=measurements.join('    |    ');
+ document.querySelector('#error').textContent=issues.join('; ');
+ for(const name of ['relaxed','original','raise'])
+   document.getElementById(name).setAttribute('aria-pressed',String(name===mode));
 }
+
 try{
  asset=await loadRiggedCharacterAsset();
  if(!asset)throw new Error('Rigged GLB not available at models/human-male-female-rigged.glb');
- display(true);
- document.querySelector('#relaxed').addEventListener('click',()=>display(true));
- document.querySelector('#original').addEventListener('click',()=>display(false));
+ display('relaxed');
+ document.querySelector('#relaxed').addEventListener('click',()=>display('relaxed'));
+ document.querySelector('#original').addEventListener('click',()=>display('original'));
+ document.querySelector('#raise').addEventListener('click',()=>display('raise'));
 }catch(error){
  console.error(error);status.textContent='Failed to load';
  document.querySelector('#error').textContent=error.message;
