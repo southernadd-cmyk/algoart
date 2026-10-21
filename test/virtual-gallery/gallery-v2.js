@@ -7,7 +7,7 @@ import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './s
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs';
-import { planVisitors,renderVisitors } from './visitors.mjs?v=verified-rigged-arms-20261021';
+import { planVisitors,renderVisitors } from './visitors.mjs?v=rig-validated-left-hand-20261021';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
