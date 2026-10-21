@@ -4,6 +4,7 @@ import { buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT, PHI } from
 import { planGalleryHangs } from './hanging-v3.mjs';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
 import { createPortraitSculpture } from './sculpture-render-solid.mjs';
+import { resolveStudyMaterial } from './study-material.mjs';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -283,7 +284,8 @@ function readArchive(html, url) {
       href,
       portrait: card.dataset.orientation === 'portrait' || Number(img.getAttribute('height')) > Number(img.getAttribute('width')),
       aspect: Number(img.getAttribute('width')) / Number(img.getAttribute('height')) || 1.4,
-      engine: new URL(href).searchParams.get('mode') || 'field'
+      engine: new URL(href).searchParams.get('mode') || 'field',
+      material: resolveStudyMaterial(href,card.dataset.material || 'marker')
     };
   }).filter(Boolean);
 }
