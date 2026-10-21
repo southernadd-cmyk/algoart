@@ -220,10 +220,11 @@ function hangArt(room, study, hang) {
 }
 function constructGallery(layout, studies) {
   const hangs = planGalleryHangs(layout, studies);
+  const byId = new Map(studies.map(study => [study.id, study]));
   for (const room of layout.rooms) {
     addRoom(room, room.index, layout.rooms.length);
-    for (const hanging of hangs.filter(h => studies[h.studyId] && h.roomIndex === room.index)) {
-      hangArt(room, studies[hanging.studyId], hanging);
+    for (const hanging of hangs.filter(h => h.roomIndex === room.index)) {
+      hangArt(room, byId.get(hanging.studyId), hanging);
     }
   }
   for (let i = 0; i < layout.rooms.length - 1; i++) addBridge(layout.rooms[i], layout.rooms[i+1]);
@@ -248,6 +249,7 @@ function readArchive(html, url) {
       image: new URL(img.getAttribute('src'),url).href,
       href,
       portrait: card.dataset.orientation === 'portrait' || Number(img.getAttribute('height')) > Number(img.getAttribute('width')),
+      aspect: Number(img.getAttribute('width')) / Number(img.getAttribute('height')) || 1.4,
       engine: new URL(href).searchParams.get('mode') || 'field'
     };
   }).filter(Boolean);
