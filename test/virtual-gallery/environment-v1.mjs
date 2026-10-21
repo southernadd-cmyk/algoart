@@ -32,7 +32,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false}={}
   const centerX=(Math.min(...xs)+Math.max(...xs))/2;
   const centerZ=(Math.min(...zs)+Math.max(...zs))/2;
   const size=Math.max(190,Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))+114);
-  const theme=['meadow','heath','grove','urban'][Math.floor(random()*4)];
+  const theme='urban';
   const phase=random()*Math.PI*2;
   const slope=random()*Math.PI*2;
   const baseline=-1.08;
@@ -84,7 +84,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false}={}
     }
   }
   return {seed,theme,size,centerX,centerZ,phase,slope,lowPower,
-    trees:theme==='urban'?trees.slice(0,lowPower?8:18):trees,
-    shrubs:theme==='urban'?shrubs.slice(0,lowPower?12:25):shrubs,
+    trees:theme==='urban'?trees.slice(0,lowPower?14:28):trees,
+    shrubs:theme==='urban'?shrubs.slice(0,lowPower?8:16):shrubs,
     rocks:theme==='urban'?[]:rocks,buildings,heightAt};
 }
