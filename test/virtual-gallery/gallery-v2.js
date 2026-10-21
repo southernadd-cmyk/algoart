@@ -326,6 +326,8 @@ async function travelLift(date,index){
   const current=Math.max(0,archiveDates.indexOf(exhibitDate));
   const direction=index>current?'Ascending':'Descending';
   $('liftDirection').textContent=direction+' · '+Math.abs(index-current)+' floors';
+  overlay.classList.toggle('descending',index<current);
+  overlay.classList.toggle('ascending',index>current);
   $('liftDestination').textContent='Floor '+(index===0?'G':index)+' · '+readableDate(date);
   // The lift moves while the next exhibit is fetched, not after a fixed delay.
   // A new page is still used to release all previous WebGL assets reliably.
