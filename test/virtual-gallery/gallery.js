@@ -62,7 +62,6 @@ const join = new THREE.MeshStandardMaterial({color: '#756f61', metalness: .22, r
 const dark = new THREE.MeshStandardMaterial({color: '#393b35', metalness: .16, roughness: .74});
 const bridgeSurface = new THREE.MeshStandardMaterial({color: '#b8a994', side: THREE.DoubleSide, roughness: .9});
 const frame = new THREE.MeshStandardMaterial({color: '#34322e', roughness: .85});
-const placeholder = new THREE.MeshBasicMaterial({color: '#e8e4d7', side: THREE.DoubleSide});
 
 function block(w, h, d, x, y, z, material = wall) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -123,6 +122,7 @@ function addRoom(room, index, count) {
   block(.025, .022, room.depth - 1, lineX, room.y + .012, midZ, join);
   const levelTag = makeRoomLabel('Gallery ' + (index + 1) + ' / ' + count);
   levelTag.position.set(room.x, room.y + 4.18, room.z0 + .26);
+  levelTag.rotation.y = Math.PI;
   scene.add(levelTag);
 }
 
