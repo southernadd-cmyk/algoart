@@ -31,11 +31,11 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
   const sky=new THREE.Mesh(skyGeo,new THREE.MeshBasicMaterial({
     vertexColors:true,side:THREE.BackSide,depthWrite:false,fog:false
   }));
-  sky.position.set(plan.centerX,0,plan.centerZ);
+  sky.position.set(plan.centerX,layout.rooms[0].y,plan.centerZ);
   sky.renderOrder=-5;
   scene.add(sky);
   scene.background=color(palette.horizon);
-  scene.fog=new THREE.Fog(color(palette.horizon),55,164);
+  scene.fog=new THREE.Fog(color(palette.horizon),75,Math.max(164,layout.rooms[0].y+230));
 
   // Terrain gently rises only outside the actual footprint and approach bridges.
   // Heights are sampled from the SAME function as all the planted instances.
