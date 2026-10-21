@@ -72,9 +72,17 @@ function createMaskedTexture(image,layer,quality) {
   const ctx=canvas.getContext('2d',{alpha:true});
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.drawImage(image,0,0,canvas.width,canvas.height);
+  // Combine all cutouts on a separate transparent mask first. Applying
+  // destination-in repeatedly would INTERSECT each stroke instead of unioning
+  // them and can make sculptures look mysteriously blank.
+  const mask=document.createElement('canvas');
+  mask.width=canvas.width;mask.height=canvas.height;
+  const cut=mask.getContext('2d',{alpha:true});
+  cut.fillStyle=layer.isBacking?'rgba(255,255,255,.60)':'rgba(255,255,255,.94)';
+  cut.strokeStyle=cut.fillStyle;
+  maskImage(cut,layer.form,layer,canvas.width,canvas.height);
   ctx.globalCompositeOperation='destination-in';
-  ctx.fillStyle=layer.isBacking?'rgba(255,255,255,.60)':'rgba(255,255,255,.94)';
-  maskImage(ctx,layer.form,layer,canvas.width,canvas.height);
+  ctx.drawImage(mask,0,0);
   ctx.globalCompositeOperation='source-over';
   const texture=new THREE.CanvasTexture(canvas);
   texture.colorSpace=THREE.SRGBColorSpace;
