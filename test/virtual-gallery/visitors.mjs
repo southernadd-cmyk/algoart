@@ -76,41 +76,62 @@ async function loadCharacters(){
  return characterAssets;
 }
 function riggedVisitor(THREE,asset,person){
+ // The lzyassoul archive contains exactly two separate skinned characters.
+ // Clone skeletons, do not clone only meshes (that breaks joint bindings).
  const copy=asset.clone(asset.scene);
- const skinned=[];
- copy.traverse(o=>{if(o.isSkinnedMesh)skinned.push(o);});
- if(!skinned.length)return null;
- // The source includes two independent skins. Keep the selected skin and
- // its armature while hiding all geometry belonging to the other character.
- const rigs=[...new Set(skinned.map(mesh=>mesh.skeleton?.bones?.[0]))].filter(Boolean);
- if(rigs.length!==2)return null;
- const desired=person.bodyType==='male'?0:1;
- const chosen=rigs[desired];
- const selected=skinned.filter(mesh=>mesh.skeleton?.bones?.[0]===chosen);
- if(!selected.length)return null;
- for(const mesh of skinned)mesh.visible=selected.includes(mesh);
+ const meshes=[];
+ copy.traverse(o=>{if(o.isSkinnedMesh)meshes.push(o);});
+ const groups=new Map();
+ for(const mesh of meshes){
+  const key=mesh.skeleton?.bones?.[0];
+  if(!key)continue;
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(mesh);
+ }
+ if(groups.size!==2)return null;
+ const candidates=[...groups.values()];
+ // Source glTF has the shorter and taller character; prefer actual geometric
+ // classification rather than assuming the skin order means male or female.
+ const sizes=candidates.map(group=>{
+  const box=new THREE.Box3();
+  for(const mesh of group)box.expandByObject(mesh);
+  return {group,height:box.getSize(new THREE.Vector3()).y};
+ }).sort((a,b)=>a.height-b.height);
+ const selected=(person.bodyType==='female'?sizes[0]:sizes[1]).group;
+ for(const mesh of meshes)mesh.visible=selected.includes(mesh);
  const bones=new Set(selected.flatMap(mesh=>mesh.skeleton.bones));
- const find=name=>[...bones].find(b=>b.name.replace(/_\d+$/,'')===name);
- // Only small relaxations from the authored rest pose. Large guessed limb
- // rotations caused the previous floating, contorted characters.
+ const named=label=>[...bones].find(b=>b.name.replace(/_\d+$/,'')===label);
+ // Bend an arm toward the body in world space using its actual joint positions.
+ // This avoids assuming that the skeleton's local X/Y/Z match world axes.
+ copy.updateMatrixWorld(true);
+ const tmp=new THREE.Vector3();
  for(const side of ['L','R']){
-  const k=side==='L'?1:-1;
-  const upper=find('upper_arm.'+side),forearm=find('forearm.'+side);
-  if(upper)upper.rotateZ(k*.18);
-  if(forearm)forearm.rotateZ(k*.08);
+  const shoulder=named('upper_arm.'+side),elbow=named('forearm.'+side);
+  if(!shoulder||!elbow)continue;
+  const from=elbow.getWorldPosition(new THREE.Vector3())
+    .sub(shoulder.getWorldPosition(new THREE.Vector3())).normalize();
+  const down=new THREE.Vector3(0,-1,0);
+  const delta=new THREE.Quaternion().setFromUnitVectors(from,down);
+  // Limit maximum correction so an unusual skeleton cannot twist violently.
+  const correction=new THREE.Quaternion().identity().slerp(delta,.78);
+  const parentWorld=shoulder.parent.getWorldQuaternion(new THREE.Quaternion());
+  const world=shoulder.getWorldQuaternion(new THREE.Quaternion());
+  const desired=correction.multiply(world);
+  shoulder.quaternion.copy(parentWorld.invert().multiply(desired));
+  shoulder.updateMatrixWorld(true);
  }
  copy.updateMatrixWorld(true);
  const box=new THREE.Box3();
  for(const mesh of selected)box.expandByObject(mesh);
- const height=box.max.y-box.min.y;
- if(!Number.isFinite(height)||height<.1||height>1000)return null;
- const scale=(person.bodyType==='male'?1.78:1.66)*person.scale/height;
+ const size=box.getSize(new THREE.Vector3());
+ if(!Number.isFinite(size.y)||size.y<.35||size.y>1000)return null;
+ const scale=(person.bodyType==='male'?1.76:1.67)*person.scale/size.y;
  const ctr=box.getCenter(new THREE.Vector3());
  copy.scale.setScalar(scale);
- copy.position.set(person.x-ctr.x*scale,person.y-box.min.y*scale,person.z-ctr.z*scale);
+ copy.position.set(person.x-ctr.x*scale,person.y-box.min.y*scale,
+   person.z-ctr.z*scale);
  copy.rotation.y=person.yaw;
- // Seated posing will be enabled only after validating hip and knee axes.
- // Until then the procedural seated character remains the reliable option.
+ copy.userData.galleryRiggedVisitor=true;
  return copy;
 }
 
@@ -186,9 +207,22 @@ export function renderVisitors(THREE,scene,plan){
   }
   root.add(g);
   }
- // Replace standing figures when the optional validated rigged asset is hosted.
- // Leave seated visitors procedural until proper seated joint angles are tested.
- // Keep the stable procedural figures visible while the rig's authored
- // rest pose and animation axes are tested separately. The current imported
- // characters visibly hold their arms out and obstruct exhibits.
+ // Imported standing figures are deliberately optional. No network request
+ // is made if the rigged GLB has not been published alongside this gallery.
+ if(plan.people.some(p=>!p.seat)){
+  fetch('./models/human-male-female-rigged.glb',{method:'HEAD'}).then(response=>{
+   if(!response.ok)return;
+   return loadCharacters().then(asset=>{
+    if(!asset||!root.parent)return;
+    const figures=root.children.slice(plan.benches.length,plan.benches.length+plan.people.length);
+    for(let i=0;i<plan.people.length;i++){
+     const p=plan.people[i];if(p.seat)continue;
+     try{
+      const candidate=riggedVisitor(THREE,asset,p);
+      if(candidate){root.add(candidate);figures[i].visible=false;}
+     }catch(error){console.warn('Visitor skeleton failed; keeping fallback',error);}
+    }
+   });
+  }).catch(()=>{});
+ }
 }
