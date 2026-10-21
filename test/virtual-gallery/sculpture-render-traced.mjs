@@ -11,8 +11,12 @@ import {
 
 // The objects below are actual traced source strokes and paint boundaries.
 // No golden-section shards, random polygons or full-image picture planes.
-const baseMaterial=new THREE.MeshStandardMaterial({color:'#d5d0c4',roughness:.85});
-const metalMaterial=new THREE.MeshStandardMaterial({color:'#454c45',metalness:.38,roughness:.48});
+let baseMaterial=new THREE.MeshStandardMaterial({color:'#d5d0c4',roughness:.85});
+let metalMaterial=new THREE.MeshStandardMaterial({color:'#454c45',metalness:.38,roughness:.48});
+export function setSculptureArchitecturalMaterials({plinth,metal}={}){
+  if(plinth)baseMaterial=plinth;
+  if(metal)metalMaterial=metal;
+}
 const transientMaterial=new THREE.MeshStandardMaterial({color:'#555b52',metalness:.15,roughness:.79});
 const thicknessProfiles={
   marker:{ink:.065,pigment:.02,amplify:1.8,roughness:.75,painted:false,opacity:1},
