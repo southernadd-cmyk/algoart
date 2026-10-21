@@ -489,7 +489,7 @@ window.addEventListener('keydown',(e)=>{
     if(nearLift())openLift();
     else showInfo(focused?.userData.study);
   }
-  if (e.code==='Escape') $('info').hidden=true;
+  if (e.code==='Escape') {$('info').hidden=true;$('lift').hidden=true;}
 });
 window.addEventListener('keyup',(e)=>{if(moveCodes.has(e.code))pressed.delete(moveCodes.get(e.code));});
 window.addEventListener('blur',()=>pressed.clear());
