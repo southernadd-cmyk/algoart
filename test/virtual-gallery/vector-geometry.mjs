@@ -62,21 +62,62 @@ export function selectRecordedPaths(source,quality='desktop'){
   if(raw.length<=limit)return raw;
   const ranking=[...raw].sort((a,b)=>b.score-a.score||a.i-b.i);
   const keep=new Set(ranking.slice(0,Math.round(limit*.72)).map(p=>p.i));
-  const interval=(raw.length-1)/Math.max(1,limit-keep.size);
-  for(let j=0;j<limit-keep.size;j++)keep.add(raw[Math.min(raw.length-1,Math.round(j*interval))].i);
+  const remaining=limit-keep.size;
+  const interval=(raw.length-1)/Math.max(1,remaining);
+  for(let j=0;j<remaining;j++)
+    keep.add(raw[Math.min(raw.length-1,Math.round(j*interval))].i);
   return raw.filter(p=>keep.has(p.i)).slice(0,limit);
 }
-export function strokeSections(stroke,widthPx=stroke.width){
-  // Segment long paths before extrusion: avoids invalid self-intersecting
-  // extrusion polygons at spiral crossings while retaining their true route.
-  // Interpolate along the real path; never substitute a procedural curve.
+export function strokeSections(stroke){
+  // Material-faithful real dash patterns. Merely extruding each whole path
+  // would fill in the hand-drawn breaks recorded by dry marker and graphite.
   const points=stroke.points;
-  const chunks=[];
-  for(let start=0;start<points.length-1;start+=14){
-    const end=Math.min(points.length-1,start+14);
-    const slice=points.slice(start,end+1);
-    if(polyLength(slice)>=.2)chunks.push(slice);
+  const rawPattern=Array.isArray(stroke.dash)?stroke.dash.filter(n=>Number.isFinite(n)&&n>0):[];
+  const dash=rawPattern.length%2 ? [...rawPattern,...rawPattern] : rawPattern;
+  const period=dash.reduce((a,b)=>a+b,0);
+  let patternIndex=0,remain=Infinity,on=true;
+  if(period>0){
+    let offset=((Number(stroke.dashOffset)||0)%period+period)%period;
+    while(offset>=dash[patternIndex] && patternIndex<dash.length*2){
+      offset-=dash[patternIndex];
+      patternIndex=(patternIndex+1)%dash.length;
+    }
+    remain=dash[patternIndex]-offset;
+    on=patternIndex%2===0;
   }
+  const chunks=[];
+  let current=[];
+  function flush(){
+    if(current.length>1&&polyLength(current)>.2)chunks.push(current);
+    current=[];
+  }
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i];
+    const length=Math.hypot(b.x-a.x,b.y-a.y);
+    if(length<.001)continue;
+    let covered=0;
+    while(covered<length-.00001){
+      const span=Math.min(length-covered,remain);
+      const begin=covered/length,finish=(covered+span)/length;
+      const p={x:a.x+(b.x-a.x)*begin,y:a.y+(b.y-a.y)*begin};
+      const q={x:a.x+(b.x-a.x)*finish,y:a.y+(b.y-a.y)*finish};
+      if(on){
+        if(!current.length)current.push(p);
+        current.push(q);
+        if(current.length>=16) {flush();current=[q];}
+      }else flush();
+      covered+=span;
+      if(period>0){
+        remain-=span;
+        if(remain<.00001){
+          patternIndex=(patternIndex+1)%dash.length;
+          on=patternIndex%2===0;remain=dash[patternIndex];
+          if(!on)flush();
+        }
+      }
+    }
+  }
+  flush();
   return chunks;
 }
 export function strokeOutline(points,width){
