@@ -56,9 +56,9 @@ export function planGallerySculptures(layout,studies){
   for(const room of layout.rooms){
     const portraits=studies.slice(room.artStart,room.artEnd).filter(study=>study.portrait);
     const rng=makeRandom(seedFromString('PP-PLINTH-LOCATIONS-v1:'+layout.date+':'+room.index+':'+portraits.map(p=>p.seed).join('|')));
-    const x=room.width/2-1.11,z=room.depth/2-1.07;
-    // Offset corners leave the 3.8 m doorway sightline free in *both*
-    // directions. The first positions vary between exhibitions.
+    const x=room.width/2-1.32,z=room.depth/2-1.30;
+    // Pull sculptures away from tight wall junctions while retaining the
+    // clear cross-aisle required by doors on all four sides.
     const corners=[[-x,-z],[x,z],[-x,z],[x,-z]];
     const rotation=Math.floor(rng()*corners.length);
     const options=corners.slice(rotation).concat(corners.slice(0,rotation));
