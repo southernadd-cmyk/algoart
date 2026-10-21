@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {vectorForStudy} from './vector-bridge.mjs';
 import {selectRecordedPaths,strokeSections,strokeOutline,portraitCoords} from './vector-geometry.mjs';
 import {pigmentGrid,tracePigmentRegions} from './pigment-regions.mjs';
+import {paperRGB,pigmentOpacity,maskPaper} from './paper-isolation.mjs';
 import {makeRandom,seedFromString} from './layout-v2.mjs';
 import {
   SCULPTURE_WIDTH as W,SCULPTURE_HEIGHT as H,
@@ -47,6 +48,16 @@ function colouredMaterial(stroke,type,cache){
   cache.set(key,mat);
   return mat;
 }
+function paperLikeStroke(stroke,study){
+  // Off-white recorded strokes must not turn paper grain into opaque beams.
+  let color;
+  try{color=new THREE.Color(stroke.stroke||'#343434').getHex();}
+  catch{return false;}
+  const rgb=[(color>>16)&255,(color>>8)&255,color&255];
+  return pigmentOpacity(...rgb,
+    paperRGB(study.material?.params?.paper||'#f5f0e6'),
+    study.material?.type||'marker')<.16;
+}
 function makeShape(vertices){
   if(vertices.length<3)return null;
   const shape=new THREE.Shape();
@@ -91,6 +102,7 @@ function buildPathReliefs(source,study,quality,core,onArtworkMesh,materialCache)
   const totalBudget=quality==='mobile'?95:quality==='vr'?125:230;
   for(const stroke of paths){
     if(added>=totalBudget)break;
+    if(paperLikeStroke(stroke,study))continue;
     const material=colouredMaterial(stroke,type,materialCache);
     // Original recorded width is used as the physical reference. A minimum
     // relief thickness allows pencil lines to survive mobile perspective.
@@ -113,8 +125,16 @@ function buildPathReliefs(source,study,quality,core,onArtworkMesh,materialCache)
   }
   return added;
 }
-function paintTexture(canvas){
-  const texture=new THREE.CanvasTexture(canvas);
+function paintTexture(canvas,type,paper){
+  // CanvasTexture RGBA alpha, NOT alphaMap (which would read green).
+  const isolated=document.createElement('canvas');
+  isolated.width=canvas.width;isolated.height=canvas.height;
+  const context=isolated.getContext('2d',{willReadFrequently:true});
+  context.drawImage(canvas,0,0,isolated.width,isolated.height);
+  const pixels=context.getImageData(0,0,isolated.width,isolated.height);
+  maskPaper(pixels,type,paper);
+  context.putImageData(pixels,0,0);
+  const texture=new THREE.CanvasTexture(isolated);
   texture.colorSpace=THREE.SRGBColorSpace;
   texture.anisotropy=2;
   return texture;
@@ -135,18 +155,30 @@ function buildMaterialReliefs(image,study,quality,core,onArtworkMesh){
   const grid=pigmentGrid(data,type,paper);
   const regions=tracePigmentRegions(grid,type,quality);
   const profile=thicknessProfiles[type];
-  const atlas=paintTexture(canvas);
+  const atlas=paintTexture(canvas,type,paper);
   const pigment=new THREE.MeshStandardMaterial({
     map:atlas,roughness:profile.roughness,metalness:type==='oil'?.035:0,
-    transparent:profile.opacity<1,opacity:profile.opacity,
-    side:THREE.DoubleSide
+    transparent:true,opacity:profile.opacity,alphaTest:.14,
+    depthWrite:type==='oil'||type==='action',side:THREE.DoubleSide
   });
-  const sides=new THREE.MeshStandardMaterial({
-    color:type==='oil'?'#858075':type==='action'?'#6e665c':'#b6aa97',
-    roughness:profile.roughness,metalness:0,
-    transparent:type==='tissue'||type==='watercolour',
-    opacity:type==='tissue'?.68:type==='watercolour'?.83:1
-  });
+  // Side faces take the colour of the *pigment component* itself, not paper.
+  const sideCache=new Map();
+  function sideFor(region){
+    const x=Math.max(0,Math.min(pixels.width-1,Math.floor(region.centroid.x*pixels.width)));
+    const y=Math.max(0,Math.min(pixels.height-1,Math.floor(region.centroid.y*pixels.height)));
+    const k=(y*pixels.width+x)*4,d=pixels.data;
+    const rgb=[d[k],d[k+1],d[k+2]];
+    const key=rgb.map(v=>Math.round(v/20)).join(',');
+    if(sideCache.has(key))return sideCache.get(key);
+    const color=new THREE.Color().setRGB(rgb[0]/255,rgb[1]/255,rgb[2]/255,THREE.SRGBColorSpace);
+    color.multiplyScalar(type==='oil'?.75:.82);
+    const material=new THREE.MeshStandardMaterial({
+      color,roughness:profile.roughness,metalness:0,
+      transparent:type==='tissue'||type==='watercolour',
+      opacity:type==='tissue'?.68:type==='watercolour'?.83:1
+    });
+    sideCache.set(key,material);return material;
+  }
   const rng=makeRandom(seedFromString('PP-PAINT-RELIEF:'+study.seed+':'+type));
   let created=0;
   for(const region of regions){
@@ -156,7 +188,7 @@ function buildMaterialReliefs(image,study,quality,core,onArtworkMesh){
     const areaScale=Math.min(1,region.coverage*24);
     const depth=profile.pigment*(.65+.55*areaScale+.3*rng());
     const z=.02+(rng()-.5)*profile.pigment*1.3;
-    const object=solid(shape,depth,pigment,sides,z,study);
+    const object=solid(shape,depth,pigment,sideFor(region),z,study);
     core.add(object);
     onArtworkMesh?.(object);
     created++;
