@@ -7,7 +7,7 @@ import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './s
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs';
-import { planVisitors,renderVisitors } from './visitors.mjs?v=no-tpose-max-three-20261021';
+import { planVisitors,renderVisitors } from './visitors.mjs?v=verified-rigged-arms-20261021';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -557,7 +557,7 @@ async function loadEdition(date,{viaLift=false}={}) {
   for(const room of nextPlan.rooms)room.y+=elevation;
   for(const hall of nextPlan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
   // Snapshot persistent scene content so only this edition gets removed.
-  for(const object of editionObjects){scene.remove(object);object.traverse?.(child=>child.geometry?.dispose());}
+  for(const object of editionObjects){scene.remove(object);object.traverse?.(child=>{if(child.geometry&&!child.geometry.userData?.sharedVisitorAsset)child.geometry.dispose();});}
   editionObjects=[];artPlanes.length=0;sculpturePlacements.length=0;
   liftPosition=null;liftWasNear=false;liftDoors=[];
   const previous=new Set(scene.children);
