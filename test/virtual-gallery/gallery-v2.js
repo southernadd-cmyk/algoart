@@ -395,16 +395,20 @@ function constructGallery(layout, studies) {
     const tower=new THREE.Group();
     const bodyMaterial=new THREE.MeshStandardMaterial({color:'#a9aea9',roughness:.88});
     const bandMaterial=new THREE.MeshStandardMaterial({color:'#4e5755',metalness:.45,roughness:.5});
-    const centre=layout.rooms[0];
     const height=currentFloor*FLOOR_SPACING;
-    const shell=new THREE.Mesh(new THREE.BoxGeometry(centre.width+.35,height,centre.depth+.35),bodyMaterial);
-    shell.position.set(centre.x,height/2-.26,centre.z);
-    tower.add(shell);
-    const bands=new THREE.InstancedMesh(new THREE.BoxGeometry(centre.width+.48,.13,centre.depth+.48),bandMaterial,currentFloor);
-    const transform=new THREE.Object3D();
-    for(let i=0;i<currentFloor;i++){
-      transform.position.set(centre.x,(i+1)*FLOOR_SPACING-.18,centre.z);
-      transform.updateMatrix();bands.setMatrixAt(i,transform.matrix);
+    // Repeat lightweight supporting volumes below every gallery wing, not
+    // only beneath the entrance room, so the upper gallery is not suspended.
+    for(const room of layout.rooms){
+      const shell=new THREE.Mesh(new THREE.BoxGeometry(room.width+.35,height,room.depth+.35),bodyMaterial);
+      shell.position.set(room.x,height/2-.26,room.z);
+      tower.add(shell);
+    }
+    const bands=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.13,1),bandMaterial,currentFloor*layout.rooms.length);
+    const transform=new THREE.Object3D();let n=0;
+    for(const room of layout.rooms)for(let i=0;i<currentFloor;i++){
+      transform.position.set(room.x,(i+1)*FLOOR_SPACING-.18,room.z);
+      transform.scale.set(room.width+.48,1,room.depth+.48);
+      transform.updateMatrix();bands.setMatrixAt(n++,transform.matrix);
     }
     bands.instanceMatrix.needsUpdate=true;tower.add(bands);
     scene.add(tower);
@@ -469,6 +473,8 @@ async function load() {
     plan=buildLayout(date,studyList.length,studyList);
     currentFloor=archiveDates.indexOf(date);
     const elevation=Math.max(0,currentFloor)*FLOOR_SPACING;
+    camera.far=Math.max(210,elevation+240);
+    camera.updateProjectionMatrix();
     for(const room of plan.rooms)room.y+=elevation;
     for(const hall of plan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
     constructGallery(plan,studyList);
