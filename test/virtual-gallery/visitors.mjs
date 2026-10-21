@@ -1,3 +1,5 @@
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 // Seeded furniture and visitor v1. WebGL-independent placement followed by
 // lightweight geometry; no inaccessible downloaded model required.
 import {makeRandom,seedFromString,DOOR_WIDTH} from './layout-v2.mjs';
@@ -54,6 +56,14 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
   }
  }
  return {benches,people};
+}
+// Optional real rigged characters. A single Sketchfab GLB contains two rigs.
+const riggedLoader=new GLTFLoader();
+let riggedPromise;
+function getRiggedModels(){
+ if(!riggedPromise)riggedPromise=new Promise((resolve,reject)=>
+  riggedLoader.load('./models/rigged_characters.glb',gltf=>resolve(gltf.scene),undefined,reject));
+ return riggedPromise;
 }
 export function renderVisitors(THREE,scene,plan){
  const root=new THREE.Group();scene.add(root);
