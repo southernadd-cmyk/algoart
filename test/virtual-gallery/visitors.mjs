@@ -1,4 +1,3 @@
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // Seeded furniture and visitor v1. WebGL-independent placement followed by
 // lightweight geometry; no inaccessible downloaded model required.
 import {makeRandom,seedFromString,DOOR_WIDTH} from './layout-v2.mjs';
@@ -35,7 +34,10 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
     const b=options[(i+first)%options.length];
     if(clear(b.x,b.z,.62)){
      benches.push({...b,y:room.y,roomIndex:room.index});
-     obstacles.push({...b,radius:1.15});break;
+     obstacles.push({...b,radius:1.15});
+     if(rng()>.42)people.push({x:b.x,z:b.z,y:room.y,yaw:b.rotation,roomIndex:room.index,
+      variant:Math.floor(rng()*5),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.13,pose:4,seat:true});
+     break;
     }
    }
   }
@@ -52,15 +54,6 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
   }
  }
  return {benches,people};
-}
-const modelLoader=new GLTFLoader();
-const assetPromises=new Map();
-function visitorAsset(type){
- if(!assetPromises.has(type)){
-  assetPromises.set(type,new Promise((resolve,reject)=>modelLoader.load(
-   './models/'+type+'.glb',gltf=>resolve(gltf.scene),undefined,reject)));
- }
- return assetPromises.get(type);
 }
 export function renderVisitors(THREE,scene,plan){
  const root=new THREE.Group();scene.add(root);
@@ -93,6 +86,21 @@ export function renderVisitors(THREE,scene,plan){
   const male=p.bodyType==='male',palette=p.variant;
   const skin=skins[palette],shirt=cloth[palette],pants=trousers[palette];
   const stature=male?1.76:1.66;
+  if(p.seat){
+   // Seated posture, hips at bench height, thighs horizontal and shins down.
+   scaled(g,torsoShape,shirt,[0,.92,-.11],[.225,.27,.16],-.08);
+   scaled(g,headShape,skin,[0,1.31,-.13],[.137,.17,.12]);
+   scaled(g,headShape,hair[palette],[0,1.445,-.145],[.14,.09,.126]);
+   for(const sign of [-1,1]){
+    const x=sign*.13;
+    scaled(g,limbShape,pants,[x,.47,.25],[.095,.095,.33],Math.PI/2);
+    scaled(g,limbShape,pants,[x,.245,.53],[.076,.23,.08]);
+    scaled(g,headShape,shoes,[x,.06,.62],[.095,.065,.15]);
+    scaled(g,limbShape,shirt,[sign*.27,.85,-.06],[.073,.17,.078],sign*.18);
+    scaled(g,limbShape,skin,[sign*.26,.64,.13],[.056,.15,.062],Math.PI/3);
+   }
+   root.add(g);continue;
+  }
   const shoulders=male?.255:.218;
   const hips=male?.20:.225;
   // An articulated human silhouette: head, neck, tapered torso, hips,
@@ -120,15 +128,6 @@ export function renderVisitors(THREE,scene,plan){
   root.add(g);
   // Procedural body remains as an offline fallback if the optional GLB
   // file is not deployed or cannot load on the visitor's device.
-  // The original non-rigged GLB is a rigid T-pose. Do not replace posed
-  // visitors until a genuinely skinned/posed asset is deployed.
-  if(false)visitorAsset(p.bodyType).then(model=>{
-   if(!root.parent)return;
-   const replica=model.clone(true);
-   replica.position.set(p.x,p.y,p.z);
-   replica.rotation.y=p.yaw;
-   replica.scale.setScalar(p.scale);
-   root.add(replica);g.visible=false;
-  }).catch(()=>{});
+
  }
 }
