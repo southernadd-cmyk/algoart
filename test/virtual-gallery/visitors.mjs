@@ -12,8 +12,13 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    const p={x,z};
    if(Math.abs(x-room.x)>room.width/2-r-.55||Math.abs(z-room.z)>room.depth/2-r-.55)return false;
    // Keep both centre aisles and all door approaches unobstructed.
-   const safe=DOOR_WIDTH/2+.30+r;
-   if(Math.abs(x-room.x)<safe||Math.abs(z-room.z)<safe)return false;
+   const safe=DOOR_WIDTH/2+.15+r;
+   const dx=x-room.x,dz=z-room.z;
+   if(Math.abs(dx)<1.1+r&&Math.abs(dz)<1.1+r)return false;
+   if(room.doors.includes('north')&&dz<0&&Math.abs(dx)<safe)return false;
+   if(room.doors.includes('south')&&dz>0&&Math.abs(dx)<safe)return false;
+   if(room.doors.includes('west')&&dx<0&&Math.abs(dz)<safe)return false;
+   if(room.doors.includes('east')&&dx>0&&Math.abs(dz)<safe)return false;
    if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+.45&&Math.abs(z-q.z)<q.depth/2+r+.45))return false;
    return !obstacles.some(q=>near(p,q,r+q.radius+.32));
   };
