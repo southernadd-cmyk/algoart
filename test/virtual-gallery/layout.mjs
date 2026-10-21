@@ -43,8 +43,8 @@ export function buildLayout(date, artworkCount, artworkStates = []) {
 
   for (let i = 0; i < roomCount; i++) {
     const system = artworkStates[i * 3]?.engine || 'field';
-    const width = 12 + (i % 3) * 2 * INV_PHI + rng() * 1.8 + (system === 'rects' ? 1.7 : 0);
-    const depth = 12.4 + Math.floor(rng() * 3) * INV_PHI * 2 + (system === 'organic' ? 1.1 : 0);
+    const width = 10.7 + (i % 3) * 1.05 * INV_PHI + rng() * 1.1 + (system === 'rects' ? .8 : 0);
+    const depth = 11.1 + Math.floor(rng() * 3) * INV_PHI * 1.6 + (system === 'organic' ? .6 : 0);
     const turn = system === 'spiral' ? 2.6 : system === 'network' ? 1.4 : 2.15;
     if (i) center = Math.max(-3.2, Math.min(3.2, center + Math.cos(phase + i * GOLDEN_ANGLE) * turn));
     const level = levelPattern[i % levelPattern.length] * reverse;
