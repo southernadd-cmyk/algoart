@@ -8,6 +8,59 @@ const PALETTES={
   grove:{horizon:'#cbd5cc',zenith:'#abc7cc',terrain:['#768978','#99a58a','#6e8277'],trees:['#496856','#5f7c62','#849b7c'],stone:['#b5b4ac','#949e97']},
   urban:{horizon:'#c9d0d1',zenith:'#b9cbd4',terrain:['#90928b','#a9aaa0','#80837d'],trees:['#5b735f','#72826c','#889383'],stone:['#b1b1a9','#90948e']}
 };
+
+// Offline-safe procedural exterior textures; seeded architecture retains stable
+// materials even when third-party texture CDNs are unavailable.
+function surfaceTexture(THREE,kind){
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
+  const ctx=canvas.getContext('2d'),hash=(x,y)=>(Math.imul(x+31,73856093)^Math.imul(y+17,19349663))>>>0;
+  const base=kind==='brick'?'#b8a99a':kind==='concrete'?'#b6b8b1':kind==='windows'?'#bfc4c0':kind==='roof'?'#757c7a':'#93968b';
+  ctx.fillStyle=base;ctx.fillRect(0,0,256,256);
+  if(kind==='brick'){
+    ctx.strokeStyle='rgba(65,58,49,.35)';ctx.lineWidth=3;
+    for(let y=0;y<256;y+=22){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();
+      for(let x=(Math.floor(y/22)%2)*30-60;x<300;x+=60){
+        ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+22);ctx.stroke();
+      }
+    }
+  }else if(kind==='windows'){
+    for(let y=13;y<256;y+=52)for(let x=14;x<256;x+=51){
+      ctx.fillStyle='#555d5c';ctx.fillRect(x-4,y-4,37,38);
+      ctx.fillStyle=((hash(x,y)%3)===0)?'#aeb5ad':'#536b73';
+      ctx.fillRect(x,y,29,30);
+      ctx.fillStyle='rgba(224,231,222,.22)';ctx.fillRect(x+2,y+2,5,25);
+      ctx.fillStyle='#959d9b';ctx.fillRect(x+14,y,2,30);
+    }
+  }else if(kind==='roof'){
+    ctx.strokeStyle='rgba(28,37,39,.28)';ctx.lineWidth=2;
+    for(let y=0;y<256;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();}
+    for(let x=0;x<256;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,256);ctx.stroke();}
+  }else if(kind==='ground'){
+    ctx.strokeStyle='rgba(54,59,56,.21)';ctx.lineWidth=2;
+    for(let y=0;y<256;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();}
+    for(let x=0;x<256;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,256);ctx.stroke();}
+  }
+  for(let y=0;y<256;y+=2)for(let x=0;x<256;x+=2){
+    const h=hash(x,y),level=(h%21)/100;
+    ctx.fillStyle=(h&1)?'rgba(255,255,255,'+level+')':'rgba(28,28,23,'+(level*.58)+')';
+    ctx.fillRect(x,y,2,2);
+  }
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.anisotropy=2;
+  return texture;
+}
+function uvBox(THREE,w,h,d,tile=2.5){
+  const geo=new THREE.BoxGeometry(w,h,d),uv=geo.getAttribute('uv');
+  const faces=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
+  for(let side=0;side<6;side++)for(let i=0;i<4;i++){
+    const k=side*4+i;
+    uv.setXY(k,uv.getX(k)*faces[side][0]/tile,uv.getY(k)*faces[side][1]/tile);
+  }
+  uv.needsUpdate=true;return geo;
+}
+
 const noise=(a,b,s)=>Math.sin(a*.27+s)*Math.cos(b*.31-s);
 export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=false}={}){
   const plan=buildEnvironmentPlan(layout,studies,{lowPower});
@@ -58,7 +111,9 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
   position.needsUpdate=true;
   groundGeo.setAttribute('color',new THREE.BufferAttribute(groundColors,3));
   groundGeo.computeVertexNormals();
-  const ground=new THREE.Mesh(groundGeo,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
+  const groundMap=surfaceTexture(THREE,'ground');
+  groundMap.repeat.set(plan.size/12,plan.size/12);
+  const ground=new THREE.Mesh(groundGeo,new THREE.MeshLambertMaterial({vertexColors:true,map:groundMap,side:THREE.DoubleSide}));
   ground.position.set(plan.centerX,0,plan.centerZ);
   scene.add(ground);
 
@@ -124,30 +179,29 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     o.scale.set(.65*p.scale,.28*p.scale,.48*p.scale);
     o.rotation.set(p.variant*.15,p.variant*6,p.variant*.16);
   },p=>stones[p.species%stones.length]);
-  // City blocks are cheap instanced masonry masses rather than a huge imported
-  // scene. Each edition changes street silhouette, positions, and roof treatments.
+  // Architecture has metre-scaled UVs, so windows and joints do not stretch
+  // as buildings grow. Seeded materials vary without loading external assets.
   if(plan.buildings?.length){
-    const urbanPalette=['#b8b5ac','#d0c7b9','#9faaa9','#c0b2a5','#d1d1c9'];
-    const masonry=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.94,metalness:0});
-    const body=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),masonry,plan.buildings.length);
-    body.frustumCulled=false;
-    plan.buildings.forEach((p,i)=>{
-      dummy.position.set(p.x,p.y+p.height/2,p.z);
-      dummy.rotation.set(0,0,0);
-      dummy.scale.set(p.width,p.height,p.depth);
-      dummy.updateMatrix();body.setMatrixAt(i,dummy.matrix);
-      body.setColorAt(i,new THREE.Color(urbanPalette[Math.floor(p.variant*urbanPalette.length)]));
-    });
-    body.instanceMatrix.needsUpdate=true;
-    if(body.instanceColor)body.instanceColor.needsUpdate=true;
-    scene.add(body);
-    // A varied crown line avoids the same flat rooftop on every block.
-    const capped=plan.buildings.filter(p=>p.roof);
-    place(capped,new THREE.BoxGeometry(1,1,1),
-      new THREE.MeshLambertMaterial({color:'#787e80'}),(o,p)=>{
-        o.position.set(p.x,p.y+p.height+.23,p.z);
-        o.scale.set(p.width+.25,.46,p.depth+.25);
-      });
+    const masonry=[
+      new THREE.MeshStandardMaterial({map:surfaceTexture(THREE,'brick'),roughness:.91,color:'#e6e0d8'}),
+      new THREE.MeshStandardMaterial({map:surfaceTexture(THREE,'concrete'),roughness:.94,color:'#e2e3df'}),
+      new THREE.MeshStandardMaterial({map:surfaceTexture(THREE,'windows'),roughness:.6,metalness:.12,color:'#d9e0df'})
+    ];
+    const roofMat=new THREE.MeshStandardMaterial({map:surfaceTexture(THREE,'roof'),roughness:.83,color:'#c4c9c8'});
+    const buildingGroup=new THREE.Group();
+    for(const p of plan.buildings){
+      const material=masonry[Math.min(2,Math.floor(p.variant*3))];
+      const body=new THREE.Mesh(uvBox(THREE,p.width,p.height,p.depth,3),material);
+      body.position.set(p.x,p.y+p.height/2,p.z);buildingGroup.add(body);
+      const cap=new THREE.Mesh(uvBox(THREE,p.width+.3,.42,p.depth+.3,2.8),roofMat);
+      cap.position.set(p.x,p.y+p.height+.18,p.z);buildingGroup.add(cap);
+      // Parapet corners are restrained; the facade textures supply most detail.
+      if(p.roof){
+        const ledge=new THREE.Mesh(uvBox(THREE,p.width+.5,.15,p.depth+.5,2.8),roofMat);
+        ledge.position.set(p.x,p.y+p.height+.44,p.z);buildingGroup.add(ledge);
+      }
+    }
+    scene.add(buildingGroup);
   }
   return plan;
 }
