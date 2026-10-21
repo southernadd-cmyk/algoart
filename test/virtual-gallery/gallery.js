@@ -188,7 +188,8 @@ function hangArt(room, study, position, roomIndex) {
   const left = position % 2 === 0;
   const sign = left ? -1 : 1;
   const x = room.x + sign * (room.width / 2 - .24);
-  const z = room.z0 + room.depth * (.19 + .31 * position);
+  const biases = {spiral:.035, organic:-.028, burst:.02, network:-.018, geometric:.012, scribble:-.013};
+  const z = room.z0 + room.depth * (.19 + .31 * position + (biases[study.engine] || 0));
   const portrait = study.portrait;
   const width = portrait ? 1.77 : 2.82;
   const height = portrait ? 2.48 : 2.03;
@@ -272,7 +273,7 @@ async function load() {
     if (!res.ok) throw new Error('The edition for '+readableDate(date)+' is not available.');
     studyList=readArchive(await res.text(),res.url);
     if (!studyList.length) throw new Error('No artwork records found for this edition.');
-    plan=buildLayout(date,studyList.length);
+    plan=buildLayout(date,studyList.length,studyList);
     constructGallery(plan,studyList);
     status.textContent=readableDate(date)+' · '+studyList.length+' drawings';
     enter.disabled=false;
@@ -305,6 +306,7 @@ function showInfo(study) {
   $('info').hidden=false;
 }
 $('closeInfo').addEventListener('click',() => $('info').hidden=true);
+$('inspectTouch').addEventListener('click',() => showInfo(focused?.userData.study));
 const moveCodes = new Map([
   ['KeyW','forward'],['ArrowUp','forward'],['KeyS','back'],['ArrowDown','back'],
   ['KeyA','left'],['ArrowLeft','left'],['KeyD','right'],['ArrowRight','right']
