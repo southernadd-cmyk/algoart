@@ -47,6 +47,7 @@ export function planRoomHangs(room, studies, date) {
     remaining.splice(at, 1);
     const p = picture(study, role, room, rand);
     p.surface = surface;
+    p.roomIndex = room.index;
     p.profile = profile;
     if (surface === 'left' || surface === 'right') {
       p.x = room.x + (surface === 'left' ? -1 : 1) * (room.width / 2 - .24);
