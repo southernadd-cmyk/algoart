@@ -27,6 +27,8 @@ let yaw = Math.PI, pitch = 0;
 let exhibitDate = null;
 let archiveDates=[];
 let liftPosition=null;
+let liftWasNear=false;
+let liftTravelling=false;
 let currentFloor=0;
 const FLOOR_SPACING=6.2;
 let plan = null;
@@ -298,22 +300,51 @@ function addArchiveLift(room){
   door.position.set(panel.x,room.y+1.34,panel.z);
   door.rotation.y=isNS?(side==='north'?0:Math.PI):(side==='east'?-Math.PI/2:Math.PI/2);
   scene.add(door);
-  const header=labelTexture('ARCHIVE LIFT','E / SELECT FLOOR');
+  const header=labelTexture('ARCHIVE LIFT','CHOOSE A FLOOR');
   const label=new THREE.Mesh(new THREE.PlaneGeometry(1.65,.38),
     new THREE.MeshBasicMaterial({map:header,side:THREE.DoubleSide}));
   label.position.set(panel.x+front.x*.025,room.y+3.07,panel.z+front.z*.025);
   label.rotation.y=door.rotation.y;
   scene.add(label);
-  liftPosition=centre.clone().addScaledVector(front,1.5);
+  liftPosition=centre.clone().addScaledVector(front,1.12);
 }
 function nearLift(){
   return liftPosition&&Math.hypot(rig.position.x-liftPosition.x,rig.position.z-liftPosition.z)<2.6;
 }
 function openLift(){
-  if(!welcome.hidden||!liftPosition)return;
+  if(!welcome.hidden||!liftPosition||liftTravelling)return;
   document.exitPointerLock?.();
   $('lift').hidden=false;
   renderLiftCalendar();
+}
+async function travelLift(date,index){
+  if(liftTravelling)return;
+  liftTravelling=true;
+  $('lift').hidden=true;
+  const overlay=$('liftAnimation');
+  overlay.hidden=false;
+  const current=Math.max(0,archiveDates.indexOf(exhibitDate));
+  const direction=index>current?'Ascending':'Descending';
+  $('liftDirection').textContent=direction+' · '+Math.abs(index-current)+' floors';
+  $('liftDestination').textContent='Floor '+(index===0?'G':index)+' · '+readableDate(date);
+  // The lift moves while the next exhibit is fetched, not after a fixed delay.
+  // A new page is still used to release all previous WebGL assets reliably.
+  const started=performance.now();
+  try{
+    const url=new URL('../../gallery/'+date+'/',location.href);
+    const response=await fetch(url,{cache:'no-store'});
+    if(!response.ok)throw new Error('The destination exhibition is unavailable');
+    const studies=readArchive(await response.text(),response.url);
+    if(!studies.length)throw new Error('The destination gallery has no artworks');
+    // Ensure visitors can perceive the doors closing and the floor indicator.
+    await new Promise(resolve=>setTimeout(resolve,Math.max(0,1300-(performance.now()-started))));
+    sessionStorage.setItem('pp-lift-arrival',date);
+    location.assign('?date='+date);
+  }catch(error){
+    liftTravelling=false;overlay.hidden=true;$('lift').hidden=false;
+    $('liftTravel').hidden=false;
+    $('liftTravel').textContent=error.message+' — choose another floor.';
+  }
 }
 function renderLiftCalendar(){
   const dates=archiveDates;
@@ -339,9 +370,7 @@ function renderLiftCalendar(){
       btn.setAttribute('aria-label',new Date(date+'T12:00:00Z').toLocaleDateString('en-GB',{dateStyle:'full',timeZone:'UTC'})+', floor '+(index===0?'ground':index));
       btn.addEventListener('click',()=>{
         if(date===exhibitDate){$('lift').hidden=true;return;}
-        $('liftTravel').hidden=false;
-        $('liftTravel').textContent='Travelling to floor '+(index===0?'G':index)+' — '+readableDate(date);
-        setTimeout(()=>location.assign('?date='+date),600);
+        travelLift(date,index);
       });
     }
     grid.appendChild(btn);
@@ -481,6 +510,14 @@ async function load() {
     status.textContent=readableDate(date)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures';
     enter.disabled=false;
     enter.textContent='Enter the gallery';
+    const arrival=sessionStorage.getItem('pp-lift-arrival');
+    if(arrival===date){
+      sessionStorage.removeItem('pp-lift-arrival');
+      welcome.hidden=true;
+      $('liftArrival').hidden=false;
+      $('liftArrival').textContent='Doors opening · floor '+(currentFloor===0?'G':currentFloor);
+      setTimeout(()=>$('liftArrival').hidden=true,2400);
+    }
     camera.updateProjectionMatrix();
   } catch (e) {
     enter.textContent='Gallery unavailable';
@@ -520,10 +557,7 @@ $('liftMonth').addEventListener('change',renderLiftCalendar);
 window.addEventListener('keydown',(e)=>{
   if (['INPUT','BUTTON','TEXTAREA'].includes(document.activeElement?.tagName)) return;
   if (moveCodes.has(e.code)) {e.preventDefault();pressed.add(moveCodes.get(e.code));}
-  if (e.code==='KeyE' && !e.repeat) {
-    if(nearLift())openLift();
-    else showInfo(focused?.userData.study);
-  }
+  if (e.code==='KeyE' && !e.repeat) showInfo(focused?.userData.study);
   if (e.code==='Escape') {$('info').hidden=true;$('lift').hidden=true;}
 });
 window.addEventListener('keyup',(e)=>{if(moveCodes.has(e.code))pressed.delete(moveCodes.get(e.code));});
@@ -603,7 +637,7 @@ function drawMap(){
 }
 
 function updateMovement(dt) {
-  if (!plan || !welcome.hidden || !$('info').hidden) return;
+  if (!plan || !welcome.hidden || !$('info').hidden || !$('lift').hidden || liftTravelling) return;
   let ahead=Number(pressed.has('forward')||touchPressed.has('forward')) - Number(pressed.has('back')||touchPressed.has('back'));
   let side=Number(pressed.has('right')||touchPressed.has('right')) - Number(pressed.has('left')||touchPressed.has('left'));
   if (renderer.xr.isPresenting) {
@@ -631,6 +665,9 @@ function updateMovement(dt) {
   }
   const part=footprintAt(plan,rig.position.x,rig.position.z);
   if(part)rig.position.y=part.y;
+  const atLift=Boolean(nearLift());
+  if(atLift&&!liftWasNear&&$('lift').hidden)openLift();
+  liftWasNear=atLift;
   rig.rotation.y=yaw;
   camera.rotation.x=renderer.xr.isPresenting?0:pitch;
 }
@@ -642,7 +679,7 @@ function detectArt() {
   ray.setFromCamera(pointer,camera);
   const hit=ray.intersectObjects(artPlanes,false).find(x=>x.distance<6.3);
   focused=hit?.object||null;
-  const text=nearLift()?' · E to use archive lift':(focused ? ' · E to inspect this drawing' : '');
+  const text=nearLift()?' · Archive lift':(focused ? ' · E to inspect this drawing' : '');
   const current=footprintAt(plan,rig.position.x,rig.position.z)?.room ?? -1;
   status.textContent=readableDate(exhibitDate)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures'+(current>=0?' · Gallery '+(current+1):' · Walkway')+text;
 }
