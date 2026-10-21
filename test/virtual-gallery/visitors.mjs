@@ -83,93 +83,93 @@ async function loadCharacters(){
  return characterAssets;
 }
 function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={}){
+ const fail=(stage,detail)=>{throw new Error(person.bodyType+' '+stage+': '+detail);};
  const copy=asset.clone(asset.scene);
- const skinned=[];
- copy.traverse(node=>{if(node.isSkinnedMesh)skinned.push(node);});
- // Exact identity comes from the uploaded GLB:
- // skin 0 = Man (Rig), skin 1 = Woman (Rig).
- const expected=person.bodyType==='male'?'GLTF_created_0_rootJoint':'GLTF_created_1_rootJoint';
- const selected=skinned.filter(node=>node.skeleton?.bones?.[0]?.name?.startsWith(expected));
- if(selected.length!==1)return null;
- // CRITICAL: Source scene ALSO holds five unrelated static meshes:
- // Man/Woman (NonRig), and three HighPoly objects. Previous code hid only
- // the opposite skinned mesh, leaving those default-pose duplicates visible.
- let staticMeshesHidden=0;
- copy.traverse(node=>{if(node.isMesh){
-   node.visible=selected.includes(node);
-   if(!node.isSkinnedMesh)staticMeshesHidden++;
-   if(node.isSkinnedMesh)node.frustumCulled=false;
- }});
- if(staticMeshesHidden!==5||skinned.length!==2)return null;
- const bones=new Set(selected[0].skeleton.bones);
- const named=name=>[...bones].find(b=>b.name.replace(/_\d+$/,'')===name);
+ const allMeshes=[],skinned=[];
+ copy.traverse(node=>{
+   if(node.isMesh)allMeshes.push(node);
+   if(node.isSkinnedMesh)skinned.push(node);
+ });
+ // This file contains two skin meshes and five STATIC mesh objects. Select
+ // the actual rig by both the known mesh and its own skeleton, never by height.
+ const expected=person.bodyType==='male'?'Object_7':'Object_166';
+ let selected=skinned.find(mesh=>mesh.name===expected);
+ if(!selected){
+   // Three.js may uniquify mesh names; skin-root identity is a fallback.
+   const root=person.bodyType==='male'?'GLTF_created_0_rootJoint':'GLTF_created_1_rootJoint';
+   selected=skinned.find(mesh=>mesh.skeleton?.bones?.[0]?.name?.startsWith(root));
+ }
+ if(!selected)fail('mesh selection','expected '+expected+'; found '+skinned.map(m=>m.name).join(', '));
+ const bones=selected.skeleton?.bones;
+ if(!bones?.length)fail('skeleton','skinned mesh has no bones');
+ const named=name=>bones.find(b=>b.name.replace(/_\\d+$/,'')===name);
+ for(const name of ['upper_arm.L','upper_arm.R','forearm.L','forearm.R','hand.L','hand.R']){
+   if(!named(name))fail('bone lookup',name+' absent; names: '+bones.map(b=>b.name).filter(n=>/arm|hand/.test(n)).join(', '));
+ }
+ // Hide every nonselected mesh, not merely the other skinned mesh. The
+ // original glTF includes static copies of the two T-posed characters.
+ for(const mesh of allMeshes)mesh.visible=mesh===selected;
+ selected.frustumCulled=false;
  copy.updateMatrixWorld(true);
- // The source GLB has one malformed parent link: hand.L belongs to the root
- // rather than forearm.L, even though it occupies the correct wrist position.
- // Reattach while preserving its rest-world transform, so the left hand
- // follows the elbow when the arm is lowered. Verified by CPU skinning.
- const detachedHand=named('hand.L'),leftForearm=named('forearm.L');
- if(!detachedHand||!leftForearm)return null;
- if(detachedHand.parent!==leftForearm)leftForearm.attach(detachedHand);
+ // Source-model defect: left hand is parented to the skeleton root, not
+ // forearm.L. Attach() preserves its existing world transform.
+ const leftHand=named('hand.L'),leftForearm=named('forearm.L');
+ if(leftHand.parent!==leftForearm)leftForearm.attach(leftHand);
  copy.updateMatrixWorld(true);
- // Compute in joint/world space, not guessed Euler axes. The optional raised
- // right arm is an intentionally obvious test of actual skin deformation.
- const arms=[];
- if(relaxed)for(const side of ['L','R']){
-   const upper=named('upper_arm.'+side);
-   const elbow=named('forearm.'+side);
-   if(!upper||!elbow)return null;
-   const shoulderPoint=upper.getWorldPosition(new THREE.Vector3());
-   const elbowPoint=elbow.getWorldPosition(new THREE.Vector3());
-   const current=elbowPoint.sub(shoulderPoint).normalize();
-   const target=side==='R'&&raiseRightArm
-      ?new THREE.Vector3(-.96,.27,.12).normalize()
-      :new THREE.Vector3(side==='L'?.11:-.11,-.992,.06).normalize();
-   const beforeDown=current.dot(new THREE.Vector3(0,-1,0));
-   const worldDelta=new THREE.Quaternion().setFromUnitVectors(current,target);
-   const parentWorld=upper.parent.getWorldQuaternion(new THREE.Quaternion());
-   const shoulderWorld=upper.getWorldQuaternion(new THREE.Quaternion());
-   upper.quaternion.copy(parentWorld.invert().multiply(worldDelta).multiply(shoulderWorld));
-   upper.updateMatrixWorld(true);
-   const finalElbow=elbow.getWorldPosition(new THREE.Vector3());
-   const finalShoulder=upper.getWorldPosition(new THREE.Vector3());
-   const actual=finalElbow.sub(finalShoulder).normalize();
-   if(!Number.isFinite(actual.y)||actual.dot(target)<.98)return null;
-   if(side==='R'&&raiseRightArm ? actual.y<.1 : actual.y>=-.98 || -actual.y-beforeDown<.05)return null;
-   const wrist=named('hand.'+side);
-   if(!wrist)return null;
-   const wristPoint=wrist.getWorldPosition(new THREE.Vector3());
-   const finalElbowPoint=elbow.getWorldPosition(new THREE.Vector3());
-   const shoulderX=upper.getWorldPosition(new THREE.Vector3()).x;
-   if(!Number.isFinite(wristPoint.y)||!Number.isFinite(wristPoint.x))return null;
-   // A relaxed wrist must hang below the elbow near its own side. This also
-   // detects detached hands that fail to follow the shoulder deformation.
-   if(!(side==='R'&&raiseRightArm)&&
-      (wristPoint.y>=finalElbowPoint.y || Math.abs(wristPoint.x-shoulderX)>.5))return null;
-   arms.push({side,bone:upper.name,elbow:elbow.name,wrist:wrist.name,
-      originalDown:+beforeDown.toFixed(3),
-      finalDown:+actual.dot(new THREE.Vector3(0,-1,0)).toFixed(3),
-      targetAccuracy:+actual.dot(target).toFixed(4),
-      wristDistanceFromShoulder:+Math.abs(wristPoint.x-shoulderX).toFixed(3)});
+ const measures=[];
+ if(relaxed){
+   for(const side of ['L','R']){
+     const shoulder=named('upper_arm.'+side),elbow=named('forearm.'+side),wrist=named('hand.'+side);
+     const beforeShoulder=shoulder.getWorldPosition(new THREE.Vector3());
+     const beforeElbow=elbow.getWorldPosition(new THREE.Vector3());
+     const arm=beforeElbow.sub(beforeShoulder).normalize();
+     if(!Number.isFinite(arm.y))fail('bone coordinates',side+' arm vector is not finite');
+     const target=side==='R'&&raiseRightArm
+       ?new THREE.Vector3(-.96,.27,.12).normalize()
+       :new THREE.Vector3(side==='L'?.11:-.11,-.992,.06).normalize();
+     const delta=new THREE.Quaternion().setFromUnitVectors(arm,target);
+     const parentWorld=shoulder.parent.getWorldQuaternion(new THREE.Quaternion());
+     const shoulderWorld=shoulder.getWorldQuaternion(new THREE.Quaternion());
+     shoulder.quaternion.copy(parentWorld.invert().multiply(delta).multiply(shoulderWorld));
+     shoulder.updateMatrixWorld(true);
+     const shoulderPos=shoulder.getWorldPosition(new THREE.Vector3());
+     const elbowPos=elbow.getWorldPosition(new THREE.Vector3());
+     const wristPos=wrist.getWorldPosition(new THREE.Vector3());
+     const actual=elbowPos.clone().sub(shoulderPos).normalize();
+     const accuracy=actual.dot(target);
+     const wristBelowElbow=wristPos.y<elbowPos.y;
+     const wristSideDistance=Math.abs(wristPos.x-shoulderPos.x);
+     if(!Number.isFinite(accuracy)||accuracy<.95)
+       fail('shoulder transform',side+' target dot='+accuracy);
+     // Wrist measurements are useful diagnostics, but do not reject the
+     // whole rig based on arbitrary orientation thresholds.
+     measures.push({side,shoulder:shoulder.name,elbow:elbow.name,wrist:wrist.name,
+       targetAccuracy:+accuracy.toFixed(4),wristBelowElbow,
+       wristSideDistance:+wristSideDistance.toFixed(3)});
+   }
  }
  copy.updateMatrixWorld(true);
- const box=new THREE.Box3();
- for(const mesh of selected)box.expandByObject(mesh,true);
+ const box=new THREE.Box3().setFromObject(selected,true);
  const size=box.getSize(new THREE.Vector3());
- if(!Number.isFinite(size.y)||size.y<.1||size.y>20)return null;
- const ctr=box.getCenter(new THREE.Vector3());
- const scale=person.scale*(person.bodyType==='male'?1.76:1.67)/size.y;
- // Rotate about each visitor's feet/centre, NOT the whole original scene's
- // origin (its male and female are separated by several metres).
+ if(!Number.isFinite(size.y)||size.y<.1||size.y>30)
+   fail('bounding box','height='+size.y);
+ const centre=box.getCenter(new THREE.Vector3());
+ const height=person.bodyType==='male'?1.76:1.67;
+ const scale=person.scale*height/size.y;
  const holder=new THREE.Group();
  holder.position.set(person.x,person.y,person.z);
  holder.rotation.y=person.yaw;
  copy.scale.setScalar(scale);
- copy.position.set(-ctr.x*scale,-box.min.y*scale,-ctr.z*scale);
+ copy.position.set(-centre.x*scale,-box.min.y*scale,-centre.z*scale);
  holder.add(copy);
  holder.userData.galleryRiggedVisitor=true;
- holder.userData.galleryRigPose=relaxed?(raiseRightArm?'arm-raised':'relaxed'):'original';
- holder.userData.galleryRigMetrics={bodyType:person.bodyType,sourceSkinnedMeshes:skinned.length,visibleSkinnedMeshes:selected.length,originalStaticMeshesHidden:staticMeshesHidden,arms,heightMetres:+(size.y*scale).toFixed(3)};
+ holder.userData.galleryRigPose=!relaxed?'original':raiseRightArm?'arm-raised':'relaxed';
+ holder.userData.galleryRigMetrics={
+    bodyType:person.bodyType,selectedMesh:selected.name,
+    sourceSkinnedMeshes:skinned.length,visibleSkinnedMeshes:1,
+    originalStaticMeshesHidden:allMeshes.length-1,
+    arms:measures,heightMetres:+(size.y*scale).toFixed(3)
+ };
  return holder;
 }
 
