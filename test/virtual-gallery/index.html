@@ -7,11 +7,11 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Virtual Gallery — PROPORTION PIECE (test)</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./gallery.css?v=branching-gallery-20261021">
+<link rel="stylesheet" href="./gallery.css?v=archive-lift-20261021">
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
 </script>
-<script type="module" src="./gallery-v2.js?v=exhibition-spots-20261021"></script>
+<script type="module" src="./gallery-v2.js?v=archive-lift-20261021"></script>
 </head>
 <body>
 <canvas id="world" aria-label="Interactive three-dimensional art gallery"></canvas>
@@ -21,6 +21,7 @@
     <label class="date-label" for="edition">Edition</label>
     <input id="edition" type="date" min="2026-10-05" aria-label="Daily gallery date">
     <button id="goDate" type="button">Open</button>
+    <button id="openLift" type="button">Lift · Floors</button>
     <a id="archiveLink" href="../../gallery/">View 2D gallery</a>
     <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
     <div id="xr-controls" aria-label="Virtual reality controls"></div>
@@ -37,6 +38,16 @@
   </div>
 </aside>
 <div class="plan-view" id="planView"><span>Floor plan</span><canvas id="floorMap" width="248" height="218" aria-label="Diagram of galleries, connecting routes, and your position"></canvas></div>
+<section class="lift-panel" id="lift" hidden role="dialog" aria-modal="true" aria-labelledby="liftTitle">
+  <div class="lift-head"><div><small>Archive lift</small><h2 id="liftTitle">Choose a floor</h2></div><button id="closeLift" type="button" aria-label="Close lift panel">×</button></div>
+  <p id="liftCurrent"></p>
+  <label for="liftMonth">Month and year</label>
+  <input id="liftMonth" type="month" min="2026-10">
+  <div class="lift-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+  <div class="lift-days" id="liftDays" aria-label="Gallery dates for selected month"></div>
+  <p class="lift-note">Red dates have a published exhibition. Earliest date is ground floor; newer dates ascend.</p>
+  <p id="liftTravel" hidden role="status"></p>
+</section>
 <div class="status" id="status" aria-live="polite">Loading gallery…</div>
 <div class="hint" id="hint">W A S D to move · mouse to look · E to inspect · Esc to release pointer</div>
 <div class="touch-nav" id="touchNav" aria-label="Touch movement controls">
