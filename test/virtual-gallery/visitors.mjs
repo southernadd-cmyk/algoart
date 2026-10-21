@@ -55,6 +55,60 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  }
  return {benches,people};
 }
+
+// Actual male/female rig support for the lzyassoul pack only. The source
+// rig uses upper_arm.L/R and thigh.L/R, NOT the unrelated DEF-* naming.
+// Loading is lazy and optional so the gallery's cold start never depends on it.
+let characterAssets=null;
+async function loadCharacters(){
+ if(!characterAssets)characterAssets=Promise.all([
+  import('three/addons/loaders/GLTFLoader.js'),
+  import('three/addons/utils/SkeletonUtils.js')
+ ]).then(([{GLTFLoader},{clone}])=>new Promise((resolve,reject)=>{
+  new GLTFLoader().load('./models/human-male-female-rigged.glb',
+   gltf=>resolve({scene:gltf.scene,clone}),undefined,reject);
+ })).catch(()=>null);
+ return characterAssets;
+}
+function riggedVisitor(THREE,asset,person){
+ const copy=asset.clone(asset.scene);
+ const skinned=[];
+ copy.traverse(o=>{if(o.isSkinnedMesh)skinned.push(o);});
+ if(!skinned.length)return null;
+ // The source includes two independent skins. Keep the selected skin and
+ // its armature while hiding all geometry belonging to the other character.
+ const rigs=[...new Set(skinned.map(mesh=>mesh.skeleton?.bones?.[0]))].filter(Boolean);
+ if(rigs.length!==2)return null;
+ const desired=person.bodyType==='male'?0:1;
+ const chosen=rigs[desired];
+ const selected=skinned.filter(mesh=>mesh.skeleton?.bones?.[0]===chosen);
+ if(!selected.length)return null;
+ for(const mesh of skinned)mesh.visible=selected.includes(mesh);
+ const bones=new Set(selected.flatMap(mesh=>mesh.skeleton.bones));
+ const find=name=>[...bones].find(b=>b.name.replace(/_\d+$/,'')===name);
+ // Only small relaxations from the authored rest pose. Large guessed limb
+ // rotations caused the previous floating, contorted characters.
+ for(const side of ['L','R']){
+  const k=side==='L'?1:-1;
+  const upper=find('upper_arm.'+side),forearm=find('forearm.'+side);
+  if(upper)upper.rotateZ(k*.18);
+  if(forearm)forearm.rotateZ(k*.08);
+ }
+ copy.updateMatrixWorld(true);
+ const box=new THREE.Box3();
+ for(const mesh of selected)box.expandByObject(mesh);
+ const height=box.max.y-box.min.y;
+ if(!Number.isFinite(height)||height<.1||height>1000)return null;
+ const scale=(person.bodyType==='male'?1.78:1.66)*person.scale/height;
+ const ctr=box.getCenter(new THREE.Vector3());
+ copy.scale.setScalar(scale);
+ copy.position.set(person.x-ctr.x*scale,person.y-box.min.y*scale,person.z-ctr.z*scale);
+ copy.rotation.y=person.yaw;
+ // Seated posing will be enabled only after validating hip and knee axes.
+ // Until then the procedural seated character remains the reliable option.
+ return copy;
+}
+
 export function renderVisitors(THREE,scene,plan){
  const root=new THREE.Group();scene.add(root);
  const wood=new THREE.MeshStandardMaterial({color:'#9b8067',roughness:.85});
@@ -127,6 +181,16 @@ export function renderVisitors(THREE,scene,plan){
   }
   root.add(g);
   }
- // Rigged Sketchfab asset temporarily disabled: current bone mapping distorts bodies.
- // Use the stable seeded standing and seated fallback figures until rig validation.
+ // Replace standing figures when the optional validated rigged asset is hosted.
+ // Leave seated visitors procedural until proper seated joint angles are tested.
+ if(plan.people.some(p=>!p.seat))loadCharacters().then(asset=>{
+  if(!asset||!root.parent)return;
+  const figures=root.children.slice(plan.benches.length,plan.benches.length+plan.people.length);
+  for(let i=0;i<plan.people.length;i++){
+   const p=plan.people[i];if(p.seat)continue;
+   try{const model=riggedVisitor(THREE,asset,p);
+    if(model){root.add(model);figures[i].visible=false;}
+   }catch(_){/* keep safe procedural fallback */}
+  }
+ });
 }
