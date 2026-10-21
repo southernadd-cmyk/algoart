@@ -155,15 +155,7 @@ function addRoom(room, index, count) {
   const light=new THREE.PointLight('#fff5e8',17,13);
   light.position.set(room.x,ceiling-.55,room.z);
   scene.add(light);
-  // Signs hang above the entrance junction, not in the picture field.
-  const sign=makeRoomLabel('Gallery '+(index+1));
-  const door=room.doors.includes('south') ? 'south' : room.doors.includes('west')?'west':room.doors.includes('north')?'north':'east';
-  const r={north:0,south:Math.PI,west:Math.PI/2,east:-Math.PI/2}[door];
-  const inDir=new THREE.Vector3(Math.sin(r),0,Math.cos(r));
-  sign.position.set(room.x,room.y+4.28,room.z);
-  sign.position.addScaledVector(inDir,2.75);
-  sign.rotation.y=r;
-  scene.add(sign);
+
 }
 function makeRoomLabel(text) {
   const c = document.createElement('canvas');
