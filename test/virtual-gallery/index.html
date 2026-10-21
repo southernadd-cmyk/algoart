@@ -11,12 +11,12 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
 </script>
-<script type="module" src="./gallery-v2.js?v=lift-travel-fix-20261021"></script>
+<script type="module" src="./gallery-v2.js?v=initial-floor-20261021"></script>
 </head>
 <body>
 <canvas id="world" aria-label="Interactive three-dimensional art gallery"></canvas>
 <header class="topbar">
-  <div class="identity"><a href="../../" class="brand">PROPORTION PIECE</a><span class="section-name">Virtual gallery</span></div>
+  <div class="identity"><a href="../../" class="brand">PROPORTION PIECE</a><span class="section-name">Virtual gallery</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
   <div class="top-actions">
     <label class="date-label" for="edition">Edition</label>
     <input id="edition" type="date" min="2026-10-05" aria-label="Daily gallery date">
@@ -69,7 +69,7 @@
 <section class="welcome" id="welcome" aria-labelledby="welcomeTitle">
   <div class="welcome-content">
     <div class="eyebrow">An exhibition built by its drawings</div>
-    <h1 id="welcomeTitle">Walk into<br>the composition.</h1>
+    <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
     <p>Every daily collection becomes its own building. Landscape studies hang on the walls; portrait studies become sculptures made from the actual drawn lines and the visible pigment boundaries of each material. Choose your route through the work.</p>
     <p class="shortcuts">Walk using W A S D and look with the mouse. On a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
