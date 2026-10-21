@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#e8e4da">
+<meta name="robots" content="noindex,nofollow">
+<title>Virtual Gallery — PROPORTION PIECE (test)</title>
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./gallery.css?v=1">
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
+</script>
+<script type="module" src="./gallery.js?v=1"></script>
+</head>
+<body>
+<canvas id="world" aria-label="Interactive three-dimensional art gallery"></canvas>
+<header class="topbar">
+  <div class="identity"><a href="../../" class="brand">PROPORTION PIECE</a><span class="section-name">Virtual gallery</span></div>
+  <div class="top-actions">
+    <label class="date-label" for="edition">Edition</label>
+    <input id="edition" type="date" min="2026-10-05" aria-label="Daily gallery date">
+    <button id="goDate" type="button">Open</button>
+    <a id="archiveLink" href="../../gallery/">View 2D gallery</a>
+    <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
+    <div id="xr-controls" aria-label="Virtual reality controls"></div>
+  </div>
+</header>
+<div class="center-reticle" aria-hidden="true"></div>
+<aside class="info" id="info" hidden>
+  <img id="infoImage" alt="">
+  <div class="info-body">
+    <button class="info-close" id="closeInfo" type="button" aria-label="Close artwork information">×</button>
+    <h2 id="infoTitle"></h2>
+    <p id="infoSeed"></p>
+    <a id="openArt" href="../../" target="_blank" rel="noopener noreferrer">Explore this drawing ↗</a>
+  </div>
+</aside>
+<div class="status" id="status" aria-live="polite">Loading gallery…</div>
+<div class="hint" id="hint">W A S D to move · mouse to look · E to inspect · Esc to release pointer</div>
+<div class="touch-nav" id="touchNav" aria-label="Touch movement controls">
+  <button data-move="forward" aria-label="Move forward">↑</button>
+  <div><button data-move="left" aria-label="Move left">←</button><button data-move="back" aria-label="Move backward">↓</button><button data-move="right" aria-label="Move right">→</button></div>
+  <span>Drag the scene to look around</span>
+</div>
+<section class="welcome" id="welcome" aria-labelledby="welcomeTitle">
+  <div class="welcome-content">
+    <div class="eyebrow">An exhibition built by its drawings</div>
+    <h1 id="welcomeTitle">Walk into<br>the composition.</h1>
+    <p>Each daily collection becomes its own architecture. Golden sections define rooms, trajectories bend the route, and the drawings choose what fills the walls.</p>
+    <p class="shortcuts">Walk using W A S D and look with the mouse. On a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p>
+    <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
+    <a id="welcomeArchive" href="../../gallery/">See the original 2D edition ↗</a>
+  </div>
+</section>
+<div class="error" id="error" hidden role="alert"></div>
+</body>
+</html>
