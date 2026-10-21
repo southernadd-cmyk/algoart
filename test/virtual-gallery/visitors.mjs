@@ -82,7 +82,7 @@ async function loadCharacters(){
  })).catch(error=>{console.warn('Rigged visitors unavailable:',error);return null;});
  return characterAssets;
 }
-function riggedVisitor(THREE,asset,person,{relaxed=true}={}){
+function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={}){
  const copy=asset.clone(asset.scene);
  const skinned=[];
  copy.traverse(node=>{if(node.isSkinnedMesh)skinned.push(node);});
@@ -109,8 +109,9 @@ function riggedVisitor(THREE,asset,person,{relaxed=true}={}){
  if(!detachedHand||!leftForearm)return null;
  if(detachedHand.parent!==leftForearm)leftForearm.attach(detachedHand);
  copy.updateMatrixWorld(true);
- // Joint-space rotation tested against actual weighted vertices:
- // male: 8,396 vertices moved; female: 2,889; final downward dot > .992.
+ // Compute in joint/world space, not guessed Euler axes. The optional raised
+ // right arm is an intentionally obvious test of actual skin deformation.
+ const arms=[];
  if(relaxed)for(const side of ['L','R']){
    const upper=named('upper_arm.'+side);
    const elbow=named('forearm.'+side);
@@ -118,7 +119,10 @@ function riggedVisitor(THREE,asset,person,{relaxed=true}={}){
    const shoulderPoint=upper.getWorldPosition(new THREE.Vector3());
    const elbowPoint=elbow.getWorldPosition(new THREE.Vector3());
    const current=elbowPoint.sub(shoulderPoint).normalize();
-   const target=new THREE.Vector3(side==='L'?.11:-.11,-.992,.06).normalize();
+   const target=side==='R'&&raiseRightArm
+      ?new THREE.Vector3(-.96,.27,.12).normalize()
+      :new THREE.Vector3(side==='L'?.11:-.11,-.992,.06).normalize();
+   const beforeDown=current.dot(new THREE.Vector3(0,-1,0));
    const worldDelta=new THREE.Quaternion().setFromUnitVectors(current,target);
    const parentWorld=upper.parent.getWorldQuaternion(new THREE.Quaternion());
    const shoulderWorld=upper.getWorldQuaternion(new THREE.Quaternion());
@@ -127,7 +131,22 @@ function riggedVisitor(THREE,asset,person,{relaxed=true}={}){
    const finalElbow=elbow.getWorldPosition(new THREE.Vector3());
    const finalShoulder=upper.getWorldPosition(new THREE.Vector3());
    const actual=finalElbow.sub(finalShoulder).normalize();
-   if(!Number.isFinite(actual.y)||actual.dot(target)<.95)return null;
+   if(!Number.isFinite(actual.y)||actual.dot(target)<.98)return null;
+   const wrist=named('hand.'+side);
+   if(!wrist)return null;
+   const wristPoint=wrist.getWorldPosition(new THREE.Vector3());
+   const finalElbowPoint=elbow.getWorldPosition(new THREE.Vector3());
+   const shoulderX=upper.getWorldPosition(new THREE.Vector3()).x;
+   if(!Number.isFinite(wristPoint.y)||!Number.isFinite(wristPoint.x))return null;
+   // A relaxed wrist must hang below the elbow near its own side. This also
+   // detects detached hands that fail to follow the shoulder deformation.
+   if(!(side==='R'&&raiseRightArm)&&
+      (wristPoint.y>=finalElbowPoint.y || Math.abs(wristPoint.x-shoulderX)>.5))return null;
+   arms.push({side,bone:upper.name,elbow:elbow.name,wrist:wrist.name,
+      originalDown:+beforeDown.toFixed(3),
+      finalDown:+actual.dot(new THREE.Vector3(0,-1,0)).toFixed(3),
+      targetAccuracy:+actual.dot(target).toFixed(4),
+      wristDistanceFromShoulder:+Math.abs(wristPoint.x-shoulderX).toFixed(3)});
  }
  copy.updateMatrixWorld(true);
  const box=new THREE.Box3();
@@ -145,7 +164,8 @@ function riggedVisitor(THREE,asset,person,{relaxed=true}={}){
  copy.position.set(-ctr.x*scale,-box.min.y*scale,-ctr.z*scale);
  holder.add(copy);
  holder.userData.galleryRiggedVisitor=true;
- holder.userData.galleryRigPose=relaxed?'relaxed':'original';
+ holder.userData.galleryRigPose=relaxed?(raiseRightArm?'arm-raised':'relaxed'):'original';
+ holder.userData.galleryRigMetrics={bodyType:person.bodyType,sourceSkinnedMeshes:skinned.length,visibleSkinnedMeshes:selected.length,originalStaticMeshesHidden:5,arms,heightMetres:+(size.y*scale).toFixed(3)};
  return holder;
 }
 
