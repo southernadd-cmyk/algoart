@@ -6,7 +6,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  const rng=makeRandom(seedFromString('PP-VISITORS-v1:'+layout.date));
  const benches=[],people=[],obstacles=[];
  // Sparse museum occupancy, bounded even as editions gain more rooms.
- const MAX_VISITORS=lowPower?3:6;
+ const MAX_VISITORS=lowPower?2:3;
  const MAX_BENCHES=lowPower?1:3;
  for(const room of layout.rooms){
   const roomHangs=hangs.filter(h=>h.roomIndex===room.index);
@@ -39,19 +39,20 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
     if(clear(b.x,b.z,.62)){
      benches.push({...b,y:room.y,roomIndex:room.index});
      obstacles.push({...b,radius:1.15});
-     if(people.length<MAX_VISITORS && rng()>.65)people.push({x:b.x,z:b.z,y:room.y,yaw:b.rotation,roomIndex:room.index,
+     if(people.length<MAX_VISITORS && rng()>.8)people.push({x:b.x,z:b.z,y:room.y,yaw:b.rotation,roomIndex:room.index,
       variant:Math.floor(rng()*5),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.13,pose:4,seat:true});
      break;
     }
    }
   }
   const candidates=roomHangs.slice().sort((a,b)=>a.studyId-b.studyId);
-  for(const hang of candidates.slice(0,people.length<MAX_VISITORS && room.index%2===0?1:0)){
+  for(const hang of candidates.slice(0,people.length<MAX_VISITORS && room.index%3===0 && !people.some(p=>p.roomIndex===room.index)?1:0)){
    const dx=hang.x-room.x,dz=hang.z-room.z;
    const distance=Math.hypot(dx,dz)||1;
    const x=hang.x-dx/distance*(1.6+rng()*.45);
    const z=hang.z-dz/distance*(1.6+rng()*.45);
-   if(!clear(x,z,.38))continue;
+   if(!clear(x,z,.55))continue;
+   if(people.some(p=>p.roomIndex===room.index || Math.hypot(x-p.x,z-p.z)<3.3))continue;
    const yaw=Math.atan2(hang.x-x,hang.z-z);
    if(people.length>=MAX_VISITORS)break;
    people.push({x,z,y:room.y,yaw,roomIndex:room.index,variant:Math.floor(rng()*5),pose:Math.floor(rng()*4),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.16});
@@ -207,22 +208,7 @@ export function renderVisitors(THREE,scene,plan){
   }
   root.add(g);
   }
- // Imported standing figures are deliberately optional. No network request
- // is made if the rigged GLB has not been published alongside this gallery.
- if(plan.people.some(p=>!p.seat)){
-  fetch('./models/human-male-female-rigged.glb',{method:'HEAD'}).then(response=>{
-   if(!response.ok)return;
-   return loadCharacters().then(asset=>{
-    if(!asset||!root.parent)return;
-    const figures=root.children.slice(plan.benches.length,plan.benches.length+plan.people.length);
-    for(let i=0;i<plan.people.length;i++){
-     const p=plan.people[i];if(p.seat)continue;
-     try{
-      const candidate=riggedVisitor(THREE,asset,p);
-      if(candidate){root.add(candidate);figures[i].visible=false;}
-     }catch(error){console.warn('Visitor skeleton failed; keeping fallback',error);}
-    }
-   });
-  }).catch(()=>{});
- }
+ // Keep the imported rig disabled until a separately verified standing pose
+ // passes real-world skeletal orientation checks. It must never silently replace
+ // visitors with outstretched-arm figures during a gallery visit.
 }
