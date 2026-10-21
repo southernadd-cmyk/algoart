@@ -25,6 +25,8 @@ let focused = null;
 let lastFocusCheck = 0;
 let yaw = Math.PI, pitch = 0;
 let exhibitDate = null;
+let archiveDates=[];
+let liftPosition=null;
 let plan = null;
 let studyList = [];
 let touchPointer = null;
@@ -274,6 +276,88 @@ function hangArt(room, study, hang) {
   caption.rotation.y = rotation;
   scene.add(caption);
 }
+function addArchiveLift(room){
+  // A compact lift cabin is cut into the visitor's visual route without
+  // introducing an inaccessible secondary room into collision geometry.
+  const side=['north','east','south','west'].find(v=>!room.doors.includes(v))||'north';
+  const isNS=side==='north'||side==='south';
+  const sign=side==='north'||side==='west'?-1:1;
+  const wallOffset=(isNS?room.depth:room.width)/2-.22;
+  const centre=new THREE.Vector3(room.x,room.y,room.z);
+  if(isNS)centre.z+=sign*wallOffset;
+  else centre.x+=sign*wallOffset;
+  const front=new THREE.Vector3(isNS?0:-sign,0,isNS?-sign:0);
+  // Face the cabin towards the gallery centre; visitors interact nearby.
+  const horizontal=isNS?2.05:.15,depth=isNS?.15:2.05;
+  block(horizontal,2.75,depth,centre.x,room.y+1.42,centre.z,dark);
+  const panel=centre.clone().addScaledVector(front,.095);
+  const door=new THREE.Mesh(new THREE.PlaneGeometry(isNS?1.5:1.5,2.25),
+    new THREE.MeshStandardMaterial({color:'#858b87',metalness:.67,roughness:.37,side:THREE.DoubleSide}));
+  door.position.set(panel.x,room.y+1.34,panel.z);
+  door.rotation.y=isNS?(side==='north'?0:Math.PI):(side==='east'?-Math.PI/2:Math.PI/2);
+  scene.add(door);
+  const header=labelTexture('ARCHIVE LIFT','E / SELECT FLOOR');
+  const label=new THREE.Mesh(new THREE.PlaneGeometry(1.65,.38),
+    new THREE.MeshBasicMaterial({map:header,side:THREE.DoubleSide}));
+  label.position.set(panel.x+front.x*.025,room.y+3.07,panel.z+front.z*.025);
+  label.rotation.y=door.rotation.y;
+  scene.add(label);
+  liftPosition=centre.clone().addScaledVector(front,1.5);
+}
+function nearLift(){
+  return liftPosition&&Math.hypot(rig.position.x-liftPosition.x,rig.position.z-liftPosition.z)<2.6;
+}
+function openLift(){
+  if(!welcome.hidden||!liftPosition)return;
+  document.exitPointerLock?.();
+  $('lift').hidden=false;
+  renderLiftCalendar();
+}
+function renderLiftCalendar(){
+  const dates=archiveDates;
+  const picker=$('liftMonth');
+  const year=Number(picker.value.slice(0,4)),month=Number(picker.value.slice(5,7));
+  if(!year||month<1||month>12)return;
+  const available=new Set(dates);
+  const grid=$('liftDays');
+  grid.replaceChildren();
+  const first=(new Date(Date.UTC(year,month-1,1)).getUTCDay()+6)%7;
+  for(let i=0;i<first;i++)grid.appendChild(document.createElement('span'));
+  const limit=new Date(Date.UTC(year,month,0)).getUTCDate();
+  for(let day=1;day<=limit;day++){
+    const date=picker.value+'-'+String(day).padStart(2,'0');
+    const btn=document.createElement('button');
+    btn.type='button';btn.textContent=String(day);
+    btn.disabled=!available.has(date);
+    btn.className=available.has(date)?'lift-available':'';
+    if(date===exhibitDate)btn.classList.add('lift-current');
+    if(available.has(date)){
+      const index=dates.indexOf(date);
+      btn.title=date+' — floor '+(index===0?'G':index);
+      btn.setAttribute('aria-label',new Date(date+'T12:00:00Z').toLocaleDateString('en-GB',{dateStyle:'full',timeZone:'UTC'})+', floor '+(index===0?'ground':index));
+      btn.addEventListener('click',()=>{
+        if(date===exhibitDate){$('lift').hidden=true;return;}
+        $('liftTravel').hidden=false;
+        $('liftTravel').textContent='Travelling to floor '+(index===0?'G':index)+' — '+readableDate(date);
+        setTimeout(()=>location.assign('?date='+date),600);
+      });
+    }
+    grid.appendChild(btn);
+  }
+  const floor=dates.indexOf(exhibitDate);
+  $('liftCurrent').textContent='Current floor '+(floor===0?'G':Math.max(0,floor))+' · '+readableDate(exhibitDate);
+}
+async function loadArchiveDates(){
+  const res=await fetch('../../gallery/',{cache:'no-store'});
+  if(!res.ok)throw new Error('Could not load the gallery archive.');
+  const doc=new DOMParser().parseFromString(await res.text(),'text/html');
+  const discovered=[...doc.querySelectorAll('a[href]')]
+    .map(a=>a.getAttribute('href')?.match(/(?:^|\/)\d{4}-\d{2}-\d{2}(?=\/|$)/)?.[0]?.replace(/^\//,''))
+    .filter(Boolean);
+  const dates=[...new Set(discovered)].sort();
+  if(!dates.length)throw new Error('No dated galleries found in archive.');
+  return dates;
+}
 function constructGallery(layout, studies) {
   const hangs=planGalleryHangs(layout,studies);
   const sculptures=planGallerySculptures(layout,studies);
@@ -301,6 +385,7 @@ function constructGallery(layout, studies) {
   // it never occupies rooms, walkways or the visitor collision footprint.
   createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower});
   const first=layout.rooms[0];
+  addArchiveLift(first);
   rig.position.set(first.x,first.y,first.z);
   const initial=layout.rooms[first.neighbours[0]];
   if(initial)yaw=Math.atan2(-(initial.x-first.x),-(initial.z-first.z));
@@ -343,8 +428,10 @@ function readableDate(date) {
 async function load() {
   try {
     if (!renderer) return;
+    archiveDates=await loadArchiveDates();
     const qp = new URLSearchParams(location.search).get('date');
-    const date = qp && /^\d{4}-\d{2}-\d{2}$/.test(qp) ? qp : await latestDate();
+    const date = qp && archiveDates.includes(qp) ? qp : archiveDates.at(-1);
+    $('liftMonth').value=date.slice(0,7);
     exhibitDate = date;
     $('edition').value=date;
     $('archiveLink').href='../../gallery/'+date+'/';
@@ -392,10 +479,16 @@ const moveCodes = new Map([
   ['KeyW','forward'],['ArrowUp','forward'],['KeyS','back'],['ArrowDown','back'],
   ['KeyA','left'],['ArrowLeft','left'],['KeyD','right'],['ArrowRight','right']
 ]);
+$('openLift').addEventListener('click',openLift);
+$('closeLift').addEventListener('click',()=>{$('lift').hidden=true;});
+$('liftMonth').addEventListener('change',renderLiftCalendar);
 window.addEventListener('keydown',(e)=>{
   if (['INPUT','BUTTON','TEXTAREA'].includes(document.activeElement?.tagName)) return;
   if (moveCodes.has(e.code)) {e.preventDefault();pressed.add(moveCodes.get(e.code));}
-  if (e.code==='KeyE' && !e.repeat) showInfo(focused?.userData.study);
+  if (e.code==='KeyE' && !e.repeat) {
+    if(nearLift())openLift();
+    else showInfo(focused?.userData.study);
+  }
   if (e.code==='Escape') $('info').hidden=true;
 });
 window.addEventListener('keyup',(e)=>{if(moveCodes.has(e.code))pressed.delete(moveCodes.get(e.code));});
@@ -510,17 +603,18 @@ window.addEventListener('keydown',e=>{if(e.code==='ShiftLeft')pressed.add('Shift
 window.addEventListener('keyup',e=>{if(e.code==='ShiftLeft')pressed.delete('ShiftLeft');});
 
 function detectArt() {
-  if (!plan || !welcome.hidden || renderer.xr.isPresenting) return;
+  if (!plan || !welcome.hidden || !$('lift').hidden || renderer.xr.isPresenting) return;
   ray.setFromCamera(pointer,camera);
   const hit=ray.intersectObjects(artPlanes,false).find(x=>x.distance<6.3);
   focused=hit?.object||null;
-  const text=focused ? ' · E to inspect this drawing' : '';
+  const text=nearLift()?' · E to use archive lift':(focused ? ' · E to inspect this drawing' : '');
   const current=footprintAt(plan,rig.position.x,rig.position.z)?.room ?? -1;
   status.textContent=readableDate(exhibitDate)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures'+(current>=0?' · Gallery '+(current+1):' · Walkway')+text;
 }
 function tick() {
   if (!renderer) return;
   const dt=Math.min(clock.getDelta(),.055);
+  if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
   lastFocusCheck+=dt;
   if(lastFocusCheck>.18){detectArt();drawMap();lastFocusCheck=0;}
