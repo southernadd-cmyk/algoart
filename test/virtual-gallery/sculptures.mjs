@@ -17,7 +17,7 @@ export const PEDESTAL_WIDTH=1.42;
 export const PEDESTAL_DEPTH=1.32;
 export const PEDESTAL_HEIGHT=.72;
 export const SCULPTURE_HEIGHT=1.88;
-export const SCULPTURE_WIDTH=1.26;
+export const SCULPTURE_WIDTH=1.34; // Approx. 1000:1400, matching archived portrait format
 
 function seededStudy(study){
   return makeRandom(seedFromString('PP-SCULPTURE-v1:'+study.seed+':'+(study.engine||'field')));
