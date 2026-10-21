@@ -37,7 +37,7 @@ export function buildLayout(date, artworkCount) {
   let start = 0;
   let center = 0;
   const phase = rng() * Math.PI * 2;
-  const levelPattern = [0, INV_PHI * 1.5, INV_PHI * 3, INV_PHI * 1.5, 0];
+  const levelPattern = [0, INV_PHI * .75, INV_PHI * 1.5, INV_PHI * .75, 0];
   const reverse = rng() < 0.5 ? 1 : -1;
 
   for (let i = 0; i < roomCount; i++) {
@@ -46,7 +46,7 @@ export function buildLayout(date, artworkCount) {
     if (i) center = Math.max(-3.2, Math.min(3.2, center + Math.cos(phase + i * GOLDEN_ANGLE) * 2.15));
     const level = levelPattern[i % levelPattern.length] * reverse;
     // Galleries remain above ground; the pattern's orientation changes the rise sequence.
-    const y = reverse < 0 ? 1.86 + level : level;
+    const y = reverse < 0 ? INV_PHI * 1.5 + level : level;
     rooms.push({
       index: i, x: center, z0: start, z1: start + depth, width, depth, y,
       artStart: i * 3, artEnd: Math.min(count, i * 3 + 3),
