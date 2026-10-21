@@ -27,6 +27,8 @@ let yaw = Math.PI, pitch = 0;
 let exhibitDate = null;
 let archiveDates=[];
 let liftPosition=null;
+let currentFloor=0;
+const FLOOR_SPACING=6.2;
 let plan = null;
 let studyList = [];
 let touchPointer = null;
@@ -279,7 +281,7 @@ function hangArt(room, study, hang) {
 function addArchiveLift(room){
   // A compact lift cabin is cut into the visitor's visual route without
   // introducing an inaccessible secondary room into collision geometry.
-  const side=['north','east','south','west'].find(v=>!room.doors.includes(v))||'north';
+  const side=room.liftWall;
   const isNS=side==='north'||side==='south';
   const sign=side==='north'||side==='west'?-1:1;
   const wallOffset=(isNS?room.depth:room.width)/2-.22;
@@ -359,6 +361,10 @@ async function loadArchiveDates(){
   return dates;
 }
 function constructGallery(layout, studies) {
+  const entry=layout.rooms[0];
+  // Reserve a complete unoccupied wall for the lift before the curator hangs art.
+  entry.liftWall=['north','east','south','west'].find(side=>!entry.doors.includes(side));
+  if(!entry.liftWall)throw new Error('No uninterrupted lift wall in entry gallery');
   const hangs=planGalleryHangs(layout,studies);
   const sculptures=planGallerySculptures(layout,studies);
   validateSculpturePlacement(layout,sculptures);
@@ -384,6 +390,25 @@ function constructGallery(layout, studies) {
   // The daily landscape follows this exhibition's date and artwork seed;
   // it never occupies rooms, walkways or the visitor collision footprint.
   createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower});
+  // Previous floors remain below the current exhibition as a stacked tower.
+  if(currentFloor>0){
+    const tower=new THREE.Group();
+    const bodyMaterial=new THREE.MeshStandardMaterial({color:'#a9aea9',roughness:.88});
+    const bandMaterial=new THREE.MeshStandardMaterial({color:'#4e5755',metalness:.45,roughness:.5});
+    const centre=layout.rooms[0];
+    const height=currentFloor*FLOOR_SPACING;
+    const shell=new THREE.Mesh(new THREE.BoxGeometry(centre.width+.35,height,centre.depth+.35),bodyMaterial);
+    shell.position.set(centre.x,height/2-.26,centre.z);
+    tower.add(shell);
+    const bands=new THREE.InstancedMesh(new THREE.BoxGeometry(centre.width+.48,.13,centre.depth+.48),bandMaterial,currentFloor);
+    const transform=new THREE.Object3D();
+    for(let i=0;i<currentFloor;i++){
+      transform.position.set(centre.x,(i+1)*FLOOR_SPACING-.18,centre.z);
+      transform.updateMatrix();bands.setMatrixAt(i,transform.matrix);
+    }
+    bands.instanceMatrix.needsUpdate=true;tower.add(bands);
+    scene.add(tower);
+  }
   const first=layout.rooms[0];
   addArchiveLift(first);
   rig.position.set(first.x,first.y,first.z);
@@ -442,6 +467,10 @@ async function load() {
     studyList=readArchive(await res.text(),res.url);
     if (!studyList.length) throw new Error('No artwork records found for this edition.');
     plan=buildLayout(date,studyList.length,studyList);
+    currentFloor=archiveDates.indexOf(date);
+    const elevation=Math.max(0,currentFloor)*FLOOR_SPACING;
+    for(const room of plan.rooms)room.y+=elevation;
+    for(const hall of plan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
     constructGallery(plan,studyList);
     status.textContent=readableDate(date)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures';
     enter.disabled=false;
