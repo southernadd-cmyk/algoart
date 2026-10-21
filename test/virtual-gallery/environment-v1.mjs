@@ -32,7 +32,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false}={}
   const centerX=(Math.min(...xs)+Math.max(...xs))/2;
   const centerZ=(Math.min(...zs)+Math.max(...zs))/2;
   const size=Math.max(190,Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))+114);
-  const theme=['meadow','heath','grove','urban'][Math.floor(random()*3)];
+  const theme=['meadow','heath','grove','urban'][Math.floor(random()*4)];
   const phase=random()*Math.PI*2;
   const slope=random()*Math.PI*2;
   const baseline=-1.08;
