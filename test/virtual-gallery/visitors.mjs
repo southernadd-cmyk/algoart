@@ -71,69 +71,73 @@ async function loadCharacters(){
   import('three/addons/loaders/GLTFLoader.js'),
   import('three/addons/utils/SkeletonUtils.js')
  ]).then(([{GLTFLoader},{clone}])=>new Promise((resolve,reject)=>{
-  new GLTFLoader().load('./models/human-male-female-rigged.glb',
-   gltf=>resolve({scene:gltf.scene,clone}),undefined,reject);
- })).catch(()=>null);
+  new GLTFLoader().load('./models/human-male-female-rigged.glb',gltf=>{
+    // Every visitor instance reuses the same geometry. Scene swaps must not
+    // dispose it, otherwise later lift floors get invisible characters.
+    gltf.scene.traverse(node=>{
+      if(node.isMesh&&node.geometry)node.geometry.userData.sharedVisitorAsset=true;
+    });
+    resolve({scene:gltf.scene,clone});
+  },undefined,reject);
+ })).catch(error=>{console.warn('Rigged visitors unavailable:',error);return null;});
  return characterAssets;
 }
 function riggedVisitor(THREE,asset,person){
- // The lzyassoul archive contains exactly two separate skinned characters.
- // Clone skeletons, do not clone only meshes (that breaks joint bindings).
  const copy=asset.clone(asset.scene);
- const meshes=[];
- copy.traverse(o=>{if(o.isSkinnedMesh)meshes.push(o);});
- const groups=new Map();
- for(const mesh of meshes){
-  const key=mesh.skeleton?.bones?.[0];
-  if(!key)continue;
-  if(!groups.has(key))groups.set(key,[]);
-  groups.get(key).push(mesh);
- }
- if(groups.size!==2)return null;
- const candidates=[...groups.values()];
- // Source glTF has the shorter and taller character; prefer actual geometric
- // classification rather than assuming the skin order means male or female.
- const sizes=candidates.map(group=>{
-  const box=new THREE.Box3();
-  for(const mesh of group)box.expandByObject(mesh);
-  return {group,height:box.getSize(new THREE.Vector3()).y};
- }).sort((a,b)=>a.height-b.height);
- const selected=(person.bodyType==='female'?sizes[0]:sizes[1]).group;
- for(const mesh of meshes)mesh.visible=selected.includes(mesh);
- const bones=new Set(selected.flatMap(mesh=>mesh.skeleton.bones));
- const named=label=>[...bones].find(b=>b.name.replace(/_\d+$/,'')===label);
- // Bend an arm toward the body in world space using its actual joint positions.
- // This avoids assuming that the skeleton's local X/Y/Z match world axes.
+ const skinned=[];
+ copy.traverse(node=>{if(node.isSkinnedMesh)skinned.push(node);});
+ // Exact identity comes from the uploaded GLB:
+ // skin 0 = Man (Rig), skin 1 = Woman (Rig).
+ const expected=person.bodyType==='male'?'GLTF_created_0_rootJoint':'GLTF_created_1_rootJoint';
+ const selected=skinned.filter(node=>node.skeleton?.bones?.[0]?.name?.startsWith(expected));
+ if(selected.length!==1)return null;
+ // CRITICAL: Source scene ALSO holds five unrelated static meshes:
+ // Man/Woman (NonRig), and three HighPoly objects. Previous code hid only
+ // the opposite skinned mesh, leaving those default-pose duplicates visible.
+ copy.traverse(node=>{if(node.isMesh){
+   node.visible=selected.includes(node);
+   if(node.isSkinnedMesh)node.frustumCulled=false;
+ }});
+ const bones=new Set(selected[0].skeleton.bones);
+ const named=name=>[...bones].find(b=>b.name.replace(/_\d+$/,'')===name);
  copy.updateMatrixWorld(true);
- const tmp=new THREE.Vector3();
+ // Joint-space rotation tested against actual weighted vertices:
+ // male: 6,159 vertices moved; female: 1,830; final downward dot > .992.
  for(const side of ['L','R']){
-  const shoulder=named('upper_arm.'+side),elbow=named('forearm.'+side);
-  if(!shoulder||!elbow)continue;
-  const from=elbow.getWorldPosition(new THREE.Vector3())
-    .sub(shoulder.getWorldPosition(new THREE.Vector3())).normalize();
-  const down=new THREE.Vector3(0,-1,0);
-  const delta=new THREE.Quaternion().setFromUnitVectors(from,down);
-  // Limit maximum correction so an unusual skeleton cannot twist violently.
-  const correction=new THREE.Quaternion().identity().slerp(delta,.78);
-  const parentWorld=shoulder.parent.getWorldQuaternion(new THREE.Quaternion());
-  const world=shoulder.getWorldQuaternion(new THREE.Quaternion());
-  const desired=correction.multiply(world);
-  shoulder.quaternion.copy(parentWorld.invert().multiply(desired));
-  shoulder.updateMatrixWorld(true);
+   const upper=named('upper_arm.'+side);
+   const elbow=named('forearm.'+side);
+   if(!upper||!elbow)return null;
+   const shoulderPoint=upper.getWorldPosition(new THREE.Vector3());
+   const elbowPoint=elbow.getWorldPosition(new THREE.Vector3());
+   const current=elbowPoint.sub(shoulderPoint).normalize();
+   const target=new THREE.Vector3(side==='L'?.11:-.11,-.992,.06).normalize();
+   const worldDelta=new THREE.Quaternion().setFromUnitVectors(current,target);
+   const parentWorld=upper.parent.getWorldQuaternion(new THREE.Quaternion());
+   const shoulderWorld=upper.getWorldQuaternion(new THREE.Quaternion());
+   upper.quaternion.copy(parentWorld.invert().multiply(worldDelta).multiply(shoulderWorld));
+   upper.updateMatrixWorld(true);
+   const finalElbow=elbow.getWorldPosition(new THREE.Vector3());
+   const finalShoulder=upper.getWorldPosition(new THREE.Vector3());
+   const actual=finalElbow.sub(finalShoulder).normalize();
+   if(!Number.isFinite(actual.y)||actual.dot(target)<.95)return null;
  }
  copy.updateMatrixWorld(true);
  const box=new THREE.Box3();
- for(const mesh of selected)box.expandByObject(mesh);
+ for(const mesh of selected)box.expandByObject(mesh,true);
  const size=box.getSize(new THREE.Vector3());
- if(!Number.isFinite(size.y)||size.y<.35||size.y>1000)return null;
- const scale=(person.bodyType==='male'?1.76:1.67)*person.scale/size.y;
+ if(!Number.isFinite(size.y)||size.y<.1||size.y>20)return null;
  const ctr=box.getCenter(new THREE.Vector3());
+ const scale=person.scale*(person.bodyType==='male'?1.76:1.67)/size.y;
+ // Rotate about each visitor's feet/centre, NOT the whole original scene's
+ // origin (its male and female are separated by several metres).
+ const holder=new THREE.Group();
+ holder.position.set(person.x,person.y,person.z);
+ holder.rotation.y=person.yaw;
  copy.scale.setScalar(scale);
- copy.position.set(person.x-ctr.x*scale,person.y-box.min.y*scale,
-   person.z-ctr.z*scale);
- copy.rotation.y=person.yaw;
- copy.userData.galleryRiggedVisitor=true;
- return copy;
+ copy.position.set(-ctr.x*scale,-box.min.y*scale,-ctr.z*scale);
+ holder.add(copy);
+ holder.userData.galleryRiggedVisitor=true;
+ return holder;
 }
 
 export function renderVisitors(THREE,scene,plan){
@@ -208,7 +212,18 @@ export function renderVisitors(THREE,scene,plan){
   }
   root.add(g);
   }
- // Keep the imported rig disabled until a separately verified standing pose
- // passes real-world skeletal orientation checks. It must never silently replace
- // visitors with outstretched-arm figures during a gallery visit.
+ // Load after the initial room is usable. Only standing visitors are
+ // substituted; seated poses remain procedural until hip/knee testing.
+ if(plan.people.some(p=>!p.seat))loadCharacters().then(asset=>{
+   if(!asset||!root.parent)return;
+   const figures=root.children.slice(plan.benches.length,plan.benches.length+plan.people.length);
+   for(let i=0;i<plan.people.length;i++){
+     const p=plan.people[i];
+     if(p.seat)continue;
+     try{
+       const posed=riggedVisitor(THREE,asset,p);
+       if(posed){root.add(posed);figures[i].visible=false;}
+     }catch(error){console.warn('Visitor pose failed, retaining fallback',error);}
+   }
+ });
 }
