@@ -2,7 +2,7 @@
 // Pixel segmentation is used only where the SVG doesn't encode the
 // material-specific washes, deposits, pools or splatters.
 // The resulting polygons follow ACTUAL visible pigment pixels.
-import {estimatePaper,pigmentOpacity} from './paper-isolation.mjs';
+import {estimatePaper,pigmentOpacity} from './paper-isolation.mjs?v=paperless-20261021';
 export function pigmentGrid(imageData,material='marker',paper='#f5f0e6'){
   const {width:w,height:h,data}=imageData;
   const rgb=estimatePaper(imageData,paper);
