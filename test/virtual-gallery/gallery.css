@@ -55,3 +55,16 @@ a{color:inherit}
 .plan-view canvas{display:block;width:214px;height:188px}
 @media(max-width:750px){.plan-view{top:112px;right:10px;padding:8px}.plan-view canvas{width:132px;height:116px}.plan-view span{font-size:10px}}
 @media(max-width:390px){.plan-view{top:101px}.plan-view canvas{width:112px;height:98px}}
+
+/* Lift destination panel: at most 31 date controls for any selected month. */
+.lift-panel{position:fixed;z-index:9;top:50%;left:50%;transform:translate(-50%,-50%);width:min(410px,calc(100vw - 24px));max-height:calc(100dvh - 30px);overflow:auto;background:#f1eee7;color:#252b28;padding:23px 26px;box-shadow:0 18px 65px rgba(0,0,0,.4);border:1px solid #aaa99f}
+.lift-head{display:flex;justify-content:space-between;align-items:start}.lift-head small{color:#586158}.lift-head h2{font:normal 31px Georgia,serif;margin:5px 0 15px}
+.lift-head button{border:0;background:none;font-size:27px}.lift-panel p{font-size:12px;color:#626a64;line-height:1.5}.lift-panel label{display:block;font-size:12px;margin:16px 0 6px}
+#liftMonth{width:100%;font-size:16px;padding:9px;background:white;border:1px solid #aab0a9}
+.lift-weekdays,.lift-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center}
+.lift-weekdays{margin:19px 0 7px;font-size:11px;color:#777}.lift-days button{aspect-ratio:1;border:1px solid #d6d5ce;background:#e9e7e2;color:#999;font-size:13px}
+.lift-days button.lift-available{background:#a03933;color:#fff;border-color:#92322c;font-weight:700}
+.lift-days button.lift-available:hover,.lift-days button.lift-available:focus-visible{background:#762b26;outline:2px solid #292c29;outline-offset:2px}
+.lift-days button.lift-current{box-shadow:inset 0 0 0 3px #f4dfad}
+.lift-note{margin:17px 0 0}#liftTravel{font-weight:700;color:#373f3a}
+@media(max-width:480px){.lift-panel{padding:18px}.lift-days{gap:3px}.lift-panel h2{font-size:27px}}
