@@ -3,7 +3,7 @@ import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
 import { planGalleryHangs } from './hanging-v3.mjs';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
-import { createPortraitSculpture } from './sculpture-render.mjs';
+import { createPortraitSculpture } from './sculpture-render-solid.mjs';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -249,10 +249,10 @@ function constructGallery(layout, studies) {
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
       hangArt(room,byId.get(hanging.studyId),hanging);
     for(const placement of sculptures.filter(p=>p.roomIndex===room.index)){
-      const exhibit=createPortraitSculpture({
-        scene,study:byId.get(placement.studyId),placement,quality,labelTexture
+      createPortraitSculpture({
+        scene,study:byId.get(placement.studyId),placement,quality,labelTexture,
+        onArtworkMesh(mesh){ artPlanes.push(mesh); }
       });
-      artPlanes.push(...exhibit.selectable);
     }
   }
   if(hangs.length+sculptures.length!==studies.length)
