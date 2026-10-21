@@ -57,13 +57,51 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  }
  return {benches,people};
 }
-// Optional real rigged characters. A single Sketchfab GLB contains two rigs.
-const riggedLoader=new GLTFLoader();
-let riggedPromise;
-function getRiggedModels(){
- if(!riggedPromise)riggedPromise=new Promise((resolve,reject)=>
-  riggedLoader.load('./models/rigged_characters.glb',gltf=>resolve(gltf.scene),undefined,reject));
- return riggedPromise;
+// Browser-ready rigged characters are optional; keep procedural fallback.
+let assetPromise=null;
+function riggedAsset(){
+ if(!assetPromise)assetPromise=new Promise((resolve,reject)=>new GLTFLoader().load(
+  './models/rigged_characters.glb',gltf=>resolve(gltf.scene),undefined,reject)).catch(()=>null);
+ return assetPromise;
+}
+function makeCharacter(THREE,source,person){
+ const root=cloneSkeleton(source);
+ const selection=person.bodyType==='female'?0:1;
+ let visible=0;
+ root.traverse(node=>{
+  if(!node.isSkinnedMesh)return;
+  const names=node.skeleton.bones.map(b=>b.name);
+  const skinIndex=names.some(n=>/_6\\d\\d$/.test(n))?1:0;
+  node.visible=skinIndex===selection;
+  if(node.visible)visible++;
+ });
+ if(!visible)return null;
+ root.traverse(node=>{
+  if(!node.isBone||!/^DEF-/.test(node.name))return;
+  const index=Number(node.name.match(/_(\\d+)$/)?.[1]||0);
+  if((index>=600?1:0)!==selection)return;
+  const name=node.name.replace(/_\\d+$/,'');
+  const sign=name.includes('.L')?1:name.includes('.R')?-1:0;
+  if(/^DEF-upper_arm\\.[LR]$/.test(name))node.rotation.z+=sign*(.4+(person.pose%3)*.1);
+  if(/^DEF-forearm\\.[LR]$/.test(name))node.rotation.z+=sign*(person.pose===2?.38:.14);
+  if(person.seat){
+   if(/^DEF-thigh\\.[LR]$/.test(name))node.rotation.x-=1.12;
+   if(/^DEF-shin\\.[LR]$/.test(name))node.rotation.x+=1.18;
+   if(/^DEF-spine\\.002$/.test(name))node.rotation.x+=.18;
+  }
+ });
+ root.updateMatrixWorld(true);
+ const box=new THREE.Box3();
+ root.traverse(node=>{if(node.isSkinnedMesh&&node.visible)box.expandByObject(node);});
+ const size=box.getSize(new THREE.Vector3());
+ if(!Number.isFinite(size.y)||size.y<.01)return null;
+ const scale=person.scale*(selection===0?1.65:1.78)/size.y;
+ root.scale.setScalar(scale);
+ root.position.set(person.x-box.getCenter(new THREE.Vector3()).x*scale,
+  person.y-box.min.y*scale-(person.seat?.47:0),
+  person.z-box.getCenter(new THREE.Vector3()).z*scale);
+ root.rotation.y=person.yaw;
+ return root;
 }
 export function renderVisitors(THREE,scene,plan){
  const root=new THREE.Group();scene.add(root);
@@ -136,8 +174,15 @@ export function renderVisitors(THREE,scene,plan){
    if(p.pose===3 && sign===1)forearm.rotation.x=-.45;
   }
   root.add(g);
-  // Procedural body remains as an offline fallback if the optional GLB
-  // file is not deployed or cannot load on the visitor's device.
-
- }
+  }
+ if(plan.people.length)riggedAsset().then(source=>{
+  if(!source||!root.parent)return;
+  const fallback= root.children.slice(plan.benches.length);
+  for(let i=0;i<plan.people.length;i++){
+   try{
+    const character=makeCharacter(THREE,source,plan.people[i]);
+    if(character){root.add(character);fallback[i].visible=false;}
+   }catch(_){/* Keep procedural fallback on any model error. */}
+  }
+ });
 }
