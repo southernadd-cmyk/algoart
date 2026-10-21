@@ -27,10 +27,11 @@ export function makeRandom(seed) {
 // A seeded sequence of linked golden-section rooms and elevated promenades.
 // Inverse-phi divisions control room size and the golden angle steers the route.
 // Every doorway stays aligned to a continuous traversable central path.
-export function buildLayout(date, artworkCount) {
+export function buildLayout(date, artworkCount, artworkStates = []) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Invalid archive date');
   const count = Math.max(1, Math.floor(artworkCount));
-  const rng = makeRandom(seedFromString('PROPORTION-PIECE-ARCHITECTURE-v1:' + date));
+  const sourceSignature = artworkStates.map(s => (s.seed || '') + ':' + (s.engine || '')).join('|');
+  const rng = makeRandom(seedFromString('PROPORTION-PIECE-ARCHITECTURE-v1:' + date + ':' + sourceSignature));
   const roomCount = Math.ceil(count / 3);
   const rooms = [];
   const gap = 5.8;
@@ -41,14 +42,16 @@ export function buildLayout(date, artworkCount) {
   const reverse = rng() < 0.5 ? 1 : -1;
 
   for (let i = 0; i < roomCount; i++) {
-    const width = 12 + (i % 3) * 2 * INV_PHI + rng() * 1.8;
-    const depth = 12.4 + Math.floor(rng() * 3) * INV_PHI * 2;
-    if (i) center = Math.max(-3.2, Math.min(3.2, center + Math.cos(phase + i * GOLDEN_ANGLE) * 2.15));
+    const system = artworkStates[i * 3]?.engine || 'field';
+    const width = 12 + (i % 3) * 2 * INV_PHI + rng() * 1.8 + (system === 'rects' ? 1.7 : 0);
+    const depth = 12.4 + Math.floor(rng() * 3) * INV_PHI * 2 + (system === 'organic' ? 1.1 : 0);
+    const turn = system === 'spiral' ? 2.6 : system === 'network' ? 1.4 : 2.15;
+    if (i) center = Math.max(-3.2, Math.min(3.2, center + Math.cos(phase + i * GOLDEN_ANGLE) * turn));
     const level = levelPattern[i % levelPattern.length] * reverse;
     // Galleries remain above ground; the pattern's orientation changes the rise sequence.
     const y = reverse < 0 ? INV_PHI * 1.5 + level : level;
     rooms.push({
-      index: i, x: center, z0: start, z1: start + depth, width, depth, y,
+      index: i, x: center, z0: start, z1: start + depth, width, depth, y, system,
       artStart: i * 3, artEnd: Math.min(count, i * 3 + 3),
       aspect: width / depth
     });
