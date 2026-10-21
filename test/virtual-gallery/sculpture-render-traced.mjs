@@ -85,10 +85,9 @@ function solid(shape,depth,capMaterial,sideMaterial,z,source){
   mesh.userData.study=source;
   return mesh;
 }
-function visibleSourceSegment(points,source,reference,paper,type){
+function visibleSourceSegment(points,source,reference,imgPaper,type){
   if(!reference||type==='marker')return true;
   const {pixels}=reference;
-  const imgPaper=estimatePaper(pixels,paper);
   let marked=0,sampled=0;
   const steps=Math.min(12,points.length);
   for(let i=0;i<steps;i++){
@@ -119,6 +118,7 @@ function buildPathReliefs(source,study,quality,core,onArtworkMesh,materialCache,
   let added=0;
   const totalBudget=quality==='mobile'?95:quality==='vr'?125:230;
   const paper=study.material?.params?.paper||'#f5f0e6';
+  const imgPaper=reference?estimatePaper(reference.pixels,paper):null;
   for(const stroke of paths){
     if(added>=totalBudget)break;
     if(paperLikeStroke(stroke,study))continue;
@@ -131,7 +131,7 @@ function buildPathReliefs(source,study,quality,core,onArtworkMesh,materialCache,
     const z=(rng()-.5)*(type==='marker'?.16:.25);
     for(const section of strokeSections(stroke)){
       if(added>=totalBudget)break;
-      if(!visibleSourceSegment(section,source,reference,paper,type))continue;
+      if(!visibleSourceSegment(section,source,reference,imgPaper,type))continue;
       const coords=portraitCoords(section,source.width,source.height,W,H);
       const polygon=strokeOutline(coords,radius);
       if(polygon.length<4)continue;
