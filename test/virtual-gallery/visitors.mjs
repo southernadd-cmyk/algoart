@@ -41,7 +41,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    const z=hang.z-dz/distance*(1.6+rng()*.45);
    if(!clear(x,z,.38))continue;
    const yaw=Math.atan2(hang.x-x,hang.z-z);
-   people.push({x,z,y:room.y,yaw,roomIndex:room.index,variant:Math.floor(rng()*5),scale:.91+rng()*.16});
+   people.push({x,z,y:room.y,yaw,roomIndex:room.index,variant:Math.floor(rng()*5),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.16});
    obstacles.push({x,z,radius:.45});
   }
  }
@@ -61,14 +61,39 @@ export function renderVisitors(THREE,scene,plan){
    piece(g,new THREE.BoxGeometry(.075,.48,.075),steel,x,.24,z);
   scene.add(g);
  }
+ const hair=['#38302b','#6c5240','#262b2b','#a07d53','#5b4b42'].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
+ const trousers=['#3b454c','#625c5b','#52534e','#434f5a','#68685d'].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
+ const shoes=new THREE.MeshStandardMaterial({color:'#363937',roughness:.92});
+ const headShape=new THREE.SphereGeometry(1,12,9);
+ const torsoShape=new THREE.CylinderGeometry(1,1,1,10);
+ const limbShape=new THREE.CylinderGeometry(1,1,1,8);
+ function scaled(group,geometry,material,pos,size,rotation=0){
+  const mesh=piece(group,geometry,material,...pos);
+  mesh.scale.set(...size);mesh.rotation.z=rotation;return mesh;
+ }
  for(const p of plan.people){
-  const g=new THREE.Group();g.position.set(p.x,p.y,p.z);g.rotation.y=p.yaw;g.scale.setScalar(p.scale);
-  const c=cloth[p.variant],skin=skins[p.variant];
-  piece(g,new THREE.CapsuleGeometry(.23,.51,3,7),c,0,1.16,0);
-  piece(g,new THREE.SphereGeometry(.17,8,6),skin,0,1.67,0);
-  for(const x of [-.13,.13]){
-   piece(g,new THREE.CylinderGeometry(.083,.075,.75,6),steel,x,.40,0);
-   piece(g,new THREE.CylinderGeometry(.075,.066,.55,6),c,x*2,1.18,0);
+  const g=new THREE.Group();
+  g.position.set(p.x,p.y,p.z);g.rotation.y=p.yaw;g.scale.setScalar(p.scale);
+  const male=p.bodyType==='male',palette=p.variant;
+  const skin=skins[palette],shirt=cloth[palette],pants=trousers[palette];
+  const stature=male?1.76:1.66;
+  const shoulders=male?.255:.218;
+  const hips=male?.20:.225;
+  // An articulated human silhouette: head, neck, tapered torso, hips,
+  // distinct upper/lower limbs, shoes and simple hair.
+  scaled(g,torsoShape,shirt,[0,1.21,0],[shoulders,.31,.16]);
+  scaled(g,torsoShape,pants,[0,.91,0],[hips,.16,.16]);
+  scaled(g,limbShape,skin,[0,1.53,0],[.073,.065,.073]);
+  scaled(g,headShape,skin,[0,stature-.17,0],[.135,.18,.12]);
+  scaled(g,headShape,hair[palette],[0,stature-.045,-.015],[.141,.096,.122]);
+  for(const sign of [-1,1]){
+   const legX=sign*(male?.115:.12);
+   scaled(g,limbShape,pants,[legX,.60,0],[.090,.23,.099],sign*.025);
+   scaled(g,limbShape,pants,[legX,.20,.015],[.074,.20,.085],-sign*.018);
+   scaled(g,headShape,shoes,[legX,.055,.075],[.097,.065,.17]);
+   const armX=sign*(shoulders+.056);
+   scaled(g,limbShape,shirt,[armX,1.205,0],[.076,.205,.084],sign*.085);
+   scaled(g,limbShape,skin,[armX+sign*.032,.85,.018],[.061,.16,.068],sign*.10);
   }
   scene.add(g);
  }
