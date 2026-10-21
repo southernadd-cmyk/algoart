@@ -13,6 +13,7 @@ function artRatio(study) {
 function walls(room){
   const result=[];
   for(const surface of SIDES){
+    if(surface===room.liftWall)continue;
     const length=(surface==='north'||surface==='south')?room.width:room.depth;
     const outer=length/2-.48;
     if(!room.doors.includes(surface))result.push({surface,lo:-outer,hi:outer,closed:true});
