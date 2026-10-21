@@ -107,7 +107,7 @@ function makeSolid(fragment,faceMaterial,sideColor,study){
   return mesh;
 }
 
-export function createPortraitSculpture({scene,study,placement,quality,labelTexture}){
+export function createPortraitSculpture({scene,study,placement,quality,labelTexture,onArtworkMesh}){
   const pivot=new THREE.Group();
   pivot.name='Solid portrait sculpture: '+study.seed;
   pivot.position.set(placement.x,placement.y,placement.z);
@@ -150,6 +150,7 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
         const piece=makeSolid(fragment,faceMaterial,fragment.rgb,study);
         core.add(piece);
         selectable.push(piece);
+        onArtworkMesh?.(piece);
       }
       // Replace scaffolding when the actual sculpture is assembled.
       stem.visible=false;
@@ -161,6 +162,7 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
       core.add(fallback);
       fallback.userData.study=study;
       selectable.push(fallback);
+      onArtworkMesh?.(fallback);
       stem.visible=false;
       foot.visible=false;
     }
@@ -171,6 +173,7 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
     fallback.userData.study=study;
     core.add(fallback);
     selectable.push(fallback);
+      onArtworkMesh?.(fallback);
     stem.visible=false;foot.visible=false;
   };
   img.src=study.image;
