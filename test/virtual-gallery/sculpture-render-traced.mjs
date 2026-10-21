@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {vectorForStudy} from './vector-bridge.mjs';
 import {selectRecordedPaths,strokeSections,strokeOutline,portraitCoords} from './vector-geometry.mjs';
 import {pigmentGrid,tracePigmentRegions} from './pigment-regions.mjs';
-import {paperRGB,pigmentOpacity,maskPaper} from './paper-isolation.mjs';
+import {paperRGB,estimatePaper,pigmentOpacity,maskPaper} from './paper-isolation.mjs';
 import {makeRandom,seedFromString} from './layout-v2.mjs';
 import {
   SCULPTURE_WIDTH as W,SCULPTURE_HEIGHT as H,
@@ -85,7 +85,25 @@ function solid(shape,depth,capMaterial,sideMaterial,z,source){
   mesh.userData.study=source;
   return mesh;
 }
-function buildPathReliefs(source,study,quality,core,onArtworkMesh,materialCache){
+function visibleSourceSegment(points,source,reference,paper,type){
+  if(!reference||type==='marker')return true;
+  const {pixels}=reference;
+  const imgPaper=estimatePaper(pixels,paper);
+  let marked=0,sampled=0;
+  const steps=Math.min(12,points.length);
+  for(let i=0;i<steps;i++){
+    const p=points[Math.min(points.length-1,Math.floor(i*(points.length-1)/Math.max(1,steps-1)))];
+    const x=Math.max(0,Math.min(pixels.width-1,Math.floor(p.x/source.width*pixels.width)));
+    const y=Math.max(0,Math.min(pixels.height-1,Math.floor(p.y/source.height*pixels.height)));
+    const k=(y*pixels.width+x)*4,d=pixels.data;
+    sampled++;
+    if(pigmentOpacity(d[k],d[k+1],d[k+2],imgPaper,type)>.24)marked++;
+  }
+  // Source paths belong in the finished sculpture only if the material
+  // renderer actually made a visible mark at their original positions.
+  return sampled>0 && marked/sampled>=.35;
+}
+function buildPathReliefs(source,study,quality,core,onArtworkMesh,materialCache,reference){
   const type=study.material?.type||'marker';
   const profile=thicknessProfiles[type];
   const options={
@@ -100,6 +118,7 @@ function buildPathReliefs(source,study,quality,core,onArtworkMesh,materialCache)
   const rng=makeRandom(seedFromString('PP-TRUE-LINE-DEPTH:'+study.seed+':'+type));
   let added=0;
   const totalBudget=quality==='mobile'?95:quality==='vr'?125:230;
+  const paper=study.material?.params?.paper||'#f5f0e6';
   for(const stroke of paths){
     if(added>=totalBudget)break;
     if(paperLikeStroke(stroke,study))continue;
@@ -112,6 +131,7 @@ function buildPathReliefs(source,study,quality,core,onArtworkMesh,materialCache)
     const z=(rng()-.5)*(type==='marker'?.16:.25);
     for(const section of strokeSections(stroke)){
       if(added>=totalBudget)break;
+      if(!visibleSourceSegment(section,source,reference,paper,type))continue;
       const coords=portraitCoords(section,source.width,source.height,W,H);
       const polygon=strokeOutline(coords,radius);
       if(polygon.length<4)continue;
@@ -241,8 +261,12 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
     showIfReady();
     return data;
   }).catch(err=>{console.warn('Material image unavailable',study.seed,err);return null;});
-  const strokes=lines.then(vector=>{
-    try {strokeCount=buildPathReliefs(vector,study,quality,core,onArtworkMesh,materials);}
+  const strokes=lines.then(async vector=>{
+    // Material-specific images complete independently, then gate the source
+    // lines. This avoids displaying underlying marker scaffolding as beige
+    // plastic when the finished material only contains pigment elsewhere.
+    const reference=await paints;
+    try {strokeCount=buildPathReliefs(vector,study,quality,core,onArtworkMesh,materials,reference);}
     catch(e){console.warn('Vector relief failed',study.seed,e);}
     showIfReady();
   }).catch(err=>{console.warn('Source vector unavailable',study.seed,err);});
