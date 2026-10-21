@@ -31,6 +31,8 @@ let liftWasNear=false;
 let liftTravelling=false;
 let editionObjects=[];
 let liftDoors=[];
+let liftDoorClosure=0;
+let liftDoorTarget=0;
 let liftCabinPosition=null;
 let currentFloor=0;
 const FLOOR_SPACING=6.2;
@@ -314,6 +316,7 @@ function addArchiveLift(room){
   }
   // Two independently animated sliding leaves.
   liftDoors=[];
+  liftDoorClosure=0;liftDoorTarget=0;
   for(const u of [-1,1]){
     const leaf=part(.92,2.3,.075,u*.47,1.2,depth*.5-.02,metal);
     leaf.userData.closed=leaf.position.clone();
@@ -336,7 +339,12 @@ function addArchiveLift(room){
   scene.add(heading);
 }
 function setLiftDoors(closed){
-  for(const leaf of liftDoors)leaf.position.copy(closed?leaf.userData.closed:leaf.userData.open);
+  liftDoorTarget=closed?1:0;
+}
+function animateLiftDoors(dt){
+  const step=Math.min(1,dt*2.1);
+  liftDoorClosure+=Math.sign(liftDoorTarget-liftDoorClosure)*Math.min(step,Math.abs(liftDoorTarget-liftDoorClosure));
+  for(const leaf of liftDoors)leaf.position.copy(leaf.userData.open).lerp(leaf.userData.closed,liftDoorClosure);
 }
 
 function nearLift(){
@@ -727,6 +735,7 @@ function detectArt() {
 function tick() {
   if (!renderer) return;
   const dt=Math.min(clock.getDelta(),.055);
+  animateLiftDoors(dt);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
   lastFocusCheck+=dt;
