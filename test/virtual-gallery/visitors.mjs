@@ -23,14 +23,19 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+.45&&Math.abs(z-q.z)<q.depth/2+r+.45))return false;
    return !obstacles.some(q=>near(p,q,r+q.radius+.32));
   };
-  if(room.index%3===1 && roomHangs.length){
-   // Small wall-parallel bench at the edge of an open viewing bay.
-   const options=[{x:room.x+room.width/2-1.13,z:room.z+room.depth/2-1.12,rotation:Math.PI/2},
-    {x:room.x-room.width/2+1.13,z:room.z-room.depth/2+1.12,rotation:Math.PI/2}];
-   for(const b of options){
-    if(clear(b.x,b.z,.65)){
+  if(roomHangs.length && (room.index%2===1 || roomHangs.length>=2)){
+   // Try centre-offset viewing bays on each side; never default to a corner.
+   const options=[];
+   for(const sx of [-1,1])for(const sz of [-1,1]){
+    options.push({x:room.x+sx*(room.width/2-1.12),z:room.z+sz*1.55,rotation:Math.PI/2});
+    options.push({x:room.x+sx*1.55,z:room.z+sz*(room.depth/2-1.12),rotation:0});
+   }
+   const first=Math.floor(rng()*options.length);
+   for(let i=0;i<options.length;i++){
+    const b=options[(i+first)%options.length];
+    if(clear(b.x,b.z,.62)){
      benches.push({...b,y:room.y,roomIndex:room.index});
-     obstacles.push({...b,radius:1.25});break;
+     obstacles.push({...b,radius:1.15});break;
     }
    }
   }
@@ -42,7 +47,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    const z=hang.z-dz/distance*(1.6+rng()*.45);
    if(!clear(x,z,.38))continue;
    const yaw=Math.atan2(hang.x-x,hang.z-z);
-   people.push({x,z,y:room.y,yaw,roomIndex:room.index,variant:Math.floor(rng()*5),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.16});
+   people.push({x,z,y:room.y,yaw,roomIndex:room.index,variant:Math.floor(rng()*5),pose:Math.floor(rng()*4),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.16});
    obstacles.push({x,z,radius:.45});
   }
  }
@@ -70,7 +75,7 @@ export function renderVisitors(THREE,scene,plan){
   piece(g,new THREE.BoxGeometry(1.65,.4,.09),wood,0,.74,-.25);
   for(const x of [-.68,.68])for(const z of [-.17,.17])
    piece(g,new THREE.BoxGeometry(.075,.48,.075),steel,x,.24,z);
-  scene.add(g);
+  root.add(g);
  }
  const hair=['#38302b','#6c5240','#262b2b','#a07d53','#5b4b42'].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
  const trousers=['#3b454c','#625c5b','#52534e','#434f5a','#68685d'].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
@@ -98,18 +103,26 @@ export function renderVisitors(THREE,scene,plan){
   scaled(g,headShape,skin,[0,stature-.17,0],[.135,.18,.12]);
   scaled(g,headShape,hair[palette],[0,stature-.045,-.015],[.141,.096,.122]);
   for(const sign of [-1,1]){
-   const legX=sign*(male?.115:.12);
+   const legX=sign*(male?.115:.12)+(p.pose===1?.025:-.008);
    scaled(g,limbShape,pants,[legX,.60,0],[.090,.23,.099],sign*.025);
    scaled(g,limbShape,pants,[legX,.20,.015],[.074,.20,.085],-sign*.018);
    scaled(g,headShape,shoes,[legX,.055,.075],[.097,.065,.17]);
    const armX=sign*(shoulders+.056);
-   scaled(g,limbShape,shirt,[armX,1.205,0],[.076,.205,.084],sign*.085);
-   scaled(g,limbShape,skin,[armX+sign*.032,.85,.018],[.061,.16,.068],sign*.10);
+   // Relaxed shoulders, weight shift and occasional folded / thoughtful arms.
+   const shoulderTilt=p.pose===1?-.12:p.pose===2?.16:.035;
+   const forearmTilt=p.pose===2?sign*.54:p.pose===3?-sign*.22:sign*.09;
+   scaled(g,limbShape,shirt,[armX,1.205,0],[.076,.205,.084],sign*shoulderTilt);
+   const forearm=scaled(g,limbShape,skin,[armX-sign*.018,.865,p.pose===2?-.13:.045],
+     [.060,.155,.064],forearmTilt);
+   if(p.pose===2)forearm.rotation.x=-.8;
+   if(p.pose===3 && sign===1)forearm.rotation.x=-.45;
   }
   root.add(g);
   // Procedural body remains as an offline fallback if the optional GLB
   // file is not deployed or cannot load on the visitor's device.
-  visitorAsset(p.bodyType).then(model=>{
+  // The original non-rigged GLB is a rigid T-pose. Do not replace posed
+  // visitors until a genuinely skinned/posed asset is deployed.
+  if(false)visitorAsset(p.bodyType).then(model=>{
    if(!root.parent)return;
    const replica=model.clone(true);
    replica.position.set(p.x,p.y,p.z);
