@@ -193,27 +193,35 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
     img.src=study.image;
   });
   const lines=vectorForStudy(study);
-  Promise.allSettled([bitmap,lines]).then(([raster,vectors])=>{
-    let pigmentCount=0,strokeCount=0;
-    const type=study.material?.type||'marker';
-    if(raster.status==='fulfilled' && type!=='marker'){
-      try { pigmentCount=buildMaterialReliefs(raster.value,study,quality,core,onArtworkMesh); }
-      catch(e){console.warn('Material boundary extraction failed',study.seed,e);}
+  let pigmentCount=0,strokeCount=0,loaded=0,removed=false;
+  const type=study.material?.type||'marker';
+  function showIfReady(){
+    if(!removed && pigmentCount+strokeCount>0){
+      removed=true;core.remove(placeholder);placeholder.geometry.dispose();
     }
-    if(vectors.status==='fulfilled'){
-      try { strokeCount=buildPathReliefs(vectors.value,study,quality,core,onArtworkMesh,materials); }
-      catch(e){console.warn('Source stroke conversion failed',study.seed,e);}
-    }else console.warn('Source vector unavailable',study.seed,vectors.reason);
-    if(!strokeCount&&!pigmentCount&&raster.status==='fulfilled'){
-      try {pigmentCount=buildMaterialReliefs(raster.value,study,quality,core,onArtworkMesh);}
-      catch(e){console.warn('Fallback paint outline failed',study.seed,e);}
+  }
+  // Material contours can appear immediately while the exact SVG generation
+  // is queued in a separate isolated frame.
+  const paints=bitmap.then(data=>{
+    if(type==='marker')return data;
+    try {pigmentCount=buildMaterialReliefs(data,study,quality,core,onArtworkMesh);}
+    catch(e){console.warn('Material boundary extraction failed',study.seed,e);}
+    showIfReady();
+    return data;
+  }).catch(err=>{console.warn('Material image unavailable',study.seed,err);return null;});
+  const strokes=lines.then(vector=>{
+    try {strokeCount=buildPathReliefs(vector,study,quality,core,onArtworkMesh,materials);}
+    catch(e){console.warn('Vector relief failed',study.seed,e);}
+    showIfReady();
+  }).catch(err=>{console.warn('Source vector unavailable',study.seed,err);});
+  Promise.all([paints,strokes]).then(([raster])=>{
+    if(!strokeCount && !pigmentCount && raster){
+      try{pigmentCount=buildMaterialReliefs(raster,study,quality,core,onArtworkMesh);}
+      catch(e){console.warn('Raster contour fallback failed',study.seed,e);}
+      showIfReady();
     }
-    if(strokeCount+pigmentCount){
-      core.remove(placeholder);placeholder.geometry.dispose();
-    }else {
-      console.warn('No real image geometry could be extracted for',study.seed);
-      // Explicit neutral scaffold, not fabricated sculpture geometry.
-    }
+    if(!strokeCount && !pigmentCount)
+      console.warn('No traceable source geometry for',study.seed);
   });
   return {pivot,study};
 }
