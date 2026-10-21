@@ -7,11 +7,11 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Virtual Gallery — PROPORTION PIECE (test)</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./gallery.css?v=archive-lift-20261021">
+<link rel="stylesheet" href="./gallery.css?v=lift-travel-20261021">
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
 </script>
-<script type="module" src="./gallery-v2.js?v=lift-wall-elevation-v2-20261021"></script>
+<script type="module" src="./gallery-v2.js?v=lift-travel-20261021"></script>
 </head>
 <body>
 <canvas id="world" aria-label="Interactive three-dimensional art gallery"></canvas>
@@ -48,8 +48,18 @@
   <p class="lift-note">Red dates have a published exhibition. Earliest date is ground floor; newer dates ascend.</p>
   <p id="liftTravel" hidden role="status"></p>
 </section>
+<section id="liftAnimation" class="lift-animation" hidden role="status" aria-live="polite">
+  <div class="lift-doors"><div></div><div></div></div>
+  <div class="lift-motion">
+    <span id="liftDirection">Ascending</span>
+    <div class="lift-track"><div class="lift-track-lines"></div><span class="lift-arrow">↑</span></div>
+    <strong id="liftDestination">Next exhibition</strong>
+    <p>Preparing the gallery</p>
+  </div>
+</section>
+<div id="liftArrival" class="lift-arrival" hidden role="status"></div>
 <div class="status" id="status" aria-live="polite">Loading gallery…</div>
-<div class="hint" id="hint">W A S D to move · mouse to look · E to inspect · Esc to release pointer</div>
+<div class="hint" id="hint">W A S D to move · walk into the lift to select a floor · E to inspect</div>
 <div class="touch-nav" id="touchNav" aria-label="Touch movement controls">
   <button data-move="forward" aria-label="Move forward">↑</button>
   <div><button data-move="left" aria-label="Move left">←</button><button data-move="back" aria-label="Move backward">↓</button><button data-move="right" aria-label="Move right">→</button></div>
