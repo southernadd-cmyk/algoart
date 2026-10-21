@@ -75,7 +75,7 @@ export function buildLayout(date, artworkCount, artworkStates = []) {
     const width=8.4 + rand()*.68 + (engine==='rects'?.30:0);
     const depth=8.45 + rand()*.75 + (engine==='organic'?.28:0);
     const distance=Math.abs(gx)+Math.abs(gz);
-    const y= (distance%3)*.22;
+    const y= (distance%3)*.17;
     return {
       index:i,gx:g.x,gz:g.z,x:g.x*CELL,z:g.z*CELL,
       width,depth,y,system:engine,doors:[],neighbours:[],
