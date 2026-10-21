@@ -127,17 +127,18 @@ function addWallWithOpening(room, side) {
     if(horizontal)block(len,height,w,room.x+offset,heightY,fixed);
     else block(w,height,len,fixed,heightY,room.z+offset);
   };
-  if(!room.doors.includes(side)) {
+  if(!room.doors.includes(side) && side!==room.liftWall) {
     segment(length,0);
     return;
   }
-  const wing=(length-DOOR_WIDTH)/2;
-  segment(wing,-(DOOR_WIDTH+wing)/2);
-  segment(wing, (DOOR_WIDTH+wing)/2);
+  const opening=side===room.liftWall?1.85:DOOR_WIDTH;
+  const wing=(length-opening)/2;
+  segment(wing,-(opening+wing)/2);
+  segment(wing, (opening+wing)/2);
   const doorHeight=3.68;
-  segment(DOOR_WIDTH,0,ROOM_HEIGHT-doorHeight,room.y+(ROOM_HEIGHT+doorHeight)/2);
-  if(horizontal)block(DOOR_WIDTH+.09,.045,.43,room.x,room.y+doorHeight,fixed,join);
-  else block(.43,.045,DOOR_WIDTH+.09,fixed,room.y+doorHeight,room.z,join);
+  segment(opening,0,ROOM_HEIGHT-doorHeight,room.y+(ROOM_HEIGHT+doorHeight)/2);
+  if(horizontal)block(opening+.09,.045,.43,room.x,room.y+doorHeight,fixed,join);
+  else block(.43,.045,opening+.09,fixed,room.y+doorHeight,room.z,join);
 }
 
 function addRoom(room, index, count) {
@@ -287,16 +288,15 @@ function hangArt(room, study, hang) {
   scene.add(caption);
 }
 function addArchiveLift(room){
-  // Cabin is built INTO the gallery, with visible interior surfaces and
-  // a clear approach on a wall reserved by the hanging curator.
+  // Separate external cabin behind a real opening in the reserved gallery wall.
   const side=room.liftWall;
   const normal=new THREE.Vector3(side==='east'?-1:side==='west'?1:0,0,
     side==='north'?1:side==='south'?-1:0); // towards room centre
   const tangent=new THREE.Vector3(normal.z,0,-normal.x);
   const offset=(side==='north'||side==='south'?room.depth:room.width)/2-.3;
-  const doorCentre=new THREE.Vector3(room.x,room.y,room.z).addScaledVector(normal,-offset);
+  const doorCentre=new THREE.Vector3(room.x,room.y,room.z).addScaledVector(normal,-offset-.18);
   const depth=1.9, width=2.3, height=2.65;
-  const origin=doorCentre.clone().addScaledVector(normal,depth*.5);
+  const origin=doorCentre.clone().addScaledVector(normal,-depth*.5);
   const metal=new THREE.MeshStandardMaterial({color:'#a2a9aa',metalness:.72,roughness:.34});
   const brushed=new THREE.MeshStandardMaterial({color:'#c4c8c5',metalness:.64,roughness:.42});
   const rubber=new THREE.MeshStandardMaterial({color:'#343a38',metalness:.06,roughness:.88});
@@ -309,7 +309,7 @@ function addArchiveLift(room){
   };
   part(width,.14,depth,0,.035,0,rubber);
   part(width,.14,depth,0,height,0,brushed);
-  part(width,.15,.12,0,height+.08,-depth*.5,metal);
+  part(width,.15,.12,0,height+.08,depth*.5,metal);
   part(width, height,.11,0,height*.5,-depth*.5,brushed);
   for(const u of [-1,1]){
     part(.11,height,depth,u*width*.5,height*.5,0,metal);
