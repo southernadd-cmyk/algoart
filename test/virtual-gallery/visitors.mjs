@@ -101,8 +101,16 @@ function riggedVisitor(THREE,asset,person){
  const bones=new Set(selected[0].skeleton.bones);
  const named=name=>[...bones].find(b=>b.name.replace(/_\d+$/,'')===name);
  copy.updateMatrixWorld(true);
+ // The source GLB has one malformed parent link: hand.L belongs to the root
+ // rather than forearm.L, even though it occupies the correct wrist position.
+ // Reattach while preserving its rest-world transform, so the left hand
+ // follows the elbow when the arm is lowered. Verified by CPU skinning.
+ const detachedHand=named('hand.L'),leftForearm=named('forearm.L');
+ if(!detachedHand||!leftForearm)return null;
+ if(detachedHand.parent!==leftForearm)leftForearm.attach(detachedHand);
+ copy.updateMatrixWorld(true);
  // Joint-space rotation tested against actual weighted vertices:
- // male: 6,159 vertices moved; female: 1,830; final downward dot > .992.
+ // male: 8,396 vertices moved; female: 2,889; final downward dot > .992.
  for(const side of ['L','R']){
    const upper=named('upper_arm.'+side);
    const elbow=named('forearm.'+side);
