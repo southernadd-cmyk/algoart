@@ -1,0 +1,165 @@
+// PROPORTION PIECE virtual gallery — CC0 architectural material bank.
+// Real photographic maps from Poly Haven; see MATERIALS.md in this directory.
+// No dependency on the Poly Haven API at runtime. The static 1K files are
+// fetched once on demand and reused by all rooms; failure is non-fatal.
+// Three.js is passed in so this module can be unit-tested without WebGL.
+export const MATERIAL_SOURCES=Object.freeze({
+  walls:Object.freeze({
+    asset:'concrete',author:'Poly Haven',license:'CC0-1.0',
+    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete/concrete_diff_1k.png',
+    normal:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete/concrete_nor_gl_1k.png',
+    tileMeters:2.7
+  }),
+  floors:Object.freeze({
+    asset:'concrete_floor',author:'Poly Haven',license:'CC0-1.0',
+    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_floor/concrete_floor_diff_1k.png',
+    normal:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/concrete_floor/concrete_floor_nor_gl_1k.png',
+    tileMeters:2.25
+  }),
+  timber:Object.freeze({
+    asset:'wood_floor',author:'Poly Haven',license:'CC0-1.0',
+    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/wood_floor/wood_floor_diff_1k.png',
+    tileMeters:2.3
+  })
+});
+export const FINISHES=Object.freeze(['stone','timber','minimal']);
+function tintScan(image,mode,limit=768){
+  const canvas=document.createElement('canvas');
+  const scale=Math.min(1,limit/Math.max(image.width,image.height));
+  canvas.width=Math.max(1,Math.round(image.width*scale));
+  canvas.height=Math.max(1,Math.round(image.height*scale));
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(image,0,0,canvas.width,canvas.height);
+  if(mode==='timber')return canvas;
+  const frame=ctx.getImageData(0,0,canvas.width,canvas.height);
+  const d=frame.data;
+  // Neutralise scanned concrete into restrained warm architectural plaster
+  // and polished gallery concrete without hiding the real photo detail.
+  const mean=mode==='walls'?244:mode==='plinth'?241:mode==='floor'?204:216;
+  const contrast=mode==='walls'?.28:mode==='plinth'?.22:.52;
+  for(let i=0;i<d.length;i+=4){
+    const lum=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];
+    const value=Math.max(90,Math.min(254,mean+(lum-128)*contrast));
+    if(mode==='walls'||mode==='plinth'){
+      d[i]=Math.min(255,value+5);
+      d[i+1]=Math.min(255,value+2);
+      d[i+2]=Math.max(0,value-5);
+    }else{
+      d[i]=Math.min(255,value+3);
+      d[i+1]=Math.min(255,value+2);
+      d[i+2]=Math.max(0,value-1);
+    }
+  }
+  ctx.putImageData(frame,0,0);
+  return canvas;
+}
+function fallbackCanvas(mode){
+  // Lightweight neutral fallback, not a misleading substitute for a loaded
+  // Poly Haven scan. Architectural surfaces remain usable offline.
+  const c=document.createElement('canvas');
+  c.width=128;c.height=128;
+  const ctx=c.getContext('2d'),img=ctx.createImageData(128,128);
+  const seed={walls:57,floor:83,plinth:31,timber:121}[mode]||57;
+  for(let y=0;y<128;y++)for(let x=0;x<128;x++){
+    const i=(y*128+x)*4;
+    const h=((x*73856093)^(y*19349663)^(seed*83492791))>>>0;
+    const ripple=Math.sin((x+seed)*.075)*2.1+Math.cos((y-seed)*.054)*1.5;
+    const grain=(((h>>>12)&255)/255-.5)*4.2+ripple;
+    const base=mode==='walls'?240:mode==='plinth'?235:mode==='timber'?193:202;
+    const r=base+grain,g=base+grain-(mode==='timber'?12:2),b=base+grain-(mode==='timber'?26:7);
+    img.data[i]=r;img.data[i+1]=g;img.data[i+2]=b;img.data[i+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  return c;
+}
+export function tiledBoxUvs(geometry,w,h,d,tileMeters=2.5){
+  // BoxGeometry packs six sides in 4-vertex groups (+X,-X,+Y,-Y,+Z,-Z).
+  // Tiling in physical metres prevents a 9 m wall from stretching one texel
+  // over its entire surface; shared texture objects remain identical.
+  const uv=geometry.getAttribute('uv');
+  if(!uv||uv.count<24)return geometry;
+  const scales=[
+    [d,h],[d,h],[w,d],[w,d],[w,h],[w,h]
+  ];
+  for(let face=0;face<6;face++){
+    const [uScale,vScale]=scales[face].map(length=>Math.max(.001,length/tileMeters));
+    for(let v=0;v<4;v++){
+      const i=face*4+v;
+      uv.setXY(i,uv.getX(i)*uScale,uv.getY(i)*vScale);
+    }
+  }
+  uv.needsUpdate=true;
+  return geometry;
+}
+export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
+  const loader=new THREE.TextureLoader();
+  const make=(color,roughness,tileMeters,metalness=0)=>{
+    const material=new THREE.MeshStandardMaterial({color,roughness,metalness});
+    material.userData.tileMeters=tileMeters;
+    return material;
+  };
+  const wall=make('#faf4ea',.96,2.7);
+  const floor=make('#e1ddd2',.90,2.25);
+  const timber=make('#e6daca',.87,2.3);
+  const plinth=make('#f6f1e9',.90,1.15);
+  const stoneBridge=make('#ddd6c8',.88,2.25);
+  stoneBridge.side=THREE.DoubleSide;
+  const trims=make('#625f58',.66,.8,.15);
+  const fallback={
+    wall:fallbackCanvas('walls'),floor:fallbackCanvas('floor'),
+    timber:fallbackCanvas('timber'),plinth:fallbackCanvas('plinth')
+  };
+  const tx=(canvas)=>{
+    const t=new THREE.CanvasTexture(canvas);
+    t.colorSpace=THREE.SRGBColorSpace;
+    t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.RepeatWrapping;
+    t.anisotropy=lowPower?1:4;
+    return t;
+  };
+  wall.map=tx(fallback.wall);floor.map=tx(fallback.floor);
+  timber.map=tx(fallback.timber);plinth.map=tx(fallback.plinth);
+  stoneBridge.map=floor.map;
+  const diagnostics={loaded:[],failed:[],lowPower,source:'Poly Haven CC0'};
+  function scan(slot,url,mode,targets){
+    loader.load(url,imageTexture=>{
+      try{
+        const next=tx(tintScan(imageTexture.image,mode,lowPower?384:768));
+        for(const material of targets) {
+          material.map=next;material.needsUpdate=true;
+        }
+        diagnostics.loaded.push(slot);
+        imageTexture.dispose();
+      }catch(error){diagnostics.failed.push(slot);}
+    },undefined,()=>diagnostics.failed.push(slot));
+  }
+  function normal(slot,url,targets,strength){
+    if(lowPower)return;
+    loader.load(url,texture=>{
+      texture.wrapS=THREE.RepeatWrapping;
+      texture.wrapT=THREE.RepeatWrapping;
+      texture.anisotropy=2;
+      for(const material of targets){
+        material.normalMap=texture;
+        material.normalScale=new THREE.Vector2(strength,strength);
+        material.needsUpdate=true;
+      }
+      diagnostics.loaded.push(slot);
+    },undefined,()=>diagnostics.failed.push(slot));
+  }
+  scan('wall-color',MATERIAL_SOURCES.walls.diffuse,'walls',[wall]);
+  normal('wall-normal',MATERIAL_SOURCES.walls.normal,[wall],.15);
+  scan('floor-color',MATERIAL_SOURCES.floors.diffuse,'floor',[floor,stoneBridge]);
+  normal('floor-normal',MATERIAL_SOURCES.floors.normal,[floor,stoneBridge],.21);
+  scan('wood-color',MATERIAL_SOURCES.timber.diffuse,'timber',[timber]);
+  // Plinths share the plaster scan as a distinct, near-white matte finish.
+  scan('plinth-color',MATERIAL_SOURCES.walls.diffuse,'plinth',[plinth]);
+  let finish='stone';
+  const finishFor=()=>finish;
+  const setFinish=next=>{
+    if(!FINISHES.includes(next))return finish;
+    finish=next;
+    return finish;
+  };
+  return {wall,floor,timber,plinth,stoneBridge,trims,diagnostics,
+    setFinish,finishFor,lowPower};
+}
