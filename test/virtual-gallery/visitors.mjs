@@ -175,14 +175,6 @@ export function renderVisitors(THREE,scene,plan){
   }
   root.add(g);
   }
- if(plan.people.length)riggedAsset().then(source=>{
-  if(!source||!root.parent)return;
-  const fallback= root.children.slice(plan.benches.length);
-  for(let i=0;i<plan.people.length;i++){
-   try{
-    const character=makeCharacter(THREE,source,plan.people[i]);
-    if(character){root.add(character);fallback[i].visible=false;}
-   }catch(_){/* Keep procedural fallback on any model error. */}
-  }
- });
+ // Rigged Sketchfab asset temporarily disabled: current bone mapping distorts bodies.
+ // Use the stable seeded standing and seated fallback figures until rig validation.
 }
