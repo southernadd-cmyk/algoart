@@ -1,3 +1,4 @@
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // Seeded furniture and visitor v1. WebGL-independent placement followed by
 // lightweight geometry; no inaccessible downloaded model required.
 import {makeRandom,seedFromString,DOOR_WIDTH} from './layout-v2.mjs';
@@ -47,7 +48,17 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  }
  return {benches,people};
 }
+const modelLoader=new GLTFLoader();
+const assetPromises=new Map();
+function visitorAsset(type){
+ if(!assetPromises.has(type)){
+  assetPromises.set(type,new Promise((resolve,reject)=>modelLoader.load(
+   './models/'+type+'.glb',gltf=>resolve(gltf.scene),undefined,reject)));
+ }
+ return assetPromises.get(type);
+}
 export function renderVisitors(THREE,scene,plan){
+ const root=new THREE.Group();scene.add(root);
  const wood=new THREE.MeshStandardMaterial({color:'#9b8067',roughness:.85});
  const steel=new THREE.MeshStandardMaterial({color:'#59605d',metalness:.48,roughness:.54});
  const skins=['#bd8a6f','#e1b293','#78533f','#c99c80','#9c6f55'].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
@@ -95,6 +106,16 @@ export function renderVisitors(THREE,scene,plan){
    scaled(g,limbShape,shirt,[armX,1.205,0],[.076,.205,.084],sign*.085);
    scaled(g,limbShape,skin,[armX+sign*.032,.85,.018],[.061,.16,.068],sign*.10);
   }
-  scene.add(g);
+  root.add(g);
+  // Procedural body remains as an offline fallback if the optional GLB
+  // file is not deployed or cannot load on the visitor's device.
+  visitorAsset(p.bodyType).then(model=>{
+   if(!root.parent)return;
+   const replica=model.clone(true);
+   replica.position.set(p.x,p.y,p.z);
+   replica.rotation.y=p.yaw;
+   replica.scale.setScalar(p.scale);
+   root.add(replica);g.visible=false;
+  }).catch(()=>{});
  }
 }
