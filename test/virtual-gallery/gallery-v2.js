@@ -153,17 +153,10 @@ function addRoom(room, index, count) {
   const insetZ=room.z-(1/PHI-.5)*room.depth*.44;
   block(.023,.02,room.depth-1.15,insetX,room.y+.018,room.z,join);
   block(room.width-1.15,.02,.023,room.x,room.y+.018,insetZ,join);
-  // Soft, lower-output fill plus wall grazers: artworks stay readable without
-  // the over-bright central bulb effect.
-  const light=new THREE.PointLight('#fff5e9',6.5,14,2);
-  light.position.set(room.x,ceiling-.65,room.z);
-  scene.add(light);
-  for(const side of [-1,1]){
-    const wash=new THREE.SpotLight('#fff7ed',9,room.width*.85,Math.PI/4,.85,1.8);
-    wash.position.set(room.x+side*(room.width/2-.85),ceiling-.48,room.z);
-    wash.target.position.set(room.x+side*(room.width/2-.85),room.y+2.1,room.z);
-    scene.add(wash,wash.target);
-  }
+  // The room fill is deliberately subdued: exhibit fittings provide focus.
+  const fill=new THREE.PointLight('#fff5ec',2.3,11,2);
+  fill.position.set(room.x,ceiling-.82,room.z);
+  scene.add(fill);
 
 }
 function makeRoomLabel(text) {
@@ -233,6 +226,20 @@ function loadArtworkTexture(url, material) {
 }
 // Stage 2: landscape images occupy walls. Portraits become freestanding
 // layered engine-specific sculptures, with a clear walking route around them.
+// Aim a real exhibition spotlight at its individual exhibit, not a generic wall.
+const fittingMaterial=new THREE.MeshStandardMaterial({color:'#484743',metalness:.7,roughness:.32});
+const fittingGeometry=new THREE.CylinderGeometry(.115,.16,.22,10);
+function exhibitLight(room,position,target,{beam=.38,power=18}={}){
+  const spot=new THREE.SpotLight('#fff6e8',power,8,beam,.76,1.7);
+  spot.position.copy(position);
+  spot.target.position.copy(target);
+  scene.add(spot,spot.target);
+  const head=new THREE.Mesh(fittingGeometry,fittingMaterial);
+  head.position.copy(position);
+  head.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),
+    target.clone().sub(position).normalize());
+  scene.add(head);
+}
 function hangArt(room, study, hang) {
   const width = hang.width, height = hang.height;
   const rotation = {
@@ -245,7 +252,7 @@ function hangArt(room, study, hang) {
   surround.rotation.y = rotation;
   scene.add(surround);
 
-  const artworkMaterial = new THREE.MeshBasicMaterial({color: '#e6e1d5', side: THREE.DoubleSide});
+  const artworkMaterial = new THREE.MeshStandardMaterial({color: '#e6e1d5',roughness:1,metalness:0,side: THREE.DoubleSide,emissive:'#ffffff',emissiveIntensity:.12});
   const artwork = new THREE.Mesh(new THREE.PlaneGeometry(width, height), artworkMaterial);
   artwork.position.copy(base).addScaledVector(normal, .038);
   artwork.rotation.y = rotation;
@@ -253,6 +260,9 @@ function hangArt(room, study, hang) {
   scene.add(artwork);
   artPlanes.push(artwork);
   loadArtworkTexture(study.image, artworkMaterial);
+  const lamp=base.clone().addScaledVector(normal,1.35);
+  lamp.y=Math.min(room.y+ROOM_HEIGHT-.35,hang.y+height*.66+1.25);
+  exhibitLight(room,lamp,base,{beam:Math.max(.28,Math.min(.56,Math.atan(width/2/1.45)*1.25)),power:17});
 
   const labelWidth = Math.min(2.06, Math.max(1.48, width * .73));
   const caption = new THREE.Mesh(
@@ -276,6 +286,8 @@ function constructGallery(layout, studies) {
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
       hangArt(room,byId.get(hanging.studyId),hanging);
     for(const placement of sculptures.filter(p=>p.roomIndex===room.index)){
+      const sculptureLamp=new THREE.Vector3(placement.x,room.y+ROOM_HEIGHT-.42,placement.z);
+      exhibitLight(room,sculptureLamp,new THREE.Vector3(placement.x,room.y+1.22,placement.z),{beam:.47,power:12});
       createPortraitSculpture({
         scene,study:byId.get(placement.studyId),placement,quality,labelTexture,
         onArtworkMesh(mesh){ artPlanes.push(mesh); }
