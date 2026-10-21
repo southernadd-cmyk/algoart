@@ -5,12 +5,16 @@ const near=(a,b,r)=>Math.hypot(a.x-b.x,a.z-b.z)<r;
 export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  const rng=makeRandom(seedFromString('PP-VISITORS-v1:'+layout.date));
  const benches=[],people=[],obstacles=[];
+ // Sparse museum occupancy, bounded even as editions gain more rooms.
+ const MAX_VISITORS=lowPower?3:6;
+ const MAX_BENCHES=lowPower?1:3;
  for(const room of layout.rooms){
   const roomHangs=hangs.filter(h=>h.roomIndex===room.index);
   const roomSculptures=sculptures.filter(p=>p.roomIndex===room.index);
   const clear=(x,z,r=0.5)=>{
    const p={x,z};
-   if(Math.abs(x-room.x)>room.width/2-r-.55||Math.abs(z-room.z)>room.depth/2-r-.55)return false;
+   // Preserve a full standing clearance around the figure, not just its centre.
+   if(Math.abs(x-room.x)>room.width/2-r-1.05||Math.abs(z-room.z)>room.depth/2-r-1.05)return false;
    // Keep both centre aisles and all door approaches unobstructed.
    const safe=DOOR_WIDTH/2+.15+r;
    const dx=x-room.x,dz=z-room.z;
@@ -22,7 +26,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+1.1&&Math.abs(z-q.z)<q.depth/2+r+1.1))return false;
    return !obstacles.some(q=>near(p,q,r+q.radius+.32));
   };
-  if(roomHangs.length && room.index%2===1){
+  if(roomHangs.length && room.index%2===1 && benches.length<MAX_BENCHES){
    // Try centre-offset viewing bays on each side; never default to a corner.
    const options=[];
    for(const sx of [-1,1])for(const sz of [-1,1]){
@@ -35,25 +39,26 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
     if(clear(b.x,b.z,.62)){
      benches.push({...b,y:room.y,roomIndex:room.index});
      obstacles.push({...b,radius:1.15});
-     if(rng()>.42)people.push({x:b.x,z:b.z,y:room.y,yaw:b.rotation,roomIndex:room.index,
+     if(people.length<MAX_VISITORS && rng()>.65)people.push({x:b.x,z:b.z,y:room.y,yaw:b.rotation,roomIndex:room.index,
       variant:Math.floor(rng()*5),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.13,pose:4,seat:true});
      break;
     }
    }
   }
   const candidates=roomHangs.slice().sort((a,b)=>a.studyId-b.studyId);
-  for(const hang of candidates.slice(0,1)){
+  for(const hang of candidates.slice(0,people.length<MAX_VISITORS && room.index%2===0?1:0)){
    const dx=hang.x-room.x,dz=hang.z-room.z;
    const distance=Math.hypot(dx,dz)||1;
    const x=hang.x-dx/distance*(1.6+rng()*.45);
    const z=hang.z-dz/distance*(1.6+rng()*.45);
    if(!clear(x,z,.38))continue;
    const yaw=Math.atan2(hang.x-x,hang.z-z);
+   if(people.length>=MAX_VISITORS)break;
    people.push({x,z,y:room.y,yaw,roomIndex:room.index,variant:Math.floor(rng()*5),pose:Math.floor(rng()*4),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.16});
    obstacles.push({x,z,radius:.45});
   }
  }
- return {benches,people};
+ return {benches,people:people.slice(0,MAX_VISITORS)};
 }
 
 // Actual male/female rig support for the lzyassoul pack only. The source
