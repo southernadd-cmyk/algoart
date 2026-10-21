@@ -7,6 +7,7 @@ import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './s
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs';
+import { planVisitors,renderVisitors } from './visitors.mjs';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -454,6 +455,7 @@ function constructGallery(layout, studies) {
       });
     }
   }
+  renderVisitors(THREE,scene,planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower}));
   if(hangs.length+sculptures.length!==studies.length)
     throw new Error('An archived study was omitted from the exhibition');
   for(const hall of layout.corridors)addBridge(hall);
