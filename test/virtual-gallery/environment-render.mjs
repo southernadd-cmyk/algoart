@@ -81,12 +81,44 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     skyColors[i*3]=skyC.r;skyColors[i*3+1]=skyC.g;skyColors[i*3+2]=skyC.b;
   }
   skyGeo.setAttribute('color',new THREE.BufferAttribute(skyColors,3));
+  // High-altitude cloud texture, deterministic for the daily seed. It is
+  // local and cached in a canvas: no network dependency on a sky provider.
+  const cloudCanvas=document.createElement('canvas');
+  cloudCanvas.width=768;cloudCanvas.height=384;
+  const cloudCtx=cloudCanvas.getContext('2d');
+  const img=cloudCtx.createImageData(768,384);
+  const hash=(x,y,k)=>{let n=Math.imul(x+1301,374761393)+Math.imul(y+733,668265263)+k;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295;};
+  const noise2=(x,y,k)=>{
+    const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
+    const sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);
+    const a=hash(ix,iy,k)*(1-sx)+hash(ix+1,iy,k)*sx;
+    const b=hash(ix,iy+1,k)*(1-sx)+hash(ix+1,iy+1,k)*sx;
+    return a*(1-sy)+b*sy;
+  };
+  for(let y=0;y<384;y++)for(let x=0;x<768;x++){
+    const lat=y/383;
+    // Latitude zero is zenith in this projection; avoid clouding the horizon.
+    const band=Math.sin(Math.PI*Math.max(0,Math.min(1,(lat-.08)/.86)));
+    const n=.53*noise2(x/132,y/83,plan.seed)+.31*noise2(x/53,y/41,plan.seed)+.16*noise2(x/18,y/17,plan.seed);
+    const alpha=Math.pow(Math.max(0,(n-.46)/.30),1.4)*.55*Math.max(0,band);
+    const idx=(y*768+x)*4;
+    img.data[idx]=247;img.data[idx+1]=247;img.data[idx+2]=242;
+    img.data[idx+3]=Math.floor(Math.min(.7,alpha)*255);
+  }
+  cloudCtx.putImageData(img,0,0);
+  const cloudMap=new THREE.CanvasTexture(cloudCanvas);
+  cloudMap.colorSpace=THREE.SRGBColorSpace;
+  cloudMap.wrapS=THREE.RepeatWrapping;
   const sky=new THREE.Mesh(skyGeo,new THREE.MeshBasicMaterial({
     vertexColors:true,side:THREE.BackSide,depthWrite:false,fog:false
   }));
+  const clouds=new THREE.Mesh(new THREE.SphereGeometry(176.8,40,22),
+    new THREE.MeshBasicMaterial({map:cloudMap,transparent:true,side:THREE.BackSide,depthWrite:false,fog:false}));
   sky.position.set(plan.centerX,layout.rooms[0].y,plan.centerZ);
   sky.renderOrder=-5;
   scene.add(sky);
+  clouds.position.copy(sky.position);
+  scene.add(clouds);
   scene.background=color(palette.horizon);
   scene.fog=new THREE.Fog(color(palette.horizon),75,Math.max(164,layout.rooms[0].y+230));
 
