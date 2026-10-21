@@ -32,7 +32,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false}={}
   const centerX=(Math.min(...xs)+Math.max(...xs))/2;
   const centerZ=(Math.min(...zs)+Math.max(...zs))/2;
   const size=Math.max(190,Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))+114);
-  const theme=['meadow','heath','grove'][Math.floor(random()*3)];
+  const theme=['meadow','heath','grove','urban'][Math.floor(random()*3)];
   const phase=random()*Math.PI*2;
   const slope=random()*Math.PI*2;
   const baseline=-1.08;
@@ -64,5 +64,27 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false}={}
   distribute(trees,lowPower?33:64,2000,13,51,7,lowPower?6:5);
   distribute(shrubs,lowPower?75:160,3000,6,34,3.3,lowPower?2.2:1.65);
   distribute(rocks,lowPower?12:28,600,8,45,4,2.5);
-  return {seed,theme,size,centerX,centerZ,phase,slope,lowPower,trees,shrubs,rocks,heightAt};
+  // Deterministic urban blocks: kept outside the museum's clearance zone.
+  // Building footprints and heights change with the same edition seed.
+  const buildings=[];
+  if(theme==='urban'){
+    const street=12, edge=size*.43;
+    for(let gx=-edge;gx<=edge;gx+=street){
+      for(let gz=-edge;gz<=edge;gz+=street){
+        if(random()<.20)continue;
+        const x=centerX+gx+(random()-.5)*2.2;
+        const z=centerZ+gz+(random()-.5)*2.2;
+        const width=5+random()*3.8,depth=5+random()*3.8;
+        // A bounding-circle clearance protects every corridor and room.
+        if(distanceToArchitecture(layout,x,z)<Math.hypot(width,depth)*.5+8)continue;
+        const height=4+Math.pow(random(),1.6)*23;
+        buildings.push({x,z,y:heightAt(x,z),width,depth,height,
+          variant:random(),roof:random()>.62?1:0});
+      }
+    }
+  }
+  return {seed,theme,size,centerX,centerZ,phase,slope,lowPower,
+    trees:theme==='urban'?trees.slice(0,lowPower?8:18):trees,
+    shrubs:theme==='urban'?shrubs.slice(0,lowPower?12:25):shrubs,
+    rocks:theme==='urban'?[]:rocks,buildings,heightAt};
 }
