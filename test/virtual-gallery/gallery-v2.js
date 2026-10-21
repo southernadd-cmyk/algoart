@@ -307,7 +307,7 @@ function addArchiveLift(room){
   part(width,.14,depth,0,.035,0,rubber);
   part(width,.14,depth,0,height,0,brushed);
   part(width,.15,.12,0,height+.08,-depth*.5,metal);
-  part(width, height,.11,0,height*.5,depth*.5,brushed);
+  part(width, height,.11,0,height*.5,-depth*.5,brushed);
   for(const u of [-1,1]){
     part(.11,height,depth,u*width*.5,height*.5,0,metal);
     part(.055,.07,depth,u*(width*.5-.1),1.04,0,metal);
@@ -315,7 +315,7 @@ function addArchiveLift(room){
   // Two independently animated sliding leaves.
   liftDoors=[];
   for(const u of [-1,1]){
-    const leaf=part(.92,2.3,.075,u*.47,1.2,-depth*.5+.02,metal);
+    const leaf=part(.92,2.3,.075,u*.47,1.2,depth*.5-.02,metal);
     leaf.userData.closed=leaf.position.clone();
     leaf.userData.open=leaf.position.clone().addScaledVector(tangent,u*.91);
     leaf.position.copy(leaf.userData.open);
@@ -328,10 +328,10 @@ function addArchiveLift(room){
   part(.04,.9,.52,width*.5-.07,1.48,-.02,rubber);
   for(let i=0;i<4;i++)part(.055,.055,.055,width*.5-.115,1.7-i*.19,.1,glass);
   liftCabinPosition=local(0,0,0);
-  liftPosition=local(0,0,-.12);
+  liftPosition=local(0,0,.12);
   const heading=new THREE.Mesh(new THREE.PlaneGeometry(1.8,.36),
     new THREE.MeshBasicMaterial({map:labelTexture('ARCHIVE LIFT','SELECT FLOOR'),side:THREE.DoubleSide}));
-  heading.position.copy(local(0,2.91,-depth*.5+.03));
+  heading.position.copy(local(0,2.91,depth*.5-.03));
   heading.rotation.y=Math.atan2(normal.x,normal.z);
   scene.add(heading);
 }
