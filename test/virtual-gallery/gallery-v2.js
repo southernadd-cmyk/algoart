@@ -69,6 +69,7 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
 const wall=galleryFinish.wall;
 const floor=galleryFinish.floor;
 const timber=galleryFinish.timber;
+const stone=galleryFinish.stone;
 const join=galleryFinish.trims;
 setSculptureArchitecturalMaterials({plinth:galleryFinish.plinth,metal:galleryFinish.trims});
 const dark = new THREE.MeshStandardMaterial({color: '#393b35', metalness: .16, roughness: .74});
@@ -82,7 +83,7 @@ function block(w, h, d, x, y, z, material = wall) {
     tiledBoxUvs(geometry,w,h,d,material.userData.tileMeters);
   const mesh=new THREE.Mesh(geometry,material);
   mesh.position.set(x,y,z);
-  mesh.receiveShadow=material===floor||material===timber;
+  mesh.receiveShadow=material===floor||material===timber||material===stone;
   scene.add(mesh);
   return mesh;
 }
@@ -130,7 +131,7 @@ function addRoom(room, index, count) {
   const ceiling=room.y+ROOM_HEIGHT;
   // One timber chamber in larger editions adds material rhythm while the
   // rest remain neutral and focused on the artwork.
-  const surface=(count>=4&&index%5===2)?timber:floor;
+  const surface=(count>=4&&index%5===2)?timber:(count>=5&&index%5===4)?stone:floor;
   block(room.width+.42,.36,room.depth+.42,room.x,room.y-.22,room.z,surface);
   for(const side of ['north','south','east','west'])addWallWithOpening(room,side);
   const roofStrip=(room.width-3.5)/2;
