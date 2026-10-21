@@ -3,7 +3,8 @@ import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
 import { planGalleryHangs } from './hanging-v3.mjs';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
-import { createPortraitSculpture } from './sculpture-render-traced.mjs?v=paperless-20261021';
+import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=texture-pass-20261021';
+import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -31,8 +32,8 @@ let touchX = 0, touchY = 0;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#c2cbc5');
 scene.fog = new THREE.Fog('#c2cbc5', 48, 165);
-scene.add(new THREE.HemisphereLight('#ffffff', '#8e9891', 2.7));
-const sun = new THREE.DirectionalLight('#fff5df', 2.5);
+scene.add(new THREE.HemisphereLight('#ffffff', '#92998c', 1.95));
+const sun = new THREE.DirectionalLight('#fff7ec', 2.2);
 sun.position.set(-18, 30, 12);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(76, 1, 0.07, 210);
@@ -50,7 +51,7 @@ try {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.12;
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType('local-floor');
   const xrButton = VRButton.createButton(renderer);
@@ -61,16 +62,25 @@ try {
   errorBox.hidden = false;
 }
 
-const wall = new THREE.MeshStandardMaterial({color: '#e5e3d9', roughness: .96});
-const floor = new THREE.MeshStandardMaterial({color: '#bdb6a8', roughness: .96});
-const join = new THREE.MeshStandardMaterial({color: '#756f61', metalness: .22, roughness: .77});
+const galleryFinish=createArchitecturalMaterials(THREE,{
+  lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches
+});
+const wall=galleryFinish.wall;
+const floor=galleryFinish.floor;
+const timber=galleryFinish.timber;
+const join=galleryFinish.trims;
+setSculptureArchitecturalMaterials({plinth:galleryFinish.plinth,metal:galleryFinish.trims});
 const dark = new THREE.MeshStandardMaterial({color: '#393b35', metalness: .16, roughness: .74});
-const bridgeSurface = new THREE.MeshStandardMaterial({color: '#b8a994', side: THREE.DoubleSide, roughness: .9});
+const bridgeSurface=galleryFinish.stoneBridge;
 const frame = new THREE.MeshStandardMaterial({color: '#34322e', roughness: .85});
 
 function block(w, h, d, x, y, z, material = wall) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-  mesh.position.set(x, y, z);
+  const geometry=new THREE.BoxGeometry(w,h,d);
+  if(material.userData?.tileMeters)
+    tiledBoxUvs(geometry,w,h,d,material.userData.tileMeters);
+  const mesh=new THREE.Mesh(geometry,material);
+  mesh.position.set(x,y,z);
+  mesh.receiveShadow=material===floor||material===timber;
   scene.add(mesh);
   return mesh;
 }
@@ -116,7 +126,10 @@ function addWallWithOpening(room, side) {
 
 function addRoom(room, index, count) {
   const ceiling=room.y+ROOM_HEIGHT;
-  block(room.width+.42,.36,room.depth+.42,room.x,room.y-.22,room.z,floor);
+  // One timber chamber in larger editions adds material rhythm while the
+  // rest remain neutral and focused on the artwork.
+  const surface=(count>=4&&index%5===2)?timber:floor;
+  block(room.width+.42,.36,room.depth+.42,room.x,room.y-.22,room.z,surface);
   for(const side of ['north','south','east','west'])addWallWithOpening(room,side);
   const roofStrip=(room.width-3.5)/2;
   block(roofStrip,.21,room.depth+.45,room.x-(room.width+3.5)/4,ceiling+.1,room.z);
@@ -131,7 +144,7 @@ function addRoom(room, index, count) {
   const insetZ=room.z-(1/PHI-.5)*room.depth*.44;
   block(.023,.02,room.depth-1.15,insetX,room.y+.018,room.z,join);
   block(room.width-1.15,.02,.023,room.x,room.y+.018,insetZ,join);
-  const light=new THREE.PointLight('#fff4de',23,14);
+  const light=new THREE.PointLight('#fff5e8',17,13);
   light.position.set(room.x,ceiling-.55,room.z);
   scene.add(light);
   // Signs hang above the entrance junction, not in the picture field.
@@ -167,6 +180,10 @@ function addBridge(hall) {
   const vertices=new Float32Array([...a0.toArray(),...a1.toArray(),...b0.toArray(),...b1.toArray()]);
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.BufferAttribute(vertices,3));
+  const tiles=Math.max(.3,hall.length/2.25);
+  geometry.setAttribute('uv',new THREE.BufferAttribute(new Float32Array([
+    0,0,0,DOOR_WIDTH/2.25,tiles,0,tiles,DOOR_WIDTH/2.25
+  ]),2));
   geometry.setIndex([0,2,1,1,2,3]);
   geometry.computeVertexNormals();
   scene.add(new THREE.Mesh(geometry,bridgeSurface));
