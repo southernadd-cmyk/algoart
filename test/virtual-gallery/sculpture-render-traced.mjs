@@ -228,7 +228,24 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
   const pedestal=new THREE.Mesh(new THREE.BoxGeometry(
     PEDESTAL_WIDTH,PEDESTAL_HEIGHT,PEDESTAL_DEPTH),baseMaterial);
   pedestal.position.y=PEDESTAL_HEIGHT/2;
+  pedestal.castShadow=true;
   pivot.add(pedestal);
+  // A lightweight contact shadow anchors the plinth without expensive
+  // per-fragment WebGL shadow passes (important with hundreds of real strokes).
+  const shadowCanvas=document.createElement('canvas');
+  shadowCanvas.width=96;shadowCanvas.height=96;
+  const shadeContext=shadowCanvas.getContext('2d');
+  const shade=shadeContext.createRadialGradient(48,48,10,48,48,47);
+  shade.addColorStop(0,'rgba(30,29,26,.30)');
+  shade.addColorStop(.6,'rgba(30,29,26,.17)');
+  shade.addColorStop(1,'rgba(30,29,26,0)');
+  shadeContext.fillStyle=shade;shadeContext.fillRect(0,0,96,96);
+  const shadowTex=new THREE.CanvasTexture(shadowCanvas);
+  const shadow=new THREE.Mesh(new THREE.PlaneGeometry(2.35,2.05),
+    new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false}));
+  shadow.rotation.x=-Math.PI/2;
+  shadow.position.y=.018;
+  pivot.add(shadow);
   const lip=new THREE.Mesh(new THREE.BoxGeometry(
     PEDESTAL_WIDTH+.03,.025,PEDESTAL_DEPTH+.03),metalMaterial);
   lip.position.y=PEDESTAL_HEIGHT+.011;pivot.add(lip);
