@@ -82,7 +82,7 @@ async function loadCharacters(){
  })).catch(error=>{console.warn('Rigged visitors unavailable:',error);return null;});
  return characterAssets;
 }
-function riggedVisitor(THREE,asset,person){
+function riggedVisitor(THREE,asset,person,{relaxed=true}={}){
  const copy=asset.clone(asset.scene);
  const skinned=[];
  copy.traverse(node=>{if(node.isSkinnedMesh)skinned.push(node);});
@@ -111,7 +111,7 @@ function riggedVisitor(THREE,asset,person){
  copy.updateMatrixWorld(true);
  // Joint-space rotation tested against actual weighted vertices:
  // male: 8,396 vertices moved; female: 2,889; final downward dot > .992.
- for(const side of ['L','R']){
+ if(relaxed)for(const side of ['L','R']){
    const upper=named('upper_arm.'+side);
    const elbow=named('forearm.'+side);
    if(!upper||!elbow)return null;
@@ -145,6 +145,7 @@ function riggedVisitor(THREE,asset,person){
  copy.position.set(-ctr.x*scale,-box.min.y*scale,-ctr.z*scale);
  holder.add(copy);
  holder.userData.galleryRiggedVisitor=true;
+ holder.userData.galleryRigPose=relaxed?'relaxed':'original';
  return holder;
 }
 
@@ -235,3 +236,6 @@ export function renderVisitors(THREE,scene,plan){
    }
  });
 }
+
+// Used by the isolated asset validation view; gallery visitors call the same code.
+export {loadCharacters as loadRiggedCharacterAsset,riggedVisitor as createRiggedCharacter};
