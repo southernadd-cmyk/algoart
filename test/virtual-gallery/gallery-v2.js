@@ -329,24 +329,14 @@ async function travelLift(date,index){
   overlay.classList.toggle('descending',index<current);
   overlay.classList.toggle('ascending',index>current);
   $('liftDestination').textContent='Floor '+(index===0?'G':index)+' · '+readableDate(date);
-  // The lift moves while the next exhibit is fetched, not after a fixed delay.
-  // A new page is still used to release all previous WebGL assets reliably.
-  const started=performance.now();
-  try{
-    const url=new URL('../../gallery/'+date+'/',location.href);
-    const response=await fetch(url,{cache:'no-store'});
-    if(!response.ok)throw new Error('The destination exhibition is unavailable');
-    const studies=readArchive(await response.text(),response.url);
-    if(!studies.length)throw new Error('The destination gallery has no artworks');
-    // Ensure visitors can perceive the doors closing and the floor indicator.
-    await new Promise(resolve=>setTimeout(resolve,Math.max(0,1300-(performance.now()-started))));
+  // Never block navigation on an archive fetch: gallery assets and the 3D
+  // scene are loaded by the destination page. Keep travel time bounded.
+  try {
     sessionStorage.setItem('pp-lift-arrival',date);
-    location.assign('?date='+date);
-  }catch(error){
-    liftTravelling=false;overlay.hidden=true;$('lift').hidden=false;
-    $('liftTravel').hidden=false;
-    $('liftTravel').textContent=error.message+' — choose another floor.';
-  }
+  } catch (_) { /* private browsing can deny session storage */ }
+  window.setTimeout(()=>{
+    location.assign('?date='+encodeURIComponent(date));
+  },1450);
 }
 function renderLiftCalendar(){
   const dates=archiveDates;
@@ -512,9 +502,10 @@ async function load() {
     status.textContent=readableDate(date)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures';
     enter.disabled=false;
     enter.textContent='Enter the gallery';
-    const arrival=sessionStorage.getItem('pp-lift-arrival');
+    let arrival=null;
+    try{arrival=sessionStorage.getItem('pp-lift-arrival');}catch(_){}
     if(arrival===date){
-      sessionStorage.removeItem('pp-lift-arrival');
+      try{sessionStorage.removeItem('pp-lift-arrival');}catch(_){}
       welcome.hidden=true;
       $('liftArrival').hidden=false;
       $('liftArrival').textContent='Doors opening · floor '+(currentFloor===0?'G':currentFloor);
