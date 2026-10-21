@@ -22,6 +22,14 @@ export const MATERIAL_SOURCES=Object.freeze({
     tileMeters:2.3
   })
 });
+// Optional CC0 scans prepared from the uploaded OpenGameArt 50-texture pack.
+// These local files are intentionally optional: existing Poly Haven maps remain
+// as a reliable fallback until the optimised files are published.
+export const LOCAL_TEXTURES=Object.freeze({
+  walls:'./textures/open-game-art/041.jpg',
+  floors:'./textures/open-game-art/028.jpg',
+  stone:'./textures/open-game-art/048.jpg'
+});
 export const FINISHES=Object.freeze(['stone','timber','minimal']);
 function tintScan(image,mode,limit=768){
   const canvas=document.createElement('canvas');
@@ -102,6 +110,8 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   const floor=make('#e1ddd2',.90,2.25);
   const timber=make('#e6daca',.87,2.3);
   const plinth=make('#f6f1e9',.90,1.15);
+  // A quieter secondary floor finish permits stone in selected gallery rooms.
+  const stone=make('#e6e1d8',.92,1.65);
   const stoneBridge=make('#ddd6c8',.88,2.25);
   stoneBridge.side=THREE.DoubleSide;
   const trims=make('#625f58',.66,.8,.15);
@@ -118,7 +128,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   };
   wall.map=tx(fallback.wall);floor.map=tx(fallback.floor);
   timber.map=tx(fallback.timber);plinth.map=tx(fallback.plinth);
-  stoneBridge.map=floor.map;
+  stoneBridge.map=floor.map;stone.map=floor.map;
   const diagnostics={loaded:[],failed:[],lowPower,source:'Poly Haven CC0'};
   function scan(slot,url,mode,targets){
     loader.load(url,imageTexture=>{
@@ -153,6 +163,21 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   scan('wood-color',MATERIAL_SOURCES.timber.diffuse,'timber',[timber]);
   // Plinths share the plaster scan as a distinct, near-white matte finish.
   scan('plinth-color',MATERIAL_SOURCES.walls.diffuse,'plinth',[plinth]);
+  // Local scans override the network-loaded defaults only when successfully
+  // fetched. An absent or blocked optional file never breaks the exhibition.
+  for(const [slot,url,mode,targets] of [
+    ['oga-walls',LOCAL_TEXTURES.walls,'walls',[wall]],
+    ['oga-floors',LOCAL_TEXTURES.floors,'floor',[floor]],
+    ['oga-stone',LOCAL_TEXTURES.stone,'floor',[stone]]
+  ]){
+    loader.load(url,texture=>{
+      try {
+        const next=tx(tintScan(texture.image,mode,lowPower?384:768));
+        for(const target of targets){target.map=next;target.needsUpdate=true;}
+        diagnostics.loaded.push(slot);texture.dispose();
+      }catch(_){diagnostics.failed.push(slot);}
+    },undefined,()=>diagnostics.failed.push(slot));
+  }
   let finish='stone';
   const finishFor=()=>finish;
   const setFinish=next=>{
@@ -160,6 +185,6 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
     finish=next;
     return finish;
   };
-  return {wall,floor,timber,plinth,stoneBridge,trims,diagnostics,
+  return {wall,floor,timber,stone,plinth,stoneBridge,trims,diagnostics,
     setFinish,finishFor,lowPower};
 }
