@@ -130,11 +130,13 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   timber.map=tx(fallback.timber);plinth.map=tx(fallback.plinth);
   stoneBridge.map=floor.map;stone.map=floor.map;
   const diagnostics={loaded:[],failed:[],lowPower,source:'Poly Haven CC0'};
+  const locallyLoaded=new Set();
   function scan(slot,url,mode,targets){
     loader.load(url,imageTexture=>{
       try{
         const next=tx(tintScan(imageTexture.image,mode,lowPower?384:768));
         for(const material of targets) {
+          if(locallyLoaded.has(material))continue;
           material.map=next;material.needsUpdate=true;
         }
         diagnostics.loaded.push(slot);
@@ -173,7 +175,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
     loader.load(url,texture=>{
       try {
         const next=tx(tintScan(texture.image,mode,lowPower?384:768));
-        for(const target of targets){target.map=next;target.needsUpdate=true;}
+        for(const target of targets){target.map=next;target.needsUpdate=true;locallyLoaded.add(target);}
         diagnostics.loaded.push(slot);texture.dispose();
       }catch(_){diagnostics.failed.push(slot);}
     },undefined,()=>diagnostics.failed.push(slot));
