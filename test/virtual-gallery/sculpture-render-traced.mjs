@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import {vectorForStudy} from './vector-bridge.mjs';
 import {selectRecordedPaths,strokeSections,strokeOutline,portraitCoords} from './vector-geometry.mjs';
-import {pigmentGrid,tracePigmentRegions} from './pigment-regions.mjs';
-import {paperRGB,estimatePaper,pigmentOpacity,maskPaper} from './paper-isolation.mjs';
+import {pigmentGrid,tracePigmentRegions} from './pigment-regions.mjs?v=paperless-20261021';
+import {paperRGB,estimatePaper,pigmentOpacity,maskPaper} from './paper-isolation.mjs?v=paperless-20261021';
 import {makeRandom,seedFromString} from './layout-v2.mjs';
 import {
   SCULPTURE_WIDTH as W,SCULPTURE_HEIGHT as H,
