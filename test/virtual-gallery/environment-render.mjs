@@ -5,7 +5,8 @@ import {buildEnvironmentPlan} from './environment-v1.mjs';
 const PALETTES={
   meadow:{horizon:'#cbd5cc',zenith:'#b1c8cf',terrain:['#7c9077','#9eab86','#71856e'],trees:['#536d54','#667b58','#79906b'],stone:['#b2b3a6','#9b9f91']},
   heath:{horizon:'#d4cdbf',zenith:'#b1c6cc',terrain:['#918d73','#b0a785','#7d896f'],trees:['#61705b','#758168','#8e997b'],stone:['#b6aea0','#999b8e']},
-  grove:{horizon:'#cbd5cc',zenith:'#abc7cc',terrain:['#768978','#99a58a','#6e8277'],trees:['#496856','#5f7c62','#849b7c'],stone:['#b5b4ac','#949e97']}
+  grove:{horizon:'#cbd5cc',zenith:'#abc7cc',terrain:['#768978','#99a58a','#6e8277'],trees:['#496856','#5f7c62','#849b7c'],stone:['#b5b4ac','#949e97']},
+  urban:{horizon:'#c9d0d1',zenith:'#b9cbd4',terrain:['#90928b','#a9aaa0','#80837d'],trees:['#5b735f','#72826c','#889383'],stone:['#b1b1a9','#90948e']}
 };
 const noise=(a,b,s)=>Math.sin(a*.27+s)*Math.cos(b*.31-s);
 export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=false}={}){
@@ -123,5 +124,30 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     o.scale.set(.65*p.scale,.28*p.scale,.48*p.scale);
     o.rotation.set(p.variant*.15,p.variant*6,p.variant*.16);
   },p=>stones[p.species%stones.length]);
+  // City blocks are cheap instanced masonry masses rather than a huge imported
+  // scene. Each edition changes street silhouette, positions, and roof treatments.
+  if(plan.buildings?.length){
+    const urbanPalette=['#b8b5ac','#d0c7b9','#9faaa9','#c0b2a5','#d1d1c9'];
+    const masonry=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.94,metalness:0});
+    const body=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),masonry,plan.buildings.length);
+    body.frustumCulled=false;
+    plan.buildings.forEach((p,i)=>{
+      dummy.position.set(p.x,p.y+p.height/2,p.z);
+      dummy.rotation.set(0,0,0);
+      dummy.scale.set(p.width,p.height,p.depth);
+      dummy.updateMatrix();body.setMatrixAt(i,dummy.matrix);
+      body.setColorAt(i,new THREE.Color(urbanPalette[Math.floor(p.variant*urbanPalette.length)]));
+    });
+    body.instanceMatrix.needsUpdate=true;
+    if(body.instanceColor)body.instanceColor.needsUpdate=true;
+    scene.add(body);
+    // A varied crown line avoids the same flat rooftop on every block.
+    const capped=plan.buildings.filter(p=>p.roof);
+    place(capped,new THREE.BoxGeometry(1,1,1),
+      new THREE.MeshLambertMaterial({color:'#787e80'}),(o,p)=>{
+        o.position.set(p.x,p.y+p.height+.23,p.z);
+        o.scale.set(p.width+.25,.46,p.depth+.25);
+      });
+  }
   return plan;
 }
