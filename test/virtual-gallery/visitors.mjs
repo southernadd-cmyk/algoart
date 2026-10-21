@@ -14,15 +14,15 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    // Keep both centre aisles and all door approaches unobstructed.
    const safe=DOOR_WIDTH/2+.15+r;
    const dx=x-room.x,dz=z-room.z;
-   if(Math.abs(dx)<1.1+r&&Math.abs(dz)<1.1+r)return false;
+   if(Math.abs(dx)<1.45+r&&Math.abs(dz)<1.45+r)return false;
    if(room.doors.includes('north')&&dz<0&&Math.abs(dx)<safe)return false;
    if(room.doors.includes('south')&&dz>0&&Math.abs(dx)<safe)return false;
    if(room.doors.includes('west')&&dx<0&&Math.abs(dz)<safe)return false;
    if(room.doors.includes('east')&&dx>0&&Math.abs(dz)<safe)return false;
-   if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+.45&&Math.abs(z-q.z)<q.depth/2+r+.45))return false;
+   if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+1.1&&Math.abs(z-q.z)<q.depth/2+r+1.1))return false;
    return !obstacles.some(q=>near(p,q,r+q.radius+.32));
   };
-  if(roomHangs.length && (room.index%2===1 || roomHangs.length>=2)){
+  if(roomHangs.length && room.index%2===1){
    // Try centre-offset viewing bays on each side; never default to a corner.
    const options=[];
    for(const sx of [-1,1])for(const sz of [-1,1]){
@@ -42,7 +42,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    }
   }
   const candidates=roomHangs.slice().sort((a,b)=>a.studyId-b.studyId);
-  for(const hang of candidates.slice(0,lowPower?1:2)){
+  for(const hang of candidates.slice(0,1)){
    const dx=hang.x-room.x,dz=hang.z-room.z;
    const distance=Math.hypot(dx,dz)||1;
    const x=hang.x-dx/distance*(1.6+rng()*.45);
@@ -183,14 +183,7 @@ export function renderVisitors(THREE,scene,plan){
   }
  // Replace standing figures when the optional validated rigged asset is hosted.
  // Leave seated visitors procedural until proper seated joint angles are tested.
- if(plan.people.some(p=>!p.seat))loadCharacters().then(asset=>{
-  if(!asset||!root.parent)return;
-  const figures=root.children.slice(plan.benches.length,plan.benches.length+plan.people.length);
-  for(let i=0;i<plan.people.length;i++){
-   const p=plan.people[i];if(p.seat)continue;
-   try{const model=riggedVisitor(THREE,asset,p);
-    if(model){root.add(model);figures[i].visible=false;}
-   }catch(_){/* keep safe procedural fallback */}
-  }
- });
+ // Keep the stable procedural figures visible while the rig's authored
+ // rest pose and animation axes are tested separately. The current imported
+ // characters visibly hold their arms out and obstruct exhibits.
 }
