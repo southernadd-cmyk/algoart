@@ -3,7 +3,7 @@ import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
 import { planGalleryHangs } from './hanging-v3.mjs';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
-import { createPortraitSculpture } from './sculpture-render-solid.mjs';
+import { createPortraitSculpture } from './sculpture-render-traced.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 
 const $ = (id) => document.getElementById(id);
