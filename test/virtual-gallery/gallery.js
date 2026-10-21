@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT, PHI } from './layout.mjs';
+import { planGalleryHangs } from './hanging.mjs';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -184,49 +185,53 @@ function loadArtworkTexture(url, material) {
   image.onerror = () => { status.textContent = 'One artwork could not be loaded; other works remain available.'; };
   image.src = url;
 }
-function hangArt(room, study, position, roomIndex) {
-  const left = position % 2 === 0;
-  const sign = left ? -1 : 1;
-  const x = room.x + sign * (room.width / 2 - .24);
-  const biases = {spiral:.035, organic:-.028, burst:.02, network:-.018, geometric:.012, scribble:-.013};
-  const z = room.z0 + room.depth * (.19 + .31 * position + (biases[study.engine] || 0));
-  const portrait = study.portrait;
-  const width = portrait ? 1.77 : 2.82;
-  const height = portrait ? 2.48 : 2.03;
-  const y = room.y + 2.36;
-  const rot = left ? Math.PI / 2 : -Math.PI / 2;
-  const inner = -sign;
-  const surround = new THREE.Mesh(new THREE.PlaneGeometry(width+.20,height+.20),frame);
-  surround.position.set(x - inner * .012,y,z);
-  surround.rotation.y = rot;
+// Phase 1: keep actual archive images, but curate them at distinct sizes and
+// across side walls and available end-wall wings. Gallery planning lives in
+// hanging.mjs so overlap and circulation clearance can be tested without WebGL.
+function hangArt(room, study, hang) {
+  const width = hang.width, height = hang.height;
+  const rotation = hang.surface === 'left' ? Math.PI / 2 :
+    hang.surface === 'right' ? -Math.PI / 2 : Math.PI;
+  const normal = new THREE.Vector3(Math.sin(rotation), 0, Math.cos(rotation));
+  const base = new THREE.Vector3(hang.x, hang.y, hang.z);
+  const surround = new THREE.Mesh(new THREE.BoxGeometry(width + .14, height + .14, .065), frame);
+  surround.position.copy(base);
+  surround.rotation.y = rotation;
   scene.add(surround);
-  const artworkMaterial = new THREE.MeshBasicMaterial({color:'#e6e1d5', side:THREE.DoubleSide});
-  const artwork = new THREE.Mesh(new THREE.PlaneGeometry(width,height), artworkMaterial);
-  artwork.position.set(x + inner * .02, y, z);
-  artwork.rotation.y = rot;
+
+  const artworkMaterial = new THREE.MeshBasicMaterial({color: '#e6e1d5', side: THREE.DoubleSide});
+  const artwork = new THREE.Mesh(new THREE.PlaneGeometry(width, height), artworkMaterial);
+  artwork.position.copy(base).addScaledVector(normal, .038);
+  artwork.rotation.y = rotation;
   artwork.userData.study = study;
   scene.add(artwork);
   artPlanes.push(artwork);
   loadArtworkTexture(study.image, artworkMaterial);
 
+  const labelWidth = Math.min(2.06, Math.max(1.48, width * .73));
   const caption = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.68,.63),
-    new THREE.MeshBasicMaterial({map:labelTexture(study.title, study.seed), side: THREE.DoubleSide})
+    new THREE.PlaneGeometry(labelWidth, labelWidth * 210 / 900),
+    new THREE.MeshBasicMaterial({map: labelTexture(study.title, study.seed), side: THREE.DoubleSide})
   );
-  caption.position.set(x + inner * .026,room.y+.58,z);
-  caption.rotation.y = rot;
+  caption.position.copy(base).addScaledVector(normal, .043);
+  caption.position.y = hang.y - height / 2 - .30;
+  caption.rotation.y = rotation;
   scene.add(caption);
 }
 function constructGallery(layout, studies) {
+  const hangs = planGalleryHangs(layout, studies);
   for (const room of layout.rooms) {
     addRoom(room, room.index, layout.rooms.length);
-    studies.slice(room.artStart,room.artEnd).forEach((study, i) => hangArt(room, study, i, room.index));
+    for (const hanging of hangs.filter(h => studies[h.studyId] && h.roomIndex === room.index)) {
+      hangArt(room, studies[hanging.studyId], hanging);
+    }
   }
-  for (let i=0;i<layout.rooms.length-1;i++) addBridge(layout.rooms[i],layout.rooms[i+1]);
+  for (let i = 0; i < layout.rooms.length - 1; i++) addBridge(layout.rooms[i], layout.rooms[i+1]);
   const base = layout.rooms[0].y > 0 ? -.65 : -1.0;
-  block(250,.45,230,0,base, (layout.rooms.at(-1).z1)/2, new THREE.MeshStandardMaterial({color:'#929d96',roughness:1}));
+  block(250, .45, 230, 0, base, layout.rooms.at(-1).z1 / 2,
+    new THREE.MeshStandardMaterial({color: '#929d96', roughness: 1}));
   const first = layout.rooms[0];
-  rig.position.set(first.x,first.y,first.z0+2.6);
+  rig.position.set(first.x, first.y, first.z0 + 2.6);
 }
 function readArchive(html, url) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
