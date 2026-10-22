@@ -35,6 +35,9 @@ let liftPosition=null;
 let liftWasNear=false;
 let liftTravelling=false;
 let editionObjects=[];
+let deferredGalleryJobs=[];
+let deferredGalleryVersion=0;
+let deferredGalleryRunning=false;
 let liftDoors=[];
 let liftDoorClosure=0;
 let liftDoorTarget=0;
@@ -671,6 +674,24 @@ function onArrivalPath(x,z){
   // Overlap the room footprint slightly to make crossing the threshold continuous.
   return along>=-1.0&&along<=arrival.pathLength+1.5&&across<=arrival.halfWidth;
 }
+// Stage costly exhibits across frames so the exterior is usable immediately.
+function startDeferredGallery(){
+  if(deferredGalleryRunning||!deferredGalleryJobs.length)return;
+  deferredGalleryRunning=true;
+  const version=deferredGalleryVersion;
+  const step=()=>{
+    if(version!==deferredGalleryVersion){deferredGalleryRunning=false;return;}
+    const job=deferredGalleryJobs.shift();
+    if(!job){deferredGalleryRunning=false;updateExhibitLighting();return;}
+    try{
+      const previous=new Set(scene.children);
+      job();
+      for(const object of scene.children)if(!previous.has(object))editionObjects.push(object);
+    }catch(error){console.warn('Deferred gallery asset failed',error);}
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 function constructGallery(layout, studies) {
   const entry=layout.rooms[0];
   // Reserve a complete unoccupied wall for the lift before the curator hangs art.
@@ -689,18 +710,21 @@ function constructGallery(layout, studies) {
   for(const room of layout.rooms){
     addRoom(room,room.index,layout.rooms.length);
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
-      hangArt(room,byId.get(hanging.studyId),hanging);
+      deferredGalleryJobs.push(()=>hangArt(room,byId.get(hanging.studyId),hanging));
     for(const placement of sculptures.filter(p=>p.roomIndex===room.index)){
-      const sculptureLamp=new THREE.Vector3(placement.x,room.y+ROOM_HEIGHT-.42,placement.z);
-      exhibitLight(room,sculptureLamp,new THREE.Vector3(placement.x,room.y+1.22,placement.z),{beam:.47,power:12});
-      createPortraitSculpture({
-        scene,study:byId.get(placement.studyId),placement,quality,labelTexture
+      deferredGalleryJobs.push(()=>{
+        const sculptureLamp=new THREE.Vector3(placement.x,room.y+ROOM_HEIGHT-.42,placement.z);
+        exhibitLight(room,sculptureLamp,new THREE.Vector3(placement.x,room.y+1.22,placement.z),{beam:.47,power:12});
+        createPortraitSculpture({
+          scene,study:byId.get(placement.studyId),placement,quality,labelTexture
+        });
+        artExhibits.push({study:byId.get(placement.studyId),
+          position:new THREE.Vector3(placement.x,placement.y+1.52,placement.z)});
       });
-      artExhibits.push({study:byId.get(placement.studyId),
-        position:new THREE.Vector3(placement.x,placement.y+1.52,placement.z)});
     }
   }
-  renderVisitors(THREE,scene,planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower}));
+  deferredGalleryJobs.push(()=>renderVisitors(THREE,scene,
+    planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower})));
   if(hangs.length+sculptures.length!==studies.length)
     throw new Error('An archived study was omitted from the exhibition');
   for(const hall of layout.corridors)addBridge(hall);
@@ -915,6 +939,7 @@ async function loadEdition(date,{viaLift=false}={}) {
   }
   for(const texture of staleTextures)texture.dispose();
   for(const geometry of staleGeometries)geometry.dispose();
+  deferredGalleryVersion++;deferredGalleryJobs=[];deferredGalleryRunning=false;
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
   exhibitLightTargets.length=0;
   resetInspection();
@@ -926,6 +951,8 @@ async function loadEdition(date,{viaLift=false}={}) {
   constructGallery(plan,studyList);
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object));
+  // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
+  if(viaLift||nextFloor!==0)startDeferredGallery();
   if(!viaLift && nextFloor===0 && arrival){
     rig.position.copy(arrival.start);
     // Face the front doors and the tower on first arrival.
@@ -1070,6 +1097,7 @@ for (const button of document.querySelectorAll('[data-move]')) {
 enter.addEventListener('click',()=>{
   if (!plan) return;
   welcome.hidden=true;
+  startDeferredGallery();
   if (matchMedia('(pointer:fine)').matches) canvas.requestPointerLock?.().catch?.(()=>{});
 });
 $('goDate').addEventListener('click',()=>{
