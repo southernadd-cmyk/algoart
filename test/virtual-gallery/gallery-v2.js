@@ -107,7 +107,8 @@ try {
 }
 
 const galleryFinish=createArchitecturalMaterials(THREE,{
-  lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches
+  lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
+  startAfter:window.__galleryEarly?.tower
 });
 const wall=galleryFinish.wall;
 const floor=galleryFinish.floor;
