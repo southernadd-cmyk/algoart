@@ -22,8 +22,8 @@ export function distanceToArchitecture(layout,x,z){
   return nearest;
 }
 
-export const MIN_BUILDING_CLEARANCE=42; // metres between building footprints and tower/bridges
-export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,protectedLayouts=[],approach=null}={}){
+export const MIN_BUILDING_CLEARANCE=60; // metres between building footprints and tower/bridges
+export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,protectedLayouts=[],approach=null,plaza=null}={}){
   if(!layout?.rooms?.length)throw new Error('An outdoor environment needs rooms');
   const signature=artworkStates.map(s=>(s.seed||'')+':'+(s.engine||'')+':'+(s.material||'')).join('|');
   const seed=seedFromString('PP-SCULPTURE-GARDEN-v1:'+layout.date+':'+signature);
@@ -33,7 +33,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
   const zs=allLayouts.flatMap(p=>p.rooms).map(r=>[r.z-r.depth/2,r.z+r.depth/2]).flat();
   const centerX=(Math.min(...xs)+Math.max(...xs))/2;
   const centerZ=(Math.min(...zs)+Math.max(...zs))/2;
-  const size=Math.max(290,Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))+240);
+  const size=Math.max(350,Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))+300);
   const towerDistance=(x,z)=>Math.min(...allLayouts.map(p=>distanceToArchitecture(p,x,z)));
   const approachDistance=(x,z)=>{
     if(!approach)return Infinity;
@@ -41,6 +41,14 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
     const dx=x-doorway.x,dz=z-doorway.z;
     const along=clamp(dx*outward.x+dz*outward.z,0,pathLength+3);
     return Math.max(0,Math.hypot(dx-outward.x*along,dz-outward.z*along)-halfWidth);
+  };
+  const distanceToPlaza=(x,z)=>{
+    if(!plaza)return Infinity;
+    const dx=x-plaza.centre.x,dz=z-plaza.centre.z;
+    const along=dx*plaza.outward.x+dz*plaza.outward.z;
+    const across=dx*plaza.transverse.x+dz*plaza.transverse.z;
+    return Math.hypot(Math.max(0,Math.abs(along)-plaza.halfDepth),
+      Math.max(0,Math.abs(across)-plaza.halfWidth));
   };
   const theme='urban';
   const phase=random()*Math.PI*2;
@@ -53,7 +61,9 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
     const big=Math.sin(xx*.047+phase)*Math.cos(zz*.038-slope)*2.65;
     const middle=Math.sin(xx*.118-slope)*Math.sin(zz*.093+phase)*.63;
     const detail=Math.sin(xx*.37+phase)*Math.cos(zz*.29+slope)*.12;
-    return baseline+beyond*(.63+big+middle+detail);
+    const natural=baseline+beyond*(.63+big+middle+detail);
+    const blend=smooth((distanceToPlaza(x,z)-1)/11);
+    return plaza?(plaza.level-.33)*(1-blend)+natural*blend:natural;
   };
   const trees=[],shrubs=[],rocks=[];
   const choosePoint=(inner,outer)=>{
@@ -67,6 +77,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
       const p=choosePoint(inner,outer);
       if(Math.abs(p.x-centerX)>size*.45||Math.abs(p.z-centerZ)>size*.45)continue;
       if(Math.min(towerDistance(p.x,p.z),approachDistance(p.x,p.z))<clearance)continue;
+      if(distanceToPlaza(p.x,p.z)<clearance+5)continue;
       if(target.some(q=>Math.hypot(q.x-p.x,q.z-p.z)<minSpacing))continue;
       target.push({...p,y:heightAt(p.x,p.z),scale:.65+random()*.9,species:Math.floor(random()*3),variant:random()});
     }
@@ -87,11 +98,12 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
         const width=5+random()*3.8,depth=5+random()*3.8;
         // A bounding-circle clearance protects every corridor and room.
         const footprintRadius=Math.hypot(width,depth)/2;
-        // Conservative bounding-circle test guarantees at least 18 m of
+        // Conservative bounding-circle test guarantees at least 60 m of
         // separation from *every* dated tower level and its skybridges.
         if(towerDistance(x,z)<footprintRadius+MIN_BUILDING_CLEARANCE)continue;
         // The street-level arrival avenue remains open and visible.
-        if(approachDistance(x,z)<footprintRadius+30)continue;
+        if(approachDistance(x,z)<footprintRadius+42)continue;
+        if(distanceToPlaza(x,z)<footprintRadius+32)continue;
         const height=4+Math.pow(random(),1.6)*23;
         buildings.push({x,z,y:heightAt(x,z),width,depth,height,
           variant:random(),roof:random()>.62?1:0});
@@ -102,5 +114,5 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
     trees:theme==='urban'?trees.slice(0,lowPower?14:28):trees,
     shrubs:theme==='urban'?shrubs.slice(0,lowPower?8:16):shrubs,
     rocks:theme==='urban'?[]:rocks,
-    buildings:buildings.sort((a,b)=>a.variant-b.variant).slice(0,lowPower?65:130),heightAt};
+    buildings:buildings.sort((a,b)=>a.variant-b.variant).slice(0,lowPower?65:130),heightAt,plaza,distanceToPlaza};
 }
