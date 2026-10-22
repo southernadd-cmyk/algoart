@@ -178,6 +178,20 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
      obstacles.push({x:best.x,z:best.z,radius:.45});
    }
  }
+ // The seed still determines the room, pose, clothes and body-type order,
+ // but never produces an all-male or all-female two-person exhibition.
+ // On desktop both standing models differ; on mobile one standing visitor
+ // and one seated visitor differ if the second character is present.
+ const standing=people.filter(person=>!person.seat);
+ if(standing.length>=2){
+   const first=rng()<.5?'male':'female';
+   standing[0].bodyType=first;
+   standing[1].bodyType=first==='male'?'female':'male';
+ }else if(people.length>=2){
+   const first=rng()<.5?'male':'female';
+   people[0].bodyType=first;
+   people[1].bodyType=first==='male'?'female':'male';
+ }
  return {benches,people:people.slice(0,MAX_VISITORS)};
 }
 
