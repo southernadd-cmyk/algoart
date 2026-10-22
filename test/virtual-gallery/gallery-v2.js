@@ -899,28 +899,6 @@ function createGalleryArrival(room){
   arrival={doorway,outward,pathLength,halfWidth:3.25,baseY:room.y,
     start:new THREE.Vector3(start.x,room.y,start.z)};
 }
-// The welcome view is a non-walkable overview: show the complete tower
-// before entering, then restore the visitor to the actual entrance approach.
-function positionWelcomeTowerView(){
-  if(!arrival||currentFloor!==0)return;
-  const towerHeight=(archiveDates.length-1)*FLOOR_SPACING+ROOM_HEIGHT;
-  const centreHeight=towerHeight/2;
-  const distance=Math.max(125,towerHeight*1.35);
-  rig.position.copy(arrival.doorway).addScaledVector(arrival.outward,distance);
-  rig.position.y=arrival.baseY+centreHeight-1.68;
-  yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
-  rig.rotation.y=yaw;pitch=0;camera.rotation.x=0;
-  camera.far=Math.max(camera.far,distance+170);
-  camera.updateProjectionMatrix();
-  // An overview must not disappear into the street-level atmospheric fog.
-  scene.fog.far=Math.max(scene.fog.far,distance+140);
-}
-function positionEntranceVisitor(){
-  if(!arrival||currentFloor!==0)return;
-  rig.position.copy(arrival.start);
-  yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
-  rig.rotation.y=yaw;pitch=-.16;camera.rotation.x=pitch;
-}
 function onArrivalPath(x,z){
   if(!arrival||currentFloor!==0)return false;
   const dx=x-arrival.doorway.x,dz=z-arrival.doorway.z;
@@ -1185,6 +1163,25 @@ function constructGallery(layout, studies) {
   });
   }
   scene.add(tower);
+  // Verify the full exterior tower exists in the scene before exposing Enter.
+  // This reports missing geometry separately from a camera/framing problem.
+  tower.updateMatrixWorld(true);
+  const towerBounds=new THREE.Box3().setFromObject(tower);
+  const expectedTop=(archiveDates.length-1)*FLOOR_SPACING+ROOM_HEIGHT;
+  const actualTop=towerBounds.max.y;
+  const towerSummary={
+    floors:archiveDates.length,
+    method:usingBaked?'prebuilt':'procedural',
+    meshes:(()=>{let n=0;tower.traverse(o=>{if(o.isMesh)n++;});return n;})(),
+    minimumY:Math.round(towerBounds.min.y*10)/10,
+    maximumY:Math.round(actualTop*10)/10,
+    expectedMaximumY:Math.round(expectedTop*10)/10
+  };
+  console.info('[Gallery tower geometry]',towerSummary);
+  if(towerBounds.isEmpty()||actualTop<expectedTop-2){
+    console.error('[Gallery tower geometry] Missing upper floors',towerSummary);
+    status.textContent='Tower geometry incomplete: check console';
+  }
   const first=layout.rooms[0];
   if(currentFloor===0 && first.entranceWall)createGalleryArrival(first);
   addArchiveLift(first);
@@ -1296,8 +1293,9 @@ async function loadEdition(date,{viaLift=false}={}) {
   // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
   if(viaLift||nextFloor!==0)startDeferredGallery();
   if(!viaLift && nextFloor===0 && arrival){
-    // Frame every floor for the welcome view; walking still begins at the door.
-    positionWelcomeTowerView();
+    rig.position.copy(arrival.start);
+    yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
+    rig.rotation.y=yaw;pitch=-.16;camera.rotation.x=pitch;
   }
   if(viaLift&&liftCabinPosition){
     rig.position.copy(liftCabinPosition);
@@ -1453,7 +1451,6 @@ for (const button of document.querySelectorAll('[data-move]')) {
 enter.addEventListener('click',()=>{
   if (!plan) return;
   welcome.hidden=true;
-  positionEntranceVisitor();
   startDeferredGallery();
   if (matchMedia('(pointer:fine)').matches) canvas.requestPointerLock?.().catch?.(()=>{});
 });
