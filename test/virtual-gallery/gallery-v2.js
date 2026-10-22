@@ -899,6 +899,28 @@ function createGalleryArrival(room){
   arrival={doorway,outward,pathLength,halfWidth:3.25,baseY:room.y,
     start:new THREE.Vector3(start.x,room.y,start.z)};
 }
+// The welcome view is a non-walkable overview: show the complete tower
+// before entering, then restore the visitor to the actual entrance approach.
+function positionWelcomeTowerView(){
+  if(!arrival||currentFloor!==0)return;
+  const towerHeight=(archiveDates.length-1)*FLOOR_SPACING+ROOM_HEIGHT;
+  const centreHeight=towerHeight/2;
+  const distance=Math.max(125,towerHeight*1.35);
+  rig.position.copy(arrival.doorway).addScaledVector(arrival.outward,distance);
+  rig.position.y=arrival.baseY+centreHeight-1.68;
+  yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
+  rig.rotation.y=yaw;pitch=0;camera.rotation.x=0;
+  camera.far=Math.max(camera.far,distance+170);
+  camera.updateProjectionMatrix();
+  // An overview must not disappear into the street-level atmospheric fog.
+  scene.fog.far=Math.max(scene.fog.far,distance+140);
+}
+function positionEntranceVisitor(){
+  if(!arrival||currentFloor!==0)return;
+  rig.position.copy(arrival.start);
+  yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
+  rig.rotation.y=yaw;pitch=-.16;camera.rotation.x=pitch;
+}
 function onArrivalPath(x,z){
   if(!arrival||currentFloor!==0)return false;
   const dx=x-arrival.doorway.x,dz=z-arrival.doorway.z;
@@ -1274,10 +1296,8 @@ async function loadEdition(date,{viaLift=false}={}) {
   // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
   if(viaLift||nextFloor!==0)startDeferredGallery();
   if(!viaLift && nextFloor===0 && arrival){
-    rig.position.copy(arrival.start);
-    // Face the front doors and the tower on first arrival.
-    yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
-    rig.rotation.y=yaw;pitch=-.16;camera.rotation.x=pitch;
+    // Frame every floor for the welcome view; walking still begins at the door.
+    positionWelcomeTowerView();
   }
   if(viaLift&&liftCabinPosition){
     rig.position.copy(liftCabinPosition);
@@ -1433,6 +1453,7 @@ for (const button of document.querySelectorAll('[data-move]')) {
 enter.addEventListener('click',()=>{
   if (!plan) return;
   welcome.hidden=true;
+  positionEntranceVisitor();
   startDeferredGallery();
   if (matchMedia('(pointer:fine)').matches) canvas.requestPointerLock?.().catch?.(()=>{});
 });
