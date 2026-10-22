@@ -9,6 +9,7 @@ import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
 import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=seat-height-correction-20261022';
 import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
+import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=glazed-bridges-20261022';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -108,6 +109,7 @@ const join=galleryFinish.trims;
 setSculptureArchitecturalMaterials({plinth:galleryFinish.plinth,metal:galleryFinish.trims});
 const dark = new THREE.MeshStandardMaterial({color: '#393b35', metalness: .16, roughness: .74});
 const bridgeSurface=galleryFinish.stoneBridge;
+const walkwayGlassMaterials=createWalkwayGlassMaterials(THREE,{lowPower:galleryFinish.lowPower});
 const frame = new THREE.MeshStandardMaterial({color: '#34322e', roughness: .85});
 const roofFinish=galleryFinish.plinth;
 const skylightGlass = new THREE.MeshPhysicalMaterial({color:'#d5e1df',metalness:.06,roughness:.22,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false});
@@ -227,20 +229,9 @@ function addBridge(hall) {
   geometry.setIndex([0,2,1,1,2,3]);
   geometry.computeVertexNormals();
   scene.add(new THREE.Mesh(geometry,bridgeSurface));
-  // Open-air links and suspended rails make the changes in floor level visible.
-  for(const side of [-1,1]){
-    const p0=a.clone().addScaledVector(across,side*(w-.13));
-    const p1=b.clone().addScaledVector(across,side*(w-.13));
-    p0.y+=.9;p1.y+=.9;
-    const dir=p1.clone().sub(p0);
-    const rail=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,dir.length(),7),join);
-    rail.position.copy(p0).add(p1).multiplyScalar(.5);
-    rail.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
-    scene.add(rail);
-    for(const p of [p0,p1]){
-      block(.075,.85,.075,p.x,p.y-.4,p.z,dark);
-    }
-  }
+  // Glass sides and roof follow the inclined bridge; both room ends stay open.
+  scene.add(createGlassWalkway(THREE,hall.start,hall.end,DOOR_WIDTH,
+    walkwayGlassMaterials,{lowPower:galleryFinish.lowPower}));
 }
 // Temporary diagnostic for the unexplained entrance overlay.
 // Aim the central reticle at the stripe and press P; identifies the precise mesh.
@@ -1032,14 +1023,10 @@ function constructGallery(layout, studies) {
       deck.rotation.y=Math.atan2(x2-x1,z2-z1);
       deck.rotation.x=Math.atan2(y1-y2,length);
       tower.add(deck);
-      for(const side of [-1,1]){
-        const lateral=side*(DOOR_WIDTH/2-.13);
-        const rail=new THREE.Mesh(new THREE.BoxGeometry(.08,.085,length),join);
-        rail.position.set((x1+x2)/2+Math.cos(deck.rotation.y)*lateral,
-          (y1+y2)/2+.92,(z1+z2)/2-Math.sin(deck.rotation.y)*lateral);
-        rail.rotation.y=deck.rotation.y;rail.rotation.x=deck.rotation.x;
-        tower.add(rail);
-      }
+      // Archived bridges receive the same glazed shell as the current floor.
+      tower.add(createGlassWalkway(THREE,
+        {x:x1,y:y1,z:z1},{x:x2,y:y2,z:z2},DOOR_WIDTH,
+        walkwayGlassMaterials,{lowPower:galleryFinish.lowPower}));
     }
   }
   if(towerInstances){
