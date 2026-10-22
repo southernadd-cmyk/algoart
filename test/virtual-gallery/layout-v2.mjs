@@ -5,9 +5,10 @@ export const PHI = (1 + Math.sqrt(5)) / 2;
 export const INV_PHI = 1 / PHI;
 export const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 export const DOOR_WIDTH = 3.8;
+export const DOOR_HEIGHT = 3.68;
 export const ROOM_HEIGHT = 5.2;
 const CELL = 12.25;
-const CORRIDOR_OVERLAP = 0.72;
+export const CORRIDOR_OVERLAP = 0.72;
 
 export function seedFromString(value) {
   let h = 2166136261;
