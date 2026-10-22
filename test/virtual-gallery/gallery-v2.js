@@ -1215,6 +1215,7 @@ function readableDate(date) {
 }
 async function loadEdition(date,{viaLift=false}={}) {
   if(!renderer)return;
+  const editionStart=performance.now();
   const url = new URL('../../gallery/'+date+'/', location.href);
   // Previous daily editions never change; allow normal browser caching.
   // Today's edition can still be updated by the publishing job.
@@ -1263,7 +1264,9 @@ async function loadEdition(date,{viaLift=false}={}) {
   arrival=null;entranceDoor=null;
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
   camera.far=Math.max(210,elevation+240);camera.updateProjectionMatrix();
+  const constructionStart=performance.now();
   constructGallery(plan,studyList);
+  console.info('[Gallery performance] scene construction',Math.round(performance.now()-constructionStart)+'ms','floors',archiveDates.length,'prebuilt',!!prebuiltTowerMatches(prebuiltTower,archiveDates,towerFloorSignatures));
   // Give the optimised entrance lamps priority over deferred artworks/visitors.
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
@@ -1294,8 +1297,10 @@ async function loadEdition(date,{viaLift=false}={}) {
   $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
   status.textContent=floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
   enter.disabled=false;enter.textContent='Enter the gallery';
+  console.info('[Gallery performance] edition ready',Math.round(performance.now()-editionStart)+'ms',date);
 }
 async function load(){
+  const startupStart=performance.now();
   try{
     // The tower index already lists every published date. Avoid downloading and
     // parsing the gallery landing page on every cold start.
@@ -1317,11 +1322,13 @@ async function load(){
     [towerFloorSignatures,prebuiltTower]=await Promise.all([
       towerIndexPromise,bakedPromise
     ]);
+    console.info('[Gallery performance] tower metadata and geometry fetched',Math.round(performance.now()-startupStart)+'ms','prebuilt',!!prebuiltTower);
     archiveDates=towerFloorSignatures.size
       ?[...towerFloorSignatures.keys()].sort()
       :await loadArchiveDates();
     const qp=new URLSearchParams(location.search).get('date');
     await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates[0]);
+    console.info('[Gallery performance] enter available',Math.round(performance.now()-startupStart)+'ms');
   }catch(e){
     enter.textContent='Gallery unavailable';errorBox.textContent=e.message;
     errorBox.hidden=false;console.error(e);
