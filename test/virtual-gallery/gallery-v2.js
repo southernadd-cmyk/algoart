@@ -216,7 +216,7 @@ function makeRoomLabel(text) {
   c.width = 640; c.height = 110;
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#363b35'; ctx.fillRect(0, 0, c.width, c.height);
-  ctx.font = '42px Georgia'; ctx.fillStyle = '#eee8db'; ctx.textAlign = 'center';
+  ctx.font = '42px "AlgoArt Marker", Georgia, serif'; ctx.fillStyle = '#eee8db'; ctx.textAlign = 'center';
   ctx.fillText(text, 320, 71, 600);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   return new THREE.Mesh(new THREE.PlaneGeometry(2.9, .5), new THREE.MeshBasicMaterial({map:t, side:THREE.DoubleSide}));
@@ -576,8 +576,8 @@ function addArchiveLift(room){
   const g=signCanvas.getContext('2d');
   g.fillStyle='#e9e5dc';g.fillRect(0,0,768,192);
   g.fillStyle='#333b39';g.textAlign='center';
-  g.font='600 52px Georgia, serif';g.fillText('archive lift',384,81);
-  g.font='28px Arial, sans-serif';g.fillText('daily exhibitions',384,139);
+  g.font='52px "AlgoArt Marker", Georgia, serif';g.fillText('ARCHIVE LIFT',384,81);
+  g.font='28px Georgia, serif';g.fillText('daily exhibitions',384,139);
   const signTexture=new THREE.CanvasTexture(signCanvas);
   signTexture.colorSpace=THREE.SRGBColorSpace;
   const heading=new THREE.Mesh(new THREE.PlaneGeometry(2.13,.53),
@@ -1337,7 +1337,6 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     history.replaceState(null,'','?date='+date);
   }
   $('liftMonth').value=date.slice(0,7);
-  $('edition').value=date;
   $('archiveLink').href='../../gallery/'+date+'/';
   $('welcomeArchive').href='../../gallery/'+date+'/';
   const floorName=nextFloor===0?'Ground floor':'Floor '+nextFloor;
@@ -1486,11 +1485,6 @@ enter.addEventListener('click',()=>{
   startDeferredGallery();
   if (matchMedia('(pointer:fine)').matches) canvas.requestPointerLock?.().catch?.(()=>{});
 });
-$('goDate').addEventListener('click',()=>{
-  const date=$('edition').value;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) location.assign('?date='+date);
-});
-$('edition').addEventListener('keydown',e=>{if(e.key==='Enter')$('goDate').click();});
 $('fullscreen').addEventListener('click',()=>{
   if (document.fullscreenElement) document.exitFullscreen();
   else document.documentElement.requestFullscreen?.();
@@ -1634,4 +1628,9 @@ function tick() {
   renderer.render(scene,camera);
 }
 if(renderer)renderer.setAnimationLoop(tick);
-load();
+// Ensure canvas-rendered entrance and lift signs use the actual marker font.
+// The font is local; do not hold startup indefinitely if it cannot load.
+Promise.race([
+  document.fonts.load('42px "AlgoArt Marker"'),
+  new Promise(resolve=>setTimeout(resolve,1600))
+]).catch(error=>console.warn('Marker font fallback:',error)).finally(load);
