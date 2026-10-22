@@ -397,8 +397,8 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
      if(shoulder&&elbow&&hand){
        // Keep elbows slightly forward and wrists above the thighs, rather
        // than allowing the hands to intersect the bench beside the hips.
-       orient(shoulder,elbow,new THREE.Vector3(side==='L'?.24:-.24,-.32,.90));
-       orient(elbow,hand,new THREE.Vector3(0,-.08,.99));
+       orient(shoulder,elbow,new THREE.Vector3(side==='L'?.12:-.12,-.18,.98));
+       orient(elbow,hand,new THREE.Vector3(0,-.35,.94));
      }
      const thigh=matching(side,[/thigh/,/upleg/,/upperleg/]);
      const shin=matching(side,[/shin/,/calf/,/lowerleg/,/^leg/]);
