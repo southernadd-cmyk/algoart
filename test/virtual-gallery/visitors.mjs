@@ -82,7 +82,7 @@ async function loadCharacters(){
  })).catch(error=>{console.warn('Rigged visitors unavailable:',error);return null;});
  return characterAssets;
 }
-function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={}){
+function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seated=false}={}){
  const fail=(stage,detail)=>{throw new Error(person.bodyType+' '+stage+': '+detail);};
  const copy=asset.clone(asset.scene);
  const allMeshes=[],skinned=[];
@@ -153,6 +153,45 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={})
        wristSideDistance:+wristSideDistance.toFixed(3)});
    }
  }
+ // Experimental articulated seated pose on the REAL glTF skeleton.
+ // Targets are expressed in world space, independent of imported bone axes.
+ const seatingMetrics=[];
+ if(seated){
+   const matching=(side,patterns)=>bones.find(b=>{
+     const name=b.name.replace(/_\\d+$/,'').toLowerCase();
+     return patterns.some(pattern=>pattern.test(name)) &&
+       (name.endsWith(side.toLowerCase())||name.endsWith('.'+side.toLowerCase())||
+        name.includes('_'+side.toLowerCase())||name.includes(side.toLowerCase()+'_'));
+   });
+   const orient=(joint,child,target)=>{
+     copy.updateMatrixWorld(true);
+     const from=child.getWorldPosition(new THREE.Vector3())
+       .sub(joint.getWorldPosition(new THREE.Vector3())).normalize();
+     const to=target.clone().normalize();
+     if(from.lengthSq()<.1)throw Error('Degenerate limb vector '+joint.name);
+     const delta=new THREE.Quaternion().setFromUnitVectors(from,to);
+     const parent=joint.parent.getWorldQuaternion(new THREE.Quaternion());
+     const world=joint.getWorldQuaternion(new THREE.Quaternion());
+     joint.quaternion.copy(parent.invert().multiply(delta).multiply(world));
+     copy.updateMatrixWorld(true);
+     const result=child.getWorldPosition(new THREE.Vector3())
+       .sub(joint.getWorldPosition(new THREE.Vector3())).normalize();
+     return result.dot(to);
+   };
+   for(const side of ['L','R']){
+     const thigh=matching(side,[/thigh/,/upleg/,/upperleg/]);
+     const shin=matching(side,[/shin/,/calf/,/lowerleg/,/^leg/]);
+     const foot=matching(side,[/foot/,/ankle/]);
+     if(!thigh||!shin||!foot){
+       fail('seated bone lookup',side+' thigh/shin/foot absent; candidates: '+
+         bones.map(b=>b.name).filter(n=>/thigh|shin|calf|leg|foot/i.test(n)).join(', '));
+     }
+     const hipAccuracy=orient(thigh,shin,new THREE.Vector3(0,-.05,-1));
+     const kneeAccuracy=orient(shin,foot,new THREE.Vector3(0,-1,.12));
+     seatingMetrics.push({side,thigh:thigh.name,shin:shin.name,foot:foot.name,
+       hipAccuracy:+hipAccuracy.toFixed(3),kneeAccuracy:+kneeAccuracy.toFixed(3)});
+   }
+ }
  copy.updateMatrixWorld(true);
  const box=new THREE.Box3().setFromObject(selected,true);
  const size=box.getSize(new THREE.Vector3());
@@ -168,12 +207,12 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={})
  copy.position.set(-centre.x*scale,-box.min.y*scale,-centre.z*scale);
  holder.add(copy);
  holder.userData.galleryRiggedVisitor=true;
- holder.userData.galleryRigPose=!relaxed?'original':raiseRightArm?'arm-raised':'relaxed';
+ holder.userData.galleryRigPose=seated?'seated-test':!relaxed?'original':raiseRightArm?'arm-raised':'relaxed';
  holder.userData.galleryRigMetrics={
     bodyType:person.bodyType,selectedMesh:selected.name,
     sourceSkinnedMeshes:skinned.length,visibleSkinnedMeshes:1,
     originalStaticMeshesHidden:allMeshes.length-1,
-    arms:measures,heightMetres:+(size.y*scale).toFixed(3)
+    arms:measures,seating:seatingMetrics,heightMetres:+(size.y*scale).toFixed(3)
  };
  return holder;
 }
