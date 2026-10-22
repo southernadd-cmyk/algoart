@@ -31,8 +31,12 @@ export function stabiliseMaleTorsoSkinning(scene){
    const x=Math.abs(positions.getX(vertex)-centreX);
    // Restrict changes to the central torso and blend to zero before the
    // shoulder and outer sleeve, preserving arm articulation and silhouette.
-   const protect=clamp((.49-x)/.16)*
-     clamp((y-1.48)/.22)*clamp((2.78-y)/.30);
+   // The original mask only protected the centre 0.49m of the torso.
+   // The male chest extends farther laterally; those uncorrected weights
+   // still collapse when the shoulders rotate from the source T-pose.
+   // Blend out before the actual arm mesh, rather than at the ribcage edge.
+   const protect=clamp((.67-x)/.20)*
+     clamp((y-1.43)/.20)*clamp((2.99-y)/.23);
    if(protect<.001)continue;
    const spine=spineIndices[y<1.86?0:y<2.19?1:y<2.45?2:3];
    const influences=new Map();
