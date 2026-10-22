@@ -690,7 +690,8 @@ function createGalleryArrival(room){
   const edge=side==='north'||side==='south'?room.depth/2:room.width/2;
   const doorway=new THREE.Vector3(room.x,room.y,room.z).addScaledVector(outward,edge);
   const pathLength=26;
-  const material=galleryFinish.stoneBridge;
+  // Paved approach, not the distinct textured bridge material that read as a stripe.
+  const material=galleryFinish.stone;
   const place=(w,h,d,x,y,z,mat=material)=>{
     const g=new THREE.BoxGeometry(w,h,d);
     if(mat.userData?.tileMeters)tiledBoxUvs(g,w,h,d,mat.userData.tileMeters);
