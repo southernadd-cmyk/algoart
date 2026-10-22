@@ -690,16 +690,17 @@ function createGalleryArrival(room){
   const edge=side==='north'||side==='south'?room.depth/2:room.width/2;
   const doorway=new THREE.Vector3(room.x,room.y,room.z).addScaledVector(outward,edge);
   const pathLength=26;
-  // Paved approach, not the distinct textured bridge material that read as a stripe.
+  // The civic plaza spans the whole 26m entrance approach (0–38m from the
+  // doorway). Do not overlay a separate stone slab: it was slightly higher
+  // than the paving and left a conspicuous centre stripe even after the
+  // decorative plaza strip was removed. onArrivalPath still marks the entire
+  // route as walkable, and the plaza itself provides the visible surface.
   const material=galleryFinish.stone;
   const place=(w,h,d,x,y,z,mat=material)=>{
     const g=new THREE.BoxGeometry(w,h,d);
     if(mat.userData?.tileMeters)tiledBoxUvs(g,w,h,d,mat.userData.tileMeters);
     const o=new THREE.Mesh(g,mat);o.position.set(x,y,z);scene.add(o);return o;
   };
-  const midpoint=doorway.clone().addScaledVector(outward,pathLength/2+1);
-  if(Math.abs(outward.z)>0)place(7,.19,pathLength+3,midpoint.x,room.y-.16,midpoint.z);
-  else place(pathLength+3,.19,7,midpoint.x,room.y-.16,midpoint.z);
   // A substantial stone-framed portal with an illuminated gallery name.
   const crown=doorway.clone().addScaledVector(outward,.48);
   const top=room.y+4.35;
