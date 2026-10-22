@@ -618,6 +618,20 @@ function createGalleryArrival(room){
     glass.rotation.y=Math.atan2(outward.x,outward.z);
     scene.add(glass);
   }
+  // Twin grounded planter beds and slender entrance lanterns frame the axis
+  // without occupying the accessible central walking route.
+  const bronze=new THREE.MeshStandardMaterial({color:'#41463f',metalness:.55,roughness:.42});
+  const warm=new THREE.MeshStandardMaterial({color:'#fff2d7',emissive:'#f9d69d',emissiveIntensity:.8,roughness:.3});
+  for(const sideSign of [-1,1]){
+    const bed=doorway.clone().addScaledVector(outward,8).addScaledVector(transverse,sideSign*4.65);
+    place(1.75,.56,1.75,bed.x,room.y+.20,bed.z,galleryFinish.stone);
+    const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.87,1),
+      new THREE.MeshStandardMaterial({color:'#526d55',roughness:1,flatShading:true}));
+    shrub.position.set(bed.x,room.y+1.02,bed.z);scene.add(shrub);
+    const lamp=doorway.clone().addScaledVector(outward,3.2).addScaledVector(transverse,sideSign*3.25);
+    place(.12,2.7,.12,lamp.x,room.y+1.35,lamp.z,bronze);
+    place(.38,.42,.38,lamp.x,room.y+2.87,lamp.z,warm);
+  }
   const start=doorway.clone().addScaledVector(outward,pathLength-2);
   arrival={doorway,outward,pathLength,halfWidth:3.25,baseY:room.y,
     start:new THREE.Vector3(start.x,room.y,start.z)};
@@ -663,9 +677,27 @@ function constructGallery(layout, studies) {
   if(hangs.length+sculptures.length!==studies.length)
     throw new Error('An archived study was omitted from the exhibition');
   for(const hall of layout.corridors)addBridge(hall);
-  // The daily landscape follows this exhibition's date and artwork seed;
-  // it never occupies rooms, walkways or the visitor collision footprint.
-  createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower});
+  // Compute the entire tower footprint before placing any nearby buildings.
+  // Upper-storey projections are protected even where the ground floor is empty.
+  const exteriorFloorPlans=[];
+  for(let level=0;level<archiveDates.length;level++){
+    if(level===currentFloor)continue;
+    const date=archiveDates[level],entries=towerFloorSignatures.get(date);
+    if(!entries?.length)continue;
+    exteriorFloorPlans.push({level,plan:buildLayout(date,entries.length,
+      entries.map(([seed,engine])=>({seed,engine})))});
+  }
+  // The approach clearance is computed from the same front-door geometry.
+  const entryApproach=currentFloor===0&&layout.rooms[0].entranceWall?(()=>{
+    const room=layout.rooms[0],side=room.entranceWall;
+    const outward={x:side==='east'?1:side==='west'?-1:0,
+      z:side==='south'?1:side==='north'?-1:0};
+    const edge=(outward.x?room.width:room.depth)/2;
+    return {doorway:{x:room.x+outward.x*edge,z:room.z+outward.z*edge},
+      outward,pathLength:26,halfWidth:3.5};
+  })():null;
+  createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower,
+    protectedLayouts:exteriorFloorPlans.map(f=>f.plan),approach:entryApproach});
   // Rebuild each archived floor from its *own* daily seed signature.
   // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
   const tower=new THREE.Group();
@@ -681,7 +713,8 @@ function constructGallery(layout, studies) {
     if(level===currentFloor)continue;
     const date=archiveDates[level],entries=towerFloorSignatures.get(date);
     if(!entries?.length)continue; // Missing index data must not invent a layout.
-    const floorPlan=buildLayout(date,entries.length,entries.map(([seed,engine])=>({seed,engine})));
+    const floorPlan=exteriorFloorPlans.find(f=>f.level===level)?.plan;
+    if(!floorPlan)continue;
     const base=level*FLOOR_SPACING;
     for(const room of floorPlan.rooms){
       const y=base+room.y;
