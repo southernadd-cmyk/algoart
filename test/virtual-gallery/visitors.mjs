@@ -179,6 +179,12 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
      return result.dot(to);
    };
    for(const side of ['L','R']){
+     // Bring hands forward to rest near the knees rather than hanging vertically.
+     const shoulder=named('upper_arm.'+side),elbow=named('forearm.'+side),hand=named('hand.'+side);
+     if(shoulder&&elbow&&hand){
+       orient(shoulder,elbow,new THREE.Vector3(side==='L'?.17:-.17,-.85,.47));
+       orient(elbow,hand,new THREE.Vector3(0,-.30,.95));
+     }
      const thigh=matching(side,[/thigh/,/upleg/,/upperleg/]);
      const shin=matching(side,[/shin/,/calf/,/lowerleg/,/^leg/]);
      const foot=matching(side,[/foot/,/ankle/]);
@@ -216,7 +222,7 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
      // Seat top is y=.52, with the pelvis just above it.
      copy.position.y+=(.54-person.y)-pelvis.y;
      // Bring hips forward of the bench backrest and towards seat centre.
-     copy.position.z+=.04-pelvis.z;
+     copy.position.z+=.28-pelvis.z;
    }
  }
  holder.add(copy);
