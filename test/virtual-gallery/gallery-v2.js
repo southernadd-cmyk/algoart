@@ -7,7 +7,7 @@ import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './s
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=hdr-panorama-20261022';
-import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=all-benches-polyhaven-20261022';
+import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=lift-seated-visitors-20261022';
 import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
 
 const $ = (id) => document.getElementById(id);
@@ -190,12 +190,8 @@ function addRoom(room, index, count) {
     block(room.width+.47,.2,.37,room.x,ceiling+.15,z,join);
   for(const x of [room.x-room.width/2,room.x+room.width/2])
     block(.37,.2,room.depth+.47,x,ceiling+.15,room.z,join);
-  // Slightly irregular phi divisions keep the floor a real composition,
-  // rather than leaving a large, featureless rectangle under the paintings.
-  const insetX=room.x+(1/PHI-.5)*room.width*.48;
-  const insetZ=room.z-(1/PHI-.5)*room.depth*.44;
-  block(.023,.02,room.depth-1.15,insetX,room.y+.018,room.z,join);
-  block(room.width-1.15,.02,.023,room.x,room.y+.018,insetZ,join);
+  // Leave the exhibition floor unobstructed; the former raised phi divider
+  // strips looked like stray dark lines across the entrance and galleries.
   // The room fill is deliberately subdued: exhibit fittings provide focus.
   // Ambient and a constant-sized spotlight pool light the occupied rooms.
   // Avoid allocating a separate point light per room.
