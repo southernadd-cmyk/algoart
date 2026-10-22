@@ -8,6 +8,17 @@
 <title>Virtual Gallery — PROPORTION PIECE (test)</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./gallery.css?v=auto-inspect-20261022">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js">
+<script>
+(()=>{
+ const day=new Date().toLocaleDateString('en-CA',{timeZone:'Europe/London'});
+ const early=window.__galleryEarly={day};
+ early.tower=fetch('../../gallery/tower-geometry.bin.gz?schema=2&day='+day,{cache:'no-cache'});
+ early.index=fetch('../../gallery/tower-layouts.json?day='+day,{cache:'no-cache'});
+ early.tower.catch(()=>{});early.index.catch(()=>{});
+})();
+</script>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
 </script>
