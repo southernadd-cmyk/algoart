@@ -884,6 +884,30 @@ function constructGallery(layout, studies) {
   })():null;
   createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower,
     protectedLayouts:exteriorFloorPlans.map(f=>f.plan),approach:entryApproach,plaza:entryPlaza});
+  // Safety invariant: the exterior is a single paved square. No narrow,
+  // longitudinal deck/stripe may overlay the centre of the entrance approach.
+  // This catches both the former 29m approach slab and the 38m centre-strip
+  // variant regardless of which path generated it, but leaves the much wider
+  // 46m plaza slab and regular short paving joints alone.
+  if(entryApproach){
+    const {doorway,outward}=entryApproach,across={x:outward.z,z:-outward.x};
+    const discarded=[];
+    for(const mesh of [...scene.children]){
+      if(!mesh.isMesh||!mesh.geometry?.isBoxGeometry)continue;
+      const bounds=new THREE.Box3().setFromObject(mesh);
+      const dim=bounds.getSize(new THREE.Vector3());
+      const along= Math.abs(outward.x)*dim.x+Math.abs(outward.z)*dim.z;
+      const cross= Math.abs(across.x)*dim.x+Math.abs(across.z)*dim.z;
+      const centre=bounds.getCenter(new THREE.Vector3());
+      const depth=(centre.x-doorway.x)*outward.x+(centre.z-doorway.z)*outward.z;
+      const lateral=Math.abs((centre.x-doorway.x)*across.x+(centre.z-doorway.z)*across.z);
+      if(along>18 && cross>0.7 && cross<9 && depth>0 && depth<38 &&
+         lateral<1.5 && bounds.max.y<groundEntry.y+.3){
+        scene.remove(mesh);discarded.push({along,cross,depth});
+      }
+    }
+    if(discarded.length)console.info('Removed entrance overlay strip',discarded);
+  }
   if(entryPlaza)deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,entryPlaza));
   // Rebuild each archived floor from its *own* daily seed signature.
   // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
