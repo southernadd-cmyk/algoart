@@ -186,12 +186,9 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
       mesh.position.copy(at(along,across,y));square.add(mesh);
       return mesh;
     };
-    // A contrasting centre strip connects the civic square to its gallery doors.
-    const centreMaterial=new THREE.MeshStandardMaterial({color:'#c0baad',roughness:.96});
-    // Slab is deliberately below the pre-existing entrance walkway, which
-    // remains the unobstructed and collision-tested visitor route.
+    // Continuous paving; no raised or contrasting stripe down the entrance.
+    // The separate approach slab maintains the walkable bridge beyond the plaza.
     box(p.halfDepth*2,.16,p.halfWidth*2,0,0,-.17,paving);
-    box(p.halfDepth*2,.012,3.3,0,0,-.077,centreMaterial);
     // Fine architectural joints rather than thousands of individual tiles.
     for(let a=-p.halfDepth+4;a<p.halfDepth;a+=4){
       box(.022,.009,p.halfWidth*2,a,0,-.083,stoneEdge);
