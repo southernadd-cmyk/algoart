@@ -378,14 +378,25 @@ function addArchiveLift(room){
     mesh.rotation.y=Math.atan2(normal.x,normal.z);
     return mesh;
   };
+  // Quiet stone-and-bronze portal with a recessed shadow reveal.
+  const portal=new THREE.MeshStandardMaterial({color:'#dedbd1',roughness:.9});
+  const bronze=new THREE.MeshStandardMaterial({color:'#555750',metalness:.43,roughness:.45});
   part(width,.14,depth,0,.035,0,rubber);
   part(width,.14,depth,0,height,0,brushed);
-  part(width,.15,.12,0,height+.08,depth*.5,metal);
-  part(width, height,.11,0,height*.5,-depth*.5,brushed);
+  part(width,height,.11,0,height*.5,-depth*.5,brushed);
   for(const u of [-1,1]){
     part(.11,height,depth,u*width*.5,height*.5,0,metal);
     part(.055,.07,depth,u*(width*.5-.1),1.04,0,metal);
   }
+  // Surround faces the visitor at the gallery-side threshold.
+  const face=depth*.5+.075;
+  for(const u of [-1,1]){
+    part(.22,3.05,.23,u*(width*.5+.10),1.525,face,portal);
+    part(.038,2.62,.08,u*(width*.5-.015),1.31,face+.135,bronze);
+  }
+  part(width+.48,.24,.28,0,3.05,face,portal);
+  part(width+.12,.045,.13,0,2.82,face+.14,bronze);
+  part(width+.5,.075,.36,0,3.52,face-.06,bronze);
   // Two independently animated sliding leaves.
   liftDoors=[];
   liftDoorClosure=0;liftDoorTarget=0;
@@ -404,11 +415,30 @@ function addArchiveLift(room){
   for(let i=0;i<4;i++)part(.055,.055,.055,width*.5-.115,1.7-i*.19,.1,glass);
   liftCabinPosition=local(0,0,0);
   liftPosition=local(0,0,.12);
-  const heading=new THREE.Mesh(new THREE.PlaneGeometry(1.8,.36),
-    new THREE.MeshBasicMaterial({map:labelTexture('ARCHIVE LIFT','SELECT FLOOR'),side:THREE.DoubleSide}));
-  heading.position.copy(local(0,2.91,depth*.5-.03));
+  // Purpose-made readable signage, centred ABOVE the lintel rather than hidden behind it.
+  const signCanvas=document.createElement('canvas');
+  signCanvas.width=768;signCanvas.height=192;
+  const g=signCanvas.getContext('2d');
+  g.fillStyle='#e9e5dc';g.fillRect(0,0,768,192);
+  g.fillStyle='#333b39';g.textAlign='center';
+  g.font='600 52px Georgia, serif';g.fillText('archive lift',384,81);
+  g.font='28px Arial, sans-serif';g.fillText('daily exhibitions',384,139);
+  const signTexture=new THREE.CanvasTexture(signCanvas);
+  signTexture.colorSpace=THREE.SRGBColorSpace;
+  const heading=new THREE.Mesh(new THREE.PlaneGeometry(2.13,.53),
+    new THREE.MeshBasicMaterial({map:signTexture,side:THREE.DoubleSide}));
+  heading.position.copy(local(0,3.31,face+.17));
   heading.rotation.y=Math.atan2(normal.x,normal.z);
   scene.add(heading);
+  // Simple floor-status display and a small call button beside the portal.
+  const panel=new THREE.Mesh(new THREE.PlaneGeometry(.22,.31),
+    new THREE.MeshBasicMaterial({color:'#303c3d',side:THREE.DoubleSide}));
+  panel.position.copy(local(width*.5+.16,2.08,face+.18));
+  panel.rotation.y=heading.rotation.y;scene.add(panel);
+  const indicator=new THREE.Mesh(new THREE.PlaneGeometry(.10,.10),
+    new THREE.MeshBasicMaterial({color:'#cdd9c1',side:THREE.DoubleSide}));
+  indicator.position.copy(local(width*.5+.16,2.1,face+.19));
+  indicator.rotation.y=heading.rotation.y;scene.add(indicator);
 }
 function setLiftDoors(closed){
   liftDoorTarget=closed?1:0;
