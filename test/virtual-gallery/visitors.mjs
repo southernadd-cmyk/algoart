@@ -97,67 +97,6 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  return {benches,people:people.slice(0,MAX_VISITORS)};
 }
 
-// The male source GLB incorrectly weights much of its chest and waist to
-// upper-arm and forearm bones. Bringing its arms down then caves in the
-// abdomen. Redistribute only *torso-area* arm influence to spine joints,
-// preserving the source geometry, bind pose and normal arm articulation.
-// Apply once to the shared asset before SkeletonUtils clones it.
-function stabiliseMaleTorsoSkinning(scene){
- let male=null;
- scene.traverse(node=>{if(node.isSkinnedMesh&&node.name==='Object_7')male=node;});
- if(!male)return;
- const geometry=male.geometry;
- const position=geometry.getAttribute('position');
- const joints=geometry.getAttribute('skinIndex');
- const weights=geometry.getAttribute('skinWeight');
- const bones=male.skeleton?.bones;
- if(!position||!joints||!weights||!bones?.length)return;
- const armBones=new Set(bones.map((b,i)=>
-   /^(?:upper_arm|forearm)\.[LR](?:_\d+)?$/.test(b.name)?i:-1).filter(i=>i>=0));
- const spineNames=['spine_','spine.001_','spine.002_','spine.003_'];
- const spineBones=spineNames.map(prefix=>bones.findIndex(b=>b.name.startsWith(prefix)));
- if(armBones.size<4||spineBones.some(i=>i<0))return;
- geometry.computeBoundingBox();
- const centreX=(geometry.boundingBox.min.x+geometry.boundingBox.max.x)/2;
- const clamp01=x=>Math.max(0,Math.min(1,x));
- let repaired=0;
- for(let v=0;v<position.count;v++){
-   const x=Math.abs(position.getX(v)-centreX),y=position.getY(v);
-   // Smooth spatial falloff keeps the shoulder and hip seams continuous.
-   const protect=clamp01((.46-x)/.14)*
-     clamp01((y-1.48)/.18)*clamp01((2.78-y)/.24);
-   if(protect<=.001)continue;
-   const trunk=spineBones[y<1.86?0:y<2.19?1:y<2.45?2:3];
-   const influence=new Map();
-   let moved=0;
-   for(let slot=0;slot<4;slot++){
-     const joint=joints.getComponent(v,slot),weight=weights.getComponent(v,slot);
-     if(weight<=0)continue;
-     if(armBones.has(joint)){
-       const safeWeight=weight*protect;
-       moved+=safeWeight;
-       influence.set(joint,(influence.get(joint)||0)+weight-safeWeight);
-       influence.set(trunk,(influence.get(trunk)||0)+safeWeight);
-     }else influence.set(joint,(influence.get(joint)||0)+weight);
-   }
-   if(moved<=.001)continue;
-   const top=[...influence.entries()].filter(([,w])=>w>0)
-     .sort((a,b)=>b[1]-a[1]).slice(0,4);
-   const total=top.reduce((s,[,w])=>s+w,0);
-   if(total<=0)continue;
-   for(let slot=0;slot<4;slot++){
-     joints.setComponent(v,slot,top[slot]?.[0]??0);
-     weights.setComponent(v,slot,(top[slot]?.[1]??0)/total);
-   }
-   repaired++;
- }
- if(repaired){
-   joints.needsUpdate=true;
-   weights.needsUpdate=true;
-   geometry.userData.stabilisedMaleTorsoVertices=repaired;
- }
-}
-
 // Actual male/female rig support for the lzyassoul pack only. The imported
 // glTF renames e.g. upper_armL_91/forearmL_90/handL_151, not upper_arm.L.
 // Loading is lazy and optional so the gallery's cold start never depends on it.
@@ -170,7 +109,6 @@ async function loadCharacters(){
   new GLTFLoader().load('./models/human-male-female-rigged.glb',gltf=>{
     // Every visitor instance reuses the same geometry. Scene swaps must not
     // dispose it, otherwise later lift floors get invisible characters.
-    stabiliseMaleTorsoSkinning(gltf.scene);
     gltf.scene.traverse(node=>{
       if(node.isMesh&&node.geometry)node.geometry.userData.sharedVisitorAsset=true;
     });
