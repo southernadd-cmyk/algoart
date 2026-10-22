@@ -5,14 +5,11 @@ https://hdrmaps.com/freebies/jedlina-zdroj-plac-zdrojowy/
 
 The source is a 10,000 × 5,000 EXR (~466 MB). Do **not** host or fetch that source in the gallery browser. Download separately, inspect the HDRMAPS royalty-free terms, and convert it to equirectangular display-referred JPEGs with exposure and tone mapping.
 
-Place the generated files in this folder:
-
-- `jedlina-zdroj-2k.jpg` — 2048 × 1024, target < 350 KB, mobile and desktop fallback
-- `jedlina-zdroj-4k.jpg` — 4096 × 2048, target < 1.5 MB, desktop
+For the currently supplied 1K EXR (1024 × 512), place the converted **`jedlina-zdroj-1k.jpg`** (approximately 115 KB) in this folder. Do not upscale and claim added detail. A higher resolution EXR may be used to create 2K/4K assets in a later upgrade.
 
 Keep a 2:1 equirectangular image (not a perspective crop). Tone-map highlight detail and save sRGB JPEGs; reject visible seams. Adjust horizon and orientation after previewing against the physical forecourt.
 
-The gallery tries the 4K image on desktop and the 2K image on low-power/mobile devices. If either image is unavailable, it falls back to 2K and finally to the existing procedural sky. The HDR EXR is **not** decoded on the client.
+The gallery requests the 1K JPEG on both desktop and mobile. If the image is unavailable, it keeps the existing procedural sky. The HDR EXR is **not** decoded on the client.
 
 The JPEG is the photographic **background**, not a real distant walkable city. Existing tower, benches, plaza, artworks and visitors remain native 3D geometry.
 
