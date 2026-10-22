@@ -6,7 +6,7 @@ import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } fr
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
-import { createExteriorLandscape } from './environment-render.mjs?v=plaza-axis-fix-20261022';
+import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
 import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=seat-height-correction-20261022';
 import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
 
