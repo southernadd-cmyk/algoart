@@ -11,7 +11,7 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-horizon-feather-20261022';
-import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=waist-skin-v2-20261022';
+import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=measured-waist-v3-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
