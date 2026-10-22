@@ -19,6 +19,7 @@ export function createWalkwayGlassMaterials(THREE,{lowPower=false}={}){
   ctx.putImageData(pixels,0,0);
   const texture=new THREE.CanvasTexture(c);
   texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
   texture.userData.galleryPersistent=true;
   const glass=new THREE.MeshStandardMaterial({
     color:'#dcebea',map:texture,transparent:true,
