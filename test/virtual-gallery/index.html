@@ -7,7 +7,8 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Virtual Gallery — PROPORTION PIECE (test)</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./gallery.css?v=auto-inspect-20261022">
+<link rel="stylesheet" href="./gallery.css?v=marker-signage-20261022">
+<link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js">
 <script>
@@ -22,7 +23,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
 </script>
-<script type="module" src="./gallery-v2.js?v=desktop-detail-restored-20261022"></script>
+<script type="module" src="./gallery-v2.js?v=marker-signage-20261022"></script>
 <script>
 // If the module fails to load (or mobile WebGL never completes startup),
 // provide a useful message instead of leaving the preparation text forever.
@@ -54,9 +55,6 @@ window.addEventListener('load',()=>{
 <header class="topbar">
   <div class="identity"><a href="../../" class="brand">PROPORTION PIECE</a><span class="section-name">Virtual gallery</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
   <div class="top-actions">
-    <label class="date-label" for="edition">Edition</label>
-    <input id="edition" type="date" min="2026-10-05" aria-label="Daily gallery date">
-    <button id="goDate" type="button">Open</button>
     <button id="openLift" type="button">Lift · Floors</button>
     <a id="archiveLink" href="../../gallery/">View 2D gallery</a>
     <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
