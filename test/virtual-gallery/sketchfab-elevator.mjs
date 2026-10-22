@@ -53,13 +53,17 @@ export function fitGameReadyElevator(THREE,source,{origin,rotation,width,height,
   // The supplied doors are in their OPEN position. Translate towards each
   // other to close, leaving all child details attached to the actual leaf.
   // The source pair's centre gap is roughly 0.98m prior to X fitting.
-  const gap=.49;
+  const gap=.49,slide=.35;
   const doors=[left,right];
   for(let i=0;i<doors.length;i++){
     const leaf=doors[i];
-    leaf.userData.open=leaf.position.clone();
+    const direction=i===0?1:-1;
+    // Extend the model's partially opened default pose into the two frame
+    // pockets. At this fitted scale the clear walk-through is ~1.22m.
+    leaf.userData.open=leaf.position.clone().add(
+      new THREE.Vector3(-direction*slide,0,0));
     leaf.userData.closed=leaf.position.clone().add(
-      new THREE.Vector3(i===0?gap:-gap,0,0));
+      new THREE.Vector3(direction*gap,0,0));
     leaf.position.copy(leaf.userData.open).lerp(leaf.userData.closed,closure);
   }
   return {holder,doors};
