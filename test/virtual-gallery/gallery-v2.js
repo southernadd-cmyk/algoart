@@ -136,6 +136,7 @@ function labelTexture(title, seed) {
 }
 
 // Four-sided rooms: each connector creates a genuine portal in its wall.
+let exteriorBrick=null;
 function addWallWithOpening(room, side) {
   const horizontal = side === 'north' || side === 'south';
   const length = horizontal ? room.width : room.depth;
@@ -146,6 +147,13 @@ function addWallWithOpening(room, side) {
   const segment = (len,offset,height=ROOM_HEIGHT,heightY=y) => {
     if(horizontal)block(len,height,w,room.x+offset,heightY,fixed);
     else block(w,height,len,fixed,heightY,room.z+offset);
+    // Brick veneer on the outside face only; inside stays plaster.
+    if(exteriorBrick){
+      const sign=side==='north'||side==='west'?-1:1;
+      const surface=fixed+sign*(w/2+.016);
+      if(horizontal)block(len,height,.026,room.x+offset,heightY,surface,exteriorBrick);
+      else block(.026,height,len,surface,heightY,room.z+offset,exteriorBrick);
+    }
   };
   if(!room.doors.includes(side) && side!==room.liftWall && side!==room.entranceWall) {
     segment(length,0);
@@ -815,7 +823,7 @@ function constructGallery(layout, studies) {
   brickTexture.colorSpace=THREE.SRGBColorSpace;
   brickTexture.wrapS=brickTexture.wrapT=THREE.RepeatWrapping;
   brickTexture.anisotropy=2;
-  const exteriorBrick=new THREE.MeshStandardMaterial({
+  exteriorBrick=new THREE.MeshStandardMaterial({
     map:brickTexture,color:'#f0e8db',roughness:.94,metalness:0
   });
   exteriorBrick.userData.tileMeters=3.2;
