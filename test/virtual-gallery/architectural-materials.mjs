@@ -108,6 +108,31 @@ function fallbackCanvas(mode){
   ctx.putImageData(img,0,0);
   return c;
 }
+function brickFallback(){
+  // A quiet, locally generated running-bond brick remains visible when the
+  // CDN is unavailable. It is replaced by the real 1K Poly Haven scan.
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const g=c.getContext('2d');
+  g.fillStyle='#b2a89b';g.fillRect(0,0,256,256);
+  for(let row=0;row<8;row++){
+    const y=row*32+2,shift=(row%2)*32;
+    for(let column=-1;column<5;column++){
+      const x=column*64+shift+2;
+      const h=((row*197+column*149)^(row*column*31))>>>0;
+      const light=h%5;
+      g.fillStyle=['#c4b7a4','#b6a995','#c2b29c','#aa9f91','#baaa95'][light];
+      g.fillRect(x,y,60,28);
+      g.strokeStyle='rgba(78,67,51,.09)';
+      g.beginPath();g.moveTo(x+2,y+25);g.lineTo(x+58,y+25);g.stroke();
+      for(let k=0;k<9;k++){
+        const px=x+((h+k*37)%58),py=y+((h+k*19)%27);
+        g.fillStyle=k%2?'rgba(65,56,44,.035)':'rgba(255,255,255,.035)';
+        g.fillRect(px,py,2+(k%3),1+(k%2));
+      }
+    }
+  }
+  return c;
+}
 export function tiledBoxUvs(geometry,w,h,d,tileMeters=2.5){
   // BoxGeometry packs six sides in 4-vertex groups (+X,-X,+Y,-Y,+Z,-Z).
   // Tiling in physical metres prevents a 9 m wall from stretching one texel
@@ -167,6 +192,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   timberSmoked.map=tx(tintTimber(fallback.timber,2));
   plinth.map=tx(fallback.plinth);
   stoneBridge.map=floor.map;stone.map=floor.map;
+  exteriorBrick.map=tx(brickFallback());
   const diagnostics={loaded:[],failed:[],lowPower,source:'Poly Haven CC0'};
   const locallyLoaded=new Set();
   function scan(slot,url,mode,targets){
