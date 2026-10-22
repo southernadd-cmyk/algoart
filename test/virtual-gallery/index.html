@@ -32,28 +32,12 @@
   if(enter?.disabled)enter.textContent='Loading gallery scripts…';
   console.info('[Gallery startup] requesting application modules');
   try{
-    // Probe dependencies independently to identify a Chrome-only stalled module.
-    // Each probe is bounded so the diagnostic remains visible if one never settles.
-    const probes=[
-      ['three core', 'three'],
-      ['Three.js VR addon', 'three/addons/webxr/VRButton.js'],
-      ['gallery layout', './layout-v2.mjs'],
-      ['gallery environment', './environment-render.mjs?v=soft-horizon-feather-20261022'],
-      ['gallery visitors', './visitors.mjs?v=arms-forward-v10-20261022']
-    ];
-    for(const [name,url] of probes){
-      console.info('[Gallery startup] checking',name);
-      const result=await Promise.race([
-        import(url).then(()=>({ok:true}),error=>({error})),
-        new Promise(resolve=>setTimeout(()=>resolve({timeout:true}),6000))
-      ]);
-      if(result.timeout)console.warn('[Gallery startup] stalled dependency:',name,url);
-      else if(result.error)console.error('[Gallery startup] failed dependency:',name,url,result.error);
-      else console.info('[Gallery startup] ready:',name);
-    }
+    // Load the app immediately. Serial diagnostic imports were unnecessarily
+    // delaying cold start; a single timed import reports the real bottleneck.
+    const importStarted=performance.now();
     console.info('[Gallery startup] importing gallery application');
-    await import('./gallery-v2.js?v=observable-startup-20261023');
-    console.info('[Gallery startup] application modules evaluated',Math.round(performance.now()-started)+'ms');
+    await import('./gallery-v2.js?v=direct-startup-20261023');
+    console.info('[Gallery startup] application modules evaluated',Math.round(performance.now()-importStarted)+'ms import,',Math.round(performance.now()-started)+'ms total');
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
     window.__galleryStartupError='Module import failed: '+(error?.message||String(error));
