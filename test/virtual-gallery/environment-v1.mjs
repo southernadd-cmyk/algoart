@@ -22,7 +22,7 @@ export function distanceToArchitecture(layout,x,z){
   return nearest;
 }
 
-export const MIN_BUILDING_CLEARANCE=18; // metres between building footprints and tower/bridges
+export const MIN_BUILDING_CLEARANCE=42; // metres between building footprints and tower/bridges
 export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,protectedLayouts=[],approach=null}={}){
   if(!layout?.rooms?.length)throw new Error('An outdoor environment needs rooms');
   const signature=artworkStates.map(s=>(s.seed||'')+':'+(s.engine||'')+':'+(s.material||'')).join('|');
@@ -33,7 +33,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
   const zs=allLayouts.flatMap(p=>p.rooms).map(r=>[r.z-r.depth/2,r.z+r.depth/2]).flat();
   const centerX=(Math.min(...xs)+Math.max(...xs))/2;
   const centerZ=(Math.min(...zs)+Math.max(...zs))/2;
-  const size=Math.max(210,Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))+150);
+  const size=Math.max(290,Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))+240);
   const towerDistance=(x,z)=>Math.min(...allLayouts.map(p=>distanceToArchitecture(p,x,z)));
   const approachDistance=(x,z)=>{
     if(!approach)return Infinity;
@@ -91,7 +91,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
         // separation from *every* dated tower level and its skybridges.
         if(towerDistance(x,z)<footprintRadius+MIN_BUILDING_CLEARANCE)continue;
         // The street-level arrival avenue remains open and visible.
-        if(approachDistance(x,z)<footprintRadius+11)continue;
+        if(approachDistance(x,z)<footprintRadius+30)continue;
         const height=4+Math.pow(random(),1.6)*23;
         buildings.push({x,z,y:heightAt(x,z),width,depth,height,
           variant:random(),roof:random()>.62?1:0});
