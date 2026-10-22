@@ -1,0 +1,63 @@
+name: Mirror gallery release artworks
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/gallery-release-mirror.yml'
+permissions:
+  contents: write
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Mirror images referenced by daily archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          from urllib.parse import urlparse
+          from concurrent.futures import ThreadPoolExecutor,as_completed
+          import subprocess
+          class Images(HTMLParser):
+              def __init__(self):
+                  super().__init__();self.urls=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag=='img':
+                      a=dict(attrs)
+                      if a.get('src'):self.urls.append(a['src'])
+          base='https://github.com/southernadd-cmyk/algoart/releases/download/'
+          jobs=set()
+          for html in Path('gallery').glob('*/index.html'):
+              parser=Images();parser.feed(html.read_text(encoding='utf8'))
+              for url in parser.urls:
+                  if url.startswith(base):
+                      remainder=url[len(base):].split('?')[0]
+                      tag,_,filename=remainder.partition('/')
+                      if tag and filename and '/' not in filename and filename.lower().endswith(('.jpg','.jpeg','.png','.webp')):
+                          jobs.add((tag,filename))
+          target=Path('gallery/release-art');target.mkdir(parents=True,exist_ok=True)
+          missing=[(tag,name) for tag,name in sorted(jobs) if not (target/name).exists()]
+          print(f'Archive release image references: {len(jobs)}; files to mirror: {len(missing)}',flush=True)
+          def download(entry):
+              tag,name=entry
+              p=subprocess.run(['gh','release','download',tag,'--repo','southernadd-cmyk/algoart','--pattern',name,'--dir',str(target),'--clobber'],capture_output=True,text=True)
+              if p.returncode:raise RuntimeError(f'{name}: {p.stderr.strip()}')
+              return name
+          with ThreadPoolExecutor(max_workers=4) as executor:
+              futures=[executor.submit(download,item) for item in missing]
+              for future in as_completed(futures): print('Mirrored',future.result(),flush=True)
+          PY
+      - name: Commit gallery image mirrors
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/release-art/
+          if ! git diff --cached --quiet; then
+            git commit -m "Mirror GitHub Release art for same-origin gallery textures"
+            git push
+          fi
