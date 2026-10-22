@@ -64,7 +64,7 @@ try {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, matchMedia('(pointer:coarse)').matches ? 1.35 : 1.7));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.02;
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType('local-floor');
@@ -97,7 +97,6 @@ function block(w, h, d, x, y, z, material = wall) {
     tiledBoxUvs(geometry,w,h,d,material.userData.tileMeters);
   const mesh=new THREE.Mesh(geometry,material);
   mesh.position.set(x,y,z);
-  mesh.receiveShadow=material===floor||material===timber||material===stone;
   scene.add(mesh);
   return mesh;
 }
@@ -169,9 +168,8 @@ function addRoom(room, index, count) {
   block(.023,.02,room.depth-1.15,insetX,room.y+.018,room.z,join);
   block(room.width-1.15,.02,.023,room.x,room.y+.018,insetZ,join);
   // The room fill is deliberately subdued: exhibit fittings provide focus.
-  const fill=new THREE.PointLight('#fff5ec',2.3,11,2);
-  fill.position.set(room.x,ceiling-.82,room.z);
-  scene.add(fill);
+  // Ambient and a constant-sized spotlight pool light the occupied rooms.
+  // Avoid allocating a separate point light per room.
 
 }
 function makeRoomLabel(text) {
@@ -223,6 +221,8 @@ function loadArtworkTexture(url, material) {
   const image = new Image();
   image.crossOrigin = 'anonymous';
   image.onload = () => {
+    // Edition disposal can race with an image finishing its download.
+    if(material.userData.galleryDisposed)return;
     const maxSize = matchMedia('(pointer:coarse)').matches ? 800 : 1100;
     const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
     const c = document.createElement('canvas');
@@ -236,7 +236,7 @@ function loadArtworkTexture(url, material) {
     material.color.set('#ffffff');
     material.needsUpdate = true;
   };
-  image.onerror = () => { status.textContent = 'One artwork could not be loaded; other works remain available.'; };
+  image.onerror = () => { if(!material.userData.galleryDisposed)console.warn('An archived artwork image failed to load:',url); };
   image.src = url;
 }
 // Stage 2: landscape images occupy walls. Portraits become freestanding
@@ -244,11 +244,33 @@ function loadArtworkTexture(url, material) {
 // Aim a real exhibition spotlight at its individual exhibit, not a generic wall.
 const fittingMaterial=new THREE.MeshStandardMaterial({color:'#484743',metalness:.7,roughness:.32});
 const fittingGeometry=new THREE.CylinderGeometry(.115,.16,.22,10);
+// These resources persist across editions; other edition-owned assets are disposed.
+fittingGeometry.userData.galleryPersistent=true;
+for(const material of [...Object.values(galleryFinish),dark,frame,skylightGlass,fittingMaterial]){
+  if(material?.isMaterial)material.userData.galleryPersistent=true;
+}
+const exhibitLightTargets=[];
+const exhibitSpotPool=Array.from({length:5},()=>{
+  const light=new THREE.SpotLight('#fff6e8',0,9,.42,.76,1.7);
+  scene.add(light,light.target);
+  return light;
+});
+function updateExhibitLighting(){
+  if(!plan)return;
+  const nearest=exhibitLightTargets.slice()
+    .sort((a,b)=>a.position.distanceToSquared(rig.position)-b.position.distanceToSquared(rig.position));
+  for(let i=0;i<exhibitSpotPool.length;i++){
+    const light=exhibitSpotPool[i],fixture=nearest[i];
+    if(!fixture){light.intensity=0;continue;}
+    light.position.copy(fixture.position);
+    light.target.position.copy(fixture.target);
+    light.angle=fixture.beam;
+    light.intensity=fixture.power;
+    light.target.updateMatrixWorld();
+  }
+}
 function exhibitLight(room,position,target,{beam=.38,power=18}={}){
-  const spot=new THREE.SpotLight('#fff6e8',power,8,beam,.76,1.7);
-  spot.position.copy(position);
-  spot.target.position.copy(target);
-  scene.add(spot,spot.target);
+  exhibitLightTargets.push({position:position.clone(),target:target.clone(),beam,power});
   const head=new THREE.Mesh(fittingGeometry,fittingMaterial);
   head.position.copy(position);
   head.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),
@@ -267,7 +289,7 @@ function hangArt(room, study, hang) {
   surround.rotation.y = rotation;
   scene.add(surround);
 
-  const artworkMaterial = new THREE.MeshStandardMaterial({color: '#e6e1d5',roughness:1,metalness:0,side: THREE.DoubleSide,emissive:'#ffffff',emissiveIntensity:.12});
+  const artworkMaterial = new THREE.MeshStandardMaterial({color: '#ffffff',roughness:1,metalness:0,side: THREE.DoubleSide});
   const artwork = new THREE.Mesh(new THREE.PlaneGeometry(width, height), artworkMaterial);
   artwork.position.copy(base).addScaledVector(normal, .038);
   artwork.rotation.y = rotation;
@@ -558,15 +580,39 @@ async function loadEdition(date,{viaLift=false}={}) {
   const elevation=nextFloor*FLOOR_SPACING;
   for(const room of nextPlan.rooms)room.y+=elevation;
   for(const hall of nextPlan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
-  // Snapshot persistent scene content so only this edition gets removed.
-  for(const object of editionObjects){scene.remove(object);object.traverse?.(child=>{if(child.geometry&&!child.geometry.userData?.sharedVisitorAsset)child.geometry.dispose();});}
+  // Dispose *all* edition-owned GPU resources, including artwork maps and
+  // procedural canvas textures, but not materials/geometry shared across floors.
+  const staleGeometries=new Set(),staleMaterials=new Set(),staleTextures=new Set();
+  for(const object of editionObjects){
+    scene.remove(object);
+    object.traverse?.(child=>{
+      child.userData.galleryDisposed=true;
+      if(child.geometry && !child.geometry.userData?.sharedVisitorAsset && !child.geometry.userData?.galleryPersistent)
+        staleGeometries.add(child.geometry);
+      const materials=Array.isArray(child.material)?child.material:[child.material];
+      for(const material of materials){
+        if(material?.isMaterial && !material.userData.galleryPersistent)staleMaterials.add(material);
+      }
+    });
+  }
+  for(const material of staleMaterials){
+    material.userData.galleryDisposed=true;
+    for(const value of Object.values(material)){
+      if(value?.isTexture)staleTextures.add(value);
+    }
+    material.dispose();
+  }
+  for(const texture of staleTextures)texture.dispose();
+  for(const geometry of staleGeometries)geometry.dispose();
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
+  exhibitLightTargets.length=0;
   resetInspection();
   liftPosition=null;liftWasNear=false;liftDoors=[];
   const previous=new Set(scene.children);
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
   camera.far=Math.max(210,elevation+240);camera.updateProjectionMatrix();
   constructGallery(plan,studyList);
+  updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object));
   if(viaLift&&liftCabinPosition){
     rig.position.copy(liftCabinPosition);
@@ -799,7 +845,7 @@ function tick() {
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
   lastFocusCheck+=dt;
-  if(lastFocusCheck>.18){detectArt(lastFocusCheck);drawMap();lastFocusCheck=0;}
+  if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();drawMap();lastFocusCheck=0;}
   renderer.render(scene,camera);
 }
 if(renderer)renderer.setAnimationLoop(tick);
