@@ -214,9 +214,9 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
      const localHips=hips.map(b=>b.getWorldPosition(new THREE.Vector3()));
      const pelvis=localHips[0].add(localHips[1]).multiplyScalar(.5);
      // Seat top is y=.52, with the pelvis just above it.
-     copy.position.y+=.57-pelvis.y*scale;
+     copy.position.y+=(.54-person.y)-pelvis.y;
      // Bring hips forward of the bench backrest and towards seat centre.
-     copy.position.z+=.04-pelvis.z*scale;
+     copy.position.z+=.04-pelvis.z;
    }
  }
  holder.add(copy);
