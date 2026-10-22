@@ -186,15 +186,17 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
       mesh.position.copy(at(along,across,y));square.add(mesh);
       return mesh;
     };
-    // Continuous paving; no raised or contrasting stripe down the entrance.
-    // The separate approach slab maintains the walkable bridge beyond the plaza.
-    box(p.halfDepth*2,.16,p.halfWidth*2,0,0,-.17,paving);
-    // Fine architectural joints rather than thousands of individual tiles.
-    for(let a=-p.halfDepth+4;a<p.halfDepth;a+=4){
-      box(.022,.009,p.halfWidth*2,a,0,-.083,stoneEdge);
+    // The box is rotated to face the entrance: local X is ACROSS the plaza
+    // and local Z is ALONG the approach. Keep the two dimensions in that order.
+    // Swapping them made all paving joints and perimeter edges overlap along
+    // the centreline, producing the long raised stripe in front of the door.
+    box(p.halfWidth*2,.16,p.halfDepth*2,0,0,-.17,paving);
+    // A regular, level paving grid with joints following the correct axes.
+    for(let along=-p.halfDepth+4;along<p.halfDepth;along+=4){
+      box(p.halfWidth*2,.009,.022,along,0,-.083,stoneEdge);
     }
-    for(let a=-p.halfWidth+4;a<p.halfWidth;a+=4){
-      box(p.halfDepth*2,.009,.022,0,a,-.083,stoneEdge);
+    for(let across=-p.halfWidth+4;across<p.halfWidth;across+=4){
+      box(.022,.009,p.halfDepth*2,0,across,-.083,stoneEdge);
     }
     for(const side of [-1,1]){
       // Furnish only the perimeter: clear sightline to the gallery entrance.
@@ -219,7 +221,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
         box(.14,3.8,.14,along,across,1.83,bronze);
         box(.42,.38,.42,along,across,3.91,lampGlass);
       }
-      box(.34,.22,p.halfWidth*2,side*(p.halfDepth-.42),0,-.09,stoneEdge);
+      box(p.halfWidth*2,.22,.34,side*(p.halfDepth-.42),0,-.09,stoneEdge);
     }
     scene.add(square);
   }
