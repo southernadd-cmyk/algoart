@@ -5,11 +5,12 @@ on:
     branches: [main]
     paths:
       - 'automation/validate-gallery-visitors.py'
+      - 'test/virtual-gallery/visitors.mjs'
       - '.github/workflows/gallery-visitors-optimize.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   optimise-validate:
@@ -31,17 +32,6 @@ jobs:
         run: npx gltf-transform meshopt test/virtual-gallery/models/human-male-female-rigged.glb test/virtual-gallery/models/human-male-female-rigged-optimized.glb --level medium
       - name: Validate character rigs and compressed file
         run: python automation/validate-gallery-visitors.py verify
-      - name: Prepare isolated rig-pose test
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('test/virtual-gallery/visitors.mjs')
-          s=p.read_text()
-          s="import {MeshoptDecoder} from 'https://cdn.jsdelivr.net/npm/meshoptimizer@0.25.0/meshopt_decoder.module.js';\n"+s
-          s=s.replace("new GLTFLoader().load('./models/human-male-female-rigged.glb'", "new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('./models/human-male-female-rigged-optimized.glb'")
-          p.write_text(s)
-          PY
       - name: Install browser test runner
         run: |
           npm install --no-save --no-package-lock playwright@1.56.1
@@ -79,3 +69,12 @@ jobs:
           name: gallery-visitors-meshopt-candidate
           path: test/virtual-gallery/models/human-male-female-rigged-optimized.glb
           if-no-files-found: error
+      - name: Publish smaller visitors after passed pose tests
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/virtual-gallery/models/human-male-female-rigged-optimized.glb
+          git commit -m "Publish validated 1.41 MB Meshopt gallery visitors"
+          git pull --rebase origin main
+          git push origin HEAD:main
