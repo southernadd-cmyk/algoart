@@ -1351,11 +1351,12 @@ async function load(){
     // parsing the gallery landing page on every cold start.
     // Retain HTML discovery only as a fallback for an unavailable index.
     // Fetch tower index and prepared geometry together.
-    const cacheDay=new Date().toISOString().slice(0,10);
+    const cacheDay=window.__galleryEarly?.day||new Date().toLocaleDateString('en-CA',{timeZone:'Europe/London'});
     const bakedPromise=loadPrebuiltTower(
-      '../../gallery/tower-geometry.bin.gz?schema=2&day='+cacheDay);
-    const towerIndexPromise=fetchGalleryText(
-      '../../gallery/tower-layouts.json?day='+cacheDay,{timeoutMs:7000})
+      '../../gallery/tower-geometry.bin.gz?schema=2&day='+cacheDay,window.__galleryEarly?.tower);
+    const towerIndexPromise=(window.__galleryEarly?.index
+      ?window.__galleryEarly.index.then(async response=>({ok:response.ok,text:response.ok?await response.text():''}))
+      :fetchGalleryText('../../gallery/tower-layouts.json?day='+cacheDay,{timeoutMs:7000}))
       .then(response=>{
         if(!response.ok)return new Map();
         const data=JSON.parse(response.text);
