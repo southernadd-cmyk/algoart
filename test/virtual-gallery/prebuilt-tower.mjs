@@ -16,7 +16,7 @@ export async function loadPrebuiltTower(url){
    const length=view.getUint32(0,true);
    if(length<2||length>bytes.byteLength-4||length>4_000_000)return null;
    const metadata=JSON.parse(new TextDecoder().decode(new Uint8Array(bytes,4,length)));
-   if(metadata.version!==1||!Array.isArray(metadata.floors))return null;
+   if(metadata.version!==2||!Array.isArray(metadata.floors))return null;
    const dataStart=Math.ceil((4+length)/4)*4;
    return {metadata,bytes,dataStart,geometryCache:new Map()};
  }catch(error){
@@ -26,7 +26,7 @@ export async function loadPrebuiltTower(url){
  }finally{clearTimeout(timeout);}
 }
 export function prebuiltTowerMatches(source,dates,signatures){
- if(!source||source.metadata.days!==dates.length)return false;
+ if(!source||source.metadata.version!==2||source.metadata.days!==dates.length)return false;
  for(let level=0;level<dates.length;level++){
    const floor=source.metadata.floors[level],entries=signatures.get(dates[level]);
    if(!floor||floor.date!==dates[level]||!entries)return false;
