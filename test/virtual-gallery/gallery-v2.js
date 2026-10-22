@@ -688,8 +688,12 @@ function constructGallery(layout, studies) {
       entries.map(([seed,engine])=>({seed,engine})))});
   }
   // The approach clearance is computed from the same front-door geometry.
-  const entryApproach=currentFloor===0&&layout.rooms[0].entranceWall?(()=>{
-    const room=layout.rooms[0],side=room.entranceWall;
+  const groundLayout=currentFloor===0?layout:exteriorFloorPlans.find(f=>f.level===0)?.plan;
+  const groundEntry=groundLayout?.rooms[0];
+  const groundEntrance=groundEntry?.entranceWall||
+    ['south','east','west','north'].find(side=>side!==['north','east','south','west'].find(s=>!groundEntry?.doors.includes(s))&&!groundEntry?.doors.includes(side));
+  const entryApproach=groundEntry&&groundEntrance?(()=>{
+    const room=groundEntry,side=groundEntrance;
     const outward={x:side==='east'?1:side==='west'?-1:0,
       z:side==='south'?1:side==='north'?-1:0};
     const edge=(outward.x?room.width:room.depth)/2;
