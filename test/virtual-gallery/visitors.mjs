@@ -198,6 +198,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
 // Actual male/female rig support for the lzyassoul pack only. The imported
 // glTF renames e.g. upper_armL_91/forearmL_90/handL_151, not upper_arm.L.
 // Loading is lazy and optional so the gallery's cold start never depends on it.
+const rigMode=new URLSearchParams(location.search).get('rig')||'fixed';
 let characterAssets=null;
 async function loadCharacters(){
  if(!characterAssets)characterAssets=Promise.all([
@@ -205,9 +206,11 @@ async function loadCharacters(){
   import('three/addons/utils/SkeletonUtils.js')
  ]).then(([{GLTFLoader},{clone}])=>new Promise((resolve,reject)=>{
   new GLTFLoader().load('./models/human-male-female-rigged.glb',gltf=>{
-    const repair=stabiliseMaleTorsoSkinning(gltf.scene);
-    if(repair.reason)console.warn('Male visitor skin repair skipped:',repair.reason);
-    else console.info('Male visitor skin repaired:',repair.repaired,'vertices');
+    if(rigMode!=='bind'&&rigMode!=='raw'){
+      const repair=stabiliseMaleTorsoSkinning(gltf.scene);
+      if(repair.reason)console.warn('Male visitor skin repair skipped:',repair.reason);
+      else console.info('Male visitor skin repaired:',repair.repaired,'vertices');
+    }else console.info('Rig diagnostic, original skin:',rigMode);
     // Every visitor instance reuses the same geometry. Scene swaps must not
     // dispose it, otherwise later lift floors get invisible characters.
     gltf.scene.traverse(node=>{
@@ -466,7 +469,7 @@ export function renderVisitors(THREE,scene,plan){
          seated.position.add(shift);
          root.add(seated);
        }else{
-         const posed=riggedVisitor(THREE,asset,p);
+         const posed=riggedVisitor(THREE,asset,p,{relaxed:rigMode!=='bind'});
          if(posed){root.add(posed);placeholders.get(p).visible=false;}
        }
      }catch(error){console.warn('Rigged visitor unavailable',p.bodyType,error);}
