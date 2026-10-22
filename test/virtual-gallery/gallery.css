@@ -29,8 +29,8 @@ a{color:inherit}
 .welcome-content>a{font-size:13px;text-decoration-thickness:1px;text-underline-offset:3px}
 .center-reticle{position:fixed;z-index:2;top:50%;left:50%;width:5px;height:5px;border:1px solid rgba(255,255,255,.92);border-radius:50%;background:#252c27;box-shadow:0 0 0 2px rgba(0,0,0,.3);transform:translate(-50%,-50%);pointer-events:none}
 .welcome:not([hidden])~.center-reticle{display:none}
-.info{position:fixed;z-index:6;bottom:28px;left:28px;display:flex;background:var(--glass);width:min(540px,calc(100vw - 56px));box-shadow:0 8px 40px rgba(0,0,0,.17)}
-.info>img{object-fit:contain;background:#eee9dc;width:40%;max-height:240px}
+.info{position:fixed;z-index:6;bottom:78px;left:28px;display:flex;background:var(--glass);width:min(420px,calc(100vw - 56px));box-shadow:0 8px 40px rgba(0,0,0,.17);pointer-events:auto}
+.info>img{object-fit:contain;background:#eee9dc;width:36%;max-height:180px}
 .info-body{padding:23px;position:relative;flex:1}
 .info h2{font-family:Georgia,serif;font-weight:normal;font-size:23px;line-height:1.16;margin:9px 12px 10px 0}
 .info p{font-size:12px;color:#565d57;margin:0 0 19px}
@@ -47,7 +47,7 @@ a{color:inherit}
 @media(max-width:800px){.topbar{align-items:flex-start;gap:8px}.identity{display:block}.section-name{display:block;margin-top:5px;font-size:15px}.top-actions{gap:5px;max-width:75%;}.date-label{display:none}.top-actions button,.top-actions a,.top-actions input{font-size:11px;padding:6px;min-height:32px}.top-actions input{width:120px}.welcome-content{padding:25px}.welcome h1{font-size:clamp(42px,11vw,70px)}.info{left:10px;bottom:140px;width:min(460px,calc(100vw - 20px))}.info-body{padding:13px}.info h2{font-size:18px}}
 @media(max-width:480px){.topbar{padding:10px}.brand{font-size:12px}.section-name{font-size:13px}.top-actions{max-width:67%}#fullscreen{display:none}.top-actions>a{display:none}.welcome p{font-size:14px}.info>img{width:36%}}
 
-.touch-nav #inspectTouch{width:100%;height:auto;border-radius:3px;padding:11px 12px;margin-top:8px;font-size:12px;background:rgba(24,29,26,.86)}
+
 
 /* Real architectural diagram for the non-linear museum. */
 .plan-view{position:fixed;top:88px;right:23px;z-index:3;background:rgba(244,241,233,.91);padding:12px 13px 8px;box-shadow:0 9px 33px rgba(35,43,37,.13);border:1px solid rgba(64,64,54,.16);pointer-events:none;backdrop-filter:blur(8px)}
