@@ -228,10 +228,30 @@ async function loadCharacters(){
  }).catch(error=>{console.warn('Rigged visitors unavailable:',error);return null;});
  return characterAssets;
 }
+const QUATERNIUS_VISITOR_TONES=[0x5f6468,0x7a736b,0x4f5a52,0x6f5d55,0x59636f,0x7b6b5d,0x4d4d52,0x6b7464];
+function quaterniusVisitorTone(person){
+ const seed=Math.abs(Math.round(person.x*31)+Math.round(person.z*37)+Math.round(person.yaw*100)+(person.bodyType==='male'?11:17));
+ return QUATERNIUS_VISITOR_TONES[seed%QUATERNIUS_VISITOR_TONES.length];
+}
 function quaterniusVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seated=false,seatHipHeight=.61}={}){
  const copy=asset.clone(asset[person.bodyType]);
  const bones={};let skinned=0;
- copy.traverse(node=>{if(node.isBone)bones[node.name]=node;if(node.isSkinnedMesh){skinned++;node.frustumCulled=false;node.geometry.userData.sharedVisitorAsset=true;}});
+ // Each character is one uniformly shaded sculpture, without skin/clothing
+ // vertex colours, eye textures, or partial texture maps.
+ const material=new THREE.MeshStandardMaterial({
+  color:quaterniusVisitorTone(person),roughness:.92,metalness:0,
+  vertexColors:false,flatShading:false,side:THREE.DoubleSide
+ });
+ copy.traverse(node=>{
+  if(node.isBone)bones[node.name]=node;
+  if(node.isSkinnedMesh){
+   skinned++;node.frustumCulled=false;
+   node.geometry.userData.sharedVisitorAsset=true;
+   node.material=material;
+  }else if(node.isMesh){
+   node.material=material;
+  }
+ });
  if(!skinned||!bones.upperarm_l||!bones.upperarm_r)throw Error('Quaternius rig incomplete: '+person.bodyType);
  const rotate=(name,axis,deg)=>{const bone=bones[name];if(!bone)return;bone.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(axis==='x'?1:0,axis==='y'?1:0,axis==='z'?1:0),THREE.MathUtils.degToRad(deg)))};
  if(relaxed){rotate('upperarm_l','z',-65);rotate('upperarm_r','z',65);}
