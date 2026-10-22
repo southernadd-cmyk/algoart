@@ -17,12 +17,13 @@ const errorBox = $('error');
 const enter = $('enter');
 const pressed = new Set();
 const touchPressed = new Set();
-const ray = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
 const clock = new THREE.Clock();
-const artPlanes = [];
+const artExhibits = [];
 const sculpturePlacements=[];
-let focused = null;
+let currentInfoExhibit = null;
+let focusCandidate = null;
+let focusDuration = 0;
+let dismissedExhibit = null;
 let lastFocusCheck = 0;
 let yaw = Math.PI, pitch = 0;
 let exhibitDate = null;
@@ -272,7 +273,7 @@ function hangArt(room, study, hang) {
   artwork.rotation.y = rotation;
   artwork.userData.study = study;
   scene.add(artwork);
-  artPlanes.push(artwork);
+  artExhibits.push({study,position:artwork.position.clone(),normal:normal.clone()});
   loadArtworkTexture(study.image, artworkMaterial);
   const lamp=base.clone().addScaledVector(normal,1.35);
   lamp.y=Math.min(room.y+ROOM_HEIGHT-.35,hang.y+height*.66+1.25);
@@ -451,9 +452,10 @@ function constructGallery(layout, studies) {
       const sculptureLamp=new THREE.Vector3(placement.x,room.y+ROOM_HEIGHT-.42,placement.z);
       exhibitLight(room,sculptureLamp,new THREE.Vector3(placement.x,room.y+1.22,placement.z),{beam:.47,power:12});
       createPortraitSculpture({
-        scene,study:byId.get(placement.studyId),placement,quality,labelTexture,
-        onArtworkMesh(mesh){ artPlanes.push(mesh); }
+        scene,study:byId.get(placement.studyId),placement,quality,labelTexture
       });
+      artExhibits.push({study:byId.get(placement.studyId),
+        position:new THREE.Vector3(placement.x,placement.y+1.52,placement.z)});
     }
   }
   renderVisitors(THREE,scene,planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower}));
@@ -558,7 +560,8 @@ async function loadEdition(date,{viaLift=false}={}) {
   for(const hall of nextPlan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
   // Snapshot persistent scene content so only this edition gets removed.
   for(const object of editionObjects){scene.remove(object);object.traverse?.(child=>{if(child.geometry&&!child.geometry.userData?.sharedVisitorAsset)child.geometry.dispose();});}
-  editionObjects=[];artPlanes.length=0;sculpturePlacements.length=0;
+  editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
+  resetInspection();
   liftPosition=null;liftWasNear=false;liftDoors=[];
   const previous=new Set(scene.children);
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
@@ -603,18 +606,29 @@ function resize() {
 }
 window.addEventListener('resize',resize);
 
-function showInfo(study) {
-  if (!study) return;
-  if (document.pointerLockElement) document.exitPointerLock();
-  $('infoImage').src=study.image;
-  $('infoImage').alt=study.title;
-  $('infoTitle').textContent=study.title;
-  $('infoSeed').textContent=study.seed;
-  $('openArt').href=study.href;
+// Information appears when a visitor pauses facing a nearby exhibit.
+// This is not a modal: movement and mouse look continue uninterrupted.
+function resetInspection(){
+  $('info').hidden=true;
+  currentInfoExhibit=null;focusCandidate=null;focusDuration=0;dismissedExhibit=null;
+}
+function showInfo(exhibit){
+  if(!exhibit?.study)return;
+  const study=exhibit.study;
+  if(currentInfoExhibit!==exhibit){
+    $('infoImage').src=study.image;
+    $('infoImage').alt=study.title;
+    $('infoTitle').textContent=study.title;
+    $('infoSeed').textContent=study.seed;
+    $('openArt').href=study.href;
+  }
+  currentInfoExhibit=exhibit;
   $('info').hidden=false;
 }
-$('closeInfo').addEventListener('click',() => $('info').hidden=true);
-$('inspectTouch').addEventListener('click',() => showInfo(focused?.userData.study));
+$('closeInfo').addEventListener('click',()=>{
+  dismissedExhibit=currentInfoExhibit;
+  $('info').hidden=true;
+});
 const moveCodes = new Map([
   ['KeyW','forward'],['ArrowUp','forward'],['KeyS','back'],['ArrowDown','back'],
   ['KeyA','left'],['ArrowLeft','left'],['KeyD','right'],['ArrowRight','right']
@@ -623,10 +637,13 @@ $('openLift').addEventListener('click',openLift);
 $('closeLift').addEventListener('click',()=>{$('lift').hidden=true;});
 $('liftMonth').addEventListener('change',renderLiftCalendar);
 window.addEventListener('keydown',(e)=>{
-  if (['INPUT','BUTTON','TEXTAREA'].includes(document.activeElement?.tagName)) return;
+  if (e.code==='Escape') {
+    if(!$('info').hidden)dismissedExhibit=currentInfoExhibit;
+    $('info').hidden=true;$('lift').hidden=true;
+    return;
+  }
+  if (['INPUT','BUTTON','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
   if (moveCodes.has(e.code)) {e.preventDefault();pressed.add(moveCodes.get(e.code));}
-  if (e.code==='KeyE' && !e.repeat) showInfo(focused?.userData.study);
-  if (e.code==='Escape') {$('info').hidden=true;$('lift').hidden=true;}
 });
 window.addEventListener('keyup',(e)=>{if(moveCodes.has(e.code))pressed.delete(moveCodes.get(e.code));});
 window.addEventListener('blur',()=>pressed.clear());
@@ -636,7 +653,7 @@ window.addEventListener('mousemove',(e)=>{
   pitch=Math.max(-1.35,Math.min(1.35,pitch-e.movementY*.0023));
 });
 canvas.addEventListener('click',()=>{
-  if (welcome.hidden && $('info').hidden && !renderer.xr.isPresenting && matchMedia('(pointer:fine)').matches && document.pointerLockElement!==canvas) canvas.requestPointerLock?.();
+  if (welcome.hidden && !renderer.xr.isPresenting && matchMedia('(pointer:fine)').matches && document.pointerLockElement!==canvas) canvas.requestPointerLock?.().catch?.(()=>{});
 });
 canvas.addEventListener('pointerdown',(e)=>{
   if(e.pointerType!=='touch' || !welcome.hidden) return;
@@ -705,7 +722,7 @@ function drawMap(){
 }
 
 function updateMovement(dt) {
-  if (!plan || !welcome.hidden || !$('info').hidden || !$('lift').hidden || liftTravelling) return;
+  if (!plan || !welcome.hidden || !$('lift').hidden || liftTravelling) return;
   let ahead=Number(pressed.has('forward')||touchPressed.has('forward')) - Number(pressed.has('back')||touchPressed.has('back'));
   let side=Number(pressed.has('right')||touchPressed.has('right')) - Number(pressed.has('left')||touchPressed.has('left'));
   if (renderer.xr.isPresenting) {
@@ -742,14 +759,38 @@ function updateMovement(dt) {
 window.addEventListener('keydown',e=>{if(e.code==='ShiftLeft')pressed.add('ShiftLeft');});
 window.addEventListener('keyup',e=>{if(e.code==='ShiftLeft')pressed.delete('ShiftLeft');});
 
-function detectArt() {
-  if (!plan || !welcome.hidden || !$('lift').hidden || renderer.xr.isPresenting) return;
-  ray.setFromCamera(pointer,camera);
-  const hit=ray.intersectObjects(artPlanes,false).find(x=>x.distance<6.3);
-  focused=hit?.object||null;
-  const text=nearLift()?' · Archive lift':(focused ? ' · E to inspect this drawing' : '');
+function detectArt(elapsed) {
+  if (!plan || !welcome.hidden || !$('lift').hidden || liftTravelling || renderer.xr.isPresenting) {
+    if(!$('info').hidden)resetInspection();
+    return;
+  }
+  const eye=camera.getWorldPosition(new THREE.Vector3());
+  const looking=camera.getWorldDirection(new THREE.Vector3());
+  let selected=null,score=-Infinity;
+  for(const exhibit of artExhibits){
+    const toward=exhibit.position.clone().sub(eye);
+    const horizontal=Math.hypot(toward.x,toward.z);
+    if(horizontal>3.6 || toward.length()>4.1)continue;
+    // Wall works must be approached from inside the room, not through a wall.
+    if(exhibit.normal && eye.clone().sub(exhibit.position).dot(exhibit.normal)<.2)continue;
+    const alignment=looking.dot(toward.normalize());
+    if(alignment<.76)continue;
+    const value=alignment*2-horizontal*.13;
+    if(value>score){selected=exhibit;score=value;}
+  }
+  if(selected!==focusCandidate){focusCandidate=selected;focusDuration=0;}
+  else focusDuration+=elapsed;
+  if(selected && focusDuration>=.36 && selected!==dismissedExhibit && currentInfoExhibit!==selected)
+    showInfo(selected);
+  if(!selected)resetInspection();
+  else if(currentInfoExhibit && currentInfoExhibit!==selected && focusDuration<.36){
+    // Preserve the current label for a moment while looking between works.
+  }else if(selected===dismissedExhibit || (currentInfoExhibit && currentInfoExhibit!==selected)){
+    $('info').hidden=true;
+  }
   const current=footprintAt(plan,rig.position.x,rig.position.z)?.room ?? -1;
-  status.textContent='Floor '+(currentFloor===0?'G':currentFloor)+' · '+readableDate(exhibitDate)+' · '+studyList.length+' works · '+sculpturePlacements.length+' sculptures'+(current>=0?' · Gallery '+(current+1):' · Walkway')+text;
+  const text='Floor '+(currentFloor===0?'G':currentFloor)+(current>=0?' · Gallery '+(current+1):' · Walkway');
+  if(status.textContent!==text)status.textContent=text;
 }
 function tick() {
   if (!renderer) return;
@@ -758,7 +799,7 @@ function tick() {
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
   lastFocusCheck+=dt;
-  if(lastFocusCheck>.18){detectArt();drawMap();lastFocusCheck=0;}
+  if(lastFocusCheck>.18){detectArt(lastFocusCheck);drawMap();lastFocusCheck=0;}
   renderer.render(scene,camera);
 }
 if(renderer)renderer.setAnimationLoop(tick);
