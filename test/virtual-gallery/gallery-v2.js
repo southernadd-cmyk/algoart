@@ -255,6 +255,7 @@ function loadArtworkTexture(url, material) {
   image.decoding='async';
   image.crossOrigin = 'anonymous';
   image.onload = () => {
+    try {
     // Edition disposal can race with an image finishing its download.
     if(material.userData.galleryDisposed)return;
     const maxSize = mobileImages ? 640 : 1100;
@@ -269,6 +270,8 @@ function loadArtworkTexture(url, material) {
     material.map = tex;
     material.color.set('#ffffff');
     material.needsUpdate = true;
+    }catch(error){console.warn('Artwork image decoding failed',url,error);}
+    finally{resolve();}
   };
   let attempts=0;
   image.onerror=()=>{
@@ -277,7 +280,6 @@ function loadArtworkTexture(url, material) {
     console.warn('An archived artwork image failed to load:',url);
     resolve();
   };
-  image.addEventListener('load',resolve,{once:true});
   image.src=url;
   }));
 }
