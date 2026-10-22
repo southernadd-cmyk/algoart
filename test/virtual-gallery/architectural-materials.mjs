@@ -132,6 +132,9 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   const make=(color,roughness,tileMeters,metalness=0)=>{
     const material=new THREE.MeshStandardMaterial({color,roughness,metalness});
     material.userData.tileMeters=tileMeters;
+    // A single material bank survives lift/edition changes. Disposal of
+    // per-edition mesh geometry must not dispose the shared 1K material maps.
+    material.userData.galleryPersistent=true;
     return material;
   };
   const wall=make('#faf4ea',.96,2.7);
