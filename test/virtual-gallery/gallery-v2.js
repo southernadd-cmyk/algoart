@@ -3,7 +3,7 @@ import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
 import { planGalleryHangs } from './hanging-v3.mjs';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
-import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=async-disposal-20261022';
+import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=civic-materials-fix-20261022';
@@ -234,13 +234,30 @@ function addBridge(hall) {
     }
   }
 }
+// Restrict simultaneous downloads/decodes on phones; artwork is never omitted.
+const mobileImages=matchMedia('(pointer:coarse)').matches;
+const artworkQueue=[];
+let artworkActive=0;
+function scheduleArtwork(task){
+  artworkQueue.push(task);
+  const drain=()=>{
+    while(artworkActive<(mobileImages?3:8)&&artworkQueue.length){
+      const next=artworkQueue.shift();
+      artworkActive++;
+      Promise.resolve().then(next).finally(()=>{artworkActive--;drain();});
+    }
+  };
+  drain();
+}
 function loadArtworkTexture(url, material) {
+  scheduleArtwork(()=>new Promise(resolve=>{
   const image = new Image();
+  image.decoding='async';
   image.crossOrigin = 'anonymous';
   image.onload = () => {
     // Edition disposal can race with an image finishing its download.
     if(material.userData.galleryDisposed)return;
-    const maxSize = matchMedia('(pointer:coarse)').matches ? 800 : 1100;
+    const maxSize = mobileImages ? 640 : 1100;
     const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
     const c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -253,8 +270,16 @@ function loadArtworkTexture(url, material) {
     material.color.set('#ffffff');
     material.needsUpdate = true;
   };
-  image.onerror = () => { if(!material.userData.galleryDisposed)console.warn('An archived artwork image failed to load:',url); };
-  image.src = url;
+  let attempts=0;
+  image.onerror=()=>{
+    if(material.userData.galleryDisposed){resolve();return;}
+    if(attempts++<1){image.src=url+(url.includes('?')?'&':'?')+'retry=1';return;}
+    console.warn('An archived artwork image failed to load:',url);
+    resolve();
+  };
+  image.addEventListener('load',resolve,{once:true});
+  image.src=url;
+  }));
 }
 // Stage 2: landscape images occupy walls. Portraits become freestanding
 // layered engine-specific sculptures, with a clear walking route around them.
