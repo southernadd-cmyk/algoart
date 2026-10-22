@@ -428,10 +428,35 @@ function addArchiveLift(room){
   const doorCentre=new THREE.Vector3(room.x,room.y,room.z).addScaledVector(normal,-offset-.18);
   const depth=1.9, width=2.3, height=2.65;
   const origin=doorCentre.clone().addScaledVector(normal,-depth*.5);
-  const metal=new THREE.MeshStandardMaterial({color:'#a2a9aa',metalness:.72,roughness:.34});
-  const brushed=new THREE.MeshStandardMaterial({color:'#c4c8c5',metalness:.64,roughness:.42});
-  const rubber=new THREE.MeshStandardMaterial({color:'#343a38',metalness:.06,roughness:.88});
-  const glass=new THREE.MeshStandardMaterial({color:'#f3f1e4',emissive:'#fff9e5',emissiveIntensity:.55,roughness:.8});
+  // Restrained architectural metalwork. The supplied Sketchfab GLB is under
+  // Free Standard terms, so it is NOT redistributed on public GitHub Pages.
+  // Instead these low-poly panels give the cabin its own distinct finish.
+  const metal=new THREE.MeshStandardMaterial({color:'#6b7675',metalness:.72,roughness:.39});
+  const brushed=new THREE.MeshStandardMaterial({color:'#bdc3c0',metalness:.57,roughness:.49});
+  const rubber=new THREE.MeshStandardMaterial({color:'#303937',metalness:.07,roughness:.88});
+  const glass=new THREE.MeshStandardMaterial({color:'#e9f0e6',emissive:'#f7ffed',emissiveIntensity:.45,roughness:.78});
+  const inset=new THREE.MeshStandardMaterial({color:'#939d9a',metalness:.66,roughness:.47});
+  const seam=new THREE.MeshStandardMaterial({color:'#333d3b',metalness:.29,roughness:.6});
+  // Tiny vertical brushed highlights, generated once per gallery floor.
+  // No downloaded materials, heavy textures or expensive reflective passes.
+  const brushCanvas=document.createElement('canvas');
+  brushCanvas.width=128;brushCanvas.height=128;
+  const brushContext=brushCanvas.getContext('2d');
+  const brushData=brushContext.createImageData(128,128);
+  for(let x=0;x<128;x++)for(let y=0;y<128;y++){
+    const h=((x*1213+y*197)^((x+41)*8309))>>>0;
+    const v=Math.max(214,Math.min(250,
+      Math.round(234+4*Math.sin(x*.22)+3*Math.sin(x*.73)+(h%7)-3)));
+    const i=(y*128+x)*4;
+    brushData.data[i]=v;
+    brushData.data[i+1]=Math.min(255,v+2);
+    brushData.data[i+2]=Math.min(255,v+2);
+    brushData.data[i+3]=255;
+  }
+  brushContext.putImageData(brushData,0,0);
+  const brushTexture=new THREE.CanvasTexture(brushCanvas);
+  brushTexture.colorSpace=THREE.SRGBColorSpace;
+  brushed.map=brushTexture;
   const local=(u,v,w)=>origin.clone().addScaledVector(tangent,u).addScaledVector(normal,w).add(new THREE.Vector3(0,v,0));
   const part=(w,h,d,u,v,z,material)=>{
     const p=local(u,v,z);const mesh=block(w,h,d,p.x,p.y,p.z,material);
@@ -439,8 +464,8 @@ function addArchiveLift(room){
     return mesh;
   };
   // Quiet stone-and-bronze portal with a recessed shadow reveal.
-  const portal=new THREE.MeshStandardMaterial({color:'#dedbd1',roughness:.9});
-  const bronze=new THREE.MeshStandardMaterial({color:'#555750',metalness:.43,roughness:.45});
+  const portal=new THREE.MeshStandardMaterial({color:'#d4d2ca',roughness:.89});
+  const bronze=new THREE.MeshStandardMaterial({color:'#424b47',metalness:.58,roughness:.43});
   part(width,.14,depth,0,.035,0,rubber);
   part(width,.14,depth,0,height,0,brushed);
   part(width,height,.11,0,height*.5,-depth*.5,brushed);
@@ -457,15 +482,33 @@ function addArchiveLift(room){
   part(width+.48,.24,.28,0,3.05,face,portal);
   part(width+.12,.045,.13,0,2.82,face+.14,bronze);
   part(width+.5,.075,.36,0,3.52,face-.06,bronze);
-  // Automatically opening lobby doors. During floor travel the newly built
-  // destination cabin MUST start closed, or the panels pop open mid-ride.
+  // Two distinct, detailed sliding leaves. Keep a single transform per leaf
+  // so every inset, lip and vertical seam travels with its metal door.
+  // Destination-floor doors start CLOSED while the lift is in transit.
   liftDoors=[];
   liftDoorClosure=1;liftDoorTarget=1;
   for(const u of [-1,1]){
-    const leaf=part(.92,2.3,.075,u*.47,1.2,depth*.5-.02,metal);
+    const leaf=new THREE.Group();
+    leaf.name=u<0?'lift-door-left':'lift-door-right';
+    leaf.position.copy(local(u*.47,1.2,depth*.5-.02));
+    leaf.rotation.y=Math.atan2(normal.x,normal.z);
+    const face=(w,h,d,x,y,z,material)=>{
+      const item=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+      item.position.set(x,y,z);
+      leaf.add(item);
+    };
+    face(.92,2.35,.085,0,0,0,brushed);
+    face(.79,2.20,.006,0,.025,.048,inset);
+    // Vertical brushing ribs plus separate top and kick plates.
+    face(.045,2.34,.047,u*.435,0,.055,metal);
+    face(.023,2.31,.053,-u*.445,0,.06,seam);
+    face(.77,.06,.029,0,1.065,.07,metal);
+    face(.77,.15,.029,0,-1.025,.07,metal);
+    face(.018,1.83,.017,u*.30,.055,.057,brushed);
+    // Machine profile: no handles, since these are sensor-operated sliders.
     leaf.userData.closed=leaf.position.clone();
     leaf.userData.open=leaf.position.clone().addScaledVector(tangent,u*.91);
-    leaf.position.copy(leaf.userData.closed);
+    scene.add(leaf);
     liftDoors.push(leaf);
   }
   part(.85,.065,.58,0,height-.11,0,glass);
