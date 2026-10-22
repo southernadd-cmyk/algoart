@@ -3,9 +3,9 @@
 // Safe default: the existing procedurally coloured sky stays until image load.
 let cached = new Map();
 export function loadSquarePanorama(THREE,scene,{sky,clouds,lowPower=false}={}){
-  // The currently supplied source is 1K: do not request nonexistent 2K/4K assets.
-  const path='./assets/day-environment-hdri-101-1k.jpg';
-  const backup=path;
+  // The supplied higher-resolution image is native 2K; retain 1K as fallback.
+  const path='./assets/day-environment-hdri-101-2k.jpg';
+  const backup='./assets/day-environment-hdri-101-1k.jpg';
   const use=(texture)=>{
     // Level swaps recreate the environment: do not mutate an old scene.
     if(!sky?.parent || sky.parent!==scene)return;
