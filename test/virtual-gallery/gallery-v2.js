@@ -878,8 +878,18 @@ function constructGallery(layout, studies) {
   const windowGlass=new THREE.MeshStandardMaterial({color:'#839ba1',metalness:.34,roughness:.19,side:THREE.DoubleSide});
   const tintedGlass=new THREE.MeshStandardMaterial({color:'#536d75',metalness:.27,roughness:.25,side:THREE.DoubleSide});
   const exteriorMetal=new THREE.MeshStandardMaterial({color:'#454c49',metalness:.55,roughness:.4});
+  // Mobile GPUs cannot render thousands of independent draw calls from the
+  // archived tower. Batch equal-material boxes into instanced meshes while
+  // preserving every floor's own rooms, window apertures, trims and bridges.
+  // The current exhibition floor still uses its full-quality geometry.
+  const towerInstances=galleryFinish.lowPower?new Map():null;
   const put=(w,h,d,x,y,z,material=wall)=>{
     if(w<=0||h<=0||d<=0)return;
+    if(towerInstances){
+      if(!towerInstances.has(material))towerInstances.set(material,[]);
+      towerInstances.get(material).push([w,h,d,x,y,z]);
+      return;
+    }
     const geometry=new THREE.BoxGeometry(w,h,d);
     if(material.userData?.tileMeters)tiledBoxUvs(geometry,w,h,d,material.userData.tileMeters);
     const mesh=new THREE.Mesh(geometry,material);
@@ -970,6 +980,23 @@ function constructGallery(layout, studies) {
         rail.rotation.y=deck.rotation.y;rail.rotation.x=deck.rotation.x;
         tower.add(rail);
       }
+    }
+  }
+  if(towerInstances){
+    const cube=new THREE.BoxGeometry(1,1,1);
+    const transform=new THREE.Object3D();
+    for(const [material,boxes] of towerInstances){
+      const batch=new THREE.InstancedMesh(cube,material,boxes.length);
+      for(let i=0;i<boxes.length;i++){
+        const [w,h,d,x,y,z]=boxes[i];
+        transform.position.set(x,y,z);
+        transform.scale.set(w,h,d);
+        transform.updateMatrix();
+        batch.setMatrixAt(i,transform.matrix);
+      }
+      batch.instanceMatrix.needsUpdate=true;
+      batch.computeBoundingSphere();
+      tower.add(batch);
     }
   }
   scene.add(tower);
