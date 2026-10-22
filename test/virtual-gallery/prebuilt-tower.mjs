@@ -2,9 +2,12 @@
 // GitHub Actions publishing job. A missing/old file is not an error: the
 // runtime falls back to the previous tested procedural tower constructor.
 export async function loadPrebuiltTower(url){
+ // A slow or missing optional asset must never hold the welcome screen open.
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),3500);
  try{
    if(typeof DecompressionStream!=='function')return null;
-   const response=await fetch(url,{cache:'force-cache'});
+   const response=await fetch(url,{cache:'force-cache',signal:controller.signal});
    if(!response.ok||!response.body)return null;
    const bytes=await new Response(response.body.pipeThrough(new DecompressionStream('gzip')))
      .arrayBuffer();
@@ -17,9 +20,10 @@ export async function loadPrebuiltTower(url){
    const dataStart=Math.ceil((4+length)/4)*4;
    return {metadata,bytes,dataStart,geometryCache:new Map()};
  }catch(error){
-   console.warn('Using procedural tower fallback; prebuilt archive unavailable:',error);
+   if(error?.name!=='AbortError')
+     console.warn('Using procedural tower fallback; prebuilt archive unavailable:',error);
    return null;
- }
+ }finally{clearTimeout(timeout);}
 }
 export function prebuiltTowerMatches(source,dates,signatures){
  if(!source||source.metadata.days!==dates.length)return false;
