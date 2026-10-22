@@ -4,7 +4,7 @@ import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGH
 import { planGalleryHangs } from './hanging-v3.mjs';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
-import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
+import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=gallery-surface-upgrade-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
 import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=artwork-facing-benches-20261022';
@@ -174,9 +174,9 @@ function addWallWithOpening(room, side) {
 
 function addRoom(room, index, count) {
   const ceiling=room.y+ROOM_HEIGHT;
-  // One timber chamber in larger editions adds material rhythm while the
-  // rest remain neutral and focused on the artwork.
-  const surface=(count>=4&&index%5===2)?timber:(count>=5&&index%5===4)?stone:floor;
+  // Deterministic material rhythm without altering the exhibition layout.
+  // Photographic wood varies between three low-contrast tones by room seed.
+  const surface=galleryFinish.floorForRoom(exhibitDate,index,count);
   block(room.width+.42,.36,room.depth+.42,room.x,room.y-.22,room.z,surface);
   for(const side of ['north','south','east','west'])addWallWithOpening(room,side);
   const roofStrip=(room.width-3.5)/2;
@@ -811,30 +811,8 @@ function constructGallery(layout, studies) {
   const byId=new Map(studies.map(study=>[study.id,study]));
   const quality=matchMedia('(pointer:coarse)').matches?'mobile':'desktop';
   // Lightweight, locally generated buff brick: no network texture request.
-  const brickCanvas=document.createElement('canvas');
-  brickCanvas.width=512;brickCanvas.height=512;
-  const bc=brickCanvas.getContext('2d');
-  bc.fillStyle='#b6ad99';bc.fillRect(0,0,512,512);
-  for(let row=0;row<16;row++){
-    const top=row*32+2,offset=(row%2)*32;
-    for(let col=-1;col<9;col++){
-      const x=col*64+offset+2;
-      const hash=((row*127+col*61+301)^((row+11)*(col+19)*17))>>>0;
-      const light=hash%5;
-      bc.fillStyle=['#ad9b80','#baa88b','#c3b396','#a89a83','#b5a78f'][light];
-      bc.fillRect(x,top,60,28);
-      bc.fillStyle='rgba(255,255,255,.075)';bc.fillRect(x+2,top+2,56,2);
-      bc.fillStyle='rgba(65,59,47,.05)';bc.fillRect(x,top+25,60,3);
-    }
-  }
-  const brickTexture=new THREE.CanvasTexture(brickCanvas);
-  brickTexture.colorSpace=THREE.SRGBColorSpace;
-  brickTexture.wrapS=brickTexture.wrapT=THREE.RepeatWrapping;
-  brickTexture.anisotropy=2;
-  exteriorBrick=new THREE.MeshStandardMaterial({
-    map:brickTexture,color:'#f0e8db',roughness:.94,metalness:0
-  });
-  exteriorBrick.userData.tileMeters=3.2;
+  // Shared CC0 1K scan: reuse the existing material across all wall faces.
+  exteriorBrick=galleryFinish.exteriorBrick;
   for(const room of layout.rooms){
     addRoom(room,room.index,layout.rooms.length);
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
@@ -1018,7 +996,7 @@ function constructGallery(layout, studies) {
       const x1=hall.start.x,x2=hall.end.x,z1=hall.start.z,z2=hall.end.z;
       const y1=base+hall.start.y,y2=base+hall.end.y;
       const length=Math.hypot(x2-x1,z2-z1);
-      const deck=new THREE.Mesh(new THREE.BoxGeometry(DOOR_WIDTH,.2,length),bridgeSurface);
+      const deck=new THREE.Mesh(tiledBoxUvs(new THREE.BoxGeometry(DOOR_WIDTH,.2,length),DOOR_WIDTH,.2,length,bridgeSurface.userData.tileMeters),bridgeSurface);
       deck.position.set((x1+x2)/2,(y1+y2)/2-.07,(z1+z2)/2);
       deck.rotation.y=Math.atan2(x2-x1,z2-z1);
       deck.rotation.x=Math.atan2(y1-y2,length);
