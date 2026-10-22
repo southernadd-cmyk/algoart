@@ -1,0 +1,55 @@
+name: Install CC0 virtual gallery lighting assets
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'automation/install-gallery-lighting-assets.py'
+      - '.github/workflows/gallery-lighting-assets.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: gallery-lighting-assets
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Install Pillow
+        run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
+      - name: Retrieve and validate public domain model and texture
+        run: python3 automation/install-gallery-lighting-assets.py
+      - name: Check model and texture file outputs
+        run: |
+          test -s test/virtual-gallery/models/twin-surface-spotlight.glb
+          test -s test/virtual-gallery/textures/OfficeCeiling001_Color.jpg
+          test -s test/virtual-gallery/textures/OfficeCeiling001_NormalGL.jpg
+          test -s test/virtual-gallery/textures/OfficeCeiling001_Roughness.jpg
+      - name: Commit gallery assets
+        id: publish
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/virtual-gallery/models/twin-surface-spotlight.glb test/virtual-gallery/textures/OfficeCeiling001_*.jpg
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Publish CC0 gallery spotlights and ceiling maps"
+            git pull --rebase origin main
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Deploy Pages with installed assets
+        if: steps.publish.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
