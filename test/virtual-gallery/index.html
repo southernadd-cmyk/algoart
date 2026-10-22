@@ -23,10 +23,34 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
 </script>
-<script type="module" src="./gallery-v2.js?v=marker-signage-20261022"></script>
+<script type="module" src="./gallery-v2.js?v=chrome-startup-diagnostics-20261023"></script>
 <script>
 // If the module fails to load (or mobile WebGL never completes startup),
 // provide a useful message instead of leaving the preparation text forever.
+// Capture module/CDN failures even if the window load event never fires.
+window.__galleryStartupError='';
+window.addEventListener('error',event=>{
+  const resource=event.target?.src||event.target?.href;
+  window.__galleryStartupError=resource
+    ?'Could not load: '+resource
+    :'JavaScript error: '+(event.message||'unknown error');
+},true);
+window.addEventListener('unhandledrejection',event=>{
+  window.__galleryStartupError='Startup promise failed: '+(event.reason?.message||String(event.reason));
+});
+document.addEventListener('DOMContentLoaded',()=>{
+  const enter=document.getElementById('enter');
+  const diagnostic=document.getElementById('error');
+  const started=performance.now();
+  const watchdog=setInterval(()=>{
+    if(!enter?.disabled){clearInterval(watchdog);return;}
+    if(performance.now()-started<12000)return;
+    const stage=enter.textContent;
+    diagnostic.textContent='Chrome loading diagnosis — '+stage+'. '+(window.__galleryStartupError||'No JavaScript error captured. Check Console for [Gallery startup] messages.');
+    diagnostic.hidden=false;
+    clearInterval(watchdog);
+  },1000);
+});
 window.addEventListener('load',()=>{
   const enter=document.getElementById('enter');
   const error=document.getElementById('error');
