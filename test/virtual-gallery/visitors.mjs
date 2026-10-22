@@ -27,23 +27,57 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+1.1&&Math.abs(z-q.z)<q.depth/2+r+1.1))return false;
    return !obstacles.some(q=>near(p,q,r+q.radius+.32));
   };
-  if((layout.rooms.length>=3&&room.index>0) && roomHangs.length && benches.length<MAX_BENCHES){
-   // Try centre-offset viewing bays on each side; never default to a corner.
-   const options=[];
-   for(const sx of [-1,1])for(const sz of [-1,1]){
-    options.push({x:room.x+sx*(room.width/2-1.8),z:room.z+sz*1.55,rotation:Math.PI/2});
-    options.push({x:room.x+sx*1.55,z:room.z+sz*(room.depth/2-1.8),rotation:0});
-   }
-   const first=Math.floor(rng()*options.length);
-   for(let i=0;i<options.length;i++){
-    const b=options[(i+first)%options.length];
-    if(clear(b.x,b.z,.45)){
-     benches.push({...b,y:room.y,roomIndex:room.index});
-     obstacles.push({...b,radius:1.15});
-     if(people.length<MAX_VISITORS && rng()>.8)people.push({x:b.x,z:b.z,y:room.y,yaw:b.rotation,roomIndex:room.index,
-      variant:Math.floor(rng()*5),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.13,pose:4,seat:true});
-     break;
+  if(layout.rooms.length>=3&&room.index>0 && roomHangs.length && benches.length<MAX_BENCHES){
+   // Viewing benches are curated around actual hanging artworks, not placed
+   // at arbitrary room corners. Prefer a substantial focal/hero piece.
+   const curated=roomHangs.slice().sort((a,b)=>
+     Number(b.role==='hero')-Number(a.role==='hero') ||
+     b.width-a.width || a.studyId-b.studyId);
+   const inward={
+     north:{x:0,z:1},south:{x:0,z:-1},
+     east:{x:-1,z:0},west:{x:1,z:0}
+   };
+   let chosen=null;
+   for(const art of curated){
+    const normal=inward[art.surface];
+    if(!normal)continue;
+    const lateral={x:-normal.z,z:normal.x};
+    // Preserve a direct view of the target, rather than looking through a
+    // freestanding sculpture. Sample the centre of the sightline in plan.
+    const visible=(x,z)=>{
+     for(let t=.2;t<.9;t+=.12){
+      const qx=x+(art.x-x)*t,qz=z+(art.z-z)*t;
+      if(roomSculptures.some(p=>Math.abs(qx-p.x)<p.width/2+.35&&
+          Math.abs(qz-p.z)<p.depth/2+.35))return false;
+     }
+     return true;
+    };
+    // 1.75–2.7 m viewing distance; small offsets allow artwork on a portal
+    // wing to be seen without obstructing the central through-route.
+    for(const distance of [2.1,1.8,2.45,2.7,1.65]){
+     for(const offset of [0,-.45,.45,-.85,.85]){
+      const x=art.x+normal.x*distance+lateral.x*offset;
+      const z=art.z+normal.z*distance+lateral.z*offset;
+      if(!clear(x,z,.70)||!visible(x,z))continue;
+      const dx=art.x-x,dz=art.z-z;
+      // At most ~25 degrees from a square-on view of the painting.
+      const mag=Math.hypot(dx,dz);
+      if((dx*(-normal.x)+dz*(-normal.z))/mag<.91)continue;
+      chosen={x,z,y:room.y,roomIndex:room.index,
+       rotation:Math.atan2(dx,dz),targetX:art.x,targetZ:art.z,studyId:art.studyId};
+      break;
+     }
+     if(chosen)break;
     }
+    if(chosen)break;
+   }
+   if(chosen){
+    benches.push(chosen);
+    obstacles.push({x:chosen.x,z:chosen.z,radius:1.15});
+    if(people.length<MAX_VISITORS && rng()>.8)
+     people.push({x:chosen.x,z:chosen.z,y:room.y,yaw:chosen.rotation,
+      roomIndex:room.index,variant:Math.floor(rng()*5),
+      bodyType:rng()<.5?'male':'female',scale:.91+rng()*.13,pose:4,seat:true});
    }
   }
   const candidates=roomHangs.slice().sort((a,b)=>a.studyId-b.studyId);
