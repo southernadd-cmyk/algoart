@@ -23,7 +23,26 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
 </script>
-<script type="module" src="./gallery-v2.js?v=chrome-startup-diagnostics-20261023"></script>
+<script type="module">
+(async()=>{
+  const started=performance.now();
+  const enter=document.getElementById('enter');
+  // This entry point is intentionally independent of the large Three.js graph:
+  // Chrome can now report a failed import instead of waiting indefinitely.
+  if(enter?.disabled)enter.textContent='Loading gallery scripts…';
+  console.info('[Gallery startup] requesting application modules');
+  try{
+    await import('./gallery-v2.js?v=observable-startup-20261023');
+    console.info('[Gallery startup] application modules evaluated',Math.round(performance.now()-started)+'ms');
+  }catch(error){
+    console.error('[Gallery startup] module import failed',error);
+    window.__galleryStartupError='Module import failed: '+(error?.message||String(error));
+    const box=document.getElementById('error');
+    if(box){box.textContent=window.__galleryStartupError;box.hidden=false;}
+    if(enter){enter.textContent='Gallery unavailable';enter.disabled=true;}
+  }
+})();
+</script>
 <script>
 // If the module fails to load (or mobile WebGL never completes startup),
 // provide a useful message instead of leaving the preparation text forever.
