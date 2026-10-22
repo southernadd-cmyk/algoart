@@ -7,7 +7,7 @@ import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './s
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
-import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=seat-height-correction-20261022';
+import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=artwork-facing-benches-20261022';
 import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=glazed-bridges-20261022';
 
