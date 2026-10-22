@@ -763,7 +763,9 @@ function constructGallery(layout, studies) {
   // Rebuild each archived floor from its *own* daily seed signature.
   // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
   const tower=new THREE.Group();
-  const windowGlass=new THREE.MeshStandardMaterial({color:'#819a9e',metalness:.24,roughness:.23,transparent:true,opacity:.85,side:THREE.DoubleSide});
+  // Opaque reflective architectural glazing avoids expensive mobile blending.
+  const windowGlass=new THREE.MeshStandardMaterial({color:'#839ba1',metalness:.34,roughness:.19,side:THREE.DoubleSide});
+  const tintedGlass=new THREE.MeshStandardMaterial({color:'#536d75',metalness:.27,roughness:.25,side:THREE.DoubleSide});
   const exteriorMetal=new THREE.MeshStandardMaterial({color:'#454c49',metalness:.55,roughness:.4});
   const put=(w,h,d,x,y,z,material=wall)=>{
     if(w<=0||h<=0||d<=0)return;
@@ -826,7 +828,7 @@ function constructGallery(layout, studies) {
           wallPart(aperture,windowBottom,position,y+windowBottom/2);
           const top=ROOM_HEIGHT-windowBottom-windowHeight;
           wallPart(aperture,top,position,y+windowBottom+windowHeight+top/2);
-          wallPart(aperture,windowHeight,position,y+windowBottom+windowHeight/2,windowGlass);
+          wallPart(aperture,windowHeight,position,y+windowBottom+windowHeight/2,(level+room.index)%4===0?tintedGlass:windowGlass);
           // Real inset glazing bounded by projecting aluminium casements.
           trim(aperture+.22,.09,position,y+windowBottom);
           trim(aperture+.22,.09,position,y+windowBottom+windowHeight);
