@@ -30,6 +30,7 @@ let yaw = Math.PI, pitch = 0;
 let exhibitDate = null;
 let archiveDates=[];
 let towerFloorSignatures=new Map();
+let arrival=null;
 let liftPosition=null;
 let liftWasNear=false;
 let liftTravelling=false;
@@ -143,15 +144,15 @@ function addWallWithOpening(room, side) {
     if(horizontal)block(len,height,w,room.x+offset,heightY,fixed);
     else block(w,height,len,fixed,heightY,room.z+offset);
   };
-  if(!room.doors.includes(side) && side!==room.liftWall) {
+  if(!room.doors.includes(side) && side!==room.liftWall && side!==room.entranceWall) {
     segment(length,0);
     return;
   }
-  const opening=side===room.liftWall?1.85:DOOR_WIDTH;
+  const opening=side===room.liftWall?1.85:side===room.entranceWall?3.4:DOOR_WIDTH;
   const wing=(length-opening)/2;
   segment(wing,-(opening+wing)/2);
   segment(wing, (opening+wing)/2);
-  const doorHeight=3.68;
+  const doorHeight=side===room.entranceWall?4.15:3.68;
   segment(opening,0,ROOM_HEIGHT-doorHeight,room.y+(ROOM_HEIGHT+doorHeight)/2);
   if(horizontal)block(opening+.09,.045,.43,room.x,room.y+doorHeight,fixed,join);
   else block(.43,.045,opening+.09,fixed,room.y+doorHeight,room.z,join);
@@ -576,11 +577,68 @@ async function loadArchiveDates(){
   if(!dates.length)throw new Error('No dated galleries found in archive.');
   return dates;
 }
+// A real outside approach, opening and architectural threshold at ground level.
+function createGalleryArrival(room){
+  const side=room.entranceWall;
+  const outward=new THREE.Vector3(side==='east'?1:side==='west'?-1:0,0,
+    side==='south'?1:side==='north'?-1:0);
+  const transverse=new THREE.Vector3(outward.z,0,-outward.x);
+  const edge=side==='north'||side==='south'?room.depth/2:room.width/2;
+  const doorway=new THREE.Vector3(room.x,room.y,room.z).addScaledVector(outward,edge);
+  const pathLength=26;
+  const material=galleryFinish.stoneBridge;
+  const place=(w,h,d,x,y,z,mat=material)=>{
+    const g=new THREE.BoxGeometry(w,h,d);
+    if(mat.userData?.tileMeters)tiledBoxUvs(g,w,h,d,mat.userData.tileMeters);
+    const o=new THREE.Mesh(g,mat);o.position.set(x,y,z);scene.add(o);return o;
+  };
+  const midpoint=doorway.clone().addScaledVector(outward,pathLength/2+1);
+  if(Math.abs(outward.z)>0)place(7,.19,pathLength+3,midpoint.x,room.y-.16,midpoint.z);
+  else place(pathLength+3,.19,7,midpoint.x,room.y-.16,midpoint.z);
+  // A substantial stone-framed portal with an illuminated gallery name.
+  const crown=doorway.clone().addScaledVector(outward,.48);
+  const top=room.y+4.35;
+  if(Math.abs(outward.z)>0){
+    place(5.1,.38,.95,crown.x,top,crown.z,galleryFinish.plinth);
+    for(const dx of [-2.36,2.36])place(.42,4.35,.95,crown.x+dx,room.y+2.175,crown.z,galleryFinish.plinth);
+  }else{
+    place(.95,.38,5.1,crown.x,top,crown.z,galleryFinish.plinth);
+    for(const dz of [-2.36,2.36])place(.95,4.35,.42,crown.x,room.y+2.175,crown.z+dz,galleryFinish.plinth);
+  }
+  const sign=makeRoomLabel('PROPORTION PIECE');
+  sign.position.copy(crown).addScaledVector(outward,.55);
+  sign.position.y=top+.55;
+  sign.rotation.y=Math.atan2(outward.x,outward.z);
+  scene.add(sign);
+  // Entrance glass is transparent and leaves the centre walkable.
+  for(const direction of [-1,1]){
+    const panel=doorway.clone().addScaledVector(outward,.1).addScaledVector(transverse,direction*1.6);
+    const glass=new THREE.Mesh(new THREE.BoxGeometry(1.2,3.9,.045),skylightGlass);
+    glass.position.copy(panel);glass.position.y=room.y+2.02;
+    glass.rotation.y=Math.atan2(outward.x,outward.z);
+    scene.add(glass);
+  }
+  const start=doorway.clone().addScaledVector(outward,pathLength-2);
+  arrival={doorway,outward,pathLength,halfWidth:3.25,baseY:room.y,
+    start:new THREE.Vector3(start.x,room.y,start.z)};
+}
+function onArrivalPath(x,z){
+  if(!arrival||currentFloor!==0)return false;
+  const dx=x-arrival.doorway.x,dz=z-arrival.doorway.z;
+  const along=dx*arrival.outward.x+dz*arrival.outward.z;
+  const across=Math.abs(dx*arrival.outward.z-dz*arrival.outward.x);
+  // Overlap the room footprint slightly to make crossing the threshold continuous.
+  return along>=-1.0&&along<=arrival.pathLength+1.5&&across<=arrival.halfWidth;
+}
 function constructGallery(layout, studies) {
   const entry=layout.rooms[0];
   // Reserve a complete unoccupied wall for the lift before the curator hangs art.
   entry.liftWall=['north','east','south','west'].find(side=>!entry.doors.includes(side));
   if(!entry.liftWall)throw new Error('No uninterrupted lift wall in entry gallery');
+  // The street entrance is a separate free wall, never a footbridge or lift.
+  if(currentFloor===0){
+    entry.entranceWall=['south','east','west','north'].find(side=>side!==entry.liftWall&&!entry.doors.includes(side));
+  }
   const hangs=planGalleryHangs(layout,studies);
   const sculptures=planGallerySculptures(layout,studies);
   validateSculpturePlacement(layout,sculptures);
@@ -687,6 +745,7 @@ function constructGallery(layout, studies) {
   }
   scene.add(tower);
   const first=layout.rooms[0];
+  if(currentFloor===0 && first.entranceWall)createGalleryArrival(first);
   addArchiveLift(first);
   rig.position.set(first.x,first.y,first.z);
   const initial=layout.rooms[first.neighbours[0]];
@@ -769,11 +828,18 @@ async function loadEdition(date,{viaLift=false}={}) {
   resetInspection();
   liftPosition=null;liftWasNear=false;liftDoors=[];
   const previous=new Set(scene.children);
+  arrival=null;
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
   camera.far=Math.max(210,elevation+240);camera.updateProjectionMatrix();
   constructGallery(plan,studyList);
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object));
+  if(!viaLift && nextFloor===0 && arrival){
+    rig.position.copy(arrival.start);
+    // Face the front doors and the tower on first arrival.
+    yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
+    rig.rotation.y=yaw;pitch=-.16;camera.rotation.x=pitch;
+  }
   if(viaLift&&liftCabinPosition){
     rig.position.copy(liftCabinPosition);
     const towards=new THREE.Vector3(plan.rooms[0].x-liftCabinPosition.x,0,plan.rooms[0].z-liftCabinPosition.z);
@@ -807,7 +873,7 @@ async function load(){
     }catch(error){console.warn('Tower floor index unavailable',error);}
 
     const qp=new URLSearchParams(location.search).get('date');
-    await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates.at(-1));
+    await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates[0]);
   }catch(e){
     enter.textContent='Gallery unavailable';errorBox.textContent=e.message;
     errorBox.hidden=false;console.error(e);
@@ -996,11 +1062,12 @@ function updateMovement(dt) {
       dx=(Math.cos(yaw)*side-Math.sin(yaw)*ahead)*dt*speed;
       dz=(-Math.sin(yaw)*side-Math.cos(yaw)*ahead)*dt*speed;
     }
-    if (canStand(plan,rig.position.x+dx,rig.position.z) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
-    if (canStand(plan,rig.position.x,rig.position.z+dz) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
+    if ((canStand(plan,rig.position.x+dx,rig.position.z)||onArrivalPath(rig.position.x+dx,rig.position.z)) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
+    if ((canStand(plan,rig.position.x,rig.position.z+dz)||onArrivalPath(rig.position.x,rig.position.z+dz)) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
   }
   const part=footprintAt(plan,rig.position.x,rig.position.z);
   if(part)rig.position.y=part.y;
+  else if(onArrivalPath(rig.position.x,rig.position.z))rig.position.y=arrival.baseY;
   const atLift=Boolean(nearLift());
   if(xrLiftPanel && !atLift)closeXRLift();
   if(atLift&&!liftWasNear&&$('lift').hidden)openLift();
