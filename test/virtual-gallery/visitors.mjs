@@ -1,7 +1,7 @@
 // Seeded furniture and visitor v1. WebGL-independent placement followed by
 // lightweight geometry; no inaccessible downloaded model required.
 import {makeRandom,seedFromString,DOOR_WIDTH} from './layout-v2.mjs';
-import {replaceFixtureWithProp} from './polyhaven-props.mjs';
+import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
 const near=(a,b,r)=>Math.hypot(a.x-b.x,a.z-b.z)<r;
 export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  const rng=makeRandom(seedFromString('PP-VISITORS-v1:'+layout.date));
