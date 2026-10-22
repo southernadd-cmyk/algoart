@@ -22,22 +22,32 @@ export function distanceToArchitecture(layout,x,z){
   return nearest;
 }
 
-export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false}={}){
+export const MIN_BUILDING_CLEARANCE=18; // metres between building footprints and tower/bridges
+export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,protectedLayouts=[],approach=null}={}){
   if(!layout?.rooms?.length)throw new Error('An outdoor environment needs rooms');
   const signature=artworkStates.map(s=>(s.seed||'')+':'+(s.engine||'')+':'+(s.material||'')).join('|');
   const seed=seedFromString('PP-SCULPTURE-GARDEN-v1:'+layout.date+':'+signature);
   const random=makeRandom(seed);
-  const xs=layout.rooms.map(r=>[r.x-r.width/2,r.x+r.width/2]).flat();
-  const zs=layout.rooms.map(r=>[r.z-r.depth/2,r.z+r.depth/2]).flat();
+  const allLayouts=[layout,...protectedLayouts.filter(p=>p?.rooms?.length)];
+  const xs=allLayouts.flatMap(p=>p.rooms).map(r=>[r.x-r.width/2,r.x+r.width/2]).flat();
+  const zs=allLayouts.flatMap(p=>p.rooms).map(r=>[r.z-r.depth/2,r.z+r.depth/2]).flat();
   const centerX=(Math.min(...xs)+Math.max(...xs))/2;
   const centerZ=(Math.min(...zs)+Math.max(...zs))/2;
-  const size=Math.max(190,Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))+114);
+  const size=Math.max(210,Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))+150);
+  const towerDistance=(x,z)=>Math.min(...allLayouts.map(p=>distanceToArchitecture(p,x,z)));
+  const approachDistance=(x,z)=>{
+    if(!approach)return Infinity;
+    const {doorway,outward,pathLength=26,halfWidth=3.5}=approach;
+    const dx=x-doorway.x,dz=z-doorway.z;
+    const along=clamp(dx*outward.x+dz*outward.z,0,pathLength+3);
+    return Math.max(0,Math.hypot(dx-outward.x*along,dz-outward.z*along)-halfWidth);
+  };
   const theme='urban';
   const phase=random()*Math.PI*2;
   const slope=random()*Math.PI*2;
   const baseline=-1.08;
   const heightAt=(x,z)=>{
-    const distance=distanceToArchitecture(layout,x,z);
+    const distance=Math.min(towerDistance(x,z),approachDistance(x,z));
     const beyond=smooth((distance-4)/28);
     const xx=x-centerX,zz=z-centerZ;
     const big=Math.sin(xx*.047+phase)*Math.cos(zz*.038-slope)*2.65;
@@ -56,7 +66,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false}={}
     for(let i=0;i<attempts&&target.length<count;i++){
       const p=choosePoint(inner,outer);
       if(Math.abs(p.x-centerX)>size*.45||Math.abs(p.z-centerZ)>size*.45)continue;
-      if(distanceToArchitecture(layout,p.x,p.z)<clearance)continue;
+      if(Math.min(towerDistance(p.x,p.z),approachDistance(p.x,p.z))<clearance)continue;
       if(target.some(q=>Math.hypot(q.x-p.x,q.z-p.z)<minSpacing))continue;
       target.push({...p,y:heightAt(p.x,p.z),scale:.65+random()*.9,species:Math.floor(random()*3),variant:random()});
     }
@@ -76,7 +86,12 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false}={}
         const z=centerZ+gz+(random()-.5)*2.2;
         const width=5+random()*3.8,depth=5+random()*3.8;
         // A bounding-circle clearance protects every corridor and room.
-        if(distanceToArchitecture(layout,x,z)<Math.hypot(width,depth)*.5+8)continue;
+        const footprintRadius=Math.hypot(width,depth)/2;
+        // Conservative bounding-circle test guarantees at least 18 m of
+        // separation from *every* dated tower level and its skybridges.
+        if(towerDistance(x,z)<footprintRadius+MIN_BUILDING_CLEARANCE)continue;
+        // The street-level arrival avenue remains open and visible.
+        if(approachDistance(x,z)<footprintRadius+11)continue;
         const height=4+Math.pow(random(),1.6)*23;
         buildings.push({x,z,y:heightAt(x,z),width,depth,height,
           variant:random(),roof:random()>.62?1:0});
