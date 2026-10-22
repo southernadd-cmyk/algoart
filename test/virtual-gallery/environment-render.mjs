@@ -2,6 +2,7 @@
 // terrain mesh, one sky shell and batched instanced plants/stone.
 import {buildEnvironmentPlan} from './environment-v1.mjs';
 import { loadSquarePanorama } from './panorama-backdrop.mjs?v=soft-exterior-panorama-20261022';
+import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=cast-iron-entrance-v1-20261022';
 
 const PALETTES={
   meadow:{horizon:'#cbd5cc',zenith:'#b1c8cf',terrain:['#7c9077','#9eab86','#71856e'],trees:['#536d54','#667b58','#79906b'],stone:['#b2b3a6','#9b9f91']},
@@ -218,8 +219,14 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
       }
       for(const along of [-15,0,15]){
         const across=side*(p.halfWidth-1.5);
-        box(.14,3.8,.14,along,across,1.83,bronze);
-        box(.42,.38,.42,along,across,3.91,lampGlass);
+        const backup=new THREE.Group();
+        backup.add(box(.14,3.8,.14,along,across,1.83,bronze));
+        backup.add(box(.42,.38,.42,along,across,3.91,lampGlass));
+        square.add(backup);
+        // Preserve the original plaza layout, approach clearance, paving
+        // and seat positions; replace only the six lamppost visuals.
+        placeCastIronStreetLamp(THREE,square,at(along,across,0),backup,
+          {scale:.98,rotation:Math.atan2(p.outward.x,p.outward.z)});
       }
       box(p.halfWidth*2,.22,.34,side*(p.halfDepth-.42),0,-.09,stoneEdge);
     }
