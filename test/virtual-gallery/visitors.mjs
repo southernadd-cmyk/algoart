@@ -113,7 +113,7 @@ function stabiliseMaleTorsoSkinning(scene){
  const bones=male.skeleton?.bones;
  if(!position||!joints||!weights||!bones?.length)return;
  const armBones=new Set(bones.map((b,i)=>
-   /^(?:upper_arm|forearm)\\.[LR](?:_\\d+)?$/.test(b.name)?i:-1).filter(i=>i>=0));
+   /^(?:upper_arm|forearm)\.[LR](?:_\d+)?$/.test(b.name)?i:-1).filter(i=>i>=0));
  const spineNames=['spine_','spine.001_','spine.002_','spine.003_'];
  const spineBones=spineNames.map(prefix=>bones.findIndex(b=>b.name.startsWith(prefix)));
  if(armBones.size<4||spineBones.some(i=>i<0))return;
