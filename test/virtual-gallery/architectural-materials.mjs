@@ -152,8 +152,20 @@ export function tiledBoxUvs(geometry,w,h,d,tileMeters=2.5){
   uv.needsUpdate=true;
   return geometry;
 }
-export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
-  const loader=new THREE.TextureLoader();
+export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=null}={}){
+  const textureLoader=new THREE.TextureLoader();
+  // Neutral canvas maps are ready immediately; external textures must not
+  // compete with the early tower download on slow/mobile connections.
+  const ready=startAfter
+    ?Promise.race([Promise.resolve(startAfter).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))])
+    :null;
+  const loader={
+    load(...args){
+      if(!ready)return textureLoader.load(...args);
+      ready.then(()=>textureLoader.load(...args)).catch(error=>console.warn('Optional gallery texture unavailable',error));
+      return null;
+    }
+  };
   const make=(color,roughness,tileMeters,metalness=0)=>{
     const material=new THREE.MeshStandardMaterial({color,roughness,metalness});
     material.userData.tileMeters=tileMeters;
