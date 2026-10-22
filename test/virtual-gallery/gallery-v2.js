@@ -6,6 +6,7 @@ import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } fr
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=gallery-surface-upgrade-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
+import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=daily-baked-geometry-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
 import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=softer-seated-hips-20261022';
@@ -35,6 +36,7 @@ let yaw = Math.PI, pitch = 0;
 let exhibitDate = null;
 let archiveDates=[];
 let towerFloorSignatures=new Map();
+let prebuiltTower=null;
 let arrival=null;
 let entranceDoor=null;
 let liftPosition=null;
@@ -1002,6 +1004,11 @@ function constructGallery(layout, studies) {
     if(discarded.length)console.info('Removed entrance overlay strip',discarded);
   }
   if(entryPlaza)deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,entryPlaza));
+  // Prefer the meshes baked during the daily publishing workflow. They carry
+  // the same per-floor architecture and metre-scaled texture coordinates but
+  // avoid re-running geometry generation in every visitor's browser.
+  // An absent, mismatched or damaged pack falls back to the existing builder.
+  const baked=prebuiltTowerMatches(prebuiltTower,archiveDates,towerFloorSignatures);
   // Rebuild each archived floor from its *own* daily seed signature.
   // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
   const tower=new THREE.Group();
@@ -1009,6 +1016,40 @@ function constructGallery(layout, studies) {
   const windowGlass=new THREE.MeshStandardMaterial({color:'#839ba1',metalness:.34,roughness:.19,side:THREE.DoubleSide});
   const tintedGlass=new THREE.MeshStandardMaterial({color:'#536d75',metalness:.27,roughness:.25,side:THREE.DoubleSide});
   const exteriorMetal=new THREE.MeshStandardMaterial({color:'#454c49',metalness:.55,roughness:.4});
+  let usingBaked=false;
+  if(baked){
+    try{
+      const t0=performance.now(),rendered=renderPrebuiltTower(THREE,tower,prebuiltTower,{
+        wall, floor:galleryFinish.floor,roof:roofFinish,join,
+        plinth:galleryFinish.plinth,brick:exteriorBrick,
+        glass:windowGlass,tinted:tintedGlass,metal:exteriorMetal
+      },currentFloor);
+      for(const bridge of rendered.bridges){
+        const {start,end}=bridge;
+        const dx=end.x-start.x,dz=end.z-start.z;
+        const distance=Math.hypot(dx,dz);
+        const deck=new THREE.Mesh(
+          tiledBoxUvs(new THREE.BoxGeometry(DOOR_WIDTH,.2,distance),
+            DOOR_WIDTH,.2,distance,bridgeSurface.userData.tileMeters),
+          bridgeSurface);
+        deck.position.set((start.x+end.x)/2,(start.y+end.y)/2-.07,(start.z+end.z)/2);
+        deck.rotation.y=Math.atan2(dx,dz);
+        deck.rotation.x=Math.atan2(start.y-end.y,distance);
+        tower.add(deck);
+        tower.add(createGlassWalkway(THREE,start,end,DOOR_WIDTH,
+          walkwayGlassMaterials,{lowPower:galleryFinish.lowPower}));
+      }
+      usingBaked=true;
+      console.info('Prepared tower loaded',{
+        batches:rendered.batchCount,bridges:rendered.bridges.length,
+        elapsedMs:Math.round(performance.now()-t0)
+      });
+    }catch(error){
+      console.warn('Prepared tower rejected; falling back to procedural build:',error);
+      tower.clear();
+    }
+  }
+  if(!usingBaked){
   // Collect identical-material wall/window/trim pieces instead of allocating
   // thousands of separate draw calls. Their per-face UVs are retained when
   // combined, so the completed tower looks the same as the desktop version.
@@ -1107,6 +1148,7 @@ function constructGallery(layout, studies) {
     boxes:towerStats.totalBoxes,batches:towerStats.batchCount,
     elapsedMs:Math.round(performance.now()-towerBuildStart)
   });
+  }
   scene.add(tower);
   const first=layout.rooms[0];
   if(currentFloor===0 && first.entranceWall)createGalleryArrival(first);
@@ -1240,6 +1282,11 @@ async function load(){
     // Fetch metadata concurrently: the tower index used to add up to seven
     // seconds AFTER the archive fetch, even on a healthy connection.
     const archivePromise=loadArchiveDates();
+    // Each daily publication has its own cache key, so repeat visits reuse
+    // the prepared geometry without reading stale copies on following days.
+    const bakedPromise=archivePromise.then(dates=>
+      loadPrebuiltTower('../../gallery/tower-geometry.bin.gz?day='+dates.at(-1)))
+      .catch(error=>{console.warn('Prepared tower unavailable:',error);return null;});
     const towerIndexPromise=fetchGalleryText('../../gallery/tower-layouts.json',{timeoutMs:7000})
       .then(response=>{
         if(!response.ok)return new Map();
@@ -1248,7 +1295,7 @@ async function load(){
           ?new Map(data.floors.map(f=>[f.date,f.studies]))
           :new Map();
       }).catch(error=>{console.warn('Tower floor index unavailable',error);return new Map();});
-    [archiveDates,towerFloorSignatures]=await Promise.all([archivePromise,towerIndexPromise]);
+    [archiveDates,towerFloorSignatures,prebuiltTower]=await Promise.all([archivePromise,towerIndexPromise,bakedPromise]);
 
     const qp=new URLSearchParams(location.search).get('date');
     await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates[0]);
