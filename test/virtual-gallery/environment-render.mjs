@@ -168,7 +168,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     pavingMap.repeat.set(p.halfDepth*2/6,p.halfWidth*2/6);
     const paving=new THREE.MeshStandardMaterial({map:pavingMap,color:'#eee9e1',roughness:.94});
     const stoneMap=surfaceTexture(THREE,'stone');
-    const stoneEdge=new THREE.MeshStandardMaterial({map:stoneMap,color:'#d0cbc2',roughness:.88});
+    const stoneEdge=new THREE.MeshStandardMaterial({map:stoneMap,color:'#e4dfd5',roughness:.94});
     const bronze=new THREE.MeshStandardMaterial({color:'#424a49',metalness:.42,roughness:.52});
     const planted=new THREE.MeshStandardMaterial({color:'#58705c',roughness:1,flatShading:true});
     const lampGlass=new THREE.MeshStandardMaterial({color:'#f5e8cc',emissive:'#e9c99b',emissiveIntensity:.52,roughness:.36});
@@ -183,7 +183,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
       return mesh;
     };
     // A contrasting centre strip connects the civic square to its gallery doors.
-    const centreMaterial=new THREE.MeshStandardMaterial({color:'#bbb6a9',roughness:.93});
+    const centreMaterial=new THREE.MeshStandardMaterial({color:'#c0baad',roughness:.96});
     // Slab is deliberately below the pre-existing entrance walkway, which
     // remains the unobstructed and collision-tested visitor route.
     box(p.halfDepth*2,.16,p.halfWidth*2,0,0,-.17,paving);
@@ -205,8 +205,13 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
       for(const along of [-13,12]){
         const across=side*(p.halfWidth-4.6);
         box(1.75,.69,1.75,along,across,.22,stoneEdge);
-        const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.82,1),planted);
-        shrub.position.copy(at(along,across,1.11));square.add(shrub);
+        // Layered, subtly offset planting instead of identical geometric balls.
+        for(let i=0;i<3;i++){
+          const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.5+i*.08,1),planted);
+          shrub.position.copy(at(along+(i-1)*.46,across+(i%2?-.22:.15),.96+(i%2)*.16));
+          shrub.scale.set(1.2,.75,1);
+          square.add(shrub);
+        }
       }
       for(const along of [-15,0,15]){
         const across=side*(p.halfWidth-1.5);
