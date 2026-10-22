@@ -1294,13 +1294,14 @@ async function load(){
     // Fetch metadata concurrently: the tower index used to add up to seven
     // seconds AFTER the archive fetch, even on a healthy connection.
     const archivePromise=loadArchiveDates();
-    // Each daily publication has its own cache key, so repeat visits reuse
-    // the prepared geometry without reading stale copies on following days.
-    const bakedPromise=archivePromise.then(dates=>
-      loadPrebuiltTower('../../gallery/tower-geometry.bin.gz?day='+dates.at(-1)+'&schema=2'))
-      .catch(error=>{console.warn('Prepared tower unavailable:',error);return null;});
-    const towerIndexPromise=archivePromise.then(dates=>
-      fetchGalleryText('../../gallery/tower-layouts.json?day='+dates.at(-1),{timeoutMs:7000}))
+    // Do not serialise archive discovery -> tower-index fetch -> baked
+    // geometry fetch. These three static assets are independent and should
+    // be in flight together; only the final scene construction waits.
+    const cacheDay=new Date().toISOString().slice(0,10);
+    const bakedPromise=loadPrebuiltTower(
+      '../../gallery/tower-geometry.bin.gz?schema=2&day='+cacheDay);
+    const towerIndexPromise=fetchGalleryText(
+      '../../gallery/tower-layouts.json?day='+cacheDay,{timeoutMs:7000})
       .then(response=>{
         if(!response.ok)return new Map();
         const data=JSON.parse(response.text);
@@ -1308,8 +1309,9 @@ async function load(){
           ?new Map(data.floors.map(f=>[f.date,f.studies]))
           :new Map();
       }).catch(error=>{console.warn('Tower floor index unavailable',error);return new Map();});
-    [archiveDates,towerFloorSignatures,prebuiltTower]=await Promise.all([archivePromise,towerIndexPromise,bakedPromise]);
-
+    [archiveDates,towerFloorSignatures,prebuiltTower]=await Promise.all([
+      archivePromise,towerIndexPromise,bakedPromise
+    ]);
     const qp=new URLSearchParams(location.search).get('date');
     await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates[0]);
   }catch(e){
