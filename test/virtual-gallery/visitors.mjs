@@ -345,10 +345,10 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
    const across=p.side*(plaza.halfWidth-2.2);
    const x=plaza.centre.x+plaza.outward.x*p.along+plaza.transverse.x*across;
    const z=plaza.centre.z+plaza.outward.z*p.along+plaza.transverse.z*across;
-   const facing=new THREE.Vector3(-plaza.transverse.x*p.side,0,-plaza.transverse.z*p.side);
+   const facing=new THREE.Vector3(-plaza.outward.x,0,-plaza.outward.z);
    const yaw=Math.atan2(facing.x,facing.z);
    try{
-    const person={bodyType:p.type,x,z,y:plaza.level+.445,yaw,scale:1};
+    const person={bodyType:p.type,x,z,y:plaza.level+.35,yaw,scale:1};
     const figure=riggedVisitor(THREE,asset,person,{seated:true});
     // Calibration is relative to the same .52-m test seat.
     const local=new THREE.Vector3(0,0,p.forward).applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
