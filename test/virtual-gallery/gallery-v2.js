@@ -282,13 +282,15 @@ function loadArtworkTexture(url, material) {
     material.map = tex;
     material.color.set('#ffffff');
     material.needsUpdate = true;
-    }catch(error){console.warn('Artwork image decoding failed',url,error);}
+    }catch(error){material.color.set('#c9ad9b');material.needsUpdate=true;
+      console.warn('Artwork image decoding failed',url,error);}
     finally{resolve();}
   };
   let attempts=0;
   image.onerror=()=>{
     if(material.userData.galleryDisposed){resolve();return;}
     if(attempts++<1){image.src=url+(url.includes('?')?'&':'?')+'retry=1';return;}
+    material.color.set('#c9ad9b');material.needsUpdate=true;
     console.warn('An archived artwork image failed to load:',url);
     resolve();
   };
@@ -345,7 +347,7 @@ function hangArt(room, study, hang) {
   surround.rotation.y = rotation;
   scene.add(surround);
 
-  const artworkMaterial = new THREE.MeshStandardMaterial({color: '#ffffff',roughness:1,metalness:0,side: THREE.DoubleSide});
+  const artworkMaterial = new THREE.MeshBasicMaterial({color: '#eae5d9',side: THREE.DoubleSide});
   const artwork = new THREE.Mesh(new THREE.PlaneGeometry(width, height), artworkMaterial);
   artwork.position.copy(base).addScaledVector(normal, .038);
   artwork.rotation.y = rotation;
@@ -773,16 +775,6 @@ function constructGallery(layout, studies) {
   exteriorBrick.userData.tileMeters=3.2;
   for(const room of layout.rooms){
     addRoom(room,room.index,layout.rooms.length);
-    // A single lightweight Poly Haven ceiling fixture per room, loaded only
-    // after entry. Existing scene lighting remains the illumination source.
-    if(!galleryFinish.lowPower)deferredGalleryJobs.push(()=>{
-      const fixtureRoot=new THREE.Group();scene.add(fixtureRoot);
-      replaceFixtureWithProp(THREE,{
-        id:'modern_ceiling_lamp_01',parent:fixtureRoot,
-        position:new THREE.Vector3(room.x,room.y+ROOM_HEIGHT-1.0,room.z),
-        width:.48,height:.9,depth:.48
-      });
-    });
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
       deferredGalleryJobs.push(()=>hangArt(room,byId.get(hanging.studyId),hanging));
     for(const placement of sculptures.filter(p=>p.roomIndex===room.index)){
@@ -797,6 +789,15 @@ function constructGallery(layout, studies) {
       });
     }
   }
+  // Decorative props are queued LAST: every painting gets its loader first.
+  if(!galleryFinish.lowPower)for(const room of layout.rooms)deferredGalleryJobs.push(()=>{
+    const fixtureRoot=new THREE.Group();scene.add(fixtureRoot);
+    replaceFixtureWithProp(THREE,{
+      id:'modern_ceiling_lamp_01',parent:fixtureRoot,
+      position:new THREE.Vector3(room.x,room.y+ROOM_HEIGHT-1.0,room.z),
+      width:.48,height:.9,depth:.48
+    });
+  });
   deferredGalleryJobs.push(()=>renderVisitors(THREE,scene,
     planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower})));
   if(hangs.length+sculptures.length!==studies.length)
