@@ -8,10 +8,10 @@ import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-mater
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
 import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=cast-iron-entrance-v1-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
-import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=daily-baked-geometry-20261022';
+import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
-import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
-import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=standing-placement-repaired-20261022';
+import { createExteriorLandscape } from './environment-render.mjs?v=cast-iron-plaza-20261022';
+import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=guaranteed-mixed-visitors-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
