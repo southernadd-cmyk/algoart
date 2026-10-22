@@ -11,7 +11,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
 </script>
-<script type="module" src="./gallery-v2.js?v=semantic-bone-aliases-20261022"></script>
+<script type="module" src="./gallery-v2.js?v=auto-artwork-info-20261022"></script>
 </head>
 <body>
 <canvas id="world" aria-label="Interactive three-dimensional art gallery"></canvas>
@@ -59,11 +59,10 @@
 </section>
 <div id="liftArrival" class="lift-arrival" hidden role="status"></div>
 <div class="status" id="status" aria-live="polite">Loading gallery…</div>
-<div class="hint" id="hint">W A S D to move · walk into the lift to select a floor · E to inspect</div>
+<div class="hint" id="hint">W A S D to move · mouse to look · Shift to move faster</div>
 <div class="touch-nav" id="touchNav" aria-label="Touch movement controls">
   <button data-move="forward" aria-label="Move forward">↑</button>
   <div><button data-move="left" aria-label="Move left">←</button><button data-move="back" aria-label="Move backward">↓</button><button data-move="right" aria-label="Move right">→</button></div>
-  <button id="inspectTouch" type="button" aria-label="Inspect painting you are looking at">Inspect artwork</button>
   <span>Drag the scene to look around</span>
 </div>
 <section class="welcome" id="welcome" aria-labelledby="welcomeTitle">
@@ -71,7 +70,7 @@
     <div class="eyebrow">An exhibition built by its drawings</div>
     <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
     <p>Every daily collection becomes its own building. Landscape studies hang on the walls; portrait studies become sculptures made from the actual drawn lines and the visible pigment boundaries of each material. Choose your route through the work.</p>
-    <p class="shortcuts">Walk using W A S D and look with the mouse. On a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p>
+    <p class="shortcuts">Walk using W A S D and look with the mouse. Artwork details appear when you approach and face a work. On a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
     <a id="welcomeArchive" href="../../gallery/">See the original 2D edition ↗</a>
   </div>
