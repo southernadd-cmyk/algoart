@@ -15,7 +15,7 @@ import { createExteriorLandscape } from './environment-render.mjs?v=soft-horizon
 // Rigged visitor code and its model dependencies are not needed to open the entrance.
 let visitorsModulePromise;
 function loadVisitorsModule(){
-  return visitorsModulePromise ||= import('./visitors.mjs?v=bench-finetune-v7-20261022');
+  return visitorsModulePromise ||= import('./visitors.mjs?v=seated-arm-pose-v8-20261022');
 }
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
