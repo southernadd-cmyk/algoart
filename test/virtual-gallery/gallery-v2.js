@@ -9,7 +9,7 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=daily-baked-geometry-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
-import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=softer-seated-hips-20261022';
+import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=torso-skin-repaired-20261022';
 import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
@@ -1287,7 +1287,8 @@ async function load(){
     const bakedPromise=archivePromise.then(dates=>
       loadPrebuiltTower('../../gallery/tower-geometry.bin.gz?day='+dates.at(-1)))
       .catch(error=>{console.warn('Prepared tower unavailable:',error);return null;});
-    const towerIndexPromise=fetchGalleryText('../../gallery/tower-layouts.json',{timeoutMs:7000})
+    const towerIndexPromise=archivePromise.then(dates=>
+      fetchGalleryText('../../gallery/tower-layouts.json?day='+dates.at(-1),{timeoutMs:7000}))
       .then(response=>{
         if(!response.ok)return new Map();
         const data=JSON.parse(response.text);
