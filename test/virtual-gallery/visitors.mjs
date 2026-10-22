@@ -533,7 +533,9 @@ export function renderVisitors(THREE,scene,plan){
        if(p.seat){
          // Cushion surface is ~0.55m; place the hip joint just above it.
          const seated=riggedVisitor(THREE,asset,{...p,scale:1},{seated:true,seatHipHeight:.51});
-         const forward=p.bodyType==='male'?.12:.16;
+         // The model faces local +Z; negative Z moves its hips into the bench.
+         // Previous positive offsets pushed sitters away from the seat.
+         const forward=-.48;
          const shift=new THREE.Vector3(0,0,forward)
            .applyAxisAngle(new THREE.Vector3(0,1,0),p.yaw);
          seated.position.add(shift);
@@ -558,8 +560,8 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
  if(!plaza)return null;
  const group=new THREE.Group();scene.add(group);
  const positions=[
-  {type:'male',along:-9,side:-1,forward:.12},
-  {type:'female',along:6,side:1,forward:.16}
+  {type:'male',along:-9,side:-1,forward:-.48},
+  {type:'female',along:6,side:1,forward:-.48}
  ];
  loadCharacters().then(asset=>{
   if(!asset||!group.parent)return;
