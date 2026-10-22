@@ -83,7 +83,7 @@ async function loadCharacters(){
  })).catch(error=>{console.warn('Rigged visitors unavailable:',error);return null;});
  return characterAssets;
 }
-function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seated=false}={}){
+function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seated=false,seatHipHeight=.61}={}){
  const fail=(stage,detail)=>{throw new Error(person.bodyType+' '+stage+': '+detail);};
  const copy=asset.clone(asset.scene);
  const allMeshes=[],skinned=[];
@@ -220,8 +220,8 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
      copy.updateMatrixWorld(true);
      const localHips=hips.map(b=>b.getWorldPosition(new THREE.Vector3()));
      const pelvis=localHips[0].add(localHips[1]).multiplyScalar(.5);
-     // Lower the pelvis so the seated body meets the cushion rather than perching above it.
-     copy.position.y+=(.43-person.y)-pelvis.y;
+     // Align the hips relative to this floor (the holder supplies person.y).
+     copy.position.y+=seatHipHeight-pelvis.y;
      // Advance hips past the backrest onto the actual seating surface.
      copy.position.z+=.56-pelvis.z;
    }
@@ -316,13 +316,12 @@ export function renderVisitors(THREE,scene,plan){
      const p=plan.people[i];
      try{
        if(p.seat){
-         const seated=riggedVisitor(THREE,asset,{...p,scale:1,y:p.y+.35},{seated:true});
+         // Cushion surface is ~0.55m; place the hip joint just above it.
+         const seated=riggedVisitor(THREE,asset,{...p,scale:1},{seated:true,seatHipHeight:.61});
          const forward=p.bodyType==='male'?.28:.36;
-         const drop=p.bodyType==='male'?-.37:-.39;
          const shift=new THREE.Vector3(0,0,forward)
            .applyAxisAngle(new THREE.Vector3(0,1,0),p.yaw);
          seated.position.add(shift);
-         seated.position.y+=drop+.04; // Lift sitter 4 cm to align with Poly Haven bench seat
          root.add(seated);
        }else{
          const posed=riggedVisitor(THREE,asset,p);
@@ -344,8 +343,8 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
  if(!plaza)return null;
  const group=new THREE.Group();scene.add(group);
  const positions=[
-  {type:'male',along:-9,side:-1,forward:.28,drop:-.37},
-  {type:'female',along:6,side:1,forward:.36,drop:-.39}
+  {type:'male',along:-9,side:-1,forward:.28},
+  {type:'female',along:6,side:1,forward:.36}
  ];
  loadCharacters().then(asset=>{
   if(!asset||!group.parent)return;
@@ -356,12 +355,11 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
    const facing=new THREE.Vector3(-plaza.transverse.x*p.side,0,-plaza.transverse.z*p.side);
    const yaw=Math.atan2(facing.x,facing.z);
    try{
-    const person={bodyType:p.type,x,z,y:plaza.level+.35,yaw,scale:1};
-    const figure=riggedVisitor(THREE,asset,person,{seated:true});
-    // Calibration is relative to the same .52-m test seat.
+    const person={bodyType:p.type,x,z,y:plaza.level,yaw,scale:1};
+    // Plaza bench cushion surface is ~0.615m; hips sit just above it.
+    const figure=riggedVisitor(THREE,asset,person,{seated:true,seatHipHeight:.68});
     const local=new THREE.Vector3(0,0,p.forward).applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
     figure.position.add(local);
-    figure.position.y+=p.drop+.095;
     group.add(figure);
    }catch(error){console.warn('Plaza seated visitor unavailable',p.type,error);}
   }
