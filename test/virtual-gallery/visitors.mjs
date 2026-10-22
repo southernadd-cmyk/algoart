@@ -322,7 +322,7 @@ export function renderVisitors(THREE,scene,plan){
          const shift=new THREE.Vector3(0,0,forward)
            .applyAxisAngle(new THREE.Vector3(0,1,0),p.yaw);
          seated.position.add(shift);
-         seated.position.y+=drop;
+         seated.position.y+=drop+.04; // Lift sitter 4 cm to align with Poly Haven bench seat
          root.add(seated);
        }else{
          const posed=riggedVisitor(THREE,asset,p);
