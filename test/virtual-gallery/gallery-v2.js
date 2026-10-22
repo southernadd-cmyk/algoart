@@ -274,54 +274,55 @@ window.addEventListener('visibilitychange',()=>{
 });
 function loadArtworkTexture(url, material) {
  scheduleArtwork(()=>new Promise(resolve=>{
-  const image=new Image();
-  image.decoding='async';
-  image.crossOrigin='anonymous';
-  let attempts=0,finished=false;
+  let finished=false;
   const finish=()=>{if(!finished){finished=true;resolve();}};
-  const attempt=()=>{
+  const source=new URL(url,location.href);
+  // Published archive images also exist in the public repository. Try the
+  // independently served CDN if Pages returns an error or cannot decode one.
+  const galleryPath=source.pathname.match(/\/gallery\/(\d{4}-\d{2}-\d{2}\/[^/]+\.(?:jpe?g|png|webp))$/i);
+  const fallback=galleryPath
+    ?'https://cdn.jsdelivr.net/gh/southernadd-cmyk/algoart@main/gallery/'+galleryPath[1]
+    :null;
+  const requests=[source.href,source.href+(source.search?'&':'?')+'galleryRetry=1'];
+  if(fallback){requests.push(fallback,fallback+'?galleryRetry=1');}
+  let index=0;
+  function attempt(){
    if(material.userData.galleryDisposed){finish();return;}
-   // A new Image request avoids browsers keeping a failed request state.
-   const requestURL=new URL(url,location.href);
-   if(attempts>0)requestURL.searchParams.set('galleryRetry',String(attempts));
-   image.src=requestURL.href;
-  };
-  image.onload=()=>{
-   try{
-    if(material.userData.galleryDisposed)return;
-    if(!image.naturalWidth||!image.naturalHeight)throw Error('Zero-sized artwork image');
-    const maxSize=mobileImages?640:1100;
-    const scale=Math.min(1,maxSize/Math.max(image.naturalWidth,image.naturalHeight));
-    const c=document.createElement('canvas');
-    c.width=Math.max(1,Math.round(image.naturalWidth*scale));
-    c.height=Math.max(1,Math.round(image.naturalHeight*scale));
-    c.getContext('2d').drawImage(image,0,0,c.width,c.height);
-    const tex=new THREE.CanvasTexture(c);
-    tex.colorSpace=THREE.SRGBColorSpace;
-    tex.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
-    if(material.map&&material.map!==tex)material.map.dispose();
-    material.map=tex;
-    material.color.set('#ffffff');
-    material.needsUpdate=true;
-    failedArtworkLoads.delete(material);
-   }catch(error){
+   if(index>=requests.length){
     material.color.set('#c9ad9b');material.needsUpdate=true;
     failedArtworkLoads.set(material,url);
-    console.warn('Artwork image decode failed:',url,error);
-   }finally{finish();}
-  };
-  image.onerror=()=>{
-   if(material.userData.galleryDisposed){finish();return;}
-   if(attempts<3){
-    attempts++;
-    setTimeout(attempt,attempts*1500);
-   }else{
-    material.color.set('#c9ad9b');material.needsUpdate=true;
-    failedArtworkLoads.set(material,url);
-    console.warn('Artwork unavailable after retries:',url);
-    finish();
+    console.warn('Artwork failed at Pages and CDN:',url);
+    finish();return;
    }
-  };
+   const candidate=requests[index++];
+   const image=new Image();
+   image.crossOrigin='anonymous';
+   image.decoding='async';
+   image.onload=()=>{
+    if(material.userData.galleryDisposed){finish();return;}
+    try{
+     if(!image.naturalWidth||!image.naturalHeight)throw Error('Empty image');
+     const maxSize=mobileImages?640:1100;
+     const scale=Math.min(1,maxSize/Math.max(image.naturalWidth,image.naturalHeight));
+     const canvas=document.createElement('canvas');
+     canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
+     canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+     canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+     const texture=new THREE.CanvasTexture(canvas);
+     texture.colorSpace=THREE.SRGBColorSpace;
+     texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
+     if(material.map)material.map.dispose();
+     material.map=texture;material.color.set('#ffffff');material.needsUpdate=true;
+     failedArtworkLoads.delete(material);
+     finish();
+    }catch(error){
+     console.warn('Artwork could not be decoded:',candidate,error);
+     setTimeout(attempt,400);
+    }
+   };
+   image.onerror=()=>{console.warn('Artwork request failed:',candidate);setTimeout(attempt,400);};
+   image.src=candidate;
+  }
   attempt();
  }));
 }
