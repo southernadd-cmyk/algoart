@@ -18,6 +18,7 @@ export function setSculptureArchitecturalMaterials({plinth,metal}={}){
   if(metal)metalMaterial=metal;
 }
 const transientMaterial=new THREE.MeshStandardMaterial({color:'#555b52',metalness:.15,roughness:.79});
+transientMaterial.userData.galleryPersistent=true;
 const thicknessProfiles={
   marker:{ink:.065,pigment:.02,amplify:1.8,roughness:.75,painted:false,opacity:1},
   tissue:{ink:.018,pigment:.028,amplify:2.3,roughness:.94,painted:true,opacity:.84},
@@ -261,7 +262,7 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
   const materials=new Map();
   const img=new Image();img.decoding='async';
   const bitmap=new Promise((resolve,reject)=>{
-    img.onload=()=>{try{resolve(getImage(img,quality))}catch(err){reject(err)}};
+    img.onload=()=>{if(pivot.userData.galleryDisposed){resolve(null);return;}try{resolve(getImage(img,quality))}catch(err){reject(err)}};
     img.onerror=()=>reject(Error('Could not load the actual archived portrait image'));
     img.src=study.image;
   });
@@ -276,6 +277,7 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
   // Material contours can appear immediately while the exact SVG generation
   // is queued in a separate isolated frame.
   const paints=bitmap.then(data=>{
+    if(!data || pivot.userData.galleryDisposed)return null;
     if(type==='marker')return data;
     try {pigmentCount=buildMaterialReliefs(data,study,quality,core,onArtworkMesh);}
     catch(e){console.warn('Material boundary extraction failed',study.seed,e);}
@@ -283,15 +285,18 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
     return data;
   }).catch(err=>{console.warn('Material image unavailable',study.seed,err);return null;});
   const strokes=lines.then(async vector=>{
+    if(pivot.userData.galleryDisposed)return;
     // Material-specific images complete independently, then gate the source
     // lines. This avoids displaying underlying marker scaffolding as beige
     // plastic when the finished material only contains pigment elsewhere.
     const reference=await paints;
+    if(pivot.userData.galleryDisposed)return;
     try {strokeCount=buildPathReliefs(vector,study,quality,core,onArtworkMesh,materials,reference);}
     catch(e){console.warn('Vector relief failed',study.seed,e);}
     showIfReady();
   }).catch(err=>{console.warn('Source vector unavailable',study.seed,err);});
   Promise.all([paints,strokes]).then(([raster])=>{
+    if(pivot.userData.galleryDisposed)return;
     if(!strokeCount && !pigmentCount && raster){
       try{pigmentCount=buildMaterialReliefs(raster,study,quality,core,onArtworkMesh);}
       catch(e){console.warn('Raster contour fallback failed',study.seed,e);}
