@@ -50,11 +50,11 @@ export function createEntranceDoors(THREE,{doorway,outward,level,modelURL=null})
     p.name=i?'right-door-hinge':'left-door-hinge';
     root.add(p);
   }
-  const procedural=new THREE.Group();root.add(procedural);
-  // Pivot in the centre of the hinge, not at the centre of the door leaf.
+  // Pivot at the actual .709m hinge position, rather than leaf centres.
   // +X goes inward on the left leaf; -X goes inward on the right.
   for(let i=0;i<2;i++){
     const sign=i===0?1:-1,leaf= new THREE.Group();
+    leaf.userData.proceduralLeaf=true;
     const x=sign*.344,span=.679;
     for(const frameX of [0,sign*(span-.06)])
       box(leaf,.058,doorH-.09,.085,frameX,(doorH-.07)/2,0,timber);
@@ -65,7 +65,6 @@ export function createEntranceDoors(THREE,{doorway,outward,level,modelURL=null})
     for(const y of [1.38,1.75])
       box(leaf,span-.08,.035,.065,x,y,0,timber);
     box(leaf,.13,.045,.095,sign*(span-.12),1.04,.09,bronze);
-    procedural.add(leaf);
     // The decorative placeholder can be swapped for the actual GLB without
     // affecting the floor plan, trigger radius, or hinge animation.
     pivots[i].add(leaf);
@@ -92,15 +91,16 @@ export function createEntranceDoors(THREE,{doorway,outward,level,modelURL=null})
         model.updateMatrixWorld(true);
         for(const part of moving){
           // Side from the actual GLB hinge x position, in real metres.
-          const x=part.getWorldPosition(new THREE.Vector3()).x;
-          const index=x<0?0:1;
+          const centre=part.getWorldPosition(new THREE.Vector3());
+          root.worldToLocal(centre);
+          const index=centre.x<0?0:1;
           pivots[index].attach(part);
         }
         model.updateMatrixWorld(true);
         // Both hinges are at the origin of root's local door coordinates.
         // Model and root have matching unscaled metre units.
         for(const p of pivots){
-          p.children.filter(child=>child.isGroup && !child.userData.fromGLB)
+          p.children.filter(child=>child.userData.proceduralLeaf)
             .forEach(child=>child.visible=false);
         }
         for(const part of frameParts){if(!part.parent)model.add(part);}
