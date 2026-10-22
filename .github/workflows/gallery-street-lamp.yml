@@ -1,0 +1,59 @@
+name: Install CC0 cast-iron gallery street lamps
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'automation/install-gallery-street-lamp.py'
+      - '.github/workflows/gallery-street-lamp.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: gallery-street-lamp
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Download and validate the publisher's CC0 model
+        run: python3 automation/install-gallery-street-lamp.py
+      - name: Confirm model is present and has valid glTF header
+        shell: bash
+        run: |
+          test -s test/virtual-gallery/models/polyhaven-street-lamp-01.glb
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          path=Path('test/virtual-gallery/models/polyhaven-street-lamp-01.glb')
+          data=path.read_bytes()
+          assert data[:4]==b'glTF'
+          assert struct.unpack_from('<I',data,8)[0]==len(data)
+          PY
+      - name: Commit same-origin street-lamp model
+        id: publish
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/virtual-gallery/models/polyhaven-street-lamp-01.glb
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Publish CC0 cast-iron street-lamp model"
+            git pull --rebase origin main
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Deploy updated gallery
+        if: steps.publish.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
