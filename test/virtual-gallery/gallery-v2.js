@@ -1215,7 +1215,10 @@ function readableDate(date) {
 async function loadEdition(date,{viaLift=false}={}) {
   if(!renderer)return;
   const url = new URL('../../gallery/'+date+'/', location.href);
-  const res=await fetchGalleryText(url,{cache:'no-store'});
+  // Previous daily editions never change; allow normal browser caching.
+  // Today's edition can still be updated by the publishing job.
+  const today=new Date().toISOString().slice(0,10);
+  const res=await fetchGalleryText(url,{cache:date===today?'no-cache':'force-cache'});
   if(!res.ok)throw new Error('The edition for '+readableDate(date)+' is not available.');
   const studies=readArchive(res.text,res.url);
   if(!studies.length)throw new Error('No artworks for this edition');
@@ -1291,14 +1294,10 @@ async function loadEdition(date,{viaLift=false}={}) {
 }
 async function load(){
   try{
-    // Fetch metadata concurrently: the tower index used to add up to seven
-    // seconds AFTER the archive fetch, even on a healthy connection.
     // The tower index already lists every published date. Avoid downloading and
     // parsing the gallery landing page on every cold start.
     // Retain HTML discovery only as a fallback for an unavailable index.
-    // Do not serialise archive discovery -> tower-index fetch -> baked
-    // geometry fetch. These three static assets are independent and should
-    // be in flight together; only the final scene construction waits.
+    // Fetch tower index and prepared geometry together.
     const cacheDay=new Date().toISOString().slice(0,10);
     const bakedPromise=loadPrebuiltTower(
       '../../gallery/tower-geometry.bin.gz?schema=2&day='+cacheDay);
