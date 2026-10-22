@@ -254,7 +254,7 @@ export function renderVisitors(THREE,scene,plan){
   root.add(g);
   // Actual Poly Haven model is an optional cosmetic upgrade. Keep the
   // validated local bench footprint and sitter positioning unchanged.
-  if(!matchMedia('(pointer:coarse)').matches && !plan.people.some(p=>p.seat&&Math.hypot(p.x-b.x,p.z-b.z)<.6))replaceFixtureWithProp(THREE,{
+  if(!matchMedia('(pointer:coarse)').matches)replaceFixtureWithProp(THREE,{
     id:'painted_wooden_bench',parent:root,placeholder:g,
     position:new THREE.Vector3(b.x,b.y,b.z),rotation:b.rotation,
     width:1.65,height:.88,depth:.52
