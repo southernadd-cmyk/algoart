@@ -144,24 +144,39 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
   const groundGeo=new THREE.PlaneGeometry(plan.size,plan.size,segments,segments);
   groundGeo.rotateX(-Math.PI/2);
   const position=groundGeo.getAttribute('position');
-  const groundColors=new Float32Array(position.count*3);
+  // The world has a finite terrain mesh while the sky / panorama extends
+  // indefinitely. Fade the ground's outer ~30% into the actual background
+  // instead of exposing a hard, square edge at the horizon. Three.js uses
+  // four-component vertex colours as RGB + alpha on transparent materials.
+  // This adds no geometry, textures or post-processing passes.
+  const groundColors=new Float32Array(position.count*4);
   const grass=new THREE.Color();
+  const smoothstep=t=>{const k=Math.max(0,Math.min(1,t));return k*k*(3-2*k);};
+  const half=plan.size/2;
   for(let i=0;i<position.count;i++){
-    const x=position.getX(i)+plan.centerX,z=position.getZ(i)+plan.centerZ;
+    const localX=position.getX(i),localZ=position.getZ(i);
+    const x=localX+plan.centerX,z=localZ+plan.centerZ;
     position.setY(i,plan.heightAt(x,z));
     const variation=Math.sin(x*.16+plan.phase)*Math.cos(z*.13+plan.slope);
     const detail=noise(x,z,plan.phase);
     const t=Math.max(0,Math.min(1,.5+variation*.29+detail*.10));
     grass.copy(terrainColors[0]).lerp(terrainColors[1],t);
     if(variation<-.48)grass.lerp(terrainColors[2],(-variation-.48)*.44);
-    groundColors[i*3]=grass.r;groundColors[i*3+1]=grass.g;groundColors[i*3+2]=grass.b;
+    const fade=Math.max(Math.abs(localX),Math.abs(localZ))/half;
+    const alpha=1-smoothstep((fade-.68)/.32);
+    groundColors[i*4]=grass.r;
+    groundColors[i*4+1]=grass.g;
+    groundColors[i*4+2]=grass.b;
+    groundColors[i*4+3]=alpha;
   }
   position.needsUpdate=true;
-  groundGeo.setAttribute('color',new THREE.BufferAttribute(groundColors,3));
+  groundGeo.setAttribute('color',new THREE.BufferAttribute(groundColors,4));
   groundGeo.computeVertexNormals();
   const groundMap=surfaceTexture(THREE,'ground');
   groundMap.repeat.set(plan.size/12,plan.size/12);
-  const ground=new THREE.Mesh(groundGeo,new THREE.MeshLambertMaterial({vertexColors:true,map:groundMap,side:THREE.DoubleSide}));
+  const ground=new THREE.Mesh(groundGeo,new THREE.MeshLambertMaterial({
+    vertexColors:true,transparent:true,map:groundMap,side:THREE.DoubleSide
+  }));
   ground.position.set(plan.centerX,0,plan.centerZ);
   scene.add(ground);
 
