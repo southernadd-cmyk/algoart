@@ -5,6 +5,7 @@ import { planGalleryHangs } from './hanging-v3.mjs?v=reserve-glazed-door-walls-2
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=gallery-surface-upgrade-20261022';
+import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
 import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=softer-seated-hips-20261022';
@@ -1008,22 +1009,15 @@ function constructGallery(layout, studies) {
   const windowGlass=new THREE.MeshStandardMaterial({color:'#839ba1',metalness:.34,roughness:.19,side:THREE.DoubleSide});
   const tintedGlass=new THREE.MeshStandardMaterial({color:'#536d75',metalness:.27,roughness:.25,side:THREE.DoubleSide});
   const exteriorMetal=new THREE.MeshStandardMaterial({color:'#454c49',metalness:.55,roughness:.4});
-  // Mobile GPUs cannot render thousands of independent draw calls from the
-  // archived tower. Batch equal-material boxes into instanced meshes while
-  // preserving every floor's own rooms, window apertures, trims and bridges.
-  // The current exhibition floor still uses its full-quality geometry.
-  const towerInstances=galleryFinish.lowPower?new Map():null;
+  // Collect identical-material wall/window/trim pieces instead of allocating
+  // thousands of separate draw calls. Their per-face UVs are retained when
+  // combined, so the completed tower looks the same as the desktop version.
+  const towerBuildStart=performance.now();
+  const towerBoxes=new Map();
   const put=(w,h,d,x,y,z,material=wall)=>{
     if(w<=0||h<=0||d<=0)return;
-    if(towerInstances){
-      if(!towerInstances.has(material))towerInstances.set(material,[]);
-      towerInstances.get(material).push([w,h,d,x,y,z]);
-      return;
-    }
-    const geometry=new THREE.BoxGeometry(w,h,d);
-    if(material.userData?.tileMeters)tiledBoxUvs(geometry,w,h,d,material.userData.tileMeters);
-    const mesh=new THREE.Mesh(geometry,material);
-    mesh.position.set(x,y,z);tower.add(mesh);
+    if(!towerBoxes.has(material))towerBoxes.set(material,[]);
+    towerBoxes.get(material).push([w,h,d,x,y,z]);
   };
   for(let level=0;level<archiveDates.length;level++){
     if(level===currentFloor)continue;
@@ -1108,23 +1102,11 @@ function constructGallery(layout, studies) {
         walkwayGlassMaterials,{lowPower:galleryFinish.lowPower}));
     }
   }
-  if(towerInstances){
-    const cube=new THREE.BoxGeometry(1,1,1);
-    const transform=new THREE.Object3D();
-    for(const [material,boxes] of towerInstances){
-      const batch=new THREE.InstancedMesh(cube,material,boxes.length);
-      for(let i=0;i<boxes.length;i++){
-        const [w,h,d,x,y,z]=boxes[i];
-        transform.position.set(x,y,z);
-        transform.scale.set(w,h,d);
-        transform.updateMatrix();
-        batch.setMatrixAt(i,transform.matrix);
-      }
-      batch.instanceMatrix.needsUpdate=true;
-      batch.computeBoundingSphere();
-      tower.add(batch);
-    }
-  }
+  const towerStats=appendTowerBoxBatches(THREE,tower,towerBoxes);
+  console.info('Archived tower prepared',{
+    boxes:towerStats.totalBoxes,batches:towerStats.batchCount,
+    elapsedMs:Math.round(performance.now()-towerBuildStart)
+  });
   scene.add(tower);
   const first=layout.rooms[0];
   if(currentFloor===0 && first.entranceWall)createGalleryArrival(first);
@@ -1255,16 +1237,18 @@ async function loadEdition(date,{viaLift=false}={}) {
 }
 async function load(){
   try{
-    archiveDates=await loadArchiveDates();
-    // Reuse one compact, cacheable index rather than loading every edition's HTML.
-    try{
-      const response=await fetchGalleryText('../../gallery/tower-layouts.json',{timeoutMs:7000});
-      if(response.ok){
+    // Fetch metadata concurrently: the tower index used to add up to seven
+    // seconds AFTER the archive fetch, even on a healthy connection.
+    const archivePromise=loadArchiveDates();
+    const towerIndexPromise=fetchGalleryText('../../gallery/tower-layouts.json',{timeoutMs:7000})
+      .then(response=>{
+        if(!response.ok)return new Map();
         const data=JSON.parse(response.text);
-        if(data.version===1&&Array.isArray(data.floors))
-          towerFloorSignatures=new Map(data.floors.map(f=>[f.date,f.studies]));
-      }
-    }catch(error){console.warn('Tower floor index unavailable',error);}
+        return data.version===1&&Array.isArray(data.floors)
+          ?new Map(data.floors.map(f=>[f.date,f.studies]))
+          :new Map();
+      }).catch(error=>{console.warn('Tower floor index unavailable',error);return new Map();});
+    [archiveDates,towerFloorSignatures]=await Promise.all([archivePromise,towerIndexPromise]);
 
     const qp=new URLSearchParams(location.search).get('date');
     await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates[0]);
