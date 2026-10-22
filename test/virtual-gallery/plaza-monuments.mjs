@@ -73,7 +73,11 @@ function monument(kind,plaza,side){
  const z=plaza.centre.z+across.z*offset+out.z*depth;
  root.position.set(x,plaza.level,z);
  // Artwork faces the middle approach; sculpture face normal looks out to plaza.
- root.rotation.y=Math.atan2(out.x,out.z)+(side===1?-.12:.12);
+ // Angle both works inward towards the visitor's central approach, rather
+ // than leaving them nearly parallel to the entrance. Their fronts converge
+ // towards a point on the path, while keeping the walkway unobstructed.
+ const facing=new THREE.Vector3(out.x*12-across.x*offset,0,out.z*12-across.z*offset).normalize();
+ root.rotation.y=Math.atan2(facing.x,facing.z);
  const frame=new THREE.Group();root.add(frame);
  const structure=ink(0x53534d);
  // A substantial free-standing open steel frame; no canvas/paper backing.
