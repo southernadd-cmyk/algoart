@@ -345,7 +345,7 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
    const across=p.side*(plaza.halfWidth-2.2);
    const x=plaza.centre.x+plaza.outward.x*p.along+plaza.transverse.x*across;
    const z=plaza.centre.z+plaza.outward.z*p.along+plaza.transverse.z*across;
-   const facing=new THREE.Vector3(-plaza.outward.x,0,-plaza.outward.z);
+   const facing=new THREE.Vector3(-plaza.transverse.x*p.side,0,-plaza.transverse.z*p.side);
    const yaw=Math.atan2(facing.x,facing.z);
    try{
     const person={bodyType:p.type,x,z,y:plaza.level+.35,yaw,scale:1};
