@@ -8,8 +8,13 @@ async function resolveModelURL(id){
  if(!response.ok)throw Error('Poly Haven file manifest '+response.status);
  const manifest=await response.json();
  const matches=[];
+ const fileURLs=new Map();
  function visit(node,path=[]){
   if(!node||typeof node!=='object')return;
+  if(typeof node.url==='string'){
+   const filename=new URL(node.url).pathname.split('/').pop();
+   if(filename)fileURLs.set(filename.toLowerCase(),node.url);
+  }
   if(typeof node.url==='string'&&/\.gltf(?:\?|$)/i.test(node.url)){
    const label=path.join('/').toLowerCase();
    matches.push({url:node.url,score:(label.includes('1k')?20:label.includes('2k')?10:0)+(label.includes('gltf')?5:0)});
@@ -19,15 +24,22 @@ async function resolveModelURL(id){
  visit(manifest);
  matches.sort((a,b)=>b.score-a.score);
  if(!matches.length)throw Error('No glTF download listed for '+id);
- return matches[0].url;
+ return {url:matches[0].url,fileURLs};
 }
 export async function loadPolyHavenProp(id){
  if(!assets.has(id)){
   assets.set(id,(async()=>{
-   const [{GLTFLoader},url]=await Promise.all([
-    import('three/addons/loaders/GLTFLoader.js'),resolveModelURL(id)]);
+   const [{GLTFLoader},{url,fileURLs},{default:THREE}]=await Promise.all([
+    import('three/addons/loaders/GLTFLoader.js'),resolveModelURL(id),import('three')]);
+   // Poly Haven glTF texture references are relative, while the actual
+   // dependency URLs are supplied separately in the official file manifest.
+   const manager=new THREE.LoadingManager();
+   manager.setURLModifier(requestURL=>{
+    const name=new URL(requestURL,url).pathname.split('/').pop()?.toLowerCase();
+    return fileURLs.get(name)||requestURL;
+   });
    return await new Promise((resolve,reject)=>{
-    new GLTFLoader().load(url,gltf=>resolve(gltf.scene),undefined,reject);
+    new GLTFLoader(manager).load(url,gltf=>resolve(gltf.scene),undefined,reject);
    });
   })().catch(error=>{console.warn('Optional Poly Haven model unavailable:',id,error);return null;}));
  }
