@@ -1,0 +1,32 @@
+name: Validate optimised gallery visitors
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'automation/optimize-gallery-visitors.py'
+      - '.github/workflows/gallery-visitors-optimize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  optimise-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image optimiser
+        run: python -m pip install 'Pillow>=10,<13'
+      - name: Optimise GLB and validate preserved rig
+        run: python automation/optimize-gallery-visitors.py
+      - name: Upload candidate (not deployed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gallery-visitors-optimised-candidate
+          path: test/virtual-gallery/models/human-male-female-rigged-optimized.glb
+          if-no-files-found: error
