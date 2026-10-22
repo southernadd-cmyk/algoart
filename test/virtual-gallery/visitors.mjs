@@ -205,6 +205,20 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
  holder.rotation.y=person.yaw;
  copy.scale.setScalar(scale);
  copy.position.set(-centre.x*scale,-box.min.y*scale,-centre.z*scale);
+ if(seated){
+   // Position from the actual hip joints, not the posed bounding-box bottom.
+   // The knee / foot geometry extends well below a seated person's pelvis.
+   const hips=bones.filter(b=>/^(thigh|upleg|upperleg)[._]?[lr](?:_\\d+)?$/i.test(b.name));
+   if(hips.length===2){
+     copy.updateMatrixWorld(true);
+     const localHips=hips.map(b=>b.getWorldPosition(new THREE.Vector3()));
+     const pelvis=localHips[0].add(localHips[1]).multiplyScalar(.5);
+     // Seat top is y=.52, with the pelvis just above it.
+     copy.position.y+=.57-pelvis.y*scale;
+     // Bring hips forward of the bench backrest and towards seat centre.
+     copy.position.z+=.04-pelvis.z*scale;
+   }
+ }
  holder.add(copy);
  holder.userData.galleryRiggedVisitor=true;
  holder.userData.galleryRigPose=seated?'seated-test':!relaxed?'original':raiseRightArm?'arm-raised':'relaxed';
