@@ -12,6 +12,31 @@
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
 </script>
 <script type="module" src="./gallery-v2.js?v=mobile-tower-loading-fix-20261022"></script>
+<script>
+// If the module fails to load (or mobile WebGL never completes startup),
+// provide a useful message instead of leaving the preparation text forever.
+window.addEventListener('load',()=>{
+  const enter=document.getElementById('enter');
+  const error=document.getElementById('error');
+  const timer=setTimeout(()=>{
+    if(enter?.disabled && error?.hidden){
+      error.textContent='The 3D gallery is taking too long to prepare. Reload this page or use the 2D gallery link.';
+      error.hidden=false;
+    }
+  },25000);
+  if(enter && error){
+    const observer=new MutationObserver(()=>{
+      if(!enter.disabled){
+        clearTimeout(timer);
+        if(error.textContent.startsWith('The 3D gallery is taking too long'))error.hidden=true;
+        observer.disconnect();
+      }
+    });
+    observer.observe(enter,{attributes:true,attributeFilter:['disabled']});
+    if(!enter.disabled){clearTimeout(timer);observer.disconnect();}
+  }
+});
+</script>
 </head>
 <body>
 <canvas id="world" aria-label="Interactive three-dimensional art gallery"></canvas>
