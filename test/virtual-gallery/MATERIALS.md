@@ -41,3 +41,33 @@ will enable the detailed model. Until then the animated procedural doors work.
 
 A source-level test is not a WebGL screenshot. Real desktop/mobile browser
 verification is still needed to judge colour, UV repeat and door clearance.
+
+
+## Sketchfab lift integration (optional binary)
+
+The source-file integration in `sketchfab-elevator.mjs` uses the exact
+[Elevator - Game Ready](https://sketchfab.com/3d-models/elevator-game-ready-e0ec659e907c4a35a840df99f8cd25be)
+by **Big5shadow**. Its downloaded ZIP says **Sketchfab Standard**, not CC0.
+The GLB's original metadata and names were examined locally:
+
+- overall source bounds: 3.1624 m wide × 2.9605 m high × 2.9037 m deep
+- door scene nodes: `DoorL_0` and `DoorR_1`
+- fitted scales: width .7273, height .8951, depth .6543
+- sliding positions produce an approximately 1.22 m clear gap and 0.2 mm
+  centre seam when closed
+
+**The GLB is not uploaded to GitHub by this code change.** The optional
+loader expects `test/virtual-gallery/models/elevator-game-ready.glb`.
+If absent or blocked it silently leaves the existing functional elevator
+visible. Once an appropriately authorised deployment of the GLB is
+available at that location, the real mesh replaces the fallback and
+inherits the existing proximity and floor-travel animation.
+
+The Free Standard terms permit incorporating the model in larger works
+but prohibit distribution/access as a stand-alone asset. Public GitHub
+Pages hosts raw binary files openly; confirm redistribution permission
+before placing the GLB in that public path.
+
+The model is low-polygon (~5,300 triangles) and ~296 KiB. It loads on
+demand after the floor scene is ready and its geometry is reused after
+lift-floor changes. It is not a prerequisite for a working elevator.
