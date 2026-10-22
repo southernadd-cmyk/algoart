@@ -1,3 +1,5 @@
+import {DOOR_HEIGHT,CORRIDOR_OVERLAP} from './layout-v2.mjs';
+
 // Lightweight glazed bridge enclosure shared by the occupied gallery and
 // archived exterior floors. No post-processing, external textures or loading.
 export function createWalkwayGlassMaterials(THREE,{lowPower=false}={}){
@@ -50,8 +52,14 @@ export function createGlassWalkway(THREE,start,end,width,materials,{lowPower=fal
   group.rotation.set(-Math.atan2(dy,distance),Math.atan2(dx,dz),0);
   // Local +Z follows the bridge's actual inclined centreline.
   const length=Math.hypot(distance,dy);
-  const halfWidth=width/2-.055, halfLength=length/2-.06;
-  const bottom=.13,top=2.88;
+  // The walkable deck overlaps each room by CORRIDOR_OVERLAP, whereas
+  // glazing must stop AT the doorway wall, rather than cutting into artwork.
+  const halfWidth=width/2-.055;
+  const halfLength=length/2-CORRIDOR_OVERLAP;
+  if(halfLength<.18)return group;
+  const span=2*halfLength;
+  // Match the 3.68m doorway, with clearance for the metal roof beam.
+  const bottom=.13,top=DOOR_HEIGHT-.08;
   const positions=[],uv=[],indices=[];
   function panel(corners,uvScaleX=1,uvScaleY=1){
     const base=positions.length/3;
@@ -65,10 +73,10 @@ export function createGlassWalkway(THREE,start,end,width,materials,{lowPower=fal
   for(const side of [-1,1]){
     const x=side*halfWidth;
     panel([[x,bottom,-halfLength],[x,bottom,halfLength],
-      [x,top,halfLength],[x,top,-halfLength]],length/3,1);
+      [x,top,halfLength],[x,top,-halfLength]],span/3,1);
   }
   panel([[-halfWidth,top,-halfLength],[halfWidth,top,-halfLength],
-    [halfWidth,top,halfLength],[-halfWidth,top,halfLength]],width/3,length/3);
+    [halfWidth,top,halfLength],[-halfWidth,top,halfLength]],width/3,span/3);
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
@@ -83,10 +91,10 @@ export function createGlassWalkway(THREE,start,end,width,materials,{lowPower=fal
   // draw call even for galleries with many footbridges.
   const members=[];
   const member=(x,y,z,w,h,d)=>members.push([x,y,z,w,h,d]);
-  const bays=Math.max(1,Math.ceil(length/(lowPower?4.5:2.9)));
+  const bays=Math.max(1,Math.ceil(span/(lowPower?4.5:2.9)));
   for(const x of [-halfWidth,halfWidth]){
-    member(x,bottom,0,.055,.075,length);
-    member(x,top,0,.058,.072,length);
+    member(x,bottom,0,.055,.075,span);
+    member(x,top,0,.058,.072,span);
     for(let i=0;i<=bays;i++){
       const z=-halfLength+2*halfLength*i/bays;
       member(x,(bottom+top)/2,z,.065,top-bottom,.065);
