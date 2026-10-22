@@ -1293,7 +1293,9 @@ async function load(){
   try{
     // Fetch metadata concurrently: the tower index used to add up to seven
     // seconds AFTER the archive fetch, even on a healthy connection.
-    const archivePromise=loadArchiveDates();
+    // The tower index already lists every published date. Avoid downloading and
+    // parsing the gallery landing page on every cold start.
+    // Retain HTML discovery only as a fallback for an unavailable index.
     // Do not serialise archive discovery -> tower-index fetch -> baked
     // geometry fetch. These three static assets are independent and should
     // be in flight together; only the final scene construction waits.
@@ -1306,12 +1308,16 @@ async function load(){
         if(!response.ok)return new Map();
         const data=JSON.parse(response.text);
         return data.version===1&&Array.isArray(data.floors)
-          ?new Map(data.floors.map(f=>[f.date,f.studies]))
+          ?new Map(data.floors.filter(f=>/^\\d{4}-\\d{2}-\\d{2}$/.test(f.date)&&Array.isArray(f.studies))
+            .map(f=>[f.date,f.studies]))
           :new Map();
       }).catch(error=>{console.warn('Tower floor index unavailable',error);return new Map();});
-    [archiveDates,towerFloorSignatures,prebuiltTower]=await Promise.all([
-      archivePromise,towerIndexPromise,bakedPromise
+    [towerFloorSignatures,prebuiltTower]=await Promise.all([
+      towerIndexPromise,bakedPromise
     ]);
+    archiveDates=towerFloorSignatures.size
+      ?[...towerFloorSignatures.keys()].sort()
+      :await loadArchiveDates();
     const qp=new URLSearchParams(location.search).get('date');
     await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates[0]);
   }catch(e){
