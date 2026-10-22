@@ -1,6 +1,7 @@
 // Seeded furniture and visitor v1. WebGL-independent placement followed by
 // lightweight geometry; no inaccessible downloaded model required.
 import {makeRandom,seedFromString,DOOR_WIDTH} from './layout-v2.mjs';
+import {replaceFixtureWithProp} from './polyhaven-props.mjs';
 const near=(a,b,r)=>Math.hypot(a.x-b.x,a.z-b.z)<r;
 export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  const rng=makeRandom(seedFromString('PP-VISITORS-v1:'+layout.date));
@@ -251,6 +252,13 @@ export function renderVisitors(THREE,scene,plan){
   for(const x of [-.68,.68])for(const z of [-.17,.17])
    piece(g,new THREE.BoxGeometry(.075,.48,.075),steel,x,.24,z);
   root.add(g);
+  // Actual Poly Haven model is an optional cosmetic upgrade. Keep the
+  // validated local bench footprint and sitter positioning unchanged.
+  replaceFixtureWithProp(THREE,{
+    id:'painted_wooden_bench',parent:root,placeholder:g,
+    position:new THREE.Vector3(b.x,b.y,b.z),rotation:b.rotation,
+    width:1.65,height:.88,depth:.52
+  });
  }
  const hair=['#38302b','#6c5240','#262b2b','#a07d53','#5b4b42'].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
  const trousers=['#3b454c','#625c5b','#52534e','#434f5a','#68685d'].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
