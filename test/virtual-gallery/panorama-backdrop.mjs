@@ -4,7 +4,7 @@
 let cached = new Map();
 export function loadSquarePanorama(THREE,scene,{sky,clouds,lowPower=false}={}){
   // The currently supplied source is 1K: do not request nonexistent 2K/4K assets.
-  const path='./assets/jedlina-zdroj-1k.jpg';
+  const path='./assets/day-environment-hdri-101-1k.jpg';
   const backup=path;
   const use=(texture)=>{
     // Level swaps recreate the environment: do not mutate an old scene.
