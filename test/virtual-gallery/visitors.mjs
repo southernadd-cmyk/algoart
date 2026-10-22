@@ -397,8 +397,8 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
      if(shoulder&&elbow&&hand){
        // Keep elbows slightly forward and wrists above the thighs, rather
        // than allowing the hands to intersect the bench beside the hips.
-       orient(shoulder,elbow,new THREE.Vector3(side==='L'?.24:-.24,-.45,.86));
-       orient(elbow,hand,new THREE.Vector3(0,-.24,.97));
+       orient(shoulder,elbow,new THREE.Vector3(side==='L'?.24:-.24,-.32,.90));
+       orient(elbow,hand,new THREE.Vector3(0,-.08,.99));
      }
      const thigh=matching(side,[/thigh/,/upleg/,/upperleg/]);
      const shin=matching(side,[/shin/,/calf/,/lowerleg/,/^leg/]);
@@ -534,7 +534,7 @@ export function renderVisitors(THREE,scene,plan){
      try{
        if(p.seat){
          // Cushion surface is ~0.55m; place the hip joint just above it.
-         const seated=riggedVisitor(THREE,asset,{...p,scale:1},{seated:true,seatHipHeight:.57});
+         const seated=riggedVisitor(THREE,asset,{...p,scale:1},{seated:true,seatHipHeight:.61});
          // The model faces local +Z; negative Z moves its hips into the bench.
          // Previous positive offsets pushed sitters away from the seat.
          const forward=-.39;
@@ -576,7 +576,7 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
    try{
     const person={bodyType:p.type,x,z,y:plaza.level,yaw,scale:1};
     // Plaza bench cushion surface is ~0.615m; hips sit just above it.
-    const figure=riggedVisitor(THREE,asset,person,{seated:true,seatHipHeight:.64});
+    const figure=riggedVisitor(THREE,asset,person,{seated:true,seatHipHeight:.68});
     const local=new THREE.Vector3(0,0,p.forward).applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
     figure.position.add(local);
     group.add(figure);
