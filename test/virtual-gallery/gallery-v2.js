@@ -6,7 +6,7 @@ import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } fr
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
-import { createExteriorLandscape } from './environment-render.mjs?v=plaza-softening-20261022';
+import { createExteriorLandscape } from './environment-render.mjs?v=museum-forecourt-20261022';
 import { planVisitors,renderVisitors } from './visitors.mjs?v=semantic-bone-aliases-20261022';
 
 const $ = (id) => document.getElementById(id);
