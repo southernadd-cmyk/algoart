@@ -8,6 +8,7 @@ import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-mater
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=hdr-panorama-20261022';
 import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=plaza-facing-fix-20261022';
+import {replaceFixtureWithProp} from './polyhaven-props.mjs';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -772,6 +773,16 @@ function constructGallery(layout, studies) {
   exteriorBrick.userData.tileMeters=3.2;
   for(const room of layout.rooms){
     addRoom(room,room.index,layout.rooms.length);
+    // A single lightweight Poly Haven ceiling fixture per room, loaded only
+    // after entry. Existing scene lighting remains the illumination source.
+    deferredGalleryJobs.push(()=>{
+      const fixtureRoot=new THREE.Group();scene.add(fixtureRoot);
+      replaceFixtureWithProp(THREE,{
+        id:'modern_ceiling_lamp_01',parent:fixtureRoot,
+        position:new THREE.Vector3(room.x,room.y+ROOM_HEIGHT-1.0,room.z),
+        width:.48,height:.9,depth:.48
+      });
+    });
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
       deferredGalleryJobs.push(()=>hangArt(room,byId.get(hanging.studyId),hanging));
     for(const placement of sculptures.filter(p=>p.roomIndex===room.index)){
