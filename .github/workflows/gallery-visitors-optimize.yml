@@ -38,7 +38,7 @@ jobs:
           from pathlib import Path
           p=Path('test/virtual-gallery/visitors.mjs')
           s=p.read_text()
-          s="import {MeshoptDecoder} from 'https://cdn.jsdelivr.net/npm/meshoptimizer@0.25.0/meshopt_decoder.module.js';\\n"+s
+          s="import {MeshoptDecoder} from 'https://cdn.jsdelivr.net/npm/meshoptimizer@0.25.0/meshopt_decoder.module.js';\n"+s
           s=s.replace("new GLTFLoader().load('./models/human-male-female-rigged.glb'", "new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('./models/human-male-female-rigged-optimized.glb'")
           p.write_text(s)
           PY
@@ -58,7 +58,7 @@ jobs:
           try{
             const page=await browser.newPage({viewport:{width:1280,height:800}});
             await page.goto('http://127.0.0.1:4173/test/virtual-gallery/rig-debug.html',{waitUntil:'domcontentloaded'});
-            await page.waitForFunction(()=>/^(PASS|FAIL|Failed to load)/.test(document.querySelector('#status')?.textContent||''),{timeout:60000});
+            await page.waitForFunction(()=>/^(PASS|FAIL|Failed to load)/.test(document.querySelector('#status')?.textContent||''),null,{timeout:60000});
             for(const [name,button] of [['standing','relaxed'],['rest','original'],['raised-arm','raise']]){
               if(button!=='relaxed')await page.locator('#'+button).click();
               await page.screenshot({path:'visitor-pose-validation/'+name+'.png',fullPage:true});
