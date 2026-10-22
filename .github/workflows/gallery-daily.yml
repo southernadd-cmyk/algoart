@@ -190,7 +190,7 @@ jobs:
           const size=packed.readUInt32LE(0);
           const baked=JSON.parse(packed.subarray(4,4+size).toString('utf8'));
           const live=JSON.parse(fs.readFileSync('gallery/tower-layouts.json','utf8'));
-          if(baked.version!==1||baked.floors.length!==live.floors.length)throw Error('Incomplete prepared tower');
+          if(baked.version!==2||baked.floors.length!==live.floors.length)throw Error('Incomplete prepared tower');
           for(let i=0;i<live.floors.length;i++){
             const day=live.floors[i],floor=baked.floors[i];
             if(day.date!==floor.date||floor.signature!==day.studies.map(x=>x.join(':')).join('|'))throw Error('Stale prepared tower '+day.date);
