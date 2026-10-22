@@ -1289,9 +1289,13 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
   camera.far=Math.max(210,elevation+240);camera.updateProjectionMatrix();
   const constructionStart=performance.now();
+  const sceneBeforeConstruction=new Set(scene.children);
   try{
     constructGallery(plan,studyList);
   }catch(error){
+    // Remove partially constructed destination objects before recovery.
+    // Otherwise a failed construction leaves orphaned meshes in the scene.
+    editionObjects=scene.children.filter(object=>!sceneBeforeConstruction.has(object));
     if(!rollback && previousDate && previousDate!==date){
       console.error('Gallery floor construction failed; restoring previous edition',date,error);
       try{
