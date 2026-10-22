@@ -45,9 +45,6 @@ export function placeCastIronStreetLamp(THREE,parent,groundPosition,placeholder,
    model.scale.setScalar(scale);
    model.position.set(-centre.x*scale,-asset.bounds.min.y*scale,-centre.z*scale);
    mount.add(model);
-   const lantern=new THREE.Mesh(new THREE.SphereGeometry(.09,8,6),new THREE.MeshBasicMaterial({color:0xffe4a3}));
-   lantern.position.y=(asset.bounds.max.y-asset.bounds.min.y)*scale*.85;
-   mount.add(lantern);
    if(placeholder)placeholder.visible=false;
  });
  return mount;
