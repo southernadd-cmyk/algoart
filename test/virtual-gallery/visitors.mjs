@@ -198,7 +198,7 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
        (name.endsWith(side.toLowerCase())||name.endsWith('.'+side.toLowerCase())||
         name.includes('_'+side.toLowerCase())||name.includes(side.toLowerCase()+'_'));
    });
-   const orient=(joint,child,target)=>{
+   const orient=(joint,child,target,bend=1)=>{
      copy.updateMatrixWorld(true);
      const from=child.getWorldPosition(new THREE.Vector3())
        .sub(joint.getWorldPosition(new THREE.Vector3())).normalize();
@@ -207,7 +207,11 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
      const delta=new THREE.Quaternion().setFromUnitVectors(from,to);
      const parent=joint.parent.getWorldQuaternion(new THREE.Quaternion());
      const world=joint.getWorldQuaternion(new THREE.Quaternion());
-     joint.quaternion.copy(parent.invert().multiply(delta).multiply(world));
+     // A full ninety-degree rotation at the thigh can pull skin-weighted
+     // vertices into the abdomen and pinch the waist. Blend just the hip
+     // bend; shoulder and knee targets retain their original strength.
+     const requested=parent.invert().multiply(delta).multiply(world);
+     joint.quaternion.slerp(requested,bend);
      copy.updateMatrixWorld(true);
      const result=child.getWorldPosition(new THREE.Vector3())
        .sub(joint.getWorldPosition(new THREE.Vector3())).normalize();
@@ -227,7 +231,9 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
        fail('seated bone lookup',side+' thigh/shin/foot absent; candidates: '+
          bones.map(b=>b.name).filter(n=>/thigh|shin|calf|leg|foot/i.test(n)).join(', '));
      }
-     const hipAccuracy=orient(thigh,shin,new THREE.Vector3(0,-.05,1));
+     // A little downward thigh angle plus a partial hip rotation avoids
+     // the unnaturally sharp pinch at the pelvis of these imported rigs.
+     const hipAccuracy=orient(thigh,shin,new THREE.Vector3(0,-.27,.96),.84);
      const kneeAccuracy=orient(shin,foot,new THREE.Vector3(0,-1,.12));
      seatingMetrics.push({side,thigh:thigh.name,shin:shin.name,foot:foot.name,
        hipAccuracy:+hipAccuracy.toFixed(3),kneeAccuracy:+kneeAccuracy.toFixed(3)});
