@@ -7,7 +7,7 @@ import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './s
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=hdr-panorama-20261022';
-import { planVisitors,renderVisitors } from './visitors.mjs?v=semantic-bone-aliases-20261022';
+import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=seated-plaza-and-benches-20261022';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -823,6 +823,7 @@ function constructGallery(layout, studies) {
   })():null;
   createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower,
     protectedLayouts:exteriorFloorPlans.map(f=>f.plan),approach:entryApproach,plaza:entryPlaza});
+  if(entryPlaza)deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,entryPlaza));
   // Rebuild each archived floor from its *own* daily seed signature.
   // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
   const tower=new THREE.Group();
