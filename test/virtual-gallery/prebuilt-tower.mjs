@@ -36,48 +36,69 @@ export function prebuiltTowerMatches(source,dates,signatures){
  return true;
 }
 export function renderPrebuiltTower(THREE,tower,source,materials,currentFloor){
- const bridges=[];
- let batchCount=0;
+ const bridges=[],byMaterial=new Map();
  for(let level=0;level<source.metadata.floors.length;level++){
    if(level===currentFloor)continue;
    const floor=source.metadata.floors[level];
-   for(const batch of floor.batches){
-     const material=materials[batch.material];
-     if(!material)throw Error('Unknown prepared tower material '+batch.material);
-     const cacheKey=level+':'+batch.material;
-     let geometry=source.geometryCache.get(cacheKey);
-     if(!geometry){
-       const floats=(range,components)=>{
-         const [relative,byteLength]=range,absolute=source.dataStart+relative;
-         if(relative<0||byteLength<0||byteLength%4!==0||absolute%4!==0||
-            absolute+byteLength>source.bytes.byteLength)
-           throw Error('Invalid prepared geometry attribute');
-         return new THREE.BufferAttribute(new Float32Array(source.bytes,absolute,byteLength/4),components);
-       };
-       const [indexRelative,indexLength]=batch.index;
-       const offset=source.dataStart+indexRelative;
-       if(indexRelative<0||indexLength<0||indexLength%4!==0||offset%4!==0||
-          offset+indexLength>source.bytes.byteLength)throw Error('Invalid prepared tower indices');
-       geometry=new THREE.BufferGeometry();
-       geometry.setAttribute('position',floats(batch.position,3));
-       geometry.setAttribute('normal',floats(batch.normal,3));
-       geometry.setAttribute('uv',floats(batch.uv,2));
-       geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(source.bytes,offset,indexLength/4),1));
-       if(geometry.getAttribute('position').count!==batch.vertexCount||
-          geometry.index.count!==batch.indexCount)
-         throw Error('Prepared tower geometry count mismatch');
-       geometry.computeBoundingSphere();
-       // Reusing the immutable, cached buffer on lift changes avoids expensive
-       // GPU buffer reallocations. The edition disposer respects this flag.
-       geometry.userData.galleryPersistent=true;
-       source.geometryCache.set(cacheKey,geometry);
-     }
-     const mesh=new THREE.Mesh(geometry,material);
-     mesh.name='prebuilt-archive-tower';
-     tower.add(mesh);
-     batchCount++;
-   }
    bridges.push(...floor.bridges);
+   for(const batch of floor.batches){
+     if(!materials[batch.material])throw Error('Unknown prepared tower material '+batch.material);
+     if(!byMaterial.has(batch.material))byMaterial.set(batch.material,[]);
+     byMaterial.get(batch.material).push(batch);
+   }
+ }
+ // Merge the *already baked* triangle buffers with fast array copies.
+ // This preserves the previous desktop/mobile draw-call budget (one per
+ // material, not one per material per floor) without building any box meshes.
+ if(source.cacheForFloor!==currentFloor){
+   for(const geometry of source.geometryCache.values())geometry.dispose();
+   source.geometryCache.clear();
+   source.cacheForFloor=currentFloor;
+ }
+ const rangeView=(range,type)=>{
+   const [relative,byteLength]=range,absolute=source.dataStart+relative;
+   if(relative<0||byteLength<0||byteLength%4!==0||absolute%4!==0||
+      absolute+byteLength>source.bytes.byteLength)
+     throw Error('Invalid prepared geometry attribute');
+   return new type(source.bytes,absolute,byteLength/4);
+ };
+ let batchCount=0;
+ for(const [name,batches] of byMaterial){
+   let geometry=source.geometryCache.get(name);
+   if(!geometry){
+     const totalVertices=batches.reduce((n,b)=>n+b.vertexCount,0);
+     const totalIndices=batches.reduce((n,b)=>n+b.indexCount,0);
+     const positions=new Float32Array(totalVertices*3);
+     const normals=new Float32Array(totalVertices*3);
+     const uvs=new Float32Array(totalVertices*2);
+     const indices=new Uint32Array(totalIndices);
+     let vertexBase=0,indexBase=0;
+     for(const batch of batches){
+       positions.set(rangeView(batch.position,Float32Array),vertexBase*3);
+       normals.set(rangeView(batch.normal,Float32Array),vertexBase*3);
+       uvs.set(rangeView(batch.uv,Float32Array),vertexBase*2);
+       const original=rangeView(batch.index,Uint32Array);
+       if(original.length!==batch.indexCount)throw Error('Bad tower index count');
+       for(let i=0;i<original.length;i++){
+         if(original[i]>=batch.vertexCount)throw Error('Out of range tower triangle index');
+         indices[indexBase+i]=original[i]+vertexBase;
+       }
+       vertexBase+=batch.vertexCount;
+       indexBase+=batch.indexCount;
+     }
+     geometry=new THREE.BufferGeometry();
+     geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
+     geometry.setAttribute('normal',new THREE.BufferAttribute(normals,3));
+     geometry.setAttribute('uv',new THREE.BufferAttribute(uvs,2));
+     geometry.setIndex(new THREE.BufferAttribute(indices,1));
+     geometry.computeBoundingSphere();
+     geometry.userData.galleryPersistent=true;
+     source.geometryCache.set(name,geometry);
+   }
+   const mesh=new THREE.Mesh(geometry,materials[name]);
+   mesh.name='prebuilt-archive-tower';
+   tower.add(mesh);
+   batchCount++;
  }
  return {bridges,batchCount};
 }
