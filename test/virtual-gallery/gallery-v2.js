@@ -1297,7 +1297,7 @@ async function load(){
     // Each daily publication has its own cache key, so repeat visits reuse
     // the prepared geometry without reading stale copies on following days.
     const bakedPromise=archivePromise.then(dates=>
-      loadPrebuiltTower('../../gallery/tower-geometry.bin.gz?day='+dates.at(-1)))
+      loadPrebuiltTower('../../gallery/tower-geometry.bin.gz?day='+dates.at(-1)+'&schema=2'))
       .catch(error=>{console.warn('Prepared tower unavailable:',error);return null;});
     const towerIndexPromise=archivePromise.then(dates=>
       fetchGalleryText('../../gallery/tower-layouts.json?day='+dates.at(-1),{timeoutMs:7000}))
