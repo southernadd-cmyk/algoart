@@ -46,6 +46,7 @@ jobs:
               return data,json.loads(data[20:20+n])
             before,a=read('flat')
             after,b=read('meshopt')
+            print(f'{sex}: original {len(before):,}, compressed {len(after):,}; meshes {len(a.get("meshes",[]))}->{len(b.get("meshes",[]))}; skins {len(a.get("skins",[]))}->{len(b.get("skins",[]))}; nodes {len(a.get("nodes",[]))}->{len(b.get("nodes",[]))}; extensions {b.get("extensionsRequired",[])}',flush=True)
             assert len(after)<len(before),(sex,'not smaller')
             assert 'EXT_meshopt_compression' in b.get('extensionsRequired',[])
             assert len(a['meshes'])==len(b['meshes'])
