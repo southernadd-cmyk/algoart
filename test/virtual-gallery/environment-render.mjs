@@ -1,7 +1,7 @@
 // Procedural exterior for the daily museum. Small draw-call budget: one
 // terrain mesh, one sky shell and batched instanced plants/stone.
 import {buildEnvironmentPlan} from './environment-v1.mjs';
-import { loadSquarePanorama } from './panorama-backdrop.mjs';
+import { loadSquarePanorama } from './panorama-backdrop.mjs?v=day-environment-101-20261022';
 
 const PALETTES={
   meadow:{horizon:'#cbd5cc',zenith:'#b1c8cf',terrain:['#7c9077','#9eab86','#71856e'],trees:['#536d54','#667b58','#79906b'],stone:['#b2b3a6','#9b9f91']},
