@@ -437,7 +437,7 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
      // Align the hips relative to this floor (the holder supplies person.y).
      copy.position.y+=seatHipHeight-pelvis.y;
      // Advance hips past the backrest onto the actual seating surface.
-     copy.position.z+=.56-pelvis.z;
+     copy.position.z+=.38-pelvis.z;
    }
  }
  holder.add(copy);
@@ -532,8 +532,8 @@ export function renderVisitors(THREE,scene,plan){
      try{
        if(p.seat){
          // Cushion surface is ~0.55m; place the hip joint just above it.
-         const seated=riggedVisitor(THREE,asset,{...p,scale:1},{seated:true,seatHipHeight:.61});
-         const forward=p.bodyType==='male'?.28:.36;
+         const seated=riggedVisitor(THREE,asset,{...p,scale:1},{seated:true,seatHipHeight:.51});
+         const forward=p.bodyType==='male'?.12:.16;
          const shift=new THREE.Vector3(0,0,forward)
            .applyAxisAngle(new THREE.Vector3(0,1,0),p.yaw);
          seated.position.add(shift);
@@ -558,8 +558,8 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
  if(!plaza)return null;
  const group=new THREE.Group();scene.add(group);
  const positions=[
-  {type:'male',along:-9,side:-1,forward:.28},
-  {type:'female',along:6,side:1,forward:.36}
+  {type:'male',along:-9,side:-1,forward:.12},
+  {type:'female',along:6,side:1,forward:.16}
  ];
  loadCharacters().then(asset=>{
   if(!asset||!group.parent)return;
@@ -572,7 +572,7 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
    try{
     const person={bodyType:p.type,x,z,y:plaza.level,yaw,scale:1};
     // Plaza bench cushion surface is ~0.615m; hips sit just above it.
-    const figure=riggedVisitor(THREE,asset,person,{seated:true,seatHipHeight:.68});
+    const figure=riggedVisitor(THREE,asset,person,{seated:true,seatHipHeight:.58});
     const local=new THREE.Vector3(0,0,p.forward).applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
     figure.position.add(local);
     group.add(figure);
