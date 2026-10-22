@@ -396,7 +396,7 @@ function nearLift(){
   return Math.hypot(position.x-liftPosition.x,position.z-liftPosition.z)<1.15;
 }
 // A controller-operated, world-space lift panel: HTML panels are invisible in VR.
-function paintXRLift(){
+function paintXRLift(message='Point a controller and press the trigger'){
   if(!xrLiftPanel)return;
   const {canvas,texture}=xrLiftPanel;
   const c=canvas.getContext('2d');
@@ -407,7 +407,7 @@ function paintXRLift(){
   c.fillText('Floor '+(xrFloorChoice===0?'G':xrFloorChoice),42,197);
   c.font='23px Arial';c.fillStyle='#4e5b53';
   c.fillText(readableDate(archiveDates[xrFloorChoice]||exhibitDate),42,242);
-  c.font='21px Arial';c.fillText('Point a controller and press the trigger',42,291);
+  c.font='21px Arial';c.fillText(message,42,291);
   const buttons=[
     {name:'Previous',x:35,w:230,disabled:xrFloorChoice<=0},
     {name:xrFloorChoice===currentFloor?'Close':'Travel',x:278,w:280,disabled:false},
@@ -422,6 +422,15 @@ function paintXRLift(){
   }
   c.textAlign='left';c.font='19px Arial';c.fillStyle='#4e5b53';
   c.fillText('Move away from the lift to dismiss',40,478);
+  texture.needsUpdate=true;
+}
+function paintXRTravel(index){
+  if(!xrLiftPanel)return;
+  const {canvas,texture}=xrLiftPanel;
+  const c=canvas.getContext('2d');
+  c.fillStyle='#293b33';c.fillRect(0,0,840,500);
+  c.fillStyle='#f5f2e9';c.font='34px Georgia';c.fillText('Travelling to floor '+(index===0?'G':index),55,182);
+  c.font='23px Arial';c.fillText('Loading the exhibition…',55,255);
   texture.needsUpdate=true;
 }
 function openXRLift(){
@@ -487,7 +496,7 @@ async function travelLift(date,index){
   if(liftTravelling)return;
   liftTravelling=true;
   const xrRide=renderer.xr.isPresenting;
-  if(xrRide)closeXRLift();
+  if(xrRide)paintXRTravel(index);
   $('lift').hidden=true;
   if(!xrRide)document.exitPointerLock?.();
   const overlay=$('liftAnimation');
@@ -504,6 +513,7 @@ async function travelLift(date,index){
     // Keep doors closed long enough to make the ride perceptible.
     await new Promise(resolve=>setTimeout(resolve,Math.max(0,1300-(performance.now()-begin))));
     overlay.hidden=true;
+    if(xrRide)closeXRLift();
     if(!xrRide){
       $('liftArrival').hidden=false;
       $('liftArrival').textContent='Doors opening · floor '+(index===0?'G':index);
@@ -515,7 +525,10 @@ async function travelLift(date,index){
     errorBox.textContent='Lift could not reach that floor: '+error.message;
     errorBox.hidden=false;
     if(!xrRide)$('lift').hidden=false;
-    else openXRLift();
+    else {
+      if(!xrLiftPanel)openXRLift();
+      paintXRLift('This floor did not load. Choose another.');
+    }
   }finally{liftTravelling=false;}
 }
 
