@@ -5,6 +5,7 @@ on:
     paths:
       - 'automation/build-quaternius-flat.py'
       - 'automation/meshopt-quaternius.mjs'
+      - 'test/virtual-gallery/quaternius-meshopt-check.html'
       - '.github/workflows/quaternius-meshopt.yml'
   workflow_dispatch:
 permissions:
@@ -62,6 +63,39 @@ jobs:
             print(f'{sex}: {len(before):,} -> {len(after):,} bytes',flush=True)
           print(f'COMBINED: {total:,} bytes',flush=True)
           PY
+      - name: Install Chromium pose-test tooling
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test actual compressed male and female models in WebGL
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/quaternius-test.log 2>&1 &
+          node --input-type=module <<'JS'
+          import {chromium} from 'playwright';
+          import {mkdirSync} from 'node:fs';
+          mkdirSync('quaternius-pose-screenshots',{recursive:true});
+          const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl']});
+          try{
+            const page=await browser.newPage({viewport:{width:1200,height:720}});
+            page.on('pageerror',e=>console.error('BROWSER:',e.message));
+            await page.goto('http://127.0.0.1:4173/test/virtual-gallery/quaternius-meshopt-check.html');
+            await page.waitForFunction(()=>window.poseResults?.status!=='loading',null,{timeout:60000});
+            for(const pose of ['standing','arm','seated']){
+              if(pose!=='standing')await page.evaluate(p=>window.showPose(p),pose);
+              const state=await page.evaluate(()=>window.poseResults);
+              if(state.status!=='pass')throw Error(pose+': '+JSON.stringify(state));
+              await page.screenshot({path:'quaternius-pose-screenshots/'+pose+'.png'});
+              console.log('PASS browser pose:',pose);
+            }
+          }finally{await browser.close()}
+          JS
+      - name: Upload compressed pose screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: quaternius-meshopt-pose-screenshots
+          path: quaternius-pose-screenshots/*.png
+          if-no-files-found: error
       - name: Upload compressed files without changing the live gallery
         uses: actions/upload-artifact@v4
         with:
