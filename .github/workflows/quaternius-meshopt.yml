@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'automation/build-quaternius-flat.py'
+      - 'automation/meshopt-quaternius.mjs'
       - '.github/workflows/quaternius-meshopt.yml'
   workflow_dispatch:
 permissions:
@@ -25,12 +26,10 @@ jobs:
       - name: Rebuild Quaternius vertex-colour models, eye textures only
         run: python automation/build-quaternius-flat.py
       - name: Install proven Meshopt tooling
-        run: npm install --no-save --no-package-lock @gltf-transform/cli@4.5.1
+        run: npm install --no-save --no-package-lock @gltf-transform/core@4.5.1 @gltf-transform/extensions@4.5.1 @gltf-transform/functions@4.5.1 meshoptimizer@0.25.0
       - name: Compress male and female rigs
         run: |
-          for sex in male female; do
-            npx gltf-transform meshopt "test/virtual-gallery/models/quaternius-$sex-flat.glb" "test/virtual-gallery/models/quaternius-$sex-meshopt.glb" --level medium
-          done
+          node automation/meshopt-quaternius.mjs
       - name: Verify sizes, skin bones, vertex colours and Meshopt
         shell: bash
         run: |
