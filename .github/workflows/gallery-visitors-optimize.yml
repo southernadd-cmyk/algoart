@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'automation/optimize-gallery-visitors.py'
+      - 'automation/validate-gallery-visitors.py'
       - '.github/workflows/gallery-visitors-optimize.yml'
   workflow_dispatch:
 
@@ -14,19 +14,26 @@ permissions:
 jobs:
   optimise-validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install image optimiser
-        run: python -m pip install 'Pillow>=10,<13'
-      - name: Optimise GLB and validate preserved rig
-        run: python automation/optimize-gallery-visitors.py
-      - name: Upload candidate (not deployed)
+      - name: Inspect original visitor composition
+        run: python automation/validate-gallery-visitors.py inspect
+      - name: Install glTF Transform CLI
+        run: npm install --no-save --no-package-lock @gltf-transform/cli@4.5.1
+      - name: Compress geometry and animations with Meshopt
+        run: npx gltf-transform meshopt test/virtual-gallery/models/human-male-female-rigged.glb test/virtual-gallery/models/human-male-female-rigged-optimized.glb --level medium
+      - name: Validate character rigs and compressed file
+        run: python automation/validate-gallery-visitors.py verify
+      - name: Upload candidate for isolated visual checks
         uses: actions/upload-artifact@v4
         with:
-          name: gallery-visitors-optimised-candidate
+          name: gallery-visitors-meshopt-candidate
           path: test/virtual-gallery/models/human-male-female-rigged-optimized.glb
           if-no-files-found: error
