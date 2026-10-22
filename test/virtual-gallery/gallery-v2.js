@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
-import { buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
+import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
 import { planGalleryHangs } from './hanging-v3.mjs';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
@@ -9,7 +9,7 @@ import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
 import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=artwork-facing-benches-20261022';
 import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
-import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=glazed-bridges-20261022';
+import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -166,7 +166,7 @@ function addWallWithOpening(room, side) {
   const wing=(length-opening)/2;
   segment(wing,-(opening+wing)/2);
   segment(wing, (opening+wing)/2);
-  const doorHeight=side===room.entranceWall?4.15:3.68;
+  const doorHeight=side===room.entranceWall?4.15:DOOR_HEIGHT;
   segment(opening,0,ROOM_HEIGHT-doorHeight,room.y+(ROOM_HEIGHT+doorHeight)/2);
   if(horizontal)block(opening+.09,.045,.43,room.x,room.y+doorHeight,fixed,join);
   else block(.43,.045,opening+.09,fixed,room.y+doorHeight,room.z,join);
@@ -984,7 +984,7 @@ function constructGallery(layout, studies) {
         };
         for(const bandY of [y+.32,y+ROOM_HEIGHT-.36])trim(length+.13,.085,0,bandY,join);
         if(room.doors.includes(side)){
-          const opening=DOOR_WIDTH,wing=(length-opening)/2,doorHeight=3.68;
+          const opening=DOOR_WIDTH,wing=(length-opening)/2,doorHeight=DOOR_HEIGHT;
           wallPart(wing,ROOM_HEIGHT,-(opening+wing)/2,centre);
           wallPart(wing,ROOM_HEIGHT,(opening+wing)/2,centre);
           wallPart(opening,ROOM_HEIGHT-doorHeight,0,y+(ROOM_HEIGHT+doorHeight)/2);
