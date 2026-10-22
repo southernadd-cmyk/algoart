@@ -27,7 +27,7 @@ small{display:block;color:#52605a}canvas{width:100%;height:100%;display:block}
 </main>
 <script type="module">
 import * as THREE from 'three';
-import {loadRiggedCharacterAsset,createRiggedCharacter} from './visitors.mjs?v=rig-mesh-and-motion-20261022';
+import {loadRiggedCharacterAsset,createRiggedCharacter} from './visitors.mjs?v=semantic-bone-aliases-20261022';
 const canvas=document.querySelector('#view'),status=document.querySelector('#status');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
