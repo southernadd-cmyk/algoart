@@ -1,3 +1,4 @@
+import {MeshoptDecoder} from 'https://cdn.jsdelivr.net/npm/meshoptimizer@0.25.0/meshopt_decoder.module.js';
 // Seeded furniture and visitor v1. WebGL-independent placement followed by
 // lightweight geometry; no inaccessible downloaded model required.
 import {makeRandom,seedFromString,DOOR_WIDTH} from './layout-v2.mjs';
@@ -205,7 +206,7 @@ async function loadCharacters(){
   import('three/addons/loaders/GLTFLoader.js'),
   import('three/addons/utils/SkeletonUtils.js')
  ]).then(([{GLTFLoader},{clone}])=>new Promise((resolve,reject)=>{
-  new GLTFLoader().load('./models/human-male-female-rigged.glb',gltf=>{
+  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('./models/human-male-female-rigged-optimized.glb',gltf=>{
     if(rigMode!=='bind'&&rigMode!=='raw'){
       const repair=stabiliseMaleTorsoSkinning(gltf.scene);
       if(repair.reason)console.warn('Male visitor skin repair skipped:',repair.reason);
