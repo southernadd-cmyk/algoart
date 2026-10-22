@@ -260,7 +260,7 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
   const placeholder=new THREE.Mesh(new THREE.BoxGeometry(.045,1.24,.045),transientMaterial);
   core.add(placeholder);
   const materials=new Map();
-  const img=new Image();img.decoding='async';
+  const img=new Image();img.crossOrigin='anonymous';img.decoding='async';
   const bitmap=new Promise((resolve,reject)=>{
     img.onload=()=>{if(pivot.userData.galleryDisposed){resolve(null);return;}try{resolve(getImage(img,quality))}catch(err){reject(err)}};
     img.onerror=()=>reject(Error('Could not load the actual archived portrait image'));
