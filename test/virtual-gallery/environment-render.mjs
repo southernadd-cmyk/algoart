@@ -171,20 +171,20 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     };
     // Slab is deliberately below the pre-existing entrance walkway, which
     // remains the unobstructed and collision-tested visitor route.
-    box(p.halfWidth*2,.16,p.halfDepth*2,0,0,-.17,paving);
+    box(p.halfDepth*2,.16,p.halfWidth*2,0,0,-.17,paving);
     // Fine architectural joints rather than thousands of individual tiles.
     for(let a=-p.halfDepth+4;a<p.halfDepth;a+=4){
-      box(p.halfWidth*2,.009,.022,a,0,-.083,stoneEdge);
+      box(.022,.009,p.halfWidth*2,a,0,-.083,stoneEdge);
     }
     for(let a=-p.halfWidth+4;a<p.halfWidth;a+=4){
-      box(.022,.009,p.halfDepth*2,0,a,-.083,stoneEdge);
+      box(p.halfDepth*2,.009,.022,0,a,-.083,stoneEdge);
     }
     for(const side of [-1,1]){
       // Furnish only the perimeter: clear sightline to the gallery entrance.
       for(const along of [-9,6,13]){
         const across=side*(p.halfWidth-2.2);
-        box(2.7,.57,1.2,along,across,.20,stoneEdge);
-        box(2.35,.13,.92,along,across,.55,paving);
+        box(1.2,.57,2.7,along,across,.20,stoneEdge);
+        box(.92,.13,2.35,along,across,.55,paving);
       }
       for(const along of [-13,12]){
         const across=side*(p.halfWidth-4.6);
@@ -197,7 +197,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
         box(.14,3.8,.14,along,across,1.83,bronze);
         box(.42,.38,.42,along,across,3.91,lampGlass);
       }
-      box(p.halfWidth*2,.22,.34,side*(p.halfDepth-.42),0,-.01,stoneEdge);
+      box(.34,.22,p.halfWidth*2,side*(p.halfDepth-.42),0,-.09,stoneEdge);
     }
     scene.add(square);
   }
