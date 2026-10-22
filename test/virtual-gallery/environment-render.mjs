@@ -289,17 +289,47 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
       new THREE.MeshStandardMaterial({map:surfaceTexture(THREE,'windows'),roughness:.6,metalness:.12,color:'#d9e0df'})
     ];
     const roofMat=new THREE.MeshStandardMaterial({map:surfaceTexture(THREE,'roof'),roughness:.83,color:'#c4c9c8'});
+    const trimMat=new THREE.MeshStandardMaterial({color:'#686e6b',roughness:.78,metalness:.08});
+    const paleStone=new THREE.MeshStandardMaterial({color:'#c2c4bd',roughness:.93});
+    const copperRoof=new THREE.MeshStandardMaterial({color:'#798c83',roughness:.76,metalness:.14});
     const buildingGroup=new THREE.Group();
+    const detail=(w,h,d,x,y,z,material)=>{
+      const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+      mesh.position.set(x,y,z);buildingGroup.add(mesh);
+    };
     for(const p of plan.buildings){
       const material=masonry[Math.min(2,Math.floor(p.variant*3))];
       const body=new THREE.Mesh(uvBox(THREE,p.width,p.height,p.depth,3),material);
       body.position.set(p.x,p.y+p.height/2,p.z);buildingGroup.add(body);
       const cap=new THREE.Mesh(uvBox(THREE,p.width+.3,.42,p.depth+.3,2.8),roofMat);
       cap.position.set(p.x,p.y+p.height+.18,p.z);buildingGroup.add(cap);
-      // Parapet corners are restrained; the facade textures supply most detail.
+      // Distinct but restrained architectural identities, determined by the seed.
+      const family=Math.floor(p.variant*4);
+      if(family===0){
+        // Masonry townhouses: a stone ground-floor plinth and strong cornice.
+        detail(p.width+.12,1.35,p.depth+.12,p.x,p.y+.675,p.z,paleStone);
+        detail(p.width+.46,.24,p.depth+.46,p.x,p.y+p.height-.3,p.z,trimMat);
+      }else if(family===1){
+        // Contemporary buildings: horizontal reveals articulate floor levels.
+        const storeys=Math.min(7,Math.floor(p.height/3.45));
+        for(let i=1;i<storeys;i++){
+          const h=p.y+i*p.height/storeys;
+          detail(p.width+.08,.065,p.depth+.08,p.x,h,p.z,trimMat);
+        }
+      }else if(family===2){
+        // Taller city blocks with a contrasting roof crown.
+        detail(p.width+.28,.55,p.depth+.28,p.x,p.y+p.height-.12,p.z,paleStone);
+      }else{
+        detail(p.width+.2,.2,p.depth+.2,p.x,p.y+p.height-.26,p.z,trimMat);
+      }
       if(p.roof){
-        const ledge=new THREE.Mesh(uvBox(THREE,p.width+.5,.15,p.depth+.5,2.8),roofMat);
-        ledge.position.set(p.x,p.y+p.height+.44,p.z);buildingGroup.add(ledge);
+        const roofLevel=p.y+p.height+.55;
+        detail(p.width+.54,.18,p.depth+.54,p.x,roofLevel,p.z,family===3?copperRoof:roofMat);
+        // Two understated rooftop service housings on selected buildings.
+        if(p.height>13 && p.variant>.7){
+          detail(Math.min(2.2,p.width*.3),.85,Math.min(2,p.depth*.3),
+            p.x-p.width*.17,roofLevel+.48,p.z,paleStone);
+        }
       }
     }
     scene.add(buildingGroup);
