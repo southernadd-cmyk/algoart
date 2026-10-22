@@ -149,6 +149,59 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
   ground.position.set(plan.centerX,0,plan.centerZ);
   scene.add(ground);
 
+  // Ground-floor civic forecourt: wide unobstructed centre and furnished edges.
+  if(plan.plaza){
+    const p=plan.plaza;
+    const square=new THREE.Group();
+    const paving=new THREE.MeshStandardMaterial({color:'#dad6cd',roughness:.94});
+    const stoneEdge=new THREE.MeshStandardMaterial({color:'#b8b6ad',roughness:.9});
+    const bronze=new THREE.MeshStandardMaterial({color:'#424a49',metalness:.42,roughness:.52});
+    const planted=new THREE.MeshStandardMaterial({color:'#58705c',roughness:1,flatShading:true});
+    const lampGlass=new THREE.MeshStandardMaterial({color:'#f5e8cc',emissive:'#e9c99b',emissiveIntensity:.52,roughness:.36});
+    const at=(along,across,y=0)=>({
+      x:p.centre.x+p.outward.x*along+p.transverse.x*across,
+      z:p.centre.z+p.outward.z*along+p.transverse.z*across,
+      y:p.level+y
+    });
+    const box=(w,h,d,along,across,y,material)=>{
+      const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+      mesh.rotation.y=Math.atan2(p.outward.x,p.outward.z);
+      mesh.position.copy(at(along,across,y));square.add(mesh);
+      return mesh;
+    };
+    // Slab is deliberately below the pre-existing entrance walkway, which
+    // remains the unobstructed and collision-tested visitor route.
+    box(p.halfWidth*2,.16,p.halfDepth*2,0,0,-.17,paving);
+    // Fine architectural joints rather than thousands of individual tiles.
+    for(let a=-p.halfDepth+4;a<p.halfDepth;a+=4){
+      box(p.halfWidth*2,.009,.022,a,0,-.083,stoneEdge);
+    }
+    for(let a=-p.halfWidth+4;a<p.halfWidth;a+=4){
+      box(.022,.009,p.halfDepth*2,0,a,-.083,stoneEdge);
+    }
+    for(const side of [-1,1]){
+      // Furnish only the perimeter: clear sightline to the gallery entrance.
+      for(const along of [-9,6,13]){
+        const across=side*(p.halfWidth-2.2);
+        box(2.7,.57,1.2,along,across,.20,stoneEdge);
+        box(2.35,.13,.92,along,across,.55,paving);
+      }
+      for(const along of [-13,12]){
+        const across=side*(p.halfWidth-4.6);
+        box(1.75,.69,1.75,along,across,.22,stoneEdge);
+        const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.82,1),planted);
+        shrub.position.copy(at(along,across,1.11));square.add(shrub);
+      }
+      for(const along of [-15,0,15]){
+        const across=side*(p.halfWidth-1.5);
+        box(.14,3.8,.14,along,across,1.83,bronze);
+        box(.42,.38,.42,along,across,3.91,lampGlass);
+      }
+      box(p.halfWidth*2,.22,.34,side*(p.halfDepth-.42),0,-.01,stoneEdge);
+    }
+    scene.add(square);
+  }
+
   const dummy=new THREE.Object3D();
   const greens=palette.trees.map(color);
   const stones=palette.stone.map(color);
