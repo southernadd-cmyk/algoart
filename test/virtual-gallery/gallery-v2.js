@@ -7,7 +7,7 @@ import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './s
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=hdr-panorama-20261022';
-import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=plaza-facing-fix-20261022';
+import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=polyhaven-bench-20261022';
 import {replaceFixtureWithProp} from './polyhaven-props.mjs';
 
 const $ = (id) => document.getElementById(id);
@@ -775,7 +775,7 @@ function constructGallery(layout, studies) {
     addRoom(room,room.index,layout.rooms.length);
     // A single lightweight Poly Haven ceiling fixture per room, loaded only
     // after entry. Existing scene lighting remains the illumination source.
-    deferredGalleryJobs.push(()=>{
+    if(!galleryFinish.lowPower)deferredGalleryJobs.push(()=>{
       const fixtureRoot=new THREE.Group();scene.add(fixtureRoot);
       replaceFixtureWithProp(THREE,{
         id:'modern_ceiling_lamp_01',parent:fixtureRoot,
