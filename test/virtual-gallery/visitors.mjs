@@ -437,7 +437,7 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
      // Align the hips relative to this floor (the holder supplies person.y).
      copy.position.y+=seatHipHeight-pelvis.y;
      // Advance hips past the backrest onto the actual seating surface.
-     copy.position.z+=.38-pelvis.z;
+     copy.position.z+=-.18-pelvis.z;
    }
  }
  holder.add(copy);
