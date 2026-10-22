@@ -10,14 +10,13 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  // Sparse museum occupancy, bounded even as editions gain more rooms.
  const MAX_VISITORS=lowPower?2:3;
  const MAX_BENCHES=lowPower?2:4;
- for(const room of layout.rooms){
-  const roomHangs=hangs.filter(h=>h.roomIndex===room.index);
-  const roomSculptures=sculptures.filter(p=>p.roomIndex===room.index);
-  const clear=(x,z,r=0.5)=>{
+ // Guarantee room for standing visitors instead of allowing bench occupancy
+ // to use all available character slots.
+ const MAX_SEATED=1;
+ const standingClear=(room,roomSculptures,x,z,r=.5)=>{
    const p={x,z};
-   // Preserve a full standing clearance around the figure, not just its centre.
-   if(Math.abs(x-room.x)>room.width/2-r-1.05||Math.abs(z-room.z)>room.depth/2-r-1.05)return false;
-   // Keep both centre aisles and all door approaches unobstructed.
+   if(Math.abs(x-room.x)>room.width/2-r-1.05||
+      Math.abs(z-room.z)>room.depth/2-r-1.05)return false;
    const safe=DOOR_WIDTH/2+.15+r;
    const dx=x-room.x,dz=z-room.z;
    if(Math.abs(dx)<1.45+r&&Math.abs(dz)<1.45+r)return false;
@@ -25,9 +24,14 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    if(room.doors.includes('south')&&dz>0&&Math.abs(dx)<safe)return false;
    if(room.doors.includes('west')&&dx<0&&Math.abs(dz)<safe)return false;
    if(room.doors.includes('east')&&dx>0&&Math.abs(dz)<safe)return false;
-   if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+1.1&&Math.abs(z-q.z)<q.depth/2+r+1.1))return false;
+   if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+1.1&&
+       Math.abs(z-q.z)<q.depth/2+r+1.1))return false;
    return !obstacles.some(q=>near(p,q,r+q.radius+.32));
-  };
+ };
+ for(const room of layout.rooms){
+  const roomHangs=hangs.filter(h=>h.roomIndex===room.index);
+  const roomSculptures=sculptures.filter(p=>p.roomIndex===room.index);
+  const clear=(x,z,r=.5)=>standingClear(room,roomSculptures,x,z,r);
   if(layout.rooms.length>=3&&room.index>0 && roomHangs.length && benches.length<MAX_BENCHES){
    // Viewing benches are curated around actual hanging artworks, not placed
    // at arbitrary room corners. Prefer a substantial focal/hero piece.
@@ -75,7 +79,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    if(chosen){
     benches.push(chosen);
     obstacles.push({x:chosen.x,z:chosen.z,radius:1.15});
-    if(people.length<MAX_VISITORS && rng()>.8)
+    if(people.length<MAX_VISITORS && people.filter(p=>p.seat).length<MAX_SEATED && rng()>.8)
      people.push({x:chosen.x,z:chosen.z,y:room.y,yaw:chosen.rotation,
       roomIndex:room.index,variant:Math.floor(rng()*5),
       bodyType:rng()<.5?'male':'female',scale:.91+rng()*.13,pose:4,seat:true});
@@ -94,6 +98,50 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    people.push({x,z,y:room.y,yaw,roomIndex:room.index,variant:Math.floor(rng()*5),pose:Math.floor(rng()*4),bodyType:rng()<.5?'male':'female',scale:.91+rng()*.16});
    obstacles.push({x,z,radius:.45});
   }
+ }
+ // A single centred sample frequently lands in a doorway or sculpture
+ // exclusion zone. Try several genuine viewing positions beside each
+ // hanging picture before deciding this floor has no standing visitors.
+ const targetStanding=lowPower?1:2;
+ const roomCandidates=layout.rooms.slice().sort((a,b)=>{
+   const aArt=hangs.filter(h=>h.roomIndex===a.index).length;
+   const bArt=hangs.filter(h=>h.roomIndex===b.index).length;
+   return bArt-aArt || a.index-b.index;
+ });
+ const inward={
+   north:{x:0,z:1},south:{x:0,z:-1},
+   east:{x:-1,z:0},west:{x:1,z:0}
+ };
+ for(const room of roomCandidates){
+   if(people.length>=MAX_VISITORS||
+      people.filter(p=>!p.seat).length>=targetStanding)break;
+   if(people.some(p=>p.roomIndex===room.index))continue;
+   const roomSculptures=sculptures.filter(p=>p.roomIndex===room.index);
+   const roomHangs=hangs.filter(h=>h.roomIndex===room.index)
+     .slice().sort((a,b)=>a.studyId-b.studyId);
+   let placed=false;
+   for(const art of roomHangs){
+     const normal=inward[art.surface];
+     if(!normal)continue;
+     const lateral={x:-normal.z,z:normal.x};
+     for(const distance of [1.45,1.8,2.15,2.5]){
+       for(const offset of [-1.35,1.35,-.8,.8,-2.0,2.0,0]){
+         const x=art.x+normal.x*distance+lateral.x*offset;
+         const z=art.z+normal.z*distance+lateral.z*offset;
+         if(!standingClear(room,roomSculptures,x,z,.50))continue;
+         if(people.some(p=>Math.hypot(x-p.x,z-p.z)<2.35))continue;
+         const yaw=Math.atan2(art.x-x,art.z-z);
+         people.push({x,z,y:room.y,yaw,roomIndex:room.index,
+           variant:Math.floor(rng()*5),pose:Math.floor(rng()*4),
+           bodyType:rng()<.5?'male':'female',scale:.91+rng()*.16});
+         obstacles.push({x,z,radius:.45});
+         placed=true;
+         break;
+       }
+       if(placed)break;
+     }
+     if(placed)break;
+   }
  }
  return {benches,people:people.slice(0,MAX_VISITORS)};
 }
@@ -284,6 +332,7 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
 
 export function renderVisitors(THREE,scene,plan){
  const root=new THREE.Group();scene.add(root);
+ const placeholders=new Map();
  const wood=new THREE.MeshStandardMaterial({color:'#9b8067',roughness:.85});
  const steel=new THREE.MeshStandardMaterial({color:'#59605d',metalness:.48,roughness:.54});
  const skins=['#bd8a6f','#e1b293','#78533f','#c99c80','#9c6f55'].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
@@ -323,7 +372,7 @@ export function renderVisitors(THREE,scene,plan){
   if(p.seat){
    // Do not show a disconnected primitive seated figure. The validated
    // rigged sitting pose is loaded below; failures leave an empty bench.
-   root.add(g);g.visible=false;continue;
+   root.add(g);g.visible=false;placeholders.set(p,g);continue;
   }
   const shoulders=male?.255:.218;
   const hips=male?.20:.225;
@@ -350,12 +399,12 @@ export function renderVisitors(THREE,scene,plan){
    if(p.pose===3 && sign===1)forearm.rotation.x=-.45;
   }
   root.add(g);
+  placeholders.set(p,g);
   }
  // Rigged models replace standing placeholders and supply all seated people.
  // Delayed model loads must never populate a disposed/previous exhibition.
  if(plan.people.length)loadCharacters().then(asset=>{
    if(!asset||!root.parent)return;
-   const figures=root.children.slice(plan.benches.length,plan.benches.length+plan.people.length);
    for(let i=0;i<plan.people.length;i++){
      const p=plan.people[i];
      try{
@@ -369,7 +418,7 @@ export function renderVisitors(THREE,scene,plan){
          root.add(seated);
        }else{
          const posed=riggedVisitor(THREE,asset,p);
-         if(posed){root.add(posed);figures[i].visible=false;}
+         if(posed){root.add(posed);placeholders.get(p).visible=false;}
        }
      }catch(error){console.warn('Rigged visitor unavailable',p.bodyType,error);}
    }
