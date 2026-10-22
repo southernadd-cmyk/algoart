@@ -6,10 +6,12 @@ on:
       - 'automation/build-quaternius-flat.py'
       - 'automation/meshopt-quaternius.mjs'
       - 'test/virtual-gallery/quaternius-meshopt-check.html'
+      - 'test/virtual-gallery/visitors.mjs'
       - '.github/workflows/quaternius-meshopt.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
+  actions: write
 jobs:
   compress-and-validate:
     runs-on: ubuntu-24.04
@@ -102,3 +104,18 @@ jobs:
           name: quaternius-male-female-meshopt
           path: test/virtual-gallery/models/quaternius-*-meshopt.glb
           if-no-files-found: error
+      - name: Publish validated visitor assets
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/virtual-gallery/models/quaternius-*-meshopt.glb
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish 520 KB Quaternius Meshopt visitor models"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Publish assets to Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
