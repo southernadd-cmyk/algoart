@@ -226,9 +226,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
       diagnostics.loaded.push(slot);
     },undefined,()=>diagnostics.failed.push(slot));
   }
-  scan('wall-color',MATERIAL_SOURCES.walls.diffuse,'walls',[wall]);
   normal('wall-normal',MATERIAL_SOURCES.walls.normal,[wall],.15);
-  scan('floor-color',MATERIAL_SOURCES.floors.diffuse,'floor',[floor,stoneBridge]);
   normal('floor-normal',MATERIAL_SOURCES.floors.normal,[floor,stoneBridge],.21);
   loader.load(MATERIAL_SOURCES.timber.diffuse,source=>{
     try{
@@ -273,12 +271,11 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
     ceiling.needsUpdate=true;
     diagnostics.loaded.push('ambientcg-office-ceiling-roughness');
   },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-roughness'));
-  // Plinths share the plaster scan as a distinct, near-white matte finish.
-  scan('plinth-color',MATERIAL_SOURCES.walls.diffuse,'plinth',[plinth]);
-  // Local scans override the network-loaded defaults only when successfully
-  // fetched. An absent or blocked optional file never breaks the exhibition.
+  // Use the local plaster scan for both wall and plinth to avoid remote duplication.
+  // Local colour scans are preferred from the outset. Canvas fallback materials
+  // keep the exhibition usable even if an optional scan is unavailable.
   for(const [slot,url,mode,targets] of [
-    ['oga-walls',LOCAL_TEXTURES.walls,'walls',[wall]],
+    ['oga-walls',LOCAL_TEXTURES.walls,'walls',[wall,plinth]],
     ['oga-floors',LOCAL_TEXTURES.floors,'floor',[floor]],
     ['oga-stone',LOCAL_TEXTURES.stone,'floor',[stone]]
   ]){
