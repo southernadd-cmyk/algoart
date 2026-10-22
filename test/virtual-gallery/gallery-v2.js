@@ -42,6 +42,10 @@ let plan = null;
 let studyList = [];
 let touchPointer = null;
 let touchX = 0, touchY = 0;
+let xrLiftPanel=null;
+let xrFloorChoice=0;
+let xrTurnLatched=false;
+const xrPickerRay=new THREE.Raycaster();
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#c2cbc5');
@@ -70,7 +74,17 @@ try {
   renderer.xr.setReferenceSpaceType('local-floor');
   const xrButton = VRButton.createButton(renderer);
   $('xr-controls').appendChild(xrButton);
-  renderer.xr.addEventListener('sessionstart', () => { welcome.hidden = true; $('info').hidden = true; });
+  renderer.xr.addEventListener('sessionstart', () => {
+    welcome.hidden=true;resetInspection();$('lift').hidden=true;
+  });
+  renderer.xr.addEventListener('sessionend',()=>{
+    closeXRLift();xrTurnLatched=false;liftWasNear=false;
+  });
+  for(let i=0;i<2;i++){
+    const controller=renderer.xr.getController(i);
+    controller.addEventListener('select',()=>selectXRLift(controller));
+    scene.add(controller);
+  }
 } catch (err) {
   errorBox.textContent = 'This device cannot initialise a WebGL gallery: ' + err.message;
   errorBox.hidden = false;
@@ -375,8 +389,89 @@ function animateLiftDoors(dt){
 function nearLift(){
   return liftPosition&&Math.hypot(rig.position.x-liftPosition.x,rig.position.z-liftPosition.z)<1.15;
 }
+// A controller-operated, world-space lift panel: HTML panels are invisible in VR.
+function paintXRLift(){
+  if(!xrLiftPanel)return;
+  const {canvas,texture}=xrLiftPanel;
+  const c=canvas.getContext('2d');
+  c.fillStyle='#f3efe6';c.fillRect(0,0,840,500);
+  c.fillStyle='#26342d';c.font='bold 27px Arial';c.fillText('ARCHIVE LIFT',42,58);
+  c.font='24px Arial';c.fillText('Choose an exhibition floor',42,122);
+  c.font='45px Georgia';
+  c.fillText('Floor '+(xrFloorChoice===0?'G':xrFloorChoice),42,197);
+  c.font='23px Arial';c.fillStyle='#4e5b53';
+  c.fillText(readableDate(archiveDates[xrFloorChoice]||exhibitDate),42,242);
+  c.font='21px Arial';c.fillText('Point a controller and press the trigger',42,291);
+  const buttons=[
+    {name:'Previous',x:35,w:230,disabled:xrFloorChoice<=0},
+    {name:xrFloorChoice===currentFloor?'Close':'Travel',x:278,w:280,disabled:false},
+    {name:'Next',x:570,w:235,disabled:xrFloorChoice>=archiveDates.length-1}
+  ];
+  for(const b of buttons){
+    c.fillStyle=b.disabled?'#d9dbd5':'#31463b';
+    c.fillRect(b.x,341,b.w,98);
+    c.fillStyle=b.disabled?'#919992':'#ffffff';
+    c.textAlign='center';c.font='bold 26px Arial';
+    c.fillText(b.name,b.x+b.w/2,399);
+  }
+  c.textAlign='left';c.font='19px Arial';c.fillStyle='#4e5b53';
+  c.fillText('Move away from the lift to dismiss',40,478);
+  texture.needsUpdate=true;
+}
+function openXRLift(){
+  if(xrLiftPanel || !renderer.xr.isPresenting || !archiveDates.length)return;
+  xrFloorChoice=Math.max(0,archiveDates.indexOf(exhibitDate));
+  const eye=renderer.xr.getCamera(camera);
+  const eyePos=eye.getWorldPosition(new THREE.Vector3());
+  const forward=eye.getWorldDirection(new THREE.Vector3());
+  forward.y=0;if(forward.lengthSq()<.01)forward.set(0,0,-1);
+  forward.normalize();
+  const canvas=document.createElement('canvas');canvas.width=840;canvas.height=500;
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,depthTest:false});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.68,1),material);
+  mesh.renderOrder=999;
+  mesh.position.copy(eyePos).addScaledVector(forward,1.35);
+  mesh.position.y-=.05;
+  mesh.lookAt(eyePos);
+  scene.add(mesh);
+  xrLiftPanel={mesh,canvas,texture};
+  paintXRLift();
+}
+function closeXRLift(){
+  if(!xrLiftPanel)return;
+  const {mesh,texture}=xrLiftPanel;
+  scene.remove(mesh);mesh.geometry.dispose();mesh.material.dispose();texture.dispose();
+  xrLiftPanel=null;
+}
+function selectXRLift(controller){
+  if(!xrLiftPanel || liftTravelling)return;
+  const from=new THREE.Vector3().setFromMatrixPosition(controller.matrixWorld);
+  const direction=new THREE.Vector3(0,0,-1).transformDirection(controller.matrixWorld);
+  xrPickerRay.set(from,direction);
+  let hit=xrPickerRay.intersectObject(xrLiftPanel.mesh,false)[0];
+  // Gaze fallback also supports headsets without a tracked pointing controller.
+  if(!hit){
+    const eye=renderer.xr.getCamera(camera);
+    xrPickerRay.set(eye.getWorldPosition(new THREE.Vector3()),
+      eye.getWorldDirection(new THREE.Vector3()));
+    hit=xrPickerRay.intersectObject(xrLiftPanel.mesh,false)[0];
+  }
+  if(!hit?.uv)return;
+  const x=hit.uv.x*840,y=(1-hit.uv.y)*500;
+  if(y<341||y>439)return;
+  if(x>=35&&x<=265)xrFloorChoice=Math.max(0,xrFloorChoice-1);
+  else if(x>=570&&x<=805)xrFloorChoice=Math.min(archiveDates.length-1,xrFloorChoice+1);
+  else if(x>=278&&x<=558){
+    if(xrFloorChoice===currentFloor)closeXRLift();
+    else travelLift(archiveDates[xrFloorChoice],xrFloorChoice);
+    return;
+  }
+  paintXRLift();
+}
 function openLift(){
   if(!welcome.hidden||!liftPosition||liftTravelling)return;
+  if(renderer.xr.isPresenting){openXRLift();return;}
   document.exitPointerLock?.();
   $('lift').hidden=false;
   renderLiftCalendar();
@@ -384,10 +479,12 @@ function openLift(){
 async function travelLift(date,index){
   if(liftTravelling)return;
   liftTravelling=true;
+  const xrRide=renderer.xr.isPresenting;
+  if(xrRide)closeXRLift();
   $('lift').hidden=true;
-  document.exitPointerLock?.();
+  if(!xrRide)document.exitPointerLock?.();
   const overlay=$('liftAnimation');
-  overlay.hidden=false;
+  if(!xrRide)overlay.hidden=false;
   setLiftDoors(true);
   const current=Math.max(0,archiveDates.indexOf(exhibitDate));
   $('liftDirection').textContent=(index>current?'Ascending':'Descending')+' · '+Math.abs(index-current)+' floors';
@@ -400,15 +497,18 @@ async function travelLift(date,index){
     // Keep doors closed long enough to make the ride perceptible.
     await new Promise(resolve=>setTimeout(resolve,Math.max(0,1300-(performance.now()-begin))));
     overlay.hidden=true;
-    $('liftArrival').hidden=false;
-    $('liftArrival').textContent='Doors opening · floor '+(index===0?'G':index);
+    if(!xrRide){
+      $('liftArrival').hidden=false;
+      $('liftArrival').textContent='Doors opening · floor '+(index===0?'G':index);
+      setTimeout(()=>$('liftArrival').hidden=true,1800);
+    }
     setLiftDoors(false);
-    setTimeout(()=>$('liftArrival').hidden=true,1800);
   }catch(error){
     overlay.hidden=true;setLiftDoors(false);
     errorBox.textContent='Lift could not reach that floor: '+error.message;
     errorBox.hidden=false;
-    $('lift').hidden=false;
+    if(!xrRide)$('lift').hidden=false;
+    else openXRLift();
   }finally{liftTravelling=false;}
 }
 
@@ -780,8 +880,14 @@ function updateMovement(dt) {
       if(source.handedness==='left') {
         side+=Math.abs(axes.at(-2))>.16?axes.at(-2):0;
         ahead-=Math.abs(axes.at(-1))>.16?axes.at(-1):0;
-      } else if(source.handedness==='right' && Math.abs(axes.at(-2))>.75) {
-        yaw-=Math.sign(axes.at(-2))*dt*1.5;
+      } else if(source.handedness==='right') {
+        // Comfortable 30-degree snap turns, one per stick deflection.
+        const turn=axes.at(-2)||0;
+        if(Math.abs(turn)<.35)xrTurnLatched=false;
+        else if(Math.abs(turn)>.75 && !xrTurnLatched){
+          yaw-=Math.sign(turn)*Math.PI/6;
+          xrTurnLatched=true;
+        }
       }
     }
   }
@@ -789,14 +895,24 @@ function updateMovement(dt) {
   if(length>0) {
     const speed = pressed.has('ShiftLeft') ? 5.4 : 3.2;
     ahead/=length;side/=length;
-    const dx=(Math.cos(yaw)*side-Math.sin(yaw)*ahead)*dt*speed;
-    const dz=(-Math.sin(yaw)*side-Math.cos(yaw)*ahead)*dt*speed;
+    let dx,dz;
+    if(renderer.xr.isPresenting){
+      // Head-relative locomotion follows where the visitor actually looks.
+      const forward=renderer.xr.getCamera(camera).getWorldDirection(new THREE.Vector3());
+      forward.y=0;forward.normalize();
+      dx=(forward.x*ahead-forward.z*side)*dt*speed;
+      dz=(forward.z*ahead+forward.x*side)*dt*speed;
+    }else{
+      dx=(Math.cos(yaw)*side-Math.sin(yaw)*ahead)*dt*speed;
+      dz=(-Math.sin(yaw)*side-Math.cos(yaw)*ahead)*dt*speed;
+    }
     if (canStand(plan,rig.position.x+dx,rig.position.z) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
     if (canStand(plan,rig.position.x,rig.position.z+dz) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
   }
   const part=footprintAt(plan,rig.position.x,rig.position.z);
   if(part)rig.position.y=part.y;
   const atLift=Boolean(nearLift());
+  if(xrLiftPanel && !atLift)closeXRLift();
   if(atLift&&!liftWasNear&&$('lift').hidden)openLift();
   liftWasNear=atLift;
   rig.rotation.y=yaw;
