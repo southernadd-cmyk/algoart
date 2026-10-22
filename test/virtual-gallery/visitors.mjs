@@ -1,4 +1,3 @@
-import {MeshoptDecoder} from 'https://cdn.jsdelivr.net/npm/meshoptimizer@0.25.0/meshopt_decoder.module.js';
 // Seeded furniture and visitor v1. WebGL-independent placement followed by
 // lightweight geometry; no inaccessible downloaded model required.
 import {makeRandom,seedFromString,DOOR_WIDTH} from './layout-v2.mjs';
@@ -204,8 +203,14 @@ let characterAssets=null;
 async function loadCharacters(){
  if(!characterAssets)characterAssets=Promise.all([
   import('three/addons/loaders/GLTFLoader.js'),
-  import('three/addons/utils/SkeletonUtils.js')
- ]).then(([{GLTFLoader},{clone}])=>new Promise((resolve,reject)=>{
+  import('three/addons/utils/SkeletonUtils.js'),
+  import('https://cdn.jsdelivr.net/npm/meshoptimizer@0.25.0/meshopt_decoder.module.js')
+ ]).then(([{GLTFLoader},{clone},{MeshoptDecoder}])=>Promise.all(['male','female'].map(sex=>new Promise((resolve,reject)=>{
+  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('./models/quaternius-'+sex+'-meshopt.glb',gltf=>resolve(gltf.scene),undefined,reject);
+ }))).then(([male,female])=>({quaternius:true,male,female,clone}))).catch(async error=>{
+ console.warn('Quaternius visitors unavailable; attempting previous GLB',error);
+ const [{GLTFLoader},{clone},{MeshoptDecoder}]=await Promise.all([import('three/addons/loaders/GLTFLoader.js'),import('three/addons/utils/SkeletonUtils.js'),import('https://cdn.jsdelivr.net/npm/meshoptimizer@0.25.0/meshopt_decoder.module.js')]);
+ return new Promise((resolve,reject)=>{
   new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('./models/human-male-female-rigged-optimized.glb',gltf=>{
     if(rigMode!=='bind'&&rigMode!=='raw'){
       const repair=stabiliseMaleTorsoSkinning(gltf.scene);
@@ -219,10 +224,43 @@ async function loadCharacters(){
     });
     resolve({scene:gltf.scene,clone});
   },undefined,reject);
- })).catch(error=>{console.warn('Rigged visitors unavailable:',error);return null;});
+ });
+ }).catch(error=>{console.warn('Rigged visitors unavailable:',error);return null;});
  return characterAssets;
 }
+function quaterniusVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seated=false,seatHipHeight=.61}={}){
+ const copy=asset.clone(asset[person.bodyType]);
+ const bones={};let skinned=0;
+ copy.traverse(node=>{if(node.isBone)bones[node.name]=node;if(node.isSkinnedMesh){skinned++;node.frustumCulled=false;node.geometry.userData.sharedVisitorAsset=true;}});
+ if(!skinned||!bones.upperarm_l||!bones.upperarm_r)throw Error('Quaternius rig incomplete: '+person.bodyType);
+ const rotate=(name,axis,deg)=>{const bone=bones[name];if(!bone)return;bone.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(axis==='x'?1:0,axis==='y'?1:0,axis==='z'?1:0),THREE.MathUtils.degToRad(deg)))};
+ if(relaxed){rotate('upperarm_l','z',-65);rotate('upperarm_r','z',65);}
+ if(raiseRightArm){rotate('upperarm_r','z',-100);rotate('upperarm_r','x',-25);}
+ if(seated){rotate('pelvis','x',-9);rotate('spine_01','x',10);for(const side of ['l','r']){rotate('thigh_'+side,'x',-82);rotate('calf_'+side,'x',80);}}
+ copy.updateMatrixWorld(true);
+ const bounds=new THREE.Box3().setFromObject(copy,true);
+ const size=bounds.getSize(new THREE.Vector3()),centre=bounds.getCenter(new THREE.Vector3());
+ if(!Number.isFinite(size.y)||size.y<.1)throw Error('Invalid Quaternius bounds');
+ const scale=(person.bodyType==='male'?1.76:1.67)*person.scale/size.y;
+ const holder=new THREE.Group();
+ holder.position.set(person.x,person.y,person.z);holder.rotation.y=person.yaw;
+ copy.scale.setScalar(scale);
+ copy.position.set(-centre.x*scale,-bounds.min.y*scale,-centre.z*scale);
+ if(seated && bones.pelvis){
+  copy.updateMatrixWorld(true);
+  const hip=bones.pelvis.getWorldPosition(new THREE.Vector3());
+  // Correct for holder coordinates and place hips at the bench cushion.
+  copy.position.y+=seatHipHeight-hip.y;
+  copy.position.z+=.42-hip.z;
+ }
+ holder.add(copy);
+ holder.userData.galleryRiggedVisitor=true;
+ holder.userData.galleryRigPose=seated?'seated':raiseRightArm?'arm-raised':'relaxed';
+ holder.userData.galleryRigMetrics={bodyType:person.bodyType,sourceSkinnedMeshes:skinned,visibleSkinnedMeshes:skinned,originalStaticMeshesHidden:0,arms:[],seating:[],heightMetres:size.y*scale};
+ return holder;
+}
 function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seated=false,seatHipHeight=.61}={}){
+ if(asset.quaternius)return quaterniusVisitor(THREE,asset,person,{relaxed,raiseRightArm,seated,seatHipHeight});
  const fail=(stage,detail)=>{throw new Error(person.bodyType+' '+stage+': '+detail);};
  const copy=asset.clone(asset.scene);
  const allMeshes=[],skinned=[];
