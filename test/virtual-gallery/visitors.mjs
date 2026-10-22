@@ -26,12 +26,12 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+1.1&&Math.abs(z-q.z)<q.depth/2+r+1.1))return false;
    return !obstacles.some(q=>near(p,q,r+q.radius+.32));
   };
-  if((room.width>=12&&room.depth>=10) && roomHangs.length && benches.length<MAX_BENCHES){
+  if((layout.rooms.length>=3&&room.index>0) && roomHangs.length && benches.length<MAX_BENCHES){
    // Try centre-offset viewing bays on each side; never default to a corner.
    const options=[];
    for(const sx of [-1,1])for(const sz of [-1,1]){
-    options.push({x:room.x+sx*(room.width/2-1.12),z:room.z+sz*1.55,rotation:Math.PI/2});
-    options.push({x:room.x+sx*1.55,z:room.z+sz*(room.depth/2-1.12),rotation:0});
+    options.push({x:room.x+sx*(room.width/2-1.8),z:room.z+sz*1.55,rotation:Math.PI/2});
+    options.push({x:room.x+sx*1.55,z:room.z+sz*(room.depth/2-1.8),rotation:0});
    }
    const first=Math.floor(rng()*options.length);
    for(let i=0;i<options.length;i++){
