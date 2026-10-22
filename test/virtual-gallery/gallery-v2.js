@@ -83,8 +83,7 @@ rig.rotation.y = yaw;
 let renderer;
 try {
   renderer = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'});
-  // Keep desktop startup within the mobile-tested GPU budget while investigating cold starts.
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, matchMedia('(pointer:coarse)').matches ? 1.35 : 1.7));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
@@ -110,9 +109,7 @@ try {
 }
 
 const galleryFinish=createArchitecturalMaterials(THREE,{
-  // Start all devices with the proven lightweight material/environment path.
-  // Full detail can be reintroduced selectively after desktop startup is reliable.
-  lowPower:true,
+  lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
   startAfter:window.__galleryEarly?.tower
 });
 const wall=galleryFinish.wall;
