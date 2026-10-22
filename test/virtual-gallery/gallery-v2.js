@@ -29,6 +29,7 @@ let mapElapsed = 0;
 let yaw = Math.PI, pitch = 0;
 let exhibitDate = null;
 let archiveDates=[];
+let towerFloorSignatures=new Map();
 let liftPosition=null;
 let liftWasNear=false;
 let liftTravelling=false;
@@ -607,45 +608,84 @@ function constructGallery(layout, studies) {
   // The daily landscape follows this exhibition's date and artwork seed;
   // it never occupies rooms, walkways or the visitor collision footprint.
   createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower});
-  // Keep the present exhibition traversable; show simplified occupied
-  // building mass both below and above it without loading other exhibitions.
-  const below=currentFloor,above=Math.max(0,archiveDates.length-1-currentFloor);
-  if(below||above){
-    const tower=new THREE.Group();
-    const cladding=new THREE.MeshStandardMaterial({color:'#aeb4b0',roughness:.89});
-    const bandsMaterial=new THREE.MeshStandardMaterial({color:'#68716f',metalness:.24,roughness:.62});
-    const topMaterial=new THREE.MeshStandardMaterial({color:'#858f8c',roughness:.85});
-    const bands=[];
-    for(const room of layout.rooms){
-      const addMass=(height,centre)=>{
-        if(height<=0)return;
-        const mesh=new THREE.Mesh(new THREE.BoxGeometry(room.width+.35,height,room.depth+.35),cladding);
-        mesh.position.set(room.x,centre,room.z);tower.add(mesh);
-      };
-      if(below)addMass(below*FLOOR_SPACING,below*FLOOR_SPACING/2-.26);
-      if(above)addMass(above*FLOOR_SPACING,room.y+FLOOR_SPACING+above*FLOOR_SPACING/2-.26);
-      for(let level=1;level<archiveDates.length;level++){
-        if(level===currentFloor || level===currentFloor+1)continue;
-        bands.push({room,y:level*FLOOR_SPACING-.18});
-      }
-      if(above){
-        const roof=new THREE.Mesh(new THREE.BoxGeometry(room.width+.6,.26,room.depth+.6),topMaterial);
-        roof.position.set(room.x,(archiveDates.length)*FLOOR_SPACING-.13,room.z);
-        tower.add(roof);
+  // Rebuild each archived floor from its *own* daily seed signature.
+  // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
+  const tower=new THREE.Group();
+  const windowGlass=skylightGlass;
+  const put=(w,h,d,x,y,z,material=wall)=>{
+    if(w<=0||h<=0||d<=0)return;
+    const geometry=new THREE.BoxGeometry(w,h,d);
+    if(material.userData?.tileMeters)tiledBoxUvs(geometry,w,h,d,material.userData.tileMeters);
+    const mesh=new THREE.Mesh(geometry,material);
+    mesh.position.set(x,y,z);tower.add(mesh);
+  };
+  for(let level=0;level<archiveDates.length;level++){
+    if(level===currentFloor)continue;
+    const date=archiveDates[level],entries=towerFloorSignatures.get(date);
+    if(!entries?.length)continue; // Missing index data must not invent a layout.
+    const floorPlan=buildLayout(date,entries.length,entries.map(([seed,engine])=>({seed,engine})));
+    const base=level*FLOOR_SPACING;
+    for(const room of floorPlan.rooms){
+      const y=base+room.y;
+      put(room.width+.42,.35,room.depth+.42,room.x,y-.2,room.z,galleryFinish.floor);
+      put(room.width+.45,.24,room.depth+.45,room.x,y+ROOM_HEIGHT+.15,room.z,roofFinish);
+      for(const side of ['north','south','east','west']){
+        const horizontal=side==='north'||side==='south';
+        const length=horizontal?room.width:room.depth;
+        const fixed=horizontal?room.z+(side==='north'?-room.depth/2:room.depth/2):
+          room.x+(side==='west'?-room.width/2:room.width/2);
+        const wallPart=(lengthPart,heightPart,offset,verticalCentre,material=wall)=>{
+          if(horizontal)put(lengthPart,heightPart,.34,room.x+offset,verticalCentre,fixed,material);
+          else put(.34,heightPart,lengthPart,fixed,verticalCentre,room.z+offset,material);
+        };
+        const centre=y+ROOM_HEIGHT/2;
+        if(room.doors.includes(side)){
+          const opening=DOOR_WIDTH,wing=(length-opening)/2,doorHeight=3.68;
+          wallPart(wing,ROOM_HEIGHT,-(opening+wing)/2,centre);
+          wallPart(wing,ROOM_HEIGHT,(opening+wing)/2,centre);
+          wallPart(opening,ROOM_HEIGHT-doorHeight,0,y+(ROOM_HEIGHT+doorHeight)/2);
+          continue;
+        }
+        // Two genuine glazed wall openings (not windows painted over solid walls).
+        const aperture=1.35,windowBottom=1.45,windowHeight=2.15;
+        const positions=[-length*.24,length*.24];
+        let previous=-length/2;
+        for(const position of positions){
+          const left=position-aperture/2,right=position+aperture/2;
+          wallPart(left-previous,ROOM_HEIGHT,(previous+left)/2,centre);
+          wallPart(aperture,windowBottom,position,y+windowBottom/2);
+          const top=ROOM_HEIGHT-windowBottom-windowHeight;
+          wallPart(aperture,top,position,y+windowBottom+windowHeight+top/2);
+          wallPart(aperture,windowHeight,position,y+windowBottom+windowHeight/2,windowGlass);
+          // Recessed mullions and sill follow the window orientation.
+          wallPart(aperture+.12,.065,position,y+windowBottom,join);
+          wallPart(.055,windowHeight,position,y+windowBottom+windowHeight/2,join);
+          previous=right;
+        }
+        wallPart(length/2-previous,ROOM_HEIGHT,(previous+length/2)/2,centre);
       }
     }
-    if(bands.length){
-      const instances=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.13,1),bandsMaterial,bands.length);
-      const obj=new THREE.Object3D();
-      for(let i=0;i<bands.length;i++){
-        const {room,y}=bands[i];obj.position.set(room.x,y,room.z);
-        obj.scale.set(room.width+.48,1,room.depth+.48);obj.updateMatrix();
-        instances.setMatrixAt(i,obj.matrix);
+    // The actual corridor endpoints and gradients define each visible footbridge.
+    for(const hall of floorPlan.corridors){
+      const x1=hall.start.x,x2=hall.end.x,z1=hall.start.z,z2=hall.end.z;
+      const y1=base+hall.start.y,y2=base+hall.end.y;
+      const length=Math.hypot(x2-x1,z2-z1);
+      const deck=new THREE.Mesh(new THREE.BoxGeometry(DOOR_WIDTH,.2,length),bridgeSurface);
+      deck.position.set((x1+x2)/2,(y1+y2)/2-.07,(z1+z2)/2);
+      deck.rotation.y=Math.atan2(x2-x1,z2-z1);
+      deck.rotation.x=Math.atan2(y1-y2,length);
+      tower.add(deck);
+      for(const side of [-1,1]){
+        const lateral=side*(DOOR_WIDTH/2-.13);
+        const rail=new THREE.Mesh(new THREE.BoxGeometry(.08,.085,length),join);
+        rail.position.set((x1+x2)/2+Math.cos(deck.rotation.y)*lateral,
+          (y1+y2)/2+.92,(z1+z2)/2-Math.sin(deck.rotation.y)*lateral);
+        rail.rotation.y=deck.rotation.y;rail.rotation.x=deck.rotation.x;
+        tower.add(rail);
       }
-      instances.instanceMatrix.needsUpdate=true;tower.add(instances);
     }
-    scene.add(tower);
   }
+  scene.add(tower);
   const first=layout.rooms[0];
   addArchiveLift(first);
   rig.position.set(first.x,first.y,first.z);
@@ -756,6 +796,16 @@ async function loadEdition(date,{viaLift=false}={}) {
 async function load(){
   try{
     archiveDates=await loadArchiveDates();
+    // Reuse one compact, cacheable index rather than loading every edition's HTML.
+    try{
+      const response=await fetch('../../gallery/tower-layouts.json');
+      if(response.ok){
+        const data=await response.json();
+        if(data.version===1&&Array.isArray(data.floors))
+          towerFloorSignatures=new Map(data.floors.map(f=>[f.date,f.studies]));
+      }
+    }catch(error){console.warn('Tower floor index unavailable',error);}
+
     const qp=new URLSearchParams(location.search).get('date');
     await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates.at(-1));
   }catch(e){
