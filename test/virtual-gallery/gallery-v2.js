@@ -4,13 +4,13 @@ import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGH
 import { planGalleryHangs } from './hanging-v3.mjs?v=reserve-glazed-door-walls-20261022';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
-import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=gallery-surface-upgrade-20261022';
+import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
+import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=daily-baked-geometry-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterior-panorama-20261022';
 import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=standing-placement-repaired-20261022';
-import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
@@ -119,6 +119,7 @@ const bridgeSurface=galleryFinish.stoneBridge;
 const walkwayGlassMaterials=createWalkwayGlassMaterials(THREE,{lowPower:galleryFinish.lowPower});
 const frame = new THREE.MeshStandardMaterial({color: '#34322e', roughness: .85});
 const roofFinish=galleryFinish.plinth;
+const ceilingFinish=galleryFinish.ceiling;
 const skylightGlass = new THREE.MeshPhysicalMaterial({color:'#d5e1df',metalness:.06,roughness:.22,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false});
 
 function block(w, h, d, x, y, z, material = wall) {
@@ -187,12 +188,12 @@ function addRoom(room, index, count) {
   block(room.width+.42,.36,room.depth+.42,room.x,room.y-.22,room.z,surface);
   for(const side of ['north','south','east','west'])addWallWithOpening(room,side);
   const roofStrip=(room.width-3.5)/2;
-  block(roofStrip,.21,room.depth+.45,room.x-(room.width+3.5)/4,ceiling+.1,room.z,roofFinish);
-  block(roofStrip,.21,room.depth+.45,room.x+(room.width+3.5)/4,ceiling+.1,room.z,roofFinish);
+  block(roofStrip,.21,room.depth+.45,room.x-(room.width+3.5)/4,ceiling+.1,room.z,ceilingFinish);
+  block(roofStrip,.21,room.depth+.45,room.x+(room.width+3.5)/4,ceiling+.1,room.z,ceilingFinish);
   // A continuous glazed skylight seals the centre opening between the roof slabs.
   // Light still reaches the drawings and the sky is visible from inside.
   block(3.5,.085,room.depth+.38,room.x,ceiling+.105,room.z,
-    currentFloor===archiveDates.length-1?skylightGlass:roofFinish);
+    currentFloor===archiveDates.length-1?skylightGlass:ceilingFinish);
   for(const sx of [-1,1])block(.075,.13,room.depth+.43,room.x+sx*1.755,ceiling+.11,room.z,join);
   for(let i=1;i<4;i++)block(3.57,.13,.067,room.x,ceiling+.11,room.z-room.depth/2+room.depth*i/4,join);
   for(const z of [room.z-room.depth/2,room.z+room.depth/2])
@@ -381,12 +382,29 @@ function updateExhibitLighting(){
   }
 }
 function exhibitLight(room,position,target,{beam=.38,power=18}={}){
-  exhibitLightTargets.push({position:position.clone(),target:target.clone(),beam,power});
-  const head=new THREE.Mesh(fittingGeometry,fittingMaterial);
-  head.position.copy(position);
-  head.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),
-    target.clone().sub(position).normalize());
-  scene.add(head);
+  // Attach each real fixture to the solid ceiling, never the glazed strip.
+  // Lighting and mesh loading remain separate: the exhibition light works
+  // immediately, while the optional 250KB Innerscene model loads after entry.
+  const dx=position.x-room.x;
+  const x=Math.max(room.x-room.width/2+.48,
+    Math.min(room.x+room.width/2-.48,
+      Math.abs(dx)<1.89?room.x+(dx<0?-1:1)*2.02:position.x));
+  const z=Math.max(room.z-room.depth/2+.48,
+    Math.min(room.z+room.depth/2-.48,position.z));
+  const mount=new THREE.Group();
+  mount.position.set(x,room.y+ROOM_HEIGHT-.015,z);
+  mount.name='gallery-twin-ceiling-spotlight';
+  scene.add(mount);
+  const direction=target.clone().sub(mount.position).normalize();
+  const fallback=new THREE.Mesh(fittingGeometry,fittingMaterial);
+  fallback.position.y=-.125;
+  fallback.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),direction);
+  mount.add(fallback);
+  exhibitLightTargets.push({
+    position:mount.position.clone().add(new THREE.Vector3(0,-.15,0)),
+    target:target.clone(),beam,power
+  });
+  placeTwinSpotlight(THREE,mount,target,fallback);
 }
 function hangArt(room, study, hang) {
   const width = hang.width, height = hang.height;
@@ -933,15 +951,8 @@ function constructGallery(layout, studies) {
       });
     }
   }
-  // Decorative props are queued LAST: every painting gets its loader first.
-  if(!galleryFinish.lowPower)for(const room of layout.rooms)deferredGalleryJobs.push(()=>{
-    const fixtureRoot=new THREE.Group();scene.add(fixtureRoot);
-    replaceFixtureWithProp(THREE,{
-      id:'modern_ceiling_lamp_01',parent:fixtureRoot,
-      position:new THREE.Vector3(room.x,room.y+ROOM_HEIGHT-1.0,room.z),
-      width:.48,height:.9,depth:.48
-    });
-  });
+  // Exhibition spotlights are fitted per artwork. No extra central prop:
+  // the previous generic ceiling lamp doubled fixtures and loaded a second CDN.
   deferredGalleryJobs.push(()=>renderVisitors(THREE,scene,
     planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower})));
   if(hangs.length+sculptures.length!==studies.length)
