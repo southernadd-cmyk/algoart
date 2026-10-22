@@ -283,8 +283,16 @@ function loadArtworkTexture(url, material) {
   const fallback=galleryPath
     ?'https://cdn.jsdelivr.net/gh/southernadd-cmyk/algoart@main/gallery/'+galleryPath[1]
     :null;
-  const requests=[source.href,source.href+(source.search?'&':'?')+'galleryRetry=1'];
-  if(fallback){requests.push(fallback,fallback+'?galleryRetry=1');}
+  // GitHub Releases reject cross-origin canvas reads. Route release
+  // artwork via a CORS-capable image cache instead of retrying github.com.
+  const isRelease=source.hostname==='github.com'&&source.pathname.includes('/releases/download/');
+  const proxiedRelease=isRelease
+    ?'https://wsrv.nl/?url='+encodeURIComponent(source.href)+'&w='+(mobileImages?640:1100)+'&output=jpg'
+    :null;
+  const requests=isRelease
+    ?[proxiedRelease,proxiedRelease+'&q=88']
+    :[source.href,source.href+(source.search?'&':'?')+'galleryRetry=1'];
+  if(fallback)requests.push(fallback);
   let index=0;
   function attempt(){
    if(material.userData.galleryDisposed){finish();return;}
