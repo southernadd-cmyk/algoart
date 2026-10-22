@@ -195,6 +195,14 @@ jobs:
             const day=live.floors[i],floor=baked.floors[i];
             if(day.date!==floor.date||floor.signature!==day.studies.map(x=>x.join(':')).join('|'))throw Error('Stale prepared tower '+day.date);
             if(!floor.batches.length)throw Error('Missing floor meshes '+day.date);
+            // A gallery has no exterior wall windows: only glazed
+            // walkways (separate geometry) and the uppermost skylights.
+            const allowed=new Set(['floor','roof','join','plinth','brick','skylight']);
+            for(const batch of floor.batches){
+              if(!allowed.has(batch.material))throw Error('Unexpected facade material '+batch.material+' on '+day.date);
+            }
+            if(i===live.floors.length-1&&!floor.batches.some(b=>b.material==='skylight'))
+              throw Error('Rooftop skylight missing '+day.date);
           }
           "
           test -s sitemap.xml
