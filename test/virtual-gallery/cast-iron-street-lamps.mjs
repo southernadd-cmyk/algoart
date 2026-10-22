@@ -2,17 +2,16 @@
 // entrance and plaza location. All lamps share one GLB download and PBR
 // material set. Existing procedural lanterns remain until the asset arrives.
 let sharedLamp=null;
+let detailedLampsEnabled=false;
+const pendingLamps=[];
 async function loadStreetLamp(THREE){
  if(!sharedLamp){
    sharedLamp=import('three/addons/loaders/GLTFLoader.js')
      .then(({GLTFLoader})=>new Promise((resolve,reject)=>{
        const loader=new GLTFLoader();
+     // The full-resolution original is 6.9 MB: never fetch it as a fallback.
      loader.load('./models/polyhaven-street-lamp-01-optimized.glb',
-       gltf=>resolve(gltf.scene),undefined,()=>{
-         // First load after deployment, or old browser cache: retain original.
-         loader.load('./models/polyhaven-street-lamp-01.glb',
-           fallback=>resolve(fallback.scene),undefined,reject);
-       });
+       gltf=>resolve(gltf.scene),undefined,reject);
      }))
      .then(scene=>{
        scene.traverse(node=>{
@@ -40,7 +39,7 @@ export function placeCastIronStreetLamp(THREE,parent,groundPosition,placeholder,
  mount.rotation.y=rotation;
  mount.name='cast-iron-street-lamp';
  parent.add(mount);
- loadStreetLamp(THREE).then(asset=>{
+ const attach=()=>loadStreetLamp(THREE).then(asset=>{
    // Stale gallery floors are disposed during a lift ride. A completed
    // network fetch must never repopulate a previous floor or plaza.
    if(!asset||!mount.parent||mount.userData.galleryDisposed||
@@ -52,5 +51,15 @@ export function placeCastIronStreetLamp(THREE,parent,groundPosition,placeholder,
    mount.add(model);
    if(placeholder)placeholder.visible=false;
  });
+ if(detailedLampsEnabled)attach();
+ else pendingLamps.push(attach);
  return mount;
+}
+
+// Called only after essential exhibits have been staged; detailed lamp models
+// must not compete with gallery startup downloads or first-frame rendering.
+export function enableDetailedStreetLamps(){
+ if(detailedLampsEnabled)return;
+ detailedLampsEnabled=true;
+ for(const attach of pendingLamps.splice(0))attach();
 }
