@@ -62,8 +62,8 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  return {benches,people:people.slice(0,MAX_VISITORS)};
 }
 
-// Actual male/female rig support for the lzyassoul pack only. The source
-// rig uses upper_arm.L/R and thigh.L/R, NOT the unrelated DEF-* naming.
+// Actual male/female rig support for the lzyassoul pack only. The imported
+// glTF renames e.g. upper_armL_91/forearmL_90/handL_151, not upper_arm.L.
 // Loading is lazy and optional so the gallery's cold start never depends on it.
 let characterAssets=null;
 async function loadCharacters(){
@@ -102,7 +102,12 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false}={})
  if(!selected)fail('mesh selection','expected '+expected+'; found '+skinned.map(m=>m.name).join(', '));
  const bones=selected.skeleton?.bones;
  if(!bones?.length)fail('skeleton','skinned mesh has no bones');
- const named=name=>bones.find(b=>b.name.replace(/_\d+$/,'')===name);
+ // The glTF import strips Blender's side separator and adds numeric ids:
+ // upper_armL_91, forearmL_90, handL_151 (female uses different ids).
+ // Normalize semantic names, never rely on character-specific numeric ids.
+ const canonicalBoneName=name=>name.replace(/_\d+$/,'')
+   .replace(/^(upper_arm|forearm|hand)([LR])$/,(_all,part,side)=>part+'.'+side);
+ const named=name=>bones.find(b=>canonicalBoneName(b.name)===name);
  for(const name of ['upper_arm.L','upper_arm.R','forearm.L','forearm.R','hand.L','hand.R']){
    if(!named(name))fail('bone lookup',name+' absent; names: '+bones.map(b=>b.name).filter(n=>/arm|hand/.test(n)).join(', '));
  }
