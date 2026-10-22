@@ -1232,7 +1232,12 @@ async function latestDate() {
 function readableDate(date) {
   return new Intl.DateTimeFormat('en-GB',{dateStyle:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
 }
-async function loadEdition(date,{viaLift=false}={}) {
+async function loadEdition(date,{viaLift=false,rollback=false}={}) {
+  // Preserve the last valid edition so a failed floor construction can be
+  // rebuilt instead of leaving the visitor inside an empty scene.
+  const previousDate=exhibitDate;
+  const previousPosition=rig?.position?.clone();
+  const previousYaw=yaw,previousPitch=pitch;
   if(!renderer)return;
   const editionStart=performance.now();
   const url = new URL('../../gallery/'+date+'/', location.href);
@@ -1284,7 +1289,25 @@ async function loadEdition(date,{viaLift=false}={}) {
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
   camera.far=Math.max(210,elevation+240);camera.updateProjectionMatrix();
   const constructionStart=performance.now();
-  constructGallery(plan,studyList);
+  try{
+    constructGallery(plan,studyList);
+  }catch(error){
+    if(!rollback && previousDate && previousDate!==date){
+      console.error('Gallery floor construction failed; restoring previous edition',date,error);
+      try{
+        await loadEdition(previousDate,{rollback:true});
+        if(previousPosition){
+          rig.position.copy(previousPosition);
+          yaw=previousYaw;pitch=previousPitch;
+          rig.rotation.y=yaw;camera.rotation.x=pitch;
+        }
+        setLiftDoors(false);
+      }catch(recoveryError){
+        console.error('Previous gallery edition could not be restored',recoveryError);
+      }
+    }
+    throw error;
+  }
   console.info('[Gallery performance] scene construction',Math.round(performance.now()-constructionStart)+'ms','floors',archiveDates.length,'prebuilt',!!prebuiltTowerMatches(prebuiltTower,archiveDates,towerFloorSignatures));
   // Give the optimised entrance lamps priority over deferred artworks/visitors.
   if(currentFloor===0)enableDetailedStreetLamps();
