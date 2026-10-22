@@ -6,8 +6,13 @@ async function loadStreetLamp(THREE){
  if(!sharedLamp){
    sharedLamp=import('three/addons/loaders/GLTFLoader.js')
      .then(({GLTFLoader})=>new Promise((resolve,reject)=>{
-       new GLTFLoader().load('./models/polyhaven-street-lamp-01.glb',
-         gltf=>resolve(gltf.scene),undefined,reject);
+       const loader=new GLTFLoader();
+     loader.load('./models/polyhaven-street-lamp-01-optimized.glb',
+       gltf=>resolve(gltf.scene),undefined,()=>{
+         // First load after deployment, or old browser cache: retain original.
+         loader.load('./models/polyhaven-street-lamp-01.glb',
+           fallback=>resolve(fallback.scene),undefined,reject);
+       });
      }))
      .then(scene=>{
        scene.traverse(node=>{
