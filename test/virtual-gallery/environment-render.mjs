@@ -1,6 +1,7 @@
 // Procedural exterior for the daily museum. Small draw-call budget: one
 // terrain mesh, one sky shell and batched instanced plants/stone.
 import {buildEnvironmentPlan} from './environment-v1.mjs';
+import { loadSquarePanorama } from './panorama-backdrop.mjs';
 
 const PALETTES={
   meadow:{horizon:'#cbd5cc',zenith:'#b1c8cf',terrain:['#7c9077','#9eab86','#71856e'],trees:['#536d54','#667b58','#79906b'],stone:['#b2b3a6','#9b9f91']},
@@ -132,6 +133,9 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
   scene.add(clouds);
   scene.background=color(palette.horizon);
   scene.fog=new THREE.Fog(color(palette.horizon),75,Math.max(164,layout.rooms[0].y+230));
+  // Optional progressive HDRI-derived panorama. The procedural sky remains visible
+  // until a self-hosted, mobile-sized panorama has successfully loaded.
+  loadSquarePanorama(THREE,scene,{sky,clouds,lowPower});
 
   // Terrain gently rises only outside the actual footprint and approach bridges.
   // Heights are sampled from the SAME function as all the planted instances.
