@@ -1,0 +1,108 @@
+name: Prebuild gallery tower now
+
+# Run immediately when this one-off workflow is installed, and allow a
+# manual rerun if archived geometry ever needs refreshing.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/gallery-tower-backfill.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: gallery-tower-backfill
+  cancel-in-progress: false
+
+jobs:
+  prebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout latest gallery sources
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build today's archived tower without regenerating artwork
+        run: node automation/build-tower-geometry.mjs
+
+      - name: Validate tower's current floors and windowless architecture
+        shell: bash
+        run: |
+          test -s gallery/tower-geometry.bin.gz
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { gunzipSync } from 'node:zlib';
+          import assert from 'node:assert/strict';
+          const index = JSON.parse(fs.readFileSync('gallery/tower-layouts.json', 'utf8'));
+          const packed = gunzipSync(fs.readFileSync('gallery/tower-geometry.bin.gz'));
+          const headerSize = packed.readUInt32LE(0);
+          const tower = JSON.parse(packed.subarray(4, 4 + headerSize).toString('utf8'));
+          assert.equal(tower.version, 2, 'Old prebuilt tower format must not be published');
+          assert.equal(tower.createdFor, '2026-10-22', 'This backfill must use the 22 October archive');
+          assert.equal(tower.days, index.floors.length, 'Missing archived floors');
+          assert.equal(tower.floors.length, index.floors.length, 'Incorrect floor count');
+          assert.equal(index.floors.at(-1).date, '2026-10-22', 'Archive changed: use normal daily workflow instead');
+          const allowed = new Set(['floor', 'roof', 'join', 'plinth', 'brick', 'skylight']);
+          let batches = 0, boxes = 0, bridges = 0;
+          for (let i = 0; i < index.floors.length; i++) {
+            const a = index.floors[i], b = tower.floors[i];
+            assert.equal(a.date, b.date);
+            assert.equal(b.signature, a.studies.map(e => e.join(':')).join('|'));
+            assert.ok(b.batches.length, 'Missing tower meshes '+b.date);
+            bridges += b.bridges.length;
+            for (const batch of b.batches) {
+              assert.ok(allowed.has(batch.material), 'Exterior window material on '+b.date);
+              assert.equal(batch.vertexCount % 24, 0);
+              boxes += batch.vertexCount / 24;
+              batches++;
+            }
+          }
+          assert.ok(tower.floors.at(-1).batches.some(b=>b.material==='skylight'),
+            'Missing rooftop skylights');
+          assert.ok(bridges>0,'Missing glass walkway connections');
+          console.log('Validated',tower.days,'floors,',batches,'material batches,',
+            boxes,'architecture blocks,',bridges,'glass walkway connections');
+          NODE
+
+      - name: Publish today’s tower binary to main
+        id: publish
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/tower-geometry.bin.gz
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Prepared tower geometry already published."
+          else
+            git commit -m "Prebuild 22 October gallery tower geometry"
+            git pull --rebase origin main
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy the prebuilt tower to Pages
+        if: steps.publish.outputs.changed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
+
+      - name: Published tower summary
+        if: always()
+        run: |
+          echo "### 22 October prebuilt gallery tower" >> "$GITHUB_STEP_SUMMARY"
+          echo "Generates only \`gallery/tower-geometry.bin.gz\`, not artwork." >> "$GITHUB_STEP_SUMMARY"
+          echo "Gallery: https://southernadd-cmyk.github.io/algoart/test/virtual-gallery/" >> "$GITHUB_STEP_SUMMARY"
