@@ -6,7 +6,7 @@ import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } fr
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
-import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=optimized-glb-v2-20261022';
+import {placeCastIronStreetLamp,enableDetailedStreetLamps} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
@@ -915,7 +915,10 @@ function startDeferredGallery(){
   const step=()=>{
     if(version!==deferredGalleryVersion){deferredGalleryRunning=false;return;}
     const job=deferredGalleryJobs.shift();
-    if(!job){deferredGalleryRunning=false;updateExhibitLighting();return;}
+    if(!job){deferredGalleryRunning=false;updateExhibitLighting();
+      // Load optional street-lamp meshes only when the initial exhibition is usable.
+      if(welcome.hidden && currentFloor===0)enableDetailedStreetLamps();
+      return;}
     try{
       const previous=new Set(scene.children);
       job();
@@ -1424,6 +1427,7 @@ enter.addEventListener('click',()=>{
   if (!plan) return;
   welcome.hidden=true;
   startDeferredGallery();
+  if(!deferredGalleryJobs.length && currentFloor===0)enableDetailedStreetLamps();
   if (matchMedia('(pointer:fine)').matches) canvas.requestPointerLock?.().catch?.(()=>{});
 });
 $('goDate').addEventListener('click',()=>{
