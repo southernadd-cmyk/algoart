@@ -35,8 +35,14 @@ export function stabiliseMaleTorsoSkinning(scene){
    // The male chest extends farther laterally; those uncorrected weights
    // still collapse when the shoulders rotate from the source T-pose.
    // Blend out before the actual arm mesh, rather than at the ribcage edge.
-   const protect=clamp((.67-x)/.20)*
-     clamp((y-1.43)/.20)*clamp((2.99-y)/.23);
+   // Measured directly from the source GLB: the torso extends to about
+   // 0.55m from the character centre at y=2.0-2.5, while arm vertices
+   // dominate outside ~0.75m. The previous cutoff of 0.47m fully
+   // protected only the innermost chest, producing an artificial pinch.
+   // Keep the whole central trunk anchored to spine and blend the shoulder
+   // sleeve influence in the 0.56-0.80m transition zone.
+   const protect=clamp((.80-x)/.24)*
+     clamp((y-1.54)/.20)*clamp((3.02-y)/.22);
    if(protect<.001)continue;
    const spine=spineIndices[y<1.86?0:y<2.19?1:y<2.45?2:3];
    const influences=new Map();
