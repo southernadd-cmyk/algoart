@@ -239,8 +239,14 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   };
   const floorForRoom=(date,index,roomCount)=>{
     if(roomCount<4)return floor;
-    const h=(index*7+String(date).length+index*index)%11;
-    return h===3?stone:(h===1||h===5||h===8)?timberVariants[index%3]:floor;
+    // Daily layouts retain their own finish rhythm; no runtime randomness.
+    let seed=2166136261;
+    for(const char of String(date)+':'+index){
+      seed^=char.charCodeAt(0);seed=Math.imul(seed,16777619);
+    }
+    const h=(seed>>>0)%11;
+    return h===3?stone:(h===1||h===5||h===8)?
+      timberVariants[((seed>>>6)>>>0)%3]:floor;
   };
   return {wall,floor,timber,timberVariants,floorForRoom,exteriorBrick,
     stone,plinth,stoneBridge,trims,diagnostics,
