@@ -22,7 +22,7 @@ a{color:inherit}
 .welcome{position:fixed;inset:0;z-index:8;background:linear-gradient(110deg,rgba(232,228,218,.98) 0%,rgba(232,228,218,.92) 34%,rgba(232,228,218,.14) 76%);display:flex;align-items:center;pointer-events:none}
 .welcome-content{width:min(540px,100%);padding:clamp(28px,6vw,85px);pointer-events:auto}
 .eyebrow{font-size:12px;letter-spacing:.045em;color:#495b4e;margin-bottom:20px}
-.welcome h1{font-family:Georgia,Times,serif;font-size:clamp(43px,5.8vw,83px);font-weight:normal;letter-spacing:-.06em;line-height:1.04;margin:0 0 29px}
+.welcome h1{font-family:"AlgoArt Marker",Georgia,serif;font-size:clamp(43px,5.8vw,83px);font-weight:normal;letter-spacing:-.06em;line-height:1.04;margin:0 0 29px}
 .welcome p{max-width:395px;font-size:15px;line-height:1.7;margin:0 0 17px}
 .welcome .shortcuts{font-size:12px;color:#59625e;line-height:1.6}
 .enter{display:block;padding:15px 24px;border:1px solid #303d35;background:#303d35;color:white;font-size:14px;margin:24px 0 19px;min-width:205px;text-align:center}
