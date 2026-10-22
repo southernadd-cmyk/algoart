@@ -60,7 +60,10 @@ function preset(kind){
  pose=kind;
  for(const s of controlPanel.querySelectorAll('input')){s.value=0;s.previousSibling.textContent='0°'}
  const set=(b,a,v)=>{const s=controlPanel.querySelector('[data-bone="'+b+'"][data-axis="'+a+'"]');if(s){s.value=v;s.previousSibling.textContent=v+'°'}};
- if(kind==='arm'){set('upperarm_r','z',-65);set('upperarm_r','x',-25);set('lowerarm_r','x',-25)}
+ // The supplied model's bind pose is a T-pose. Lower both upper arms first.
+ set('upperarm_l','z',-65);
+ set('upperarm_r','z',65);
+ if(kind==='arm'){set('upperarm_r','z',-35);set('upperarm_r','x',-25);set('lowerarm_r','x',-25)}
  if(kind==='seated'){set('pelvis','x',-9);set('spine_01','x',10);for(const b of ['thigh_l','thigh_r'])set(b,'x',-82);for(const b of ['calf_l','calf_r'])set(b,'x',80)}
  applyPose();document.querySelectorAll('[data-pose]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pose===kind)));
 }
