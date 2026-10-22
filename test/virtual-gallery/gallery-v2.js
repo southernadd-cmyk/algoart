@@ -6,6 +6,7 @@ import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } fr
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
+import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=cast-iron-entrance-v1-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=daily-baked-geometry-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
@@ -884,8 +885,15 @@ function createGalleryArrival(room){
       new THREE.MeshStandardMaterial({color:'#526d55',roughness:1,flatShading:true}));
     shrub.position.set(bed.x,room.y+1.02,bed.z);scene.add(shrub);
     const lamp=doorway.clone().addScaledVector(outward,3.2).addScaledVector(transverse,sideSign*3.25);
-    place(.12,2.7,.12,lamp.x,room.y+1.35,lamp.z,bronze);
-    place(.38,.42,.38,lamp.x,room.y+2.87,lamp.z,warm);
+    // Retain these two simple meshes only until the shared detailed GLB
+    // arrives; fit the new cast-iron model to the actual entrance floor.
+    const backup=new THREE.Group();
+    backup.add(place(.12,2.7,.12,lamp.x,room.y+1.35,lamp.z,bronze));
+    backup.add(place(.38,.42,.38,lamp.x,room.y+2.87,lamp.z,warm));
+    scene.add(backup);
+    placeCastIronStreetLamp(THREE,scene,
+      new THREE.Vector3(lamp.x,room.y,lamp.z),backup,
+      {scale:.84,rotation:Math.atan2(outward.x,outward.z)});
   }
   const start=doorway.clone().addScaledVector(outward,pathLength-2);
   arrival={doorway,outward,pathLength,halfWidth:3.25,baseY:room.y,
