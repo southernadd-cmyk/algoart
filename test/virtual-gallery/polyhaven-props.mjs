@@ -29,7 +29,7 @@ async function resolveModelURL(id){
 export async function loadPolyHavenProp(id){
  if(!assets.has(id)){
   assets.set(id,(async()=>{
-   const [{GLTFLoader},{url,fileURLs},{default:THREE}]=await Promise.all([
+   const [{GLTFLoader},{url,fileURLs},THREE]=await Promise.all([
     import('three/addons/loaders/GLTFLoader.js'),resolveModelURL(id),import('three')]);
    // Poly Haven glTF texture references are relative, while the actual
    // dependency URLs are supplied separately in the official file manifest.
