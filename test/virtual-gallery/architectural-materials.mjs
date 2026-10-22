@@ -20,6 +20,12 @@ export const MATERIAL_SOURCES=Object.freeze({
     asset:'wood_floor',author:'Poly Haven',license:'CC0-1.0',
     diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor/wood_floor_diff_1k.jpg',
     tileMeters:2.3
+  }),
+  brick:Object.freeze({
+    asset:'brick_wall_02',author:'Dimitrios Savva / Poly Haven',license:'CC0-1.0',
+    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brick_wall_02/brick_wall_02_diff_1k.jpg',
+    normal:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brick_wall_02/brick_wall_02_nor_gl_1k.jpg',
+    tileMeters:2
   })
 });
 // Optional CC0 scans prepared from the uploaded OpenGameArt 50-texture pack.
@@ -52,6 +58,12 @@ function tintScan(image,mode,limit=768){
       d[i]=Math.min(255,value+5);
       d[i+1]=Math.min(255,value+2);
       d[i+2]=Math.max(0,value-5);
+    }else if(mode==='brick'){
+      // Keep actual mortar and brick detail, but neutralise red into quiet
+      // buff sandstone to sit behind the artworks.
+      d[i]=Math.max(60,Math.min(242,166+(lum-120)*.35));
+      d[i+1]=Math.max(55,Math.min(225,146+(lum-120)*.34));
+      d[i+2]=Math.max(50,Math.min(205,122+(lum-120)*.31));
     }else{
       d[i]=Math.min(255,value+3);
       d[i+1]=Math.min(255,value+2);
@@ -60,6 +72,22 @@ function tintScan(image,mode,limit=768){
   }
   ctx.putImageData(frame,0,0);
   return canvas;
+}
+function tintTimber(source,variant){
+  const c=document.createElement('canvas');
+  c.width=source.width;c.height=source.height;
+  const g=c.getContext('2d',{willReadFrequently:true});
+  g.drawImage(source,0,0);
+  const image=g.getImageData(0,0,c.width,c.height),data=image.data;
+  // Three tonal studies from one 1K photographic source. No extra downloads.
+  const gains=variant===1?[1.06,1.055,1.035]:[.91,.92,.93];
+  const bias=variant===1?[7,8,6]:[6,5,4];
+  for(let i=0;i<data.length;i+=4){
+    for(let n=0;n<3;n++)data[i+n]=Math.max(0,Math.min(255,
+      data[i+n]*gains[n]+bias[n]));
+  }
+  g.putImageData(image,0,0);
+  return c;
 }
 function fallbackCanvas(mode){
   // Lightweight neutral fallback, not a misleading substitute for a loaded
@@ -109,10 +137,14 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   const wall=make('#faf4ea',.96,2.7);
   const floor=make('#e1ddd2',.90,2.25);
   const timber=make('#e6daca',.87,2.3);
+  const timberLight=make('#f0e6d7',.89,2.3);
+  const timberSmoked=make('#d5c9b7',.92,2.3);
+  const timberVariants=[timber,timberLight,timberSmoked];
   const plinth=make('#f6f1e9',.90,1.15);
   // A quieter secondary floor finish permits stone in selected gallery rooms.
   const stone=make('#e6e1d8',.92,1.65);
-  const stoneBridge=make('#ddd6c8',.88,2.25);
+  const stoneBridge=make('#dedbd3',.91,2.25);
+  const exteriorBrick=make('#faf8f1',.93,2.0);
   stoneBridge.side=THREE.DoubleSide;
   const trims=make('#625f58',.66,.8,.15);
   const fallback={
@@ -127,7 +159,10 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
     return t;
   };
   wall.map=tx(fallback.wall);floor.map=tx(fallback.floor);
-  timber.map=tx(fallback.timber);plinth.map=tx(fallback.plinth);
+  timber.map=tx(fallback.timber);
+  timberLight.map=tx(tintTimber(fallback.timber,1));
+  timberSmoked.map=tx(tintTimber(fallback.timber,2));
+  plinth.map=tx(fallback.plinth);
   stoneBridge.map=floor.map;stone.map=floor.map;
   const diagnostics={loaded:[],failed:[],lowPower,source:'Poly Haven CC0'};
   const locallyLoaded=new Set();
@@ -162,7 +197,22 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   normal('wall-normal',MATERIAL_SOURCES.walls.normal,[wall],.15);
   scan('floor-color',MATERIAL_SOURCES.floors.diffuse,'floor',[floor,stoneBridge]);
   normal('floor-normal',MATERIAL_SOURCES.floors.normal,[floor,stoneBridge],.21);
-  scan('wood-color',MATERIAL_SOURCES.timber.diffuse,'timber',[timber]);
+  loader.load(MATERIAL_SOURCES.timber.diffuse,source=>{
+    try{
+      const base=tintScan(source.image,'timber',lowPower?384:1024);
+      const maps=[base,tintTimber(base,1),tintTimber(base,2)];
+      for(let i=0;i<timberVariants.length;i++){
+        timberVariants[i].map=tx(maps[i]);
+        timberVariants[i].needsUpdate=true;
+      }
+      diagnostics.loaded.push('wood-three-tones');
+    }catch(error){diagnostics.failed.push('wood-three-tones');}
+    source.dispose();
+  },undefined,()=>diagnostics.failed.push('wood-three-tones'));
+  // A real scanned 1K brick and subtle OpenGL normal relief replace the flat
+  // procedural exterior tile. Both requests are optional; geometry is unchanged.
+  scan('brick-color',MATERIAL_SOURCES.brick.diffuse,'brick',[exteriorBrick]);
+  normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.11);
   // Plinths share the plaster scan as a distinct, near-white matte finish.
   scan('plinth-color',MATERIAL_SOURCES.walls.diffuse,'plinth',[plinth]);
   // Local scans override the network-loaded defaults only when successfully
@@ -187,6 +237,12 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
     finish=next;
     return finish;
   };
-  return {wall,floor,timber,stone,plinth,stoneBridge,trims,diagnostics,
+  const floorForRoom=(date,index,roomCount)=>{
+    if(roomCount<4)return floor;
+    const h=(index*7+String(date).length+index*index)%11;
+    return h===3?stone:(h===1||h===5||h===8)?timberVariants[index%3]:floor;
+  };
+  return {wall,floor,timber,timberVariants,floorForRoom,exteriorBrick,
+    stone,plinth,stoneBridge,trims,diagnostics,
     setFinish,finishFor,lowPower};
 }
