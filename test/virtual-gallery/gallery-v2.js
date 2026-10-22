@@ -6,7 +6,7 @@ import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } fr
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
-import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=lit-lanterns-20261022';
+import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=optimized-street-lamp-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
@@ -894,9 +894,6 @@ function createGalleryArrival(room){
     placeCastIronStreetLamp(THREE,scene,
       new THREE.Vector3(lamp.x,room.y,lamp.z),backup,
       {scale:.84,rotation:Math.atan2(outward.x,outward.z)});
-    const glow=new THREE.PointLight(0xffe0ae,2.0,5,2);
-    glow.position.set(lamp.x,room.y+2.75,lamp.z);
-    scene.add(glow);
   }
   const start=doorway.clone().addScaledVector(outward,pathLength-2);
   arrival={doorway,outward,pathLength,halfWidth:3.25,baseY:room.y,
