@@ -143,6 +143,41 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
      if(placed)break;
    }
  }
+ // For very tight historic layouts, all painting-centred candidates can
+ // be blocked despite there being legal standing space elsewhere in the room.
+ // Sweep a sparse grid and face the nearest artwork/sculpture instead of
+ // leaving the whole exhibition without any standing visitors.
+ if(people.filter(p=>!p.seat).length<targetStanding){
+   const steps=[-3.2,-2.8,-2.3,-1.8,-1,0,1,1.8,2.3,2.8,3.2];
+   for(const room of roomCandidates){
+     if(people.length>=MAX_VISITORS||
+        people.filter(p=>!p.seat).length>=targetStanding)break;
+     if(people.some(p=>p.roomIndex===room.index))continue;
+     const roomSculptures=sculptures.filter(p=>p.roomIndex===room.index);
+     const focus=hangs.filter(h=>h.roomIndex===room.index)
+       .concat(roomSculptures.map(p=>({x:p.x,z:p.z})));
+     if(!focus.length)continue;
+     let best=null;
+     for(const dx of steps)for(const dz of steps){
+       const x=room.x+dx,z=room.z+dz;
+       if(!standingClear(room,roomSculptures,x,z,.50))continue;
+       if(people.some(p=>Math.hypot(x-p.x,z-p.z)<2.35))continue;
+       for(const art of focus){
+         const distance=Math.hypot(x-art.x,z-art.z);
+         if(distance<1.4||distance>5.1)continue;
+         const score=Math.abs(distance-2.25)+.02*(Math.abs(dx)+Math.abs(dz));
+         if(!best||score<best.score)best={x,z,art,score};
+       }
+     }
+     if(!best)continue;
+     people.push({x:best.x,z:best.z,y:room.y,
+       yaw:Math.atan2(best.art.x-best.x,best.art.z-best.z),
+       roomIndex:room.index,variant:Math.floor(rng()*5),
+       pose:Math.floor(rng()*4),bodyType:rng()<.5?'male':'female',
+       scale:.91+rng()*.16});
+     obstacles.push({x:best.x,z:best.z,radius:.45});
+   }
+ }
  return {benches,people:people.slice(0,MAX_VISITORS)};
 }
 
