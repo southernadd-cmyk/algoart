@@ -16,7 +16,18 @@ function surfaceTexture(THREE,kind){
   const ctx=canvas.getContext('2d'),hash=(x,y)=>(Math.imul(x+31,73856093)^Math.imul(y+17,19349663))>>>0;
   const base=kind==='brick'?'#b8a99a':kind==='concrete'?'#b6b8b1':kind==='windows'?'#bfc4c0':kind==='roof'?'#757c7a':'#93968b';
   ctx.fillStyle=base;ctx.fillRect(0,0,256,256);
-  if(kind==='brick'){
+  if(kind==='paving'||kind==='stone'){
+    ctx.fillStyle=kind==='paving'?'#c9c6be':'#b2aea5';ctx.fillRect(0,0,256,256);
+    ctx.strokeStyle='rgba(71,68,63,.19)';ctx.lineWidth=2;
+    if(kind==='paving'){
+      for(let y=0;y<=256;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();}
+      for(let row=0;row<4;row++)for(let x=(row%2)*64;x<=256;x+=128){
+        ctx.beginPath();ctx.moveTo(x,row*64);ctx.lineTo(x,(row+1)*64);ctx.stroke();
+      }
+    }else{
+      for(let y=0;y<=256;y+=85){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();}
+    }
+  }else if(kind==='brick'){
     ctx.strokeStyle='rgba(65,58,49,.35)';ctx.lineWidth=3;
     for(let y=0;y<256;y+=22){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();
       for(let x=(Math.floor(y/22)%2)*30-60;x<300;x+=60){
@@ -62,8 +73,8 @@ function uvBox(THREE,w,h,d,tile=2.5){
 }
 
 const noise=(a,b,s)=>Math.sin(a*.27+s)*Math.cos(b*.31-s);
-export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=false}={}){
-  const plan=buildEnvironmentPlan(layout,studies,{lowPower});
+export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=false,protectedLayouts=[],approach=null,plaza=null}={}){
+  const plan=buildEnvironmentPlan(layout,studies,{lowPower,protectedLayouts,approach,plaza});
   const palette=PALETTES[plan.theme];
   const color=s=>new THREE.Color(s);
   const terrainColors=palette.terrain.map(color);
@@ -153,25 +164,30 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
   if(plan.plaza){
     const p=plan.plaza;
     const square=new THREE.Group();
-    const paving=new THREE.MeshStandardMaterial({color:'#dad6cd',roughness:.94});
-    const stoneEdge=new THREE.MeshStandardMaterial({color:'#b8b6ad',roughness:.9});
+    const pavingMap=surfaceTexture(THREE,'paving');
+    pavingMap.repeat.set(p.halfDepth*2/6,p.halfWidth*2/6);
+    const paving=new THREE.MeshStandardMaterial({map:pavingMap,color:'#eee9e1',roughness:.94});
+    const stoneMap=surfaceTexture(THREE,'stone');
+    const stoneEdge=new THREE.MeshStandardMaterial({map:stoneMap,color:'#d0cbc2',roughness:.88});
     const bronze=new THREE.MeshStandardMaterial({color:'#424a49',metalness:.42,roughness:.52});
     const planted=new THREE.MeshStandardMaterial({color:'#58705c',roughness:1,flatShading:true});
     const lampGlass=new THREE.MeshStandardMaterial({color:'#f5e8cc',emissive:'#e9c99b',emissiveIntensity:.52,roughness:.36});
-    const at=(along,across,y=0)=>({
-      x:p.centre.x+p.outward.x*along+p.transverse.x*across,
-      z:p.centre.z+p.outward.z*along+p.transverse.z*across,
-      y:p.level+y
-    });
+    const at=(along,across,y=0)=>new THREE.Vector3(
+      p.centre.x+p.outward.x*along+p.transverse.x*across,
+      p.level+y,
+      p.centre.z+p.outward.z*along+p.transverse.z*across);
     const box=(w,h,d,along,across,y,material)=>{
       const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
       mesh.rotation.y=Math.atan2(p.outward.x,p.outward.z);
       mesh.position.copy(at(along,across,y));square.add(mesh);
       return mesh;
     };
+    // A contrasting centre strip connects the civic square to its gallery doors.
+    const centreMaterial=new THREE.MeshStandardMaterial({color:'#bbb6a9',roughness:.93});
     // Slab is deliberately below the pre-existing entrance walkway, which
     // remains the unobstructed and collision-tested visitor route.
     box(p.halfDepth*2,.16,p.halfWidth*2,0,0,-.17,paving);
+    box(p.halfDepth*2,.012,3.3,0,0,-.077,centreMaterial);
     // Fine architectural joints rather than thousands of individual tiles.
     for(let a=-p.halfDepth+4;a<p.halfDepth;a+=4){
       box(.022,.009,p.halfWidth*2,a,0,-.083,stoneEdge);
