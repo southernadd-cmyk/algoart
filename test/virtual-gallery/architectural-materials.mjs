@@ -169,6 +169,9 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   const timberSmoked=make('#d5c9b7',.92,2.3);
   const timberVariants=[timber,timberLight,timberSmoked];
   const plinth=make('#f6f1e9',.90,1.15);
+  // ambientCG OfficeCeiling001 (CC0): a subtle physical acoustic ceiling
+  // grid. 3.85m real-world tile repeat, with safe neutral canvas fallback.
+  const ceiling=make('#f0eee7',.91,3.85);
   // A quieter secondary floor finish permits stone in selected gallery rooms.
   const stone=make('#e6e1d8',.92,1.65);
   const stoneBridge=make('#dedbd3',.91,2.25);
@@ -191,6 +194,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   timberLight.map=tx(tintTimber(fallback.timber,1));
   timberSmoked.map=tx(tintTimber(fallback.timber,2));
   plinth.map=tx(fallback.plinth);
+  ceiling.map=tx(fallback.plinth);
   stoneBridge.map=floor.map;stone.map=floor.map;
   exteriorBrick.map=tx(brickFallback());
   const diagnostics={loaded:[],failed:[],lowPower,source:'Poly Haven CC0'};
@@ -242,6 +246,33 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
   // procedural exterior tile. Both requests are optional; geometry is unchanged.
   scan('brick-color',MATERIAL_SOURCES.brick.diffuse,'brick',[exteriorBrick]);
   normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.11);
+  // Downloaded once from same-origin assets, not from a third-party API
+  // during gallery start. Optional maps can fail independently; the roof
+  // remains solid and navigable throughout.
+  const ceilingDir='./textures/OfficeCeiling001_';
+  loader.load(ceilingDir+'Color.jpg',texture=>{
+    texture.colorSpace=THREE.SRGBColorSpace;
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    texture.anisotropy=lowPower?1:2;
+    ceiling.map=texture;
+    ceiling.needsUpdate=true;
+    diagnostics.loaded.push('ambientcg-office-ceiling-color');
+  },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-color'));
+  if(!lowPower){
+    loader.load(ceilingDir+'NormalGL.jpg',texture=>{
+      texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+      ceiling.normalMap=texture;
+      ceiling.normalScale=new THREE.Vector2(.18,.18);
+      ceiling.needsUpdate=true;
+      diagnostics.loaded.push('ambientcg-office-ceiling-normal');
+    },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-normal'));
+  }
+  loader.load(ceilingDir+'Roughness.jpg',texture=>{
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    ceiling.roughnessMap=texture;
+    ceiling.needsUpdate=true;
+    diagnostics.loaded.push('ambientcg-office-ceiling-roughness');
+  },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-roughness'));
   // Plinths share the plaster scan as a distinct, near-white matte finish.
   scan('plinth-color',MATERIAL_SOURCES.walls.diffuse,'plinth',[plinth]);
   // Local scans override the network-loaded defaults only when successfully
@@ -280,7 +311,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
     return h===3?stone:(h===1||h===5)?
       timberVariants[((seed>>>6)>>>0)%3]:floor;
   };
-  return {wall,floor,timber,timberVariants,floorForRoom,exteriorBrick,
+  return {wall,floor,timber,timberVariants,floorForRoom,exteriorBrick,ceiling,
     stone,plinth,stoneBridge,trims,diagnostics,
     setFinish,finishFor,lowPower};
 }
