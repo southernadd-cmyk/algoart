@@ -93,6 +93,7 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
         // The street-level arrival avenue remains open and visible.
         if(approachDistance(x,z)<footprintRadius+30)continue;
         const height=4+Math.pow(random(),1.6)*23;
+        if(buildings.length >= (lowPower?65:130))continue;
         buildings.push({x,z,y:heightAt(x,z),width,depth,height,
           variant:random(),roof:random()>.62?1:0});
       }
