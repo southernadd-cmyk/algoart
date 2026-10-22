@@ -670,10 +670,24 @@ function renderLiftCalendar(){
   const floor=dates.indexOf(exhibitDate);
   $('liftCurrent').textContent='Current floor '+(floor===0?'G':Math.max(0,floor))+' · '+readableDate(exhibitDate);
 }
+// Bound all startup and lift fetches, including the response body download.
+ // A mobile network that stops responding must show an error, not an
+ // indefinitely disabled "Preparing exhibition" button or lift overlay.
+async function fetchGalleryText(url,{timeoutMs=18000,...options}={}){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const response=await fetch(url,{...options,signal:controller.signal});
+    return {ok:response.ok,url:response.url,text:response.ok?await response.text():''};
+  }catch(error){
+    if(error?.name==='AbortError')throw new Error('Gallery loading timed out. Check your connection and reload.');
+    throw error;
+  }finally{clearTimeout(timeout);}
+}
 async function loadArchiveDates(){
-  const res=await fetch('../../gallery/',{cache:'no-store'});
+  const res=await fetchGalleryText('../../gallery/',{cache:'no-store'});
   if(!res.ok)throw new Error('Could not load the gallery archive.');
-  const doc=new DOMParser().parseFromString(await res.text(),'text/html');
+  const doc=new DOMParser().parseFromString(res.text,'text/html');
   const discovered=[...doc.querySelectorAll('a[href]')]
     .map(a=>a.getAttribute('href')?.match(/(?:^|\/)\d{4}-\d{2}-\d{2}(?=\/|$)/)?.[0]?.replace(/^\//,''))
     .filter(Boolean);
@@ -1053,9 +1067,9 @@ function readableDate(date) {
 async function loadEdition(date,{viaLift=false}={}) {
   if(!renderer)return;
   const url = new URL('../../gallery/'+date+'/', location.href);
-  const res=await fetch(url,{cache:'no-store'});
+  const res=await fetchGalleryText(url,{cache:'no-store'});
   if(!res.ok)throw new Error('The edition for '+readableDate(date)+' is not available.');
-  const studies=readArchive(await res.text(),res.url);
+  const studies=readArchive(res.text,res.url);
   if(!studies.length)throw new Error('No artworks for this edition');
   const nextPlan=buildLayout(date,studies.length,studies);
   const nextFloor=archiveDates.indexOf(date);
@@ -1132,9 +1146,9 @@ async function load(){
     archiveDates=await loadArchiveDates();
     // Reuse one compact, cacheable index rather than loading every edition's HTML.
     try{
-      const response=await fetch('../../gallery/tower-layouts.json');
+      const response=await fetchGalleryText('../../gallery/tower-layouts.json',{timeoutMs:7000});
       if(response.ok){
-        const data=await response.json();
+        const data=JSON.parse(response.text);
         if(data.version===1&&Array.isArray(data.floors))
           towerFloorSignatures=new Map(data.floors.map(f=>[f.date,f.studies]));
       }
