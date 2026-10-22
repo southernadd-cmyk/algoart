@@ -269,19 +269,9 @@ export function renderVisitors(THREE,scene,plan){
   const skin=skins[palette],shirt=cloth[palette],pants=trousers[palette];
   const stature=male?1.76:1.66;
   if(p.seat){
-   // Seated posture, hips at bench height, thighs horizontal and shins down.
-   scaled(g,torsoShape,shirt,[0,.92,-.11],[.225,.27,.16],-.08);
-   scaled(g,headShape,skin,[0,1.31,-.13],[.137,.17,.12]);
-   scaled(g,headShape,hair[palette],[0,1.445,-.145],[.14,.09,.126]);
-   for(const sign of [-1,1]){
-    const x=sign*.13;
-    scaled(g,limbShape,pants,[x,.47,.25],[.095,.095,.33],Math.PI/2);
-    scaled(g,limbShape,pants,[x,.245,.53],[.076,.23,.08]);
-    scaled(g,headShape,shoes,[x,.06,.62],[.095,.065,.15]);
-    scaled(g,limbShape,shirt,[sign*.27,.85,-.06],[.073,.17,.078],sign*.18);
-    scaled(g,limbShape,skin,[sign*.26,.64,.13],[.056,.15,.062],Math.PI/3);
-   }
-   root.add(g);continue;
+   // Do not show a disconnected primitive seated figure. The validated
+   // rigged sitting pose is loaded below; failures leave an empty bench.
+   root.add(g);g.visible=false;continue;
   }
   const shoulders=male?.255:.218;
   const hips=male?.20:.225;
@@ -309,18 +299,28 @@ export function renderVisitors(THREE,scene,plan){
   }
   root.add(g);
   }
- // Load after the initial room is usable. Only standing visitors are
- // substituted; seated poses remain procedural until hip/knee testing.
- if(plan.people.some(p=>!p.seat))loadCharacters().then(asset=>{
+ // Rigged models replace standing placeholders and supply all seated people.
+ // Delayed model loads must never populate a disposed/previous exhibition.
+ if(plan.people.length)loadCharacters().then(asset=>{
    if(!asset||!root.parent)return;
    const figures=root.children.slice(plan.benches.length,plan.benches.length+plan.people.length);
    for(let i=0;i<plan.people.length;i++){
      const p=plan.people[i];
-     if(p.seat)continue;
      try{
-       const posed=riggedVisitor(THREE,asset,p);
-       if(posed){root.add(posed);figures[i].visible=false;}
-     }catch(error){console.warn('Visitor pose failed, retaining fallback',error);}
+       if(p.seat){
+         const seated=riggedVisitor(THREE,asset,{...p,scale:1,y:p.y+.35},{seated:true});
+         const forward=p.bodyType==='male'?.28:.36;
+         const drop=p.bodyType==='male'?-.37:-.39;
+         const shift=new THREE.Vector3(0,0,forward)
+           .applyAxisAngle(new THREE.Vector3(0,1,0),p.yaw);
+         seated.position.add(shift);
+         seated.position.y+=drop;
+         root.add(seated);
+       }else{
+         const posed=riggedVisitor(THREE,asset,p);
+         if(posed){root.add(posed);figures[i].visible=false;}
+       }
+     }catch(error){console.warn('Rigged visitor unavailable',p.bodyType,error);}
    }
  });
 }
