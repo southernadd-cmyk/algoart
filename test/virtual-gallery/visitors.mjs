@@ -228,18 +228,29 @@ async function loadCharacters(){
  }).catch(error=>{console.warn('Rigged visitors unavailable:',error);return null;});
  return characterAssets;
 }
-const QUATERNIUS_VISITOR_TONES=[0x5f6468,0x7a736b,0x4f5a52,0x6f5d55,0x59636f,0x7b6b5d,0x4d4d52,0x6b7464];
+// A continuous, seeded colour space rather than a fixed palette. Each
+// visitor keeps the same shade when their daily gallery is revisited.
 function quaterniusVisitorTone(person){
- const seed=Math.abs(Math.round(person.x*31)+Math.round(person.z*37)+Math.round(person.yaw*100)+(person.bodyType==='male'?11:17));
- return QUATERNIUS_VISITOR_TONES[seed%QUATERNIUS_VISITOR_TONES.length];
+ let hash=2166136261;
+ const identity=[person.bodyType,Math.round(person.x*100),Math.round(person.y*100),
+  Math.round(person.z*100),Math.round(person.yaw*1000)].join(':');
+ for(let i=0;i<identity.length;i++){
+  hash=Math.imul(hash^identity.charCodeAt(i),16777619);
+ }
+ const unit=()=>{hash^=hash<<13;hash^=hash>>>17;hash^=hash<<5;return (hash>>>0)/4294967296;};
+ // Earthy, restrained tones in HSL: many possible combinations, none neon.
+ const hue=unit(),saturation=.13+unit()*.23,lightness=.30+unit()*.27;
+ return {hue,saturation,lightness};
 }
 function quaterniusVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seated=false,seatHipHeight=.61}={}){
  const copy=asset.clone(asset[person.bodyType]);
  const bones={};let skinned=0;
  // Each character is one uniformly shaded sculpture, without skin/clothing
  // vertex colours, eye textures, or partial texture maps.
+ const tone=quaterniusVisitorTone(person);
  const material=new THREE.MeshStandardMaterial({
-  color:quaterniusVisitorTone(person),roughness:.92,metalness:0,
+  color:new THREE.Color().setHSL(tone.hue,tone.saturation,tone.lightness),
+  roughness:.92,metalness:0,
   vertexColors:false,flatShading:false,side:THREE.DoubleSide
  });
  copy.traverse(node=>{
