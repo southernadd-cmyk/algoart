@@ -12,11 +12,7 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-horizon-feather-20261022';
-// Rigged visitor code and its model dependencies are not needed to open the entrance.
-let visitorsModulePromise;
-function loadVisitorsModule(){
-  return visitorsModulePromise ||= import('./visitors.mjs?v=arms-forward-v10-20261022');
-}
+import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
@@ -969,15 +965,8 @@ function constructGallery(layout, studies) {
   }
   // Exhibition spotlights are fitted per artwork. No extra central prop:
   // the previous generic ceiling lamp doubled fixtures and loaded a second CDN.
-  deferredGalleryJobs.push(()=>{
-    const version=deferredGalleryVersion;
-    return loadVisitorsModule().then(({planVisitors,renderVisitors})=>{
-      if(version!==deferredGalleryVersion)return;
-      const before=new Set(scene.children);
-      renderVisitors(THREE,scene,planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower}));
-      for(const object of scene.children)if(!before.has(object))editionObjects.push(object);
-    }).catch(error=>console.warn('Deferred visitors unavailable',error));
-  });
+  deferredGalleryJobs.push(()=>renderVisitors(THREE,scene,
+    planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower})));
   if(hangs.length+sculptures.length!==studies.length)
     throw new Error('An archived study was omitted from the exhibition');
   for(const hall of layout.corridors)addBridge(hall);
@@ -1038,15 +1027,7 @@ function constructGallery(layout, studies) {
     if(discarded.length)console.info('Removed entrance overlay strip',discarded);
   }
   if(entryPlaza)addPermanentPlazaSculptures(scene,entryPlaza);
-  if(entryPlaza)deferredGalleryJobs.push(()=>{
-    const version=deferredGalleryVersion;
-    return loadVisitorsModule().then(({renderPlazaSeatedVisitors})=>{
-      if(version!==deferredGalleryVersion)return;
-      const before=new Set(scene.children);
-      renderPlazaSeatedVisitors(THREE,scene,entryPlaza);
-      for(const object of scene.children)if(!before.has(object))editionObjects.push(object);
-    }).catch(error=>console.warn('Deferred plaza sitters unavailable',error));
-  });
+  if(entryPlaza)deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,entryPlaza));
   // Prefer the meshes baked during the daily publishing workflow. They carry
   // the same per-floor architecture and metre-scaled texture coordinates but
   // avoid re-running geometry generation in every visitor's browser.
