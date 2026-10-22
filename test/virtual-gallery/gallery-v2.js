@@ -10,6 +10,7 @@ import { createExteriorLandscape } from './environment-render.mjs?v=soft-exterio
 import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=artwork-facing-benches-20261022';
 import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
+import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -33,6 +34,7 @@ let exhibitDate = null;
 let archiveDates=[];
 let towerFloorSignatures=new Map();
 let arrival=null;
+let entranceDoor=null;
 let liftPosition=null;
 let liftWasNear=false;
 let liftTravelling=false;
@@ -743,14 +745,10 @@ function createGalleryArrival(room){
   sign.position.y=top+.55;
   sign.rotation.y=Math.atan2(outward.x,outward.z);
   scene.add(sign);
-  // Entrance glass is transparent and leaves the centre walkable.
-  for(const direction of [-1,1]){
-    const panel=doorway.clone().addScaledVector(outward,.1).addScaledVector(transverse,direction*1.6);
-    const glass=new THREE.Mesh(new THREE.BoxGeometry(1.2,3.9,.045),skylightGlass);
-    glass.position.copy(panel);glass.position.y=room.y+2.02;
-    glass.rotation.y=Math.atan2(outward.x,outward.z);
-    scene.add(glass);
-  }
+  // Human-scale hinged door pair, full-height sidelights and transom. The
+  // model can be swapped later without replacing the proximity controller.
+  entranceDoor=createEntranceDoors(THREE,{doorway,outward,level:room.y});
+  scene.add(entranceDoor.root);
   // Twin grounded planter beds and slender entrance lanterns frame the axis
   // without occupying the accessible central walking route.
   const bronze=new THREE.MeshStandardMaterial({color:'#41463f',metalness:.55,roughness:.42});
@@ -1119,7 +1117,7 @@ async function loadEdition(date,{viaLift=false}={}) {
   resetInspection();
   liftPosition=null;liftWasNear=false;liftDoors=[];
   const previous=new Set(scene.children);
-  arrival=null;
+  arrival=null;entranceDoor=null;
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
   camera.far=Math.max(210,elevation+240);camera.updateProjectionMatrix();
   constructGallery(plan,studyList);
@@ -1409,6 +1407,7 @@ function tick() {
   if (!renderer) return;
   const dt=Math.min(clock.getDelta(),.055);
   animateLiftDoors(dt);
+  entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
   lastFocusCheck+=dt;mapElapsed+=dt;
