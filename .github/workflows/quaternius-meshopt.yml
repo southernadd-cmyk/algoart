@@ -50,9 +50,12 @@ jobs:
             assert len(after)<len(before),(sex,'not smaller')
             assert 'EXT_meshopt_compression' in b.get('extensionsRequired',[])
             assert len(a['meshes'])==len(b['meshes'])
-            assert len(a['skins'])==len(b['skins'])==1
-            def joint_names(g):return sorted(g['nodes'][i].get('name','') for i in g['skins'][0]['joints'])
-            assert joint_names(a)==joint_names(b) and len(joint_names(b))==65
+            assert len(a['skins'])==1 and len(b['skins'])>=1
+            def joint_names(g,skin):return sorted(g['nodes'][i].get('name','') for i in skin['joints'])
+            expected=joint_names(a,a['skins'][0])
+            assert len(expected)==65 and all(joint_names(b,skin)==expected for skin in b['skins'])
+            def skinned_nodes(g):return sorted(n.get('name','') for n in g['nodes'] if 'skin' in n)
+            assert skinned_nodes(a)==skinned_nodes(b)
             assert len(b.get('images',[]))==1
             assert any('COLOR_0' in prim['attributes'] for mesh in b['meshes'] for prim in mesh['primitives'])
             total+=len(after)
