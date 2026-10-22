@@ -186,7 +186,7 @@ function riggedVisitor(THREE,asset,person,{relaxed=true,raiseRightArm=false,seat
        fail('seated bone lookup',side+' thigh/shin/foot absent; candidates: '+
          bones.map(b=>b.name).filter(n=>/thigh|shin|calf|leg|foot/i.test(n)).join(', '));
      }
-     const hipAccuracy=orient(thigh,shin,new THREE.Vector3(0,-.05,-1));
+     const hipAccuracy=orient(thigh,shin,new THREE.Vector3(0,-.05,1));
      const kneeAccuracy=orient(shin,foot,new THREE.Vector3(0,-1,.12));
      seatingMetrics.push({side,thigh:thigh.name,shin:shin.name,foot:foot.name,
        hipAccuracy:+hipAccuracy.toFixed(3),kneeAccuracy:+kneeAccuracy.toFixed(3)});
