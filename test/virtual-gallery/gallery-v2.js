@@ -476,11 +476,12 @@ function selectXRLift(controller){
   paintXRLift();
 }
 function openLift(){
-  if(!welcome.hidden||!liftPosition||liftTravelling)return;
+  if(!liftPosition||liftTravelling)return;
   if(renderer.xr.isPresenting){openXRLift();return;}
   document.exitPointerLock?.();
   $('lift').hidden=false;
   renderLiftCalendar();
+  $('closeLift').focus();
 }
 async function travelLift(date,index){
   if(liftTravelling)return;
@@ -787,7 +788,19 @@ const moveCodes = new Map([
   ['KeyA','left'],['ArrowLeft','left'],['KeyD','right'],['ArrowRight','right']
 ]);
 $('openLift').addEventListener('click',openLift);
-$('closeLift').addEventListener('click',()=>{$('lift').hidden=true;});
+$('closeLift').addEventListener('click',()=>{
+  $('lift').hidden=true;
+  $('closeLift').blur();
+});
+$('lift').addEventListener('keydown',e=>{
+  if(e.key!=='Tab')return;
+  const buttons=[...$('lift').querySelectorAll('button:not([disabled]),input:not([disabled])')]
+    .filter(element=>element.offsetParent!==null);
+  if(!buttons.length)return;
+  const first=buttons[0],last=buttons.at(-1);
+  if(e.shiftKey && document.activeElement===first){e.preventDefault();last.focus();}
+  else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first.focus();}
+});
 $('liftMonth').addEventListener('change',renderLiftCalendar);
 window.addEventListener('keydown',(e)=>{
   if (e.code==='Escape') {
@@ -799,6 +812,7 @@ window.addEventListener('keydown',(e)=>{
     }
     if(!$('info').hidden)dismissedExhibit=currentInfoExhibit;
     $('info').hidden=true;$('lift').hidden=true;
+    if(document.activeElement?.closest?.('#lift'))document.activeElement.blur();
     return;
   }
   if (['INPUT','BUTTON','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
