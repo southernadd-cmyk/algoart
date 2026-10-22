@@ -10,7 +10,7 @@ const manifestPath=new URL('tower-layouts.json',root);
 const outputPath=new URL('tower-geometry.bin.gz',root);
 const FLOOR_SPACING=6.2;
 const TILE={floor:2.25,roof:1.15,join:.8,plinth:1.15,brick:2,
-  glass:0,tinted:0,metal:0,wall:2.7};
+  skylight:0,wall:2.7};
 const encoder=new TextEncoder();
 const source=JSON.parse(await fs.readFile(manifestPath,'utf8'));
 if(source.version!==1||!Array.isArray(source.floors)||!source.floors.length)
@@ -40,9 +40,20 @@ function compileFloor(floor,level,highest){
   for(const room of plan.rooms){
     const y=base+room.y;
     put(room.width+.42,.35,room.depth+.42,room.x,y-.2,room.z,'floor');
-    put(room.width+.45,.24,room.depth+.45,room.x,y+ROOM_HEIGHT+.15,room.z,'roof');
+    if(level===highest){
+      const strip=(room.width-3.5)/2;
+      for(const sign of [-1,1]){
+        put(strip,.24,room.depth+.45,
+          room.x+sign*(room.width+3.5)/4,y+ROOM_HEIGHT+.15,room.z,'roof');
+        put(strip,.17,room.depth+.94,
+          room.x+sign*(room.width+3.5)/4,y+ROOM_HEIGHT+.32,room.z,'roof');
+      }
+      put(3.5,.085,room.depth+.38,room.x,y+ROOM_HEIGHT+.105,room.z,'skylight');
+    }else{
+      put(room.width+.45,.24,room.depth+.45,room.x,y+ROOM_HEIGHT+.15,room.z,'roof');
+      put(room.width+.94,.17,room.depth+.94,room.x,y+ROOM_HEIGHT+.32,room.z,'roof');
+    }
     put(room.width+.76,.12,room.depth+.76,room.x,y+ROOM_HEIGHT-.09,room.z,'join');
-    put(room.width+.94,.17,room.depth+.94,room.x,y+ROOM_HEIGHT+.32,room.z,'roof');
     if(level===highest){
       const edgeY=y+ROOM_HEIGHT+.66;
       for(const sign of [-1,1]){
@@ -60,14 +71,14 @@ function compileFloor(floor,level,highest){
         else put(.34,height,span,fixed,yCentre,room.z+offset,material);
       };
       const centre=y+ROOM_HEIGHT/2;
-      const outside=side==='north'?-1:side==='south'?1:side==='west'?-1:1;
-      const face=fixed+outside*.23;
-      const trim=(span,height,offset,yCentre,material='metal')=>{
-        if(horizontal)put(span,height,.10,room.x+offset,yCentre,face,material);
-        else put(.10,height,span,face,yCentre,room.z+offset,material);
-      };
-      for(const bandY of [y+.32,y+ROOM_HEIGHT-.36])
-        trim(length+.13,.085,0,bandY,'join');
+      // The only external glass on the tower is skybridges and skylights.
+      if(horizontal){
+        put(length+.13,.085,.10,room.x,y+.32,fixed,'join');
+        put(length+.13,.085,.10,room.x,y+ROOM_HEIGHT-.36,fixed,'join');
+      }else{
+        put(.10,.085,length+.13,fixed,y+.32,room.z,'join');
+        put(.10,.085,length+.13,fixed,y+ROOM_HEIGHT-.36,room.z,'join');
+      }
       if(room.doors.includes(side)){
         const opening=DOOR_WIDTH,wing=(length-opening)/2,doorHeight=DOOR_HEIGHT;
         wallPart(wing,ROOM_HEIGHT,-(opening+wing)/2,centre);
@@ -75,28 +86,8 @@ function compileFloor(floor,level,highest){
         wallPart(opening,ROOM_HEIGHT-doorHeight,0,y+(ROOM_HEIGHT+doorHeight)/2);
         continue;
       }
-      const aperture=1.35,windowBottom=1.45,windowHeight=2.15;
-      const positions=[-length*.24,length*.24];
-      let previous=-length/2;
-      for(const position of positions){
-        const left=position-aperture/2,right=position+aperture/2;
-        wallPart(left-previous,ROOM_HEIGHT,(previous+left)/2,centre);
-        wallPart(aperture,windowBottom,position,y+windowBottom/2);
-        const top=ROOM_HEIGHT-windowBottom-windowHeight;
-        wallPart(aperture,top,position,y+windowBottom+windowHeight+top/2);
-        wallPart(aperture,windowHeight,position,y+windowBottom+windowHeight/2,
-          (level+room.index)%4===0?'tinted':'glass');
-        trim(aperture+.22,.09,position,y+windowBottom);
-        trim(aperture+.22,.09,position,y+windowBottom+windowHeight);
-        for(const sign of [-1,1])
-          trim(.09,windowHeight+.1,position+sign*(aperture/2+.045),
-            y+windowBottom+windowHeight/2);
-        trim(.055,windowHeight,position,y+windowBottom+windowHeight/2);
-        trim(aperture+.42,.10,position,y+windowBottom-.16,'join');
-        trim(aperture+.38,.065,position,y+windowBottom+windowHeight+.16,'join');
-        previous=right;
-      }
-      wallPart(length/2-previous,ROOM_HEIGHT,(previous+length/2)/2,centre);
+      // Match the occupied gallery: intact brick wall, no outside windows.
+      wallPart(length,ROOM_HEIGHT,0,centre);
     }
   }
   for(const hall of plan.corridors)
@@ -146,7 +137,7 @@ function compileFloor(floor,level,highest){
     roomCount:plan.rooms.length,bridges,batches};
 }
 const floors=source.floors.map((f,i)=>compileFloor(f,i,source.floors.length-1));
-const metadata={version:1,createdFor:source.floors.at(-1).date,days:floors.length,floors};
+const metadata={version:2,createdFor:source.floors.at(-1).date,days:floors.length,floors};
 const head=Buffer.from(encoder.encode(JSON.stringify(metadata)));
 const dataStart=Math.ceil((4+head.length)/4)*4;
 const packed=Buffer.allocUnsafe(dataStart+binaryBytes);
@@ -159,7 +150,7 @@ const compressed=gzipSync(packed,{level:9});
 const decoded=gunzipSync(compressed);
 const metaLength=decoded.readUInt32LE(0);
 const check=JSON.parse(decoded.subarray(4,4+metaLength).toString('utf8'));
-if(check.floors.length!==source.floors.length||check.version!==1||decoded.length!==packed.length)
+if(check.floors.length!==source.floors.length||check.version!==2||decoded.length!==packed.length)
   throw Error('Compressed tower validation failed');
 await fs.writeFile(outputPath,compressed);
 const count=floors.reduce((n,f)=>n+f.batches.reduce((s,b)=>s+b.vertexCount/24,0),0);
