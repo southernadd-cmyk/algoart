@@ -84,7 +84,7 @@ try {
   for(let i=0;i<2;i++){
     const controller=renderer.xr.getController(i);
     controller.addEventListener('select',()=>selectXRLift(controller));
-    scene.add(controller);
+    rig.add(controller); // Controllers share the headset's locomotion transform.
   }
 } catch (err) {
   errorBox.textContent = 'This device cannot initialise a WebGL gallery: ' + err.message;
@@ -434,7 +434,7 @@ function openXRLift(){
   forward.normalize();
   const canvas=document.createElement('canvas');canvas.width=840;canvas.height=500;
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-  const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,depthTest:false});
+  const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,depthTest:false,depthWrite:false});
   const mesh=new THREE.Mesh(new THREE.PlaneGeometry(1.68,1),material);
   mesh.renderOrder=999;
   mesh.position.copy(eyePos).addScaledVector(forward,1.35);
