@@ -2,7 +2,7 @@
 // terrain mesh, one sky shell and batched instanced plants/stone.
 import {buildEnvironmentPlan} from './environment-v1.mjs';
 import { loadSquarePanorama } from './panorama-backdrop.mjs?v=soft-exterior-panorama-20261022';
-import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=cast-iron-entrance-v1-20261022';
+import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=optimized-glb-v2-20261022';
 
 const PALETTES={
   meadow:{horizon:'#cbd5cc',zenith:'#b1c8cf',terrain:['#7c9077','#9eab86','#71856e'],trees:['#536d54','#667b58','#79906b'],stone:['#b2b3a6','#9b9f91']},
