@@ -700,8 +700,15 @@ function constructGallery(layout, studies) {
     return {doorway:{x:room.x+outward.x*edge,z:room.z+outward.z*edge},
       outward,pathLength:26,halfWidth:3.5};
   })():null;
+  // The civic square is anchored to the one permanent ground-floor entrance.
+  const entryPlaza=entryApproach?(()=>{
+    const {doorway,outward}=entryApproach;
+    return {centre:{x:doorway.x+outward.x*19,z:doorway.z+outward.z*19},
+      outward,transverse:{x:outward.z,z:-outward.x},
+      halfWidth:23,halfDepth:19,level:groundEntry.y};
+  })():null;
   createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower,
-    protectedLayouts:exteriorFloorPlans.map(f=>f.plan),approach:entryApproach});
+    protectedLayouts:exteriorFloorPlans.map(f=>f.plan),approach:entryApproach,plaza:entryPlaza});
   // Rebuild each archived floor from its *own* daily seed signature.
   // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
   const tower=new THREE.Group();
