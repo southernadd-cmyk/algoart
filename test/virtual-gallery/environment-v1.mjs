@@ -93,7 +93,6 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
         // The street-level arrival avenue remains open and visible.
         if(approachDistance(x,z)<footprintRadius+30)continue;
         const height=4+Math.pow(random(),1.6)*23;
-        if(buildings.length >= (lowPower?65:130))continue;
         buildings.push({x,z,y:heightAt(x,z),width,depth,height,
           variant:random(),roof:random()>.62?1:0});
       }
@@ -102,5 +101,6 @@ export function buildEnvironmentPlan(layout,artworkStates=[],{lowPower=false,pro
   return {seed,theme,size,centerX,centerZ,phase,slope,lowPower,
     trees:theme==='urban'?trees.slice(0,lowPower?14:28):trees,
     shrubs:theme==='urban'?shrubs.slice(0,lowPower?8:16):shrubs,
-    rocks:theme==='urban'?[]:rocks,buildings,heightAt};
+    rocks:theme==='urban'?[]:rocks,
+    buildings:buildings.sort((a,b)=>a.variant-b.variant).slice(0,lowPower?65:130),heightAt};
 }
