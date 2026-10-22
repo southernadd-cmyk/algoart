@@ -261,41 +261,69 @@ function scheduleArtwork(task){
   };
   drain();
 }
+// Failed image requests are retried after transient network/deployment errors.
+// Only current-edition materials may be retried after a tab regains focus.
+const failedArtworkLoads=new Map();
+window.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  for(const [material,url] of [...failedArtworkLoads]){
+    if(material.userData.galleryDisposed){failedArtworkLoads.delete(material);continue;}
+    failedArtworkLoads.delete(material);
+    loadArtworkTexture(url,material);
+  }
+});
 function loadArtworkTexture(url, material) {
-  scheduleArtwork(()=>new Promise(resolve=>{
-  const image = new Image();
+ scheduleArtwork(()=>new Promise(resolve=>{
+  const image=new Image();
   image.decoding='async';
-  image.crossOrigin = 'anonymous';
-  image.onload = () => {
-    try {
-    // Edition disposal can race with an image finishing its download.
+  image.crossOrigin='anonymous';
+  let attempts=0,finished=false;
+  const finish=()=>{if(!finished){finished=true;resolve();}};
+  const attempt=()=>{
+   if(material.userData.galleryDisposed){finish();return;}
+   // A new Image request avoids browsers keeping a failed request state.
+   const requestURL=new URL(url,location.href);
+   if(attempts>0)requestURL.searchParams.set('galleryRetry',String(attempts));
+   image.src=requestURL.href;
+  };
+  image.onload=()=>{
+   try{
     if(material.userData.galleryDisposed)return;
-    const maxSize = mobileImages ? 640 : 1100;
-    const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
-    const c = document.createElement('canvas');
-    c.width = Math.max(1, Math.round(image.naturalWidth * scale));
-    c.height = Math.max(1, Math.round(image.naturalHeight * scale));
-    c.getContext('2d').drawImage(image, 0, 0, c.width, c.height);
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 4);
-    material.map = tex;
+    if(!image.naturalWidth||!image.naturalHeight)throw Error('Zero-sized artwork image');
+    const maxSize=mobileImages?640:1100;
+    const scale=Math.min(1,maxSize/Math.max(image.naturalWidth,image.naturalHeight));
+    const c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(image.naturalWidth*scale));
+    c.height=Math.max(1,Math.round(image.naturalHeight*scale));
+    c.getContext('2d').drawImage(image,0,0,c.width,c.height);
+    const tex=new THREE.CanvasTexture(c);
+    tex.colorSpace=THREE.SRGBColorSpace;
+    tex.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
+    if(material.map&&material.map!==tex)material.map.dispose();
+    material.map=tex;
     material.color.set('#ffffff');
-    material.needsUpdate = true;
-    }catch(error){material.color.set('#c9ad9b');material.needsUpdate=true;
-      console.warn('Artwork image decoding failed',url,error);}
-    finally{resolve();}
-  };
-  let attempts=0;
-  image.onerror=()=>{
-    if(material.userData.galleryDisposed){resolve();return;}
-    if(attempts++<1){image.src=url+(url.includes('?')?'&':'?')+'retry=1';return;}
+    material.needsUpdate=true;
+    failedArtworkLoads.delete(material);
+   }catch(error){
     material.color.set('#c9ad9b');material.needsUpdate=true;
-    console.warn('An archived artwork image failed to load:',url);
-    resolve();
+    failedArtworkLoads.set(material,url);
+    console.warn('Artwork image decode failed:',url,error);
+   }finally{finish();}
   };
-  image.src=url;
-  }));
+  image.onerror=()=>{
+   if(material.userData.galleryDisposed){finish();return;}
+   if(attempts<3){
+    attempts++;
+    setTimeout(attempt,attempts*1500);
+   }else{
+    material.color.set('#c9ad9b');material.needsUpdate=true;
+    failedArtworkLoads.set(material,url);
+    console.warn('Artwork unavailable after retries:',url);
+    finish();
+   }
+  };
+  attempt();
+ }));
 }
 // Stage 2: landscape images occupy walls. Portraits become freestanding
 // layered engine-specific sculptures, with a clear walking route around them.
@@ -1017,6 +1045,7 @@ async function loadEdition(date,{viaLift=false}={}) {
   }
   for(const texture of staleTextures)texture.dispose();
   for(const geometry of staleGeometries)geometry.dispose();
+  failedArtworkLoads.clear();
   deferredGalleryVersion++;deferredGalleryJobs=[];deferredGalleryRunning=false;
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
   exhibitLightTargets.length=0;
