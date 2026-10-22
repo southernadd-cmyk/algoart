@@ -1333,7 +1333,7 @@ async function load(){
         if(!response.ok)return new Map();
         const data=JSON.parse(response.text);
         return data.version===1&&Array.isArray(data.floors)
-          ?new Map(data.floors.filter(f=>/^\\d{4}-\\d{2}-\\d{2}$/.test(f.date)&&Array.isArray(f.studies))
+          ?new Map(data.floors.filter(f=>/^\d{4}-\d{2}-\d{2}$/.test(f.date)&&Array.isArray(f.studies))
             .map(f=>[f.date,f.studies]))
           :new Map();
       }).catch(error=>{console.warn('Tower floor index unavailable',error);return new Map();});
