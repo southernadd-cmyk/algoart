@@ -1023,17 +1023,14 @@ function constructGallery(layout, studies) {
   // Rebuild each archived floor from its *own* daily seed signature.
   // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
   const tower=new THREE.Group();
-  // Opaque reflective architectural glazing avoids expensive mobile blending.
-  const windowGlass=new THREE.MeshStandardMaterial({color:'#839ba1',metalness:.34,roughness:.19,side:THREE.DoubleSide});
-  const tintedGlass=new THREE.MeshStandardMaterial({color:'#536d75',metalness:.27,roughness:.25,side:THREE.DoubleSide});
-  const exteriorMetal=new THREE.MeshStandardMaterial({color:'#454c49',metalness:.55,roughness:.4});
+  // Archived galleries have solid walls, just like the walkable interiors.
+  // The only glass belongs on bridges and the uppermost skylights.
   let usingBaked=false;
   if(baked){
     try{
       const t0=performance.now(),rendered=renderPrebuiltTower(THREE,tower,prebuiltTower,{
         wall, floor:galleryFinish.floor,roof:roofFinish,join,
-        plinth:galleryFinish.plinth,brick:exteriorBrick,
-        glass:windowGlass,tinted:tintedGlass,metal:exteriorMetal
+        plinth:galleryFinish.plinth,brick:exteriorBrick,skylight:skylightGlass
       },currentFloor);
       for(const bridge of rendered.bridges){
         const {start,end}=bridge;
@@ -1061,7 +1058,7 @@ function constructGallery(layout, studies) {
     }
   }
   if(!usingBaked){
-  // Collect identical-material wall/window/trim pieces instead of allocating
+  // Collect identical-material solid wall/roof pieces instead of allocating
   // thousands of separate draw calls. Their per-face UVs are retained when
   // combined, so the completed tower looks the same as the desktop version.
   const towerBuildStart=performance.now();
@@ -1081,9 +1078,22 @@ function constructGallery(layout, studies) {
     for(const room of floorPlan.rooms){
       const y=base+room.y;
       put(room.width+.42,.35,room.depth+.42,room.x,y-.2,room.z,galleryFinish.floor);
-      put(room.width+.45,.24,room.depth+.45,room.x,y+ROOM_HEIGHT+.15,room.z,roofFinish);
+      if(level===archiveDates.length-1){
+        // The highest floor has the same central glazed skylight as the
+        // walkable room. Do not cover it with a full solid roof slab.
+        const strip=(room.width-3.5)/2;
+        for(const sign of [-1,1]){
+          put(strip,.24,room.depth+.45,
+            room.x+sign*(room.width+3.5)/4,y+ROOM_HEIGHT+.15,room.z,roofFinish);
+          put(strip,.17,room.depth+.94,
+            room.x+sign*(room.width+3.5)/4,y+ROOM_HEIGHT+.32,room.z,roofFinish);
+        }
+        put(3.5,.085,room.depth+.38,room.x,y+ROOM_HEIGHT+.105,room.z,skylightGlass);
+      }else{
+        put(room.width+.45,.24,room.depth+.45,room.x,y+ROOM_HEIGHT+.15,room.z,roofFinish);
+        put(room.width+.94,.17,room.depth+.94,room.x,y+ROOM_HEIGHT+.32,room.z,roofFinish);
+      }
       put(room.width+.76,.12,room.depth+.76,room.x,y+ROOM_HEIGHT-.09,room.z,join);
-      put(room.width+.94,.17,room.depth+.94,room.x,y+ROOM_HEIGHT+.32,room.z,roofFinish);
       if(level===archiveDates.length-1){
         const edgeY=y+ROOM_HEIGHT+.66;
         for(const sign of [-1,1]){
@@ -1101,13 +1111,14 @@ function constructGallery(layout, studies) {
           else put(.34,heightPart,lengthPart,fixed,verticalCentre,room.z+offset,material);
         };
         const centre=y+ROOM_HEIGHT/2;
-        const outside=side==='north'?-1:side==='south'?1:side==='west'?-1:1;
-        const face=fixed+outside*.23;
-        const trim=(span,height,offset,centreY,material=exteriorMetal)=>{
-          if(horizontal)put(span,height,.10,room.x+offset,centreY,face,material);
-          else put(.10,height,span,face,centreY,room.z+offset,material);
-        };
-        for(const bandY of [y+.32,y+ROOM_HEIGHT-.36])trim(length+.13,.085,0,bandY,join);
+        // Preserve the original roofline band; no exterior window trim.
+        if(horizontal){
+          put(length+.13,.085,.10,room.x,y+.32,fixed,join);
+          put(length+.13,.085,.10,room.x,y+ROOM_HEIGHT-.36,fixed,join);
+        }else{
+          put(.10,.085,length+.13,fixed,y+.32,room.z,join);
+          put(.10,.085,length+.13,fixed,y+ROOM_HEIGHT-.36,room.z,join);
+        }
         if(room.doors.includes(side)){
           const opening=DOOR_WIDTH,wing=(length-opening)/2,doorHeight=DOOR_HEIGHT;
           wallPart(wing,ROOM_HEIGHT,-(opening+wing)/2,centre);
@@ -1115,27 +1126,9 @@ function constructGallery(layout, studies) {
           wallPart(opening,ROOM_HEIGHT-doorHeight,0,y+(ROOM_HEIGHT+doorHeight)/2);
           continue;
         }
-        // Two genuine glazed wall openings (not windows painted over solid walls).
-        const aperture=1.35,windowBottom=1.45,windowHeight=2.15;
-        const positions=[-length*.24,length*.24];
-        let previous=-length/2;
-        for(const position of positions){
-          const left=position-aperture/2,right=position+aperture/2;
-          wallPart(left-previous,ROOM_HEIGHT,(previous+left)/2,centre);
-          wallPart(aperture,windowBottom,position,y+windowBottom/2);
-          const top=ROOM_HEIGHT-windowBottom-windowHeight;
-          wallPart(aperture,top,position,y+windowBottom+windowHeight+top/2);
-          wallPart(aperture,windowHeight,position,y+windowBottom+windowHeight/2,(level+room.index)%4===0?tintedGlass:windowGlass);
-          // Real inset glazing bounded by projecting aluminium casements.
-          trim(aperture+.22,.09,position,y+windowBottom);
-          trim(aperture+.22,.09,position,y+windowBottom+windowHeight);
-          for(const sign of [-1,1])trim(.09,windowHeight+.1,position+sign*(aperture/2+.045),y+windowBottom+windowHeight/2);
-          trim(.055,windowHeight,position,y+windowBottom+windowHeight/2);
-          trim(aperture+.42,.10,position,y+windowBottom-.16,join);
-          trim(aperture+.38,.065,position,y+windowBottom+windowHeight+.16,join);
-          previous=right;
-        }
-        wallPart(length/2-previous,ROOM_HEIGHT,(previous+length/2)/2,centre);
+        // No windows here: the inside of this gallery has a solid wall.
+        // The glazed walkway attached to each doorway is built separately.
+        wallPart(length,ROOM_HEIGHT,0,centre);
       }
     }
     // The actual corridor endpoints and gradients define each visible footbridge.
