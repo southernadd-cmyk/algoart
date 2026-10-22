@@ -11,6 +11,7 @@ import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitor
 import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
+import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -458,9 +459,18 @@ function addArchiveLift(room){
   brushTexture.colorSpace=THREE.SRGBColorSpace;
   brushed.map=brushTexture;
   const local=(u,v,w)=>origin.clone().addScaledVector(tangent,u).addScaledVector(normal,w).add(new THREE.Vector3(0,v,0));
+  // All fallback cabin objects belong to one root; installing the licensed
+  // model can hide that root without obscuring the newly imported elevator.
+  const fallbackCabin=new THREE.Group();
+  fallbackCabin.name='procedural-lift-backup';
+  scene.add(fallbackCabin);
   const part=(w,h,d,u,v,z,material)=>{
-    const p=local(u,v,z);const mesh=block(w,h,d,p.x,p.y,p.z,material);
+    const p=local(u,v,z);
+    const geometry=new THREE.BoxGeometry(w,h,d);
+    const mesh=new THREE.Mesh(geometry,material);
+    mesh.position.copy(p);
     mesh.rotation.y=Math.atan2(normal.x,normal.z);
+    fallbackCabin.add(mesh);
     return mesh;
   };
   // Quiet stone-and-bronze portal with a recessed shadow reveal.
@@ -508,7 +518,7 @@ function addArchiveLift(room){
     // Machine profile: no handles, since these are sensor-operated sliders.
     leaf.userData.closed=leaf.position.clone();
     leaf.userData.open=leaf.position.clone().addScaledVector(tangent,u*.91);
-    scene.add(leaf);
+    fallbackCabin.add(leaf);
     liftDoors.push(leaf);
   }
   part(.85,.065,.58,0,height-.11,0,glass);
@@ -544,6 +554,23 @@ function addArchiveLift(room){
     new THREE.MeshBasicMaterial({color:'#cdd9c1',side:THREE.DoubleSide}));
   indicator.position.copy(local(width*.5+.16,2.1,face+.19));
   indicator.rotation.y=heading.rotation.y;scene.add(indicator);
+  // Non-blocking optional upgrade. Keep the proven walkable cabin and doors
+  // until the exact downloaded model has loaded and both door nodes validate.
+  loadGameReadyElevator(THREE).then(source=>{
+    if(!source||!fallbackCabin.parent)return;
+    try{
+      const fitted=fitGameReadyElevator(THREE,source,{
+        origin,rotation:Math.atan2(normal.x,normal.z),
+        width,height,depth,closure:liftDoorClosure
+      });
+      scene.add(fitted.holder);
+      // Register the late-loaded shell with the current edition cleanup.
+      // The asset loader is shared; a floor change must remove its instance.
+      editionObjects.push(fitted.holder);
+      fallbackCabin.visible=false;
+      liftDoors=fitted.doors;
+    }catch(error){console.warn('Sketchfab elevator fitting failed',error);}
+  });
 }
 function setLiftDoors(closed){
   liftDoorTarget=closed?1:0;
