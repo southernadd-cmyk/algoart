@@ -894,6 +894,9 @@ function createGalleryArrival(room){
     placeCastIronStreetLamp(THREE,scene,
       new THREE.Vector3(lamp.x,room.y,lamp.z),backup,
       {scale:.84,rotation:Math.atan2(outward.x,outward.z)});
+    const glow=new THREE.PointLight(0xffe0ae,2.0,5,2);
+    glow.position.set(lamp.x,room.y+2.75,lamp.z);
+    scene.add(glow);
   }
   const start=doorway.clone().addScaledVector(outward,pathLength-2);
   arrival={doorway,outward,pathLength,halfWidth:3.25,baseY:room.y,
