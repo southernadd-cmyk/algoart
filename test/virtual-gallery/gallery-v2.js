@@ -1392,7 +1392,7 @@ const moveCodes = new Map([
 $('openLift').addEventListener('click',openLift);
 $('closeLift').addEventListener('click',()=>{
   $('lift').hidden=true;
-  $('closeLift').blur();
+  $('openLift').focus();
 });
 $('lift').addEventListener('keydown',e=>{
   if(e.key!=='Tab')return;
@@ -1423,12 +1423,12 @@ window.addEventListener('keydown',(e)=>{
 window.addEventListener('keyup',(e)=>{if(moveCodes.has(e.code))pressed.delete(moveCodes.get(e.code));});
 window.addEventListener('blur',()=>pressed.clear());
 window.addEventListener('mousemove',(e)=>{
-  if (document.pointerLockElement !== canvas || renderer.xr.isPresenting) return;
+  if (!renderer || document.pointerLockElement !== canvas || renderer.xr.isPresenting) return;
   yaw -= e.movementX*.0025;
   pitch=Math.max(-1.35,Math.min(1.35,pitch-e.movementY*.0023));
 });
 canvas.addEventListener('click',()=>{
-  if (welcome.hidden && !renderer.xr.isPresenting && matchMedia('(pointer:fine)').matches && document.pointerLockElement!==canvas) canvas.requestPointerLock?.().catch?.(()=>{});
+  if (renderer && welcome.hidden && !renderer.xr.isPresenting && matchMedia('(pointer:fine)').matches && document.pointerLockElement!==canvas) canvas.requestPointerLock?.().catch?.(()=>{});
 });
 canvas.addEventListener('pointerdown',(e)=>{
   if(e.pointerType!=='touch' || !welcome.hidden) return;
@@ -1523,7 +1523,7 @@ function updateMovement(dt) {
   }
   const length=Math.hypot(ahead,side);
   if(length>0) {
-    const speed = pressed.has('ShiftLeft') ? 5.4 : 3.2;
+    const speed = (pressed.has('ShiftLeft')||pressed.has('ShiftRight')) ? 5.4 : 3.2;
     ahead/=length;side/=length;
     let dx,dz;
     if(renderer.xr.isPresenting){
@@ -1549,8 +1549,8 @@ function updateMovement(dt) {
   rig.rotation.y=yaw;
   camera.rotation.x=renderer.xr.isPresenting?0:pitch;
 }
-window.addEventListener('keydown',e=>{if(e.code==='ShiftLeft')pressed.add('ShiftLeft');});
-window.addEventListener('keyup',e=>{if(e.code==='ShiftLeft')pressed.delete('ShiftLeft');});
+window.addEventListener('keydown',e=>{if(e.code==='ShiftLeft'||e.code==='ShiftRight')pressed.add(e.code);});
+window.addEventListener('keyup',e=>{if(e.code==='ShiftLeft'||e.code==='ShiftRight')pressed.delete(e.code);});
 
 function detectArt(elapsed) {
   if (!plan || !welcome.hidden || !$('lift').hidden || liftTravelling || renderer.xr.isPresenting) {
@@ -1575,7 +1575,12 @@ function detectArt(elapsed) {
   else focusDuration+=elapsed;
   if(selected && focusDuration>=.36 && selected!==dismissedExhibit && currentInfoExhibit!==selected)
     showInfo(selected);
-  if(!selected)resetInspection();
+  if(!selected){
+    $('info').hidden=true;
+    currentInfoExhibit=null;focusCandidate=null;focusDuration=0;
+    // Keep dismissed exhibit suppressed until the visitor walks away.
+    if(dismissedExhibit && camera.getWorldPosition(new THREE.Vector3()).distanceTo(dismissedExhibit.position)>4.5) dismissedExhibit=null;
+  }
   else if(currentInfoExhibit && currentInfoExhibit!==selected && focusDuration<.36){
     // Preserve the current label for a moment while looking between works.
   }else if(selected===dismissedExhibit || (currentInfoExhibit && currentInfoExhibit!==selected)){
