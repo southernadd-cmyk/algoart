@@ -1,5 +1,5 @@
-// Progressive outdoor panorama. Images are generated offline from the licensed
-// Jedlina-Zdrój HDRMAPS EXR; never download the original ~466MB EXR in a browser.
+// Progressive outdoor panorama. Use the Day Environment HDRI 101 tone-mapped
+// equirectangular JPEG, not an EXR or the circular preview image.
 // Safe default: the existing procedurally coloured sky stays until image load.
 let cached = new Map();
 export function loadSquarePanorama(THREE,scene,{sky,clouds,lowPower=false}={}){
