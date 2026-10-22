@@ -464,13 +464,19 @@ function addArchiveLift(room){
   const fallbackCabin=new THREE.Group();
   fallbackCabin.name='procedural-lift-backup';
   scene.add(fallbackCabin);
-  const part=(w,h,d,u,v,z,material)=>{
+  // Unlike the interchangeable cabin, this masonry/metal portal must remain
+  // in place when the detailed GLB becomes visible. Hiding the whole old
+  // cabin previously removed the header and exposed a gap above the model.
+  const permanentSurround=new THREE.Group();
+  permanentSurround.name='archive-lift-permanent-surround';
+  scene.add(permanentSurround);
+  const part=(w,h,d,u,v,z,material,parent=fallbackCabin)=>{
     const p=local(u,v,z);
     const geometry=new THREE.BoxGeometry(w,h,d);
     const mesh=new THREE.Mesh(geometry,material);
     mesh.position.copy(p);
     mesh.rotation.y=Math.atan2(normal.x,normal.z);
-    fallbackCabin.add(mesh);
+    parent.add(mesh);
     return mesh;
   };
   // Quiet stone-and-bronze portal with a recessed shadow reveal.
@@ -483,15 +489,24 @@ function addArchiveLift(room){
     part(.11,height,depth,u*width*.5,height*.5,0,metal);
     part(.055,.07,depth,u*(width*.5-.1),1.04,0,metal);
   }
-  // Surround faces the visitor at the gallery-side threshold.
+  // The surround faces the visitor at the gallery-side threshold. It is
+  // independent of the optional model and must always bridge the vertical
+  // difference between the 2.65m model and the taller masonry opening.
   const face=depth*.5+.075;
   for(const u of [-1,1]){
-    part(.22,3.05,.23,u*(width*.5+.10),1.525,face,portal);
-    part(.038,2.62,.08,u*(width*.5-.015),1.31,face+.135,bronze);
+    part(.22,3.05,.23,u*(width*.5+.10),1.525,face,portal,permanentSurround);
+    part(.038,2.62,.08,u*(width*.5-.015),1.31,face+.135,bronze,permanentSurround);
   }
-  part(width+.48,.24,.28,0,3.05,face,portal);
-  part(width+.12,.045,.13,0,2.82,face+.14,bronze);
-  part(width+.5,.075,.36,0,3.52,face-.06,bronze);
+  // Continuous brushed-metal infill: 2.65m model roof to 3.05m lintel.
+  // It is shallow and mounted ahead of the cabin, so it cannot obstruct
+  // the sliding leaves, floor controls or the player's doorway clearance.
+  const headerBottom=height-.015;
+  const headerTop=3.045;
+  part(width+.08,headerTop-headerBottom,.15,0,
+    (headerBottom+headerTop)/2,face+.065,brushed,permanentSurround);
+  part(width+.48,.24,.28,0,3.05,face,portal,permanentSurround);
+  part(width+.12,.045,.13,0,2.82,face+.14,bronze,permanentSurround);
+  part(width+.5,.075,.36,0,3.52,face-.06,bronze,permanentSurround);
   // Two distinct, detailed sliding leaves. Keep a single transform per leaf
   // so every inset, lip and vertical seam travels with its metal door.
   // Destination-floor doors start CLOSED while the lift is in transit.
