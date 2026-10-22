@@ -3,9 +3,9 @@
 // Safe default: the existing procedurally coloured sky stays until image load.
 let cached = new Map();
 export function loadSquarePanorama(THREE,scene,{sky,clouds,lowPower=false}={}){
-  const mobile=lowPower || (typeof matchMedia==='function' && matchMedia('(pointer:coarse)').matches);
-  const path=mobile?'./assets/jedlina-zdroj-2k.jpg':'./assets/jedlina-zdroj-4k.jpg';
-  const backup='./assets/jedlina-zdroj-2k.jpg';
+  // The currently supplied source is 1K: do not request nonexistent 2K/4K assets.
+  const path='./assets/jedlina-zdroj-1k.jpg';
+  const backup=path;
   const use=(texture)=>{
     // Level swaps recreate the environment: do not mutate an old scene.
     if(!sky?.parent || sky.parent!==scene)return;
