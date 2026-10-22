@@ -71,3 +71,12 @@ before placing the GLB in that public path.
 The model is low-polygon (~5,300 triangles) and ~296 KiB. It loads on
 demand after the floor scene is ready and its geometry is reused after
 lift-floor changes. It is not a prerequisite for a working elevator.
+
+
+## Twin surface spotlights and office ceiling (CC0)
+
+- Physical exhibition fittings: [Twin Spot – Twin Surface Spotlight](https://www.innerscene.com/tools/library/3d-parts/twin-spot-twin-surface-spotlight-68df1e43) by Innerscene. Original approximately 27.6 × 10.5 × 19.8 cm GLB with included textured PBR materials, released under CC0.
+- Interior solid-ceiling finish: [OfficeCeiling001](https://ambientcg.com/view?id=OfficeCeiling001) by ambientCG, CC0. Source 1K JPEG Color, NormalGL and Roughness maps. Installed as optimized 768px JPEGs with original spatial scale ~3.85m per repeat.
+- The local asset installer is `automation/install-gallery-lighting-assets.py`. `.github/workflows/gallery-lighting-assets.yml` downloads and validates from the official publisher sites, commits the binary files under `test/virtual-gallery/models` and `test/virtual-gallery/textures`, then requests a Pages deployment.
+- The actual light cones use the existing limited light pool. Individual detailed fixtures are optional decoration, loaded after entry; until the GLB is available the original simple fitting stays visible. Missing ceiling maps leave the neutral roof finish intact, with no blocking promises.
+- The central roof skylights are preserved and the new office-ceiling material is applied only to solid interior ceiling panels, not exterior walls or the tower facade.
