@@ -46,6 +46,7 @@ let liftDoors=[];
 let liftDoorClosure=0;
 let liftDoorTarget=0;
 let liftCabinPosition=null;
+let liftDoorThreshold=null;
 let currentFloor=0;
 const FLOOR_SPACING=6.2;
 let plan = null;
@@ -456,14 +457,15 @@ function addArchiveLift(room){
   part(width+.48,.24,.28,0,3.05,face,portal);
   part(width+.12,.045,.13,0,2.82,face+.14,bronze);
   part(width+.5,.075,.36,0,3.52,face-.06,bronze);
-  // Two independently animated sliding leaves.
+  // Automatically opening lobby doors. During floor travel the newly built
+  // destination cabin MUST start closed, or the panels pop open mid-ride.
   liftDoors=[];
-  liftDoorClosure=0;liftDoorTarget=0;
+  liftDoorClosure=1;liftDoorTarget=1;
   for(const u of [-1,1]){
     const leaf=part(.92,2.3,.075,u*.47,1.2,depth*.5-.02,metal);
     leaf.userData.closed=leaf.position.clone();
     leaf.userData.open=leaf.position.clone().addScaledVector(tangent,u*.91);
-    leaf.position.copy(leaf.userData.open);
+    leaf.position.copy(leaf.userData.closed);
     liftDoors.push(leaf);
   }
   part(.85,.065,.58,0,height-.11,0,glass);
@@ -474,6 +476,7 @@ function addArchiveLift(room){
   for(let i=0;i<4;i++)part(.055,.055,.055,width*.5-.115,1.7-i*.19,.1,glass);
   liftCabinPosition=local(0,0,0);
   liftPosition=local(0,0,.12);
+  liftDoorThreshold=local(0,0,depth*.5-.02);
   // Purpose-made readable signage, centred ABOVE the lintel rather than hidden behind it.
   const signCanvas=document.createElement('canvas');
   signCanvas.width=768;signCanvas.height=192;
@@ -503,9 +506,24 @@ function setLiftDoors(closed){
   liftDoorTarget=closed?1:0;
 }
 function animateLiftDoors(dt){
-  const step=Math.min(1,dt*2.1);
-  liftDoorClosure+=Math.sign(liftDoorTarget-liftDoorClosure)*Math.min(step,Math.abs(liftDoorTarget-liftDoorClosure));
-  for(const leaf of liftDoors)leaf.position.copy(leaf.userData.open).lerp(leaf.userData.closed,liftDoorClosure);
+  // Proximity sensor works on both sides of the doorway, just like the
+  // gallery entrance. Never reopen doors during a lift journey.
+  if(liftDoorThreshold && liftDoors.length && !liftTravelling){
+    const person=renderer?.xr.isPresenting
+      ?renderer.xr.getCamera(camera).getWorldPosition(new THREE.Vector3())
+      :rig.position;
+    const distance=Math.hypot(person.x-liftDoorThreshold.x,
+      person.z-liftDoorThreshold.z);
+    // Hysteresis keeps leaves from chattering at the activation boundary.
+    if(distance<2.6)liftDoorTarget=0;
+    else if(distance>3.05)liftDoorTarget=1;
+  }else if(liftTravelling)liftDoorTarget=1;
+  // Smooth, framerate-independent sliding movement.
+  liftDoorClosure+=(liftDoorTarget-liftDoorClosure)*Math.min(1,dt*3.5);
+  if(Math.abs(liftDoorTarget-liftDoorClosure)<.002)
+    liftDoorClosure=liftDoorTarget;
+  for(const leaf of liftDoors)
+    leaf.position.copy(leaf.userData.open).lerp(leaf.userData.closed,liftDoorClosure);
 }
 
 function nearLift(){
@@ -1115,7 +1133,7 @@ async function loadEdition(date,{viaLift=false}={}) {
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
   exhibitLightTargets.length=0;
   resetInspection();
-  liftPosition=null;liftWasNear=false;liftDoors=[];
+  liftPosition=null;liftDoorThreshold=null;liftWasNear=false;liftDoors=[];
   const previous=new Set(scene.children);
   arrival=null;entranceDoor=null;
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
