@@ -25,6 +25,7 @@ let focusCandidate = null;
 let focusDuration = 0;
 let dismissedExhibit = null;
 let lastFocusCheck = 0;
+let mapElapsed = 0;
 let yaw = Math.PI, pitch = 0;
 let exhibitDate = null;
 let archiveDates=[];
@@ -387,7 +388,12 @@ function animateLiftDoors(dt){
 }
 
 function nearLift(){
-  return liftPosition&&Math.hypot(rig.position.x-liftPosition.x,rig.position.z-liftPosition.z)<1.15;
+  if(!liftPosition)return false;
+  // In VR the headset can move relative to the locomotion rig.
+  const position=renderer?.xr.isPresenting
+    ?renderer.xr.getCamera(camera).getWorldPosition(new THREE.Vector3())
+    :rig.position;
+  return Math.hypot(position.x-liftPosition.x,position.z-liftPosition.z)<1.15;
 }
 // A controller-operated, world-space lift panel: HTML panels are invisible in VR.
 function paintXRLift(){
@@ -774,6 +780,7 @@ function showInfo(exhibit){
 $('closeInfo').addEventListener('click',()=>{
   dismissedExhibit=currentInfoExhibit;
   $('info').hidden=true;
+  $('closeInfo').blur();
 });
 const moveCodes = new Map([
   ['KeyW','forward'],['ArrowUp','forward'],['KeyS','back'],['ArrowDown','back'],
@@ -784,6 +791,12 @@ $('closeLift').addEventListener('click',()=>{$('lift').hidden=true;});
 $('liftMonth').addEventListener('change',renderLiftCalendar);
 window.addEventListener('keydown',(e)=>{
   if (e.code==='Escape') {
+    // First Escape releases mouse lock so the artwork link can be clicked.
+    // Only another Escape dismisses the contextual information.
+    if(document.pointerLockElement===canvas){
+      document.exitPointerLock?.();
+      return;
+    }
     if(!$('info').hidden)dismissedExhibit=currentInfoExhibit;
     $('info').hidden=true;$('lift').hidden=true;
     return;
@@ -822,7 +835,7 @@ for (const button of document.querySelectorAll('[data-move]')) {
 enter.addEventListener('click',()=>{
   if (!plan) return;
   welcome.hidden=true;
-  if (matchMedia('(pointer:fine)').matches) canvas.requestPointerLock?.();
+  if (matchMedia('(pointer:fine)').matches) canvas.requestPointerLock?.().catch?.(()=>{});
 });
 $('goDate').addEventListener('click',()=>{
   const date=$('edition').value;
@@ -960,8 +973,9 @@ function tick() {
   animateLiftDoors(dt);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
-  lastFocusCheck+=dt;
-  if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();drawMap();lastFocusCheck=0;}
+  lastFocusCheck+=dt;mapElapsed+=dt;
+  if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
+  if(mapElapsed>.065){drawMap();mapElapsed=0;}
   renderer.render(scene,camera);
 }
 if(renderer)renderer.setAnimationLoop(tick);
