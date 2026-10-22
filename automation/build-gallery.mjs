@@ -481,6 +481,15 @@ archive.days.sort((a, b) => b.date.localeCompare(a.date));
 
 await fs.mkdir(galleryRoot, { recursive: true });
 await fs.writeFile(archivePath, JSON.stringify(archive, null, 2) + '\n');
+// A small index contains the precise seed and engine sequence for every day.
+// The 3D tower can reproduce each level without fetching every full gallery page.
+const towerFloors=[];
+for(const record of [...archive.days].sort((a,b)=>a.date.localeCompare(b.date))){
+  const meta=JSON.parse(await fs.readFile(path.join(galleryRoot,record.date,'meta.json'),'utf8'));
+  towerFloors.push({date:record.date,studies:meta.entries.map(entry=>[entry.seed,entry.mode])});
+}
+await fs.writeFile(path.join(galleryRoot,'tower-layouts.json'),
+  JSON.stringify({version:1,floors:towerFloors})+'\n');
 await fs.writeFile(path.join(galleryRoot, 'index.html'), archivePage(archive));
 await fs.writeFile(path.join(galleryRoot, 'feed.xml'), rss(archive));
 await fs.writeFile(path.resolve('sitemap.xml'), sitemap(archive));
