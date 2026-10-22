@@ -705,7 +705,8 @@ function constructGallery(layout, studies) {
   // Rebuild each archived floor from its *own* daily seed signature.
   // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
   const tower=new THREE.Group();
-  const windowGlass=skylightGlass;
+  const windowGlass=new THREE.MeshStandardMaterial({color:'#819a9e',metalness:.24,roughness:.23,transparent:true,opacity:.85,side:THREE.DoubleSide});
+  const exteriorMetal=new THREE.MeshStandardMaterial({color:'#454c49',metalness:.55,roughness:.4});
   const put=(w,h,d,x,y,z,material=wall)=>{
     if(w<=0||h<=0||d<=0)return;
     const geometry=new THREE.BoxGeometry(w,h,d);
@@ -724,6 +725,15 @@ function constructGallery(layout, studies) {
       const y=base+room.y;
       put(room.width+.42,.35,room.depth+.42,room.x,y-.2,room.z,galleryFinish.floor);
       put(room.width+.45,.24,room.depth+.45,room.x,y+ROOM_HEIGHT+.15,room.z,roofFinish);
+      put(room.width+.76,.12,room.depth+.76,room.x,y+ROOM_HEIGHT-.09,room.z,join);
+      put(room.width+.94,.17,room.depth+.94,room.x,y+ROOM_HEIGHT+.32,room.z,roofFinish);
+      if(level===archiveDates.length-1){
+        const edgeY=y+ROOM_HEIGHT+.66;
+        for(const sign of [-1,1]){
+          put(room.width+1.05,.53,.22,room.x,edgeY,room.z+sign*(room.depth+.87)/2,galleryFinish.plinth);
+          put(.22,.53,room.depth+.95,room.x+sign*(room.width+.87)/2,edgeY,room.z,galleryFinish.plinth);
+        }
+      }
       for(const side of ['north','south','east','west']){
         const horizontal=side==='north'||side==='south';
         const length=horizontal?room.width:room.depth;
@@ -734,6 +744,13 @@ function constructGallery(layout, studies) {
           else put(.34,heightPart,lengthPart,fixed,verticalCentre,room.z+offset,material);
         };
         const centre=y+ROOM_HEIGHT/2;
+        const outside=side==='north'?-1:side==='south'?1:side==='west'?-1:1;
+        const face=fixed+outside*.23;
+        const trim=(span,height,offset,centreY,material=exteriorMetal)=>{
+          if(horizontal)put(span,height,.10,room.x+offset,centreY,face,material);
+          else put(.10,height,span,face,centreY,room.z+offset,material);
+        };
+        for(const bandY of [y+.32,y+ROOM_HEIGHT-.36])trim(length+.13,.085,0,bandY,join);
         if(room.doors.includes(side)){
           const opening=DOOR_WIDTH,wing=(length-opening)/2,doorHeight=3.68;
           wallPart(wing,ROOM_HEIGHT,-(opening+wing)/2,centre);
@@ -752,9 +769,13 @@ function constructGallery(layout, studies) {
           const top=ROOM_HEIGHT-windowBottom-windowHeight;
           wallPart(aperture,top,position,y+windowBottom+windowHeight+top/2);
           wallPart(aperture,windowHeight,position,y+windowBottom+windowHeight/2,windowGlass);
-          // Recessed mullions and sill follow the window orientation.
-          wallPart(aperture+.12,.065,position,y+windowBottom,join);
-          wallPart(.055,windowHeight,position,y+windowBottom+windowHeight/2,join);
+          // Real inset glazing bounded by projecting aluminium casements.
+          trim(aperture+.22,.09,position,y+windowBottom);
+          trim(aperture+.22,.09,position,y+windowBottom+windowHeight);
+          for(const sign of [-1,1])trim(.09,windowHeight+.1,position+sign*(aperture/2+.045),y+windowBottom+windowHeight/2);
+          trim(.055,windowHeight,position,y+windowBottom+windowHeight/2);
+          trim(aperture+.42,.10,position,y+windowBottom-.16,join);
+          trim(aperture+.38,.065,position,y+windowBottom+windowHeight+.16,join);
           previous=right;
         }
         wallPart(length/2-previous,ROOM_HEIGHT,(previous+length/2)/2,centre);
