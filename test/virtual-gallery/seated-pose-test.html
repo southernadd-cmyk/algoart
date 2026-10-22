@@ -49,7 +49,7 @@ function adjust(){
 forward.addEventListener('input',adjust);height.addEventListener('input',adjust);
 const asset=await loadRiggedCharacterAsset();
 const selector=document.getElementById('model');
-const seatDefaults={male:{forward:.28,height:-.37},female:{forward:.36,height:-.39}};
+const seatDefaults=Object.freeze({male:{forward:.28,height:-.37},female:{forward:.36,height:-.39}});
 function applySeatDefaults(){
  const values=seatDefaults[selector.value];
  forward.value=values.forward;
@@ -66,7 +66,11 @@ adjust();
 log.textContent=JSON.stringify(figure.userData.galleryRigMetrics,null,2)+'\n\nAdjust forward and height until hips visibly rest on the horizontal seat. Share the two displayed values.';
 }catch(error){log.textContent='SEATED POSE FAILED: '+error.message;console.error(error);}
 }
-selector.addEventListener('change',()=>{applySeatDefaults();build();});document.getElementById('refresh').addEventListener('click',build);
+selector.addEventListener('change',()=>{applySeatDefaults();build();});
+document.getElementById('refresh').addEventListener('click',()=>{applySeatDefaults();build();});
+// Some browsers restore range inputs AFTER module evaluation, overriding
+// script-assigned defaults. Reapply the calibrated values after page restore.
+window.addEventListener('pageshow',()=>{applySeatDefaults();build();});
 applySeatDefaults();build();
 function resize(){const width=canvas.clientWidth,height=canvas.clientHeight;renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);resize();
