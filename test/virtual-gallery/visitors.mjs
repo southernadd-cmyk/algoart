@@ -7,7 +7,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  const benches=[],people=[],obstacles=[];
  // Sparse museum occupancy, bounded even as editions gain more rooms.
  const MAX_VISITORS=lowPower?2:3;
- const MAX_BENCHES=lowPower?1:3;
+ const MAX_BENCHES=lowPower?2:4;
  for(const room of layout.rooms){
   const roomHangs=hangs.filter(h=>h.roomIndex===room.index);
   const roomSculptures=sculptures.filter(p=>p.roomIndex===room.index);
@@ -26,7 +26,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    if(roomSculptures.some(q=>Math.abs(x-q.x)<q.width/2+r+1.1&&Math.abs(z-q.z)<q.depth/2+r+1.1))return false;
    return !obstacles.some(q=>near(p,q,r+q.radius+.32));
   };
-  if(roomHangs.length && room.index%2===1 && benches.length<MAX_BENCHES){
+  if((room.width>=12&&room.depth>=10) && roomHangs.length && benches.length<MAX_BENCHES){
    // Try centre-offset viewing bays on each side; never default to a corner.
    const options=[];
    for(const sx of [-1,1])for(const sz of [-1,1]){
@@ -36,7 +36,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
    const first=Math.floor(rng()*options.length);
    for(let i=0;i<options.length;i++){
     const b=options[(i+first)%options.length];
-    if(clear(b.x,b.z,.62)){
+    if(clear(b.x,b.z,.45)){
      benches.push({...b,y:room.y,roomIndex:room.index});
      obstacles.push({...b,radius:1.15});
      if(people.length<MAX_VISITORS && rng()>.8)people.push({x:b.x,z:b.z,y:room.y,yaw:b.rotation,roomIndex:room.index,
@@ -327,3 +327,36 @@ export function renderVisitors(THREE,scene,plan){
 
 // Used by the isolated asset validation view; gallery visitors call the same code.
 export {loadCharacters as loadRiggedCharacterAsset,riggedVisitor as createRiggedCharacter};
+
+/**
+ * Place two calibrated real rigged visitors on separate plaza benches.
+ * Called after entry to avoid delaying the first outdoor render.
+ */
+export function renderPlazaSeatedVisitors(THREE,scene,plaza){
+ if(!plaza)return null;
+ const group=new THREE.Group();scene.add(group);
+ const positions=[
+  {type:'male',along:-9,side:-1,forward:.28,drop:-.37},
+  {type:'female',along:6,side:1,forward:.36,drop:-.39}
+ ];
+ loadCharacters().then(asset=>{
+  if(!asset||!group.parent)return;
+  for(const p of positions){
+   const across=p.side*(plaza.halfWidth-2.2);
+   const x=plaza.centre.x+plaza.outward.x*p.along+plaza.transverse.x*across;
+   const z=plaza.centre.z+plaza.outward.z*p.along+plaza.transverse.z*across;
+   const facing=new THREE.Vector3(-plaza.transverse.x*p.side,0,-plaza.transverse.z*p.side);
+   const yaw=Math.atan2(facing.x,facing.z);
+   try{
+    const person={bodyType:p.type,x,z,y:plaza.level+.445,yaw,scale:1};
+    const figure=riggedVisitor(THREE,asset,person,{seated:true});
+    // Calibration is relative to the same .52-m test seat.
+    const local=new THREE.Vector3(0,0,p.forward).applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
+    figure.position.add(local);
+    figure.position.y+=p.drop+.095;
+    group.add(figure);
+   }catch(error){console.warn('Plaza seated visitor unavailable',p.type,error);}
+  }
+ });
+ return group;
+}
