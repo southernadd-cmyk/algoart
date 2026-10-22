@@ -274,7 +274,10 @@ export function createArchitecturalMaterials(THREE,{lowPower=false}={}){
       seed^=char.charCodeAt(0);seed=Math.imul(seed,16777619);
     }
     const h=(seed>>>0)%11;
-    return h===3?stone:(h===1||h===5||h===8)?
+    // At least one timber room in each multiroom edition; its tone varies
+    // with the actual day seed. Other rooms remain primarily pale concrete.
+    if(index===2)return timberVariants[((seed>>>6)>>>0)%3];
+    return h===3?stone:(h===1||h===5)?
       timberVariants[((seed>>>6)>>>0)%3]:floor;
   };
   return {wall,floor,timber,timberVariants,floorForRoom,exteriorBrick,
