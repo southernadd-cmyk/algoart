@@ -6,7 +6,7 @@ import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } fr
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
-import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=cast-iron-entrance-v1-20261022';
+import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=lit-lanterns-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
 import { resolveStudyMaterial } from './study-material.mjs';
