@@ -996,7 +996,15 @@ function readArchive(html, url) {
       id: i,
       title: card.querySelector('h2')?.textContent.trim() || 'Untitled drawing',
       seed,
-      image: new URL(img.getAttribute('src'),url).href,
+      image: (() => {
+        const original=new URL(img.getAttribute('src'),url);
+        // Release download URLs are blocked for canvas/WebGL by CORS.
+        // Gallery release art is mirrored into same-origin Pages assets.
+        if(original.hostname==='github.com' && original.pathname.includes('/southernadd-cmyk/algoart/releases/download/')){
+          return new URL('../../gallery/release-art/'+original.pathname.split('/').pop(),location.href).href;
+        }
+        return original.href;
+      })(),
       href,
       portrait: card.dataset.orientation === 'portrait' || Number(img.getAttribute('height')) > Number(img.getAttribute('width')),
       aspect: Number(img.getAttribute('width')) / Number(img.getAttribute('height')) || 1.4,
