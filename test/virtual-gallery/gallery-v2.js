@@ -745,6 +745,31 @@ function constructGallery(layout, studies) {
   sculpturePlacements.push(...sculptures);
   const byId=new Map(studies.map(study=>[study.id,study]));
   const quality=matchMedia('(pointer:coarse)').matches?'mobile':'desktop';
+  // Lightweight, locally generated buff brick: no network texture request.
+  const brickCanvas=document.createElement('canvas');
+  brickCanvas.width=512;brickCanvas.height=512;
+  const bc=brickCanvas.getContext('2d');
+  bc.fillStyle='#b6ad99';bc.fillRect(0,0,512,512);
+  for(let row=0;row<16;row++){
+    const top=row*32+2,offset=(row%2)*32;
+    for(let col=-1;col<9;col++){
+      const x=col*64+offset+2;
+      const hash=((row*127+col*61+301)^((row+11)*(col+19)*17))>>>0;
+      const light=hash%5;
+      bc.fillStyle=['#ad9b80','#baa88b','#c3b396','#a89a83','#b5a78f'][light];
+      bc.fillRect(x,top,60,28);
+      bc.fillStyle='rgba(255,255,255,.075)';bc.fillRect(x+2,top+2,56,2);
+      bc.fillStyle='rgba(65,59,47,.05)';bc.fillRect(x,top+25,60,3);
+    }
+  }
+  const brickTexture=new THREE.CanvasTexture(brickCanvas);
+  brickTexture.colorSpace=THREE.SRGBColorSpace;
+  brickTexture.wrapS=brickTexture.wrapT=THREE.RepeatWrapping;
+  brickTexture.anisotropy=2;
+  exteriorBrick=new THREE.MeshStandardMaterial({
+    map:brickTexture,color:'#f0e8db',roughness:.94,metalness:0
+  });
+  exteriorBrick.userData.tileMeters=3.2;
   for(const room of layout.rooms){
     addRoom(room,room.index,layout.rooms.length);
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
@@ -802,31 +827,6 @@ function constructGallery(layout, studies) {
   // Exterior-only geometry: no art, visitors, colliders or per-floor lights.
   const tower=new THREE.Group();
   // Opaque reflective architectural glazing avoids expensive mobile blending.
-  // Lightweight, locally generated buff brick: no network texture request.
-  const brickCanvas=document.createElement('canvas');
-  brickCanvas.width=512;brickCanvas.height=512;
-  const bc=brickCanvas.getContext('2d');
-  bc.fillStyle='#b6ad99';bc.fillRect(0,0,512,512);
-  for(let row=0;row<16;row++){
-    const top=row*32+2,offset=(row%2)*32;
-    for(let col=-1;col<9;col++){
-      const x=col*64+offset+2;
-      const hash=((row*127+col*61+301)^((row+11)*(col+19)*17))>>>0;
-      const light=hash%5;
-      bc.fillStyle=['#ad9b80','#baa88b','#c3b396','#a89a83','#b5a78f'][light];
-      bc.fillRect(x,top,60,28);
-      bc.fillStyle='rgba(255,255,255,.075)';bc.fillRect(x+2,top+2,56,2);
-      bc.fillStyle='rgba(65,59,47,.05)';bc.fillRect(x,top+25,60,3);
-    }
-  }
-  const brickTexture=new THREE.CanvasTexture(brickCanvas);
-  brickTexture.colorSpace=THREE.SRGBColorSpace;
-  brickTexture.wrapS=brickTexture.wrapT=THREE.RepeatWrapping;
-  brickTexture.anisotropy=2;
-  exteriorBrick=new THREE.MeshStandardMaterial({
-    map:brickTexture,color:'#f0e8db',roughness:.94,metalness:0
-  });
-  exteriorBrick.userData.tileMeters=3.2;
   const windowGlass=new THREE.MeshStandardMaterial({color:'#839ba1',metalness:.34,roughness:.19,side:THREE.DoubleSide});
   const tintedGlass=new THREE.MeshStandardMaterial({color:'#536d75',metalness:.27,roughness:.25,side:THREE.DoubleSide});
   const exteriorMetal=new THREE.MeshStandardMaterial({color:'#454c49',metalness:.55,roughness:.4});
