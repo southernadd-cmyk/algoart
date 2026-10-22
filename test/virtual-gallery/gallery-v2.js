@@ -7,8 +7,8 @@ import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './s
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=hdr-panorama-20261022';
-import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=polyhaven-bench-20261022';
-import {replaceFixtureWithProp} from './polyhaven-props.mjs';
+import { planVisitors,renderVisitors,renderPlazaSeatedVisitors } from './visitors.mjs?v=cors-and-textures-20261022';
+import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
