@@ -916,8 +916,6 @@ function startDeferredGallery(){
     if(version!==deferredGalleryVersion){deferredGalleryRunning=false;return;}
     const job=deferredGalleryJobs.shift();
     if(!job){deferredGalleryRunning=false;updateExhibitLighting();
-      // Load optional street-lamp meshes only when the initial exhibition is usable.
-      if(welcome.hidden && currentFloor===0)enableDetailedStreetLamps();
       return;}
     try{
       const previous=new Set(scene.children);
@@ -1266,6 +1264,8 @@ async function loadEdition(date,{viaLift=false}={}) {
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
   camera.far=Math.max(210,elevation+240);camera.updateProjectionMatrix();
   constructGallery(plan,studyList);
+  // Give the optimised entrance lamps priority over deferred artworks/visitors.
+  if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object));
   // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
@@ -1427,7 +1427,6 @@ enter.addEventListener('click',()=>{
   if (!plan) return;
   welcome.hidden=true;
   startDeferredGallery();
-  if(!deferredGalleryJobs.length && currentFloor===0)enableDetailedStreetLamps();
   if (matchMedia('(pointer:fine)').matches) canvas.requestPointerLock?.().catch?.(()=>{});
 });
 $('goDate').addEventListener('click',()=>{
