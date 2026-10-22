@@ -71,29 +71,31 @@ async function loadCharacter(){
  if(!cache[kind]){
   const prefix=kind+'/',name=kind==='male'?'Superhero_Male_FullBody.gltf':'Superhero_Female_FullBody.gltf';
   const gltf=archive.file(prefix+name);if(!gltf)throw Error('Missing '+prefix+name+' in ZIP');
-  const manager=new THREE.LoadingManager();
-  manager.setURLModifier(url=>{
-   const filename=decodeURIComponent(url.split('/').pop().split('?')[0]);
-   const z=archive.file(prefix+filename);
-   if(!z)throw Error('Missing '+prefix+filename);
-   const key=prefix+filename;
-   if(!cache[key])throw Error('Asset not prepared: '+key);
-   return cache[key];
-  });
-  for(const [path,entry] of Object.entries(archive.files)){
-   if(!path.startsWith(prefix)||entry.dir||path.endsWith('.gltf'))continue;
-   const bytes=await entry.async('uint8array');
-   const ext=path.split('.').pop().toLowerCase();
-   const mime=ext==='bin'?'application/octet-stream':ext==='png'?'image/png':'image/jpeg';
-   cache[path]=URL.createObjectURL(new Blob([bytes],{type:mime}));urls.push(cache[path]);
+  // Resolve the actual glTF resources from the ZIP, rather than relying on
+  // a server path or a LoadingManager URL rewrite.
+  const documentJSON=JSON.parse(await gltf.async('string'));
+  const toDataURL=async(uri,mime)=>{
+   const resource=archive.file(prefix+decodeURIComponent(uri));
+   if(!resource)throw Error('Missing model resource: '+prefix+uri);
+   const data=await resource.async('base64');
+   return 'data:'+mime+';base64,'+data;
+  };
+  for(const buffer of documentJSON.buffers||[]){
+   if(buffer.uri&&!buffer.uri.startsWith('data:'))
+     buffer.uri=await toDataURL(buffer.uri,'application/octet-stream');
   }
-  const loader=new GLTFLoader(manager);cache[kind]=await new Promise((resolve,reject)=>{
-    gltf.async('string').then(text=>loader.parse(text,'',resolve,reject),reject);
-  });
+  for(const picture of documentJSON.images||[]){
+   if(!picture.uri||picture.uri.startsWith('data:'))continue;
+   const mime=/\\.png$/i.test(picture.uri)?'image/png':'image/jpeg';
+   picture.uri=await toDataURL(picture.uri,mime);
+  }
+  cache[kind]=await new Promise((resolve,reject)=>
+   new GLTFLoader().parse(JSON.stringify(documentJSON),'',resolve,reject));
+
  }
  character=cache[kind].scene;scene.add(character);bones={};base={};
  character.traverse(o=>{if(o.isBone){bones[o.name]=o;base[o.name]=o.quaternion.clone()}});
- const bounds=new THREE.Box3().setFromObject(character);character.position.y-=bounds.min.y;
+ const bounds=new THREE.Box3().setFromObject(character);character.position.y-=bounds.min.y;const size=bounds.getSize(new THREE.Vector3());const height=Math.max(.2,size.y);orbit.target.set(0,height*.52,0);camera.position.set(height*.75,height*.65,height*1.7);camera.near=Math.max(.001,height*.001);camera.far=Math.max(100,height*20);camera.updateProjectionMatrix();orbit.update();
  status.textContent=kind+' · '+Object.keys(bones).length+' bones';preset(pose);
 }
 document.querySelector('#archive').addEventListener('change',async e=>{
