@@ -2,6 +2,7 @@
 // lightweight geometry; no inaccessible downloaded model required.
 import {makeRandom,seedFromString,DOOR_WIDTH} from './layout-v2.mjs';
 import {replaceFixtureWithProp} from './polyhaven-props.mjs?v=texture-manifest-20261022';
+import {stabiliseMaleTorsoSkinning} from './visitor-skin-repair.mjs?v=male-torso-v1-20261022';
 const near=(a,b,r)=>Math.hypot(a.x-b.x,a.z-b.z)<r;
 export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
  const rng=makeRandom(seedFromString('PP-VISITORS-v1:'+layout.date));
@@ -107,6 +108,9 @@ async function loadCharacters(){
   import('three/addons/utils/SkeletonUtils.js')
  ]).then(([{GLTFLoader},{clone}])=>new Promise((resolve,reject)=>{
   new GLTFLoader().load('./models/human-male-female-rigged.glb',gltf=>{
+    const repair=stabiliseMaleTorsoSkinning(gltf.scene);
+    if(repair.reason)console.warn('Male visitor skin repair skipped:',repair.reason);
+    else console.info('Male visitor skin repaired:',repair.repaired,'vertices');
     // Every visitor instance reuses the same geometry. Scene swaps must not
     // dispose it, otherwise later lift floors get invisible characters.
     gltf.scene.traverse(node=>{
