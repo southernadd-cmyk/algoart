@@ -130,8 +130,8 @@ function buildPathReliefs(source,study,quality,core,onArtworkMesh,materialCache,
     const material=colouredMaterial(stroke,type,materialCache);
     // Original recorded width is used as the physical reference. A minimum
     // relief thickness allows pencil lines to survive mobile perspective.
-    const reference=Math.min(W/source.width,H/source.height);
-    const radius=Math.max(.008,Math.min(.075,stroke.width*reference*profile.amplify));
+    const scaleReference=Math.min(W/source.width,H/source.height);
+    const radius=Math.max(.008,Math.min(.075,stroke.width*scaleReference*profile.amplify));
     const height=profile.ink*(.73+rng()*.58);
     const z=(rng()-.5)*(type==='marker'?.16:.25);
     for(const section of strokeSections(stroke)){
