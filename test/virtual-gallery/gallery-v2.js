@@ -1318,7 +1318,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object));
   // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
-  if(viaLift||nextFloor!==0)startDeferredGallery();
+  if(viaLift||nextFloor!==0||welcome.hidden)startDeferredGallery();
   if(!viaLift && nextFloor===0 && arrival){
     rig.position.copy(arrival.start);
     yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
@@ -1441,7 +1441,7 @@ window.addEventListener('keydown',(e)=>{
     }
     if(!$('info').hidden)dismissedExhibit=currentInfoExhibit;
     $('info').hidden=true;$('lift').hidden=true;
-    if(document.activeElement?.closest?.('#lift'))document.activeElement.blur();
+    if(document.activeElement?.closest?.('#lift'))$('openLift').focus();
     return;
   }
   if (['INPUT','BUTTON','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
@@ -1585,6 +1585,7 @@ function detectArt(elapsed) {
     return;
   }
   const eye=camera.getWorldPosition(new THREE.Vector3());
+  if(dismissedExhibit && eye.distanceTo(dismissedExhibit.position)>4.5) dismissedExhibit=null;
   const looking=camera.getWorldDirection(new THREE.Vector3());
   let selected=null,score=-Infinity;
   for(const exhibit of artExhibits){
@@ -1605,8 +1606,6 @@ function detectArt(elapsed) {
   if(!selected){
     $('info').hidden=true;
     currentInfoExhibit=null;focusCandidate=null;focusDuration=0;
-    // Keep dismissed exhibit suppressed until the visitor walks away.
-    if(dismissedExhibit && camera.getWorldPosition(new THREE.Vector3()).distanceTo(dismissedExhibit.position)>4.5) dismissedExhibit=null;
   }
   else if(currentInfoExhibit && currentInfoExhibit!==selected && focusDuration<.36){
     // Preserve the current label for a moment while looking between works.
