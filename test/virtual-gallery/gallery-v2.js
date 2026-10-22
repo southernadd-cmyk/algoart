@@ -1349,7 +1349,12 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
 }
 async function load(){
   const startupStart=performance.now();
+  const progress=message=>{
+    if(enter.disabled)enter.textContent=message;
+    console.info('[Gallery startup]',message,Math.round(performance.now()-startupStart)+'ms');
+  };
   try{
+    progress('Loading tower data…');
     // The tower index already lists every published date. Avoid downloading and
     // parsing the gallery landing page on every cold start.
     // Retain HTML discovery only as a fallback for an unavailable index.
@@ -1371,6 +1376,7 @@ async function load(){
     [towerFloorSignatures,prebuiltTower]=await Promise.all([
       towerIndexPromise,bakedPromise
     ]);
+    progress('Building exhibition…');
     console.info('[Gallery performance] tower metadata and geometry fetched',Math.round(performance.now()-startupStart)+'ms','prebuilt',!!prebuiltTower);
     archiveDates=towerFloorSignatures.size
       ?[...towerFloorSignatures.keys()].sort()
