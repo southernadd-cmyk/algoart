@@ -13,8 +13,10 @@ on:
       - '.github/workflows/oil-live.yml'
       - 'automation/captions.mjs'
       - 'automation/social-stagger.mjs'
+      - 'automation/social-publish-policy.mjs'
       - 'tests/social-caption-rotation.test.mjs'
       - 'tests/social-stagger.test.mjs'
+      - 'tests/social-publish-policy.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -34,4 +36,5 @@ jobs:
           node --test tests/social-stagger.test.mjs \
             tests/social-caption-rotation.test.mjs \
             tests/social-caption-limits.test.mjs \
+            tests/social-publish-policy.test.mjs \
             tests/portrait-captions.test.mjs
