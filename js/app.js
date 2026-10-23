@@ -575,12 +575,7 @@ function regenerate(){
   if(info&&phiSheetFraming){
     var fit=A.lastPhiSheetFrame;
     info.textContent=fit&&fit.kind==='phi-sheet'?
-      'Applied · '+fit.scale.toFixed(2)+'× size; '+Math.round(fit.beforeCover*100)+
-        '% → '+Math.round(fit.afterCover*100)+'% longest-axis coverage; shifted '+
-        Math.round(fit.fittedCentroid.x-fit.originalCentroid.x)+'px horizontally / '+
-        Math.round(fit.fittedCentroid.y-fit.originalCentroid.y)+
-        'px vertically. Same paths in PNG and SVG.':
-      'No adjustment · this artwork has no measurable strokes.';
+      'On · drawing fitted to φ.':'On · no strokes to adjust.';
   }
   var series=SERIES[s.mode]||{code:s.mode.toUpperCase(),title:s.mode};
   var materialName=actionPaintingEnabled()?'Action painting':oilPaintEnabled()?'Oil paint':watercolourEnabled()?'Watercolour':oilEnabled()?'Tissue & graphite':'Marker';
@@ -1099,6 +1094,18 @@ function syncDescription(settings,meta){
   if($('descriptionAlt'))$('descriptionAlt').textContent=currentDescription.altText;
   if($('descriptionLong'))$('descriptionLong').textContent=currentDescription.longDescription;
   if($('descriptionConstruction'))$('descriptionConstruction').textContent=currentDescription.constructionDescription;
+  // Keep the measured fit visible in Describe, not beside the composition controls.
+  var fitDetail=$('descriptionPhiFit'),fit=A.lastPhiSheetFrame;
+  if(fitDetail){
+    fitDetail.hidden=!phiSheetFraming;
+    fitDetail.textContent=!phiSheetFraming?'':fit&&fit.kind==='phi-sheet'?
+      'Fit to φ: '+fit.scale.toFixed(2)+'× size; '+Math.round(fit.beforeCover*100)+
+      '% → '+Math.round(fit.afterCover*100)+'% longest-axis coverage; shifted '+
+      Math.round(fit.fittedCentroid.x-fit.originalCentroid.x)+'px horizontally / '+
+      Math.round(fit.fittedCentroid.y-fit.originalCentroid.y)+
+      'px vertically. Same paths in PNG and SVG.':
+      'Fit to φ is on, but there are no measurable strokes to adjust.';
+  }
   return currentDescription;
 }
 
@@ -1422,9 +1429,10 @@ window.addEventListener('keydown',function(e){
   if(activeDialog||!$('introSplash').hidden)return;
   if(!shortcutsEnabled||e.target.closest('input,select,textarea,[contenteditable]:not([contenteditable="false"])'))return;
   var key=e.key.toLowerCase();
-  if(key==='n')$('newSeed').click();
+  if(key==='n')$('randomise').click();
   else if(key==='m')$('mutate').click();
-  else if(key==='v')openVariations();
+  else if(key==='f')openVariations();
+  else if(key==='s')$('newSeed').click();
   else if(key==='d')openDescription();
   else if(e.key==='[')setInspector(app.classList.contains('inspector-closed'),true);
   else return;

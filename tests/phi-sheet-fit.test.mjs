@@ -38,7 +38,12 @@ try{
   await page.locator('#phiSheetFit').check();
   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi');
-  assert.match(await page.locator('#phiSheetInfo').textContent(),/Applied/);
+  assert.match(await page.locator('#phiSheetInfo').textContent(),/^On · drawing fitted to φ\.$/);
+  await page.locator('#describe').click();
+  const fitDetail=page.locator('#descriptionPhiFit');
+  assert.equal(await fitDetail.isVisible(),true,'Fit measurements must live in How it is built');
+  assert.match(await fitDetail.textContent(),/Fit to φ: \d+\.\d+× size; \d+% → \d+% longest-axis coverage; shifted/);
+  await page.locator('#closeDescription').click();
   const first=await page.evaluate(()=>{
     const A=window.AlgoArt,s=A.readSettings();
     function marker(fit){
@@ -102,6 +107,10 @@ try{
   await page.locator('#phiSheetFit').uncheck();
   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.has('sheet'),false);
+  await page.locator('#describe').click();
+  assert.equal(await page.locator('#descriptionPhiFit').isVisible(),false,
+    'Fit details should disappear from Describe when Fit to φ is off');
+  await page.locator('#closeDescription').click();
   await page.goto(new URL('?v=9&seed=PHI-SHEET-20261014&mode=field&pal=neon&material=watercolour-v2s&fit=1',base).href);
   await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent.includes('PHI-SHEET'));
   assert.equal(await page.locator('#phiSheetFit').isChecked(),false);
