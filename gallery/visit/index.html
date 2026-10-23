@@ -19,7 +19,9 @@
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/gallery/2026-10-22/archive-preview.jpg">
 <title>Virtual Exhibition | PROPORTION PIECE</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./gallery.css?v=keyboard-access-20261023">
+<link rel="stylesheet" href="./gallery.css?v=site-navigation-20261023">
+<link rel="stylesheet" href="../../css/nav-lettering.css?v=11">
+<script defer src="../../js/nav-lettering.js?v=2"></script>
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js">
@@ -111,15 +113,21 @@ window.addEventListener('load',()=>{
 </head>
 <body>
 <canvas id="world" tabindex="0" aria-label="Three-dimensional gallery. W A S D to move, arrow keys to look, E for artwork information, L for floors. Tab to reach page controls." aria-describedby="hint"></canvas>
-<header class="topbar">
-  <div class="identity"><a href="../../" class="brand">PROPORTION PIECE</a><span class="section-name">Virtual gallery</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
+<header class="algo-global-header gallery-global-header">
+  <div class="algo-global-brand"><a class="brand" href="../../">PROPORTION PIECE</a></div>
+  <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
+  <p class="algo-global-question">Can one number compose a drawing?</p>
+  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../" aria-current="page">daily gallery</a><a data-algo-nav href="../../about/">how it works</a></nav>
+</header>
+<div class="topbar" role="group" aria-label="Virtual exhibition controls">
+  <div class="identity"><span class="section-name">Virtual gallery</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
   <div class="top-actions">
     <button id="openLift" type="button">Lift · Floors</button>
     <a id="archiveLink" href="../">View 2D gallery</a>
     <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
     <div id="xr-controls" aria-label="Virtual reality controls"></div>
   </div>
-</header>
+</div>
 <div class="center-reticle" aria-hidden="true"></div>
 <aside class="info" id="info" hidden>
   <img id="infoImage" alt="">
@@ -152,7 +160,7 @@ window.addEventListener('load',()=>{
 </section>
 <div id="liftArrival" class="lift-arrival" hidden role="status"></div>
 <div class="status" id="status" aria-live="polite">Loading gallery…</div>
-<div class="hint" id="hint">W A S D move · arrow keys look · Shift faster · E inspect · L floors · Tab controls</div>
+<div class="hint" id="hint">W A S D move · arrow keys look · Shift faster</div>
 <div class="touch-nav" id="touchNav" aria-label="Touch movement controls">
   <button data-move="forward" aria-label="Move forward">↑</button>
   <div><button data-move="left" aria-label="Move left">←</button><button data-move="back" aria-label="Move backward">↓</button><button data-move="right" aria-label="Move right">→</button></div>

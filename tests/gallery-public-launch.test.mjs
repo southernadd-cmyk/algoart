@@ -28,6 +28,14 @@ test('public metadata and essential production assets exist',()=>{
   assert.match(html,/rel="canonical" href="https:\/\/southernadd-cmyk\.github\.io\/algoart\/gallery\/visit\/"/);
   assert.doesNotMatch(html,/noindex/);
   assert.match(html,/gallery-v2\.js\?v=/);
+  assert.match(html,/class="algo-global-header gallery-global-header"/);
+  assert.match(html,/\.\.\/\.\.\/css\/nav-lettering\.css/);
+  assert.match(html,/\.\.\/\.\.\/js\/nav-lettering\.js/);
+  assert.match(html,/<nav class="algo-site-nav" aria-label="Site navigation">/);
+  assert.match(html,/data-algo-nav href="\.\.\/\.\.\/">try it out<\/a>/);
+  assert.match(html,/data-algo-nav href="\.\.\/" aria-current="page">daily gallery<\/a>/);
+  assert.match(html,/data-algo-nav href="\.\.\/\.\.\/about\/">how it works<\/a>/);
+  assert.match(html,/class="hint" id="hint">W A S D move · arrow keys look · Shift faster<\/div>/);
   for(const file of [
     'models/quaternius-male-meshopt.glb',
     'models/quaternius-female-meshopt.glb',

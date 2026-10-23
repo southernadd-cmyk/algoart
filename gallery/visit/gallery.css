@@ -96,3 +96,37 @@ a{color:inherit}
 /* A visible, non-intrusive focus boundary for keyboard explorers. */
 #world:focus-visible{outline:3px solid #e9bc76;outline-offset:-5px}
 .info button:focus-visible,.info a:focus-visible,.lift-panel button:focus-visible,#liftMonth:focus-visible,.enter:focus-visible,.welcome a:focus-visible{outline:3px solid #314d40;outline-offset:3px}
+
+
+/* The virtual exhibition shares the real site header instead of inventing a
+   second navigation. Keep it visible over the 3D canvas and welcome screen. */
+body .algo-global-header.gallery-global-header{
+  position:fixed!important;
+  top:0!important;left:0!important;right:0!important;
+  z-index:10!important;
+}
+.topbar{
+  top:72px;
+  z-index:5;
+  min-height:49px;
+  padding:7px clamp(15px,2.5vw,35px);
+  background:rgba(237,235,228,.94);
+  backdrop-filter:none;
+}
+.topbar .identity{align-items:center;gap:12px}
+.topbar .section-name{font-size:15px}
+.topbar .top-actions{flex-wrap:nowrap}
+.topbar .top-actions button,.topbar .top-actions>a{white-space:nowrap}
+.plan-view{top:143px}
+@media(max-width:850px){
+  .topbar{top:92px;align-items:center;gap:10px;padding:7px 12px}
+  .topbar .identity{display:flex;align-items:center;gap:8px}
+  .topbar .section-name{display:none}
+  .topbar .top-actions{max-width:none;flex:1;flex-wrap:nowrap;justify-content:flex-end;gap:6px}
+  .topbar .top-actions button,.topbar .top-actions>a{padding:6px 8px}
+  .plan-view{top:156px}
+}
+@media(max-width:480px){
+  .topbar .top-actions>a{display:none}
+  .plan-view{top:150px}
+}
