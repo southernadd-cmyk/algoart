@@ -16,17 +16,39 @@ const browser=await chromium.launch({headless:true});
 try{
   const page=await browser.newPage({viewport:{width:1200,height:900}});
   page.setDefaultTimeout(180000);
+  const browserErrors=[];
+  page.on('pageerror',error=>browserErrors.push(error.message));
+  page.on('console',message=>{
+    if(message.type()==='error')browserErrors.push('console: '+message.text());
+  });
   const manifests=[];
   for(const [i,c] of cases.entries()){
     const u=new URL(root);
     u.search='?v=9&seed='+c.seed+'&mode='+c.mode+'&pal='+c.palette+
       '&tissue=7&paper=%23f5f0e6';
     await page.goto(u.href,{waitUntil:'domcontentloaded'});
-    await page.waitForFunction(seed=>
-      document.getElementById('seed')?.value===seed&&
-      document.getElementById('creatingOverlay')?.hidden===true&&
-      Boolean(document.querySelector('#statsText')?.textContent?.trim()),
-      c.seed,{timeout:180000});
+    try{
+      await page.waitForFunction(seed=>
+        document.getElementById('seed')?.value===seed&&
+        document.getElementById('creatingOverlay')?.hidden===true&&
+        Boolean(document.querySelector('#statsText')?.textContent?.trim()),
+        c.seed,{timeout:45000});
+    }catch(error){
+      let actual;
+      try{
+        actual=await page.evaluate(()=>({
+          href:location.href,
+          seed:document.getElementById('seed')?.value,
+          material:document.getElementById('materialStyle')?.value,
+          overlayHidden:document.getElementById('creatingOverlay')?.hidden,
+          stats:document.getElementById('statsText')?.textContent,
+          canvasSize:[document.getElementById('art')?.width,document.getElementById('art')?.height]
+        }));
+      }catch(readError){actual={inspectionError:String(readError)};}
+      throw new Error('Tissue V7 browser failed to become ready: '+
+        JSON.stringify({requested:c,actual,browserErrors}),{cause:error});
+    }
+    assert.deepEqual(browserErrors,[],'Editor script errors before V7 comparison');
     assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
     const a=await page.evaluate(()=>{
       const A=window.AlgoArt,s=A.readSettings();
