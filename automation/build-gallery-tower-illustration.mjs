@@ -150,6 +150,86 @@ function liftCore(room,base){
   // A small exterior lift housing, consistently adjacent to room zero.
   solidRoom(core,-1,base+room.y);
 }
+
+// Civic square and two fixed outdoor monuments based on plaza-monuments.mjs.
+// The sculptures are 4.57m wide, 3.66m tall, with 0.48m base supports.
+function drawSquareAndSculptures(){
+  const outward=unit[rootEntry.entranceWall];
+  const transverse={x:outward.z,z:-outward.x};
+  const edge=(outward.x?rootEntry.width:rootEntry.depth)/2;
+  const front={x:rootEntry.x+outward.x*edge,z:rootEntry.z+outward.z*edge};
+  const centre={x:front.x+outward.x*19,z:front.z+outward.z*19};
+  const ground=rootEntry.y;
+  const loc=(a,b,h=ground)=>[centre.x+transverse.x*a+outward.x*b,
+    h,centre.z+transverse.z*a+outward.z*b];
+  emit('<g class="entrance-square">');
+  shape([loc(-23,-19),loc(23,-19),loc(23,19),loc(-23,19)],
+    '#c3c0b2','#8a9086',1.4);
+  for(let a=-19;a<=19;a+=4.75)
+    line(loc(a,-19),loc(a,19),'#858f84',.7,'opacity=".45"');
+  for(let b=-14;b<=14;b+=4.75)
+    line(loc(-23,b),loc(23,b),'#e5e2d5',.85,'opacity=".65"');
+  emit('</g>');
+  const W=4.57,H=3.66;
+  for(const [kind,side] of [['trajectories',-1],['divisions',1]]){
+    const offset=side*13.4;
+    const x=centre.x+transverse.x*offset+outward.x;
+    const z=centre.z+transverse.z*offset+outward.z;
+    const facing={x:outward.x*12-transverse.x*offset,
+      z:outward.z*12-transverse.z*offset};
+    const length=Math.hypot(facing.x,facing.z);
+    facing.x/=length;facing.z/=length;
+    const across={x:facing.z,z:-facing.x};
+    const p=(u,h)=>[x+across.x*u,ground+h,z+across.z*u];
+    const a=(u,v)=>p(u*W,.48+(v+.5)*H);
+    emit('<g class="outdoor-sculpture" data-sculpture="'+kind+'">');
+    for(const side of [-1,1]){
+      line(p(side*(W+.22)/2,.48),p(side*(W+.22)/2,.48+H+.15),
+        '#53534d',2.1);
+      line(p(side*W*.4,0),p(side*W*.4,.48),'#53534d',2);
+      line(p(side*W*.4-.28,.06),p(side*W*.4+.28,.06),'#53534d',2.4);
+    }
+    line(p(-(W+.22)/2,.48),p((W+.22)/2,.48),'#53534d',2.4);
+    line(p(-(W+.22)/2,.48+H+.15),p((W+.22)/2,.48+H+.15),
+      '#53534d',2.4);
+    if(kind==='trajectories'){
+      for(const [cx,cy,r,t0,t1,color] of [
+        [-.25,.08,.29,0,2.9,'#a8744f'],
+        [-.12,-.09,.40,.4,3.5,'#394742'],
+        [.16,.07,.46,1,4.8,'#b5a083']
+      ]){
+        let last=null;
+        for(let j=0;j<=48;j++){
+          const t=t0+(t1-t0)*j/48;
+          const next=a(cx+Math.cos(t)*r,cy+Math.sin(t)*r*.87);
+          if(last)line(last,next,color,2.5);
+          last=next;
+        }
+      }
+      for(const [start,end,c] of [
+        [[-.45,-.34],[.45,.39],'#373a38'],
+        [[-.48,.24],[.45,-.31],'#b5a083'],
+        [[-.18,-.46],[.30,.46],'#737b65']
+      ])line(a(...start),a(...end),c,2);
+    }else{
+      const cells=[
+        [-.279,0,.442,.83,'#b5a083'],[.221,.231,.52,.369,'#737b65'],
+        [.221,-.196,.52,.48,'#394742'],[-.297,.324,.37,.19,'#a8744f'],
+        [-.291,-.319,.39,.18,'#817269'],[.052,-.356,.17,.12,'#b5a083'],
+        [.365,.373,.20,.12,'#a8744f'],[.373,-.13,.19,.18,'#817269']
+      ];
+      for(const [cx,cy,w,h,color] of cells)
+        shape([a(cx-w/2,cy-h/2),a(cx+w/2,cy-h/2),
+          a(cx+w/2,cy+h/2),a(cx-w/2,cy+h/2)],color,'#394742',.9);
+      for(const [x1,y1,x2,y2] of [
+        [-.5,0,.5,0],[-.06,-.48,-.06,.49],
+        [-.48,.41,-.06,.41],[-.48,-.4,-.06,-.4],[.16,0,.16,.46]
+      ])line(a(x1,y1),a(x2,y2),'#373a38',1.5);
+    }
+    emit('</g>');
+  }
+}
+
 function entrance(room){
   const normal=unit[rootEntry.entranceWall];
   const along={x:-normal.z,z:normal.x};
@@ -194,10 +274,11 @@ for(let level=0;level<plans.length;level++){
   }
   emit('</g>');
 }
+drawSquareAndSculptures();
 emit('<path d="M0 429L1200 429V480H0Z" fill="#a7aa9f"/>');
 emit('<path d="M0 429H1200" stroke="#e1e2d8" stroke-width="3.5"/>');
-emit('<path d="M160 426Q157 393 196 369Q238 386 222 426Z" fill="#6f8579" stroke="#50665a" stroke-width="2.5"/>');
-emit('<path d="M980 418Q963 390 1005 358Q1044 380 1027 418Z" fill="#6f8579" stroke="#50665a" stroke-width="2.5"/>');
+
+
 emit('</svg>');
 if(entries.length===15&&highY>0)
   throw Error('Fifteen floors do not reach the image top: upper silhouette at y='+highY);
