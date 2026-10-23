@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 const base='https://proportion-piece-social.mr-adam-clement.workers.dev';
 const keys=['v','seed','mode','fmt','el','den','cx','neg','phi','rec','spi','ga','nest','pen','th','wob','od','op','pr','dry','curve','shape','overlap','rot','ln','ci','re','po','ar','pal','cols','sat','bri','paper','grain','sheet','material','fit','tissue','watercolor'];
 const params={v:'9',seed:'CLOUDFLARE-SMOKE-20261023',mode:'rects',material:'oil-v4'};
@@ -28,3 +29,15 @@ assert.equal(cors.headers.get('access-control-allow-origin'),'https://southernad
 const forbidden=await get('/share/preload?c='+token,{method:'OPTIONS',headers:{Origin:'https://untrusted.example'}});
 assert.equal(forbidden.status,403);
 console.log('PASS Cloudflare public health, OG preview, missing image, permitted and rejected CORS');
+
+const jpeg=readFileSync('/tmp/proportion-piece-cloudflare-ci.jpg');
+assert(jpeg.length>4000 && jpeg.length<285000,'Fixture must satisfy actual upload limits');
+const uploaded=await get('/share/preload?c='+token,{method:'POST',headers:{
+  'Origin':'https://southernadd-cmyk.github.io','Content-Type':'application/json'
+},body:JSON.stringify({jpeg:jpeg.toString('base64')})});
+assert.equal(uploaded.status,200,'Real JPEG upload to Cloudflare KV must succeed: '+await uploaded.text());
+const roundtrip=await get('/share/image?c='+token);
+assert.equal(roundtrip.status,200,'KV stored artwork must be retrievable');
+assert.match(roundtrip.headers.get('content-type')||'',/image\/jpeg/);
+assert.deepEqual(Buffer.from(await roundtrip.arrayBuffer()),jpeg,'Stored JPEG bytes must be exact');
+console.log('PASS real JPEG upload and Cloudflare KV byte-for-byte roundtrip');
