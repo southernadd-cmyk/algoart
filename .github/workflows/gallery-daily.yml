@@ -169,6 +169,9 @@ jobs:
 
       # The 3D visitor never needs the archive JPEG's original pixel count.
       # Generate both browser-targeted sizes after the LAST artwork slot.
+      - name: Test gallery texture exporter
+        run: python3 -m unittest discover -s tests -p test_gallery_3d_textures.py
+
       - name: Generate WebP textures for the 3D exhibition
         shell: bash
         run: |
