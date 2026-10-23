@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
@@ -178,6 +178,14 @@ jobs:
           DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
           python3 automation/build-gallery-3d-textures.py --date "$DAY"
 
+      # Baking uses the real generator in a headless browser only ONCE,
+      # preserving material-specific contours in a compressed polygon pack.
+      - name: Prebuild portrait sculptures for the daily 3D floor
+        shell: bash
+        run: |
+          DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
+          node automation/build-gallery-sculptures.mjs --date "$DAY"
+
       # This runs only after the final artwork slot has been archived, so the
       # baked geometry and daily archive share the same seed signatures.
       - name: Prebuild complete 3D tower geometry
@@ -225,6 +233,7 @@ jobs:
           test -s "gallery/$DAY/index.html"
           test -s "gallery/$DAY/archive-preview.jpg"
           test -s "gallery/$DAY/3d/manifest.json"
+          test -s "gallery/$DAY/3d/sculptures.json.gz"
           DAY="$DAY" python3 - <<'PY'
           import os
           from pathlib import Path
@@ -247,7 +256,15 @@ jobs:
                   with Image.open(asset) as img:
                       assert img.format == 'WEBP', f'{asset} is not WebP'
                       assert max(img.size) <= cap, f'{asset} exceeds {cap}px'
-          print(f'Verified complete mosaic and pre-sized 3D textures: {preview}')
+          import gzip
+          sculptures = json.loads(gzip.decompress((Path('gallery') / date / '3d' / 'sculptures.json.gz').read_bytes()))
+          assert sculptures['version'] == 1 and sculptures['date'] == date
+          portraits = {entry['imageFile'] for entry in meta['entries'] if entry.get('orientation') == 'portrait'}
+          assert set(sculptures['studies']) == portraits, f'Incomplete sculpture bake: {date}'
+          for variants in sculptures['studies'].values():
+              for label in ('mobile', 'desktop'):
+                  assert variants[label], f'Empty {label} sculpture outlines'
+          print(f'Verified complete mosaic, WebP textures and baked sculptures: {preview}')
           PY
           COUNT="$(find "gallery/$DAY" -maxdepth 1 -name '*.jpg' | wc -l)"
           # New materials add artwork without changing the historical batch size.
