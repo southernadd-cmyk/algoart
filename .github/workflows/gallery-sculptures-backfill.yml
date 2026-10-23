@@ -1,0 +1,99 @@
+name: Backfill prepared 3D sculptures
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'automation/gallery-sculptures-backfill.trigger'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: gallery-daily
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser generator
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Serve the original generators and archive
+        run: |
+          python3 -m http.server 4173 >/tmp/gallery-bake.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/gallery/visit/sculpture-bake.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/gallery-bake.log
+          exit 1
+      - name: Bake all historical portrait collections
+        run: node automation/build-gallery-sculptures.mjs --all
+      - name: Validate precomputed geometry packs
+        run: |
+          python3 - <<'PY'
+          import gzip,json
+          from pathlib import Path
+          archives = 0
+          studies = 0
+          for day in sorted(Path('gallery').iterdir()):
+            if not day.is_dir() or not (day / 'meta.json').is_file():
+              continue
+            meta=json.loads((day/'meta.json').read_text())
+            portraits={entry['imageFile'] for entry in meta['entries'] if entry.get('orientation')=='portrait'}
+            if not portraits:
+              continue
+            file=day/'3d'/'sculptures.json.gz'
+            if not file.is_file():
+              print(day.name, ': no prepared geometry, browser fallback retained')
+              continue
+            obj=json.loads(gzip.decompress(file.read_bytes()))
+            assert obj['version']==1 and obj['date']==day.name
+            assert set(obj['studies']) <= portraits
+            for quality_maps in obj['studies'].values():
+              for quality in ('mobile','desktop'):
+                contours=quality_maps[quality]
+                assert contours, (day,quality)
+                assert all(len(entry['points'])>=3 for entry in contours)
+            archives+=1
+            studies+=len(obj['studies'])
+          assert archives>0 and studies>0
+          print('Validated',studies,'prepared sculptures on',archives,'archive floors')
+          PY
+      - name: Commit only validated baked sculpture data
+        id: publication
+        shell: bash
+        run: |
+          rm -rf node_modules
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          find gallery -path '*/3d/sculptures.json.gz' -print0 | xargs -0 -r git add --
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "Publish prebaked historical gallery sculpture geometry"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Could not publish sculptures after 5 attempts" >&2
+          exit 1
+      - name: Publish updated galleries
+        if: steps.publication.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
