@@ -9,11 +9,11 @@ const values={v:'9',seed:'TEST-SEED-1',mode:'rects',material:'oil-v4'};
 const token=Buffer.from(keys.map(k=>values[k]||'').join('\x1f')).toString('base64url');
 const base='https://proportion-piece-social.example.workers.dev';
 const map=new Map();
-const bucket={
+const kv={
  async put(k,b){map.set(k,b)},
- async get(k){return map.has(k)?{body:map.get(k)}:null}
+ async get(k,mode){assert.equal(mode,'arrayBuffer');return map.get(k)||null}
 };
-const env={ARTWORK_PREVIEWS:bucket};
+const env={PREVIEW_KV:kv};
 function request(path,init){return new Request(base+path,init)}
 test('compact share token retains historic revision and rejects mutation',()=>{
  assert.equal(testing.decodeToken(token).material,'oil-v4');
@@ -43,6 +43,6 @@ test('missing images 404, invalid uploads rejected, CORS honoured',async()=>{
  }),env);
  assert.equal(invalid.status,400);
 });
-test('health works without an R2 bucket',async()=>{
+test('health works without a KV namespace',async()=>{
  assert.equal((await worker.fetch(request('/health'),{})).status,200);
 });
