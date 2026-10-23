@@ -17,7 +17,8 @@ import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mj
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
 
-console.info('[Gallery performance] initial JavaScript module evaluated',Math.round(performance.now())+'ms since navigation');
+const GALLERY_DEBUG=new URLSearchParams(location.search).has('debug');
+if(GALLERY_DEBUG)console.info('[Gallery performance] initial JavaScript module evaluated',Math.round(performance.now())+'ms since navigation');
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
 const status = $('status');
@@ -106,7 +107,8 @@ try {
     rig.add(controller); // Controllers share the headset's locomotion transform.
   }
 } catch (err) {
-  errorBox.textContent = 'This device cannot initialise a WebGL gallery: ' + err.message;
+  console.error('[Gallery startup] WebGL unavailable',err);
+  errorBox.textContent = 'The virtual gallery cannot run on this device. Please use the 2D gallery below.';
   errorBox.hidden = false;
 }
 
@@ -1017,7 +1019,7 @@ function constructGallery(layout, studies) {
         scene.remove(mesh);discarded.push({along,cross,depth});
       }
     }
-    if(discarded.length)console.info('Removed entrance overlay strip',discarded);
+    if(discarded.length&&GALLERY_DEBUG)console.info('Removed entrance overlay strip',discarded);
   }
   if(entryPlaza)addPermanentPlazaSculptures(scene,entryPlaza);
   if(entryPlaza)deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,entryPlaza));
@@ -1054,7 +1056,7 @@ function constructGallery(layout, studies) {
           walkwayGlassMaterials,{lowPower:galleryFinish.lowPower}));
       }
       usingBaked=true;
-      console.info('Prepared tower loaded',{
+      GALLERY_DEBUG&&console.info('Prepared tower loaded',{
         batches:rendered.batchCount,bridges:rendered.bridges.length,
         elapsedMs:Math.round(performance.now()-t0)
       });
@@ -1154,7 +1156,7 @@ function constructGallery(layout, studies) {
     }
   }
   const towerStats=appendTowerBoxBatches(THREE,tower,towerBoxes);
-  console.info('Archived tower prepared',{
+  GALLERY_DEBUG&&console.info('Archived tower prepared',{
     boxes:towerStats.totalBoxes,batches:towerStats.batchCount,
     elapsedMs:Math.round(performance.now()-towerBuildStart)
   });
@@ -1174,10 +1176,10 @@ function constructGallery(layout, studies) {
     maximumY:Math.round(actualTop*10)/10,
     expectedMaximumY:Math.round(expectedTop*10)/10
   };
-  console.info('[Gallery tower geometry]',towerSummary);
+  GALLERY_DEBUG&&console.info('[Gallery tower geometry]',towerSummary);
   if(towerBounds.isEmpty()||actualTop<expectedTop-2){
     console.error('[Gallery tower geometry] Missing upper floors',towerSummary);
-    status.textContent='Tower geometry incomplete: check console';
+    status.textContent='Part of the gallery tower could not be prepared.';
   }
   const first=layout.rooms[0];
   if(currentFloor===0 && first.entranceWall)createGalleryArrival(first);
@@ -1304,7 +1306,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     }
     throw error;
   }
-  console.info('[Gallery performance] scene construction',Math.round(performance.now()-constructionStart)+'ms','floors',archiveDates.length,'prebuilt',!!prebuiltTowerMatches(prebuiltTower,archiveDates,towerFloorSignatures));
+  GALLERY_DEBUG&&console.info('[Gallery performance] scene construction',Math.round(performance.now()-constructionStart)+'ms','floors',archiveDates.length,'prebuilt',!!prebuiltTowerMatches(prebuiltTower,archiveDates,towerFloorSignatures));
   // Give the optimised entrance lamps priority over deferred artworks/visitors.
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
@@ -1333,13 +1335,13 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
   status.textContent=floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
   enter.disabled=false;enter.textContent='Enter the gallery';
-  console.info('[Gallery performance] edition ready',Math.round(performance.now()-editionStart)+'ms',date);
+  GALLERY_DEBUG&&console.info('[Gallery performance] edition ready',Math.round(performance.now()-editionStart)+'ms',date);
 }
 async function load(){
   const startupStart=performance.now();
   const progress=message=>{
     if(enter.disabled)enter.textContent=message;
-    if(new URLSearchParams(location.search).has('debug'))console.info('[Gallery startup]',message,Math.round(performance.now()-startupStart)+'ms');
+    if(new URLSearchParams(location.search).has('debug'))GALLERY_DEBUG&&console.info('[Gallery startup]',message,Math.round(performance.now()-startupStart)+'ms');
   };
   try{
     progress('Loading tower data…');
@@ -1365,16 +1367,18 @@ async function load(){
       towerIndexPromise,bakedPromise
     ]);
     progress('Building exhibition…');
-    console.info('[Gallery performance] tower metadata and geometry fetched',Math.round(performance.now()-startupStart)+'ms','prebuilt',!!prebuiltTower);
+    GALLERY_DEBUG&&console.info('[Gallery performance] tower metadata and geometry fetched',Math.round(performance.now()-startupStart)+'ms','prebuilt',!!prebuiltTower);
     archiveDates=towerFloorSignatures.size
       ?[...towerFloorSignatures.keys()].sort()
       :await loadArchiveDates();
     const qp=new URLSearchParams(location.search).get('date');
     await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates[0]);
-    console.info('[Gallery performance] enter available',Math.round(performance.now()-startupStart)+'ms');
+    GALLERY_DEBUG&&console.info('[Gallery performance] enter available',Math.round(performance.now()-startupStart)+'ms');
   }catch(e){
-    enter.textContent='Gallery unavailable';errorBox.textContent=e.message;
-    errorBox.hidden=false;console.error(e);
+    console.error('[Gallery startup] Failed to prepare exhibition',e);
+    enter.textContent='Gallery unavailable';
+    errorBox.textContent='The virtual gallery could not load. Please reload or continue in the 2D gallery below.';
+    errorBox.hidden=false;
   }
 }
 
