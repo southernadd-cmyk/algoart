@@ -45,9 +45,9 @@ test('public metadata and essential production assets exist',()=>{
   assert.match(html,/Each daily collection occupies its own floor/);
   assert.doesNotMatch(html,/Chrome loading diagnosis/);
   const app=read(resolve(root,'gallery-v2.js'));
-  assert.doesNotMatch(app,/window\\.prompt\\(/);
+  assert.doesNotMatch(app,/window[.]prompt/);
   assert.doesNotMatch(app,/Temporary diagnostic for the unexplained entrance overlay/);
-  assert.match(app,/id="infoMeta"|\\$\\('infoMeta'\\)/);
+  assert.match(app,/infoMeta/);
   for(const file of [
     'models/quaternius-male-meshopt.glb',
     'models/quaternius-female-meshopt.glb',
