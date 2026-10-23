@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {makeCaptions} from './captions.mjs';
+import {selectedSocialJobs} from './social-publish-policy.mjs';
 
 export const EVENING_MATERIAL_ROTATION=Object.freeze([
   'watercolour','oil','action','watercolor','marker'
@@ -23,10 +24,14 @@ export function selectEveningThreadsArtwork(entries,date){
     ((day%EVENING_MATERIAL_ROTATION.length)+EVENING_MATERIAL_ROTATION.length)%
     EVENING_MATERIAL_ROTATION.length
   ];
+  const morningJob=selectedSocialJobs(date,0,'threads')[0];
+  const morningType=morningJob?.split('-')[0];
+  const morningMaterial=morningType==='tissue'?'watercolor':morningType;
   const ordered=[
     preferred,
     ...EVENING_MATERIAL_ROTATION.filter(material=>material!==preferred)
-  ];
+  ].filter(material=>material!==morningMaterial);
+  // When both candidates are available, morning and evening use different media.
   // Favour portrait/landscape alternation and stable artwork IDs.
   const orientation=day%2===0?'portrait':'landscape';
   for(const material of ordered){
