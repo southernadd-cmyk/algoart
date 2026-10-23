@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const base='https://proportion-piece-social.mr-adam-clement.workers.dev';
 const keys=['v','seed','mode','fmt','el','den','cx','neg','phi','rec','spi','ga','nest','pen','th','wob','od','op','pr','dry','curve','shape','overlap','rot','ln','ci','re','po','ar','pal','cols','sat','bri','paper','grain','sheet','material','fit','tissue','watercolor'];
-const params={v:'9',seed:'CLOUDFLARE-SMOKE-20261023',mode:'rects',material:'oil-v4'};
+const seed='CLOUDFLARE-SMOKE-'+(process.env.GITHUB_RUN_ID||'LOCAL-UNIQUE');
+const params={v:'9',seed,mode:'rects',material:'oil-v4'};
 const token=Buffer.from(keys.map(k=>params[k]||'').join('\x1f')).toString('base64url');
 async function get(path,init){
   const r=await fetch(base+path,{signal:AbortSignal.timeout(15000),...init});
@@ -15,7 +16,7 @@ const landing=await get('/share?c='+token+'&pv=2',{headers:{'User-Agent':'facebo
 assert.equal(landing.status,200,'Crawler OG response must return 200');
 const html=await landing.text();
 assert.match(html,/property="og:image"/);
-assert.match(html,/CLOUDFLARE-SMOKE-20261023/);
+assert(html.includes(seed),'Social title must contain exact seed');
 assert.match(html,/proportion-piece-social\.mr-adam-clement\.workers\.dev\/share\/image/);
 assert.match(html,/&amp;pv=2/);
 assert(!html.includes('onrender.com'));
