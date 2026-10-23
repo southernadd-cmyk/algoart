@@ -30,7 +30,14 @@
  const day=new Date().toLocaleDateString('en-CA',{timeZone:'Europe/London'});
  const early=window.__galleryEarly={day};
  early.tower=fetch('../tower-geometry.bin.gz?schema=2&day='+day,{cache:'no-cache'});
- early.index=fetch('../tower-layouts.json?day='+day,{cache:'no-cache'});
+ // Keep the early index request bounded even before the application imports.
+ const indexController=new AbortController();
+ const indexTimer=setTimeout(()=>indexController.abort(),7000);
+ early.index=fetch('../tower-layouts.json?day='+day,{cache:'no-cache',signal:indexController.signal}).then(async response=>{
+   if(!response.ok)return {ok:false,text:async()=>''};
+   const body=await response.text();
+   return {ok:true,text:async()=>body};
+ }).finally(()=>clearTimeout(indexTimer));
  early.tower.catch(()=>{});early.index.catch(()=>{});
 })();
 </script>
