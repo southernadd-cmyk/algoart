@@ -12,7 +12,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1] / "test/virtual-gallery/models"
 SOURCE = ROOT / "human-male-female-rigged.glb"
-TARGET = ROOT / "human-male-female-rigged-optimized.glb"
+TARGET = Path(__file__).resolve().parents[1] / "gallery/visit/models/human-male-female-rigged-optimized.glb"
 
 def read_glb(path):
     payload = path.read_bytes()

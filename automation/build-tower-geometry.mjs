@@ -3,7 +3,7 @@
 // There are no runtime/CDN dependencies: only Node 22 and layout-v2.mjs.
 import fs from 'node:fs/promises';
 import {gzipSync, gunzipSync} from 'node:zlib';
-import {buildLayout,DOOR_WIDTH,DOOR_HEIGHT,ROOM_HEIGHT} from '../test/virtual-gallery/layout-v2.mjs';
+import {buildLayout,DOOR_WIDTH,DOOR_HEIGHT,ROOM_HEIGHT} from '../gallery/visit/layout-v2.mjs';
 
 const root=new URL('../gallery/',import.meta.url);
 const manifestPath=new URL('tower-layouts.json',root);

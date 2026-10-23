@@ -8,7 +8,7 @@ from pathlib import Path
 from PIL import Image
 
 BASE="https://raw.githubusercontent.com/NafisRayan/Animate-Rigged-Humanoid-No-Blender/main/Universal%20Base%20Characters%5BStandard%5D/Universal%20Base%20Characters%5BStandard%5D/Base%20Characters/Godot%20-%20UE/"
-OUT=Path("test/virtual-gallery/models")
+OUT=Path("test/virtual-gallery/models") # source GLBs stay in the test workbench
 OUT.mkdir(parents=True,exist_ok=True)
 
 def download(name):
