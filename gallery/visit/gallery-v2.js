@@ -1227,6 +1227,7 @@ function readArchive(html, url, textureManifest={}) {
       id: i,
       title: card.querySelector('h2')?.textContent.trim() || 'Untitled drawing',
       seed,
+      imageFile:filename,
       imageOptimized:variant?new URL(variant,url).href:null,
       image: (() => {
         const original=new URL(img.getAttribute('src'),url);
@@ -1252,6 +1253,25 @@ async function latestDate() {
 function readableDate(date) {
   return new Intl.DateTimeFormat('en-GB',{dateStyle:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
 }
+// One compressed polygon pack per edition. A missing/corrupt pack is safe:
+// the original portrait generator remains available as the fallback.
+async function loadSculpturePack(date,cache){
+  if(typeof DecompressionStream!=='function')return {};
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),7000);
+  try{
+    const url=new URL('../'+date+'/3d/sculptures.json.gz',location.href);
+    const response=await fetch(url,{cache,signal:controller.signal});
+    if(!response.ok||!response.body)return {};
+    const inflated=response.body.pipeThrough(new DecompressionStream('gzip'));
+    const parsed=JSON.parse(await new Response(inflated).text());
+    return parsed.version===1&&parsed.date===date&&parsed.studies&&
+      typeof parsed.studies==='object'?parsed.studies:{};
+  }catch(error){
+    if(GALLERY_DEBUG)console.warn('Offline sculpture pack unavailable',date,error);
+    return {};
+  }finally{clearTimeout(timer);}
+}
 async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   // Preserve the last valid edition so a failed floor construction can be
   // rebuilt instead of leaving the visitor inside an empty scene.
@@ -1267,7 +1287,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   // Fetch the per-floor texture manifest alongside the dated HTML; older
   // archive floors have no manifest yet and continue working unchanged.
   const cache=date===today?'no-cache':'force-cache';
-  const [res,textureManifest]=await Promise.all([
+  const [res,textureManifest,sculpturePack]=await Promise.all([
     fetchGalleryText(url,{cache}),
     fetchGalleryText(new URL('3d/manifest.json',url),{cache,timeoutMs:5000})
       .then(response=>{
@@ -1278,10 +1298,16 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
       }).catch(error=>{
         if(GALLERY_DEBUG)console.warn('3D texture manifest unavailable:',date,error);
         return {};
-      })
+      }),
+    loadSculpturePack(date,cache)
   ]);
   if(!res.ok)throw new Error('The edition for '+readableDate(date)+' is not available.');
   const studies=readArchive(res.text,res.url,textureManifest);
+  for(const study of studies){
+    if(study.portrait&&sculpturePack[study.imageFile]){
+      study.prebuilt=sculpturePack[study.imageFile];
+    }
+  }
   if(!studies.length)throw new Error('No artworks for this edition');
   const nextPlan=buildLayout(date,studies.length,studies);
   const nextFloor=archiveDates.indexOf(date);
