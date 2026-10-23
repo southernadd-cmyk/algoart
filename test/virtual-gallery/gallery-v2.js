@@ -26,6 +26,7 @@ const errorBox = $('error');
 const enter = $('enter');
 const pressed = new Set();
 const touchPressed = new Set();
+const lookPressed = new Set();
 const clock = new THREE.Clock();
 const artExhibits = [];
 const sculpturePlacements=[];
@@ -45,6 +46,7 @@ let entranceDoor=null;
 let liftPosition=null;
 let liftWasNear=false;
 let liftTravelling=false;
+let liftReturnFocus=null;
 let editionObjects=[];
 let deferredGalleryJobs=[];
 let deferredGalleryVersion=0;
@@ -736,10 +738,20 @@ function selectXRLift(controller){
 function openLift(){
   if(!liftPosition||liftTravelling)return;
   if(renderer.xr.isPresenting){openXRLift();return;}
+  liftReturnFocus=document.activeElement;
+  pressed.clear();lookPressed.clear();
   document.exitPointerLock?.();
   $('lift').hidden=false;
   renderLiftCalendar();
   $('closeLift').focus();
+}
+function closeLift({returnToCanvas=false}={}){
+  $('lift').hidden=true;
+  pressed.clear();lookPressed.clear();
+  const target=returnToCanvas ? canvas
+    :liftReturnFocus?.isConnected ? liftReturnFocus : $('openLift');
+  liftReturnFocus=null;
+  target.focus({preventScroll:true});
 }
 async function travelLift(date,index){
   if(liftTravelling)return;
@@ -764,6 +776,8 @@ async function travelLift(date,index){
     overlay.hidden=true;
     if(xrRide)closeXRLift();
     if(!xrRide){
+      liftReturnFocus=null;
+      canvas.focus({preventScroll:true});
       $('liftArrival').hidden=false;
       $('liftArrival').textContent='Doors opening · floor '+(index===0?'G':index);
       setTimeout(()=>$('liftArrival').hidden=true,1800);
@@ -773,8 +787,10 @@ async function travelLift(date,index){
     overlay.hidden=true;setLiftDoors(false);
     errorBox.textContent='Lift could not reach that floor: '+error.message;
     errorBox.hidden=false;
-    if(!xrRide)$('lift').hidden=false;
-    else {
+    if(!xrRide){
+      $('lift').hidden=false;
+      $('closeLift').focus({preventScroll:true});
+    }else {
       if(!xrLiftPanel)openXRLift();
       paintXRLift('This floor did not load. Choose another.');
     }
@@ -804,7 +820,7 @@ function renderLiftCalendar(){
       btn.title=date+' — floor '+(index===0?'G':index);
       btn.setAttribute('aria-label',new Date(date+'T12:00:00Z').toLocaleDateString('en-GB',{dateStyle:'full',timeZone:'UTC'})+', floor '+(index===0?'ground':index));
       btn.addEventListener('click',()=>{
-        if(date===exhibitDate){$('lift').hidden=true;return;}
+        if(date===exhibitDate){closeLift();return;}
         travelLift(date,index);
       });
     }
@@ -1420,17 +1436,21 @@ function showInfo(exhibit){
 $('closeInfo').addEventListener('click',()=>{
   dismissedExhibit=currentInfoExhibit;
   $('info').hidden=true;
-  $('closeInfo').blur();
+  canvas.focus({preventScroll:true});
 });
+// Keep walking and looking on separate keys so neither requires a mouse.
 const moveCodes = new Map([
-  ['KeyW','forward'],['ArrowUp','forward'],['KeyS','back'],['ArrowDown','back'],
-  ['KeyA','left'],['ArrowLeft','left'],['KeyD','right'],['ArrowRight','right']
+  ['KeyW','forward'],['KeyS','back'],['KeyA','left'],['KeyD','right']
 ]);
+const lookCodes = new Map([
+  ['ArrowLeft','turnLeft'],['ArrowRight','turnRight'],
+  ['ArrowUp','lookUp'],['ArrowDown','lookDown']
+]);
+const isInteractiveFocus=()=>Boolean(document.activeElement?.closest?.(
+  'button,a,input,textarea,select,[contenteditable="true"],[role="textbox"]'
+));
 $('openLift').addEventListener('click',openLift);
-$('closeLift').addEventListener('click',()=>{
-  $('lift').hidden=true;
-  $('openLift').focus();
-});
+$('closeLift').addEventListener('click',()=>closeLift());
 $('lift').addEventListener('keydown',e=>{
   if(e.key!=='Tab')return;
   const buttons=[...$('lift').querySelectorAll('button:not([disabled]),input:not([disabled])')]
@@ -1442,23 +1462,65 @@ $('lift').addEventListener('keydown',e=>{
 });
 $('liftMonth').addEventListener('change',renderLiftCalendar);
 window.addEventListener('keydown',(e)=>{
-  if (e.code==='Escape') {
-    // First Escape releases mouse lock so the artwork link can be clicked.
-    // Only another Escape dismisses the contextual information.
+  if(e.code==='Escape'){
+    // Preserve the mouse user's first-Escape-to-unlock behaviour.
     if(document.pointerLockElement===canvas){
       document.exitPointerLock?.();
       return;
     }
-    if(!$('info').hidden)dismissedExhibit=currentInfoExhibit;
-    $('info').hidden=true;$('lift').hidden=true;
-    if(document.activeElement?.closest?.('#lift'))$('openLift').focus();
+    if(!$('lift').hidden){
+      e.preventDefault();closeLift();return;
+    }
+    if(!$('info').hidden){
+      e.preventDefault();
+      dismissedExhibit=currentInfoExhibit;
+      $('info').hidden=true;
+      if($('info').contains(document.activeElement))canvas.focus({preventScroll:true});
+    }
     return;
   }
-  if (['INPUT','BUTTON','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
-  if (moveCodes.has(e.code)) {e.preventDefault();pressed.add(moveCodes.get(e.code));}
+  if(e.code==='Tab'){
+    pressed.clear();lookPressed.clear();
+    return; // Standard keyboard navigation must remain available.
+  }
+  if(!plan||!welcome.hidden||liftTravelling||!$('lift').hidden||renderer.xr.isPresenting||isInteractiveFocus())return;
+  if(e.code==='ShiftLeft'||e.code==='ShiftRight'){
+    pressed.add(e.code);
+    return;
+  }
+  if(e.code==='KeyL'){
+    e.preventDefault();
+    if(!e.repeat)openLift();
+    return;
+  }
+  if(e.code==='KeyE'){
+    e.preventDefault();
+    if(!e.repeat){
+      const exhibit=focusCandidate||currentInfoExhibit;
+      if(exhibit){
+        showInfo(exhibit);
+        $('closeInfo').focus({preventScroll:true});
+      }
+    }
+    return;
+  }
+  if(moveCodes.has(e.code)){
+    e.preventDefault();
+    pressed.add(moveCodes.get(e.code));
+  }else if(lookCodes.has(e.code)){
+    e.preventDefault();
+    lookPressed.add(lookCodes.get(e.code));
+  }
 });
-window.addEventListener('keyup',(e)=>{if(moveCodes.has(e.code))pressed.delete(moveCodes.get(e.code));});
-window.addEventListener('blur',()=>pressed.clear());
+window.addEventListener('keyup',(e)=>{
+  if(moveCodes.has(e.code))pressed.delete(moveCodes.get(e.code));
+  if(lookCodes.has(e.code))lookPressed.delete(lookCodes.get(e.code));
+  if(e.code==='ShiftLeft'||e.code==='ShiftRight')pressed.delete(e.code);
+});
+window.addEventListener('blur',()=>{pressed.clear();lookPressed.clear();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){pressed.clear();lookPressed.clear();}
+});
 window.addEventListener('mousemove',(e)=>{
   if (!renderer || document.pointerLockElement !== canvas || renderer.xr.isPresenting) return;
   yaw -= e.movementX*.0025;
@@ -1485,11 +1547,14 @@ for (const button of document.querySelectorAll('[data-move]')) {
   button.addEventListener('pointerdown',e=>{e.preventDefault();touchPressed.add(direction);button.setPointerCapture(e.pointerId);});
   for (const type of ['pointerup','pointercancel','lostpointercapture']) button.addEventListener(type,()=>touchPressed.delete(direction));
 }
-enter.addEventListener('click',()=>{
+enter.addEventListener('click',(event)=>{
   if (!plan) return;
   welcome.hidden=true;
   startDeferredGallery();
-  if (matchMedia('(pointer:fine)').matches) canvas.requestPointerLock?.().catch?.(()=>{});
+  canvas.focus({preventScroll:true});
+  // Enter/Space activation must never force mouse-only pointer lock.
+  if (event.detail>0 && matchMedia('(pointer:fine)').matches)
+    canvas.requestPointerLock?.().catch?.(()=>{});
 });
 $('fullscreen').addEventListener('click',()=>{
   if (document.fullscreenElement) document.exitFullscreen();
@@ -1531,6 +1596,13 @@ function drawMap(){
 
 function updateMovement(dt) {
   if (!plan || !welcome.hidden || !$('lift').hidden || liftTravelling) return;
+  if(!renderer.xr.isPresenting){
+    // Continuous, frame-rate-independent keyboard look; arrow keys never walk.
+    const lookRate=1.65;
+    yaw+=(Number(lookPressed.has('turnLeft'))-Number(lookPressed.has('turnRight')))*lookRate*dt;
+    pitch=Math.max(-1.35,Math.min(1.35,pitch+
+      (Number(lookPressed.has('lookUp'))-Number(lookPressed.has('lookDown')))*lookRate*.8*dt));
+  }
   let ahead=Number(pressed.has('forward')||touchPressed.has('forward')) - Number(pressed.has('back')||touchPressed.has('back'));
   let side=Number(pressed.has('right')||touchPressed.has('right')) - Number(pressed.has('left')||touchPressed.has('left'));
   if (renderer.xr.isPresenting) {
@@ -1581,9 +1653,6 @@ function updateMovement(dt) {
   rig.rotation.y=yaw;
   camera.rotation.x=renderer.xr.isPresenting?0:pitch;
 }
-window.addEventListener('keydown',e=>{if(e.code==='ShiftLeft'||e.code==='ShiftRight')pressed.add(e.code);});
-window.addEventListener('keyup',e=>{if(e.code==='ShiftLeft'||e.code==='ShiftRight')pressed.delete(e.code);});
-
 function detectArt(elapsed) {
   if (!plan || !welcome.hidden || !$('lift').hidden || liftTravelling || renderer.xr.isPresenting) {
     if(!$('info').hidden)resetInspection();
