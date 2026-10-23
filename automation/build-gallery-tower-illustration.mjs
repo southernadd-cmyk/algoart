@@ -129,7 +129,7 @@ function liftCore(room,base){
   if(!side)return;
   const normal=unit[side],offset=(side==='north'||side==='south'?room.depth:room.width)/2+1.0;
   const cx=room.x+normal.x*offset,cz=room.z+normal.z*offset;
-  const core={x:cx,z:cz,width:2.2,depth:2.2,index:-1,doors:[]};
+  const core={x:cx,z:cz,y:0,width:2.2,depth:2.2,index:-1,doors:[]};
   // A small exterior lift housing, consistently adjacent to room zero.
   solidRoom(core,-1,base+room.y);
 }
