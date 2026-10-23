@@ -1,4 +1,4 @@
-// Real-browser regression: Randomise never switches material.
+// Real-browser regression: Another switches material, while saved Tissue states stay unchanged.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 
@@ -23,29 +23,35 @@ try{
   assert.match(await page.locator('#materialStyleNote').innerText(),/^Tissue & Graphite — thin layers of colour, pencil-like shading and soft edges\./);
   assert.equal(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion),1,
     'Archived v1 URL must use original pigment version');
+
+  // Another is now intentionally a new artwork in a *different* material.
+  const oldURL=page.url(),oldSeed=await page.locator('#seed').inputValue();
   await page.locator('#randomise').click();
-  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
+  await page.waitForFunction(seed=>document.getElementById('seed')?.value!==seed&&
+    document.getElementById('creatingOverlay')?.hidden===true,oldSeed,{timeout:180000});
+  const freshMaterial=await page.locator('#materialStyle').inputValue();
+  assert.notEqual(freshMaterial,'tissue','Another should change the selected material');
+  assert.notEqual(page.url(),oldURL,'Another should change the composition');
+  assert.equal(new URL(page.url()).searchParams.has('tissue'),false,
+    'A new non-Tissue artwork should not retain a legacy Tissue URL');
+
+  // Re-enter Tissue explicitly before checking its actual seeded pigments.
+  await open({tissue:7});
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
   const initial=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
-  assert(initial?.length>0,'New tissue should record a source palette');
-  const firstURL=page.url();
-  await page.locator('#randomise').click();
-  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
-  assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
-  const second=await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours);
-  assert.notEqual(page.url(),firstURL,'Randomise should change the composition');
-  assert(second?.length>0);
+  assert(initial?.length>0,'Current Tissue should record a seeded source palette');
+
   await page.locator('#materialStyle').selectOption('marker');
-  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
+  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,null,{timeout:120000});
   assert.match(await page.locator('#materialStyleNote').innerText(),/^Marker Drawing — uneven lines, changing pressure and the odd dry patch of ink\./);
+  const markerSeed=await page.locator('#seed').inputValue();
   await page.locator('#randomise').click();
-  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
-  assert.equal(await page.locator('#materialStyle').inputValue(),'marker',
-    'Marker must remain selected after Randomise');
-  assert.equal(new URL(page.url()).searchParams.has('tissue'),false);
-  await page.locator('#materialStyle').selectOption('tissue');
-  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
+  await page.waitForFunction(seed=>document.getElementById('seed')?.value!==seed&&
+    document.getElementById('creatingOverlay')?.hidden===true,markerSeed,{timeout:180000});
+  assert.notEqual(await page.locator('#materialStyle').inputValue(),'marker',
+    'Another should change away from Marker');
+  await open({tissue:7});
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
   assert.match(await page.locator('#materialStyleNote').innerText(),/^Tissue & Graphite — thin layers of colour, pencil-like shading and soft edges\./);
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
@@ -115,7 +121,7 @@ try{
   await open({tissue:4,pal:'warm'});
   await page.locator('#art').screenshot({path:'oil-check-results/tissue-seeded-warm.png'});
   assert.deepEqual(errors,[]);
-  console.log('PASS: Randomise preserves Marker or Tissue selection');
+  console.log('PASS: Another switches material; explicit Tissue settings remain reproducible');
   console.log('PASS: historic watercolour URL stays v1 until randomised');
   console.log('PASS: Tissue follows Colour controls and versioned share URLs');
 }finally{await browser.close()}

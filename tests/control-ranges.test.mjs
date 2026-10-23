@@ -9,6 +9,20 @@ const readme=readFileSync(new URL('../README.md',import.meta.url),'utf8');
 const versionMatch=appSource.match(/SUPPORTED_RENDERER_VERSIONS=Object\.freeze\(\[([0-9,]+)\]\)/);
 assert.ok(versionMatch,'App must declare the current renderer version');
 const currentRenderer=Number(versionMatch[1].split(',').at(-1));
+const anotherStart=appSource.indexOf("$('randomise').onclick=function(){");
+const anotherEnd=appSource.indexOf("\nfunction variationSeed(",anotherStart);
+assert(anotherStart>=0&&anotherEnd>anotherStart,'Locate Another handler');
+const anotherHandler=appSource.slice(anotherStart,anotherEnd);
+assert.match(anotherHandler,/querySelectorAll\('\.tab-panel:not\(#panel-export\) select'\)/,
+  'Another must not randomise Plotter or other export selects');
+assert.match(anotherHandler,/querySelectorAll\('\.tab-panel:not\(#panel-export\) input\[type=range\]'\)/,
+  'Another must not randomise future export range controls');
+assert.match(html,/<option value="rects" selected>Recursive Divisions/,
+  'HTML default should match the active Recursive Divisions card');
+assert.doesNotMatch(html,/test\/editorial-(?:copy|pigment)\.js/,
+  'Production must not load scripts from test/');
+assert.match(html,/js\/editorial-pigment\.js\?v=/,
+  'Keep the editorial pigment behavior as a production script');
 assert.ok(readme.includes('**Current renderer: V'+currentRenderer+'.**'),
   'README must identify the renderer actually selected by the editor');
 assert.ok(readme.includes('| **V'+currentRenderer+'** |'),

@@ -32,7 +32,10 @@ function snapshot(){
 try{
   const url=new URL(root);url.search='?v=9&seed=PROFILE-NAMES-001&mode=network&pen=highlighter&tissue=6&paper=%23dbcab1';
   await page.goto(url.href,{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent.includes('PROFILE-NAMES-001'));
+  await page.waitForFunction(()=>document.getElementById('seed')?.value==='PROFILE-NAMES-001'&&
+    document.querySelector('#statsText')?.textContent?.includes('Connected Fields')&&
+    document.getElementById('creatingOverlay')?.hidden===true,
+    null,{timeout:120000});
   const tissue=await snapshot();
   assert.equal(tissue.settings.pen,'highlighter');
   assert.equal(tissue.names.pen.label,'Source mark profile');
@@ -83,7 +86,10 @@ try{
   const historic=new URL(root);
   historic.search='?v=8&tissue=6&seed=HISTORIC-PROFILE&mode=rects&pen=highlighter';
   await page.goto(historic.href,{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent.includes('HISTORIC-PROFILE'));
+  await page.waitForFunction(()=>document.getElementById('seed')?.value==='HISTORIC-PROFILE'&&
+    document.querySelector('#statsText')?.textContent?.includes('Recursive Divisions')&&
+    document.getElementById('creatingOverlay')?.hidden===true,
+    null,{timeout:120000});
   assert.equal((await snapshot()).version,8);
   assert.equal((await snapshot()).options.find(x=>x.value==='highlighter').text,'Flat-edged bands');
   await page.locator('#materialStyle').selectOption('marker');

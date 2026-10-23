@@ -4,8 +4,12 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
-assert.match(app,/select:not\(#exportScale\):not\(#orientation\):not\(#materialStyle\)/,
-  'Randomise must never randomise the selected drawing material');
+assert.match(app,/document\.querySelectorAll\('\.tab-panel:not\(#panel-export\) select'\)/,
+  'Another must never include Export-panel controls');
+assert.match(app,/var nextMaterials=Array\.from\(material\.options\)/,
+  'Another should choose a new material from the actual available options');
+assert.match(app,/option\.value!==material\.value/,
+  'Another should choose a material different from the previous one');
 assert.match(app,/tissuePaletteVersion=7/);
 assert.match(app,/params\.set\(tissuePaletteVersion>=2\?'tissue':'watercolor'/);
 const exports=readFileSync(new URL('../js/export.js',import.meta.url),'utf8');
@@ -123,7 +127,7 @@ assert.equal(JSON.stringify(marker(s)),markerGeometry,
   'Material colour selection must never mutate the published V8 geometry');
 console.log('PASS Tissue follows actual seeded Marker palette and paper');
 console.log('PASS palettes diverge, repeat deterministically, and v1 stays reproducible');
-console.log('PASS Randomise excludes selected drawing material');
+console.log('PASS Another selects a different material without touching Export controls');
 
 geometryOnly=true;
 assert.deepEqual(paint(s,4),paint(s,1),

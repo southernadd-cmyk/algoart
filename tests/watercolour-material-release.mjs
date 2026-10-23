@@ -14,7 +14,9 @@ const page=await context.newPage(),errors=[];
 page.on('pageerror',error=>errors.push(error.message));
 async function stable(){
   const seed=new URL(page.url()).searchParams.get('seed');
-  await page.waitForFunction(expected=>document.querySelector('#statsText')?.textContent.includes(expected),
+  await page.waitForFunction(expected=>document.getElementById('seed')?.value===expected&&
+    document.getElementById('creatingOverlay')?.hidden===true&&
+    Boolean(document.querySelector('#statsText')?.textContent?.trim()),
     seed,{timeout:180000});
 }
 try{
@@ -107,14 +109,18 @@ try{
   assert.deepEqual(await page.evaluate(()=>window.AlgoArt.readSettings()),original.settings);
   assert.equal(await page.evaluate(()=>window.AlgoArt.rendererVersion),9);
 
-  // Randomise keeps the material, the chosen paper, and the serialized type.
+  // Another creates a new seed and changes material, but keeps the paper
+  // preference. Historical V2S/V2R links are tested separately below.
+  const previousSeed=await page.locator('#seed').inputValue();
   await page.locator('#randomise').click();
-  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
-  assert.equal(await page.locator('#materialStyle').inputValue(),'watercolour');
-  assert.equal(new URL(page.url()).searchParams.get('material'),'watercolour-v2s');
+  await page.waitForFunction(seed=>document.getElementById('seed')?.value!==seed&&
+    document.getElementById('creatingOverlay')?.hidden===true,
+    previousSeed,{timeout:180000});
+  assert.notEqual(await page.locator('#materialStyle').inputValue(),'watercolour',
+    'Another must choose a different material');
   assert.equal(new URL(page.url()).searchParams.get('paper'),'#d9c7b9');
-  // Historical Watercolour V2R is a separate material revision.
-  const oldShare=new URL(page.url());
+  // Historical Watercolour V2R remains a separate material revision.
+  const oldShare=new URL(shared);
   oldShare.searchParams.set('material','watercolour-v2r');
   await page.goto(oldShare.href,{waitUntil:'domcontentloaded'});await stable();
   assert.equal(await page.locator('#materialStyle').inputValue(),'watercolour');
@@ -134,5 +140,5 @@ try{
   assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'6');
   assert.deepEqual(errors,[]);
-  console.log('PASS watercolour material URL, old Tissue pixel identity, determinism, renderer restoration, user paper, PNG download, randomise',size);
+  console.log('PASS watercolour material URL, old Tissue pixel identity, determinism, renderer restoration, user paper, PNG download, Another',size);
 }finally{await browser.close()}
