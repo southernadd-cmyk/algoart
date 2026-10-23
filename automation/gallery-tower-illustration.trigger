@@ -1,1 +1,1 @@
-Rebuild using the 3D gallery's actual seeded lower-floor room positions and bridge endpoints.
+Rebuild after restoring opaque brick facades. Glass only on actual layout corridors. 2026-10-23 rev2.
