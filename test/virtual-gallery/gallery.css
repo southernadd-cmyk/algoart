@@ -92,3 +92,7 @@ a{color:inherit}
 
 .floor-indicator{display:inline-flex;align-items:center;justify-content:center;min-width:30px;padding:3px 8px;background:#343d39;color:#fff;font:700 12px Arial,sans-serif;border-radius:2px}
 .start-floor{font:normal 16px Georgia,serif!important;color:#535b54!important;margin:-13px 0 20px!important}
+
+/* A visible, non-intrusive focus boundary for keyboard explorers. */
+#world:focus-visible{outline:3px solid #e9bc76;outline-offset:-5px}
+.info button:focus-visible,.info a:focus-visible,.lift-panel button:focus-visible,#liftMonth:focus-visible,.enter:focus-visible,.welcome a:focus-visible{outline:3px solid #314d40;outline-offset:3px}
