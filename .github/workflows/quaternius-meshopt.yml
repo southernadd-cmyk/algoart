@@ -104,12 +104,16 @@ jobs:
           name: quaternius-male-female-meshopt
           path: test/virtual-gallery/models/quaternius-*-meshopt.glb
           if-no-files-found: error
+      - name: Install validated visitors in production
+        run: |
+          mkdir -p gallery/visit/models
+          cp test/virtual-gallery/models/quaternius-{male,female}-meshopt.glb gallery/visit/models/
       - name: Publish validated visitor assets
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add test/virtual-gallery/models/quaternius-*-meshopt.glb
+          git add gallery/visit/models/quaternius-*-meshopt.glb
           if ! git diff --cached --quiet; then
             git commit -m "Publish 520 KB Quaternius Meshopt visitor models"
             git reset --hard HEAD

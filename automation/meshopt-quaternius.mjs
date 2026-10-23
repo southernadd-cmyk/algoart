@@ -13,6 +13,6 @@ const dir='test/virtual-gallery/models';
 for(const sex of ['male','female']){
  const model=await io.read(join(dir,`quaternius-${sex}-flat.glb`));
  await model.transform(meshopt({encoder:MeshoptEncoder,level:'medium'}));
- await io.write(join('gallery/visit/models',`quaternius-${sex}-meshopt.glb`),model);
+ await io.write(join(dir,`quaternius-${sex}-meshopt.glb`),model);
  console.log('Preserved full rig',sex);
 }

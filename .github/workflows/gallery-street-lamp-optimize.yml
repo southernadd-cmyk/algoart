@@ -28,13 +28,17 @@ jobs:
         run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
       - name: Repack original GLB to smaller same-origin asset
         run: python3 automation/optimize-gallery-street-lamp.py
+      - name: Install optimized street lamp in production
+        run: |
+          mkdir -p gallery/visit/models
+          cp test/virtual-gallery/models/polyhaven-street-lamp-01-optimized.glb gallery/visit/models/
       - name: Publish optimized static model
         id: publish
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add test/virtual-gallery/models/polyhaven-street-lamp-01-optimized.glb
+          git add gallery/visit/models/polyhaven-street-lamp-01-optimized.glb
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else

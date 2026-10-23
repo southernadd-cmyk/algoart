@@ -9,7 +9,7 @@ from pathlib import Path
 
 FOLDER=Path(__file__).resolve().parents[1]/'test/virtual-gallery/models'
 ORIGINAL=FOLDER/'human-male-female-rigged.glb'
-CANDIDATE=Path(__file__).resolve().parents[1]/'gallery/visit/models/human-male-female-rigged-optimized.glb'
+CANDIDATE=FOLDER/'human-male-female-rigged-optimized.glb'
 
 def read(path):
     data=path.read_bytes()

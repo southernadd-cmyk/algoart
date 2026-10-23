@@ -33,13 +33,18 @@ jobs:
           test -s test/virtual-gallery/textures/OfficeCeiling001_Color.jpg
           test -s test/virtual-gallery/textures/OfficeCeiling001_NormalGL.jpg
           test -s test/virtual-gallery/textures/OfficeCeiling001_Roughness.jpg
+      - name: Install verified lighting assets in production
+        run: |
+          mkdir -p gallery/visit/models gallery/visit/textures
+          cp test/virtual-gallery/models/twin-surface-spotlight.glb gallery/visit/models/
+          cp test/virtual-gallery/textures/OfficeCeiling001_*.jpg gallery/visit/textures/
       - name: Commit gallery assets
         id: publish
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add test/virtual-gallery/models/twin-surface-spotlight.glb test/virtual-gallery/textures/OfficeCeiling001_*.jpg
+          git add gallery/visit/models/twin-surface-spotlight.glb gallery/visit/textures/OfficeCeiling001_*.jpg
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else

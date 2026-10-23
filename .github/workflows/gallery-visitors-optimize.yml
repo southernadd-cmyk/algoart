@@ -70,12 +70,16 @@ jobs:
           name: gallery-visitors-meshopt-candidate
           path: test/virtual-gallery/models/human-male-female-rigged-optimized.glb
           if-no-files-found: error
+      - name: Install validated rigged visitor in production
+        run: |
+          mkdir -p gallery/visit/models
+          cp test/virtual-gallery/models/human-male-female-rigged-optimized.glb gallery/visit/models/
       - name: Publish smaller visitors after passed pose tests
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add test/virtual-gallery/models/human-male-female-rigged-optimized.glb
+          git add gallery/visit/models/human-male-female-rigged-optimized.glb
           if ! git diff --cached --quiet; then
             git commit -m "Publish validated 1.41 MB Meshopt gallery visitors"
             git pull --rebase origin main
