@@ -1,1 +1,1 @@
-Rebuild 2026-10-23 rev2: square and both entrance sculptures; lift-core colours fixed, regression assertions for monuments and paving.
+Rebuild 2026-10-23: project Recursive Divisions sculpture 28px to the right of the entrance; require 10px+ clearance and retain the generator fix.
