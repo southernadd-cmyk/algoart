@@ -7,4 +7,4 @@ workers_dev = true
 # Replace this placeholder with its actual namespace ID before deployment.
 [[kv_namespaces]]
 binding = "PREVIEW_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "7dc02116a78744ad959cce0cc8292b42"
