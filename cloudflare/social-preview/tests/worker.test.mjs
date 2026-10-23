@@ -46,3 +46,18 @@ test('missing images 404, invalid uploads rejected, CORS honoured',async()=>{
 test('health works without a KV namespace',async()=>{
  assert.equal((await worker.fetch(request('/health'),{})).status,200);
 });
+
+test('production editor and legacy GitHub Pages origins are permitted',async()=>{
+ for(const origin of ['https://algoart.org','https://www.algoart.org','https://southernadd-cmyk.github.io']){
+   const response=await worker.fetch(request('/share/preload?c='+token,{
+     method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Method':'POST'}
+   }),env);
+   assert.equal(response.status,204,origin);
+   assert.equal(response.headers.get('access-control-allow-origin'),origin);
+ }
+ const denied=await worker.fetch(request('/share/preload?c='+token,{
+   method:'OPTIONS',headers:{Origin:'https://evil.example'}
+ }),env);
+ assert.equal(denied.status,403);
+ assert.equal(denied.headers.get('access-control-allow-origin'),null);
+});
