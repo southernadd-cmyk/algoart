@@ -14,6 +14,7 @@ on:
       - 'automation/captions.mjs'
       - 'automation/social-stagger.mjs'
       - 'automation/social-publish-policy.mjs'
+      - 'automation/threads-evening-feature.mjs'
       - 'tests/social-caption-rotation.test.mjs'
       - 'tests/social-stagger.test.mjs'
       - 'tests/social-publish-policy.test.mjs'
