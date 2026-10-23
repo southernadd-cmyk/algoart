@@ -30,7 +30,15 @@ export function selectedSocialJobs(date,slot,platform){
   if(!PLATFORMS.includes(platform))throw Error('Unknown platform: '+platform);
   // Slot 3 is a legacy noon test slot; never publish from it.
   if(!Object.hasOwn(SLOT_CANDIDATES,String(slot)))return [];
-  const choices=SLOT_CANDIDATES[slot],quantity=PLATFORM_TARGETS[platform][slot];
+  // The evening Threads post is sent by the base job, which selects its
+  // image from the completed daily archive (including afternoon materials).
+  if(platform==='threads' && String(slot)==='2')return ['marker-landscape'];
+  const available=SLOT_CANDIDATES[slot];
+  // Pinterest primarily features the vertical originals.
+  const choices=platform==='pinterest'
+    ? available.filter(job=>job.endsWith('-portrait'))
+    : available;
+  const quantity=PLATFORM_TARGETS[platform][slot];
   const day=Math.floor(parsed.valueOf()/86_400_000);
   const first=((day+ROTATIONS[platform]+Number(slot)*3)%choices.length+choices.length)%choices.length;
   return Array.from({length:quantity},(_,i)=>choices[(first+i)%choices.length]);
