@@ -198,7 +198,7 @@ export function planVisitors(layout,hangs,sculptures,{lowPower=false}={}){
 // Actual male/female rig support for the lzyassoul pack only. The imported
 // glTF renames e.g. upper_armL_91/forearmL_90/handL_151, not upper_arm.L.
 // Loading is lazy and optional so the gallery's cold start never depends on it.
-const rigMode=new URLSearchParams(location.search).get('rig')||'fixed';
+const rigMode=new URLSearchParams(typeof location==='undefined'?'':location.search).get('rig')||'fixed';
 let characterAssets=null;
 async function loadCharacters(){
  if(!characterAssets)characterAssets=Promise.all([
