@@ -281,7 +281,7 @@ function archivePage(archive) {
   </section>
   <section class="visit-band" aria-labelledby="visit-title">
     <a href="./visit/">
-      <img src="./visit/tower-still.svg?v=20261023-tower" width="1200" height="480" loading="eager" alt="Illustration of the virtual exhibition's stacked glass gallery floors, entrance and elevated walkways">
+      <img src="./visit/tower-still.svg?v=lower-fifteen-20261023" width="1200" height="480" loading="eager" alt="Illustration of the virtual exhibition's stacked glass gallery floors, entrance and elevated walkways">
       <div class="visit-copy">
         <h2 id="visit-title">Walk the tower.</h2>
         <p>Every daily edition is a floor. Begin outside and take the lift through ${days.length} days of drawings.</p>
