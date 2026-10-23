@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Virtual Gallery — PROPORTION PIECE (test)</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./gallery.css?v=marker-welcome-20261022">
+<link rel="stylesheet" href="./gallery.css?v=keyboard-access-20261023">
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js">
@@ -36,7 +36,7 @@
     // delaying cold start; a single timed import reports the real bottleneck.
     const importStarted=performance.now();
     console.info('[Gallery startup] importing gallery application');
-    await import('./gallery-v2.js?v=direct-startup-20261023');
+    await import('./gallery-v2.js?v=keyboard-access-20261023');
     console.info('[Gallery startup] application modules evaluated',Math.round(performance.now()-importStarted)+'ms import,',Math.round(performance.now()-started)+'ms total');
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -98,7 +98,7 @@ window.addEventListener('load',()=>{
 </script>
 </head>
 <body>
-<canvas id="world" aria-label="Interactive three-dimensional art gallery"></canvas>
+<canvas id="world" tabindex="0" aria-label="Three-dimensional gallery. W A S D to move, arrow keys to look, E for artwork information, L for floors. Tab to reach page controls." aria-describedby="hint"></canvas>
 <header class="topbar">
   <div class="identity"><a href="../../" class="brand">PROPORTION PIECE</a><span class="section-name">Virtual gallery</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
   <div class="top-actions">
@@ -140,7 +140,7 @@ window.addEventListener('load',()=>{
 </section>
 <div id="liftArrival" class="lift-arrival" hidden role="status"></div>
 <div class="status" id="status" aria-live="polite">Loading gallery…</div>
-<div class="hint" id="hint">W A S D to move · mouse to look · Shift to move faster</div>
+<div class="hint" id="hint">W A S D move · arrow keys look · Shift faster · E inspect · L floors · Tab controls</div>
 <div class="touch-nav" id="touchNav" aria-label="Touch movement controls">
   <button data-move="forward" aria-label="Move forward">↑</button>
   <div><button data-move="left" aria-label="Move left">←</button><button data-move="back" aria-label="Move backward">↓</button><button data-move="right" aria-label="Move right">→</button></div>
@@ -151,7 +151,7 @@ window.addEventListener('load',()=>{
     <div class="eyebrow">An exhibition built by its drawings</div>
     <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
     <p>Every daily collection becomes its own building. Landscape studies hang on the walls; portrait studies become sculptures made from the actual drawn lines and the visible pigment boundaries of each material. Choose your route through the work.</p>
-    <p class="shortcuts">Walk using W A S D and look with the mouse. Artwork details appear when you approach and face a work. On a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p>
+    <p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, E to inspect artwork, L to choose a floor. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
     <a id="welcomeArchive" href="../../gallery/">See the original 2D edition ↗</a>
   </div>
