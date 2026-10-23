@@ -52,8 +52,10 @@ class GalleryTextureTests(unittest.TestCase):
         mirror = self.root / "release-art"
         mirror.mkdir()
         Image.new("RGB", (1200, 900), (200, 190, 175)).save(mirror / filename)
-        self.create_meta(filename)
+        self.create_meta("https://github.com/southernadd-cmyk/algoart/releases/download/algoart-social-live/" + filename)
         textures.build_day(self.day)
+        manifest = json.loads((self.day / "3d" / "manifest.json").read_text())
+        self.assertIn(filename, manifest["images"])
         self.assertTrue((self.day / "3d" / "v3-live-2026-10-05-c-01-640.webp").is_file())
 
     def test_missing_archive_image_fails_before_publication(self):
