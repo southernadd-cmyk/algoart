@@ -1,0 +1,27 @@
+name: Gallery bundle release checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/gallery-public-launch.test.mjs'
+      - 'gallery/visit/index.html'
+      - 'gallery/visit/gallery-bundle.js'
+      - 'test/virtual-gallery/index.html'
+      - '.github/workflows/gallery-bundle-release-checks.yml'
+  workflow_dispatch:
+jobs:
+  gallery-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gallery public launch regression
+        run: node --test tests/gallery-public-launch.test.mjs
+      - name: Validate bundle syntax and test entry point
+        run: |
+          node --check gallery/visit/gallery-bundle.js
+          test -s gallery/visit/gallery-bundle.js
+          grep -q 'gallery-bundle.js' test/virtual-gallery/index.html
+          if grep -q 'location.replace' test/virtual-gallery/index.html; then exit 1; fi
