@@ -19,7 +19,7 @@
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/gallery/2026-10-22/archive-preview.jpg">
 <title>Virtual Exhibition | PROPORTION PIECE</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./gallery.css?v=welcome-clearance-20261023">
+<link rel="stylesheet" href="./gallery.css?v=accessibility-20261023">
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=11">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -46,7 +46,7 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
-    await import('./gallery-v2.js?v=gallery-public-route-20261023');
+    await import('./gallery-v2.js?v=visitor-safety-20261023');
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
     window.__galleryStartupError='Module import failed: '+(error?.message||String(error));
