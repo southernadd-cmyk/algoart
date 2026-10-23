@@ -458,7 +458,7 @@ function renderMobileModePreviews(generation){
   var cards=Array.from(document.querySelectorAll('.mode-card'));
   var index=0;
   function next(){
-    if(generation!==mobilePreviewGeneration)return;
+    if(generation!==mobilePreviewGeneration||!selectedMaterialReady())return;
     // A change to controls invalidates the remaining thumbnails.
     var latest=A.readSettings(),state=Object.assign({},latest);
     delete state.mode;
@@ -481,6 +481,7 @@ function scheduleModePreviews(){
   clearTimeout(previewTimer);
   var generation=++mobilePreviewGeneration;
   previewTimer=setTimeout(function(){
+    if(generation!==mobilePreviewGeneration||!selectedMaterialReady())return;
     if(mobileQuery.matches)renderMobileModePreviews(generation);
     else renderModePreviews();
   },180);
@@ -513,6 +514,24 @@ function syncCanvasFormat(s){
   }
 }
 
+// The loader is optional for experimental /test/ pages that still preload
+// their complete original script stack.
+function selectedMaterialLoadOptions(){
+  return {tissueRevision:tissuePaletteVersion,
+    watercolourRevision:watercolourMaterialRevision,
+    oilRevision:oilPaintV4Enabled()?'v4':oilPaintV3Enabled()?'v3':
+      oilPaintV2Enabled()?'v2':'v1'};
+}
+function ensureSelectedMaterial(){
+  return typeof A.ensureMaterialScripts==='function'?
+    A.ensureMaterialScripts($('materialStyle').value,selectedMaterialLoadOptions()):
+    Promise.resolve();
+}
+function selectedMaterialReady(){
+  return typeof A.materialScriptsReady!=='function'||
+    A.materialScriptsReady($('materialStyle').value,selectedMaterialLoadOptions());
+}
+
 var dragPreviewTimer=null,dragPreviewPending=false,lastCommittedRenderKey=null;
 A.renderTimings={previewMs:0,fullMs:0};
 function scheduleDragPreview(){
@@ -521,6 +540,9 @@ function scheduleDragPreview(){
   if(dragPreviewTimer!==null)return;
   dragPreviewTimer=setTimeout(function(){
     dragPreviewTimer=null;
+    // A delayed slider preview can outlive a material switch. The full
+    // Creating render will draw after that material has finished loading.
+    if(!selectedMaterialReady())return;
     var s=A.readSettings(),previousMeta=A.lastRenderMeta;
     syncCanvasFormat(s);
     var started=performance.now();
@@ -544,18 +566,24 @@ function scheduleCreatingRender(){
     if(overlay.parentNode!==document.body)document.body.appendChild(overlay);
     overlay.hidden=false;overlay.setAttribute('aria-hidden','false');
   }
-  // Two paints give the browser a chance to display the marker overlay before
-  // synchronous work blocks the main thread. Latest request wins.
+  // Let the overlay paint before downloads or synchronous rendering. Requests
+  // may finish out of order: only the latest request is allowed to commit.
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
       if(generation!==creatingGeneration)return;
-      try{commitRegenerate();}
-      finally{
+      ensureSelectedMaterial().then(function(){
+        if(generation!==creatingGeneration)return;
+        commitRegenerate();
+      }).catch(function(error){
+        if(generation!==creatingGeneration)return;
+        console.error('Material rendering unavailable:',error);
+        $('statsText').textContent='Material could not load. Try again or select Marker.';
+      }).finally(function(){
         if(generation===creatingGeneration){
           creatingPending=false;
           if(overlay){overlay.hidden=true;overlay.setAttribute('aria-hidden','true');}
         }
-      }
+      });
     });
   });
 }
@@ -1589,12 +1617,14 @@ function chooseWelcomeArtwork(){
     };
     candidate.src=selected.src;
     // Prepare the corresponding editor state without blocking image download.
-    if(selected.artUrl)Promise.resolve().then(function(){
+    if(selected.artUrl)Promise.resolve().then(async function(){
       if(serial!==welcomeSelectionSerial||splash.hidden)return;
       var selectedUrl=new URL(selected.artUrl,location.href);
       if(selectedUrl.origin!==location.origin)return;
       history.replaceState(null,'',selectedUrl.href);
       if(!loadSettingsFromURL())return;
+      await ensureSelectedMaterial();
+      if(serial!==welcomeSelectionSerial||splash.hidden)return;
       commitRegenerate();
       if(serial===welcomeSelectionSerial)welcomePreparedArtworkUrl=selectedUrl.href;
     }).catch(function(error){console.warn('Welcome artwork pre-render failed:',error)});
