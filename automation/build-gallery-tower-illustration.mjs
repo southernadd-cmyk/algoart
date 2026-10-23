@@ -184,6 +184,9 @@ function drawSquareAndSculptures(){
     const across={x:facing.z,z:-facing.x};
     const p=(u,h)=>[x+across.x*u,ground+h,z+across.z*u];
     const a=(u,v)=>p(u*W,.48+(v+.5)*H);
+    // Preview-only lateral nudge: the projected Divisions relief otherwise
+    // sits edge-on in front of the entrance door. Do not move the 3D artwork.
+    if(kind==='divisions')emit('<g class="preview-sculpture-offset" transform="translate(28 0)">');
     emit('<g class="outdoor-sculpture" data-sculpture="'+kind+'">');
     for(const side of [-1,1]){
       line(p(side*(W+.22)/2,.48),p(side*(W+.22)/2,.48+H+.15),
@@ -229,6 +232,7 @@ function drawSquareAndSculptures(){
       ])line(a(x1,y1),a(x2,y2),'#373a38',1.5);
     }
     emit('</g>');
+    if(kind==='divisions')emit('</g>');
   }
 }
 
