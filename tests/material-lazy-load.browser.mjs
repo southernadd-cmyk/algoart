@@ -53,6 +53,7 @@ try{
   assert.equal(await p.evaluate(()=>typeof window.AlgoArt.renderOilPaintV1),'undefined');
   assert.equal(await p.evaluate(()=>typeof window.AlgoArt.renderOil),'undefined');
   assert.equal(await p.evaluate(()=>window.AlgoArt.rendererVersion),9);
+  const markerBefore=await p.locator('#art').evaluate(canvas=>canvas.toDataURL('image/png'));
   const before=first.requests.length;
   await p.locator('#materialStyle').selectOption('tissue');
   await ready(p,'LAZY-MARKER-001','tissue');
@@ -67,6 +68,17 @@ try{
   assert.equal(first.requests.filter(x=>x.includes('/js/oil-render.js')).length,1,
     'Revisiting Tissue must reuse its cached module');
   assert(first.requests.length>before);
+  await p.locator('#materialStyle').selectOption('marker');
+  await ready(p,'LAZY-MARKER-001','marker');
+  assert.equal(await p.locator('#art').evaluate(canvas=>canvas.toDataURL('image/png')),
+    markerBefore,'Loading Tissue must not alter later Marker pixels');
+  await p.locator('#materialStyle').selectOption('oil');
+  await ready(p,'LAZY-MARKER-001','oil');
+  assert.equal(await p.evaluate(()=>typeof window.AlgoArt.renderOilPaintV4),'function');
+  await p.locator('#materialStyle').selectOption('marker');
+  await ready(p,'LAZY-MARKER-001','marker');
+  assert.equal(await p.locator('#art').evaluate(canvas=>canvas.toDataURL('image/png')),
+    markerBefore,'Loading the historic Oil chain must not alter Marker pixels');
   await first.context.close();
   console.log('PASS: cold Marker loads no material modules; Tissue loads once on demand');
 
