@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'cloudflare/social-preview/**'
+      - 'wrangler.toml'
+      - 'tests/cloudflare-root-config.test.mjs'
+      - 'wrangler.toml'
+      - 'tests/cloudflare-root-config.test.mjs'
       - '.github/workflows/cloudflare-social-preview.yml'
   push:
     branches: [main]
@@ -22,5 +26,6 @@ jobs:
           node-version: '22'
       - name: Check Worker syntax and API tests
         run: |
+          node tests/cloudflare-root-config.test.mjs
           node --check cloudflare/social-preview/src/worker.mjs
           node --test cloudflare/social-preview/tests/worker.test.mjs

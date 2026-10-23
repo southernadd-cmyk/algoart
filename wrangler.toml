@@ -1,0 +1,10 @@
+# Git-connected Cloudflare Worker deployment. This is NOT the website.
+# Deploying this config only publishes cloudflare/social-preview/src/worker.mjs.
+name = "proportion-piece-social"
+main = "cloudflare/social-preview/src/worker.mjs"
+compatibility_date = "2026-10-23"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "PREVIEW_KV"
+id = "7dc02116a78744ad959cce0cc8292b42"
