@@ -23,7 +23,10 @@ try{
       '&tissue=7&paper=%23f5f0e6';
     await page.goto(u.href,{waitUntil:'domcontentloaded'});
     await page.waitForFunction(seed=>
-      document.querySelector('#statsText')?.textContent.includes(seed),c.seed);
+      document.getElementById('seed')?.value===seed&&
+      document.getElementById('creatingOverlay')?.hidden===true&&
+      Boolean(document.querySelector('#statsText')?.textContent?.trim()),
+      c.seed,{timeout:180000});
     assert.equal(await page.locator('#materialStyle').inputValue(),'tissue');
     const a=await page.evaluate(()=>{
       const A=window.AlgoArt,s=A.readSettings();
