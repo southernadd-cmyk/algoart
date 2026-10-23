@@ -51,7 +51,9 @@ jobs:
               meta = json.loads(meta_file.read_text())
               manifest = json.loads((folder / '3d' / 'manifest.json').read_text())
               assert manifest['version'] == 1
-              assert set(manifest['images']) == {e['imageFile'] for e in meta['entries']}
+              from urllib.parse import urlsplit, unquote
+              names = {unquote(urlsplit(e['imageFile']).path.rsplit('/', 1)[-1]) for e in meta['entries']}
+              assert set(manifest['images']) == names
               for variants in manifest['images'].values():
                   for name, size in [('desktop',1100), ('mobile',640)]:
                       file = folder / variants[name]
