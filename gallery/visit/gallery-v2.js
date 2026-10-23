@@ -269,73 +269,96 @@ function scheduleArtwork(task){
 const failedArtworkLoads=new Map();
 window.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible')return;
-  for(const [material,url] of [...failedArtworkLoads]){
+  for(const [material,request] of [...failedArtworkLoads]){
     if(material.userData.galleryDisposed){failedArtworkLoads.delete(material);continue;}
     failedArtworkLoads.delete(material);
-    loadArtworkTexture(url,material);
+    loadArtworkTexture(request.url,material,{preferred:request.preferred});
   }
 });
-function loadArtworkTexture(url, material) {
- scheduleArtwork(()=>new Promise(resolve=>{
-  let finished=false;
-  const finish=()=>{if(!finished){finished=true;resolve();}};
-  const source=new URL(url,location.href);
-  // Published archive images also exist in the public repository. Try the
-  // independently served CDN if Pages returns an error or cannot decode one.
-  const galleryPath=source.pathname.match(/\/gallery\/(\d{4}-\d{2}-\d{2}\/[^/]+\.(?:jpe?g|png|webp))$/i);
-  const fallback=galleryPath
-    ?'https://cdn.jsdelivr.net/gh/southernadd-cmyk/algoart@main/gallery/'+galleryPath[1]
-    :null;
-  // GitHub Releases reject cross-origin canvas reads. Route release
-  // artwork via a CORS-capable image cache instead of retrying github.com.
-  const isRelease=source.hostname==='github.com'&&source.pathname.includes('/releases/download/');
-  const proxiedRelease=isRelease
-    ?'https://wsrv.nl/?url='+encodeURIComponent(source.href)+'&w='+(mobileImages?640:1100)+'&output=jpg'
-    :null;
-  const requests=isRelease
-    ?[proxiedRelease,proxiedRelease+'&q=88']
-    :[source.href,source.href+(source.search?'&':'?')+'galleryRetry=1'];
-  if(fallback)requests.push(fallback);
-  let index=0;
-  function attempt(){
-   if(material.userData.galleryDisposed){finish();return;}
-   if(index>=requests.length){
-    material.color.set('#c9ad9b');material.needsUpdate=true;
-    failedArtworkLoads.set(material,url);
-    console.warn('Artwork failed at Pages and CDN:',url);
-    finish();return;
-   }
-   const candidate=requests[index++];
-   const image=new Image();
-   image.crossOrigin='anonymous';
-   image.decoding='async';
-   image.onload=()=>{
-    if(material.userData.galleryDisposed){finish();return;}
-    try{
-     if(!image.naturalWidth||!image.naturalHeight)throw Error('Empty image');
-     const maxSize=mobileImages?640:1100;
-     const scale=Math.min(1,maxSize/Math.max(image.naturalWidth,image.naturalHeight));
-     const canvas=document.createElement('canvas');
-     canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
-     canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
-     canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
-     const texture=new THREE.CanvasTexture(canvas);
-     texture.colorSpace=THREE.SRGBColorSpace;
-     texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
-     if(material.map)material.map.dispose();
-     material.map=texture;material.color.set('#ffffff');material.needsUpdate=true;
-     failedArtworkLoads.delete(material);
-     finish();
-    }catch(error){
-     console.warn('Artwork could not be decoded:',candidate,error);
-     setTimeout(attempt,400);
+function loadArtworkTexture(url,material,{preferred=null}={}){
+  scheduleArtwork(()=>new Promise(resolve=>{
+    let finished=false;
+    const finish=()=>{if(!finished){finished=true;resolve();}};
+    const source=new URL(url,location.href);
+    // Use 1100px desktop / 640px mobile images from the dated floor's
+    // manifest. The source JPEG remains the fallback for older exhibitions.
+    const galleryPath=source.pathname.match(/\/gallery\/(\d{4}-\d{2}-\d{2}\/[^/]+\.(?:jpe?g|png|webp))$/i);
+    const cdnFallback=galleryPath
+      ?'https://cdn.jsdelivr.net/gh/southernadd-cmyk/algoart@main/gallery/'+galleryPath[1]
+      :null;
+    const isRelease=source.hostname==='github.com'&&source.pathname.includes('/releases/download/');
+    const releaseProxy=isRelease
+      ?'https://wsrv.nl/?url='+encodeURIComponent(source.href)+'&w='+(mobileImages?640:1100)+'&output=jpg'
+      :null;
+    const requests=[
+      ...(preferred?[preferred]:[]),
+      ...(isRelease?[releaseProxy]:[source.href]),
+      ...(isRelease?[releaseProxy+'&q=88']:[source.href+(source.search?'&':'?')+'galleryRetry=1']),
+      ...(cdnFallback?[cdnFallback]:[])
+    ];
+    let index=0;
+    function attempt(){
+      if(material.userData.galleryDisposed){finish();return;}
+      if(index>=requests.length){
+        material.color.set('#c9ad9b');material.needsUpdate=true;
+        failedArtworkLoads.set(material,{url,preferred});
+        console.warn('Artwork could not be loaded:',url);
+        finish();return;
+      }
+      const candidate=requests[index++];
+      const image=new Image();
+      image.crossOrigin='anonymous';
+      image.decoding='async';
+      image.onload=async()=>{
+        if(material.userData.galleryDisposed){finish();return;}
+        let bitmap=null;
+        try{
+          if(!image.naturalWidth||!image.naturalHeight)throw Error('Empty image');
+          const maxSize=mobileImages?640:1100;
+          // Published WebPs are already at the correct size: no main-thread
+          // canvas allocation or drawImage operation is needed for the wall.
+          // On historical floors, try off-thread ImageBitmap resizing before
+          // falling back to an unresized GPU texture on older browsers.
+          if(candidate!==preferred &&
+             Math.max(image.naturalWidth,image.naturalHeight)>maxSize &&
+             typeof createImageBitmap==='function'){
+            const scale=maxSize/Math.max(image.naturalWidth,image.naturalHeight);
+            try{
+              bitmap=await createImageBitmap(image,{
+                resizeWidth:Math.max(1,Math.round(image.naturalWidth*scale)),
+                resizeHeight:Math.max(1,Math.round(image.naturalHeight*scale)),
+                resizeQuality:'high'
+              });
+            }catch(error){
+              if(GALLERY_DEBUG)console.warn('ImageBitmap resize unavailable',error);
+            }
+          }
+          if(material.userData.galleryDisposed){
+            bitmap?.close?.();finish();return;
+          }
+          const texture=new THREE.Texture(bitmap||image);
+          if(bitmap)texture.userData.galleryBitmap=bitmap;
+          texture.colorSpace=THREE.SRGBColorSpace;
+          texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
+          texture.needsUpdate=true;
+          if(material.map){
+            material.map.dispose();
+            material.map.userData.galleryBitmap?.close?.();
+          }
+          material.map=texture;material.color.set('#ffffff');material.needsUpdate=true;
+          failedArtworkLoads.delete(material);
+          finish();
+        }catch(error){
+          bitmap?.close?.();
+          console.warn('Artwork could not be decoded:',candidate,error);
+          setTimeout(attempt,400);
+        }
+      };
+      image.onerror=()=>{if(GALLERY_DEBUG)console.warn('Artwork request failed:',candidate);setTimeout(attempt,400);};
+      image.src=candidate;
     }
-   };
-   image.onerror=()=>{console.warn('Artwork request failed:',candidate);setTimeout(attempt,400);};
-   image.src=candidate;
-  }
-  attempt();
- }));
+    attempt();
+  }));
 }
 // Stage 2: landscape images occupy walls. Portraits become freestanding
 // layered engine-specific sculptures, with a clear walking route around them.
@@ -411,7 +434,7 @@ function hangArt(room, study, hang) {
   artwork.userData.study = study;
   scene.add(artwork);
   artExhibits.push({study,position:artwork.position.clone(),normal:normal.clone()});
-  loadArtworkTexture(study.image, artworkMaterial);
+  loadArtworkTexture(study.image, artworkMaterial,{preferred:study.imageOptimized});
   const lamp=base.clone().addScaledVector(normal,1.35);
   lamp.y=Math.min(room.y+ROOM_HEIGHT-.35,hang.y+height*.66+1.25);
   exhibitLight(room,lamp,base,{beam:Math.max(.28,Math.min(.56,Math.atan(width/2/1.45)*1.25)),power:17});
@@ -1190,7 +1213,7 @@ function constructGallery(layout, studies) {
   rig.rotation.y=yaw;
   drawMap();
 }
-function readArchive(html, url) {
+function readArchive(html, url, textureManifest={}) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   return [...doc.querySelectorAll('article.art-card')].map((card, i) => {
     const img=card.querySelector('.art-image-link img');
@@ -1198,10 +1221,13 @@ function readArchive(html, url) {
     if (!img || !link) return null;
     const href = new URL(link.getAttribute('href'), url).href;
     const seed = card.querySelector('dd')?.textContent.trim() || new URL(href).searchParams.get('seed') || '';
+    const filename=decodeURIComponent(new URL(img.getAttribute('src'),url).pathname.split('/').pop());
+    const variant=textureManifest[filename]?.[mobileImages?'mobile':'desktop'];
     return {
       id: i,
       title: card.querySelector('h2')?.textContent.trim() || 'Untitled drawing',
       seed,
+      imageOptimized:variant?new URL(variant,url).href:null,
       image: (() => {
         const original=new URL(img.getAttribute('src'),url);
         // Release download URLs are blocked for canvas/WebGL by CORS.
@@ -1238,9 +1264,24 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   // Previous daily editions never change; allow normal browser caching.
   // Today's edition can still be updated by the publishing job.
   const today=new Date().toISOString().slice(0,10);
-  const res=await fetchGalleryText(url,{cache:date===today?'no-cache':'force-cache'});
+  // Fetch the per-floor texture manifest alongside the dated HTML; older
+  // archive floors have no manifest yet and continue working unchanged.
+  const cache=date===today?'no-cache':'force-cache';
+  const [res,textureManifest]=await Promise.all([
+    fetchGalleryText(url,{cache}),
+    fetchGalleryText(new URL('3d/manifest.json',url),{cache,timeoutMs:5000})
+      .then(response=>{
+        if(!response.ok)return {};
+        const parsed=JSON.parse(response.text);
+        return parsed.version===1 && parsed.images && typeof parsed.images==='object'
+          ?parsed.images:{};
+      }).catch(error=>{
+        if(GALLERY_DEBUG)console.warn('3D texture manifest unavailable:',date,error);
+        return {};
+      })
+  ]);
   if(!res.ok)throw new Error('The edition for '+readableDate(date)+' is not available.');
-  const studies=readArchive(res.text,res.url);
+  const studies=readArchive(res.text,res.url,textureManifest);
   if(!studies.length)throw new Error('No artworks for this edition');
   const nextPlan=buildLayout(date,studies.length,studies);
   const nextFloor=archiveDates.indexOf(date);
@@ -1270,7 +1311,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     }
     material.dispose();
   }
-  for(const texture of staleTextures)texture.dispose();
+  for(const texture of staleTextures){texture.dispose();texture.userData.galleryBitmap?.close?.();}
   for(const geometry of staleGeometries)geometry.dispose();
   failedArtworkLoads.clear();
   deferredGalleryVersion++;deferredGalleryJobs=[];deferredGalleryRunning=false;
