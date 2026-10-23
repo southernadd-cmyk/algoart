@@ -201,12 +201,22 @@ jobs:
 
       # Delay only publication, after generating and hosting the verified artwork.
       # One pause per orientation/material job; skip completed slots and dry runs.
+      # One material/orientation per eligible destination; never gate gallery generation.
+      - name: Select per-platform social publishing targets
+        id: policy
+        if: steps.gate.outputs.should_post == 'true'
+        env:
+          SOCIAL_DATE: ${{ steps.gate.outputs.date }}
+          SOCIAL_SLOT: ${{ steps.gate.outputs.slot }}
+          SOCIAL_PUBLISH_JOB: 'marker-landscape'
+        run: node automation/social-publish-policy.mjs
+
       - name: Stagger social publication (5–20 minutes)
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true') || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'))
+        if: steps.gate.outputs.should_post == 'true' && ((steps.policy.outputs.instagram == 'true' && steps.state.outputs.instagram_done != 'true') || (steps.policy.outputs.threads == 'true' && steps.state.outputs.threads_done != 'true') || (steps.policy.outputs.bluesky == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true') || (steps.policy.outputs.pinterest == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'))
         run: node automation/social-stagger.mjs
 
       - name: Publish to Instagram
-        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
+        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true' && steps.policy.outputs.instagram == 'true'
         env:
           LIVE_PUBLISHING: 'true'
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
@@ -221,7 +231,7 @@ jobs:
           npm run social:instagram
 
       - name: Mark Instagram slot complete
-        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
+        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true' && steps.policy.outputs.instagram == 'true'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.instagram_marker }}"
@@ -229,7 +239,7 @@ jobs:
           gh release upload "$RELEASE_TAG" "/tmp/$MARKER" --clobber
 
       - name: Publish to Threads
-        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true'
+        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true' && steps.policy.outputs.threads == 'true'
         env:
           LIVE_PUBLISHING: 'true'
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
@@ -244,7 +254,7 @@ jobs:
           npm run social:threads
 
       - name: Mark Threads slot complete
-        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true'
+        if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.threads_done != 'true' && steps.policy.outputs.threads == 'true'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.threads_marker }}"
@@ -253,7 +263,7 @@ jobs:
 
 
       - name: Publish to Bluesky
-        if: steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'
+        if: steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true' && steps.policy.outputs.bluesky == 'true'
         env:
           MEDIA_URL: ${{ steps.host.outputs.media_url }}
           CAPTION_B64: ${{ steps.select.outputs.bluesky_caption_b64 }}
@@ -265,7 +275,7 @@ jobs:
           npm run social:bluesky
 
       - name: Mark Bluesky slot complete
-        if: steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'
+        if: steps.gate.outputs.should_post == 'true' && env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true' && steps.policy.outputs.bluesky == 'true'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.bluesky_marker }}"
@@ -273,7 +283,7 @@ jobs:
           gh release upload "$RELEASE_TAG" "/tmp/$MARKER" --clobber
 
       - name: Publish to Pinterest
-        if: steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'
+        if: steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true' && steps.policy.outputs.pinterest == 'true'
         env:
           LIVE_PUBLISHING: 'true'
           PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
@@ -291,7 +301,7 @@ jobs:
           npm run social:pinterest
 
       - name: Mark Pinterest slot complete
-        if: steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'
+        if: steps.gate.outputs.should_post == 'true' && vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true' && steps.policy.outputs.pinterest == 'true'
         shell: bash
         run: |
           MARKER="${{ steps.state.outputs.pinterest_marker }}"
