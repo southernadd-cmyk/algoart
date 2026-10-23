@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+const base='https://proportion-piece-social.mr-adam-clement.workers.dev';
+const keys=['v','seed','mode','fmt','el','den','cx','neg','phi','rec','spi','ga','nest','pen','th','wob','od','op','pr','dry','curve','shape','overlap','rot','ln','ci','re','po','ar','pal','cols','sat','bri','paper','grain','sheet','material','fit','tissue','watercolor'];
+const params={v:'9',seed:'CLOUDFLARE-SMOKE-20261023',mode:'rects',material:'oil-v4'};
+const token=Buffer.from(keys.map(k=>params[k]||'').join('\x1f')).toString('base64url');
+async function get(path,init){
+  const r=await fetch(base+path,{signal:AbortSignal.timeout(15000),...init});
+  return r;
+}
+const health=await get('/health');
+assert.equal(health.status,200,'Cloudflare health must return 200');
+assert.equal((await health.json()).service,'proportion-piece-social');
+const landing=await get('/share?c='+token+'&pv=2',{headers:{'User-Agent':'facebookexternalhit/1.1'},redirect:'manual'});
+assert.equal(landing.status,200,'Crawler OG response must return 200');
+const html=await landing.text();
+assert.match(html,/property="og:image"/);
+assert.match(html,/CLOUDFLARE-SMOKE-20261023/);
+assert.match(html,/proportion-piece-social\.mr-adam-clement\.workers\.dev\/share\/image/);
+assert.match(html,/&amp;pv=2/);
+assert(!html.includes('onrender.com'));
+const absent=await get('/share/image?c='+token);
+assert.equal(absent.status,404,'Unuploaded image should return safe 404, not fake artwork');
+const cors=await get('/share/preload?c='+token,{method:'OPTIONS',headers:{
+  Origin:'https://southernadd-cmyk.github.io','Access-Control-Request-Method':'POST'
+}});
+assert.equal(cors.status,204,'Legacy published origin must be accepted');
+assert.equal(cors.headers.get('access-control-allow-origin'),'https://southernadd-cmyk.github.io');
+const forbidden=await get('/share/preload?c='+token,{method:'OPTIONS',headers:{Origin:'https://untrusted.example'}});
+assert.equal(forbidden.status,403);
+console.log('PASS Cloudflare public health, OG preview, missing image, permitted and rejected CORS');
