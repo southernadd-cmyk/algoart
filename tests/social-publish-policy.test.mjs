@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {PLATFORM_TARGETS,SLOT_CANDIDATES,selectedSocialJobs,socialPublishDecision} from '../automation/social-publish-policy.mjs';
+import {EVENING_MATERIAL_ROTATION,selectEveningThreadsArtwork} from '../automation/threads-evening-feature.mjs';
 
 const JOB_WORKFLOWS={
   'marker-landscape':'social-live',
@@ -81,4 +82,36 @@ test('policy command prints only safe positive decisions, with no publishing cal
     {env:{...process.env,...args,GITHUB_OUTPUT:''},encoding:'utf8'});
   for(const platform of platforms)assert.match(stdout,new RegExp(platform+'=(?:true|false)'));
   assert.doesNotMatch(stdout,/access.token|threads_publish|https:\/\/graph\./);
+});
+
+test('Pinterest selects portrait studies and evening Threads rotates every available material',()=>{
+  const materials=new Set();
+  const archive=EVENING_MATERIAL_ROTATION.flatMap((material,i)=>['landscape','portrait'].map(orientation=>({
+    id:'2026-10-23-'+i+'-'+orientation,
+    material,orientation,shareUrl:'https://example.test/?art='+material,
+    imageFile:material+'-'+orientation+'.jpg'
+  })));
+  for(let day=0;day<20;day++){
+    const date=new Date(Date.UTC(2026,9,23+day)).toISOString().slice(0,10);
+    const featured=selectEveningThreadsArtwork(archive,date);
+    materials.add(featured.material);
+    assert.ok(archive.includes(featured),'Featured work must be drawn from archived studies');
+    assert.deepEqual(selectedSocialJobs(date,2,'threads'),['marker-landscape'],
+      'One central evening Threads publisher must feature the archive');
+    for(const slot of [0,1,2]){
+      const pins=selectedSocialJobs(date,slot,'pinterest');
+      assert.equal(pins.length,1);
+      assert.ok(pins[0].endsWith('-portrait'),'Pins must favour original vertical studies');
+    }
+  }
+  assert.deepEqual([...materials].sort(),[...EVENING_MATERIAL_ROTATION].sort(),
+    'All five visual media must appear in the evening Threads cycle');
+  const main=readFileSync('.github/workflows/social-live.yml','utf8');
+  for(const fragment of [
+    'node automation/threads-evening-feature.mjs',
+    'gh release upload "$RELEASE_TAG" "/tmp/$ASSET" --clobber',
+    'steps.threads_feature_host.outputs.media_url || steps.host.outputs.media_url',
+    'steps.threads_feature.outputs.caption_b64 || steps.select.outputs.threads_caption_b64',
+    'steps.threads_feature.outputs.alt_text_b64 || steps.select.outputs.alt_text_b64'
+  ])assert.ok(main.includes(fragment),'Evening Threads workflow missing: '+fragment);
 });
