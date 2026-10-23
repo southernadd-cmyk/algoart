@@ -29,3 +29,18 @@ test('tower illustration projects real lower floor plans, rooms and bridges',()=
   assert.ok((svg.match(/<polygon /g)||[]).length>rows.length*2,
     'Real architectural massing must be drawn as faces, not repeated storey stripes');
 });
+
+test('tower illustration shows the actual civic square and both permanent plaza artworks',()=>{
+  const svg=read('gallery/visit/tower-still.svg');
+  const square=svg.match(/<g class="entrance-square">([\s\S]*?)<\/g>/);
+  assert.ok(square,'The entrance square must be present in the published asset');
+  assert.match(square[1],/<polygon /,'Square must have a paved surface');
+  const sculptureGroups=[...svg.matchAll(/<g class="outdoor-sculpture" data-sculpture="([^"]+)">([\s\S]*?)<\/g>/g)];
+  assert.deepEqual(sculptureGroups.map(group=>group[1]),['trajectories','divisions'],
+    'The exact two fixed outdoor compositions must be shown, in their intended order');
+  for(const [,,drawing] of sculptureGroups){
+    assert.ok((drawing.match(/<path /g)||[]).length>=8,
+      'Each artwork needs its frame, feet, and actual internal composition');
+  }
+  assert.doesNotMatch(svg,/fill="undefined"/,'Every architectural face needs a real material colour');
+});
