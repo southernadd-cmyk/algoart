@@ -31,14 +31,23 @@ test('public metadata and essential production assets exist',()=>{
   assert.match(html,/class="algo-global-header gallery-global-header"/);
   assert.match(html,/--gallery-ui-bottom/);
   assert.match(html,/ResizeObserver\(update\)/);
-  assert.match(html,/gallery\.css\?v=welcome-clearance-20261023/);
+  assert.match(html,/gallery\.css\?v=accessibility-20261023/);
   assert.match(html,/\.\.\/\.\.\/css\/nav-lettering\.css/);
   assert.match(html,/\.\.\/\.\.\/js\/nav-lettering\.js/);
   assert.match(html,/<nav class="algo-site-nav" aria-label="Site navigation">/);
   assert.match(html,/data-algo-nav href="\.\.\/\.\.\/">try it out<\/a>/);
-  assert.match(html,/data-algo-nav href="\.\.\/" aria-current="page">daily gallery<\/a>/);
+  assert.match(html,/data-algo-nav href="\.\.\/">daily gallery<\/a>/);
+  assert.doesNotMatch(html,/aria-current="page"/);
   assert.match(html,/data-algo-nav href="\.\.\/\.\.\/about\/">how it works<\/a>/);
   assert.match(html,/class="hint" id="hint">W A S D move · arrow keys look · Shift faster<\/div>/);
+  assert.match(html,/id="infoMeta"/);
+  assert.match(html,/Dates marked with a dot/);
+  assert.match(html,/Each daily collection occupies its own floor/);
+  assert.doesNotMatch(html,/Chrome loading diagnosis/);
+  const app=read(resolve(root,'gallery-v2.js'));
+  assert.doesNotMatch(app,/window\\.prompt\\(/);
+  assert.doesNotMatch(app,/Temporary diagnostic for the unexplained entrance overlay/);
+  assert.match(app,/id="infoMeta"|\\$\\('infoMeta'\\)/);
   for(const file of [
     'models/quaternius-male-meshopt.glb',
     'models/quaternius-female-meshopt.glb',
