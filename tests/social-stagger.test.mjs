@@ -21,7 +21,8 @@ test('every social publication job staggers after hosting and before publishing'
   const workflows=['social-live','portrait-live','action-live','watercolor-live','watercolour-live','oil-live'];
   for(const name of workflows){
     const source=readFileSync('.github/workflows/'+name+'.yml','utf8');
-    const host=source.indexOf('      - name: Host image publicly');
+    const host=Math.max(source.indexOf('      - name: Host image publicly'),
+      source.indexOf('      - name: Verify frozen '));
     const stagger=source.indexOf('      - name: Stagger social publication (5–20 minutes)');
     const publish=source.indexOf('      - name: Publish to Instagram');
     assert.ok(host>=0&&stagger>host&&publish>stagger,
