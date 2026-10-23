@@ -4,6 +4,11 @@ name: Backfill historical 3D artwork textures
 # Run once after the texture exporter has been verified.
 on:
   workflow_dispatch:
+  # A one-time repository marker lets the connected GitHub app run this
+  # workflow without using a personal access token or a terminal.
+  push:
+    paths:
+      - 'automation/gallery-3d-textures-backfill.trigger'
 
 permissions:
   contents: write
