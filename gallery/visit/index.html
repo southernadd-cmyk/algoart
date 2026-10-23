@@ -39,24 +39,19 @@
 </script>
 <script type="module">
 (async()=>{
-  const started=performance.now();
   const enter=document.getElementById('enter');
   // This entry point is intentionally independent of the large Three.js graph:
   // Chrome can now report a failed import instead of waiting indefinitely.
   if(enter?.disabled)enter.textContent='Loading gallery scripts…';
-  console.info('[Gallery startup] requesting application modules');
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
-    const importStarted=performance.now();
-    console.info('[Gallery startup] importing gallery application');
     await import('./gallery-v2.js?v=gallery-public-route-20261023');
-    console.info('[Gallery startup] application modules evaluated',Math.round(performance.now()-importStarted)+'ms import,',Math.round(performance.now()-started)+'ms total');
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
     window.__galleryStartupError='Module import failed: '+(error?.message||String(error));
     const box=document.getElementById('error');
-    if(box){box.textContent=window.__galleryStartupError;box.hidden=false;}
+    if(box){box.textContent='The virtual gallery could not load. Please reload or continue in the 2D gallery below.';box.hidden=false;}
     if(enter){enter.textContent='Gallery unavailable';enter.disabled=true;}
   }
 })();
@@ -82,8 +77,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   const watchdog=setInterval(()=>{
     if(!enter?.disabled){clearInterval(watchdog);return;}
     if(performance.now()-started<12000)return;
-    const stage=enter.textContent;
-    diagnostic.textContent='Chrome loading diagnosis — '+stage+'. '+(window.__galleryStartupError||'No JavaScript error captured. Check Console for [Gallery startup] messages.');
+    console.warn('[Gallery startup] Slow startup',enter.textContent,window.__galleryStartupError||'No captured error');
+    diagnostic.textContent='The virtual gallery is taking longer than expected. Please reload or continue in the 2D gallery below.';
     diagnostic.hidden=false;
     clearInterval(watchdog);
   },1000);
@@ -101,7 +96,7 @@ window.addEventListener('load',()=>{
     const observer=new MutationObserver(()=>{
       if(!enter.disabled){
         clearTimeout(timer);
-        if(error.textContent.startsWith('The 3D gallery is taking too long'))error.hidden=true;
+        if(error.textContent.startsWith('The 3D gallery is taking too long') || error.textContent.startsWith('The virtual gallery is taking longer'))error.hidden=true;
         observer.disconnect();
       }
     });
@@ -117,7 +112,7 @@ window.addEventListener('load',()=>{
   <div class="algo-global-brand"><a class="brand" href="../../">PROPORTION PIECE</a></div>
   <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
   <p class="algo-global-question">Can one number compose a drawing?</p>
-  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../" aria-current="page">daily gallery</a><a data-algo-nav href="../../about/">how it works</a></nav>
+  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../">daily gallery</a><a data-algo-nav href="../../about/">how it works</a></nav>
 </header>
 <div class="topbar" role="group" aria-label="Virtual exhibition controls">
   <div class="identity"><span class="section-name">Virtual gallery</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
@@ -157,6 +152,7 @@ window.addEventListener('load',()=>{
   <div class="info-body">
     <button class="info-close" id="closeInfo" type="button" aria-label="Close artwork information">×</button>
     <h2 id="infoTitle"></h2>
+    <p class="info-meta" id="infoMeta"></p>
     <p id="infoSeed"></p>
     <a id="openArt" href="../../" target="_blank" rel="noopener noreferrer">Explore this drawing ↗</a>
   </div>
@@ -169,7 +165,7 @@ window.addEventListener('load',()=>{
   <input id="liftMonth" type="month" min="2026-10">
   <div class="lift-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
   <div class="lift-days" id="liftDays" aria-label="Gallery dates for selected month"></div>
-  <p class="lift-note">Red dates have a published exhibition. Earliest date is ground floor; newer dates ascend.</p>
+  <p class="lift-note">Dates marked with a dot have a published exhibition. Earliest date is ground floor; newer dates ascend.</p>
   <p id="liftTravel" hidden role="status"></p>
 </section>
 <section id="liftAnimation" class="lift-animation" hidden role="status" aria-live="polite">
@@ -193,7 +189,7 @@ window.addEventListener('load',()=>{
   <div class="welcome-content">
     <div class="eyebrow">An exhibition built by its drawings</div>
     <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
-    <p>Every daily collection becomes its own building. Landscape studies hang on the walls; portrait studies become sculptures made from the actual drawn lines and the visible pigment boundaries of each material. Choose your route through the work.</p>
+    <p>Each daily collection occupies its own floor in a growing tower. Landscape studies hang on the walls; portrait studies become sculptures made from the actual drawn lines and the visible pigment boundaries of each material. Choose your route through the work.</p>
     <p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, E to inspect artwork, L to choose a floor. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
     <a id="welcomeArchive" href="../">See the original 2D edition ↗</a>
