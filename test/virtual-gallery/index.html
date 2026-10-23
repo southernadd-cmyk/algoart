@@ -51,7 +51,9 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
+    window.__galleryStage='Importing bundled JavaScript';
     await import('../../gallery/visit/gallery-bundle.js?v=local-three-test-20261023');
+    window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
     window.__galleryStartupError='Module import failed: '+(error?.message||String(error));
@@ -66,6 +68,12 @@
 // provide a useful message instead of leaving the preparation text forever.
 // Capture module/CDN failures even if the window load event never fires.
 window.__galleryStartupError='';
+window.__galleryStage='Waiting for module import';
+window.__galleryDebugEvents=[];
+for(const level of ['log','warn','error']){
+ const original=console[level].bind(console);
+ console[level]=(...args)=>{window.__galleryDebugEvents.push(level+': '+args.map(x=>x instanceof Error?x.message:String(x)).join(' '));window.__galleryDebugEvents=window.__galleryDebugEvents.slice(-12);original(...args);};
+}
 window.addEventListener('error',event=>{
   const resource=event.target?.src||event.target?.href;
   window.__galleryStartupError=resource
@@ -83,7 +91,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(!enter?.disabled){clearInterval(watchdog);return;}
     if(performance.now()-started<12000)return;
     console.warn('[Gallery startup] Slow startup',enter.textContent,window.__galleryStartupError||'No captured error');
-    diagnostic.textContent='The virtual gallery is taking longer than expected. Please reload or continue in the 2D gallery below.';
+    diagnostic.textContent='Gallery startup diagnostic: '+(window.__galleryStartupError||window.__galleryStage||'Unknown')+'; button: '+enter.textContent+'; recent: '+window.__galleryDebugEvents.slice(-3).join(' | ');
     diagnostic.hidden=false;
     clearInterval(watchdog);
   },1000);
