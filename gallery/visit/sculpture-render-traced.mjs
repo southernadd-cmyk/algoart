@@ -283,9 +283,12 @@ async function renderPreparedReliefs({entries,core,study,onArtworkMesh,onFirstMe
       side=sideCache.get(entry.side);
     }else{
       const key=entry.color+'|'+entry.opacity;
-      if(!inkCache.has(key))inkCache.set(key,colouredMaterial({
-        stroke:entry.color,opacity:entry.opacity
-      },type,new Map()));
+      if(!inkCache.has(key))inkCache.set(key,new THREE.MeshStandardMaterial({
+        color:entry.color,roughness:profile.roughness,
+        metalness:type==='oil'?.07:0,
+        transparent:type==='tissue'||type==='watercolour',
+        opacity:entry.opacity,side:THREE.DoubleSide
+      }));
       cap=side=inkCache.get(key);
     }
     const obj=solid(shape,entry.depth,cap,side,entry.z,study);
@@ -293,7 +296,7 @@ async function renderPreparedReliefs({entries,core,study,onArtworkMesh,onFirstMe
     if(created===1)onFirstMesh?.();
     // Even precomputed polygon extrusion needs work; amortise it over frames.
     if(created%8===0)await new Promise(requestAnimationFrame);
-    if(core.parent?.parent?.userData.galleryDisposed)return true;
+    if(core.parent?.userData.galleryDisposed)return true;
   }
   return created>0;
 }
