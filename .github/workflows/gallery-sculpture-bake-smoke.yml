@@ -1,0 +1,58 @@
+name: Validate prebuilt sculpture geometry
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'automation/gallery-sculpture-bake-smoke.trigger'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install generator and Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          python3 -m pip install --break-system-packages 'Pillow>=10,<13'
+      - name: Start archive server
+        run: |
+          python3 -m http.server 4173 >/tmp/gallery-sculpture-bake-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/gallery/visit/sculpture-bake.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/gallery-sculpture-bake-http.log
+          exit 1
+      - name: Produce WebP images for representative archived floor
+        run: python3 automation/build-gallery-3d-textures.py --date 2026-10-22
+      - name: Bake the exact material and vector contours
+        run: node automation/build-gallery-sculptures.mjs --date 2026-10-22
+      - name: Validate mobile and desktop sculptures
+        run: |
+          python3 - <<'PY'
+          import json,gzip
+          from pathlib import Path
+          meta=json.loads(Path('gallery/2026-10-22/meta.json').read_text())
+          data=json.loads(gzip.decompress(Path('gallery/2026-10-22/3d/sculptures.json.gz').read_bytes()))
+          portraits={e['imageFile'] for e in meta['entries'] if e.get('orientation')=='portrait'}
+          assert data['version']==1 and data['date']=='2026-10-22'
+          assert set(data['studies'])==portraits
+          for variants in data['studies'].values():
+            for quality in ('desktop','mobile'):
+              shapes=variants[quality]
+              assert len(shapes)>0, 'No contours in '+quality
+              for shape in shapes:
+                assert len(shape['points'])>=3
+                assert shape['kind'] in ('ink','paint')
+                assert 0<shape['depth']<1
+          print('Validated',len(portraits),'prebuilt sculptures in both sizes')
+          PY
