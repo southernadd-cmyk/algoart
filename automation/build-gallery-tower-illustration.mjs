@@ -69,11 +69,26 @@ function solidRoom(room,level,base){
   const sides=Object.entries(unit)
     .filter(([,v])=>v.x*view.x+v.z*view.z>.025)
     .sort((a,b)=>(a[1].x*view.x+a[1].z*view.z)-(b[1].x*view.x+b[1].z*view.z));
-  const tones=['#d2d6cb','#dddcd2','#e2e1d6','#cdd3c9'];
+  const tones=['#ab9180','#b99d8b','#c1a491','#a88c7c'];
   for(const [side] of sides){
     const light=side==='south'||side==='east';
     const tone=tones[(room.index+level+(light?2:0))%tones.length];
-    shape(face(room,side,bottom,top),tone,'#65756a',1.35);
+    shape(face(room,side,bottom,top),tone,'#69584e',1.35,'class="solid-brick-wall"');
+    // Staggered mortar courses: solid brick, not glass panels.
+    const wallFace=face(room,side,bottom,top);
+    for(let course=1;course<7;course++){
+      const t=course/7;
+      const a=wallFace[0].map((v,k)=>v+(wallFace[3][k]-v)*t);
+      const b=wallFace[1].map((v,k)=>v+(wallFace[2][k]-v)*t);
+      line(a,b,'#e3d0bb',.7,'opacity=".52" class="brick-mortar"');
+      for(let brick=1;brick<5;brick++){
+        const frac=(brick+((course%2)*.5))/5;
+        if(frac>=1)continue;
+        const baseEdge=a.map((v,k)=>v+(b[k]-v)*frac);
+        const topEdge=baseEdge.map((v,k)=>v+(wallFace[3][k]-wallFace[0][k])/7);
+        line(baseEdge,topEdge,'#705d50',.55,'opacity=".30" class="brick-mortar"');
+      }
+    }
     const sill=face(room,side,bottom+.35,bottom+.35);
     line(sill[0],sill[1],'#9ba99c',.9,'opacity=".52"');
     const lintel=face(room,side,top-.35,top-.35);
@@ -90,7 +105,7 @@ function solidRoom(room,level,base){
         [cx+along.x*half,bottom+DOOR_HEIGHT,cz+along.z*half],
         [cx-along.x*half,bottom+DOOR_HEIGHT,cz-along.z*half]
       ];
-      shape(door,'#7d9389','#75877f',.7,'opacity=".32"');
+      shape(door,'#77685d','#69594f',.7,'opacity=".88" class="solid-door-recess"');
     }
   }
   shape([
@@ -117,9 +132,9 @@ function glassBridge(hall,base){
   const y1=base+a.y,y2=base+b.y;
   const aa=ends(a,y1),bb=ends(b,y2);
   const ah=ends(a,y1+DOOR_HEIGHT),bh=ends(b,y2+DOOR_HEIGHT);
-  shape([aa[0],bb[0],bh[0],ah[0]],'#bed2cd','#5d7c75',1.4,'opacity=".94"');
-  shape([aa[1],bb[1],bh[1],ah[1]],'#cbdcd7','#63827a',1.4,'opacity=".87"');
-  shape([ah[0],bh[0],bh[1],ah[1]],'#d5e3df','#63827a',1.05,'opacity=".9"');
+  shape([aa[0],bb[0],bh[0],ah[0]],'#bed2cd','#5d7c75',1.4,'opacity=".94" class="glass-walkway"');
+  shape([aa[1],bb[1],bh[1],ah[1]],'#cbdcd7','#63827a',1.4,'opacity=".87" class="glass-walkway"');
+  shape([ah[0],bh[0],bh[1],ah[1]],'#d5e3df','#63827a',1.05,'opacity=".9" class="glass-walkway"');
   // Actual cross-brace spans, not imaginary projecting wings.
   line(aa[0],bh[0],'#849d96',.9,'opacity=".7"');
   line(aa[1],bh[1],'#849d96',.9,'opacity=".7"');
