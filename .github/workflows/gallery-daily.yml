@@ -167,6 +167,14 @@ jobs:
           DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
           python3 automation/build-gallery-previews.py --date "$DAY" --force
 
+      # The 3D visitor never needs the archive JPEG's original pixel count.
+      # Generate both browser-targeted sizes after the LAST artwork slot.
+      - name: Generate WebP textures for the 3D exhibition
+        shell: bash
+        run: |
+          DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
+          python3 automation/build-gallery-3d-textures.py --date "$DAY"
+
       # This runs only after the final artwork slot has been archived, so the
       # baked geometry and daily archive share the same seed signatures.
       - name: Prebuild complete 3D tower geometry
@@ -213,6 +221,7 @@ jobs:
           DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
           test -s "gallery/$DAY/index.html"
           test -s "gallery/$DAY/archive-preview.jpg"
+          test -s "gallery/$DAY/3d/manifest.json"
           DAY="$DAY" python3 - <<'PY'
           import os
           from pathlib import Path
@@ -223,7 +232,19 @@ jobs:
               image.verify()
           with Image.open(preview) as image:
               assert image.size == (840, 600), f'{preview}: {image.size}'
-          print(f'Verified complete mosaic: {preview}')
+          import json
+          meta = json.loads((Path('gallery') / date / 'meta.json').read_text())
+          manifest = json.loads((Path('gallery') / date / '3d' / 'manifest.json').read_text())
+          assert manifest['version'] == 1
+          assert set(manifest['images']) == {entry['imageFile'] for entry in meta['entries']}
+          for variants in manifest['images'].values():
+              for label, cap in [('desktop', 1100), ('mobile', 640)]:
+                  asset = Path('gallery') / date / variants[label]
+                  assert asset.is_file(), f'Missing {label} texture: {asset}'
+                  with Image.open(asset) as img:
+                      assert img.format == 'WEBP', f'{asset} is not WebP'
+                      assert max(img.size) <= cap, f'{asset} exceeds {cap}px'
+          print(f'Verified complete mosaic and pre-sized 3D textures: {preview}')
           PY
           COUNT="$(find "gallery/$DAY" -maxdepth 1 -name '*.jpg' | wc -l)"
           # New materials add artwork without changing the historical batch size.
