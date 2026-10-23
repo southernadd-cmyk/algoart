@@ -88,7 +88,7 @@ try{
     const {context,page,requests}=await newPage();
     await page.goto(url(c.params),{waitUntil:'domcontentloaded'});
     await ready(page,c.params.seed,c.material);
-    const state=await page.evaluate(()=>({
+    const state=await page.evaluate(({material,options})=>({
       version:window.AlgoArt.rendererVersion,
       material:document.getElementById('materialStyle').value,
       oilV1:typeof window.AlgoArt.renderOilPaintV1,
@@ -97,12 +97,15 @@ try{
       waterS:typeof window.AlgoArt.renderWatercolourV2S,
       tissue:window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion,
       action:typeof window.AlgoArt.renderActionPainting,
-      loaded:window.AlgoArt.materialScriptsReady(c.material,{
+      loaded:window.AlgoArt.materialScriptsReady(material,options)
+    }),{
+      material:c.material,
+      options:{
         tissueRevision:c.params.tissue?Number(c.params.tissue):7,
         watercolourRevision:c.params.material?.replace('watercolour-','')||'v2s',
         oilRevision:c.params.material?.replace('oil-','')||'v4'
-      })
-    }));
+      }
+    });
     assert.equal(state.loaded,true,'Missing material script dependency: '+c.check);
     assert.equal(state.version,Number(c.params.v),'Old renderer must stay pinned: '+c.check);
     if(c.check==='tissueV6')assert.equal(state.tissue,6,'Tissue V6 revision changed');
