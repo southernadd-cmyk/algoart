@@ -7,6 +7,11 @@ on:
     # Early morning UTC; the generator resolves the calendar day in Europe/London.
     - cron: '15 4 * * *'
   workflow_dispatch:
+    inputs:
+      date:
+        description: 'Edition to recover (YYYY-MM-DD); blank uses London today'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -23,6 +28,7 @@ jobs:
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+      SOCIAL_DATE: ${{ inputs.date || '' }}
 
     steps:
       - name: Checkout
@@ -50,6 +56,12 @@ jobs:
           done
           cat /tmp/algoart-gallery-http.log
           exit 1
+
+      - name: Validate requested edition date
+        run: |
+          if [ -n "$SOCIAL_DATE" ]; then
+            [[ "$SOCIAL_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || exit 1
+          fi
 
       - name: Generate deterministic daily batch
         run: npm run social:generate
@@ -164,7 +176,7 @@ jobs:
       - name: Build final daily gallery mosaic
         shell: bash
         run: |
-          DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
+          DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
           python3 automation/build-gallery-previews.py --date "$DAY" --force
 
       # The 3D visitor never needs the archive JPEG's original pixel count.
@@ -175,7 +187,7 @@ jobs:
       - name: Generate WebP textures for the 3D exhibition
         shell: bash
         run: |
-          DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
+          DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
           python3 automation/build-gallery-3d-textures.py --date "$DAY"
 
       # Baking uses the real generator in a headless browser only ONCE,
@@ -183,7 +195,7 @@ jobs:
       - name: Prebuild portrait sculptures for the daily 3D floor
         shell: bash
         run: |
-          DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
+          DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
           node automation/build-gallery-sculptures.mjs --date "$DAY"
 
       # This runs only after the final artwork slot has been archived, so the
@@ -235,7 +247,7 @@ jobs:
           "
           test -s sitemap.xml
           test -s robots.txt
-          DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
+          DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
           test -s "gallery/$DAY/index.html"
           test -s "gallery/$DAY/archive-preview.jpg"
           test -s "gallery/$DAY/3d/manifest.json"
@@ -297,7 +309,7 @@ jobs:
             echo "Daily gallery already matches the deterministic batch."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            DAY="$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")"
+            DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
             git commit -m "Publish ALGO ART daily gallery $DAY"
             git pull --rebase origin main
             git push origin HEAD:main
