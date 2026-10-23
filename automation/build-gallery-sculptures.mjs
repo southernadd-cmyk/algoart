@@ -6,7 +6,7 @@ import zlib from 'node:zlib';
 import {chromium} from 'playwright';
 
 const root=process.cwd();
-const baseUrl=process.env.GALLERY_BAKE_URL||'http://127.0.0.1:4173/algoart/';
+const baseUrl=process.env.GALLERY_BAKE_URL||'http://127.0.0.1:4173/';
 const args=process.argv.slice(2);
 const option=name=>args[args.indexOf(name)+1];
 const dates=[];
