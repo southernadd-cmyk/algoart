@@ -48,11 +48,11 @@ test('tower illustration shows the actual civic square and both permanent plaza 
 test('illustrated entrance is visually clear of the Recursive Divisions sculpture',()=>{
   const svg=read('gallery/visit/tower-still.svg');
   const doorway=svg.match(/<polygon points="([^"]+)" fill="#314940"/);
-  const shifted=svg.match(/<g class="preview-sculpture-offset" transform="translate\\((\\d+) 0\\)">\\s*(<g class="outdoor-sculpture" data-sculpture="divisions">[\\s\\S]*?<\\/g>)\\s*<\\/g>/);
+  const shifted=svg.match(/<g class="preview-sculpture-offset" transform="translate\((\d+) 0\)">\s*(<g class="outdoor-sculpture" data-sculpture="divisions">[\s\S]*?<\/g>)\s*<\/g>/);
   assert.ok(doorway,'Entrances must be drawn');
   assert.ok(shifted,'The preview relief should be displaced without altering the 3D monument');
   const doorXs=doorway[1].trim().split(/[ ,]+/).map(Number).filter((_,i)=>i%2===0);
-  const reliefXs=[...shifted[2].matchAll(/<path d="M(-?[\\d.]+) [-\\d.]+L(-?[\\d.]+) [-\\d.]+"/g)]
+  const reliefXs=[...shifted[2].matchAll(/<path d="M(-?[\d.]+) [-\d.]+L(-?[\d.]+) [-\d.]+"/g)]
     .flatMap(m=>[Number(m[1]),Number(m[2])]);
   for(const polygon of shifted[2].matchAll(/<polygon points="([^"]+)"/g))
     reliefXs.push(...polygon[1].trim().split(/[ ,]+/).map(Number).filter((_,i)=>i%2===0));
