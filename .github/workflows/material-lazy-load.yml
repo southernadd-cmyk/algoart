@@ -1,0 +1,46 @@
+name: Lazy material loading and saved artwork regression
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'js/app.js'
+      - 'js/material-loader.js'
+      - 'tests/material-lazy-load.browser.mjs'
+      - 'tests/fast-editor-markup.test.mjs'
+      - '.github/workflows/material-lazy-load.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'js/app.js'
+      - 'js/material-loader.js'
+      - 'tests/material-lazy-load.browser.mjs'
+      - '.github/workflows/material-lazy-load.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/algoart-lazy.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/algoart-lazy.log
+          exit 1
+      - name: Baseline renderer pixel parity and lightweight markup
+        run: |
+          npm run test:renderer-lock
+          node tests/fast-editor-markup.test.mjs
+      - name: Lazy load cold Marker and archived material links
+        run: node tests/material-lazy-load.browser.mjs
