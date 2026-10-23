@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Offline sculpture geometry builder</title>
+<body>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {createPortraitSculpture} from './sculpture-render-traced.mjs';
+import {resolveStudyMaterial} from './study-material.mjs';
+
+const round=(v)=>Math.round(v*10000)/10000;
+window.bakeStudy=async(item,quality)=>{
+  if(!['desktop','mobile'].includes(quality))throw Error('Unknown sculpture quality');
+  const archiveUrl=new URL('../'+item.date+'/',location.href);
+  const study={
+    seed:item.seed,
+    title:item.title||'Artwork',
+    href:item.shareUrl,
+    image:new URL(item.imageFile,archiveUrl).href,
+    imageOptimized:new URL('3d/'+item.imageFile.replace(/\.[^.]+$/,'')+'-'+(quality==='mobile'?'640':'1100')+'.webp',archiveUrl).href,
+    material:resolveStudyMaterial(item.shareUrl,item.material||'marker')
+  };
+  const entries=[];
+  let finished=false;
+  const done=new Promise((resolve,reject)=>{
+    const fail=setTimeout(()=>reject(Error('Timed out tracing '+study.seed)),70000);
+    const scene=new THREE.Scene();
+    createPortraitSculpture({
+      scene,study,quality,placement:{x:0,y:0,z:0,yaw:0},
+      labelTexture:()=>{
+        const canvas=document.createElement('canvas');
+        canvas.width=4;canvas.height=4;
+        return new THREE.CanvasTexture(canvas);
+      },
+      onArtworkMesh(mesh){
+        const {shapes,options}=mesh.geometry.parameters||{};
+        const shape=Array.isArray(shapes)?shapes[0]:shapes;
+        if(!shape||!options)throw Error('Missing extrusion source outline for '+study.seed);
+        const points=shape.getPoints().map(p=>[round(p.x),round(p.y)]);
+        const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+        const cap=mats[0],side=mats[1]||cap;
+        entries.push({
+          kind:cap?.map?'paint':'ink',
+          points,
+          depth:round(options.depth),
+          z:round(mesh.position.z+options.depth/2),
+          color:'#'+cap.color.getHexString(),
+          side:'#'+side.color.getHexString(),
+          opacity:round(cap.opacity)
+        });
+      },
+      onComplete(result){
+        if(finished)return;finished=true;clearTimeout(fail);
+        if(!entries.length || (result.strokeCount+result.pigmentCount)<1){
+          reject(Error('No baked shapes for '+study.seed));
+        }else resolve({seed:study.seed,quality,entries});
+      }
+    });
+  });
+  return await done;
+};
+window.bakerReady=true;
+</script>
+</body>
+</html>
