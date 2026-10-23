@@ -1,12 +1,13 @@
 {
   "version": 1,
   "date": "2026-10-23",
-  "count": 5,
+  "count": 6,
   "series": [
     "Golden Trajectories",
     "Recursive Divisions",
     "Orbital Studies",
-    "Automatic Marks"
+    "Automatic Marks",
+    "Constructed Forms"
   ],
   "entries": [
     {
@@ -251,6 +252,56 @@
         "grain": 11
       },
       "altText": "Action painting from PROPORTION PIECE's Automatic Marks system, seed ACL-20261023-01-48619. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
+    },
+    {
+      "id": "2026-10-23-ACP01",
+      "title": "Constructed Forms — Action Painting Study 06",
+      "orientation": "portrait",
+      "material": "action",
+      "seed": "ACP-20261023-01-23845",
+      "mode": "geometric",
+      "series": "Constructed Forms",
+      "imageFile": "2026-10-23-action-portrait-01-geometric-ACP-20261023-01-23845.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACP-20261023-01-23845&mode=geometric&fmt=portrait&el=52&den=47&cx=63&neg=22&phi=84&rec=6&spi=77&ga=92&nest=46&pen=paint&th=11&wob=27&od=2&op=75&pr=42&dry=39&curve=59&shape=54&overlap=65&rot=82&ln=1&ci=1&re=1&po=1&ar=1&pal=warm&cols=8&sat=90&bri=47&paper=%23f5f0e6&grain=15&material=action-v2&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "geometric",
+        "orientation": "portrait",
+        "series": "Constructed Forms",
+        "seed": "ACP-20261023-01-23845",
+        "elements": 52,
+        "density": 47,
+        "complexity": 63,
+        "negativeSpace": 22,
+        "phiStrength": 84,
+        "recursion": 6,
+        "spiralInfluence": 77,
+        "goldenAngle": 92,
+        "nesting": 46,
+        "pen": "paint",
+        "thickness": 11,
+        "wobble": 27,
+        "overdraw": 2,
+        "opacity": 75,
+        "pressure": 42,
+        "dryness": 39,
+        "curveBias": 59,
+        "shapeAmount": 54,
+        "overlap": 65,
+        "rotation": 82,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "warm",
+        "colourCount": 8,
+        "saturation": 90,
+        "brightness": 47,
+        "paper": "#f5f0e6",
+        "grain": 15
+      },
+      "altText": "Action painting from PROPORTION PIECE's Constructed Forms system, seed ACP-20261023-01-23845. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
