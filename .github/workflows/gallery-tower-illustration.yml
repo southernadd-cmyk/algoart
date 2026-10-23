@@ -1,0 +1,54 @@
+name: Rebuild actual tower illustration
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'automation/gallery-tower-illustration.trigger'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gallery-preview-geometry
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Redraw the actual lower gallery geometry
+        run: node automation/build-gallery-tower-illustration.mjs
+      - name: Validate rooms, bridges, and cropped tower height
+        run: node --test tests/gallery-tower-illustration.test.mjs
+      - name: Check SVG markup
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          p=Path('gallery/visit/tower-still.svg')
+          ET.parse(p)
+          assert p.stat().st_size>3000
+          print('Valid architectural SVG:',p.stat().st_size,'bytes')
+          PY
+      - name: Publish corrected tower preview
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/tower-still.svg
+          if git diff --cached --quiet; then
+            echo "Tower preview already correct"
+            exit 0
+          fi
+          git commit -m "Publish geometrically faithful cropped tower illustration"
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 2
+          done
+          exit 1
