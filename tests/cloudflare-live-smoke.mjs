@@ -36,8 +36,16 @@ const uploaded=await get('/share/preload?c='+token,{method:'POST',headers:{
   'Origin':'https://southernadd-cmyk.github.io','Content-Type':'application/json'
 },body:JSON.stringify({jpeg:jpeg.toString('base64')})});
 assert.equal(uploaded.status,200,'Real JPEG upload to Cloudflare KV must succeed: '+await uploaded.text());
-const roundtrip=await get('/share/image?c='+token);
-assert.equal(roundtrip.status,200,'KV stored artwork must be retrievable');
+// Cloudflare KV is eventually consistent across PoPs. Test within the
+// documented propagation window, not immediately after PUT.
+let roundtrip;
+for(let attempt=0;attempt<18;attempt++){
+  roundtrip=await get('/share/image?c='+token);
+  if(roundtrip.status===200)break;
+  assert.equal(roundtrip.status,404,'Unexpected response while KV propagates');
+  await new Promise(resolve=>setTimeout(resolve,5000));
+}
+assert.equal(roundtrip.status,200,'KV image still missing after 90-second propagation window');
 assert.match(roundtrip.headers.get('content-type')||'',/image\/jpeg/);
 assert.deepEqual(Buffer.from(await roundtrip.arrayBuffer()),jpeg,'Stored JPEG bytes must be exact');
 console.log('PASS real JPEG upload and Cloudflare KV byte-for-byte roundtrip');
