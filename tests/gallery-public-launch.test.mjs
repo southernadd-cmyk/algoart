@@ -29,6 +29,9 @@ test('public metadata and essential production assets exist',()=>{
   assert.doesNotMatch(html,/noindex/);
   assert.match(html,/gallery-v2\.js\?v=/);
   assert.match(html,/class="algo-global-header gallery-global-header"/);
+  assert.match(html,/--gallery-ui-bottom/);
+  assert.match(html,/ResizeObserver\(update\)/);
+  assert.match(html,/gallery\.css\?v=welcome-clearance-20261023/);
   assert.match(html,/\.\.\/\.\.\/css\/nav-lettering\.css/);
   assert.match(html,/\.\.\/\.\.\/js\/nav-lettering\.js/);
   assert.match(html,/<nav class="algo-site-nav" aria-label="Site navigation">/);

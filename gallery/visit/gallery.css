@@ -130,3 +130,45 @@ body .algo-global-header.gallery-global-header{
   .topbar .top-actions>a{display:none}
   .plan-view{top:150px}
 }
+
+
+/* Welcome starts below the shared header and its gallery controls. The
+   measured offset also handles browser zoom, wrapping, and XR controls. */
+:root{--gallery-ui-bottom:132px}
+.welcome{
+  top:var(--gallery-ui-bottom);
+  bottom:0;
+  align-items:safe center;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  pointer-events:auto;
+  padding-block:12px;
+}
+.welcome-content{
+  width:min(640px,100%);
+  padding:clamp(16px,2.2vw,30px) clamp(22px,4.5vw,68px);
+  margin-block:auto;
+}
+.welcome h1{
+  font-size:clamp(40px,4.2vw,66px);
+  line-height:1.04;
+  margin-bottom:18px;
+}
+.welcome .eyebrow{margin-bottom:12px}
+.welcome p{line-height:1.5;margin-bottom:13px;max-width:480px}
+.welcome .shortcuts{line-height:1.48}
+.welcome .enter{margin:16px 0 12px;padding:12px 20px}
+.plan-view{top:calc(var(--gallery-ui-bottom) + 18px)}
+@media(max-width:850px){
+  :root{--gallery-ui-bottom:152px}
+  .welcome-content{padding:20px 25px}
+  .welcome h1{font-size:clamp(36px,8vw,54px);margin-bottom:15px}
+  .welcome .shortcuts{font-size:11px}
+}
+@media(max-width:480px){
+  .welcome{padding-block:8px}
+  .welcome-content{padding:14px 20px 22px}
+  .welcome h1{font-size:clamp(35px,10vw,47px)}
+  .welcome p{font-size:13px;line-height:1.48}
+  .welcome .shortcuts{font-size:11px}
+}

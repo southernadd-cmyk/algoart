@@ -19,7 +19,7 @@
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/gallery/2026-10-22/archive-preview.jpg">
 <title>Virtual Exhibition | PROPORTION PIECE</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./gallery.css?v=site-navigation-20261023">
+<link rel="stylesheet" href="./gallery.css?v=welcome-clearance-20261023">
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=11">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -128,6 +128,29 @@ window.addEventListener('load',()=>{
     <div id="xr-controls" aria-label="Virtual reality controls"></div>
   </div>
 </div>
+<script>
+// Position the welcome screen below the *actual* site header and exhibition
+// controls (including when the VR button or viewport changes their height).
+// This runs before the 3D app loads, so it works on slow connections too.
+(()=>{
+  const navigation=document.querySelector('.gallery-global-header');
+  const controls=document.querySelector('.topbar');
+  const update=()=>{
+    const bottom=Math.ceil(Math.max(
+      navigation.getBoundingClientRect().bottom,
+      controls.getBoundingClientRect().bottom
+    ));
+    document.documentElement.style.setProperty('--gallery-ui-bottom',bottom+'px');
+  };
+  update();
+  if('ResizeObserver' in window){
+    const observer=new ResizeObserver(update);
+    observer.observe(navigation);
+    observer.observe(controls);
+  }
+  window.addEventListener('resize',update,{passive:true});
+})();
+</script>
 <div class="center-reticle" aria-hidden="true"></div>
 <aside class="info" id="info" hidden>
   <img id="infoImage" alt="">
