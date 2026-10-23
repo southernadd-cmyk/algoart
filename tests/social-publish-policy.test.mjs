@@ -78,7 +78,7 @@ test('every publisher applies the same policy to both publish and completion mar
 test('policy command prints only safe positive decisions, with no publishing calls',()=>{
   const args={SOCIAL_DATE:'2026-10-23',SOCIAL_SLOT:'0',SOCIAL_PUBLISH_JOB:'marker-landscape'};
   const stdout=execFileSync(process.execPath,['automation/social-publish-policy.mjs'],
-    {env:{...process.env,...args},encoding:'utf8'});
+    {env:{...process.env,...args,GITHUB_OUTPUT:''},encoding:'utf8'});
   for(const platform of platforms)assert.match(stdout,new RegExp(platform+'=(?:true|false)'));
   assert.doesNotMatch(stdout,/access.token|threads_publish|https:\/\/graph\./);
 });
