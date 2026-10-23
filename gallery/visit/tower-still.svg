@@ -6400,6 +6400,7 @@
 <path d="M448.41 394.63L470.12 404.42" fill="none" stroke="#b5a083" stroke-width="2" />
 <path d="M455.41 407.35L466.62 390.37" fill="none" stroke="#737b65" stroke-width="2" />
 </g>
+<g class="preview-sculpture-offset" transform="translate(28 0)">
 <g class="outdoor-sculpture" data-sculpture="divisions">
 <path d="M573.6 411.65L573.6 392.6" fill="none" stroke="#53534d" stroke-width="2.1" />
 <path d="M573.97 414.21L573.97 411.81" fill="none" stroke="#53534d" stroke-width="2" />
@@ -6422,6 +6423,7 @@
 <path d="M573.73 395.05L574.97 395.58" fill="none" stroke="#373a38" stroke-width="1.5" />
 <path d="M573.73 409.87L574.97 410.41" fill="none" stroke="#373a38" stroke-width="1.5" />
 <path d="M575.61 403.37L575.61 394.95" fill="none" stroke="#373a38" stroke-width="1.5" />
+</g>
 </g>
 <path d="M0 429L1200 429V480H0Z" fill="#a7aa9f"/>
 <path d="M0 429H1200" stroke="#e1e2d8" stroke-width="3.5"/>
