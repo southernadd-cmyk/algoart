@@ -85,7 +85,7 @@ try{
    'Toolbar ink must not alter saved SVG artwork');
  assert(art.intents.artworkURL.includes('?c='));
  assert.equal(new URL(art.intents.previewURL).host,
-   'algoart-composition-plugin.onrender.com');
+   'proportion-piece-social.mr-adam-clement.workers.dev');
  assert(new URL(art.intents.previewURL).pathname==='/share');
  assert([...art.intents.caption].length<300,
    'Selected artwork link is too long for Bluesky');
@@ -111,12 +111,11 @@ try{
    'A cached unversioned OG canonical could defeat the Threads fix');
  const imageURL=pageHTML.match(/property="og:image" content="([^"]+)"/)?.[1];
  assert(imageURL&&imageURL.includes('/share/image?c='));
- const response=await fetch(imageURL,{signal:AbortSignal.timeout(120000)});
- assert.equal(response.status,200,'Artwork image preview returned an error');
- assert.match(response.headers.get('content-type')||'',/image\/jpeg/);
- const bytes=new Uint8Array(await response.arrayBuffer());
- assert(bytes.length>14000,'Real artwork share image was empty');
- assert.equal(bytes[0],255);assert.equal(bytes[1],216);
+ // KV only serves previews after the editor uploads the JPEG.
+ // The browser upload and exact JPEG bytes are checked below; a separate
+ // live Cloudflare smoke test checks actual KV write/read roundtrip.
+ assert.equal(new URL(imageURL.replaceAll('&amp;','&')).pathname,'/share/image',
+   'OG image must point to the Worker image route');
 
  for(const [key,value] of Object.entries(art.original))
    assert.equal(art.restored[key],value,'Compact link lost '+key);
@@ -124,7 +123,7 @@ try{
  // Stub ONLY the network transport, preserving the actual JPEG pixels,
  // exact compact token and popup/composer navigation.
  let uploads=[];
- await desktop.route('https://algoart-composition-plugin.onrender.com/share/preload?c=*',
+ await desktop.route('https://proportion-piece-social.mr-adam-clement.workers.dev/share/preload?c=*',
    async route=>{
      const req=route.request(),headers={
        'access-control-allow-origin':new URL(base).origin,

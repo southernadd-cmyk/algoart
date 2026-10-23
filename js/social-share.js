@@ -51,7 +51,7 @@
         // Our already-hosted Render service responds with unique SSR tags
         // and a real PROPORTION PIECE canvas preview for each compact artwork.
         token=new URL(shortURL).searchParams.get('c'),
-        previewURL=token?'https://algoart-composition-plugin.onrender.com/share?c='+
+        previewURL=token?'https://proportion-piece-social.mr-adam-clement.workers.dev/share?c='+
           encodeURIComponent(token):shortURL,
         caption='PROPORTION PIECE '+previewURL,
         // Meta/Threads may cache the old (unversioned) generic preview
