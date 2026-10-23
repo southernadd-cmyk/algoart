@@ -1,0 +1,31 @@
+name: Cloudflare social preview Worker tests
+on:
+  pull_request:
+    paths:
+      - 'cloudflare/social-preview/**'
+      - 'wrangler.toml'
+      - 'tests/cloudflare-root-config.test.mjs'
+      - '.github/workflows/cloudflare-social-preview.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'cloudflare/social-preview/**'
+      - 'wrangler.toml'
+      - 'tests/cloudflare-root-config.test.mjs'
+      - '.github/workflows/cloudflare-social-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Worker syntax and API tests
+        run: |
+          node tests/cloudflare-root-config.test.mjs
+          node --check cloudflare/social-preview/src/worker.mjs
+          node --test cloudflare/social-preview/tests/worker.test.mjs

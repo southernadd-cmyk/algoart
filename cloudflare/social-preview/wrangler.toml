@@ -1,0 +1,9 @@
+name = "proportion-piece-social"
+main = "src/worker.mjs"
+compatibility_date = "2026-10-23"
+workers_dev = true
+
+# Existing free Workers KV namespace: proportion-piece-previews.
+[[kv_namespaces]]
+binding = "PREVIEW_KV"
+id = "7dc02116a78744ad959cce0cc8292b42"
