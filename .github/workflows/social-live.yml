@@ -27,7 +27,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
@@ -198,6 +198,12 @@ jobs:
           echo "media_url=$URL" >> "$GITHUB_OUTPUT"
           curl -fL --retry 4 --retry-delay 2 -o /tmp/host-check.jpg "$URL"
           test -s /tmp/host-check.jpg
+
+      # Delay only publication, after generating and hosting the verified artwork.
+      # One pause per orientation/material job; skip completed slots and dry runs.
+      - name: Stagger social publication (5–20 minutes)
+        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true') || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true'))
+        run: node automation/social-stagger.mjs
 
       - name: Publish to Instagram
         if: steps.gate.outputs.should_post == 'true' && steps.state.outputs.instagram_done != 'true'
