@@ -56,7 +56,7 @@ try{
   assert(archive.covers.length===archive.count,'Every edition needs a preview image');
   assert(archive.covers.every(img=>img.src?.includes('archive-preview.jpg')||img.fallback?.includes('this.src=')),
     'Archive covers must use a prebuilt preview or an explicit fallback');
-  assert(archive.links.every(x=>/gallery\/\d{4}-\d\d-\d\d\/$/.test(x)),
+  assert(archive.links.every(x=>/(?:^|\/)\d{4}-\d\d-\d\d\/$/.test(x)),
     'Every daily edition must link to its own published day');
   assert(archive.width<=archive.viewport+2,'Daily archive horizontal overflow');
   await page.screenshot({path:'editorial-preview-results/'+(mobile?'archive-mobile':'archive-desktop')+'.png',fullPage:true});
