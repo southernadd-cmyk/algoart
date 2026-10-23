@@ -1264,7 +1264,10 @@ async function loadSculpturePack(date,cache){
     const response=await fetch(url,{cache,signal:controller.signal});
     if(!response.ok||!response.body)return {};
     const inflated=response.body.pipeThrough(new DecompressionStream('gzip'));
-    const parsed=JSON.parse(await new Response(inflated).text());
+    const parsed=JSON.parse(await Promise.race([
+      new Response(inflated).text(),
+      new Promise((_,reject)=>controller.signal.addEventListener('abort',()=>reject(new DOMException('Sculpture pack timeout','AbortError')),{once:true}))
+    ]));
     return parsed.version===1&&parsed.date===date&&parsed.studies&&
       typeof parsed.studies==='object'?parsed.studies:{};
   }catch(error){
