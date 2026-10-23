@@ -26,15 +26,31 @@ const thicknessProfiles={
   oil:{ink:.16,pigment:.23,amplify:3.8,roughness:.42,painted:true,opacity:1},
   action:{ink:.15,pigment:.20,amplify:3.2,roughness:.51,painted:true,opacity:1}
 };
-function getImage(img,quality){
-  const canvas=document.createElement('canvas');
+async function getImage(img,quality){
   const cap=quality==='mobile'?480:quality==='vr'?600:850;
   const scale=Math.min(1,cap/Math.max(img.naturalWidth,img.naturalHeight));
-  canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
-  canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const width=Math.max(1,Math.round(img.naturalWidth*scale));
+  const height=Math.max(1,Math.round(img.naturalHeight*scale));
+  // The source image is already a pre-sized WebP when published. Any final
+  // sculpture-resolution resize can happen off-thread, leaving only the
+  // required pigment pixel readback on the main thread.
+  let bitmap=null;
+  if(scale<1 && typeof createImageBitmap==='function'){
+    try{
+      bitmap=await createImageBitmap(img,{
+        resizeWidth:width,resizeHeight:height,resizeQuality:'high'
+      });
+    }catch{ /* Older browsers can use the standard canvas fallback. */ }
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=height;
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
-  ctx.drawImage(img,0,0,canvas.width,canvas.height);
-  return {canvas,pixels:ctx.getImageData(0,0,canvas.width,canvas.height)};
+  try{
+    ctx.drawImage(bitmap||img,0,0,width,height);
+    return {canvas,pixels:ctx.getImageData(0,0,width,height)};
+  }finally{
+    bitmap?.close?.();
+  }
 }
 function colouredMaterial(stroke,type,cache){
   const color=String(stroke.stroke||'#313632');
@@ -262,9 +278,17 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
   const materials=new Map();
   const img=new Image();img.crossOrigin='anonymous';img.decoding='async';
   const bitmap=new Promise((resolve,reject)=>{
-    img.onload=()=>{if(pivot.userData.galleryDisposed){resolve(null);return;}try{resolve(getImage(img,quality))}catch(err){reject(err)}};
-    img.onerror=()=>reject(Error('Could not load the actual archived portrait image'));
-    img.src=study.image;
+    const sources=[study.imageOptimized,study.image].filter(Boolean);
+    let index=0;
+    img.onload=async()=>{
+      if(pivot.userData.galleryDisposed){resolve(null);return;}
+      try{resolve(await getImage(img,quality));}catch(err){reject(err);}
+    };
+    img.onerror=()=>{
+      if(index<sources.length)img.src=sources[index++];
+      else reject(Error('Could not load the archived portrait image'));
+    };
+    img.src=sources[index++];
   });
   const lines=vectorForStudy(study);
   let pigmentCount=0,strokeCount=0,loaded=0,removed=false;
