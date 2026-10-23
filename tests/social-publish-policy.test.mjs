@@ -95,6 +95,9 @@ test('Pinterest selects portrait studies and evening Threads rotates every avail
     const date=new Date(Date.UTC(2026,9,23+day)).toISOString().slice(0,10);
     const featured=selectEveningThreadsArtwork(archive,date);
     materials.add(featured.material);
+    const morning=selectedSocialJobs(date,0,'threads')[0].split('-')[0];
+    assert.notEqual(featured.material,morning==='tissue'?'watercolor':morning,
+      'Threads should not repeat the morning material in the evening');
     assert.ok(archive.includes(featured),'Featured work must be drawn from archived studies');
     assert.deepEqual(selectedSocialJobs(date,2,'threads'),['marker-landscape'],
       'One central evening Threads publisher must feature the archive');
