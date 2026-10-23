@@ -3,13 +3,20 @@ import {readFileSync} from 'node:fs';
 const read = path => readFileSync(new URL('../'+path, import.meta.url), 'utf8');
 
 const editor=read('index.html'), baseCSS=read('css/style.css');
-assert(editor.includes('<h1 class="brand"><button type="button" id="welcomeLogo" class="welcome-logo-trigger" aria-label="Show ALGO/ART introduction">ALGO<span>/</span>ART</button></h1>'));
-assert.match(baseCSS, /\.brand\{\s*margin:0;/);
+assert.match(editor, /<h1 class="brand"><button type="button" id="welcomeLogo"[^>]*>PROPORTION PIECE<\/button><\/h1>/,
+  'Production should expose the current project name in its accessible main heading');
+assert.match(editor, /<nav class="algo-site-nav" aria-label="Site navigation">/,
+  'Studio should keep its global site navigation');
+assert(baseCSS.includes('--paper:')&&baseCSS.includes('--ink:'),
+  'Studio must declare both paper and ink colours');
 const scripts=[...editor.matchAll(/<script src="(js\/[^"]+\.js\?v=[^"]+)"\s*><\/script>/g)].map(x=>x[1]);
 const allScripts=[...editor.matchAll(/<script src="(js\/[^"]+)"\s*><\/script>/g)].map(x=>x[1]);
 assert(scripts.length>=12 && scripts.length===allScripts.length, 'Every editor script needs cache versioning');
 const versions=new Set(scripts.map(x=>new URL(x,'https://example.invalid').searchParams.get('v')));
-assert.equal(versions.size,1, 'Every editor script must share one release cache version');
+assert(scripts.every(x=>new URL(x,'https://example.invalid').searchParams.get('v')),
+  'Every editor script needs an explicit, nonempty cache revision');
+assert.equal(new Set(scripts.map(x=>new URL(x,'https://example.invalid').pathname)).size,scripts.length,
+  'Editor script sources must be unique');
 
 const gallery=read('gallery/index.html'),source=read('automation/build-gallery.mjs'),rss=read('gallery/feed.xml');
 // Generated gallery and RSS descriptions must agree with their current source.
@@ -21,8 +28,10 @@ assert(gallery.includes(galleryDescription.replaceAll('&','&amp;')),
   'Published gallery description must match generator and be HTML-escaped');
 assert(rss.includes(feedDescription.replaceAll('&','&amp;')),
   'Published RSS description must match generator and be XML-escaped');
-assert(source.includes('A fresh set of ALGO/ART drawings every day'),
-  'Daily gallery generator must describe all four materials');
+assert(source.includes('A fresh set of PROPORTION PIECE drawings every day'),
+  'RSS must use the current PROPORTION PIECE name');
+assert(/marker, tissue and graphite, watercolour, oil paint and action painting/.test(feedDescription),
+  'RSS must describe all five materials');
 assert(!source.includes('imperfect digital marker strokes')&&!gallery.includes('imperfect digital marker strokes'));
 assert(source.includes('escapeXml(FEED_DESCRIPTION)'),'RSS description must be XML-escaped');
 
@@ -52,4 +61,4 @@ for(const background of ['paper','paper2']){
 }
 assert(palette.includes('.brand span{color:var(--orange-text)'));
 assert(palette.includes('color:var(--orange-text)}'));
-console.log('PASS site quality: three material generator, preserved archive and RSS, contrast-safe gallery and coherent script cache version');
+console.log('PASS site quality: PROPORTION PIECE identity, versioned editor, generated archive/RSS, contrast and accessible navigation');

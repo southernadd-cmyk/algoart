@@ -35,6 +35,8 @@ jobs:
         run: node tests/mobile-png-link.test.mjs
       - name: Android-size PNG randomise PNG without refresh
         run: node tests/mobile-export-paper.test.mjs
+      - name: Another preserves output and plotter settings
+        run: node tests/another-export-settings.test.mjs
       - name: Check export material reproducibility
         run: npm run test:tissue-colour
       - uses: actions/upload-artifact@v4

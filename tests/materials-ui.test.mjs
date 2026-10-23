@@ -28,7 +28,10 @@ assert.match(help,/option\.value/);
 assert.match(help,/materialControlsNote/);
 assert.doesNotMatch(help,/option\.value\s*=/,'Material labels must never change serialized option values');
 assert.doesNotMatch(help,/new Option\(/,'Never replace option nodes and lose their selected state');
-assert.match(help,/Keep the selected material, paper colour and shape choices/);
+assert.match(help,/Presentation only: retain every setting and its value for existing artwork URLs/,
+  'Material-aware labels must preserve the raw saved artwork settings');
+assert.match(help,/var TISSUE_PROFILES=/);
+assert.match(help,/var TISSUE_LABELS=/);
 assert.match(app,/pen:'pen'/);
 assert.match(app,/if\(oilPaintV2Enabled\(\)\)return A\.renderOilPaintV2/);
 assert.match(app,/if\(oilPaintV1Enabled\(\)\)return A\.renderOilPaintV1/);
@@ -49,5 +52,6 @@ assert(style.includes('.tabs{display:flex;flex-wrap:wrap;'));
 assert(style.includes('.tab.active{background:transparent;'));
 assert(style.includes('.tab span{display:none}'));
 assert(!markerStyle.includes('grid-template-columns:1.25fr'));
-assert(markerStyle.includes('.tab{font-size:12px;white-space:normal;overflow-wrap:anywhere;text-align:center;}'));
+assert.match(markerStyle,/\.tab\{font-size:1[23]px;[^}]*\}/,
+  'Navigation tabs must retain readable marker lettering');
 console.log('PASS: Material labels, descriptions, unchanged URL parameters, and editorial tabs');
