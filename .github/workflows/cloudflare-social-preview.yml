@@ -5,13 +5,13 @@ on:
       - 'cloudflare/social-preview/**'
       - 'wrangler.toml'
       - 'tests/cloudflare-root-config.test.mjs'
-      - 'wrangler.toml'
-      - 'tests/cloudflare-root-config.test.mjs'
       - '.github/workflows/cloudflare-social-preview.yml'
   push:
     branches: [main]
     paths:
       - 'cloudflare/social-preview/**'
+      - 'wrangler.toml'
+      - 'tests/cloudflare-root-config.test.mjs'
       - '.github/workflows/cloudflare-social-preview.yml'
   workflow_dispatch:
 permissions:
