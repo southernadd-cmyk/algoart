@@ -145,3 +145,41 @@ Portrait publishing runs even if the landscape job fails. A failed portrait job 
 ### Renderer upgrades and existing editions
 
 The current editor and newly generated Oil, Watercolour and Action studies use the V9 geometry renderer; other material queues resolve their renderer version from the generator settings and existing publication rules. Check `automation/generate-social.mjs` before changing version defaults. An explicit `SOCIAL_RENDERER_VERSION` can select an older supported renderer for test or recovery generation. Landscape jobs reuse archived daily JPEGs, settings, links and renderer versions, including editions created before an upgrade. Portrait jobs reuse their frozen release queue. A renderer update does not rewrite historical editions or change the 09:00, 15:00 and 20:30 Europe/London posting times.
+
+
+## Curated live publishing policy (23 October 2026)
+
+The existing London publishing windows remain 09:00, 15:00 and 20:30.
+Daily archive creation is unchanged; not every archived study is posted to every destination.
+
+| Destination | 09:00 | 15:00 | 20:30 | Daily target |
+| --- | ---: | ---: | ---: | ---: |
+| Threads | 1 | 0 | 1 | 2 |
+| Instagram | 1 | 2 | 1 | 4 |
+| Bluesky | 1 | 2 | 1 | 4 |
+| Pinterest | 1 | 1 | 1 | 3 |
+
+This is a maximum of 13 posts per day (91 in a full seven-day week).
+Actual counts depend on platform credentials, PINTEREST_ENABLED=true,
+successful platform API requests, and whether a completion marker already exists.
+
+automation/social-publish-policy.mjs deterministically selects eligible
+material/orientation jobs per platform, date and slot, retaining the original
+per-platform completion markers and retry semantics. Pinterest selects vertical
+portrait studies. The evening Threads post is handled by the ordinary parent
+job, which uses automation/threads-evening-feature.mjs to select an actual
+archived artwork (including afternoon Oil Paint and Watercolour), then uploads
+that specific image with its exact editor link and regenerated caption.
+Morning Threads posts rotate among Marker, Action Painting and Tissue & Graphite.
+
+Each eligible job still delays 5–20 minutes once before publishing, and
+automation/captions.mjs rotates wording and tags deterministically by artwork.
+These adjustments reduce publishing frequency but do not guarantee freedom
+from account restrictions. Do not trigger repeated manual retries if Threads
+reports an account restriction; resolve the restriction before attempting to
+publish again. The historical 12:00 test slot is not eligible for automatic
+social publishing under the curated policy.
+
+Validate without posting:
+node --test tests/social-publish-policy.test.mjs tests/social-stagger.test.mjs tests/social-caption-rotation.test.mjs tests/social-caption-limits.test.mjs
+The social-pacing-checks.yml workflow runs these tests on relevant changes.
