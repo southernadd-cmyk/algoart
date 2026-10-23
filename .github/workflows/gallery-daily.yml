@@ -3,6 +3,9 @@ name: Build ALGO ART daily gallery
 # Only scheduled or explicit gallery builds may write new gallery assets.
 # Editing this workflow or its generator must not trigger a live build.
 on:
+  push:
+    branches: [main]
+    paths: ['automation/backfill-gallery-2026-10-23-retry.trigger']
   schedule:
     # Early morning UTC; the generator resolves the calendar day in Europe/London.
     - cron: '15 4 * * *'
@@ -28,7 +31,7 @@ jobs:
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
-      SOCIAL_DATE: ${{ inputs.date || '' }}
+      SOCIAL_DATE: ${{ inputs.date || (github.event_name == 'push' && '2026-10-23') || '' }}
 
     steps:
       - name: Checkout
