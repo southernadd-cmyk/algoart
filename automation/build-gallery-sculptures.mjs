@@ -39,24 +39,34 @@ try{
       continue;
     }
     const compiled={version:1,date,studies:{}};
+    let failed=0;
     for(const item of portraits){
-      const variants={};
-      for(const quality of ['mobile','desktop']){
-        const baked=await page.evaluate(
-          async values=>await window.bakeStudy(values.item,values.quality),
-          {item:{...item,date},quality},
-          {timeout:90000}
-        );
-        if(!baked.entries.length)throw Error('Empty '+quality+' sculpture for '+item.seed);
-        variants[quality]=baked.entries;
+      try{
+        const variants={};
+        for(const quality of ['mobile','desktop']){
+          const baked=await page.evaluate(
+            async values=>await window.bakeStudy(values.item,values.quality),
+            {item:{...item,date},quality}
+          );
+          if(!baked.entries.length)throw Error('Empty '+quality+' sculpture for '+item.seed);
+          variants[quality]=baked.entries;
+        }
+        compiled.studies[item.imageFile]=variants;
+      }catch(error){
+        if(!args.includes('--all'))throw error;
+        failed++;
+        console.warn(date+': preserving live-render fallback for '+item.seed+': '+String(error));
       }
-      compiled.studies[item.imageFile]=variants;
+    }
+    if(!Object.keys(compiled.studies).length){
+      console.warn(date+': no traceable portraits; original browser path remains enabled');
+      continue;
     }
     const dir=path.join(root,'gallery',date,'3d');
     await fs.mkdir(dir,{recursive:true});
     const compressed=zlib.gzipSync(Buffer.from(JSON.stringify(compiled)),{level:9});
     await fs.writeFile(path.join(dir,'sculptures.json.gz'),compressed);
-    console.log(date+': baked '+portraits.length+' sculptures in both qualities, '+Math.round(compressed.length/1024)+' KiB compressed');
+    console.log(date+': baked '+Object.keys(compiled.studies).length+'/'+portraits.length+' sculptures in both qualities, '+Math.round(compressed.length/1024)+' KiB compressed, '+failed+' fallback(s)');
   }
 }finally{
   await browser.close();
