@@ -188,6 +188,7 @@ function dayPage(queue) {
     <div class="kicker">DAILY ARCHIVE / ${escapeHtml(date)}</div>
     <h1>Drawings from<br>${escapeHtml(pretty)}.</h1>
     <p>${escapeHtml(description)}</p>
+    <p class="visit-day-link"><a href="../visit/?date=${escapeHtml(date)}">Walk this floor in 3D →</a></p>
     <div class="hero-meta"><span>${entries.length} drawings</span><span>Different materials</span><span>Each one can be revisited</span></div>
   </section>
   <section class="grid" aria-label="Artwork generated on ${escapeHtml(pretty)}">
@@ -278,6 +279,16 @@ function archivePage(archive) {
     <p>${escapeHtml(description)}</p>
     <div class="hero-meta"><span>${days.length} DAILY ${days.length === 1 ? 'EDITION' : 'EDITIONS'}</span><span>LATEST: ${latest ? latest.count : 0} STUDIES</span><span>EXACT STATES PRESERVED</span></div>
   </section>
+  <section class="visit-band" aria-labelledby="visit-title">
+    <a href="./visit/">
+      <img src="./visit/tower-still.svg" width="1200" height="500" loading="eager" alt="Architectural illustration of the gallery tower and its glass walkways">
+      <div class="visit-copy">
+        <h2 id="visit-title">Walk the tower.</h2>
+        <p>Every daily edition is a floor. Begin outside and take the lift through ${days.length} days of drawings.</p>
+        <span>Enter the exhibition →</span>
+      </div>
+    </a>
+  </section>
   <section class="day-grid" aria-label="Daily PROPORTION PIECE galleries">
     ${cards || '<p class="empty">The first daily edition is being generated.</p>'}
   </section>
@@ -314,6 +325,7 @@ function sitemap(archive) {
   const urls = [
     { loc: SITE_URL + '/', lastmod: latest },
     { loc: GALLERY_URL + '/', lastmod: latest },
+    { loc: GALLERY_URL + '/visit/', lastmod: latest },
     ...days.map(day => ({ loc: `${GALLERY_URL}/${day.date}/`, lastmod: day.date }))
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
