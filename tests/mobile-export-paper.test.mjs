@@ -134,8 +134,9 @@ try{
   await changeArtwork();
   const newSeed=await page.locator('#seed').inputValue();
   assert.notEqual(newSeed,oldSeed,'Randomise must change the composition');
-  assert.equal(await page.locator('#materialStyle').inputValue(),'tissue',
-    'Randomise must retain Tissue material');
+  const afterFirstMaterial=await page.locator('#materialStyle').inputValue();
+  assert.notEqual(afterFirstMaterial,'tissue',
+    'Another must select a different material from the previous artwork');
   const afterRandomise=await checkDownload('#savePanel','.png','tissue-mobile-after-randomise');
   assert(afterRandomise.filename.includes(newSeed),
     'Second PNG should encode the randomised composition instead of the old seed');
@@ -144,6 +145,9 @@ try{
   await changeArtwork();
   const newerSeed=await page.locator('#seed').inputValue();
   assert.notEqual(newerSeed,newSeed);
+  const afterSecondMaterial=await page.locator('#materialStyle').inputValue();
+  assert.notEqual(afterSecondMaterial,afterFirstMaterial,
+    'Each Another press must change material from the currently selected one');
   const thirdSeed=await checkDownload('#savePanel','.png','tissue-mobile-after-second-randomise');
   assert(thirdSeed.filename.includes(newerSeed));
   const svg=await checkDownload('#saveSVG','.svg','tissue-mobile-svg');
@@ -157,7 +161,7 @@ try{
     'Later PNG should preserve the same artwork identity');
   const liveDownloadLinks=await page.locator('a[download]').count();
   assert(liveDownloadLinks>=5,'Mobile download anchors must remain attached for browser consumption');
-  console.log('PASS Tissue mobile repeated PNG, SVG and plotter downloads without reload',
+  console.log('PASS repeated mobile PNG, SVG and plotter downloads across material changes',
     png,secondPng,svg,secondSvg,plotter,secondPlotter,thirdPng);
   await load('marker','portrait');
   await openExport();
