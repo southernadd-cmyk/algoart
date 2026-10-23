@@ -1574,6 +1574,13 @@ function drawMap(){
     minX:Math.min(p.minX,r.x-r.width/2),maxX:Math.max(p.maxX,r.x+r.width/2),
     minZ:Math.min(p.minZ,r.z-r.depth/2),maxZ:Math.max(p.maxZ,r.z+r.depth/2)
   }),{minX:Infinity,maxX:-Infinity,minZ:Infinity,maxZ:-Infinity});
+  // The lift cabin sits outside its gallery wall, so include it in the map extent.
+  if(liftPosition){
+    bounds.minX=Math.min(bounds.minX,liftPosition.x-1.2);
+    bounds.maxX=Math.max(bounds.maxX,liftPosition.x+1.2);
+    bounds.minZ=Math.min(bounds.minZ,liftPosition.z-1.2);
+    bounds.maxZ=Math.max(bounds.maxZ,liftPosition.z+1.2);
+  }
   const scale=Math.min((w-28)/(bounds.maxX-bounds.minX+2),(h-28)/(bounds.maxZ-bounds.minZ+2));
   const px=x=>(x-(bounds.minX+bounds.maxX)/2)*scale+w/2;
   const pz=z=>(z-(bounds.minZ+bounds.maxZ)/2)*scale+h/2;
@@ -1587,6 +1594,16 @@ function drawMap(){
     ctx.fillStyle='#e6e4d8';ctx.strokeStyle='#474b43';ctx.lineWidth=1.2;
     ctx.fillRect(x,y,room.width*scale,room.depth*scale);
     ctx.strokeRect(x,y,room.width*scale,room.depth*scale);
+  }
+  // Lift location is generated for this floor, not assumed to be identical
+  // across the tower. Draw it before the visitor so their arrow stays visible.
+  if(liftPosition){
+    const x=px(liftPosition.x),y=pz(liftPosition.z);
+    ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);
+    ctx.fillStyle='#334d43';ctx.fill();
+    ctx.lineWidth=1.5;ctx.strokeStyle='#f6f3e9';ctx.stroke();
+    ctx.fillStyle='#ffffff';ctx.font='bold 10px Arial, sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('L',x,y+.5);
   }
   ctx.save();
   ctx.translate(px(rig.position.x),pz(rig.position.z));
