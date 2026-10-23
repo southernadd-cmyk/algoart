@@ -27,7 +27,8 @@ test('public metadata and essential production assets exist',()=>{
   assert.match(html,/<title>Virtual Exhibition \| PROPORTION PIECE<\/title>/);
   assert.match(html,/rel="canonical" href="https:\/\/southernadd-cmyk\.github\.io\/algoart\/gallery\/visit\/"/);
   assert.doesNotMatch(html,/noindex/);
-  assert.match(html,/gallery-v2\.js\?v=/);
+  assert.match(html,/gallery-bundle\.js\?v=/);
+  assert.doesNotMatch(html,/cdn\.jsdelivr\.net/);
   assert.match(html,/class="algo-global-header gallery-global-header"/);
   assert.match(html,/--gallery-ui-bottom/);
   assert.match(html,/ResizeObserver\(update\)/);
