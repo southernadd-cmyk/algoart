@@ -247,28 +247,6 @@ function addBridge(hall) {
   scene.add(createGlassWalkway(THREE,hall.start,hall.end,DOOR_WIDTH,
     walkwayGlassMaterials,{lowPower:galleryFinish.lowPower}));
 }
-// Temporary diagnostic for the unexplained entrance overlay.
-// Aim the central reticle at the stripe and press P; identifies the precise mesh.
-window.addEventListener('keydown',event=>{
- if(event.key.toLowerCase()!=='p'||event.repeat||event.target?.closest?.('input,textarea,select'))return;
- const ray=new THREE.Raycaster();
- ray.setFromCamera(new THREE.Vector2(0,0),camera);
- const hits=ray.intersectObjects(scene.children,true);
- const description=hits.slice(0,4).map((hit,i)=>{
-  const object=hit.object;
-  const world=new THREE.Box3().setFromObject(object);
-  const dimensions=world.getSize(new THREE.Vector3());
-  const centre=world.getCenter(new THREE.Vector3());
-  const material=Array.isArray(object.material)?object.material[0]:object.material;
-  return [i,object.name||'(unnamed)',object.type,object.geometry?.type,
-    'size='+dimensions.toArray().map(n=>n.toFixed(2)).join(','),
-    'at='+centre.toArray().map(n=>n.toFixed(2)).join(','),
-    'material='+String(material?.name||material?.uuid||'none'),
-    'parent='+String(object.parent?.name||object.parent?.type)].join(' | ');
- }).join('\n');
- console.info('Gallery reticle inspection:',description);
- window.prompt('Gallery surface under reticle (copy this text):',description||'No mesh intersection');
-});
 // Restrict simultaneous downloads/decodes on phones; artwork is never omitted.
 const mobileImages=matchMedia('(pointer:coarse)').matches;
 const artworkQueue=[];
@@ -1361,7 +1339,7 @@ async function load(){
   const startupStart=performance.now();
   const progress=message=>{
     if(enter.disabled)enter.textContent=message;
-    console.info('[Gallery startup]',message,Math.round(performance.now()-startupStart)+'ms');
+    if(new URLSearchParams(location.search).has('debug'))console.info('[Gallery startup]',message,Math.round(performance.now()-startupStart)+'ms');
   };
   try{
     progress('Loading tower data…');
@@ -1421,7 +1399,10 @@ function showInfo(exhibit){
     $('infoImage').src=study.image;
     $('infoImage').alt=study.title;
     $('infoTitle').textContent=study.title;
-    $('infoSeed').textContent=study.seed;
+    const medium=({marker:'Marker',tissue:'Tissue & graphite',watercolour:'Watercolour',oil:'Oil paint',action:'Action painting'})[study.material?.type]||'Drawing';
+    const composition=(study.engine||'composition').replace(/[-_]/g,' ');
+    $('infoMeta').textContent=[medium,composition,study.portrait?'portrait sculpture':'landscape study'].join(' · ');
+    $('infoSeed').textContent='Seed '+study.seed;
     $('openArt').href=study.href;
   }
   currentInfoExhibit=exhibit;
