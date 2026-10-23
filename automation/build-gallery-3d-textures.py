@@ -7,6 +7,7 @@ continue loading without probing for dozens of missing WebP files.
 import argparse
 import json
 from pathlib import Path
+from urllib.parse import urlsplit, unquote
 from PIL import Image, ImageOps, features
 
 ROOT = Path(__file__).resolve().parent.parent / "gallery"
@@ -14,9 +15,24 @@ SIZES = {"desktop": 1100, "mobile": 640}
 QUALITIES = {"desktop": 87, "mobile": 85}
 
 
-def source_for(day_dir, filename):
-    if Path(filename).name != filename or Path(filename).suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
+def normalized_name(filename):
+    # Early archived editions use full GitHub Release URLs rather than basenames.
+    # Only these known public Release URLs are permitted as image identifiers.
+    if filename.startswith("https://"):
+        url = urlsplit(filename)
+        if url.hostname != "github.com" or not url.path.startswith(
+            "/southernadd-cmyk/algoart/releases/download/"
+        ):
+            raise ValueError(f"Untrusted archive image URL: {filename!r}")
+        filename = unquote(url.path.rsplit("/", 1)[-1])
+    if (Path(filename).name != filename or
+        Path(filename).suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}):
         raise ValueError(f"Unsafe artwork filename: {filename!r}")
+    return filename
+
+
+def source_for(day_dir, filename):
+    filename = normalized_name(filename)
     local = day_dir / filename
     if local.is_file():
         return local
@@ -38,7 +54,7 @@ def build_day(day_dir):
     keep = set()
 
     for entry in entries:
-        filename = entry["imageFile"]
+        filename = normalized_name(entry["imageFile"])
         if filename in records:
             raise ValueError(f"Duplicate imageFile in {day_dir}: {filename}")
         source = source_for(day_dir, filename)
