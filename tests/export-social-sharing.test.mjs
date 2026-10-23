@@ -85,7 +85,7 @@ try{
    'Toolbar ink must not alter saved SVG artwork');
  assert(art.intents.artworkURL.includes('?c='));
  assert.equal(new URL(art.intents.previewURL).host,
-   'algoart-composition-plugin.onrender.com');
+   'proportion-piece-social.mr-adam-clement.workers.dev');
  assert(new URL(art.intents.previewURL).pathname==='/share');
  assert([...art.intents.caption].length<300,
    'Selected artwork link is too long for Bluesky');
@@ -124,7 +124,7 @@ try{
  // Stub ONLY the network transport, preserving the actual JPEG pixels,
  // exact compact token and popup/composer navigation.
  let uploads=[];
- await desktop.route('https://algoart-composition-plugin.onrender.com/share/preload?c=*',
+ await desktop.route('https://proportion-piece-social.mr-adam-clement.workers.dev/share/preload?c=*',
    async route=>{
      const req=route.request(),headers={
        'access-control-allow-origin':new URL(base).origin,

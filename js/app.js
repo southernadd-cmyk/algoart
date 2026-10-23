@@ -1287,7 +1287,7 @@ $('copyLink').onclick=copyShareLink;
  function preloadSocialImage(intents){
    var token=new URL(intents.artworkURL).searchParams.get('c');
    if(!token)throw Error('This artwork cannot be shared with an image preview');
-   return fetch('https://algoart-composition-plugin.onrender.com/share/preload?c='+
+   return fetch('https://proportion-piece-social.mr-adam-clement.workers.dev/share/preload?c='+
      encodeURIComponent(token),{
        method:'POST',mode:'cors',headers:{'Content-Type':'application/json'},
        body:JSON.stringify({jpeg:previewJPEG()})
