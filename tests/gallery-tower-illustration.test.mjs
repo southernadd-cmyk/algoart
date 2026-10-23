@@ -12,6 +12,13 @@ test('tower illustration projects real lower floor plans, rooms and bridges',()=
   assert.match(svg,/viewBox="0 0 1200 480"/);
   assert.match(svg,/more floors|continue above|continue beyond|continue above the frame|continue above the image|extend/i);
   assert.doesNotMatch(svg,/class="window"|decorative window grid/i);
+  assert.ok((svg.match(/class="solid-brick-wall"/g)||[]).length>30,
+    'Gallery rooms must have opaque masonry facade faces');
+  assert.ok((svg.match(/class="glass-walkway"/g)||[]).length>10,
+    'Only connecting corridors should get glass faces');
+  assert.ok((svg.match(/class="brick-mortar"/g)||[]).length>150,
+    'Opaque room faces need discernible brickwork');
+  assert.doesNotMatch(svg,/class="glass-room"/);
   for(let i=0;i<rows.length;i++){
     const f=floors[i],studyStates=f.studies.map(([seed,engine])=>({seed,engine}));
     const plan=buildLayout(f.date,studyStates.length,studyStates);
