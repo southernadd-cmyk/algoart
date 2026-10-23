@@ -1,0 +1,81 @@
+name: Backfill historical 3D artwork textures
+
+# A separate, explicit workflow keeps the daily archive publish lightweight.
+# Run once after the texture exporter has been verified.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: gallery-daily
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install WebP exporter
+        run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
+
+      - name: Check exporter behaviour
+        run: python3 -m unittest discover -s tests -p test_gallery_3d_textures.py
+
+      - name: Generate both WebP sizes for every historical edition
+        run: python3 automation/build-gallery-3d-textures.py --all
+
+      - name: Check all output manifests
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image
+          root = Path('gallery')
+          completed = 0
+          for folder in sorted(root.iterdir()):
+              meta_file = folder / 'meta.json'
+              if not meta_file.is_file():
+                  continue
+              meta = json.loads(meta_file.read_text())
+              manifest = json.loads((folder / '3d' / 'manifest.json').read_text())
+              assert manifest['version'] == 1
+              assert set(manifest['images']) == {e['imageFile'] for e in meta['entries']}
+              for variants in manifest['images'].values():
+                  for name, size in [('desktop',1100), ('mobile',640)]:
+                      file = folder / variants[name]
+                      with Image.open(file) as img:
+                          assert img.format == 'WEBP' and max(img.size) <= size, file
+              completed += 1
+          assert completed > 0
+          print(f'Validated {completed} historical 3D floors')
+          PY
+
+      - name: Commit artwork-only WebPs and manifests
+        id: archive_commit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery
+          if git diff --cached --quiet; then
+            echo "Historical editions already have all WebPs."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Backfill pre-sized WebP artwork for historical 3D exhibitions"
+            git pull --rebase origin main
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish optimised historical artwork
+        if: steps.archive_commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
