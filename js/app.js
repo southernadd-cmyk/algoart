@@ -944,13 +944,14 @@ $('randomise').onclick=function(){
   useCurrentRenderer();
   var r=A.makeR(newSeedValue());
 
-  document.querySelectorAll('input[type=range]').forEach(function(e){
+  document.querySelectorAll('.tab-panel:not(#panel-export) input[type=range]').forEach(function(e){
     e.value=Math.round(+e.min+r.n()*(+e.max-+e.min));
     e.dispatchEvent(new Event('input'));
   });
 
-  // Randomise composition controls; choose a different drawing material below.
-  document.querySelectorAll('select:not(#exportScale):not(#orientation):not(#materialStyle)').forEach(function(e){
+  // Only artwork controls belong to Another. Never change export settings.
+  document.querySelectorAll('.tab-panel:not(#panel-export) select').forEach(function(e){
+    if(e.id==='orientation'||e.id==='materialStyle')return;
     e.selectedIndex=r.int(0,e.options.length-1);
   });
 

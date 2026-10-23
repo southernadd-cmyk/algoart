@@ -8,6 +8,14 @@ PROPORTION PIECE is an ongoing artwork and free, browser-based drawing experimen
 
 The drawings are made with seeded JavaScript, not an AI image generator. You can return to a drawing using its saved settings and renderer version.
 
+**Current renderer: V9.** It retains the earlier seeded composition geometry while allowing the paper colour to be chosen independently of the marks. Earlier renderer versions remain available for saved artwork links.
+
+| Renderer | Main change |
+| --- | --- |
+| **V9** | Selectable paper colour without changing composition geometry or the drawing’s seeded pigment palette. |
+
+The page uses a practical 7:5 landscape format (1400 × 1000, reversed for portrait). The golden ratio shapes relationships within the drawing; the outer canvas is not itself a golden rectangle.
+
 **[Try PROPORTION PIECE](https://southernadd-cmyk.github.io/algoart/)** · **[Browse the daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/)** · **[How it works](https://southernadd-cmyk.github.io/algoart/about/)**
 
 ## Five materials, five drawings
