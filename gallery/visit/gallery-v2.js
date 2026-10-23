@@ -1341,7 +1341,7 @@ async function load(){
   const startupStart=performance.now();
   const progress=message=>{
     if(enter.disabled)enter.textContent=message;
-    if(new URLSearchParams(location.search).has('debug'))GALLERY_DEBUG&&console.info('[Gallery startup]',message,Math.round(performance.now()-startupStart)+'ms');
+    if(GALLERY_DEBUG)console.info('[Gallery startup]',message,Math.round(performance.now()-startupStart)+'ms');
   };
   try{
     progress('Loading tower data…');
