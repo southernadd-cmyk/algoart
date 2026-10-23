@@ -16,9 +16,9 @@ const plans=entries.map(f=>({
 }));
 const FLOOR_SPACING=6.2;
 const width=1200,height=480;
-const groundY=432;
+const groundY=407;
 const metresToPixels=5.0;
-const depthShift=.45;
+const depthShift=.28;
 const horizScale=5.25;
 const centreX=590;
 const rootEntry=plans[0].plan.rooms[0];
@@ -132,12 +132,14 @@ function glassBridge(hall,base){
   const y1=base+a.y,y2=base+b.y;
   const aa=ends(a,y1),bb=ends(b,y2);
   const ah=ends(a,y1+DOOR_HEIGHT),bh=ends(b,y2+DOOR_HEIGHT);
-  shape([aa[0],bb[0],bh[0],ah[0]],'#bed2cd','#5d7c75',1.4,'opacity=".94" class="glass-walkway"');
-  shape([aa[1],bb[1],bh[1],ah[1]],'#cbdcd7','#63827a',1.4,'opacity=".87" class="glass-walkway"');
-  shape([ah[0],bh[0],bh[1],ah[1]],'#d5e3df','#63827a',1.05,'opacity=".9" class="glass-walkway"');
+  shape([aa[0],bb[0],bh[0],ah[0]],'#a7cbc6','#3d6b65',2.2,'opacity=".94" class="glass-walkway"');
+  shape([aa[1],bb[1],bh[1],ah[1]],'#bfd9d3','#467970',2.2,'opacity=".93" class="glass-walkway"');
+  shape([ah[0],bh[0],bh[1],ah[1]],'#e0eee8','#467970',1.6,'opacity=".96" class="glass-walkway"');
   // Actual cross-brace spans, not imaginary projecting wings.
-  line(aa[0],bh[0],'#849d96',.9,'opacity=".7"');
-  line(aa[1],bh[1],'#849d96',.9,'opacity=".7"');
+  line(aa[0],bh[0],'#4d837b',1.65,'opacity=".94"');
+  line(bb[0],bh[0],'#4d837b',1.2,'opacity=".85"');
+  line(aa[1],bh[1],'#4d837b',1.65,'opacity=".94"');
+  line(bb[1],bh[1],'#4d837b',1.2,'opacity=".85"');
 }
 function liftCore(room,base){
   const side=freeSides.find(s=>!room.doors.includes(s));
@@ -192,8 +194,8 @@ for(let level=0;level<plans.length;level++){
   }
   emit('</g>');
 }
-emit('<path d="M0 426L1200 411V480H0Z" fill="#a7aa9f"/>');
-emit('<path d="M0 437L1200 423" stroke="#e1e2d8" stroke-width="3.5"/>');
+emit('<path d="M0 429L1200 429V480H0Z" fill="#a7aa9f"/>');
+emit('<path d="M0 429H1200" stroke="#e1e2d8" stroke-width="3.5"/>');
 emit('<path d="M160 426Q157 393 196 369Q238 386 222 426Z" fill="#6f8579" stroke="#50665a" stroke-width="2.5"/>');
 emit('<path d="M980 418Q963 390 1005 358Q1044 380 1027 418Z" fill="#6f8579" stroke="#50665a" stroke-width="2.5"/>');
 emit('</svg>');
