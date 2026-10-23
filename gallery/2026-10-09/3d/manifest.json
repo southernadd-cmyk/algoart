@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-10-09-01-organic-AA-20261009-01-07665.jpg": {
+      "desktop": "3d/2026-10-09-01-organic-AA-20261009-01-07665-1100.webp",
+      "mobile": "3d/2026-10-09-01-organic-AA-20261009-01-07665-640.webp"
+    },
+    "2026-10-09-02-geometric-AA-20261009-02-30046.jpg": {
+      "desktop": "3d/2026-10-09-02-geometric-AA-20261009-02-30046-1100.webp",
+      "mobile": "3d/2026-10-09-02-geometric-AA-20261009-02-30046-640.webp"
+    },
+    "2026-10-09-03-scribble-AA-20261009-03-52427.jpg": {
+      "desktop": "3d/2026-10-09-03-scribble-AA-20261009-03-52427-1100.webp",
+      "mobile": "3d/2026-10-09-03-scribble-AA-20261009-03-52427-640.webp"
+    },
+    "2026-10-09-04-field-AA-20261009-04-74808.jpg": {
+      "desktop": "3d/2026-10-09-04-field-AA-20261009-04-74808-1100.webp",
+      "mobile": "3d/2026-10-09-04-field-AA-20261009-04-74808-640.webp"
+    },
+    "2026-10-09-05-spiral-AA-20261009-05-18141.jpg": {
+      "desktop": "3d/2026-10-09-05-spiral-AA-20261009-05-18141-1100.webp",
+      "mobile": "3d/2026-10-09-05-spiral-AA-20261009-05-18141-640.webp"
+    },
+    "2026-10-09-portrait-01-network-AP-20261009-01-62304.jpg": {
+      "desktop": "3d/2026-10-09-portrait-01-network-AP-20261009-01-62304-1100.webp",
+      "mobile": "3d/2026-10-09-portrait-01-network-AP-20261009-01-62304-640.webp"
+    },
+    "2026-10-09-portrait-02-organic-AP-20261009-02-39923.jpg": {
+      "desktop": "3d/2026-10-09-portrait-02-organic-AP-20261009-02-39923-1100.webp",
+      "mobile": "3d/2026-10-09-portrait-02-organic-AP-20261009-02-39923-640.webp"
+    },
+    "2026-10-09-portrait-03-geometric-AP-20261009-03-17542.jpg": {
+      "desktop": "3d/2026-10-09-portrait-03-geometric-AP-20261009-03-17542-1100.webp",
+      "mobile": "3d/2026-10-09-portrait-03-geometric-AP-20261009-03-17542-640.webp"
+    },
+    "2026-10-09-portrait-04-scribble-AP-20261009-04-95161.jpg": {
+      "desktop": "3d/2026-10-09-portrait-04-scribble-AP-20261009-04-95161-1100.webp",
+      "mobile": "3d/2026-10-09-portrait-04-scribble-AP-20261009-04-95161-640.webp"
+    },
+    "2026-10-09-portrait-05-field-AP-20261009-05-72780.jpg": {
+      "desktop": "3d/2026-10-09-portrait-05-field-AP-20261009-05-72780-1100.webp",
+      "mobile": "3d/2026-10-09-portrait-05-field-AP-20261009-05-72780-640.webp"
+    }
+  }
+}

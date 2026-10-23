@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-10-15-01-network-AA-20261015-01-71232.jpg": {
+      "desktop": "3d/2026-10-15-01-network-AA-20261015-01-71232-1100.webp",
+      "mobile": "3d/2026-10-15-01-network-AA-20261015-01-71232-640.webp"
+    },
+    "2026-10-15-02-organic-AA-20261015-02-48851.jpg": {
+      "desktop": "3d/2026-10-15-02-organic-AA-20261015-02-48851-1100.webp",
+      "mobile": "3d/2026-10-15-02-organic-AA-20261015-02-48851-640.webp"
+    },
+    "2026-10-15-03-geometric-AA-20261015-03-26470.jpg": {
+      "desktop": "3d/2026-10-15-03-geometric-AA-20261015-03-26470-1100.webp",
+      "mobile": "3d/2026-10-15-03-geometric-AA-20261015-03-26470-640.webp"
+    },
+    "2026-10-15-04-scribble-AA-20261015-04-04089.jpg": {
+      "desktop": "3d/2026-10-15-04-scribble-AA-20261015-04-04089-1100.webp",
+      "mobile": "3d/2026-10-15-04-scribble-AA-20261015-04-04089-640.webp"
+    },
+    "2026-10-15-05-field-AA-20261015-05-81708.jpg": {
+      "desktop": "3d/2026-10-15-05-field-AA-20261015-05-81708-1100.webp",
+      "mobile": "3d/2026-10-15-05-field-AA-20261015-05-81708-640.webp"
+    },
+    "2026-10-15-portrait-01-burst-AP-20261015-01-77959.jpg": {
+      "desktop": "3d/2026-10-15-portrait-01-burst-AP-20261015-01-77959-1100.webp",
+      "mobile": "3d/2026-10-15-portrait-01-burst-AP-20261015-01-77959-640.webp"
+    },
+    "2026-10-15-portrait-02-network-AP-20261015-02-00340.jpg": {
+      "desktop": "3d/2026-10-15-portrait-02-network-AP-20261015-02-00340-1100.webp",
+      "mobile": "3d/2026-10-15-portrait-02-network-AP-20261015-02-00340-640.webp"
+    },
+    "2026-10-15-portrait-03-organic-AP-20261015-03-33197.jpg": {
+      "desktop": "3d/2026-10-15-portrait-03-organic-AP-20261015-03-33197-1100.webp",
+      "mobile": "3d/2026-10-15-portrait-03-organic-AP-20261015-03-33197-640.webp"
+    },
+    "2026-10-15-portrait-04-geometric-AP-20261015-04-55578.jpg": {
+      "desktop": "3d/2026-10-15-portrait-04-geometric-AP-20261015-04-55578-1100.webp",
+      "mobile": "3d/2026-10-15-portrait-04-geometric-AP-20261015-04-55578-640.webp"
+    },
+    "2026-10-15-portrait-05-scribble-AP-20261015-05-67483.jpg": {
+      "desktop": "3d/2026-10-15-portrait-05-scribble-AP-20261015-05-67483-1100.webp",
+      "mobile": "3d/2026-10-15-portrait-05-scribble-AP-20261015-05-67483-640.webp"
+    },
+    "2026-10-15-watercolor-landscape-01-burst-AWL-20261015-01-71225.jpg": {
+      "desktop": "3d/2026-10-15-watercolor-landscape-01-burst-AWL-20261015-01-71225-1100.webp",
+      "mobile": "3d/2026-10-15-watercolor-landscape-01-burst-AWL-20261015-01-71225-640.webp"
+    },
+    "2026-10-15-watercolor-landscape-02-network-AWL-20261015-02-58416.jpg": {
+      "desktop": "3d/2026-10-15-watercolor-landscape-02-network-AWL-20261015-02-58416-1100.webp",
+      "mobile": "3d/2026-10-15-watercolor-landscape-02-network-AWL-20261015-02-58416-640.webp"
+    },
+    "2026-10-15-watercolor-portrait-01-rects-AWP-20261015-01-69511.jpg": {
+      "desktop": "3d/2026-10-15-watercolor-portrait-01-rects-AWP-20261015-01-69511-1100.webp",
+      "mobile": "3d/2026-10-15-watercolor-portrait-01-rects-AWP-20261015-01-69511-640.webp"
+    },
+    "2026-10-15-watercolor-portrait-02-burst-AWP-20261015-02-77654.jpg": {
+      "desktop": "3d/2026-10-15-watercolor-portrait-02-burst-AWP-20261015-02-77654-1100.webp",
+      "mobile": "3d/2026-10-15-watercolor-portrait-02-burst-AWP-20261015-02-77654-640.webp"
+    },
+    "2026-10-15-watercolour-landscape-01-scribble-CWL-20261015-01-31782.jpg": {
+      "desktop": "3d/2026-10-15-watercolour-landscape-01-scribble-CWL-20261015-01-31782-1100.webp",
+      "mobile": "3d/2026-10-15-watercolour-landscape-01-scribble-CWL-20261015-01-31782-640.webp"
+    },
+    "2026-10-15-watercolour-portrait-01-geometric-CWP-20261015-01-01998.jpg": {
+      "desktop": "3d/2026-10-15-watercolour-portrait-01-geometric-CWP-20261015-01-01998-1100.webp",
+      "mobile": "3d/2026-10-15-watercolour-portrait-01-geometric-CWP-20261015-01-01998-640.webp"
+    }
+  }
+}

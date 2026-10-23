@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-10-23-01-spiral-AA-20261023-01-90213.jpg": {
+      "desktop": "3d/2026-10-23-01-spiral-AA-20261023-01-90213-1100.webp",
+      "mobile": "3d/2026-10-23-01-spiral-AA-20261023-01-90213-640.webp"
+    },
+    "2026-10-23-02-rects-AA-20261023-02-12594.jpg": {
+      "desktop": "3d/2026-10-23-02-rects-AA-20261023-02-12594-1100.webp",
+      "mobile": "3d/2026-10-23-02-rects-AA-20261023-02-12594-640.webp"
+    },
+    "2026-10-23-portrait-01-field-AP-20261023-01-19452.jpg": {
+      "desktop": "3d/2026-10-23-portrait-01-field-AP-20261023-01-19452-1100.webp",
+      "mobile": "3d/2026-10-23-portrait-01-field-AP-20261023-01-19452-640.webp"
+    },
+    "2026-10-23-portrait-02-spiral-AP-20261023-02-97071.jpg": {
+      "desktop": "3d/2026-10-23-portrait-02-spiral-AP-20261023-02-97071-1100.webp",
+      "mobile": "3d/2026-10-23-portrait-02-spiral-AP-20261023-02-97071-640.webp"
+    },
+    "2026-10-23-watercolor-landscape-01-rects-AWL-20261023-01-63004.jpg": {
+      "desktop": "3d/2026-10-23-watercolor-landscape-01-rects-AWL-20261023-01-63004-1100.webp",
+      "mobile": "3d/2026-10-23-watercolor-landscape-01-rects-AWL-20261023-01-63004-640.webp"
+    },
+    "2026-10-23-watercolor-landscape-02-burst-AWL-20261023-02-75813.jpg": {
+      "desktop": "3d/2026-10-23-watercolor-landscape-02-burst-AWL-20261023-02-75813-1100.webp",
+      "mobile": "3d/2026-10-23-watercolor-landscape-02-burst-AWL-20261023-02-75813-640.webp"
+    },
+    "2026-10-23-action-landscape-01-scribble-ACL-20261023-01-48619.jpg": {
+      "desktop": "3d/2026-10-23-action-landscape-01-scribble-ACL-20261023-01-48619-1100.webp",
+      "mobile": "3d/2026-10-23-action-landscape-01-scribble-ACL-20261023-01-48619-640.webp"
+    },
+    "2026-10-23-action-portrait-01-geometric-ACP-20261023-01-23845.jpg": {
+      "desktop": "3d/2026-10-23-action-portrait-01-geometric-ACP-20261023-01-23845-1100.webp",
+      "mobile": "3d/2026-10-23-action-portrait-01-geometric-ACP-20261023-01-23845-640.webp"
+    }
+  }
+}

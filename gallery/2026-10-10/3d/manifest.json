@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-10-10-01-burst-AA-20261010-01-33911.jpg": {
+      "desktop": "3d/2026-10-10-01-burst-AA-20261010-01-33911-1100.webp",
+      "mobile": "3d/2026-10-10-01-burst-AA-20261010-01-33911-640.webp"
+    },
+    "2026-10-10-02-network-AA-20261010-02-56292.jpg": {
+      "desktop": "3d/2026-10-10-02-network-AA-20261010-02-56292-1100.webp",
+      "mobile": "3d/2026-10-10-02-network-AA-20261010-02-56292-640.webp"
+    },
+    "2026-10-10-03-organic-AA-20261010-03-89149.jpg": {
+      "desktop": "3d/2026-10-10-03-organic-AA-20261010-03-89149-1100.webp",
+      "mobile": "3d/2026-10-10-03-organic-AA-20261010-03-89149-640.webp"
+    },
+    "2026-10-10-04-geometric-AA-20261010-04-11530.jpg": {
+      "desktop": "3d/2026-10-10-04-geometric-AA-20261010-04-11530-1100.webp",
+      "mobile": "3d/2026-10-10-04-geometric-AA-20261010-04-11530-640.webp"
+    },
+    "2026-10-10-05-scribble-AA-20261010-05-23435.jpg": {
+      "desktop": "3d/2026-10-10-05-scribble-AA-20261010-05-23435-1100.webp",
+      "mobile": "3d/2026-10-10-05-scribble-AA-20261010-05-23435-640.webp"
+    },
+    "2026-10-10-portrait-01-rects-AP-20261010-01-70606.jpg": {
+      "desktop": "3d/2026-10-10-portrait-01-rects-AP-20261010-01-70606-1100.webp",
+      "mobile": "3d/2026-10-10-portrait-01-rects-AP-20261010-01-70606-640.webp"
+    },
+    "2026-10-10-portrait-02-burst-AP-20261010-02-48225.jpg": {
+      "desktop": "3d/2026-10-10-portrait-02-burst-AP-20261010-02-48225-1100.webp",
+      "mobile": "3d/2026-10-10-portrait-02-burst-AP-20261010-02-48225-640.webp"
+    },
+    "2026-10-10-portrait-03-network-AP-20261010-03-15368.jpg": {
+      "desktop": "3d/2026-10-10-portrait-03-network-AP-20261010-03-15368-1100.webp",
+      "mobile": "3d/2026-10-10-portrait-03-network-AP-20261010-03-15368-640.webp"
+    },
+    "2026-10-10-portrait-04-organic-AP-20261010-04-92987.jpg": {
+      "desktop": "3d/2026-10-10-portrait-04-organic-AP-20261010-04-92987-1100.webp",
+      "mobile": "3d/2026-10-10-portrait-04-organic-AP-20261010-04-92987-640.webp"
+    },
+    "2026-10-10-portrait-05-geometric-AP-20261010-05-81082.jpg": {
+      "desktop": "3d/2026-10-10-portrait-05-geometric-AP-20261010-05-81082-1100.webp",
+      "mobile": "3d/2026-10-10-portrait-05-geometric-AP-20261010-05-81082-640.webp"
+    }
+  }
+}

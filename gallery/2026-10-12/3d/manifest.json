@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-10-12-01-spiral-AA-20261012-01-92861.jpg": {
+      "desktop": "3d/2026-10-12-01-spiral-AA-20261012-01-92861-1100.webp",
+      "mobile": "3d/2026-10-12-01-spiral-AA-20261012-01-92861-640.webp"
+    },
+    "2026-10-12-02-rects-AA-20261012-02-15242.jpg": {
+      "desktop": "3d/2026-10-12-02-rects-AA-20261012-02-15242-1100.webp",
+      "mobile": "3d/2026-10-12-02-rects-AA-20261012-02-15242-640.webp"
+    },
+    "2026-10-12-03-burst-AA-20261012-03-37623.jpg": {
+      "desktop": "3d/2026-10-12-03-burst-AA-20261012-03-37623-1100.webp",
+      "mobile": "3d/2026-10-12-03-burst-AA-20261012-03-37623-640.webp"
+    },
+    "2026-10-12-04-network-AA-20261012-04-60004.jpg": {
+      "desktop": "3d/2026-10-12-04-network-AA-20261012-04-60004-1100.webp",
+      "mobile": "3d/2026-10-12-04-network-AA-20261012-04-60004-640.webp"
+    },
+    "2026-10-12-05-organic-AA-20261012-05-82385.jpg": {
+      "desktop": "3d/2026-10-12-05-organic-AA-20261012-05-82385-1100.webp",
+      "mobile": "3d/2026-10-12-05-organic-AA-20261012-05-82385-640.webp"
+    },
+    "2026-10-12-portrait-01-field-AP-20261012-01-42132.jpg": {
+      "desktop": "3d/2026-10-12-portrait-01-field-AP-20261012-01-42132-1100.webp",
+      "mobile": "3d/2026-10-12-portrait-01-field-AP-20261012-01-42132-640.webp"
+    },
+    "2026-10-12-portrait-02-spiral-AP-20261012-02-19751.jpg": {
+      "desktop": "3d/2026-10-12-portrait-02-spiral-AP-20261012-02-19751-1100.webp",
+      "mobile": "3d/2026-10-12-portrait-02-spiral-AP-20261012-02-19751-640.webp"
+    },
+    "2026-10-12-portrait-03-rects-AP-20261012-03-97370.jpg": {
+      "desktop": "3d/2026-10-12-portrait-03-rects-AP-20261012-03-97370-1100.webp",
+      "mobile": "3d/2026-10-12-portrait-03-rects-AP-20261012-03-97370-640.webp"
+    },
+    "2026-10-12-portrait-04-burst-AP-20261012-04-74989.jpg": {
+      "desktop": "3d/2026-10-12-portrait-04-burst-AP-20261012-04-74989-1100.webp",
+      "mobile": "3d/2026-10-12-portrait-04-burst-AP-20261012-04-74989-640.webp"
+    },
+    "2026-10-12-portrait-05-network-AP-20261012-05-31656.jpg": {
+      "desktop": "3d/2026-10-12-portrait-05-network-AP-20261012-05-31656-1100.webp",
+      "mobile": "3d/2026-10-12-portrait-05-network-AP-20261012-05-31656-640.webp"
+    }
+  }
+}
