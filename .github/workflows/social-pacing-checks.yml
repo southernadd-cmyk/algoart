@@ -1,0 +1,37 @@
+name: Verify social publishing pace and captions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/social-pacing-checks.yml'
+      - '.github/workflows/social-live.yml'
+      - '.github/workflows/portrait-live.yml'
+      - '.github/workflows/action-live.yml'
+      - '.github/workflows/watercolor-live.yml'
+      - '.github/workflows/watercolour-live.yml'
+      - '.github/workflows/oil-live.yml'
+      - 'automation/captions.mjs'
+      - 'automation/social-stagger.mjs'
+      - 'tests/social-caption-rotation.test.mjs'
+      - 'tests/social-stagger.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify dry-run pacing, deterministic captions, links and limits
+        run: |
+          node --test tests/social-stagger.test.mjs \
+            tests/social-caption-rotation.test.mjs \
+            tests/social-caption-limits.test.mjs \
+            tests/portrait-captions.test.mjs
