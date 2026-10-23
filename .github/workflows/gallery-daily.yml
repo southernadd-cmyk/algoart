@@ -191,6 +191,12 @@ jobs:
       - name: Prebuild complete 3D tower geometry
         run: node automation/build-tower-geometry.mjs
 
+      - name: Illustrate the same seeded tower geometry
+        run: node automation/build-gallery-tower-illustration.mjs
+
+      - name: Verify illustrated floor geometry
+        run: node --test tests/gallery-tower-illustration.test.mjs
+
       - name: Verify public 3D gallery files, imports and floor links
         run: node --test tests/gallery-public-launch.test.mjs
 
