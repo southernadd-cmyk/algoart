@@ -13,7 +13,10 @@ assert.match(html,/id="materialStyle"/);
 assert.match(html,/Tissue &amp; Graphite/);
 assert.match(app,/params\.has\('oil'\)/);
 assert.match(exportCode,/-tissue-graphite/);
-assert.match(html,/js\/oil-render\.js/);
+assert.doesNotMatch(html,/<script src="js\/oil-render\.js/,
+  'Tissue engine should not block Marker startup');
+const loader=readFileSync(new URL('../js/material-loader.js',import.meta.url),'utf8');
+assert.match(loader,/'oil-render'/,'Tissue engine must remain available for lazy loading');
 assert.match(app,/if\(oilEnabled\(\)\)params\.set\(tissuePaletteVersion>=2\?'tissue':'watercolor'/);
 assert.match(app,/if\(e\.id!=='materialStyle'\)useCurrentRenderer\(\)/);
 assert.match(exportCode,/delete compositionSettings\.oilRender/);

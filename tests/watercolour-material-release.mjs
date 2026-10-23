@@ -31,13 +31,16 @@ try{
     sourceFn:window.AlgoArt.renderOil instanceof Function,
     waterFn:window.AlgoArt.renderWatercolourV2R instanceof Function
   }));
-  assert(original.sourceFn&&original.waterFn);
+  assert(!original.sourceFn&&!original.waterFn,
+    'Cold Marker editor must defer both Tissue and Watercolour engines');
   assert.equal(original.rendererVersion,9);
   assert.equal(await page.locator('#materialStyle').inputValue(),'marker');
 
   await page.locator('#materialStyle').selectOption('tissue');
   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
   assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
+  assert.equal(await page.evaluate(()=>typeof window.AlgoArt.renderOil),'function',
+    'Selecting Tissue should fetch its historical rendering code');
   const tissueSnapshot=await page.evaluate(()=>{
     const A=window.AlgoArt,settings=A.readSettings(),output=document.createElement('canvas');
     A.renderOil(output,settings,.34,false,6);
@@ -51,6 +54,8 @@ try{
   assert.equal(new URL(page.url()).searchParams.get('paper'),'#d9c7b9');
   assert.match(await page.locator('#materialStyleNote').textContent(),/Watercolour — soft washes, colours bleeding together and dry brush marks on paper/);
   assert.match(await page.locator('#statsText').textContent(),/watercolour/i);
+  assert.equal(await page.evaluate(()=>typeof window.AlgoArt.renderWatercolourV2R),'function',
+    'Selecting Watercolour should load historical V2R for saved links');
   const water=await page.evaluate(()=>{
     const A=window.AlgoArt,settings=A.readSettings(),savedMaterial=A.oilMaterial;
     const a=document.createElement('canvas'),b=document.createElement('canvas');
