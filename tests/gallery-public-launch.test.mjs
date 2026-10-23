@@ -74,5 +74,7 @@ test('every archived edition links to its exact 3D floor',()=>{
     assert.ok(read(resolve(gallery,date,'index.html')).includes('../visit/?date='+date),
       'Missing floor link on '+date);
   const legacy=read(resolve('test/virtual-gallery/index.html'));
-  assert.match(legacy,/location\.replace\('\.\.\/\.\.\/gallery\/visit\/'.*location\.search\+location\.hash/);
+  assert.doesNotMatch(legacy,/location\\.replace\\(/);
+  assert.match(legacy,/gallery-bundle\\.js/);
+  assert.match(legacy,/<base href="\\.\\.\\/\\.\\.\\/gallery\\/visit\\/">/);
 });
