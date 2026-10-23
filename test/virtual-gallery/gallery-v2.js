@@ -1526,8 +1526,9 @@ window.addEventListener('mousemove',(e)=>{
   yaw -= e.movementX*.0025;
   pitch=Math.max(-1.35,Math.min(1.35,pitch-e.movementY*.0023));
 });
-canvas.addEventListener('click',()=>{
-  if (renderer && welcome.hidden && !renderer.xr.isPresenting && matchMedia('(pointer:fine)').matches && document.pointerLockElement!==canvas) canvas.requestPointerLock?.().catch?.(()=>{});
+canvas.addEventListener('click',(event)=>{
+  // Synthetic keyboard clicks are not consent to pointer lock.
+  if (event.detail>0 && renderer && welcome.hidden && !renderer.xr.isPresenting && matchMedia('(pointer:fine)').matches && document.pointerLockElement!==canvas) canvas.requestPointerLock?.().catch?.(()=>{});
 });
 canvas.addEventListener('pointerdown',(e)=>{
   if(e.pointerType!=='touch' || !welcome.hidden) return;
