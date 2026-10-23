@@ -41,7 +41,7 @@ async function ready(page,seed,material){
     document.getElementById('seed')?.value===seed&&
     document.getElementById('materialStyle')?.value===material&&
     document.getElementById('creatingOverlay')?.hidden===true&&
-    Boolean(document.getElementById('statsText')?.textContent?.trim()),
+    document.getElementById('statsText')?.textContent?.includes(' · '),
     {seed,material},{timeout:120000});
 }
 try{

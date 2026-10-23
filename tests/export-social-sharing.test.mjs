@@ -13,7 +13,11 @@ try{
  const url=new URL(base);
  url.search='?v=9&seed=SOCIAL-%CE%A6-20261015&mode=organic&fmt=portrait&el=53&den=61&cx=66&neg=49&phi=83&rec=4&spi=48&ga=93&nest=55&pen=fine&th=14&wob=43&od=3&op=70&pr=35&dry=20&curve=92&shape=59&overlap=57&rot=62&ln=1&ci=1&re=1&po=1&ar=1&pal=earth&cols=4&sat=89&bri=68&paper=%23f5f0e6&grain=13&sheet=phi&material=oil-v1';
  await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:90000});
- await page.waitForFunction(()=>document.querySelector('#materialStyle')?.value==='oil');
+ await page.waitForFunction(()=>document.querySelector('#materialStyle')?.value==='oil'&&
+  document.getElementById('creatingOverlay')?.hidden===true&&
+  new URL(location.href).searchParams.get('v')==='9'&&
+  document.querySelector('#statsText')?.textContent?.includes('Oil paint'),
+  null,{timeout:120000});
  await page.locator('#tab-export').click();
  assert.equal(await page.locator('#shareInstagram').count(),0,
   'Instagram button must be fully removed, not visually hidden');
@@ -165,8 +169,10 @@ try{
    'Preloaded image does not match the exact artwork share link');
  await page.goto(art.intents.artworkURL,{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>
-  document.querySelector('#seed')?.value==='SOCIAL-Φ-20261015',
-  null,{timeout:90000});
+  document.querySelector('#seed')?.value==='SOCIAL-Φ-20261015'&&
+  document.getElementById('creatingOverlay')?.hidden===true&&
+  new URL(location.href).searchParams.get('v')==='9',
+  null,{timeout:120000});
  assert.equal(await page.locator('#materialStyle').inputValue(),'oil');
  assert.equal(await page.locator('#paper').inputValue(),'#f5f0e6');
  const restoredSettings=Object.fromEntries(new URL(page.url()).searchParams);
