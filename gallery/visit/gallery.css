@@ -35,6 +35,7 @@ a{color:inherit}
 .info-body{padding:23px;position:relative;flex:1}
 .info h2{font-family:Georgia,serif;font-weight:normal;font-size:23px;line-height:1.16;margin:9px 12px 10px 0}
 .info p{font-size:12px;color:#565d57;margin:0 0 19px}
+.info .info-meta{font-weight:600;line-height:1.5;margin-bottom:5px}
 .info a{display:inline-block;font-size:13px;text-underline-offset:3px}
 .info-close{position:absolute;right:9px;top:6px;border:0;background:transparent;font-size:22px}
 .status{position:fixed;z-index:3;left:25px;bottom:25px;background:rgba(242,239,232,.84);padding:10px 13px;font-size:12px;max-width:58vw;pointer-events:none}
@@ -64,7 +65,8 @@ a{color:inherit}
 #liftMonth{width:100%;font-size:16px;padding:9px;background:white;border:1px solid #aab0a9}
 .lift-weekdays,.lift-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center}
 .lift-weekdays{margin:19px 0 7px;font-size:11px;color:#777}.lift-days button{aspect-ratio:1;border:1px solid #d6d5ce;background:#e9e7e2;color:#999;font-size:13px}
-.lift-days button.lift-available{background:#a03933;color:#fff;border-color:#92322c;font-weight:700}
+.lift-days button.lift-available{position:relative;background:#a03933;color:#fff;border-color:#92322c;font-weight:700}
+.lift-days button.lift-available::after{content:'';position:absolute;bottom:2px;left:50%;width:4px;height:4px;border-radius:50%;transform:translateX(-50%);background:#fff}
 .lift-days button.lift-available:hover,.lift-days button.lift-available:focus-visible{background:#762b26;outline:2px solid #292c29;outline-offset:2px}
 .lift-days button.lift-current{box-shadow:inset 0 0 0 3px #f4dfad}
 .lift-note{margin:17px 0 0}#liftTravel{font-weight:700;color:#373f3a}
