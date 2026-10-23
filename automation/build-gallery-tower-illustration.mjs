@@ -72,7 +72,9 @@ function solidRoom(room,level,base){
   const tones=['#ab9180','#b99d8b','#c1a491','#a88c7c'];
   for(const [side] of sides){
     const light=side==='south'||side==='east';
-    const tone=tones[(room.index+level+(light?2:0))%tones.length];
+    // Lift cores use index -1: normalise negative modulo to a valid palette slot.
+    const index=((room.index+level+(light?2:0))%tones.length+tones.length)%tones.length;
+    const tone=tones[index];
     shape(face(room,side,bottom,top),tone,'#69584e',1.35,'class="solid-brick-wall"');
     // Staggered mortar courses: solid brick, not glass panels.
     const wallFace=face(room,side,bottom,top);
