@@ -5,6 +5,7 @@ on:
     paths:
       - 'tests/gallery-public-launch.test.mjs'
       - 'tests/gallery-xr-loading.test.mjs'
+      - 'tests/gallery-xr-controls.test.mjs'
       - 'gallery/visit/gallery-v2.js'
       - 'gallery/visit/index.html'
       - 'gallery/visit/gallery-bundle.js'
@@ -20,7 +21,7 @@ jobs:
         with:
           node-version: '22'
       - name: Gallery public launch regression
-        run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs
+        run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs
       - name: Validate bundle syntax and test entry point
         run: |
           node --check gallery/visit/gallery-bundle.js

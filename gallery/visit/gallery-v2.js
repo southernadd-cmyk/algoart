@@ -1678,7 +1678,12 @@ function updateMovement(dt) {
     let dx,dz;
     if(renderer.xr.isPresenting){
       // Head-relative locomotion follows where the visitor actually looks.
-      const forward=renderer.xr.getCamera(camera).getWorldDirection(new THREE.Vector3());
+      // The XR camera has no rig parent. Its world-direction getter rebuilds
+      // its matrix without our locomotion rotation, making forward sideways
+      // on rotated entrances. Rotate its local headset direction by our yaw.
+      const forward=new THREE.Vector3(0,0,-1)
+        .transformDirection(renderer.xr.getCamera(camera).matrix)
+        .applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
       forward.y=0;forward.normalize();
       dx=(forward.x*ahead-forward.z*side)*dt*speed;
       dz=(forward.z*ahead+forward.x*side)*dt*speed;

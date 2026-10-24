@@ -48,7 +48,7 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
-    await import('./gallery-bundle.js?v=xr-artwork-loading-20261024');
+    await import('./gallery-bundle.js?v=xr-head-relative-controls-20261024');
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
     window.__galleryStartupError='Module import failed: '+(error?.message||String(error));
