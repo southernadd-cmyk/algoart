@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="index,follow,max-image-preview:large"><meta name="description" content="See how PROPORTION PIECE makes a marker drawing, one mark at a time, using real generated strokes and the golden ratio."><link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/about/step-by-step/"><meta property="og:type" content="article"><meta property="og:title" content="How a drawing is made — PROPORTION PIECE"><meta property="og:description" content="Watch the drawing machine work, one marker stroke at a time."><meta property="og:image" content="https://southernadd-cmyk.github.io/algoart/social-card.png"><title>How a drawing is made — PROPORTION PIECE</title><link rel="icon" href="../../favicon.svg"><link rel="stylesheet" href="../../css/marker-font.css"><link rel="stylesheet" href="../../css/nav-lettering.css?v=11"><script defer src="../../js/nav-lettering.js?v=2"></script><style>:root{--paper:#e8e1d1;--ink:#403931;--rose:#b65368;--line:#c9bdab}
+*{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink)}
+body{font:18px/1.65 "Palatino Linotype",Palatino,"Book Antiqua",serif}
+a{color:inherit;text-underline-offset:4px}
+main{max-width:1350px;margin:auto;padding:0 clamp(20px,4vw,65px) 85px}
+.intro-section{max-width:920px;margin:0;padding:65px 0 24px}
+.kicker{font:16px/1.4 "AlgoArt Marker",sans-serif;color:var(--rose)}
+.page-title{font:normal clamp(40px,6vw,70px)/1.13 "AlgoArt Marker",sans-serif;margin:12px 0 26px}
+.intro{font-size:clamp(20px,2.3vw,26px);line-height:1.5;margin:0}
+.controls{display:flex;flex-wrap:wrap;align-items:end;gap:16px;margin:28px 0 20px}
+label{display:grid;gap:6px;font-size:15px}
+select,input,button{font:inherit;min-height:40px;border:1px solid #a9a093;background:#f7f3e9;color:var(--ink);padding:8px 12px;border-radius:0}
+button{font:17px/1.2 "AlgoArt Marker",sans-serif;cursor:pointer}
+button:hover{background:#e4ddcd}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
+select{max-width:100%}.controls label{flex:1 1 190px}.controls button{flex:0 1 auto}
+.panel{border-top:1px solid var(--line);padding:26px 0 0;margin:34px 0 0}
+h2{font:normal clamp(25px,3vw,38px)/1.15 "AlgoArt Marker",sans-serif;margin:0 0 12px}
+h3{font:normal 23px/1.25 "AlgoArt Marker",sans-serif;margin:19px 0 6px}
+p{margin:0 0 17px}.small{font-size:15px;color:#645c52}
+.viewer{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:26px;align-items:start}
+.viewer>div{min-width:0}
+.phi-toggle{display:flex;align-items:center;gap:9px;margin:0 0 12px}
+.phi-toggle input{min-height:auto;width:18px;height:18px}
+.paper{background:#f7f3e9;border:1px solid var(--line);box-shadow:0 8px 22px #40393115;overflow:hidden}
+.paper svg{display:block;width:100%;height:auto;max-height:75vh}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.timeline{width:100%;padding:0;min-height:24px}
+.stats{font-variant-numeric:tabular-nums;margin:4px 0}
+.explain{min-width:0;padding-left:23px;border-left:1px solid var(--line)}
+.explain #explanation{font-size:17px;line-height:1.55}
+.explain #explanation p{margin:0 0 12px}
+details{border-top:1px solid var(--line);padding:12px 0;margin-top:15px}
+summary{cursor:pointer}
+.math{background:#f8f4eb;padding:14px;border-left:2px solid #a59a88;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.65 ui-monospace,Consolas,monospace}
+.source-details code{display:block;background:#f8f4eb;padding:12px;max-height:120px;overflow:auto;overflow-wrap:anywhere;white-space:pre-wrap;font:11px/1.5 ui-monospace,monospace}
+.left-note{margin-top:28px;border-top:1px solid var(--line);padding-top:18px}
+.room{display:block;width:100%;max-height:290px;background:#f8f4eb}
+.foot{max-width:1280px;margin:0 auto 45px;padding:18px clamp(22px,4vw,54px);border-top:1px solid var(--line);font-size:14px}
+@media(max-width:800px){.intro-section{padding-top:38px}.viewer{grid-template-columns:1fr}.explain{border-left:0;border-top:1px solid var(--line);padding:20px 0 0}.controls{gap:12px}}
+</style></head><body>
+<header class="algo-global-header">
+<div class="algo-global-brand"><a class="brand" href="../../">PROPORTION PIECE</a></div>
+<div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
+<p class="algo-global-question">Can one number compose a drawing?</p>
+<nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../../gallery/">daily gallery</a><a data-algo-nav href="../../about/">how it works</a></nav>
+</header>
+<main><div class="intro-section"><span class="kicker">A DRAWING, ONE MARK AT A TIME</span><h1 class="page-title">HOW A DRAWING IS MADE</h1><p class="intro">Watch a drawing appear, one mark at a time. This example uses a marker. Other materials begin with the same geometry, but make their marks differently.</p></div>
+
+<div class="controls"><label>Choose a drawing engine<select id="engine"><option value="field">Orbital Studies</option><option value="spiral">Golden Trajectories</option><option value="rects" selected>Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic">Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
+
+<label>Paper orientation<select id="orientation"><option value="portrait">Portrait</option><option value="landscape" selected>Landscape</option></select></label>
+<label>Seed<input id="seed" value="PP-RECURSIVE-DIVISIONS-INTRO" spellcheck="false"></label><button id="regenerate">Generate from seed</button></div>
+<p id="notice" role="status" class="small">Loading the drawing and architecture modules…</p>
+<section class="panel"><h2>Watch it happen</h2><p>Start with Recursive Divisions, which draws across the sheet. Press Next mark to follow the pen.</p><div class="viewer"><div><label class="phi-toggle"><input type="checkbox" id="phiGuides" checked> Show golden-ratio guides</label><div class="paper"><svg id="drawing" viewBox="0 0 1000 1400" role="img" aria-label="Artwork progressively constructed from recorded vector pen paths"></svg></div><div class="actions"><button id="prev">Previous mark</button><button id="next">Next mark</button><button id="play">Play</button><button id="all">Show finished drawing</button></div><input id="step" class="timeline" type="range" value="0" min="0" max="0" aria-label="Drawing mark number"><p id="counter" class="stats small"></p><aside class="left-note"><h2>What the gold lines show</h2><p>They mark golden-ratio divisions of the page, at about 38% and 62%. They help reveal the structure, but not every ink line follows them.</p></aside></div>
+<div class="explain" aria-live="polite" aria-atomic="true"><h2 id="markTitle">The blank page</h2><p id="markText">The seed controls reproducible choices. No marks have been placed yet.</p><div id="explanation"></div><details id="calculations"><summary>The actual numbers — show the mathematics (optional)</summary><p class="small">A short breakdown of this pen pass. The original SVG commands are available separately.</p><div id="markMath" class="math">φ = (1 + √5)/2 = 1.6180339887
+Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details class="source-details"><summary>Show original SVG path</summary><code id="svgSource"></code></details></details><p id="inkNote" class="small"></p></div></div></section>
+<section class="panel"><h2>Why the pen goes over a line again</h2><p>The artist-like finish comes from drawing the same path more than once, with small changes in position, thickness and ink strength.</p></section>
+<section class="panel"><h2>From the page to the exhibition</h2>
+<p>In the <a href="../../gallery/visit/">virtual exhibition</a>, some portrait drawings become sculptures: their marks are traced into solid shapes and placed on plinths. Portraits that aren't made into sculptures hang on the walls as paintings, alongside the landscape works.</p>
+<p>Each day's rooms are planned from that day's date and drawings, so the exhibitions grow and change.</p>
+<p>For the thinking behind the project, read <a href="../../about/">How It Works</a>. You can also <a href="../../">make a drawing of your own</a>.</p>
+<p class="small">The drawings come from the code itself. See the <a href="https://github.com/southernadd-cmyk/algoart">PROPORTION PIECE source repository</a> for the rules behind them.</p></section></main>
+
+<script src="../../js/random.js"></script><script src="../../js/phi.js"></script><script src="../../js/palettes.js"></script><script src="../../js/marker.js"></script><script src="../../js/phi-sheet-fit.js"></script><script src="../../js/generator.js"></script>
+<script type="module">
+const $=id=>document.getElementById(id), A=window.AlgoArt;
+const PHI=A.PHI; // The same exact constant defined by js/phi.js for the drawing engine.
+const names={field:'Orbital Studies',spiral:'Golden Trajectories',rects:'Recursive Divisions',burst:'Radiant Systems',network:'Connected Fields',organic:'Growth Systems',geometric:'Constructed Forms',scribble:'Automatic Marks'};
+const descriptions={
+marker:'Fine marker strokes are constructed from the actual path, then seeded wobble, pressure, opacity, dry-ink gaps and repeated passes alter their visible edges.',
+tissue:'Tissue & Graphite overlays translucent torn-paper shapes and graphite. The source path alone cannot reproduce the torn boundaries or translucency.',
+watercolour:'Watercolour transports simulated pigment through paper fibres, with wet-on-wet movement, edge darkening, granulation and glazing. The vector path is only the underlying geometry.',
+oil:'Oil Paint uses paint-loaded brush contacts, surface tooth, bristle behaviour and layered pigment. Individual path geometry does not encode the complete visible paint surface.',
+action:'Action Painting builds dynamic curves and paint deposits with speed-dependent width, pools and spatters. Paint dynamics and deposits require more than a single SVG path.'
+};
+let paths=[],i=0,playing=false,token=0,roomInfo=null;
+const num=n=>Number(n).toFixed(2),esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
+function settings(){return {seed:$('seed').value.trim()||'PP-RECURSIVE-DIVISIONS-INTRO',mode:$('engine').value,orientation:$('orientation').value,
+elements:36,density:53,complexity:71,negativeSpace:41,phiStrength:91,recursion:4,spiralInfluence:63,goldenAngle:93,nesting:44,
+pen:'fine',thickness:13,wobble:32,overdraw:3,opacity:70,pressure:36,dryness:19,curveBias:91,shapeAmount:68,overlap:65,rotation:91,
+lines:true,circles:true,rectangles:true,polygons:true,arcs:true,palette:'mono',colourCount:4,saturation:86,brightness:59,paper:'#f5f0e6',grain:13};}
+const explanations={
+field:'Larger shapes lead the eye. Smaller marks support them. The engine compares possible layouts and keeps one that balances the page.',
+spiral:'Each point turns around a centre while moving farther out. The golden angle helps set the turning rhythm.',
+rects:'A large rectangle is split into smaller spaces. Some cuts use the golden ratio, so one space is about 1.6 times another.',
+burst:'Lines spread out from a centre. Their angles and lengths are chosen by rules and varied by the seed.',
+network:'Points are placed, then connected. The engine tries to make a connected drawing without too many crossings.',
+organic:'Branches grow from earlier branches. New directions and lengths follow rules for growth.',
+geometric:'The engine chooses where to put shapes, how big to make them and how far to turn them.',
+scribble:'Marks move within chosen areas and directions. The result feels spontaneous, but the seed keeps it repeatable.'
+};
+function phiOverlay(w,h){
+const a=w/PHI,b=h/PHI,c=w-a,d=h-b;
+return '<g fill="none" stroke="#b0873b" stroke-width="2" stroke-dasharray="10 10" opacity=".8"><path d="M '+a+' 0 V '+h+' M '+c+' 0 V '+h+' M 0 '+b+' H '+w+' M 0 '+d+' H '+w+'"/></g><g fill="#85622b" font-size="22" font-family="Georgia"><text x="'+(a+10)+'" y="30">w/φ</text><text x="12" y="'+(b-10)+'">h/φ</text></g>';
+}
+function renderStep(){const svg=$('drawing');const s=settings();const w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000;svg.setAttribute('viewBox','0 0 '+w+' '+h);svg.setAttribute('preserveAspectRatio','xMidYMid meet');svg.setAttribute('aria-label',i===0?'Blank paper, ready for the first mark':'Drawing with '+i+' of '+paths.length+' marker passes visible');
+svg.innerHTML='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+s.paper+'"/>'+paths.slice(0,i).map(p=>'<path d="'+esc(p.d)+'" fill="none" stroke="'+esc(p.stroke||'#262626')+'" stroke-width="'+num(p.width||1)+'" stroke-opacity="'+num(p.opacity??1)+'" stroke-linecap="'+esc(p.lineCap||'round')+'" stroke-linejoin="round"'+(p.dash?.length?' stroke-dasharray="'+p.dash.map(num).join(' ')+'" stroke-dashoffset="'+num(p.dashOffset||0)+'"':'')+'/>').join('')+($('phiGuides').checked?phiOverlay(w,h):'');
+$('step').max=paths.length;$('step').value=i;$('counter').textContent=i+' / '+paths.length+' recorded pen passes';
+if(!i){$('svgSource').textContent='No path yet';$('explanation').innerHTML='<h3>First, plan the composition</h3><p>'+explanations[s.mode]+'</p><h3>Then, prepare the pen</h3><p>Coordinates begin at (0, 0) in the top-left. X runs right and Y runs down. A seeded random sequence supplies repeatable wobble, pressure and repeated ink passes.</p>';$('markTitle').textContent='The blank page';$('markText').textContent='The canvas starts empty. Next, the selected engine determines where the first geometry will go.';$('markMath').textContent='φ = (1+√5)/2 = '+num(PHI)+'\nGolden angle = π(3−√5) = 137.5078°';return;}
+const p=paths[i-1],nums=[...(p.d||'').matchAll(/-?\d+(?:\.\d+)?(?:e[-+]?\d+)?/ig)].map(x=>Number(x[0]));const cmd=[...(p.d||'').matchAll(/[MLCQAZ]/ig)].map(x=>x[0]);
+$('markTitle').textContent='Recorded pen pass '+i;
+$('markText').textContent='One pass of the pen. Some marks are drawn more than once to give the line its uneven ink.';
+const px=nums[0]||0,py=nums[1]||0,qx=nums.at(-2)||px,qy=nums.at(-1)||py;
+const dx=qx-px,dy=qy-py,distance=Math.hypot(dx,dy),curved=cmd.includes('C');
+$('explanation').innerHTML='<h3>Why is it here?</h3><p>'+explanations[s.mode]+'</p><h3>What does the pen do?</h3><p>It starts '+Math.round(px)+' pixels across and '+Math.round(py)+' pixels down the paper. '+(curved?'Two control points bend the line into a curve.':'It follows straight segments between its points.')+' It ends '+Math.round(Math.abs(dx))+' pixels '+(dx<0?'left':'right')+' and '+Math.round(Math.abs(dy))+' pixels '+(dy<0?'up':'down')+' from where it began.</p><h3>Why does it look drawn?</h3><p>The marker is '+num(p.width||1)+' pixels wide on this pass. Its ink is '+Math.round((p.opacity??1)*100)+'% opaque.'+(p.dash?.length?' Small gaps make the ink look dry.':'')+' Other passes may retrace the same shape with small changes.</p>';
+let formula='Path commands: '+cmd.join(' → ')+'\n';
+if(nums.length>=4){const x=nums[0],y=nums[1],xx=nums.at(-2),yy=nums.at(-1);formula+='Start ('+num(x)+', '+num(y)+')\nEnd ('+num(xx)+', '+num(yy)+')\nΔx = '+num(xx-x)+'; Δy = '+num(yy-y)+'\nChord length = √(Δx²+Δy²) = '+num(Math.hypot(xx-x,yy-y))+' px\n';}
+if(cmd.includes('C')&&nums.length>=8)formula+='Cubic Bézier: B(t)=(1−t)³P₀ + 3(1−t)²tP₁ + 3(1−t)t²P₂ + t³P₃\nControl points: ('+num(nums[2])+', '+num(nums[3])+'), ('+num(nums[4])+', '+num(nums[5])+')\n';
+formula+='Stroke width: '+num(p.width||1)+' px\nOpacity: '+num(p.opacity??1)+'\nDash pattern: '+(p.dash?.map(num).join(', ')||'solid');
+$('markMath').textContent=formula;$('svgSource').textContent=p.d;
+}
+$('phiGuides').addEventListener('change',renderStep);
+function advance(n){i=Math.max(0,Math.min(paths.length,n));renderStep()}
+function generate(){playing=false;++token;$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=9;A.phiFramingEnabled=false;const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;renderStep();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';$('notice').textContent=names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded pen passes from the drawing renderer.';}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
+$('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(paths.length)};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=paths.length){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(paths.length,1)));}tick();};generate();
+</script></body></html>
