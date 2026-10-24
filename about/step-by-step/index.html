@@ -99,7 +99,7 @@ const capturedMaterial=()=>['tissue','watercolour','oil'].includes(selectedMater
 const actionLayerCount=5;
 const selectedMaterial=()=> $('replayMaterial').value;
 const isAction=()=>selectedMaterial()==='action';
-const stepTotal=()=>isAction()?actionLayerCount:capturedMaterial()?Math.max(0,materialFrames.length-1):paths.length;
+const stepTotal=()=>isAction()||capturedMaterial()?Math.max(0,materialFrames.length-1):paths.length;
 const materialFromURL=()=>{const m=incoming.get('material')||'';return m.startsWith('action')?'action':m.startsWith('oil')?'oil':m.startsWith('watercolour')?'watercolour':incoming.has('tissue')||incoming.has('watercolor')?'tissue':'marker'};
 const incoming=new URLSearchParams(location.search);
 const editorKeys=A.PARAM_KEYS;
@@ -160,11 +160,11 @@ const painting=$('actionDrawing');
 $('prev').textContent=capturedMaterial()?'Previous stage':isAction()?'Previous layer':'Previous mark';
 $('next').textContent=capturedMaterial()?'Next stage':isAction()?'Next layer':'Next mark';
 svg.style.display=(isAction()||capturedMaterial())?'none':'block';painting.hidden=!(isAction()||capturedMaterial());painting.style.display=(isAction()||capturedMaterial())?'block':'none';
-if(capturedMaterial()){
+if(capturedMaterial()||isAction()){
  const frame=materialFrames[i];if(!frame)return;
  painting.width=frame.width;painting.height=frame.height;painting.getContext('2d').drawImage(frame,0,0);
  $('step').max=stepTotal();$('step').value=i;
- $('counter').textContent=i+' / '+stepTotal()+' actual material stages';
+ $('counter').textContent=i+' / '+stepTotal()+(isAction()?' actual paint passes':' actual material stages');
  $('markTitle').textContent=materialFrameLabels[i]||'Material stage '+i;
  $('markText').textContent=descriptions[selectedMaterial()];
  $('explanation').innerHTML='<h3>What is visible?</h3><p>This image is a captured state of the actual material renderer, not marker geometry recoloured to resemble paint. The intermediate stages are checkpoints in the rendering process rather than individual brush movements.</p>';
@@ -202,9 +202,29 @@ $('markMath').textContent=formula;$('svgSource').textContent=p.d;
 }
 $('phiGuides').addEventListener('change',renderStep);
 function advance(n){i=Math.max(0,Math.min(stepTotal(),n));renderStep()}
-function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;if(capturedMaterial())captureMaterialStages(s);renderStep();showMaterialExplanation();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';const originalMaterial=incoming.get('material')|| (incoming.has('tissue')?'tissue':incoming.has('watercolor')?'watercolour':'marker');
+function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;if(capturedMaterial())captureMaterialStages(s);else if(isAction())captureActionStages(s);renderStep();showMaterialExplanation();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';const originalMaterial=incoming.get('material')|| (incoming.has('tissue')?'tissue':incoming.has('watercolor')?'watercolour':'marker');
 $('notice').textContent=(incoming.has('seed')&&incoming.has('mode')?'Your drawing from the editor · ':'')+names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded source passes.'+(originalMaterial!=='marker'&&originalMaterial!==selectedMaterial()?' The editor uses '+originalMaterial+'; the selected view shows '+selectedMaterial()+'.':'');}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
-$('replayMaterial').onchange=()=>{playing=false;++token;i=0;if(capturedMaterial())captureMaterialStages(settings());renderStep();showMaterialExplanation()};
+$('replayMaterial').onchange=()=>{playing=false;++token;i=0;if(capturedMaterial())captureMaterialStages(settings());else if(isAction())captureActionStages(settings());renderStep();showMaterialExplanation()};
+function captureActionStages(s){
+ materialFrames=[];materialFrameLabels=[];
+ const scale=.32,target=document.createElement('canvas');
+ const save=(label,source)=>{
+  const frame=document.createElement('canvas');
+  frame.width=source.width;frame.height=source.height;
+  frame.getContext('2d').drawImage(source,0,0);
+  materialFrames.push(frame);materialFrameLabels.push(label);
+ };
+ const blank=document.createElement('canvas');
+ blank.width=Math.round((s.orientation==='portrait'?1000:1400)*scale);
+ blank.height=Math.round((s.orientation==='portrait'?1400:1000)*scale);
+ const context=blank.getContext('2d');context.fillStyle=s.paper;context.fillRect(0,0,blank.width,blank.height);
+ save('The blank page',blank);
+ A.actionPaintingFromPaths(target,paths,s,scale,{
+  version:Number((incoming.get('material')||'').replace('action-v',''))||2,
+  layers:actionLayerCount,
+  onStage:(label,canvas)=>save(label,canvas)
+ });
+}
 function captureMaterialStages(s){
  materialFrames=[];materialFrameLabels=[];
  const shortScale=.32;
