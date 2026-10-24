@@ -173,6 +173,8 @@ function oilColourField(ctx,mask,area,painter,plan){
   ctx.fillStyle=hex(blend(base,[244,232,217],.085));ctx.fill(poly);
   mask.globalAlpha=.33;mask.fillStyle='#fff';mask.fill(poly);
   ctx.globalAlpha=1;mask.globalAlpha=1;
+  // Record the actual field foundation before the first loaded-brush contact.
+  if(progress)progress(0,12);
   const guides=(plan.territories||[]).filter(t=>
     area.guideIds&&area.guideIds.includes(t.guideId));
   // Gesture geometry comes from the actual branches, ordered trajectory
