@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {resolveStudyMaterial,materialProfile} from './study-material.mjs';
+import {resolveStudyMaterial,materialProfile} from '../../gallery/visit/study-material.mjs';
 
 test('Replays each of the five material families and their exact archive versions',()=>{
   const cases=[
