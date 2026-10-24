@@ -2,6 +2,18 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-10-24",
+      "cover": "2026-10-24-01-network-AA-20261024-01-19688.jpg",
+      "coverOrientation": "landscape",
+      "count": 4,
+      "series": [
+        "Connected Fields",
+        "Growth Systems",
+        "Constructed Forms",
+        "Automatic Marks"
+      ]
+    },
+    {
       "date": "2026-10-23",
       "cover": "2026-10-23-01-spiral-AA-20261023-01-90213.jpg",
       "coverOrientation": "landscape",
