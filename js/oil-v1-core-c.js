@@ -259,7 +259,6 @@ function oilAdapter(target,plan,scale){
         oilTerritory(ctx,mask,cell,cell.rgb,cell.seed,painter):
         oilGuideTerritory(ctx,mask,cell,painter);
     }
-    if(A.materialStageCapture&&((ti+1)%Math.max(1,Math.ceil(plan.territories.length/12))===0))captureOilStage('oil-territory-'+(ti+1));
   }
   for(var i=0;i<((plan.connectedFields||[]).length?0:plan.regions.length);i++){
     // Source-mark clusters remain directional material detail, not a second
@@ -3904,7 +3903,7 @@ function oilAdapter(target,plan,scale){
   var deposits=0,territoryDeposits=0,fieldStrokes=0;
   var connected=plan.connectedFields||[];
   for(var fi=0;fi<connected.length;fi++){
-    // Use four progressive, real brushwork checkpoints per connected field,
+    // Use twelve progressive, real brushwork checkpoints per connected field,
     // instead of empty territory/mass/gesture passes in this rendering mode.
     fieldStrokes+=oilColourField(ctx,mask,connected[fi],painter,plan,
       A.materialStageCapture?(quarter,total)=>captureOilStage('oil-field-'+(fi+1)+'-'+quarter):null);
