@@ -1,15 +1,8 @@
 name: Verify gallery bundle reproducibility
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/gallery-bundle-reproducibility.yml'
-      - 'tests/gallery-xr-controls.test.mjs'
-      - '.github/workflows/gallery-bundle-release-checks.yml'
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 jobs:
   compare:
     runs-on: ubuntu-latest
@@ -37,21 +30,6 @@ jobs:
           name: gallery-rebuilt-bundle
           path: gallery/visit/gallery-bundle.js
           retention-days: 7
-      - name: Open review PR for a mismatched bundle
-        if: steps.parity.outcome == 'failure'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: 'Rebuild gallery bundle from pinned source and dependencies'
-          branch: automation/gallery-bundle-parity
-          delete-branch: true
-          title: 'Rebuild gallery bundle to match source'
-          body: |
-            This PR contains only the reproducibly built production gallery bundle.
-            The current committed bundle does not match the source build.
-            The generated bundle passed syntax and the gallery regression suite before this PR was created.
-            Review the change before merging to production.
-          add-paths: gallery/visit/gallery-bundle.js
       - name: Report parity without blocking manual diagnosis
         run: |
           if [ "${{ steps.parity.outcome }}" = 'failure' ]; then
