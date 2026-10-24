@@ -110,10 +110,10 @@ if(incomingSettings.seed)$('seed').value=incomingSettings.seed;
 if(incomingSettings.mode)$('engine').value=incomingSettings.mode;
 if(incomingSettings.orientation)$('orientation').value=incomingSettings.orientation;
 const num=n=>Number(n).toFixed(2),esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
-function settings(){return {...incomingSettings,seed:$('seed').value.trim()||'PP-RECURSIVE-DIVISIONS-INTRO',mode:$('engine').value,orientation:$('orientation').value,
+function settings(){return {seed:$('seed').value.trim()||'PP-RECURSIVE-DIVISIONS-INTRO',mode:$('engine').value,orientation:$('orientation').value,
 elements:36,density:53,complexity:71,negativeSpace:41,phiStrength:91,recursion:4,spiralInfluence:63,goldenAngle:93,nesting:44,
 pen:'fine',thickness:13,wobble:32,overdraw:3,opacity:70,pressure:36,dryness:19,curveBias:91,shapeAmount:68,overlap:65,rotation:91,
-lines:true,circles:true,rectangles:true,polygons:true,arcs:true,palette:'mono',colourCount:4,saturation:86,brightness:59,paper:'#f5f0e6',grain:13};}
+lines:true,circles:true,rectangles:true,polygons:true,arcs:true,palette:'mono',colourCount:4,saturation:86,brightness:59,paper:'#f5f0e6',grain:13,...incomingSettings,seed:$('seed').value.trim()||'PP-RECURSIVE-DIVISIONS-INTRO',mode:$('engine').value,orientation:$('orientation').value};}
 const explanations={
 field:'Larger shapes lead the eye. Smaller marks support them. The engine compares possible layouts and keeps one that balances the page.',
 spiral:'Each point turns around a centre while moving farther out. The golden angle helps set the turning rhythm.',
