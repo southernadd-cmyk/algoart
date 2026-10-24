@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT} from './layout-v2.mjs';
+import {buildLayout, footprintAt, canStand, DOOR_WIDTH, ROOM_HEIGHT} from '../../gallery/visit/layout-v2.mjs';
 import {planGalleryHangs} from './hanging-v2.mjs';
 
 const ENGINE=['rects','spiral','network','organic','field','burst','geometric','scribble'];
