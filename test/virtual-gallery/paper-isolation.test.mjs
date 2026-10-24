@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {paperRGB,estimatePaper,pigmentOpacity,maskPaper} from './paper-isolation.mjs';
-import {pigmentGrid,tracePigmentRegions} from './pigment-regions.mjs';
+import {paperRGB,estimatePaper,pigmentOpacity,maskPaper} from '../../gallery/visit/paper-isolation.mjs';
+import {pigmentGrid,tracePigmentRegions} from '../../gallery/visit/pigment-regions.mjs';
 function illustration(){
   const width=96,height=112,data=new Uint8ClampedArray(width*height*4);
   const put=(x,y,rgb)=>{
