@@ -262,16 +262,16 @@ function captureMaterialStages(s){
  const originalCapture=A.materialStageCapture;
  try{
   A.materialStageCapture=(name,source)=>{
-   const labels={'tissue-planes':'Broad tissue areas','tissue-glazes':'Translucent overlapping glazes','tissue-ribbons':'Main coloured tissue ribbons','tissue-pale':'Pale tissue and torn edges','tissue-pigment':'Small pigment and fibre details','tissue-surface':'The textured tissue surface','tissue-graphite-finished':'Completed graphite linework','watercolour-broad':'First broad wet washes','watercolour-hero':'Structural pigment strokes','watercolour-before-flow':'Wet pigment before paper transport','watercolour-wash':'Pigment transported through paper','watercolour-dry':'First dry marks','watercolour-dry-lines':'Additional dry strokes','watercolour-accents':'Final accents and granulation','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added','oil-primary-fields':'Primary coloured oil fields','oil-territories':'Territory brush deposits','oil-paint-masses':'Loaded paint masses','oil-gestures':'Directional bristle gestures','oil-before-relief':'Completed brush deposits before surface lighting','oil-after-relief':'Bristle ridges under surface lighting'};
+   const labels={'tissue-planes':'Broad tissue areas','tissue-glazes':'Translucent overlapping glazes','tissue-ribbons':'Main coloured tissue ribbons','tissue-pale':'Pale tissue and torn edges','tissue-pigment':'Small pigment and fibre details','tissue-surface':'The textured tissue surface','tissue-graphite-finished':'Completed graphite linework','watercolour-broad':'Broad pigment deposits before paper transport','watercolour-hero':'Structural pigment before paper transport','watercolour-wash':'Pigment transported through paper','watercolour-dry':'First dry marks','watercolour-accents':'Final accents and granulation','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added','oil-primary-fields':'Primary coloured oil fields','oil-territories':'Territory brush deposits','oil-paint-masses':'Loaded paint masses','oil-gestures':'Directional bristle gestures','oil-before-relief':'Completed brush deposits before surface lighting','oil-after-relief':'Bristle ridges under surface lighting'};
    const phase=name.startsWith('watercolour-')?name.replace(/-\d+$/,'').replace(/-(broad|hero|detail|dry|fine-ink)-.*$/,'-$1'):
     name.startsWith('tissue-')?name.replace(/-\d+$/,'').replace(/-(plane|glaze|ribbon|detail)-.*$/,'-$1'):
     name.startsWith('oil-field-')?'oil-field-'+name.split('-')[2]:
     name.replace(/-\d+$/,'');
    const description=labels[name]||
-    (name.startsWith('watercolour-detail-')?'Small pigment details':
+    (name.startsWith('watercolour-detail-')?'Pigment details before paper transport':
      name.startsWith('watercolour-fine-ink-')?'Fine dry ink accents':
-     name.startsWith('watercolour-broad-')?'Building the broad washes':
-     name.startsWith('watercolour-hero-')?'Building the structural strokes':
+     name.startsWith('watercolour-broad-')?'Depositing broad pigment before paper transport':
+     name.startsWith('watercolour-hero-')?'Depositing structural pigment before paper transport':
      name.startsWith('watercolour-dry-')?'Adding dry marks':
      name.startsWith('tissue-plane-')?'Laying tissue pigment planes':
      name.startsWith('tissue-glaze-')?'Layering translucent glazes':
