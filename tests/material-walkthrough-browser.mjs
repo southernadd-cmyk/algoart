@@ -11,7 +11,7 @@ const server=createServer(async(req,res)=>{
   const path=new URL(req.url,'http://localhost').pathname;
   const full=resolve(root,'.'+decodeURIComponent(path));
   if(full!==root&&!full.startsWith(root+sep)){res.writeHead(403);res.end();return;}
-  const file=full.endsWith('/')?full+'index.html':full;
+  const file=path.endsWith('/')?resolve(full,'index.html'):full;
   const data=await readFile(file);
   const ext=file.slice(file.lastIndexOf('.'));
   res.writeHead(200,{'content-type':mime[ext]||'application/octet-stream'});res.end(data);
