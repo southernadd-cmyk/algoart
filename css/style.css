@@ -2432,3 +2432,47 @@ button{font-family:Georgia,serif}
   max-width:100%!important;
   height:auto!important;
 }
+
+/* Mobile editor: prevent the sixth action from overflowing the five-button row. */
+@media(max-width:760px){
+ .editorial-preview .stage>.actions{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-flow:row wrap!important;
+  justify-content:flex-start!important;
+  align-content:flex-start!important;
+  gap:5px 14px!important;
+  padding:12px 0 10px!important;
+  height:auto!important;
+  min-height:0!important;
+  overflow:visible!important;
+ }
+ .editorial-preview .stage>.actions>button{
+  flex:0 0 auto!important;
+  min-height:32px!important;
+  padding:4px 0!important;
+  font-size:clamp(12px,3.2vw,15px)!important;
+ }
+ .editorial-preview .stage>.actions>#watchDrawing{
+  display:inline-flex!important;
+  flex:1 0 100%!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:3px 0 0!important;
+  padding:5px 0!important;
+  min-height:32px!important;
+  font:clamp(12px,3.2vw,15px)/1.35 Georgia,serif!important;
+  white-space:normal!important;
+  text-align:left!important;
+  border:0!important;
+  background:transparent!important;
+ }
+ .editorial-preview .stage>.actions #variations::after,
+ .editorial-preview .stage>.actions #geometry::after{
+  font-size:clamp(12px,3.2vw,15px)!important;
+ }
+ .editorial-preview .stage{
+  min-height:0!important;
+  overflow-x:hidden!important;
+ }
+}
