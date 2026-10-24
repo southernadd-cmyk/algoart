@@ -3880,10 +3880,20 @@ function oilAdapter(target,plan,scale){
   if(!painter)throw Error('V4e loaded brush unavailable');
   ctx.scale(scale,scale);mask.scale(scale,scale);
   ctx.save();mask.save();clippedToVoids(ctx,plan);clippedToVoids(mask,plan);
+  function captureOilStage(name){
+    if(!A.materialStageCapture)return;
+    var preview=document.createElement('canvas');
+    preview.width=w;preview.height=h;
+    var presentation=preview.getContext('2d');
+    presentation.drawImage(target,0,0);
+    presentation.drawImage(canvas,0,0);
+    A.materialStageCapture(name,preview);
+  }
   var deposits=0,territoryDeposits=0,fieldStrokes=0;
   for(var fi=0;fi<(plan.connectedFields||[]).length;fi++){
     fieldStrokes+=oilColourField(ctx,mask,plan.connectedFields[fi],painter,plan);
   }
+  captureOilStage('oil-primary-fields');
   for(var ti=0;ti<((plan.connectedFields||[]).length?0:(plan.territories||[]).length);ti++){
     var cell=plan.territories[ti];
     if(cell.role==='painted'){
@@ -3892,6 +3902,7 @@ function oilAdapter(target,plan,scale){
         oilGuideTerritory(ctx,mask,cell,painter);
     }
   }
+  captureOilStage('oil-territories');
   for(var i=0;i<((plan.connectedFields||[]).length?0:plan.regions.length);i++){
     // Source-mark clusters remain directional material detail, not a second
     // overlapping mass layer that conceals actual subdivision territories.
@@ -3920,6 +3931,7 @@ function oilAdapter(target,plan,scale){
       deposits++;
     }
   }
+  captureOilStage('oil-paint-masses');
   for(i=0;i<((plan.connectedFields||[]).length?0:plan.gestures.length);i++){
     a=plan.gestures[i];r=rng(a.seed+'|oil-v5');
     var start=shifted(a,a.angle,-a.length*.5),
@@ -3929,6 +3941,7 @@ function oilAdapter(target,plan,scale){
       'filbert',r,{thickness:.72,drag:.6,bristles:.9});
     deposits++;
   }
+  captureOilStage('oil-gestures');
   ctx.restore();mask.restore();
   // Contact-height pass matches the pigment layer, then locally shades its
   // actual ridges; no whole-image emboss, RGB haze or blurred screenshot.
