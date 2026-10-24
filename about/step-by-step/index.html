@@ -204,10 +204,11 @@ $('markMath').textContent=formula;$('svgSource').textContent=p.d;
 }
 $('phiGuides').addEventListener('change',renderStep);
 function advance(n){i=Math.max(0,Math.min(stepTotal(),n));renderStep()}
-async function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;if(capturedMaterial()){
+async function generate(){playing=false;const own=++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;if(capturedMaterial()){
  if(selectedMaterial()==='oil'){
   $('notice').textContent='Rendering oil walkthrough…';
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  if(own!==token)return;
  }
  captureMaterialStages(s);
 }else if(isAction())captureActionStages(s);renderStep();showMaterialExplanation();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';const originalMaterial=incoming.get('material')|| (incoming.has('tissue')?'tissue':incoming.has('watercolor')?'watercolour':'marker');
