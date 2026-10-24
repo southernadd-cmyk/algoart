@@ -281,36 +281,41 @@ function captureMaterialStages(s){
     sum+=Math.abs(a[p]-b[p])+Math.abs(a[p+1]-b[p+1])+Math.abs(a[p+2]-b[p+2]);
    return sum/(a.length/4*3);
   };
+  // A fixed pixel threshold discarded nearly every watercolour checkpoint
+  // on pale seeds. Measure each seed's own visible change instead.
+  const increments=[];
+  for(let j=1;j<candidates.length;j++)
+   increments.push(distance(candidates[j-1].pixels,candidates[j].pixels));
+  const totalChange=increments.reduce((sum,value)=>sum+value,0);
+  // Keep all non-identical captures; never invent a blended painting frame.
+  const epsilon=Math.max(.005,Math.min(.08,totalChange*.00015));
   const distinct=[candidates[0]];
   for(let j=1;j<candidates.length;j++){
-   const current=candidates[j],previous=distinct[distinct.length-1];
+   const current=candidates[j],previous=distinct.at(-1);
    if(j===candidates.length-1){
-    if(distance(previous.pixels,current.pixels)>.18)distinct.push(current);
-    else {distinct[distinct.length-1]=current;}
-   }else if(distance(previous.pixels,current.pixels)>.18)distinct.push(current);
+    if(distance(previous.pixels,current.pixels)>epsilon)distinct.push(current);
+    else distinct[distinct.length-1]=current;
+   }else if(distance(previous.pixels,current.pixels)>epsilon)distinct.push(current);
   }
   if(distinct.length>2){
-   // Choose the next frame by its difference from the last selected frame,
-   // not by its position in a cumulative callback timeline. This avoids
-   // spending several stages on barely visible late-renderer polish.
-   const minimumChange=selectedMaterial()==='oil'||selectedMaterial()==='watercolour'?1.5:.8;
-   const chosen=[0];
+   const cumulative=[0];
+   for(let j=1;j<distinct.length;j++)
+    cumulative.push(cumulative.at(-1)+distance(distinct[j-1].pixels,distinct[j].pixels));
    const finalIndex=distinct.length-1;
-   while(chosen.at(-1)<finalIndex){
-    const previous=chosen.at(-1);
-    const remaining=distance(distinct[previous].pixels,distinct[finalIndex].pixels);
-    if(remaining<minimumChange)break;
-    const targetChange=Math.max(minimumChange,remaining/Math.max(2,Math.min(8,finalIndex-chosen.length+1)));
-    let next=-1;
-    for(let j=previous+1;j<finalIndex;j++){
-     if(distance(distinct[previous].pixels,distinct[j].pixels)>=targetChange){next=j;break;}
+   // Retain up to 20 genuinely different stages. Adapt the number of stages
+   // to the available captures, not to the seed's absolute colour contrast.
+   const count=Math.min(distinct.length,21);
+   const chosen=[0];
+   for(let slot=1;slot<count-1;slot++){
+    const first=chosen.at(-1)+1,last=finalIndex-(count-1-slot);
+    const target=cumulative[finalIndex]*slot/(count-1);
+    let best=first,score=Infinity;
+    for(let j=first;j<=last;j++){
+     const error=Math.abs(cumulative[j]-target);
+     if(error<score){score=error;best=j;}
     }
-    if(next<0)break;
-    chosen.push(next);
+    chosen.push(best);
    }
-   // Always finish on the renderer's actual final surface.
-   while(chosen.length>1&&distance(distinct[chosen.at(-1)].pixels,distinct[finalIndex].pixels)<minimumChange)
-    chosen.pop();
    chosen.push(finalIndex);
    materialFrames=chosen.map(j=>distinct[j].frame);
    materialFrameLabels=chosen.map(j=>distinct[j].label);
