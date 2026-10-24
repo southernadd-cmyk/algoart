@@ -1,0 +1,38 @@
+name: Build virtual gallery social preview
+on:
+  push:
+    paths:
+      - 'gallery/visit/tower-still.svg'
+      - '.github/workflows/gallery-social-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Render original tower SVG as PNG
+        run: |
+          python -m pip install cairosvg
+          python - <<'PY'
+          import cairosvg
+          cairosvg.svg2png(url='gallery/visit/tower-still.svg',write_to='gallery/visit/tower-still.png',output_width=1200,output_height=480)
+          PY
+      - name: Update preview metadata and commit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('gallery/visit/index.html')
+          s=p.read_text()
+          s=s.replace('gallery/visit/tower-still.svg','gallery/visit/tower-still.png')
+          s=s.replace('<meta property="og:image:type" content="image/svg+xml">','<meta property="og:image:type" content="image/png">')
+          p.write_text(s)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/tower-still.png gallery/visit/index.html
+          if ! git diff --cached --quiet; then git commit -m "Render gallery tower social preview as PNG"; git push; fi
