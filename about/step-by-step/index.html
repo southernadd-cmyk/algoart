@@ -287,6 +287,13 @@ function captureMaterialStages(s){
     chosen.push(best);
    }
    chosen.push(distinct.length-1);
+   // Oil's final polish can be technically different yet imperceptible.
+   // Do not offer two successive stages that look like the same painting.
+   if(selectedMaterial()==='oil'){
+    const minimumVisibleChange=1.5;
+    while(chosen.length>2 && distance(distinct[chosen.at(-2)].pixels,distinct[chosen.at(-1)].pixels)<minimumVisibleChange)
+     chosen.splice(-2,1);
+   }
    materialFrames=chosen.map(j=>distinct[j].frame);
    materialFrameLabels=chosen.map(j=>distinct[j].label);
   }else{
