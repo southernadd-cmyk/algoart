@@ -73,7 +73,7 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <script src="../../js/watercolour-v2s.js?v=walkthrough-stages1"></script>
 <script src="../../js/oil-v1-core-a.js"></script>
 <script src="../../js/oil-v1-core-b.js"></script>
-<script src="../../js/oil-v1-core-c.js"></script>
+<script src="../../js/oil-v1-core-c.js?v=walkthrough-oil-stages2"></script>
 <script src="../../js/oil-paint-v1.js?v=walkthrough-stages1"></script>
 <script src="../../js/oil-brush-v2.js"></script>
 <script src="../../js/oil-paint-v2.js"></script>
@@ -223,7 +223,7 @@ function captureMaterialStages(s){
  const originalCapture=A.materialStageCapture;
  try{
   A.materialStageCapture=(name,source)=>{
-   const labels={'tissue-planes':'Broad tissue areas','tissue-glazes':'Translucent overlapping glazes','tissue-ribbons':'Main coloured tissue ribbons','tissue-pale':'Pale tissue and torn edges','tissue-pigment':'Small pigment and fibre details','tissue-surface':'The textured tissue surface','watercolour-broad':'First broad wet washes','watercolour-hero':'Structural pigment strokes','watercolour-wash':'Pigment transported through paper','watercolour-dry':'First dry marks','watercolour-dry-lines':'Additional dry strokes','watercolour-accents':'Final accents and granulation','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added'};
+   const labels={'tissue-planes':'Broad tissue areas','tissue-glazes':'Translucent overlapping glazes','tissue-ribbons':'Main coloured tissue ribbons','tissue-pale':'Pale tissue and torn edges','tissue-pigment':'Small pigment and fibre details','tissue-surface':'The textured tissue surface','watercolour-broad':'First broad wet washes','watercolour-hero':'Structural pigment strokes','watercolour-wash':'Pigment transported through paper','watercolour-dry':'First dry marks','watercolour-dry-lines':'Additional dry strokes','watercolour-accents':'Final accents and granulation','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added','oil-primary-fields':'Primary coloured oil fields','oil-territories':'Territory brush deposits','oil-paint-masses':'Loaded paint masses','oil-gestures':'Directional bristle gestures'};
    snapshot(labels[name]||(name.startsWith('oil-field-')?'Connected oil field '+name.slice('oil-field-'.length):name),source);
   };
   A.phiFramingEnabled=incoming.get('sheet')==='phi';
