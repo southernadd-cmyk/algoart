@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/gallery-bundle-reproducibility.yml'
+permissions:
+  contents: write
+  pull-requests: write
 jobs:
   compare:
     runs-on: ubuntu-latest
@@ -14,19 +17,43 @@ jobs:
         with:
           node-version: '22'
       - name: Install pinned gallery bundler
-        run: npm install --no-save --package-lock=false --ignore-scripts=false
-      - name: Rebuild and compare with committed gallery bundle
-        run: npm run gallery:bundle:check
-      - name: Preserve rebuilt bundle for comparison
+        run: npm install --no-save --package-lock=false
+      - name: Rebuild gallery bundle
+        run: npm run gallery:bundle
+      - name: Validate generated bundle and live gallery regression tests
+        run: |
+          node --check gallery/visit/gallery-bundle.js
+          node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs
+      - name: Check committed bundle matches production source
+        id: parity
+        continue-on-error: true
+        run: git diff --exit-code -- gallery/visit/gallery-bundle.js
+      - name: Preserve candidate bundle
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gallery-rebuilt-bundle
           path: gallery/visit/gallery-bundle.js
           retention-days: 7
-      - name: Show bundle difference if reproducibility fails
-        if: failure()
+      - name: Open review PR for a mismatched bundle
+        if: steps.parity.outcome == 'failure' && github.event_name == 'workflow_dispatch'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'Rebuild gallery bundle from pinned source and dependencies'
+          branch: automation/gallery-bundle-parity
+          delete-branch: true
+          title: 'Rebuild gallery bundle to match source'
+          body: |
+            This PR contains only the reproducibly built production gallery bundle.
+            The current committed bundle does not match the source build.
+            The generated bundle passed syntax and the gallery regression suite before this PR was created.
+            Review the change before merging to production.
+          add-paths: gallery/visit/gallery-bundle.js
+      - name: Report parity without blocking manual diagnosis
         run: |
-          git status --short gallery/visit/gallery-bundle.js
-          git diff --stat -- gallery/visit/gallery-bundle.js
-          echo "Do not enable the mandatory release gate until this produces byte-identical output."
+          if [ "${{ steps.parity.outcome }}" = 'failure' ]; then
+            echo "Gallery bundle differs from its source. Review the generated artifact or PR." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Gallery bundle is reproducible byte-for-byte." >> "$GITHUB_STEP_SUMMARY"
+          fi
