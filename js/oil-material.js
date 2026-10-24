@@ -389,6 +389,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
   if(A.materialStageCapture)A.materialStageCapture('tissue-pale',pig.canvas);
   // Broken small strokes and half-covered edges build material variation.
   var detail=Math.min(n,Math.ceil(112*allowance));
+  var fineCaptureCount=0;
   for(i=0;i<detail;i++){
     ch=chains[i];pts=ch.pts;
     var skip=quality<.4?2:1;
@@ -405,6 +406,14 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
       if(sourceShade)shade=sourceShade;
       paintRibbon(pig,height,base,r.range(5,20),r,shade,
         r.range(.45,.90),r.range(.30,1.4));
+      // Show genuine individual fine-mark accumulation, bounded to avoid
+      // excessive snapshots and with no effect on the seeded drawing.
+      if(A.materialStageCapture&&fineCaptureCount<12&&
+         i%Math.max(1,Math.ceil(detail/12))===0&&
+         j>=Math.floor(pts.length/2)&&j-skip<Math.floor(pts.length/2)){
+        fineCaptureCount++;
+        A.materialStageCapture('tissue-fine-mark-'+fineCaptureCount,pig.canvas);
+      }
     }
     if(A.materialStageCapture&&detail>0&&((i+1)%Math.max(1,Math.ceil(detail/10))===0))A.materialStageCapture('tissue-detail-'+(i+1),pig.canvas);
   }
