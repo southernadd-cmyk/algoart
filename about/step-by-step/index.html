@@ -96,7 +96,7 @@ action:'Action Painting builds dynamic curves and paint deposits with speed-depe
 let paths=[],i=0,playing=false,token=0,roomInfo=null;
 let materialFrames=[],materialFrameLabels=[];
 // Read-only browser regression hook for module-scoped replay state.
-window.__walkthroughTest={settings:()=>settings(),frames:()=>materialFrames};
+window.__walkthroughTest={settings:()=>settings(),frames:()=>materialFrames,labels:()=>materialFrameLabels};
 const capturedMaterial=()=>['tissue','watercolour','oil'].includes(selectedMaterial());
 const actionLayerCount=5;
 const selectedMaterial=()=> $('replayMaterial').value;
