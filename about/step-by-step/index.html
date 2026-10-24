@@ -206,7 +206,7 @@ $('phiGuides').addEventListener('change',renderStep);
 function advance(n){i=Math.max(0,Math.min(stepTotal(),n));renderStep()}
 async function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;if(capturedMaterial()){
  if(selectedMaterial()==='oil'){
-  $('notice').textContent='Rendering oil at full studio quality…';
+  $('notice').textContent='Rendering oil walkthrough…';
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  }
  captureMaterialStages(s);
@@ -220,7 +220,7 @@ $('replayMaterial').onchange=async()=>{playing=false;const own=++token;i=0;if(ca
  }
  captureMaterialStages(settings());
 }else if(isAction())captureActionStages(settings());renderStep();showMaterialExplanation();
-if(own===token&&selectedMaterial()==='oil'&&!$('notice').textContent.startsWith('Could not'))$('notice').textContent='Oil rendering complete · full studio quality.';};
+if(own===token&&selectedMaterial()==='oil'&&!$('notice').textContent.startsWith('Could not'))$('notice').textContent=matchMedia('(max-width: 800px)').matches?'Oil walkthrough ready · faster mobile preview (0.45× resolution).':'Oil walkthrough ready · studio quality.';};
 function captureActionStages(s){
  materialFrames=[];materialFrameLabels=[];
  const scale=.32,target=document.createElement('canvas');
@@ -245,7 +245,8 @@ function captureMaterialStages(s){
  materialFrames=[];materialFrameLabels=[];
  const capturePhases=[];
  // Render at studio quality; only stored walkthrough frames are downsampled.
- const renderScale=1;
+ const mobileOil=selectedMaterial()==='oil'&&matchMedia('(max-width: 800px)').matches;
+ const renderScale=mobileOil?.45:1;
  const frameScale=.32;
  const width=Math.round((s.orientation==='portrait'?1000:1400)*frameScale);
  const height=Math.round((s.orientation==='portrait'?1400:1000)*frameScale);
@@ -395,6 +396,6 @@ function captureMaterialStages(s){
   materialFrames=[blank];materialFrameLabels=['The blank page'];
  }finally{A.materialStageCapture=originalCapture;}
 }
-function showMaterialExplanation(){const material=selectedMaterial();$('materialExplanation').textContent=material==='action'?'Action Painting: the canvas shows actual progressively added paint layers from the material renderer.':material==='marker'?'Marker: each step reveals an actual recorded pen pass.':'Captured stages from the actual material renderer. '+descriptions[material];}
+function showMaterialExplanation(){const material=selectedMaterial();$('materialExplanation').textContent=material==='action'?'Action Painting: the canvas shows actual progressively added paint layers from the material renderer.':material==='marker'?'Marker: each step reveals an actual recorded pen pass.' :material==='oil'&&matchMedia('(max-width: 800px)').matches?'Captured stages from the Oil renderer at reduced resolution for mobile speed; the studio retains full quality. '+descriptions[material]:'Captured stages from the actual material renderer. '+descriptions[material];}
 $('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(stepTotal())};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=stepTotal()){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(stepTotal(),1)));}tick();};generate();
 </script></body></html>
