@@ -287,9 +287,9 @@ function captureMaterialStages(s){
     chosen.push(best);
    }
    chosen.push(distinct.length-1);
-   // Oil's final polish can be technically different yet imperceptible.
+   // Final oil and watercolour polish can be technically different yet imperceptible.
    // Do not offer two successive stages that look like the same painting.
-   if(selectedMaterial()==='oil'){
+   if(selectedMaterial()==='oil'||selectedMaterial()==='watercolour'){
     const minimumVisibleChange=1.5;
     while(chosen.length>2 && distance(distinct[chosen.at(-2)].pixels,distinct[chosen.at(-1)].pixels)<minimumVisibleChange)
      chosen.splice(-2,1);
