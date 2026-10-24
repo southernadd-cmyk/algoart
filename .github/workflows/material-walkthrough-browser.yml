@@ -1,0 +1,27 @@
+name: Walkthrough browser smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/material-walkthrough-browser.mjs'
+      - 'about/step-by-step/index.html'
+      - 'js/oil-material.js'
+      - 'js/oil-paint-v1.js'
+      - 'js/watercolour-v2s.js'
+      - '.github/workflows/material-walkthrough-browser.yml'
+  workflow_dispatch:
+jobs:
+  material-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies and Chromium
+        run: |
+          npm install --no-save --package-lock=false
+          npx playwright install --with-deps chromium
+      - name: Render every walkthrough material in Chromium
+        run: node tests/material-walkthrough-browser.mjs
