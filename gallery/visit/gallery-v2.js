@@ -1616,27 +1616,29 @@ function drawMap(){
   const w=element.width,h=element.height;
   const visitorX=rig.position.x,visitorZ=rig.position.z;
   ctx.clearRect(0,0,w,h);
-  // Include the outdoor arrival point when fitting the floor plan.
-  const bounds=plan.rooms.reduce((p,r)=>({
-    minX:Math.min(p.minX,r.x-r.width/2),maxX:Math.max(p.maxX,r.x+r.width/2),
-    minZ:Math.min(p.minZ,r.z-r.depth/2),maxZ:Math.max(p.maxZ,r.z+r.depth/2)
-  }),{minX:visitorX,maxX:visitorX,minZ:visitorZ,maxZ:visitorZ});
-  // Keep the visitor in the centre, with their facing direction at the top.
-  // Rotate the map geometry, not the player arrow or the canvas element.
-  const rotation=yaw;
-  const cs=Math.cos(rotation),sn=Math.sin(rotation);
+  // Rotate the floor plan around the viewer, but fit the visible architecture
+  // rather than reserving half the map for the viewer's position.
+  const rotation=yaw,cs=Math.cos(rotation),sn=Math.sin(rotation);
   const project=(x,z)=>{
     const dx=x-visitorX,dz=z-visitorZ;
     return {x:dx*cs-dz*sn,y:dx*sn+dz*cs};
   };
-  const corners=[
-    [bounds.minX,bounds.minZ],[bounds.minX,bounds.maxZ],
-    [bounds.maxX,bounds.minZ],[bounds.maxX,bounds.maxZ]
-  ].map(([x,z])=>project(x,z));
-  const extentX=Math.max(1,...corners.map(p=>Math.abs(p.x)));
-  const extentY=Math.max(1,...corners.map(p=>Math.abs(p.y)));
-  const scale=Math.min((w-28)/(2*extentX),(h-28)/(2*extentY));
-  const point=(x,z)=>{const p=project(x,z);return {x:w/2+p.x*scale,y:h/2+p.y*scale};};
+  const vertices=[];
+  for(const room of plan.rooms){
+    const x0=room.x-room.width/2,x1=room.x+room.width/2;
+    const z0=room.z-room.depth/2,z1=room.z+room.depth/2;
+    for(const x of [x0,x1])for(const z of [z0,z1])vertices.push(project(x,z));
+  }
+  for(const hall of plan.corridors){
+    vertices.push(project(hall.start.x,hall.start.z),project(hall.end.x,hall.end.z));
+  }
+  if(!vertices.length)return;
+  const minX=Math.min(...vertices.map(p=>p.x)),maxX=Math.max(...vertices.map(p=>p.x));
+  const minY=Math.min(...vertices.map(p=>p.y)),maxY=Math.max(...vertices.map(p=>p.y));
+  const padding=12;
+  const scale=Math.min((w-2*padding)/Math.max(1,maxX-minX),(h-2*padding)/Math.max(1,maxY-minY));
+  const offsetX=w/2-(minX+maxX)*scale/2,offsetY=h/2-(minY+maxY)*scale/2;
+  const point=(x,z)=>{const p=project(x,z);return {x:offsetX+p.x*scale,y:offsetY+p.y*scale};};
   ctx.lineWidth=7;ctx.lineCap='round';ctx.strokeStyle='#999789';
   for(const hall of plan.corridors){
     const start=point(hall.start.x,hall.start.z),end=point(hall.end.x,hall.end.z);
@@ -1652,8 +1654,9 @@ function drawMap(){
     ctx.closePath();ctx.fillStyle='#e6e4d8';ctx.strokeStyle='#474b43';
     ctx.lineWidth=1.2;ctx.fill();ctx.stroke();
   }
-  ctx.beginPath();ctx.moveTo(w/2,h/2-9);ctx.lineTo(w/2-5,h/2+5);
-  ctx.lineTo(w/2+5,h/2+5);ctx.closePath();
+  const marker=point(visitorX,visitorZ);
+  ctx.beginPath();ctx.moveTo(marker.x,marker.y-9);ctx.lineTo(marker.x-5,marker.y+5);
+  ctx.lineTo(marker.x+5,marker.y+5);ctx.closePath();
   ctx.fillStyle='#d25232';ctx.fill();
 }
 
