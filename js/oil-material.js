@@ -361,6 +361,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     var sourceMuted=sourceTissueHue(ch,.46);
     if(sourceMuted)muted=sourceMuted;
     paintRibbon(pig,height,pts,width,r,muted,r.range(.40,.69),r.range(.35,.80));
+    if(A.materialStageCapture&&broad>0&&i%Math.max(1,Math.ceil(broad/8))===0)A.materialStageCapture('tissue-glaze-'+i,pig.canvas);
   }
   if(A.materialStageCapture)A.materialStageCapture('tissue-glazes',pig.canvas);
   // Main painterly ribbons at two scales. Rhythm and large-scale direction
@@ -377,6 +378,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     if(sourceHue)hue=sourceHue;
     paintRibbon(pig,height,pts,width,r,hue,r.range(.69,.94),
       r.range(.58,1.5));
+    if(A.materialStageCapture&&hero>0&&((i+1)%Math.max(1,Math.ceil(hero/10))===0))A.materialStageCapture('tissue-ribbon-'+(i+1),pig.canvas);
   }
   if(A.materialStageCapture)A.materialStageCapture('tissue-ribbons',pig.canvas);
   // V6 adds approved pale tissue with an independent seeded RNG.
