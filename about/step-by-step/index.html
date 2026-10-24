@@ -96,7 +96,7 @@ let editorURL=new URL(editorHome);
 try{
  const from=incoming.get('return');
  if(from){const target=new URL(from);if(target.origin===location.origin&&target.pathname===editorHome.pathname)editorURL=target;}
- else for(const [name,key] of Object.entries(editorKeys))if(incoming.has(key))editorURL.searchParams.set(key,incoming.get(key));
+ else for(const [key,value] of incoming.entries())if(key!=='return')editorURL.searchParams.append(key,value);
 }catch(e){}
 const editLink=$('continueEditing');
 function updateEditLink(){
