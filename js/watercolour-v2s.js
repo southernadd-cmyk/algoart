@@ -957,6 +957,7 @@ function finishDryAccents(ctx,chains,seed,quality,kit,voids,stats){
     paintThinWatercolourStroke(ctx,pts,width,hue,inkOpacity,
       A.makeR(seed+'|v2i-all-ink|'+i),wetness);
     rendered++;
+    if(A.materialStageCapture&&((i+1)%Math.max(1,Math.ceil(count/12))===0))A.materialStageCapture('watercolour-fine-ink-'+(i+1),ctx.canvas);
   }
   ctx.restore();
   return rendered;
