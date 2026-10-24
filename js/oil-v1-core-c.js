@@ -3944,6 +3944,7 @@ function oilAdapter(target,plan,scale){
         {thickness:.94,drag:.35,bristles:.9});
       deposits++;
     }
+    if(A.materialStageCapture&&plan.regions.length>0&&((i+1)%Math.max(1,Math.ceil(plan.regions.length/8))===0))captureOilStage('oil-masses-'+(i+1));
   }
   if(!connected.length)captureOilStage('oil-paint-masses');
   for(i=0;i<((plan.connectedFields||[]).length?0:plan.gestures.length);i++){
@@ -3954,6 +3955,7 @@ function oilAdapter(target,plan,scale){
       Math.max(9,a.width*1.3),blend(a.rgb,[245,225,196],.08),
       'filbert',r,{thickness:.72,drag:.6,bristles:.9});
     deposits++;
+    if(A.materialStageCapture&&plan.gestures.length>0&&((i+1)%Math.max(1,Math.ceil(plan.gestures.length/8))===0))captureOilStage('oil-gesture-'+(i+1));
   }
   if(!connected.length)captureOilStage('oil-gestures');
   ctx.restore();mask.restore();
