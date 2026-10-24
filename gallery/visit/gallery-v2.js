@@ -1623,7 +1623,7 @@ function drawMap(){
   }),{minX:visitorX,maxX:visitorX,minZ:visitorZ,maxZ:visitorZ});
   // Keep the visitor in the centre, with their facing direction at the top.
   // Rotate the map geometry, not the player arrow or the canvas element.
-  const rotation=-yaw;
+  const rotation=yaw;
   const cs=Math.cos(rotation),sn=Math.sin(rotation);
   const project=(x,z)=>{
     const dx=x-visitorX,dz=z-visitorZ;
