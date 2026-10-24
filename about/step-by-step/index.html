@@ -270,7 +270,9 @@ function captureMaterialStages(s){
     name.startsWith('oil-field-')?'oil-field-'+name.split('-')[2]:
     name.replace(/-\d+$/,'');
    const description=labels[name]||
-    (name.startsWith('watercolour-detail-')?'Pigment details before paper transport':
+    (name.startsWith('watercolour-opening-')?'Adding the first wet pigment deposits':
+     name.startsWith('tissue-opening-')?'Laying the first tissue sheets':
+     name.startsWith('watercolour-detail-')?'Pigment details before paper transport':
      name.startsWith('watercolour-fine-ink-')?'Fine dry ink accents':
      name.startsWith('watercolour-broad-')?'Depositing broad pigment before paper transport':
      name.startsWith('watercolour-hero-')?'Depositing structural pigment before paper transport':
@@ -351,7 +353,7 @@ function captureMaterialStages(s){
    // The opening paint deposits must remain visible individually. A global
    // activity-based sampler otherwise spends its budget on later, larger
    // changes and jumps from blank paper to a partly completed painting.
-   if(selectedMaterial()==='oil'){
+   if(['oil','watercolour','tissue'].includes(selectedMaterial())){
     const opening=Math.min(12,distinct.length-1);
     for(let j=1;j<=opening;j++)selected.add(j);
    }
@@ -359,7 +361,7 @@ function captureMaterialStages(s){
    // keep the first occurrence of each phase and the final artwork.
    if(selected.size>maxStages){
     selected.clear();selected.add(0);selected.add(distinct.length-1);
-    if(selectedMaterial()==='oil')
+    if(['oil','watercolour','tissue'].includes(selectedMaterial()))
      for(let j=1;j<=Math.min(12,distinct.length-2)&&selected.size<maxStages;j++)selected.add(j);
     for(let j=1;j<distinct.length-1&&selected.size<maxStages;j++)
      if(distinct[j].phase!==distinct[j-1].phase)selected.add(j);
