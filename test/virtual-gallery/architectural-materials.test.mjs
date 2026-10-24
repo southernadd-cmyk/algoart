@@ -17,7 +17,7 @@ function uvGeometry(){
   return {getAttribute(key){return key==='uv'?attribute:null},data,needsUpdate:false};
 }
 test('Source assets are verified Poly Haven CC0 materials with real 1K maps',()=>{
-  assert.equal(Object.keys(MATERIAL_SOURCES).length,3);
+  assert.equal(Object.keys(MATERIAL_SOURCES).length,4);
   for(const entry of Object.values(MATERIAL_SOURCES)){
     assert.equal(entry.license,'CC0-1.0');
     assert.ok(entry.diffuse.includes('/Textures/jpg/1k/'));
@@ -63,6 +63,8 @@ test('Offline mobile/VR fallback has real materials, shared floor/bridge map, no
       const canvas={width:0,height:0};
       canvas.getContext=()=>({
         createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)}},
+        drawImage(){},
+        getImageData(x,y,w,h){return {data:new Uint8ClampedArray(w*h*4)}},
         putImageData(){}
       });
       return canvas;
