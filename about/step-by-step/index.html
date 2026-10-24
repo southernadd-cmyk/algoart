@@ -241,7 +241,7 @@ function captureMaterialStages(s){
   // Some oil modes bypass territory, mass and gesture passes entirely.
   // Those renderer callbacks are valid, but do not represent new paint.
   // Keep only visually changed checkpoints, without altering final pixels.
-  materialFrames.push(frame);materialFrameLabels.push(label);
+  materialFrames.push(frame);materialFrameLabels.push(label);capturePhases.push(phase);
  };
  const target=document.createElement('canvas');
  const originalCapture=A.materialStageCapture;
