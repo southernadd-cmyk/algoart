@@ -284,3 +284,24 @@ body .algo-global-header .algo-global-brand .brand{font-size:19px!important}
 body .algo-global-header .algo-number-slash{color:#b65368!important}
 @media(max-width:850px){body .algo-global-header .algo-global-brand .brand{font-size:15px!important}}
 @media(max-width:390px){body .algo-global-header .algo-global-brand .brand{font-size:14px!important}}
+
+/* Three navigation labels now include "about this project".
+   Reserve their actual lettering width, rather than squeezing them into
+   the former 330px track with zero gap. */
+@media(min-width:1101px){
+ body .algo-global-header{grid-template-columns:240px minmax(105px,1fr) 455px!important}
+ body .algo-global-header .algo-site-nav{width:auto!important;min-width:0!important;justify-content:flex-end!important;gap:22px!important}
+ body .algo-global-header .algo-site-nav [data-algo-nav]{flex:0 0 auto!important}
+ body .algo-global-header .algo-site-nav .algo-nav-ink{max-width:none!important}
+}
+@media(min-width:851px) and (max-width:1100px){
+ body .algo-global-header{grid-template-columns:205px minmax(75px,1fr) 410px!important}
+ body .algo-global-header .algo-site-nav{width:auto!important;gap:13px!important;justify-content:flex-end!important}
+ body .algo-global-header .algo-site-nav [data-algo-nav]{flex:0 0 auto!important}
+ body .algo-global-header .algo-site-nav .algo-nav-ink{max-width:none!important;height:13px!important}
+}
+@media(max-width:850px){
+ body .algo-global-header .algo-site-nav{width:auto!important;justify-content:flex-end!important;gap:9px!important}
+ body .algo-global-header .algo-site-nav [data-algo-nav]{flex:0 1 auto!important}
+ body .algo-global-header .algo-site-nav .algo-nav-ink{max-width:100%!important}
+}
