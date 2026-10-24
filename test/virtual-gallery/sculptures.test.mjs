@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildLayout,canStand,DOOR_WIDTH} from './layout-v2.mjs';
-import {planGalleryHangs} from './hanging-v3.mjs';
+import {buildLayout,canStand,DOOR_WIDTH} from '../../gallery/visit/layout-v2.mjs';
+import {planGalleryHangs} from '../../gallery/visit/hanging-v3.mjs';
 import {
   planGallerySculptures,planSculptureLayers,clearOfSculptures,
   validateSculpturePlacement,PEDESTAL_WIDTH,PEDESTAL_DEPTH,ENGINE_FORMS
-} from './sculptures.mjs';
+} from '../../gallery/visit/sculptures.mjs';
 
 const modes=['field','spiral','rects','burst','network','organic','geometric','scribble'];
 function exhibition(date,n,variant){
