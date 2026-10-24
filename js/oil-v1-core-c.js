@@ -3961,6 +3961,9 @@ function oilAdapter(target,plan,scale){
   }
   if(!connected.length)captureOilStage('oil-gestures');
   ctx.restore();mask.restore();
+  // The complete brush deposit layer, before contact-height lighting.
+  // Capture the same composited surface used by the final presentation.
+  captureOilStage('oil-before-relief');
   // Contact-height pass matches the pigment layer, then locally shades its
   // actual ridges; no whole-image emboss, RGB haze or blurred screenshot.
   var adapterProfile=A.oilStageEAdapterProfile||null,adapterStart=performance.now();
@@ -4024,6 +4027,8 @@ function oilAdapter(target,plan,scale){
     adapterProfile.raisedPixels=sample;
   }
   ctx.putImageData(paint,0,0);
+  // Capture the genuine shaded bristle surface, not an artificial transition.
+  captureOilStage('oil-after-relief');
   target.getContext('2d').drawImage(canvas,0,0);
   return {deposits:deposits,territoryDeposits:territoryDeposits,
     colourFields:(plan.connectedFields||[]).length,fieldStrokes:fieldStrokes,
