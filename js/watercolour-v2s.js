@@ -1527,12 +1527,14 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
       chains,wetCtx,softCtx);
     ctx.save();ctx.imageSmoothingEnabled=true;
     ctx.drawImage(layer,0,0,w,h);
+    if(A.materialStageCapture)A.materialStageCapture('watercolour-wash',ctx.canvas);
     activeDryMediaPhase=true;
     for(var i=0;i<washStats.dryDeposits.length;i++){
       var mark=washStats.dryDeposits[i];
       paintRibbon(ctx,null,mark.pts,mark.width,
         A.makeR(seed+'|v2e-dry-outline|'+mark.key),mark.col,mark.opacity,0,'dry');
     }
+    if(A.materialStageCapture)A.materialStageCapture('watercolour-dry',ctx.canvas);
     var dryDetail=finishDryAccents(ctx,chains,seed,quality,kit,presentationVoids,washStats);
     var preservedLines=paintSourceOpenLines(ctx,chains,presentation,seed,w,h);
     activeDryMediaPhase=false;
