@@ -95,6 +95,8 @@ action:'Action Painting builds dynamic curves and paint deposits with speed-depe
 };
 let paths=[],i=0,playing=false,token=0,roomInfo=null;
 let materialFrames=[],materialFrameLabels=[];
+// Read-only browser regression hook for module-scoped replay state.
+window.__walkthroughTest={settings:()=>settings(),frames:()=>materialFrames};
 const capturedMaterial=()=>['tissue','watercolour','oil'].includes(selectedMaterial());
 const actionLayerCount=5;
 const selectedMaterial=()=> $('replayMaterial').value;
@@ -202,9 +204,22 @@ $('markMath').textContent=formula;$('svgSource').textContent=p.d;
 }
 $('phiGuides').addEventListener('change',renderStep);
 function advance(n){i=Math.max(0,Math.min(stepTotal(),n));renderStep()}
-function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;if(capturedMaterial())captureMaterialStages(s);else if(isAction())captureActionStages(s);renderStep();showMaterialExplanation();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';const originalMaterial=incoming.get('material')|| (incoming.has('tissue')?'tissue':incoming.has('watercolor')?'watercolour':'marker');
+async function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;if(capturedMaterial()){
+ if(selectedMaterial()==='oil'){
+  $('notice').textContent='Rendering oil at full studio quality…';
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ }
+ captureMaterialStages(s);
+}else if(isAction())captureActionStages(s);renderStep();showMaterialExplanation();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';const originalMaterial=incoming.get('material')|| (incoming.has('tissue')?'tissue':incoming.has('watercolor')?'watercolour':'marker');
 $('notice').textContent=(incoming.has('seed')&&incoming.has('mode')?'Your drawing from the editor · ':'')+names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded source passes.'+(originalMaterial!=='marker'&&originalMaterial!==selectedMaterial()?' The editor uses '+originalMaterial+'; the selected view shows '+selectedMaterial()+'.':'');}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
-$('replayMaterial').onchange=()=>{playing=false;++token;i=0;if(capturedMaterial())captureMaterialStages(settings());else if(isAction())captureActionStages(settings());renderStep();showMaterialExplanation()};
+$('replayMaterial').onchange=async()=>{playing=false;const own=++token;i=0;if(capturedMaterial()){
+ if(selectedMaterial()==='oil'){
+  $('notice').textContent='Rendering oil at full studio quality…';
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  if(own!==token)return;
+ }
+ captureMaterialStages(settings());
+}else if(isAction())captureActionStages(settings());renderStep();showMaterialExplanation()};
 function captureActionStages(s){
  materialFrames=[];materialFrameLabels=[];
  const scale=.32,target=document.createElement('canvas');
@@ -229,7 +244,7 @@ function captureMaterialStages(s){
  materialFrames=[];materialFrameLabels=[];
  const capturePhases=[];
  // Render at studio quality; only stored walkthrough frames are downsampled.
- const shortScale=1;
+ const renderScale=1;
  const frameScale=.32;
  const width=Math.round((s.orientation==='portrait'?1000:1400)*frameScale);
  const height=Math.round((s.orientation==='portrait'?1400:1000)*frameScale);
@@ -272,18 +287,18 @@ function captureMaterialStages(s){
   A.phiFramingEnabled=incoming.get('sheet')==='phi';
   if(selectedMaterial()==='tissue'){
    const revision=Number(incoming.get('tissue'))||7;
-   if(revision===8&&A.renderTissueV8)A.renderTissueV8(target,s,shortScale,false);
-   else A.renderOil(target,s,shortScale,false,revision);
+   if(revision===8&&A.renderTissueV8)A.renderTissueV8(target,s,renderScale,false);
+   else A.renderOil(target,s,renderScale,false,revision);
   }else if(selectedMaterial()==='watercolour'){
    A.watercolourV2sOptions.fitToSheet=incoming.has('fit')?incoming.get('fit')==='1':false;
-   if(incoming.get('material')==='watercolour-v2t'&&A.renderWatercolourV2T)A.renderWatercolourV2T(target,s,shortScale,false);
-   else A.renderWatercolourV2S(target,s,shortScale,false);
+   if(incoming.get('material')==='watercolour-v2t'&&A.renderWatercolourV2T)A.renderWatercolourV2T(target,s,renderScale,false);
+   else A.renderWatercolourV2S(target,s,renderScale,false);
   }else if(selectedMaterial()==='oil'){
    const version=incoming.get('material');
-   if(version==='oil-v1'&&A.renderOilPaintV1)A.renderOilPaintV1(target,s,shortScale,false);
-   else if(version==='oil-v2'&&A.renderOilPaintV2)A.renderOilPaintV2(target,s,shortScale,false);
-   else if(version==='oil-v3'&&A.renderOilPaintV3)A.renderOilPaintV3(target,s,shortScale,false);
-   else A.renderOilPaintV4(target,s,shortScale,false);
+   if(version==='oil-v1'&&A.renderOilPaintV1)A.renderOilPaintV1(target,s,renderScale,false);
+   else if(version==='oil-v2'&&A.renderOilPaintV2)A.renderOilPaintV2(target,s,renderScale,false);
+   else if(version==='oil-v3'&&A.renderOilPaintV3)A.renderOilPaintV3(target,s,renderScale,false);
+   else A.renderOilPaintV4(target,s,renderScale,false);
   }
   snapshot('The finished '+selectedMaterial()+' surface',target);
   // Retain only distinct renderer states, then select checkpoints by cumulative
