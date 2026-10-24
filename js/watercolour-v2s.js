@@ -1542,7 +1542,6 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
       if(A.materialStageCapture&&washStats.dryDeposits.length>0&&((i+1)%Math.max(1,Math.ceil(washStats.dryDeposits.length/12))===0))A.materialStageCapture('watercolour-dry-'+(i+1),ctx.canvas);
     }
     if(A.materialStageCapture)A.materialStageCapture('watercolour-dry',ctx.canvas);
-    if(A.materialStageCapture)A.materialStageCapture('watercolour-dry-lines',ctx.canvas);
     var dryDetail=finishDryAccents(ctx,chains,seed,quality,kit,presentationVoids,washStats);
     if(A.materialStageCapture)A.materialStageCapture('watercolour-accents',ctx.canvas);
     var preservedLines=paintSourceOpenLines(ctx,chains,presentation,seed,w,h);
