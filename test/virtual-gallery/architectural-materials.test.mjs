@@ -63,7 +63,7 @@ test('Offline mobile/VR fallback has real materials, shared floor/bridge map, no
       const canvas={width:0,height:0};
       canvas.getContext=()=>({
         createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)}},
-        drawImage(){},
+        drawImage(){}, fillRect(){}, beginPath(){}, moveTo(){}, lineTo(){}, stroke(){},
         getImageData(x,y,w,h){return {data:new Uint8ClampedArray(w*h*4)}},
         putImageData(){}
       });
