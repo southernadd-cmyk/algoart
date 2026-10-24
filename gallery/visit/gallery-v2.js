@@ -74,7 +74,7 @@ scene.add(new THREE.HemisphereLight('#f6f7f5', '#92998c', 1.15));
 const sun = new THREE.DirectionalLight('#fff9f0', 1.65);
 sun.position.set(-18, 30, 12);
 scene.add(sun);
-const camera = new THREE.PerspectiveCamera(76, 1, 0.07, 210);
+const camera = new THREE.PerspectiveCamera(76, window.innerWidth / Math.max(1, window.innerHeight), 0.07, 210);
 camera.rotation.order = 'YXZ';
 camera.position.set(0, 1.68, 0);
 const rig = new THREE.Group();
