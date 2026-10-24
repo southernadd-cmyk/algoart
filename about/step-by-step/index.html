@@ -246,6 +246,53 @@ function captureMaterialStages(s){
    else A.renderOilPaintV4(target,s,shortScale,false);
   }
   snapshot('The finished '+selectedMaterial()+' surface',target);
+  // Retain only distinct renderer states, then select checkpoints by cumulative
+  // visual change rather than by callback order. This avoids idle final stages
+  // and distributes the largest early jumps across the available checkpoints.
+  const candidates=materialFrames.map((frame,index)=>{
+   const sample=document.createElement('canvas');sample.width=112;sample.height=80;
+   const context=sample.getContext('2d',{willReadFrequently:true});
+   context.drawImage(frame,0,0,112,80);
+   return {frame,label:materialFrameLabels[index],pixels:context.getImageData(0,0,112,80).data};
+  });
+  const distance=(a,b)=>{
+   let sum=0;
+   for(let p=0;p<a.length;p+=4)
+    sum+=Math.abs(a[p]-b[p])+Math.abs(a[p+1]-b[p+1])+Math.abs(a[p+2]-b[p+2]);
+   return sum/(a.length/4*3);
+  };
+  const distinct=[candidates[0]];
+  for(let j=1;j<candidates.length;j++){
+   const current=candidates[j],previous=distinct[distinct.length-1];
+   if(j===candidates.length-1){
+    if(distance(previous.pixels,current.pixels)>.18)distinct.push(current);
+    else {distinct[distinct.length-1]=current;}
+   }else if(distance(previous.pixels,current.pixels)>.18)distinct.push(current);
+  }
+  if(distinct.length>2){
+   const cumulative=[0];
+   for(let j=1;j<distinct.length;j++)
+    cumulative.push(cumulative[j-1]+distance(distinct[j-1].pixels,distinct[j].pixels));
+   const chosen=[0];
+   // Never repeat a checkpoint. When a renderer exposes fewer distinct
+   // states than requested, show the actual states rather than fake progress.
+   const desired=Math.min(distinct.length,Math.max(5,Math.min(10,candidates.length)));
+   for(let slot=1;slot<desired-1;slot++){
+    const targetChange=cumulative.at(-1)*slot/(desired-1);
+    let best=-1,score=Infinity;
+    for(let j=chosen.at(-1)+1;j<=distinct.length-(desired-slot);j++){
+     const error=Math.abs(cumulative[j]-targetChange);
+     if(error<score){score=error;best=j;}
+    }
+    chosen.push(best);
+   }
+   chosen.push(distinct.length-1);
+   materialFrames=chosen.map(j=>distinct[j].frame);
+   materialFrameLabels=chosen.map(j=>distinct[j].label);
+  }else{
+   materialFrames=distinct.map(x=>x.frame);
+   materialFrameLabels=distinct.map(x=>x.label);
+  }
  }catch(error){
   console.error('Material stages unavailable',error);
   $('notice').textContent='Could not build the material stages: '+error.message;
