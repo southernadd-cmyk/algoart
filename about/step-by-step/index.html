@@ -302,9 +302,9 @@ function captureMaterialStages(s){
    for(let j=1;j<distinct.length;j++)
     cumulative.push(cumulative.at(-1)+distance(distinct[j-1].pixels,distinct[j].pixels));
    const finalIndex=distinct.length-1;
-   // Retain up to 20 genuinely different stages. Adapt the number of stages
+   // Retain up to 40 genuinely different stages. Adapt the number of stages
    // to the available captures, not to the seed's absolute colour contrast.
-   const count=Math.min(distinct.length,21);
+   const count=Math.min(distinct.length,41);
    const chosen=[0];
    for(let slot=1;slot<count-1;slot++){
     const first=chosen.at(-1)+1,last=finalIndex-(count-1-slot);
