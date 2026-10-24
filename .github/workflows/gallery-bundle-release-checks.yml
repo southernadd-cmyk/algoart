@@ -16,6 +16,8 @@ on:
       - 'gallery/visit/sculptures.mjs'
       - 'tests/gallery-xr-loading.test.mjs'
       - 'tests/gallery-xr-controls.test.mjs'
+      - 'gallery/visit/**'
+      - 'package.json'
       - 'gallery/visit/gallery-v2.js'
       - 'gallery/visit/index.html'
       - 'gallery/visit/gallery-bundle.js'
@@ -36,6 +38,8 @@ jobs:
         run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs
       - name: Production-module unit tests
         run: node --test test/virtual-gallery/architectural-materials.test.mjs test/virtual-gallery/environment-v1.test.mjs test/virtual-gallery/paper-isolation.test.mjs test/virtual-gallery/sculptures.test.mjs test/virtual-gallery/study-material.test.mjs test/virtual-gallery/vector-tracing.test.mjs
+      - name: Enforce gallery bundle parity with production source
+        run: npm run gallery:bundle:check
       - name: Validate bundle syntax and test entry point
         run: |
           node --check gallery/visit/gallery-bundle.js
