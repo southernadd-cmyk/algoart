@@ -51,6 +51,7 @@ summary{cursor:pointer}
 
 <label>Paper orientation<select id="orientation"><option value="portrait">Portrait</option><option value="landscape" selected>Landscape</option></select></label>
 <label>Seed<input id="seed" value="PP-RECURSIVE-DIVISIONS-INTRO" spellcheck="false"></label><button id="regenerate">Generate from seed</button></div>
+<p class="small"><a id="continueEditing" href="../../">Continue editing this drawing →</a></p>
 <p id="notice" role="status" class="small">Loading the drawing…</p>
 <section class="panel"><h2>Watch it happen</h2><p>Start with Recursive Divisions, which draws across the sheet. Press Next mark to follow the pen.</p><div class="viewer"><div><label class="phi-toggle"><input type="checkbox" id="phiGuides" checked> Show golden-ratio guides</label><div class="paper"><svg id="drawing" viewBox="0 0 1000 1400" role="img" aria-label="Artwork progressively constructed from recorded vector pen paths"></svg></div><div class="actions"><button id="prev">Previous mark</button><button id="next">Next mark</button><button id="play">Play</button><button id="all">Show finished drawing</button></div><input id="step" class="timeline" type="range" value="0" min="0" max="0" aria-label="Drawing mark number"><p id="counter" class="stats small"></p><aside class="left-note"><h2>What the gold lines show</h2><p>They mark golden-ratio divisions of the page, at about 38% and 62%. They help reveal the structure, but not every ink line follows them.</p></aside></div>
 <div class="explain" aria-live="polite" aria-atomic="true"><h2 id="markTitle">The blank page</h2><p id="markText">The seed controls reproducible choices. No marks have been placed yet.</p><div id="explanation"></div><details id="calculations"><summary>The actual numbers — show the mathematics (optional)</summary><p class="small">A short breakdown of this pen pass. The original SVG commands are available separately.</p><div id="markMath" class="math">φ = (1 + √5)/2 = 1.6180339887
@@ -75,8 +76,41 @@ oil:'Oil Paint uses paint-loaded brush contacts, surface tooth, bristle behaviou
 action:'Action Painting builds dynamic curves and paint deposits with speed-dependent width, pools and spatters. Paint dynamics and deposits require more than a single SVG path.'
 };
 let paths=[],i=0,playing=false,token=0,roomInfo=null;
+const incoming=new URLSearchParams(location.search);
+const editorKeys={seed:'seed',mode:'mode',orientation:'fmt',elements:'el',density:'den',complexity:'cx',negativeSpace:'neg',phiStrength:'phi',recursion:'rec',spiralInfluence:'spi',goldenAngle:'ga',nesting:'nest',pen:'pen',thickness:'th',wobble:'wob',overdraw:'od',opacity:'op',pressure:'pr',dryness:'dry',curveBias:'curve',shapeAmount:'shape',overlap:'overlap',rotation:'rot',lines:'ln',circles:'ci',rectangles:'re',polygons:'po',arcs:'ar',palette:'pal',colourCount:'cols',saturation:'sat',brightness:'bri',paper:'paper',grain:'grain'};
+const binaryKeys=new Set(['lines','circles','rectangles','polygons','arcs']);
+const textKeys=new Set(['seed','mode','orientation','pen','palette','paper']);
+const incomingSettings={};
+for(const [name,key] of Object.entries(editorKeys)){
+ if(!incoming.has(key))continue;
+ const raw=incoming.get(key);
+ const value=binaryKeys.has(name)?raw==='1'||raw==='true':textKeys.has(name)?raw:Number(raw);
+ if(typeof value==='number'&&!Number.isFinite(value))continue;
+ incomingSettings[name]=value;
+}
+if(incomingSettings.mode&&!names[incomingSettings.mode])delete incomingSettings.mode;
+if(incomingSettings.orientation&&!['landscape','portrait'].includes(incomingSettings.orientation))delete incomingSettings.orientation;
+const editorHome=new URL('../../',location.href);
+let editorURL=new URL(editorHome);
+try{
+ const from=incoming.get('return');
+ if(from){const target=new URL(from);if(target.origin===location.origin&&target.pathname===editorHome.pathname)editorURL=target;}
+ else for(const [name,key] of Object.entries(editorKeys))if(incoming.has(key))editorURL.searchParams.set(key,incoming.get(key));
+}catch(e){}
+const editLink=$('continueEditing');
+function updateEditLink(){
+ const target=new URL(editorURL);
+ target.searchParams.set('seed',$('seed').value.trim());
+ target.searchParams.set('mode',$('engine').value);
+ if($('orientation').value==='portrait')target.searchParams.set('fmt','portrait');
+ else target.searchParams.delete('fmt');
+ editLink.href=target.href;
+}
+if(incomingSettings.seed)$('seed').value=incomingSettings.seed;
+if(incomingSettings.mode)$('engine').value=incomingSettings.mode;
+if(incomingSettings.orientation)$('orientation').value=incomingSettings.orientation;
 const num=n=>Number(n).toFixed(2),esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
-function settings(){return {seed:$('seed').value.trim()||'PP-RECURSIVE-DIVISIONS-INTRO',mode:$('engine').value,orientation:$('orientation').value,
+function settings(){return {...incomingSettings,seed:$('seed').value.trim()||'PP-RECURSIVE-DIVISIONS-INTRO',mode:$('engine').value,orientation:$('orientation').value,
 elements:36,density:53,complexity:71,negativeSpace:41,phiStrength:91,recursion:4,spiralInfluence:63,goldenAngle:93,nesting:44,
 pen:'fine',thickness:13,wobble:32,overdraw:3,opacity:70,pressure:36,dryness:19,curveBias:91,shapeAmount:68,overlap:65,rotation:91,
 lines:true,circles:true,rectangles:true,polygons:true,arcs:true,palette:'mono',colourCount:4,saturation:86,brightness:59,paper:'#f5f0e6',grain:13};}
@@ -112,6 +146,6 @@ $('markMath').textContent=formula;$('svgSource').textContent=p.d;
 }
 $('phiGuides').addEventListener('change',renderStep);
 function advance(n){i=Math.max(0,Math.min(paths.length,n));renderStep()}
-function generate(){playing=false;++token;$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=9;A.phiFramingEnabled=false;const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;renderStep();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';$('notice').textContent=names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded pen passes from the drawing renderer.';}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
+function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=Number(incoming.get('v'))||9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;renderStep();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';$('notice').textContent=names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded pen passes from the drawing renderer.';}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
 $('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(paths.length)};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=paths.length){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(paths.length,1)));}tick();};generate();
 </script></body></html>
