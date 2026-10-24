@@ -259,6 +259,7 @@ function oilAdapter(target,plan,scale){
         oilTerritory(ctx,mask,cell,cell.rgb,cell.seed,painter):
         oilGuideTerritory(ctx,mask,cell,painter);
     }
+    if(A.materialStageCapture&&((ti+1)%Math.max(1,Math.ceil(plan.territories.length/12))===0))captureOilStage('oil-territory-'+(ti+1));
   }
   for(var i=0;i<((plan.connectedFields||[]).length?0:plan.regions.length);i++){
     // Source-mark clusters remain directional material detail, not a second
