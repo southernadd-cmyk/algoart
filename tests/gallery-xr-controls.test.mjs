@@ -2,15 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import * as THREE from 'three';
 
 const source=readFileSync('gallery/visit/gallery-v2.js','utf8');
 const bundle=readFileSync('gallery/visit/gallery-bundle.js','utf8');
-// Load the gallery's actual Three.js maths without constructing the app/GL.
-const maths={console,URL,URLSearchParams,TextDecoder,TextEncoder,AbortController,
-  performance,window:{addEventListener(){}},location:{search:'',href:'http://localhost/'}};
-vm.createContext(maths);
-vm.runInContext(bundle.slice(0,bundle.indexOf('var In='))+';globalThis.THREE=Wt;',maths);
-const THREE=maths.THREE;
 const implementations=[
   {name:'source',code:source.slice(source.indexOf('function updateMovement(dt)'),source.indexOf('function detectArt(')),
     fn:'updateMovement',names:{plan:'plan',welcome:'welcome',ui:'$',travelling:'liftTravelling',
