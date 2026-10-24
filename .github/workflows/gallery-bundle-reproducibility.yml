@@ -17,6 +17,13 @@ jobs:
         run: npm install --no-save --package-lock=false --ignore-scripts=false
       - name: Rebuild and compare with committed gallery bundle
         run: npm run gallery:bundle:check
+      - name: Preserve rebuilt bundle for comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gallery-rebuilt-bundle
+          path: gallery/visit/gallery-bundle.js
+          retention-days: 7
       - name: Show bundle difference if reproducibility fails
         if: failure()
         run: |
