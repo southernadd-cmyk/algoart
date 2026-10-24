@@ -340,6 +340,7 @@ function addLightTissue(pig,height,w,h,chains,voids,seed,quality){
     height.save();ribbon(height,pts,width*.5,A.makeR(outlineSeed));
     height.globalCompositeOperation='lighter';height.globalAlpha=.22;
     height.fillStyle='rgb(21,21,21)';height.fill();height.restore();
+    if(A.materialStageCapture)A.materialStageCapture('tissue-pale-piece-'+(i+1),pig.canvas);
   }
   return {pieces:selected.length,candidates:candidates.length,pass:'pale tissue before unchanged pencil details'};
 }
@@ -432,6 +433,7 @@ function graphiteOverlay(ctx,chains,seed,quality){
       });
       pathStroke(ctx,offset,Math.max(.5,weight*.44),graphite,alpha*.40);
     }
+    if(A.materialStageCapture&&((i+1)%Math.max(1,Math.ceil(n/12))===0))A.materialStageCapture('tissue-graphite-'+(i+1),ctx.canvas);
   }
   ctx.restore();
   return drawn;
@@ -511,6 +513,7 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   ctx.drawImage(final,0,0,w,h);
   if(A.materialStageCapture)A.materialStageCapture('tissue-surface',ctx.canvas);
   var graphitePaths=kit&&kit.revision===3?graphiteOverlay(ctx,chains,seed,quality):0;
+  if(graphitePaths&&A.materialStageCapture)A.materialStageCapture('tissue-graphite-finished',ctx.canvas);
   ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
     version:4,tissuePaletteVersion:kit?kit.revision:1,
