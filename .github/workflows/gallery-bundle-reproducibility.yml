@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/gallery-bundle-reproducibility.yml'
       - 'tests/gallery-xr-controls.test.mjs'
+      - '.github/workflows/gallery-bundle-release-checks.yml'
 permissions:
   contents: write
   pull-requests: write
