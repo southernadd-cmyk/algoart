@@ -1,11 +1,13 @@
-import {HANDS,createTag,drawTag,planFloorTags,normaliseText,makeRandom} from './tag-engine.mjs?v=phi-handstyles-v2';
+import {HANDS,CORE_HANDS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom} from './tag-engine.mjs?v=handstyle-spray-v1';
 import {drawConstruction} from './phi-lettering.mjs?v=phi-handstyles-v2';
 const $=id=>document.getElementById(id),canvas=$('wall'),ctx=canvas.getContext('2d');
 const inkLayer=document.createElement('canvas');
 const inkCtx=inkLayer.getContext('2d',{willReadFrequently:true});
 let plan=[],tags=[],frame=0,playing=false,started=0,elapsed=0,token=0,scan=null,mainWall=null,currentProgress=1;
+let studyPage=0;
+const studyIds=Object.keys(REFERENCE_STUDIES),pageSize=6;
 const surfaceCache=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,ink:$('ink').value,floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
+const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,ink:$('ink').value,finish:$('paint').value,floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
 function fallbackTile(){
  const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d'),r=makeRandom('PP-BRICK-FALLBACK');g.fillStyle='#aa9e8b';g.fillRect(0,0,512,512);
  for(let row=0;row<16;row++)for(let col=-1;col<9;col++){
@@ -50,7 +52,7 @@ function paintWall(target,tagList,placements,progress=1){
  const total=tagList.reduce((n,t)=>n+t.strokes.reduce((a,s)=>a+s.points.length,0),0);let used=0;
  tagList.forEach((tag,i)=>{
   const points=tag.strokes.reduce((n,s)=>n+s.points.length,0),portion=Math.max(0,Math.min(1,(total*progress-used)/points));used+=points;if(!portion)return;
-  positionTag(inkCtx,target,tag,placements[i],tagList.length,i,()=>drawTag(inkCtx,tag,{progress:portion}));
+  positionTag(inkCtx,target,tag,placements[i],tagList.length,i,()=>drawTag(inkCtx,tag,{progress:portion,finish:$('paint').value}));
  });
  const image=inkCtx.getImageData(0,0,target.width,target.height),data=image.data;
  for(let i=0;i<wall.mask.length;i++)if(data[i*4+3])data[i*4+3]=data[i*4+3]*wall.mask[i]/255;
@@ -63,7 +65,7 @@ function paintWall(target,tagList,placements,progress=1){
 function stop(){cancelAnimationFrame(frame);playing=false;token++;$('play').textContent='Watch it being written';}
 function render(progress=1){currentProgress=progress;mainWall=paintWall(canvas,tags,plan,progress);$('progress').style.width=(progress*100)+'%';}
 function updateURL(){
- const url=new URL(location.href),o=readOptions();url.searchParams.set('word',normaliseText(o.text));url.searchParams.set('seed',o.seed);url.searchParams.set('floor',$('floor').value);url.searchParams.set('hand',o.hand);url.searchParams.set('ink',o.ink);if($('show-phi').checked)url.searchParams.set('phi','1');else url.searchParams.delete('phi');history.replaceState(null,'',url);
+ const url=new URL(location.href),o=readOptions();url.searchParams.set('word',normaliseText(o.text));url.searchParams.set('seed',o.seed);url.searchParams.set('floor',$('floor').value);url.searchParams.set('hand',o.hand);url.searchParams.set('ink',o.ink);url.searchParams.set('finish',o.finish);if($('show-phi').checked)url.searchParams.set('phi','1');else url.searchParams.delete('phi');history.replaceState(null,'',url);
 }
 function generate({url=true}={}){
  stop();const small=matchMedia('(max-width:700px)').matches;canvas.width=small?1000:1600;canvas.height=small?920:800;
@@ -73,17 +75,42 @@ function generate({url=true}={}){
  $('floor-caption').textContent='Floor '+$('floor').value+' · '+(tags.length===1?'one tag':'two tags')+' · '+tags.map(t=>HANDS[t.hand].name).join(' / ');
  canvas.setAttribute('aria-label','Floor '+$('floor').value+': '+tags.map(t=>t.text+' written in the '+HANDS[t.hand].name+' hand').join('; ')+', on a buff brick wall.');
  $('status').textContent=(raw!==clean?'Text adjusted to the supported characters. ':'')+'Same seed and floor, same tags. Every floor receives one or two.';
+ $('finish-caption').textContent=options.finish==='spray'?'Soft spray edges and scattered droplets follow the brick.':'Ink follows the brick grain and mortar.';
  const m=tags[0].construction.metrics;
  $('phi-measurements').textContent='At a height of '+m.height+' units, the letter frame is '+m.width.toFixed(2)+' units wide. Its bowl divisions are '+m.short.toFixed(2)+' and '+m.long.toFixed(2)+' units. Each writer then leans, compresses and varies that structure.';
- for(const hand of Object.keys(HANDS)){
+ for(const hand of Object.keys(CORE_HANDS)){
   const tag=createTag(clean||'PHI',{seed:options.seed,hand,ink:options.ink==='mixed'?'#242a28':options.ink});
   paintWall($(hand+'-wall'),[tag],[{x:.5,y:.55,scale:.94,rotation:-.025}]);
  }
+ renderStudies();
  if(url)updateURL();
+}
+function renderStudies(){
+ const options=readOptions(),start=studyPage*pageSize,grid=$('study-grid');grid.replaceChildren();
+ for(const id of studyIds.slice(start,start+pageSize)){
+  const study=REFERENCE_STUDIES[id],article=document.createElement('article');article.className='hand';
+  const c=document.createElement('canvas');c.width=720;c.height=380;c.setAttribute('role','img');c.setAttribute('aria-label',study.reference+' procedural lettering study on brick');
+  const title=document.createElement('h3');title.textContent=study.reference+' study';
+  const description=document.createElement('p');description.textContent=study.description;
+  const button=document.createElement('button');button.type='button';button.textContent='Use this study';button.dataset.study=id;button.onclick=()=>{$('hand').value=id;generate();};
+  article.append(c,title,description,button);grid.append(article);
+  const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,hand:id,ink:options.ink==='mixed'?'#242a28':options.ink});paintWall(c,[tag],[{x:.5,y:.53,scale:.97,rotation:-.018}]);
+ }
+ $('study-range').textContent='Studies '+(start+1)+'–'+Math.min(start+pageSize,studyIds.length)+' of '+studyIds.length;
+ $('studies-prev').disabled=studyPage===0;$('studies-next').disabled=start+pageSize>=studyIds.length;
+ const selected=REFERENCE_STUDIES[$('hand').value];
+ $('study-selection').textContent=selected?selected.reference+' study · '+selected.description:'Choose a study, or use Different writers to mix all 53 hands.';
+}
+function populateHands(){
+ const select=$('hand');select.replaceChildren(new Option('Different writers','mixed'));
+ for(const [label,entries] of [['Original hands',CORE_HANDS],['Bombing Science — 50 reference studies',REFERENCE_STUDIES]]){
+  const group=document.createElement('optgroup');group.label=label;
+  for(const [id,hand] of Object.entries(entries))group.append(new Option(hand.name,id));select.append(group);
+ }
 }
 function animate(){
  if(playing){stop();$('status').textContent='Writing paused. Press Watch it being written to continue.';return;}
- playing=true;const own=++token;started=performance.now()-elapsed;$('play').textContent='Pause writing';$('status').textContent='Following the actual pen movements, including the joins and finishing strokes.';
+ playing=true;const own=++token;started=performance.now()-elapsed;$('play').textContent='Pause writing';$('status').textContent='Following the strokes, including the joins and finishing movements.';
  const duration=reduced?2600:6200;
  const tick=now=>{if(own!==token)return;elapsed=now-started;const progress=Math.min(1,elapsed/duration);render(progress);if(progress<1)frame=requestAnimationFrame(tick);else{stop();elapsed=0;$('status').textContent='Writing complete. These are the same strokes as the finished tag.';}};
  frame=requestAnimationFrame(tick);
@@ -92,11 +119,13 @@ function restoreURL(){
  const q=new URLSearchParams(location.search);for(const id of ['word','seed','floor','hand','ink'])if(q.has(id)){
   const value=q.get(id),el=$(id);if(el.tagName!=='SELECT'||[...el.options].some(o=>o.value===value))el.value=value;
  }
+ if(['spray','marker'].includes(q.get('finish')))$('paint').value=q.get('finish');
  $('show-phi').checked=q.get('phi')==='1';
 }
 async function init(){
- restoreURL();scan=fallbackTile();generate({url:false});
- $('controls').addEventListener('submit',e=>{e.preventDefault();generate();});for(const id of ['word','seed','hand','ink','floor'])$(id).addEventListener('change',()=>generate());
+ populateHands();restoreURL();scan=fallbackTile();generate({url:false});
+ $('controls').addEventListener('submit',e=>{e.preventDefault();generate();});for(const id of ['word','seed','hand','ink','floor','paint'])$(id).addEventListener('change',()=>generate());
+ $('studies-prev').onclick=()=>{studyPage=Math.max(0,studyPage-1);renderStudies();};$('studies-next').onclick=()=>{studyPage=Math.min(Math.ceil(studyIds.length/pageSize)-1,studyPage+1);renderStudies();};
  $('another').onclick=()=>{const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);$('seed').value='PP-TAG-'+bytes[0].toString(36).toUpperCase();generate();};
  $('previous').onclick=()=>{$('floor').value=Number($('floor').value)-1;generate();};$('next').onclick=()=>{$('floor').value=Number($('floor').value)+1;generate();};
  $('play').onclick=animate;$('finish').onclick=()=>{stop();elapsed=0;render();$('status').textContent='Finished wall. Same seed and floor, same tags.';};
@@ -106,6 +135,6 @@ async function init(){
  const image=new Image();image.onload=()=>{try{scan=prepareScan(image);surfaceCache.clear();generate({url:false});document.documentElement.dataset.wall='scan';}catch(e){console.warn('Using the local procedural brick fallback.',e);}};image.onerror=()=>{document.documentElement.dataset.wall='fallback';};image.src='./assets/brick-wall.webp';
  // A small read-only hook makes determinism, counts and actual rendering
  // inspectable without relying on visually identical DOM text.
- window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
+ window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get finish(){return $('paint').value;},get studyCount(){return studyIds.length;},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
 }
 init().catch(error=>{$('status').textContent='The wall could not be prepared: '+error.message;console.error(error);});

@@ -6,7 +6,42 @@ Words are constructed from original letter centre-lines, alternate movements,
 word-level slant and baseline rhythm, joins, and finishing strokes. A continuous
 pressure/speed ribbon and the existing `AlgoArt.stroke` marker renderer deposit
 ink into a transparent layer. The brick's grain modulates that layer's alpha.
-The specimen presents three writer profiles and actual stroke playback.
+The specimen presents the three original hands, 50 selectable reference
+studies, and actual stroke playback.
+
+## Spray paint
+
+Spray paint is now the default finish. `spray-paint.mjs` plans seeded aerosol
+deposits along the actual phi-generated strokes, with a dense centre, feathered
+granular edge, isolated droplets and extra buildup at turns. Four small seeded
+cone stamps per colour are cached locally. No spray texture image or external
+service is downloaded. The existing wall-grain mask still modulates coverage.
+Fat-cap studies vary the nozzle spread along each stroke.
+
+The Paint selector switches between spray paint and the original marker
+without changing letter geometry, tag seeds or floor assignments. Replay
+reveals the same preplanned deposits, so the finished spray image is independent
+of playback frame rate. `finish=spray` or `finish=marker` is saved in the URL.
+
+## Fifty reference studies
+
+All 50 entries in the user's selected [Bombing Science list](https://www.bombingscience.com/top-50-graffiti-handstyles/)
+have a separately authored procedural recipe in `handstyles.mjs`. Recipes use
+plain capitals, rounded bowls, connected script, wickets, elastic forms or a
+continuous line, plus distinct slant, proportions, spacing, joins, baseline
+rhythm, stroke weight, finishing gestures and spray flares. The script/wicket
+alphabet has its own pen movements built from the same golden-ratio dimensions.
+
+The selector contains all 50 studies, identified by their reference writers.
+The wall gallery pages through six studies at a time; only the current six are
+rendered. These are original procedural interpretations of documented traits,
+not complete reconstructed alphabets by those writers. The existing three
+hands remain available. Different writers selects from all 53 profiles.
+
+Every floor still receives one or two tag objects. The KATSU study uses
+interlocking strokes within one word; it does not repeat the whole tag four
+times and inflate the floor's visible tag count. Appending a new floor does
+not change an existing floor's plan.
 
 ## Phi construction
 
@@ -62,7 +97,7 @@ Run the geometry/planning checks with:
 
     node --test test/graffiti/tag-engine.test.mjs
 
-`word`, `seed`, `floor`, `hand` and `ink` are stored in the specimen URL.
+`word`, `seed`, `floor`, `hand`, `ink` and `finish` are stored in the specimen URL.
 The word accepts Latin letters, digits, spaces, phi, full stops, exclamation
 marks, question marks and hyphens, up to 24 characters. Letter shapes are capitals
 with a lowercase phi. A blank word selects different words for each floor.

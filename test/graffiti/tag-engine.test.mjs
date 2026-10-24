@@ -2,7 +2,30 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {createTag,planFloorTags,HANDS,normaliseText,drawTag,PHI,goldenMetrics,letterSkeleton} from './tag-engine.mjs';
+import {createTag,planFloorTags,HANDS,REFERENCE_STUDIES,normaliseText,drawTag,PHI,goldenMetrics,letterSkeleton} from './tag-engine.mjs';
+import {buildSprayPlan} from './spray-paint.mjs';
+
+test('aerosol deposits are seeded, stay in bounds and leave the phi geometry unchanged',()=>{
+ const tag=createTag('ECHO',{seed:'aerosol'}),copy=structuredClone(tag),a=buildSprayPlan(tag),b=buildSprayPlan(copy);
+ assert.deepEqual(a,b);assert.deepEqual(tag,copy);assert.ok(a.dabs.length>300);
+ let previous=-1;
+ for(const dab of a.dabs){assert.ok(dab.at>=previous);previous=dab.at;assert.ok(dab.opacity>0&&dab.opacity<=1);assert.ok(dab.radius>0);const r=dab.radius*a.halo;assert.ok(dab.x-r>tag.bounds.x&&dab.x+r<tag.bounds.x+tag.bounds.width);assert.ok(dab.y-r>tag.bounds.y&&dab.y+r<tag.bounds.y+tag.bounds.height);}
+ assert.equal(a.total,tag.strokes.reduce((n,s)=>n+s.points.length,0));
+ assert.notDeepEqual(a.dabs,buildSprayPlan(createTag('ECHO',{seed:'different'})).dabs);
+});
+
+test('all fifty reference studies have distinct recipes and valid spray footprints',()=>{
+ assert.equal(Object.keys(REFERENCE_STUDIES).length,50);assert.equal(Object.keys(HANDS).length,53);
+ const recipes=new Set(),signatures=new Set();
+ for(const [id,study] of Object.entries(REFERENCE_STUDIES)){
+  recipes.add(JSON.stringify([study.shape,study.lean,study.width,study.height,study.weight,study.spacing,study.join,study.bounce,study.gesture,study.flare]));
+  const tag=createTag('ECHO',{hand:id,seed:'all-studies'}),spray=buildSprayPlan(tag);signatures.add(JSON.stringify(tag.strokes));
+  assert.equal(tag.construction.metrics.ratio,PHI);assert.ok(spray.dabs.length>100);
+  for(const dab of spray.dabs){const r=dab.radius*spray.halo;assert.ok(dab.x-r>tag.bounds.x&&dab.x+r<tag.bounds.x+tag.bounds.width,id);assert.ok(dab.y-r>tag.bounds.y&&dab.y+r<tag.bounds.y+tag.bounds.height,id);}
+  if(study.shape==='oneline')assert.equal(tag.strokes.filter(s=>s.kind==='letter').length,1);
+ }
+ assert.equal(recipes.size,50);assert.equal(signatures.size,50);
+});
 
 test('phi constructs actual alphabet geometry, including bowl splits and crossbar intersections',()=>{
  const m=goldenMetrics();assert.ok(Math.abs(m.height/m.width-PHI)<1e-12);
@@ -62,7 +85,7 @@ test('actual legacy marker renderer draws the planned strokes without a recorder
  const marker=env.window.AlgoArt,original=marker.stroke;let deposits=0;
  const ctx={save(){},restore(){},beginPath(){},closePath(){},moveTo(){},lineTo(){},stroke(){deposits++;},fill(){deposits++;},setLineDash(){},globalCompositeOperation:'source-over'};
  const tag=createTag('ECHO',{seed:'marker-reuse'}),copy=structuredClone(tag);
- drawTag(ctx,tag,{marker});assert.ok(deposits>=tag.strokes.length*2);assert.deepEqual(tag,copy);assert.equal(marker.stroke,original);assert.equal(marker.svgRecorder,undefined);
- const full=deposits;deposits=0;drawTag(ctx,tag,{marker,progress:0});assert.equal(deposits,0);
- drawTag(ctx,tag,{marker,progress:.4});assert.ok(deposits>0&&deposits<full);
+ drawTag(ctx,tag,{marker,finish:'marker'});assert.ok(deposits>=tag.strokes.length*2);assert.deepEqual(tag,copy);assert.equal(marker.stroke,original);assert.equal(marker.svgRecorder,undefined);
+ const full=deposits;deposits=0;drawTag(ctx,tag,{marker,progress:0,finish:'marker'});assert.equal(deposits,0);
+ drawTag(ctx,tag,{marker,progress:.4,finish:'marker'});assert.ok(deposits>0&&deposits<full);
 });
