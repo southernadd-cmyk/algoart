@@ -224,9 +224,16 @@ function captureMaterialStages(s){
   if(previous&&previous.width===width&&previous.height===height){
    const before=previous.getContext('2d',{willReadFrequently:true}).getImageData(0,0,width,height).data;
    const after=ctx.getImageData(0,0,width,height).data;
-   let changed=false;
-   for(let p=0;p<after.length;p++){if(before[p]!==after[p]){changed=true;break;}}
-   if(!changed)return;
+   let changedPixels=0, strongPixels=0;
+   for(let p=0;p<after.length;p+=4){
+    const delta=Math.max(Math.abs(before[p]-after[p]),Math.abs(before[p+1]-after[p+1]),Math.abs(before[p+2]-after[p+2]),Math.abs(before[p+3]-after[p+3]));
+    if(delta>0)changedPixels++;
+    if(delta>=12)strongPixels++;
+   }
+   if(!changedPixels)return;
+   // Oil lighting and texture passes can alter a handful of pixels without
+   // making a perceptibly new painting stage. Don't advertise those as steps.
+   if(selectedMaterial()==='oil' && strongPixels<width*height*.003)return;
   }
   materialFrames.push(frame);materialFrameLabels.push(label);
  };
