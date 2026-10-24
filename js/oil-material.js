@@ -223,6 +223,7 @@ function paintPlanes(pig,height,chains,voids,r,allowance){
   // Solid pigment planes grow off existing structure segments, giving the
   // viewer a painted field instead of many parallel geometric wireframes.
   var n=Math.min(chains.length,Math.ceil(31*allowance));
+  var placed=0;
   for(var i=n-1;i>=0;i--){
     var pts=chains[i].pts;
     if(pts.length<2)continue;
@@ -260,7 +261,11 @@ function paintPlanes(pig,height,chains,voids,r,allowance){
     height.save();height.globalCompositeOperation='lighter';shape(height);
     height.fillStyle='rgb(38,38,38)';height.globalAlpha=r.range(.18,.48);
     height.fill();height.restore();
-    if(A.materialStageCapture&&n>0&&((n-i)%Math.max(1,Math.ceil(n/12))===0))A.materialStageCapture('tissue-plane-'+(n-i),pig.canvas);
+    if(A.materialStageCapture){
+      placed++;
+      if(placed<=12)A.materialStageCapture('tissue-opening-'+placed,pig.canvas);
+      else if((n-i)%Math.max(1,Math.ceil(n/12))===0)A.materialStageCapture('tissue-plane-'+(n-i),pig.canvas);
+    }
   }
 }
 // Pale translucent scraps along existing source chains. This is an additive
