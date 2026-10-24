@@ -64,6 +64,7 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <p class="small">The drawings come from the code itself. See the <a href="https://github.com/southernadd-cmyk/algoart">PROPORTION PIECE source repository</a> for the rules behind them.</p></section></main>
 
 <script src="../../js/random.js"></script><script src="../../js/phi.js"></script><script src="../../js/palettes.js"></script><script src="../../js/marker.js"></script><script src="../../js/phi-sheet-fit.js"></script><script src="../../js/generator.js"></script>
+<script src="../../js/settings-url.js?v=1"></script>
 <script type="module">
 const $=id=>document.getElementById(id), A=window.AlgoArt;
 const PHI=A.PHI; // The same exact constant defined by js/phi.js for the drawing engine.
@@ -77,7 +78,7 @@ action:'Action Painting builds dynamic curves and paint deposits with speed-depe
 };
 let paths=[],i=0,playing=false,token=0,roomInfo=null;
 const incoming=new URLSearchParams(location.search);
-const editorKeys={seed:'seed',mode:'mode',orientation:'fmt',elements:'el',density:'den',complexity:'cx',negativeSpace:'neg',phiStrength:'phi',recursion:'rec',spiralInfluence:'spi',goldenAngle:'ga',nesting:'nest',pen:'pen',thickness:'th',wobble:'wob',overdraw:'od',opacity:'op',pressure:'pr',dryness:'dry',curveBias:'curve',shapeAmount:'shape',overlap:'overlap',rotation:'rot',lines:'ln',circles:'ci',rectangles:'re',polygons:'po',arcs:'ar',palette:'pal',colourCount:'cols',saturation:'sat',brightness:'bri',paper:'paper',grain:'grain'};
+const editorKeys=A.PARAM_KEYS;
 const binaryKeys=new Set(['lines','circles','rectangles','polygons','arcs']);
 const textKeys=new Set(['seed','mode','orientation','pen','palette','paper']);
 const incomingSettings={};
@@ -109,6 +110,7 @@ function updateEditLink(){
 if(incomingSettings.seed)$('seed').value=incomingSettings.seed;
 if(incomingSettings.mode)$('engine').value=incomingSettings.mode;
 if(incomingSettings.orientation)$('orientation').value=incomingSettings.orientation;
+if(incoming.has('mode')&&incoming.has('seed'))$('notice').textContent='Your drawing from the editor, replayed as marker paths.';
 const num=n=>Number(n).toFixed(2),esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
 function settings(){return {seed:$('seed').value.trim()||'PP-RECURSIVE-DIVISIONS-INTRO',mode:$('engine').value,orientation:$('orientation').value,
 elements:36,density:53,complexity:71,negativeSpace:41,phiStrength:91,recursion:4,spiralInfluence:63,goldenAngle:93,nesting:44,
@@ -146,6 +148,6 @@ $('markMath').textContent=formula;$('svgSource').textContent=p.d;
 }
 $('phiGuides').addEventListener('change',renderStep);
 function advance(n){i=Math.max(0,Math.min(paths.length,n));renderStep()}
-function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=Number(incoming.get('v'))||9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;renderStep();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';$('notice').textContent=names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded pen passes from the drawing renderer.';}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
+function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;renderStep();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';$('notice').textContent=names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded pen passes from the drawing renderer.';}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
 $('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(paths.length)};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=paths.length){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(paths.length,1)));}tick();};generate();
 </script></body></html>
