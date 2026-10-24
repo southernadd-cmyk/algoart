@@ -73,7 +73,7 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <script src="../../js/watercolour-v2s.js?v=walkthrough-stages1"></script>
 <script src="../../js/oil-v1-core-a.js"></script>
 <script src="../../js/oil-v1-core-b.js"></script>
-<script src="../../js/oil-v1-core-c.js?v=walkthrough-oil-stages2"></script>
+<script src="../../js/oil-v1-core-c.js?v=oil-real-brush-stages3"></script>
 <script src="../../js/oil-paint-v1.js?v=walkthrough-stages1"></script>
 <script src="../../js/oil-brush-v2.js"></script>
 <script src="../../js/oil-paint-v2.js"></script>
@@ -220,21 +220,6 @@ function captureMaterialStages(s){
   // Some oil modes bypass territory, mass and gesture passes entirely.
   // Those renderer callbacks are valid, but do not represent new paint.
   // Keep only visually changed checkpoints, without altering final pixels.
-  const previous=materialFrames[materialFrames.length-1];
-  if(previous&&previous.width===width&&previous.height===height){
-   const before=previous.getContext('2d',{willReadFrequently:true}).getImageData(0,0,width,height).data;
-   const after=ctx.getImageData(0,0,width,height).data;
-   let changedPixels=0, strongPixels=0;
-   for(let p=0;p<after.length;p+=4){
-    const delta=Math.max(Math.abs(before[p]-after[p]),Math.abs(before[p+1]-after[p+1]),Math.abs(before[p+2]-after[p+2]),Math.abs(before[p+3]-after[p+3]));
-    if(delta>0)changedPixels++;
-    if(delta>=12)strongPixels++;
-   }
-   if(!changedPixels)return;
-   // Oil lighting and texture passes can alter a handful of pixels without
-   // making a perceptibly new painting stage. Don't advertise those as steps.
-   if(selectedMaterial()==='oil' && strongPixels<width*height*.003)return;
-  }
   materialFrames.push(frame);materialFrameLabels.push(label);
  };
  const target=document.createElement('canvas');
@@ -242,7 +227,7 @@ function captureMaterialStages(s){
  try{
   A.materialStageCapture=(name,source)=>{
    const labels={'tissue-planes':'Broad tissue areas','tissue-glazes':'Translucent overlapping glazes','tissue-ribbons':'Main coloured tissue ribbons','tissue-pale':'Pale tissue and torn edges','tissue-pigment':'Small pigment and fibre details','tissue-surface':'The textured tissue surface','watercolour-broad':'First broad wet washes','watercolour-hero':'Structural pigment strokes','watercolour-wash':'Pigment transported through paper','watercolour-dry':'First dry marks','watercolour-dry-lines':'Additional dry strokes','watercolour-accents':'Final accents and granulation','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added','oil-primary-fields':'Primary coloured oil fields','oil-territories':'Territory brush deposits','oil-paint-masses':'Loaded paint masses','oil-gestures':'Directional bristle gestures'};
-   snapshot(labels[name]||(name.startsWith('oil-field-')?'Connected oil field '+name.slice('oil-field-'.length):name),source);
+   snapshot(labels[name]||(name.startsWith('oil-field-')?'Brushwork in connected field '+name.slice('oil-field-'.length).replace('-',', pass '):name),source);
   };
   A.phiFramingEnabled=incoming.get('sheet')==='phi';
   if(selectedMaterial()==='tissue'){
