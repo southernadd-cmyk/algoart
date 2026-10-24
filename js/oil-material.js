@@ -260,6 +260,7 @@ function paintPlanes(pig,height,chains,voids,r,allowance){
     height.save();height.globalCompositeOperation='lighter';shape(height);
     height.fillStyle='rgb(38,38,38)';height.globalAlpha=r.range(.18,.48);
     height.fill();height.restore();
+    if(A.materialStageCapture&&n>0&&((n-i)%Math.max(1,Math.ceil(n/12))===0))A.materialStageCapture('tissue-plane-'+(n-i),pig.canvas);
   }
 }
 // Pale translucent scraps along existing source chains. This is an additive
