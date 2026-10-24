@@ -61,6 +61,22 @@ try {
    },material);
    assert.ok(parity.differences<=(material==='tissue'?2:0),material+' final frame differs from studio-quality render by '+parity.differences+' channel values');
   }
+  if(material==='oil'){
+   const opening=await page.evaluate(()=>{
+    const frames=window.__walkthroughTest.frames();
+    return frames.slice(0,Math.min(8,frames.length)).map((frame,index)=>{
+     const data=frame.getContext('2d').getImageData(0,0,frame.width,frame.height).data;
+     const paper=frames[0].getContext('2d').getImageData(0,0,frame.width,frame.height).data;
+     let changed=0;
+     for(let k=0;k<data.length;k+=4)
+      if(data[k]!==paper[k]||data[k+1]!==paper[k+1]||data[k+2]!==paper[k+2])changed++;
+     return {index,changedPixels:changed};
+    });
+   });
+   console.log('Oil opening frame coverage:',JSON.stringify(opening));
+   assert.ok(opening[1].changedPixels<opening.at(-1).changedPixels,
+    'Oil opening frames do not build progressively');
+  }
   console.log(material,'stages',max,'status:',status.slice(0,140));
  }
  assert.ok(!errors.length,'Browser errors: '+errors.join(' | '));
