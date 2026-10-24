@@ -1614,30 +1614,47 @@ function drawMap(){
   if(!element||!plan)return;
   const ctx=element.getContext('2d');
   const w=element.width,h=element.height;
+  const visitorX=rig.position.x,visitorZ=rig.position.z;
   ctx.clearRect(0,0,w,h);
+  // Include the outdoor arrival point when fitting the floor plan.
   const bounds=plan.rooms.reduce((p,r)=>({
     minX:Math.min(p.minX,r.x-r.width/2),maxX:Math.max(p.maxX,r.x+r.width/2),
     minZ:Math.min(p.minZ,r.z-r.depth/2),maxZ:Math.max(p.maxZ,r.z+r.depth/2)
-  }),{minX:Infinity,maxX:-Infinity,minZ:Infinity,maxZ:-Infinity});
-  const scale=Math.min((w-28)/(bounds.maxX-bounds.minX+2),(h-28)/(bounds.maxZ-bounds.minZ+2));
-  const px=x=>(x-(bounds.minX+bounds.maxX)/2)*scale+w/2;
-  const pz=z=>(z-(bounds.minZ+bounds.maxZ)/2)*scale+h/2;
+  }),{minX:visitorX,maxX:visitorX,minZ:visitorZ,maxZ:visitorZ});
+  // Keep the visitor in the centre, with their facing direction at the top.
+  // Rotate the map geometry, not the player arrow or the canvas element.
+  const rotation=-yaw;
+  const cs=Math.cos(rotation),sn=Math.sin(rotation);
+  const project=(x,z)=>{
+    const dx=x-visitorX,dz=z-visitorZ;
+    return {x:dx*cs-dz*sn,y:dx*sn+dz*cs};
+  };
+  const corners=[
+    [bounds.minX,bounds.minZ],[bounds.minX,bounds.maxZ],
+    [bounds.maxX,bounds.minZ],[bounds.maxX,bounds.maxZ]
+  ].map(([x,z])=>project(x,z));
+  const extentX=Math.max(1,...corners.map(p=>Math.abs(p.x)));
+  const extentY=Math.max(1,...corners.map(p=>Math.abs(p.y)));
+  const scale=Math.min((w-28)/(2*extentX),(h-28)/(2*extentY));
+  const point=(x,z)=>{const p=project(x,z);return {x:w/2+p.x*scale,y:h/2+p.y*scale};};
   ctx.lineWidth=7;ctx.lineCap='round';ctx.strokeStyle='#999789';
   for(const hall of plan.corridors){
-    ctx.beginPath();ctx.moveTo(px(hall.start.x),pz(hall.start.z));
-    ctx.lineTo(px(hall.end.x),pz(hall.end.z));ctx.stroke();
+    const start=point(hall.start.x,hall.start.z),end=point(hall.end.x,hall.end.z);
+    ctx.beginPath();ctx.moveTo(start.x,start.y);
+    ctx.lineTo(end.x,end.y);ctx.stroke();
   }
   for(const room of plan.rooms){
-    const x=px(room.x-room.width/2),y=pz(room.z-room.depth/2);
-    ctx.fillStyle='#e6e4d8';ctx.strokeStyle='#474b43';ctx.lineWidth=1.2;
-    ctx.fillRect(x,y,room.width*scale,room.depth*scale);
-    ctx.strokeRect(x,y,room.width*scale,room.depth*scale);
+    const x0=room.x-room.width/2,x1=room.x+room.width/2;
+    const z0=room.z-room.depth/2,z1=room.z+room.depth/2;
+    const corners=[[x0,z0],[x1,z0],[x1,z1],[x0,z1]].map(([x,z])=>point(x,z));
+    ctx.beginPath();ctx.moveTo(corners[0].x,corners[0].y);
+    for(let i=1;i<corners.length;i++)ctx.lineTo(corners[i].x,corners[i].y);
+    ctx.closePath();ctx.fillStyle='#e6e4d8';ctx.strokeStyle='#474b43';
+    ctx.lineWidth=1.2;ctx.fill();ctx.stroke();
   }
-  ctx.save();
-  ctx.translate(px(rig.position.x),pz(rig.position.z));
-  ctx.rotate(-yaw);
-  ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-5,5);ctx.lineTo(5,5);ctx.closePath();
-  ctx.fillStyle='#d25232';ctx.fill();ctx.restore();
+  ctx.beginPath();ctx.moveTo(w/2,h/2-9);ctx.lineTo(w/2-5,h/2+5);
+  ctx.lineTo(w/2+5,h/2+5);ctx.closePath();
+  ctx.fillStyle='#d25232';ctx.fill();
 }
 
 function updateMovement(dt) {
