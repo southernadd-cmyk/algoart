@@ -326,6 +326,9 @@ function sitemap(archive) {
     { loc: SITE_URL + '/', lastmod: latest },
     { loc: GALLERY_URL + '/', lastmod: latest },
     { loc: GALLERY_URL + '/visit/', lastmod: latest },
+    { loc: SITE_URL + '/about/', lastmod: latest },
+    { loc: SITE_URL + '/about/step-by-step/', lastmod: latest },
+    { loc: SITE_URL + '/press/', lastmod: latest },
     ...days.map(day => ({ loc: `${GALLERY_URL}/${day.date}/`, lastmod: day.date }))
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
