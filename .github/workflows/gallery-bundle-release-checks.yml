@@ -4,6 +4,10 @@ on:
     branches: [main]
     paths:
       - 'tests/gallery-public-launch.test.mjs'
+      - 'tests/gallery-production-planning.test.mjs'
+      - 'gallery/visit/layout-v2.mjs'
+      - 'gallery/visit/hanging-v3.mjs'
+      - 'gallery/visit/sculptures.mjs'
       - 'tests/gallery-xr-loading.test.mjs'
       - 'tests/gallery-xr-controls.test.mjs'
       - 'gallery/visit/gallery-v2.js'
@@ -21,7 +25,7 @@ jobs:
         with:
           node-version: '22'
       - name: Gallery public launch regression
-        run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs
+        run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs
       - name: Validate bundle syntax and test entry point
         run: |
           node --check gallery/visit/gallery-bundle.js
