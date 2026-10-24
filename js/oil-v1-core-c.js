@@ -3811,10 +3811,11 @@ function oilColourField(ctx,mask,area,painter,plan,progress){
   // Real paint checkpoints, taken during the source-field brush passes.
   // This is capture-only: it never changes brush order, pigment or randomness.
   const expected=guides.reduce((sum,g)=>sum+clamp(Math.floor((g.width+g.height)/36),5,11),0)+(guides.length>=2?9:0);
-  let nextQuarter=1;
+  let nextCheckpoint=1;
+  const checkpointCount=12;
   const record=()=>{
-    while(progress && nextQuarter<=4 && deposits>=Math.ceil(expected*nextQuarter/4)){
-      progress(nextQuarter,4);nextQuarter++;
+    while(progress && nextCheckpoint<=checkpointCount && deposits>=Math.ceil(expected*nextCheckpoint/checkpointCount)){
+      progress(nextCheckpoint,checkpointCount);nextCheckpoint++;
     }
   };
   // Gesture geometry comes from the actual branches, ordered trajectory
@@ -3875,7 +3876,7 @@ function oilColourField(ctx,mask,area,painter,plan,progress){
       deposits++;record();
     }
   }
-  if(progress && !expected)progress(4,4);
+  if(progress && !expected)progress(checkpointCount,checkpointCount);
   ctx.restore();mask.restore();
   return deposits;
 }
