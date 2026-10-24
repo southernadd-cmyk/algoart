@@ -113,10 +113,12 @@ A.renderOilPaintV1=function(target,settings,scale,reveal){
    // Test-only switch; default and released V1 links remain untouched.
    reuseCompositionCapture:A.oilPerfExperimental===true};
  const base=A.renderInterpretedV5P(target,settings,scale,opts);
+ if(A.materialStageCapture)A.materialStageCapture('oil-paint-base',target);
  const plan=base.plan;
  const applied=plan&&plan.connectedFields.length?
    paintMaterialConnections(target,plan,scale,'oil'):
    {broadFields:0,sourceLinks:0,materialContacts:0,junctionPools:0};
+ if(A.materialStageCapture)A.materialStageCapture('oil-paint-connections',target);
  // V4e already captured the actual V8 source's guide and void metadata.
  // Before this fix Oil v1 discarded it, and ignored `reveal`: the button
  // changed state but no scaffold was drawn and hover hit-testing failed.
