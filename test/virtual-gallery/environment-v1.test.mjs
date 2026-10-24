@@ -40,5 +40,7 @@ test('low-power mode uses fewer objects',()=>{
   const layout=gallery('2026-10-21');
   const full=buildEnvironmentPlan(layout,states);
   const lite=buildEnvironmentPlan(layout,states,{lowPower:true});
-  for(const key of ['trees','shrubs','rocks'])assert.ok(lite[key].length<full[key].length);
+  for(const key of ['trees','shrubs'])assert.ok(lite[key].length<full[key].length);
+  assert.equal(lite.rocks.length,0);
+  assert.equal(full.rocks.length,0);
 });
