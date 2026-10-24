@@ -270,30 +270,28 @@ function captureMaterialStages(s){
    }else if(distance(previous.pixels,current.pixels)>.18)distinct.push(current);
   }
   if(distinct.length>2){
-   const cumulative=[0];
-   for(let j=1;j<distinct.length;j++)
-    cumulative.push(cumulative[j-1]+distance(distinct[j-1].pixels,distinct[j].pixels));
+   // Choose the next frame by its difference from the last selected frame,
+   // not by its position in a cumulative callback timeline. This avoids
+   // spending several stages on barely visible late-renderer polish.
+   const minimumChange=selectedMaterial()==='oil'||selectedMaterial()==='watercolour'?1.5:.8;
    const chosen=[0];
-   // Never repeat a checkpoint. When a renderer exposes fewer distinct
-   // states than requested, show the actual states rather than fake progress.
-   const desired=Math.min(distinct.length,Math.max(5,Math.min(10,candidates.length)));
-   for(let slot=1;slot<desired-1;slot++){
-    const targetChange=cumulative.at(-1)*slot/(desired-1);
-    let best=-1,score=Infinity;
-    for(let j=chosen.at(-1)+1;j<=distinct.length-(desired-slot);j++){
-     const error=Math.abs(cumulative[j]-targetChange);
-     if(error<score){score=error;best=j;}
+   const finalIndex=distinct.length-1;
+   while(chosen.at(-1)<finalIndex){
+    const previous=chosen.at(-1);
+    const remaining=distance(distinct[previous].pixels,distinct[finalIndex].pixels);
+    if(remaining<minimumChange)break;
+    const targetChange=Math.max(minimumChange,remaining/Math.max(2,Math.min(8,finalIndex-chosen.length+1)));
+    let next=-1;
+    for(let j=previous+1;j<finalIndex;j++){
+     if(distance(distinct[previous].pixels,distinct[j].pixels)>=targetChange){next=j;break;}
     }
-    chosen.push(best);
+    if(next<0)break;
+    chosen.push(next);
    }
-   chosen.push(distinct.length-1);
-   // Final oil and watercolour polish can be technically different yet imperceptible.
-   // Do not offer two successive stages that look like the same painting.
-   if(selectedMaterial()==='oil'||selectedMaterial()==='watercolour'){
-    const minimumVisibleChange=1.5;
-    while(chosen.length>2 && distance(distinct[chosen.at(-2)].pixels,distinct[chosen.at(-1)].pixels)<minimumVisibleChange)
-     chosen.splice(-2,1);
-   }
+   // Always finish on the renderer's actual final surface.
+   while(chosen.length>1&&distance(distinct[chosen.at(-1)].pixels,distinct[finalIndex].pixels)<minimumChange)
+    chosen.pop();
+   chosen.push(finalIndex);
    materialFrames=chosen.map(j=>distinct[j].frame);
    materialFrameLabels=chosen.map(j=>distinct[j].label);
   }else{
