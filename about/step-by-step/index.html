@@ -212,7 +212,7 @@ function captureActionStages(s){
   const frame=document.createElement('canvas');
   frame.width=source.width;frame.height=source.height;
   frame.getContext('2d').drawImage(source,0,0);
-  materialFrames.push(frame);materialFrameLabels.push(label);
+  materialFrames.push(frame);materialFrameLabels.push(label);capturePhases.push(phase);
  };
  const blank=document.createElement('canvas');
  blank.width=Math.round((s.orientation==='portrait'?1000:1400)*scale);
@@ -227,13 +227,14 @@ function captureActionStages(s){
 }
 function captureMaterialStages(s){
  materialFrames=[];materialFrameLabels=[];
+ const capturePhases=[];
  const shortScale=.32;
  const width=Math.round((s.orientation==='portrait'?1000:1400)*shortScale);
  const height=Math.round((s.orientation==='portrait'?1400:1000)*shortScale);
  const blank=document.createElement('canvas');blank.width=width;blank.height=height;
  const blankCtx=blank.getContext('2d');blankCtx.fillStyle=s.paper;blankCtx.fillRect(0,0,width,height);
- materialFrames.push(blank);materialFrameLabels.push('The blank page');
- const snapshot=(label,source)=>{
+ materialFrames.push(blank);materialFrameLabels.push('The blank page');capturePhases.push('blank');
+ const snapshot=(label,source,phase='finished')=>{
   if(!source||!source.width||!source.height)return;
   const frame=document.createElement('canvas');frame.width=width;frame.height=height;
   const ctx=frame.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,width,height);
@@ -247,7 +248,23 @@ function captureMaterialStages(s){
  try{
   A.materialStageCapture=(name,source)=>{
    const labels={'tissue-planes':'Broad tissue areas','tissue-glazes':'Translucent overlapping glazes','tissue-ribbons':'Main coloured tissue ribbons','tissue-pale':'Pale tissue and torn edges','tissue-pigment':'Small pigment and fibre details','tissue-surface':'The textured tissue surface','watercolour-broad':'First broad wet washes','watercolour-hero':'Structural pigment strokes','watercolour-wash':'Pigment transported through paper','watercolour-dry':'First dry marks','watercolour-dry-lines':'Additional dry strokes','watercolour-accents':'Final accents and granulation','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added','oil-primary-fields':'Primary coloured oil fields','oil-territories':'Territory brush deposits','oil-paint-masses':'Loaded paint masses','oil-gestures':'Directional bristle gestures'};
-   snapshot(labels[name]||(name.startsWith('oil-field-')?'Brushwork in connected field '+name.slice('oil-field-'.length).replace('-',', pass '):name),source);
+   const phase=name.startsWith('watercolour-')?name.replace(/-\\d+$/,'').replace(/-(broad|hero|detail|dry|fine-ink)-.*$/,'-$1'):
+    name.startsWith('tissue-')?name.replace(/-\\d+$/,'').replace(/-(plane|glaze|ribbon|detail)-.*$/,'-$1'):
+    name.startsWith('oil-field-')?'oil-field-'+name.split('-')[2]:
+    name.replace(/-\\d+$/,'');
+   const description=labels[name]||
+    (name.startsWith('watercolour-detail-')?'Small pigment details':
+     name.startsWith('watercolour-fine-ink-')?'Fine dry ink accents':
+     name.startsWith('watercolour-broad-')?'Building the broad washes':
+     name.startsWith('watercolour-hero-')?'Building the structural strokes':
+     name.startsWith('watercolour-dry-')?'Adding dry marks':
+     name.startsWith('tissue-plane-')?'Laying tissue pigment planes':
+     name.startsWith('tissue-glaze-')?'Layering translucent glazes':
+     name.startsWith('tissue-ribbon-')?'Adding coloured tissue ribbons':
+     name.startsWith('tissue-detail-')?'Adding pigment details':
+     name.startsWith('oil-field-')?'Connected field brushwork':
+     name.replace(/-\\d+$/,'').replace(/-/g,' '));
+   snapshot(description,source,phase);
   };
   A.phiFramingEnabled=incoming.get('sheet')==='phi';
   if(selectedMaterial()==='tissue'){
@@ -273,7 +290,7 @@ function captureMaterialStages(s){
    const sample=document.createElement('canvas');sample.width=112;sample.height=80;
    const context=sample.getContext('2d',{willReadFrequently:true});
    context.drawImage(frame,0,0,112,80);
-   return {frame,label:materialFrameLabels[index],pixels:context.getImageData(0,0,112,80).data};
+   return {frame,label:materialFrameLabels[index],phase:capturePhases[index],pixels:context.getImageData(0,0,112,80).data};
   });
   const distance=(a,b)=>{
    let sum=0;
@@ -281,44 +298,65 @@ function captureMaterialStages(s){
     sum+=Math.abs(a[p]-b[p])+Math.abs(a[p+1]-b[p+1])+Math.abs(a[p+2]-b[p+2]);
    return sum/(a.length/4*3);
   };
-  // A fixed pixel threshold discarded nearly every watercolour checkpoint
-  // on pale seeds. Measure each seed's own visible change instead.
-  const increments=[];
-  for(let j=1;j<candidates.length;j++)
-   increments.push(distance(candidates[j-1].pixels,candidates[j].pixels));
-  const totalChange=increments.reduce((sum,value)=>sum+value,0);
-  // Keep all non-identical captures; never invent a blended painting frame.
-  const epsilon=Math.max(.005,Math.min(.08,totalChange*.00015));
+  // Select frames within actual renderer phases. Every phase gets its first
+  // visibly changed frame and its last; remaining slots favour paint activity.
+  // Compare full-resolution frames when thumbnail differences are tiny.
+  const visiblyDifferent=(a,b)=>{
+   if(distance(a.pixels,b.pixels)>.012)return true;
+   const x=a.frame.getContext('2d',{willReadFrequently:true}).getImageData(0,0,width,height).data;
+   const y=b.frame.getContext('2d',{willReadFrequently:true}).getImageData(0,0,width,height).data;
+   for(let p=0;p<x.length;p+=4)
+    if(x[p]!==y[p]||x[p+1]!==y[p+1]||x[p+2]!==y[p+2]||x[p+3]!==y[p+3])return true;
+   return false;
+  };
   const distinct=[candidates[0]];
   for(let j=1;j<candidates.length;j++){
    const current=candidates[j],previous=distinct.at(-1);
-   if(j===candidates.length-1){
-    if(distance(previous.pixels,current.pixels)>epsilon)distinct.push(current);
-    else distinct[distinct.length-1]=current;
-   }else if(distance(previous.pixels,current.pixels)>epsilon)distinct.push(current);
+   if(visiblyDifferent(previous,current))distinct.push(current);
+   else if(j===candidates.length-1)distinct[distinct.length-1]=current;
   }
-  if(distinct.length>2){
-   const cumulative=[0];
-   for(let j=1;j<distinct.length;j++)
-    cumulative.push(cumulative.at(-1)+distance(distinct[j-1].pixels,distinct[j].pixels));
-   const finalIndex=distinct.length-1;
-   // Retain up to 40 genuinely different stages. Adapt the number of stages
-   // to the available captures, not to the seed's absolute colour contrast.
-   const count=Math.min(distinct.length,41);
-   const chosen=[0];
-   for(let slot=1;slot<count-1;slot++){
-    const first=chosen.at(-1)+1,last=finalIndex-(count-1-slot);
-    const target=cumulative[finalIndex]*slot/(count-1);
-    let best=first,score=Infinity;
-    for(let j=first;j<=last;j++){
-     const error=Math.abs(cumulative[j]-target);
-     if(error<score){score=error;best=j;}
+  const maxStages=41;
+  if(distinct.length>maxStages){
+   const required=new Set([0,distinct.length-1]);
+   for(let j=1;j<distinct.length;j++){
+    if(distinct[j].phase!==distinct[j-1].phase){
+     required.add(j-1);required.add(j);
     }
-    chosen.push(best);
    }
-   chosen.push(finalIndex);
-   materialFrames=chosen.map(j=>distinct[j].frame);
-   materialFrameLabels=chosen.map(j=>distinct[j].label);
+   const activity=[];
+   for(let j=1;j<distinct.length;j++)
+    activity.push(distance(distinct[j-1].pixels,distinct[j].pixels));
+   const selected=new Set(required);
+   // If a composition has more phase boundaries than the stage budget,
+   // keep the first occurrence of each phase and the final artwork.
+   if(selected.size>maxStages){
+    selected.clear();selected.add(0);selected.add(distinct.length-1);
+    for(let j=1;j<distinct.length-1&&selected.size<maxStages;j++)
+     if(distinct[j].phase!==distinct[j-1].phase)selected.add(j);
+   }
+   while(selected.size<maxStages){
+    const ordered=[...selected].sort((a,b)=>a-b);
+    let best=-1,bestScore=-1;
+    for(let k=1;k<ordered.length;k++){
+     const left=ordered[k-1],right=ordered[k];
+     if(right-left<2)continue;
+     let total=0;
+     for(let j=left+1;j<=right;j++)total+=activity[j-1];
+     if(total<=bestScore)continue;
+     let cumulative=0,mid=left+1,nearest=Infinity;
+     for(let j=left+1;j<right;j++){
+      cumulative+=activity[j-1];
+      const error=Math.abs(cumulative-total/2);
+      if(error<nearest){nearest=error;mid=j;}
+     }
+     best=mid;bestScore=total;
+    }
+    if(best<0)break;
+    selected.add(best);
+   }
+   const indices=[...selected].sort((a,b)=>a-b);
+   materialFrames=indices.map(j=>distinct[j].frame);
+   materialFrameLabels=indices.map(j=>distinct[j].label);
   }else{
    materialFrames=distinct.map(x=>x.frame);
    materialFrameLabels=distinct.map(x=>x.label);
