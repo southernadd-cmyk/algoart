@@ -138,6 +138,7 @@ for(var layer=0;layer<passes;layer++){
   occupancy[ca]++;occupancy[cb]++;occupancy[cm]++;
   if(i%5===0&&crowded<17){var at=select();ctx.globalAlpha=between(r,.3,.75);
    scatter(ctx,r,at.x,at.y,3+Math.floor(r()*9),colour,between(r,9,38));ctx.globalAlpha=1}
+  if(options.onStage)options.onStage('Paint pass '+(layer+1),target);
  }ctx.restore()}
 return {pathCount:paths.length,anchorCount:anchors.length,layers:layers,archetype:archetype,skippedCrowded:skipped,palette:palette.slice()}}
 A.renderActionPainting=function(target,s,scale,showGeometry,options){scale=scale||1;var prior=A.svgRecorder,rec={precise:true,paths:[],paperMarks:[]},scratch=document.createElement('canvas'),meta;
