@@ -95,16 +95,7 @@ function paintMaterialConnections(target,plan,scale,material){
      result=overlayOil(ctx,mask,field,edges,rr);
    broad++;links+=edges.length;strokes+=result.strokes;pools+=result.pools;
    ctx.restore();mask.restore();
-   if(A.materialStageCapture && broad<=5){
-     const progress=document.createElement('canvas');
-     progress.width=target.width;progress.height=target.height;
-     const preview=progress.getContext('2d');
-     preview.drawImage(target,0,0);
-     preview.globalAlpha=.78;
-     preview.drawImage(pass,0,0);
-     preview.globalAlpha=1;
-     A.materialStageCapture('oil-field-'+broad,progress);
-   }
+
  }
  ctx.restore();mask.restore();
  const out=target.getContext('2d');
