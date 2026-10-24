@@ -29,3 +29,13 @@ test('all artwork parameters, version, materials and framing survive the handoff
  assert.match(replay,/editorURL\.searchParams/);
  assert.match(replay,/target\.searchParams\.set\('seed'/);
 });
+
+test('action paint replay uses real material layers and blank first stage',()=>{
+ assert.match(replay,/action-painting-v1\.js/);
+ assert.match(replay,/A\.actionPaintingFromPaths\(painting,paths,s,\.75/);
+ assert.match(replay,/if\(layers===0\)/);
+ assert.match(replay,/const stepTotal=\(\)=>isAction\(\)\?actionLayerCount:paths\.length/);
+ assert.match(replay,/materialFromURL/);
+ assert.match(replay,/id="replayMaterial"/);
+ assert.match(replay,/id="continueEditing"/);
+});
