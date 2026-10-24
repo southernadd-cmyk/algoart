@@ -223,8 +223,8 @@ function captureMaterialStages(s){
  const originalCapture=A.materialStageCapture;
  try{
   A.materialStageCapture=(name,source)=>{
-   const labels={'tissue-pigment':'Pigment and paper layers','tissue-surface':'The textured tissue surface','watercolour-wash':'Wet pigment spread through the paper','watercolour-dry':'Dry pigment detail','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added'};
-   snapshot(labels[name]||name,source);
+   const labels={'tissue-planes':'Broad tissue areas','tissue-glazes':'Translucent overlapping glazes','tissue-ribbons':'Main coloured tissue ribbons','tissue-pale':'Pale tissue and torn edges','tissue-pigment':'Small pigment and fibre details','tissue-surface':'The textured tissue surface','watercolour-broad':'First broad wet washes','watercolour-hero':'Structural pigment strokes','watercolour-wash':'Pigment transported through paper','watercolour-dry':'First dry marks','watercolour-dry-lines':'Additional dry strokes','watercolour-accents':'Final accents and granulation','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added'};
+   snapshot(labels[name]||(name.startsWith('oil-field-')?'Connected oil field '+name.slice('oil-field-'.length):name),source);
   };
   A.phiFramingEnabled=incoming.get('sheet')==='phi';
   if(selectedMaterial()==='tissue'){
