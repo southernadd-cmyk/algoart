@@ -212,7 +212,7 @@ function captureActionStages(s){
   const frame=document.createElement('canvas');
   frame.width=source.width;frame.height=source.height;
   frame.getContext('2d').drawImage(source,0,0);
-  materialFrames.push(frame);materialFrameLabels.push(label);capturePhases.push(phase);
+  materialFrames.push(frame);materialFrameLabels.push(label);
  };
  const blank=document.createElement('canvas');
  blank.width=Math.round((s.orientation==='portrait'?1000:1400)*scale);
@@ -228,9 +228,11 @@ function captureActionStages(s){
 function captureMaterialStages(s){
  materialFrames=[];materialFrameLabels=[];
  const capturePhases=[];
- const shortScale=.32;
- const width=Math.round((s.orientation==='portrait'?1000:1400)*shortScale);
- const height=Math.round((s.orientation==='portrait'?1400:1000)*shortScale);
+ // Render at studio quality; only stored walkthrough frames are downsampled.
+ const shortScale=1;
+ const frameScale=.32;
+ const width=Math.round((s.orientation==='portrait'?1000:1400)*frameScale);
+ const height=Math.round((s.orientation==='portrait'?1400:1000)*frameScale);
  const blank=document.createElement('canvas');blank.width=width;blank.height=height;
  const blankCtx=blank.getContext('2d');blankCtx.fillStyle=s.paper;blankCtx.fillRect(0,0,width,height);
  materialFrames.push(blank);materialFrameLabels.push('The blank page');capturePhases.push('blank');
@@ -238,9 +240,7 @@ function captureMaterialStages(s){
   if(!source||!source.width||!source.height)return;
   const frame=document.createElement('canvas');frame.width=width;frame.height=height;
   const ctx=frame.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,width,height);
-  // Some oil modes bypass territory, mass and gesture passes entirely.
-  // Those renderer callbacks are valid, but do not represent new paint.
-  // Keep only visually changed checkpoints, without altering final pixels.
+  // Stage selection below removes unchanged frames; capture at display size.
   materialFrames.push(frame);materialFrameLabels.push(label);capturePhases.push(phase);
  };
  const target=document.createElement('canvas');
