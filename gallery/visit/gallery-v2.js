@@ -1640,6 +1640,9 @@ function drawMap(){
   for(const hall of plan.corridors){
     vertices.push(project(hall.start.x,hall.start.z),project(hall.end.x,hall.end.z));
   }
+  // The lift cabin is outside its gallery wall. Include it in the fitted
+  // footprint so its symbol cannot be clipped when the plan rotates.
+  if(liftPosition)vertices.push(project(liftPosition.x,liftPosition.z));
   if(!vertices.length)return;
   const minX=Math.min(...vertices.map(p=>p.x)),maxX=Math.max(...vertices.map(p=>p.x));
   const minY=Math.min(...vertices.map(p=>p.y)),maxY=Math.max(...vertices.map(p=>p.y));
@@ -1662,6 +1665,10 @@ function drawMap(){
     ctx.closePath();ctx.fillStyle='#e6e4d8';ctx.strokeStyle='#474b43';
     ctx.lineWidth=1.2;ctx.fill();ctx.stroke();
   }
+  const marker=point(visitorX,visitorZ);
+  ctx.beginPath();ctx.moveTo(marker.x,marker.y-9);ctx.lineTo(marker.x-5,marker.y+5);
+  ctx.lineTo(marker.x+5,marker.y+5);ctx.closePath();
+  ctx.fillStyle='#d25232';ctx.fill();
   // Draw the lift using its placed world position, not the room plan: the
   // lift is constructed after the rooms and can move between editions.
   if(liftPosition){
@@ -1680,10 +1687,6 @@ function drawMap(){
     ctx.fillText('L',lift.x,lift.y+.5);
     ctx.restore();
   }
-  const marker=point(visitorX,visitorZ);
-  ctx.beginPath();ctx.moveTo(marker.x,marker.y-9);ctx.lineTo(marker.x-5,marker.y+5);
-  ctx.lineTo(marker.x+5,marker.y+5);ctx.closePath();
-  ctx.fillStyle='#d25232';ctx.fill();
 }
 
 function updateMovement(dt) {
