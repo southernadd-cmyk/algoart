@@ -216,7 +216,18 @@ function captureMaterialStages(s){
  const snapshot=(label,source)=>{
   if(!source||!source.width||!source.height)return;
   const frame=document.createElement('canvas');frame.width=width;frame.height=height;
-  const ctx=frame.getContext('2d');ctx.drawImage(source,0,0,width,height);
+  const ctx=frame.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,width,height);
+  // Some oil modes bypass territory, mass and gesture passes entirely.
+  // Those renderer callbacks are valid, but do not represent new paint.
+  // Keep only visually changed checkpoints, without altering final pixels.
+  const previous=materialFrames[materialFrames.length-1];
+  if(previous&&previous.width===width&&previous.height===height){
+   const before=previous.getContext('2d',{willReadFrequently:true}).getImageData(0,0,width,height).data;
+   const after=ctx.getImageData(0,0,width,height).data;
+   let changed=false;
+   for(let p=0;p<after.length;p++){if(before[p]!==after[p]){changed=true;break;}}
+   if(!changed)return;
+  }
   materialFrames.push(frame);materialFrameLabels.push(label);
  };
  const target=document.createElement('canvas');
