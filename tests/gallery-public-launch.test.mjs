@@ -39,7 +39,7 @@ test('public metadata and essential production assets exist',()=>{
   assert.match(html,/data-algo-nav href="\.\.\/\.\.\/">try it out<\/a>/);
   assert.match(html,/data-algo-nav href="\.\.\/">daily gallery<\/a>/);
   assert.doesNotMatch(html,/aria-current="page"/);
-  assert.match(html,/data-algo-nav href="\.\.\/\.\.\/about\/">how it works<\/a>/);
+  assert.match(html,/data-algo-nav href="\.\.\/\.\.\/about\/">about this project<\/a>/);
   assert.match(html,/class="hint" id="hint">W A S D move · arrow keys look · Shift faster<\/div>/);
   assert.match(html,/id="infoMeta"/);
   assert.match(html,/Dates marked with a dot/);
