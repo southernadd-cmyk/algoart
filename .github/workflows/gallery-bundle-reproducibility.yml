@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/gallery-bundle-reproducibility.yml'
+      - 'tests/gallery-xr-controls.test.mjs'
 permissions:
   contents: write
   pull-requests: write
@@ -36,7 +37,7 @@ jobs:
           path: gallery/visit/gallery-bundle.js
           retention-days: 7
       - name: Open review PR for a mismatched bundle
-        if: steps.parity.outcome == 'failure' && github.event_name == 'workflow_dispatch'
+        if: steps.parity.outcome == 'failure'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
