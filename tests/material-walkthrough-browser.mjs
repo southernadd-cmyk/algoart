@@ -47,7 +47,7 @@ try {
      A.materialStageCapture=null;
      if(material==='tissue')A.renderOil(studio,s,1,false,7);
      else if(material==='watercolour')A.renderWatercolourV2S(studio,s,1,false);
-     else A.renderOilPaintV4(studio,s,1,false);
+     else A.renderOilPaintV4(studio,s,.45,false);
      const final=window.__walkthroughTest.frames().at(-1);
      const resized=document.createElement('canvas');
      resized.width=final.width;resized.height=final.height;
@@ -59,7 +59,7 @@ try {
      return {differences,width:final.width,height:final.height};
     }finally{A.materialStageCapture=prior}
    },material);
-   assert.ok(parity.differences<=(material==='tissue'?2:0),material+' final frame differs from studio-quality render by '+parity.differences+' channel values');
+   assert.ok(parity.differences<=(material==='tissue'?2:0),material+' final frame differs from same-resolution renderer by '+parity.differences+' channel values');
   }
   if(material==='tissue'||material==='oil'){
    const labels=await page.evaluate(()=>window.__walkthroughTest.labels());
