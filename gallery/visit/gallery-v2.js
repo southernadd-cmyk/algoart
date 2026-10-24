@@ -50,7 +50,6 @@ let liftTravelling=false;
 let liftReturnFocus=null;
 let editionObjects=[];
 let deferredGalleryJobs=[];
-let deferredGalleryVersion=0;
 let deferredGalleryRunning=false;
 let liftDoors=[];
 let liftDoorClosure=0;
@@ -97,6 +96,7 @@ try {
   $('xr-controls').appendChild(xrButton);
   renderer.xr.addEventListener('sessionstart', () => {
     welcome.hidden=true;resetInspection();$('lift').hidden=true;
+    startDeferredGallery();
   });
   renderer.xr.addEventListener('sessionend',()=>{
     closeXRLift();xrTurnLatched=false;liftWasNear=false;
@@ -932,20 +932,16 @@ function onArrivalPath(x,z){
 function startDeferredGallery(){
   if(deferredGalleryRunning||!deferredGalleryJobs.length)return;
   deferredGalleryRunning=true;
-  const version=deferredGalleryVersion;
-  const step=()=>{
-    if(version!==deferredGalleryVersion){deferredGalleryRunning=false;return;}
-    const job=deferredGalleryJobs.shift();
-    if(!job){deferredGalleryRunning=false;updateExhibitLighting();
-      return;}
-    try{
-      const previous=new Set(scene.children);
-      job();
-      for(const object of scene.children)if(!previous.has(object))editionObjects.push(object);
-    }catch(error){console.warn('Deferred gallery asset failed',error);}
-    requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
+}
+function processDeferredGallery(){
+  if(!deferredGalleryRunning)return;
+  const job=deferredGalleryJobs.shift();
+  if(!job){deferredGalleryRunning=false;updateExhibitLighting();return;}
+  try{
+    const previous=new Set(scene.children);
+    job();
+    for(const object of scene.children)if(!previous.has(object))editionObjects.push(object);
+  }catch(error){console.warn('Deferred gallery asset failed',error);}
 }
 function constructGallery(layout, studies) {
   const entry=layout.rooms[0];
@@ -1343,7 +1339,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   for(const texture of staleTextures){texture.dispose();texture.userData.galleryBitmap?.close?.();}
   for(const geometry of staleGeometries)geometry.dispose();
   failedArtworkLoads.clear();
-  deferredGalleryVersion++;deferredGalleryJobs=[];deferredGalleryRunning=false;
+  deferredGalleryJobs=[];deferredGalleryRunning=false;
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
   exhibitLightTargets.length=0;
   resetInspection();
@@ -1743,6 +1739,9 @@ function detectArt(elapsed) {
 function tick() {
   if (!renderer) return;
   const dt=Math.min(clock.getDelta(),.055);
+  // Three.js supplies both desktop and XR frames here. Window animation
+  // frames can pause in immersive VR, so build exhibits on this loop instead.
+  processDeferredGallery();
   animateLiftDoors(dt);
   entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
@@ -1759,3 +1758,4 @@ Promise.race([
   document.fonts.load('42px "AlgoArt Marker"'),
   new Promise(resolve=>setTimeout(resolve,1600))
 ]).catch(error=>console.warn('Marker font fallback:',error)).finally(load);
+
