@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {
  traceRecordedPath,selectRecordedPaths,strokeSections,
  strokeOutline,portraitCoords
-} from './vector-geometry.mjs';
-import {pigmentGrid,tracePigmentRegions} from './pigment-regions.mjs';
+} from '../../gallery/visit/vector-geometry.mjs';
+import {pigmentGrid,tracePigmentRegions} from '../../gallery/visit/pigment-regions.mjs';
 
 test('Recorded real M/L/C strokes retain the source coordinates and curve',()=>{
  const straight=traceRecordedPath({d:'M 100 200 L 110 200 L 120 210'});
