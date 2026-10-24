@@ -37,6 +37,7 @@ try {
   assert.ok(visible,material+' result not displayed');
   const status=await page.locator('#notice').innerText();
   assert.ok(!status.startsWith('Could not'),material+': '+status);
+  if(material==='oil')assert.ok(status.includes('rendering complete'), 'Oil loading notice was not cleared: '+status);
   if(material==='tissue'||material==='watercolour'||material==='oil')assert.ok(max>=2,material+' should expose an intermediate material checkpoint');
   if(['tissue','watercolour','oil'].includes(material)){
    const parity=await page.evaluate(material=>{
