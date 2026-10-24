@@ -5,7 +5,6 @@ import vm from 'node:vm';
 import * as THREE from 'three';
 
 const source=readFileSync('gallery/visit/gallery-v2.js','utf8');
-const bundle=readFileSync('gallery/visit/gallery-bundle.js','utf8');
 const implementations=[
   {name:'source',code:source.slice(source.indexOf('function updateMovement(dt)'),source.indexOf('function detectArt(')),
     fn:'updateMovement',names:{plan:'plan',welcome:'welcome',ui:'$',travelling:'liftTravelling',
@@ -13,12 +12,7 @@ const implementations=[
       vector:'THREE',yaw:'yaw',pitch:'pitch',latched:'xrTurnLatched',rig:'rig',stand:'canStand',
       path:'onArrivalPath',clear:'clearOfSculptures',sculptures:'sculpturePlacements',
       footprint:'footprintAt',near:'nearLift',panel:'xrLiftPanel',wasNear:'liftWasNear',
-      close:'closeXRLift',open:'openLift'}},
-  {name:'shipped bundle',code:bundle.slice(bundle.indexOf('function cE('),bundle.indexOf('function lE(')),
-    fn:'cE',names:{plan:'en',welcome:'Ui',ui:'Ue',travelling:'Ni',look:'_i',pressed:'_n',touch:'ta',
-      renderer:'et',camera:'qt',vector:'C',yaw:'Xt',pitch:'Wn',latched:'gd',rig:'je',stand:'qp',
-      path:'Zm',clear:'Yp',sculptures:'Ol',footprint:'Xp',near:'$T',panel:'Pn',wasNear:'zl',
-      close:'Ed',open:'sg'}}
+      close:'closeXRLift',open:'openLift'}}
 ];
 function controller(implementation,yaw=0,head=0){
   const xrCamera=new THREE.PerspectiveCamera();
