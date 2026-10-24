@@ -1,6 +1,7 @@
 // Original procedural studies of the 50 writers in the user-selected list.
 // Names identify the reference; geometry comes from our phi alphabet and the
 // distinct movement/shape recipes below. These are not traced signatures.
+import {letterDialect,applyLetterDialect,shapeWicket} from './letter-dialects.mjs?v=bold-dialects-v5';
 export const HANDSTYLE_SOURCE='https://www.bombingscience.com/top-50-graffiti-handstyles/';
 // id, reference, construction, lean, width, height, weight, spacing, joins,
 // baseline swing, finishing gesture, nozzle flare, short study label.
@@ -22,7 +23,7 @@ const rows=[
  ['daver','DAVER','script',.46,.82,1.2,6.1,-1.1,.85,.72,'kick',1.15,'Slanted swing'],
  ['grey','GREY (PVC)','plain',.05,.87,1.03,6.2,-.4,.08,.1,'slash',1,'Clipped spacing'],
  ['kadism','KADISM','wicket',.32,.5,1.86,5.2,-1.2,.98,.32,'return',1.1,'Long wickets'],
- ['karma','KARMA','wicket',.4,.58,1.7,6,-.9,.94,.22,'kick',1.25,'Steady wickets'],
+ ['karma','KARMA','wicket',.26,.94,1.34,6.9,.5,.68,.22,'kick',1.25,'Open wickets'],
  ['cecster','CECSTER','plain',.1,.53,1.65,5.3,.25,.04,.18,'underline',1,'Narrow cadence'],
  ['spot','SPOT (KMS)','round',.14,.96,1.01,7.8,.15,.38,.38,'loop',1.1,'Round balance'],
  ['kanser','KANSER','elastic',.36,.89,1.19,6.3,-1.3,.8,1.2,'kick',1.2,'Alternating shapes'],
@@ -58,7 +59,7 @@ const rows=[
 ];
 export const REFERENCE_STUDIES=Object.freeze(Object.fromEntries(rows.map(([id,reference,shape,lean,width,height,weight,spacing,join,bounce,gesture,flare,label],i)=>[
  id,Object.freeze({id,name:reference+' study',reference,shape,lean,width,height,weight,spacing,join,bounce,gesture,flare,description:label,order:i+1,source:HANDSTYLE_SOURCE,
- family:shape==='angular'?'cut':shape==='plain'?'rush':'loop',angle:shape==='angular'?-Math.PI/4:.25})
+ family:shape==='angular'?'cut':shape==='plain'?'rush':'loop',angle:shape==='angular'?-Math.PI/4:.25,dialect:Object.freeze(letterDialect({id}))})
 ])));
 
 // A second pen-movement alphabet gives connected script and wickets actual
@@ -100,13 +101,10 @@ export function shapeStudyLetter(ch,glyph,style,m){
   };
   if(forms[ch])strokes=forms[ch];
  }
- if(style.shape==='wicket'&&/[A-Z]/.test(ch)){
-  // Tall returning loops and narrow body columns are a different stroke
-  // grammar from simply stretching a plain capital.
-  const first=strokes[0];strokes=[P([...L([0,H],[u,a],[v,-a/ratio],[k,-a/ratio],[W/2,a]),...first.points]),...strokes.slice(1)];
- }
  if(style.shape==='elastic')strokes=strokes.map((s,i)=>({points:s.points.map(p=>({x:p.x+Math.sin(p.y/H*Math.PI)*u*(i%2?-.7:.7),y:p.y})),smooth:true}));
  if(style.id==='remio'&&ch==='R')strokes=[...strokes,P(L([v,a],[k,b],[W+v,H]))];
  if(style.id==='spot'&&ch==='S')strokes=[P(L([W,a/ratio],[k,0],[u,u],[0,a],[k,b],[W,b+u],[k,H],[0,H-u]))];
- return {...glyph,strokes};
+ let result=applyLetterDialect(ch,{...glyph,strokes},style,m);
+ if(style.shape==='wicket')result=shapeWicket(ch,result,style,m);
+ return result;
 }

@@ -1,4 +1,4 @@
-import {HANDS,CORE_HANDS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom,tagDuration} from './tag-engine.mjs?v=word-flow-v4';
+import {HANDS,CORE_HANDS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom,tagDuration} from './tag-engine.mjs?v=bold-dialects-v5';
 import {drawConstruction} from './phi-lettering.mjs?v=phi-handstyles-v2';
 const $=id=>document.getElementById(id),canvas=$('wall'),ctx=canvas.getContext('2d');
 const inkLayer=document.createElement('canvas');
@@ -7,7 +7,7 @@ let plan=[],tags=[],frame=0,playing=false,started=0,elapsed=0,token=0,scan=null,
 let studyPage=0;
 const studyIds=Object.keys(REFERENCE_STUDIES),pageSize=6;
 const surfaceCache=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,ink:$('ink').value,finish:$('paint').value,floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
+const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,ink:$('ink').value,finish:$('paint').value,paintWidth:Math.max(.75,Math.min(3,(Number($('width').value)||200)/100)),floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
 function fallbackTile(){
  const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d'),r=makeRandom('PP-BRICK-FALLBACK');g.fillStyle='#aa9e8b';g.fillRect(0,0,512,512);
  for(let row=0;row<16;row++)for(let col=-1;col<9;col++){
@@ -65,12 +65,12 @@ function paintWall(target,tagList,placements,progress=1){
 function stop(){cancelAnimationFrame(frame);playing=false;token++;$('play').textContent='Watch it being written';}
 function render(progress=1){currentProgress=progress;mainWall=paintWall(canvas,tags,plan,progress);$('progress').style.width=(progress*100)+'%';}
 function updateURL(){
- const url=new URL(location.href),o=readOptions();url.searchParams.set('word',normaliseText(o.text));url.searchParams.set('seed',o.seed);url.searchParams.set('floor',$('floor').value);url.searchParams.set('hand',o.hand);url.searchParams.set('ink',o.ink);url.searchParams.set('finish',o.finish);if($('show-phi').checked)url.searchParams.set('phi','1');else url.searchParams.delete('phi');history.replaceState(null,'',url);
+ const url=new URL(location.href),o=readOptions();url.searchParams.set('word',normaliseText(o.text));url.searchParams.set('seed',o.seed);url.searchParams.set('floor',$('floor').value);url.searchParams.set('hand',o.hand);url.searchParams.set('ink',o.ink);url.searchParams.set('finish',o.finish);url.searchParams.set('width',o.paintWidth);if($('show-phi').checked)url.searchParams.set('phi','1');else url.searchParams.delete('phi');history.replaceState(null,'',url);
 }
 function generate({url=true}={}){
  stop();const small=matchMedia('(max-width:700px)').matches;canvas.width=small?1000:1600;canvas.height=small?920:800;
  const raw=$('word').value,clean=normaliseText(raw);$('word').value=clean;$('floor').value=Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)));if(!$('seed').value.trim())$('seed').value='PP-GRAFFITI-01';
- const options=readOptions();plan=planFloorTags(options);tags=plan.map(p=>createTag(p.text,p));render();elapsed=0;
+ const options=readOptions();$('width-value').textContent=options.paintWidth.toFixed(2).replace(/0$/,'')+'×';plan=planFloorTags(options);tags=plan.map(p=>createTag(p.text,{...p,paintWidth:options.paintWidth}));render();elapsed=0;
  $('previous').disabled=Number($('floor').value)<=1;$('next').disabled=Number($('floor').value)>=9999;
  $('floor-caption').textContent='Floor '+$('floor').value+' · '+(tags.length===1?'one tag':'two tags')+' · '+tags.map(t=>HANDS[t.hand].name).join(' / ');
  canvas.setAttribute('aria-label','Floor '+$('floor').value+': '+tags.map(t=>t.text+' written in the '+HANDS[t.hand].name+' hand').join('; ')+', on a buff brick wall.');
@@ -79,7 +79,7 @@ function generate({url=true}={}){
  const m=tags[0].construction.metrics;
  $('phi-measurements').textContent='At a height of '+m.height+' units, the letter frame is '+m.width.toFixed(2)+' units wide. Its bowl divisions are '+m.short.toFixed(2)+' and '+m.long.toFixed(2)+' units. Each writer then leans, compresses and varies that structure.';
  for(const hand of Object.keys(CORE_HANDS)){
-  const tag=createTag(clean||'PHI',{seed:options.seed,hand,ink:options.ink==='mixed'?'#242a28':options.ink});
+  const tag=createTag(clean||'PHI',{seed:options.seed,hand,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
   paintWall($(hand+'-wall'),[tag],[{x:.5,y:.55,scale:.94,rotation:-.025}]);
  }
  renderStudies();
@@ -94,7 +94,7 @@ function renderStudies(){
   const description=document.createElement('p');description.textContent=study.description;
   const button=document.createElement('button');button.type='button';button.textContent='Use this study';button.dataset.study=id;button.onclick=()=>{$('hand').value=id;generate();};
   article.append(c,title,description,button);grid.append(article);
-  const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,hand:id,ink:options.ink==='mixed'?'#242a28':options.ink});paintWall(c,[tag],[{x:.5,y:.53,scale:.97,rotation:-.018}]);
+  const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,hand:id,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});paintWall(c,[tag],[{x:.5,y:.53,scale:.97,rotation:-.018}]);
  }
  $('study-range').textContent='Studies '+(start+1)+'–'+Math.min(start+pageSize,studyIds.length)+' of '+studyIds.length;
  $('studies-prev').disabled=studyPage===0;$('studies-next').disabled=start+pageSize>=studyIds.length;
@@ -119,6 +119,7 @@ function restoreURL(){
  const q=new URLSearchParams(location.search);for(const id of ['word','seed','floor','hand','ink'])if(q.has(id)){
   const value=q.get(id),el=$(id);if(el.tagName!=='SELECT'||[...el.options].some(o=>o.value===value))el.value=value;
  }
+ const requestedWidth=Number(q.get('width'));if(q.has('width')&&Number.isFinite(requestedWidth))$('width').value=Math.round(Math.max(.75,Math.min(3,requestedWidth))*100);
  if(['spray','marker'].includes(q.get('finish')))$('paint').value=q.get('finish');
  $('show-phi').checked=q.get('phi')==='1';
 }
@@ -126,6 +127,7 @@ async function init(){
  populateHands();restoreURL();scan=fallbackTile();generate({url:false});
  $('controls').addEventListener('submit',e=>{e.preventDefault();generate();});for(const id of ['word','seed','hand','ink','floor','paint'])$(id).addEventListener('change',()=>generate());
  $('studies-prev').onclick=()=>{studyPage=Math.max(0,studyPage-1);renderStudies();};$('studies-next').onclick=()=>{studyPage=Math.min(Math.ceil(studyIds.length/pageSize)-1,studyPage+1);renderStudies();};
+ let widthFrame=0;$('width').addEventListener('input',()=>{cancelAnimationFrame(widthFrame);widthFrame=requestAnimationFrame(()=>generate());});$('width').addEventListener('change',()=>{cancelAnimationFrame(widthFrame);generate();});
  $('another').onclick=()=>{const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);$('seed').value='PP-TAG-'+bytes[0].toString(36).toUpperCase();generate();};
  $('previous').onclick=()=>{$('floor').value=Number($('floor').value)-1;generate();};$('next').onclick=()=>{$('floor').value=Number($('floor').value)+1;generate();};
  $('play').onclick=animate;$('finish').onclick=()=>{stop();elapsed=0;render();$('status').textContent='Finished wall. Same seed and floor, same tags.';};
@@ -135,6 +137,6 @@ async function init(){
  const image=new Image();image.onload=()=>{try{scan=prepareScan(image);surfaceCache.clear();generate({url:false});document.documentElement.dataset.wall='scan';}catch(e){console.warn('Using the local procedural brick fallback.',e);}};image.onerror=()=>{document.documentElement.dataset.wall='fallback';};image.src='./assets/brick-wall.webp';
  // A small read-only hook makes determinism, counts and actual rendering
  // inspectable without relying on visually identical DOM text.
- window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get finish(){return $('paint').value;},get studyCount(){return studyIds.length;},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
+ window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get finish(){return $('paint').value;},get paintWidth(){return readOptions().paintWidth;},get studyCount(){return studyIds.length;},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
 }
 init().catch(error=>{$('status').textContent='The wall could not be prepared: '+error.message;console.error(error);});

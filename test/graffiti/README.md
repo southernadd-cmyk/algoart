@@ -9,6 +9,23 @@ ink into a transparent layer. The brick's grain modulates that layer's alpha.
 The specimen presents the three original hands, 50 selectable reference
 studies, and actual stroke playback.
 
+## Paint width and study alphabets
+
+Version 5 doubles the default paint width. The Paint width slider ranges from
+0.75x to 3x the original weight, applies to spray paint and marker, and is saved
+as `width` in the URL. It changes coverage and the safe paint bounds while
+preserving letter paths, writer identity and the writing timeline.
+
+`letter-dialects.mjs` adds authored construction choices for P, R, O, T, I,
+N, E, A, H and C. The studies now combine different bowls, counters, stems,
+crossbars and case forms before slant or scale is applied. Regression checks
+require all fifty untransformed study constructions to differ for both ECHO
+and PROPORTION. TWIST/DAVER and KADISM/KARMA are also checked directly.
+
+Wicket heads attach to selected stem letters instead of prepending the same
+tall loop to every capital. KADISM retains narrow returning stems; KARMA uses
+more open, separated angular forms. Rounded letters have their own counters.
+
 ## Word flow and writer identity
 
 Version 4 applies the cohesion and movement ideas in the user's selected

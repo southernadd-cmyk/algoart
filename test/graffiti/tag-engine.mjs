@@ -5,10 +5,10 @@ import {PHI,goldenMetrics,letterSkeleton} from './phi-lettering.mjs?v=phi-handst
 import {drawSpray} from './spray-paint.mjs?v=word-flow-v4';
 import {writerIdentity,connectingStroke,orientConnection,connectionClear,planWritingMotion,strokeFraction,tagDuration} from './writing-motion.mjs?v=word-flow-v4';
 export {tagDuration,strokeFraction} from './writing-motion.mjs?v=word-flow-v4';
-import {REFERENCE_STUDIES,shapeStudyLetter} from './handstyles.mjs?v=handstyle-spray-v1';
-export {REFERENCE_STUDIES,HANDSTYLE_SOURCE} from './handstyles.mjs?v=handstyle-spray-v1';
+import {REFERENCE_STUDIES,shapeStudyLetter} from './handstyles.mjs?v=bold-dialects-v5';
+export {REFERENCE_STUDIES,HANDSTYLE_SOURCE} from './handstyles.mjs?v=bold-dialects-v5';
 export {PHI,goldenMetrics,letterSkeleton} from './phi-lettering.mjs?v=phi-handstyles-v2';
-export const VERSION = 4;
+export const VERSION = 5;
 const U=goldenMetrics().unit;
 export const CORE_HANDS = Object.freeze({
  loop:Object.freeze({name:'Loop',description:'Interlocking bowls and a sweeping return stroke.',lean:1/PHI**3,width:1.08,spacing:-U*PHI,weight:6.8,angle:.4,flourish:1}),
@@ -45,8 +45,10 @@ function boundsOf(strokes,padding){
  const x=Math.min(...xs)-padding,y=Math.min(...ys)-padding;
  return {x,y,width:Math.max(...xs)-x+padding,height:Math.max(...ys)-y+padding};
 }
-export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',ratio=PHI}={}){
+export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',ratio=PHI,paintWidth=2}={}){
  if(!HANDS[hand])throw new RangeError('Unknown handwriting style: '+hand);
+ paintWidth=Number(paintWidth);
+ if(!Number.isFinite(paintWidth)||paintWidth<.75||paintWidth>3)throw new RangeError('Paint width must be between 0.75 and 3.');
  const metrics=goldenMetrics(100,ratio),{height:H,width:W,short:a,long:b,unit:u}=metrics;
  const study=REFERENCE_STUDIES[hand],h=HANDS[hand],family=study?.family||hand;
  const word=normaliseText(text)||'PHI',r=makeRandom(seed+'|'+hand+'|'+word+'|phi-v2');
@@ -137,7 +139,7 @@ export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',
  if(identity.accent==='quotes')for(let i=0;i<2;i++)add(L([accentX+i*u,accentY-u/ratio],[accentX+i*u-u/ratio,accentY+u/ratio]),'accent',1/ratio**2,false);
  const motion=planWritingMotion(strokes,{pace:identity.pace});
  const inkR=makeRandom(seed+'|ink'),opacity=inkR.range(.86,.96);
- return {version:VERSION,text:word,seed:String(seed),hand,family,writer:identity,flow:{connections},motion,ink,weight:h.weight,sprayFlare:study?.flare||1,opacity,strokes,bounds:boundsOf(strokes,h.weight*Math.max(1.6,(study?.flare||1)*1.6)),construction:{metrics,letters,lift,wordAdvance:cursor,gapUnit:W/ratio**4,returnPoint:cursor/ratio}};
+ return {version:VERSION,text:word,seed:String(seed),hand,family,writer:identity,flow:{connections},motion,ink,paintWidth,baseWeight:h.weight,weight:h.weight*paintWidth,sprayFlare:study?.flare||1,opacity,strokes,bounds:boundsOf(strokes,h.weight*paintWidth*Math.max(1.6,(study?.flare||1)*1.6)),construction:{metrics,letters,lift,wordAdvance:cursor,gapUnit:W/ratio**4,returnPoint:cursor/ratio}};
 }
 
 function drawRibbon(ctx,stroke,tag,progress,movement){

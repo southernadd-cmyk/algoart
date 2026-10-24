@@ -5,6 +5,31 @@ import vm from 'node:vm';
 import {createTag,planFloorTags,HANDS,REFERENCE_STUDIES,normaliseText,drawTag,PHI,goldenMetrics,letterSkeleton,tagDuration,strokeFraction} from './tag-engine.mjs';
 import {buildSprayPlan} from './spray-paint.mjs';
 import {planWritingMotion,connectionClear} from './writing-motion.mjs';
+import {shapeStudyLetter} from './handstyles.mjs?v=bold-dialects-v5';
+
+test('width increases paint weight without changing the letters or writing rhythm',()=>{
+ const narrow=createTag('PROPORTION',{hand:'twist',seed:'width',paintWidth:1}),broad=createTag('PROPORTION',{hand:'twist',seed:'width',paintWidth:2});
+ assert.equal(broad.weight,narrow.weight*2);assert.equal(createTag('ECHO').paintWidth,2);
+ assert.deepEqual(narrow.strokes,broad.strokes);assert.deepEqual(narrow.writer,broad.writer);assert.deepEqual(narrow.motion,broad.motion);
+ assert.ok(broad.bounds.width>narrow.bounds.width);assert.ok(broad.bounds.height>narrow.bounds.height);
+ assert.throws(()=>createTag('ECHO',{paintWidth:0}),RangeError);assert.throws(()=>createTag('ECHO',{paintWidth:4}),RangeError);
+ for(const hand of ['kadism','karma','sliks','style']){
+  const tag=createTag('PROPORTION',{hand,paintWidth:3}),plan=buildSprayPlan(tag);
+  for(const dab of plan.dabs){const r=dab.radius*plan.halo;assert.ok(dab.x-r>tag.bounds.x&&dab.x+r<tag.bounds.x+tag.bounds.width);assert.ok(dab.y-r>tag.bounds.y&&dab.y+r<tag.bounds.y+tag.bounds.height);}
+ }
+});
+test('similar studies use different letter constructions before slant and scaling',()=>{
+ const skeleton=(hand,ch)=>{const h=REFERENCE_STUDIES[hand];return shapeStudyLetter(ch,letterSkeleton(ch,{hand:h.family}),h,goldenMetrics()).strokes;};
+ for(const [a,b] of [['twist','daver'],['kadism','karma'],['soviet','grey']]){
+  const shapeA=[...'PROPORTION'].map(ch=>skeleton(a,ch)),shapeB=[...'PROPORTION'].map(ch=>skeleton(b,ch));assert.notDeepEqual(shapeA,shapeB);
+ }
+ for(const word of ['ECHO','PROPORTION']){
+  const unscaled=new Set(Object.keys(REFERENCE_STUDIES).map(id=>JSON.stringify([...word].map(ch=>skeleton(id,ch)))));assert.equal(unscaled.size,50,word+' has fifty distinct constructions before writer transforms');
+ }
+ // Rounded O has no extra wicket head; spines are attached only to relevant
+ // stem letters, so repeated Os no longer turn into the same tall loop.
+ assert.notDeepEqual(skeleton('kadism','P'),skeleton('karma','P'));
+});
 
 test('joins meet their actual neighbours, with no connection across a word break',()=>{
  let joins=0;
