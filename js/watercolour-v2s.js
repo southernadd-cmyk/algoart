@@ -817,6 +817,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     broadWidthMax:0,heroWidthMax:0,filledPools:0,mixedPigmentPools:0,
     softWashCount:0,areaWashCount:0,paleFormBoosts:0};
   var broad=Math.min(n,Math.ceil(21*allowance));
+  var broadDeposits=0;
   for(var i=broad-1;i>=0;i--){
     var ch=chains[i],pts=ch.pts;
     if(pts.length<2||r.chance(.17))continue; // leave genuine negative space
@@ -849,7 +850,11 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
       paintRibbon(pig,null,pts,width,r,wash,r.range(.41,.70),0,state,isSoft);
     }
     stats[state]++;
-    if(A.materialStageCapture&&broad>0&&((i+1)%Math.max(1,Math.ceil(broad/12))===0))A.materialStageCapture('watercolour-broad-'+(i+1),pig.canvas);
+    if(A.materialStageCapture){
+      broadDeposits++;
+      if(broadDeposits<=12)A.materialStageCapture('watercolour-opening-'+broadDeposits,pig.canvas);
+      else if(broadDeposits%4===0)A.materialStageCapture('watercolour-broad-'+broadDeposits,pig.canvas);
+    }
   }
   if(A.materialStageCapture)A.materialStageCapture('watercolour-broad',pig.canvas);
   var hero=Math.min(n,Math.ceil(68*allowance));
