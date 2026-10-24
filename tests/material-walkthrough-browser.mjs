@@ -61,21 +61,28 @@ try {
    },material);
    assert.ok(parity.differences<=(material==='tissue'?2:0),material+' final frame differs from studio-quality render by '+parity.differences+' channel values');
   }
+  if(material==='tissue'||material==='oil'){
+   const labels=await page.evaluate(()=>window.__walkthroughTest.labels());
+   const expected=material==='tissue'?'Laying the first tissue sheets':'Oil ground prepared';
+   assert.ok(labels.includes(expected),material+' missing opening capture: '+expected);
+  }
   if(material==='oil'){
    const opening=await page.evaluate(()=>{
     const frames=window.__walkthroughTest.frames();
-    return frames.slice(0,Math.min(8,frames.length)).map((frame,index)=>{
-     const data=frame.getContext('2d').getImageData(0,0,frame.width,frame.height).data;
-     const paper=frames[0].getContext('2d').getImageData(0,0,frame.width,frame.height).data;
-     let changed=0;
-     for(let k=0;k<data.length;k+=4)
-      if(data[k]!==paper[k]||data[k+1]!==paper[k+1]||data[k+2]!==paper[k+2])changed++;
-     return {index,changedPixels:changed};
-    });
+    const labels=window.__walkthroughTest.labels();
+    const ground=labels.indexOf('Oil ground prepared');
+    const stroke=labels.indexOf('Adding the first source brushstrokes');
+    if(ground<0||stroke<0)return {ground,stroke,changed:0};
+    const base=frames[ground].getContext('2d').getImageData(0,0,frames[ground].width,frames[ground].height).data;
+    const ink=frames[stroke].getContext('2d').getImageData(0,0,frames[stroke].width,frames[stroke].height).data;
+    let changed=0;
+    for(let k=0;k<base.length;k+=4)
+     if(base[k]!==ink[k]||base[k+1]!==ink[k+1]||base[k+2]!==ink[k+2])changed++;
+    return {ground,stroke,changed};
    });
-   console.log('Oil opening frame coverage:',JSON.stringify(opening));
-   assert.ok(opening[1].changedPixels<opening.at(-1).changedPixels,
-    'Oil opening frames do not build progressively');
+   console.log('Oil ground-to-first-stroke difference:',JSON.stringify(opening));
+   assert.ok(opening.ground>=0&&opening.stroke>opening.ground&&opening.changed>0,
+    'Oil first source stroke must add real marks beyond the prepared ground');
   }
   console.log(material,'stages',max,'status:',status.slice(0,140));
  }
