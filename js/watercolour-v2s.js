@@ -1535,6 +1535,7 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
       var mark=washStats.dryDeposits[i];
       paintRibbon(ctx,null,mark.pts,mark.width,
         A.makeR(seed+'|v2e-dry-outline|'+mark.key),mark.col,mark.opacity,0,'dry');
+      if(A.materialStageCapture&&washStats.dryDeposits.length>0&&((i+1)%Math.max(1,Math.ceil(washStats.dryDeposits.length/12))===0))A.materialStageCapture('watercolour-dry-'+(i+1),ctx.canvas);
     }
     if(A.materialStageCapture)A.materialStageCapture('watercolour-dry',ctx.canvas);
     if(A.materialStageCapture)A.materialStageCapture('watercolour-dry-lines',ctx.canvas);
