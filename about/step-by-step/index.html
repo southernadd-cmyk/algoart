@@ -47,13 +47,14 @@ summary{cursor:pointer}
 </header>
 <main><div class="intro-section"><span class="kicker">A DRAWING, ONE MARK AT A TIME</span><h1 class="page-title">HOW A DRAWING IS MADE</h1><p class="intro">Watch a drawing appear, one mark at a time. This example uses a marker. Other materials begin with the same geometry, but make their marks differently.</p></div>
 
-<div class="controls"><label>Choose a drawing engine<select id="engine"><option value="field">Orbital Studies</option><option value="spiral">Golden Trajectories</option><option value="rects" selected>Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic">Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
+<div class="controls"><label>Material<select id="replayMaterial"><option value="marker">Marker</option><option value="tissue">Tissue & Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select></label><label>Choose a drawing engine<select id="engine"><option value="field">Orbital Studies</option><option value="spiral">Golden Trajectories</option><option value="rects" selected>Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic">Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
 
 <label>Paper orientation<select id="orientation"><option value="portrait">Portrait</option><option value="landscape" selected>Landscape</option></select></label>
 <label>Seed<input id="seed" value="PP-RECURSIVE-DIVISIONS-INTRO" spellcheck="false"></label><button id="regenerate">Generate from seed</button></div>
 <p class="small"><a id="continueEditing" href="../../">Continue editing this drawing →</a></p>
 <p id="notice" role="status" class="small">Loading the drawing…</p>
-<section class="panel"><h2>Watch it happen</h2><p>Start with Recursive Divisions, which draws across the sheet. Press Next mark to follow the pen.</p><div class="viewer"><div><label class="phi-toggle"><input type="checkbox" id="phiGuides" checked> Show golden-ratio guides</label><div class="paper"><svg id="drawing" viewBox="0 0 1000 1400" role="img" aria-label="Artwork progressively constructed from recorded vector pen paths"></svg></div><div class="actions"><button id="prev">Previous mark</button><button id="next">Next mark</button><button id="play">Play</button><button id="all">Show finished drawing</button></div><input id="step" class="timeline" type="range" value="0" min="0" max="0" aria-label="Drawing mark number"><p id="counter" class="stats small"></p><aside class="left-note"><h2>What the gold lines show</h2><p>They mark golden-ratio divisions of the page, at about 38% and 62%. They help reveal the structure, but not every ink line follows them.</p></aside></div>
+<p id="materialExplanation" class="small"></p>
+<section class="panel"><h2>Watch it happen</h2><p>Start with Recursive Divisions, which draws across the sheet. Press Next mark to follow the pen.</p><div class="viewer"><div><label class="phi-toggle"><input type="checkbox" id="phiGuides" checked> Show golden-ratio guides</label><div class="paper"><canvas id="actionDrawing" hidden style="display:none;width:100%;height:auto;max-height:75vh"></canvas><svg id="drawing" viewBox="0 0 1000 1400" role="img" aria-label="Artwork progressively constructed from recorded vector pen paths"></svg></div><div class="actions"><button id="prev">Previous mark</button><button id="next">Next mark</button><button id="play">Play</button><button id="all">Show finished drawing</button></div><input id="step" class="timeline" type="range" value="0" min="0" max="0" aria-label="Drawing mark number"><p id="counter" class="stats small"></p><aside class="left-note"><h2>What the gold lines show</h2><p>They mark golden-ratio divisions of the page, at about 38% and 62%. They help reveal the structure, but not every ink line follows them.</p></aside></div>
 <div class="explain" aria-live="polite" aria-atomic="true"><h2 id="markTitle">The blank page</h2><p id="markText">The seed controls reproducible choices. No marks have been placed yet.</p><div id="explanation"></div><details id="calculations"><summary>The actual numbers — show the mathematics (optional)</summary><p class="small">A short breakdown of this pen pass. The original SVG commands are available separately.</p><div id="markMath" class="math">φ = (1 + √5)/2 = 1.6180339887
 Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details class="source-details"><summary>Show original SVG path</summary><code id="svgSource"></code></details></details><p id="inkNote" class="small"></p></div></div></section>
 <section class="panel"><h2>Why the pen goes over a line again</h2><p>The artist-like finish comes from drawing the same path more than once, with small changes in position, thickness and ink strength.</p></section>
@@ -65,6 +66,7 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 
 <script src="../../js/random.js"></script><script src="../../js/phi.js"></script><script src="../../js/palettes.js"></script><script src="../../js/marker.js"></script><script src="../../js/phi-sheet-fit.js"></script><script src="../../js/generator.js"></script>
 <script src="../../js/settings-url.js?v=1"></script>
+<script src="../../js/action-painting-v1.js"></script>
 <script type="module">
 const $=id=>document.getElementById(id), A=window.AlgoArt;
 const PHI=A.PHI; // The same exact constant defined by js/phi.js for the drawing engine.
@@ -77,6 +79,11 @@ oil:'Oil Paint uses paint-loaded brush contacts, surface tooth, bristle behaviou
 action:'Action Painting builds dynamic curves and paint deposits with speed-dependent width, pools and spatters. Paint dynamics and deposits require more than a single SVG path.'
 };
 let paths=[],i=0,playing=false,token=0,roomInfo=null;
+const actionLayerCount=5;
+const selectedMaterial=()=> $('replayMaterial').value;
+const isAction=()=>selectedMaterial()==='action';
+const stepTotal=()=>isAction()?actionLayerCount:paths.length;
+const materialFromURL=()=>{const m=incoming.get('material')||'';return m.startsWith('action')?'action':m.startsWith('oil')?'oil':m.startsWith('watercolour')?'watercolour':incoming.has('tissue')||incoming.has('watercolor')?'tissue':'marker'};
 const incoming=new URLSearchParams(location.search);
 const editorKeys=A.PARAM_KEYS;
 const binaryKeys=new Set(['lines','circles','rectangles','polygons','arcs']);
@@ -107,6 +114,7 @@ function updateEditLink(){
  else target.searchParams.delete('fmt');
  editLink.href=target.href;
 }
+$('replayMaterial').value=materialFromURL();
 if(incomingSettings.seed)$('seed').value=incomingSettings.seed;
 if(incomingSettings.mode)$('engine').value=incomingSettings.mode;
 if(incomingSettings.orientation)$('orientation').value=incomingSettings.orientation;
@@ -130,9 +138,22 @@ function phiOverlay(w,h){
 const a=w/PHI,b=h/PHI,c=w-a,d=h-b;
 return '<g fill="none" stroke="#b0873b" stroke-width="2" stroke-dasharray="10 10" opacity=".8"><path d="M '+a+' 0 V '+h+' M '+c+' 0 V '+h+' M 0 '+b+' H '+w+' M 0 '+d+' H '+w+'"/></g><g fill="#85622b" font-size="22" font-family="Georgia"><text x="'+(a+10)+'" y="30">w/φ</text><text x="12" y="'+(b-10)+'">h/φ</text></g>';
 }
-function renderStep(){const svg=$('drawing');const s=settings();const w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000;svg.setAttribute('viewBox','0 0 '+w+' '+h);svg.setAttribute('preserveAspectRatio','xMidYMid meet');svg.setAttribute('aria-label',i===0?'Blank paper, ready for the first mark':'Drawing with '+i+' of '+paths.length+' marker passes visible');
+function renderStep(){const svg=$('drawing');const s=settings();
+const painting=$('actionDrawing');
+svg.style.display=isAction()?'none':'block';painting.hidden=!isAction();painting.style.display=isAction()?'block':'none';
+if(isAction()){
+ const layers=Math.max(1,i);A.actionPaintingFromPaths(painting,paths,s,.75,{version:Number((incoming.get('material')||'').replace('action-v',''))||2,layers});
+ $('step').max=actionLayerCount;$('step').value=i;
+ $('counter').textContent=i+' / '+actionLayerCount+' actual paint passes';
+ $('markTitle').textContent=i?'Paint layer '+i:'Composition beneath the paint';
+ $('markText').textContent=i?'The action-painting renderer deposits its real curved gestures, pools and spatter. Earlier layers stay in place as the next layer is added.':'The recorded composition supplies the paint anchors and movement directions.';
+ $('explanation').innerHTML='<h3>What changes in this stage?</h3><p>'+descriptions.action+'</p><p>The paint is reconstructed from the recorded geometry using the same seeded action-painting renderer. The final stage uses its normal five-layer setting.</p>';
+ $('svgSource').textContent='Material strokes are painted onto canvas rather than stored as SVG lines.';
+ $('markMath').textContent='Layer '+i+' of '+actionLayerCount+' · source paths: '+paths.length;
+ return;
+}const w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000;svg.setAttribute('viewBox','0 0 '+w+' '+h);svg.setAttribute('preserveAspectRatio','xMidYMid meet');svg.setAttribute('aria-label',i===0?'Blank paper, ready for the first mark':'Drawing with '+i+' of '+paths.length+' marker passes visible');
 svg.innerHTML='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+s.paper+'"/>'+paths.slice(0,i).map(p=>'<path d="'+esc(p.d)+'" fill="none" stroke="'+esc(p.stroke||'#262626')+'" stroke-width="'+num(p.width||1)+'" stroke-opacity="'+num(p.opacity??1)+'" stroke-linecap="'+esc(p.lineCap||'round')+'" stroke-linejoin="round"'+(p.dash?.length?' stroke-dasharray="'+p.dash.map(num).join(' ')+'" stroke-dashoffset="'+num(p.dashOffset||0)+'"':'')+'/>').join('')+($('phiGuides').checked?phiOverlay(w,h):'');
-$('step').max=paths.length;$('step').value=i;$('counter').textContent=i+' / '+paths.length+' recorded pen passes';
+$('step').max=paths.length;$('step').value=i;$('counter').textContent=i+' / '+paths.length+' recorded source passes';
 if(!i){$('svgSource').textContent='No path yet';$('explanation').innerHTML='<h3>First, plan the composition</h3><p>'+explanations[s.mode]+'</p><h3>Then, prepare the pen</h3><p>Coordinates begin at (0, 0) in the top-left. X runs right and Y runs down. A seeded random sequence supplies repeatable wobble, pressure and repeated ink passes.</p>';$('markTitle').textContent='The blank page';$('markText').textContent='The canvas starts empty. Next, the selected engine determines where the first geometry will go.';$('markMath').textContent='φ = (1+√5)/2 = '+num(PHI)+'\nGolden angle = π(3−√5) = 137.5078°';return;}
 const p=paths[i-1],nums=[...(p.d||'').matchAll(/-?\d+(?:\.\d+)?(?:e[-+]?\d+)?/ig)].map(x=>Number(x[0]));const cmd=[...(p.d||'').matchAll(/[MLCQAZ]/ig)].map(x=>x[0]);
 $('markTitle').textContent='Recorded pen pass '+i;
@@ -147,8 +168,10 @@ formula+='Stroke width: '+num(p.width||1)+' px\nOpacity: '+num(p.opacity??1)+'\n
 $('markMath').textContent=formula;$('svgSource').textContent=p.d;
 }
 $('phiGuides').addEventListener('change',renderStep);
-function advance(n){i=Math.max(0,Math.min(paths.length,n));renderStep()}
-function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;renderStep();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';const originalMaterial=incoming.get('material')|| (incoming.has('tissue')?'tissue':incoming.has('watercolor')?'watercolour':'marker');
-$('notice').textContent=(incoming.has('seed')&&incoming.has('mode')?'Your drawing from the editor · ':'')+names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded marker passes.'+(originalMaterial!=='marker'?' The editor uses '+originalMaterial+'; this replay shows underlying paths as marker, not the finished material surface.':'');}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
-$('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(paths.length)};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=paths.length){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(paths.length,1)));}tick();};generate();
+function advance(n){i=Math.max(0,Math.min(stepTotal(),n));renderStep()}
+function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;renderStep();showMaterialExplanation();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';const originalMaterial=incoming.get('material')|| (incoming.has('tissue')?'tissue':incoming.has('watercolor')?'watercolour':'marker');
+$('notice').textContent=(incoming.has('seed')&&incoming.has('mode')?'Your drawing from the editor · ':'')+names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded marker passes.'+(originalMaterial!=='marker'&&selectedMaterial()!=='action'?' The editor uses '+originalMaterial+'; the current view shows source paths rather than its finished material surface.':'');}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
+$('replayMaterial').onchange=()=>{playing=false;++token;i=0;renderStep();showMaterialExplanation()};
+function showMaterialExplanation(){const material=selectedMaterial();$('materialExplanation').textContent=material==='action'?'Action Painting: the canvas shows actual progressively added paint layers from the material renderer.':material==='marker'?'Marker: each step reveals an actual recorded pen pass.':descriptions[material]+' This view reveals real source paths one by one, not a reconstruction of the finished material surface.';}
+$('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(stepTotal())};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=stepTotal()){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(stepTotal(),1)));}tick();};generate();
 </script></body></html>
