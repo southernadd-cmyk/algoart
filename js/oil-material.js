@@ -347,6 +347,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
   var r=A.makeR(seed+'|paint-dab-4'),n=chains.length;
   var allowance=quality<.4?.5:1;
   paintPlanes(pig,height,chains,voids,r,allowance);
+  if(A.materialStageCapture)A.materialStageCapture('tissue-planes',pig.canvas);
   // Localised translucent glazes knit separate paths together without
   // replacing the original geometry with a noise texture.
   var broad=Math.min(n,Math.round(24*allowance));
@@ -361,6 +362,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     if(sourceMuted)muted=sourceMuted;
     paintRibbon(pig,height,pts,width,r,muted,r.range(.40,.69),r.range(.35,.80));
   }
+  if(A.materialStageCapture)A.materialStageCapture('tissue-glazes',pig.canvas);
   // Main painterly ribbons at two scales. Rhythm and large-scale direction
   // use the same φ-composed source segments.
   var hero=Math.min(n,Math.ceil(72*allowance));
@@ -376,9 +378,11 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
     paintRibbon(pig,height,pts,width,r,hue,r.range(.69,.94),
       r.range(.58,1.5));
   }
+  if(A.materialStageCapture)A.materialStageCapture('tissue-ribbons',pig.canvas);
   // V6 adds approved pale tissue with an independent seeded RNG.
   // All original V5 pigment and pencil operations retain their exact sequence.
   if(tissueLightEnabled)lightTissueStats=addLightTissue(pig,height,w,h,chains,voids,seed,quality);
+  if(A.materialStageCapture)A.materialStageCapture('tissue-pale',pig.canvas);
   // Broken small strokes and half-covered edges build material variation.
   var detail=Math.min(n,Math.ceil(112*allowance));
   for(i=0;i<detail;i++){
