@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildLayout} from './layout-v2.mjs';
-import {buildEnvironmentPlan,distanceToArchitecture} from './environment-v1.mjs';
+import {buildLayout} from '../../gallery/visit/layout-v2.mjs';
+import {buildEnvironmentPlan,distanceToArchitecture} from '../../gallery/visit/environment-v1.mjs';
 
 const states=Array.from({length:20},(_,i)=>({seed:'study-'+i,engine:i%2?'orbital':'field',material:i%3?'ink':'oil'}));
 const gallery=date=>buildLayout(date,states.length,states);
