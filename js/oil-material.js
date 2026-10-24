@@ -497,9 +497,11 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   deposit(pctx,hctx,w,h,chains,voids,seed,quality);
   // Restore transforms before readback in case this is reused later.
   pctx.setTransform(1,0,0,1,0,0);hctx.setTransform(1,0,0,1,0,0);
+  if(A.materialStageCapture)A.materialStageCapture('tissue-pigment',pctx.canvas);
   shade(pctx,hctx,fctx,sw,sh,seed,kit);
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);
+  if(A.materialStageCapture)A.materialStageCapture('tissue-surface',ctx.canvas);
   var graphitePaths=kit&&kit.revision===3?graphiteOverlay(ctx,chains,seed,quality):0;
   ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
