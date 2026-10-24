@@ -6,6 +6,8 @@ on:
       - 'tests/material-walkthrough-browser.mjs'
       - 'about/step-by-step/index.html'
       - 'js/oil-material.js'
+      - 'js/oil-v1-core-c.js'
+      - 'js/action-painting-v1.js'
       - 'js/oil-paint-v1.js'
       - 'js/watercolour-v2s.js'
       - '.github/workflows/material-walkthrough-browser.yml'
@@ -13,7 +15,7 @@ on:
 jobs:
   material-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
