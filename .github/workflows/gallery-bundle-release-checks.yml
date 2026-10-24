@@ -30,6 +30,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install gallery test dependencies
+        run: npm install --no-save --package-lock=false
       - name: Gallery public launch regression
         run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs
       - name: Production-module unit tests
