@@ -351,19 +351,9 @@
 <script src="js/social-share.js?v=20261018-welcome-preload-v3"></script>
 <script src="js/social-marker-icons.js?v=20261018-welcome-preload-v3"></script>
 <script src="js/action-painting-v1.js?v=20261018-welcome-preload-v3"></script>
-<script src="js/app.js?v=20261023-four-at-once-copy-v1"></script>
+<script src="js/settings-url.js?v=1"></script>
+<script src="js/app.js?v=20261024-watch-replay-v2"></script>
 <script src="js/editorial-pigment.js?v=20261023-editor-review-v1"></script>
-<script>
-(function(){
-  var link=document.getElementById("watchDrawing");
-  if(!link)return;
-  link.addEventListener("click",function(){
-    var editor=new URL(location.href);
-    var params=new URLSearchParams(editor.search);
-    params.set("return",editor.href);
-    link.href="about/step-by-step/?"+params.toString();
-  });
-})();
-</script>
+
 </body>
 </html>
