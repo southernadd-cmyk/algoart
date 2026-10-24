@@ -219,7 +219,8 @@ $('replayMaterial').onchange=async()=>{playing=false;const own=++token;i=0;if(ca
   if(own!==token)return;
  }
  captureMaterialStages(settings());
-}else if(isAction())captureActionStages(settings());renderStep();showMaterialExplanation()};
+}else if(isAction())captureActionStages(settings());renderStep();showMaterialExplanation();
+if(own===token&&selectedMaterial()==='oil'&&!$('notice').textContent.startsWith('Could not'))$('notice').textContent='Oil rendering complete · full studio quality.';};
 function captureActionStages(s){
  materialFrames=[];materialFrameLabels=[];
  const scale=.32,target=document.createElement('canvas');
