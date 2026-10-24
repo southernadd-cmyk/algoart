@@ -1,0 +1,21 @@
+name: Verify gallery bundle reproducibility
+on:
+  workflow_dispatch:
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned gallery bundler
+        run: npm install --no-save --package-lock=false --ignore-scripts=false
+      - name: Rebuild and compare with committed gallery bundle
+        run: npm run gallery:bundle:check
+      - name: Show bundle difference if reproducibility fails
+        if: failure()
+        run: |
+          git status --short gallery/visit/gallery-bundle.js
+          git diff --stat -- gallery/visit/gallery-bundle.js
+          echo "Do not enable the mandatory release gate until this produces byte-identical output."
