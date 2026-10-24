@@ -51,7 +51,7 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
-    await import('./gallery-bundle.js?v=artwork-nearest-first-20261024');
+    await import('./gallery-bundle.js?v=lift-map-visible-20261024');
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
     window.__galleryStartupError='Module import failed: '+(error?.message||String(error));
