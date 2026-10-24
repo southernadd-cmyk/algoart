@@ -1662,6 +1662,24 @@ function drawMap(){
     ctx.closePath();ctx.fillStyle='#e6e4d8';ctx.strokeStyle='#474b43';
     ctx.lineWidth=1.2;ctx.fill();ctx.stroke();
   }
+  // Draw the lift using its placed world position, not the room plan: the
+  // lift is constructed after the rooms and can move between editions.
+  if(liftPosition){
+    const lift=point(liftPosition.x,liftPosition.z);
+    // A compact outlined square remains legible on mobile without changing
+    // the map's size or its viewer-relative orientation.
+    ctx.save();
+    ctx.fillStyle='#f6d77d';
+    ctx.strokeStyle='#303a35';
+    ctx.lineWidth=1.8;
+    ctx.fillRect(lift.x-5,lift.y-5,10,10);
+    ctx.strokeRect(lift.x-5,lift.y-5,10,10);
+    ctx.fillStyle='#303a35';
+    ctx.font='bold 9px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('L',lift.x,lift.y+.5);
+    ctx.restore();
+  }
   const marker=point(visitorX,visitorZ);
   ctx.beginPath();ctx.moveTo(marker.x,marker.y-9);ctx.lineTo(marker.x-5,marker.y+5);
   ctx.lineTo(marker.x+5,marker.y+5);ctx.closePath();
