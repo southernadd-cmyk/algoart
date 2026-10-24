@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
- MATERIAL_SOURCES,tiledBoxUvs,createArchitecturalMaterials
+ MATERIAL_SOURCES,LOCAL_TEXTURES,tiledBoxUvs,createArchitecturalMaterials
 } from '../../gallery/visit/architectural-materials.mjs';
 
 function uvGeometry(){
@@ -79,8 +79,8 @@ test('Offline mobile/VR fallback has real materials, shared floor/bridge map, no
     assert.equal(bank.stoneBridge.map,bank.floor.map);
     assert.ok(bank.wall.userData.tileMeters>2);
     assert.equal(bank.wall.normalMap,undefined);
-    assert.equal(calls.length,4,'only albedo maps on mobile');
-    assert.equal(bank.diagnostics.failed.length,4);
+    assert.equal(calls.length,Object.keys(MATERIAL_SOURCES).length+Object.keys(LOCAL_TEXTURES).length,'only material colour sources on mobile');
+    assert.equal(bank.diagnostics.failed.length,calls.length);
     assert.equal(bank.setFinish('timber'),'timber');
     assert.equal(bank.setFinish('unknown'),'timber');
   } finally{globalThis.document=originalDocument}
