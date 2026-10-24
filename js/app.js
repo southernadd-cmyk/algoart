@@ -14,7 +14,7 @@ var variationBatch=0;
 var currentRenderMeta=null;
 var currentDescription=null;
 // Keep the URL parser aligned with the renderer versions implemented in generator.js.
-var SUPPORTED_RENDERER_VERSIONS=Object.freeze([1,2,3,4,5,6,7,8,9]);
+var SUPPORTED_RENDERER_VERSIONS=A.SUPPORTED_RENDERER_VERSIONS;
 var CURRENT_RENDERER_VERSION=SUPPORTED_RENDERER_VERSIONS[SUPPORTED_RENDERER_VERSIONS.length-1];
 A.supportedRendererVersions=SUPPORTED_RENDERER_VERSIONS;
 var UNVERSIONED_FIELD_VERSION_BY_SEED={
@@ -49,14 +49,7 @@ var SETTING_IDS=[
   'palette','colourCount','saturation','brightness','paper','grain'
 ];
 
-var PARAM_KEYS={
-  seed:'seed',mode:'mode',orientation:'fmt',elements:'el',density:'den',complexity:'cx',negativeSpace:'neg',
-  phiStrength:'phi',recursion:'rec',spiralInfluence:'spi',goldenAngle:'ga',nesting:'nest',
-  pen:'pen',thickness:'th',wobble:'wob',overdraw:'od',opacity:'op',pressure:'pr',dryness:'dry',
-  curveBias:'curve',shapeAmount:'shape',overlap:'overlap',rotation:'rot',
-  lines:'ln',circles:'ci',rectangles:'re',polygons:'po',arcs:'ar',
-  palette:'pal',colourCount:'cols',saturation:'sat',brightness:'bri',paper:'paper',grain:'grain'
-};
+var PARAM_KEYS=A.PARAM_KEYS;
 
 var SERIES={
   field:{code:'FIELD',title:'Orbital Studies'},
@@ -300,6 +293,12 @@ function updateURL(settings){
   var state=url.slice(url.indexOf('?')+1).split('#')[0];
   var artworkId=A.hash(state).toString(16).toUpperCase().padStart(8,'0');
   document.title=series.title+' · '+settings.seed+' · '+artworkId+' — PROPORTION PIECE';
+  var watch=$('watchDrawing');
+  if(watch){
+    var replay=new URL('about/step-by-step/',location.href);
+    replay.search=url.slice(url.indexOf('?')).split('#')[0];
+    watch.href=replay.href;
+  }
   try{
     history.replaceState(null,'',url);
   }catch(e){}
