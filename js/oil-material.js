@@ -402,6 +402,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality){
       paintRibbon(pig,height,base,r.range(5,20),r,shade,
         r.range(.45,.90),r.range(.30,1.4));
     }
+    if(A.materialStageCapture&&detail>0&&((i+1)%Math.max(1,Math.ceil(detail/10))===0))A.materialStageCapture('tissue-detail-'+(i+1),pig.canvas);
   }
 }
 // Bring back the distinct pencil/graphite linework lost when dark umbers
