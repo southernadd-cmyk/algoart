@@ -1,8 +1,9 @@
-import {HANDS,createTag,drawTag,planFloorTags,normaliseText,makeRandom} from './tag-engine.mjs';
+import {HANDS,createTag,drawTag,planFloorTags,normaliseText,makeRandom} from './tag-engine.mjs?v=phi-handstyles-v2';
+import {drawConstruction} from './phi-lettering.mjs?v=phi-handstyles-v2';
 const $=id=>document.getElementById(id),canvas=$('wall'),ctx=canvas.getContext('2d');
 const inkLayer=document.createElement('canvas');
 const inkCtx=inkLayer.getContext('2d',{willReadFrequently:true});
-let plan=[],tags=[],frame=0,playing=false,started=0,elapsed=0,token=0,scan=null,mainWall=null;
+let plan=[],tags=[],frame=0,playing=false,started=0,elapsed=0,token=0,scan=null,mainWall=null,currentProgress=1;
 const surfaceCache=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,ink:$('ink').value,floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
 function fallbackTile(){
@@ -36,28 +37,33 @@ function makeWall(width,height){
  g.putImageData(base,0,0);
  const wall={canvas:c,mask,width,height};surfaceCache.set(key,wall);return wall;
 }
+function positionTag(g,target,tag,placement,count,index,draw){
+ const stacked=target.height>target.width*.7&&count===2;
+ const place=stacked?{...placement,x:.5,y:index===0?.28:.72}:placement,b=tag.bounds;
+ const maxW=target.width*(count===1||stacked?.72:.405),maxH=target.height*(stacked?.32:.48);
+ const scale=Math.min(maxW/b.width,maxH/b.height)*place.scale;
+ g.save();g.translate(place.x*target.width,place.y*target.height);g.rotate(place.rotation);g.scale(scale,scale);g.translate(-b.x-b.width/2,-b.y-b.height/2);draw();g.restore();
+}
 function paintWall(target,tagList,placements,progress=1){
  const g=target.getContext('2d'),wall=makeWall(target.width,target.height);g.clearRect(0,0,target.width,target.height);g.drawImage(wall.canvas,0,0);
  if(inkLayer.width!==target.width||inkLayer.height!==target.height){inkLayer.width=target.width;inkLayer.height=target.height;}else inkCtx.clearRect(0,0,target.width,target.height);
  const total=tagList.reduce((n,t)=>n+t.strokes.reduce((a,s)=>a+s.points.length,0),0);let used=0;
  tagList.forEach((tag,i)=>{
   const points=tag.strokes.reduce((n,s)=>n+s.points.length,0),portion=Math.max(0,Math.min(1,(total*progress-used)/points));used+=points;if(!portion)return;
-  const stacked=target.height>target.width*.7&&tagList.length===2;
-  const place=stacked?{...placements[i],x:.5,y:i===0?.28:.72}:placements[i],b=tag.bounds;
-  const maxW=target.width*(tagList.length===1||stacked?.72:.405),maxH=target.height*(stacked?.32:.48);
-  const scale=Math.min(maxW/b.width,maxH/b.height)*place.scale;
-  inkCtx.save();inkCtx.translate(place.x*target.width,place.y*target.height);inkCtx.rotate(place.rotation);inkCtx.scale(scale,scale);inkCtx.translate(-b.x-b.width/2,-b.y-b.height/2);drawTag(inkCtx,tag,{progress:portion});inkCtx.restore();
+  positionTag(inkCtx,target,tag,placements[i],tagList.length,i,()=>drawTag(inkCtx,tag,{progress:portion}));
  });
  const image=inkCtx.getImageData(0,0,target.width,target.height),data=image.data;
  for(let i=0;i<wall.mask.length;i++)if(data[i*4+3])data[i*4+3]=data[i*4+3]*wall.mask[i]/255;
  inkCtx.putImageData(image,0,0);
  // All ink is lit by the wall; no shadow, outline rectangle or floating plane.
- g.drawImage(inkLayer,0,0);return wall;
+ g.drawImage(inkLayer,0,0);
+ if(target===canvas&&$('show-phi').checked)tagList.forEach((tag,i)=>positionTag(g,target,tag,placements[i],tagList.length,i,()=>drawConstruction(g,tag)));
+ return wall;
 }
 function stop(){cancelAnimationFrame(frame);playing=false;token++;$('play').textContent='Watch it being written';}
-function render(progress=1){mainWall=paintWall(canvas,tags,plan,progress);$('progress').style.width=(progress*100)+'%';}
+function render(progress=1){currentProgress=progress;mainWall=paintWall(canvas,tags,plan,progress);$('progress').style.width=(progress*100)+'%';}
 function updateURL(){
- const url=new URL(location.href),o=readOptions();url.searchParams.set('word',normaliseText(o.text));url.searchParams.set('seed',o.seed);url.searchParams.set('floor',$('floor').value);url.searchParams.set('hand',o.hand);url.searchParams.set('ink',o.ink);history.replaceState(null,'',url);
+ const url=new URL(location.href),o=readOptions();url.searchParams.set('word',normaliseText(o.text));url.searchParams.set('seed',o.seed);url.searchParams.set('floor',$('floor').value);url.searchParams.set('hand',o.hand);url.searchParams.set('ink',o.ink);if($('show-phi').checked)url.searchParams.set('phi','1');else url.searchParams.delete('phi');history.replaceState(null,'',url);
 }
 function generate({url=true}={}){
  stop();const small=matchMedia('(max-width:700px)').matches;canvas.width=small?1000:1600;canvas.height=small?920:800;
@@ -67,6 +73,8 @@ function generate({url=true}={}){
  $('floor-caption').textContent='Floor '+$('floor').value+' · '+(tags.length===1?'one tag':'two tags')+' · '+tags.map(t=>HANDS[t.hand].name).join(' / ');
  canvas.setAttribute('aria-label','Floor '+$('floor').value+': '+tags.map(t=>t.text+' written in the '+HANDS[t.hand].name+' hand').join('; ')+', on a buff brick wall.');
  $('status').textContent=(raw!==clean?'Text adjusted to the supported characters. ':'')+'Same seed and floor, same tags. Every floor receives one or two.';
+ const m=tags[0].construction.metrics;
+ $('phi-measurements').textContent='At a height of '+m.height+' units, the letter frame is '+m.width.toFixed(2)+' units wide. Its bowl divisions are '+m.short.toFixed(2)+' and '+m.long.toFixed(2)+' units. Each writer then leans, compresses and varies that structure.';
  for(const hand of Object.keys(HANDS)){
   const tag=createTag(clean||'PHI',{seed:options.seed,hand,ink:options.ink==='mixed'?'#242a28':options.ink});
   paintWall($(hand+'-wall'),[tag],[{x:.5,y:.55,scale:.94,rotation:-.025}]);
@@ -84,6 +92,7 @@ function restoreURL(){
  const q=new URLSearchParams(location.search);for(const id of ['word','seed','floor','hand','ink'])if(q.has(id)){
   const value=q.get(id),el=$(id);if(el.tagName!=='SELECT'||[...el.options].some(o=>o.value===value))el.value=value;
  }
+ $('show-phi').checked=q.get('phi')==='1';
 }
 async function init(){
  restoreURL();scan=fallbackTile();generate({url:false});
@@ -91,6 +100,7 @@ async function init(){
  $('another').onclick=()=>{const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);$('seed').value='PP-TAG-'+bytes[0].toString(36).toUpperCase();generate();};
  $('previous').onclick=()=>{$('floor').value=Number($('floor').value)-1;generate();};$('next').onclick=()=>{$('floor').value=Number($('floor').value)+1;generate();};
  $('play').onclick=animate;$('finish').onclick=()=>{stop();elapsed=0;render();$('status').textContent='Finished wall. Same seed and floor, same tags.';};
+ $('show-phi').onchange=()=>{render(currentProgress);updateURL();};
  matchMedia('(max-width:700px)').addEventListener('change',()=>generate({url:false}));
  for(const button of document.querySelectorAll('[data-hand]'))button.onclick=()=>{$('hand').value=button.dataset.hand;generate();};
  const image=new Image();image.onload=()=>{try{scan=prepareScan(image);surfaceCache.clear();generate({url:false});document.documentElement.dataset.wall='scan';}catch(e){console.warn('Using the local procedural brick fallback.',e);}};image.onerror=()=>{document.documentElement.dataset.wall='fallback';};image.src='./assets/brick-wall.webp';

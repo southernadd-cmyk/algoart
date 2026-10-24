@@ -2,7 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {createTag,planFloorTags,HANDS,normaliseText,drawTag} from './tag-engine.mjs';
+import {createTag,planFloorTags,HANDS,normaliseText,drawTag,PHI,goldenMetrics,letterSkeleton} from './tag-engine.mjs';
+
+test('phi constructs actual alphabet geometry, including bowl splits and crossbar intersections',()=>{
+ const m=goldenMetrics();assert.ok(Math.abs(m.height/m.width-PHI)<1e-12);
+ assert.ok(Math.abs(m.short+m.long-m.height)<1e-12);assert.ok(Math.abs(m.long/m.short-PHI)<1e-12);
+ const A=letterSkeleton('A'),bar=A.strokes[1].points;
+ assert.equal(bar[0].y,m.long);assert.equal(bar[1].y,m.long);
+ // The crossbar ends lie on the two constructed diagonals, not at decorative
+ // guide positions unrelated to the actual A.
+ assert.ok(Math.abs(bar[0].x-m.width/2*(1-bar[0].y/m.height))<1e-12);
+ const H=letterSkeleton('H');assert.ok(H.strokes[2].points.every(p=>p.y===m.long));
+ const B=letterSkeleton('B');assert.ok(Math.abs(B.strokes[1].points.at(-1).y-m.short)<1e-12);
+ assert.ok(Math.abs(B.strokes[2].points.at(-1).y-m.height)<1e-12);
+ const normal=createTag('ABHOP',{seed:'phi-construction'}),different=createTag('ABHOP',{seed:'phi-construction',ratio:1.45});
+ assert.notDeepEqual(normal.strokes,different.strokes);assert.notEqual(normal.construction.wordAdvance,different.construction.wordAdvance);
+ assert.equal(normal.construction.letters.length,5);assert.equal(normal.construction.metrics.ratio,PHI);
+ assert.throws(()=>goldenMetrics(0),RangeError);assert.throws(()=>goldenMetrics(100,1),RangeError);
+});
 
 test('every floor receives one or two reproducible tags, including upper floors',()=>{
  const seen=new Set();
