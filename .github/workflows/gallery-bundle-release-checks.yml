@@ -4,6 +4,11 @@ on:
     branches: [main]
     paths:
       - 'tests/gallery-public-launch.test.mjs'
+      - 'tests/studio-walkthrough-link.test.mjs'
+      - 'js/settings-url.js'
+      - 'js/app.js'
+      - 'index.html'
+      - 'about/step-by-step/index.html'
       - 'tests/gallery-production-planning.test.mjs'
       - 'test/virtual-gallery/architectural-materials.test.mjs'
       - 'test/virtual-gallery/environment-v1.test.mjs'
@@ -36,6 +41,8 @@ jobs:
         run: npm install --no-save --package-lock=false
       - name: Gallery public launch regression
         run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs
+      - name: Studio walkthrough links regression
+        run: node --test tests/studio-walkthrough-link.test.mjs
       - name: Production-module unit tests
         run: node --test test/virtual-gallery/architectural-materials.test.mjs test/virtual-gallery/environment-v1.test.mjs test/virtual-gallery/paper-isolation.test.mjs test/virtual-gallery/sculptures.test.mjs test/virtual-gallery/study-material.test.mjs test/virtual-gallery/vector-tracing.test.mjs
       - name: Enforce gallery bundle parity with production source
