@@ -346,10 +346,19 @@ function captureMaterialStages(s){
    for(let j=1;j<distinct.length;j++)
     activity.push(distance(distinct[j-1].pixels,distinct[j].pixels));
    const selected=new Set(required);
+   // The opening paint deposits must remain visible individually. A global
+   // activity-based sampler otherwise spends its budget on later, larger
+   // changes and jumps from blank paper to a partly completed painting.
+   if(selectedMaterial()==='oil'){
+    const opening=Math.min(12,distinct.length-1);
+    for(let j=1;j<=opening;j++)selected.add(j);
+   }
    // If a composition has more phase boundaries than the stage budget,
    // keep the first occurrence of each phase and the final artwork.
    if(selected.size>maxStages){
     selected.clear();selected.add(0);selected.add(distinct.length-1);
+    if(selectedMaterial()==='oil')
+     for(let j=1;j<=Math.min(12,distinct.length-2)&&selected.size<maxStages;j++)selected.add(j);
     for(let j=1;j<distinct.length-1&&selected.size<maxStages;j++)
      if(distinct[j].phase!==distinct[j-1].phase)selected.add(j);
    }
