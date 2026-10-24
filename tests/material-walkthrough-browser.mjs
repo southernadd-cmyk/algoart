@@ -38,6 +38,28 @@ try {
   const status=await page.locator('#notice').innerText();
   assert.ok(!status.startsWith('Could not'),material+': '+status);
   if(material==='tissue'||material==='watercolour'||material==='oil')assert.ok(max>=2,material+' should expose an intermediate material checkpoint');
+  if(['tissue','watercolour','oil'].includes(material)){
+   const parity=await page.evaluate(material=>{
+    const A=window.AlgoArt,s=settings(),studio=document.createElement('canvas');
+    const prior=A.materialStageCapture;
+    try{
+     A.materialStageCapture=null;
+     if(material==='tissue')A.renderOil(studio,s,1,false,7);
+     else if(material==='watercolour')A.renderWatercolourV2S(studio,s,1,false);
+     else A.renderOilPaintV4(studio,s,1,false);
+     const final=materialFrames.at(-1);
+     const resized=document.createElement('canvas');
+     resized.width=final.width;resized.height=final.height;
+     resized.getContext('2d').drawImage(studio,0,0,resized.width,resized.height);
+     const a=final.getContext('2d').getImageData(0,0,final.width,final.height).data;
+     const b=resized.getContext('2d').getImageData(0,0,resized.width,resized.height).data;
+     let differences=0;
+     for(let k=0;k<a.length;k++)if(a[k]!==b[k])differences++;
+     return {differences,width:final.width,height:final.height};
+    }finally{A.materialStageCapture=prior}
+   },material);
+   assert.equal(parity.differences,0,material+' final frame differs from studio-quality render');
+  }
   console.log(material,'stages',max,'status:',status.slice(0,140));
  }
  assert.ok(!errors.length,'Browser errors: '+errors.join(' | '));
