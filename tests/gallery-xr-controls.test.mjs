@@ -26,7 +26,7 @@ const implementations=[
       close:'Ed',open:'sg'}}
 ];
 function controller(implementation,yaw=0,head=0){
-  const xrCamera=new THREE.ArrayCamera();
+  const xrCamera=new THREE.PerspectiveCamera();
   xrCamera.matrixAutoUpdate=false;
   xrCamera.matrix.makeRotationY(head);
   // Mirrors a rendered XR camera: world matrix includes the rig, but the
