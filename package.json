@@ -26,9 +26,13 @@
     "test:watercolour-fit": "node tests/watercolour-fit.test.mjs",
     "test:plotter": "node tests/plotter.test.mjs",
     "test:plotter-browser": "node tests/plotter-browser.test.mjs",
-    "test:plotter-metrics": "node tests/plotter-metrics.test.mjs"
+    "test:plotter-metrics": "node tests/plotter-metrics.test.mjs",
+    "gallery:bundle": "esbuild gallery/visit/gallery-v2.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=gallery/visit/gallery-bundle.js",
+    "gallery:bundle:check": "npm run gallery:bundle && git diff --exit-code -- gallery/visit/gallery-bundle.js"
   },
   "devDependencies": {
-    "playwright": "1.64.0"
+    "playwright": "1.64.0",
+    "esbuild": "0.25.12",
+    "three": "0.180.0"
   }
 }
