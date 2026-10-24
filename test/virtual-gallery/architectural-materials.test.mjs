@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
  MATERIAL_SOURCES,tiledBoxUvs,createArchitecturalMaterials
-} from './architectural-materials.mjs';
+} from '../../gallery/visit/architectural-materials.mjs';
 
 function uvGeometry(){
   const data=[
