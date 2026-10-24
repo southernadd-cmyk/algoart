@@ -946,12 +946,21 @@ A.renderOilPaintV4E=function(target,settings,scale,opts){
   var r=A.makeR(settings.seed+'|oil-paint-v4e|'+settings.mode+'|'+
     settings.orientation+'|'+(opts.phiFraming?'phi':'plain'));
   ground(ctx,w,h,settings.seed,r,settings.paper);
+  // Walkthrough-only snapshots of real source strokes. The renderer's paint
+  // sequence and final output are unchanged; only the first strokes are copied.
+  var earlyOilCapture=A.materialStageCapture;
+  var earlyOilCount=0;
+  if(earlyOilCapture)earlyOilCapture('oil-ground',pigment);
   phase.planMs=+(performance.now()-start-phase.captureMs).toFixed(2);
   var profiles={flat:0,filbert:0,dry:0,knife:0},dragMarks=0,painted=0,massArea=0,bristleRuns=0,pickupMarks=0,wetDragMarks=0,bristleContacts=0,paintPatches=0,contactFootprints=0,loadStart=0,loadEnd=0,pressureMin=2,pressureMax=0;
   var paintStart=performance.now();
   for(var i=0;i<chains.length;i++){
     var result=paintOne(ctx,mask,chains[i],r,i,opts,field,sw,sh,scale,settings.mode);
     if(result){
+      if(earlyOilCapture&&earlyOilCount<12){
+        earlyOilCount++;
+        earlyOilCapture('oil-source-stroke-'+earlyOilCount,pigment);
+      }
       painted++;profiles[result.profile]++;dragMarks+=result.dragMarks;
       bristleRuns+=result.bristleRuns;pickupMarks+=result.pickupMarks;
       wetDragMarks+=result.wetDragMarks;
