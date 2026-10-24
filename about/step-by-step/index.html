@@ -140,6 +140,8 @@ return '<g fill="none" stroke="#b0873b" stroke-width="2" stroke-dasharray="10 10
 }
 function renderStep(){const svg=$('drawing');const s=settings();
 const painting=$('actionDrawing');
+$('prev').textContent=isAction()?'Previous layer':'Previous mark';
+$('next').textContent=isAction()?'Next layer':'Next mark';
 svg.style.display=isAction()?'none':'block';painting.hidden=!isAction();painting.style.display=isAction()?'block':'none';
 if(isAction()){
  const layers=i;
