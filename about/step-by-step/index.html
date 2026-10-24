@@ -215,13 +215,13 @@ async function generate(){playing=false;const own=++token;updateEditLink();$('no
 $('notice').textContent=(incoming.has('seed')&&incoming.has('mode')?'Your drawing from the editor · ':'')+names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded source passes.'+(originalMaterial!=='marker'&&originalMaterial!==selectedMaterial()?' The editor uses '+originalMaterial+'; the selected view shows '+selectedMaterial()+'.':'');}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
 $('replayMaterial').onchange=async()=>{playing=false;const own=++token;i=0;if(capturedMaterial()){
  if(selectedMaterial()==='oil'){
-  $('notice').textContent='Rendering oil at full studio quality…';
+  $('notice').textContent='Rendering faster oil walkthrough preview…';
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   if(own!==token)return;
  }
  captureMaterialStages(settings());
 }else if(isAction())captureActionStages(settings());renderStep();showMaterialExplanation();
-if(own===token&&selectedMaterial()==='oil'&&!$('notice').textContent.startsWith('Could not'))$('notice').textContent=matchMedia('(max-width: 800px)').matches?'Oil walkthrough ready · faster mobile preview (0.45× resolution).':'Oil walkthrough ready · studio quality.';};
+if(own===token&&selectedMaterial()==='oil'&&!$('notice').textContent.startsWith('Could not'))$('notice').textContent='Oil walkthrough ready · 0.45× preview resolution.';};
 function captureActionStages(s){
  materialFrames=[];materialFrameLabels=[];
  const scale=.32,target=document.createElement('canvas');
@@ -245,9 +245,8 @@ function captureActionStages(s){
 function captureMaterialStages(s){
  materialFrames=[];materialFrameLabels=[];
  const capturePhases=[];
- // Render at studio quality; only stored walkthrough frames are downsampled.
- const mobileOil=selectedMaterial()==='oil'&&matchMedia('(max-width: 800px)').matches;
- const renderScale=mobileOil?.45:1;
+ // Oil is a teaching preview on every device; full resolution belongs in the studio.
+ const renderScale=selectedMaterial()==='oil'?.45:1;
  const frameScale=.32;
  const width=Math.round((s.orientation==='portrait'?1000:1400)*frameScale);
  const height=Math.round((s.orientation==='portrait'?1400:1000)*frameScale);
@@ -400,6 +399,6 @@ function captureMaterialStages(s){
   materialFrames=[blank];materialFrameLabels=['The blank page'];
  }finally{A.materialStageCapture=originalCapture;}
 }
-function showMaterialExplanation(){const material=selectedMaterial();$('materialExplanation').textContent=material==='action'?'Action Painting: the canvas shows actual progressively added paint layers from the material renderer.':material==='marker'?'Marker: each step reveals an actual recorded pen pass.' :material==='oil'&&matchMedia('(max-width: 800px)').matches?'Captured stages from the Oil renderer at reduced resolution for mobile speed; the studio retains full quality. '+descriptions[material]:'Captured stages from the actual material renderer. '+descriptions[material];}
+function showMaterialExplanation(){const material=selectedMaterial();$('materialExplanation').textContent=material==='action'?'Action Painting: the canvas shows actual progressively added paint layers from the material renderer.':material==='marker'?'Marker: each step reveals an actual recorded pen pass.' :material==='oil'?'Captured stages from the real Oil renderer at 0.45× resolution for a faster walkthrough; the studio retains full quality. '+descriptions[material]:'Captured stages from the actual material renderer. '+descriptions[material];}
 $('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(stepTotal())};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=stepTotal()){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(stepTotal(),1)));}tick();};generate();
 </script></body></html>
