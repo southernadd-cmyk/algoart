@@ -404,7 +404,7 @@ function tissueGuideTerritory(ctx,cell){
 }
 
 
-function tissueColourField(ctx,area){
+function tissueColourField(ctx,area,progress){
   const border=area.contour||[],r=rng(area.seed+'|v5j-fibrous-sheets'),
       colours=area.paintPalette||area.palette||[area.rgb],
       pigment=area.paintRgb||area.rgb;
@@ -416,6 +416,7 @@ function tissueColourField(ctx,area){
   ctx.globalCompositeOperation='multiply';ctx.globalAlpha=.46;
   ctx.fillStyle=hex(blend(pigment,[245,240,230],.11));
   ctx.fill(physicalEdgePath(area,'tissue'));pieces++;
+  if(progress)progress(pieces);
   const centre={x:area.x,y:area.y};
   for(let layer=0;layer<2;layer++){
     const paper=new Path2D(),scale=layer===0?.961:.83;
@@ -444,6 +445,7 @@ function tissueColourField(ctx,area){
     ctx.lineWidth=layer===0?.9:.6;ctx.globalAlpha=.16;
     ctx.strokeStyle='rgb(244,237,225)';ctx.stroke(paper);
     pieces++;
+    if(progress)progress(pieces);
   }
   ctx.restore();return pieces;
 }
@@ -451,9 +453,12 @@ function tissueColourField(ctx,area){
 function tissueAdapter(target,plan,scale){
   var ctx=target.getContext('2d'),pieces=0,lines=0;
   ctx.save();ctx.scale(scale,scale);clippedToVoids(ctx,plan);
-  var territoryPieces=0,fieldPieces=0;
+  var territoryPieces=0,fieldPieces=0,openingTissuePieces=0;
   for(var fi=0;fi<(plan.connectedFields||[]).length;fi++){
-    fieldPieces+=tissueColourField(ctx,plan.connectedFields[fi]);
+    fieldPieces+=tissueColourField(ctx,plan.connectedFields[fi],
+      A.materialStageCapture?function(){
+        if(++openingTissuePieces<=12)A.materialStageCapture('tissue-opening-'+openingTissuePieces,target);
+      }:null);
   }
   for(var ti=0;ti<((plan.connectedFields||[]).length?0:(plan.territories||[]).length);ti++){
     var cell=plan.territories[ti];
