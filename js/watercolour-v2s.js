@@ -850,6 +850,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     }
     stats[state]++;
   }
+  if(A.materialStageCapture)A.materialStageCapture('watercolour-broad',pig.canvas);
   var hero=Math.min(n,Math.ceil(68*allowance));
   for(i=0;i<hero;i++){
     ch=chains[i];pts=ch.pts;
@@ -900,6 +901,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
     }
     stats[state]++;
   }
+  if(A.materialStageCapture)A.materialStageCapture('watercolour-hero',pig.canvas);
   var details=Math.min(n,Math.ceil(52*allowance));
   for(i=0;i<details;i++){
     ch=chains[i];pts=ch.pts;
@@ -1535,7 +1537,9 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
         A.makeR(seed+'|v2e-dry-outline|'+mark.key),mark.col,mark.opacity,0,'dry');
     }
     if(A.materialStageCapture)A.materialStageCapture('watercolour-dry',ctx.canvas);
+    if(A.materialStageCapture)A.materialStageCapture('watercolour-dry-lines',ctx.canvas);
     var dryDetail=finishDryAccents(ctx,chains,seed,quality,kit,presentationVoids,washStats);
+    if(A.materialStageCapture)A.materialStageCapture('watercolour-accents',ctx.canvas);
     var preservedLines=paintSourceOpenLines(ctx,chains,presentation,seed,w,h);
     activeDryMediaPhase=false;
     var microBleedTotal=activeMicroBleedCount;
