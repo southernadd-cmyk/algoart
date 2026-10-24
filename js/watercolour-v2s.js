@@ -849,6 +849,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
       paintRibbon(pig,null,pts,width,r,wash,r.range(.41,.70),0,state,isSoft);
     }
     stats[state]++;
+    if(A.materialStageCapture&&broad>0&&((i+1)%Math.max(1,Math.ceil(broad/12))===0))A.materialStageCapture('watercolour-broad-'+(i+1),pig.canvas);
   }
   if(A.materialStageCapture)A.materialStageCapture('watercolour-broad',pig.canvas);
   var hero=Math.min(n,Math.ceil(68*allowance));
@@ -900,6 +901,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
       }else paintRibbon(pig,null,pts,width,r,pigment,opacity,0,state,isSoftHero);
     }
     stats[state]++;
+    if(A.materialStageCapture&&hero>0&&((i+1)%Math.max(1,Math.ceil(hero/12))===0))A.materialStageCapture('watercolour-hero-'+(i+1),pig.canvas);
   }
   if(A.materialStageCapture)A.materialStageCapture('watercolour-hero',pig.canvas);
   var details=Math.min(n,Math.ceil(52*allowance));
