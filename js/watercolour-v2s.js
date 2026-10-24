@@ -927,6 +927,7 @@ function deposit(pig,height,w,h,chains,voids,seed,quality,kit){
         r.range(.34,.57),0,'damp',traceSoft);
     }
     stats[detailState]++;
+    if(A.materialStageCapture&&details>0&&((i+1)%Math.max(1,Math.ceil(details/16))===0))A.materialStageCapture('watercolour-detail-'+(i+1),pig.canvas);
   }
   return stats;
 }
