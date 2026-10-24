@@ -28,12 +28,12 @@ button{font-family:'AlgoArt Marker',sans-serif}.math{font-size:12px}
 </header>
 <main><h1 class="page-title">How a drawing is made</h1><p class="intro">Watch a marker drawing take shape, one stroke at a time. See how the rules become marks on paper.</p>
 
-<div class="controls"><label>Choose a drawing engine<select id="engine"><option value="field">Orbital Studies</option><option value="spiral">Golden Trajectories</option><option value="rects">Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic">Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
+<div class="controls"><label>Choose a drawing engine<select id="engine"><option value="field">Orbital Studies</option><option value="spiral">Golden Trajectories</option><option value="rects" selected>Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic">Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
 
-<label>Paper orientation<select id="orientation"><option value="portrait">Portrait (sculpture candidate)</option><option value="landscape">Landscape (wall-hung)</option></select></label>
-<label>Seed<input id="seed" value="PP-WORKINGS-EXPANDED-04" spellcheck="false"></label><button id="regenerate">Generate from seed</button></div>
+<label>Paper orientation<select id="orientation"><option value="portrait">Portrait (sculpture candidate)</option><option value="landscape" selected>Landscape (wall-hung)</option></select></label>
+<label>Seed<input id="seed" value="PP-RECURSIVE-DIVISIONS-INTRO" spellcheck="false"></label><button id="regenerate">Generate from seed</button></div>
 <p id="notice" role="status" class="small">Loading the drawing and architecture modules…</p>
-<section class="panel"><h2>Watch it happen</h2><p>Choose an engine. Press Next mark to follow the pen.</p><div class="viewer"><div><label class="phi-toggle"><input type="checkbox" id="phiGuides" checked> Show golden-ratio guides</label><div class="paper"><svg id="drawing" viewBox="0 0 1000 1400" role="img" aria-label="Artwork progressively constructed from recorded vector pen paths"></svg></div><div class="actions"><button id="prev">Previous mark</button><button id="next">Next mark</button><button id="play">Play</button><button id="all">Show finished drawing</button></div><input id="step" class="timeline" type="range" value="0" min="0" max="0" aria-label="Drawing mark number"><p id="counter" class="stats small"></p></div>
+<section class="panel"><h2>Watch it happen</h2><p>Start with Recursive Divisions, which draws across the sheet. Press Next mark to follow the pen.</p><div class="viewer"><div><label class="phi-toggle"><input type="checkbox" id="phiGuides" checked> Show golden-ratio guides</label><div class="paper"><svg id="drawing" viewBox="0 0 1000 1400" role="img" aria-label="Artwork progressively constructed from recorded vector pen paths"></svg></div><div class="actions"><button id="prev">Previous mark</button><button id="next">Next mark</button><button id="play">Play</button><button id="all">Show finished drawing</button></div><input id="step" class="timeline" type="range" value="0" min="0" max="0" aria-label="Drawing mark number"><p id="counter" class="stats small"></p></div>
 <div class="explain"><h2 id="markTitle">The blank page</h2><p id="markText">The seed controls reproducible choices. No marks have been placed yet.</p><div id="explanation"></div><h3>The actual numbers</h3><details id="calculations"><summary>Show the exact mathematics (optional)</summary><p class="small">The explanation above is the main lesson. These are the numerical workings behind it.</p><div id="markMath" class="math">φ = (1 + √5)/2 = 1.6180339887
 Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div></details><p id="inkNote" class="small"></p></div></div></section>
 <section class="panel"><h2>What the gold lines show</h2><p>Gold lines divide the paper at about 38% and 62%. These come from the golden ratio. They are guides, not rules every stroke must follow.</p></section><section class="panel"><h2>Why the pen goes over a line again</h2><p>The artist-like finish comes from drawing the same path more than once, with small changes in position, thickness and ink strength.</p></section>
@@ -56,7 +56,7 @@ action:'Action Painting builds dynamic curves and paint deposits with speed-depe
 };
 let paths=[],i=0,playing=false,token=0,roomInfo=null;
 const num=n=>Number(n).toFixed(2),esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
-function settings(){return {seed:$('seed').value.trim()||'PP-WORKINGS-EXPANDED-04',mode:$('engine').value,orientation:$('orientation').value,
+function settings(){return {seed:$('seed').value.trim()||'PP-RECURSIVE-DIVISIONS-INTRO',mode:$('engine').value,orientation:$('orientation').value,
 elements:36,density:53,complexity:71,negativeSpace:41,phiStrength:91,recursion:4,spiralInfluence:63,goldenAngle:93,nesting:44,
 pen:'fine',thickness:13,wobble:32,overdraw:3,opacity:70,pressure:36,dryness:19,curveBias:91,shapeAmount:68,overlap:65,rotation:91,
 lines:true,circles:true,rectangles:true,polygons:true,arcs:true,palette:'mono',colourCount:4,saturation:86,brightness:59,paper:'#f5f0e6',grain:13};}
@@ -99,29 +99,6 @@ $('sculptureText').textContent=p?'Portrait works are sculpture candidates. The l
 $('sculptureMath').textContent=p?'Source image coordinates (u,v) → normalized sculpture-plane coordinates (x,y)\nShape outline → THREE.ExtrudeGeometry(shape,{depth:d,…})\nMesh z = source-layer z + d/2\nSculpture world translation = ('+num(p.x)+', '+num(p.y)+', '+num(p.z)+') m\nPlacement yaw = '+num(p.yaw)+' rad\nNominal height = '+SCULPTURE_HEIGHT+' m; plinth = '+PEDESTAL_HEIGHT+' m\nExact outline points/depth vary by traced work and are NOT calculated on this page.':'No extrusion: wall-hung landscape study.';
 }
 // Compare real recorded bounds, rather than assuming a seed fills the page.
-function recordedCoverage(list,w,h){
-const coords=[];
-for(const p of list){const n=(p.d||'').match(/-?\d+(?:\.\d+)?(?:e[-+]?\d+)?/gi)||[];
-for(let k=0;k+1<n.length;k+=2){const x=+n[k],y=+n[k+1];if(Number.isFinite(x)&&Number.isFinite(y))coords.push([x,y]);}}
-if(!coords.length)return 0;
-const xs=coords.map(p=>p[0]),ys=coords.map(p=>p[1]),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-const fx=Math.max(0,Math.min(1,(maxX-minX)/w)),fy=Math.max(0,Math.min(1,(maxY-minY)/h));
-const balance=Math.max(0,1-Math.abs((maxX+minX)/2-w/2)/w-Math.abs((maxY+minY)/2-h/2)/h);
-return Math.min(fx,fy)*.65+fx*fy*.25+balance*.10;
-}
-function chooseStartingSeed(){
-const chosen=['PP-WORKINGS-EXPANDED-04','PP-FULL-SHEET-17','PP-MARKER-SPACE-23','PP-STUDY-ENGAGED-31','PP-ROOM-TO-BREATHE-09'];
-let best=chosen[0],score=-1;const s=settings();const target=document.createElement('canvas');
-A.rendererVersion=9;A.phiFramingEnabled=false;
-for(const seed of chosen){
-const rec={precise:true,paths:[],paperMarks:[]};
-try{s.seed=seed;A.svgRecorder=rec;A.render(target,s,.12,false);
-const w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000;
-const rating=recordedCoverage(rec.paths,w,h);
-if(rating>score){score=rating;best=seed;}}catch(e){console.warn('Seed coverage check failed',seed,e);}finally{A.svgRecorder=null;}
-}
-$('seed').value=best;
-}
 function generate(){playing=false;++token;$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=9;A.phiFramingEnabled=false;const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;renderStep();updateRoom();$('inkNote').textContent='Recording is from the actual marker geometry path. This is a replay of real marker ink paths.';$('notice').textContent=names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded pen passes from the drawing renderer.';}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
-$('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(paths.length)};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=paths.length){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(paths.length,1)));}tick();};chooseStartingSeed();generate();
+$('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(paths.length)};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=paths.length){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(paths.length,1)));}tick();};generate();
 </script></body></html>
