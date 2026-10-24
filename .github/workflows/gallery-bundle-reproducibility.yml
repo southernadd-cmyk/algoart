@@ -1,6 +1,10 @@
 name: Verify gallery bundle reproducibility
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gallery-bundle-reproducibility.yml'
 jobs:
   compare:
     runs-on: ubuntu-latest
