@@ -1529,6 +1529,17 @@ A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
     pctx.setTransform(1,0,0,1,0,0);
     wetCtx.setTransform(1,0,0,1,0,0);
     softCtx.setTransform(1,0,0,1,0,0);
+    // Capture the deposited pigment before the paper-flow transform.
+    // Use a separate presentation canvas: never alter the working layer or
+    // consume random values, and only allocate it for walkthrough playback.
+    if(A.materialStageCapture){
+      var preFlow=document.createElement('canvas');
+      preFlow.width=ctx.canvas.width;preFlow.height=ctx.canvas.height;
+      var preFlowCtx=preFlow.getContext('2d');
+      preFlowCtx.drawImage(ctx.canvas,0,0);
+      preFlowCtx.drawImage(layer,0,0,w,h);
+      A.materialStageCapture('watercolour-before-flow',preFlow);
+    }
     var paperStats=flowThroughPaper(pctx,sw,sh,seed,kit.paperRGB,ratio,
       chains,wetCtx,softCtx);
     ctx.save();ctx.imageSmoothingEnabled=true;
