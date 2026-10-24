@@ -3793,7 +3793,7 @@ function oilGuideTerritory(ctx,mask,cell,painter){
 }
 
 
-function oilColourField(ctx,mask,area,painter,plan){
+function oilColourField(ctx,mask,area,painter,plan,progress){
   const poly=physicalEdgePath(area,'oil'),r=rng(area.seed+'|v5j-source-bristle'),
     b=area.box,colours=area.paintPalette||area.palette||[area.rgb],
     base=area.paintRgb||area.rgb;
@@ -3807,6 +3807,15 @@ function oilColourField(ctx,mask,area,painter,plan){
   ctx.globalAlpha=1;mask.globalAlpha=1;
   const guides=(plan.territories||[]).filter(t=>
     area.guideIds&&area.guideIds.includes(t.guideId));
+  // Real paint checkpoints, taken during the source-field brush passes.
+  // This is capture-only: it never changes brush order, pigment or randomness.
+  const expected=guides.reduce((sum,g)=>sum+clamp(Math.floor((g.width+g.height)/36),5,11),0)+(guides.length>=2?9:0);
+  let nextQuarter=1;
+  const record=()=>{
+    while(progress && nextQuarter<=4 && deposits>=Math.ceil(expected*nextQuarter/4)){
+      progress(nextQuarter,4);nextQuarter++;
+    }
+  };
   // Gesture geometry comes from the actual branches, ordered trajectory
   // points, or rotated placed objects already present in V5d.
   guides.forEach(function(g,gi){
@@ -3839,7 +3848,7 @@ function oilColourField(ctx,mask,area,painter,plan){
         width,mixed,k%4===0?'flat':'filbert',r,
         {thickness:r.range(.76,1.02),drag:r.range(.39,.82),
          bristles:r.range(.82,.99)});
-      deposits++;
+      deposits++;record();
     }
   });
   // The bridge is itself the source-owned relationship between the two
@@ -3862,9 +3871,10 @@ function oilColourField(ctx,mask,area,painter,plan){
        k%3===0?'flat':'filbert',r,
        {thickness:r.range(.75,1.0),drag:r.range(.40,.83),
         bristles:r.range(.80,.99)});
-      deposits++;
+      deposits++;record();
     }
   }
+  if(progress && !expected)progress(4,4);
   ctx.restore();mask.restore();
   return deposits;
 }
@@ -3890,10 +3900,14 @@ function oilAdapter(target,plan,scale){
     A.materialStageCapture(name,preview);
   }
   var deposits=0,territoryDeposits=0,fieldStrokes=0;
-  for(var fi=0;fi<(plan.connectedFields||[]).length;fi++){
-    fieldStrokes+=oilColourField(ctx,mask,plan.connectedFields[fi],painter,plan);
+  var connected=plan.connectedFields||[];
+  for(var fi=0;fi<connected.length;fi++){
+    // Use four progressive, real brushwork checkpoints per connected field,
+    // instead of empty territory/mass/gesture passes in this rendering mode.
+    fieldStrokes+=oilColourField(ctx,mask,connected[fi],painter,plan,
+      A.materialStageCapture?(quarter,total)=>captureOilStage('oil-field-'+(fi+1)+'-'+quarter):null);
   }
-  captureOilStage('oil-primary-fields');
+  if(!connected.length)captureOilStage('oil-primary-fields');
   for(var ti=0;ti<((plan.connectedFields||[]).length?0:(plan.territories||[]).length);ti++){
     var cell=plan.territories[ti];
     if(cell.role==='painted'){
@@ -3902,7 +3916,7 @@ function oilAdapter(target,plan,scale){
         oilGuideTerritory(ctx,mask,cell,painter);
     }
   }
-  captureOilStage('oil-territories');
+  if(!connected.length)captureOilStage('oil-territories');
   for(var i=0;i<((plan.connectedFields||[]).length?0:plan.regions.length);i++){
     // Source-mark clusters remain directional material detail, not a second
     // overlapping mass layer that conceals actual subdivision territories.
@@ -3931,7 +3945,7 @@ function oilAdapter(target,plan,scale){
       deposits++;
     }
   }
-  captureOilStage('oil-paint-masses');
+  if(!connected.length)captureOilStage('oil-paint-masses');
   for(i=0;i<((plan.connectedFields||[]).length?0:plan.gestures.length);i++){
     a=plan.gestures[i];r=rng(a.seed+'|oil-v5');
     var start=shifted(a,a.angle,-a.length*.5),
@@ -3941,7 +3955,7 @@ function oilAdapter(target,plan,scale){
       'filbert',r,{thickness:.72,drag:.6,bristles:.9});
     deposits++;
   }
-  captureOilStage('oil-gestures');
+  if(!connected.length)captureOilStage('oil-gestures');
   ctx.restore();mask.restore();
   // Contact-height pass matches the pigment layer, then locally shades its
   // actual ridges; no whole-image emboss, RGB haze or blurred screenshot.
