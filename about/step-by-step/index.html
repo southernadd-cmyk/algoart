@@ -45,7 +45,7 @@ summary{cursor:pointer}
 <p class="algo-global-question">Can one number compose a drawing?</p>
 <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../../gallery/">daily gallery</a><a data-algo-nav href="../../about/">about this project</a></nav>
 </header>
-<main><div class="intro-section"><span class="kicker">A DRAWING, ONE MARK AT A TIME</span><h1 class="page-title">HOW A DRAWING IS MADE</h1><p class="intro">Watch the geometry form, then explore how each material turns it into marks. Marker replays individual lines; Action Painting adds real paint layers. Tissue, watercolour and oil currently show their source paths.</p></div>
+<main><div class="intro-section"><span class="kicker">A DRAWING, ONE MARK AT A TIME</span><h1 class="page-title">HOW A DRAWING IS MADE</h1><p class="intro">Watch recorded pen passes or follow actual stages of the material renderer. Each material uses the same underlying composition, but changes how its marks are made.</p></div>
 
 <div class="controls"><label>Material<select id="replayMaterial"><option value="marker">Marker</option><option value="tissue">Tissue & Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select></label><label>Choose a drawing engine<select id="engine"><option value="field">Orbital Studies</option><option value="spiral">Golden Trajectories</option><option value="rects" selected>Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic">Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
 
@@ -74,7 +74,7 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <script src="../../js/oil-v1-core-a.js"></script>
 <script src="../../js/oil-v1-core-b.js"></script>
 <script src="../../js/oil-v1-core-c.js"></script>
-<script src="../../js/oil-paint-v1.js"></script>
+<script src="../../js/oil-paint-v1.js?v=walkthrough-stages1"></script>
 <script src="../../js/oil-brush-v2.js"></script>
 <script src="../../js/oil-paint-v2.js"></script>
 <script src="../../js/oil-brush-v3.js"></script>
@@ -203,7 +203,7 @@ $('markMath').textContent=formula;$('svgSource').textContent=p.d;
 $('phiGuides').addEventListener('change',renderStep);
 function advance(n){i=Math.max(0,Math.min(stepTotal(),n));renderStep()}
 function generate(){playing=false;++token;updateEditLink();$('notice').textContent='Calculating source geometry…';try{const s=settings();A.rendererVersion=A.SUPPORTED_RENDERER_VERSIONS.includes(Number(incoming.get('v')))?Number(incoming.get('v')):9;A.phiFramingEnabled=incoming.get('sheet')==='phi';const rec={precise:true,paths:[],paperMarks:[]};A.svgRecorder=rec;const target=document.createElement('canvas');A.render(target,s,.15,false);paths=rec.paths.filter(x=>x.d);A.svgRecorder=null;i=0;if(capturedMaterial())captureMaterialStages(s);renderStep();showMaterialExplanation();$('inkNote').textContent='The marks are recorded from the same drawing code used by the studio.';const originalMaterial=incoming.get('material')|| (incoming.has('tissue')?'tissue':incoming.has('watercolor')?'watercolour':'marker');
-$('notice').textContent=(incoming.has('seed')&&incoming.has('mode')?'Your drawing from the editor · ':'')+names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded marker passes.'+(originalMaterial!=='marker'&&selectedMaterial()!=='action'?' The editor uses '+originalMaterial+'; the current view shows source paths rather than its finished material surface.':'');}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
+$('notice').textContent=(incoming.has('seed')&&incoming.has('mode')?'Your drawing from the editor · ':'')+names[s.mode]+' · '+s.orientation+' · '+paths.length+' recorded source passes.'+(originalMaterial!=='marker'&&originalMaterial!==selectedMaterial()?' The editor uses '+originalMaterial+'; the selected view shows '+selectedMaterial()+'.':'');}catch(e){A.svgRecorder=null;$('notice').textContent='Could not generate this selection: '+e.message;console.error(e);}}
 $('replayMaterial').onchange=()=>{playing=false;++token;i=0;if(capturedMaterial())captureMaterialStages(settings());renderStep();showMaterialExplanation()};
 function captureMaterialStages(s){
  materialFrames=[];materialFrameLabels=[];
@@ -223,7 +223,7 @@ function captureMaterialStages(s){
  const originalCapture=A.materialStageCapture;
  try{
   A.materialStageCapture=(name,source)=>{
-   const labels={'tissue-pigment':'Pigment and paper layers','tissue-surface':'The textured tissue surface','watercolour-wash':'Wet pigment spread through the paper','watercolour-dry':'Dry pigment detail'};
+   const labels={'tissue-pigment':'Pigment and paper layers','tissue-surface':'The textured tissue surface','watercolour-wash':'Wet pigment spread through the paper','watercolour-dry':'Dry pigment detail','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added'};
    snapshot(labels[name]||name,source);
   };
   A.phiFramingEnabled=incoming.get('sheet')==='phi';
