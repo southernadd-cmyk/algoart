@@ -2,15 +2,57 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {createTag,planFloorTags,HANDS,REFERENCE_STUDIES,normaliseText,drawTag,PHI,goldenMetrics,letterSkeleton} from './tag-engine.mjs';
+import {createTag,planFloorTags,HANDS,REFERENCE_STUDIES,normaliseText,drawTag,PHI,goldenMetrics,letterSkeleton,tagDuration,strokeFraction} from './tag-engine.mjs';
 import {buildSprayPlan} from './spray-paint.mjs';
+import {planWritingMotion,connectionClear} from './writing-motion.mjs';
+
+test('joins meet their actual neighbours, with no connection across a word break',()=>{
+ let joins=0;
+ for(const hand of Object.keys(HANDS))for(const seed of ['first','second']){
+  const tag=createTag('ECHO MARK',{hand,seed});
+  for(let i=0;i<tag.strokes.length;i++)if(tag.strokes[i].kind==='join'){
+   const join=tag.strokes[i];joins++;
+   assert.deepEqual(join.points[0],tag.strokes[i-1].points.at(-1),hand+' join start');
+   assert.deepEqual(join.points.at(-1),tag.strokes[i+1].points[0],hand+' join end');
+  }
+  for(const connection of tag.flow.connections)assert.ok(!tag.text.slice(connection.from+1,connection.to).includes(' '));
+  if(REFERENCE_STUDIES[hand]?.shape==='oneline')assert.equal(tag.strokes.filter(s=>s.kind==='letter').length,2);
+  if(tag.strokes[0].kind==='entry')assert.deepEqual(tag.strokes[0].points.at(-1),tag.strokes[1].points[0]);
+ }
+ assert.ok(joins>30);
+ assert.equal(connectionClear([{x:0,y:0},{x:50,y:0}],[{points:[{x:25,y:-10},{x:25,y:10}]}]),false);
+ assert.equal(connectionClear([{x:0,y:0},{x:50,y:0}],[{points:[{x:0,y:-10},{x:0,y:10}]}]),true);
+});
+test('writer habits persist across words and seeds while execution changes',()=>{
+ for(const hand of Object.keys(HANDS)){
+  const a=createTag('ALPHA',{hand,seed:'hit-a'}),b=createTag('ALPHA',{hand,seed:'hit-b'}),c=createTag('MARK',{hand,seed:'other-word'});
+  assert.deepEqual(a.writer,b.writer);assert.deepEqual(a.writer,c.writer);assert.notDeepEqual(a.strokes,b.strokes);
+  for(const frame of [...a.construction.letters,...b.construction.letters,...c.construction.letters])assert.equal(frame.variant,a.writer.variants[frame.character]);
+  for(const stroke of a.strokes)assert.ok(Math.abs(stroke.nib-a.writer.nib)<=.0121);
+ }
+});
+test('turns slow the hand, lift travel pauses it, and shared playback follows the timing',()=>{
+ const points=[...Array.from({length:101},(_,x)=>({x,y:0})),...Array.from({length:100},(_,i)=>({x:100,y:i+1}))];
+ const strokes=[{points,kind:'letter'},{points:[{x:120,y:100},{x:150,y:100}],kind:'letter'}];
+ const motion=planWritingMotion(strokes),tag={strokes,motion};
+ assert.ok(motion.strokes[0].speeds[100]<motion.strokes[0].speeds[50]-.2);
+ assert.ok(motion.strokes[1].pause>.035);
+ const inPause=(motion.strokes[0].start+motion.strokes[0].duration+motion.strokes[1].pause/2)/motion.duration;
+ assert.equal(strokeFraction(tag,0,inPause),1);assert.equal(strokeFraction(tag,1,inPause),0);
+ assert.equal(strokeFraction(tag,1,1),1);
+ const sprayTag={...tag,seed:'speed',ink:'#222222',weight:7,opacity:.9,sprayFlare:1,strokes:strokes.map(s=>({...s,weight:1,pressure:1,phase:0}))};
+ const plan=buildSprayPlan(sprayTag),fast=plan.dabs.filter(d=>d.x>20&&d.x<70&&d.y<1),slow=plan.dabs.filter(d=>d.x>96&&d.y<5);
+ const mean=xs=>xs.reduce((n,d)=>n+d.opacity,0)/xs.length;
+ assert.ok(fast.length&&slow.length);assert.ok(mean(slow)>mean(fast)*1.08);
+ assert.equal(plan.total,motion.duration);
+});
 
 test('aerosol deposits are seeded, stay in bounds and leave the phi geometry unchanged',()=>{
  const tag=createTag('ECHO',{seed:'aerosol'}),copy=structuredClone(tag),a=buildSprayPlan(tag),b=buildSprayPlan(copy);
  assert.deepEqual(a,b);assert.deepEqual(tag,copy);assert.ok(a.dabs.length>300);
  let previous=-1;
  for(const dab of a.dabs){assert.ok(dab.at>=previous);previous=dab.at;assert.ok(dab.opacity>0&&dab.opacity<=1);assert.ok(dab.radius>0);const r=dab.radius*a.halo;assert.ok(dab.x-r>tag.bounds.x&&dab.x+r<tag.bounds.x+tag.bounds.width);assert.ok(dab.y-r>tag.bounds.y&&dab.y+r<tag.bounds.y+tag.bounds.height);}
- assert.equal(a.total,tag.strokes.reduce((n,s)=>n+s.points.length,0));
+ assert.equal(a.total,tagDuration(tag));
  assert.notDeepEqual(a.dabs,buildSprayPlan(createTag('ECHO',{seed:'different'})).dabs);
 });
 

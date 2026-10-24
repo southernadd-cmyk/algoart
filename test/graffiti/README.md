@@ -9,6 +9,33 @@ ink into a transparent layer. The brick's grain modulates that layer's alpha.
 The specimen presents the three original hands, 50 selectable reference
 studies, and actual stroke playback.
 
+## Word flow and writer identity
+
+Version 4 applies the cohesion and movement ideas in the user's selected
+[GraffSpace tag guide](https://www.graffspace.com/blog/graffiti-tags).
+
+The whole word is laid out before connections are chosen. Eligible neighbours
+use their real stroke endpoints and tangents. A connection can reverse an open
+movement without changing its letter shape, while preserving earlier joins.
+Ordinary joins that cross another letter movement or require a long backward
+stroke become pen lifts. Spaces always break the connection. Continuous-line
+studies keep one continuous movement per word.
+
+Each of the 53 hands has a repeatable identity independent of the execution
+seed: preferred letter variants, nib angle, pair-joining habits, pace and a
+small accent vocabulary. Seeded variations act on word-level dimensions,
+baseline rhythm, pressure and coverage. The preferred letter variant is kept
+the same across repeated letters and different words by the same writer.
+
+`writing-motion.mjs` calculates travel distance, speed through corners, short
+pen-lift pauses and a timeline. Both spray deposition and marker/playback
+progress use that timeline. Faster sweeps get lighter coverage; slower turns
+deposit more. Final pixels remain independent of playback frame rate.
+
+Closing gestures are positioned from actual letter bounds. Returning strokes
+clear descenders, framing is reduced to small side brackets, and the writer's
+optional dots, quotes or dash stay outside the letter body.
+
 ## Spray paint
 
 Spray paint is now the default finish. `spray-paint.mjs` plans seeded aerosol

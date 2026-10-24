@@ -1,5 +1,6 @@
 // Seeded aerosol deposits along the writing path. The cone has a dense centre,
 // a granular soft edge and isolated droplets; no blur filter or image download.
+import {tagDuration} from './writing-motion.mjs?v=word-flow-v4';
 const CONE=1.55,HALO=1.8;
 function random(seed){
  let a=2166136261;for(const c of String(seed)){a^=c.charCodeAt(0);a=Math.imul(a,16777619);}
@@ -10,18 +11,18 @@ export function buildSprayPlan(tag){
  if(plans.has(tag))return plans.get(tag);
  const dabs=[];let used=0;
  for(let k=0;k<tag.strokes.length;k++){
-  const stroke=tag.strokes[k],points=stroke.points,r=random(tag.seed+'|aerosol|'+k);
+  const stroke=tag.strokes[k],points=stroke.points,movement=tag.motion?.strokes[k],r=random(tag.seed+'|aerosol|'+k);
   const baseRadius=tag.weight*stroke.weight*.64*stroke.pressure;
-  const add=(x,y,t,at,corner,travel)=>{
+  const add=(x,y,t,at,corner,travel,speed=.8)=>{
    const flow=.9+.1*Math.sin(t*8+stroke.phase),taper=.8+.2*Math.min(1,t*12,(1-t)*12);
    const radius=baseRadius*flow*taper*(1+((tag.sprayFlare||1)-1)*Math.sin(Math.PI*t)**4);
    const droplets=[];
    if(r()<.23){const angle=r()*Math.PI*2,distance=radius*(.95+r()*.6);droplets.push({x:Math.cos(angle)*distance,y:Math.sin(angle)*distance,radius:radius*(.055+r()*.12),opacity:.28+r()*.4});}
-   dabs.push({x:x+(r()-.5)*radius*.035,y:y+(r()-.5)*radius*.035,radius,droplets,
+   dabs.push({x:x+(r()-.5)*radius*.035,y:y+(r()-.5)*radius*.035,radius,droplets,speed,
     // The hand slows at a turn, laying down a little more paint there.
-    opacity:Math.min(.82,(.56+corner*.22)*(.92+r()*.16)*Math.max(.35,travel/(baseRadius*.34))),variant:Math.floor(r()*4),at});
+    opacity:Math.min(.86,(movement ? .48+.42*(1-speed) : .56+corner*.22)*(.92+r()*.16)*Math.max(.35,travel/(baseRadius*.34))),variant:Math.floor(r()*4),at});
   };
-  add(points[0].x,points[0].y,0,used,0,baseRadius*.34);
+  add(points[0].x,points[0].y,0,movement?.start??used,0,baseRadius*.34,movement?.speeds[0]??.8);
   for(let i=1;i<points.length;i++){
    const p=points[i-1],q=points[i],dx=q.x-p.x,dy=q.y-p.y,length=Math.hypot(dx,dy);
    if(length<1e-8)continue;
@@ -29,13 +30,15 @@ export function buildSprayPlan(tag){
    const corner=nl?Math.min(1,(1-(dx*nx+dy*ny)/(length*nl))*.5):.2;
    const steps=Math.max(1,Math.ceil(length/Math.max(.55,baseRadius*.34)));
    for(let j=1;j<=steps;j++){
-    const f=j/steps,t=(i-1+f)/(points.length-1);
-    add(p.x+dx*f,p.y+dy*f,t,used+i-1+f,corner,length/steps);
+    const f=j/steps,t=movement?.length?(movement.distances[i-1]+length*f)/movement.length:(i-1+f)/(points.length-1);
+    const at=movement?movement.start+movement.times[i-1]+f*(movement.times[i]-movement.times[i-1]):used+i-1+f;
+    const speed=movement?movement.speeds[i-1]+f*(movement.speeds[i]-movement.speeds[i-1]):.8;
+    add(p.x+dx*f,p.y+dy*f,t,at,corner,length/steps,speed);
    }
   }
   used+=points.length;
  }
- const result={dabs,total:used,halo:HALO};plans.set(tag,result);return result;
+ const result={dabs,total:tagDuration(tag),halo:HALO};plans.set(tag,result);return result;
 }
 function stampBank(colour){
  if(stampBanks.has(colour))return stampBanks.get(colour);

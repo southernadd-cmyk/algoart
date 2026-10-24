@@ -1,4 +1,4 @@
-import {HANDS,CORE_HANDS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom} from './tag-engine.mjs?v=handstyle-spray-v1';
+import {HANDS,CORE_HANDS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom,tagDuration} from './tag-engine.mjs?v=word-flow-v4';
 import {drawConstruction} from './phi-lettering.mjs?v=phi-handstyles-v2';
 const $=id=>document.getElementById(id),canvas=$('wall'),ctx=canvas.getContext('2d');
 const inkLayer=document.createElement('canvas');
@@ -49,9 +49,9 @@ function positionTag(g,target,tag,placement,count,index,draw){
 function paintWall(target,tagList,placements,progress=1){
  const g=target.getContext('2d'),wall=makeWall(target.width,target.height);g.clearRect(0,0,target.width,target.height);g.drawImage(wall.canvas,0,0);
  if(inkLayer.width!==target.width||inkLayer.height!==target.height){inkLayer.width=target.width;inkLayer.height=target.height;}else inkCtx.clearRect(0,0,target.width,target.height);
- const total=tagList.reduce((n,t)=>n+t.strokes.reduce((a,s)=>a+s.points.length,0),0);let used=0;
+ const total=tagList.reduce((n,t)=>n+tagDuration(t),0);let used=0;
  tagList.forEach((tag,i)=>{
-  const points=tag.strokes.reduce((n,s)=>n+s.points.length,0),portion=Math.max(0,Math.min(1,(total*progress-used)/points));used+=points;if(!portion)return;
+  const duration=tagDuration(tag),portion=Math.max(0,Math.min(1,(total*progress-used)/duration));used+=duration;if(!portion)return;
   positionTag(inkCtx,target,tag,placements[i],tagList.length,i,()=>drawTag(inkCtx,tag,{progress:portion,finish:$('paint').value}));
  });
  const image=inkCtx.getImageData(0,0,target.width,target.height),data=image.data;
@@ -98,8 +98,8 @@ function renderStudies(){
  }
  $('study-range').textContent='Studies '+(start+1)+'–'+Math.min(start+pageSize,studyIds.length)+' of '+studyIds.length;
  $('studies-prev').disabled=studyPage===0;$('studies-next').disabled=start+pageSize>=studyIds.length;
- const selected=REFERENCE_STUDIES[$('hand').value];
- $('study-selection').textContent=selected?selected.reference+' study · '+selected.description:'Choose a study, or use Different writers to mix all 53 hands.';
+ const selected=HANDS[$('hand').value];
+ $('study-selection').textContent=selected?selected.name+' · '+selected.description+' New seeds vary the execution while keeping this hand’s habits.':'Choose a hand to compare its habits across seeds, or use Different writers to mix all 53 hands.';
 }
 function populateHands(){
  const select=$('hand');select.replaceChildren(new Option('Different writers','mixed'));
@@ -110,7 +110,7 @@ function populateHands(){
 }
 function animate(){
  if(playing){stop();$('status').textContent='Writing paused. Press Watch it being written to continue.';return;}
- playing=true;const own=++token;started=performance.now()-elapsed;$('play').textContent='Pause writing';$('status').textContent='Following the strokes, including the joins and finishing movements.';
+ playing=true;const own=++token;started=performance.now()-elapsed;$('play').textContent='Pause writing';$('status').textContent='Following the writing rhythm: quick sweeps, slower turns and short pen lifts.';
  const duration=reduced?2600:6200;
  const tick=now=>{if(own!==token)return;elapsed=now-started;const progress=Math.min(1,elapsed/duration);render(progress);if(progress<1)frame=requestAnimationFrame(tick);else{stop();elapsed=0;$('status').textContent='Writing complete. These are the same strokes as the finished tag.';}};
  frame=requestAnimationFrame(tick);
