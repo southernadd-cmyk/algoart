@@ -253,16 +253,23 @@ function addBridge(hall) {
 const mobileImages=matchMedia('(pointer:coarse)').matches;
 const artworkQueue=[];
 let artworkActive=0;
-function scheduleArtwork(task){
-  artworkQueue.push(task);
-  const drain=()=>{
-    while(artworkActive<(mobileImages?3:8)&&artworkQueue.length){
-      const next=artworkQueue.shift();
-      artworkActive++;
-      Promise.resolve().then(next).finally(()=>{artworkActive--;drain();});
-    }
-  };
-  drain();
+function scheduleArtwork(task,material){
+ artworkQueue.push({task,material});
+ const drain=()=>{
+  while(artworkActive<(mobileImages?3:8)&&artworkQueue.length){
+   let best=0,distance=Infinity;
+   for(let i=0;i<artworkQueue.length;i++){
+    const item=artworkQueue[i],p=item.material.userData.galleryPosition;
+    if(item.material.userData.galleryDisposed)continue;
+    const d=p?rig.position.distanceToSquared(p):Infinity;
+    if(d<distance){distance=d;best=i;}
+   }
+   const next=artworkQueue.splice(best,1)[0];
+   artworkActive++;
+   Promise.resolve().then(next.task).finally(()=>{artworkActive--;drain();});
+  }
+ };
+ drain();
 }
 // Failed image requests are retried after transient network/deployment errors.
 // Only current-edition materials may be retried after a tab regains focus.
@@ -358,7 +365,7 @@ function loadArtworkTexture(url,material,{preferred=null}={}){
       image.src=candidate;
     }
     attempt();
-  }));
+  }),material);
 }
 // Stage 2: landscape images occupy walls. Portraits become freestanding
 // layered engine-specific sculptures, with a clear walking route around them.
@@ -434,7 +441,8 @@ function hangArt(room, study, hang) {
   artwork.userData.study = study;
   scene.add(artwork);
   artExhibits.push({study,position:artwork.position.clone(),normal:normal.clone()});
-  loadArtworkTexture(study.image, artworkMaterial,{preferred:study.imageOptimized});
+  artworkMaterial.userData.galleryPosition=artwork.position.clone();
+   loadArtworkTexture(study.image, artworkMaterial,{preferred:study.imageOptimized});
   const lamp=base.clone().addScaledVector(normal,1.35);
   lamp.y=Math.min(room.y+ROOM_HEIGHT-.35,hang.y+height*.66+1.25);
   exhibitLight(room,lamp,base,{beam:Math.max(.28,Math.min(.56,Math.atan(width/2/1.45)*1.25)),power:17});
