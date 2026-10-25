@@ -100,11 +100,11 @@ function renderForms(){
 }
 function renderAlphabetComparison(){
  const root=$('alphabet-columns');root.replaceChildren();const opts=readOptions();
- for(const id of ['skofe','skuf']){
+ for(const id of featuredIds){
   const study=REFERENCE_STUDIES[id],article=document.createElement('article');article.className='alphabet-sheet';
   const heading=document.createElement('h3');heading.textContent=study.reference;
-  const source=document.createElement('p');source.textContent=id==='skofe'?'Source describes ultrawide, full-body gestures. The A–Z construction remains a reconstruction, not verified samples.':'Source identifies a swooping S, compressed throw-up shapes and elongated F. Remaining letters are inferred.';
-  const link=document.createElement('a');link.href=id==='skofe'?'https://www.bombingscience.com/skofe/':'https://www.vice.com/en/article/skuf-what-happens-when-a-legendary-graffiti-writer-grows-up/';link.textContent='View source examples';link.target='_blank';link.rel='noopener noreferrer';
+  const source=document.createElement('p');source.textContent=id==='skofe'?'Ultrawide, full-body gestures; other letters inferred.':id==='skuf'?'Swooping S and elongated F; other letters inferred.':'An original reconstruction informed by selected artist references; unverified letters inferred.';
+  const link=document.createElement('a');link.href=id==='skofe'?'https://www.bombingscience.com/skofe/':id==='skuf'?'https://www.vice.com/en/article/skuf-what-happens-when-a-legendary-graffiti-writer-grows-up/':HANDSTYLE_SOURCE;link.textContent='View source examples';link.target='_blank';link.rel='noopener noreferrer';
   article.append(heading,source,link);
   for(const letters of ['ABCDEFGHIJKLM','NOPQRSTUVWXYZ']){
    const row=document.createElement('div');row.className='alphabet-row';
