@@ -54,7 +54,20 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
     const placement=fitPhiTag({bounds:tag.bounds,desiredWidth,maxHeight:ROOM_HEIGHT-1.5,
      lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,bottom:.65,top:ROOM_HEIGHT-.55,slot:item.slot,phase});
     const facing=face.normal.x*front.x+face.normal.z*front.z;
-    return {face,...placement,score:(face.exposed?4:0)+facing*3+r.range(0,1)};
+    const right={x:face.normal.z,z:-face.normal.x},c=Math.abs(Math.cos(placement.rotation)),sn=Math.abs(Math.sin(placement.rotation));
+    const hw=(placement.width*c+placement.height*sn)/2,hh=(placement.height*c+placement.width*sn)/2;
+    const neighbours=marks.filter(m=>m.level===level&&m.face.id===face.id);
+    const overlap=neighbours.reduce((area,m)=>{
+     const mw=(Math.abs(m.width*Math.cos(m.rotation))+Math.abs(m.height*Math.sin(m.rotation)))/2;
+     const mh=(Math.abs(m.height*Math.cos(m.rotation))+Math.abs(m.width*Math.sin(m.rotation)))/2;
+     const mu=(m.position.x-face.centre.x)*right.x+(m.position.z-face.centre.z)*right.z;
+     const my=m.position.y-level*floorSpacing-face.roomY;
+     const dx=Math.max(0,Math.min(placement.u+hw,mu+mw)-Math.max(placement.u-hw,mu-mw));
+     const dy=Math.max(0,Math.min(placement.centreY+hh,my+mh)-Math.max(placement.centreY-hh,my-mh));
+     return area+dx*dy;
+    },0);
+    return {face,...placement,score:(face.exposed?4:0)+facing*3+r.range(0,.1)-overlap*100-neighbours.length*2};
+
    }).sort((a,b)=>b.score-a.score);
    const chosen=candidates[0];if(!chosen)throw new Error('No exterior wall for '+plan.date);
    const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
