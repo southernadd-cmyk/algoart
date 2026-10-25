@@ -1,0 +1,55 @@
+name: Validate pre-rendered tower graffiti
+on:
+  pull_request:
+    paths:
+      - 'automation/build-gallery-graffiti.mjs'
+      - 'gallery/visit/**'
+      - 'tests/gallery-*-graffiti.test.mjs'
+      - '.github/workflows/gallery-graffiti-atlases.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Verify tower graffiti planners
+        run: node --test tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs
+      - name: Start static site
+        run: |
+          python3 -m http.server 4173 >/tmp/gallery-graffiti-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Bake most recent floor and exterior writing
+        run: node automation/build-gallery-graffiti.mjs
+      - name: Verify atlas data
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const archive=JSON.parse(fs.readFileSync('gallery/tower-layouts.json'));
+          const day=archive.floors.at(-1).date;
+          for(const dir of ['gallery/'+day+'/3d/graffiti','gallery/visit/graffiti-assets/exterior']){
+            const manifest=JSON.parse(fs.readFileSync(dir+'/manifest.json'));
+            if(manifest.version!==1||!manifest.pages.length||manifest.marks.length<3)throw Error('Incomplete '+dir);
+            for(const p of manifest.pages)if(!fs.statSync(dir+'/'+p.file).size)throw Error('Empty '+p.file);
+          }
+          NODE
+      - name: Rebuild gallery bundle for syntax check
+        run: |
+          npm run gallery:bundle
+          node --check gallery/visit/gallery-bundle.js
+      - name: Save preview atlases
+        uses: actions/upload-artifact@v4
+        with:
+          name: tower-graffiti-atlases
+          path: |
+            gallery/*/3d/graffiti/
+            gallery/visit/graffiti-assets/exterior/
+          retention-days: 7
