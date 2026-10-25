@@ -3,7 +3,7 @@
 import {createTag,planFloorTags,makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {ROOM_HEIGHT} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
-import {TOWER_HANDS,pickTowerHand,alphabetIdentity} from './tower-graffiti-styles.mjs';
+import {TOWER_HANDS,pickTowerHand,alphabetIdentity,graffitiAlphabetSignature} from './tower-graffiti-styles.mjs';
 export const GRAFFITI_WORDS=Object.freeze(['Proportion Piece','PHI','φ']);
 export const GRAFFITI_SEED='PP-TOWER-WRITING-01';
 export const WALL_MARGIN=.52;
@@ -36,7 +36,7 @@ export function exteriorWallFaces(layout,ground=false){
  return faces;
 }
 export function towerGraffitiKey(floors){
- return floors.filter(f=>f.level===0||f.level===1).map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
+ return graffitiAlphabetSignature()+'|'+floors.filter(f=>f.level===0||f.level===1).map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
 }
 export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2}={}){
  if(!floors.length)return [];
