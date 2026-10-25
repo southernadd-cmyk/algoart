@@ -37,3 +37,13 @@ export function resolveAlphabetIdentity(identity){
   throw new RangeError('Unavailable alphabet revision: '+identity);
  return ALPHABETS[id];
 }
+
+/**
+ * Explicit backfill policy: every floor, including archived dates, is planned
+ * against the currently published alphabet revisions. Increment a revision only
+ * when its new immutable glyph implementation is shipped.
+ */
+export const GRAFFITI_BACKFILL_POLICY='all-floors';
+export function graffitiAlphabetSignature(){
+ return TOWER_HANDS.map(id=>alphabetIdentity(id)).join('|');
+}
