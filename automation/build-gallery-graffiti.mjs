@@ -11,6 +11,8 @@ import {towerGraffitiSignature,TOWER_LETTERING_REVISION} from '../gallery/visit/
 const archive=JSON.parse(await fs.readFile('gallery/tower-layouts.json','utf8'));
 const requested=process.argv.find(x=>x.startsWith('--date='))?.slice(7)||archive.floors.at(-1)?.date;
 const indoorOnly=process.argv.includes('--indoor-only');
+const exteriorOnly=process.argv.includes('--exterior-only');
+if(indoorOnly&&exteriorOnly)throw Error('Choose --indoor-only or --exterior-only');
 if(!/^\d{4}-\d{2}-\d{2}$/.test(requested))throw Error('Expected --date=YYYY-MM-DD');
 const level=archive.floors.findIndex(f=>f.date===requested);
 if(level<0)throw Error('Date not present in tower-layouts: '+requested);
@@ -46,6 +48,7 @@ try{
   await fs.writeFile(path.join(dir,'manifest.json'),JSON.stringify(manifest)+'\n');
   console.log('Baked '+marks.length+' tags into '+plans.length+' atlases: '+dir);
  }
+ if(!exteriorOnly){
  const floor=archive.floors[level],meta=JSON.parse(await fs.readFile('gallery/'+requested+'/meta.json','utf8'));
  const studies=meta.entries.map((entry,i)=>({id:i,seed:entry.seed,engine:entry.mode,portrait:entry.orientation==='portrait',aspect:entry.orientation==='portrait'?1/1.4:1.4}));
  const layout=buildLayout(requested,studies.length,studies);
@@ -55,6 +58,7 @@ try{
  const indoor=planInteriorGraffiti({layout,hangs,level});
  const indoorSignature=towerGraffitiSignature(indoor);
  for(const lowPower of [false,true])await exportAtlas(indoor,path.join('gallery',requested,'3d','graffiti'),indoorSignature,lowPower);
+ }
  // The two exterior levels are stable; republish their atlas after each daily build
  // so existing floor plans and all new script versions remain in sync.
  if(!indoorOnly){
