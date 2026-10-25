@@ -26,7 +26,7 @@ function inkRibbon(d,{width=6,kind='marker'}={}){
   left.push([p.x+nx*r,p.y+ny*r]);
   right.unshift([p.x-nx*r,p.y-ny*r]);
  }
- return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'evenodd'});
+ return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'nonzero'});
 }
 const coords=([x,y])=>x.toFixed(2)+' '+y.toFixed(2);
 function polygon(left,right){return 'M'+left.map(coords).join(' L')+' L'+right.map(coords).join(' L')+' Z'}
@@ -49,7 +49,7 @@ function broadMarkerRibbon(d,width){
   left.push([p.x+nx*w/2,p.y+ny*w/2]);
   right.unshift([p.x-nx*w/2,p.y-ny*w/2]);
  }
- return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'evenodd',
+ return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'nonzero',
   'data-tool':'broad-cross-marker'});
 }
 function chiselRibbon(d,width){
@@ -64,7 +64,7 @@ function chiselRibbon(d,width){
    r=width*out*entry/2;
   left.push([p.x+ux*r,p.y+uy*r]);right.unshift([p.x-ux*r,p.y-uy*r]);
  }
- return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'evenodd',
+ return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'nonzero',
   'data-tool':'chisel-marker'});
 }
 function broadNib(d,width){
@@ -79,7 +79,7 @@ function broadNib(d,width){
    r=width*(.63+.37*Math.sin(Math.PI*(.025+.95*u)))/2;
   left.push([p.x+ux*r,p.y+uy*r]);right.unshift([p.x-ux*r,p.y-uy*r]);
  }
- return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'evenodd'});
+ return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'nonzero'});
 }
 function strokeAttrs(f,s,construction){
  if(construction)return {fill:'none',stroke:'currentColor','stroke-width':1.65,'stroke-linecap':'round','stroke-linejoin':'round'};

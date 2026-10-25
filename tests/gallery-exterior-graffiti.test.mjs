@@ -18,12 +18,16 @@ test('ground and first floors each have ten marks including distinct front freeh
  for(const level of [0,1]){
   const originals=marks.filter(m=>m.level===level&&m.slot<5),added=marks.filter(m=>m.level===level&&m.slot>=5);
   assert.equal(added.length,5);assert.ok(added.every(m=>m.form==='handstyle'));
-  assert.ok(new Set(added.map(m=>m.hand)).size>=3);
+  assert.equal(new Set(added.map(m=>m.hand)).size,5);
   assert.ok(added.every(m=>TOWER_HANDS.includes(m.hand)));
   assert.ok(originals.every(m=>TOWER_HANDS.includes(m.hand)));
   assert.equal(new Set([...originals,...added].map(m=>m.id)).size,10);
  }
- assert.ok(new Set(marks.map(m=>m.form)).size>=3);
+ assert.ok(marks.every(m=>m.form==='handstyle'&&m.tag.renderer==='az-nine-v1'));
+ for(const level of [0,1]){
+  const visible=marks.filter(m=>m.level===level);
+  assert.equal(new Set(visible.map(m=>m.hand)).size,9,'All nine complete alphabets must be represented before a repeat');
+ }
 });
 test('paint fits solid wall faces and stays clear of doors, lifts, corners and roof bands',()=>{
  for(const mark of marks){
@@ -72,5 +76,16 @@ test('batched quads face outward and use the same wall location for active, prep
    assert.ok(Math.abs(distance-(mark.level===currentFloor?.202:.173))<1e-5);
    for(let k=0;k<4;k++){assert.equal(n.getX(i*4+k),normal.x);assert.equal(n.getZ(i*4+k),normal.z);assert.ok(uv.getX(i*4+k)>=0&&uv.getX(i*4+k)<=1&&uv.getY(i*4+k)>=0&&uv.getY(i*4+k)<=1);}
   });g.dispose();
+ }
+});
+
+test('all exterior graffiti is composed from authored nine-style glyphs',()=>{
+ for(const mark of marks){
+  assert.ok(mark.hand>='A'&&mark.hand<='I');
+  assert.equal(mark.tag.version,'az-nine-v1-20261025');
+  assert.equal(mark.tag.renderer,'az-nine-v1');
+  assert.ok(mark.tag.plan.letters.length>0);
+  assert.ok(mark.tag.plan.letters.every(x=>x.glyph.shapes.length>=1));
+  assert.ok(mark.bounds.width>0&&mark.bounds.height===189);
  }
 });

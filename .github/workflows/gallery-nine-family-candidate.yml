@@ -1,0 +1,70 @@
+name: Build nine-family tower release candidate
+on:
+  push:
+    branches: [tower-nine-alphabet-v1]
+    paths:
+      - 'gallery/visit/tower-family-lettering.mjs'
+      - 'gallery/visit/tower-graffiti-styles.mjs'
+      - 'gallery/visit/exterior-graffiti-plan.mjs'
+      - 'gallery/visit/interior-graffiti-plan.mjs'
+      - 'gallery/visit/exterior-graffiti.mjs'
+      - 'automation/build-gallery-graffiti.mjs'
+      - 'tests/gallery-exterior-graffiti.test.mjs'
+      - 'tests/gallery-interior-graffiti.test.mjs'
+      - 'tests/gallery-exterior-graffiti-browser.mjs'
+      - 'tests/gallery-family-lettering-browser.mjs'
+      - '.github/workflows/gallery-nine-family-candidate.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    concurrency:
+      group: gallery-nine-family-candidate-branch
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned gallery build tools
+        run: npm ci
+      - name: Validate floor curation, wall placement, and nine authored alphabets
+        run: |
+          node --test tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs test/graffiti/phase-d.test.mjs
+      - name: Build exact production gallery bundle
+        run: |
+          npm run gallery:bundle
+          node --check gallery/visit/gallery-bundle.js
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Render nine actual production Canvas letterings
+        run: node tests/gallery-family-lettering-browser.mjs
+      - name: Run live gallery, floor traversal, and mobile smoke
+        run: node tests/gallery-exterior-graffiti-browser.mjs
+      - name: Commit generated bundle to review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/gallery-bundle.js
+          if git diff --cached --quiet; then
+            echo "Bundle already matches source."
+          else
+            git commit -m "Bundle nine approved graffiti families for live tower"
+            git pull --rebase origin tower-nine-alphabet-v1
+            git push origin HEAD:tower-nine-alphabet-v1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nine-family-tower-ink-previews
+          path: |
+            artifacts/tower-az-nine-*.png
+            artifacts/tower-graffiti-*.png
+            artifacts/tower-interior-handstyle.png
+          retention-days: 7

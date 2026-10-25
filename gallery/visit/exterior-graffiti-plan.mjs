@@ -1,9 +1,10 @@
 // One stable selection per exhibition. Wall placement is independent of the
 // occupied floor and of whether the surrounding tower uses prepared meshes.
-import {createTag,planFloorTags,makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
+import {makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
+import {makeTowerFamilyTag,towerGraffitiSignature,TOWER_LETTERING_REVISION} from './tower-family-lettering.mjs';
 import {ROOM_HEIGHT} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
-import {TOWER_HANDS,pickTowerHand} from './tower-graffiti-styles.mjs';
+import {TOWER_HANDS,towerHandCycle,towerTagSlot} from './tower-graffiti-styles.mjs';
 export const GRAFFITI_WORDS=Object.freeze(['Proportion Piece','PHI','φ']);
 export const GRAFFITI_SEED='PP-TOWER-WRITING-01';
 export const WALL_MARGIN=.52;
@@ -36,7 +37,7 @@ export function exteriorWallFaces(layout,ground=false){
  return faces;
 }
 export function towerGraffitiKey(floors){
- return floors.filter(f=>f.level===0||f.level===1).map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
+ return TOWER_LETTERING_REVISION+'|'+floors.filter(f=>f.level===0||f.level===1).map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
 }
 export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2}={}){
  if(!floors.length)return [];
@@ -46,10 +47,12 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
  for(const {level,plan} of ordered){
   const faces=exteriorWallFaces(plan,level===0),wordRandom=makeRandom(seed+'|'+plan.date+'|words');
   const firstWord=wordRandom.int(0,GRAFFITI_WORDS.length-1),phase=wordRandom.int(0,31);
-  const selection=Array.from({length:TAGS_PER_PAINTED_FLOOR},(_,slot)=>{const writer=pickTowerHand(makeRandom(seed+'|'+plan.date+'|outside|'+slot));return {...planFloorTags({floorId:plan.date,seed:seed+'|slot|'+slot,hand:writer,form:'mixed',count:1})[0],slot};});
+  const styles=towerHandCycle(seed+'|'+plan.date+'|all-outside');
+  const selection=Array.from({length:TAGS_PER_PAINTED_FLOOR},(_,slot)=>
+   towerTagSlot({floorId:plan.date,seed:seed+'|slot|'+slot,slot,hand:styles[slot]}));
   for(const item of selection){
    const phrase=GRAFFITI_WORDS[(firstWord+item.slot)%GRAFFITI_WORDS.length];
-   const tag=createTag(phrase,{...item,paintWidth:2}),r=makeRandom(item.seed+'|wall');
+   const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:2}),r=makeRandom(item.seed+'|wall');
    const desiredWidth=phrase==='Proportion Piece'?r.range(5.7,6.9):phrase==='PHI'?r.range(2.4,3.5):r.range(1.5,2.1);
    const candidates=faces.map(face=>{
     const placement=fitPhiTag({bounds:tag.bounds,desiredWidth,maxHeight:ROOM_HEIGHT-1.5,
@@ -87,15 +90,15 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
   const candidates=frontFaces.length?frontFaces:faces.filter(face=>face.exposed);
   const existing=marks.filter(mark=>mark.level===level);
   const occupied=new Set(existing.map(mark=>mark.hand));
-  const dialects=TOWER_HANDS;
+  const dialects=towerHandCycle(seed+'|'+plan.date+'|all-outside');
   for(let extra=0;extra<5;extra++){
    const slot=TAGS_PER_PAINTED_FLOOR+extra;
    const hand=dialects.find(id=>!occupied.has(id)) || dialects[extra%dialects.length];
-   // Eight curated writers cover ten facade tags; repeat only after exhaustion.
+   // Nine approved families cover ten facade tags; repeat only after exhaustion.
    occupied.add(hand);
-   const item=planFloorTags({floorId:plan.date,seed:seed+'|front-freehand|'+slot,hand,form:'handstyle',count:1})[0];
+   const item=towerTagSlot({floorId:plan.date,seed:seed+'|front-freehand|'+slot,slot,hand});
    const phrase=GRAFFITI_WORDS[(extra+level)%GRAFFITI_WORDS.length];
-   const tag=createTag(phrase,{...item,paintWidth:2});
+   const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:2});
    const r=makeRandom(item.seed+'|front-wall'),desiredWidth=phrase==='Proportion Piece'?r.range(3.2,4.3):phrase==='PHI'?r.range(1.7,2.5):r.range(1.1,1.6);
    // Try several phi-phased placements on each wall rather than stacking
    // every additional mark at the same five golden fractions.
@@ -128,8 +131,9 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
  }
  return marks;
 }
+export {towerGraffitiSignature};
 export function planGraffitiAtlases(marks,{lowPower=false}={}){
- const size=lowPower?1536:2048,cellWidth=size/4,cellHeight=size/8,capacity=32,padding=12;
+ const size=lowPower?1536:2048,cellWidth=size/4,cellHeight=size/8,capacity=32,padding=13;
  return Array.from({length:Math.ceil(marks.length/capacity)},(_,page)=>({size,page,height:Math.ceil(Math.min(capacity,marks.length-page*capacity)/4)*cellHeight,
   entries:marks.slice(page*capacity,(page+1)*capacity).map((mark,index)=>{
    const aspect=mark.bounds.width/mark.bounds.height;
