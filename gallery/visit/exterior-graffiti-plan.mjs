@@ -1,7 +1,7 @@
 // One stable selection per exhibition. Wall placement is independent of the
 // occupied floor and of whether the surrounding tower uses prepared meshes.
 import {makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
-import {makeTowerFamilyTag,towerGraffitiSignature} from './tower-family-lettering.mjs';
+import {makeTowerFamilyTag,towerGraffitiSignature,TOWER_LETTERING_REVISION} from './tower-family-lettering.mjs';
 import {ROOM_HEIGHT} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
 import {TOWER_HANDS,towerHandCycle,towerTagSlot} from './tower-graffiti-styles.mjs';
@@ -37,7 +37,7 @@ export function exteriorWallFaces(layout,ground=false){
  return faces;
 }
 export function towerGraffitiKey(floors){
- return floors.filter(f=>f.level===0||f.level===1).map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
+ return TOWER_LETTERING_REVISION+'|'+floors.filter(f=>f.level===0||f.level===1).map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
 }
 export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2}={}){
  if(!floors.length)return [];
