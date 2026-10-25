@@ -29,6 +29,26 @@ function artistAlphabet(id,ch,m,glyph){
  const {height:H,width:W,short:a,long:b,unit:u}=m,v=W/m.ratio,k=W/m.ratio**2;
  const upper=a*.2,mid=H*.55;
  const forms={
+  skofe:{
+   // Full, rounded bowls with a swinging upper return and open terminals.
+   S:[path([W,a+u],[v,0],[u,0],[0,a],[v,mid],[W-u,mid+u],[W,H-u],[v,H+u],[0,H])],
+   K:[path([0,H],[0,0],[u,-u],[v,u],[0,mid]),path([W,a-u],[u,mid],[W+u,H])],
+   O:[oval(W*.5,H*.49,W*.52,H*.47,-Math.PI*.3,Math.PI*1.68)],
+   F:[path([W,0],[u,0],[0,u],[0,H]),path([0,mid],[W-u,mid-u])],
+   E:[path([W,a],[0,a],[0,H],[W,H]),path([0,mid],[v,mid])],
+   M:[path([0,H],[0,u],[u,0],[v,mid],[W*.72,u],[W,0],[W,H])],
+   U:[path([0,0],[0,H-u],[v,H+u],[W,H-u],[W,0])]
+  },
+  skuf:{
+   // Compressed, squared-off quick returns. Different movement topology.
+   S:[angular([W,0],[0,0],[0,mid],[W,mid],[W,H],[0,H])],
+   K:[angular([0,0],[0,H]),angular([W,0],[u,mid],[W,H])],
+   O:[path([0,a],[v,0],[W,0],[W,H-u],[v,H],[0,H-u],[0,a])],
+   F:[angular([W,0],[0,0],[0,H]),angular([0,mid],[v,mid])],
+   E:[angular([W,0],[0,0],[0,H],[W,H]),angular([0,mid],[v,mid])],
+   M:[angular([0,H],[0,0],[v,mid],[W*.7,0],[W,H])],
+   U:[angular([0,0],[0,H],[W,H],[W,0])]
+  },
   faust:{
    M:[path([0,H],[u,a],[v,mid],[v,a],[W-u,a],[W,H])],
    U:[path([0,a],[u,H-u],[v,H],[W,H-u],[W+u,a-u])],
@@ -73,6 +93,8 @@ function artistAlphabet(id,ch,m,glyph){
 
 const gestures={
   // Each of these has a contrasting pen habit, applied to every letter.
+  skofe:{stem:.04,terminal:.7,elastic:.17,cut:0},
+  skuf:{stem:0,terminal:0,elastic:0,cut:1},
   faust:{stem:.22,terminal:.8,elastic:.11,cut:0},
   sicoer:{stem:.08,terminal:.46,elastic:.24,cut:0},
   gorey:{stem:0,terminal:.1,elastic:.31,cut:0},
