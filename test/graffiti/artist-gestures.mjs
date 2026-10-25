@@ -91,6 +91,48 @@ function artistAlphabet(id,ch,m,glyph){
  return forms[id]?.[ch]?{...glyph,strokes:forms[id][ch]}:glyph;
 }
 
+
+// Complete A-Z writer grammar: every character receives a deterministic,
+// artist-specific construction pass, including letters without bespoke paths.
+// Stroke order and topology remain legible; no randomness or font fallback.
+const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const hash=(value)=>{let h=2166136261;for(const c of value){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
+export function writerAlphabetLetter(ch,glyph,style,m){
+ if(!alphabet.includes(ch))return glyph;
+ const H=m.height,W=m.width,u=m.unit;
+ const seed=hash(style.id+'|'+ch),identity=hash(style.id);
+ const pick=(bits,scale=1)=>(((bits>>>0)%1001)/500-1)*scale;
+ const weight=.16+(identity%13)/35;
+ const bend=pick(seed,weight)*u,offset=pick(seed>>>7,.22)*u;
+ const topBias=pick(identity>>>6,.16)*u;
+ const slice=2+seed%3;
+ const strokes=glyph.strokes.map((stroke,si)=>{
+  const ps=stroke.points;
+  if(ps.length<2)return {...stroke,points:ps.map(p=>({...p}))};
+  const smooth=style.shape==='angular'?false:stroke.smooth!==false;
+  const points=[];
+  for(let j=0;j<ps.length-1;j++){
+   const a=ps[j],b=ps[j+1];
+   points.push({...a});
+   // Add a controlled bend on each segment, making it a constructed
+   // movement rather than an unmodified common skeleton.
+   const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy)||1;
+   const amount=bend*(si%2?-.7:1);
+   const t=(j+si+slice)%3===0?.42:.56;
+   points.push({x:a.x+dx*t-dy/length*amount,
+                y:a.y+dy*t+dx/length*amount+topBias*(1-a.y/H)});
+  }
+  points.push({...ps.at(-1)});
+  const shaped=points.map((p,j)=>({
+   x:p.x+offset*Math.sin(Math.PI*p.y/H+si*.7),
+   y:p.y+topBias*Math.sin(Math.PI*p.x/W)
+  }));
+  return {...stroke,smooth,points:shaped};
+ });
+ return {...glyph,strokes};
+}
+export const WRITER_ALPHABET=alphabet;
+
 const gestures={
   // Each of these has a contrasting pen habit, applied to every letter.
   skofe:{stem:.04,terminal:.7,elastic:.17,cut:0},
@@ -105,9 +147,9 @@ const gestures={
   veefer:{stem:.04,terminal:.52,elastic:.2,cut:0}
 };
 export function applyArtistGesture(ch,glyph,style,m){
-  if(style.id==='guess')return guess(ch,m,glyph);
+  if(style.id==='guess')return writerAlphabetLetter(ch,guess(ch,m,glyph),style,m);
   glyph=artistAlphabet(style.id,ch,m,glyph);
-  const recipe=gestures[style.id];if(!recipe)return glyph;
+  const recipe=gestures[style.id];if(!recipe)return writerAlphabetLetter(ch,glyph,style,m);
   const {height:H,width:W,unit:u}=m;
   let strokes=mapPoints(glyph.strokes,(p,i,j,n)=>({
     x:p.x+recipe.elastic*u*Math.sin(p.y/H*Math.PI*2+i*1.4),
@@ -125,5 +167,5 @@ export function applyArtistGesture(ch,glyph,style,m){
     }
   }
   if(recipe.cut)strokes=strokes.map(s=>({...s,smooth:false}));
-  return {...glyph,strokes};
+  return writerAlphabetLetter(ch,{...glyph,strokes},style,m);
 }
