@@ -1,0 +1,37 @@
+name: Action V3 and walkthrough release parity
+on:
+  push:
+    branches: [fix/action-replay-parity]
+  pull_request:
+    paths:
+      - 'tests/action-v3-*'
+      - '.github/workflows/action-v3-parity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          node tests/action-v3-export.test.mjs
+          node tests/studio-walkthrough-link.test.mjs
+          node tests/oil-v5-release.test.mjs
+          node --test cloudflare/social-preview/tests/worker.test.mjs
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/action-parity-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - run: node tests/action-v3-parity-browser.mjs
+      - run: node tests/material-walkthrough-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: action-v3-parity-results
+          path: action-v3-parity-results/

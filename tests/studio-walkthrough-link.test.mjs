@@ -27,15 +27,18 @@ test('all artwork parameters, version, materials and framing survive the handoff
  assert.match(replay,/incoming\.get\('sheet'\)==='phi'/);
  assert.match(replay,/originalMaterial/);
  assert.match(replay,/editorURL\.searchParams/);
- assert.match(replay,/target\.searchParams\.set\('seed'/);
+ assert.match(replay,/Object\.entries\(editorKeys\)/);
+ assert.match(replay,/target\.searchParams\.set\(key/);
 });
 
 test('action paint replay uses real material layers and blank first stage',()=>{
  assert.match(replay,/action-painting-v1\.js/);
- assert.match(replay,/A\.actionPaintingFromPaths\(painting,paths,s,\.75/);
- assert.match(replay,/if\(layers===0\)/);
- assert.ok(replay.includes('const stepTotal=()=>isAction()?actionLayerCount:capturedMaterial()'));
+ assert.match(replay,/version===3\?A\.renderActionPaintingV3:A\.renderActionPainting/);
+ assert.match(replay,/save\('The blank page',blank\)/);
+ assert.match(replay,/const stepTotal=\(\)=>isAction\(\)\|\|capturedMaterial\(\)/);
+ assert.match(replay,/onStage:\(label,canvas\)=>save\(label,canvas\)/);
  assert.match(replay,/materialFromURL/);
  assert.match(replay,/id="replayMaterial"/);
  assert.match(replay,/id="continueEditing"/);
 });
+

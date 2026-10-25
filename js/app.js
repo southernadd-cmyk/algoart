@@ -1482,7 +1482,9 @@ function loadExactArchivedArtwork(id){
       legacyOilV2Link=archivedWater==='oil-v2';
       oilV4Link=archivedWater==='oil-v4';
       oilV5Link=archivedWater==='oil-v5';
-      $('materialStyle').value=['oil-v1','oil-v2','oil-v3','oil-v4','oil-v5'].includes(archivedWater)?'oil':
+      var archivedAction=['action-v1','action-v2','action-v3'].includes(archivedWater);
+      if(archivedAction)actionPaintingRevision=Number(archivedWater.slice(-1));
+      $('materialStyle').value=archivedAction?'action':['oil-v1','oil-v2','oil-v3','oil-v4','oil-v5'].includes(archivedWater)?'oil':
         ['watercolour-v2r','watercolour-v2s','watercolour-v2t'].includes(archivedWater)
         ?'watercolour':archivedTissueVersion>=2||entry.material==='watercolor'||
           archivedMaterialURL.searchParams.get('watercolor')==='1'?'tissue':'marker';
