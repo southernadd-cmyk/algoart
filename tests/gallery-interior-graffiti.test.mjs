@@ -21,6 +21,8 @@ test('every floor gets three to five small handstyles on painting-free wall face
   const input=exhibition(floor,level,mode),marks=planInteriorGraffiti(input),art=new Set(input.hangs.map(h=>h.roomIndex+':'+h.surface));
   assert.ok(marks.length>=3&&marks.length<=5);assert.deepEqual(planInteriorGraffiti(input),marks);
   for(const m of marks){assert.ok(TOWER_HANDS.includes(m.hand));assert.equal(m.surface,'interior');assert.equal(m.form,'handstyle');assert.ok(!art.has(m.face.id));assert.ok(m.width<=1.35&&m.height<=.450001);assert.ok(m.width>0&&m.height>0);}
+  assert.equal(new Set(marks.map(m=>m.hand)).size,marks.length,'Each floor must use a different A–Z writer');
+  assert.ok(marks.every(m=>m.tag.renderer==='az-nine-v1'&&m.tag.version==='az-nine-v1-20261025'));
   const availableRooms=new Set(interiorWallFaces(input.layout,input.hangs).map(f=>f.roomIndex));
   assert.equal(new Set(marks.map(m=>m.face.roomIndex)).size,Math.min(availableRooms.size,marks.length));
   assert.ok(marks.some(m=>m.rotation<0)&&marks.some(m=>m.rotation>0));
@@ -67,4 +69,16 @@ test('interior geometry faces into the room and remains flush with the plaster',
   assert.ok(Math.abs(centre.sub(new THREE.Vector3(m.position.x,m.position.y,m.position.z)).dot(normal)-.173)<1e-5);
  }
  g.dispose();
+});
+
+test('new indoor floor seeds never require a default font or older writer masks',()=>{
+ const expected=new Set(TOWER_HANDS);
+ for(const [level,floor] of floors.entries()){
+  const {layout,hangs}=exhibition(floor,level);
+  const tags=planInteriorGraffiti({layout,hangs,level});
+  for(const mark of tags){
+   assert.ok(expected.has(mark.hand));assert.equal(mark.tag.family,mark.hand);
+   assert.ok(mark.tag.plan.letters.every(l=>l.glyph.shapes.length>0));
+  }
+ }
 });
