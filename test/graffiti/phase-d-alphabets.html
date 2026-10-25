@@ -66,7 +66,7 @@ button{cursor:pointer}button:hover,button:focus-visible{background:#dfded2}
 <p id="detail-meta" class="meta"></p>
 <div class="actions">
 <label>Family<select id="family"></select></label>
-<button type="button" id="export-alphabet">Export all 26 letters (SVG)</button>
+<button type="button" id="export-alphabet">Export A–Z + φ (SVG)</button>
 <button type="button" id="export-word">Export comparison word (SVG)</button>
 </div>
 <div id="letters" class="letters" aria-label="Complete A to Z letter sheet"></div>
@@ -89,7 +89,7 @@ by('family').value=chosen;
 function opts(){return {seed:by('seed').value,variation:.04,construction:by('mode').value==='outline',joins:by('joins').value==='on'}}
 function drawDetail(){
  const f=getFamily(chosen),o=opts();
- by('detail-title').textContent=f.name+' — A to Z';
+ by('detail-title').textContent=f.name+' — A to Z + φ';
  by('detail-description').textContent=f.notes.join(' · ');
  by('detail-meta').textContent='Primary research sheet '+f.primary+' · alternate sheets '+f.anchors.filter(x=>x!==f.primary).join(', ')+' · '+f.technique+' geometry';
  by('family').value=chosen;
@@ -99,7 +99,7 @@ function drawDetail(){
   const div=document.createElement('div');div.dataset.word=w;
   div.append(wordSvg(chosen,w,o));holder.append(div);
  }
- by('status').textContent='26 original capitals · stable seed '+o.seed+' · proposed family, not production';
+ by('status').textContent='26 original capitals + authored φ · stable seed '+o.seed+' · proposed family, not production';
  document.querySelectorAll('.specimen').forEach(card=>card.classList.toggle('active',card.dataset.family===chosen));
 }
 function redraw(){const oldScroll=window.scrollY;
@@ -122,8 +122,8 @@ by('another').addEventListener('click',()=>{variants++;by('seed').value='PP-61-S
 by('export-alphabet').addEventListener('click',()=>{
  const family=getFamily(chosen),o=opts(),s=document.createElementNS('http://www.w3.org/2000/svg','svg');
  s.setAttribute('viewBox','0 0 1040 830');s.style.color=family.ink;
- for(let i=0;i<26;i++){
-  const ch=String.fromCharCode(65+i),col=i%7,row=Math.floor(i/7);
+ for(let i=0;i<27;i++){
+  const ch=i===26?'Φ':String.fromCharCode(65+i),col=i%7,row=Math.floor(i/7);
   const group=document.createElementNS(s.namespaceURI,'g');
   group.setAttribute('transform','translate('+(col*144+20)+' '+(row*199+16)+') scale(.82)');
   for(const child of [...letterSvg(chosen,ch,{construction:o.construction}).children])group.append(child.cloneNode(true));
