@@ -1,0 +1,118 @@
+name: Publish nine-family historical tower atlases
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gallery/visit/tower-family-lettering.mjs'
+      - 'gallery/visit/tower-graffiti-styles.mjs'
+      - 'gallery/visit/exterior-graffiti-plan.mjs'
+      - 'gallery/visit/interior-graffiti-plan.mjs'
+      - '.github/workflows/gallery-nine-family-backfill.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: nine-family-backfill-live
+  cancel-in-progress: false
+jobs:
+  bake:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: true
+      matrix:
+        part: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start local atlas site
+        run: |
+          python3 -m http.server 4173 >/tmp/gallery-az9-atlas-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Rebuild assigned historic floors from nine A-Z families
+        env:
+          CHUNK: ${{ matrix.part }}
+        run: |
+          mkdir -p artifacts-nine
+          node --input-type=module <<'NODE' > /tmp/nine-family-floors
+          import fs from 'node:fs';
+          const floors=JSON.parse(fs.readFileSync('gallery/tower-layouts.json')).floors;
+          floors.forEach((f,index)=>{if(index%3===Number(process.env.CHUNK))console.log(f.date)});
+          NODE
+          while read -r DATE; do
+            [ -n "$DATE" ] || continue
+            node automation/build-gallery-graffiti.mjs --date="$DATE" --indoor-only
+            mkdir -p "artifacts-nine/gallery/$DATE/3d"
+            cp -a "gallery/$DATE/3d/graffiti" "artifacts-nine/gallery/$DATE/3d/"
+          done < /tmp/nine-family-floors
+      - name: Rebuild ground and first floor exterior atlases once
+        if: ${{ matrix.part == 0 }}
+        run: |
+          DAY=$(node -e "const fs=require('fs');process.stdout.write(JSON.parse(fs.readFileSync('gallery/tower-layouts.json')).floors.at(-1).date)")
+          node automation/build-gallery-graffiti.mjs --date="$DAY" --exterior-only
+          mkdir -p artifacts-nine/gallery/visit/graffiti-assets
+          cp -a gallery/visit/graffiti-assets/exterior artifacts-nine/gallery/visit/graffiti-assets/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nine-family-atlases-part-${{ matrix.part }}
+          path: artifacts-nine/
+          retention-days: 3
+  publish:
+    needs: bake
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nine-family-atlases-part-*
+          path: .
+          merge-multiple: true
+      - name: Verify all historical atlas files and version signatures
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import {TOWER_LETTERING_REVISION} from './gallery/visit/tower-family-lettering.mjs';
+          const floors=JSON.parse(fs.readFileSync('gallery/tower-layouts.json')).floors;
+          const bases=floors.map(f=>'gallery/'+f.date+'/3d/graffiti');
+          bases.push('gallery/visit/graffiti-assets/exterior');
+          let pages=0;
+          for(const base of bases)for(const target of ['desktop','mobile']){
+            const directory=base+'/'+target;
+            const manifest=JSON.parse(fs.readFileSync(directory+'/manifest.json'));
+            if(manifest.version!==1||manifest.letteringRevision!==TOWER_LETTERING_REVISION||!manifest.signature.startsWith(TOWER_LETTERING_REVISION+'|'))throw Error('Wrong atlas release '+directory);
+            if(!manifest.marks.length||!manifest.pages.length)throw Error('Empty atlas '+directory);
+            for(const mark of manifest.marks)if(!/^[A-I]$/.test(mark.hand))throw Error('Outdated writer '+directory);
+            for(const page of manifest.pages){
+              const data=fs.readFileSync(directory+'/'+page.file);
+              if(data.length<100||data.subarray(0,8).toString('hex')!=='89504e470d0a1a0a')throw Error('Bad image '+directory);
+              pages++;
+            }
+          }
+          console.log('Verified '+floors.length+' historical floors, 2 exterior facades and '+pages+' nine-family PNG atlases');
+          NODE
+      - name: Commit all updated historical graffiti to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/*/3d/graffiti/ gallery/visit/graffiti-assets/exterior/
+          if git diff --cached --quiet; then
+            echo "Nine-family PNG atlases already current."
+          else
+            git commit -m "Publish nine-family A-Z graffiti atlases for all historical tower floors"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Redeploy finished atlases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
