@@ -1,6 +1,7 @@
 // SVG geometry renderer for the original 10-family, 260-letter Phase D study.
 // No font substitution, CSS filters, tracings, external image or raster resources.
 import {getFamily,getGlyph,composeWord,LETTERS,FAMILIES} from './family-library.mjs';
+import {contextualJoinLayer} from './family-joins.mjs';
 const NS='http://www.w3.org/2000/svg',clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 function tag(name,attrs={}){
  const e=document.createElementNS(NS,name);
@@ -29,6 +30,21 @@ function inkRibbon(d,{width=6,kind='marker'}={}){
 }
 const coords=([x,y])=>x.toFixed(2)+' '+y.toFixed(2);
 function polygon(left,right){return 'M'+left.map(coords).join(' L')+' L'+right.map(coords).join(' L')+' Z'}
+function chiselRibbon(d,width){
+ const measure=tag('path',{d}),length=measure.getTotalLength();
+ if(!Number.isFinite(length)||length<.1)return tag('path',{d,fill:'none',stroke:'currentColor','stroke-width':width});
+ const count=clamp(Math.ceil(length/2),15,500),left=[],right=[];
+ // Flat near-horizontal marker tip; long low-pressure exit and squared start.
+ const angle=-10*Math.PI/180,ux=Math.cos(angle),uy=Math.sin(angle);
+ for(let i=0;i<=count;i++){
+  const u=i/count,p=measure.getPointAtLength(length*u),
+   out=1-.80*u*u*(3-2*u),entry=.82+.18*Math.min(1,u/.06),
+   r=width*out*entry/2;
+  left.push([p.x+ux*r,p.y+uy*r]);right.unshift([p.x-ux*r,p.y-uy*r]);
+ }
+ return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'evenodd',
+  'data-tool':'chisel-marker'});
+}
 function broadNib(d,width){
  const measure=tag('path',{d}),length=measure.getTotalLength();
  if(!Number.isFinite(length)||length<.1)return tag('path',{d,fill:'none',stroke:'currentColor','stroke-width':1});
@@ -56,9 +72,11 @@ function drawGlyph(f,ch,{construction=false}={}){
  const g=tag('g',{'data-letter':ch,'aria-label':ch}),glyph=getGlyph(f.id,ch);
  for(const s of glyph.shapes){
   let path;
-  if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&f.technique==='nib')
+  if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&f.technique==='chisel')
+   path=chiselRibbon(s.d,f.weight*(s.kind==='heavy'?1.26:1));
+  else if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&f.technique==='nib')
    path=broadNib(s.d,f.weight*(s.kind==='heavy'?1.35:1));
-  else if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&['marker','loop','airy','sweep'].includes(f.technique))
+  else if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&['marker','loop','airy','sweep','crosshand'].includes(f.technique))
    path=inkRibbon(s.d,{width:f.weight*(s.kind==='heavy'?1.35:1),kind:f.technique});
   else path=tag('path',{d:s.d,...strokeAttrs(f,s,construction)});
   path.setAttribute('data-gesture',s.kind);
@@ -78,15 +96,15 @@ export function letterSvg(style,letter,{construction=false}={}){
 }
 export function alphabetFragment(style,{construction=false}={}){
  const f=getFamily(style),root=document.createDocumentFragment();
- for(const ch of LETTERS){
+ for(const ch of LETTERS+'Φ'){
   const fig=document.createElement('figure');fig.className='letter';
   fig.append(letterSvg(style,ch,{construction}));
-  const caption=document.createElement('figcaption');caption.textContent=ch;fig.append(caption);
+  const caption=document.createElement('figcaption');caption.textContent=ch==='Φ'?'φ':ch;fig.append(caption);
   root.append(fig);
  }
  return root;
 }
-export function wordSvg(style,word,{seed='PP-ALPHABETS-01',variation=.04,construction=false}={}){
+export function wordSvg(style,word,{seed='PP-ALPHABETS-01',variation=.04,construction=false,joins=true}={}){
  const f=getFamily(style),plan=composeWord(style,word,{seed,variation});
  // Give letters room for long strokes and baseline excursions.
  const s=svg('-32 -35 '+(plan.width+61).toFixed(2)+' 189',f.name+' writes '+plan.word);
@@ -95,6 +113,7 @@ export function wordSvg(style,word,{seed='PP-ALPHABETS-01',variation=.04,constru
   const g=tag('g',{transform:'translate('+item.x.toFixed(3)+' '+item.y.toFixed(3)+') rotate('+item.rotation.toFixed(3)+' 38 54) matrix('+item.scale.toFixed(4)+' 0 '+f.italic.toFixed(3)+' 1 0 0)'});
   g.append(drawGlyph(f,item.ch,{construction}));s.append(g);
  }
+ s.append(contextualJoinLayer(f,plan,{seed,enabled:joins,construction}));
  return s;
 }
 export function exportSvg(element,filename='graffiti-word.svg'){
@@ -109,7 +128,7 @@ export function exportSvg(element,filename='graffiti-word.svg'){
  link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  return serialized.length;
 }
-export function renderComparison(word,{seed='PP-ALPHABETS-01',variation=.04,construction=false}={}){
+export function renderComparison(word,{seed='PP-ALPHABETS-01',variation=.04,construction=false,joins=true}={}){
  const fragment=document.createDocumentFragment();
  for(const f of FAMILIES){
   const item=document.createElement('article');item.className='specimen';item.dataset.family=f.id;
@@ -117,7 +136,7 @@ export function renderComparison(word,{seed='PP-ALPHABETS-01',variation=.04,cons
   const title=document.createElement('h3');title.textContent=f.name;header.append(title);
   const subtitle=document.createElement('p');subtitle.textContent='Source study: sheet '+f.primary+' · '+f.technique+' geometry';header.append(subtitle);
   item.append(header);
-  const holder=document.createElement('div');holder.className='word-preview';holder.append(wordSvg(f.id,word,{seed,variation,construction}));item.append(holder);
+  const holder=document.createElement('div');holder.className='word-preview';holder.append(wordSvg(f.id,word,{seed,variation,construction,joins}));item.append(holder);
   const button=document.createElement('button');button.type='button';button.dataset.family=f.id;button.textContent='See full alphabet';
   button.className='family-select';item.append(button);
   fragment.append(item);

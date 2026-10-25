@@ -30,7 +30,7 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('.specimen').length===10);
  assert.equal(await page.locator('#compare article.specimen').count(),10);
  assert.equal(await page.locator('#family option').count(),10);
- assert.equal(await page.locator('#letters figure').count(),26);
+ assert.equal(await page.locator('#letters figure').count(),27);
  for(const figure of await page.locator('#letters figure').all())
   assert.ok(await figure.locator('svg path').count()>0,'Empty glyph');
  const previews=await page.locator('.word-preview svg').all();
@@ -46,8 +46,8 @@ try{
  await page.screenshot({path:path.join(root,'artifacts/graffiti-phase-d-comparison.png'),fullPage:true});
  for(const family of 'ABCDEFGHIJ'){
   await page.locator('#family').selectOption(family);
-  assert.equal(await page.locator('#letters figure').count(),26,'Missing glyph in '+family);
-  assert.equal(await page.locator('#words > div').count(),4,'Missing word samples '+family);
+  assert.equal(await page.locator('#letters figure').count(),27,'Missing A–Z or phi glyph in '+family);
+  assert.equal(await page.locator('#words > div').count(),5,'Missing word/phi samples '+family);
   const bounds=await page.locator('#letters svg').evaluateAll(svgs=>svgs.map(s=>{
    const bbox=s.querySelector('g[data-letter]')?.getBBox(),view=s.viewBox.baseVal;
    return {x:bbox.x,y:bbox.y,right:bbox.x+bbox.width,bottom:bbox.y+bbox.height,
@@ -57,12 +57,32 @@ try{
    'Glyph exceeds SVG viewport in '+family+': '+JSON.stringify(b));
   await page.screenshot({path:path.join(root,'artifacts/graffiti-phase-d-'+family+'.png'),fullPage:true});
  }
+ const phiSamples=await page.locator('#words > div[data-word="φ"] svg').count();
+ assert.equal(phiSamples,1,'Standalone phi missing from preview');
  const wordBefore=await page.locator('#words > div').first().locator('svg').evaluate(s=>s.outerHTML);
  await page.locator('#family').selectOption('F');
  const nibPaths=await page.locator('#letters svg path[data-gesture="stroke"]').count();
  assert.ok(nibPaths>=20,'Broad-nib family missing generated stroke ribbons');
+ await page.locator('#family').selectOption('I');
+ assert.ok(await page.locator('#letters svg path[data-tool="chisel-marker"]').count()>=25,
+  'Family I is still a plain skeletal font, not a chisel brush');
+ await page.locator('#family').selectOption('J');
+ await page.locator('#word').fill('PROPORTION PIECE');
+ const joinedWord=await page.locator('#compare article[data-family="J"] .word-preview svg path[data-join]').count();
+ assert.ok(joinedWord>=1,'Kinetic family has no contextual joins');
+ await page.locator('#joins').selectOption('off');
+ assert.equal(await page.locator('#compare .word-preview svg path[data-join]').count(),0,'Disabled joins still rendered');
+ await page.locator('#joins').selectOption('on');
+ assert.ok(await page.locator('#compare article[data-family="J"] .word-preview svg path[data-join]').count()>=1,
+   'Re-enabling contextual joins failed');
+ const phiWord=await page.evaluate(async()=> {
+  const {wordSvg}=await import('./family-renderer.mjs');
+  return [...'ABCDEFGHIJ'].map(id=>wordSvg(id,'φ').querySelectorAll('g[data-letter="Φ"]').length);
+ });
+ assert.deepEqual(phiWord,Array(10).fill(1),'Phi signatures absent from composition');
+ await page.locator('#family').selectOption('F');
  await page.locator('#mode').selectOption('outline');
- assert.equal(await page.locator('#letters figure').count(),26);
+ assert.equal(await page.locator('#letters figure').count(),27);
  await page.locator('#word').fill('PROPORTION PIECE');
  assert.equal(await page.locator('#compare .specimen').count(),10);
  const [download]=await Promise.all([
@@ -76,19 +96,20 @@ try{
  assert.ok((out.match(/<path/g)||[]).length>20);
  const [sheet]=await Promise.all([page.waitForEvent('download'),page.locator('#export-alphabet').click()]);
  const letters=await fs.readFile(await sheet.path(),'utf8');
- assert.ok((letters.match(/<path/g)||[]).length>=26,'Alphabet export missing original glyph geometry');
+ assert.ok((letters.match(/<path/g)||[]).length>=27,'Alphabet export missing original glyph geometry or phi');
  await page.setViewportSize({width:390,height:844});
  await page.locator('#mode').selectOption('ink');
  await page.locator('#word').fill('MUSHROOM');
  await page.locator('#family').selectOption('J');
  const mobile=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,viewport:window.innerWidth,
-  figures:document.querySelectorAll('#letters figure').length,previews:document.querySelectorAll('.specimen').length}));
+  figures:document.querySelectorAll('#letters figure').length,previews:document.querySelectorAll('.specimen').length,phi:document.querySelector('div[data-word="φ"] svg')!==null}));
  assert.ok(mobile.scrollWidth<=mobile.viewport+2,'Horizontal mobile overflow: '+JSON.stringify(mobile));
- assert.equal(mobile.figures,26);
+ assert.equal(mobile.figures,27);
  assert.equal(mobile.previews,10);
+ assert.equal(mobile.phi,true);
  await page.screenshot({path:path.join(root,'artifacts/graffiti-phase-d-mobile.png'),fullPage:true});
  assert.deepEqual(errors,[],'Browser console errors');
- console.log(JSON.stringify({ok:true,styles:10,letters:260,uniqueRasterPreviews:new Set(imageHashes).size,
+ console.log(JSON.stringify({ok:true,styles:10,letters:260,phiStyles:10,contextualJoins:true,uniqueRasterPreviews:new Set(imageHashes).size,
   uniqueVectorPreviews:new Set(outlines).size,mobile,errors,screenshots:12},null,2));
 }catch(e){
  console.error('Phase D visual check failed',e,JSON.stringify(errors));

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {LETTERS,FAMILIES,BY_ID,getFamily,getGlyph,composeWord,auditFamilies,stableNoise} from './family-library.mjs';
+import {PHI_BY_FAMILY} from './family-symbols.mjs';
+import {joinPolicy,shouldConsiderJoin,CONNECTING_FAMILIES} from './family-joins.mjs';
 const STYLES='ABCDEFGHIJ';
 function assertPath(d,where){
  const regex=/[MLCQZ]|[-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?/g;
@@ -57,7 +59,7 @@ test('The anatomical styles use different construction systems, not just marker 
  assert.equal(getFamily('E').technique,'gothic');
  assert.equal(getFamily('F').technique,'nib');
  assert.equal(getFamily('H').technique,'fragment');
- assert.equal(getFamily('I').technique,'airy');
+ assert.equal(getFamily('I').technique,'chisel');
  const audit=auditFamilies();
  assert.equal(audit.length,10);
  assert.ok(audit.every(x=>x.uniqueLetters===26));
@@ -67,9 +69,9 @@ test('The anatomical styles use different construction systems, not just marker 
  assert.equal(filled('B'),0);assert.equal(filled('I'),0);
 });
 test('All test words work across every alphabet, without fallback lettering',()=>{
- for(const f of FAMILIES)for(const word of ['SKUF','PHI','MUSHROOM','PROPORTION PIECE','ABCDEFGHIJKLMNOPQRSTUVWXYZ']){
+ for(const f of FAMILIES)for(const word of ['SKUF','PHI','φ','MUSHROOM','PROPORTION PIECE','ABCDEFGHIJKLMNOPQRSTUVWXYZ']){
   const planned=composeWord(f.id,word);
-  assert.equal(planned.letters.map(x=>x.ch).join(''),word.replace(/ /g,''));
+  assert.equal(planned.letters.map(x=>x.ch).join(''),word.toUpperCase().replace(/ /g,''));
   assert.ok(planned.width>80);
   assert.ok(planned.letters.every(x=>x.glyph===getGlyph(f.id,x.ch)));
  }
@@ -91,4 +93,58 @@ test('Unknown style, invalid text and excessive variation are rejected',()=>{
  assert.throws(()=>getGlyph('A','6'),RangeError);
  assert.throws(()=>composeWord('A','1234'),RangeError);
  assert.throws(()=>composeWord('A','TAG',{variation:.5}),RangeError);
+});
+
+test('Ten independent phi signatures are not one shared copied shape',()=>{
+ const variants=new Set();
+ for(const f of FAMILIES){
+  const glyph=getGlyph(f.id,'φ');
+  assert.equal(glyph.letter,'Φ');
+  assert.equal(glyph,PHI_BY_FAMILY[f.id]);
+  assert.ok(glyph.shapes.length>=2,f.id);
+  for(const shape of glyph.shapes)assertPath(shape.d,f.id+' Φ');
+  const signature=glyph.shapes.map(s=>s.d).join('|');
+  assert.ok(!variants.has(signature),'Repeated phi signature in '+f.id);
+  variants.add(signature);
+  const word=composeWord(f.id,'φ PHI');
+  assert.equal(word.letters.map(x=>x.ch).join(''),'ΦPHI');
+ }
+ assert.equal(variants.size,10);
+});
+test('Only appropriate families and adjacent letters may receive contextual joins',()=>{
+ assert.deepEqual(CONNECTING_FAMILIES,['A','B','F','G','J']);
+ for(const id of 'CDEHI')assert.equal(joinPolicy(id),null);
+ for(const id of CONNECTING_FAMILIES){
+  assert.ok(joinPolicy(id).width>0);
+  const doc=composeWord(id,'MUSHROOM',{seed:'fixed'});
+  const first=doc.letters[0],second=doc.letters[1];
+  assert.equal(shouldConsiderJoin(id,first,second,'fixed'),shouldConsiderJoin(id,first,second,'fixed'));
+  assert.equal(shouldConsiderJoin(id,first,{...second,index:second.index+1},'fixed'),false);
+  assert.equal(shouldConsiderJoin(id,first,{...second,ch:'Φ'},'fixed'),false);
+ }
+});
+test('Reference-informed weak families were rebuilt, not simply recoloured',()=>{
+ const b=getFamily('B'),i=getFamily('I');
+ assert.equal(b.technique,'crosshand');
+ assert.equal(i.technique,'chisel');
+ assert.ok(b.weight>=6);
+ assert.ok(i.weight>=10);
+ assert.ok(Object.values(b.glyphs).every(g=>g.shapes.length>=2));
+ assert.ok(Object.values(i.glyphs).every(g=>g.shapes.length>=2));
+});
+
+test('Long crowded words gain tracking without disturbing fixed seed or detached alphabets',()=>{
+ for(const id of ['A','B','F','G','J']){
+  const short=composeWord(id,'SKUF',{variation:0});
+  const long=composeWord(id,'SKUFROOM',{variation:0});
+  const shortStep=short.letters[1].x-short.letters[0].x;
+  const longStep=long.letters[1].x-long.letters[0].x;
+  assert.ok(longStep>shortStep, id+' should expand long word tracking');
+  assert.deepEqual(long,composeWord(id,'SKUFROOM',{variation:0}));
+ }
+ const detachedShort=composeWord('I','SKUF',{variation:0});
+ const detachedLong=composeWord('I','SKUFROOM',{variation:0});
+ const shortStep=detachedShort.letters[1].x-detachedShort.letters[0].x;
+ const longStep=detachedLong.letters[1].x-detachedLong.letters[0].x;
+ assert.equal(shortStep,longStep,'Chisel lettering must preserve spaced individual forms');
 });
