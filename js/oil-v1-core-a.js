@@ -13,7 +13,10 @@ window.AlgoArt=window.AlgoArt||{};
 var PI=Math.PI,TAU=PI*2;
 function minmax(x,a,b){return Math.max(a,Math.min(b,x))}
 function lerp(a,b,t){return a+(b-a)*t}
-function mix(a,b,t){return a.map(function(v,i){return Math.round(lerp(v,b[i],t))})}
+function mix(a,b,t){
+  if(A.oilPigmentActive?.tone)return A.oilPigmentActive.tone(a,b,t);
+  return a.map(function(v,i){return Math.round(lerp(v,b[i],t))});
+}
 function css(c){return 'rgb('+c.map(function(v){return minmax(Math.round(v),0,255)}).join(',')+')'}
 function hexRGB(h){
   var m=String(h).match(/^#([\da-f]{6})$/i);
@@ -575,7 +578,9 @@ function dragCrossingPigment(pig,mask,crossings,pts,width,rgb,r,options){
   for(var i=0;i<crossings.length;i++){
     var crossing=crossings[i],at=crossing.at,p=pts[at],
         before=pts[Math.max(0,at-1)],after=pts[Math.min(pts.length-1,at+1)],
-        angle=tangent(before,after),colour=mix(rgb,crossing.colour,.48+.36*strength),
+        angle=tangent(before,after),colour=A.oilPigmentActive?.mix?
+          A.oilPigmentActive.mix(rgb,crossing.colour,.48+.36*strength):
+          mix(rgb,crossing.colour,.48+.36*strength),
         length=width*(.72+1.20*strength),band=width*(.14+.17*strength),
         ahead=shift(p,angle,length*.49);
     for(var j=0;j<3;j++){
@@ -595,7 +600,7 @@ function paintOne(pig,mask,ch,r,index,options,field,sw,sh,scale,mode){
       thickness=minmax(options.thickness??.90,0,1),
       nominal=minmax(6+ch.width*1.8,9,58),
       width=nominal*(1+thickness*.92)*r.range(.90,1.08),
-      rgb=ch.rgb,edge=width*.85;
+      rgb=A.oilPigmentActive?A.oilPigmentActive.mapRGB(ch.rgb):ch.rgb,edge=width*.85;
   var xs=pts.map(function(p){return p.x}),
       ys=pts.map(function(p){return p.y});
   var x0=minmax(Math.floor((Math.min.apply(null,xs)-edge)*scale)-3,0,sw-1),

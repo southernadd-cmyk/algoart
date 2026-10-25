@@ -3643,7 +3643,10 @@ window.AlgoArt=window.AlgoArt||{};
 var PI=Math.PI,TAU=PI*2;
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function hex(c){return 'rgb('+c.map(function(v){return Math.round(clamp(v,0,255))}).join(',')+')'}
-function blend(a,b,t){return a.map(function(v,i){return Math.round(v*(1-t)+b[i]*t)})}
+function blend(a,b,t){
+  if(A.oilPigmentActive?.tone)return A.oilPigmentActive.tone(a,b,t);
+  return a.map(function(v,i){return Math.round(v*(1-t)+b[i]*t)});
+}
 function rng(seed){return A.makeR(String(seed))}
 function point(c,d){return {x:c.x+Math.cos(c.angle)*d,y:c.y+Math.sin(c.angle)*d}}
 function shifted(p,angle,d){return{x:p.x+Math.cos(angle)*d,y:p.y+Math.sin(angle)*d}}
