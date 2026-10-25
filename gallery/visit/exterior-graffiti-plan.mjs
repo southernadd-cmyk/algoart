@@ -133,7 +133,7 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
 }
 export {towerGraffitiSignature};
 export function planGraffitiAtlases(marks,{lowPower=false}={}){
- const size=lowPower?1536:2048,cellWidth=size/4,cellHeight=size/8,capacity=32,padding=12;
+ const size=lowPower?1536:2048,cellWidth=size/4,cellHeight=size/8,capacity=32,padding=13;
  return Array.from({length:Math.ceil(marks.length/capacity)},(_,page)=>({size,page,height:Math.ceil(Math.min(capacity,marks.length-page*capacity)/4)*cellHeight,
   entries:marks.slice(page*capacity,(page+1)*capacity).map((mark,index)=>{
    const aspect=mark.bounds.width/mark.bounds.height;
