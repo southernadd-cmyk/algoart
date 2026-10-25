@@ -129,7 +129,7 @@ rendered. These are original procedural interpretations of documented traits,
 not complete reconstructed alphabets by those writers. The existing three
 hands remain available. Different writers selects from all 53 profiles.
 
-Every floor still receives one or two tag objects. The KATSU study uses
+The generic specimen planner produces one or two tag objects per call. The KATSU study uses
 interlocking strokes within one word; it does not repeat the whole tag four
 times and inflate the floor's visible tag count. Appending a new floor does
 not change an existing floor's plan.
@@ -166,16 +166,17 @@ These are design observations, not claims that the reference artists used phi.
 The sources are linked in the specimen. Reference photos were inspected for
 research; they are not bundled in the site or used as generated tag textures.
 
-`planFloorTags({ floorId, seed, text, hand, ink, form })` always returns **one or two
-tags for each floor**, including every upper floor. Use a stable exhibition date
-as `floorId` when integrating into the tower. Never use the number of floors or
+`planFloorTags({ floorId, seed, text, hand, ink, form })` returns **one or two
+tags per call** for the writing specimen. The tower builds fifteen separately
+seeded selections on each of its two painted floors. A stable exhibition date
+and slot identify each selection. Never use the number of floors or
 a ground-level visibility condition to seed the plan. A floor's selection is
 independent of tower growth. `text` may be blank to choose from the vocabulary.
 
 The floor browser previews the writing on one specimen wall. The live tower
 now uses this same engine through `gallery/visit/exterior-graffiti-plan.mjs`
-and `exterior-graffiti.mjs`. Every exhibition receives one or two marks from
-"Proportion Piece", "PHI" and "φ". The phrase, writer, lettering form, ink and
+and `exterior-graffiti.mjs`. The ground and first floors each receive fifteen overlapping marks from
+"Proportion Piece", "PHI" and "φ"; higher floors stay clear. The phrase, writer, lettering form, ink and
 wall are seeded by the exhibition date; adding floors preserves existing work.
 
 Marks occupy solid exterior wall faces, clear of corners, doorways and lift

@@ -12,7 +12,7 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import { resolveStudyMaterial } from './study-material.mjs';
-import { createExteriorLandscape } from './environment-render.mjs?v=soft-horizon-feather-20261022';
+import { createExteriorLandscape } from './environment-render.mjs?v=city-cards-20261025';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
@@ -982,8 +982,11 @@ function constructGallery(layout, studies) {
   // Lightweight, locally generated buff brick: no network texture request.
   // Shared CC0 1K scan: reuse the existing material across all wall faces.
   exteriorBrick=galleryFinish.exteriorBrick;
+  const occupiedArchitecture=new THREE.Box3();
   for(const room of layout.rooms){
+    const firstRoomObject=scene.children.length;
     addRoom(room,room.index,layout.rooms.length);
+    for(const object of scene.children.slice(firstRoomObject))occupiedArchitecture.expandByObject(object);
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
       deferredGalleryJobs.push(()=>hangArt(room,byId.get(hanging.studyId),hanging));
     for(const placement of sculptures.filter(p=>p.roomIndex===room.index)){
@@ -1035,8 +1038,9 @@ function constructGallery(layout, studies) {
       outward,transverse:{x:outward.z,z:-outward.x},
       halfWidth:23,halfDepth:19,level:groundEntry.y};
   })():null;
-  createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower,
+  const exteriorPlan=createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower,
     protectedLayouts:exteriorFloorPlans.map(f=>f.plan),approach:entryApproach,plaza:entryPlaza});
+  if(GALLERY_DEBUG)window.__galleryBackdrop={...exteriorPlan.backdrop};
   // Safety invariant: the exterior is a single paved square. No narrow,
   // longitudinal deck/stripe may overlay the centre of the entrance approach.
   // This catches both the former 29m approach slab and the 38m centre-strip
@@ -1213,6 +1217,10 @@ function constructGallery(layout, studies) {
   // This reports missing geometry separately from a camera/framing problem.
   tower.updateMatrixWorld(true);
   const towerBounds=new THREE.Box3().setFromObject(tower);
+  // The occupied floor is built separately from the archived tower batch.
+  // Include its actual shell when checking the roofline, especially when
+  // visiting the highest floor without any upper-storey paint overlays.
+  towerBounds.union(occupiedArchitecture);
   const expectedTop=(archiveDates.length-1)*FLOOR_SPACING+ROOM_HEIGHT;
   const actualTop=towerBounds.max.y;
   const towerSummary={

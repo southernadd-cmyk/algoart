@@ -25,21 +25,24 @@ await fs.mkdir(path.join(root,'artifacts'),{recursive:true});
 const identity=marks=>marks.map(m=>({id:m.id,date:m.date,phrase:m.phrase,hand:m.hand,form:m.form,face:m.face.id,width:m.width,height:m.height,rotation:m.rotation}));
 async function open({fallback=false,mobile=false,date=''}={}){
  const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:1000},deviceScaleFactor:1,ignoreHTTPSErrors:true,isMobile:mobile,hasTouch:mobile});
- const page=await context.newPage(),errors=[],geometry=[];
+ const page=await context.newPage(),errors=[],geometry=[],panoramaRequests=[];
+ page.on('request',r=>{if(/day-environment-hdri/.test(r.url()))panoramaRequests.push(r.url());});
  page.on('pageerror',e=>errors.push(e.message));
- page.on('console',async m=>{if(m.type()==='error'&&/Shader Error|WebGLProgram|paint failed/i.test(m.text()))errors.push(m.text());if(m.text().startsWith('[Gallery tower geometry]'))geometry.push(await m.args()[1].jsonValue());});
+ page.on('console',async m=>{if(m.type()==='error'&&/Shader Error|WebGLProgram|paint failed|Missing upper floors/i.test(m.text()))errors.push(m.text());if(m.text().startsWith('[Gallery tower geometry]'))geometry.push(await m.args()[1].jsonValue());});
  if(fallback)await page.route('**/tower-geometry.bin.gz*',r=>r.fulfill({status:404,body:'Forced missing optional archive pack'}));
  const started=Date.now();await page.goto(origin+'/gallery/visit/?debug=1'+(date?'&date='+date:''),{waitUntil:'domcontentloaded',timeout:60000});
  await page.waitForFunction(()=>!document.getElementById('enter').disabled,null,{timeout:90000});
  const readyMs=Date.now()-started;
  await page.waitForFunction(()=>window.__galleryGraffiti?.diagnostics().pending===0,null,{timeout:90000});
- const state=await page.evaluate(()=>({diagnostics:window.__galleryGraffiti.diagnostics(),marks:window.__galleryGraffiti.marks(),aspect:document.getElementById('world').width/document.getElementById('world').height,cssAspect:document.getElementById('world').getBoundingClientRect().width/document.getElementById('world').getBoundingClientRect().height}));
+ const state=await page.evaluate(()=>({diagnostics:window.__galleryGraffiti.diagnostics(),marks:window.__galleryGraffiti.marks(),backdrop:window.__galleryBackdrop,aspect:document.getElementById('world').width/document.getElementById('world').height,cssAspect:document.getElementById('world').getBoundingClientRect().width/document.getElementById('world').getBoundingClientRect().height}));
  assert.equal(state.diagnostics.errors.length,0);assert.equal(state.diagnostics.painted,state.marks.length);
- assert.equal(new Set(state.marks.map(m=>m.date)).size,dates.length);
- for(const date of dates)assert.ok([1,2].includes(state.marks.filter(m=>m.date===date).length));
+ assert.equal(new Set(state.marks.map(m=>m.date)).size,Math.min(2,dates.length));
+ for(const [level,date] of dates.entries())assert.equal(state.marks.filter(m=>m.date===date).length,level<2?15:0);
+ assert.equal(state.backdrop.source,'procedural-city');assert.equal(state.backdrop.width,mobile?512:1024);assert.equal(state.backdrop.height,mobile?128:256);
  assert.deepEqual(new Set(state.marks.map(m=>m.phrase)),new Set(['Proportion Piece','PHI','φ']));
  assert.equal(state.diagnostics.pages,Math.ceil(state.marks.length/32));assert.ok(Math.abs(state.aspect-state.cssAspect)<.01);
- console.log(JSON.stringify({stage:'wall-ready',fallback,mobile,date,readyMs,geometry:geometry.at(-1),paint:state.diagnostics,errors}));
+ assert.ok(geometry.at(-1).maximumY>=geometry.at(-1).expectedMaximumY-2,'Occupied and archived floors must both contribute to the tower roofline');
+ assert.deepEqual(panoramaRequests,[]);console.log(JSON.stringify({stage:'wall-ready',fallback,mobile,date,readyMs,geometry:geometry.at(-1),paint:state.diagnostics,backdrop:state.backdrop,errors}));
  return {page,context,state,errors,geometry,readyMs};
 }
 try{
@@ -61,8 +64,8 @@ try{
  await main.page.locator('#openLift').click();
  await main.page.locator('#liftDays button[title^="'+latest+'"]').click();
  await main.page.waitForFunction(date=>location.search.includes(date)&&document.getElementById('liftAnimation').hidden,latest,{timeout:90000});
- const after=await main.page.evaluate(()=>({diagnostics:window.__galleryGraffiti.diagnostics(),marks:window.__galleryGraffiti.marks()}));
- assert.deepEqual(identity(after.marks),identity(main.state.marks));assert.deepEqual(after.diagnostics,main.state.diagnostics,'Lift travel must reuse the painted atlas');
+ const after=await main.page.evaluate(()=>({diagnostics:window.__galleryGraffiti.diagnostics(),marks:window.__galleryGraffiti.marks(),backdrop:window.__galleryBackdrop}));
+ assert.equal(after.backdrop.textureId,main.state.backdrop.textureId);assert.equal(after.backdrop.cacheHit,true);assert.deepEqual(identity(after.marks),identity(main.state.marks));assert.deepEqual(after.diagnostics,main.state.diagnostics,'Lift travel must reuse the painted atlas');
  // Close-up of the actual archived/occupied wall meshes with the production shader.
  for(const [name,match] of [['brand',m=>m.phrase==='Proportion Piece'],['phi',m=>m.phrase==='φ'],['throwup',m=>m.form==='bubble']]){
   const index=after.marks.findIndex(match);assert.ok(index>=0);
@@ -76,5 +79,5 @@ try{
  assert.deepEqual(identity(mobile.state.marks),identity(main.state.marks));assert.ok(await mobile.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(mobile.errors,[]);
  await mobile.page.evaluate(()=>{document.getElementById('welcome').hidden=true;window.__galleryGraffiti.preview(0);});
  await mobile.page.screenshot({path:path.join(root,'artifacts/tower-graffiti-mobile.png')});await mobile.context.close();
- console.log(JSON.stringify({result:'passed',floors:dates.length,marks:main.state.marks.length,pages:main.state.diagnostics.pages,desktopReadyMs:main.readyMs,mobileReadyMs:mobile.readyMs,paint:main.state.diagnostics,checks:['prepared tower','procedural fallback','active upper floor','floor travel and atlas reuse','all requested words','outward geometry and shader','mobile aspect and layout'],errors:[]}));
+ console.log(JSON.stringify({result:'passed',floors:dates.length,marks:main.state.marks.length,pages:main.state.diagnostics.pages,desktopReadyMs:main.readyMs,mobileReadyMs:mobile.readyMs,paint:main.state.diagnostics,checks:['prepared tower','procedural fallback','active upper floor','floor travel and atlas reuse','15 marks on each of the two lower floors','no marks above first floor','no panorama request','cached generated backdrop','all requested words','outward geometry and shader','mobile aspect and layout'],errors:[]}));
 }finally{await browser.close();server.close();}

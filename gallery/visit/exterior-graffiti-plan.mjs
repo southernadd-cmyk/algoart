@@ -5,6 +5,7 @@ import {ROOM_HEIGHT} from './layout-v2.mjs';
 export const GRAFFITI_WORDS=Object.freeze(['Proportion Piece','PHI','φ']);
 export const GRAFFITI_SEED='PP-TOWER-WRITING-01';
 export const WALL_MARGIN=.52;
+export const TAGS_PER_PAINTED_FLOOR=15;
 const SIDES=['north','south','east','west'];
 const normals={north:{x:0,z:-1},south:{x:0,z:1},east:{x:1,z:0},west:{x:-1,z:0}};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -34,22 +35,22 @@ export function exteriorWallFaces(layout,ground=false){
  return faces;
 }
 export function towerGraffitiKey(floors){
- return floors.map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
+ return floors.filter(f=>f.level===0||f.level===1).map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
 }
 export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2}={}){
  if(!floors.length)return [];
- const ordered=[...floors].sort((a,b)=>a.level-b.level),ground=ordered.find(f=>f.level===0)?.plan;
+ const ordered=floors.filter(f=>f.level===0||f.level===1).sort((a,b)=>a.level-b.level),ground=ordered.find(f=>f.level===0)?.plan;
  const entry=ground?.rooms[0],front=entry?normals[reservedWalls(entry,true).at(-1)]||normals.south:normals.south;
  const marks=[];
  for(const {level,plan} of ordered){
-  const faces=exteriorWallFaces(plan,level===0),used=new Set(),wordRandom=makeRandom(seed+'|'+plan.date+'|words');
+  const faces=exteriorWallFaces(plan,level===0),wordRandom=makeRandom(seed+'|'+plan.date+'|words');
   const firstWord=wordRandom.int(0,GRAFFITI_WORDS.length-1);
-  const selection=planFloorTags({floorId:plan.date,seed,form:'mixed'});
+  const selection=Array.from({length:TAGS_PER_PAINTED_FLOOR},(_,slot)=>({...planFloorTags({floorId:plan.date,seed:seed+'|slot|'+slot,form:'mixed',count:1})[0],slot}));
   for(const item of selection){
-   const phrase=GRAFFITI_WORDS[(firstWord+(item.slot?1+wordRandom.int(0,1):0))%GRAFFITI_WORDS.length];
+   const phrase=GRAFFITI_WORDS[(firstWord+item.slot)%GRAFFITI_WORDS.length];
    const tag=createTag(phrase,{...item,paintWidth:2}),r=makeRandom(item.seed+'|wall'),aspect=tag.bounds.width/tag.bounds.height;
    const desiredWidth=phrase==='Proportion Piece'?r.range(5.7,6.9):phrase==='PHI'?r.range(2.4,3.5):r.range(1.5,2.1);
-   const candidates=faces.filter(face=>!used.has(face.id)).map(face=>{
+   const candidates=faces.map(face=>{
     const maxWidth=face.length-WALL_MARGIN*2,maxHeight=ROOM_HEIGHT-1.5;
     let width=Math.min(desiredWidth,maxWidth,maxHeight*aspect),height=width/aspect;
     const rotation=r.range(-.035,.035),cos=Math.abs(Math.cos(rotation)),sin=Math.abs(Math.sin(rotation));
@@ -58,7 +59,7 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
     return {face,width,height,rotation,score:(face.exposed?4:0)+facing*3+r.range(0,1)};
    }).sort((a,b)=>b.score-a.score);
    const chosen=candidates[0];if(!chosen)throw new Error('No exterior wall for '+plan.date);
-   const {face,width,height,rotation}=chosen;used.add(face.id);
+   const {face,width,height,rotation}=chosen;
    const halfAlong=(width*Math.abs(Math.cos(rotation))+height*Math.abs(Math.sin(rotation)))/2;
    const halfUp=(height*Math.abs(Math.cos(rotation))+width*Math.abs(Math.sin(rotation)))/2;
    const shift=r.range(-1,1)*Math.max(0,(face.length/2-WALL_MARGIN-halfAlong))*.55;
