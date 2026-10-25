@@ -1,7 +1,7 @@
 // Approved for tower release: nine independently authored complete alphabets.
 // Source reference sheets remain research-only; new tags use their original
 // procedural glyph geometry, not the archived 50 generic writer masks.
-import {makeRandom} from '../../test/graffiti/tag-engine.mjs';
+import {makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {TOWER_LETTERING_REVISION} from './tower-family-lettering.mjs';
 export const TOWER_HANDS=Object.freeze(['A','B','C','D','E','F','G','H','I']);
 export function pickTowerHand(random){return TOWER_HANDS[Math.floor(random.n()*TOWER_HANDS.length)];}
