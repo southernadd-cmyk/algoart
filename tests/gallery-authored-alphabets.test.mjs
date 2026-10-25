@@ -18,3 +18,11 @@ test('drafts remain opt-in and do not replace legacy writer grammar',()=>{
  assert.equal(AUTHORED_ALPHABET_DRAFTS.skofe.revision,2);
  assert.equal(AUTHORED_ALPHABET_DRAFTS.skuf.revision,2);
 });
+
+test('SKUF and SKOFE use distinct geometry for every capital',()=>{
+ for(const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'){
+  const a=draftGlyph('skofe',ch,{width:60,height:100});
+  const b=draftGlyph('skuf',ch,{width:60,height:100});
+  assert.notDeepEqual(a.strokes.map(s=>s.points),b.strokes.map(s=>s.points),ch);
+ }
+});
