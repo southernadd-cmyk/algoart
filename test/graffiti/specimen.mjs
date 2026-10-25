@@ -6,6 +6,7 @@ const inkCtx=inkLayer.getContext('2d',{willReadFrequently:true});
 let plan=[],tags=[],frame=0,playing=false,started=0,elapsed=0,token=0,scan=null,mainWall=null,currentProgress=1;
 let studyPage=0;
 const studyIds=Object.keys(REFERENCE_STUDIES),pageSize=6;
+const featuredIds=['guess','faust','revok','kadism','zephyr','gorey'];
 const surfaceCache=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,form:$('form').value,ink:$('ink').value,finish:$('paint').value,paintWidth:Math.max(.75,Math.min(3,(Number($('width').value)||200)/100)),floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
 function fallbackTile(){
@@ -82,7 +83,7 @@ function generate({url=true}={}){
   const tag=createTag(clean||'PHI',{seed:options.seed,hand,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
   paintWall($(hand+'-wall'),[tag],[{x:.5,y:.55,scale:.94,rotation:-.025}]);
  }
- renderForms();renderStudies();
+ renderForms();renderFeatured();renderStudies();
  if(url)updateURL();
 }
 function renderForms(){
@@ -97,6 +98,19 @@ function renderForms(){
   const hand=options.hand==='mixed'?'loop':options.hand;
   const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,form:id,hand,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
   paintWall(c,[tag],[{x:.5,y:.52,scale:1.05,maxHeight:.64,rotation:-.018}]);
+ }
+}
+function renderFeatured(){
+ const options=readOptions(),grid=$('featured-grid');grid.replaceChildren();
+ for(const id of featuredIds){
+  const study=REFERENCE_STUDIES[id],article=document.createElement('article');article.className='hand';
+  const c=document.createElement('canvas');c.width=720;c.height=380;c.setAttribute('role','img');c.setAttribute('aria-label',study.reference+' revised handwriting study on brick');
+  const title=document.createElement('h3');title.textContent=study.reference;
+  const description=document.createElement('p');description.textContent=study.description;
+  const button=document.createElement('button');button.type='button';button.textContent='Use this hand';button.onclick=()=>{$('hand').value=id;generate();window.scrollTo({top:0,behavior:'smooth'});};
+  article.append(c,title,description,button);grid.append(article);
+  const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,hand:id,form:'handstyle',ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
+  paintWall(c,[tag],[{x:.5,y:.53,scale:.97,rotation:-.018}]);
  }
 }
 function renderStudies(){
@@ -152,6 +166,6 @@ async function init(){
  const image=new Image();image.onload=()=>{try{scan=prepareScan(image);surfaceCache.clear();generate({url:false});document.documentElement.dataset.wall='scan';}catch(e){console.warn('Using the local procedural brick fallback.',e);}};image.onerror=()=>{document.documentElement.dataset.wall='fallback';};image.src='./assets/brick-wall.webp';
  // A small read-only hook makes determinism, counts and actual rendering
  // inspectable without relying on visually identical DOM text.
- window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get finish(){return $('paint').value;},get paintWidth(){return readOptions().paintWidth;},get formCount(){return Object.keys(LETTERING_FORMS).length;},get form(){return $('form').value;},get studyCount(){return studyIds.length;},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
+ window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get finish(){return $('paint').value;},get paintWidth(){return readOptions().paintWidth;},get formCount(){return Object.keys(LETTERING_FORMS).length;},get form(){return $('form').value;},get studyCount(){return studyIds.length;},get featuredHands(){return [...featuredIds];},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
 }
 init().catch(error=>{$('status').textContent='The wall could not be prepared: '+error.message;console.error(error);});
