@@ -9,15 +9,18 @@ import {createTag,strokeFraction} from '../test/graffiti/tag-engine.mjs?v=spraye
 const source=JSON.parse(fs.readFileSync('gallery/tower-layouts.json','utf8'));
 const floors=source.floors.map((f,level)=>({level,plan:buildLayout(f.date,f.studies.length,f.studies.map(([seed,engine])=>({seed,engine})))}));
 const marks=planExteriorGraffiti(floors);
-test('ground has ten marks including five distinct front freehands, first has five; upper floors stay clear',()=>{
+test('ground and first floors each have ten marks including distinct front freehands',()=>{
  assert.deepEqual(planExteriorGraffiti(floors),marks);
- for(const floor of floors){const tags=marks.filter(m=>m.date===floor.plan.date);assert.equal(tags.length,floor.level===0?10:floor.level===1?5:0);if(floor.level<2){for(const phrase of GRAFFITI_WORDS)assert.ok(tags.some(t=>t.phrase===phrase));}}
+ for(const floor of floors){const tags=marks.filter(m=>m.date===floor.plan.date);assert.equal(tags.length,floor.level<2?10:0);if(floor.level<2){for(const phrase of GRAFFITI_WORDS)assert.ok(tags.some(t=>t.phrase===phrase));}}
  assert.deepEqual(new Set(marks.map(m=>m.phrase)),new Set(GRAFFITI_WORDS));
- assert.equal(marks.length,15);assert.ok(marks.some(m=>m.level===0));assert.ok(marks.some(m=>m.level===1));assert.ok(marks.every(m=>m.level<2));
- const added=marks.filter(m=>m.level===0&&m.slot>=5);assert.equal(added.length,5);assert.ok(added.every(m=>m.form==='handstyle'));
- assert.equal(new Set(added.map(m=>m.hand)).size,5);
- const front=added[0].normal;assert.ok(added.every(m=>m.normal.x===front.x&&m.normal.z===front.z));
- assert.ok(added.every(m=>!marks.filter(o=>o!==m&&o.slot<5&&o.normal.x===front.x&&o.normal.z===front.z).some(o=>o.hand===m.hand)));
+ assert.equal(marks.length,20);assert.ok(marks.some(m=>m.level===0));assert.ok(marks.some(m=>m.level===1));assert.ok(marks.every(m=>m.level<2));
+ for(const level of [0,1]){
+  const originals=marks.filter(m=>m.level===level&&m.slot<5),added=marks.filter(m=>m.level===level&&m.slot>=5);
+  assert.equal(added.length,5);assert.ok(added.every(m=>m.form==='handstyle'));
+  assert.equal(new Set(added.map(m=>m.hand)).size,5);
+  assert.ok(added.every(m=>!originals.some(o=>o.hand===m.hand)));
+  assert.equal(new Set([...originals,...added].map(m=>m.id)).size,10);
+ }
  assert.ok(new Set(marks.map(m=>m.form)).size>=3);
 });
 test('paint fits solid wall faces and stays clear of doors, lifts, corners and roof bands',()=>{
