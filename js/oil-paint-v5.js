@@ -1,4 +1,4 @@
-// Experimental, explicitly called version. Does not select a studio default.
+// Oil Paint V5: versioned pigment treatment selected by the production studio.
 window.AlgoArt=window.AlgoArt||{};
 (function(A){
 'use strict';

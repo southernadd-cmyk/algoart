@@ -2,8 +2,8 @@
 
 Open `test/oil-pigment/index.html` through an HTTP server. It loads the real
 production Oil V4 engine directly, without an iframe or the editor app.
-Compare current oil, Claude's original pigment mapping, and the developed
-experimental Oil V5 treatment using identical settings.
+Compare previous oil, Claude's original pigment mapping, and the developed
+Oil V5 treatment using identical settings.
 
 The original upload supplies the starting idea and reference mapping in
 `oilPigment.claudeRGB`. The developed treatment adds:
@@ -26,8 +26,9 @@ eligibility, colour-based clustering, connections, brush geometry, random
 sequences, paint height, ground and protected voids keep their existing logic.
 
 `renderOilPaintV5` scopes the pigment model and planner wrapper in `try/finally`.
-Neither new script is loaded by the studio; no material URL/default,
-publishing workflow, daily artwork or archive version is switched to V5.
+The studio now selects V5 for new oil work and writes `material=oil-v5`
+into its exact links. Daily/social editions switch on 26 October 2026; older
+dates and explicit V1–V4 links retain their recorded renderer.
 Small dormant hooks in the active oil painter/brush allow the versioned
 wrapper to act on paint colours without copying or editing historical
 planner variants. V4's fallback expressions retain their original math.

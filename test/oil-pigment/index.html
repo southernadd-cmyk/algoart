@@ -11,7 +11,7 @@ form{display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin:24px 0}label{di
 @media(max-width:800px){body{padding:16px}.grid{grid-template-columns:1fr;gap:24px}input{max-width:70vw}}
 </style></head><body>
 <h1>oil pigment studies</h1>
-<p>Three treatments of the same drawing: the current oil renderer, Claude’s original pigment gamut, and a developed version with smooth colour limits, neutral-preserving mapping, perceptual tints and approximate subtractive wet mixing. The pigment gamut is an artistic approximation.</p>
+<p>Three treatments of the same drawing: the previous oil renderer, Claude’s original pigment gamut, and a developed version with smooth colour limits, neutral-preserving mapping, perceptual tints and approximate subtractive wet mixing. The pigment gamut is an artistic approximation.</p>
 <form id="controls">
 <label>Seed<input id="seed" value="PIGMENT-STUDY-1618"></label>
 <label>Composition<select id="mode"><option value="spiral">Golden Trajectories</option><option value="field">Orbital Studies</option><option value="rects">Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic">Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
@@ -21,7 +21,7 @@ form{display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin:24px 0}label{di
 <button id="draw" type="submit">Compare</button><button id="all" type="button">Compare all eight</button>
 </form>
 <p id="status" role="status" aria-live="polite">Ready.</p><main id="results"></main>
-<p>This experiment keeps the existing oil brush geometry and paint height. Source colours remain in the composition planner; the pigment treatment is applied afterwards. The studio, archived links and publishing defaults use their existing renderers.</p>
+<p>This experiment keeps the existing oil brush geometry and paint height. Source colours remain in the composition planner; the pigment treatment is applied afterwards. The studio uses the developed pigment treatment for new oil work. Existing artwork links preserve their recorded versions.</p>
 <script src="../../js/random.js"></script><script src="../../js/phi.js"></script>
 <script src="../../js/palettes.js"></script><script src="../../js/marker.js"></script>
 <script src="../../js/phi-sheet-fit.js"></script><script src="../../js/generator.js"></script>
@@ -61,7 +61,7 @@ async function run(all=false){
   for(const [mode,name] of selected){
    const s=settings(mode),scale=Number($('quality').value),section=document.createElement('section'),h=document.createElement('h2');h.textContent=name;
    const grid=document.createElement('div');grid.className='grid';section.append(h,grid);$('results').append(section);
-   for(const [label,reference] of [['Current oil',null],["Claude’s gamut",true],['Developed pigment',false]]){
+   for(const [label,reference] of [['Previous oil',null],["Claude’s gamut",true],['Developed pigment',false]]){
     $('status').textContent='Rendering '+name.toLowerCase()+': '+label.toLowerCase()+'…';await pause();
     const figure=document.createElement('figure'),c=document.createElement('canvas'),caption=document.createElement('figcaption');
     grid.append(figure);figure.append(c,caption);

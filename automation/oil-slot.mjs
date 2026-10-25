@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {makeCaptions} from './captions.mjs';
+import {oilVersionForDate} from './oil-edition.mjs';
 
 const b64=text=>Buffer.from(String(text||''),'utf8').toString('base64');
 function today(){
@@ -24,7 +25,7 @@ export function validateOilItem(item,day,orientation){
      !new RegExp('^'+day+'-'+(orientation==='portrait'?'OP':'OL')+'01$').test(item.id))
     throw Error('Invalid Oil artwork identity');
   const link=new URL(item.shareUrl);
-  if(link.searchParams.get('material')!==(day>='2026-10-17'?'oil-v4':'oil-v1')||
+  if(link.searchParams.get('material')!==oilVersionForDate(day)||
      link.searchParams.get('v')!=='9'||
      link.searchParams.get('seed')!==item.seed||
      link.searchParams.get('mode')!==item.mode||
@@ -67,7 +68,7 @@ async function main(){
       threads_caption_b64:b64(copy.threads),
       bluesky_caption_b64:b64(copy.bluesky),
       pinterest_title_b64:b64('Oil · '+item.series+' — PROPORTION PIECE'),
-      pinterest_description_b64:b64('Oil v1 study. Open the exact artwork: '+item.shareUrl),
+      pinterest_description_b64:b64('Oil Paint study. Open the exact artwork: '+item.shareUrl),
       alt_text_b64:b64(copy.altText),share_url:item.shareUrl,
       scheduled_time:gate.target_time
     });
@@ -77,3 +78,4 @@ async function main(){
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)
   await main();
+
