@@ -6,7 +6,7 @@ export const interlocked=parseFamily({
  id:'A',name:'Interlocked marker',primary:41,anchors:[1,17,26,41],
  technique:'marker',ink:'#242722',weight:7.8,spacing:65,overlap:12,italic:-.10,
  notes:['Crossings are structural','Counter openings must survive','Disparate slash lengths and returning hooks'],
- rows:String.raw\`
+ rows:String.raw`
 A|M -5 101 L 25 6 L 51 84 L 66 107|$M -8 70 L 71 44 L 80 22|^M 24 7 L 43 -5|M 13 93 Q 21 109 42 92
 B|$M 5 107 L 18 -4 L 13 61 L 8 90|M 16 12 L 57 3 L 73 20 L 49 47 L 78 65 L 64 94 L 8 103|^M 0 55 L 64 46
 C|M 73 7 L 28 6 L 2 37 L 12 90 L 49 103 L 78 78|$M -6 81 L 56 47 L 82 39|^M 12 14 L 28 1
@@ -33,7 +33,7 @@ W|$M -4 9 L 20 108 L 42 45 L 62 109 L 95 2|M 2 74 L 96 28|^M 32 89 L 58 37
 X|$M -3 0 L 82 107|M 83 -5 L 3 104|$M 15 71 L 71 28|^M 63 102 L 93 91
 Y|$M 1 3 L 29 64 L 78 0|M 39 47 L 14 115|^M 34 70 L 75 99
 Z|$M -5 15 L 77 3 L 3 98 L 85 93|M 20 50 L 77 43|^M -6 85 L 28 113
-\`
+`
 });
 
 // Primary sheet 7. Light line networks, open loops, piercing traversals.
@@ -41,7 +41,7 @@ export const skeletal=parseFamily({
  id:'B',name:'Linear skeletal',primary:7,anchors:[7,9,22,42],
  technique:'wire',ink:'#484238',weight:2.5,spacing:79,overlap:0,italic:.04,
  notes:['Construction visible through open loops','Few strokes, with crossings exposed','Counters not filled'],
- rows:String.raw\`
+ rows:String.raw`
 A|M 3 99 Q 19 42 46 0 L 72 93|M 0 64 L 74 47|^M 29 21 Q 38 11 53 15
 B|M 13 0 L 8 107|M 13 5 C 86 -23 93 46 28 48 C 96 26 95 111 9 101|M -2 52 L 58 61
 C|M 76 14 C 48 -12 1 23 6 68 Q 13 113 78 88|^M 5 61 L 25 58
@@ -68,7 +68,7 @@ W|M 0 4 L 21 105 L 43 39 L 62 103 L 94 2|^M 40 48 Q 42 60 52 64
 X|M 1 5 L 82 105|M 84 2 L 0 101|^M 35 54 L 48 59
 Y|M 2 4 Q 40 93 46 59 Q 56 34 78 2|M 44 58 C 22 77 26 100 43 114 L 70 108|^M 31 86 C 5 81 13 60 31 60
 Z|M 1 12 L 79 6 L 5 95 L 88 100|^M 72 99 L 83 110
-\`
+`
 });
 
 // Sheet 13. Solid sharp blades and deliberately broken diagonal counters.
@@ -76,7 +76,7 @@ export const wedges=parseFamily({
  id:'C',name:'Cut-wedge angular',primary:13,anchors:[3,13,38,48],
  technique:'blade',ink:'#2a2823',weight:5,spacing:73,overlap:3,italic:-.06,
  notes:['Filled triangular blades are the letter','Diagonal notches and white wedges','Never derived by shearing conventional round font'],
- rows:String.raw\`
+ rows:String.raw`
 A|!M -5 102 L 42 -3 L 59 8 L 89 104 L 58 89 L 40 36 L 18 104 Z|!M 13 61 L 62 46 L 78 53 L 21 76 Z
 B|!M 5 107 L 15 -2 L 35 8 L 29 102 Z|!M 27 7 L 82 15 L 63 48 L 39 43 L 64 31 L 37 24 Z|!M 34 51 L 81 64 L 58 103 L 22 94 L 58 81 L 52 68 Z
 C|!M 88 11 L 45 4 L 7 32 L -3 80 L 42 106 L 84 86 L 61 69 L 30 88 L 18 69 L 27 35 L 62 30 Z|!M 5 55 L 25 35 L 23 80 Z
@@ -103,5 +103,5 @@ W|!M 0 4 L 23 -2 L 27 73 L 48 30 L 63 45 L 69 77 L 95 -4 L 118 6 L 83 108 L 62 1
 X|!M -2 7 L 29 -1 L 89 104 L 59 112 Z|!M 86 -6 L 101 18 L 7 110 L -6 89 Z
 Y|!M -2 5 L 24 0 L 42 51 L 75 -5 L 100 7 L 51 83 L 41 120 L 17 104 L 25 69 Z
 Z|!M 4 -2 L 91 8 L 73 30 L 34 77 L 95 82 L 74 111 L -1 99 L 11 78 L 55 28 L 0 27 Z|!M 31 56 L 64 43 L 50 66 Z
-\`
+`
 });
