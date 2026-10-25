@@ -1,0 +1,62 @@
+name: Action V4 and Oil V6 full release gate
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'js/app.js'
+      - 'js/export.js'
+      - 'js/action-painting-v4.js'
+      - 'js/oil-paint-v6.js'
+      - 'automation/oil-edition.mjs'
+      - 'automation/generate-social.mjs'
+      - 'about/step-by-step/index.html'
+      - 'tests/action-v3-parity-browser.mjs'
+      - 'tests/oil-v5-release-browser.mjs'
+      - 'tests/material-walkthrough-browser.mjs'
+      - '.github/workflows/paint-v4-v6-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paint-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Unit, deterministic release and export contracts
+        run: |
+          node tests/paint-refinements.test.mjs
+          node tests/oil-future-version.test.mjs
+          node tests/oil-v5-release.test.mjs
+          node tests/action-v3-export.test.mjs
+          node --test tests/studio-walkthrough-link.test.mjs tests/plotter.test.mjs tests/renderer-lock.test.mjs
+      - name: Start local studio for all browser checks
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/paint-release-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - name: Painting study parity, all engines, both orientations
+        run: node tests/paint-refinements-browser.mjs
+      - name: Action V4 desktop/mobile, PNG, walkthrough and social publishing
+        run: node tests/action-v3-parity-browser.mjs
+      - name: Oil V6 desktop/mobile, PNG, walkthrough and social publishing
+        run: node tests/oil-v5-release-browser.mjs
+      - name: Five-material walkthrough and parity
+        run: node tests/material-walkthrough-browser.mjs
+      - name: SVG and plotter browser export
+        run: node tests/plotter-browser.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paint-v4-v6-release-results
+          path: |
+            paint-refinement-results/
+            action-v3-parity-results/
+            oil-v5-release-results/
+            /tmp/paint-release-http.log
+          if-no-files-found: ignore
