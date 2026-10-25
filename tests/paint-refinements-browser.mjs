@@ -3,14 +3,16 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {chromium} from 'playwright';
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/',out='paint-refinement-results';
-const oldSources=['oil-v1-core-c','oil-paint-v1'].map(name=>execFileSync('git',['show','d690b5844cb56be032505175bd3681690c0faabd:js/'+name+'.js'],{encoding:'utf8',maxBuffer:4e6}));
+const oldSources=['oil-v1-core-c','oil-paint-v1'].map(name=>({name,content:execFileSync('git',['show','d690b5844cb56be032505175bd3681690c0faabd:js/'+name+'.js'],{encoding:'utf8',maxBuffer:4e6})}));
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-gpu']});
 try{
  const page=await browser.newPage({viewport:{width:1600,height:1050}}),old=await browser.newPage();
  const errors=[];for(const p of [page,old])p.on('pageerror',e=>errors.push(e.message));
+ // Substitute the original files before their first execution. Re-evaluating
+ // core-c would wrap its composition planner twice and corrupt the baseline.
+ for(const {name,content} of oldSources)await old.route('**/js/'+name+'.js*',route=>route.fulfill({contentType:'application/javascript',body:content}));
  await page.goto(root+'test/paint-refinements/');await old.goto(root+'test/paint-refinements/');
- for(const content of oldSources)await old.addScriptTag({content});
  const defaults=await page.evaluate(()=>window.paintStudy.settings('rects'));
  async function render(p,s,family,version,scale=.3,reveal=false){
   return p.evaluate(({s,family,version,scale,reveal})=>{
@@ -66,7 +68,7 @@ try{
  // Shared connection hook preserves every historical oil branch in a fresh
  // render state, not only the current V5 studio path.
  for(const version of [1,2,3,4]){
-  await page.reload();await old.reload();for(const content of oldSources)await old.addScriptTag({content});
+  await page.reload();await old.reload();
   const s={...defaults,orientation:'portrait'},baseline=await render(old,s,'oil',version,.25),current=await render(page,s,'oil',version,.25);
   assert.equal(current.hash,baseline.hash,'Historical oil '+version+' pixels');console.log('PASS historical oil V'+version);
  }
