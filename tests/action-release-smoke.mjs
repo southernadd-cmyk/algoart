@@ -85,5 +85,20 @@ try {
  const modern=await page.evaluate(()=>window.AlgoArt.lastActionPaintingStats.palette);
  assert.equal(modern.length,3,'V2 must honour the slider for the identical seed');
 
+ // V3 becomes the default for new Action work, but old material URLs stay on
+ // their exact original implementations, even after a V3 visit.
+ await page.goto('http://127.0.0.1:4173/?v=9&seed=ACTION-V3-SMOKE&mode=spiral&pal=primary&cols=3&material=action-v3');
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true &&
+   window.AlgoArt.lastActionPaintingStatsV3?.palette?.length===3,{timeout:120000});
+ assert.equal(new URL(page.url()).searchParams.get('material'),'action-v3');
+ assert.equal(await page.evaluate(()=>window.AlgoArt.lastActionPaintingStatsV3?.palette?.length),3);
+ await page.evaluate(()=>{
+   const material=document.getElementById('materialStyle');
+   material.value='marker';material.dispatchEvent(new Event('change',{bubbles:true}));
+   material.value='action';material.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
+ assert.equal(await page.evaluate(()=>new URL(window.location.href).searchParams.get('material')),'action-v3',
+   'New Action selection must produce a V3 URL');
  console.log('PASS: Action Painting honours the exact Colours slider and preserves material choices');
 }finally{await browser.close()}
