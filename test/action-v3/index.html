@@ -14,10 +14,25 @@ const $=id=>document.getElementById(id), frame=$('engine');
 let engine=null;
 frame.addEventListener('load',()=>{
  const d=frame.contentDocument,script=d.createElement('script');script.src='test/action-v3/action-v3.js';
- script.onload=()=>{engine=frame.contentWindow.AlgoArt;$('draw').disabled=false;$('all').disabled=false;$('status').textContent='Ready. V2 is unchanged; V3 is loaded for comparison only.';};
+ script.onload=()=>{engine=frame.contentWindow.AlgoArt;
+ const missing=['render','renderActionPainting','renderActionPaintingV3','hues','makeR'].filter(key=>typeof engine[key]!=='function');
+ if(missing.length){$('status').textContent='Editor renderer not ready: '+missing.join(', ');return;}
+ $('draw').disabled=false;$('all').disabled=false;$('status').textContent='Ready. V2 is unchanged; V3 is loaded for comparison only.';};
  script.onerror=()=>{$('status').textContent='Could not load Action V3. Check that the prototype exists on this branch.';};
  d.head.appendChild(script);
 });
+// Read the existing editor controls directly. The test should not depend on
+// app.js exposing readSettings: its UI may fail to initialise inside an iframe.
+const editorKeys=['elements','density','complexity','negativeSpace','phiStrength','recursion','spiralInfluence','goldenAngle','nesting','pen','thickness','wobble','overdraw','opacity','pressure','dryness','curveBias','shapeAmount','overlap','rotation','lines','circles','rectangles','polygons','arcs','palette','colourCount','saturation','brightness','paper','grain'];
+function readEditorControls(){
+ const d=frame.contentDocument,settings={};
+ for(const key of editorKeys){
+  const el=d.getElementById(key);
+  if(!el)throw Error('Missing editor control: '+key);
+  settings[key]=el.type==='checkbox'?el.checked:el.type==='range'?Number(el.value):el.value;
+ }
+ return settings;
+}
 function makeCanvas(){const c=document.createElement('canvas');c.width=700;c.height=500;return c;}
 async function run(all){
  if(!engine)return;
@@ -28,7 +43,7 @@ async function run(all){
  try{
   for(let index=0;index<selected.length;index++){
    const [mode,name]=selected[index];$('status').textContent='Rendering '+name+' ('+(index+1)+'/'+selected.length+')…';
-   const base=engine.readSettings();const settings={...base,seed,mode,orientation};
+   const base=readEditorControls();const settings={...base,seed,mode,orientation};
    const section=document.createElement('section');const h=document.createElement('h2');h.textContent=name;section.append(h);
    const grid=document.createElement('div');grid.className='grid';
    for(const [label,fn] of [['V2 — current',engine.renderActionPainting],['V3 — composition-guided',engine.renderActionPaintingV3]]){
