@@ -1,0 +1,39 @@
+name: Repair npm lockfile for Cloudflare and CI
+on:
+  push:
+    paths:
+      - .github/workflows/repair-npm-lockfile.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+      - name: Regenerate lockfile from existing package manifest
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Prove clean install works
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Commit verified dependency lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lockfile already synchronized"
+            exit 0
+          fi
+          git commit -m "Synchronize npm lockfile for Cloudflare Worker builds and GitHub CI"
+          for attempt in 1 2 3; do
+            git -c rebase.autoStash=true pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 3
+          done
+          exit 1
