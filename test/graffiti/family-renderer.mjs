@@ -96,10 +96,10 @@ export function letterSvg(style,letter,{construction=false}={}){
 }
 export function alphabetFragment(style,{construction=false}={}){
  const f=getFamily(style),root=document.createDocumentFragment();
- for(const ch of LETTERS){
+ for(const ch of LETTERS+'Φ'){
   const fig=document.createElement('figure');fig.className='letter';
   fig.append(letterSvg(style,ch,{construction}));
-  const caption=document.createElement('figcaption');caption.textContent=ch;fig.append(caption);
+  const caption=document.createElement('figcaption');caption.textContent=ch==='Φ'?'φ':ch;fig.append(caption);
   root.append(fig);
  }
  return root;
