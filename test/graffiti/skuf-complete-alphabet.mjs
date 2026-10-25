@@ -139,7 +139,7 @@ function rng(seed){let n=2166136261;for(const c of String(seed))n=Math.imul(n^c.
 const limit=(n,a,b)=>Math.max(a,Math.min(b,n));
 /** Same alphabet for all strings; plans letters as an interacting word, not an SVG font. */
 export function planLetters(text,{seed='PP-AZ-01',tightness=.88,variation=.08}={}){
- const input=String(text||'').toUpperCase().replace(/[^A-Z \-]/g,'').slice(0,60);
+ const input=String(text||'').toUpperCase().replace(/[^A-ZΦ \-]/g,'').slice(0,60);
  if(!input.trim())throw new RangeError('Enter text with letters A–Z');
  if(!Number.isFinite(tightness)||tightness<.55||tightness>1.2)throw new RangeError('Invalid tightness');
  if(!Number.isFinite(variation)||variation<0||variation>.2)throw new RangeError('Invalid variation');
