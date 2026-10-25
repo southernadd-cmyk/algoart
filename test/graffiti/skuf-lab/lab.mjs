@@ -60,7 +60,16 @@ function render(){
   const b=document.createElement('button');b.type='button';b.className=s.id===selected?'active':'';b.textContent=(i+1)+'. '+s.letter+' / '+s.id+(s.liftAfter?'  ↑':'  joined');
   b.addEventListener('click',()=>select(s.id));menu.append(b);
  }
- updateProperties();if(simulated)by('timing').textContent=Math.round(simulated.durationMs)+' ms · '+simulated.events.length+' time samples · '+doc.strokes.length+' strokes';
+ updateProperties();updateCoverage();if(simulated)by('timing').textContent=Math.round(simulated.durationMs)+' ms · '+simulated.events.length+' time samples · '+doc.strokes.length+' strokes';
+}
+function updateCoverage(){
+ const items=doc.observations||[],c=describeCoverage(items);
+ by('coverage').textContent=c.sourcePages+' research source pages · '+c.handstyleExamples+' annotated handstyle photos · '+c.needed+' more to meet the minimum reference target';
+ const host=by('observations');host.replaceChildren();
+ for(const [i,a] of items.entries()){
+  const p=document.createElement('p');p.textContent=(i+1)+'. '+a.sourceId+' — '+a.medium+' ('+a.confidence+'), '+a.lettersVisible+'. '+a.geometry;
+  host.append(p);
+ }
 }
 function updateProperties(){
  const s=current();by('strokeProperties').hidden=!s;if(!s)return;
@@ -139,6 +148,18 @@ function download(name,contents,type){
  const blob=new Blob([contents],{type}),url=URL.createObjectURL(blob),link=document.createElement('a');
  link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
+by('add-observation').addEventListener('click',()=>{
+ const geometry=by('obs-visible').value.trim(),inferredMotion=by('obs-inferred').value.trim();
+ if(!geometry){write('Describe what you actually see in the chosen photograph before saving.');return}
+ snapshot();
+ const a={sourceId:referenceId,imageDescription:'Locally viewed reference image (not embedded)',medium:by('obs-medium').value,
+  word:'SKUF',lettersVisible:by('obs-letters').value.trim(),contour:geometry,connections:'',terminal:'',
+  confidence:by('obs-confidence').value,geometry,inferredMotion,reviewedBy:'manual-review',reviewedAt:new Date().toISOString()};
+ (doc.observations??=[]).push(a);render();write('Saved image-specific evidence note; geometry and motion are labelled separately.');
+});
+by('remove-observation').addEventListener('click',()=>{
+ if(!doc.observations?.length)return;snapshot();doc.observations.pop();render();write('Latest evidence note removed.');
+});
 by('export').addEventListener('click',()=>{
  try{validateDocument(doc);download('skuf-gestures.json',JSON.stringify({...doc,referenceSourceId:referenceId},null,2),'application/json');write('Downloaded editable stroke data (reference photo not included).')}
  catch(error){write(error.message)}
@@ -185,5 +206,5 @@ const selectSource=by('source');for(const s of SKUF_SOURCES){
  article.append(title,paragraph);by('sources').append(article);
 }
 selectSource.value=referenceId;selectSource.addEventListener('change',()=>{referenceId=selectSource.value;write('Reference selected; use its link to obtain a photograph you have rights to inspect locally.')});
-by('coverage').textContent='Sources: '+describeCoverage().sourcePages+' source pages · 0 confirmed handstyle specimens · target 15–25';
+updateCoverage();
 render();write('This is an unapproved reconstructed sketch. Load an actual tag photograph to start a source-led revision.');
