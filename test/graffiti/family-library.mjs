@@ -1,6 +1,7 @@
 import {LETTERS} from './families/parse.mjs';
 import {PHI_BY_FAMILY} from './family-symbols.mjs';
-import {interlocked,skeletal,wedges} from './families/A-C.mjs';
+import {interlocked,wedges} from './families/A-C.mjs';
+import {crossedMarkerV2} from './family-crossed-v2.mjs';
 import {block,gothic,calligraphy} from './families/D-F.mjs';
 import {orbitals,fragments} from './families/G-H.mjs';
 import {airy,sweeps} from './families/I-J.mjs';
@@ -10,7 +11,7 @@ export const PHASE_D_VERSION='draft-2-nine-families';
 // words overlap with G too closely to warrant a separate public family.
 export const RETIRED_STUDIES=Object.freeze({J:sweeps});
 export const RETIREMENT_MAP=Object.freeze({J:'G'});
-export const FAMILIES=Object.freeze([interlocked,skeletal,wedges,block,gothic,calligraphy,orbitals,fragments,airy]);
+export const FAMILIES=Object.freeze([interlocked,crossedMarkerV2,wedges,block,gothic,calligraphy,orbitals,fragments,airy]);
 export const BY_ID=Object.freeze(Object.fromEntries(FAMILIES.map(f=>[f.id,f])));
 export {LETTERS};
 export function getFamily(id){
