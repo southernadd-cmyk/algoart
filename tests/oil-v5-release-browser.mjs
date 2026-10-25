@@ -14,7 +14,7 @@ try{
   localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1');
   localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open');
   window.AlgoArt=window.AlgoArt||{};
-  for(let n=1;n<=6;n++{
+  for(let n=1;n<=6;n++){
    let render;Object.defineProperty(window.AlgoArt,'renderOilPaintV'+n,{configurable:true,
     get(){return render},set(fn){render=function(...args){const meta=fn.apply(this,args);
      if(args[0].id==='art')window.__oilRendered={version:meta.version,seed:args[1].seed};return meta;};}});
@@ -63,7 +63,7 @@ try{
   await page.screenshot({path:out+'/'+orientation+'.png',fullPage:false});
   console.log('PASS default V6, visible/download PNG parity and compact replay '+orientation);
  }
- for(let n=1;n<=5;n++{
+ for(let n=1;n<=5;n++){
   const q=new URLSearchParams(params);q.set('material','oil-v'+n);
   await page.goto(root+'?'+q,{waitUntil:'domcontentloaded'});await ready(page,'oil-paint-v'+n);
   assert.equal(new URL(page.url()).searchParams.get('material'),'oil-v'+n,'Old URL must retain revision');
