@@ -3,10 +3,12 @@
 The tower uses the specimen's procedural writing engine, compiled into the
 existing gallery bundle. It adds no font, image, library or CDN request.
 
-The exterior has five marks on the ground floor and five on the first floor.
+The exterior has ten marks on the ground floor and ten on the first floor.
 Higher exterior walls stay clear. The three phrases are Proportion Piece, PHI
-and φ, with seeded writer profiles, lettering forms and ink. Outside marks
-may overlap; their rotated bounds still fit the solid wall, clear of openings.
+and φ, with seeded writer profiles, lettering forms and ink. Five additional
+freehand tags on each level use distinct writing profiles. Their placement
+samples alternate golden-ratio positions to minimise overlap and keep existing
+lettering legible; rotated bounds fit solid walls clear of openings.
 
 Every exhibition also gets three to five small interior handstyle tags. The
 interior planner receives the exact hanging plan before deferred artwork images
