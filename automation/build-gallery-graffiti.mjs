@@ -18,8 +18,9 @@ const page=await browser.newPage();
 try{
  await page.goto(new URL('test/graffiti/',BASE).href);
  await page.waitForFunction(()=>!!document.querySelector('#wall'));
- async function exportAtlas(marks,dir,signature){
-  const plans=planGraffitiAtlases(marks,{lowPower:false});
+ async function exportAtlas(marks,dir,signature,lowPower=false){
+  const plans=planGraffitiAtlases(marks,{lowPower});
+  dir=path.join(dir,lowPower?'mobile':'desktop');
   await fs.mkdir(dir,{recursive:true});
   const manifest={version:1,date:requested,signature,marks:marks.map(m=>({id:m.id,hand:m.hand,seed:m.seed,text:m.text,form:m.form})),pages:[]};
   for(const [n,plan] of plans.entries()){
@@ -50,10 +51,10 @@ try{
  const hangs=planGalleryHangs(layout,studies);
  const indoor=planInteriorGraffiti({layout,hangs,level});
  const indoorSignature=indoor.map(m=>m.id+'|'+m.hand+'|'+m.seed).join(';');
- await exportAtlas(indoor,path.join('gallery',requested,'3d','graffiti'),indoorSignature);
+ for(const lowPower of [false,true])await exportAtlas(indoor,path.join('gallery',requested,'3d','graffiti'),indoorSignature,lowPower);
  // The two exterior levels are stable; republish their atlas after each daily build
  // so existing floor plans and all new script versions remain in sync.
  const outer=archive.floors.slice(0,2).map((f,i)=>({level:i,plan:buildLayout(f.date,f.studies.length,f.studies.map(([seed,engine])=>({seed,engine})))}));
  const outside=planExteriorGraffiti(outer);
- await exportAtlas(outside,'gallery/visit/graffiti-assets/exterior',outside.map(m=>m.id+'|'+m.hand+'|'+m.seed).join(';'));
+ for(const lowPower of [false,true])await exportAtlas(outside,'gallery/visit/graffiti-assets/exterior',outside.map(m=>m.id+'|'+m.hand+'|'+m.seed).join(';'),lowPower);
 }finally{await page.close();await browser.close();}
