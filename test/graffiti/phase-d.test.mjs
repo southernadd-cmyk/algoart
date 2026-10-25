@@ -59,7 +59,7 @@ test('The anatomical styles use different construction systems, not just marker 
  assert.equal(getFamily('E').technique,'gothic');
  assert.equal(getFamily('F').technique,'nib');
  assert.equal(getFamily('H').technique,'fragment');
- assert.equal(getFamily('I').technique,'airy');
+ assert.equal(getFamily('I').technique,'chisel');
  const audit=auditFamilies();
  assert.equal(audit.length,10);
  assert.ok(audit.every(x=>x.uniqueLetters===26));
