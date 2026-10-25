@@ -57,7 +57,7 @@
         // Meta/Threads may cache the old (unversioned) generic preview
         // for this artwork. Only Threads gets a new page-cache identity;
         // Bluesky retains its already-working URL.
-        threadsPreviewURL=token?previewURL+'&pv=2':previewURL,
+        threadsPreviewURL=token?previewURL+'&pv=3':previewURL,
         threadsCaption='PROPORTION PIECE '+threadsPreviewURL;
     return{
       fullURL:fullURL,
