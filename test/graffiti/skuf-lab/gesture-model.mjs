@@ -8,7 +8,7 @@ const point=(x,y)=>({x,y});
 const lerp=(a,b,t)=>a+(b-a)*t;
 const dist=(a,b)=>Math.hypot(b.x-a.x,b.y-a.y);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-function tokens(path){return String(path).match(/[MCQLmcql]|[-+]?(?:\d*\.?\d+)(?:[eE][-+]?\d+)?/g)||[]}
+function tokens(path){return String(path).match(/[MCQL]|[-+]?(?:\d*\.?\d+)(?:[eE][-+]?\d+)?/g)||[]}
 /** Import legacy authored SVG paths into editable cubic anchors; does not infer stroke order. */
 export function cubicKnots(path,xOffset=0){
  const ts=tokens(path),knots=[];let i=0,cmd='';
@@ -101,16 +101,18 @@ export function simulateDocument(doc,{seed='PP-SKUF-LAB-01',stepMs=12}={}){
  validateDocument(doc);
  if(!finite(stepMs)||stepMs<3||stepMs>100)throw new RangeError('Invalid step');
  const random=seeded(seed),events=[];let clock=0,previous=null;
- for(const stroke of doc.strokes){
+ for(const [strokeIndex,stroke] of doc.strokes.entries()){
   const table=tableForStroke(stroke);
   if(table.length<1)continue;
   const start=table.positions[0],end=table.positions.at(-1);
   if(previous){
-   const airborne=dist(previous,end)>1; // pen travel always targets START, not END
-   const transfer=dist(previous,start),travelMs=clamp(transfer/1.5,45,500);
-   events.push({x:previous.x,y:previous.y,t:clock,contact:false,strokeId:null,speed:0,pressure:0});
-   clock+=travelMs;
-   events.push({x:start.x,y:start.y,t:clock,contact:false,strokeId:null,speed:0,pressure:0});
+   const prior=doc.strokes[strokeIndex-1],transfer=dist(previous,start);
+   if(prior.liftAfter){
+    const travelMs=clamp(transfer/1.5,45,500);
+    events.push({x:previous.x,y:previous.y,t:clock,contact:false,strokeId:null,speed:0,pressure:0});
+    clock+=travelMs;
+    events.push({x:start.x,y:start.y,t:clock,contact:false,strokeId:null,speed:0,pressure:0});
+   }else if(transfer>2)throw new RangeError('Unjoined strokes cannot remain in contact: '+prior.id);
   }
   const duration=stroke.durationMs*(.975+random()*.05),pressureScale=.97+random()*.06;
   let prevPoint=null,prevSpeed=0;
@@ -127,12 +129,8 @@ export function simulateDocument(doc,{seed='PP-SKUF-LAB-01',stepMs=12}={}){
   clock+=duration;
   previous=end;
   if(stroke.liftAfter){events.push({x:end.x,y:end.y,t:clock+.01,speed:0,pressure:0,contact:false,strokeId:null});clock+=.01}
-  else{
-   // Retained as an explicit decision: no automatic drawn bridge to the next
-   // stroke. Only genuine coincident endpoints may stay in contact.
-   const next=doc.strokes[doc.strokes.indexOf(stroke)+1];
-   if(next){const future=tableForStroke(next).positions[0];if(dist(end,future)>2)throw new RangeError('Unjoined strokes cannot remain in contact: '+stroke.id)}
-  }
+  // If liftAfter is false, the next stroke is allowed only when its starting
+  // anchor meets this endpoint. This is validated on the next iteration.
  }
  return {events,durationMs:clock,strokeCount:doc.strokes.length};
 }
