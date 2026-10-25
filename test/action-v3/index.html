@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Action Painting V2 / V3 comparison — PROPORTION PIECE</title>
+<style>
+:root{color-scheme:light;background:#f4f0e7;color:#24211d;font-family:Georgia,serif}body{max-width:1500px;margin:auto;padding:24px}h1{font-weight:normal;font-size:clamp(26px,4vw,42px)}p{line-height:1.5;max-width:760px}button,input,select{font:inherit;padding:9px;border:1px solid #aaa;background:#fff;color:#222}button{cursor:pointer}fieldset{border:0;padding:0;display:flex;gap:12px;flex-wrap:wrap;align-items:end}label{display:grid;gap:4px;font-size:14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:20px 0 40px}.grid figure{margin:0}.grid canvas{width:100%;height:auto;display:block;background:#f5f0e6}.grid figcaption{padding:8px 0;font-size:16px}.status{min-height:24px}iframe{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}@media(max-width:700px){.grid{gap:10px}body{padding:12px}.grid figcaption{font-size:13px}}
+</style></head><body>
+<h1>Action Painting: V2 / V3</h1>
+<p>Same source drawing, seed and paint treatment. V2 uses the current gesture placement; V3 follows source paths for 38% of throws, stays local for 48%, and allows 14% wild throws. Experimental only: no gallery or publishing defaults are changed.</p>
+<fieldset><label>Seed<input id="seed" value="AA-20261005-03-55769"></label><label>Orientation<select id="orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label><button id="draw" disabled>Render comparison</button><button id="all" disabled>Compare all eight</button></fieldset>
+<p id="status" class="status" aria-live="polite">Loading comparison renderer…</p><section id="results"></section>
+<iframe id="engine" src="../index.html" title="Hidden source renderer"></iframe>
+<script>
+const modes=[['field','Orbital Studies'],['spiral','Golden Trajectories'],['rects','Recursive Divisions'],['burst','Radiant Systems'],['network','Connected Fields'],['organic','Growth Systems'],['geometric','Constructed Forms'],['scribble','Automatic Marks']];
+const $=id=>document.getElementById(id), frame=$('engine');
+let engine=null;
+frame.addEventListener('load',()=>{
+ const d=frame.contentDocument,script=d.createElement('script');script.src='test/action-v3/action-v3.js';
+ script.onload=()=>{engine=frame.contentWindow.AlgoArt;$('draw').disabled=false;$('all').disabled=false;$('status').textContent='Ready. V2 is unchanged; V3 is loaded for comparison only.';};
+ script.onerror=()=>{$('status').textContent='Could not load Action V3. Check that the prototype exists on this branch.';};
+ d.head.appendChild(script);
+});
+function makeCanvas(){const c=document.createElement('canvas');c.width=700;c.height=500;return c;}
+async function run(all){
+ if(!engine)return;
+ $('draw').disabled=$('all').disabled=true;
+ const seed=$('seed').value.trim()||'PHI-1618',orientation=$('orientation').value;
+ const selected=all?modes:[modes.find(m=>m[0]==='spiral')];
+ $('results').replaceChildren();
+ try{
+  for(let index=0;index<selected.length;index++){
+   const [mode,name]=selected[index];$('status').textContent='Rendering '+name+' ('+(index+1)+'/'+selected.length+')…';
+   const base=engine.readSettings();const settings={...base,seed,mode,orientation};
+   const section=document.createElement('section');const h=document.createElement('h2');h.textContent=name;section.append(h);
+   const grid=document.createElement('div');grid.className='grid';
+   for(const [label,fn] of [['V2 — current',engine.renderActionPainting],['V3 — composition-guided',engine.renderActionPaintingV3]]){
+    const figure=document.createElement('figure'),canvas=makeCanvas(),caption=document.createElement('figcaption');caption.textContent=label;
+    figure.append(canvas,caption);grid.append(figure);
+    const start=performance.now();fn(canvas,settings,.5,false,{version:2});
+    caption.textContent+=' · '+Math.round(performance.now()-start)+' ms';
+   }
+   section.append(grid);$('results').append(section);await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  $('status').textContent='Finished '+selected.length+' comparison'+(selected.length===1?'':'s')+'. Both versions use the same seed and editor settings.';
+ }catch(error){$('status').textContent='Rendering error: '+error.message;console.error(error)}
+ finally{$('draw').disabled=$('all').disabled=false}
+}
+$('draw').onclick=()=>run(false);$('all').onclick=()=>run(true);
+</script></body></html>
