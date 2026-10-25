@@ -39,13 +39,14 @@ try {
   assert.ok(!status.startsWith('Could not'),material+': '+status);
   if(material==='oil')assert.ok(status.includes('Oil walkthrough ready'), 'Oil loading notice was not cleared: '+status);
   if(material==='tissue'||material==='watercolour'||material==='oil')assert.ok(max>=2,material+' should expose an intermediate material checkpoint');
-  if(['tissue','watercolour','oil'].includes(material)){
+  if(['action','tissue','watercolour','oil'].includes(material)){
    const parity=await page.evaluate(material=>{
     const A=window.AlgoArt,s=window.__walkthroughTest.settings(),studio=document.createElement('canvas');
     const prior=A.materialStageCapture;
     try{
      A.materialStageCapture=null;
-     if(material==='tissue')A.renderOil(studio,s,1,false,7);
+     if(material==='action')A.renderActionPaintingV3(studio,s,.32,false,{version:3,layers:5});
+     else if(material==='tissue')A.renderOil(studio,s,1,false,7);
      else if(material==='watercolour')A.renderWatercolourV2S(studio,s,1,false);
      else A.renderOilPaintV5(studio,s,.45,false);
      const final=window.__walkthroughTest.frames().at(-1);

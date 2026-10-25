@@ -54,7 +54,8 @@ A.preparePNG=function(settings,scale){
   return new Promise(function(resolve,reject){
     try{
       if(settings.actionPaintingRender){
-        A.renderActionPainting(out,compositionSettings,scale,false,{version:settings.actionPaintingRevision||2});
+        const actionVersion=Number(settings.actionPaintingRevision)||2;
+        (actionVersion===3?A.renderActionPaintingV3:A.renderActionPainting)(out,compositionSettings,scale,false,{version:actionVersion});
       }
       else if(settings.oilPaintRender){
         const oilRenderer=settings.oilPaintRevision==='v5'?A.renderOilPaintV5:

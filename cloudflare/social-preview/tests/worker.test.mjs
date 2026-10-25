@@ -26,6 +26,13 @@ test('Oil V5 compact links retain the pigment revision and oil metadata',async()
  const response=await worker.fetch(request('/share?c='+v5),env);
  assert.equal(response.status,200);assert.match(await response.text(),/Original Oil Paint composition/);
 });
+test('Action V3 compact links retain their exact renderer and paint metadata',async()=>{
+ const data={...values,material:'action-v3'};
+ const v3=Buffer.from(keys.map(k=>data[k]||'').join('\x1f')).toString('base64url');
+ assert.equal(testing.decodeToken(v3).material,'action-v3');
+ const response=await worker.fetch(request('/share?c='+v3),env);
+ assert.equal(response.status,200);assert.match(await response.text(),/Original Action Painting composition/);
+});
 test('social HTML is crawler-visible and keeps exact token',async()=>{
  const r=await worker.fetch(request('/share?c='+token+'&pv=2'),env);
  assert.equal(r.status,200);
