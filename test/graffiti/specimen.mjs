@@ -1,4 +1,4 @@
-import {HANDS,CORE_HANDS,LETTERING_FORMS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom,tagDuration} from './tag-engine.mjs?v=letter-forms-v6';
+import {HANDS,CORE_HANDS,LETTERING_FORMS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom,tagDuration} from './tag-engine.mjs?v=sprayed-throwups-v7';
 import {drawConstruction} from './phi-lettering.mjs?v=phi-handstyles-v2';
 const $=id=>document.getElementById(id),canvas=$('wall'),ctx=canvas.getContext('2d');
 const inkLayer=document.createElement('canvas');
@@ -113,7 +113,7 @@ function renderStudies(){
  $('study-range').textContent='Studies '+(start+1)+'–'+Math.min(start+pageSize,studyIds.length)+' of '+studyIds.length;
  $('studies-prev').disabled=studyPage===0;$('studies-next').disabled=start+pageSize>=studyIds.length;
  const selected=HANDS[$('hand').value];
- $('study-selection').textContent=$('form').value!=='handstyle'?"Lettering sets the construction. Handwriting sets the writer; the fifty studies below compare their handstyles.":selected?selected.name+' · '+selected.description+' New seeds vary the execution while keeping this hand’s habits.':'Choose a hand to compare its habits across seeds, or use Different writers to mix all 53 hands.';
+ $('study-selection').textContent=$('form').value!=='handstyle'?"Lettering changes the construction and paint. Handwriting supplies the writer’s alphabet, proportions and rhythm.":selected?selected.name+' · '+selected.description+' New seeds vary the execution while keeping this hand’s habits.':'Choose a hand to compare its habits across seeds, or use Different writers to mix all 53 hands.';
 }
 function populateHands(){
  const forms=$('form');forms.replaceChildren(new Option('Different forms','mixed'));for(const [id,style] of Object.entries(LETTERING_FORMS))forms.append(new Option(style.name,id));

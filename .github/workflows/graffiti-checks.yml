@@ -1,0 +1,34 @@
+name: Graffiti lettering and paint checks
+on:
+  push:
+    paths:
+      - 'test/graffiti/**'
+      - '.github/workflows/graffiti-checks.yml'
+  pull_request:
+    paths:
+      - 'test/graffiti/**'
+      - '.github/workflows/graffiti-checks.yml'
+permissions:
+  contents: read
+jobs:
+  graffiti:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Letter geometry and paint field
+        run: node --test test/graffiti/tag-engine.test.mjs test/graffiti/throwup-paint.test.mjs
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Render throw-ups and check writer selection
+        run: node test/graffiti/throwup-browser-check.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: graffiti-paint-previews
+          path: artifacts/graffiti-throwups-*.png

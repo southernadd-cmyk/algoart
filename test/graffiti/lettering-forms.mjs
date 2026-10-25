@@ -1,10 +1,11 @@
+import {drawThrowup} from './throwup-paint.mjs?v=sprayed-throwups-v7';
 // Distinct construction and rendering families. All letters start from the
 // project's phi dimensions; inflated faces, straight bars and angular spines
 // have separate pen grammars from the existing handwriting studies.
 export const LETTERING_FORMS=Object.freeze({
  handstyle:Object.freeze({name:'Handstyle',description:'A quick signature, joins and a personal closing mark.',solid:false}),
- hollow:Object.freeze({name:'Hollow throw-up',description:'Inflated letter contours with the brick left showing inside.',solid:true,round:true,hollow:true,bar:25,outline:3.4,width:1.28,height:1,spacing:18}),
- bubble:Object.freeze({name:'Bubble throw-up',description:'Pillowy filled letters, dark outlines and small highlights.',solid:true,round:true,bar:28,outline:3.3,width:1.3,height:.98,spacing:19}),
+ hollow:Object.freeze({name:'Hollow throw-up',description:'A heavy sprayed contour with the brick left showing inside.',solid:true,round:true,hollow:true,bar:25,outline:6.8,width:1.28,height:1,spacing:18}),
+ bubble:Object.freeze({name:'Bubble throw-up',description:'Rounded fills with a heavy, uneven paint contour.',solid:true,round:true,bar:28,outline:6.5,width:1.3,height:.98,spacing:19}),
  straight:Object.freeze({name:'Straight letters',description:'Clear letter faces, square ends and an outline.',solid:true,round:false,bar:18,outline:2.6,width:1.2,height:1,spacing:17}),
  blockbuster:Object.freeze({name:'Blockbuster',description:'Wide, heavy, tightly packed geometric capitals.',solid:true,round:false,bar:30,outline:0,width:1.55,height:.95,spacing:22}),
  calligraphy:Object.freeze({name:'Calligraffiti',description:'Broad angled strokes, fine turns and sweeping script.',solid:false,calligraphy:true,width:.92,height:1.12}),
@@ -27,41 +28,25 @@ export function formGlyph(character,base,form,m){
  const L=(...ps)=>ps.map(([x,y])=>({x,y})),P=(points,smooth=false)=>({points,smooth});
  let glyph=base;
  if(form==='blockbuster'||form==='pixo'){
-  // Open polygonal bowls give these alphabets square/angular construction,
-  // rather than a rounded alphabet rendered with a different cap.
-  const shapes={
-   B:[P(L([0,H],[0,0],[W,0],[W,a],[0,a],[W,a],[W,H],[0,H]))],
-   C:[P(L([W,0],[0,0],[0,H],[W,H]))],
-   D:[P(L([0,H],[0,0],[W-u,0],[W,H/2],[W-u,H],[0,H]))],
-   G:[P(L([W,0],[0,0],[0,H],[W,H],[W,b],[W/2,b]))],
-   O:[P(L([0,0],[W,0],[W,H],[0,H],[0,0]))],
-   P:[P(L([0,H],[0,0],[W,0],[W,a],[0,a]))],
-   Q:[P(L([0,0],[W,0],[W,H],[0,H],[0,0])),P(L([W/2,b],[W+u,H+u]))],
-   R:[P(L([0,H],[0,0],[W,0],[W,a],[0,a])),P(L([W/ratio**2,a],[W,H]))],
-   S:[P(L([W,0],[0,0],[0,a],[W,b],[W,H],[0,H]))],
-   U:[P(L([0,0],[0,H],[W,H],[W,0]))]
-  };
-  if(shapes[character])glyph={...base,strokes:shapes[character]};
- }
- if(form==='pixo'){
-  const runes={
-   A:[P(L([0,H],[W/2,0],[W,H])),P(L([0,b],[W,a]))],
-   E:[P(L([0,0],[0,H])),P(L([0,0],[W,a/ratio])),P(L([0,b],[W,a])),P(L([0,H],[W,b]))],
-   M:[P(L([0,H],[0,0],[W/2,b],[W,0],[W,H]))],
-   N:[P(L([0,H],[0,0],[W,H],[W,0]))],
-   O:[P(L([W/2,0],[W,H/2],[W/2,H],[0,H/2],[W/2,0]))],
-   T:[P(L([0,a/ratio],[W,0])),P(L([W/2,0],[W/2,H]))],
-   I:[P(L([W/2,0],[W/2,H])),P(L([0,a],[W,b]))],
-   H:[P(L([0,0],[0,H])),P(L([W,0],[W,H])),P(L([0,b],[W,a]))]
-  };
-  if(runes[character])glyph={...glyph,strokes:runes[character]};
+  // Angularise this writer's alphabet rather than substituting a shared one.
+  // Bowls keep their openings, case forms and terminal positions.
+  glyph={...glyph,strokes:glyph.strokes.map(s=>{
+   let points=s.points;
+   if(s.smooth&&points.length>12){
+    const xs=points.map(p=>p.x),ys=points.map(p=>p.y),left=Math.min(...xs),right=Math.max(...xs),top=Math.min(...ys),bottom=Math.max(...ys);
+    const cx=(left+right)/2,cy=(top+bottom)/2,rx=(right-left)/2||1,ry=(bottom-top)/2||1;
+    points=points.map(p=>Math.abs((p.x-cx)/rx)>Math.abs((p.y-cy)/ry)?{x:p.x<cx?left:right,y:p.y}:{x:p.x,y:p.y<cy?top:bottom});
+    points=points.filter((p,i)=>!i||Math.hypot(p.x-points[i-1].x,p.y-points[i-1].y)>u*.25);
+   }
+   return {points,smooth:false};
+  })};
  }
  if(LETTERING_FORMS[form]?.solid){
   // Filled letter faces need larger counters than a signature's centreline.
   // P and R use the long phi bowl, rather than losing the short bowl beneath
   // a fat cap; B shares the available bowl space between its two counters.
-  if(character==='P'||character==='R')glyph={...glyph,strokes:glyph.strokes.map(s=>({...s,points:s.points.map(q=>({...q,y:q.y<=a+1e-6?q.y*b/a:q.y}))}))};
-  if(character==='B')glyph={...glyph,strokes:glyph.strokes.map(s=>({...s,points:s.points.map(q=>({...q,y:q.y<=a?q.y*(a+b)/2/a:(a+b)/2+(q.y-a)*(a+b)/2/b}))}))};
+  if((character==='P'||character==='R')&&glyph.strokes.some(s=>s.points.some(p=>p.y<1)&&s.points.every(p=>p.y<=a+1e-6)))glyph={...glyph,strokes:glyph.strokes.map(s=>({...s,points:s.points.map(q=>({...q,y:q.y<=a+1e-6?q.y*b/a:q.y}))}))};
+  if(character==='B'&&glyph.strokes.some(s=>s.points.some(p=>p.y<1)&&s.points.every(p=>p.y<=a+1e-6)))glyph={...glyph,strokes:glyph.strokes.map(s=>({...s,points:s.points.map(q=>({...q,y:q.y<=a?q.y*(a+b)/2/a:(a+b)/2+(q.y-a)*(a+b)/2/b}))}))};
  }
  if(form==='piece'){
   // Alternating wedge shoulders and extended terminal bars break the word's
@@ -88,6 +73,7 @@ export function drawSolidForm(ctx,tag,{progress=1,fractionAt,finish='spray'}={})
  const style=LETTERING_FORMS[tag.form];
  if(!style?.solid)throw new TypeError('A filled/outline lettering form is required.');
  if(progress<=0)return;
+ if(style.round)return drawThrowup(ctx,tag,style,{progress,fractionAt,finish,colours:colourPlan(tag)});
  let cache=caches.get(tag);
  if(!cache){
   const canvas=document.createElement('canvas');
@@ -112,7 +98,6 @@ export function drawSolidForm(ctx,tag,{progress=1,fractionAt,finish='spray'}={})
   if(style.hollow){g.globalCompositeOperation='destination-out';g.lineWidth=width;draws();g.globalCompositeOperation='source-over';}
   else{
    g.strokeStyle=style.outline?colours.fill:tag.ink;g.lineWidth=width;draws();
-   if(style.round){g.save();g.translate(-width*.12,-width*.13);g.strokeStyle=colours.highlight;g.globalAlpha=.36;g.lineWidth=Math.max(1.2,width*.055);draws();g.restore();}
   }
  }
  if(style.piece){
