@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Graffiti alphabet families · PROPORTION PIECE</title>
-<meta name="description" content="Ten original A–Z graffiti alphabets built from a structural study of 60 complete handstyle sheets.">
+<meta name="description" content="Nine original A–Z graffiti alphabets built from a structural study of 60 complete handstyle sheets.">
 <style>
 :root{font-family:Georgia,'Times New Roman',serif;color:#252c26;background:#ede9df}
 *{box-sizing:border-box}
@@ -47,11 +47,11 @@ button{cursor:pointer}button:hover,button:focus-visible{background:#dfded2}
 @media(max-width:470px){.letters{grid-template-columns:repeat(4,minmax(0,1fr))}.specimen{padding:14px}.word-preview{min-height:65px}input{width:180px}}
 </style></head><body>
 <nav><a href="../../studio.html">studio</a><a href="../../gallery.html">gallery</a><a href="https://www.bombingscience.com/graffiti-letters-61-graffiti-artists-share-their-styles/" target="_blank" rel="noopener noreferrer">source collection</a></nav>
-<header class="intro"><h1>Graffiti lettering, ten ways</h1>
-<p class="subtitle">Ten independently constructed A–Z alphabets, with matching φ symbols. Built from analysis of the 60 complete sheets in the Bombing Science collection, with separate anatomy and drawing rules for every family—not ten painted versions of one font.</p>
+<header class="intro"><h1>Graffiti lettering, nine ways</h1>
+<p class="subtitle">Nine independently constructed A–Z alphabets, with matching φ symbols. Built from analysis of the 60 complete sheets in the Bombing Science collection, with separate anatomy and drawing rules for every family—not nine painted versions of one font.</p>
 <p class="subtitle">Original interpretations, not traced or authenticated handwriting by any of the contributing artists. The tower still uses its existing graffiti until these are approved.</p>
 </header>
-<section aria-label="Compare the ten styles">
+<section aria-label="Compare the nine styles">
 <div class="controls">
 <label>Compare this word<input id="word" maxlength="65" value="MUSHROOM" autocomplete="off" spellcheck="false"></label>
 <label>Construction<select id="mode"><option value="ink">Writing / ink</option><option value="outline">Underlying geometry</option></select></label>
@@ -76,12 +76,14 @@ button{cursor:pointer}button:hover,button:focus-visible{background:#dfded2}
 <section class="notes"><h2>What you're looking at</h2>
 <p>Each capital is independently authored as a set of curves or solid cuts specific to its style family. The angular alphabets use filled blades and squared corners; the flowing alphabets use ink gestures; the calligraphic family uses a fixed-angle broad nib so its thick/thin contrast follows actual pen direction.</p>
 <p>The lettering is context-sensitive in compatible families: joining strokes begin and end on actual measured letter curves. Turn them off to judge each alphabet's anatomy without the word-level connections. Each family also has a separately designed φ symbol.</p>
+<p>We combined the former Kinetic sweeping study with Rotational loops because their completed words were not distinctive enough. Its original geometry remains archived in the research code. The Arrow-cross handstyle has been reconstructed from the reference sheets with stronger marker gestures.</p>
 <p>The 60 reference sheets remain in the user-supplied research archive. No reference photographs are copied into this website. This is a Phase D prototype for visual review, not the gallery release or the backfilled tower atlas.</p>
 </section>
 <script type="module">
 import {FAMILIES,getFamily} from './family-library.mjs';
 import {alphabetFragment,wordSvg,renderComparison,exportSvg,letterSvg} from './family-renderer.mjs';
 const by=id=>document.getElementById(id);let chosen=new URLSearchParams(location.search).get('family')||'A';
+if(chosen==='J')chosen='G'; // preserve old review links to consolidated J
 if(!FAMILIES.some(f=>f.id===chosen))chosen='A';
 let variants=1;
 for(const f of FAMILIES){const option=document.createElement('option');option.value=f.id;option.textContent=f.name;by('family').append(option)}
@@ -102,8 +104,7 @@ function drawDetail(){
  by('status').textContent='26 original capitals + authored φ · stable seed '+o.seed+' · proposed family, not production';
  document.querySelectorAll('.specimen').forEach(card=>card.classList.toggle('active',card.dataset.family===chosen));
 }
-function redraw(){const oldScroll=window.scrollY;
- try{by('compare').replaceChildren(renderComparison(by('word').value||'MUSHROOM',opts()));drawDetail()}
+function redraw(){try{by('compare').replaceChildren(renderComparison(by('word').value||'MUSHROOM',opts()));drawDetail()}
  catch(e){by('status').textContent='Could not render: '+e.message;console.error(e)}
 }
 function choose(family,scroll=true){

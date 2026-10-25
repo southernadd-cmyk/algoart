@@ -5,10 +5,9 @@ import {stableNoise} from './family-library.mjs';
 const NS='http://www.w3.org/2000/svg';
 const POLICIES=Object.freeze({
  A:Object.freeze({kind:'angular-cross',rate:.48,min:9,max:37,range:25,width:2.65}),
- B:Object.freeze({kind:'crossbar',rate:.76,min:11,max:48,range:30,width:2.85}),
+ B:Object.freeze({kind:'crossbar',rate:.48,min:7,max:62,range:27,width:3.3}),
  F:Object.freeze({kind:'calligraphic-link',rate:.66,min:9,max:45,range:22,width:1.25}),
- G:Object.freeze({kind:'orbital-link',rate:.72,min:11,max:46,range:28,width:2.2}),
- J:Object.freeze({kind:'kinetic-return',rate:.73,min:13,max:51,range:26,width:2.65})
+ G:Object.freeze({kind:'orbital-link',rate:.72,min:11,max:46,range:28,width:2.2})
 });
 export const CONNECTING_FAMILIES=Object.freeze(Object.keys(POLICIES));
 export function joinPolicy(id){return POLICIES[id]||null}

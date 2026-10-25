@@ -27,9 +27,9 @@ try{
  page.on('pageerror',error=>errors.push(error.message));
  page.on('console',msg=>{if(msg.type()==='error')errors.push(msg.text())});
  await page.goto(url,{waitUntil:'networkidle',timeout:60000});
- await page.waitForFunction(()=>document.querySelectorAll('.specimen').length===10);
- assert.equal(await page.locator('#compare article.specimen').count(),10);
- assert.equal(await page.locator('#family option').count(),10);
+ await page.waitForFunction(()=>document.querySelectorAll('.specimen').length===9);
+ assert.equal(await page.locator('#compare article.specimen').count(),9);
+ assert.equal(await page.locator('#family option').count(),9);
  assert.equal(await page.locator('#letters figure').count(),27);
  for(const figure of await page.locator('#letters figure').all())
   assert.ok(await figure.locator('svg path').count()>0,'Empty glyph');
@@ -39,12 +39,12 @@ try{
   const png=await icon.screenshot({timeout:30000});
   imageHashes.push(createHash('sha256').update(png).digest('hex'));
  }
- assert.equal(new Set(imageHashes).size,10,'Two preview alphabets produce identical raster artwork');
+ assert.equal(new Set(imageHashes).size,9,'Two of the nine preview alphabets produce identical raster artwork');
  // Check construction changes, not just colour: custom commands must differ.
  const outlines=await page.locator('#compare .word-preview svg').evaluateAll(svgs=>svgs.map(s=>[...s.querySelectorAll('path')].map(p=>p.getAttribute('d')).join('|')));
- assert.equal(new Set(outlines).size,10,'Two families share identical geometry');
+ assert.equal(new Set(outlines).size,9,'Two families share identical geometry');
  await page.screenshot({path:path.join(root,'artifacts/graffiti-phase-d-comparison.png'),fullPage:true});
- for(const family of 'ABCDEFGHIJ'){
+ for(const family of 'ABCDEFGHI'){
   await page.locator('#family').selectOption(family);
   assert.equal(await page.locator('#letters figure').count(),27,'Missing A–Z or phi glyph in '+family);
   assert.equal(await page.locator('#words > div').count(),5,'Missing word/phi samples '+family);
@@ -66,25 +66,28 @@ try{
  await page.locator('#family').selectOption('I');
  assert.ok(await page.locator('#letters svg path[data-tool="chisel-marker"]').count()>=25,
   'Family I is still a plain skeletal font, not a chisel brush');
- await page.locator('#family').selectOption('J');
+ await page.locator('#family').selectOption('B');
+ assert.ok(await page.locator('#letters svg path[data-tool="broad-cross-marker"]').count()>=50,
+  'Reconstructed B must use the new broad marker renderer, not the thin skeleton');
+ await page.locator('#family').selectOption('G');
  await page.locator('#word').fill('PROPORTION PIECE');
- const joinedWord=await page.locator('#compare article[data-family="J"] .word-preview svg path[data-join]').count();
- assert.ok(joinedWord>=1,'Kinetic family has no contextual joins');
+ const joinedWord=await page.locator('#compare article[data-family="G"] .word-preview svg path[data-join]').count();
+ assert.ok(joinedWord>=1,'Rotational family has no contextual joins');
  await page.locator('#joins').selectOption('off');
  assert.equal(await page.locator('#compare .word-preview svg path[data-join]').count(),0,'Disabled joins still rendered');
  await page.locator('#joins').selectOption('on');
- assert.ok(await page.locator('#compare article[data-family="J"] .word-preview svg path[data-join]').count()>=1,
+ assert.ok(await page.locator('#compare article[data-family="G"] .word-preview svg path[data-join]').count()>=1,
    'Re-enabling contextual joins failed');
  const phiWord=await page.evaluate(async()=> {
   const {wordSvg}=await import('./family-renderer.mjs');
-  return [...'ABCDEFGHIJ'].map(id=>wordSvg(id,'φ').querySelectorAll('g[data-letter="Φ"]').length);
+  return [...'ABCDEFGHI'].map(id=>wordSvg(id,'φ').querySelectorAll('g[data-letter="Φ"]').length);
  });
- assert.deepEqual(phiWord,Array(10).fill(1),'Phi signatures absent from composition');
+ assert.deepEqual(phiWord,Array(9).fill(1),'Phi signatures absent from composition');
  await page.locator('#family').selectOption('F');
  await page.locator('#mode').selectOption('outline');
  assert.equal(await page.locator('#letters figure').count(),27);
  await page.locator('#word').fill('PROPORTION PIECE');
- assert.equal(await page.locator('#compare .specimen').count(),10);
+ assert.equal(await page.locator('#compare .specimen').count(),9);
  const [download]=await Promise.all([
   page.waitForEvent('download'),
   page.locator('#export-word').click()
@@ -100,17 +103,17 @@ try{
  await page.setViewportSize({width:390,height:844});
  await page.locator('#mode').selectOption('ink');
  await page.locator('#word').fill('MUSHROOM');
- await page.locator('#family').selectOption('J');
+ await page.locator('#family').selectOption('G');
  const mobile=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,viewport:window.innerWidth,
   figures:document.querySelectorAll('#letters figure').length,previews:document.querySelectorAll('.specimen').length,phi:document.querySelector('div[data-word="φ"] svg')!==null}));
  assert.ok(mobile.scrollWidth<=mobile.viewport+2,'Horizontal mobile overflow: '+JSON.stringify(mobile));
  assert.equal(mobile.figures,27);
- assert.equal(mobile.previews,10);
+ assert.equal(mobile.previews,9);
  assert.equal(mobile.phi,true);
  await page.screenshot({path:path.join(root,'artifacts/graffiti-phase-d-mobile.png'),fullPage:true});
  assert.deepEqual(errors,[],'Browser console errors');
- console.log(JSON.stringify({ok:true,styles:10,letters:260,phiStyles:10,contextualJoins:true,uniqueRasterPreviews:new Set(imageHashes).size,
-  uniqueVectorPreviews:new Set(outlines).size,mobile,errors,screenshots:12},null,2));
+ console.log(JSON.stringify({ok:true,styles:9,letters:260,phiStyles:9,contextualJoins:true,uniqueRasterPreviews:new Set(imageHashes).size,
+  uniqueVectorPreviews:new Set(outlines).size,mobile,errors,screenshots:11},null,2));
 }catch(e){
  console.error('Phase D visual check failed',e,JSON.stringify(errors));
  if(page)await page.screenshot({path:path.join(root,'artifacts/graffiti-phase-d-failure.png'),fullPage:true}).catch(()=>{});

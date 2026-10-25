@@ -3,9 +3,9 @@ import {parseFamily} from './parse.mjs';
 // Sheet 8. Wide nested ovals and returning orbital gestures generate the letter,
 // rather than simple block geometry decorated with circles.
 export const orbitals=parseFamily({
- id:'G',name:'Rotational loops',primary:8,anchors:[8,18,47,57],
+ id:'G',name:'Rotational loops',primary:8,anchors:[8,18,47,57,36,40,52,54],
  technique:'loop',ink:'#40352c',weight:5.3,spacing:89,overlap:10,italic:-.08,
- notes:['Outer loop and inner counter interact','Crossings deliberately visible','Non-uniform widths with extended tails'],
+ notes:['Outer loops and inner counters create the letter structure','Crossings remain visible and deliberate','Kinetic sweeping references folded into this family because their finished words were visually redundant'],
  rows:String.raw`
 A|M 3 100 C 5 38 42 -13 61 9 C 81 32 64 78 83 103|M 1 76 C 18 55 52 43 77 64 C 83 76 47 85 35 64 C 19 41 58 19 64 44|^M 55 17 Q 87 2 95 19
 B|M 17 -5 C 9 34 12 84 10 113|M 20 22 C 86 -17 98 55 39 56 C 99 21 106 107 26 99 C 0 95 9 53 33 55|M 27 57 C 50 75 80 68 69 93|^M 50 10 Q 71 6 83 19

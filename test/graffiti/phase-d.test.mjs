@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {LETTERS,FAMILIES,BY_ID,getFamily,getGlyph,composeWord,auditFamilies,stableNoise} from './family-library.mjs';
+import {LETTERS,FAMILIES,BY_ID,RETIRED_STUDIES,RETIREMENT_MAP,getFamily,getGlyph,composeWord,auditFamilies,stableNoise} from './family-library.mjs';
 import {PHI_BY_FAMILY} from './family-symbols.mjs';
 import {joinPolicy,shouldConsiderJoin,CONNECTING_FAMILIES} from './family-joins.mjs';
-const STYLES='ABCDEFGHIJ';
+const STYLES='ABCDEFGHI';
 function assertPath(d,where){
  const regex=/[MLCQZ]|[-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?/g;
  assert.equal(d.replace(regex,'').replace(/\s+/g,''),'','Unparsed SVG tokens in '+where);
@@ -20,9 +20,9 @@ function assertPath(d,where){
  }
  assert.ok(moveCount>=2,where+' must contain a real segment');
 }
-test('Exactly ten source-informed independent complete A-Z families',()=>{
- assert.equal(FAMILIES.length,10);
- assert.equal(Object.keys(BY_ID).length,10);
+test('Nine visually distinct source-informed A-Z families, with redundant J retired',()=>{
+ assert.equal(FAMILIES.length,9);
+ assert.equal(Object.keys(BY_ID).length,9);
  assert.equal(FAMILIES.map(f=>f.id).join(''),STYLES);
  for(const f of FAMILIES){
   assert.equal(Object.keys(f.glyphs).length,26);
@@ -32,7 +32,7 @@ test('Exactly ten source-informed independent complete A-Z families',()=>{
   for(const ch of LETTERS)assert.ok(f.glyphs[ch],'Missing '+f.id+ch);
  }
 });
-test('All 260 glyphs use independent authored paths with valid SVG geometry',()=>{
+test('All 234 active glyphs use independent authored paths with valid SVG geometry',()=>{
  let n=0;const signatures=new Set();
  for(const f of FAMILIES){
   const local=new Set();
@@ -50,7 +50,7 @@ test('All 260 glyphs use independent authored paths with valid SVG geometry',()=
   }
   signatures.add([...local].join('!'));
  }
- assert.equal(signatures.size,10);
+ assert.equal(signatures.size,9);
  assert.ok(n>=600,'There should be substantial deliberately authored stroke geometry');
 });
 test('The anatomical styles use different construction systems, not just marker widths',()=>{
@@ -61,9 +61,9 @@ test('The anatomical styles use different construction systems, not just marker 
  assert.equal(getFamily('H').technique,'fragment');
  assert.equal(getFamily('I').technique,'chisel');
  const audit=auditFamilies();
- assert.equal(audit.length,10);
+ assert.equal(audit.length,9);
  assert.ok(audit.every(x=>x.uniqueLetters===26));
- assert.equal(new Set(audit.map(x=>x.geometryFingerprint)).size,10);
+ assert.equal(new Set(audit.map(x=>x.geometryFingerprint)).size,9);
  const filled=f=>Object.values(getFamily(f).glyphs).flatMap(g=>g.shapes).filter(s=>s.kind==='fill').length;
  assert.ok(filled('C')>=26&&filled('E')>=26&&filled('H')>=26);
  assert.equal(filled('B'),0);assert.equal(filled('I'),0);
@@ -95,7 +95,7 @@ test('Unknown style, invalid text and excessive variation are rejected',()=>{
  assert.throws(()=>composeWord('A','TAG',{variation:.5}),RangeError);
 });
 
-test('Ten independent phi signatures are not one shared copied shape',()=>{
+test('Nine active phi signatures are not one shared copied shape',()=>{
  const variants=new Set();
  for(const f of FAMILIES){
   const glyph=getGlyph(f.id,'φ');
@@ -109,10 +109,10 @@ test('Ten independent phi signatures are not one shared copied shape',()=>{
   const word=composeWord(f.id,'φ PHI');
   assert.equal(word.letters.map(x=>x.ch).join(''),'ΦPHI');
  }
- assert.equal(variants.size,10);
+ assert.equal(variants.size,9);
 });
 test('Only appropriate families and adjacent letters may receive contextual joins',()=>{
- assert.deepEqual(CONNECTING_FAMILIES,['A','B','F','G','J']);
+ assert.deepEqual(CONNECTING_FAMILIES,['A','B','F','G']);
  for(const id of 'CDEHI')assert.equal(joinPolicy(id),null);
  for(const id of CONNECTING_FAMILIES){
   assert.ok(joinPolicy(id).width>0);
@@ -125,16 +125,16 @@ test('Only appropriate families and adjacent letters may receive contextual join
 });
 test('Reference-informed weak families were rebuilt, not simply recoloured',()=>{
  const b=getFamily('B'),i=getFamily('I');
- assert.equal(b.technique,'crosshand');
+ assert.equal(b.technique,'fatmarker');
  assert.equal(i.technique,'chisel');
- assert.ok(b.weight>=6);
+ assert.ok(b.weight>=11);
  assert.ok(i.weight>=10);
  assert.ok(Object.values(b.glyphs).every(g=>g.shapes.length>=2));
  assert.ok(Object.values(i.glyphs).every(g=>g.shapes.length>=2));
 });
 
 test('Long crowded words gain tracking without disturbing fixed seed or detached alphabets',()=>{
- for(const id of ['A','B','F','G','J']){
+ for(const id of ['A','B','F','G']){
   const short=composeWord(id,'SKUF',{variation:0});
   const long=composeWord(id,'SKUFROOM',{variation:0});
   const shortStep=short.letters[1].x-short.letters[0].x;
@@ -147,4 +147,22 @@ test('Long crowded words gain tracking without disturbing fixed seed or detached
  const shortStep=detachedShort.letters[1].x-detachedShort.letters[0].x;
  const longStep=detachedLong.letters[1].x-detachedLong.letters[0].x;
  assert.equal(shortStep,longStep,'Chisel lettering must preserve spaced individual forms');
+});
+
+test('Retired kinetic alphabet is preserved as research, not an active duplicate',()=>{
+ assert.equal(RETIREMENT_MAP.J,'G');
+ assert.equal(RETIRED_STUDIES.J.id,'J');
+ assert.equal(Object.keys(RETIRED_STUDIES.J.glyphs).length,26);
+ assert.equal(FAMILIES.some(f=>f.id==='J'),false);
+ assert.throws(()=>getFamily('J'),RangeError);
+ assert.ok(getFamily('G').anchors.includes(52),'Consolidated group retains kinetic reference sheet');
+});
+test('Arrow-cross B has a full replacement alphabet, not recycled thin constructions',()=>{
+ const f=getFamily('B');
+ assert.equal(f.name,'Arrow-cross handstyle');
+ assert.equal(f.technique,'fatmarker');
+ assert.ok(f.weight>11);
+ assert.ok(f.anchors.includes(7)&&f.anchors.includes(9));
+ assert.ok(Object.values(f.glyphs).every(g=>g.shapes.length>=3));
+ assert.ok(Object.values(f.glyphs).reduce((n,g)=>n+g.shapes.length,0)>=100);
 });
