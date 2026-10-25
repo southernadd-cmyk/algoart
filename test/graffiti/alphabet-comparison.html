@@ -1,0 +1,10 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Alphabet comparison</title><style>body{font-family:Georgia;background:#eee9dc;padding:20px}main{display:grid;grid-template-columns:1fr 1fr;gap:20px}section{background:#fff;padding:15px}.letters{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}svg{width:100%;background:#f4f0e9}path{fill:none;stroke:#222;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}</style><h1>SKOFE and SKUF alphabet studies</h1><p>Provisional geometry specimens, not the live tower.</p><main><section><h2>SKOFE</h2><div class="letters" id="skofe"></div></section><section><h2>SKUF</h2><div class="letters" id="skuf"></div></section></main><script type="module">
+import {draftGlyph} from './authored-alphabet-drafts.mjs';
+for(const id of ['skofe','skuf'])for(const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'){
+const glyph=draftGlyph(id,ch,{width:60,height:100});
+const cell=document.createElement('div');
+const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','-12 -12 84 124');
+for(const stroke of glyph.strokes){const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',stroke.points.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' '));svg.append(path)}
+cell.append(svg,document.createTextNode(ch));document.getElementById(id).append(cell)
+}
+</script></html>
