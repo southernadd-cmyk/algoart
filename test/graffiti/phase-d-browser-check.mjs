@@ -30,7 +30,7 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('.specimen').length===10);
  assert.equal(await page.locator('#compare article.specimen').count(),10);
  assert.equal(await page.locator('#family option').count(),10);
- assert.equal(await page.locator('#letters figure').count(),26);
+ assert.equal(await page.locator('#letters figure').count(),27);
  for(const figure of await page.locator('#letters figure').all())
   assert.ok(await figure.locator('svg path').count()>0,'Empty glyph');
  const previews=await page.locator('.word-preview svg').all();
@@ -46,7 +46,7 @@ try{
  await page.screenshot({path:path.join(root,'artifacts/graffiti-phase-d-comparison.png'),fullPage:true});
  for(const family of 'ABCDEFGHIJ'){
   await page.locator('#family').selectOption(family);
-  assert.equal(await page.locator('#letters figure').count(),26,'Missing glyph in '+family);
+  assert.equal(await page.locator('#letters figure').count(),27,'Missing A–Z or phi glyph in '+family);
   assert.equal(await page.locator('#words > div').count(),5,'Missing word/phi samples '+family);
   const bounds=await page.locator('#letters svg').evaluateAll(svgs=>svgs.map(s=>{
    const bbox=s.querySelector('g[data-letter]')?.getBBox(),view=s.viewBox.baseVal;
@@ -81,7 +81,7 @@ try{
  });
  assert.deepEqual(phiWord,Array(10).fill(1),'Phi signatures absent from composition');
  await page.locator('#mode').selectOption('outline');
- assert.equal(await page.locator('#letters figure').count(),26);
+ assert.equal(await page.locator('#letters figure').count(),27);
  await page.locator('#word').fill('PROPORTION PIECE');
  assert.equal(await page.locator('#compare .specimen').count(),10);
  const [download]=await Promise.all([
@@ -95,7 +95,7 @@ try{
  assert.ok((out.match(/<path/g)||[]).length>20);
  const [sheet]=await Promise.all([page.waitForEvent('download'),page.locator('#export-alphabet').click()]);
  const letters=await fs.readFile(await sheet.path(),'utf8');
- assert.ok((letters.match(/<path/g)||[]).length>=26,'Alphabet export missing original glyph geometry');
+ assert.ok((letters.match(/<path/g)||[]).length>=27,'Alphabet export missing original glyph geometry or phi');
  await page.setViewportSize({width:390,height:844});
  await page.locator('#mode').selectOption('ink');
  await page.locator('#word').fill('MUSHROOM');
@@ -103,7 +103,7 @@ try{
  const mobile=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,viewport:window.innerWidth,
   figures:document.querySelectorAll('#letters figure').length,previews:document.querySelectorAll('.specimen').length,phi:document.querySelector('div[data-word="φ"] svg')!==null}));
  assert.ok(mobile.scrollWidth<=mobile.viewport+2,'Horizontal mobile overflow: '+JSON.stringify(mobile));
- assert.equal(mobile.figures,26);
+ assert.equal(mobile.figures,27);
  assert.equal(mobile.previews,10);
  assert.equal(mobile.phi,true);
  await page.screenshot({path:path.join(root,'artifacts/graffiti-phase-d-mobile.png'),fullPage:true});
