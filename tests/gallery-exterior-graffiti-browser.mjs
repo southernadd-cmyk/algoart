@@ -83,12 +83,12 @@ try{
   if(date===dates[0])assert.deepEqual(identity(inside.marks),identity(main.state.inside.marks));
  }
  await main.page.evaluate(()=>window.__galleryInteriorGraffiti.preview(0));
- await main.page.locator('#world').screenshot({path:path.join(root,'artifacts/tower-interior-handstyle.png')});
+ await main.page.screenshot({path:path.join(root,'artifacts/tower-interior-handstyle.png'),animations:'disabled',timeout:45000});
  // Close-up of the actual archived/occupied wall meshes with the production shader.
  for(const [name,match] of [['brand',m=>m.phrase==='Proportion Piece'],['phi',m=>m.phrase==='φ'],['angle',m=>m.slot===0]]){
   const index=after.marks.findIndex(match);assert.ok(index>=0);
   await main.page.evaluate(index=>{document.getElementById('welcome').hidden=true;document.getElementById('lift').hidden=true;window.__galleryGraffiti.preview(index);},index);
-  await main.page.locator('#world').screenshot({path:path.join(root,'artifacts/tower-graffiti-'+name+'.png')});
+  await main.page.screenshot({path:path.join(root,'artifacts/tower-graffiti-'+name+'.png'),animations:'disabled',timeout:45000});
  }
  assert.deepEqual(main.errors,[]);await main.context.close();
  const fallback=await open({fallback:true});assert.equal(fallback.geometry.at(-1).method,'procedural');
