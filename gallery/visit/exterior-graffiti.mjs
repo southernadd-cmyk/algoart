@@ -1,9 +1,11 @@
 // Transparent, outward-facing paint quads share a texture atlas and material.
 // Paint is generated in small renderer-frame steps, outside startup's critical path.
 import {drawTag} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
+import {drawTowerFamilyTag,towerGraffitiSignature,TOWER_LETTERING_REVISION} from './tower-family-lettering.mjs';
 import {planExteriorGraffiti,planGraffitiAtlases,towerGraffitiKey} from './exterior-graffiti-plan.mjs';
 const surfaceOffset=(mark,currentFloor)=>mark.surface==='interior'?.173:mark.level===currentFloor?.202:.173;
 export function graffitiPaintParts(tag){
+ if(tag.renderer==='az-nine-v1')return [tag];
  if(tag.form!=='bubble'&&tag.form!=='hollow')return [tag];
  const letters=new Map();tag.strokes.forEach((stroke,index)=>{const key=stroke.letterIndex;if(!letters.has(key))letters.set(key,{strokes:[],timing:[]});letters.get(key).strokes.push(stroke);if(tag.motion)letters.get(key).timing.push(tag.motion.strokes[index]);});
  // At full progress, each letter uses the same seed, coordinates and opacity
@@ -70,7 +72,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
   updateNormal();
   // Build-time PNG atlas is preferred. The legacy paint queue remains a
   // deterministic fallback for old floors or stale/incomplete manifests.
-  const expected=marks.map(m=>m.id+'|'+m.hand+'|'+m.seed).join(';');
+  const expected=towerGraffitiSignature(marks);
   const manifestUrl=kind==='interior'&&marks[0]
    ?new URL('../'+marks[0].date+'/3d/graffiti/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href)
    :new URL('./graffiti-assets/exterior/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
@@ -109,14 +111,14 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
    const {page,entry}=job,{mark,x,y,width,height}=entry,start=performance.now(),g=page.context,b=mark.bounds;
    try{
     g.save();g.beginPath();g.rect(x-2,y-2,width+4,height+4);g.clip();g.translate(x,y);g.scale(width/b.width,height/b.height);g.translate(-b.x,-b.y);
-    try{drawTag(g,job.tag,{finish:'spray'});}finally{g.restore();}
+    try{if(job.tag.renderer==='az-nine-v1')drawTowerFamilyTag(g,job.tag,{finish:'spray'});else drawTag(g,job.tag,{finish:'spray'});}finally{g.restore();}
     page.dirty=true;if(job.last){painted++;mark.tag=null;}
    }catch(error){errors.push(mark.id+': '+error.message);console.warn(kind+' paint failed',error);}
    paintSteps++;const elapsed=performance.now()-start;totalPaintMs+=elapsed;if(elapsed>maxPaintMs){maxPaintMs=elapsed;slowest={text:mark.phrase,hand:mark.hand,form:mark.form};}
    // Limit texture uploads while still showing the ground-floor marks first.
    if(paintSteps<=2||paintSteps%8===0||!pending.length)for(const p of pages)if(p.dirty){p.texture.needsUpdate=true;p.dirty=false;}
   },
-  get diagnostics(){return {marks:marks.length,painted,pending:pending.length,paintSteps,pages:pages.length,totalPaintMs:Math.round(totalPaintMs),maxPaintMs:Math.round(maxPaintMs),slowest,errors:[...errors]};},
+  get diagnostics(){return {lettering:TOWER_LETTERING_REVISION,marks:marks.length,painted,pending:pending.length,paintSteps,pages:pages.length,totalPaintMs:Math.round(totalPaintMs),maxPaintMs:Math.round(maxPaintMs),slowest,errors:[...errors]};},
   snapshot(currentFloor){return marks.map(({tag,bounds,...mark})=>({...mark,position:{x:mark.position.x+mark.normal.x*surfaceOffset(mark,currentFloor),y:mark.position.y,z:mark.position.z+mark.normal.z*surfaceOffset(mark,currentFloor)}}));},
   dispose(){dispose();sharedNormal?.dispose();sharedNormal=null;sourceNormal=null;key='';marks=[];}
  };
