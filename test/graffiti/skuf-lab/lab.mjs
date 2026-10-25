@@ -64,7 +64,7 @@ function render(){
 }
 function updateCoverage(){
  const items=doc.observations||[],c=describeCoverage(items);
- by('coverage').textContent=c.sourcePages+' research source pages · '+c.handstyleExamples+' annotated handstyle photos · '+c.needed+' more to meet the minimum reference target';
+ by('coverage').textContent=c.referenceLeads+' dated reference leads across '+c.sourcePages+' source pages · '+c.handstyleExamples+' annotated handstyle photos · '+c.needed+' more to meet the minimum reference target';
  const host=by('observations');host.replaceChildren();
  for(const [i,a] of items.entries()){
   const p=document.createElement('p');p.textContent=(i+1)+'. '+a.sourceId+' — '+a.medium+' ('+a.confidence+'), '+a.lettersVisible+'. '+a.geometry;
