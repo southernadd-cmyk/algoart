@@ -72,8 +72,8 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
   // deterministic fallback for old floors or stale/incomplete manifests.
   const expected=marks.map(m=>m.id+'|'+m.hand+'|'+m.seed).join(';');
   const manifestUrl=kind==='interior'&&marks[0]
-   ?new URL('../'+marks[0].date+'/3d/graffiti/manifest.json',location.href)
-   :new URL('./graffiti-assets/exterior/manifest.json',location.href);
+   ?new URL('../'+marks[0].date+'/3d/graffiti/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href)
+   :new URL('./graffiti-assets/exterior/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
   const token=generation;
   (async()=>{
    try{
