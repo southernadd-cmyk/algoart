@@ -69,7 +69,7 @@ function updateURL(){
 function generate({url=true}={}){
  stop();const small=matchMedia('(max-width:700px)').matches;canvas.width=small?1000:1600;canvas.height=small?920:800;
  const raw=$('word').value,clean=normaliseText(raw);$('word').value=clean;$('floor').value=Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)));if(!$('seed').value.trim())$('seed').value='PP-GRAFFITI-01';
- const options=readOptions();$('width-value').textContent=options.paintWidth.toFixed(2).replace(/0$/,'')+'×';plan=planFloorTags(options);tags=plan.map(p=>createTag(p.text,{...p,paintWidth:options.paintWidth}));render();elapsed=0;
+ const options=readOptions();$('width-value').textContent=options.paintWidth.toFixed(2).replace(/0$/,'')+'×';plan=planFloorTags(options).map(p=>options.hand==='mixed'?{...p,hand:featuredIds[Math.floor(makeRandom(p.seed+'|eight-hands').n()*featuredIds.length)]}:p);tags=plan.map(p=>createTag(p.text,{...p,paintWidth:options.paintWidth}));render();elapsed=0;
  $('previous').disabled=Number($('floor').value)<=1;$('next').disabled=Number($('floor').value)>=9999;
  $('floor-caption').textContent='Floor '+$('floor').value+' · '+(tags.length===1?'one tag':'two tags')+' · '+tags.map(t=>LETTERING_FORMS[t.form].name).join(' / ');
  canvas.setAttribute('aria-label','Floor '+$('floor').value+': '+tags.map(t=>t.text+' in '+LETTERING_FORMS[t.form].name+' lettering').join('; ')+', on a buff brick wall.');
@@ -77,10 +77,6 @@ function generate({url=true}={}){
  $('finish-caption').textContent=options.finish==='spray'?'Soft spray edges and scattered droplets follow the brick.':'Ink follows the brick grain and mortar.';
  const m=tags[0].construction.metrics;
  $('phi-measurements').textContent='At a height of '+m.height+' units, the letter frame is '+m.width.toFixed(2)+' units wide. Its bowl divisions are '+m.short.toFixed(2)+' and '+m.long.toFixed(2)+' units. Each writer then leans, compresses and varies that structure.';
- for(const hand of Object.keys(CORE_HANDS)){
-  const tag=createTag(clean||'PHI',{seed:options.seed,hand,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
-  paintWall($(hand+'-wall'),[tag],[{x:.5,y:.55,scale:.94,rotation:-.025}]);
- }
  renderForms();renderFeatured();renderAlphabetComparison();
  if(url)updateURL();
 }
@@ -133,7 +129,7 @@ function renderFeatured(){
 function populateHands(){
  const forms=$('form');forms.replaceChildren(new Option('Different forms','mixed'));for(const [id,style] of Object.entries(LETTERING_FORMS))forms.append(new Option(style.name,id));
  const select=$('hand');select.replaceChildren(new Option('Different writers','mixed'));
- for(const [label,entries] of [['Original hands',CORE_HANDS],['Eight developing styles',Object.fromEntries(featuredIds.map(id=>[id,REFERENCE_STUDIES[id]]))]]){
+ for(const [label,entries] of [['Eight developing styles',Object.fromEntries(featuredIds.map(id=>[id,REFERENCE_STUDIES[id]]))]]){
   const group=document.createElement('optgroup');group.label=label;
   for(const [id,hand] of Object.entries(entries))group.append(new Option(hand.name,id));select.append(group);
  }
@@ -162,7 +158,7 @@ async function init(){
  $('play').onclick=animate;$('finish').onclick=()=>{stop();elapsed=0;render();$('status').textContent='Finished wall. Same seed and floor, same tags.';};
  $('show-phi').onchange=()=>{render(currentProgress);updateURL();};
  matchMedia('(max-width:700px)').addEventListener('change',()=>generate({url:false}));
- for(const button of document.querySelectorAll('[data-hand]'))button.onclick=()=>{$('hand').value=button.dataset.hand;generate();};
+ 
  const image=new Image();image.onload=()=>{try{scan=prepareScan(image);surfaceCache.clear();generate({url:false});document.documentElement.dataset.wall='scan';}catch(e){console.warn('Using the local procedural brick fallback.',e);}};image.onerror=()=>{document.documentElement.dataset.wall='fallback';};image.src='./assets/brick-wall.webp';
  // A small read-only hook makes determinism, counts and actual rendering
  // inspectable without relying on visually identical DOM text.
