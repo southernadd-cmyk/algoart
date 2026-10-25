@@ -31,8 +31,34 @@ function pool(ctx,r,p,heading,weight,color){
  if(r()<.22){ctx.beginPath();ctx.ellipse(rx*.72,ry*.2,rx*.3,ry*.26,angle*.1,0,Math.PI*2);ctx.fill()}
  ctx.restore();
 }
+function softenStraightRuns(pts,r,w,h){
+ var changed=0;
+ function inside(p){return p.x>=0&&p.x<=w&&p.y>=0&&p.y<=h}
+ // Long, nearly collinear visible tails can survive even a curved cubic.
+ // Add one gentle local bow, with zero slope at its joins, only to those
+ // stretches. Existing loops and shorter gestures keep their shape.
+ for(var i=0;i<pts.length-2;i++){
+  if(!inside(pts[i]))continue;
+  var j=i,travel=0;
+  while(j+1<pts.length&&inside(pts[j+1])&&travel<260){travel+=Math.hypot(pts[j+1].x-pts[j].x,pts[j+1].y-pts[j].y);j++}
+  if(travel<260)continue;
+  var a=pts[i],b=pts[j],dx=b.x-a.x,dy=b.y-a.y,chord=Math.hypot(dx,dy),deviation=0;
+  if(chord<240)continue;
+  for(var k=i+1;k<j;k++)deviation=Math.max(deviation,Math.abs(dx*(pts[k].y-a.y)-dy*(pts[k].x-a.x))/chord);
+  if(deviation>2.6)continue;
+  var amplitude=chord*between(r,.025,.05)*(r()<.5?-1:1),nx=-dy/chord,ny=dx/chord,distance=0;
+  var original=pts.slice(i,j+1);
+  for(k=i+1;k<j;k++){
+   distance+=Math.hypot(original[k-i].x-original[k-i-1].x,original[k-i].y-original[k-i-1].y);
+   var offset=amplitude*Math.sin(Math.PI*distance/travel)**2;
+   pts[k]={x:original[k-i].x+nx*offset,y:original[k-i].y+ny*offset};
+  }
+  changed++;i=j;
+ }
+ return changed;
+}
 function fling(ctx,r,from,to,color,weight,energy,w,h,via,straightSource){
- var dx=to.x-from.x,dy=to.y-from.y,len=Math.hypot(dx,dy);if(len<5)return;
+ var dx=to.x-from.x,dy=to.y-from.y,len=Math.hypot(dx,dy);if(len<5)return 0;
  var nx=-dy/len,ny=dx/len,sign=r()<.5?-1:1;
  // Multi-anchor curved skeins: loops have the same chance in dark and light passes.
  var mid=via||{x:(from.x+to.x)/2,y:(from.y+to.y)/2};
@@ -59,6 +85,7 @@ function fling(ctx,r,from,to,color,weight,energy,w,h,via,straightSource){
  for(var k=0;k<=N;k++){var t=k/N,u=1-t;
    pts.push({x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,
              y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y})}
+ var softened=softenStraightRuns(pts,r,w,h);
  ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineCap='round';ctx.lineJoin='round';
  // Continuous ribbons with local curvature-dependent slowing and paint deposits.
  for(var i=1;i<pts.length;i++){
@@ -79,6 +106,7 @@ function fling(ctx,r,from,to,color,weight,energy,w,h,via,straightSource){
  for(var j=0;j<Math.floor(energy*6);j++){var spot=pts[Math.floor(r()*pts.length)];
    scatter(ctx,r,spot.x,spot.y,2+Math.floor(r()*5),color,between(r,8,40))}
  ctx.restore();
+ return softened;
 }
 function samplePaths(paths){var anchors=[];for(var i=0;i<paths.length;i++){var p=paths[i].pts;if(!p.length)continue;anchors.push(p[0],p[Math.floor(p.length/2)],p[p.length-1]);if(p.length>9)anchors.push(p[Math.floor(p.length*.618)])}return anchors}
 function structuralPour(pts){
@@ -153,7 +181,7 @@ paths.sort(function(a,b){return b.pts.length-a.pts.length});
 var cellsX=21,cellsY=15,occupancy=new Uint16Array(cellsX*cellsY);
 function cell(p){return Math.max(0,Math.min(cellsY-1,Math.floor(p.y/h*cellsY)))*cellsX+
  Math.max(0,Math.min(cellsX-1,Math.floor(p.x/w*cellsX)))}
-var passes=layers*3,skipped=0,bowed=0,order=paintLayerOrder(palette.length,r);
+var passes=layers*3,skipped=0,bowed=0,softened=0,order=paintLayerOrder(palette.length,r);
 for(var layer=0;layer<passes;layer++){
  if(layer&&layer%palette.length===0)order=paintLayerOrder(palette.length,r);
  var ix=order[layer%palette.length];
@@ -171,7 +199,7 @@ for(var layer=0;layer<passes;layer++){
   if(r()<.19){var theta=r()*Math.PI*2;b={x:b.x+Math.cos(theta)*w*between(r,.10,.30),y:b.y+Math.sin(theta)*h*between(r,.10,.30)}}
   var weight=between(r,.8,layer%3===0?9:6)*(roll>=.86?.45:1),energy=between(r,.55,1.35);
   if(crowded>14)weight*=.55;
-  fling(ctx,r,a,b,colour,weight,energy,w,h,via,straight);
+  softened+=fling(ctx,r,a,b,colour,weight,energy,w,h,via,straight);
   if(straight)bowed++;
   occupancy[ca]++;occupancy[cb]++;occupancy[cm]++;
   if(i%5===0&&crowded<17){var at=select();ctx.globalAlpha=between(r,.3,.75);
@@ -180,9 +208,9 @@ for(var layer=0;layer<passes;layer++){
  // One real completed layer per checkpoint, not one canvas per gesture.
  if(options.onStage)options.onStage('Paint pass '+(layer+1),target);
 }
-return {pathCount:paths.length,anchorCount:anchors.length,layers:layers,skippedCrowded:skipped,bowedSourceThrows:bowed,palette:palette.slice()}}
+return {pathCount:paths.length,anchorCount:anchors.length,layers:layers,skippedCrowded:skipped,bowedSourceThrows:bowed,softenedStraightRuns:softened,palette:palette.slice()}}
 A.renderActionPaintingV4=function(target,s,scale,showGeometry,options){scale=scale||1;var prior=A.svgRecorder,rec={precise:true,paths:[],paperMarks:[]},scratch=document.createElement('canvas'),meta;
 try{A.svgRecorder=rec;meta=A.render(scratch,s,Math.min(1,Math.max(.1,scale)),false)}finally{A.svgRecorder=prior}
 var stats=A.actionPaintingFromPathsV4(target,rec.paths,s,scale,options);if(showGeometry)A.geometryOverlay(target.getContext('2d'),s,meta);A.lastRenderMeta=meta;A.lastActionPaintingStatsV4=stats;return meta}
-A.actionPaintingV4Test={structuralPour:structuralPour};
+A.actionPaintingV4Test={structuralPour:structuralPour,softenStraightRuns:softenStraightRuns};
 })(window.AlgoArt);

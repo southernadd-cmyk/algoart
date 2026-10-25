@@ -15,11 +15,13 @@ try{
  async function render(p,s,family,version,scale=.3,reveal=false){
   return p.evaluate(({s,family,version,scale,reveal})=>{
    const A=window.AlgoArt,c=document.createElement('canvas'),before=JSON.stringify(s),alphas=[],original=CanvasRenderingContext2D.prototype.drawImage,
-    previousPlanner=A.planCompositionV5FromSource,previousContext=HTMLCanvasElement.prototype.getContext;
-   CanvasRenderingContext2D.prototype.drawImage=function(...args){if(this.canvas===c)alphas.push(this.globalAlpha);return original.apply(this,args)};
+    previousPlanner=A.planCompositionV5FromSource,previousContext=HTMLCanvasElement.prototype.getContext,previousCapture=A.materialStageCapture;
+   let inConnections=false;
+   A.materialStageCapture=function(label,...args){if(label==='oil-paint-base')inConnections=true;if(label==='oil-paint-connections')inConnections=false;previousCapture?.(label,...args)};
+   CanvasRenderingContext2D.prototype.drawImage=function(...args){if(inConnections)alphas.push(this.globalAlpha);return original.apply(this,args)};
    let meta;
    try{meta=A['render'+(family==='oil'?'OilPaint':'ActionPainting')+'V'+version](c,s,scale,reveal)}
-   finally{CanvasRenderingContext2D.prototype.drawImage=original}
+   finally{CanvasRenderingContext2D.prototype.drawImage=original;if(previousCapture===undefined)delete A.materialStageCapture;else A.materialStageCapture=previousCapture}
    const data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
    let hash=2166136261,transparent=0;for(let i=0;i<data.length;i++){hash=Math.imul(hash^data[i],16777619);if(i%4===3&&data[i]!==255)transparent++}
    return {hash:hash>>>0,width:c.width,height:c.height,transparent,meta,
@@ -46,7 +48,7 @@ try{
    assert(result.inputIntact&&result.restored,label+' scope');assert.equal(result.transparent,0);
    assert.equal(result.width,orientation==='portrait'?300:420);assert.equal(result.height,orientation==='portrait'?420:300);
   }
-  rows.push({label,bowedThrows:v4.action.bowedSourceThrows,contacts:v6.meta.work.oilV1.materialContacts,actionV3:v3.hash,actionV4:v4.hash,oilV5:v5.hash,oilV6:v6.hash});
+  rows.push({label,bowedThrows:v4.action.bowedSourceThrows,softenedRuns:v4.action.softenedStraightRuns,contacts:v6.meta.work.oilV1.materialContacts,actionV3:v3.hash,actionV4:v4.hash,oilV5:v5.hash,oilV6:v6.hash});
   console.log('PASS '+JSON.stringify(rows.at(-1)));
  }
  // Explicit Monochrome is the original palette; all counts stay user-chosen.
