@@ -65,35 +65,50 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
     bounds:{...tag.bounds},tag});
   }
  }
- // Five extra signatures across entrance-facing ground-floor brick. Preserve
- // the original ten tags, their seeds and their placements unchanged.
- if(ground){
-  const faces=exteriorWallFaces(ground,true);
+ // Five new signatures per painted floor, using different freehand writer
+ // profiles from any previously selected on its outward-facing facade.
+ for(const {level,plan} of ordered){
+  const faces=exteriorWallFaces(plan,level===0);
   const frontFaces=faces.filter(face=>face.exposed&&face.normal.x===front.x&&face.normal.z===front.z);
   const candidates=frontFaces.length?frontFaces:faces.filter(face=>face.exposed);
-  const occupied=new Set(marks.filter(mark=>mark.face.normal.x===front.x&&mark.face.normal.z===front.z).map(mark=>mark.hand));
+  const existing=marks.filter(mark=>mark.level===level);
+  const occupied=new Set(existing.map(mark=>mark.hand));
   const dialects=['gorey','kadism','faust','revok','sabe','veefer','katsu','curve','sicoer','rime','yorker','twist','remio','zephyr','jade','skofe'];
-  const usage=new Map();
   for(let extra=0;extra<5;extra++){
    const slot=TAGS_PER_PAINTED_FLOOR+extra;
    const hand=dialects.find(id=>HANDS[id]&&!occupied.has(id));
    if(!hand)throw new Error('Not enough distinct facade handstyles');
    occupied.add(hand);
-   const item=planFloorTags({floorId:ground.date,seed:seed+'|front-freehand|'+slot,hand,form:'handstyle',count:1})[0];
-   const phrase=GRAFFITI_WORDS[extra%GRAFFITI_WORDS.length];
+   const item=planFloorTags({floorId:plan.date,seed:seed+'|front-freehand|'+slot,hand,form:'handstyle',count:1})[0];
+   const phrase=GRAFFITI_WORDS[(extra+level)%GRAFFITI_WORDS.length];
    const tag=createTag(phrase,{...item,paintWidth:2});
-   const r=makeRandom(item.seed+'|front-wall'),desiredWidth=phrase==='Proportion Piece'?r.range(4.6,5.8):phrase==='PHI'?r.range(2.2,3.1):r.range(1.4,2);
-   const placed=candidates.map(face=>({face,...fitPhiTag({bounds:tag.bounds,desiredWidth,maxHeight:ROOM_HEIGHT-1.5,
-     lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,bottom:.65,top:ROOM_HEIGHT-.55,slot,phase:extra*7})}))
-    .filter(p=>p.width>0&&p.height>0)
-    .sort((a,b)=>(usage.get(a.face.id)||0)-(usage.get(b.face.id)||0)||b.face.length-a.face.length);
-   const chosen=placed[0];if(!chosen)throw new Error('No suitable front facade wall for freehand tag');
+   const r=makeRandom(item.seed+'|front-wall'),desiredWidth=phrase==='Proportion Piece'?r.range(3.2,4.3):phrase==='PHI'?r.range(1.7,2.5):r.range(1.1,1.6);
+   // Try several phi-phased placements on each wall rather than stacking
+   // every additional mark at the same five golden fractions.
+   const placed=candidates.flatMap(face=>Array.from({length:12},(_,attempt)=>{
+    const p=fitPhiTag({bounds:tag.bounds,desiredWidth,maxHeight:ROOM_HEIGHT-1.5,
+     lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,bottom:.65,top:ROOM_HEIGHT-.55,slot:slot+attempt*3,phase:extra*7+attempt*11});
+    const cos=Math.abs(Math.cos(p.rotation)),sin=Math.abs(Math.sin(p.rotation));
+    const hw=(p.width*cos+p.height*sin)/2,hh=(p.height*cos+p.width*sin)/2;
+    const right={x:face.normal.z,z:-face.normal.x};
+    const neighbours=marks.filter(m=>m.level===level&&m.face.id===face.id);
+    const overlap=neighbours.reduce((sum,m)=>{
+     const mw=(Math.abs(m.width*Math.cos(m.rotation))+Math.abs(m.height*Math.sin(m.rotation)))/2;
+     const mh=(Math.abs(m.height*Math.cos(m.rotation))+Math.abs(m.width*Math.sin(m.rotation)))/2;
+     const mu=(m.position.x-face.centre.x)*right.x+(m.position.z-face.centre.z)*right.z;
+     const my=m.position.y-level*floorSpacing-face.roomY;
+     const dx=Math.max(0,Math.min(p.u+hw,mu+mw)-Math.max(p.u-hw,mu-mw));
+     const dy=Math.max(0,Math.min(p.centreY+hh,my+mh)-Math.max(p.centreY-hh,my-mh));
+     return sum+dx*dy;
+    },0);
+    return {face,...p,overlap,score:overlap*100+(neighbours.length*0.15)+attempt*.002};
+   })).filter(p=>p.width>0&&p.height>0).sort((a,b)=>a.score-b.score);
+   const chosen=placed[0];if(!chosen)throw new Error('No suitable facade wall for freehand tag');
    const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
-   usage.set(face.id,(usage.get(face.id)||0)+1);
    const normal=face.normal,right={x:normal.z,z:-normal.x};
-   marks.push({id:item.id,date:ground.date,level:0,slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,form:'handstyle',ink:tag.ink,seed:tag.seed,
+   marks.push({id:item.id,date:plan.date,level,slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,form:'handstyle',ink:tag.ink,seed:tag.seed,
     face,width,height,rotation,normal:{x:normal.x,y:0,z:normal.z},
-    position:{x:face.centre.x+right.x*shift,y:face.roomY+centreY,z:face.centre.z+right.z*shift},
+    position:{x:face.centre.x+right.x*shift,y:level*floorSpacing+face.roomY+centreY,z:face.centre.z+right.z*shift},
     bounds:{...tag.bounds},tag});
   }
  }
