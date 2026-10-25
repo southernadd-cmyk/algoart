@@ -1,37 +1,39 @@
 import {parseFamily} from './parse.mjs';
 
-// Sheet 10. Deliberately small stroke budget; the open ends ARE the anatomy.
+// Sheet 10: sharply folded blue marker gestures with long pressure-faded exits.
+// Rebuilt after comparing reference artwork: *not* ordinary single-line capitals.
+// These are independent original variations on the sharp chisel-marker grammar.
 export const airy=parseFamily({
- id:'I',name:'Sparse gestural',primary:10,anchors:[10,35,53],
- technique:'airy',ink:'#257f91',weight:4.2,spacing:89,overlap:-8,italic:.09,
- notes:['One or two passes per capital','Counterforms often intentionally unclosed','Avoid added flourishes'],
+ id:'I',name:'Angular chisel gestures',primary:10,anchors:[10,35,53],
+ technique:'chisel',ink:'#2789a0',weight:14,spacing:83,overlap:1,italic:.05,
+ notes:['Long vertical marker sweeps end in dry taper','Short bent cut-nib heads are the letter identity','Very sparse strokes, but not typographic line capitals'],
  rows:String.raw`
-A|M 9 108 Q 23 70 28 5 L 37 26 L 69 103|M 23 56 L 57 47
-B|M 14 3 L 13 106|M 17 8 Q 72 -2 67 34 L 27 53 Q 82 48 71 91 L 21 102
-C|M 75 15 Q 23 -5 8 40 L 12 83 Q 32 117 77 91
-D|M 13 2 L 13 110|M 18 6 L 64 22 Q 91 58 65 88 L 22 103
-E|M 73 8 L 19 12 L 17 100 L 75 97|M 18 53 L 62 51
-F|M 18 111 L 23 8 L 80 6|M 21 52 L 67 46
-G|M 73 12 L 34 6 L 11 45 L 18 93 L 58 107 L 75 72 L 52 70
-H|M 14 2 L 10 107|M 74 1 L 78 107 L 15 58
-I|M 13 5 L 66 5|M 42 5 L 33 107
-J|M 26 7 L 76 4 L 65 90 Q 43 121 9 102
-K|M 16 -2 L 16 108|M 75 4 L 22 60 L 80 105
-L|M 21 1 L 18 103 L 80 98
-M|M 4 110 L 15 7 L 40 68 L 62 8 L 87 105
-N|M 9 110 L 15 5 L 76 103 L 80 4
-O|M 37 2 L 66 16 L 81 74 L 43 108 L 15 86 L 11 37 L 37 2
-P|M 15 114 L 17 6 L 66 13 L 76 50 L 20 63
-Q|M 31 5 L 72 9 L 79 50 L 53 92 L 14 88 L 9 29 L 31 5|M 51 69 L 95 112
-R|M 12 110 L 19 3 L 68 9 L 74 47 L 21 61|M 35 58 L 81 109
-S|M 77 11 L 36 3 L 11 38 L 71 66 L 58 103 L 3 97
-T|M 1 11 L 94 9|M 50 9 L 39 112
-U|M 13 2 L 11 80 L 33 107 L 69 90 L 80 4
-V|M 1 5 L 37 104 L 81 3
-W|M 2 7 L 19 105 L 47 54 L 66 106 L 98 7
-X|M 6 2 L 82 103|M 77 3 L 8 101
-Y|M 5 3 L 43 62 L 82 1|M 44 61 L 31 116
-Z|M 2 13 L 80 9 L 8 102 L 88 100
+A|M 22 112 C 22 68 17 29 31 8 Q 45 -2 57 18 L 55 44 Q 39 57 23 44|M 56 13 Q 48 59 67 117
+B|M 18 115 L 23 8 L 45 27 L 66 19 L 76 41 L 53 60|M 43 57 Q 66 77 78 115|^M 12 91 Q 45 78 59 92
+C|M 74 23 L 48 3 L 24 30 L 18 83 L 57 112|M 27 46 L 47 34 L 62 56|M 13 85 Q 36 89 63 100
+D|M 19 117 L 21 0 L 74 67 L 56 87 L 18 69|M 30 9 Q 59 46 85 108|^M 0 61 Q 37 49 61 64
+E|M 70 15 L 46 2 L 20 37 L 30 73 L 76 114|M 26 51 L 62 44|M 21 85 Q 44 71 63 87
+F|M 22 114 L 23 10 L 54 -5 L 72 16|M 22 52 L 62 45|M 7 98 Q 26 114 48 122
+G|M 71 18 L 45 1 L 21 28 L 24 86 L 62 112 L 76 65 L 53 67|M 24 60 Q 49 42 78 53|^M 17 89 L 34 110
+H|M 15 4 C 18 42 14 87 28 116|M 77 1 Q 69 54 83 111|M 20 65 L 69 44|^M 13 28 L 39 4
+I|M 35 -1 C 35 41 34 78 47 122|M 18 7 L 49 0|^M 26 95 Q 38 108 56 115
+J|M 14 17 L 84 2|M 63 17 C 62 54 73 100 45 116 Q 19 124 7 103|M 11 100 Q 24 93 32 113
+K|M 19 4 L 22 115|M 66 -3 L 45 28 L 30 57 L 66 102|M 14 65 L 71 45|^M 52 75 L 87 115
+L|M 24 0 C 22 34 27 84 48 115|M 17 86 L 81 107|M 29 35 L 44 17
+M|M 14 113 L 20 1 L 46 64 L 55 13 L 80 112|M 26 43 Q 42 58 55 87|^M 73 25 L 87 8
+N|M 16 119 L 19 -1 L 60 74 L 63 0|M 26 43 Q 47 63 79 111|^M 60 7 L 78 31
+O|M 50 5 L 75 35 L 63 98 L 42 118 L 19 84 L 24 27 L 50 5|M 25 39 L 46 20|^M 59 81 L 77 107
+P|M 19 120 L 19 2 L 62 15 L 78 46 L 50 66 L 21 57|M 22 12 L 47 30 L 61 44|^M 17 107 L 33 117
+Q|M 47 3 L 77 38 L 68 95 L 47 115 L 21 78 L 27 20 L 47 3|M 51 74 Q 71 92 93 116|M 23 46 Q 31 27 45 32
+R|M 20 117 L 22 3 L 69 18 L 78 48 L 42 65 L 22 52|M 44 67 Q 60 90 83 113|M 20 10 L 52 27
+S|M 78 16 L 46 -4 L 18 35 L 41 65 L 76 102 Q 46 119 11 96|M 23 45 Q 34 33 52 44|M 9 94 Q 38 109 58 123
+T|M 5 25 Q 43 5 92 16|M 49 8 L 44 112|M 42 73 L 70 93|^M 78 16 L 90 2
+U|M 17 1 C 9 50 15 97 40 115|M 76 2 C 68 42 70 81 57 108|M 40 109 L 68 87
+V|M 7 4 C 21 47 33 93 47 115|M 88 -2 Q 65 57 48 115|^M 38 77 L 54 91
+W|M -2 0 L 19 115 L 44 43|M 45 24 L 61 112 L 82 51|M 90 -4 L 97 35|^M 8 68 L 20 85
+X|M 9 -4 C 25 29 43 75 77 117|M 80 -2 C 59 38 27 84 6 116|M 35 35 L 53 53
+Y|M 8 3 Q 28 62 44 78|M 81 4 Q 63 57 46 81 C 44 105 32 114 13 126|M 41 83 L 67 115
+Z|M 9 9 L 78 2 L 49 42|M 55 32 Q 26 66 15 92 L 80 108|M 17 89 L 40 100
 `
 });
 
