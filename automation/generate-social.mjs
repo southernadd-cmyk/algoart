@@ -13,7 +13,7 @@ import { appendDailyPhiFraming, dailyPhiFramingForDate } from './phi-framing.mjs
 
 const rendererVersion=socialRendererVersion();
 // Old editions stay on their recorded material renderer; new editions use V3.
-const actionVersionForDate=day=>day>='2026-10-26'?'action-v3':day>='2026-10-18'?'action-v2':'action-v1';
+const actionVersionForDate=day=>day>='2026-10-26'?'action-v4':day>='2026-10-18'?'action-v2':'action-v1';
 
 function dateInZone(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', {
