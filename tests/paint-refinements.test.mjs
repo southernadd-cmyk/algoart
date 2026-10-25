@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+const sandbox={window:{AlgoArt:{}}},A=sandbox.window.AlgoArt;
+const load=path=>vm.runInNewContext(readFileSync(path,'utf8'),sandbox);
+load('js/action-painting-v4.js');
+const pour=A.actionPaintingV4Test.structuralPour;
+const plain=v=>JSON.parse(JSON.stringify(v));
+// The previous floor((n-1)/phi) midpoint was the start for a two-point line.
+for(const [a,b] of [[{x:0,y:0},{x:1000,y:0}],[{x:20,y:10},{x:20,y:1010}],[{x:900,y:20},{x:20,y:700}]]){
+ const p=pour([a,b]);assert(p.straight);assert.equal(p.a,a);assert.equal(p.b,b);
+ assert(Math.abs(Math.hypot(p.via.x-a.x,p.via.y-a.y)/Math.hypot(b.x-a.x,b.y-a.y)-.61803398875)<1e-10);
+}
+const sampled=pour([{x:0,y:0},{x:10,y:0},{x:1000,y:0}]);
+assert(Math.abs(sampled.via.x-618.03398875)<1e-7,'Golden point follows arc distance rather than sample index');
+assert(!pour([{x:0,y:0},{x:500,y:400},{x:1000,y:0}]).straight,'Retain already curved source gestures');
+assert(!pour([{x:0,y:0},{x:1000,y:0},{x:0,y:0}]).straight,'Closed source paths are not forced into a bow');
+assert(!pour([{x:0,y:0},{x:10,y:0}]).straight,'Short marks retain existing treatment');
+const soften=A.actionPaintingV4Test.softenStraightRuns;
+const line=Array.from({length:101},(_,i)=>({x:100+i*10,y:500}));
+const original=plain(line);assert(soften(line,()=>.75,1400,1000)>0);
+assert.deepEqual(line[0],original[0]);assert.deepEqual(line.at(-1),original.at(-1));
+assert(Math.max(...line.map(p=>Math.abs(p.y-500)))>6,'Long visible needles gain a meaningful bow');
+const loop=Array.from({length:101},(_,i)=>({x:700+200*Math.cos(i/100*Math.PI*2),y:500+200*Math.sin(i/100*Math.PI*2)}));
+const loopBefore=plain(loop);assert.equal(soften(loop,()=>.75,1400,1000),0);assert.deepEqual(loop,loopBefore,'Existing loops are unchanged');
+// V6 restores its opt-in on normal and exceptional exits, including nesting.
+A.renderOilPaintV5=()=>{assert.equal(A.oilOpaquePaint,true);return {version:'oil-paint-v5',work:{contact:12}}};
+load('js/oil-paint-v6.js');
+assert.deepEqual(plain(A.renderOilPaintV6({},{})),{version:'oil-paint-v6',work:{contact:12}});
+assert(!Object.hasOwn(A,'oilOpaquePaint'));
+A.oilOpaquePaint='prior';A.renderOilPaintV6({},{});assert.equal(A.oilOpaquePaint,'prior');
+A.renderOilPaintV5=()=>{throw Error('paint failure')};
+assert.throws(()=>A.renderOilPaintV6({},{}),/paint failure/);assert.equal(A.oilOpaquePaint,'prior');
+delete A.oilOpaquePaint;
+assert.throws(()=>A.renderOilPaintV6({},{}),/paint failure/);assert(!Object.hasOwn(A,'oilOpaquePaint'));
+console.log('PASS two-point and sampled structural pours; existing curves; V6 coverage scope on success and failure.');

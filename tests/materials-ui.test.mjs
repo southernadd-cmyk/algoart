@@ -32,7 +32,8 @@ assert.match(help,/Presentation only: retain every setting and its value for exi
   'Material-aware labels must preserve the raw saved artwork settings');
 assert.match(help,/var TISSUE_PROFILES=/);
 assert.match(help,/var TISSUE_LABELS=/);
-assert.match(app,/pen:'pen'/);
+assert.match(read('js/settings-url.js'),/pen:'pen'/);
+assert.match(app,/var PARAM_KEYS=A\.PARAM_KEYS/);
 assert.match(app,/if\(oilPaintV2Enabled\(\)\)return A\.renderOilPaintV2/);
 assert.match(app,/if\(oilPaintV1Enabled\(\)\)return A\.renderOilPaintV1/);
 assert.match(app,/params\.set\('material','oil-v2'\)/);
@@ -55,3 +56,4 @@ assert(!markerStyle.includes('grid-template-columns:1.25fr'));
 assert.match(markerStyle,/\.tab\{font-size:1[23]px;[^}]*\}/,
   'Navigation tabs must retain readable marker lettering');
 console.log('PASS: Material labels, descriptions, unchanged URL parameters, and editorial tabs');
+

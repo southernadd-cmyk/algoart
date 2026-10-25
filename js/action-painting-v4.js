@@ -1,0 +1,216 @@
+// Action Painting V4 study: bowed structural pours and an enamel-like gamut.
+// V3 is frozen in its own module for exact replay of released artwork.
+// Geometry is produced by the existing marker renderer; no new composition engine.
+window.AlgoArt=window.AlgoArt||{};
+(function(A){
+'use strict';
+function hash(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function random(seed){var v=hash(seed)||1;return function(){v+=0x6D2B79F5;var t=v;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296}}
+function between(r,a,b){return a+(b-a)*r()}
+function pathPoints(d){var t=(d||'').match(/[MLC]|-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?/gi)||[],p=[],i=0,cmd='',q=null;
+function n(){return Number(t[i++])}
+while(i<t.length&&p.length<400){if(/^[MLC]$/i.test(t[i])){cmd=t[i++].toUpperCase();continue}
+if(cmd==='M'||cmd==='L'){if(i+1>=t.length)break;q={x:n(),y:n()};p.push(q);cmd='L'}
+else if(cmd==='C'&&q){if(i+5>=t.length)break;var a={x:n(),y:n()},b={x:n(),y:n()},c={x:n(),y:n()},f=q;for(var z=1;z<=8;z++){var u=z/8,v=1-u;p.push({x:v*v*v*f.x+3*v*v*u*a.x+3*v*u*u*b.x+u*u*u*c.x,y:v*v*v*f.y+3*v*v*u*a.y+3*v*u*u*b.y+u*u*u*c.y})}q=c;cmd='L'}else break}
+return p}
+function dedupe(paths){var out=[],seen=new Set();for(var k=0;k<paths.length;k++){var pts=pathPoints(paths[k].d);if(pts.length<2)continue;var a=pts[0],b=pts[pts.length-1],key=[Math.round(a.x/12),Math.round(a.y/12),Math.round(b.x/12),Math.round(b.y/12)].join(':');if(seen.has(key))continue;seen.add(key);out.push({pts:pts,color:paths[k].stroke||'#252525'})}return out}
+function scatter(ctx,r,x,y,amount,c,width){ctx.fillStyle=c;for(var i=0;i<amount;i++){var angle=r()*Math.PI*2,rad=Math.pow(r(),.7)*width,sz=Math.pow(r(),2.1)*between(r,.6,7);ctx.beginPath();ctx.ellipse(x+Math.cos(angle)*rad,y+Math.sin(angle)*rad,sz,sz*between(r,.6,1.5),angle,0,Math.PI*2);ctx.fill()}}
+function pool(ctx,r,p,heading,weight,color){
+ // Smooth irregular paint footprint: cubic-like quadratic joins instead of polygon edges.
+ var rx=weight*between(r,.9,2.7),ry=rx*between(r,.38,1.1);
+ var n=14+Math.floor(r()*9),angle=heading+between(r,-.7,.7),points=[];
+ // Low-frequency modulation keeps pools organic rather than spiky or faceted.
+ var phase=r()*6.283185307,second=r()*6.283185307;
+ for(var j=0;j<n;j++){var t=j*2*Math.PI/n,mod=1+.14*Math.sin(t*3+phase)+.08*Math.cos(t*5+second)+between(r,-.035,.035);
+  points.push({x:Math.cos(t)*rx*mod,y:Math.sin(t)*ry*mod})}
+ ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);ctx.beginPath();
+ var prev=points[n-1],first=points[0];ctx.moveTo((prev.x+first.x)/2,(prev.y+first.y)/2);
+ for(j=0;j<n;j++){var v=points[j],next=points[(j+1)%n];
+  ctx.quadraticCurveTo(v.x,v.y,(v.x+next.x)/2,(v.y+next.y)/2)}
+ ctx.closePath();ctx.globalAlpha=between(r,.5,.92);ctx.fillStyle=color;ctx.fill();
+ if(r()<.22){ctx.beginPath();ctx.ellipse(rx*.72,ry*.2,rx*.3,ry*.26,angle*.1,0,Math.PI*2);ctx.fill()}
+ ctx.restore();
+}
+function softenStraightRuns(pts,r,w,h){
+ var changed=0;
+ function inside(p){return p.x>=0&&p.x<=w&&p.y>=0&&p.y<=h}
+ // Long, nearly collinear visible tails can survive even a curved cubic.
+ // Add one gentle local bow, with zero slope at its joins, only to those
+ // stretches. Existing loops and shorter gestures keep their shape.
+ for(var i=0;i<pts.length-2;i++){
+  if(!inside(pts[i]))continue;
+  var j=i,travel=0;
+  while(j+1<pts.length&&inside(pts[j+1])&&travel<260){travel+=Math.hypot(pts[j+1].x-pts[j].x,pts[j+1].y-pts[j].y);j++}
+  if(travel<260)continue;
+  var a=pts[i],b=pts[j],dx=b.x-a.x,dy=b.y-a.y,chord=Math.hypot(dx,dy),deviation=0;
+  if(chord<240)continue;
+  for(var k=i+1;k<j;k++)deviation=Math.max(deviation,Math.abs(dx*(pts[k].y-a.y)-dy*(pts[k].x-a.x))/chord);
+  if(deviation>2.6)continue;
+  var amplitude=chord*between(r,.025,.05)*(r()<.5?-1:1),nx=-dy/chord,ny=dx/chord,distance=0;
+  var original=pts.slice(i,j+1);
+  for(k=i+1;k<j;k++){
+   distance+=Math.hypot(original[k-i].x-original[k-i-1].x,original[k-i].y-original[k-i-1].y);
+   var offset=amplitude*Math.sin(Math.PI*distance/travel)**2;
+   pts[k]={x:original[k-i].x+nx*offset,y:original[k-i].y+ny*offset};
+  }
+  changed++;i=j;
+ }
+ return changed;
+}
+function fling(ctx,r,from,to,color,weight,energy,w,h,via,straightSource){
+ var dx=to.x-from.x,dy=to.y-from.y,len=Math.hypot(dx,dy);if(len<5)return 0;
+ var nx=-dy/len,ny=dx/len,sign=r()<.5?-1:1;
+ // Multi-anchor curved skeins: loops have the same chance in dark and light passes.
+ var mid=via||{x:(from.x+to.x)/2,y:(from.y+to.y)/2};
+ var spread=between(r,.2,.7)*len*sign,fold=r()<.46;
+ var p0={x:from.x-dx*between(r,.03,.16),y:from.y-dy*between(r,.03,.16)};
+ var p1={x:mid.x-dx*.35+nx*spread,y:mid.y-dy*.35+ny*spread};
+ var p2={x:mid.x+dx*(fold?-.34:.22)-nx*spread*.9,y:mid.y+dy*(fold?-.34:.22)-ny*spread*.9};
+ var p3={x:to.x+dx*between(r,.05,.27),y:to.y+dy*between(r,.05,.27)};
+ // Small perpendicular deflection breaks the remaining ruler-straight needles.
+ // Preserve strong long skeins and underlying anchors; no random walk.
+ var arch=between(r,.035,.11)*len*(r()<.5?-1:1);
+ p1.x+=nx*arch;p1.y+=ny*arch;
+ p2.x+=nx*arch*.75;p2.y+=ny*arch*.75;
+ // A two-point rectangle edge has no interior anchor. Give its structural
+ // pour a coherent bow rather than an S curve whose long inflection reads
+ // as a ruler line. Endpoints retain their source positions and overshoot.
+ if(straightSource){
+  var bend=(Math.abs(arch)*1.6+len*.025)*sign,
+   ex=p3.x-p0.x,ey=p3.y-p0.y;
+  p1={x:p0.x+ex*.32+nx*bend,y:p0.y+ey*.32+ny*bend};
+  p2={x:p0.x+ex*.68+nx*bend*.82,y:p0.y+ey*.68+ny*bend*.82};
+ }
+ var pts=[],N=Math.min(105,Math.max(28,Math.ceil(len/8)));
+ for(var k=0;k<=N;k++){var t=k/N,u=1-t;
+   pts.push({x:u*u*u*p0.x+3*u*u*t*p1.x+3*u*t*t*p2.x+t*t*t*p3.x,
+             y:u*u*u*p0.y+3*u*u*t*p1.y+3*u*t*t*p2.y+t*t*t*p3.y})}
+ var softened=softenStraightRuns(pts,r,w,h);
+ ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineCap='round';ctx.lineJoin='round';
+ // Continuous ribbons with local curvature-dependent slowing and paint deposits.
+ for(var i=1;i<pts.length;i++){
+   var p=pts[i],q=pts[i-1],before=pts[Math.max(0,i-2)],after=pts[Math.min(N,i+1)];
+   var ax=q.x-before.x,ay=q.y-before.y,bx=after.x-p.x,by=after.y-p.y;
+   var curvature=Math.min(1,Math.abs(Math.atan2(ax*by-ay*bx,ax*bx+ay*by))*3.8);
+   var speed=Math.hypot(p.x-q.x,p.y-q.y);
+   var thickness=weight*(.3+curvature*.85+Math.min(.55,2/Math.max(2,speed)))*(r()<.05?.6:1);
+   if(r()<.025&&!curvature)continue;
+   ctx.globalAlpha=between(r,.53,.92);ctx.lineWidth=Math.max(.5,thickness);
+   ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+   if(i>3&&i<N-3&&((curvature>.27&&r()<.13)||(speed<2.5&&r()<.15)))
+     pool(ctx,r,p,Math.atan2(p.y-q.y,p.x-q.x),Math.max(1.2,thickness),color);
+   if(r()<.09*energy)scatter(ctx,r,p.x,p.y,2+Math.floor(r()*5),color,between(r,5,24));
+ }
+ // Not every gesture pools, and no endpoint is privileged.
+ if(r()<.24){var at=pts[2+Math.floor(r()*(N-4))];pool(ctx,r,at,between(r,-3.14,3.14),weight,color)}
+ for(var j=0;j<Math.floor(energy*6);j++){var spot=pts[Math.floor(r()*pts.length)];
+   scatter(ctx,r,spot.x,spot.y,2+Math.floor(r()*5),color,between(r,8,40))}
+ ctx.restore();
+ return softened;
+}
+function samplePaths(paths){var anchors=[];for(var i=0;i<paths.length;i++){var p=paths[i].pts;if(!p.length)continue;anchors.push(p[0],p[Math.floor(p.length/2)],p[p.length-1]);if(p.length>9)anchors.push(p[Math.floor(p.length*.618)])}return anchors}
+function structuralPour(pts){
+ var first=pts[0],last=pts[pts.length-1],dx=last.x-first.x,dy=last.y-first.y,
+  chord=Math.hypot(dx,dy),length=0,segments=[];
+ for(var i=1;i<pts.length;i++){var d=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);segments.push(d);length+=d}
+ // Interpolate the actual golden-distance point; indexing a two-point path
+ // used its start as the middle anchor, which exaggerates long thin tails.
+ var remaining=length/((1+Math.sqrt(5))/2),via=first;
+ for(i=0;i<segments.length;i++){
+  if(remaining<=segments[i]&&segments[i]>0){var t=remaining/segments[i];via={x:pts[i].x+(pts[i+1].x-pts[i].x)*t,y:pts[i].y+(pts[i+1].y-pts[i].y)*t};break}
+  remaining-=segments[i];
+ }
+ var straight=chord>80&&length<chord*1.04&&pts.every(function(p){return Math.abs(dx*(p.y-first.y)-dy*(p.x-first.x))/chord<chord*.025});
+ return {a:first,b:last,via:via,straight:straight};
+}
+function enamelPalette(s,base){
+ if(s.palette==='mono')return base;
+ if(!A.oilPigment)throw Error('Action V4 requires oil-pigment.js');
+ var sample=document.createElement('canvas');sample.width=sample.height=1;
+ var ctx=sample.getContext('2d');
+ return base.map(function(css){ctx.fillStyle=css;ctx.fillRect(0,0,1,1);
+  var mapped=A.oilPigment.mapRGB(Array.from(ctx.getImageData(0,0,1,1).data).slice(0,3));
+  return 'rgb('+mapped.join(',')+')';
+ });
+}
+// Action Painting needs a full working rack of pigments, even when a
+// traditional named palette has only 3 anchor hues. Other materials continue
+// using A.hues unchanged. Explicit Monochrome remains monochromatic.
+function actionPaintPalette(s,version){
+ // V1 preserves the historical eight-pigment minimum for archived links.
+ // V2 takes its pigment count exclusively from the Colours control.
+ var count=version===1?(s.palette==='mono'?Math.max(1,s.colourCount):Math.max(8,s.colourCount)):
+   Math.max(1,Math.min(14,Math.round(Number(s.colourCount)||1)));
+ var base=A.hues(Object.assign({},s,{colourCount:count}),A.makeR(String(s.seed)+'|action-palette'));
+ if(s.palette==='mono'||s.palette==='spectrum'||s.palette==='golden')return base;
+ var cycle={primary:3,cmyk:4,warm:6,cold:7,neon:7,pastel:8,earth:8,marker:11}[s.palette]||count;
+ return base.map(function(value,i){
+  var round=Math.floor(i/cycle);
+  if(!round)return value;
+  var parts=/^hsl\(([\d.]+) ([\d.]+)% ([\d.]+)%\)$/.exec(value);
+  if(!parts)return value;
+  var hue=(+parts[1]+[0,21,-24,42,-43,63][round%6])%360;
+  var light=Math.max(26,Math.min(74,+parts[3]+(round%2?-7:8)));
+  return 'hsl('+hue+' '+parts[2]+'% '+light+'%)';
+ });
+}
+function paintLayerOrder(length,r){
+ var indices=Array.from({length:length},function(_,i){return i});
+ for(var i=indices.length-1;i>0;i--){var j=Math.floor(r()*(i+1)),tmp=indices[i];indices[i]=indices[j];indices[j]=tmp}
+ return indices;
+}
+A.actionPaintingFromPathsV4=function(target,sourcePaths,s,scale,options){options=options||{};scale=scale||1;
+// Derive the study from the same seed and source composition as V3.
+var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v3|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=enamelPalette(s,actionPaintPalette(s,3));
+target.width=Math.round(w*scale);target.height=Math.round(h*scale);var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
+ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h);if(!anchors.length)return {pathCount:0,anchorCount:0};
+var layers=options.layers||5,density=options.density||1;
+var archetypes=['off-centre knot','double cluster','diagonal band','hooked crescent','edge-loaded','woven strip'];
+var archetype=archetypes[hash(s.seed+'|mass')%archetypes.length];
+var cx=anchors.reduce((sum,p)=>sum+p.x,0)/anchors.length,cy=anchors.reduce((sum,p)=>sum+p.y,0)/anchors.length;
+var ordered=anchors.slice().sort((a,b)=>a.x-b.x),left=ordered[Math.floor(ordered.length*.25)],right=ordered[Math.floor(ordered.length*.75)];
+var PHI=(1+Math.sqrt(5))/2,reach=Math.hypot(w,h)/(PHI*PHI*PHI); // local throw radius: diagonal/phi^3
+function select(){var p=anchors[Math.floor(r()*anchors.length)];return{x:p.x+between(r,-6,6),y:p.y+between(r,-6,6)}}
+function near(a){ // a partner anchor within reach of a, so throws stay where the drawing is
+ for(var tries=0;tries<12;tries++){var q=anchors[Math.floor(r()*anchors.length)];if(Math.hypot(q.x-a.x,q.y-a.y)<reach&&Math.hypot(q.x-a.x,q.y-a.y)>8)return{x:q.x,y:q.y}}
+ var t=r()*6.283;return{x:a.x+Math.cos(t)*reach*.6,y:a.y+Math.sin(t)*reach*.6}}
+function along(){ // pour along a real drawn line: start, golden point, end
+ return structuralPour(paths[Math.floor(Math.pow(r(),1.4)*paths.length)].pts)}
+paths.sort(function(a,b){return b.pts.length-a.pts.length});
+// Coarse occupancy prevents late opaque paint collapsing into an unreadable centre.
+var cellsX=21,cellsY=15,occupancy=new Uint16Array(cellsX*cellsY);
+function cell(p){return Math.max(0,Math.min(cellsY-1,Math.floor(p.y/h*cellsY)))*cellsX+
+ Math.max(0,Math.min(cellsX-1,Math.floor(p.x/w*cellsX)))}
+var passes=layers*3,skipped=0,bowed=0,softened=0,order=paintLayerOrder(palette.length,r);
+for(var layer=0;layer<passes;layer++){
+ if(layer&&layer%palette.length===0)order=paintLayerOrder(palette.length,r);
+ var ix=order[layer%palette.length];
+ var colour=palette[ix],count=Math.min(95,Math.floor((7+anchors.length*.065)*density));
+ ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
+ for(var i=0;i<count;i++){
+  var a,b,via,straight=false,roll=r();
+  if(roll<.38){var ln=along();a=ln.a;via=ln.via;b=ln.b;straight=ln.straight} // follow the structure
+  else if(roll<.86){a=select();b=near(a);via={x:(a.x+b.x)/2+between(r,-1,1)*reach*.4,y:(a.y+b.y)/2+between(r,-1,1)*reach*.4}} // local skein
+  else{a=select();b=select();via=select()}                            // the occasional wild cross-canvas throw
+  var ca=cell(a),cb=cell(b),cm=cell(via);
+  var crowded=Math.max(occupancy[ca],occupancy[cb],occupancy[cm]);
+  if(crowded>20&&r()<Math.min(.82,(crowded-20)/36)){skipped++;continue}
+  // New gestures may escape the φ mass; origin and intermediate anchors remain derived.
+  if(r()<.19){var theta=r()*Math.PI*2;b={x:b.x+Math.cos(theta)*w*between(r,.10,.30),y:b.y+Math.sin(theta)*h*between(r,.10,.30)}}
+  var weight=between(r,.8,layer%3===0?9:6)*(roll>=.86?.45:1),energy=between(r,.55,1.35);
+  if(crowded>14)weight*=.55;
+  softened+=fling(ctx,r,a,b,colour,weight,energy,w,h,via,straight);
+  if(straight)bowed++;
+  occupancy[ca]++;occupancy[cb]++;occupancy[cm]++;
+  if(i%5===0&&crowded<17){var at=select();ctx.globalAlpha=between(r,.3,.75);
+   scatter(ctx,r,at.x,at.y,3+Math.floor(r()*9),colour,between(r,9,38));ctx.globalAlpha=1}
+ }ctx.restore();
+ // One real completed layer per checkpoint, not one canvas per gesture.
+ if(options.onStage)options.onStage('Paint pass '+(layer+1),target);
+}
+return {pathCount:paths.length,anchorCount:anchors.length,layers:layers,skippedCrowded:skipped,bowedSourceThrows:bowed,softenedStraightRuns:softened,palette:palette.slice()}}
+A.renderActionPaintingV4=function(target,s,scale,showGeometry,options){scale=scale||1;var prior=A.svgRecorder,rec={precise:true,paths:[],paperMarks:[]},scratch=document.createElement('canvas'),meta;
+try{A.svgRecorder=rec;meta=A.render(scratch,s,Math.min(1,Math.max(.1,scale)),false)}finally{A.svgRecorder=prior}
+var stats=A.actionPaintingFromPathsV4(target,rec.paths,s,scale,options);if(showGeometry)A.geometryOverlay(target.getContext('2d'),s,meta);A.lastRenderMeta=meta;A.lastActionPaintingStatsV4=stats;return meta}
+A.actionPaintingV4Test={structuralPour:structuralPour,softenStraightRuns:softenStraightRuns};
+})(window.AlgoArt);
