@@ -3,7 +3,7 @@
 import {createTag,planFloorTags,makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {ROOM_HEIGHT} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
-import {TOWER_HANDS,pickTowerHand} from './tower-graffiti-styles.mjs';
+import {TOWER_HANDS,pickTowerHand,alphabetIdentity} from './tower-graffiti-styles.mjs';
 export const GRAFFITI_WORDS=Object.freeze(['Proportion Piece','PHI','φ']);
 export const GRAFFITI_SEED='PP-TOWER-WRITING-01';
 export const WALL_MARGIN=.52;
@@ -73,7 +73,7 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
    const chosen=candidates[0];if(!chosen)throw new Error('No exterior wall for '+plan.date);
    const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
    const normal=face.normal,right={x:normal.z,z:-normal.x};
-   marks.push({id:item.id,date:plan.date,level,slot:item.slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,form:tag.form,ink:tag.ink,seed:tag.seed,
+   marks.push({id:item.id,date:plan.date,level,slot:item.slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,alphabetId:alphabetIdentity(tag.hand),form:tag.form,ink:tag.ink,seed:tag.seed,
     face,width,height,rotation,normal:{x:normal.x,y:0,z:normal.z},
     position:{x:face.centre.x+right.x*shift,y:level*floorSpacing+face.roomY+centreY,z:face.centre.z+right.z*shift},
     bounds:{...tag.bounds},tag});
@@ -120,7 +120,7 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
    const chosen=placed[0];if(!chosen)throw new Error('No suitable facade wall for freehand tag');
    const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
    const normal=face.normal,right={x:normal.z,z:-normal.x};
-   marks.push({id:item.id,date:plan.date,level,slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,form:'handstyle',ink:tag.ink,seed:tag.seed,
+   marks.push({id:item.id,date:plan.date,level,slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,alphabetId:alphabetIdentity(tag.hand),form:'handstyle',ink:tag.ink,seed:tag.seed,
     face,width,height,rotation,normal:{x:normal.x,y:0,z:normal.z},
     position:{x:face.centre.x+right.x*shift,y:level*floorSpacing+face.roomY+centreY,z:face.centre.z+right.z*shift},
     bounds:{...tag.bounds},tag});
