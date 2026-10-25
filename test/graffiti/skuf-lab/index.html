@@ -70,6 +70,19 @@ input[type=range]{padding:0;width:130px}input[type=checkbox]{width:17px;height:1
 </section>
 </aside>
 </div>
+<section class="pane reference">
+<h2>Handstyle evidence notes</h2>
+<p class="small">Record an observation for a single photograph only after checking the original. Separate visible geometry from guessed writing movement. The photo stays local; notes are saved with the JSON document.</p>
+<div class="row">
+<label>Medium<select id="obs-medium"><option value="unknown">Not classified</option><option value="handstyle">Handstyle tag</option><option value="throwup">Throw-up</option><option value="piece">Piece</option><option value="sketch">Sketch</option></select></label>
+<label>Confidence<select id="obs-confidence"><option value="unknown">Unassessed</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+<label>Letters visible<input id="obs-letters" placeholder="S K U F"></label>
+</div>
+<label>What is visible in the source?<textarea id="obs-visible" placeholder="Silhouette, letter proportions, connections and terminal shapes"></textarea></label>
+<label>What movement is only inferred?<textarea id="obs-inferred" placeholder="Possible stroke order and lifts; state uncertainty"></textarea></label>
+<div class="row"><button type="button" id="add-observation">Save evidence note</button><button type="button" id="remove-observation">Remove latest</button></div>
+<div id="observations" class="small"></div>
+</section>
 <section class="pane reference"><h2>Research sources</h2>
 <p id="coverage" class="small"></p><p class="small">These are source pages, not 7 fully reviewed individual tags. Validate the actual handstyle images before making a reconstruction claim.</p><div id="sources"></div>
 <details><summary>How the study works</summary><p>Select a stroke and drag its large anchor dots or smaller Bézier handles. Use Draw new stroke to author another gesture. Reorder strokes and specify contact lifts, then replay timed motion. SVG exports only the reconstructed lines; JSON preserves editable paths and annotations. Timing is synthetic minimum-jerk movement, not captured SKUF motion. Work is isolated from the production gallery.</p></details>
