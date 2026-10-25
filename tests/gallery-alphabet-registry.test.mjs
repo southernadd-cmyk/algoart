@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ALPHABETS,TOWER_HANDS,alphabetRevision,alphabetIdentity,pickTowerHand,resolveAlphabetIdentity} from '../gallery/visit/tower-graffiti-styles.mjs';
+import {ALPHABETS,TOWER_HANDS,alphabetRevision,alphabetIdentity,pickTowerHand,resolveAlphabetIdentity,graffitiAlphabetSignature,GRAFFITI_BACKFILL_POLICY} from '../gallery/visit/tower-graffiti-styles.mjs';
 test('eight curated alphabets have independent pinned revisions',()=>{
  assert.equal(TOWER_HANDS.length,8);
  assert.equal(new Set(TOWER_HANDS).size,8);
@@ -25,4 +25,9 @@ test('recorded atlas revisions resolve only to available immutable grammars',()=
  assert.throws(()=>resolveAlphabetIdentity('guess@2'),RangeError);
  assert.throws(()=>resolveAlphabetIdentity('unknown@1'),RangeError);
  assert.throws(()=>resolveAlphabetIdentity('guess@01'),RangeError);
+});
+
+test('backfill includes all archived floors and keys revisions',()=>{
+ assert.equal(GRAFFITI_BACKFILL_POLICY,'all-floors');
+ assert.equal(graffitiAlphabetSignature(),TOWER_HANDS.map(id=>id+'@1').join('|'));
 });
