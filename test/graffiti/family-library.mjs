@@ -5,8 +5,12 @@ import {block,gothic,calligraphy} from './families/D-F.mjs';
 import {orbitals,fragments} from './families/G-H.mjs';
 import {airy,sweeps} from './families/I-J.mjs';
 
-export const PHASE_D_VERSION='draft-1';
-export const FAMILIES=Object.freeze([interlocked,skeletal,wedges,block,gothic,calligraphy,orbitals,fragments,airy,sweeps]);
+export const PHASE_D_VERSION='draft-2-nine-families';
+// J's kinetic-sweep study remains in source control as research, but its rendered
+// words overlap with G too closely to warrant a separate public family.
+export const RETIRED_STUDIES=Object.freeze({J:sweeps});
+export const RETIREMENT_MAP=Object.freeze({J:'G'});
+export const FAMILIES=Object.freeze([interlocked,skeletal,wedges,block,gothic,calligraphy,orbitals,fragments,airy]);
 export const BY_ID=Object.freeze(Object.fromEntries(FAMILIES.map(f=>[f.id,f])));
 export {LETTERS};
 export function getFamily(id){
@@ -24,7 +28,7 @@ export function stableNoise(value){
 }
 const WIDE=new Set(['M','W']),NARROW=new Set(['I','J']);
 export const TOWER_SIGNATURES=Object.freeze(['PHI','φ','PROPORTION PIECE']);
-const LONG_WORD_TRACKING=Object.freeze({A:6,B:13,F:5,G:8,J:11});
+const LONG_WORD_TRACKING=Object.freeze({A:6,B:13,F:5,G:8});
 export function composeWord(id,text,{seed='PP-ALPHABETS-01',variation=.04}={}){
  const f=getFamily(id);
  const word=String(text).normalize('NFKC').toUpperCase().replace(/[^A-ZΦ ]/g,'').slice(0,65);
