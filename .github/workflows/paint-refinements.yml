@@ -1,0 +1,41 @@
+name: Paint refinement study checks
+on:
+  push:
+    branches: [experiment/paint-refinements]
+  pull_request:
+    paths:
+      - 'js/action-painting-v4.js'
+      - 'js/oil-paint-v6.js'
+      - 'test/paint-refinements/**'
+      - 'tests/paint-refinements*'
+      - '.github/workflows/paint-refinements.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  study:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          node tests/paint-refinements.test.mjs
+          node tests/oil-pigment.test.mjs
+          node tests/action-v3-export.test.mjs
+          node tests/oil-v5-release.test.mjs
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/paint-study-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - run: node tests/paint-refinements-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paint-refinement-results
+          path: paint-refinement-results/

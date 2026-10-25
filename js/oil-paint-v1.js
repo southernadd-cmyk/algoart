@@ -102,7 +102,9 @@ function paintMaterialConnections(target,plan,scale,material){
  const out=target.getContext('2d');
  // Source output is not changed until all the brush/wash passes finish.
  out.save();out.globalCompositeOperation='source-over';
- out.globalAlpha=.78;
+ // Only the V6 study opts into full paint coverage. Released V1–V5 keep
+ // their recorded composite, including when rendered after a V6 preview.
+ out.globalAlpha=A.oilOpaqueConnections===true?1:.78;
  out.drawImage(pass,0,0);out.restore();
  return{broadFields:broad,sourceLinks:links,materialContacts:strokes,
    junctionPools:pools,sourceFieldCount:plan.connectedFields.length};
@@ -154,3 +156,4 @@ A.renderOilPaintV1=function(target,settings,scale,reveal){
    work:{...base.work,oilV1:applied},sourceMeta:oilStats};
 };
 })(window.AlgoArt);
+
