@@ -1,4 +1,4 @@
-// SVG geometry renderer for the original 10-family, 260-letter Phase D study.
+// SVG geometry renderer for nine curated families (260 authored capitals retained in repository).
 // No font substitution, CSS filters, tracings, external image or raster resources.
 import {getFamily,getGlyph,composeWord,LETTERS,FAMILIES} from './family-library.mjs';
 import {contextualJoinLayer} from './family-joins.mjs';
@@ -30,6 +30,28 @@ function inkRibbon(d,{width=6,kind='marker'}={}){
 }
 const coords=([x,y])=>x.toFixed(2)+' '+y.toFixed(2);
 function polygon(left,right){return 'M'+left.map(coords).join(' L')+' L'+right.map(coords).join(' L')+' Z'}
+function broadMarkerRibbon(d,width){
+ const measure=tag('path',{d}),len=measure.getTotalLength();
+ if(!Number.isFinite(len)||len<.05)return tag('path',{d,fill:'none',stroke:'currentColor','stroke-width':width});
+ const count=clamp(Math.ceil(len/2),16,500),left=[],right=[];
+ for(let i=0;i<=count;i++){
+  const u=i/count,t=len*u,p=measure.getPointAtLength(t),
+   a=measure.getPointAtLength(Math.max(0,t-2.0)),
+   b=measure.getPointAtLength(Math.min(len,t+2.0)),
+   dx=b.x-a.x,dy=b.y-a.y,mag=Math.hypot(dx,dy)||1,
+   nx=-dy/mag,ny=dx/mag;
+  // Reference handstyle: black marker carries more weight on rising/falling
+  // cuts than on exposed transverse strokes, but retains a felt-tip footprint.
+  const nib=.67+.33*Math.abs(ny);
+  const onset=.80+.20*Math.min(1,u/.075);
+  const release=u>.87?Math.max(.23,1-.77*(u-.87)/.13):1;
+  const w=width*nib*onset*release*(.96+.04*Math.cos(6*Math.PI*u));
+  left.push([p.x+nx*w/2,p.y+ny*w/2]);
+  right.unshift([p.x-nx*w/2,p.y-ny*w/2]);
+ }
+ return tag('path',{d:polygon(left,right),fill:'currentColor','fill-rule':'evenodd',
+  'data-tool':'broad-cross-marker'});
+}
 function chiselRibbon(d,width){
  const measure=tag('path',{d}),length=measure.getTotalLength();
  if(!Number.isFinite(length)||length<.1)return tag('path',{d,fill:'none',stroke:'currentColor','stroke-width':width});
@@ -72,7 +94,9 @@ function drawGlyph(f,ch,{construction=false}={}){
  const g=tag('g',{'data-letter':ch,'aria-label':ch}),glyph=getGlyph(f.id,ch);
  for(const s of glyph.shapes){
   let path;
-  if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&f.technique==='chisel')
+  if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&f.technique==='fatmarker')
+   path=broadMarkerRibbon(s.d,f.weight*(s.kind==='heavy'?1.18:1));
+  else if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&f.technique==='chisel')
    path=chiselRibbon(s.d,f.weight*(s.kind==='heavy'?1.26:1));
   else if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&f.technique==='nib')
    path=broadNib(s.d,f.weight*(s.kind==='heavy'?1.35:1));
