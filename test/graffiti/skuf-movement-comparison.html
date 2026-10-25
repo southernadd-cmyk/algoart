@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SKUF movement study</title><style>
+body{font:18px/1.5 Georgia,serif;background:#e9e4d8;color:#202823;max-width:1120px;margin:24px auto;padding:0 16px}h1,h2{font-weight:normal}p{max-width:760px}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.panel{background:#faf7ef;padding:20px;border:1px solid #cac4b6}.art{width:100%;min-height:220px;display:grid;place-items:center}.art svg{width:100%;max-height:300px}input{font:inherit}label{display:inline-flex;gap:8px;align-items:center;margin-right:18px}@media(max-width:720px){.pair{grid-template-columns:1fr}}</style></head><body>
+<h1>SKUF — movement experiment</h1><p>Study of varying stroke weight and natural movement, using our original four-letter construction. Neither version is a tracing of an artist's tag.</p><p><label>Seed <input id="seed" value="PP-SKUF-01"></label><label>Pressure variation <input type="range" min="0" max="100" value="62" id="pressure"></label></p>
+<div class="pair"><section class="panel"><h2>Previous study</h2><div class="art" id="old"></div></section><section class="panel"><h2>Movement V2</h2><div class="art" id="new"></div></section></div><p id="status" aria-live="polite"></p>
+<script type="module">
+import {skufNameSvg} from './skuf-word-study.mjs';
+import {drawMovementSvg} from './skuf-movement-v2.mjs';
+document.getElementById('old').innerHTML=skufNameSvg();
+function render(){try{const p=document.getElementById('new');p.replaceChildren(drawMovementSvg(document.getElementById('seed').value,{contrast:Number(document.getElementById('pressure').value)/100}));document.getElementById('status').textContent='Rendered with deterministic gesture widths and pen lifts.'}catch(e){document.getElementById('status').textContent='Rendering failed: '+e.message}}
+document.querySelectorAll('input').forEach(n=>n.addEventListener('input',render));render();
+</script></body></html>
