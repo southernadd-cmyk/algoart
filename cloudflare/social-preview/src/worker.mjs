@@ -60,7 +60,7 @@ function html(token,data,pv,origin){
  const desc='Original '+material+' composition by PROPORTION PIECE. Seed '+data.seed+
    '. Open the exact artwork and explore its golden-ratio structure.';
  const portrait=data.fmt==='portrait';
- const suffix=pv==='2'?'&pv=2':'';
+ const suffix=/^[2-9]$/.test(pv||'')?'&pv='+pv:'';
  const url=origin+'/share?c='+encodeURIComponent(token)+suffix;
  const image=origin+'/share/image?c='+encodeURIComponent(token)+suffix;
  const redirect=SITE+'?c='+encodeURIComponent(token);
@@ -78,7 +78,7 @@ function html(token,data,pv,origin){
  '<meta property="og:image:type" content="image/jpeg">'+
  '<meta property="og:image:width" content="'+(portrait?630:1200)+'">'+
  '<meta property="og:image:height" content="'+(portrait?1200:630)+'">'+
- '<meta name="twitter:card" content="summary_large_image">'+
+ '<meta name="twitter:card" content="'+(portrait?'summary':'summary_large_image')+'">'+
  '<meta name="twitter:title" content="'+e(title)+'">'+
  '<meta name="twitter:description" content="'+e(desc)+'">'+
  '<meta name="twitter:image" content="'+e(image)+'">'+
