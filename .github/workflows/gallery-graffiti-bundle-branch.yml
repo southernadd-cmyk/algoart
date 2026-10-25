@@ -1,0 +1,34 @@
+name: Refresh graffiti preview bundle
+on:
+  push:
+    branches: [gallery/eight-style-graffiti-atlases]
+    paths:
+      - 'gallery/visit/exterior-graffiti.mjs'
+      - 'gallery/visit/exterior-graffiti-plan.mjs'
+      - 'gallery/visit/interior-graffiti-plan.mjs'
+      - 'gallery/visit/tower-graffiti-styles.mjs'
+      - '.github/workflows/gallery-graffiti-bundle-branch.yml'
+permissions:
+  contents: write
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gallery/eight-style-graffiti-atlases
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run gallery:bundle
+      - run: node --check gallery/visit/gallery-bundle.js
+      - name: Commit updated gallery bundle on this experimental branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/gallery-bundle.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Update gallery bundle for eight-style graffiti atlases"
+            git push origin HEAD:gallery/eight-style-graffiti-atlases
+          fi
