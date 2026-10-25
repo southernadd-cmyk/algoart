@@ -1,4 +1,4 @@
-import {HANDS,CORE_HANDS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom,tagDuration} from './tag-engine.mjs?v=bold-dialects-v5';
+import {HANDS,CORE_HANDS,LETTERING_FORMS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom,tagDuration} from './tag-engine.mjs?v=letter-forms-v6';
 import {drawConstruction} from './phi-lettering.mjs?v=phi-handstyles-v2';
 const $=id=>document.getElementById(id),canvas=$('wall'),ctx=canvas.getContext('2d');
 const inkLayer=document.createElement('canvas');
@@ -7,7 +7,7 @@ let plan=[],tags=[],frame=0,playing=false,started=0,elapsed=0,token=0,scan=null,
 let studyPage=0;
 const studyIds=Object.keys(REFERENCE_STUDIES),pageSize=6;
 const surfaceCache=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,ink:$('ink').value,finish:$('paint').value,paintWidth:Math.max(.75,Math.min(3,(Number($('width').value)||200)/100)),floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
+const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,form:$('form').value,ink:$('ink').value,finish:$('paint').value,paintWidth:Math.max(.75,Math.min(3,(Number($('width').value)||200)/100)),floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
 function fallbackTile(){
  const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d'),r=makeRandom('PP-BRICK-FALLBACK');g.fillStyle='#aa9e8b';g.fillRect(0,0,512,512);
  for(let row=0;row<16;row++)for(let col=-1;col<9;col++){
@@ -42,7 +42,7 @@ function makeWall(width,height){
 function positionTag(g,target,tag,placement,count,index,draw){
  const stacked=target.height>target.width*.7&&count===2;
  const place=stacked?{...placement,x:.5,y:index===0?.28:.72}:placement,b=tag.bounds;
- const maxW=target.width*(count===1||stacked?.72:.405),maxH=target.height*(stacked?.32:.48);
+ const maxW=target.width*(count===1||stacked?.72:.405),maxH=target.height*(place.maxHeight??(stacked?.32:.48));
  const scale=Math.min(maxW/b.width,maxH/b.height)*place.scale;
  g.save();g.translate(place.x*target.width,place.y*target.height);g.rotate(place.rotation);g.scale(scale,scale);g.translate(-b.x-b.width/2,-b.y-b.height/2);draw();g.restore();
 }
@@ -65,15 +65,15 @@ function paintWall(target,tagList,placements,progress=1){
 function stop(){cancelAnimationFrame(frame);playing=false;token++;$('play').textContent='Watch it being written';}
 function render(progress=1){currentProgress=progress;mainWall=paintWall(canvas,tags,plan,progress);$('progress').style.width=(progress*100)+'%';}
 function updateURL(){
- const url=new URL(location.href),o=readOptions();url.searchParams.set('word',normaliseText(o.text));url.searchParams.set('seed',o.seed);url.searchParams.set('floor',$('floor').value);url.searchParams.set('hand',o.hand);url.searchParams.set('ink',o.ink);url.searchParams.set('finish',o.finish);url.searchParams.set('width',o.paintWidth);if($('show-phi').checked)url.searchParams.set('phi','1');else url.searchParams.delete('phi');history.replaceState(null,'',url);
+ const url=new URL(location.href),o=readOptions();url.searchParams.set('word',normaliseText(o.text));url.searchParams.set('seed',o.seed);url.searchParams.set('floor',$('floor').value);url.searchParams.set('hand',o.hand);url.searchParams.set('form',o.form);url.searchParams.set('ink',o.ink);url.searchParams.set('finish',o.finish);url.searchParams.set('width',o.paintWidth);if($('show-phi').checked)url.searchParams.set('phi','1');else url.searchParams.delete('phi');history.replaceState(null,'',url);
 }
 function generate({url=true}={}){
  stop();const small=matchMedia('(max-width:700px)').matches;canvas.width=small?1000:1600;canvas.height=small?920:800;
  const raw=$('word').value,clean=normaliseText(raw);$('word').value=clean;$('floor').value=Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)));if(!$('seed').value.trim())$('seed').value='PP-GRAFFITI-01';
  const options=readOptions();$('width-value').textContent=options.paintWidth.toFixed(2).replace(/0$/,'')+'×';plan=planFloorTags(options);tags=plan.map(p=>createTag(p.text,{...p,paintWidth:options.paintWidth}));render();elapsed=0;
  $('previous').disabled=Number($('floor').value)<=1;$('next').disabled=Number($('floor').value)>=9999;
- $('floor-caption').textContent='Floor '+$('floor').value+' · '+(tags.length===1?'one tag':'two tags')+' · '+tags.map(t=>HANDS[t.hand].name).join(' / ');
- canvas.setAttribute('aria-label','Floor '+$('floor').value+': '+tags.map(t=>t.text+' written in the '+HANDS[t.hand].name+' hand').join('; ')+', on a buff brick wall.');
+ $('floor-caption').textContent='Floor '+$('floor').value+' · '+(tags.length===1?'one tag':'two tags')+' · '+tags.map(t=>LETTERING_FORMS[t.form].name).join(' / ');
+ canvas.setAttribute('aria-label','Floor '+$('floor').value+': '+tags.map(t=>t.text+' in '+LETTERING_FORMS[t.form].name+' lettering').join('; ')+', on a buff brick wall.');
  $('status').textContent=(raw!==clean?'Text adjusted to the supported characters. ':'')+'Same seed and floor, same tags. Every floor receives one or two.';
  $('finish-caption').textContent=options.finish==='spray'?'Soft spray edges and scattered droplets follow the brick.':'Ink follows the brick grain and mortar.';
  const m=tags[0].construction.metrics;
@@ -82,8 +82,22 @@ function generate({url=true}={}){
   const tag=createTag(clean||'PHI',{seed:options.seed,hand,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
   paintWall($(hand+'-wall'),[tag],[{x:.5,y:.55,scale:.94,rotation:-.025}]);
  }
- renderStudies();
+ renderForms();renderStudies();
  if(url)updateURL();
+}
+function renderForms(){
+ const options=readOptions(),grid=$('form-grid');grid.replaceChildren();
+ for(const [id,style] of Object.entries(LETTERING_FORMS)){
+  const article=document.createElement('article');article.className='hand';
+  const c=document.createElement('canvas');c.width=900;c.height=400;c.setAttribute('role','img');c.setAttribute('aria-label',style.name+' on brick');
+  const title=document.createElement('h3');title.textContent=style.name;
+  const description=document.createElement('p');description.textContent=style.description;
+  const button=document.createElement('button');button.type='button';button.textContent='Use this lettering';button.dataset.form=id;button.onclick=()=>{$('form').value=id;generate();};
+  article.append(c,title,description,button);grid.append(article);
+  const hand=options.hand==='mixed'?'loop':options.hand;
+  const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,form:id,hand,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
+  paintWall(c,[tag],[{x:.5,y:.52,scale:1.05,maxHeight:.64,rotation:-.018}]);
+ }
 }
 function renderStudies(){
  const options=readOptions(),start=studyPage*pageSize,grid=$('study-grid');grid.replaceChildren();
@@ -92,16 +106,17 @@ function renderStudies(){
   const c=document.createElement('canvas');c.width=720;c.height=380;c.setAttribute('role','img');c.setAttribute('aria-label',study.reference+' procedural lettering study on brick');
   const title=document.createElement('h3');title.textContent=study.reference+' study';
   const description=document.createElement('p');description.textContent=study.description;
-  const button=document.createElement('button');button.type='button';button.textContent='Use this study';button.dataset.study=id;button.onclick=()=>{$('hand').value=id;generate();};
+  const button=document.createElement('button');button.type='button';button.textContent='Use this study';button.dataset.study=id;button.onclick=()=>{$('hand').value=id;$('form').value='handstyle';generate();};
   article.append(c,title,description,button);grid.append(article);
   const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,hand:id,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});paintWall(c,[tag],[{x:.5,y:.53,scale:.97,rotation:-.018}]);
  }
  $('study-range').textContent='Studies '+(start+1)+'–'+Math.min(start+pageSize,studyIds.length)+' of '+studyIds.length;
  $('studies-prev').disabled=studyPage===0;$('studies-next').disabled=start+pageSize>=studyIds.length;
  const selected=HANDS[$('hand').value];
- $('study-selection').textContent=selected?selected.name+' · '+selected.description+' New seeds vary the execution while keeping this hand’s habits.':'Choose a hand to compare its habits across seeds, or use Different writers to mix all 53 hands.';
+ $('study-selection').textContent=$('form').value!=='handstyle'?"Lettering sets the construction. Handwriting sets the writer; the fifty studies below compare their handstyles.":selected?selected.name+' · '+selected.description+' New seeds vary the execution while keeping this hand’s habits.':'Choose a hand to compare its habits across seeds, or use Different writers to mix all 53 hands.';
 }
 function populateHands(){
+ const forms=$('form');forms.replaceChildren(new Option('Different forms','mixed'));for(const [id,style] of Object.entries(LETTERING_FORMS))forms.append(new Option(style.name,id));
  const select=$('hand');select.replaceChildren(new Option('Different writers','mixed'));
  for(const [label,entries] of [['Original hands',CORE_HANDS],['Bombing Science — 50 reference studies',REFERENCE_STUDIES]]){
   const group=document.createElement('optgroup');group.label=label;
@@ -116,7 +131,7 @@ function animate(){
  frame=requestAnimationFrame(tick);
 }
 function restoreURL(){
- const q=new URLSearchParams(location.search);for(const id of ['word','seed','floor','hand','ink'])if(q.has(id)){
+ const q=new URLSearchParams(location.search);for(const id of ['word','seed','floor','hand','form','ink'])if(q.has(id)){
   const value=q.get(id),el=$(id);if(el.tagName!=='SELECT'||[...el.options].some(o=>o.value===value))el.value=value;
  }
  const requestedWidth=Number(q.get('width'));if(q.has('width')&&Number.isFinite(requestedWidth))$('width').value=Math.round(Math.max(.75,Math.min(3,requestedWidth))*100);
@@ -125,7 +140,7 @@ function restoreURL(){
 }
 async function init(){
  populateHands();restoreURL();scan=fallbackTile();generate({url:false});
- $('controls').addEventListener('submit',e=>{e.preventDefault();generate();});for(const id of ['word','seed','hand','ink','floor','paint'])$(id).addEventListener('change',()=>generate());
+ $('controls').addEventListener('submit',e=>{e.preventDefault();generate();});for(const id of ['word','seed','hand','form','ink','floor','paint'])$(id).addEventListener('change',()=>generate());
  $('studies-prev').onclick=()=>{studyPage=Math.max(0,studyPage-1);renderStudies();};$('studies-next').onclick=()=>{studyPage=Math.min(Math.ceil(studyIds.length/pageSize)-1,studyPage+1);renderStudies();};
  let widthFrame=0;$('width').addEventListener('input',()=>{cancelAnimationFrame(widthFrame);widthFrame=requestAnimationFrame(()=>generate());});$('width').addEventListener('change',()=>{cancelAnimationFrame(widthFrame);generate();});
  $('another').onclick=()=>{const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);$('seed').value='PP-TAG-'+bytes[0].toString(36).toUpperCase();generate();};
@@ -133,10 +148,10 @@ async function init(){
  $('play').onclick=animate;$('finish').onclick=()=>{stop();elapsed=0;render();$('status').textContent='Finished wall. Same seed and floor, same tags.';};
  $('show-phi').onchange=()=>{render(currentProgress);updateURL();};
  matchMedia('(max-width:700px)').addEventListener('change',()=>generate({url:false}));
- for(const button of document.querySelectorAll('[data-hand]'))button.onclick=()=>{$('hand').value=button.dataset.hand;generate();};
+ for(const button of document.querySelectorAll('[data-hand]'))button.onclick=()=>{$('hand').value=button.dataset.hand;$('form').value='handstyle';generate();};
  const image=new Image();image.onload=()=>{try{scan=prepareScan(image);surfaceCache.clear();generate({url:false});document.documentElement.dataset.wall='scan';}catch(e){console.warn('Using the local procedural brick fallback.',e);}};image.onerror=()=>{document.documentElement.dataset.wall='fallback';};image.src='./assets/brick-wall.webp';
  // A small read-only hook makes determinism, counts and actual rendering
  // inspectable without relying on visually identical DOM text.
- window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get finish(){return $('paint').value;},get paintWidth(){return readOptions().paintWidth;},get studyCount(){return studyIds.length;},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
+ window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get finish(){return $('paint').value;},get paintWidth(){return readOptions().paintWidth;},get formCount(){return Object.keys(LETTERING_FORMS).length;},get form(){return $('form').value;},get studyCount(){return studyIds.length;},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
 }
 init().catch(error=>{$('status').textContent='The wall could not be prepared: '+error.message;console.error(error);});

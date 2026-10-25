@@ -2,13 +2,16 @@
 // constructed from phi in phi-lettering.mjs. Ink uses the existing
 // A.stroke marker renderer plus a pressure/speed-sensitive continuous ribbon.
 import {PHI,goldenMetrics,letterSkeleton} from './phi-lettering.mjs?v=phi-handstyles-v2';
-import {drawSpray} from './spray-paint.mjs?v=word-flow-v4';
+import {drawSpray} from './spray-paint.mjs?v=optical-spray-v6';
+import {LETTERING_FORMS,formGlyph,drawSolidForm} from './lettering-forms.mjs?v=letter-forms-v6';
+export {LETTERING_FORMS} from './lettering-forms.mjs?v=letter-forms-v6';
+import {spaceWord} from './word-spacing.mjs?v=optical-spray-v6';
 import {writerIdentity,connectingStroke,orientConnection,connectionClear,planWritingMotion,strokeFraction,tagDuration} from './writing-motion.mjs?v=word-flow-v4';
 export {tagDuration,strokeFraction} from './writing-motion.mjs?v=word-flow-v4';
 import {REFERENCE_STUDIES,shapeStudyLetter} from './handstyles.mjs?v=bold-dialects-v5';
 export {REFERENCE_STUDIES,HANDSTYLE_SOURCE} from './handstyles.mjs?v=bold-dialects-v5';
 export {PHI,goldenMetrics,letterSkeleton} from './phi-lettering.mjs?v=phi-handstyles-v2';
-export const VERSION = 5;
+export const VERSION = 6;
 const U=goldenMetrics().unit;
 export const CORE_HANDS = Object.freeze({
  loop:Object.freeze({name:'Loop',description:'Interlocking bowls and a sweeping return stroke.',lean:1/PHI**3,width:1.08,spacing:-U*PHI,weight:6.8,angle:.4,flourish:1}),
@@ -45,33 +48,43 @@ function boundsOf(strokes,padding){
  const x=Math.min(...xs)-padding,y=Math.min(...ys)-padding;
  return {x,y,width:Math.max(...xs)-x+padding,height:Math.max(...ys)-y+padding};
 }
-export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',ratio=PHI,paintWidth=2}={}){
+export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',ratio=PHI,paintWidth=2,form='handstyle'}={}){
+ if(!LETTERING_FORMS[form])throw new RangeError('Unknown lettering form: '+form);
  if(!HANDS[hand])throw new RangeError('Unknown handwriting style: '+hand);
  paintWidth=Number(paintWidth);
  if(!Number.isFinite(paintWidth)||paintWidth<.75||paintWidth>3)throw new RangeError('Paint width must be between 0.75 and 3.');
  const metrics=goldenMetrics(100,ratio),{height:H,width:W,short:a,long:b,unit:u}=metrics;
- const study=REFERENCE_STUDIES[hand],h=HANDS[hand],family=study?.family||hand;
+ const formStyle=LETTERING_FORMS[form],solid=formStyle.solid;
+ const study=(solid||formStyle.pixo||formStyle.calligraphy)?null:REFERENCE_STUDIES[hand];
+ const original=HANDS[hand],h=solid?{...original,lean:formStyle.piece?.22:formStyle.round?.05:0,width:1,spacing:formStyle.spacing}:formStyle.pixo?{...original,lean:0,width:1,spacing:U*.8,weight:5.8}:formStyle.calligraphy?{...original,width:1.05,weight:14,spacing:U*.2}:original;
+ const family=formStyle.calligraphy?'cut':formStyle.pixo?'rush':study?.family||hand;
  const word=normaliseText(text)||'PHI',r=makeRandom(seed+'|'+hand+'|'+word+'|phi-v2');
  const identity=writerIdentity(hand,h);
  const strokes=[],letters=[],groups=[],connections=[],lean=h.lean+r.range(-u/H,u/H)*.12;
- const lift=r.range(-1,1)/ratio**7,phase=r.range(0,Math.PI*2),height=r.range(.985,1.015)*(study?.height||1),width=h.width*r.range(.985,1.015);
+ const lift=r.range(-1,1)/ratio**7,phase=r.range(0,Math.PI*2),height=r.range(.985,1.015)*(study?.height||1)*(formStyle.height||1),width=h.width*r.range(.985,1.015)*(formStyle.width||1);
  let cursor=0,wordIndex=0;
- const makeStroke=(points,kind='letter',weight=1,smooth=true)=>({points:sample(points,smooth),kind,weight,phase:r.range(0,Math.PI*2),pressure:r.range(.95,1.05),nib:identity.nib+r.range(-.012,.012)});
+ const makeStroke=(points,kind='letter',weight=1,smooth=true)=>({points:sample(points,smooth),kind,weight,phase:r.range(0,Math.PI*2),pressure:r.range(.95,1.05),nib:(formStyle.calligraphy?-Math.PI/4:identity.nib)+r.range(-.012,.012)});
  const add=(points,kind='letter',weight=1,smooth=true)=>{const stroke=makeStroke(points,kind,weight,smooth);strokes.push(stroke);return stroke;};
  for(let index=0;index<word.length;index++){
   const ch=word[index];if(ch===' '){cursor+=W/ratio;wordIndex++;continue;}
   const variant=identity.variants[ch];
-  let glyph=letterSkeleton(ch,{hand:family,variant,metrics});
+  let glyph=letterSkeleton(ch,{hand:solid?'rush':family,variant,metrics});
   if(study)glyph=shapeStudyLetter(ch,glyph,study,metrics);
+  if(formStyle.calligraphy)glyph=shapeStudyLetter(ch,letterSkeleton(ch,{hand:'loop',variant,metrics}),{id:'calligraphy',shape:'script',width:1,height:1},metrics);
+  glyph=formGlyph(ch,glyph,form,metrics);
   const stretch=height*r.range(.993,1.007),wide=width*r.range(.99,1.01),bounce=(r.range(-u/ratio,u/ratio)*.4+Math.sin(index*ratio+phase)*u/ratio)*(study?.bounce??1);
   const frame={character:ch,index,variant,x:cursor,wide,stretch,bounce,lean,baseY:H*stretch+bounce+cursor*lift};letters.push(frame);
   const transform=q=>{const y=q.y*stretch+bounce;return {x:cursor+q.x*wide+(H-y)*lean+Math.sin(q.y/H*Math.PI*2+phase+index)*u/ratio**4,y:y+cursor*lift};};
-  const movements=glyph.strokes.map(s=>makeStroke(s.points.map(transform),'letter',study?.id==='revok'&&ch==='R'?1.18:1,s.smooth));
+  const counterLetter=/[ABDGOPQR0689]/.test(ch);
+  const counterHeight=/[BPR]/.test(ch)?a*stretch:b*stretch;
+  const nozzleLimit=counterLetter?Math.min(W*wide,counterHeight)*.48:0;
+  const movements=glyph.strokes.map(s=>({...makeStroke(s.points.map(transform),'letter',study?.id==='revok'&&ch==='R'?1.18:1,s.smooth),nozzleLimit,letterIndex:index}));
   groups.push({character:ch,index,wordIndex,frame,movements});
   cursor+=Math.max(W/ratio**2,glyph.width*wide+(study?h.spacing*u:h.spacing)+r.range(-u/ratio**2,u/ratio**2)*.4);
  }
- const continuous=study?.shape==='oneline',joinChance=study?.join??(family==='loop'?1/ratio:0);
- for(let i=0;i<groups.length-1;i++){
+ const continuous=!solid&&study?.shape==='oneline',joinChance=solid||formStyle.pixo?0:study?.join??(family==='loop'?1/ratio:0);
+ const spacing=solid?{pairs:[],shift:0}:spaceWord(groups,{unit:u,ratio,weight:h.weight,lift,joinChance});cursor+=spacing.shift;
+ if(!solid&&!formStyle.pixo)for(let i=0;i<groups.length-1;i++){
   const from=groups[i],to=groups[i+1];if(from.wordIndex!==to.wordIndex)continue;
   if(!continuous&&!makeRandom('writer|'+hand+'|join|'+from.character+to.character).chance(joinChance))continue;
   const last=from.movements.at(-1),first=to.movements[0],oldLast=last.points,oldFirst=first.points;
@@ -84,7 +97,7 @@ export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',
   connections.push({from:from.index,to:to.index,start:{...start},end:{...end}});
  }
  // A writer's entry flourish finishes exactly at the first real pen contact.
- if(family==='loop'&&makeRandom('writer|'+hand+'|entry').chance(1/ratio)){
+ if(!solid&&family==='loop'&&makeRandom('writer|'+hand+'|entry').chance(1/ratio)){
   const first=groups[0].movements[0].points[0];
   add(L([first.x-a,first.y+b/ratio],[first.x-a/ratio,first.y-u],[first.x-u,first.y-u],[first.x,first.y]),'entry',.55,true);
  }
@@ -106,6 +119,7 @@ export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',
  const body=boundsOf(strokes.filter(s=>s.kind!=='entry'),0);
  const baseline=body.y+body.height,endY=0,under=baseline+u*ratio;
  cursor=Math.max(cursor,body.x+body.width);
+ if(!solid&&!formStyle.pixo){
  const gesture=study?.gesture||(family==='loop'?'return':family==='cut'?'double':'underline');
  if(gesture==='return'||gesture==='sweep'){
   add(L([body.x-u,under+u],[cursor/ratio**2,under],[cursor/ratio,under-u/ratio],[cursor+W/ratio,under+u/ratio],[cursor+u,under+u*ratio],[cursor/ratio**2,under+u*ratio]),'flourish',1/ratio,true);
@@ -137,9 +151,18 @@ export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',
  if(identity.accent==='dots')for(let i=0;i<3;i++)add(Array.from({length:13},(_,j)=>{const t=j/12*Math.PI*2;return {x:accentX+i*u*.85+Math.cos(t)*u*.12,y:accentY+Math.sin(t)*u*.12};}),'accent',.35,true);
  if(identity.accent==='dash')add(L([accentX,accentY],[accentX+u*ratio,accentY-u/ratio]),'accent',1/ratio**2,false);
  if(identity.accent==='quotes')for(let i=0;i<2;i++)add(L([accentX+i*u,accentY-u/ratio],[accentX+i*u-u/ratio,accentY+u/ratio]),'accent',1/ratio**2,false);
+ }
+ const extensions=[];
+ if(formStyle.piece){
+  const y=body.y+body.height/ratio;
+  extensions.push({at:.88,points:L([body.x+u,y],[body.x-a,y+u*ratio],[body.x+u,y+u*ratio*2])});
+  extensions.push({at:.96,points:L([body.x+body.width-u,body.y+b/ratio],[body.x+body.width+a,body.y-u],[body.x+body.width,body.y+b])});
+ }
  const motion=planWritingMotion(strokes,{pace:identity.pace});
  const inkR=makeRandom(seed+'|ink'),opacity=inkR.range(.86,.96);
- return {version:VERSION,text:word,seed:String(seed),hand,family,writer:identity,flow:{connections},motion,ink,paintWidth,baseWeight:h.weight,weight:h.weight*paintWidth,sprayFlare:study?.flare||1,opacity,strokes,bounds:boundsOf(strokes,h.weight*paintWidth*Math.max(1.6,(study?.flare||1)*1.6)),construction:{metrics,letters,lift,wordAdvance:cursor,gapUnit:W/ratio**4,returnPoint:cursor/ratio}};
+ const padding=Math.max(h.weight*paintWidth*Math.max(1.6,(study?.flare||1)*1.6),solid?(formStyle.bar+formStyle.outline*2)*paintWidth/2+12:0);
+ const boundStrokes=extensions.length?[...strokes,...extensions]:strokes;
+ return {version:VERSION,form,extensions,text:word,seed:String(seed),hand,family,writer:identity,flow:{connections},spacing,motion,ink,paintWidth,baseWeight:h.weight,weight:h.weight*paintWidth,sprayFlare:study?.flare||1,opacity,strokes,bounds:boundsOf(boundStrokes,padding),construction:{metrics,letters,lift,wordAdvance:cursor,gapUnit:W/ratio**4,returnPoint:cursor/ratio}};
 }
 
 function drawRibbon(ctx,stroke,tag,progress,movement){
@@ -149,7 +172,7 @@ function drawRibbon(ctx,stroke,tag,progress,movement){
   const before=points[Math.max(0,i-1)],after=points[Math.min(points.length-1,i+1)],dx=after.x-before.x,dy=after.y-before.y,len=Math.hypot(dx,dy)||1;
   const t=i/(stroke.points.length-1),speed=movement?.speeds[i]??Math.min(1,len/6),pressure=.81+.16*Math.sin(t*5.1+stroke.phase)+.1*Math.sin(t*11+stroke.phase*.5);
   const taper=.4+.6*Math.min(1,t*13,(1-t)*10);
-  const chisel=tag.family==='cut'?.40+.72*Math.abs(Math.sin(Math.atan2(dy,dx)-stroke.nib)):1;
+  const chisel=tag.form==='calligraphy'?.15+1.15*Math.abs(Math.sin(Math.atan2(dy,dx)-stroke.nib)):tag.family==='cut'?.40+.72*Math.abs(Math.sin(Math.atan2(dy,dx)-stroke.nib)):1;
   const width=tag.weight*stroke.weight*stroke.pressure*pressure*(1-.18*speed)*taper*chisel;
   left.push({x:points[i].x-dy/len*width*.5,y:points[i].y+dx/len*width*.5});
   right.push({x:points[i].x+dy/len*width*.5,y:points[i].y-dx/len*width*.5});
@@ -160,8 +183,9 @@ function drawRibbon(ctx,stroke,tag,progress,movement){
 // Draw in tag coordinates. Callers choose resolution/placement with ctx.transform.
 // A separate RNG per pen movement keeps replay independent of frame rate.
 export function drawTag(ctx,tag,{progress=1,marker=globalThis.AlgoArt,finish='spray'}={}){
+ if(!['spray','marker'].includes(finish))throw new RangeError('Unknown paint finish: '+finish);
+ if(LETTERING_FORMS[tag.form]?.solid){drawSolidForm(ctx,tag,{progress,fractionAt:strokeFraction,finish});return tagDuration(tag);}
  if(finish==='spray')return drawSpray(ctx,tag,{progress});
- if(finish!=='marker')throw new RangeError('Unknown paint finish: '+finish);
  if(!marker?.stroke)throw new Error('Load the PROPORTION PIECE marker renderer first.');
  const total=tagDuration(tag);
  ctx.save();ctx.fillStyle=tag.ink;
@@ -188,14 +212,15 @@ const WORDS=Object.freeze(['PHI','ECHO','LOOP','DRIFT','FORM','MARK','GOLD','GHO
 const INKS=Object.freeze(['#242a28','#4c2630','#293849','#e4ddd0','#3e4938']);
 // A floor ID is a stable exhibition identity (normally its date), never a
 // ground-floor test or the total tower height. Adding floors cannot reshuffle it.
-export function planFloorTags({floorId,seed='PP-GRAFFITI-01',text='',hand='mixed',ink='mixed',count='auto'}={}){
+export function planFloorTags({floorId,seed='PP-GRAFFITI-01',text='',hand='mixed',ink='mixed',form='handstyle',count='auto'}={}){
  if(floorId===undefined||floorId===null||String(floorId)==='')throw new TypeError('A stable floorId is required.');
+ if(form!=='mixed'&&!LETTERING_FORMS[form])throw new RangeError('Unknown lettering form.');
  if(hand!=='mixed'&&!HANDS[hand])throw new RangeError('Unknown handwriting style.');
  if(!['auto',1,2,'1','2'].includes(count))throw new RangeError('Each floor must have one or two tags.');
  const key=String(seed)+'|floor|'+String(floorId),r=makeRandom(key+'|count'),n=count==='auto'?(r.chance(.55)?2:1):Number(count);
  return Array.from({length:n},(_,slot)=>{
   const q=makeRandom(key+'|slot|'+slot),writer=hand==='mixed'?q.pick(Object.keys(HANDS)):hand;
-  return {id:key+'|'+slot,floorId:String(floorId),slot,hand:writer,text:normaliseText(text)||q.pick(WORDS),ink:ink==='mixed'?q.pick(INKS):ink,seed:key+'|tag|'+slot,
+  return {id:key+'|'+slot,floorId:String(floorId),slot,hand:writer,form:form==='mixed'?makeRandom(key+'|form|'+slot).pick(Object.keys(LETTERING_FORMS)):form,text:normaliseText(text)||q.pick(WORDS),ink:ink==='mixed'?q.pick(INKS):ink,seed:key+'|tag|'+slot,
    // Normalised prototype positions; real tower integration will select solid
    // wall segments from each exhibition's room plan before placing these tags.
    x:n===1?.5:slot===0?.28:.73,y:slot===0?.58:.51,scale:q.range(.87,1.06),rotation:q.range(-.07,.055)};

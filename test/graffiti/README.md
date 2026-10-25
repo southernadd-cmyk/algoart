@@ -9,6 +9,37 @@ ink into a transparent layer. The brick's grain modulates that layer's alpha.
 The specimen presents the three original hands, 50 selectable reference
 studies, and actual stroke playback.
 
+## Eight lettering forms — version 6
+
+The Lettering control separates word construction from the existing 53 writer
+profiles. It offers handstyle, hollow throw-up, bubble throw-up, straight letters,
+blockbuster, calligraffiti, a pichação study and an interlocking piece. All eight
+are shown on brick with the same word in the comparison gallery. Different forms
+uses a separate seeded choice per floor slot, preserving the floor's count,
+word, writer, colour and position. Selecting an existing handstyle study returns
+to Handstyle. The selected form is saved as `form` in the URL.
+
+`lettering-forms.mjs` constructs round faces, square/polygonal counters, tall
+angular spines and wedge shoulders from the phi dimensions. Filled forms render
+letter unions with contour/fill passes, a lightly granular paint film and local
+spray feathering; hollow letters leave the brick visible. Blockbusters have
+solid square bars. Interlocking pieces add overlap, two terminal extensions and
+stepped depth. These are construction studies, rather than full wildstyle.
+Calligraffiti uses a separate script skeleton and an angled, flattened aerosol
+cone in spray mode, or a broad variable-width nib in marker mode. Playback uses
+the same planned stroke timeline and reproduces the finished image.
+
+The user's [Street Fame style guide](https://street-fame.com/graffiti-styles-101-the-official-street-bible/)
+and [Bombing Science alphabet collection](https://www.bombingscience.com/graffiti-letters-61-graffiti-artists-share-their-styles/)
+inform these distinctions in letter anatomy, counter shapes, overlap and word
+flow. The engine does not reproduce or bundle the 61 illustrated alphabets.
+
+`word-spacing.mjs` adjusts handstyle pairs from their actual path envelopes.
+Corrections are bounded and planned independently of paint width; explicit
+spaces remain word breaks. Spray now has a denser core, finer detached droplets
+and a soft nozzle limit around counter-bearing letters to preserve clearance
+at thick widths. The original 50 studies remain a separate comparison gallery.
+
 ## Paint width and study alphabets
 
 Version 5 doubles the default paint width. The Paint width slider ranges from
@@ -119,7 +150,7 @@ These are design observations, not claims that the reference artists used phi.
 The sources are linked in the specimen. Reference photos were inspected for
 research; they are not bundled in the site or used as generated tag textures.
 
-`planFloorTags({ floorId, seed, text, hand, ink })` always returns **one or two
+`planFloorTags({ floorId, seed, text, hand, ink, form })` always returns **one or two
 tags for each floor**, including every upper floor. Use a stable exhibition date
 as `floorId` when integrating into the tower. Never use the number of floors or
 a ground-level visibility condition to seed the plan. A floor's selection is
@@ -141,7 +172,7 @@ Run the geometry/planning checks with:
 
     node --test test/graffiti/tag-engine.test.mjs
 
-`word`, `seed`, `floor`, `hand`, `ink` and `finish` are stored in the specimen URL.
+`word`, `seed`, `floor`, `hand`, `form`, `ink`, `width` and `finish` are stored in the specimen URL.
 The word accepts Latin letters, digits, spaces, phi, full stops, exclamation
 marks, question marks and hyphens, up to 24 characters. Letter shapes are capitals
 with a lowercase phi. A blank word selects different words for each floor.

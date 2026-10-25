@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {createTag,planFloorTags,HANDS,REFERENCE_STUDIES,normaliseText,drawTag,PHI,goldenMetrics,letterSkeleton,tagDuration,strokeFraction} from './tag-engine.mjs';
+import {createTag,planFloorTags,HANDS,LETTERING_FORMS,REFERENCE_STUDIES,normaliseText,drawTag,PHI,goldenMetrics,letterSkeleton,tagDuration,strokeFraction} from './tag-engine.mjs';
 import {buildSprayPlan} from './spray-paint.mjs';
 import {planWritingMotion,connectionClear} from './writing-motion.mjs';
 import {shapeStudyLetter} from './handstyles.mjs?v=bold-dialects-v5';
@@ -155,4 +155,53 @@ test('actual legacy marker renderer draws the planned strokes without a recorder
  drawTag(ctx,tag,{marker,finish:'marker'});assert.ok(deposits>=tag.strokes.length*2);assert.deepEqual(tag,copy);assert.equal(marker.stroke,original);assert.equal(marker.svgRecorder,undefined);
  const full=deposits;deposits=0;drawTag(ctx,tag,{marker,progress:0,finish:'marker'});assert.equal(deposits,0);
  drawTag(ctx,tag,{marker,progress:.4,finish:'marker'});assert.ok(deposits>0&&deposits<full);
+});
+
+
+test('lettering forms change construction while remaining seeded, finite and phi based',()=>{
+ const forms=Object.keys(LETTERING_FORMS);assert.equal(forms.length,8);
+ const shapes=new Set();
+ for(const form of forms){
+  const a=createTag('PROPORTION',{form,hand:'loop',seed:'forms'}),b=createTag('PROPORTION',{form,hand:'loop',seed:'forms'});
+  assert.deepEqual(a,b);assert.equal(a.form,form);assert.equal(a.construction.metrics.width,100/PHI);
+  shapes.add(JSON.stringify(a.strokes));
+  for(const word of ['ABCDEFGHIJKLMNOPQRSTUVWX','YZ 0123456789φ.!?-','A A','I'])for(const paintWidth of [.75,3]){
+   const t=createTag(word,{form,paintWidth});assert.ok(t.bounds.width>0&&t.bounds.height>0&&Number.isFinite(t.motion.duration));
+   for(const stroke of t.strokes)for(const q of stroke.points){assert.ok(Number.isFinite(q.x)&&Number.isFinite(q.y));assert.ok(q.x>t.bounds.x&&q.x<t.bounds.x+t.bounds.width);assert.ok(q.y>t.bounds.y&&q.y<t.bounds.y+t.bounds.height);}
+   if(LETTERING_FORMS[form].solid){assert.equal(t.flow.connections.length,0);assert.ok(t.strokes.every(s=>Number.isInteger(s.letterIndex)));}
+  }
+ }
+ assert.equal(shapes.size,8);
+ assert.notDeepEqual(createTag('BOR',{form:'blockbuster'}).strokes,createTag('BOR',{form:'bubble'}).strokes);
+ assert.throws(()=>createTag('ECHO',{form:'unknown'}),RangeError);
+});
+test('mixed forms keep floor counts, words, inks and writers stable',()=>{
+ const forms=new Set();
+ for(let floor=1;floor<=150;floor++){
+  const input={floorId:'exhibition-'+floor,seed:'mixed-forms'},plain=planFloorTags(input),mixed=planFloorTags({...input,form:'mixed'});
+  assert.deepEqual(mixed,planFloorTags({...input,form:'mixed'}));assert.equal(mixed.length,plain.length);assert.ok([1,2].includes(mixed.length));
+  mixed.forEach((p,i)=>{forms.add(p.form);assert.ok(LETTERING_FORMS[p.form]);for(const key of ['text','hand','ink','seed','x','y','scale','rotation'])assert.deepEqual(p[key],plain[i][key]);});
+ }
+ assert.equal(forms.size,8);
+ assert.throws(()=>planFloorTags({floorId:1,form:'unknown'}),RangeError);
+});
+test('optical adjustments are bounded and independent of paint width',()=>{
+ let corrected=0;
+ for(const hand of ['loop','rush','cut','faust','twist']){
+  const tag=createTag('MARK WORD',{hand}),narrow=createTag('MARK WORD',{hand,paintWidth:.75});
+  assert.deepEqual(tag.spacing,narrow.spacing);
+  for(const pair of tag.spacing.pairs){assert.ok(Math.abs(pair.shift)<=pair.maximum+1e-9);assert.ok(Math.abs(pair.after-pair.target)<=Math.abs(pair.before-pair.target)+.1);assert.ok(!tag.text.slice(pair.from+1,pair.to).includes(' '));if(Math.abs(pair.shift)>.1)corrected++;}
+ }
+ assert.ok(corrected>10);
+});
+test('thick spray preserves counter clearance and keeps detached droplets fine',()=>{
+ for(const hand of ['loop','kadism','sliks']){
+  const tag=createTag('PROPORTION',{hand,paintWidth:3}),plan=buildSprayPlan(tag);
+  assert.ok(tag.strokes.some(s=>s.nozzleLimit>0));
+  for(const dab of plan.dabs)for(const drop of dab.droplets)assert.ok(drop.radius<=.85);
+  for(let i=0;i<tag.strokes.length;i++){
+   const limit=tag.strokes[i].nozzleLimit;if(!limit)continue;
+   const motion=tag.motion.strokes[i];for(const dab of plan.dabs.filter(d=>d.at>=motion.start&&d.at<=motion.start+motion.duration))assert.ok(dab.radius<=limit+1e-9);
+  }
+ }
 });

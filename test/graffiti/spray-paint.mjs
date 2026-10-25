@@ -15,9 +15,10 @@ export function buildSprayPlan(tag){
   const baseRadius=tag.weight*stroke.weight*.64*stroke.pressure;
   const add=(x,y,t,at,corner,travel,speed=.8)=>{
    const flow=.9+.1*Math.sin(t*8+stroke.phase),taper=.8+.2*Math.min(1,t*12,(1-t)*12);
-   const radius=baseRadius*flow*taper*(1+((tag.sprayFlare||1)-1)*Math.sin(Math.PI*t)**4);
+   const rawRadius=baseRadius*flow*taper*(1+((tag.sprayFlare||1)-1)*Math.sin(Math.PI*t)**4);
+   const radius=stroke.nozzleLimit?stroke.nozzleLimit*Math.tanh(rawRadius/stroke.nozzleLimit):rawRadius;
    const droplets=[];
-   if(r()<.23){const angle=r()*Math.PI*2,distance=radius*(.95+r()*.6);droplets.push({x:Math.cos(angle)*distance,y:Math.sin(angle)*distance,radius:radius*(.055+r()*.12),opacity:.28+r()*.4});}
+   if(r()<.23){const angle=r()*Math.PI*2,distance=radius*(.95+r()*.6);droplets.push({x:Math.cos(angle)*distance,y:Math.sin(angle)*distance,radius:Math.min(.85,radius*(.025+r()*.045)),opacity:.28+r()*.4});}
    dabs.push({x:x+(r()-.5)*radius*.035,y:y+(r()-.5)*radius*.035,radius,droplets,speed,
     // The hand slows at a turn, laying down a little more paint there.
     opacity:Math.min(.86,(movement ? .48+.42*(1-speed) : .56+corner*.22)*(.92+r()*.16)*Math.max(.35,travel/(baseRadius*.34))),variant:Math.floor(r()*4),at});
@@ -49,7 +50,7 @@ function stampBank(colour){
   const g=canvas.getContext('2d'),image=g.createImageData(96,96),d=image.data,r=random('PP-AEROSOL-CONE-1|'+variant);
   for(let y=0;y<96;y++)for(let x=0;x<96;x++){
    const px=(x+.5-48)/48*CONE,py=(y+.5-48)/48*CONE,rad=Math.hypot(px,py);
-   const noise=r(),edge=Math.max(0,Math.min(1,(rad-.29)/.71));
+   const noise=r(),edge=Math.max(0,Math.min(1,(rad-.52)/.48));
    const falloff=(1-edge)**2*(1+2*edge);
    // Repeated deposits build a mottled film. Individual tiny gaps and
    // detached droplets remain at the outer edge of the cone.
@@ -69,8 +70,9 @@ export function drawSpray(ctx,tag,{progress=1}={}){
  ctx.save();ctx.globalCompositeOperation='source-over';ctx.fillStyle=tag.ink;
  for(const dab of plan.dabs){
   if(dab.at>limit)break;
-  const radius=dab.radius*CONE;ctx.globalAlpha=dab.opacity*tag.opacity;
-  ctx.drawImage(bank[dab.variant],dab.x-radius,dab.y-radius,radius*2,radius*2);
+  const radius=dab.radius*CONE;ctx.globalAlpha=Math.min(1,dab.opacity*(tag.form==='calligraphy'?1.65:1))*tag.opacity;
+  if(tag.form==='calligraphy'){ctx.save();ctx.translate(dab.x,dab.y);ctx.rotate(-Math.PI/4);ctx.scale(1,.30);ctx.drawImage(bank[dab.variant],-radius,-radius,radius*2,radius*2);ctx.restore();}
+  else ctx.drawImage(bank[dab.variant],dab.x-radius,dab.y-radius,radius*2,radius*2);
   for(const drop of dab.droplets){ctx.globalAlpha=drop.opacity*tag.opacity;ctx.beginPath();ctx.arc(dab.x+drop.x,dab.y+drop.y,drop.radius,0,Math.PI*2);ctx.fill();}
  }
  ctx.restore();return plan.total;
