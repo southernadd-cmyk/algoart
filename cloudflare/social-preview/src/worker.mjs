@@ -59,7 +59,7 @@ function html(token,data,pv,origin){
  const title='PROPORTION PIECE — '+MODES[data.mode]+' · '+data.seed;
  const desc='Original '+material+' composition by PROPORTION PIECE. Seed '+data.seed+
    '. Open the exact artwork and explore its golden-ratio structure.';
- const portrait=data.fmt==='portrait';
+ // The social image is always a wide card; portrait art is letterboxed inside it.
  const suffix=/^[2-9]$/.test(pv||'')?'&pv='+pv:'';
  const url=origin+'/share?c='+encodeURIComponent(token)+suffix;
  const image=origin+'/share/image?c='+encodeURIComponent(token)+suffix;
@@ -76,9 +76,9 @@ function html(token,data,pv,origin){
  '<meta property="og:image" content="'+e(image)+'">'+
  '<meta property="og:image:secure_url" content="'+e(image)+'">'+
  '<meta property="og:image:type" content="image/jpeg">'+
- '<meta property="og:image:width" content="'+(portrait?630:1200)+'">'+
- '<meta property="og:image:height" content="'+(portrait?1200:630)+'">'+
- '<meta name="twitter:card" content="'+(portrait?'summary':'summary_large_image')+'">'+
+ '<meta property="og:image:width" content="'+1200+'">'+
+ '<meta property="og:image:height" content="'+630+'">'+
+ '<meta name="twitter:card" content="'+'summary_large_image'+'">'+
  '<meta name="twitter:title" content="'+e(title)+'">'+
  '<meta name="twitter:description" content="'+e(desc)+'">'+
  '<meta name="twitter:image" content="'+e(image)+'">'+
@@ -122,7 +122,7 @@ export default {
      try{bytes=Uint8Array.from(atob(body.jpeg),c=>c.charCodeAt(0))}
      catch{return txt('Invalid JPEG',400,cors)}
      const dims=jpegDimensions(bytes);
-     if(!dims||dims.width!==(data.fmt==='portrait'?630:1200)||dims.height!==(data.fmt==='portrait'?1200:630)||bytes.length<4000||bytes.length>285000)
+     if(!dims||dims.width!==1200||dims.height!==630||bytes.length<4000||bytes.length>285000)
        return txt('Invalid JPEG dimensions',400,cors);
      // Identical artwork token is idempotent. No client-provided storage path.
      await env.PREVIEW_KV.put('previews/'+token+'.jpg',bytes.buffer);
