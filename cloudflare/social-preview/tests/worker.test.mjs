@@ -19,6 +19,13 @@ test('compact share token retains historic revision and rejects mutation',()=>{
  assert.equal(testing.decodeToken(token).material,'oil-v4');
  assert.equal(testing.decodeToken('bogus'),null);
 });
+test('Oil V5 compact links retain the pigment revision and oil metadata',async()=>{
+ const data={...values,material:'oil-v5'};
+ const v5=Buffer.from(keys.map(k=>data[k]||'').join('\x1f')).toString('base64url');
+ assert.equal(testing.decodeToken(v5).material,'oil-v5');
+ const response=await worker.fetch(request('/share?c='+v5),env);
+ assert.equal(response.status,200);assert.match(await response.text(),/Original Oil Paint composition/);
+});
 test('social HTML is crawler-visible and keeps exact token',async()=>{
  const r=await worker.fetch(request('/share?c='+token+'&pv=2'),env);
  assert.equal(r.status,200);
@@ -54,3 +61,4 @@ test('portrait OG metadata reflects orientation',async()=>{
  assert.match(html,/og:image:width\" content=\"1200\"/);
  assert.match(html,/og:image:height\" content=\"630\"/);
 });
+

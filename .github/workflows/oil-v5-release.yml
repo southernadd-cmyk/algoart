@@ -1,0 +1,37 @@
+name: Oil V5 production release checks
+on:
+  push:
+    branches: [release/oil-pigment-v5]
+  pull_request:
+    paths:
+      - 'tests/oil-v5-release*'
+      - 'automation/oil-edition.mjs'
+      - '.github/workflows/oil-v5-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          node tests/oil-pigment.test.mjs
+          node tests/oil-future-version.test.mjs
+          node tests/oil-v5-release.test.mjs
+          node --test cloudflare/social-preview/tests/worker.test.mjs
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-release-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+      - run: node tests/oil-v5-release-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-v5-release-results
+          path: oil-v5-release-results/

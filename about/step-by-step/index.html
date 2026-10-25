@@ -71,16 +71,18 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <script src="../../js/oil-render.js"></script>
 <script src="../../js/watercolour-v2r.js"></script>
 <script src="../../js/watercolour-v2s.js?v=walkthrough-stages1"></script>
-<script src="../../js/oil-v1-core-a.js"></script>
+<script src="../../js/oil-v1-core-a.js?v=20261025-oil-v5-release"></script>
 <script src="../../js/oil-v1-core-b.js"></script>
-<script src="../../js/oil-v1-core-c.js?v=oil-real-brush-stages3"></script>
-<script src="../../js/oil-paint-v1.js?v=walkthrough-stages1"></script>
+<script src="../../js/oil-v1-core-c.js?v=20261025-oil-v5-release"></script>
+<script src="../../js/oil-paint-v1.js?v=20261025-oil-v5-release"></script>
 <script src="../../js/oil-brush-v2.js"></script>
 <script src="../../js/oil-paint-v2.js"></script>
-<script src="../../js/oil-brush-v3.js"></script>
+<script src="../../js/oil-brush-v3.js?v=20261025-oil-v5-release"></script>
 <script src="../../js/oil-paint-v3.js"></script>
 <script src="../../js/cpu-canvas.js"></script>
 <script src="../../js/cpu-material-versions.js"></script>
+<script src="../../js/oil-pigment.js?v=20261025-oil-v5-release"></script>
+<script src="../../js/oil-paint-v5.js?v=20261025-oil-v5-release"></script>
 <script src="../../js/action-painting-v1.js"></script>
 <script type="module">
 const $=id=>document.getElementById(id), A=window.AlgoArt;
@@ -303,7 +305,8 @@ function captureMaterialStages(s){
    if(version==='oil-v1'&&A.renderOilPaintV1)A.renderOilPaintV1(target,s,renderScale,false);
    else if(version==='oil-v2'&&A.renderOilPaintV2)A.renderOilPaintV2(target,s,renderScale,false);
    else if(version==='oil-v3'&&A.renderOilPaintV3)A.renderOilPaintV3(target,s,renderScale,false);
-   else A.renderOilPaintV4(target,s,renderScale,false);
+   else if(version==='oil-v4')A.renderOilPaintV4(target,s,renderScale,false);
+   else A.renderOilPaintV5(target,s,renderScale,false);
   }
   snapshot('The finished '+selectedMaterial()+' surface',target);
   // Retain only distinct renderer states, then select checkpoints by cumulative

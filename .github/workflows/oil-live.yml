@@ -28,7 +28,7 @@ on:
   workflow_dispatch:
     inputs:
       slot:
-        description: 'Build one v1 Oil Paint study or inspect afternoon posting'
+        description: 'Build one Oil Paint study or inspect afternoon posting'
         type: choice
         required: true
         default: 'build'
@@ -461,4 +461,5 @@ jobs:
             echo "::error::A oil destination failed. Successful posts are marked complete; rerunning the same slot retries only missing platforms."
             exit 1
           fi
+
 

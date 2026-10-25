@@ -57,7 +57,8 @@ A.preparePNG=function(settings,scale){
         A.renderActionPainting(out,compositionSettings,scale,false,{version:settings.actionPaintingRevision||2});
       }
       else if(settings.oilPaintRender){
-        const oilRenderer=settings.oilPaintRevision==='v4'?A.renderOilPaintV4:
+        const oilRenderer=settings.oilPaintRevision==='v5'?A.renderOilPaintV5:
+          settings.oilPaintRevision==='v4'?A.renderOilPaintV4:
           settings.oilPaintRevision==='v3'?A.renderOilPaintV3:
           settings.oilPaintRevision==='v2'?A.renderOilPaintV2:A.renderOilPaintV1;
         oilRenderer(out,compositionSettings,scale,false);
@@ -157,3 +158,4 @@ A.exportSVG=function(settings){
 };
 
 })(window.AlgoArt);
+

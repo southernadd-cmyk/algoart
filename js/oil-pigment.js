@@ -1,4 +1,4 @@
-// Experimental Oil V5 colour model, developed from Claude's pigment.js.
+// Oil V5 colour model, developed from Claude's pigment.js.
 // An art-directed gamut and three-channel K/S approximation, not measured
 // pigment spectra. Oklab matrices: https://bottosson.github.io/posts/oklab/
 window.AlgoArt=window.AlgoArt||{};

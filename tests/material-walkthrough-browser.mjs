@@ -47,7 +47,7 @@ try {
      A.materialStageCapture=null;
      if(material==='tissue')A.renderOil(studio,s,1,false,7);
      else if(material==='watercolour')A.renderWatercolourV2S(studio,s,1,false);
-     else A.renderOilPaintV4(studio,s,.45,false);
+     else A.renderOilPaintV5(studio,s,.45,false);
      const final=window.__walkthroughTest.frames().at(-1);
      const resized=document.createElement('canvas');
      resized.width=final.width;resized.height=final.height;
@@ -91,3 +91,4 @@ try {
  assert.ok(href.includes('seed=PP-BROWSER-SMOKE'),'return editor link lost seed');
  console.log('All five material paths rendered and editor return state persisted');
 }finally{await browser?.close();await new Promise(ok=>server.close(ok));}
+

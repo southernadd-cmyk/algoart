@@ -6,6 +6,7 @@ import {
   SCHEDULE, PLATFORM_SLOTS, PORTRAIT_SCHEDULE, PORTRAIT_POST_INDICES, MODES, PALETTES, PENS
 } from './config.mjs';
 import { makeCaptions } from './captions.mjs';
+import { oilVersionForDate } from './oil-edition.mjs';
 import { socialRendererVersion, archivedLandscapeStudy } from './renderer-state.mjs';
 import { tissueEditionForDate, validateTissueShareUrl } from './tissue-edition.mjs';
 import { appendDailyPhiFraming, dailyPhiFramingForDate } from './phi-framing.mjs';
@@ -269,7 +270,7 @@ try {
     // the same φ-derived source fit, in their PNG/SVG and exact share URL.
     // Earlier dates and already-frozen gallery/release assets stay untouched.
     const query=appendDailyPhiFraming(
-      queryFor(settings,itemVersion)+(action?'&material='+actionVersionForDate(day):oil?'&material='+ (day>='2026-10-17'?'oil-v4':'oil-v1'):watercolour?'&material=watercolour-v2s&fit=0':
+      queryFor(settings,itemVersion)+(action?'&material='+actionVersionForDate(day):oil?'&material='+ oilVersionForDate(day):watercolour?'&material=watercolour-v2s&fit=0':
       watercolor?tissueEdition.suffix:''),day);
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
@@ -278,7 +279,7 @@ try {
       if(params.get('material')!==actionVersionForDate(day)||params.get('seed')!==settings.seed||params.get('pal')!==settings.palette)throw Error('Action share URL seed/palette mismatch');}
     if(oil){
       const q=new URL(shareUrl).searchParams;
-      if(q.get('material')!==(day>='2026-10-17'?'oil-v4':'oil-v1')||q.get('seed')!==settings.seed||
+      if(q.get('material')!==oilVersionForDate(day)||q.get('seed')!==settings.seed||
          q.get('pal')!==settings.palette)
         throw Error('Oil image URL does not preserve exact seed and randomly chosen palette');
     }
@@ -466,3 +467,4 @@ await fs.writeFile(path.join(outDir, 'queue.json'), JSON.stringify(queue, null, 
 console.log(`\nGenerated ${generationCount} artworks into ${outDir}`);
 console.log(`${material} ${orientation} Instagram/Threads/Bluesky: ${(action?['09:00']:oil?['15:00']:watercolour?['15:00']:
   watercolor?['09:00','20:30']:orientation==='portrait'?PORTRAIT_SCHEDULE:SCHEDULE.instagram).join(', ')} ${TIME_ZONE}`);
+
