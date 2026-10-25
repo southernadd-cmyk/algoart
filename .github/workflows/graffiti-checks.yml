@@ -20,9 +20,10 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci
       - name: Letter geometry and paint field
         run: node --test test/graffiti/tag-engine.test.mjs test/graffiti/throwup-paint.test.mjs
+      - name: Install test dependencies without rewriting the project lock
+        run: npm install --no-save --package-lock=false --ignore-scripts
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Render throw-ups and check writer selection
