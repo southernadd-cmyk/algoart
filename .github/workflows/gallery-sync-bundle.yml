@@ -1,0 +1,43 @@
+name: Synchronise deployed gallery bundle
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gallery-sync-bundle.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: gallery-bundle-sync-main
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Build and validate production bundle
+        run: |
+          npm run gallery:bundle
+          node --check gallery/visit/gallery-bundle.js
+          node --test tests/gallery-public-launch.test.mjs
+          npm run gallery:bundle:check
+      - name: Commit exact reproducible bundle to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/gallery-bundle.js
+          if git diff --cached --quiet; then
+            echo "Bundle already matches source."
+          else
+            git commit -m "Sync nine-family gallery bundle with canonical module imports"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
