@@ -9,12 +9,12 @@ import {createTag,strokeFraction} from '../test/graffiti/tag-engine.mjs?v=spraye
 const source=JSON.parse(fs.readFileSync('gallery/tower-layouts.json','utf8'));
 const floors=source.floors.map((f,level)=>({level,plan:buildLayout(f.date,f.studies.length,f.studies.map(([seed,engine])=>({seed,engine})))}));
 const marks=planExteriorGraffiti(floors);
-test('ground and first floors have fifteen overlapping marks each; upper floors stay clear',()=>{
+test('ground and first floors have five exterior marks each; upper floors stay clear',()=>{
  assert.deepEqual(planExteriorGraffiti(floors),marks);
- for(const floor of floors){const tags=marks.filter(m=>m.date===floor.plan.date);assert.equal(tags.length,floor.level<2?15:0);if(floor.level<2){assert.ok(new Set(tags.map(t=>t.face.id)).size<tags.length);for(const phrase of GRAFFITI_WORDS)assert.equal(tags.filter(t=>t.phrase===phrase).length,5);}}
+ for(const floor of floors){const tags=marks.filter(m=>m.date===floor.plan.date);assert.equal(tags.length,floor.level<2?5:0);if(floor.level<2){for(const phrase of GRAFFITI_WORDS)assert.ok(tags.some(t=>t.phrase===phrase));}}
  assert.deepEqual(new Set(marks.map(m=>m.phrase)),new Set(GRAFFITI_WORDS));
- assert.equal(marks.length,30);assert.ok(marks.some(m=>m.level===0));assert.ok(marks.some(m=>m.level===1));assert.ok(marks.every(m=>m.level<2));
- assert.ok(marks.some(m=>m.form==='bubble')&&marks.some(m=>m.form==='handstyle'));
+ assert.equal(marks.length,10);assert.ok(marks.some(m=>m.level===0));assert.ok(marks.some(m=>m.level===1));assert.ok(marks.every(m=>m.level<2));
+ assert.ok(new Set(marks.map(m=>m.form)).size>=3);
 });
 test('paint fits solid wall faces and stays clear of doors, lifts, corners and roof bands',()=>{
  for(const mark of marks){

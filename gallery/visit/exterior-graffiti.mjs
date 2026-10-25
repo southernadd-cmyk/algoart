@@ -2,6 +2,7 @@
 // Paint is generated in small renderer-frame steps, outside startup's critical path.
 import {drawTag} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {planExteriorGraffiti,planGraffitiAtlases,towerGraffitiKey} from './exterior-graffiti-plan.mjs';
+const surfaceOffset=(mark,currentFloor)=>mark.surface==='interior'?.173:mark.level===currentFloor?.202:.173;
 export function graffitiPaintParts(tag){
  if(tag.form!=='bubble'&&tag.form!=='hollow')return [tag];
  const letters=new Map();tag.strokes.forEach((stroke,index)=>{const key=stroke.letterIndex;if(!letters.has(key))letters.set(key,{strokes:[],timing:[]});letters.get(key).strokes.push(stroke);if(tag.motion)letters.get(key).timing.push(tag.motion.strokes[index]);});
@@ -13,7 +14,7 @@ export function graffitiGeometry(THREE,entries,size,currentFloor,tileMeters=2,at
  const positions=[],normals=[],uv=[],wallUv=[],indices=[];
  for(const {mark,x,y,width,height} of entries){
   const {normal:n,position:p,rotation}=mark,c=Math.cos(rotation),s=Math.sin(rotation);
-  const right={x:n.z,y:0,z:-n.x},offset=mark.level===currentFloor?.202:.173;
+  const right={x:n.z,y:0,z:-n.x},offset=surfaceOffset(mark,currentFloor);
   const u0=x/size,u1=(x+width)/size,v0=1-(y+height)/atlasHeight,v1=1-y/atlasHeight,base=positions.length/3;
   for(const [dx,dy,u,v] of [[-.5,-.5,u0,v0],[.5,-.5,u1,v0],[.5,.5,u1,v1],[-.5,.5,u0,v1]]){
    const along=dx*mark.width*c-dy*mark.height*s,vertical=dx*mark.width*s+dy*mark.height*c;
@@ -32,7 +33,7 @@ export function graffitiGeometry(THREE,entries,size,currentFloor,tileMeters=2,at
  geometry.setAttribute('wallUv',new THREE.Float32BufferAttribute(wallUv,2));
  geometry.setIndex(indices);geometry.computeBoundingSphere();return geometry;
 }
-export function createTowerGraffiti(THREE,{brick,lowPower=false}={}){
+export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExteriorGraffiti,keyFor=towerGraffitiKey,kind='exterior'}={}){
  let key='',marks=[],pages=[],pending=[],painted=0,paintSteps=0,totalPaintMs=0,maxPaintMs=0,slowest=null,errors=[],sourceNormal=null,sharedNormal=null;
  const updateNormal=()=>{
   if(!brick.normalMap||brick.normalMap===sourceNormal)return;
@@ -41,8 +42,8 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false}={}){
  };
  const dispose=()=>{for(const p of pages){p.texture.dispose();p.material.dispose();}pages=[];pending=[];};
  const prepare=floors=>{
-  const next=towerGraffitiKey(floors);if(next===key)return;
-  dispose();key=next;marks=planExteriorGraffiti(floors);painted=0;paintSteps=0;totalPaintMs=0;maxPaintMs=0;slowest=null;errors=[];
+  const next=keyFor(floors);if(next===key)return;
+  dispose();key=next;marks=planner(floors);painted=0;paintSteps=0;totalPaintMs=0;maxPaintMs=0;slowest=null;errors=[];
   pages=planGraffitiAtlases(marks,{lowPower}).map(plan=>{
    const canvas=document.createElement('canvas');canvas.width=plan.size;canvas.height=plan.height;
    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=lowPower?1:4;
@@ -50,7 +51,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false}={}){
     roughness:.96,metalness:0,side:THREE.FrontSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
    material.userData.galleryPersistent=true;texture.userData.galleryPersistent=true;
    const page={...plan,canvas,context:canvas.getContext('2d'),texture,material,shader:null,dirty:false};
-   // Keep the brick relief and mortar visible through the deposited paint.
+   // Keep the wall relief and grain visible through the deposited paint.
    // This UV is measured in wall metres, independently of the paint atlas.
    material.onBeforeCompile=shader=>{
     shader.uniforms.graffitiBrick={value:brick.map};page.shader=shader;
@@ -69,10 +70,10 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false}={}){
  };
  return {
   addTo(parent,floors,currentFloor){
-   prepare(floors);const group=new THREE.Group();group.name='tower-exterior-graffiti';
+   prepare(floors);const group=new THREE.Group();group.name='tower-'+kind+'-graffiti';
    for(const page of pages){
     const geometry=graffitiGeometry(THREE,page.entries,page.size,currentFloor,brick.userData.tileMeters||2,page.height);
-    const mesh=new THREE.Mesh(geometry,page.material);mesh.name='exterior-graffiti-atlas-'+page.page;mesh.renderOrder=-1;
+    const mesh=new THREE.Mesh(geometry,page.material);mesh.name=kind+'-graffiti-atlas-'+page.page;mesh.renderOrder=-1;
     mesh.onBeforeRender=()=>{updateNormal();if(page.shader)page.shader.uniforms.graffitiBrick.value=brick.map;};group.add(mesh);
    }
    parent.add(group);return group;
@@ -84,13 +85,13 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false}={}){
     g.save();g.beginPath();g.rect(x-2,y-2,width+4,height+4);g.clip();g.translate(x,y);g.scale(width/b.width,height/b.height);g.translate(-b.x,-b.y);
     try{drawTag(g,job.tag,{finish:'spray'});}finally{g.restore();}
     page.dirty=true;if(job.last){painted++;mark.tag=null;}
-   }catch(error){errors.push(mark.id+': '+error.message);console.warn('Exterior paint failed',error);}
+   }catch(error){errors.push(mark.id+': '+error.message);console.warn(kind+' paint failed',error);}
    paintSteps++;const elapsed=performance.now()-start;totalPaintMs+=elapsed;if(elapsed>maxPaintMs){maxPaintMs=elapsed;slowest={text:mark.phrase,hand:mark.hand,form:mark.form};}
    // Limit texture uploads while still showing the ground-floor marks first.
    if(paintSteps<=2||paintSteps%8===0||!pending.length)for(const p of pages)if(p.dirty){p.texture.needsUpdate=true;p.dirty=false;}
   },
   get diagnostics(){return {marks:marks.length,painted,pending:pending.length,paintSteps,pages:pages.length,totalPaintMs:Math.round(totalPaintMs),maxPaintMs:Math.round(maxPaintMs),slowest,errors:[...errors]};},
-  snapshot(currentFloor){return marks.map(({tag,bounds,...mark})=>({...mark,position:{x:mark.position.x+mark.normal.x*(mark.level===currentFloor?.202:.173),y:mark.position.y,z:mark.position.z+mark.normal.z*(mark.level===currentFloor?.202:.173)}}));},
+  snapshot(currentFloor){return marks.map(({tag,bounds,...mark})=>({...mark,position:{x:mark.position.x+mark.normal.x*surfaceOffset(mark,currentFloor),y:mark.position.y,z:mark.position.z+mark.normal.z*surfaceOffset(mark,currentFloor)}}));},
   dispose(){dispose();sharedNormal?.dispose();sharedNormal=null;sourceNormal=null;key='';marks=[];}
  };
 }

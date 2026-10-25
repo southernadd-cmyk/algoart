@@ -167,16 +167,18 @@ The sources are linked in the specimen. Reference photos were inspected for
 research; they are not bundled in the site or used as generated tag textures.
 
 `planFloorTags({ floorId, seed, text, hand, ink, form })` returns **one or two
-tags per call** for the writing specimen. The tower builds fifteen separately
-seeded selections on each of its two painted floors. A stable exhibition date
+tags per call** for the writing specimen. The tower builds five separately seeded exterior selections on each of its
+two painted floors, plus three to five interior signatures per exhibition. A stable exhibition date
 and slot identify each selection. Never use the number of floors or
 a ground-level visibility condition to seed the plan. A floor's selection is
 independent of tower growth. `text` may be blank to choose from the vocabulary.
 
 The floor browser previews the writing on one specimen wall. The live tower
 now uses this same engine through `gallery/visit/exterior-graffiti-plan.mjs`
-and `exterior-graffiti.mjs`. The ground and first floors each receive fifteen overlapping marks from
-"Proportion Piece", "PHI" and "φ"; higher floors stay clear. The phrase, writer, lettering form, ink and
+and `exterior-graffiti.mjs`. The ground and first floors each receive five exterior marks from
+"Proportion Piece", "PHI" and "φ"; higher exterior walls stay clear. Each
+exhibition also has three to five small handstyles on painting-free interior
+wall faces, using φ placement and varied angles. The phrase, writer, lettering form, ink and
 wall are seeded by the exhibition date; adding floors preserves existing work.
 
 Marks occupy solid exterior wall faces, clear of corners, doorways and lift

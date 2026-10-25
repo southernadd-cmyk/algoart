@@ -2,13 +2,13 @@
 // occupied floor and of whether the surrounding tower uses prepared meshes.
 import {createTag,planFloorTags,makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {ROOM_HEIGHT} from './layout-v2.mjs';
+import {fitPhiTag} from './graffiti-placement.mjs';
 export const GRAFFITI_WORDS=Object.freeze(['Proportion Piece','PHI','φ']);
 export const GRAFFITI_SEED='PP-TOWER-WRITING-01';
 export const WALL_MARGIN=.52;
-export const TAGS_PER_PAINTED_FLOOR=15;
+export const TAGS_PER_PAINTED_FLOOR=5;
 const SIDES=['north','south','east','west'];
 const normals={north:{x:0,z:-1},south:{x:0,z:1},east:{x:1,z:0},west:{x:-1,z:0}};
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function reservedWalls(room,ground=false){
  if(room.index!==0)return [];
  const lift=SIDES.find(side=>!room.doors.includes(side));
@@ -44,28 +44,22 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
  const marks=[];
  for(const {level,plan} of ordered){
   const faces=exteriorWallFaces(plan,level===0),wordRandom=makeRandom(seed+'|'+plan.date+'|words');
-  const firstWord=wordRandom.int(0,GRAFFITI_WORDS.length-1);
+  const firstWord=wordRandom.int(0,GRAFFITI_WORDS.length-1),phase=wordRandom.int(0,31);
   const selection=Array.from({length:TAGS_PER_PAINTED_FLOOR},(_,slot)=>({...planFloorTags({floorId:plan.date,seed:seed+'|slot|'+slot,form:'mixed',count:1})[0],slot}));
   for(const item of selection){
    const phrase=GRAFFITI_WORDS[(firstWord+item.slot)%GRAFFITI_WORDS.length];
-   const tag=createTag(phrase,{...item,paintWidth:2}),r=makeRandom(item.seed+'|wall'),aspect=tag.bounds.width/tag.bounds.height;
+   const tag=createTag(phrase,{...item,paintWidth:2}),r=makeRandom(item.seed+'|wall');
    const desiredWidth=phrase==='Proportion Piece'?r.range(5.7,6.9):phrase==='PHI'?r.range(2.4,3.5):r.range(1.5,2.1);
    const candidates=faces.map(face=>{
-    const maxWidth=face.length-WALL_MARGIN*2,maxHeight=ROOM_HEIGHT-1.5;
-    let width=Math.min(desiredWidth,maxWidth,maxHeight*aspect),height=width/aspect;
-    const rotation=r.range(-.035,.035),cos=Math.abs(Math.cos(rotation)),sin=Math.abs(Math.sin(rotation));
-    const factor=Math.min(1,maxWidth/(width*cos+height*sin),maxHeight/(height*cos+width*sin));width*=factor;height*=factor;
+    const placement=fitPhiTag({bounds:tag.bounds,desiredWidth,maxHeight:ROOM_HEIGHT-1.5,
+     lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,bottom:.65,top:ROOM_HEIGHT-.55,slot:item.slot,phase});
     const facing=face.normal.x*front.x+face.normal.z*front.z;
-    return {face,width,height,rotation,score:(face.exposed?4:0)+facing*3+r.range(0,1)};
+    return {face,...placement,score:(face.exposed?4:0)+facing*3+r.range(0,1)};
    }).sort((a,b)=>b.score-a.score);
    const chosen=candidates[0];if(!chosen)throw new Error('No exterior wall for '+plan.date);
-   const {face,width,height,rotation}=chosen;
-   const halfAlong=(width*Math.abs(Math.cos(rotation))+height*Math.abs(Math.sin(rotation)))/2;
-   const halfUp=(height*Math.abs(Math.cos(rotation))+width*Math.abs(Math.sin(rotation)))/2;
-   const shift=r.range(-1,1)*Math.max(0,(face.length/2-WALL_MARGIN-halfAlong))*.55;
-   const centreY=clamp(r.range(1.95,2.65),.65+halfUp,ROOM_HEIGHT-.55-halfUp);
+   const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
    const normal=face.normal,right={x:normal.z,z:-normal.x};
-   marks.push({id:item.id,date:plan.date,level,slot:item.slot,phrase,text:tag.text,hand:tag.hand,form:tag.form,ink:tag.ink,seed:tag.seed,
+   marks.push({id:item.id,date:plan.date,level,slot:item.slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,form:tag.form,ink:tag.ink,seed:tag.seed,
     face,width,height,rotation,normal:{x:normal.x,y:0,z:normal.z},
     position:{x:face.centre.x+right.x*shift,y:level*floorSpacing+face.roomY+centreY,z:face.centre.z+right.z*shift},
     bounds:{...tag.bounds},tag});

@@ -11,6 +11,7 @@ import {placeCastIronStreetLamp,enableDetailedStreetLamps} from './cast-iron-str
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
+import {planInteriorGraffiti,interiorGraffitiKey} from './interior-graffiti-plan.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=city-cards-20261025';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
@@ -119,17 +120,19 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
 });
 const wall=galleryFinish.wall;
 const towerGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.exteriorBrick,lowPower:galleryFinish.lowPower});
-if(GALLERY_DEBUG)window.__galleryGraffiti={
- diagnostics:()=>towerGraffiti.diagnostics,
- marks:()=>towerGraffiti.snapshot(currentFloor),
+const interiorGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.wall,lowPower:galleryFinish.lowPower,
+ planner:planInteriorGraffiti,keyFor:interiorGraffitiKey,kind:'interior'});
+if(GALLERY_DEBUG){const debugWriting=(manager,inside=false)=>({
+ diagnostics:()=>manager.diagnostics,
+ marks:()=>manager.snapshot(currentFloor),
  preview(index){
-  const mark=towerGraffiti.snapshot(currentFloor)[index];if(!mark)return;
+  const mark=manager.snapshot(currentFloor)[index];if(!mark)return;
   const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210),p=mark.position,n=mark.normal;
-  const distance=Math.max(3.8,mark.width*1.2);
+  const distance=inside?Math.max(2,mark.width*1.8):Math.max(3.8,mark.width*1.2);
   view.position.set(p.x+n.x*distance,p.y+.12,p.z+n.z*distance);view.lookAt(p.x,p.y,p.z);
   renderer.setAnimationLoop(null);renderer.render(scene,view);
  }
-};
+});window.__galleryGraffiti=debugWriting(towerGraffiti);window.__galleryInteriorGraffiti=debugWriting(interiorGraffiti,true);}
 const floor=galleryFinish.floor;
 const timber=galleryFinish.timber;
 const stone=galleryFinish.stone;
@@ -974,6 +977,7 @@ function constructGallery(layout, studies) {
     entry.entranceWall=['south','east','west','north'].find(side=>side!==entry.liftWall&&!entry.doors.includes(side));
   }
   const hangs=planGalleryHangs(layout,studies);
+  if(GALLERY_DEBUG)window.__galleryInteriorGraffiti.artWalls=hangs.map(h=>({roomIndex:h.roomIndex,surface:h.surface}));
   const sculptures=planGallerySculptures(layout,studies);
   validateSculpturePlacement(layout,sculptures);
   sculpturePlacements.push(...sculptures);
@@ -1007,6 +1011,11 @@ function constructGallery(layout, studies) {
     planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower})));
   if(hangs.length+sculptures.length!==studies.length)
     throw new Error('An archived study was omitted from the exhibition');
+  // The complete hanging plan is available before deferred images load.
+  // Exclude every wall face with a planned painting, then add small signatures
+  // only on this occupied floor's inward-facing plaster surfaces.
+  const writingLayout={...layout,rooms:layout.rooms.map(room=>({...room,y:Math.round((room.y-currentFloor*FLOOR_SPACING)*1e6)/1e6}))};
+  interiorGraffiti.addTo(scene,{layout:writingLayout,hangs,level:currentFloor},currentFloor);
   for(const hall of layout.corridors)addBridge(hall);
   // Compute the entire tower footprint before placing any nearby buildings.
   // Upper-storey projections are protected even where the ground floor is empty.
@@ -1822,6 +1831,7 @@ function tick() {
   if (!renderer) return;
   const dt=Math.min(clock.getDelta(),.055);
   towerGraffiti.paintNext();
+  interiorGraffiti.paintNext();
   // Three.js supplies both desktop and XR frames here. Window animation
   // frames can pause in immersive VR, so build exhibits on this loop instead.
   processDeferredGallery();

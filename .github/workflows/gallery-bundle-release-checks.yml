@@ -12,6 +12,7 @@ on:
       - 'tests/gallery-production-planning.test.mjs'
       - 'tests/gallery-exterior-graffiti.test.mjs'
       - 'tests/gallery-backdrop.test.mjs'
+      - 'tests/gallery-interior-graffiti.test.mjs'
       - 'test/virtual-gallery/architectural-materials.test.mjs'
       - 'test/virtual-gallery/environment-v1.test.mjs'
       - 'test/virtual-gallery/paper-isolation.test.mjs'
@@ -42,7 +43,7 @@ jobs:
       - name: Install gallery test dependencies
         run: npm install --no-save --package-lock=false
       - name: Gallery public launch regression
-        run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs tests/gallery-exterior-graffiti.test.mjs tests/gallery-backdrop.test.mjs
+        run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs tests/gallery-backdrop.test.mjs
       - name: Studio walkthrough links regression
         run: node --test tests/studio-walkthrough-link.test.mjs
       - name: Production-module unit tests

@@ -23,6 +23,7 @@ function gallery(){
     deferredGalleryJobs:[],deferredGalleryRunning:false,
     scene:{children:[]},camera:{},editionObjects:[],welcome:{hidden:false},plan:{},
     paintFrames:0,towerGraffiti:{paintNext(){context.paintFrames++;}},
+    interiorPaintFrames:0,interiorGraffiti:{paintNext(){context.interiorPaintFrames++;}},
     clock:{getDelta:()=>.016},lastFocusCheck:0,mapElapsed:0,
     entranceDoor:null,rig:{position:{}},
     $:()=>lift,canvas:{focus(){}},matchMedia:()=>({matches:false}),
@@ -73,7 +74,8 @@ test('desktop entry keeps the exterior first and starts exhibit loading on entry
 });
 test('exterior paint progresses before entry and on immersive XR frames',()=>{
   const g=gallery();g.floor();g.frame();assert.equal(g.context.paintFrames,1);
-  assert.equal(g.context.welcome.hidden,false);g.vr();g.frame();assert.equal(g.context.paintFrames,2);
+  assert.equal(g.context.interiorPaintFrames,1);
+  assert.equal(g.context.welcome.hidden,false);g.vr();g.frame();assert.equal(g.context.paintFrames,2);assert.equal(g.context.interiorPaintFrames,2);
 });
 test('VR entered before floor preparation starts exhibits once that floor is ready',()=>{
   const g=gallery();g.vr();g.frame();

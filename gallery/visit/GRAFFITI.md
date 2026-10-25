@@ -1,42 +1,40 @@
-# Exterior writing
+# Wall writing
 
-The tower uses the specimen's procedural writing engine, bundled into the
-existing gallery JavaScript. It adds no font, image, library or CDN request.
-The source import points to `test/graffiti/tag-engine.mjs`; that engine is
-compiled into the production bundle rather than fetched from the test page.
+The tower uses the specimen's procedural writing engine, compiled into the
+existing gallery bundle. It adds no font, image, library or CDN request.
 
-`exterior-graffiti-plan.mjs` selects fifteen marks on the ground floor and
-fifteen on the first floor. Higher floors have no marks. Each painted floor
-has five Proportion Piece tags, five PHI tags and five φ tags. Wall faces may
-be reused, so the tags can overlap with a repeatable drawing order. All 53 writer profiles and eight lettering forms remain available.
-Selections use the exhibition date and slot, independently of tower height,
-the currently occupied floor, or prepared versus procedural tower geometry.
+The exterior has five marks on the ground floor and five on the first floor.
+Higher exterior walls stay clear. The three phrases are Proportion Piece, PHI
+and φ, with seeded writer profiles, lettering forms and ink. Outside marks
+may overlap; their rotated bounds still fit the solid wall, clear of openings.
 
-The planner reserves the lift wall and ground entrance, excludes connector
-doors, and fits each rotated mark inside the remaining brick face. It prefers
-exposed facades facing the entrance square. Only outward-facing transparent
-quads are created; no inside walls, glass bridges or artworks receive paint.
-Active-room veneer and archived brick have separate millimetre surface offsets.
+Every exhibition also gets three to five small interior handstyle tags. The
+interior planner receives the exact hanging plan before deferred artwork images
+load. It excludes every wall face that has any planned painting. It spreads
+signatures across rooms and wall faces, using clear doorway wings when useful.
+Interior tags are at most 1.35 m wide and 45 cm high, in a reachable wall band.
+Their rotated bounds avoid door openings, corners and one another.
 
-Up to 32 marks share one atlas, material and draw call. Desktop atlas cells
-are 512 by 256 pixels; mobile cells are 384 by 192. The last atlas uses only
-the rows it needs. Each mark's UV rectangle preserves its original aspect.
-Painting progresses in small renderer-frame steps, including immersive XR
-and the welcome screen. Filled words are split by letter with identical final
-pixels, avoiding one long paint job for a whole word. Existing atlas pixels
-are retained across lift journeys.
-Brick grain modulates coverage; desktop paint reuses the brick normal-map
-image with metre-based wall UVs. These UVs are separate from the atlas UVs.
+Both planners place tags by φ within the usable wall area. Successive golden
+fractions choose horizontal and vertical positions after allowing for rotation.
+Angles alternate direction and vary from about 5° to 21°, using powers of φ.
+The date and slot seed the choices, so floor travel and tower growth do not
+reshuffle the writing.
 
-Run the placement and renderer-loop checks with:
+`graffiti-placement.mjs` handles the shared positioning. The exterior and
+interior planners are separate; both use the shared atlas renderer. Outward
+brick and inward plaster have their own surface offsets, grain and normal
+maps. Transparent quads are batched by atlas. The exterior atlas survives lift
+travel; the occupied floor has one small interior atlas, replaced on a journey.
+Higher-floor interiors are generated when that exhibition is visited.
 
-    node --test tests/gallery-exterior-graffiti.test.mjs tests/gallery-xr-loading.test.mjs
+Painting progresses on the desktop/XR renderer loop, including the welcome
+screen. Filled outside words are split by letter with identical final pixels.
 
-Run the full prepared/fallback, lift and mobile browser check with:
-
+    node --test tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs tests/gallery-xr-loading.test.mjs
     npx playwright install chromium
     node tests/gallery-exterior-graffiti-browser.mjs
 
-`GALLERY_CHROMIUM` can select an existing Chromium binary. Debug builds opened
-with `?debug=1` expose `__galleryGraffiti` diagnostics, a mark snapshot and a
-close-up preview helper. This does not add controls to the visitor interface.
+`GALLERY_CHROMIUM` can select an existing Chromium binary. Debug mode exposes
+`__galleryGraffiti` and `__galleryInteriorGraffiti` diagnostics, snapshots and
+close-up previews. These add no controls to the visitor interface.
