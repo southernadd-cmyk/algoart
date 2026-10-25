@@ -31,6 +31,22 @@ test('similar studies use different letter constructions before slant and scalin
  assert.notDeepEqual(skeleton('kadism','P'),skeleton('karma','P'));
 });
 
+test('GUESS has a distinct handwritten MUSHROOM construction and remains seeded',()=>{
+ const a=createTag('MUSHROOM',{hand:'guess',seed:'PP-TAG-X1AXW',paintWidth:1.8});
+ const b=createTag('MUSHROOM',{hand:'guess',seed:'PP-TAG-X1AXW',paintWidth:1.8});
+ const generic=createTag('MUSHROOM',{hand:'jade',seed:'PP-TAG-X1AXW',paintWidth:1.8});
+ assert.deepEqual(a,b);
+ assert.notDeepEqual(a.strokes,generic.strokes);
+ const hand=REFERENCE_STUDIES.guess,other=REFERENCE_STUDIES.jade,m=goldenMetrics();
+ for(const ch of 'MUSHRO'){
+  const glyph=letterSkeleton(ch,{hand:hand.family});
+  const guess=shapeStudyLetter(ch,glyph,hand,m);
+  const jade=shapeStudyLetter(ch,glyph,other,m);
+  assert.notDeepEqual(guess.strokes,jade.strokes,ch+' uses a different pen construction');
+ }
+ assert.ok(a.motion.duration>0);
+});
+
 test('joins meet their actual neighbours, with no connection across a word break',()=>{
  let joins=0;
  for(const hand of Object.keys(HANDS))for(const seed of ['first','second']){
