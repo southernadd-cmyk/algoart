@@ -1,4 +1,5 @@
 import {LETTERS} from './families/parse.mjs';
+import {PHI_BY_FAMILY} from './family-symbols.mjs';
 import {interlocked,skeletal,wedges} from './families/A-C.mjs';
 import {block,gothic,calligraphy} from './families/D-F.mjs';
 import {orbitals,fragments} from './families/G-H.mjs';
@@ -12,7 +13,7 @@ export function getFamily(id){
  const f=BY_ID[id];if(!f)throw new RangeError('Unknown alphabet family '+id);return f;
 }
 export function getGlyph(id,letter){
- const f=getFamily(id),ch=String(letter).toUpperCase(),g=f.glyphs[ch];
+ const f=getFamily(id),ch=String(letter).toUpperCase(),g=ch==='Φ'?PHI_BY_FAMILY[id]:f.glyphs[ch];
  if(!g)throw new RangeError('No authored letter '+letter+' in '+id);
  return g;
 }
@@ -22,9 +23,10 @@ export function stableNoise(value){
  return ((t^t>>>14)>>>0)/4294967296;
 }
 const WIDE=new Set(['M','W']),NARROW=new Set(['I','J']);
+export const TOWER_SIGNATURES=Object.freeze(['PHI','φ','PROPORTION PIECE']);
 export function composeWord(id,text,{seed='PP-ALPHABETS-01',variation=.04}={}){
  const f=getFamily(id);
- const word=String(text).normalize('NFKC').toUpperCase().replace(/[^A-Z ]/g,'').slice(0,65);
+ const word=String(text).normalize('NFKC').toUpperCase().replace(/[^A-ZΦ ]/g,'').slice(0,65);
  if(!word.trim())throw new RangeError('Use letters A–Z');
  if(!Number.isFinite(variation)||variation<0||variation>.12)throw new RangeError('Invalid variation');
  const letters=[];let cursor=0;
