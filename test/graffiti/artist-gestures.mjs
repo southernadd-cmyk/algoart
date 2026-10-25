@@ -22,6 +22,55 @@ function guess(ch,m,glyph){
   };
   return forms[ch]?{...glyph,strokes:forms[ch]}:glyph;
 }
+
+// Contrasting whole-letter grammars. They replace skeleton construction,
+// rather than merely distorting a shared font after it is assembled.
+function artistAlphabet(id,ch,m,glyph){
+ const {height:H,width:W,short:a,long:b,unit:u}=m,v=W/m.ratio,k=W/m.ratio**2;
+ const upper=a*.2,mid=H*.55;
+ const forms={
+  faust:{
+   M:[path([0,H],[u,a],[v,mid],[v,a],[W-u,a],[W,H])],
+   U:[path([0,a],[u,H-u],[v,H],[W,H-u],[W+u,a-u])],
+   S:[path([W,a],[v,a-u],[0,mid-u],[W,mid+u],[v,H+u],[0,H])],
+   H:[path([0,H],[u,a-u],[v,a],[v,mid],[W-u,mid-u],[W,H])],
+   R:[path([0,H],[u,a],[v,a-u],[W,mid],[v,mid],[W+u,H])],
+   O:[oval(W/2,mid,W*.44,b*.45,-2.6,3.3)]
+  },
+  revok:{
+   M:[angular([0,H],[0,0],[W*.45,mid],[W*.65,0],[W,H])],
+   U:[angular([0,0],[0,H-u],[u,H],[W-u,H],[W,H-u],[W,0])],
+   S:[angular([W,0],[u,0],[0,mid],[W,mid],[W,H],[0,H])],
+   H:[angular([0,0],[0,H],[0,mid],[W,mid],[W,0],[W,H])],
+   R:[angular([0,H],[0,0],[W,0],[W,mid],[0,mid]),angular([k,mid],[W,H])],
+   O:[angular([u,0],[W-u,0],[W,upper],[W,H-u],[W-u,H],[u,H],[0,H-u],[0,u],[u,0])]
+  },
+  kadism:{
+   M:[path([0,H],[0,-u],[k,-2*u],[v,0],[k,a],[v,H],[v,a],[W-u,0],[W,a],[W,H])],
+   U:[path([0,a],[0,H-u],[v,H],[W,H-u],[W,a]),path([0,a],[u,-u],[v,0])],
+   S:[path([W,a],[v,-u],[0,a],[W,mid],[0,H],[W,H-u])],
+   H:[path([0,H],[0,-u],[k,-2*u],[v,0],[0,mid],[v,mid],[W,mid+u],[W,H])],
+   R:[path([0,H],[0,-u],[v,-u],[W,a],[v,mid],[0,mid],[W,H])]
+  },
+  zephyr:{
+   M:[angular([0,H],[0,0],[v,mid],[W/2,0],[W,mid],[W,H])],
+   U:[angular([0,0],[0,H],[W,H],[W,0])],
+   S:[angular([W,0],[0,0],[W,H],[0,H])],
+   H:[angular([0,0],[0,H]),angular([W,0],[W,H]),angular([0,mid],[W,mid])],
+   R:[angular([0,H],[0,0],[W,0],[W,mid],[0,mid]),angular([v,mid],[W,H])]
+  },
+  gorey:{
+   M:[path([0,H],[0,a],[v,mid],[v,a],[W,a],[W,H])],
+   U:[path([0,a],[0,H-u],[v,H],[W,H-u],[W,a])],
+   S:[path([W,a],[u,a],[v,mid],[W,mid],[v,H],[0,H])],
+   H:[path([0,H],[0,a],[v,a],[v,mid],[W,mid],[W,H])],
+   R:[path([0,H],[0,a],[v,a],[W,mid],[v,mid],[W,H])],
+   O:[oval(W/2,mid,W*.46,b*.47)]
+  }
+ };
+ return forms[id]?.[ch]?{...glyph,strokes:forms[id][ch]}:glyph;
+}
+
 const gestures={
   // Each of these has a contrasting pen habit, applied to every letter.
   faust:{stem:.22,terminal:.8,elastic:.11,cut:0},
@@ -35,6 +84,7 @@ const gestures={
 };
 export function applyArtistGesture(ch,glyph,style,m){
   if(style.id==='guess')return guess(ch,m,glyph);
+  glyph=artistAlphabet(style.id,ch,m,glyph);
   const recipe=gestures[style.id];if(!recipe)return glyph;
   const {height:H,width:W,unit:u}=m;
   let strokes=mapPoints(glyph.strokes,(p,i,j,n)=>({
