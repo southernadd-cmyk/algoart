@@ -14,7 +14,7 @@ try{
   localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1');
   localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open');
   window.AlgoArt=window.AlgoArt||{};
-  for(let n=1;n<=5;n++){
+  for(let n=1;n<=6;n++{
    let render;Object.defineProperty(window.AlgoArt,'renderOilPaintV'+n,{configurable:true,
     get(){return render},set(fn){render=function(...args){const meta=fn.apply(this,args);
      if(args[0].id==='art')window.__oilRendered={version:meta.version,seed:args[1].seed};return meta;};}});
@@ -47,30 +47,30 @@ try{
   await page.waitForFunction(()=>window.AlgoArt?.readSettings&&document.querySelector('#creatingOverlay')?.hidden===true);
   if(!await page.locator('#tab-composition').isVisible())await page.locator('#inspectorToggle').click();
   await page.locator('#tab-composition').click();
-  await page.locator('#materialStyle').selectOption('oil');await ready(page,'oil-paint-v5');
-  assert.equal(new URL(page.url()).searchParams.get('material'),'oil-v5','New oil selection uses V5');
+  await page.locator('#materialStyle').selectOption('oil');await ready(page,'oil-paint-v6');
+  assert.equal(new URL(page.url()).searchParams.get('material'),'oil-v6','New oil selection uses V6');
   const hash=await pixelHash(page);await openExport(page);
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#savePanel').click()]);
-  assert(download.suggestedFilename().includes('-oil-paint-v5-1x.png'));
+  assert(download.suggestedFilename().includes('-oil-paint-v6-1x.png'));
   assert.equal(await downloadedHash(page,download),hash,'Downloaded PNG matches visible oil '+orientation);
   canonical=page.url();settings=await page.evaluate(()=>window.AlgoArt.readSettings());
   const compact=await page.evaluate(()=>window.AlgoArt.socialShare.compact(location.href,Object.values(window.AlgoArt.PARAM_KEYS)));
   assert(new URL(compact).searchParams.has('c'),'Must exercise the compact token decoder');
-  await page.goto(compact,{waitUntil:'domcontentloaded'});await ready(page,'oil-paint-v5');
-  assert.equal(await pixelHash(page),hash,'Compact V5 link replays exact pixels '+orientation);
-  const replay=await page.locator('#watchDrawing').getAttribute('href');assert.equal(new URL(replay,root).searchParams.get('material'),'oil-v5');
+  await page.goto(compact,{waitUntil:'domcontentloaded'});await ready(page,'oil-paint-v6');
+  assert.equal(await pixelHash(page),hash,'Compact V6 link replays exact pixels '+orientation);
+  const replay=await page.locator('#watchDrawing').getAttribute('href');assert.equal(new URL(replay,root).searchParams.get('material'),'oil-v6');
   results.push({orientation,hash,filename:download.suggestedFilename()});
   await page.screenshot({path:out+'/'+orientation+'.png',fullPage:false});
-  console.log('PASS default V5, visible/download PNG parity and compact replay '+orientation);
+  console.log('PASS default V6, visible/download PNG parity and compact replay '+orientation);
  }
- for(let n=1;n<=4;n++){
+ for(let n=1;n<=5;n++{
   const q=new URLSearchParams(params);q.set('material','oil-v'+n);
   await page.goto(root+'?'+q,{waitUntil:'domcontentloaded'});await ready(page,'oil-paint-v'+n);
   assert.equal(new URL(page.url()).searchParams.get('material'),'oil-v'+n,'Old URL must retain revision');
   console.log('PASS explicit historical studio oil-v'+n);
  }
  // Short gallery links are used by scheduled social posts and the welcome.
- for(const [day,version] of [['2026-10-25','oil-v4'],['2026-10-26','oil-v5']]){
+ for(const [day,version] of [['2026-10-25','oil-v4'],['2026-10-26','oil-v6']]){
   const id=day+'-OP01',url=new URL(canonical);url.searchParams.set('material',version);
   const entry={id,seed:settings.seed,mode:settings.mode,material:'oil',rendererVersion:9,settings,shareUrl:url.href};
   await page.route('**/gallery/'+day+'/meta.json',route=>route.fulfill({json:{date:day,entries:[entry]}}));
@@ -85,11 +85,11 @@ try{
  await replayPage.waitForFunction(()=>window.__walkthroughTest?.frames().length>2,null,{timeout:180000});
  const differences=await replayPage.evaluate(()=>{
   const A=window.AlgoArt,s=window.__walkthroughTest.settings(),c=document.createElement('canvas');
-  A.renderOilPaintV5(c,s,.45,false);const final=window.__walkthroughTest.frames().at(-1),copy=document.createElement('canvas');
+  A.renderOilPaintV6(c,s,.45,false);const final=window.__walkthroughTest.frames().at(-1),copy=document.createElement('canvas');
   copy.width=final.width;copy.height=final.height;copy.getContext('2d').drawImage(c,0,0,copy.width,copy.height);
   const a=final.getContext('2d').getImageData(0,0,copy.width,copy.height).data,b=copy.getContext('2d').getImageData(0,0,copy.width,copy.height).data;
   let differences=0;for(let i=0;i<a.length;i++)if(a[i]!==b[i])differences++;return differences;
- });assert.equal(differences,0,'Walkthrough final frame matches V5');console.log('PASS V5 walkthrough final-frame parity');
+ });assert.equal(differences,0,'Walkthrough final frame matches V6');console.log('PASS V5 walkthrough final-frame parity');
  const mobile=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});
  await mobile.addInitScript(()=>{localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1');localStorage.setItem('algoart-inspector-mobile','open')});
  const mp=await mobile.newPage();mp.on('pageerror',e=>errors.push(e.message));
@@ -97,7 +97,7 @@ try{
  await mp.waitForFunction(()=>document.querySelector('#creatingOverlay')?.hidden===true&&document.querySelector('#materialStyle')?.value==='oil',null,{timeout:180000});
  const mobileHash=await pixelHash(mp);await openExport(mp);await mp.locator('#savePanel').click();
  await mp.locator('#pngDownload').waitFor({state:'visible',timeout:180000});
- assert((await mp.locator('#pngDownload').getAttribute('download')).includes('-oil-paint-v5-1x.png'));
+ assert((await mp.locator('#pngDownload').getAttribute('download')).includes('-oil-paint-v6-1x.png'));
  const [mobileDownload]=await Promise.all([mp.waitForEvent('download'),mp.locator('#pngDownload').click()]);
  assert.equal(await downloadedHash(mp,mobileDownload),mobileHash,'Mobile prepared PNG matches visible V5');
  console.log('PASS mobile V5 prepare/download parity');
@@ -107,10 +107,10 @@ try{
  for(const orientation of ['landscape','portrait']){
   const run=spawnSync(process.execPath,['automation/generate-social.mjs'],{encoding:'utf8',timeout:480000,maxBuffer:8e6,
    env:{...process.env,SOCIAL_DATE:'2026-10-26',SOCIAL_MATERIAL:'oil',SOCIAL_ORIENTATION:orientation,SOCIAL_COUNT:'1',ALGOART_LOCAL_URL:root}});
-  assert.equal(run.status,0,'Daily Oil V5 generation '+orientation+': '+run.stderr+' '+run.stdout.slice(-1500));
+  assert.equal(run.status,0,'Daily Oil V6 generation '+orientation+': '+run.stderr+' '+run.stdout.slice(-1500));
   const q=JSON.parse(await readFile('social-output/2026-10-26/oil/'+orientation+'/queue.json','utf8'));
   assert.equal(q.entries.length,1);validateOilItem(q.entries[0],'2026-10-26',orientation);
-  assert.equal(new URL(q.entries[0].shareUrl).searchParams.get('material'),'oil-v5');
+  assert.equal(new URL(q.entries[0].shareUrl).searchParams.get('material'),'oil-v6');
   console.log('PASS real daily Oil V5 '+orientation+' '+q.entries[0].seed);
  }
  console.log('PASS Oil V5 studio/export/link/archive/walkthrough/mobile/daily release checks.');
