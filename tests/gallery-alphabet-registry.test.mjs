@@ -7,7 +7,7 @@ test('eight curated alphabets have independent pinned revisions',()=>{
  for(const id of TOWER_HANDS){
   assert.equal(ALPHABETS[id].id,id);
   assert.equal(alphabetRevision(id),1);
-  assert.equal(alphabetIdentity(id),'${id}@1');
+  assert.equal(alphabetIdentity(id),id+'@1');
  }
 });
 test('legacy tower hand selection remains stable',()=>{
