@@ -29,16 +29,21 @@ try{
  });
  for(const r of result){assert.equal(r.final.hash,r.replay.hash,'replay '+r.hand);assert.equal(r.final.hash,r.copy.hash,'seed '+r.hand);assert.notEqual(r.final.hash,r.marker.hash,'finish '+r.hand);assert.equal(r.edge,0,'bounds '+r.hand+' '+r.paintWidth);assert.ok(r.final.count>50);}
  for(const form of ['hollow','bubble']){const hashes=result.filter(x=>x.form===form&&x.paintWidth===2).map(x=>x.final.hash);assert.equal(new Set(hashes).size,6);}
- await page.locator('#form').selectOption('hollow');await page.locator('#hand').selectOption('sicoer');
- assert.ok(await page.evaluate(()=>window.graffitiSpecimen.tags.every(t=>t.hand==='sicoer'&&t.form==='hollow')));
+ const featured=['guess','faust','revok','kadism','zephyr','gorey','skofe','skuf'];
+ assert.deepEqual(await page.locator('#hand option').evaluateAll(xs=>xs.map(x=>x.value)),['mixed',...featured]);
+ assert.equal(await page.locator('#alphabet-columns .alphabet-sheet').count(),8);
+ for(const section of await page.locator('#alphabet-columns .alphabet-sheet').all())assert.equal(await section.locator('canvas').count(),2);
+ await page.locator('#form').selectOption('hollow');await page.locator('#hand').selectOption('skofe');
+ assert.ok(await page.evaluate(()=>window.graffitiSpecimen.tags.every(t=>t.hand==='skofe'&&t.form==='hollow')));
  await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.wall==='scan');
- assert.equal(await page.locator('#hand').inputValue(),'sicoer');assert.equal(await page.locator('#form').inputValue(),'hollow');
- await page.locator('[data-hand="cut"]').click();assert.equal(await page.locator('#hand').inputValue(),'cut');assert.equal(await page.locator('#form').inputValue(),'hollow');
- const firstStudy=await page.locator('[data-study]').first().getAttribute('data-study');
- await page.locator('[data-study]').first().click();assert.equal(await page.locator('#hand').inputValue(),firstStudy);assert.equal(await page.locator('#form').inputValue(),'hollow');
+ assert.equal(await page.locator('#hand').inputValue(),'skofe');assert.equal(await page.locator('#form').inputValue(),'hollow');
+ await page.locator('#hand').selectOption('mixed');
+ assert.ok(await page.evaluate(()=>window.graffitiSpecimen.tags.every(t=>window.graffitiSpecimen.featuredHands.includes(t.hand))));
+ await page.locator('#hand').selectOption('skuf');
+ assert.ok(await page.evaluate(()=>window.graffitiSpecimen.tags.every(t=>t.hand==='skuf')));
  // Preview is made from the actual wall canvases, after each writer choice.
  await page.evaluate(()=>{window.paintProof=document.createElement('canvas');paintProof.width=640;paintProof.height=680;paintProof.getContext('2d').fillStyle='#f4f0e7';paintProof.getContext('2d').fillRect(0,0,640,680);});
- for(const [row,hand] of ['loop','sicoer','kadism','twist'].entries()){
+ for(const [row,hand] of ['guess','skofe','skuf','revok'].entries()){
   await page.locator('#hand').selectOption(hand);
   await page.evaluate(({row,hand})=>{const g=paintProof.getContext('2d');for(const [col,form] of ['hollow','bubble'].entries()){const source=document.querySelector('[data-form="'+form+'"]').closest('article').querySelector('canvas');g.drawImage(source,col*320,row*170,320,142);g.fillStyle='#30312c';g.font='15px Georgia';g.fillText(hand+' · '+form,col*320+8,row*170+161);}}, {row,hand});
  }
