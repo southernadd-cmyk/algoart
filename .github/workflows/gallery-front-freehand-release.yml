@@ -1,0 +1,34 @@
+name: Gallery facade freehand release
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gallery/visit/exterior-graffiti-plan.mjs'
+      - 'tests/gallery-exterior-graffiti.test.mjs'
+      - '.github/workflows/gallery-front-freehand-release.yml'
+permissions:
+  contents: write
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false
+      - name: Validate facade placement and graffiti atlas
+        run: node --test tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs
+      - name: Build production gallery
+        run: npm run gallery:bundle && node --check gallery/visit/gallery-bundle.js
+      - name: Commit production bundle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/gallery-bundle.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Bundle five additional entrance graffiti handstyles"
+            git push
+          fi
