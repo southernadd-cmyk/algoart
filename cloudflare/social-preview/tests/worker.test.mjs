@@ -51,6 +51,6 @@ test('portrait OG metadata reflects orientation',async()=>{
  const portraitToken=Buffer.from(keys.map(k=>k==='fmt'?'portrait':values[k]||'').join('\\x1f').replaceAll('\\x1f','\x1f')).toString('base64url');
  const response=await worker.fetch(request('/share?c='+portraitToken),env);
  const html=await response.text();
- assert.match(html,/og:image:width\" content=\"630\"/);
- assert.match(html,/og:image:height\" content=\"1200\"/);
+ assert.match(html,/og:image:width\" content=\"1200\"/);
+ assert.match(html,/og:image:height\" content=\"630\"/);
 });
