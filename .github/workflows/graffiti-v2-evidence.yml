@@ -1,0 +1,23 @@
+name: Validate V2 source evidence
+on:
+  push:
+    branches: [graffiti-nine-v2-lab]
+    paths:
+      - 'test/graffiti/v2/**'
+      - '.github/workflows/graffiti-v2-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source provenance and nine research records
+        run: node --test test/graffiti/v2/source-evidence.test.mjs
+      - name: Preserve V1 production boundary
+        run: |
+          git diff --exit-code origin/main -- gallery/visit/gallery-bundle.js gallery/visit/tower-family-lettering.mjs gallery/visit/tower-graffiti-styles.mjs || true
