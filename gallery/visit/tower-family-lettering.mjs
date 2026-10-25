@@ -73,7 +73,7 @@ function fillStrip(ctx,d,width,technique){
  }
  ctx.beginPath();
  for(const [i,[x,y]] of [...left,...right].entries())i?ctx.lineTo(x,y):ctx.moveTo(x,y);
- ctx.closePath();ctx.fill('evenodd');
+ ctx.closePath();ctx.fill('nonzero');
 }
 function drawStroke(ctx,s,f){
  const d=s.d,kind=s.kind;
