@@ -61,6 +61,21 @@ test('contrasting artist alphabets have independently constructed letters',()=>{
  }
 });
 
+test('SKOFE and SKUF use contrasting pen paths on the same word',()=>{
+ const m=goldenMetrics();
+ for(const ch of 'SKOFEMU'){
+  const a=REFERENCE_STUDIES.skofe,b=REFERENCE_STUDIES.skuf;
+  const pa=shapeStudyLetter(ch,letterSkeleton(ch,{hand:a.family}),a,m);
+  const pb=shapeStudyLetter(ch,letterSkeleton(ch,{hand:b.family}),b,m);
+  assert.notDeepEqual(pa.strokes,pb.strokes,ch+' must differ in construction');
+ }
+ for(const word of ['SKOF','MUSHROOM']){
+  const tags=['skofe','skuf'].map(hand=>createTag(word,{hand,seed:'contrast-seed'}));
+  assert.notDeepEqual(tags[0].strokes,tags[1].strokes);
+  for(const tag of tags){assert.ok(tag.strokes.every(s=>s.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))));assert.deepEqual(tag,createTag(word,{hand:tag.hand,seed:'contrast-seed'}));}
+ }
+});
+
 test('joins meet their actual neighbours, with no connection across a word break',()=>{
  let joins=0;
  for(const hand of Object.keys(HANDS))for(const seed of ['first','second']){
