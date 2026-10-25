@@ -104,7 +104,7 @@ function paintMaterialConnections(target,plan,scale,material){
  out.save();out.globalCompositeOperation='source-over';
  // Only the V6 study opts into full paint coverage. Released V1–V5 keep
  // their recorded composite, including when rendered after a V6 preview.
- out.globalAlpha=A.oilOpaqueConnections===true?1:.78;
+ out.globalAlpha=A.oilOpaquePaint===true?1:.78;
  out.drawImage(pass,0,0);out.restore();
  return{broadFields:broad,sourceLinks:links,materialContacts:strokes,
    junctionPools:pools,sourceFieldCount:plan.connectedFields.length};

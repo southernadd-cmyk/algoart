@@ -11,7 +11,7 @@ form{display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin:24px 0}label{di
 @media(max-width:800px){body{padding:16px}.grid{grid-template-columns:1fr;gap:24px}input{max-width:70vw}}
 </style></head><body>
 <h1>paint refinement studies</h1>
-<p>Compare the released paint with a further study of the same composition. Action adds bowed structural pours and pigment colour limits. Oil gives its connecting brushwork full coverage. The pigment gamut is an artistic approximation.</p>
+<p>Compare the released paint with a further study of the same composition. Action adds bowed structural pours and pigment colour limits. Oil gives its paint masses and connecting brushwork full coverage. The pigment gamut is an artistic approximation.</p>
 <p><a href="../../">studio</a></p><form id="controls">
 <label>Material<select id="material"><option value="action">Action Painting</option><option value="oil">Oil Paint</option></select></label>
 <label>Seed<input id="seed" value="PAINT-STUDY-1618"></label>
@@ -28,7 +28,7 @@ form{display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin:24px 0}label{di
 <script src="../../js/phi-sheet-fit.js"></script><script src="../../js/generator.js"></script>
 <script src="../../js/oil-surface.js"></script><script src="../../js/oil-material.js"></script>
 <script src="../../js/oil-render.js"></script>
-<script src="../../js/oil-v1-core-a.js"></script><script src="../../js/oil-v1-core-b.js"></script><script src="../../js/oil-v1-core-c.js"></script>
+<script src="../../js/oil-v1-core-a.js"></script><script src="../../js/oil-v1-core-b.js"></script><script src="../../js/oil-v1-core-c.js?v=20261025-coverage-study"></script>
 <script src="../../js/oil-paint-v1.js?v=20261025-coverage-study"></script><script src="../../js/oil-brush-v2.js"></script><script src="../../js/oil-paint-v2.js"></script>
 <script src="../../js/oil-brush-v3.js"></script><script src="../../js/oil-paint-v3.js"></script>
 <script src="../../js/cpu-canvas.js"></script><script src="../../js/cpu-material-versions.js"></script>
@@ -66,7 +66,7 @@ async function run(all=false){
    const grid=document.createElement('div');grid.className='grid';section.append(h,grid);$('results').append(section);
    const action=$('material').value==='action';
    const versions=action?[['Released Action V3',A.renderActionPaintingV3],['Bowed pours and enamel pigments',A.renderActionPaintingV4]]:
-    [['Released Oil V5',A.renderOilPaintV5],['Full-coverage connection paint',A.renderOilPaintV6]];
+    [['Released Oil V5',A.renderOilPaintV5],['Opaque paint masses',A.renderOilPaintV6]];
    for(const [label,render] of versions){
     $('status').textContent='Rendering '+name.toLowerCase()+': '+label.toLowerCase()+'…';await pause();
     const figure=document.createElement('figure'),c=document.createElement('canvas'),caption=document.createElement('figcaption');

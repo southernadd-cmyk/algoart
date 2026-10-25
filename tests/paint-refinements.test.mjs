@@ -24,13 +24,13 @@ assert(Math.max(...line.map(p=>Math.abs(p.y-500)))>6,'Long visible needles gain 
 const loop=Array.from({length:101},(_,i)=>({x:700+200*Math.cos(i/100*Math.PI*2),y:500+200*Math.sin(i/100*Math.PI*2)}));
 const loopBefore=plain(loop);assert.equal(soften(loop,()=>.75,1400,1000),0);assert.deepEqual(loop,loopBefore,'Existing loops are unchanged');
 // V6 restores its opt-in on normal and exceptional exits, including nesting.
-A.renderOilPaintV5=()=>{assert.equal(A.oilOpaqueConnections,true);return {version:'oil-paint-v5',work:{contact:12}}};
+A.renderOilPaintV5=()=>{assert.equal(A.oilOpaquePaint,true);return {version:'oil-paint-v5',work:{contact:12}}};
 load('js/oil-paint-v6.js');
 assert.deepEqual(plain(A.renderOilPaintV6({},{})),{version:'oil-paint-v6',work:{contact:12}});
-assert(!Object.hasOwn(A,'oilOpaqueConnections'));
-A.oilOpaqueConnections='prior';A.renderOilPaintV6({},{});assert.equal(A.oilOpaqueConnections,'prior');
+assert(!Object.hasOwn(A,'oilOpaquePaint'));
+A.oilOpaquePaint='prior';A.renderOilPaintV6({},{});assert.equal(A.oilOpaquePaint,'prior');
 A.renderOilPaintV5=()=>{throw Error('paint failure')};
-assert.throws(()=>A.renderOilPaintV6({},{}),/paint failure/);assert.equal(A.oilOpaqueConnections,'prior');
-delete A.oilOpaqueConnections;
-assert.throws(()=>A.renderOilPaintV6({},{}),/paint failure/);assert(!Object.hasOwn(A,'oilOpaqueConnections'));
+assert.throws(()=>A.renderOilPaintV6({},{}),/paint failure/);assert.equal(A.oilOpaquePaint,'prior');
+delete A.oilOpaquePaint;
+assert.throws(()=>A.renderOilPaintV6({},{}),/paint failure/);assert(!Object.hasOwn(A,'oilOpaquePaint'));
 console.log('PASS two-point and sampled structural pours; existing curves; V6 coverage scope on success and failure.');

@@ -3738,7 +3738,7 @@ function oilTerritory(ctx,mask,cell,rgb,sourceSeed,painter){
   // Loaded bristles break up the surface; not just a texture on a polygon.
   ctx.save();mask.save();
   ctx.clip(shape);mask.clip(shape);
-  ctx.globalAlpha=.77;ctx.fillStyle=hex(blend(rgb,[243,225,198],.08));ctx.fill(shape);
+  ctx.globalAlpha=A.oilOpaquePaint===true?1:.77;ctx.fillStyle=hex(blend(rgb,[243,225,198],.08));ctx.fill(shape);
   mask.globalAlpha=.46;mask.fillStyle='#fff';mask.fill(shape);
   for(var i=0;i<count;i++){
     var y=top+(i+.5)*dy/count,
@@ -3767,7 +3767,7 @@ function oilGuideTerritory(ctx,mask,cell,painter){
   ctx.clip(shape);mask.clip(shape);
   // A restrained under-layer is *material-specific*; actual bristle
   // contact breaks up the top paint volume and controls its lighting.
-  ctx.globalAlpha=kind==='constructed-focal-form'?.54:.56;
+  ctx.globalAlpha=A.oilOpaquePaint===true?1:(kind==='constructed-focal-form'?.54:.56);
   ctx.fillStyle=hex(blend(base,[241,225,205],.08));
   ctx.fill(shape);
   mask.globalAlpha=.29;mask.fillStyle='#fff';mask.fill(shape);
@@ -3806,7 +3806,7 @@ function oilColourField(ctx,mask,area,painter,plan,progress){
   ctx.save();mask.save();ctx.clip(poly);mask.clip(poly);
   // Occupy the whole ORIGINAL source-field interior, but let loaded bristle
   // contacts carry the relief rather than regularly-spaced horizontal bands.
-  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.70;
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=A.oilOpaquePaint===true?1:.70;
   ctx.fillStyle=hex(blend(base,[244,232,217],.085));ctx.fill(poly);
   mask.globalAlpha=.33;mask.fillStyle='#fff';mask.fill(poly);
   ctx.globalAlpha=1;mask.globalAlpha=1;
@@ -3934,7 +3934,7 @@ function oilAdapter(target,plan,scale){
         // gestures. It is not a thickened Marker source line: this is the
         // optional V5 area translated by Oil's material adapter.
         area=massContour(a);
-    ctx.globalAlpha=.73;
+    ctx.globalAlpha=A.oilOpaquePaint===true?1:.73;
     ctx.fillStyle=hex(blend(a.rgb,[243,228,205],.075));
     ctx.fill(area);
     mask.globalAlpha=.46;mask.fillStyle='#fff';mask.fill(area);

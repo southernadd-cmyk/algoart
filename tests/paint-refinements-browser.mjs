@@ -3,14 +3,14 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {chromium} from 'playwright';
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/',out='paint-refinement-results';
-const oldOil=execFileSync('git',['show','d690b5844cb56be032505175bd3681690c0faabd:js/oil-paint-v1.js'],{encoding:'utf8'});
+const oldSources=['oil-v1-core-c','oil-paint-v1'].map(name=>execFileSync('git',['show','d690b5844cb56be032505175bd3681690c0faabd:js/'+name+'.js'],{encoding:'utf8',maxBuffer:4e6}));
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-gpu']});
 try{
  const page=await browser.newPage({viewport:{width:1600,height:1050}}),old=await browser.newPage();
  const errors=[];for(const p of [page,old])p.on('pageerror',e=>errors.push(e.message));
  await page.goto(root+'test/paint-refinements/');await old.goto(root+'test/paint-refinements/');
- await old.addScriptTag({content:oldOil});
+ for(const content of oldSources)await old.addScriptTag({content});
  const defaults=await page.evaluate(()=>window.paintStudy.settings('rects'));
  async function render(p,s,family,version,scale=.3,reveal=false){
   return p.evaluate(({s,family,version,scale,reveal})=>{
@@ -27,7 +27,7 @@ try{
    return {hash:hash>>>0,width:c.width,height:c.height,transparent,meta,
     action:family==='action'?A['lastActionPaintingStatsV'+version]:null,
     connectionAlpha:alphas.at(-1),inputIntact:JSON.stringify(s)===before,
-    restored:!Object.hasOwn(A,'oilOpaqueConnections')&&!A.oilPigmentActive&&A.planCompositionV5FromSource===previousPlanner&&HTMLCanvasElement.prototype.getContext===previousContext};
+    restored:!Object.hasOwn(A,'oilOpaquePaint')&&!A.oilPigmentActive&&A.planCompositionV5FromSource===previousPlanner&&HTMLCanvasElement.prototype.getContext===previousContext};
   },{s,family,version,scale,reveal});
  }
  const geometry=plan=>JSON.stringify(plan,(key,value)=>/rgb|palette|colour|color|paintTone|materialStats/i.test(key)?undefined:value);
@@ -43,6 +43,7 @@ try{
   assert.equal(v5.hash,baseline.hash,'Oil V5 original pixels '+label);assert.equal(v5after.hash,baseline.hash,'V5 after V6 '+label);
   assert.equal(v6.hash,v6again.hash,'Oil V6 deterministic '+label);assert.equal(geometry(v5.meta.plan),geometry(v6.meta.plan),'Oil geometry '+label);
   assert.deepEqual(v5.meta.work,v6.meta.work,'Oil brush counts '+label);
+  if(v5.meta.plan.connectedFields.length)assert.notEqual(v5.hash,v6.hash,'Opaque field coverage changes paint '+label);
   if(v5.meta.work.oilV1.materialContacts>0){assert.notEqual(v5.hash,v6.hash,'Coverage changes pixels '+label);assert.equal(v5.connectionAlpha,.78);assert.equal(v6.connectionAlpha,1)}
   for(const result of [v3,v4,v3after,baseline,v5,v6,v5after]){
    assert(result.inputIntact&&result.restored,label+' scope');assert.equal(result.transparent,0);
@@ -65,7 +66,7 @@ try{
  // Shared connection hook preserves every historical oil branch in a fresh
  // render state, not only the current V5 studio path.
  for(const version of [1,2,3,4]){
-  await page.reload();await old.reload();await old.addScriptTag({content:oldOil});
+  await page.reload();await old.reload();for(const content of oldSources)await old.addScriptTag({content});
   const s={...defaults,orientation:'portrait'},baseline=await render(old,s,'oil',version,.25),current=await render(page,s,'oil',version,.25);
   assert.equal(current.hash,baseline.hash,'Historical oil '+version+' pixels');console.log('PASS historical oil V'+version);
  }
