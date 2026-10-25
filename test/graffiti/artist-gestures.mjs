@@ -40,14 +40,15 @@ function artistAlphabet(id,ch,m,glyph){
    U:[path([0,0],[0,H-u],[v,H+u],[W,H-u],[W,0])]
   },
   skuf:{
-   // Compressed, squared-off quick returns. Different movement topology.
-   S:[angular([W,0],[0,0],[0,mid],[W,mid],[W,H],[0,H])],
-   K:[angular([0,0],[0,H]),angular([W,0],[u,mid],[W,H])],
-   O:[path([0,a],[v,0],[W,0],[W,H-u],[v,H],[0,H-u],[0,a])],
-   F:[angular([W,0],[0,0],[0,H]),angular([0,mid],[v,mid])],
-   E:[angular([W,0],[0,0],[0,H],[W,H]),angular([0,mid],[v,mid])],
-   M:[angular([0,H],[0,0],[v,mid],[W*.7,0],[W,H])],
-   U:[angular([0,0],[0,H],[W,H],[W,0])]
+   // Based on the documented curved S, compressed centre and elongated F.
+   // Other letters remain grammar-inferred, not photographed examples.
+   S:[path([W*.9,a*.22],[W*.37,-u],[0,a*.45],[u,H*.37],[W*.85,H*.53],[W*.96,H*.75],[W*.34,H+u],[0,H*.89])],
+   K:[path([0,0],[0,H]),path([W*.92,a*.06],[W*.2,H*.52],[W*.98,H*.93])],
+   O:[path([W*.5,-u],[W*.88,a*.1],[W,H*.55],[W*.62,H],[W*.18,H*.94],[0,H*.58],[W*.16,a*.22],[W*.5,-u])],
+   F:[path([W*.95,-u],[W*.28,-u],[W*.14,H*.14],[W*.10,H+2*u]),path([W*.1,H*.40],[W*.83,H*.35])],
+   E:[path([W*.92,a*.12],[W*.25,0],[u,H*.45],[W*.74,H*.42],[u,H*.45],[W*.24,H],[W,H*.94])],
+   M:[path([0,H],[u,0],[W*.45,H*.52],[W*.69,0],[W,H])],
+   U:[path([u,0],[0,H*.72],[W*.22,H],[W*.73,H],[W,H*.72],[W*.94,0])]
   },
   faust:{
    M:[path([0,H],[u,a],[v,mid],[v,a],[W-u,a],[W,H])],
@@ -136,7 +137,7 @@ export const WRITER_ALPHABET=alphabet;
 const gestures={
   // Each of these has a contrasting pen habit, applied to every letter.
   skofe:{stem:.04,terminal:.7,elastic:.17,cut:0},
-  skuf:{stem:0,terminal:0,elastic:0,cut:1},
+  skuf:{stem:.02,terminal:.12,elastic:.04,cut:0},
   faust:{stem:.22,terminal:.8,elastic:.11,cut:0},
   sicoer:{stem:.08,terminal:.46,elastic:.24,cut:0},
   gorey:{stem:0,terminal:.1,elastic:.31,cut:0},
