@@ -136,14 +136,14 @@ test('Reference-informed weak families were rebuilt, not simply recoloured',()=>
 test('Long crowded words gain tracking without disturbing fixed seed or detached alphabets',()=>{
  for(const id of ['A','B','F','G','J']){
   const short=composeWord(id,'SKUF',{variation:0});
-  const long=composeWord(id,'MUSHROOM',{variation:0});
+  const long=composeWord(id,'SKUFROOM',{variation:0});
   const shortStep=short.letters[1].x-short.letters[0].x;
   const longStep=long.letters[1].x-long.letters[0].x;
   assert.ok(longStep>shortStep, id+' should expand long word tracking');
-  assert.deepEqual(long,composeWord(id,'MUSHROOM',{variation:0}));
+  assert.deepEqual(long,composeWord(id,'SKUFROOM',{variation:0}));
  }
  const detachedShort=composeWord('I','SKUF',{variation:0});
- const detachedLong=composeWord('I','MUSHROOM',{variation:0});
+ const detachedLong=composeWord('I','SKUFROOM',{variation:0});
  const shortStep=detachedShort.letters[1].x-detachedShort.letters[0].x;
  const longStep=detachedLong.letters[1].x-detachedLong.letters[0].x;
  assert.equal(shortStep,longStep,'Chisel lettering must preserve spaced individual forms');
