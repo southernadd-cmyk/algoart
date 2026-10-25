@@ -3,15 +3,15 @@
 // A.stroke marker renderer plus a pressure/speed-sensitive continuous ribbon.
 import {PHI,goldenMetrics,letterSkeleton} from './phi-lettering.mjs?v=phi-handstyles-v2';
 import {drawSpray} from './spray-paint.mjs?v=optical-spray-v6';
-import {LETTERING_FORMS,formGlyph,drawSolidForm} from './lettering-forms.mjs?v=letter-forms-v6';
-export {LETTERING_FORMS} from './lettering-forms.mjs?v=letter-forms-v6';
+import {LETTERING_FORMS,formGlyph,drawSolidForm} from './lettering-forms.mjs?v=sprayed-throwups-v7';
+export {LETTERING_FORMS} from './lettering-forms.mjs?v=sprayed-throwups-v7';
 import {spaceWord} from './word-spacing.mjs?v=optical-spray-v6';
 import {writerIdentity,connectingStroke,orientConnection,connectionClear,planWritingMotion,strokeFraction,tagDuration} from './writing-motion.mjs?v=word-flow-v4';
 export {tagDuration,strokeFraction} from './writing-motion.mjs?v=word-flow-v4';
 import {REFERENCE_STUDIES,shapeStudyLetter} from './handstyles.mjs?v=bold-dialects-v5';
 export {REFERENCE_STUDIES,HANDSTYLE_SOURCE} from './handstyles.mjs?v=bold-dialects-v5';
 export {PHI,goldenMetrics,letterSkeleton} from './phi-lettering.mjs?v=phi-handstyles-v2';
-export const VERSION = 6;
+export const VERSION = 7;
 const U=goldenMetrics().unit;
 export const CORE_HANDS = Object.freeze({
  loop:Object.freeze({name:'Loop',description:'Interlocking bowls and a sweeping return stroke.',lean:1/PHI**3,width:1.08,spacing:-U*PHI,weight:6.8,angle:.4,flourish:1}),
@@ -55,8 +55,12 @@ export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',
  if(!Number.isFinite(paintWidth)||paintWidth<.75||paintWidth>3)throw new RangeError('Paint width must be between 0.75 and 3.');
  const metrics=goldenMetrics(100,ratio),{height:H,width:W,short:a,long:b,unit:u}=metrics;
  const formStyle=LETTERING_FORMS[form],solid=formStyle.solid;
- const study=(solid||formStyle.pixo||formStyle.calligraphy)?null:REFERENCE_STUDIES[hand];
- const original=HANDS[hand],h=solid?{...original,lean:formStyle.piece?.22:formStyle.round?.05:0,width:1,spacing:formStyle.spacing}:formStyle.pixo?{...original,lean:0,width:1,spacing:U*.8,weight:5.8}:formStyle.calligraphy?{...original,width:1.05,weight:14,spacing:U*.2}:original;
+ const study=REFERENCE_STUDIES[hand];
+ const original=HANDS[hand],writerFamily=study?.family||hand,writerSpacing=study?original.spacing*u:original.spacing;
+ const leanScale=formStyle.round?1:formStyle.piece?.55:formStyle.pixo?.4:solid?.5:1;
+ const h={...original,lean:original.lean*leanScale+(formStyle.piece?.10:0),
+  spacing:solid?(formStyle.round?formStyle.spacing*.3+writerSpacing*.7:formStyle.spacing+writerSpacing*.5):writerSpacing,
+  weight:formStyle.calligraphy?Math.max(14,original.weight*1.5):original.weight};
  const family=formStyle.calligraphy?'cut':formStyle.pixo?'rush':study?.family||hand;
  const word=normaliseText(text)||'PHI',r=makeRandom(seed+'|'+hand+'|'+word+'|phi-v2');
  const identity=writerIdentity(hand,h);
@@ -68,9 +72,9 @@ export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',
  for(let index=0;index<word.length;index++){
   const ch=word[index];if(ch===' '){cursor+=W/ratio;wordIndex++;continue;}
   const variant=identity.variants[ch];
-  let glyph=letterSkeleton(ch,{hand:solid?'rush':family,variant,metrics});
+  let glyph=letterSkeleton(ch,{hand:writerFamily,variant,metrics});
   if(study)glyph=shapeStudyLetter(ch,glyph,study,metrics);
-  if(formStyle.calligraphy)glyph=shapeStudyLetter(ch,letterSkeleton(ch,{hand:'loop',variant,metrics}),{id:'calligraphy',shape:'script',width:1,height:1},metrics);
+  if(formStyle.calligraphy&&!study&&writerFamily==='loop')glyph=shapeStudyLetter(ch,letterSkeleton(ch,{hand:'loop',variant,metrics}),{id:'calligraphy',shape:'script',width:1,height:1},metrics);
   glyph=formGlyph(ch,glyph,form,metrics);
   const stretch=height*r.range(.993,1.007),wide=width*r.range(.99,1.01),bounce=(r.range(-u/ratio,u/ratio)*.4+Math.sin(index*ratio+phase)*u/ratio)*(study?.bounce??1);
   const frame={character:ch,index,variant,x:cursor,wide,stretch,bounce,lean,baseY:H*stretch+bounce+cursor*lift};letters.push(frame);
@@ -80,7 +84,7 @@ export function createTag(text,{seed='PP-GRAFFITI-01',hand='loop',ink='#232624',
   const nozzleLimit=counterLetter?Math.min(W*wide,counterHeight)*.48:0;
   const movements=glyph.strokes.map(s=>({...makeStroke(s.points.map(transform),'letter',study?.id==='revok'&&ch==='R'?1.18:1,s.smooth),nozzleLimit,letterIndex:index}));
   groups.push({character:ch,index,wordIndex,frame,movements});
-  cursor+=Math.max(W/ratio**2,glyph.width*wide+(study?h.spacing*u:h.spacing)+r.range(-u/ratio**2,u/ratio**2)*.4);
+  cursor+=Math.max(W/ratio**2,glyph.width*wide+h.spacing+r.range(-u/ratio**2,u/ratio**2)*.4);
  }
  const continuous=!solid&&study?.shape==='oneline',joinChance=solid||formStyle.pixo?0:study?.join??(family==='loop'?1/ratio:0);
  const spacing=solid?{pairs:[],shift:0}:spaceWord(groups,{unit:u,ratio,weight:h.weight,lift,joinChance});cursor+=spacing.shift;

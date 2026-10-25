@@ -9,6 +9,22 @@ ink into a transparent layer. The brick's grain modulates that layer's alpha.
 The specimen presents the three original hands, 50 selectable reference
 studies, and actual stroke playback.
 
+## Painted throw-ups and writer alphabets — version 7
+
+Every lettering form now starts with the selected writer's actual alphabet,
+including its alternate letter constructions, case forms, lean, width, height,
+spacing and bounce. Filled faces and angular forms no longer replace those
+letters with a common alphabet. Angular forms reshape the writer's own bowls
+and stems; calligraphy keeps the selected writer's movements.
+
+The two throw-up forms use a separate paint renderer. A mask unions each
+letter's actual strokes; a signed-distance field deposits one broad contour
+around that mask with seeded edge irregularity, granular coverage and fine
+overspray. Filled throw-ups have a mottled paint body, without the inset white
+highlight line. Hollow throw-ups leave the brick visible. Complete letter
+textures are cached; playback reveals those same pixels along the planned
+writing movements. The straight, block and piece paint renderers are unchanged.
+
 ## Eight lettering forms — version 6
 
 The Lettering control separates word construction from the existing 53 writer
@@ -16,8 +32,8 @@ profiles. It offers handstyle, hollow throw-up, bubble throw-up, straight letter
 blockbuster, calligraffiti, a pichação study and an interlocking piece. All eight
 are shown on brick with the same word in the comparison gallery. Different forms
 uses a separate seeded choice per floor slot, preserving the floor's count,
-word, writer, colour and position. Selecting an existing handstyle study returns
-to Handstyle. The selected form is saved as `form` in the URL.
+word, writer, colour and position. Writer buttons and the handwriting selector preserve the chosen lettering
+form. The selected form is saved as `form` in the URL.
 
 `lettering-forms.mjs` constructs round faces, square/polygonal counters, tall
 angular spines and wedge shoulders from the phi dimensions. Filled forms render

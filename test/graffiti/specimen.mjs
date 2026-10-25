@@ -1,4 +1,4 @@
-import {HANDS,CORE_HANDS,LETTERING_FORMS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom,tagDuration} from './tag-engine.mjs?v=letter-forms-v6';
+import {HANDS,CORE_HANDS,LETTERING_FORMS,REFERENCE_STUDIES,HANDSTYLE_SOURCE,createTag,drawTag,planFloorTags,normaliseText,makeRandom,tagDuration} from './tag-engine.mjs?v=sprayed-throwups-v7';
 import {drawConstruction} from './phi-lettering.mjs?v=phi-handstyles-v2';
 const $=id=>document.getElementById(id),canvas=$('wall'),ctx=canvas.getContext('2d');
 const inkLayer=document.createElement('canvas');
@@ -106,14 +106,14 @@ function renderStudies(){
   const c=document.createElement('canvas');c.width=720;c.height=380;c.setAttribute('role','img');c.setAttribute('aria-label',study.reference+' procedural lettering study on brick');
   const title=document.createElement('h3');title.textContent=study.reference+' study';
   const description=document.createElement('p');description.textContent=study.description;
-  const button=document.createElement('button');button.type='button';button.textContent='Use this study';button.dataset.study=id;button.onclick=()=>{$('hand').value=id;$('form').value='handstyle';generate();};
+  const button=document.createElement('button');button.type='button';button.textContent='Use this study';button.dataset.study=id;button.onclick=()=>{$('hand').value=id;generate();};
   article.append(c,title,description,button);grid.append(article);
   const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,hand:id,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});paintWall(c,[tag],[{x:.5,y:.53,scale:.97,rotation:-.018}]);
  }
  $('study-range').textContent='Studies '+(start+1)+'–'+Math.min(start+pageSize,studyIds.length)+' of '+studyIds.length;
  $('studies-prev').disabled=studyPage===0;$('studies-next').disabled=start+pageSize>=studyIds.length;
  const selected=HANDS[$('hand').value];
- $('study-selection').textContent=$('form').value!=='handstyle'?"Lettering sets the construction. Handwriting sets the writer; the fifty studies below compare their handstyles.":selected?selected.name+' · '+selected.description+' New seeds vary the execution while keeping this hand’s habits.':'Choose a hand to compare its habits across seeds, or use Different writers to mix all 53 hands.';
+ $('study-selection').textContent=$('form').value!=='handstyle'?"Lettering changes the construction and paint. Handwriting supplies the writer’s alphabet, proportions and rhythm.":selected?selected.name+' · '+selected.description+' New seeds vary the execution while keeping this hand’s habits.':'Choose a hand to compare its habits across seeds, or use Different writers to mix all 53 hands.';
 }
 function populateHands(){
  const forms=$('form');forms.replaceChildren(new Option('Different forms','mixed'));for(const [id,style] of Object.entries(LETTERING_FORMS))forms.append(new Option(style.name,id));
@@ -148,7 +148,7 @@ async function init(){
  $('play').onclick=animate;$('finish').onclick=()=>{stop();elapsed=0;render();$('status').textContent='Finished wall. Same seed and floor, same tags.';};
  $('show-phi').onchange=()=>{render(currentProgress);updateURL();};
  matchMedia('(max-width:700px)').addEventListener('change',()=>generate({url:false}));
- for(const button of document.querySelectorAll('[data-hand]'))button.onclick=()=>{$('hand').value=button.dataset.hand;$('form').value='handstyle';generate();};
+ for(const button of document.querySelectorAll('[data-hand]'))button.onclick=()=>{$('hand').value=button.dataset.hand;generate();};
  const image=new Image();image.onload=()=>{try{scan=prepareScan(image);surfaceCache.clear();generate({url:false});document.documentElement.dataset.wall='scan';}catch(e){console.warn('Using the local procedural brick fallback.',e);}};image.onerror=()=>{document.documentElement.dataset.wall='fallback';};image.src='./assets/brick-wall.webp';
  // A small read-only hook makes determinism, counts and actual rendering
  // inspectable without relying on visually identical DOM text.
