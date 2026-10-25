@@ -25,14 +25,28 @@ try{
  async function render(p,settings,version,scale=.35,reveal=false){
   return p.evaluate(({settings,version,scale,reveal})=>{
    const A=window.AlgoArt,c=document.createElement('canvas'),before=JSON.stringify(settings),native=HTMLCanvasElement.prototype.getContext,planner=A.planCompositionV5FromSource;
+   const started=performance.now();
    const meta=/^v[1-4]$/.test(version)?A['renderOilPaintV'+version.slice(1)](c,settings,scale,reveal):A.renderOilPaintV5(c,settings,scale,reveal,{reference:version==='claude'});
+   const renderMs=performance.now()-started;
    const rgba=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
    let hash=2166136261,translucent=0;for(let i=0;i<rgba.length;i++){hash=Math.imul(hash^rgba[i],16777619);if(i%4===3&&rgba[i]!==255)translucent++}
    return {hash:hash>>>0,width:c.width,height:c.height,translucent,plan:meta.plan,pigment:meta.pigment,work:meta.work,
     sourcePaths:A.lastOilPaintV4EStats.sourcePaths,paintedPaths:A.lastOilPaintV4EStats.paintedPaths,massGroups:A.lastOilPaintV4EStats.massGroups,
     inputIntact:JSON.stringify(settings)===before,stateIntact:A.planCompositionV5FromSource===planner&&!A.oilPigmentActive&&HTMLCanvasElement.prototype.getContext===native,
-    ms:A.lastCPUCanvasRender.ms};
+    ms:+renderMs.toFixed(1)};
   },{settings,version,scale,reveal});
+ }
+ for(const orientation of ['landscape','portrait'])for(const mode of ['field','spiral','rects','burst','network','organic','geometric','scribble']){
+  const s={...settings,mode,orientation,seed:'PIGMENT-REGRESSION-'+mode,palette:'golden'},label=mode+'-'+orientation;
+  const before=await render(old,s,'v4'),current=await render(page,s,'v4'),developed=await render(page,s,'v5'),repeat=await render(page,s,'v5'),after=await render(page,s,'v4');
+  assert.equal(current.hash,before.hash,'Old V4 pixels '+label);assert.equal(after.hash,before.hash,'V4 after V5 '+label);
+  assert.equal(developed.hash,repeat.hash,'V5 repeatability '+label);assert.notEqual(developed.hash,current.hash,'V5 must change paint '+label);
+  assert.equal(geometry(developed.plan),geometry(current.plan),'Source geometry '+label);
+  for(const key of ['sourcePaths','paintedPaths','massGroups'])assert.equal(developed[key],current[key],key+' '+label);
+  assert.deepEqual(developed.work,current.work,'Brush counts '+label);
+  for(const r of [current,developed,repeat,after]){assert(r.inputIntact&&r.stateIntact,label+' state');assert.equal(r.translucent,0,label+' opacity')}
+  assert(developed.pigment.mappedColours>0&&developed.pigment.tones>0,'Pigment hooks active '+label);
+  rows.push({label,currentHash:current.hash,developedHash:developed.hash,currentMs:current.ms,developedMs:developed.ms,pigment:developed.pigment});console.log('PASS '+JSON.stringify(rows.at(-1)));
  }
  for(const version of ['v1','v2','v3']){
   const s={...settings,mode:'rects',orientation:'portrait'};
@@ -49,18 +63,6 @@ try{
   assert.equal(developed.width,orientation==='portrait'?1000:1400);assert.equal(developed.height,orientation==='portrait'?1400:1000);
   assert.equal(developed.translucent,0);assert(developed.stateIntact);
   console.log('PASS full-size with geometry reveal '+orientation);
- }
- for(const orientation of ['landscape','portrait'])for(const mode of ['field','spiral','rects','burst','network','organic','geometric','scribble']){
-  const s={...settings,mode,orientation,seed:'PIGMENT-REGRESSION-'+mode,palette:'golden'},label=mode+'-'+orientation;
-  const before=await render(old,s,'v4'),current=await render(page,s,'v4'),developed=await render(page,s,'v5'),repeat=await render(page,s,'v5'),after=await render(page,s,'v4');
-  assert.equal(current.hash,before.hash,'Old V4 pixels '+label);assert.equal(after.hash,before.hash,'V4 after V5 '+label);
-  assert.equal(developed.hash,repeat.hash,'V5 repeatability '+label);assert.notEqual(developed.hash,current.hash,'V5 must change paint '+label);
-  assert.equal(geometry(developed.plan),geometry(current.plan),'Source geometry '+label);
-  for(const key of ['sourcePaths','paintedPaths','massGroups'])assert.equal(developed[key],current[key],key+' '+label);
-  assert.deepEqual(developed.work,current.work,'Brush counts '+label);
-  for(const r of [current,developed,repeat,after]){assert(r.inputIntact&&r.stateIntact,label+' state');assert.equal(r.translucent,0,label+' opacity')}
-  assert(developed.pigment.mappedColours>0&&developed.pigment.tones>0,'Pigment hooks active '+label);
-  rows.push({label,currentHash:current.hash,developedHash:developed.hash,currentMs:current.ms,developedMs:developed.ms,pigment:developed.pigment});console.log('PASS '+JSON.stringify(rows.at(-1)));
  }
  // Visually inspect different palettes, including the bright-yellow and grey
  // cases that motivated the new gamut. These are real three-way renders.
