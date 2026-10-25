@@ -37,10 +37,34 @@ export const SKUF_SOURCES=Object.freeze([
   url:'https://www.drips.fr/destruction-style-violence-skuf-raconte-le-graffiti-a-new-york-dans-les-90s/',
   category:'mixed',priority:'medium',status:'source-verified',
   evidence:'Interview about period and writing context.',
-  limitation:'Do not treat narrative or throw-up imagery as handstyle stroke evidence.'}
+  limitation:'Do not treat narrative or throw-up imagery as handstyle stroke evidence.'},
+ {id:'stomp-2019-skuf-one',title:'PAR · CADE · SEV · SKUF ONE · FORTE',publisher:'The Great Gallery of Graffiti',date:'2019-09-27',
+  url:'https://graffiti.stompandcrush.com/tag/skuf-ykk-2/',
+  category:'mixed-wall',priority:'medium',status:'source-verified',evidence:'Dated archive entry identifies SKUF ONE in a multi-writer wall photograph.',
+  limitation:'Extract a single legible tag, if any, before treating it as a study.'},
+ {id:'stomp-2017-nov',title:'SKUF YKK — 3 November',publisher:'The Great Gallery of Graffiti',date:'2017-11-03',
+  url:'https://graffiti.stompandcrush.com/tag/skuf-ykk-2/',
+  category:'unclassified',priority:'medium',status:'source-verified',evidence:'Separate dated archival example attributed to SKUF.',
+  limitation:'Medium and handwriting classification require photo-level inspection.'},
+ {id:'stomp-2016-may',title:'SKUF PG3 YKKD',publisher:'The Great Gallery of Graffiti',date:'2016-05-13',
+  url:'https://graffiti.stompandcrush.com/tag/skuf-ykk-2/',
+  category:'unclassified',priority:'medium',status:'source-verified',evidence:'Separate dated SKUF entry with extended crew writing.',
+  limitation:'Do not infer a letter alphabet from caption alone.'},
+ {id:'stomp-2015-tags',title:'NIRO · RAZE · SEZE · SKUF / SKUFER',publisher:'The Great Gallery of Graffiti',date:'2015-03-13',
+  url:'https://graffiti.stompandcrush.com/tag/skuf-ykk-2/',
+  category:'mixed-tags',priority:'high',status:'source-verified',evidence:'Archive explicitly reports tags by SKUF in a multi-writer line-up.',
+  limitation:'Crop and attribute only the visible SKUF mark after visual confirmation.'},
+ {id:'stomp-2015-july',title:'NB · RAZE · SKUF · ERUPTO · SEZE · 2ESAE',publisher:'The Great Gallery of Graffiti',date:'2015-07-15',
+  url:'https://graffiti.stompandcrush.com/tag/skuf-ykk-2/',
+  category:'mixed-tags',priority:'medium',status:'source-verified',evidence:'Archive explicitly distinguishes larger fills from smaller tags attributed to SKUF and other writers.',
+  limitation:'Check the original photo for a readable single SKUF tag.'},
+ {id:'stomp-2012',title:'SKUF · SPOT · NERVE · EVER · KET RIS',publisher:'For Your Inspiration',date:'2012-08-02',
+  url:'https://blog.stompandcrush.com/tag/skuf-ykk-2/',
+  category:'mixed-wall',priority:'medium',status:'source-verified',evidence:'Earlier SKUF appearance in a photographed multiple-writer group.',
+  limitation:'Likely not a clean single-writer handstyle sample; inspect before retaining.'}
 ]);
 export const OBSERVATION_FIELDS=Object.freeze(['sourceId','imageDescription','medium','word','lettersVisible','contour','connections','terminal','confidence','geometry','inferredMotion','reviewedBy']);
 export function describeCoverage(annotations=[]){
  const confirmed=annotations.filter(a=>a.reviewedBy&&a.confidence!=='unknown'&&a.medium==='handstyle');
- return {sourcePages:SKUF_SOURCES.length,handstyleExamples:confirmed.length,needed:Math.max(0,REFERENCE_TARGET.minimum-confirmed.length)};
+ return {sourcePages:new Set(SKUF_SOURCES.map(s=>s.url)).size,referenceLeads:SKUF_SOURCES.length,handstyleExamples:confirmed.length,needed:Math.max(0,REFERENCE_TARGET.minimum-confirmed.length)};
 }
