@@ -55,10 +55,11 @@ A.preparePNG=function(settings,scale){
     try{
       if(settings.actionPaintingRender){
         const actionVersion=Number(settings.actionPaintingRevision)||2;
-        (actionVersion===3?A.renderActionPaintingV3:A.renderActionPainting)(out,compositionSettings,scale,false,{version:actionVersion});
+        (actionVersion===4?A.renderActionPaintingV4:actionVersion===3?A.renderActionPaintingV3:A.renderActionPainting)(out,compositionSettings,scale,false,{version:actionVersion});
       }
       else if(settings.oilPaintRender){
-        const oilRenderer=settings.oilPaintRevision==='v5'?A.renderOilPaintV5:
+        const oilRenderer=settings.oilPaintRevision==='v6'?A.renderOilPaintV6:
+           settings.oilPaintRevision==='v5'?A.renderOilPaintV5:
           settings.oilPaintRevision==='v4'?A.renderOilPaintV4:
           settings.oilPaintRevision==='v3'?A.renderOilPaintV3:
           settings.oilPaintRevision==='v2'?A.renderOilPaintV2:A.renderOilPaintV1;
