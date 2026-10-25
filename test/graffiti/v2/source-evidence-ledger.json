@@ -1,0 +1,324 @@
+{
+  "version": "v2-primary-and-real-tag-evidence-01",
+  "scope": "Nine original active styles A-I; do not alter production V1; image indices are article order, NOT verified artist identities",
+  "primary_source": {
+    "title": "Graffiti Letters: 61 Artists Share Styles",
+    "url": "https://www.bombingscience.com/graffiti-letters-61-graffiti-artists-share-their-styles/",
+    "date": "2023-01-27",
+    "user_asset": "Graffiti Letters_ 61 Artists Share Styles.zip",
+    "sheet_count": 60,
+    "usage": "local-only research; no source photos republished"
+  },
+  "full_tag_sources": [
+    {
+      "id": "tags50",
+      "title": "Top 50 Graffiti Handstyles",
+      "url": "https://www.bombingscience.com/top-50-graffiti-handstyles/",
+      "date": "2025-11-26",
+      "use": "Writer-named tag photographs for comparative practice; no direct attribution to alphabet sheets"
+    },
+    {
+      "id": "faust",
+      "title": "FAUST original photographed wall work",
+      "url": "https://www.faustnewyork.com/",
+      "use": "Primary artist website with actual wall tag; compare long-name rhythm and scale"
+    },
+    {
+      "id": "faust-interview",
+      "title": "FAUST discusses chisel-tip, scripts, blackletter and repetition",
+      "url": "https://hypebeast.com/2022/8/faust-nike-sb-dunk-high-sole-mates-interview",
+      "use": "Direct first-person process statements"
+    },
+    {
+      "id": "shoe",
+      "title": "Niels Shoe Meulman photographed artworks",
+      "url": "https://www.nielsshoemeulman.com/calligraffiti/",
+      "use": "Artist's original calligraffiti portfolio; brush weight and word image"
+    },
+    {
+      "id": "shoe-interview",
+      "title": "Niels Shoe Meulman instrument and movement account",
+      "url": "https://www.urbanartcore.com/niels-shoe-meulman-calligraffiti-isnt-new/",
+      "use": "First-person pen-hand, brush-wrist and spray-arm distinction"
+    },
+    {
+      "id": "keno",
+      "title": "KENO first-person note on fluent legibility",
+      "url": "https://www.bombingscience.com/26-letters-of-style-8/",
+      "use": "Explicit preference for flow and minimal frills"
+    },
+    {
+      "id": "zephyr",
+      "title": "ZEPHYR first-person tag practice interview",
+      "url": "https://www.bombingscience.com/interview-zephyr/",
+      "use": "Marker practice and slow development of personal lettering"
+    },
+    {
+      "id": "earsnot",
+      "title": "EARSNOT tag photographed on storefront",
+      "url": "https://klughaus.tumblr.com/post/15621734472/earsnot-black-mop",
+      "use": "Photographic evidence of large mop loops and real drips; comparison not alphabet attribution"
+    },
+    {
+      "id": "tempo",
+      "title": "TEMPO writer account and work photographs",
+      "url": "https://www.bombingscience.com/tempo/",
+      "use": "Artist-named sharp angular letterwork; mainly pieces, not all photographs are tags"
+    }
+  ],
+  "families": [
+    {
+      "id": "A",
+      "label": "Interlocked marker",
+      "primary_sheet": 41,
+      "supporting_sheets": [
+        1,
+        17,
+        26
+      ],
+      "observed_letters": {
+        "A": "Two triangular diagonals crossed by a heavy slash; structural crossing runs beyond the left leg",
+        "M": "An asymmetric tall peak retains a triangular opening despite multiple crossing gestures"
+      },
+      "tag_comparators": [
+        "tags50",
+        "keno",
+        "zephyr"
+      ],
+      "named_writers_to_review": [
+        "RIME",
+        "GUESS",
+        "REVOK"
+      ],
+      "evidence": "Artist-named tags in tags50 demonstrate word-level dominant forms; KENO explicitly favours fluent legibility and minimal frills.",
+      "next_measure": "Trace 2-3 actual exit-to-entry transitions in writer-identified tags and count crossing strokes per full word",
+      "do_not": "Do not randomly remove hairlines from every glyph or assign a decorative slash to every letter."
+    },
+    {
+      "id": "B",
+      "label": "Arrow-cross / source-mismatch audit",
+      "primary_sheet": 7,
+      "supporting_sheets": [
+        9,
+        22,
+        42
+      ],
+      "observed_letters": {
+        "A": "Loosely open triangular peak; thin crossing stroke; the lower counter is not filled",
+        "O": "Broad handdrawn ring pierced by a horizontal bar and a short central echo"
+      },
+      "tag_comparators": [
+        "tags50",
+        "faust",
+        "faust-interview"
+      ],
+      "named_writers_to_review": [
+        "GREY",
+        "ZEPHYR",
+        "FAUST"
+      ],
+      "evidence": "The uploaded primary is thin and skeletal; current heavy arrow-cross rendering contradicts it. FAUST demonstrates a separate chisel/blackletter signature discipline but does not authenticate sheet 7.",
+      "next_measure": "Compare a thin-source reconstruction against current heavy design; re-anchor heavy style if retained rather than claiming sheet 7 is fat-marker evidence",
+      "do_not": "Do not call the heavy arrow-cross renderer a faithful transcription of sheet 7."
+    },
+    {
+      "id": "C",
+      "label": "Cut-wedge angular",
+      "primary_sheet": 13,
+      "supporting_sheets": [
+        3,
+        38,
+        48
+      ],
+      "observed_letters": {
+        "M": "Unequal black wedge rises form a tight broken zigzag rather than three font stems",
+        "K": "Acute thick blade intersections with narrow cut-out slits"
+      },
+      "tag_comparators": [
+        "tags50",
+        "tempo"
+      ],
+      "named_writers_to_review": [
+        "SEVER",
+        "TEMPO"
+      ],
+      "evidence": "The supplied sheet visibly uses massive angular blades; TEMPO documents preference for hard-edged letterforms. TEMPO photos contain pieces, so confirm full-tag evidence separately.",
+      "next_measure": "Compare blade angles, visible counters and directional balance in whole 4-8 letter word; retain current decisive silhouette",
+      "do_not": "Do not smooth points into generic rounded throw-up letters."
+    },
+    {
+      "id": "D",
+      "label": "Rectilinear block",
+      "primary_sheet": 20,
+      "supporting_sheets": [
+        16,
+        33
+      ],
+      "observed_letters": {
+        "O": "Heavy squared perimeter with a smaller hard-edged central cavity",
+        "E": "Three shelves differ in length and angle; not mathematically identical rectangles"
+      },
+      "tag_comparators": [
+        "tags50",
+        "faust-interview"
+      ],
+      "named_writers_to_review": [
+        "GREY",
+        "SHAKEN",
+        "ADEK BTM"
+      ],
+      "evidence": "Visible sheet has straight dominant bars but hand-placed shelf irregularity; 2025 writer-named photographed gallery includes clipped simple tags.",
+      "next_measure": "Record exact deviations from straightness and terminal overshoots on at least two tagged names",
+      "do_not": "Do not turn block into a mechanical stencil or apply random texture."
+    },
+    {
+      "id": "E",
+      "label": "Fractured Gothic",
+      "primary_sheet": 29,
+      "supporting_sheets": [
+        12,
+        39,
+        44
+      ],
+      "observed_letters": {
+        "A": "Tall blade plus narrow pointed arch; hairline is secondary",
+        "M": "Two tall tapering uprights with compressed asymmetric notch; not three isolated I minims"
+      },
+      "tag_comparators": [
+        "faust",
+        "faust-interview",
+        "shoe",
+        "shoe-interview"
+      ],
+      "named_writers_to_review": [
+        "FAUST",
+        "Niels Shoe Meulman"
+      ],
+      "evidence": "FAUST explicitly distinguishes chisel, script and blackletter approaches; Shoe demonstrates physically scaled calligraphic gestures. Neither proves authorship of uploaded sheet 29.",
+      "next_measure": "On H/M/N record top shoulders, joins and counter cuts that differentiate one word; remove decorative midline only if unsupported by actual marks",
+      "do_not": "Do not use generic spiked typefaces as the model."
+    },
+    {
+      "id": "F",
+      "label": "Broad-nib calligraffiti",
+      "primary_sheet": 59,
+      "supporting_sheets": [
+        5,
+        25,
+        50
+      ],
+      "observed_letters": {
+        "A": "Heavy ribbon upright with a very thin returning outside loop",
+        "S": "Ribbon turns produce clear wide/thin contrast and a light runout"
+      },
+      "tag_comparators": [
+        "shoe",
+        "shoe-interview",
+        "faust-interview"
+      ],
+      "named_writers_to_review": [
+        "Niels Shoe Meulman",
+        "FAUST"
+      ],
+      "evidence": "Artist's portfolio shows brush-created word images; first-person hand/wrist/arm mechanics explicitly depend on instrument/scale.",
+      "next_measure": "Map local tangent versus broad nib orientation on a whole word to predict where broad vs fine mark must occur",
+      "do_not": "Do not vary width by letter name alone."
+    },
+    {
+      "id": "G",
+      "label": "Rotational loops",
+      "primary_sheet": 8,
+      "supporting_sheets": [
+        18,
+        47,
+        57
+      ],
+      "observed_letters": {
+        "O": "Flattened enclosing oval includes a smaller eye loop",
+        "G": "Outer rotational circuit is interrupted by a cross bridge and returned tail"
+      },
+      "tag_comparators": [
+        "earsnot",
+        "tags50"
+      ],
+      "named_writers_to_review": [
+        "EARSNOT",
+        "GOREY"
+      ],
+      "evidence": "Photographed EARSNOT mop tag shows dominant loops, swing and drips; GOREY named tag gallery supplies one-line contrasting comparator. The two sources are not the sheet's authors.",
+      "next_measure": "Mark major loop(s) and terminating direction in a complete tag; distinguish intentional orbit from an equal wobble on every letter",
+      "do_not": "Do not mechanically cap every letter at two paths."
+    },
+    {
+      "id": "H",
+      "label": "Fragmented brush",
+      "primary_sheet": 30,
+      "supporting_sheets": [
+        24,
+        27
+      ],
+      "observed_letters": {
+        "A": "Separate angular red ribbons leave triangular omissions and detached top ends",
+        "K": "Letter identity arises from three separated blade groups rather than a single outline"
+      },
+      "tag_comparators": [
+        "tags50",
+        "shoe",
+        "tempo"
+      ],
+      "named_writers_to_review": [
+        "SABE KST",
+        "SOVIET",
+        "Niels Shoe Meulman"
+      ],
+      "evidence": "The uploaded sample directly verifies sharp separated brush-like forms; photographed tags in tags50 distinguish necessary pen lifts from gratuitous noise.",
+      "next_measure": "Annotate exact dry-lift gap and free negative spaces in every proposed revision to A K M S",
+      "do_not": "Do not insert an automatic break every fixed distance."
+    },
+    {
+      "id": "I",
+      "label": "Angular chisel gestures",
+      "primary_sheet": 10,
+      "supporting_sheets": [
+        35,
+        53
+      ],
+      "observed_letters": {
+        "A": "Cyan upright trunk topped by a small offset headcut; almost no closed counter",
+        "O": "Narrow teardrop-shaped open silhouette made from two tapered edges"
+      },
+      "tag_comparators": [
+        "faust-interview",
+        "faust",
+        "tags50"
+      ],
+      "named_writers_to_review": [
+        "FAUST",
+        "CECSTER",
+        "YORKER"
+      ],
+      "evidence": "Sheet confirms few-pass trunk-and-cut structure, FAUST first-person account confirms practice with chisel-tip markers; no attribution link asserted.",
+      "next_measure": "Study actual chisel-tip entry face and hard taper on M N R O before rewriting whole alphabet",
+      "do_not": "Do not bulk thicken or add rounded loops to this sparse hand."
+    }
+  ],
+  "review_protocol": {
+    "fixed_words": [
+      "MUSHROOM",
+      "PHI",
+      "φ",
+      "PROPORTION PIECE",
+      "SKUF"
+    ],
+    "must_capture": [
+      "full primary alphabet",
+      "supporting alphabet",
+      "real writer-identified photographed tag",
+      "letter transition notes",
+      "tool evidence",
+      "counter observations",
+      "observed versus proposed distinction"
+    ],
+    "release": "No V2 font code or production atlas modifications until full-tag links and observations have been reviewed"
+  }
+}

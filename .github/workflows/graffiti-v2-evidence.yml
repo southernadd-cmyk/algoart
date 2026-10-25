@@ -1,0 +1,36 @@
+name: Validate V2 source evidence
+on:
+  push:
+    branches: [graffiti-nine-v2-lab]
+    paths:
+      - 'test/graffiti/v2/**'
+      - '.github/workflows/graffiti-v2-evidence.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source provenance and nine research records
+        run: node --test test/graffiti/v2/source-evidence.test.mjs test/graffiti/v2/v2-pilot.test.mjs
+      - name: Install Chromium for comparative screenshots
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Compare 45 browser word renders and mobile layout
+        run: node test/graffiti/v2/v2-pilot-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nine-v2-sheet-grounded-pilot
+          path: artifacts/graffiti-v2-pilot-*.png
+          retention-days: 7
+      - name: Preserve V1 production boundary
+        run: |
+          git fetch --depth=1 origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main HEAD -- gallery/visit/gallery-bundle.js gallery/visit/tower-family-lettering.mjs gallery/visit/tower-graffiti-styles.mjs

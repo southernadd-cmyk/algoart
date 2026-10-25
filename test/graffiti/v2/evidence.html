@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Nine graffiti families — V2 evidence review</title>
+<style>
+:root{font-family:Georgia,serif;color:#293129;background:#efece4}
+*{box-sizing:border-box}body{margin:0 auto;max-width:1080px;padding:28px 22px 90px}
+a{color:#234a3d;text-underline-offset:3px}header{border-bottom:1px solid #c5c3b9;padding-bottom:27px;margin-bottom:24px}
+h1{font-size:clamp(36px,5vw,62px);font-weight:400;line-height:1.08;letter-spacing:-.035em;margin:16px 0}
+h2{font-size:30px;font-weight:400;margin:0 0 12px}h3{font-size:19px;font-weight:400;margin:18px 0 7px}
+p{line-height:1.55;margin:9px 0}small{font-size:13px;color:#666a62}
+nav{display:flex;gap:20px;font-size:14px;flex-wrap:wrap}
+.blurb{max-width:810px;font-size:17px}.warning{border-left:3px solid #a98b69;padding:9px 15px;margin:22px 0;background:#f9f4e9}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:18px 0 27px}
+button,select{font:inherit;padding:8px 12px;color:inherit;background:#fcfaf4;border:1px solid #c4beaf;border-radius:2px}
+button{cursor:pointer}button[aria-pressed=true]{background:#dedfd6}
+.stack{display:grid;gap:18px}.study{background:#fbf9f3;padding:20px;border:1px solid #d7d2c6}
+.id{font-family:Georgia,serif;font-size:17px;color:#70776c;float:right}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:25px}
+dl{margin:0}dt{font-size:13px;color:#555f56;margin:9px 0 4px}dd{margin:0;line-height:1.5}
+ul{padding-left:20px;line-height:1.55}
+footer{margin-top:30px;border-top:1px solid #c5c3b9;padding-top:15px;color:#646960;font-size:14px}
+@media(max-width:700px){.cols{grid-template-columns:1fr}body{padding:21px 15px}}
+</style></head><body>
+<header><nav><a href="../phase-d-alphabets.html">V1 alphabets</a><a href="../../../gallery/visit/">Live virtual gallery</a><a href="./source-evidence-ledger.json">Evidence ledger (JSON)</a></nav>
+<h1>Before the next stroke</h1>
+<p class="blurb">Evidence review for nine graffiti handstyle families. Each study separates what we can actually see in the uploaded artist alphabet sheets, what named writers demonstrate in documented full tags, and what would still be a guess.</p>
+<div class="warning"><strong>Research, not a release.</strong> The approved nine-style V1 engine and all production tower graffiti stay unchanged. The original 60 sheets are held in the user's private research archive, not republished here. Image numbers are archive order, not confirmed writer identities.</div></header>
+<div class="controls"><label for="family">Examine family <select id="family"><option value="all">All nine</option></select></label>
+<button id="next" type="button">Next family</button><span id="count" aria-live="polite"></span></div>
+<div class="stack" id="studies"></div>
+<footer><p>All external tags and artist material are independent comparison references, not authorship claims for numbered sheets. Don't copy photographed signatures as the new PROPORTION PIECE alphabets.</p></footer>
+<script type="module">
+const ledger=await fetch('./source-evidence-ledger.json').then(r=>{if(!r.ok)throw Error('Missing evidence');return r.json()});
+const select=document.querySelector('#family'),stack=document.querySelector('#studies'),count=document.querySelector('#count');
+const sources=new Map(ledger.full_tag_sources.map(s=>[s.id,s]));
+const el=(tag,text,attrs={})=>{const e=document.createElement(tag);e.textContent=text;for(const [k,v]of Object.entries(attrs))e.setAttribute(k,v);return e};
+for(const f of ledger.families)select.append(el('option',f.id+' — '+f.label,{value:f.id}));
+function detail(parent,label,text){const dl=parent.querySelector('dl');dl.append(el('dt',label),el('dd',text))}
+function render(){
+ stack.replaceChildren();
+ const selected=select.value,items=ledger.families.filter(f=>selected==='all'||selected===f.id);
+ count.textContent=items.length===9?'Nine families':items[0]?.label||'';
+ for(const f of items){
+  const article=el('article','',{class:'study'});article.append(el('span','family '+f.id,{class:'id'}),el('h2',f.label));
+  article.append(el('p','Primary uploaded sheet '+f.primary_sheet+'; supporting sheets '+f.supporting_sheets.join(', ')+'.'));
+  const cols=el('div','',{class:'cols'}),left=el('div',''),right=el('div','');
+  left.append(el('h3','Visible A–Z construction'),el('dl',''));
+  for(const [letter,observation]of Object.entries(f.observed_letters))detail(left,letter,observation);
+  left.append(el('h3','Next measurement'),el('p',f.next_measure));
+  right.append(el('h3','Whole-word reference material'));
+  const list=el('ul','');
+  for(const id of f.tag_comparators){const s=sources.get(id);if(!s)continue;
+   const li=el('li',''),link=el('a',s.title,{href:s.url,target:'_blank',rel:'noopener noreferrer'});
+   li.append(link,el('small',' — '+s.use));list.append(li)}
+  right.append(list,el('p',f.evidence),el('h3','Not supported by the evidence'),el('p',f.do_not));
+  cols.append(left,right);article.append(cols);stack.append(article);
+ }
+}
+select.addEventListener('change',render);
+document.querySelector('#next').addEventListener('click',()=>{
+ const all=ledger.families.map(f=>f.id),idx=all.indexOf(select.value);select.value=all[(idx+1)%all.length];render()
+});
+render();
+</script></body></html>
