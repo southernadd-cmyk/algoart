@@ -32,4 +32,5 @@ jobs:
           retention-days: 7
       - name: Preserve V1 production boundary
         run: |
-          git diff --exit-code HEAD~1 HEAD -- gallery/visit/gallery-bundle.js gallery/visit/tower-family-lettering.mjs gallery/visit/tower-graffiti-styles.mjs
+          git fetch --depth=1 origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main HEAD -- gallery/visit/gallery-bundle.js gallery/visit/tower-family-lettering.mjs gallery/visit/tower-graffiti-styles.mjs
