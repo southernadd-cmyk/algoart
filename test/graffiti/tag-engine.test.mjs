@@ -47,6 +47,20 @@ test('GUESS has a distinct handwritten MUSHROOM construction and remains seeded'
  assert.ok(a.motion.duration>0);
 });
 
+test('contrasting artist alphabets have independently constructed letters',()=>{
+ const m=goldenMetrics();const word='MUSHRO';
+ const vectors=['guess','faust','revok','kadism','zephyr','gorey'].map(id=>{
+  const style=REFERENCE_STUDIES[id];
+  return JSON.stringify([...word].map(ch=>shapeStudyLetter(ch,letterSkeleton(ch,{hand:style.family}),style,m).strokes));
+ });
+ assert.equal(new Set(vectors).size,vectors.length);
+ for(const id of ['guess','faust','revok','kadism','zephyr','gorey']){
+  const tag=createTag('MUSHROOM',{hand:id,seed:'PP-TAG-X1AXW'});
+  assert.ok(tag.strokes.every(stroke=>stroke.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))));
+  assert.deepEqual(tag,createTag('MUSHROOM',{hand:id,seed:'PP-TAG-X1AXW'}));
+ }
+});
+
 test('joins meet their actual neighbours, with no connection across a word break',()=>{
  let joins=0;
  for(const hand of Object.keys(HANDS))for(const seed of ['first','second']){
