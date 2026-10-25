@@ -2,7 +2,7 @@
 import {createTag,planFloorTags,makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {DOOR_WIDTH} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
-import {TOWER_HANDS,pickTowerHand,alphabetIdentity} from './tower-graffiti-styles.mjs';
+import {TOWER_HANDS,pickTowerHand,alphabetIdentity,graffitiAlphabetSignature} from './tower-graffiti-styles.mjs';
 import {GRAFFITI_WORDS} from './exterior-graffiti-plan.mjs';
 const SIDES=['north','south','east','west'];
 const outward={north:{x:0,z:-1},south:{x:0,z:1},east:{x:1,z:0},west:{x:-1,z:0}};
@@ -21,7 +21,7 @@ export function interiorWallFaces(layout,hangs){
  return faces;
 }
 export function interiorGraffitiKey({layout,hangs,level}){
- return level+':'+layout.date+':'+layout.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y,r.liftWall||'',r.entranceWall||'',r.doors.join(',')].join(',')).join(';')+':'+hangs.map(h=>h.roomIndex+':'+h.surface).sort().join('|');
+ return graffitiAlphabetSignature()+'|'+level+':'+layout.date+':'+layout.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y,r.liftWall||'',r.entranceWall||'',r.doors.join(',')].join(',')).join(';')+':'+hangs.map(h=>h.roomIndex+':'+h.surface).sort().join('|');
 }
 export function planInteriorGraffiti({layout,hangs,level},{seed='PP-INDOOR-WRITING-01',floorSpacing=6.2}={}){
  const r=makeRandom(seed+'|'+layout.date),count=r.int(3,5),phase=r.int(0,31),faces=interiorWallFaces(layout,hangs),marks=[],usedRooms=new Set(),usedFaces=new Set();
