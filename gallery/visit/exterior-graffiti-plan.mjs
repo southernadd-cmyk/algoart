@@ -1,8 +1,9 @@
 // One stable selection per exhibition. Wall placement is independent of the
 // occupied floor and of whether the surrounding tower uses prepared meshes.
-import {createTag,planFloorTags,makeRandom,HANDS} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
+import {createTag,planFloorTags,makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {ROOM_HEIGHT} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
+import {TOWER_HANDS,pickTowerHand} from './tower-graffiti-styles.mjs';
 export const GRAFFITI_WORDS=Object.freeze(['Proportion Piece','PHI','φ']);
 export const GRAFFITI_SEED='PP-TOWER-WRITING-01';
 export const WALL_MARGIN=.52;
@@ -45,7 +46,7 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
  for(const {level,plan} of ordered){
   const faces=exteriorWallFaces(plan,level===0),wordRandom=makeRandom(seed+'|'+plan.date+'|words');
   const firstWord=wordRandom.int(0,GRAFFITI_WORDS.length-1),phase=wordRandom.int(0,31);
-  const selection=Array.from({length:TAGS_PER_PAINTED_FLOOR},(_,slot)=>({...planFloorTags({floorId:plan.date,seed:seed+'|slot|'+slot,form:'mixed',count:1})[0],slot}));
+  const selection=Array.from({length:TAGS_PER_PAINTED_FLOOR},(_,slot)=>{const writer=pickTowerHand(makeRandom(seed+'|'+plan.date+'|outside|'+slot));return {...planFloorTags({floorId:plan.date,seed:seed+'|slot|'+slot,hand:writer,form:'mixed',count:1})[0],slot};});
   for(const item of selection){
    const phrase=GRAFFITI_WORDS[(firstWord+item.slot)%GRAFFITI_WORDS.length];
    const tag=createTag(phrase,{...item,paintWidth:2}),r=makeRandom(item.seed+'|wall');
@@ -86,11 +87,11 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
   const candidates=frontFaces.length?frontFaces:faces.filter(face=>face.exposed);
   const existing=marks.filter(mark=>mark.level===level);
   const occupied=new Set(existing.map(mark=>mark.hand));
-  const dialects=['gorey','kadism','faust','revok','sabe','veefer','katsu','curve','sicoer','rime','yorker','twist','remio','zephyr','jade','skofe'];
+  const dialects=TOWER_HANDS;
   for(let extra=0;extra<5;extra++){
    const slot=TAGS_PER_PAINTED_FLOOR+extra;
-   const hand=dialects.find(id=>HANDS[id]&&!occupied.has(id));
-   if(!hand)throw new Error('Not enough distinct facade handstyles');
+   const hand=dialects.find(id=>!occupied.has(id)) || dialects[extra%dialects.length];
+   // Eight curated writers cover ten facade tags; repeat only after exhaustion.
    occupied.add(hand);
    const item=planFloorTags({floorId:plan.date,seed:seed+'|front-freehand|'+slot,hand,form:'handstyle',count:1})[0];
    const phrase=GRAFFITI_WORDS[(extra+level)%GRAFFITI_WORDS.length];
