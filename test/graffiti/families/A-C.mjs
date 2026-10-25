@@ -41,7 +41,7 @@ Z|$M -5 15 L 77 3 L 3 98 L 85 93|M 20 50 L 77 43|^M -6 85 L 28 113
 // These are original constructions based on visual *grammar*, not traced paths.
 export const skeletal=parseFamily({
  id:'B',name:'Crossed marker handstyle',primary:7,anchors:[7,9,22,42],
- technique:'crosshand',ink:'#302e2b',weight:6.1,spacing:75,overlap:7,italic:.01,
+ technique:'crosshand',ink:'#302e2b',weight:6.1,spacing:84,overlap:3,italic:.01,
  notes:['Repeated interrupted crossbars and aggressive triangular turns','Large loops break from lettering baselines','Every capital has asymmetric gesture order'],
  rows:String.raw`
 A|M -2 110 C 12 87 29 19 48 5 L 83 100|M 8 69 C 36 37 53 43 75 58 Q 87 65 97 51|M 27 5 L 45 -6
