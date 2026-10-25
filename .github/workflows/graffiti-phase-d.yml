@@ -1,0 +1,48 @@
+name: Phase D graffiti alphabet review
+
+on:
+  push:
+    branches: [graffiti-61-phase-d, main]
+    paths:
+      - 'test/graffiti/families/**'
+      - 'test/graffiti/family-library.mjs'
+      - 'test/graffiti/family-renderer.mjs'
+      - 'test/graffiti/phase-d-*.mjs'
+      - 'test/graffiti/phase-d-alphabets.html'
+      - '.github/workflows/graffiti-phase-d.yml'
+  pull_request:
+    paths:
+      - 'test/graffiti/families/**'
+      - 'test/graffiti/family-library.mjs'
+      - 'test/graffiti/family-renderer.mjs'
+      - 'test/graffiti/phase-d-*.mjs'
+      - 'test/graffiti/phase-d-alphabets.html'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validate all 260 independent letters
+        run: node --test test/graffiti/phase-d.test.mjs
+      - name: Install browser tools without lockfile changes
+        run: npm install --no-save --package-lock=false --ignore-scripts
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Screenshot ten full alphabets, test SVG exports and mobile
+        run: node test/graffiti/phase-d-browser-check.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase-d-graffiti-visual-review
+          path: artifacts/graffiti-phase-d-*.png
+          if-no-files-found: warn
