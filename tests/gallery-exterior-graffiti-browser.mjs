@@ -27,6 +27,7 @@ function assertInterior(inside){
  assert.ok(inside.marks.length>=3&&inside.marks.length<=5);assert.equal(inside.diagnostics.errors.length,0);assert.equal(inside.diagnostics.painted,inside.marks.length);
  const occupied=new Set(inside.artWalls.map(h=>h.roomIndex+':'+h.surface));for(const m of inside.marks){assert.equal(m.form,'handstyle');assert.equal(m.surface,'interior');assert.ok(!occupied.has(m.face.id));assert.ok(m.width<=1.35001&&m.height<=.45001);}
  assert.ok(inside.marks.some(m=>m.rotation<0)&&inside.marks.some(m=>m.rotation>0));
+ assert.equal(new Set(inside.marks.map(m=>m.hand)).size,inside.marks.length);
 }
 async function open({fallback=false,mobile=false,date=''}={}){
  const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:1000},deviceScaleFactor:1,ignoreHTTPSErrors:true,isMobile:mobile,hasTouch:mobile});
@@ -42,9 +43,10 @@ async function open({fallback=false,mobile=false,date=''}={}){
  const state=await page.evaluate(()=>({diagnostics:window.__galleryGraffiti.diagnostics(),marks:window.__galleryGraffiti.marks(),backdrop:window.__galleryBackdrop,inside:{diagnostics:window.__galleryInteriorGraffiti.diagnostics(),marks:window.__galleryInteriorGraffiti.marks(),artWalls:window.__galleryInteriorGraffiti.artWalls},aspect:document.getElementById('world').width/document.getElementById('world').height,cssAspect:document.getElementById('world').getBoundingClientRect().width/document.getElementById('world').getBoundingClientRect().height}));
  assertInterior(state.inside);assert.equal(state.diagnostics.errors.length,0);assert.equal(state.diagnostics.painted,state.marks.length);
  assert.equal(new Set(state.marks.map(m=>m.date)).size,Math.min(2,dates.length));
- for(const [level,date] of dates.entries())assert.equal(state.marks.filter(m=>m.date===date).length,level<2?5:0);
+ for(const [level,date] of dates.entries())assert.equal(state.marks.filter(m=>m.date===date).length,level<2?10:0);
  assert.equal(state.backdrop.source,'procedural-city');assert.equal(state.backdrop.width,mobile?512:1024);assert.equal(state.backdrop.height,mobile?128:256);
  assert.deepEqual(new Set(state.marks.map(m=>m.phrase)),new Set(['Proportion Piece','PHI','φ']));
+ for(const level of [0,1])assert.equal(new Set(state.marks.filter(m=>m.level===level).map(m=>m.hand)).size,9);
  assert.equal(state.diagnostics.pages,Math.ceil(state.marks.length/32));assert.ok(Math.abs(state.aspect-state.cssAspect)<.01);
  assert.ok(geometry.at(-1).maximumY>=geometry.at(-1).expectedMaximumY-2,'Occupied and archived floors must both contribute to the tower roofline');
  assert.deepEqual(panoramaRequests,[]);console.log(JSON.stringify({stage:'wall-ready',fallback,mobile,date,readyMs,geometry:geometry.at(-1),paint:state.diagnostics,interior:state.inside.diagnostics,backdrop:state.backdrop,errors}));
@@ -93,5 +95,5 @@ try{
  assert.deepEqual(identity(mobile.state.marks),identity(main.state.marks));assert.ok(await mobile.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(mobile.errors,[]);
  await mobile.page.evaluate(()=>{document.getElementById('welcome').hidden=true;window.__galleryInteriorGraffiti.preview(0);});
  await mobile.page.screenshot({path:path.join(root,'artifacts/tower-graffiti-mobile.png')});await mobile.context.close();
- console.log(JSON.stringify({result:'passed',floors:dates.length,marks:main.state.marks.length,pages:main.state.diagnostics.pages,desktopReadyMs:main.readyMs,mobileReadyMs:mobile.readyMs,paint:main.state.diagnostics,checks:['prepared tower','procedural fallback','active upper floor','floor travel and atlas reuse','5 exterior marks on each of the two lower floors','3-5 small interior handstyles','entire painting walls excluded','phi positions and varied angles','no marks above first floor','no panorama request','cached generated backdrop','all requested words','outward geometry and shader','mobile aspect and layout'],errors:[]}));
+ console.log(JSON.stringify({result:'passed',floors:dates.length,marks:main.state.marks.length,pages:main.state.diagnostics.pages,desktopReadyMs:main.readyMs,mobileReadyMs:mobile.readyMs,paint:main.state.diagnostics,checks:['prepared tower','procedural fallback','active upper floor','floor travel and atlas reuse','10 A–Z exterior marks on each of the two lower floors','3-5 small interior handstyles','entire painting walls excluded','phi positions and varied angles','no marks above first floor','no panorama request','cached generated backdrop','all requested words','outward geometry and shader','mobile aspect and layout'],errors:[]}));
 }finally{await browser.close();server.close();}
