@@ -76,6 +76,20 @@ test('SKOFE and SKUF use contrasting pen paths on the same word',()=>{
  }
 });
 
+test('each reference hand has a complete, deterministic alphabet',()=>{
+ const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ',m=goldenMetrics();
+ for(const [id,style] of Object.entries(REFERENCE_STUDIES)){
+  const first=[...alphabet].map(ch=>shapeStudyLetter(ch,letterSkeleton(ch,{hand:style.family}),style,m));
+  const second=[...alphabet].map(ch=>shapeStudyLetter(ch,letterSkeleton(ch,{hand:style.family}),style,m));
+  assert.equal(first.length,26,id);
+  assert.deepEqual(first,second,id+' deterministic alphabet');
+  for(let i=0;i<26;i++){
+   assert.ok(first[i].strokes.length>0,id+' '+alphabet[i]);
+   assert.ok(first[i].strokes.every(st=>st.points.length>=2&&st.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))),id+' '+alphabet[i]+' valid paths');
+  }
+ }
+});
+
 test('joins meet their actual neighbours, with no connection across a word break',()=>{
  let joins=0;
  for(const hand of Object.keys(HANDS))for(const seed of ['first','second']){
