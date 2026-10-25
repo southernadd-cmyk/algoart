@@ -32,8 +32,8 @@ profiles. It offers handstyle, hollow throw-up, bubble throw-up, straight letter
 blockbuster, calligraffiti, a pichação study and an interlocking piece. All eight
 are shown on brick with the same word in the comparison gallery. Different forms
 uses a separate seeded choice per floor slot, preserving the floor's count,
-word, writer, colour and position. Selecting an existing handstyle study returns
-to Handstyle. The selected form is saved as `form` in the URL.
+word, writer, colour and position. Writer buttons and the handwriting selector preserve the chosen lettering
+form. The selected form is saved as `form` in the URL.
 
 `lettering-forms.mjs` constructs round faces, square/polygonal counters, tall
 angular spines and wedge shoulders from the phi dimensions. Filled forms render

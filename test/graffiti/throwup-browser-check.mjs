@@ -33,6 +33,9 @@ try{
  assert.ok(await page.evaluate(()=>window.graffitiSpecimen.tags.every(t=>t.hand==='sicoer'&&t.form==='hollow')));
  await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.wall==='scan');
  assert.equal(await page.locator('#hand').inputValue(),'sicoer');assert.equal(await page.locator('#form').inputValue(),'hollow');
+ await page.locator('[data-hand="cut"]').click();assert.equal(await page.locator('#hand').inputValue(),'cut');assert.equal(await page.locator('#form').inputValue(),'hollow');
+ const firstStudy=await page.locator('[data-study]').first().getAttribute('data-study');
+ await page.locator('[data-study]').first().click();assert.equal(await page.locator('#hand').inputValue(),firstStudy);assert.equal(await page.locator('#form').inputValue(),'hollow');
  // Preview is made from the actual wall canvases, after each writer choice.
  await page.evaluate(()=>{window.paintProof=document.createElement('canvas');paintProof.width=640;paintProof.height=680;paintProof.getContext('2d').fillStyle='#f4f0e7';paintProof.getContext('2d').fillRect(0,0,640,680);});
  for(const [row,hand] of ['loop','sicoer','kadism','twist'].entries()){
