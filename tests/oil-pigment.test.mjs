@@ -55,4 +55,4 @@ const prior={sentinel:true};A.oilPigmentActive=prior;
 A.renderOilPaintV4=()=>{throw Error('paint failure')};
 assert.throws(()=>A.renderOilPaintV5({},{}),/paint failure/);
 assert.equal(A.oilPigmentActive,prior);assert.equal(A.planCompositionV5FromSource,planner);
-console.log('PASS V5 scope: originalPlan plan intact; success/failure restore planner and prior pigment state.');
+console.log('PASS V5 scope: original plan intact; success/failure restore planner and prior pigment state.');

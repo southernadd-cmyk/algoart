@@ -1,7 +1,7 @@
 // Real engine comparison; no publishing or social actions. Baseline sources
 // come from the base commit, so dormant hooks must preserve exact V4 pixels.
 import assert from 'node:assert/strict';
-import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {chromium} from 'playwright';
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/',out='oil-pigment-results';
@@ -22,17 +22,33 @@ try{
  const settings=await page.evaluate(()=>window.oilPigmentStudy.settings('spiral'));
  const geometry=plan=>JSON.stringify(plan,(key,value)=>/rgb|palette|colour|color|paintTone|materialStats/i.test(key)?undefined:value);
  const rows=[];
- async function render(p,settings,version,scale=.35){
-  return p.evaluate(({settings,version,scale})=>{
+ async function render(p,settings,version,scale=.35,reveal=false){
+  return p.evaluate(({settings,version,scale,reveal})=>{
    const A=window.AlgoArt,c=document.createElement('canvas'),before=JSON.stringify(settings),native=HTMLCanvasElement.prototype.getContext,planner=A.planCompositionV5FromSource;
-   const meta=version==='v4'?A.renderOilPaintV4(c,settings,scale,false):A.renderOilPaintV5(c,settings,scale,false,{reference:version==='claude'});
+   const meta=/^v[1-4]$/.test(version)?A['renderOilPaintV'+version.slice(1)](c,settings,scale,reveal):A.renderOilPaintV5(c,settings,scale,reveal,{reference:version==='claude'});
    const rgba=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
    let hash=2166136261,translucent=0;for(let i=0;i<rgba.length;i++){hash=Math.imul(hash^rgba[i],16777619);if(i%4===3&&rgba[i]!==255)translucent++}
    return {hash:hash>>>0,width:c.width,height:c.height,translucent,plan:meta.plan,pigment:meta.pigment,work:meta.work,
     sourcePaths:A.lastOilPaintV4EStats.sourcePaths,paintedPaths:A.lastOilPaintV4EStats.paintedPaths,massGroups:A.lastOilPaintV4EStats.massGroups,
     inputIntact:JSON.stringify(settings)===before,stateIntact:A.planCompositionV5FromSource===planner&&!A.oilPigmentActive&&HTMLCanvasElement.prototype.getContext===native,
     ms:A.lastCPUCanvasRender.ms};
-  },{settings,version,scale});
+  },{settings,version,scale,reveal});
+ }
+ for(const version of ['v1','v2','v3']){
+  const s={...settings,mode:'rects',orientation:'portrait'};
+  const before=await render(old,s,version,.25),after=await render(page,s,version,.25);
+  assert.equal(after.hash,before.hash,'Historical '+version+' unchanged');
+  console.log('PASS historical '+version+' exact pixels after V5');
+ }
+ for(const [mode,orientation] of [['rects','landscape'],['organic','portrait']]){
+  const s={...settings,mode,orientation},before=await render(old,s,'v4',1,true),current=await render(page,s,'v4',1,true),
+   developed=await render(page,s,'v5',1,true),repeat=await render(page,s,'v5',1,true);
+  assert.equal(current.hash,before.hash,'Full-size V4 unchanged '+orientation);
+  assert.equal(developed.hash,repeat.hash,'Full-size V5 repeat '+orientation);
+  assert.equal(geometry(developed.plan),geometry(current.plan),'Full-size geometry '+orientation);
+  assert.equal(developed.width,orientation==='portrait'?1000:1400);assert.equal(developed.height,orientation==='portrait'?1400:1000);
+  assert.equal(developed.translucent,0);assert(developed.stateIntact);
+  console.log('PASS full-size with geometry reveal '+orientation);
  }
  for(const orientation of ['landscape','portrait'])for(const mode of ['field','spiral','rects','burst','network','organic','geometric','scribble']){
   const s={...settings,mode,orientation,seed:'PIGMENT-REGRESSION-'+mode,palette:'golden'},label=mode+'-'+orientation;
@@ -59,5 +75,5 @@ try{
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Mobile horizontal overflow');
  assert.deepEqual(errors,[],'Browser console errors');
  await writeFile(out+'/results.json',JSON.stringify(rows,null,2));
- console.log('PASS all 16 engine/orientation cases; baseline pixels; geometry; state; repeatability; four visual comparisons; mobile layout.');
+ console.log('PASS all 16 engine/orientation cases; V1–V4 baseline pixels; full-size/reveal; geometry; state; repeatability; four visual comparisons; mobile layout.');
 }finally{await browser.close()}

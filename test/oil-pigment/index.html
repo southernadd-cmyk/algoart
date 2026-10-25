@@ -53,7 +53,7 @@ function settings(mode){return{
 };}
 const pause=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 async function run(all=false){
- $('draw').disabled=$('all').disabled=true;$('results').replaceChildren();
+ for(const el of $('controls').elements)el.disabled=true;$('results').replaceChildren();
  const selected=all?modes:modes.filter(([mode])=>mode===$('mode').value);
  const params=new URLSearchParams();for(const id of ['seed','mode','palette','orientation','quality'])params.set(id,$(id).value);
  history.replaceState(null,'','?'+params);
@@ -69,7 +69,7 @@ async function run(all=false){
     c.setAttribute('aria-label',name+' — '+label);caption.textContent=label+' · '+Math.round(performance.now()-start)+' ms';
     figure.dataset.version=meta.version;
     const swatches=document.createElement('div');swatches.className='swatches';
-    for(const css of A.hues(s,A.makeR('pigment-swatches'))){
+    for(const css of A.lastOilPaintV4EStats.sourceColours.slice(0,8)){
      const sample=document.createElement('canvas');sample.width=sample.height=1;const ctx=sample.getContext('2d');ctx.fillStyle=css;ctx.fillRect(0,0,1,1);
      const rgb=[...ctx.getImageData(0,0,1,1).data].slice(0,3),colour=reference===null?rgb:reference?A.oilPigment.claudeRGB(rgb):A.oilPigment.mapRGB(rgb),span=document.createElement('span');span.style.background='rgb('+colour.join(',')+')';swatches.append(span);
     }
@@ -78,7 +78,7 @@ async function run(all=false){
   }
   $('status').textContent='Finished. Each row uses identical seed, settings and source geometry.';
  }catch(error){$('status').textContent='Rendering error: '+error.message;console.error(error);throw error}
- finally{$('draw').disabled=$('all').disabled=false}
+ finally{for(const el of $('controls').elements)el.disabled=false}
 }
 $('controls').addEventListener('submit',event=>{event.preventDefault();run().catch(()=>{})});
 $('all').addEventListener('click',()=>run(true).catch(()=>{}));
