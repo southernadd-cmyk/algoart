@@ -4,8 +4,7 @@ const $=id=>document.getElementById(id),canvas=$('wall'),ctx=canvas.getContext('
 const inkLayer=document.createElement('canvas');
 const inkCtx=inkLayer.getContext('2d',{willReadFrequently:true});
 let plan=[],tags=[],frame=0,playing=false,started=0,elapsed=0,token=0,scan=null,mainWall=null,currentProgress=1;
-let studyPage=0;
-const studyIds=Object.keys(REFERENCE_STUDIES),pageSize=6;
+const featuredIds=['guess','faust','revok','kadism','zephyr','gorey','skofe','skuf'];
 const surfaceCache=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,form:$('form').value,ink:$('ink').value,finish:$('paint').value,paintWidth:Math.max(.75,Math.min(3,(Number($('width').value)||200)/100)),floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
 function fallbackTile(){
@@ -70,7 +69,7 @@ function updateURL(){
 function generate({url=true}={}){
  stop();const small=matchMedia('(max-width:700px)').matches;canvas.width=small?1000:1600;canvas.height=small?920:800;
  const raw=$('word').value,clean=normaliseText(raw);$('word').value=clean;$('floor').value=Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)));if(!$('seed').value.trim())$('seed').value='PP-GRAFFITI-01';
- const options=readOptions();$('width-value').textContent=options.paintWidth.toFixed(2).replace(/0$/,'')+'×';plan=planFloorTags(options);tags=plan.map(p=>createTag(p.text,{...p,paintWidth:options.paintWidth}));render();elapsed=0;
+ const options=readOptions();$('width-value').textContent=options.paintWidth.toFixed(2).replace(/0$/,'')+'×';plan=planFloorTags(options).map(p=>options.hand==='mixed'?{...p,hand:featuredIds[Math.floor(makeRandom(p.seed+'|eight-hands').n()*featuredIds.length)]}:p);tags=plan.map(p=>createTag(p.text,{...p,paintWidth:options.paintWidth}));render();elapsed=0;
  $('previous').disabled=Number($('floor').value)<=1;$('next').disabled=Number($('floor').value)>=9999;
  $('floor-caption').textContent='Floor '+$('floor').value+' · '+(tags.length===1?'one tag':'two tags')+' · '+tags.map(t=>LETTERING_FORMS[t.form].name).join(' / ');
  canvas.setAttribute('aria-label','Floor '+$('floor').value+': '+tags.map(t=>t.text+' in '+LETTERING_FORMS[t.form].name+' lettering').join('; ')+', on a buff brick wall.');
@@ -78,11 +77,7 @@ function generate({url=true}={}){
  $('finish-caption').textContent=options.finish==='spray'?'Soft spray edges and scattered droplets follow the brick.':'Ink follows the brick grain and mortar.';
  const m=tags[0].construction.metrics;
  $('phi-measurements').textContent='At a height of '+m.height+' units, the letter frame is '+m.width.toFixed(2)+' units wide. Its bowl divisions are '+m.short.toFixed(2)+' and '+m.long.toFixed(2)+' units. Each writer then leans, compresses and varies that structure.';
- for(const hand of Object.keys(CORE_HANDS)){
-  const tag=createTag(clean||'PHI',{seed:options.seed,hand,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
-  paintWall($(hand+'-wall'),[tag],[{x:.5,y:.55,scale:.94,rotation:-.025}]);
- }
- renderForms();renderStudies();
+ renderForms();renderFeatured();renderAlphabetComparison();
  if(url)updateURL();
 }
 function renderForms(){
@@ -99,26 +94,42 @@ function renderForms(){
   paintWall(c,[tag],[{x:.5,y:.52,scale:1.05,maxHeight:.64,rotation:-.018}]);
  }
 }
-function renderStudies(){
- const options=readOptions(),start=studyPage*pageSize,grid=$('study-grid');grid.replaceChildren();
- for(const id of studyIds.slice(start,start+pageSize)){
-  const study=REFERENCE_STUDIES[id],article=document.createElement('article');article.className='hand';
-  const c=document.createElement('canvas');c.width=720;c.height=380;c.setAttribute('role','img');c.setAttribute('aria-label',study.reference+' procedural lettering study on brick');
-  const title=document.createElement('h3');title.textContent=study.reference+' study';
-  const description=document.createElement('p');description.textContent=study.description;
-  const button=document.createElement('button');button.type='button';button.textContent='Use this study';button.dataset.study=id;button.onclick=()=>{$('hand').value=id;generate();};
-  article.append(c,title,description,button);grid.append(article);
-  const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,hand:id,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});paintWall(c,[tag],[{x:.5,y:.53,scale:.97,rotation:-.018}]);
+function renderAlphabetComparison(){
+ const root=$('alphabet-columns');root.replaceChildren();const opts=readOptions();
+ for(const id of featuredIds){
+  const study=REFERENCE_STUDIES[id],article=document.createElement('article');article.className='alphabet-sheet';
+  const heading=document.createElement('h3');heading.textContent=study.reference;
+  const source=document.createElement('p');source.textContent=id==='skofe'?'Ultrawide, full-body gestures; other letters inferred.':id==='skuf'?'Swooping S and elongated F; other letters inferred.':'An original reconstruction informed by selected artist references; unverified letters inferred.';
+  const link=document.createElement('a');link.href=id==='skofe'?'https://www.bombingscience.com/skofe/':id==='skuf'?'https://www.vice.com/en/article/skuf-what-happens-when-a-legendary-graffiti-writer-grows-up/':HANDSTYLE_SOURCE;link.textContent='View source examples';link.target='_blank';link.rel='noopener noreferrer';
+  article.append(heading,source,link);
+  for(const letters of ['ABCDEFGHIJKLM','NOPQRSTUVWXYZ']){
+   const row=document.createElement('div');row.className='alphabet-row';
+   const title=document.createElement('p');title.textContent=letters;row.append(title);
+   const c=document.createElement('canvas');c.width=1120;c.height=280;c.setAttribute('role','img');c.setAttribute('aria-label',study.reference+' alphabet '+letters);
+   const tag=createTag(letters,{seed:'PP-ALPHABET-REFERENCE',hand:id,form:'handstyle',ink:opts.ink==='mixed'?'#242a28':opts.ink,paintWidth:opts.paintWidth});
+   paintWall(c,[tag],[{x:.5,y:.51,scale:1.0,maxHeight:.65,rotation:0}]);
+   row.append(c);article.append(row);
+  }
+  root.append(article);
  }
- $('study-range').textContent='Studies '+(start+1)+'–'+Math.min(start+pageSize,studyIds.length)+' of '+studyIds.length;
- $('studies-prev').disabled=studyPage===0;$('studies-next').disabled=start+pageSize>=studyIds.length;
- const selected=HANDS[$('hand').value];
- $('study-selection').textContent=$('form').value!=='handstyle'?"Lettering changes the construction and paint. Handwriting supplies the writer’s alphabet, proportions and rhythm.":selected?selected.name+' · '+selected.description+' New seeds vary the execution while keeping this hand’s habits.':'Choose a hand to compare its habits across seeds, or use Different writers to mix all 53 hands.';
+}
+function renderFeatured(){
+ const options=readOptions(),grid=$('featured-grid');grid.replaceChildren();
+ for(const id of featuredIds){
+  const study=REFERENCE_STUDIES[id],article=document.createElement('article');article.className='hand';
+  const c=document.createElement('canvas');c.width=720;c.height=380;c.setAttribute('role','img');c.setAttribute('aria-label',study.reference+' revised handwriting study on brick');
+  const title=document.createElement('h3');title.textContent=study.reference;
+  const description=document.createElement('p');description.textContent=study.description;
+  const button=document.createElement('button');button.type='button';button.textContent='Use this hand';button.onclick=()=>{$('hand').value=id;generate();window.scrollTo({top:0,behavior:'smooth'});};
+  article.append(c,title,description,button);grid.append(article);
+  const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,hand:id,form:'handstyle',ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
+  paintWall(c,[tag],[{x:.5,y:.53,scale:.97,rotation:-.018}]);
+ }
 }
 function populateHands(){
  const forms=$('form');forms.replaceChildren(new Option('Different forms','mixed'));for(const [id,style] of Object.entries(LETTERING_FORMS))forms.append(new Option(style.name,id));
  const select=$('hand');select.replaceChildren(new Option('Different writers','mixed'));
- for(const [label,entries] of [['Original hands',CORE_HANDS],['Bombing Science — 50 reference studies',REFERENCE_STUDIES]]){
+ for(const [label,entries] of [['Eight developing styles',Object.fromEntries(featuredIds.map(id=>[id,REFERENCE_STUDIES[id]]))]]){
   const group=document.createElement('optgroup');group.label=label;
   for(const [id,hand] of Object.entries(entries))group.append(new Option(hand.name,id));select.append(group);
  }
@@ -141,17 +152,16 @@ function restoreURL(){
 async function init(){
  populateHands();restoreURL();scan=fallbackTile();generate({url:false});
  $('controls').addEventListener('submit',e=>{e.preventDefault();generate();});for(const id of ['word','seed','hand','form','ink','floor','paint'])$(id).addEventListener('change',()=>generate());
- $('studies-prev').onclick=()=>{studyPage=Math.max(0,studyPage-1);renderStudies();};$('studies-next').onclick=()=>{studyPage=Math.min(Math.ceil(studyIds.length/pageSize)-1,studyPage+1);renderStudies();};
  let widthFrame=0;$('width').addEventListener('input',()=>{cancelAnimationFrame(widthFrame);widthFrame=requestAnimationFrame(()=>generate());});$('width').addEventListener('change',()=>{cancelAnimationFrame(widthFrame);generate();});
  $('another').onclick=()=>{const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);$('seed').value='PP-TAG-'+bytes[0].toString(36).toUpperCase();generate();};
  $('previous').onclick=()=>{$('floor').value=Number($('floor').value)-1;generate();};$('next').onclick=()=>{$('floor').value=Number($('floor').value)+1;generate();};
  $('play').onclick=animate;$('finish').onclick=()=>{stop();elapsed=0;render();$('status').textContent='Finished wall. Same seed and floor, same tags.';};
  $('show-phi').onchange=()=>{render(currentProgress);updateURL();};
  matchMedia('(max-width:700px)').addEventListener('change',()=>generate({url:false}));
- for(const button of document.querySelectorAll('[data-hand]'))button.onclick=()=>{$('hand').value=button.dataset.hand;generate();};
+ 
  const image=new Image();image.onload=()=>{try{scan=prepareScan(image);surfaceCache.clear();generate({url:false});document.documentElement.dataset.wall='scan';}catch(e){console.warn('Using the local procedural brick fallback.',e);}};image.onerror=()=>{document.documentElement.dataset.wall='fallback';};image.src='./assets/brick-wall.webp';
  // A small read-only hook makes determinism, counts and actual rendering
  // inspectable without relying on visually identical DOM text.
- window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get finish(){return $('paint').value;},get paintWidth(){return readOptions().paintWidth;},get formCount(){return Object.keys(LETTERING_FORMS).length;},get form(){return $('form').value;},get studyCount(){return studyIds.length;},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
+ window.graffitiSpecimen={get plan(){return structuredClone(plan);},get tags(){return structuredClone(tags);},get finish(){return $('paint').value;},get paintWidth(){return readOptions().paintWidth;},get formCount(){return Object.keys(LETTERING_FORMS).length;},get form(){return $('form').value;},get studyCount(){return featuredIds.length;},get featuredHands(){return [...featuredIds];},get playing(){return playing;},get surface(){return mainWall?{width:mainWall.width,height:mainWall.height}:null;},generate};
 }
 init().catch(error=>{$('status').textContent='The wall could not be prepared: '+error.message;console.error(error);});

@@ -31,6 +31,65 @@ test('similar studies use different letter constructions before slant and scalin
  assert.notDeepEqual(skeleton('kadism','P'),skeleton('karma','P'));
 });
 
+test('GUESS has a distinct handwritten MUSHROOM construction and remains seeded',()=>{
+ const a=createTag('MUSHROOM',{hand:'guess',seed:'PP-TAG-X1AXW',paintWidth:1.8});
+ const b=createTag('MUSHROOM',{hand:'guess',seed:'PP-TAG-X1AXW',paintWidth:1.8});
+ const generic=createTag('MUSHROOM',{hand:'jade',seed:'PP-TAG-X1AXW',paintWidth:1.8});
+ assert.deepEqual(a,b);
+ assert.notDeepEqual(a.strokes,generic.strokes);
+ const hand=REFERENCE_STUDIES.guess,other=REFERENCE_STUDIES.jade,m=goldenMetrics();
+ for(const ch of 'MUSHRO'){
+  const glyph=letterSkeleton(ch,{hand:hand.family});
+  const guess=shapeStudyLetter(ch,glyph,hand,m);
+  const jade=shapeStudyLetter(ch,glyph,other,m);
+  assert.notDeepEqual(guess.strokes,jade.strokes,ch+' uses a different pen construction');
+ }
+ assert.ok(a.motion.duration>0);
+});
+
+test('contrasting artist alphabets have independently constructed letters',()=>{
+ const m=goldenMetrics();const word='MUSHRO';
+ const vectors=['guess','faust','revok','kadism','zephyr','gorey'].map(id=>{
+  const style=REFERENCE_STUDIES[id];
+  return JSON.stringify([...word].map(ch=>shapeStudyLetter(ch,letterSkeleton(ch,{hand:style.family}),style,m).strokes));
+ });
+ assert.equal(new Set(vectors).size,vectors.length);
+ for(const id of ['guess','faust','revok','kadism','zephyr','gorey']){
+  const tag=createTag('MUSHROOM',{hand:id,seed:'PP-TAG-X1AXW'});
+  assert.ok(tag.strokes.every(stroke=>stroke.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))));
+  assert.deepEqual(tag,createTag('MUSHROOM',{hand:id,seed:'PP-TAG-X1AXW'}));
+ }
+});
+
+test('SKOFE and SKUF use contrasting pen paths on the same word',()=>{
+ const m=goldenMetrics();
+ for(const ch of 'SKOFEMU'){
+  const a=REFERENCE_STUDIES.skofe,b=REFERENCE_STUDIES.skuf;
+  const pa=shapeStudyLetter(ch,letterSkeleton(ch,{hand:a.family}),a,m);
+  const pb=shapeStudyLetter(ch,letterSkeleton(ch,{hand:b.family}),b,m);
+  assert.notDeepEqual(pa.strokes,pb.strokes,ch+' must differ in construction');
+ }
+ for(const word of ['SKOF','MUSHROOM']){
+  const tags=['skofe','skuf'].map(hand=>createTag(word,{hand,seed:'contrast-seed'}));
+  assert.notDeepEqual(tags[0].strokes,tags[1].strokes);
+  for(const tag of tags){assert.ok(tag.strokes.every(s=>s.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))));assert.deepEqual(tag,createTag(word,{hand:tag.hand,seed:'contrast-seed'}));}
+ }
+});
+
+test('each reference hand has a complete, deterministic alphabet',()=>{
+ const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ',m=goldenMetrics();
+ for(const [id,style] of Object.entries(REFERENCE_STUDIES)){
+  const first=[...alphabet].map(ch=>shapeStudyLetter(ch,letterSkeleton(ch,{hand:style.family}),style,m));
+  const second=[...alphabet].map(ch=>shapeStudyLetter(ch,letterSkeleton(ch,{hand:style.family}),style,m));
+  assert.equal(first.length,26,id);
+  assert.deepEqual(first,second,id+' deterministic alphabet');
+  for(let i=0;i<26;i++){
+   assert.ok(first[i].strokes.length>0,id+' '+alphabet[i]);
+   assert.ok(first[i].strokes.every(st=>st.points.length>=2&&st.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y))),id+' '+alphabet[i]+' valid paths');
+  }
+ }
+});
+
 test('joins meet their actual neighbours, with no connection across a word break',()=>{
  let joins=0;
  for(const hand of Object.keys(HANDS))for(const seed of ['first','second']){
