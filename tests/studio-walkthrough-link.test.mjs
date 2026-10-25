@@ -33,7 +33,7 @@ test('all artwork parameters, version, materials and framing survive the handoff
 
 test('action paint replay uses real material layers and blank first stage',()=>{
  assert.match(replay,/action-painting-v1\.js/);
- assert.match(replay,/version===3\?A\.renderActionPaintingV3:A\.renderActionPainting/);
+ assert.match(replay,/version===4\?A\.renderActionPaintingV4:version===3\?A\.renderActionPaintingV3:A\.renderActionPainting/);
  assert.match(replay,/save\('The blank page',blank\)/);
  assert.match(replay,/const stepTotal=\(\)=>isAction\(\)\|\|capturedMaterial\(\)/);
  assert.match(replay,/onStage:\(label,canvas\)=>save\(label,canvas\)/);
