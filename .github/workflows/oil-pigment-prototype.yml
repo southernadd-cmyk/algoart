@@ -1,0 +1,41 @@
+name: Oil pigment prototype comparison
+on:
+  push:
+    branches: [oil-pigment-study]
+  pull_request:
+    paths:
+      - 'js/oil-pigment.js'
+      - 'js/oil-paint-v5.js'
+      - 'test/oil-pigment/**'
+      - 'tests/oil-pigment*'
+      - '.github/workflows/oil-pigment-prototype.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/oil-pigment.test.mjs
+      # Isolated browser dependency: the repository lockfile is being fixed
+      # separately. This experiment does not rewrite it or install scripts.
+      - run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.64.0
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-pigment-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/test/oil-pigment/ >/dev/null && break; sleep 1; done
+      - run: node tests/oil-pigment-browser.mjs
+        env:
+          OIL_BASE_REF: 92e4d25cc492e7d692295ce0574a226fa954e608
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-pigment-comparison
+          path: oil-pigment-results/

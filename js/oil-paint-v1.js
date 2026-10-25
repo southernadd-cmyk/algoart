@@ -5,7 +5,8 @@ window.AlgoArt=window.AlgoArt||{};
 'use strict';
 const PI=Math.PI,TAU=2*PI,PHI=(1+Math.sqrt(5))/2;
 const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
-const mix=(a,b,t)=>a.map((v,i)=>Math.round(v*(1-t)+b[i]*t));
+const mix=(a,b,t)=>A.oilPigmentActive?.tone?A.oilPigmentActive.tone(a,b,t):
+ a.map((v,i)=>Math.round(v*(1-t)+b[i]*t));
 const rgb=c=>'rgb('+c.map(x=>Math.round(clamp(x,0,255))).join(',')+')';
 const rgba=(c,a)=>'rgba('+c.map(x=>Math.round(clamp(x,0,255))).join(',')+','+clamp(a,0,1).toFixed(4)+')';
 const rand=seed=>A.makeR(String(seed));

@@ -15,7 +15,8 @@ const mixPaint=(a,b,t)=>a.map((v,i)=>{const Ra=Math.max(.001,linear(v)),Rb=Math.
  const k=(1-t)*(1-Ra)**2/(2*Ra)+t*(1-Rb)**2/(2*Rb);
  return Math.round(clamp(srgb(1+k-Math.sqrt(k*k+2*k)),0,255));});
 // Small tone adjustments should not use high-tint-strength K/S darkening.
-const mix=(a,b,t)=>a.map((v,i)=>Math.round(clamp(srgb((1-t)*linear(v)+t*linear(b[i])),0,255)));
+const mix=(a,b,t)=>A.oilPigmentActive?.tone?A.oilPigmentActive.tone(a,b,t):
+ a.map((v,i)=>Math.round(clamp(srgb((1-t)*linear(v)+t*linear(b[i])),0,255)));
 // Module caches are kept per canvas backend. Oil V3 always uses the
 // 'default' slot exactly as before; Oil V4 renders inside withCPUCanvases()
 // and uses the 'cpu' slot, so a canvas created by one version is never
