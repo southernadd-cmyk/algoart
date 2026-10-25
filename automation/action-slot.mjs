@@ -24,7 +24,7 @@ export function validateActionItem(item,day,orientation){
      !new RegExp('^'+day+'-'+(orientation==='portrait'?'ACP':'ACL')+'01$').test(item.id))
     throw Error('Invalid Action artwork identity');
   const link=new URL(item.shareUrl);
-  if(!['action-v1','action-v2'].includes(link.searchParams.get('material'))||
+  if(!['action-v1','action-v2','action-v3'].includes(link.searchParams.get('material'))||
      link.searchParams.get('v')!=='9'||
      link.searchParams.get('seed')!==item.seed||
      link.searchParams.get('mode')!==item.mode||
@@ -53,7 +53,7 @@ async function main(){
     const q=JSON.parse(await fs.readFile(path.join(dir,'queue.json'),'utf8'));
     if(q.date!==date||q.material!=='action'||q.orientation!==orientation||
        !Array.isArray(q.entries)||q.entries.length!==1)
-      throw Error('Expected one frozen Action v1 study in '+orientation);
+      throw Error('Expected one frozen Action study in '+orientation);
     const item=q.entries[0];
     validateActionItem(item,date,orientation);
     const image=path.join(dir,item.imageFile);
@@ -67,7 +67,7 @@ async function main(){
       threads_caption_b64:b64(copy.threads),
       bluesky_caption_b64:b64(copy.bluesky),
       pinterest_title_b64:b64('Action · '+item.series+' — PROPORTION PIECE'),
-      pinterest_description_b64:b64('Action v1 study. Open the exact artwork: '+item.shareUrl),
+      pinterest_description_b64:b64('Action Painting study. Open the exact artwork: '+item.shareUrl),
       alt_text_b64:b64(copy.altText),share_url:item.shareUrl,
       scheduled_time:gate.target_time
     });
