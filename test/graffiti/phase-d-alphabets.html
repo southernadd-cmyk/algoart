@@ -48,13 +48,14 @@ button{cursor:pointer}button:hover,button:focus-visible{background:#dfded2}
 </style></head><body>
 <nav><a href="../../studio.html">studio</a><a href="../../gallery.html">gallery</a><a href="https://www.bombingscience.com/graffiti-letters-61-graffiti-artists-share-their-styles/" target="_blank" rel="noopener noreferrer">source collection</a></nav>
 <header class="intro"><h1>Graffiti lettering, ten ways</h1>
-<p class="subtitle">Ten independently constructed A–Z alphabets. Built from analysis of the 60 complete sheets in the Bombing Science collection, with separate anatomy and drawing rules for every family—not ten painted versions of one font.</p>
+<p class="subtitle">Ten independently constructed A–Z alphabets, with matching φ symbols. Built from analysis of the 60 complete sheets in the Bombing Science collection, with separate anatomy and drawing rules for every family—not ten painted versions of one font.</p>
 <p class="subtitle">Original interpretations, not traced or authenticated handwriting by any of the contributing artists. The tower still uses its existing graffiti until these are approved.</p>
 </header>
 <section aria-label="Compare the ten styles">
 <div class="controls">
 <label>Compare this word<input id="word" maxlength="65" value="MUSHROOM" autocomplete="off" spellcheck="false"></label>
 <label>Construction<select id="mode"><option value="ink">Writing / ink</option><option value="outline">Underlying geometry</option></select></label>
+<label>Connections<select id="joins"><option value="on">Contextual joins</option><option value="off">No joins</option></select></label>
 <label>Seed<input id="seed" value="PP-61-SHEET-01" spellcheck="false"></label>
 <button type="button" id="another">Another variation</button>
 </div>
@@ -74,6 +75,7 @@ button{cursor:pointer}button:hover,button:focus-visible{background:#dfded2}
 </section>
 <section class="notes"><h2>What you're looking at</h2>
 <p>Each capital is independently authored as a set of curves or solid cuts specific to its style family. The angular alphabets use filled blades and squared corners; the flowing alphabets use ink gestures; the calligraphic family uses a fixed-angle broad nib so its thick/thin contrast follows actual pen direction.</p>
+<p>The lettering is context-sensitive in compatible families: joining strokes begin and end on actual measured letter curves. Turn them off to judge each alphabet's anatomy without the word-level connections. Each family also has a separately designed φ symbol.</p>
 <p>The 60 reference sheets remain in the user-supplied research archive. No reference photographs are copied into this website. This is a Phase D prototype for visual review, not the gallery release or the backfilled tower atlas.</p>
 </section>
 <script type="module">
@@ -84,7 +86,7 @@ if(!FAMILIES.some(f=>f.id===chosen))chosen='A';
 let variants=1;
 for(const f of FAMILIES){const option=document.createElement('option');option.value=f.id;option.textContent=f.name;by('family').append(option)}
 by('family').value=chosen;
-function opts(){return {seed:by('seed').value,variation:.04,construction:by('mode').value==='outline'}}
+function opts(){return {seed:by('seed').value,variation:.04,construction:by('mode').value==='outline',joins:by('joins').value==='on'}}
 function drawDetail(){
  const f=getFamily(chosen),o=opts();
  by('detail-title').textContent=f.name+' — A to Z';
@@ -93,7 +95,7 @@ function drawDetail(){
  by('family').value=chosen;
  by('letters').replaceChildren(alphabetFragment(chosen,{construction:o.construction}));
  const holder=by('words');holder.replaceChildren();
- for(const w of ['SKUF','PROPORTION PIECE','PHI','MUSHROOM']){
+ for(const w of ['SKUF','PROPORTION PIECE','PHI','φ','MUSHROOM']){
   const div=document.createElement('div');div.dataset.word=w;
   div.append(wordSvg(chosen,w,o));holder.append(div);
  }
@@ -115,6 +117,7 @@ by('family').addEventListener('change',event=>choose(event.target.value,false));
 by('word').addEventListener('input',redraw);
 by('seed').addEventListener('change',redraw);
 by('mode').addEventListener('change',redraw);
+by('joins').addEventListener('change',redraw);
 by('another').addEventListener('click',()=>{variants++;by('seed').value='PP-61-SHEET-'+String(variants).padStart(2,'0');redraw()});
 by('export-alphabet').addEventListener('click',()=>{
  const family=getFamily(chosen),o=opts(),s=document.createElementNS('http://www.w3.org/2000/svg','svg');
