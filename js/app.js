@@ -1284,6 +1284,8 @@ $('copyLink').onclick=copyShareLink;
    var encoded=c.toDataURL('image/jpeg',.78).split(',')[1];
    // Avoid accidentally exhausting the free hosting server.
    if(encoded.length>380000)encoded=c.toDataURL('image/jpeg',.58).split(',')[1];
+   if(encoded.length>380000)encoded=c.toDataURL('image/jpeg',.38).split(',')[1];
+   if(encoded.length>380000)throw Error('Artwork preview exceeds upload limit');
    return encoded;
  }
  function preloadSocialImage(intents){
