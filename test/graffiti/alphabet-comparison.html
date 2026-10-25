@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SKOFE / SKUF alphabet study — development only</title>
+<style>
+:root{font-family:Georgia,serif;background:#e9e4d8;color:#252923}body{max-width:1180px;margin:30px auto;padding:0 18px}h1{font-size:clamp(27px,4vw,44px);font-weight:normal}p{line-height:1.5;max-width:760px}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.panel{background:#f7f3e9;padding:20px;border:1px solid #c5beb0}h2{font-weight:normal;margin:0 0 14px}.letters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.glyph{background:#eee8dc;min-width:0}.glyph svg{display:block;width:100%;height:auto}.glyph small{display:block;text-align:center;padding-bottom:6px}svg path{fill:none;stroke:#262c2a;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.sample{margin-top:20px;background:#f7f3e9;padding:15px;overflow:auto}.sample svg{height:100px;min-width:600px}#status{font-style:italic}@media(max-width:680px){.pair{grid-template-columns:1fr}}
+</style></head><body>
+<h1>Two alphabets, one comparison</h1>
+<p>Provisional, original interpretations of SKOFE and SKUF. This page renders the authored construction paths directly; it is not a simulated sprayed tag and is not the live tower renderer.</p>
+<p id="status">Loading letter geometry…</p>
+<div class="pair"><section class="panel"><h2>SKOFE · draft 2</h2><div id="skofe" class="letters"></div></section><section class="panel"><h2>SKUF · draft 2</h2><div id="skuf" class="letters"></div></section></div>
+<div class="sample"><h2>Shared phrase: PROPORTION PIECE</h2><div id="words"></div></div>
+<script type="module">
+import {draftGlyph} from './authored-alphabet-drafts.mjs';
+const NS='http://www.w3.org/2000/svg',abc='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function el(tag,attrs={}){const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);return n}
+function draw(ch,id){const g=draftGlyph(id,ch,{width:60,height:100});const svg=el('svg',{viewBox:'-12 -12 84 124','aria-label':id+' letter '+ch});
+ for(const stroke of g.strokes){if(stroke.points.length<2)continue;const d=stroke.points.map((p,i)=>(i?'L':'M')+p.x.toFixed(2)+' '+p.y.toFixed(2)).join(' ');svg.append(el('path',{d}));}return svg}
+for(const id of ['skofe','skuf']){const target=document.getElementById(id);for(const ch of abc){const cell=document.createElement('div');cell.className='glyph';cell.append(draw(ch,id));const caption=document.createElement('small');caption.textContent=ch;cell.append(caption);target.append(cell)}}
+for(const id of ['skofe','skuf']){const line=document.createElement('div');line.style.marginBottom='15px';const label=document.createElement('strong');label.textContent=id.toUpperCase()+' ';line.append(label);const svg=el('svg',{viewBox:'0 -12 1160 124',preserveAspectRatio:'xMinYMid meet'});let x=0;for(const ch of 'PROPORTION PIECE'){if(ch===' '){x+=40;continue}const g=draw(ch,id);g.setAttribute('x',x);g.setAttribute('width',64);g.setAttribute('height',110);svg.append(g);x+=65}line.append(svg);document.getElementById('words').append(line)}
+document.getElementById('status').textContent='All 52 glyphs rendered. Compare construction, not just appearance.';
+</script></body></html>
