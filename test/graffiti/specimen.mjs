@@ -83,7 +83,7 @@ function generate({url=true}={}){
   const tag=createTag(clean||'PHI',{seed:options.seed,hand,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
   paintWall($(hand+'-wall'),[tag],[{x:.5,y:.55,scale:.94,rotation:-.025}]);
  }
- renderForms();renderFeatured();renderStudies();
+ renderForms();renderFeatured();renderAlphabetComparison();renderStudies();
  if(url)updateURL();
 }
 function renderForms(){
@@ -98,6 +98,25 @@ function renderForms(){
   const hand=options.hand==='mixed'?'loop':options.hand;
   const tag=createTag(normaliseText(options.text)||'ECHO',{seed:options.seed,form:id,hand,ink:options.ink==='mixed'?'#242a28':options.ink,paintWidth:options.paintWidth});
   paintWall(c,[tag],[{x:.5,y:.52,scale:1.05,maxHeight:.64,rotation:-.018}]);
+ }
+}
+function renderAlphabetComparison(){
+ const root=$('alphabet-columns');root.replaceChildren();const opts=readOptions();
+ for(const id of ['skofe','skuf']){
+  const study=REFERENCE_STUDIES[id],article=document.createElement('article');article.className='alphabet-sheet';
+  const heading=document.createElement('h3');heading.textContent=study.reference;
+  const source=document.createElement('p');source.textContent=id==='skofe'?'Observed: broad, high-movement strokes. Other alphabet characters remain inferred.':'Observed: broad, controlled outlines and rounded swing. Other alphabet characters remain inferred.';
+  const link=document.createElement('a');link.href=id==='skofe'?'https://www.bombingscience.com/skofe/':'https://carnagenyc.com/home/2015/12/3/december-3-skuf-ykk';link.textContent='View source examples';link.target='_blank';link.rel='noopener noreferrer';
+  article.append(heading,source,link);
+  for(const letters of ['ABCDEFGHIJKLM','NOPQRSTUVWXYZ']){
+   const row=document.createElement('div');row.className='alphabet-row';
+   const title=document.createElement('p');title.textContent=letters;row.append(title);
+   const c=document.createElement('canvas');c.width=1120;c.height=280;c.setAttribute('role','img');c.setAttribute('aria-label',study.reference+' alphabet '+letters);
+   const tag=createTag(letters,{seed:'PP-ALPHABET-REFERENCE',hand:id,form:'handstyle',ink:opts.ink==='mixed'?'#242a28':opts.ink,paintWidth:opts.paintWidth});
+   paintWall(c,[tag],[{x:.5,y:.51,scale:1.0,maxHeight:.65,rotation:0}]);
+   row.append(c);article.append(row);
+  }
+  root.append(article);
  }
 }
 function renderFeatured(){
