@@ -10,6 +10,8 @@ on:
       - 'automation/oil-edition.mjs'
       - 'automation/generate-social.mjs'
       - 'automation/captions.mjs'
+      - 'automation/action-slot.mjs'
+      - 'automation/oil-slot.mjs'
       - 'about/step-by-step/index.html'
       - 'tests/action-v3-parity-browser.mjs'
       - 'tests/oil-v5-release-browser.mjs'
