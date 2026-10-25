@@ -45,7 +45,8 @@ try{
   const q=new URLSearchParams(params);if(orientation==='portrait')q.set('fmt','portrait');
   await page.goto(root+'?'+q,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.AlgoArt?.readSettings&&document.querySelector('#creatingOverlay')?.hidden===true);
-  if(!await page.locator('#materialStyle').isVisible())await page.locator('#inspectorToggle').click();
+  if(!await page.locator('#tab-composition').isVisible())await page.locator('#inspectorToggle').click();
+  await page.locator('#tab-composition').click();
   await page.locator('#materialStyle').selectOption('oil');await ready(page,'oil-paint-v5');
   assert.equal(new URL(page.url()).searchParams.get('material'),'oil-v5','New oil selection uses V5');
   const hash=await pixelHash(page);await openExport(page);
