@@ -23,3 +23,17 @@ export function alphabetIdentity(id,revision=alphabetRevision(id)){
  return id+'@'+revision;
 }
 export function pickTowerHand(random){return TOWER_HANDS[Math.floor(random.n()*TOWER_HANDS.length)];}
+
+/**
+ * Resolve a recorded atlas identity. Unknown revisions are rejected instead of
+ * silently rendering them with the latest alphabet (which would rewrite history).
+ * Revision 1 is the existing, unmodified procedural writer grammar.
+ */
+export function resolveAlphabetIdentity(identity){
+ const match=/^([a-z][a-z0-9-]*)@([1-9][0-9]*)$/.exec(String(identity));
+ if(!match)throw new RangeError('Malformed alphabet identity: '+identity);
+ const id=match[1],revision=Number(match[2]);
+ if(!Number.isSafeInteger(revision)||!ALPHABETS[id]||ALPHABETS[id].revision!==revision)
+  throw new RangeError('Unavailable alphabet revision: '+identity);
+ return ALPHABETS[id];
+}
