@@ -200,6 +200,20 @@ jobs:
 
       # This runs only after the final artwork slot has been archived, so the
       # baked geometry and daily archive share the same seed signatures.
+      - name: Pre-render graffiti atlases for new indoor floor and exterior facade
+        shell: bash
+        run: |
+          DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const x=Object.fromEntries(p.map(v=>[v.type,v.value]));process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
+          node automation/build-gallery-graffiti.mjs --date="$DAY"
+
+      - name: Verify saved graffiti atlases
+        shell: bash
+        run: |
+          DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const x=Object.fromEntries(p.map(v=>[v.type,v.value]));process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
+          test -s "gallery/$DAY/3d/graffiti/desktop/manifest.json"\n          test -s "gallery/$DAY/3d/graffiti/mobile/manifest.json"
+          test -s gallery/visit/graffiti-assets/exterior/desktop/manifest.json\n          test -s gallery/visit/graffiti-assets/exterior/mobile/manifest.json
+          node --test tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs
+
       - name: Prebuild complete 3D tower geometry
         run: node automation/build-tower-geometry.mjs
 

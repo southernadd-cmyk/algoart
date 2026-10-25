@@ -2,6 +2,7 @@
 import {createTag,planFloorTags,makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {DOOR_WIDTH} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
+import {TOWER_HANDS,pickTowerHand} from './tower-graffiti-styles.mjs';
 import {GRAFFITI_WORDS} from './exterior-graffiti-plan.mjs';
 const SIDES=['north','south','east','west'];
 const outward={north:{x:0,z:-1},south:{x:0,z:1},east:{x:1,z:0},west:{x:-1,z:0}};
@@ -26,7 +27,8 @@ export function planInteriorGraffiti({layout,hangs,level},{seed='PP-INDOOR-WRITI
  const r=makeRandom(seed+'|'+layout.date),count=r.int(3,5),phase=r.int(0,31),faces=interiorWallFaces(layout,hangs),marks=[],usedRooms=new Set(),usedFaces=new Set();
  if(!faces.length)throw new Error('No painting-free interior wall on '+layout.date);
  for(let slot=0;slot<count;slot++){
-  const item=planFloorTags({floorId:layout.date,seed:seed+'|slot|'+slot,form:'handstyle',count:1})[0];
+  const hand=pickTowerHand(makeRandom(seed+'|'+layout.date+'|indoor|'+slot));
+  const item=planFloorTags({floorId:layout.date,seed:seed+'|slot|'+slot,hand,form:'handstyle',count:1})[0];
   const phrase=GRAFFITI_WORDS[(phase+slot)%GRAFFITI_WORDS.length],ink=r.pick(INKS),tag=createTag(phrase,{...item,ink,form:'handstyle',paintWidth:1.6});
   const desiredWidth=phrase==='Proportion Piece'?r.range(1.05,1.35):phrase==='PHI'?r.range(.55,.85):r.range(.25,.4);
   const candidates=faces.map(face=>{

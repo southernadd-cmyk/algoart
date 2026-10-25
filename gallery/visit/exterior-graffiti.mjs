@@ -34,6 +34,7 @@ export function graffitiGeometry(THREE,entries,size,currentFloor,tileMeters=2,at
  geometry.setIndex(indices);geometry.computeBoundingSphere();return geometry;
 }
 export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExteriorGraffiti,keyFor=towerGraffitiKey,kind='exterior'}={}){
+ let generation=0;
  let key='',marks=[],pages=[],pending=[],painted=0,paintSteps=0,totalPaintMs=0,maxPaintMs=0,slowest=null,errors=[],sourceNormal=null,sharedNormal=null;
  const updateNormal=()=>{
   if(!brick.normalMap||brick.normalMap===sourceNormal)return;
@@ -43,7 +44,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
  const dispose=()=>{for(const p of pages){p.texture.dispose();p.material.dispose();}pages=[];pending=[];};
  const prepare=floors=>{
   const next=keyFor(floors);if(next===key)return;
-  dispose();key=next;marks=planner(floors);painted=0;paintSteps=0;totalPaintMs=0;maxPaintMs=0;slowest=null;errors=[];
+  dispose();generation++;key=next;marks=planner(floors);painted=0;paintSteps=0;totalPaintMs=0;maxPaintMs=0;slowest=null;errors=[];
   pages=planGraffitiAtlases(marks,{lowPower}).map(plan=>{
    const canvas=document.createElement('canvas');canvas.width=plan.size;canvas.height=plan.height;
    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=lowPower?1:4;
@@ -67,6 +68,31 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
   // Existing loaded normal maps can be reused immediately after a cache reset.
   for(const page of pages)if(sharedNormal){page.material.normalMap=sharedNormal;page.material.normalScale.copy(brick.normalScale);page.material.needsUpdate=true;}
   updateNormal();
+  // Build-time PNG atlas is preferred. The legacy paint queue remains a
+  // deterministic fallback for old floors or stale/incomplete manifests.
+  const expected=marks.map(m=>m.id+'|'+m.hand+'|'+m.seed).join(';');
+  const manifestUrl=kind==='interior'&&marks[0]
+   ?new URL('../'+marks[0].date+'/3d/graffiti/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href)
+   :new URL('./graffiti-assets/exterior/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
+  const token=generation;
+  (async()=>{
+   try{
+    const response=await fetch(manifestUrl,{cache:'force-cache'});
+    if(!response.ok) return;
+    const manifest=await response.json();
+    if(manifest.version!==1||manifest.signature!==expected||manifest.pages?.length!==pages.length)return;
+    const images=await Promise.all(manifest.pages.map(async(item,i)=>{
+     const page=pages[i];
+     if(item.size!==page.size||item.height!==page.height||item.entries!==page.entries.length)throw Error('Graffiti atlas dimensions differ');
+     const image=new Image();image.decoding='async';image.src=new URL(item.file,manifestUrl).href;
+     await image.decode();if(image.naturalWidth!==page.size||image.naturalHeight!==page.height)throw Error('Graffiti atlas image size differs');
+     return image;
+    }));
+    if(token!==generation)return;
+    pages.forEach((page,i)=>{page.context.clearRect(0,0,page.canvas.width,page.canvas.height);page.context.drawImage(images[i],0,0);page.texture.needsUpdate=true;page.dirty=false;});
+    pending.length=0;painted=marks.length;marks.forEach(mark=>{mark.tag=null;});
+   }catch(error){if(kind==='interior')console.warn('Using fallback graffiti paint:',error);}
+  })();
  };
  return {
   addTo(parent,floors,currentFloor){
