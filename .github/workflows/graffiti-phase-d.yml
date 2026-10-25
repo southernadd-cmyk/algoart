@@ -2,10 +2,12 @@ name: Phase D graffiti alphabet review
 
 on:
   push:
-    branches: [graffiti-61-phase-d, main]
+    branches: [graffiti-61-phase-d, graffiti-phase-d-refinement, main]
     paths:
       - 'test/graffiti/families/**'
       - 'test/graffiti/family-library.mjs'
+      - 'test/graffiti/family-symbols.mjs'
+      - 'test/graffiti/family-joins.mjs'
       - 'test/graffiti/family-renderer.mjs'
       - 'test/graffiti/phase-d-*.mjs'
       - 'test/graffiti/phase-d-alphabets.html'
