@@ -1,0 +1,302 @@
+{
+  "phase": "B",
+  "status": "provisional visual review, not finished glyphs",
+  "reference": {
+    "url": "https://www.bombingscience.com/graffiti-letters-61-graffiti-artists-share-their-styles/",
+    "source": "user-supplied complete webpage ZIP",
+    "numbering": "Image order in the 60 wp-image-... content images; excludes lead/title duplicate",
+    "sheetCount": 60,
+    "sourceAssets": "Third-party images remain in user-supplied archive; DO NOT commit images to this repository"
+  },
+  "policy": "One separately constructed alphabet per genuinely distinct family; anchor artists are reference, not copying targets; do not alter production graff unless tested/approved.",
+  "families": [
+    {
+      "id": "A",
+      "name": "Interlocked marker constructions",
+      "sheets": [
+        1,
+        2,
+        11,
+        17,
+        23,
+        26,
+        31,
+        41,
+        45,
+        55
+      ],
+      "anchors": [
+        1,
+        17,
+        26,
+        41
+      ],
+      "primary": 41,
+      "letters": "A K M R S X",
+      "rule": "Crowded contours; acute crossings; wedge terminations; compressed counterforms",
+      "letterSamples": [
+        "A",
+        "K",
+        "M",
+        "R",
+        "S",
+        "X"
+      ]
+    },
+    {
+      "id": "B",
+      "name": "Linear and skeletal handstyles",
+      "sheets": [
+        7,
+        9,
+        22,
+        42
+      ],
+      "anchors": [
+        7,
+        9,
+        22,
+        42
+      ],
+      "primary": 7,
+      "letters": "A G O Q R Y",
+      "rule": "Open thin skeletons; bar-crossed circular counters; visibly exposed joins",
+      "letterSamples": [
+        "A",
+        "G",
+        "O",
+        "Q",
+        "R",
+        "Y"
+      ]
+    },
+    {
+      "id": "C",
+      "name": "Cut-wedge angular signatures",
+      "sheets": [
+        3,
+        6,
+        13,
+        19,
+        38,
+        43,
+        48,
+        49
+      ],
+      "anchors": [
+        3,
+        13,
+        38,
+        48
+      ],
+      "primary": 13,
+      "letters": "B G K M R S",
+      "rule": "Triangular stroke ends; slanted folded segments; split angular counters",
+      "letterSamples": [
+        "B",
+        "G",
+        "K",
+        "M",
+        "R",
+        "S"
+      ]
+    },
+    {
+      "id": "D",
+      "name": "Block and rectilinear alphabets",
+      "sheets": [
+        16,
+        20,
+        21,
+        33
+      ],
+      "anchors": [
+        16,
+        20,
+        33
+      ],
+      "primary": 20,
+      "letters": "B D E G O P R",
+      "rule": "Rectangular bowls and crossbars; stiff axes; deliberate spacing",
+      "letterSamples": [
+        "B",
+        "D",
+        "E",
+        "G",
+        "O",
+        "P",
+        "R"
+      ]
+    },
+    {
+      "id": "E",
+      "name": "Blackletter and fractured Gothic",
+      "sheets": [
+        12,
+        15,
+        29,
+        34,
+        37,
+        39,
+        44,
+        51,
+        58
+      ],
+      "anchors": [
+        12,
+        29,
+        39,
+        44
+      ],
+      "primary": 29,
+      "letters": "A B G M S Y",
+      "rule": "High vertical stress; diamond ends; narrow bowls; repeated fracturing",
+      "letterSamples": [
+        "A",
+        "B",
+        "G",
+        "M",
+        "S",
+        "Y"
+      ]
+    },
+    {
+      "id": "F",
+      "name": "Broad-nib calligraffiti",
+      "sheets": [
+        4,
+        5,
+        25,
+        32,
+        46,
+        50,
+        56,
+        59,
+        60
+      ],
+      "anchors": [
+        5,
+        25,
+        50,
+        59
+      ],
+      "primary": 59,
+      "letters": "A B K S U Y",
+      "rule": "Consistent nib-angle contrast; ribbon entries; cut exits",
+      "letterSamples": [
+        "A",
+        "B",
+        "K",
+        "S",
+        "U",
+        "Y"
+      ]
+    },
+    {
+      "id": "G",
+      "name": "Rotational loops and round scripts",
+      "sheets": [
+        8,
+        18,
+        28,
+        47,
+        57
+      ],
+      "anchors": [
+        8,
+        18,
+        47,
+        57
+      ],
+      "primary": 8,
+      "letters": "B G O Q S U",
+      "rule": "Repeated oval rotations and crossed circular paths; swinging return strokes",
+      "letterSamples": [
+        "B",
+        "G",
+        "O",
+        "Q",
+        "S",
+        "U"
+      ]
+    },
+    {
+      "id": "H",
+      "name": "Fragmented slash and broken brush",
+      "sheets": [
+        24,
+        27,
+        30
+      ],
+      "anchors": [
+        24,
+        27,
+        30
+      ],
+      "primary": 30,
+      "letters": "A E K R S Z",
+      "rule": "Interrupted slash fragments; broken joint forms; discontinuous diagonals",
+      "letterSamples": [
+        "A",
+        "E",
+        "K",
+        "R",
+        "S",
+        "Z"
+      ]
+    },
+    {
+      "id": "I",
+      "name": "Sparse and airy gesture lettering",
+      "sheets": [
+        10,
+        14,
+        35,
+        53
+      ],
+      "anchors": [
+        10,
+        35,
+        53
+      ],
+      "primary": 10,
+      "letters": "A G L O Q Y",
+      "rule": "Economical long stems; unclosed counters; large amounts of whitespace",
+      "letterSamples": [
+        "A",
+        "G",
+        "L",
+        "O",
+        "Q",
+        "Y"
+      ]
+    },
+    {
+      "id": "J",
+      "name": "Fast kinetic sweep handstyles",
+      "sheets": [
+        36,
+        40,
+        52,
+        54
+      ],
+      "anchors": [
+        36,
+        40,
+        52,
+        54
+      ],
+      "primary": 52,
+      "letters": "A E K R S T",
+      "rule": "Swung gestures; pointed directional reversals; long oblique entry/exit strokes",
+      "letterSamples": [
+        "A",
+        "E",
+        "K",
+        "R",
+        "S",
+        "T"
+      ]
+    }
+  ]
+}
