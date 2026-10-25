@@ -6,8 +6,10 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 
 const appSource=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const readme=readFileSync(new URL('../README.md',import.meta.url),'utf8');
-const versionMatch=appSource.match(/SUPPORTED_RENDERER_VERSIONS=Object\.freeze\(\[([0-9,]+)\]\)/);
-assert.ok(versionMatch,'App must declare the current renderer version');
+const settingsSource=readFileSync(new URL('../js/settings-url.js',import.meta.url),'utf8');
+const versionMatch=settingsSource.match(/SUPPORTED_RENDERER_VERSIONS=Object\.freeze\(\[([0-9,]+)\]\)/);
+assert.ok(versionMatch,'Shared settings schema must declare the current renderer version');
+assert.match(appSource,/var SUPPORTED_RENDERER_VERSIONS=A\.SUPPORTED_RENDERER_VERSIONS/);
 const currentRenderer=Number(versionMatch[1].split(',').at(-1));
 const anotherStart=appSource.indexOf("$('randomise').onclick=function(){");
 const anotherEnd=appSource.indexOf("\nfunction variationSeed(",anotherStart);
@@ -108,3 +110,4 @@ for(let detail=0;detail<=100;detail++){
   }
 }
 console.log('PASS: all per-system slider bounds/effective values and calculated form counts agree with renderer expressions; raw artwork settings are retained.');
+

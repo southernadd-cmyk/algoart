@@ -31,6 +31,7 @@ jobs:
           node tests/action-v3-export.test.mjs
           node tests/oil-v5-release.test.mjs
           node tests/materials-ui.test.mjs
+          node tests/control-ranges.test.mjs
       - run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/paint-study-http.log 2>&1 &
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
