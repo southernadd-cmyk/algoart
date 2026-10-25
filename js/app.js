@@ -185,7 +185,7 @@ var phiSheetFraming=false; // Shared optional φ source-geometry transform.
 var legacyOilV1Link=false;
 var legacyOilV2Link=false; // Historical Oil v1 links only; never a visible selector choice.
 var oilV4Link=true; // Oil V4 is the default; explicit oil-v1/v2/v3 URLs preserve historical versions.
-var actionPaintingRevision=2; // action-v1 deep links preserve the prior pigment rack.
+var actionPaintingRevision=3; // V3 is the default; explicit V1/V2 deep links remain reproducible.
 function actionPaintingEnabled(){return $('materialStyle').value==='action'}
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
@@ -238,7 +238,9 @@ function syncMaterialNote(){
 function renderArtwork(target,settings,scale,reveal){
   A.phiFramingEnabled=phiSheetFraming&&
     !(watercolourEnabled()&&watercolourMaterialRevision==='v2r');
-  if(actionPaintingEnabled())return A.renderActionPainting(target,settings,scale,reveal,{version:actionPaintingRevision});
+  if(actionPaintingEnabled())return actionPaintingRevision===3
+    ? A.renderActionPaintingV3(target,settings,scale,reveal,{version:3})
+    : A.renderActionPainting(target,settings,scale,reveal,{version:actionPaintingRevision});
   if(oilPaintV4Enabled())return A.renderOilPaintV4(target,settings,scale,reveal);
   if(oilPaintV3Enabled())return A.renderOilPaintV3(target,settings,scale,reveal);
   if(oilPaintV2Enabled())return A.renderOilPaintV2(target,settings,scale,reveal);
@@ -326,7 +328,7 @@ function loadSettingsFromURL(){
     legacyOilV1Link=false;
     legacyOilV2Link=false;
     oilV4Link=true;
-    actionPaintingRevision=2;
+    actionPaintingRevision=3;
     tissuePaletteVersion=7;
     watercolourMaterialRevision='v2s';
     watercolourFitToSheet=false;
@@ -372,8 +374,8 @@ function loadSettingsFromURL(){
     found=true;
   }
 
-  if(['action-v1','action-v2'].includes(params.get('material'))){
-    $('materialStyle').value='action';actionPaintingRevision=params.get('material')==='action-v1'?1:2;found=true;
+  if(['action-v1','action-v2','action-v3'].includes(params.get('material'))){
+    $('materialStyle').value='action';actionPaintingRevision=Number(params.get('material').slice(-1));found=true;
   }
   if(['oil-v1','oil-v2','oil-v3','oil-v4'].includes(params.get('material'))){
     $('materialStyle').value='oil';
@@ -960,7 +962,7 @@ $('randomise').onclick=function(){
   legacyOilV1Link=false;
   legacyOilV2Link=false;
   oilV4Link=true;
-  actionPaintingRevision=2;
+  actionPaintingRevision=3;
   tissuePaletteVersion=7;
   watercolourMaterialRevision='v2s';
   watercolourFitToSheet=false;
@@ -1385,7 +1387,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
        e.id==='phiSheetFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
     if(e.id==='materialStyle'){legacyOilV1Link=false;legacyOilV2Link=false;oilV4Link=true;}
-    if(e.id==='materialStyle'&&actionPaintingEnabled())actionPaintingRevision=2;
+    if(e.id==='materialStyle'&&actionPaintingEnabled())actionPaintingRevision=3;
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
     if(e.id==='materialStyle'&&watercolourEnabled()){
       watercolourMaterialRevision='v2s';
