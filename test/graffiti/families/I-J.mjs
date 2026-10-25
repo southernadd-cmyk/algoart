@@ -41,7 +41,7 @@ Z|M 9 9 L 78 2 L 49 42|M 55 32 Q 26 66 15 92 L 80 108|M 17 89 L 40 100
 // Unlike the airy family, each construction uses rebound/return as an essential part.
 export const sweeps=parseFamily({
  id:'J',name:'Kinetic sweeping handstyle',primary:52,anchors:[36,40,52,54],
- technique:'sweep',ink:'#2b6953',weight:5.8,spacing:84,overlap:14,italic:.16,
+ technique:'sweep',ink:'#2b6953',weight:5.8,spacing:88,overlap:7,italic:.16,
  notes:['Swung stems with directional reversals','Upper loops fold back through letters','Long exit strokes used as part of joins'],
  rows:String.raw`
 A|M -7 99 C 11 82 23 40 35 16 C 43 -9 62 -7 58 19 Q 53 41 29 44|M 36 29 Q 53 58 75 108|M 4 83 C 21 63 54 53 83 62 Q 94 69 79 76
