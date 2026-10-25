@@ -7,6 +7,7 @@ import {buildLayout} from '../gallery/visit/layout-v2.mjs';
 import {planGalleryHangs} from '../gallery/visit/hanging-v3.mjs';
 import {planExteriorGraffiti,planGraffitiAtlases} from '../gallery/visit/exterior-graffiti-plan.mjs';
 import {planInteriorGraffiti} from '../gallery/visit/interior-graffiti-plan.mjs';
+import {towerGraffitiSignature,TOWER_LETTERING_REVISION} from '../gallery/visit/tower-family-lettering.mjs';
 const archive=JSON.parse(await fs.readFile('gallery/tower-layouts.json','utf8'));
 const requested=process.argv.find(x=>x.startsWith('--date='))?.slice(7)||archive.floors.at(-1)?.date;
 const indoorOnly=process.argv.includes('--indoor-only');
@@ -23,17 +24,18 @@ try{
   const plans=planGraffitiAtlases(marks,{lowPower});
   dir=path.join(dir,lowPower?'mobile':'desktop');
   await fs.mkdir(dir,{recursive:true});
-  const manifest={version:1,date:requested,signature,marks:marks.map(m=>({id:m.id,hand:m.hand,seed:m.seed,text:m.text,form:m.form})),pages:[]};
+  const manifest={version:1,letteringRevision:TOWER_LETTERING_REVISION,date:requested,signature,marks:marks.map(m=>({id:m.id,hand:m.hand,seed:m.seed,text:m.text,form:m.form})),pages:[]};
   for(const [n,plan] of plans.entries()){
    const entries=plan.entries.map(({mark,x,y,width,height})=>({tag:mark.tag,bounds:mark.bounds,x,y,width,height}));
    const base64=await page.evaluate(async({entries,size,height})=>{
     const {drawTag}=await import('/test/graffiti/tag-engine.mjs');
+    const {drawTowerFamilyTag}=await import('/gallery/visit/tower-family-lettering.mjs');
     const canvas=document.createElement('canvas');canvas.width=size;canvas.height=height;
     const g=canvas.getContext('2d',{alpha:true});
     for(const e of entries){
      g.save();g.beginPath();g.rect(e.x-2,e.y-2,e.width+4,e.height+4);g.clip();
      g.translate(e.x,e.y);g.scale(e.width/e.bounds.width,e.height/e.bounds.height);
-     g.translate(-e.bounds.x,-e.bounds.y);drawTag(g,e.tag,{finish:'spray'});g.restore();
+     g.translate(-e.bounds.x,-e.bounds.y);if(e.tag.renderer==='az-nine-v1')drawTowerFamilyTag(g,e.tag,{finish:'spray'});else drawTag(g,e.tag,{finish:'spray'});g.restore();
     }
     return canvas.toDataURL('image/png').split(',')[1];
    },{entries,size:plan.size,height:plan.height});
@@ -51,13 +53,13 @@ try{
  if(level===0)entry.entranceWall=['south','east','west','north'].find(side=>side!==entry.liftWall&&!entry.doors.includes(side));
  const hangs=planGalleryHangs(layout,studies);
  const indoor=planInteriorGraffiti({layout,hangs,level});
- const indoorSignature=indoor.map(m=>m.id+'|'+m.hand+'|'+m.seed).join(';');
+ const indoorSignature=towerGraffitiSignature(indoor);
  for(const lowPower of [false,true])await exportAtlas(indoor,path.join('gallery',requested,'3d','graffiti'),indoorSignature,lowPower);
  // The two exterior levels are stable; republish their atlas after each daily build
  // so existing floor plans and all new script versions remain in sync.
  if(!indoorOnly){
  const outer=archive.floors.slice(0,2).map((f,i)=>({level:i,plan:buildLayout(f.date,f.studies.length,f.studies.map(([seed,engine])=>({seed,engine})))}));
  const outside=planExteriorGraffiti(outer);
- for(const lowPower of [false,true])await exportAtlas(outside,'gallery/visit/graffiti-assets/exterior',outside.map(m=>m.id+'|'+m.hand+'|'+m.seed).join(';'),lowPower);
+ for(const lowPower of [false,true])await exportAtlas(outside,'gallery/visit/graffiti-assets/exterior',towerGraffitiSignature(outside),lowPower);
  }
 }finally{await page.close();await browser.close();}
