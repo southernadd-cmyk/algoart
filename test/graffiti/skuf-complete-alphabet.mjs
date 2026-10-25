@@ -119,12 +119,18 @@ const raw={
 export const HANDSTYLE_GLYPHS=Object.freeze(Object.fromEntries(
  Object.entries(raw).map(([ch,v])=>[ch,Object.freeze({width:v.w,strokes:Object.freeze(v.strokes.slice())})])));
 export const LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+// The tower also writes phi as a standalone signature.
+export const PHI_GLYPH=Object.freeze({width:86,strokes:Object.freeze([
+ 'M 42 -9 C 34 24 26 61 33 111 Q 34 118 46 116',
+ 'M 42 25 C 10 14 -4 36 5 72 Q 21 105 46 95 Q 80 97 87 58 Q 87 31 57 24',
+ 'M 72 29 Q 85 25 96 39'
+])});
 for(const ch of LETTERS){
  const g=HANDSTYLE_GLYPHS[ch];
  if(!g||g.strokes.length<2||g.strokes.some(s=>!/^M /.test(s)))throw new Error('Missing authored gesture: '+ch);
 }
 export function glyphFor(ch){
- const g=HANDSTYLE_GLYPHS[String(ch).toUpperCase()];
+ const c=String(ch).toUpperCase(),g=c==='Φ'?PHI_GLYPH:HANDSTYLE_GLYPHS[c];
  if(!g)throw new RangeError('No authored uppercase glyph: '+ch);
  return g;
 }
