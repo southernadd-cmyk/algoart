@@ -73,7 +73,7 @@ function svg(viewBox,label){
 }
 export function letterSvg(style,letter,{construction=false}={}){
  const f=getFamily(style),g=svg('-25 -28 151 174',f.name+' letter '+letter);
- g.style.color=f.ink;g.append(drawGlyph(f,String(letter).toUpperCase(),{construction}));
+ g.style.color=construction?'#282c28':f.ink;g.append(drawGlyph(f,String(letter).toUpperCase(),{construction}));
  return g;
 }
 export function alphabetFragment(style,{construction=false}={}){
@@ -90,7 +90,7 @@ export function wordSvg(style,word,{seed='PP-ALPHABETS-01',variation=.04,constru
  const f=getFamily(style),plan=composeWord(style,word,{seed,variation});
  // Give letters room for long strokes and baseline excursions.
  const s=svg('-32 -35 '+(plan.width+61).toFixed(2)+' 189',f.name+' writes '+plan.word);
- s.style.color=f.ink;
+ s.style.color=construction?'#282c28':f.ink;
  for(const item of plan.letters){
   const g=tag('g',{transform:'translate('+item.x.toFixed(3)+' '+item.y.toFixed(3)+') rotate('+item.rotation.toFixed(3)+' 38 54) matrix('+item.scale.toFixed(4)+' 0 '+f.italic.toFixed(3)+' 1 0 0)'});
   g.append(drawGlyph(f,item.ch,{construction}));s.append(g);
