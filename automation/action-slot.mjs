@@ -24,7 +24,7 @@ export function validateActionItem(item,day,orientation){
      !new RegExp('^'+day+'-'+(orientation==='portrait'?'ACP':'ACL')+'01$').test(item.id))
     throw Error('Invalid Action artwork identity');
   const link=new URL(item.shareUrl);
-  if(!['action-v1','action-v2','action-v3'].includes(link.searchParams.get('material'))||
+  if(!['action-v1','action-v2','action-v3','action-v4'].includes(link.searchParams.get('material'))||
      link.searchParams.get('v')!=='9'||
      link.searchParams.get('seed')!==item.seed||
      link.searchParams.get('mode')!==item.mode||
