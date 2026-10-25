@@ -77,6 +77,9 @@ jobs:
           git fetch origin main
           git checkout -B main origin/main
 
+      - name: Select monthly media release
+        run: echo "RELEASE_TAG=algoart-social-$(date -u +%Y-%m)" >> "$GITHUB_ENV"
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -273,7 +276,7 @@ jobs:
           fi
 
           git commit -m "Archive PROPORTION PIECE gallery ${{ steps.gate.outputs.date }}"
-          git pull --rebase origin main
+          git -c rebase.autoStash=true pull --rebase origin main
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
