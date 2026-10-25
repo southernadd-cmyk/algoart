@@ -172,12 +172,19 @@ as `floorId` when integrating into the tower. Never use the number of floors or
 a ground-level visibility condition to seed the plan. A floor's selection is
 independent of tower growth. `text` may be blank to choose from the vocabulary.
 
-The floor browser previews each floor's tag selection on one specimen wall.
-It does not yet place graffiti on the live tower. Tower integration must choose
-solid exterior wall segments from the existing room layouts, avoid openings,
-and work in the current-floor, prepared-archive and fallback geometry paths.
-It should share texture atlases and batch wall overlays, rather than creating
-a texture or material per letter. Lettering and placement must stay reproducible.
+The floor browser previews the writing on one specimen wall. The live tower
+now uses this same engine through `gallery/visit/exterior-graffiti-plan.mjs`
+and `exterior-graffiti.mjs`. Every exhibition receives one or two marks from
+"Proportion Piece", "PHI" and "φ". The phrase, writer, lettering form, ink and
+wall are seeded by the exhibition date; adding floors preserves existing work.
+
+Marks occupy solid exterior wall faces, clear of corners, doorways and lift
+openings. The occupied floor, prepared archive and procedural fallback share
+one placement plan. Transparent outward-facing quads are batched into shared
+texture atlases; paint uses the brick's physical UVs for grain and normal relief.
+Paint is applied in small steps on desktop/XR renderer frames, with filled
+words split by letter to keep generation outside the startup critical path.
+The atlases survive lift travel and are reused on the next occupied floor.
 
 The existing marker renderer and marker font are unchanged.
 
@@ -205,3 +212,4 @@ The buff tint matches `gallery/visit/architectural-materials.mjs`. This small
 same-origin derivative is used only by the specimen. The live material bank
 and gallery textures have not been changed. A seeded brick fallback remains
 available when the image cannot be loaded.
+

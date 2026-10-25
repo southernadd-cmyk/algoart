@@ -1,0 +1,83 @@
+// One stable selection per exhibition. Wall placement is independent of the
+// occupied floor and of whether the surrounding tower uses prepared meshes.
+import {createTag,planFloorTags,makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
+import {ROOM_HEIGHT} from './layout-v2.mjs';
+export const GRAFFITI_WORDS=Object.freeze(['Proportion Piece','PHI','φ']);
+export const GRAFFITI_SEED='PP-TOWER-WRITING-01';
+export const WALL_MARGIN=.52;
+const SIDES=['north','south','east','west'];
+const normals={north:{x:0,z:-1},south:{x:0,z:1},east:{x:1,z:0},west:{x:-1,z:0}};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+export function reservedWalls(room,ground=false){
+ if(room.index!==0)return [];
+ const lift=SIDES.find(side=>!room.doors.includes(side));
+ const entrance=ground?['south','east','west','north'].find(side=>side!==lift&&!room.doors.includes(side)):null;
+ return [lift,entrance].filter(Boolean);
+}
+export function exteriorWallFaces(layout,ground=false){
+ const faces=[];
+ for(const room of layout.rooms)for(const side of SIDES){
+  if(room.doors.includes(side)||reservedWalls(room,ground).includes(side))continue;
+  const normal=normals[side],horizontal=!normal.x,length=horizontal?room.width:room.depth;
+  const fixed=horizontal?room.z+normal.z*room.depth/2:room.x+normal.x*room.width/2;
+  // Prefer a facade visible from open space, rather than the back of a room
+  // hidden by another room in the same row or column.
+  const exposed=!layout.rooms.some(other=>{
+   if(other===room)return false;
+   const forward=(other.x-room.x)*normal.x+(other.z-room.z)*normal.z;
+   const cross=Math.abs(horizontal?other.x-room.x:other.z-room.z);
+   return forward>0&&cross<(length+(horizontal?other.width:other.depth))/2-.1;
+  });
+  faces.push({id:room.index+':'+side,roomIndex:room.index,side,normal:{...normal},length,fixed,roomY:room.y,
+   centre:{x:horizontal?room.x:fixed,z:horizontal?fixed:room.z},exposed});
+ }
+ return faces;
+}
+export function towerGraffitiKey(floors){
+ return floors.map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
+}
+export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2}={}){
+ if(!floors.length)return [];
+ const ordered=[...floors].sort((a,b)=>a.level-b.level),ground=ordered.find(f=>f.level===0)?.plan;
+ const entry=ground?.rooms[0],front=entry?normals[reservedWalls(entry,true).at(-1)]||normals.south:normals.south;
+ const marks=[];
+ for(const {level,plan} of ordered){
+  const faces=exteriorWallFaces(plan,level===0),used=new Set(),wordRandom=makeRandom(seed+'|'+plan.date+'|words');
+  const firstWord=wordRandom.int(0,GRAFFITI_WORDS.length-1);
+  const selection=planFloorTags({floorId:plan.date,seed,form:'mixed'});
+  for(const item of selection){
+   const phrase=GRAFFITI_WORDS[(firstWord+(item.slot?1+wordRandom.int(0,1):0))%GRAFFITI_WORDS.length];
+   const tag=createTag(phrase,{...item,paintWidth:2}),r=makeRandom(item.seed+'|wall'),aspect=tag.bounds.width/tag.bounds.height;
+   const desiredWidth=phrase==='Proportion Piece'?r.range(5.7,6.9):phrase==='PHI'?r.range(2.4,3.5):r.range(1.5,2.1);
+   const candidates=faces.filter(face=>!used.has(face.id)).map(face=>{
+    const maxWidth=face.length-WALL_MARGIN*2,maxHeight=ROOM_HEIGHT-1.5;
+    let width=Math.min(desiredWidth,maxWidth,maxHeight*aspect),height=width/aspect;
+    const rotation=r.range(-.035,.035),cos=Math.abs(Math.cos(rotation)),sin=Math.abs(Math.sin(rotation));
+    const factor=Math.min(1,maxWidth/(width*cos+height*sin),maxHeight/(height*cos+width*sin));width*=factor;height*=factor;
+    const facing=face.normal.x*front.x+face.normal.z*front.z;
+    return {face,width,height,rotation,score:(face.exposed?4:0)+facing*3+r.range(0,1)};
+   }).sort((a,b)=>b.score-a.score);
+   const chosen=candidates[0];if(!chosen)throw new Error('No exterior wall for '+plan.date);
+   const {face,width,height,rotation}=chosen;used.add(face.id);
+   const halfAlong=(width*Math.abs(Math.cos(rotation))+height*Math.abs(Math.sin(rotation)))/2;
+   const halfUp=(height*Math.abs(Math.cos(rotation))+width*Math.abs(Math.sin(rotation)))/2;
+   const shift=r.range(-1,1)*Math.max(0,(face.length/2-WALL_MARGIN-halfAlong))*.55;
+   const centreY=clamp(r.range(1.95,2.65),.65+halfUp,ROOM_HEIGHT-.55-halfUp);
+   const normal=face.normal,right={x:normal.z,z:-normal.x};
+   marks.push({id:item.id,date:plan.date,level,slot:item.slot,phrase,text:tag.text,hand:tag.hand,form:tag.form,ink:tag.ink,seed:tag.seed,
+    face,width,height,rotation,normal:{x:normal.x,y:0,z:normal.z},
+    position:{x:face.centre.x+right.x*shift,y:level*floorSpacing+face.roomY+centreY,z:face.centre.z+right.z*shift},
+    bounds:{...tag.bounds},tag});
+  }
+ }
+ return marks;
+}
+export function planGraffitiAtlases(marks,{lowPower=false}={}){
+ const size=lowPower?1536:2048,cellWidth=size/4,cellHeight=size/8,capacity=32,padding=12;
+ return Array.from({length:Math.ceil(marks.length/capacity)},(_,page)=>({size,page,height:Math.ceil(Math.min(capacity,marks.length-page*capacity)/4)*cellHeight,
+  entries:marks.slice(page*capacity,(page+1)*capacity).map((mark,index)=>{
+   const aspect=mark.bounds.width/mark.bounds.height;
+   const width=Math.min(cellWidth-padding*2,(cellHeight-padding*2)*aspect),height=width/aspect;
+   return {mark,x:(index%4)*cellWidth+(cellWidth-width)/2,y:Math.floor(index/4)*cellHeight+(cellHeight-height)/2,width,height};
+  })}));
+}

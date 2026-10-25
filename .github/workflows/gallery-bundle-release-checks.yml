@@ -10,6 +10,7 @@ on:
       - 'index.html'
       - 'about/step-by-step/index.html'
       - 'tests/gallery-production-planning.test.mjs'
+      - 'tests/gallery-exterior-graffiti.test.mjs'
       - 'test/virtual-gallery/architectural-materials.test.mjs'
       - 'test/virtual-gallery/environment-v1.test.mjs'
       - 'test/virtual-gallery/paper-isolation.test.mjs'
@@ -40,7 +41,7 @@ jobs:
       - name: Install gallery test dependencies
         run: npm install --no-save --package-lock=false
       - name: Gallery public launch regression
-        run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs
+        run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs tests/gallery-exterior-graffiti.test.mjs
       - name: Studio walkthrough links regression
         run: node --test tests/studio-walkthrough-link.test.mjs
       - name: Production-module unit tests
@@ -53,4 +54,5 @@ jobs:
           test -s gallery/visit/gallery-bundle.js
           grep -q 'gallery-bundle.js' test/virtual-gallery/index.html
           if grep -q 'location.replace' test/virtual-gallery/index.html; then exit 1; fi
+
 

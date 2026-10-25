@@ -10,6 +10,7 @@ import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin
 import {placeCastIronStreetLamp,enableDetailedStreetLamps} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
+import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=soft-horizon-feather-20261022';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
@@ -117,6 +118,18 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
   startAfter:window.__galleryEarly?.tower
 });
 const wall=galleryFinish.wall;
+const towerGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.exteriorBrick,lowPower:galleryFinish.lowPower});
+if(GALLERY_DEBUG)window.__galleryGraffiti={
+ diagnostics:()=>towerGraffiti.diagnostics,
+ marks:()=>towerGraffiti.snapshot(currentFloor),
+ preview(index){
+  const mark=towerGraffiti.snapshot(currentFloor)[index];if(!mark)return;
+  const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210),p=mark.position,n=mark.normal;
+  const distance=Math.max(3.8,mark.width*1.2);
+  view.position.set(p.x+n.x*distance,p.y+.12,p.z+n.z*distance);view.lookAt(p.x,p.y,p.z);
+  renderer.setAnimationLoop(null);renderer.render(scene,view);
+ }
+};
 const floor=galleryFinish.floor;
 const timber=galleryFinish.timber;
 const stone=galleryFinish.stone;
@@ -1188,6 +1201,13 @@ function constructGallery(layout, studies) {
     elapsedMs:Math.round(performance.now()-towerBuildStart)
   });
   }
+  // The same exterior placement is used for the occupied room geometry,
+  // the prepared archive and its procedural fallback. Current-floor room
+  // heights are normalised before planning, so lift travel cannot reshuffle it.
+  const graffitiFloors=[...exteriorFloorPlans,{level:currentFloor,plan:{...layout,
+    rooms:layout.rooms.map(room=>({...room,y:Math.round((room.y-currentFloor*FLOOR_SPACING)*1e6)/1e6}))}}].sort((a,b)=>a.level-b.level);
+  try{towerGraffiti.addTo(tower,graffitiFloors,currentFloor);}
+  catch(error){console.warn('Exterior writing could not be prepared',error);}
   scene.add(tower);
   // Verify the full exterior tower exists in the scene before exposing Enter.
   // This reports missing geometry separately from a camera/framing problem.
@@ -1793,6 +1813,7 @@ function detectArt(elapsed) {
 function tick() {
   if (!renderer) return;
   const dt=Math.min(clock.getDelta(),.055);
+  towerGraffiti.paintNext();
   // Three.js supplies both desktop and XR frames here. Window animation
   // frames can pause in immersive VR, so build exhibits on this loop instead.
   processDeferredGallery();
@@ -1812,4 +1833,5 @@ Promise.race([
   document.fonts.load('42px "AlgoArt Marker"'),
   new Promise(resolve=>setTimeout(resolve,1600))
 ]).catch(error=>console.warn('Marker font fallback:',error)).finally(load);
+
 
