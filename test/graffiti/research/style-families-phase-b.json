@@ -4,7 +4,7 @@
   "reference": {
     "url": "https://www.bombingscience.com/graffiti-letters-61-graffiti-artists-share-their-styles/",
     "source": "user-supplied complete webpage ZIP",
-    "numbering": "Image order in the 60 wp-image-... content images; excludes lead/title duplicate",
+    "numbering": "Image order in the 60 wp-image-... content images; excludes the distinct lead image, which shows A-L only rather than a complete A-Z",
     "sheetCount": 60,
     "sourceAssets": "Third-party images remain in user-supplied archive; DO NOT commit images to this repository"
   },
