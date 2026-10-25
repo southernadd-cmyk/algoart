@@ -6,7 +6,7 @@ const inkCtx=inkLayer.getContext('2d',{willReadFrequently:true});
 let plan=[],tags=[],frame=0,playing=false,started=0,elapsed=0,token=0,scan=null,mainWall=null,currentProgress=1;
 let studyPage=0;
 const studyIds=Object.keys(REFERENCE_STUDIES),pageSize=6;
-const featuredIds=['guess','faust','revok','kadism','zephyr','gorey'];
+const featuredIds=['guess','faust','revok','kadism','zephyr','gorey','skofe','skuf'];
 const surfaceCache=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const readOptions=()=>({seed:$('seed').value.trim()||'PP-GRAFFITI-01',text:$('word').value,hand:$('hand').value,form:$('form').value,ink:$('ink').value,finish:$('paint').value,paintWidth:Math.max(.75,Math.min(3,(Number($('width').value)||200)/100)),floorId:'specimen-floor-'+Math.min(9999,Math.max(1,Math.floor(Number($('floor').value)||1)))});
 function fallbackTile(){
