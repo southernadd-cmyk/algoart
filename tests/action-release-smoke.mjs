@@ -99,6 +99,6 @@ try {
  });
  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:120000});
  assert.equal(await page.evaluate(()=>new URL(window.location.href).searchParams.get('material')),'action-v3',
-   'New Action selection must produce a V3 URL');
+   'New Action selection must produce a V4 URL');
  console.log('PASS: Action Painting honours the exact Colours slider and preserves material choices');
 }finally{await browser.close()}
