@@ -105,8 +105,8 @@ function renderAlphabetComparison(){
  for(const id of ['skofe','skuf']){
   const study=REFERENCE_STUDIES[id],article=document.createElement('article');article.className='alphabet-sheet';
   const heading=document.createElement('h3');heading.textContent=study.reference;
-  const source=document.createElement('p');source.textContent=id==='skofe'?'Observed: broad, high-movement strokes. Other alphabet characters remain inferred.':'Observed: broad, controlled outlines and rounded swing. Other alphabet characters remain inferred.';
-  const link=document.createElement('a');link.href=id==='skofe'?'https://www.bombingscience.com/skofe/':'https://carnagenyc.com/home/2015/12/3/december-3-skuf-ykk';link.textContent='View source examples';link.target='_blank';link.rel='noopener noreferrer';
+  const source=document.createElement('p');source.textContent=id==='skofe'?'Source describes ultrawide, full-body gestures. The A–Z construction remains a reconstruction, not verified samples.':'Source identifies a swooping S, compressed throw-up shapes and elongated F. Remaining letters are inferred.';
+  const link=document.createElement('a');link.href=id==='skofe'?'https://www.bombingscience.com/skofe/':'https://www.vice.com/en/article/skuf-what-happens-when-a-legendary-graffiti-writer-grows-up/';link.textContent='View source examples';link.target='_blank';link.rel='noopener noreferrer';
   article.append(heading,source,link);
   for(const letters of ['ABCDEFGHIJKLM','NOPQRSTUVWXYZ']){
    const row=document.createElement('div');row.className='alphabet-row';
