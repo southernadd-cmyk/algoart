@@ -2,7 +2,7 @@
 import {createTag,planFloorTags,makeRandom} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {DOOR_WIDTH} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
-import {TOWER_HANDS,pickTowerHand} from './tower-graffiti-styles.mjs';
+import {TOWER_HANDS,pickTowerHand,alphabetIdentity} from './tower-graffiti-styles.mjs';
 import {GRAFFITI_WORDS} from './exterior-graffiti-plan.mjs';
 const SIDES=['north','south','east','west'];
 const outward={north:{x:0,z:-1},south:{x:0,z:1},east:{x:1,z:0},west:{x:-1,z:0}};
@@ -39,7 +39,7 @@ export function planInteriorGraffiti({layout,hangs,level},{seed='PP-INDOOR-WRITI
   const chosen=candidates[0];if(!chosen)throw new Error('No clear interior tag position on '+layout.date);
   const {face,placement:p}=chosen,normal={...face.normal,y:0},right={x:normal.z,z:-normal.x};
   usedRooms.add(face.roomIndex);usedFaces.add(face.id);
-  marks.push({id:item.id,date:layout.date,level,slot,phrase,text:tag.text,hand:tag.hand,form:'handstyle',surface:'interior',ink,seed:tag.seed,
+  marks.push({id:item.id,date:layout.date,level,slot,phrase,text:tag.text,hand:tag.hand,alphabetId:alphabetIdentity(tag.hand),form:'handstyle',surface:'interior',ink,seed:tag.seed,
    face,width:p.width,height:p.height,rotation:p.rotation,phi:p.phi,wallU:p.u,centreY:p.centreY,halfAlong:p.halfAlong,halfUp:p.halfUp,normal,
    position:{x:face.centre.x+right.x*p.u,y:level*floorSpacing+face.roomY+p.centreY,z:face.centre.z+right.z*p.u},bounds:{...tag.bounds},tag});
  }
