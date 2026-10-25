@@ -80,6 +80,7 @@ try{
   return [...'ABCDEFGHIJ'].map(id=>wordSvg(id,'φ').querySelectorAll('g[data-letter="Φ"]').length);
  });
  assert.deepEqual(phiWord,Array(10).fill(1),'Phi signatures absent from composition');
+ await page.locator('#family').selectOption('F');
  await page.locator('#mode').selectOption('outline');
  assert.equal(await page.locator('#letters figure').count(),27);
  await page.locator('#word').fill('PROPORTION PIECE');
