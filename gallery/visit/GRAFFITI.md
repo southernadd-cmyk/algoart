@@ -40,3 +40,21 @@ screen. Filled outside words are split by letter with identical final pixels.
 `GALLERY_CHROMIUM` can select an existing Chromium binary. Debug mode exposes
 `__galleryGraffiti` and `__galleryInteriorGraffiti` diagnostics, snapshots and
 close-up previews. These add no controls to the visitor interface.
+
+## Curated alphabet revision registry (development branch)
+
+The eight curated writer identities are listed in `tower-alphabet-registry.mjs`.
+`tower-graffiti-styles.mjs` remains the compatibility import for both planners.
+Each newly planned exterior or interior mark carries `alphabetId` (for example
+`guess@1`) so a persisted atlas manifest can record which revision produced it.
+
+**Not yet a historical atlas freeze:** The gallery currently regenerates paint
+from the live renderer and does not load pinned historical glyph definitions.
+Before increasing any revision number, implement immutable revision-specific
+glyph data and select it when rebuilding old atlases. Otherwise the identifier
+alone cannot guarantee that old floors retain their appearance.
+
+**Not yet hot-swappable:** The deployed `gallery-bundle.js` compiles these
+modules. A registry edit alone does not update the deployed tower; rebuild the
+bundle and run the gallery graffiti tests before publishing. The existing
+`test/graffiti` specimen remains on its current writer grammar.
