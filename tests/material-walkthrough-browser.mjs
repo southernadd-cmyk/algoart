@@ -45,10 +45,10 @@ try {
     const prior=A.materialStageCapture;
     try{
      A.materialStageCapture=null;
-     if(material==='action')A.renderActionPaintingV3(studio,s,.32,false,{version:3,layers:5});
+     if(material==='action')A.renderActionPaintingV4(studio,s,.32,false,{version:4,layers:5});
      else if(material==='tissue')A.renderOil(studio,s,1,false,7);
      else if(material==='watercolour')A.renderWatercolourV2S(studio,s,1,false);
-     else A.renderOilPaintV5(studio,s,.45,false);
+     else A.renderOilPaintV6(studio,s,.45,false);
      const final=window.__walkthroughTest.frames().at(-1);
      const resized=document.createElement('canvas');
      resized.width=final.width;resized.height=final.height;
