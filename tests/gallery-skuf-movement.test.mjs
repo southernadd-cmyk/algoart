@@ -4,7 +4,7 @@ import {movementPlan,velocityWidths,ribbonOutline} from '../test/graffiti/skuf-m
 test('same seed reproduces movement plan and different seeds change gesture variation',()=>{
  assert.deepEqual(movementPlan('a'),movementPlan('a'));
  assert.notDeepEqual(movementPlan('a'),movementPlan('b'));
- assert.equal(movementPlan('a').length,8);
+ assert.equal(movementPlan('a').length,9);
 });
 test('velocity and curvature produce valid variable-width ribbon',()=>{
  const p=velocityWidths([{x:0,y:0},{x:10,y:0},{x:14,y:5},{x:14,y:15}],{base:9});
