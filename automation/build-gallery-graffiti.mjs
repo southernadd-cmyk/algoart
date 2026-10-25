@@ -9,6 +9,7 @@ import {planExteriorGraffiti,planGraffitiAtlases} from '../gallery/visit/exterio
 import {planInteriorGraffiti} from '../gallery/visit/interior-graffiti-plan.mjs';
 const archive=JSON.parse(await fs.readFile('gallery/tower-layouts.json','utf8'));
 const requested=process.argv.find(x=>x.startsWith('--date='))?.slice(7)||archive.floors.at(-1)?.date;
+const indoorOnly=process.argv.includes('--indoor-only');
 if(!/^\d{4}-\d{2}-\d{2}$/.test(requested))throw Error('Expected --date=YYYY-MM-DD');
 const level=archive.floors.findIndex(f=>f.date===requested);
 if(level<0)throw Error('Date not present in tower-layouts: '+requested);
@@ -54,7 +55,9 @@ try{
  for(const lowPower of [false,true])await exportAtlas(indoor,path.join('gallery',requested,'3d','graffiti'),indoorSignature,lowPower);
  // The two exterior levels are stable; republish their atlas after each daily build
  // so existing floor plans and all new script versions remain in sync.
+ if(!indoorOnly){
  const outer=archive.floors.slice(0,2).map((f,i)=>({level:i,plan:buildLayout(f.date,f.studies.length,f.studies.map(([seed,engine])=>({seed,engine})))}));
  const outside=planExteriorGraffiti(outer);
  for(const lowPower of [false,true])await exportAtlas(outside,'gallery/visit/graffiti-assets/exterior',outside.map(m=>m.id+'|'+m.hand+'|'+m.seed).join(';'),lowPower);
+ }
 }finally{await page.close();await browser.close();}
