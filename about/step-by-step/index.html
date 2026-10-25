@@ -83,8 +83,10 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <script src="../../js/cpu-material-versions.js"></script>
 <script src="../../js/oil-pigment.js?v=20261025-oil-v5-release"></script>
 <script src="../../js/oil-paint-v5.js?v=20261025-oil-v5-release"></script>
+<script src="../../js/oil-paint-v6.js?v=20261025-oil-v6-release"></script>
 <script src="../../js/action-painting-v1.js"></script>
 <script src="../../js/action-painting-v3.js?v=20261025-v3-release"></script>
+<script src="../../js/action-painting-v4.js?v=20261025-v4-release"></script>
 <script type="module">
 const $=id=>document.getElementById(id), A=window.AlgoArt;
 const PHI=A.PHI; // The same exact constant defined by js/phi.js for the drawing engine.
@@ -109,8 +111,8 @@ const materialFromURL=()=>{const m=incoming.get('material')||'';return m.startsW
 const incoming=new URLSearchParams(location.search);
 function selectedRevision(){
  const original=incoming.get('material')||'',material=selectedMaterial();
- if(material==='action')return /^action-v[123]$/.test(original)?original:'action-v3';
- if(material==='oil')return /^oil-v[1-5]$/.test(original)?original:'oil-v5';
+ if(material==='action')return /^action-v[1234]$/.test(original)?original:'action-v4';
+ if(material==='oil')return /^oil-v[1-6]$/.test(original)?original:'oil-v6';
  if(material==='watercolour')return /^watercolour-v2[rst]$/.test(original)?original:'watercolour-v2s';
  if(material==='tissue')return 'tissue-'+(Number(incoming.get('tissue'))||(incoming.has('watercolor')||incoming.has('oil')?1:7));
  return 'marker';
@@ -251,7 +253,7 @@ function captureActionStages(s){
  const context=blank.getContext('2d');context.fillStyle=s.paper;context.fillRect(0,0,blank.width,blank.height);
  save('The blank page',blank);
  const version=Number(selectedRevision().slice(-1));
- const paint=version===3?A.renderActionPaintingV3:A.renderActionPainting;
+ const paint=version===4?A.renderActionPaintingV4:version===3?A.renderActionPaintingV3:A.renderActionPainting;
  paint(target,s,scale,false,{
   version,layers:actionLayerCount,
   onStage:(label,canvas)=>save(label,canvas)
@@ -320,7 +322,8 @@ function captureMaterialStages(s){
    else if(version==='oil-v2'&&A.renderOilPaintV2)A.renderOilPaintV2(target,s,renderScale,false);
    else if(version==='oil-v3'&&A.renderOilPaintV3)A.renderOilPaintV3(target,s,renderScale,false);
    else if(version==='oil-v4')A.renderOilPaintV4(target,s,renderScale,false);
-   else A.renderOilPaintV5(target,s,renderScale,false);
+   else if(version==='oil-v6')A.renderOilPaintV6(target,s,renderScale,false);
+    else A.renderOilPaintV5(target,s,renderScale,false);
   }
   snapshot('The finished '+selectedMaterial()+' surface',target);
   // Retain only distinct renderer states, then select checkpoints by cumulative
