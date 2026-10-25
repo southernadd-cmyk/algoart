@@ -2,6 +2,7 @@
 // Names identify the reference; geometry comes from our phi alphabet and the
 // distinct movement/shape recipes below. These are not traced signatures.
 import {letterDialect,applyLetterDialect,shapeWicket} from './letter-dialects.mjs?v=bold-dialects-v5';
+import {applyArtistGesture} from './artist-gestures.mjs?v=artist-grammar-v1';
 export const HANDSTYLE_SOURCE='https://www.bombingscience.com/top-50-graffiti-handstyles/';
 // id, reference, construction, lean, width, height, weight, spacing, joins,
 // baseline swing, finishing gesture, nozzle flare, short study label.
@@ -106,5 +107,5 @@ export function shapeStudyLetter(ch,glyph,style,m){
  if(style.id==='spot'&&ch==='S')strokes=[P(L([W,a/ratio],[k,0],[u,u],[0,a],[k,b],[W,b+u],[k,H],[0,H-u]))];
  let result=applyLetterDialect(ch,{...glyph,strokes},style,m);
  if(style.shape==='wicket')result=shapeWicket(ch,result,style,m);
- return result;
+ return applyArtistGesture(ch,result,style,m);
 }
