@@ -1273,8 +1273,9 @@ $('copyLink').onclick=copyShareLink;
    // Exact currently visible painting, including selected paper colour,
    // material, seed and canvas framing. No re-render or seed changes.
    var src=$('art'),c=document.createElement('canvas');
-   var portrait=A.readSettings().orientation==='portrait';
-   c.width=portrait?630:1200;c.height=portrait?1200:630;
+   // Threads displays link cards in a wide crop. Letterbox portrait artwork
+   // within a landscape JPEG so the complete composition stays visible.
+   c.width=1200;c.height=630;
    var ctx=c.getContext('2d');
    ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,c.width,c.height);
    var scale=Math.min(c.width/src.width,c.height/src.height);
