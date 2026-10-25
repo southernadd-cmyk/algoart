@@ -22,7 +22,7 @@ label{display:flex;flex-direction:column;gap:5px;font-size:14px}input,select,but
 </style></head>
 <body>
 <header><div class="quiet">PROPORTION PIECE · graffiti development</div>
-<h1>An alphabet, not a font</h1>
+<h1>graffiti alphabet · A–Z</h1>
 <p>Twenty-six independently constructed graffiti capitals, each with its own gesture paths, hooks and endings. This is a <strong>complete original A–Z draft</strong>, built as part of the SKUF research—not a traced or authenticated alphabet by SKUF.</p>
 <p class="quiet">The <a href="https://www.bombingscience.com/graffiti-letters-61-graffiti-artists-share-their-styles/" target="_blank" rel="noopener noreferrer">Bombing Science 61-artist A–Z collection</a> informed the approach: each letter needs individual anatomy, not a shared font skeleton.</p></header>
 <div class="controls">
@@ -37,7 +37,7 @@ label{display:flex;flex-direction:column;gap:5px;font-size:14px}input,select,but
 <div id="samples"></div><div id="status" class="quiet" aria-live="polite"></div></section>
 <section class="explain"><h2>What this is</h2>
 <p>The letters are actual authored vector gestures, not a browser font with a texture applied. The text setting arranges those paths into words; a seed changes small proportions and placement without swapping the letter constructions.</p>
-<p>This draft is for checking letter anatomy and whether unfamiliar words still work. It isn't part of the production tower yet. The eight curated writer-specific alphabets will require separate research and approvals.</p></section>
+<p>This draft is for checking letter anatomy and whether unfamiliar words still work. It isn't part of the production tower yet. This is the first completed construction set, not yet one of the eight approved writer-specific alphabets.</p></section>
 <script type="module">
 import {renderAlphabet,renderWord,exportSvg} from './skuf-complete-renderer.mjs';
 const by=id=>document.getElementById(id);
@@ -46,7 +46,7 @@ function update(){
  const seed=by('seed').value,mode=by('mode').value;
  by('letters').replaceChildren(renderAlphabet({mode,seed}));
  const holder=by('samples');holder.replaceChildren();
- for(const phrase of ['SKUF',by('phrase').value,'PHI','MUSHROOM']){
+ for(const phrase of ['SKUF',by('phrase').value,'PHI','φ','MUSHROOM']){
   const box=document.createElement('div');box.className='word';
   try{const svg=renderWord(phrase,{mode,seed});box.append(svg);
    if(phrase===by('phrase').value)wordSvg=svg;
