@@ -9,6 +9,7 @@ on:
       - 'js/oil-paint-v6.js'
       - 'automation/oil-edition.mjs'
       - 'automation/generate-social.mjs'
+      - 'automation/captions.mjs'
       - 'about/step-by-step/index.html'
       - 'tests/action-v3-parity-browser.mjs'
       - 'tests/oil-v5-release-browser.mjs'
