@@ -1,3 +1,4 @@
+import {planPhiReception} from './phi-reception-layout.mjs';
 import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=shared-core-south-entrance-20261026';
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
@@ -1175,6 +1176,32 @@ function constructPhiGallery(layout,studies){
  for(const sx of [-1,1])for(const sz of [-1,1])block(.12,ROOM_HEIGHT,.12,l.x+sx*1.38,elevation+ROOM_HEIGHT/2,l.z+sz*1.38,join);
  block(Math.max(2.4,Math.abs((l.portal?.at??l.x+2.25)-l.x)+.5),.16,2.3,(l.x+(l.portal?.at??l.x+2.25))/2,elevation-.08,l.z,galleryFinish.floor);
  const liftLight=new THREE.PointLight(0xfff4d8,8,12,2);liftLight.position.set(l.x,elevation+3,l.z);scene.add(liftLight);
+ // Same procedural brushed-steel texture as the production archive lift.
+ const steelCanvas=document.createElement('canvas');steelCanvas.width=128;steelCanvas.height=128;
+ const brush=steelCanvas.getContext('2d'),pixels=brush.createImageData(128,128);
+ for(let x=0;x<128;x++)for(let y=0;y<128;y++){
+  const h=((x*1213+y*197)^((x+41)*8309))>>>0;
+  const v=Math.max(214,Math.min(250,Math.round(234+4*Math.sin(x*.22)+3*Math.sin(x*.73)+(h%7)-3)));
+  const i=(y*128+x)*4;pixels.data[i]=v;pixels.data[i+1]=Math.min(255,v+2);
+  pixels.data[i+2]=Math.min(255,v+2);pixels.data[i+3]=255;
+ }
+ brush.putImageData(pixels,0,0);
+ const brushed=new THREE.MeshStandardMaterial({color:'#bdc3c0',metalness:.57,roughness:.49,
+   map:new THREE.CanvasTexture(steelCanvas)});
+ brushed.map.colorSpace=THREE.SRGBColorSpace;
+ const bronze=new THREE.MeshStandardMaterial({color:'#424b47',metalness:.58,roughness:.43});
+ const rubber=new THREE.MeshStandardMaterial({color:'#303937',roughness:.88});
+ block(2.65,.055,2.65,l.x,elevation+.02,l.z,rubber);
+ for(const side of [-1,1]){
+  block(.065,2.75,2.55,l.x+side*1.31,elevation+1.43,l.z,brushed);
+  block(2.55,2.75,.065,l.x,elevation+1.43,l.z+side*1.31,brushed);
+  block(2.6,.08,.085,l.x,elevation+2.92,l.z+side*1.25,bronze);
+ }
+ block(2.6,.1,2.6,l.x,elevation+3.02,l.z,brushed);
+ // Portal surrounds reproduce the existing archive lift's bronze/metal trim.
+ for(const side of [-1,1])block(.07,2.7,.16,l.portal.at-.12,elevation+1.38,l.z+side*1.12,bronze);
+ block(.12,.23,2.5,l.portal.at-.12,elevation+2.93,l.z,brushed);
+
  if(currentFloor===0){
   // Reuse the production square, furnishings, monuments and seated visitors.
   // Its approach is westward from the new external vestibule entrance.
@@ -1198,21 +1225,39 @@ function constructPhiGallery(layout,studies){
  liftPosition=liftCabinPosition.clone();
  liftDoorThreshold=liftCabinPosition.clone();
  if(exhibitDate===RECEPTION){
-  const entry=phi.circulation.publicEntrance;
-  const r=phi.floor.rooms.find(p=>entry&&Math.abs(p.z-entry.at)<.01&&entry.centre>=p.x&&entry.centre<=p.x+p.w)||phi.floor.rooms[0];
-  const x=r.x+r.w*.5,z=r.z+r.h*.62;
-  block(3.1,.85,1.05,x,elevation+.43,z,galleryFinish.timber);
-  block(3.35,.12,1.18,x,elevation+.9,z,galleryFinish.plinth);
-  const paper=document.createElement('canvas');paper.width=1024;paper.height=512;
-  const g=paper.getContext('2d');g.fillStyle='#ece5d5';g.fillRect(0,0,1024,512);
-  g.fillStyle='#273b32';g.font='bold 61px Georgia';g.fillText('PROPORTION PIECE',45,100);
-  g.font='34px Georgia';
-  ['An algorithmically generated gallery','exhibiting algorithmically generated art.','A new exhibition floor every day.','Use the archive lift to explore.'].forEach((line,i)=>g.fillText(line,45,190+i*67));
-  const texture=new THREE.CanvasTexture(paper);texture.colorSpace=THREE.SRGBColorSpace;
-  const board=new THREE.Mesh(new THREE.PlaneGeometry(4.5,2.25),
-     new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
-  board.position.set(x,elevation+2.4,r.z+.12);scene.add(board);
-  window.__phiReception={desk:true,information:true};
+  const furnishing=planPhiReception(phi.floor,phi.circulation,phi.physical);
+  if(furnishing.desk){
+   const {x,z}=furnishing.desk;
+   block(3.1,.84,1.06,x,elevation+.42,z,timber);
+   block(3.35,.12,1.18,x,elevation+.90,z,galleryFinish.plinth);
+   // Recessed front panel and simple counter accessories.
+   block(2.8,.58,.025,x,elevation+.44,z+.55,join);
+   block(.47,.07,.3,x-.7,elevation+.99,z-.16,stone);
+  }
+  const captions=[
+   ['PROPORTION PIECE','An algorithmically generated gallery','exhibiting algorithmically generated art.'],
+   ['THE GROWING TOWER','A new floor of art is added daily.','Choose an exhibition in the archive lift.']
+  ];
+  for(const [i,item] of furnishing.signage.entries()){
+   const paper=document.createElement('canvas');paper.width=1024;paper.height=512;
+   const g=paper.getContext('2d');g.fillStyle='#f0ece3';g.fillRect(0,0,1024,512);
+   g.fillStyle='#2e3e33';g.font='bold 60px Georgia';g.fillText(captions[i][0],40,105,945);
+   g.font='36px Georgia';captions[i].slice(1).forEach((line,n)=>g.fillText(line,40,208+n*83,950));
+   const texture=new THREE.CanvasTexture(paper);texture.colorSpace=THREE.SRGBColorSpace;
+   const board=new THREE.Mesh(new THREE.PlaneGeometry(item.width,2.2),
+      new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
+   board.position.set(item.x,elevation+2.6,item.z);
+   board.rotation.y=item.axis==='x'?(item.normal.x>0?Math.PI/2:-Math.PI/2):(item.normal.z>0?0:Math.PI);
+   scene.add(board);
+  }
+  const plantMaterial=new THREE.MeshStandardMaterial({color:'#56705b',roughness:1,flatShading:true});
+  for(const p of furnishing.plants){
+   block(.5,.65,.5,p.x,elevation+.32,p.z,stone);
+   const leaves=new THREE.Mesh(new THREE.IcosahedronGeometry(.48,1),plantMaterial);
+   leaves.position.set(p.x,elevation+1.02,p.z);scene.add(leaves);
+  }
+  window.__phiReception={desk:!!furnishing.desk,information:furnishing.signage.length>0,
+    signCount:furnishing.signage.length,plantCount:furnishing.plants.length,clearance:furnishing.checks};
  }
  // Gallery-side lift doors: frame and leaves kept distinct from walking collision.
  const liftFace=l.portal.at;
