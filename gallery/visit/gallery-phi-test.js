@@ -1005,6 +1005,14 @@ function transformPhiActiveFloor(before){
  for(const a of artExhibits)rotate(a.position);
  rotate(liftPosition);rotate(liftCabinPosition);rotate(liftDoorThreshold);
  rotate(rig.position);
+ // The forecourt and entrance are data as well as meshes. Move their
+ // navigation coordinates by precisely the same transform as their paving.
+ if(phi.plaza){
+   rotate(phi.plaza.centre);rotate(phi.arrivalDoor);
+   const direction=v=>{const x=v.x,z=v.z;v.x=x*Math.cos(world.theta)+z*Math.sin(world.theta);v.z=-x*Math.sin(world.theta)+z*Math.cos(world.theta);};
+   direction(phi.plaza.outward);direction(phi.plaza.transverse);
+   if(window.__phiPlaza)window.__phiPlaza.centre={...phi.plaza.centre};
+ }
  const original=phi.canWalk;
  phi.canWalk=(x,z)=>{const p=world.toLocal(x,z);return original(p.x,p.z);};
 }
@@ -1146,9 +1154,9 @@ function constructPhiGallery(layout,studies){
   const outward=entrance?{x:0,z:-1}:{x:-1,z:0};
   const transverse={x:outward.z,z:-outward.x};
   const doorway=entrance?{x:entrance.centre,z:entrance.at}:{x:l.x-1.45,z:l.z};
-  const plaza={centre:{x:doorway.x-19,z:doorway.z},outward,transverse,
-    halfWidth:23,halfDepth:19,level:elevation};
-  const approach={doorway,outward,pathLength:38,halfWidth:3.25};
+  const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
+    halfWidth:30,halfDepth:29,level:elevation};
+  const approach={doorway,outward,pathLength:42,halfWidth:3.25};
   const exterior=createExteriorLandscape(THREE,scene,layout,studies,{
     lowPower:galleryFinish.lowPower,protectedLayouts:[],approach,plaza});
   addPermanentPlazaSculptures(scene,plaza);
@@ -1993,6 +2001,11 @@ function onPhiPlaza(x,z){
  const along=dx*p.outward.x+dz*p.outward.z;
  const across=dx*p.transverse.x+dz*p.transverse.z;
  if(Math.abs(along)>p.halfDepth-.4||Math.abs(across)>p.halfWidth-.4)return false;
+ // The paved square extends beneath the tower; never make solid walls
+ // traversable merely because pavement is visible on the other side.
+ const point=phi.world?phi.world.toLocal(x,z):{x,z};
+ if(phi.pieces.some(c=>point.x>=c.x-.4&&point.x<=c.x+c.w+.4&&point.z>=c.z-.4&&point.z<=c.z+c.h+.4))
+   return phi.canWalk(x,z);
  // Entrance threshold connects the square to the enclosed lift foyer.
  const door=phi.arrivalDoor;
  return ((x-door.x)*p.outward.x+(z-door.z)*p.outward.z)>-.5 || phi.canWalk(x,z);
