@@ -1,4 +1,4 @@
-import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=reception-valid-date-20261026';
+import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=shared-core-south-entrance-20261026';
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
@@ -984,7 +984,9 @@ function phiFloorTransform(level,lift){
  const radius=1.6*(1-Math.pow(2/(1+Math.sqrt(5)),level));
  const dx=radius*Math.cos(theta),dz=radius*Math.sin(theta);
  const cs=Math.cos(theta),sn=Math.sin(theta);
- const tx=dx-(lift.x*cs+lift.z*sn),tz=dz-(-lift.x*sn+lift.z*cs);
+ // Lock every landing to one vertical world-space shaft. Rotations still
+ // stagger the silhouettes; offsets must be expressed in connector bridges.
+ const tx=-(lift.x*cs+lift.z*sn),tz=-(-lift.x*sn+lift.z*cs);
  return {
   theta,dx,dz,tx,tz,
   toWorld:(x,z)=>({x:x*cs+z*sn+tx,z:-x*sn+z*cs+tz}),
@@ -1057,6 +1059,13 @@ function constructPhiTowerShell(){
   }
   count++;
  }
+ // Continuous vertical core, instead of independent floating lift cubicles.
+ const coreHeight=archiveDates.length*FLOOR_SPACING;
+ const metal=join,shaftRadius=1.38;
+ for(const sx of [-1,1])for(const sz of [-1,1])
+   append(.18,coreHeight,.18,sx*shaftRadius,coreHeight/2-0.1,sz*shaftRadius,metal);
+ for(let level=0;level<archiveDates.length;level++)
+   append(3,.15,3,0,level*FLOOR_SPACING-.18,0,galleryFinish.plinth);
  scene.add(shell);
  window.__phiTowerExterior={otherFloors:count,wallMeshes:shell.children.length};
 }
