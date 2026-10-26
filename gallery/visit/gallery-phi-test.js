@@ -1301,8 +1301,10 @@ function constructPhiGallery(layout,studies){
  const bronze=new THREE.MeshStandardMaterial({color:'#424b47',metalness:.58,roughness:.43});
  const rubber=new THREE.MeshStandardMaterial({color:'#303937',roughness:.88});
  block(2.65,.055,2.65,l.x,elevation+.02,l.z,rubber);
+ // Rear wall only. The forward (+X) face must remain a real opening:
+ // previously the generic loop built a full-height opaque steel wall across it.
+ block(.065,2.75,2.55,l.x-1.31,elevation+1.43,l.z,brushed);
  for(const side of [-1,1]){
-  block(.065,2.75,2.55,l.x+side*1.31,elevation+1.43,l.z,brushed);
   block(2.55,2.75,.065,l.x,elevation+1.43,l.z+side*1.31,brushed);
   block(2.6,.08,.085,l.x,elevation+2.92,l.z+side*1.25,bronze);
  }
