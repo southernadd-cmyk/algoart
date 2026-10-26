@@ -1,6 +1,6 @@
 // Broad-nib V3: continuous calligraphic clusters replace recipient skeleton strokes.
 // V2 stays immutable; each composed letter carries its own shape list.
-export const BROADNIB_REVISION='nib-clusters-05';
+export const BROADNIB_REVISION='nib-clusters-06';
 const families=new Set(['PRO','ROP','OPO','POR','ORT','RTI','TIO','ION','PIE','IEC','ECE']);
 const pairs=new Set(['PR','RO','OP','PO','OR','RT','TI','IO','ON','PI','IE','EC','CE']);
 function rand(seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619);return(h>>>0)/4294967296}
@@ -51,16 +51,15 @@ export function composeBroadNib(plan,{seed='V3',mode='restrained'}={}){
   shared.push({kind:'stroke',role:'secondary',width:3.1,subtype:'crossbar',d,from:a.index,to:b.index,pair,tool:'angled-nib',structural:true});
   a.variant='nib-sender';b.variant='nib-receiver';
  }
- // The middle arm is an essential E feature, particularly after I in PIECE.
- // Draw it in the same world coordinate space as other shared pen gestures.
- // Never add it to C or carry it across a word break.
+ // The actual F-family E has its middle arm as a separate hairline.
+ // Shared-cluster composition can remove that arm; reinstate it in GLYPH
+ // coordinates so it gets the same scale, rotation and italic transform.
  for(let i=1;i<letters.length;i++){
-  const prev=letters[i-1],letter=letters[i];
-  if(letter.ch!=='E'||letter.index!==prev.index+1||!['I','C'].includes(prev.ch))continue;
-  const x=letter.x+22*letter.scale,y=56;
-  shared.push({kind:'stroke',role:'primary',subtype:'crossbar',width:3.8,
-   d:`M ${x.toFixed(2)} ${y} Q ${(x+15*letter.scale).toFixed(2)} ${(y-3)} ${(x+33*letter.scale).toFixed(2)} ${(y-2)}`,
-   letterIndex:letter.index,feature:'E-middle-arm',structural:true});
+  const previous=letters[i-1],letter=letters[i];
+  if(letter.ch!=='E'||previous.index!==letter.index-1||!['I','C'].includes(previous.ch))continue;
+  letter.shapes=letter.shapes.filter(st=>st.feature!=='E-middle-arm');
+  letter.shapes.push({kind:'hairline',role:'primary',subtype:'crossbar',
+   d:'M 13 55 Q 43 43 77 49',feature:'E-middle-arm'});
   letter.variant+='-middle-arm';
  }
  return {word:plan.word,letters,shared,connectors:[],mode,revision:BROADNIB_REVISION};
