@@ -1,4 +1,4 @@
-import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=room-door-clearance-20261026';
+import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=public-entrance-20261026';
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
@@ -1106,8 +1106,10 @@ function constructPhiGallery(layout,studies){
  if(currentFloor===0){
   // Reuse the production square, furnishings, monuments and seated visitors.
   // Its approach is westward from the new external vestibule entrance.
-  const outward={x:-1,z:0},transverse={x:0,z:1};
-  const doorway={x:l.x-1.45,z:l.z};
+  const entrance=phi.circulation.publicEntrance;
+  const outward=entrance?{x:0,z:-1}:{x:-1,z:0};
+  const transverse={x:outward.z,z:-outward.x};
+  const doorway=entrance?{x:entrance.centre,z:entrance.at}:{x:l.x-1.45,z:l.z};
   const plaza={centre:{x:doorway.x-19,z:doorway.z},outward,transverse,
     halfWidth:23,halfDepth:19,level:elevation};
   const approach={doorway,outward,pathLength:38,halfWidth:3.25};
@@ -1522,7 +1524,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     }
   }
   if(!reception&&!studies.length)throw new Error('No artworks for this edition');
-  const phi=reception?buildPhiRendererPlan(archiveDates[1],Array.from({length:10},(_,i)=>({id:'foyer-placeholder-'+i,portrait:i%3===0,aspect:i%3===0?.75:1.4}))):buildPhiRendererPlan(date,studies);
+  const phi=reception?buildPhiRendererPlan(RECEPTION,Array.from({length:10},(_,i)=>({id:'foyer-placeholder-'+i,portrait:i%3===0,aspect:i%3===0?.75:1.4}))):buildPhiRendererPlan(date,studies);
   if(reception){phi.exhibition.paintings=[];phi.exhibition.sculptures=[];phi.exhibition.unplaced=[];phi.checks.unplaced=0;}
   if(!phi.checks.connected||(!reception&&!phi.checks.count)||!phi.checks.unique||phi.checks.unplaced)
     throw new Error('Invalid phi exhibition plan: '+JSON.stringify(phi.checks));
@@ -1604,8 +1606,9 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   if(viaLift||nextFloor!==0||welcome.hidden)startDeferredGallery();
   if(!viaLift && nextFloor===0 && plan.phi?.plaza){
     const door=plan.phi.arrivalDoor;
-    rig.position.set(door.x-13,0,door.z);
-    yaw=-Math.PI/2;pitch=.15;rig.rotation.y=yaw;camera.rotation.x=pitch;
+    const out=plan.phi.plaza.outward;
+    rig.position.set(door.x+out.x*13,0,door.z+out.z*13);
+    yaw=Math.atan2(-out.x,-out.z);pitch=.15;rig.rotation.y=yaw;camera.rotation.x=pitch;
   }
   if(!viaLift && nextFloor===0 && arrival){
     rig.position.copy(arrival.start);
@@ -1845,6 +1848,8 @@ function drawPhiMap(){
  const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
  ctx.clearRect(0,0,w,h);
  const shapes=phi.floor.rooms;
+ // The reception is a public foyer, not an art floor.
+ const reception=exhibitDate===RECEPTION;
  const all=[...shapes.flatMap(p=>[[p.x,p.z],[p.x+p.w,p.z+p.h]]),[phi.circulation.lift.x,phi.circulation.lift.z],[rig.position.x,rig.position.z]];
  const minX=Math.min(...all.map(p=>p[0]))-3,maxX=Math.max(...all.map(p=>p[0]))+3;
  const minZ=Math.min(...all.map(p=>p[1]))-3,maxZ=Math.max(...all.map(p=>p[1]))+3;
@@ -1860,6 +1865,12 @@ function drawPhiMap(){
    for(const wall of phi.physical.walls){ctx.beginPath();if(wall.axis==='x'){ctx.moveTo(X(wall.at),Z(wall.lo));ctx.lineTo(X(wall.at),Z(wall.hi));}else{ctx.moveTo(X(wall.lo),Z(wall.at));ctx.lineTo(X(wall.hi),Z(wall.at));}ctx.stroke();}
    for(const d of [...phi.circulation.doors,...phi.circulation.bridgePortals]){ctx.strokeStyle='#d0a16e';ctx.lineWidth=3.5;ctx.beginPath();if(d.axis==='x'){ctx.moveTo(X(d.at),Z(d.centre-d.width/2));ctx.lineTo(X(d.at),Z(d.centre+d.width/2));}else{ctx.moveTo(X(d.centre-d.width/2),Z(d.at));ctx.lineTo(X(d.centre+d.width/2),Z(d.at));}ctx.stroke();}
   }
+ }
+ if(reception){
+   const door=phi.circulation.publicEntrance;
+   if(door){ctx.fillStyle='#376a55';ctx.fillRect(X(door.centre)-12,Z(door.at)-5,24,7);}
+   const p=phi.floor.rooms[0];ctx.fillStyle='#3e5147';ctx.font='bold 10px sans-serif';
+   ctx.fillText('RECEPTION',X(p.x+p.w/2)-27,Z(p.z+p.h/2));
  }
  const l=phi.circulation.lift;
  ctx.fillStyle='#d9c68c';ctx.fillRect(X(l.x)-6,Z(l.z)-6,12,12);ctx.fillStyle='#27352e';ctx.font='bold 10px sans-serif';ctx.fillText('L',X(l.x)-3,Z(l.z)+4);
@@ -1946,7 +1957,7 @@ function onPhiPlaza(x,z){
  if(Math.abs(along)>p.halfDepth-.4||Math.abs(across)>p.halfWidth-.4)return false;
  // Entrance threshold connects the square to the enclosed lift foyer.
  const door=phi.arrivalDoor;
- return x<door.x+.5 || phi.canWalk(x,z);
+ return ((x-door.x)*p.outward.x+(z-door.z)*p.outward.z)>-.5 || phi.canWalk(x,z);
 }
 function updateMovement(dt) {
   if (!plan || !welcome.hidden || !$('lift').hidden || liftTravelling) return;
