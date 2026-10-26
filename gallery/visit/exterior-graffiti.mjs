@@ -4,6 +4,24 @@ import {drawTag} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7'
 import {drawTowerFamilyTag,towerGraffitiSignature,TOWER_LETTERING_REVISION} from './tower-family-lettering.mjs';
 import {planExteriorGraffiti,planGraffitiAtlases,towerGraffitiKey} from './exterior-graffiti-plan.mjs';
 const surfaceOffset=(mark,currentFloor)=>mark.surface==='interior'?.173:mark.level===currentFloor?.202:.173;
+function paintExteriorUnderstroke(ctx,x,y,width,height){
+ // Add a broad white spray beneath the original, finer ink trace.
+ const pad=5,left=Math.max(0,Math.floor(x-pad)),top=Math.max(0,Math.floor(y-pad));
+ const right=Math.min(ctx.canvas.width,Math.ceil(x+width+pad));
+ const bottom=Math.min(ctx.canvas.height,Math.ceil(y+height+pad));
+ const w=right-left,h=bottom-top;if(w<=0||h<=0)return;
+ const original=document.createElement('canvas');original.width=w;original.height=h;
+ const oc=original.getContext('2d');oc.drawImage(ctx.canvas,left,top,w,h,0,0,w,h);
+ const white=document.createElement('canvas');white.width=w;white.height=h;
+ const wc=white.getContext('2d');
+ wc.drawImage(original,0,0);wc.globalCompositeOperation='source-in';wc.fillStyle='#f5f4ee';wc.fillRect(0,0,w,h);
+ ctx.clearRect(left,top,w,h);
+ // Circular dilations of the white mask mimic a broad spray pass.
+ for(let i=0;i<16;i++){const a=i*Math.PI/8;ctx.globalAlpha=.56;ctx.drawImage(white,left+Math.cos(a)*2.8,top+Math.sin(a)*2.8);}
+ ctx.globalAlpha=1;ctx.drawImage(white,left,top);
+ ctx.drawImage(original,left,top);
+}
+
 export function graffitiPaintParts(tag){
  if(tag.renderer==='az-nine-v1')return [tag];
  if(tag.form!=='bubble'&&tag.form!=='hollow')return [tag];
@@ -72,7 +90,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
   updateNormal();
   // Build-time PNG atlas is preferred. The legacy paint queue remains a
   // deterministic fallback for old floors or stale/incomplete manifests.
-  const expected=towerGraffitiSignature(marks);
+  const expected=(kind==='exterior'?'white-understroke-v1|':'')+towerGraffitiSignature(marks);
   const manifestUrl=kind==='interior'&&marks[0]
    ?new URL('../'+marks[0].date+'/3d/graffiti/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href)
    :new URL('./graffiti-assets/exterior/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
@@ -112,6 +130,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
    try{
     g.save();g.beginPath();g.rect(x-2,y-2,width+4,height+4);g.clip();g.translate(x,y);g.scale(width/b.width,height/b.height);g.translate(-b.x,-b.y);
     try{if(job.tag.renderer==='az-nine-v1')drawTowerFamilyTag(g,job.tag,{finish:'spray'});else drawTag(g,job.tag,{finish:'spray'});}finally{g.restore();}
+    if(kind==='exterior')paintExteriorUnderstroke(g,x,y,width,height);
     page.dirty=true;if(job.last){painted++;mark.tag=null;}
    }catch(error){errors.push(mark.id+': '+error.message);console.warn(kind+' paint failed',error);}
    paintSteps++;const elapsed=performance.now()-start;totalPaintMs+=elapsed;if(elapsed>maxPaintMs){maxPaintMs=elapsed;slowest={text:mark.phrase,hand:mark.hand,form:mark.form};}
