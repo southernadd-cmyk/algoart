@@ -5,23 +5,40 @@ import {drawTowerFamilyTag,towerGraffitiSignature,TOWER_LETTERING_REVISION} from
 import {planExteriorGraffiti,planGraffitiAtlases,towerGraffitiKey} from './exterior-graffiti-plan.mjs';
 const surfaceOffset=(mark,currentFloor)=>mark.surface==='interior'?.173:mark.level===currentFloor?.202:.173;
 function paintExteriorUnderstroke(ctx,x,y,width,height){
- // Add a broad white spray beneath the original, finer ink trace.
- const pad=5,left=Math.max(0,Math.floor(x-pad)),top=Math.max(0,Math.floor(y-pad));
+ // Broad chalk-white aerosol underpainting with uneven soft overspray.
+ const pad=14,left=Math.max(0,Math.floor(x-pad)),top=Math.max(0,Math.floor(y-pad));
  const right=Math.min(ctx.canvas.width,Math.ceil(x+width+pad));
  const bottom=Math.min(ctx.canvas.height,Math.ceil(y+height+pad));
  const w=right-left,h=bottom-top;if(w<=0||h<=0)return;
  const original=document.createElement('canvas');original.width=w;original.height=h;
  const oc=original.getContext('2d');oc.drawImage(ctx.canvas,left,top,w,h,0,0,w,h);
- const white=document.createElement('canvas');white.width=w;white.height=h;
- const wc=white.getContext('2d');
- wc.drawImage(original,0,0);wc.globalCompositeOperation='source-in';wc.fillStyle='#f5f4ee';wc.fillRect(0,0,w,h);
- ctx.clearRect(left,top,w,h);
- // Circular dilations of the white mask mimic a broad spray pass.
- for(let i=0;i<16;i++){const a=i*Math.PI/8;ctx.globalAlpha=.56;ctx.drawImage(white,left+Math.cos(a)*2.8,top+Math.sin(a)*2.8);}
- ctx.globalAlpha=1;ctx.drawImage(white,left,top);
- ctx.drawImage(original,left,top);
+ const mask=document.createElement('canvas');mask.width=w;mask.height=h;
+ const mc=mask.getContext('2d');mc.drawImage(original,0,0);mc.globalCompositeOperation='source-in';
+ mc.fillStyle='#f8f7f0';mc.fillRect(0,0,w,h);
+ ctx.clearRect(left,top,w,h);ctx.save();
+ // Multiple offset impressions form a thick, soft-edged aerosol stroke.
+ for(let ring=10;ring>=0;ring-=2){
+  for(let i=0;i<24;i++){
+   const a=i*Math.PI/12;
+   ctx.globalAlpha=ring>=8?.11:ring>=4?.22:.43;
+   ctx.drawImage(mask,left+Math.cos(a)*ring,top+Math.sin(a)*ring);
+  }
+ }
+ ctx.globalAlpha=.94;ctx.drawImage(mask,left,top);
+ // Sparse, deterministic droplets feather the white silhouette.
+ let seed=((Math.floor(x)*73856093)^(Math.floor(y)*19349663))>>>0;
+ const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+ const alpha=oc.getImageData(0,0,w,h).data;
+ ctx.fillStyle='#f8f7f0';
+ for(let i=0;i<Math.min(2300,Math.floor(w*h*.017));i++){
+  const px=Math.floor(random()*w),py=Math.floor(random()*h);
+  if(alpha[(py*w+px)*4+3]<90)continue;
+  const angle=random()*Math.PI*2,distance=4+random()*12;
+  ctx.globalAlpha=.09+random()*.30;
+  ctx.beginPath();ctx.arc(left+px+Math.cos(angle)*distance,top+py+Math.sin(angle)*distance,.25+random()*1.35,0,Math.PI*2);ctx.fill();
+ }
+ ctx.globalAlpha=1;ctx.drawImage(original,left,top);ctx.restore();
 }
-
 export function graffitiPaintParts(tag){
  if(tag.renderer==='az-nine-v1')return [tag];
  if(tag.form!=='bubble'&&tag.form!=='hollow')return [tag];
@@ -90,7 +107,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
   updateNormal();
   // Build-time PNG atlas is preferred. The legacy paint queue remains a
   // deterministic fallback for old floors or stale/incomplete manifests.
-  const expected=(kind==='exterior'?'white-understroke-v1|':'')+towerGraffitiSignature(marks);
+  const expected=(kind==='exterior'?'white-understroke-v2|':'')+towerGraffitiSignature(marks);
   const manifestUrl=kind==='interior'&&marks[0]
    ?new URL('../'+marks[0].date+'/3d/graffiti/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href)
    :new URL('./graffiti-assets/exterior/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
