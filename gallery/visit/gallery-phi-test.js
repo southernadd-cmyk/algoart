@@ -62,6 +62,7 @@ let liftArrivalOpening=false;
 let liftPickerConsumed=false;
 let phiMovingCabin=null;
 let phiRideState=null;
+let phiLiftPanelPosition=null;
 let liftCabinPosition=null;
 let liftDoorThreshold=null;
 let currentFloor=0;
@@ -676,7 +677,8 @@ function nearLift(){
   const position=renderer?.xr.isPresenting
     ?renderer.xr.getCamera(camera).getWorldPosition(new THREE.Vector3())
     :rig.position;
-  return Math.hypot(position.x-liftPosition.x,position.z-liftPosition.z)<1.15;
+  return !!phiLiftPanelPosition && Math.hypot(position.x-phiLiftPanelPosition.x,position.z-phiLiftPanelPosition.z)<1.3 &&
+    Math.hypot(position.x-liftPosition.x,position.z-liftPosition.z)<1.95;
 }
 // A controller-operated, world-space lift panel: HTML panels are invisible in VR.
 function paintXRLift(message='Point a controller and press the trigger'){
@@ -808,8 +810,7 @@ function startPhiCabinRide(targetFloor){
  for(const z of [-1.26,1.26])panel(.09,2.96,.11,1.41,1.48,z,metal);
  // The moving cabin is an enclosed object, not just a floating platform.
  // Its two metal door leaves remain shut between landings.
- for(const side of [-1,1])
-  panel(.095,2.77,1.19,1.42,1.43,side*.60,metal);
+ // No duplicate opaque leaves: the animated landing pair provides the doors.
  scene.add(pod);
  phiMovingCabin=pod;
  const duration=Math.max(1.8,Math.min(9,Math.abs(endY-startY)/7.0+1));
@@ -1064,7 +1065,7 @@ function transformPhiActiveFloor(before){
  }
  for(const p of sculpturePlacements)rotate(p);
  for(const a of artExhibits)rotate(a.position);
- rotate(liftPosition);rotate(liftCabinPosition);rotate(liftDoorThreshold);
+ rotate(liftPosition);rotate(liftCabinPosition);rotate(liftDoorThreshold);rotate(phiLiftPanelPosition);
  // Moving the meshes alone would leave door-animation endpoints behind
  // when this exhibition level is rotated about the shared lift core.
  for(const leaf of liftDoors){
@@ -1250,11 +1251,15 @@ function constructPhiGallery(layout,studies){
  // Enclosed exterior arrival lobby. The east-facing doorway to the gallery
  // stays open, as does the lift-facing approach in the cabin's west end.
  const outerWest=l.x-1.45,innerEast=l.portal.at,depth=3.1;
+ // Mount the calendar actuator inside the cabin, facing the visitor.
+ phiLiftPanelPosition=new THREE.Vector3(l.x-1.28,elevation,l.z);
  // Leave a 2.2 m opening to the exterior approach at ground level.
- if(currentFloor===0){for(const side of [-1,1])block(.19,ROOM_HEIGHT,(depth-2.2)/2,outerWest,elevation+ROOM_HEIGHT/2,l.z+side*(depth+2.2)/4,plaster);block(.19,ROOM_HEIGHT-2.55,2.2,outerWest,elevation+2.55+(ROOM_HEIGHT-2.55)/2,l.z,plaster);}else block(.19,ROOM_HEIGHT,depth,outerWest,elevation+ROOM_HEIGHT/2,l.z,plaster);
+ // Glazed shaft-facing western wall, not an opaque fake second door.
+ const shaftGlass=new THREE.MeshStandardMaterial({color:0xb1d8d2,transparent:true,opacity:.22,roughness:.15,metalness:.09,depthWrite:false,side:THREE.DoubleSide});
+ block(.045,ROOM_HEIGHT,depth,outerWest,elevation+ROOM_HEIGHT/2,l.z,shaftGlass);
  for(const side of [-1,1]){
-   block(Math.max(.1,innerEast-outerWest),ROOM_HEIGHT,.19,
-     (outerWest+innerEast)/2,elevation+ROOM_HEIGHT/2,l.z+side*depth/2,plaster);
+   block(Math.max(.1,innerEast-outerWest),ROOM_HEIGHT,.065,
+     (outerWest+innerEast)/2,elevation+ROOM_HEIGHT/2,l.z+side*depth/2,shaftGlass);
  }
  block(Math.max(.1,innerEast-outerWest),.18,depth,
    (outerWest+innerEast)/2,elevation+ROOM_HEIGHT+.08,l.z,ceilingFinish);
@@ -1429,7 +1434,26 @@ function constructPhiGallery(layout,studies){
   liftDoors.push(leaf);
  }
  liftDoorClosure=0;liftDoorTarget=0;
- // Brushed cabin door and illuminated floor indicator.
+ // Physical calendar plaque on the inner cabin wall. Approaching this
+ // plaque opens the interactive month/date picker once, like artwork inspection.
+ const calendarCanvas=document.createElement('canvas');calendarCanvas.width=512;calendarCanvas.height=640;
+ const cg=calendarCanvas.getContext('2d');
+ cg.fillStyle='#263831';cg.fillRect(0,0,512,640);
+ cg.strokeStyle='#bdad7a';cg.lineWidth=12;cg.strokeRect(16,16,480,608);
+ cg.fillStyle='#f0ede2';cg.textAlign='center';
+ cg.font='bold 57px Georgia';cg.fillText('ARCHIVE',256,111);
+ cg.font='bold 60px Georgia';cg.fillText('LIFT',256,190);
+ cg.font='35px Georgia';cg.fillText('SELECT A FLOOR',256,300);
+ cg.font='27px Arial';cg.fillText('Approach to open',256,394);
+ cg.font='29px Arial';cg.fillText('the exhibition calendar',256,440);
+ const calendarTexture=new THREE.CanvasTexture(calendarCanvas);
+ calendarTexture.colorSpace=THREE.SRGBColorSpace;
+ const controlBoard=new THREE.Mesh(new THREE.PlaneGeometry(.89,1.12),
+  new THREE.MeshBasicMaterial({map:calendarTexture,side:THREE.DoubleSide}));
+ controlBoard.position.set(l.x-1.34,elevation+1.65,l.z);
+ controlBoard.rotation.y=Math.PI/2;
+ controlBoard.name='phi-lift-wall-calendar';scene.add(controlBoard);
+  // Brushed cabin door and illuminated floor indicator.
  const indicator=document.createElement('canvas');indicator.width=512;indicator.height=128;
  const ink=indicator.getContext('2d');ink.fillStyle='#202d2a';ink.fillRect(0,0,512,128);
  ink.fillStyle='#f0e8c9';ink.font='bold 57px Georgia';ink.fillText(currentFloor===0?'G · RECEPTION':'FLOOR '+currentFloor,28,82);
@@ -1876,7 +1900,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
   exhibitLightTargets.length=0;
   resetInspection();
-  liftPosition=null;liftDoorThreshold=null;liftWasNear=false;liftDoors=[];
+  liftPosition=null;liftDoorThreshold=null;phiLiftPanelPosition=null;liftWasNear=false;liftDoors=[];
   liftPickerConsumed=false;
   const previous=new Set(scene.children);
   arrival=null;entranceDoor=null;
