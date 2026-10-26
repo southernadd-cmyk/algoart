@@ -58,7 +58,7 @@ export function composeBroadNib(plan,{seed='V3',mode='restrained'}={}){
   const previous=letters[i-1],letter=letters[i];
   if(letter.ch!=='E'||previous.index!==letter.index-1||!['I','C'].includes(previous.ch))continue;
   letter.shapes=letter.shapes.filter(st=>st.feature!=='E-middle-arm');
-  letter.shapes.push({kind:'hairline',role:'primary',subtype:'crossbar',
+  letter.shapes.push({kind:'hairline',role:'structure',subtype:'crossbar',
    d:'M 13 55 Q 43 43 77 49',feature:'E-middle-arm'});
   letter.variant+='-middle-arm';
  }
