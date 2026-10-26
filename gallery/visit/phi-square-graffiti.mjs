@@ -3,7 +3,7 @@
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
-export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v3-ph-i':'phi-square-golden-eight-v6-ph-i')+'|sprayed-throwups-v'+VERSION;
+export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v4-phi-only':'phi-square-golden-eight-v7-phi-only')+'|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
 export const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
@@ -66,9 +66,11 @@ export function planSquareTags(objects=planPhiSquare()){
    const centre={x:object.x+n.x*half,z:object.z+n.z*half};
    const count=SQUARE_TAG_COUNTS[faceIndex%4],phase=faceIndex*3;
    for(let index=0;index<count;index++){
-    const slot=marks.length,phrase=(index+faceIndex)%3===1?'φ':'ph-i',seed=PHI_SQUARE_REVISION+'|'+object.id+'|'+side+'|'+index;
+    const slot=marks.length,phrase='φ',seed=PHI_SQUARE_REVISION+'|'+object.id+'|'+side+'|'+index;
     const ink=inks[(slot+faceIndex)%inks.length],form=SQUARE_TAG_FORMS[(slot*5+faceIndex*3)%SQUARE_TAG_FORMS.length];
     const hand=writers[(slot*7+faceIndex*11)%writers.length],tag=makeSquareTag(phrase,seed,ink,{form,hand});
+    // Every outdoor mark is a lowercase phi; writer profiles and paint weight provide variety.
+    tag.paintWidth=0.85+((slot*7+faceIndex*3)%11)*0.19;
     const p=goldenSquarePlacement({bounds:tag.bounds,length:face.length,wallHeight:object.height,count,index,phase});
     marks.push({id:seed,date:'__phi_reception__',level:0,slot,surface:'square',material:object.material,phrase,text:tag.text,hand:tag.hand,form:tag.form,ink,seed:tag.seed,
      face:{id:object.id+':'+side,centre,length:face.length,roomY:0},width:p.width,height:p.height,rotation:p.rotation,phi:p.phi,
