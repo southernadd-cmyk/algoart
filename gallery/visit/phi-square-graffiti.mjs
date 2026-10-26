@@ -1,8 +1,8 @@
 // Reception-only writing surfaces. The latest approved broad-nib engine supplies
 // the letters and sprayed atlas; the lowercase symbol keeps its own descender.
 import {makeTowerFamilyTag,TOWER_LETTERING_REVISION} from './tower-family-lettering.mjs';
-import {createTowerGraffiti} from './exterior-graffiti.mjs';
-import {tiledBoxUvs} from './architectural-materials.mjs';
+import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
+import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 export const PHI_SQUARE_REVISION='phi-square-v1|'+TOWER_LETTERING_REVISION;
 export function makeSquareTag(text,seed,ink){
  const tag=makeTowerFamilyTag(text,{hand:'F',seed,ink,finish:'spray',paintWidth:2});
