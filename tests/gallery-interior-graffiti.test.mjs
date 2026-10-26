@@ -1,4 +1,5 @@
 import {TOWER_HANDS} from '../gallery/visit/tower-graffiti-styles.mjs';
+import {TOWER_LETTERING_REVISION} from '../gallery/visit/tower-family-lettering.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -22,7 +23,7 @@ test('every floor gets three to five small handstyles on painting-free wall face
   assert.ok(marks.length>=3&&marks.length<=5);assert.deepEqual(planInteriorGraffiti(input),marks);
   for(const m of marks){assert.ok(TOWER_HANDS.includes(m.hand));assert.equal(m.surface,'interior');assert.equal(m.form,'handstyle');assert.ok(!art.has(m.face.id));assert.ok(m.width<=1.35&&m.height<=.450001);assert.ok(m.width>0&&m.height>0);}
   assert.equal(new Set(marks.map(m=>m.hand)).size,marks.length,'Each floor must use a different A–Z writer');
-  assert.ok(marks.every(m=>m.tag.renderer==='az-nine-v1'&&m.tag.version==='az-nine-v1-20261025'));
+  assert.ok(marks.every(m=>m.tag.renderer==='az-nine-v1'&&m.tag.version===TOWER_LETTERING_REVISION));
   const availableRooms=new Set(interiorWallFaces(input.layout,input.hangs).map(f=>f.roomIndex));
   assert.equal(new Set(marks.map(m=>m.face.roomIndex)).size,Math.min(availableRooms.size,marks.length));
   assert.ok(marks.some(m=>m.rotation<0)&&marks.some(m=>m.rotation>0));
