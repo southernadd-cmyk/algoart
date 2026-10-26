@@ -18,7 +18,7 @@ try {
    await page.waitForFunction(mode=>document.getElementById('facts')?.textContent?.startsWith(mode==='original'?'ORIGINAL FIRST-FIT':'CURATOR V1'),placement,{timeout:60000});
    const summary=await page.locator('#facts').textContent();
    assert.match(summary,/paintings.*sculptures.*unplaced/);
-   const parsed=summary.match(/(\\d+) paintings.*?(\\d+) sculptures.*?(\\d+) unplaced/);
+   const parsed=summary.match(/(\d+) paintings.*?(\d+) sculptures.*?(\d+) unplaced/);
    assert(parsed,'Could not parse artwork totals: '+summary);
    assert.equal(Number(parsed[1])+Number(parsed[2])+Number(parsed[3]),archive,'Mismatch with archive '+date);
    assert.match(summary,/0 unplaced/,'Artwork missing from '+placement+' placement');
