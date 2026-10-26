@@ -1234,7 +1234,19 @@ function constructPhiGallery(layout,studies){
   const approach={doorway,outward,pathLength:42,halfWidth:3.25};
   const exterior=createExteriorLandscape(THREE,scene,layout,studies,{
     lowPower:galleryFinish.lowPower,protectedLayouts:[],approach,plaza});
-  addPermanentPlazaSculptures(scene,plaza);
+  // Landmark sculptures above the reception entrance, not in the walking square.
+  if(currentFloor===0){
+   const monuments=addPermanentPlazaSculptures(scene,plaza);
+   const frontage=phi.floor.rooms.filter(p=>Math.abs(p.z-doorway.z)<.01).sort((a,b)=>b.w-a.w)[0];
+   const centre=frontage?frontage.x+frontage.w/2:doorway.x;
+   const span=frontage?frontage.w:14;
+   monuments.forEach((m,i)=>{
+    m.position.set(centre+(i?1:-1)*Math.max(3.4,span*.32),
+      elevation+ROOM_HEIGHT+.36,doorway.z+1.25);
+    m.rotation.y=i?-.14:.14;
+   });
+   window.__phiRoofMonuments=monuments.length;
+  }
   deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
   window.__phiPlaza={centre:plaza.centre,benchCount:6,monumentCount:2,visitorSlots:2};
   // Permit visitors to exit the lobby onto the open paved square.
@@ -1281,6 +1293,23 @@ function constructPhiGallery(layout,studies){
  }
  // Gallery-side lift doors: frame and leaves kept distinct from walking collision.
  const liftFace=l.portal.at;
+ // Two animated steel landing leaves, aligned to the physical portal.
+ liftDoors=[];
+ for(const side of [-1,1]){
+  const leaf=block(.105,2.8,l.portal.width/2-.045,liftFace-.10,
+    elevation+1.42,l.z+side*(l.portal.width/4),brushed);
+  leaf.userData.closed=leaf.position.clone();
+  leaf.userData.open=leaf.position.clone().add(new THREE.Vector3(0,0,side*(l.portal.width/2-.055)));
+  liftDoors.push(leaf);
+ }
+ liftDoorClosure=0;liftDoorTarget=0;
+ // Brushed cabin door and illuminated floor indicator.
+ const indicator=document.createElement('canvas');indicator.width=512;indicator.height=128;
+ const ink=indicator.getContext('2d');ink.fillStyle='#202d2a';ink.fillRect(0,0,512,128);
+ ink.fillStyle='#f0e8c9';ink.font='bold 57px Georgia';ink.fillText(currentFloor===0?'G · RECEPTION':'FLOOR '+currentFloor,28,82);
+ const tex=new THREE.CanvasTexture(indicator);tex.colorSpace=THREE.SRGBColorSpace;
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+ sign.position.set(liftFace-.16,elevation+3.33,l.z);sign.rotation.y=Math.PI/2;scene.add(sign);
  for(const side of [-1,1])block(.16,3.1,.17,liftFace,elevation+1.55,l.z+side*1.22,join);
  block(.19,.24,2.55,liftFace,elevation+3.15,l.z,join);
  rig.position.copy(liftCabinPosition);
@@ -1772,10 +1801,12 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   }
   if(viaLift&&liftCabinPosition){
     rig.position.copy(liftCabinPosition);
-    const towards=plan.phi?new THREE.Vector3(0,0,-1):new THREE.Vector3(plan.rooms[0].x-liftCabinPosition.x,0,plan.rooms[0].z-liftCabinPosition.z);
+    const towards=plan.phi?new THREE.Vector3(Math.cos(plan.phi.world?.theta||0),0,-Math.sin(plan.phi.world?.theta||0)):new THREE.Vector3(plan.rooms[0].x-liftCabinPosition.x,0,plan.rooms[0].z-liftCabinPosition.z);
     yaw=Math.atan2(-towards.x,-towards.z);
     rig.rotation.y=yaw;pitch=0;camera.rotation.x=0;
     liftWasNear=true;welcome.hidden=true;
+    liftDoorClosure=1;liftDoorTarget=0;
+    for(const leaf of liftDoors)leaf.position.copy(leaf.userData.closed);
     history.replaceState(null,'','?date='+date);
   }
   $('liftMonth').value=(reception?archiveDates[1]:date).slice(0,7);
