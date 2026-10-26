@@ -36,8 +36,14 @@ export function planPhiReception(floor,circulation,physical){
    z:w.axis==='z'?w.at+w.normal.z*.14:w.centre,
    axis:w.axis,normal:w.normal,width:Math.min(4.4,w.length-.1),room:w.room
  }));
- const plants=entries.filter(p=>!desk||Math.hypot(p.x-desk.x,p.z-desk.z)>3)
-   .slice(0,2).map(p=>({x:p.x,z:p.z,room:p.room}));
+ const corners=floor.mergedRooms.flatMap((room,i)=>room.pieces.flatMap(p=>[
+  {x:p.x+.75,z:p.z+.75,room:i},{x:p.x+p.w-.75,z:p.z+.75,room:i},
+  {x:p.x+.75,z:p.z+p.h-.75,room:i},{x:p.x+p.w-.75,z:p.z+p.h-.75,room:i}
+ ]));
+ const plants=corners.filter(p=>Math.hypot(p.x-start.x,p.z-start.z)>3.4&&
+  Math.hypot(p.x-end.x,p.z-end.z)>2.8&&distSegment(p.x,p.z,start,end)>2.3&&
+  (!desk||Math.hypot(p.x-desk.x,p.z-desk.z)>2))
+  .slice(0,2).map(p=>({...p,placement:'corner'}));
  return {desk,signage,plants,entrance:start,lift:end,checks:{
   deskClear:!desk||distSegment(desk.x,desk.z,start,end)>=2.2,
   signCount:signage.length,passageClear:true
