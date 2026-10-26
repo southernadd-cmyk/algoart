@@ -11,7 +11,7 @@ function paintExteriorUnderstroke(ctx,x,y,width,height){
  const bottom=Math.min(ctx.canvas.height,Math.ceil(y+height+pad));
  const w=right-left,h=bottom-top;if(w<=0||h<=0)return;
  const original=document.createElement('canvas');original.width=w;original.height=h;
- const oc=original.getContext('2d');oc.drawImage(ctx.canvas,left,top,w,h,0,0,w,h);
+ const oc=original.getContext('2d',{willReadFrequently:true});oc.drawImage(ctx.canvas,left,top,w,h,0,0,w,h);
  const mask=document.createElement('canvas');mask.width=w;mask.height=h;
  const mc=mask.getContext('2d');mc.drawImage(original,0,0);mc.globalCompositeOperation='source-in';
  mc.fillStyle='#f8f7f0';mc.fillRect(0,0,w,h);
@@ -100,7 +100,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
    const material=new THREE.MeshStandardMaterial({map:texture,transparent:true,depthWrite:false,depthTest:true,alphaTest:.015,
     roughness:.96,metalness:0,side:THREE.FrontSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
    material.userData.galleryPersistent=true;texture.userData.galleryPersistent=true;
-   const page={...plan,canvas,context:canvas.getContext('2d'),texture,material,shader:null,dirty:false};
+   const page={...plan,canvas,context:canvas.getContext('2d',{willReadFrequently:true}),texture,material,shader:null,dirty:false};
    // Keep the wall relief and grain visible through the deposited paint.
    // This UV is measured in wall metres, independently of the paint atlas.
    material.onBeforeCompile=shader=>{
