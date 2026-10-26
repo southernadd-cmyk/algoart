@@ -1120,7 +1120,7 @@ function constructPhiGallery(layout,studies){
  // ceiling photographic texture, with trim only at true physical boundaries:
  // subdivided internal cells should not look like a ceiling grid.
  for(const p of phi.pieces)
-  block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,ceilingFinish);
+  block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,ceilingFinish);
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.45)continue;
   if(w.axis==='x'){
