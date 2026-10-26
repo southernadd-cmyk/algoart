@@ -1252,12 +1252,14 @@ function constructPhiGallery(layout,studies){
   if(currentFloor===0){
    const monuments=addPermanentPlazaSculptures(scene,plaza);
    const frontage=phi.floor.rooms.filter(p=>Math.abs(p.z-doorway.z)<.01).sort((a,b)=>b.w-a.w)[0];
-   const centre=frontage?frontage.x+frontage.w/2:doorway.x;
-   const span=frontage?frontage.w:14;
+   // Visitor faces north (+Z) from the square: visual left is -X.
+   // Keep the congested right corner entirely clear.
+   const left=frontage?frontage.x+2.6:doorway.x-9;
+   const middle=frontage?frontage.x+frontage.w*.51:doorway.x-1;
    monuments.forEach((m,i)=>{
-    m.position.set(centre+(i?1:-1)*Math.max(3.4,span*.32),
-      elevation+ROOM_HEIGHT+.36,doorway.z+1.25);
-    m.rotation.y=i?-.14:.14;
+    m.position.set(i===0?left:middle,
+      elevation+ROOM_HEIGHT+.36,doorway.z+2.0);
+    m.rotation.y=i===0?.12:-.12;
    });
    window.__phiRoofMonuments=monuments.length;
   }
@@ -1276,6 +1278,7 @@ function constructPhiGallery(layout,studies){
    const markerSign=new THREE.Mesh(new THREE.PlaneGeometry(8.6,1.62),
     new THREE.MeshBasicMaterial({map,side:THREE.DoubleSide}));
    markerSign.position.set(doorway.x,elevation+ROOM_HEIGHT-.95,doorway.z-.14);
+   markerSign.rotation.y=Math.PI; // Canvas front must face south towards the square.
    markerSign.name='phi-exterior-marker-sign';
    scene.add(markerSign);
    window.__phiExteriorSign=true;
