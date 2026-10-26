@@ -25,18 +25,25 @@ export function appendTowerBoxBatches(THREE, parent, buckets) {
     for (let i = 0; i < boxes.length; i++) {
       const [w, h, d, x, y, z] = boxes[i];
       const offset = i * verticesPerBox;
+      // Optional world-space yaw for golden-angle archival floors. Existing
+      // seven-coordinate callers remain unchanged (rotation defaults to zero).
+      const yaw = boxes[i][6] || 0;
+      const cs = Math.cos(yaw), sn = Math.sin(yaw);
       const texU = [d, d, w, w, w, w];
       const texV = [h, h, d, d, h, h];
       for (let v = 0; v < verticesPerBox; v++) {
         const p = (offset + v) * 3;
         const uv = (offset + v) * 2;
         const face = Math.floor(v / 4);
-        positions[p] = x + basePosition.getX(v) * w;
+        const px = basePosition.getX(v) * w;
+        const pz = basePosition.getZ(v) * d;
+        const nx = baseNormal.getX(v), nz = baseNormal.getZ(v);
+        positions[p] = x + px * cs + pz * sn;
         positions[p + 1] = y + basePosition.getY(v) * h;
-        positions[p + 2] = z + basePosition.getZ(v) * d;
-        normals[p] = baseNormal.getX(v);
+        positions[p + 2] = z - px * sn + pz * cs;
+        normals[p] = nx * cs + nz * sn;
         normals[p + 1] = baseNormal.getY(v);
-        normals[p + 2] = baseNormal.getZ(v);
+        normals[p + 2] = -nx * sn + nz * cs;
         uvs[uv] = baseUv.getX(v) * (tile ? Math.max(.001, texU[face] / tile) : 1);
         uvs[uv + 1] = baseUv.getY(v) * (tile ? Math.max(.001, texV[face] / tile) : 1);
       }
