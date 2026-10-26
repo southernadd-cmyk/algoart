@@ -3,7 +3,7 @@
 :root{font-family:Georgia,serif;color:#292b26;background:#efece4}*{box-sizing:border-box}body{max-width:1270px;margin:auto;padding:28px 24px 90px}h1,h2,h3{font-weight:400}h1{font-size:clamp(35px,5vw,58px);letter-spacing:-.045em;line-height:1.04}h2{font-size:28px;margin:0 0 12px}h3{font-size:19px;margin:0 0 10px}p{line-height:1.5}nav{display:flex;gap:20px;flex-wrap:wrap}a{color:inherit;text-underline-offset:3px}.intro{max-width:880px}header{padding-bottom:19px;border-bottom:1px solid #c5bfaf}.controls{display:flex;gap:13px;flex-wrap:wrap;align-items:end;margin:21px 0}label{display:grid;gap:6px;font-size:14px}button,select,input{font:inherit;background:#fcfaf5;color:inherit;padding:8px 11px;border:1px solid #b9b5ab;border-radius:3px}button{cursor:pointer}.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.panel{background:#faf8f0;border:1px solid #cdc8ba;padding:15px;min-width:0}.panel h3{padding-bottom:8px;border-bottom:1px solid #ddd8cd}.letters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.letter{min-width:0;background:white;padding:6px;border:1px solid #eee9e1;text-align:center}.letter svg{width:100%;height:auto;display:block}.letter span{font-size:12px;color:#64655d}.letter.changed{background:#ecefe5;border-color:#a2ae9e}.note{font-size:13px;color:#686960}.words{display:grid;gap:10px}.word{background:white;padding:10px;min-width:0}.word svg{display:block;width:100%;height:auto;max-height:120px;overflow:visible}.word .desc{font-size:13px;color:#666}.alert{border-left:3px solid #8b9c87;padding:12px 16px;margin:20px 0;background:#faf8f0}.summary{font-size:15px}.count{color:#5e685b;font-size:14px}footer{border-top:1px solid #c5bfaf;margin-top:30px;padding-top:15px;color:#686960;font-size:14px}@media(max-width:780px){body{padding:20px 12px}.two{grid-template-columns:1fr}.letters{grid-template-columns:repeat(6,minmax(0,1fr))}.panel{padding:10px}.controls{gap:10px}}
 </style></head><body>
 <header><nav><a href="./pilot.html">Earlier targeted comparison</a><a href="./evidence.html">Source evidence by family</a><a href="../phase-d-alphabets.html">Current V1 review</a></nav>
-<h1>Nine alphabets, all 26 letters</h1><p class="intro">A source-grounded V2 workroom. View each entire A–Z alphabet against the approved V1, including φ, then compare identical words at the same seed. Pale highlighted tiles mark changed glyph geometry. Unhighlighted letters are unchanged until their own source-led revision is ready.</p></header>
+<h1>Nine alphabets, all 26 letters</h1><p class="intro">A V2 research and legibility workroom. View each entire A–Z alphabet against the approved V1, including φ, then compare identical words at the same seed. Pale highlighted tiles mark changed glyph geometry. Unhighlighted letters retain their original geometry. Source-led changes and word-legibility repairs are identified separately below.</p></header>
 <div class="alert"><strong>Research version only.</strong> The live tower stays on V1. The uploaded sheets are not republished. The revised writer B is deliberately thinner than the V1 arrow-marker because primary sheet 7 is a skeletal handstyle.</div>
 <div class="controls"><label>Style<select id="style"></select></label><label>Test word<input id="custom" value="MUSHROOM" maxlength="55"></label><label>Seed<input id="seed" value="PP-NINE-V2-RESEARCH"></label><label>Joins<select id="joins"><option value="on">On</option><option value="off">Off</option></select></label><label>V2 ornaments<select id="ornaments"><option value="on">On (word budget)</option><option value="off">Off (structural only)</option></select></label><button id="next" type="button">Next style</button></div>
 <p id="summary" class="summary" aria-live="polite"></p>
@@ -45,7 +45,13 @@ function draw(){
  const details=$('details');details.replaceChildren();
  if(!changed.length)details.append(node('p','No V2 letter geometry changes yet. This family remains an intentional reference control.'));
  for(const key of changed){
-  const p=PILOT_EVIDENCE[key];details.append(node('h3',key+' · source sheet '+p.sheet),node('p','Observed: '+p.observation),node('p','V2 hypothesis: '+p.change));
+  const p=PILOT_EVIDENCE[key];
+  if(!p){details.append(node('p',key+' · missing evidence record'));continue}
+  const repair=p.basis==='legibility';
+  details.append(node('h3',key+' · '+(repair?'legibility repair':'source-led study')+' · sheet '+p.sheet));
+  if(repair)details.append(node('p','Failed word test: '+p.failedWord));
+  else details.append(node('p','Source observation: '+p.observation));
+  details.append(node('p',(repair?'Repair rationale: ':'Source-led hypothesis: ')+p.change));
  }
 }
 $('style').value='A';
