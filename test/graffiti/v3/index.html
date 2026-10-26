@@ -58,7 +58,7 @@ function draw(){
     // Normalize sampling using a dense polyline; actual outline geometry stays V2.
     const len=p.getTotalLength(),samples=[],sampledPoints=[];
     for(let i=0;i<=Math.ceil(len/3);i++){const a=p.getPointAtLength(len*i/Math.ceil(len/3)),motion=styleMovementPoint(a.x,a.y,{letterIndex:item.index,strokeIndex,seed:$('seed').value,family:f.id,mode:f.id==='G'?'none':$('orbit').value,progress:i/Math.ceil(len/3)}),b=new DOMPoint(motion.x,motion.y).matrixTransform(q);sampledPoints.push({x:b.x,y:b.y});samples.push((i?'L':'M')+b.x.toFixed(2)+' '+b.y.toFixed(2));}
-    transformed.push({d:samples.join(' '),kind:st.kind,role:gestureRole(st,strokeIndex),subtype:f.id==='F'?broadNibSubtype(st,sampledPoints):null,strokeIndex,width:st.kind==='hairline'?Math.max(1.5,f.weight*.22):f.weight*(st.kind==='heavy'?1.32:1)});
+    transformed.push({d:samples.join(' '),kind:st.kind,role:gestureRole(st,strokeIndex),subtype:f.id==='F'?broadNibSubtype(st,sampledPoints):null,strokeIndex,width:st.kind==='hairline'?(f.id==='F'?Math.max(2.5,f.weight*.45):Math.max(1.5,f.weight*.22)):f.weight*(st.kind==='heavy'?1.32:1)});
    }
   }
   transformed.push(...loopComposition.connectors,...loopComposition.shared);
