@@ -1,3 +1,4 @@
+import {planPhiCirculation} from './phi-circulation.mjs';
 // Phase C: carve selected golden cells into open courts and bridge across them.
 // Returns a derived floor; the original deterministic subdivision stays intact.
 export function planPhiBridges(plan,{maxBridges=3}={}){
@@ -45,15 +46,27 @@ export function planPhiBridges(plan,{maxBridges=3}={}){
   picked.push({...option,id:'bridge-'+(picked.length+1)});usedRooms.add(owner);
   reserved.add(option.voidCell);reserved.add(option.fromCell);reserved.add(option.toCell);
  }
- if(!picked.length)return {plan,bridges:[],voids:[],candidateCount:options.length};
+ // Ensure removing a void never destroys the conventional doorway network.
+ // Keep the bridges as an optional loop, not the only route to a room.
+ function derived(selected){
+  const voidIds=new Set(selected.map(b=>b.voidCell));
+  const rooms=plan.mergedRooms.map(r=>{
+   const pieces=r.pieces.filter(p=>!voidIds.has(p.id)),area=pieces.reduce((sum,p)=>sum+p.w*p.h,0);
+   if(!pieces.length)return null;
+   return {...r,pieces,cells:pieces.map(p=>p.id),area,
+    x:Math.min(...pieces.map(p=>p.x)),z:Math.min(...pieces.map(p=>p.z)),
+    width:Math.max(...pieces.map(p=>p.x+p.w))-Math.min(...pieces.map(p=>p.x)),
+    depth:Math.max(...pieces.map(p=>p.z+p.h))-Math.min(...pieces.map(p=>p.z))};
+  });
+  if(rooms.some(r=>!r))return null;
+  return {...plan,mergedRooms:rooms,rooms:cells.filter(c=>!voidIds.has(c.id))};
+ }
+ while(picked.length){
+  const candidate=derived(picked);
+  if(candidate&&planPhiCirculation(candidate).connected)break;
+  picked.pop();
+ }
+ const derivedPlan=derived(picked)||plan;
  const voidIds=new Set(picked.map(b=>b.voidCell));
- const rooms=plan.mergedRooms.map(r=>{
-  const pieces=r.pieces.filter(p=>!voidIds.has(p.id));
-  const area=pieces.reduce((sum,p)=>sum+p.w*p.h,0);
-  return {...r,pieces,cells:pieces.map(p=>p.id),area,
-   x:Math.min(...pieces.map(p=>p.x)),z:Math.min(...pieces.map(p=>p.z)),
-   width:Math.max(...pieces.map(p=>p.x+p.w))-Math.min(...pieces.map(p=>p.x)),
-   depth:Math.max(...pieces.map(p=>p.z+p.h))-Math.min(...pieces.map(p=>p.z))};
- });
- return {plan:{...plan,mergedRooms:rooms,rooms:cells.filter(c=>!voidIds.has(c.id))},bridges:picked,voids:cells.filter(c=>voidIds.has(c.id)),candidateCount:options.length};
+ return {plan:derivedPlan,bridges:picked,voids:cells.filter(c=>voidIds.has(c.id)),candidateCount:options.length};
 }
