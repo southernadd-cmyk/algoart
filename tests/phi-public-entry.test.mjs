@@ -6,12 +6,12 @@ const browser=await chromium.launch({headless:true});
 try{
  for(const options of [{viewport:{width:1200,height:800},deviceScaleFactor:1},{viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true}]){
   const context=await browser.newContext(options),page=await context.newPage(),errors=[],requests=[];
-  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
+  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push({url:r.url(),type:r.resourceType()}));
   const url='http://127.0.0.1:4173/gallery/visit/?date=2026-10-07&debug';
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>!document.getElementById('enter').disabled,null,{timeout:90000});
   assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),'2026-10-07');assert.match(await page.locator('#floorIndicator').innerText(),/7 Oct · Floor 3/);
-  assert.equal(await page.locator('#error').isVisible(),false);assert.ok(!requests.some(u=>/cdn\.jsdelivr|test\/virtual-gallery|tower-geometry\.bin/.test(u)));
+  assert.equal(await page.locator('#error').isVisible(),false);assert.deepEqual(requests.filter(({url,type})=>/\/test\/virtual-gallery\//.test(url)||/tower-geometry\.bin/.test(url)||(['script','stylesheet','font'].includes(type)&&new URL(url).origin!=='http://127.0.0.1:4173')),[],'Public date entry must not import test assets, legacy geometry or external scripts');
   await page.locator('#enter').focus();await page.keyboard.press('Enter');
   if(options.isMobile){
    const before=await page.evaluate(()=>window.__phiLiftState.yaw),touch=await context.newCDPSession(page);
