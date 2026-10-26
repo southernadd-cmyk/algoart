@@ -59,6 +59,7 @@ let liftDoors=[];
 let liftDoorClosure=0;
 let liftDoorTarget=0;
 let liftArrivalOpening=false;
+let liftPickerConsumed=false;
 let liftCabinPosition=null;
 let liftDoorThreshold=null;
 let currentFloor=0;
@@ -663,8 +664,8 @@ function animateLiftDoors(dt){
     const distance=Math.hypot(person.x-liftDoorThreshold.x,
       person.z-liftDoorThreshold.z);
     // Hysteresis keeps leaves from chattering at the activation boundary.
-    if(distance<2.6)liftDoorTarget=0;
-    else if(distance>3.05)liftDoorTarget=1;
+    if(distance<3.3)liftDoorTarget=0;
+    else if(distance>3.8)liftDoorTarget=1;
   }
   // Smooth, framerate-independent sliding movement.
   liftDoorClosure+=(liftDoorTarget-liftDoorClosure)*Math.min(1,dt*3.5);
@@ -772,7 +773,8 @@ function selectXRLift(controller){
   paintXRLift();
 }
 function openLift(){
-  if(!liftPosition||liftTravelling)return;
+  if(!liftPosition||liftTravelling||!$('lift').hidden)return;
+  liftPickerConsumed=true;
   if(renderer.xr.isPresenting){openXRLift();return;}
   liftReturnFocus=document.activeElement;
   pressed.clear();lookPressed.clear();
@@ -1813,6 +1815,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   exhibitLightTargets.length=0;
   resetInspection();
   liftPosition=null;liftDoorThreshold=null;liftWasNear=false;liftDoors=[];
+  liftPickerConsumed=false;
   const previous=new Set(scene.children);
   arrival=null;entranceDoor=null;
   exhibitDate=date;studyList=studies;plan=nextPlan;currentFloor=nextFloor;
@@ -1866,7 +1869,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     const towards=plan.phi?new THREE.Vector3(Math.cos(plan.phi.world?.theta||0),0,-Math.sin(plan.phi.world?.theta||0)):new THREE.Vector3(plan.rooms[0].x-liftCabinPosition.x,0,plan.rooms[0].z-liftCabinPosition.z);
     yaw=Math.atan2(-towards.x,-towards.z);
     rig.rotation.y=yaw;pitch=0;camera.rotation.x=0;
-    liftWasNear=true;welcome.hidden=true;
+    liftWasNear=true;liftPickerConsumed=true;welcome.hidden=true;
     liftDoorClosure=1;liftDoorTarget=1;
     for(const leaf of liftDoors)leaf.position.copy(leaf.userData.closed);
     history.replaceState(null,'','?date='+date);
@@ -2272,8 +2275,13 @@ function updateMovement(dt) {
   else if(onArrivalPath(rig.position.x,rig.position.z))rig.position.y=arrival.baseY;
   const atLift=Boolean(nearLift());
   if(xrLiftPanel && !atLift)closeXRLift();
-  // The calendar is opened deliberately (L or the Floors button), never
-  // by crossing a proximity threshold. Approaching only opens physical doors.
+  // Doors react at the threshold; the calendar opens exactly once after
+  // stepping into the cabin. Re-arm only after leaving the entire lift area.
+  if(!atLift && liftPosition &&
+     Math.hypot(rig.position.x-liftPosition.x,rig.position.z-liftPosition.z)>3.3)
+    liftPickerConsumed=false;
+  if(atLift&&!liftPickerConsumed&&!liftTravelling&&$('lift').hidden)
+    openLift();
   liftWasNear=atLift;
   rig.rotation.y=yaw;
   camera.rotation.x=renderer.xr.isPresenting?0:pitch;
