@@ -82,7 +82,7 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
     bounds:{...tag.bounds},tag});
   }
  }
- // Five new signatures per painted floor, using different freehand writer
+ // Fifteen supplemental signatures per painted floor, including large-format tags, using different freehand writer
  // profiles from any previously selected on its outward-facing facade.
  for(const {level,plan} of ordered){
   const faces=exteriorWallFaces(plan,level===0);
@@ -91,18 +91,20 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
   const existing=marks.filter(mark=>mark.level===level);
   const occupied=new Set(existing.map(mark=>mark.hand));
   const dialects=towerHandCycle(seed+'|'+plan.date+'|all-outside');
-  for(let extra=0;extra<10;extra++){
+  for(let extra=0;extra<15;extra++){
    const slot=TAGS_PER_PAINTED_FLOOR+extra;
    const hand=dialects.find(id=>!occupied.has(id)) || dialects[extra%dialects.length];
    // Nine approved families cover ten facade tags; repeat only after exhaustion.
    occupied.add(hand);
    const item=towerTagSlot({floorId:plan.date,seed:seed+'|front-freehand|'+slot,slot,hand});
-   const phrase=extra<5?GRAFFITI_WORDS[(extra+level)%GRAFFITI_WORDS.length]:['Proportion','Piece','PHI','φ','Proportion Piece'][extra-5];
+   const phrase=extra<5?GRAFFITI_WORDS[(extra+level)%GRAFFITI_WORDS.length]:extra<10?['Proportion','Piece','PHI','φ','Proportion Piece'][extra-5]:['Proportion','Piece','Proportion Piece','PHI','φ'][extra-10];
    const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:2});
-   const r=makeRandom(item.seed+'|front-wall'),desiredWidth=phrase==='Proportion Piece'?r.range(3.2,4.3):phrase==='PHI'?r.range(1.7,2.5):phrase==='Proportion'?r.range(3,4.1):phrase==='Piece'?r.range(2.2,3.1):r.range(1.1,1.6);
+   const r=makeRandom(item.seed+'|front-wall'),epic=extra>=10&&extra<=12;
+   const desiredWidth=epic?(phrase==='Proportion Piece'?r.range(8,10.5):phrase==='Proportion'?r.range(7,9.5):r.range(5.5,7.5)):
+    phrase==='Proportion Piece'?r.range(3.2,4.3):phrase==='PHI'?r.range(1.7,2.5):phrase==='Proportion'?r.range(3,4.1):phrase==='Piece'?r.range(2.2,3.1):r.range(1.1,1.6);
    // Try several phi-phased placements on each wall rather than stacking
    // every additional mark at the same five golden fractions.
-   const placed=candidates.flatMap(face=>Array.from({length:12},(_,attempt)=>{
+   const placed=candidates.flatMap(face=>Array.from({length:epic?30:12},(_,attempt)=>{
     const p=fitPhiTag({bounds:tag.bounds,desiredWidth,maxHeight:ROOM_HEIGHT-1.5,
      lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,bottom:.65,top:ROOM_HEIGHT-.55,slot:slot+attempt*3,phase:extra*7+attempt*11});
     const cos=Math.abs(Math.cos(p.rotation)),sin=Math.abs(Math.sin(p.rotation));
@@ -118,7 +120,7 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
      const dy=Math.max(0,Math.min(p.centreY+hh,my+mh)-Math.max(p.centreY-hh,my-mh));
      return sum+dx*dy;
     },0);
-    return {face,...p,overlap,score:overlap*100+(neighbours.length*0.15)+attempt*.002};
+    return {face,...p,overlap,score:overlap*(epic?12:100)+(neighbours.length*(epic?.07:.15))+attempt*.002-(epic?Math.min(p.width,desiredWidth)*.10:0)};
    })).filter(p=>p.width>0&&p.height>0).sort((a,b)=>a.score-b.score);
    const chosen=placed[0];if(!chosen)throw new Error('No suitable facade wall for freehand tag');
    const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
