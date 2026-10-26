@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {FAMILIES as v1,composeWord as composeV1} from '../family-library.mjs';
 import {FAMILIES as v2,composeWord as composeV2,getGlyph,pilotDiff,PILOT_EVIDENCE,V2_REVISION} from './v2-library.mjs';
 
-test('Source-led pilot edits twenty-three individually supported glyphs in all nine families',()=>{
- assert.deepEqual(pilotDiff().sort(),['A:M','A:O','B:A','B:O','C:A','C:O','D:E','D:H','D:S','E:A','E:H','E:M','E:N','F:A','F:S','G:O','G:S','G:U','H:A','H:S','I:A','I:M','I:O']);
+test('Source-led pilot documents twenty-seven revised glyphs in all nine families',()=>{
+ assert.deepEqual(pilotDiff().sort(),['A:M','A:O','B:A','B:E','B:O','B:P','C:A','C:O','D:E','D:H','D:S','E:A','E:H','E:M','E:N','F:A','F:S','G:O','G:S','G:U','H:A','H:O','H:S','I:A','I:E','I:M','I:O']);
  assert.deepEqual(Object.keys(PILOT_EVIDENCE).sort(),pilotDiff().sort());
  assert.equal(v1.length,9);assert.equal(v2.length,9);
  for(let i=0;i<9;i++){
@@ -45,7 +45,7 @@ test('All words remain deterministically positioned, no silent V1 geometry chang
  }
 });
 test('All V2 geometry and symbol paths remain valid; improvements are named hypotheses',()=>{
- assert.match(V2_REVISION,/source-led-structural-roles/);
+ assert.match(V2_REVISION,/source-led-glyph-repair/);
  for(const f of v2)for(const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZΦ'){
   const glyph=getGlyph(f.id,ch);assert.ok(glyph.shapes.length);
   for(const s of glyph.shapes)assert.match(s.d,/^M\s*-?[\d.]+\s+-?[\d.]+/);
