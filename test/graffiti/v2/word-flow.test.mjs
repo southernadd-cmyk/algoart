@@ -102,3 +102,21 @@ test('Loops U has an open high entrance and S remains a distinct two-bowl spine'
  assert.equal(u.shapes.filter(x=>x.role==='ornament').length,1);
  assert.equal(s.shapes.filter(x=>x.role==='ornament').length,1);
 });
+
+test('glyph repairs preserve distinct uppercase counters and visible middle arms',()=>{
+ const arrowP=getGlyph('B','P'),arrowE=getGlyph('B','E');
+ assert.ok(arrowP.shapes[0].d.includes('Q 93 40'),'Arrow-cross P requires a distinct upper bowl');
+ assert.ok(!arrowP.shapes[0].d.includes('L 83 110'),'Arrow-cross P must not grow an R leg');
+ assert.ok(arrowE.shapes.some(x=>x.d.includes('L 64 54')),'Arrow-cross E needs a middle arm');
+ const chiselE=getGlyph('I','E');
+ assert.ok(chiselE.shapes.some(x=>x.d.includes('L 69 53')),'Chisel E needs a distinct middle shelf');
+ const fragmentedO=getGlyph('H','O');
+ assert.ok(fragmentedO.shapes.some(x=>x.kind==='fill'&&x.d.includes('L 84 101')),'Fragmented O must close its lower return');
+});
+test('ornament semantics follow gesture geometry, not mutable index',()=>{
+ const f=FAMILIES.find(x=>x.id==='G'),o=getGlyph('G','O');
+ const original=[...o.shapes],reversed=[...original].reverse();
+ assert.deepEqual(reversed.filter(x=>x.role==='ornament').map(x=>x.d),
+  original.filter(x=>x.role==='ornament').map(x=>x.d));
+ assert.ok(original.every(x=>x.role==='ornament'?x.kind==='hairline':true));
+});
