@@ -15,6 +15,7 @@ Prepared 26 October 2026. This is the production migration plan; the public entr
 | Area | Current state | Work before cutover |
 | --- | --- | --- |
 | Public boot | `gallery/visit/index.html` loads the old `gallery-bundle.js` | Prepare a separate φ bundle and switch the public page to it |
+| Page controls | The public HTML lacks `#liftReception`, which the φ app expects | Promote the matching reception/lift template with the new bundle |
 | Test boot | `test/virtual-gallery/full-engine.html` uses source modules and a CDN import map | Bundle the pinned npm Three.js and loaders; verify one Three.js instance |
 | Build automation | `gallery:bundle` and the rebuild, sync and reproducibility workflows target `gallery-v2.js` | Add an explicit φ build/parity target and update release workflows |
 | Assets | New props and credits, plus the renderer adapter and presentation CSS, are under `test/virtual-gallery/` | Promote their runtime paths into the public gallery and audit relative URLs |
@@ -26,7 +27,7 @@ A trial esbuild of the current φ source succeeds: 1,087,932 bytes minified and 
 
 ## 1. Prepare a production candidate
 
-Create a release branch and a reviewable PR. Extract the shared φ application entry from the test file, keeping debug views behind the debug flag. Give the production bundle its own filename, for example `gallery-phi-bundle.js`; retain the existing legacy bundle for rollback. Add a reproducible `gallery:bundle:phi` build and parity check. Check that all dynamic loaders resolve to the same bundled Three.js.
+Create a release branch and a reviewable PR. Extract the shared φ application entry from the test file, keeping debug views behind the debug flag. Give the production bundle its own filename, for example `gallery-phi-bundle.js`; retain the existing legacy bundle for rollback. Promote the matching HTML controls as part of this change: swapping only the JavaScript would fail because the old public page has no reception button. Add a reproducible `gallery:bundle:phi` build and parity check. Check that all dynamic loaders resolve to the same bundled Three.js.
 
 Move the φ renderer adapter, presentation CSS, seven credited model assets and credits page to stable public paths. Audit visitor, lamp, spotlight, texture, sculpture-pack and mirrored artwork URLs from both the public route and the staging route. Preserve embedded attribution and modification records.
 
