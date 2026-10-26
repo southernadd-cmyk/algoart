@@ -50,3 +50,18 @@ test('sculpture placements respect room and exhibition clearance',()=>{
    assert.ok(sculpture.depth>0);
  }
 });
+
+test('curator supports daily collections ranging from 10 to 20 artworks',()=>{
+ for(const count of [10,12,16,18,20]){
+  const floor=planPhiBridges(planPhiFloor('2026-10-26',{artworks:count})).plan;
+  const circulation=planPhiCirculation(floor);
+  const physical=buildPhysicalPhiFloor(floor,circulation);
+  const studies=Array.from({length:count},(_,i)=>({id:'study-'+i,portrait:i%3===0,aspect:i%3===0?.72:1.4}));
+  const result=planCuratedPhiExhibition(floor,circulation,physical,studies);
+  assert.equal(result.paintings.length+result.sculptures.length+result.unplaced.length,count);
+  assert.equal(result.checks.unique,true);
+  assert.equal(result.checks.inwardFacing,true);
+  assert.equal(result.checks.sculptureClearances,true);
+  assert.equal(circulation.connected,true);
+ }
+});
