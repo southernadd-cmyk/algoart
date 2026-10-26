@@ -4,7 +4,7 @@ import {planPhiFloor} from '../gallery/visit/phi-architecture.mjs';
 import {planPhiBridges} from '../gallery/visit/phi-bridges.mjs';
 import {planPhiCirculation} from '../gallery/visit/phi-circulation.mjs';
 import {buildPhysicalPhiFloor} from '../gallery/visit/phi-physical.mjs';
-import {exhibitionSurfaces,planCuratedPhiArtwork} from '../gallery/visit/phi-curator.mjs';
+import {exhibitionSurfaces,planCuratedPhiArtwork,planCuratedPhiExhibition} from '../gallery/visit/phi-curator.mjs';
 
 test('curatorial adapter is repeatable and never duplicates studies',()=>{
   const floor=planPhiBridges(planPhiFloor('2026-10-26',{artworks:18})).plan;
@@ -32,4 +32,21 @@ test('portraits are reserved for sculpture curator',()=>{
   const result=planCuratedPhiArtwork(floor,circulation,physical,[{id:'portrait',portrait:true}]);
   assert.equal(result.paintings.length,0);
   assert.equal(result.unplaced.length,0);
+});
+
+test('sculpture placements respect room and exhibition clearance',()=>{
+ const floor=planPhiBridges(planPhiFloor('2026-10-26',{artworks:18})).plan;
+ const circulation=planPhiCirculation(floor);
+ const physical=buildPhysicalPhiFloor(floor,circulation);
+ const studies=Array.from({length:18},(_,i)=>({id:'art-'+i,portrait:i%3===0,aspect:i%3===0?.72:1.4}));
+ const a=planCuratedPhiExhibition(floor,circulation,physical,studies);
+ const b=planCuratedPhiExhibition(floor,circulation,physical,studies);
+ assert.deepEqual(a,b);
+ assert.equal(a.checks.unique,true);
+ assert.equal(a.checks.sculptureClearances,true);
+ assert.equal(a.sculptures.length+a.paintings.length+a.unplaced.length,studies.length);
+ for(const sculpture of a.sculptures) {
+   assert.ok(sculpture.width>0);
+   assert.ok(sculpture.depth>0);
+ }
 });
