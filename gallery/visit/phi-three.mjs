@@ -57,7 +57,7 @@ export function mountPhiThree(canvas){
    const byId=new Map(studies.map(v=>[v.id,v]));
    for(const a of artwork.paintings){const tall=Math.min(1.6,a.height);const panel=a.axis==='x'?block(a.at,1.73,a.u,.10,tall,a.width,canvasMaterial):block(a.u,1.73,a.at,a.width,tall,.10,canvasMaterial);
     const study=byId.get(a.studyId);if(!study?.image)continue;
-    new THREE.TextureLoader().load(study.image,texture=>{if(!root.children.includes(panel)){texture.dispose();return;}texture.colorSpace=THREE.SRGBColorSpace;const mat=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});const mesh=new THREE.Mesh(new THREE.PlaneGeometry(a.width,tall),mat);mesh.position.set(a.axis==='x'?a.at+.09:a.u,1.73,a.axis==='x'?a.u:a.at+.09);if(a.axis==='x')mesh.rotation.y=Math.PI/2;root.add(mesh);render();});
+    new THREE.TextureLoader().load(study.image,texture=>{if(!root.children.includes(panel)){texture.dispose();return;}texture.colorSpace=THREE.SRGBColorSpace;const mat=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});const mesh=new THREE.Mesh(new THREE.PlaneGeometry(a.width,tall),mat);const nx=a.normal?.x??(a.axis==='x'?1:0),nz=a.normal?.z??(a.axis==='z'?1:0);mesh.position.set(a.axis==='x'?a.at+nx*.09:a.u,1.73,a.axis==='x'?a.u:a.at+nz*.09);if(a.axis==='x')mesh.rotation.y=nx>0?Math.PI/2:-Math.PI/2;else if(nz<0)mesh.rotation.y=Math.PI;root.add(mesh);render();});
    }
    for(const a of artwork.sculptures){const study=byId.get(a.studyId);if(!study)continue;
     const material=study.material?.type?study.material:{type:study.material||'marker'};
