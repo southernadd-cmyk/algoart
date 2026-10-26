@@ -3,7 +3,7 @@
 <title>PROPORTION PIECE — φ tower rehearsal</title>
 <style>body{font:17px Georgia,serif;background:#eae6db;color:#26332c;margin:0}header{padding:18px 24px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}h1{font-size:25px;font-weight:normal;margin:0}main{display:grid;grid-template-columns:minmax(250px,32%) 1fr;gap:12px;padding:0 14px 14px}.panel{background:#f4f1e8;border:1px solid #b0a99d;padding:12px}canvas{width:100%;height:65vh;display:block;touch-action:none}iframe{border:1px solid #b0a99d;width:100%;height:80vh;background:#fff}select,button{font:inherit;padding:8px}#floors{width:100%;max-height:220px;overflow:auto}#floors button{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #ccc}#floors button[aria-current=true]{background:#d4dcd4}#status{font-size:14px;line-height:1.4}@media(max-width:750px){main{display:block}canvas{height:300px}iframe{height:80vh}}</style></head><body>
 <header><h1>PROPORTION PIECE · φ tower rehearsal</h1><a href="./">Current test gallery</a><a href="./phi-rehearsal.html">Single-floor study</a></header>
-<main><section class="panel"><p>Golden-angle φ-offset stacked floor preview. Select a floor to enter its real-art walkable exhibition. Full continuous lift animation and exterior dressing are still in development.</p><canvas id="tower" aria-label="Three-dimensional stacked φ gallery floor geometry"></canvas><p id="status" role="status">Reading gallery archive…</p><nav id="floors" aria-label="Tower lift floors"></nav></section><section><iframe id="exhibition" title="Walkable current exhibition floor" src="./phi-rehearsal.html?date=2026-10-26" loading="eager"></iframe></section></main>
+<main><section class="panel"><p>Golden-angle φ-offset stacked floor preview. Select a floor to enter its real-art walkable exhibition. The shaft, lobbies and enclosed connectors are now shown in the tower overview. Continuous lift travel and walking through these connectors are not yet wired into the single-floor viewer.</p><canvas id="tower" aria-label="Three-dimensional stacked φ gallery floor geometry"></canvas><p id="status" role="status">Reading gallery archive…</p><nav id="floors" aria-label="Tower lift floors"></nav></section><section><iframe id="exhibition" title="Walkable current exhibition floor" src="./phi-rehearsal.html?date=2026-10-26" loading="eager"></iframe></section></main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -25,7 +25,9 @@ const glassMaterial=new THREE.MeshStandardMaterial({color:0x91c5c9,transparent:t
 const frameMaterial=new THREE.MeshStandardMaterial({color:0x66695e});
 const PHI=(1+Math.sqrt(5))/2,GOLDEN_ANGLE=2*Math.PI/(PHI*PHI),FLOOR_RISE=6.2;
 const levels=[];let selected=0,angle=.5,dragX=null,zoom=1;
+const SHAFT_HALF=1.65,LOBBY_DEPTH=3.2,WALK_WIDTH=2.2;
 function cube(group,material,x,y,z,w,h,d){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);group.add(mesh);return mesh;}
+function beam(group,material,ax,az,bx,bz,y,width,height){const length=Math.hypot(bx-ax,bz-az);if(length<.01)return null;const obj=cube(group,material,(ax+bx)/2,y,(az+bz)/2,width,height,length);obj.rotation.y=Math.atan2(bx-ax,bz-az);return obj;}
 function draw(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const height=levels.length*FLOOR_RISE;camera.position.set(Math.sin(angle)*height*.92*zoom,height*.64*zoom+8,Math.cos(angle)*height*.92*zoom);camera.lookAt(0,height*.46,0);renderer.render(scene,camera);}
 function select(i){selected=i;for(let n=0;n<levels.length;n++){levels[n].group.children.forEach(obj=>{if(obj.userData.floorSlab)obj.material=n===i?selectedMaterial:floorMaterial;});}for(const btn of nav.querySelectorAll('button'))btn.setAttribute('aria-current',String(Number(btn.dataset.index)===i));document.querySelector('#exhibition').src='./phi-rehearsal.html?date='+encodeURIComponent(levels[i].date);status.textContent='Floor '+(i+1)+' of '+levels.length+' · '+levels[i].date+' · '+levels[i].count+' archived artworks · φ-offset '+levels[i].group.userData.offset.dx.toFixed(1)+' m / '+levels[i].group.userData.offset.dz.toFixed(1)+' m · selected for walkthrough';draw();}
 canvas.addEventListener('pointerdown',e=>{dragX=e.clientX;canvas.setPointerCapture(e.pointerId);});
@@ -71,9 +73,34 @@ try{
   const lift=circulation.lift;
   group.position.x=dx-(lift.x*Math.cos(theta)+lift.z*Math.sin(theta));
   group.position.z=dz-(-lift.x*Math.sin(theta)+lift.z*Math.cos(theta));
-  // A stationary vertical shaft, rendered separately, makes floor-to-floor alignment legible.
-  if(i===0){const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.84,.84,dates.length*FLOOR_RISE,12),new THREE.MeshStandardMaterial({color:0x818a82,transparent:true,opacity:.35}));shaft.position.y=(dates.length-1)*FLOOR_RISE/2;tower.add(shaft);}
+  // The common shaft is fixed in world coordinates, not rotated with floors.
+  // Each gallery's local lift datum is connected to its common-core landing.
+  const core=new THREE.Group();core.position.y=i*FLOOR_RISE;tower.add(core);
+  const distance=Math.hypot(dx,dz);
+  const ux=distance>.01?dx/distance:Math.cos(theta),uz=distance>.01?dz/distance:Math.sin(theta);
+  const landingStart={x:ux*SHAFT_HALF,z:uz*SHAFT_HALF};
+  const lobbyEnd={x:dx+ux*LOBBY_DEPTH,z:dz+uz*LOBBY_DEPTH};
+  // Solid floor apron makes an accessible landing outside the shaft.
+  cube(core,floorMaterial,0,-.06,0,SHAFT_HALF*2,.16,SHAFT_HALF*2);
+  cube(core,floorMaterial,dx,-.06,dz,2.7,.16,2.7);
+  const deck=beam(core,floorMaterial,landingStart.x,landingStart.z,lobbyEnd.x,lobbyEnd.z,-.08,WALK_WIDTH,.16);
+  const guide=beam(core,glassMaterial,landingStart.x,landingStart.z,lobbyEnd.x,lobbyEnd.z,2.55,WALK_WIDTH, .08);
+  // Side glazing follows the corridor, leaving both ends open.
+  const span=Math.hypot(lobbyEnd.x-landingStart.x,lobbyEnd.z-landingStart.z);
+  if(span>.1){
+   const sideX=-uz*WALK_WIDTH/2,sideZ=ux*WALK_WIDTH/2;
+   for(const side of [-1,1])beam(core,glassMaterial,landingStart.x+side*sideX,landingStart.z+side*sideZ,lobbyEnd.x+side*sideX,lobbyEnd.z+side*sideZ,1.1,.075,2.2);
+  }
+  // Shaft columns define a physical rectangular envelope; the front stays
+  // visually open at the landing. Lift car is the dark core datum.
+  for(const x of [-SHAFT_HALF,SHAFT_HALF])for(const z of [-SHAFT_HALF,SHAFT_HALF]){
+   cube(core,frameMaterial,x,FLOOR_RISE/2,z,.16,FLOOR_RISE,.16);
+  }
+  cube(core,frameMaterial,0,.13,0,2.0,.26,2.0);
+  cube(core,frameMaterial,0,FLOOR_RISE-.2,0,SHAFT_HALF*2,.18,SHAFT_HALF*2);
+  group.userData.connection={landingStart,lobbyEnd,deck:!!deck,guide:!!guide};
   group.userData.offset={angle:theta,dx,dz};
+  if(!group.userData.connection.deck)throw Error('Missing landing connection for '+date);
   if(i%4===0){status.textContent='Generated '+(i+1)+' / '+dates.length+' exhibition floors';draw();await new Promise(requestAnimationFrame);}
  }
  select(levels.length-1);
