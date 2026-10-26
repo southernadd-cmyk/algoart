@@ -1838,7 +1838,8 @@ function detectArt(elapsed) {
 let frameSerial=0;
 function tick() {
   if (!renderer) return;
-  const frameStart=GALLERY_DEBUG?performance.now():0;
+  const frameDebug=typeof GALLERY_DEBUG!=='undefined'&&GALLERY_DEBUG;
+  const frameStart=frameDebug?performance.now():0;
   const rawDelta=clock.getDelta();
   const dt=Math.min(rawDelta,.055);
   // Spread canvas painting across frames. This avoids pairing two costly
@@ -1856,7 +1857,7 @@ function tick() {
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
   renderer.render(scene,camera);
-  if(GALLERY_DEBUG){
+  if(frameDebug){
     const spent=performance.now()-frameStart;
     if(spent>34){
       window.__galleryFrameSpikes??=[];
