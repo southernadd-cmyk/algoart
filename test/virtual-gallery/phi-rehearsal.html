@@ -15,7 +15,7 @@ import {planPhiArtwork} from '../../gallery/visit/phi-artwork.mjs';
 import {planCuratedPhiExhibition} from '../../gallery/visit/phi-curator.mjs';
 import {loadPhiArchive} from '../../gallery/visit/phi-archive.mjs';
 import {mountPhi3D} from '../../gallery/visit/phi-3d-preview.mjs?v=touch-20261026';
-import {mountPhiThree} from '../../gallery/visit/phi-three.mjs?v=real-sculpture-20261026';
+import {mountPhiThree} from '../../gallery/visit/phi-three.mjs?v=sculpture-recovery-20261026';
 const preview3d=mountPhi3D(document.getElementById('preview3d'));
 const threePreview=mountPhiThree(document.getElementById('threePreview'));
 document.getElementById('walkToggle').addEventListener('click',e=>{const walking=e.currentTarget.textContent==='Walk inside';threePreview.setWalkMode(walking);document.getElementById('touchPad').classList.toggle('is-walking',walking);e.currentTarget.textContent=walking?'Return to orbit':'Walk inside';});
