@@ -15,5 +15,20 @@ for(const count of [10,12,16,18,20]){
   assert.ok(a.physical.walls.length>0);
   assert.ok(a.pieces.length>0);
   assert.equal(a.canWalk(a.circulation.lift.x,a.circulation.lift.z),true);
+  // Sample the complete crossing, not merely the centre of the doorway.
+  for(const d of a.circulation.doors){
+   for(let offset=-0.7;offset<=0.7;offset+=0.1){
+    const x=d.axis==='x'?d.at+offset:d.centre;
+    const z=d.axis==='z'?d.at+offset:d.centre;
+    assert.ok(a.canWalk(x,z),'Blocked room-to-room transition '+d.axis+' at '+offset);
+   }
+  }
+  for(const d of a.circulation.bridgePortals){
+   for(const offset of [-.35,0,.35]){
+    const x=d.axis==='x'?d.at+offset:d.centre;
+    const z=d.axis==='z'?d.at+offset:d.centre;
+    assert.ok(a.canWalk(x,z),'Blocked bridge/lift portal '+d.axis+' at '+offset);
+   }
+  }
  });
 }
