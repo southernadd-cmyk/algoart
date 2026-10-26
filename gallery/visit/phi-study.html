@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROPORTION PIECE — phi architecture study</title>
+<style>
+body{font-family:Georgia,serif;background:#eae6db;color:#26332c;margin:0;padding:24px}main{max-width:1100px;margin:auto}h1{font-weight:normal;font-size:2rem}p{line-height:1.5}header{display:flex;gap:16px;flex-wrap:wrap;align-items:end;margin-bottom:20px}label{display:grid;gap:7px}input{font:inherit;padding:8px;background:#faf9f3;border:1px solid #a09c8d}button{padding:10px 18px;border:1px solid #26332c;background:transparent;font:inherit;cursor:pointer}.views{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}figure{margin:0}svg{width:100%;background:#f8f5ec;border:1px solid #a09c8d}figcaption{padding-top:9px}#facts{margin-top:15px}small{display:block;color:#63665d}
+</style></head><body><main><h1>phi architecture study</h1><p>A standalone Phase A experiment. Each partition is cut at a golden ratio; some cells are exhibition rooms, others remain voids. No live tower geometry has been replaced.</p>
+<header><label>Exhibition date<input id="date" type="date" value="2026-10-26"></label><label>Artworks<input id="artworks" type="number" min="1" max="60" value="18"></label><label>Variation<input id="variation" type="number" min="0" value="0"></label><button id="draw">Generate floor</button></header>
+<div class="views"><figure><svg id="geometry" viewBox="0 0 700 470" role="img" aria-label="Golden subdivision diagram"></svg><figcaption>Mathematical subdivisions</figcaption></figure><figure><svg id="rooms" viewBox="0 0 700 470" role="img" aria-label="Candidate exhibition rooms"></svg><figcaption>Candidate rooms and voids</figcaption></figure></div><p id="facts"></p><small>Next phase: merge cells, build corridors, connect the lift, validate doors and movement, then allocate artwork.</small></main>
+<script type="module">
+import {planPhiFloor} from './phi-architecture.mjs';
+const NS='http://www.w3.org/2000/svg',el=id=>document.getElementById(id);
+function shape(svg,name,attrs){const n=document.createElementNS(NS,name);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);svg.appendChild(n);return n;}
+function paint(svg,plan,showRooms){svg.textContent='';const {root}=plan;const scale=Math.min(660/root.w,420/root.h),ox=20-root.x*scale,oy=20-root.z*scale;
+for(const [i,r] of plan.rooms.entries()){const x=ox+r.x*scale,y=oy+r.z*scale,w=r.w*scale,h=r.h*scale;
+shape(svg,'rect',{x,y,width:w,height:h,fill:showRooms?(r.role==='gallery'?'#b7c2af':'#e0d1c4'):(i%2?'#e2dccd':'#c6bea9'),stroke:'#5d675e','stroke-width':1.8});
+if(showRooms&&w>40&&h>32){const t=shape(svg,'text',{x:x+w/2,y:y+h/2,'text-anchor':'middle','font-size':Math.min(17,w/6),fill:'#304138'});t.textContent=r.role==='gallery'?'gallery':'void';}
+}
+}
+function draw(){try{const plan=planPhiFloor(el('date').value,{artworks:Number(el('artworks').value),variation:Number(el('variation').value)});paint(el('geometry'),plan,false);paint(el('rooms'),plan,true);el('facts').textContent=plan.stats.totalCells+' cells · '+plan.stats.galleryCells+' candidate galleries · '+plan.stats.voidCells+' voids · '+plan.stats.contacts+' shared edges · φ = '+plan.phi.toFixed(9);}catch(e){el('facts').textContent=e.message;}}
+el('draw').addEventListener('click',draw);draw();
+</script></body></html>
