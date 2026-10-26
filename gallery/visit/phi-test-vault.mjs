@@ -1,20 +1,19 @@
 // Test-only vaulted reception canopy, based on the low-poly Gothic church
 // ceiling study by ramonscortanu (CC BY 4.0).
-// A lightweight mesh study of the original intersecting pointed vaults.
-// The original downloaded model/texture is retained separately for asset import.
+// Temporary geometry study; original licensed archive is not yet deployed.
 export function addPhiTestVault(THREE,scene,{doorway,outward,elevation,stone}){
  const root=new THREE.Group();root.name='phi-test-gothic-reception-vault';
  const inward={x:-outward.x,z:-outward.z};
  const yaw=Math.atan2(outward.x,outward.z);
- root.position.set(doorway.x+inward.x*2.35,elevation+3.3,doorway.z+inward.z*2.35);
+ root.position.set(doorway.x+inward.x*2.15,elevation+4.20,doorway.z+inward.z*2.15);
  root.rotation.y=yaw;
  // Cross-vault: four lobes meet at a gently pointed central crown.
  // The ribs are hung below the existing slab, with no change to collision.
- const w=3.35,d=4.25,n=24,vertices=[],indices=[];
+ const w=3.95,d=4.30,n=32,vertices=[],indices=[];
  function rise(x,z){
   const ax=Math.abs(x/(w/2)),az=Math.abs(z/(d/2));
   const arch=Math.min(1,Math.max(ax,az));
-  return -.09-.48*(arch*arch);
+  return -.07-.68*(arch*arch);
  }
  for(let iz=0;iz<=n;iz++)for(let ix=0;ix<=n;ix++){
   const x=-w/2+w*ix/n,z=-d/2+d*iz/n;
@@ -27,7 +26,7 @@ export function addPhiTestVault(THREE,scene,{doorway,outward,elevation,stone}){
  const geom=new THREE.BufferGeometry();
  geom.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
  geom.setIndex(indices);geom.computeVertexNormals();
- const vaultMat=new THREE.MeshStandardMaterial({color:'#c7b9a4',roughness:.94,side:THREE.DoubleSide});
+ const vaultMat=new THREE.MeshStandardMaterial({color:'#d6c8b5',roughness:.96,side:THREE.DoubleSide});
  const canopy=new THREE.Mesh(geom,vaultMat);canopy.name='phi-test-gothic-vault-web';root.add(canopy);
  const ribMat=stone?.clone?.()||new THREE.MeshStandardMaterial({color:'#988773',roughness:.95});
  ribMat.side=THREE.DoubleSide;
@@ -50,6 +49,6 @@ export function addPhiTestVault(THREE,scene,{doorway,outward,elevation,stone}){
   return [x,rise(x,z)-.035,z];
  }),.055);
  const light=new THREE.PointLight(0xffe6bc,.8,5,2);
- light.position.set(0,-.72,0);root.add(light);
+ light.position.set(0,-.95,0);root.add(light);
  scene.add(root);return root;
 }
