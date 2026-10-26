@@ -53,7 +53,7 @@
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
     window.__galleryStage='Importing bundled JavaScript';
-    await import('../../gallery/visit/gallery-phi-test.js?v=phi-production-square-20261026');
+    await import('../../gallery/visit/gallery-phi-test.js?v=physical-map-only-20261026');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -173,7 +173,7 @@ window.addEventListener('load',()=>{
     <a id="openArt" href="../../" target="_blank" rel="noopener noreferrer">Explore this drawing ↗</a>
   </div>
 </aside>
-<div class="plan-view" id="planView"><span>Floor plan</span><select aria-label="Map display" style="margin-left:6px;font-size:12px" onchange="window.setPhiMapMode?.(this.value)"><option value="physical">Physical</option><option value="merged">Merged rooms</option><option value="subdivision">φ divisions</option></select><canvas id="floorMap" width="248" height="218" aria-label="Diagram of galleries, connecting routes, and your position"></canvas></div>
+<div class="plan-view" id="planView"><span>Floor plan</span><canvas id="floorMap" width="248" height="218" aria-label="Diagram of galleries, connecting routes, and your position"></canvas></div>
 <section class="lift-panel" id="lift" hidden role="dialog" aria-modal="true" aria-labelledby="liftTitle">
   <div class="lift-head"><div><small>Archive lift</small><h2 id="liftTitle">Choose a floor</h2></div><button id="closeLift" type="button" aria-label="Close lift panel">×</button></div>
   <p id="liftCurrent"></p>
