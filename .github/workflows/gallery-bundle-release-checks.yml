@@ -42,6 +42,8 @@ jobs:
           node-version: '22'
       - name: Install gallery test dependencies
         run: npm install --no-save --package-lock=false
+      - name: Lift sculpture staging and cancellation regression
+        run: node --test tests/phi-sculpture-stage.test.mjs
       - name: Gallery public launch regression
         run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs tests/gallery-backdrop.test.mjs
       - name: Studio walkthrough links regression
