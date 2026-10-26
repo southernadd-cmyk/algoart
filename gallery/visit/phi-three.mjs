@@ -61,7 +61,22 @@ export function mountPhiThree(canvas){
    }
    for(const a of artwork.sculptures){const study=byId.get(a.studyId);if(!study)continue;
     const material=study.material?.type?study.material:{type:study.material||'marker'};
-    const instance=createPortraitSculpture({scene:root,study:{...study,material},placement:{x:a.x,y:0,z:a.z,yaw:0},quality:'mobile',labelTexture});
+    const instance=createPortraitSculpture({scene:root,study:{...study,material},placement:{x:a.x,y:0,z:a.z,yaw:0},quality:'mobile',labelTexture,onComplete:({strokeCount,pigmentCount,prepared})=>{
+     if(strokeCount+pigmentCount>0){instance.pivot.userData.sculptureStatus=prepared?'prepared':'rendered';render();return;}
+     console.warn('[Phi rehearsal] Sculpture source could not be traced:',study.id,study.seed);
+     instance.pivot.userData.sculptureStatus='image-fallback';
+     const fallback=new THREE.Group();fallback.name='Portrait sculpture recovery: '+study.id;
+     const relief=new THREE.Mesh(new THREE.BoxGeometry(1.05,1.25,.085),new THREE.MeshStandardMaterial({color:'#e6e1d6',roughness:.82}));
+     relief.position.y=1.65;fallback.add(relief);
+     const label=new THREE.Mesh(new THREE.PlaneGeometry(1.0,1.18),new THREE.MeshBasicMaterial({color:'#dfd9c9',side:THREE.DoubleSide}));
+     label.position.set(0,1.65,.048);fallback.add(label);
+     if(study.image){new THREE.TextureLoader().load(study.image,texture=>{
+       if(instance.pivot.userData.galleryDisposed){texture.dispose();return;}
+       texture.colorSpace=THREE.SRGBColorSpace;label.material.dispose();
+       label.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});render();
+     },undefined,error=>console.warn('[Phi rehearsal] Portrait image unavailable:',study.id,error));}
+     instance.pivot.add(fallback);render();
+    }});
     instance.pivot.userData.studyId=a.studyId;
    }
   }else for(const s of physical.sculptures)block(s.x,.43,s.z,s.width,.86,s.depth,plinth);
