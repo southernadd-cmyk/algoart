@@ -35,7 +35,7 @@ function beam(group,material,ax,az,bx,bz,y,width,height){const length=Math.hypot
 function draw(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const height=levels.length*FLOOR_RISE;if(walking){const y=liftMotion?liftMotion.from+(liftMotion.to-liftMotion.from)*Math.min(1,liftMotion.elapsed/liftMotion.duration):walkFloor*FLOOR_RISE;camera.position.set(walkX,y+1.62,walkZ);camera.lookAt(walkX+Math.sin(walkYaw)*4,y+1.62,walkZ-Math.cos(walkYaw)*4);}else{camera.position.set(Math.sin(angle)*height*.92*zoom,height*.64*zoom+8,Math.cos(angle)*height*.92*zoom);camera.lookAt(0,height*.46,0);}renderer.render(scene,camera);}
 function loadSelectedArtwork(i){
  const level=levels[i];if(!level)return;
- if(activeArt){activeArt.parent?.remove(activeArt);activeArt.traverse(o=>{if(o.userData.galleryPersistent)return;o.geometry?.dispose?.();if(o.material?.map)o.material.map.dispose();if(o.material&&!Array.isArray(o.material))o.material.dispose?.();});}
+ if(activeArt){activeArt.parent?.remove(activeArt);activeArt.traverse(o=>{if(o.userData.galleryPersistent)return;o.geometry?.dispose?.();if(o.material?.map?.isTexture)o.material.map.dispose();if(o.material&&!Array.isArray(o.material))o.material.dispose?.();});}
  const art=new THREE.Group();level.group.add(art);activeArt=art;
  const hang=planCuratedPhiExhibition(level.floor,level.circulation,level.physical,level.studies);
  const byId=new Map(level.studies.map(st=>[st.id,st]));
