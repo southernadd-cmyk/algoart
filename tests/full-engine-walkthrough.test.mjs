@@ -24,21 +24,22 @@ try{
  assert.equal(await page.evaluate(()=>window.__galleryStartupError),'');
  assert.equal(errors.length,0,errors.join('; '));
  assert.equal(await page.locator('#world').count(),1);
- // A whole lift journey must not reopen the destination picker automatically.
+ // Physical lift ride: the cabin and player must move in world space.
  await page.locator('#enter').click();
  await page.locator('#openLift').click();
- assert.equal(await page.locator('#lift').isVisible(),true,'Lift picker did not open');
- const destination=page.locator('#liftDays button.lift-available').first();
+ assert.equal(await page.locator('#lift').isVisible(),true,'Lift calendar did not open');
+ const destination=page.locator('#liftDays button').filter({hasText:/[0-9]/}).last();
  await destination.click();
- await page.waitForFunction(()=>!document.querySelector('#liftAnimation')?.hidden,{timeout:15000});
- await page.waitForFunction(()=>document.querySelector('#liftAnimation')?.hidden &&
-   document.querySelector('#lift')?.hidden &&
+ await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',{timeout:15000});
+ const positions=await page.evaluate(()=>window.__phiLiftRide);
+ assert.ok(Math.abs(positions.to-positions.from)>1,'Lift destination did not change');
+ await page.waitForFunction(()=>window.__phiLiftRide?.status==='arrived',{timeout:90000});
+ await page.waitForFunction(()=>document.querySelector('#lift')?.hidden &&
    !document.querySelector('#liftArrival')?.hidden,{timeout:90000});
  assert.equal(await page.locator('#lift').isVisible(),false,
-   'Floor picker unexpectedly reopened after arriving');
- const doors=await page.evaluate(()=>({arrival:document.querySelector('#liftArrival')?.textContent,
-   indicator:document.querySelector('#floorIndicator')?.textContent}));
- assert.ok(doors.arrival?.includes('Doors opening'),'Lift has no door-opening arrival feedback');
+   'Calendar unexpectedly reopened on arrival');
+ assert.equal(await page.locator('#liftAnimation').isVisible(),false,
+   'Old cutscene appeared during physical lift travel');
 
  console.log('Full-engine source imported without page errors');
 }finally{await browser.close();}
