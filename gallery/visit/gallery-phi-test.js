@@ -651,7 +651,9 @@ function setLiftDoors(closed){
 function animateLiftDoors(dt){
   // Proximity sensor works on both sides of the doorway, just like the
   // gallery entrance. Never reopen doors during a lift journey.
-  if(liftArrivalOpening){
+  if(liftTravelling){
+    liftDoorTarget=1;
+  }else if(liftArrivalOpening){
     liftDoorTarget=0;
     if(liftDoorClosure<.025)liftArrivalOpening=false;
   }else if(liftDoorThreshold && liftDoors.length && !liftTravelling){
@@ -663,7 +665,7 @@ function animateLiftDoors(dt){
     // Hysteresis keeps leaves from chattering at the activation boundary.
     if(distance<2.6)liftDoorTarget=0;
     else if(distance>3.05)liftDoorTarget=1;
-  }else if(liftTravelling)liftDoorTarget=1;
+  }
   // Smooth, framerate-independent sliding movement.
   liftDoorClosure+=(liftDoorTarget-liftDoorClosure)*Math.min(1,dt*3.5);
   if(Math.abs(liftDoorTarget-liftDoorClosure)<.002)
@@ -795,9 +797,12 @@ async function travelLift(date,index){
   $('lift').hidden=true;
   if(!xrRide)document.exitPointerLock?.();
   const overlay=$('liftAnimation');
+  // Travel feedback is a single transient status, never another floor picker.
   if(!xrRide)overlay.hidden=false;
   liftArrivalOpening=false;
   setLiftDoors(true);
+  // Close the physical leaves in view before replacing the destination floor.
+  await new Promise(resolve=>setTimeout(resolve,850));
   const current=Math.max(0,archiveDates.indexOf(exhibitDate));
   $('liftDirection').textContent=(index>current?'Ascending':'Descending')+' · '+Math.abs(index-current)+' floors';
   overlay.classList.toggle('descending',index<current);
@@ -821,9 +826,10 @@ async function travelLift(date,index){
     // forces the doors closed again on the destination floor.
     liftTravelling=false;
     liftArrivalOpening=true;
+    liftWasNear=true;
     setLiftDoors(false);
   }catch(error){
-    overlay.hidden=true;setLiftDoors(false);
+    overlay.hidden=true;liftTravelling=false;liftArrivalOpening=true;setLiftDoors(false);
     errorBox.textContent='Lift could not reach that floor: '+error.message;
     errorBox.hidden=false;
     if(!xrRide){
@@ -2257,7 +2263,8 @@ function updateMovement(dt) {
   else if(onArrivalPath(rig.position.x,rig.position.z))rig.position.y=arrival.baseY;
   const atLift=Boolean(nearLift());
   if(xrLiftPanel && !atLift)closeXRLift();
-  if(atLift&&!liftWasNear&&$('lift').hidden)openLift();
+  // The calendar is opened deliberately (L or the Floors button), never
+  // by crossing a proximity threshold. Approaching only opens physical doors.
   liftWasNear=atLift;
   rig.rotation.y=yaw;
   camera.rotation.x=renderer.xr.isPresenting?0:pitch;
