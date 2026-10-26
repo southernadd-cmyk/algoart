@@ -1116,11 +1116,20 @@ function constructPhiGallery(layout,studies){
    block(len,ROOM_HEIGHT,.035,c,elevation+ROOM_HEIGHT/2,w.at+side*.113,galleryFinish.exteriorBrick);
   }
  }
- for(const p of phi.pieces){
-  block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,ceilingFinish);
-  // Restrained ceiling cornice and transverse joints from the live gallery.
-  for(const x of [p.x,p.x+p.w])block(.09,.15,p.h,x,elevation+ROOM_HEIGHT-.05,p.z+p.h/2,join);
-  for(const z of [p.z,p.z+p.h])block(p.w,.15,.09,p.x+p.w/2,elevation+ROOM_HEIGHT-.05,z,join);
+ // Architectural finish follows the actual phi rooms. Keep the office
+ // ceiling photographic texture, with trim only at true physical boundaries:
+ // subdivided internal cells should not look like a ceiling grid.
+ for(const p of phi.pieces)
+  block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,ceilingFinish);
+ for(const w of phi.physical.walls){
+  const len=w.hi-w.lo;if(len<.45)continue;
+  if(w.axis==='x'){
+   block(.13,.16,len,w.at,elevation+ROOM_HEIGHT-.035,(w.lo+w.hi)/2,join);
+   block(.065,.13,len,w.at,elevation+.14,(w.lo+w.hi)/2,galleryFinish.plinth);
+  }else{
+   block(len,.16,.13,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT-.035,w.at,join);
+   block(len,.13,.065,(w.lo+w.hi)/2,elevation+.14,w.at,galleryFinish.plinth);
+  }
  }
  // Share the production spotlight fixture loader, limiting fixtures to
  // larger merged rooms rather than the many phi subdivision cells.
@@ -1309,6 +1318,15 @@ function constructPhiGallery(layout,studies){
    // Recessed front panel and simple counter accessories.
    block(2.8,.58,.025,x,elevation+.44,z+.55,join);
    block(.47,.07,.3,x-.7,elevation+.99,z-.16,stone);
+   // The local CC0 scanned stone/concrete finish forms a quiet waiting-area
+   // inset, sized by the reserved furniture zone rather than blocking doors.
+   block(5.7,.026,3.35,x,elevation+.014,z+.2,galleryFinish.stone);
+   for(const side of [-1,1])
+    block(.075,.045,3.4,x+side*2.85,elevation+.04,z+.2,join);
+   const brass=new THREE.MeshStandardMaterial({color:'#9d8965',metalness:.5,roughness:.52});
+   block(2.8,.055,.055,x,elevation+.76,z+.555,brass);
+   block(.28,.28,.28,x+1.17,elevation+1.12,z-.12,galleryFinish.stone);
+
   }
   const captions=[
    ['PROPORTION PIECE','An algorithmically generated gallery','exhibiting algorithmically generated art.'],
@@ -1327,6 +1345,7 @@ function constructPhiGallery(layout,studies){
    scene.add(board);
   }
   const plantMaterial=new THREE.MeshStandardMaterial({color:'#56705b',roughness:1,flatShading:true});
+  const leafLight=new THREE.MeshStandardMaterial({color:'#819477',roughness:1,flatShading:true});
   // Visitors can rest close to the desk, without blocking the entrance.
   if(furnishing.desk){
    const d=furnishing.desk;
@@ -1344,6 +1363,8 @@ function constructPhiGallery(layout,studies){
    block(.5,.65,.5,p.x,elevation+.32,p.z,stone);
    const leaves=new THREE.Mesh(new THREE.IcosahedronGeometry(.48,1),plantMaterial);
    leaves.position.set(p.x,elevation+1.02,p.z);scene.add(leaves);
+   const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(.32,1),leafLight);
+   crown.position.set(p.x+.16,elevation+1.45,p.z-.10);scene.add(crown);
   }
   window.__phiReception={desk:!!furnishing.desk,information:furnishing.signage.length>0,
     signCount:furnishing.signage.length,plantCount:furnishing.plants.length,clearance:furnishing.checks};
