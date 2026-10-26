@@ -227,7 +227,7 @@ export {LETTERS};
 export function getFamily(id){const f=BY_ID[id];if(!f)throw new RangeError('Unknown V2 alphabet family '+id);return f}
 export function getGlyph(id,letter){
  const ch=String(letter).toUpperCase();
- const glyph=ch==='Φ'?PHI_BY_FAMILY[id]:getFamily(id).glyphs[ch];
+ const glyph=ch==='Φ'?annotateGlyph(id,ch,PHI_BY_FAMILY[id]):getFamily(id).glyphs[ch];
  if(!glyph)throw new RangeError('Unknown glyph '+letter+' in '+id);
  return glyph;
 }
