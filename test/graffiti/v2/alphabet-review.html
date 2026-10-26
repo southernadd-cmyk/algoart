@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>All nine A–Z graffiti studies | V1 versus V2</title>
+<style>
+:root{font-family:Georgia,serif;color:#292b26;background:#efece4}*{box-sizing:border-box}body{max-width:1270px;margin:auto;padding:28px 24px 90px}h1,h2,h3{font-weight:400}h1{font-size:clamp(35px,5vw,58px);letter-spacing:-.045em;line-height:1.04}h2{font-size:28px;margin:0 0 12px}h3{font-size:19px;margin:0 0 10px}p{line-height:1.5}nav{display:flex;gap:20px;flex-wrap:wrap}a{color:inherit;text-underline-offset:3px}.intro{max-width:880px}header{padding-bottom:19px;border-bottom:1px solid #c5bfaf}.controls{display:flex;gap:13px;flex-wrap:wrap;align-items:end;margin:21px 0}label{display:grid;gap:6px;font-size:14px}button,select,input{font:inherit;background:#fcfaf5;color:inherit;padding:8px 11px;border:1px solid #b9b5ab;border-radius:3px}button{cursor:pointer}.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.panel{background:#faf8f0;border:1px solid #cdc8ba;padding:15px;min-width:0}.panel h3{padding-bottom:8px;border-bottom:1px solid #ddd8cd}.letters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.letter{min-width:0;background:white;padding:6px;border:1px solid #eee9e1;text-align:center}.letter svg{width:100%;height:auto;display:block}.letter span{font-size:12px;color:#64655d}.letter.changed{background:#ecefe5;border-color:#a2ae9e}.note{font-size:13px;color:#686960}.words{display:grid;gap:10px}.word{background:white;padding:10px;min-width:0}.word svg{display:block;width:100%;height:auto;max-height:120px;overflow:visible}.word .desc{font-size:13px;color:#666}.alert{border-left:3px solid #8b9c87;padding:12px 16px;margin:20px 0;background:#faf8f0}.summary{font-size:15px}.count{color:#5e685b;font-size:14px}footer{border-top:1px solid #c5bfaf;margin-top:30px;padding-top:15px;color:#686960;font-size:14px}@media(max-width:780px){body{padding:20px 12px}.two{grid-template-columns:1fr}.letters{grid-template-columns:repeat(6,minmax(0,1fr))}.panel{padding:10px}.controls{gap:10px}}
+</style></head><body>
+<header><nav><a href="./pilot.html">Earlier targeted comparison</a><a href="./evidence.html">Source evidence by family</a><a href="../phase-d-alphabets.html">Current V1 review</a></nav>
+<h1>Nine alphabets, all 26 letters</h1><p class="intro">A source-grounded V2 workroom. View each entire A–Z alphabet against the approved V1, including φ, then compare identical words at the same seed. Pale highlighted tiles mark changed glyph geometry. Unhighlighted letters are unchanged until their own source-led revision is ready.</p></header>
+<div class="alert"><strong>Research version only.</strong> The live tower stays on V1. The uploaded sheets are not republished. The revised writer B is deliberately thinner than the V1 arrow-marker because primary sheet 7 is a skeletal handstyle.</div>
+<div class="controls"><label>Style<select id="style"></select></label><label>Test word<input id="custom" value="MUSHROOM" maxlength="55"></label><label>Seed<input id="seed" value="PP-NINE-V2-RESEARCH"></label><label>Joins<select id="joins"><option value="on">On</option><option value="off">Off</option></select></label><button id="next" type="button">Next style</button></div>
+<p id="summary" class="summary" aria-live="polite"></p>
+<div class="two" id="alphabets"><section class="panel"><h2>V1 alphabet</h2><div id="v1letters" class="letters"></div></section><section class="panel"><h2>V2 alphabet</h2><div id="v2letters" class="letters"></div></section></div>
+<h2 style="margin-top:30px">Whole-word tests</h2><div class="two"><section class="panel"><h3>V1 writing</h3><div id="v1words" class="words"></div></section><section class="panel"><h3>V2 writing</h3><div id="v2words" class="words"></div></section></div>
+<h2 style="margin-top:30px">Evidence for edited letters</h2><div id="details" class="panel"></div>
+<footer>Each change is a newly drawn, source-informed hypothesis, not a trace or attributed reproduction of any writer's personal signature. A complete A–Z grid is an audit surface, not proof that all 26 letters are finished.</footer>
+<script type="module">
+import {FAMILIES as base} from '../family-library.mjs';
+import {letterSvg as v1Glyph,wordSvg as v1Word} from '../family-renderer.mjs';
+import {letterSvg as v2Glyph,wordSvg as v2Word} from './v2-renderer.mjs';
+import {V2_REVISION,PILOT_EVIDENCE,pilotDiff,INSTRUMENT_REVISIONS} from './v2-library.mjs';
+const $=id=>document.getElementById(id),letters='ABCDEFGHIJKLMNOPQRSTUVWXYZΦ';
+for(const f of base){const e=document.createElement('option');e.value=f.id;e.textContent=f.id+' — '+f.name;$('style').append(e)}
+const node=(name,text,cls)=>{const e=document.createElement(name);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
+function draw(){
+ const style=$('style').value,seed=$('seed').value,custom=$('custom').value||'MUSHROOM';
+ const changed=pilotDiff().filter(id=>id.startsWith(style+':'));const changedLetters=new Set(changed.map(s=>s.split(':')[1]));
+ $('summary').textContent=style+' · '+changed.length+' of 26 letter paths revised · revision '+V2_REVISION+(INSTRUMENT_REVISIONS[style]?' · instrument revision: '+INSTRUMENT_REVISIONS[style]:'');
+ for(const [id,renderer]of [['v1letters',v1Glyph],['v2letters',v2Glyph]]){
+  const parent=$(id);parent.replaceChildren();
+  for(const ch of letters){
+   const item=node('div',undefined,'letter'+(id==='v2letters'&&changedLetters.has(ch)?' changed':''));
+   item.append(renderer(style,ch),node('span',ch==='Φ'?'φ':ch));parent.append(item);
+  }
+ }
+ const words=[...new Set([custom,'MUSHROOM','PHI','φ','PROPORTION PIECE','SKUF','FAST','NASH','MIME'])];
+ for(const [id,renderer]of [['v1words',v1Word],['v2words',v2Word]]){
+  const parent=$(id);parent.replaceChildren();
+  for(const word of words){
+   const item=node('div',undefined,'word');
+   item.append(node('div',word,'desc'));
+   try{item.append(renderer(style,word,{seed,variation:.04,joins:$('joins').value==='on'}))}
+   catch(e){item.append(node('p',e.message))}
+   parent.append(item);
+  }
+ }
+ const details=$('details');details.replaceChildren();
+ if(!changed.length)details.append(node('p','No V2 letter geometry changes yet. This family remains an intentional reference control.'));
+ for(const key of changed){
+  const p=PILOT_EVIDENCE[key];details.append(node('h3',key+' · source sheet '+p.sheet),node('p','Observed: '+p.observation),node('p','V2 hypothesis: '+p.change));
+ }
+}
+$('style').value='A';
+for(const id of ['style','joins','custom','seed'])$(id).addEventListener(id==='custom'||id==='seed'?'input':'change',draw);
+$('next').addEventListener('click',()=>{const values=[...$('style').options].map(o=>o.value);$('style').value=values[(values.indexOf($('style').value)+1)%values.length];draw()});
+draw();
+</script></body></html>
