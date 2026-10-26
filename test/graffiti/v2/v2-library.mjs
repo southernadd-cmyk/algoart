@@ -102,18 +102,6 @@ const changes=Object.freeze({
    path('fill','M 33 103 L 78 77 L 91 91 L 54 116 L 8 112 L 5 95 Z')
   ])
  }),
- I:Object.freeze({
-  A:Object.freeze([
-   path('stroke','M 25 114 L 24 13 L 36 -1 L 53 19 L 49 45 L 28 41'),
-   path('stroke','M 53 15 L 69 113'),
-   path('hairline','M 23 10 L 42 -5')
-  ]),
-  O:Object.freeze([
-   path('stroke','M 48 0 L 66 18 L 73 79 L 49 118 L 24 92 L 22 36 L 48 0'),
-   path('stroke','M 26 38 L 47 20'),
-   path('hairline','M 55 93 L 67 111')
-  ])
- }),
  D:Object.freeze({
   H:Object.freeze([
    path('stroke','M 9 -2 L 8 110'),
@@ -173,7 +161,16 @@ const changes=Object.freeze({
   ])
  }),
  I:Object.freeze({
-  M:Object.freeze([
+  A:Object.freeze([
+   path('stroke','M 25 114 L 24 13 L 36 -1 L 53 19 L 49 45 L 28 41'),
+   path('stroke','M 53 15 L 69 113'),
+   path('hairline','M 23 10 L 42 -5')
+  ]),
+  O:Object.freeze([
+   path('stroke','M 48 0 L 66 18 L 73 79 L 49 118 L 24 92 L 22 36 L 48 0'),
+   path('stroke','M 26 38 L 47 20'),
+   path('hairline','M 55 93 L 67 111')
+  ])  M:Object.freeze([
    path('stroke','M 15 116 L 17 2 L 37 56'),
    path('stroke','M 38 55 L 52 19 L 77 116'),
    path('hairline','M 53 20 L 75 7 L 88 20'),
