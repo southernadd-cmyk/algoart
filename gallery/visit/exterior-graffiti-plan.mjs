@@ -6,7 +6,7 @@ import {ROOM_HEIGHT} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
 import {TOWER_HANDS,towerHandCycle,towerTagSlot} from './tower-graffiti-styles.mjs';
 export const GRAFFITI_WORDS=Object.freeze(['φ']);
-export const GRAFFITI_SEED='PP-TOWER-PHI-ONLY-02';
+export const GRAFFITI_SEED='PP-TOWER-LAYERED-PHI-03';
 export const WALL_MARGIN=.52;
 export const TAGS_PER_PAINTED_FLOOR=5;
 const SIDES=['north','south','east','west'];
@@ -40,94 +40,38 @@ export function towerGraffitiKey(floors){
  return TOWER_LETTERING_REVISION+'|'+floors.filter(f=>f.level===0||f.level===1).map(({level,plan})=>level+':'+plan.date+':'+plan.rooms.map(r=>[r.x,r.z,r.width,r.depth,r.y].map(v=>Number(v.toFixed(6))).join(',')).join(';')).join('|');
 }
 export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2}={}){
- if(!floors.length)return [];
- const ordered=floors.filter(f=>f.level===0||f.level===1).sort((a,b)=>a.level-b.level),ground=ordered.find(f=>f.level===0)?.plan;
- const entry=ground?.rooms[0],front=entry?normals[reservedWalls(entry,true).at(-1)]||normals.south:normals.south;
+ const ordered=floors.filter(f=>f.level===0||f.level===1).sort((a,b)=>a.level-b.level);
  const marks=[];
  for(const {level,plan} of ordered){
-  const faces=exteriorWallFaces(plan,level===0),wordRandom=makeRandom(seed+'|'+plan.date+'|words');
-  const firstWord=wordRandom.int(0,GRAFFITI_WORDS.length-1),phase=wordRandom.int(0,31);
-  const styles=towerHandCycle(seed+'|'+plan.date+'|all-outside');
-  const selection=Array.from({length:TAGS_PER_PAINTED_FLOOR},(_,slot)=>
-   towerTagSlot({floorId:plan.date,seed:seed+'|slot|'+slot,slot,hand:styles[slot]}));
-  for(const item of selection){
-   const phrase=GRAFFITI_WORDS[(firstWord+item.slot)%GRAFFITI_WORDS.length];
-   const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:1.2+(item.slot%7)*.3}),r=makeRandom(item.seed+'|wall');
-   const desiredWidth=r.range(1.2,3.4);
-   const candidates=faces.map(face=>{
-    const placement=fitPhiTag({bounds:tag.bounds,desiredWidth,maxHeight:ROOM_HEIGHT-1.5,
-     lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,bottom:.65,top:ROOM_HEIGHT-.55,slot:item.slot,phase});
-    const facing=face.normal.x*front.x+face.normal.z*front.z;
-    const right={x:face.normal.z,z:-face.normal.x},c=Math.abs(Math.cos(placement.rotation)),sn=Math.abs(Math.sin(placement.rotation));
-    const hw=(placement.width*c+placement.height*sn)/2,hh=(placement.height*c+placement.width*sn)/2;
-    const neighbours=marks.filter(m=>m.level===level&&m.face.id===face.id);
-    const overlap=neighbours.reduce((area,m)=>{
-     const mw=(Math.abs(m.width*Math.cos(m.rotation))+Math.abs(m.height*Math.sin(m.rotation)))/2;
-     const mh=(Math.abs(m.height*Math.cos(m.rotation))+Math.abs(m.width*Math.sin(m.rotation)))/2;
-     const mu=(m.position.x-face.centre.x)*right.x+(m.position.z-face.centre.z)*right.z;
-     const my=m.position.y-level*floorSpacing-face.roomY;
-     const dx=Math.max(0,Math.min(placement.u+hw,mu+mw)-Math.max(placement.u-hw,mu-mw));
-     const dy=Math.max(0,Math.min(placement.centreY+hh,my+mh)-Math.max(placement.centreY-hh,my-mh));
-     return area+dx*dy;
-    },0);
-    return {face,...placement,score:(face.exposed?4:0)+facing*3+r.range(0,.1)-overlap*100-neighbours.length*2};
-
-   }).sort((a,b)=>b.score-a.score);
-   const chosen=candidates[0];if(!chosen)throw new Error('No exterior wall for '+plan.date);
-   const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
+  const faces=exteriorWallFaces(plan,level===0).filter(face=>face.exposed);
+  if(!faces.length)throw new Error('No exposed exterior graffiti wall on '+plan.date);
+  const hands=towerHandCycle(seed+'|'+plan.date+'|layered-phi');
+  const front=faces.filter(face=>face.side==='south');
+  const featured=(front.length?front:faces).sort((a,b)=>b.length-a.length)[0];
+  const groups=[1,3,5,8];
+  for(let slot=0;slot<17;slot++){
+   const tier=slot===0?0:slot<4?1:slot<9?2:3;
+   const item=towerTagSlot({floorId:plan.date,seed:seed+'|layered|'+slot,slot,hand:hands[slot%hands.length]});
+   const tag=makeTowerFamilyTag('φ',{...item,paintWidth:[3,2.1,1.45,.88][tier]});
+   const face=featured;
+   // Smaller work is placed over the same central cluster, rather than
+   // rejecting overlaps. The golden angle disperses the handwriting.
+   const placement=fitPhiTag({bounds:tag.bounds,desiredWidth:[Math.min(6,face.length-.9),2.7,1.4,.65][tier],
+    maxHeight:ROOM_HEIGHT-1.2,lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,
+    bottom:.5,top:ROOM_HEIGHT-.4,slot:slot+17,phase:slot*3});
    const normal=face.normal,right={x:normal.z,z:-normal.x};
-   marks.push({id:item.id,date:plan.date,level,slot:item.slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,form:tag.form,ink:tag.ink,seed:tag.seed,
-    face,width,height,rotation,normal:{x:normal.x,y:0,z:normal.z},
-    position:{x:face.centre.x+right.x*shift,y:level*floorSpacing+face.roomY+centreY,z:face.centre.z+right.z*shift},
-    bounds:{...tag.bounds},tag});
-  }
- }
- // Fifteen supplemental signatures per painted floor, including large-format tags, using different freehand writer
- // profiles from any previously selected on its outward-facing facade.
- for(const {level,plan} of ordered){
-  const faces=exteriorWallFaces(plan,level===0);
-  const frontFaces=faces.filter(face=>face.exposed&&face.normal.x===front.x&&face.normal.z===front.z);
-  const candidates=frontFaces.length?frontFaces:faces.filter(face=>face.exposed);
-  const existing=marks.filter(mark=>mark.level===level);
-  const occupied=new Set(existing.map(mark=>mark.hand));
-  const dialects=towerHandCycle(seed+'|'+plan.date+'|all-outside');
-  for(let extra=0;extra<15;extra++){
-   const slot=TAGS_PER_PAINTED_FLOOR+extra;
-   const hand=dialects.find(id=>!occupied.has(id)) || dialects[extra%dialects.length];
-   // Nine approved families cover ten facade tags; repeat only after exhaustion.
-   const item=towerTagSlot({floorId:plan.date,seed:seed+'|front-freehand|'+slot,slot,hand});
-   const phrase='φ';
-   const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:.85+(slot%9)*.36});
-   const r=makeRandom(item.seed+'|front-wall'),epic=extra>=10&&extra<=12;
-   const desiredWidth=epic?r.range(4.0,7.2):r.range(.9,3.2);
-   // Try several phi-phased placements on each wall rather than stacking
-   // every additional mark at the same five golden fractions.
-   const placed=candidates.flatMap(face=>Array.from({length:epic?30:18},(_,attempt)=>{
-    const p=fitPhiTag({bounds:tag.bounds,desiredWidth:desiredWidth*.78,maxHeight:ROOM_HEIGHT-1.5,
-     lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,bottom:.65,top:ROOM_HEIGHT-.55,slot:slot+attempt*3,phase:extra*7+attempt*11});
-    const cos=Math.abs(Math.cos(p.rotation)),sin=Math.abs(Math.sin(p.rotation));
-    const hw=(p.width*cos+p.height*sin)/2,hh=(p.height*cos+p.width*sin)/2;
-    const right={x:face.normal.z,z:-face.normal.x};
-    const neighbours=marks.filter(m=>m.level===level&&m.face.id===face.id);
-    const overlap=neighbours.reduce((sum,m)=>{
-     const mw=(Math.abs(m.width*Math.cos(m.rotation))+Math.abs(m.height*Math.sin(m.rotation)))/2;
-     const mh=(Math.abs(m.height*Math.cos(m.rotation))+Math.abs(m.width*Math.sin(m.rotation)))/2;
-     const mu=(m.position.x-face.centre.x)*right.x+(m.position.z-face.centre.z)*right.z;
-     const my=m.position.y-level*floorSpacing-face.roomY;
-     const dx=Math.max(0,Math.min(p.u+hw,mu+mw)-Math.max(p.u-hw,mu-mw));
-     const dy=Math.max(0,Math.min(p.centreY+hh,my+mh)-Math.max(p.centreY-hh,my-mh));
-     return sum+dx*dy;
-    },0);
-    return {face,...p,overlap,score:overlap*1000+(neighbours.length*.12)+attempt*.002};
-   })).filter(p=>p.width>0&&p.height>0&&p.overlap<.015).sort((a,b)=>a.score-b.score);
-   // Do not place one tag on top of another: an oversized tag can shrink or be omitted.
-   const chosen=placed[0];if(!chosen)continue;
-   occupied.add(hand);
-   const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
-   const normal=face.normal,right={x:normal.z,z:-normal.x};
-   marks.push({id:item.id,date:plan.date,level,slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,form:'handstyle',ink:tag.ink,seed:tag.seed,
-    face,width,height,rotation,normal:{x:normal.x,y:0,z:normal.z},
-    position:{x:face.centre.x+right.x*shift,y:level*floorSpacing+face.roomY+centreY,z:face.centre.z+right.z*shift},
+   const angle=slot* Math.PI*(3-Math.sqrt(5)),radius=tier===0?0:[0,.24,.55,.9][tier];
+   const u=Math.max(-face.length/2+placement.width/2+.15,
+    Math.min(face.length/2-placement.width/2-.15,Math.cos(angle)*radius));
+   const centreY=Math.max(.4+placement.height/2,
+    Math.min(ROOM_HEIGHT-.3-placement.height/2,ROOM_HEIGHT/2+Math.sin(angle)*radius*.45));
+   marks.push({id:item.id,date:plan.date,level,slot,surface:'exterior',phi:{...placement.phi,tier},
+    phrase:'φ',text:tag.text,hand:tag.hand,form:tier===3?'handstyle':tag.form,
+    ink:tag.ink,seed:tag.seed,face,width:placement.width,height:placement.height,
+    rotation:placement.rotation*.45,normal:{x:normal.x,y:0,z:normal.z},
+    position:{x:face.centre.x+right.x*u+normal.x*tier*.007,
+     y:level*floorSpacing+face.roomY+centreY,
+     z:face.centre.z+right.z*u+normal.z*tier*.007},
     bounds:{...tag.bounds},tag});
   }
  }
