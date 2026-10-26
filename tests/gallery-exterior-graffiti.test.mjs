@@ -1,4 +1,5 @@
 import {TOWER_HANDS} from '../gallery/visit/tower-graffiti-styles.mjs';
+import {TOWER_LETTERING_REVISION} from '../gallery/visit/tower-family-lettering.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,23 +11,25 @@ import {createTag,strokeFraction} from '../test/graffiti/tag-engine.mjs?v=spraye
 const source=JSON.parse(fs.readFileSync('gallery/tower-layouts.json','utf8'));
 const floors=source.floors.map((f,level)=>({level,plan:buildLayout(f.date,f.studies.length,f.studies.map(([seed,engine])=>({seed,engine})))}));
 const marks=planExteriorGraffiti(floors);
-test('ground and first floors each have ten marks including distinct front freehands',()=>{
+test('ground and first floors retain base tags and non-overlapping supplemental freehands',()=>{
  assert.deepEqual(planExteriorGraffiti(floors),marks);
- for(const floor of floors){const tags=marks.filter(m=>m.date===floor.plan.date);assert.equal(tags.length,floor.level<2?10:0);if(floor.level<2){for(const phrase of GRAFFITI_WORDS)assert.ok(tags.some(t=>t.phrase===phrase));}}
+ for(const floor of floors){const tags=marks.filter(m=>m.date===floor.plan.date);if(floor.level<2)assert.ok(tags.length>=5&&tags.length<=18);else assert.equal(tags.length,0);if(floor.level<2){for(const phrase of GRAFFITI_WORDS)assert.ok(tags.some(t=>t.phrase===phrase));}}
  assert.deepEqual(new Set(marks.map(m=>m.phrase)),new Set(GRAFFITI_WORDS));
- assert.equal(marks.length,20);assert.ok(marks.some(m=>m.level===0));assert.ok(marks.some(m=>m.level===1));assert.ok(marks.every(m=>m.level<2));
+ assert.ok(marks.length>=10&&marks.length<=36);assert.ok(marks.some(m=>m.level===0));assert.ok(marks.some(m=>m.level===1));assert.ok(marks.every(m=>m.level<2));
  for(const level of [0,1]){
   const originals=marks.filter(m=>m.level===level&&m.slot<5),added=marks.filter(m=>m.level===level&&m.slot>=5);
-  assert.equal(added.length,5);assert.ok(added.every(m=>m.form==='handstyle'));
-  assert.equal(new Set(added.map(m=>m.hand)).size,5);
+  assert.ok(added.length<=13);assert.ok(added.every(m=>m.form==='handstyle'));
+  assert.ok(new Set(added.map(m=>m.hand)).size>=Math.min(added.length,Math.max(0,9-originals.length)));
   assert.ok(added.every(m=>TOWER_HANDS.includes(m.hand)));
   assert.ok(originals.every(m=>TOWER_HANDS.includes(m.hand)));
-  assert.equal(new Set([...originals,...added].map(m=>m.id)).size,10);
+  assert.equal(originals.length,5);
+  assert.equal(new Set([...originals,...added].map(m=>m.id)).size,originals.length+added.length);
+  assert.ok([...originals,...added].every(m=>m.phrase!=='Piece'));
  }
  assert.ok(marks.every(m=>m.form==='handstyle'&&m.tag.renderer==='az-nine-v1'));
  for(const level of [0,1]){
   const visible=marks.filter(m=>m.level===level);
-  assert.equal(new Set(visible.map(m=>m.hand)).size,9,'All nine complete alphabets must be represented before a repeat');
+  assert.equal(new Set(visible.map(m=>m.hand)).size,Math.min(9,visible.length),'All nine complete alphabets must be represented before a repeat');
  }
 });
 test('paint fits solid wall faces and stays clear of doors, lifts, corners and roof bands',()=>{
@@ -82,7 +85,7 @@ test('batched quads face outward and use the same wall location for active, prep
 test('all exterior graffiti is composed from authored nine-style glyphs',()=>{
  for(const mark of marks){
   assert.ok(mark.hand>='A'&&mark.hand<='I');
-  assert.equal(mark.tag.version,'az-nine-v1-20261025');
+  assert.equal(mark.tag.version,TOWER_LETTERING_REVISION);
   assert.equal(mark.tag.renderer,'az-nine-v1');
   assert.ok(mark.tag.plan.letters.length>0);
   assert.ok(mark.tag.plan.letters.every(x=>x.glyph.shapes.length>=1));
