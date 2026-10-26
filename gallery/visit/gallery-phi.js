@@ -1,4 +1,5 @@
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
+import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
 import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=public-phi-20261026';
 import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=succulent-planters-20261026';
 import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=golden-eight-forms-v4-no-loop-20261026';
@@ -310,6 +311,9 @@ function addBridge(hall) {
 }
 // Restrict simultaneous downloads/decodes on phones; artwork is never omitted.
 const mobileImages=matchMedia('(pointer:coarse)').matches;
+// Prepare only the destination floor's paintings while the lift travels.
+const phiArtworkPreloader=createPhiArtworkPreloader(undefined,{concurrency:mobileImages?2:4});
+if(GALLERY_DEBUG)window.__phiArtworkPreload=()=>phiArtworkPreloader.stats();
 const artworkQueue=[];
 let artworkActive=0;
 function scheduleArtwork(task,material){
@@ -899,6 +903,11 @@ async function travelLift(date,index){
   // Fetch and validate while still at the departure floor. A failed request
   // must never strand the visitor at an elevation with the old floor loaded.
   const prepared=await preparePhiEdition(date);
+  // Begin downloads after metadata validation, before the physical journey.
+  const byId=new Map(prepared.studies.map(study=>[study.id,study]));
+  phiArtworkPreloader.start(date,prepared.nextPlan.phi.exhibition.paintings
+   .map(p=>byId.get(p.studyId)).filter(Boolean)
+   .map(study=>study.imageOptimized||study.image).filter(Boolean));
   while(liftDoorClosure<.998)await new Promise(resolve=>setTimeout(resolve,30));
   if(plan?.phi){
    await startPhiCabinRide(index);
@@ -923,6 +932,7 @@ async function travelLift(date,index){
   setLiftDoors(false);
   if(window.__phiLiftRide)window.__phiLiftRide.status='opening';
  }catch(error){
+  phiArtworkPreloader.clear();
   if(exhibitDate!==departure.date){
    try{await loadEdition(departure.date,{rollback:true});}
    catch(recoveryError){console.error('[Phi lift] departure recovery failed',recoveryError);}
@@ -1359,13 +1369,29 @@ function constructPhiGallery(layout,studies){
   caption.position.set(p.x,centreY-height/2-.24,p.z);
   caption.rotation.copy(face.rotation);scene.add(caption);
   const url=study.imageOptimized||study.image;
-  if(url)deferredGalleryJobs.push(()=>loader.load(url,texture=>{
-    if(!face.parent){texture.dispose();return;}
+  if(url)deferredGalleryJobs.push(()=>{
+   const apply=texture=>{
+    if(!face.parent||face.userData.galleryDisposed){texture.dispose();return;}
     texture.colorSpace=THREE.SRGBColorSpace;
     face.material.dispose();
     face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide});
     window.__phiFullEngine.paintingsLoaded++;
-  },undefined,error=>console.warn('Phi painting failed to load',study.id,error)));
+   };
+   const fallback=source=>{
+    if(!face.parent||face.userData.galleryDisposed)return;
+    loader.load(source,apply,undefined,error=>console.warn('Phi painting failed to load',study.id,error));
+   };
+   // Reuse the decoded lift image instead of issuing another image request.
+   const warmed=phiArtworkPreloader.take(exhibitDate,url);
+   if(warmed)warmed.then(image=>{
+    if(!face.parent||face.userData.galleryDisposed)return;
+    if(!image){fallback(study.image||url);return;}
+    const texture=new THREE.Texture(image);
+    texture.needsUpdate=true;
+    apply(texture);
+   });
+   else fallback(url); // Direct links and cold starts work as before.
+  });
   artExhibits.push({study,position:face.position.clone(),normal:new THREE.Vector3(p.normal.x,0,p.normal.z)});
  }
  for(const p of phi.exhibition.sculptures){
