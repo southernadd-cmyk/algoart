@@ -58,6 +58,7 @@ let deferredGalleryRunning=false;
 let liftDoors=[];
 let liftDoorClosure=0;
 let liftDoorTarget=0;
+let liftArrivalOpening=false;
 let liftCabinPosition=null;
 let liftDoorThreshold=null;
 let currentFloor=0;
@@ -650,7 +651,10 @@ function setLiftDoors(closed){
 function animateLiftDoors(dt){
   // Proximity sensor works on both sides of the doorway, just like the
   // gallery entrance. Never reopen doors during a lift journey.
-  if(liftDoorThreshold && liftDoors.length && !liftTravelling){
+  if(liftArrivalOpening){
+    liftDoorTarget=0;
+    if(liftDoorClosure<.025)liftArrivalOpening=false;
+  }else if(liftDoorThreshold && liftDoors.length && !liftTravelling){
     const person=renderer?.xr.isPresenting
       ?renderer.xr.getCamera(camera).getWorldPosition(new THREE.Vector3())
       :rig.position;
@@ -792,6 +796,7 @@ async function travelLift(date,index){
   if(!xrRide)document.exitPointerLock?.();
   const overlay=$('liftAnimation');
   if(!xrRide)overlay.hidden=false;
+  liftArrivalOpening=false;
   setLiftDoors(true);
   const current=Math.max(0,archiveDates.indexOf(exhibitDate));
   $('liftDirection').textContent=(index>current?'Ascending':'Descending')+' · '+Math.abs(index-current)+' floors';
@@ -812,6 +817,10 @@ async function travelLift(date,index){
       $('liftArrival').textContent='Doors opening · floor '+(index===0?'G':index);
       setTimeout(()=>$('liftArrival').hidden=true,1800);
     }
+    // Release the journey lock before opening, otherwise the animation loop
+    // forces the doors closed again on the destination floor.
+    liftTravelling=false;
+    liftArrivalOpening=true;
     setLiftDoors(false);
   }catch(error){
     overlay.hidden=true;setLiftDoors(false);
@@ -1840,7 +1849,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     yaw=Math.atan2(-towards.x,-towards.z);
     rig.rotation.y=yaw;pitch=0;camera.rotation.x=0;
     liftWasNear=true;welcome.hidden=true;
-    liftDoorClosure=1;liftDoorTarget=0;
+    liftDoorClosure=1;liftDoorTarget=1;
     for(const leaf of liftDoors)leaf.position.copy(leaf.userData.closed);
     history.replaceState(null,'','?date='+date);
   }
