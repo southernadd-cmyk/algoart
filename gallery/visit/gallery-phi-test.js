@@ -1,4 +1,4 @@
-import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=tagged-square-v2-20261026';
+import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=golden-eight-forms-v3-20261026';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs';
@@ -2551,8 +2551,8 @@ function tick() {
   if (!renderer) return;
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
   const paintSlot=phiFrameSerial++%3;
-  if(paintSlot===0)towerGraffiti.paintNext();
-  else if(paintSlot===1)interiorGraffiti.paintNext();
+  if(paintSlot===0&&towerGraffiti.diagnostics.pending)towerGraffiti.paintNext();
+  else if(paintSlot===1&&interiorGraffiti.diagnostics.pending)interiorGraffiti.paintNext();
   else phiSquare.paintNext();
   // Finish lift motion before building expensive portrait geometry. In XR
   // this same renderer loop still owns all deferred artwork construction.

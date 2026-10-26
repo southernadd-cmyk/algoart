@@ -1,19 +1,15 @@
-// Reception-only writing surfaces. The latest approved broad-nib engine supplies
-// the letters and sprayed atlas; the lowercase symbol keeps its own descender.
-import {makeTowerFamilyTag,TOWER_LETTERING_REVISION} from './tower-family-lettering.mjs';
+// Reception-only writing uses all eight lettering forms and independently
+// varied writer profiles. Golden-angle spirals replace repeated rows.
+import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
-export const PHI_SQUARE_REVISION='phi-square-v1|'+TOWER_LETTERING_REVISION;
-export function makeSquareTag(text,seed,ink){
- const tag=makeTowerFamilyTag(text,{hand:'F',seed,ink,finish:'spray',paintWidth:2});
- if(text==='φ'){
-  tag.text=tag.plan.word='φ';tag.plan.shared=[];
-  tag.plan.letters[0].ch='φ';tag.plan.letters[0].shapes=[
-   {kind:'stroke',role:'structure',d:'M 14 49 C 26 31 64 19 81 40 C 102 66 86 91 57 93 C 27 94 7 76 14 49'},
-   {kind:'stroke',role:'structure',d:'M 60 12 C 48 44 45 93 37 131'}
-  ];tag.construction.letters[0].char='φ';
- }
- return tag;
+export const PHI_SQUARE_REVISION='phi-square-golden-eight-v3|sprayed-throwups-v'+VERSION;
+export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
+export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
+export const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
+const writers=Object.keys(HANDS);
+export function makeSquareTag(text,seed,ink,{form='handstyle',hand='loop'}={}){
+ return createTag(text,{seed,ink,form,hand,paintWidth:1.35});
 }
 export function planPhiSquare(){
  return [
@@ -27,8 +23,23 @@ export function planPhiSquare(){
  ];
 }
 function rotate(x,z,yaw){return {x:x*Math.cos(yaw)+z*Math.sin(yaw),z:-x*Math.sin(yaw)+z*Math.cos(yaw)};}
+export function goldenSquarePlacement({bounds,length,wallHeight,count,index,phase=0}){
+ const angle=(index+phase)*GOLDEN_ANGLE,radius=count===1?0:Math.sqrt((index+.5)/count);
+ const rotation=Math.atan2(Math.sin(angle),Math.cos(angle))/PHI**5;
+ const c=Math.abs(Math.cos(rotation)),sn=Math.abs(Math.sin(rotation)),aspect=bounds.width/bounds.height;
+ const availableWidth=length-.24,availableHeight=wallHeight-.24;
+ const scale=[.82,.53,.43,.35][SQUARE_TAG_COUNTS.indexOf(count)]/PHI**(((index+phase)%3)*.22);
+ let height=availableHeight*scale,width=height*aspect;
+ const fit=Math.min(1,availableWidth/(width*c+height*sn),availableHeight/(height*c+width*sn));
+ width*=fit;height*=fit;
+ const halfAlong=(width*c+height*sn)/2,halfUp=(height*c+width*sn)/2;
+ return {width,height,rotation,u:Math.cos(angle)*radius*(availableWidth/2-halfAlong),
+  y:wallHeight/2+Math.sin(angle)*radius*(availableHeight/2-halfUp),
+  phi:{angle,radius,index,phase,count,goldenAngle:GOLDEN_ANGLE}};
+}
 export function planSquareTags(objects=planPhiSquare()){
  const inks=['#843b37','#245965','#303a32','#99763d','#4a4671'],marks=[];
+ let faceIndex=0;
  for(const object of objects){
   const faces=[{x:0,z:1,length:object.width},{x:0,z:-1,length:object.width},
    ...(object.kind==='monument'?[{x:1,z:0,length:object.depth},{x:-1,z:0,length:object.depth}]:[])];
@@ -36,19 +47,18 @@ export function planSquareTags(objects=planPhiSquare()){
    const n=rotate(face.x,face.z,object.yaw),right={x:n.z,z:-n.x};
    const half=face.x?object.width/2:object.depth/2;
    const centre={x:object.x+n.x*half,z:object.z+n.z*half};
-   const columns=object.kind==='wall'?3:1;
-   for(let row=0;row<2;row++)for(let col=0;col<columns;col++){
-    const slot=marks.length,phrase=(row+col+side)%2?'φ':'PHI',seed=PHI_SQUARE_REVISION+'|'+object.id+'|'+side+'|'+row+'|'+col;
-    const ink=inks[slot%inks.length],tag=makeSquareTag(phrase,seed,ink);
-    const cell=face.length/columns,width=Math.min(cell-.14,phrase==='φ'?1.05:1.95);
-    const height=Math.min(width*tag.bounds.height/tag.bounds.width,object.kind==='wall'?1.08:1.4);
-    const actualWidth=height*tag.bounds.width/tag.bounds.height;
-    const shift=(col-(columns-1)/2)*cell;
-    marks.push({id:seed,date:'__phi_reception__',level:0,slot,surface:'square',phrase,text:tag.text,hand:tag.hand,form:tag.form,ink,seed:tag.seed,
-     face:{id:object.id+':'+side,centre,length:face.length,roomY:0},width:actualWidth,height,rotation:(slot%3-1)*.045,
-     normal:{...n,y:0},position:{x:centre.x+right.x*shift-n.x*.197,y:row===0?object.height*.29:object.height*.73,z:centre.z+right.z*shift-n.z*.197},
+   const count=SQUARE_TAG_COUNTS[faceIndex%4],phase=faceIndex*3;
+   for(let index=0;index<count;index++){
+    const slot=marks.length,phrase=(index+faceIndex)%3===1?'φ':'PHI',seed=PHI_SQUARE_REVISION+'|'+object.id+'|'+side+'|'+index;
+    const ink=inks[(slot+faceIndex)%inks.length],form=SQUARE_TAG_FORMS[(slot*5+faceIndex*3)%SQUARE_TAG_FORMS.length];
+    const hand=writers[(slot*7+faceIndex*11)%writers.length],tag=makeSquareTag(phrase,seed,ink,{form,hand});
+    const p=goldenSquarePlacement({bounds:tag.bounds,length:face.length,wallHeight:object.height,count,index,phase});
+    marks.push({id:seed,date:'__phi_reception__',level:0,slot,surface:'square',material:object.material,phrase,text:tag.text,hand:tag.hand,form:tag.form,ink,seed:tag.seed,
+     face:{id:object.id+':'+side,centre,length:face.length,roomY:0},width:p.width,height:p.height,rotation:p.rotation,phi:p.phi,
+     normal:{...n,y:0},position:{x:centre.x+right.x*p.u-n.x*.197,y:p.y,z:centre.z+right.z*p.u-n.z*.197},
      bounds:{...tag.bounds},tag});
    }
+   faceIndex++;
   }
  }
  return marks;
@@ -59,10 +69,10 @@ export function clearOfPhiSquare(obstacles,x,z,radius=.38){
  });
 }
 export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
- const objects=planPhiSquare(),managers=['brick','concrete'].map(material=>createTowerGraffiti(THREE,{
+ const objects=planPhiSquare(),marks=planSquareTags(objects),managers=['brick','concrete'].map(material=>createTowerGraffiti(THREE,{
   brick:material==='brick'?brick:concrete,lowPower,kind:'exterior',
   keyFor:()=>PHI_SQUARE_REVISION+'|'+material,
-  planner:()=>planSquareTags(objects.filter(o=>o.material===material))
+  planner:()=>marks.filter(m=>m.material===material)
  }));
  let serial=0,activeRoot=null;
  return {
@@ -77,7 +87,7 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
    for(const manager of managers)manager.addTo(root,[],0);
    parent.add(root);activeRoot=root;
    const obstacles=objects.map(o=>{const p=rotate(o.x,o.z,root.rotation.y);return {...o,x:p.x+doorway.x,z:p.z+doorway.z,yaw:o.yaw+root.rotation.y};});
-   return {root,obstacles,walls:4,monuments:3,tags:72};
+   return {root,obstacles,walls:4,monuments:3,tags:marks.length};
   },
   viewpoint(){
    if(!activeRoot)return null;activeRoot.updateWorldMatrix(true,false);

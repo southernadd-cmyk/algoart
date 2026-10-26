@@ -37,7 +37,7 @@ test('real archive floors retain standing visitors, seating and a bounded popula
 
 // Exercise the same planner, painter state and obstacle coordinates used in the scene.
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from '../gallery/visit/phi-lift-indicator.mjs';
-import {planPhiSquare,planSquareTags,clearOfPhiSquare} from '../gallery/visit/phi-square-graffiti.mjs';
+import {planPhiSquare,planSquareTags,clearOfPhiSquare,GOLDEN_ANGLE,SQUARE_TAG_COUNTS,SQUARE_TAG_FORMS} from '../gallery/visit/phi-square-graffiti.mjs';
 test('lift indicator follows physical floors in both directions and retains archive dates',()=>{
  const dates=['__phi_reception__','2026-10-05','2026-10-06','2026-10-07'];
  const up=[0,6.2,12.4,18.6].map(height=>phiLiftIndicatorState({height,dates,currentFloor:0,targetFloor:3,phase:'moving'}));
@@ -49,19 +49,28 @@ test('lift indicator follows physical floors in both directions and retains arch
  assert.equal(paintPhiLiftIndicator(display,up[1]),true);assert.ok(drawing.every(d=>d.font.includes('AlgoArt Marker')));assert.equal(display.texture.needsUpdate,true);
  assert.equal(paintPhiLiftIndicator(display,up[1]),false);assert.equal(paintPhiLiftIndicator(display,up[2]),true);
 });
-test('square writing preserves lowercase phi and uses the latest broad-nib engine on every surface',()=>{
+test('square writing mixes eight lettering forms, independent hands and lowercase phi in golden-angle groups',()=>{
  const objects=planPhiSquare(),marks=planSquareTags(objects);
- assert.equal(objects.filter(o=>o.kind==='wall').length,4);assert.equal(objects.filter(o=>o.kind==='monument').length,3);assert.equal(marks.length,72);
+ assert.equal(objects.filter(o=>o.kind==='wall').length,4);assert.equal(objects.filter(o=>o.kind==='monument').length,3);assert.equal(marks.length,85);
  assert.deepEqual(planSquareTags(objects),marks);assert.deepEqual(new Set(marks.map(m=>m.phrase)),new Set(['PHI','φ']));
+ assert.deepEqual(new Set(marks.map(m=>m.form)),new Set(SQUARE_TAG_FORMS));assert.equal(SQUARE_TAG_FORMS.length,8);
+ assert.ok(new Set(marks.map(m=>m.hand)).size>=25,'Writer identities are repeating');
+ const faces=new Map();for(const m of marks){if(!faces.has(m.face.id))faces.set(m.face.id,[]);faces.get(m.face.id).push(m);}
+ assert.deepEqual(new Set([...faces.values()].map(ms=>ms.length)),new Set(SQUARE_TAG_COUNTS));
+ for(const group of faces.values()){
+  if(group.length>=3){assert.ok(new Set(group.map(m=>m.form)).size>=3);assert.deepEqual(new Set(group.map(m=>m.phrase)),new Set(['PHI','φ']));}
+  for(let i=1;i<group.length;i++)assert.ok(Math.abs(group[i].phi.angle-group[i-1].phi.angle-GOLDEN_ANGLE)<1e-12);
+ }
  for(const m of marks){
-  assert.equal(m.tag.version,'az-nine-v3-broadnib-20261026');assert.equal(m.tag.hand,'F');
-  assert.equal(m.text,m.phrase);assert.equal(m.tag.plan.word,m.phrase);
-  if(m.phrase==='φ'){
-   assert.equal(m.tag.plan.letters[0].ch,'φ');assert.match(m.tag.plan.letters[0].shapes[1].d,/37 131$/,'Lowercase phi lost its descender');
-  }
+  assert.equal(m.tag.version,7);assert.equal(m.text,m.phrase);assert.equal(m.tag.text,m.phrase);
+  if(m.phrase==='φ')assert.equal(m.tag.construction.letters[0].character,'φ');
   const object=objects.find(o=>m.face.id.startsWith(o.id+':'));
   const hh=(Math.abs(m.height*Math.cos(m.rotation))+Math.abs(m.width*Math.sin(m.rotation)))/2;
-  assert.ok(m.position.y-hh>.05&&m.position.y+hh<object.height,'Paint leaves its wall');
+  const hw=(Math.abs(m.width*Math.cos(m.rotation))+Math.abs(m.height*Math.sin(m.rotation)))/2;
+  const right={x:m.normal.z,z:-m.normal.x};
+  const u=(m.position.x-m.face.centre.x)*right.x+(m.position.z-m.face.centre.z)*right.z;
+  assert.ok(m.position.y-hh>.05&&m.position.y+hh<object.height,'Paint leaves its wall vertically');
+  assert.ok(Math.abs(u)+hw<m.face.length/2,'Paint leaves its wall horizontally');
  }
 });
 test('square objects leave the entrance, frontage benches and central route clear with rotated collisions',()=>{

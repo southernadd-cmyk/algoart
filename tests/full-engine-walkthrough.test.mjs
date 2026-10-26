@@ -21,7 +21,7 @@ try{
  assert.equal(phi.unplaced,0,'Unplaced artworks');
  const plaza=await page.evaluate(()=>window.__phiPlaza);
  assert.equal(plaza?.monumentCount,2);
- assert.equal(plaza.benchCount,8);assert.equal(plaza.tagWalls,4);assert.equal(plaza.squareMonumentCount,3);assert.equal(plaza.tags,72);
+ assert.equal(plaza.benchCount,8);assert.equal(plaza.tagWalls,4);assert.equal(plaza.squareMonumentCount,3);assert.equal(plaza.tags,85);
  assert.ok(await page.locator('#welcomeTitle').evaluate(el=>parseFloat(getComputedStyle(el).fontSize)<=50),'Welcome heading too large');
  const tower=await page.evaluate(()=>window.__phiTowerExterior);
  assert.ok(tower?.otherFloors>0&&tower.wallMeshes>tower.otherFloors,'Missing exterior tower');
@@ -29,9 +29,9 @@ try{
  assert.equal(await page.evaluate(()=>window.__phiReceptionCredits?.count),3,'Missing framed credit collection');
  await page.waitForFunction(()=>window.__phiLiftState?.entranceModelLoaded&&window.__phiLiftState?.propsLoaded===3,null,{timeout:30000});
  assert.equal(await page.evaluate(()=>window.__galleryStartupError),'');
- await page.waitForFunction(()=>window.__phiSquareGraffiti?.diagnostics().painted===72,null,{timeout:90000});
- const writing=await page.evaluate(()=>({diagnostics:window.__phiSquareGraffiti.diagnostics(),words:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.text))]}));
- assert.equal(writing.diagnostics.pending,0);assert.deepEqual(writing.diagnostics.errors,[]);assert.match(writing.diagnostics.revision,/az-nine-v3-broadnib/);assert.deepEqual(new Set(writing.words),new Set(['PHI','φ']));
+ await page.waitForFunction(()=>window.__phiSquareGraffiti?.diagnostics().painted===85,null,{timeout:90000});
+ const writing=await page.evaluate(()=>({diagnostics:window.__phiSquareGraffiti.diagnostics(),words:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.text))],forms:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.form))],hands:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.hand))]}));
+ assert.equal(writing.diagnostics.pending,0);assert.deepEqual(writing.diagnostics.errors,[]);assert.match(writing.diagnostics.revision,/golden-eight/);assert.equal(writing.forms.length,8);assert.ok(writing.hands.length>=25);assert.deepEqual(new Set(writing.words),new Set(['PHI','φ']));
  await page.screenshot({path:'phi-tower-results/full-welcome.png'});
  await page.locator('#enter').focus();await page.keyboard.press('Enter');
  await page.screenshot({path:'phi-tower-results/full-entrance.png'});
@@ -109,14 +109,14 @@ try{
  await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',null,{timeout:90000});
  assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),'__phi_reception__');
  assert.equal(await page.evaluate(()=>window.__phiLiftState.indicator.primary),'G · Reception');
- assert.equal(await page.evaluate(()=>window.__phiSquareGraffiti.diagnostics().painted),72,'Square atlas did not survive a reception return');
+ assert.equal(await page.evaluate(()=>window.__phiSquareGraffiti.diagnostics().painted),85,'Square atlas did not survive a reception return');
  assert.equal(await page.locator('#error').isVisible(),false);
  await page.setViewportSize({width:390,height:844});
  await page.screenshot({path:'phi-tower-results/full-mobile.png'});
  assert.equal(threeImports.size,1,'Multiple Three.js module URLs');
  assert.ok(!warnings.some(s=>/Multiple instances of Three\.js/.test(s)),'Duplicate Three.js warning');
  assert.equal(errors.length,0,errors.join('; '));
- console.log('Full gallery: 72 latest-engine square tags, smaller welcome, live marker lift indicator, historical rides, free look, doors, failed-load recovery and one Three.js instance passed');
+ console.log('Full gallery: 85 mixed square tags in eight forms and golden-angle groups, smaller welcome, live marker lift indicator, historical rides, free look, doors, failed-load recovery and one Three.js instance passed');
 }catch(error){
  if(page){
   console.error('Gallery state on failure',await page.evaluate(()=>({ride:window.__phiLiftRide,lift:window.__phiLiftState,error:window.__phiLiftError,events:window.__galleryDebugEvents})));
