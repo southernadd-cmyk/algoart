@@ -1,2 +1,3 @@
-// Staging and production share the same phi renderer.
-import './gallery-phi.js?v=public-phi-20261026';
+// Staging-only reception furnishing refinements.
+globalThis.__phiReceptionTestRefresh=true;
+await import('./gallery-phi.js?v=reception-refresh-test-20261026');
