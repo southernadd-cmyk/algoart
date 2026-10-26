@@ -96,6 +96,20 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
      const geometry=tiledBoxUvs(new THREE.BoxGeometry(w,h,d),w,h,d,mat.userData.tileMeters||2);
      const mesh=new THREE.Mesh(geometry,mat);mesh.position.set(x,y,z);mesh.name=name;root.add(mesh);return mesh;
     };
+    // A pair of low plinths create public seating at the wide outer edges.
+    // Reuse existing stone and brick maps; keep the centre line fully clear.
+    for(const x of [-20,20])for(const z of [10,24]){
+     add(3.1,.43,1.1,x,.215,z,paving,'phi-square-perimeter-seat');
+     add(2.8,.075,.88,x,.475,z,brickwork,'phi-square-perimeter-seat-cap');
+    }
+    // Slim illuminated markers define the forecourt at night. Emissive materials
+    // avoid extra real-time point lights, textures or draw-heavy shadow passes.
+    const darkMetal=new THREE.MeshStandardMaterial({color:'#444b46',roughness:.65,metalness:.35});
+    const warmGlass=new THREE.MeshStandardMaterial({color:'#eedcb8',emissive:'#e8c78a',emissiveIntensity:.8,roughness:.48});
+    for(const x of [-22,22])for(const z of [5,16,27]){
+     add(.12,1.06,.12,x,.53,z,darkMetal,'phi-square-wayfinding-post');
+     add(.16,.3,.16,x,1.15,z,warmGlass,'phi-square-wayfinding-lantern');
+    }
     // Low flush bands create rhythm without making the walking surface uneven.
     for(const z of [5.5,10.5,15.5,20.5,25.5]){
      add(28,.025,.22,0,-.038,z,brickwork,'phi-square-paving-band');
@@ -129,6 +143,10 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
      const p=rotate(x,z,root.rotation.y);
      obstacles.push({x:p.x+doorway.x,z:p.z+doorway.z,yaw:root.rotation.y,width:3.2,depth:1.5,kind:'planted-seat'});
     }
+   }
+   if(globalThis.__phiReceptionTestRefresh)for(const x of [-20,20])for(const z of [10,24]){
+    const p=rotate(x,z,root.rotation.y);
+    obstacles.push({x:p.x+doorway.x,z:p.z+doorway.z,yaw:root.rotation.y,width:3.1,depth:1.1,kind:'perimeter-seat'});
    }
    return {root,obstacles,walls:4,monuments:3,tags:marks.length};
   },
