@@ -74,9 +74,10 @@ export function styleMovementPoint(x,y,{family='G',letterIndex=0,strokeIndex=0,s
  if(family==='H')return {x,y}; // Keep precisely separated filled fragments.
  return movementPoint(x,y,{family,letterIndex,strokeIndex,seed,mode});
 }
-export function styleWidthMultiplier(family,{mode='marker',role='primary',progress=.5}={}){
+export function styleWidthMultiplier(family,{mode='marker',role='primary',subtype=null,progress=.5}={}){
  if(family==='A'&&mode==='marker')return role==='primary'?.86:1;
  if(family==='I'&&mode==='marker')return .91;
  if(family==='G')return role==='secondary'?.72:1.18;
+ if(family==='F')return subtype==='crossbar'?1.75:subtype==='flourish'?.85:1;
  return 1;
 }
