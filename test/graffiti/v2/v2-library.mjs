@@ -5,8 +5,20 @@
 import {FAMILIES as ORIGINAL,getFamily as originalFamily,stableNoise,LETTERS} from '../family-library.mjs';
 import {PHI_BY_FAMILY} from '../family-symbols.mjs';
 
-export const V2_REVISION='pilot-sheets20-29-59-10-round2';
+export const V2_REVISION='all-nine-az-source-review-01';
 export const PILOT_EVIDENCE=Object.freeze({
+  'A:O':Object.freeze({sheet:41,letters:'O',observation:'The source O is not a plain circular loop: sharp angular returns cut a tall opening while the crossed stroke punctures the left side and extends beyond the perimeter.',change:'Replace a generic enclosing oval with angular top, inward right turn and one independent, clearly directional crossing pass.'}),
+  'A:M':Object.freeze({sheet:41,letters:'M',observation:'The source M is formed by steep converging diagonals, one solid lower-left foot and a large acute open counter; its dominant long crossover is part of the skeleton.',change:'Emphasise three legible diagonal stems and keep only one structural crossing stroke, instead of repeated short flourishes.'}),
+  'B:A':Object.freeze({sheet:7,letters:'A',observation:'Sheet 7 A is skeletal, airy and open: a loose sloped left entry, intersecting upright and a thin sweep passing through the upper counter. It is not a thick arrow-marker block.',change:'Pilot a separately authored fine-line A with light crossed upper strokes, retaining the existing heavy style in V1 for comparison.'}),
+  'B:O':Object.freeze({sheet:7,letters:'O',observation:'Sheet 7 O uses an irregular circled outline crossed by a nearly horizontal centre bar that extends beyond the ring; the counter remains visibly open.',change:'Pilot the thin ring and long pierced centre rather than a heavy oval with a solid arrow tip.'}),
+  'C:A':Object.freeze({sheet:13,letters:'A',observation:'Sheet 13 A combines an angular cut stem, a separated sloping blade and a short open high counter; the shape is asymmetric and made of decisive triangular wedges.',change:'Rebuild A with separate polygonal blade pieces and a real triangular negative-space notch.'}),
+  'C:O':Object.freeze({sheet:13,letters:'O',observation:'Sheet 13 O is a thick ring of irregular angular wedge segments enclosing a sharp eccentric hole rather than a round geometric font counter.',change:'Re-author a deliberately off-centre polygonal O with a cut-out inner counter and angular outer turns.'}),
+  'G:O':Object.freeze({sheet:8,letters:'O',observation:'Sheet 8 O is made from a broad repeated orbit with one smaller inner eye and a return across the interior, not equal-amplitude wobble at each contour point.',change:'Retain one confident outer orbit, a smaller inner eye, and a single crossing return.'}),
+  'G:S':Object.freeze({sheet:8,letters:'S',observation:'Sheet 8 S is drawn with an energetic long looping upper turn that descends into a dominant bottom sweep; inner curls sit within the larger directional movement.',change:'Keep a long committed S path with one inner counter-echo, not several independent wobbling rings.'}),
+  'H:A':Object.freeze({sheet:30,letters:'A',observation:'Sheet 30 A is clearly assembled from separate red slashed fragments with a high triangular empty counter, a long sharp left blade and a detached crossband.',change:'Use three individually outlined angular paint masses while preserving the visible central triangular white gap.'}),
+  'H:S':Object.freeze({sheet:30,letters:'S',observation:'Sheet 30 S comprises detached red wedges at the top and middle, with a long lower ribbon curling back; the deliberate gaps define the letter rather than texture noise.',change:'Rebuild the upper two wedge groups and lower angled sweep as separated filled marks with purposeful paper gaps.'}),
+  'I:A':Object.freeze({sheet:10,letters:'A',observation:'Sheet 10 cyan A is narrow and upright, with a short offset cap, slim downward chisel trunk and very open counter; the top is not a broad sloping triangle.',change:'Give A an offset sharp head, slender downstroke and short return bar while keeping the interior open.'}),
+  'I:O':Object.freeze({sheet:10,letters:'O',observation:'Sheet 10 O is a thin vertically extended single-stroke teardrop with one tipped upper point and a small lighter overlap, unlike a normal wide loop.',change:'Build a narrow elongated downward and upward chisel circuit with a pointed upper terminal.'}),
   'D:H':Object.freeze({sheet:20,letters:'H',observation:'Sheet 20 H consists of two unevenly pitched bold uprights crossed by a single decisive bar extending slightly past the second stem; it has a sloping, handwritten horizontal, not a symmetric stencil crossbar.',
    change:'Re-author both uprights and the overshooting crossbar as three discrete firm marker passes.'}),
   'D:S':Object.freeze({sheet:20,letters:'S',observation:'Sheet 20 S is composed of short angular box-like turns rather than a smooth curve; the upper arm is flatter and the lower exit finishes abruptly and farther to the right.',
@@ -30,6 +42,77 @@ export const PILOT_EVIDENCE=Object.freeze({
 });
 function path(kind,d){return Object.freeze({kind,d})}
 const changes=Object.freeze({
+ A:Object.freeze({
+  O:Object.freeze([
+   path('heavy','M 7 74 L 18 19 L 53 -4 L 83 15 L 76 83 L 48 112 L 17 92 L 7 74'),
+   path('stroke','M -7 72 L 56 35 L 91 48'),
+   path('hairline','M 18 24 L 42 5')
+  ]),
+  M:Object.freeze([
+   path('heavy','M -3 108 L 19 6 L 42 69 L 64 4 L 85 110'),
+   path('stroke','M -5 79 L 74 33'),
+   path('hairline','M 61 8 L 79 22')
+  ])
+ }),
+ B:Object.freeze({
+  A:Object.freeze([
+   path('stroke','M -5 108 Q 24 76 34 5 L 75 108'),
+   path('stroke','M -8 70 L 67 33 L 87 53'),
+   path('hairline','M 17 10 Q 34 -4 51 13')
+  ]),
+  O:Object.freeze([
+   path('stroke','M 42 3 C 94 -4 105 82 60 106 C 12 129 -12 49 19 18 Q 30 6 42 3'),
+   path('stroke','M -10 58 L 96 54'),
+   path('hairline','M 21 38 Q 34 20 53 24')
+  ])
+ }),
+ C:Object.freeze({
+  A:Object.freeze([
+   path('fill','M -6 102 L 34 -2 L 55 8 L 18 105 L 4 113 Z'),
+   path('fill','M 44 4 L 61 -3 L 91 103 L 69 109 L 55 54 Z'),
+   path('fill','M 14 55 L 77 48 L 72 67 L 7 76 Z')
+  ]),
+  O:Object.freeze([
+   path('fill','M 24 -2 L 78 9 L 99 42 L 80 94 L 55 113 L 14 105 L -3 70 L 4 27 Z M 35 27 L 22 73 L 47 90 L 67 78 L 79 45 L 61 23 Z'),
+   path('fill','M 1 24 L 36 -7 L 44 13 L 16 42 Z')
+  ])
+ }),
+ G:Object.freeze({
+  O:Object.freeze([
+   path('stroke','M 37 5 C 92 -13 109 71 75 107 C 47 138 -12 104 4 46 Q 15 8 48 3'),
+   path('stroke','M 36 35 C 68 14 83 47 66 76 C 52 96 25 79 30 55 Q 34 43 55 42'),
+   path('hairline','M 6 65 Q 45 36 92 58')
+  ]),
+  S:Object.freeze([
+   path('stroke','M 81 17 C 54 -14 13 3 8 30 C 0 55 57 57 74 38 Q 83 25 65 19'),
+   path('stroke','M 29 52 C -12 79 15 122 54 109 C 93 95 71 60 43 74 Q 31 86 47 93'),
+   path('hairline','M 13 112 Q 52 131 89 100')
+  ])
+ }),
+ H:Object.freeze({
+  A:Object.freeze([
+   path('fill','M -5 104 L 29 -5 L 46 12 L 14 110 Z'),
+   path('fill','M 52 6 L 78 110 L 62 101 L 38 31 Z'),
+   path('fill','M 7 60 L 72 49 L 75 64 L 0 81 Z')
+  ]),
+  S:Object.freeze([
+   path('fill','M 69 -4 L 90 7 L 60 35 L 32 21 L 15 44 L 1 32 L 27 0 Z'),
+   path('fill','M 17 47 L 36 52 L 24 78 L 54 82 L 49 96 L 6 88 Z'),
+   path('fill','M 33 103 L 78 77 L 91 91 L 54 116 L 8 112 L 5 95 Z')
+  ])
+ }),
+ I:Object.freeze({
+  A:Object.freeze([
+   path('stroke','M 25 114 L 24 13 L 36 -1 L 53 19 L 49 45 L 28 41'),
+   path('stroke','M 53 15 L 69 113'),
+   path('hairline','M 23 10 L 42 -5')
+  ]),
+  O:Object.freeze([
+   path('stroke','M 48 0 L 66 18 L 73 79 L 49 118 L 24 92 L 22 36 L 48 0'),
+   path('stroke','M 26 38 L 47 20'),
+   path('hairline','M 55 93 L 67 111')
+  ])
+ }),
  D:Object.freeze({
   H:Object.freeze([
    path('stroke','M 9 -2 L 8 110'),
