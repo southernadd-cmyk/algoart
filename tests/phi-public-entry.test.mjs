@@ -14,8 +14,23 @@ try{
   assert.equal(await page.locator('#error').isVisible(),false);assert.deepEqual(requests.filter(({url,type})=>/\/test\/virtual-gallery\//.test(url)||/tower-geometry\.bin/.test(url)||(['script','stylesheet','font'].includes(type)&&new URL(url).origin!=='http://127.0.0.1:4173')),[],'Public date entry must not import test assets, legacy geometry or external scripts');
   await page.locator('#enter').focus();await page.keyboard.press('Enter');
   if(options.isMobile){
-   const before=await page.evaluate(()=>window.__phiLiftState.yaw),touch=await context.newCDPSession(page);
-   await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:190,y:400}]});await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:260,y:400}]});await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   await page.waitForFunction(()=>document.getElementById('welcome').hidden);
+   const before=await page.evaluate(()=>window.__phiLiftState.yaw);
+   const origin=await page.evaluate(()=>{
+    for(const y of [460,380,560,650])for(const x of [180,260,90])
+     if(document.elementFromPoint(x,y)?.id==='world')return {x,y};
+    return null;
+   });
+   assert.ok(origin,'No unobstructed canvas point for mobile touch drag');
+   const touch=await context.newCDPSession(page);
+   const point=(x,y)=>[{x,y,id:0,force:1}];
+   await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:point(origin.x,origin.y)});
+   await page.waitForTimeout(120);
+   await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:point(origin.x+50,origin.y)});
+   await page.waitForTimeout(120);
+   await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:point(origin.x+110,origin.y)});
+   await page.waitForTimeout(120);
+   await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
    await page.waitForFunction(y=>Math.abs(window.__phiLiftState.yaw-y)>.1,before,{timeout:10000});
    assert.ok(await page.locator('#touchNav').isVisible());await page.screenshot({path:'phi-tower-results/public-touch.png'});
   }
