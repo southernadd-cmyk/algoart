@@ -1835,14 +1835,19 @@ function detectArt(elapsed) {
   const text='Floor '+(currentFloor===0?'G':currentFloor)+(current>=0?' · Gallery '+(current+1):' · Walkway');
   if(status.textContent!==text)status.textContent=text;
 }
+let frameSerial=0;
 function tick() {
   if (!renderer) return;
-  const dt=Math.min(clock.getDelta(),.055);
-  towerGraffiti.paintNext();
-  interiorGraffiti.paintNext();
-  // Three.js supplies both desktop and XR frames here. Window animation
-  // frames can pause in immersive VR, so build exhibits on this loop instead.
-  processDeferredGallery();
+  const frameStart=GALLERY_DEBUG?performance.now():0;
+  const rawDelta=clock.getDelta();
+  const dt=Math.min(rawDelta,.055);
+  // Spread canvas painting across frames. This avoids pairing two costly
+  // graffiti atlas writes with artwork geometry construction in one tick.
+  if((frameSerial++&1)===0)towerGraffiti.paintNext();
+  else interiorGraffiti.paintNext();
+  // Only construct a deferred exhibit on frames that were already inexpensive.
+  // XR still uses this animation loop, rather than window requestAnimationFrame.
+  if(dt<.030)processDeferredGallery();
   animateLiftDoors(dt);
   entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
@@ -1851,6 +1856,14 @@ function tick() {
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
   renderer.render(scene,camera);
+  if(GALLERY_DEBUG){
+    const spent=performance.now()-frameStart;
+    if(spent>34){
+      window.__galleryFrameSpikes??=[];
+      window.__galleryFrameSpikes.push({ms:Math.round(spent),deltaMs:Math.round(rawDelta*1000),deferred:deferredGalleryJobs.length,frame:frameSerial});
+      if(window.__galleryFrameSpikes.length>60)window.__galleryFrameSpikes.shift();
+    }
+  }
 }
 if(renderer)renderer.setAnimationLoop(tick);
 // Ensure canvas-rendered entrance and lift signs use the actual marker font.
