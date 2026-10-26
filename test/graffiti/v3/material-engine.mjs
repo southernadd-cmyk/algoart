@@ -1,5 +1,5 @@
 // Experimental, deterministic V3 wall-paint deposition. No production imports.
-export const V3_MATERIAL_REVISION='material-study-06';
+export const V3_MATERIAL_REVISION='material-study-07';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function hash(seed,x,y,channel=0){
  let n=2166136261;
@@ -72,9 +72,13 @@ export function paintStrokes(ctx,paths,{mode='marker',surface='painted-plaster',
    const role=roleForStroke(stroke);
    const roleScale=role==='ornament'?.52:role==='secondary'?.77:1;
    const strokeWidth=(stroke.width||width)*roleScale;
+   const contact=stroke.contact||{onset:.04,release:.10};
+   const onset=Math.min(1,(t+.015)/Math.max(.01,contact.onset));
+   const lift=Math.min(1,(1-t+.015)/Math.max(.01,contact.release));
+   const contactPressure=.74+.26*Math.min(onset,lift);
    const radius=(mode==='spray'?strokeWidth*.56:strokeWidth*.55)*scale*
-    (mode==='spray'?(1.1+.18*Math.sin(t*12+index)):(.88+.20*profile.pressure));
-   const strength=(mode==='spray'?.56+.27*(1-profile.speed):.88+.09*profile.pressure)*(role==='ornament'?.62:role==='secondary'?.82:1);
+    (mode==='spray'?(1.1+.18*Math.sin(t*12+index)):(.88+.20*profile.pressure)*contactPressure);
+   const strength=(mode==='spray'?.56+.27*(1-profile.speed):.88+.09*profile.pressure)*(role==='ornament'?.62:role==='secondary'?.82:1)*(mode==='marker'?contactPressure:1);
    deposit(coverage,w,h,p.x*scale,p.y*scale,radius,strength,seed,mode,surface,wallCoordinates);
   }
  });
