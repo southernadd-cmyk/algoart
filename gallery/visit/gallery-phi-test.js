@@ -2111,7 +2111,7 @@ window.addEventListener('keydown',(e)=>{
     pressed.clear();lookPressed.clear();
     return; // Standard keyboard navigation must remain available.
   }
-  if(!plan||!welcome.hidden||liftTravelling||!$('lift').hidden||renderer.xr.isPresenting||isInteractiveFocus())return;
+  if(!plan||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting||isInteractiveFocus())return;
   if(e.code==='ShiftLeft'||e.code==='ShiftRight'){
     pressed.add(e.code);
     return;
@@ -2317,7 +2317,20 @@ function onPhiPlaza(x,z){
  return ((x-door.x)*p.outward.x+(z-door.z)*p.outward.z)>-.5 || phi.canWalk(x,z);
 }
 function updateMovement(dt) {
-  if (!plan || !welcome.hidden || !$('lift').hidden || liftTravelling) return;
+  if (!plan || !welcome.hidden || !$('lift').hidden) return;
+  // Look remains responsive during physical travel; only translation is locked.
+  // Never snap the rig back to the old floor while its cabin is moving.
+  if(liftTravelling){
+    if(!renderer.xr.isPresenting){
+      const lookRate=1.65;
+      yaw+=(Number(lookPressed.has('turnLeft'))-Number(lookPressed.has('turnRight')))*lookRate*dt;
+      pitch=Math.max(-1.35,Math.min(1.35,pitch+
+        (Number(lookPressed.has('lookUp'))-Number(lookPressed.has('lookDown')))*lookRate*.8*dt));
+    }
+    rig.rotation.y=yaw;
+    camera.rotation.x=renderer.xr.isPresenting?0:pitch;
+    return;
+  }
   if(!renderer.xr.isPresenting){
     // Continuous, frame-rate-independent keyboard look; arrow keys never walk.
     const lookRate=1.65;
