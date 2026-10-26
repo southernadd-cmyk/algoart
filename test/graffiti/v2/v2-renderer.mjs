@@ -2,7 +2,7 @@
 // No font substitution, CSS filters, tracings, external image or raster resources.
 import {getFamily,getGlyph,composeWord,LETTERS,FAMILIES} from './v2-library.mjs';
 import {contextualJoinLayer} from '../family-joins.mjs';
-import {wordPlan,showGesture,limitJoins} from './word-flow.mjs';
+import {wordPlan,showGesture,limitJoins,exitContinuations} from './word-flow.mjs';
 const NS='http://www.w3.org/2000/svg',clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 function tag(name,attrs={}){
  const e=document.createElementNS(NS,name);
@@ -139,7 +139,8 @@ export function wordSvg(style,word,{seed='PP-ALPHABETS-01',variation=.04,constru
   const g=tag('g',{transform:'translate('+item.x.toFixed(3)+' '+item.y.toFixed(3)+') rotate('+item.rotation.toFixed(3)+' 38 54) matrix('+item.scale.toFixed(4)+' 0 '+f.italic.toFixed(3)+' 1 0 0)'});
   g.append(drawGlyph(f,item.ch,{construction,item,plan}));s.append(g);
  }
- s.append(limitJoins(f,contextualJoinLayer(f,plan,{seed,enabled:joins&&f.id!=='E',construction}),plan));
+ if(['A','F','G'].includes(f.id))s.append(exitContinuations(f,plan,{seed,enabled:joins}));
+ else s.append(limitJoins(f,contextualJoinLayer(f,plan,{seed,enabled:joins&&f.id!=='E',construction}),plan));
  return s;
 }
 export function exportSvg(element,filename='graffiti-word.svg'){
