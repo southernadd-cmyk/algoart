@@ -9,7 +9,7 @@ try {
   const page=await ctx.newPage(), errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto('http://127.0.0.1:4173/gallery/visit/phi-study/',{waitUntil:'domcontentloaded'});
-  for (const date of ['2026-10-17','2026-10-23']) {
+  for (const date of ['2026-10-17','2026-10-23','2026-10-26']) {
    const archive=await page.evaluate(async date=>{const response=await fetch('/gallery/'+date+'/');if(!response.ok)throw Error('Missing archive '+date);const doc=new DOMParser().parseFromString(await response.text(),'text/html');return doc.querySelectorAll('article.art-card').length;},date);
    assert(archive>0,'Archive must contain artworks: '+date);
    await page.locator('#date').fill(date);
