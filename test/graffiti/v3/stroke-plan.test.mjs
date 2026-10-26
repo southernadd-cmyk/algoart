@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {physicalStroke,planLoopsOrbit,movementPoint,STROKE_PLAN_REVISION} from './stroke-plan.mjs';
+import {physicalStroke,planLoopsOrbit,movementPoint,styleMovementPoint,styleWidthMultiplier,STROKE_PLAN_REVISION} from './stroke-plan.mjs';
 test('primary, secondary, ornaments remain distinct',()=>{
  const primary=physicalStroke({kind:'stroke',width:10},'D');
  const thin=physicalStroke({kind:'hairline',width:10},'D');
@@ -41,4 +41,15 @@ test('golden movement is deterministic, bounded, and family-specific',()=>{
   assert.deepEqual(movementPoint(24,49,{...args,mode:'none'}),{x:24,y:49});
  }
  assert.notDeepEqual(movementPoint(24,49,{family:'G',seed:'one'}),movementPoint(24,49,{family:'D',seed:'one'}));
+});
+
+test('style-specific movement preserves stroke endpoints and fragmented geometry',()=>{
+ for(const family of 'AGH'){
+  for(const progress of [0,1])assert.deepEqual(styleMovementPoint(31,58,{family,progress,mode:'expressive'}),{x:31,y:58});
+ }
+ const g=styleMovementPoint(31,58,{family:'G',progress:.4});
+ assert.notDeepEqual(g,{x:31,y:58});
+ assert.deepEqual(styleMovementPoint(31,58,{family:'H',progress:.4}),{x:31,y:58});
+ assert.ok(styleWidthMultiplier('A',{mode:'marker'})<1);
+ assert.equal(styleWidthMultiplier('H',{mode:'spray'}),1);
 });
