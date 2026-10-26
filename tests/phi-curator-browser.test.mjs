@@ -11,7 +11,7 @@ try {
   await page.goto('http://127.0.0.1:4173/gallery/visit/phi-study/',{waitUntil:'domcontentloaded'});
   for (const placement of ['original','curated']) {
    await page.locator('#placement').selectOption(placement);
-   await page.waitForFunction(()=>document.getElementById('facts')?.textContent?.includes('paintings'),null,{timeout:60000});
+   await page.waitForFunction(mode=>document.getElementById('facts')?.textContent?.startsWith(mode==='original'?'ORIGINAL FIRST-FIT':'CURATOR V1'),placement,{timeout:60000});
    const summary=await page.locator('#facts').textContent();
    assert.match(summary,/paintings.*sculptures.*unplaced/);
    const suffix=(mobile?'mobile':'desktop')+'-'+placement;
