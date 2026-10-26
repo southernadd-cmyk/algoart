@@ -3,7 +3,7 @@
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
-export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v4-phi-only':'phi-square-golden-eight-v7-phi-only')+'|sprayed-throwups-v'+VERSION;
+export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v5-layered-phi':'phi-square-golden-eight-v8-layered-phi')+'|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
 export const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
@@ -45,13 +45,14 @@ export function goldenSquarePlacement({bounds,length,wallHeight,count,index,phas
  const rotation=Math.atan2(Math.sin(angle),Math.cos(angle))/PHI**5;
  const c=Math.abs(Math.cos(rotation)),sn=Math.abs(Math.sin(rotation)),aspect=bounds.width/bounds.height;
  const availableWidth=length-.24,availableHeight=wallHeight-.24;
- const scale=[.82,.53,.43,.35][SQUARE_TAG_COUNTS.indexOf(count)]/PHI**(((index+phase)%3)*.22);
+ const tier=count===17?(index===0?0:index<4?1:index<9?2:3):SQUARE_TAG_COUNTS.indexOf(count);
+ const scale=[.82,.49,.29,.14][tier]/PHI**(((index+phase)%3)*.12);
  let height=availableHeight*scale,width=height*aspect;
  const fit=Math.min(1,availableWidth/(width*c+height*sn),availableHeight/(height*c+width*sn));
  width*=fit;height*=fit;
  const halfAlong=(width*c+height*sn)/2,halfUp=(height*c+width*sn)/2;
- return {width,height,rotation,u:Math.cos(angle)*radius*(availableWidth/2-halfAlong),
-  y:wallHeight/2+Math.sin(angle)*radius*(availableHeight/2-halfUp),
+ return {width,height,rotation,u:Math.cos(angle)*radius*(availableWidth/2-halfAlong)*(count===17?.37:1),
+  y:wallHeight/2+Math.sin(angle)*radius*(availableHeight/2-halfUp)*(count===17?.37:1),
   phi:{angle,radius,index,phase,count,goldenAngle:GOLDEN_ANGLE}};
 }
 export function planSquareTags(objects=planPhiSquare()){
@@ -64,7 +65,7 @@ export function planSquareTags(objects=planPhiSquare()){
    const n=rotate(face.x,face.z,object.yaw),right={x:n.z,z:-n.x};
    const half=face.x?object.width/2:object.depth/2;
    const centre={x:object.x+n.x*half,z:object.z+n.z*half};
-   const count=SQUARE_TAG_COUNTS[faceIndex%4],phase=faceIndex*3;
+   const count=object.kind==='wall'?17:SQUARE_TAG_COUNTS[faceIndex%4],phase=faceIndex*3;
    for(let index=0;index<count;index++){
     const slot=marks.length,phrase='φ',seed=PHI_SQUARE_REVISION+'|'+object.id+'|'+side+'|'+index;
     const ink=inks[(slot+faceIndex)%inks.length],form=SQUARE_TAG_FORMS[(slot*5+faceIndex*3)%SQUARE_TAG_FORMS.length];
@@ -74,7 +75,7 @@ export function planSquareTags(objects=planPhiSquare()){
     const p=goldenSquarePlacement({bounds:tag.bounds,length:face.length,wallHeight:object.height,count,index,phase});
     marks.push({id:seed,date:'__phi_reception__',level:0,slot,surface:'square',material:object.material,phrase,text:tag.text,hand:tag.hand,form:tag.form,ink,seed:tag.seed,
      face:{id:object.id+':'+side,centre,length:face.length,roomY:0},width:p.width,height:p.height,rotation:p.rotation,phi:p.phi,
-     normal:{...n,y:0},position:{x:centre.x+right.x*p.u-n.x*.197,y:p.y,z:centre.z+right.z*p.u-n.z*.197},
+     normal:{...n,y:0},position:{x:centre.x+right.x*p.u-n.x*(.197+(count===17?(index===0?0:index<4?.006:index<9?.012:.018):0)),y:p.y,z:centre.z+right.z*p.u-n.z*(.197+(count===17?(index===0?0:index<4?.006:index<9?.012:.018):0))},
      bounds:{...tag.bounds},tag});
    }
    faceIndex++;
