@@ -1,5 +1,5 @@
 // Experimental, deterministic V3 wall-paint deposition. No production imports.
-export const V3_MATERIAL_REVISION='material-study-04';
+export const V3_MATERIAL_REVISION='material-study-05';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function hash(seed,x,y,channel=0){
  let n=2166136261;
@@ -46,8 +46,8 @@ function deposit(buf,w,h,x,y,r,alpha,seed,mode,surface,wallCoordinates){
    const dry=wall.roughness*(.02+.09*(1-alpha))*(noise>.92?1:.12);
    coverage=alpha*(1-dry)*clamp((edge-d)*2.4,0,1);
   }else{
-   const core=Math.exp(-4.6*(d/r)**4);
-   const fleck=d>r*.72&&noise>.972?Math.exp(-1.8*(d/r)**2)*.16:0;
+   const core=Math.exp(-7.0*(d/r)**6);
+   const fleck=d>r*.87&&noise>.965?Math.exp(-1.8*(d/r)**2)*.15:0;
    coverage=(core+fleck)*alpha*(1-.26*wall.roughness)*(1-.12*wall.mortar);
   }
   const k=py*w+px;
@@ -63,14 +63,14 @@ export function paintStrokes(ctx,paths,{mode='marker',surface='painted-plaster',
   measure.setAttribute('d',stroke.d);
   const length=measure.getTotalLength();
   if(!Number.isFinite(length)||length<.1)return;
-  const count=Math.min(900,Math.ceil(length*scale/1.6));
+  const count=Math.min(1100,Math.ceil(length*scale/(mode==='spray'?.9:1.4)));
   for(let n=0;n<=count;n++){
    const t=n/count,p=measure.getPointAtLength(length*t);
    const profile=strokeProfile(t,seed,index);
    const strokeWidth=stroke.width||width;
    const radius=(mode==='spray'?strokeWidth*.56:strokeWidth*.55)*scale*
     (mode==='spray'?(1.1+.18*Math.sin(t*12+index)):(.88+.20*profile.pressure));
-   const strength=mode==='spray'?.29+.26*(1-profile.speed):.88+.09*profile.pressure;
+   const strength=mode==='spray'?.56+.27*(1-profile.speed):.88+.09*profile.pressure;
    deposit(coverage,w,h,p.x*scale,p.y*scale,radius,strength,seed,mode,surface,wallCoordinates);
   }
  });
