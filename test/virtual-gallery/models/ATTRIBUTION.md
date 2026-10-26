@@ -25,3 +25,8 @@ Licence: https://creativecommons.org/licenses/by/4.0/ . User-visible source link
 ## Reception world map
 
 **Vintage Framed World Map** by **My Name Is This**, [Sketchfab source](https://sketchfab.com/3d-models/vintage-framed-world-map-d09886ee76e74457a765498984dc04a0), [author](https://sketchfab.com/profileFromHere), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Geometry centred and oriented for wall display; scale and materials adjusted for gallery lighting. Original texture pixels retained. Attribution is also recorded in the embedded GLB metadata, the reception credits collection and ../credits.html.
+
+## Reception desk props
+
+- **Art Magazines on Old Cabinet (Scaniverse LIDAR)** by **JFN**, [source](https://sketchfab.com/3d-models/art-magazines-on-old-cabinet-scaniverse-lidar-9868923cd16b4c4db3bd834d8e18fe2e), [author](https://sketchfab.com/db4), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Unused UV sets removed, texture resized and recompressed, scale adjusted for display.
+- **Paper debris** by **Sousinho**, [source](https://sketchfab.com/3d-models/paper-debris-457624d2526744d8890d50d811ef45d7), [author](https://sketchfab.com/sousinho), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Textures resized and recompressed; selected paper objects rescaled and arranged around the reception desk.

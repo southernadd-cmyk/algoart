@@ -56,7 +56,9 @@ export function planPhiReception(floor,circulation,physical){
   .filter(w=>w.room===desk.room&&w.axis==='z'&&w.normal.z>0&&w.at<desk.z-2&&w.length>=2.34)
   .sort((a,b)=>Number(b.centre>start.x)-Number(a.centre>start.x)||Math.abs(a.centre-desk.x)-Math.abs(b.centre-desk.x))[0]:null;
  const credits=creditWall?{x:creditWall.centre,z:creditWall.at+.15,axis:creditWall.axis,normal:creditWall.normal}:null;
- return {desk,signage,plants,credits,worldMap,entrance:start,lift:end,checks:{
+ if(credits&&signage.length>1)signage[1]={...credits,width:2.65,height:1.3,centreY:3.25,room:desk.room};
+ const cabinet=desk?{x:desk.x+.9,z:desk.z-2.2,yaw:Math.PI,height:1.15,width:1.1,depth:.85,kind:'cabinet'}:null;
+ return {desk,cabinet,signage,plants,credits,worldMap,entrance:start,lift:end,checks:{
   deskClear:!desk||distSegment(desk.x,desk.z,start,end)>=2.2,
   signCount:signage.length,passageClear:true
  }};

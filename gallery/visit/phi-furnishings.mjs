@@ -9,7 +9,7 @@ export function planPhiFurnishings(phi,{reception=null,lowPower=false}={}){
    const rotation=Math.atan2(2.6,1),bench={x:d.x-2.6,z:d.z-1,rotation,room:d.room};benches.push(bench);
    people.push({x:d.x,z:d.z+.95,yaw:Math.PI,bodyType:'male',variant:4,scale:1,pose:0});
    people.push({...bench,yaw:rotation,bodyType:'female',variant:3,scale:1,pose:4,seat:true});
-   obstacles.push({x:d.x,z:d.z,width:3.35,depth:1.2,kind:'desk'});
+   obstacles.push({x:d.x,z:d.z,width:3.9,depth:1.5,kind:'desk'});
   }
  }else{
   const doors=[...phi.circulation.doors,...phi.circulation.bridgePortals];

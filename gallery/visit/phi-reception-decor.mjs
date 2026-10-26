@@ -66,7 +66,7 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMat
 
 export const RECEPTION_CREDITS=[
  {title:'The gallery',lines:['PROPORTION PIECE','Daily generative art and architecture','','Built with Three.js','Three.js authors · MIT licence','','Visitors: Quaternius · CC0','Street lamps: Poly Haven · CC0']},
- {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Succulent — GrrHero','World map — My Name Is This','Cardboard boxes —','NotAnotherApocalypticCo.','','All five models: CC BY 4.0','Meshes and textures optimised.','Door frame and leaves separated.']},
+ {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Succulent — GrrHero','World map — My Name Is This','Magazine cabinet — JFN','Paper debris — Sousinho','Cardboard boxes —','NotAnotherApocalypticCo.','','All seven models: CC BY 4.0','Meshes and textures optimised.','Door frame and leaves separated.']},
  {title:'Materials and fittings',lines:['Architectural textures — Poly Haven','Plaster, brick, timber and concrete','CC0','','OfficeCeiling001 — ambientCG · CC0','Twin Surface Spotlight — Innerscene','CC0','','Full sources and licences online.']}
 ];
 export function addPhiReceptionCredits(THREE,scene,placement,elevation){

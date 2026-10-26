@@ -133,3 +133,17 @@ test('paintings grow into available wall space without losing aspect, room bound
   if(date==='2026-10-07')assert.ok(phi.exhibition.paintings.filter(p=>p.width>=4.5).length>=3,'Sparse 7 October walls did not get larger paintings');
  }
 });
+
+import {DESK_PAPERS,fitPhiDesktopModel} from '../gallery/visit/phi-reception-desk.mjs';
+test('reception desk props fit their surfaces and the tower poster sits above the credits',()=>{
+ const phi=buildPhiRendererPlan('__phi_reception__',[]),reception=planPhiReception(phi.floor,phi.circulation,phi.physical),poster=reception.signage[1];
+ assert.ok(Math.abs(poster.x-reception.credits.x)<.01&&Math.abs(poster.z-reception.credits.z)<.01);assert.ok(poster.centreY-poster.height/2>2.3);
+ assert.ok(phi.canWalk(reception.cabinet.x,reception.cabinet.z));assert.ok(Math.hypot(reception.cabinet.x-reception.desk.x,reception.cabinet.z-reception.desk.z)>2);
+ for(const [filename,author,maximum] of [['magazine-cabinet.glb','JFN',1000000],['paper-clutter.glb','Sousinho',500000]]){
+  const asset=glbMetadata(filename);assert.ok(asset.bytes<maximum,filename+' too large');assert.match(asset.doc.asset.extras.author,new RegExp(author));assert.match(asset.doc.asset.extras.license,/CC-BY-4.0/);
+  assert.ok(asset.doc.meshes.every(m=>m.primitives.every(p=>!Object.keys(p.attributes).some(k=>/^TEXCOORD_[1-9]/.test(k)))),'Unused UV sets remain');
+ }
+ const model=new THREE.Group(),sheet=new THREE.Mesh(new THREE.BoxGeometry(27,3,18),new THREE.MeshBasicMaterial());sheet.position.set(4,8,12);model.add(sheet);
+ const fitted=fitPhiDesktopModel(THREE,model,.3),box=new THREE.Box3().setFromObject(fitted),size=box.getSize(new THREE.Vector3());assert.ok(Math.abs(Math.max(size.x,size.z)-.3)<1e-5);assert.ok(Math.abs(box.min.y)<1e-5);
+ assert.ok(DESK_PAPERS.filter(p=>p.y>1).every(p=>Math.abs(p.x)+p.width/2<1.95&&Math.abs(p.z)+p.width/2<.75),'Papers extend off the worktop');
+});

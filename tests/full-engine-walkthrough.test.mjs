@@ -27,9 +27,10 @@ try{
  assert.ok(tower?.otherFloors>0&&tower.wallMeshes>tower.otherFloors,'Missing exterior tower');
  assert.ok(await page.evaluate(()=>window.__phiReception?.desk&&window.__phiReception?.information),'Missing ground-floor reception');
  assert.equal(await page.evaluate(()=>window.__phiReceptionCredits?.count),3,'Missing framed credit collection');
- await page.waitForFunction(()=>window.__phiLiftState?.entranceModelLoaded&&window.__phiLiftState?.propsLoaded===3&&window.__phiLiftState?.outdoorPlantsLoaded===4&&window.__phiLiftState?.worldMapLoaded,null,{timeout:45000});
+ await page.waitForFunction(()=>window.__phiLiftState?.entranceModelLoaded&&window.__phiLiftState?.propsLoaded===3&&window.__phiLiftState?.outdoorPlantsLoaded===4&&window.__phiLiftState?.worldMapLoaded&&window.__phiLiftState?.deskPropsLoaded===2,null,{timeout:45000});
  assert.equal(await page.evaluate(()=>window.__phiLiftState.outdoorPlantsReplaced),16,'Low-poly planting was not replaced');
  assert.ok(await page.evaluate(()=>window.__phiReception.worldMap.width>=6),'Missing giant reception map');
+ assert.ok(await page.evaluate(()=>{const p=window.__phiReception.growingPoster,c=window.__phiReception.creditPlacement;return Math.abs(p.x-c.x)<.01&&Math.abs(p.z-c.z)<.01&&p.centreY-p.height/2>2.3;}),'Growing Tower poster is not above the credits');
  assert.equal(await page.evaluate(()=>window.__galleryStartupError),'');
  await page.waitForFunction(()=>window.__phiSquareGraffiti?.diagnostics().painted===85,null,{timeout:90000});
  const writing=await page.evaluate(()=>({diagnostics:window.__phiSquareGraffiti.diagnostics(),words:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.text))],forms:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.form))],hands:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.hand))]}));
@@ -40,6 +41,8 @@ try{
  await page.evaluate(()=>window.__phiSquareGraffiti.preview());
  await page.screenshot({path:'phi-tower-results/tagged-square.png'});
  await page.evaluate(()=>window.__phiSquareGraffiti.resume());
+ await page.evaluate(()=>window.__phiReceptionPreview.show('desk'));await page.screenshot({path:'phi-tower-results/reception-desk.png'});
+ await page.evaluate(()=>window.__phiReceptionPreview.credits());await page.screenshot({path:'phi-tower-results/reception-credits.png'});
  await page.evaluate(()=>window.__phiReceptionPreview.show('map'));await page.screenshot({path:'phi-tower-results/reception-world-map.png'});
  await page.evaluate(()=>window.__phiReceptionPreview.show('plant'));await page.screenshot({path:'phi-tower-results/outdoor-succulent.png'});
  await page.evaluate(()=>window.__phiReceptionPreview.resume());
@@ -125,7 +128,7 @@ try{
  assert.equal(threeImports.size,1,'Multiple Three.js module URLs');
  assert.ok(!warnings.some(s=>/Multiple instances of Three\.js/.test(s)),'Duplicate Three.js warning');
  assert.equal(errors.length,0,errors.join('; '));
- console.log('Full gallery: 85 mixed square tags in eight forms and golden-angle groups, larger paintings, succulent planters, giant reception map, smaller welcome, live marker lift indicator, historical rides, free look, doors, failed-load recovery and one Three.js instance passed');
+ console.log('Full gallery: 85 mixed square tags in eight forms and golden-angle groups, larger paintings, succulent planters, giant reception map, furnished desk and magazine cabinet, credits heading, smaller welcome, live marker lift indicator, historical rides, free look, doors, failed-load recovery and one Three.js instance passed');
 }catch(error){
  if(page){
   console.error('Gallery state on failure',await page.evaluate(()=>({ride:window.__phiLiftRide,lift:window.__phiLiftState,error:window.__phiLiftError,events:window.__galleryDebugEvents})));
