@@ -978,6 +978,44 @@ function processDeferredGallery(){
   }catch(error){console.warn('Deferred gallery asset failed',error);}
 }
 
+// Exterior shell: one lightweight set of walls per archived date. Every floor
+// uses its own deterministic phi plan; artwork, lighting and occupants belong
+// only to the active floor. No old rectangular tower meshes are used.
+function constructPhiTowerShell(){
+ const shell=new THREE.Group();shell.name='phi-complete-tower-exterior';
+ const masonry=galleryFinish.exteriorBrick||wall;
+ const cap=roofFinish;
+ const append=(w,h,d,x,y,z,mat)=>{
+  if(w<=0||h<=0||d<=0)return;
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  mesh.position.set(x,y,z);shell.add(mesh);
+ };
+ let count=0;
+ for(let level=0;level<archiveDates.length;level++){
+  if(level===currentFloor)continue;
+  const date=archiveDates[level];
+  const archived=towerFloorSignatures.get(date);
+  const number=date===RECEPTION?10:(archived?.length||18);
+  const stubs=Array.from({length:number},(_,i)=>({id:date+'-'+i,portrait:i%3===0,aspect:i%3===0?.75:1.4}));
+  const planned=buildPhiRendererPlan(date===RECEPTION?archiveDates[1]:date,stubs);
+  const y=level*FLOOR_SPACING;
+  for(const p of planned.pieces)append(p.w,.25,p.h,p.x+p.w/2,y-.16,p.z+p.h/2,floor);
+  for(const w of planned.physical.walls){
+   const len=w.hi-w.lo;if(len<.03)continue;
+   if(w.axis==='x')append(.20,ROOM_HEIGHT,len,w.at,y+ROOM_HEIGHT/2,(w.lo+w.hi)/2,masonry);
+   else append(len,ROOM_HEIGHT,.20,(w.lo+w.hi)/2,y+ROOM_HEIGHT/2,w.at,masonry);
+  }
+  for(const p of planned.pieces)append(p.w,.18,p.h,p.x+p.w/2,y+ROOM_HEIGHT+.09,p.z+p.h/2,cap);
+  for(const b of planned.bridges){
+   const mid=(b.from+b.to)/2;
+   append(b.axis==='x'?b.length:b.width,.16,b.axis==='z'?b.length:b.width,
+      b.axis==='x'?mid:b.centre,y-.06,b.axis==='z'?mid:b.centre,bridgeSurface);
+  }
+  count++;
+ }
+ scene.add(shell);
+ window.__phiTowerExterior={otherFloors:count,wallMeshes:shell.children.length};
+}
 function constructPhiGallery(layout,studies){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
  window.__phiFullEngine={date:exhibitDate,roomCount:phi.floor.mergedRooms.length,wallCount:phi.physical.walls.length,artworks:studies.length,paintings:phi.exhibition.paintings.length,sculptures:phi.exhibition.sculptures.length,unplaced:phi.exhibition.unplaced.length};
@@ -1557,12 +1595,18 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     throw error;
   }
   GALLERY_DEBUG&&console.info('[Gallery performance] scene construction',Math.round(performance.now()-constructionStart)+'ms','floors',archiveDates.length,'prebuilt',!!prebuiltTowerMatches(prebuiltTower,archiveDates,towerFloorSignatures));
+  if(plan.phi)constructPhiTowerShell();
   // Give the optimised entrance lamps priority over deferred artworks/visitors.
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object));
   // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
   if(viaLift||nextFloor!==0||welcome.hidden)startDeferredGallery();
+  if(!viaLift && nextFloor===0 && plan.phi?.plaza){
+    const door=plan.phi.arrivalDoor;
+    rig.position.set(door.x-13,0,door.z);
+    yaw=-Math.PI/2;pitch=.15;rig.rotation.y=yaw;camera.rotation.x=pitch;
+  }
   if(!viaLift && nextFloor===0 && arrival){
     rig.position.copy(arrival.start);
     yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
