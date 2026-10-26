@@ -124,6 +124,12 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
    for(const manager of managers)manager.addTo(root,[],0);
    parent.add(root);activeRoot=root;
    const obstacles=objects.map(o=>{const p=rotate(o.x,o.z,root.rotation.y);return {...o,x:p.x+doorway.x,z:p.z+doorway.z,yaw:o.yaw+root.rotation.y};});
+   if(globalThis.__phiReceptionTestRefresh){
+    for(const x of [-13.8,13.8])for(const z of [8,21]){
+     const p=rotate(x,z,root.rotation.y);
+     obstacles.push({x:p.x+doorway.x,z:p.z+doorway.z,yaw:root.rotation.y,width:3.2,depth:1.5,kind:'planted-seat'});
+    }
+   }
    return {root,obstacles,walls:4,monuments:3,tags:marks.length};
   },
   viewpoint(){
