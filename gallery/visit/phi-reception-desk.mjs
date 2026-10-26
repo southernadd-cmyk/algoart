@@ -12,17 +12,19 @@ export const DESK_PAPERS=Object.freeze([
 export function addPhiReceptionDesk(THREE,scene,reception,elevation,{concrete,timber,trims}={}){
  if(!reception.desk)return null;
  const {desk,cabinet}=reception,root=new THREE.Group();root.name='phi-upgraded-reception-desk';root.position.set(desk.x,elevation,desk.z);scene.add(root);root.userData.propsLoaded=0;
- const walnut=timber||new THREE.MeshStandardMaterial({color:'#795d46',roughness:.75});
+ const walnut=(globalThis.__phiReceptionTestRefresh&&timber)||new THREE.MeshStandardMaterial({color:'#795d46',roughness:.75});
  const ink=new THREE.MeshStandardMaterial({color:'#34413d',roughness:.7});
- const brass=trims||new THREE.MeshStandardMaterial({color:'#a18d66',metalness:.62,roughness:.4});
+ const brass=(globalThis.__phiReceptionTestRefresh&&trims)||new THREE.MeshStandardMaterial({color:'#a18d66',metalness:.62,roughness:.4});
  const paper=new THREE.MeshStandardMaterial({color:'#eee6d6',roughness:.9});
  const part=(w,h,d,x,y,z,m)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);root.add(mesh);return mesh;};
  part(3.35,.09,1.18,0,.075,0,ink);
  for(const side of [-1,1])part(.26,.92,1.38,side*1.72,.54,0,concrete);
  part(3.24,.79,.14,0,.515,-.59,walnut);
  // A continuous timber kickboard and restrained stone reveals ground the desk.
- part(3.45,.13,.07,0,.14,-.655,ink);
- part(3.34,.035,.055,0,.98,-.66,brass);
+ if(globalThis.__phiReceptionTestRefresh){
+  part(3.45,.13,.07,0,.14,-.655,ink);
+  part(3.34,.035,.055,0,.98,-.66,brass);
+ }
  const slats=new THREE.InstancedMesh(new THREE.BoxGeometry(.055,.78,.055),walnut,25),matrix=new THREE.Matrix4();slats.name='walnut-front-fluting';
  for(let i=0;i<25;i++){matrix.makeTranslation(-1.5+i*.125,.52,-.684);slats.setMatrixAt(i,matrix);}root.add(slats);
  const shape=new THREE.Shape(),w=3.9,d=1.5,r=.14,x=-w/2,z=-d/2;
