@@ -2,6 +2,7 @@
 // No font substitution, CSS filters, tracings, external image or raster resources.
 import {getFamily,getGlyph,composeWord,LETTERS,FAMILIES} from './v2-library.mjs';
 import {contextualJoinLayer} from '../family-joins.mjs';
+import {wordPlan,showGesture,limitJoins} from './word-flow.mjs';
 const NS='http://www.w3.org/2000/svg',clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 function tag(name,attrs={}){
  const e=document.createElementNS(NS,name);
@@ -90,9 +91,10 @@ function strokeAttrs(f,s,construction){
  return {fill:'none',stroke:'currentColor','stroke-width':s.kind==='heavy'?f.weight*1.3:f.weight,
   'stroke-linecap':f.technique==='fragment'?'square':'round','stroke-linejoin':'round'};
 }
-function drawGlyph(f,ch,{construction=false}={}){
+function drawGlyph(f,ch,{construction=false,item=null,plan=null}={}){
  const g=tag('g',{'data-letter':ch,'aria-label':ch}),glyph=getGlyph(f.id,ch);
  for(const s of glyph.shapes){
+  if(plan&&item&&!showGesture(f,item,s,plan))continue;
   let path;
   if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&f.technique==='fatmarker')
    path=broadMarkerRibbon(s.d,f.weight*(s.kind==='heavy'?1.18:1));
@@ -129,15 +131,15 @@ export function alphabetFragment(style,{construction=false}={}){
  return root;
 }
 export function wordSvg(style,word,{seed='PP-ALPHABETS-01',variation=.04,construction=false,joins=true}={}){
- const f=getFamily(style),plan=composeWord(style,word,{seed,variation});
+ const f=getFamily(style),plan=wordPlan(f,composeWord(style,word,{seed,variation}));
  // Give letters room for long strokes and baseline excursions.
  const s=svg('-32 -35 '+(plan.width+61).toFixed(2)+' 189',f.name+' writes '+plan.word);
  s.style.color=construction?'#282c28':f.ink;
  for(const item of plan.letters){
   const g=tag('g',{transform:'translate('+item.x.toFixed(3)+' '+item.y.toFixed(3)+') rotate('+item.rotation.toFixed(3)+' 38 54) matrix('+item.scale.toFixed(4)+' 0 '+f.italic.toFixed(3)+' 1 0 0)'});
-  g.append(drawGlyph(f,item.ch,{construction}));s.append(g);
+  g.append(drawGlyph(f,item.ch,{construction,item,plan}));s.append(g);
  }
- s.append(contextualJoinLayer(f,plan,{seed,enabled:joins,construction}));
+ s.append(limitJoins(f,contextualJoinLayer(f,plan,{seed,enabled:joins&&f.id!=='E',construction}),plan));
  return s;
 }
 export function exportSvg(element,filename='graffiti-word.svg'){
