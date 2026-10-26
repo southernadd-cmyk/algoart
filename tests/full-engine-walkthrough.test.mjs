@@ -32,7 +32,7 @@ try{
  for(const date of ['2026-10-14','2026-10-18','2026-10-26']){
   await page.locator('#openLift').click();
   const destination=page.locator('#liftDays button').filter({hasText:new RegExp('^'+Number(date.slice(-2))+'$')});
-  await destination.click();
+  await destination.click({noWaitAfter:true});
   await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',null,{timeout:20000});
   const before=await page.evaluate(()=>window.__phiLiftState);
   assert.equal(before.doorCount,2);assert.equal(before.calendarCount,1);
@@ -57,7 +57,7 @@ try{
  const departure=await page.evaluate(()=>window.__phiLiftState);
  await page.route('**/gallery/2026-10-15/',route=>route.fulfill({status:503,body:'Unavailable'}));
  await page.locator('#openLift').click();
- await page.locator('#liftDays button').filter({hasText:/^15$/}).click();
+ await page.locator('#liftDays button').filter({hasText:/^15$/}).click({noWaitAfter:true});
  await page.waitForFunction(()=>window.__phiLiftError,null,{timeout:25000});
  assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),departure.date);
  await page.locator('#closeLift').click();
@@ -67,7 +67,7 @@ try{
  assert.ok(Math.hypot(recovered.x-departure.x,recovered.z-departure.z)<.02,'Failed destination stranded visitor');
  await page.unroute('**/gallery/2026-10-15/');
  // Ground floor is a separate, reachable reception rather than an archive date.
- await page.locator('#openLift').click();await page.locator('#liftReception').click();
+ await page.locator('#openLift').click();await page.locator('#liftReception').click({noWaitAfter:true});
  await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',null,{timeout:90000});
  assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),'__phi_reception__');
  assert.equal(await page.locator('#error').isVisible(),false);
