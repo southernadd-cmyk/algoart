@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'automation/build-phi-square-graffiti.mjs'
+      - 'gallery/visit/phi-square-graffiti.mjs'
+      - 'gallery/visit/exterior-graffiti-plan.mjs'
       - '.github/workflows/phi-square-atlases.yml'
   workflow_dispatch:
 permissions:
@@ -31,27 +33,29 @@ jobs:
           python3 -m http.server 4173 >/tmp/phi-square-site.log 2>&1 &
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
           exit 1
-      - name: Bake test square desktop and mobile atlases
+      - name: Bake live and test square desktop and mobile atlases
         run: node automation/build-phi-square-graffiti.mjs
       - name: Verify phi-square atlas contents
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          for(const surface of ['brick','concrete'])for(const mode of ['desktop','mobile']){
-           const dir='gallery/visit/graffiti-assets/square/'+surface+'/'+mode;
+          for(const variant of ['live/',''])for(const surface of ['brick','concrete'])for(const mode of ['desktop','mobile']){
+           const dir='gallery/visit/graffiti-assets/square/'+variant+surface+'/'+mode;
            const m=JSON.parse(fs.readFileSync(dir+'/manifest.json','utf8'));
            if(!m.pages.length||!m.signature.startsWith('white-understroke-v3|'))throw Error('Invalid square atlas '+dir);
-           if(!m.marks.some(tag=>tag.text==='ph-i')||m.marks.some(tag=>tag.text==='PHI'))throw Error('Wrong lettering '+dir);
+           if(!m.marks.length||m.marks.some(tag=>tag.text!=='φ'))throw Error('Expected lowercase phi only '+dir);
            for(const page of m.pages)if(fs.statSync(dir+'/'+page.file).size<100)throw Error('Empty atlas '+dir+'/'+page.file);
           }
           NODE
+      - name: Bake main tower exterior phi-only atlases
+        run: node automation/build-gallery-graffiti.mjs --exterior-only
       - name: Commit square atlases
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add gallery/visit/graffiti-assets/square/
+          git add gallery/visit/graffiti-assets/square/ gallery/visit/graffiti-assets/exterior/
           if ! git diff --cached --quiet; then
-            git commit -m 'Publish refreshed ph-i square graffiti atlases'
+            git commit -m 'Publish phi-only live and test square graffiti atlases'
             git pull --rebase origin main
             git push origin HEAD:main
           fi
