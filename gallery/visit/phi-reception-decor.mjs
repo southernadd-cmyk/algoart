@@ -3,7 +3,7 @@ import {createGothicSurroundShape} from './phi-gothic-door-profile.mjs';
 import {renderVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 // Optional shared CC-BY props for the experimental reception. Loading never
 // blocks the floor planner or lift. Credits are installed separately below.
-const modelURL=name=>new URL('../../test/virtual-gallery/models/'+name,import.meta.url).href;
+const modelURL=name=>new URL('./models/'+name,import.meta.url).href;
 export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
  const holders=[];
  for(const [i,p] of furnishing.plants.entries()){
@@ -81,7 +81,7 @@ export function addPhiReceptionCredits(THREE,scene,placement,elevation){
   group.rotation.y=placement.axis==='x'?(placement.normal.x>0?Math.PI/2:-Math.PI/2):(placement.normal.z>0?0:Math.PI);
   group.add(new THREE.Mesh(new THREE.BoxGeometry(width+.06,height+.06,.045),new THREE.MeshStandardMaterial({color:'#3d493b',roughness:.78})));
   const face=new THREE.Mesh(new THREE.PlaneGeometry(width,height),new THREE.MeshBasicMaterial({map:texture}));face.position.z=.026;group.add(face);scene.add(group);
-  exhibits.push({study:{title:credit.title,credits:credit.lines.join('\n'),image:canvas.toDataURL(),href:new URL('../../test/virtual-gallery/credits.html',import.meta.url).href},position:group.position.clone(),normal:new THREE.Vector3(placement.normal.x,0,placement.normal.z)});
+  exhibits.push({study:{title:credit.title,credits:credit.lines.join('\n'),image:canvas.toDataURL(),href:new URL('./credits.html',import.meta.url).href},position:group.position.clone(),normal:new THREE.Vector3(placement.normal.x,0,placement.normal.z)});
  }
  return exhibits;
 }

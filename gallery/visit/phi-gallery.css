@@ -1,0 +1,41 @@
+/* Presentation for the experimental gallery only. */
+.topbar .section-name{font-style:normal;color:#454e45}
+.topbar .top-actions>a{background:none;border-color:transparent;text-decoration:underline;text-underline-offset:4px}
+.topbar .top-actions #openLift{background:#34473c;color:#f6f1e6;border-color:#34473c;padding-inline:17px}
+.welcome{background:linear-gradient(100deg,rgba(241,237,225,.98),rgba(241,237,225,.9) 35%,rgba(241,237,225,.06) 78%)}
+.welcome-content{width:min(620px,100%)}
+.welcome .eyebrow{font:italic 16px Georgia,serif;color:#4f604d;margin-bottom:22px;letter-spacing:0}
+.welcome h1{font-size:clamp(32px,3.4vw,50px);line-height:1.08;letter-spacing:-.035em;margin-bottom:26px}
+.welcome p{font-size:15px;line-height:1.65;max-width:430px}
+.welcome .start-floor{font-size:14px!important;margin-bottom:24px!important}
+.welcome .enter{background:#34473c;border-color:#34473c;padding:15px 25px;margin-top:24px}
+.visit-controls{max-width:430px;margin:18px 0;font-size:13px}
+.visit-controls summary{cursor:pointer;text-decoration:underline;text-underline-offset:4px;color:#465446}
+.visit-controls .shortcuts{margin-top:12px}
+body:has(.welcome:not([hidden])) .plan-view,body:has(.welcome:not([hidden])) .hint,body:has(.welcome:not([hidden])) .status,body:has(.welcome:not([hidden])) .center-reticle{visibility:hidden}
+.plan-view{box-shadow:0 4px 22px #263b2b12;border-color:#4a5a4528;background:#f4f0e6ed}
+.lift-panel{background:#f4f0e6;border:1px solid #7b8273;box-shadow:0 18px 70px #15291c55;padding:26px 29px}
+.lift-head h2{font-family:"AlgoArt Marker",Georgia,serif;font-weight:400;font-size:34px;margin-block:9px 20px}
+.lift-panel #liftCurrent{border-block:1px solid #8d958650;padding-block:13px;color:#465343}
+.lift-weekdays{color:#53644f}
+.lift-days button{border:0;color:#899083;background:#e6e5dc;min-height:37px}
+.lift-days button.lift-available{background:#dce3d5;color:#30412f;border:1px solid #aab8a1;font-weight:400}
+.lift-days button.lift-available::after{background:#5a7350}
+.lift-days button.lift-available:hover,.lift-days button.lift-available:focus-visible{background:#34473c;color:#fff}
+.lift-days button.lift-current{background:#34473c;color:#fff;box-shadow:none}
+.lift-days button.lift-current::after{background:#e6d8af}
+#liftReception{width:100%;padding:12px;margin-top:20px;border:1px solid #aab3a1;background:none;color:#34473c;font-size:13px}
+#liftReception:hover{background:#dce3d5}
+.lift-arrival{font-size:17px;padding:13px 22px;top:calc(var(--gallery-ui-bottom) + 22px)}
+.status,.hint{color:#3d4a3d;background:#f2eee4e8}
+@media(max-width:600px){
+ .welcome{background:linear-gradient(100deg,#f1ede1fa,#f1ede1eb)}
+ .welcome-content{padding:22px}
+ .welcome h1{font-size:clamp(30px,7.5vw,40px);margin-bottom:20px}
+ .welcome .eyebrow{font-size:14px;margin-bottom:18px}
+ .welcome p{font-size:14px;line-height:1.55}
+ .lift-panel{padding:20px;width:min(410px,calc(100vw - 24px))}
+ .lift-head h2{font-size:29px}
+ .lift-arrival{width:max-content;max-width:calc(100vw - 28px);font-size:14px}
+}
+.info #infoSeed{white-space:pre-line;line-height:1.45}

@@ -42,6 +42,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Validate public gallery before uploading the site
+        run: |
+          node automation/validate-phi-archive.mjs
+          node --test tests/gallery-public-launch.test.mjs tests/phi-full-engine-adapter.test.mjs tests/phi-presentation.test.mjs
+          npm run gallery:bundle:check
+          npm run gallery:bundle:phi:check
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

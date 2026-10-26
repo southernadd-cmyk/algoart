@@ -6,6 +6,10 @@ on:
       - 'test/virtual-gallery/full-engine.html'
       - 'gallery/visit/gallery-v2.js'
       - 'gallery/visit/gallery-phi-test.js'
+      - 'gallery/visit/gallery-phi.js'
+      - 'gallery/visit/gallery-phi-bundle.js'
+      - 'gallery/visit/index.html'
+      - 'tests/phi-public-entry.test.mjs'
       - 'tests/full-engine-walkthrough.test.mjs'
       - 'tests/phi-full-engine-adapter.test.mjs'
       - 'tests/phi-presentation.test.mjs'
@@ -17,7 +21,7 @@ on:
 jobs:
   walkthrough:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,6 +32,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-tower-http.log 2>&1 &
       - run: node tests/phi-tower-smoke.mjs
+      # Fail quickly on dated mobile entry/touch regressions before the longer floor walkthrough.
+      - run: node tests/phi-public-entry.test.mjs
       - run: node tests/full-engine-walkthrough.test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
