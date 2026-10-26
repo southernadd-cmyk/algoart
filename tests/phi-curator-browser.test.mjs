@@ -14,6 +14,9 @@ try {
    await page.waitForFunction(mode=>document.getElementById('facts')?.textContent?.startsWith(mode==='original'?'ORIGINAL FIRST-FIT':'CURATOR V1'),placement,{timeout:60000});
    const summary=await page.locator('#facts').textContent();
    assert.match(summary,/paintings.*sculptures.*unplaced/);
+   assert.match(summary,/0 unplaced/,'Artwork missing from '+placement+' placement');
+   assert.match(summary,/all rooms connected/,'Gallery route is disconnected');
+   assert.doesNotMatch(summary,/ERROR|WARNING/,'Placement diagnostics reported errors');
    const suffix=(mobile?'mobile':'desktop')+'-'+placement;
    await page.locator('#rooms').screenshot({path:'phi-curator-results/'+suffix+'-plan.png'});
    await page.locator('#threePreview').screenshot({path:'phi-curator-results/'+suffix+'-3d.png'});
