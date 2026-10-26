@@ -1847,7 +1847,7 @@ function tick() {
   else interiorGraffiti.paintNext();
   // Only construct a deferred exhibit on frames that were already inexpensive.
   // XR still uses this animation loop, rather than window requestAnimationFrame.
-  if(dt<.030)processDeferredGallery();
+  if(dt<.030||(frameSerial%8===0))processDeferredGallery();
   animateLiftDoors(dt);
   entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
