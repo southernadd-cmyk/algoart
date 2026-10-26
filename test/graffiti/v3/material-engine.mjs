@@ -1,5 +1,5 @@
 // Experimental, deterministic V3 wall-paint deposition. No production imports.
-export const V3_MATERIAL_REVISION='material-study-05';
+export const V3_MATERIAL_REVISION='material-study-06';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function hash(seed,x,y,channel=0){
  let n=2166136261;
@@ -21,6 +21,8 @@ export function wallSample(surface,x,y,seed='wall'){
  const rough=surface==='rough-plaster'?.38:.12;
  return {height:.35+grain*rough,absorption:.32+grain*.2,roughness:rough*(.45+fine*.55),mortar:0};
 }
+export const STROKE_ROLES=Object.freeze(['primary','secondary','ornament','fill']);
+export function roleForStroke(stroke){return stroke.role==='ornament'?'ornament':stroke.role==='secondary'?'secondary':stroke.kind==='fill'?'fill':'primary';}
 export function strokeProfile(t,seed,strokeIndex=0){
  const motion=Math.sin(Math.PI*clamp(t,0,1));
  const drift=Math.sin(t*13+hash(seed,strokeIndex,0)*6.28)*.08;
@@ -67,10 +69,12 @@ export function paintStrokes(ctx,paths,{mode='marker',surface='painted-plaster',
   for(let n=0;n<=count;n++){
    const t=n/count,p=measure.getPointAtLength(length*t);
    const profile=strokeProfile(t,seed,index);
-   const strokeWidth=stroke.width||width;
+   const role=roleForStroke(stroke);
+   const roleScale=role==='ornament'?.52:role==='secondary'?.77:1;
+   const strokeWidth=(stroke.width||width)*roleScale;
    const radius=(mode==='spray'?strokeWidth*.56:strokeWidth*.55)*scale*
     (mode==='spray'?(1.1+.18*Math.sin(t*12+index)):(.88+.20*profile.pressure));
-   const strength=mode==='spray'?.56+.27*(1-profile.speed):.88+.09*profile.pressure;
+   const strength=(mode==='spray'?.56+.27*(1-profile.speed):.88+.09*profile.pressure)*(role==='ornament'?.62:role==='secondary'?.82:1);
    deposit(coverage,w,h,p.x*scale,p.y*scale,radius,strength,seed,mode,surface,wallCoordinates);
   }
  });
