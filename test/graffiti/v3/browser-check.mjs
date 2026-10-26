@@ -23,14 +23,16 @@ try{
   await page.goto('http://127.0.0.1:'+server.address().port+'/test/graffiti/v3/index.html',{waitUntil:'networkidle'});
   for(const hand of 'ABCDEFGHI'){
    await page.locator('#hand').selectOption(hand);
+   if(hand==='G')await page.locator('#orbit').selectOption('expressive');
    const result=await page.locator('.study').evaluateAll(nodes=>nodes.map(node=>{
     const canvases=[...node.querySelectorAll('canvas')];
+    if(canvases.length===0)return {baseline:true};
     if(canvases.length!==2)return {bad:true};
     const ink=canvases[1],data=ink.getContext('2d').getImageData(0,0,ink.width,ink.height).data;
     let nonzero=0;for(let i=3;i<data.length;i+=4)if(data[i]>20)nonzero++;
     return {nonzero,width:ink.width,height:ink.height};
    }));
-   if(result.length!==3||result.some(x=>x.bad||x.nonzero<100))throw Error(hand+' lacks material paint: '+JSON.stringify(result));
+   if(result.length!==4||result.slice(1).some(x=>x.bad||x.nonzero<100))throw Error(hand+' lacks material paint: '+JSON.stringify(result));
    if(['A','C','G','H','I'].includes(hand))await page.screenshot({path:'artifacts/graffiti-v3/'+hand+'-'+width+'.png',fullPage:true});
   }
   await page.close();
