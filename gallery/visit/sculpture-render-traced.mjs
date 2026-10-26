@@ -252,6 +252,9 @@ async function renderPreparedReliefs({entries,core,study,onArtworkMesh,onFirstMe
       img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Prepared pigment texture unavailable'));
       img.src=source;
     });
+    // A cancelled lift may have disposed this off-screen sculpture while
+    // its pigment image was still downloading. Do not build into that pivot.
+    if(core.parent?.userData.galleryDisposed)return false;
     const canvas=document.createElement('canvas');
     canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
     canvas.getContext('2d',{willReadFrequently:true}).drawImage(image,0,0);
@@ -263,6 +266,7 @@ async function renderPreparedReliefs({entries,core,study,onArtworkMesh,onFirstMe
       depthWrite:type==='oil'||type==='action',side:THREE.DoubleSide
     });
   }
+  if(core.parent?.userData.galleryDisposed)return false;
   let created=0;
   for(const entry of entries){
     if(!Array.isArray(entry.points)||entry.points.length<3 ||
@@ -404,7 +408,8 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
       }
     }).then(success=>{
       if(!success && !pivot.userData.galleryDisposed)buildLive();
-      else if(success)onComplete?.({strokeCount:0,pigmentCount:prepared.length,prepared:true});
+      else if(success && !pivot.userData.galleryDisposed)
+        onComplete?.({strokeCount:0,pigmentCount:prepared.length,prepared:true});
     }).catch(error=>{
       console.warn('Prepared sculpture failed; regenerating from source',study.seed,error);
       if(!pivot.userData.galleryDisposed)buildLive();
