@@ -1,4 +1,5 @@
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
+import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
 import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=public-phi-20261026';
 import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=succulent-planters-20261026';
@@ -57,6 +58,7 @@ let yaw = Math.PI, pitch = 0;
 let exhibitDate = null;
 let archiveDates=[];
 let towerFloorSignatures=new Map();
+let phiTowerShellCache=null; // Persistent across archive floor swaps.
 let arrival=null;
 let entranceDoor=null;
 let liftPosition=null;
@@ -1159,13 +1161,31 @@ function transformPhiActiveFloor(before){
 // uses its own deterministic phi plan; artwork, lighting and occupants belong
 // only to the active floor. No old rectangular tower meshes are used.
 function constructPhiTowerShell(){
+ const signature=archiveDates.map(date=>date+':'+(towerFloorSignatures.get(date)?.length||0)).join('|');
+ if(phiTowerShellCache?.signature===signature && phiTowerShellCache.shell.parent===scene){
+  phiTowerShellCache.controller.activate(currentFloor);
+  updatePhiShellDiagnostics();
+  return;
+ }
+ // An archive update may invalidate the shell. Dispose its geometry only;
+ // architectural textures and materials are shared with the active exhibition.
+ if(phiTowerShellCache){
+  const old=phiTowerShellCache;
+  old.shell.parent?.remove(old.shell);
+  const geometries=new Set();
+  old.shell.traverse(object=>{if(object.geometry)geometries.add(object.geometry);});
+  for(const geometry of geometries)geometry.dispose();
+  for(const material of old.ownedMaterials)material.dispose();
+  phiTowerShellCache=null;
+ }
  const shell=new THREE.Group();shell.name='phi-complete-tower-exterior';
  const masonry=galleryFinish.exteriorBrick||wall;
  const cap=roofFinish;
  // Three-floor geometry chunks preserve frustum culling between tower sections
  // while collapsing thousands of individual meshes into material batches.
- const shellBatchGroups=[];
- let currentBatch=null, shellTransform=null, staticBoxes=0;
+ const glassFloors=[];
+ const opaqueFloors=[];
+ let floorGroup=null,currentBatch=null,shellTransform=null,staticBoxes=0;
  const append=(w,h,d,x,y,z,mat)=>{
   if(w<=0||h<=0||d<=0)return;
   staticBoxes++;
@@ -1180,7 +1200,7 @@ function constructPhiTowerShell(){
   const geo=new THREE.BoxGeometry(w,h,d);
   if(mat.userData?.tileMeters)tiledBoxUvs(geo,w,h,d,mat.userData.tileMeters);
   const mesh=new THREE.Mesh(geo,mat);
-  mesh.position.set(x,y,z);shell.add(mesh);
+  mesh.position.set(x,y,z);floorGroup.add(mesh);
  };
  // Faceted glass enclosure with a real opening at every rotated landing.
  const shaft=planPhiLiftShaft(archiveDates.length,FLOOR_SPACING);
@@ -1195,7 +1215,8 @@ function constructPhiTowerShell(){
  const glazing=new THREE.BufferGeometry();glazing.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));glazing.computeVertexNormals();
  const pane=new THREE.Mesh(glazing,shaftGlass);pane.name='phi-open-landing-shaft-glass';shell.add(pane);
  const edgeGeometry=new THREE.BufferGeometry();edgeGeometry.setAttribute('position',new THREE.Float32BufferAttribute(edges,3));
- shell.add(new THREE.LineSegments(edgeGeometry,new THREE.LineBasicMaterial({color:'#596961',transparent:true,opacity:.55})));
+ const shaftEdgesMaterial=new THREE.LineBasicMaterial({color:'#596961',transparent:true,opacity:.55});
+ shell.add(new THREE.LineSegments(edgeGeometry,shaftEdgesMaterial));
  const ring=new THREE.TorusGeometry(shaft.radius,.045,4,32);
  for(let level=0;level<archiveDates.length;level++){
   const beam=new THREE.Mesh(ring,join);beam.rotation.x=Math.PI/2;beam.position.y=level*FLOOR_SPACING-.18;shell.add(beam);
@@ -1203,7 +1224,6 @@ function constructPhiTowerShell(){
  window.__phiLiftShaft={radius:shaft.radius,openings:shaft.openings};
  let count=0;
  for(let level=0;level<archiveDates.length;level++){
-  if(level===currentFloor)continue;
   const date=archiveDates[level];
   const archived=towerFloorSignatures.get(date);
   const number=date===RECEPTION?10:(archived?.length||18);
@@ -1211,14 +1231,10 @@ function constructPhiTowerShell(){
   const planned=buildPhiRendererPlan(date===RECEPTION?RECEPTION:date,stubs);
   const wt=phiFloorTransform(level,planned.circulation.lift);
   const y=level*FLOOR_SPACING;
-  if(PHI_BATCH_SHELL){
-   if(!currentBatch||level%3===0){
-    currentBatch=new Map();
-    shellBatchGroups.push(currentBatch);
-   }
-   shellTransform=wt;
-  }
-  const floorStart=shell.children.length;
+  floorGroup=new THREE.Group();floorGroup.name='phi-archived-floor-glass-'+level;
+  shell.add(floorGroup);glassFloors.push(floorGroup);
+  currentBatch=new Map();opaqueFloors.push(currentBatch);
+  shellTransform=wt;
   for(const p of planned.pieces)append(p.w,.25,p.h,p.x+p.w/2,y-.16,p.z+p.h/2,floor);
   for(const w of planned.physical.walls){
    const len=w.hi-w.lo;if(len<.03)continue;
@@ -1236,22 +1252,57 @@ function constructPhiTowerShell(){
    append(b.axis==='x'?b.length:b.width,.045,b.axis==='z'?b.length:b.width,
       b.axis==='x'?mid:b.centre,y+3.1,b.axis==='z'?mid:b.centre,walkwayGlassMaterials.glass);
   }
-  // Includes individual transparent panes in both comparison modes.
-  for(const object of shell.children.slice(floorStart)){
+  // Individual glass panes stay sorted and are hidden on the active floor.
+  for(const object of floorGroup.children){
    const p=wt.toWorld(object.position.x,object.position.z);
    object.position.x=p.x;object.position.z=p.z;object.rotation.y+=wt.theta;
   }
   count++;
  }
- let staticBatches=0;
- if(PHI_BATCH_SHELL)for(const buckets of shellBatchGroups){
-  staticBatches+=appendTowerBoxBatches(THREE,shell,buckets).batchCount;
- }
+ const chunkRoot=new THREE.Group();chunkRoot.name='phi-archived-three-floor-batches';
+ shell.add(chunkRoot);
+ const createView=(start,floors,omitted)=>{
+  const buckets=new Map();
+  for(const level of floors){
+   if(level===omitted)continue;
+   for(const [material,boxes] of opaqueFloors[level]){
+    if(!buckets.has(material))buckets.set(material,[]);
+    buckets.get(material).push(...boxes);
+   }
+  }
+  const view=new THREE.Group();
+  view.name='phi-cached-batch-'+start+'-excluding-'+omitted;
+  appendTowerBoxBatches(THREE,view,buckets);
+  chunkRoot.add(view);
+  return view;
+ };
+ const disposeView=view=>{
+  view.parent?.remove(view);
+  view.traverse(object=>object.geometry?.dispose());
+ };
+ const controller=createPhiShellChunkController({
+  floorCount:archiveDates.length,chunkSize:3,createView,disposeView,
+  toggleFloor:(active,previous)=>{
+   if(previous!==null)glassFloors[previous].visible=true;
+   glassFloors[active].visible=false;
+  }
+ });
  scene.add(shell);
+ phiTowerShellCache={signature,shell,controller,chunkRoot,glassFloors,
+  staticBoxes,ownedMaterials:[shaftGlass,shaftEdgesMaterial]};
+ controller.activate(currentFloor);
+ updatePhiShellDiagnostics();
+}
+function updatePhiShellDiagnostics(){
+ const cache=phiTowerShellCache;
+ if(!cache)return;
+ const batches=cache.chunkRoot.children.filter(view=>view.visible)
+  .reduce((n,view)=>n+(view.userData.archivedTowerBatchStats?.batchCount||0),0);
  window.__phiTowerExterior={
-  otherFloors:count,wallMeshes:shell.children.length,staticBoxes,
-  staticBatches:PHI_BATCH_SHELL?staticBatches:staticBoxes,
-  batching:PHI_BATCH_SHELL?'opaque three-floor chunks':'individual meshes'
+  otherFloors:archiveDates.length-1,wallMeshes:cache.shell.children.length,
+  staticBoxes:cache.staticBoxes,staticBatches:batches,
+  batching:'persistent opaque three-floor chunks',
+  cache:cache.controller.stats()
  };
 }
 function queuePhiFurnishings(phi,furnishings,elevation){
@@ -1787,7 +1838,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   }catch(error){
     // Remove partially constructed destination objects before recovery.
     // Otherwise a failed construction leaves orphaned meshes in the scene.
-    editionObjects=scene.children.filter(object=>!sceneBeforeConstruction.has(object));
+    editionObjects=scene.children.filter(object=>!sceneBeforeConstruction.has(object)&&object!==phiTowerShellCache?.shell);
     if(!rollback && previousDate && previousDate!==date){
       console.error('Gallery floor construction failed; restoring previous edition',date,error);
       try{
@@ -1809,7 +1860,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   // Give the optimised entrance lamps priority over deferred artworks/visitors.
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
-  editionObjects=scene.children.filter(object=>!previous.has(object));
+  editionObjects=scene.children.filter(object=>!previous.has(object)&&object!==phiTowerShellCache?.shell);
   // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
   if(viaLift||nextFloor!==0||welcome.hidden)startDeferredGallery();
   if(!viaLift && nextFloor===0 && plan.phi?.plaza){
