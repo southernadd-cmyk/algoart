@@ -1,0 +1,61 @@
+name: Publish phi-square graffiti atlases
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'automation/build-phi-square-graffiti.mjs'
+      - '.github/workflows/phi-square-atlases.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: phi-square-atlas-publish
+  cancel-in-progress: false
+jobs:
+  bake:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Serve repo
+        run: |
+          python3 -m http.server 4173 >/tmp/phi-square-site.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Bake test square desktop and mobile atlases
+        run: node automation/build-phi-square-graffiti.mjs
+      - name: Verify phi-square atlas contents
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          for(const surface of ['brick','concrete'])for(const mode of ['desktop','mobile']){
+           const dir='gallery/visit/graffiti-assets/square/'+surface+'/'+mode;
+           const m=JSON.parse(fs.readFileSync(dir+'/manifest.json','utf8'));
+           if(!m.pages.length||!m.signature.startsWith('white-understroke-v3|'))throw Error('Invalid square atlas '+dir);
+           if(m.marks.some(tag=>tag.text==='PHI')||!m.marks.some(tag=>tag.text==='phI'))throw Error('Wrong lettering '+dir);
+           for(const page of m.pages)if(fs.statSync(dir+'/'+page.file).size<100)throw Error('Empty atlas '+dir+'/'+page.file);
+          }
+          NODE
+      - name: Commit square atlases
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gallery/visit/graffiti-assets/square/
+          if ! git diff --cached --quiet; then
+            git commit -m 'Publish refreshed phI square graffiti atlases'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Redeploy square atlases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
