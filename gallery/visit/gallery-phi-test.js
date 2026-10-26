@@ -2504,8 +2504,19 @@ function detectArt(elapsed) {
   }else if(selected===dismissedExhibit || (currentInfoExhibit && currentInfoExhibit!==selected)){
     $('info').hidden=true;
   }
-  const current=footprintAt(plan,rig.position.x,rig.position.z)?.room ?? -1;
-  const text='Floor '+(currentFloor===0?'G':currentFloor)+(current>=0?' · Gallery '+(current+1):' · Walkway');
+  let locationLabel;
+  if(plan.phi){
+    const local=plan.phi.world.toLocal(rig.position.x,rig.position.z);
+    const room=plan.phi.floor.mergedRooms.findIndex(r=>r.pieces.some(p=>
+      local.x>=p.x&&local.x<=p.x+p.w&&local.z>=p.z&&local.z<=p.z+p.h));
+    locationLabel=Math.hypot(rig.position.x,rig.position.z)<2.1?'Archive lift':
+      currentFloor===0?(room>=0?'Reception':'Public square'):
+      room>=0?'Gallery '+(room+1):'Glass walkway';
+  }else{
+    const current=footprintAt(plan,rig.position.x,rig.position.z)?.room??-1;
+    locationLabel=current>=0?'Gallery '+(current+1):'Walkway';
+  }
+  const text='Floor '+(currentFloor===0?'G':currentFloor)+' · '+locationLabel;
   if(status.textContent!==text)status.textContent=text;
 }
 let phiFrameSerial=0;

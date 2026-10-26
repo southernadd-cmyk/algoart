@@ -52,6 +52,19 @@ try{
   assert.equal(await page.locator('#lift').isVisible(),false,'Calendar reopened on arrival');
   assert.equal(await page.locator('#liftAnimation').isVisible(),false,'Old cutscene appeared');
   await page.screenshot({path:'phi-tower-results/lift-'+date+'.png'});
+  // Leave through the opened door using the visitor's keyboard controls.
+  const heading=state.lift.floor*(2*Math.PI/(((1+Math.sqrt(5))/2)**2))-Math.PI/2;
+  const turn=Math.atan2(Math.sin(heading-state.lift.yaw),Math.cos(heading-state.lift.yaw));
+  if(Math.abs(turn)>.1){
+   const key=turn>0?'ArrowLeft':'ArrowRight';await page.keyboard.down(key);
+   try{await page.waitForFunction(target=>Math.abs(Math.atan2(Math.sin(window.__phiLiftState.yaw-target),Math.cos(window.__phiLiftState.yaw-target)))<.1,heading,{timeout:20000});}
+   finally{await page.keyboard.up(key);}
+  }
+  await page.keyboard.down('w');
+  try{await page.waitForFunction(()=>Math.hypot(window.__phiLiftState.x,window.__phiLiftState.z)>3.1,null,{timeout:20000});}
+  finally{await page.keyboard.up('w');}
+  assert.equal(await page.locator('#lift').isVisible(),false,'Calendar interrupted the exit');
+  await page.screenshot({path:'phi-tower-results/gallery-'+date+'.png'});
  }
  // An unavailable destination must preserve the departure exhibition and position.
  const departure=await page.evaluate(()=>window.__phiLiftState);
