@@ -44,25 +44,22 @@ export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
   for(const [index,p] of furnishing.backrooms.entries()){
    const g=new THREE.Group();g.name='phi-reception-backroom-'+index;
    g.position.set(p.x,elevation,p.z);scene.add(g);holders.push(g);
-   // Archive cabinet at a corner, with three shelves and differently sized boxes.
-   for(const x of [-.88,.88])cube(g,.09,2.25,.49,x,1.125,0,iron);
-   for(const y of [.14,.83,1.52,2.2])cube(g,1.84,.07,.55,0,y,0,wood);
-   for(let j=0;j<8;j++){
+   // Keep fittings against opposing sides of compact rooms, not in the aisle.
+   const shelvesZ=-p.depth/2+.42;
+   const tableZ=p.depth/2-.54;
+   for(const x of [-.75,.75])cube(g,.09,2.12,.42,x,1.06,shelvesZ,iron);
+   for(const y of [.14,.77,1.4,2.08])cube(g,1.63,.065,.46,0,y,shelvesZ,wood);
+   for(let j=0;j<7;j++){
     const row=Math.floor(j/3),col=j%3;
-    cube(g,.29+(j%2)*.11,.34+(j%3)*.055,.35,-.56+col*.49,.34+row*.69,.02,card);
+    cube(g,.26+(j%2)*.08,.27+(j%3)*.04,.27,
+     -.52+col*.5,.33+row*.63,shelvesZ,card);
    }
-   // Backroom packing/work bench opposite the shelving. Keep a broad walking gap.
-   const benchZ=2.15;
-   cube(g,2.25,.11,.78,0,.91,benchZ,wood);
-   for(const x of [-.95,.95])cube(g,.08,.87,.66,x,.44,benchZ,iron);
-   for(const x of [-.48,.18,.61]){
-    cube(g,.38,.028,.27,x,.991,benchZ-.09,sheet);
-   }
-   cube(g,.72,.17,.45,.48,1.03,benchZ+.12,card);
-   // Framed noticeboard: procedural canvas, no new texture request.
-   const notice=new THREE.Mesh(new THREE.BoxGeometry(1.7,.9,.055),wood);
-   notice.position.set(0,1.83,benchZ+.48);g.add(notice);
-   for(const x of [-.45,.22])cube(g,.43,.47,.012,x,1.83,benchZ+.515,sheet);
+   // Narrow sorting counter on the opposite wall; no suspended noticeboard.
+   cube(g,1.65,.10,.52,0,.88,tableZ,wood);
+   for(const x of [-.7,.7])cube(g,.07,.83,.43,x,.43,tableZ,iron);
+   for(const x of [-.42,.22])cube(g,.31,.025,.23,x,.95,tableZ-.04,sheet);
+   cube(g,.34,.19,.26,.42,1.01,tableZ+.03,card);
+
   }
  }
  return holders;
