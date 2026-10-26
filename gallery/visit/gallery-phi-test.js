@@ -60,6 +60,8 @@ let liftDoorClosure=0;
 let liftDoorTarget=0;
 let liftArrivalOpening=false;
 let liftPickerConsumed=false;
+let phiMovingCabin=null;
+let phiRideState=null;
 let liftCabinPosition=null;
 let liftDoorThreshold=null;
 let currentFloor=0;
@@ -784,59 +786,101 @@ function closeLift({returnToCanvas=false}={}){
   liftReturnFocus=null;
   target.focus({preventScroll:true});
 }
-async function travelLift(date,index){
-  if(liftTravelling)return;
-  liftTravelling=true;
-  const xrRide=renderer.xr.isPresenting;
-  if(xrRide)paintXRTravel(index);
-  $('lift').hidden=true;
-  if(!xrRide)document.exitPointerLock?.();
-  const overlay=$('liftAnimation');
-  // Travel feedback is a single transient status, never another floor picker.
-  liftArrivalOpening=false;
-  setLiftDoors(true);
-  // Close the physical leaves in view before replacing the destination floor.
-  await new Promise(resolve=>setTimeout(resolve,850));
-  if(!xrRide)overlay.hidden=false;
-  const current=Math.max(0,archiveDates.indexOf(exhibitDate));
-  $('liftDirection').textContent=(index>current?'Ascending':'Descending')+' · '+Math.abs(index-current)+' floors';
-  overlay.classList.toggle('descending',index<current);
-  overlay.classList.toggle('ascending',index>current);
-  $('liftDestination').textContent='Floor '+(index===0?'G':index)+' · '+readableDate(date);
-  const begin=performance.now();
-  try{
-    await loadEdition(date,{viaLift:true});
-    // Keep doors closed long enough to make the ride perceptible.
-    await new Promise(resolve=>setTimeout(resolve,Math.max(0,1300-(performance.now()-begin))));
-    overlay.hidden=true;
-    if(xrRide)closeXRLift();
-    if(!xrRide){
-      liftReturnFocus=null;
-      canvas.focus({preventScroll:true});
-      $('liftArrival').hidden=false;
-      $('liftArrival').textContent='Doors opening · floor '+(index===0?'G':index);
-      setTimeout(()=>$('liftArrival').hidden=true,1800);
-    }
-    // Release the journey lock before opening, otherwise the animation loop
-    // forces the doors closed again on the destination floor.
-    liftTravelling=false;
-    liftArrivalOpening=true;
-    liftWasNear=true;
-    setLiftDoors(false);
-  }catch(error){
-    overlay.hidden=true;liftTravelling=false;liftArrivalOpening=true;setLiftDoors(false);
-    errorBox.textContent='Lift could not reach that floor: '+error.message;
-    errorBox.hidden=false;
-    if(!xrRide){
-      $('lift').hidden=false;
-      $('closeLift').focus({preventScroll:true});
-    }else {
-      if(!xrLiftPanel)openXRLift();
-      paintXRLift('This floor did not load. Choose another.');
-    }
-  }finally{liftTravelling=false;}
+// The φ tower has one real, shared vertical shaft at world x=z=0.
+// Unlike the legacy cutscene, this temporary cabin and the player's rig move
+// continuously through the world while the neighbouring floors stay rendered.
+function startPhiCabinRide(targetFloor){
+ const startY=rig.position.y;
+ const endY=targetFloor*FLOOR_SPACING;
+ const pod=new THREE.Group();pod.name='phi-moving-archive-lift';
+ pod.position.set(0,startY,0);
+ const metal=new THREE.MeshStandardMaterial({color:0x85918d,metalness:.47,roughness:.47,side:THREE.DoubleSide});
+ const dark=new THREE.MeshStandardMaterial({color:0x273530,metalness:.38,roughness:.55});
+ const glass=new THREE.MeshStandardMaterial({color:0xbed6ce,transparent:true,opacity:.19,roughness:.18,metalness:.13,side:THREE.DoubleSide,depthWrite:false});
+ const panel=(w,h,d,x,y,z,material)=>{
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+  m.position.set(x,y,z);pod.add(m);
+ };
+ panel(2.85,.16,2.55,0,-.12,0,dark);
+ panel(2.85,.15,2.55,0,3.03,0,metal);
+ panel(.09,2.96,2.55,-1.45,1.48,0,metal);
+ panel(2.85,2.96,.09,0,1.48,-1.31,glass);
+ for(const z of [-1.26,1.26])panel(.09,2.96,.11,1.41,1.48,z,metal);
+ scene.add(pod);
+ phiMovingCabin=pod;
+ const duration=Math.max(1.8,Math.min(9,Math.abs(endY-startY)/7.0+1));
+ phiRideState={startY,endY,elapsed:0,duration,resolve:null};
+ window.__phiLiftRide={from:startY,to:endY,progress:0,status:'moving'};
+ return new Promise(resolve=>{phiRideState.resolve=resolve;});
 }
-
+function updatePhiCabinRide(dt){
+ if(!phiRideState)return;
+ const ride=phiRideState;
+ ride.elapsed=Math.min(ride.duration,ride.elapsed+dt);
+ const p=ride.elapsed/ride.duration;
+ // Accelerate and brake smoothly rather than jumping to a new elevation.
+ const smooth=p*p*(3-2*p);
+ const y=ride.startY+(ride.endY-ride.startY)*smooth;
+ rig.position.y=y;
+ if(phiMovingCabin)phiMovingCabin.position.y=y;
+ if(window.__phiLiftRide)window.__phiLiftRide.progress=p;
+ if(p>=1){
+  phiRideState=null;
+  if(window.__phiLiftRide)window.__phiLiftRide.status='arrived';
+  ride.resolve();
+ }
+}
+function clearPhiMovingCabin(){
+ if(!phiMovingCabin)return;
+ scene.remove(phiMovingCabin);
+ phiMovingCabin.traverse(o=>{o.geometry?.dispose?.();o.material?.dispose?.();});
+ phiMovingCabin=null;
+}
+async function travelLift(date,index){
+ if(liftTravelling)return;
+ liftTravelling=true;
+ const xrRide=renderer.xr.isPresenting;
+ $('lift').hidden=true;
+ liftPickerConsumed=true;
+ liftArrivalOpening=false;
+ if(!xrRide)document.exitPointerLock?.();
+ if(xrRide)paintXRTravel(index);
+ // The actual doors shut while the visitor remains in the cabin.
+ setLiftDoors(true);
+ await new Promise(resolve=>setTimeout(resolve,900));
+ try{
+  if(plan?.phi){
+   await startPhiCabinRide(index);
+   // The shared shaft and the other levels remain in the 3D scene for the ride.
+   // Replace detailed room contents only after the cabin reaches its landing.
+   await loadEdition(date,{viaLift:true});
+  }else{
+   await loadEdition(date,{viaLift:true});
+  }
+  clearPhiMovingCabin();
+  if(xrRide)closeXRLift();
+  else{
+   liftReturnFocus=null;canvas.focus({preventScroll:true});
+   $('liftArrival').textContent='Floor '+(index===0?'G':index)+' · doors opening';
+   $('liftArrival').hidden=false;
+   setTimeout(()=>$('liftArrival').hidden=true,1550);
+  }
+  liftTravelling=false;
+  liftArrivalOpening=true;
+  liftWasNear=true;
+  liftPickerConsumed=true;
+  setLiftDoors(false);
+ }catch(error){
+  clearPhiMovingCabin();
+  liftTravelling=false;
+  liftArrivalOpening=true;
+  setLiftDoors(false);
+  errorBox.textContent='The lift could not reach that floor: '+error.message;
+  errorBox.hidden=false;
+  if(!xrRide){$('lift').hidden=false;$('closeLift').focus({preventScroll:true});}
+  else{if(!xrLiftPanel)openXRLift();paintXRLift('Please choose another floor.');}
+ }
+}
 function renderLiftCalendar(){
   const dates=archiveDates;
   const picker=$('liftMonth');
@@ -2346,6 +2390,7 @@ function tick() {
   // frames can pause in immersive VR, so build exhibits on this loop instead.
   if(dt<.030||phiFrameSerial%8===0)processDeferredGallery();
   animateLiftDoors(dt);
+  updatePhiCabinRide(dt);
   entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
