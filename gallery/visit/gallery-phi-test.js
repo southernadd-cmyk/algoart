@@ -1150,6 +1150,11 @@ function constructPhiTowerShell(){
    const mid=(b.from+b.to)/2;
    append(b.axis==='x'?b.length:b.width,.16,b.axis==='z'?b.length:b.width,
       b.axis==='x'?mid:b.centre,y-.06,b.axis==='z'?mid:b.centre,bridgeSurface);
+   for(const side of [-1,1])append(b.axis==='x'?b.length:.045,2.95,b.axis==='z'?b.length:.045,
+      b.axis==='x'?mid:b.centre+side*b.width/2,y+1.6,
+      b.axis==='z'?mid:b.centre+side*b.width/2,walkwayGlassMaterials.glass);
+   append(b.axis==='x'?b.length:b.width,.045,b.axis==='z'?b.length:b.width,
+      b.axis==='x'?mid:b.centre,y+3.1,b.axis==='z'?mid:b.centre,walkwayGlassMaterials.glass);
   }
   for(const object of shell.children.slice(floorStart)){
    const p=wt.toWorld(object.position.x,object.position.z);
@@ -1244,28 +1249,43 @@ function constructPhiGallery(layout,studies){
   const mid=(b.from+b.to)/2;
   block(b.axis==='x'?b.length:b.width,.16,b.axis==='z'?b.length:b.width,
     b.axis==='x'?mid:b.centre,elevation-.08,b.axis==='z'?mid:b.centre,bridgeSurface);
+  // Open ends meet the actual doorways; glazed sides and a roof enclose
+  // the walk without adding a pane across its route.
+  for(const side of [-1,1]){
+   const x=b.axis==='x'?mid:b.centre+side*b.width/2;
+   const z=b.axis==='z'?mid:b.centre+side*b.width/2;
+   block(b.axis==='x'?b.length:.045,2.95,b.axis==='z'?b.length:.045,x,elevation+1.6,z,walkwayGlassMaterials.glass);
+   for(const height of [.18,3.08])block(b.axis==='x'?b.length:.055,.055,b.axis==='z'?b.length:.055,x,elevation+height,z,join);
+   for(const end of [b.from,b.to])block(.06,3.0,.06,b.axis==='x'?end:x,elevation+1.6,b.axis==='z'?end:z,join);
+  }
+  block(b.axis==='x'?b.length:b.width,.045,b.axis==='z'?b.length:b.width,
+    b.axis==='x'?mid:b.centre,elevation+3.1,b.axis==='z'?mid:b.centre,walkwayGlassMaterials.glass);
  }
  const byId=new Map(studies.map(study=>[study.id,study]));
  const loader=new THREE.TextureLoader();
  for(const p of phi.exhibition.paintings){
   const study=byId.get(p.studyId);if(!study)continue;
-  const height=Math.min(2.4,p.height);
-  const backing=block(p.axis==='x'?.13:p.width+.12,height+.12,p.axis==='x'?p.width+.12:.13,
-    p.x,elevation+2,p.z,join);
+  const height=Math.min(2.4,p.height),centreY=elevation+p.y;
+  block(p.axis==='x'?.08:p.width+.10,height+.10,p.axis==='x'?p.width+.10:.08,
+    p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);
   const face=new THREE.Mesh(new THREE.PlaneGeometry(p.width,height),
-    new THREE.MeshBasicMaterial({color:0xdedacf,side:THREE.DoubleSide}));
-  face.position.set(p.x+p.normal.x*.12,elevation+2,p.z+p.normal.z*.12);
+    new THREE.MeshBasicMaterial({color:0xdedacf,side:THREE.FrontSide}));
+  face.position.set(p.x,centreY,p.z);
   if(p.axis==='x')face.rotation.y=p.normal.x>0?Math.PI/2:-Math.PI/2;
   else if(p.normal.z<0)face.rotation.y=Math.PI;
   scene.add(face);
+  const caption=new THREE.Mesh(new THREE.PlaneGeometry(1.12,.26),
+    new THREE.MeshBasicMaterial({map:labelTexture(study.title,study.seed),side:THREE.FrontSide}));
+  caption.position.set(p.x,centreY-height/2-.24,p.z);
+  caption.rotation.copy(face.rotation);scene.add(caption);
   const url=study.imageOptimized||study.image;
   if(url)deferredGalleryJobs.push(()=>loader.load(url,texture=>{
     if(!face.parent){texture.dispose();return;}
     texture.colorSpace=THREE.SRGBColorSpace;
     face.material.dispose();
-    face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});
+    face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide});
   },undefined,error=>console.warn('Phi painting failed to load',study.id,error)));
-  artExhibits.push({study,position:face.position.clone()});
+  artExhibits.push({study,position:face.position.clone(),normal:new THREE.Vector3(p.normal.x,0,p.normal.z)});
  }
  for(const p of phi.exhibition.sculptures){
   const study=byId.get(p.studyId);if(!study)continue;
@@ -2494,9 +2514,9 @@ function tick() {
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
   if((phiFrameSerial++&1)===0)towerGraffiti.paintNext();
   else interiorGraffiti.paintNext();
-  // Three.js supplies both desktop and XR frames here. Window animation
-  // frames can pause in immersive VR, so build exhibits on this loop instead.
-  if(dt<.030||phiFrameSerial%8===0)processDeferredGallery();
+  // Finish lift motion before building expensive portrait geometry. In XR
+  // this same renderer loop still owns all deferred artwork construction.
+  if(!liftTravelling&&!liftArrivalOpening&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
   animateLiftDoors(elapsed);
   updatePhiCabinRide(dt);
   entranceDoor?.update(dt,rig.position);
