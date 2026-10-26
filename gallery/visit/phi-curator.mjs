@@ -120,20 +120,27 @@ export function planCuratedPhiExhibition(floor,circulation,physical,studies){
       Math.abs(x-p.u)<p.width/2+.65&&Math.abs(z-p.at)<2.35)))return false;
   return true;
  }
+ // Test fixed architectural clearances once per floor, before occupancy.
+ // The denser lattice retains all original golden-section anchor positions.
+ const fractions=size=>[...new Set([INV_PHI,1-INV_PHI,.5,
+   ...Array.from({length:Math.max(0,Math.floor((size-3.2)/.7)+1)},(_,n)=>(1.6+n*.7)/size)])];
+ const candidates=[];
+ for(let i=0;i<floor.mergedRooms.length;i++){
+  const room=floor.mergedRooms[i];
+  for(const p of room.pieces)for(const fx of fractions(p.w))for(const fz of fractions(p.h)){
+   const x=p.x+p.w*fx,z=p.z+p.h*fz;
+   if(!safe({...room,index:i},x,z))continue;
+   const clearance=Math.min(x-p.x,p.x+p.w-x,z-p.z,p.z+p.h-z);
+   candidates.push({room:i,x,z,score:clearance*.35+Math.min(3,Math.hypot(x-lift.x,z-lift.z))*.1});
+  }
+ }
  for(const study of studies.filter(s=>s.portrait)){
   let best=null;
-  for(let i=0;i<floor.mergedRooms.length;i++){
-   const room=floor.mergedRooms[i];
-   for(const p of room.pieces){
-    for(const fx of [INV_PHI,1-INV_PHI,.5])for(const fz of [INV_PHI,1-INV_PHI,.5]){
-     const x=p.x+p.w*fx,z=p.z+p.h*fz;
-     if(!safe({...room,index:i},x,z))continue;
-     const clearance=Math.min(x-p.x,p.x+p.w-x,z-p.z,p.z+p.h-z);
-     const score=clearance*.35-roomCounts[i]*2.2+
-       Math.min(3,Math.hypot(x-lift.x,z-lift.z))*.1;
-     if(!best||score>best.score)best={studyId:study.id,room:i,x,z,width:1.42,depth:1.32,score};
-    }
-   }
+  for(const candidate of candidates){
+   const {room,x,z}=candidate;
+   if(sculptures.some(p=>Math.hypot(x-p.x,z-p.z)<3.1))continue;
+   const score=candidate.score-roomCounts[room]*2.2;
+   if(!best||score>best.score)best={studyId:study.id,room,x,z,width:1.42,depth:1.32,score};
   }
   if(best){const {score,...placed}=best;sculptures.push(placed);roomCounts[best.room]++;}
   else rejected.push(study);

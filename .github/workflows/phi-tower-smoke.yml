@@ -5,6 +5,7 @@ on:
       - 'test/virtual-gallery/phi-tower.html'
       - 'test/virtual-gallery/full-engine.html'
       - 'gallery/visit/gallery-v2.js'
+      - 'gallery/visit/gallery-phi-test.js'
       - 'tests/full-engine-walkthrough.test.mjs'
       - 'tests/phi-full-engine-adapter.test.mjs'
       - 'test/virtual-gallery/phi-full-engine-adapter.mjs'

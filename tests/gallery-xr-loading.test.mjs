@@ -12,7 +12,7 @@ const between=(start,end)=>{
 const loading=between('function startDeferredGallery(){','function constructGallery(');
 const entry=source.match(/renderer\.xr\.addEventListener\('sessionstart', \(\) => \{[\s\S]*?\n  \}\);/)[0];
 const desktop=between("enter.addEventListener('click'","$('fullscreen').addEventListener");
-const renderLoop=between('function tick() {','// Ensure canvas-rendered entrance');
+const renderLoop=between('let frameSerial=0;','// Ensure canvas-rendered entrance');
 const reset=source.match(/deferredGalleryJobs=\[\];deferredGalleryRunning=false;/)[0];
 const ready=source.match(/if\(viaLift\|\|nextFloor!==0\|\|welcome\.hidden\)startDeferredGallery\(\);/)[0];
 
@@ -72,10 +72,21 @@ test('desktop entry keeps the exterior first and starts exhibit loading on entry
   g.floor();g.frame();assert.deepEqual(g.built,[]);
   g.desktop();g.finish();assert.deepEqual(g.built,['painting','sculpture']);
 });
-test('exterior paint progresses before entry and on immersive XR frames',()=>{
+test('exterior and interior painting alternate before entry and during XR',()=>{
   const g=gallery();g.floor();g.frame();assert.equal(g.context.paintFrames,1);
-  assert.equal(g.context.interiorPaintFrames,1);
-  assert.equal(g.context.welcome.hidden,false);g.vr();g.frame();assert.equal(g.context.paintFrames,2);assert.equal(g.context.interiorPaintFrames,2);
+  assert.equal(g.context.interiorPaintFrames,0);
+  assert.equal(g.context.welcome.hidden,false);
+  g.vr();g.frame();assert.equal(g.context.paintFrames,1);assert.equal(g.context.interiorPaintFrames,1);
+  g.frame();assert.equal(g.context.paintFrames,2);assert.equal(g.context.interiorPaintFrames,1);
+  g.frame();assert.equal(g.context.paintFrames,2);assert.equal(g.context.interiorPaintFrames,2);
+});
+test('busy frames still build exhibits every eighth XR frame',()=>{
+  const g=gallery();g.context.clock.getDelta=()=>.05;
+  g.queue('painting');g.queue('sculpture');g.vr();
+  for(let i=0;i<7;i++)g.frame();
+  assert.deepEqual(g.built,[]);
+  g.frame();assert.deepEqual(g.built,['painting']);
+  g.finish();assert.deepEqual(g.built,['painting','sculpture']);
 });
 test('VR entered before floor preparation starts exhibits once that floor is ready',()=>{
   const g=gallery();g.vr();g.frame();

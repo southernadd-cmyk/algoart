@@ -9,3 +9,11 @@ The browser-ready male and female GLB files are prepared from the non-rigged mes
 
 ## Corrected male/female rig asset
 The `human-male-female-rigged.glb` file is converted from the **lzyassoul** source glTF + BIN without removing the skin data (two 153-joint rigs). Put this GLB in the same `models/` directory. The scene uses small rest-pose adjustments, not the unrelated MotionStreamStudios DEF rig.
+
+## Phi reception
+
+- **Door** by **Maria Stashko**, CC BY 4.0: https://sketchfab.com/3d-models/door-b037e932fd774dd9b355ba0a403f5c79 . Textures compressed, frame and two leaves separated, scale normalised.
+- **[FREE] Pothos Potted Plant - Money Plant** by **AllQuad**, CC BY 4.0: https://sketchfab.com/3d-models/free-pothos-potted-plant-money-plant-e9832f38484f4f85b3f9081b51fa3799 . Textures compressed and foliage alpha adjusted.
+- **Set of Cardboard Boxes** by **NotAnotherApocalypticCo.**, CC BY 4.0: https://sketchfab.com/3d-models/set-of-cardboard-boxes-8986ba512f704ac5b253286a0d1ad8bb . Textures compressed; individual boxes reused.
+
+Licence: https://creativecommons.org/licenses/by/4.0/ . User-visible source links and licence credits are at ../credits.html and in the reception's three framed credit panels.

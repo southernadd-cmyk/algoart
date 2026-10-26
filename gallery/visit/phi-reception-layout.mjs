@@ -44,7 +44,13 @@ export function planPhiReception(floor,circulation,physical){
   Math.hypot(p.x-end.x,p.z-end.z)>2.8&&distSegment(p.x,p.z,start,end)>2.3&&
   (!desk||Math.hypot(p.x-desk.x,p.z-desk.z)>2))
   .slice(0,2).map(p=>({...p,placement:'corner'}));
- return {desk,signage,plants,entrance:start,lift:end,checks:{
+ // A small framed collection across from the desk, on the entrance wall's
+ // solid right-hand wing. Keep the entrance and its approach unobstructed.
+ const creditWall=desk?exhibitionSurfaces(floor,physical,{edgeClearance:.4,minLength:1.2})
+  .filter(w=>w.room===desk.room&&w.axis==='z'&&w.normal.z>0&&w.at<desk.z-2&&w.length>=2.34)
+  .sort((a,b)=>Number(b.centre>start.x)-Number(a.centre>start.x)||Math.abs(a.centre-desk.x)-Math.abs(b.centre-desk.x))[0]:null;
+ const credits=creditWall?{x:creditWall.centre,z:creditWall.at+.15,axis:creditWall.axis,normal:creditWall.normal}:null;
+ return {desk,signage,plants,credits,entrance:start,lift:end,checks:{
   deskClear:!desk||distSegment(desk.x,desk.z,start,end)>=2.2,
   signCount:signage.length,passageClear:true
  }};

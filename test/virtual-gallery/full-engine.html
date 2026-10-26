@@ -20,6 +20,7 @@
 <title>φ-layout Full-engine Renderer Test | PROPORTION PIECE</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./gallery.css?v=accessibility-20261023">
+<link rel="stylesheet" href="../../test/virtual-gallery/phi-gallery.css?v=reception-credits-20261026">
 <style>
 /* The fixed canvas must never cover the keyboard/mouse lift fallback. */
 #world{z-index:0}
@@ -63,7 +64,7 @@
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
     window.__galleryStage='Importing bundled JavaScript';
-    await import('../../gallery/visit/gallery-phi-test.js?v=free-look-during-lift-20261026');
+    await import('../../gallery/visit/gallery-phi-test.js?v=reception-credits-and-lift-20261026');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -130,20 +131,19 @@ window.addEventListener('load',()=>{
 });
 </script>
 </head>
-<body><div role="status" style="position:fixed;z-index:99999;top:0;left:0;right:0;background:#e0e7db;color:#29261e;text-align:center;padding:8px 12px;font:14px sans-serif">Experimental full-engine φ floor: real renderer with golden-ratio room geometry and curator. Lift connections and exterior tower are still being integrated.</div>
-<canvas id="world" tabindex="0" aria-label="Three-dimensional gallery. W A S D to move, arrow keys to look, E for artwork information, L for floors. Tab to reach page controls." aria-describedby="hint"></canvas>
+<body>
+<canvas id="world" tabindex="0" aria-label="Three-dimensional gallery. W A S D to move, arrow keys to look, L for floors. Tab to reach page controls." aria-describedby="hint"></canvas>
 <header class="algo-global-header gallery-global-header">
   <div class="algo-global-brand"><a class="brand" href="../../">PROPORTION PIECE</a></div>
   <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
   <p class="algo-global-question">Can one number compose a drawing?</p>
-  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../">daily gallery</a><a data-algo-nav href="../../about/">how it works</a></nav>
+  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../">daily gallery</a><a data-algo-nav href="../../about/">about this project</a></nav>
 </header>
 <div class="topbar" role="group" aria-label="Virtual exhibition controls">
-  <div class="identity"><span class="section-name">Full renderer · φ architecture · test only</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
+  <div class="identity"><span class="section-name">Gallery preview</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
   <div class="top-actions">
     <button id="openLift" type="button">Lift · Floors</button>
-    <a href="./phi-tower.html">φ architecture preview</a>
-    <a href="./phi-rehearsal.html">New φ-floor rehearsal</a>
+    <a href="../../test/virtual-gallery/phi-tower.html">Architecture study</a>
     <a id="archiveLink" href="../">View 2D gallery</a>
     <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
     <div id="xr-controls" aria-label="Virtual reality controls"></div>
@@ -183,15 +183,16 @@ window.addEventListener('load',()=>{
     <a id="openArt" href="../../" target="_blank" rel="noopener noreferrer">Explore this drawing ↗</a>
   </div>
 </aside>
-<div class="plan-view" id="planView"><span>Floor plan</span><canvas id="floorMap" width="248" height="218" aria-label="Diagram of galleries, connecting routes, and your position"></canvas></div>
+<div class="plan-view" aria-label="Your location" id="planView"><span>Floor plan</span><canvas id="floorMap" width="248" height="218" aria-label="Diagram of galleries, connecting routes, and your position"></canvas></div>
 <section class="lift-panel" id="lift" hidden role="dialog" aria-modal="true" aria-labelledby="liftTitle">
-  <div class="lift-head"><div><small>Archive lift</small><h2 id="liftTitle">Choose a floor</h2></div><button id="closeLift" type="button" aria-label="Close lift panel">×</button></div>
+  <div class="lift-head"><div><small>Archive lift</small><h2 id="liftTitle">Where shall we go?</h2></div><button id="closeLift" type="button" aria-label="Close lift panel">×</button></div>
   <p id="liftCurrent"></p>
   <label for="liftMonth">Month and year</label>
   <input id="liftMonth" type="month" min="2026-10">
   <div class="lift-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
   <div class="lift-days" id="liftDays" aria-label="Gallery dates for selected month"></div>
-  <p class="lift-note">Dates marked with a dot have a published exhibition. Earliest date is ground floor; newer dates ascend.</p>
+  <button id="liftReception" type="button">Ground floor · Reception</button>
+  <p class="lift-note">Each available date opens an exhibition. Newer collections are higher in the tower.</p>
   <p id="liftTravel" hidden role="status"></p>
 </section>
 <section id="liftAnimation" class="lift-animation" hidden role="status" aria-live="polite">
@@ -215,8 +216,9 @@ window.addEventListener('load',()=>{
   <div class="welcome-content">
     <div class="eyebrow">An exhibition built by its drawings</div>
     <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
-    <p>Each daily collection occupies its own floor in a growing tower. Landscape studies hang on the walls; portrait studies become sculptures made from the actual drawn lines and the visible pigment boundaries of each material. Choose your route through the work.</p>
-    <p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, E to inspect artwork, L to choose a floor. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p>
+    <p>A new collection. A new floor. Every day.</p>
+    <p>Step inside a gallery shaped by the golden ratio. Discover drawings on the walls and sculptures made from their lines, then take the archive lift to another day.</p>
+    <details class="visit-controls"><summary>How to explore</summary><p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, Artwork details appear when you pause nearby; L opens the lift calendar. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p></details>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
     <a id="welcomeArchive" href="../">See the original 2D edition ↗</a>
   </div>
