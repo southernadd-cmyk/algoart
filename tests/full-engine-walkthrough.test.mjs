@@ -17,6 +17,10 @@ try{
  assert.ok(plaza,'Ground floor plaza was not constructed');
  assert.equal(plaza.monumentCount,2);
  assert.equal(plaza.benchCount,6);
+ const tower=await page.evaluate(()=>window.__phiTowerExterior);
+ assert.ok(tower?.otherFloors>0,'Missing exterior tower floors');
+ assert.ok(tower.wallMeshes>tower.otherFloors,'Missing external wall geometry');
+ assert.ok(await page.evaluate(()=>window.__phiReception?.desk&&window.__phiReception?.information),'Missing ground-floor reception');
  assert.equal(await page.evaluate(()=>window.__galleryStartupError),'');
  assert.equal(errors.length,0,errors.join('; '));
  assert.equal(await page.locator('#world').count(),1);
