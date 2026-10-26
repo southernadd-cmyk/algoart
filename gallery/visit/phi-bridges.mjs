@@ -34,11 +34,15 @@ export function planPhiBridges(plan,{maxBridges=3}={}){
   }
  }
  options.sort((a,b)=>b.score-a.score||a.voidCell.localeCompare(b.voidCell));
- const picked=[],reserved=new Set();
+ const picked=[],reserved=new Set(),usedRooms=new Set();
  for(const option of options){
   if(picked.length>=maxBridges)break;
-  if(reserved.has(option.voidCell)||reserved.has(option.fromCell)||reserved.has(option.toCell))continue;
-  picked.push({...option,id:'bridge-'+(picked.length+1)});
+  const owner=owners.get(option.voidCell);
+  if(usedRooms.has(owner)||reserved.has(option.voidCell)||reserved.has(option.fromCell)||reserved.has(option.toCell))continue;
+  const v=cells.find(c=>c.id===option.voidCell);
+  const liftX=plan.root.x+2.2,liftZ=plan.root.z+2.2;
+  if(liftX>=v.x&&liftX<=v.x+v.w&&liftZ>=v.z&&liftZ<=v.z+v.h)continue;
+  picked.push({...option,id:'bridge-'+(picked.length+1)});usedRooms.add(owner);
   reserved.add(option.voidCell);reserved.add(option.fromCell);reserved.add(option.toCell);
  }
  if(!picked.length)return {plan,bridges:[],voids:[],candidateCount:options.length};
