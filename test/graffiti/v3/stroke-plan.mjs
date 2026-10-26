@@ -9,17 +9,36 @@ export function physicalStroke(stroke,family){
   // A slower start and earlier lift prevent perfectly even marker contact.
   contact:{onset:.045,release:family==='I'?.15:.10}};
 }
-// Whole-word orbit: a single open, directional gesture ABOVE and around the
-// phrase, not a baseline strike-through or a concentric ellipse around letters.
-export function planLoopsOrbit(plan){
- const letters=plan.letters;
- if(letters.length<3)return [];
- const first=letters[0],last=letters.at(-1);
- const left=first.x-12,right=last.x+76,span=right-left;
- if(span<=0)return [];
- return [{
-  kind:'stroke',role:'secondary',width:5.5,
-  d:`M ${left} 79 C ${left+span*.04} 1 ${left+span*.28} -21 ${left+span*.49} -8 S ${right+19} 11 ${right} 72`,
-  contact:{onset:.10,release:.2},wordGesture:true
- }];
+// Golden-ratio trajectory study: each word generates its own anchored orbit.
+// φ controls subdivisions and asymmetric arcs; stable seed perturbations prevent
+// mechanical repeats without pushing the marks into letter counters.
+const PHI=(1+Math.sqrt(5))/2;
+const fmt=n=>Number(n.toFixed(2));
+function noise(seed){
+ let h=2166136261;for(const ch of String(seed))h=Math.imul(h^ch.charCodeAt(0),16777619);
+ return ((h>>>0)/4294967295)*2-1;
+}
+export function planLoopsOrbit(plan,{mode='restrained',seed=plan.seed||'V3-STUDY'}={}){
+ if(!['none','restrained','expressive'].includes(mode))throw new RangeError('Unknown orbit mode');
+ if(mode==='none')return [];
+ const groups=[];
+ for(const letter of plan.letters){
+  const previous=groups.at(-1);
+  if(!previous||letter.index>previous.at(-1).index+1)groups.push([letter]);
+  else previous.push(letter);
+ }
+ return groups.filter(g=>g.length>=2).map((group,i)=>{
+  const left=group[0].x-5,right=group.at(-1).x+79,span=right-left;
+  const shift=noise(seed+'|orbit|'+i)*5;
+  const shoulder=left+span/(PHI*PHI),crest=left+span/PHI;
+  const rise=mode==='expressive'?49:31;
+  const top=-14-rise*.42+shift;
+  // Open asymmetric curl; all control points remain above letter tops.
+  const d=`M ${fmt(left)} ${fmt(32+shift)}
+C ${fmt(left-12)} ${fmt(-8+shift)} ${fmt(shoulder-span*.11)} ${fmt(top)} ${fmt(shoulder)} ${fmt(top-7)}
+C ${fmt(crest-span*.09)} ${fmt(top-12)} ${fmt(right+span*.03)} ${fmt(top+8)} ${fmt(right)} ${fmt(21+shift)}`;
+  return {kind:'stroke',role:'secondary',width:mode==='expressive'?5.3:3.6,d,
+   contact:{onset:.08,release:.18},wordGesture:true,wordIndex:i,
+   generator:'golden-trajectory-v1'};
+ });
 }
