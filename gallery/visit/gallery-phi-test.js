@@ -1,4 +1,4 @@
-import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs';
+import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=external-lift-20261026';
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
@@ -1033,7 +1033,7 @@ function constructPhiGallery(layout,studies){
  block(2.9,.2,2.9,l.x,elevation-.09,l.z,galleryFinish.floor);
  block(2.9,.18,2.9,l.x,elevation+ROOM_HEIGHT+.08,l.z,ceilingFinish);
  for(const sx of [-1,1])for(const sz of [-1,1])block(.12,ROOM_HEIGHT,.12,l.x+sx*1.38,elevation+ROOM_HEIGHT/2,l.z+sz*1.38,join);
- block(2.7,.16,2.3,(l.x+l.portal.at)/2,elevation-.08,l.z,galleryFinish.floor);
+ block(Math.max(2.4,Math.abs((l.portal?.at??l.x+2.25)-l.x)+.5),.16,2.3,(l.x+(l.portal?.at??l.x+2.25))/2,elevation-.08,l.z,galleryFinish.floor);
  const liftLight=new THREE.PointLight(0xfff4d8,8,12,2);liftLight.position.set(l.x,elevation+3,l.z);scene.add(liftLight);
  liftCabinPosition=new THREE.Vector3(l.x,elevation,l.z);
  liftPosition=liftCabinPosition.clone();
