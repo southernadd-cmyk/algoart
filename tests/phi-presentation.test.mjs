@@ -34,3 +34,41 @@ test('real archive floors retain standing visitors, seating and a bounded popula
   }
  }
 });
+
+// Exercise the same planner, painter state and obstacle coordinates used in the scene.
+import {phiLiftIndicatorState,paintPhiLiftIndicator} from '../gallery/visit/phi-lift-indicator.mjs';
+import {planPhiSquare,planSquareTags,clearOfPhiSquare} from '../gallery/visit/phi-square-graffiti.mjs';
+test('lift indicator follows physical floors in both directions and retains archive dates',()=>{
+ const dates=['__phi_reception__','2026-10-05','2026-10-06','2026-10-07'];
+ const up=[0,6.2,12.4,18.6].map(height=>phiLiftIndicatorState({height,dates,currentFloor:0,targetFloor:3,phase:'moving'}));
+ assert.deepEqual(up.map(s=>s.floor),[0,1,2,3]);assert.match(up[1].primary,/1 · 5 Oct/);assert.match(up[1].secondary,/Ascending to 7 Oct · Floor 3/);
+ const down=[18.6,12.4,6.2,0].map(height=>phiLiftIndicatorState({height,dates,currentFloor:3,targetFloor:0,phase:'moving'}));
+ assert.deepEqual(down.map(s=>s.floor),[3,2,1,0]);assert.match(down[2].secondary,/Descending to Reception/);
+ const idle=phiLiftIndicatorState({height:18.6,dates,currentFloor:3});assert.equal(idle.primary,'3 · 7 Oct');assert.equal(idle.secondary,'Archive lift');
+ const drawing=[],context={clearRect(){},fillRect(){},fillText(text){drawing.push({text,font:this.font});}},display={canvas:{width:768,height:192},context,texture:{needsUpdate:false}};
+ assert.equal(paintPhiLiftIndicator(display,up[1]),true);assert.ok(drawing.every(d=>d.font.includes('AlgoArt Marker')));assert.equal(display.texture.needsUpdate,true);
+ assert.equal(paintPhiLiftIndicator(display,up[1]),false);assert.equal(paintPhiLiftIndicator(display,up[2]),true);
+});
+test('square writing preserves lowercase phi and uses the latest broad-nib engine on every surface',()=>{
+ const objects=planPhiSquare(),marks=planSquareTags(objects);
+ assert.equal(objects.filter(o=>o.kind==='wall').length,4);assert.equal(objects.filter(o=>o.kind==='monument').length,3);assert.equal(marks.length,72);
+ assert.deepEqual(planSquareTags(objects),marks);assert.deepEqual(new Set(marks.map(m=>m.phrase)),new Set(['PHI','φ']));
+ for(const m of marks){
+  assert.equal(m.tag.version,'az-nine-v3-broadnib-20261026');assert.equal(m.tag.hand,'F');
+  assert.equal(m.text,m.phrase);assert.equal(m.tag.plan.word,m.phrase);
+  if(m.phrase==='φ'){
+   assert.equal(m.tag.plan.letters[0].ch,'φ');assert.match(m.tag.plan.letters[0].shapes[1].d,/37 131$/,'Lowercase phi lost its descender');
+  }
+  const object=objects.find(o=>m.face.id.startsWith(o.id+':'));
+  const hh=(Math.abs(m.height*Math.cos(m.rotation))+Math.abs(m.width*Math.sin(m.rotation)))/2;
+  assert.ok(m.position.y-hh>.05&&m.position.y+hh<object.height,'Paint leaves its wall');
+ }
+});
+test('square objects leave the entrance, frontage benches and central route clear with rotated collisions',()=>{
+ const objects=planPhiSquare();
+ for(let z=-2;z<=25;z+=.25)for(const x of [-2,0,2])assert.ok(clearOfPhiSquare(objects,x,z),'Main route obstructed at '+x+','+z);
+ for(const x of [-5.2,5.2])assert.ok(clearOfPhiSquare(objects,x,3.1,1.4),'Frontage seating obstructed');
+ for(const p of objects){assert.equal(clearOfPhiSquare([p],p.x,p.z),false);assert.ok(Math.abs(p.x)<30&&p.z<41);}
+ const diagonal={x:0,z:0,yaw:Math.PI/4,width:6,depth:.34};
+ assert.equal(clearOfPhiSquare([diagonal],1,-1),false);assert.equal(clearOfPhiSquare([diagonal],1,1),true);
+});

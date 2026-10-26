@@ -1,3 +1,5 @@
+import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=tagged-square-20261026';
+import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs';
 import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,renderPhiFurniture,addPhiFrontage} from './phi-reception-decor.mjs?v=minimal-gothic-frontage-20261026';
@@ -65,8 +67,11 @@ let liftArrivalOpening=false;
 let liftPickerConsumed=false;
 let phiMovingCabin=null;
 let phiLiftCabin=null;
+let phiLiftIndicator=null;
+let phiLiftTarget=null;
 let phiReceptionProps=[];
 let phiFurnishingObstacles=[];
+let phiSquareObstacles=[];
 let phiRideState=null;
 let phiLiftPanelPosition=null;
 let liftCabinPosition=null;
@@ -147,6 +152,10 @@ if(GALLERY_DEBUG){const debugWriting=(manager,inside=false)=>({
   renderer.setAnimationLoop(null);renderer.render(scene,view);
  }
 });window.__galleryGraffiti=debugWriting(towerGraffiti);window.__galleryInteriorGraffiti=debugWriting(interiorGraffiti,true);}
+const phiSquare=createPhiSquare(THREE,{brick:galleryFinish.exteriorBrick,concrete:galleryFinish.floor,lowPower:galleryFinish.lowPower});
+if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnostics(),marks:()=>phiSquare.marks(),
+ preview(){const frame=phiSquare.viewpoint();if(!frame)return;const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(frame.position);view.lookAt(frame.target);renderer.setAnimationLoop(null);renderer.render(scene,view);},
+ resume(){renderer.setAnimationLoop(tick);}};
 const floor=galleryFinish.floor;
 const timber=galleryFinish.timber;
 const stone=galleryFinish.stone;
@@ -845,6 +854,7 @@ function clearPhiMovingCabin(){
 async function travelLift(date,index){
  if(liftTravelling)return;
  liftTravelling=true;
+ phiLiftTarget=index;
  const xrRide=renderer.xr.isPresenting;
  $('lift').hidden=true;
  liftPickerConsumed=true;
@@ -1091,6 +1101,7 @@ function transformPhiActiveFloor(before){
   object.rotation.y+=world.theta;
  }
  for(const p of sculpturePlacements)rotate(p);
+ for(const p of phiSquareObstacles){rotate(p);p.yaw+=world.theta;}
  for(const a of artExhibits){
   rotate(a.position);
   a.normal?.applyAxisAngle(new THREE.Vector3(0,1,0),world.theta);
@@ -1411,7 +1422,8 @@ function constructPhiGallery(layout,studies){
    window.__phiRoofMonuments=monuments.length;
   }
   deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
-  window.__phiPlaza={centre:plaza.centre,benchCount:8,monumentCount:2,visitorSlots:2};
+  const square=phiSquare.addTo(scene,{doorway,outward,elevation});phiSquareObstacles=square.obstacles;
+  window.__phiPlaza={centre:plaza.centre,benchCount:8,monumentCount:2,visitorSlots:2,tagWalls:square.walls,squareMonumentCount:square.monuments,tags:square.tags};
   // Exterior marker-font sign, mounted above the public doorway on the
   // reception facade and transformed with the rest of the ground floor.
   if(entrance){
@@ -1525,10 +1537,11 @@ function constructPhiGallery(layout,studies){
  controlBoard.rotation.y=Math.PI; // Face inward from the +Z cabin wall.
  controlBoard.name='phi-lift-wall-calendar';cabinObject(controlBoard);
   // Brushed cabin door and illuminated floor indicator.
- const indicator=document.createElement('canvas');indicator.width=512;indicator.height=128;
- const ink=indicator.getContext('2d');ink.fillStyle='#202d2a';ink.fillRect(0,0,512,128);
- ink.fillStyle='#f0e8c9';ink.font='bold 57px Georgia';ink.fillText(currentFloor===0?'G · RECEPTION':currentFloor+' · '+shortDate(exhibitDate).toUpperCase(),28,82,456);
+ const indicator=document.createElement('canvas');indicator.width=768;indicator.height=192;
+ const ink=indicator.getContext('2d');
  const tex=new THREE.CanvasTexture(indicator);tex.colorSpace=THREE.SRGBColorSpace;
+ phiLiftIndicator={canvas:indicator,context:ink,texture:tex,last:null};
+ paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({height:elevation,dates:archiveDates,currentFloor}));
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
  sign.position.set(liftFace-.16,elevation+2.78,l.z);sign.rotation.y=-Math.PI/2;cabinObject(sign);
  const landingSign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),sign.material);
@@ -1982,7 +1995,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   exhibitLightTargets.length=0;
   resetInspection();
   liftPosition=null;liftDoorThreshold=null;phiLiftPanelPosition=null;liftWasNear=false;liftDoors=[];
-  phiReceptionProps=[];phiFurnishingObstacles=[];
+  phiReceptionProps=[];phiFurnishingObstacles=[];phiSquareObstacles=[];phiLiftIndicator=null;
   liftPickerConsumed=false;
   const previous=new Set(scene.children);
   arrival=null;entranceDoor=null;
@@ -2467,8 +2480,8 @@ function updateMovement(dt) {
       dx=(Math.cos(yaw)*side-Math.sin(yaw)*ahead)*dt*speed;
       dz=(-Math.sin(yaw)*side-Math.cos(yaw)*ahead)*dt*speed;
     }
-    if (((plan.phi?(plan.phi.canWalk(rig.position.x+dx,rig.position.z)||onPhiPlaza(rig.position.x+dx,rig.position.z)):canStand(plan,rig.position.x+dx,rig.position.z))||(plan.phi?false:onArrivalPath(rig.position.x+dx,rig.position.z))) && !phiDoorBlocked(rig.position.x+dx,rig.position.z) && clearOfSculptures(phiFurnishingObstacles,rig.position.x+dx,rig.position.z) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
-    if (((plan.phi?(plan.phi.canWalk(rig.position.x,rig.position.z+dz)||onPhiPlaza(rig.position.x,rig.position.z+dz)):canStand(plan,rig.position.x,rig.position.z+dz))||(plan.phi?false:onArrivalPath(rig.position.x,rig.position.z+dz))) && !phiDoorBlocked(rig.position.x,rig.position.z+dz) && clearOfSculptures(phiFurnishingObstacles,rig.position.x,rig.position.z+dz) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
+    if (((plan.phi?(plan.phi.canWalk(rig.position.x+dx,rig.position.z)||onPhiPlaza(rig.position.x+dx,rig.position.z)):canStand(plan,rig.position.x+dx,rig.position.z))||(plan.phi?false:onArrivalPath(rig.position.x+dx,rig.position.z))) && clearOfPhiSquare(phiSquareObstacles,rig.position.x+dx,rig.position.z) && !phiDoorBlocked(rig.position.x+dx,rig.position.z) && clearOfSculptures(phiFurnishingObstacles,rig.position.x+dx,rig.position.z) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
+    if (((plan.phi?(plan.phi.canWalk(rig.position.x,rig.position.z+dz)||onPhiPlaza(rig.position.x,rig.position.z+dz)):canStand(plan,rig.position.x,rig.position.z+dz))||(plan.phi?false:onArrivalPath(rig.position.x,rig.position.z+dz))) && clearOfPhiSquare(phiSquareObstacles,rig.position.x,rig.position.z+dz) && !phiDoorBlocked(rig.position.x,rig.position.z+dz) && clearOfSculptures(phiFurnishingObstacles,rig.position.x,rig.position.z+dz) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
   }
   const part=plan.phi?((plan.phi.canWalk(rig.position.x,rig.position.z)||onPhiPlaza(rig.position.x,rig.position.z))?{y:currentFloor*FLOOR_SPACING,zone:'room'}:null):footprintAt(plan,rig.position.x,rig.position.z);
   if(part)rig.position.y=part.y;
@@ -2537,13 +2550,19 @@ let phiFrameSerial=0;
 function tick() {
   if (!renderer) return;
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
-  if((phiFrameSerial++&1)===0)towerGraffiti.paintNext();
-  else interiorGraffiti.paintNext();
+  const paintSlot=phiFrameSerial++%3;
+  if(paintSlot===0)towerGraffiti.paintNext();
+  else if(paintSlot===1)interiorGraffiti.paintNext();
+  else phiSquare.paintNext();
   // Finish lift motion before building expensive portrait geometry. In XR
   // this same renderer loop still owns all deferred artwork construction.
   if(!liftTravelling&&!liftArrivalOpening&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
   animateLiftDoors(elapsed);
   updatePhiCabinRide(dt);
+  if(phiLiftIndicator)paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({
+    height:rig.position.y,spacing:FLOOR_SPACING,dates:archiveDates,currentFloor,
+    targetFloor:phiLiftTarget,phase:phiRideState||window.__phiLiftRide?.status==='arrived'?'moving':liftTravelling?'preparing':'idle'
+  }));
   entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
@@ -2554,7 +2573,8 @@ function tick() {
     calendarCount:phiLiftCabin?.children.filter(o=>o.name==='phi-lift-wall-calendar').length,
     doorCount:liftDoors.length,threeRevision:THREE.REVISION,
     entranceModelLoaded:!!entranceDoor?.root.userData.modelLoaded,
-    propsLoaded:phiReceptionProps.filter(o=>o.userData.modelLoaded).length
+    propsLoaded:phiReceptionProps.filter(o=>o.userData.modelLoaded).length,
+    indicator:phiLiftIndicator?.last,indicatorFont:phiLiftIndicator?.context.font
   };
   lastFocusCheck+=dt;mapElapsed+=dt;
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}

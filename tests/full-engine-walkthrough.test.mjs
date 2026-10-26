@@ -21,21 +21,33 @@ try{
  assert.equal(phi.unplaced,0,'Unplaced artworks');
  const plaza=await page.evaluate(()=>window.__phiPlaza);
  assert.equal(plaza?.monumentCount,2);
- assert.equal(plaza.benchCount,8);
+ assert.equal(plaza.benchCount,8);assert.equal(plaza.tagWalls,4);assert.equal(plaza.squareMonumentCount,3);assert.equal(plaza.tags,72);
+ assert.ok(await page.locator('#welcomeTitle').evaluate(el=>parseFloat(getComputedStyle(el).fontSize)<=50),'Welcome heading too large');
  const tower=await page.evaluate(()=>window.__phiTowerExterior);
  assert.ok(tower?.otherFloors>0&&tower.wallMeshes>tower.otherFloors,'Missing exterior tower');
  assert.ok(await page.evaluate(()=>window.__phiReception?.desk&&window.__phiReception?.information),'Missing ground-floor reception');
  assert.equal(await page.evaluate(()=>window.__phiReceptionCredits?.count),3,'Missing framed credit collection');
  await page.waitForFunction(()=>window.__phiLiftState?.entranceModelLoaded&&window.__phiLiftState?.propsLoaded===3,null,{timeout:30000});
  assert.equal(await page.evaluate(()=>window.__galleryStartupError),'');
+ await page.waitForFunction(()=>window.__phiSquareGraffiti?.diagnostics().painted===72,null,{timeout:90000});
+ const writing=await page.evaluate(()=>({diagnostics:window.__phiSquareGraffiti.diagnostics(),words:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.text))]}));
+ assert.equal(writing.diagnostics.pending,0);assert.deepEqual(writing.diagnostics.errors,[]);assert.match(writing.diagnostics.revision,/az-nine-v3-broadnib/);assert.deepEqual(new Set(writing.words),new Set(['PHI','φ']));
  await page.screenshot({path:'phi-tower-results/full-welcome.png'});
  await page.locator('#enter').focus();await page.keyboard.press('Enter');
  await page.screenshot({path:'phi-tower-results/full-entrance.png'});
+ await page.evaluate(()=>window.__phiSquareGraffiti.preview());
+ await page.screenshot({path:'phi-tower-results/tagged-square.png'});
+ await page.evaluate(()=>window.__phiSquareGraffiti.resume());
  // Historical floors that previously rejected one or two portrait sculptures.
  for(const date of ['2026-10-14','2026-10-18','2026-10-26']){
   await page.locator('#openLift').click({noWaitAfter:true});
   await page.locator('#lift').waitFor({state:'visible'});
   const destination=page.locator('#liftDays button').filter({hasText:new RegExp('^'+Number(date.slice(-2))+'$')});
+  if(date==='2026-10-14')await page.evaluate(()=>{
+   window.__liftDisplaySamples=[];
+   const sample=()=>{const s=window.__phiLiftState?.indicator;if(s?.phase==='moving'&&!window.__liftDisplaySamples.some(v=>v.floor===s.floor))window.__liftDisplaySamples.push(s);if(window.__phiLiftRide?.status!=='ready')requestAnimationFrame(sample);};
+   requestAnimationFrame(sample);
+  });
   await destination.click({noWaitAfter:true});
   await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',null,{timeout:90000});
   const before=await page.evaluate(()=>window.__phiLiftState);
@@ -54,6 +66,12 @@ try{
   assert.equal(state.exhibition.unplaced,0);
   assert.ok(await page.evaluate(()=>window.__phiFurnishings?.standing>=1&&window.__phiFurnishings?.benches>=1),'Missing gallery visitors or seating');assert.ok(state.lift.doorClosure<.025,'Arrival doors did not open');
   assert.equal(state.lift.calendarCount,1);assert.equal(state.lift.doorCount,2);
+  assert.equal(state.lift.indicator.floor,state.lift.floor);assert.match(state.lift.indicator.primary,new RegExp('^'+state.lift.floor+' · '));assert.match(state.lift.indicatorFont,/AlgoArt Marker/);
+  if(date==='2026-10-14'){
+   const samples=await page.evaluate(()=>window.__liftDisplaySamples);
+   assert.ok(samples.length>=3,'Lift display did not change through passing floors');assert.ok(samples.every(s=>s.phase==='moving'&&/Ascending to/.test(s.secondary)));
+   await writeFile('phi-tower-results/lift-display-samples.json',JSON.stringify(samples,null,2));
+  }
   assert.equal(await page.locator('#lift').isVisible(),false,'Calendar reopened on arrival');
   assert.equal(await page.locator('#liftAnimation').isVisible(),false,'Old cutscene appeared');
   await page.screenshot({path:'phi-tower-results/lift-'+date+'.png'});
@@ -90,13 +108,15 @@ try{
   await page.locator('#lift').waitFor({state:'visible'});await page.locator('#liftReception').click({noWaitAfter:true});
  await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',null,{timeout:90000});
  assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),'__phi_reception__');
+ assert.equal(await page.evaluate(()=>window.__phiLiftState.indicator.primary),'G · Reception');
+ assert.equal(await page.evaluate(()=>window.__phiSquareGraffiti.diagnostics().painted),72,'Square atlas did not survive a reception return');
  assert.equal(await page.locator('#error').isVisible(),false);
  await page.setViewportSize({width:390,height:844});
  await page.screenshot({path:'phi-tower-results/full-mobile.png'});
  assert.equal(threeImports.size,1,'Multiple Three.js module URLs');
  assert.ok(!warnings.some(s=>/Multiple instances of Three\.js/.test(s)),'Duplicate Three.js warning');
  assert.equal(errors.length,0,errors.join('; '));
- console.log('Full gallery: historical rides, free look, moving cabin, doors, failed-load recovery, reception and one Three.js instance passed');
+ console.log('Full gallery: 72 latest-engine square tags, smaller welcome, live marker lift indicator, historical rides, free look, doors, failed-load recovery and one Three.js instance passed');
 }catch(error){
  if(page){
   console.error('Gallery state on failure',await page.evaluate(()=>({ride:window.__phiLiftRide,lift:window.__phiLiftState,error:window.__phiLiftError,events:window.__galleryDebugEvents})));

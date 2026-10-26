@@ -5,7 +5,7 @@
 .welcome{background:linear-gradient(100deg,rgba(241,237,225,.98),rgba(241,237,225,.9) 35%,rgba(241,237,225,.06) 78%)}
 .welcome-content{width:min(620px,100%)}
 .welcome .eyebrow{font:italic 16px Georgia,serif;color:#4f604d;margin-bottom:22px;letter-spacing:0}
-.welcome h1{font-size:clamp(42px,4.7vw,72px);line-height:1.08;letter-spacing:-.035em;margin-bottom:26px}
+.welcome h1{font-size:clamp(32px,3.4vw,50px);line-height:1.08;letter-spacing:-.035em;margin-bottom:26px}
 .welcome p{font-size:15px;line-height:1.65;max-width:430px}
 .welcome .start-floor{font-size:14px!important;margin-bottom:24px!important}
 .welcome .enter{background:#34473c;border-color:#34473c;padding:15px 25px;margin-top:24px}
@@ -31,7 +31,7 @@ body:has(.welcome:not([hidden])) .plan-view,body:has(.welcome:not([hidden])) .hi
 @media(max-width:600px){
  .welcome{background:linear-gradient(100deg,#f1ede1fa,#f1ede1eb)}
  .welcome-content{padding:22px}
- .welcome h1{font-size:clamp(38px,10vw,55px);margin-bottom:20px}
+ .welcome h1{font-size:clamp(30px,7.5vw,40px);margin-bottom:20px}
  .welcome .eyebrow{font-size:14px;margin-bottom:18px}
  .welcome p{font-size:14px;line-height:1.55}
  .lift-panel{padding:20px;width:min(410px,calc(100vw - 24px))}
