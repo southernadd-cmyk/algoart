@@ -63,7 +63,7 @@ test('square writing mixes eight lettering forms, independent hands and lowercas
   for(let i=1;i<group.length;i++)assert.ok(Math.abs(group[i].phi.angle-group[i-1].phi.angle-GOLDEN_ANGLE)<1e-12);
  }
  for(const m of marks){
-  assert.equal(m.tag.version,7);assert.equal(m.text,m.phrase);assert.equal(m.tag.text,m.phrase);
+  assert.equal(m.tag.version,7);assert.equal(m.text,m.phrase);assert.equal(m.tag.text,m.phrase==='φ'?'φ':m.phrase.toUpperCase());
   if(m.phrase==='φ')assert.equal(m.tag.construction.letters[0].character,'φ');
   const object=objects.find(o=>m.face.id.startsWith(o.id+':'));
   const hh=(Math.abs(m.height*Math.cos(m.rotation))+Math.abs(m.width*Math.sin(m.rotation)))/2;
