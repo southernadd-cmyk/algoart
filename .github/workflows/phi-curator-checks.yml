@@ -5,7 +5,7 @@ on:
   pull_request:
     paths:
       - 'gallery/visit/phi-*.mjs'
-      - 'tests/phi-curator.test.mjs'
+      - 'tests/phi-curator*.test.mjs'
       - '.github/workflows/phi-curator-checks.yml'
 jobs:
   curator:
@@ -16,3 +16,13 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/phi-curator.test.mjs
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-http.log 2>&1 &
+      - run: node tests/phi-curator-browser.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-curator-comparison
+          path: phi-curator-results/
+          if-no-files-found: warn
