@@ -70,9 +70,45 @@ export function mountPhiThree(canvas){
   renderer.render(scene,camera);
  }
  canvas.style.touchAction='none';
- canvas.addEventListener('pointerdown',e=>{if(e.cancelable)e.preventDefault();drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.focus();});
- canvas.addEventListener('pointermove',e=>{if(!drag)return;if(e.cancelable)e.preventDefault();yaw+=(e.clientX-drag.x)*.009;pitch=Math.max(mode==='walk'?-.8:.17,Math.min(mode==='walk'?.8:1.46,pitch+(e.clientY-drag.y)*.006));drag={x:e.clientX,y:e.clientY};render()});
- canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
+ let activePointer=null,touchGesture=null;
+ const rotate=(dx,dy)=>{yaw+=dx*.009;pitch=Math.max(mode==='walk'?-.8:.17,Math.min(mode==='walk'?.8:1.46,pitch+dy*.006));render();};
+ canvas.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='touch')return;
+  if(e.cancelable)e.preventDefault();
+  activePointer=e.pointerId;drag={x:e.clientX,y:e.clientY};
+  canvas.setPointerCapture(e.pointerId);canvas.focus();
+ });
+ canvas.addEventListener('pointermove',e=>{
+  if(e.pointerType==='touch'||!drag||activePointer!==e.pointerId)return;
+  rotate(e.clientX-drag.x,e.clientY-drag.y);
+  drag={x:e.clientX,y:e.clientY};
+ });
+ const endPointer=e=>{if(activePointer===e.pointerId){drag=null;activePointer=null;}};
+ canvas.addEventListener('pointerup',endPointer);
+ canvas.addEventListener('pointercancel',endPointer);
+ // Explicit touch handling also covers mobile WebViews that cancel pointer drags.
+ canvas.addEventListener('touchstart',e=>{
+  if(e.cancelable)e.preventDefault();
+  const touches=[...e.touches];
+  if(touches.length===1)touchGesture={x:touches[0].clientX,y:touches[0].clientY,pinch:null};
+  else if(touches.length>=2)touchGesture={x:(touches[0].clientX+touches[1].clientX)/2,y:(touches[0].clientY+touches[1].clientY)/2,
+    pinch:Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY)};
+ },{passive:false});
+ canvas.addEventListener('touchmove',e=>{
+  if(e.cancelable)e.preventDefault();if(!touchGesture)return;
+  const touches=[...e.touches];if(!touches.length)return;
+  const x=touches.length===1?touches[0].clientX:(touches[0].clientX+touches[1].clientX)/2;
+  const y=touches.length===1?touches[0].clientY:(touches[0].clientY+touches[1].clientY)/2;
+  if(touches.length===1&&touchGesture.pinch===null)rotate(x-touchGesture.x,y-touchGesture.y);
+  if(touches.length>=2){
+   const pinch=Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY);
+   if(touchGesture.pinch){if(mode!=='walk')distance=Math.max(15,Math.min(200,distance*touchGesture.pinch/pinch));render();}
+   touchGesture.pinch=pinch;
+  }
+  touchGesture.x=x;touchGesture.y=y;
+ },{passive:false});
+ canvas.addEventListener('touchend',e=>{touchGesture=null;});
+ canvas.addEventListener('touchcancel',()=>{touchGesture=null;});
  canvas.addEventListener('wheel',e=>{if(mode==='walk')return;e.preventDefault();distance=Math.max(15,Math.min(200,distance*Math.exp(e.deltaY*.001)));render()},{passive:false});
  canvas.tabIndex=0;
  canvas.addEventListener('keydown',e=>{if(mode==='walk'&&['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase())){keys.add(e.key.toLowerCase());e.preventDefault();}});
