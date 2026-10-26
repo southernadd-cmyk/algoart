@@ -7,13 +7,14 @@ const browser=await chromium.launch({headless:true});
 const galleryURL=process.env.PHI_GALLERY_URL||'http://127.0.0.1:4173/gallery/visit/?debug';
 const bundled=!galleryURL.includes('full-engine.html');
 const requests=[];
+const requestMetadata=[];
 let page;
 try{
  page=await browser.newPage({viewport:{width:1365,height:850},deviceScaleFactor:.5});
  const errors=[],warnings=[],threeImports=new Set();
  page.on('pageerror',error=>errors.push(error.message));
  page.on('console',m=>{if(m.type()==='warning')warnings.push(m.text());});
- page.on('request',request=>{requests.push(request.url());if(/\/build\/three\.module\.js(?:\?|$)/.test(request.url()))threeImports.add(request.url());});
+ page.on('request',request=>{requests.push(request.url());requestMetadata.push({url:request.url(),type:request.resourceType()});if(/\/build\/three\.module\.js(?:\?|$)/.test(request.url()))threeImports.add(request.url());});
  await page.goto(galleryURL,{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled || !document.querySelector('#error')?.hidden || window.__galleryStartupError,null,{timeout:90000});
  assert.equal(await page.locator('#error').isVisible(),false,'Gallery startup error visible');
@@ -136,7 +137,16 @@ try{
  await page.screenshot({path:'phi-tower-results/full-mobile.png'});
  assert.equal(threeImports.size,bundled?0:1,'Unexpected Three.js module requests');
  assert.ok(!requests.some(u=>/tower-geometry\.bin/.test(u)),'Unused legacy geometry downloaded');
- if(bundled)assert.ok(!requests.some(u=>/cdn\.jsdelivr|test\/virtual-gallery/.test(u)),'Public runtime depends on CDN scripts or test assets');
+ if(bundled){
+  // Artwork images may legitimately use a jsDelivr fallback when a dated JPEG
+  // has not been mirrored. Do not confuse them with external runtime scripts.
+  const pageOrigin=new URL(galleryURL).origin;
+  const externalDependencies=requestMetadata.filter(({url,type})=>
+   /\/test\/virtual-gallery\//.test(url) ||
+   (['script','stylesheet','font'].includes(type) && new URL(url).origin!==pageOrigin)
+  );
+  assert.deepEqual(externalDependencies,[],'Public runtime uses external scripts, styles, fonts or test assets');
+ }
  assert.ok(!warnings.some(s=>/Multiple instances of Three\.js/.test(s)),'Duplicate Three.js warning');
  await writeFile('phi-tower-results/return-metrics.json',JSON.stringify(await page.evaluate(()=>window.__phiRenderStats),null,2));
  assert.equal(errors.length,0,errors.join('; '));
