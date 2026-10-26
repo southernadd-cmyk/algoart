@@ -1064,6 +1064,23 @@ function constructPhiGallery(layout,studies){
  for(const sx of [-1,1])for(const sz of [-1,1])block(.12,ROOM_HEIGHT,.12,l.x+sx*1.38,elevation+ROOM_HEIGHT/2,l.z+sz*1.38,join);
  block(Math.max(2.4,Math.abs((l.portal?.at??l.x+2.25)-l.x)+.5),.16,2.3,(l.x+(l.portal?.at??l.x+2.25))/2,elevation-.08,l.z,galleryFinish.floor);
  const liftLight=new THREE.PointLight(0xfff4d8,8,12,2);liftLight.position.set(l.x,elevation+3,l.z);scene.add(liftLight);
+ if(currentFloor===0){
+  // Reuse the production square, furnishings, monuments and seated visitors.
+  // Its approach is westward from the new external vestibule entrance.
+  const outward={x:-1,z:0},transverse={x:0,z:1};
+  const doorway={x:l.x-1.45,z:l.z};
+  const plaza={centre:{x:doorway.x-19,z:doorway.z},outward,transverse,
+    halfWidth:23,halfDepth:19,level:elevation};
+  const approach={doorway,outward,pathLength:38,halfWidth:3.25};
+  const exterior=createExteriorLandscape(THREE,scene,layout,studies,{
+    lowPower:galleryFinish.lowPower,protectedLayouts:[],approach,plaza});
+  addPermanentPlazaSculptures(scene,plaza);
+  deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
+  window.__phiPlaza={centre:plaza.centre,benchCount:6,monumentCount:2,visitorSlots:2};
+  // Permit visitors to exit the lobby onto the open paved square.
+  phi.plaza=plaza;
+  phi.arrivalDoor=doorway;
+ }
  liftCabinPosition=new THREE.Vector3(l.x,elevation,l.z);
  liftPosition=liftCabinPosition.clone();
  liftDoorThreshold=liftCabinPosition.clone();
@@ -1872,6 +1889,16 @@ function drawMap(){
   }
 }
 
+function onPhiPlaza(x,z){
+ const phi=plan?.phi,p=phi?.plaza;if(!p||currentFloor!==0)return false;
+ const dx=x-p.centre.x,dz=z-p.centre.z;
+ const along=dx*p.outward.x+dz*p.outward.z;
+ const across=dx*p.transverse.x+dz*p.transverse.z;
+ if(Math.abs(along)>p.halfDepth-.4||Math.abs(across)>p.halfWidth-.4)return false;
+ // Entrance threshold connects the square to the enclosed lift foyer.
+ const door=phi.arrivalDoor;
+ return x<door.x+.5 || phi.canWalk(x,z);
+}
 function updateMovement(dt) {
   if (!plan || !welcome.hidden || !$('lift').hidden || liftTravelling) return;
   if(!renderer.xr.isPresenting){
@@ -1923,10 +1950,10 @@ function updateMovement(dt) {
       dx=(Math.cos(yaw)*side-Math.sin(yaw)*ahead)*dt*speed;
       dz=(-Math.sin(yaw)*side-Math.cos(yaw)*ahead)*dt*speed;
     }
-    if (((plan.phi?plan.phi.canWalk(rig.position.x+dx,rig.position.z):canStand(plan,rig.position.x+dx,rig.position.z))||(plan.phi?false:onArrivalPath(rig.position.x+dx,rig.position.z))) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
-    if (((plan.phi?plan.phi.canWalk(rig.position.x,rig.position.z+dz):canStand(plan,rig.position.x,rig.position.z+dz))||(plan.phi?false:onArrivalPath(rig.position.x,rig.position.z+dz))) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
+    if (((plan.phi?(plan.phi.canWalk(rig.position.x+dx,rig.position.z)||onPhiPlaza(rig.position.x+dx,rig.position.z)):canStand(plan,rig.position.x+dx,rig.position.z))||(plan.phi?false:onArrivalPath(rig.position.x+dx,rig.position.z))) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
+    if (((plan.phi?(plan.phi.canWalk(rig.position.x,rig.position.z+dz)||onPhiPlaza(rig.position.x,rig.position.z+dz)):canStand(plan,rig.position.x,rig.position.z+dz))||(plan.phi?false:onArrivalPath(rig.position.x,rig.position.z+dz))) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
   }
-  const part=plan.phi?(plan.phi.canWalk(rig.position.x,rig.position.z)?{y:currentFloor*FLOOR_SPACING,zone:'room'}:null):footprintAt(plan,rig.position.x,rig.position.z);
+  const part=plan.phi?((plan.phi.canWalk(rig.position.x,rig.position.z)||onPhiPlaza(rig.position.x,rig.position.z))?{y:currentFloor*FLOOR_SPACING,zone:'room'}:null):footprintAt(plan,rig.position.x,rig.position.z);
   if(part)rig.position.y=part.y;
   else if(onArrivalPath(rig.position.x,rig.position.z))rig.position.y=arrival.baseY;
   const atLift=Boolean(nearLift());
