@@ -42,6 +42,7 @@ jobs:
           node-version: '22'
       - name: Install gallery test dependencies
         run: npm install --no-save --package-lock=false
+      # Run the focused regression before the expensive gallery tests.
       - name: Lift sculpture staging and cancellation regression
         run: node --test tests/phi-sculpture-stage.test.mjs
       - name: Gallery public launch regression
