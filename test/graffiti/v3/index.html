@@ -8,10 +8,18 @@ import {FAMILIES,composeWord} from '../v2/v2-library.mjs';
 import {wordPlan,showGesture} from '../v2/word-flow.mjs';
 import {wordSvg as v2Word} from '../v2/v2-renderer.mjs';
 import {paintStrokes,paintFilledRegions,paintWallPreview} from './material-engine.mjs';
-import {physicalStroke,styleMovementPoint,styleWidthMultiplier} from './stroke-plan.mjs?v=style-motion-03';
-import {composeStyleWord} from './style-grammar.mjs?v=family-composition-04';
+import {physicalStroke,styleMovementPoint,styleWidthMultiplier} from './stroke-plan.mjs?v=style-motion-04';
+import {composeStyleWord} from './style-grammar.mjs?v=family-composition-05';
 const $=id=>document.getElementById(id);
 const STYLE_INKS={A:'#252c29',B:'#252823',C:'#30302b',D:'#282b2a',E:'#242424',F:'#873f38',G:'#283e45',H:'#833d35',I:'#285767'};
+function broadNibSubtype(st,points){
+ if(st.subtype)return st.subtype;
+ if(st.kind==='hairline')return 'crossbar';
+ if(st.role==='ornament')return 'flourish';
+ const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+ const w=Math.max(...xs)-Math.min(...xs),h=Math.max(...ys)-Math.min(...ys);
+ return w>h*1.7&&w>12?'crossbar':h>w*1.35?'downstroke':'curve';
+}
 function gestureRole(st,index){return st.role==='ornament'?'ornament':st.kind==='hairline'?'secondary':'primary';}
 for(const f of FAMILIES){const o=document.createElement('option');o.value=f.id;o.textContent=f.id+' · '+f.name;$('hand').append(o);}
 function draw(){
@@ -48,15 +56,15 @@ function draw(){
     const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',st.d);temp.append(p);
     const q=new DOMMatrix().translate(item.x,item.y).translate(38,54).rotate(item.rotation).translate(-38,-54).multiply(new DOMMatrix([item.scale,0,f.italic,1,0,0]));
     // Normalize sampling using a dense polyline; actual outline geometry stays V2.
-    const len=p.getTotalLength(),samples=[];
-    for(let i=0;i<=Math.ceil(len/3);i++){const a=p.getPointAtLength(len*i/Math.ceil(len/3)),motion=styleMovementPoint(a.x,a.y,{letterIndex:item.index,strokeIndex,seed:$('seed').value,family:f.id,mode:f.id==='G'?'none':$('orbit').value,progress:i/Math.ceil(len/3)}),b=new DOMPoint(motion.x,motion.y).matrixTransform(q);samples.push((i?'L':'M')+b.x.toFixed(2)+' '+b.y.toFixed(2));}
-    transformed.push({d:samples.join(' '),kind:st.kind,role:gestureRole(st,strokeIndex),strokeIndex,width:st.kind==='hairline'?Math.max(1.5,f.weight*.22):f.weight*(st.kind==='heavy'?1.32:1)});
+    const len=p.getTotalLength(),samples=[],sampledPoints=[];
+    for(let i=0;i<=Math.ceil(len/3);i++){const a=p.getPointAtLength(len*i/Math.ceil(len/3)),motion=styleMovementPoint(a.x,a.y,{letterIndex:item.index,strokeIndex,seed:$('seed').value,family:f.id,mode:f.id==='G'?'none':$('orbit').value,progress:i/Math.ceil(len/3)}),b=new DOMPoint(motion.x,motion.y).matrixTransform(q);sampledPoints.push({x:b.x,y:b.y});samples.push((i?'L':'M')+b.x.toFixed(2)+' '+b.y.toFixed(2));}
+    transformed.push({d:samples.join(' '),kind:st.kind,role:gestureRole(st,strokeIndex),subtype:f.id==='F'?broadNibSubtype(st,sampledPoints):null,strokeIndex,width:st.kind==='hairline'?Math.max(1.5,f.weight*.22):f.weight*(st.kind==='heavy'?1.32:1)});
    }
   }
   transformed.push(...loopComposition.connectors,...loopComposition.shared);
   const markerWidthByStyle={A:1.65,B:1.38,C:1.05,D:1.3,E:1.22,F:1.14,G:1.32,H:1.08,I:1.2};
   const sprayWidthByStyle={A:1.18,B:1.6,C:1.12,D:1.25,E:1.22,F:1.15,G:1.3,H:1.18,I:1.35};
-  const positioned=transformed.map(raw=>{const x=physicalStroke(raw,f.id);return {...x,width:x.width*styleWidthMultiplier(f.id,{mode,role:x.role})*(mode==='marker'?markerWidthByStyle[f.id]:sprayWidthByStyle[f.id])*(f.id==='B'&&x.kind==='hairline'?.55:1),d:x.d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g,(m,x,y)=>(Number(x)+52).toFixed(2)+' '+(Number(y)+49).toFixed(2))};});
+  const positioned=transformed.map(raw=>{const x=physicalStroke(raw,f.id);return {...x,width:x.width*styleWidthMultiplier(f.id,{mode,role:x.role,subtype:x.subtype})*(mode==='marker'?markerWidthByStyle[f.id]:sprayWidthByStyle[f.id])*(f.id==='B'&&x.kind==='hairline'?.55:1),d:x.d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g,(m,x,y)=>(Number(x)+52).toFixed(2)+' '+(Number(y)+49).toFixed(2))};});
   paintStrokes(c,positioned,{mode,surface,seed:$('seed').value+'|'+f.id,width:mode==='spray'?10:Math.max(4,f.weight),scale,wallCoordinates,ink:STYLE_INKS[f.id]});
   paintFilledRegions(c,regions,{mode,surface,seed:$('seed').value+'|'+f.id,wallCoordinates,ink:STYLE_INKS[f.id]});
   wall.append(bg,cv);section.append(wall);$('studies').append(section);
