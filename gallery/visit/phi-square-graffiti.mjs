@@ -88,6 +88,7 @@ export function clearOfPhiSquare(obstacles,x,z,radius=.38){
 export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
  const objects=planPhiSquare(),marks=planSquareTags(objects),managers=['brick','concrete'].map(material=>createTowerGraffiti(THREE,{
   brick:material==='brick'?brick:concrete,lowPower,kind:'exterior',
+  atlasBase:globalThis.__phiReceptionTestRefresh?'square/'+material:null,
   keyFor:()=>PHI_SQUARE_REVISION+'|'+material,
   planner:()=>marks.filter(m=>m.material===material)
  }));
