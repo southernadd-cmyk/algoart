@@ -1529,8 +1529,10 @@ function constructPhiGallery(layout,studies){
  const ink=indicator.getContext('2d');ink.fillStyle='#202d2a';ink.fillRect(0,0,512,128);
  ink.fillStyle='#f0e8c9';ink.font='bold 57px Georgia';ink.fillText(currentFloor===0?'G · RECEPTION':currentFloor+' · '+shortDate(exhibitDate).toUpperCase(),28,82,456);
  const tex=new THREE.CanvasTexture(indicator);tex.colorSpace=THREE.SRGBColorSpace;
- const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
  sign.position.set(liftFace-.16,elevation+2.78,l.z);sign.rotation.y=-Math.PI/2;cabinObject(sign);
+ const landingSign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),sign.material);
+ landingSign.position.set(l.portal.at+.13,elevation+3.55,l.z);landingSign.rotation.y=Math.PI/2;scene.add(landingSign);
  for(const side of [-1,1])cabinBlock(.16,3.1,.17,liftFace,elevation+1.55,l.z+side*1.22,join);
  cabinBlock(.19,.24,2.55,liftFace,elevation+3.15,l.z,join);
  rig.position.copy(liftCabinPosition);
