@@ -4,18 +4,19 @@ import path from 'node:path';
 import {chromium} from 'playwright';
 import {planGraffitiAtlases} from '../gallery/visit/exterior-graffiti-plan.mjs';
 import {towerGraffitiSignature,TOWER_LETTERING_REVISION} from '../gallery/visit/tower-family-lettering.mjs';
-globalThis.__phiReceptionTestRefresh=true;
-const {planPhiSquare,planSquareTags,PHI_SQUARE_REVISION}=await import('../gallery/visit/phi-square-graffiti.mjs');
-const marks=planSquareTags(planPhiSquare());
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage();
 try{
+ for(const variant of ['live','test']){
+ globalThis.__phiReceptionTestRefresh=variant==='test';
+ const {planPhiSquare,planSquareTags,PHI_SQUARE_REVISION}=await import('../gallery/visit/phi-square-graffiti.mjs?'+variant);
+ const marks=planSquareTags(planPhiSquare());
  await page.goto('http://127.0.0.1:4173/test/graffiti/',{waitUntil:'domcontentloaded'});
  for(const material of ['brick','concrete']){
   const subset=marks.filter(mark=>mark.material===material);
   for(const lowPower of [false,true]){
    const plans=planGraffitiAtlases(subset,{lowPower});
-   const dir=path.join('gallery/visit/graffiti-assets/square',material,lowPower?'mobile':'desktop');
+   const dir=path.join('gallery/visit/graffiti-assets/square',variant==='live'?'live':'',material,lowPower?'mobile':'desktop');
    await fs.mkdir(dir,{recursive:true});
    const manifest={version:1,letteringRevision:TOWER_LETTERING_REVISION,
     date:'__phi_reception__',squareRevision:PHI_SQUARE_REVISION,
@@ -47,4 +48,4 @@ try{
    console.log(dir+': '+subset.length+' marks, '+plans.length+' PNG pages, '+manifest.signature.slice(0,72));
   }
  }
-} finally {await page.close();await browser.close();}
+} } finally {await page.close();await browser.close();}
