@@ -8,7 +8,8 @@ function createFrame(){
   if(framePromise)return framePromise;
   framePromise=new Promise((resolve,reject)=>{
     const frame=document.createElement('iframe');
-    frame.src='./vector-source.html';
+    // Resolve from this module: the rehearsal runs under /test/virtual-gallery/.
+    frame.src=new URL('./vector-source.html',import.meta.url).href;
     frame.setAttribute('aria-hidden','true');
     frame.tabIndex=-1;
     frame.style.cssText='display:none;width:0;height:0;border:0';
