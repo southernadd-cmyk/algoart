@@ -1007,6 +1007,11 @@ function transformPhiActiveFloor(before){
  for(const p of sculpturePlacements)rotate(p);
  for(const a of artExhibits)rotate(a.position);
  rotate(liftPosition);rotate(liftCabinPosition);rotate(liftDoorThreshold);
+ // Moving the meshes alone would leave door-animation endpoints behind
+ // when this exhibition level is rotated about the shared lift core.
+ for(const leaf of liftDoors){
+   rotate(leaf.userData.closed);rotate(leaf.userData.open);
+ }
  rotate(rig.position);
  // The forecourt and entrance are data as well as meshes. Move their
  // navigation coordinates by precisely the same transform as their paving.
@@ -1249,6 +1254,23 @@ function constructPhiGallery(layout,studies){
   }
   deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
   window.__phiPlaza={centre:plaza.centre,benchCount:6,monumentCount:2,visitorSlots:2};
+  // Exterior marker-font sign, mounted above the public doorway on the
+  // reception facade and transformed with the rest of the ground floor.
+  if(entrance){
+   const plaque=document.createElement('canvas');plaque.width=1536;plaque.height=290;
+   const lettering=plaque.getContext('2d');
+   lettering.fillStyle='#303f39';lettering.fillRect(0,0,1536,290);
+   lettering.fillStyle='#f2efe3';lettering.textAlign='center';
+   lettering.font='bold 145px "AlgoArt Marker", Georgia, serif';
+   lettering.fillText('PROPORTION PIECE',768,190,1440);
+   const map=new THREE.CanvasTexture(plaque);map.colorSpace=THREE.SRGBColorSpace;
+   const markerSign=new THREE.Mesh(new THREE.PlaneGeometry(8.6,1.62),
+    new THREE.MeshBasicMaterial({map,side:THREE.DoubleSide}));
+   markerSign.position.set(doorway.x,elevation+ROOM_HEIGHT-.95,doorway.z-.14);
+   markerSign.name='phi-exterior-marker-sign';
+   scene.add(markerSign);
+   window.__phiExteriorSign=true;
+  }
   // Permit visitors to exit the lobby onto the open paved square.
   phi.plaza=plaza;
   phi.arrivalDoor=doorway;
@@ -1283,6 +1305,19 @@ function constructPhiGallery(layout,studies){
    scene.add(board);
   }
   const plantMaterial=new THREE.MeshStandardMaterial({color:'#56705b',roughness:1,flatShading:true});
+  // Visitors can rest close to the desk, without blocking the entrance.
+  if(furnishing.desk){
+   const d=furnishing.desk;
+   for(const shift of [-1,1]){
+    const x=d.x+shift*2.18,z=d.z+.42;
+    if(phi.canWalk(x,z)&&Math.hypot(x-furnishing.entrance.x,z-furnishing.entrance.z)>2.8){
+     block(.75,.13,.72,x,elevation+.51,z,timber);
+     for(const sx of [-1,1])for(const sz of [-1,1])
+      block(.085,.44,.085,x+sx*.28,elevation+.24,z+sz*.25,join);
+     block(.76,.68,.12,x,elevation+.91,z+.29,timber);
+    }
+   }
+  }
   for(const p of furnishing.plants){
    block(.5,.65,.5,p.x,elevation+.32,p.z,stone);
    const leaves=new THREE.Mesh(new THREE.IcosahedronGeometry(.48,1),plantMaterial);
