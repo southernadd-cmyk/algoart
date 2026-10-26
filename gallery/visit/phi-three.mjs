@@ -69,8 +69,9 @@ export function mountPhiThree(canvas){
   }
   renderer.render(scene,camera);
  }
- canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.focus();});
- canvas.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-drag.x)*.009;pitch=Math.max(mode==='walk'?-.8:.17,Math.min(mode==='walk'?.8:1.46,pitch+(e.clientY-drag.y)*.006));drag={x:e.clientX,y:e.clientY};render()});
+ canvas.style.touchAction='none';
+ canvas.addEventListener('pointerdown',e=>{if(e.cancelable)e.preventDefault();drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.focus();});
+ canvas.addEventListener('pointermove',e=>{if(!drag)return;if(e.cancelable)e.preventDefault();yaw+=(e.clientX-drag.x)*.009;pitch=Math.max(mode==='walk'?-.8:.17,Math.min(mode==='walk'?.8:1.46,pitch+(e.clientY-drag.y)*.006));drag={x:e.clientX,y:e.clientY};render()});
  canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
  canvas.addEventListener('wheel',e=>{if(mode==='walk')return;e.preventDefault();distance=Math.max(15,Math.min(200,distance*Math.exp(e.deltaY*.001)));render()},{passive:false});
  canvas.tabIndex=0;
