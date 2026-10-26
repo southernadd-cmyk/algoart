@@ -1027,7 +1027,9 @@ function constructPhiTowerShell(){
  const cap=roofFinish;
  const append=(w,h,d,x,y,z,mat)=>{
   if(w<=0||h<=0||d<=0)return;
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  const geo=new THREE.BoxGeometry(w,h,d);
+  if(mat.userData?.tileMeters)tiledBoxUvs(geo,w,h,d,mat.userData.tileMeters);
+  const mesh=new THREE.Mesh(geo,mat);
   mesh.position.set(x,y,z);shell.add(mesh);
  };
  let count=0;
@@ -1075,11 +1077,28 @@ function constructPhiGallery(layout,studies){
  // Every floor, enclosure and collision surface comes from the same phi plan.
  const plaster=galleryFinish?.interiorWall||wall;
  for(const p of phi.pieces)
-   block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,galleryFinish.floorForRoom(exhibitDate,p.room,phi.floor.mergedRooms.length));
+   block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,galleryFinish.floorForRoom(exhibitDate===RECEPTION?archiveDates[1]:exhibitDate,p.room,phi.floor.mergedRooms.length));
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.04)continue;
   if(w.axis==='x')block(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,plaster);
   else block(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,plaster);
+ }
+ // Architectural plaster inside; metre-tiled brick veneer only on exterior faces.
+ const inCell=(x,z)=>phi.pieces.some(p=>x>=p.x-.0001&&x<=p.x+p.w+.0001&&z>=p.z-.0001&&z<=p.z+p.h+.0001);
+ for(const w of phi.physical.walls){
+  const len=w.hi-w.lo;if(len<.05)continue;
+  const c=(w.lo+w.hi)/2,offset=.24;
+  if(w.axis==='x'){
+   const left=inCell(w.at-offset,c),right=inCell(w.at+offset,c);
+   if(left===right)continue;
+   const side=left?1:-1;
+   block(.035,ROOM_HEIGHT,len,w.at+side*.113,elevation+ROOM_HEIGHT/2,c,galleryFinish.exteriorBrick);
+  }else{
+   const north=inCell(c,w.at-offset),south=inCell(c,w.at+offset);
+   if(north===south)continue;
+   const side=north?1:-1;
+   block(len,ROOM_HEIGHT,.035,c,elevation+ROOM_HEIGHT/2,w.at+side*.113,galleryFinish.exteriorBrick);
+  }
  }
  for(const p of phi.pieces)block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,ceilingFinish);
  // Put visible portal frames on the exact holes created in the collision walls.
