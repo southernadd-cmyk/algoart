@@ -228,7 +228,7 @@ for(const family of ORIGINAL){
  const byLetter=Object.create(null);
  for(const [ch,indices] of Object.entries(ORNAMENT_INDICES[family.id]||{})){
   byLetter[ch]=Object.freeze(indices.map(i=>{
-   const shape=family.glyphs[ch].shapes[i];
+   const shape=(changes[family.id]?.[ch]||family.glyphs[ch].shapes)[i];
    if(!shape||shape.kind!=='hairline')throw Error('Invalid legacy ornament '+family.id+ch+i);
    return shape.d;
   }));
