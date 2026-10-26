@@ -95,7 +95,6 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
    const slot=TAGS_PER_PAINTED_FLOOR+extra;
    const hand=dialects.find(id=>!occupied.has(id)) || dialects[extra%dialects.length];
    // Nine approved families cover ten facade tags; repeat only after exhaustion.
-   occupied.add(hand);
    const item=towerTagSlot({floorId:plan.date,seed:seed+'|front-freehand|'+slot,slot,hand});
    const phrase='φ';
    const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:.85+(slot%9)*.36});
@@ -123,6 +122,7 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
    })).filter(p=>p.width>0&&p.height>0&&p.overlap<.015).sort((a,b)=>a.score-b.score);
    // Do not place one tag on top of another: an oversized tag can shrink or be omitted.
    const chosen=placed[0];if(!chosen)continue;
+   occupied.add(hand);
    const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
    const normal=face.normal,right={x:normal.z,z:-normal.x};
    marks.push({id:item.id,date:plan.date,level,slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,form:'handstyle',ink:tag.ink,seed:tag.seed,
