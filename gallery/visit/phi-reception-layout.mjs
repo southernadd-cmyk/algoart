@@ -25,7 +25,13 @@ export function planPhiReception(floor,circulation,physical){
  }
  entries.sort((a,b)=>b.score-a.score);
  const desk=entries[0]||null;
+ // The widest wall behind the desk supports a room-scale world map.
+ // Reserve it before placing the two information posters.
+ const mapWall=desk?surfaces.filter(w=>w.room===desk.room&&w.axis==='z'&&w.normal.z<0&&w.length>=6.8)
+  .sort((a,b)=>b.length-a.length)[0]:null;
+ const worldMap=mapWall?{x:mapWall.centre,z:mapWall.at+mapWall.normal.z*.14,axis:mapWall.axis,normal:mapWall.normal,width:6.1,height:4.016,centreY:2.65,surface:mapWall.id}:null;
  const signs=surfaces.filter(w=>{
+  if(w.id===mapWall?.id)return false;
   const x=w.axis==='x'?w.at+w.normal.x*.25:w.centre;
   const z=w.axis==='z'?w.at+w.normal.z*.25:w.centre;
   return Math.hypot(x-start.x,z-start.z)>2.0&&Math.hypot(x-end.x,z-end.z)>2.1&&
@@ -50,7 +56,7 @@ export function planPhiReception(floor,circulation,physical){
   .filter(w=>w.room===desk.room&&w.axis==='z'&&w.normal.z>0&&w.at<desk.z-2&&w.length>=2.34)
   .sort((a,b)=>Number(b.centre>start.x)-Number(a.centre>start.x)||Math.abs(a.centre-desk.x)-Math.abs(b.centre-desk.x))[0]:null;
  const credits=creditWall?{x:creditWall.centre,z:creditWall.at+.15,axis:creditWall.axis,normal:creditWall.normal}:null;
- return {desk,signage,plants,credits,entrance:start,lift:end,checks:{
+ return {desk,signage,plants,credits,worldMap,entrance:start,lift:end,checks:{
   deskClear:!desk||distSegment(desk.x,desk.z,start,end)>=2.2,
   signCount:signage.length,passageClear:true
  }};

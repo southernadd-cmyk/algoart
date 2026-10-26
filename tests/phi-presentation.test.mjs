@@ -82,3 +82,54 @@ test('square objects leave the entrance, frontage benches and central route clea
  const diagonal={x:0,z:0,yaw:Math.PI/4,width:6,depth:.34};
  assert.equal(clearOfPhiSquare([diagonal],1,-1),false);assert.equal(clearOfPhiSquare([diagonal],1,1),true);
 });
+
+import {planPhiOutdoorPlants,addPhiOutdoorPlants} from '../gallery/visit/phi-outdoor-plants.mjs';
+import {planPhiReception} from '../gallery/visit/phi-reception-layout.mjs';
+import {fitPhiWallModel} from '../gallery/visit/phi-model-assets.mjs';
+import {planCuratedPhiArtwork} from '../gallery/visit/phi-curator.mjs';
+function glbMetadata(name){const b=readFileSync(new URL('../test/virtual-gallery/models/'+name,import.meta.url));assert.equal(b.readUInt32LE(8),b.length);return {bytes:b.length,doc:JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString())};}
+test('outdoor succulent is compact, credited, and replaces all four original planting groups',async()=>{
+ const asset=glbMetadata('succulent-planter.glb');assert.ok(asset.bytes<1000000);assert.match(asset.doc.asset.extras.author,/GrrHero/);assert.match(asset.doc.asset.extras.license,/CC-BY-4.0/);
+ assert.ok(asset.doc.meshes.reduce((n,m)=>n+m.primitives.reduce((a,p)=>a+asset.doc.accessors[p.indices].count/3,0),0)<18000);
+ const plaza={centre:{x:0,z:0},outward:{x:0,z:1},transverse:{x:1,z:0},halfWidth:30,level:0};
+ const scene=new THREE.Scene(),landscape=new THREE.Group();scene.add(landscape);
+ const placements=planPhiOutdoorPlants(plaza),originals=[];assert.equal(placements.length,4);
+ for(const p of placements){
+  assert.ok(Math.abs(p.x)>20,'Plant blocks the main square');
+  for(const g of [new THREE.BoxGeometry(1.75,.69,1.75),...Array.from({length:3},()=>new THREE.IcosahedronGeometry(.5,1))]){
+   const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial());m.position.set(p.x,.5,p.z);landscape.add(m);originals.push(m);
+  }
+ }
+ const bench=new THREE.Mesh(new THREE.BoxGeometry(1.2,.57,2.7),new THREE.MeshBasicMaterial());bench.position.set(placements[0].x,.2,placements[0].z);landscape.add(bench);
+ const source=new THREE.Group();source.add(new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshBasicMaterial()));
+ const result=addPhiOutdoorPlants(THREE,scene,plaza,[landscape],{loadModel:()=>Promise.resolve(source)});await result.ready;
+ assert.ok(originals.every(o=>!o.visible));assert.equal(bench.visible,true);assert.ok(result.holders.every(o=>o.userData.modelLoaded&&o.userData.replaced===4));
+ for(const holder of result.holders)assert.ok(Math.abs(new THREE.Box3().setFromObject(holder).getSize(new THREE.Vector3()).y-1.3)<1e-5);
+ let resolve;const late=addPhiOutdoorPlants(THREE,scene,plaza,[],{loadModel:()=>new Promise(r=>resolve=r)});for(const h of late.holders)scene.remove(h);resolve(source);await late.ready;assert.ok(late.holders.every(h=>h.children.length===0),'Late model attached to an old floor');
+});
+test('giant map occupies its own reception wall and retains the original credited image',()=>{
+ const phi=buildPhiRendererPlan('__phi_reception__',[]),reception=planPhiReception(phi.floor,phi.circulation,phi.physical),map=reception.worldMap;
+ assert.ok(map.width>=6&&map.height>=4);assert.ok(map.centreY-map.height/2>.5&&map.centreY+map.height/2<4.9);
+ assert.equal(reception.signage.length,2);assert.ok(reception.signage.every(s=>s.axis!==map.axis||Math.abs((s.axis==='x'?s.x:s.z)-(map.axis==='x'?map.x:map.z))>.3));
+ const asset=glbMetadata('vintage-world-map.glb');assert.ok(asset.bytes<300000);assert.match(asset.doc.asset.extras.author,/My Name Is This/);assert.match(asset.doc.asset.extras.license,/CC-BY-4.0/);
+ const credits=readFileSync(new URL('../test/virtual-gallery/credits.html',import.meta.url),'utf8');assert.match(credits,/GrrHero/);assert.match(credits,/My Name Is This/);
+ const source=new THREE.Group();source.add(new THREE.Mesh(new THREE.BoxGeometry(7.241604,4.768173,.088),new THREE.MeshBasicMaterial()));
+ const fitted=fitPhiWallModel(THREE,source,map.width),bounds=new THREE.Box3().setFromObject(fitted),size=bounds.getSize(new THREE.Vector3());
+ assert.ok(Math.abs(size.x-map.width)<1e-5);assert.ok(Math.abs(size.y-map.height)<.01);assert.ok(Math.abs(bounds.getCenter(new THREE.Vector3()).y)<1e-5);assert.ok(Math.abs(bounds.min.z)<1e-5);
+});
+test('paintings grow into available wall space without losing aspect, room boundaries or neighbouring gaps',()=>{
+ const archive=JSON.parse(readFileSync(new URL('../gallery/tower-layouts.json',import.meta.url)));
+ for(const {date} of archive.floors){
+  const meta=JSON.parse(readFileSync(new URL('../gallery/'+date+'/meta.json',import.meta.url)));
+  const studies=meta.entries.map((s,id)=>({id,portrait:s.orientation==='portrait',aspect:s.orientation==='portrait'?1/1.4:1.4}));
+  const phi=buildPhiRendererPlan(date,studies),baseline=planCuratedPhiArtwork(phi.floor,phi.circulation,phi.physical,studies);
+  for(const p of phi.exhibition.paintings){
+   const prior=baseline.paintings.find(b=>b.studyId===p.studyId),wall=phi.exhibition.surfaces.find(w=>w.id===p.surfaceId);
+   assert.ok(p.width>=prior.width-1e-6);assert.ok(Math.abs(p.width/p.height-1.4)<1e-6);
+   assert.ok(p.u-p.width/2>=wall.lo-1e-6&&p.u+p.width/2<=wall.hi+1e-6,date+' frame crosses an opening or corner');
+   assert.ok(p.y-p.height/2>.5&&p.y+p.height/2<4.7);
+   for(const other of phi.exhibition.paintings.filter(q=>q!==p&&q.surfaceId===p.surfaceId))assert.ok(Math.abs(p.u-other.u)-(p.width+other.width)/2>=.42-1e-6,date+' frames overlap');
+  }
+  if(date==='2026-10-07')assert.ok(phi.exhibition.paintings.filter(p=>p.width>=4.5).length>=3,'Sparse 7 October walls did not get larger paintings');
+ }
+});

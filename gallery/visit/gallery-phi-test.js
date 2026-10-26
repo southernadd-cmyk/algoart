@@ -1,10 +1,11 @@
+import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=succulent-planters-20261026';
 import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=golden-eight-forms-v4-no-loop-20261026';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs';
-import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,renderPhiFurniture,addPhiFrontage} from './phi-reception-decor.mjs?v=minimal-gothic-frontage-20261026';
+import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,renderPhiFurniture,addPhiFrontage,addPhiReceptionMap} from './phi-reception-decor.mjs?v=succulent-world-map-20261026';
 import {planPhiFurnishings} from './phi-furnishings.mjs';
-import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=complete-archive-20261026';
+import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=wall-sized-paintings-20261026';
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
@@ -70,6 +71,8 @@ let phiLiftCabin=null;
 let phiLiftIndicator=null;
 let phiLiftTarget=null;
 let phiReceptionProps=[];
+let phiOutdoorPlants=[];
+let phiReceptionMap=null;
 let phiFurnishingObstacles=[];
 let phiSquareObstacles=[];
 let phiRideState=null;
@@ -156,6 +159,13 @@ const phiSquare=createPhiSquare(THREE,{brick:galleryFinish.exteriorBrick,concret
 if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnostics(),marks:()=>phiSquare.marks(),
  preview(){const frame=phiSquare.viewpoint();if(!frame)return;const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(frame.position);view.lookAt(frame.target);renderer.setAnimationLoop(null);renderer.render(scene,view);},
  resume(){renderer.setAnimationLoop(tick);}};
+if(GALLERY_DEBUG)window.__phiReceptionPreview={
+ show(kind){const object=kind==='map'?phiReceptionMap:phiOutdoorPlants[0];if(!object?.parent)return;
+  object.updateWorldMatrix(true,false);const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);
+  const offset=kind==='map'?new THREE.Vector3(0,0,5.7):new THREE.Vector3(2,1.4,2.7);
+  view.position.copy(object.localToWorld(offset));view.lookAt(object.localToWorld(new THREE.Vector3(0,kind==='map'?0:.6,0)));
+  renderer.setAnimationLoop(null);renderer.render(scene,view);},resume(){renderer.setAnimationLoop(tick);}
+};
 const floor=galleryFinish.floor;
 const timber=galleryFinish.timber;
 const stone=galleryFinish.stone;
@@ -1206,7 +1216,7 @@ function queuePhiFurnishings(phi,furnishings,elevation){
 }
 function constructPhiGallery(layout,studies){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
- window.__phiFullEngine={date:exhibitDate,roomCount:phi.floor.mergedRooms.length,wallCount:phi.physical.walls.length,artworks:studies.length,paintings:phi.exhibition.paintings.length,sculptures:phi.exhibition.sculptures.length,unplaced:phi.exhibition.unplaced.length};
+ window.__phiFullEngine={date:exhibitDate,roomCount:phi.floor.mergedRooms.length,wallCount:phi.physical.walls.length,artworks:studies.length,paintings:phi.exhibition.paintings.length,sculptures:phi.exhibition.sculptures.length,unplaced:phi.exhibition.unplaced.length,paintingSizes:phi.exhibition.paintings.map(p=>({width:p.width,height:p.height})),paintingsLoaded:0};
  // Every floor, enclosure and collision surface comes from the same phi plan.
  const plaster=galleryFinish?.interiorWall||wall;
  for(const p of phi.pieces)
@@ -1295,7 +1305,7 @@ function constructPhiGallery(layout,studies){
  const loader=new THREE.TextureLoader();
  for(const p of phi.exhibition.paintings){
   const study=byId.get(p.studyId);if(!study)continue;
-  const height=Math.min(2.4,p.height),centreY=elevation+p.y;
+  const height=p.height,centreY=elevation+p.y;
   block(p.axis==='x'?.08:p.width+.10,height+.10,p.axis==='x'?p.width+.10:.08,
     p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);
   const face=new THREE.Mesh(new THREE.PlaneGeometry(p.width,height),
@@ -1314,6 +1324,7 @@ function constructPhiGallery(layout,studies){
     texture.colorSpace=THREE.SRGBColorSpace;
     face.material.dispose();
     face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide});
+    window.__phiFullEngine.paintingsLoaded++;
   },undefined,error=>console.warn('Phi painting failed to load',study.id,error)));
   artExhibits.push({study,position:face.position.clone(),normal:new THREE.Vector3(p.normal.x,0,p.normal.z)});
  }
@@ -1395,8 +1406,11 @@ function constructPhiGallery(layout,studies){
   const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
     halfWidth:30,halfDepth:29,level:elevation};
   const approach={doorway,outward,pathLength:42,halfWidth:3.25};
+  const beforeLandscape=new Set(scene.children);
   const exterior=createExteriorLandscape(THREE,scene,layout,studies,{
     lowPower:galleryFinish.lowPower,protectedLayouts:[],approach,plaza});
+  const outdoor=addPhiOutdoorPlants(THREE,scene,exterior.plaza||plaza,scene.children.filter(o=>!beforeLandscape.has(o)));
+  phiOutdoorPlants=outdoor.holders;phiSquareObstacles.push(...outdoor.obstacles);
   // Landmark sculptures above the reception entrance, not in the walking square.
   if(currentFloor===0){
    const monuments=addPermanentPlazaSculptures(scene,plaza);
@@ -1422,7 +1436,7 @@ function constructPhiGallery(layout,studies){
    window.__phiRoofMonuments=monuments.length;
   }
   deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
-  const square=phiSquare.addTo(scene,{doorway,outward,elevation});phiSquareObstacles=square.obstacles;
+  const square=phiSquare.addTo(scene,{doorway,outward,elevation});phiSquareObstacles.push(...square.obstacles);
   window.__phiPlaza={centre:plaza.centre,benchCount:8,monumentCount:2,visitorSlots:2,tagWalls:square.walls,squareMonumentCount:square.monuments,tags:square.tags};
   // Exterior marker-font sign, mounted above the public doorway on the
   // reception facade and transformed with the rest of the ground floor.
@@ -1488,9 +1502,10 @@ function constructPhiGallery(layout,studies){
   const leafLight=new THREE.MeshStandardMaterial({color:'#819477',roughness:1,flatShading:true});
   queuePhiFurnishings(phi,planPhiFurnishings(phi,{reception:furnishing,lowPower:galleryFinish.lowPower}),elevation);
   phiReceptionProps=addPhiReceptionDecor(THREE,scene,furnishing,elevation);
+  phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);
   const credits=addPhiReceptionCredits(THREE,scene,furnishing.credits,elevation);
   artExhibits.push(...credits);window.__phiReceptionCredits={count:credits.length,placement:furnishing.credits};
-  window.__phiReception={desk:!!furnishing.desk,information:furnishing.signage.length>0,
+  window.__phiReception={worldMap:furnishing.worldMap,desk:!!furnishing.desk,information:furnishing.signage.length>0,
     signCount:furnishing.signage.length,plantCount:furnishing.plants.length,credits:credits.length,clearance:furnishing.checks};
  }
  if(exhibitDate!==RECEPTION)queuePhiFurnishings(phi,planPhiFurnishings(phi,{lowPower:galleryFinish.lowPower}),elevation);
@@ -1995,7 +2010,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   exhibitLightTargets.length=0;
   resetInspection();
   liftPosition=null;liftDoorThreshold=null;phiLiftPanelPosition=null;liftWasNear=false;liftDoors=[];
-  phiReceptionProps=[];phiFurnishingObstacles=[];phiSquareObstacles=[];phiLiftIndicator=null;
+  phiReceptionProps=[];phiOutdoorPlants=[];phiReceptionMap=null;phiFurnishingObstacles=[];phiSquareObstacles=[];phiLiftIndicator=null;
   liftPickerConsumed=false;
   const previous=new Set(scene.children);
   arrival=null;entranceDoor=null;
@@ -2574,6 +2589,9 @@ function tick() {
     doorCount:liftDoors.length,threeRevision:THREE.REVISION,
     entranceModelLoaded:!!entranceDoor?.root.userData.modelLoaded,
     propsLoaded:phiReceptionProps.filter(o=>o.userData.modelLoaded).length,
+    worldMapLoaded:!!phiReceptionMap?.userData.modelLoaded,
+    outdoorPlantsLoaded:phiOutdoorPlants.filter(o=>o.userData.modelLoaded).length,
+    outdoorPlantsReplaced:phiOutdoorPlants.reduce((n,o)=>n+(o.userData.replaced||0),0),
     indicator:phiLiftIndicator?.last,indicatorFont:phiLiftIndicator?.context.font
   };
   lastFocusCheck+=dt;mapElapsed+=dt;

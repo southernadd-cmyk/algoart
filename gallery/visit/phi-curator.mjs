@@ -94,6 +94,32 @@ export function planCuratedPhiArtwork(floor,circulation,physical,studies){
        p.x+p.normal.x*.1,p.z+p.normal.z*.1))}};
 }
 
+/** Grow each completed hang into unused wall space, after reserving sculpture
+ * viewing corridors. Keep every artwork and its safe doorway position. */
+export function expandPhiPaintings(hang,sculptures){
+ const originals=hang.paintings.map(p=>({...p})),targets=[];
+ for(const p of originals){
+  const wall=hang.surfaces.find(w=>w.id===p.surfaceId),aspect=p.width/p.height;
+  let width=Math.min(4.8,3.3*aspect,2*(p.u-wall.lo),2*(wall.hi-p.u));
+  for(const other of originals){
+   if(other===p||other.surfaceId!==p.surfaceId)continue;
+   const gap=Math.abs(p.u-other.u)-(p.width+other.width)/2;
+   width=Math.min(width,p.width+Math.max(0,gap-.55));
+  }
+  for(const sculpture of sculptures){
+   if(sculpture.room!==p.room)continue;
+   const normalDistance=p.axis==='x'?Math.abs(sculpture.x-p.at):Math.abs(sculpture.z-p.at);
+   if(normalDistance>=2.35)continue;
+   const along=p.axis==='x'?sculpture.z:sculpture.x;
+   width=Math.min(width,2*(Math.abs(along-p.u)-.67));
+  }
+  width=Math.max(p.width,width);const height=width/aspect;
+  targets.push({width,height,y:Math.max(1.72,height/2+.62)});
+ }
+ hang.paintings.forEach((p,i)=>Object.assign(p,targets[i]));
+ return hang;
+}
+
 /** Curate portrait sculptures after the wall hang, reserving visitor sightlines. */
 export function planCuratedPhiExhibition(floor,circulation,physical,studies){
  const hang=planCuratedPhiArtwork(floor,circulation,physical,studies);
@@ -145,6 +171,7 @@ export function planCuratedPhiExhibition(floor,circulation,physical,studies){
   if(best){const {score,...placed}=best;sculptures.push(placed);roomCounts[best.room]++;}
   else rejected.push(study);
  }
+ expandPhiPaintings(hang,sculptures);
  const unplaced=[...hang.unplaced,...rejected];
  const ids=[...hang.paintings,...sculptures].map(a=>a.studyId);
  return {...hang,sculptures,unplaced,roomCounts,checks:{...hang.checks,

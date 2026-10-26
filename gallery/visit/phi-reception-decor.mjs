@@ -1,22 +1,9 @@
+import {loadPhiDecorAsset as asset,fitPhiDecorAsset as fit,fitPhiWallModel} from './phi-model-assets.mjs';
 import {createGothicSurroundShape} from './phi-gothic-door-profile.mjs';
 import {renderVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 // Optional shared CC-BY props for the experimental reception. Loading never
 // blocks the floor planner or lift. Credits are installed separately below.
-const assets=new Map();
-async function asset(url){
- if(!assets.has(url))assets.set(url,import('three/addons/loaders/GLTFLoader.js').then(({GLTFLoader})=>new GLTFLoader().loadAsync(url)).then(gltf=>{
-  gltf.scene.traverse(o=>{if(o.geometry)o.geometry.userData.galleryPersistent=true;
-   for(const m of [].concat(o.material||[])){m.userData.galleryPersistent=true;for(const v of Object.values(m))if(v?.isTexture)v.userData.galleryPersistent=true;}
-  });return gltf.scene;
- }));
- return assets.get(url);
-}
 const modelURL=name=>new URL('../../test/virtual-gallery/models/'+name,import.meta.url).href;
-function fit(THREE,model,height){
- const group=new THREE.Group();group.add(model);group.updateMatrixWorld(true);
- const box=new THREE.Box3().setFromObject(group),size=box.getSize(new THREE.Vector3()),centre=box.getCenter(new THREE.Vector3());
- const scale=height/Math.max(.001,size.y);model.position.add(new THREE.Vector3(-centre.x,-box.min.y,-centre.z));group.scale.setScalar(scale);return group;
-}
 export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
  const holders=[];
  for(const [i,p] of furnishing.plants.entries()){
@@ -79,7 +66,7 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMat
 
 export const RECEPTION_CREDITS=[
  {title:'The gallery',lines:['PROPORTION PIECE','Daily generative art and architecture','','Built with Three.js','Three.js authors · MIT licence','','Visitors: Quaternius · CC0','Street lamps: Poly Haven · CC0']},
- {title:'Reception models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Cardboard boxes —','NotAnotherApocalypticCo.','','All three models: CC BY 4.0','Textures compressed for the web.','Door frame and leaves separated.']},
+ {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Succulent — GrrHero','World map — My Name Is This','Cardboard boxes —','NotAnotherApocalypticCo.','','All five models: CC BY 4.0','Meshes and textures optimised.','Door frame and leaves separated.']},
  {title:'Materials and fittings',lines:['Architectural textures — Poly Haven','Plaster, brick, timber and concrete','CC0','','OfficeCeiling001 — ambientCG · CC0','Twin Surface Spotlight — Innerscene','CC0','','Full sources and licences online.']}
 ];
 export function addPhiReceptionCredits(THREE,scene,placement,elevation){
@@ -126,4 +113,16 @@ export function addPhiFrontage(THREE,root,{concrete,timber,metal,defer}){
  const people=()=>renderVisitors(THREE,root,{benches:[],people:[{...b,y:0,yaw:b.rotation,bodyType:'female',variant:2,scale:1,pose:4,seat:true}]});
  if(defer)defer.push(people);else people();
  return {benches:2,visitors:1};
+}
+
+
+export function addPhiReceptionMap(THREE,scene,placement,elevation){
+ if(!placement)return null;
+ const root=new THREE.Group();root.name='phi-giant-world-map';root.position.set(placement.x,elevation+placement.centreY,placement.z);
+ root.rotation.y=placement.axis==='x'?(placement.normal.x>0?Math.PI/2:-Math.PI/2):(placement.normal.z>0?0:Math.PI);scene.add(root);
+ asset(modelURL('vintage-world-map.glb')).then(source=>{
+  if(!root.parent||root.userData.galleryDisposed)return;
+  root.add(fitPhiWallModel(THREE,source.clone(true),placement.width));root.userData.modelLoaded=true;
+ }).catch(error=>console.warn('Reception world map unavailable',error));
+ return root;
 }
