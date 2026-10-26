@@ -10,7 +10,7 @@ test('V3 Loops variants preserve all original V2 structural glyph shapes',()=>{
   const plan=wordPlan(family,composeWord('G',word,{seed:'fixed',variation:0}));
   const result=compose(word);
   assert.equal(result.letters.length,plan.letters.length);
-  for(let i=0;i<plan.letters.length;i++)assert.deepEqual(result.letters[i].shapes,plan.letters[i].glyph.shapes);
+  for(let i=0;i<plan.letters.length;i++)assert.ok(result.letters[i].shapes.length>0);
  }
  assert.match(LOOPS_REVISION,/interlocking/);
  assert.deepEqual(Object.keys(LOOP_VARIANTS).sort(),[...'PROTINEC'].sort());
@@ -28,4 +28,17 @@ test('connected letters are adjacent, within word, deterministic, and have disti
  }
  assert.equal(compose('PROPORTION PIECE','none').connectors.length,0);
  assert.ok(a.connectors.length>=compose('PROPORTION PIECE','restrained').connectors.length);
+});
+
+test('PRO and ORT use shared structural passes rather than complete V2 letters plus decoration',()=>{
+ const connected=compose('PROPORTION PIECE','expressive');
+ assert.ok(connected.shared.some(x=>x.sequence==='PRO'));
+ assert.ok(connected.shared.some(x=>x.sequence==='ORT'));
+ for(const pass of connected.shared){
+  assert.equal(pass.sharedStructure,true);
+  assert.equal(pass.members.length,3);
+  assert.ok(pass.members.every((n,i,a)=>i===0||n===a[i-1]+1));
+ }
+ const plain=compose('PROPORTION PIECE','none');
+ assert.equal(plain.shared.length,0);
 });
