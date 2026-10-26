@@ -13,6 +13,10 @@ try{
  assert.ok(phi.wallCount>0&&phi.roomCount>0,'Missing phi architecture');
  assert.equal(phi.artworks,phi.paintings+phi.sculptures,'Phi curator dropped art');
  assert.equal(phi.unplaced,0,'Unplaced artworks');
+ const plaza=await page.evaluate(()=>window.__phiPlaza);
+ assert.ok(plaza,'Ground floor plaza was not constructed');
+ assert.equal(plaza.monumentCount,2);
+ assert.equal(plaza.benchCount,6);
  assert.equal(await page.evaluate(()=>window.__galleryStartupError),'');
  assert.equal(errors.length,0,errors.join('; '));
  assert.equal(await page.locator('#world').count(),1);
