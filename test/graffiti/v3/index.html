@@ -1,8 +1,8 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PROPORTION PIECE — V3 wall studies</title>
 <style>body{font-family:Georgia,serif;background:#ece8df;color:#292b29;margin:auto;max-width:1150px;padding:26px}h1{font-size:clamp(30px,5vw,54px);font-weight:normal;margin-bottom:4px}p{line-height:1.5}label{display:grid;gap:4px}select,input{padding:7px;font:inherit;background:#faf8f1;border:1px solid #aaa}nav{display:flex;gap:14px;flex-wrap:wrap;margin:22px 0}.examples{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.study{background:#faf8f1;border:1px solid #beb9ac;padding:12px}.wall{position:relative;width:100%;overflow:hidden}.wall canvas{width:100%;display:block}.wall canvas+canvas{position:absolute;inset:0}.wall.brick{background:repeating-linear-gradient(0deg,transparent 0 40px,#aaa092 40px 44px),repeating-linear-gradient(90deg,#a96c58 0 111px,#a28b7c 111px 115px)}.wall.plaster{background:#c6c4b8}.wall.interior{background:#e0ded5}header{border-bottom:1px solid #aaa;padding-bottom:12px}small{color:#555}</style></head>
 <body><header><a href="../v2/alphabet-review.html">V2 review</a><h1>Graffiti V3 — wall studies</h1><p>Experimental material and stroke-deposition study. Production gallery and historical atlases remain unchanged.</p></header>
-<nav><label>Lettering<select id="hand"></select></label><label>Word<input id="word" value="PROPORTION PIECE" maxlength="30"></label><label>Seed<input id="seed" value="V3-STUDY-01"></label></nav>
-<div id="studies" class="examples"></div><p><small>Prototype limitation: marker strokes now use denser felt-tip contact with limited wall-grain dropout; filled wedges receive surface-aware pigment coverage. The wall preview and pigment share a wall coordinate frame; Three.js mesh UV mapping still requires validation. This pass gives structural marker strokes proper width and denser spray coverage.</small></p>
+<nav><label>Lettering<select id="hand"></select></label><label>Word<input id="word" value="PROPORTION PIECE" maxlength="30"></label><label>Seed<input id="seed" value="V3-STUDY-01"></label><label>Loops gesture<select id="orbit"><option value="none">No orbit</option><option value="restrained" selected>Restrained φ</option><option value="expressive">Expressive φ</option></select></label></nav>
+<div id="studies" class="examples"></div><p><small>Prototype limitation: marker strokes now use denser felt-tip contact with limited wall-grain dropout; filled wedges receive surface-aware pigment coverage. Loops uses a per-word golden-ratio trajectory; choose restrained, expressive, or no orbit above. The wall preview and pigment share a wall coordinate frame; Three.js mesh UV mapping still requires validation. This pass gives structural marker strokes proper width and denser spray coverage.</small></p>
 <script type="module">
 import {FAMILIES,composeWord} from '../v2/v2-library.mjs';
 import {wordPlan,showGesture} from '../v2/word-flow.mjs';
@@ -52,7 +52,7 @@ function draw(){
    }
   }
   if(f.id==='G'){
-   transformed.push(...planLoopsOrbit(plan));
+   transformed.push(...planLoopsOrbit(plan,{mode:$('orbit').value,seed:$('seed').value}));
   }
   const markerWidthByStyle={A:1.65,B:1.38,C:1.05,D:1.3,E:1.22,F:1.14,G:1.32,H:1.08,I:1.2};
   const sprayWidthByStyle={A:1.18,B:1.6,C:1.12,D:1.25,E:1.22,F:2.3,G:1.3,H:1.18,I:1.35};
@@ -62,6 +62,6 @@ function draw(){
   wall.append(bg,cv);section.append(wall);$('studies').append(section);
  }
 }
-for(const id of ['hand','word','seed'])$(id).addEventListener('input',draw);
+for(const id of ['hand','word','seed','orbit'])$(id).addEventListener('input',draw);
 draw();
 </script></body></html>
