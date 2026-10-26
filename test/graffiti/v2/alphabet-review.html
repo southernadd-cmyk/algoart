@@ -16,13 +16,14 @@ import {FAMILIES as base} from '../family-library.mjs';
 import {letterSvg as v1Glyph,wordSvg as v1Word} from '../family-renderer.mjs';
 import {letterSvg as v2Glyph,wordSvg as v2Word} from './v2-renderer.mjs';
 import {V2_REVISION,PILOT_EVIDENCE,pilotDiff,INSTRUMENT_REVISIONS} from './v2-library.mjs';
+import {WORD_POLICIES} from './word-flow.mjs';
 const $=id=>document.getElementById(id),letters='ABCDEFGHIJKLMNOPQRSTUVWXYZΦ';
 for(const f of base){const e=document.createElement('option');e.value=f.id;e.textContent=f.id+' — '+f.name;$('style').append(e)}
 const node=(name,text,cls)=>{const e=document.createElement(name);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
 function draw(){
  const style=$('style').value,seed=$('seed').value,custom=$('custom').value||'MUSHROOM';
  const changed=pilotDiff().filter(id=>id.startsWith(style+':'));const changedLetters=new Set(changed.map(s=>s.split(':')[1]));
- $('summary').textContent=style+' · '+changed.length+' of 26 letter paths revised · revision '+V2_REVISION+(INSTRUMENT_REVISIONS[style]?' · instrument revision: '+INSTRUMENT_REVISIONS[style]:'');
+ $('summary').textContent=style+' · '+changed.length+' of 26 letter paths revised · revision '+V2_REVISION+(INSTRUMENT_REVISIONS[style]?' · instrument revision: '+INSTRUMENT_REVISIONS[style]:'')+' · word rule: '+WORD_POLICIES[style].why;
  for(const [id,renderer]of [['v1letters',v1Glyph],['v2letters',v2Glyph]]){
   const parent=$(id);parent.replaceChildren();
   for(const ch of letters){
