@@ -4,7 +4,7 @@ import {drawTag} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7'
 import {drawTowerFamilyTag,towerGraffitiSignature,TOWER_LETTERING_REVISION} from './tower-family-lettering.mjs';
 import {planExteriorGraffiti,planGraffitiAtlases,towerGraffitiKey} from './exterior-graffiti-plan.mjs';
 const surfaceOffset=(mark,currentFloor)=>mark.surface==='interior'?.173:mark.level===currentFloor?.202:.173;
-function paintExteriorUnderstroke(ctx,x,y,width,height){
+export function paintExteriorUnderstroke(ctx,x,y,width,height){
  // Broad chalk-white aerosol underpainting with uneven soft overspray.
  const pad=14,left=Math.max(0,Math.floor(x-pad)),top=Math.max(0,Math.floor(y-pad));
  const right=Math.min(ctx.canvas.width,Math.ceil(x+width+pad));
@@ -82,7 +82,7 @@ export function graffitiGeometry(THREE,entries,size,currentFloor,tileMeters=2,at
  geometry.setAttribute('wallUv',new THREE.Float32BufferAttribute(wallUv,2));
  geometry.setIndex(indices);geometry.computeBoundingSphere();return geometry;
 }
-export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExteriorGraffiti,keyFor=towerGraffitiKey,kind='exterior'}={}){
+export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExteriorGraffiti,keyFor=towerGraffitiKey,kind='exterior',atlasBase=null}={}){
  let generation=0;
  let key='',marks=[],pages=[],pending=[],painted=0,paintSteps=0,totalPaintMs=0,maxPaintMs=0,slowest=null,errors=[],sourceNormal=null,sharedNormal=null;
  const updateNormal=()=>{
@@ -122,7 +122,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
   const expected=(kind==='exterior'?'white-understroke-v3|':'')+towerGraffitiSignature(marks);
   const manifestUrl=kind==='interior'&&marks[0]
    ?new URL('../'+marks[0].date+'/3d/graffiti/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href)
-   :new URL('./graffiti-assets/exterior/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
+   :new URL('./graffiti-assets/'+(atlasBase||'exterior')+'/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
   const token=generation;
   (async()=>{
    try{
