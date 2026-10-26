@@ -11,6 +11,7 @@ import {buildPhiRendererPlan} from './phi-full-engine-adapter.mjs?v=public-adapt
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
+import { appendTowerBoxBatches } from './tower-box-batches.mjs';
 import { planGalleryHangs } from './hanging-v3.mjs?v=reserve-glazed-door-walls-20261022';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
 import {addPermanentPlazaSculptures} from './plaza-monuments.mjs';
@@ -29,6 +30,8 @@ import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-2
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
 
 const GALLERY_DEBUG=new URLSearchParams(location.search).has('debug');
+// Staging A/B switch; the published bundle is not modified.
+const PHI_BATCH_SHELL=new URLSearchParams(location.search).get('shell')==='batched';
 if(GALLERY_DEBUG)console.info('[Gallery performance] initial JavaScript module evaluated',Math.round(performance.now())+'ms since navigation');
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
@@ -1150,8 +1153,19 @@ function constructPhiTowerShell(){
  const shell=new THREE.Group();shell.name='phi-complete-tower-exterior';
  const masonry=galleryFinish.exteriorBrick||wall;
  const cap=roofFinish;
+ // Three-floor geometry chunks preserve frustum culling between tower sections
+ // while collapsing thousands of individual meshes into material batches.
+ const shellBatchGroups=[];
+ let currentBatch=null, shellTransform=null, staticBoxes=0;
  const append=(w,h,d,x,y,z,mat)=>{
   if(w<=0||h<=0||d<=0)return;
+  staticBoxes++;
+  if(PHI_BATCH_SHELL){
+   const p=shellTransform.toWorld(x,z);
+   if(!currentBatch.has(mat))currentBatch.set(mat,[]);
+   currentBatch.get(mat).push([w,h,d,p.x,y,p.z,shellTransform.theta]);
+   return;
+  }
   const geo=new THREE.BoxGeometry(w,h,d);
   if(mat.userData?.tileMeters)tiledBoxUvs(geo,w,h,d,mat.userData.tileMeters);
   const mesh=new THREE.Mesh(geo,mat);
@@ -1186,6 +1200,13 @@ function constructPhiTowerShell(){
   const planned=buildPhiRendererPlan(date===RECEPTION?RECEPTION:date,stubs);
   const wt=phiFloorTransform(level,planned.circulation.lift);
   const y=level*FLOOR_SPACING;
+  if(PHI_BATCH_SHELL){
+   if(!currentBatch||level%3===0){
+    currentBatch=new Map();
+    shellBatchGroups.push(currentBatch);
+   }
+   shellTransform=wt;
+  }
   const floorStart=shell.children.length;
   for(const p of planned.pieces)append(p.w,.25,p.h,p.x+p.w/2,y-.16,p.z+p.h/2,floor);
   for(const w of planned.physical.walls){
@@ -1204,14 +1225,22 @@ function constructPhiTowerShell(){
    append(b.axis==='x'?b.length:b.width,.045,b.axis==='z'?b.length:b.width,
       b.axis==='x'?mid:b.centre,y+3.1,b.axis==='z'?mid:b.centre,walkwayGlassMaterials.glass);
   }
-  for(const object of shell.children.slice(floorStart)){
+  if(!PHI_BATCH_SHELL)for(const object of shell.children.slice(floorStart)){
    const p=wt.toWorld(object.position.x,object.position.z);
    object.position.x=p.x;object.position.z=p.z;object.rotation.y+=wt.theta;
   }
   count++;
  }
+ let staticBatches=0;
+ if(PHI_BATCH_SHELL)for(const buckets of shellBatchGroups){
+  staticBatches+=appendTowerBoxBatches(THREE,shell,buckets).batchCount;
+ }
  scene.add(shell);
- window.__phiTowerExterior={otherFloors:count,wallMeshes:shell.children.length};
+ window.__phiTowerExterior={
+  otherFloors:count,wallMeshes:shell.children.length,staticBoxes,
+  staticBatches:PHI_BATCH_SHELL?staticBatches:staticBoxes,
+  batching:PHI_BATCH_SHELL?'three-floor chunks':'individual meshes'
+ };
 }
 function queuePhiFurnishings(phi,furnishings,elevation){
  window.__phiFurnishings={benches:furnishings.benches.length,standing:furnishings.people.filter(p=>!p.seat).length,seated:furnishings.people.filter(p=>p.seat).length};
