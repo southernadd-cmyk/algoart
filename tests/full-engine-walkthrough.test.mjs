@@ -24,5 +24,21 @@ try{
  assert.equal(await page.evaluate(()=>window.__galleryStartupError),'');
  assert.equal(errors.length,0,errors.join('; '));
  assert.equal(await page.locator('#world').count(),1);
+ // A whole lift journey must not reopen the destination picker automatically.
+ await page.locator('#enter').click();
+ await page.locator('#openLift').click();
+ assert.equal(await page.locator('#lift').isVisible(),true,'Lift picker did not open');
+ const destination=page.locator('#liftDays button.lift-available').first();
+ await destination.click();
+ await page.waitForFunction(()=>!document.querySelector('#liftAnimation')?.hidden,{timeout:15000});
+ await page.waitForFunction(()=>document.querySelector('#liftAnimation')?.hidden &&
+   document.querySelector('#lift')?.hidden &&
+   !document.querySelector('#liftArrival')?.hidden,{timeout:90000});
+ assert.equal(await page.locator('#lift').isVisible(),false,
+   'Floor picker unexpectedly reopened after arriving');
+ const doors=await page.evaluate(()=>({arrival:document.querySelector('#liftArrival')?.textContent,
+   indicator:document.querySelector('#floorIndicator')?.textContent}));
+ assert.ok(doors.arrival?.includes('Doors opening'),'Lift has no door-opening arrival feedback');
+
  console.log('Full-engine source imported without page errors');
 }finally{await browser.close();}
