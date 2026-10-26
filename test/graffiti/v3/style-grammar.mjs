@@ -1,6 +1,6 @@
 // Experimental family-aware word construction. Production and V2 remain immutable.
 import {composeLoopsWord} from './loops-library.mjs';
-import {composeBroadNib} from './broadnib-library.mjs?v=nib-clusters-03';
+import {composeBroadNib} from './broadnib-library.mjs?v=nib-clusters-04';
 import {composeRectilinear} from './rectilinear-library.mjs';
 export const GRAMMAR_REVISION='family-composition-04';
 export const RULES=Object.freeze({
