@@ -12,14 +12,14 @@ test('nine complete, independently stated per-word policies',()=>{
  }
  assert.match(WORD_FLOW_REVISION,/source-led/);
 });
-test('Gothic A has a substantive crossbar and unsupported word hairlines are suppressed',()=>{
+test('Gothic A has a substantive crossbar and ornaments cannot suppress structural crossbars',()=>{
  const a=getGlyph('E','A');
  assert.ok(a.shapes.some(s=>s.kind==='fill'&&s.d.includes('L 72 57')));
  const f=FAMILIES.find(f=>f.id==='E');
  const plan=wordPlan(f,composeWord('E','FAST',{variation:0}));
  assert.ok(plan.letters.find(x=>x.ch==='A'));
  for(const l of plan.letters)for(const s of l.glyph.shapes)
-  if(s.kind==='hairline')assert.equal(showGesture(f,l,s,plan),false);
+  if(s.role==='ornament')assert.equal(showGesture(f,l,s,plan),false);
  assert.equal(WORD_POLICIES.E.maxJoins,0);
 });
 test('Block SH is spaced to stop marker shelf collisions',()=>{
@@ -36,11 +36,49 @@ test('decorative hairlines are bounded per word, independent of word length',()=
  for(const f of FAMILIES)for(const name of ['MUSHROOM','PHI','PROPORTION PIECE','SKUF']){
   const plan=wordPlan(f,composeWord(f.id,name,{variation:0}));
   assert.equal(plan.letters.length,plan.letters.filter(x=>x.ch!==' ').length);
-  const accents=plan.letters.flatMap(item=>item.glyph.shapes.filter(x=>x.kind==='hairline'&&showGesture(f,item,x,plan)));
+  const accents=plan.letters.flatMap(item=>item.glyph.shapes.filter(x=>x.role==='ornament'&&showGesture(f,item,x,plan)));
   // One chosen glyph can include several separate small strokes; the number
   // of glyphs receiving accents, not SVG subpaths, is the actual word budget.
-  const withAccent=plan.letters.filter(item=>item.glyph.shapes.some(x=>x.kind==='hairline'&&showGesture(f,item,x,plan)));
+  const withAccent=plan.letters.filter(item=>item.glyph.shapes.some(x=>x.role==='ornament'&&showGesture(f,item,x,plan)));
   assert.ok(withAccent.length<=WORD_POLICIES[f.id].ornamentsPerWord);
   assert.deepEqual(wordPlan(f,composeWord(f.id,name,{variation:0})),plan);
  }
+});
+
+test('all V2 letters explicitly distinguish structural marks from optional ornament',()=>{
+ for(const f of FAMILIES)for(const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZΦ'){
+  const glyph=getGlyph(f.id,ch);
+  assert.ok(glyph.shapes.length>0);
+  for(const shape of glyph.shapes){
+   assert.ok(['structure','ornament'].includes(shape.role),f.id+ch+' unclassified stroke');
+   if(shape.kind!=='hairline')assert.equal(shape.role,'structure',f.id+ch+' deleted main mark');
+  }
+ }
+});
+test('structural thin strokes survive with ALL ornaments disabled in T, E, F, H',()=>{
+ // Every shape marked structure survives even when the word's accent budget is zero.
+ for(const f of FAMILIES)for(const ch of 'TEFH'){
+  const g=getGlyph(f.id,ch);
+  const p=wordPlan(f,composeWord(f.id,ch,{variation:0})),item=p.letters[0];
+  for(const s of g.shapes)if(s.role==='structure')assert.equal(
+   showGesture(f,item,s,p,{ornaments:false}),true,f.id+ch+' lost structural '+s.kind);
+ }
+ const f=FAMILIES.find(f=>f.id==='E'),g=getGlyph('E','A');
+ assert.ok(g.shapes.some(s=>s.role==='structure'&&s.d.includes('L 72 57')));
+ for(const s of g.shapes)if(s.role==='structure')
+  assert.equal(showGesture(f,wordPlan(f,composeWord('E','FAST',{variation:0})).letters[1],s,
+   wordPlan(f,composeWord('E','FAST',{variation:0})),{ornaments:false}),true);
+});
+test('Interlocked overlap is reduced, and Gothic word break visibly expands',()=>{
+ const a=FAMILIES.find(f=>f.id==='A');
+ const original=composeWord('A','MUSHROOM',{variation:0});
+ const planned=wordPlan(a,original);
+ assert.ok(planned.letters[2].x-original.letters[2].x>=26,'U/S/H still stacked in A');
+ const gothic=FAMILIES.find(f=>f.id==='E');
+ const before=composeWord('E','PROPORTION PIECE',{variation:0});
+ const after=wordPlan(gothic,before);
+ const boundary=after.letters.findIndex((l,i)=>i>0&&l.index>after.letters[i-1].index+1);
+ assert.ok(boundary>0);
+ assert.ok(after.letters[boundary].x-after.letters[boundary-1].x>
+  before.letters[boundary].x-before.letters[boundary-1].x+10);
 });
