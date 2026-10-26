@@ -2,10 +2,11 @@ import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 await mkdir('phi-tower-results',{recursive:true});
+// Keep the complete desktop scene; halve pixel density for software WebGL in CI.
 const browser=await chromium.launch({headless:true});
 let page;
 try{
- page=await browser.newPage({viewport:{width:1365,height:850}});
+ page=await browser.newPage({viewport:{width:1365,height:850},deviceScaleFactor:.5});
  const errors=[],warnings=[],threeImports=new Set();
  page.on('pageerror',error=>errors.push(error.message));
  page.on('console',m=>{if(m.type()==='warning')warnings.push(m.text());});
@@ -20,7 +21,7 @@ try{
  assert.equal(phi.unplaced,0,'Unplaced artworks');
  const plaza=await page.evaluate(()=>window.__phiPlaza);
  assert.equal(plaza?.monumentCount,2);
- assert.equal(plaza.benchCount,6);
+ assert.equal(plaza.benchCount,8);
  const tower=await page.evaluate(()=>window.__phiTowerExterior);
  assert.ok(tower?.otherFloors>0&&tower.wallMeshes>tower.otherFloors,'Missing exterior tower');
  assert.ok(await page.evaluate(()=>window.__phiReception?.desk&&window.__phiReception?.information),'Missing ground-floor reception');
@@ -50,7 +51,8 @@ try{
   const state=await page.evaluate(()=>({lift:window.__phiLiftState,exhibition:window.__phiFullEngine,error:window.__phiLiftError}));
   assert.equal(state.error,null);assert.equal(state.exhibition.date,date);
   assert.equal(state.exhibition.artworks,state.exhibition.paintings+state.exhibition.sculptures);
-  assert.equal(state.exhibition.unplaced,0);assert.ok(state.lift.doorClosure<.025,'Arrival doors did not open');
+  assert.equal(state.exhibition.unplaced,0);
+  assert.ok(await page.evaluate(()=>window.__phiFurnishings?.standing>=1&&window.__phiFurnishings?.benches>=1),'Missing gallery visitors or seating');assert.ok(state.lift.doorClosure<.025,'Arrival doors did not open');
   assert.equal(state.lift.calendarCount,1);assert.equal(state.lift.doorCount,2);
   assert.equal(await page.locator('#lift').isVisible(),false,'Calendar reopened on arrival');
   assert.equal(await page.locator('#liftAnimation').isVisible(),false,'Old cutscene appeared');

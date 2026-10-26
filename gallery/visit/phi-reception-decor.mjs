@@ -1,3 +1,5 @@
+import {createGothicSurroundShape} from './phi-gothic-door-profile.mjs';
+import {renderVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 // Optional shared CC-BY props for the experimental reception. Loading never
 // blocks the floor planner or lift. Credits are installed separately below.
 const assets=new Map();
@@ -43,8 +45,12 @@ export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
  }
  return holders;
 }
-export function createPhiGothicEntrance(THREE,{doorway,outward,level}){
+export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMaterial}){
  const root=new THREE.Group();root.name='phi-gothic-main-entrance';root.position.set(doorway.x,level,doorway.z);root.rotation.y=Math.atan2(outward.x,outward.z);
+ const surround=createGothicSurroundShape(THREE);
+ const stone=surroundMaterial||new THREE.MeshStandardMaterial({color:'#b8b5a9',roughness:.9});
+ const infill=new THREE.Mesh(new THREE.ExtrudeGeometry(surround,{depth:.26,bevelEnabled:false,steps:1}),stone);infill.position.z=-.13;infill.name='gothic-exact-arch-infill';root.add(infill);
+ for(const x of [-1.46,1.46]){const jamb=new THREE.Mesh(new THREE.BoxGeometry(.28,5.2,.34),stone);jamb.position.set(x,2.6,.045);root.add(jamb);}
  const width=2.147,hinges=[new THREE.Group(),new THREE.Group()];
  const fallbackMaterial=new THREE.MeshStandardMaterial({color:'#514132',roughness:.85});
  const fallback=[];
@@ -72,7 +78,7 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level}){
 }
 
 export const RECEPTION_CREDITS=[
- {title:'The gallery',lines:['PROPORTION PIECE','Daily generative art and architecture','','Built with Three.js','Three.js authors · MIT licence','','Visitors: Quaternius · CC0','Bench and lamps: Poly Haven · CC0']},
+ {title:'The gallery',lines:['PROPORTION PIECE','Daily generative art and architecture','','Built with Three.js','Three.js authors · MIT licence','','Visitors: Quaternius · CC0','Street lamps: Poly Haven · CC0']},
  {title:'Reception models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Cardboard boxes —','NotAnotherApocalypticCo.','','All three models: CC BY 4.0','Textures compressed for the web.','Door frame and leaves separated.']},
  {title:'Materials and fittings',lines:['Architectural textures — Poly Haven','Plaster, brick, timber and concrete','CC0','','OfficeCeiling001 — ambientCG · CC0','Twin Surface Spotlight — Innerscene','CC0','','Full sources and licences online.']}
 ];
@@ -91,4 +97,33 @@ export function addPhiReceptionCredits(THREE,scene,placement,elevation){
   exhibits.push({study:{title:credit.title,credits:credit.lines.join('\n'),image:canvas.toDataURL(),href:new URL('../../test/virtual-gallery/credits.html',import.meta.url).href},position:group.position.clone(),normal:new THREE.Vector3(placement.normal.x,0,placement.normal.z)});
  }
  return exhibits;
+}
+
+// Backless concrete benches with restrained timber seating; the same visitor
+// renderer supplies calibrated standing and seated male/female models.
+export function renderPhiFurniture(THREE,parent,plan,{concrete,timber},elevation=0){
+ const root=new THREE.Group();root.name='phi-minimal-furnishings';parent.add(root);
+ for(const b of plan.benches){
+  const group=new THREE.Group();group.position.set(b.x,elevation,b.z);group.rotation.y=b.rotation;root.add(group);
+  const part=(w,h,d,x,y,z,material)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);group.add(m);};
+  for(const x of [-.65,.65])part(.23,.45,.62,x,.225,0,concrete);
+  part(1.85,.105,.68,0,.49,0,concrete);
+  for(const z of [-.21,0,.21])part(1.80,.045,.185,0,.565,z,timber);
+ }
+ renderVisitors(THREE,root,{benches:[],people:plan.people.map(p=>({...p,y:elevation}))});
+ return root;
+}
+export function addPhiFrontage(THREE,root,{concrete,timber,metal,defer}){
+ const box=(w,h,d,x,y,z,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);root.add(m);return m;};
+ box(2.65,.06,.65,0,-.05,.22,concrete);
+ const glow=new THREE.MeshStandardMaterial({color:'#f1e9cf',emissive:'#e5c795',emissiveIntensity:.65,roughness:.3});
+ for(const side of [-1,1]){
+  box(.16,.7,.22,side*1.94,2.25,.23,metal);box(.11,.52,.055,side*1.94,2.25,.37,glow);
+  const lamp=new THREE.PointLight('#ffe4ba',2.3,5,2);lamp.position.set(side*1.94,2.4,.65);root.add(lamp);
+ }
+ const benches=[-1,1].map(side=>({x:side*5.2,z:3.1,rotation:Math.atan2(-side*5.2,-3.1)}));
+ const b=benches[0];renderPhiFurniture(THREE,root,{benches,people:[]},{concrete,timber});
+ const people=()=>renderVisitors(THREE,root,{benches:[],people:[{...b,y:0,yaw:b.rotation,bodyType:'female',variant:2,scale:1,pose:4,seat:true}]});
+ if(defer)defer.push(people);else people();
+ return {benches:2,visitors:1};
 }

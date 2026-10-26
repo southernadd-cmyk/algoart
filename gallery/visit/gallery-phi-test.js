@@ -1,6 +1,7 @@
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs';
-import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance} from './phi-reception-decor.mjs?v=reception-credits-20261026';
+import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,renderPhiFurniture,addPhiFrontage} from './phi-reception-decor.mjs?v=minimal-gothic-frontage-20261026';
+import {planPhiFurnishings} from './phi-furnishings.mjs';
 import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=complete-archive-20261026';
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
@@ -65,6 +66,7 @@ let liftPickerConsumed=false;
 let phiMovingCabin=null;
 let phiLiftCabin=null;
 let phiReceptionProps=[];
+let phiFurnishingObstacles=[];
 let phiRideState=null;
 let phiLiftPanelPosition=null;
 let liftCabinPosition=null;
@@ -1181,13 +1183,23 @@ function constructPhiTowerShell(){
  scene.add(shell);
  window.__phiTowerExterior={otherFloors:count,wallMeshes:shell.children.length};
 }
+function queuePhiFurnishings(phi,furnishings,elevation){
+ window.__phiFurnishings={benches:furnishings.benches.length,standing:furnishings.people.filter(p=>!p.seat).length,seated:furnishings.people.filter(p=>p.seat).length};
+ deferredGalleryJobs.unshift(()=>{
+  const convert=p=>({...p,...phi.world.toWorld(p.x,p.z),rotation:(p.rotation||0)+phi.world.theta,yaw:(p.yaw||0)+phi.world.theta});
+  const furniture={benches:furnishings.benches.map(convert),people:furnishings.people.map(convert)};
+  renderPhiFurniture(THREE,scene,furniture,{concrete:galleryFinish.stone,timber},elevation);
+  const cs=Math.abs(Math.cos(phi.world.theta)),sn=Math.abs(Math.sin(phi.world.theta));
+  phiFurnishingObstacles=furnishings.obstacles.map(p=>({...convert(p),width:p.width*cs+p.depth*sn,depth:p.width*sn+p.depth*cs}));
+ });
+}
 function constructPhiGallery(layout,studies){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
  window.__phiFullEngine={date:exhibitDate,roomCount:phi.floor.mergedRooms.length,wallCount:phi.physical.walls.length,artworks:studies.length,paintings:phi.exhibition.paintings.length,sculptures:phi.exhibition.sculptures.length,unplaced:phi.exhibition.unplaced.length};
  // Every floor, enclosure and collision surface comes from the same phi plan.
  const plaster=galleryFinish?.interiorWall||wall;
  for(const p of phi.pieces)
-   block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,galleryFinish.floorForRoom(exhibitDate===RECEPTION?archiveDates[1]:exhibitDate,p.room,phi.floor.mergedRooms.length));
+   block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,galleryFinish.floor);
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.04)continue;
   if(w.axis==='x')block(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,plaster);
@@ -1214,7 +1226,7 @@ function constructPhiGallery(layout,studies){
  // ceiling photographic texture, with trim only at true physical boundaries:
  // subdivided internal cells should not look like a ceiling grid.
  for(const p of phi.pieces)
-  block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,ceilingFinish);
+  block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster);
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.45)continue;
   if(w.axis==='x'){
@@ -1367,8 +1379,8 @@ function constructPhiGallery(layout,studies){
   const outward=entrance?{x:0,z:-1}:{x:-1,z:0};
   const transverse={x:outward.z,z:-outward.x};
   const doorway=entrance?{x:entrance.centre,z:entrance.at}:{x:l.x-1.45,z:l.z};
-  entranceDoor=createPhiGothicEntrance(THREE,{doorway,outward,level:elevation});scene.add(entranceDoor.root);
-  block(2.6,.6,.19,doorway.x,elevation+4.9,doorway.z,plaster);
+  entranceDoor=createPhiGothicEntrance(THREE,{doorway,outward,level:elevation,surroundMaterial:galleryFinish.stone});scene.add(entranceDoor.root);
+  addPhiFrontage(THREE,entranceDoor.root,{concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs});
   const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
     halfWidth:30,halfDepth:29,level:elevation};
   const approach={doorway,outward,pathLength:42,halfWidth:3.25};
@@ -1399,7 +1411,7 @@ function constructPhiGallery(layout,studies){
    window.__phiRoofMonuments=monuments.length;
   }
   deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
-  window.__phiPlaza={centre:plaza.centre,benchCount:6,monumentCount:2,visitorSlots:2};
+  window.__phiPlaza={centre:plaza.centre,benchCount:8,monumentCount:2,visitorSlots:2};
   // Exterior marker-font sign, mounted above the public doorway on the
   // reception facade and transformed with the rest of the ground floor.
   if(entrance){
@@ -1432,7 +1444,7 @@ function constructPhiGallery(layout,studies){
    block(3.1,.84,1.06,x,elevation+.42,z,timber);
    block(3.35,.12,1.18,x,elevation+.90,z,galleryFinish.plinth);
    // Recessed front panel and simple counter accessories.
-   block(2.8,.58,.025,x,elevation+.44,z+.55,join);
+   block(2.8,.58,.025,x,elevation+.44,z-.55,join);
    block(.47,.07,.3,x-.7,elevation+.99,z-.16,stone);
    // The local CC0 scanned stone/concrete finish forms a quiet waiting-area
    // inset, sized by the reserved furniture zone rather than blocking doors.
@@ -1440,7 +1452,7 @@ function constructPhiGallery(layout,studies){
    for(const side of [-1,1])
     block(.075,.045,3.4,x+side*2.85,elevation+.04,z+.2,join);
    const brass=new THREE.MeshStandardMaterial({color:'#9d8965',metalness:.5,roughness:.52});
-   block(2.8,.055,.055,x,elevation+.76,z+.555,brass);
+   block(2.8,.055,.055,x,elevation+.76,z-.555,brass);
    block(.28,.28,.28,x+1.17,elevation+1.12,z-.12,galleryFinish.stone);
 
   }
@@ -1462,25 +1474,14 @@ function constructPhiGallery(layout,studies){
   }
   const plantMaterial=new THREE.MeshStandardMaterial({color:'#56705b',roughness:1,flatShading:true});
   const leafLight=new THREE.MeshStandardMaterial({color:'#819477',roughness:1,flatShading:true});
-  // Visitors can rest close to the desk, without blocking the entrance.
-  if(furnishing.desk){
-   const d=furnishing.desk;
-   for(const shift of [-1,1]){
-    const x=d.x+shift*2.18,z=d.z+.42;
-    if(phi.canWalk(x,z)&&Math.hypot(x-furnishing.entrance.x,z-furnishing.entrance.z)>2.8){
-     block(.75,.13,.72,x,elevation+.51,z,timber);
-     for(const sx of [-1,1])for(const sz of [-1,1])
-      block(.085,.44,.085,x+sx*.28,elevation+.24,z+sz*.25,join);
-     block(.76,.68,.12,x,elevation+.91,z+.29,timber);
-    }
-   }
-  }
+  queuePhiFurnishings(phi,planPhiFurnishings(phi,{reception:furnishing,lowPower:galleryFinish.lowPower}),elevation);
   phiReceptionProps=addPhiReceptionDecor(THREE,scene,furnishing,elevation);
   const credits=addPhiReceptionCredits(THREE,scene,furnishing.credits,elevation);
   artExhibits.push(...credits);window.__phiReceptionCredits={count:credits.length,placement:furnishing.credits};
   window.__phiReception={desk:!!furnishing.desk,information:furnishing.signage.length>0,
     signCount:furnishing.signage.length,plantCount:furnishing.plants.length,credits:credits.length,clearance:furnishing.checks};
  }
+ if(exhibitDate!==RECEPTION)queuePhiFurnishings(phi,planPhiFurnishings(phi,{lowPower:galleryFinish.lowPower}),elevation);
  // Gallery-side lift doors: frame and leaves kept distinct from walking collision.
  const liftFace=l.x+1.30;
  // Two animated steel landing leaves, aligned to the physical portal.
@@ -1979,7 +1980,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   exhibitLightTargets.length=0;
   resetInspection();
   liftPosition=null;liftDoorThreshold=null;phiLiftPanelPosition=null;liftWasNear=false;liftDoors=[];
-  phiReceptionProps=[];
+  phiReceptionProps=[];phiFurnishingObstacles=[];
   liftPickerConsumed=false;
   const previous=new Set(scene.children);
   arrival=null;entranceDoor=null;
@@ -2021,8 +2022,8 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   if(!viaLift && nextFloor===0 && plan.phi?.plaza){
     const door=plan.phi.arrivalDoor;
     const out=plan.phi.plaza.outward;
-    rig.position.set(door.x+out.x*13,0,door.z+out.z*13);
-    yaw=Math.atan2(out.x,out.z);pitch=.08;rig.rotation.y=yaw;camera.rotation.x=pitch;
+    rig.position.set(door.x+out.x*9.8,0,door.z+out.z*9.8);
+    yaw=Math.atan2(out.x,out.z);pitch=.14;rig.rotation.y=yaw;camera.rotation.x=pitch;
   }
   if(!viaLift && nextFloor===0 && arrival){
     rig.position.copy(arrival.start);
@@ -2393,9 +2394,12 @@ function onPhiPlaza(x,z){
  return ((x-door.x)*p.outward.x+(z-door.z)*p.outward.z)>-.5 || phi.canWalk(x,z);
 }
 function phiDoorBlocked(x,z){
- if(!plan?.phi||liftDoorClosure<.12)return false;
+ if(!plan?.phi)return false;
  const p=plan.phi.world.toLocal(x,z),l=plan.phi.circulation.lift;
- return Math.abs(p.x-(l.x+1.20))<.43&&Math.abs(p.z-l.z)<1.27;
+ if(liftDoorClosure>=.12&&Math.abs(p.x-(l.x+1.20))<.43&&Math.abs(p.z-l.z)<1.27)return true;
+ const entrance=plan.phi.circulation.publicEntrance;
+ return currentFloor===0&&entrance&&Math.abs(p.z-entrance.at)<.45&&
+   Math.abs(p.x-entrance.centre)>.63&&Math.abs(p.x-entrance.centre)<1.8;
 }
 function updateMovement(dt) {
   if (!plan || !welcome.hidden || !$('lift').hidden) return;
@@ -2461,8 +2465,8 @@ function updateMovement(dt) {
       dx=(Math.cos(yaw)*side-Math.sin(yaw)*ahead)*dt*speed;
       dz=(-Math.sin(yaw)*side-Math.cos(yaw)*ahead)*dt*speed;
     }
-    if (((plan.phi?(plan.phi.canWalk(rig.position.x+dx,rig.position.z)||onPhiPlaza(rig.position.x+dx,rig.position.z)):canStand(plan,rig.position.x+dx,rig.position.z))||(plan.phi?false:onArrivalPath(rig.position.x+dx,rig.position.z))) && !phiDoorBlocked(rig.position.x+dx,rig.position.z) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
-    if (((plan.phi?(plan.phi.canWalk(rig.position.x,rig.position.z+dz)||onPhiPlaza(rig.position.x,rig.position.z+dz)):canStand(plan,rig.position.x,rig.position.z+dz))||(plan.phi?false:onArrivalPath(rig.position.x,rig.position.z+dz))) && !phiDoorBlocked(rig.position.x,rig.position.z+dz) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
+    if (((plan.phi?(plan.phi.canWalk(rig.position.x+dx,rig.position.z)||onPhiPlaza(rig.position.x+dx,rig.position.z)):canStand(plan,rig.position.x+dx,rig.position.z))||(plan.phi?false:onArrivalPath(rig.position.x+dx,rig.position.z))) && !phiDoorBlocked(rig.position.x+dx,rig.position.z) && clearOfSculptures(phiFurnishingObstacles,rig.position.x+dx,rig.position.z) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
+    if (((plan.phi?(plan.phi.canWalk(rig.position.x,rig.position.z+dz)||onPhiPlaza(rig.position.x,rig.position.z+dz)):canStand(plan,rig.position.x,rig.position.z+dz))||(plan.phi?false:onArrivalPath(rig.position.x,rig.position.z+dz))) && !phiDoorBlocked(rig.position.x,rig.position.z+dz) && clearOfSculptures(phiFurnishingObstacles,rig.position.x,rig.position.z+dz) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
   }
   const part=plan.phi?((plan.phi.canWalk(rig.position.x,rig.position.z)||onPhiPlaza(rig.position.x,rig.position.z))?{y:currentFloor*FLOOR_SPACING,zone:'room'}:null):footprintAt(plan,rig.position.x,rig.position.z);
   if(part)rig.position.y=part.y;

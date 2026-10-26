@@ -8,6 +8,7 @@ on:
       - 'gallery/visit/gallery-phi-test.js'
       - 'tests/full-engine-walkthrough.test.mjs'
       - 'tests/phi-full-engine-adapter.test.mjs'
+      - 'tests/phi-presentation.test.mjs'
       - 'test/virtual-gallery/phi-full-engine-adapter.mjs'
       - 'gallery/visit/phi-*.mjs'
       - 'tests/phi-tower-smoke.mjs'
@@ -22,8 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/phi-full-engine-adapter.test.mjs
-      - run: npm install --no-save --no-package-lock playwright
+      - run: npm ci
+      - run: node --test tests/phi-full-engine-adapter.test.mjs tests/phi-presentation.test.mjs
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-tower-http.log 2>&1 &
       - run: node tests/phi-tower-smoke.mjs
