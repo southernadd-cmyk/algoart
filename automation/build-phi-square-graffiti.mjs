@@ -20,9 +20,9 @@ try{
    const manifest={version:1,letteringRevision:TOWER_LETTERING_REVISION,
     date:'__phi_reception__',squareRevision:PHI_SQUARE_REVISION,
     signature:'white-understroke-v3|'+towerGraffitiSignature(subset),
-    marks:subset.map(m=>({id:m.id,hand:m.hand,seed:m.seed,text:m.text,form:m.form})),pages:[]};
+    marks:subset.map(m=>({id:m.id,hand:m.hand,seed:m.seed,text:m.phrase,form:m.form})),pages:[]};
    for(const [i,plan] of plans.entries()){
-    const entries=plan.entries.map(({mark,x,y,width,height})=>({tag:mark.tag,bounds:mark.bounds,x,y,width,height}));
+    const entries=plan.entries.map(({mark,x,y,width,height})=>({tag:mark.tag,phrase:mark.phrase,bounds:mark.bounds,x,y,width,height}));
     const base64=await page.evaluate(async({entries,size,height})=>{
      const [{drawTag},{drawTowerFamilyTag},{paintExteriorUnderstroke}]=await Promise.all([
       import('/test/graffiti/tag-engine.mjs'),
@@ -35,6 +35,17 @@ try{
       g.translate(e.x,e.y);g.scale(e.width/e.bounds.width,e.height/e.bounds.height);g.translate(-e.bounds.x,-e.bounds.y);
       if(e.tag.renderer==='az-nine-v1')drawTowerFamilyTag(g,e.tag,{finish:'spray'});
       else drawTag(g,e.tag,{finish:'spray'});
+      // Preserve the capital I as a clearly legible vertical with caps. The
+      // legacy graffiti normaliser uppercases input, so 'phI' otherwise paints
+      // the same ambiguous PHI glyph. This adjustment is atlas-only.
+      if(e.phrase==='phI'&&e.tag.construction?.letters?.[2]){
+       const frame=e.tag.construction.letters[2],H=e.tag.construction.metrics.height;
+       const x=frame.x+frame.wide*.44,top=frame.baseY-H*.92,bottom=frame.baseY;
+       g.save();g.strokeStyle=e.tag.ink;g.lineWidth=Math.max(3,e.tag.weight*.28);g.lineCap='round';
+       g.beginPath();g.moveTo(x,top);g.lineTo(x,bottom);
+       g.moveTo(x-H*.14,top);g.lineTo(x+H*.14,top);
+       g.moveTo(x-H*.14,bottom);g.lineTo(x+H*.14,bottom);g.stroke();g.restore();
+      }
       g.restore();paintExteriorUnderstroke(g,e.x,e.y,e.width,e.height);
      }
      return canvas.toDataURL('image/png').split(',')[1];
