@@ -3,7 +3,7 @@
 <title>PROPORTION PIECE — φ tower rehearsal</title>
 <style>body{font:17px Georgia,serif;background:#eae6db;color:#26332c;margin:0}header{padding:18px 24px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}h1{font-size:25px;font-weight:normal;margin:0}main{display:grid;grid-template-columns:minmax(250px,32%) 1fr;gap:12px;padding:0 14px 14px}.panel{background:#f4f1e8;border:1px solid #b0a99d;padding:12px}canvas{width:100%;height:65vh;display:block;touch-action:none}iframe{border:1px solid #b0a99d;width:100%;height:80vh;background:#fff}select,button{font:inherit;padding:8px}#floors{width:100%;max-height:220px;overflow:auto}#floors button{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #ccc}#floors button[aria-current=true]{background:#d4dcd4}#status{font-size:14px;line-height:1.4}@media(max-width:750px){main{display:block}canvas{height:300px}iframe{height:80vh}}</style></head><body>
 <header><h1>PROPORTION PIECE · φ tower rehearsal</h1><a href="./">Current test gallery</a><a href="./phi-rehearsal.html">Single-floor study</a></header>
-<main><section class="panel"><p>Stacked φ floor preview. Select a floor to enter its real-art walkable exhibition. Full continuous lift animation and exterior dressing are still in development.</p><canvas id="tower" aria-label="Three-dimensional stacked φ gallery floor geometry"></canvas><p id="status" role="status">Reading gallery archive…</p><nav id="floors" aria-label="Tower lift floors"></nav></section><section><iframe id="exhibition" title="Walkable current exhibition floor" src="./phi-rehearsal.html?date=2026-10-26" loading="eager"></iframe></section></main>
+<main><section class="panel"><p>Golden-angle φ-offset stacked floor preview. Select a floor to enter its real-art walkable exhibition. Full continuous lift animation and exterior dressing are still in development.</p><canvas id="tower" aria-label="Three-dimensional stacked φ gallery floor geometry"></canvas><p id="status" role="status">Reading gallery archive…</p><nav id="floors" aria-label="Tower lift floors"></nav></section><section><iframe id="exhibition" title="Walkable current exhibition floor" src="./phi-rehearsal.html?date=2026-10-26" loading="eager"></iframe></section></main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -23,10 +23,11 @@ const floorMaterial=new THREE.MeshStandardMaterial({color:0xb1b2a9,roughness:.88
 const selectedMaterial=new THREE.MeshStandardMaterial({color:0x8ca8aa,roughness:.78,side:THREE.DoubleSide});
 const glassMaterial=new THREE.MeshStandardMaterial({color:0x91c5c9,transparent:true,opacity:.63,side:THREE.DoubleSide});
 const frameMaterial=new THREE.MeshStandardMaterial({color:0x66695e});
+const PHI=(1+Math.sqrt(5))/2,GOLDEN_ANGLE=2*Math.PI/(PHI*PHI),FLOOR_RISE=6.2;
 const levels=[];let selected=0,angle=.5,dragX=null,zoom=1;
 function cube(group,material,x,y,z,w,h,d){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);group.add(mesh);return mesh;}
-function draw(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const height=levels.length*6.2;camera.position.set(Math.sin(angle)*height*.92*zoom,height*.64*zoom+8,Math.cos(angle)*height*.92*zoom);camera.lookAt(0,height*.46,0);renderer.render(scene,camera);}
-function select(i){selected=i;for(let n=0;n<levels.length;n++){levels[n].group.children.forEach(obj=>{if(obj.userData.floorSlab)obj.material=n===i?selectedMaterial:floorMaterial;});}for(const btn of nav.querySelectorAll('button'))btn.setAttribute('aria-current',String(Number(btn.dataset.index)===i));document.querySelector('#exhibition').src='./phi-rehearsal.html?date='+encodeURIComponent(levels[i].date);status.textContent='Floor '+(i+1)+' of '+levels.length+' · '+levels[i].date+' · '+levels[i].count+' archived artworks · selected for walkthrough';draw();}
+function draw(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const height=levels.length*FLOOR_RISE;camera.position.set(Math.sin(angle)*height*.92*zoom,height*.64*zoom+8,Math.cos(angle)*height*.92*zoom);camera.lookAt(0,height*.46,0);renderer.render(scene,camera);}
+function select(i){selected=i;for(let n=0;n<levels.length;n++){levels[n].group.children.forEach(obj=>{if(obj.userData.floorSlab)obj.material=n===i?selectedMaterial:floorMaterial;});}for(const btn of nav.querySelectorAll('button'))btn.setAttribute('aria-current',String(Number(btn.dataset.index)===i));document.querySelector('#exhibition').src='./phi-rehearsal.html?date='+encodeURIComponent(levels[i].date);status.textContent='Floor '+(i+1)+' of '+levels.length+' · '+levels[i].date+' · '+levels[i].count+' archived artworks · φ-offset '+levels[i].group.userData.offset.dx.toFixed(1)+' m / '+levels[i].group.userData.offset.dz.toFixed(1)+' m · selected for walkthrough';draw();}
 canvas.addEventListener('pointerdown',e=>{dragX=e.clientX;canvas.setPointerCapture(e.pointerId);});
 canvas.addEventListener('pointermove',e=>{if(dragX===null)return;angle+=(e.clientX-dragX)*.008;dragX=e.clientX;draw();});
 canvas.addEventListener('pointerup',()=>dragX=null);canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.4,Math.min(2,zoom*Math.exp(e.deltaY*.001)));draw()},{passive:false});
@@ -41,7 +42,7 @@ try{
  for(let i=0;i<dates.length;i++){
   const date=dates[i],studies=await loadPhiArchive(date);
   const result=planPhiBridges(planPhiFloor(date,{artworks:studies.length}));
-  const group=new THREE.Group();group.position.y=i*6.2;tower.add(group);
+  const group=new THREE.Group();group.position.y=i*FLOOR_RISE;tower.add(group);
   const floor=result.plan;
   for(const room of floor.mergedRooms)for(const p of room.pieces){
    const slab=cube(group,floorMaterial,p.x+p.w/2,0,p.z+p.h/2,p.w,.18,p.h);slab.userData.floorSlab=true;
@@ -60,8 +61,19 @@ try{
   }
   levels.push({date,count:studies.length,group});
   const btn=document.createElement('button');btn.type='button';btn.dataset.index=String(i);btn.textContent=(i===0?'G':String(i))+' · '+date+' · '+studies.length+' works';btn.addEventListener('click',()=>select(i));nav.prepend(btn);
-  // World coordinates are centred on the oldest floor's root for a consistent tower overview.
-  group.position.x=-floor.root.x-floor.root.w/2;group.position.z=-floor.root.z-floor.root.h/2;
+  // Golden-angle rotation and phi-scaled sunflower staggering.
+  // Rotate around each floor's own lift rather than its geometric centre.
+  // The shaft stays at the global origin; offset galleries require future enclosed lift lobbies.
+  const theta=i*GOLDEN_ANGLE;
+  const radius=1.6*(1-Math.pow(1/PHI,i));
+  const dx=radius*Math.cos(theta),dz=radius*Math.sin(theta);
+  group.rotation.y=theta;
+  const lift=circulation.lift;
+  group.position.x=dx-(lift.x*Math.cos(theta)+lift.z*Math.sin(theta));
+  group.position.z=dz-(-lift.x*Math.sin(theta)+lift.z*Math.cos(theta));
+  // A stationary vertical shaft, rendered separately, makes floor-to-floor alignment legible.
+  if(i===0){const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.84,.84,dates.length*FLOOR_RISE,12),new THREE.MeshStandardMaterial({color:0x818a82,transparent:true,opacity:.35}));shaft.position.y=(dates.length-1)*FLOOR_RISE/2;tower.add(shaft);}
+  group.userData.offset={angle:theta,dx,dz};
   if(i%4===0){status.textContent='Generated '+(i+1)+' / '+dates.length+' exhibition floors';draw();await new Promise(requestAnimationFrame);}
  }
  select(levels.length-1);
