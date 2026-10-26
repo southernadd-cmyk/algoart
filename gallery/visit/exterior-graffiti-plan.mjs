@@ -98,14 +98,15 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
    occupied.add(hand);
    const item=towerTagSlot({floorId:plan.date,seed:seed+'|front-freehand|'+slot,slot,hand});
    const phrase=extra<5?GRAFFITI_WORDS[(extra+level)%GRAFFITI_WORDS.length]:extra<10?['Proportion','Piece','PHI','φ','Proportion Piece'][extra-5]:['Proportion','Piece','Proportion Piece','PHI','φ'][extra-10];
+   if(phrase==='Piece')continue;
    const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:2});
    const r=makeRandom(item.seed+'|front-wall'),epic=extra>=10&&extra<=12;
    const desiredWidth=epic?(phrase==='Proportion Piece'?r.range(8,10.5):phrase==='Proportion'?r.range(7,9.5):r.range(5.5,7.5)):
     phrase==='Proportion Piece'?r.range(3.2,4.3):phrase==='PHI'?r.range(1.7,2.5):phrase==='Proportion'?r.range(3,4.1):phrase==='Piece'?r.range(2.2,3.1):r.range(1.1,1.6);
    // Try several phi-phased placements on each wall rather than stacking
    // every additional mark at the same five golden fractions.
-   const placed=candidates.flatMap(face=>Array.from({length:epic?30:12},(_,attempt)=>{
-    const p=fitPhiTag({bounds:tag.bounds,desiredWidth,maxHeight:ROOM_HEIGHT-1.5,
+   const placed=[1,.82,.66,.52].flatMap(shrink=>candidates.flatMap(face=>Array.from({length:epic?30:18},(_,attempt)=>{
+    const p=fitPhiTag({bounds:tag.bounds,desiredWidth:desiredWidth*shrink,maxHeight:ROOM_HEIGHT-1.5,
      lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,bottom:.65,top:ROOM_HEIGHT-.55,slot:slot+attempt*3,phase:extra*7+attempt*11});
     const cos=Math.abs(Math.cos(p.rotation)),sin=Math.abs(Math.sin(p.rotation));
     const hw=(p.width*cos+p.height*sin)/2,hh=(p.height*cos+p.width*sin)/2;
@@ -120,9 +121,10 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
      const dy=Math.max(0,Math.min(p.centreY+hh,my+mh)-Math.max(p.centreY-hh,my-mh));
      return sum+dx*dy;
     },0);
-    return {face,...p,overlap,score:overlap*(epic?12:100)+(neighbours.length*(epic?.07:.15))+attempt*.002-(epic?Math.min(p.width,desiredWidth)*.10:0)};
-   })).filter(p=>p.width>0&&p.height>0).sort((a,b)=>a.score-b.score);
-   const chosen=placed[0];if(!chosen)throw new Error('No suitable facade wall for freehand tag');
+    return {face,...p,overlap,score:overlap*1000+(neighbours.length*.12)+attempt*.002+(1-shrink)*.25};
+   }))).filter(p=>p.width>0&&p.height>0).sort((a,b)=>a.score-b.score);
+   // Do not place one tag on top of another: an oversized tag can shrink or be omitted.
+   const chosen=placed.find(p=>p.overlap<.015);if(!chosen)continue;
    const {face,width,height,rotation,u:shift,centreY,phi}=chosen;
    const normal=face.normal,right={x:normal.z,z:-normal.x};
    marks.push({id:item.id,date:plan.date,level,slot,surface:'exterior',phi,phrase,text:tag.text,hand:tag.hand,form:'handstyle',ink:tag.ink,seed:tag.seed,
