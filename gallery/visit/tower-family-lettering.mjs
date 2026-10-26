@@ -7,8 +7,9 @@
 import {composeWord,getFamily} from '../../test/graffiti/v2/v2-library.mjs';
 import {wordPlan,showGesture,limitJoins,exitContinuations} from '../../test/graffiti/v2/word-flow.mjs';
 import {contextualJoinLayer} from '../../test/graffiti/family-joins.mjs';
+import {composeBroadNib} from '../../test/graffiti/v3/broadnib-library.mjs';
 
-export const TOWER_LETTERING_REVISION='az-nine-v2-20261026';
+export const TOWER_LETTERING_REVISION='az-nine-v3-broadnib-20261026';
 const NS='http://www.w3.org/2000/svg';
 const SVG_STROKE_CACHE=new Map(),PATH_CACHE=new Map();
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -17,7 +18,8 @@ export function makeTowerFamilyTag(text,{hand='A',seed='PP-TOWER',ink='#2b2c29',
  const family=getFamily(hand);
  const versionedSeed=seed+'|'+TOWER_LETTERING_REVISION;
  const planned=wordPlan(family,composeWord(hand,text,{seed:versionedSeed,variation:.04}));
- const plan={...planned,accented:[...planned.accented]}; // JSON-safe atlas payload
+ const v3=hand==='F'?composeBroadNib(planned,{seed:versionedSeed,mode:'restrained'}):null;
+ const plan={...planned,letters:v3?v3.letters:planned.letters,shared:v3?v3.shared:[],accented:[...planned.accented]}; // JSON-safe atlas payload
  const bounds={x:-32,y:-35,width:plan.width+61,height:189};
  return {
   renderer:'az-nine-v1',version:TOWER_LETTERING_REVISION,
@@ -81,7 +83,7 @@ function drawStroke(ctx,s,f){
  const d=s.d,kind=s.kind;
  if(kind==='fill'){ctx.fill(pathFor(d),'evenodd');return;}
  if(kind==='hairline'){
-  ctx.lineWidth=f.technique==='gothic'?1.25:1.8;
+  ctx.lineWidth=f.id==='F'&&s.subtype==='crossbar'?5.2:f.technique==='gothic'?1.25:1.8;
   ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke(pathFor(d));return;
  }
  const weight=f.weight*(kind==='heavy'?(f.technique==='fatmarker'?1.18:1.3):1);
@@ -107,10 +109,18 @@ export function drawTowerFamilyTag(ctx,tag,{finish='spray',joins=true}={}){
   ctx.rotate(item.rotation*Math.PI/180);
   ctx.translate(-38,-54);
   ctx.transform(item.scale,0,f.italic,1,0,0);
-  for(const s of item.glyph.shapes)if(showGesture(f,item,s,plan))drawStroke(ctx,s,f);
+  for(const s of (item.shapes||item.glyph.shapes))if(s.role==='ornament'?showGesture(f,item,s,plan):s.role==='structure')drawStroke(ctx,s,f);
   ctx.restore();
  }
- if(joins){
+ if(tag.hand==='F'&&plan.shared?.length){
+  for(const stroke of plan.shared){
+   ctx.save();
+   ctx.lineCap='round';ctx.lineJoin='round';
+   ctx.lineWidth=stroke.subtype==='crossbar'?5.2:Math.max(3.2,stroke.width||4.7);
+   ctx.stroke(pathFor(stroke.d));ctx.restore();
+  }
+ }
+ if(joins&&tag.hand!=='F'){
   const layer=['A','F','G'].includes(f.id)?exitContinuations(f,plan,{seed:plan.seed,enabled:true}):limitJoins(f,contextualJoinLayer(f,plan,{seed:plan.seed,enabled:f.id!=='E'}),plan);
   for(const path of layer.querySelectorAll('path')){
    ctx.save();
