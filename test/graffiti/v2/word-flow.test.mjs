@@ -82,3 +82,23 @@ test('Interlocked overlap is reduced, and Gothic word break visibly expands',()=
  assert.ok(after.letters[boundary].x-after.letters[boundary-1].x>
   before.letters[boundary].x-before.letters[boundary-1].x+10);
 });
+
+test('known thin letter anatomy is role=structure: broad-nib T/E/F/H and chisel E',()=>{
+ const cases=[['F','T',0],['F','E',1],['F','F',1],['F','H',2]];
+ for(const [family,letter,index] of cases){
+  const g=getGlyph(family,letter),mark=g.shapes[index];
+  assert.equal(mark.kind,'hairline',family+letter+' expected fine construction');
+  assert.equal(mark.role,'structure',family+letter+' crossbar must not be treated as ornament');
+  const f=FAMILIES.find(x=>x.id===family),plan=wordPlan(f,composeWord(f.id,letter,{variation:0}));
+  assert.equal(showGesture(f,plan.letters[0],mark,plan,{ornaments:false}),true);
+ }
+ const chisel=getGlyph('I','E');
+ assert.ok(chisel.shapes.filter(s=>s.role==='structure').length>=2);
+});
+test('Loops U has an open high entrance and S remains a distinct two-bowl spine',()=>{
+ const u=getGlyph('G','U'),s=getGlyph('G','S');
+ assert.ok(u.shapes.some(x=>x.d.startsWith('M 9 1 C 10 34')));
+ assert.ok(s.shapes.some(x=>x.d.startsWith('M 82 15 C 54 -9')));
+ assert.equal(u.shapes.filter(x=>x.role==='ornament').length,1);
+ assert.equal(s.shapes.filter(x=>x.role==='ornament').length,1);
+});
