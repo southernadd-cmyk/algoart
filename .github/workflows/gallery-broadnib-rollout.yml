@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/gallery-broadnib-rollout.yml'
       - 'gallery/visit/tower-family-lettering.mjs'
+      - 'test/graffiti/v3/structural-composers.test.mjs'
       - 'test/graffiti/v3/broadnib-library.mjs'
   workflow_dispatch:
 permissions:
