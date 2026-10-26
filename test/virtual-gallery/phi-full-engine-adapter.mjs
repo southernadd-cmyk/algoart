@@ -8,7 +8,8 @@ import {buildPhysicalPhiFloor,WALK_RADIUS} from '../../gallery/visit/phi-physica
 import {planCuratedPhiExhibition} from '../../gallery/visit/phi-curator.mjs';
 
 export function buildPhiRendererPlan(date,studies,{variation=0}={}){
- const subdivision=planPhiFloor(date,{artworks:studies.length,variation});
+ const planningDate=date==='__phi_reception__'?'2026-10-05':date;
+ const subdivision=planPhiFloor(planningDate,{artworks:studies.length,variation});
  const {plan:floor,bridges,voids}=planPhiBridges(subdivision);
  const circulation=planPhiCirculation(floor);
  circulation.bridges=bridges;
