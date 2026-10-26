@@ -1,6 +1,7 @@
 // Genuine Three.js geometry for the isolated phi architecture prototype.
 // Deliberately separate from the public exhibition renderer.
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import {createPortraitSculpture} from './sculpture-render-traced.mjs';
 export function mountPhiThree(canvas){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
@@ -51,13 +52,18 @@ export function mountPhiThree(canvas){
    }
   }
   if(artwork){
+   const labelTexture=(title,seed)=>{const c=document.createElement('canvas');c.width=512;c.height=128;const g=c.getContext('2d');g.fillStyle='#eee8da';g.fillRect(0,0,512,128);g.fillStyle='#343c36';g.font='21px Georgia';g.fillText(String(title).slice(0,33),18,48);g.font='15px Georgia';g.fillText(String(seed).slice(0,42),18,79);return new THREE.CanvasTexture(c);};
    const canvasMaterial=new THREE.MeshStandardMaterial({color:0xf4f0e5,roughness:.85,side:THREE.DoubleSide});
    const byId=new Map(studies.map(v=>[v.id,v]));
    for(const a of artwork.paintings){const tall=Math.min(1.6,a.height);const panel=a.axis==='x'?block(a.at,1.73,a.u,.10,tall,a.width,canvasMaterial):block(a.u,1.73,a.at,a.width,tall,.10,canvasMaterial);
     const study=byId.get(a.studyId);if(!study?.image)continue;
     new THREE.TextureLoader().load(study.image,texture=>{if(!root.children.includes(panel)){texture.dispose();return;}texture.colorSpace=THREE.SRGBColorSpace;const mat=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});const mesh=new THREE.Mesh(new THREE.PlaneGeometry(a.width,tall),mat);mesh.position.set(a.axis==='x'?a.at+.09:a.u,1.73,a.axis==='x'?a.u:a.at+.09);if(a.axis==='x')mesh.rotation.y=Math.PI/2;root.add(mesh);render();});
    }
-   for(const a of artwork.sculptures)block(a.x,.48,a.z,a.width,.96,a.depth,plinth);
+   for(const a of artwork.sculptures){const study=byId.get(a.studyId);if(!study)continue;
+    const material=study.material?.type?study.material:{type:study.material||'marker'};
+    const instance=createPortraitSculpture({scene:root,study:{...study,material},placement:{x:a.x,y:0,z:a.z,yaw:0},quality:'mobile',labelTexture});
+    instance.pivot.userData.studyId=a.studyId;
+   }
   }else for(const s of physical.sculptures)block(s.x,.43,s.z,s.width,.86,s.depth,plinth);
   const lift=circulation.lift;
   const pad=block(lift.x,.045,lift.z,2.2,.09,2.2,frame);pad.renderOrder=1;
