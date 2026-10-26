@@ -1043,6 +1043,23 @@ function constructPhiGallery(layout,studies){
  const l=phi.circulation.lift;
  block(2.9,.2,2.9,l.x,elevation-.09,l.z,galleryFinish.floor);
  block(2.9,.18,2.9,l.x,elevation+ROOM_HEIGHT+.08,l.z,ceilingFinish);
+ // Enclosed exterior arrival lobby. The east-facing doorway to the gallery
+ // stays open, as does the lift-facing approach in the cabin's west end.
+ const outerWest=l.x-1.45,innerEast=l.portal.at,depth=3.1;
+ block(.19,ROOM_HEIGHT,depth,outerWest,elevation+ROOM_HEIGHT/2,l.z,plaster);
+ for(const side of [-1,1]){
+   block(Math.max(.1,innerEast-outerWest),ROOM_HEIGHT,.19,
+     (outerWest+innerEast)/2,elevation+ROOM_HEIGHT/2,l.z+side*depth/2,plaster);
+ }
+ block(Math.max(.1,innerEast-outerWest),.18,depth,
+   (outerWest+innerEast)/2,elevation+ROOM_HEIGHT+.08,l.z,ceilingFinish);
+ block(Math.max(.1,innerEast-outerWest),.20,depth,
+   (outerWest+innerEast)/2,elevation-.15,l.z,galleryFinish.floor);
+ // Door opening coincides exactly with the reserved physical portal.
+ const openingHalf=l.portal.width/2;
+ for(const side of [-1,1])
+   block(.17,3.2,.16,innerEast,elevation+1.6,l.z+side*openingHalf,join);
+ block(.17,.2,l.portal.width+.15,innerEast,elevation+3.23,l.z,join);
  for(const sx of [-1,1])for(const sz of [-1,1])block(.12,ROOM_HEIGHT,.12,l.x+sx*1.38,elevation+ROOM_HEIGHT/2,l.z+sz*1.38,join);
  block(Math.max(2.4,Math.abs((l.portal?.at??l.x+2.25)-l.x)+.5),.16,2.3,(l.x+(l.portal?.at??l.x+2.25))/2,elevation-.08,l.z,galleryFinish.floor);
  const liftLight=new THREE.PointLight(0xfff4d8,8,12,2);liftLight.position.set(l.x,elevation+3,l.z);scene.add(liftLight);
