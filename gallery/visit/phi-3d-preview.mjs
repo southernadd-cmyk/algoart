@@ -33,8 +33,9 @@ export function mountPhi3D(canvas){
   for(const p of polygons){ctx.beginPath();p.pts.forEach((v,i)=>i?ctx.lineTo(v.x,v.y):ctx.moveTo(v.x,v.y));ctx.closePath();ctx.fillStyle=p.fill;ctx.fill();ctx.strokeStyle=p.stroke;ctx.lineWidth=p.width*(canvas.width/canvas.clientWidth);ctx.stroke();}
   ctx.fillStyle='#3c514c';ctx.font=(12*canvas.width/canvas.clientWidth)+'px Georgia';ctx.fillText('Drag to orbit · scroll to zoom',18,24);
  }
- canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
- canvas.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-drag.x)*.009;elevation=Math.max(.24,Math.min(1.40,elevation+(e.clientY-drag.y)*.006));drag={x:e.clientX,y:e.clientY};draw();});
+ canvas.style.touchAction='none';
+ canvas.addEventListener('pointerdown',e=>{if(e.cancelable)e.preventDefault();drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
+ canvas.addEventListener('pointermove',e=>{if(!drag)return;if(e.cancelable)e.preventDefault();yaw+=(e.clientX-drag.x)*.009;elevation=Math.max(.24,Math.min(1.40,elevation+(e.clientY-drag.y)*.006));drag={x:e.clientX,y:e.clientY};draw();});
  canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
  canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.55,Math.min(2.8,zoom*Math.exp(-e.deltaY*.001)));draw();},{passive:false});
  window.addEventListener('resize',resize);resize();
