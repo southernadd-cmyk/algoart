@@ -979,6 +979,7 @@ function processDeferredGallery(){
 
 function constructPhiGallery(layout,studies){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
+ window.__phiFullEngine={date:exhibitDate,roomCount:phi.floor.mergedRooms.length,wallCount:phi.physical.walls.length,artworks:studies.length,paintings:phi.exhibition.paintings.length,sculptures:phi.exhibition.sculptures.length,unplaced:phi.exhibition.unplaced.length};
  // Every floor, enclosure and collision surface comes from the same phi plan.
  for(const p of phi.pieces)
    block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,galleryFinish.floorForRoom(exhibitDate,p.room,phi.floor.mergedRooms.length));
