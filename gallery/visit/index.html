@@ -51,7 +51,7 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
-    await import('./gallery-bundle.js?v=nine-alphabet-tower-20261025');
+    await import('./gallery-bundle.js?v=full-plaza-walk-20261026');
     // The gallery module installs its resize handler after constructing the camera.
     // Trigger it once on initial load so portrait screens do not retain aspect=1.
     window.dispatchEvent(new Event('resize'));
