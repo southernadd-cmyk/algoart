@@ -806,6 +806,10 @@ function startPhiCabinRide(targetFloor){
  panel(.09,2.96,2.55,-1.45,1.48,0,metal);
  panel(2.85,2.96,.09,0,1.48,-1.31,glass);
  for(const z of [-1.26,1.26])panel(.09,2.96,.11,1.41,1.48,z,metal);
+ // The moving cabin is an enclosed object, not just a floating platform.
+ // Its two metal door leaves remain shut between landings.
+ for(const side of [-1,1])
+  panel(.095,2.77,1.19,1.42,1.43,side*.60,metal);
  scene.add(pod);
  phiMovingCabin=pod;
  const duration=Math.max(1.8,Math.min(9,Math.abs(endY-startY)/7.0+1));
