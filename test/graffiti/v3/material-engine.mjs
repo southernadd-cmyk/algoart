@@ -1,5 +1,5 @@
 // Experimental, deterministic V3 wall-paint deposition. No production imports.
-export const V3_MATERIAL_REVISION='material-study-03';
+export const V3_MATERIAL_REVISION='material-study-04';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function hash(seed,x,y,channel=0){
  let n=2166136261;
@@ -43,7 +43,7 @@ function deposit(buf,w,h,x,y,r,alpha,seed,mode,surface,wallCoordinates){
    const edge=r*(.97+.06*noise);
    if(d>edge)continue;
    // Dry cavities follow wall relief and pen direction, rather than uniform alpha noise.
-   const dry=wall.roughness*(.025+.09*(1-alpha))*(noise>.85?1:.15);
+   const dry=wall.roughness*(.02+.09*(1-alpha))*(noise>.92?1:.12);
    coverage=alpha*(1-dry)*clamp((edge-d)*2.4,0,1);
   }else{
    const core=Math.exp(-4.6*(d/r)**4);
@@ -68,9 +68,9 @@ export function paintStrokes(ctx,paths,{mode='marker',surface='painted-plaster',
    const t=n/count,p=measure.getPointAtLength(length*t);
    const profile=strokeProfile(t,seed,index);
    const strokeWidth=stroke.width||width;
-   const radius=(mode==='spray'?strokeWidth*.56:strokeWidth*.56)*scale*
-    (mode==='spray'?(1.1+.18*Math.sin(t*12+index)):(.65+.55*profile.pressure));
-   const strength=mode==='spray'?.29+.26*(1-profile.speed):.57+.32*profile.pressure;
+   const radius=(mode==='spray'?strokeWidth*.56:strokeWidth*.55)*scale*
+    (mode==='spray'?(1.1+.18*Math.sin(t*12+index)):(.88+.20*profile.pressure));
+   const strength=mode==='spray'?.29+.26*(1-profile.speed):.88+.09*profile.pressure;
    deposit(coverage,w,h,p.x*scale,p.y*scale,radius,strength,seed,mode,surface,wallCoordinates);
   }
  });
@@ -110,7 +110,7 @@ export function paintFilledRegions(ctx,regions,{mode='marker',surface='painted-p
   const grain=hash(seed,uv.x,uv.y,11);
   const coverage=mode==='spray'?
    (.89+.09*grain)*(1-.12*wall.roughness)*(1-.12*wall.mortar):
-   (.94+.05*grain)*(1-.2*wall.roughness*(grain>.82?1:.2));
+   (.97+.025*grain)*(1-.08*wall.roughness*(grain>.9?1:.1));
   const incoming=clamp(a*coverage,0,.99),existing=out.data[k*4+3]/255;
   const opacity=1-(1-existing)*(1-incoming);
   for(let c=0;c<3;c++)out.data[k*4+c]=rgb[c];
