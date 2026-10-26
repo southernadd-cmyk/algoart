@@ -5,7 +5,8 @@
 import {FAMILIES as ORIGINAL,getFamily as originalFamily,stableNoise,LETTERS} from '../family-library.mjs';
 import {PHI_BY_FAMILY} from '../family-symbols.mjs';
 
-export const V2_REVISION='all-nine-az-source-review-01';
+export const V2_REVISION='all-nine-az-source-review-02';
+export const INSTRUMENT_REVISIONS=Object.freeze({B:'Sheet 7 light crossed line; V1 fat marker 12.5 was incompatible with source. V2 uses 6.1-weight crossed hand.'});
 export const PILOT_EVIDENCE=Object.freeze({
   'A:O':Object.freeze({sheet:41,letters:'O',observation:'The source O is not a plain circular loop: sharp angular returns cut a tall opening while the crossed stroke punctures the left side and extends beyond the perimeter.',change:'Replace a generic enclosing oval with angular top, inward right turn and one independent, clearly directional crossing pass.'}),
   'A:M':Object.freeze({sheet:41,letters:'M',observation:'The source M is formed by steep converging diagonals, one solid lower-left foot and a large acute open counter; its dominant long crossover is part of the skeleton.',change:'Emphasise three legible diagonal stems and keep only one structural crossing stroke, instead of repeated short flourishes.'}),
@@ -187,7 +188,10 @@ const newFamily=(f)=>{
   const v=changes[f.id][ch];
   glyphs[ch]=v?Object.freeze({letter:ch,shapes:v}):f.glyphs[ch];
  }
- return Object.freeze({...f,name:f.name+' (sheet-led V2 pilot)',glyphs:Object.freeze(glyphs)});
+ // Sheet 7 is fine-line skeletal writing, unlike the heavy fat-marker B in
+ // production. V2 explicitly tests a slimmer instrument without touching V1.
+ const instrument=f.id==='B'?{technique:'crosshand',weight:6.1,spacing:84,overlap:3,italic:.01}:{};
+ return Object.freeze({...f,...instrument,name:f.name+' (source-led V2 study)',glyphs:Object.freeze(glyphs)});
 };
 export const FAMILIES=Object.freeze(ORIGINAL.map(newFamily));
 export const BY_ID=Object.freeze(Object.fromEntries(FAMILIES.map(f=>[f.id,f])));
