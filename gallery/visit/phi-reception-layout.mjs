@@ -42,21 +42,6 @@ export function planPhiReception(floor,circulation,physical){
    z:w.axis==='z'?w.at+w.normal.z*.14:w.centre,
    axis:w.axis,normal:w.normal,width:Math.min(4.4,w.length-.1),room:w.room
  }));
- // Place the existing Growing Tower poster on the blank wall to the left
- // of the world map in the test reception, rather than duplicating it.
- if(globalThis.__phiReceptionTestRefresh&&worldMap&&signage.length>1){
-  const posterWidth=2.35,gap=.42;
-  const left=worldMap.x-worldMap.width/2-gap-posterWidth/2;
-  const right=worldMap.x+worldMap.width/2+gap+posterWidth/2;
-  const minimum=mapWall.centre-mapWall.length/2+posterWidth/2+.12;
-  const maximum=mapWall.centre+mapWall.length/2-posterWidth/2-.12;
-  // Prefer the photographed blank area left of the map. Other wall spans
-  // remain available if the map itself occupies most of this surface.
-  const wallX=left>=minimum?left:right<=maximum?right:left;
-  signage[1]={x:wallX,z:mapWall.at+mapWall.normal.z*.17,
-   axis:'z',normal:mapWall.normal,width:posterWidth,height:1.3,
-   centreY:2.2,room:mapWall.room};
- }
  const corners=floor.mergedRooms.flatMap((room,i)=>room.pieces.flatMap(p=>[
   {x:p.x+.75,z:p.z+.75,room:i},{x:p.x+p.w-.75,z:p.z+.75,room:i},
   {x:p.x+.75,z:p.z+p.h-.75,room:i},{x:p.x+p.w-.75,z:p.z+p.h-.75,room:i}
@@ -72,6 +57,22 @@ export function planPhiReception(floor,circulation,physical){
   .sort((a,b)=>Number(b.centre>start.x)-Number(a.centre>start.x)||Math.abs(a.centre-desk.x)-Math.abs(b.centre-desk.x))[0]:null;
  const credits=creditWall?{x:creditWall.centre,z:creditWall.at+.15,axis:creditWall.axis,normal:creditWall.normal}:null;
  if(credits&&signage.length>1)signage[1]={...credits,width:2.65,height:1.3,centreY:3.25,room:desk.room};
+ // Place the existing Growing Tower poster on the blank wall to the left
+ // of the world map in the test reception, rather than duplicating it.
+ if(globalThis.__phiReceptionTestRefresh&&worldMap&&signage.length>1){
+  const posterWidth=2.35,gap=.42;
+  const left=worldMap.x-worldMap.width/2-gap-posterWidth/2;
+  const right=worldMap.x+worldMap.width/2+gap+posterWidth/2;
+  const minimum=mapWall.centre-mapWall.length/2+posterWidth/2+.12;
+  const maximum=mapWall.centre+mapWall.length/2-posterWidth/2-.12;
+  // Prefer the photographed blank area left of the map. Other wall spans
+  // remain available if the map itself occupies most of this surface.
+  const wallX=left>=minimum?left:right<=maximum?right:left;
+  signage[1]={x:wallX,z:mapWall.at+mapWall.normal.z*.17,
+   axis:'z',normal:mapWall.normal,width:posterWidth,height:1.3,
+   centreY:2.2,room:mapWall.room};
+ }
+
  const cabinet=desk?(globalThis.__phiReceptionTestRefresh
   ?{x:desk.x+1.05,z:desk.z+2.15,yaw:Math.PI,height:1.15,width:1.1,depth:.85,kind:'cabinet'}
   :{x:desk.x+.9,z:desk.z-2.2,yaw:-Math.PI*.75,height:1.15,width:1.1,depth:.85,kind:'cabinet'}):null;
