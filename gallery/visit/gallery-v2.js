@@ -302,7 +302,7 @@ function loadArtworkTexture(url,material,{preferred=null}={}){
   scheduleArtwork(()=>new Promise(resolve=>{
     let finished=false;
     const finish=()=>{if(!finished){finished=true;resolve();}};
-    const source=new URL(url,location.href);
+    const source=new URL(url,document.baseURI);
     // Use 1100px desktop / 640px mobile images from the dated floor's
     // manifest. The source JPEG remains the fallback for older exhibitions.
     const galleryPath=source.pathname.match(/\/gallery\/(\d{4}-\d{2}-\d{2}\/[^/]+\.(?:jpe?g|png|webp))$/i);
@@ -1283,7 +1283,7 @@ function readArchive(html, url, textureManifest={}) {
         // Release download URLs are blocked for canvas/WebGL by CORS.
         // Gallery release art is mirrored into same-origin Pages assets.
         if(original.hostname==='github.com' && original.pathname.includes('/southernadd-cmyk/algoart/releases/download/')){
-          return new URL('../release-art/'+original.pathname.split('/').pop(),location.href).href;
+          return new URL('../release-art/'+original.pathname.split('/').pop(),document.baseURI).href;
         }
         return original.href;
       })(),
@@ -1309,7 +1309,7 @@ async function loadSculpturePack(date,cache){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7000);
   try{
-    const url=new URL('../'+date+'/3d/sculptures.json.gz',location.href);
+    const url=new URL('../'+date+'/3d/sculptures.json.gz',document.baseURI);
     const response=await fetch(url,{cache,signal:controller.signal});
     if(!response.ok||!response.body)return {};
     const inflated=response.body.pipeThrough(new DecompressionStream('gzip'));
@@ -1332,7 +1332,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   const previousYaw=yaw,previousPitch=pitch;
   if(!renderer)return;
   const editionStart=performance.now();
-  const url = new URL('../'+date+'/', location.href);
+  const url = new URL('../'+date+'/', document.baseURI);
   // Previous daily editions never change; allow normal browser caching.
   // Today's edition can still be updated by the publishing job.
   const today=new Date().toISOString().slice(0,10);
