@@ -9,7 +9,7 @@ import {wordPlan,showGesture} from '../v2/word-flow.mjs';
 import {wordSvg as v2Word} from '../v2/v2-renderer.mjs';
 import {paintStrokes,paintFilledRegions,paintWallPreview} from './material-engine.mjs';
 import {physicalStroke,styleMovementPoint,styleWidthMultiplier} from './stroke-plan.mjs?v=style-motion-03';
-import {composeLoopsWord} from './loops-library.mjs?v=interlocking-alpha-01';
+import {composeLoopsWord} from './loops-library.mjs?v=interlocking-alpha-02';
 const $=id=>document.getElementById(id);
 const STYLE_INKS={A:'#252c29',B:'#252823',C:'#30302b',D:'#282b2a',E:'#242424',F:'#873f38',G:'#283e45',H:'#833d35',I:'#285767'};
 function gestureRole(st,index){return st.role==='ornament'?'ornament':st.kind==='hairline'?'secondary':'primary';}
@@ -37,7 +37,7 @@ function draw(){
   const transformed=[],regions=[];
   for(const item of (loopComposition?.letters||plan.letters)){
    const temp=document.createElementNS('http://www.w3.org/2000/svg','svg');
-   for(const [strokeIndex,st] of item.glyph.shapes.entries()){
+   for(const [strokeIndex,st] of (loopComposition?item.shapes:item.glyph.shapes).entries()){
     if(!showGesture(f,item,st,plan))continue;
     if(st.kind==='fill'){
      const q=new DOMMatrix().translate(item.x,item.y).translate(38,54).rotate(item.rotation).translate(-38,-54).multiply(new DOMMatrix([item.scale,0,f.italic,1,0,0]));
@@ -53,7 +53,7 @@ function draw(){
     transformed.push({d:samples.join(' '),kind:st.kind,role:gestureRole(st,strokeIndex),strokeIndex,width:st.kind==='hairline'?Math.max(1.5,f.weight*.22):f.weight*(st.kind==='heavy'?1.32:1)});
    }
   }
-  if(loopComposition)transformed.push(...loopComposition.connectors);
+  if(loopComposition)transformed.push(...loopComposition.connectors,...loopComposition.shared);
   const markerWidthByStyle={A:1.65,B:1.38,C:1.05,D:1.3,E:1.22,F:1.14,G:1.32,H:1.08,I:1.2};
   const sprayWidthByStyle={A:1.18,B:1.6,C:1.12,D:1.25,E:1.22,F:2.3,G:1.3,H:1.18,I:1.35};
   const positioned=transformed.map(raw=>{const x=physicalStroke(raw,f.id);return {...x,width:x.width*styleWidthMultiplier(f.id,{mode,role:x.role})*(mode==='marker'?markerWidthByStyle[f.id]:sprayWidthByStyle[f.id])*(f.id==='B'&&x.kind==='hairline'?.55:1),d:x.d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g,(m,x,y)=>(Number(x)+52).toFixed(2)+' '+(Number(y)+49).toFixed(2))};});
