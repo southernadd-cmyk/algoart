@@ -30,6 +30,40 @@ export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
    holder.userData.modelLoaded=true;
   }).catch(error=>console.warn('Reception boxes unavailable',error));
  }
+ // Small, practical preparation rooms: archive shelving, packing benches and
+ // sorting trays. Geometry and colours reuse the scene's loaded material bank.
+ if(globalThis.__phiReceptionTestRefresh&&furnishing.backrooms?.length){
+  const wood=new THREE.MeshStandardMaterial({color:'#9b846e',roughness:.86});
+  const iron=new THREE.MeshStandardMaterial({color:'#434941',metalness:.38,roughness:.66});
+  const card=new THREE.MeshStandardMaterial({color:'#c4b399',roughness:1});
+  const sheet=new THREE.MeshStandardMaterial({color:'#e9e4d7',roughness:1});
+  const cube=(g,w,h,d,x,y,z,m)=>{
+   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);g.add(mesh);return mesh;
+  };
+  for(const [index,p] of furnishing.backrooms.entries()){
+   const g=new THREE.Group();g.name='phi-reception-backroom-'+index;
+   g.position.set(p.x,elevation,p.z);scene.add(g);holders.push(g);
+   // Archive cabinet at a corner, with three shelves and differently sized boxes.
+   for(const x of [-.88,.88])cube(g,.09,2.25,.49,x,1.125,0,iron);
+   for(const y of [.14,.83,1.52,2.2])cube(g,1.84,.07,.55,0,y,0,wood);
+   for(let j=0;j<8;j++){
+    const row=Math.floor(j/3),col=j%3;
+    cube(g,.29+(j%2)*.11,.34+(j%3)*.055,.35,-.56+col*.49,.34+row*.69,.02,card);
+   }
+   // Backroom packing/work bench opposite the shelving. Keep a broad walking gap.
+   const benchZ=2.15;
+   cube(g,2.25,.11,.78,0,.91,benchZ,wood);
+   for(const x of [-.95,.95])cube(g,.08,.87,.66,x,.44,benchZ,iron);
+   for(const x of [-.48,.18,.61]){
+    cube(g,.38,.028,.27,x,.991,benchZ-.09,sheet);
+   }
+   cube(g,.72,.17,.45,.48,1.03,benchZ+.12,card);
+   // Framed noticeboard: procedural canvas, no new texture request.
+   const notice=new THREE.Mesh(new THREE.BoxGeometry(1.7,.9,.055),wood);
+   notice.position.set(0,1.83,benchZ+.48);g.add(notice);
+   for(const x of [-.45,.22])cube(g,.43,.47,.012,x,1.83,benchZ+.515,sheet);
+  }
+ }
  return holders;
 }
 export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMaterial}){
