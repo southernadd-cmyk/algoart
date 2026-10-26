@@ -225,6 +225,9 @@ jobs:
       - name: Verify illustrated floor geometry
         run: node --test tests/gallery-tower-illustration.test.mjs
 
+      - name: Rebuild production gallery bundle from verified sources
+        run: npm run gallery:bundle
+
       - name: Verify public 3D gallery files, imports and floor links
         run: node --test tests/gallery-public-launch.test.mjs
 
