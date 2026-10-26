@@ -30,7 +30,8 @@ try{
  await page.screenshot({path:'phi-tower-results/full-entrance.png'});
  // Historical floors that previously rejected one or two portrait sculptures.
  for(const date of ['2026-10-14','2026-10-18','2026-10-26']){
-  await page.locator('#openLift').click();
+  await page.locator('#openLift').click({noWaitAfter:true});
+  await page.locator('#lift').waitFor({state:'visible'});
   const destination=page.locator('#liftDays button').filter({hasText:new RegExp('^'+Number(date.slice(-2))+'$')});
   await destination.click({noWaitAfter:true});
   await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',null,{timeout:20000});
@@ -69,18 +70,20 @@ try{
  // An unavailable destination must preserve the departure exhibition and position.
  const departure=await page.evaluate(()=>window.__phiLiftState);
  await page.route('**/gallery/2026-10-15/',route=>route.fulfill({status:503,body:'Unavailable'}));
- await page.locator('#openLift').click();
+ await page.locator('#openLift').click({noWaitAfter:true});
+  await page.locator('#lift').waitFor({state:'visible'});
  await page.locator('#liftDays button').filter({hasText:/^15$/}).click({noWaitAfter:true});
  await page.waitForFunction(()=>window.__phiLiftError,null,{timeout:25000});
  assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),departure.date);
- await page.locator('#closeLift').click();
+ await page.locator('#closeLift').click({noWaitAfter:true});
  await page.waitForFunction(()=>!window.__phiLiftState.travelling);
  const recovered=await page.evaluate(()=>window.__phiLiftState);
  assert.ok(Math.abs(recovered.y-departure.y)<.01,'Failed destination changed visitor elevation');
  assert.ok(Math.hypot(recovered.x-departure.x,recovered.z-departure.z)<.02,'Failed destination stranded visitor');
  await page.unroute('**/gallery/2026-10-15/');
  // Ground floor is a separate, reachable reception rather than an archive date.
- await page.locator('#openLift').click();await page.locator('#liftReception').click({noWaitAfter:true});
+ await page.locator('#openLift').click({noWaitAfter:true});
+  await page.locator('#lift').waitFor({state:'visible'});await page.locator('#liftReception').click({noWaitAfter:true});
  await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',null,{timeout:90000});
  assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),'__phi_reception__');
  assert.equal(await page.locator('#error').isVisible(),false);
