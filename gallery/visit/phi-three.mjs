@@ -1,7 +1,7 @@
 // Genuine Three.js geometry for the isolated phi architecture prototype.
 // Deliberately separate from the public exhibition renderer.
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
-import {createPortraitSculpture} from './sculpture-render-traced.mjs';
+import {createPortraitSculpture} from './sculpture-render-traced.mjs?v=prebaked-sculptures-20261023';
 export function mountPhiThree(canvas){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
