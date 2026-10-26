@@ -204,12 +204,12 @@ async function loadCharacters(){
  if(!characterAssets)characterAssets=Promise.all([
   import('three/addons/loaders/GLTFLoader.js'),
   import('three/addons/utils/SkeletonUtils.js'),
-  import('https://cdn.jsdelivr.net/npm/meshoptimizer@0.25.0/meshopt_decoder.module.js')
+  import('three/addons/libs/meshopt_decoder.module.js')
  ]).then(([{GLTFLoader},{clone},{MeshoptDecoder}])=>Promise.all(['male','female'].map(sex=>new Promise((resolve,reject)=>{
   new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('./models/quaternius-'+sex+'-meshopt.glb',gltf=>resolve(gltf.scene),undefined,reject);
  }))).then(([male,female])=>({quaternius:true,male,female,clone}))).catch(async error=>{
  console.warn('Quaternius visitors unavailable; attempting previous GLB',error);
- const [{GLTFLoader},{clone},{MeshoptDecoder}]=await Promise.all([import('three/addons/loaders/GLTFLoader.js'),import('three/addons/utils/SkeletonUtils.js'),import('https://cdn.jsdelivr.net/npm/meshoptimizer@0.25.0/meshopt_decoder.module.js')]);
+ const [{GLTFLoader},{clone},{MeshoptDecoder}]=await Promise.all([import('three/addons/loaders/GLTFLoader.js'),import('three/addons/utils/SkeletonUtils.js'),import('three/addons/libs/meshopt_decoder.module.js')]);
  return new Promise((resolve,reject)=>{
   new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('./models/human-male-female-rigged-optimized.glb',gltf=>{
     if(rigMode!=='bind'&&rigMode!=='raw'){
