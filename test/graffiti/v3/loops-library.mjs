@@ -1,7 +1,7 @@
 // V3 experimental interlocking Loops: variant strokes and neighbour-aware bridges.
 // Unchanged V2 structural geometry remains the fallback for every capital.
 import {getGlyph} from '../v2/v2-library.mjs';
-export const LOOPS_REVISION='interlocking-alpha-01';
+export const LOOPS_REVISION='interlocking-alpha-02';
 export const LOOP_CLASSES=Object.freeze({strong:'OPRCSUG',bridge:'TINMHL',terminal:'EFKXZ'});
 const subset='PROTINEC';
 const pairScores=Object.freeze({PR:5,RO:5,OP:4,OO:5,OR:4,ON:3,PI:3,IE:2,EC:3,CE:3,RT:2,TI:2,IO:2,PO:5,OT:3,TO:2,NC:2,PE:3});
@@ -24,7 +24,7 @@ function jitter(seed,key){let h=2166136261;for(const c of seed+'|'+key)h=Math.im
 export function composeLoopsWord(plan,{seed='V3-STUDY-01',mode='restrained'}={}){
  if(!['none','restrained','expressive'].includes(mode))throw new RangeError('Invalid Loops mode');
  const letters=plan.letters.map(item=>({...item,variant:'plain',shapes:getGlyph('G',item.ch).shapes}));
- const connectors=[];const taken=new Set();let previous=null;
+ const connectors=[];const taken=new Set();
  const candidates=[];
  for(let i=1;i<letters.length;i++){
   const a=letters[i-1],b=letters[i];
@@ -49,7 +49,34 @@ export function composeLoopsWord(plan,{seed='V3-STUDY-01',mode='restrained'}={})
   taken.add(a.index);taken.add(b.index);
   a.variant='send';b.variant='receive';
  }
- // Preserve V2 structural strokes. Variants describe connection state and do
- // not substitute an unvalidated letter skeleton.
- return {word:plan.word,letters,connectors,mode,revision:LOOPS_REVISION};
+ // Shared structural passes replace selected V2 main strokes in known sequences.
+ // The connecting curve starts inside the first glyph, traverses the intervening
+ // letter's bowl and finishes inside the third; it is not an independent ornament.
+ const shared=[];
+ if(mode!=='none'){
+  const patterns=['PRO','ORT','PIE','ECE'];
+  for(let i=0;i<letters.length-2;i++){
+   const trio=letters.slice(i,i+3);
+   if(trio[1].index!==trio[0].index+1||trio[2].index!==trio[1].index+1)continue;
+   const sequence=trio.map(x=>x.ch).join('');
+   if(!patterns.includes(sequence))continue;
+   const [a,b,c]=trio;
+   const x0=a.x+54,x1=b.x+42,x2=c.x+38;
+   const wiggle=jitter(seed,sequence+'|'+i)*4;
+   const phi=(1+Math.sqrt(5))/2;
+   const d=`M ${x0.toFixed(2)} 38 C ${(x0+20).toFixed(2)} ${(8+wiggle).toFixed(2)} ${(x1-34).toFixed(2)} ${(12+wiggle).toFixed(2)} ${x1.toFixed(2)} 40 C ${(x1+28).toFixed(2)} ${(82+wiggle).toFixed(2)} ${(x2-25/phi).toFixed(2)} ${(12+wiggle).toFixed(2)} ${x2.toFixed(2)} 45`;
+   shared.push({kind:'stroke',role:'primary',width:mode==='expressive'?7.2:5.5,d,sequence,
+    members:trio.map(x=>x.index),sharedStructure:true});
+   // This stroke is the structure formerly supplied by part of the individual
+   // glyphs, not a visually superimposed line. Retain the rest of each glyph.
+   for(const item of [b,c]){
+    item.shapes=item.shapes.filter((shape,index)=>index!==0);
+    item.variant='shared-'+sequence;
+   }
+   // Avoid drawing an independent connector over the shared stroke.
+   for(let k=connectors.length-1;k>=0;k--)if(connectors[k].from>=a.index&&connectors[k].to<=c.index)connectors.splice(k,1);
+   i+=2;
+  }
+ }
+ return {word:plan.word,letters,connectors,shared,mode,revision:LOOPS_REVISION};
 }
