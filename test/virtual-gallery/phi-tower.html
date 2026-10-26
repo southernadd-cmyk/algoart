@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PROPORTION PIECE — φ tower rehearsal</title>
+<style>body{font:17px Georgia,serif;background:#eae6db;color:#26332c;margin:0}header{padding:18px 24px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}h1{font-size:25px;font-weight:normal;margin:0}main{display:grid;grid-template-columns:minmax(250px,32%) 1fr;gap:12px;padding:0 14px 14px}.panel{background:#f4f1e8;border:1px solid #b0a99d;padding:12px}canvas{width:100%;height:65vh;display:block;touch-action:none}iframe{border:1px solid #b0a99d;width:100%;height:80vh;background:#fff}select,button{font:inherit;padding:8px}#floors{width:100%;max-height:220px;overflow:auto}#floors button{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid #ccc}#floors button[aria-current=true]{background:#d4dcd4}#status{font-size:14px;line-height:1.4}@media(max-width:750px){main{display:block}canvas{height:300px}iframe{height:80vh}}</style></head><body>
+<header><h1>PROPORTION PIECE · φ tower rehearsal</h1><a href="./">Current test gallery</a><a href="./phi-rehearsal.html">Single-floor study</a></header>
+<main><section class="panel"><p>Stacked φ floor preview. Select a floor to enter its real-art walkable exhibition. Full continuous lift animation and exterior dressing are still in development.</p><canvas id="tower" aria-label="Three-dimensional stacked φ gallery floor geometry"></canvas><p id="status" role="status">Reading gallery archive…</p><nav id="floors" aria-label="Tower lift floors"></nav></section><section><iframe id="exhibition" title="Walkable current exhibition floor" src="./phi-rehearsal.html?date=2026-10-26" loading="eager"></iframe></section></main>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {planPhiFloor} from '../../gallery/visit/phi-architecture.mjs';
+import {planPhiBridges} from '../../gallery/visit/phi-bridges.mjs';
+import {loadPhiArchive} from '../../gallery/visit/phi-archive.mjs';
+const canvas=document.querySelector('#tower'),status=document.querySelector('#status'),nav=document.querySelector('#floors');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.setClearColor(0xeae6db);
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(44,1,.1,900);
+scene.add(new THREE.HemisphereLight(0xffffff,0x829090,2));
+const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(30,60,20);scene.add(light);
+const tower=new THREE.Group();scene.add(tower);
+const floorMaterial=new THREE.MeshStandardMaterial({color:0xb1b2a9,roughness:.88,side:THREE.DoubleSide});
+const selectedMaterial=new THREE.MeshStandardMaterial({color:0x8ca8aa,roughness:.78,side:THREE.DoubleSide});
+const glassMaterial=new THREE.MeshStandardMaterial({color:0x91c5c9,transparent:true,opacity:.63,side:THREE.DoubleSide});
+const frameMaterial=new THREE.MeshStandardMaterial({color:0x66695e});
+const levels=[];let selected=0,angle=.5,dragX=null,zoom=1;
+function cube(group,material,x,y,z,w,h,d){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);group.add(mesh);return mesh;}
+function draw(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();const height=levels.length*6.2;camera.position.set(Math.sin(angle)*height*.92*zoom,height*.64*zoom+8,Math.cos(angle)*height*.92*zoom);camera.lookAt(0,height*.46,0);renderer.render(scene,camera);}
+function select(i){selected=i;for(let n=0;n<levels.length;n++){levels[n].group.children.forEach(obj=>{if(obj.userData.floorSlab)obj.material=n===i?selectedMaterial:floorMaterial;});}for(const btn of nav.querySelectorAll('button'))btn.setAttribute('aria-current',String(Number(btn.dataset.index)===i));document.querySelector('#exhibition').src='./phi-rehearsal.html?date='+encodeURIComponent(levels[i].date);status.textContent='Floor '+(i+1)+' of '+levels.length+' · '+levels[i].date+' · '+levels[i].count+' archived artworks · selected for walkthrough';draw();}
+canvas.addEventListener('pointerdown',e=>{dragX=e.clientX;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(dragX===null)return;angle+=(e.clientX-dragX)*.008;dragX=e.clientX;draw();});
+canvas.addEventListener('pointerup',()=>dragX=null);canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.4,Math.min(2,zoom*Math.exp(e.deltaY*.001)));draw()},{passive:false});
+window.addEventListener('resize',draw);
+try{
+ const response=await fetch('../../gallery/index.html',{cache:'no-cache'});if(!response.ok)throw Error('Archive index HTTP '+response.status);
+ const doc=new DOMParser().parseFromString(await response.text(),'text/html');
+ const dates=[...new Set([...doc.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')?.match(/(20\d\d-\d\d-\d\d)/)?.[1]).filter(Boolean))].sort();
+ if(!dates.length)throw Error('No dated gallery links in archive');
+ status.textContent='Generating '+dates.length+' φ floors from real archives…';
+ // Build asynchronously to keep the interface interactive. Each archive has its own actual count.
+ for(let i=0;i<dates.length;i++){
+  const date=dates[i],studies=await loadPhiArchive(date);
+  const result=planPhiBridges(planPhiFloor(date,{artworks:studies.length}));
+  const group=new THREE.Group();group.position.y=i*6.2;tower.add(group);
+  const floor=result.plan;
+  for(const room of floor.mergedRooms)for(const p of room.pieces){
+   const slab=cube(group,floorMaterial,p.x+p.w/2,0,p.z+p.h/2,p.w,.18,p.h);slab.userData.floorSlab=true;
+   // Lightweight perimeter silhouette; interior walls live in the selected walkable exhibit.
+  }
+  for(const b of result.bridges||[]){
+   cube(group,glassMaterial,b.axis==='x'?(b.from+b.to)/2:b.centre,0,b.axis==='z'?(b.from+b.to)/2:b.centre,b.axis==='x'?b.length:b.width,.12,b.axis==='z'?b.length:b.width);
+  }
+  levels.push({date,count:studies.length,group});
+  const btn=document.createElement('button');btn.type='button';btn.dataset.index=String(i);btn.textContent=(i===0?'G':String(i))+' · '+date+' · '+studies.length+' works';btn.addEventListener('click',()=>select(i));nav.prepend(btn);
+  // World coordinates are centred on the oldest floor's root for a consistent tower overview.
+  group.position.x=-floor.root.x-floor.root.w/2;group.position.z=-floor.root.z-floor.root.h/2;
+  if(i%4===0){status.textContent='Generated '+(i+1)+' / '+dates.length+' exhibition floors';draw();await new Promise(requestAnimationFrame);}
+ }
+ select(levels.length-1);
+}catch(err){status.textContent='Tower build failed: '+err.message;console.error(err);}
+</script></body></html>
