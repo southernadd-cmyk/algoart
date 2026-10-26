@@ -1264,7 +1264,7 @@ function constructPhiGallery(layout,studies){
  // stays open, as does the lift-facing approach in the cabin's west end.
  const outerWest=l.x-1.45,innerEast=l.portal.at,depth=3.1;
  // Mount the calendar actuator inside the cabin, facing the visitor.
- phiLiftPanelPosition=new THREE.Vector3(l.x-1.28,elevation,l.z);
+ phiLiftPanelPosition=new THREE.Vector3(l.x,elevation,l.z+1.10);
  // Leave a 2.2 m opening to the exterior approach at ground level.
  // Glazed shaft-facing western wall, not an opaque fake second door.
  const shaftGlass=new THREE.MeshStandardMaterial({color:0xb1d8d2,transparent:true,opacity:.22,roughness:.15,metalness:.09,depthWrite:false,side:THREE.DoubleSide});
@@ -1464,8 +1464,8 @@ function constructPhiGallery(layout,studies){
  calendarTexture.colorSpace=THREE.SRGBColorSpace;
  const controlBoard=new THREE.Mesh(new THREE.PlaneGeometry(.89,1.12),
   new THREE.MeshBasicMaterial({map:calendarTexture,side:THREE.DoubleSide}));
- controlBoard.position.set(l.x-1.34,elevation+1.65,l.z);
- controlBoard.rotation.y=Math.PI/2;
+ controlBoard.position.set(l.x,elevation+1.65,l.z+1.19);
+ controlBoard.rotation.y=Math.PI; // Face inward from the +Z cabin wall.
  controlBoard.name='phi-lift-wall-calendar';scene.add(controlBoard);
   // Brushed cabin door and illuminated floor indicator.
  const indicator=document.createElement('canvas');indicator.width=512;indicator.height=128;
