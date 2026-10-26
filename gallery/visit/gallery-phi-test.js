@@ -61,6 +61,7 @@ let liftCabinPosition=null;
 let liftDoorThreshold=null;
 let currentFloor=0;
 const FLOOR_SPACING=6.2;
+const RECEPTION='__phi_reception__';
 let plan = null;
 let studyList = [];
 let touchPointer = null;
@@ -1420,6 +1421,7 @@ async function latestDate() {
   return dates.at(-1);
 }
 function readableDate(date) {
+  if(date===RECEPTION)return 'Reception';
   return new Intl.DateTimeFormat('en-GB',{dateStyle:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
 }
 // One compressed polygon pack per edition. A missing/corrupt pack is safe:
@@ -1452,14 +1454,15 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   const previousYaw=yaw,previousPitch=pitch;
   if(!renderer)return;
   const editionStart=performance.now();
-  const url = new URL('../'+date+'/', document.baseURI);
+  const reception=date===RECEPTION;
+  const url = new URL('../'+(reception?archiveDates[1]:date)+'/', document.baseURI);
   // Previous daily editions never change; allow normal browser caching.
   // Today's edition can still be updated by the publishing job.
   const today=new Date().toISOString().slice(0,10);
   // Fetch the per-floor texture manifest alongside the dated HTML; older
   // archive floors have no manifest yet and continue working unchanged.
   const cache=date===today?'no-cache':'force-cache';
-  const [res,textureManifest,sculpturePack]=await Promise.all([
+  const [res,textureManifest,sculpturePack]=reception?[{ok:true,text:'',url:url.href},{},{}]:await Promise.all([
     fetchGalleryText(url,{cache}),
     fetchGalleryText(new URL('3d/manifest.json',url),{cache,timeoutMs:5000})
       .then(response=>{
@@ -1474,15 +1477,16 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     loadSculpturePack(date,cache)
   ]);
   if(!res.ok)throw new Error('The edition for '+readableDate(date)+' is not available.');
-  const studies=readArchive(res.text,res.url,textureManifest);
+  const studies=reception?[]:readArchive(res.text,res.url,textureManifest);
   for(const study of studies){
     if(study.portrait&&sculpturePack[study.imageFile]){
       study.prebuilt=sculpturePack[study.imageFile];
     }
   }
-  if(!studies.length)throw new Error('No artworks for this edition');
-  const phi=buildPhiRendererPlan(date,studies);
-  if(!phi.checks.connected||!phi.checks.count||!phi.checks.unique||phi.checks.unplaced)
+  if(!reception&&!studies.length)throw new Error('No artworks for this edition');
+  const phi=reception?buildPhiRendererPlan(archiveDates[1],Array.from({length:10},(_,i)=>({id:'foyer-placeholder-'+i,portrait:i%3===0,aspect:i%3===0?.75:1.4}))):buildPhiRendererPlan(date,studies);
+  if(reception){phi.exhibition.paintings=[];phi.exhibition.sculptures=[];phi.exhibition.unplaced=[];phi.checks.unplaced=0;}
+  if(!phi.checks.connected||(!reception&&!phi.checks.count)||!phi.checks.unique||phi.checks.unplaced)
     throw new Error('Invalid phi exhibition plan: '+JSON.stringify(phi.checks));
   const nextPlan={
     date,artworkCount:studies.length,phi,
@@ -1572,14 +1576,14 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     liftWasNear=true;welcome.hidden=true;
     history.replaceState(null,'','?date='+date);
   }
-  $('liftMonth').value=date.slice(0,7);
-  $('archiveLink').href='../'+date+'/';
-  $('welcomeArchive').href='../'+date+'/';
+  $('liftMonth').value=(reception?archiveDates[1]:date).slice(0,7);
+  $('archiveLink').href='../'+(reception?archiveDates[1]:date)+'/';
+  $('welcomeArchive').href='../'+(reception?archiveDates[1]:date)+'/';
   const floorName=nextFloor===0?'Ground floor':'Floor '+nextFloor;
   $('startFloor').textContent=floorName+' · '+readableDate(date);
   $('floorIndicator').textContent=nextFloor===0?'G':String(nextFloor);
   $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
-  status.textContent=floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
+  status.textContent=reception?'Ground floor · reception and visitor information':floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
   enter.disabled=false;enter.textContent='Enter the gallery';
   GALLERY_DEBUG&&console.info('[Gallery performance] edition ready',Math.round(performance.now()-editionStart)+'ms',date);
 }
@@ -1617,8 +1621,9 @@ async function load(){
     archiveDates=towerFloorSignatures.size
       ?[...towerFloorSignatures.keys()].sort()
       :await loadArchiveDates();
+    archiveDates.unshift(RECEPTION);
     const qp=new URLSearchParams(location.search).get('date');
-    await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates[0]);
+    await loadEdition(qp&&archiveDates.includes(qp)?qp:RECEPTION);
     GALLERY_DEBUG&&console.info('[Gallery performance] enter available',Math.round(performance.now()-startupStart)+'ms');
   }catch(e){
     console.error('[Gallery startup] Failed to prepare exhibition',e);
