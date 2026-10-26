@@ -9,17 +9,23 @@ export function physicalStroke(stroke,family){
   // A slower start and earlier lift prevent perfectly even marker contact.
   contact:{onset:.045,release:family==='I'?.15:.10}};
 }
-// Whole-word orbit: a single open, directional gesture ABOVE and around the
-// phrase, not a baseline strike-through or a concentric ellipse around letters.
-export function planLoopsOrbit(plan){
- const letters=plan.letters;
- if(letters.length<3)return [];
- const first=letters[0],last=letters.at(-1);
- const left=first.x-12,right=last.x+76,span=right-left;
- if(span<=0)return [];
- return [{
-  kind:'stroke',role:'secondary',width:5.5,
-  d:`M ${left} 79 C ${left+span*.04} 1 ${left+span*.28} -21 ${left+span*.49} -8 S ${right+19} 11 ${right} 72`,
-  contact:{onset:.10,release:.2},wordGesture:true
- }];
+// Keep the original readable glyphs intact. Each word has its own orbit;
+// no stroke bridges a space or runs horizontally through its baseline.
+export function planLoopsOrbit(plan,{mode='restrained'}={}){
+ if(!['none','restrained','expressive'].includes(mode))throw new RangeError('Unknown orbit mode');
+ if(mode==='none')return [];
+ const groups=[];
+ for(const letter of plan.letters){
+  const previous=groups.at(-1);
+  if(!previous||letter.index>previous.at(-1).index+1)groups.push([letter]);
+  else previous.push(letter);
+ }
+ return groups.filter(g=>g.length>=2).map((group,i)=>{
+  const left=group[0].x-9,right=group.at(-1).x+82,span=right-left;
+  const lift=mode==='expressive'?25:15;
+  const y=mode==='expressive'?-22:-15;
+  const d=`M ${left.toFixed(2)} 36 C ${(left+span*.08).toFixed(2)} ${y} ${(left+span*.35).toFixed(2)} ${(y-lift).toFixed(2)} ${(left+span*.58).toFixed(2)} ${(y+5).toFixed(2)} S ${(right+span*.07).toFixed(2)} ${(y+lift*.5).toFixed(2)} ${right.toFixed(2)} 20`;
+  return {kind:'stroke',role:'secondary',width:mode==='expressive'?5:3.5,d,
+   contact:{onset:.08,release:.18},wordGesture:true,wordIndex:i};
+ });
 }
