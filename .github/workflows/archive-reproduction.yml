@@ -62,12 +62,12 @@ jobs:
       - name: Record browser runtime
         run: npx playwright --version
       - name: Install browser system dependencies
-        timeout-minutes: 2
+        timeout-minutes: 8
         env:
           DEBIAN_FRONTEND: noninteractive
         run: npx playwright install-deps ${{ matrix.browser }}
       - name: Download browser runtime
-        timeout-minutes: 2
+        timeout-minutes: 5
         run: npx playwright install ${{ matrix.browser }}
       - name: Start local editor
         run: |
