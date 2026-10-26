@@ -1,4 +1,4 @@
-// Build the test-only public square atlases from the exact runtime planner.
+// Build the live golden-spiral square atlases from the exact runtime planner.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {chromium} from 'playwright';
@@ -35,17 +35,6 @@ try{
       g.translate(e.x,e.y);g.scale(e.width/e.bounds.width,e.height/e.bounds.height);g.translate(-e.bounds.x,-e.bounds.y);
       if(e.tag.renderer==='az-nine-v1')drawTowerFamilyTag(g,e.tag,{finish:'spray'});
       else drawTag(g,e.tag,{finish:'spray'});
-      // Preserve the capital I as a clearly legible vertical with caps. The
-      // legacy graffiti normaliser uppercases input, so 'phI' otherwise paints
-      // the same ambiguous PHI glyph. This adjustment is atlas-only.
-      if(e.phrase==='phI'&&e.tag.construction?.letters?.[2]){
-       const frame=e.tag.construction.letters[2],H=e.tag.construction.metrics.height;
-       const x=frame.x+frame.wide*.44,top=frame.baseY-H*.92,bottom=frame.baseY;
-       g.save();g.strokeStyle=e.tag.ink;g.lineWidth=Math.max(3,e.tag.weight*.28);g.lineCap='round';
-       g.beginPath();g.moveTo(x,top);g.lineTo(x,bottom);
-       g.moveTo(x-H*.14,top);g.lineTo(x+H*.14,top);
-       g.moveTo(x-H*.14,bottom);g.lineTo(x+H*.14,bottom);g.stroke();g.restore();
-      }
       g.restore();paintExteriorUnderstroke(g,e.x,e.y,e.width,e.height);
      }
      return canvas.toDataURL('image/png').split(',')[1];
