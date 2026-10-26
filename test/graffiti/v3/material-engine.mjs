@@ -1,5 +1,5 @@
 // Experimental, deterministic V3 wall-paint deposition. No production imports.
-export const V3_MATERIAL_REVISION='material-study-01';
+export const V3_MATERIAL_REVISION='material-study-02';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function hash(seed,x,y,channel=0){
  let n=2166136261;
@@ -27,12 +27,17 @@ export function strokeProfile(t,seed,strokeIndex=0){
  const speed=clamp(.18+.66*Math.abs(Math.sin(t*8.3+strokeIndex*.7)),0,1);
  return {pressure:clamp(.22+.65*Math.pow(motion,.45)+drift,.05,1),speed,angle:-.6+Math.sin(t*4+strokeIndex)*.25};
 }
-function deposit(buf,w,h,x,y,r,alpha,seed,mode,surface){
+export function wallPixelPosition(px,py,{wallOriginX=0,wallOriginY=0,pixelsPerWallUnit=1}={}){
+ if(!(pixelsPerWallUnit>0))throw new RangeError('Invalid wall coordinate scale');
+ return {x:wallOriginX+px/pixelsPerWallUnit,y:wallOriginY+py/pixelsPerWallUnit};
+}
+function deposit(buf,w,h,x,y,r,alpha,seed,mode,surface,wallCoordinates){
  const left=Math.max(0,Math.floor(x-r*2.3)),right=Math.min(w-1,Math.ceil(x+r*2.3));
  const top=Math.max(0,Math.floor(y-r*2.3)),bottom=Math.min(h-1,Math.ceil(y+r*2.3));
  for(let py=top;py<=bottom;py++)for(let px=left;px<=right;px++){
   const dx=px+.5-x,dy=py+.5-y,d=Math.hypot(dx,dy);
-  const wall=wallSample(surface,px,py,seed+'|surface'),noise=hash(seed,px,py,3);
+  const uv=wallPixelPosition(px,py,wallCoordinates);
+  const wall=wallSample(surface,uv.x,uv.y,seed+'|surface'),noise=hash(seed,uv.x,uv.y,3);
   let coverage=0;
   if(mode==='marker'){
    const edge=r*(.86+.2*noise);
@@ -49,7 +54,7 @@ function deposit(buf,w,h,x,y,r,alpha,seed,mode,surface){
   buf[k]=1-(1-buf[k])*(1-clamp(coverage,0,.94));
  }
 }
-export function paintStrokes(ctx,paths,{mode='marker',surface='painted-plaster',seed='v3',ink='#242628',width=9,scale=1}={}){
+export function paintStrokes(ctx,paths,{mode='marker',surface='painted-plaster',seed='v3',ink='#242628',width=9,scale=1,wallCoordinates={}}={}){
  if(!['marker','spray'].includes(mode))throw Error('Unknown tool');
  const w=ctx.canvas.width,h=ctx.canvas.height,coverage=new Float32Array(w*h);
  const measure=document.createElementNS('http://www.w3.org/2000/svg','path');
@@ -65,7 +70,7 @@ export function paintStrokes(ctx,paths,{mode='marker',surface='painted-plaster',
    const radius=(mode==='spray'?width*1.3:width*.48)*scale*
     (mode==='spray'?(1.1+.18*Math.sin(t*12+index)):(.65+.55*profile.pressure));
    const strength=mode==='spray'?.075+.13*(1-profile.speed):.22+.35*profile.pressure;
-   deposit(coverage,w,h,p.x*scale,p.y*scale,radius,strength,seed,mode,surface);
+   deposit(coverage,w,h,p.x*scale,p.y*scale,radius,strength,seed,mode,surface,wallCoordinates);
   }
  });
  const out=ctx.createImageData(w,h);const hex=ink.replace('#','');
@@ -76,4 +81,56 @@ export function paintStrokes(ctx,paths,{mode='marker',surface='painted-plaster',
  }
  ctx.putImageData(out,0,0);
  return {revision:V3_MATERIAL_REVISION,pixels:coverage.length,strokes:paths.length};
+}
+
+/** Rasterize authored filled outlines (including holes) and deposit pigment
+ * through the SAME absolute wall-coordinate surface field as thin strokes.
+ * This is a separate overlay pass; it preserves the underlying stroke alpha. */
+export function paintFilledRegions(ctx,regions,{mode='marker',surface='painted-plaster',seed='v3',ink='#242628',wallCoordinates={}}={}){
+ const {width:w,height:h}=ctx.canvas;
+ const mask=document.createElement('canvas');mask.width=w;mask.height=h;
+ const g=mask.getContext('2d',{willReadFrequently:true});
+ g.fillStyle='#000';
+ for(const region of regions){
+  if(!region?.d)continue;
+  g.save();
+  if(region.transform)g.setTransform(...region.transform);
+  g.fill(new Path2D(region.d),'evenodd');
+  g.restore();
+ }
+ const pixels=g.getImageData(0,0,w,h).data;
+ const out=ctx.getImageData(0,0,w,h),hex=ink.replace('#','');
+ const rgb=hex.length===6?[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)):[35,35,35];
+ let filled=0;
+ for(let py=0;py<h;py++)for(let px=0;px<w;px++){
+  const k=py*w+px,a=pixels[k*4+3]/255;if(a===0)continue;
+  const uv=wallPixelPosition(px,py,wallCoordinates);
+  const wall=wallSample(surface,uv.x,uv.y,seed+'|surface');
+  const grain=hash(seed,uv.x,uv.y,11);
+  const coverage=mode==='spray'?
+   (.76+.17*grain)*(1-.27*wall.roughness)*(1-.38*wall.mortar):
+   (.88+.10*grain)*(1-.42*wall.roughness*(grain>.72?1:.25));
+  const incoming=clamp(a*coverage,0,.99),existing=out.data[k*4+3]/255;
+  const opacity=1-(1-existing)*(1-incoming);
+  for(let c=0;c<3;c++)out.data[k*4+c]=rgb[c];
+  out.data[k*4+3]=Math.round(opacity*255);filled++;
+ }
+ ctx.putImageData(out,0,0);
+ return {revision:V3_MATERIAL_REVISION,filledPixels:filled};
+}
+/** Diagnostic substrate draw, keyed to the identical wall frame used for paint.
+ * Not a replacement for the tower's physical mesh/shader. */
+export function paintWallPreview(ctx,{surface='brick',seed='v3',wallCoordinates={}}={}){
+ const {width:w,height:h}=ctx.canvas,image=ctx.createImageData(w,h);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+  const uv=wallPixelPosition(x,y,wallCoordinates);
+  const p=wallSample(surface,uv.x,uv.y,seed+'|surface');
+  const base=surface==='brick'?[167,104,83]:surface==='rough-plaster'?[187,184,170]:[221,219,208];
+  const shade=1+(p.height-.5)*.15-p.mortar*.38;
+  const i=(y*w+x)*4;
+  for(let c=0;c<3;c++)image.data[i+c]=Math.round(clamp(base[c]*shade,0,255));
+  image.data[i+3]=255;
+ }
+ ctx.putImageData(image,0,0);
+ return {revision:V3_MATERIAL_REVISION,pixels:w*h};
 }
