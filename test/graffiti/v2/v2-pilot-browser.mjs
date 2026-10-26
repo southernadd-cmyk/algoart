@@ -86,6 +86,40 @@ try{
   return src('v1')!==src('v2');
  }),'Sheet 10 chisel M edit absent from MIME');
  await page.screenshot({path:path.join(root,'artifacts/graffiti-v2-pilot-chisel.png'),fullPage:true});
+ // Structural strokes must never be lost when ALL ornaments are disabled.
+ const anatomy=await page.evaluate(async()=>{
+  const {letterSvg,wordSvg}=await import('./v2-renderer.mjs');
+  const result=[];
+  for(const f of 'ABCDEFGHI'){
+   for(const ch of 'TEFHA'){
+    const svg=letterSvg(f,ch,{ornaments:false});
+    const structure=svg.querySelectorAll('path[data-role="structure"]').length;
+    const ornament=svg.querySelectorAll('path[data-role="ornament"]').length;
+    result.push({f,ch,structure,ornament});
+   }
+   const word=wordSvg(f,'PROPORTION PIECE',{ornaments:false,joins:false,variation:0});
+   if(word.querySelectorAll('path[data-role="ornament"]').length)throw Error('Ornament remains in '+f);
+  }
+  return result;
+ });
+ assert.equal(anatomy.length,45);
+ for(const a of anatomy){assert.ok(a.structure>0,a.f+a.ch+' lost all anatomy');assert.equal(a.ornament,0)}
+ for(const f of ['F','I']){
+  const word=await page.evaluate(async(f)=>{
+   const {wordSvg}=await import('./v2-renderer.mjs');
+   const svg=wordSvg(f,'PROPORTION PIECE',{ornaments:false,joins:false,variation:0});
+   return {t:[...svg.querySelectorAll('g[data-letter="T"] path[data-role="structure"]')].length,
+    e:[...svg.querySelectorAll('g[data-letter="E"] path[data-role="structure"]')].length};
+  },f);
+  assert.ok(word.t>0&&word.e>0,f+' structural crossbars missing');
+ }
+ await page.goto('http://127.0.0.1:'+server.address().port+'/test/graffiti/v2/alphabet-review.html',{waitUntil:'networkidle'});
+ await page.locator('#style').selectOption('G');
+ await page.locator('#custom').fill('MUSHROOM');
+ await page.screenshot({path:path.join(root,'artifacts/graffiti-v2-loops-legibility.png'),fullPage:true});
+ await page.locator('#style').selectOption('F');
+ await page.locator('#custom').fill('PROPORTION PIECE');
+ await page.screenshot({path:path.join(root,'artifacts/graffiti-v2-broad-nib-anatomy.png'),fullPage:true});
  await page.setViewportSize({width:390,height:844});
  const dimensions=await page.evaluate(()=>({screen:innerWidth,scroll:document.documentElement.scrollWidth}));
  assert.ok(dimensions.scroll<=dimensions.screen+2,'Mobile overflow');

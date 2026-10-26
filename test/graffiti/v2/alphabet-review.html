@@ -5,7 +5,7 @@
 <header><nav><a href="./pilot.html">Earlier targeted comparison</a><a href="./evidence.html">Source evidence by family</a><a href="../phase-d-alphabets.html">Current V1 review</a></nav>
 <h1>Nine alphabets, all 26 letters</h1><p class="intro">A source-grounded V2 workroom. View each entire A–Z alphabet against the approved V1, including φ, then compare identical words at the same seed. Pale highlighted tiles mark changed glyph geometry. Unhighlighted letters are unchanged until their own source-led revision is ready.</p></header>
 <div class="alert"><strong>Research version only.</strong> The live tower stays on V1. The uploaded sheets are not republished. The revised writer B is deliberately thinner than the V1 arrow-marker because primary sheet 7 is a skeletal handstyle.</div>
-<div class="controls"><label>Style<select id="style"></select></label><label>Test word<input id="custom" value="MUSHROOM" maxlength="55"></label><label>Seed<input id="seed" value="PP-NINE-V2-RESEARCH"></label><label>Joins<select id="joins"><option value="on">On</option><option value="off">Off</option></select></label><button id="next" type="button">Next style</button></div>
+<div class="controls"><label>Style<select id="style"></select></label><label>Test word<input id="custom" value="MUSHROOM" maxlength="55"></label><label>Seed<input id="seed" value="PP-NINE-V2-RESEARCH"></label><label>Joins<select id="joins"><option value="on">On</option><option value="off">Off</option></select></label><label>V2 ornaments<select id="ornaments"><option value="on">On (word budget)</option><option value="off">Off (structural only)</option></select></label><button id="next" type="button">Next style</button></div>
 <p id="summary" class="summary" aria-live="polite"></p>
 <div class="two" id="alphabets"><section class="panel"><h2>V1 alphabet</h2><div id="v1letters" class="letters"></div></section><section class="panel"><h2>V2 alphabet</h2><div id="v2letters" class="letters"></div></section></div>
 <h2 style="margin-top:30px">Whole-word tests</h2><div class="two"><section class="panel"><h3>V1 writing</h3><div id="v1words" class="words"></div></section><section class="panel"><h3>V2 writing</h3><div id="v2words" class="words"></div></section></div>
@@ -28,7 +28,7 @@ function draw(){
   const parent=$(id);parent.replaceChildren();
   for(const ch of letters){
    const item=node('div',undefined,'letter'+(id==='v2letters'&&changedLetters.has(ch)?' changed':''));
-   item.append(renderer(style,ch),node('span',ch==='Φ'?'φ':ch));parent.append(item);
+   item.append(renderer(style,ch,id==='v2letters'?{ornaments:$('ornaments').value==='on'}:{}),node('span',ch==='Φ'?'φ':ch));parent.append(item);
   }
  }
  const words=[...new Set([custom,'MUSHROOM','PHI','φ','PROPORTION PIECE','SKUF','FAST','NASH','MIME'])];
@@ -37,7 +37,7 @@ function draw(){
   for(const word of words){
    const item=node('div',undefined,'word');
    item.append(node('div',word,'desc'));
-   try{item.append(renderer(style,word,{seed,variation:.04,joins:$('joins').value==='on'}))}
+   try{item.append(renderer(style,word,{seed,variation:.04,joins:$('joins').value==='on',ornaments:id==='v2words'?$('ornaments').value==='on':true}))}
    catch(e){item.append(node('p',e.message))}
    parent.append(item);
   }
@@ -49,7 +49,7 @@ function draw(){
  }
 }
 $('style').value='A';
-for(const id of ['style','joins','custom','seed'])$(id).addEventListener(id==='custom'||id==='seed'?'input':'change',draw);
+for(const id of ['style','joins','ornaments','custom','seed'])$(id).addEventListener(id==='custom'||id==='seed'?'input':'change',draw);
 $('next').addEventListener('click',()=>{const values=[...$('style').options].map(o=>o.value);$('style').value=values[(values.indexOf($('style').value)+1)%values.length];draw()});
 draw();
 </script></body></html>

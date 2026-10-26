@@ -91,10 +91,10 @@ function strokeAttrs(f,s,construction){
  return {fill:'none',stroke:'currentColor','stroke-width':s.kind==='heavy'?f.weight*1.3:f.weight,
   'stroke-linecap':f.technique==='fragment'?'square':'round','stroke-linejoin':'round'};
 }
-function drawGlyph(f,ch,{construction=false,item=null,plan=null}={}){
+function drawGlyph(f,ch,{construction=false,item=null,plan=null,ornaments=true}={}){
  const g=tag('g',{'data-letter':ch,'aria-label':ch}),glyph=getGlyph(f.id,ch);
  for(const s of glyph.shapes){
-  if(plan&&item&&!showGesture(f,item,s,plan))continue;
+  if((plan&&item&&!showGesture(f,item,s,plan,{ornaments}))||(!plan&&!ornaments&&s.role==='ornament'))continue;
   let path;
   if(!construction&&s.kind!=='fill'&&s.kind!=='hairline'&&f.technique==='fatmarker')
    path=broadMarkerRibbon(s.d,f.weight*(s.kind==='heavy'?1.18:1));
@@ -106,6 +106,7 @@ function drawGlyph(f,ch,{construction=false,item=null,plan=null}={}){
    path=inkRibbon(s.d,{width:f.weight*(s.kind==='heavy'?1.35:1),kind:f.technique});
   else path=tag('path',{d:s.d,...strokeAttrs(f,s,construction)});
   path.setAttribute('data-gesture',s.kind);
+  path.setAttribute('data-role',s.role);
   g.append(path);
  }
  return g;
@@ -115,9 +116,9 @@ function svg(viewBox,label){
   'stroke-linecap':'round','stroke-linejoin':'round'});
  return s;
 }
-export function letterSvg(style,letter,{construction=false}={}){
+export function letterSvg(style,letter,{construction=false,ornaments=true}={}){
  const f=getFamily(style),g=svg('-25 -28 151 174',f.name+' letter '+letter);
- g.style.color=construction?'#282c28':f.ink;g.append(drawGlyph(f,String(letter).toUpperCase(),{construction}));
+ g.style.color=construction?'#282c28':f.ink;g.append(drawGlyph(f,String(letter).toUpperCase(),{construction,ornaments}));
  return g;
 }
 export function alphabetFragment(style,{construction=false}={}){
@@ -130,14 +131,14 @@ export function alphabetFragment(style,{construction=false}={}){
  }
  return root;
 }
-export function wordSvg(style,word,{seed='PP-ALPHABETS-01',variation=.04,construction=false,joins=true}={}){
+export function wordSvg(style,word,{seed='PP-ALPHABETS-01',variation=.04,construction=false,joins=true,ornaments=true}={}){
  const f=getFamily(style),plan=wordPlan(f,composeWord(style,word,{seed,variation}));
  // Give letters room for long strokes and baseline excursions.
  const s=svg('-32 -35 '+(plan.width+61).toFixed(2)+' 189',f.name+' writes '+plan.word);
  s.style.color=construction?'#282c28':f.ink;
  for(const item of plan.letters){
   const g=tag('g',{transform:'translate('+item.x.toFixed(3)+' '+item.y.toFixed(3)+') rotate('+item.rotation.toFixed(3)+' 38 54) matrix('+item.scale.toFixed(4)+' 0 '+f.italic.toFixed(3)+' 1 0 0)'});
-  g.append(drawGlyph(f,item.ch,{construction,item,plan}));s.append(g);
+  g.append(drawGlyph(f,item.ch,{construction,item,plan,ornaments}));s.append(g);
  }
  if(['A','F','G'].includes(f.id))s.append(exitContinuations(f,plan,{seed,enabled:joins}));
  else s.append(limitJoins(f,contextualJoinLayer(f,plan,{seed,enabled:joins&&f.id!=='E',construction}),plan));

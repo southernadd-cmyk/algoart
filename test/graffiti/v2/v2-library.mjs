@@ -5,7 +5,7 @@
 import {FAMILIES as ORIGINAL,getFamily as originalFamily,stableNoise,LETTERS} from '../family-library.mjs';
 import {PHI_BY_FAMILY} from '../family-symbols.mjs';
 
-export const V2_REVISION='source-led-word-flow-01';
+export const V2_REVISION='source-led-structural-roles-02';
 export const INSTRUMENT_REVISIONS=Object.freeze({B:'Sheet 7 light crossed line; V1 fat marker 12.5 was incompatible with source. V2 uses 6.1-weight crossed hand.'});
 export const PILOT_EVIDENCE=Object.freeze({
   'A:O':Object.freeze({sheet:41,letters:'O',observation:'The source O is not a plain circular loop: sharp angular returns cut a tall opening while the crossed stroke punctures the left side and extends beyond the perimeter.',change:'Replace a generic enclosing oval with angular top, inward right turn and one independent, clearly directional crossing pass.'}),
@@ -15,7 +15,8 @@ export const PILOT_EVIDENCE=Object.freeze({
   'C:A':Object.freeze({sheet:13,letters:'A',observation:'Sheet 13 A combines an angular cut stem, a separated sloping blade and a short open high counter; the shape is asymmetric and made of decisive triangular wedges.',change:'Rebuild A with separate polygonal blade pieces and a real triangular negative-space notch.'}),
   'C:O':Object.freeze({sheet:13,letters:'O',observation:'Sheet 13 O is a thick ring of irregular angular wedge segments enclosing a sharp eccentric hole rather than a round geometric font counter.',change:'Re-author a deliberately off-centre polygonal O with a cut-out inner counter and angular outer turns.'}),
   'G:O':Object.freeze({sheet:8,letters:'O',observation:'Sheet 8 O is made from a broad repeated orbit with one smaller inner eye and a return across the interior, not equal-amplitude wobble at each contour point.',change:'Retain one confident outer orbit, a smaller inner eye, and a single crossing return.'}),
-  'G:S':Object.freeze({sheet:8,letters:'S',observation:'Sheet 8 S is drawn with an energetic long looping upper turn that descends into a dominant bottom sweep; inner curls sit within the larger directional movement.',change:'Keep a long committed S path with one inner counter-echo, not several independent wobbling rings.'}),
+  'G:U':Object.freeze({sheet:8,letters:'U',observation:'Sheet 8 U descends from two unmistakably separate high entry strokes into one large low rounded bowl, then the right stem rises; its top stays open and its turning point is well below mid-height.',change:'Build a tall open U with distinct left/right ascenders, a low return bowl and a minor inner orbit that cannot close the upper opening into a C.'}),
+  'G:S':Object.freeze({sheet:8,letters:'S',observation:'Sheet 8 S is drawn with an energetic long looping upper turn that descends into a dominant bottom sweep; inner curls sit within the larger directional movement.',change:'Keep a single directional upper-to-lower S spine, an open upper return and one small inner echo, avoiding G-like closed loops.'}),
   'H:A':Object.freeze({sheet:30,letters:'A',observation:'Sheet 30 A is clearly assembled from separate red slashed fragments with a high triangular empty counter, a long sharp left blade and a detached crossband.',change:'Use three individually outlined angular paint masses while preserving the visible central triangular white gap.'}),
   'H:S':Object.freeze({sheet:30,letters:'S',observation:'Sheet 30 S comprises detached red wedges at the top and middle, with a long lower ribbon curling back; the deliberate gaps define the letter rather than texture noise.',change:'Rebuild the upper two wedge groups and lower angled sweep as separated filled marks with purposeful paper gaps.'}),
   'I:A':Object.freeze({sheet:10,letters:'A',observation:'Sheet 10 cyan A is narrow and upright, with a short offset cap, slim downward chisel trunk and very open counter; the top is not a broad sloping triangle.',change:'Give A an offset sharp head, slender downstroke and short return bar while keeping the interior open.'}),
@@ -79,15 +80,20 @@ const changes=Object.freeze({
   ])
  }),
  G:Object.freeze({
+  U:Object.freeze([
+   path('stroke','M 9 1 C 10 34 3 70 18 97 C 36 130 70 121 77 91 C 82 67 77 35 80 3'),
+   path('stroke','M 18 39 C 21 84 33 103 49 101 C 67 99 68 83 67 58'),
+   path('hairline','M 68 12 Q 77 -3 92 10')
+  ]),
   O:Object.freeze([
    path('stroke','M 37 5 C 92 -13 109 71 75 107 C 47 138 -12 104 4 46 Q 15 8 48 3'),
    path('stroke','M 36 35 C 68 14 83 47 66 76 C 52 96 25 79 30 55 Q 34 43 55 42'),
    path('hairline','M 6 65 Q 45 36 92 58')
   ]),
   S:Object.freeze([
-   path('stroke','M 81 17 C 54 -14 13 3 8 30 C 0 55 57 57 74 38 Q 83 25 65 19'),
-   path('stroke','M 29 52 C -12 79 15 122 54 109 C 93 95 71 60 43 74 Q 31 86 47 93'),
-   path('hairline','M 13 112 Q 52 131 89 100')
+   path('stroke','M 82 15 C 54 -9 17 2 13 32 C 11 48 27 54 49 60 C 77 68 88 86 65 106 C 45 121 16 112 7 96'),
+   path('stroke','M 69 16 C 39 6 24 23 30 39 Q 36 48 55 52'),
+   path('hairline','M 20 78 Q 43 67 61 82')
   ])
  }),
  H:Object.freeze({
@@ -179,12 +185,36 @@ const changes=Object.freeze({
   ])
  })
 });
+// Tool/appearance (hairline, heavy, fill) is NOT optionality.
+// Every V2 glyph shape receives an explicit semantic role. Default structure
+// is intentionally conservative: unreviewed thin lines cannot disappear.
+// Only referenced flourishes below may be subject to a word-level accent cap.
+export const ORNAMENT_INDICES=Object.freeze({
+ A:Object.freeze({A:[2],C:[2],D:[2],F:[2],H:[2],I:[2],K:[3],M:[2],N:[2],O:[2],R:[2],S:[2],W:[2]}),
+ B:Object.freeze({}),
+ C:Object.freeze({}),
+ D:Object.freeze({}),
+ E:Object.freeze({A:[],B:[2],C:[1],D:[2],F:[2],G:[1],H:[3],I:[2],K:[3],L:[1],N:[3],O:[1],P:[2],S:[1]}),
+ F:Object.freeze({A:[0],S:[0,2]}),
+ G:Object.freeze({O:[2],U:[2],S:[2]}),
+ H:Object.freeze({}),
+ I:Object.freeze({})
+});
+function annotateGlyph(id,ch,g){
+ const removable=new Set(ORNAMENT_INDICES[id]?.[ch]||[]);
+ const shapes=Object.freeze(g.shapes.map((shape,i)=>{
+  if(removable.has(i)&&shape.kind!=='hairline')
+   throw new Error('An ornament must be an explicitly identified hairline: '+id+ch+i);
+  return Object.freeze({...shape,role:removable.has(i)?'ornament':'structure'});
+ }));
+ return Object.freeze({letter:ch,shapes});
+}
 const newFamily=(f)=>{
- if(!changes[f.id])return f;
+ // Even unchanged geometry requires explicit structure/ornament roles.
  const glyphs=Object.create(null);
  for(const ch of LETTERS){
   const v=changes[f.id][ch];
-  glyphs[ch]=v?Object.freeze({letter:ch,shapes:v}):f.glyphs[ch];
+  glyphs[ch]=annotateGlyph(f.id,ch,v?{letter:ch,shapes:v}:f.glyphs[ch]);
  }
  // Sheet 7 is fine-line skeletal writing, unlike the heavy fat-marker B in
  // production. V2 explicitly tests a slimmer instrument without touching V1.
@@ -197,7 +227,7 @@ export {LETTERS};
 export function getFamily(id){const f=BY_ID[id];if(!f)throw new RangeError('Unknown V2 alphabet family '+id);return f}
 export function getGlyph(id,letter){
  const ch=String(letter).toUpperCase();
- const glyph=ch==='Φ'?PHI_BY_FAMILY[id]:getFamily(id).glyphs[ch];
+ const glyph=ch==='Φ'?annotateGlyph(id,ch,PHI_BY_FAMILY[id]):getFamily(id).glyphs[ch];
  if(!glyph)throw new RangeError('Unknown glyph '+letter+' in '+id);
  return glyph;
 }
