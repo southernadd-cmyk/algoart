@@ -1,5 +1,5 @@
 import {planPhiReception} from './phi-reception-layout.mjs';
-import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=shared-core-south-entrance-20261026';
+import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=complete-archive-20261026';
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
@@ -61,6 +61,7 @@ let liftDoorTarget=0;
 let liftArrivalOpening=false;
 let liftPickerConsumed=false;
 let phiMovingCabin=null;
+let phiLiftCabin=null;
 let phiRideState=null;
 let phiLiftPanelPosition=null;
 let liftCabinPosition=null;
@@ -657,7 +658,10 @@ function animateLiftDoors(dt){
   // The destination opening is held until the physical leaves are open.
   if(liftArrivalOpening){
     liftDoorTarget=0;
-    if(liftDoorClosure<.025)liftArrivalOpening=false;
+    if(liftDoorClosure<.025){
+      liftArrivalOpening=false;
+      if(window.__phiLiftRide?.status==='opening')window.__phiLiftRide.status='ready';
+    }
   }else if(liftDoorThreshold&&liftDoors.length&&!liftTravelling){
     const person=renderer?.xr.isPresenting
       ?renderer.xr.getCamera(camera).getWorldPosition(new THREE.Vector3())
@@ -794,27 +798,14 @@ function closeLift({returnToCanvas=false}={}){
 function startPhiCabinRide(targetFloor){
  const startY=rig.position.y;
  const endY=targetFloor*FLOOR_SPACING;
- const pod=new THREE.Group();pod.name='phi-moving-archive-lift';
- pod.position.set(0,startY,0);
- const metal=new THREE.MeshStandardMaterial({color:0x85918d,metalness:.47,roughness:.47,side:THREE.DoubleSide});
- const dark=new THREE.MeshStandardMaterial({color:0x273530,metalness:.38,roughness:.55});
- const glass=new THREE.MeshStandardMaterial({color:0xbed6ce,transparent:true,opacity:.19,roughness:.18,metalness:.13,side:THREE.DoubleSide,depthWrite:false});
- const panel=(w,h,d,x,y,z,material)=>{
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
-  m.position.set(x,y,z);pod.add(m);
- };
- panel(2.85,.16,2.55,0,-.12,0,dark);
- panel(2.85,.15,2.55,0,3.03,0,metal);
- panel(.09,2.96,2.55,-1.45,1.48,0,metal);
- // No solid or tinted end wall across the cabin's sightline.
- for(const z of [-1.26,1.26])panel(.09,2.96,.11,1.41,1.48,z,metal);
- // The moving cabin is an enclosed object, not just a floating platform.
- // Its two metal door leaves remain shut between landings.
- // No duplicate opaque leaves: the animated landing pair provides the doors.
- scene.add(pod);
- phiMovingCabin=pod;
+ // Travel in the same furnished cabin, with its calendar and real doors.
+ // The floor's golden-angle orientation is reached gradually during travel.
+ phiMovingCabin=phiLiftCabin;
+ const startTheta=phiLiftCabin.rotation.y;
+ const targetTheta=targetFloor*(2*Math.PI/(PHI*PHI));
+ const turn=Math.atan2(Math.sin(targetTheta-startTheta),Math.cos(targetTheta-startTheta));
  const duration=Math.max(1.8,Math.min(9,Math.abs(endY-startY)/7.0+1));
- phiRideState={startY,endY,elapsed:0,duration,resolve:null};
+ phiRideState={startY,endY,startTheta,turn,lastTheta:startTheta,elapsed:0,duration,resolve:null};
  window.__phiLiftRide={from:startY,to:endY,progress:0,status:'moving'};
  return new Promise(resolve=>{phiRideState.resolve=resolve;});
 }
@@ -827,7 +818,12 @@ function updatePhiCabinRide(dt){
  const smooth=p*p*(3-2*p);
  const y=ride.startY+(ride.endY-ride.startY)*smooth;
  rig.position.y=y;
- if(phiMovingCabin)phiMovingCabin.position.y=y;
+ if(phiMovingCabin){
+  phiMovingCabin.position.y=y;
+  const theta=ride.startTheta+ride.turn*smooth;
+  phiMovingCabin.rotation.y=theta;
+  yaw+=theta-ride.lastTheta;ride.lastTheta=theta;
+ }
  if(window.__phiLiftRide)window.__phiLiftRide.progress=p;
  if(p>=1){
   phiRideState=null;
@@ -836,9 +832,7 @@ function updatePhiCabinRide(dt){
  }
 }
 function clearPhiMovingCabin(){
- if(!phiMovingCabin)return;
- scene.remove(phiMovingCabin);
- phiMovingCabin.traverse(o=>{o.geometry?.dispose?.();o.material?.dispose?.();});
+ // loadEdition owns and disposes the previous cabin with the previous floor.
  phiMovingCabin=null;
 }
 async function travelLift(date,index){
@@ -848,19 +842,30 @@ async function travelLift(date,index){
  $('lift').hidden=true;
  liftPickerConsumed=true;
  liftArrivalOpening=false;
+ window.__phiLiftError=null;
+ errorBox.hidden=true;
+ const departure={date:exhibitDate,position:rig.position.clone(),yaw,pitch};
+ window.__phiLiftRide={from:rig.position.y,to:index*FLOOR_SPACING,progress:0,status:'preparing'};
+ // Header/keyboard access boards the same physical cabin as wall proximity.
+ if(plan?.phi&&liftCabinPosition)rig.position.copy(liftCabinPosition);
  if(!xrRide)document.exitPointerLock?.();
+ canvas.focus({preventScroll:true});
+ pressed.clear();touchPressed.clear();lookPressed.clear();
  if(xrRide)paintXRTravel(index);
  // The actual doors shut while the visitor remains in the cabin.
  setLiftDoors(true);
- await new Promise(resolve=>setTimeout(resolve,900));
  try{
+  // Fetch and validate while still at the departure floor. A failed request
+  // must never strand the visitor at an elevation with the old floor loaded.
+  const prepared=await preparePhiEdition(date);
+  while(liftDoorClosure<.998)await new Promise(resolve=>setTimeout(resolve,30));
   if(plan?.phi){
    await startPhiCabinRide(index);
    // The shared shaft and the other levels remain in the 3D scene for the ride.
    // Replace detailed room contents only after the cabin reaches its landing.
-   await loadEdition(date,{viaLift:true});
+   await loadEdition(date,{viaLift:true,prepared});
   }else{
-   await loadEdition(date,{viaLift:true});
+   await loadEdition(date,{viaLift:true,prepared});
   }
   clearPhiMovingCabin();
   if(xrRide)closeXRLift();
@@ -875,13 +880,22 @@ async function travelLift(date,index){
   liftWasNear=true;
   liftPickerConsumed=true;
   setLiftDoors(false);
+  if(window.__phiLiftRide)window.__phiLiftRide.status='opening';
  }catch(error){
+  if(exhibitDate!==departure.date){
+   try{await loadEdition(departure.date,{rollback:true});}
+   catch(recoveryError){console.error('[Phi lift] departure recovery failed',recoveryError);}
+  }
+  rig.position.copy(departure.position);yaw=departure.yaw;pitch=departure.pitch;
+  rig.rotation.y=yaw;camera.rotation.x=pitch;
+  if(phiLiftCabin){phiLiftCabin.position.y=currentFloor*FLOOR_SPACING;phiLiftCabin.rotation.y=plan.phi.world.theta;}
   clearPhiMovingCabin();
   liftTravelling=false;
   liftArrivalOpening=true;
   setLiftDoors(false);
   console.error('[Phi lift] destination failure', {date,index,atFloor:currentFloor,ride:window.__phiLiftRide},error);
   window.__phiLiftError={message:String(error?.message||error),stack:String(error?.stack||''),date,index};
+  window.__phiLiftRide.status='failed';
   errorBox.textContent='The lift could not reach that floor: '+error.message;
   errorBox.hidden=false;
   if(!xrRide){$('lift').hidden=false;$('closeLift').focus({preventScroll:true});}
@@ -1066,12 +1080,15 @@ function transformPhiActiveFloor(before){
   object.rotation.y+=world.theta;
  }
  for(const p of sculpturePlacements)rotate(p);
- for(const a of artExhibits)rotate(a.position);
+ for(const a of artExhibits){
+  rotate(a.position);
+  a.normal?.applyAxisAngle(new THREE.Vector3(0,1,0),world.theta);
+ }
  rotate(liftPosition);rotate(liftCabinPosition);rotate(liftDoorThreshold);rotate(phiLiftPanelPosition);
  // Moving the meshes alone would leave door-animation endpoints behind
  // when this exhibition level is rotated about the shared lift core.
  for(const leaf of liftDoors){
-   rotate(leaf.userData.closed);rotate(leaf.userData.open);
+   if(leaf.parent===scene){rotate(leaf.userData.closed);rotate(leaf.userData.open);}
  }
  rotate(rig.position);
  // The forecourt and entrance are data as well as meshes. Move their
@@ -1143,8 +1160,11 @@ function constructPhiTowerShell(){
  const metal=join,shaftRadius=1.38;
  for(const sx of [-1,1])for(const sz of [-1,1])
    append(.18,coreHeight,.18,sx*shaftRadius,coreHeight/2-0.1,sz*shaftRadius,metal);
- for(let level=0;level<archiveDates.length;level++)
-   append(3,.15,3,0,level*FLOOR_SPACING-.18,0,galleryFinish.plinth);
+ // Ring beams support the landings without slabs cutting through the cabin.
+ for(let level=0;level<archiveDates.length;level++)for(const side of [-1,1]){
+   append(.12,.15,3,side*1.48,level*FLOOR_SPACING-.18,0,metal);
+   append(3,.15,.12,0,level*FLOOR_SPACING-.18,side*1.48,metal);
+ }
  scene.add(shell);
  window.__phiTowerExterior={otherFloors:count,wallMeshes:shell.children.length};
 }
@@ -1258,6 +1278,12 @@ function constructPhiGallery(layout,studies){
  // The shaft landing is an actual collision surface; the full gallery lift UI
  // continues to use liftPosition and liftCabinPosition unchanged.
  const l=phi.circulation.lift;
+ const cabin=new THREE.Group();cabin.name='phi-archive-lift-cabin';
+ cabin.position.set(l.x,elevation,l.z);scene.add(cabin);phiLiftCabin=cabin;
+ const cabinObject=object=>{
+  object.position.sub(cabin.position);cabin.add(object);return object;
+ };
+ const cabinBlock=(...args)=>cabinObject(block(...args));
  block(2.9,.2,2.9,l.x,elevation-.09,l.z,galleryFinish.floor);
  block(2.9,.18,2.9,l.x,elevation+ROOM_HEIGHT+.08,l.z,ceilingFinish);
  // Enclosed exterior arrival lobby. The east-facing doorway to the gallery
@@ -1284,7 +1310,7 @@ function constructPhiGallery(layout,studies){
  block(.17,.2,l.portal.width+.15,innerEast,elevation+3.23,l.z,join);
  for(const sx of [-1,1])for(const sz of [-1,1])block(.12,ROOM_HEIGHT,.12,l.x+sx*1.38,elevation+ROOM_HEIGHT/2,l.z+sz*1.38,join);
  block(Math.max(2.4,Math.abs((l.portal?.at??l.x+2.25)-l.x)+.5),.16,2.3,(l.x+(l.portal?.at??l.x+2.25))/2,elevation-.08,l.z,galleryFinish.floor);
- const liftLight=new THREE.PointLight(0xfff4d8,8,12,2);liftLight.position.set(l.x,elevation+3,l.z);scene.add(liftLight);
+ const liftLight=new THREE.PointLight(0xfff4d8,8,12,2);liftLight.position.set(l.x,elevation+2.8,l.z);cabinObject(liftLight);
  // Same procedural brushed-steel texture as the production archive lift.
  const steelCanvas=document.createElement('canvas');steelCanvas.width=128;steelCanvas.height=128;
  const brush=steelCanvas.getContext('2d'),pixels=brush.createImageData(128,128);
@@ -1300,15 +1326,16 @@ function constructPhiGallery(layout,studies){
  brushed.map.colorSpace=THREE.SRGBColorSpace;
  const bronze=new THREE.MeshStandardMaterial({color:'#424b47',metalness:.58,roughness:.43});
  const rubber=new THREE.MeshStandardMaterial({color:'#303937',roughness:.88});
- block(2.65,.055,2.65,l.x,elevation+.02,l.z,rubber);
+ cabinBlock(2.65,.055,2.65,l.x,elevation+.02,l.z,rubber);
  // Rear wall only. The forward (+X) face must remain a real opening:
  // previously the generic loop built a full-height opaque steel wall across it.
- block(.065,2.75,2.55,l.x-1.31,elevation+1.43,l.z,brushed);
+ cabinBlock(.065,2.75,2.55,l.x-1.31,elevation+1.43,l.z,brushed);
  for(const side of [-1,1]){
-  block(2.55,2.75,.065,l.x,elevation+1.43,l.z+side*1.31,brushed);
-  block(2.6,.08,.085,l.x,elevation+2.92,l.z+side*1.25,bronze);
+  cabinBlock(2.55,2.75,.065,l.x,elevation+1.43,l.z+side*1.31,brushed);
+  cabinBlock(2.6,.08,.085,l.x,elevation+2.92,l.z+side*1.25,bronze);
+  cabinBlock(2.4,.045,.055,l.x,elevation+.93,l.z+side*1.22,bronze);
  }
- block(2.6,.1,2.6,l.x,elevation+3.02,l.z,brushed);
+ cabinBlock(2.6,.1,2.6,l.x,elevation+3.02,l.z,brushed);
  // Portal surrounds reproduce the existing archive lift's bronze/metal trim.
  for(const side of [-1,1])block(.07,2.7,.16,l.portal.at-.12,elevation+1.38,l.z+side*1.12,bronze);
  block(.12,.23,2.5,l.portal.at-.12,elevation+2.93,l.z,brushed);
@@ -1405,9 +1432,9 @@ function constructPhiGallery(layout,studies){
    g.fillStyle='#2e3e33';g.font='bold 60px Georgia';g.fillText(captions[i][0],40,105,945);
    g.font='36px Georgia';captions[i].slice(1).forEach((line,n)=>g.fillText(line,40,208+n*83,950));
    const texture=new THREE.CanvasTexture(paper);texture.colorSpace=THREE.SRGBColorSpace;
-   const board=new THREE.Mesh(new THREE.PlaneGeometry(item.width,2.2),
+   const board=new THREE.Mesh(new THREE.PlaneGeometry(item.width,1.65),
       new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
-   board.position.set(item.x,elevation+2.6,item.z);
+   board.position.set(item.x,elevation+1.85,item.z);
    board.rotation.y=item.axis==='x'?(item.normal.x>0?Math.PI/2:-Math.PI/2):(item.normal.z>0?0:Math.PI);
    scene.add(board);
   }
@@ -1437,11 +1464,11 @@ function constructPhiGallery(layout,studies){
     signCount:furnishing.signage.length,plantCount:furnishing.plants.length,clearance:furnishing.checks};
  }
  // Gallery-side lift doors: frame and leaves kept distinct from walking collision.
- const liftFace=l.portal.at;
+ const liftFace=l.x+1.30;
  // Two animated steel landing leaves, aligned to the physical portal.
  liftDoors=[];
  for(const side of [-1,1]){
-  const leaf=block(.105,2.8,l.portal.width/2-.045,liftFace-.10,
+  const leaf=cabinBlock(.105,2.8,l.portal.width/2-.045,liftFace-.10,
     elevation+1.42,l.z+side*(l.portal.width/4),brushed);
   leaf.userData.closed=leaf.position.clone();
   leaf.userData.open=leaf.position.clone().add(new THREE.Vector3(0,0,side*(l.portal.width/2-.055)));
@@ -1455,27 +1482,38 @@ function constructPhiGallery(layout,studies){
  cg.fillStyle='#263831';cg.fillRect(0,0,512,640);
  cg.strokeStyle='#bdad7a';cg.lineWidth=12;cg.strokeRect(16,16,480,608);
  cg.fillStyle='#f0ede2';cg.textAlign='center';
- cg.font='bold 57px Georgia';cg.fillText('ARCHIVE',256,111);
- cg.font='bold 60px Georgia';cg.fillText('LIFT',256,190);
- cg.font='35px Georgia';cg.fillText('SELECT A FLOOR',256,300);
- cg.font='27px Arial';cg.fillText('Approach to open',256,394);
- cg.font='29px Arial';cg.fillText('the exhibition calendar',256,440);
+ cg.font='48px "AlgoArt Marker", Georgia';cg.fillText('Exhibitions',256,89);
+ const calendarDate=exhibitDate===RECEPTION?archiveDates.at(-1):exhibitDate;
+ const month=calendarDate.slice(0,7),year=Number(month.slice(0,4)),monthNumber=Number(month.slice(5,7));
+ cg.font='30px Georgia';cg.fillText(new Date(calendarDate+'T12:00:00Z').toLocaleDateString('en-GB',{month:'long',year:'numeric',timeZone:'UTC'}),256,146);
+ cg.font='21px Arial';
+ ['M','T','W','T','F','S','S'].forEach((d,i)=>cg.fillText(d,64+i*64,208));
+ const first=(new Date(Date.UTC(year,monthNumber-1,1)).getUTCDay()+6)%7;
+ const days=new Date(Date.UTC(year,monthNumber,0)).getUTCDate();
+ for(let day=1;day<=days;day++){
+  const slot=first+day-1,x=64+slot%7*64,y=254+Math.floor(slot/7)*51;
+  const date=month+'-'+String(day).padStart(2,'0'),available=archiveDates.includes(date);
+  if(date===exhibitDate){cg.fillStyle='#b8c6a7';cg.fillRect(x-23,y-28,46,43);}
+  cg.fillStyle=available?(date===exhibitDate?'#263831':'#f0ede2'):'#738177';
+  cg.font=available?'bold 27px Arial':'25px Arial';cg.fillText(String(day),x,y);
+ }
+ cg.fillStyle='#f0ede2';cg.font='25px Georgia';cg.fillText('Approach to choose a date',256,586);
  const calendarTexture=new THREE.CanvasTexture(calendarCanvas);
  calendarTexture.colorSpace=THREE.SRGBColorSpace;
  const controlBoard=new THREE.Mesh(new THREE.PlaneGeometry(.89,1.12),
   new THREE.MeshBasicMaterial({map:calendarTexture,side:THREE.DoubleSide}));
  controlBoard.position.set(l.x,elevation+1.65,l.z+1.19);
  controlBoard.rotation.y=Math.PI; // Face inward from the +Z cabin wall.
- controlBoard.name='phi-lift-wall-calendar';scene.add(controlBoard);
+ controlBoard.name='phi-lift-wall-calendar';cabinObject(controlBoard);
   // Brushed cabin door and illuminated floor indicator.
  const indicator=document.createElement('canvas');indicator.width=512;indicator.height=128;
  const ink=indicator.getContext('2d');ink.fillStyle='#202d2a';ink.fillRect(0,0,512,128);
  ink.fillStyle='#f0e8c9';ink.font='bold 57px Georgia';ink.fillText(currentFloor===0?'G · RECEPTION':'FLOOR '+currentFloor,28,82);
  const tex=new THREE.CanvasTexture(indicator);tex.colorSpace=THREE.SRGBColorSpace;
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
- sign.position.set(liftFace-.16,elevation+3.33,l.z);sign.rotation.y=Math.PI/2;scene.add(sign);
- for(const side of [-1,1])block(.16,3.1,.17,liftFace,elevation+1.55,l.z+side*1.22,join);
- block(.19,.24,2.55,liftFace,elevation+3.15,l.z,join);
+ sign.position.set(liftFace-.16,elevation+2.78,l.z);sign.rotation.y=-Math.PI/2;cabinObject(sign);
+ for(const side of [-1,1])cabinBlock(.16,3.1,.17,liftFace,elevation+1.55,l.z+side*1.22,join);
+ cabinBlock(.19,.24,2.55,liftFace,elevation+3.15,l.z,join);
  rig.position.copy(liftCabinPosition);
  arrival=null;
  if(phi.exhibition.paintings.length+phi.exhibition.sculptures.length!==studies.length)
@@ -1833,14 +1871,7 @@ async function loadSculpturePack(date,cache){
     return {};
   }finally{clearTimeout(timer);}
 }
-async function loadEdition(date,{viaLift=false,rollback=false}={}) {
-  // Preserve the last valid edition so a failed floor construction can be
-  // rebuilt instead of leaving the visitor inside an empty scene.
-  const previousDate=exhibitDate;
-  const previousPosition=rig?.position?.clone();
-  const previousYaw=yaw,previousPitch=pitch;
-  if(!renderer)return;
-  const editionStart=performance.now();
+async function preparePhiEdition(date) {
   const reception=date===RECEPTION;
   const url = new URL('../'+(reception?archiveDates[1]:date)+'/', document.baseURI);
   // Previous daily editions never change; allow normal browser caching.
@@ -1873,7 +1904,8 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   if(!reception&&!studies.length)throw new Error('No artworks for this edition');
   const phi=reception?buildPhiRendererPlan(RECEPTION,Array.from({length:10},(_,i)=>({id:'foyer-placeholder-'+i,portrait:i%3===0,aspect:i%3===0?.75:1.4}))):buildPhiRendererPlan(date,studies);
   if(reception){phi.exhibition.paintings=[];phi.exhibition.sculptures=[];phi.exhibition.unplaced=[];phi.checks.unplaced=0;}
-  if(!phi.checks.connected||(!reception&&!phi.checks.count)||!phi.checks.unique||phi.checks.unplaced)
+  if(!phi.checks.connected||(!reception&&!phi.checks.count)||!phi.checks.unique||
+     !phi.checks.inwardFacing||!phi.checks.clearances||phi.checks.unplaced)
     throw new Error('Invalid phi exhibition plan: '+JSON.stringify(phi.checks));
   const nextPlan={
     date,artworkCount:studies.length,phi,
@@ -1885,6 +1917,16 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   const elevation=nextFloor*FLOOR_SPACING;
   for(const room of nextPlan.rooms)room.y+=elevation;
   for(const hall of nextPlan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
+  return {studies,nextPlan,nextFloor,elevation,reception};
+}
+async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={}) {
+  // Destination data is fully checked before any current scene is removed.
+  const previousDate=exhibitDate;
+  const previousPosition=rig?.position?.clone();
+  const previousYaw=yaw,previousPitch=pitch;
+  if(!renderer)return;
+  const editionStart=performance.now();
+  const {studies,nextPlan,nextFloor,elevation,reception}=prepared||await preparePhiEdition(date);
   // Dispose *all* edition-owned GPU resources, including artwork maps and
   // procedural canvas textures, but not materials/geometry shared across floors.
   const staleGeometries=new Set(),staleMaterials=new Set(),staleTextures=new Set();
@@ -1957,7 +1999,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     const door=plan.phi.arrivalDoor;
     const out=plan.phi.plaza.outward;
     rig.position.set(door.x+out.x*13,0,door.z+out.z*13);
-    yaw=Math.atan2(-out.x,-out.z);pitch=.15;rig.rotation.y=yaw;camera.rotation.x=pitch;
+    yaw=Math.atan2(out.x,out.z);pitch=.08;rig.rotation.y=yaw;camera.rotation.x=pitch;
   }
   if(!viaLift && nextFloor===0 && arrival){
     rig.position.copy(arrival.start);
@@ -1967,8 +2009,8 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   if(viaLift&&liftCabinPosition){
     rig.position.copy(liftCabinPosition);
     const towards=plan.phi?new THREE.Vector3(Math.cos(plan.phi.world?.theta||0),0,-Math.sin(plan.phi.world?.theta||0)):new THREE.Vector3(plan.rooms[0].x-liftCabinPosition.x,0,plan.rooms[0].z-liftCabinPosition.z);
-    yaw=Math.atan2(-towards.x,-towards.z);
-    rig.rotation.y=yaw;pitch=0;camera.rotation.x=0;
+    if(!plan.phi){yaw=Math.atan2(-towards.x,-towards.z);pitch=0;}
+    rig.rotation.y=yaw;camera.rotation.x=pitch;
     liftWasNear=true;liftPickerConsumed=true;welcome.hidden=true;
     liftDoorClosure=1;liftDoorTarget=1;
     for(const leaf of liftDoors)leaf.position.copy(leaf.userData.closed);
@@ -2089,6 +2131,10 @@ $('lift').addEventListener('keydown',e=>{
   else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first.focus();}
 });
 $('liftMonth').addEventListener('change',renderLiftCalendar);
+$('liftReception').addEventListener('click',()=>{
+  if(exhibitDate===RECEPTION)closeLift({returnToCanvas:true});
+  else travelLift(RECEPTION,0);
+});
 window.addEventListener('keydown',(e)=>{
   if(e.code==='Escape'){
     // Preserve the mouse user's first-Escape-to-unlock behaviour.
@@ -2316,6 +2362,11 @@ function onPhiPlaza(x,z){
  const door=phi.arrivalDoor;
  return ((x-door.x)*p.outward.x+(z-door.z)*p.outward.z)>-.5 || phi.canWalk(x,z);
 }
+function phiDoorBlocked(x,z){
+ if(!plan?.phi||liftDoorClosure<.12)return false;
+ const p=plan.phi.world.toLocal(x,z),l=plan.phi.circulation.lift;
+ return Math.abs(p.x-(l.x+1.20))<.43&&Math.abs(p.z-l.z)<1.27;
+}
 function updateMovement(dt) {
   if (!plan || !welcome.hidden || !$('lift').hidden) return;
   // Look remains responsive during physical travel; only translation is locked.
@@ -2380,8 +2431,8 @@ function updateMovement(dt) {
       dx=(Math.cos(yaw)*side-Math.sin(yaw)*ahead)*dt*speed;
       dz=(-Math.sin(yaw)*side-Math.cos(yaw)*ahead)*dt*speed;
     }
-    if (((plan.phi?(plan.phi.canWalk(rig.position.x+dx,rig.position.z)||onPhiPlaza(rig.position.x+dx,rig.position.z)):canStand(plan,rig.position.x+dx,rig.position.z))||(plan.phi?false:onArrivalPath(rig.position.x+dx,rig.position.z))) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
-    if (((plan.phi?(plan.phi.canWalk(rig.position.x,rig.position.z+dz)||onPhiPlaza(rig.position.x,rig.position.z+dz)):canStand(plan,rig.position.x,rig.position.z+dz))||(plan.phi?false:onArrivalPath(rig.position.x,rig.position.z+dz))) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
+    if (((plan.phi?(plan.phi.canWalk(rig.position.x+dx,rig.position.z)||onPhiPlaza(rig.position.x+dx,rig.position.z)):canStand(plan,rig.position.x+dx,rig.position.z))||(plan.phi?false:onArrivalPath(rig.position.x+dx,rig.position.z))) && !phiDoorBlocked(rig.position.x+dx,rig.position.z) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
+    if (((plan.phi?(plan.phi.canWalk(rig.position.x,rig.position.z+dz)||onPhiPlaza(rig.position.x,rig.position.z+dz)):canStand(plan,rig.position.x,rig.position.z+dz))||(plan.phi?false:onArrivalPath(rig.position.x,rig.position.z+dz))) && !phiDoorBlocked(rig.position.x,rig.position.z+dz) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
   }
   const part=plan.phi?((plan.phi.canWalk(rig.position.x,rig.position.z)||onPhiPlaza(rig.position.x,rig.position.z))?{y:currentFloor*FLOOR_SPACING,zone:'room'}:null):footprintAt(plan,rig.position.x,rig.position.z);
   if(part)rig.position.y=part.y;
@@ -2449,6 +2500,13 @@ function tick() {
   entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
+  if(GALLERY_DEBUG)window.__phiLiftState={
+    floor:currentFloor,date:exhibitDate,travelling:liftTravelling,
+    x:rig.position.x,y:rig.position.y,z:rig.position.z,yaw,pitch,
+    doorClosure:liftDoorClosure,cabinY:phiLiftCabin?.position.y,
+    calendarCount:phiLiftCabin?.children.filter(o=>o.name==='phi-lift-wall-calendar').length,
+    doorCount:liftDoors.length,threeRevision:THREE.REVISION
+  };
   lastFocusCheck+=dt;mapElapsed+=dt;
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}

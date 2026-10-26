@@ -125,7 +125,13 @@ export function planCuratedPhiExhibition(floor,circulation,physical,studies){
   for(let i=0;i<floor.mergedRooms.length;i++){
    const room=floor.mergedRooms[i];
    for(const p of room.pieces){
-    for(const fx of [INV_PHI,1-INV_PHI,.5])for(const fz of [INV_PHI,1-INV_PHI,.5]){
+    // Nine centre samples per cell missed usable perimeter space and left
+    // portrait-heavy editions incomplete. Sample a finer lattice as
+    // well as the original anchors; every candidate retains the same safety
+    // checks for walls, doorways, paintings and neighbouring sculptures.
+    const fractions=size=>[...new Set([INV_PHI,1-INV_PHI,.5,
+      ...Array.from({length:Math.max(0,Math.floor((size-3.2)/.7)+1)},(_,n)=>(1.6+n*.7)/size)])];
+    for(const fx of fractions(p.w))for(const fz of fractions(p.h)){
      const x=p.x+p.w*fx,z=p.z+p.h*fz;
      if(!safe({...room,index:i},x,z))continue;
      const clearance=Math.min(x-p.x,p.x+p.w-x,z-p.z,p.z+p.h-z);
