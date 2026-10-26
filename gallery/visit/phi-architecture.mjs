@@ -29,6 +29,46 @@ export function planPhiFloor(date,{artworks=18,span=40,minSide=5.1,variation=0}=
  const classified=leaves.map((r,i)=>({...r,role:Math.min(r.w,r.h)<minSide||r.w*r.h<minSide*minSide*1.55?'void':'gallery',area:r.w*r.h}));
  const galleries=classified.filter(r=>r.role==='gallery');
  if(!galleries.length)throw Error('No gallery cells generated');
+ // Merge adjacent golden cells into usable exhibition rooms. The cells remain
+ // untouched mathematically; only internal partitions are removed.
+ // Compact rooms are favoured, but L-shaped unions are permitted.
+ const targetRooms=Math.min(classified.length,Math.max(2,Math.ceil(artworks/3)));
+ const groups=classified.map((cell,i)=>({id:i,cells:[cell],area:cell.area}));
+ const commonEdge=(a,b)=>{
+  const ox=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
+  const oz=Math.min(a.z+a.h,b.z+b.h)-Math.max(a.z,b.z);
+  return Math.abs(ox)<1e-6&&oz>1?oz:Math.abs(oz)<1e-6&&ox>1?ox:0;
+ };
+ while(groups.length>targetRooms){
+  let best=null;
+  for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){
+   const a=groups[i],b=groups[j];
+   let shared=0;
+   for(const x of a.cells)for(const y of b.cells)shared+=commonEdge(x,y);
+   if(!shared)continue;
+   const combined=a.cells.concat(b.cells),minX=Math.min(...combined.map(x=>x.x));
+   const maxX=Math.max(...combined.map(x=>x.x+x.w));
+   const minZ=Math.min(...combined.map(x=>x.z));
+   const maxZ=Math.max(...combined.map(x=>x.z+x.h));
+   const boundsArea=(maxX-minX)*(maxZ-minZ);
+   const fill=(a.area+b.area)/boundsArea;
+   const score=fill*5+shared*.10-Math.abs(a.area-b.area)/(a.area+b.area)*.5+random()*.025;
+   if(!best||score>best.score)best={i,j,score};
+  }
+  if(!best)break;
+  const a=groups[best.i],b=groups[best.j];
+  a.cells.push(...b.cells);a.area+=b.area;
+  groups.splice(best.j,1);
+ }
+ const mergedRooms=groups.map((group,i)=>({
+  id:'gallery-'+(i+1),area:group.area,
+  cells:group.cells.map(cell=>cell.id),
+  pieces:group.cells.map(({x,z,w,h,id})=>({x,z,w,h,id})),
+  x:Math.min(...group.cells.map(x=>x.x)),
+  z:Math.min(...group.cells.map(x=>x.z)),
+  width:Math.max(...group.cells.map(x=>x.x+x.w))-Math.min(...group.cells.map(x=>x.x)),
+  depth:Math.max(...group.cells.map(x=>x.z+x.h))-Math.min(...group.cells.map(x=>x.z))
+ }));
  // A spanning-tree adjacency guide; actual door/corridor planning is Phase B.
  const contacts=[];
  for(let i=0;i<classified.length;i++)for(let j=i+1;j<classified.length;j++){
@@ -37,5 +77,5 @@ export function planPhiFloor(date,{artworks=18,span=40,minSide=5.1,variation=0}=
   const oz=Math.min(a.z+a.h,b.z+b.h)-Math.max(a.z,b.z);
   if((Math.abs(ox)<1e-6&&oz>1)||(Math.abs(oz)<1e-6&&ox>1))contacts.push({a:a.id,b:b.id,shared:Math.max(ox,oz)});
  }
- return {version:1,date,seed:hash('phi-architecture-v1|'+date+'|'+artworks+'|'+variation),phi:PHI,root,rooms:classified,splits,contacts,stats:{galleryCells:galleries.length,voidCells:classified.length-galleries.length,totalCells:classified.length,contacts:contacts.length,footprintArea:root.w*root.h}};
+ return {version:2,date,mergedRooms,seed:hash('phi-architecture-v1|'+date+'|'+artworks+'|'+variation),phi:PHI,root,rooms:classified,splits,contacts,stats:{galleryCells:galleries.length,voidCells:classified.length-galleries.length,totalCells:classified.length,mergedCount:mergedRooms.length,targetRooms,contacts:contacts.length,footprintArea:root.w*root.h}};
 }
