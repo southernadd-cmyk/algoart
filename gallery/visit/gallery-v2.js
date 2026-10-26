@@ -952,8 +952,12 @@ function onArrivalPath(x,z){
   // Overlap the room footprint slightly to make crossing the threshold continuous.
   // The public plaza is 46m across and 38m deep, not merely the entrance route.
   // Retain the narrower threshold overlap so visitors cannot cross solid facade walls.
-  const plaza=along>=0&&along<=37.55&&across<=22.55;
-  const doorway=along>=-1.0&&along<=1.0&&across<=arrival.halfWidth;
+  const doorway=along>=-1.0&&along<=1.0&&across<=1.45;
+  // Exterior paving does not make the solid gallery walls walkable.
+  const blocked=plan.rooms.some(room=>
+    Math.abs(x-room.x)<room.width/2+.48&&
+    Math.abs(z-room.z)<room.depth/2+.48&&!doorway);
+  const plaza=along>=0&&along<=37.55&&across<=22.55&&!blocked;
   return plaza||doorway;
 }
 // Stage costly exhibits across frames so the exterior is usable immediately.
