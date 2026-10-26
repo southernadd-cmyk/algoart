@@ -45,7 +45,7 @@ test('All words remain deterministically positioned, no silent V1 geometry chang
  }
 });
 test('All V2 geometry and symbol paths remain valid; improvements are named hypotheses',()=>{
- assert.match(V2_REVISION,/all-nine-az-source-review/);
+ assert.match(V2_REVISION,/source-led-word-flow/);
  for(const f of v2)for(const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZΦ'){
   const glyph=getGlyph(f.id,ch);assert.ok(glyph.shapes.length);
   for(const s of glyph.shapes)assert.match(s.d,/^M\s*-?[\d.]+\s+-?[\d.]+/);

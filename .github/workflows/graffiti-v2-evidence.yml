@@ -1,7 +1,7 @@
 name: Validate V2 source evidence
 on:
   push:
-    branches: [graffiti-nine-v2-lab, graffiti-v2-source-led-round2, graffiti-v2-all-nine-az-study]
+    branches: [graffiti-nine-v2-lab, graffiti-v2-source-led-round2, graffiti-v2-all-nine-az-study, graffiti-v2-word-flow-study]
     paths:
       - 'test/graffiti/v2/**'
       - '.github/workflows/graffiti-v2-evidence.yml'
@@ -17,7 +17,7 @@ jobs:
         with:
           node-version: '22'
       - name: Verify source provenance and nine research records
-        run: node --test test/graffiti/v2/source-evidence.test.mjs test/graffiti/v2/v2-pilot.test.mjs
+        run: node --test test/graffiti/v2/source-evidence.test.mjs test/graffiti/v2/v2-pilot.test.mjs test/graffiti/v2/word-flow.test.mjs
       - name: Install Chromium for comparative screenshots
         run: |
           npm ci
