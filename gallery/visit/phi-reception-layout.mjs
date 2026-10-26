@@ -62,20 +62,21 @@ export function planPhiReception(floor,circulation,physical){
   :{x:desk.x+.9,z:desk.z-2.2,yaw:-Math.PI*.75,height:1.15,width:1.1,depth:.85,kind:'cabinet'}):null;
  // Select secondary-room corner bays rather than scattering furniture into the foyer.
  // Workstations remain within their room cells, away from the entrance/lift route.
+ // Only the smaller corridor-side cells become preparation/storage rooms.
+ // Rank by compactness, not distance alone: the open front must stay clear.
  const backrooms=globalThis.__phiReceptionTestRefresh?floor.mergedRooms.flatMap((room,i)=>
-  room.pieces.filter(p=>p.w>=4.8&&p.h>=5.0).map(p=>({
-   x:p.x+Math.min(1.55,p.w*.24),z:p.z+Math.min(1.45,p.h*.24),
-   room:i,width:p.w,depth:p.h
+  room.pieces.filter(p=>p.w>=3.4&&p.h>=3.6&&p.w*p.h<=72).map(p=>({
+   x:p.x+p.w/2,z:p.z+p.h/2,room:i,width:p.w,depth:p.h,area:p.w*p.h
   }))).filter(p=>
-   Math.hypot(p.x-start.x,p.z-start.z)>3.5&&
-   Math.hypot(p.x-end.x,p.z-end.z)>3.5&&
-   (!desk||Math.hypot(p.x-desk.x,p.z-desk.z)>3.25)&&
-   distSegment(p.x,p.z,start,end)>2.0&&
+   Math.hypot(p.x-start.x,p.z-start.z)>5.5&&
+   Math.hypot(p.x-end.x,p.z-end.z)>3.1&&
+   (!desk||Math.hypot(p.x-desk.x,p.z-desk.z)>6.2)&&
+   distSegment(p.x,p.z,start,end)>2.1&&
    !physical.walls.some(w=>w.axis==='x'
-    ?Math.abs(p.x-w.at)<1.1&&p.z>w.lo-.4&&p.z<w.hi+.4
-    :Math.abs(p.z-w.at)<1.1&&p.x>w.lo-.4&&p.x<w.hi+.4))
-  .sort((a,b)=>Math.hypot(b.x-start.x,b.z-start.z)-Math.hypot(a.x-start.x,a.z-start.z))
-  .slice(0,4):[];
+    ?Math.abs(p.x-w.at)<1.25&&p.z>w.lo-.3&&p.z<w.hi+.3
+    :Math.abs(p.z-w.at)<1.25&&p.x>w.lo-.3&&p.x<w.hi+.3))
+  .sort((a,b)=>a.area-b.area||Math.hypot(b.x-start.x,b.z-start.z)-Math.hypot(a.x-start.x,a.z-start.z))
+  .slice(0,5):[];
  return {desk,cabinet,backrooms,signage,plants,credits,worldMap,entrance:start,lift:end,checks:{
   deskClear:!desk||distSegment(desk.x,desk.z,start,end)>=2.2,
   signCount:signage.length,passageClear:true
