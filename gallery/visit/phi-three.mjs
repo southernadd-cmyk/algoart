@@ -15,11 +15,14 @@ export function mountPhiThree(canvas){
  const frame=new THREE.MeshStandardMaterial({color:0x5c6e73,metalness:.62,roughness:.32});
  const glass=new THREE.MeshPhysicalMaterial({color:0x8dc7d0,metalness:.1,roughness:.12,transparent:true,opacity:.34,depthWrite:false,side:THREE.DoubleSide});
  const plinth=new THREE.MeshStandardMaterial({color:0xa48370,roughness:.66});
- let focus=new THREE.Vector3(),distance=95,yaw=-.78,pitch=.72,drag=null;
+ let focus=new THREE.Vector3(),distance=95,yaw=-.78,pitch=.72,drag=null,mode='orbit',current=null;
+ const walker=new THREE.Vector3(),keys=new Set();let last=0;
+ function setWalkMode(enabled){mode=enabled?'walk':'orbit';keys.clear();if(enabled&&current){const l=current.circulation.lift;walker.set(l.x,1.62,l.z);yaw=0;pitch=.05;}render();return mode;}
  function block(x,y,z,w,h,d,mat){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);root.add(m);return m;
  }
  function setModel({floor,circulation,physical}){
+  current={floor,circulation,physical};
   while(root.children.length){const child=root.children[0];root.remove(child);child.geometry?.dispose();}
   // Draw floor cells individually; missing cells are open atrium voids.
   for(const cell of floor.rooms)block(cell.x+cell.w/2,-.12,cell.z+cell.h/2,cell.w,.24,cell.h,stone);
@@ -52,18 +55,36 @@ export function mountPhiThree(canvas){
   const pad=block(lift.x,.045,lift.z,2.2,.09,2.2,frame);pad.renderOrder=1;
   focus.set(floor.root.x+floor.root.w/2,0,floor.root.z+floor.root.h/2);
   distance=Math.max(floor.root.w,floor.root.h)*1.55;
-  render();
+  if(mode==='walk')setWalkMode(true);else render();
  }
  function render(){
   const w=Math.max(1,canvas.clientWidth),h=Math.max(1,canvas.clientHeight);
   renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
-  camera.position.set(focus.x+distance*Math.sin(yaw)*Math.cos(pitch),focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*Math.cos(pitch));
-  camera.lookAt(focus);renderer.render(scene,camera);
+  if(mode==='walk'){
+   camera.position.copy(walker);
+   camera.lookAt(walker.x+Math.sin(yaw)*Math.cos(pitch),walker.y+Math.sin(pitch),walker.z-Math.cos(yaw)*Math.cos(pitch));
+  }else{
+   camera.position.set(focus.x+distance*Math.sin(yaw)*Math.cos(pitch),focus.y+distance*Math.sin(pitch),focus.z+distance*Math.cos(yaw)*Math.cos(pitch));
+   camera.lookAt(focus);
+  }
+  renderer.render(scene,camera);
  }
- canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId)});
- canvas.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-drag.x)*.009;pitch=Math.max(.17,Math.min(1.46,pitch+(e.clientY-drag.y)*.006));drag={x:e.clientX,y:e.clientY};render()});
+ canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.focus();});
+ canvas.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-drag.x)*.009;pitch=Math.max(mode==='walk'?-.8:.17,Math.min(mode==='walk'?.8:1.46,pitch+(e.clientY-drag.y)*.006));drag={x:e.clientX,y:e.clientY};render()});
  canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
- canvas.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(15,Math.min(200,distance*Math.exp(e.deltaY*.001)));render()},{passive:false});
+ canvas.addEventListener('wheel',e=>{if(mode==='walk')return;e.preventDefault();distance=Math.max(15,Math.min(200,distance*Math.exp(e.deltaY*.001)));render()},{passive:false});
+ canvas.tabIndex=0;
+ canvas.addEventListener('keydown',e=>{if(mode==='walk'&&['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase())){keys.add(e.key.toLowerCase());e.preventDefault();}});
+ canvas.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));canvas.addEventListener('blur',()=>keys.clear());
+ function tick(ms){const dt=Math.min(.05,Math.max(0,(ms-last)/1000));last=ms;
+  if(mode==='walk'&&current&&keys.size){const ahead=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown'));
+   const side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
+   const length=Math.hypot(ahead,side)||1,step=4.1*dt/length;
+   const dx=(Math.sin(yaw)*ahead+Math.cos(yaw)*side)*step,dz=(-Math.cos(yaw)*ahead+Math.sin(yaw)*side)*step;
+   if(current.physical.walkable(walker.x+dx,walker.z))walker.x+=dx;
+   if(current.physical.walkable(walker.x,walker.z+dz))walker.z+=dz;
+   render();}requestAnimationFrame(tick);
+ }requestAnimationFrame(tick);
  window.addEventListener('resize',render);
- return {setModel,render};
+ return {setModel,render,setWalkMode};
 }
