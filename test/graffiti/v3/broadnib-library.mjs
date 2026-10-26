@@ -1,25 +1,49 @@
-// A shared nib movement replaces the recipient's first eligible hairline,
-// without deleting its main letter anatomy.
-export const BROADNIB_REVISION='nib-clusters-01';
-const pairs=new Set(['PR','RO','OP','PI','IE','OR','ON','TI']);
-const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return(h>>>0)/4294967296};
+// Broad-nib V3: continuous calligraphic clusters replace recipient skeleton strokes.
+// V2 stays immutable; each composed letter carries its own shape list.
+export const BROADNIB_REVISION='nib-clusters-02';
+const families=new Set(['PRO','ROP','OPO','POR','ORT','RTI','TIO','ION','PIE','IEC','ECE']);
+const pairs=new Set(['PR','RO','OP','PO','OR','RT','TI','IO','ON','PI','IE','EC','CE']);
+function rand(seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619);return(h>>>0)/4294967296}
+function pathFor(items,seed,mode){
+ const [a,b,c]=items;
+ const r=rand(seed+'|'+a.index+'|'+a.ch+b.ch+c.ch);
+ const start=a.x+49*a.scale,mid=b.x+39*b.scale,end=c.x+28*c.scale;
+ const shoulder=11+r*18,belly=74+r*17;
+ const strength=mode==='expressive'?1.18:1;
+ // Two joined cubic gestures form ONE continuous pen movement across three glyphs.
+ return `M ${start.toFixed(2)} 43 C ${(start+17*strength).toFixed(2)} ${shoulder.toFixed(2)} ${(mid-32).toFixed(2)} ${(shoulder-6).toFixed(2)} ${mid.toFixed(2)} 52 C ${(mid+26*strength).toFixed(2)} ${belly.toFixed(2)} ${(end-23).toFixed(2)} ${(shoulder+4).toFixed(2)} ${end.toFixed(2)} 50`;
+}
 export function composeBroadNib(plan,{seed='V3',mode='restrained'}={}){
+ if(!['none','restrained','expressive'].includes(mode))throw new RangeError('Unknown nib mode');
  const letters=plan.letters.map(l=>({...l,variant:'plain',shapes:[...l.glyph.shapes]})),shared=[];
- if(mode!=='none')for(let i=1;i<letters.length;i++){
+ if(mode==='none')return {word:plan.word,letters,shared,connectors:[],mode,revision:BROADNIB_REVISION};
+ const occupied=new Set();
+ for(let i=0;i<letters.length-2;i++){
+  const trio=letters.slice(i,i+3);
+  if(trio[1].index!==trio[0].index+1||trio[2].index!==trio[1].index+1)continue;
+  const sequence=trio.map(l=>l.ch).join('');
+  if(!families.has(sequence)||trio.some(l=>occupied.has(l.index)))continue;
+  const r=rand(seed+'|cluster|'+sequence+'|'+i);
+  if(r>(mode==='expressive'?.94:.79))continue;
+  const [a,b,c]=trio;
+  shared.push({kind:'stroke',role:'primary',width:4.7,d:pathFor(trio,seed,mode),members:trio.map(l=>l.index),sequence,tool:'angled-nib',structural:true});
+  // The connecting curve is a replacement for the first structural pen passes
+  // of the receiver glyphs, not an overlay on top of complete V2 forms.
+  for(const l of [b,c]){l.shapes=l.shapes.slice(1);l.variant='shared-nib-'+sequence;}
+  a.variant='nib-lead-'+sequence;
+  trio.forEach(l=>occupied.add(l.index));
+  i+=2;
+ }
+ // Short connected pairs fill gaps not covered by the structural clusters.
+ for(let i=1;i<letters.length;i++){
   const a=letters[i-1],b=letters[i],pair=a.ch+b.ch;
-  if(b.index!==a.index+1||!pairs.has(pair))continue;
-  const n=hash(seed+'|nib|'+i);
-  if(n>(mode==='expressive'?.93:.63))continue;
-  const x0=a.x+56,x1=b.x+24,dx=x1-x0;
-  if(dx<6||dx>83)continue;
-  // Pen continues from one letter into the next with a high shoulder and nib-led return.
-  const d=`M ${x0.toFixed(2)} 62 C ${(x0+dx*.22).toFixed(2)} ${(35-n*9).toFixed(2)} ${(x1-dx*.25).toFixed(2)} ${(86+n*5).toFixed(2)} ${x1.toFixed(2)} 53`;
-  const replace=b.shapes.findIndex(s=>s.kind==='hairline'&&s.role!=='structure');
-  // Do not remove any protected shape; connected variant is authored by
-  // changing the pen's entry trajectory and retaining essential structure.
-  if(replace>=0)b.shapes.splice(replace,1);
-  b.variant='nib-receiver';a.variant='nib-sender';
-  shared.push({kind:'stroke',role:'primary',d,width:5.8,from:a.index,to:b.index,pair,tool:'angled-nib',structural:true});
+  if(b.index!==a.index+1||occupied.has(a.index)||occupied.has(b.index)||!pairs.has(pair))continue;
+  if(rand(seed+'|pair|'+i)>(mode==='expressive'?.82:.48))continue;
+  const x=a.x+60*a.scale,y=b.x+14*b.scale;
+  if(y-x<3||y-x>75)continue;
+  const d=`M ${x.toFixed(2)} 57 C ${(x+13).toFixed(2)} 30 ${(y-13).toFixed(2)} 78 ${y.toFixed(2)} 50`;
+  shared.push({kind:'stroke',role:'secondary',width:3.1,d,from:a.index,to:b.index,pair,tool:'angled-nib',structural:true});
+  a.variant='nib-sender';b.variant='nib-receiver';
  }
  return {word:plan.word,letters,shared,connectors:[],mode,revision:BROADNIB_REVISION};
 }
