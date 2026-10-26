@@ -50,3 +50,12 @@ test('Broad-nib replaces recipient skeletons in three-letter shared clusters',()
  }
  assert.ok(found);
 });
+
+test('Broad-nib E after I gets a structural middle arm, C does not',()=>{
+ const p=plan('F','PIECE');
+ const result=composeBroadNib(p,{seed:'fixed',mode:'restrained'});
+ const e=result.letters.find((l,i)=>l.ch==='E'&&result.letters[i-1]?.ch==='I');
+ assert.ok(e,'Expected E after I');
+ assert.ok(result.shared.some(st=>st.feature==='E-middle-arm'&&st.letterIndex===e.index&&st.subtype==='crossbar'));
+ assert.ok(result.shared.every(st=>st.feature!=='E-middle-arm'||result.letters.some(l=>l.index===st.letterIndex&&l.ch==='E')));
+});
