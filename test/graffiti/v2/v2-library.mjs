@@ -223,14 +223,19 @@ export const ORNAMENT_INDICES=Object.freeze({
 });
 // Legacy shapes have no authored roles. Freeze their identity by geometry,
 // not array position, so reordering cannot turn a structural mark into decoration.
-const LEGACY_ORNAMENT_GEOMETRY=Object.freeze(Object.fromEntries(
- ORIGINAL.map(f=>[f.id,Object.freeze(Object.fromEntries(
-  Object.entries(ORNAMENT_INDICES[f.id]||{}).map(([ch,indices])=>
-   [ch,Object.freeze(indices.map(i=>{
-    const shape=f.glyphs[ch].shapes[i];
-    if(!shape||shape.kind!=='hairline')throw Error('Invalid legacy ornament '+f.id+ch+i);
-    return shape.d;
-   }))])))]))));
+const legacyOrnaments=Object.create(null);
+for(const family of ORIGINAL){
+ const byLetter=Object.create(null);
+ for(const [ch,indices] of Object.entries(ORNAMENT_INDICES[family.id]||{})){
+  byLetter[ch]=Object.freeze(indices.map(i=>{
+   const shape=family.glyphs[ch].shapes[i];
+   if(!shape||shape.kind!=='hairline')throw Error('Invalid legacy ornament '+family.id+ch+i);
+   return shape.d;
+  }));
+ }
+ legacyOrnaments[family.id]=Object.freeze(byLetter);
+}
+const LEGACY_ORNAMENT_GEOMETRY=Object.freeze(legacyOrnaments);
 function annotateGlyph(id,ch,g){
  const approved=new Set(LEGACY_ORNAMENT_GEOMETRY[id]?.[ch]||[]);
  const shapes=Object.freeze(g.shapes.map(shape=>{
