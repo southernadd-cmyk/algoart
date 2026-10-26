@@ -1,3 +1,3 @@
-// Reception changes are enabled only by the full-engine test entry point.
+// Staging-only reception furnishing refinements.
 globalThis.__phiReceptionTestRefresh=true;
-import './gallery-phi.js?v=reception-refresh-test-20261026';
+await import('./gallery-phi.js?v=reception-refresh-test-20261026');
