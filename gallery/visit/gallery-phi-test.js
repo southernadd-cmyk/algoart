@@ -1754,7 +1754,35 @@ $('fullscreen').addEventListener('click',()=>{
 
 
 // Small plan diagram: real rooms, real connecting ramps, real visitor position.
+let phiMapMode='physical';
+window.setPhiMapMode=mode=>{if(['physical','merged','subdivision'].includes(mode)){phiMapMode=mode;drawMap();}};
+function drawPhiMap(){
+ const canvas=$('floorMap'),phi=plan.phi;if(!canvas||!phi)return;
+ const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
+ ctx.clearRect(0,0,w,h);
+ const shapes=phi.floor.rooms;
+ const all=[...shapes.flatMap(p=>[[p.x,p.z],[p.x+p.w,p.z+p.h]]),[phi.circulation.lift.x,phi.circulation.lift.z],[rig.position.x,rig.position.z]];
+ const minX=Math.min(...all.map(p=>p[0]))-3,maxX=Math.max(...all.map(p=>p[0]))+3;
+ const minZ=Math.min(...all.map(p=>p[1]))-3,maxZ=Math.max(...all.map(p=>p[1]))+3;
+ const scale=Math.min((w-24)/(maxX-minX),(h-24)/(maxZ-minZ));
+ const X=x=>(x-(minX+maxX)/2)*scale+w/2,Z=z=>(z-(minZ+maxZ)/2)*scale+h/2;
+ const rect=(p,fill,stroke)=>{ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.fillRect(X(p.x),Z(p.z),p.w*scale,p.h*scale);ctx.strokeRect(X(p.x),Z(p.z),p.w*scale,p.h*scale);};
+ if(phiMapMode==='subdivision'){for(const p of shapes)rect(p,'#e5e2d5','#a39f8e');}
+ else{
+  for(const [i,room] of phi.floor.mergedRooms.entries())for(const p of room.pieces)rect(p,['#ebe8db','#dce5df','#e6dfd9','#dedfe8'][i%4],'#b1b1a4');
+  if(phiMapMode==='physical'){
+   for(const b of phi.bridges){const p=b.axis==='x'?{x:Math.min(b.from,b.to),z:b.centre-b.width/2,w:b.length,h:b.width}:{x:b.centre-b.width/2,z:Math.min(b.from,b.to),w:b.width,h:b.length};rect(p,'#a9d4d4','#56898a');}
+   ctx.strokeStyle='#39463f';ctx.lineWidth=2;
+   for(const wall of phi.physical.walls){ctx.beginPath();if(wall.axis==='x'){ctx.moveTo(X(wall.at),Z(wall.lo));ctx.lineTo(X(wall.at),Z(wall.hi));}else{ctx.moveTo(X(wall.lo),Z(wall.at));ctx.lineTo(X(wall.hi),Z(wall.at));}ctx.stroke();}
+   for(const d of [...phi.circulation.doors,...phi.circulation.bridgePortals]){ctx.strokeStyle='#d0a16e';ctx.lineWidth=3.5;ctx.beginPath();if(d.axis==='x'){ctx.moveTo(X(d.at),Z(d.centre-d.width/2));ctx.lineTo(X(d.at),Z(d.centre+d.width/2));}else{ctx.moveTo(X(d.centre-d.width/2),Z(d.at));ctx.lineTo(X(d.centre+d.width/2),Z(d.at));}ctx.stroke();}
+  }
+ }
+ const l=phi.circulation.lift;
+ ctx.fillStyle='#d9c68c';ctx.fillRect(X(l.x)-6,Z(l.z)-6,12,12);ctx.fillStyle='#27352e';ctx.font='bold 10px sans-serif';ctx.fillText('L',X(l.x)-3,Z(l.z)+4);
+ ctx.fillStyle='#d25436';ctx.save();ctx.translate(X(rig.position.x),Z(rig.position.z));ctx.rotate(-yaw);ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-6,5);ctx.lineTo(6,5);ctx.closePath();ctx.fill();ctx.restore();
+}
 function drawMap(){
+  if(plan?.phi)return drawPhiMap();
   const element=$('floorMap');
   if(!element||!plan)return;
   const ctx=element.getContext('2d');
