@@ -5,7 +5,7 @@ export const INV_PHI=1/PHI;
 function hash(s){let h=2166136261;for(const c of s){h=Math.imul(h^c.charCodeAt(0),16777619);}return h>>>0;}
 function rng(seed){let a=hash(seed);return ()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};}
 export function planPhiFloor(date,{artworks=18,span=40,minSide=5.1,variation=0}={}){
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))throw Error('Expected YYYY-MM-DD');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Expected YYYY-MM-DD');
  const random=rng('phi-architecture-v1|'+date+'|'+artworks+'|'+variation);
  const root={x:-span*PHI/2,z:-span/2,w:span*PHI,h:span,depth:0,id:'root'};
  const leaves=[root],splits=[];
