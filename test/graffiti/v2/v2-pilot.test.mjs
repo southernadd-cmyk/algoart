@@ -52,6 +52,15 @@ test('All V2 geometry and symbol paths remain valid; improvements are named hypo
  }
  for(const e of Object.values(PILOT_EVIDENCE)){
   assert.ok([7,8,10,13,20,29,30,41,59].includes(e.sheet));
-  assert.ok(e.observation.length>75&&e.change.length>45);
+  assert.ok(['source','legibility'].includes(e.basis));
+  assert.ok(e.change.length>45);
+  if(e.basis==='source')assert.ok(e.observation.length>75);
+  else assert.ok(typeof e.failedWord==='string'&&e.failedWord.length>20&&/read as/.test(e.failedWord));
  }
+});
+
+test('legibility records name the failed word and cannot masquerade as source studies',()=>{
+ const repairs=['B:P','B:E','I:E','H:O'];
+ assert.deepEqual(Object.entries(PILOT_EVIDENCE).filter(([,e])=>e.basis==='legibility').map(([k])=>k).sort(),repairs);
+ for(const key of repairs)assert.match(PILOT_EVIDENCE[key].failedWord,/read as/);
 });
