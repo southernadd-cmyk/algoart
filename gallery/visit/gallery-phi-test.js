@@ -1046,7 +1046,8 @@ function constructPhiGallery(layout,studies){
  // Enclosed exterior arrival lobby. The east-facing doorway to the gallery
  // stays open, as does the lift-facing approach in the cabin's west end.
  const outerWest=l.x-1.45,innerEast=l.portal.at,depth=3.1;
- block(.19,ROOM_HEIGHT,depth,outerWest,elevation+ROOM_HEIGHT/2,l.z,plaster);
+ // Leave a 2.2 m opening to the exterior approach at ground level.
+ if(currentFloor===0){for(const side of [-1,1])block(.19,ROOM_HEIGHT,(depth-2.2)/2,outerWest,elevation+ROOM_HEIGHT/2,l.z+side*(depth+2.2)/4,plaster);block(.19,ROOM_HEIGHT-2.55,2.2,outerWest,elevation+2.55+(ROOM_HEIGHT-2.55)/2,l.z,plaster);}else block(.19,ROOM_HEIGHT,depth,outerWest,elevation+ROOM_HEIGHT/2,l.z,plaster);
  for(const side of [-1,1]){
    block(Math.max(.1,innerEast-outerWest),ROOM_HEIGHT,.19,
      (outerWest+innerEast)/2,elevation+ROOM_HEIGHT/2,l.z+side*depth/2,plaster);
