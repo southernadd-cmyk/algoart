@@ -1,3 +1,4 @@
+import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs';
 import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance} from './phi-reception-decor.mjs?v=reception-credits-20261026';
 import {buildPhiRendererPlan} from '../../test/virtual-gallery/phi-full-engine-adapter.mjs?v=complete-archive-20261026';
@@ -1124,16 +1125,25 @@ function constructPhiTowerShell(){
   const mesh=new THREE.Mesh(geo,mat);
   mesh.position.set(x,y,z);shell.add(mesh);
  };
- // A continuous transparent shaft enclosing the cabin between landings.
- // Keep the east side open for the actual floor landing doors.
+ // Faceted glass enclosure with a real opening at every rotated landing.
+ const shaft=planPhiLiftShaft(archiveDates.length,FLOOR_SPACING);
  const shaftGlass=new THREE.MeshStandardMaterial({color:0xa6ccc8,transparent:true,
   opacity:.14,metalness:.09,roughness:.16,depthWrite:false,side:THREE.DoubleSide});
- const shaftHeight=Math.max(FLOOR_SPACING,archiveDates.length*FLOOR_SPACING);
- append(.055,shaftHeight,2.95,-1.48,shaftHeight/2,0,shaftGlass);
- for(const z of [-1.48,1.48])
-  append(2.96,shaftHeight,.055,0,shaftHeight/2,z,shaftGlass);
- for(const x of [-1.48,1.48])for(const z of [-1.48,1.48])
-  append(.085,shaftHeight,.085,x,shaftHeight/2,z,join);
+ const vertices=[],edges=[];
+ for(const p of shaft.panels){
+  const a=[p.a.x,p.y0,p.a.z],b=[p.b.x,p.y0,p.b.z],c=[p.b.x,p.y1,p.b.z],d=[p.a.x,p.y1,p.a.z];
+  vertices.push(...a,...b,...c,...a,...c,...d);
+  edges.push(...a,...d,...b,...c);
+ }
+ const glazing=new THREE.BufferGeometry();glazing.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));glazing.computeVertexNormals();
+ const pane=new THREE.Mesh(glazing,shaftGlass);pane.name='phi-open-landing-shaft-glass';shell.add(pane);
+ const edgeGeometry=new THREE.BufferGeometry();edgeGeometry.setAttribute('position',new THREE.Float32BufferAttribute(edges,3));
+ shell.add(new THREE.LineSegments(edgeGeometry,new THREE.LineBasicMaterial({color:'#596961',transparent:true,opacity:.55})));
+ const ring=new THREE.TorusGeometry(shaft.radius,.045,4,32);
+ for(let level=0;level<archiveDates.length;level++){
+  const beam=new THREE.Mesh(ring,join);beam.rotation.x=Math.PI/2;beam.position.y=level*FLOOR_SPACING-.18;shell.add(beam);
+ }
+ window.__phiLiftShaft={radius:shaft.radius,openings:shaft.openings};
  let count=0;
  for(let level=0;level<archiveDates.length;level++){
   if(level===currentFloor)continue;
@@ -1167,16 +1177,6 @@ function constructPhiTowerShell(){
    object.position.x=p.x;object.position.z=p.z;object.rotation.y+=wt.theta;
   }
   count++;
- }
- // Continuous vertical core, instead of independent floating lift cubicles.
- const coreHeight=archiveDates.length*FLOOR_SPACING;
- const metal=join,shaftRadius=1.38;
- for(const sx of [-1,1])for(const sz of [-1,1])
-   append(.18,coreHeight,.18,sx*shaftRadius,coreHeight/2-0.1,sz*shaftRadius,metal);
- // Ring beams support the landings without slabs cutting through the cabin.
- for(let level=0;level<archiveDates.length;level++)for(const side of [-1,1]){
-   append(.12,.15,3,side*1.48,level*FLOOR_SPACING-.18,0,metal);
-   append(3,.15,.12,0,level*FLOOR_SPACING-.18,side*1.48,metal);
  }
  scene.add(shell);
  window.__phiTowerExterior={otherFloors:count,wallMeshes:shell.children.length};
@@ -1314,24 +1314,15 @@ function constructPhiGallery(layout,studies){
  };
  const cabinBlock=(...args)=>cabinObject(block(...args));
  block(2.9,.2,2.9,l.x,elevation-.09,l.z,galleryFinish.floor);
- block(2.9,.18,2.9,l.x,elevation+ROOM_HEIGHT+.08,l.z,ceilingFinish);
+
  // Enclosed exterior arrival lobby. The east-facing doorway to the gallery
  // stays open, as does the lift-facing approach in the cabin's west end.
- const outerWest=l.x-1.45,innerEast=l.portal.at,depth=3.1;
- // Mount the calendar actuator inside the cabin, facing the visitor.
+ const outerWest=l.x+1.43,innerEast=l.portal.at,depth=2.4;
  phiLiftPanelPosition=new THREE.Vector3(l.x,elevation,l.z+1.10);
- // Leave a 2.2 m opening to the exterior approach at ground level.
- // Glazed shaft-facing western wall, not an opaque fake second door.
  const shaftGlass=new THREE.MeshStandardMaterial({color:0xb1d8d2,transparent:true,opacity:.22,roughness:.15,metalness:.09,depthWrite:false,side:THREE.DoubleSide});
- block(.045,ROOM_HEIGHT,depth,outerWest,elevation+ROOM_HEIGHT/2,l.z,shaftGlass);
- for(const side of [-1,1]){
-   block(Math.max(.1,innerEast-outerWest),ROOM_HEIGHT,.065,
-     (outerWest+innerEast)/2,elevation+ROOM_HEIGHT/2,l.z+side*depth/2,shaftGlass);
- }
- block(Math.max(.1,innerEast-outerWest),.18,depth,
-   (outerWest+innerEast)/2,elevation+ROOM_HEIGHT+.08,l.z,ceilingFinish);
- block(Math.max(.1,innerEast-outerWest),.20,depth,
-   (outerWest+innerEast)/2,elevation-.15,l.z,galleryFinish.floor);
+ for(const side of [-1,1])block(innerEast-outerWest,3.2,.045,(outerWest+innerEast)/2,elevation+1.6,l.z+side*depth/2,shaftGlass);
+ block(innerEast-outerWest,.14,depth,(outerWest+innerEast)/2,elevation+3.27,l.z,ceilingFinish);
+ block(innerEast-outerWest,.16,depth,(outerWest+innerEast)/2,elevation-.08,l.z,galleryFinish.floor);
  // Door opening coincides exactly with the reserved physical portal.
  const openingHalf=l.portal.width/2;
  for(const side of [-1,1])
@@ -1412,12 +1403,12 @@ function constructPhiGallery(layout,studies){
   // Exterior marker-font sign, mounted above the public doorway on the
   // reception facade and transformed with the rest of the ground floor.
   if(entrance){
-   const plaque=document.createElement('canvas');plaque.width=1536;plaque.height=290;
+   const plaque=document.createElement('canvas');plaque.width=1536;plaque.height=176;
    const lettering=plaque.getContext('2d');
-   lettering.fillStyle='#303f39';lettering.fillRect(0,0,1536,290);
+   lettering.fillStyle='#303f39';lettering.fillRect(0,0,1536,176);
    lettering.fillStyle='#f2efe3';lettering.textAlign='center';
-   lettering.font='bold 145px "AlgoArt Marker", Georgia, serif';
-   lettering.fillText('PROPORTION PIECE',768,190,1440);
+   lettering.font='120px "AlgoArt Marker", Georgia, serif';
+   lettering.fillText('PROPORTION PIECE',768,128,1440);
    const map=new THREE.CanvasTexture(plaque);map.colorSpace=THREE.SRGBColorSpace;
    const markerSign=new THREE.Mesh(new THREE.PlaneGeometry(7.4,.85),
     new THREE.MeshBasicMaterial({map,side:THREE.DoubleSide}));
@@ -1460,8 +1451,8 @@ function constructPhiGallery(layout,studies){
   for(const [i,item] of furnishing.signage.entries()){
    const paper=document.createElement('canvas');paper.width=1024;paper.height=512;
    const g=paper.getContext('2d');g.fillStyle='#f0ece3';g.fillRect(0,0,1024,512);
-   g.fillStyle='#2e3e33';g.font='bold 60px Georgia';g.fillText(captions[i][0],40,105,945);
-   g.font='36px Georgia';captions[i].slice(1).forEach((line,n)=>g.fillText(line,40,208+n*83,950));
+   g.fillStyle='#2e3e33';g.font='60px "AlgoArt Marker", Georgia';g.fillText(captions[i][0],40,105,945);
+   g.font='36px "AlgoArt Marker", Georgia';captions[i].slice(1).forEach((line,n)=>g.fillText(line,40,208+n*83,950));
    const texture=new THREE.CanvasTexture(paper);texture.colorSpace=THREE.SRGBColorSpace;
    const board=new THREE.Mesh(new THREE.PlaneGeometry(item.width,1.65),
       new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
@@ -2053,7 +2044,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   $('welcomeArchive').href='../'+(reception?archiveDates[1]:date)+'/';
   const floorName=nextFloor===0?'Ground floor':'Floor '+nextFloor;
   $('startFloor').textContent=floorName+' · '+readableDate(date);
-  $('floorIndicator').textContent=nextFloor===0?'G · Reception':String(nextFloor)+' · '+shortDate(date);
+  $('floorIndicator').textContent=nextFloor===0?'G · Reception':shortDate(date)+' · Floor '+nextFloor;
   $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
   status.textContent=reception?'Ground floor · reception and visitor information':floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
   enter.disabled=false;enter.textContent='Enter the gallery';
