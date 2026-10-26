@@ -1,0 +1,34 @@
+name: Graffiti V3 isolated prototype checks
+on:
+  push:
+    branches: [graffiti-v3-material-prototype]
+    paths:
+      - 'test/graffiti/v3/**'
+      - '.github/workflows/graffiti-v3-prototype.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: V2 evidence and word legibility guards
+        run: node --test test/graffiti/v2/v2-pilot.test.mjs test/graffiti/v2/word-flow.test.mjs
+      - name: V3 surface and wall coordinate tests
+        run: node --test test/graffiti/v3/material-engine.test.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Render every V3 style on marker and spray surfaces
+        run: node test/graffiti/v3/browser-check.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: graffiti-v3-material-studies
+          path: artifacts/graffiti-v3/*.png
+          retention-days: 7
