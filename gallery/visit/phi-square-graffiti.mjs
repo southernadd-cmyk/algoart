@@ -3,7 +3,7 @@
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
-export const PHI_SQUARE_REVISION='phi-square-golden-eight-v4-no-loop|sprayed-throwups-v'+VERSION;
+export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v1':'phi-square-golden-eight-v4-no-loop')+'|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
 export const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
@@ -16,6 +16,19 @@ export function makeSquareTag(text,seed,ink,{form='handstyle',hand='rush'}={}){
  return createTag(text,{seed,ink,form,hand,paintWidth:1.35});
 }
 export function planPhiSquare(){
+ if(globalThis.__phiReceptionTestRefresh){
+  // True logarithmic golden spiral: radius grows by φ every quarter-turn.
+  // Core is off the direct entrance axis so the public approach stays clear.
+  const core={x:3,z:18},phi=(1+Math.sqrt(5))/2;
+  return Array.from({length:7},(_,i)=>{
+   const theta=-.8+i*.73,r=6*Math.pow(phi,theta/(Math.PI/2)+.7);
+   const x=core.x+r*Math.cos(theta),z=core.z+r*Math.sin(theta);
+   const wall=i>=3;
+   return {id:'spiral-'+i,kind:wall?'wall':'monument',
+    material:wall?'brick':'concrete',x,z,yaw:Math.PI/2-theta,
+    width:wall?5.2:1.8,height:wall?2.4:3.1+i*.22,depth:wall?.34:1.4};
+  });
+ }
  return [
   {id:'near-west',kind:'wall',material:'brick',x:-11.5,z:1.2,yaw:.12,width:6,height:2.4,depth:.34},
   {id:'near-east',kind:'wall',material:'brick',x:11.5,z:1.2,yaw:-.12,width:6,height:2.4,depth:.34},
@@ -96,6 +109,19 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
      const geometry=tiledBoxUvs(new THREE.BoxGeometry(w,h,d),w,h,d,mat.userData.tileMeters||2);
      const mesh=new THREE.Mesh(geometry,mat);mesh.position.set(x,y,z);mesh.name=name;root.add(mesh);return mesh;
     };
+    // A shallow reflecting pool at the golden-spiral core. No extra texture downloads.
+    // The basin is offset from the entrance sightline, with a continuous solid rim.
+    const cx=3,cz=18,w=7.4,d=w/((1+Math.sqrt(5))/2);
+    const water=new THREE.MeshStandardMaterial({color:'#668e99',roughness:.19,metalness:.18,transparent:true,opacity:.83,depthWrite:false});
+    const bottom=new THREE.MeshStandardMaterial({color:'#3b5557',roughness:.95});
+    add(w,.15,d,cx,-.14,cz,bottom,'phi-spiral-pool-bottom');
+    const waterSurface=new THREE.Mesh(new THREE.PlaneGeometry(w-.44,d-.44),water);
+    waterSurface.rotation.x=-Math.PI/2;waterSurface.position.set(cx,.013,cz);
+    waterSurface.name='phi-spiral-reflecting-water';root.add(waterSurface);
+    for(const sign of [-1,1]){
+     add(w+.22,.2,.24,cx,.10,cz+sign*d/2,paving,'phi-spiral-pool-rim');
+     add(.24,.2,d+.22,cx+sign*w/2,.10,cz,paving,'phi-spiral-pool-rim');
+    }
     // A pair of low plinths create public seating at the wide outer edges.
     // Reuse existing stone and brick maps; keep the centre line fully clear.
     for(const x of [-20,20])for(const z of [10,24]){
@@ -144,6 +170,7 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
      obstacles.push({x:p.x+doorway.x,z:p.z+doorway.z,yaw:root.rotation.y,width:3.2,depth:1.5,kind:'planted-seat'});
     }
    }
+   if(globalThis.__phiReceptionTestRefresh)obstacles.push({x:doorway.x+3*Math.cos(root.rotation.y)+18*Math.sin(root.rotation.y),z:doorway.z-3*Math.sin(root.rotation.y)+18*Math.cos(root.rotation.y),yaw:root.rotation.y,width:7.9,depth:5.05,kind:'reflecting-pool'});
    if(globalThis.__phiReceptionTestRefresh)for(const x of [-20,20])for(const z of [10,24]){
     const p=rotate(x,z,root.rotation.y);
     obstacles.push({x:p.x+doorway.x,z:p.z+doorway.z,yaw:root.rotation.y,width:3.1,depth:1.1,kind:'perimeter-seat'});
