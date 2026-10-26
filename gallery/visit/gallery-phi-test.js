@@ -981,13 +981,15 @@ function constructPhiGallery(layout,studies){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
  window.__phiFullEngine={date:exhibitDate,roomCount:phi.floor.mergedRooms.length,wallCount:phi.physical.walls.length,artworks:studies.length,paintings:phi.exhibition.paintings.length,sculptures:phi.exhibition.sculptures.length,unplaced:phi.exhibition.unplaced.length};
  // Every floor, enclosure and collision surface comes from the same phi plan.
+ const plaster=galleryFinish?.interiorWall||wall;
  for(const p of phi.pieces)
    block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,galleryFinish.floorForRoom(exhibitDate,p.room,phi.floor.mergedRooms.length));
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.04)continue;
-  if(w.axis==='x')block(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,wall);
-  else block(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,wall);
+  if(w.axis==='x')block(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,plaster);
+  else block(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,plaster);
  }
+ for(const p of phi.pieces)block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,ceilingFinish);
  for(const b of phi.bridges){
   const mid=(b.from+b.to)/2;
   block(b.axis==='x'?b.length:b.width,.16,b.axis==='z'?b.length:b.width,
@@ -1028,7 +1030,11 @@ function constructPhiGallery(layout,studies){
  // The shaft landing is an actual collision surface; the full gallery lift UI
  // continues to use liftPosition and liftCabinPosition unchanged.
  const l=phi.circulation.lift;
- block(2.4,.2,2.4,l.x,elevation-.09,l.z,join);
+ block(2.9,.2,2.9,l.x,elevation-.09,l.z,galleryFinish.floor);
+ block(2.9,.18,2.9,l.x,elevation+ROOM_HEIGHT+.08,l.z,ceilingFinish);
+ for(const sx of [-1,1])for(const sz of [-1,1])block(.12,ROOM_HEIGHT,.12,l.x+sx*1.38,elevation+ROOM_HEIGHT/2,l.z+sz*1.38,join);
+ block(2.7,.16,2.3,(l.x+l.portal.at)/2,elevation-.08,l.z,galleryFinish.floor);
+ const liftLight=new THREE.PointLight(0xfff4d8,8,12,2);liftLight.position.set(l.x,elevation+3,l.z);scene.add(liftLight);
  liftCabinPosition=new THREE.Vector3(l.x,elevation,l.z);
  liftPosition=liftCabinPosition.clone();
  liftDoorThreshold=liftCabinPosition.clone();
