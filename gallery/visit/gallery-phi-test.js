@@ -1257,16 +1257,25 @@ function constructPhiGallery(layout,studies){
   // Landmark sculptures above the reception entrance, not in the walking square.
   if(currentFloor===0){
    const monuments=addPermanentPlazaSculptures(scene,plaza);
-   const frontage=phi.floor.rooms.filter(p=>Math.abs(p.z-doorway.z)<.01).sort((a,b)=>b.w-a.w)[0];
-   // Visitor faces north (+Z) from the square: visual left is -X.
-   // Keep the congested right corner entirely clear.
-   const left=frontage?frontage.x+2.6:doorway.x-9;
-   const middle=frontage?frontage.x+frontage.w*.51:doorway.x-1;
+   // Roof frontage is the *entire* reception footprint, not the single
+   // subdivision cell next to the entrance. The latter clustered both works.
+   const pieces=phi.pieces;
+   const west=Math.min(...pieces.map(p=>p.x));
+   const east=Math.max(...pieces.map(p=>p.x+p.w));
+   const extent=east-west;
+   const positions=[west+3.1,west+extent*.53];
+   // Choose a supporting roof slab for each sculpture; favour the plaza-facing
+   // edge, but never place a sculpture beyond the available roof surface.
+   const supports=positions.map(x=>pieces.filter(p=>x>=p.x+2.7&&x<=p.x+p.w-2.7)
+     .sort((a,b)=>a.z-b.z)[0]);
    monuments.forEach((m,i)=>{
-    m.position.set(i===0?left:middle,
-      elevation+ROOM_HEIGHT+.36,doorway.z+2.0);
+    const support=supports[i];
+    const x=support?positions[i]:i===0?west+3.1:west+extent*.53;
+    const z=support?support.z+Math.min(2.1,support.h*.5):doorway.z+2.1;
+    m.position.set(x,elevation+ROOM_HEIGHT+.36,z);
     m.rotation.y=i===0?.12:-.12;
    });
+   window.__phiRoofMonumentPositions=monuments.map(m=>({x:m.position.x,z:m.position.z}));
    window.__phiRoofMonuments=monuments.length;
   }
   deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
