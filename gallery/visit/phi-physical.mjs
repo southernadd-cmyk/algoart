@@ -71,6 +71,6 @@ export function buildPhysicalPhiFloor(plan,circulation){
    [{x:d.centre,z:d.at-offset},{x:d.centre,z:d.at+offset}];
   return {...center,valid:walkable(center.x,center.z)&&sides.every(p=>walkable(p.x,p.z))};
  });
- return {walls:physicalWalls,sculptures,transitions,wallCount:physicalWalls.length,
+ return {walls:physicalWalls,sculptures,transitions,walkable,wallCount:physicalWalls.length,
   checks:{doorsClear:transitions.every(t=>t.valid),liftInside:walkable(circulation.lift.x,circulation.lift.z),noSculptureWalls:sculptures.every(s=>walkable(s.x+s.width/2+.6,s.z))}};
 }
