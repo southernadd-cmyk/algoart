@@ -21,7 +21,7 @@ export function mountPhiThree(canvas){
  function block(x,y,z,w,h,d,mat){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);root.add(m);return m;
  }
- function setModel({floor,circulation,physical}){
+ function setModel({floor,circulation,physical,artwork}){
   current={floor,circulation,physical};
   while(root.children.length){const child=root.children[0];root.remove(child);child.geometry?.dispose();}
   // Draw floor cells individually; missing cells are open atrium voids.
@@ -50,7 +50,12 @@ export function mountPhiThree(canvas){
     }
    }
   }
-  for(const s of physical.sculptures)block(s.x,.43,s.z,s.width,.86,s.depth,plinth);
+  if(artwork){
+   const canvasMaterial=new THREE.MeshStandardMaterial({color:0xf4f0e5,roughness:.85,side:THREE.DoubleSide});
+   for(const a of artwork.paintings){const tall=Math.min(1.6,a.height);if(a.axis==='x')block(a.at,1.73,a.u,.10,tall,a.width,canvasMaterial);
+    else block(a.u,1.73,a.at,a.width,tall,.10,canvasMaterial);}
+   for(const a of artwork.sculptures)block(a.x,.48,a.z,a.width,.96,a.depth,plinth);
+  }else for(const s of physical.sculptures)block(s.x,.43,s.z,s.width,.86,s.depth,plinth);
   const lift=circulation.lift;
   const pad=block(lift.x,.045,lift.z,2.2,.09,2.2,frame);pad.renderOrder=1;
   focus.set(floor.root.x+floor.root.w/2,0,floor.root.z+floor.root.h/2);
