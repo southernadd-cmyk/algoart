@@ -1474,7 +1474,7 @@ function constructPhiGallery(layout,studies){
  liftDoorThreshold=liftCabinPosition.clone();
  if(exhibitDate===RECEPTION){
   const furnishing=planPhiReception(phi.floor,phi.circulation,phi.physical);
-  phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone});
+  phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone,timber:galleryFinish.timberSmoked,trims:galleryFinish.trims});
   if(phiReceptionDesk)phiSquareObstacles.push(...phiReceptionDesk.obstacles);
   const captions=[
    ['PROPORTION PIECE','An algorithmically generated gallery','exhibiting algorithmically generated art.'],
