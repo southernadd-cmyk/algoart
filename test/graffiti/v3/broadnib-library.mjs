@@ -26,7 +26,7 @@ export function composeBroadNib(plan,{seed='V3',mode='restrained'}={}){
   const r=rand(seed+'|cluster|'+sequence+'|'+i);
   if(r>(mode==='expressive'?.94:.79))continue;
   const [a,b,c]=trio;
-  shared.push({kind:'stroke',role:'primary',width:4.7,d:pathFor(trio,seed,mode),members:trio.map(l=>l.index),sequence,tool:'angled-nib',structural:true});
+  shared.push({kind:'stroke',role:'primary',width:4.7,subtype:'curve',d:pathFor(trio,seed,mode),members:trio.map(l=>l.index),sequence,tool:'angled-nib',structural:true});
   // The connecting curve is a replacement for the first structural pen passes
   // of the receiver glyphs, not an overlay on top of complete V2 forms.
   for(const l of [b,c]){
@@ -48,7 +48,7 @@ export function composeBroadNib(plan,{seed='V3',mode='restrained'}={}){
   const x=a.x+60*a.scale,y=b.x+14*b.scale;
   if(y-x<3||y-x>75)continue;
   const d=`M ${x.toFixed(2)} 57 C ${(x+13).toFixed(2)} 43 ${(y-13).toFixed(2)} 65 ${y.toFixed(2)} 50`;
-  shared.push({kind:'stroke',role:'secondary',width:3.1,d,from:a.index,to:b.index,pair,tool:'angled-nib',structural:true});
+  shared.push({kind:'stroke',role:'secondary',width:3.1,subtype:'crossbar',d,from:a.index,to:b.index,pair,tool:'angled-nib',structural:true});
   a.variant='nib-sender';b.variant='nib-receiver';
  }
  return {word:plan.word,letters,shared,connectors:[],mode,revision:BROADNIB_REVISION};
