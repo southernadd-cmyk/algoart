@@ -16,7 +16,8 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function makeTowerFamilyTag(text,{hand='A',seed='PP-TOWER',ink='#2b2c29',finish='spray',paintWidth=2}={}){
  const family=getFamily(hand);
  const versionedSeed=seed+'|'+TOWER_LETTERING_REVISION;
- const plan=wordPlan(family,composeWord(hand,text,{seed:versionedSeed,variation:.04}));
+ const planned=wordPlan(family,composeWord(hand,text,{seed:versionedSeed,variation:.04}));
+ const plan={...planned,accented:[...planned.accented]}; // JSON-safe atlas payload
  const bounds={x:-32,y:-35,width:plan.width+61,height:189};
  return {
   renderer:'az-nine-v1',version:TOWER_LETTERING_REVISION,
@@ -95,7 +96,7 @@ function drawStroke(ctx,s,f){
 /** Paint a deterministic tag into the existing atlas coordinate system. */
 export function drawTowerFamilyTag(ctx,tag,{finish='spray',joins=true}={}){
  if(tag?.renderer!=='az-nine-v1')throw new TypeError('Expected nine-family tower tag');
- const f=getFamily(tag.hand),plan=tag.plan;
+ const f=getFamily(tag.hand),plan={...tag.plan,accented:new Set(tag.plan.accented)};
  ctx.save();
  ctx.fillStyle=tag.ink;ctx.strokeStyle=tag.ink;
  ctx.globalAlpha*=finish==='spray'?.90:1;
