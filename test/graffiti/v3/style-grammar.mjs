@@ -2,7 +2,7 @@
 import {composeLoopsWord} from './loops-library.mjs';
 import {composeBroadNib} from './broadnib-library.mjs?v=nib-clusters-04';
 import {composeRectilinear} from './rectilinear-library.mjs';
-export const GRAMMAR_REVISION='family-composition-04';
+export const GRAMMAR_REVISION='family-composition-05';
 export const RULES=Object.freeze({
  A:{name:'interlocked',pairs:['PR','RO','OP','OR','PI','IE'],curvature:.36,width:5.0},
  B:{name:'arrow-cross',pairs:['PR','RO','RT','TI','IE'],curvature:-.55,width:2.7},
