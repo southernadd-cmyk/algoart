@@ -5,7 +5,7 @@
 import {FAMILIES as ORIGINAL,getFamily as originalFamily,stableNoise,LETTERS} from '../family-library.mjs';
 import {PHI_BY_FAMILY} from '../family-symbols.mjs';
 
-export const V2_REVISION='source-led-structural-roles-02';
+export const V2_REVISION='source-led-glyph-repair-03';
 export const INSTRUMENT_REVISIONS=Object.freeze({B:'Sheet 7 light crossed line; V1 fat marker 12.5 was incompatible with source. V2 uses 6.1-weight crossed hand.'});
 export const PILOT_EVIDENCE=Object.freeze({
   'A:O':Object.freeze({sheet:41,letters:'O',observation:'The source O is not a plain circular loop: sharp angular returns cut a tall opening while the crossed stroke punctures the left side and extends beyond the perimeter.',change:'Replace a generic enclosing oval with angular top, inward right turn and one independent, clearly directional crossing pass.'}),
@@ -42,21 +42,33 @@ export const PILOT_EVIDENCE=Object.freeze({
  'E:M':Object.freeze({sheet:29,letters:'M',observation:'The M is a single clustered Gothic silhouette: three downward blades grouped by pointed upper shoulder arcs; bare disconnected minims do not read as M.',
    change:'Rebuild the three tapering blades with two explicit top shoulder bridges.'})
 });
-function path(kind,d){return Object.freeze({kind,d})}
+function path(kind,d,role='structure'){
+ if(!['structure','ornament'].includes(role)||role==='ornament'&&kind!=='hairline')throw new TypeError('Invalid authored gesture role');
+ return Object.freeze({kind,d,role});
+}
 const changes=Object.freeze({
  A:Object.freeze({
   O:Object.freeze([
    path('heavy','M 7 74 L 18 19 L 53 -4 L 83 15 L 76 83 L 48 112 L 17 92 L 7 74'),
    path('stroke','M -7 72 L 56 35 L 91 48'),
-   path('hairline','M 18 24 L 42 5')
+   path('hairline','M 18 24 L 42 5','ornament')
   ]),
   M:Object.freeze([
    path('heavy','M -3 108 L 19 6 L 42 69 L 64 4 L 85 110'),
    path('stroke','M -5 79 L 74 33'),
-   path('hairline','M 61 8 L 79 22')
+   path('hairline','M 61 8 L 79 22','ornament')
   ])
  }),
  B:Object.freeze({
+  P:Object.freeze([
+   path('stroke','M 13 111 L 14 0 Q 55 -5 76 18 Q 93 40 68 57 Q 49 69 15 60'),
+   path('hairline','M 20 12 Q 44 5 62 19')
+  ]),
+  E:Object.freeze([
+   path('stroke','M 80 4 L 14 4 L 12 108 L 83 108'),
+   path('stroke','M 14 55 L 64 54'),
+   path('hairline','M 65 4 L 79 17')
+  ]),
   A:Object.freeze([
    path('stroke','M -5 108 Q 24 76 34 5 L 75 108'),
    path('stroke','M -8 70 L 67 33 L 87 53'),
@@ -83,20 +95,24 @@ const changes=Object.freeze({
   U:Object.freeze([
    path('stroke','M 9 1 C 10 34 3 70 18 97 C 36 130 70 121 77 91 C 82 67 77 35 80 3'),
    path('stroke','M 18 39 C 21 84 33 103 49 101 C 67 99 68 83 67 58'),
-   path('hairline','M 68 12 Q 77 -3 92 10')
+   path('hairline','M 68 12 Q 77 -3 92 10','ornament')
   ]),
   O:Object.freeze([
    path('stroke','M 37 5 C 92 -13 109 71 75 107 C 47 138 -12 104 4 46 Q 15 8 48 3'),
    path('stroke','M 36 35 C 68 14 83 47 66 76 C 52 96 25 79 30 55 Q 34 43 55 42'),
-   path('hairline','M 6 65 Q 45 36 92 58')
+   path('hairline','M 6 65 Q 45 36 92 58','ornament')
   ]),
   S:Object.freeze([
    path('stroke','M 82 15 C 54 -9 17 2 13 32 C 11 48 27 54 49 60 C 77 68 88 86 65 106 C 45 121 16 112 7 96'),
    path('stroke','M 69 16 C 39 6 24 23 30 39 Q 36 48 55 52'),
-   path('hairline','M 20 78 Q 43 67 61 82')
+   path('hairline','M 20 78 Q 43 67 61 82','ornament')
   ])
  }),
  H:Object.freeze({
+  O:Object.freeze([
+   path('fill','M 24 0 L 65 1 L 86 20 L 85 53 L 68 61 L 72 31 L 57 18 L 30 23 L 20 52 L 21 75 L 44 96 L 70 86 L 77 65 L 92 72 L 84 101 L 58 116 L 23 107 L 4 82 L 2 46 Z'),
+   path('fill','M 12 63 L 26 60 L 28 78 L 13 84 Z')
+  ]),
   A:Object.freeze([
    path('fill','M -5 104 L 29 -5 L 46 12 L 14 110 Z'),
    path('fill','M 52 6 L 78 110 L 62 101 L 38 31 Z'),
@@ -167,6 +183,11 @@ const changes=Object.freeze({
   ])
  }),
  I:Object.freeze({
+  E:Object.freeze([
+   path('stroke','M 75 2 L 23 3 L 19 113 L 78 111'),
+   path('stroke','M 21 55 L 69 53'),
+   path('hairline','M 73 3 L 85 12')
+  ]),
   A:Object.freeze([
    path('stroke','M 25 114 L 24 13 L 36 -1 L 53 19 L 49 45 L 28 41'),
    path('stroke','M 53 15 L 69 113'),
@@ -200,12 +221,22 @@ export const ORNAMENT_INDICES=Object.freeze({
  H:Object.freeze({}),
  I:Object.freeze({})
 });
+// Legacy shapes have no authored roles. Freeze their identity by geometry,
+// not array position, so reordering cannot turn a structural mark into decoration.
+const LEGACY_ORNAMENT_GEOMETRY=Object.freeze(Object.fromEntries(
+ ORIGINAL.map(f=>[f.id,Object.freeze(Object.fromEntries(
+  Object.entries(ORNAMENT_INDICES[f.id]||{}).map(([ch,indices])=>
+   [ch,Object.freeze(indices.map(i=>{
+    const shape=f.glyphs[ch].shapes[i];
+    if(!shape||shape.kind!=='hairline')throw Error('Invalid legacy ornament '+f.id+ch+i);
+    return shape.d;
+   }))])))]))));
 function annotateGlyph(id,ch,g){
- const removable=new Set(ORNAMENT_INDICES[id]?.[ch]||[]);
- const shapes=Object.freeze(g.shapes.map((shape,i)=>{
-  if(removable.has(i)&&shape.kind!=='hairline')
-   throw new Error('An ornament must be an explicitly identified hairline: '+id+ch+i);
-  return Object.freeze({...shape,role:removable.has(i)?'ornament':'structure'});
+ const approved=new Set(LEGACY_ORNAMENT_GEOMETRY[id]?.[ch]||[]);
+ const shapes=Object.freeze(g.shapes.map(shape=>{
+  const role=shape.role||(approved.has(shape.d)?'ornament':'structure');
+  if(role==='ornament'&&shape.kind!=='hairline')throw Error('Only hairlines may be ornamental: '+id+ch);
+  return Object.freeze({...shape,role});
  }));
  return Object.freeze({letter:ch,shapes});
 }
