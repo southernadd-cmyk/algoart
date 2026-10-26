@@ -91,15 +91,15 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
   const existing=marks.filter(mark=>mark.level===level);
   const occupied=new Set(existing.map(mark=>mark.hand));
   const dialects=towerHandCycle(seed+'|'+plan.date+'|all-outside');
-  for(let extra=0;extra<5;extra++){
+  for(let extra=0;extra<10;extra++){
    const slot=TAGS_PER_PAINTED_FLOOR+extra;
    const hand=dialects.find(id=>!occupied.has(id)) || dialects[extra%dialects.length];
    // Nine approved families cover ten facade tags; repeat only after exhaustion.
    occupied.add(hand);
    const item=towerTagSlot({floorId:plan.date,seed:seed+'|front-freehand|'+slot,slot,hand});
-   const phrase=GRAFFITI_WORDS[(extra+level)%GRAFFITI_WORDS.length];
+   const phrase=extra<5?GRAFFITI_WORDS[(extra+level)%GRAFFITI_WORDS.length]:['Proportion','Piece','PHI','φ','Proportion Piece'][extra-5];
    const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:2});
-   const r=makeRandom(item.seed+'|front-wall'),desiredWidth=phrase==='Proportion Piece'?r.range(3.2,4.3):phrase==='PHI'?r.range(1.7,2.5):r.range(1.1,1.6);
+   const r=makeRandom(item.seed+'|front-wall'),desiredWidth=phrase==='Proportion Piece'?r.range(3.2,4.3):phrase==='PHI'?r.range(1.7,2.5):phrase==='Proportion'?r.range(3,4.1):phrase==='Piece'?r.range(2.2,3.1):r.range(1.1,1.6);
    // Try several phi-phased placements on each wall rather than stacking
    // every additional mark at the same five golden fractions.
    const placed=candidates.flatMap(face=>Array.from({length:12},(_,attempt)=>{
