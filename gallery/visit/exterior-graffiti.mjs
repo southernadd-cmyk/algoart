@@ -38,6 +38,18 @@ function paintExteriorUnderstroke(ctx,x,y,width,height){
   ctx.beginPath();ctx.arc(left+px+Math.cos(angle)*distance,top+py+Math.sin(angle)*distance,.25+random()*1.35,0,Math.PI*2);ctx.fill();
  }
  ctx.globalAlpha=1;ctx.drawImage(original,left,top);ctx.restore();
+ // Break both the white undercoat and the top ink into porous deposited paint.
+ const pixels=ctx.getImageData(left,top,w,h),data=pixels.data;
+ for(let py=0;py<h;py++)for(let px=0;px<w;px++){
+  const k=(py*w+px)*4;if(data[k+3]===0)continue;
+  const grain=Math.sin((px+left)*.61+(py+top)*1.73)*Math.sin((px+left)*1.91-(py+top)*.77);
+  const aggregate=Math.sin((px+left)*.13)*Math.sin((py+top)*.17);
+  const pores=grain*.25+aggregate*.24;
+  const thinning=pores<-.28?.43:pores<-.12?.72:pores>.26?.96:.85;
+  data[k+3]=Math.round(data[k+3]*thinning);
+ }
+ ctx.putImageData(pixels,left,top);
+
 }
 export function graffitiPaintParts(tag){
  if(tag.renderer==='az-nine-v1')return [tag];
@@ -107,7 +119,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
   updateNormal();
   // Build-time PNG atlas is preferred. The legacy paint queue remains a
   // deterministic fallback for old floors or stale/incomplete manifests.
-  const expected=(kind==='exterior'?'white-understroke-v2|':'')+towerGraffitiSignature(marks);
+  const expected=(kind==='exterior'?'white-understroke-v3|':'')+towerGraffitiSignature(marks);
   const manifestUrl=kind==='interior'&&marks[0]
    ?new URL('../'+marks[0].date+'/3d/graffiti/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href)
    :new URL('./graffiti-assets/exterior/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
