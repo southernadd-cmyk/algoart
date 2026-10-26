@@ -66,6 +66,7 @@ jobs:
       - name: Record browser runtime
         run: npx playwright --version
       - name: Start local editor
+        shell: bash
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/archive-http.log 2>&1 &
           for i in {1..30}; do
