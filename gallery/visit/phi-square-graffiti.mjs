@@ -69,7 +69,7 @@ export function planSquareTags(objects=planPhiSquare()){
    for(let index=0;index<count;index++){
     const slot=marks.length,phrase='φ',seed=PHI_SQUARE_REVISION+'|'+object.id+'|'+side+'|'+index;
     const ink=inks[(slot+faceIndex)%inks.length],form=SQUARE_TAG_FORMS[(slot*5+faceIndex*3)%SQUARE_TAG_FORMS.length];
-    const hand=writers[(slot*7+faceIndex*11)%writers.length],tag=makeSquareTag(phrase,seed,ink,{form,hand});
+    const hand=writers[(slot*7+faceIndex*11)%writers.length],tag=makeSquareTag(phrase,seed,ink,{form:count===17&&index>=9?'handstyle':form,hand});
     // Every outdoor mark is a lowercase phi; writer profiles and paint weight provide variety.
     tag.paintWidth=0.85+((slot*7+faceIndex*3)%11)*0.19;
     const p=goldenSquarePlacement({bounds:tag.bounds,length:face.length,wallHeight:object.height,count,index,phase});
