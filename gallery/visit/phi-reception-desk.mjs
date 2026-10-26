@@ -26,10 +26,7 @@ export function addPhiReceptionDesk(THREE,scene,reception,elevation,{concrete}={
  shape.moveTo(x+r,z);shape.lineTo(x+w-r,z);shape.quadraticCurveTo(x+w,z,x+w,z+r);shape.lineTo(x+w,z+d-r);shape.quadraticCurveTo(x+w,z+d,x+w-r,z+d);shape.lineTo(x+r,z+d);shape.quadraticCurveTo(x,z+d,x,z+d-r);shape.lineTo(x,z+r);shape.quadraticCurveTo(x,z,x+r,z);
  const top=new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth:.105,bevelEnabled:true,bevelSize:.01,bevelThickness:.01,bevelSegments:2,steps:1,curveSegments:6}),concrete);top.rotation.x=-Math.PI/2;top.position.y=1.01;top.name='rounded-stone-counter';root.add(top);
  part(3.34,.025,.025,0,.93,-.691,brass);
- // A real working surface: laptop, catalogues, pen cup and a warm task lamp.
- part(.54,.028,.36,.34,1.145,.15,ink);
- const screen=part(.52,.36,.032,.34,1.34,.30,ink);screen.rotation.x=-.17;
- const display=new THREE.Mesh(new THREE.PlaneGeometry(.47,.30),new THREE.MeshBasicMaterial({color:'#d9e0ce'}));display.position.set(.34,1.34,.322);display.rotation.x=-.17;root.add(display);
+ // Catalogues, pen cup, paper props and a warm task lamp.
  for(let i=0;i<3;i++){const book=part(.39,.035,.27,-1.28,1.145+i*.038,-.10,i===1?ink:paper);book.rotation.y=.12-i*.07;}
  const cup=new THREE.Mesh(new THREE.CylinderGeometry(.055,.048,.14,16),brass);cup.position.set(.91,1.20,.20);root.add(cup);
  for(let i=0;i<3;i++){const pen=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.22,6),ink);pen.position.set(.89+i*.019,1.34,.20);pen.rotation.z=(i-1)*.13;root.add(pen);}

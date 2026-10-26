@@ -1,4 +1,4 @@
-import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=working-desk-20261026';
+import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=no-laptop-20261026';
 import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=succulent-planters-20261026';
 import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=golden-eight-forms-v4-no-loop-20261026';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
