@@ -650,31 +650,24 @@ function setLiftDoors(closed){
   liftDoorTarget=closed?1:0;
 }
 function animateLiftDoors(dt){
-  // Proximity sensor works on both sides of the doorway, just like the
-  // gallery entrance. Never reopen doors during a lift journey.
-  if(liftTravelling){
-    liftDoorTarget=1;
-  }else if(liftArrivalOpening){
+  // Original production door actuator and approach hysteresis.
+  // The destination opening is held until the physical leaves are open.
+  if(liftArrivalOpening){
     liftDoorTarget=0;
     if(liftDoorClosure<.025)liftArrivalOpening=false;
-  }else if(liftDoorThreshold && liftDoors.length && !liftTravelling){
+  }else if(liftDoorThreshold&&liftDoors.length&&!liftTravelling){
     const person=renderer?.xr.isPresenting
       ?renderer.xr.getCamera(camera).getWorldPosition(new THREE.Vector3())
       :rig.position;
-    const distance=Math.hypot(person.x-liftDoorThreshold.x,
-      person.z-liftDoorThreshold.z);
-    // Hysteresis keeps leaves from chattering at the activation boundary.
+    const distance=Math.hypot(person.x-liftDoorThreshold.x,person.z-liftDoorThreshold.z);
     if(distance<3.3)liftDoorTarget=0;
     else if(distance>3.8)liftDoorTarget=1;
-  }
-  // Smooth, framerate-independent sliding movement.
+  }else if(liftTravelling)liftDoorTarget=1;
   liftDoorClosure+=(liftDoorTarget-liftDoorClosure)*Math.min(1,dt*3.5);
-  if(Math.abs(liftDoorTarget-liftDoorClosure)<.002)
-    liftDoorClosure=liftDoorTarget;
+  if(Math.abs(liftDoorTarget-liftDoorClosure)<.002)liftDoorClosure=liftDoorTarget;
   for(const leaf of liftDoors)
     leaf.position.copy(leaf.userData.open).lerp(leaf.userData.closed,liftDoorClosure);
 }
-
 function nearLift(){
   if(!liftPosition)return false;
   // In VR the headset can move relative to the locomotion rig.
@@ -2280,8 +2273,7 @@ function updateMovement(dt) {
   if(!atLift && liftPosition &&
      Math.hypot(rig.position.x-liftPosition.x,rig.position.z-liftPosition.z)>3.3)
     liftPickerConsumed=false;
-  if(atLift&&!liftPickerConsumed&&!liftTravelling&&$('lift').hidden)
-    openLift();
+  if(atLift&&!liftWasNear&&!liftPickerConsumed&&$('lift').hidden)openLift();
   liftWasNear=atLift;
   rig.rotation.y=yaw;
   camera.rotation.x=renderer.xr.isPresenting?0:pitch;
