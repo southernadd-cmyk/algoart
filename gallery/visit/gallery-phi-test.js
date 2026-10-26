@@ -805,14 +805,16 @@ function startPhiCabinRide(targetFloor){
  const targetTheta=targetFloor*(2*Math.PI/(PHI*PHI));
  const turn=Math.atan2(Math.sin(targetTheta-startTheta),Math.cos(targetTheta-startTheta));
  const duration=Math.max(1.8,Math.min(9,Math.abs(endY-startY)/7.0+1));
- phiRideState={startY,endY,startTheta,turn,lastTheta:startTheta,elapsed:0,duration,resolve:null};
+ phiRideState={startY,endY,startTheta,turn,lastTheta:startTheta,started:performance.now(),elapsed:0,duration,resolve:null};
  window.__phiLiftRide={from:startY,to:endY,progress:0,status:'moving'};
  return new Promise(resolve=>{phiRideState.resolve=resolve;});
 }
 function updatePhiCabinRide(dt){
  if(!phiRideState)return;
  const ride=phiRideState;
- ride.elapsed=Math.min(ride.duration,ride.elapsed+dt);
+ // Navigation clamps long frames to prevent walking through walls. The lift
+ // uses elapsed time so a low frame rate cannot stretch a nine-second ride.
+ ride.elapsed=Math.min(ride.duration,(performance.now()-ride.started)/1000);
  const p=ride.elapsed/ride.duration;
  // Accelerate and brake smoothly rather than jumping to a new elevation.
  const smooth=p*p*(3-2*p);
@@ -2489,13 +2491,13 @@ function detectArt(elapsed) {
 let phiFrameSerial=0;
 function tick() {
   if (!renderer) return;
-  const dt=Math.min(clock.getDelta(),.055);
+  const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
   if((phiFrameSerial++&1)===0)towerGraffiti.paintNext();
   else interiorGraffiti.paintNext();
   // Three.js supplies both desktop and XR frames here. Window animation
   // frames can pause in immersive VR, so build exhibits on this loop instead.
   if(dt<.030||phiFrameSerial%8===0)processDeferredGallery();
-  animateLiftDoors(dt);
+  animateLiftDoors(elapsed);
   updatePhiCabinRide(dt);
   entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}

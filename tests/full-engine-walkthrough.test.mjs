@@ -1,16 +1,17 @@
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
-import {mkdir} from 'node:fs/promises';
+import {mkdir,writeFile} from 'node:fs/promises';
 await mkdir('phi-tower-results',{recursive:true});
 const browser=await chromium.launch({headless:true});
+let page;
 try{
- const page=await browser.newPage({viewport:{width:1365,height:850}});
+ page=await browser.newPage({viewport:{width:1365,height:850}});
  const errors=[],warnings=[],threeImports=new Set();
  page.on('pageerror',error=>errors.push(error.message));
  page.on('console',m=>{if(m.type()==='warning')warnings.push(m.text());});
  page.on('request',request=>{if(/\/build\/three\.module\.js(?:\?|$)/.test(request.url()))threeImports.add(request.url());});
  await page.goto('http://127.0.0.1:4173/test/virtual-gallery/full-engine.html?debug',{waitUntil:'domcontentloaded'});
- await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled || !document.querySelector('#error')?.hidden || window.__galleryStartupError,{timeout:90000});
+ await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled || !document.querySelector('#error')?.hidden || window.__galleryStartupError,null,{timeout:90000});
  assert.equal(await page.locator('#error').isVisible(),false,'Gallery startup error visible');
  assert.equal(await page.locator('#enter').isEnabled(),true,'Gallery did not finish preparing');
  const phi=await page.evaluate(()=>window.__phiFullEngine);
@@ -32,7 +33,7 @@ try{
   await page.locator('#openLift').click();
   const destination=page.locator('#liftDays button').filter({hasText:new RegExp('^'+Number(date.slice(-2))+'$')});
   await destination.click();
-  await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',{timeout:20000});
+  await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',null,{timeout:20000});
   const before=await page.evaluate(()=>window.__phiLiftState);
   assert.equal(before.doorCount,2);assert.equal(before.calendarCount,1);
   assert.ok(before.doorClosure>.99,'Cabin moved with doors open');
@@ -41,7 +42,8 @@ try{
   assert.ok(during.pitch>before.pitch+.05,'Looking around was locked during the ride');
   assert.ok(Math.abs(during.y-before.y)>.03,'Cabin did not move');
   assert.ok(Math.abs(during.cabinY-during.y)<.01,'Cabin left the visitor behind');
-  await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',{timeout:90000});
+  await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',null,{timeout:90000});
+  await page.keyboard.down('ArrowDown');await page.waitForTimeout(280);await page.keyboard.up('ArrowDown');
   const state=await page.evaluate(()=>({lift:window.__phiLiftState,exhibition:window.__phiFullEngine,error:window.__phiLiftError}));
   assert.equal(state.error,null);assert.equal(state.exhibition.date,date);
   assert.equal(state.exhibition.artworks,state.exhibition.paintings+state.exhibition.sculptures);
@@ -56,7 +58,7 @@ try{
  await page.route('**/gallery/2026-10-15/',route=>route.fulfill({status:503,body:'Unavailable'}));
  await page.locator('#openLift').click();
  await page.locator('#liftDays button').filter({hasText:/^15$/}).click();
- await page.waitForFunction(()=>window.__phiLiftError,{timeout:25000});
+ await page.waitForFunction(()=>window.__phiLiftError,null,{timeout:25000});
  assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),departure.date);
  await page.locator('#closeLift').click();
  await page.waitForFunction(()=>!window.__phiLiftState.travelling);
@@ -66,7 +68,7 @@ try{
  await page.unroute('**/gallery/2026-10-15/');
  // Ground floor is a separate, reachable reception rather than an archive date.
  await page.locator('#openLift').click();await page.locator('#liftReception').click();
- await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',{timeout:90000});
+ await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',null,{timeout:90000});
  assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),'__phi_reception__');
  assert.equal(await page.locator('#error').isVisible(),false);
  await page.setViewportSize({width:390,height:844});
@@ -75,4 +77,11 @@ try{
  assert.ok(!warnings.some(s=>/Multiple instances of Three\.js/.test(s)),'Duplicate Three.js warning');
  assert.equal(errors.length,0,errors.join('; '));
  console.log('Full gallery: historical rides, free look, moving cabin, doors, failed-load recovery, reception and one Three.js instance passed');
+}catch(error){
+ if(page){
+  console.error('Gallery state on failure',await page.evaluate(()=>({ride:window.__phiLiftRide,lift:window.__phiLiftState,error:window.__phiLiftError,events:window.__galleryDebugEvents})));
+  await page.screenshot({path:'phi-tower-results/full-failure.png'}).catch(()=>{});
+  await writeFile('phi-tower-results/failure.json',JSON.stringify(await page.evaluate(()=>({ride:window.__phiLiftRide,lift:window.__phiLiftState,error:window.__phiLiftError,events:window.__galleryDebugEvents})),null,2));
+ }
+ throw error;
 }finally{await browser.close();}

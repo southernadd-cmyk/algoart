@@ -5,7 +5,7 @@ import {planPhiFloor} from '../../gallery/visit/phi-architecture.mjs';
 import {planPhiBridges} from '../../gallery/visit/phi-bridges.mjs';
 import {planPhiCirculation} from '../../gallery/visit/phi-circulation.mjs';
 import {buildPhysicalPhiFloor,WALK_RADIUS} from '../../gallery/visit/phi-physical.mjs';
-import {planCuratedPhiExhibition} from '../../gallery/visit/phi-curator.mjs';
+import {planCuratedPhiExhibition} from '../../gallery/visit/phi-curator.mjs?v=complete-archive-20261026';
 
 export function buildPhiRendererPlan(date,studies,{variation=0}={}){
  const planningDate=date==='__phi_reception__'?'2026-10-05':date;
