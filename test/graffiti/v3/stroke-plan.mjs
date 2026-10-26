@@ -1,5 +1,5 @@
 // V3-only physical writing plan. V2 glyphs stay immutable.
-export const STROKE_PLAN_REVISION='stroke-plan-02';
+export const STROKE_PLAN_REVISION='stroke-plan-03';
 export function physicalStroke(stroke,family){
  const kind=stroke.kind||'stroke';
  const role=stroke.role==='ornament'?'ornament':stroke.role==='secondary'||kind==='hairline'?'secondary':'primary';
@@ -53,4 +53,30 @@ export function movementPoint(x,y,{letterIndex=0,strokeIndex=0,seed='V3',family=
  const swell=Math.sin(Math.PI*Math.min(1,Math.max(0,y/115)));
  const wave=Math.sin((x/94)*Math.PI*2/PHI+phase);
  return {x:x+strength*1.8*wave*swell,y:y+strength*2.8*wave*swell};
+}
+
+// V3 style-specific construction, not a universal displacement.
+export function styleMovementPoint(x,y,{family='G',letterIndex=0,strokeIndex=0,seed='V3',mode='restrained',progress=.5}={}){
+ if(mode==='none')return {x,y};
+ const phi=(1+Math.sqrt(5))/2;
+ const n=noise(seed+'|'+family+'|'+letterIndex+'|'+strokeIndex);
+ const strength=mode==='expressive'?1.35:1;
+ const taper=Math.pow(Math.sin(Math.PI*Math.max(0,Math.min(1,progress))),.7);
+ if(family==='G'){
+  // Directional rotational pull within each stroke; returns naturally to endpoints.
+  const angle=2*Math.PI*(progress/phi+letterIndex/phi**2)+n*.35;
+  return {x:x+strength*taper*(3.3*Math.cos(angle)),y:y+strength*taper*(5.5*Math.sin(angle))};
+ }
+ if(family==='A'){
+  // Preserve crossings; reshape only the middle of the stroke.
+  return {x:x+strength*taper*.85*n,y:y+strength*taper*.65*Math.sin(progress*Math.PI*2/phi+n)};
+ }
+ if(family==='H')return {x,y}; // Keep precisely separated filled fragments.
+ return movementPoint(x,y,{family,letterIndex,strokeIndex,seed,mode});
+}
+export function styleWidthMultiplier(family,{mode='marker',role='primary',progress=.5}={}){
+ if(family==='A'&&mode==='marker')return role==='primary'?.86:1;
+ if(family==='I'&&mode==='marker')return .91;
+ if(family==='G')return role==='secondary'?.72:1.18;
+ return 1;
 }
