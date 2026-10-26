@@ -6,6 +6,7 @@ import {renderVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 const modelURL=name=>new URL('./models/'+name,import.meta.url).href;
 export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
  const holders=[];
+ if(globalThis.__phiReceptionTestRefresh)globalThis.__phiReceptionBackroomCount=furnishing.backrooms?.length||0;
  for(const [i,p] of furnishing.plants.entries()){
   const holder=new THREE.Group();holder.name='phi-pothos-'+i;holder.position.set(p.x,elevation,p.z);scene.add(holder);holders.push(holder);
   const pot=new THREE.Mesh(new THREE.BoxGeometry(.42,.55,.42),new THREE.MeshStandardMaterial({color:'#8a8070',roughness:.85}));pot.position.y=.275;holder.add(pot);
