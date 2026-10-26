@@ -1,6 +1,6 @@
 // Broad-nib V3: continuous calligraphic clusters replace recipient skeleton strokes.
 // V2 stays immutable; each composed letter carries its own shape list.
-export const BROADNIB_REVISION='nib-clusters-03';
+export const BROADNIB_REVISION='nib-clusters-04';
 const families=new Set(['PRO','ROP','OPO','POR','ORT','RTI','TIO','ION','PIE','IEC','ECE']);
 const pairs=new Set(['PR','RO','OP','PO','OR','RT','TI','IO','ON','PI','IE','EC','CE']);
 function rand(seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619);return(h>>>0)/4294967296}
