@@ -1,0 +1,64 @@
+name: Roll out Broad-nib V3 tower graffiti
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gallery-broadnib-rollout.yml'
+      - 'gallery/visit/tower-family-lettering.mjs'
+      - 'test/graffiti/v3/broadnib-library.mjs'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: broadnib-tower-rollout
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Check V3 grammar and tower regressions
+        run: node --test tests/gallery-broadnib-tower.test.mjs tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs test/graffiti/v3/structural-composers.test.mjs
+      - name: Build production gallery bundle
+        run: |
+          npm run gallery:bundle
+          node --check gallery/visit/gallery-bundle.js
+      - run: npx playwright install --with-deps chromium
+      - name: Start local site
+        run: |
+          python3 -m http.server 4173 >/tmp/gallery-broadnib-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          exit 1
+      - name: Bake all archived indoor atlases and outside atlas
+        run: |
+          node --input-type=module <<'NODE' > /tmp/broadnib-dates
+          import fs from 'node:fs';
+          for(const f of JSON.parse(fs.readFileSync('gallery/tower-layouts.json')).floors)console.log(f.date);
+          NODE
+          while read -r DAY; do
+            [ -n "$DAY" ] || continue
+            node automation/build-gallery-graffiti.mjs --date="$DAY" --indoor-only
+          done < /tmp/broadnib-dates
+          node automation/build-gallery-graffiti.mjs --exterior-only
+      - name: Commit bundled gallery and baked graffiti atlases
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/gallery-bundle.js gallery/visit/graffiti-assets/exterior gallery/*/3d/graffiti/
+          if git diff --cached --quiet; then
+            echo "No rebuilt assets to commit"
+          else
+            git commit -m "Roll out Broad-nib V3 to indoor and exterior tower atlases"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Publish gallery to GitHub Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
