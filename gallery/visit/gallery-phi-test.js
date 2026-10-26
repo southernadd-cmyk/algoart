@@ -1,2 +1,3 @@
-// Staging and production share the same phi renderer.
-import './gallery-phi.js?v=public-phi-20261026';
+// Reception changes are enabled only by the full-engine test entry point.
+globalThis.__phiReceptionTestRefresh=true;
+import './gallery-phi.js?v=reception-refresh-test-20261026';
