@@ -978,6 +978,36 @@ function processDeferredGallery(){
   }catch(error){console.warn('Deferred gallery asset failed',error);}
 }
 
+// One canonical horizontal transform for exterior, live gallery, navigation and map.
+function phiFloorTransform(level,lift){
+ const theta=level*(2*Math.PI/(((1+Math.sqrt(5))/2)**2));
+ const radius=1.6*(1-Math.pow(2/(1+Math.sqrt(5)),level));
+ const dx=radius*Math.cos(theta),dz=radius*Math.sin(theta);
+ const cs=Math.cos(theta),sn=Math.sin(theta);
+ const tx=dx-(lift.x*cs+lift.z*sn),tz=dz-(-lift.x*sn+lift.z*cs);
+ return {
+  theta,dx,dz,tx,tz,
+  toWorld:(x,z)=>({x:x*cs+z*sn+tx,z:-x*sn+z*cs+tz}),
+  toLocal:(x,z)=>({x:(x-tx)*cs-(z-tz)*sn,z:(x-tx)*sn+(z-tz)*cs})
+ };
+}
+function transformPhiActiveFloor(before){
+ const phi=plan.phi,world=phiFloorTransform(currentFloor,phi.circulation.lift);
+ phi.world=world;
+ const rotate=(v)=>{if(!v)return;const p=world.toWorld(v.x,v.z);v.x=p.x;v.z=p.z;};
+ for(const object of scene.children){
+  if(before.has(object))continue;
+  const pos=world.toWorld(object.position.x,object.position.z);
+  object.position.x=pos.x;object.position.z=pos.z;
+  object.rotation.y+=world.theta;
+ }
+ for(const p of sculpturePlacements)rotate(p);
+ for(const a of artExhibits)rotate(a.position);
+ rotate(liftPosition);rotate(liftCabinPosition);rotate(liftDoorThreshold);
+ rotate(rig.position);
+ const original=phi.canWalk;
+ phi.canWalk=(x,z)=>{const p=world.toLocal(x,z);return original(p.x,p.z);};
+}
 // Exterior shell: one lightweight set of walls per archived date. Every floor
 // uses its own deterministic phi plan; artwork, lighting and occupants belong
 // only to the active floor. No old rectangular tower meshes are used.
@@ -997,8 +1027,10 @@ function constructPhiTowerShell(){
   const archived=towerFloorSignatures.get(date);
   const number=date===RECEPTION?10:(archived?.length||18);
   const stubs=Array.from({length:number},(_,i)=>({id:date+'-'+i,portrait:i%3===0,aspect:i%3===0?.75:1.4}));
-  const planned=buildPhiRendererPlan(date===RECEPTION?archiveDates[1]:date,stubs);
+  const planned=buildPhiRendererPlan(date===RECEPTION?RECEPTION:date,stubs);
+  const wt=phiFloorTransform(level,planned.circulation.lift);
   const y=level*FLOOR_SPACING;
+  const floorStart=shell.children.length;
   for(const p of planned.pieces)append(p.w,.25,p.h,p.x+p.w/2,y-.16,p.z+p.h/2,floor);
   for(const w of planned.physical.walls){
    const len=w.hi-w.lo;if(len<.03)continue;
@@ -1010,6 +1042,10 @@ function constructPhiTowerShell(){
    const mid=(b.from+b.to)/2;
    append(b.axis==='x'?b.length:b.width,.16,b.axis==='z'?b.length:b.width,
       b.axis==='x'?mid:b.centre,y-.06,b.axis==='z'?mid:b.centre,bridgeSurface);
+  }
+  for(const object of shell.children.slice(floorStart)){
+   const p=wt.toWorld(object.position.x,object.position.z);
+   object.position.x=p.x;object.position.z=p.z;object.rotation.y+=wt.theta;
   }
   count++;
  }
@@ -1576,6 +1612,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   const sceneBeforeConstruction=new Set(scene.children);
   try{
     constructGallery(plan,studyList);
+    if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);
   }catch(error){
     // Remove partially constructed destination objects before recovery.
     // Otherwise a failed construction leaves orphaned meshes in the scene.
@@ -1848,9 +1885,10 @@ function drawPhiMap(){
  const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
  ctx.clearRect(0,0,w,h);
  const shapes=phi.floor.rooms;
+ const localVisitor=phi.world?phi.world.toLocal(rig.position.x,rig.position.z):{x:rig.position.x,z:rig.position.z};
  // The reception is a public foyer, not an art floor.
  const reception=exhibitDate===RECEPTION;
- const all=[...shapes.flatMap(p=>[[p.x,p.z],[p.x+p.w,p.z+p.h]]),[phi.circulation.lift.x,phi.circulation.lift.z],[rig.position.x,rig.position.z]];
+ const all=[...shapes.flatMap(p=>[[p.x,p.z],[p.x+p.w,p.z+p.h]]),[phi.circulation.lift.x,phi.circulation.lift.z],[localVisitor.x,localVisitor.z]];
  const minX=Math.min(...all.map(p=>p[0]))-3,maxX=Math.max(...all.map(p=>p[0]))+3;
  const minZ=Math.min(...all.map(p=>p[1]))-3,maxZ=Math.max(...all.map(p=>p[1]))+3;
  const scale=Math.min((w-24)/(maxX-minX),(h-24)/(maxZ-minZ));
@@ -1874,7 +1912,7 @@ function drawPhiMap(){
  }
  const l=phi.circulation.lift;
  ctx.fillStyle='#d9c68c';ctx.fillRect(X(l.x)-6,Z(l.z)-6,12,12);ctx.fillStyle='#27352e';ctx.font='bold 10px sans-serif';ctx.fillText('L',X(l.x)-3,Z(l.z)+4);
- ctx.fillStyle='#d25436';ctx.save();ctx.translate(X(rig.position.x),Z(rig.position.z));ctx.rotate(-yaw);ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-6,5);ctx.lineTo(6,5);ctx.closePath();ctx.fill();ctx.restore();
+ ctx.fillStyle='#d25436';ctx.save();ctx.translate(X(localVisitor.x),Z(localVisitor.z));ctx.rotate(-yaw+(phi.world?.theta||0));ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-6,5);ctx.lineTo(6,5);ctx.closePath();ctx.fill();ctx.restore();
 }
 function drawMap(){
   if(plan?.phi)return drawPhiMap();
