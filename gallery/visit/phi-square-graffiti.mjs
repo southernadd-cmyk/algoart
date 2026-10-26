@@ -88,6 +88,39 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
     const mesh=new THREE.Mesh(tiledBoxUvs(new THREE.BoxGeometry(o.width,o.height,o.depth),o.width,o.height,o.depth,material.userData.tileMeters||2),material);
     mesh.position.set(o.x,o.height/2,o.z);mesh.rotation.y=o.yaw;mesh.name='phi-square-'+o.id;root.add(mesh);
    }
+   // Test-square architectural refresh: all finishes come from the existing material bank.
+   // Local square axes: x spans the frontage, positive z points into the public square.
+   if(globalThis.__phiReceptionTestRefresh){
+    const paving=concrete,brickwork=brick;
+    const add=(w,h,d,x,y,z,mat,name)=>{
+     const geometry=tiledBoxUvs(new THREE.BoxGeometry(w,h,d),w,h,d,mat.userData.tileMeters||2);
+     const mesh=new THREE.Mesh(geometry,mat);mesh.position.set(x,y,z);mesh.name=name;root.add(mesh);return mesh;
+    };
+    // Low flush bands create rhythm without making the walking surface uneven.
+    for(const z of [5.5,10.5,15.5,20.5,25.5]){
+     add(28,.025,.22,0,-.038,z,brickwork,'phi-square-paving-band');
+    }
+    for(const x of [-13.8,13.8]){
+     add(.22,.028,27,x,-.036,14,brickwork,'phi-square-paving-edge');
+     // Raised beds and masonry seating stay clear of the central arrival route.
+     for(const z of [8,21]){
+      const group=new THREE.Group();group.position.set(x,0,z);group.name='phi-square-planted-seat';root.add(group);
+      const piece=(w,h,d,px,py,pz,m)=>{
+       const mesh=new THREE.Mesh(tiledBoxUvs(new THREE.BoxGeometry(w,h,d),w,h,d,m.userData.tileMeters||2),m);
+       mesh.position.set(px,py,pz);group.add(mesh);
+      };
+      piece(3.2,.44,1.5,0,.22,0,paving);
+      piece(2.78,.07,1.12,0,.47,0,brickwork);
+      piece(3.15,.11,.42,0,.52,-.65,paving);
+      // Sculptural shrub silhouettes avoid new geometry downloads or alpha sorting.
+      const green=new THREE.MeshStandardMaterial({color:'#64765b',roughness:1});
+      for(const dx of [-.83,0,.83]){
+       const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.43,1),green);
+       shrub.position.set(dx,.93,.12);group.add(shrub);
+      }
+     }
+    }
+   }
    for(const manager of managers)manager.addTo(root,[],0);
    parent.add(root);activeRoot=root;
    const obstacles=objects.map(o=>{const p=rotate(o.x,o.z,root.rotation.y);return {...o,x:p.x+doorway.x,z:p.z+doorway.z,yaw:o.yaw+root.rotation.y};});
