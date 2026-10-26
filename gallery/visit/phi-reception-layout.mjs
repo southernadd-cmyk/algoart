@@ -60,7 +60,15 @@ export function planPhiReception(floor,circulation,physical){
  const cabinet=desk?(globalThis.__phiReceptionTestRefresh
   ?{x:desk.x+1.05,z:desk.z+2.15,yaw:Math.PI,height:1.15,width:1.1,depth:.85,kind:'cabinet'}
   :{x:desk.x+.9,z:desk.z-2.2,yaw:-Math.PI*.75,height:1.15,width:1.1,depth:.85,kind:'cabinet'}):null;
- return {desk,cabinet,signage,plants,credits,worldMap,entrance:start,lift:end,checks:{
+ // Select secondary-room corner bays rather than scattering furniture into the foyer.
+ // Workstations remain within their room cells, away from the entrance/lift route.
+ const backrooms=globalThis.__phiReceptionTestRefresh?floor.mergedRooms.flatMap((room,i)=>
+  room.pieces.filter(p=>p.w>=5.2&&p.h>=5.2).map(p=>({
+   x:p.x+p.w*.20,z:p.z+p.h*.23,room:i,width:p.w,depth:p.h
+  }))).filter(p=>p.room!==desk?.room&&
+   Math.hypot(p.x-start.x,p.z-start.z)>5&&Math.hypot(p.x-end.x,p.z-end.z)>4&&
+   distSegment(p.x,p.z,start,end)>3.2).slice(0,4):[];
+ return {desk,cabinet,backrooms,signage,plants,credits,worldMap,entrance:start,lift:end,checks:{
   deskClear:!desk||distSegment(desk.x,desk.z,start,end)>=2.2,
   signCount:signage.length,passageClear:true
  }};
