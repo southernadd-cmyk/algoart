@@ -10,6 +10,8 @@ import * as THREE from 'three';
 import {planPhiFloor} from '../../gallery/visit/phi-architecture.mjs';
 import {planPhiBridges} from '../../gallery/visit/phi-bridges.mjs';
 import {loadPhiArchive} from '../../gallery/visit/phi-archive.mjs';
+import {planPhiCirculation} from '../../gallery/visit/phi-circulation.mjs';
+import {buildPhysicalPhiFloor} from '../../gallery/visit/phi-physical.mjs';
 const canvas=document.querySelector('#tower'),status=document.querySelector('#status'),nav=document.querySelector('#floors');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.setClearColor(0xeae6db);
@@ -44,6 +46,14 @@ try{
   for(const room of floor.mergedRooms)for(const p of room.pieces){
    const slab=cube(group,floorMaterial,p.x+p.w/2,0,p.z+p.h/2,p.w,.18,p.h);slab.userData.floorSlab=true;
    // Lightweight perimeter silhouette; interior walls live in the selected walkable exhibit.
+  }
+  const circulation=planPhiCirculation(floor);
+  circulation.bridges=result.bridges;
+  circulation.bridgePortals=result.bridges.flatMap(b=>[{axis:b.axis,at:b.from,centre:b.centre,width:b.width},{axis:b.axis,at:b.to,centre:b.centre,width:b.width}]);
+  const physical=buildPhysicalPhiFloor(floor,circulation);
+  for(const wall of physical.walls){
+   const length=wall.hi-wall.lo;if(length<=.01)continue;
+   cube(group,frameMaterial,wall.axis==='x'?wall.at:(wall.lo+wall.hi)/2,1.25,wall.axis==='z'?wall.at:(wall.lo+wall.hi)/2,wall.axis==='x'?.16:length,2.5,wall.axis==='z'?.16:length);
   }
   for(const b of result.bridges||[]){
    cube(group,glassMaterial,b.axis==='x'?(b.from+b.to)/2:b.centre,0,b.axis==='z'?(b.from+b.to)/2:b.centre,b.axis==='x'?b.length:b.width,.12,b.axis==='z'?b.length:b.width);
