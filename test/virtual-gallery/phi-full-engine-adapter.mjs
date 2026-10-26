@@ -25,8 +25,9 @@ export function buildPhiRendererPlan(date,studies,{variation=0}={}){
  circulation.lift={x:portal.at-2.25,z:portal.centre,room:0,external:true,portal};
  // Reception has a separate south-side public door, distinct from west lift.
  if(date==='__phi_reception__'){
-   const first=floor.rooms[0];
-   const entrance={axis:'z',at:first.z,centre:first.x+first.w/2,width:2.6,public:true};
+   const edge=floor.rooms.filter(p=>Math.abs(p.z-floor.root.z)<.001&&p.w>=3.4).sort((a,b)=>b.w-a.w)[0];
+   if(!edge)throw new Error('Reception has no viable exterior south entrance');
+   const entrance={axis:'z',at:edge.z,centre:edge.x+edge.w/2,width:2.6,public:true};
    circulation.bridgePortals.push(entrance);
    circulation.publicEntrance=entrance;
  }
