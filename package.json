@@ -28,7 +28,9 @@
     "test:plotter-browser": "node tests/plotter-browser.test.mjs",
     "test:plotter-metrics": "node tests/plotter-metrics.test.mjs",
     "gallery:bundle": "esbuild gallery/visit/gallery-v2.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=gallery/visit/gallery-bundle.js",
-    "gallery:bundle:check": "npm run gallery:bundle && git diff --exit-code -- gallery/visit/gallery-bundle.js"
+    "gallery:bundle:check": "npm run gallery:bundle && git diff --exit-code -- gallery/visit/gallery-bundle.js",
+    "gallery:bundle:phi": "esbuild gallery/visit/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=gallery/visit/gallery-phi-bundle.js",
+    "gallery:bundle:phi:check": "npm run gallery:bundle:phi && git diff --exit-code -- gallery/visit/gallery-phi-bundle.js"
   },
   "devDependencies": {
     "playwright": "1.64.0",

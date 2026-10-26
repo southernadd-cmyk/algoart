@@ -14,7 +14,9 @@ jobs:
       - name: Install pinned gallery bundler
         run: npm install --no-save --package-lock=false
       - name: Rebuild gallery bundle
-        run: npm run gallery:bundle
+        run: |
+          npm run gallery:bundle
+          npm run gallery:bundle:phi
       - name: Validate generated bundle and live gallery regression tests
         run: |
           node --check gallery/visit/gallery-bundle.js
@@ -22,13 +24,15 @@ jobs:
       - name: Check committed bundle matches production source
         id: parity
         continue-on-error: true
-        run: git diff --exit-code -- gallery/visit/gallery-bundle.js
+        run: git diff --exit-code -- gallery/visit/gallery-bundle.js gallery/visit/gallery-phi-bundle.js
       - name: Preserve candidate bundle
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gallery-rebuilt-bundle
-          path: gallery/visit/gallery-bundle.js
+          path: |
+            gallery/visit/gallery-bundle.js
+            gallery/visit/gallery-phi-bundle.js
           retention-days: 7
       - name: Report parity without blocking manual diagnosis
         run: |

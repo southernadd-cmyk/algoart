@@ -5,32 +5,41 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#e8e4da">
 <meta name="robots" content="index,follow,max-image-preview:large">
-<meta name="description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
 <link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/gallery/visit/">
+<meta name="description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PROPORTION PIECE">
 <meta property="og:title" content="Virtual Exhibition | PROPORTION PIECE">
 <meta property="og:description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
 <meta property="og:url" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/">
-<meta property="og:image" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/tower-still.png">
-<meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="480">
+<meta property="og:image" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/phi-tower-preview.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Virtual Exhibition | PROPORTION PIECE">
 <meta name="twitter:description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
-<meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/tower-still.png">
+<meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/phi-tower-preview.png">
 <title>Virtual Exhibition | PROPORTION PIECE</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./gallery.css?v=accessibility-20261023">
+<link rel="stylesheet" href="./phi-gallery.css?v=public-phi-20261026">
+<style>
+/* The fixed canvas must never cover the keyboard/mouse lift fallback. */
+#world{z-index:0}
+.topbar{z-index:30;pointer-events:auto}
+.topbar .top-actions,.topbar #openLift{position:relative;z-index:31;pointer-events:auto}
+.lift-panel{z-index:90}
+.lift-animation{z-index:100}
+.lift-arrival{z-index:95}
+</style>
+
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=12">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
+
+
 <script>
 (()=>{
  const day=new Date().toLocaleDateString('en-CA',{timeZone:'Europe/London'});
  const early=window.__galleryEarly={day};
- early.tower=fetch('../tower-geometry.bin.gz?schema=2&day='+day,{cache:'no-cache'});
  // Keep the early index request bounded even before the application imports.
  const indexController=new AbortController();
  const indexTimer=setTimeout(()=>indexController.abort(),7000);
@@ -39,9 +48,10 @@
    const body=await response.text();
    return {ok:true,text:async()=>body};
  }).finally(()=>clearTimeout(indexTimer));
- early.tower.catch(()=>{});early.index.catch(()=>{});
+ early.index.catch(()=>{});
 })();
 </script>
+
 <script type="module">
 (async()=>{
   const enter=document.getElementById('enter');
@@ -51,17 +61,9 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
-    // Three.js sets window.__THREE__ when its module evaluates. This snapshot
-    // tells us whether an earlier page script or a browser extension loaded it.
-    const threeBefore=window.__THREE__ ?? null;
-    window.__galleryThreeDiagnostics={beforeBundle:threeBefore,
-      scripts:[...document.scripts].map(node=>node.src||'inline:'+node.type).filter(Boolean)};
-    if(threeBefore!==null)console.warn('[Gallery diagnostic] Three.js was present before the gallery bundle loaded',threeBefore);
-    await import('./gallery-bundle.js?v=exterior-wall-collision-20261026');
-    window.__galleryThreeDiagnostics.afterBundle=window.__THREE__ ?? null;
-    // The gallery module installs its resize handler after constructing the camera.
-    // Trigger it once on initial load so portrait screens do not retain aspect=1.
-    window.dispatchEvent(new Event('resize'));
+    window.__galleryStage='Importing bundled JavaScript';
+    await import('./gallery-phi-bundle.js?v=phi-release-20261026');
+    window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
     window.__galleryStartupError='Module import failed: '+(error?.message||String(error));
@@ -93,8 +95,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(!enter?.disabled){clearInterval(watchdog);return;}
     if(performance.now()-started<12000)return;
     console.warn('[Gallery startup] Slow startup',enter.textContent,window.__galleryStartupError||'No captured error');
-    diagnostic.textContent='The virtual gallery is taking longer than expected. Please reload or continue in the 2D gallery below.';
-    diagnostic.hidden=false;
+    if(window.__galleryStartupError){diagnostic.textContent='The virtual gallery could not load. Please reload or continue in the 2D gallery below.';diagnostic.hidden=false;}
+    else document.getElementById('startFloor').textContent='The gallery is still preparing. Your visit will be ready shortly.';
     clearInterval(watchdog);
   },1000);
 });
@@ -122,7 +124,7 @@ window.addEventListener('load',()=>{
 </script>
 </head>
 <body>
-<canvas id="world" tabindex="0" aria-label="Three-dimensional gallery. W A S D to move, arrow keys to look, E for artwork information, L for floors. Tab to reach page controls." aria-describedby="hint"></canvas>
+<canvas id="world" tabindex="0" aria-label="Three-dimensional gallery. W A S D to move, arrow keys to look, L for floors. Tab to reach page controls." aria-describedby="hint"></canvas>
 <header class="algo-global-header gallery-global-header">
   <div class="algo-global-brand"><a class="brand" href="../../">PROPORTION PIECE</a></div>
   <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
@@ -172,15 +174,16 @@ window.addEventListener('load',()=>{
     <a id="openArt" href="../../" target="_blank" rel="noopener noreferrer">Explore this drawing ↗</a>
   </div>
 </aside>
-<div class="plan-view" id="planView"><span>Floor plan</span><canvas id="floorMap" width="248" height="218" aria-label="Diagram of galleries, connecting routes, and your position"></canvas></div>
+<div class="plan-view" aria-label="Your location" id="planView"><span>Floor plan</span><canvas id="floorMap" width="248" height="218" aria-label="Diagram of galleries, connecting routes, and your position"></canvas></div>
 <section class="lift-panel" id="lift" hidden role="dialog" aria-modal="true" aria-labelledby="liftTitle">
-  <div class="lift-head"><div><small>Archive lift</small><h2 id="liftTitle">Choose a floor</h2></div><button id="closeLift" type="button" aria-label="Close lift panel">×</button></div>
+  <div class="lift-head"><div><small>Archive lift</small><h2 id="liftTitle">Where shall we go?</h2></div><button id="closeLift" type="button" aria-label="Close lift panel">×</button></div>
   <p id="liftCurrent"></p>
   <label for="liftMonth">Month and year</label>
   <input id="liftMonth" type="month" min="2026-10">
   <div class="lift-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
   <div class="lift-days" id="liftDays" aria-label="Gallery dates for selected month"></div>
-  <p class="lift-note">Dates marked with a dot have a published exhibition. Earliest date is ground floor; newer dates ascend.</p>
+  <button id="liftReception" type="button">Ground floor · Reception</button>
+  <p class="lift-note">Dates marked with a dot have a published exhibition. Ground floor is reception; newer dates ascend.</p>
   <p id="liftTravel" hidden role="status"></p>
 </section>
 <section id="liftAnimation" class="lift-animation" hidden role="status" aria-live="polite">
@@ -204,8 +207,9 @@ window.addEventListener('load',()=>{
   <div class="welcome-content">
     <div class="eyebrow">An exhibition built by its drawings</div>
     <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
-    <p>Each daily collection occupies its own floor in a growing tower. Landscape and portrait studies hang on the walls; a selection of portrait studies become sculptures made from the actual drawn lines and the visible pigment boundaries of each material. Choose your route through the work.</p>
-    <p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, E to inspect artwork, L to choose a floor. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p>
+    <p>A new collection. A new floor. Every day.</p>
+    <p>Each daily collection occupies its own floor. Step inside a gallery shaped by the golden ratio. Discover drawings on the walls and sculptures made from their lines, then take the archive lift to another day.</p>
+    <details class="visit-controls"><summary>How to explore</summary><p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, Artwork details appear when you pause nearby; L opens the lift calendar. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p></details>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
     <a id="welcomeArchive" href="../">See the original 2D edition ↗</a>
   </div>

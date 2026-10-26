@@ -27,7 +27,7 @@ test('public metadata and essential production assets exist',()=>{
   assert.match(html,/<title>Virtual Exhibition \| PROPORTION PIECE<\/title>/);
   assert.match(html,/rel="canonical" href="https:\/\/southernadd-cmyk\.github\.io\/algoart\/gallery\/visit\/"/);
   assert.doesNotMatch(html,/noindex/);
-  assert.match(html,/gallery-bundle\.js\?v=/);
+  assert.match(html,/gallery-phi-bundle\.js\?v=/);
   assert.doesNotMatch(html,/cdn\.jsdelivr\.net/);
   assert.match(html,/class="algo-global-header gallery-global-header"/);
   assert.match(html,/--gallery-ui-bottom/);
@@ -45,7 +45,10 @@ test('public metadata and essential production assets exist',()=>{
   assert.match(html,/Dates marked with a dot/);
   assert.match(html,/Each daily collection occupies its own floor/);
   assert.doesNotMatch(html,/Chrome loading diagnosis/);
-  const app=read(resolve(root,'gallery-v2.js'));
+  const app=read(resolve(root,'gallery-phi.js'));
+  assert.match(html,/id="liftReception"/);assert.match(html,/phi-gallery\.css/);
+  assert.doesNotMatch(html,/Gallery preview|Architecture study|type="importmap"/);
+  assert.doesNotMatch(app,/loadPrebuiltTower|tower-geometry\.bin/);
   assert.doesNotMatch(app,/window[.]prompt/);
   assert.doesNotMatch(app,/Temporary diagnostic for the unexplained entrance overlay/);
   assert.match(app,/infoMeta/);
@@ -56,6 +59,8 @@ test('public metadata and essential production assets exist',()=>{
     'models/polyhaven-street-lamp-01-optimized.glb',
     'models/twin-surface-spotlight.glb',
     'models/elevator-game-ready.glb',
+    ...['pothos-plant','cardboard-boxes','gothic-entrance-door','succulent-planter','vintage-world-map','magazine-cabinet','paper-clutter'].map(n=>'models/'+n+'.glb'),
+    'credits.html','phi-gallery.css','legacy.html','phi-tower-preview.png',
     'assets/day-environment-hdri-101-1k.jpg',
     'assets/day-environment-hdri-101-2k.jpg',
     'textures/OfficeCeiling001_Color.jpg',

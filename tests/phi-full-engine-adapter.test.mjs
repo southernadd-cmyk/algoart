@@ -62,3 +62,13 @@ for(const {date} of archive.floors){
   assert.deepEqual(a.exhibition,buildPhiRendererPlan(date,studies).exhibition,'Curating must be deterministic');
  });
 }
+
+
+test('future 18- and 20-work editions remain complete through the next month',()=>{
+ for(const count of [18,20])for(let day=27;day<=57;day++){
+  const date=new Date(Date.UTC(2026,9,day)).toISOString().slice(0,10);
+  const studies=Array.from({length:count},(_,id)=>({id,portrait:id%2===0,aspect:id%2===0?1/1.4:1.4}));
+  const p=buildPhiRendererPlan(date,studies);
+  assert.deepEqual(p.checks,{connected:true,count:true,unique:true,inwardFacing:true,clearances:true,unplaced:0},date+' with '+count+' works');
+ }
+});

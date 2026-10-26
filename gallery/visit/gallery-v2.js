@@ -83,6 +83,7 @@ const rig = new THREE.Group();
 scene.add(rig);
 rig.add(camera);
 rig.rotation.y = yaw;
+if(new URLSearchParams(location.search).has('svg-export'))window.__PP_EXPORT_SCENE__={scene,camera,rig,THREE:{Vector3:THREE.Vector3,Matrix4:THREE.Matrix4,Box3:THREE.Box3}};
 
 let renderer;
 try {

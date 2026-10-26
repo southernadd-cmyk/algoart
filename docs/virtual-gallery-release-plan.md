@@ -58,3 +58,14 @@ If startup, navigation, archive placement or asset loading fails, restore the le
 ## Proposed release boundary
 
 The first production release is this validated gallery with the current artwork archive and presentation. Additional architecture, decor and engine changes can continue on staging after cutover. The immediate next implementation task is the shared production entry and reproducible φ bundle; the live URL switch comes after candidate acceptance.
+
+
+## Implementation status
+
+The release candidate promotes the application to `gallery/visit/gallery-phi.js` and its reproducible `gallery-phi-bundle.js`. Staging imports that same application. The matching public template includes reception controls, public styles/assets/credits and the canonical URL; the legacy document is retained as `gallery/visit/legacy.html`.
+
+The unused baked-tower request and legacy scene-construction branch have been removed from the new entry. Interior model downloads start on gallery entry. The SVG export hook is preserved in source for both renderers. The cabinet faces the approach and has a small inner backing behind incomplete scan edges.
+
+Both bundle build targets, automatic rebuild workflows, daily archive validation and Pages deployment validation are wired. Local verification covers 61 existing release tests plus 42 phi/public presentation tests, including all 22 archives and 62 future-date mixes across the month boundary. The browser workflow now exercises the bundled public route, exact dated entry/refresh, full-density desktop and mobile touch input. Its artifact supplies the actual-scene sharing image and render/resource measurements.
+
+The legacy rollback baseline for this candidate is `7230993fc16de3a6fee63866ec1828f909c87f8d`. Candidate browser acceptance and live cutover follow the recorded workflow results.

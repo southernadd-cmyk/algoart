@@ -4,14 +4,17 @@ import {mkdir,writeFile} from 'node:fs/promises';
 await mkdir('phi-tower-results',{recursive:true});
 // Keep the complete desktop scene; halve pixel density for software WebGL in CI.
 const browser=await chromium.launch({headless:true});
+const galleryURL=process.env.PHI_GALLERY_URL||'http://127.0.0.1:4173/gallery/visit/?debug';
+const bundled=!galleryURL.includes('full-engine.html');
+const requests=[];
 let page;
 try{
  page=await browser.newPage({viewport:{width:1365,height:850},deviceScaleFactor:.5});
  const errors=[],warnings=[],threeImports=new Set();
  page.on('pageerror',error=>errors.push(error.message));
  page.on('console',m=>{if(m.type()==='warning')warnings.push(m.text());});
- page.on('request',request=>{if(/\/build\/three\.module\.js(?:\?|$)/.test(request.url()))threeImports.add(request.url());});
- await page.goto('http://127.0.0.1:4173/test/virtual-gallery/full-engine.html?debug',{waitUntil:'domcontentloaded'});
+ page.on('request',request=>{requests.push(request.url());if(/\/build\/three\.module\.js(?:\?|$)/.test(request.url()))threeImports.add(request.url());});
+ await page.goto(galleryURL,{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled || !document.querySelector('#error')?.hidden || window.__galleryStartupError,null,{timeout:90000});
  assert.equal(await page.locator('#error').isVisible(),false,'Gallery startup error visible');
  assert.equal(await page.locator('#enter').isEnabled(),true,'Gallery did not finish preparing');
@@ -27,7 +30,7 @@ try{
  assert.ok(tower?.otherFloors>0&&tower.wallMeshes>tower.otherFloors,'Missing exterior tower');
  assert.ok(await page.evaluate(()=>window.__phiReception?.desk&&window.__phiReception?.information),'Missing ground-floor reception');
  assert.equal(await page.evaluate(()=>window.__phiReceptionCredits?.count),3,'Missing framed credit collection');
- await page.waitForFunction(()=>window.__phiLiftState?.entranceModelLoaded&&window.__phiLiftState?.propsLoaded===3&&window.__phiLiftState?.outdoorPlantsLoaded===4&&window.__phiLiftState?.worldMapLoaded&&window.__phiLiftState?.deskPropsLoaded===2,null,{timeout:45000});
+ await page.waitForFunction(()=>window.__phiLiftState?.entranceModelLoaded&&window.__phiLiftState?.outdoorPlantsLoaded===4,null,{timeout:45000});
  assert.equal(await page.evaluate(()=>window.__phiLiftState.outdoorPlantsReplaced),16,'Low-poly planting was not replaced');
  assert.ok(await page.evaluate(()=>window.__phiReception.worldMap.width>=6),'Missing giant reception map');
  assert.ok(await page.evaluate(()=>{const p=window.__phiReception.growingPoster,c=window.__phiReception.creditPlacement;return Math.abs(p.x-c.x)<.01&&Math.abs(p.z-c.z)<.01&&p.centreY-p.height/2>2.3;}),'Growing Tower poster is not above the credits');
@@ -35,9 +38,15 @@ try{
  await page.waitForFunction(()=>window.__phiSquareGraffiti?.diagnostics().painted===85,null,{timeout:90000});
  const writing=await page.evaluate(()=>({diagnostics:window.__phiSquareGraffiti.diagnostics(),words:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.text))],forms:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.form))],hands:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.hand))]}));
  assert.equal(writing.diagnostics.pending,0);assert.deepEqual(writing.diagnostics.errors,[]);assert.match(writing.diagnostics.revision,/golden-eight/);assert.equal(writing.forms.length,8);assert.ok(writing.hands.length>=25);assert.ok(!writing.hands.includes('loop'),'Excluded Loop profile returned');assert.deepEqual(new Set(writing.words),new Set(['PHI','φ']));
+ await writeFile('phi-tower-results/startup-metrics.json',JSON.stringify(await page.evaluate(()=>({elapsedMs:performance.now(),render:window.__phiRenderStats})),null,2));
  await page.screenshot({path:'phi-tower-results/full-welcome.png'});
  await page.locator('#enter').focus();await page.keyboard.press('Enter');
+ await page.waitForFunction(()=>window.__phiLiftState?.propsLoaded===3&&window.__phiLiftState?.worldMapLoaded&&window.__phiLiftState?.deskPropsLoaded===2,null,{timeout:45000});
  await page.screenshot({path:'phi-tower-results/full-entrance.png'});
+ await page.setViewportSize({width:1200,height:630});
+ const hiddenUI=await page.addStyleTag({content:'body>*:not(#world){visibility:hidden!important}'});
+ await page.evaluate(()=>window.__phiReceptionPreview.overview());await page.screenshot({path:'phi-tower-results/phi-tower-preview.png',scale:'css'});
+ await hiddenUI.evaluate(el=>el.remove());await page.setViewportSize({width:1365,height:850});await page.evaluate(()=>window.__phiReceptionPreview.resume());
  await page.evaluate(()=>window.__phiSquareGraffiti.preview());
  await page.screenshot({path:'phi-tower-results/tagged-square.png'});
  await page.evaluate(()=>window.__phiSquareGraffiti.resume());
@@ -125,8 +134,11 @@ try{
  assert.equal(await page.locator('#error').isVisible(),false);
  await page.setViewportSize({width:390,height:844});
  await page.screenshot({path:'phi-tower-results/full-mobile.png'});
- assert.equal(threeImports.size,1,'Multiple Three.js module URLs');
+ assert.equal(threeImports.size,bundled?0:1,'Unexpected Three.js module requests');
+ assert.ok(!requests.some(u=>/tower-geometry\.bin/.test(u)),'Unused legacy geometry downloaded');
+ if(bundled)assert.ok(!requests.some(u=>/cdn\.jsdelivr|test\/virtual-gallery/.test(u)),'Public runtime depends on CDN scripts or test assets');
  assert.ok(!warnings.some(s=>/Multiple instances of Three\.js/.test(s)),'Duplicate Three.js warning');
+ await writeFile('phi-tower-results/return-metrics.json',JSON.stringify(await page.evaluate(()=>window.__phiRenderStats),null,2));
  assert.equal(errors.length,0,errors.join('; '));
  console.log('Full gallery: 85 mixed square tags in eight forms and golden-angle groups, larger paintings, succulent planters, giant reception map, furnished desk and magazine cabinet, credits heading, smaller welcome, live marker lift indicator, historical rides, free look, doors, failed-load recovery and one Three.js instance passed');
 }catch(error){

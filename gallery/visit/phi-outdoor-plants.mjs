@@ -14,7 +14,7 @@ function isOriginalPlant(mesh,p){
  const g=mesh.geometry;
  return g?.type==='IcosahedronGeometry'||g?.type==='BoxGeometry'&&g.parameters.width===1.75&&g.parameters.height===.69&&g.parameters.depth===1.75;
 }
-export function addPhiOutdoorPlants(THREE,scene,plaza,landscapeRoots,{loadModel=()=>loadPhiDecorAsset(new URL('../../test/virtual-gallery/models/succulent-planter.glb',import.meta.url).href)}={}){
+export function addPhiOutdoorPlants(THREE,scene,plaza,landscapeRoots,{loadModel=()=>loadPhiDecorAsset(new URL('./models/succulent-planter.glb',import.meta.url).href)}={}){
  const placements=planPhiOutdoorPlants(plaza),holders=[],source=loadModel();
  const jobs=placements.map(p=>{
   const backups=[];for(const root of landscapeRoots)root.traverse(o=>{if(isOriginalPlant(o,p))backups.push(o);});

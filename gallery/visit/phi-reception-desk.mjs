@@ -39,11 +39,12 @@ export function addPhiReceptionDesk(THREE,scene,reception,elevation,{concrete}={
  const texture=new THREE.CanvasTexture(label);texture.colorSpace=THREE.SRGBColorSpace;
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.20,.225),new THREE.MeshBasicMaterial({map:texture}));sign.rotation.y=Math.PI;sign.position.set(0,.60,-.72);root.add(sign);
  const cabinetRoot=new THREE.Group();cabinetRoot.name='phi-art-magazine-cabinet';cabinetRoot.position.set(cabinet.x-desk.x,0,cabinet.z-desk.z);cabinetRoot.rotation.y=cabinet.yaw;root.add(cabinetRoot);
- const cabinetJob=loadPhiDecorAsset(new URL('../../test/virtual-gallery/models/magazine-cabinet.glb',import.meta.url).href).then(source=>{
+ const cabinetJob=loadPhiDecorAsset(new URL('./models/magazine-cabinet.glb',import.meta.url).href).then(source=>{
   if(!root.parent||root.userData.galleryDisposed)return;
+  const backing=new THREE.Mesh(new THREE.BoxGeometry(.70,.98,.53),walnut);backing.position.y=.50;backing.name='cabinet-scan-inner-backing';cabinetRoot.add(backing);
   cabinetRoot.add(fitPhiDecorAsset(THREE,source.clone(true),cabinet.height));root.userData.propsLoaded++;
  }).catch(error=>console.warn('Reception magazine cabinet unavailable',error));
- const paperJob=loadPhiDecorAsset(new URL('../../test/virtual-gallery/models/paper-clutter.glb',import.meta.url).href).then(source=>{
+ const paperJob=loadPhiDecorAsset(new URL('./models/paper-clutter.glb',import.meta.url).href).then(source=>{
   if(!root.parent||root.userData.galleryDisposed)return;source.updateMatrixWorld(true);
   for(const p of DESK_PAPERS){const original=source.getObjectByName(p.name);if(!original)throw new Error('Missing paper object '+p.name);
    const model=original.clone(true);original.matrixWorld.decompose(model.position,model.quaternion,model.scale);model.updateMatrix();

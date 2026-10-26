@@ -1,6 +1,6 @@
 // Reception furniture and signage share the physical walls and clearances
 // used by the phi exhibition curator. Coordinates are local to the floor.
-import {exhibitionSurfaces} from './phi-curator.mjs';
+import {exhibitionSurfaces} from './phi-curator.mjs?v=wall-sized-paintings-20261026';
 const distSegment=(x,z,a,b)=>{
  const dx=b.x-a.x,dz=b.z-a.z,t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/(dx*dx+dz*dz||1)));
  return Math.hypot(x-a.x-t*dx,z-a.z-t*dz);
@@ -57,7 +57,7 @@ export function planPhiReception(floor,circulation,physical){
   .sort((a,b)=>Number(b.centre>start.x)-Number(a.centre>start.x)||Math.abs(a.centre-desk.x)-Math.abs(b.centre-desk.x))[0]:null;
  const credits=creditWall?{x:creditWall.centre,z:creditWall.at+.15,axis:creditWall.axis,normal:creditWall.normal}:null;
  if(credits&&signage.length>1)signage[1]={...credits,width:2.65,height:1.3,centreY:3.25,room:desk.room};
- const cabinet=desk?{x:desk.x+.9,z:desk.z-2.2,yaw:Math.PI,height:1.15,width:1.1,depth:.85,kind:'cabinet'}:null;
+ const cabinet=desk?{x:desk.x+.9,z:desk.z-2.2,yaw:-Math.PI*.75,height:1.15,width:1.1,depth:.85,kind:'cabinet'}:null;
  return {desk,cabinet,signage,plants,credits,worldMap,entrance:start,lift:end,checks:{
   deskClear:!desk||distSegment(desk.x,desk.z,start,end)>=2.2,
   signCount:signage.length,passageClear:true

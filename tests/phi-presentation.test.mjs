@@ -87,7 +87,7 @@ import {planPhiOutdoorPlants,addPhiOutdoorPlants} from '../gallery/visit/phi-out
 import {planPhiReception} from '../gallery/visit/phi-reception-layout.mjs';
 import {fitPhiWallModel} from '../gallery/visit/phi-model-assets.mjs';
 import {planCuratedPhiArtwork} from '../gallery/visit/phi-curator.mjs';
-function glbMetadata(name){const b=readFileSync(new URL('../test/virtual-gallery/models/'+name,import.meta.url));assert.equal(b.readUInt32LE(8),b.length);return {bytes:b.length,doc:JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString())};}
+function glbMetadata(name){const b=readFileSync(new URL('../gallery/visit/models/'+name,import.meta.url));assert.equal(b.readUInt32LE(8),b.length);return {bytes:b.length,doc:JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString())};}
 test('outdoor succulent is compact, credited, and replaces all four original planting groups',async()=>{
  const asset=glbMetadata('succulent-planter.glb');assert.ok(asset.bytes<1000000);assert.match(asset.doc.asset.extras.author,/GrrHero/);assert.match(asset.doc.asset.extras.license,/CC-BY-4.0/);
  assert.ok(asset.doc.meshes.reduce((n,m)=>n+m.primitives.reduce((a,p)=>a+asset.doc.accessors[p.indices].count/3,0),0)<18000);
@@ -112,7 +112,7 @@ test('giant map occupies its own reception wall and retains the original credite
  assert.ok(map.width>=6&&map.height>=4);assert.ok(map.centreY-map.height/2>.5&&map.centreY+map.height/2<4.9);
  assert.equal(reception.signage.length,2);assert.ok(reception.signage.every(s=>s.axis!==map.axis||Math.abs((s.axis==='x'?s.x:s.z)-(map.axis==='x'?map.x:map.z))>.3));
  const asset=glbMetadata('vintage-world-map.glb');assert.ok(asset.bytes<300000);assert.match(asset.doc.asset.extras.author,/My Name Is This/);assert.match(asset.doc.asset.extras.license,/CC-BY-4.0/);
- const credits=readFileSync(new URL('../test/virtual-gallery/credits.html',import.meta.url),'utf8');assert.match(credits,/GrrHero/);assert.match(credits,/My Name Is This/);
+ const credits=readFileSync(new URL('../gallery/visit/credits.html',import.meta.url),'utf8');assert.match(credits,/GrrHero/);assert.match(credits,/My Name Is This/);
  const source=new THREE.Group();source.add(new THREE.Mesh(new THREE.BoxGeometry(7.241604,4.768173,.088),new THREE.MeshBasicMaterial()));
  const fitted=fitPhiWallModel(THREE,source,map.width),bounds=new THREE.Box3().setFromObject(fitted),size=bounds.getSize(new THREE.Vector3());
  assert.ok(Math.abs(size.x-map.width)<1e-5);assert.ok(Math.abs(size.y-map.height)<.01);assert.ok(Math.abs(bounds.getCenter(new THREE.Vector3()).y)<1e-5);assert.ok(Math.abs(bounds.min.z)<1e-5);
