@@ -84,3 +84,11 @@ test('every archived edition links to its exact 3D floor',()=>{
   assert.match(legacy,/gallery-bundle\.js/);
   assert.match(legacy,/<base href="\.\.\/\.\.\/gallery\/visit\/">/);
 });
+
+test('production visitor models use the bundled Meshopt decoder',()=>{
+  const visitors=read(resolve(root,'visitors.mjs'));
+  assert.match(visitors,/three\\/addons\\/libs\\/meshopt_decoder\\.module\\.js/);
+  assert.doesNotMatch(visitors,/import\\(['\"]https?:\\/\\//);
+  const bundle=read(resolve(root,'gallery-phi-bundle.js'));
+  assert.doesNotMatch(bundle,/cdn\\.jsdelivr\\.net\\/npm\\/meshoptimizer/);
+});
