@@ -93,3 +93,62 @@ export function planCuratedPhiArtwork(floor,circulation,physical,studies){
      inwardFacing:wallPlacements.every(p=>pointInRoom(floor.mergedRooms[p.room],
        p.x+p.normal.x*.1,p.z+p.normal.z*.1))}};
 }
+
+/** Curate portrait sculptures after the wall hang, reserving visitor sightlines. */
+export function planCuratedPhiExhibition(floor,circulation,physical,studies){
+ const hang=planCuratedPhiArtwork(floor,circulation,physical,studies);
+ const sculptures=[],rejected=[];
+ const doors=[...circulation.doors,...(circulation.bridgePortals||[])];
+ const lift=circulation.lift;
+ const roomCounts=[...hang.roomCounts];
+ function safe(room,x,z){
+  const radius=1.15;
+  // Clearance must work on all four sides of each installation.
+  if(![[0,0],[radius,0],[-radius,0],[0,radius],[0,-radius]].every(([dx,dz])=>pointInRoom(room,x+dx,z+dz)))return false;
+  if(Math.hypot(x-lift.x,z-lift.z)<3.0)return false;
+  if(doors.some(d=>distanceToDoor({x,z},d)<2.6))return false;
+  if(physical.walls.some(w=>w.axis==='x'?
+    Math.abs(x-w.at)<1.6&&z>w.lo-1.4&&z<w.hi+1.4:
+    Math.abs(z-w.at)<1.6&&x>w.lo-1.4&&x<w.hi+1.4))return false;
+  if((circulation.bridges||[]).some(b=>b.axis==='x'?
+    x>b.from-1.8&&x<b.to+1.8&&Math.abs(z-b.centre)<b.width/2+1.3:
+    z>b.from-1.8&&z<b.to+1.8&&Math.abs(x-b.centre)<b.width/2+1.3))return false;
+  if(sculptures.some(p=>Math.hypot(x-p.x,z-p.z)<3.1))return false;
+  // Leave a 2 m observation corridor in front of displayed paintings.
+  if(hang.paintings.some(p=>p.room===room.index&&
+     (p.axis==='x'?Math.abs(z-p.u)<p.width/2+.65&&Math.abs(x-p.at)<2.35:
+      Math.abs(x-p.u)<p.width/2+.65&&Math.abs(z-p.at)<2.35)))return false;
+  return true;
+ }
+ for(const study of studies.filter(s=>s.portrait)){
+  let best=null;
+  for(let i=0;i<floor.mergedRooms.length;i++){
+   const room=floor.mergedRooms[i];
+   for(const p of room.pieces){
+    for(const fx of [INV_PHI,1-INV_PHI,.5])for(const fz of [INV_PHI,1-INV_PHI,.5]){
+     const x=p.x+p.w*fx,z=p.z+p.h*fz;
+     if(!safe({...room,index:i},x,z))continue;
+     const clearance=Math.min(x-p.x,p.x+p.w-x,z-p.z,p.z+p.h-z);
+     const score=clearance*.35-roomCounts[i]*2.2+
+       Math.min(3,Math.hypot(x-lift.x,z-lift.z))*.1;
+     if(!best||score>best.score)best={studyId:study.id,room:i,x,z,width:1.42,depth:1.32,score};
+    }
+   }
+  }
+  if(best){const {score,...placed}=best;sculptures.push(placed);roomCounts[best.room]++;}
+  else rejected.push(study);
+ }
+ const unplaced=[...hang.unplaced,...rejected];
+ const ids=[...hang.paintings,...sculptures].map(a=>a.studyId);
+ return {...hang,sculptures,unplaced,roomCounts,checks:{...hang.checks,
+   unique:new Set(ids).size===ids.length,
+   complete:unplaced.length===0&&ids.length===studies.length,
+   sculptureCount:sculptures.length,
+   sculptureClearances:sculptures.every(s=>safeWithoutSelf(s))}};
+ function safeWithoutSelf(s){
+  const at=sculptures.indexOf(s);sculptures.splice(at,1);
+  const ok=safe({...floor.mergedRooms[s.room],index:s.room},s.x,s.z);
+  sculptures.splice(at,0,s);
+  return ok;
+ }
+}
