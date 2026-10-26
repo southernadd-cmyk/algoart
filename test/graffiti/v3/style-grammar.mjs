@@ -1,6 +1,8 @@
 // Experimental family-aware word construction. Production and V2 remain immutable.
 import {composeLoopsWord} from './loops-library.mjs';
-export const GRAMMAR_REVISION='family-composition-01';
+import {composeBroadNib} from './broadnib-library.mjs';
+import {composeRectilinear} from './rectilinear-library.mjs';
+export const GRAMMAR_REVISION='family-composition-02';
 export const RULES=Object.freeze({
  A:{name:'interlocked',pairs:['PR','RO','OP','OR','PI','IE'],curvature:.36,width:5.0},
  B:{name:'arrow-cross',pairs:['PR','RO','RT','TI','IE'],curvature:-.55,width:2.7},
@@ -14,6 +16,8 @@ export const RULES=Object.freeze({
 const hash=s=>{let h=2166136261;for(const ch of s)h=Math.imul(h^ch.charCodeAt(0),16777619);return(h>>>0)/4294967296};
 export function composeStyleWord(family,plan,{seed='V3',mode='restrained'}={}){
  if(family==='G')return composeLoopsWord(plan,{seed,mode});
+ if(family==='F')return composeBroadNib(plan,{seed,mode});
+ if(family==='D')return composeRectilinear(plan,{seed,mode});
  if(!RULES[family])throw new RangeError('Unknown family');
  if(!['none','restrained','expressive'].includes(mode))throw new RangeError('Unknown mode');
  const rule=RULES[family],letters=plan.letters.map(item=>({...item,variant:'plain',shapes:item.glyph.shapes})),shared=[],connectors=[];
