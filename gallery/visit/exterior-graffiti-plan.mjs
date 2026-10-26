@@ -5,8 +5,8 @@ import {makeTowerFamilyTag,towerGraffitiSignature,TOWER_LETTERING_REVISION} from
 import {ROOM_HEIGHT} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
 import {TOWER_HANDS,towerHandCycle,towerTagSlot} from './tower-graffiti-styles.mjs';
-export const GRAFFITI_WORDS=Object.freeze(['Proportion Piece','PHI','φ']);
-export const GRAFFITI_SEED='PP-TOWER-WRITING-01';
+export const GRAFFITI_WORDS=Object.freeze(['φ']);
+export const GRAFFITI_SEED='PP-TOWER-PHI-ONLY-02';
 export const WALL_MARGIN=.52;
 export const TAGS_PER_PAINTED_FLOOR=5;
 const SIDES=['north','south','east','west'];
@@ -52,8 +52,8 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
    towerTagSlot({floorId:plan.date,seed:seed+'|slot|'+slot,slot,hand:styles[slot]}));
   for(const item of selection){
    const phrase=GRAFFITI_WORDS[(firstWord+item.slot)%GRAFFITI_WORDS.length];
-   const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:2}),r=makeRandom(item.seed+'|wall');
-   const desiredWidth=phrase==='Proportion Piece'?r.range(5.7,6.9):phrase==='PHI'?r.range(2.4,3.5):r.range(1.5,2.1);
+   const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:1.2+(item.slot%7)*.3}),r=makeRandom(item.seed+'|wall');
+   const desiredWidth=r.range(1.2,3.4);
    const candidates=faces.map(face=>{
     const placement=fitPhiTag({bounds:tag.bounds,desiredWidth,maxHeight:ROOM_HEIGHT-1.5,
      lo:-face.length/2+WALL_MARGIN,hi:face.length/2-WALL_MARGIN,bottom:.65,top:ROOM_HEIGHT-.55,slot:item.slot,phase});
@@ -97,12 +97,10 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
    // Nine approved families cover ten facade tags; repeat only after exhaustion.
    occupied.add(hand);
    const item=towerTagSlot({floorId:plan.date,seed:seed+'|front-freehand|'+slot,slot,hand});
-   const phrase=extra<5?GRAFFITI_WORDS[(extra+level)%GRAFFITI_WORDS.length]:extra<10?['Proportion','Piece','PHI','φ','Proportion Piece'][extra-5]:['Proportion','Piece','Proportion Piece','PHI','φ'][extra-10];
-   if(phrase==='Piece')continue;
-   const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:2});
+   const phrase='φ';
+   const tag=makeTowerFamilyTag(phrase,{...item,paintWidth:.85+(slot%9)*.36});
    const r=makeRandom(item.seed+'|front-wall'),epic=extra>=10&&extra<=12;
-   const desiredWidth=epic?(phrase==='Proportion Piece'?r.range(8,10.5):phrase==='Proportion'?r.range(7,9.5):r.range(5.5,7.5)):
-    phrase==='Proportion Piece'?r.range(3.2,4.3):phrase==='PHI'?r.range(1.7,2.5):phrase==='Proportion'?r.range(3,4.1):phrase==='Piece'?r.range(2.2,3.1):r.range(1.1,1.6);
+   const desiredWidth=epic?r.range(4.0,7.2):r.range(.9,3.2);
    // Try several phi-phased placements on each wall rather than stacking
    // every additional mark at the same five golden fractions.
    const placed=candidates.flatMap(face=>Array.from({length:epic?30:18},(_,attempt)=>{
