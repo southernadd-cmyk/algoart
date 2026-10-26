@@ -4,10 +4,11 @@
 // Unlike the earlier procedural font, glyph geometry is supplied independently
 // for each of the 26 letters and φ, by the approved Phase D family study.
 // Versioned seeds and atlas signatures prevent stale PNGs from shadowing v1.
-import {composeWord,getFamily} from '../../test/graffiti/family-library.mjs';
+import {composeWord,getFamily} from '../../test/graffiti/v2/v2-library.mjs';
+import {wordPlan,showGesture,limitJoins,exitContinuations} from '../../test/graffiti/v2/word-flow.mjs';
 import {contextualJoinLayer} from '../../test/graffiti/family-joins.mjs';
 
-export const TOWER_LETTERING_REVISION='az-nine-v1-20261025';
+export const TOWER_LETTERING_REVISION='az-nine-v2-20261026';
 const NS='http://www.w3.org/2000/svg';
 const SVG_STROKE_CACHE=new Map(),PATH_CACHE=new Map();
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -15,7 +16,7 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function makeTowerFamilyTag(text,{hand='A',seed='PP-TOWER',ink='#2b2c29',finish='spray',paintWidth=2}={}){
  const family=getFamily(hand);
  const versionedSeed=seed+'|'+TOWER_LETTERING_REVISION;
- const plan=composeWord(hand,text,{seed:versionedSeed,variation:.04});
+ const plan=wordPlan(family,composeWord(hand,text,{seed:versionedSeed,variation:.04}));
  const bounds={x:-32,y:-35,width:plan.width+61,height:189};
  return {
   renderer:'az-nine-v1',version:TOWER_LETTERING_REVISION,
@@ -105,11 +106,11 @@ export function drawTowerFamilyTag(ctx,tag,{finish='spray',joins=true}={}){
   ctx.rotate(item.rotation*Math.PI/180);
   ctx.translate(-38,-54);
   ctx.transform(item.scale,0,f.italic,1,0,0);
-  for(const s of item.glyph.shapes)drawStroke(ctx,s,f);
+  for(const s of item.glyph.shapes)if(showGesture(f,item,s,plan))drawStroke(ctx,s,f);
   ctx.restore();
  }
  if(joins){
-  const layer=contextualJoinLayer(f,plan,{seed:plan.seed,enabled:true});
+  const layer=['A','F','G'].includes(f.id)?exitContinuations(f,plan,{seed:plan.seed,enabled:true}):limitJoins(f,contextualJoinLayer(f,plan,{seed:plan.seed,enabled:f.id!=='E'}),plan);
   for(const path of layer.querySelectorAll('path')){
    ctx.save();
    ctx.lineCap='round';ctx.lineJoin='round';
