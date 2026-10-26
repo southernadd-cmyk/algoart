@@ -950,7 +950,11 @@ function onArrivalPath(x,z){
   const along=dx*arrival.outward.x+dz*arrival.outward.z;
   const across=Math.abs(dx*arrival.outward.z-dz*arrival.outward.x);
   // Overlap the room footprint slightly to make crossing the threshold continuous.
-  return along>=-1.0&&along<=arrival.pathLength+1.5&&across<=arrival.halfWidth;
+  // The public plaza is 46m across and 38m deep, not merely the entrance route.
+  // Retain the narrower threshold overlap so visitors cannot cross solid facade walls.
+  const plaza=along>=0&&along<=37.55&&across<=22.55;
+  const doorway=along>=-1.0&&along<=1.0&&across<=arrival.halfWidth;
+  return plaza||doorway;
 }
 // Stage costly exhibits across frames so the exterior is usable immediately.
 function startDeferredGallery(){
