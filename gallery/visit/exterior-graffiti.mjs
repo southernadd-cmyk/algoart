@@ -96,9 +96,9 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
     shader.vertexShader='attribute vec2 wallUv;\nvarying vec2 vGraffitiWallUv;\n'+shader.vertexShader;
     shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvGraffitiWallUv=wallUv;');
     shader.fragmentShader='uniform sampler2D graffitiBrick;\nvarying vec2 vGraffitiWallUv;\n'+shader.fragmentShader;
-    shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nfloat wallGrain=dot(texture2D(graffitiBrick,vGraffitiWallUv).rgb,vec3(.2126,.7152,.0722));\ndiffuseColor.a*=.72+.28*clamp(wallGrain*1.6,0.,1.);');
+    shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\n'+(kind==='exterior'?"vec3 wallPaint=texture2D(graffitiBrick,vGraffitiWallUv).rgb;\nfloat wallLuma=dot(wallPaint,vec3(.2126,.7152,.0722));\nfloat mortar=smoothstep(.48,.72,wallLuma);\nfloat surfaceVariation=clamp(wallLuma*1.35,0.,1.);\nfloat paintLight=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722));\nfloat staining=mix(.23,.09,paintLight);\ndiffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*wallPaint*1.35,staining);\ndiffuseColor.rgb*=.90+.13*surfaceVariation;\ndiffuseColor.rgb=mix(diffuseColor.rgb,wallPaint,mortar*.055);\ndiffuseColor.a*=(.75+.2*surfaceVariation)*(1.-.19*mortar);":'float wallGrain=dot(texture2D(graffitiBrick,vGraffitiWallUv).rgb,vec3(.2126,.7152,.0722));\ndiffuseColor.a*=.72+.28*clamp(wallGrain*1.6,0.,1.);'));
    };
-   material.customProgramCacheKey=()=> 'tower-spray-brick-v1';
+   material.customProgramCacheKey=()=> 'tower-spray-brick-v2';
    for(const entry of page.entries){const parts=graffitiPaintParts(entry.mark.tag);parts.forEach((tag,index)=>pending.push({page,entry,tag,last:index===parts.length-1}));}
    return page;
   });
