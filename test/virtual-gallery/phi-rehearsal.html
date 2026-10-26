@@ -91,6 +91,7 @@ function paint(svg,plan,showRooms,circulation,physical,voids,artwork){
   text.textContent=room.id.replace('gallery-','room ');
  }
 }
+const requestedDate=new URLSearchParams(location.search).get('date');if(requestedDate&&/^20\d{2}-\d{2}-\d{2}$/.test(requestedDate))el('date').value=requestedDate;
 let requestId=0;
 async function draw(){const request=++requestId;el('facts').textContent='Loading archived artworks…';try{const date=el('date').value;const studies=await loadPhiArchive(date);if(request!==requestId)return;el('artworks').value=studies.length;const plan=planPhiFloor(date,{artworks:studies.length,variation:Number(el('variation').value)});const result=planPhiBridges(plan),floor=result.plan,circulation=planPhiCirculation(floor);circulation.bridges=result.bridges;circulation.bridgePortals=result.bridges.flatMap(b=>[{axis:b.axis,at:b.from,centre:b.centre,width:b.width},{axis:b.axis,at:b.to,centre:b.centre,width:b.width}]);const physical=buildPhysicalPhiFloor(floor,circulation);const legacy=planPhiArtwork(floor,circulation,physical,studies);const curated=planCuratedPhiExhibition(floor,circulation,physical,studies);
 // Show curator diagnostics without silently hiding unplaced studies.
