@@ -46,12 +46,16 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
+      - name: Refresh generated bundles in deployment workspace
+        run: |
+          npm run gallery:bundle
+          npm run gallery:bundle:phi
       - name: Validate public gallery before uploading the site
         run: |
           node automation/validate-phi-archive.mjs
           node --test tests/gallery-public-launch.test.mjs tests/phi-full-engine-adapter.test.mjs tests/phi-presentation.test.mjs
-          npm run gallery:bundle:check
-          npm run gallery:bundle:phi:check
+          node --check gallery/visit/gallery-bundle.js
+          node --check gallery/visit/gallery-phi-bundle.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
