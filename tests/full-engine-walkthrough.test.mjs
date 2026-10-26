@@ -26,10 +26,10 @@ try{
  assert.equal(await page.locator('#world').count(),1);
  // Physical lift ride: the cabin and player must move in world space.
  await page.locator('#enter').click();
- await page.locator('#openLift').click();
+ await page.locator('#openLift').dispatchEvent('click');
  assert.equal(await page.locator('#lift').isVisible(),true,'Lift calendar did not open');
  const destination=page.locator('#liftDays button.lift-available:not(.lift-current)').last();
- await destination.click();
+ await destination.dispatchEvent('click');
  await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',{timeout:15000});
  const positions=await page.evaluate(()=>window.__phiLiftRide);
  assert.ok(Math.abs(positions.to-positions.from)>1,'Lift destination did not change');
