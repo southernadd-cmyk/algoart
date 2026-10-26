@@ -26,7 +26,7 @@ try{
  await fs.mkdir(path.join(root,'artifacts'),{recursive:true});
  for(const id of 'ABCDEFGHI'){
   await page.locator('#family').selectOption(id);
-  for(const word of ['MUSHROOM','PHI','φ','PROPORTION PIECE','SKUF']){
+  for(const word of ['MUSHROOM','PHI','φ','PROPORTION PIECE','SKUF','FAST','NASH','MIME']){
    await page.locator('#word').fill(word);
    const a=await page.locator('#v1 svg').evaluate(s=>s.outerHTML);
    const b=await page.locator('#v2 svg').evaluate(s=>s.outerHTML);
@@ -35,7 +35,7 @@ try{
     const src=id=>[...document.querySelectorAll('#'+id+' svg path')].map(p=>p.getAttribute('d')).join('|');
     return src('v1')===src('v2');
    });
-   if(id!=='D'&&id!=='E')assert.equal(samePaths,true,'Control geometry changed in '+id+' / '+word);
+   if(!'DEFI'.includes(id))assert.equal(samePaths,true,'Control geometry changed in '+id+' / '+word);
   }
  }
  await page.locator('#family').selectOption('E');
@@ -50,11 +50,25 @@ try{
  await page.locator('#word').fill('PIECE');
  assert.ok(await page.evaluate(()=>document.querySelector('#v1 svg').outerHTML!==document.querySelector('#v2 svg').outerHTML));
  await page.screenshot({path:path.join(root,'artifacts/graffiti-v2-pilot-block.png'),fullPage:true});
+ await page.locator('#family').selectOption('F');
+ await page.locator('#word').fill('FAST');
+ assert.ok(await page.evaluate(()=>{
+  const src=id=>[...document.querySelectorAll('#'+id+' svg path')].map(p=>p.getAttribute('d')).join('|');
+  return src('v1')!==src('v2');
+ }),'Sheet 59 broad-nib A/S edits absent from FAST');
+ await page.screenshot({path:path.join(root,'artifacts/graffiti-v2-pilot-calligraffiti.png'),fullPage:true});
+ await page.locator('#family').selectOption('I');
+ await page.locator('#word').fill('MIME');
+ assert.ok(await page.evaluate(()=>{
+  const src=id=>[...document.querySelectorAll('#'+id+' svg path')].map(p=>p.getAttribute('d')).join('|');
+  return src('v1')!==src('v2');
+ }),'Sheet 10 chisel M edit absent from MIME');
+ await page.screenshot({path:path.join(root,'artifacts/graffiti-v2-pilot-chisel.png'),fullPage:true});
  await page.setViewportSize({width:390,height:844});
  const dimensions=await page.evaluate(()=>({screen:innerWidth,scroll:document.documentElement.scrollWidth}));
  assert.ok(dimensions.scroll<=dimensions.screen+2,'Mobile overflow');
  await page.screenshot({path:path.join(root,'artifacts/graffiti-v2-pilot-mobile.png'),fullPage:true});
  assert.deepEqual(problems,[]);
- console.log(JSON.stringify({ok:true,families:9,comparedWords:45,editedLetters:['D:E','E:H','E:M'],screenshots:3,mobile:dimensions,problems}));
+ console.log(JSON.stringify({ok:true,families:9,comparedWords:72,editedLetters:['D:E','D:H','D:S','E:A','E:H','E:M','E:N','F:A','F:S','I:M'],screenshots:5,mobile:dimensions,problems}));
 }catch(e){console.error('V2 pilot browser check failed',e,problems);process.exitCode=1}
 finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
