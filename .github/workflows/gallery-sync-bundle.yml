@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/gallery-sync-bundle.yml'
+      - 'gallery/visit/tower-family-lettering.mjs'
+      - 'gallery/visit/tower-graffiti-styles.mjs'
   workflow_dispatch:
 permissions:
   contents: write
