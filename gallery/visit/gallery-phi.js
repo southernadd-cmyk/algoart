@@ -17,6 +17,7 @@ import { planGalleryHangs } from './hanging-v3.mjs?v=reserve-glazed-door-walls-2
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
 import {addPermanentPlazaSculptures} from './plaza-monuments.mjs';
 import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=prebaked-sculptures-20261023';
+import { createPhiSculptureStager } from './phi-sculpture-stage.mjs?v=lift-stage-20261026';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
 import {placeCastIronStreetLamp,enableDetailedStreetLamps} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
@@ -313,6 +314,38 @@ function addBridge(hall) {
 }
 // Restrict simultaneous downloads/decodes on phones; artwork is never omitted.
 const mobileImages=matchMedia('(pointer:coarse)').matches;
+// Sculptures for the next floor are created off-scene while the lift travels.
+// Detached geometry is handed to the active floor before the doors open.
+const phiSculptureWorkshop=new THREE.Group();
+const phiSculptureStage=createPhiSculptureStager({
+ schedule:callback=>requestAnimationFrame(callback),
+ create:({study,placement})=>createPortraitSculpture({
+  scene:phiSculptureWorkshop,study,placement,
+  quality:mobileImages?'mobile':'desktop',labelTexture
+ }),
+ dispose:({pivot})=>{
+  if(!pivot)return;
+  const geometries=new Set(),materials=new Set(),textures=new Set();
+  pivot.traverse(object=>{
+   object.userData.galleryDisposed=true;
+   if(object.geometry && !object.geometry.userData?.galleryPersistent)geometries.add(object.geometry);
+   const assigned=Array.isArray(object.material)?object.material:[object.material];
+   for(const material of assigned){
+    if(material?.isMaterial && !material.userData.galleryPersistent &&
+       material!==galleryFinish.plinth && material!==galleryFinish.trims)
+      materials.add(material);
+   }
+  });
+  pivot.parent?.remove(pivot);
+  for(const material of materials){
+   for(const value of Object.values(material))if(value?.isTexture)textures.add(value);
+   material.dispose();
+  }
+  for(const texture of textures){texture.dispose();texture.userData.galleryBitmap?.close?.();}
+  for(const geometry of geometries)geometry.dispose();
+ }
+});
+if(GALLERY_DEBUG)window.__phiSculptureStage=()=>phiSculptureStage.stats();
 // Prepare only the destination floor's paintings while the lift travels.
 const phiArtworkPreloader=createPhiArtworkPreloader(undefined,{concurrency:mobileImages?2:4});
 if(GALLERY_DEBUG)window.__phiArtworkPreload=()=>phiArtworkPreloader.stats();
@@ -910,6 +943,13 @@ async function travelLift(date,index){
   phiArtworkPreloader.start(date,prepared.nextPlan.phi.exhibition.paintings
    .map(p=>byId.get(p.studyId)).filter(Boolean)
    .map(study=>study.imageOptimized||study.image).filter(Boolean));
+  // Prepare a detached pedestal and traced portrait relief each animation
+  // frame while the lift is closing and moving. This is never in the live
+  // scene until the destination has been constructed and rotated.
+  phiSculptureStage.start(date,prepared.nextPlan.phi.exhibition.sculptures
+   .map(p=>({id:p.studyId,study:byId.get(p.studyId),
+    placement:{...p,y:prepared.elevation,yaw:0}}))
+   .filter(item=>item.study));
   while(liftDoorClosure<.998)await new Promise(resolve=>setTimeout(resolve,30));
   if(plan?.phi){
    await startPhiCabinRide(index);
@@ -935,6 +975,7 @@ async function travelLift(date,index){
   if(window.__phiLiftRide)window.__phiLiftRide.status='opening';
  }catch(error){
   phiArtworkPreloader.clear();
+  phiSculptureStage.clear();
   if(exhibitDate!==departure.date){
    try{await loadEdition(departure.date,{rollback:true});}
    catch(recoveryError){console.error('[Phi lift] departure recovery failed',recoveryError);}
@@ -1449,10 +1490,18 @@ function constructPhiGallery(layout,studies){
   const study=byId.get(p.studyId);if(!study)continue;
   const placement={...p,y:elevation,yaw:0};
   sculpturePlacements.push(placement);
-  deferredGalleryJobs.push(()=>{
-    createPortraitSculpture({scene,study,placement,
-      quality:matchMedia('(pointer:coarse)').matches?'mobile':'desktop',labelTexture});
-  });
+  const staged=phiSculptureStage.take(exhibitDate,study.id);
+  if(staged?.pivot){
+   // Pivot remains in floor-local coordinates here. The existing
+   // transformPhiActiveFloor rotates it with the rest of the exhibition.
+   scene.add(staged.pivot);
+  }else{
+   // Direct date links, slow background tabs and failed preparations still
+   // use the original reliable incremental construction path.
+   deferredGalleryJobs.push(()=>createPortraitSculpture({
+    scene,study,placement,quality:mobileImages?'mobile':'desktop',labelTexture
+   }));
+  }
   artExhibits.push({study,position:new THREE.Vector3(p.x,elevation+1.5,p.z)});
  }
  // The shaft landing is an actual collision surface; the full gallery lift UI
@@ -1856,6 +1905,9 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
     throw error;
   }
   GALLERY_DEBUG&&console.info('[Gallery performance] scene construction',Math.round(performance.now()-constructionStart)+'ms','floors',archiveDates.length);
+  // All staged sculpture pivots have either been attached or replaced by
+  // deferred fallbacks. Dispose any unused detached objects now.
+  if(viaLift)phiSculptureStage.clear();
   if(plan.phi)constructPhiTowerShell();
   // Give the optimised entrance lamps priority over deferred artworks/visitors.
   if(currentFloor===0)enableDetailedStreetLamps();
