@@ -798,11 +798,11 @@ async function travelLift(date,index){
   if(!xrRide)document.exitPointerLock?.();
   const overlay=$('liftAnimation');
   // Travel feedback is a single transient status, never another floor picker.
-  if(!xrRide)overlay.hidden=false;
   liftArrivalOpening=false;
   setLiftDoors(true);
   // Close the physical leaves in view before replacing the destination floor.
   await new Promise(resolve=>setTimeout(resolve,850));
+  if(!xrRide)overlay.hidden=false;
   const current=Math.max(0,archiveDates.indexOf(exhibitDate));
   $('liftDirection').textContent=(index>current?'Ascending':'Descending')+' · '+Math.abs(index-current)+' floors';
   overlay.classList.toggle('descending',index<current);
