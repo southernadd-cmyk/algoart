@@ -1160,7 +1160,9 @@ function constructPhiTowerShell(){
  const append=(w,h,d,x,y,z,mat)=>{
   if(w<=0||h<=0||d<=0)return;
   staticBoxes++;
-  if(PHI_BATCH_SHELL){
+  // Transparent panes stay as individually sorted meshes, as in the
+  // original renderer; only opaque boxes enter combined buffer geometries.
+  if(PHI_BATCH_SHELL&&!mat.transparent){
    const p=shellTransform.toWorld(x,z);
    if(!currentBatch.has(mat))currentBatch.set(mat,[]);
    currentBatch.get(mat).push([w,h,d,p.x,y,p.z,shellTransform.theta]);
@@ -1225,7 +1227,8 @@ function constructPhiTowerShell(){
    append(b.axis==='x'?b.length:b.width,.045,b.axis==='z'?b.length:b.width,
       b.axis==='x'?mid:b.centre,y+3.1,b.axis==='z'?mid:b.centre,walkwayGlassMaterials.glass);
   }
-  if(!PHI_BATCH_SHELL)for(const object of shell.children.slice(floorStart)){
+  // Includes individual transparent panes in both comparison modes.
+  for(const object of shell.children.slice(floorStart)){
    const p=wt.toWorld(object.position.x,object.position.z);
    object.position.x=p.x;object.position.z=p.z;object.rotation.y+=wt.theta;
   }
@@ -1239,7 +1242,7 @@ function constructPhiTowerShell(){
  window.__phiTowerExterior={
   otherFloors:count,wallMeshes:shell.children.length,staticBoxes,
   staticBatches:PHI_BATCH_SHELL?staticBatches:staticBoxes,
-  batching:PHI_BATCH_SHELL?'three-floor chunks':'individual meshes'
+  batching:PHI_BATCH_SHELL?'opaque three-floor chunks':'individual meshes'
  };
 }
 function queuePhiFurnishings(phi,furnishings,elevation){
