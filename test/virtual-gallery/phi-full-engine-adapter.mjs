@@ -26,7 +26,9 @@ export function buildPhiRendererPlan(date,studies,{variation=0}={}){
  const exhibition=planCuratedPhiExhibition(floor,circulation,physical,studies);
  const pieces=floor.mergedRooms.flatMap((room,i)=>room.pieces.map(p=>({...p,room:i})));
  const portals=[...circulation.doors,...circulation.bridgePortals];
- const inside=(x,z,pad=WALK_RADIUS)=>pieces.some(p=>x>=p.x+pad&&x<=p.x+p.w-pad&&z>=p.z+pad&&z<=p.z+p.h-pad);
+ // Do not shrink individual golden cells: their internal seams are not walls.
+ // Collision against the physical wall segments provides the visitor clearance.
+ const inside=(x,z)=>pieces.some(p=>x>=p.x&&x<=p.x+p.w&&z>=p.z&&z<=p.z+p.h);
  const overBridge=(x,z,pad=WALK_RADIUS)=>bridges.some(b=>
   b.axis==='x'
    ?x>=Math.min(b.from,b.to)-.1&&x<=Math.max(b.from,b.to)+.1&&Math.abs(z-b.centre)<=b.width/2-pad
