@@ -30,9 +30,17 @@ test('All words remain deterministically positioned, no silent V1 geometry chang
  for(const f of v2)for(const word of words){
   const a=composeV1(f.id,word,{seed:'fixed',variation:.04});
   const b=composeV2(f.id,word,{seed:'fixed',variation:.04});
-  assert.deepEqual([b.word,b.width,b.height],[a.word,a.width,a.height]);
-  assert.deepEqual(b.letters.map(l=>[l.ch,l.x,l.y,l.rotation,l.scale]),
-   a.letters.map(l=>[l.ch,l.x,l.y,l.rotation,l.scale]));
+  if(f.id==='B'){
+   assert.equal(b.word,a.word);
+   assert.equal(b.height,a.height);
+   assert.notEqual(b.width,a.width,'Source correction must change heavy marker tracking');
+   assert.deepEqual(b.letters.map(l=>[l.ch,l.y,l.rotation,l.scale]),
+    a.letters.map(l=>[l.ch,l.y,l.rotation,l.scale]));
+  }else{
+   assert.deepEqual([b.word,b.width,b.height],[a.word,a.width,a.height]);
+   assert.deepEqual(b.letters.map(l=>[l.ch,l.x,l.y,l.rotation,l.scale]),
+    a.letters.map(l=>[l.ch,l.x,l.y,l.rotation,l.scale]));
+  }
   assert.deepEqual(b,composeV2(f.id,word,{seed:'fixed',variation:.04}));
  }
 });
