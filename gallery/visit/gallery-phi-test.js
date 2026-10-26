@@ -1101,7 +1101,27 @@ function constructPhiGallery(layout,studies){
    block(len,ROOM_HEIGHT,.035,c,elevation+ROOM_HEIGHT/2,w.at+side*.113,galleryFinish.exteriorBrick);
   }
  }
- for(const p of phi.pieces)block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,ceilingFinish);
+ for(const p of phi.pieces){
+  block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,ceilingFinish);
+  // Restrained ceiling cornice and transverse joints from the live gallery.
+  for(const x of [p.x,p.x+p.w])block(.09,.15,p.h,x,elevation+ROOM_HEIGHT-.05,p.z+p.h/2,join);
+  for(const z of [p.z,p.z+p.h])block(p.w,.15,.09,p.x+p.w/2,elevation+ROOM_HEIGHT-.05,z,join);
+ }
+ // Share the production spotlight fixture loader, limiting fixtures to
+ // larger merged rooms rather than the many phi subdivision cells.
+ const lightRooms=phi.floor.mergedRooms.filter(r=>r.pieces?.length);
+ for(const room of lightRooms.slice(0,galleryFinish.lowPower?3:7)){
+  const cell=[...room.pieces].sort((a,b)=>b.w*b.h-a.w*a.h)[0];
+  if(!cell||cell.w<3||cell.h<3)continue;
+  const centre=new THREE.Vector3(cell.x+cell.w/2,elevation+ROOM_HEIGHT-.035,cell.z+cell.h/2);
+  const mount=new THREE.Group();mount.position.copy(centre);scene.add(mount);
+  const fallback=block(.66,.12,.28,centre.x,centre.y-.1,centre.z,join);
+  placeTwinSpotlight(THREE,mount,new THREE.Vector3(centre.x,elevation+1.45,centre.z),fallback);
+  const light=new THREE.SpotLight(0xfff3df,12,12,.66,.8,1.5);
+  light.position.set(centre.x,elevation+ROOM_HEIGHT-.2,centre.z);
+  light.target.position.set(centre.x,elevation+1.1,centre.z);
+  scene.add(light,light.target);
+ }
  // Put visible portal frames on the exact holes created in the collision walls.
  for(const d of [...phi.circulation.doors,...phi.circulation.bridgePortals]){
   const half=d.width/2,head=elevation+3.1;
@@ -2201,14 +2221,15 @@ function detectArt(elapsed) {
   const text='Floor '+(currentFloor===0?'G':currentFloor)+(current>=0?' · Gallery '+(current+1):' · Walkway');
   if(status.textContent!==text)status.textContent=text;
 }
+let phiFrameSerial=0;
 function tick() {
   if (!renderer) return;
   const dt=Math.min(clock.getDelta(),.055);
-  towerGraffiti.paintNext();
-  interiorGraffiti.paintNext();
+  if((phiFrameSerial++&1)===0)towerGraffiti.paintNext();
+  else interiorGraffiti.paintNext();
   // Three.js supplies both desktop and XR frames here. Window animation
   // frames can pause in immersive VR, so build exhibits on this loop instead.
-  processDeferredGallery();
+  if(dt<.030||phiFrameSerial%8===0)processDeferredGallery();
   animateLiftDoors(dt);
   entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
