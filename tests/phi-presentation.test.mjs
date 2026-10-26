@@ -52,14 +52,14 @@ test('lift indicator follows physical floors in both directions and retains arch
 test('square writing mixes eight lettering forms, independent hands and lowercase phi in golden-angle groups',()=>{
  const objects=planPhiSquare(),marks=planSquareTags(objects);
  assert.equal(objects.filter(o=>o.kind==='wall').length,4);assert.equal(objects.filter(o=>o.kind==='monument').length,3);assert.equal(marks.length,85);
- assert.deepEqual(planSquareTags(objects),marks);assert.deepEqual(new Set(marks.map(m=>m.phrase)),new Set(['ph-i','φ']));
+ assert.deepEqual(planSquareTags(objects),marks);assert.deepEqual(new Set(marks.map(m=>m.phrase)),new Set(['φ']));
  assert.deepEqual(new Set(marks.map(m=>m.form)),new Set(SQUARE_TAG_FORMS));assert.equal(SQUARE_TAG_FORMS.length,8);
  assert.ok(new Set(marks.map(m=>m.hand)).size>=25,'Writer identities are repeating');
- for(const hand of SQUARE_DISABLED_HANDS){assert.ok(!marks.some(m=>m.hand===hand),'Disabled handwriting returned');assert.throws(()=>makeSquareTag('ph-i','test','#000',{hand}),/temporarily disabled/);}
+ for(const hand of SQUARE_DISABLED_HANDS){assert.ok(!marks.some(m=>m.hand===hand),'Disabled handwriting returned');assert.throws(()=>makeSquareTag('φ','test','#000',{hand}),/temporarily disabled/);}
  const faces=new Map();for(const m of marks){if(!faces.has(m.face.id))faces.set(m.face.id,[]);faces.get(m.face.id).push(m);}
  assert.deepEqual(new Set([...faces.values()].map(ms=>ms.length)),new Set(SQUARE_TAG_COUNTS));
  for(const group of faces.values()){
-  if(group.length>=3){assert.ok(new Set(group.map(m=>m.form)).size>=3);assert.deepEqual(new Set(group.map(m=>m.phrase)),new Set(['ph-i','φ']));}
+  if(group.length>=3){assert.ok(new Set(group.map(m=>m.form)).size>=3);assert.deepEqual(new Set(group.map(m=>m.phrase)),new Set(['φ']));}
   for(let i=1;i<group.length;i++)assert.ok(Math.abs(group[i].phi.angle-group[i-1].phi.angle-GOLDEN_ANGLE)<1e-12);
  }
  for(const m of marks){
