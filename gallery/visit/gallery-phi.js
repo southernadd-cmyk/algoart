@@ -1498,9 +1498,17 @@ function constructPhiGallery(layout,studies){
   }else{
    // Direct date links, slow background tabs and failed preparations still
    // use the original reliable incremental construction path.
-   deferredGalleryJobs.push(()=>createPortraitSculpture({
-    scene,study,placement,quality:mobileImages?'mobile':'desktop',labelTexture
-   }));
+   deferredGalleryJobs.push(()=>{
+    // Deferred fallback is constructed after the active floor was rotated.
+    // Its position and yaw must therefore use the final world coordinates.
+    const world=plan?.phi?.world;
+    const location=world
+     ?{...placement,...world.toWorld(p.x,p.z),yaw:world.theta}
+     :placement;
+    createPortraitSculpture({
+     scene,study,placement:location,quality:mobileImages?'mobile':'desktop',labelTexture
+    });
+   });
   }
   artExhibits.push({study,position:new THREE.Vector3(p.x,elevation+1.5,p.z)});
  }
