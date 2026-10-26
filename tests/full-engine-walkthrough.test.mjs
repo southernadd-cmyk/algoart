@@ -28,7 +28,7 @@ try{
  await page.locator('#enter').click();
  await page.locator('#openLift').click();
  assert.equal(await page.locator('#lift').isVisible(),true,'Lift calendar did not open');
- const destination=page.locator('#liftDays button').filter({hasText:/[0-9]/}).last();
+ const destination=page.locator('#liftDays button.lift-available:not(.lift-current)').last();
  await destination.click();
  await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',{timeout:15000});
  const positions=await page.evaluate(()=>window.__phiLiftRide);
