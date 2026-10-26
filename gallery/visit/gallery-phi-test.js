@@ -990,6 +990,17 @@ function constructPhiGallery(layout,studies){
   else block(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,plaster);
  }
  for(const p of phi.pieces)block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,ceilingFinish);
+ // Put visible portal frames on the exact holes created in the collision walls.
+ for(const d of [...phi.circulation.doors,...phi.circulation.bridgePortals]){
+  const half=d.width/2,head=elevation+3.1;
+  if(d.axis==='x'){
+   for(const side of [-1,1])block(.21,3.1,.17,d.at,elevation+1.55,d.centre+side*half,join);
+   block(.21,.23,d.width+.18,d.at,head,d.centre,join);
+  }else{
+   for(const side of [-1,1])block(.17,3.1,.21,d.centre+side*half,elevation+1.55,d.at,join);
+   block(d.width+.18,.23,.21,d.centre,head,d.at,join);
+  }
+ }
  for(const b of phi.bridges){
   const mid=(b.from+b.to)/2;
   block(b.axis==='x'?b.length:b.width,.16,b.axis==='z'?b.length:b.width,
@@ -1038,6 +1049,10 @@ function constructPhiGallery(layout,studies){
  liftCabinPosition=new THREE.Vector3(l.x,elevation,l.z);
  liftPosition=liftCabinPosition.clone();
  liftDoorThreshold=liftCabinPosition.clone();
+ // Gallery-side lift doors: frame and leaves kept distinct from walking collision.
+ const liftFace=l.portal.at;
+ for(const side of [-1,1])block(.16,3.1,.17,liftFace,elevation+1.55,l.z+side*1.22,join);
+ block(.19,.24,2.55,liftFace,elevation+3.15,l.z,join);
  rig.position.copy(liftCabinPosition);
  arrival=null;
  if(phi.exhibition.paintings.length+phi.exhibition.sculptures.length!==studies.length)
@@ -1862,8 +1877,8 @@ function updateMovement(dt) {
       dx=(Math.cos(yaw)*side-Math.sin(yaw)*ahead)*dt*speed;
       dz=(-Math.sin(yaw)*side-Math.cos(yaw)*ahead)*dt*speed;
     }
-    if (((plan.phi?plan.phi.canWalk(rig.position.x+dx,rig.position.z):canStand(plan,rig.position.x+dx,rig.position.z))||onArrivalPath(rig.position.x+dx,rig.position.z)) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
-    if (((plan.phi?plan.phi.canWalk(rig.position.x,rig.position.z+dz):canStand(plan,rig.position.x,rig.position.z+dz))||onArrivalPath(rig.position.x,rig.position.z+dz)) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
+    if (((plan.phi?plan.phi.canWalk(rig.position.x+dx,rig.position.z):canStand(plan,rig.position.x+dx,rig.position.z))||(plan.phi?false:onArrivalPath(rig.position.x+dx,rig.position.z))) && clearOfSculptures(sculpturePlacements,rig.position.x+dx,rig.position.z)) rig.position.x+=dx;
+    if (((plan.phi?plan.phi.canWalk(rig.position.x,rig.position.z+dz):canStand(plan,rig.position.x,rig.position.z+dz))||(plan.phi?false:onArrivalPath(rig.position.x,rig.position.z+dz))) && clearOfSculptures(sculpturePlacements,rig.position.x,rig.position.z+dz)) rig.position.z+=dz;
   }
   const part=plan.phi?(plan.phi.canWalk(rig.position.x,rig.position.z)?{y:currentFloor*FLOOR_SPACING,zone:'room'}:null):footprintAt(plan,rig.position.x,rig.position.z);
   if(part)rig.position.y=part.y;
