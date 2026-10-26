@@ -51,7 +51,14 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
+    // Three.js sets window.__THREE__ when its module evaluates. This snapshot
+    // tells us whether an earlier page script or a browser extension loaded it.
+    const threeBefore=window.__THREE__ ?? null;
+    window.__galleryThreeDiagnostics={beforeBundle:threeBefore,
+      scripts:[...document.scripts].map(node=>node.src||'inline:'+node.type).filter(Boolean)};
+    if(threeBefore!==null)console.warn('[Gallery diagnostic] Three.js was present before the gallery bundle loaded',threeBefore);
     await import('./gallery-bundle.js?v=exterior-wall-collision-20261026');
+    window.__galleryThreeDiagnostics.afterBundle=window.__THREE__ ?? null;
     // The gallery module installs its resize handler after constructing the camera.
     // Trigger it once on initial load so portrait screens do not retain aspect=1.
     window.dispatchEvent(new Event('resize'));
