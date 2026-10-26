@@ -22,6 +22,13 @@ export function buildPhiRendererPlan(date,studies,{variation=0}={}){
  const portal={axis:'x',at:entranceCell.x,centre:entranceCell.z+Math.min(entranceCell.h/2,2.2),width:2.4};
  circulation.bridgePortals.push(portal);
  circulation.lift={x:portal.at-2.25,z:portal.centre,room:0,external:true,portal};
+ // Reception has a separate south-side public door, distinct from west lift.
+ if(date==='__phi_reception__'){
+   const first=floor.rooms[0];
+   const entrance={axis:'z',at:first.z,centre:first.x+first.w/2,width:2.6,public:true};
+   circulation.bridgePortals.push(entrance);
+   circulation.publicEntrance=entrance;
+ }
  const physical=buildPhysicalPhiFloor(floor,circulation);
  const exhibition=planCuratedPhiExhibition(floor,circulation,physical,studies);
  const pieces=floor.mergedRooms.flatMap((room,i)=>room.pieces.map(p=>({...p,room:i})));
