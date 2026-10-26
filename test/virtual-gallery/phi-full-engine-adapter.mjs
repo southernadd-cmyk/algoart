@@ -34,13 +34,15 @@ export function buildPhiRendererPlan(date,studies,{variation=0}={}){
    ?x>=Math.min(b.from,b.to)-.1&&x<=Math.max(b.from,b.to)+.1&&Math.abs(z-b.centre)<=b.width/2-pad
    :z>=Math.min(b.from,b.to)-.1&&z<=Math.max(b.from,b.to)+.1&&Math.abs(x-b.centre)<=b.width/2-pad);
  const nearPortal=(x,z)=>portals.some(d=>d.axis==='x'?
-   Math.abs(x-d.at)<WALK_RADIUS+.2&&Math.abs(z-d.centre)<d.width/2-WALK_RADIUS:
-   Math.abs(z-d.at)<WALK_RADIUS+.2&&Math.abs(x-d.centre)<d.width/2-WALK_RADIUS);
+   Math.abs(x-d.at)<=1.05&&Math.abs(z-d.centre)<d.width/2-WALK_RADIUS:
+   Math.abs(z-d.at)<=1.05&&Math.abs(x-d.centre)<d.width/2-WALK_RADIUS);
  const lobby=circulation.lift;
  const inLiftLobby=(x,z)=>x>=lobby.x-1.45&&x<=lobby.portal.at+.42&&Math.abs(z-lobby.z)<=1.2-WALK_RADIUS;
  const wallCollision=(x,z)=>physical.walls.some(w=>w.axis==='x'?
    Math.abs(x-w.at)<WALK_RADIUS&&z>=w.lo-WALK_RADIUS&&z<=w.hi+WALK_RADIUS:
    Math.abs(z-w.at)<WALK_RADIUS&&x>=w.lo-WALK_RADIUS&&x<=w.hi+WALK_RADIUS);
+ // A doorway remains traversable along its approach, not just within a
+ // thin collar at the boundary. Walls themselves are still authoritative.
  const canWalk=(x,z)=> (inside(x,z)||overBridge(x,z)||nearPortal(x,z)||inLiftLobby(x,z))&&!wallCollision(x,z);
  const placed=[...exhibition.paintings,...exhibition.sculptures];
  const ids=placed.map(p=>p.studyId);
