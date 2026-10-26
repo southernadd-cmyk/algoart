@@ -20,6 +20,16 @@
 <title>φ-layout Full-engine Renderer Test | PROPORTION PIECE</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./gallery.css?v=accessibility-20261023">
+<style>
+/* The fixed canvas must never cover the keyboard/mouse lift fallback. */
+#world{z-index:0}
+.topbar{z-index:30;pointer-events:auto}
+.topbar .top-actions,.topbar #openLift{position:relative;z-index:31;pointer-events:auto}
+.lift-panel{z-index:90}
+.lift-animation{z-index:100}
+.lift-arrival{z-index:95}
+</style>
+
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=11">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -53,7 +63,7 @@
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
     window.__galleryStage='Importing bundled JavaScript';
-    await import('../../gallery/visit/gallery-phi-test.js?v=approach-open-picker-once-20261026');
+    await import('../../gallery/visit/gallery-phi-test.js?v=production-lift-behaviour-20261026');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
