@@ -4,7 +4,7 @@
 <style>body{font:16px Georgia,serif;background:#eae6db;color:#283932;margin:0}header{padding:16px 24px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}button{font:inherit;padding:10px 15px;border:1px solid #52645a;background:#f7f3e8;cursor:pointer}p{margin:5px 0}#preview{display:block;max-width:1200px;width:100%;background:white;margin:0 auto;border:1px solid #abb9b0}#source{width:100%;height:300px;border:0;display:block}#status{padding:12px 24px}main{padding:10px 20px}small{color:#63766e}#download{display:none}</style>
 </head><body>
 <header><h1 style="font-size:23px;font-weight:normal;margin:0">Gallery tower · actual-scene SVG</h1><button id="capture">Capture loaded geometry</button><button id="svg" disabled>Save SVG</button><button id="png" disabled>Save PNG</button><label>Azimuth <input id="az" type="range" min="-180" max="180" value="-43"></label><label>Elevation <input id="el" type="range" min="3" max="45" value="16"></label></header>
-<main><p>This exporter reads meshes from the <em>actual rendered gallery scene</em> in the iframe. It does not regenerate floor layouts or invent a reception. Complex artwork, textures, and lighting are approximated using vector polygons and material colours.</p><div id="status">Loading real gallery scene…</div><img id="preview" alt="SVG export preview"><details><summary>Live source / floor check</summary><iframe title="Loaded gallery scene" id="source" src="./?svg-export=1"></iframe></details></main>
+<main><p>This exporter reads meshes from the <em>actual rendered gallery scene</em> in the iframe. It does not regenerate floor layouts or invent a reception. Complex artwork, textures, and lighting are approximated using vector polygons and material colours.</p><div id="status">Loading real gallery scene…</div><img id="preview" alt="SVG export preview"><details open><summary>Live source / floor check — enter exhibition before capture</summary><iframe title="Loaded gallery scene" id="source" src="./?svg-export=1"></iframe></details></main>
 <script>
 const el=id=>document.getElementById(id),frame=el('source'),status=el('status');let exportSVG='';
 const yieldFrame=()=>new Promise(r=>requestAnimationFrame(r));
@@ -62,7 +62,7 @@ async function capture(){
   if(polys.length>maxTris)break;
   if(oi%200===0){status.textContent='Reading mesh '+oi+'/'+meshes.length+'…';await yieldFrame();}
  }
- polys.sort((a,b)=>b.depth-a.depth);
+ polys.sort((a,b)=>a.depth-b.depth);
  const lines=['<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" role="img" aria-label="Actual PROPORTION PIECE scene mesh projection: tower reception and square">','<rect width="1200" height="480" fill="#c2cbc5"/>','<path d="M0 390Q360 368 740 393T1200 387V480H0Z" fill="#92998c"/>'];
  for(const p of polys){lines.push('<polygon points="'+p.pts.map(q=>q.x.toFixed(1)+','+q.y.toFixed(1)).join(' ')+'" fill="'+p.base+'" opacity="'+p.op.toFixed(2)+'"/>');}
  lines.push('</svg>');
