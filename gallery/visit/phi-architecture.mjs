@@ -4,15 +4,19 @@ export const PHI=(1+Math.sqrt(5))/2;
 export const INV_PHI=1/PHI;
 function hash(s){let h=2166136261;for(const c of s){h=Math.imul(h^c.charCodeAt(0),16777619);}return h>>>0;}
 function rng(seed){let a=hash(seed);return ()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};}
-export function planPhiFloor(date,{artworks=18,span=40,minSide=5.1,variation=0}={}){
+export function planPhiFloor(date,{artworks=18,span=null,minSide=null,variation=0}={}){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Expected YYYY-MM-DD');
+ // Exhibition-scale footprint: a typical 18-piece floor occupies roughly 30 × 19 m.
+ // The art count, rather than a fixed monumental footprint, controls the scale.
+ span=span??Math.max(15,Math.min(31,19*Math.sqrt(Math.max(1,artworks)/18)));
+ minSide=minSide??Math.max(2.65,span*.155);
  const random=rng('phi-architecture-v1|'+date+'|'+artworks+'|'+variation);
  const root={x:-span*PHI/2,z:-span/2,w:span*PHI,h:span,depth:0,id:'root'};
  const leaves=[root],splits=[];
  // Recursive golden section cuts: the cut location is always 1/phi of the long axis.
  for(let step=0;step<96;step++){
   const possible=leaves.filter(r=>Math.max(r.w,r.h)>=2*minSide&&Math.min(r.w,r.h)>=minSide);
-  if(!possible.length||leaves.length>=Math.max(8,Math.ceil(artworks/2)+3))break;
+  if(!possible.length||leaves.length>=Math.max(8,Math.ceil(artworks/2)+2))break;
   const sorted=possible.map(r=>({r,weight:r.w*r.h*(.72+random()*.56)})).sort((a,b)=>b.weight-a.weight);
   const parent=sorted[Math.floor(random()*Math.min(3,sorted.length))].r;
   const vertical=parent.w>=parent.h;
@@ -32,7 +36,7 @@ export function planPhiFloor(date,{artworks=18,span=40,minSide=5.1,variation=0}=
  // Merge adjacent golden cells into usable exhibition rooms. The cells remain
  // untouched mathematically; only internal partitions are removed.
  // Compact rooms are favoured, but L-shaped unions are permitted.
- const targetRooms=Math.min(classified.length,Math.max(2,Math.ceil(artworks/3)));
+ const targetRooms=Math.min(classified.length,Math.max(2,Math.ceil(artworks/4.5)));
  const groups=classified.map((cell,i)=>({id:i,cells:[cell],area:cell.area}));
  const commonEdge=(a,b)=>{
   const ox=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
@@ -77,5 +81,5 @@ export function planPhiFloor(date,{artworks=18,span=40,minSide=5.1,variation=0}=
   const oz=Math.min(a.z+a.h,b.z+b.h)-Math.max(a.z,b.z);
   if((Math.abs(ox)<1e-6&&oz>1)||(Math.abs(oz)<1e-6&&ox>1))contacts.push({a:a.id,b:b.id,shared:Math.max(ox,oz)});
  }
- return {version:2,date,mergedRooms,seed:hash('phi-architecture-v1|'+date+'|'+artworks+'|'+variation),phi:PHI,root,rooms:classified,splits,contacts,stats:{galleryCells:galleries.length,voidCells:classified.length-galleries.length,totalCells:classified.length,mergedCount:mergedRooms.length,targetRooms,contacts:contacts.length,footprintArea:root.w*root.h}};
+ return {version:3,date,mergedRooms,seed:hash('phi-architecture-v1|'+date+'|'+artworks+'|'+variation),phi:PHI,root,rooms:classified,splits,contacts,stats:{galleryCells:galleries.length,voidCells:classified.length-galleries.length,totalCells:classified.length,mergedCount:mergedRooms.length,targetRooms,contacts:contacts.length,footprintArea:root.w*root.h}};
 }
