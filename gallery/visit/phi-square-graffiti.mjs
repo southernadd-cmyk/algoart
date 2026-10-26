@@ -3,7 +3,7 @@
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
-export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v1':'phi-square-golden-eight-v4-no-loop')+'|sprayed-throwups-v'+VERSION;
+export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v2-phI':'phi-square-golden-eight-v5-phI')+'|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
 export const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
@@ -66,7 +66,7 @@ export function planSquareTags(objects=planPhiSquare()){
    const centre={x:object.x+n.x*half,z:object.z+n.z*half};
    const count=SQUARE_TAG_COUNTS[faceIndex%4],phase=faceIndex*3;
    for(let index=0;index<count;index++){
-    const slot=marks.length,phrase=(index+faceIndex)%3===1?'φ':'PHI',seed=PHI_SQUARE_REVISION+'|'+object.id+'|'+side+'|'+index;
+    const slot=marks.length,phrase=(index+faceIndex)%3===1?'φ':'phI',seed=PHI_SQUARE_REVISION+'|'+object.id+'|'+side+'|'+index;
     const ink=inks[(slot+faceIndex)%inks.length],form=SQUARE_TAG_FORMS[(slot*5+faceIndex*3)%SQUARE_TAG_FORMS.length];
     const hand=writers[(slot*7+faceIndex*11)%writers.length],tag=makeSquareTag(phrase,seed,ink,{form,hand});
     const p=goldenSquarePlacement({bounds:tag.bounds,length:face.length,wallHeight:object.height,count,index,phase});
