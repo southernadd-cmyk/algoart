@@ -5,7 +5,7 @@
 import {FAMILIES as ORIGINAL,getFamily as originalFamily,stableNoise,LETTERS} from '../family-library.mjs';
 import {PHI_BY_FAMILY} from '../family-symbols.mjs';
 
-export const V2_REVISION='all-nine-az-source-review-02';
+export const V2_REVISION='source-led-word-flow-01';
 export const INSTRUMENT_REVISIONS=Object.freeze({B:'Sheet 7 light crossed line; V1 fat marker 12.5 was incompatible with source. V2 uses 6.1-weight crossed hand.'});
 export const PILOT_EVIDENCE=Object.freeze({
   'A:O':Object.freeze({sheet:41,letters:'O',observation:'The source O is not a plain circular loop: sharp angular returns cut a tall opening while the crossed stroke punctures the left side and extends beyond the perimeter.',change:'Replace a generic enclosing oval with angular top, inward right turn and one independent, clearly directional crossing pass.'}),
@@ -25,7 +25,7 @@ export const PILOT_EVIDENCE=Object.freeze({
   'D:S':Object.freeze({sheet:20,letters:'S',observation:'Sheet 20 S is composed of short angular box-like turns rather than a smooth curve; the upper arm is flatter and the lower exit finishes abruptly and farther to the right.',
    change:'Replace the generic rounded-square run with an asymmetric kinked S and deliberate short exit.'}),
   'E:A':Object.freeze({sheet:29,letters:'A',observation:'Sheet 29 A is made from a long descending wedge and an opposing returning blade, with a hooked arched head and spacious lower counter; the top join is more informative than repeated midline marks.',
-   change:'Construct an asymmetric peaked head connecting two Gothic blades, with a single fine counter mark.'}),
+   change:'Keep the high shoulder and add a visible low structural crossbar that clearly differentiates A from two adjoining vertical minims.'}),
   'E:N':Object.freeze({sheet:29,letters:'N',observation:'Sheet 29 N shows grouped black vertical minims, but a high angled shoulder and one directional cross stroke distinguish its N from adjacent I and M forms.',
    change:'Link the upper ends by a forward descending black shoulder rather than leaving only separate verticals.'}),
   'F:A':Object.freeze({sheet:59,letters:'A',observation:'Sheet 59 red A has a light curling approach from the left feeding into a broad sloped downstroke, a thin returning motion and a smaller crossing gesture; the mark has calligraphic rhythm instead of a triangular capital outline.',
@@ -125,7 +125,7 @@ const changes=Object.freeze({
    path('fill','M 9 108 L 8 18 Q 20 -3 40 10 L 30 99 L 19 119 Z'),
    path('fill','M 41 34 Q 56 3 71 5 L 83 24 L 73 115 L 55 101 L 67 36 L 57 29 Z'),
    path('fill','M 19 24 Q 39 -12 69 14 L 59 28 Q 40 9 29 45 Z'),
-   path('hairline','M 31 72 Q 49 61 66 73')
+   path('fill','M 26 67 L 72 57 L 76 69 L 22 83 Z')
   ]),
   N:Object.freeze([
    path('fill','M 8 110 L 9 13 L 27 -5 L 42 15 L 30 111 L 17 118 Z'),
