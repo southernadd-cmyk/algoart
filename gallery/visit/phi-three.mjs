@@ -16,8 +16,8 @@ export function mountPhiThree(canvas){
  const glass=new THREE.MeshPhysicalMaterial({color:0x8dc7d0,metalness:.1,roughness:.12,transparent:true,opacity:.34,depthWrite:false,side:THREE.DoubleSide});
  const plinth=new THREE.MeshStandardMaterial({color:0xa48370,roughness:.66});
  let focus=new THREE.Vector3(),distance=95,yaw=-.78,pitch=.72,drag=null,mode='orbit',current=null;
- const walker=new THREE.Vector3(),keys=new Set();let last=0;
- function setWalkMode(enabled){mode=enabled?'walk':'orbit';keys.clear();if(enabled&&current){const l=current.circulation.lift;walker.set(l.x,1.62,l.z);yaw=0;pitch=.05;}render();return mode;}
+ const walker=new THREE.Vector3(),keys=new Set(),touchKeys=new Set();let last=0;
+ function setWalkMode(enabled){mode=enabled?'walk':'orbit';keys.clear();touchKeys.clear();if(enabled&&current){const l=current.circulation.lift;walker.set(l.x,1.62,l.z);yaw=0;pitch=.05;}render();return mode;}
  function block(x,y,z,w,h,d,mat){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);root.add(m);return m;
  }
@@ -114,8 +114,9 @@ export function mountPhiThree(canvas){
  canvas.addEventListener('keydown',e=>{if(mode==='walk'&&['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase())){keys.add(e.key.toLowerCase());e.preventDefault();}});
  canvas.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));canvas.addEventListener('blur',()=>keys.clear());
  function tick(ms){const dt=Math.min(.05,Math.max(0,(ms-last)/1000));last=ms;
-  if(mode==='walk'&&current&&keys.size){const ahead=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown'));
-   const side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
+  if(mode==='walk'&&current&&(keys.size||touchKeys.size)){const pressed=k=>keys.has(k)||touchKeys.has(k);
+   const ahead=Number(pressed('w')||pressed('arrowup'))-Number(pressed('s')||pressed('arrowdown'));
+   const side=Number(pressed('d')||pressed('arrowright'))-Number(pressed('a')||pressed('arrowleft'));
    const length=Math.hypot(ahead,side)||1,step=4.1*dt/length;
    const dx=(Math.sin(yaw)*ahead+Math.cos(yaw)*side)*step,dz=(-Math.cos(yaw)*ahead+Math.sin(yaw)*side)*step;
    if(current.physical.walkable(walker.x+dx,walker.z))walker.x+=dx;
@@ -123,5 +124,5 @@ export function mountPhiThree(canvas){
    render();}requestAnimationFrame(tick);
  }requestAnimationFrame(tick);
  window.addEventListener('resize',render);
- return {setModel,render,setWalkMode};
+ return {setModel,render,setWalkMode,setTouchDirection:(direction,pressed)=>{if(pressed)touchKeys.add(direction);else touchKeys.delete(direction);},clearTouchDirections:()=>touchKeys.clear()};
 }
