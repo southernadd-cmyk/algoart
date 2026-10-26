@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/rebuild-gallery-bundle.yml'
       - 'gallery/visit/gallery-v2.js'
+      - 'gallery/visit/*.mjs'
 jobs:
   rebuild:
     runs-on: ubuntu-latest
