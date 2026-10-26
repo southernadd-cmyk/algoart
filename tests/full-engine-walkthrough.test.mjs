@@ -19,6 +19,7 @@ try{
  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled || !document.querySelector('#error')?.hidden || window.__galleryStartupError,null,{timeout:90000});
  assert.equal(await page.locator('#error').isVisible(),false,'Gallery startup error visible');
  assert.equal(await page.locator('#enter').isEnabled(),true,'Gallery did not finish preparing');
+ if(bundled)assert.ok(requests.some(u=>/\/gallery\/visit\/gallery-phi-bundle\.js(?:\?|$)/.test(u)),'Public gallery did not import the production φ bundle');
  const phi=await page.evaluate(()=>window.__phiFullEngine);
  assert.ok(phi?.wallCount>0&&phi.roomCount>0,'Missing phi architecture');
  assert.equal(phi.artworks,phi.paintings+phi.sculptures,'Phi curator dropped art');
