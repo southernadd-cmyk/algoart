@@ -1197,6 +1197,23 @@ function constructPhiGallery(layout,studies){
  liftCabinPosition=new THREE.Vector3(l.x,elevation,l.z);
  liftPosition=liftCabinPosition.clone();
  liftDoorThreshold=liftCabinPosition.clone();
+ if(exhibitDate===RECEPTION){
+  const entry=phi.circulation.publicEntrance;
+  const r=phi.floor.rooms.find(p=>entry&&Math.abs(p.z-entry.at)<.01&&entry.centre>=p.x&&entry.centre<=p.x+p.w)||phi.floor.rooms[0];
+  const x=r.x+r.w*.5,z=r.z+r.h*.62;
+  block(3.1,.85,1.05,x,elevation+.43,z,galleryFinish.timber);
+  block(3.35,.12,1.18,x,elevation+.9,z,galleryFinish.plinth);
+  const paper=document.createElement('canvas');paper.width=1024;paper.height=512;
+  const g=paper.getContext('2d');g.fillStyle='#ece5d5';g.fillRect(0,0,1024,512);
+  g.fillStyle='#273b32';g.font='bold 61px Georgia';g.fillText('PROPORTION PIECE',45,100);
+  g.font='34px Georgia';
+  ['An algorithmically generated gallery','exhibiting algorithmically generated art.','A new exhibition floor every day.','Use the archive lift to explore.'].forEach((line,i)=>g.fillText(line,45,190+i*67));
+  const texture=new THREE.CanvasTexture(paper);texture.colorSpace=THREE.SRGBColorSpace;
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(4.5,2.25),
+     new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
+  board.position.set(x,elevation+2.4,r.z+.12);scene.add(board);
+  window.__phiReception={desk:true,information:true};
+ }
  // Gallery-side lift doors: frame and leaves kept distinct from walking collision.
  const liftFace=l.portal.at;
  for(const side of [-1,1])block(.16,3.1,.17,liftFace,elevation+1.55,l.z+side*1.22,join);
