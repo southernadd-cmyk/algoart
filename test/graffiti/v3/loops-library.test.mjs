@@ -36,9 +36,21 @@ test('PRO and ORT use shared structural passes rather than complete V2 letters p
  assert.ok(connected.shared.some(x=>x.sequence==='ORT'));
  for(const pass of connected.shared){
   assert.equal(pass.sharedStructure,true);
-  assert.equal(pass.members.length,3);
+  assert.ok(pass.members.length>=3&&pass.members.length<=4);
   assert.ok(pass.members.every((n,i,a)=>i===0||n===a[i-1]+1));
  }
  const plain=compose('PROPORTION PIECE','none');
  assert.equal(plain.shared.length,0);
+});
+
+test('seeded expressive composition can extend connected clusters',()=>{
+ const samples=['PROPORTION PIECE','PROPORTION','ROTOR','PROCESS'];
+ const lengths=[];
+ for(const word of samples)for(const seed of ['a','b','c','d']){
+  const plan=compose(word,'expressive',seed);
+  lengths.push(...plan.shared.map(p=>p.members.length));
+  assert.ok(plan.shared.every(p=>p.members.every((n,i,a)=>i===0||n===a[i-1]+1)));
+  assert.deepEqual(plan,compose(word,'expressive',seed));
+ }
+ assert.ok(lengths.some(n=>n===4),'expected at least one four-letter shared sequence');
 });
