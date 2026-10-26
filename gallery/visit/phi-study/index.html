@@ -5,13 +5,14 @@
 body{font-family:Georgia,serif;background:#eae6db;color:#26332c;margin:0;padding:24px}main{max-width:1100px;margin:auto}h1{font-weight:normal;font-size:2rem}p{line-height:1.5}header{display:flex;gap:16px;flex-wrap:wrap;align-items:end;margin-bottom:20px}label{display:grid;gap:7px}input{font:inherit;padding:8px;background:#faf9f3;border:1px solid #a09c8d}button{padding:10px 18px;border:1px solid #26332c;background:transparent;font:inherit;cursor:pointer}.views{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}figure{margin:0}svg{width:100%;background:#f8f5ec;border:1px solid #a09c8d}figcaption{padding-top:9px}#facts{margin-top:15px}small{display:block;color:#63665d}
 </style></head><body><main><h1>phi architecture study</h1><p>A standalone Phase A experiment. Each partition is cut at a golden ratio; adjacent golden cells merge to create practical exhibition rooms. No live tower geometry has been replaced.</p>
 <header><label>Exhibition date<input id="date" type="date" value="2026-10-26"></label><label>Artworks<input id="artworks" type="number" min="1" max="60" value="18"></label><label>Variation<input id="variation" type="number" min="0" value="0"></label><button id="draw">Generate floor</button></header>
-<div class="views"><figure><svg id="geometry" viewBox="0 0 700 470" role="img" aria-label="Golden subdivision diagram"></svg><figcaption>Mathematical subdivisions</figcaption></figure><figure><svg id="rooms" viewBox="0 0 700 470" role="img" aria-label="Candidate exhibition rooms"></svg><figcaption>Merged gallery rooms</figcaption></figure></div><p id="facts"></p><small>Circulation study: tan squares indicate the reserved lift datum; orange dots indicate door openings. Doors and wall lengths are planned, but walking collisions and 3D exhibits are not yet implemented.</small></main>
+<div class="views"><figure><svg id="geometry" viewBox="0 0 700 470" role="img" aria-label="Golden subdivision diagram"></svg><figcaption>Mathematical subdivisions</figcaption></figure><figure><svg id="rooms" viewBox="0 0 700 470" role="img" aria-label="Candidate exhibition rooms"></svg><figcaption>Merged gallery rooms</figcaption></figure></div><p id="facts"></p><small>Physical study: dark lines are collision walls, openings are doorways, tan square is the lift datum and terracotta blocks are provisional sculpture footprints. These are 2D clearance checks, not yet a walkable 3D tower.</small></main>
 <script type="module">
 import {planPhiFloor} from '../phi-architecture.mjs';
 import {planPhiCirculation} from '../phi-circulation.mjs';
+import {buildPhysicalPhiFloor} from '../phi-physical.mjs';
 const NS='http://www.w3.org/2000/svg',el=id=>document.getElementById(id);
 function shape(svg,name,attrs){const n=document.createElementNS(NS,name);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);svg.appendChild(n);return n;}
-function paint(svg,plan,showRooms,circulation){
+function paint(svg,plan,showRooms,circulation,physical){
  svg.textContent='';const {root}=plan;
  const scale=Math.min(660/root.w,420/root.h),ox=20-root.x*scale,oy=20-root.z*scale;
  const rect=(r,fill,stroke='none')=>shape(svg,'rect',{x:ox+r.x*scale,y:oy+r.z*scale,width:r.w*scale,height:r.h*scale,fill,stroke,'stroke-width':1.6});
@@ -47,6 +48,9 @@ function paint(svg,plan,showRooms,circulation){
    if(!covered)shape(svg,'line',{x1:ox+e.x1*scale,y1:oy+e.y1*scale,x2:ox+e.x2*scale,y2:oy+e.y2*scale,stroke:'#394c41','stroke-width':2.7});
   }
  }
+ // Physical walls are drawn from actual collision geometry, including doorway cutouts.
+ for(const w of physical.walls){shape(svg,'line',{x1:ox+(w.axis==='x'?w.at:w.lo)*scale,y1:oy+(w.axis==='x'?w.lo:w.at)*scale,x2:ox+(w.axis==='x'?w.at:w.hi)*scale,y2:oy+(w.axis==='x'?w.hi:w.at)*scale,stroke:'#2b3932','stroke-width':3.3});}
+ for(const p of physical.sculptures){shape(svg,'rect',{x:ox+(p.x-p.width/2)*scale,y:oy+(p.z-p.depth/2)*scale,width:p.width*scale,height:p.depth*scale,fill:'#a26f54',stroke:'#fff','stroke-width':1});}
  // Mark circulation openings and permanent lift datum on the merged plan.
  for(const d of circulation.doors){
   const k=d.width*scale/2,x=d.axis==='x'?ox+d.at*scale:ox+d.centre*scale,y=d.axis==='x'?oy+d.centre*scale:oy+d.at*scale;
@@ -61,6 +65,6 @@ function paint(svg,plan,showRooms,circulation){
   text.textContent=room.id.replace('gallery-','room ');
  }
 }
-function draw(){try{const plan=planPhiFloor(el('date').value,{artworks:Number(el('artworks').value),variation:Number(el('variation').value)});const circulation=planPhiCirculation(plan);paint(el('geometry'),plan,false,circulation);paint(el('rooms'),plan,true,circulation);el('facts').textContent=plan.stats.totalCells+' cells · '+plan.stats.mergedCount+' merged rooms from '+plan.stats.totalCells+' golden cells · '+circulation.doors.length+' doors · '+(circulation.connected?'all rooms connected':'DISCONNECTED: '+circulation.reachable+'/'+circulation.roomCount)+' · '+circulation.wallSegments.length+' hanging-wall segments · φ = '+plan.phi.toFixed(9);}catch(e){el('facts').textContent=e.message;}}
+function draw(){try{const plan=planPhiFloor(el('date').value,{artworks:Number(el('artworks').value),variation:Number(el('variation').value)});const circulation=planPhiCirculation(plan);const physical=buildPhysicalPhiFloor(plan,circulation);paint(el('geometry'),plan,false,circulation,physical);paint(el('rooms'),plan,true,circulation,physical);el('facts').textContent=plan.stats.totalCells+' cells · '+plan.stats.mergedCount+' merged rooms from '+plan.stats.totalCells+' golden cells · '+circulation.doors.length+' doors · '+(circulation.connected?'all rooms connected':'DISCONNECTED: '+circulation.reachable+'/'+circulation.roomCount)+' · '+circulation.wallSegments.length+' hanging-wall segments · '+physical.wallCount+' solid wall segments · '+(Object.values(physical.checks).every(Boolean)?'physical clearances pass':'PHYSICAL CLEARANCE WARNING')+' · φ = '+plan.phi.toFixed(9);}catch(e){el('facts').textContent=e.message;}}
 el('draw').addEventListener('click',draw);draw();
 </script></body></html>
