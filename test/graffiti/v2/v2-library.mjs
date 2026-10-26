@@ -16,7 +16,7 @@ export const PILOT_EVIDENCE=Object.freeze({
   'C:O':Object.freeze({sheet:13,letters:'O',observation:'Sheet 13 O is a thick ring of irregular angular wedge segments enclosing a sharp eccentric hole rather than a round geometric font counter.',change:'Re-author a deliberately off-centre polygonal O with a cut-out inner counter and angular outer turns.'}),
   'G:O':Object.freeze({sheet:8,letters:'O',observation:'Sheet 8 O is made from a broad repeated orbit with one smaller inner eye and a return across the interior, not equal-amplitude wobble at each contour point.',change:'Retain one confident outer orbit, a smaller inner eye, and a single crossing return.'}),
   'G:U':Object.freeze({sheet:8,letters:'U',observation:'Sheet 8 U descends from two unmistakably separate high entry strokes into one large low rounded bowl, then the right stem rises; its top stays open and its turning point is well below mid-height.',change:'Build a tall open U with distinct left/right ascenders, a low return bowl and a minor inner orbit that cannot close the upper opening into a C.'}),
-  'G:S':Object.freeze({sheet:8,letters:'S',observation:'Sheet 8 S is drawn with an energetic long looping upper turn that descends into a dominant bottom sweep; inner curls sit within the larger directional movement.',change:'Keep a long committed S path with one inner counter-echo, not several independent wobbling rings.'}),
+  'G:S':Object.freeze({sheet:8,letters:'S',observation:'Sheet 8 S is drawn with an energetic long looping upper turn that descends into a dominant bottom sweep; inner curls sit within the larger directional movement.',change:'Keep a single directional upper-to-lower S spine, an open upper return and one small inner echo, avoiding G-like closed loops.'}),
   'H:A':Object.freeze({sheet:30,letters:'A',observation:'Sheet 30 A is clearly assembled from separate red slashed fragments with a high triangular empty counter, a long sharp left blade and a detached crossband.',change:'Use three individually outlined angular paint masses while preserving the visible central triangular white gap.'}),
   'H:S':Object.freeze({sheet:30,letters:'S',observation:'Sheet 30 S comprises detached red wedges at the top and middle, with a long lower ribbon curling back; the deliberate gaps define the letter rather than texture noise.',change:'Rebuild the upper two wedge groups and lower angled sweep as separated filled marks with purposeful paper gaps.'}),
   'I:A':Object.freeze({sheet:10,letters:'A',observation:'Sheet 10 cyan A is narrow and upright, with a short offset cap, slim downward chisel trunk and very open counter; the top is not a broad sloping triangle.',change:'Give A an offset sharp head, slender downstroke and short return bar while keeping the interior open.'}),
@@ -91,9 +91,9 @@ const changes=Object.freeze({
    path('hairline','M 6 65 Q 45 36 92 58')
   ]),
   S:Object.freeze([
-   path('stroke','M 81 17 C 54 -14 13 3 8 30 C 0 55 57 57 74 38 Q 83 25 65 19'),
-   path('stroke','M 29 52 C -12 79 15 122 54 109 C 93 95 71 60 43 74 Q 31 86 47 93'),
-   path('hairline','M 13 112 Q 52 131 89 100')
+   path('stroke','M 82 15 C 54 -9 17 2 13 32 C 11 48 27 54 49 60 C 77 68 88 86 65 106 C 45 121 16 112 7 96'),
+   path('stroke','M 69 16 C 39 6 24 23 30 39 Q 36 48 55 52'),
+   path('hairline','M 20 78 Q 43 67 61 82')
   ])
  }),
  H:Object.freeze({
