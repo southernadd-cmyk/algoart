@@ -30,6 +30,13 @@ try {
    console.log(suffix,summary);
   }
   }
+  await page.goto('http://127.0.0.1:4173/test/virtual-gallery/phi-rehearsal.html',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.getElementById('facts')?.textContent?.startsWith('CURATOR V1'),null,{timeout:60000});
+  const rehearsal=await page.locator('#facts').textContent();
+  assert.match(rehearsal,/paintings.*sculptures.*0 unplaced/);
+  assert.match(rehearsal,/all rooms connected/);
+  await page.locator('#threePreview').screenshot({path:'phi-curator-results/'+(mobile?'mobile':'desktop')+'-rehearsal.png'});
+  console.log('rehearsal',rehearsal);
   assert.deepEqual(errors,[]);
   await ctx.close();
  }
