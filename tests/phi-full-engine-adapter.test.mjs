@@ -32,3 +32,11 @@ for(const count of [10,12,16,18,20]){
   }
  });
 }
+
+test('reception uses a valid deterministic phi seed and separate public doorway',()=>{
+ const studies=Array.from({length:10},(_,i)=>({id:'lobby-'+i,portrait:i%3===0,aspect:1.4}));
+ const plan=buildPhiRendererPlan('__phi_reception__',studies);
+ assert.ok(plan.physical.walls.length>0);
+ assert.ok(plan.circulation.publicEntrance);
+ assert.notEqual(plan.circulation.publicEntrance.axis,plan.circulation.lift.portal.axis);
+});
