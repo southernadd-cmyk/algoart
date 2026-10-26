@@ -31,7 +31,7 @@ try{
  assert.equal(await page.evaluate(()=>window.__galleryStartupError),'');
  await page.waitForFunction(()=>window.__phiSquareGraffiti?.diagnostics().painted===85,null,{timeout:90000});
  const writing=await page.evaluate(()=>({diagnostics:window.__phiSquareGraffiti.diagnostics(),words:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.text))],forms:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.form))],hands:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.hand))]}));
- assert.equal(writing.diagnostics.pending,0);assert.deepEqual(writing.diagnostics.errors,[]);assert.match(writing.diagnostics.revision,/golden-eight/);assert.equal(writing.forms.length,8);assert.ok(writing.hands.length>=25);assert.deepEqual(new Set(writing.words),new Set(['PHI','φ']));
+ assert.equal(writing.diagnostics.pending,0);assert.deepEqual(writing.diagnostics.errors,[]);assert.match(writing.diagnostics.revision,/golden-eight/);assert.equal(writing.forms.length,8);assert.ok(writing.hands.length>=25);assert.ok(!writing.hands.includes('loop'),'Excluded Loop profile returned');assert.deepEqual(new Set(writing.words),new Set(['PHI','φ']));
  await page.screenshot({path:'phi-tower-results/full-welcome.png'});
  await page.locator('#enter').focus();await page.keyboard.press('Enter');
  await page.screenshot({path:'phi-tower-results/full-entrance.png'});

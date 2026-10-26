@@ -3,12 +3,16 @@
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
-export const PHI_SQUARE_REVISION='phi-square-golden-eight-v3|sprayed-throwups-v'+VERSION;
+export const PHI_SQUARE_REVISION='phi-square-golden-eight-v4-no-loop|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
 export const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
-const writers=Object.keys(HANDS);
-export function makeSquareTag(text,seed,ink,{form='handstyle',hand='loop'}={}){
+// Temporarily omit the Loop profile reported as broken. Preserve all other
+// writer slots so excluding one hand does not reshuffle the whole square.
+export const SQUARE_DISABLED_HANDS=Object.freeze(['loop']);
+const writers=Object.keys(HANDS).map(hand=>SQUARE_DISABLED_HANDS.includes(hand)?'rush':hand);
+export function makeSquareTag(text,seed,ink,{form='handstyle',hand='rush'}={}){
+ if(SQUARE_DISABLED_HANDS.includes(hand))throw new RangeError('Square handwriting temporarily disabled: '+hand);
  return createTag(text,{seed,ink,form,hand,paintWidth:1.35});
 }
 export function planPhiSquare(){

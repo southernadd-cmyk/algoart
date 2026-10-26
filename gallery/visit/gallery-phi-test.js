@@ -1,4 +1,4 @@
-import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=golden-eight-forms-v3-20261026';
+import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=golden-eight-forms-v4-no-loop-20261026';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs';

@@ -37,7 +37,7 @@ test('real archive floors retain standing visitors, seating and a bounded popula
 
 // Exercise the same planner, painter state and obstacle coordinates used in the scene.
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from '../gallery/visit/phi-lift-indicator.mjs';
-import {planPhiSquare,planSquareTags,clearOfPhiSquare,GOLDEN_ANGLE,SQUARE_TAG_COUNTS,SQUARE_TAG_FORMS} from '../gallery/visit/phi-square-graffiti.mjs';
+import {planPhiSquare,planSquareTags,clearOfPhiSquare,GOLDEN_ANGLE,SQUARE_TAG_COUNTS,SQUARE_TAG_FORMS,SQUARE_DISABLED_HANDS,makeSquareTag} from '../gallery/visit/phi-square-graffiti.mjs';
 test('lift indicator follows physical floors in both directions and retains archive dates',()=>{
  const dates=['__phi_reception__','2026-10-05','2026-10-06','2026-10-07'];
  const up=[0,6.2,12.4,18.6].map(height=>phiLiftIndicatorState({height,dates,currentFloor:0,targetFloor:3,phase:'moving'}));
@@ -55,6 +55,7 @@ test('square writing mixes eight lettering forms, independent hands and lowercas
  assert.deepEqual(planSquareTags(objects),marks);assert.deepEqual(new Set(marks.map(m=>m.phrase)),new Set(['PHI','φ']));
  assert.deepEqual(new Set(marks.map(m=>m.form)),new Set(SQUARE_TAG_FORMS));assert.equal(SQUARE_TAG_FORMS.length,8);
  assert.ok(new Set(marks.map(m=>m.hand)).size>=25,'Writer identities are repeating');
+ for(const hand of SQUARE_DISABLED_HANDS){assert.ok(!marks.some(m=>m.hand===hand),'Disabled handwriting returned');assert.throws(()=>makeSquareTag('PHI','test','#000',{hand}),/temporarily disabled/);}
  const faces=new Map();for(const m of marks){if(!faces.has(m.face.id))faces.set(m.face.id,[]);faces.get(m.face.id).push(m);}
  assert.deepEqual(new Set([...faces.values()].map(ms=>ms.length)),new Set(SQUARE_TAG_COUNTS));
  for(const group of faces.values()){
