@@ -1,5 +1,5 @@
-// Reception-only writing uses all eight lettering forms and independently
-// varied writer profiles. Golden-angle spirals replace repeated rows.
+// Exterior square graffiti consists only of lowercase phi marks, with eight
+// lettering forms and independently varied writer profiles on golden-angle spirals.
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
