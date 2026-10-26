@@ -19,3 +19,15 @@ test('Loops gesture deterministic and separate from letter structures',()=>{
  assert.deepEqual(gestures,planLoopsOrbit(plan));
  assert.deepEqual(planLoopsOrbit({letters:[{x:0}]}),[]);
 });
+
+test('golden trajectories break at spaces and vary by seed and mode',()=>{
+ const plan={seed:'study',letters:[{index:0,x:0},{index:1,x:80},{index:3,x:250},{index:4,x:330}]};
+ const a=planLoopsOrbit(plan,{mode:'restrained',seed:'one'});
+ assert.equal(a.length,2);
+ assert.deepEqual(a.map(x=>x.wordIndex),[0,1]);
+ assert.ok(a.every(x=>x.generator==='golden-trajectory-v1'));
+ assert.deepEqual(a,planLoopsOrbit(plan,{mode:'restrained',seed:'one'}));
+ assert.notDeepEqual(a,planLoopsOrbit(plan,{mode:'expressive',seed:'one'}));
+ assert.notDeepEqual(a,planLoopsOrbit(plan,{mode:'restrained',seed:'two'}));
+ assert.deepEqual(planLoopsOrbit(plan,{mode:'none'}),[]);
+});
