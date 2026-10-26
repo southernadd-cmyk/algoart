@@ -44,6 +44,10 @@ jobs:
   reproduce:
     name: Archive / ${{ matrix.browser }}
     runs-on: ubuntu-24.04
+    # Playwright image ships the matching browsers and Ubuntu libraries.
+    # Avoid runner-dependent apt mirrors and incomplete browser installs.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -61,14 +65,6 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Record browser runtime
         run: npx playwright --version
-      - name: Install browser system dependencies
-        timeout-minutes: 8
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: npx playwright install-deps ${{ matrix.browser }}
-      - name: Download browser runtime
-        timeout-minutes: 5
-        run: npx playwright install ${{ matrix.browser }}
       - name: Start local editor
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/archive-http.log 2>&1 &
