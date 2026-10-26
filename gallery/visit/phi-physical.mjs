@@ -28,7 +28,7 @@ export function buildPhysicalPhiFloor(plan,circulation){
       Math.abs(other.z-edge.at)<EPS||Math.abs(other.z+other.h-edge.at)<EPS;
     if(aligned)intervals=subtract(intervals,edge.axis==='x'?[other.z,other.z+other.h]:[other.x,other.x+other.w]);
    }
-   for(const door of circulation.doors)if(door.axis===edge.axis&&Math.abs(door.at-edge.at)<EPS){
+   for(const door of [...circulation.doors,...(circulation.bridgePortals||[])])if(door.axis===edge.axis&&Math.abs(door.at-edge.at)<EPS){
     intervals=subtract(intervals,[door.centre-door.width/2,door.centre+door.width/2]);
    }
    for(const [lo,hi] of intervals)if(hi-lo>EPS)walls.push({...edge,lo,hi,room:owner.get(cell.id)});
@@ -48,12 +48,13 @@ export function buildPhysicalPhiFloor(plan,circulation){
  }).filter(Boolean);
  function within(x,z,r=WALK_RADIUS){
   return plan.rooms.some(c=>x>=c.x+r-EPS&&x<=c.x+c.w-r+EPS&&z>=c.z+r-EPS&&z<=c.z+c.h-r+EPS)||
-   circulation.doors.some(d=>d.axis==='x'?
+   [...circulation.doors,...(circulation.bridgePortals||[])].some(d=>d.axis==='x'?
      Math.abs(x-d.at)<=r&&Math.abs(z-d.centre)<=d.width/2-r:
      Math.abs(z-d.at)<=r&&Math.abs(x-d.centre)<=d.width/2-r);
  }
  function walkable(x,z,r=WALK_RADIUS){
-  if(!within(x,z,r))return false;
+  if(!within(x,z,r)&&!(circulation.bridges||[]).some(b=>b.axis==='x'?x>=b.from-r&&x<=b.to+r&&Math.abs(z-b.centre)<=b.width/2-r:z>=b.from-r&&z<=b.to+r&&Math.abs(x-b.centre)<=b.width/2-r))return false;
+  // Glass deck provides a walkable strip across the otherwise empty court.
   for(const wall of physicalWalls){
    if(wall.axis==='x'&&Math.abs(x-wall.at)<r&&z>wall.lo-r&&z<wall.hi+r)return false;
    if(wall.axis==='z'&&Math.abs(z-wall.at)<r&&x>wall.lo-r&&x<wall.hi+r)return false;
