@@ -1097,6 +1097,16 @@ function constructPhiTowerShell(){
   const mesh=new THREE.Mesh(geo,mat);
   mesh.position.set(x,y,z);shell.add(mesh);
  };
+ // A continuous transparent shaft enclosing the cabin between landings.
+ // Keep the east side open for the actual floor landing doors.
+ const shaftGlass=new THREE.MeshStandardMaterial({color:0xa6ccc8,transparent:true,
+  opacity:.14,metalness:.09,roughness:.16,depthWrite:false,side:THREE.DoubleSide});
+ const shaftHeight=Math.max(FLOOR_SPACING,archiveDates.length*FLOOR_SPACING);
+ append(.055,shaftHeight,2.95,-1.48,shaftHeight/2,0,shaftGlass);
+ for(const z of [-1.48,1.48])
+  append(2.96,shaftHeight,.055,0,shaftHeight/2,z,shaftGlass);
+ for(const x of [-1.48,1.48])for(const z of [-1.48,1.48])
+  append(.085,shaftHeight,.085,x,shaftHeight/2,z,join);
  let count=0;
  for(let level=0;level<archiveDates.length;level++){
   if(level===currentFloor)continue;
