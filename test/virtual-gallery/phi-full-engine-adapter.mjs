@@ -16,6 +16,12 @@ export function buildPhiRendererPlan(date,studies,{variation=0}={}){
   {axis:b.axis,at:b.from,centre:b.centre,width:b.width},
   {axis:b.axis,at:b.to,centre:b.centre,width:b.width}
  ]);
+ // Reserve a dedicated external lift vestibule, rather than putting the
+ // cabin in a gallery corner or competing with an artwork wall.
+ const entranceCell=floor.rooms.find(p=>Math.abs(p.x-floor.root.x)<.01&&p.z<=floor.root.z+2.2&&p.z+p.h>=floor.root.z+2.2)||floor.rooms[0];
+ const portal={axis:'x',at:entranceCell.x,centre:entranceCell.z+Math.min(entranceCell.h/2,2.2),width:2.4};
+ circulation.bridgePortals.push(portal);
+ circulation.lift={x:portal.at-2.25,z:portal.centre,room:0,external:true,portal};
  const physical=buildPhysicalPhiFloor(floor,circulation);
  const exhibition=planCuratedPhiExhibition(floor,circulation,physical,studies);
  const pieces=floor.mergedRooms.flatMap((room,i)=>room.pieces.map(p=>({...p,room:i})));
@@ -28,10 +34,12 @@ export function buildPhiRendererPlan(date,studies,{variation=0}={}){
  const nearPortal=(x,z)=>portals.some(d=>d.axis==='x'?
    Math.abs(x-d.at)<WALK_RADIUS+.2&&Math.abs(z-d.centre)<d.width/2-WALK_RADIUS:
    Math.abs(z-d.at)<WALK_RADIUS+.2&&Math.abs(x-d.centre)<d.width/2-WALK_RADIUS);
+ const lobby=circulation.lift;
+ const inLiftLobby=(x,z)=>x>=lobby.x-1.45&&x<=lobby.portal.at+.42&&Math.abs(z-lobby.z)<=1.2-WALK_RADIUS;
  const wallCollision=(x,z)=>physical.walls.some(w=>w.axis==='x'?
    Math.abs(x-w.at)<WALK_RADIUS&&z>=w.lo-WALK_RADIUS&&z<=w.hi+WALK_RADIUS:
    Math.abs(z-w.at)<WALK_RADIUS&&x>=w.lo-WALK_RADIUS&&x<=w.hi+WALK_RADIUS);
- const canWalk=(x,z)=> (inside(x,z)||overBridge(x,z)||nearPortal(x,z))&&!wallCollision(x,z);
+ const canWalk=(x,z)=> (inside(x,z)||overBridge(x,z)||nearPortal(x,z)||inLiftLobby(x,z))&&!wallCollision(x,z);
  const placed=[...exhibition.paintings,...exhibition.sculptures];
  const ids=placed.map(p=>p.studyId);
  const checks={
