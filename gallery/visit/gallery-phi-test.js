@@ -806,7 +806,7 @@ function startPhiCabinRide(targetFloor){
  panel(2.85,.16,2.55,0,-.12,0,dark);
  panel(2.85,.15,2.55,0,3.03,0,metal);
  panel(.09,2.96,2.55,-1.45,1.48,0,metal);
- panel(2.85,2.96,.09,0,1.48,-1.31,glass);
+ // No solid or tinted end wall across the cabin's sightline.
  for(const z of [-1.26,1.26])panel(.09,2.96,.11,1.41,1.48,z,metal);
  // The moving cabin is an enclosed object, not just a floating platform.
  // Its two metal door leaves remain shut between landings.
@@ -880,6 +880,8 @@ async function travelLift(date,index){
   liftTravelling=false;
   liftArrivalOpening=true;
   setLiftDoors(false);
+  console.error('[Phi lift] destination failure', {date,index,atFloor:currentFloor,ride:window.__phiLiftRide},error);
+  window.__phiLiftError={message:String(error?.message||error),stack:String(error?.stack||''),date,index};
   errorBox.textContent='The lift could not reach that floor: '+error.message;
   errorBox.hidden=false;
   if(!xrRide){$('lift').hidden=false;$('closeLift').focus({preventScroll:true});}
