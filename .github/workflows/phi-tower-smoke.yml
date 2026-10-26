@@ -3,6 +3,9 @@ on:
   push:
     paths:
       - 'test/virtual-gallery/phi-tower.html'
+      - 'test/virtual-gallery/full-engine.html'
+      - 'gallery/visit/gallery-v2.js'
+      - 'tests/full-engine-walkthrough.test.mjs'
       - 'gallery/visit/phi-*.mjs'
       - 'tests/phi-tower-smoke.mjs'
       - '.github/workflows/phi-tower-smoke.yml'
@@ -20,6 +23,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-tower-http.log 2>&1 &
       - run: node tests/phi-tower-smoke.mjs
+      - run: node tests/full-engine-walkthrough.test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
