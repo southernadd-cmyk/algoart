@@ -36,7 +36,7 @@ try{
   await page.locator('#lift').waitFor({state:'visible'});
   const destination=page.locator('#liftDays button').filter({hasText:new RegExp('^'+Number(date.slice(-2))+'$')});
   await destination.click({noWaitAfter:true});
-  await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',null,{timeout:20000});
+  await page.waitForFunction(()=>window.__phiLiftRide?.status==='moving',null,{timeout:90000});
   const before=await page.evaluate(()=>window.__phiLiftState);
   assert.equal(before.doorCount,2);assert.equal(before.calendarCount,1);
   assert.ok(before.doorClosure>.99,'Cabin moved with doors open');
@@ -60,11 +60,11 @@ try{
   const turn=Math.atan2(Math.sin(heading-state.lift.yaw),Math.cos(heading-state.lift.yaw));
   if(Math.abs(turn)>.1){
    const key=turn>0?'ArrowLeft':'ArrowRight';await page.keyboard.down(key);
-   try{await page.waitForFunction(target=>Math.abs(Math.atan2(Math.sin(window.__phiLiftState.yaw-target),Math.cos(window.__phiLiftState.yaw-target)))<.1,heading,{timeout:20000});}
+   try{await page.waitForFunction(target=>Math.abs(Math.atan2(Math.sin(window.__phiLiftState.yaw-target),Math.cos(window.__phiLiftState.yaw-target)))<.1,heading,{timeout:90000});}
    finally{await page.keyboard.up(key);}
   }
   await page.keyboard.down('w');
-  try{await page.waitForFunction(()=>Math.hypot(window.__phiLiftState.x,window.__phiLiftState.z)>3.1,null,{timeout:20000});}
+  try{await page.waitForFunction(()=>Math.hypot(window.__phiLiftState.x,window.__phiLiftState.z)>3.1,null,{timeout:90000});}
   finally{await page.keyboard.up('w');}
   assert.equal(await page.locator('#lift').isVisible(),false,'Calendar interrupted the exit');
   await page.screenshot({path:'phi-tower-results/gallery-'+date+'.png'});

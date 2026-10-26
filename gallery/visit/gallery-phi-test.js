@@ -851,7 +851,11 @@ async function travelLift(date,index){
  const departure={date:exhibitDate,position:rig.position.clone(),yaw,pitch};
  window.__phiLiftRide={from:rig.position.y,to:index*FLOOR_SPACING,progress:0,status:'preparing'};
  // Header/keyboard access boards the same physical cabin as wall proximity.
- if(plan?.phi&&liftCabinPosition)rig.position.copy(liftCabinPosition);
+ if(plan?.phi&&liftCabinPosition){
+  const boarding=Math.hypot(rig.position.x-liftCabinPosition.x,rig.position.z-liftCabinPosition.z)>2;
+  rig.position.copy(liftCabinPosition);
+  if(boarding){yaw=plan.phi.world.theta-Math.PI/2;rig.rotation.y=yaw;}
+ }
  if(!xrRide)document.exitPointerLock?.();
  canvas.focus({preventScroll:true});
  pressed.clear();touchPressed.clear();lookPressed.clear();
@@ -875,7 +879,7 @@ async function travelLift(date,index){
   if(xrRide)closeXRLift();
   else{
    liftReturnFocus=null;canvas.focus({preventScroll:true});
-   $('liftArrival').textContent='Floor '+(index===0?'G':index)+' · doors opening';
+   $('liftArrival').textContent=(date===RECEPTION?'Reception':shortDate(date)+' · Floor '+index)+' · doors opening';
    $('liftArrival').hidden=false;
    setTimeout(()=>$('liftArrival').hidden=true,1550);
   }
@@ -1520,7 +1524,7 @@ function constructPhiGallery(layout,studies){
   cg.fillStyle=available?(date===exhibitDate?'#263831':'#f0ede2'):'#738177';
   cg.font=available?'bold 27px Arial':'25px Arial';cg.fillText(String(day),x,y);
  }
- cg.fillStyle='#f0ede2';cg.font='25px Georgia';cg.fillText('Approach to choose a date',256,586);
+ cg.fillStyle='#f0ede2';cg.font='24px Georgia';cg.fillText(currentFloor===0?'Ground floor · Reception':'Floor '+currentFloor+' · '+shortDate(exhibitDate),256,551);cg.fillText('Approach to choose a date',256,599);
  const calendarTexture=new THREE.CanvasTexture(calendarCanvas);
  calendarTexture.colorSpace=THREE.SRGBColorSpace;
  const controlBoard=new THREE.Mesh(new THREE.PlaneGeometry(.89,1.12),
@@ -1531,7 +1535,7 @@ function constructPhiGallery(layout,studies){
   // Brushed cabin door and illuminated floor indicator.
  const indicator=document.createElement('canvas');indicator.width=512;indicator.height=128;
  const ink=indicator.getContext('2d');ink.fillStyle='#202d2a';ink.fillRect(0,0,512,128);
- ink.fillStyle='#f0e8c9';ink.font='bold 57px Georgia';ink.fillText(currentFloor===0?'G · RECEPTION':'FLOOR '+currentFloor,28,82);
+ ink.fillStyle='#f0e8c9';ink.font='bold 57px Georgia';ink.fillText(currentFloor===0?'G · RECEPTION':currentFloor+' · '+shortDate(exhibitDate).toUpperCase(),28,82,456);
  const tex=new THREE.CanvasTexture(indicator);tex.colorSpace=THREE.SRGBColorSpace;
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
  sign.position.set(liftFace-.16,elevation+2.78,l.z);sign.rotation.y=-Math.PI/2;cabinObject(sign);
@@ -1872,6 +1876,10 @@ function readableDate(date) {
   if(date===RECEPTION)return 'Reception';
   return new Intl.DateTimeFormat('en-GB',{dateStyle:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
 }
+function shortDate(date){
+  if(date===RECEPTION)return 'Reception';
+  return new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
+}
 // One compressed polygon pack per edition. A missing/corrupt pack is safe:
 // the original portrait generator remains available as the fallback.
 async function loadSculpturePack(date,cache){
@@ -2045,7 +2053,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   $('welcomeArchive').href='../'+(reception?archiveDates[1]:date)+'/';
   const floorName=nextFloor===0?'Ground floor':'Floor '+nextFloor;
   $('startFloor').textContent=floorName+' · '+readableDate(date);
-  $('floorIndicator').textContent=nextFloor===0?'G':String(nextFloor);
+  $('floorIndicator').textContent=nextFloor===0?'G · Reception':String(nextFloor)+' · '+shortDate(date);
   $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
   status.textContent=reception?'Ground floor · reception and visitor information':floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
   enter.disabled=false;enter.textContent='Enter the gallery';
@@ -2525,7 +2533,7 @@ function detectArt(elapsed) {
     const current=footprintAt(plan,rig.position.x,rig.position.z)?.room??-1;
     locationLabel=current>=0?'Gallery '+(current+1):'Walkway';
   }
-  const text='Floor '+(currentFloor===0?'G':currentFloor)+' · '+locationLabel;
+  const text=(currentFloor===0?'Ground floor':shortDate(exhibitDate)+' · Floor '+currentFloor)+' · '+locationLabel;
   if(status.textContent!==text)status.textContent=text;
 }
 let phiFrameSerial=0;
