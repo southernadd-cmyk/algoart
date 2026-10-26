@@ -170,7 +170,8 @@ const changes=Object.freeze({
    path('stroke','M 48 0 L 66 18 L 73 79 L 49 118 L 24 92 L 22 36 L 48 0'),
    path('stroke','M 26 38 L 47 20'),
    path('hairline','M 55 93 L 67 111')
-  ])  M:Object.freeze([
+  ]),
+  M:Object.freeze([
    path('stroke','M 15 116 L 17 2 L 37 56'),
    path('stroke','M 38 55 L 52 19 L 77 116'),
    path('hairline','M 53 20 L 75 7 L 88 20'),
