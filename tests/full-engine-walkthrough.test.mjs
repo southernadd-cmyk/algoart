@@ -35,7 +35,8 @@ try{
  await page.waitForFunction(()=>window.__phiLiftState?.entranceModelLoaded&&window.__phiLiftState?.outdoorPlantsLoaded===4,null,{timeout:45000});
  assert.equal(await page.evaluate(()=>window.__phiLiftState.outdoorPlantsReplaced),16,'Low-poly planting was not replaced');
  assert.ok(await page.evaluate(()=>window.__phiReception.worldMap.width>=6),'Missing giant reception map');
- assert.ok(await page.evaluate(()=>{const p=window.__phiReception.growingPoster,c=window.__phiReception.creditPlacement;return Math.abs(p.x-c.x)<.01&&Math.abs(p.z-c.z)<.01&&p.centreY-p.height/2>2.3;}),'Growing Tower poster is not above the credits');
+ assert.ok(await page.evaluate(()=>{const p=window.__phiReception.growingPoster,m=window.__phiReception.worldMap;return (p.x-m.x)*-m.normal.z>(m.width+p.width)/2;}),'Growing Tower poster is not on the viewer’s left of the map');
+ assert.ok(await page.getByRole('button',{name:'Gramophone',exact:true}).isVisible(),'Reception gramophone controls are missing');
  assert.equal(await page.evaluate(()=>window.__galleryStartupError),'');
  await page.waitForFunction(()=>window.__phiSquareGraffiti?.diagnostics().painted===85,null,{timeout:90000});
  const writing=await page.evaluate(()=>({diagnostics:window.__phiSquareGraffiti.diagnostics(),words:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.text))],forms:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.form))],hands:[...new Set(window.__phiSquareGraffiti.marks().map(m=>m.hand))]}));
