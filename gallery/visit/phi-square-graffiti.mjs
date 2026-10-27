@@ -166,11 +166,26 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
       piece(3.2,.44,1.5,0,.22,0,paving);
       piece(2.78,.07,1.12,0,.47,0,brickwork);
       piece(3.15,.11,.42,0,.52,-.65,paving);
-      // Sculptural shrub silhouettes avoid new geometry downloads or alpha sorting.
-      const green=new THREE.MeshStandardMaterial({color:'#64765b',roughness:1});
-      for(const dx of [-.83,0,.83]){
-       const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.43,1),green);
-       shrub.position.set(dx,.93,.12);group.add(shrub);
+      // The planted seats use varied low shrubs rather than identical stone-like
+      // icosahedrons. Geometry/materials are shared across all four beds.
+      const foliage=[
+       new THREE.MeshStandardMaterial({color:'#415e43',roughness:1,side:THREE.DoubleSide}),
+       new THREE.MeshStandardMaterial({color:'#6e8154',roughness:1,side:THREE.DoubleSide}),
+       new THREE.MeshStandardMaterial({color:'#87946b',roughness:1,side:THREE.DoubleSide})
+      ];
+      const soil=new THREE.MeshStandardMaterial({color:'#494338',roughness:1});
+      piece(2.72,.035,.73,0,.55,.16,soil);
+      const leafShape=new THREE.SphereGeometry(1,6,4);
+      for(let i=0;i<7;i++){
+       const px=-1.13+i*.37,shift=Math.sin(i*2.4+z)*.16;
+       const stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.043,.46,5),darkMetal);
+       stem.position.set(px,.83,shift+.13);group.add(stem);
+       for(let j=0;j<3;j++){
+        const a=(i*2.4+j*2.094),leaf=new THREE.Mesh(leafShape,foliage[(i+j)%3]);
+        leaf.position.set(px+Math.cos(a)*.17,1.02+(j%2)*.13,shift+.13+Math.sin(a)*.16);
+        leaf.scale.set(.26+(i%3)*.045,.31+(j%2)*.09,.18);
+        leaf.rotation.z=Math.cos(a)*.38;group.add(leaf);
+       }
       }
      }
     }
