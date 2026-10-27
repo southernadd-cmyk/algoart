@@ -1,4 +1,3 @@
-import {planPhiReceptionVault,addPhiTestVault} from './phi-test-vault.mjs?v=reception-uploaded-vault-20261027';
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
@@ -171,11 +170,6 @@ if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnosti
  preview(){const frame=phiSquare.viewpoint();if(!frame)return;const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(frame.position);view.lookAt(frame.target);renderer.setAnimationLoop(null);renderer.render(scene,view);},
  resume(){renderer.setAnimationLoop(tick);}};
 if(GALLERY_DEBUG)window.__phiReceptionPreview={
- ceiling(){const root=scene.getObjectByName('phi-test-reception-vault');if(!root?.userData.modelLoaded)return;
-  root.updateWorldMatrix(true,false);const p=root.userData.vaultPlan,view=new THREE.PerspectiveCamera(70,camera.aspect,.07,210);
-  view.position.copy(root.localToWorld(new THREE.Vector3(p.west+4,1.8,p.south+4)));
-  view.lookAt(root.localToWorld(new THREE.Vector3((p.west+p.east)/2,5.45,(p.south+p.north)/2)));
-  renderer.setAnimationLoop(null);renderer.render(scene,view);},
  overview(){const view=new THREE.PerspectiveCamera(55,camera.aspect,.1,500);view.position.set(98,74,-130);view.lookAt(4,67,0);renderer.setAnimationLoop(null);renderer.render(scene,view);},
  show(kind){const object=kind==='map'?phiReceptionMap:kind==='desk'?phiReceptionDesk?.root:phiOutdoorPlants[0];if(!object?.parent)return;
   object.updateWorldMatrix(true,false);const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);
@@ -1278,8 +1272,6 @@ function constructPhiTowerShell(){
   const planned=buildPhiRendererPlan(date===RECEPTION?RECEPTION:date,stubs);
   const wt=phiFloorTransform(level,planned.circulation.lift);
   const y=level*FLOOR_SPACING;
-  const shellHeight=date===RECEPTION&&globalThis.__phiReceptionTestRefresh
-   ?planPhiReceptionVault(planned.pieces,{floorSpacing:FLOOR_SPACING}).wallHeight:ROOM_HEIGHT;
   floorGroup=new THREE.Group();floorGroup.name='phi-archived-floor-glass-'+level;
   shell.add(floorGroup);glassFloors.push(floorGroup);
   currentBatch=new Map();opaqueFloors.push(currentBatch);
@@ -1287,10 +1279,10 @@ function constructPhiTowerShell(){
   for(const p of planned.pieces)append(p.w,.25,p.h,p.x+p.w/2,y-.16,p.z+p.h/2,floor);
   for(const w of planned.physical.walls){
    const len=w.hi-w.lo;if(len<.03)continue;
-   if(w.axis==='x')append(.20,shellHeight,len,w.at,y+shellHeight/2,(w.lo+w.hi)/2,masonry);
-   else append(len,shellHeight,.20,(w.lo+w.hi)/2,y+shellHeight/2,w.at,masonry);
+   if(w.axis==='x')append(.20,ROOM_HEIGHT,len,w.at,y+ROOM_HEIGHT/2,(w.lo+w.hi)/2,masonry);
+   else append(len,ROOM_HEIGHT,.20,(w.lo+w.hi)/2,y+ROOM_HEIGHT/2,w.at,masonry);
   }
-  for(const p of planned.pieces)append(p.w,.18,p.h,p.x+p.w/2,y+shellHeight+.09,p.z+p.h/2,cap);
+  for(const p of planned.pieces)append(p.w,.18,p.h,p.x+p.w/2,y+ROOM_HEIGHT+.09,p.z+p.h/2,cap);
   for(const b of planned.bridges){
    const mid=(b.from+b.to)/2;
    append(b.axis==='x'?b.length:b.width,.16,b.axis==='z'?b.length:b.width,
@@ -1366,9 +1358,6 @@ function queuePhiFurnishings(phi,furnishings,elevation){
 }
 function constructPhiGallery(layout,studies){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
- const vaultPlan=exhibitDate===RECEPTION&&globalThis.__phiReceptionTestRefresh
-  ?planPhiReceptionVault(phi.pieces,{floorSpacing:FLOOR_SPACING}):null;
- const roomHeight=vaultPlan?.wallHeight||ROOM_HEIGHT;
  window.__phiFullEngine={date:exhibitDate,roomCount:phi.floor.mergedRooms.length,wallCount:phi.physical.walls.length,artworks:studies.length,paintings:phi.exhibition.paintings.length,sculptures:phi.exhibition.sculptures.length,unplaced:phi.exhibition.unplaced.length,paintingSizes:phi.exhibition.paintings.map(p=>({width:p.width,height:p.height})),paintingsLoaded:0};
  // Every floor, enclosure and collision surface comes from the same phi plan.
  const plaster=galleryFinish?.interiorWall||wall;
@@ -1376,8 +1365,8 @@ function constructPhiGallery(layout,studies){
    block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,galleryFinish.floor);
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.04)continue;
-  if(w.axis==='x')block(.19,roomHeight,len,w.at,elevation+roomHeight/2,(w.lo+w.hi)/2,plaster);
-  else block(len,roomHeight,.19,(w.lo+w.hi)/2,elevation+roomHeight/2,w.at,plaster);
+  if(w.axis==='x')block(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,plaster);
+  else block(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,plaster);
  }
  // Architectural plaster inside; metre-tiled brick veneer only on exterior faces.
  const inCell=(x,z)=>phi.pieces.some(p=>x>=p.x-.0001&&x<=p.x+p.w+.0001&&z>=p.z-.0001&&z<=p.z+p.h+.0001);
@@ -1388,27 +1377,26 @@ function constructPhiGallery(layout,studies){
    const left=inCell(w.at-offset,c),right=inCell(w.at+offset,c);
    if(left===right)continue;
    const side=left?1:-1;
-   block(.035,roomHeight,len,w.at+side*.113,elevation+roomHeight/2,c,galleryFinish.exteriorBrick);
+   block(.035,ROOM_HEIGHT,len,w.at+side*.113,elevation+ROOM_HEIGHT/2,c,galleryFinish.exteriorBrick);
   }else{
    const north=inCell(c,w.at-offset),south=inCell(c,w.at+offset);
    if(north===south)continue;
    const side=north?1:-1;
-   block(len,roomHeight,.035,c,elevation+roomHeight/2,w.at+side*.113,galleryFinish.exteriorBrick);
+   block(len,ROOM_HEIGHT,.035,c,elevation+ROOM_HEIGHT/2,w.at+side*.113,galleryFinish.exteriorBrick);
   }
  }
  // Architectural finish follows the actual phi rooms. Keep the office
  // ceiling photographic texture, with trim only at true physical boundaries:
  // subdivided internal cells should not look like a ceiling grid.
  for(const p of phi.pieces)
-  block(p.w,.18,p.h,p.x+p.w/2,elevation+roomHeight+.10,p.z+p.h/2,plaster);
- if(vaultPlan)addPhiTestVault(THREE,scene,{plan:vaultPlan,elevation});
+  block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster);
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.45)continue;
   if(w.axis==='x'){
-   block(.13,.16,len,w.at,elevation+roomHeight-.035,(w.lo+w.hi)/2,join);
+   block(.13,.16,len,w.at,elevation+ROOM_HEIGHT-.035,(w.lo+w.hi)/2,join);
    block(.065,.13,len,w.at,elevation+.14,(w.lo+w.hi)/2,galleryFinish.plinth);
   }else{
-   block(len,.16,.13,(w.lo+w.hi)/2,elevation+roomHeight-.035,w.at,join);
+   block(len,.16,.13,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT-.035,w.at,join);
    block(len,.13,.065,(w.lo+w.hi)/2,elevation+.14,w.at,galleryFinish.plinth);
   }
  }
@@ -1418,14 +1406,12 @@ function constructPhiGallery(layout,studies){
  for(const room of lightRooms.slice(0,galleryFinish.lowPower?3:7)){
   const cell=[...room.pieces].sort((a,b)=>b.w*b.h-a.w*a.h)[0];
   if(!cell||cell.w<3||cell.h<3)continue;
-  const bay=vaultPlan?.tiles.reduce((best,b)=>Math.hypot(b.x-cell.x-cell.w/2,b.z-cell.z-cell.h/2)<Math.hypot(best.x-cell.x-cell.w/2,best.z-cell.z-cell.h/2)?b:best);
-  const centre=bay?new THREE.Vector3(bay.x,elevation+vaultPlan.crown-.12,bay.z)
-    :new THREE.Vector3(cell.x+cell.w/2,elevation+roomHeight-.035,cell.z+cell.h/2);
+  const centre=new THREE.Vector3(cell.x+cell.w/2,elevation+ROOM_HEIGHT-.035,cell.z+cell.h/2);
   const mount=new THREE.Group();mount.position.copy(centre);scene.add(mount);
   const fallback=block(.66,.12,.28,centre.x,centre.y-.1,centre.z,join);
   placeTwinSpotlight(THREE,mount,new THREE.Vector3(centre.x,elevation+1.45,centre.z),fallback);
   const light=new THREE.SpotLight(0xfff3df,12,12,.66,.8,1.5);
-  light.position.set(centre.x,vaultPlan?centre.y-.2:elevation+ROOM_HEIGHT-.2,centre.z);
+  light.position.set(centre.x,elevation+ROOM_HEIGHT-.2,centre.z);
   light.target.position.set(centre.x,elevation+1.1,centre.z);
   scene.add(light,light.target);
  }
@@ -1550,7 +1536,7 @@ function constructPhiGallery(layout,studies){
  for(const side of [-1,1])
    block(.17,3.2,.16,innerEast,elevation+1.6,l.z+side*openingHalf,join);
  block(.17,.2,l.portal.width+.15,innerEast,elevation+3.23,l.z,join);
- for(const sx of [-1,1])for(const sz of [-1,1])block(.12,roomHeight,.12,l.x+sx*1.38,elevation+roomHeight/2,l.z+sz*1.38,join);
+ for(const sx of [-1,1])for(const sz of [-1,1])block(.12,ROOM_HEIGHT,.12,l.x+sx*1.38,elevation+ROOM_HEIGHT/2,l.z+sz*1.38,join);
  block(Math.max(2.4,Math.abs((l.portal?.at??l.x+2.25)-l.x)+.5),.16,2.3,(l.x+(l.portal?.at??l.x+2.25))/2,elevation-.08,l.z,galleryFinish.floor);
  const liftLight=new THREE.PointLight(0xfff4d8,8,12,2);liftLight.position.set(l.x,elevation+2.8,l.z);cabinObject(liftLight);
  // Same procedural brushed-steel texture as the production archive lift.
@@ -1590,9 +1576,6 @@ function constructPhiGallery(layout,studies){
   const transverse={x:outward.z,z:-outward.x};
   const doorway=entrance?{x:entrance.centre,z:entrance.at}:{x:l.x-1.45,z:l.z};
   entranceDoor=createPhiGothicEntrance(THREE,{doorway,outward,level:elevation,surroundMaterial:galleryFinish.stone});scene.add(entranceDoor.root);
-  // Close the wall above the existing doorway up to the reception roof.
-  if(vaultPlan)block(2.6,roomHeight-ROOM_HEIGHT,.19,doorway.x,
-    elevation+(roomHeight+ROOM_HEIGHT)/2,doorway.z,plaster);
   addPhiFrontage(THREE,entranceDoor.root,{concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs});
   const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
     halfWidth:30,halfDepth:29,level:elevation};
@@ -1620,7 +1603,7 @@ function constructPhiGallery(layout,studies){
     const support=supports[i];
     const x=support?positions[i]:i===0?west+3.1:west+extent*.53;
     const z=support?support.z+Math.min(2.1,support.h*.5):doorway.z+2.1;
-    m.position.set(x,elevation+roomHeight+.36,z);
+    m.position.set(x,elevation+ROOM_HEIGHT+.36,z);
     m.rotation.y=i===0?.12:-.12;
    });
    window.__phiRoofMonumentPositions=monuments.map(m=>({x:m.position.x,z:m.position.z}));
@@ -1641,7 +1624,7 @@ function constructPhiGallery(layout,studies){
    const map=new THREE.CanvasTexture(plaque);map.colorSpace=THREE.SRGBColorSpace;
    const markerSign=new THREE.Mesh(new THREE.PlaneGeometry(7.4,.85),
     new THREE.MeshBasicMaterial({map,side:THREE.DoubleSide}));
-   markerSign.position.set(doorway.x,elevation+roomHeight+.15,doorway.z-.14);
+   markerSign.position.set(doorway.x,elevation+ROOM_HEIGHT+.15,doorway.z-.14);
    markerSign.rotation.y=Math.PI; // Canvas front must face south towards the square.
    markerSign.name='phi-exterior-marker-sign';
    scene.add(markerSign);
