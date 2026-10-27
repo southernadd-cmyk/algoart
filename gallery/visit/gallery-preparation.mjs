@@ -37,25 +37,14 @@ export function stageGalleryTextureCallback(run){
  if(!preparation)return run();
  return preparation.textureTasks.enqueue(run).catch(error=>console.warn('Gallery texture preparation failed',error));
 }
-export async function prepareGalleryTexture(texture){
- if(preparation)try{await preparation.textureTasks.enqueue(()=>preparation.renderer.initTexture(texture),{priority:1});}
- catch(error){console.warn('Gallery texture will use normal first-render upload',error);}
-}
+// Let Three upload textures during normal rendering. Explicit initTexture
+// forced driver synchronisation and made the first candidate stall more.
+export async function prepareGalleryTexture(texture){}
 export async function prepareGalleryModel(model){
  if(!preparation)return model;
- try{await preparation.models.enqueue(async()=>{
-  const {renderer,camera,scene,modelReady}=preparation;
-  if(modelReady)await modelReady;
-  // Prepare detached models against the actual lights before visible clones
-  // are attached. Nothing is temporarily placed inside the gallery.
-  if(renderer.compileAsync)await renderer.compileAsync(model,camera,scene);
-  const textures=new Set();
-  model.traverse(object=>{for(const material of [].concat(object.material||[])){
-   for(const value of Object.values(material))if(value?.isTexture)textures.add(value);
-  }});
-  for(const texture of textures)await prepareGalleryTexture(texture);
- });}catch(error){console.warn('Gallery model will use normal first-render preparation',error);}
- return model;
+ // Stagger model attachment without compiling detached models or uploading
+ // their entire texture set while the visitor is already moving.
+ return preparation.models.enqueue(()=>model);
 }
 const neutralBanks=new WeakMap();
 export function neutralGalleryMaps(THREE){

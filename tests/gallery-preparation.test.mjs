@@ -17,7 +17,7 @@ test('preparation yields between tasks, honours priority and recovers from failu
  assert.equal(queue.stats.completed,3);assert.equal(queue.stats.failed,1);
 });
 
-test('detached model shaders and unique textures prepare without changing detail',async()=>{
+test('model attachment is staggered without forced shader compilation or texture upload',async()=>{
  const tasks=createGalleryPreparationQueue({yieldFrame:async()=>{}});
  const models=createGalleryPreparationQueue({yieldFrame:async()=>{}});
  const texture=new THREE.Texture({width:2048,height:2048});
@@ -31,7 +31,7 @@ test('detached model shaders and unique textures prepare without changing detail
  }});
  try{
   assert.equal(await prepareGalleryModel(model),model);
-  assert.deepEqual(calls,['compile','upload']);assert.equal(model.children.length,2);
+  assert.deepEqual(calls,[]);assert.equal(model.children.length,2);
   assert.equal(texture.image.width,2048);assert.equal(model.children[0].geometry,geometry);assert.equal(model.parent,null);
  }finally{configureGalleryPreparation(null);}
 });
