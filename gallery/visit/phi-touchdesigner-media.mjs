@@ -46,7 +46,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   started=true;setState('checking-export');
   let manifest;
   try{
-   const response=await fetch(manifestURL,{cache:'default'});
+   const response=await fetch(manifestURL,{cache:'no-store'});
    if(!response.ok)throw new Error('TouchDesigner manifest HTTP '+response.status);
    manifest=await response.json();
    if(disposed)return;
