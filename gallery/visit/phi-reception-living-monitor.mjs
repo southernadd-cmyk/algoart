@@ -1,3 +1,5 @@
+import {createTouchDesignerMonitorMedia} from './phi-touchdesigner-media.mjs';
+
 // Test-only three-monitor installation for the ground-floor reception.
 // Coordinates stay in the untransformed phi layout; the gallery transforms
 // all newly created scene children after constructing the floor.
@@ -57,7 +59,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
 
  const bezelMaterial=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.32,roughness:.48});
  const lampMaterial=new THREE.MeshBasicMaterial({color:0x66c59d,toneMapped:false});
- const textures=[],screenMaterials=[],labels=[],canvases=[];
+ const textures=[],screenMaterials=[],canvases=[],screens=[];
  const width=wall.width,height=width*0.66;
  for(let screenIndex=0;screenIndex<3;screenIndex++){
   const unit=new THREE.Group();
@@ -76,13 +78,16 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   const display=new THREE.Mesh(new THREE.PlaneGeometry(width-.065,height-.067),displayMaterial);
   display.position.z=.041;
   display.name='monitor-screen';
-  unit.add(display);
+  unit.add(display);screens.push(display);
   const indicator=new THREE.Mesh(new THREE.BoxGeometry(.024,.012,.006),lampMaterial);
   indicator.position.set(width/2-.047,-height/2+.014,.042);unit.add(indicator);
   root.add(unit);
   canvases.push(ctx);textures.push(texture);screenMaterials.push(displayMaterial);
  }
  scene.add(root);
+ // A single 1152x240 TouchDesigner WebM can feed all three panels.
+ // Until an authentic export is published, use the existing procedural canvases.
+ const media=createTouchDesignerMonitorMedia(THREE,{screens});
 
  const phi=(1+Math.sqrt(5))/2;
  const palette=['#31545c','#ba7453','#aa9b6b','#303b40','#d4ac7d'];
@@ -126,16 +131,19 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   frameId=requestAnimationFrame(tick);
   if(time-last<150)return; // At most 6-7 frames per second.
   root.getWorldPosition(monitorPosition);
-  if(camera?.getWorldPosition(cameraPosition).distanceTo(monitorPosition)>11)return;
+  const distance=camera.getWorldPosition(cameraPosition).distanceTo(monitorPosition);
+  media.update(distance<11);
+  if(distance>11||media.usingExport)return;
   last=time;
   canvases.forEach((ctx,i)=>{draw(ctx,i,(time-origin)*.00018);textures[i].needsUpdate=true;});
   draws++;
  }
  frameId=requestAnimationFrame(tick);
  return {root,mount:wall,screenCount:3,get drawCount(){return draws;},
+  get mediaDiagnostics(){return media.diagnostics();},
   dispose(){
    if(disposed)return;
-   disposed=true;cancelAnimationFrame(frameId);scene.remove(root);
+   disposed=true;cancelAnimationFrame(frameId);media.dispose();scene.remove(root);
    root.traverse(object=>object.geometry?.dispose());
    textures.forEach(texture=>texture.dispose());
    screenMaterials.forEach(material=>material.dispose());
