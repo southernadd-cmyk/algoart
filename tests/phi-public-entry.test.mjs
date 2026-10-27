@@ -65,6 +65,35 @@ try{
   assert.equal(monitors.media?.state,'fallback','TouchDesigner must not load media at gallery startup');
   assert.equal(testRequests.filter(url=>url.includes('phase-one-triptych.webm')).length,0,
    'Video decoder should never start at gallery startup');
+  // Verify living screens actually animate, not merely show static canvases.
+  // Place the automated viewer near the installed wall to exercise the
+  // distance-gated render loop without relying on keyboard navigation.
+  await page.evaluate(()=>{
+   const {scene,camera}=window.__PP_EXPORT_SCENE__;
+   const monitor=scene.getObjectByName('phi-reception-three-living-monitors');
+   monitor.updateWorldMatrix(true,false);
+   const p=monitor.getWorldPosition(monitor.position.clone());
+   camera.parent.position.set(p.x,p.y-1.68,p.z+2);
+  });
+  const readFrames=()=>page.evaluate(()=>{
+   const scene=window.__PP_EXPORT_SCENE__.scene;
+   const root=scene.getObjectByName('phi-reception-three-living-monitors');
+   return [1,2].map(i=>{
+    const panel=root.getObjectByName('living-monitor-'+(i+1));
+    const mesh=panel.getObjectByName('monitor-screen');
+    const canvas=mesh.material.map.image;
+    const bytes=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+    let hash=2166136261;
+    for(let j=0;j<bytes.length;j+=37)hash=Math.imul(hash^bytes[j],16777619)>>>0;
+    return hash;
+   });
+  });
+  await page.waitForTimeout(550);
+  const beforeAnimation=await readFrames();
+  await page.waitForTimeout(1100);
+  const afterAnimation=await readFrames();
+  assert.ok(beforeAnimation.every((hash,i)=>hash!==afterAnimation[i]),
+   'Both fallback screens must change pixels over time when approached');
   assert.deepEqual(failures,[],'Test gallery generated browser errors');
   console.log('Three test reception monitors created in scene:',monitors);
   await context.close();
