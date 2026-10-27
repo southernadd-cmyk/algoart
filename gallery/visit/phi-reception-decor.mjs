@@ -105,7 +105,7 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMat
 
 export const RECEPTION_CREDITS=[
  {title:'The gallery',lines:['PROPORTION PIECE','Daily generative art and architecture','','Built with Three.js','Three.js authors · MIT licence','','Visitors: Quaternius · CC0','Street lamps: Poly Haven · CC0']},
- {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Succulent — GrrHero','World map — My Name Is This','Magazine cabinet — JFN','Paper debris — Sousinho','Cardboard boxes —','NotAnotherApocalypticCo.','','All seven models: CC BY 4.0','Meshes and textures optimised.','Door frame and leaves separated.']},
+ {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Succulent — GrrHero','Reception art — PROPORTION PIECE','Magazine cabinet — JFN','Paper debris — Sousinho','Cardboard boxes —','NotAnotherApocalypticCo.','','Scene models: CC BY 4.0','Meshes and textures optimised.','Door frame and leaves separated.']},
  {title:'Materials and fittings',lines:['Wall plaster — OpenGameArt scan','Ceiling — OfficeCeiling001','ambientCG · CC0','','Black brick: Bricks055','ambientCG · CC0','','Exterior roof: Abandoned Scans','CC BY 4.0 · scan adapted','','Full credits and licences online.']}
 ];
 export function addPhiReceptionCredits(THREE,scene,placement,elevation){
@@ -159,11 +159,27 @@ export function addPhiFrontage(THREE,root,{concrete,timber,metal,defer}){
 
 export function addPhiReceptionMap(THREE,scene,placement,elevation){
  if(!placement)return null;
- const root=new THREE.Group();root.name='phi-giant-world-map';root.position.set(placement.x,elevation+placement.centreY,placement.z);
+ const root=new THREE.Group();root.name='phi-reception-baked-watercolour';root.position.set(placement.x,elevation+placement.centreY,placement.z);
  root.rotation.y=placement.axis==='x'?(placement.normal.x>0?Math.PI/2:-Math.PI/2):(placement.normal.z>0?0:Math.PI);scene.add(root);
- asset(modelURL('vintage-world-map.glb')).then(source=>{
-  if(!root.parent||root.userData.galleryDisposed)return;
-  root.add(fitPhiWallModel(THREE,source.clone(true),placement.width));root.userData.modelLoaded=true;
- }).catch(error=>console.warn('Reception world map unavailable',error));
+ // A pre-rendered editor export: no live paint simulation or GLB decode in reception.
+ const frameWidth=placement.width,frameHeight=placement.height||4.016;
+ const frame=new THREE.Mesh(new THREE.BoxGeometry(frameWidth,frameHeight,.08),
+  new THREE.MeshStandardMaterial({color:'#302d29',roughness:.68}));
+ frame.name='reception-watercolour-frame';root.add(frame);
+ const mount=new THREE.Mesh(new THREE.PlaneGeometry(frameWidth-.12,frameHeight-.12),
+  new THREE.MeshBasicMaterial({color:'#ede8da',toneMapped:false}));
+ mount.position.z=.043;root.add(mount);
+ const artHeight=frameHeight-.20,artWidth=artHeight*1.4;
+ const paper=new THREE.MeshBasicMaterial({color:'#f5f0e6',toneMapped:false});
+ const artwork=new THREE.Mesh(new THREE.PlaneGeometry(artWidth,artHeight),paper);
+ artwork.name='reception-radiant-watercolour';artwork.position.z=.047;root.add(artwork);
+ const imageURL=new URL('./assets/reception-radiant-watercolour.webp',import.meta.url).href;
+ new THREE.TextureLoader().load(imageURL,texture=>{
+  if(!root.parent||root.userData.galleryDisposed){texture.dispose();return;}
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.anisotropy=4;
+  paper.map=texture;paper.color.set('#ffffff');paper.needsUpdate=true;
+  root.userData.modelLoaded=true;
+ },undefined,error=>console.warn('Reception baked watercolour unavailable',error));
  return root;
 }
