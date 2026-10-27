@@ -29,7 +29,9 @@ test('public metadata and essential production assets exist',()=>{
   assert.doesNotMatch(html,/noindex/);
   assert.match(html,/gallery-phi-bundle\.js\?v=/);
   const receptionFlag=html.indexOf('globalThis.__phiReceptionTestRefresh=true');
-  assert.ok(receptionFlag>=0&&receptionFlag<html.indexOf("await import('./gallery-phi-bundle.js"),'Reception must be enabled before the production bundle loads');
+  // The bundle is selected by a test-query conditional, so the import is dynamic.
+  // Check that reception is initialised before that import statement itself.
+  assert.ok(receptionFlag>=0&&receptionFlag<html.indexOf('await import(',receptionFlag),'Reception must be enabled before the production bundle loads');
   assert.doesNotMatch(html,/cdn\.jsdelivr\.net/);
   assert.match(html,/class="algo-global-header gallery-global-header"/);
   assert.match(html,/--gallery-ui-bottom/);
