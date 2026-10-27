@@ -1,12 +1,12 @@
 export const RECEPTION_RECORD=Object.freeze([
  {title:'Reflets dans l’eau',composer:'Claude Debussy',analysis:'Roy Howat',
-  src:'https://s9.imslp.org/files/imglnks/usimg/0/0e/IMSLP506786-PMLP07652-Debussy_%2C_Reflets_dans_l%27eau.ogg',
+  src:'https://upload.wikimedia.org/wikipedia/commons/7/7b/Debussy_%2C_Reflets_dans_l%27eau.ogg',
   credit:'Giorgi Latso · recorded by Asuas · 2017 · CC BY-SA 4.0',
   source:'https://commons.wikimedia.org/wiki/File:Debussy_,_Reflets_dans_l%27eau.ogg'},
- {title:'Music for Strings, Percussion and Celesta',composer:'Béla Bartók',analysis:'Ernő Lendvai',
-  src:'https://imslp.eu/files/imglnks/euimg/7/74/IMSLP415495-PMLP40552-Bartok_Sz_106_SOSWF_Somogyi_1957.mp3',
-  credit:'SWR Sinfonieorchester Baden-Baden und Freiburg · László Somogyi · 1957',
-  source:'https://imslp.org/wiki/Music_for_Strings,_Percussion_and_Celesta_(Bart%C3%B3k,_B%C3%A9la)'}
+ {title:'Piano Sonata No. 16 in C major, K. 545 — I. Allegro',composer:'Wolfgang Amadeus Mozart',analysis:'John F. Putz',
+  src:'https://upload.wikimedia.org/wikipedia/commons/3/38/Wolfgang_Amadeus_Mozart_-_sonata_no._16_in_c_major%2C_k.545_%27sonata_facile%27_-_i._allegro.ogg',
+  credit:'Musopen · public-domain recording · worldwide use',
+  source:'https://commons.wikimedia.org/wiki/File:Wolfgang_Amadeus_Mozart_-_sonata_no._16_in_c_major,_k.545_%27sonata_facile%27_-_i._allegro.ogg'}
 ]);
 // One media element is the record: track changes never overlap two performances.
 export function createGramophoneRecord({audio=new Audio(),tracks=RECEPTION_RECORD,onChange=()=>{}}={}){
