@@ -22,10 +22,12 @@ export const MATERIAL_SOURCES=Object.freeze({
     tileMeters:2.3
   }),
   brick:Object.freeze({
-    asset:'brick_wall_02',author:'Dimitrios Savva / Poly Haven',license:'CC0-1.0',
-    diffuse:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brick_wall_02/brick_wall_02_diff_1k.jpg',
-    normal:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brick_wall_02/brick_wall_02_nor_gl_1k.jpg',
-    tileMeters:2
+    asset:'Bricks055',author:'ambientCG',license:'CC0-1.0',
+    source:'https://ambientcg.com/view?id=Bricks055',
+    diffuse:'./textures/Bricks055_Color.jpg',
+    normal:'./textures/Bricks055_NormalGL.jpg',
+    roughness:'./textures/Bricks055_Roughness.jpg',
+    tileMeters:1.05
   })
 });
 // Optional CC0 scans prepared from the uploaded OpenGameArt 50-texture pack.
@@ -58,12 +60,12 @@ function tintScan(image,mode,limit=768){
       d[i]=Math.min(255,value+5);
       d[i+1]=Math.min(255,value+2);
       d[i+2]=Math.max(0,value-5);
-    }else if(mode==='brick'){
-      // Keep actual mortar and brick detail, but neutralise red into quiet
-      // buff sandstone to sit behind the artworks.
-      d[i]=Math.max(60,Math.min(242,166+(lum-120)*.35));
-      d[i+1]=Math.max(55,Math.min(225,146+(lum-120)*.34));
-      d[i+2]=Math.max(50,Math.min(205,122+(lum-120)*.31));
+    }else if(mode==='brick-black'){
+      // ambientCG Bricks055 has grey-brown albedo; retain the photographed
+      // mortar/brick relief while turning it into black charcoal masonry.
+      // This is a colour adaptation of the specified CC0 texture.
+      const charcoal=Math.max(21,Math.min(80,38+(lum-106)*.28));
+      d[i]=charcoal*.94;d[i+1]=charcoal*.99;d[i+2]=charcoal*1.035;
     }else{
       d[i]=Math.min(255,value+3);
       d[i+1]=Math.min(255,value+2);
@@ -113,16 +115,16 @@ function brickFallback(){
   // CDN is unavailable. It is replaced by the real 1K Poly Haven scan.
   const c=document.createElement('canvas');c.width=256;c.height=256;
   const g=c.getContext('2d');
-  g.fillStyle='#b2a89b';g.fillRect(0,0,256,256);
+  g.fillStyle='#25292b';g.fillRect(0,0,256,256);
   for(let row=0;row<8;row++){
     const y=row*32+2,shift=(row%2)*32;
     for(let column=-1;column<5;column++){
       const x=column*64+shift+2;
       const h=((row*197+column*149)^(row*column*31))>>>0;
       const light=h%5;
-      g.fillStyle=['#c4b7a4','#b6a995','#c2b29c','#aa9f91','#baaa95'][light];
+      g.fillStyle=['#35383b','#2b2f32','#404246','#24282b','#303437'][light];
       g.fillRect(x,y,60,28);
-      g.strokeStyle='rgba(78,67,51,.09)';
+      g.strokeStyle='rgba(5,7,8,.24)';
       g.beginPath();g.moveTo(x+2,y+25);g.lineTo(x+58,y+25);g.stroke();
       for(let k=0;k<9;k++){
         const px=x+((h+k*37)%58),py=y+((h+k*19)%27);
@@ -189,7 +191,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // A quieter secondary floor finish permits stone in selected gallery rooms.
   const stone=make('#e6e1d8',.92,1.65);
   const stoneBridge=make('#dedbd3',.91,2.25);
-  const exteriorBrick=make('#faf8f1',.93,2.0);
+  const exteriorBrick=make('#ffffff',.94,MATERIAL_SOURCES.brick.tileMeters);
   stoneBridge.side=THREE.DoubleSide;
   const trims=make('#625f58',.66,.8,.15);
   const fallback={
@@ -211,7 +213,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   ceiling.map=tx(fallback.plinth);
   stoneBridge.map=floor.map;stone.map=floor.map;
   exteriorBrick.map=tx(brickFallback());
-  const diagnostics={loaded:[],failed:[],lowPower,source:'Poly Haven CC0'};
+  const diagnostics={loaded:[],failed:[],lowPower,source:'ambientCG Bricks055 CC0 / Poly Haven CC0'};
   const locallyLoaded=new Set();
   function scan(slot,url,mode,targets){
     loader.load(url,imageTexture=>{
@@ -256,8 +258,14 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   },undefined,()=>diagnostics.failed.push('wood-three-tones'));
   // A real scanned 1K brick and subtle OpenGL normal relief replace the flat
   // procedural exterior tile. Both requests are optional; geometry is unchanged.
-  scan('brick-color',MATERIAL_SOURCES.brick.diffuse,'brick',[exteriorBrick]);
-  normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.11);
+  scan('brick-color',MATERIAL_SOURCES.brick.diffuse,'brick-black',[exteriorBrick]);
+  normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
+  loader.load(MATERIAL_SOURCES.brick.roughness,texture=>{
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    exteriorBrick.roughnessMap=texture;
+    exteriorBrick.needsUpdate=true;
+    diagnostics.loaded.push('ambientcg-bricks055-roughness');
+  },undefined,()=>diagnostics.failed.push('ambientcg-bricks055-roughness'));
   // Downloaded once from same-origin assets, not from a third-party API
   // during gallery start. Optional maps can fail independently; the roof
   // remains solid and navigable throughout.
