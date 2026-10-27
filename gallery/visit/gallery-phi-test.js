@@ -1,5 +1,5 @@
 // Staging-only reception furnishing refinements.
 globalThis.__phiReceptionTestRefresh=true;
 globalThis.__phiReceptionTilePreview=true;
-await import('./gallery-phi.js?v=gallery-speakers-tiles-20261027');
+await import('./gallery-phi.js?v=storage-boxes-20261027');
 

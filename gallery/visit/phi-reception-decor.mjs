@@ -1,4 +1,4 @@
-import {replacePhiPreparationTable,addPhiOfficeFrontage} from './phi-office-reception.mjs?v=gallery-reception-20261027';
+import {addPhiOfficeFrontage} from './phi-office-reception.mjs?v=gallery-reception-20261027';
 import {loadPhiDecorAsset as asset,fitPhiDecorAsset as fit,fitPhiWallModel} from './phi-model-assets.mjs';
 import {createGothicSurroundShape} from './phi-gothic-door-profile.mjs';
 import {renderVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
@@ -32,13 +32,11 @@ export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
    holder.userData.modelLoaded=true;
   }).catch(error=>console.warn('Reception boxes unavailable',error));
  }
- // Small, practical preparation rooms: archive shelving, packing benches and
- // sorting trays. Geometry and colours reuse the scene's loaded material bank.
+ // Small storage rooms: archive shelving and floor-stacked packing boxes.
  if(globalThis.__phiReceptionTestRefresh&&furnishing.backrooms?.length){
   const wood=new THREE.MeshStandardMaterial({color:'#9b846e',roughness:.86});
   const iron=new THREE.MeshStandardMaterial({color:'#434941',metalness:.38,roughness:.66});
   const card=new THREE.MeshStandardMaterial({color:'#c4b399',roughness:1});
-  const sheet=new THREE.MeshStandardMaterial({color:'#e9e4d7',roughness:1});
   const cube=(g,w,h,d,x,y,z,m)=>{
    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);g.add(mesh);return mesh;
   };
@@ -47,7 +45,7 @@ export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
    g.position.set(p.x,elevation,p.z);scene.add(g);holders.push(g);
    // Keep fittings against opposing sides of compact rooms, not in the aisle.
    const shelvesZ=-p.depth/2+.42;
-   const tableZ=p.depth/2-.54;
+   const stackZ=p.depth/2-.54;
    for(const x of [-.75,.75])cube(g,.09,2.12,.42,x,1.06,shelvesZ,iron);
    for(const y of [.14,.77,1.4,2.08])cube(g,1.63,.065,.46,0,y,shelvesZ,wood);
    for(let j=0;j<7;j++){
@@ -55,14 +53,20 @@ export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
     cube(g,.26+(j%2)*.08,.27+(j%3)*.04,.27,
      -.52+col*.5,.33+row*.63,shelvesZ,card);
    }
-   // Narrow sorting counter on the opposite wall; no suspended noticeboard.
-   const table=new THREE.Group();table.position.z=tableZ;g.add(table);
-   cube(table,1.85,.10,.66,0,.81,0,wood);
-   for(const x of [-.8,.8])cube(table,.07,.76,.53,x,.38,0,iron);
-   replacePhiPreparationTable(THREE,g,table);
-   for(const x of [-.42,.22])cube(g,.31,.025,.23,x,.95,tableZ-.04,sheet);
-   cube(g,.34,.19,.26,.42,1.01,tableZ+.03,card);
-
+   const stack=new THREE.Group();stack.name='phi-backroom-cardboard-stack';stack.position.z=stackZ;g.add(stack);
+   const cartons=[[-.56,0,0,.46,.03],[0,0,.04,.5,-.1],[.56,0,-.02,.42,.08],[-.52,.46,0,.42,-.07],[.02,.5,.02,.45,.06],[.55,.42,0,.43,-.04],[.02,.95,.01,.38,.12]];
+   const fallback=new THREE.Group();stack.add(fallback);
+   for(const [x,y,z,size,angle] of cartons){const box=cube(fallback,size,size,size,x,y+size/2,z,card);box.rotation.y=angle;}
+   asset(modelURL('cardboard-boxes.glb')).then(source=>{
+    if(!g.parent||g.userData.galleryDisposed)return;
+    source.updateMatrixWorld(true);
+    const original=source.getObjectByName('290x290x290_1_Cardboard_Box_Mat_0');if(!original)return;
+    for(const [x,y,z,size,angle] of cartons){
+     const mesh=original.clone();original.matrixWorld.decompose(mesh.position,mesh.quaternion,mesh.scale);
+     const box=fit(THREE,mesh,size);box.position.set(x,y,z);box.rotation.y=angle;stack.add(box);
+    }
+    fallback.visible=false;stack.userData.modelLoaded=true;
+   }).catch(error=>console.warn('Backroom cardboard box fallback',error));
   }
  }
  return holders;
