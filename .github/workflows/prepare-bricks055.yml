@@ -1,0 +1,47 @@
+name: Prepare Bricks055 texture for virtual gallery
+on:
+  push:
+    paths:
+      - '.github/workflows/prepare-bricks055.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  texture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch authentic ambientCG Bricks055 CC0 PBR maps
+        run: |
+          python - <<'PY'
+          from urllib.request import Request,urlopen
+          from zipfile import ZipFile
+          from io import BytesIO
+          from pathlib import Path
+          root=Path('gallery/visit/textures')
+          root.mkdir(parents=True,exist_ok=True)
+          url='https://ambientcg.com/get?file=Bricks055_1K-JPG.zip'
+          data=urlopen(Request(url,headers={'User-Agent':'Mozilla/5.0 (compatible; ProportionPiece/1.0)'}),timeout=75).read()
+          z=ZipFile(BytesIO(data))
+          for label in ['Color','NormalGL','Roughness']:
+            candidates=[p for p in z.namelist() if p.lower().endswith('_'+label.lower()+'.jpg')]
+            if not candidates:
+              raise RuntimeError(f'Missing {label} in downloaded Bricks055 asset: {z.namelist()}')
+            payload=z.read(candidates[0])
+            (root/f'Bricks055_{label}.jpg').write_bytes(payload)
+            print(label,len(payload),candidates[0])
+          PY
+      - name: Commit same-origin texture maps
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gallery/visit/textures/Bricks055_*.jpg
+          if ! git diff --cached --quiet; then
+            git commit -m 'Publish original ambientCG Bricks055 PBR maps'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
