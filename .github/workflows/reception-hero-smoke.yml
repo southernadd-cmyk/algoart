@@ -1,0 +1,25 @@
+name: Reception hero movement smoke (test)
+on:
+  push:
+    paths:
+      - 'automation/test-reception-hero.mjs'
+      - '.github/workflows/reception-hero-smoke.yml'
+      - 'gallery/visit/data/reception-growth-systems.json'
+      - 'gallery/visit/gallery-phi-bundle.js'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/hero-http.log 2>&1 &
+          sleep 2
+      - run: node automation/test-reception-hero.mjs
