@@ -44,8 +44,9 @@ try{
  {
   const context=await browser.newContext({viewport:{width:1200,height:800},deviceScaleFactor:.75});
   const page=await context.newPage();
-  const failures=[];
+  const failures=[],testRequests=[];
   page.on('pageerror',err=>failures.push(err.message));
+  page.on('request',request=>testRequests.push(request.url()));
   await page.goto('http://127.0.0.1:4173/test/virtual-gallery/full-engine.html?debug&svg-export',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.__phiLivingMonitorDiagnostics?.placed || !document.getElementById('error')?.hidden,null,{timeout:90000});
   const monitors=await page.evaluate(()=>{
@@ -55,12 +56,15 @@ try{
    root?.traverse(child=>{if(child.name==='monitor-screen')screens.push(child);});
    const diag=window.__phiLivingMonitorDiagnostics;
    return {placed:diag?.placed,count:diag?.screenCount,screenMeshes:screens.length,
-    wall:diag?.wall,position:root?.position.toArray(),error:document.getElementById('error')?.textContent};
+    wall:diag?.wall,media:diag?.media,position:root?.position.toArray(),error:document.getElementById('error')?.textContent};
   });
   assert.equal(monitors.placed,true,'Monitor creation must succeed during reception construction');
   assert.equal(monitors.count,3,'Expected three reception monitors');
   assert.equal(monitors.screenMeshes,3,'Expected three actual screen meshes in the active scene');
   assert.equal(monitors.wall?.fromPhysical,true,'Monitors must attach to real backroom wall geometry');
+  assert.equal(monitors.media?.state,'fallback','TouchDesigner must not load media at gallery startup');
+  assert.equal(testRequests.filter(url=>url.includes('phase-one-triptych.webm')).length,0,
+   'Video decoder should never start at gallery startup');
   assert.deepEqual(failures,[],'Test gallery generated browser errors');
   console.log('Three test reception monitors created in scene:',monitors);
   await context.close();
