@@ -156,6 +156,20 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     const pavingMap=surfaceTexture(THREE,'paving');
     pavingMap.repeat.set(p.halfDepth*2/6,p.halfWidth*2/6);
     const paving=new THREE.MeshStandardMaterial({map:pavingMap,color:'#eee9e1',roughness:.94});
+    // Staging square: reuse the previously uploaded CC0 OpenGameArt floor scan
+    // instead of the hand-drawn canvas paving. Keep the existing map as a
+    // synchronous fallback when a texture request fails or is still loading.
+    if(globalThis.__phiReceptionTestRefresh){
+      new THREE.TextureLoader().load('./textures/open-game-art/028.jpg',texture=>{
+        texture.colorSpace=THREE.SRGBColorSpace;
+        texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+        texture.repeat.set(p.halfWidth*2/4,p.halfDepth*2/4);
+        texture.anisotropy=lowPower?1:4;
+        paving.map=texture;
+        paving.color.set('#ffffff');
+        paving.needsUpdate=true;
+      },undefined,error=>console.warn('Uploaded plaza paving unavailable; retaining original',error));
+    }
     const stoneMap=surfaceTexture(THREE,'stone');
     const stoneEdge=new THREE.MeshStandardMaterial({map:stoneMap,color:'#e4dfd5',roughness:.94});
     const bronze=new THREE.MeshStandardMaterial({color:'#424a49',metalness:.42,roughness:.52});
