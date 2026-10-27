@@ -1,4 +1,5 @@
 name: Deploy ALGO ART to Pages
+# Deployment refresh: publish latest plaster and reception credits.
 
 on:
   push:
