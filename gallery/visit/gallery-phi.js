@@ -94,6 +94,7 @@ let phiSpeakerEmitters=[];
 let phiFurnishingObstacles=[];
 let phiSquareObstacles=[];
 let phiRideState=null;
+let phiRideHidden=[];
 let phiLiftPanelPosition=null;
 let liftCabinPosition=null;
 let liftDoorThreshold=null;
@@ -890,6 +891,16 @@ function startPhiCabinRide(targetFloor){
  // Travel in the same furnished cabin, with its calendar and real doors.
  // The floor's golden-angle orientation is reached gradually during travel.
  phiMovingCabin=phiLiftCabin;
+ // The static tower slabs must not intersect the travelling cabin.
+ phiRideHidden=[];
+ for(const object of editionObjects){
+  if(object===phiMovingCabin)continue;
+  if(object.visible){object.visible=false;phiRideHidden.push(object);}
+ }
+ if(phiTowerShellCache?.shell?.visible){
+  phiTowerShellCache.shell.visible=false;
+  phiRideHidden.push(phiTowerShellCache.shell);
+ }
  const startTheta=phiLiftCabin.rotation.y;
  const targetTheta=targetFloor*(2*Math.PI/(PHI*PHI));
  const turn=Math.atan2(Math.sin(targetTheta-startTheta),Math.cos(targetTheta-startTheta));
@@ -923,7 +934,9 @@ function updatePhiCabinRide(dt){
  }
 }
 function clearPhiMovingCabin(){
- // loadEdition owns and disposes the previous cabin with the previous floor.
+ // Restore only still-mounted objects: departure objects are disposed on arrival.
+ for(const object of phiRideHidden)if(object.parent)object.visible=true;
+ phiRideHidden=[];
  phiMovingCabin=null;
 }
 async function travelLift(date,index){
