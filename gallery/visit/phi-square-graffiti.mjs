@@ -225,8 +225,8 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
        const mesh=new THREE.Mesh(tiledBoxUvs(new THREE.BoxGeometry(w,h,d),w,h,d,m.userData.tileMeters||2),m);
        mesh.position.set(px,py,pz);group.add(mesh);
       };
-      piece(3.2,.44,1.5,0,.22,0,paving);
-      piece(2.78,.07,1.12,0,.47,0,brickwork);
+      piece(3.2,.44,3.2/((1+Math.sqrt(5))/2),0,.22,0,paving);
+      piece(2.78,.07,2.78/((1+Math.sqrt(5))/2),0,.47,0,brickwork);
       piece(3.15,.11,.42,0,.52,-.65,paving);
       // The planted seats use varied low shrubs rather than identical stone-like
       // icosahedrons. Geometry/materials are shared across all four beds.
@@ -236,7 +236,7 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
        new THREE.MeshStandardMaterial({color:'#87946b',roughness:1,side:THREE.DoubleSide})
       ];
       const soil=new THREE.MeshStandardMaterial({color:'#494338',roughness:1});
-      piece(2.72,.035,.73,0,.55,.16,soil);
+      piece(2.72,.035,2.72/((1+Math.sqrt(5))/2),0,.55,.16,soil);
       const leafShape=new THREE.SphereGeometry(1,6,4);
       // Distinctive taller foliage, attached directly to the visible planted-seat
       // geometry rather than the asynchronously loaded decorative GLB.
@@ -275,7 +275,7 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
    if(globalThis.__phiReceptionTestRefresh){
     for(const x of [-13.8,13.8])for(const z of [8,21]){
      const p=rotate(x,z,root.rotation.y);
-     obstacles.push({x:p.x+doorway.x,z:p.z+doorway.z,yaw:root.rotation.y,width:3.2,depth:1.5,kind:'planted-seat'});
+     obstacles.push({x:p.x+doorway.x,z:p.z+doorway.z,yaw:root.rotation.y,width:3.2,depth:3.2/((1+Math.sqrt(5))/2),kind:'planted-seat'});
     }
    }
    if(globalThis.__phiReceptionTestRefresh)obstacles.push({x:doorway.x+3*Math.cos(root.rotation.y)+18*Math.sin(root.rotation.y),z:doorway.z-3*Math.sin(root.rotation.y)+18*Math.cos(root.rotation.y),yaw:root.rotation.y,width:7.9,depth:5.05,kind:'reflecting-pool'});
