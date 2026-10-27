@@ -13,6 +13,9 @@ try{
   const url=new URL(target);url.searchParams.set('post',mode);url.searchParams.set('debug','');
   await page.goto(url.href,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.__phiPostTest?.ready,{timeout:120000});
+  // A successful shader compilation does not prove that import.meta.url asset
+  // requests survived bundling. Require the actual reception tile image.
+  await page.waitForFunction(()=>window.__phiReceptionTiles?.map?.image?.width>0,{timeout:30000});
   // Keyboard activation avoids pointer lock and automated mouse movements
   // changing the inspection camera while opening the comparison controls.
   await page.locator('#enter').press('Enter');
