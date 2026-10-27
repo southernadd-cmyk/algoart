@@ -46,12 +46,14 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
  function open(){opened=true;panel.hidden=false;trigger.setAttribute('aria-expanded','true');document.exitPointerLock?.();toggle.focus({preventScroll:true});}
  function close(){opened=false;panel.hidden=true;trigger.setAttribute('aria-expanded','false');canvas.focus({preventScroll:true});}
  trigger.addEventListener('click',()=>opened?close():open());panel.querySelector('.record-close').addEventListener('click',close);
+ const outsidePanel=event=>{if(opened&&!panel.contains(event.target)&&!trigger.contains(event.target)&&!videoDialog.open)close();};
+ document.addEventListener('pointerdown',outsidePanel);
  panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close();}});
  toggle.addEventListener('click',()=>record.toggle());
  volume.addEventListener('input',()=>feed.setVolume(volume.value));
  const hidden=()=>{if(document.hidden)record.pause();};document.addEventListener('visibilitychange',hidden);
  if(debug)globalThis.__phiGalleryMusic={state:record.state,record,open,speakers:feed.snapshot};
  return {record,open,update:feed.update,setEmitters:feed.setEmitters,
-  dispose(){record.dispose();document.removeEventListener('visibilitychange',hidden);trigger.remove();if(videoDialog.open)videoDialog.close();videoDialog.remove();panel.remove();style.remove();if(debug)delete globalThis.__phiGalleryMusic;}
+  dispose(){record.dispose();document.removeEventListener('visibilitychange',hidden);document.removeEventListener('pointerdown',outsidePanel);trigger.remove();if(videoDialog.open)videoDialog.close();videoDialog.remove();panel.remove();style.remove();if(debug)delete globalThis.__phiGalleryMusic;}
  };
 }
