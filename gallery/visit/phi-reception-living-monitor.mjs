@@ -7,7 +7,7 @@ export function addPhiReceptionLivingMonitor(THREE, scene, {room, world, elevati
  if(!ctx)return null;
  const texture=new THREE.CanvasTexture(canvas);
  texture.colorSpace=THREE.SRGBColorSpace;
- const screenMaterial=new THREE.MeshBasicMaterial({map:texture,toneMapped:false});
+ const screenMaterial=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});
  const bezelMaterial=new THREE.MeshStandardMaterial({color:0x141414,metalness:.36,roughness:.55});
  const root=new THREE.Group();
  root.name='phi-reception-living-painting';
@@ -15,6 +15,8 @@ export function addPhiReceptionLivingMonitor(THREE, scene, {room, world, elevati
  const local=world.toWorld(room.x,localZ);
  root.position.set(local.x,elevation+2.05,local.z);
  root.rotation.y=world.theta||0;
+ // The display is on the north wall, facing into the room (+local Z).
+ // Allow viewing from either side if the dynamic room geometry changes.
  const frame=new THREE.Mesh(new THREE.BoxGeometry(1.36,.88,.07),bezelMaterial);
  root.add(frame);
  const screen=new THREE.Mesh(new THREE.PlaneGeometry(1.26,.788),screenMaterial);
@@ -63,6 +65,14 @@ export function addPhiReceptionLivingMonitor(THREE, scene, {room, world, elevati
  }
  // A useful still is available even before the first animation frame.
  ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,512,320);
+ ctx.strokeStyle='#31545c';ctx.lineWidth=5;ctx.beginPath();
+ for(let i=0;i<80;i++){
+  const a=i*2*Math.PI/((1+Math.sqrt(5))/2)**2;
+  const r=8+Math.sqrt(i/80)*140;
+  const x=256+Math.cos(a)*r*1.45,y=160+Math.sin(a)*r*.9;
+  if(!i)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+ }
+ ctx.stroke();texture.needsUpdate=true;
  frameId=requestAnimationFrame(render);
  return {root,get drawCount(){return draws;},dispose(){
    disposed=true;cancelAnimationFrame(frameId);scene.remove(root);
