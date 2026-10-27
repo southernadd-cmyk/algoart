@@ -31,5 +31,6 @@ jobs:
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add gallery/visit/gallery-bundle.js gallery/visit/gallery-phi-bundle.js
             git commit -m 'Rebuild gallery bundle from current source'
-            git push
+            git pull --rebase origin main
+            git push origin HEAD:main
           fi
