@@ -106,7 +106,7 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMat
 export const RECEPTION_CREDITS=[
  {title:'The gallery',lines:['PROPORTION PIECE','Daily generative art and architecture','','Built with Three.js','Three.js authors · MIT licence','','Visitors: Quaternius · CC0','Street lamps: Poly Haven · CC0']},
  {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Plaza plants — Nicholas-3D','Reception art — PROPORTION PIECE','Magazine cabinet — JFN','Paper debris — Sousinho','Cardboard boxes —','NotAnotherApocalypticCo.','','Scene models: CC BY 4.0','Meshes and textures optimised.','Door frame and leaves separated.']},
- {title:'Materials and fittings',lines:['Plaster: Poly Haven · CC0','plastered_wall_02','Ceiling — OfficeCeiling001','ambientCG · CC0','','Black brick: Bricks055','ambientCG · CC0','','Exterior roof: Abandoned Scans','CC BY 4.0 · scan adapted','','Full credits and licences online.']}
+ {title:'Materials and fittings',lines:['Reception: Decorative Wall 2','ShareTextures · M. Tolga Arslan','CC0','Gallery plaster: Poly Haven · CC0','plastered_wall_02','Ceiling: OfficeCeiling001 · CC0','Black brick: Bricks055 · CC0','Ceiling and brick: ambientCG','','Exterior roof: Abandoned Scans','CC BY 4.0 · scan adapted','Full credits and licences online.']}
 ];
 export function addPhiReceptionCredits(THREE,scene,placement,elevation){
  const exhibits=[];if(!placement)return exhibits;
