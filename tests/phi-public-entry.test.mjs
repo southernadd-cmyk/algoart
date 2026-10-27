@@ -37,5 +37,33 @@ try{
   await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>!document.getElementById('enter').disabled,null,{timeout:90000});assert.equal(await page.evaluate(()=>window.__phiFullEngine.date),'2026-10-07');
   assert.deepEqual(errors,[]);await context.close();
  }
+
+ // Regression: the test backroom monitor used to silently return null because
+ // phi.world is assigned AFTER constructPhiGallery. Verify the real browser
+ // scene contains three separately rendered monitor screens, not just a planner.
+ {
+  const context=await browser.newContext({viewport:{width:1200,height:800},deviceScaleFactor:.75});
+  const page=await context.newPage();
+  const failures=[];
+  page.on('pageerror',err=>failures.push(err.message));
+  await page.goto('http://127.0.0.1:4173/test/virtual-gallery/full-engine.html?debug&svg-export',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>window.__phiLivingMonitorDiagnostics?.placed || !document.getElementById('error')?.hidden,null,{timeout:90000});
+  const monitors=await page.evaluate(()=>{
+   const scene=window.__PP_EXPORT_SCENE__?.scene;
+   const root=scene?.getObjectByName('phi-reception-three-living-monitors');
+   const screens=[];
+   root?.traverse(child=>{if(child.name==='monitor-screen')screens.push(child);});
+   const diag=window.__phiLivingMonitorDiagnostics;
+   return {placed:diag?.placed,count:diag?.screenCount,screenMeshes:screens.length,
+    wall:diag?.wall,position:root?.position.toArray(),error:document.getElementById('error')?.textContent};
+  });
+  assert.equal(monitors.placed,true,'Monitor creation must succeed during reception construction');
+  assert.equal(monitors.count,3,'Expected three reception monitors');
+  assert.equal(monitors.screenMeshes,3,'Expected three actual screen meshes in the active scene');
+  assert.equal(monitors.wall?.fromPhysical,true,'Monitors must attach to real backroom wall geometry');
+  assert.deepEqual(failures,[],'Test gallery generated browser errors');
+  console.log('Three test reception monitors created in scene:',monitors);
+  await context.close();
+ }
  console.log('Public dated entry, refresh, touch look and mobile viewport passed at full pixel density');
 }finally{await browser.close();}
