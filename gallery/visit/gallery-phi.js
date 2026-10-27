@@ -1124,9 +1124,21 @@ function createGalleryArrival(room){
   // without occupying the accessible central walking route.
   const bronze=new THREE.MeshStandardMaterial({color:'#41463f',metalness:.55,roughness:.42});
   const warm=new THREE.MeshStandardMaterial({color:'#fff2d7',emissive:'#f9d69d',emissiveIntensity:.8,roughness:.3});
+  // Two baked planter-contact shadows share one texture and ONE draw call.
+  // Kept separate from expensive real-time shadow maps and sculpture shadows.
+  const shadowPositions=[],shadowUvs=[];
+  const addPlanterShadow=(x,z)=>{
+    const radius=1.48,y=room.y+.008;
+    const corners=[[-1,-1],[1,-1],[1,1],[-1,-1],[1,1],[-1,1]];
+    for(const [u,v] of corners){
+      shadowPositions.push(x+u*radius,y,z+v*radius);
+      shadowUvs.push((u+1)/2,(v+1)/2);
+    }
+  };
   for(const sideSign of [-1,1]){
     const bed=doorway.clone().addScaledVector(outward,8).addScaledVector(transverse,sideSign*4.65);
     place(1.75,.56,1.75,bed.x,room.y+.20,bed.z,galleryFinish.stone);
+    addPlanterShadow(bed.x,bed.z);
     const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.87,1),
       new THREE.MeshStandardMaterial({color:'#526d55',roughness:1,flatShading:true}));
     shrub.position.set(bed.x,room.y+1.02,bed.z);scene.add(shrub);
@@ -1140,6 +1152,26 @@ function createGalleryArrival(room){
     placeCastIronStreetLamp(THREE,scene,
       new THREE.Vector3(lamp.x,room.y,lamp.z),backup,
       {scale:.84,rotation:Math.atan2(outward.x,outward.z)});
+  }
+  if(shadowPositions.length){
+    const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
+    const ctx=canvas.getContext('2d');
+    const gradient=ctx.createRadialGradient(32,32,6,32,32,32);
+    gradient.addColorStop(0,'rgba(26,25,22,.30)');
+    gradient.addColorStop(.56,'rgba(26,25,22,.16)');
+    gradient.addColorStop(1,'rgba(26,25,22,0)');
+    ctx.fillStyle=gradient;ctx.fillRect(0,0,64,64);
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(shadowPositions,3));
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(shadowUvs,2));
+    geometry.computeVertexNormals();
+    const texture=new THREE.CanvasTexture(canvas);
+    const shadow=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({
+      map:texture,transparent:true,depthWrite:false,polygonOffset:true,
+      polygonOffsetFactor:-1,side:THREE.DoubleSide
+    }));
+    shadow.renderOrder=2;
+    scene.add(shadow);
   }
   const start=doorway.clone().addScaledVector(outward,pathLength-2);
   arrival={doorway,outward,pathLength,halfWidth:3.25,baseY:room.y,
