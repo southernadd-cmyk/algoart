@@ -1694,10 +1694,10 @@ function constructPhiGallery(layout,studies){
   const leafLight=new THREE.MeshStandardMaterial({color:'#819477',roughness:1,flatShading:true});
   queuePhiFurnishings(phi,planPhiFurnishings(phi,{reception:furnishing,lowPower:galleryFinish.lowPower}),elevation);
   phiReceptionProps=addPhiReceptionDecor(THREE,scene,furnishing,elevation);
-  // Test-only permanent reception installation: two baked copies at the
-  // exact visitor-chosen local coordinates. These bypass the curator, room
-  // scoring, backroom-door inference and all furniture collision placement.
-  if(new URLSearchParams(location.search).get('receptionHeroTest')==='1'){
+  // Permanent reception installation: two pre-baked Growth Systems sculptures
+  // at the visitor-approved exact local coordinates. Do not involve any
+  // curator, door, furniture or collision placement rules.
+  if(exhibitDate===RECEPTION){
    const placements=[
     {x:4.411915702544714,z:-0.6555802049181754,yawOffset:0},
     {x:0.30772021302065866,z:-2.943824927389186,yawOffset:Math.PI/2}
@@ -1733,7 +1733,7 @@ function constructPhiGallery(layout,studies){
         yaw:baseYaw+place.yawOffset},
        labelTexture
       });
-      built.pivot.name='phi-reception-growth-systems-baked-test-'+(index+1);
+      built.pivot.name='phi-reception-growth-systems-'+(index+1);
       built.pivot.scale.setScalar(1.4);
       phiReceptionProps.push(built.pivot);
       return {name:built.pivot.name,local:{x:place.x,z:place.z},
