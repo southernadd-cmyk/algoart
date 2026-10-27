@@ -30,7 +30,7 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-wall-surface-20261027';
 import {planInteriorGraffiti,interiorGraffitiKey} from './interior-graffiti-plan.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
-import { createExteriorLandscape } from './environment-render.mjs?v=uploaded-square-paving-20261027';
+import { createExteriorLandscape } from './environment-render.mjs?v=daytime-exterior-20261027';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
@@ -111,8 +111,8 @@ const xrPickerRay=new THREE.Raycaster();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#c2cbc5');
 scene.fog = new THREE.Fog('#c2cbc5', 48, 165);
-scene.add(new THREE.HemisphereLight('#f6f7f5', '#92998c', 1.15));
-const sun = new THREE.DirectionalLight('#fff9f0', 1.65);
+scene.add(new THREE.HemisphereLight('#eef6ff', '#9ba18f', 1.45));
+const sun = new THREE.DirectionalLight('#fff9e9', 2.35);
 sun.position.set(-18, 30, 12);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(76, window.innerWidth / Math.max(1, window.innerHeight), 0.07, 210);
@@ -131,7 +131,7 @@ try {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.02;
+  renderer.toneMappingExposure = 1.08;
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType('local-floor');
   const xrButton = VRButton.createButton(renderer);
