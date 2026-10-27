@@ -89,12 +89,31 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
  // Until an authentic export is published, use the existing procedural canvases.
  const media=createTouchDesignerMonitorMedia(THREE,{screens});
 
+ // Show the actual, reproducible study on monitor one even before an
+ // authentic TouchDesigner export is available. Load only when approached.
+ const sourceImageURL=new URL('../../2026-10-27/2026-10-27-oil-landscape-02-spiral-OL-20261027-02-57201.jpg',import.meta.url);
+ let sourceImage=null,sourceRequested=false;
+ function loadSource(){
+  if(sourceRequested)return;
+  sourceRequested=true;
+  const image=new Image();
+  image.onload=()=>{if(!disposed)sourceImage=image;};
+  image.onerror=()=>{sourceImage=null;};
+  image.src=sourceImageURL.href;
+ }
  const phi=(1+Math.sqrt(5))/2;
  const palette=['#31545c','#ba7453','#aa9b6b','#303b40','#d4ac7d'];
  function draw(ctx,index,time){
   const w=384,h=240;
   ctx.globalAlpha=1;
   ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,w,h);
+  if(index===0 && sourceImage){
+   // Contain instead of stretching or cropping the original composition.
+   const scale=Math.min(w/sourceImage.width,h/sourceImage.height);
+   const dw=sourceImage.width*scale,dh=sourceImage.height*scale;
+   ctx.drawImage(sourceImage,(w-dw)/2,(h-dh)/2,dw,dh);
+   return;
+  }
   ctx.lineCap='round';ctx.lineJoin='round';
   for(let k=0;k<34;k++){
    const theta=k*2*Math.PI/(phi*phi)+index*.77+time*(.24+index*.12);
@@ -133,6 +152,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   root.getWorldPosition(monitorPosition);
   const distance=camera.getWorldPosition(cameraPosition).distanceTo(monitorPosition);
   media.update(distance<11);
+  if(distance<11)loadSource();
   if(distance>11||media.usingExport)return;
   last=time;
   canvases.forEach((ctx,i)=>{draw(ctx,i,(time-origin)*.00018);textures[i].needsUpdate=true;});
