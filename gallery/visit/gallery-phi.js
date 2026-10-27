@@ -1838,7 +1838,8 @@ function constructPhiGallery(layout,studies){
     selectedRoom:monitorRoom||null,placed:!!phiReceptionLivingMonitor,
     screenCount:phiReceptionLivingMonitor?.screenCount||0,
     wall:phiReceptionLivingMonitor?.mount||null,
-    localPosition:phiReceptionLivingMonitor?.root.position.toArray()||null
+    localPosition:phiReceptionLivingMonitor?.root.position.toArray()||null,
+    get media(){return phiReceptionLivingMonitor?.mediaDiagnostics||{state:'no-monitor'};}
    };
   }
   // Permanent reception installation: two pre-baked Growth Systems sculptures
