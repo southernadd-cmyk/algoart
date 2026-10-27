@@ -56,7 +56,7 @@ jobs:
           git add gallery/visit/graffiti-assets/square/ gallery/visit/graffiti-assets/exterior/
           if ! git diff --cached --quiet; then
             git commit -m 'Publish phi-only live and test square graffiti atlases'
-            git pull --rebase origin main
+            git pull --rebase -X theirs origin main
             git push origin HEAD:main
           fi
       - name: Redeploy square atlases
