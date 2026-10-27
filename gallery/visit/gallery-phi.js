@@ -7,7 +7,7 @@ import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
 import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=gallery-reception-20261027';
-import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=flowers-20261027';
+import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=tall-flowers-20261027';
 import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=planted-square-20261027';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
