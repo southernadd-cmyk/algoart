@@ -22,7 +22,7 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
   // Raise a real, visible ridge over the reception; retain fine variations
   // from the CC BY scan. The eaves extend beyond the black-brick wall.
   const ridge=1-Math.abs(u*2-1);
-  const h=.12+ridge*2.35+Math.pow(raw[row*NX+col]/255,1.3)*.065;
+  const h=.12+ridge*1.55+Math.pow(raw[row*NX+col]/255,1.3)*.065;
   positions.push((u-.5)*roofW,h,(v-.5)*roofD-frontOverhang*.5+.35);
   uv.push(u,v);
  }
@@ -38,7 +38,7 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
    side:THREE.DoubleSide});
  const group=new THREE.Group();group.name='phi-exterior-reception-metal-roof';
  // Eaves clear the existing facade sign; the ridge is deliberately taller.
- group.position.set((minX+maxX)/2,elevation+ceilingHeight+1.10,(minZ+maxZ)/2);
+ group.position.set((minX+maxX)/2,elevation+ceilingHeight+.62,(minZ+maxZ)/2);
  const surface=new THREE.Mesh(geo,metal);
  surface.name='abandoned-scans-reduced-roof-relief';
  surface.receiveShadow=true;group.add(surface);
@@ -46,7 +46,7 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
  // silhouette readable against the dark brickwork at street level.
  const flashing=new THREE.MeshStandardMaterial({color:'#333c40',metalness:.53,roughness:.59});
  const seamMaterial=new THREE.MeshStandardMaterial({color:'#b0b5b2',metalness:.62,roughness:.53});
- const eaveY=.10,roofRise=2.35;
+ const eaveY=.10,roofRise=1.55;
  for(const side of [-1,1]){
   const eave=new THREE.Mesh(new THREE.BoxGeometry(.13,.16,roofD+.12),flashing);
   eave.position.set(side*roofW/2,eaveY,-frontOverhang*.5+.35);
@@ -74,6 +74,25 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
    group.add(line);
   }
  }
+ // Visible structural support: narrow steel posts rise from the masonry top
+ // to the canopy's underside. They sit just inside the facade corners,
+ // avoiding the entrance opening and preserving the dramatic overhang.
+ const support=new THREE.MeshStandardMaterial({color:'#414a4b',metalness:.64,roughness:.49});
+ const eaveAbsolute=elevation+ceilingHeight+.62+.12;
+ const wallTop=elevation+ceilingHeight-.05;
+ const supportHeight=Math.max(.4,eaveAbsolute-wallTop);
+ for(const x of [-1,1])for(const z of [-1,1]){
+  const post=new THREE.Mesh(new THREE.BoxGeometry(.24,supportHeight,.24),support);
+  post.position.set(x*(width/2-.75),wallTop-group.position.y+supportHeight/2,
+   z*(depth/2-.85));
+  post.name='metal-roof-masonry-support';
+  group.add(post);
+ }
+ // A continuous support rail along the building's external rear wall
+ // makes the canopy meet the reception structure instead of floating.
+ const rear=new THREE.Mesh(new THREE.BoxGeometry(width-.9,.22,.24),support);
+ rear.position.set(0,wallTop-group.position.y+.11,depth/2-.16);
+ rear.name='metal-roof-rear-wall-connection';group.add(rear);
  scene.add(group);
  group.userData.modelLoaded=true;
  group.userData.attribution='Abandoned Scans · Just a metal roof for your project · CC BY 4.0';
