@@ -13,7 +13,7 @@ import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './preb
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-wall-surface-20261027';
 import {planInteriorGraffiti,interiorGraffitiKey} from './interior-graffiti-plan.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
-import { createExteriorLandscape } from './environment-render.mjs?v=uploaded-square-paving-20261027';
+import { createExteriorLandscape } from './environment-render.mjs?v=daytime-exterior-20261027';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
