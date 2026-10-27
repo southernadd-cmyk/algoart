@@ -6,11 +6,12 @@ await mkdir('phi-postprocessing-results',{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const results=[];
 try{
- for(const mode of (process.env.PHI_POST_TEST_URL?['ao']:['off','composer','ao','fxaa','ao-fxaa'])){
+ for(const mode of (process.env.PHI_POST_TEST_URL||process.env.PHI_SHADOW_TEST?['ao']:['off','composer','ao','fxaa','ao-fxaa'])){
   const page=await browser.newPage({viewport:{width:960,height:600}}),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('console',message=>{if(message.type()==='error'&&/shader|WebGL|Post test/i.test(message.text()))errors.push(message.text());});
   const url=new URL(target);url.searchParams.set('post',mode);url.searchParams.set('debug','');
+  if(process.env.PHI_SHADOW_TEST)url.searchParams.set('shadows','1');
   await page.goto(url.href,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.__phiPostTest?.ready,{timeout:120000});
   // A successful shader compilation does not prove that import.meta.url asset
@@ -34,6 +35,7 @@ try{
   }
   const state=await page.evaluate(()=>({post:window.__phiPostTest,floor:window.__phiLiftState}));
   assert.equal(state.post.error,null);assert.equal(state.post.mode,mode);assert.deepEqual(errors,[]);
+  if(process.env.PHI_SHADOW_TEST){assert.equal(state.post.shadows.enabled,true);assert.ok(state.post.shadows.roomLights>0);}
   results.push({mode,...state});console.log(mode,JSON.stringify(state));
   await page.close();
  }

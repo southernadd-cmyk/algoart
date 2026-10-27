@@ -1,7 +1,7 @@
 name: Phi post-processing experiment
 on:
   push:
-    branches: ['test/postprocessing']
+    branches: ['test/postprocessing', 'test/postprocessing-shadows']
   workflow_run:
     workflows: ['Deploy ALGO ART to Pages']
     types: [completed]
@@ -26,12 +26,13 @@ jobs:
       - run: npm ci
       - run: npm run gallery:bundle:post-test
       - run: node --test tests/phi-postprocessing.test.mjs
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - run: node tests/phi-postprocessing-browser.mjs
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/post-test-http.log 2>&1 &
       - run: node tests/phi-postprocessing-tower.mjs
         env:
           PHI_POST_TEST_URL: ${{ github.event_name == 'workflow_run' && 'https://southernadd-cmyk.github.io/algoart/test/virtual-gallery/full-engine.html' || inputs.deployed_url }}
+          PHI_SHADOW_TEST: '1'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

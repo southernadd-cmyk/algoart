@@ -4,6 +4,7 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {GTAOPass} from 'three/addons/postprocessing/GTAOPass.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {FXAAShader} from 'three/addons/shaders/FXAAShader.js';
+import {createPhiShadows} from './phi-shadows.mjs';
 
 const MODES=['off','composer','ao','fxaa','ao-fxaa'];
 export function summariseFrames(samples){
@@ -19,12 +20,14 @@ export function createPhiPostTest({THREE,renderer,scene,camera}){
  const requested=params.get('post');
  const mode=MODES.includes(requested)?requested:'off';
  const useAO=mode.includes('ao'),useFXAA=mode.includes('fxaa');
+ const shadows=params.get('shadows')==='1'?createPhiShadows({THREE,renderer,scene,camera,lowPower:matchMedia('(pointer:coarse)').matches}):null;
  const stats=window.__phiPostTest={revision:'post-test-1',mode,ready:false,frames:[],gpuMs:[],
   startupReadyMs:null,warmMs:null,targetBytesEstimate:0,gpuSupported:false,error:null};
  let composer,ao,fxaa,maskTarget,ready=false,failed=false,lastFrame=0,lastUI=0;
  let activeQuery=null,pendingQueries=[];
  const gl=renderer.getContext(),timer=gl.getExtension('EXT_disjoint_timer_query_webgl2');
  stats.gpuSupported=!!timer;
+ stats.shadows=shadows?.stats||{enabled:false};
  const panel=document.createElement('details');panel.id='phi-post-test';
  panel.style.cssText='position:fixed;right:8px;bottom:8px;z-index:110;max-width:310px;background:#f5f0e6ed;color:#222;padding:8px 10px;font:12px/1.4 system-ui;border:1px solid #888;border-radius:5px';
  const summary=document.createElement('summary');summary.textContent='Visual test · '+mode;panel.append(summary);
@@ -33,6 +36,11 @@ export function createPhiPostTest({THREE,renderer,scene,camera}){
  for(const value of MODES){const option=document.createElement('option');option.value=value;option.textContent={off:'Original renderer',composer:'Composer only',ao:'Subtle ambient occlusion',fxaa:'FXAA only','ao-fxaa':'Ambient occlusion + FXAA'}[value];select.append(option);}
  select.value=mode;select.addEventListener('change',()=>{const url=new URL(location.href);url.searchParams.set('post',select.value);location.assign(url.href);});
  label.append(select);panel.append(label);
+ const shadowLabel=document.createElement('label');shadowLabel.style.display='block';
+ const shadowToggle=document.createElement('input');shadowToggle.type='checkbox';shadowToggle.checked=!!shadows;
+ shadowToggle.setAttribute('aria-label','Enable cast shadows');
+ shadowToggle.addEventListener('change',()=>{const url=new URL(location.href);url.searchParams.set('shadows',shadowToggle.checked?'1':'0');location.assign(url.href);});
+ shadowLabel.append(shadowToggle,' Cast shadows (test)');panel.append(shadowLabel);
  const reset=document.createElement('button');reset.type='button';reset.textContent='Restart measurement';
  reset.addEventListener('click',()=>{stats.frames.length=0;stats.gpuMs.length=0;lastFrame=0;});panel.append(reset);
  const report=document.createElement('p');report.style.marginBottom='0';report.textContent='Preparing comparison…';panel.append(report);
@@ -47,7 +55,11 @@ export function createPhiPostTest({THREE,renderer,scene,camera}){
  function renderProtectionMask(){
   const saved=[],oldBackground=scene.background,oldOverride=scene.overrideMaterial;
   const target=renderer.getRenderTarget(),alpha=renderer.getClearAlpha();renderer.getClearColor(maskClear);
+  const shadowRefresh=renderer.shadowMap.needsUpdate;
   try{
+   // Shadow depth must use the original alpha-tested model materials, never
+   // this black/white protection mask. RenderPass refreshes it afterwards.
+   renderer.shadowMap.needsUpdate=false;
    scene.background=null;scene.overrideMaterial=null;
    scene.traverse(o=>{
     if(!o.isMesh&&!o.isLine&&!o.isPoints)return;
@@ -61,6 +73,7 @@ export function createPhiPostTest({THREE,renderer,scene,camera}){
    for(const [o,material,visible] of saved){o.material=material;o.visible=visible;}
    scene.background=oldBackground;scene.overrideMaterial=oldOverride;
    renderer.setRenderTarget(target);renderer.setClearColor(maskClear,alpha);
+   renderer.shadowMap.needsUpdate=shadowRefresh;
   }
  }
  function initialise(){
@@ -122,6 +135,7 @@ export function createPhiPostTest({THREE,renderer,scene,camera}){
  }
  function render(){
   const now=performance.now();
+  shadows?.update(now);
   if(!document.hidden&&ready){if(lastFrame)stats.frames.push(now-lastFrame);if(stats.frames.length>600)stats.frames.shift();lastFrame=now;}
   else lastFrame=0;
   pollGPU();renderer.info.autoReset=false;renderer.info.reset();
@@ -140,11 +154,11 @@ export function createPhiPostTest({THREE,renderer,scene,camera}){
  async function warm(){
   if(ready)return;
   const started=performance.now();
-  try{initialise();draw();await new Promise(resolve=>requestAnimationFrame(resolve));draw();}
+  try{shadows?.update();initialise();draw();await new Promise(resolve=>requestAnimationFrame(resolve));draw();}
   catch(error){failed=true;stats.error=error.message;renderer.setRenderTarget(null);console.error('[Post test] Warm-up failed',error);}
   ready=true;stats.ready=true;stats.warmMs=performance.now()-started;stats.startupReadyMs=performance.now();lastFrame=0;
  }
  document.addEventListener('visibilitychange',()=>{lastFrame=0;});
  document.getElementById('enter')?.addEventListener('click',()=>{stats.frames.length=0;stats.gpuMs.length=0;lastFrame=0;});
- return {render,resize,warm};
+ return {render,resize,warm,editionChanged(elevation){shadows?.editionChanged(elevation);}};
 }

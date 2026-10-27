@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {instrumentPhiSource} from '../automation/build-phi-post-test.mjs';
 import {summariseFrames} from '../test/virtual-gallery/phi-postprocessing.mjs';
+import * as THREE from 'three';
+import {createPhiShadows,isPhiShadowSurface} from '../test/virtual-gallery/phi-shadows.mjs';
 
 test('long stalls are retained in frame statistics',()=>{
  const result=summariseFrames([16,17,18,60,220,1000]);
@@ -35,4 +37,29 @@ test('test bundle preserves the gallery asset base for import.meta.url loaders',
   '/algoart/gallery/visit/textures/bajwa-floor-tiles/color.webp');
  assert.equal(new URL('./models/plants-scene-gallery-optimized.glb',base).pathname,
   '/algoart/gallery/visit/models/plants-scene-gallery-optimized.glb');
+});
+
+test('shadows exclude unlit art, glazing and the reflecting pool',()=>{
+ const mesh=m=>new THREE.Mesh(new THREE.BoxGeometry(),m);
+ assert.equal(isPhiShadowSurface(mesh(new THREE.MeshStandardMaterial())),true);
+ assert.equal(isPhiShadowSurface(mesh(new THREE.MeshBasicMaterial())),false);
+ assert.equal(isPhiShadowSurface(mesh(new THREE.MeshStandardMaterial({transparent:true,opacity:.28,depthWrite:false}))),false);
+ const water=mesh(new THREE.MeshStandardMaterial());water.name='phi-spiral-reflecting-water';
+ assert.equal(isPhiShadowSurface(water),false);
+});
+
+test('shadows cache static maps and reuse two room map slots across floors',()=>{
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(),renderer={shadowMap:{}};
+ const sun=new THREE.DirectionalLight();sun.position.set(-18,30,12);scene.add(sun);
+ const mesh=new THREE.Mesh(new THREE.BoxGeometry(),new THREE.MeshStandardMaterial());scene.add(mesh);
+ const roomLights=Array.from({length:4},(_,i)=>{const l=new THREE.SpotLight();l.name='phi-shadow-room-light';l.position.set(i*5,3,0);scene.add(l,l.target);return l;});
+ const helper=createPhiShadows({THREE,renderer,scene,camera});helper.update(0);
+ assert.equal(helper.stats.roomLights,2);assert.equal(roomLights.filter(l=>l.castShadow).length,2);
+ const shadowSlots=roomLights.filter(l=>l.castShadow).map(l=>l.shadow);
+ const count=helper.stats.mapRefreshes;helper.update(300);assert.equal(helper.stats.mapRefreshes,count);
+ const next=new THREE.SpotLight();next.name='phi-shadow-room-light';scene.remove(...roomLights);scene.add(next,next.target);
+ helper.editionChanged(62);helper.update(600);
+ assert.ok(shadowSlots.includes(next.shadow));assert.equal(sun.position.y-sun.target.position.y,30);
+ assert.equal(sun.position.y,92);assert.equal(helper.stats.roomLights,1);
+ assert.equal(mesh.receiveShadow,true);helper.dispose();
 });
