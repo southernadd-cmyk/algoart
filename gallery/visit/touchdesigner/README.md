@@ -1,6 +1,6 @@
 # PROPORTION PIECE — The Translation Room (TouchDesigner Phase 1)
 
-**Status: TouchDesigner export pending.** Three test reception monitors work, but an actual TouchDesigner movie has **not** yet been rendered or published. The first monitor displays a real source painting; the other two retain lightweight previews.
+**Status: genuine TouchDesigner export independently verified; repository upload pending.** The 20-second VP9/WebM (1152×240, 24 fps, 480 frames, 3,384,087 bytes) has SHA256 `d64dd7eda6c7bbb62ce90a19c8543791b455d16989a875fa4b7a72914c0ff9d0`. Until the verified binary and manifest are committed together, the three test monitors continue showing their browser fallbacks.
 
 ## Source and translation
 
@@ -12,17 +12,34 @@ The horizontal triptych is SOURCE → TRANSLATION → EMERGENCE.
 - Middle: TouchDesigner Edge TOP reveals contours while retaining the source.
 - Right: Noise, Displace, Feedback, Transform, Level and Composite TOPs create a moving second interpretation.
 
-## Produce the authentic TouchDesigner export
+## Publish the verified Phase 1 export
 
-1. Start TouchDesigner on a Windows computer and create a Text DAT in /project1.
-2. Paste and execute [build_translation_room.py](build_translation_room.py) using **Run Script**. It creates /project1/pp_translation_room containing the TOP network.
-3. Check source_golden_trajectories loads the published JPEG. If HTTPS access fails, download the source image URL given in the script and set the Movie File In TOP's File parameter to that local JPEG.
-4. Inspect triptych_1152x240. Ensure all three panels display properly, with evolving output on panel 3. The network builder has not been executed here because TouchDesigner is not installed in this environment; inspect parameter warnings in the Textport and make any TD-version-specific adjustments in the network.
-5. Set timeline to 24 fps. Configure moviefileout1 for VP9, WebM, 1152 × 240 and record about 20 seconds. If encoding drops frames, turn off Realtime for offline rendering.
-6. Verify locally in Chrome that the resulting silent WebM has exactly 1152 × 240 pixels, three 384 × 240 panels and a clean loop.
-7. Upload the binary file as phase-one-triptych.webm into this directory; only then change the status in phase-one.json from awaiting-touchdesigner-export to published and deploy.
+The real network was constructed and verified using TouchDesigner MCP in Cursor.
+It contains 34 operators in `/project1/pp_translation_room`: source image and
+darkening scan, golden contour extraction and noise displacement, and minimum
+feedback with decay over the cream ground. It was rendered as 480 lossless PNG
+frames and encoded into a silent VP9/WebM using the ffmpeg supplied with
+TouchDesigner. The 20-second loop and the emitted movie were verified.
 
-TouchDesigner Non-Commercial's published resolution limit is 1280 × 1280, so the full triptych fits. VP9/WebM is the intended browser-compatible route; H.264 in TouchDesigner can require a paid licence and suitable hardware. Review licence conditions before exhibiting.
+To publish from a local Git checkout with access to the exported binary:
+
+```powershell
+node automation/publish-touchdesigner-triptych.mjs "C:\\path\\to\\phase-one-triptych.webm"
+node --test tests/phi-touchdesigner-phase-one.test.mjs tests/phi-reception-refresh.test.mjs
+git add gallery/visit/touchdesigner/phase-one-triptych.webm gallery/visit/touchdesigner/phase-one.json
+git commit -m "Publish verified TouchDesigner Phase 1 triptych"
+git push
+```
+
+The publisher checks the *actual video bytes* against the independent 3.38 MB
+SHA256 and only enables the manifest for this verified export. Never enable
+`status: published` before the matching video exists in the same commit.
+
+**Keep the TouchDesigner .toe private unless explicitly approved for release.**
+The older `build_translation_room.py` is a reference, not a perfect
+reproduction of the real MCP-built network. For future re-exports, use the saved
+TouchDesigner project; in particular the project timeline must run at 24 fps
+and the feedback composite uses *minimum*, not additive blending.
 
 ## Runtime in the test tower
 
