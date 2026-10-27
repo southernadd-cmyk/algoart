@@ -1622,8 +1622,8 @@ function constructPhiGallery(layout,studies){
    const facadeDistance=4.7; // Metres outward onto the paving, not roof height
    const face=Math.atan2(outward.x,outward.z);
    monuments.forEach((m,i)=>{
-    const x=doorway.x-transverse.x*offsets[i]+outward.x*facadeDistance;
-    const z=doorway.z-transverse.z*offsets[i]+outward.z*facadeDistance;
+    const x=doorway.x+transverse.x*offsets[i]+outward.x*facadeDistance;
+    const z=doorway.z+transverse.z*offsets[i]+outward.z*facadeDistance;
     m.position.set(x,elevation,z);
     m.rotation.y=face+(i===0?.10:-.10);
     // These are wide, fixed ground-level works. Use normal rectangular
