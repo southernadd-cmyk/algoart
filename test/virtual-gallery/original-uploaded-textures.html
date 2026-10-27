@@ -17,4 +17,4 @@
 const pics=[...document.querySelectorAll('main img')],state=document.getElementById('state');
 function report(){const ok=pics.filter(x=>x.complete&&x.naturalWidth>0).length;const failed=pics.filter(x=>x.complete&&x.naturalWidth===0).length;state.textContent=ok+' / '+pics.length+' uploaded maps loaded'+(failed?' — '+failed+' failed to load':'');}
 pics.forEach(p=>{p.addEventListener('load',report);p.addEventListener('error',report)});report();
-</script></body></html>
+</script><!-- Pages deployment trigger after gallery launch-test assertion repair --></body></html>
