@@ -80,7 +80,14 @@
     // Use the original uploaded plaster and acoustic ceiling textures in this test only.
     globalThis.__phiUploadedWallCeilingTest=true;
     window.__galleryStage='Importing full-engine texture test';
-    await import('../../gallery/visit/gallery-phi-post-test-bundle.js?v=reception-opposite-finishes-20261027');
+    // Preview is opt-in, so the normal bundled test startup is unchanged.
+    const livingPreview=new URLSearchParams(location.search).has('living-monitor');
+    globalThis.__phiLivingMonitorTest=livingPreview;
+    if(livingPreview){
+      await import('../../gallery/visit/gallery-phi.js?v=living-monitor-preview-20261027');
+    }else{
+      await import('../../gallery/visit/gallery-phi-post-test-bundle.js?v=reception-opposite-finishes-20261027');
+    }
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
