@@ -2,6 +2,7 @@ import {createPhiGalleryMusic} from './gallery-music.mjs?v=distributed-record-20
 import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
 import {planGallerySpeakers,addGalleryCeilingSpeaker} from './gallery-speakers.mjs?v=distributed-record-20261027';
 import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=distributed-record-20261027';
+import {addPhiReceptionMetalRoof} from './phi-reception-metal-roof.mjs';
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
@@ -1604,6 +1605,7 @@ function constructPhiGallery(layout,studies){
   const transverse={x:outward.z,z:-outward.x};
   const doorway=entrance?{x:entrance.centre,z:entrance.at}:{x:l.x-1.45,z:l.z};
   entranceDoor=createPhiGothicEntrance(THREE,{doorway,outward,level:elevation,surroundMaterial:galleryFinish.stone});scene.add(entranceDoor.root);
+  addPhiReceptionMetalRoof(THREE,scene,{doorway,outward,elevation});
   addPhiFrontage(THREE,entranceDoor.root,{concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs});
   const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
     halfWidth:30,halfDepth:29,level:elevation};
