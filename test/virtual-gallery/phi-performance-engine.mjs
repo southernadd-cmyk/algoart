@@ -99,8 +99,10 @@ const xrPickerRay=new THREE.Raycaster();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#c2cbc5');
 scene.fog = new THREE.Fog('#c2cbc5', 48, 165);
-scene.add(new THREE.HemisphereLight('#f6f7f5', '#92998c', 1.15));
-const sun = new THREE.DirectionalLight('#fff9f0', 1.65);
+// Contrast-balanced, shadow-map-free daylight. Keep the existing two lights:
+// no extra draw calls, lights, shadow render targets or post-processing passes.
+scene.add(new THREE.HemisphereLight('#eaf1ff', '#72796f', 1.08));
+const sun = new THREE.DirectionalLight('#fff5e5', 2.20);
 sun.position.set(-18, 30, 12);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(76, window.innerWidth / Math.max(1, window.innerHeight), 0.07, 210);
