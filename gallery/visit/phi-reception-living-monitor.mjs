@@ -91,7 +91,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
 
  // Show the actual, reproducible study on monitor one even before an
  // authentic TouchDesigner export is available. Load only when approached.
- const sourceImageURL=new URL('../../2026-10-27/2026-10-27-oil-landscape-02-spiral-OL-20261027-02-57201.jpg',import.meta.url);
+ const sourceImageURL=new URL('../2026-10-27/2026-10-27-oil-landscape-02-spiral-OL-20261027-02-57201.jpg',import.meta.url);
  let sourceImage=null,sourceRequested=false;
  function loadSource(){
   if(sourceRequested)return;
