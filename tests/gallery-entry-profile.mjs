@@ -17,12 +17,12 @@ for(const [name,path] of [['live','/gallery/visit/?debug'],['test','/test/virtua
   await page.waitForFunction(()=>!document.querySelector('#enter').disabled,{timeout:90000});
   await page.evaluate(()=>window.__entryMetrics.entryAt=performance.now());await page.locator('#enter').click();
   await page.waitForTimeout(8000);
-  const metrics=await page.evaluate(()=>({...window.__entryMetrics,stats:window.__phiPerformance,graffiti:window.__phiSquare,renderer:window.__phiRenderStats}));
+  const metrics=await page.evaluate(()=>({...window.__entryMetrics,stats:window.__phiPerformance,graffiti:window.__phiSquare,renderer:window.__phiRenderStats,graffiti:window.__phiGraffitiStats}));
   const {profile}=await cdp.send('Profiler.stop');await writeFile('entry-profile/'+label+'-'+name+'-cpu.json',JSON.stringify(profile));
   const summarise=items=>{const a=items.map(e=>e.ms).sort((a,b)=>a-b);return {frames:a.length,median:a[Math.floor(a.length*.5)],p95:a[Math.floor(a.length*.95)],max:a.at(-1),over50:a.filter(v=>v>50).length};};
-  const output={name,entryAt:metrics.entryAt,before:summarise(metrics.frames.filter(f=>f.start<metrics.entryAt)),after:summarise(metrics.frames.filter(f=>f.start>=metrics.entryAt)),tasks:metrics.tasks,stats:metrics.stats,logs,errors};
-  console.log(JSON.stringify(output));await writeFile('entry-profile/'+label+'-'+name+'.json',JSON.stringify(output,null,2));await page.screenshot({path:'entry-profile/'+label+'-'+name+'.png'});
- }catch(e){console.log(name,e.message,errors,logs);await page.screenshot({path:'entry-profile/'+label+'-'+name+'-error.png'});}
+  const output={name,entryAt:metrics.entryAt,before:summarise(metrics.frames.filter(f=>f.start<metrics.entryAt)),after:summarise(metrics.frames.filter(f=>f.start>=metrics.entryAt)),tasks:metrics.tasks,stats:{...metrics.stats,samples:undefined},renderer:metrics.renderer,graffiti:metrics.graffiti,logs,errors};
+  console.log(JSON.stringify(output));await writeFile('entry-profile/'+label+'-'+name+'.json',JSON.stringify(output,null,2));
+ }catch(e){console.log(name,e.message,errors,logs);}
  await page.close();
 }
 await browser.close();

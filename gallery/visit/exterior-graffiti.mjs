@@ -86,7 +86,7 @@ export function graffitiGeometry(THREE,entries,size,currentFloor,tileMeters=2,at
 }
 export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExteriorGraffiti,keyFor=towerGraffitiKey,kind='exterior',atlasBase=null,atlasPlanner=planGraffitiAtlases,atlasPrefix=null,paintTag=null}={}){
  let generation=0;
- let key='',marks=[],pages=[],pending=[],painted=0,paintSteps=0,totalPaintMs=0,maxPaintMs=0,slowest=null,errors=[],sourceNormal=null,sharedNormal=null,baked=false;
+ let key='',marks=[],pages=[],pending=[],painted=0,paintSteps=0,totalPaintMs=0,maxPaintMs=0,slowest=null,errors=[],sourceNormal=null,sharedNormal=null,baked=false,bakeLoading=false;
  const updateNormal=()=>{
   if(!brick.normalMap||brick.normalMap===sourceNormal)return;
   sharedNormal?.dispose();sourceNormal=brick.normalMap;sharedNormal=sourceNormal.clone();sharedNormal.channel=1;sharedNormal.needsUpdate=true;
@@ -95,7 +95,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
  const dispose=()=>{for(const p of pages){p.texture.dispose();p.material.dispose();}pages=[];pending=[];};
  const prepare=floors=>{
   const next=keyFor(floors);if(next===key)return;
-  dispose();generation++;key=next;marks=planner(floors);painted=0;paintSteps=0;totalPaintMs=0;maxPaintMs=0;slowest=null;errors=[];baked=false;
+  dispose();generation++;key=next;marks=planner(floors);painted=0;paintSteps=0;totalPaintMs=0;maxPaintMs=0;slowest=null;errors=[];baked=false;bakeLoading=true;
   pages=atlasPlanner(marks,{lowPower}).map(plan=>{
    const canvas=document.createElement('canvas');canvas.width=plan.size;canvas.height=plan.height;
    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=lowPower?1:4;
@@ -127,26 +127,30 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
    :new URL('./graffiti-assets/'+(atlasBase||'exterior')+'/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
   const token=generation;
   (async()=>{
+   const controller=new AbortController();
+   const timer=setTimeout(()=>controller.abort(),8000);
    try{
     // The URL changes with the planned paint, so a cached manifest/image pair
     // from a previous bake cannot silently trigger the slow fallback painter.
     manifestUrl.searchParams.set('v',key);
-    const response=await fetch(manifestUrl,{cache:'force-cache'});
+    const response=await fetch(manifestUrl,{cache:'force-cache',signal:controller.signal});
     if(!response.ok) return;
     const manifest=await response.json();
     if(manifest.version!==1||manifest.signature!==expected||manifest.pages?.length!==pages.length)return;
-    const images=await Promise.all(manifest.pages.map(async(item,i)=>{
+   const aborted=new Promise((_,reject)=>controller.signal.addEventListener('abort',()=>reject(new Error('Graffiti atlas load timed out')),{once:true}));
+    const images=await Promise.race([aborted,Promise.all(manifest.pages.map(async(item,i)=>{
      const page=pages[i];
      if(item.size!==page.size||item.height!==page.height||item.entries!==page.entries.length)throw Error('Graffiti atlas dimensions differ');
      const imageUrl=new URL(item.file,manifestUrl);imageUrl.searchParams.set('v',key);
      const image=new Image();image.decoding='async';image.src=imageUrl.href;
      await image.decode();if(image.naturalWidth!==page.size||image.naturalHeight!==page.height)throw Error('Graffiti atlas image size differs');
      return image;
-    }));
+    }))]);
     if(token!==generation)return;
     pages.forEach((page,i)=>{page.context.clearRect(0,0,page.canvas.width,page.canvas.height);page.context.drawImage(images[i],0,0);page.texture.needsUpdate=true;page.dirty=false;});
     pending.length=0;painted=marks.length;baked=true;marks.forEach(mark=>{mark.tag=null;});
    }catch(error){if(kind==='interior')console.warn('Using fallback graffiti paint:',error);}
+   finally{clearTimeout(timer);if(token===generation)bakeLoading=false;}
   })();
  };
  return {
@@ -160,6 +164,8 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
    parent.add(group);return group;
   },
   paintNext(){
+   // Never race expensive fallback painting against a matching PNG download.
+   if(bakeLoading)return;
    const job=pending.shift();if(!job)return;
    const {page,entry}=job,{mark,x,y,width,height}=entry,start=performance.now(),g=page.context,b=mark.bounds;
    try{
@@ -172,7 +178,7 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
    // Limit texture uploads while still showing the ground-floor marks first.
    if(paintSteps<=2||paintSteps%8===0||!pending.length)for(const p of pages)if(p.dirty){p.texture.needsUpdate=true;p.dirty=false;}
   },
-  get diagnostics(){return {lettering:TOWER_LETTERING_REVISION,marks:marks.length,painted,pending:pending.length,paintSteps,pages:pages.length,baked,totalPaintMs:Math.round(totalPaintMs),maxPaintMs:Math.round(maxPaintMs),slowest,errors:[...errors]};},
+  get diagnostics(){return {lettering:TOWER_LETTERING_REVISION,marks:marks.length,painted,pending:pending.length,paintSteps,pages:pages.length,baked,bakeLoading,totalPaintMs:Math.round(totalPaintMs),maxPaintMs:Math.round(maxPaintMs),slowest,errors:[...errors]};},
   snapshot(currentFloor){return marks.map(({tag,bounds,...mark})=>({...mark,position:{x:mark.position.x+mark.normal.x*surfaceOffset(mark,currentFloor),y:mark.position.y,z:mark.position.z+mark.normal.z*surfaceOffset(mark,currentFloor)}}));},
   dispose(){dispose();sharedNormal?.dispose();sharedNormal=null;sourceNormal=null;key='';marks=[];}
  };

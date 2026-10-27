@@ -1,7 +1,7 @@
 // Exterior square graffiti consists only of lowercase phi marks, with eight
 // lettering forms and independently varied writer profiles on golden-angle spirals.
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
-import {createTowerGraffiti,paintExteriorUnderstroke} from './exterior-graffiti.mjs?v=exterior-wall-surface-20261027';
+import {createTowerGraffiti,paintExteriorUnderstroke} from './exterior-graffiti.mjs?v=atlas-first-20261027';
 import {planSquareWallAtlases,paintSquareWall,SQUARE_ATLAS_PREFIX} from './square-graffiti-atlas.mjs';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 import {Reflector} from 'three/addons/objects/Reflector.js';
