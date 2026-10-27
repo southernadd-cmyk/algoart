@@ -2528,8 +2528,47 @@ function detectArt(elapsed) {
   const text=(currentFloor===0?'Ground floor':shortDate(exhibitDate)+' · Floor '+currentFloor)+' · '+locationLabel;
   if(status.textContent!==text)status.textContent=text;
 }
+// Staging-only diagnostics and conservative adaptive resolution. Preserve VR scaling.
+const phiPerformanceTest=!!globalThis.__phiReceptionTestRefresh;
+const phiPerf={samples:[],lastPublish:0,lastAdjustment:0,pixelRatio:0,quality:'default'};
+let phiFrameLast=0;
+const phiBaseRatio=Math.min(window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches?1.35:1.7);
+if(phiPerformanceTest)window.__phiPerformance=phiPerf;
+function measurePhiPerformance(now){
+ if(!phiPerformanceTest||!renderer||renderer.xr.isPresenting)return;
+ if(phiFrameLast){
+  const ms=now-phiFrameLast;
+  if(ms>0&&ms<180){phiPerf.samples.push(ms);if(phiPerf.samples.length>90)phiPerf.samples.shift();}
+ }
+ phiFrameLast=now;
+ if(now-phiPerf.lastPublish>1200&&phiPerf.samples.length>=30){
+  const ordered=[...phiPerf.samples].sort((a,b)=>a-b);
+  const median=ordered[Math.floor(ordered.length/2)];
+  const p95=ordered[Math.floor(ordered.length*.95)];
+  const current=renderer.getPixelRatio();
+  // Hysteresis: change only once every 5 seconds, by a small step.
+  if(now-phiPerf.lastAdjustment>5000){
+   let target=current;
+   if(median>26&&p95>36)target=Math.max(.85,current-.10);
+   else if(median<17.5&&p95<26)target=Math.min(phiBaseRatio,current+.05);
+   target=Math.round(target*100)/100;
+   if(Math.abs(target-current)>.01){
+    renderer.setPixelRatio(target);
+    phiPerf.lastAdjustment=now;
+   }
+  }
+  Object.assign(phiPerf,{medianFrameMs:+median.toFixed(1),p95FrameMs:+p95.toFixed(1),
+   fps:Math.round(1000/median),pixelRatio:renderer.getPixelRatio(),
+   quality:renderer.getPixelRatio()<phiBaseRatio?'adaptive':'full',
+   drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
+   geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,
+   pool:globalThis.__phiPoolPerf||null});
+  phiPerf.lastPublish=now;
+ }
+}
 let phiFrameSerial=0;
 function tick() {
+ measurePhiPerformance(performance.now());
   if (!renderer) return;
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
   const paintSlot=phiFrameSerial++%3;
