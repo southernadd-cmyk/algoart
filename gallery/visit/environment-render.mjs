@@ -8,7 +8,7 @@ const PALETTES={
   meadow:{horizon:'#cbd5cc',zenith:'#b1c8cf',terrain:['#7c9077','#9eab86','#71856e'],trees:['#536d54','#667b58','#79906b'],stone:['#b2b3a6','#9b9f91']},
   heath:{horizon:'#d4cdbf',zenith:'#b1c6cc',terrain:['#918d73','#b0a785','#7d896f'],trees:['#61705b','#758168','#8e997b'],stone:['#b6aea0','#999b8e']},
   grove:{horizon:'#cbd5cc',zenith:'#abc7cc',terrain:['#768978','#99a58a','#6e8277'],trees:['#496856','#5f7c62','#849b7c'],stone:['#b5b4ac','#949e97']},
-  urban:{horizon:'#c9d0d1',zenith:'#b9cbd4',terrain:['#90928b','#a9aaa0','#80837d'],trees:['#5b735f','#72826c','#889383'],stone:['#b1b1a9','#90948e']}
+  urban:{horizon:'#e1edf2',zenith:'#91c4e8',terrain:['#90928b','#a9aaa0','#80837d'],trees:['#5b735f','#72826c','#889383'],stone:['#b1b1a9','#90948e']}
 };
 
 // Offline-safe procedural exterior textures; seeded architecture retains stable
