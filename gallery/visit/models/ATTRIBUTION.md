@@ -30,3 +30,11 @@ Licence: https://creativecommons.org/licenses/by/4.0/ . User-visible source link
 
 - **Art Magazines on Old Cabinet (Scaniverse LIDAR)** by **JFN**, [source](https://sketchfab.com/3d-models/art-magazines-on-old-cabinet-scaniverse-lidar-9868923cd16b4c4db3bd834d8e18fe2e), [author](https://sketchfab.com/db4), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Unused UV sets removed, texture resized and recompressed, scale adjusted for display.
 - **Paper debris** by **Sousinho**, [source](https://sketchfab.com/3d-models/paper-debris-457624d2526744d8890d50d811ef45d7), [author](https://sketchfab.com/sousinho), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Textures resized and recompressed; selected paper objects rescaled and arranged around the reception desk.
+
+## Test gallery reception office fittings
+
+**Minimalistic Modern Office** by **dylanheyes**, [source](https://sketchfab.com/3d-models/minimalistic-modern-office-5540183da1c7452f810f8de33734879a), [author](https://sketchfab.com/dylanheyes), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Task chair, preparation table and wall lights selected from the uploaded office; transforms baked, unused UV sets removed, textures resized and recompressed, materials adjusted. The existing Gothic entrance door is retained.
+
+## Reception gramophone
+
+**Grammaphone** by **josephineburns**, [source](https://sketchfab.com/3d-models/grammaphone-b1a1c0eb77254acd81f94f38e6569c6a), [author](https://sketchfab.com/josephineburns), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Uploaded model repackaged as GLB; original geometry and colours retained, scaled for display.

@@ -61,13 +61,8 @@ export function planPhiReception(floor,circulation,physical){
  // of the world map in the test reception, rather than duplicating it.
  if(globalThis.__phiReceptionTestRefresh&&worldMap&&signage.length>1){
   const posterWidth=2.35,gap=.42;
-  const left=worldMap.x-worldMap.width/2-gap-posterWidth/2;
-  const right=worldMap.x+worldMap.width/2+gap+posterWidth/2;
-  const minimum=mapWall.centre-mapWall.length/2+posterWidth/2+.12;
-  const maximum=mapWall.centre+mapWall.length/2-posterWidth/2-.12;
-  // Prefer the photographed blank area left of the map. Other wall spans
-  // remain available if the map itself occupies most of this surface.
-  const wallX=left>=minimum?left:right<=maximum?right:left;
+  // Screen-left reverses world X when this wall faces -Z.
+  const wallX=worldMap.x-worldMap.normal.z*(worldMap.width/2+gap+posterWidth/2);
   signage[1]={x:wallX,z:mapWall.at+mapWall.normal.z*.17,
    axis:'z',normal:mapWall.normal,width:posterWidth,height:1.3,
    centreY:2.2,room:mapWall.room};
@@ -86,6 +81,7 @@ export function planPhiReception(floor,circulation,physical){
   }))).filter(p=>
    Math.hypot(p.x-start.x,p.z-start.z)>5.5&&
    Math.hypot(p.x-end.x,p.z-end.z)>3.1&&
+   (!desk||p.room!==desk.room)&&
    (!desk||Math.hypot(p.x-desk.x,p.z-desk.z)>6.2)&&
    distSegment(p.x,p.z,start,end)>2.1&&
    !physical.walls.some(w=>w.axis==='x'

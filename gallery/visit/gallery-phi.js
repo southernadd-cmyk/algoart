@@ -1,13 +1,14 @@
+import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=one-reception-record-20261027';
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
-import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=public-phi-20261026';
+import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=gallery-reception-20261027';
 import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=succulent-planters-20261026';
 import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=wall-surface-bake-20261027';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
-import {planPhiReception} from './phi-reception-layout.mjs?v=public-reception-20261026';
-import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,renderPhiFurniture,addPhiFrontage,addPhiReceptionMap} from './phi-reception-decor.mjs?v=desk-cabinet-paper-credits-20261026';
+import {planPhiReception} from './phi-reception-layout.mjs?v=gallery-reception-20261027';
+import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,renderPhiFurniture,addPhiFrontage,addPhiReceptionMap} from './phi-reception-decor.mjs?v=gallery-reception-20261027';
 import {planPhiFurnishings} from './phi-furnishings.mjs?v=larger-reception-desk-20261026';
 import {buildPhiRendererPlan} from './phi-full-engine-adapter.mjs?v=public-adapter-20261026';
 import * as THREE from 'three';
@@ -82,6 +83,7 @@ let phiReceptionProps=[];
 let phiOutdoorPlants=[];
 let phiReceptionMap=null;
 let phiReceptionDesk=null;
+let phiReceptionGramophone=null;
 let phiFurnishingObstacles=[];
 let phiSquareObstacles=[];
 let phiRideState=null;
@@ -171,10 +173,10 @@ if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnosti
  resume(){renderer.setAnimationLoop(tick);}};
 if(GALLERY_DEBUG)window.__phiReceptionPreview={
  overview(){const view=new THREE.PerspectiveCamera(55,camera.aspect,.1,500);view.position.set(98,74,-130);view.lookAt(4,67,0);renderer.setAnimationLoop(null);renderer.render(scene,view);},
- show(kind){const object=kind==='map'?phiReceptionMap:kind==='desk'?phiReceptionDesk?.root:phiOutdoorPlants[0];if(!object?.parent)return;
+ show(kind){const object=kind==='map'?phiReceptionMap:kind==='desk'?phiReceptionDesk?.root:kind==='gramophone'?phiReceptionGramophone?.root:phiOutdoorPlants[0];if(!object?.parent)return;
   object.updateWorldMatrix(true,false);const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);
-  const offset=kind==='map'?new THREE.Vector3(0,0,5.7):kind==='desk'?new THREE.Vector3(-4.3,2.15,-5.8):new THREE.Vector3(2,1.4,2.7);
-  view.position.copy(object.localToWorld(offset));view.lookAt(object.localToWorld(new THREE.Vector3(0,kind==='map'?0:kind==='desk'?.8:.6,0)));
+  const offset=kind==='map'?new THREE.Vector3(0,0,5.7):kind==='desk'?new THREE.Vector3(0,2.3,-6.8):kind==='gramophone'?new THREE.Vector3(-1.5,1.55,-2):new THREE.Vector3(2,1.4,2.7);
+  view.position.copy(object.localToWorld(offset));view.lookAt(object.localToWorld(new THREE.Vector3(0,kind==='map'?0:kind==='desk'?.8:kind==='gramophone'?1.1:.6,0)));
   renderer.setAnimationLoop(null);renderer.render(scene,view);},
  credits(){const art=artExhibits.find(a=>a.study?.title==='Scene models');if(!art)return;
   const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(art.position).addScaledVector(art.normal,5.1);view.position.y=2.6;view.lookAt(art.position.x,2.6,art.position.z);renderer.setAnimationLoop(null);renderer.render(scene,view);},
@@ -1641,6 +1643,10 @@ function constructPhiGallery(layout,studies){
   const furnishing=planPhiReception(phi.floor,phi.circulation,phi.physical);
   phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone,timber:galleryFinish.timberSmoked,trims:galleryFinish.trims});
   if(phiReceptionDesk)phiSquareObstacles.push(...phiReceptionDesk.obstacles);
+  if(globalThis.__phiReceptionTestRefresh&&furnishing.desk){
+   phiReceptionGramophone=addPhiReceptionGramophone(THREE,scene,{furnishing,elevation,camera,canvas,timber:galleryFinish.timberSmoked||galleryFinish.timber,trims:galleryFinish.trims,debug:GALLERY_DEBUG});
+   phiSquareObstacles.push(phiReceptionGramophone.obstacle);
+  }
   const captions=[
    ['PROPORTION PIECE','An algorithmically generated gallery','exhibiting algorithmically generated art.'],
    ['THE GROWING TOWER','A new floor of art is added daily.','Choose an exhibition in the archive lift.']
@@ -1853,6 +1859,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   const {studies,nextPlan,nextFloor,elevation,reception}=prepared||await preparePhiEdition(date);
   // Dispose *all* edition-owned GPU resources, including artwork maps and
   // procedural canvas textures, but not materials/geometry shared across floors.
+  phiReceptionGramophone?.dispose();phiReceptionGramophone=null;
   const staleGeometries=new Set(),staleMaterials=new Set(),staleTextures=new Set();
   for(const object of editionObjects){
     scene.remove(object);
@@ -2449,6 +2456,7 @@ function tick() {
     targetFloor:phiLiftTarget,phase:phiRideState||window.__phiLiftRide?.status==='arrived'?'moving':liftTravelling?'preparing':'idle'
   }));
   entranceDoor?.update(dt,rig.position);
+  phiReceptionGramophone?.update(rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
   if(GALLERY_DEBUG)window.__phiLiftState={

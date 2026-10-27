@@ -1,3 +1,4 @@
+import {replacePhiPreparationTable,addPhiOfficeFrontage} from './phi-office-reception.mjs?v=gallery-reception-20261027';
 import {loadPhiDecorAsset as asset,fitPhiDecorAsset as fit,fitPhiWallModel} from './phi-model-assets.mjs';
 import {createGothicSurroundShape} from './phi-gothic-door-profile.mjs';
 import {renderVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
@@ -55,8 +56,10 @@ export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
      -.52+col*.5,.33+row*.63,shelvesZ,card);
    }
    // Narrow sorting counter on the opposite wall; no suspended noticeboard.
-   cube(g,1.65,.10,.52,0,.88,tableZ,wood);
-   for(const x of [-.7,.7])cube(g,.07,.83,.43,x,.43,tableZ,iron);
+   const table=new THREE.Group();table.position.z=tableZ;g.add(table);
+   cube(table,1.85,.10,.66,0,.81,0,wood);
+   for(const x of [-.8,.8])cube(table,.07,.76,.53,x,.38,0,iron);
+   replacePhiPreparationTable(THREE,g,table);
    for(const x of [-.42,.22])cube(g,.31,.025,.23,x,.95,tableZ-.04,sheet);
    cube(g,.34,.19,.26,.42,1.01,tableZ+.03,card);
 
@@ -136,10 +139,12 @@ export function addPhiFrontage(THREE,root,{concrete,timber,metal,defer}){
  const box=(w,h,d,x,y,z,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);root.add(m);return m;};
  box(2.65,.06,.65,0,-.05,.22,concrete);
  const glow=new THREE.MeshStandardMaterial({color:'#f1e9cf',emissive:'#e5c795',emissiveIntensity:.65,roughness:.3});
+ const oldFixtures=[];
  for(const side of [-1,1]){
-  box(.16,.7,.22,side*1.94,2.25,.23,metal);box(.11,.52,.055,side*1.94,2.25,.37,glow);
+  oldFixtures.push(box(.16,.7,.22,side*1.94,2.25,.23,metal),box(.11,.52,.055,side*1.94,2.25,.37,glow));
   const lamp=new THREE.PointLight('#ffe4ba',2.3,5,2);lamp.position.set(side*1.94,2.4,.65);root.add(lamp);
  }
+ if(globalThis.__phiReceptionTestRefresh)addPhiOfficeFrontage(THREE,root,oldFixtures);
  const benches=[-1,1].map(side=>({x:side*5.2,z:3.1,rotation:Math.atan2(-side*5.2,-3.1)}));
  const b=benches[0];renderPhiFurniture(THREE,root,{benches,people:[]},{concrete,timber});
  const people=()=>renderVisitors(THREE,root,{benches:[],people:[{...b,y:0,yaw:b.rotation,bodyType:'female',variant:2,scale:1,pose:4,seat:true}]});

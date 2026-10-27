@@ -1,3 +1,4 @@
+import {addPhiOfficeChair} from './phi-office-reception.mjs?v=gallery-reception-20261027';
 import {loadPhiDecorAsset,fitPhiDecorAsset} from './phi-model-assets.mjs';
 export function fitPhiDesktopModel(THREE,model,width){
  const group=new THREE.Group();group.add(model);group.updateMatrixWorld(true);
@@ -45,6 +46,7 @@ export function addPhiReceptionDesk(THREE,scene,reception,elevation,{concrete,ti
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.20,.225),new THREE.MeshBasicMaterial({map:texture}));sign.rotation.y=Math.PI;sign.position.set(0,.60,-.72);root.add(sign);
  // Cabinet sits on the staff side of the reception counter, keeping the approach clear.
  const cabinetRoot=new THREE.Group();cabinetRoot.name='phi-art-magazine-cabinet';cabinetRoot.position.set(cabinet.x-desk.x,0,cabinet.z-desk.z);cabinetRoot.rotation.y=cabinet.yaw;root.add(cabinetRoot);
+ if(globalThis.__phiReceptionTestRefresh)addPhiOfficeChair(THREE,root);
  const cabinetJob=loadPhiDecorAsset(new URL('./models/magazine-cabinet.glb',import.meta.url).href).then(source=>{
   if(!root.parent||root.userData.galleryDisposed)return;
   const backing=new THREE.Mesh(new THREE.BoxGeometry(.70,.98,.53),walnut);backing.position.y=.50;backing.name='cabinet-scan-inner-backing';cabinetRoot.add(backing);
@@ -57,5 +59,5 @@ export function addPhiReceptionDesk(THREE,scene,reception,elevation,{concrete,ti
    const fitted=fitPhiDesktopModel(THREE,model,p.width);fitted.position.set(p.x,p.y,p.z);fitted.rotation.y=p.yaw;fitted.name='phi-desk-'+p.name;root.add(fitted);
   }root.userData.propsLoaded++;
  }).catch(error=>console.warn('Reception papers unavailable',error));
- return {root,obstacles:[cabinet],ready:Promise.all([cabinetJob,paperJob])};
+ return {root,obstacles:[cabinet,...(globalThis.__phiReceptionTestRefresh?[{x:desk.x-.55,z:desk.z+1.65,width:.85,depth:.85,yaw:0,kind:'chair'}]:[])],ready:Promise.all([cabinetJob,paperJob])};
 }
