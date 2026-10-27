@@ -1,12 +1,18 @@
 // Exterior square graffiti consists only of lowercase phi marks, with eight
 // lettering forms and independently varied writer profiles on golden-angle spirals.
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
-import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
+import {createTowerGraffiti,paintExteriorUnderstroke} from './exterior-graffiti.mjs?v=exterior-wall-surface-20261027';
+import {planSquareWallAtlases,paintSquareWall,SQUARE_ATLAS_PREFIX} from './square-graffiti-atlas.mjs';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
-export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v6-spread-phi':'phi-square-golden-eight-v9-spread-phi')+'|sprayed-throwups-v'+VERSION;
+export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-wall-bake-v7':'phi-square-live-wall-bake-v10')+'|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
 export const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
+// Wall coordinates, large first; later tiers occupy the full face, with light
+// overlap instead of seventeen marks converging on the same centre point.
+const WALL_ANCHORS=[[-.45,.04],[.62,.55],[.56,-.62],[-.82,-.48],
+ [-.93,.8],[-.30,.88],[.25,.13],[.95,-.12],[-.10,-.8],
+ [-.95,.20],[-.65,.38],[-.55,-.8],[-.05,.60],[.35,.88],[.90,.90],[.82,-.87],[.18,-.40]];
 // Temporarily omit the Loop profile reported as broken. Preserve all other
 // writer slots so excluding one hand does not reshuffle the whole square.
 export const SQUARE_DISABLED_HANDS=Object.freeze(['loop']);
@@ -51,8 +57,10 @@ export function goldenSquarePlacement({bounds,length,wallHeight,count,index,phas
  const fit=Math.min(1,availableWidth/(width*c+height*sn),availableHeight/(height*c+width*sn));
  width*=fit;height*=fit;
  const halfAlong=(width*c+height*sn)/2,halfUp=(height*c+width*sn)/2;
- return {width,height,rotation,u:Math.cos(angle)*radius*(availableWidth/2-halfAlong)*(count===17?1:1),
-  y:wallHeight/2+Math.sin(angle)*radius*(availableHeight/2-halfUp)*(count===17?.37:1),
+ const anchor=count===17?WALL_ANCHORS[index]:[Math.cos(angle)*radius,Math.sin(angle)*radius];
+ const mirror=Math.floor(phase/3)%2?-1:1;
+ return {width,height,rotation,u:anchor[0]*mirror*(availableWidth/2-halfAlong),
+  y:wallHeight/2+anchor[1]*(availableHeight/2-halfUp),
   phi:{angle,radius,index,phase,count,goldenAngle:GOLDEN_ANGLE}};
 }
 export function planSquareTags(objects=planPhiSquare()){
@@ -74,8 +82,8 @@ export function planSquareTags(objects=planPhiSquare()){
     tag.paintWidth=0.85+((slot*7+faceIndex*3)%11)*0.19;
     const p=goldenSquarePlacement({bounds:tag.bounds,length:face.length,wallHeight:object.height,count,index,phase});
     marks.push({id:seed,date:'__phi_reception__',level:0,slot,surface:'square',material:object.material,phrase,text:tag.text,hand:tag.hand,form:tag.form,ink,seed:tag.seed,
-     face:{id:object.id+':'+side,centre,length:face.length,roomY:0},width:p.width,height:p.height,rotation:p.rotation,phi:p.phi,
-     normal:{...n,y:0},position:{x:centre.x+right.x*p.u-n.x*(.197+(count===17?(index===0?0:index<4?.006:index<9?.012:.018):0)),y:p.y,z:centre.z+right.z*p.u-n.z*(.197+(count===17?(index===0?0:index<4?.006:index<9?.012:.018):0))},
+     face:{id:object.id+':'+side,centre,length:face.length,height:object.height,roomY:0},width:p.width,height:p.height,rotation:p.rotation,phi:p.phi,
+     normal:{...n,y:0},position:{x:centre.x+right.x*p.u,y:p.y,z:centre.z+right.z*p.u},
      bounds:{...tag.bounds},tag});
    }
    faceIndex++;
@@ -92,6 +100,8 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
  const objects=planPhiSquare(),marks=planSquareTags(objects),managers=['brick','concrete'].map(material=>createTowerGraffiti(THREE,{
   brick:material==='brick'?brick:concrete,lowPower,kind:'exterior',
   atlasBase:'square/'+(globalThis.__phiReceptionTestRefresh?'':'live/')+material,
+  atlasPlanner:planSquareWallAtlases,atlasPrefix:SQUARE_ATLAS_PREFIX,
+  paintTag:(ctx,tag,details)=>paintSquareWall(ctx,tag,{...details,paintUnderstroke:paintExteriorUnderstroke}),
   keyFor:()=>PHI_SQUARE_REVISION+'|'+material,
   planner:()=>marks.filter(m=>m.material===material)
  }));
@@ -190,3 +200,4 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
   marks(){return managers.flatMap(m=>m.snapshot(0));}
  };
 }
+

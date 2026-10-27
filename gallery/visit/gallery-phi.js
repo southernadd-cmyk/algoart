@@ -3,7 +3,7 @@ import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
 import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=public-phi-20261026';
 import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=succulent-planters-20261026';
-import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=golden-eight-forms-v4-no-loop-20261026';
+import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=wall-surface-bake-20261027';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs?v=public-reception-20261026';
@@ -22,7 +22,7 @@ import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-mater
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
 import {placeCastIronStreetLamp,enableDetailedStreetLamps} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
-import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
+import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-wall-surface-20261027';
 import {planInteriorGraffiti,interiorGraffitiKey} from './interior-graffiti-plan.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=city-cards-20261025';
@@ -2484,5 +2484,6 @@ Promise.race([
   document.fonts.load('42px "AlgoArt Marker"'),
   new Promise(resolve=>setTimeout(resolve,1600))
 ]).catch(error=>console.warn('Marker font fallback:',error)).finally(load);
+
 
 

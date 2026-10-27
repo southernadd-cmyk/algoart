@@ -1,3 +1,4 @@
 // Staging-only reception furnishing refinements.
 globalThis.__phiReceptionTestRefresh=true;
-await import('./gallery-phi.js?v=gothic-test-vault-20261026');
+await import('./gallery-phi.js?v=wall-surface-bake-20261027');
+

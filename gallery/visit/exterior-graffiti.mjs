@@ -3,7 +3,9 @@
 import {drawTag} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {drawTowerFamilyTag,towerGraffitiSignature,TOWER_LETTERING_REVISION} from './tower-family-lettering.mjs';
 import {planExteriorGraffiti,planGraffitiAtlases,towerGraffitiKey} from './exterior-graffiti-plan.mjs';
-const surfaceOffset=(mark,currentFloor)=>mark.surface==='interior'?.173:mark.level===currentFloor?.202:.173;
+// Square face centres already lie on the physical masonry surface. This
+// clearance must not depend on the occupied tower floor or the paint tier.
+const surfaceOffset=(mark,currentFloor)=>mark.surface==='square'?.008:mark.surface==='interior'?.173:mark.level===currentFloor?.202:.173;
 export function paintExteriorUnderstroke(ctx,x,y,width,height){
  // Broad chalk-white aerosol underpainting with uneven soft overspray.
  const pad=14,left=Math.max(0,Math.floor(x-pad)),top=Math.max(0,Math.floor(y-pad));
@@ -82,9 +84,9 @@ export function graffitiGeometry(THREE,entries,size,currentFloor,tileMeters=2,at
  geometry.setAttribute('wallUv',new THREE.Float32BufferAttribute(wallUv,2));
  geometry.setIndex(indices);geometry.computeBoundingSphere();return geometry;
 }
-export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExteriorGraffiti,keyFor=towerGraffitiKey,kind='exterior',atlasBase=null}={}){
+export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExteriorGraffiti,keyFor=towerGraffitiKey,kind='exterior',atlasBase=null,atlasPlanner=planGraffitiAtlases,atlasPrefix=null,paintTag=null}={}){
  let generation=0;
- let key='',marks=[],pages=[],pending=[],painted=0,paintSteps=0,totalPaintMs=0,maxPaintMs=0,slowest=null,errors=[],sourceNormal=null,sharedNormal=null;
+ let key='',marks=[],pages=[],pending=[],painted=0,paintSteps=0,totalPaintMs=0,maxPaintMs=0,slowest=null,errors=[],sourceNormal=null,sharedNormal=null,baked=false;
  const updateNormal=()=>{
   if(!brick.normalMap||brick.normalMap===sourceNormal)return;
   sharedNormal?.dispose();sourceNormal=brick.normalMap;sharedNormal=sourceNormal.clone();sharedNormal.channel=1;sharedNormal.needsUpdate=true;
@@ -93,8 +95,8 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
  const dispose=()=>{for(const p of pages){p.texture.dispose();p.material.dispose();}pages=[];pending=[];};
  const prepare=floors=>{
   const next=keyFor(floors);if(next===key)return;
-  dispose();generation++;key=next;marks=planner(floors);painted=0;paintSteps=0;totalPaintMs=0;maxPaintMs=0;slowest=null;errors=[];
-  pages=planGraffitiAtlases(marks,{lowPower}).map(plan=>{
+  dispose();generation++;key=next;marks=planner(floors);painted=0;paintSteps=0;totalPaintMs=0;maxPaintMs=0;slowest=null;errors=[];baked=false;
+  pages=atlasPlanner(marks,{lowPower}).map(plan=>{
    const canvas=document.createElement('canvas');canvas.width=plan.size;canvas.height=plan.height;
    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=lowPower?1:4;
    const material=new THREE.MeshStandardMaterial({map:texture,transparent:true,depthWrite:false,depthTest:true,alphaTest:.015,
@@ -119,13 +121,16 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
   updateNormal();
   // Build-time PNG atlas is preferred. The legacy paint queue remains a
   // deterministic fallback for old floors or stale/incomplete manifests.
-  const expected=(kind==='exterior'?'white-understroke-v3|':'')+towerGraffitiSignature(marks);
+  const expected=(atlasPrefix??(kind==='exterior'?'white-understroke-v3|':''))+towerGraffitiSignature(marks);
   const manifestUrl=kind==='interior'&&marks[0]
    ?new URL('../'+marks[0].date+'/3d/graffiti/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href)
    :new URL('./graffiti-assets/'+(atlasBase||'exterior')+'/'+(lowPower?'mobile':'desktop')+'/manifest.json',location.href);
   const token=generation;
   (async()=>{
    try{
+    // The URL changes with the planned paint, so a cached manifest/image pair
+    // from a previous bake cannot silently trigger the slow fallback painter.
+    manifestUrl.searchParams.set('v',key);
     const response=await fetch(manifestUrl,{cache:'force-cache'});
     if(!response.ok) return;
     const manifest=await response.json();
@@ -133,13 +138,14 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
     const images=await Promise.all(manifest.pages.map(async(item,i)=>{
      const page=pages[i];
      if(item.size!==page.size||item.height!==page.height||item.entries!==page.entries.length)throw Error('Graffiti atlas dimensions differ');
-     const image=new Image();image.decoding='async';image.src=new URL(item.file,manifestUrl).href;
+     const imageUrl=new URL(item.file,manifestUrl);imageUrl.searchParams.set('v',key);
+     const image=new Image();image.decoding='async';image.src=imageUrl.href;
      await image.decode();if(image.naturalWidth!==page.size||image.naturalHeight!==page.height)throw Error('Graffiti atlas image size differs');
      return image;
     }));
     if(token!==generation)return;
     pages.forEach((page,i)=>{page.context.clearRect(0,0,page.canvas.width,page.canvas.height);page.context.drawImage(images[i],0,0);page.texture.needsUpdate=true;page.dirty=false;});
-    pending.length=0;painted=marks.length;marks.forEach(mark=>{mark.tag=null;});
+    pending.length=0;painted=marks.length;baked=true;marks.forEach(mark=>{mark.tag=null;});
    }catch(error){if(kind==='interior')console.warn('Using fallback graffiti paint:',error);}
   })();
  };
@@ -158,16 +164,17 @@ export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExte
    const {page,entry}=job,{mark,x,y,width,height}=entry,start=performance.now(),g=page.context,b=mark.bounds;
    try{
     g.save();g.beginPath();g.rect(x-2,y-2,width+4,height+4);g.clip();g.translate(x,y);g.scale(width/b.width,height/b.height);g.translate(-b.x,-b.y);
-    try{if(job.tag.renderer==='az-nine-v1')drawTowerFamilyTag(g,job.tag,{finish:'spray'});else drawTag(g,job.tag,{finish:'spray'});}finally{g.restore();}
-    if(kind==='exterior')paintExteriorUnderstroke(g,x,y,width,height);
-    page.dirty=true;if(job.last){painted++;mark.tag=null;}
+    try{if(paintTag)paintTag(g,job.tag,{width,height});else if(job.tag.renderer==='az-nine-v1')drawTowerFamilyTag(g,job.tag,{finish:'spray'});else drawTag(g,job.tag,{finish:'spray'});}finally{g.restore();}
+    if(kind==='exterior'&&!paintTag)paintExteriorUnderstroke(g,x,y,width,height);
+    page.dirty=true;if(job.last){painted+=mark.markCount||1;mark.tag=null;}
    }catch(error){errors.push(mark.id+': '+error.message);console.warn(kind+' paint failed',error);}
    paintSteps++;const elapsed=performance.now()-start;totalPaintMs+=elapsed;if(elapsed>maxPaintMs){maxPaintMs=elapsed;slowest={text:mark.phrase,hand:mark.hand,form:mark.form};}
    // Limit texture uploads while still showing the ground-floor marks first.
    if(paintSteps<=2||paintSteps%8===0||!pending.length)for(const p of pages)if(p.dirty){p.texture.needsUpdate=true;p.dirty=false;}
   },
-  get diagnostics(){return {lettering:TOWER_LETTERING_REVISION,marks:marks.length,painted,pending:pending.length,paintSteps,pages:pages.length,totalPaintMs:Math.round(totalPaintMs),maxPaintMs:Math.round(maxPaintMs),slowest,errors:[...errors]};},
+  get diagnostics(){return {lettering:TOWER_LETTERING_REVISION,marks:marks.length,painted,pending:pending.length,paintSteps,pages:pages.length,baked,totalPaintMs:Math.round(totalPaintMs),maxPaintMs:Math.round(maxPaintMs),slowest,errors:[...errors]};},
   snapshot(currentFloor){return marks.map(({tag,bounds,...mark})=>({...mark,position:{x:mark.position.x+mark.normal.x*surfaceOffset(mark,currentFloor),y:mark.position.y,z:mark.position.z+mark.normal.z*surfaceOffset(mark,currentFloor)}}));},
   dispose(){dispose();sharedNormal?.dispose();sharedNormal=null;sourceNormal=null;key='';marks=[];}
  };
 }
+
