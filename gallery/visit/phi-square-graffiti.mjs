@@ -3,7 +3,7 @@
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
-export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v5-layered-phi':'phi-square-golden-eight-v8-layered-phi')+'|sprayed-throwups-v'+VERSION;
+export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-pool-v6-spread-phi':'phi-square-golden-eight-v9-spread-phi')+'|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
 export const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
@@ -51,7 +51,7 @@ export function goldenSquarePlacement({bounds,length,wallHeight,count,index,phas
  const fit=Math.min(1,availableWidth/(width*c+height*sn),availableHeight/(height*c+width*sn));
  width*=fit;height*=fit;
  const halfAlong=(width*c+height*sn)/2,halfUp=(height*c+width*sn)/2;
- return {width,height,rotation,u:Math.cos(angle)*radius*(availableWidth/2-halfAlong)*(count===17?.37:1),
+ return {width,height,rotation,u:Math.cos(angle)*radius*(availableWidth/2-halfAlong)*(count===17?1:1),
   y:wallHeight/2+Math.sin(angle)*radius*(availableHeight/2-halfUp)*(count===17?.37:1),
   phi:{angle,radius,index,phase,count,goldenAngle:GOLDEN_ANGLE}};
 }
