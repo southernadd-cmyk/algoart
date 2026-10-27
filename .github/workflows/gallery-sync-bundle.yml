@@ -5,6 +5,8 @@ on:
     paths:
       - '.github/workflows/gallery-sync-bundle.yml'
       - 'gallery/visit/tower-family-lettering.mjs'
+      - 'gallery/visit/gallery-phi.js'
+      - 'test/virtual-gallery/phi-performance-engine.mjs'
       - 'gallery/visit/tower-graffiti-styles.mjs'
   workflow_dispatch:
 permissions:
