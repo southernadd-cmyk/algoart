@@ -1829,10 +1829,16 @@ function constructPhiGallery(layout,studies){
    }))).filter(p=>p.width>=2.5&&p.depth>=2.5&&(!foyer||p.room!==phi.floor.mergedRooms.indexOf(foyer)))
      .sort((a,b)=>a.area-b.area)[0];
    const monitorRoom=furnishing.backrooms?.[0]||fallback;
-   if(monitorRoom)phiReceptionLivingMonitor=addPhiReceptionLivingMonitor(THREE,scene,{room:monitorRoom,world:phi.world,elevation,camera});
-   if(GALLERY_DEBUG)window.__phiLivingMonitorDiagnostics={
+   if(monitorRoom)phiReceptionLivingMonitor=addPhiReceptionLivingMonitor(THREE,scene,{
+    room:monitorRoom,lift:furnishing.lift,physicalWalls:phi.physical.walls,elevation,camera
+   });
+   // Always expose placement diagnostics on test; this needs to be
+   // verifiable even when debug mode is disabled.
+   window.__phiLivingMonitorDiagnostics={
     selectedRoom:monitorRoom||null,placed:!!phiReceptionLivingMonitor,
-    placement:phiReceptionLivingMonitor?.root.position.toArray()||null
+    screenCount:phiReceptionLivingMonitor?.screenCount||0,
+    wall:phiReceptionLivingMonitor?.mount||null,
+    localPosition:phiReceptionLivingMonitor?.root.position.toArray()||null
    };
   }
   // Permanent reception installation: two pre-baked Growth Systems sculptures
