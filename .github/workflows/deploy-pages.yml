@@ -1,5 +1,5 @@
 name: Deploy ALGO ART to Pages
-# Deployment refresh: publish latest plaster and reception credits.
+# Deployment refresh: correct Mozart regression assertion and publish gallery.
 
 on:
   push:
