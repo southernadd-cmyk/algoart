@@ -1715,14 +1715,14 @@ function constructPhiGallery(layout,studies){
    if(doorway){
     const doorX=doorway.axis==='x'?doorway.at:doorway.centre;
     const doorZ=doorway.axis==='z'?doorway.at:doorway.centre;
-    // From the backroom centre outward into reception, then 2.2m laterally.
+    // Tuck the plinth toward the backroom wall, while offsetting it from the opening.
     const n=doorway.axis==='x'
      ?new THREE.Vector2(Math.sign(doorX-backroom.x)||1,0)
      :new THREE.Vector2(0,Math.sign(doorZ-backroom.z)||1);
     const side=doorway.axis==='x'?new THREE.Vector2(0,1):new THREE.Vector2(1,0);
     const candidates=[-1,1].map(sign=>({
-     x:doorX+n.x*1.65+side.x*sign*2.2,
-     z:doorZ+n.y*1.65+side.y*sign*2.2
+     x:doorX+n.x*.8+side.x*sign*2.2,
+     z:doorZ+n.y*.8+side.y*sign*2.2
     }));
     // Prefer the candidate nearest the open reception, without silently
     // dropping the entire statue when old wall-clearance checks reject both.
