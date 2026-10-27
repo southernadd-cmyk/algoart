@@ -250,7 +250,7 @@ function archivePage(archive) {
 <link rel="canonical" href="${GALLERY_URL}/">
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <link rel="stylesheet" href="gallery.css?v=20261013-site-quality">
-<link rel="stylesheet" href="editorial.css?v=20261023-marker-tower">\n<link rel="stylesheet" href="../css/nav-lettering.css?v=12">\n<script defer src="../js/nav-lettering.js?v=2"></script>
+<link rel="stylesheet" href="editorial.css?v=20261027-gallery-intro-removed">\n<link rel="stylesheet" href="../css/nav-lettering.css?v=12">\n<script defer src="../js/nav-lettering.js?v=2"></script>
 
 <link rel="alternate" type="application/rss+xml" title="PROPORTION PIECE Daily Gallery" href="feed.xml">
 <meta property="og:type" content="website">
@@ -273,17 +273,11 @@ function archivePage(archive) {
   <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../">try it out</a><a data-algo-nav href="./" aria-current="page">daily gallery</a><a data-algo-nav href="../about/">about this project</a></nav>
 </header>
 <main>
-  <section class="hero archive-hero">
-    <div class="kicker">PERMANENT DAILY ARCHIVE</div>
-    <h1>A DRAWING A DAY.<br>AND THEN SOME.</h1>
-    <p>${escapeHtml(description)}</p>
-    <div class="hero-meta"><span>${days.length} DAILY ${days.length === 1 ? 'EDITION' : 'EDITIONS'}</span><span>LATEST: ${latest ? latest.count : 0} STUDIES</span><span>EXACT STATES PRESERVED</span></div>
-  </section>
   <section class="visit-band" aria-labelledby="visit-title">
     <a href="./visit/">
-      <img src="./visit/walk-the-tower-golden.png?v=20261026-crop" width="1536" height="949" loading="eager" alt="View of the Proportion Piece tower, with staggered brick exhibition rooms, glass walkways and central glass lift shaft">
+      <img src="./visit/walk-the-tower-golden.png?v=20261027-clean-phi" width="1595" height="986" loading="eager" alt="View of the Proportion Piece tower, with staggered brick exhibition rooms, glass walkways and central glass lift shaft">
       <div class="visit-copy">
-        <h2 id="visit-title">Walk the tower.</h2>
+        <h1 id="visit-title">Every day, another gallery floor</h1>
         <p>Every daily edition is a floor. Begin outside and take the lift through ${days.length} days of drawings.</p>
         <span>Enter the exhibition →</span>
       </div>
