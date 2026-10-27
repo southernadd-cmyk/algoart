@@ -1821,8 +1821,19 @@ function constructPhiGallery(layout,studies){
   const leafLight=new THREE.MeshStandardMaterial({color:'#819477',roughness:1,flatShading:true});
   queuePhiFurnishings(phi,planPhiFurnishings(phi,{reception:furnishing,lowPower:galleryFinish.lowPower}),elevation);
   phiReceptionProps=addPhiReceptionDecor(THREE,scene,furnishing,elevation);
-  if(globalThis.__phiLivingMonitorTest && furnishing.backrooms?.length){
-   phiReceptionLivingMonitor=addPhiReceptionLivingMonitor(THREE,scene,{room:furnishing.backrooms[0],world:phi.world,elevation,camera});
+  if(globalThis.__phiLivingMonitorTest){
+   // A monitor should not disappear just because the furniture planner found
+   // no compact storage room. Use the smallest non-foyer room cell as fallback.
+   const fallback=phi.floor.mergedRooms.flatMap((room,i)=>room.pieces.map(p=>({
+    x:p.x+p.w/2,z:p.z+p.h/2,width:p.w,depth:p.h,area:p.w*p.h,room:i
+   }))).filter(p=>p.width>=2.5&&p.depth>=2.5&&(!foyer||p.room!==phi.floor.mergedRooms.indexOf(foyer)))
+     .sort((a,b)=>a.area-b.area)[0];
+   const monitorRoom=furnishing.backrooms?.[0]||fallback;
+   if(monitorRoom)phiReceptionLivingMonitor=addPhiReceptionLivingMonitor(THREE,scene,{room:monitorRoom,world:phi.world,elevation,camera});
+   if(GALLERY_DEBUG)window.__phiLivingMonitorDiagnostics={
+    selectedRoom:monitorRoom||null,placed:!!phiReceptionLivingMonitor,
+    placement:phiReceptionLivingMonitor?.root.position.toArray()||null
+   };
   }
   // Permanent reception installation: two pre-baked Growth Systems sculptures
   // at the visitor-approved exact local coordinates. Do not involve any
