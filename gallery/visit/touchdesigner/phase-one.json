@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "awaiting-touchdesigner-export",
+  "status": "published",
   "artwork": {
     "title": "Golden Trajectories — Oil Paint Study 14",
     "seed": "OL-20261027-02-57201",
@@ -30,7 +30,9 @@
     "width": 1152,
     "height": 240,
     "fps": 24,
-    "durationSeconds": 20
+    "durationSeconds": 20,
+    "sha256": "d64dd7eda6c7bbb62ce90a19c8543791b455d16989a875fa4b7a72914c0ff9d0",
+    "sizeBytes": 3384087
   },
   "panels": [
     "source",
