@@ -37,8 +37,9 @@ export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryP
  }});
  // Warm the full scene, including textures in rooms outside the starting view.
  // Each upload happens behind the welcome screen, with UI time between them.
+ let batch=0;
  for(const texture of textures){
-  await nextFrame();
+  if(batch++%4===0)await nextFrame();
   try{renderer.initTexture(texture);}catch(error){console.warn('Gallery texture warm-up skipped',error);}
  }
  renderer.render(scene,camera);await nextFrame();

@@ -30,7 +30,7 @@ for(const variant of ['baseline','candidate']){
   });}}]});bundles[variant]=result.outputFiles[0].text;
 }
 const records=[];
-for(const [index,variant] of ['baseline','candidate'].entries()){
+for(const [index,variant] of (process.env.ENTRY_CANDIDATE_ONLY?['candidate']:['baseline','candidate']).entries()){
  const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  try{
   const context=await browser.newContext({viewport:{width:960,height:600}}),page=await context.newPage(),errors=[];

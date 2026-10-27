@@ -2710,6 +2710,9 @@ function tick() {
   lastFocusCheck+=dt;mapElapsed+=dt;
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
+  // Keep the preparation overlay responsive without repeatedly drawing the
+  // hidden tower while its loaders, shaders and textures are being prepared.
+  if(!welcome.hidden&&enter.disabled)return;
   renderer.render(scene,camera);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={tower:towerGraffiti.diagnostics,interior:interiorGraffiti.diagnostics,square:phiSquare.diagnostics()};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};

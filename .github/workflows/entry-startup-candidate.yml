@@ -1,7 +1,7 @@
 name: Validate prepared gallery entry
 on:
   push:
-    branches: ['startup/entry']
+    branches: ['startup/entry', 'startup/entry-ready']
 permissions:
   contents: write
 jobs:
@@ -20,6 +20,8 @@ jobs:
       - run: npx playwright install chromium
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/entry-http.log 2>&1 &
       - run: node automation/compare-entry-startup.mjs
+        env:
+          ENTRY_CANDIDATE_ONLY: 1
       - name: Store validated production bundles
         run: |
           git config user.name 'github-actions[bot]'
@@ -27,7 +29,7 @@ jobs:
           git add gallery/visit/gallery-bundle.js gallery/visit/gallery-phi-bundle.js
           if ! git diff --cached --quiet; then
             git commit -m 'Build prepared-entry bundles [skip ci]'
-            git push origin HEAD:startup/entry
+            git push origin HEAD:${GITHUB_REF_NAME}
           fi
       - uses: actions/upload-artifact@v4
         if: always()
