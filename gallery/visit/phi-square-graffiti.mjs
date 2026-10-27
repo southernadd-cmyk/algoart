@@ -126,12 +126,39 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
     // A shallow reflecting pool at the golden-spiral core. No extra texture downloads.
     // The basin is offset from the entrance sightline, with a continuous solid rim.
     const cx=3,cz=18,w=7.4,d=w/((1+Math.sqrt(5))/2);
-    const water=new THREE.MeshStandardMaterial({color:'#668e99',roughness:.19,metalness:.18,transparent:true,opacity:.83,depthWrite:false});
-    const bottom=new THREE.MeshStandardMaterial({color:'#3b5557',roughness:.95});
+    // Lightweight procedural water: sky/architecture-toned glints, two ripple scales,
+    // and angle-dependent reflectance. No render target, texture fetch, or extra light.
+    const water=new THREE.ShaderMaterial({
+     uniforms:{time:{value:0},deep:{value:new THREE.Color('#24434a')},sky:{value:new THREE.Color('#a9bbc0')}},
+     vertexShader:`varying vec2 vUv;varying vec3 vWorld;void main(){vUv=uv;vec4 wp=modelMatrix*vec4(position,1.0);vWorld=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;}`,
+     fragmentShader:`precision mediump float;
+      uniform float time;uniform vec3 deep;uniform vec3 sky;
+      varying vec2 vUv;varying vec3 vWorld;
+      void main(){
+       vec2 uv=vUv;
+       float wave=sin(uv.x*55.0+uv.y*17.0+time*.48)*.0028
+                 +sin(uv.y*86.0-uv.x*23.0-time*.39)*.0017;
+       vec2 q=uv+vec2(wave,wave*.7);
+       float broad=sin(q.y*13.0+q.x*7.0+time*.18)*.5+.5;
+       float hairline=pow(max(0.0,sin(q.y*110.0+q.x*36.0+time*.32)),26.0);
+       vec3 view=normalize(cameraPosition-vWorld);
+       float fresnel=pow(1.0-clamp(abs(view.y),0.0,1.0),2.6);
+       float mirror=.26+.54*fresnel;
+       vec3 surface=mix(deep,sky,clamp(mirror+broad*.095,0.0,1.0));
+       surface+=vec3(.20,.23,.22)*hairline*(.12+.46*fresnel);
+       float edge=min(min(uv.x,1.0-uv.x),min(uv.y,1.0-uv.y));
+       surface*=.86+.14*smoothstep(0.0,.065,edge);
+       gl_FragColor=vec4(surface,1.0);
+      }`,
+     side:THREE.DoubleSide
+    });
+    const bottom=new THREE.MeshStandardMaterial({color:'#253b3c',roughness:.94});
     add(w,.15,d,cx,-.14,cz,bottom,'phi-spiral-pool-bottom');
     const waterSurface=new THREE.Mesh(new THREE.PlaneGeometry(w-.44,d-.44),water);
     waterSurface.rotation.x=-Math.PI/2;waterSurface.position.set(cx,.013,cz);
-    waterSurface.name='phi-spiral-reflecting-water';root.add(waterSurface);
+    waterSurface.name='phi-spiral-reflecting-water';
+    waterSurface.onBeforeRender=()=>{water.uniforms.time.value=performance.now()*.001;};
+    root.add(waterSurface);
     for(const sign of [-1,1]){
      add(w+.22,.2,.24,cx,.10,cz+sign*d/2,paving,'phi-spiral-pool-rim');
      add(.24,.2,d+.22,cx+sign*w/2,.10,cz,paving,'phi-spiral-pool-rim');
