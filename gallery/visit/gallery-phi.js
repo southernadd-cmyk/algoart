@@ -1,3 +1,4 @@
+import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
 import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
 import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
 import {planGallerySpeakers,addGalleryCeilingSpeaker} from './gallery-speakers.mjs?v=distributed-record-20261027';
@@ -8,7 +9,7 @@ import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
 import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=gallery-reception-20261027';
 import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
-import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=golden-planters-20261027';
+import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=entry-performance-20261027';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs?v=gallery-reception-20261027';
@@ -27,7 +28,7 @@ import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-mater
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
 import {placeCastIronStreetLamp,enableDetailedStreetLamps} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
-import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-wall-surface-20261027';
+import {createTowerGraffiti} from './exterior-graffiti.mjs?v=atlas-first-20261027';
 import {planInteriorGraffiti,interiorGraffitiKey} from './interior-graffiti-plan.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=daytime-restored-20261027';
@@ -1371,6 +1372,8 @@ function queuePhiFurnishings(phi,furnishings,elevation){
 }
 function constructPhiGallery(layout,studies){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
+ const staticArchitecture=[];
+ const staticBlock=(...args)=>{const mesh=block(...args);staticArchitecture.push(mesh);return mesh;};
  if(globalThis.__phiReceptionTilePreview&&!receptionTilePreview)receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});
  const roomFloor=(exhibitDate===RECEPTION&&receptionTilePreview)||galleryFinish.floor;
  if(GALLERY_DEBUG)window.__phiReceptionTiles=roomFloor===receptionTilePreview?receptionTilePreview:null;
@@ -1382,13 +1385,13 @@ function constructPhiGallery(layout,studies){
  // Every floor, enclosure and collision surface comes from the same phi plan.
  const plaster=galleryFinish?.interiorWall||wall;
  for(const p of phi.pieces){
-   const slab=block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,roomFloor);
+   const slab=staticBlock(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,roomFloor);
    if(roomFloor===receptionTilePreview)alignReceptionTileUvs(slab);
  }
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.04)continue;
-  if(w.axis==='x')block(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,plaster);
-  else block(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,plaster);
+  if(w.axis==='x')staticBlock(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,plaster);
+  else staticBlock(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,plaster);
  }
  // Architectural plaster inside; metre-tiled brick veneer only on exterior faces.
  const inCell=(x,z)=>phi.pieces.some(p=>x>=p.x-.0001&&x<=p.x+p.w+.0001&&z>=p.z-.0001&&z<=p.z+p.h+.0001);
@@ -1399,29 +1402,30 @@ function constructPhiGallery(layout,studies){
    const left=inCell(w.at-offset,c),right=inCell(w.at+offset,c);
    if(left===right)continue;
    const side=left?1:-1;
-   block(.035,ROOM_HEIGHT,len,w.at+side*.113,elevation+ROOM_HEIGHT/2,c,galleryFinish.exteriorBrick);
+   staticBlock(.035,ROOM_HEIGHT,len,w.at+side*.113,elevation+ROOM_HEIGHT/2,c,galleryFinish.exteriorBrick);
   }else{
    const north=inCell(c,w.at-offset),south=inCell(c,w.at+offset);
    if(north===south)continue;
    const side=north?1:-1;
-   block(len,ROOM_HEIGHT,.035,c,elevation+ROOM_HEIGHT/2,w.at+side*.113,galleryFinish.exteriorBrick);
+   staticBlock(len,ROOM_HEIGHT,.035,c,elevation+ROOM_HEIGHT/2,w.at+side*.113,galleryFinish.exteriorBrick);
   }
  }
  // Architectural finish follows the actual phi rooms. Keep the office
  // ceiling photographic texture, with trim only at true physical boundaries:
  // subdivided internal cells should not look like a ceiling grid.
  for(const p of phi.pieces)
-  block(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster);
+  staticBlock(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster);
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.45)continue;
   if(w.axis==='x'){
-   block(.13,.16,len,w.at,elevation+ROOM_HEIGHT-.035,(w.lo+w.hi)/2,join);
-   block(.065,.13,len,w.at,elevation+.14,(w.lo+w.hi)/2,galleryFinish.plinth);
+   staticBlock(.13,.16,len,w.at,elevation+ROOM_HEIGHT-.035,(w.lo+w.hi)/2,join);
+   staticBlock(.065,.13,len,w.at,elevation+.14,(w.lo+w.hi)/2,galleryFinish.plinth);
   }else{
-   block(len,.16,.13,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT-.035,w.at,join);
-   block(len,.13,.065,(w.lo+w.hi)/2,elevation+.14,w.at,galleryFinish.plinth);
+   staticBlock(len,.16,.13,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT-.035,w.at,join);
+   staticBlock(len,.13,.065,(w.lo+w.hi)/2,elevation+.14,w.at,galleryFinish.plinth);
   }
  }
+ window.__phiArchitectureBatches=batchPhiStaticArchitecture(THREE,scene,staticArchitecture);
  // Share the production spotlight fixture loader, limiting fixtures to
  // larger merged rooms rather than the many phi subdivision cells.
  const lightRooms=phi.floor.mergedRooms.filter(r=>r.pieces?.length);
@@ -2019,7 +2023,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object)&&object!==phiTowerShellCache?.shell);
   // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
-  if(viaLift||nextFloor!==0||welcome.hidden)startDeferredGallery();
+  startDeferredGallery();
   if(!viaLift && nextFloor===0 && plan.phi?.plaza){
     const door=plan.phi.arrivalDoor;
     const out=plan.phi.plaza.outward;
@@ -2049,6 +2053,12 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   $('floorIndicator').textContent=nextFloor===0?'G · Reception':shortDate(date)+' · Floor '+nextFloor;
   $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
   status.textContent=reception?'Ground floor · reception and visitor information':floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
+  if(!viaLift&&!welcome.hidden){
+    // Prepare the existing full-quality shaders and first GPU upload behind
+    // the welcome screen instead of making the Enter click pay that cost.
+    if(renderer.compileAsync)await renderer.compileAsync(scene,camera);
+    await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
+  }
   enter.disabled=false;enter.textContent='Enter the gallery';
   GALLERY_DEBUG&&console.info('[Gallery performance] edition ready',Math.round(performance.now()-editionStart)+'ms',date);
 }
@@ -2252,6 +2262,10 @@ for (const button of document.querySelectorAll('[data-move]')) {
 }
 enter.addEventListener('click',(event)=>{
   if (!plan) return;
+  // Spawning inside a dated floor's lift is not a new walk-in event.
+  // Re-arm proximity only after the visitor leaves the cabin.
+  liftWasNear=Boolean(nearLift());
+  if(liftWasNear)liftPickerConsumed=true;
   welcome.hidden=true;
   startDeferredGallery();
   canvas.focus({preventScroll:true});
@@ -2528,7 +2542,7 @@ function detectArt(elapsed) {
   const text=(currentFloor===0?'Ground floor':shortDate(exhibitDate)+' · Floor '+currentFloor)+' · '+locationLabel;
   if(status.textContent!==text)status.textContent=text;
 }
-// Staging-only diagnostics and conservative adaptive resolution. Preserve VR scaling.
+// Frame diagnostics only: keep the original pixel density and VR scaling.
 const phiPerformanceTest=!!globalThis.__phiReceptionTestRefresh;
 const phiPerf={samples:[],lastPublish:0,lastAdjustment:0,pixelRatio:0,quality:'default'};
 let phiFrameLast=0;
@@ -2546,17 +2560,6 @@ function measurePhiPerformance(now){
   const median=ordered[Math.floor(ordered.length/2)];
   const p95=ordered[Math.floor(ordered.length*.95)];
   const current=renderer.getPixelRatio();
-  // Hysteresis: change only once every 5 seconds, by a small step.
-  if(now-phiPerf.lastAdjustment>5000){
-   let target=current;
-   if(median>26&&p95>36)target=Math.max(.85,current-.10);
-   else if(median<17.5&&p95<26)target=Math.min(phiBaseRatio,current+.05);
-   target=Math.round(target*100)/100;
-   if(Math.abs(target-current)>.01){
-    renderer.setPixelRatio(target);
-    phiPerf.lastAdjustment=now;
-   }
-  }
   Object.assign(phiPerf,{medianFrameMs:+median.toFixed(1),p95FrameMs:+p95.toFixed(1),
    fps:Math.round(1000/median),pixelRatio:renderer.getPixelRatio(),
    quality:renderer.getPixelRatio()<phiBaseRatio?'adaptive':'full',
@@ -2606,6 +2609,7 @@ function tick() {
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
   renderer.render(scene,camera);
+  if(GALLERY_DEBUG)window.__phiGraffitiStats={tower:towerGraffiti.diagnostics,interior:interiorGraffiti.diagnostics,square:phiSquare.diagnostics()};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
 }
 if(renderer)renderer.setAnimationLoop(tick);
