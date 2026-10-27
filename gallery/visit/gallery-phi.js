@@ -1578,7 +1578,7 @@ function constructPhiGallery(layout,studies){
   entranceDoor=createPhiGothicEntrance(THREE,{doorway,outward,level:elevation,surroundMaterial:galleryFinish.stone});scene.add(entranceDoor.root);
   // Test-only Gothic vault experiment; the live entrance is untouched.
   if(location.pathname.includes('/test/virtual-gallery/')){
-   import('./phi-test-vault.mjs?v=20261026-inset-b').then(({addPhiTestVault})=>
+   import('./phi-test-vault.mjs?v=20261027-roof-tiles').then(({addPhiTestVault})=>
     addPhiTestVault(THREE,scene,{doorway,outward,elevation,stone:galleryFinish.stone})
    ).catch(error=>console.warn('Test Gothic vault unavailable',error));
   }
