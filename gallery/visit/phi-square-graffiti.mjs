@@ -4,6 +4,7 @@ import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/t
 import {createTowerGraffiti,paintExteriorUnderstroke} from './exterior-graffiti.mjs?v=exterior-wall-surface-20261027';
 import {planSquareWallAtlases,paintSquareWall,SQUARE_ATLAS_PREFIX} from './square-graffiti-atlas.mjs';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
+import {Reflector} from 'three/addons/objects/Reflector.js';
 export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-wall-bake-v7':'phi-square-live-wall-bake-v10')+'|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
@@ -158,6 +159,31 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
     waterSurface.rotation.x=-Math.PI/2;waterSurface.position.set(cx,.013,cz);
     waterSurface.name='phi-spiral-reflecting-water';
     waterSurface.onBeforeRender=()=>{water.uniforms.time.value=performance.now()*.001;};
+    if(!lowPower){
+     // Reflect the actual tower, plants and sky at low resolution. The Reflector
+     // performs its own virtual-camera pass; throttle it to protect mobile FPS.
+     const reflection=new Reflector(new THREE.PlaneGeometry(w-.44,d-.44),{
+      textureWidth:256,textureHeight:160,clipBias:.006,
+      color:0x7d999e,multisample:0
+     });
+     reflection.rotation.x=-Math.PI/2;
+     reflection.position.set(cx,.011,cz);
+     reflection.name='phi-spiral-architectural-reflection';
+     const renderReflection=reflection.onBeforeRender;
+     let lastReflection=0;
+     reflection.onBeforeRender=function(renderer,scene,camera,...rest){
+      const now=performance.now();
+      if(now-lastReflection<95)return;
+      lastReflection=now;
+      return renderReflection.call(this,renderer,scene,camera,...rest);
+     };
+     root.add(reflection);
+     // Ripple/glint treatment is a light translucent layer on real reflections.
+     water.transparent=true;water.depthWrite=false;
+     water.fragmentShader=water.fragmentShader.replace('gl_FragColor=vec4(surface,1.0);','gl_FragColor=vec4(surface,.28);');
+     waterSurface.position.y=.016;
+     waterSurface.renderOrder=1;
+    }
     root.add(waterSurface);
     for(const sign of [-1,1]){
      add(w+.22,.2,.24,cx,.10,cz+sign*d/2,paving,'phi-spiral-pool-rim');
