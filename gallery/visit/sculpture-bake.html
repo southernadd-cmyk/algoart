@@ -66,8 +66,8 @@ window.bakeStudy=async(item,quality)=>{
     seed:item.seed,
     title:item.title||'Artwork',
     href:item.shareUrl,
-    image:new URL(item.imageFile,archiveUrl).href,
-    imageOptimized:new URL('3d/'+item.imageFile.replace(/\.[^.]+$/,'')+'-'+(quality==='mobile'?'640':'1100')+'.webp',archiveUrl).href,
+    image:item.imageUrl||new URL(item.imageFile,archiveUrl).href,
+    imageOptimized:item.imageUrl||new URL('3d/'+item.imageFile.replace(/\.[^.]+$/,'')+'-'+(quality==='mobile'?'640':'1100')+'.webp',archiveUrl).href,
     material:resolveStudyMaterial(item.shareUrl,item.material||'marker')
   };
   const entries=[];
