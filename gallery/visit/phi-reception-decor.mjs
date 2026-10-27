@@ -1,5 +1,5 @@
 import {addPhiOfficeFrontage} from './phi-office-reception.mjs?v=gallery-reception-20261027';
-import {loadPhiDecorAsset as asset,fitPhiDecorAsset as fit,fitPhiWallModel} from './phi-model-assets.mjs';
+import {loadPhiDecorAsset as asset,fitPhiDecorAsset as fit} from './phi-model-assets.mjs';
 import {createGothicSurroundShape} from './phi-gothic-door-profile.mjs';
 import {renderVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 // Optional shared CC-BY props for the experimental reception. Loading never
