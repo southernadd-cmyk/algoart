@@ -891,15 +891,12 @@ function startPhiCabinRide(targetFloor){
  // Travel in the same furnished cabin, with its calendar and real doors.
  // The floor's golden-angle orientation is reached gradually during travel.
  phiMovingCabin=phiLiftCabin;
- // The static tower slabs must not intersect the travelling cabin.
+ // Hide only the active exhibition, not the cached architectural tower.
+ // The shaft's reserved opening allows the other floors to whizz past.
  phiRideHidden=[];
  for(const object of editionObjects){
   if(object===phiMovingCabin)continue;
   if(object.visible){object.visible=false;phiRideHidden.push(object);}
- }
- if(phiTowerShellCache?.shell?.visible){
-  phiTowerShellCache.shell.visible=false;
-  phiRideHidden.push(phiTowerShellCache.shell);
  }
  const startTheta=phiLiftCabin.rotation.y;
  const targetTheta=targetFloor*(2*Math.PI/(PHI*PHI));
