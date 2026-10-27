@@ -8,6 +8,35 @@
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 import {createArchitecturalMaterials,tiledBoxUvs} from './architectural-materials.mjs?v=materials-study-20261027';
+function makeSurface(kind){
+ const c=document.createElement('canvas');c.width=c.height=512;
+ const g=c.getContext('2d'),rand=(x,y)=>{let n=Math.sin(x*127.1+y*311.7+kind.length*83.3)*43758.5453;return n-Math.floor(n)};
+ if(kind==='plaster'){
+  g.fillStyle='#d7d0c2';g.fillRect(0,0,512,512);
+  for(let i=0;i<4700;i++){const x=rand(i,1)*512,y=rand(i,2)*512,l=8+rand(i,3)*110;g.strokeStyle=rand(i,4)>.48?'rgba(255,252,244,.16)':'rgba(71,66,58,.10)';g.lineWidth=.4+rand(i,5)*3;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+l*.5,y-2+rand(i,7)*7,x+l,y+rand(i,8)*5);g.stroke()}
+  for(let i=0;i<300;i++){g.fillStyle='rgba(70,63,53,.035)';g.fillRect(rand(i,10)*512,rand(i,11)*512,rand(i,12)*65,1)}
+ }else if(kind==='ceiling'){
+  g.fillStyle='#c5c6c0';g.fillRect(0,0,512,512);
+  for(let y=0;y<512;y+=128)for(let x=0;x<512;x+=128){
+   g.fillStyle='#777e7b';g.fillRect(x+3,y+3,122,122);
+   g.fillStyle='#f3f0e8';g.fillRect(x+9,y+9,110,110);
+   g.fillStyle='#dddcd4';g.fillRect(x+14,y+14,100,100);
+   g.fillStyle='#ebe9df';g.fillRect(x+18,y+18,92,92);
+   for(let k=0;k<240;k++){const px=x+19+rand(x+k,y)*90,py=y+19+rand(x,y+k)*90;g.fillStyle='rgba(75,79,72,.10)';g.fillRect(px,py,1.4,1.4)}
+  }
+ }else{
+  g.fillStyle='#70695e';g.fillRect(0,0,512,512);
+  for(let row=0;row<8;row++)for(let col=-1;col<5;col++){
+   const x=col*128+(row%2)*64+4,y=row*64+4;
+   const b=rand(row,col);g.fillStyle=['#b3a08a','#c2af93','#a99882','#d1b99d'][Math.floor(b*4)];
+   g.fillRect(x,y,120,56);
+   g.fillStyle='rgba(255,255,255,.15)';g.fillRect(x+2,y+2,116,2);
+   g.fillStyle='rgba(65,54,43,.14)';g.fillRect(x+3,y+52,115,3);
+   for(let k=0;k<70;k++){g.fillStyle=k%2?'rgba(65,54,43,.10)':'rgba(255,255,244,.12)';g.fillRect(x+rand(k,row+col)*118,y+rand(k+43,row-col)*54,2+rand(k,9)*7,1+rand(k,10)*3)}
+  }
+ }
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return t;
+}
 function sceneFor(canvas,preview){
  const scene=new THREE.Scene();scene.background=new THREE.Color('#a5aaa3');
  scene.add(new THREE.HemisphereLight('#ffffff','#6b6762',2));
@@ -16,7 +45,7 @@ function sceneFor(canvas,preview){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
  // The common material loader uses optional images and keeps its fallback if a scan fails.
  const materials=createArchitecturalMaterials(THREE,{lowPower:false});
- if(preview){materials.wall.userData.tileMeters=1.9;materials.ceiling.userData.tileMeters=1.28;materials.exteriorBrick.userData.tileMeters=1.55;}
+ if(preview){materials.wall.map=makeSurface('plaster');materials.ceiling.map=makeSurface('ceiling');materials.exteriorBrick.map=makeSurface('brick');materials.wall.userData.tileMeters=2.6;materials.ceiling.userData.tileMeters=2.8;materials.exteriorBrick.userData.tileMeters=2.0;materials.wall.color.set('#ffffff');materials.ceiling.color.set('#ffffff');materials.exteriorBrick.color.set('#ffffff');}
  const wall=materials.wall,ceiling=materials.ceiling,brick=materials.exteriorBrick;
  function box(w,h,d,x,y,z,material){const g=new THREE.BoxGeometry(w,h,d);tiledBoxUvs(g,w,h,d,material.userData.tileMeters);const mesh=new THREE.Mesh(g,material);mesh.position.set(x,y,z);scene.add(mesh)}
  box(6,3.7,.2,0,1.85,-2.4,wall);box(.2,3.7,4.9,-3,1.85,0,wall);box(6,.19,4.9,0,3.75,0,ceiling);box(2.3,3.7,.2,1.85,1.85,2.4,brick);
@@ -27,7 +56,7 @@ function sceneFor(canvas,preview){
  canvas.addEventListener('pointermove',e=>{if(!drag)return;angle+=(e.clientX-drag[0])*.006;elevation=Math.max(-.35,Math.min(.8,elevation+(e.clientY-drag[1])*.004));drag=[e.clientX,e.clientY]});
  canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(4,Math.min(15,zoom+e.deltaY*.01))},{passive:false});
  function draw(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();camera.position.set(Math.sin(angle)*zoom,2.0+Math.sin(elevation)*zoom*.4,Math.cos(angle)*zoom);camera.lookAt(0,1.9,0);renderer.render(scene,camera);requestAnimationFrame(draw)}draw();
- // The test independently loads a normal map with the specified strength.
+ // The test uses a distinct painted surface and matching normal relief.
  if(preview){for(const [material,url,strength] of [[wall,'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plastered_wall_02/plastered_wall_02_nor_gl_1k.jpg',.27],[brick,'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brick_wall_02/brick_wall_02_nor_gl_1k.jpg',.22]]){new THREE.TextureLoader().load(url,t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;material.normalMap=t;material.normalScale.set(strength,strength);material.needsUpdate=true},undefined,()=>{})}}
  return {scene,materials};
 }
