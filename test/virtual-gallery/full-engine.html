@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#e8e4da">
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
 <base href="../../gallery/visit/">
+<link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/gallery/visit/">
+<meta name="description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PROPORTION PIECE">
 <meta property="og:title" content="Virtual Exhibition | PROPORTION PIECE">
 <meta property="og:description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
 <meta property="og:url" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/">
-<meta property="og:image" content="https://southernadd-cmyk.github.io/algoart/gallery/2026-10-22/archive-preview.jpg">
+<meta property="og:image" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/walk-the-tower-golden.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Virtual Exhibition | PROPORTION PIECE">
 <meta name="twitter:description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
-<meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/gallery/2026-10-22/archive-preview.jpg">
-<!-- Reception refresh deployment verification: staging entry point, 2026-10-26 -->
-<title>φ-layout Full-engine Renderer Test | PROPORTION PIECE</title>
+<meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/walk-the-tower-golden.png">
+<title>Virtual Exhibition | PROPORTION PIECE</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./gallery.css?v=accessibility-20261023">
-<link rel="stylesheet" href="../../test/virtual-gallery/phi-gallery.css?v=small-welcome-20261026">
+<link rel="stylesheet" href="./phi-gallery.css?v=public-phi-20261026">
 <style>
 /* The fixed canvas must never cover the keyboard/mouse lift fallback. */
 #world{z-index:0}
@@ -32,9 +32,12 @@
 .lift-arrival{z-index:95}
 </style>
 
-<link rel="stylesheet" href="../../css/nav-lettering.css?v=11">
+<link rel="stylesheet" href="../../css/nav-lettering.css?v=12">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
+
+<link rel="preload" href="./textures/OfficeCeiling001_Color.jpg" as="image">
 
 
 <script>
@@ -53,21 +56,6 @@
 })();
 </script>
 
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
-<script>
-// Remove obsolete staging plant-count overlays, including those created by a
-// previously cached gallery-phi-test.js after this page has initialised.
-(()=>{
- const clean=()=>document.getElementById('staging-plant-check')?.remove();
- const observer=new MutationObserver(clean);
- const start=()=>{
-  clean();
-  observer.observe(document.body,{childList:true,subtree:true});
- };
- if(document.body)start();
- else document.addEventListener('DOMContentLoaded',start,{once:true});
-})();
-</script>
 <script type="module">
 (async()=>{
   const enter=document.getElementById('enter');
@@ -77,17 +65,11 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
-    // Use the original uploaded plaster and acoustic ceiling textures in this test only.
-    globalThis.__phiUploadedWallCeilingTest=true;
-    window.__galleryStage='Importing full-engine texture test';
-    // Preview is opt-in, so the normal bundled test startup is unchanged.
-    const livingPreview=new URLSearchParams(location.search).has('living-monitor');
-    globalThis.__phiLivingMonitorTest=livingPreview;
-    if(livingPreview){
-      await import('../../gallery/visit/gallery-phi.js?v=living-monitor-preview-20261027');
-    }else{
-      await import('../../gallery/visit/gallery-phi-post-test-bundle.js?v=entry-preparation-20261027-1');
-    }
+    // Use the approved reception, gramophone and golden-spiral square.
+    globalThis.__phiReceptionTestRefresh=true;
+    globalThis.__phiReceptionTilePreview=true;
+    window.__galleryStage='Importing bundled JavaScript';
+    await import('./gallery-phi-bundle.js?v=entry-preparation-20261027-1');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -103,12 +85,6 @@
 // provide a useful message instead of leaving the preparation text forever.
 // Capture module/CDN failures even if the window load event never fires.
 window.__galleryStartupError='';
-window.__galleryStage='Waiting for module import';
-window.__galleryDebugEvents=[];
-for(const level of ['log','warn','error']){
- const original=console[level].bind(console);
- console[level]=(...args)=>{window.__galleryDebugEvents.push(level+': '+args.map(x=>x instanceof Error?x.message:String(x)).join(' '));window.__galleryDebugEvents=window.__galleryDebugEvents.slice(-12);original(...args);};
-}
 window.addEventListener('error',event=>{
   const resource=event.target?.src||event.target?.href;
   window.__galleryStartupError=resource
@@ -126,8 +102,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(!enter?.disabled){clearInterval(watchdog);return;}
     if(performance.now()-started<12000)return;
     console.warn('[Gallery startup] Slow startup',enter.textContent,window.__galleryStartupError||'No captured error');
-    diagnostic.textContent='Gallery startup diagnostic: '+(window.__galleryStartupError||window.__galleryStage||'Unknown')+'; button: '+enter.textContent+'; recent: '+window.__galleryDebugEvents.slice(-3).join(' | ');
-    diagnostic.hidden=false;
+    if(window.__galleryStartupError){diagnostic.textContent='The virtual gallery could not load. Please reload or continue in the 2D gallery below.';diagnostic.hidden=false;}
+    else document.getElementById('startFloor').textContent='The gallery is still preparing. Your visit will be ready shortly.';
     clearInterval(watchdog);
   },1000);
 });
@@ -163,10 +139,9 @@ window.addEventListener('load',()=>{
   <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../">daily gallery</a><a data-algo-nav href="../../about/">about this project</a></nav>
 </header>
 <div class="topbar" role="group" aria-label="Virtual exhibition controls">
-  <div class="identity"><span class="section-name">Gallery preview</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
+  <div class="identity"><span class="section-name">Virtual gallery</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
   <div class="top-actions">
     <button id="openLift" type="button">Lift · Floors</button>
-    <a href="../../test/virtual-gallery/phi-tower.html">Architecture study</a>
     <a id="archiveLink" href="../">View 2D gallery</a>
     <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
     <div id="xr-controls" aria-label="Virtual reality controls"></div>
@@ -215,7 +190,7 @@ window.addEventListener('load',()=>{
   <div class="lift-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
   <div class="lift-days" id="liftDays" aria-label="Gallery dates for selected month"></div>
   <button id="liftReception" type="button">Ground floor · Reception</button>
-  <p class="lift-note">Each available date opens an exhibition. Newer collections are higher in the tower.</p>
+  <p class="lift-note">Dates marked with a dot have a published exhibition. Ground floor is reception; newer dates ascend.</p>
   <p id="liftTravel" hidden role="status"></p>
 </section>
 <section id="liftAnimation" class="lift-animation" hidden role="status" aria-live="polite">
@@ -240,7 +215,7 @@ window.addEventListener('load',()=>{
     <div class="eyebrow">An exhibition built by its drawings</div>
     <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
     <p>A new collection. A new floor. Every day.</p>
-    <p>Step inside a gallery shaped by the golden ratio. Discover drawings on the walls and sculptures made from their lines, then take the archive lift to another day.</p>
+    <p>Each daily collection occupies its own floor. Step inside a gallery shaped by the golden ratio. Discover drawings on the walls and sculptures made from their lines, then take the archive lift to another day.</p>
     <details class="visit-controls"><summary>How to explore</summary><p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, Artwork details appear when you pause nearby; L opens the lift calendar. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p></details>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
     <a id="welcomeArchive" href="../">See the original 2D edition ↗</a>
