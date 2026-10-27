@@ -18,7 +18,7 @@ export function validateTouchDesignerTriptych(data){
 
 export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCHDESIGNER_TRIPTYCH_MANIFEST}){
  let state='fallback',started=false,disposed=false,video=null,texture=null,material=null;
- let playerActive=false,lastError='',originalUVs=[];
+ let playerActive=false,playerStarting=false,lastError='',originalUVs=[];
  const setState=next=>{state=next;};
  const diag=()=>({state,error:lastError,videoReady:!!video&&video.readyState>=2,playing:playerActive});
  const restore=()=>{
@@ -34,7 +34,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   if(video){video.pause();video.removeAttribute('src');video.load();video=null;}
   if(texture){texture.dispose();texture=null;}
   if(material){material.dispose();material=null;}
-  playerActive=false;
+  playerActive=false;playerStarting=false;
  };
  const fail=error=>{
   if(disposed)return;
@@ -101,9 +101,10 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   if(disposed)return;
   if(nearby&&!started)void start();
   if(!video||state==='fallback'||state==='awaiting-export')return;
-  if(nearby && !playerActive && video.readyState>=2){
-   // Browsers may deny autoplay: retain the fallback if so.
-   video.play().then(()=>{if(!disposed){playerActive=true;setState('playing-export');}}).catch(fail);
+  if(nearby && !playerActive && !playerStarting && video.readyState>=2){
+   // Avoid duplicate play() requests while the first autoplay promise settles.
+   playerStarting=true;
+   video.play().then(()=>{playerStarting=false;if(!disposed){playerActive=true;setState('playing-export');}}).catch(error=>{playerStarting=false;fail(error);});
   }else if(!nearby&&playerActive){
    video.pause();playerActive=false;setState('export-ready');
   }
