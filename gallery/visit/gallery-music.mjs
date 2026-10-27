@@ -10,23 +10,8 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
  @media(max-width:600px){.gramophone-panel{right:12px;bottom:100px;max-height:calc(100dvh - 190px);padding:15px;font-size:13px}}`;
  document.head.append(style);
  const panel=document.createElement('section');panel.className='gramophone-panel';panel.hidden=true;panel.setAttribute('aria-label','Gallery music');
- panel.innerHTML='<button type="button" class="record-close" aria-label="Close gramophone controls">×</button><h2>On the record</h2><p class="record-track" aria-live="polite"></p><div class="record-tracks" role="group" aria-label="Choose a recording"></div><small>Select either recording. When it finishes, the next begins; both repeat as one record through the gallery and lift speakers.</small><button type="button" class="record-toggle">Play record</button><label>Volume <input aria-label="Gramophone volume" type="range" min="0" max="1" step="0.01" value="0.45"></label><p class="record-notes">Musical proportion: <button type="button" class="record-analysis-video" data-video="bartok" aria-haspopup="dialog" aria-controls="gramophone-analysis-video">Ernő Lendvai’s analysis of Bartók</button>; <button type="button" class="record-analysis-video" data-video="debussy" aria-haspopup="dialog" aria-controls="gramophone-analysis-video">Debussy’s La Mer — the golden section (φ)</button>.</p><p class="record-error" role="status"></p><small class="record-credit"></small><small><a href="./credits.html" target="_blank" rel="noopener">Recordings and model credits</a></small>';
+ panel.innerHTML='<button type="button" class="record-close" aria-label="Close gramophone controls">×</button><h2>On the record</h2><p class="record-track" aria-live="polite"></p><div class="record-tracks" role="group" aria-label="Choose a recording"></div><small>Select either recording. When it finishes, the next begins; both repeat as one record through the gallery and lift speakers.</small><button type="button" class="record-toggle">Play record</button><label>Volume <input aria-label="Gramophone volume" type="range" min="0" max="1" step="0.01" value="0.45"></label><p class="record-error" role="status"></p><small class="record-credit"></small><small><a href="./credits.html" target="_blank" rel="noopener">Recordings and model credits</a></small>';
  document.body.append(panel);
- const videoDialog=document.createElement('dialog');videoDialog.id='gramophone-analysis-video';videoDialog.className='gramophone-video-dialog';videoDialog.setAttribute('aria-labelledby','gramophone-video-title');
- videoDialog.innerHTML='<button type="button" class="video-close" aria-label="Close video">×</button><h2 id="gramophone-video-title">Musical proportion</h2><div class="video-frame"><iframe title="Musical proportion video" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div><p class="video-context" hidden></p><a href="https://www.youtube.com/watch?v=Tu4W4BKF618" target="_blank" rel="noopener noreferrer">Watch on YouTube</a>';
- document.body.append(videoDialog);
- const videoFrame=videoDialog.querySelector('iframe'),analysisButtons=[...panel.querySelectorAll('.record-analysis-video')];
- const videos={bartok:{id:'Tu4W4BKF618',title:'Bartók and musical proportion'},debussy:{id:'2yaBxn3wwDQ',title:'Debussy’s La Mer — the golden section (φ)',start:0,end:180,context:'A short excerpt from Dialogue du vent et de la mer. Roy Howat identified golden-section proportions in its 55-bar introduction: 21 + 8 + 8 + 5 + 13 bars, with a key musical arrival around bar 34 (approximately 55 × 0.618).'}};
- let lastVideoButton=null;
- for(const button of analysisButtons)button.addEventListener('click',()=>{
-  const selected=videos[button.dataset.video];lastVideoButton=button;record.pause();document.exitPointerLock?.();
-  videoDialog.querySelector('#gramophone-video-title').textContent=selected.title;
-  videoDialog.querySelector('a').href='https://www.youtube.com/watch?v='+selected.id;const context=videoDialog.querySelector('.video-context');context.hidden=!selected.context;context.textContent=selected.context||'';
-  videoFrame.title=selected.title;videoFrame.src='https://www.youtube-nocookie.com/embed/'+selected.id+'?autoplay=1&rel=0'+(selected.end?'&start='+(selected.start||0)+'&end='+selected.end:'');videoDialog.showModal();
- });
- videoDialog.querySelector('.video-close').addEventListener('click',()=>videoDialog.close());
- videoDialog.addEventListener('click',event=>{if(event.target===videoDialog)videoDialog.close();});
- videoDialog.addEventListener('close',()=>{videoFrame.removeAttribute('src');lastVideoButton?.focus({preventScroll:true});});
  const trigger=document.createElement('button');trigger.type='button';trigger.textContent='Gramophone';trigger.setAttribute('aria-expanded','false');document.querySelector('.top-actions').append(trigger);
  const toggle=panel.querySelector('.record-toggle'),title=panel.querySelector('.record-track'),credit=panel.querySelector('.record-credit'),problem=panel.querySelector('.record-error'),volume=panel.querySelector('input');
  let opened=false,trackButtons=[];
@@ -46,7 +31,7 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
  function open(){opened=true;panel.hidden=false;trigger.setAttribute('aria-expanded','true');document.exitPointerLock?.();toggle.focus({preventScroll:true});}
  function close(){opened=false;panel.hidden=true;trigger.setAttribute('aria-expanded','false');canvas.focus({preventScroll:true});}
  trigger.addEventListener('click',()=>opened?close():open());panel.querySelector('.record-close').addEventListener('click',close);
- const outsidePanel=event=>{if(opened&&!panel.contains(event.target)&&!trigger.contains(event.target)&&!videoDialog.open)close();};
+ const outsidePanel=event=>{if(opened&&!panel.contains(event.target)&&!trigger.contains(event.target))close();};
  document.addEventListener('pointerdown',outsidePanel);
  panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close();}});
  toggle.addEventListener('click',()=>record.toggle());
@@ -54,6 +39,6 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
  const hidden=()=>{if(document.hidden)record.pause();};document.addEventListener('visibilitychange',hidden);
  if(debug)globalThis.__phiGalleryMusic={state:record.state,record,open,speakers:feed.snapshot};
  return {record,open,update:feed.update,setEmitters:feed.setEmitters,
-  dispose(){record.dispose();document.removeEventListener('visibilitychange',hidden);document.removeEventListener('pointerdown',outsidePanel);trigger.remove();if(videoDialog.open)videoDialog.close();videoDialog.remove();panel.remove();style.remove();if(debug)delete globalThis.__phiGalleryMusic;}
+  dispose(){record.dispose();document.removeEventListener('visibilitychange',hidden);document.removeEventListener('pointerdown',outsidePanel);trigger.remove();panel.remove();style.remove();if(debug)delete globalThis.__phiGalleryMusic;}
  };
 }
