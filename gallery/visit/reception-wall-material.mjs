@@ -2,7 +2,10 @@
 // PaintedPlaster007 — ambientCG, CC0. Both finishes are reception-only.
 export function createReceptionWallMaterial(THREE,{lowPower=false,finish='wallpaper'}={}){
  const material=new THREE.MeshStandardMaterial({color:0xffffff,roughness:1,metalness:0});
- const painted=finish==='painted-plaster';
+ // Test reception: replace the neutral wallpaper with the existing painted plaster.
+ // Keep the public tower and separately authored blue walls unchanged.
+ const testReception=globalThis.location?.pathname?.includes('/test/virtual-gallery/');
+ const painted=finish==='painted-plaster'||(testReception&&finish==='wallpaper');
  const directory=painted?'ambientcg-painted-plaster-007':'sharetextures-decorative-wall-2';
  material.name=painted?'Reception PaintedPlaster007':'Reception Decorative Wall 2';
  material.userData={galleryPersistent:true,tileMeters:2.4};
