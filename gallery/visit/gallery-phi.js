@@ -1453,21 +1453,17 @@ function constructPhiGallery(layout,studies){
    ?staticBlock(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,finish)
    :staticBlock(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,finish);
   if(exhibitDate===RECEPTION&&location.pathname.includes('/test/virtual-gallery/')&&finish===receptionWallMaterial){
-   // The blue and grey appearances are opposite lit faces of the SAME wallpaper.
-   // Preserve the cool, unlit faces; replace only the warm/grey faces facing the sun.
-   const localSun=sun.position.clone().applyAxisAngle(new THREE.Vector3(0,1,0),-phi.world.theta);
-   const normal=mesh.geometry.getAttribute('normal'),index=mesh.geometry.index;
-   const grey=[],blue=[];
-   for(let i=0;i<index.count;i+=3){
-    const vertex=index.getX(i);
-    const lit=normal.getX(vertex)*localSun.x+normal.getZ(vertex)*localSun.z;
-    (lit>0?grey:blue).push(index.getX(i),index.getX(i+1),index.getX(i+2));
-   }
-   const paintedGeometry=mesh.geometry.clone();
-   paintedGeometry.clearGroups();paintedGeometry.setIndex(grey);
-   mesh.geometry.clearGroups();mesh.geometry.setIndex(blue);
-   const paintedFace=new THREE.Mesh(paintedGeometry,receptionPaintedPlasterMaterial);
-   paintedFace.position.copy(mesh.position);scene.add(paintedFace);staticArchitecture.push(paintedFace);
+   // Explicit reception wall faces. BoxGeometry material order:
+   // +X, -X, +Y, -Y, +Z, -Z. The blue wallpaper is retained
+   // on +X and -Z; only the original grey-facing -X and +Z
+   // faces receive painted plaster. Never infer finishes from lights.
+   // Reuse the existing mesh/groups rather than cloning geometry or
+   // layering coplanar meshes (avoids z-fighting and extra geometry).
+   mesh.material=[
+    receptionWallMaterial,receptionPaintedPlasterMaterial,
+    receptionWallMaterial,receptionWallMaterial,
+    receptionPaintedPlasterMaterial,receptionWallMaterial
+   ];
   }
  }
  // Baked architectural contact occlusion: one vertex-colour mesh for the
