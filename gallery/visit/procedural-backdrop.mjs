@@ -24,10 +24,10 @@ function drawCityCanvas(plan,{lowPower=false}={}){
  // A hazy ground field conceals the finite terrain edge, while its lower fade
  // joins the matching colour of the sky's lower hemisphere from upper floors.
  const ground=g.createLinearGradient(0,height*.43,0,height);
- ground.addColorStop(0,'rgba(183,191,180,0)');ground.addColorStop(.12,'rgba(183,191,180,.98)');
- ground.addColorStop(.62,'rgba(183,191,180,.94)');ground.addColorStop(1,'rgba(183,191,180,0)');
+ ground.addColorStop(0,'rgba(20,33,47,0)');ground.addColorStop(.12,'rgba(20,33,47,.98)');
+ ground.addColorStop(.62,'rgba(20,33,47,.94)');ground.addColorStop(1,'rgba(183,191,180,0)');
  g.fillStyle=ground;g.fillRect(0,0,width,height);
- const colours=['#a8b4b6','#98a6a6','#899997'];
+ const colours=['#41566a','#344a60','#2a4056'];
  for(const [index,layer] of plan.layers.entries()){
   g.globalAlpha=.40+index*.13;
   for(const b of layer.buildings)for(const wrap of [-1,0,1]){
@@ -36,10 +36,10 @@ function drawCityCanvas(plan,{lowPower=false}={}){
    // A few quiet roof slopes, end faces and window bands suggest objects
    // without spending geometry or sharp detail on distant buildings.
    if(b.roof){g.beginPath();g.moveTo(x-w*.06,y);g.lineTo(x+w*.5,y-h*.15);g.lineTo(x+w*1.06,y);g.closePath();g.fill();}
-   g.fillStyle='rgba(221,226,222,.18)';g.fillRect(x+w*.70,y,w*.30,h);
-   if(b.windows){g.fillStyle='rgba(66,85,89,.18)';for(let row=1;row<4;row++)g.fillRect(x+w*.16,y+h*row/5,w*.60,Math.max(.5,height*.003));}
+   g.fillStyle='rgba(150,172,196,.09)';g.fillRect(x+w*.70,y,w*.30,h);
+   if(b.windows){g.fillStyle='rgba(245,215,149,.45)';for(let row=1;row<4;row++)g.fillRect(x+w*.16,y+h*row/5,w*.60,Math.max(.5,height*.003));}
   }
-  g.fillStyle=index<2?'#9cab9e':'#849787';
+  g.fillStyle=index<2?'#293e43':'#203438';
   for(const t of layer.trees)for(const wrap of [-1,0,1]){
    const x=(t.x+wrap)*width,y=(t.base-t.height*.5)*height;
    g.beginPath();g.ellipse(x,y,t.width*width,t.height*height*.52,0,0,Math.PI*2);g.fill();

@@ -1,7 +1,7 @@
 // Procedural exterior for the daily museum. Small draw-call budget: one
 // terrain mesh, one gradient sky and one softly drawn distant-city strip.
 import {buildEnvironmentPlan} from './environment-v1.mjs';
-import {addProceduralBackdrop} from './procedural-backdrop.mjs?v=city-cards-20261025';
+import {addProceduralBackdrop} from './procedural-backdrop.mjs?v=moonlit-city-20261027';
 import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 
 const PALETTES={
@@ -221,6 +221,11 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
         backup.add(box(.14,3.8,.14,along,across,1.83,bronze));
         backup.add(box(.42,.38,.42,along,across,3.91,lampGlass));
         square.add(backup);
+        // Low-cost pools of warm light under the lanterns, against cool moonlight.
+        if(!lowPower&&along!==0){
+          const glow=new THREE.PointLight('#ffd9a0',1.5,8,2);
+          glow.position.copy(at(along,across,3.75));square.add(glow);
+        }
         // Preserve the original plaza layout, approach clearance, paving
         // and seat positions; replace only the six lamppost visuals.
         placeCastIronStreetLamp(THREE,square,at(along,across,0),backup,
