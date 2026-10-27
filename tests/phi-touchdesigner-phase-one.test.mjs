@@ -1,16 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import {validateTouchDesignerTriptych,TOUCHDESIGNER_TRIPTYCH_MANIFEST} from '../gallery/visit/phi-touchdesigner-media.mjs';
 
 const manifest=JSON.parse(await readFile(new URL('../gallery/visit/touchdesigner/phase-one.json',import.meta.url),'utf8'));
 const gallery=JSON.parse(await readFile(new URL('../gallery/2026-10-27/meta.json',import.meta.url),'utf8'));
 
-test('TouchDesigner Phase 1 starts safely unpublished, with no fictional video asset',()=>{
- assert.equal(manifest.status,'awaiting-touchdesigner-export');
- assert.equal(validateTouchDesignerTriptych(manifest),null);
+test('TouchDesigner Phase 1 is unpublished until the exact verified video is committed',async()=>{
  assert.equal(manifest.triptych.file,'phase-one-triptych.webm');
  assert.equal(TOUCHDESIGNER_TRIPTYCH_MANIFEST.pathname.endsWith('/touchdesigner/phase-one.json'),true);
+ if(manifest.status==='awaiting-touchdesigner-export'){
+  assert.equal(validateTouchDesignerTriptych(manifest),null);
+  return;
+ }
+ assert.equal(manifest.status,'published');
+ assert.ok(validateTouchDesignerTriptych(manifest));
+ const video=await readFile(new URL('../gallery/visit/touchdesigner/phase-one-triptych.webm',import.meta.url));
+ const sha=createHash('sha256').update(video).digest('hex');
+ assert.equal(video.length,3384087,'Unexpected TouchDesigner media size');
+ assert.equal(sha,'d64dd7eda6c7bbb62ce90a19c8543791b455d16989a875fa4b7a72914c0ff9d0',
+  'TouchDesigner movie must be the verified source file');
+ assert.equal(manifest.triptych.sha256,sha);
+ assert.equal(manifest.triptych.sizeBytes,video.length);
 });
 
 test('TouchDesigner source points to an authentic reproducible daily study',()=>{
