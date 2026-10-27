@@ -63,15 +63,26 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
    const angle=slot* Math.PI*(3-Math.sqrt(5)),radius=tier===0?0:[0,.24,.55,.9][tier];
    const u=Math.max(-face.length/2+placement.width/2+.15,
     Math.min(face.length/2-placement.width/2-.15,Math.cos(angle)*radius*(face.length/2-placement.width/2-.22)*.95));
-   const centreY=Math.max(.4+placement.height/2,
-    Math.min(ROOM_HEIGHT-.3-placement.height/2,ROOM_HEIGHT/2+Math.sin(angle)*radius*(ROOM_HEIGHT/2-placement.height/2-.35)*.9));
+   // Fit the rotated bounding box, not the unrotated dimensions. The
+   // earlier clamp let rotated phi tags enter the roof/floor safety bands.
+   const rotation=placement.rotation*.45;
+   const c=Math.abs(Math.cos(rotation)),s=Math.abs(Math.sin(rotation));
+   const rotatedW=placement.width*c+placement.height*s;
+   const rotatedH=placement.height*c+placement.width*s;
+   const scale=Math.min(1,(face.length-2*WALL_MARGIN)/rotatedW,(ROOM_HEIGHT-1.2)/rotatedH);
+   const width=placement.width*scale,height=placement.height*scale;
+   const halfW=(width*c+height*s)/2,halfH=(height*c+width*s)/2;
+   const safeU=Math.max(-face.length/2+WALL_MARGIN+halfW,
+    Math.min(face.length/2-WALL_MARGIN-halfW,u));
+   const centreY=Math.max(.65+halfH,
+    Math.min(ROOM_HEIGHT-.55-halfH,ROOM_HEIGHT/2+Math.sin(angle)*radius*(ROOM_HEIGHT/2-halfH-.65)*.9));
    marks.push({id:item.id,date:plan.date,level,slot,surface:'exterior',phi:{...placement.phi,tier},
     phrase:'φ',text:tag.text,hand:tag.hand,form:tier===3?'handstyle':tag.form,
-    ink:tag.ink,seed:tag.seed,face,width:placement.width,height:placement.height,
-    rotation:placement.rotation*.45,normal:{x:normal.x,y:0,z:normal.z},
-    position:{x:face.centre.x+right.x*u+normal.x*tier*.007,
+    ink:tag.ink,seed:tag.seed,face,width,height,
+    rotation,normal:{x:normal.x,y:0,z:normal.z},
+    position:{x:face.centre.x+right.x*safeU+normal.x*tier*.007,
      y:level*floorSpacing+face.roomY+centreY,
-     z:face.centre.z+right.z*u+normal.z*tier*.007},
+     z:face.centre.z+right.z*safeU+normal.z*tier*.007},
     bounds:{...tag.bounds},tag});
   }
  }
