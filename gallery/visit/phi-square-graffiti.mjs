@@ -183,6 +183,7 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
       const crownGeo=new THREE.SphereGeometry(1,7,5);
       for(const [n,dx] of [-.78,.28,.92].entries()){
        const tall=2.2+n*.37;
+       root.userData.tallPlantStemCount=(root.userData.tallPlantStemCount||0)+1;
        const stem=new THREE.Mesh(new THREE.CylinderGeometry(.055,.085,tall,6),tallStemMat);
        stem.position.set(dx,.57+tall/2,.13);group.add(stem);
        for(let k=0;k<5;k++){
@@ -210,6 +211,7 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
    }
    for(const manager of managers)manager.addTo(root,[],0);
    parent.add(root);activeRoot=root;
+   if(globalThis.__phiReceptionTestRefresh)globalThis.__phiSquarePlantDiagnostics={revision:'visible-tall-beds-20261027',tallStems:root.userData.tallPlantStemCount||0,plantedBeds:4,visible:root.visible,worldY:root.position.y};
    const obstacles=objects.map(o=>{const p=rotate(o.x,o.z,root.rotation.y);return {...o,x:p.x+doorway.x,z:p.z+doorway.z,yaw:o.yaw+root.rotation.y};});
    if(globalThis.__phiReceptionTestRefresh){
     for(const x of [-13.8,13.8])for(const z of [8,21]){
