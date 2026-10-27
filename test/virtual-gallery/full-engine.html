@@ -54,6 +54,20 @@
 </script>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+<script>
+// Remove obsolete staging plant-count overlays, including those created by a
+// previously cached gallery-phi-test.js after this page has initialised.
+(()=>{
+ const clean=()=>document.getElementById('staging-plant-check')?.remove();
+ const observer=new MutationObserver(clean);
+ const start=()=>{
+  clean();
+  observer.observe(document.body,{childList:true,subtree:true});
+ };
+ if(document.body)start();
+ else document.addEventListener('DOMContentLoaded',start,{once:true});
+})();
+</script>
 <script type="module">
 (async()=>{
   const enter=document.getElementById('enter');
@@ -66,7 +80,7 @@
     // Use the original uploaded plaster and acoustic ceiling textures in this test only.
     globalThis.__phiUploadedWallCeilingTest=true;
     window.__galleryStage='Importing full-engine texture test';
-    await import('../../gallery/visit/gallery-phi-test.js?v=perf-hud-cleanup-20261027');
+    await import('../../gallery/visit/gallery-phi-test.js?v=plant-box-removed-20261027-r3');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
