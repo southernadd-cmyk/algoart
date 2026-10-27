@@ -1451,29 +1451,29 @@ function constructPhiGallery(layout,studies){
     lowPower:galleryFinish.lowPower,protectedLayouts:[],approach,plaza});
   const outdoor=addPhiOutdoorPlants(THREE,scene,exterior.plaza||plaza,scene.children.filter(o=>!beforeLandscape.has(o)));
   phiOutdoorPlants=outdoor.holders;phiSquareObstacles.push(...outdoor.obstacles);
-  // Landmark sculptures above the reception entrance, not in the walking square.
+  // The two original roof landmarks now stand on the paved forecourt in
+  // front of the long south-facing brick façade, to one side of the public
+  // entrance. They face arriving visitors and leave the doorway approach clear.
   if(currentFloor===0){
    const monuments=addPermanentPlazaSculptures(scene,plaza);
-   // Roof frontage is the *entire* reception footprint, not the single
-   // subdivision cell next to the entrance. The latter clustered both works.
-   const pieces=phi.pieces;
-   const west=Math.min(...pieces.map(p=>p.x));
-   const east=Math.max(...pieces.map(p=>p.x+p.w));
-   const extent=east-west;
-   const positions=[west+3.1,west+extent*.53];
-   // Choose a supporting roof slab for each sculpture; favour the plaza-facing
-   // edge, but never place a sculpture beyond the available roof surface.
-   const supports=positions.map(x=>pieces.filter(p=>x>=p.x+2.7&&x<=p.x+p.w-2.7)
-     .sort((a,b)=>a.z-b.z)[0]);
+   const offsets=[6.9,14.1]; // Metres along the frontage, away from the door
+   const facadeDistance=4.7; // Metres outward onto the paving, not roof height
+   const face=Math.atan2(outward.x,outward.z);
    monuments.forEach((m,i)=>{
-    const support=supports[i];
-    const x=support?positions[i]:i===0?west+3.1:west+extent*.53;
-    const z=support?support.z+Math.min(2.1,support.h*.5):doorway.z+2.1;
-    m.position.set(x,elevation+ROOM_HEIGHT+.36,z);
-    m.rotation.y=i===0?.12:-.12;
+    const x=doorway.x-transverse.x*offsets[i]+outward.x*facadeDistance;
+    const z=doorway.z-transverse.z*offsets[i]+outward.z*facadeDistance;
+    m.position.set(x,elevation,z);
+    m.rotation.y=face+(i===0?.10:-.10);
+    // These are wide, fixed ground-level works. Use normal rectangular
+    // collision bounds rather than letting visitors walk through the frames.
+    // Preserve a generous corridor in front of the reception doorway.
+    phiSquareObstacles.push({x,z,yaw:m.rotation.y,width:5.45,depth:1.9,
+     kind:'plaza-sculpture'});
    });
-   window.__phiRoofMonumentPositions=monuments.map(m=>({x:m.position.x,z:m.position.z}));
-   window.__phiRoofMonuments=monuments.length;
+   window.__phiPlazaMonumentPositions=monuments.map(m=>({
+    x:m.position.x,y:m.position.y,z:m.position.z,yaw:m.rotation.y
+   }));
+   window.__phiPlazaMonuments=monuments.length;
   }
   deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
   const square=phiSquare.addTo(scene,{doorway,outward,elevation});phiSquareObstacles.push(...square.obstacles);
