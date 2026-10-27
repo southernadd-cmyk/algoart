@@ -6,7 +6,7 @@ import {ROOM_HEIGHT} from './layout-v2.mjs';
 import {fitPhiTag} from './graffiti-placement.mjs';
 import {TOWER_HANDS,towerHandCycle,towerTagSlot} from './tower-graffiti-styles.mjs';
 export const GRAFFITI_WORDS=Object.freeze(['φ']);
-export const GRAFFITI_SEED='PP-TOWER-LAYERED-PHI-03';
+export const GRAFFITI_SEED='PP-TOWER-SPREAD-PHI-04';
 export const WALL_MARGIN=.52;
 export const TAGS_PER_PAINTED_FLOOR=5;
 const SIDES=['north','south','east','west'];
@@ -48,7 +48,7 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
   const hands=towerHandCycle(seed+'|'+plan.date+'|layered-phi');
   const front=faces.filter(face=>face.side==='south');
   const featured=(front.length?front:faces).sort((a,b)=>b.length-a.length)[0];
-  const groups=[1,3,5,8];
+  // Paint order is large, three medium, five small, then eight handwritten.
   for(let slot=0;slot<17;slot++){
    const tier=slot===0?0:slot<4?1:slot<9?2:3;
    const item=towerTagSlot({floorId:plan.date,seed:seed+'|layered|'+slot,slot,hand:hands[slot%hands.length]});
@@ -62,9 +62,9 @@ export function planExteriorGraffiti(floors,{seed=GRAFFITI_SEED,floorSpacing=6.2
    const normal=face.normal,right={x:normal.z,z:-normal.x};
    const angle=slot* Math.PI*(3-Math.sqrt(5)),radius=tier===0?0:[0,.24,.55,.9][tier];
    const u=Math.max(-face.length/2+placement.width/2+.15,
-    Math.min(face.length/2-placement.width/2-.15,Math.cos(angle)*radius));
+    Math.min(face.length/2-placement.width/2-.15,Math.cos(angle)*radius*(face.length/2-placement.width/2-.22)*.95));
    const centreY=Math.max(.4+placement.height/2,
-    Math.min(ROOM_HEIGHT-.3-placement.height/2,ROOM_HEIGHT/2+Math.sin(angle)*radius*.45));
+    Math.min(ROOM_HEIGHT-.3-placement.height/2,ROOM_HEIGHT/2+Math.sin(angle)*radius*(ROOM_HEIGHT/2-placement.height/2-.35)*.9));
    marks.push({id:item.id,date:plan.date,level,slot,surface:'exterior',phi:{...placement.phi,tier},
     phrase:'φ',text:tag.text,hand:tag.hand,form:tier===3?'handstyle':tag.form,
     ink:tag.ink,seed:tag.seed,face,width:placement.width,height:placement.height,
