@@ -1,11 +1,12 @@
 {
   "version": 1,
   "date": "2026-10-27",
-  "count": 4,
+  "count": 5,
   "series": [
     "Growth Systems",
     "Constructed Forms",
-    "Connected Fields"
+    "Connected Fields",
+    "Radiant Systems"
   ],
   "entries": [
     {
@@ -201,6 +202,55 @@
         "grain": 10
       },
       "altText": "Abstract algorithmic marker artwork from PROPORTION PIECE’s Growth Systems series. 3 branching forms enter from the top, bottom, left edges, splitting into 47 visible branch segments."
+    },
+    {
+      "id": "2026-10-27-ACL01",
+      "title": "Radiant Systems — Action Painting Study 05",
+      "orientation": "landscape",
+      "material": "action",
+      "seed": "ACL-20261027-01-32049",
+      "mode": "burst",
+      "series": "Radiant Systems",
+      "imageFile": "2026-10-27-action-landscape-01-burst-ACL-20261027-01-32049.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACL-20261027-01-32049&mode=burst&el=24&den=55&cx=63&neg=46&phi=91&rec=6&spi=28&ga=95&nest=55&pen=scribble&th=12&wob=30&od=3&op=81&pr=52&dry=38&curve=18&shape=77&overlap=42&rot=71&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=9&sat=69&bri=48&paper=%23f5f0e6&grain=14&material=action-v4&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "burst",
+        "series": "Radiant Systems",
+        "seed": "ACL-20261027-01-32049",
+        "elements": 24,
+        "density": 55,
+        "complexity": 63,
+        "negativeSpace": 46,
+        "phiStrength": 91,
+        "recursion": 6,
+        "spiralInfluence": 28,
+        "goldenAngle": 95,
+        "nesting": 55,
+        "pen": "scribble",
+        "thickness": 12,
+        "wobble": 30,
+        "overdraw": 3,
+        "opacity": 81,
+        "pressure": 52,
+        "dryness": 38,
+        "curveBias": 18,
+        "shapeAmount": 77,
+        "overlap": 42,
+        "rotation": 71,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "marker",
+        "colourCount": 9,
+        "saturation": 69,
+        "brightness": 48,
+        "paper": "#f5f0e6",
+        "grain": 14
+      },
+      "altText": "Action painting from PROPORTION PIECE's Radiant Systems system, seed ACL-20261027-01-32049. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
