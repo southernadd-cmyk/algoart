@@ -1,4 +1,4 @@
-import {createPhiGalleryMusic} from './gallery-music.mjs?v=panel-viewport-fit-20261027';
+import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
 import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
 import {planGallerySpeakers,addGalleryCeilingSpeaker} from './gallery-speakers.mjs?v=distributed-record-20261027';
 import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=distributed-record-20261027';
