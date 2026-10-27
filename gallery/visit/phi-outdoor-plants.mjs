@@ -22,7 +22,16 @@ export function addPhiOutdoorPlants(THREE,scene,plaza,landscapeRoots,{loadModel=
   holder.userData.fallbackCount=backups.length;
   return source.then(model=>{
    if(!holder.parent||holder.userData.galleryDisposed)return;
-   holder.add(fitPhiDecorAsset(THREE,model.clone(true),p.height));
+   if(globalThis.__phiReceptionTestRefresh){
+    // Group the uploaded succulent planter in staggered sizes so the four
+    // civic beds do not read as four identical repeated assets.
+    for(let i=0;i<3;i++){
+     const plant=fitPhiDecorAsset(THREE,model.clone(true),p.height*[.94,.68,.57][i]);
+     plant.position.set([0,-.54,.55][i],0,[0,.34,.22][i]);
+     plant.rotation.y=[0,1.7,-1.1][i]+(p.x+p.z)*.07;
+     holder.add(plant);
+    }
+   }else holder.add(fitPhiDecorAsset(THREE,model.clone(true),p.height));
    for(const backup of backups)backup.visible=false;
    holder.userData.modelLoaded=true;holder.userData.replaced=backups.length;
   }).catch(error=>console.warn('Outdoor succulent fallback',error));
