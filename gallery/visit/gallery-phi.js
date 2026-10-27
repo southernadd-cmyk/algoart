@@ -1694,45 +1694,6 @@ function constructPhiGallery(layout,studies){
   const leafLight=new THREE.MeshStandardMaterial({color:'#819477',roughness:1,flatShading:true});
   queuePhiFurnishings(phi,planPhiFurnishings(phi,{reception:furnishing,lowPower:galleryFinish.lowPower}),elevation);
   phiReceptionProps=addPhiReceptionDecor(THREE,scene,furnishing,elevation);
-  // Permanent standalone reception sculpture, not a dated gallery painting.
-  // Recover the exact source vectors from the original editor state; this
-  // deliberately bypasses the daily exhibition selection and its study count.
-  if(furnishing.backrooms?.length&&furnishing.desk){
-   const room=furnishing.backrooms[0],toward=new THREE.Vector2(
-    furnishing.desk.x-room.x,furnishing.desk.z-room.z).normalize();
-   const wallDistance=Math.min(room.width/2,room.depth/2);
-   const position={x:room.x+toward.x*(wallDistance+1.75),
-    y:elevation,z:room.z+toward.y*(wallDistance+1.75)};
-   // A backroom approach remains walkable: leave the doorway centre open
-   // while displaying the object beside the visitor's line of approach.
-   const tangent=new THREE.Vector2(-toward.y,toward.x);
-   const sides=[-1,1].map(side=>({
-    x:position.x+tangent.x*side*1.75,z:position.z+tangent.y*side*1.75
-   })).filter(p=>Math.hypot(p.x-furnishing.entrance.x,p.z-furnishing.entrance.z)>3.1&&
-     Math.hypot(p.x-furnishing.lift.x,p.z-furnishing.lift.z)>3.2&&
-     Math.hypot(p.x-furnishing.desk.x,p.z-furnishing.desk.z)>2.3&&
-     !phi.physical.walls.some(w=>w.axis==='x'
-      ?Math.abs(p.x-w.at)<1.3&&p.z>w.lo-1.1&&p.z<w.hi+1.1
-      :Math.abs(p.z-w.at)<1.3&&p.x>w.lo-1.1&&p.x<w.hi+1.1));
-   if(sides.length){
-    const chosen=sides[0];
-    const source='https://southernadd-cmyk.github.io/algoart/?v=9&seed=AA-20261005-03-55769&mode=rects&el=36&den=53&cx=71&neg=41&phi=91&rec=4&spi=63&ga=93&nest=44&pen=fine&th=13&wob=32&od=3&op=70&pr=36&dry=19&curve=91&shape=68&overlap=65&rot=91&ln=1&ci=1&re=1&po=1&ar=1&pal=mono&cols=4&sat=86&bri=59&paper=%23f5f0e6&grain=13&material=oil-v6';
-    const study={seed:'AA-20261005-03-55769',title:'Growth Systems',
-     href:source,material:{type:'oil',params:{paper:'#f5f0e6'}},
-     // Transparent source avoids substituting a different archived painting.
-     // Geometry still comes from the exact seeded live vector engine.
-     image:'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='};
-    const sculpture=createPortraitSculpture({scene,study,quality:mobileImages?'mobile':'desktop',
-     placement:{x:chosen.x,y:elevation,z:chosen.z,
-      yaw:Math.atan2(furnishing.entrance.x-chosen.x,furnishing.entrance.z-chosen.z)},
-     labelTexture});
-    sculpture.pivot.name='phi-permanent-reception-growth-systems';
-    sculpture.pivot.scale.setScalar(1.55);
-    phiReceptionProps.push(sculpture.pivot);
-    phiSquareObstacles.push({x:chosen.x,z:chosen.z,radius:1.45});
-    if(GALLERY_DEBUG)window.__phiReceptionHero={seed:study.seed,x:chosen.x,z:chosen.z};
-   }
-  }
   phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);
   const credits=addPhiReceptionCredits(THREE,scene,furnishing.credits,elevation);
   artExhibits.push(...credits);window.__phiReceptionCredits={count:credits.length,placement:furnishing.credits};
