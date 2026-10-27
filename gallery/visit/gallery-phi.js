@@ -1678,6 +1678,23 @@ function constructPhiGallery(layout,studies){
  liftDoorThreshold=liftCabinPosition.clone();
  if(exhibitDate===RECEPTION){
   const furnishing=planPhiReception(phi.floor,phi.circulation,phi.physical);
+  // Reception remains warmly lit while the global exterior illumination is moonlight.
+  const receptionLightPoints=[
+   {p:furnishing.entrance,power:10,range:11},
+   {p:furnishing.desk,power:13,range:12},
+   {p:furnishing.lift,power:8,range:9},
+   {p:furnishing.worldMap&&{
+     x:furnishing.worldMap.x+furnishing.worldMap.normal.x*1.7,
+     z:furnishing.worldMap.z+furnishing.worldMap.normal.z*1.7
+    },power:11,range:10}
+  ];
+  for(const {p,power,range} of receptionLightPoints){
+   if(!p)continue;
+   const fill=new THREE.PointLight('#ffe1b9',power,range,2);
+   fill.position.set(p.x,elevation+ROOM_HEIGHT-.55,p.z);
+   fill.name='phi-reception-warm-ceiling-light';
+   scene.add(fill);
+  }
   phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone,timber:galleryFinish.timberSmoked,trims:galleryFinish.trims});
   if(phiReceptionDesk)phiSquareObstacles.push(...phiReceptionDesk.obstacles);
   if(globalThis.__phiReceptionTestRefresh&&furnishing.desk){
