@@ -10,7 +10,7 @@ import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin
 import {placeCastIronStreetLamp,enableDetailedStreetLamps} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
-import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-writing-20261025';
+import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-wall-surface-20261027';
 import {planInteriorGraffiti,interiorGraffitiKey} from './interior-graffiti-plan.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=city-cards-20261025';
