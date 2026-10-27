@@ -1,0 +1,37 @@
+name: Validate live startup candidate
+on:
+  push:
+    branches: ['startup/live']
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: git fetch --depth=1 origin 06d5d3def14949ea7e21cb2c7ba654c1e6a0324a
+      - run: npm run gallery:bundle && npm run gallery:bundle:phi && npm run gallery:bundle:post-test
+      - run: node --test tests/gallery-preparation.test.mjs tests/phi-postprocessing.test.mjs test/virtual-gallery/architectural-materials.test.mjs tests/gallery-atlas-startup.test.mjs tests/gallery-public-launch.test.mjs tests/phi-presentation.test.mjs tests/phi-shell-cache.test.mjs tests/phi-sculpture-stage.test.mjs
+      - run: npx playwright install chromium
+      - run: node tests/phi-postprocessing-browser.mjs
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/live-startup-http.log 2>&1 &
+      - run: node automation/compare-live-startup.mjs
+      - name: Commit validated candidate bundles on the candidate branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gallery/visit/gallery-bundle.js gallery/visit/gallery-phi-bundle.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Build validated startup candidate bundles [skip ci]'
+            git push origin HEAD:startup/live
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-startup-results
+          path: live-startup-results/

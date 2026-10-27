@@ -60,6 +60,7 @@ test('Offline mobile/VR fallback has real materials, shared floor/bridge map, no
     MeshStandardMaterial:FakeMaterial,
     TextureLoader:FakeLoader,
     CanvasTexture:FakeCanvasTexture,
+    DataTexture:class {constructor(data,width,height){this.image={data,width,height};this.userData={};}},
     SRGBColorSpace:'srgb',
     RepeatWrapping:'repeat',
     DoubleSide:2,

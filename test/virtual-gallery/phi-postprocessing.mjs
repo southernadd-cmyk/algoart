@@ -160,5 +160,5 @@ export function createPhiPostTest({THREE,renderer,scene,camera}){
  }
  document.addEventListener('visibilitychange',()=>{lastFrame=0;});
  document.getElementById('enter')?.addEventListener('click',()=>{stats.frames.length=0;stats.gpuMs.length=0;lastFrame=0;});
- return {render,resize,warm,editionChanged(elevation){shadows?.editionChanged(elevation);}};
+ return {render,resize,warm,prepare(elevation){shadows?.editionChanged(elevation);shadows?.update();},editionChanged(elevation){shadows?.editionChanged(elevation);}};
 }

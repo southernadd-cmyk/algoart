@@ -19,8 +19,10 @@ export function instrumentPhiSource(source){
   '  renderer.setSize(innerWidth,innerHeight);\n  phiPresentation?.resize();');
  replace('  const light=new THREE.SpotLight(0xfff3df,12,12,.66,.8,1.5);',
   "  const light=new THREE.SpotLight(0xfff3df,12,12,.66,.8,1.5);light.name='phi-shadow-room-light';");
+ replace('    if(renderer.compileAsync)await renderer.compileAsync(scene,camera);',
+  '    phiPresentation?.prepare(elevation);\n    if(renderer.compileAsync)await renderer.compileAsync(scene,camera);');
  replace("  enter.disabled=false;enter.textContent='Enter the gallery';",
-  "  phiPresentation?.editionChanged(elevation);\n  if(!viaLift&&!welcome.hidden)await phiPresentation?.warm();\n  enter.disabled=false;enter.textContent='Enter the gallery';");
+  "  if(viaLift||welcome.hidden)phiPresentation?.editionChanged(elevation);\n  if(!viaLift&&!welcome.hidden)await phiPresentation?.warm();\n  enter.disabled=false;enter.textContent='Enter the gallery';");
  return source;
 }
 

@@ -3,6 +3,7 @@
 // No dependency on the Poly Haven API at runtime. The static 1K files are
 // fetched once on demand and reused by all rooms; failure is non-fatal.
 // Three.js is passed in so this module can be unit-tested without WebGL.
+import {neutralGalleryMaps,stageGalleryTextureCallback} from './gallery-preparation.mjs';
 export const MATERIAL_SOURCES=Object.freeze({
   walls:Object.freeze({
     asset:'plastered_wall_02',author:'Poly Haven',license:'CC0-1.0',
@@ -162,9 +163,10 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     ?Promise.race([Promise.resolve(startAfter).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))])
     :null;
   const loader={
-    load(...args){
-      if(!ready)return textureLoader.load(...args);
-      ready.then(()=>textureLoader.load(...args)).catch(error=>console.warn('Optional gallery texture unavailable',error));
+    load(url,onLoad,onProgress,onError){
+      const completed=texture=>stageGalleryTextureCallback(()=>onLoad(texture));
+      if(!ready)return textureLoader.load(url,completed,onProgress,onError);
+      ready.then(()=>textureLoader.load(url,completed,onProgress,onError)).catch(error=>console.warn('Optional gallery texture unavailable',error));
       return null;
     }
   };
@@ -213,6 +215,16 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   ceiling.map=tx(fallback.plinth);
   stoneBridge.map=floor.map;stone.map=floor.map;
   exteriorBrick.map=tx(brickFallback());
+  // Fix the final shader feature set before the first compilation. White
+  // roughness and a flat normal preserve the untextured appearance while
+  // the original full-resolution photographs load independently.
+  const neutral=neutralGalleryMaps(THREE);
+  exteriorBrick.roughnessMap=neutral.roughness;ceiling.roughnessMap=neutral.roughness;
+  if(!lowPower){
+    for(const [material,strength] of [[floor,.21],[stoneBridge,.21],[exteriorBrick,.19],[ceiling,.18]]){
+      material.normalMap=neutral.normal;material.normalScale=new THREE.Vector2(strength,strength);
+    }
+  }
   const diagnostics={loaded:[],failed:[],lowPower,source:'ambientCG Bricks055 CC0 / Poly Haven CC0'};
   const locallyLoaded=new Set();
   function scan(slot,url,mode,targets){

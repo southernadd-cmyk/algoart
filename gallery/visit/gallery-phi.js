@@ -1,4 +1,5 @@
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
+import {configureGalleryPreparation,createGalleryPreparationQueue,prepareGalleryTexture,neutralGalleryMaps} from './gallery-preparation.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
 import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
 import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
@@ -159,6 +160,13 @@ try {
   errorBox.hidden = false;
 }
 
+const phiTexturePreparation=createGalleryPreparationQueue();
+const phiModelPreparation=createGalleryPreparationQueue();
+let phiReleaseModelPreparation;
+const phiBaseSceneReady=new Promise(resolve=>{phiReleaseModelPreparation=resolve;});
+if(renderer)configureGalleryPreparation({renderer,camera,scene,modelReady:phiBaseSceneReady,textureTasks:phiTexturePreparation,models:phiModelPreparation});
+if(GALLERY_DEBUG)window.__phiPreparation={textures:phiTexturePreparation.stats,models:phiModelPreparation.stats};
+if(GALLERY_DEBUG)window.__phiStartupWork=()=>({deferred:deferredGalleryJobs.length,running:deferredGalleryRunning,artwork:artworkQueue.length+artworkActive});
 const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
   startAfter:window.__galleryEarly?.tower
@@ -465,6 +473,8 @@ function loadArtworkTexture(url,material,{preferred=null}={}){
           texture.colorSpace=THREE.SRGBColorSpace;
           texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
           texture.needsUpdate=true;
+          await prepareGalleryTexture(texture);
+          if(material.userData.galleryDisposed){texture.dispose();bitmap?.close?.();finish();return;}
           if(material.map){
             material.map.dispose();
             material.map.userData.galleryBitmap?.close?.();
@@ -551,7 +561,7 @@ function hangArt(room, study, hang) {
   surround.rotation.y = rotation;
   scene.add(surround);
 
-  const artworkMaterial = new THREE.MeshBasicMaterial({color: '#eae5d9',side: THREE.DoubleSide});
+  const artworkMaterial = new THREE.MeshBasicMaterial({color: '#eae5d9',map:neutralGalleryMaps(THREE).white,side: THREE.DoubleSide});
   const artwork = new THREE.Mesh(new THREE.PlaneGeometry(width, height), artworkMaterial);
   artwork.position.copy(base).addScaledVector(normal, .038);
   artwork.rotation.y = rotation;
@@ -1564,7 +1574,7 @@ function constructPhiGallery(layout,studies){
   block(p.axis==='x'?.08:p.width+.10,height+.10,p.axis==='x'?p.width+.10:.08,
     p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);
   const face=new THREE.Mesh(new THREE.PlaneGeometry(p.width,height),
-    new THREE.MeshBasicMaterial({color:0xdedacf,side:THREE.FrontSide}));
+     new THREE.MeshBasicMaterial({color:0xdedacf,map:neutralGalleryMaps(THREE).white,side:THREE.FrontSide}));
   face.position.set(p.x,centreY,p.z);
   if(p.axis==='x')face.rotation.y=p.normal.x>0?Math.PI/2:-Math.PI/2;
   else if(p.normal.z<0)face.rotation.y=Math.PI;
@@ -2146,6 +2156,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
     if(renderer.compileAsync)await renderer.compileAsync(scene,camera);
     await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
   }
+  phiReleaseModelPreparation();
   enter.disabled=false;enter.textContent='Enter the gallery';
   GALLERY_DEBUG&&console.info('[Gallery performance] edition ready',Math.round(performance.now()-editionStart)+'ms',date);
 }
