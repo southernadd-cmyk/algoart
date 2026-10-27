@@ -1,0 +1,28 @@
+name: Rebuild virtual gallery after material updates
+on:
+  push:
+    paths:
+      - '.github/workflows/rebuild-gallery-materials.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run gallery:bundle:phi
+      - name: Commit compiled bundle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/gallery-phi-bundle.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Rebuild gallery bundle with CC0 plaster and reception attribution"
+            git push
+          fi
