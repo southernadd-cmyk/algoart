@@ -33,7 +33,8 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  # A stale queued deployment must not block the newest live and test update.
+  cancel-in-progress: true
 
 jobs:
   build:

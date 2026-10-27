@@ -16,14 +16,23 @@ function uvGeometry(){
   };
   return {getAttribute(key){return key==='uv'?attribute:null},data,needsUpdate:false};
 }
-test('Source assets are verified Poly Haven CC0 materials with real 1K maps',()=>{
+test('Source assets are credited Poly Haven and ambientCG CC0 maps',()=>{
   assert.equal(Object.keys(MATERIAL_SOURCES).length,4);
   for(const entry of Object.values(MATERIAL_SOURCES)){
     assert.equal(entry.license,'CC0-1.0');
-    assert.ok(entry.diffuse.includes('/Textures/jpg/1k/'));
-    assert.ok(entry.diffuse.startsWith('https://dl.polyhaven.org/'));
+    if(entry.author==='ambientCG'){
+      assert.equal(entry.asset,'Bricks055');
+      assert.equal(entry.source,'https://ambientcg.com/view?id=Bricks055');
+      assert.equal(entry.diffuse,'./textures/Bricks055_Color.jpg');
+      assert.equal(entry.normal,'./textures/Bricks055_NormalGL.jpg');
+      assert.equal(entry.roughness,'./textures/Bricks055_Roughness.jpg');
+    }else{
+      assert.equal(entry.author,'Poly Haven');
+      assert.ok(entry.diffuse.includes('/Textures/jpg/1k/'));
+      assert.ok(entry.diffuse.startsWith('https://dl.polyhaven.org/'));
+      if(entry.normal)assert.ok(entry.normal.includes('_nor_gl_1k.jpg'));
+    }
     assert.ok(entry.tileMeters>1);
-    if(entry.normal)assert.ok(entry.normal.includes('_nor_gl_1k.jpg'));
   }
 });
 test('Box UVs repeat proportionally to metre-scale geometry dimensions',()=>{
@@ -79,7 +88,13 @@ test('Offline mobile/VR fallback has real materials, shared floor/bridge map, no
     assert.equal(bank.stoneBridge.map,bank.floor.map);
     assert.ok(bank.wall.userData.tileMeters>2);
     assert.equal(bank.wall.normalMap,undefined);
-    assert.equal(calls.length,Object.keys(MATERIAL_SOURCES).length+Object.keys(LOCAL_TEXTURES).length,'only material colour sources on mobile');
+    assert.deepEqual(calls,[
+      MATERIAL_SOURCES.timber.diffuse,MATERIAL_SOURCES.brick.diffuse,
+      MATERIAL_SOURCES.brick.roughness,'./textures/OfficeCeiling001_Color.jpg',
+      './textures/OfficeCeiling001_Roughness.jpg',LOCAL_TEXTURES.walls,
+      LOCAL_TEXTURES.floors,LOCAL_TEXTURES.stone,LOCAL_TEXTURES.walls
+    ],'mobile requests only the active colour and roughness maps');
+    assert.ok(calls.every(url=>!/_nor_gl_|NormalGL/.test(url)),'mobile must not download normal maps');
     assert.equal(bank.diagnostics.failed.length,calls.length);
     assert.equal(bank.setFinish('timber'),'timber');
     assert.equal(bank.setFinish('unknown'),'timber');

@@ -105,7 +105,7 @@ test('outdoor source plants are optimised, credited, and replace original planti
  const result=addPhiOutdoorPlants(THREE,scene,plaza,[landscape],{loadModel:()=>Promise.resolve(source)});await result.ready;
  assert.ok(originals.every(o=>!o.visible));assert.equal(bench.visible,true);assert.ok(result.holders.every(o=>o.userData.modelLoaded&&o.userData.replaced===4));
  for(const [index,holder] of result.holders.entries())assert.ok(Math.abs(new THREE.Box3().setFromObject(holder).getSize(new THREE.Vector3()).y-placements[index].height)<1e-5);
- let resolve;const late=addPhiOutdoorPlants(THREE,scene,plaza,[],{loadModel:()=>new Promise(r=>resolve=r)});for(const h of late.holders)scene.remove(h);resolve(source);await late.ready;assert.ok(late.holders.every(h=>h.children.length===0),'Late model attached to an old floor');
+ let resolve;const late=addPhiOutdoorPlants(THREE,scene,plaza,[],{loadModel:()=>new Promise(r=>resolve=r)});const initialChildren=late.holders.map(h=>[...h.children]);for(const h of late.holders)scene.remove(h);resolve(source);await late.ready;for(const [i,h] of late.holders.entries()){assert.deepEqual(h.children,initialChildren[i],'Late model attached to an old floor');assert.equal(h.userData.modelLoaded,undefined);}
 });
 test('the reception wall displays a compact baked watercolour in place of the world map',()=>{
  const phi=buildPhiRendererPlan('__phi_reception__',[]),reception=planPhiReception(phi.floor,phi.circulation,phi.physical),map=reception.worldMap;
