@@ -1,88 +1,145 @@
-// Test-only reception back-room installation. No external assets or video decoder.
-export function addPhiReceptionLivingMonitor(THREE, scene, {room, world, elevation, camera}) {
- if (!room || !world?.toWorld) return null;
- const canvas=document.createElement('canvas');
- canvas.width=512;canvas.height=320;
- const ctx=canvas.getContext('2d',{alpha:false});
- if(!ctx)return null;
- const texture=new THREE.CanvasTexture(canvas);
- texture.colorSpace=THREE.SRGBColorSpace;
- const screenMaterial=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});
- const bezelMaterial=new THREE.MeshStandardMaterial({color:0x141414,metalness:.36,roughness:.55});
+// Test-only three-monitor installation for the ground-floor reception.
+// Coordinates stay in the untransformed phi layout; the gallery transforms
+// all newly created scene children after constructing the floor.
+
+export function planPhiReceptionMonitorWall(room, lift, physicalWalls=[]) {
+ if(!room || !Number.isFinite(room.width) || !Number.isFinite(room.depth))return null;
+ const {x,z,width,depth}=room;
+ const sides=[
+  {axis:'z',at:z-depth/2,lo:x-width/2,hi:x+width/2,normal:{x:0,z:1},yaw:0},
+  {axis:'z',at:z+depth/2,lo:x-width/2,hi:x+width/2,normal:{x:0,z:-1},yaw:Math.PI},
+  {axis:'x',at:x-width/2,lo:z-depth/2,hi:z+depth/2,normal:{x:1,z:0},yaw:Math.PI/2},
+  {axis:'x',at:x+width/2,lo:z-depth/2,hi:z+depth/2,normal:{x:-1,z:0},yaw:-Math.PI/2}
+ ];
+ const walls=[];
+ for(const side of sides)for(const segment of physicalWalls){
+  if(segment.axis!==side.axis || Math.abs(segment.at-side.at)>.26)continue;
+  const lo=Math.max(side.lo,segment.lo),hi=Math.min(side.hi,segment.hi);
+  if(hi-lo<2.35)continue;
+  walls.push({...side,lo,hi,fromPhysical:true});
+ }
+ // On an unexpected floor plan, still show the installation. Room boundary
+ // fallback is preferable to silently creating no screens.
+ if(!walls.length)walls.push(...sides.filter(s=>s.hi-s.lo>=2.35).map(s=>({...s,fromPhysical:false})));
+ if(!walls.length)return null;
+ const dx=(lift?.x??x)-x,dz=(lift?.z??z)-z;
+ const length=Math.hypot(dx,dz)||1;
+ for(const wall of walls){
+  wall.facing=(wall.normal.x*dx+wall.normal.z*dz)/length;
+  wall.length=wall.hi-wall.lo;
+ }
+ // Back wall faces the lift: choose the wall whose INWARD normal points
+ // towards the lift, then prefer longer uninterrupted wall segments.
+ walls.sort((a,b)=>b.facing-a.facing||b.length-a.length);
+ const wall=walls[0],centre=(wall.lo+wall.hi)/2;
+ const clearance=.19; // In front of the wall's solid geometry.
+ return {
+  axis:wall.axis,normal:wall.normal,yaw:wall.yaw,
+  x:wall.axis==='z'?centre:wall.at+wall.normal.x*clearance,
+  z:wall.axis==='x'?centre:wall.at+wall.normal.z*clearance,
+  width:Math.min(1.23,(wall.length-.54-.28)/3),
+  gap:.14,span:wall.length,fromPhysical:wall.fromPhysical,
+  facing:wall.facing
+ };
+}
+
+export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWalls=[],elevation,camera}){
+ // phi.world is deliberately NOT required here: it is assigned only after
+ // constructPhiGallery returns. Requiring it silently removed every monitor.
+ const wall=planPhiReceptionMonitorWall(room,lift,physicalWalls);
+ if(!wall)return null;
  const root=new THREE.Group();
- root.name='phi-reception-living-painting';
- root.userData.kind='reception-living-monitor';
- // Occupy the shelving bay on the backroom's north wall; the shelving and boxes
- // are suppressed in this test installation, leaving the screen unobstructed.
- const localZ=room.z+room.depth/2-.28;
- // Gallery walls and backroom fittings are placed in phi's LOCAL layout
- // coordinates (see constructPhiGallery and addPhiReceptionDecor).
- // Transforming only the monitor through world.toWorld placed it off-wall.
- root.position.set(room.x,elevation+2.05,localZ);
- root.rotation.y=Math.PI;
- // Mount on the former cardboard-box side of the backroom, facing inward.
- // Two-sided screen stays visible from either direction.
- const frame=new THREE.Mesh(new THREE.BoxGeometry(1.36,.88,.07),bezelMaterial);
- root.add(frame);
- const screen=new THREE.Mesh(new THREE.PlaneGeometry(1.26,.788),screenMaterial);
- screen.position.z=.041;root.add(screen);
- const labelCanvas=document.createElement('canvas');labelCanvas.width=512;labelCanvas.height=96;
- const labelCtx=labelCanvas.getContext('2d');
- labelCtx.fillStyle='#e9e3d6';labelCtx.fillRect(0,0,512,96);
- labelCtx.fillStyle='#202923';labelCtx.font='bold 26px Georgia';
- labelCtx.fillText('LIVING PAINTING No. 1',19,40);
- labelCtx.font='18px Georgia';labelCtx.fillText('Golden Trajectories · PROPORTION PIECE',19,72);
- const labelTexture=new THREE.CanvasTexture(labelCanvas);
- labelTexture.colorSpace=THREE.SRGBColorSpace;
- const labelMaterial=new THREE.MeshBasicMaterial({map:labelTexture,side:THREE.DoubleSide});
- const label=new THREE.Mesh(new THREE.PlaneGeometry(1.36,.255),labelMaterial);
- label.position.set(0,-.61,.043);root.add(label);
+ root.name='phi-reception-three-living-monitors';
+ root.userData.kind='reception-three-living-monitors';
+ root.userData.mount={...wall};
+ root.position.set(wall.x,elevation+2.08,wall.z);
+ root.rotation.y=wall.yaw;
+
+ const bezelMaterial=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.32,roughness:.48});
+ const lampMaterial=new THREE.MeshBasicMaterial({color:0x66c59d,toneMapped:false});
+ const textures=[],screenMaterials=[],labels=[],canvases=[];
+ const width=wall.width,height=width*0.66;
+ for(let screenIndex=0;screenIndex<3;screenIndex++){
+  const unit=new THREE.Group();
+  unit.position.x=(screenIndex-1)*(width+wall.gap);
+  unit.name='living-monitor-'+(screenIndex+1);
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(width,height,.075),bezelMaterial);
+  frame.name='monitor-bezel';
+  unit.add(frame);
+  const canvas=document.createElement('canvas');
+  canvas.width=384;canvas.height=240;
+  const ctx=canvas.getContext('2d',{alpha:false});
+  if(!ctx)return null;
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  const displayMaterial=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});
+  const display=new THREE.Mesh(new THREE.PlaneGeometry(width-.065,height-.067),displayMaterial);
+  display.position.z=.041;
+  display.name='monitor-screen';
+  unit.add(display);
+  const indicator=new THREE.Mesh(new THREE.BoxGeometry(.024,.012,.006),lampMaterial);
+  indicator.position.set(width/2-.047,-height/2+.014,.042);unit.add(indicator);
+  root.add(unit);
+  canvases.push(ctx);textures.push(texture);screenMaterials.push(displayMaterial);
+ }
  scene.add(root);
+
+ const phi=(1+Math.sqrt(5))/2;
+ const palette=['#31545c','#ba7453','#aa9b6b','#303b40','#d4ac7d'];
+ function draw(ctx,index,time){
+  const w=384,h=240;
+  ctx.globalAlpha=1;
+  ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,w,h);
+  ctx.lineCap='round';ctx.lineJoin='round';
+  for(let k=0;k<34;k++){
+   const theta=k*2*Math.PI/(phi*phi)+index*.77+time*(.24+index*.12);
+   const radius=12+Math.sqrt(k/34)*95;
+   const px=w/2+Math.cos(theta)*radius*1.45;
+   const py=h/2+Math.sin(theta)*radius*.90;
+   const a=theta+time*.24;
+   ctx.beginPath();
+   if(index===0){
+    ctx.moveTo(px,py);
+    ctx.bezierCurveTo(px+Math.cos(a+1)*34,py+Math.sin(a+1)*34,
+      px+Math.cos(a+2)*52,py+Math.sin(a+2)*43,
+      px+Math.cos(a+2.4)*70,py+Math.sin(a+2.4)*51);
+   }else if(index===1){
+    const side=12+(k%7)*5;
+    ctx.rect(px-side/2,py-side/(2*phi),side,side/phi);
+   }else{
+    ctx.moveTo(w/2,h/2);
+    ctx.lineTo(px,py);
+   }
+   ctx.strokeStyle=palette[(k+index)%palette.length];
+   ctx.globalAlpha=.48+.24*Math.sin(k*.3+time);
+   ctx.lineWidth=1.2+(k%5)*.42;ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+ }
+ // Paint immediately: a new visitor must never see three blank canvases.
+ canvases.forEach((ctx,i)=>{draw(ctx,i,0);textures[i].needsUpdate=true;});
  let disposed=false,last=0,frameId=0,draws=0;
  const origin=performance.now();
- function render(time){
+ const cameraPosition=new THREE.Vector3(),monitorPosition=new THREE.Vector3();
+ function tick(time){
+  if(disposed)return;
+  frameId=requestAnimationFrame(tick);
+  if(time-last<150)return; // At most 6-7 frames per second.
+  root.getWorldPosition(monitorPosition);
+  if(camera?.getWorldPosition(cameraPosition).distanceTo(monitorPosition)>11)return;
+  last=time;
+  canvases.forEach((ctx,i)=>{draw(ctx,i,(time-origin)*.00018);textures[i].needsUpdate=true;});
+  draws++;
+ }
+ frameId=requestAnimationFrame(tick);
+ return {root,mount:wall,screenCount:3,get drawCount(){return draws;},
+  dispose(){
    if(disposed)return;
-   frameId=requestAnimationFrame(render);
-   if(time-last<100) return; // 10fps maximum, only while nearby
-   if(camera.getWorldPosition(new THREE.Vector3()).distanceTo(root.position)>11)return;
-   last=time;
-   const t=(time-origin)*.00016;
-   ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,512,320);
-   ctx.lineCap='round';
-   const phi=(1+Math.sqrt(5))/2;
-   for(let i=0;i<36;i++){
-     const angle=i*2*Math.PI/(phi*phi)+t*(.45+(i%4)*.07);
-     const radius=12+Math.sqrt(i/36)*136;
-     const x=256+Math.cos(angle)*radius*1.43;
-     const y=160+Math.sin(angle)*radius*.91;
-     ctx.beginPath();
-     ctx.moveTo(x,y);
-     const a=angle+t*.4;
-     ctx.bezierCurveTo(x+Math.cos(a+1)*38,y+Math.sin(a+1)*38,
-       x+Math.cos(a+1.7)*61,y+Math.sin(a+1.7)*47,
-       x+Math.cos(a+2.4)*74,y+Math.sin(a+2.4)*65);
-     ctx.strokeStyle=['#31545c','#ba7453','#a99b69','#323a3b'][i%4];
-     ctx.globalAlpha=.55+.25*Math.sin(t+i);
-     ctx.lineWidth=1.3+(i%5)*.43;ctx.stroke();
-   }
-   ctx.globalAlpha=1;
-   texture.needsUpdate=true;draws++;
- }
- // A useful still is available even before the first animation frame.
- ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,512,320);
- ctx.strokeStyle='#31545c';ctx.lineWidth=5;ctx.beginPath();
- for(let i=0;i<80;i++){
-  const a=i*2*Math.PI/((1+Math.sqrt(5))/2)**2;
-  const r=8+Math.sqrt(i/80)*140;
-  const x=256+Math.cos(a)*r*1.45,y=160+Math.sin(a)*r*.9;
-  if(!i)ctx.moveTo(x,y);else ctx.lineTo(x,y);
- }
- ctx.stroke();texture.needsUpdate=true;
- frameId=requestAnimationFrame(render);
- return {root,get drawCount(){return draws;},dispose(){
    disposed=true;cancelAnimationFrame(frameId);scene.remove(root);
    root.traverse(object=>object.geometry?.dispose());
-   texture.dispose();labelTexture.dispose();screenMaterial.dispose();
-   bezelMaterial.dispose();labelMaterial.dispose();
- }};
+   textures.forEach(texture=>texture.dispose());
+   screenMaterials.forEach(material=>material.dispose());
+   bezelMaterial.dispose();lampMaterial.dispose();
+  }
+ };
 }
