@@ -69,7 +69,8 @@
     globalThis.__phiReceptionTestRefresh=true;
     globalThis.__phiReceptionTilePreview=true;
     window.__galleryStage='Importing bundled JavaScript';
-    await import('./gallery-phi-bundle.js?v=entry-preparation-20261027-1');
+    globalThis.__phiLivingMonitorTest=true;
+    await import('../../gallery/visit/gallery-phi.js?v=living-monitor-default-test-20261027-2');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
