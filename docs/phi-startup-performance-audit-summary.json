@@ -1,0 +1,126 @@
+[
+  {
+    "index": 0,
+    "name": "baseline",
+    "ready": 6376.5999999999985,
+    "warm": 64,
+    "shadowStats": {
+      "enabled": false
+    },
+    "compiles": [
+      {
+        "at": 1343.5,
+        "ms": 3830.199999999997,
+        "programs": 26
+      }
+    ],
+    "programs": 40,
+    "deferredRuns": 7,
+    "errors": [],
+    "earlyFrames": {
+      "median": 130.6,
+      "p95": 4483.7,
+      "p99": 4483.7,
+      "over50": 7,
+      "over180": 5,
+      "count": 12
+    }
+  },
+  {
+    "index": 1,
+    "name": "shadows",
+    "ready": 8125.599999999991,
+    "warm": 95,
+    "shadowStats": {
+      "enabled": true,
+      "roomLights": 2,
+      "mapRefreshes": 8,
+      "casters": 840,
+      "mapSize": 2048,
+      "materialInvalidations": 909,
+      "scanCount": 16,
+      "scanTotalMs": 66.60000000000582,
+      "scanMaxMs": 15
+    },
+    "compiles": [
+      {
+        "at": 1363.0999999999913,
+        "ms": 5441,
+        "programs": 54
+      }
+    ],
+    "programs": 72,
+    "deferredRuns": 7,
+    "errors": [],
+    "earlyFrames": {
+      "median": 894.3,
+      "p95": 3591.9,
+      "p99": 3591.9,
+      "over50": 8,
+      "over180": 7,
+      "count": 12
+    }
+  },
+  {
+    "index": 2,
+    "name": "shadows",
+    "ready": 8242.800000000003,
+    "warm": 112.60000000000582,
+    "shadowStats": {
+      "enabled": true,
+      "roomLights": 2,
+      "mapRefreshes": 8,
+      "casters": 840,
+      "mapSize": 2048,
+      "materialInvalidations": 909,
+      "scanCount": 14,
+      "scanTotalMs": 46.80000000000291,
+      "scanMaxMs": 9.39999999999418
+    },
+    "compiles": [
+      {
+        "at": 1414.800000000003,
+        "ms": 5385,
+        "programs": 54
+      }
+    ],
+    "programs": 72,
+    "deferredRuns": 12,
+    "errors": [],
+    "earlyFrames": {
+      "median": 110,
+      "p95": 3420.9,
+      "p99": 3420.9,
+      "over50": 8,
+      "over180": 6,
+      "count": 13
+    }
+  },
+  {
+    "index": 3,
+    "name": "baseline",
+    "ready": 6435.100000000006,
+    "warm": 113,
+    "shadowStats": {
+      "enabled": false
+    },
+    "compiles": [
+      {
+        "at": 1448.6000000000058,
+        "ms": 3770.899999999994,
+        "programs": 26
+      }
+    ],
+    "programs": 40,
+    "deferredRuns": 11,
+    "errors": [],
+    "earlyFrames": {
+      "median": 493.3,
+      "p95": 2928.7,
+      "p99": 2928.7,
+      "over50": 10,
+      "over180": 8,
+      "count": 14
+    }
+  }
+]

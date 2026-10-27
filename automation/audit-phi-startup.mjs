@@ -70,7 +70,7 @@ for(let index=Number(process.env.PHI_AUDIT_START||0);index<cases.length;index++)
   const resources=await page.evaluate(()=>performance.getEntriesByType('resource').map(r=>({name:r.name,bytes:r.transferSize,encoded:r.encodedBodySize,start:r.startTime,duration:r.duration})));
   const result={index,name,shadows,softwareRendering:true,viewport:'960x600 @1',atReady,afterEntry,errors,logs,resources};
   results.push(result);await writeFile('phi-startup-audit/results.json',JSON.stringify(results,null,2));
-  console.log('AUDIT',JSON.stringify({index,name,ready:atReady.post.startupReadyMs,warm:atReady.post.warmMs,firstMovement:afterEntry.post.summary,shadowStats:afterEntry.post.shadows,compiles:afterEntry.audit.compiles,programs:afterEntry.programs,deferredRuns:afterEntry.audit.deferredRuns,errors}));
+  console.log('AUDIT',JSON.stringify({index,name,ready:atReady.post.startupReadyMs,warm:atReady.post.warmMs,earlyFrames:afterEntry.post.summary,shadowStats:afterEntry.post.shadows,compiles:afterEntry.audit.compiles,programs:afterEntry.programs,deferredRuns:afterEntry.audit.deferredRuns,errors}));
  }finally{await browser.close();}
 }
 async function snapshot(page){return page.evaluate(()=>({post:window.__phiPostTest,audit:window.__phiAudit,longTasks:window.__auditLongTasks,render:window.__phiRenderStats,programs:window.__phiAudit?.renders.at(-1)?.programs,assets:{plants:window.__phiLiftState?.outdoorPlantsLoaded,props:window.__phiLiftState?.propsLoaded,paintings:window.__phiFullEngine?.paintingsLoaded},at:performance.now()}));}
