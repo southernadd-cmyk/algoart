@@ -7,6 +7,19 @@ export function planPhiOutdoorPlants(plaza){
    y:(plaza.level||0)-.08,z:plaza.centre.z+plaza.outward.z*along+plaza.transverse.z*across,
    height:1.3,yaw:Math.atan2(plaza.outward.x,plaza.outward.z)+side*.3,width:1.4,depth:1.4,kind:'plant'});
  }
+ // Test square: place extra tall flowering clusters where visitors actually walk.
+ // The original four perimeter planters remain in place.
+ if(globalThis.__phiReceptionTestRefresh){
+  for(const side of [-1,1])for(const along of [0,15]){
+   const across=side*11.8;
+   placements.push({id:'flower-border-'+side+':'+along,
+    x:plaza.centre.x+plaza.outward.x*along+plaza.transverse.x*across,
+    y:(plaza.level||0)-.08,
+    z:plaza.centre.z+plaza.outward.z*along+plaza.transverse.z*across,
+    height:1.35,yaw:Math.atan2(plaza.outward.x,plaza.outward.z),
+    width:1.4,depth:1.4,kind:'plant'});
+  }
+ }
  return placements;
 }
 function isOriginalPlant(mesh,p){
