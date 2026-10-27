@@ -30,3 +30,7 @@ Licence: https://creativecommons.org/licenses/by/4.0/ . User-visible source link
 
 - **Art Magazines on Old Cabinet (Scaniverse LIDAR)** by **JFN**, [source](https://sketchfab.com/3d-models/art-magazines-on-old-cabinet-scaniverse-lidar-9868923cd16b4c4db3bd834d8e18fe2e), [author](https://sketchfab.com/db4), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Unused UV sets removed, texture resized and recompressed, scale adjusted for display.
 - **Paper debris** by **Sousinho**, [source](https://sketchfab.com/3d-models/paper-debris-457624d2526744d8890d50d811ef45d7), [author](https://sketchfab.com/sousinho), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Textures resized and recompressed; selected paper objects rescaled and arranged around the reception desk.
+
+## Test reception vaulted ceiling
+
+**Gothic church ceiling** by **ramonscortanu**, [source](https://sketchfab.com/3d-models/gothic-church-ceiling-53ca14ca9cc245bdab31556656e0aab5), [author](https://sketchfab.com/ramonscortanu), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Uploaded geometry normalised for repeated ceiling bays; original colour and normal textures recompressed, stone roughness adjusted. Used only in the test reception.

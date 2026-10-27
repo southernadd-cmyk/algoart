@@ -1,45 +1,80 @@
-// Repeated vaulted roof tiles above the reception ceiling, not a suspended canopy.
-// The vault is architectural roof geometry, with no hanging light.
-export function addPhiTestVault(THREE,scene,{doorway,outward,elevation,stone}){
- const root=new THREE.Group();root.name='phi-test-vaulted-roof-tiles';
- const inward={x:-outward.x,z:-outward.z};
- root.position.set(doorway.x+inward.x*2.15,elevation+5.08,doorway.z+inward.z*2.15);
- root.rotation.y=Math.atan2(outward.x,outward.z);
- const span=4.3,tilesX=2,tilesZ=2,side=span/2,n=12;
- const web=new THREE.MeshStandardMaterial({color:'#d6c8b5',roughness:.96,side:THREE.DoubleSide});
- const ribs=stone?.clone?.()||new THREE.MeshStandardMaterial({color:'#988773',roughness:.95});
- const positions=[],indices=[];
- for(let tz=0;tz<tilesZ;tz++)for(let tx=0;tx<tilesX;tx++){
-  const ox=(tx-(tilesX-1)/2)*side,oz=(tz-(tilesZ-1)/2)*side;
-  const base=positions.length/3;
-  for(let z=0;z<=n;z++)for(let x=0;x<=n;x++){
-   const lx=(x/n-.5)*side,lz=(z/n-.5)*side;
-   const edge=Math.max(Math.abs(lx),Math.abs(lz))/(side/2);
-   // Crown rises above its perimeter. Nothing protrudes below the slab.
-   positions.push(ox+lx,.08+.64*(1-edge*edge),oz+lz);
+import {loadPhiDecorAsset} from './phi-model-assets.mjs';
+
+// A continuous grid across the reception, independent of its subdivision cells.
+// The uploaded tile is a unit square, with spring at 0 and crown at 1.
+export function planPhiReceptionVault(pieces,{floorSpacing=6.2,baySize=4}={}){
+ const west=Math.min(...pieces.map(p=>p.x)),east=Math.max(...pieces.map(p=>p.x+p.w));
+ const south=Math.min(...pieces.map(p=>p.z)),north=Math.max(...pieces.map(p=>p.z+p.h));
+ const columns=Math.ceil((east-west)/baySize),rows=Math.ceil((north-south)/baySize);
+ const width=(east-west)/columns,depth=(north-south)/rows;
+ const wallHeight=floorSpacing-.34,crown=wallHeight-.06,spring=4.70;
+ const tiles=[];
+ for(let z=0;z<rows;z++)for(let x=0;x<columns;x++)tiles.push({
+  x:west+(x+.5)*width,z:south+(z+.5)*depth,width,depth,
+  regions:pieces.map(p=>({west:Math.max(p.x,west+x*width),east:Math.min(p.x+p.w,west+(x+1)*width),
+   south:Math.max(p.z,south+z*depth),north:Math.min(p.z+p.h,south+(z+1)*depth)}))
+   .filter(r=>r.east-r.west>1e-6&&r.north-r.south>1e-6)
+ });
+ return {west,east,south,north,columns,rows,tiles,wallHeight,crown,spring,rise:crown-spring};
+}
+
+export function addPhiTestVault(THREE,scene,{plan,elevation=0,loadAsset=loadPhiDecorAsset}){
+ // Attach synchronously so the floor transform and disposal own the ceiling,
+ // even if the model finishes loading after construction or a lift journey.
+ const root=new THREE.Group();root.name='phi-test-reception-vault';
+ root.position.y=elevation;root.userData.vaultPlan=plan;scene.add(root);
+ const diagnostics={tiles:plan.tiles.length,loaded:false,spring:plan.spring,crown:plan.crown,
+  coverage:{west:plan.west,east:plan.east,south:plan.south,north:plan.north}};
+ root.userData.ready=loadAsset(new URL('./models/gothic-reception-vault.glb',import.meta.url).href).then(source=>{
+  if(!root.parent||root.userData.galleryDisposed)return;
+  source.updateMatrixWorld(true);let tile;source.traverse(o=>{if(o.isMesh&&!tile)tile=o;});
+  if(!tile)throw new Error('Uploaded Gothic vault has no mesh');
+  const tileGeometry=tile.geometry.clone().applyMatrix4(tile.matrixWorld);
+  const geometry=buildPhiReceptionVaultGeometry(THREE,tileGeometry,plan);tileGeometry.dispose();
+  const ceiling=new THREE.Mesh(geometry,tile.material);ceiling.name='uploaded-gothic-ceiling-tiles';root.add(ceiling);
+  root.userData.modelLoaded=true;diagnostics.loaded=true;
+ }).catch(error=>{diagnostics.error=error.message;console.warn('Test reception ceiling unavailable',error);});
+ if(globalThis.location?.pathname.includes('/test/virtual-gallery/'))globalThis.__phiReceptionVault=diagnostics;
+ return root;
+}
+
+// Clip the repeated source triangles to the physical footprint. The reception
+// has a courtyard notch: a bounding-box roof would seal its glass walkway.
+export function buildPhiReceptionVaultGeometry(THREE,source,plan){
+ const positions=[],normals=[],uvs=[],index=source.index;
+ const pos=source.getAttribute('position'),normal=source.getAttribute('normal'),uv=source.getAttribute('uv');
+ const clip=(polygon,axis,limit,sign)=>{
+  const result=[];
+  for(let i=0;i<polygon.length;i++){
+   const a=polygon[i],b=polygon[(i+1)%polygon.length],da=(a[axis]-limit)*sign,db=(b[axis]-limit)*sign;
+   if(da>=-1e-8)result.push(a);
+   if((da<0&&db>0)||(da>0&&db<0)){
+    const t=da/(da-db);result.push(a.map((v,k)=>v+(b[k]-v)*t));
+   }
   }
-  for(let z=0;z<n;z++)for(let x=0;x<n;x++){
-   const a=base+z*(n+1)+x,b=a+1,c=a+n+1;
-   indices.push(a,c,b,b,c,c+1);
+  return result;
+ };
+ for(const bay of plan.tiles)for(let i=0;i<(index?.count||pos.count);i+=3){
+  const triangle=Array.from({length:3},(_,j)=>{
+   const k=index?index.getX(i+j):i+j;
+   return [bay.x+pos.getX(k)*bay.width,plan.spring+pos.getY(k)*plan.rise,bay.z+pos.getZ(k)*bay.depth,
+    normal?normal.getX(k)/bay.width:0,normal?normal.getY(k)/plan.rise:-1,normal?normal.getZ(k)/bay.depth:0,
+    uv?.getX(k)||0,uv?.getY(k)||0];
+  });
+  for(const region of bay.regions){
+   let polygon=triangle;
+   for(const [axis,limit,sign] of [[0,region.west,1],[0,region.east,-1],[2,region.south,1],[2,region.north,-1]]){
+    polygon=clip(polygon,axis,limit,sign);if(!polygon.length)break;
+   }
+   for(let j=1;j<polygon.length-1;j++)for(const v of [polygon[0],polygon[j],polygon[j+1]]){
+    positions.push(...v.slice(0,3));const length=Math.hypot(...v.slice(3,6))||1;
+    normals.push(...v.slice(3,6).map(n=>n/length));uvs.push(v[6],v[7]);
+   }
   }
  }
  const geometry=new THREE.BufferGeometry();
  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
- geometry.setIndex(indices);geometry.computeVertexNormals();
- const roof=new THREE.Mesh(geometry,web);roof.name='vaulted-roof-tile-array';root.add(roof);
- // Rib seams stay on the roof surface; no suspended spokes or point lights.
- const ribMat=ribs;ribMat.side=THREE.DoubleSide;
- function rib(points){
-  const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));
-  root.add(new THREE.Mesh(new THREE.TubeGeometry(curve,14,.045,5,false),ribMat));
- }
- for(let tx=0;tx<tilesX;tx++)for(let tz=0;tz<tilesZ;tz++){
-  const cx=(tx-(tilesX-1)/2)*side,cz=(tz-(tilesZ-1)/2)*side;
-  for(const sign of [-1,1])rib(Array.from({length:9},(_,i)=>{
-   const t=i/8,px=sign*(t-.5)*side,pz=(t-.5)*side;
-   const edge=Math.max(Math.abs(px),Math.abs(pz))/(side/2);
-   return [cx+px,.115+.64*(1-edge*edge),cz+pz];
-  }));
- }
- scene.add(root);return root;
+ geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
+ geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.computeBoundingBox();geometry.computeBoundingSphere();
+ return geometry;
 }

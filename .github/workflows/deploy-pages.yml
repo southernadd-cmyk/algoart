@@ -53,7 +53,7 @@ jobs:
       - name: Validate public gallery before uploading the site
         run: |
           node automation/validate-phi-archive.mjs
-          node --test tests/phi-shell-cache.test.mjs tests/phi-sculpture-stage.test.mjs
+          node --test tests/phi-shell-cache.test.mjs tests/phi-sculpture-stage.test.mjs tests/phi-reception-vault.test.mjs
           node --test tests/gallery-public-launch.test.mjs tests/phi-full-engine-adapter.test.mjs tests/phi-presentation.test.mjs
           node --check gallery/visit/gallery-bundle.js
           node --check gallery/visit/gallery-phi-bundle.js
