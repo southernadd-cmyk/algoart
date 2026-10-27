@@ -63,8 +63,10 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
-    window.__galleryStage='Importing bundled JavaScript';
-    await import('../../gallery/visit/gallery-phi-test.js?v=storage-boxes-20261027');
+    // Use the original uploaded plaster and acoustic ceiling textures in this test only.
+    globalThis.__phiUploadedWallCeilingTest=true;
+    window.__galleryStage='Importing full-engine texture test';
+    await import('../../gallery/visit/gallery-phi-test.js?v=uploaded-wall-ceiling-20261027');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
