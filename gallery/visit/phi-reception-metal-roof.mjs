@@ -22,7 +22,7 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
   // Raise a real, visible ridge over the reception; retain fine variations
   // from the CC BY scan. The eaves extend beyond the black-brick wall.
   const ridge=1-Math.abs(u*2-1);
-  const h=.12+ridge*.81+Math.pow(raw[row*NX+col]/255,1.3)*.075;
+  const h=.12+ridge*2.35+Math.pow(raw[row*NX+col]/255,1.3)*.065;
   positions.push((u-.5)*roofW,h,(v-.5)*roofD-frontOverhang*.5+.35);
   uv.push(u,v);
  }
@@ -34,10 +34,11 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
  geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
  geo.setIndex(indices);geo.computeVertexNormals();
- const metal=new THREE.MeshStandardMaterial({color:'#848b8b',metalness:.48,roughness:.62,
+ const metal=new THREE.MeshStandardMaterial({color:'#a9adb1',metalness:.32,roughness:.58,
    side:THREE.DoubleSide});
  const group=new THREE.Group();group.name='phi-exterior-reception-metal-roof';
- group.position.set((minX+maxX)/2,elevation+ceilingHeight-.18,(minZ+maxZ)/2);
+ // Eaves clear the existing facade sign; the ridge is deliberately taller.
+ group.position.set((minX+maxX)/2,elevation+ceilingHeight+1.10,(minZ+maxZ)/2);
  const surface=new THREE.Mesh(geo,metal);
  surface.name='abandoned-scans-reduced-roof-relief';
  surface.receiveShadow=true;group.add(surface);
@@ -45,7 +46,7 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
  // silhouette readable against the dark brickwork at street level.
  const flashing=new THREE.MeshStandardMaterial({color:'#333c40',metalness:.53,roughness:.59});
  const seamMaterial=new THREE.MeshStandardMaterial({color:'#b0b5b2',metalness:.62,roughness:.53});
- const eaveY=.10;
+ const eaveY=.10,roofRise=2.35;
  for(const side of [-1,1]){
   const eave=new THREE.Mesh(new THREE.BoxGeometry(.13,.16,roofD+.12),flashing);
   eave.position.set(side*roofW/2,eaveY,-frontOverhang*.5+.35);
@@ -56,11 +57,11 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
   const z=side*roofD/2-frontOverhang*.5+.35;
   for(let i=0;i<2;i++){
    const x=(i===0?-roofW/4:roofW/4);
-   const y=(eaveY+.93)/2;
-   const length=Math.hypot(roofW/2,.81);
+   const y=(eaveY+roofRise+.12)/2;
+   const length=Math.hypot(roofW/2,roofRise);
    const trim=new THREE.Mesh(new THREE.BoxGeometry(length,.09,.12),flashing);
    trim.position.set(x,y,z);
-   trim.rotation.z=(i===0?1:-1)*Math.atan2(.81,roofW/2);
+   trim.rotation.z=(i===0?1:-1)*Math.atan2(roofRise,roofW/2);
    group.add(trim);
   }
  }
@@ -68,8 +69,8 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
   const v=j/9,z=(v-.5)*roofD-frontOverhang*.5+.35;
   for(let i=0;i<2;i++){
    const line=new THREE.Mesh(new THREE.BoxGeometry(roofW/2,.025,.035),seamMaterial);
-   line.position.set(i===0?-roofW/4:roofW/4,.55,z);
-   line.rotation.z=(i===0?1:-1)*Math.atan2(.81,roofW/2);
+   line.position.set(i===0?-roofW/4:roofW/4,eaveY+roofRise/2,z);
+   line.rotation.z=(i===0?1:-1)*Math.atan2(roofRise,roofW/2);
    group.add(line);
   }
  }
