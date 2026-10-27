@@ -1,3 +1,5 @@
+let phiReceptionLivingMonitor=null;
+import {addPhiReceptionLivingMonitor} from './phi-reception-living-monitor.mjs';
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
 import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
@@ -1803,6 +1805,9 @@ function constructPhiGallery(layout,studies){
   const leafLight=new THREE.MeshStandardMaterial({color:'#819477',roughness:1,flatShading:true});
   queuePhiFurnishings(phi,planPhiFurnishings(phi,{reception:furnishing,lowPower:galleryFinish.lowPower}),elevation);
   phiReceptionProps=addPhiReceptionDecor(THREE,scene,furnishing,elevation);
+  if(globalThis.__phiLivingMonitorTest && furnishing.backrooms?.length){
+   phiReceptionLivingMonitor=addPhiReceptionLivingMonitor(THREE,scene,{room:furnishing.backrooms[0],world:phi.world,elevation,camera});
+  }
   // Permanent reception installation: two pre-baked Growth Systems sculptures
   // at the visitor-approved exact local coordinates. Do not involve any
   // curator, door, furniture or collision placement rules.
@@ -2047,6 +2052,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   // Dispose *all* edition-owned GPU resources, including artwork maps and
   // procedural canvas textures, but not materials/geometry shared across floors.
   phiReceptionGramophone?.dispose();phiReceptionGramophone=null;
+  phiReceptionLivingMonitor?.dispose();phiReceptionLivingMonitor=null;
   const staleGeometries=new Set(),staleMaterials=new Set(),staleTextures=new Set();
   for(const object of editionObjects){
     scene.remove(object);
