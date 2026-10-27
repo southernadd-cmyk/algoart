@@ -1699,21 +1699,39 @@ function constructPhiGallery(layout,studies){
   if(new URLSearchParams(location.search).get('receptionHeroTest')==='1' &&
      furnishing.backrooms?.length&&furnishing.desk){
    const backroom=furnishing.backrooms[0];
-   const approach=new THREE.Vector2(furnishing.desk.x-backroom.x,
-    furnishing.desk.z-backroom.z).normalize();
-   const tangent=new THREE.Vector2(-approach.y,approach.x);
-   const footprint=Math.max(backroom.width,backroom.depth)*.5+2;
-   const candidates=[-1,1].map(side=>({
-    x:backroom.x+approach.x*footprint+tangent.x*side*2,
-    z:backroom.z+approach.y*footprint+tangent.y*side*2
-   }));
-   const safe=candidates.find(p=>
-     Math.hypot(p.x-furnishing.desk.x,p.z-furnishing.desk.z)>2.6 &&
-     Math.hypot(p.x-furnishing.entrance.x,p.z-furnishing.entrance.z)>3.4 &&
-     Math.hypot(p.x-furnishing.lift.x,p.z-furnishing.lift.z)>3.4 &&
+   const roomId=phi.floor.mergedRooms[backroom.room]?.id;
+   // Resolve the *actual architectural opening*, not the diagonal from
+   // reception desk to a storage-room centre (which placed the statue at desk).
+   const openings=phi.circulation.doors.filter(d=>d.from===roomId||d.to===roomId);
+   const doorway=openings.sort((a,b)=>{
+    const da=Math.hypot((a.axis==='x'?a.at:a.centre)-furnishing.desk.x,
+     (a.axis==='z'?a.at:a.centre)-furnishing.desk.z);
+    const db=Math.hypot((b.axis==='x'?b.at:b.centre)-furnishing.desk.x,
+     (b.axis==='z'?b.at:b.centre)-furnishing.desk.z);
+    return da-db;
+   })[0];
+   let safe=null;
+   if(doorway){
+    const doorX=doorway.axis==='x'?doorway.at:doorway.centre;
+    const doorZ=doorway.axis==='z'?doorway.at:doorway.centre;
+    // The sculpture sits to the side of the opening, not in its threshold.
+    // Choose the foyer-facing side of the wall from the storage-room centre.
+    const normal=doorway.axis==='x'
+     ?new THREE.Vector2(Math.sign(doorX-backroom.x)||1,0)
+     :new THREE.Vector2(0,Math.sign(doorZ-backroom.z)||1);
+    const along=doorway.axis==='x'?new THREE.Vector2(0,1):new THREE.Vector2(1,0);
+    const candidates=[-1,1].map(side=>({
+     x:doorX+normal.x*1.9+along.x*side*2.35,
+     z:doorZ+normal.y*1.9+along.y*side*2.35
+    }));
+    safe=candidates.find(p=>
+     Math.hypot(p.x-doorX,p.z-doorZ)>2.6 &&
+     Math.hypot(p.x-furnishing.entrance.x,p.z-furnishing.entrance.z)>3 &&
+     Math.hypot(p.x-furnishing.lift.x,p.z-furnishing.lift.z)>3 &&
      !phi.physical.walls.some(w=>w.axis==='x'
-       ?Math.abs(p.x-w.at)<1.6&&p.z>w.lo-1.4&&p.z<w.hi+1.4
-       :Math.abs(p.z-w.at)<1.6&&p.x>w.lo-1.4&&p.x<w.hi+1.4));
+      ?Math.abs(p.x-w.at)<1.35&&p.z>w.lo-.8&&p.z<w.hi+.8
+      :Math.abs(p.z-w.at)<1.35&&p.x>w.lo-.8&&p.x<w.hi+.8));
+   }
    if(safe)fetch(new URL('./data/reception-growth-systems.json',import.meta.url))
     .then(response=>{if(!response.ok)throw Error('Offline bake not published');return response.json();})
     .then(bake=>{
