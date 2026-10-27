@@ -24,7 +24,7 @@ function addBotanicalAccents(THREE,holder,variant){
  const group=new THREE.Group();group.name='staging-flowering-foliage';holder.add(group);
  for(let i=0;i<5;i++){
   const angle=i*2.39996+variant*1.3,r=.16+.19*Math.sqrt(i);
-  const h=(i%2===0?.95:1.43)+(variant%2)*.14;
+  const h=(i%2===0?1.65:2.35)+(variant%2)*.22;
   const x=Math.cos(angle)*r,z=Math.sin(angle)*r;
   const stem=new THREE.Mesh(stemGeo,stemMat);stem.scale.y=h;
   stem.position.set(x,h/2,z);stem.rotation.z=Math.sin(angle)*.13;group.add(stem);
@@ -43,7 +43,7 @@ function addBotanicalAccents(THREE,holder,variant){
    }
   }
  }
- group.position.set(variant%2?.36:-.32,.07,variant%2?-.18:.24);
+ group.position.set(variant%2?.36:-.32,.56,variant%2?-.18:.24);
  return group;
 }
 export function addPhiOutdoorPlants(THREE,scene,plaza,landscapeRoots,{loadModel=()=>loadPhiDecorAsset(new URL('./models/succulent-planter.glb',import.meta.url).href)}={}){
@@ -52,6 +52,8 @@ export function addPhiOutdoorPlants(THREE,scene,plaza,landscapeRoots,{loadModel=
   const backups=[];for(const root of landscapeRoots)root.traverse(o=>{if(isOriginalPlant(o,p))backups.push(o);});
   const holder=new THREE.Group();holder.name='phi-outdoor-succulent-'+p.id;holder.position.set(p.x,p.y,p.z);holder.rotation.y=p.yaw;scene.add(holder);holders.push(holder);
   holder.userData.fallbackCount=backups.length;
+  // Render the tall planting immediately, even when the GLB is still loading.
+  if(globalThis.__phiReceptionTestRefresh)addBotanicalAccents(THREE,holder,placements.indexOf(p));
   return source.then(model=>{
    if(!holder.parent||holder.userData.galleryDisposed)return;
    if(globalThis.__phiReceptionTestRefresh){
@@ -63,7 +65,6 @@ export function addPhiOutdoorPlants(THREE,scene,plaza,landscapeRoots,{loadModel=
      plant.rotation.y=[0,1.7,-1.1][i]+(p.x+p.z)*.07;
      holder.add(plant);
     }
-    addBotanicalAccents(THREE,holder,placements.indexOf(p));
    }else holder.add(fitPhiDecorAsset(THREE,model.clone(true),p.height));
    for(const backup of backups)backup.visible=false;
    holder.userData.modelLoaded=true;holder.userData.replaced=backups.length;
