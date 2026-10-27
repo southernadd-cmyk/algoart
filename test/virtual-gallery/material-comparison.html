@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wall and ceiling material comparison · Proportion Piece</title>
+<style>body{margin:0;background:#202723;color:#f2eee6;font:16px system-ui}header{padding:15px 22px}h1{font-size:22px;margin:0 0 8px}p{margin:0 0 10px;color:#c8d0c8}main{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 12px 16px}@media(max-width:700px){main{grid-template-columns:1fr}}.stage{min-width:0}.stage h2{font-size:17px;font-weight:500;margin:8px 4px}.view{width:100%;height:62vh;min-height:330px;display:block;border-radius:5px;background:#343d39}footer{padding:12px 22px;font-size:14px;color:#c8d0c8}</style>
+<header><h1>Wall and ceiling material study</h1><p>Current finish versus proposed tighter tiling and stronger normal detail. Drag each view to orbit; scroll to zoom.</p></header>
+<main><section class="stage"><h2>Current finish</h2><canvas class="view" id="old"></canvas></section><section class="stage"><h2>Test finish</h2><canvas class="view" id="new"></canvas></section></main>
+<footer>Shared geometry and lighting. Material scans load on demand; comparison uses the same architectural material system as the gallery. This is a texture study, not the full tower.</footer>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+import {createArchitecturalMaterials,tiledBoxUvs} from './architectural-materials.mjs?v=materials-study-20261027';
+function sceneFor(canvas,preview){
+ const scene=new THREE.Scene();scene.background=new THREE.Color('#a5aaa3');
+ scene.add(new THREE.HemisphereLight('#ffffff','#6b6762',2));
+ const lamp=new THREE.DirectionalLight('#fff2dc',3.2);lamp.position.set(3,7,5);scene.add(lamp);
+ const camera=new THREE.PerspectiveCamera(65,1,.1,80);
+ const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+ // The common material loader uses optional images and keeps its fallback if a scan fails.
+ const materials=createArchitecturalMaterials(THREE,{lowPower:false});
+ if(preview){materials.wall.userData.tileMeters=1.9;materials.ceiling.userData.tileMeters=1.28;materials.exteriorBrick.userData.tileMeters=1.55;}
+ const wall=materials.wall,ceiling=materials.ceiling,brick=materials.exteriorBrick;
+ function box(w,h,d,x,y,z,material){const g=new THREE.BoxGeometry(w,h,d);tiledBoxUvs(g,w,h,d,material.userData.tileMeters);const mesh=new THREE.Mesh(g,material);mesh.position.set(x,y,z);scene.add(mesh)}
+ box(6,3.7,.2,0,1.85,-2.4,wall);box(.2,3.7,4.9,-3,1.85,0,wall);box(6,.19,4.9,0,3.75,0,ceiling);box(2.3,3.7,.2,1.85,1.85,2.4,brick);
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(6,5),new THREE.MeshStandardMaterial({color:'#c1bdb2',roughness:1}));floor.rotation.x=-Math.PI/2;scene.add(floor);
+ let angle=.5, elevation=.23,zoom=9,drag=null;
+ canvas.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)});
+ canvas.addEventListener('pointerup',()=>drag=null);
+ canvas.addEventListener('pointermove',e=>{if(!drag)return;angle+=(e.clientX-drag[0])*.006;elevation=Math.max(-.35,Math.min(.8,elevation+(e.clientY-drag[1])*.004));drag=[e.clientX,e.clientY]});
+ canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(4,Math.min(15,zoom+e.deltaY*.01))},{passive:false});
+ function draw(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();camera.position.set(Math.sin(angle)*zoom,2.0+Math.sin(elevation)*zoom*.4,Math.cos(angle)*zoom);camera.lookAt(0,1.9,0);renderer.render(scene,camera);requestAnimationFrame(draw)}draw();
+ // The test independently loads a normal map with the specified strength.
+ if(preview){for(const [material,url,strength] of [[wall,'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plastered_wall_02/plastered_wall_02_nor_gl_1k.jpg',.27],[brick,'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brick_wall_02/brick_wall_02_nor_gl_1k.jpg',.22]]){new THREE.TextureLoader().load(url,t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;material.normalMap=t;material.normalScale.set(strength,strength);material.needsUpdate=true},undefined,()=>{})}}
+ return {scene,materials};
+}
+sceneFor(document.getElementById('old'),false);
+sceneFor(document.getElementById('new'),true);
+</script></html>
