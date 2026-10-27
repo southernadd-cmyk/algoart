@@ -81,6 +81,7 @@ let phiReceptionDesk=null;
 let phiFurnishingObstacles=[];
 let phiSquareObstacles=[];
 let phiRideState=null;
+let phiRideHidden=[];
 let phiLiftPanelPosition=null;
 let liftCabinPosition=null;
 let liftDoorThreshold=null;
@@ -837,6 +838,14 @@ function startPhiCabinRide(targetFloor){
  // Travel in the same furnished cabin, with its calendar and real doors.
  // The floor's golden-angle orientation is reached gradually during travel.
  phiMovingCabin=phiLiftCabin;
+ // Keep the moving cabin and persistent exterior visible, but prevent the
+ // departure gallery slab from passing through the visitor on downward rides.
+ // Hide only after the doors have fully closed; no scene rebuild is needed.
+ phiRideHidden=[];
+ for(const object of editionObjects){
+  if(object===phiMovingCabin || object.name==='phi-complete-tower-exterior')continue;
+  if(object.visible){object.visible=false;phiRideHidden.push(object);}
+ }
  const startTheta=phiLiftCabin.rotation.y;
  const targetTheta=targetFloor*(2*Math.PI/(PHI*PHI));
  const turn=Math.atan2(Math.sin(targetTheta-startTheta),Math.cos(targetTheta-startTheta));
@@ -869,8 +878,11 @@ function updatePhiCabinRide(dt){
   ride.resolve();
  }
 }
-function clearPhiMovingCabin(){
- // loadEdition owns and disposes the previous cabin with the previous floor.
+function clearPhiMovingCabin({restore=false}={}){
+ // Restore departure geometry only on failure: successful arrivals have
+ // replaced and disposed the old edition's scene objects.
+ if(restore)for(const object of phiRideHidden)object.visible=true;
+ phiRideHidden=[];
  phiMovingCabin=null;
 }
 async function travelLift(date,index){
@@ -932,7 +944,7 @@ async function travelLift(date,index){
   rig.position.copy(departure.position);yaw=departure.yaw;pitch=departure.pitch;
   rig.rotation.y=yaw;camera.rotation.x=pitch;
   if(phiLiftCabin){phiLiftCabin.position.y=currentFloor*FLOOR_SPACING;phiLiftCabin.rotation.y=plan.phi.world.theta;}
-  clearPhiMovingCabin();
+  clearPhiMovingCabin({restore:true});
   liftTravelling=false;
   liftArrivalOpening=true;
   setLiftDoors(false);
