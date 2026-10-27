@@ -1,7 +1,7 @@
 name: Validate live startup candidate
 on:
   push:
-    branches: ['startup/live']
+    branches: ['startup/live', 'startup/live-v2']
 permissions:
   contents: write
 jobs:
@@ -28,7 +28,7 @@ jobs:
           git add gallery/visit/gallery-bundle.js gallery/visit/gallery-phi-bundle.js
           if ! git diff --cached --quiet; then
             git commit -m 'Build validated startup candidate bundles [skip ci]'
-            git push origin HEAD:startup/live
+            git push origin HEAD:${GITHUB_REF_NAME}
           fi
       - uses: actions/upload-artifact@v4
         if: always()
