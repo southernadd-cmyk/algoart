@@ -1,0 +1,25 @@
+name: Phi startup performance audit
+on:
+  push:
+    branches: ['audit/phi-startup']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-audit-http.log 2>&1 &
+      - run: node automation/audit-phi-startup.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-startup-audit
+          path: phi-startup-audit/
