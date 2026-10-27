@@ -1449,8 +1449,26 @@ function constructPhiGallery(layout,studies){
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.04)continue;
   const finish=foyer&&w.axis==='z'&&Math.abs(w.at-rearWallAt)<.001&&foyer.pieces.some(p=>Math.abs(p.z+p.h-w.at)<.001&&w.hi>p.x&&w.lo<p.x+p.w)?receptionPaintedPlasterMaterial:roomWall;
-  if(w.axis==='x')staticBlock(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,finish);
-  else staticBlock(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,finish);
+  const mesh=w.axis==='x'
+   ?staticBlock(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,finish)
+   :staticBlock(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,finish);
+  if(exhibitDate===RECEPTION&&location.pathname.includes('/test/virtual-gallery/')&&finish===receptionWallMaterial){
+   // The blue and grey appearances are opposite lit faces of the SAME wallpaper.
+   // Preserve the cool, unlit faces; replace only the warm/grey faces facing the sun.
+   const localSun=sun.position.clone().applyAxisAngle(new THREE.Vector3(0,1,0),-phi.world.theta);
+   const normal=mesh.geometry.getAttribute('normal'),index=mesh.geometry.index;
+   const grey=[],blue=[];
+   for(let i=0;i<index.count;i+=3){
+    const vertex=index.getX(i);
+    const lit=normal.getX(vertex)*localSun.x+normal.getZ(vertex)*localSun.z;
+    (lit>0?grey:blue).push(index.getX(i),index.getX(i+1),index.getX(i+2));
+   }
+   const paintedGeometry=mesh.geometry.clone();
+   paintedGeometry.clearGroups();paintedGeometry.setIndex(grey);
+   mesh.geometry.clearGroups();mesh.geometry.setIndex(blue);
+   const paintedFace=new THREE.Mesh(paintedGeometry,receptionPaintedPlasterMaterial);
+   paintedFace.position.copy(mesh.position);scene.add(paintedFace);staticArchitecture.push(paintedFace);
+  }
  }
  // Baked architectural contact occlusion: one vertex-colour mesh for the
  // complete active floor, not one new light or draw call per wall.
