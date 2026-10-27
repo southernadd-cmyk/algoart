@@ -34,7 +34,7 @@ export const MATERIAL_SOURCES=Object.freeze({
 // These local files are intentionally optional: existing Poly Haven maps remain
 // as a reliable fallback until the optimised files are published.
 export const LOCAL_TEXTURES=Object.freeze({
-  walls:'./textures/open-game-art/041.jpg',
+  walls:'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plastered_wall_02/plastered_wall_02_diff_1k.jpg',
   floors:'./textures/open-game-art/028.jpg',
   stone:'./textures/open-game-art/048.jpg'
 });
@@ -293,7 +293,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     ceiling.needsUpdate=true;
     diagnostics.loaded.push('ambientcg-office-ceiling-roughness');
   },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-roughness'));
-  // Use the local plaster scan for both wall and plinth to avoid remote duplication.
+  // Use the CC0 Poly Haven plaster for both wall and plinth to avoid remote duplication.
   // Local colour scans are preferred from the outset. Canvas fallback materials
   // keep the exhibition usable even if an optional scan is unavailable.
   for(const [slot,url,mode,targets] of [
@@ -310,13 +310,13 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     },undefined,()=>diagnostics.failed.push(slot));
   }
   if(uploadedTest){
-    // Use the unmodified uploaded scan in both live and test galleries.
+    // Use the CC0 Poly Haven wall photograph in both live and test galleries.
     loader.load(LOCAL_TEXTURES.walls,texture=>{
       texture.colorSpace=THREE.SRGBColorSpace;
       texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
       texture.anisotropy=lowPower?1:4;
       wall.map=texture;wall.needsUpdate=true;
-      diagnostics.loaded.push('uploaded-wall-original');
+      diagnostics.loaded.push('polyhaven-wall-original');
     },undefined,()=>diagnostics.failed.push('uploaded-wall-original'));
   }
   let finish='stone';
