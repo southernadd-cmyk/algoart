@@ -1,0 +1,33 @@
+name: Import gallery audio and rebuild bundle
+on:
+  push:
+    paths: ['.github/workflows/import-gallery-audio.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import-audio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Download and verify recordings
+        run: |
+          set -euo pipefail
+          mkdir -p gallery/visit/audio
+          curl -fL --retry 5 --retry-delay 2 -A "ProportionPiece/1.0" "https://commons.wikimedia.org/wiki/Special:Redirect/file/Debussy_%2C_Reflets_dans_l%27eau.ogg" -o gallery/visit/audio/debussy-reflets-dans-leau.ogg
+          curl -fL --retry 5 --retry-delay 2 -A "ProportionPiece/1.0" "https://commons.wikimedia.org/wiki/Special:Redirect/file/Wolfgang_Amadeus_Mozart_-_sonata_no._16_in_c_major%2C_k.545_%27sonata_facile%27_-_i._allegro.ogg" -o gallery/visit/audio/mozart-k545-allegro.ogg
+          test "$(wc -c < gallery/visit/audio/debussy-reflets-dans-leau.ogg)" -gt 7000000
+          test "$(wc -c < gallery/visit/audio/mozart-k545-allegro.ogg)" -gt 2000000
+          file gallery/visit/audio/*.ogg
+      - run: npm ci --ignore-scripts
+      - run: npm run gallery:bundle:phi
+      - name: Commit compiled bundle and audio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/audio/*.ogg gallery/visit/gallery-phi-bundle.js
+          if ! git diff --cached --quiet; then git commit -m "Host gallery audio and rebuild bundle"; git push; fi
