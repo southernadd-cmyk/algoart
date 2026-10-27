@@ -843,7 +843,7 @@ function startPhiCabinRide(targetFloor){
  // Hide only after the doors have fully closed; no scene rebuild is needed.
  phiRideHidden=[];
  for(const object of editionObjects){
-  if(object===phiMovingCabin)continue;
+  if(object===phiMovingCabin || object.name==='phi-complete-tower-exterior')continue;
   if(object.visible){object.visible=false;phiRideHidden.push(object);}
  }
  const startTheta=phiLiftCabin.rotation.y;
