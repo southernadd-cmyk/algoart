@@ -33,7 +33,7 @@ export function addPhiReceptionDecor(THREE,scene,furnishing,elevation){
   }).catch(error=>console.warn('Reception boxes unavailable',error));
  }
  // Small storage rooms: archive shelving and floor-stacked packing boxes.
- if(globalThis.__phiReceptionTestRefresh&&furnishing.backrooms?.length){
+ if(globalThis.__phiReceptionTestRefresh&&!globalThis.__phiLivingMonitorTest&&furnishing.backrooms?.length){
   const wood=new THREE.MeshStandardMaterial({color:'#9b846e',roughness:.86});
   const iron=new THREE.MeshStandardMaterial({color:'#434941',metalness:.38,roughness:.66});
   const card=new THREE.MeshStandardMaterial({color:'#c4b399',roughness:1});
