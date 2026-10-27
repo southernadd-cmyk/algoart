@@ -15,11 +15,15 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
  const raw=Uint8Array.from(atob(ROOF_HEIGHT_SAMPLE),c=>c.charCodeAt(0));
  if(raw.length!==NX*NZ)throw Error('Uploaded roof height sample is invalid');
  const positions=[],uv=[],indices=[];
+ const eaveOverhang=.95,frontOverhang=1.55;
+ const roofW=width+2*eaveOverhang,roofD=depth+frontOverhang+.7;
  for(let row=0;row<NZ;row++)for(let col=0;col<NX;col++){
   const u=col/(NX-1),v=row/(NZ-1);
-  // A shallow relief cap, kept below the next gallery level.
-  const h=.06+Math.pow(raw[row*NX+col]/255,1.3)*.42;
-  positions.push((u-.5)*(width+.35),h,(v-.5)*(depth+.35));
+  // Raise a real, visible ridge over the reception; retain fine variations
+  // from the CC BY scan. The eaves extend beyond the black-brick wall.
+  const ridge=1-Math.abs(u*2-1);
+  const h=.12+ridge*.81+Math.pow(raw[row*NX+col]/255,1.3)*.075;
+  positions.push((u-.5)*roofW,h,(v-.5)*roofD-frontOverhang*.5+.35);
   uv.push(u,v);
  }
  for(let row=0;row<NZ-1;row++)for(let col=0;col<NX-1;col++){
@@ -30,22 +34,44 @@ export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHe
  geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
  geo.setIndex(indices);geo.computeVertexNormals();
- const metal=new THREE.MeshStandardMaterial({color:'#565c5f',metalness:.44,roughness:.73,
+ const metal=new THREE.MeshStandardMaterial({color:'#848b8b',metalness:.48,roughness:.62,
    side:THREE.DoubleSide});
  const group=new THREE.Group();group.name='phi-exterior-reception-metal-roof';
- group.position.set((minX+maxX)/2,elevation+ceilingHeight+.12,(minZ+maxZ)/2);
+ group.position.set((minX+maxX)/2,elevation+ceilingHeight-.18,(minZ+maxZ)/2);
  const surface=new THREE.Mesh(geo,metal);
  surface.name='abandoned-scans-reduced-roof-relief';
  surface.receiveShadow=true;group.add(surface);
- // Continuous edge flashing hides any small gap to the existing reception cap.
- const flashing=new THREE.MeshStandardMaterial({color:'#31383a',metalness:.45,roughness:.72});
- for(const x of [-1,1]){
-  const edge=new THREE.Mesh(new THREE.BoxGeometry(.1,.12,depth+.5),flashing);
-  edge.position.set(x*(width+.3)/2,.02,0);group.add(edge);
+ // Slim standing seams and clear fascia make the shallow metal pitched
+ // silhouette readable against the dark brickwork at street level.
+ const flashing=new THREE.MeshStandardMaterial({color:'#333c40',metalness:.53,roughness:.59});
+ const seamMaterial=new THREE.MeshStandardMaterial({color:'#b0b5b2',metalness:.62,roughness:.53});
+ const eaveY=.10;
+ for(const side of [-1,1]){
+  const eave=new THREE.Mesh(new THREE.BoxGeometry(.13,.16,roofD+.12),flashing);
+  eave.position.set(side*roofW/2,eaveY,-frontOverhang*.5+.35);
+  group.add(eave);
  }
- for(const z of [-1,1]){
-  const edge=new THREE.Mesh(new THREE.BoxGeometry(width+.5,.12,.1),flashing);
-  edge.position.set(0,.02,z*(depth+.3)/2);group.add(edge);
+ for(const side of [-1,1]){
+  // Edge trim follows the two pitched slopes via a short faceted line.
+  const z=side*roofD/2-frontOverhang*.5+.35;
+  for(let i=0;i<2;i++){
+   const x=(i===0?-roofW/4:roofW/4);
+   const y=(eaveY+.93)/2;
+   const length=Math.hypot(roofW/2,.81);
+   const trim=new THREE.Mesh(new THREE.BoxGeometry(length,.09,.12),flashing);
+   trim.position.set(x,y,z);
+   trim.rotation.z=(i===0?1:-1)*Math.atan2(.81,roofW/2);
+   group.add(trim);
+  }
+ }
+ for(let j=1;j<9;j++){
+  const v=j/9,z=(v-.5)*roofD-frontOverhang*.5+.35;
+  for(let i=0;i<2;i++){
+   const line=new THREE.Mesh(new THREE.BoxGeometry(roofW/2,.025,.035),seamMaterial);
+   line.position.set(i===0?-roofW/4:roofW/4,.55,z);
+   line.rotation.z=(i===0?1:-1)*Math.atan2(.81,roofW/2);
+   group.add(line);
+  }
  }
  scene.add(group);
  group.userData.modelLoaded=true;
