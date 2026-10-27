@@ -1,3 +1,4 @@
+import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
 import {addPhiReceptionLivingMonitor} from './phi-reception-living-monitor.mjs';
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
@@ -161,6 +162,7 @@ try {
   errorBox.hidden = false;
 }
 
+const phiStartupLoading=trackGalleryLoading(THREE.DefaultLoadingManager);
 const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
   startAfter:window.__galleryEarly?.tower
@@ -2154,10 +2156,16 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
   status.textContent=reception?'Ground floor · reception and visitor information':floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
   if(!viaLift&&!welcome.hidden){
-    // Prepare the existing full-quality shaders and first GPU upload behind
-    // the welcome screen instead of making the Enter click pay that cost.
-    if(renderer.compileAsync)await renderer.compileAsync(scene,camera);
-    await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
+    enter.textContent='Preparing gallery…';
+    const prepared=await waitForGalleryEntry({
+      loading:phiStartupLoading,
+      isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0||
+        towerGraffiti.diagnostics.pending||interiorGraffiti.diagnostics.pending||phiSquare.diagnostics().pending,
+      pump:processDeferredGallery
+    });
+    const warmed=await warmGalleryEntry({renderer,scene,camera});
+    if(GALLERY_DEBUG)window.__phiEntryPreparation={...prepared,...warmed,pending:phiStartupLoading.pending,complete:true};
+    phiStartupLoading.dispose();
   }
   enter.disabled=false;enter.textContent='Enter the gallery';
   GALLERY_DEBUG&&console.info('[Gallery performance] edition ready',Math.round(performance.now()-editionStart)+'ms',date);
@@ -2708,6 +2716,9 @@ function tick() {
   lastFocusCheck+=dt;mapElapsed+=dt;
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
+  // Keep the preparation overlay responsive without repeatedly drawing the
+  // hidden tower while its loaders, shaders and textures are being prepared.
+  if(!welcome.hidden&&enter.disabled)return;
   renderer.render(scene,camera);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={tower:towerGraffiti.diagnostics,interior:interiorGraffiti.diagnostics,square:phiSquare.diagnostics()};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
