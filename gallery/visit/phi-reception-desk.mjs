@@ -13,6 +13,31 @@ export const DESK_PAPERS=Object.freeze([
 export function addPhiReceptionDesk(THREE,scene,reception,elevation,{concrete,timber,trims}={}){
  if(!reception.desk)return null;
  const {desk,cabinet}=reception,root=new THREE.Group();root.name='phi-upgraded-reception-desk';root.position.set(desk.x,elevation,desk.z);scene.add(root);root.userData.propsLoaded=0;
+ // A single shared, baked contact-shadow decal grounds both the desk and cabinet.
+ // One transparent draw call; no shadow-map render passes or extra lights.
+ const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
+ const ctx=canvas.getContext('2d'),grad=ctx.createRadialGradient(32,32,7,32,32,32);
+ grad.addColorStop(0,'rgba(21,22,19,.34)');grad.addColorStop(.64,'rgba(21,22,19,.17)');
+ grad.addColorStop(1,'rgba(21,22,19,0)');
+ ctx.fillStyle=grad;ctx.fillRect(0,0,64,64);
+ const shadowTexture=new THREE.CanvasTexture(canvas);
+ const vertices=[],uvs=[];
+ const addShadow=(x,z,w,d)=>{
+  for(const [u,v] of [[-1,-1],[1,-1],[1,1],[-1,-1],[1,1],[-1,1]]){
+   vertices.push(x+u*w/2,.008,z+v*d/2);uvs.push((u+1)/2,(v+1)/2);
+  }
+ };
+ addShadow(0,0,4.6,2.4);
+ addShadow(cabinet.x-desk.x,cabinet.z-desk.z,1.7,1.5);
+ const shadowGeometry=new THREE.BufferGeometry();
+ shadowGeometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+ shadowGeometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+ const shadowMesh=new THREE.Mesh(shadowGeometry,new THREE.MeshBasicMaterial({
+  map:shadowTexture,transparent:true,depthWrite:false,side:THREE.DoubleSide,
+  polygonOffset:true,polygonOffsetFactor:-1
+ }));
+ shadowMesh.name='phi-baked-reception-contact-shadows';
+ root.add(shadowMesh);
  const walnut=(globalThis.__phiReceptionTestRefresh&&timber)||new THREE.MeshStandardMaterial({color:'#795d46',roughness:.75});
  const ink=new THREE.MeshStandardMaterial({color:'#34413d',roughness:.7});
  const brass=(globalThis.__phiReceptionTestRefresh&&trims)||new THREE.MeshStandardMaterial({color:'#a18d66',metalness:.62,roughness:.4});
