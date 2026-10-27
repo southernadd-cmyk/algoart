@@ -6,15 +6,16 @@ await mkdir('phi-postprocessing-results',{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const results=[];
 try{
- for(const mode of ['off','composer','ao','fxaa','ao-fxaa']){
+ for(const mode of (process.env.PHI_POST_TEST_URL?['ao']:['off','composer','ao','fxaa','ao-fxaa'])){
   const page=await browser.newPage({viewport:{width:960,height:600}}),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   page.on('console',message=>{if(message.type()==='error'&&/shader|WebGL|Post test/i.test(message.text()))errors.push(message.text());});
   const url=new URL(target);url.searchParams.set('post',mode);url.searchParams.set('debug','');
   await page.goto(url.href,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.__phiPostTest?.ready,{timeout:120000});
-  await page.locator('#enter').click();
-  await page.keyboard.press('Escape');
+  // Keyboard activation avoids pointer lock and automated mouse movements
+  // changing the inspection camera while opening the comparison controls.
+  await page.locator('#enter').press('Enter');
   await page.waitForTimeout(2500);
   await page.locator('#phi-post-test summary').click();
   await page.screenshot({path:`phi-postprocessing-results/${mode}.png`});
@@ -39,5 +40,5 @@ try{
  assert.equal(await mobile.evaluate(()=>window.__phiPostTest.mode),'off');
  await mobile.screenshot({path:'phi-postprocessing-results/mobile-default.png'});
  await writeFile('phi-postprocessing-results/measurements.json',JSON.stringify(results,null,2));
- console.log('PASS: five tower modes, lift calendar, AO floor transition, mobile baseline. Software timings only.');
+ console.log('PASS: selected tower modes, lift calendar, AO floor transition, mobile baseline. Software timings only.');
 }finally{await browser.close();}

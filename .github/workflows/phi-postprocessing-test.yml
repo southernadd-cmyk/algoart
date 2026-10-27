@@ -2,6 +2,9 @@ name: Phi post-processing experiment
 on:
   push:
     branches: ['test/postprocessing']
+  workflow_run:
+    workflows: ['Deploy ALGO ART to Pages']
+    types: [completed]
   workflow_dispatch:
     inputs:
       deployed_url:
@@ -12,6 +15,7 @@ permissions:
   contents: read
 jobs:
   verify:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && contains(github.event.workflow_run.head_commit.message, 'Publish test-only post-processing comparison'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -27,7 +31,7 @@ jobs:
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/post-test-http.log 2>&1 &
       - run: node tests/phi-postprocessing-tower.mjs
         env:
-          PHI_POST_TEST_URL: ${{ inputs.deployed_url }}
+          PHI_POST_TEST_URL: ${{ github.event_name == 'workflow_run' && 'https://southernadd-cmyk.github.io/algoart/test/virtual-gallery/full-engine.html' || inputs.deployed_url }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
