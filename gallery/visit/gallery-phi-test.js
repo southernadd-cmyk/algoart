@@ -1,7 +1,7 @@
 // Staging-only reception furnishing refinements.
 globalThis.__phiReceptionTestRefresh=true;
 globalThis.__phiReceptionTilePreview=true;
-await import('./gallery-phi.js?v=performance-profiling-20261027-r2');
+await import('./gallery-phi.js?v=music-controls-only-20261027');
 // Inspect in DevTools as window.__phiPerformance and window.__phiPoolPerf.
  // A compact on-screen display is opt-in with ?perf=1.
 if(new URLSearchParams(location.search).has('perf')){
