@@ -1,0 +1,36 @@
+name: Validate prepared gallery entry
+on:
+  push:
+    branches: ['startup/entry']
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: git fetch --depth=1 origin da9f3097662eeac84f462c54cf824085a09bf77d
+      - run: npm run gallery:bundle && npm run gallery:bundle:phi && npm run gallery:bundle:post-test
+      - run: node --test tests/gallery-entry-preparation.test.mjs tests/phi-postprocessing.test.mjs tests/gallery-public-launch.test.mjs tests/phi-presentation.test.mjs tests/phi-shell-cache.test.mjs tests/phi-sculpture-stage.test.mjs tests/phi-reception-refresh.test.mjs
+      - run: npx playwright install chromium
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/entry-http.log 2>&1 &
+      - run: node automation/compare-entry-startup.mjs
+      - name: Store validated production bundles
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gallery/visit/gallery-bundle.js gallery/visit/gallery-phi-bundle.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Build prepared-entry bundles [skip ci]'
+            git push origin HEAD:startup/entry
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prepared-entry-results
+          path: live-startup-results/
