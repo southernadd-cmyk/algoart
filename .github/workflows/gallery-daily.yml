@@ -3,6 +3,13 @@ name: Build ALGO ART daily gallery
 # Only scheduled or explicit gallery builds may write new gallery assets.
 # Editing this workflow or its generator must not trigger a live build.
 on:
+  # Repair/build changes can recover today's edition immediately without a manual dispatch.
+  # Gallery output commits do not match these paths, so this cannot loop.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gallery-daily.yml'
+      - 'gallery/visit/exterior-graffiti-plan.mjs'
   schedule:
     # Early morning UTC; the generator resolves the calendar day in Europe/London.
     - cron: '15 4 * * *'
@@ -308,16 +315,17 @@ jobs:
                   assert variants[label], f'Empty {label} sculpture outlines'
           print(f'Verified complete mosaic, WebP textures and baked sculptures: {preview}')
           PY
-          COUNT="$(find "gallery/$DAY" -maxdepth 1 -name '*.jpg' | wc -l)"
+          COUNT="$(DAY="$DAY" node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('gallery/'+process.env.DAY+'/meta.json')); console.log(m.entries.length)")"
           # New materials add artwork without changing the historical batch size.
           # Require the established baseline; do not reject additional material batches.
           if [[ "$DAY" > "2026-10-16" ]]; then
-            test "$COUNT" -ge 18
+            test "$COUNT" -eq 18
+            DAY="$DAY" node --input-type=module -e "import fs from 'node:fs';const e=JSON.parse(fs.readFileSync('gallery/'+process.env.DAY+'/meta.json')).entries;for(const [kind,n] of [['marker',4],['watercolor',4],['watercolour',4],['oil',4],['action',2]]) {const found=e.filter(x=>x.material===kind);if(found.length!==n)throw Error(kind+' must have '+n+' studies; got '+found.length)}"
             DAY="$DAY" node --input-type=module -e "import fs from 'node:fs'; const day=process.env.DAY; const m=JSON.parse(fs.readFileSync('gallery/'+day+'/meta.json')); for(const orientation of ['landscape','portrait']) {if(!m.entries.some(e=>e.material==='action' && e.orientation===orientation))throw Error('Missing Action Painting '+orientation+' in '+day)}"
           else
             test "$COUNT" -ge 13
           fi
-          echo "Verified gallery/$DAY with $COUNT artwork images."
+          echo "Verified gallery/$DAY with $COUNT actual artwork entries."
 
       - name: Persist gallery archive
         id: gallery_commit
