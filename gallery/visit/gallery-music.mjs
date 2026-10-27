@@ -1,4 +1,4 @@
-import {createGramophoneRecord} from './gramophone-record.mjs?v=one-reception-record-20261027';
+import {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';
 import {createGallerySpeakerFeed} from './gallery-speakers.mjs?v=distributed-record-20261027';
 
 export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
