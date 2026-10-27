@@ -13,3 +13,14 @@ test('a blocked playback can be retried and never falsely reports playing',async
  const audio=new Media();audio.play=async()=>{throw new Error('blocked')};const player=createGramophoneRecord({audio});await player.play();assert.equal(player.state().playing,false);assert.ok(player.state().problem);
  audio.play=Media.prototype.play;await player.play();assert.equal(player.state().playing,true);assert.equal(player.state().problem,'');player.dispose();
 });
+
+test('visitors can select either listed track without overlapping playback',async()=>{
+ assert.equal(RECEPTION_RECORD[0].composer,'Claude Debussy');
+ assert.equal(RECEPTION_RECORD[1].composer,'Béla Bartók');
+ const audio=new Media(),player=createGramophoneRecord({audio});
+ player.choose(1);assert.equal(player.state().index,1);assert.equal(audio.src,RECEPTION_RECORD[1].src);assert.equal(audio.starts,0);
+ await player.play();await player.choose(0);
+ assert.equal(player.state().index,0);assert.equal(audio.src,RECEPTION_RECORD[0].src);
+ assert.equal(player.state().playing,true);assert.equal(audio.starts,2);
+ player.dispose();
+});
