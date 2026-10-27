@@ -51,6 +51,8 @@ jobs:
         run: |
           npm run gallery:bundle
           npm run gallery:bundle:phi
+          npm run gallery:bundle:post-test
+          node --test tests/phi-postprocessing.test.mjs
       - name: Validate public gallery before uploading the site
         run: |
           node automation/validate-phi-archive.mjs

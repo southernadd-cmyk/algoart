@@ -1,0 +1,36 @@
+name: Phi post-processing experiment
+on:
+  push:
+    branches: ['test/postprocessing']
+  workflow_dispatch:
+    inputs:
+      deployed_url:
+        description: 'Optional deployed test URL to verify instead of local staging'
+        required: false
+        type: string
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run gallery:bundle:post-test
+      - run: node --test tests/phi-postprocessing.test.mjs
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/phi-postprocessing-browser.mjs
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/post-test-http.log 2>&1 &
+      - run: node tests/phi-postprocessing-tower.mjs
+        env:
+          PHI_POST_TEST_URL: ${{ inputs.deployed_url }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-postprocessing-results
+          path: phi-postprocessing-results/
+          if-no-files-found: ignore
