@@ -11,7 +11,9 @@ export function addPhiReceptionLivingMonitor(THREE, scene, {room, world, elevati
  const bezelMaterial=new THREE.MeshStandardMaterial({color:0x141414,metalness:.36,roughness:.55});
  const root=new THREE.Group();
  root.name='phi-reception-living-painting';
- const localZ=room.z-room.depth/2+.19;
+ // Occupy the shelving bay on the backroom's north wall; the shelving and boxes
+ // are suppressed in this test installation, leaving the screen unobstructed.
+ const localZ=room.z-room.depth/2+.27;
  const local=world.toWorld(room.x,localZ);
  root.position.set(local.x,elevation+2.05,local.z);
  root.rotation.y=world.theta||0;
