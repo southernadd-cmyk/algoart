@@ -1,6 +1,6 @@
 import {deferPhiInteriorAssetsUntil} from '../../gallery/visit/phi-model-assets.mjs';
 import {addPhiReceptionDesk} from '../../gallery/visit/phi-reception-desk.mjs?v=public-phi-20261026';
-import {addPhiOutdoorPlants} from '../../gallery/visit/phi-outdoor-plants.mjs?v=succulent-planters-20261026';
+import {addPhiOutdoorPlants} from '../../gallery/visit/phi-outdoor-plants.mjs?v=plant-rows-20261027';
 import {createPhiSquare,clearOfPhiSquare} from '../../gallery/visit/phi-square-graffiti.mjs?v=golden-eight-forms-v4-no-loop-20261026';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from '../../gallery/visit/phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from '../../gallery/visit/phi-lift-shaft.mjs?v=clear-landings-20261026';

@@ -1,5 +1,5 @@
 // Staging-only reception furnishing refinements.
 globalThis.__phiReceptionTestRefresh=true;
 globalThis.__phiReceptionTilePreview=true;
-await import('./gallery-phi.js?v=golden-planters-20261027');
+await import('./gallery-phi.js?v=plant-rows-20261027');
 // Performance diagnostics remain available in DevTools as window.__phiPerformance and window.__phiPoolPerf.

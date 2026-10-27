@@ -104,7 +104,33 @@ test('outdoor source plants are optimised, credited, and replace original planti
  const source=new THREE.Group();source.add(new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshBasicMaterial()));
  const result=addPhiOutdoorPlants(THREE,scene,plaza,[landscape],{loadModel:()=>Promise.resolve(source)});await result.ready;
  assert.ok(originals.every(o=>!o.visible));assert.equal(bench.visible,true);assert.ok(result.holders.every(o=>o.userData.modelLoaded&&o.userData.replaced===4));
- for(const [index,holder] of result.holders.entries())assert.ok(Math.abs(new THREE.Box3().setFromObject(holder).getSize(new THREE.Vector3()).y-placements[index].height)<1e-5);
+ scene.updateMatrixWorld(true);
+ for(const holder of result.holders){
+  const planter=holder.getObjectByName('phi-golden-rectangle-planter'),soil=holder.getObjectByName('phi-planter-soil'),plant=holder.getObjectByName('phi-individual-source-plant');
+  assert.ok(planter&&soil&&plant,'Every individual model needs a planter');
+  assert.ok(Math.abs(planter.geometry.parameters.width/planter.geometry.parameters.depth-(1+Math.sqrt(5))/2)<1e-10);
+  const bounds=new THREE.Box3().setFromObject(plant),pot=new THREE.Box3().setFromObject(planter);
+  assert.ok(Math.abs(bounds.min.y-(holder.position.y+soil.position.y))<1e-5,'Plant must meet the soil');
+  assert.ok(bounds.min.x>=pot.min.x&&bounds.max.x<=pot.max.x&&bounds.min.z>=pot.min.z&&bounds.max.z<=pot.max.z,'Plant leaves must fit its planter');
+ }
+ for(const side of [-1,1]){
+  const row=placements.filter(p=>Math.sign(p.x)===side);
+  assert.equal(new Set(row.map(p=>p.x)).size,1,'Planters must form straight rows');
+  assert.deepEqual(row.map(p=>p.z),[-13,-4,5,14]);
+ }
+ const grouped=new THREE.Group(),sourceRoot=new THREE.Group();sourceRoot.name='GLTF_SceneRootNode';grouped.add(sourceRoot);
+ for(const name of ['SmallPlantStem_1','SmallPlantStem.001_2','YellowPlantStem_3','YellowPlantStem.001_4']){
+  const stem=new THREE.Group();stem.name=name;stem.position.x=sourceRoot.children.length*4;
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(2,3,2),new THREE.MeshBasicMaterial());mesh.position.y=1.5;stem.add(mesh);sourceRoot.add(stem);
+ }
+ const separate=addPhiOutdoorPlants(THREE,scene,plaza,[],{loadModel:()=>Promise.resolve(grouped)});await separate.ready;
+ scene.updateMatrixWorld(true);
+ for(const holder of separate.holders){
+  assert.equal(holder.getObjectByName('GLTF_SceneRootNode').children.length,1,'Source scene spacing must not duplicate loose plants');
+  const bounds=new THREE.Box3().setFromObject(holder.getObjectByName('phi-individual-source-plant'));
+  assert.ok(Math.abs(bounds.min.y-holder.position.y-.443)<1e-5);
+ }
+
  let resolve;const late=addPhiOutdoorPlants(THREE,scene,plaza,[],{loadModel:()=>new Promise(r=>resolve=r)});const initialChildren=late.holders.map(h=>[...h.children]);for(const h of late.holders)scene.remove(h);resolve(source);await late.ready;for(const [i,h] of late.holders.entries()){assert.deepEqual(h.children,initialChildren[i],'Late model attached to an old floor');assert.equal(h.userData.modelLoaded,undefined);}
 });
 test('the reception wall displays a compact baked watercolour in place of the world map',()=>{
