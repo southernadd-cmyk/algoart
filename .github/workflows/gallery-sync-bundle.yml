@@ -6,6 +6,7 @@ on:
       - '.github/workflows/gallery-sync-bundle.yml'
       - 'gallery/visit/tower-family-lettering.mjs'
       - 'gallery/visit/gallery-phi.js'
+      - 'gallery/visit/phi-reception-desk.mjs'
       - 'test/virtual-gallery/phi-performance-engine.mjs'
       - 'gallery/visit/tower-graffiti-styles.mjs'
   workflow_dispatch:
