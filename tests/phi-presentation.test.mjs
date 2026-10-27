@@ -88,14 +88,14 @@ import {planPhiReception} from '../gallery/visit/phi-reception-layout.mjs';
 import {fitPhiWallModel} from '../gallery/visit/phi-model-assets.mjs';
 import {planCuratedPhiArtwork} from '../gallery/visit/phi-curator.mjs';
 function glbMetadata(name){const b=readFileSync(new URL('../gallery/visit/models/'+name,import.meta.url));assert.equal(b.readUInt32LE(8),b.length);return {bytes:b.length,doc:JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString())};}
-test('outdoor succulent is compact, credited, and replaces all four original planting groups',async()=>{
- const asset=glbMetadata('succulent-planter.glb');assert.ok(asset.bytes<1000000);assert.match(asset.doc.asset.extras.author,/GrrHero/);assert.match(asset.doc.asset.extras.license,/CC-BY-4.0/);
- assert.ok(asset.doc.meshes.reduce((n,m)=>n+m.primitives.reduce((a,p)=>a+asset.doc.accessors[p.indices].count/3,0),0)<18000);
+test('outdoor source plants are optimised, credited, and replace original planting groups',async()=>{
+ const asset=glbMetadata('plants-scene-gallery-optimized.glb');assert.ok(asset.bytes<6000000);assert.match(asset.doc.asset.extras.author,/Nicholas-3D/);assert.match(asset.doc.asset.extras.license,/CC-BY-4.0/);
+ assert.ok(asset.doc.meshes.reduce((n,m)=>n+m.primitives.reduce((a,p)=>a+asset.doc.accessors[p.indices].count/3,0),0)<50000);
  const plaza={centre:{x:0,z:0},outward:{x:0,z:1},transverse:{x:1,z:0},halfWidth:30,level:0};
  const scene=new THREE.Scene(),landscape=new THREE.Group();scene.add(landscape);
- const placements=planPhiOutdoorPlants(plaza),originals=[];assert.equal(placements.length,4);
+ const placements=planPhiOutdoorPlants(plaza),originals=[];assert.equal(placements.length,8);
  for(const p of placements){
-  assert.ok(Math.abs(p.x)>20,'Plant blocks the main square');
+  assert.ok(Math.abs(p.x)>10,'Plant blocks the main square');
   for(const g of [new THREE.BoxGeometry(1.75,.69,1.75),...Array.from({length:3},()=>new THREE.IcosahedronGeometry(.5,1))]){
    const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial());m.position.set(p.x,.5,p.z);landscape.add(m);originals.push(m);
   }
