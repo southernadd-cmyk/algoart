@@ -1311,6 +1311,45 @@ function constructPhiGallery(layout,studies){
   if(w.axis==='x')block(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,plaster);
   else block(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,plaster);
  }
+ // Baked architectural contact occlusion: one vertex-colour mesh for the
+ // complete active floor, not one new light or draw call per wall.
+ // Transparent gradients hug solid wall segments without crossing doorways.
+ {
+  const vertices=[],colours=[];
+  const addTri=(a,b,c,alphaA,alphaB,alphaC)=>{
+   for(const [p,alpha] of [[a,alphaA],[b,alphaB],[c,alphaC]]){
+    vertices.push(...p);colours.push(.085,.081,.072,alpha);
+   }
+  };
+  const quad=(a,b,c,d)=>{
+   addTri(a,b,c,.22,.22,0);addTri(a,c,d,.22,0,0);
+  };
+  const y=elevation+.012,reach=.34;
+  for(const w of phi.physical.walls){
+   if(w.hi-w.lo<.10)continue;
+   for(const sign of [-1,1]){
+    if(w.axis==='x'){
+     const inner=w.at+sign*.102,outer=inner+sign*reach;
+     quad([inner,y,w.lo],[inner,y,w.hi],[outer,y,w.hi],[outer,y,w.lo]);
+    }else{
+     const inner=w.at+sign*.102,outer=inner+sign*reach;
+     quad([w.lo,y,inner],[w.hi,y,inner],[w.hi,y,outer],[w.lo,y,outer]);
+    }
+   }
+  }
+  if(vertices.length){
+   const geo=new THREE.BufferGeometry();
+   geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+   geo.setAttribute('color',new THREE.Float32BufferAttribute(colours,4));
+   const mesh=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({
+    vertexColors:true,transparent:true,depthWrite:false,
+    side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1
+   }));
+   mesh.name='phi-baked-architectural-floor-occlusion';
+   mesh.renderOrder=1;
+   scene.add(mesh);
+  }
+ }
  // Architectural plaster inside; metre-tiled brick veneer only on exterior faces.
  const inCell=(x,z)=>phi.pieces.some(p=>x>=p.x-.0001&&x<=p.x+p.w+.0001&&z>=p.z-.0001&&z<=p.z+p.h+.0001);
  for(const w of phi.physical.walls){
