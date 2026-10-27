@@ -46,7 +46,8 @@ function sceneFor(canvas,preview){
  // The common material loader uses optional images and keeps its fallback if a scan fails.
  const materials=createArchitecturalMaterials(THREE,{lowPower:false});
  if(preview){materials.wall.map=makeSurface('plaster');materials.ceiling.map=makeSurface('ceiling');materials.exteriorBrick.map=makeSurface('brick');materials.wall.userData.tileMeters=2.6;materials.ceiling.userData.tileMeters=2.8;materials.exteriorBrick.userData.tileMeters=2.0;materials.wall.color.set('#ffffff');materials.ceiling.color.set('#ffffff');materials.exteriorBrick.color.set('#ffffff');}
- const wall=materials.wall,ceiling=materials.ceiling,brick=materials.exteriorBrick;
+ const wall=preview?materials.wall.clone():materials.wall,ceiling=preview?materials.ceiling.clone():materials.ceiling,brick=preview?materials.exteriorBrick.clone():materials.exteriorBrick;
+ if(preview){wall.map=makeSurface('plaster');ceiling.map=makeSurface('ceiling');brick.map=makeSurface('brick');wall.color.set('#ffffff');ceiling.color.set('#ffffff');brick.color.set('#ffffff');wall.userData.tileMeters=2.6;ceiling.userData.tileMeters=2.8;brick.userData.tileMeters=2.0;}
  function box(w,h,d,x,y,z,material){const g=new THREE.BoxGeometry(w,h,d);tiledBoxUvs(g,w,h,d,material.userData.tileMeters);const mesh=new THREE.Mesh(g,material);mesh.position.set(x,y,z);scene.add(mesh)}
  box(6,3.7,.2,0,1.85,-2.4,wall);box(.2,3.7,4.9,-3,1.85,0,wall);box(6,.19,4.9,0,3.75,0,ceiling);box(2.3,3.7,.2,1.85,1.85,2.4,brick);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(6,5),new THREE.MeshStandardMaterial({color:'#c1bdb2',roughness:1}));floor.rotation.x=-Math.PI/2;scene.add(floor);
