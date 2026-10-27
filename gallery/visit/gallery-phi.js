@@ -30,7 +30,7 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import {createTowerGraffiti} from './exterior-graffiti.mjs?v=exterior-wall-surface-20261027';
 import {planInteriorGraffiti,interiorGraffitiKey} from './interior-graffiti-plan.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
-import { createExteriorLandscape } from './environment-render.mjs?v=moonlit-exterior-20261027';
+import { createExteriorLandscape } from './environment-render.mjs?v=daytime-restored-20261027';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
@@ -109,10 +109,10 @@ let xrTurnLatched=false;
 const xrPickerRay=new THREE.Raycaster();
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#172638');
-scene.fog = new THREE.Fog('#172638', 48, 165);
-scene.add(new THREE.HemisphereLight('#7894b6', '#272f3b', 0.72));
-const sun = new THREE.DirectionalLight('#abc2e9', 0.82);
+scene.background = new THREE.Color('#c2cbc5');
+scene.fog = new THREE.Fog('#c2cbc5', 48, 165);
+scene.add(new THREE.HemisphereLight('#eef6ff', '#9ba18f', 1.45));
+const sun = new THREE.DirectionalLight('#fff9e9', 2.35);
 sun.position.set(-18, 30, 12);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(76, window.innerWidth / Math.max(1, window.innerHeight), 0.07, 210);
@@ -131,7 +131,7 @@ try {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 0.96;
+  renderer.toneMappingExposure = 1.08;
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType('local-floor');
   const xrButton = VRButton.createButton(renderer);
@@ -1437,19 +1437,6 @@ function constructPhiGallery(layout,studies){
   light.target.position.set(centre.x,elevation+1.1,centre.z);
   scene.add(light,light.target);
  }
- // Night exterior must not leave the exhibition rooms in shadow.
- // Broad, unshadowed ceiling fill complements the existing aimed art spotlights.
- if(exhibitDate!==RECEPTION){
-  for(const room of lightRooms.slice(0,galleryFinish.lowPower?5:10)){
-   const cell=[...room.pieces].sort((a,b)=>b.w*b.h-a.w*a.h)[0];
-   if(!cell||cell.w<3||cell.h<3)continue;
-   const glow=new THREE.PointLight('#ffe8cd',10,
-    Math.min(18,Math.max(9,Math.hypot(cell.w,cell.h)*.9)),2);
-   glow.position.set(cell.x+cell.w/2,elevation+ROOM_HEIGHT-.65,cell.z+cell.h/2);
-   glow.name='phi-gallery-room-warm-fill';
-   scene.add(glow);
-  }
- }
  // Put visible portal frames on the exact holes created in the collision walls.
  for(const d of [...phi.circulation.doors,...phi.circulation.bridgePortals]){
   if(d.public)continue;
@@ -1691,23 +1678,6 @@ function constructPhiGallery(layout,studies){
  liftDoorThreshold=liftCabinPosition.clone();
  if(exhibitDate===RECEPTION){
   const furnishing=planPhiReception(phi.floor,phi.circulation,phi.physical);
-  // Reception remains warmly lit while the global exterior illumination is moonlight.
-  const receptionLightPoints=[
-   {p:furnishing.entrance,power:10,range:11},
-   {p:furnishing.desk,power:13,range:12},
-   {p:furnishing.lift,power:8,range:9},
-   {p:furnishing.worldMap&&{
-     x:furnishing.worldMap.x+furnishing.worldMap.normal.x*1.7,
-     z:furnishing.worldMap.z+furnishing.worldMap.normal.z*1.7
-    },power:11,range:10}
-  ];
-  for(const {p,power,range} of receptionLightPoints){
-   if(!p)continue;
-   const fill=new THREE.PointLight('#ffe1b9',power,range,2);
-   fill.position.set(p.x,elevation+ROOM_HEIGHT-.55,p.z);
-   fill.name='phi-reception-warm-ceiling-light';
-   scene.add(fill);
-  }
   phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone,timber:galleryFinish.timberSmoked,trims:galleryFinish.trims});
   if(phiReceptionDesk)phiSquareObstacles.push(...phiReceptionDesk.obstacles);
   if(globalThis.__phiReceptionTestRefresh&&furnishing.desk){

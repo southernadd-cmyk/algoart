@@ -1,14 +1,14 @@
 // Procedural exterior for the daily museum. Small draw-call budget: one
 // terrain mesh, one gradient sky and one softly drawn distant-city strip.
 import {buildEnvironmentPlan} from './environment-v1.mjs';
-import {addProceduralBackdrop} from './procedural-backdrop.mjs?v=moonlit-city-20261027';
+import {addProceduralBackdrop} from './procedural-backdrop.mjs?v=daytime-restored-20261027';
 import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 
 const PALETTES={
   meadow:{horizon:'#cbd5cc',zenith:'#b1c8cf',terrain:['#7c9077','#9eab86','#71856e'],trees:['#536d54','#667b58','#79906b'],stone:['#b2b3a6','#9b9f91']},
   heath:{horizon:'#d4cdbf',zenith:'#b1c6cc',terrain:['#918d73','#b0a785','#7d896f'],trees:['#61705b','#758168','#8e997b'],stone:['#b6aea0','#999b8e']},
   grove:{horizon:'#cbd5cc',zenith:'#abc7cc',terrain:['#768978','#99a58a','#6e8277'],trees:['#496856','#5f7c62','#849b7c'],stone:['#b5b4ac','#949e97']},
-  urban:{horizon:'#1e3043',zenith:'#071326',terrain:['#90928b','#a9aaa0','#80837d'],trees:['#5b735f','#72826c','#889383'],stone:['#b1b1a9','#90948e']}
+  urban:{horizon:'#e1edf2',zenith:'#91c4e8',terrain:['#90928b','#a9aaa0','#80837d'],trees:['#5b735f','#72826c','#889383'],stone:['#b1b1a9','#90948e']}
 };
 
 // Offline-safe procedural exterior textures; seeded architecture retains stable
@@ -90,7 +90,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
   for(let i=0;i<skyPos.count;i++){
     const y=skyPos.getY(i)/178;
     skyC.copy(horizon).lerp(zenith,Math.max(0,y)*.8);
-    if(y<0)skyC.lerp(color('#111e2b'),Math.min(1,-y));
+    if(y<0)skyC.lerp(color('#b7bfb4'),Math.min(1,-y));
     skyColors[i*3]=skyC.r;skyColors[i*3+1]=skyC.g;skyColors[i*3+2]=skyC.b;
   }
   skyGeo.setAttribute('color',new THREE.BufferAttribute(skyColors,3));
@@ -174,7 +174,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     const stoneEdge=new THREE.MeshStandardMaterial({map:stoneMap,color:'#e4dfd5',roughness:.94});
     const bronze=new THREE.MeshStandardMaterial({color:'#424a49',metalness:.42,roughness:.52});
     const planted=new THREE.MeshStandardMaterial({color:'#58705c',roughness:1,flatShading:true});
-    const lampGlass=new THREE.MeshStandardMaterial({color:'#f5e8cc',emissive:'#e9c99b',emissiveIntensity:1.5,roughness:.36});
+    const lampGlass=new THREE.MeshStandardMaterial({color:'#f5e8cc',emissive:'#e9c99b',emissiveIntensity:.52,roughness:.36});
     const at=(along,across,y=0)=>new THREE.Vector3(
       p.centre.x+p.outward.x*along+p.transverse.x*across,
       p.level+y,
@@ -221,11 +221,6 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
         backup.add(box(.14,3.8,.14,along,across,1.83,bronze));
         backup.add(box(.42,.38,.42,along,across,3.91,lampGlass));
         square.add(backup);
-        // Low-cost pools of warm light under the lanterns, against cool moonlight.
-        if(!lowPower&&along!==0){
-          const glow=new THREE.PointLight('#ffd9a0',1.5,8,2);
-          glow.position.copy(at(along,across,3.75));square.add(glow);
-        }
         // Preserve the original plaza layout, approach clearance, paving
         // and seat positions; replace only the six lamppost visuals.
         placeCastIronStreetLamp(THREE,square,at(along,across,0),backup,
