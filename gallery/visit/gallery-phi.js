@@ -1720,9 +1720,11 @@ function constructPhiGallery(layout,studies){
      ?new THREE.Vector2(Math.sign(doorX-backroom.x)||1,0)
      :new THREE.Vector2(0,Math.sign(doorZ-backroom.z)||1);
     const side=doorway.axis==='x'?new THREE.Vector2(0,1):new THREE.Vector2(1,0);
+    // Move 2m farther back along the wall, with the pedestal 0.5m
+    // inside the backroom side of the doorway plane.
     const candidates=[-1,1].map(sign=>({
-     x:doorX+n.x*.8+side.x*sign*2.2,
-     z:doorZ+n.y*.8+side.y*sign*2.2
+     x:doorX-n.x*.5+side.x*sign*4.2,
+     z:doorZ-n.y*.5+side.y*sign*4.2
     }));
     // Prefer the candidate nearest the open reception, without silently
     // dropping the entire statue when old wall-clearance checks reject both.
