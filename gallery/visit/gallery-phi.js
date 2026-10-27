@@ -2262,6 +2262,10 @@ for (const button of document.querySelectorAll('[data-move]')) {
 }
 enter.addEventListener('click',(event)=>{
   if (!plan) return;
+  // Spawning inside a dated floor's lift is not a new walk-in event.
+  // Re-arm proximity only after the visitor leaves the cabin.
+  liftWasNear=Boolean(nearLift());
+  if(liftWasNear)liftPickerConsumed=true;
   welcome.hidden=true;
   startDeferredGallery();
   canvas.focus({preventScroll:true});

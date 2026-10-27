@@ -15,7 +15,7 @@ for(const [name,path] of [['live','/gallery/visit/?debug'],['test','/test/virtua
  await page.goto('http://127.0.0.1:4173'+path,{waitUntil:'domcontentloaded'});
  try{
   await page.waitForFunction(()=>!document.querySelector('#enter').disabled,{timeout:90000});
-  await page.evaluate(()=>window.__entryMetrics.entryAt=performance.now());await page.locator('#enter').click();
+  await page.evaluate(()=>window.__entryMetrics.entryAt=performance.now());await page.locator('#enter').focus(); await page.keyboard.press('Enter');
   await page.waitForTimeout(8000);
   const metrics=await page.evaluate(()=>({...window.__entryMetrics,stats:window.__phiPerformance,graffiti:window.__phiSquare,renderer:window.__phiRenderStats,graffiti:window.__phiGraffitiStats}));
   const {profile}=await cdp.send('Profiler.stop');await writeFile('entry-profile/'+label+'-'+name+'-cpu.json',JSON.stringify(profile));
