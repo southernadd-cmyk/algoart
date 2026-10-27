@@ -174,7 +174,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     material.userData.galleryPersistent=true;
     return material;
   };
-  const wall=make('#faf4ea',.96,2.7);
+  const wall=make('#faf4ea',.96,1.9);
   const floor=make('#e1ddd2',.90,2.25);
   const timber=make('#e6daca',.87,2.3);
   const timberLight=make('#f0e6d7',.89,2.3);
@@ -183,11 +183,11 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   const plinth=make('#f6f1e9',.90,1.15);
   // ambientCG OfficeCeiling001 (CC0): a subtle physical acoustic ceiling
   // grid. 3.85m real-world tile repeat, with safe neutral canvas fallback.
-  const ceiling=make('#f0eee7',.91,3.85);
+  const ceiling=make('#f0eee7',.91,1.28);
   // A quieter secondary floor finish permits stone in selected gallery rooms.
   const stone=make('#e6e1d8',.92,1.65);
   const stoneBridge=make('#dedbd3',.91,2.25);
-  const exteriorBrick=make('#faf8f1',.93,2.0);
+  const exteriorBrick=make('#faf8f1',.93,1.55);
   stoneBridge.side=THREE.DoubleSide;
   const trims=make('#625f58',.66,.8,.15);
   const fallback={
@@ -238,7 +238,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
       diagnostics.loaded.push(slot);
     },undefined,()=>diagnostics.failed.push(slot));
   }
-  normal('wall-normal',MATERIAL_SOURCES.walls.normal,[wall],.15);
+  normal('wall-normal',MATERIAL_SOURCES.walls.normal,[wall],.27);
   normal('floor-normal',MATERIAL_SOURCES.floors.normal,[floor,stoneBridge],.21);
   loader.load(MATERIAL_SOURCES.timber.diffuse,source=>{
     try{
@@ -255,7 +255,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // A real scanned 1K brick and subtle OpenGL normal relief replace the flat
   // procedural exterior tile. Both requests are optional; geometry is unchanged.
   scan('brick-color',MATERIAL_SOURCES.brick.diffuse,'brick',[exteriorBrick]);
-  normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.11);
+  normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.22);
   // Downloaded once from same-origin assets, not from a third-party API
   // during gallery start. Optional maps can fail independently; the roof
   // remains solid and navigable throughout.
@@ -272,7 +272,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     loader.load(ceilingDir+'NormalGL.jpg',texture=>{
       texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
       ceiling.normalMap=texture;
-      ceiling.normalScale=new THREE.Vector2(.18,.18);
+      ceiling.normalScale=new THREE.Vector2(.27,.27);
       ceiling.needsUpdate=true;
       diagnostics.loaded.push('ambientcg-office-ceiling-normal');
     },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-normal'));
