@@ -1605,7 +1605,16 @@ function constructPhiGallery(layout,studies){
   const transverse={x:outward.z,z:-outward.x};
   const doorway=entrance?{x:entrance.centre,z:entrance.at}:{x:l.x-1.45,z:l.z};
   entranceDoor=createPhiGothicEntrance(THREE,{doorway,outward,level:elevation,surroundMaterial:galleryFinish.stone});scene.add(entranceDoor.root);
-  addPhiReceptionMetalRoof(THREE,scene,{doorway,outward,elevation});
+  // A true exterior roof cap fitted to the full ground-floor footprint,
+  // not a canopy hanging off the doorway. This is transformed together with
+  // the active floor, while the original interior ceiling remains untouched.
+  const roofBounds={
+   minX:Math.min(...phi.pieces.map(p=>p.x)),
+   maxX:Math.max(...phi.pieces.map(p=>p.x+p.w)),
+   minZ:Math.min(...phi.pieces.map(p=>p.z)),
+   maxZ:Math.max(...phi.pieces.map(p=>p.z+p.h))
+  };
+  addPhiReceptionMetalRoof(THREE,scene,{bounds:roofBounds,elevation,ceilingHeight:ROOM_HEIGHT});
   addPhiFrontage(THREE,entranceDoor.root,{concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs});
   const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
     halfWidth:30,halfDepth:29,level:elevation};
