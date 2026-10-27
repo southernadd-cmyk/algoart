@@ -1,0 +1,38 @@
+name: Bake reception hero statue (test only)
+on:
+  push:
+    paths:
+      - 'automation/bake-reception-growth-systems.mjs'
+      - 'gallery/visit/sculpture-bake.html'
+      - '.github/workflows/reception-hero-bake.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Serve project
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/reception-bake-http.log 2>&1 &
+          sleep 2
+      - name: Bake selected Oil V6 drawing into geometry
+        run: node automation/bake-reception-growth-systems.mjs
+      - name: Commit baked assets
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gallery/visit/data/reception-growth-systems.json gallery/visit/data/reception-growth-systems.png
+          if ! git diff --cached --quiet; then
+            git commit -m 'Bake Growth Systems reception statue for test tower'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
