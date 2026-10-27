@@ -171,11 +171,20 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
      reflection.name='phi-spiral-architectural-reflection';
      const renderReflection=reflection.onBeforeRender;
      let lastReflection=0;
+     const poolStats={passes:0,lastPassMs:0,averagePassMs:0,skipped:0};
+     if(globalThis.__phiReceptionTestRefresh)globalThis.__phiPoolPerf=poolStats;
      reflection.onBeforeRender=function(renderer,scene,camera,...rest){
       const now=performance.now();
-      if(now-lastReflection<95)return;
+      if(now-lastReflection<95){poolStats.skipped++;return;}
       lastReflection=now;
-      return renderReflection.call(this,renderer,scene,camera,...rest);
+      const start=performance.now();
+      try{return renderReflection.call(this,renderer,scene,camera,...rest);}
+      finally{
+       const ms=performance.now()-start;
+       poolStats.lastPassMs=+ms.toFixed(2);
+       poolStats.averagePassMs=+(poolStats.averagePassMs*.88+ms*.12).toFixed(2);
+       poolStats.passes++;
+      }
      };
      root.add(reflection);
      // Ripple/glint treatment is a light translucent layer on real reflections.
