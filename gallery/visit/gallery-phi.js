@@ -83,6 +83,7 @@ let phiLiftCabin=null;
 let phiLiftIndicator=null;
 let phiLiftTarget=null;
 let phiReceptionProps=[];
+let phiReceptionHeroPlacementCleanup=null;
 let phiOutdoorPlants=[];
 let phiReceptionMap=null;
 let phiReceptionDesk=null;
@@ -1698,44 +1699,21 @@ function constructPhiGallery(layout,studies){
   // the baked sculpture's dimensions and doorway clearance are verified.
   if(new URLSearchParams(location.search).get('receptionHeroTest')==='1' &&
      furnishing.backrooms?.length&&furnishing.desk){
-   const backroom=furnishing.backrooms[0];
-   // Put the statue IN THE OPEN FOYER, directly opposite the backroom door.
-   // Resolve the connecting doorway from the backroom boundary, then project
-   // outward toward the main reception. Do not slide along the wall.
-   const openings=phi.circulation.doors.filter(d=>{
-    const x=d.axis==='x'?d.at:d.centre,z=d.axis==='z'?d.at:d.centre;
-    const edge=d.axis==='x'
-     ?Math.abs(Math.abs(d.at-backroom.x)-backroom.width/2)
-     :Math.abs(Math.abs(d.at-backroom.z)-backroom.depth/2);
-    return edge<.65 &&
-     Math.abs(x-backroom.x)<=backroom.width/2+.65 &&
-     Math.abs(z-backroom.z)<=backroom.depth/2+.65;
-   });
-   // Prefer the internal entrance farthest from the public gallery door.
-   const doorway=openings.sort((a,b)=>{
-    const distance=d=>Math.hypot(
-     (d.axis==='x'?d.at:d.centre)-furnishing.entrance.x,
-     (d.axis==='z'?d.at:d.centre)-furnishing.entrance.z);
-    return distance(b)-distance(a);
-   })[0];
-   let safe=null;
-   if(doorway){
-    const doorX=doorway.axis==='x'?doorway.at:doorway.centre;
-    const doorZ=doorway.axis==='z'?doorway.at:doorway.centre;
-    const nx=doorway.axis==='x'?Math.sign(doorX-backroom.x)||1:0;
-    const nz=doorway.axis==='z'?Math.sign(doorZ-backroom.z)||1:0;
-    // Offset outward by 2.5m from the storage-room boundary.
-    // Reject a placement closer to the PUBLIC entrance than the backroom.
-    const outward={x:doorX+nx*2.5,z:doorZ+nz*2.5};
-    safe=outward;
-   }else{
-    // Do not put the sculpture somewhere else just to make it appear.
-    console.warn('Reception hero: real backroom door unresolved; no fallback placement');
-   }
-   window.__phiReceptionHeroDoorDiagnostic={
-    backroom,doorway:doorway||null,position:safe,publicEntrance:furnishing.entrance,
-    candidateDoorCount:openings.length
-   };
+   // Permanent test statue: no curator selection, no collision gate, no
+   // automatic door offsets. Start in the largest open reception floor cell;
+   // the visitor can put it EXACTLY where wanted using Place statue.
+   const foyer=phi.floor.mergedRooms[furnishing.desk.room];
+   const openCell=[...(foyer?.pieces||[])].sort((a,b)=>b.w*b.h-a.w*a.h)[0];
+   const safe=openCell
+    ?{x:openCell.x+openCell.w*.5,z:openCell.z+openCell.h*.5}
+    :{x:furnishing.desk.x-3.5,z:furnishing.desk.z-3.5};
+   const key='pp-reception-growth-systems-placement-v1';
+   try{
+    const saved=JSON.parse(localStorage.getItem(key)||'null');
+    if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.z)){
+     safe.x=saved.x;safe.z=saved.z;
+    }
+   }catch{}
    if(safe)fetch(new URL('./data/reception-growth-systems.json',import.meta.url))
     .then(response=>{if(!response.ok)throw Error('Offline bake not published');return response.json();})
     .then(bake=>{
@@ -1746,14 +1724,82 @@ function constructPhiGallery(layout,studies){
       image:new URL('./data/reception-growth-systems.png',import.meta.url).href,
       prebuilt:{desktop:bake.qualities.desktop,mobile:bake.qualities.mobile}
      };
+     // The statue loads asynchronously, AFTER transformPhiActiveFloor moved
+     // the reception to its world coordinates. Use the same transform.
+     const worldPosition=plan.phi?.world?.toWorld(safe.x,safe.z)||safe;
      const built=createPortraitSculpture({scene,study,quality:mobileImages?'mobile':'desktop',
-      placement:{x:safe.x,y:elevation,z:safe.z,
-       yaw:Math.atan2(furnishing.entrance.x-safe.x,furnishing.entrance.z-safe.z)},
+      placement:{x:worldPosition.x,y:elevation,z:worldPosition.z,
+       yaw:Math.atan2(furnishing.entrance.x-safe.x,furnishing.entrance.z-safe.z)+(plan.phi?.world?.theta||0)},
       labelTexture});
      built.pivot.name='phi-reception-growth-systems-baked-test';
      built.pivot.scale.setScalar(1.4);
      phiReceptionProps.push(built.pivot);
-     window.__phiReceptionHeroTest={loaded:true,position:safe,collision:false};
+     // Manual positioning is test-only. A deliberate canvas click on the
+     // floor directly moves the pedestal; no room or wall placement rules.
+     phiReceptionHeroPlacementCleanup?.();
+     const abort=new AbortController();
+     const panel=document.createElement('div');
+     panel.id='phi-reception-statue-controls';
+     panel.style.cssText='position:fixed;left:16px;bottom:85px;z-index:120;background:#eee9df;color:#30352e;padding:10px 13px;border:1px solid #8b9186;font:14px Georgia,serif;display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:min(550px,90vw)';
+     const move=document.createElement('button');
+     move.textContent='Place statue';
+     move.type='button';
+     move.style.cssText='font:inherit;padding:8px 12px;cursor:pointer;background:#34443c;color:white;border:0';
+     const copy=document.createElement('button');
+     copy.textContent='Copy position';
+     copy.type='button';
+     copy.style.cssText='font:inherit;padding:8px 10px;cursor:pointer';
+     const status=document.createElement('span');
+     status.textContent='Click Place statue, then click the floor';
+     panel.append(move,copy,status);
+     document.body.append(panel);
+     let placing=false,consumeClick=false;
+     const select=(x,z)=>{
+      const local=plan.phi?.world?.toLocal(x,z)||{x,z};
+      safe.x=local.x;safe.z=local.z;
+      built.pivot.position.set(x,elevation,z);
+      localStorage.setItem(key,JSON.stringify({x:local.x,z:local.z}));
+      window.__phiReceptionHeroTest={loaded:true,position:{x,z},localPosition:{...local},collision:false,manual:true};
+      status.textContent='Position saved';
+     };
+     move.addEventListener('click',()=>{
+      placing=!placing;move.textContent=placing?'Cancel placement':'Place statue';
+      status.textContent=placing?'Click the open floor where the pedestal should stand':'Placement cancelled';
+      if(placing)document.exitPointerLock?.();
+      canvas.style.cursor=placing?'crosshair':'';
+     },{signal:abort.signal});
+     copy.addEventListener('click',()=>{
+      const message='Growth Systems position: '+JSON.stringify({x:safe.x,z:safe.z});
+      navigator.clipboard?.writeText(message).then(()=>status.textContent='Position copied')
+       .catch(()=>{status.textContent=message;});
+     },{signal:abort.signal});
+     canvas.addEventListener('pointerdown',event=>{
+      if(!placing||exhibitDate!==RECEPTION)return;
+      event.preventDefault();event.stopImmediatePropagation();consumeClick=true;
+      const rect=canvas.getBoundingClientRect();
+      const point=new THREE.Vector2(
+       (event.clientX-rect.left)/rect.width*2-1,
+       -(event.clientY-rect.top)/rect.height*2+1
+      );
+      camera.updateMatrixWorld(true);
+      const ray=new THREE.Raycaster();ray.setFromCamera(point,camera);
+      const hit=new THREE.Vector3();
+      if(ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-elevation),hit)
+        && hit.distanceTo(camera.getWorldPosition(new THREE.Vector3()))<180){
+       select(hit.x,hit.z);placing=false;move.textContent='Place statue';
+       canvas.style.cursor='';
+      }else status.textContent='Aim at the floor and click again';
+     },{capture:true,signal:abort.signal});
+     canvas.addEventListener('click',event=>{
+      if(!consumeClick)return;
+      event.preventDefault();event.stopImmediatePropagation();consumeClick=false;
+     },{capture:true,signal:abort.signal});
+     phiReceptionHeroPlacementCleanup=()=>{
+      abort.abort();panel.remove();canvas.style.cursor='';
+      if(phiReceptionHeroPlacementCleanup)phiReceptionHeroPlacementCleanup=null;
+     };
+     window.__phiReceptionHeroTest={loaded:true,position:worldPosition,
+      localPosition:{...safe},collision:false,manual:true};
     }).catch(error=>console.warn('Reception statue test unavailable',error));
   }
 
@@ -1978,6 +2024,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   exhibitLightTargets.length=0;
   resetInspection();
   liftPosition=null;liftDoorThreshold=null;phiLiftPanelPosition=null;liftWasNear=false;liftDoors=[];
+  phiReceptionHeroPlacementCleanup?.();
   phiReceptionProps=[];phiOutdoorPlants=[];phiReceptionMap=null;phiReceptionDesk=null;phiFurnishingObstacles=[];phiSquareObstacles=[];phiLiftIndicator=null;
   liftPickerConsumed=false;
   const previous=new Set(scene.children);
