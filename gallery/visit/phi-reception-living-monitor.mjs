@@ -11,14 +11,15 @@ export function addPhiReceptionLivingMonitor(THREE, scene, {room, world, elevati
  const bezelMaterial=new THREE.MeshStandardMaterial({color:0x141414,metalness:.36,roughness:.55});
  const root=new THREE.Group();
  root.name='phi-reception-living-painting';
+ root.userData.kind='reception-living-monitor';
  // Occupy the shelving bay on the backroom's north wall; the shelving and boxes
  // are suppressed in this test installation, leaving the screen unobstructed.
- const localZ=room.z-room.depth/2+.27;
+ const localZ=room.z+room.depth/2-.28;
  const local=world.toWorld(room.x,localZ);
  root.position.set(local.x,elevation+2.05,local.z);
- root.rotation.y=world.theta||0;
- // The display is on the north wall, facing into the room (+local Z).
- // Allow viewing from either side if the dynamic room geometry changes.
+ root.rotation.y=(world.theta||0)+Math.PI;
+ // Mount on the former cardboard-box side of the backroom, facing inward.
+ // Two-sided screen stays visible from either direction.
  const frame=new THREE.Mesh(new THREE.BoxGeometry(1.36,.88,.07),bezelMaterial);
  root.add(frame);
  const screen=new THREE.Mesh(new THREE.PlaneGeometry(1.26,.788),screenMaterial);
