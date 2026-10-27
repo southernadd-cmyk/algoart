@@ -155,7 +155,6 @@ def build():
     set_par(record, 'moviecontainer', 'webm')
     set_par(record, 'fps', FPS)
     set_par(record, 'record', False)
-    room.current = True
     print('Created', room.path)
     print('Source study:', SOURCE_IMAGE)
     print('Inspect triptych_1152x240 and ensure image source loads.')
