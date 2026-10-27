@@ -75,25 +75,59 @@ try{
    const p=monitor.getWorldPosition(monitor.position.clone());
    camera.parent.position.set(p.x,p.y-1.68,p.z+2);
   });
-  const readFrames=()=>page.evaluate(()=>{
-   const scene=window.__PP_EXPORT_SCENE__.scene;
-   const root=scene.getObjectByName('phi-reception-three-living-monitors');
-   return [1,2].map(i=>{
-    const panel=root.getObjectByName('living-monitor-'+(i+1));
-    const mesh=panel.getObjectByName('monitor-screen');
-    const canvas=mesh.material.map.image;
-    const bytes=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
-    let hash=2166136261;
-    for(let j=0;j<bytes.length;j+=37)hash=Math.imul(hash^bytes[j],16777619)>>>0;
-    return hash;
+  // Published media must use the actual uploaded VP9 file, not only browser canvases.
+  // The test checks the decoded, playing video on every monitor after approach.
+  const declared=JSON.parse(await (await page.request.get(
+   'http://127.0.0.1:4173/gallery/visit/touchdesigner/phase-one.json')).text());
+  if(declared.status==='published'){
+   await page.waitForFunction(
+    ()=>['playing-export','fallback','awaiting-export'].includes(window.__phiLivingMonitorDiagnostics?.media?.state),
+    null,{timeout:20000});
+   const playback=await page.evaluate(()=>{
+    const scene=window.__PP_EXPORT_SCENE__.scene;
+    const root=scene.getObjectByName('phi-reception-three-living-monitors');
+    const meshes=[1,2,3].map(i=>root.getObjectByName('living-monitor-'+i).getObjectByName('monitor-screen'));
+    const videos=meshes.map(m=>m.material.map.image);
+    const uvs=meshes.map(m=>m.geometry.getAttribute('uv').getX(0));
+    return {media:window.__phiLivingMonitorDiagnostics.media,
+      allShareVideo:videos.every(v=>v?.tagName==='VIDEO'&&v===videos[0]),
+      dimensions:[videos[0]?.videoWidth,videos[0]?.videoHeight],
+      currentTime:videos[0]?.currentTime,uvs};
    });
-  });
-  await page.waitForTimeout(550);
-  const beforeAnimation=await readFrames();
-  await page.waitForTimeout(1100);
-  const afterAnimation=await readFrames();
-  assert.ok(beforeAnimation.every((hash,i)=>hash!==afterAnimation[i]),
-   'Both fallback screens must change pixels over time when approached');
+   assert.equal(playback.media.state,'playing-export','TouchDesigner video failed to play: '+JSON.stringify(playback));
+   assert.equal(playback.allShareVideo,true,'All three monitors must share one VideoTexture');
+   assert.deepEqual(playback.dimensions,[1152,240]);
+   assert.ok(new Set(playback.uvs.map(x=>x.toFixed(3))).size===3,'Screens must sample distinct thirds of the video');
+   await page.waitForTimeout(1250);
+   const later=await page.evaluate(()=>{
+    const root=window.__PP_EXPORT_SCENE__.scene.getObjectByName('phi-reception-three-living-monitors');
+    return root.getObjectByName('living-monitor-1').getObjectByName('monitor-screen').material.map.image.currentTime;
+   });
+   assert.ok(later>playback.currentTime+.5,
+    'TouchDesigner WebM decoding time must advance while the visitor is nearby');
+   assert.equal(testRequests.filter(url=>url.includes('phase-one-triptych.webm')).length,1,
+    'A single shared TouchDesigner video request is expected');
+   console.log('Real TouchDesigner video plays on all 3 monitors:',playback);
+  }else{
+   const readFrames=()=>page.evaluate(()=>{
+    const scene=window.__PP_EXPORT_SCENE__.scene;
+    const root=scene.getObjectByName('phi-reception-three-living-monitors');
+    return [1,2].map(i=>{
+     const mesh=root.getObjectByName('living-monitor-'+(i+1)).getObjectByName('monitor-screen');
+     const canvas=mesh.material.map.image;
+     const bytes=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+     let hash=2166136261;
+     for(let j=0;j<bytes.length;j+=37)hash=Math.imul(hash^bytes[j],16777619)>>>0;
+     return hash;
+    });
+   });
+   await page.waitForTimeout(550);
+   const before=await readFrames();
+   await page.waitForTimeout(1100);
+   const after=await readFrames();
+   assert.ok(before.every((hash,i)=>hash!==after[i]),
+    'Both fallback screens must change pixels over time when approached');
+  }
   assert.deepEqual(failures,[],'Test gallery generated browser errors');
   console.log('Three test reception monitors created in scene:',monitors);
   await context.close();
