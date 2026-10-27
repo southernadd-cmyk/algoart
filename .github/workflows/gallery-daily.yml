@@ -343,7 +343,11 @@ jobs:
           else
             DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
             git commit -m "Publish ALGO ART daily gallery $DAY"
-            git pull --rebase origin main
+            # Daily assets are regenerated deterministically by this job. When
+            # another gallery build updated binary atlases concurrently, keep
+            # this build's version during the rebase instead of failing.
+            git fetch origin main
+            git -c merge.renormalize=false rebase -X theirs origin/main
             git push origin HEAD:main
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
