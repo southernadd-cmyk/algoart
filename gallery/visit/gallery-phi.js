@@ -1551,8 +1551,12 @@ function constructPhiGallery(layout,studies){
  // stays open, as does the lift-facing approach in the cabin's west end.
  const outerWest=l.x+1.43,innerEast=l.portal.at,depth=2.4;
  phiLiftPanelPosition=new THREE.Vector3(l.x,elevation,l.z+1.10);
- const shaftGlass=new THREE.MeshStandardMaterial({color:0xb1d8d2,transparent:true,opacity:.22,roughness:.15,metalness:.09,depthWrite:false,side:THREE.DoubleSide});
- for(const side of [-1,1])block(innerEast-outerWest,3.2,.045,(outerWest+innerEast)/2,elevation+1.6,l.z+side*depth/2,shaftGlass);
+ // The short passage from the reception landing door to the moving cabin
+ // must be enclosed. Transparent side panes exposed the plaza/shaft through
+ // what should read as continuous masonry beside the doorway.
+ for(const side of [-1,1])
+  block(Math.max(.06,innerEast-outerWest+.12),3.2,.17,
+   (outerWest+innerEast)/2,elevation+1.6,l.z+side*depth/2,galleryFinish.stone);
  block(innerEast-outerWest,.14,depth,(outerWest+innerEast)/2,elevation+3.27,l.z,ceilingFinish);
  block(innerEast-outerWest,.16,depth,(outerWest+innerEast)/2,elevation-.08,l.z,galleryFinish.floor);
  // Door opening coincides exactly with the reserved physical portal.
