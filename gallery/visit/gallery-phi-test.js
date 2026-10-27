@@ -1,7 +1,7 @@
 // Staging-only reception furnishing refinements.
 globalThis.__phiReceptionTestRefresh=true;
 globalThis.__phiReceptionTilePreview=true;
-await import('./gallery-phi.js?v=diagnose-tall-plants-20261027');
+await import('./gallery-phi.js?v=reflecting-pool-20261027');
 const plantStatus=document.createElement('div');
 plantStatus.id='staging-plant-check';
 plantStatus.style.cssText='position:fixed;right:12px;bottom:12px;z-index:99999;background:#18312a;color:#fff;padding:9px 12px;border-radius:6px;font:13px system-ui;box-shadow:0 2px 12px #0007;pointer-events:none';
