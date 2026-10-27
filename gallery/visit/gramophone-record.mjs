@@ -1,6 +1,6 @@
 export const RECEPTION_RECORD=Object.freeze([
  {title:'Reflets dans l’eau',composer:'Claude Debussy',analysis:'Roy Howat',
-  src:'https://upload.wikimedia.org/wikipedia/commons/7/7b/Debussy_%2C_Reflets_dans_l%27eau.ogg',
+  src:'https://upload.wikimedia.org/wikipedia/commons/e/e5/Debussy_%2C_Reflets_dans_l%27eau.ogg',
   credit:'Giorgi Latso · recorded by Asuas · 2017 · CC BY-SA 4.0',
   source:'https://commons.wikimedia.org/wiki/File:Debussy_,_Reflets_dans_l%27eau.ogg'},
  {title:'Piano Sonata No. 16 in C major, K. 545 — I. Allegro',composer:'Wolfgang Amadeus Mozart',analysis:'John F. Putz',
