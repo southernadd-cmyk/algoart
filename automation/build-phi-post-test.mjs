@@ -24,7 +24,8 @@ export function instrumentPhiSource(source){
 
 if(process.argv[1]===fileURLToPath(import.meta.url))await build({
  entryPoints:['gallery/visit/gallery-phi-test.js'],bundle:true,minify:true,format:'esm',
- platform:'browser',target:'es2022',outfile:'test/virtual-gallery/phi-post-test-bundle.js',
+ // import.meta.url in the existing asset loaders must retain gallery/visit/.
+ platform:'browser',target:'es2022',outfile:'gallery/visit/gallery-phi-post-test-bundle.js',
  plugins:[{name:'staging-presentation-only',setup(builder){
   builder.onLoad({filter:/[/\\]gallery-phi\.js$/},async({path})=>({
    contents:instrumentPhiSource(await readFile(path,'utf8')),loader:'js',resolveDir:fileURLToPath(new URL('../gallery/visit/',import.meta.url))

@@ -23,3 +23,16 @@ test('live entry keeps its existing bundle and contains no experiment',()=>{
  assert.ok(live.includes("import('./gallery-phi-bundle.js?"));
  assert.ok(!live.includes('phi-post-test-bundle'));
 });
+
+test('test bundle preserves the gallery asset base for import.meta.url loaders',()=>{
+ const builder=readFileSync(new URL('../automation/build-phi-post-test.mjs',import.meta.url),'utf8');
+ const html=readFileSync(new URL('../test/virtual-gallery/full-engine.html',import.meta.url),'utf8');
+ const bundlePath=builder.match(/outfile:'([^']+)'/)[1];
+ assert.equal(bundlePath,'gallery/visit/gallery-phi-post-test-bundle.js');
+ assert.ok(html.includes('../../'+bundlePath+'?'));
+ const base=new URL(bundlePath,'https://example.test/algoart/');
+ assert.equal(new URL('./textures/bajwa-floor-tiles/color.webp',base).pathname,
+  '/algoart/gallery/visit/textures/bajwa-floor-tiles/color.webp');
+ assert.equal(new URL('./models/plants-scene-gallery-optimized.glb',base).pathname,
+  '/algoart/gallery/visit/models/plants-scene-gallery-optimized.glb');
+});
