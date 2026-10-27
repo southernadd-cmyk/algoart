@@ -2,7 +2,7 @@ export const RECEPTION_RECORD=Object.freeze([
  {title:'Reflets dans l’eau',composer:'Claude Debussy',analysis:'Roy Howat',
   src:'https://s9.imslp.org/files/imglnks/usimg/0/0e/IMSLP506786-PMLP07652-Debussy_%2C_Reflets_dans_l%27eau.ogg',
   credit:'Giorgi Latso · recorded by Asuas · 2017 · CC BY-SA 4.0',
-  source:'https://commons.wikimedia.org/wiki/File:Debussy_,_Reflets_dans_l%27eau.ogg'}
+  source:'https://commons.wikimedia.org/wiki/File:Debussy_,_Reflets_dans_l%27eau.ogg'},
  {title:'Music for Strings, Percussion and Celesta',composer:'Béla Bartók',analysis:'Ernő Lendvai',
   src:'https://imslp.eu/files/imglnks/euimg/7/74/IMSLP415495-PMLP40552-Bartok_Sz_106_SOSWF_Somogyi_1957.mp3',
   credit:'SWR Sinfonieorchester Baden-Baden und Freiburg · László Somogyi · 1957',
