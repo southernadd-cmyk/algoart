@@ -107,15 +107,16 @@ test('outdoor succulent is compact, credited, and replaces all four original pla
  for(const holder of result.holders)assert.ok(Math.abs(new THREE.Box3().setFromObject(holder).getSize(new THREE.Vector3()).y-1.3)<1e-5);
  let resolve;const late=addPhiOutdoorPlants(THREE,scene,plaza,[],{loadModel:()=>new Promise(r=>resolve=r)});for(const h of late.holders)scene.remove(h);resolve(source);await late.ready;assert.ok(late.holders.every(h=>h.children.length===0),'Late model attached to an old floor');
 });
-test('giant map occupies its own reception wall and retains the original credited image',()=>{
+test('the reception wall displays a compact baked watercolour in place of the world map',()=>{
  const phi=buildPhiRendererPlan('__phi_reception__',[]),reception=planPhiReception(phi.floor,phi.circulation,phi.physical),map=reception.worldMap;
  assert.ok(map.width>=6&&map.height>=4);assert.ok(map.centreY-map.height/2>.5&&map.centreY+map.height/2<4.9);
  assert.equal(reception.signage.length,2);assert.ok(reception.signage.every(s=>s.axis!==map.axis||Math.abs((s.axis==='x'?s.x:s.z)-(map.axis==='x'?map.x:map.z))>.3));
- const asset=glbMetadata('vintage-world-map.glb');assert.ok(asset.bytes<300000);assert.match(asset.doc.asset.extras.author,/My Name Is This/);assert.match(asset.doc.asset.extras.license,/CC-BY-4.0/);
- const credits=readFileSync(new URL('../gallery/visit/credits.html',import.meta.url),'utf8');assert.match(credits,/GrrHero/);assert.match(credits,/My Name Is This/);
- const source=new THREE.Group();source.add(new THREE.Mesh(new THREE.BoxGeometry(7.241604,4.768173,.088),new THREE.MeshBasicMaterial()));
- const fitted=fitPhiWallModel(THREE,source,map.width),bounds=new THREE.Box3().setFromObject(fitted),size=bounds.getSize(new THREE.Vector3());
- assert.ok(Math.abs(size.x-map.width)<1e-5);assert.ok(Math.abs(size.y-map.height)<.01);assert.ok(Math.abs(bounds.getCenter(new THREE.Vector3()).y)<1e-5);assert.ok(Math.abs(bounds.min.z)<1e-5);
+ const baked=readFileSync(new URL('../gallery/visit/assets/reception-radiant-watercolour.webp',import.meta.url));
+ assert.ok(baked.length>10000&&baked.length<200000,'Prebaked reception texture should stay small');
+ const decor=readFileSync(new URL('../gallery/visit/phi-reception-decor.mjs',import.meta.url),'utf8');
+ assert.match(decor,/reception-radiant-watercolour.webp/);assert.doesNotMatch(decor,/vintage-world-map.glb/);
+ const credits=readFileSync(new URL('../gallery/visit/credits.html',import.meta.url),'utf8');
+ assert.match(credits,/Radiant Systems, watercolour/);assert.doesNotMatch(credits,/My Name Is This/);
 });
 test('paintings grow into available wall space without losing aspect, room boundaries or neighbouring gaps',()=>{
  const archive=JSON.parse(readFileSync(new URL('../gallery/tower-layouts.json',import.meta.url)));
