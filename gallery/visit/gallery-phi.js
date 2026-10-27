@@ -166,6 +166,7 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
 let receptionWallMaterial=null;
+let receptionPaintedPlasterMaterial=null;
 const towerGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.exteriorBrick,lowPower:galleryFinish.lowPower});
 const interiorGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.wall,lowPower:galleryFinish.lowPower,
  planner:planInteriorGraffiti,keyFor:interiorGraffitiKey,kind:'interior'});
@@ -1431,15 +1432,21 @@ function constructPhiGallery(layout,studies){
  // Every floor, enclosure and collision surface comes from the same phi plan.
  const plaster=galleryFinish?.interiorWall||wall;
  if(exhibitDate===RECEPTION&&!receptionWallMaterial)receptionWallMaterial=createReceptionWallMaterial(THREE,{lowPower:galleryFinish.lowPower});
+ if(exhibitDate===RECEPTION&&!receptionPaintedPlasterMaterial)receptionPaintedPlasterMaterial=createReceptionWallMaterial(THREE,{lowPower:galleryFinish.lowPower,finish:'painted-plaster'});
  const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;
+ // The main foyer's rear wall faces the wallpapered entrance wall.
+ // Follow its physical segments so door openings and the outer brick stay intact.
+ const foyer=exhibitDate===RECEPTION?[...phi.floor.mergedRooms].sort((a,b)=>b.area-a.area)[0]:null;
+ const rearWallAt=foyer?Math.max(...foyer.pieces.map(p=>p.z+p.h)):null;
  for(const p of phi.pieces){
    const slab=staticBlock(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,roomFloor);
    if(roomFloor===receptionTilePreview)alignReceptionTileUvs(slab);
  }
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.04)continue;
-  if(w.axis==='x')staticBlock(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,roomWall);
-  else staticBlock(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,roomWall);
+  const finish=foyer&&w.axis==='z'&&Math.abs(w.at-rearWallAt)<.001&&foyer.pieces.some(p=>Math.abs(p.z+p.h-w.at)<.001&&w.hi>p.x&&w.lo<p.x+p.w)?receptionPaintedPlasterMaterial:roomWall;
+  if(w.axis==='x')staticBlock(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,finish);
+  else staticBlock(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,finish);
  }
  // Baked architectural contact occlusion: one vertex-colour mesh for the
  // complete active floor, not one new light or draw call per wall.
