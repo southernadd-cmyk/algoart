@@ -15,9 +15,11 @@ export function addPhiReceptionLivingMonitor(THREE, scene, {room, world, elevati
  // Occupy the shelving bay on the backroom's north wall; the shelving and boxes
  // are suppressed in this test installation, leaving the screen unobstructed.
  const localZ=room.z+room.depth/2-.28;
- const local=world.toWorld(room.x,localZ);
- root.position.set(local.x,elevation+2.05,local.z);
- root.rotation.y=(world.theta||0)+Math.PI;
+ // Gallery walls and backroom fittings are placed in phi's LOCAL layout
+ // coordinates (see constructPhiGallery and addPhiReceptionDecor).
+ // Transforming only the monitor through world.toWorld placed it off-wall.
+ root.position.set(room.x,elevation+2.05,localZ);
+ root.rotation.y=Math.PI;
  // Mount on the former cardboard-box side of the backroom, facing inward.
  // Two-sided screen stays visible from either direction.
  const frame=new THREE.Mesh(new THREE.BoxGeometry(1.36,.88,.07),bezelMaterial);
