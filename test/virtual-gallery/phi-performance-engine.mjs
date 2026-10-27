@@ -843,7 +843,7 @@ function startPhiCabinRide(targetFloor){
  // Hide only after the doors have fully closed; no scene rebuild is needed.
  phiRideHidden=[];
  for(const object of editionObjects){
-  if(object===phiMovingCabin || object.name==='phi-complete-tower-exterior')continue;
+  if(object===phiMovingCabin)continue;
   if(object.visible){object.visible=false;phiRideHidden.push(object);}
  }
  const startTheta=phiLiftCabin.rotation.y;
@@ -879,9 +879,8 @@ function updatePhiCabinRide(dt){
  }
 }
 function clearPhiMovingCabin({restore=false}={}){
- // Restore departure geometry only on failure: successful arrivals have
- // replaced and disposed the old edition's scene objects.
- if(restore)for(const object of phiRideHidden)object.visible=true;
+ // Restore only surviving objects; the previous edition is disposed on arrival.
+ for(const object of phiRideHidden)if(object.parent)object.visible=true;
  phiRideHidden=[];
  phiMovingCabin=null;
 }
