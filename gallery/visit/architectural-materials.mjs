@@ -174,7 +174,8 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     material.userData.galleryPersistent=true;
     return material;
   };
-  const uploadedTest=globalThis.__phiUploadedWallCeilingTest===true;
+  // The uploaded wall scan and acoustic ceiling are now the production finishes.
+  const uploadedTest=true;
   const wall=make(uploadedTest?'#ffffff':'#faf4ea',.96,uploadedTest?2.2:2.7);
   const floor=make('#e1ddd2',.90,2.25);
   const timber=make('#e6daca',.87,2.3);
@@ -239,7 +240,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
       diagnostics.loaded.push(slot);
     },undefined,()=>diagnostics.failed.push(slot));
   }
-  if(!uploadedTest)normal('wall-normal',MATERIAL_SOURCES.walls.normal,[wall],.15);
+  // Do not overlay the unrelated Poly Haven wall normal on the uploaded scan.
   normal('floor-normal',MATERIAL_SOURCES.floors.normal,[floor,stoneBridge],.21);
   loader.load(MATERIAL_SOURCES.timber.diffuse,source=>{
     try{
@@ -301,8 +302,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     },undefined,()=>diagnostics.failed.push(slot));
   }
   if(uploadedTest){
-    // Test-only: show the unmodified uploaded wall scan, rather than tintScan's
-    // almost-white reduction. Leave the production gallery material unchanged.
+    // Use the unmodified uploaded scan in both live and test galleries.
     loader.load(LOCAL_TEXTURES.walls,texture=>{
       texture.colorSpace=THREE.SRGBColorSpace;
       texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
