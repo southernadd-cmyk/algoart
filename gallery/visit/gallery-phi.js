@@ -1452,7 +1452,7 @@ function constructPhiGallery(layout,studies){
   const mesh=w.axis==='x'
    ?staticBlock(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,finish)
    :staticBlock(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,finish);
-  if(exhibitDate===RECEPTION&&location.pathname.includes('/test/virtual-gallery/')&&finish===receptionWallMaterial){
+  if(exhibitDate===RECEPTION&&finish===receptionWallMaterial){
    // Explicit reception wall faces. BoxGeometry material order:
    // +X, -X, +Y, -Y, +Z, -Z. The blue wallpaper is retained
    // on -X and +Z; the opposite +X and -Z faces receive
