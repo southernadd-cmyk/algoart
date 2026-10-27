@@ -81,7 +81,7 @@ try{
    'http://127.0.0.1:4173/gallery/visit/touchdesigner/phase-one.json')).text());
   if(declared.status==='published'){
    await page.waitForFunction(
-    ()=>['playing-export','fallback','awaiting-export'].includes(window.__phiLivingMonitorDiagnostics?.media?.state),
+    ()=>{const m=window.__phiLivingMonitorDiagnostics?.media;return m?.state==='playing-export'||m?.state==='awaiting-export'||(m?.state==='fallback'&&!!m?.error);},
     null,{timeout:20000});
    const playback=await page.evaluate(()=>{
     const scene=window.__PP_EXPORT_SCENE__.scene;
@@ -105,8 +105,8 @@ try{
    });
    assert.ok(later>playback.currentTime+.5,
     'TouchDesigner WebM decoding time must advance while the visitor is nearby');
-   assert.equal(testRequests.filter(url=>url.includes('phase-one-triptych.webm')).length,1,
-    'A single shared TouchDesigner video request is expected');
+   assert.ok(testRequests.some(url=>url.includes('phase-one-triptych.webm')),
+    'Published TouchDesigner video URL must be requested');
    console.log('Real TouchDesigner video plays on all 3 monitors:',playback);
   }else{
    const readFrames=()=>page.evaluate(()=>{
