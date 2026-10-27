@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "status": "awaiting-touchdesigner-export",
+  "artwork": {
+    "title": "Golden Trajectories — Oil Paint Study 14",
+    "seed": "OL-20261027-02-57201",
+    "date": "2026-10-27",
+    "series": "Golden Trajectories",
+    "sourceImage": "../../2026-10-27/2026-10-27-oil-landscape-02-spiral-OL-20261027-02-57201.jpg",
+    "editorUrl": "https://southernadd-cmyk.github.io/algoart/?v=8&seed=OL-20261027-02-57201&mode=spiral",
+    "phiStrength": 97,
+    "goldenAngle": 94,
+    "spiralInfluence": 55
+  },
+  "triptych": {
+    "file": "phase-one-triptych.webm",
+    "codec": "vp9",
+    "layout": "horizontal",
+    "panelCount": 3,
+    "panelWidth": 384,
+    "panelHeight": 240,
+    "width": 1152,
+    "height": 240,
+    "fps": 24,
+    "durationSeconds": 20
+  },
+  "panels": [
+    "source",
+    "translation",
+    "emergence"
+  ],
+  "credits": "Generated using TouchDesigner from a PROPORTION PIECE source study."
+}
