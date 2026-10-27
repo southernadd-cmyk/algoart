@@ -1437,6 +1437,19 @@ function constructPhiGallery(layout,studies){
   light.target.position.set(centre.x,elevation+1.1,centre.z);
   scene.add(light,light.target);
  }
+ // Night exterior must not leave the exhibition rooms in shadow.
+ // Broad, unshadowed ceiling fill complements the existing aimed art spotlights.
+ if(exhibitDate!==RECEPTION){
+  for(const room of lightRooms.slice(0,galleryFinish.lowPower?5:10)){
+   const cell=[...room.pieces].sort((a,b)=>b.w*b.h-a.w*a.h)[0];
+   if(!cell||cell.w<3||cell.h<3)continue;
+   const glow=new THREE.PointLight('#ffe8cd',10,
+    Math.min(18,Math.max(9,Math.hypot(cell.w,cell.h)*.9)),2);
+   glow.position.set(cell.x+cell.w/2,elevation+ROOM_HEIGHT-.65,cell.z+cell.h/2);
+   glow.name='phi-gallery-room-warm-fill';
+   scene.add(glow);
+  }
+ }
  // Put visible portal frames on the exact holes created in the collision walls.
  for(const d of [...phi.circulation.doors,...phi.circulation.bridgePortals]){
   if(d.public)continue;
