@@ -1704,33 +1704,38 @@ function constructPhiGallery(layout,studies){
    // outward toward the main reception. Do not slide along the wall.
    const openings=phi.circulation.doors.filter(d=>{
     const x=d.axis==='x'?d.at:d.centre,z=d.axis==='z'?d.at:d.centre;
-    return Math.abs(x-backroom.x)<=backroom.width/2+.4 &&
-     Math.abs(z-backroom.z)<=backroom.depth/2+.4;
+    const edge=d.axis==='x'
+     ?Math.abs(Math.abs(d.at-backroom.x)-backroom.width/2)
+     :Math.abs(Math.abs(d.at-backroom.z)-backroom.depth/2);
+    return edge<.65 &&
+     Math.abs(x-backroom.x)<=backroom.width/2+.65 &&
+     Math.abs(z-backroom.z)<=backroom.depth/2+.65;
    });
+   // Prefer the internal entrance farthest from the public gallery door.
    const doorway=openings.sort((a,b)=>{
-    const dist=d=>Math.hypot((d.axis==='x'?d.at:d.centre)-furnishing.desk.x,
-      (d.axis==='z'?d.at:d.centre)-furnishing.desk.z);
-    return dist(a)-dist(b);
+    const distance=d=>Math.hypot(
+     (d.axis==='x'?d.at:d.centre)-furnishing.entrance.x,
+     (d.axis==='z'?d.at:d.centre)-furnishing.entrance.z);
+    return distance(b)-distance(a);
    })[0];
    let safe=null;
    if(doorway){
     const doorX=doorway.axis==='x'?doorway.at:doorway.centre;
     const doorZ=doorway.axis==='z'?doorway.at:doorway.centre;
-    // From inside the small backroom, look through its door into reception.
     const nx=doorway.axis==='x'?Math.sign(doorX-backroom.x)||1:0;
     const nz=doorway.axis==='z'?Math.sign(doorZ-backroom.z)||1:0;
-    // Place the centre three metres in front, with zero lateral offset.
-    safe={x:doorX+nx*3,z:doorZ+nz*3};
+    // Offset outward by 2.5m from the storage-room boundary.
+    // Reject a placement closer to the PUBLIC entrance than the backroom.
+    const outward={x:doorX+nx*2.5,z:doorZ+nz*2.5};
+    safe=outward;
    }else{
-    // Fallback faces the reception centre, not the entrance or nearest wall.
-    const dx=furnishing.desk.x-backroom.x,dz=furnishing.desk.z-backroom.z;
-    if(Math.abs(dx)>Math.abs(dz)){
-     safe={x:backroom.x+Math.sign(dx)*(backroom.width/2+3),z:backroom.z};
-    }else{
-     safe={x:backroom.x,z:backroom.z+Math.sign(dz)*(backroom.depth/2+3)};
-    }
-    console.warn('Reception statue: using backroom-centred open floor placement');
+    // Do not put the sculpture somewhere else just to make it appear.
+    console.warn('Reception hero: real backroom door unresolved; no fallback placement');
    }
+   window.__phiReceptionHeroDoorDiagnostic={
+    backroom,doorway:doorway||null,position:safe,publicEntrance:furnishing.entrance,
+    candidateDoorCount:openings.length
+   };
    if(safe)fetch(new URL('./data/reception-growth-systems.json',import.meta.url))
     .then(response=>{if(!response.ok)throw Error('Offline bake not published');return response.json();})
     .then(bake=>{
