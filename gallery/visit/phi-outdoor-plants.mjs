@@ -5,7 +5,7 @@ export function planPhiOutdoorPlants(plaza){
   const across=side*(plaza.halfWidth-4.6);
   placements.push({id:side+':'+along,x:plaza.centre.x+plaza.outward.x*along+plaza.transverse.x*across,
    y:(plaza.level||0)-.08,z:plaza.centre.z+plaza.outward.z*along+plaza.transverse.z*across,
-   height:1.3,yaw:Math.atan2(plaza.outward.x,plaza.outward.z)+side*.3,width:1.4,depth:1.4,kind:'plant'});
+   height:1.3,yaw:Math.atan2(plaza.outward.x,plaza.outward.z)+side*.3,width:1.618,depth:1,kind:'plant'});
  }
  // Add larger botanical clusters along both sides of the approach on live and test.
  {
@@ -16,7 +16,7 @@ export function planPhiOutdoorPlants(plaza){
     y:(plaza.level||0)-.08,
     z:plaza.centre.z+plaza.outward.z*along+plaza.transverse.z*across,
     height:1.35,yaw:Math.atan2(plaza.outward.x,plaza.outward.z),
-    width:1.4,depth:1.4,kind:'plant'});
+    width:1.618,depth:1,kind:'plant'});
   }
  }
  return placements;
@@ -38,6 +38,14 @@ export function addPhiOutdoorPlants(THREE,scene,plaza,landscapeRoots,{loadModel=
  const jobs=placements.map(p=>{
   const backups=[];for(const root of landscapeRoots)root.traverse(o=>{if(isOriginalPlant(o,p))backups.push(o);});
   const holder=new THREE.Group();holder.name='phi-outdoor-source-plants-'+p.id;holder.position.set(p.x,p.y,p.z);holder.rotation.y=p.yaw;scene.add(holder);holders.push(holder);
+  // A ground-contact planter for each imported cluster; rectangular footprint is φ:1.
+  const phi=(1+Math.sqrt(5))/2,depth=1.14,width=depth*phi;
+  const stone=new THREE.MeshStandardMaterial({color:'#77766d',roughness:.91});
+  const earth=new THREE.MeshStandardMaterial({color:'#39362e',roughness:1});
+  const planter=new THREE.Mesh(new THREE.BoxGeometry(width,.43,depth),stone);
+  planter.name='phi-golden-rectangle-planter';planter.position.y=.215;holder.add(planter);
+  const soil=new THREE.Mesh(new THREE.BoxGeometry(width-.13,.026,depth-.13),earth);
+  soil.name='phi-planter-soil';soil.position.y=.443;holder.add(soil);
   holder.userData.fallbackCount=backups.length;
   return source.then(model=>{
    if(!holder.parent||holder.userData.galleryDisposed)return;
@@ -47,14 +55,14 @@ export function addPhiOutdoorPlants(THREE,scene,plaza,landscapeRoots,{loadModel=
     const variants=['SmallPlantStem','YellowPlantStem','SmallPlantStem'];
     for(let i=0;i<variants.length;i++){
      const plant=fitPhiDecorAsset(THREE,selectSourceGroup(model,variants[i]),p.height*[1.85,1.5,1.25][i]);
-     plant.position.set([0,-.48,.49][i],.51,[0,.32,.22][i]);
+     plant.position.set([0,-.48,.49][i],.45,[0,.32,.22][i]);
      plant.rotation.y=[0,1.7,-1.1][i]+(p.x+p.z)*.07;
      holder.add(plant);
     }
     const rocks=fitPhiDecorAsset(THREE,selectSourceGroup(model,'Rock.'),.42);
-    rocks.position.set(.3,.35,-.35);holder.add(rocks);
+    rocks.position.set(.3,.45,-.35);holder.add(rocks);
     const grass=fitPhiDecorAsset(THREE,selectSourceGroup(model,'Grass_'),.52);
-    grass.position.set(-.37,.35,.15);holder.add(grass);
+    grass.position.set(-.37,.45,.15);holder.add(grass);
    }
    for(const backup of backups)backup.visible=false;
    holder.userData.modelLoaded=true;holder.userData.replaced=backups.length;
