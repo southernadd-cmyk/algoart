@@ -1694,6 +1694,47 @@ function constructPhiGallery(layout,studies){
   const leafLight=new THREE.MeshStandardMaterial({color:'#819477',roughness:1,flatShading:true});
   queuePhiFurnishings(phi,planPhiFurnishings(phi,{reception:furnishing,lowPower:galleryFinish.lowPower}),elevation);
   phiReceptionProps=addPhiReceptionDecor(THREE,scene,furnishing,elevation);
+  // Test-only statue. No runtime vector tracing and no movement collision until
+  // the baked sculpture's dimensions and doorway clearance are verified.
+  if(new URLSearchParams(location.search).get('receptionHeroTest')==='1' &&
+     furnishing.backrooms?.length&&furnishing.desk){
+   const backroom=furnishing.backrooms[0];
+   const approach=new THREE.Vector2(furnishing.desk.x-backroom.x,
+    furnishing.desk.z-backroom.z).normalize();
+   const tangent=new THREE.Vector2(-approach.y,approach.x);
+   const footprint=Math.max(backroom.width,backroom.depth)*.5+2;
+   const candidates=[-1,1].map(side=>({
+    x:backroom.x+approach.x*footprint+tangent.x*side*2,
+    z:backroom.z+approach.y*footprint+tangent.y*side*2
+   }));
+   const safe=candidates.find(p=>
+     Math.hypot(p.x-furnishing.desk.x,p.z-furnishing.desk.z)>2.6 &&
+     Math.hypot(p.x-furnishing.entrance.x,p.z-furnishing.entrance.z)>3.4 &&
+     Math.hypot(p.x-furnishing.lift.x,p.z-furnishing.lift.z)>3.4 &&
+     !phi.physical.walls.some(w=>w.axis==='x'
+       ?Math.abs(p.x-w.at)<1.6&&p.z>w.lo-1.4&&p.z<w.hi+1.4
+       :Math.abs(p.z-w.at)<1.6&&p.x>w.lo-1.4&&p.x<w.hi+1.4));
+   if(safe)fetch(new URL('./data/reception-growth-systems.json',import.meta.url))
+    .then(response=>{if(!response.ok)throw Error('Offline bake not published');return response.json();})
+    .then(bake=>{
+     if(exhibitDate!==RECEPTION||!bake.qualities?.desktop?.length)return;
+     const study={
+      seed:bake.seed,title:'Growth Systems',href:bake.href,
+      material:{type:'oil',params:{paper:'#f5f0e6'}},
+      image:new URL('./data/reception-growth-systems.png',import.meta.url).href,
+      prebuilt:{desktop:bake.qualities.desktop,mobile:bake.qualities.mobile}
+     };
+     const built=createPortraitSculpture({scene,study,quality:mobileImages?'mobile':'desktop',
+      placement:{x:safe.x,y:elevation,z:safe.z,
+       yaw:Math.atan2(furnishing.entrance.x-safe.x,furnishing.entrance.z-safe.z)},
+      labelTexture});
+     built.pivot.name='phi-reception-growth-systems-baked-test';
+     built.pivot.scale.setScalar(1.4);
+     phiReceptionProps.push(built.pivot);
+     window.__phiReceptionHeroTest={loaded:true,position:safe,collision:false};
+    }).catch(error=>console.warn('Reception statue test unavailable',error));
+  }
+
   phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);
   const credits=addPhiReceptionCredits(THREE,scene,furnishing.credits,elevation);
   artExhibits.push(...credits);window.__phiReceptionCredits={count:credits.length,placement:furnishing.credits};
