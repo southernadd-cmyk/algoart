@@ -103,42 +103,58 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
  }
  const phi=(1+Math.sqrt(5))/2;
  const palette=['#31545c','#ba7453','#aa9b6b','#303b40','#d4ac7d'];
- function draw(ctx,index,time){
-  const w=384,h=240;
+ function draw(ctx,index,seconds){
+  // Browser PREVIEW only. Distinct, readily perceptible motion on every
+  // screen until a real TouchDesigner triptych has been published.
+  const w=384,h=240,t=seconds,spin=t*.85;
   ctx.globalAlpha=1;
-  ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#f5f0e6';
+  ctx.fillRect(0,0,w,h);
   if(index===0 && sourceImage){
-   // Contain instead of stretching or cropping the original composition.
    const scale=Math.min(w/sourceImage.width,h/sourceImage.height);
    const dw=sourceImage.width*scale,dh=sourceImage.height*scale;
    ctx.drawImage(sourceImage,(w-dw)/2,(h-dh)/2,dw,dh);
-   return;
-  }
-  ctx.lineCap='round';ctx.lineJoin='round';
-  for(let k=0;k<34;k++){
-   const theta=k*2*Math.PI/(phi*phi)+index*.77+time*(.24+index*.12);
-   const radius=12+Math.sqrt(k/34)*95;
-   const px=w/2+Math.cos(theta)*radius*1.45;
-   const py=h/2+Math.sin(theta)*radius*.90;
-   const a=theta+time*.24;
-   ctx.beginPath();
-   if(index===0){
-    ctx.moveTo(px,py);
-    ctx.bezierCurveTo(px+Math.cos(a+1)*34,py+Math.sin(a+1)*34,
-      px+Math.cos(a+2)*52,py+Math.sin(a+2)*43,
-      px+Math.cos(a+2.4)*70,py+Math.sin(a+2.4)*51);
-   }else if(index===1){
-    const side=12+(k%7)*5;
-    ctx.rect(px-side/2,py-side/(2*phi),side,side/phi);
-   }else{
-    ctx.moveTo(w/2,h/2);
-    ctx.lineTo(px,py);
+   // A scanning line signifies the translation taking place, without
+   // altering the underlying source artwork.
+   const px=((t*.19)%1)*w;
+   const gradient=ctx.createLinearGradient(px-40,0,px+40,0);
+   gradient.addColorStop(0,'rgba(255,255,255,0)');
+   gradient.addColorStop(.5,'rgba(255,255,255,.35)');
+   gradient.addColorStop(1,'rgba(255,255,255,0)');
+   ctx.fillStyle=gradient;
+   ctx.fillRect(px-40,0,80,h);
+   ctx.strokeStyle='rgba(49,84,92,.85)';
+   ctx.lineWidth=2.5;
+   ctx.beginPath();ctx.moveTo(px,8);ctx.lineTo(px,h-10);ctx.stroke();
+  }else{
+   ctx.lineCap='round';ctx.lineJoin='round';
+   const cx=w/2,cy=h/2;
+   for(let k=0;k<48;k++){
+    const theta=k*2*Math.PI/(phi*phi)+index*.77+spin*(index===1?.7:1.15);
+    const radius=12+Math.sqrt(k/48)*106+7*Math.sin(spin*2+k*.49);
+    const px=cx+Math.cos(theta)*radius*1.4;
+    const py=cy+Math.sin(theta)*radius*.92;
+    ctx.beginPath();
+    if(index===1){
+     const side=(12+(k%7)*5)*(1+.22*Math.sin(spin*1.6+k*.58));
+     ctx.rect(px-side/2,py-side/(2*phi),side,side/phi);
+    }else{
+     const pulse=.68+.3*Math.sin(spin*1.5+k*.45);
+     ctx.moveTo(cx+8*Math.sin(spin*.8),cy+8*Math.cos(spin*.8));
+     ctx.lineTo(cx+(px-cx)*pulse,cy+(py-cy)*pulse);
+    }
+    ctx.strokeStyle=palette[(k+index)%palette.length];
+    ctx.globalAlpha=.35+.43*(.5+.5*Math.sin(spin*2+k*.35));
+    ctx.lineWidth=(index===1?1.7:2.2)+(k%4)*.55;
+    ctx.stroke();
    }
-   ctx.strokeStyle=palette[(k+index)%palette.length];
-   ctx.globalAlpha=.48+.24*Math.sin(k*.3+time);
-   ctx.lineWidth=1.2+(k%5)*.42;ctx.stroke();
   }
+  // Shared moving timeline makes animation apparent even from a distance.
   ctx.globalAlpha=1;
+  ctx.fillStyle='rgba(49,84,92,.1)';
+  ctx.fillRect(12,h-11,w-24,3);
+  ctx.fillStyle='#31545c';
+  ctx.fillRect(12,h-11,Math.max(4,((t%8)/8)*(w-24)),3);
  }
  // Paint immediately: a new visitor must never see three blank canvases.
  canvases.forEach((ctx,i)=>{draw(ctx,i,0);textures[i].needsUpdate=true;});
@@ -155,7 +171,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   if(distance<11)loadSource();
   if(distance>11||media.usingExport)return;
   last=time;
-  canvases.forEach((ctx,i)=>{draw(ctx,i,(time-origin)*.00018);textures[i].needsUpdate=true;});
+  canvases.forEach((ctx,i)=>{draw(ctx,i,(time-origin)*.001);textures[i].needsUpdate=true;});
   draws++;
  }
  frameId=requestAnimationFrame(tick);
