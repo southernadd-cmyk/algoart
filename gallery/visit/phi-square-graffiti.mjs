@@ -137,8 +137,8 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
       varying vec2 vUv;varying vec3 vWorld;
       void main(){
        vec2 uv=vUv;
-       float wave=sin(uv.x*55.0+uv.y*17.0+time*.48)*.0028
-                 +sin(uv.y*86.0-uv.x*23.0-time*.39)*.0017;
+       float wave=sin(uv.x*55.0+uv.y*17.0+time*.48)*.0042
+                 +sin(uv.y*86.0-uv.x*23.0-time*.39)*.0026;
        vec2 q=uv+vec2(wave,wave*.7);
        float broad=sin(q.y*13.0+q.x*7.0+time*.18)*.5+.5;
        float hairline=pow(max(0.0,sin(q.y*110.0+q.x*36.0+time*.32)),26.0);
@@ -163,8 +163,8 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
      // Reflect the actual tower, plants and sky at low resolution. The Reflector
      // performs its own virtual-camera pass; throttle it to protect mobile FPS.
      const reflection=new Reflector(new THREE.PlaneGeometry(w-.44,d-.44),{
-      textureWidth:256,textureHeight:160,clipBias:.006,
-      color:0x7d999e,multisample:0
+      textureWidth:192,textureHeight:120,clipBias:.006,
+      color:0x90a8ab,multisample:0
      });
      reflection.rotation.x=-Math.PI/2;
      reflection.position.set(cx,.011,cz);
@@ -180,7 +180,7 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
      root.add(reflection);
      // Ripple/glint treatment is a light translucent layer on real reflections.
      water.transparent=true;water.depthWrite=false;
-     water.fragmentShader=water.fragmentShader.replace('gl_FragColor=vec4(surface,1.0);','gl_FragColor=vec4(surface,.28);');
+     water.fragmentShader=water.fragmentShader.replace('gl_FragColor=vec4(surface,1.0);','gl_FragColor=vec4(surface,.46);');
      waterSurface.position.y=.016;
      waterSurface.renderOrder=1;
     }
