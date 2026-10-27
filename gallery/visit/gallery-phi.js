@@ -1699,38 +1699,44 @@ function constructPhiGallery(layout,studies){
   if(new URLSearchParams(location.search).get('receptionHeroTest')==='1' &&
      furnishing.backrooms?.length&&furnishing.desk){
    const backroom=furnishing.backrooms[0];
-   const roomId=phi.floor.mergedRooms[backroom.room]?.id;
-   // Resolve the *actual architectural opening*, not the diagonal from
-   // reception desk to a storage-room centre (which placed the statue at desk).
-   const openings=phi.circulation.doors.filter(d=>d.from===roomId||d.to===roomId);
+   // Door records can refer to room IDs or merged indices depending on the
+   // layout build. Match geographically against the backroom cell, not IDs.
+   const openings=phi.circulation.doors.filter(d=>{
+    const x=d.axis==='x'?d.at:d.centre,z=d.axis==='z'?d.at:d.centre;
+    return Math.abs(x-backroom.x)<backroom.width/2+1.2 &&
+     Math.abs(z-backroom.z)<backroom.depth/2+1.2;
+   });
    const doorway=openings.sort((a,b)=>{
-    const da=Math.hypot((a.axis==='x'?a.at:a.centre)-furnishing.desk.x,
-     (a.axis==='z'?a.at:a.centre)-furnishing.desk.z);
-    const db=Math.hypot((b.axis==='x'?b.at:b.centre)-furnishing.desk.x,
-     (b.axis==='z'?b.at:b.centre)-furnishing.desk.z);
-    return da-db;
+    const distance=d=>Math.hypot((d.axis==='x'?d.at:d.centre)-furnishing.desk.x,
+     (d.axis==='z'?d.at:d.centre)-furnishing.desk.z);
+    return distance(a)-distance(b);
    })[0];
    let safe=null;
    if(doorway){
     const doorX=doorway.axis==='x'?doorway.at:doorway.centre;
     const doorZ=doorway.axis==='z'?doorway.at:doorway.centre;
-    // The sculpture sits to the side of the opening, not in its threshold.
-    // Choose the foyer-facing side of the wall from the storage-room centre.
-    const normal=doorway.axis==='x'
+    // From the backroom centre outward into reception, then 2.2m laterally.
+    const n=doorway.axis==='x'
      ?new THREE.Vector2(Math.sign(doorX-backroom.x)||1,0)
      :new THREE.Vector2(0,Math.sign(doorZ-backroom.z)||1);
-    const along=doorway.axis==='x'?new THREE.Vector2(0,1):new THREE.Vector2(1,0);
-    const candidates=[-1,1].map(side=>({
-     x:doorX+normal.x*1.9+along.x*side*2.35,
-     z:doorZ+normal.y*1.9+along.y*side*2.35
+    const side=doorway.axis==='x'?new THREE.Vector2(0,1):new THREE.Vector2(1,0);
+    const candidates=[-1,1].map(sign=>({
+     x:doorX+n.x*1.65+side.x*sign*2.2,
+     z:doorZ+n.y*1.65+side.y*sign*2.2
     }));
-    safe=candidates.find(p=>
-     Math.hypot(p.x-doorX,p.z-doorZ)>2.6 &&
-     Math.hypot(p.x-furnishing.entrance.x,p.z-furnishing.entrance.z)>3 &&
-     Math.hypot(p.x-furnishing.lift.x,p.z-furnishing.lift.z)>3 &&
-     !phi.physical.walls.some(w=>w.axis==='x'
-      ?Math.abs(p.x-w.at)<1.35&&p.z>w.lo-.8&&p.z<w.hi+.8
-      :Math.abs(p.z-w.at)<1.35&&p.x>w.lo-.8&&p.x<w.hi+.8));
+    // Prefer the candidate nearest the open reception, without silently
+    // dropping the entire statue when old wall-clearance checks reject both.
+    safe=candidates.sort((p,q)=>
+     Math.hypot(p.x-furnishing.desk.x,p.z-furnishing.desk.z)-
+     Math.hypot(q.x-furnishing.desk.x,q.z-furnishing.desk.z))[0];
+   }else{
+    // Last-resort visible placement adjacent to the small room, never at
+    // the reception desk. Geometry exists even for an unconnected room.
+    const direction=new THREE.Vector2(furnishing.entrance.x-backroom.x,
+     furnishing.entrance.z-backroom.z).normalize();
+    safe={x:backroom.x+direction.x*(backroom.width/2+1.75),
+     z:backroom.z+direction.y*(backroom.depth/2+1.75)};
+    console.warn('Reception statue: matching doorway unavailable; using backroom edge');
    }
    if(safe)fetch(new URL('./data/reception-growth-systems.json',import.meta.url))
     .then(response=>{if(!response.ok)throw Error('Offline bake not published');return response.json();})
