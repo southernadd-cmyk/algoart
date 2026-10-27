@@ -176,6 +176,24 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false}){
       const soil=new THREE.MeshStandardMaterial({color:'#494338',roughness:1});
       piece(2.72,.035,.73,0,.55,.16,soil);
       const leafShape=new THREE.SphereGeometry(1,6,4);
+      // Distinctive taller foliage, attached directly to the visible planted-seat
+      // geometry rather than the asynchronously loaded decorative GLB.
+      const tallStemMat=new THREE.MeshStandardMaterial({color:'#435b3c',roughness:1});
+      const bloomMat=new THREE.MeshStandardMaterial({color:'#d8b0a3',roughness:1});
+      const crownGeo=new THREE.SphereGeometry(1,7,5);
+      for(const [n,dx] of [-.78,.28,.92].entries()){
+       const tall=2.2+n*.37;
+       const stem=new THREE.Mesh(new THREE.CylinderGeometry(.055,.085,tall,6),tallStemMat);
+       stem.position.set(dx,.57+tall/2,.13);group.add(stem);
+       for(let k=0;k<5;k++){
+        const ang=k*Math.PI*2/5+n*.37,branch=new THREE.Mesh(crownGeo,foliage[(n+k)%3]);
+        branch.position.set(dx+Math.cos(ang)*.35,1.5+n*.15+k*.23,.13+Math.sin(ang)*.29);
+        branch.scale.set(.26,.51,.19);branch.rotation.z=Math.cos(ang)*.48;group.add(branch);
+       }
+       const bloom=new THREE.Mesh(crownGeo,bloomMat);
+       bloom.position.set(dx,.67+tall,.13);bloom.scale.set(.17,.16,.17);group.add(bloom);
+      }
+
       for(let i=0;i<7;i++){
        const px=-1.13+i*.37,shift=Math.sin(i*2.4+z)*.16;
        const stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.043,.46,5),darkMetal);
