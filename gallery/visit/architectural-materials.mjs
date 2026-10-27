@@ -174,7 +174,8 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     material.userData.galleryPersistent=true;
     return material;
   };
-  const wall=make('#faf4ea',.96,2.7);
+  const uploadedTest=globalThis.__phiUploadedWallCeilingTest===true;
+  const wall=make(uploadedTest?'#ffffff':'#faf4ea',.96,uploadedTest?2.2:2.7);
   const floor=make('#e1ddd2',.90,2.25);
   const timber=make('#e6daca',.87,2.3);
   const timberLight=make('#f0e6d7',.89,2.3);
@@ -183,7 +184,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   const plinth=make('#f6f1e9',.90,1.15);
   // ambientCG OfficeCeiling001 (CC0): a subtle physical acoustic ceiling
   // grid. 3.85m real-world tile repeat, with safe neutral canvas fallback.
-  const ceiling=make('#f0eee7',.91,3.85);
+  const ceiling=make(uploadedTest?'#ffffff':'#f0eee7',.91,uploadedTest?2.6:3.85);
   // A quieter secondary floor finish permits stone in selected gallery rooms.
   const stone=make('#e6e1d8',.92,1.65);
   const stoneBridge=make('#dedbd3',.91,2.25);
@@ -238,7 +239,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
       diagnostics.loaded.push(slot);
     },undefined,()=>diagnostics.failed.push(slot));
   }
-  normal('wall-normal',MATERIAL_SOURCES.walls.normal,[wall],.15);
+  if(!uploadedTest)normal('wall-normal',MATERIAL_SOURCES.walls.normal,[wall],.15);
   normal('floor-normal',MATERIAL_SOURCES.floors.normal,[floor,stoneBridge],.21);
   loader.load(MATERIAL_SOURCES.timber.diffuse,source=>{
     try{
@@ -287,7 +288,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // Local colour scans are preferred from the outset. Canvas fallback materials
   // keep the exhibition usable even if an optional scan is unavailable.
   for(const [slot,url,mode,targets] of [
-    ['oga-walls',LOCAL_TEXTURES.walls,'walls',[wall,plinth]],
+    ['oga-walls',LOCAL_TEXTURES.walls,'walls',uploadedTest?[plinth]:[wall,plinth]],
     ['oga-floors',LOCAL_TEXTURES.floors,'floor',[floor]],
     ['oga-stone',LOCAL_TEXTURES.stone,'floor',[stone]]
   ]){
@@ -298,6 +299,17 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
         diagnostics.loaded.push(slot);texture.dispose();
       }catch(_){diagnostics.failed.push(slot);}
     },undefined,()=>diagnostics.failed.push(slot));
+  }
+  if(uploadedTest){
+    // Test-only: show the unmodified uploaded wall scan, rather than tintScan's
+    // almost-white reduction. Leave the production gallery material unchanged.
+    loader.load(LOCAL_TEXTURES.walls,texture=>{
+      texture.colorSpace=THREE.SRGBColorSpace;
+      texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+      texture.anisotropy=lowPower?1:4;
+      wall.map=texture;wall.needsUpdate=true;
+      diagnostics.loaded.push('uploaded-wall-original');
+    },undefined,()=>diagnostics.failed.push('uploaded-wall-original'));
   }
   let finish='stone';
   const finishFor=()=>finish;
