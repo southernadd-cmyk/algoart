@@ -1,4 +1,7 @@
-import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=one-reception-record-20261027';
+import {createPhiGalleryMusic} from './gallery-music.mjs?v=distributed-record-20261027';
+import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
+import {planGallerySpeakers,addGalleryCeilingSpeaker} from './gallery-speakers.mjs?v=distributed-record-20261027';
+import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=distributed-record-20261027';
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
@@ -84,6 +87,8 @@ let phiOutdoorPlants=[];
 let phiReceptionMap=null;
 let phiReceptionDesk=null;
 let phiReceptionGramophone=null;
+let phiGalleryMusic=null;
+let phiSpeakerEmitters=[];
 let phiFurnishingObstacles=[];
 let phiSquareObstacles=[];
 let phiRideState=null;
@@ -153,6 +158,7 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
   startAfter:window.__galleryEarly?.tower
 });
 const wall=galleryFinish.wall;
+let receptionTilePreview=null;
 const towerGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.exteriorBrick,lowPower:galleryFinish.lowPower});
 const interiorGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.wall,lowPower:galleryFinish.lowPower,
  planner:planInteriorGraffiti,keyFor:interiorGraffitiKey,kind:'interior'});
@@ -172,6 +178,10 @@ if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnosti
  preview(){const frame=phiSquare.viewpoint();if(!frame)return;const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(frame.position);view.lookAt(frame.target);renderer.setAnimationLoop(null);renderer.render(scene,view);},
  resume(){renderer.setAnimationLoop(tick);}};
 if(GALLERY_DEBUG)window.__phiReceptionPreview={
+ speaker(kind='room'){const object=kind==='lift'?window.__phiCeilingSpeakers?.lift:window.__phiCeilingSpeakers?.rooms[0];if(!object?.parent)return;
+  const view=new THREE.PerspectiveCamera(50,camera.aspect,.02,50);object.updateWorldMatrix(true,false);
+  view.position.copy(object.localToWorld(new THREE.Vector3(.45,-.6,.45)));view.lookAt(object.getWorldPosition(new THREE.Vector3()));
+  renderer.setAnimationLoop(null);renderer.render(scene,view);},
  overview(){const view=new THREE.PerspectiveCamera(55,camera.aspect,.1,500);view.position.set(98,74,-130);view.lookAt(4,67,0);renderer.setAnimationLoop(null);renderer.render(scene,view);},
  show(kind){const object=kind==='map'?phiReceptionMap:kind==='desk'?phiReceptionDesk?.root:kind==='gramophone'?phiReceptionGramophone?.root:phiOutdoorPlants[0];if(!object?.parent)return;
   object.updateWorldMatrix(true,false);const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);
@@ -1360,11 +1370,20 @@ function queuePhiFurnishings(phi,furnishings,elevation){
 }
 function constructPhiGallery(layout,studies){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
+ if(globalThis.__phiReceptionTilePreview&&!receptionTilePreview)receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});
+ const roomFloor=(exhibitDate===RECEPTION&&receptionTilePreview)||galleryFinish.floor;
+ if(GALLERY_DEBUG)window.__phiReceptionTiles=roomFloor===receptionTilePreview?receptionTilePreview:null;
+ if(!phiGalleryMusic)phiGalleryMusic=createPhiGalleryMusic(THREE,{canvas,debug:GALLERY_DEBUG});
+ const speakers=planGallerySpeakers(phi.floor.mergedRooms,{elevation,ceilingHeight:ROOM_HEIGHT});
+ phiSpeakerEmitters=speakers.map(p=>addGalleryCeilingSpeaker(THREE,scene,p));
+ if(GALLERY_DEBUG)window.__phiCeilingSpeakers={roomCount:speakers.length,rooms:phiSpeakerEmitters.slice(),lift:null};
  window.__phiFullEngine={date:exhibitDate,roomCount:phi.floor.mergedRooms.length,wallCount:phi.physical.walls.length,artworks:studies.length,paintings:phi.exhibition.paintings.length,sculptures:phi.exhibition.sculptures.length,unplaced:phi.exhibition.unplaced.length,paintingSizes:phi.exhibition.paintings.map(p=>({width:p.width,height:p.height})),paintingsLoaded:0};
  // Every floor, enclosure and collision surface comes from the same phi plan.
  const plaster=galleryFinish?.interiorWall||wall;
- for(const p of phi.pieces)
-   block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,galleryFinish.floor);
+ for(const p of phi.pieces){
+   const slab=block(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,roomFloor);
+   if(roomFloor===receptionTilePreview)alignReceptionTileUvs(slab);
+ }
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.04)continue;
   if(w.axis==='x')block(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,plaster);
@@ -1519,6 +1538,9 @@ function constructPhiGallery(layout,studies){
  const l=phi.circulation.lift;
  const cabin=new THREE.Group();cabin.name='phi-archive-lift-cabin';
  cabin.position.set(l.x,elevation,l.z);scene.add(cabin);phiLiftCabin=cabin;
+ const liftSpeaker=addGalleryCeilingSpeaker(THREE,cabin,{x:.68,y:2.962,z:-.68,diameter:.25,name:'lift-ceiling-speaker'});
+ phiSpeakerEmitters.push(liftSpeaker);
+ if(GALLERY_DEBUG)window.__phiCeilingSpeakers.lift=liftSpeaker;
  const cabinObject=object=>{
   object.position.sub(cabin.position);cabin.add(object);return object;
  };
@@ -1644,8 +1666,9 @@ function constructPhiGallery(layout,studies){
   phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone,timber:galleryFinish.timberSmoked,trims:galleryFinish.trims});
   if(phiReceptionDesk)phiSquareObstacles.push(...phiReceptionDesk.obstacles);
   if(globalThis.__phiReceptionTestRefresh&&furnishing.desk){
-   phiReceptionGramophone=addPhiReceptionGramophone(THREE,scene,{furnishing,elevation,camera,canvas,timber:galleryFinish.timberSmoked||galleryFinish.timber,trims:galleryFinish.trims,debug:GALLERY_DEBUG});
+   phiReceptionGramophone=addPhiReceptionGramophone(THREE,scene,{furnishing,elevation,camera,canvas,timber:galleryFinish.timberSmoked||galleryFinish.timber,trims:galleryFinish.trims,music:phiGalleryMusic,debug:GALLERY_DEBUG});
    phiSquareObstacles.push(phiReceptionGramophone.obstacle);
+   phiSpeakerEmitters.push(phiReceptionGramophone.emitter);
   }
   const captions=[
    ['PROPORTION PIECE','An algorithmically generated gallery','exhibiting algorithmically generated art.'],
@@ -1899,6 +1922,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   try{
     constructPhiGallery(plan,studyList);
     if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);
+    phiGalleryMusic.setEmitters(phiSpeakerEmitters);
   }catch(error){
     // Remove partially constructed destination objects before recovery.
     // Otherwise a failed construction leaves orphaned meshes in the scene.
@@ -2456,7 +2480,7 @@ function tick() {
     targetFloor:phiLiftTarget,phase:phiRideState||window.__phiLiftRide?.status==='arrived'?'moving':liftTravelling?'preparing':'idle'
   }));
   entranceDoor?.update(dt,rig.position);
-  phiReceptionGramophone?.update(rig.position);
+  phiGalleryMusic?.update(rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
   if(GALLERY_DEBUG)window.__phiLiftState={

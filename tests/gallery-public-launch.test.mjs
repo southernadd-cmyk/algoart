@@ -61,7 +61,7 @@ test('public metadata and essential production assets exist',()=>{
     'models/polyhaven-street-lamp-01-optimized.glb',
     'models/twin-surface-spotlight.glb',
     'models/elevator-game-ready.glb',
-    ...['pothos-plant','cardboard-boxes','gothic-entrance-door','succulent-planter','vintage-world-map','magazine-cabinet','paper-clutter','modern-reception-fittings','reception-gramophone'].map(n=>'models/'+n+'.glb'),
+    ...['pothos-plant','cardboard-boxes','gothic-entrance-door','succulent-planter','vintage-world-map','magazine-cabinet','paper-clutter','modern-reception-fittings','reception-gramophone','ceiling-speaker'].map(n=>'models/'+n+'.glb'),
     'credits.html','phi-gallery.css','legacy.html','phi-tower-preview.png',
     'assets/day-environment-hdri-101-1k.jpg',
     'assets/day-environment-hdri-101-2k.jpg',

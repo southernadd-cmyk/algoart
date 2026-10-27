@@ -64,7 +64,7 @@
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
     window.__galleryStage='Importing bundled JavaScript';
-    await import('../../gallery/visit/gallery-phi-test.js?v=gallery-office-reception-20261027');
+    await import('../../gallery/visit/gallery-phi-test.js?v=gallery-speakers-tiles-20261027');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);

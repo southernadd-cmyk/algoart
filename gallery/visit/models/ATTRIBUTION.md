@@ -38,3 +38,11 @@ Licence: https://creativecommons.org/licenses/by/4.0/ . User-visible source link
 ## Reception gramophone
 
 **Grammaphone** by **josephineburns**, [source](https://sketchfab.com/3d-models/grammaphone-b1a1c0eb77254acd81f94f38e6569c6a), [author](https://sketchfab.com/josephineburns), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Uploaded model repackaged as GLB; original geometry and colours retained, scaled for display.
+
+## Gallery and lift ceiling speakers
+
+**Ceiling Speaker** by **spy_dogg**, [source](https://sketchfab.com/3d-models/ceiling-speaker-58580cd22a144b64b2aa9873d429a0b5), [author](https://sketchfab.com/chives1996), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Transforms baked for a downward-facing recessed grille, texture resized and recompressed, scale calibrated for room and lift ceilings. The same cached model is reused across floors.
+
+## Reception floor tiles
+
+**PBR Floor Tiles Material** by **Aman Bajwa**, [source](https://sketchfab.com/3d-models/pbr-floor-tiles-material-4f30f4ab3cf4461d8f0460c236fd9309), [author](https://sketchfab.com/7bajwa), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Colour, roughness and normal maps extracted from the uploaded GLB and recompressed as WebP; roughness taken from the packed map's green channel, normal strength reduced, and repeat calibrated for reception. Used on both the live and test towers.
