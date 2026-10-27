@@ -1455,14 +1455,14 @@ function constructPhiGallery(layout,studies){
   if(exhibitDate===RECEPTION&&location.pathname.includes('/test/virtual-gallery/')&&finish===receptionWallMaterial){
    // Explicit reception wall faces. BoxGeometry material order:
    // +X, -X, +Y, -Y, +Z, -Z. The blue wallpaper is retained
-   // on +X and -Z; only the original grey-facing -X and +Z
-   // faces receive painted plaster. Never infer finishes from lights.
+   // on -X and +Z; the opposite +X and -Z faces receive
+   // painted plaster. Never infer finishes from lights.
    // Reuse the existing mesh/groups rather than cloning geometry or
    // layering coplanar meshes (avoids z-fighting and extra geometry).
    mesh.material=[
-    receptionWallMaterial,receptionPaintedPlasterMaterial,
+    receptionPaintedPlasterMaterial,receptionWallMaterial,
     receptionWallMaterial,receptionWallMaterial,
-    receptionPaintedPlasterMaterial,receptionWallMaterial
+    receptionWallMaterial,receptionPaintedPlasterMaterial
    ];
   }
  }
