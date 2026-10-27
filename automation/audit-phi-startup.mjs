@@ -43,7 +43,7 @@ await build({entryPoints:['gallery/visit/gallery-phi-test.js'],bundle:true,minif
 await mkdir('phi-startup-audit',{recursive:true});
 const cases=[['baseline',0],['shadows',1],['shadows',1],['baseline',0]];
 const results=[];
-for(let index=0;index<cases.length;index++){
+for(let index=Number(process.env.PHI_AUDIT_START||0);index<cases.length;index++){
  const [name,shadows]=cases[index];
  const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  try{
@@ -67,7 +67,6 @@ for(let index=0;index<cases.length;index++){
   const afterEntry=await snapshot(page);
   const profile=await cdp.send('Profiler.stop');
   await writeFile(`phi-startup-audit/${index}-${name}.cpuprofile`,JSON.stringify(profile.profile));
-  await page.screenshot({path:`phi-startup-audit/${index}-${name}.png`});
   const resources=await page.evaluate(()=>performance.getEntriesByType('resource').map(r=>({name:r.name,bytes:r.transferSize,encoded:r.encodedBodySize,start:r.startTime,duration:r.duration})));
   const result={index,name,shadows,softwareRendering:true,viewport:'960x600 @1',atReady,afterEntry,errors,logs,resources};
   results.push(result);await writeFile('phi-startup-audit/results.json',JSON.stringify(results,null,2));
