@@ -1846,10 +1846,18 @@ function constructPhiGallery(layout,studies){
     get info(){return phiReceptionLivingMonitor?.infoDiagnostics||{state:'no-monitor'};}
    };
   }
-  if(globalThis.__phiTranslationSignTest){
+  {
+   // Use the interior glass doorway by the gramophone, never the main entrance.
+   const gramophone=phiReceptionGramophone?.obstacle;
+   const interiorDoors=(phi.circulation.doors||[]).filter(d=>
+    (d.axis==='x'||d.axis==='z')&&Number.isFinite(d.at)&&Number.isFinite(d.centre));
+   const doorDistance=d=>Math.hypot(
+    (d.axis==='x'?d.at:d.centre)-gramophone.x,
+    (d.axis==='z'?d.at:d.centre)-gramophone.z);
+   const translationDoor=gramophone?interiorDoors.sort((a,b)=>doorDistance(a)-doorDistance(b))[0]:null;
    const installation=addPhiTranslationAreaSign(THREE,scene,{
-    entrance:phi.circulation.publicEntrance,
-    gramophone:phiReceptionGramophone?.obstacle,
+    entrance:translationDoor,
+    gramophone,
     elevation
    });
    if(installation){
@@ -1862,7 +1870,7 @@ function constructPhiGallery(layout,studies){
     });
    }
    window.__phiTranslationAreaSignDiagnostics={
-    inputs:{entrance:phi.circulation.publicEntrance,gramophone:phiReceptionGramophone?.obstacle||null},
+    inputs:{entrance:translationDoor,gramophone:gramophone||null},
     placed:!!installation,placement:installation?.placement||null,
     modelFaces:installation?.meshFaces||0,
     get visible(){return !!scene.getObjectByName('phi-translation-area-doorway-sign');}
