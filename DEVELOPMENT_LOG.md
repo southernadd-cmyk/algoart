@@ -13,6 +13,28 @@ For the non-visual review of remaining numeric constants and genuine φ geometry
 **Current editor renderer: V9 (18 October 2026).** Earlier entries below are a chronological record and may refer to older defaults.
 <img width="1400" height="1000" alt="image" src="https://github.com/user-attachments/assets/e8015ddb-3cbd-4b3a-9475-697435c327c0" />
 
+## 28 October 2026 — The artwork becomes a building
+
+The daily archive is no longer only a sequence of images. PROPORTION PIECE has developed into a walkable Three.js tower in which each day's work becomes another exhibition floor. This changes the central question: can a rule system not only compose individual drawings, but also organise the space in which they are encountered?
+
+**Architecture as composition.** The tower uses a φ-informed floor planner, with a merge stage introduced after early layouts divided rooms too aggressively. Paintings share the floors with selected portrait works interpreted as sculpture. Reception, lift, glass walkways and the outdoor square establish a route through an expanding archive. The exterior's black brick, roof, planted areas and reflecting pool, alongside carefully chosen wall and ceiling textures, make the virtual space feel deliberately curated rather than merely procedural. Attributions for externally sourced assets belong in the reception credits.
+
+**A second generative language.** Exterior and interior graffiti became a substantial parallel experiment. Letterform families, legibility checks, wall-aligned atlases, spray/marker characteristics and material responses were developed so the tags could read as marks on brick and plaster rather than flat text pasted over a wall. Placement, overlap and disappearing-at-close-range problems led to repeated revisions. The outside compositions increasingly focus on φ as a visual signature.
+
+**Translation Area.** Reception's back rooms now host an experiment connecting the generative drawings with TouchDesigner. The installation combines explanatory signage, a model, a downloadable .toe project and moving images on six screens. On 28 October a change was committed to use one combined video source cropped across the six displays, reducing duplicated video handling. The translation is a new interpretation of the work, not a replacement for its browser-based renderer.
+
+**The building's computational cost.** The project moved costly tower geometry and floor layouts into prebuilt assets, with parallelised startup, deferred visitors and locally bundled resources. Recent work has examined post-processing, shadows, texture loading, and the stutter immediately after entering the 3D world. Improving first movement without sacrificing visual quality remains a live objective; a successful bundle build alone is not proof of smooth performance on a visitor's device.
+
+**Materials and reproducibility.** The drawing engine continues to develop independently of the tower: oil pigment behaviour, action-painting gestures, watercolour fidelity, staged 'how it was made' walkthroughs and version-pinned artwork links have all received attention. Preserving the seed, parameters and renderer/material version matters because the gallery is an archive, not simply a feed of replaceable images.
+
+**Publishing and presentation.** The daily gallery, social distribution and press materials now form part of the artwork's public life. The press PDF and illustrated media archive were refreshed on 28 October; the automated daily archive and social runs still require separate operational checks. A publishing commit should never be mistaken for proof that every external social platform accepted a post.
+
+The project is now three connected systems: **a drawing machine, an accumulating archive, and a generative exhibition building**. Their common subject is how far formal proportion can govern an artwork without eliminating accident, materiality or human judgement.
+
+**Next:** measure first-entry stutter and mobile image-loading performance; verify portrait sculpture fidelity and tower accessibility; continue the TouchDesigner experiments; maintain automated publishing checks and dated asset attribution.
+
+---
+
 ## 18 October 2026 — Editorial design, gallery lettering and a changing welcome image
 
 This pass was less about adding drawing features and more about making the project look and read like itself. The interface had accumulated numbers, labels, repeated φ symbols and explanatory copy that looked more like a software specification than an art project. The question on the live editor was shortened to **“Can one number compose a drawing?”** The existing eight series names were deliberately retained: renaming the underlying drawing practices for stylistic novelty would have lost continuity with the archive.
