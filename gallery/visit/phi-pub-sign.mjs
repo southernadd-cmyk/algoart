@@ -1,7 +1,7 @@
 import {loadPhiDecorAsset} from './phi-model-assets.mjs';
 // Pub Sign by johhny3D, CC BY 4.0. Original bracket, chains and board;
 // adapted with baked PROPORTION PIECE handstyle and a phi background.
-const modelURL=new URL('./models/proportion-piece-pub-sign.glb?v=upright2-20261028',import.meta.url).href;
+const modelURL=new URL('./models/proportion-piece-pub-sign.glb?v=interlocked-marker-20261028',import.meta.url).href;
 export function addPhiPubSign(THREE,frontage){
  const root=new THREE.Group();root.name='phi-proportion-piece-hanging-sign';
  // Local +Z faces the square. Mount at the right of the arched entrance,
