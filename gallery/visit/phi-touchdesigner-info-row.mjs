@@ -2,7 +2,7 @@
 // and a clickable .toe project download. No loading or image decoding at startup.
 const PREVIEW=new URL('./touchdesigner/td-network-loop.webp',import.meta.url);
 const LOGO=new URL('./touchdesigner/touchdesigner-logo.png',import.meta.url);
-const PROJECT=new URL('./touchdesigner/watercolour-burst-AA-20261005-03-55769.toe',import.meta.url);
+const PROJECT=new URL('./touchdesigner/pp_translation_room_watercolour.toe',import.meta.url);
 
 export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,camera}){
  const material=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.32,roughness:.48});
