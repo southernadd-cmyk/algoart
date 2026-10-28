@@ -46,6 +46,7 @@ export function translationAreaSignPlacement(entrance,gramophone,{scale=TRANSLAT
   [inward]:door[inward]+Math.max(-.95,Math.min(.95,
    (gramophone[inward]-door[inward])*.42))
  };
+ centre[inward]+=Math.sign(gramophone[inward]-door[inward]||1)*.9144; // Shift 3ft from the wall.
  const distanceToGramophone=Math.hypot(centre.x-gramophone.x,centre.z-gramophone.z);
  const distanceToDoor=Math.hypot(centre.x-door.x,centre.z-door.z);
  // If there is too little room, do not let a freestanding sign clip the
