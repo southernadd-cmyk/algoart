@@ -12,7 +12,7 @@ Place these exact filenames beside this document in `gallery/visit/touchdesigner
 
 1. `td-network-loop.webp`: 384 × 240, 84 frames, animated WebP compressed from the artist's 10.54-second node-network screen recording. It is decoded only when a visitor approaches the screens.
 2. `touchdesigner-logo.png`: white-background TouchDesigner by Derivative logo, cropped from the artist-provided branding image.
-3. `watercolour-burst-AA-20261005-03-55769.toe`: the **actual saved TouchDesigner project used to produce the watercolour burst video**, not the unrelated `phase1.toe` project.
+3. `pp_translation_room_watercolour.toe`: the **actual saved TouchDesigner project**. This file is already in the repository and the download link points directly to it.
 
 The last screen displays **CLICK TO DOWNLOAD .TOE** only after an HTTP HEAD request confirms that the published project exists. A pointer click on that screen within five metres opens the .toe; on mobile, visitors can tap the screen. Without the .toe, it displays **Project file awaiting publication** instead of offering a broken download.
 
