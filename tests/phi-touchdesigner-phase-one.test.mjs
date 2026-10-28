@@ -48,3 +48,22 @@ test('Published triptych requires three correctly sized panels and a safe media 
  assert.equal(validateTouchDesignerTriptych({...enabled,triptych:{...manifest.triptych,width:1153}}),null);
  assert.equal(validateTouchDesignerTriptych({...enabled,triptych:{...manifest.triptych,fps:120}}),null);
 });
+
+test('Watercolour triptych is independently verified and never replaces the original source',async()=>{
+ const wc=JSON.parse(await readFile(new URL('../gallery/visit/touchdesigner/watercolour-burst.json',import.meta.url),'utf8'));
+ assert.equal(wc.status,'published');
+ assert.equal(wc.artwork.seed,'AA-20261005-03-55769');
+ assert.equal(wc.artwork.material,'watercolour-v2s');
+ assert.equal(wc.artwork.settings.phiStrength,91);
+ assert.equal(wc.artwork.settings.goldenAngle,93);
+ assert.equal(wc.artwork.settings.spiralInfluence,63);
+ assert.ok(validateTouchDesignerTriptych(wc),'Watercolour manifest must pass validated VP9 contract');
+ assert.equal(wc.triptych.file,'watercolour-burst-AA-20261005-03-55769-triptych.webm');
+ const bytes=await readFile(new URL('../gallery/visit/touchdesigner/'+wc.triptych.file,import.meta.url));
+ const hash=createHash('sha256').update(bytes).digest('hex');
+ assert.equal(bytes.length,4867895,'Unexpected watercolour video size');
+ assert.equal(hash,'dfba634571fd77cbf7c7e8666b73cfb6aa16b29f33c88ad77bb1019a59a884da');
+ assert.equal(wc.triptych.sha256,hash);
+ assert.equal(wc.triptych.sizeBytes,bytes.length);
+ assert.equal(manifest.triptych.file,'phase-one-triptych.webm','Original video remains the first row');
+});
