@@ -1,6 +1,7 @@
 import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
 import {addPhiReceptionLivingMonitor} from './phi-reception-living-monitor.mjs';
+import {addPhiTranslationAreaSign} from './phi-translation-area-sign.mjs';
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
 import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
@@ -1843,6 +1844,21 @@ function constructPhiGallery(layout,studies){
     get media(){return phiReceptionLivingMonitor?.mediaDiagnostics||{state:'no-monitor'};},
     get mediaWatercolour(){return phiReceptionLivingMonitor?.watercolourDiagnostics||{state:'no-monitor'};},
     get info(){return phiReceptionLivingMonitor?.infoDiagnostics||{state:'no-monitor'};}
+   };
+  }
+  if(globalThis.__phiTranslationSignTest){
+   const fallbackRoom=furnishing.backrooms?.[0]||phi.floor.mergedRooms
+    .flatMap((room,i)=>room.pieces.map(p=>({
+     x:p.x+p.w/2,z:p.z+p.h/2,width:p.w,depth:p.h,area:p.w*p.h,room:i
+    }))).filter(p=>p.width>=2.5&&p.depth>=2.5&&(!foyer||p.room!==phi.floor.mergedRooms.indexOf(foyer)))
+    .sort((a,b)=>a.area-b.area)[0];
+   const installation=addPhiTranslationAreaSign(THREE,scene,{
+    room:fallbackRoom,doors:phi.circulation.doors,lift:furnishing.lift,elevation
+   });
+   window.__phiTranslationAreaSignDiagnostics={
+    placed:!!installation,placement:installation?.placement||null,
+    modelFaces:installation?.meshFaces||0,
+    get visible(){return !!scene.getObjectByName('phi-translation-area-doorway-sign');}
    };
   }
   // Permanent reception installation: two pre-baked Growth Systems sculptures
