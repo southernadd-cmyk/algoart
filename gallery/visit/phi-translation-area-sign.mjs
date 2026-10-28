@@ -139,3 +139,48 @@ export function addPhiTranslationAreaSign(THREE,scene,{entrance,gramophone,eleva
   panel.geometry.dispose();panel.material.dispose();texture.dispose();
  }};
 }
+
+// A second copy of the same credited A-frame, beside reception's lift.
+export function towerLiftSignPlacement(lift,entrance){
+ if(!lift?.portal||!entrance)return null;
+ const x=lift.portal.at+1,z=lift.portal.centre+2.05;
+ const door={x:entrance.axis==='z'?entrance.centre:entrance.at,
+  z:entrance.axis==='x'?entrance.centre:entrance.at};
+ return {x,z,yaw:Math.atan2(door.x-x,door.z-z),scale:TRANSLATION_SIGN_SCALE};
+}
+export function addPhiTowerLiftSign(THREE,scene,{lift,entrance,elevation=0}){
+ const place=towerLiftSignPlacement(lift,entrance);if(!place)return null;
+ const root=new THREE.Group();root.name='phi-daily-tower-lift-sign';
+ root.userData.kind='gallery-label';
+ root.position.set(place.x,elevation+.016,place.z);
+ root.rotation.y=place.yaw;root.scale.setScalar(place.scale);
+ const frame=new THREE.Mesh(meshGeometry(THREE),new THREE.MeshStandardMaterial({
+  color:'#80614a',roughness:.94,side:THREE.DoubleSide}));root.add(frame);
+ const canvas=document.createElement('canvas');canvas.width=768;canvas.height=1450;
+ const g=canvas.getContext('2d',{alpha:false});
+ g.fillStyle='#18373a';g.fillRect(0,0,768,1450);
+ g.strokeStyle='rgba(250,243,225,.3)';g.lineWidth=9;g.strokeRect(20,20,728,1410);
+ g.textAlign='center';g.fillStyle='#f0eadd';g.font='58px Georgia, serif';
+ g.fillText('THE DAILY',384,160,650);g.fillText('GALLERY TOWER',384,240,650);
+ g.strokeStyle='#d7c6a7';g.lineWidth=3;g.beginPath();g.moveTo(90,290);g.lineTo(678,290);g.stroke();
+ g.fillStyle='#d9c9aa';g.font='italic 37px Georgia, serif';
+ g.fillText('A new collection. A new floor.',384,365,660);
+ g.fillStyle='#f0eadc';g.font='43px Georgia, serif';
+ const lines=['Each day, new studies','become a new exhibition','floor above reception.','','Take this lift to explore','the growing tower.'];
+ lines.forEach((line,i)=>{if(line)g.fillText(line,384,475+i*91,650);});
+ g.strokeStyle='#d7c6a7';g.beginPath();g.moveTo(90,1040);g.lineTo(678,1040);g.stroke();
+ g.fillStyle='#d9c9aa';g.font='38px Georgia, serif';g.fillText('USE THE LIFT CALENDAR',384,1120,650);
+ g.fillStyle='#f0eadc';g.font='39px Georgia, serif';
+ g.fillText('Choose a date to visit its floor.',384,1205,650);
+ g.fillText('Return here via Reception.',384,1275,650);
+ g.font='28px Georgia, serif';g.fillText('PROPORTION PIECE',384,1390,650);
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;
+ const material=new THREE.MeshBasicMaterial({map:texture,toneMapped:false});
+ for(const side of [1,-1]){
+  const panel=new THREE.Mesh(new THREE.PlaneGeometry(.355,.734),material);
+  panel.position.set(0,.565,side*.087);
+  panel.rotation.set(-side*Math.atan(11.16/79.38),side===1?0:Math.PI,0);
+  panel.name='daily-tower-lift-information-'+(side===1?'front':'back');root.add(panel);
+ }
+ root.userData.placement=place;scene.add(root);return {root,placement:place};
+}

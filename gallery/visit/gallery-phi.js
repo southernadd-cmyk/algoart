@@ -1,7 +1,7 @@
 import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
 import {addPhiReceptionLivingMonitor} from './phi-reception-living-monitor.mjs';
-import {addPhiTranslationAreaSign} from './phi-translation-area-sign.mjs';
+import {addPhiTranslationAreaSign,addPhiTowerLiftSign} from './phi-translation-area-sign.mjs';
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
 import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
@@ -1795,6 +1795,15 @@ function constructPhiGallery(layout,studies){
  liftDoorThreshold=liftCabinPosition.clone();
  if(exhibitDate===RECEPTION){
   const furnishing=planPhiReception(phi.floor,phi.circulation,phi.physical);
+  const towerLiftSign=addPhiTowerLiftSign(THREE,scene,{
+   lift:l,entrance:phi.circulation.publicEntrance,elevation
+  });
+  if(towerLiftSign)phiSquareObstacles.push({
+   x:towerLiftSign.placement.x,z:towerLiftSign.placement.z,
+   width:.42*towerLiftSign.placement.scale+.08,
+   depth:.34*towerLiftSign.placement.scale+.08,
+   yaw:towerLiftSign.placement.yaw,kind:'daily-tower-lift-chalkboard'
+  });
   phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone,timber:galleryFinish.timberSmoked,trims:galleryFinish.trims});
   if(phiReceptionDesk)phiSquareObstacles.push(...phiReceptionDesk.obstacles);
   if(globalThis.__phiReceptionTestRefresh&&furnishing.desk){
