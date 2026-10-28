@@ -1,6 +1,6 @@
 import {createTouchDesignerMonitorMedia} from './phi-touchdesigner-media.mjs';
 
-// Test-only three-monitor installation for the ground-floor reception.
+// Two three-monitor rows on the reception backroom's real wall, also used live.
 // Coordinates stay in the untransformed phi layout; the gallery transforms
 // all newly created scene children after constructing the floor.
 
@@ -52,7 +52,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
  if(!wall)return null;
  const root=new THREE.Group();
  root.name='phi-reception-three-living-monitors';
- root.userData.kind='reception-three-living-monitors';
+ root.userData.kind='reception-six-living-monitors';
  root.userData.mount={...wall};
  root.position.set(wall.x,elevation+2.08,wall.z);
  root.rotation.y=wall.yaw;
@@ -61,9 +61,15 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
  const lampMaterial=new THREE.MeshBasicMaterial({color:0x66c59d,toneMapped:false});
  const textures=[],screenMaterials=[],canvases=[],screens=[];
  const width=wall.width,height=width*0.66;
- for(let screenIndex=0;screenIndex<3;screenIndex++){
+ // Leave the approved original top row at exactly the same position.
+ // Add a second row underneath; at typical sizes its bottom edge is
+ // about 0.7 m above the floor, with clear space between the bezels.
+ const rowPitch=height+.17;
+ for(let screenIndex=0;screenIndex<6;screenIndex++){
+  const row=Math.floor(screenIndex/3),column=screenIndex%3;
   const unit=new THREE.Group();
-  unit.position.x=(screenIndex-1)*(width+wall.gap);
+  unit.position.x=(column-1)*(width+wall.gap);
+  unit.position.y=-row*rowPitch;
   unit.name='living-monitor-'+(screenIndex+1);
   const frame=new THREE.Mesh(new THREE.BoxGeometry(width,height,.075),bezelMaterial);
   frame.name='monitor-bezel';
@@ -87,7 +93,11 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
  scene.add(root);
  // A single 1152x240 TouchDesigner WebM can feed all three panels.
  // Until an authentic export is published, use the existing procedural canvases.
- const media=createTouchDesignerMonitorMedia(THREE,{screens});
+ const media=createTouchDesignerMonitorMedia(THREE,{screens:screens.slice(0,3)});
+ const watercolourManifest=new URL('./touchdesigner/watercolour-burst.json',import.meta.url);
+ const mediaWatercolour=createTouchDesignerMonitorMedia(THREE,{
+  screens:screens.slice(3,6),manifestURL:watercolourManifest,followActiveIndex:false
+ });
 
  // Show the actual, reproducible study on monitor one even before an
  // authentic TouchDesigner export is available. Load only when approached.
@@ -157,7 +167,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   ctx.fillRect(12,h-11,Math.max(4,((t%8)/8)*(w-24)),3);
  }
  // Paint immediately: a new visitor must never see three blank canvases.
- canvases.forEach((ctx,i)=>{draw(ctx,i,0);textures[i].needsUpdate=true;});
+ canvases.forEach((ctx,i)=>{draw(ctx,i%3,0);textures[i].needsUpdate=true;});
  let disposed=false,last=0,frameId=0,draws=0;
  const origin=performance.now();
  const cameraPosition=new THREE.Vector3(),monitorPosition=new THREE.Vector3();
@@ -168,18 +178,25 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   root.getWorldPosition(monitorPosition);
   const distance=camera.getWorldPosition(cameraPosition).distanceTo(monitorPosition);
   media.update(distance<11);
+  mediaWatercolour.update(distance<11);
   if(distance<11)loadSource();
-  if(distance>11||media.usingExport)return;
+  if(distance>11||(media.usingExport&&mediaWatercolour.usingExport))return;
   last=time;
-  canvases.forEach((ctx,i)=>{draw(ctx,i,(time-origin)*.001);textures[i].needsUpdate=true;});
+  canvases.forEach((ctx,i)=>{
+   // Once a row has a real video, stop uploading its fallback canvases.
+   if((i<3&&media.usingExport)||(i>=3&&mediaWatercolour.usingExport))return;
+   draw(ctx,i%3,(time-origin)*.001);textures[i].needsUpdate=true;
+  });
   draws++;
  }
  frameId=requestAnimationFrame(tick);
- return {root,mount:wall,screenCount:3,get drawCount(){return draws;},
+ return {root,mount:wall,screenCount:6,rowCount:2,get drawCount(){return draws;},
   get mediaDiagnostics(){return media.diagnostics();},
+  get watercolourDiagnostics(){return mediaWatercolour.diagnostics();},
   dispose(){
    if(disposed)return;
-   disposed=true;cancelAnimationFrame(frameId);media.dispose();scene.remove(root);
+   disposed=true;cancelAnimationFrame(frameId);
+   media.dispose();mediaWatercolour.dispose();scene.remove(root);
    root.traverse(object=>object.geometry?.dispose());
    textures.forEach(texture=>texture.dispose());
    screenMaterials.forEach(material=>material.dispose());
