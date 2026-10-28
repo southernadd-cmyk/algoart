@@ -1837,9 +1837,11 @@ function constructPhiGallery(layout,studies){
    window.__phiLivingMonitorDiagnostics={
     selectedRoom:monitorRoom||null,placed:!!phiReceptionLivingMonitor,
     screenCount:phiReceptionLivingMonitor?.screenCount||0,
+    rowCount:phiReceptionLivingMonitor?.rowCount||0,
     wall:phiReceptionLivingMonitor?.mount||null,
     localPosition:phiReceptionLivingMonitor?.root.position.toArray()||null,
-    get media(){return phiReceptionLivingMonitor?.mediaDiagnostics||{state:'no-monitor'};}
+    get media(){return phiReceptionLivingMonitor?.mediaDiagnostics||{state:'no-monitor'};},
+    get mediaWatercolour(){return phiReceptionLivingMonitor?.watercolourDiagnostics||{state:'no-monitor'};}
    };
   }
   // Permanent reception installation: two pre-baked Growth Systems sculptures
