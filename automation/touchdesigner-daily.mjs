@@ -1,4 +1,4 @@
-// Phase 2: deterministic job contract. TouchDesigner runs only on local Windows.
+// Phase 2: deterministic job contract. A separate ON-DEMAND cloud GPU worker renders TouchDesigner; no personal laptop is required.
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -42,7 +42,7 @@ export function createTouchDesignerJob(meta){
    editorURL:e.shareUrl,settings:e.settings},
   render:{...PHASE2_SPEC,panels:['source','translation','emergence']},
   output:{file:'daily/'+date+'.webm',manifest:'daily/'+date+'.json'},
-  note:'Render in local TouchDesigner, verify with ffprobe, then publish through the local Phase 2 publisher.'
+  note:'Render on a provisioned cloud GPU worker with TouchDesigner; verify VP9, frame count, loop and hash before publishing. Never depend on a personal computer.'
  };
 }
 export async function generateTouchDesignerJob(date,{root=ROOT}={}){
