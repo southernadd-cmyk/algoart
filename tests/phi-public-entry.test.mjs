@@ -70,7 +70,7 @@ try{
   assert.equal(monitors.screenMeshes,9,'Expected nine actual screen meshes in the active scene');
   assert.equal(monitors.wall?.fromPhysical,true,'Monitors must attach to real backroom wall geometry');
   {
-   // The same authentic CC-BY A-frame must greet visitors in both live and test.
+   // The larger CC-BY A-frame must stand between the public glass entrance and gramophone in both towers.
    const sign=await page.evaluate(()=>{
     const d=window.__phiTranslationAreaSignDiagnostics;
     const root=window.__PP_EXPORT_SCENE__?.scene?.getObjectByName('phi-translation-area-doorway-sign');
@@ -81,6 +81,7 @@ try{
       triangleCount:originalMesh?.geometry?.index?.count/3,
       label:!!label,position:root?.position.toArray(),scale:root?.scale.x};
    });
+   console.log('Translation Area sign, real entrance and gramophone geometry:',JSON.stringify(sign));
    assert.equal(sign.placed,true,'Translation Area sign missing: '+JSON.stringify(sign));
    assert.equal(sign.visible,true,'Sign must be in the active scene');
    assert.equal(sign.label,true,'Gallery text must cover original cafe label');
