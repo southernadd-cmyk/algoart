@@ -3,6 +3,8 @@
 // the lightweight canvases on the three test-only reception monitors.
 
 export const TOUCHDESIGNER_TRIPTYCH_MANIFEST = new URL('./touchdesigner/phase-one.json',import.meta.url);
+export const TOUCHDESIGNER_ACTIVE_INDEX = new URL('./touchdesigner/active.json',import.meta.url);
+export function isSafeTouchDesignerManifestPath(path){return path==='phase-one.json'||(/^daily\/\d{4}-\d{2}-\d{2}\.json$/.test(path));}
 
 export function validateTouchDesignerTriptych(data){
  if(!data || data.version!==1 || !data.triptych)return null;
@@ -12,15 +14,15 @@ export function validateTouchDesignerTriptych(data){
     t.panelWidth!==384 || t.panelHeight!==240 ||
     t.width!==1152 || t.height!==240 ||
     !Number.isFinite(t.fps) || t.fps<1 || t.fps>30)return null;
- if(typeof t.file!=='string'|| !/^phase-one-triptych\.(webm|mp4)$/.test(t.file))return null;
+ if(typeof t.file!=='string'|| !(/^(phase-one-triptych|\d{4}-\d{2}-\d{2})\.webm$/.test(t.file)))return null;
  return {file:t.file,width:t.width,height:t.height,panelWidth:t.panelWidth,panelHeight:t.panelHeight};
 }
 
 export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCHDESIGNER_TRIPTYCH_MANIFEST}){
- let state='fallback',started=false,disposed=false,video=null,texture=null,material=null;
+ let state='fallback',started=false,disposed=false,video=null,texture=null,material=null,activeManifest=manifestURL;
  let playerActive=false,playerStarting=false,lastError='',originalUVs=[];
  const setState=next=>{state=next;};
- const diag=()=>({state,error:lastError,videoReady:!!video&&video.readyState>=2,playing:playerActive});
+ const diag=()=>({state,error:lastError,videoReady:!!video&&video.readyState>=2,playing:playerActive,manifest:activeManifest.pathname});
  const restore=()=>{
   screens.forEach((screen,i)=>{
    if(originalUVs[i]){
@@ -46,16 +48,27 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   started=true;setState('checking-export');
   let manifest;
   try{
-   const response=await fetch(manifestURL,{cache:'no-store'});
+   // The active pointer changes only after a locally rendered and verified
+   // daily WebM is committed. Missing index retains the proven Phase 1 work.
+   try{
+    const indexResponse=await fetch(TOUCHDESIGNER_ACTIVE_INDEX,{cache:'no-store'});
+    if(indexResponse.ok){
+     const index=await indexResponse.json();
+     if(index?.version===1&&isSafeTouchDesignerManifestPath(index.manifest))
+      activeManifest=new URL(index.manifest,TOUCHDESIGNER_ACTIVE_INDEX);
+    }
+   }catch{ /* Keep Phase 1 when index is offline. */ }
+   if(disposed)return;
+   const response=await fetch(activeManifest,{cache:'no-store'});
    if(!response.ok)throw new Error('TouchDesigner manifest HTTP '+response.status);
    manifest=await response.json();
    if(disposed)return;
    const media=validateTouchDesignerTriptych(manifest);
    if(!media){setState('awaiting-export');return;}
-   const source=new URL(media.file,manifestURL);
+   const source=new URL(media.file,activeManifest);
    // The manifest may not redirect media to another host or path.
-   if(source.origin!==manifestURL.origin ||
-      !source.pathname.startsWith(new URL('.',manifestURL).pathname))
+   if(source.origin!==activeManifest.origin ||
+      !source.pathname.startsWith(new URL('.',activeManifest).pathname))
      throw new Error('TouchDesigner media must be same-origin');
    setState('loading-export');
    const element=document.createElement('video');
