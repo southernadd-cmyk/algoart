@@ -1,6 +1,6 @@
 # PROPORTION PIECE — The Translation Room (TouchDesigner Phase 1)
 
-**Status: genuine TouchDesigner export independently verified; repository upload pending.** The 20-second VP9/WebM (1152×240, 24 fps, 480 frames, 3,384,087 bytes) has SHA256 `d64dd7eda6c7bbb62ce90a19c8543791b455d16989a875fa4b7a72914c0ff9d0`. Until the verified binary and manifest are committed together, the three test monitors continue showing their browser fallbacks.
+**Status: genuine TouchDesigner export published to the test gallery.** The verified 20-second VP9/WebM (1152×240, 24 fps, 480 frames, 3,384,087 bytes) has SHA256 `d64dd7eda6c7bbb62ce90a19c8543791b455d16989a875fa4b7a72914c0ff9d0`. The manifest is enabled; approaching the three reception monitors should play the published video with three UV-mapped panels. Procedural canvases remain the fallback if decoding fails. The live tower is unchanged.
 
 ## Source and translation
 
