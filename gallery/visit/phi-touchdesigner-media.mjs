@@ -1,6 +1,6 @@
 // TouchDesigner output is OPTIONAL and never part of tower startup.
 // A published manifest and a valid browser video are required before replacing
-// the lightweight canvases on the three test-only reception monitors.
+// the lightweight canvases on the two rows of reception monitors.
 
 export const TOUCHDESIGNER_TRIPTYCH_MANIFEST = new URL('./touchdesigner/phase-one.json',import.meta.url);
 export const TOUCHDESIGNER_ACTIVE_INDEX = new URL('./touchdesigner/active.json',import.meta.url);
@@ -14,11 +14,11 @@ export function validateTouchDesignerTriptych(data){
     t.panelWidth!==384 || t.panelHeight!==240 ||
     t.width!==1152 || t.height!==240 ||
     !Number.isFinite(t.fps) || t.fps<1 || t.fps>30)return null;
- if(typeof t.file!=='string'|| !(/^(phase-one-triptych|\d{4}-\d{2}-\d{2})\.webm$/.test(t.file)))return null;
+ if(typeof t.file!=='string'|| !(/^(phase-one-triptych|watercolour-burst-AA-20261005-03-55769-triptych|\d{4}-\d{2}-\d{2})\.webm$/.test(t.file)))return null;
  return {file:t.file,width:t.width,height:t.height,panelWidth:t.panelWidth,panelHeight:t.panelHeight};
 }
 
-export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCHDESIGNER_TRIPTYCH_MANIFEST}){
+export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCHDESIGNER_TRIPTYCH_MANIFEST,followActiveIndex=true}){
  let state='fallback',started=false,disposed=false,video=null,texture=null,material=null,activeManifest=manifestURL;
  let playerActive=false,playerStarting=false,lastError='',originalUVs=[];
  const setState=next=>{state=next;};
@@ -50,7 +50,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   try{
    // The active pointer changes only after a locally rendered and verified
    // daily WebM is committed. Missing index retains the proven Phase 1 work.
-   try{
+   if(followActiveIndex)try{
     const indexResponse=await fetch(TOUCHDESIGNER_ACTIVE_INDEX,{cache:'no-store'});
     if(indexResponse.ok){
      const index=await indexResponse.json();
