@@ -69,7 +69,8 @@ try{
   if(monitors.rowCount!==undefined)assert.equal(monitors.rowCount,3);
   assert.equal(monitors.screenMeshes,9,'Expected nine actual screen meshes in the active scene');
   assert.equal(monitors.wall?.fromPhysical,true,'Monitors must attach to real backroom wall geometry');
-  if(monitorPage.name==='test'){
+  {
+   // The same authentic CC-BY A-frame must greet visitors in both live and test.
    const sign=await page.evaluate(()=>{
     const d=window.__phiTranslationAreaSignDiagnostics;
     const root=window.__PP_EXPORT_SCENE__?.scene?.getObjectByName('phi-translation-area-doorway-sign');
