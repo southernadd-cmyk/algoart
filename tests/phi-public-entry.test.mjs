@@ -69,6 +69,28 @@ try{
   if(monitors.rowCount!==undefined)assert.equal(monitors.rowCount,3);
   assert.equal(monitors.screenMeshes,9,'Expected nine actual screen meshes in the active scene');
   assert.equal(monitors.wall?.fromPhysical,true,'Monitors must attach to real backroom wall geometry');
+  if(monitorPage.name==='test'){
+   const sign=await page.evaluate(()=>{
+    const d=window.__phiTranslationAreaSignDiagnostics;
+    const root=window.__PP_EXPORT_SCENE__?.scene?.getObjectByName('phi-translation-area-doorway-sign');
+    const label=root?.getObjectByName('translation-area-curatorial-label');
+    const originalMesh=root?.children.find(x=>x.isMesh&&x!==label);
+    return {placed:d?.placed,visible:d?.visible,placement:d?.placement,
+      modelFaces:d?.modelFaces,
+      triangleCount:originalMesh?.geometry?.index?.count/3,
+      label:!!label,position:root?.position.toArray()};
+   });
+   assert.equal(sign.placed,true,'The Translation Area sign must be placed beside the actual backroom doorway');
+   assert.equal(sign.visible,true,'Sign must be in the active scene');
+   assert.equal(sign.label,true,'Gallery text must cover original cafe label');
+   assert.equal(sign.modelFaces,152,'The original Sketchfab model has 152 faces per A-frame');
+   assert.equal(sign.triangleCount,152,'Must use the actual uploaded 3D model topology');
+   assert.ok(sign.placement?.doorWidth>1,'The exhibition entrance needs an open doorway');
+   assert.ok(Math.hypot(sign.placement.x-sign.placement.doorCentre,sign.placement.z-sign.placement.doorAt)>1.3,
+    'The sign may not occupy the centre of its doorway');
+   console.log('Translation Area entrance sign position and clearance:',sign);
+  }
+
   assert.equal(monitors.media?.state,'fallback','TouchDesigner must not load media at gallery startup');
   assert.equal(testRequests.filter(url=>/phase-one-triptych\.webm|watercolour-burst-.*\.webm/.test(url)).length,0,
    'Neither video decoder should start at gallery startup');
