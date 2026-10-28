@@ -38,15 +38,17 @@ export function translationAreaSignPlacement(entrance,gramophone,{scale=TRANSLAT
  const requiredLateralClearance=half+signRadius+.3;
  const between=Math.abs(difference)-.9;
  // Aim to be between the door and gramophone but keep door opening clear.
+ // The door frame still occluded half the board: shift it along the wall,
+ // to the gramophone side and clear of the glazing, not deeper through the door.
  const lateral=Math.max(requiredLateralClearance,
-   Math.min(Math.max(requiredLateralClearance,between),Math.abs(difference)*.57));
+   Math.min(Math.max(requiredLateralClearance,between),Math.abs(difference)*.57)) + 1.3;
  const centre={
   ...door,
   [across]:door[across]+side*lateral,
   [inward]:door[inward]+Math.max(-.95,Math.min(.95,
    (gramophone[inward]-door[inward])*.42))
  };
- centre[inward]+=Math.sign(gramophone[inward]-door[inward]||1)*.9144; // Shift 3ft from the wall.
+ // Stay on the reception side of the glass; lateral separation clears its frame.
  const distanceToGramophone=Math.hypot(centre.x-gramophone.x,centre.z-gramophone.z);
  const distanceToDoor=Math.hypot(centre.x-door.x,centre.z-door.z);
  // If there is too little room, do not let a freestanding sign clip the
