@@ -19,12 +19,12 @@ PDF=OUT/'PROPORTION_PIECE_Press_Kit.pdf'
 ZIP=OUT/'PROPORTION_PIECE_Media_Pack.zip'
 TOWER='gallery/visit/walk-the-tower-golden.png'
 ARTS=[
-('Action painting — landscape','gallery/2026-10-18/2026-10-18-action-landscape-01-organic-ACL-20261018-01-67793.jpg'),
-('Oil paint — landscape','gallery/2026-10-18/2026-10-18-oil-landscape-01-organic-OL-20261018-01-76206.jpg'),
-('Watercolour — landscape','gallery/2026-10-18/2026-10-18-watercolour-landscape-01-rects-CWL-20261018-01-93715.jpg'),
-('Marker — radiant system','gallery/2026-10-18/2026-10-18-01-burst-AA-20261018-01-52639.jpg'),
-('Action painting — portrait','gallery/2026-10-18/2026-10-18-action-portrait-01-network-ACP-20261018-01-15023.jpg'),
-('Oil paint — portrait','gallery/2026-10-18/2026-10-18-oil-portrait-01-geometric-OP-20261018-01-11851.jpg'),
+('Action painting — landscape','gallery/2026-10-28/2026-10-28-action-landscape-01-organic-ACL-20261028-01-14286.jpg'),
+('Oil paint — landscape','gallery/2026-10-28/2026-10-28-oil-landscape-01-geometric-OL-20261028-01-51497.jpg'),
+('Watercolour — landscape','gallery/2026-10-28/2026-10-28-watercolour-landscape-01-burst-CWL-20261028-01-47666.jpg'),
+('Marker — portrait system','gallery/2026-10-28/2026-10-28-portrait-01-scribble-AP-20261028-01-04299.jpg'),
+('Action painting — portrait','gallery/2026-10-28/2026-10-28-action-portrait-01-field-ACP-20261028-01-14806.jpg'),
+('Oil paint — portrait','gallery/2026-10-28/2026-10-28-oil-portrait-02-organic-OP-20261028-02-27634.jpg'),
 ]
 styles=getSampleStyleSheet()
 styles.add(ParagraphStyle(name='TitleCustom',parent=styles['Title'],fontSize=27,leading=32,textColor=HexColor('#403931'),spaceAfter=15))
@@ -41,7 +41,7 @@ def picture(path,width=475,maxheight=315):
     scale=min(width/w,maxheight/h)
     story.append(Image(str(f),width=w*scale,height=h*scale))
 para('PROPORTION PIECE','TitleCustom')
-para('Press and editorial resources | Updated 27 October 2026')
+para('Press and editorial resources | Updated 28 October 2026')
 para('<b>An algorithmically generated gallery exhibiting algorithmically generated art.</b>')
 para('PROPORTION PIECE (formerly ALGO/ART) is an ongoing open-source browser artwork by Adam Clement. Eight generative drawing systems explore the golden ratio through repeatable composition and five simulations of human-looking materials: marker, tissue and graphite, watercolour, oil paint and action painting.')
 picture(TOWER)
@@ -60,7 +60,7 @@ para('Source: https://github.com/southernadd-cmyk/algoart')
 heading('Editorial and reproduction')
 para('Official title: PROPORTION PIECE (formerly ALGO/ART). Suggested credit: PROPORTION PIECE / Adam Clement. Please confirm reproduction permission and final image choice before publication. Contact: southernadd@googlemail.com.')
 story.append(PageBreak())
-heading('Selected artwork — archive of 18 October 2026')
+heading('Selected artwork — archive of 28 October 2026')
 para('The six works below are a curated archival selection, not the latest daily output. Current works appear in the linked daily gallery.')
 for caption,path in ARTS:
     picture(path,width=400,maxheight=250)
@@ -70,5 +70,5 @@ with ZipFile(ZIP,'w',ZIP_DEFLATED,compresslevel=8) as z:
     z.write(PDF,PDF.name)
     z.write(ROOT/TOWER,'images/'+Path(TOWER).name)
     for _,path in ARTS:z.write(ROOT/path,'images/'+Path(path).name)
-    z.writestr('README.txt','PROPORTION PIECE / Adam Clement — press assets\nUpdated 27 October 2026\n\nImage files: one current 3D tower image and six curated studies from 18 October 2026.\nThe daily archive provides newer works.\n\nEditor: https://southernadd-cmyk.github.io/algoart/\nTower: https://southernadd-cmyk.github.io/algoart/gallery/visit/\nDaily archive: https://southernadd-cmyk.github.io/algoart/gallery/\nCredit: PROPORTION PIECE / Adam Clement\nContact to confirm reproduction permission: southernadd@googlemail.com\n')
+    z.writestr('README.txt','PROPORTION PIECE / Adam Clement — press assets\nUpdated 28 October 2026\n\nImage files: one current 3D tower image and six curated studies from 28 October 2026.\nThe daily archive provides newer works.\n\nEditor: https://southernadd-cmyk.github.io/algoart/\nTower: https://southernadd-cmyk.github.io/algoart/gallery/visit/\nDaily archive: https://southernadd-cmyk.github.io/algoart/gallery/\nCredit: PROPORTION PIECE / Adam Clement\nContact to confirm reproduction permission: southernadd@googlemail.com\n')
 print(f'Built {PDF} and {ZIP}')
