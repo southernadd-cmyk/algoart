@@ -76,12 +76,12 @@ try{
     const root=window.__PP_EXPORT_SCENE__?.scene?.getObjectByName('phi-translation-area-doorway-sign');
     const label=root?.getObjectByName('translation-area-curatorial-label');
     const originalMesh=root?.children.find(x=>x.isMesh&&x!==label);
-    return {placed:d?.placed,visible:d?.visible,placement:d?.placement,
+    return {placed:d?.placed,visible:d?.visible,placement:d?.placement,inputs:d?.inputs,
       modelFaces:d?.modelFaces,
       triangleCount:originalMesh?.geometry?.index?.count/3,
       label:!!label,position:root?.position.toArray(),scale:root?.scale.x};
    });
-   assert.equal(sign.placed,true,'The Translation Area sign must be placed beside the actual backroom doorway');
+   assert.equal(sign.placed,true,'Translation Area sign missing: '+JSON.stringify(sign));
    assert.equal(sign.visible,true,'Sign must be in the active scene');
    assert.equal(sign.label,true,'Gallery text must cover original cafe label');
    assert.equal(sign.modelFaces,152,'The original Sketchfab model has 152 faces per A-frame');
