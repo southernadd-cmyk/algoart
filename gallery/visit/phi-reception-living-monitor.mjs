@@ -1,4 +1,4 @@
-import {createTouchDesignerMonitorMedia} from './phi-touchdesigner-media.mjs';
+import {createTouchDesignerMonitorMedia,TOUCHDESIGNER_SIX_SCREEN_MANIFEST} from './phi-touchdesigner-media.mjs';
 import {addTouchDesignerInfoRow} from './phi-touchdesigner-info-row.mjs';
 
 // Two three-monitor rows on the reception backroom's real wall, also used live.
@@ -96,12 +96,9 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
  // Third row documents the authoring process and exposes the editable project.
  const infoRow=addTouchDesignerInfoRow(THREE,{root,width,height,gap:wall.gap,rowPitch,camera});
  scene.add(root);
- // A single 1152x240 TouchDesigner WebM can feed all three panels.
- // Until an authentic export is published, use the existing procedural canvases.
- const media=createTouchDesignerMonitorMedia(THREE,{screens:screens.slice(0,3)});
- const watercolourManifest=new URL('./touchdesigner/watercolour-burst.json',import.meta.url);
- const mediaWatercolour=createTouchDesignerMonitorMedia(THREE,{
-  screens:screens.slice(3,6),manifestURL:watercolourManifest,followActiveIndex:false
+ // One 1152x480 atlas preserves both triptychs with one player and texture.
+ const media=createTouchDesignerMonitorMedia(THREE,{
+  screens,manifestURL:TOUCHDESIGNER_SIX_SCREEN_MANIFEST,followActiveIndex:false
  });
 
  // Show the actual, reproducible study on monitor one even before an
@@ -183,14 +180,11 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   root.getWorldPosition(monitorPosition);
   const distance=camera.getWorldPosition(cameraPosition).distanceTo(monitorPosition);
   media.update(distance<11);
-  mediaWatercolour.update(distance<11);
   infoRow.update(time,distance<11);
   if(distance<11)loadSource();
-  if(distance>11||(media.usingExport&&mediaWatercolour.usingExport))return;
+  if(distance>11||media.usingExport)return;
   last=time;
   canvases.forEach((ctx,i)=>{
-   // Once a row has a real video, stop uploading its fallback canvases.
-   if((i<3&&media.usingExport)||(i>=3&&mediaWatercolour.usingExport))return;
    draw(ctx,i%3,(time-origin)*.001);textures[i].needsUpdate=true;
   });
   draws++;
@@ -199,11 +193,11 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
  return {root,mount:wall,screenCount:9,rowCount:3,get drawCount(){return draws;},
   get infoDiagnostics(){return infoRow.diagnostics;},
   get mediaDiagnostics(){return media.diagnostics();},
-  get watercolourDiagnostics(){return mediaWatercolour.diagnostics();},
+  get watercolourDiagnostics(){return media.diagnostics();},
   dispose(){
    if(disposed)return;
    disposed=true;cancelAnimationFrame(frameId);
-   media.dispose();mediaWatercolour.dispose();infoRow.dispose();scene.remove(root);
+   media.dispose();infoRow.dispose();scene.remove(root);
    root.traverse(object=>object.geometry?.dispose());
    textures.forEach(texture=>texture.dispose());
    screenMaterials.forEach(material=>material.dispose());

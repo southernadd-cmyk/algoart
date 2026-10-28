@@ -2,8 +2,8 @@
 
 The backroom now contains three horizontal rows of three screens:
 
-- Top row: original oil painting interpreted in TouchDesigner (`phase-one-triptych.webm`).
-- Middle row: watercolour burst (`watercolour-burst-AA-20261005-03-55769-triptych.webm`).
+- Top row: original oil painting interpreted in TouchDesigner.
+- Middle row: watercolour burst.
 - Bottom row (the information row): a looping view of the TouchDesigner node network, a short description, and the TouchDesigner by Derivative logo with an optional project download.
 
 ## Three assets for the information row
@@ -18,7 +18,7 @@ The last screen displays **CLICK TO DOWNLOAD .TOE** only after an HTTP HEAD requ
 
 ## Runtime and performance
 
-Each of the top two rows uses one video texture cropped into three sections. The third information row uses simple canvas textures. Animated WebP frames are uploaded at no more than ~7 fps and **only when the visitor is within 11 metres**. The network recording is not loaded at tower startup. The full installation is disposed when leaving the reception.
+The top two rows share one playing video and one video texture: `six-screen-installation.webm`, declared by `six-screen.json`. Its 1152 × 480 frame stacks the original oil triptych above the watercolour triptych, preserving 384 × 240 pixels per screen, 24 fps and the 20-second loop. Each screen selects one of the six grid cells through its geometry UVs. The original source files and manifests remain available for provenance; neither source video is requested during installation playback. Both rows start, pause and dispose together. The six-screen manifest deliberately does not follow the single-triptych daily active pointer. The third information row uses simple canvas textures. Animated WebP frames are uploaded at no more than ~7 fps and **only when the visitor is within 11 metres**. The network recording is not loaded at tower startup. The full installation is disposed when leaving the reception.
 
 The entire project file, if published here, is **publicly downloadable by everyone**. Review the .toe for private data, licence material, embedded usernames, and local file paths before publication.
 

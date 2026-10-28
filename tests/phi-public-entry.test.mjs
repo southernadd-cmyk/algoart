@@ -65,7 +65,7 @@ try{
   assert.equal(monitors.placed,true,'Monitor creation must succeed during reception construction');
   assert.equal(monitors.count,9,'Expected nine reception monitors in three rows');
   // The generated bundle may omit diagnostic-only rowCount, but screen geometry
-  // and independent video sources below must prove both rows are present.
+  // and shared video source below must prove both rows are present.
   if(monitors.rowCount!==undefined)assert.equal(monitors.rowCount,3);
   assert.equal(monitors.screenMeshes,9,'Expected nine actual screen meshes in the active scene');
   assert.equal(monitors.wall?.fromPhysical,true,'Monitors must attach to real backroom wall geometry');
@@ -103,8 +103,8 @@ try{
   }
 
   assert.equal(monitors.media?.state,'fallback','TouchDesigner must not load media at gallery startup');
-  assert.equal(testRequests.filter(url=>/phase-one-triptych\.webm|watercolour-burst-.*\.webm/.test(url)).length,0,
-   'Neither video decoder should start at gallery startup');
+  assert.equal(testRequests.filter(url=>/six-screen-installation\.webm|phase-one-triptych\.webm|watercolour-burst-.*\.webm/.test(url)).length,0,
+   'The shared video decoder should not start at gallery startup');
   // Verify living screens actually animate, not merely show static canvases.
   // Place the automated viewer near the installed wall to exercise the
   // distance-gated render loop without relying on keyboard navigation.
@@ -118,7 +118,7 @@ try{
   // Published media must use the actual uploaded VP9 file, not only browser canvases.
   // The test checks the decoded, playing video on every monitor after approach.
   const declared=JSON.parse(await (await page.request.get(
-   'http://127.0.0.1:4173/gallery/visit/touchdesigner/phase-one.json')).text());
+   'http://127.0.0.1:4173/gallery/visit/touchdesigner/six-screen.json')).text());
   if(declared.status==='published'){
    await page.waitForFunction(()=>{
     const d=window.__phiLivingMonitorDiagnostics;
@@ -131,24 +131,29 @@ try{
     const meshes=[1,2,3,4,5,6].map(i=>root.getObjectByName('living-monitor-'+i).getObjectByName('monitor-screen'));
     const videos=meshes.map(m=>m.material.map.image);
     const uvs=meshes.map(m=>m.geometry.getAttribute('uv').getX(0));
+    const vvs=meshes.map(m=>m.geometry.getAttribute('uv').getY(0));
     const ys=[1,2,3,4,5,6,7,8,9].map(i=>root.getObjectByName('living-monitor-'+i).position.y);
     return {media:window.__phiLivingMonitorDiagnostics.media,
       watercolour:window.__phiLivingMonitorDiagnostics.mediaWatercolour,
       firstRowShared:videos.slice(0,3).every(v=>v?.tagName==='VIDEO'&&v===videos[0]),
       secondRowShared:videos.slice(3,6).every(v=>v?.tagName==='VIDEO'&&v===videos[3]),
-      independentVideos:videos[0]!==videos[3],
+      allShared:videos.every(v=>v===videos[0]),
+      sharedTexture:meshes.every(m=>m.material.map===meshes[0].material.map),
       dimensions:[videos[0]?.videoWidth,videos[0]?.videoHeight],
       watercolourDimensions:[videos[3]?.videoWidth,videos[3]?.videoHeight],
       currentTime:videos[0]?.currentTime,
-      watercolourTime:videos[3]?.currentTime,uvs,ys};
+      watercolourTime:videos[3]?.currentTime,uvs,vvs,ys};
    });
    assert.equal(playback.media.state,'playing-export','Top row failed playback: '+JSON.stringify(playback));
    assert.equal(playback.watercolour.state,'playing-export','Watercolour row failed playback: '+JSON.stringify(playback));
    assert.equal(playback.firstRowShared,true,'Top three screens should share one VideoTexture');
-   assert.equal(playback.secondRowShared,true,'Bottom three screens should share another VideoTexture');
-   assert.equal(playback.independentVideos,true,'Each row must use its own triptych');
-   assert.deepEqual(playback.dimensions,[1152,240]);
-   assert.deepEqual(playback.watercolourDimensions,[1152,240]);
+   assert.equal(playback.secondRowShared,true,'Watercolour screens should share the same VideoTexture');
+   assert.equal(playback.allShared,true,'All six screens must share one video element');
+   assert.equal(playback.sharedTexture,true,'All six screens must share one texture');
+   assert.ok(playback.vvs.slice(0,3).every(v=>v===1),'Oil must crop the upper atlas row');
+   assert.ok(playback.vvs.slice(3).every(v=>v===.5),'Watercolour must crop the lower atlas row');
+   assert.deepEqual(playback.dimensions,[1152,480]);
+   assert.deepEqual(playback.watercolourDimensions,[1152,480]);
    assert.ok(playback.ys.slice(0,3).every(y=>Math.abs(y)<.001));
    assert.ok(playback.ys.slice(3,6).every(y=>y<-.4),'Watercolour screens must be below original row');
    assert.ok(playback.ys.slice(6).every(y=>y<playback.ys[3]-.4),'TouchDesigner explainer screens must be below watercolour row');
@@ -164,10 +169,10 @@ try{
     'Original TouchDesigner video time must advance while the visitor is nearby');
    assert.ok(later[1]>playback.watercolourTime+.5,
     'Watercolour TouchDesigner video time must advance while the visitor is nearby');
-   assert.ok(testRequests.some(url=>url.includes('phase-one-triptych.webm')),
-    'Original TouchDesigner WebM must be requested');
-   assert.ok(testRequests.some(url=>url.includes('watercolour-burst-AA-20261005-03-55769-triptych.webm')),
-    'Watercolour TouchDesigner WebM must be requested');
+   assert.ok(testRequests.some(url=>url.includes('six-screen-installation.webm')),
+    'Combined TouchDesigner WebM must be requested');
+   assert.equal(testRequests.some(url=>/phase-one-triptych\.webm|watercolour-burst-.*\.webm/.test(url)),false,
+    'Original source videos must not be loaded alongside the combined video');
    console.log('Real TouchDesigner videos play on both three-monitor rows:',playback);
   }else{
    const readFrames=()=>page.evaluate(()=>{

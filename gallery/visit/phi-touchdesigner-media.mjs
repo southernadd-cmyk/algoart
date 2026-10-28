@@ -1,8 +1,9 @@
 // TouchDesigner output is OPTIONAL and never part of tower startup.
 // A published manifest and a valid browser video are required before replacing
-// the lightweight canvases on the two rows of reception monitors.
+// the lightweight canvases. The six-screen atlas shares one decoder and texture.
 
 export const TOUCHDESIGNER_TRIPTYCH_MANIFEST = new URL('./touchdesigner/phase-one.json',import.meta.url);
+export const TOUCHDESIGNER_SIX_SCREEN_MANIFEST = new URL('./touchdesigner/six-screen.json',import.meta.url);
 export const TOUCHDESIGNER_ACTIVE_INDEX = new URL('./touchdesigner/active.json',import.meta.url);
 export function isSafeTouchDesignerManifestPath(path){return path==='phase-one.json'||(/^daily\/\d{4}-\d{2}-\d{2}\.json$/.test(path));}
 
@@ -18,6 +19,18 @@ export function validateTouchDesignerTriptych(data){
  return {file:t.file,width:t.width,height:t.height,panelWidth:t.panelWidth,panelHeight:t.panelHeight};
 }
 
+export function validateTouchDesignerSixScreen(data){
+ if(!data || data.version!==1 || data.status!=='published')return null;
+ const a=data.atlas;
+ if(!a || a.file!=='six-screen-installation.webm' || a.layout!=='grid' ||
+    a.columns!==3 || a.rows!==2 || a.panelCount!==6 ||
+    a.panelWidth!==384 || a.panelHeight!==240 ||
+    a.width!==1152 || a.height!==480 ||
+    !Number.isFinite(a.fps) || a.fps<1 || a.fps>30)return null;
+ return {file:a.file,width:a.width,height:a.height,panelWidth:a.panelWidth,
+  panelHeight:a.panelHeight,columns:a.columns,rows:a.rows};
+}
+
 export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCHDESIGNER_TRIPTYCH_MANIFEST,followActiveIndex=true}){
  let state='fallback',started=false,disposed=false,video=null,texture=null,material=null,activeManifest=manifestURL;
  let playerActive=false,playerStarting=false,lastError='',originalUVs=[];
@@ -27,7 +40,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   screens.forEach((screen,i)=>{
    if(originalUVs[i]){
     const uv=screen.geometry.getAttribute('uv');
-    originalUVs[i].forEach((value,j)=>uv.setX(j,value));
+    originalUVs[i].forEach(([x,y],j)=>uv.setXY(j,x,y));
     uv.needsUpdate=true;
    }
    if(screen.userData.fallbackMaterial)screen.material=screen.userData.fallbackMaterial;
@@ -63,8 +76,10 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
    if(!response.ok)throw new Error('TouchDesigner manifest HTTP '+response.status);
    manifest=await response.json();
    if(disposed)return;
-   const media=validateTouchDesignerTriptych(manifest);
+   const media=manifest.atlas?validateTouchDesignerSixScreen(manifest):validateTouchDesignerTriptych(manifest);
    if(!media){setState('awaiting-export');return;}
+   const columns=media.columns??3,rows=media.rows??1;
+   if(screens.length!==columns*rows)throw new Error('Incorrect TouchDesigner screen count');
    const source=new URL(media.file,activeManifest);
    // The manifest may not redirect media to another host or path.
    if(source.origin!==activeManifest.origin ||
@@ -101,8 +116,13 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
    material=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});
    screens.forEach((screen,i)=>{
     const uv=screen.geometry.getAttribute('uv');
-    originalUVs[i]=Array.from({length:uv.count},(_,j)=>uv.getX(j));
-    for(let j=0;j<uv.count;j++)uv.setX(j,(i+originalUVs[i][j])/3);
+    originalUVs[i]=Array.from({length:uv.count},(_,j)=>[uv.getX(j),uv.getY(j)]);
+    const column=i%columns,row=Math.floor(i/columns);
+    // Video's top row occupies the upper half of the texture's UV space.
+    for(let j=0;j<uv.count;j++){
+     const [x,y]=originalUVs[i][j];
+     uv.setXY(j,(column+x)/columns,(rows-1-row+y)/rows);
+    }
     uv.needsUpdate=true;
     screen.userData.fallbackMaterial=screen.material;
     screen.material=material;
