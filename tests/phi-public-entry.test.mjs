@@ -63,11 +63,11 @@ try{
     wall:diag?.wall,media:diag?.media,position:root?.position.toArray(),error:document.getElementById('error')?.textContent};
   });
   assert.equal(monitors.placed,true,'Monitor creation must succeed during reception construction');
-  assert.equal(monitors.count,6,'Expected six reception monitors in two rows');
+  assert.equal(monitors.count,9,'Expected nine reception monitors in three rows');
   // The generated bundle may omit diagnostic-only rowCount, but screen geometry
   // and independent video sources below must prove both rows are present.
-  if(monitors.rowCount!==undefined)assert.equal(monitors.rowCount,2);
-  assert.equal(monitors.screenMeshes,6,'Expected six actual screen meshes in the active scene');
+  if(monitors.rowCount!==undefined)assert.equal(monitors.rowCount,3);
+  assert.equal(monitors.screenMeshes,9,'Expected nine actual screen meshes in the active scene');
   assert.equal(monitors.wall?.fromPhysical,true,'Monitors must attach to real backroom wall geometry');
   assert.equal(monitors.media?.state,'fallback','TouchDesigner must not load media at gallery startup');
   assert.equal(testRequests.filter(url=>/phase-one-triptych\.webm|watercolour-burst-.*\.webm/.test(url)).length,0,
@@ -98,7 +98,7 @@ try{
     const meshes=[1,2,3,4,5,6].map(i=>root.getObjectByName('living-monitor-'+i).getObjectByName('monitor-screen'));
     const videos=meshes.map(m=>m.material.map.image);
     const uvs=meshes.map(m=>m.geometry.getAttribute('uv').getX(0));
-    const ys=[1,2,3,4,5,6].map(i=>root.getObjectByName('living-monitor-'+i).position.y);
+    const ys=[1,2,3,4,5,6,7,8,9].map(i=>root.getObjectByName('living-monitor-'+i).position.y);
     return {media:window.__phiLivingMonitorDiagnostics.media,
       watercolour:window.__phiLivingMonitorDiagnostics.mediaWatercolour,
       firstRowShared:videos.slice(0,3).every(v=>v?.tagName==='VIDEO'&&v===videos[0]),
@@ -117,7 +117,8 @@ try{
    assert.deepEqual(playback.dimensions,[1152,240]);
    assert.deepEqual(playback.watercolourDimensions,[1152,240]);
    assert.ok(playback.ys.slice(0,3).every(y=>Math.abs(y)<.001));
-   assert.ok(playback.ys.slice(3).every(y=>y<-.4),'Watercolour screens must be below original row');
+   assert.ok(playback.ys.slice(3,6).every(y=>y<-.4),'Watercolour screens must be below original row');
+   assert.ok(playback.ys.slice(6).every(y=>y<playback.ys[3]-.4),'TouchDesigner explainer screens must be below watercolour row');
    assert.ok(new Set(playback.uvs.slice(0,3).map(x=>x.toFixed(3))).size===3,'Top video must display three distinct panels');
    assert.ok(new Set(playback.uvs.slice(3).map(x=>x.toFixed(3))).size===3,'Watercolour video must display three distinct panels');
    await page.waitForTimeout(1250);
