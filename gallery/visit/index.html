@@ -70,8 +70,9 @@
     // Same three reception backroom monitors already verified in the test tower.
     // The WebM is lazy-loaded only when a visitor approaches their wall.
     globalThis.__phiLivingMonitorTest=true;
+    globalThis.__phiTranslationSignTest=true;
     window.__galleryStage='Importing bundled JavaScript';
-    await import('./gallery-phi-bundle.js?v=td-model-info-row-20261028-2');
+    await import('./gallery-phi-bundle.js?v=translation-area-sign-20261028-1');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
