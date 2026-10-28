@@ -91,7 +91,7 @@ export function addPhiTranslationAreaSign(THREE,scene,{entrance,gramophone,eleva
  root.name='phi-translation-area-doorway-sign';
  root.userData.kind='gallery-label';
  root.position.set(place.x,elevation+.016,place.z);
- root.rotation.y=place.yaw;
+ root.rotation.y=place.yaw+Math.PI; // Face the Translation Area; retain exact approved position.
  root.scale.setScalar(place.scale);
  const mesh=new THREE.Mesh(meshGeometry(THREE),
   new THREE.MeshStandardMaterial({color:'#80614a',roughness:.94,side:THREE.DoubleSide}));
