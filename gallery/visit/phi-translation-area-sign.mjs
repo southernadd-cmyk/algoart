@@ -87,6 +87,13 @@ function meshGeometry(THREE){
 export function addPhiTranslationAreaSign(THREE,scene,{entrance,gramophone,elevation=0}){
  const place=translationAreaSignPlacement(entrance,gramophone);
  if(!place)return null;
+ // After the approved 180-degree turn, move backward by 2m toward the wall.
+ // Backward in world space is +yaw's original normal (the front is yaw+PI).
+ place.x+=Math.sin(place.yaw)*2;
+ place.z+=Math.cos(place.yaw)*2;
+ place.backwardOffsetMetres=2;
+ place.distanceToDoor=Math.hypot(place.x-place.door.x,place.z-place.door.z);
+ place.distanceToGramophone=Math.hypot(place.x-place.gramophone.x,place.z-place.gramophone.z);
  const root=new THREE.Group();
  root.name='phi-translation-area-doorway-sign';
  root.userData.kind='gallery-label';
