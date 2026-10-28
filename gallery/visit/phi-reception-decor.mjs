@@ -1,3 +1,4 @@
+import {addPhiPubSign} from './phi-pub-sign.mjs';
 import {addPhiOfficeFrontage} from './phi-office-reception.mjs?v=gallery-reception-20261027';
 import {loadPhiDecorAsset as asset,fitPhiDecorAsset as fit} from './phi-model-assets.mjs';
 import {createGothicSurroundShape} from './phi-gothic-door-profile.mjs';
@@ -105,7 +106,7 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMat
 
 export const RECEPTION_CREDITS=[
  {title:'The gallery',lines:['PROPORTION PIECE','Daily generative art and architecture','','Built with Three.js','Three.js authors · MIT licence','','Visitors: Quaternius · CC0','Street lamps: Poly Haven · CC0']},
- {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Plaza plants — Nicholas-3D','Reception art — PROPORTION PIECE','Magazine cabinet — JFN','Paper debris — Sousinho','Cardboard boxes —','NotAnotherApocalypticCo.','','Scene models: CC BY 4.0','Meshes and textures optimised.','Chalkboard — clon6767 · CC BY 4.0']},
+ {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Plaza plants — Nicholas-3D','Reception art — PROPORTION PIECE','Magazine cabinet — JFN','Paper debris — Sousinho','Cardboard boxes —','NotAnotherApocalypticCo.','','Scene models: CC BY 4.0','Meshes and textures optimised.','Chalkboard — clon6767 · CC BY 4.0','Pub sign — johhny3D · CC BY 4.0']},
  {title:'Materials and fittings',lines:['Wallpaper: Decorative Wall 2','ShareTextures · M. Tolga Arslan · CC0','Feature wall: PaintedPlaster007','ambientCG · CC0','Gallery: plastered_wall_02','Poly Haven · CC0','Ceiling: OfficeCeiling001','Brick: Bricks055 · ambientCG · CC0','Roof: Abandoned Scans · CC BY 4.0','Scan adapted; textures optimised.','Full credits and licences online.']}
 ];
 export function addPhiReceptionCredits(THREE,scene,placement,elevation){
@@ -113,7 +114,7 @@ export function addPhiReceptionCredits(THREE,scene,placement,elevation){
  for(const [i,credit] of RECEPTION_CREDITS.entries()){
   const canvas=document.createElement('canvas');canvas.width=640;canvas.height=880;const g=canvas.getContext('2d');
   g.fillStyle='#eee9dc';g.fillRect(0,0,640,880);g.fillStyle='#344638';g.font='42px "AlgoArt Marker", Georgia';g.fillText(credit.title,40,88,560);
-  g.strokeStyle='#b7b4a2';g.beginPath();g.moveTo(40,120);g.lineTo(600,120);g.stroke();g.font='25px Georgia';credit.lines.forEach((line,n)=>g.fillText(line,40,185+n*58,560));
+  g.strokeStyle='#b7b4a2';g.beginPath();g.moveTo(40,120);g.lineTo(600,120);g.stroke();g.font='25px Georgia';credit.lines.forEach((line,n)=>g.fillText(line,40,185+n*Math.min(58,650/Math.max(1,credit.lines.length-1)),560));
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
   const group=new THREE.Group();group.name='phi-reception-credit-'+i;const width=.68,height=.94;
   group.position.set(placement.x+(placement.axis==='z'?(i-1)*.83:0),elevation+1.65,placement.z+(placement.axis==='x'?(i-1)*.83:0));
@@ -140,6 +141,7 @@ export function renderPhiFurniture(THREE,parent,plan,{concrete,timber},elevation
  return root;
 }
 export function addPhiFrontage(THREE,root,{concrete,timber,metal,defer}){
+ addPhiPubSign(THREE,root);
  const box=(w,h,d,x,y,z,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);root.add(m);return m;};
  box(2.65,.06,.65,0,-.05,.22,concrete);
  const glow=new THREE.MeshStandardMaterial({color:'#f1e9cf',emissive:'#e5c795',emissiveIntensity:.65,roughness:.3});
