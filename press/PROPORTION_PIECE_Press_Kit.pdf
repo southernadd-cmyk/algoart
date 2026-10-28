@@ -3,7 +3,7 @@
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Count 3 /Kids [6 0 R 8 0 R 10 0 R] >>
+<< /Type /Pages /Kids [6 0 R 8 0 R 10 0 R] /Count 3 >>
 endobj
 3 0 obj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
@@ -12,100 +12,102 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
 endobj
 5 0 obj
-<< /Length 2058 >>
+<< /Length 2308 >>
 stream
-0.93 0.89 0.83 rg 0 0 595 842 re f
-0.72 0.32 0.40 rg 0 0 11 842 re f
-BT 0.23 0.20 0.18 rg /F2 22 Tf 1 0 0 1 45 791 Tm (PROPORTION PIECE) Tj ET
-BT 0.72 0.32 0.40 rg /F2 9 Tf 1 0 0 1 438 798 Tm (PRESS KIT / 2026) Tj ET
-0.23 0.20 0.18 RG .5 w 45 782 m 550 782 l S
-BT 0.72 0.32 0.40 rg /F2 11 Tf 1 0 0 1 45 734 Tm (AN ONGOING ARTWORK) Tj ET
-BT 0.23 0.20 0.18 rg /F2 28 Tf 1 0 0 1 45 689 Tm (AN ALGORITHMIC GALLERY) Tj ET
-BT 0.23 0.20 0.18 rg /F2 18 Tf 1 0 0 1 45 626 Tm (An algorithmically generated gallery) Tj ET
-BT 0.23 0.20 0.18 rg /F2 18 Tf 1 0 0 1 45 601 Tm (exhibiting algorithmically generated art.) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 558 Tm (PROPORTION PIECE \(formerly ALGO/ART\) is an open-source) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 537 Tm (generative artwork by Adam Clement, based on the golden ratio.) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 516 Tm (The drawing machine is paired with a virtual gallery tower:) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 495 Tm (each day, a fresh gallery floor exhibits that day's artwork.) Tj ET
-0.85 0.80 0.73 rg 45 335 505 113 re f
-BT 0.72 0.32 0.40 rg /F2 11 Tf 1 0 0 1 63 415 Tm (CENTRAL QUESTION) Tj ET
-BT 0.23 0.20 0.18 rg /F2 15 Tf 1 0 0 1 63 390 Tm (How far can the golden ratio govern a composition) Tj ET
-BT 0.23 0.20 0.18 rg /F2 15 Tf 1 0 0 1 63 369 Tm (while its marks remain visibly human?) Tj ET
-BT 0.23 0.20 0.18 rg /F2 12 Tf 1 0 0 1 45 285 Tm (Editor: southernadd-cmyk.github.io/algoart/) Tj ET
-BT 0.23 0.20 0.18 rg /F2 12 Tf 1 0 0 1 45 260 Tm (3D gallery: southernadd-cmyk.github.io/algoart/gallery/visit/) Tj ET
-BT 0.23 0.20 0.18 rg /F1 11 Tf 1 0 0 1 45 207 Tm (The work is drawn procedurally in JavaScript, not by an AI) Tj ET
-BT 0.23 0.20 0.18 rg /F1 11 Tf 1 0 0 1 45 189 Tm (image-generation model. Visitors explore and alter its systems.) Tj ET
-0.23 0.20 0.18 RG .5 w 45 63 m 550 63 l S
-BT 0.23 0.20 0.18 rg /F1 9 Tf 1 0 0 1 45 43 Tm (ADAM CLEMENT   /   GOLDEN RATIO   /   HUMAN MARKS) Tj ET
-BT 0.72 0.32 0.40 rg /F2 9 Tf 1 0 0 1 510 43 Tm (1 / 3) Tj ET
+0.93 0.90 0.84 rg 0 0 595 842 re f
+0.69 0.30 0.39 rg 0 0 12 842 re f
+BT 0.20 0.18 0.16 rg /F2 25 Tf 1 0 0 1 42 790 Tm (PROPORTION PIECE) Tj ET
+BT 0.69 0.30 0.39 rg /F2 10 Tf 1 0 0 1 441 796 Tm (PRESS KIT) Tj ET
+0.5 w 42 778 m 550 778 l S
+BT 0.69 0.30 0.39 rg /F2 10 Tf 1 0 0 1 42 734 Tm (AN ALGORITHMICALLY GENERATED GALLERY) Tj ET
+BT 0.20 0.18 0.16 rg /F2 27 Tf 1 0 0 1 42 685 Tm (A GROWING WORK OF ART) Tj ET
+BT 0.20 0.18 0.16 rg /F2 13 Tf 1 0 0 1 42 625 Tm (An algorithmically generated gallery exhibiting algorithmically generated art.) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 578 Tm (PROPORTION PIECE \(formerly ALGO/ART\) is an ongoing interactive artwork) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 555 Tm (by Adam Clement. It begins with a browser-based generative drawing) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 532 Tm (machine and extends into a growing, walkable 3D exhibition tower.) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 509 Tm () Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 486 Tm (Each day a new collection of seeded drawings appears in the archive,) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 463 Tm (and a new floor is added to the virtual gallery. Visitors enter the) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 440 Tm (building, travel by lift and explore that day's work. Selected portrait) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 417 Tm (studies are transformed into sculptural objects.) Tj ET
+0.87 0.82 0.74 rg 42 243 510 102 re f
+BT 0.69 0.30 0.39 rg /F2 11 Tf 1 0 0 1 58 312 Tm (THE CENTRAL QUESTION) Tj ET
+BT 0.20 0.18 0.16 rg /F2 14 Tf 1 0 0 1 58 284 Tm (How far can the golden ratio govern a composition) Tj ET
+BT 0.20 0.18 0.16 rg /F2 14 Tf 1 0 0 1 58 262 Tm (while its marks remain visibly human?) Tj ET
+BT 0.20 0.18 0.16 rg /F2 11 Tf 1 0 0 1 42 190 Tm (Interactive editor: southernadd-cmyk.github.io/algoart/) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 164 Tm (Walk the tower: southernadd-cmyk.github.io/algoart/gallery/visit/) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 138 Tm (Source: github.com/southernadd-cmyk/algoart) Tj ET
+0.5 w 42 57 m 550 57 l S
+BT 0.20 0.18 0.16 rg /F1 9 Tf 1 0 0 1 42 38 Tm (PROPORTION PIECE / ADAM CLEMENT / 28 OCT 2026) Tj ET
+BT 0.20 0.18 0.16 rg /F2 9 Tf 1 0 0 1 527 38 Tm (1/3) Tj ET
 endstream
 endobj
 6 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
 endobj
 7 0 obj
-<< /Length 2249 >>
+<< /Length 2191 >>
 stream
-0.93 0.89 0.83 rg 0 0 595 842 re f
-0.72 0.32 0.40 rg 0 0 11 842 re f
-BT 0.23 0.20 0.18 rg /F2 22 Tf 1 0 0 1 45 791 Tm (PROPORTION PIECE) Tj ET
-BT 0.72 0.32 0.40 rg /F2 9 Tf 1 0 0 1 438 798 Tm (PRESS KIT / 2026) Tj ET
-0.23 0.20 0.18 RG .5 w 45 782 m 550 782 l S
-BT 0.72 0.32 0.40 rg /F2 11 Tf 1 0 0 1 45 734 Tm (THE DRAWING ENGINE) Tj ET
-BT 0.23 0.20 0.18 rg /F2 28 Tf 1 0 0 1 45 689 Tm (EIGHT SYSTEMS. FIVE MATERIALS.) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 627 Tm (Deterministic seeds preserve a composition, while different materials) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 607 Tm (make it feel expressive, textured and deliberately imperfect.) Tj ET
-BT 0.72 0.32 0.40 rg /F2 11 Tf 1 0 0 1 45 570 Tm (EIGHT COMPOSITION SYSTEMS) Tj ET
-BT 0.23 0.20 0.18 rg /F2 13 Tf 1 0 0 1 45 538 Tm (Orbital Studies           Golden Trajectories) Tj ET
-BT 0.23 0.20 0.18 rg /F1 13 Tf 1 0 0 1 45 510 Tm (Recursive Divisions      Radiant Systems) Tj ET
-BT 0.23 0.20 0.18 rg /F1 13 Tf 1 0 0 1 45 482 Tm (Connected Fields         Growth Systems) Tj ET
-BT 0.23 0.20 0.18 rg /F1 13 Tf 1 0 0 1 45 454 Tm (Constructed Forms        Automatic Marks) Tj ET
-0.85 0.80 0.73 rg 45 315 505 91 re f
-BT 0.72 0.32 0.40 rg /F2 11 Tf 1 0 0 1 63 378 Tm (FIVE MATERIALS) Tj ET
-BT 0.23 0.20 0.18 rg /F2 12 Tf 1 0 0 1 63 354 Tm (Marker  /  Tissue & Graphite  /  Watercolour) Tj ET
-BT 0.23 0.20 0.18 rg /F2 12 Tf 1 0 0 1 63 329 Tm (Oil Paint  /  Action Painting) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 271 Tm (Change seeds and parameters. Inspect golden-ratio overlays.) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 249 Tm (Export PNG or SVG files and browse the evolving daily archive.) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 207 Tm (Each daily edition adds a new tower floor with paintings,) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 185 Tm (sculptures based on selected portrait works and walkable rooms.) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 155 Tm (Golden-ratio divisions also influence the tower's floor plans.) Tj ET
-0.23 0.20 0.18 RG .5 w 45 63 m 550 63 l S
-BT 0.23 0.20 0.18 rg /F1 9 Tf 1 0 0 1 45 43 Tm (ADAM CLEMENT   /   GOLDEN RATIO   /   HUMAN MARKS) Tj ET
-BT 0.72 0.32 0.40 rg /F2 9 Tf 1 0 0 1 510 43 Tm (2 / 3) Tj ET
+0.93 0.90 0.84 rg 0 0 595 842 re f
+0.69 0.30 0.39 rg 0 0 12 842 re f
+BT 0.20 0.18 0.16 rg /F2 25 Tf 1 0 0 1 42 790 Tm (PROPORTION PIECE) Tj ET
+BT 0.69 0.30 0.39 rg /F2 10 Tf 1 0 0 1 441 796 Tm (PRESS KIT) Tj ET
+0.5 w 42 778 m 550 778 l S
+BT 0.69 0.30 0.39 rg /F2 10 Tf 1 0 0 1 42 734 Tm (THE DRAWING MACHINE) Tj ET
+BT 0.20 0.18 0.16 rg /F2 27 Tf 1 0 0 1 42 685 Tm (COMPOSITION & MATERIAL) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 623 Tm (Eight composition systems explore golden-section relationships,) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 595 Tm (rhythm, hierarchy, direction and deliberate empty space. Golden-ratio) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 567 Tm (influences also guide parts of the tower's room arrangement.) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 539 Tm () Tj ET
+BT 0.20 0.18 0.16 rg /F2 12 Tf 1 0 0 1 42 511 Tm (SYSTEMS) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 483 Tm (Orbital Studies / Golden Trajectories / Recursive Divisions) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 455 Tm (Radiant Systems / Connected Fields / Growth Systems) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 427 Tm (Constructed Forms / Automatic Marks) Tj ET
+0.87 0.82 0.74 rg 42 271 510 100 re f
+BT 0.69 0.30 0.39 rg /F2 12 Tf 1 0 0 1 58 339 Tm (FIVE MATERIALS) Tj ET
+BT 0.20 0.18 0.16 rg /F2 12 Tf 1 0 0 1 58 313 Tm (Marker / Tissue & Graphite / Watercolour) Tj ET
+BT 0.20 0.18 0.16 rg /F2 12 Tf 1 0 0 1 58 288 Tm (Oil Paint / Action Painting) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 234 Tm (The drawings are created through deterministic JavaScript rather than) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 209 Tm (a text-to-image AI system. Seeds and saved settings make studies) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 184 Tm (reproducible. The editor offers adjustable controls and PNG / SVG export.) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 159 Tm (The gallery presents daily selections as images and selected sculptures.) Tj ET
+0.5 w 42 57 m 550 57 l S
+BT 0.20 0.18 0.16 rg /F1 9 Tf 1 0 0 1 42 38 Tm (PROPORTION PIECE / ADAM CLEMENT / 28 OCT 2026) Tj ET
+BT 0.20 0.18 0.16 rg /F2 9 Tf 1 0 0 1 527 38 Tm (2/3) Tj ET
 endstream
 endobj
 8 0 obj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
 endobj
 9 0 obj
-<< /Length 2238 >>
+<< /Length 2209 >>
 stream
-0.93 0.89 0.83 rg 0 0 595 842 re f
-0.72 0.32 0.40 rg 0 0 11 842 re f
-BT 0.23 0.20 0.18 rg /F2 22 Tf 1 0 0 1 45 791 Tm (PROPORTION PIECE) Tj ET
-BT 0.72 0.32 0.40 rg /F2 9 Tf 1 0 0 1 438 798 Tm (PRESS KIT / 2026) Tj ET
-0.23 0.20 0.18 RG .5 w 45 782 m 550 782 l S
-BT 0.72 0.32 0.40 rg /F2 11 Tf 1 0 0 1 45 734 Tm (THE VIRTUAL EXHIBITION) Tj ET
-BT 0.23 0.20 0.18 rg /F2 28 Tf 1 0 0 1 45 689 Tm (WALK THE GROWING TOWER) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 625 Tm (Visitors enter from outside, choose a gallery day using the lift,) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 603 Tm (walk through architecturally arranged rooms, and view artworks) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 581 Tm (inside an exhibition space that itself grows procedurally.) Tj ET
-BT 0.72 0.32 0.40 rg /F2 11 Tf 1 0 0 1 45 541 Tm (CREATOR BIOGRAPHY) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 511 Tm (Adam Clement is a UK-based computing educator and creative coder.) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 491 Tm (His work explores the boundary between mathematical structure,) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 471 Tm (procedural drawing and expressive visual marks.) Tj ET
-0.85 0.80 0.73 rg 45 280 505 142 re f
-BT 0.72 0.32 0.40 rg /F2 11 Tf 1 0 0 1 63 391 Tm (PRESS AND EDITORIAL ENQUIRIES) Tj ET
-BT 0.23 0.20 0.18 rg /F2 17 Tf 1 0 0 1 63 359 Tm (southernadd@googlemail.com) Tj ET
-BT 0.23 0.20 0.18 rg /F1 11 Tf 1 0 0 1 63 332 Tm (Press page: southernadd-cmyk.github.io/algoart/press/) Tj ET
-BT 0.23 0.20 0.18 rg /F1 11 Tf 1 0 0 1 63 309 Tm (Source: github.com/southernadd-cmyk/algoart) Tj ET
-BT 0.72 0.32 0.40 rg /F2 11 Tf 1 0 0 1 45 236 Tm (IMAGE USE) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 211 Tm (Please credit PROPORTION PIECE / Adam Clement.) Tj ET
-BT 0.23 0.20 0.18 rg /F1 12 Tf 1 0 0 1 45 188 Tm (Contact the creator for editorial reproduction permission.) Tj ET
-BT 0.23 0.20 0.18 rg /F1 11 Tf 1 0 0 1 45 142 Tm (Six original drawings and a tower preview accompany this PDF.) Tj ET
-0.23 0.20 0.18 RG .5 w 45 63 m 550 63 l S
-BT 0.23 0.20 0.18 rg /F1 9 Tf 1 0 0 1 45 43 Tm (ADAM CLEMENT   /   GOLDEN RATIO   /   HUMAN MARKS) Tj ET
-BT 0.72 0.32 0.40 rg /F2 9 Tf 1 0 0 1 510 43 Tm (3 / 3) Tj ET
+0.93 0.90 0.84 rg 0 0 595 842 re f
+0.69 0.30 0.39 rg 0 0 12 842 re f
+BT 0.20 0.18 0.16 rg /F2 25 Tf 1 0 0 1 42 790 Tm (PROPORTION PIECE) Tj ET
+BT 0.69 0.30 0.39 rg /F2 10 Tf 1 0 0 1 441 796 Tm (PRESS KIT) Tj ET
+0.5 w 42 778 m 550 778 l S
+BT 0.69 0.30 0.39 rg /F2 10 Tf 1 0 0 1 42 734 Tm (BIOGRAPHY & CONTACT) Tj ET
+BT 0.20 0.18 0.16 rg /F2 27 Tf 1 0 0 1 42 685 Tm (EDITORIAL RESOURCES) Tj ET
+BT 0.69 0.30 0.39 rg /F2 12 Tf 1 0 0 1 42 619 Tm (ADAM CLEMENT) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 589 Tm (Adam Clement is a UK-based computing educator and creative coder.) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 565 Tm (His work explores the relationship between mathematical composition,) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 541 Tm (expressive visual marks and browser-based interactive systems.) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 517 Tm (PROPORTION PIECE turns that investigation into a growing virtual) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 493 Tm (exhibition space as well as an interactive drawing machine.) Tj ET
+BT 0.69 0.30 0.39 rg /F2 12 Tf 1 0 0 1 42 426 Tm (SELECTED MEDIA) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 396 Tm (The companion ZIP includes original, dated artwork images from) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 372 Tm (28 October 2026, a tower image and captions. They are archival) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 42 348 Tm (examples of an ongoing daily project, not fixed final editions.) Tj ET
+0.87 0.82 0.74 rg 42 155 510 126 re f
+BT 0.69 0.30 0.39 rg /F2 11 Tf 1 0 0 1 58 247 Tm (PRESS ENQUIRIES) Tj ET
+BT 0.20 0.18 0.16 rg /F2 15 Tf 1 0 0 1 58 222 Tm (southernadd@googlemail.com) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 58 195 Tm (southernadd-cmyk.github.io/algoart/press/) Tj ET
+BT 0.20 0.18 0.16 rg /F1 11 Tf 1 0 0 1 58 172 Tm (Credit: PROPORTION PIECE / Adam Clement) Tj ET
+BT 0.20 0.18 0.16 rg /F1 10 Tf 1 0 0 1 42 112 Tm (Please request approval for editorial reproduction of individual images.) Tj ET
+0.5 w 42 57 m 550 57 l S
+BT 0.20 0.18 0.16 rg /F1 9 Tf 1 0 0 1 42 38 Tm (PROPORTION PIECE / ADAM CLEMENT / 28 OCT 2026) Tj ET
+BT 0.20 0.18 0.16 rg /F2 9 Tf 1 0 0 1 527 38 Tm (3/3) Tj ET
 endstream
 endobj
 10 0 obj
@@ -119,13 +121,13 @@ xref
 0000000128 00000 n 
 0000000198 00000 n 
 0000000273 00000 n 
-0000002383 00000 n 
-0000002519 00000 n 
-0000004820 00000 n 
-0000004956 00000 n 
-0000007246 00000 n 
+0000002633 00000 n 
+0000002769 00000 n 
+0000005012 00000 n 
+0000005148 00000 n 
+0000007409 00000 n 
 trailer
-<< /Size 11 /Root 1 0 R >>
+<< /Root 1 0 R /Size 11 >>
 startxref
-7383
+7546
 %%EOF
