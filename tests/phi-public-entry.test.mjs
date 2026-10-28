@@ -59,16 +59,17 @@ try{
    const screens=[];
    root?.traverse(child=>{if(child.name==='monitor-screen')screens.push(child);});
    const diag=window.__phiLivingMonitorDiagnostics;
-   return {placed:diag?.placed,count:diag?.screenCount,screenMeshes:screens.length,
+   return {placed:diag?.placed,count:diag?.screenCount,screenMeshes:screens.length,rowCount:diag?.rowCount,
     wall:diag?.wall,media:diag?.media,position:root?.position.toArray(),error:document.getElementById('error')?.textContent};
   });
   assert.equal(monitors.placed,true,'Monitor creation must succeed during reception construction');
-  assert.equal(monitors.count,3,'Expected three reception monitors');
-  assert.equal(monitors.screenMeshes,3,'Expected three actual screen meshes in the active scene');
+  assert.equal(monitors.count,6,'Expected six reception monitors in two rows');
+  assert.equal(monitors.rowCount,2,'Expected two distinct display rows');
+  assert.equal(monitors.screenMeshes,6,'Expected six actual screen meshes in the active scene');
   assert.equal(monitors.wall?.fromPhysical,true,'Monitors must attach to real backroom wall geometry');
   assert.equal(monitors.media?.state,'fallback','TouchDesigner must not load media at gallery startup');
-  assert.equal(testRequests.filter(url=>url.includes('phase-one-triptych.webm')).length,0,
-   'Video decoder should never start at gallery startup');
+  assert.equal(testRequests.filter(url=>/phase-one-triptych\.webm|watercolour-burst-.*\.webm/.test(url)).length,0,
+   'Neither video decoder should start at gallery startup');
   // Verify living screens actually animate, not merely show static canvases.
   // Place the automated viewer near the installed wall to exercise the
   // distance-gated render loop without relying on keyboard navigation.
@@ -84,34 +85,54 @@ try{
   const declared=JSON.parse(await (await page.request.get(
    'http://127.0.0.1:4173/gallery/visit/touchdesigner/phase-one.json')).text());
   if(declared.status==='published'){
-   await page.waitForFunction(
-    ()=>{const m=window.__phiLivingMonitorDiagnostics?.media;return m?.state==='playing-export'||m?.state==='awaiting-export'||(m?.state==='fallback'&&!!m?.error);},
-    null,{timeout:20000});
+   await page.waitForFunction(()=>{
+    const d=window.__phiLivingMonitorDiagnostics;
+    const resolved=m=>m?.state==='playing-export'||m?.state==='awaiting-export'||(m?.state==='fallback'&&!!m?.error);
+    return resolved(d?.media)&&resolved(d?.mediaWatercolour);
+   },null,{timeout:20000});
    const playback=await page.evaluate(()=>{
     const scene=window.__PP_EXPORT_SCENE__.scene;
     const root=scene.getObjectByName('phi-reception-three-living-monitors');
-    const meshes=[1,2,3].map(i=>root.getObjectByName('living-monitor-'+i).getObjectByName('monitor-screen'));
+    const meshes=[1,2,3,4,5,6].map(i=>root.getObjectByName('living-monitor-'+i).getObjectByName('monitor-screen'));
     const videos=meshes.map(m=>m.material.map.image);
     const uvs=meshes.map(m=>m.geometry.getAttribute('uv').getX(0));
+    const ys=[1,2,3,4,5,6].map(i=>root.getObjectByName('living-monitor-'+i).position.y);
     return {media:window.__phiLivingMonitorDiagnostics.media,
-      allShareVideo:videos.every(v=>v?.tagName==='VIDEO'&&v===videos[0]),
+      watercolour:window.__phiLivingMonitorDiagnostics.mediaWatercolour,
+      firstRowShared:videos.slice(0,3).every(v=>v?.tagName==='VIDEO'&&v===videos[0]),
+      secondRowShared:videos.slice(3,6).every(v=>v?.tagName==='VIDEO'&&v===videos[3]),
+      independentVideos:videos[0]!==videos[3],
       dimensions:[videos[0]?.videoWidth,videos[0]?.videoHeight],
-      currentTime:videos[0]?.currentTime,uvs};
+      watercolourDimensions:[videos[3]?.videoWidth,videos[3]?.videoHeight],
+      currentTime:videos[0]?.currentTime,
+      watercolourTime:videos[3]?.currentTime,uvs,ys};
    });
-   assert.equal(playback.media.state,'playing-export','TouchDesigner video failed to play: '+JSON.stringify(playback));
-   assert.equal(playback.allShareVideo,true,'All three monitors must share one VideoTexture');
+   assert.equal(playback.media.state,'playing-export','Top row failed playback: '+JSON.stringify(playback));
+   assert.equal(playback.watercolour.state,'playing-export','Watercolour row failed playback: '+JSON.stringify(playback));
+   assert.equal(playback.firstRowShared,true,'Top three screens should share one VideoTexture');
+   assert.equal(playback.secondRowShared,true,'Bottom three screens should share another VideoTexture');
+   assert.equal(playback.independentVideos,true,'Each row must use its own triptych');
    assert.deepEqual(playback.dimensions,[1152,240]);
-   assert.ok(new Set(playback.uvs.map(x=>x.toFixed(3))).size===3,'Screens must sample distinct thirds of the video');
+   assert.deepEqual(playback.watercolourDimensions,[1152,240]);
+   assert.ok(playback.ys.slice(0,3).every(y=>Math.abs(y)<.001));
+   assert.ok(playback.ys.slice(3).every(y=>y<-.4),'Watercolour screens must be below original row');
+   assert.ok(new Set(playback.uvs.slice(0,3).map(x=>x.toFixed(3))).size===3,'Top video must display three distinct panels');
+   assert.ok(new Set(playback.uvs.slice(3).map(x=>x.toFixed(3))).size===3,'Watercolour video must display three distinct panels');
    await page.waitForTimeout(1250);
    const later=await page.evaluate(()=>{
     const root=window.__PP_EXPORT_SCENE__.scene.getObjectByName('phi-reception-three-living-monitors');
-    return root.getObjectByName('living-monitor-1').getObjectByName('monitor-screen').material.map.image.currentTime;
+    return [1,4].map(i=>root.getObjectByName('living-monitor-'+i)
+      .getObjectByName('monitor-screen').material.map.image.currentTime);
    });
-   assert.ok(later>playback.currentTime+.5,
-    'TouchDesigner WebM decoding time must advance while the visitor is nearby');
+   assert.ok(later[0]>playback.currentTime+.5,
+    'Original TouchDesigner video time must advance while the visitor is nearby');
+   assert.ok(later[1]>playback.watercolourTime+.5,
+    'Watercolour TouchDesigner video time must advance while the visitor is nearby');
    assert.ok(testRequests.some(url=>url.includes('phase-one-triptych.webm')),
-    'Published TouchDesigner video URL must be requested');
-   console.log('Real TouchDesigner video plays on all 3 monitors:',playback);
+    'Original TouchDesigner WebM must be requested');
+   assert.ok(testRequests.some(url=>url.includes('watercolour-burst-AA-20261005-03-55769-triptych.webm')),
+    'Watercolour TouchDesigner WebM must be requested');
+   console.log('Real TouchDesigner videos play on both three-monitor rows:',playback);
   }else{
    const readFrames=()=>page.evaluate(()=>{
     const scene=window.__PP_EXPORT_SCENE__.scene;
