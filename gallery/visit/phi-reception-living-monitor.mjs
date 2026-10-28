@@ -1,4 +1,5 @@
 import {createTouchDesignerMonitorMedia} from './phi-touchdesigner-media.mjs';
+import {addTouchDesignerInfoRow} from './phi-touchdesigner-info-row.mjs';
 
 // Two three-monitor rows on the reception backroom's real wall, also used live.
 // Coordinates stay in the untransformed phi layout; the gallery transforms
@@ -52,9 +53,11 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
  if(!wall)return null;
  const root=new THREE.Group();
  root.name='phi-reception-three-living-monitors';
- root.userData.kind='reception-six-living-monitors';
+ root.userData.kind='reception-nine-living-monitors';
  root.userData.mount={...wall};
- root.position.set(wall.x,elevation+2.08,wall.z);
+ // Raise the stacked display to fit three full rows within the 5.2m room.
+ // The lower information row then stays well clear of the floor.
+ root.position.set(wall.x,elevation+2.95,wall.z);
  root.rotation.y=wall.yaw;
 
  const bezelMaterial=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.32,roughness:.48});
@@ -90,6 +93,8 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   root.add(unit);
   canvases.push(ctx);textures.push(texture);screenMaterials.push(displayMaterial);
  }
+ // Third row documents the authoring process and exposes the editable project.
+ const infoRow=addTouchDesignerInfoRow(THREE,{root,width,height,gap:wall.gap,rowPitch,camera});
  scene.add(root);
  // A single 1152x240 TouchDesigner WebM can feed all three panels.
  // Until an authentic export is published, use the existing procedural canvases.
@@ -179,6 +184,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   const distance=camera.getWorldPosition(cameraPosition).distanceTo(monitorPosition);
   media.update(distance<11);
   mediaWatercolour.update(distance<11);
+  infoRow.update(time,distance<11);
   if(distance<11)loadSource();
   if(distance>11||(media.usingExport&&mediaWatercolour.usingExport))return;
   last=time;
@@ -190,13 +196,14 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   draws++;
  }
  frameId=requestAnimationFrame(tick);
- return {root,mount:wall,screenCount:6,rowCount:2,get drawCount(){return draws;},
+ return {root,mount:wall,screenCount:9,rowCount:3,get drawCount(){return draws;},
+  get infoDiagnostics(){return infoRow.diagnostics;},
   get mediaDiagnostics(){return media.diagnostics();},
   get watercolourDiagnostics(){return mediaWatercolour.diagnostics();},
   dispose(){
    if(disposed)return;
    disposed=true;cancelAnimationFrame(frameId);
-   media.dispose();mediaWatercolour.dispose();scene.remove(root);
+   media.dispose();mediaWatercolour.dispose();infoRow.dispose();scene.remove(root);
    root.traverse(object=>object.geometry?.dispose());
    textures.forEach(texture=>texture.dispose());
    screenMaterials.forEach(material=>material.dispose());
