@@ -1847,14 +1847,20 @@ function constructPhiGallery(layout,studies){
    };
   }
   if(globalThis.__phiTranslationSignTest){
-   const fallbackRoom=furnishing.backrooms?.[0]||phi.floor.mergedRooms
-    .flatMap((room,i)=>room.pieces.map(p=>({
-     x:p.x+p.w/2,z:p.z+p.h/2,width:p.w,depth:p.h,area:p.w*p.h,room:i
-    }))).filter(p=>p.width>=2.5&&p.depth>=2.5&&(!foyer||p.room!==phi.floor.mergedRooms.indexOf(foyer)))
-    .sort((a,b)=>a.area-b.area)[0];
    const installation=addPhiTranslationAreaSign(THREE,scene,{
-    room:fallbackRoom,doors:phi.circulation.doors,lift:furnishing.lift,elevation
+    entrance:phi.circulation.publicEntrance,
+    gramophone:phiReceptionGramophone?.obstacle,
+    elevation
    });
+   if(installation){
+    // Keep the larger sign solid without closing the actual glass doorway.
+    phiSquareObstacles.push({
+     x:installation.placement.x,z:installation.placement.z,
+     width:.42*installation.placement.scale+.08,
+     depth:.34*installation.placement.scale+.08,
+     yaw:installation.placement.yaw,kind:'translation-area-chalkboard'
+    });
+   }
    window.__phiTranslationAreaSignDiagnostics={
     placed:!!installation,placement:installation?.placement||null,
     modelFaces:installation?.meshFaces||0,
