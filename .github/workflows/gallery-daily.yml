@@ -327,15 +327,6 @@ jobs:
           fi
           echo "Verified gallery/$DAY with $COUNT actual artwork entries."
 
-      # Prepare, but DO NOT render, the next local TouchDesigner assignment.
-      # Failure must never block the daily gallery itself.
-      - name: Queue daily TouchDesigner artwork for local rendering
-        continue-on-error: true
-        shell: bash
-        run: |
-          DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const x=Object.fromEntries(p.map(v=>[v.type,v.value]));process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
-          node automation/build-touchdesigner-job.mjs --date "$DAY"
-
       - name: Persist gallery archive
         id: gallery_commit
         shell: bash
