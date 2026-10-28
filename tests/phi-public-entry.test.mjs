@@ -79,7 +79,7 @@ try{
     return {placed:d?.placed,visible:d?.visible,placement:d?.placement,
       modelFaces:d?.modelFaces,
       triangleCount:originalMesh?.geometry?.index?.count/3,
-      label:!!label,position:root?.position.toArray()};
+      label:!!label,position:root?.position.toArray(),scale:root?.scale.x};
    });
    assert.equal(sign.placed,true,'The Translation Area sign must be placed beside the actual backroom doorway');
    assert.equal(sign.visible,true,'Sign must be in the active scene');
@@ -87,8 +87,17 @@ try{
    assert.equal(sign.modelFaces,152,'The original Sketchfab model has 152 faces per A-frame');
    assert.equal(sign.triangleCount,152,'Must use the actual uploaded 3D model topology');
    assert.ok(sign.placement?.doorWidth>1,'The exhibition entrance needs an open doorway');
-   assert.ok(Math.hypot(sign.placement.x-sign.placement.doorCentre,sign.placement.z-sign.placement.doorAt)>1.3,
-    'The sign may not occupy the centre of its doorway');
+   assert.equal(sign.placement?.zone,'reception-main-door-gramophone',
+    'Move the A-frame from the backroom door to the public door BESIDE the gramophone');
+   assert.ok(sign.scale>=1.6,'Entrance sign must be substantially larger than the old model');
+   assert.ok(sign.placement.lateralClearance>=.29,
+    'Larger sign may not overlap the walkable entrance opening');
+   assert.ok(sign.placement.distanceToGramophone>=1.09,
+    'Sign must not clip the gramophone cabinet');
+   const p=sign.placement,g=p.gramophone,d=p.door;
+   const along=p.axis==='z'?'x':'z';
+   assert.ok((p[along]-d[along])*(g[along]-p[along])>0,
+    'Sign must be BETWEEN the actual entrance and the gramophone on the gramophone side');
    console.log('Translation Area entrance sign position and clearance:',sign);
   }
 
