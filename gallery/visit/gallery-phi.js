@@ -1862,6 +1862,7 @@ function constructPhiGallery(layout,studies){
     });
    }
    window.__phiTranslationAreaSignDiagnostics={
+    inputs:{entrance:phi.circulation.publicEntrance,gramophone:phiReceptionGramophone?.obstacle||null},
     placed:!!installation,placement:installation?.placement||null,
     modelFaces:installation?.meshFaces||0,
     get visible(){return !!scene.getObjectByName('phi-translation-area-doorway-sign');}
