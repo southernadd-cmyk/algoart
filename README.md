@@ -16,7 +16,7 @@ The drawings are made with seeded JavaScript, not an AI image generator. You can
 
 The page uses a practical 7:5 landscape format (1400 × 1000, reversed for portrait). The golden ratio shapes relationships within the drawing; the outer canvas is not itself a golden rectangle.
 
-**[Try PROPORTION PIECE](https://southernadd-cmyk.github.io/algoart/)** · **[Browse the daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/)** · **[How it works](https://southernadd-cmyk.github.io/algoart/about/)**
+**[Walk the 3D gallery](https://southernadd-cmyk.github.io/algoart/gallery/visit/)** · **[Try PROPORTION PIECE](https://southernadd-cmyk.github.io/algoart/)** · **[Browse the daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/)** · **[How it works](https://southernadd-cmyk.github.io/algoart/about/)**
 
 ## Five materials, five drawings
 
@@ -65,6 +65,18 @@ The golden ratio influences divisions, scale, spacing and relationships, but not
 | Action Painting | Poured gestures, pools and scattered splashes. |
 
 The same underlying composition can look very different when its material changes.
+
+## Walk the growing virtual gallery
+
+**[Enter the 3D tower](https://southernadd-cmyk.github.io/algoart/gallery/visit/)** · **[Daily archive](https://southernadd-cmyk.github.io/algoart/gallery/)**
+
+The project now has a second form: a navigable Three.js gallery that grows with the daily archive. Dated floors make time part of the architecture. Visitors enter through a reception area, take a lift to the exhibition floors, encounter paintings and selected portrait studies translated into sculptures, and can explore the exterior square.
+
+The building is itself an experiment in proportion. Its floor plans use φ-informed divisions and a merge pass to keep spaces navigable; glass walkways, textures, lighting, plants, a reflecting pool and exterior graffiti give the otherwise algorithmic structure a physical character. The graffiti is also procedurally generated, with multiple handstyles and surface-aware treatment.
+
+A **Translation Area** in reception explores how the artworks move into other media. Its TouchDesigner installation includes a model and downloadable project file, with video distributed across six screens from a combined source. This is an experiment, not a claim that the gallery itself is rendered in TouchDesigner.
+
+The tower uses prebuilt geometry and layout data, deferred loading and bundled assets to reduce startup work. Performance and first-movement stutter remain areas of active testing; richer lighting and shadows are evaluated against their cost on desktop and mobile. The [development diary](DEVELOPMENT_LOG.md) records the design decisions and the distinction between implemented changes and remaining work.
 
 ## A gallery that keeps growing
 
