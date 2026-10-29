@@ -10,7 +10,7 @@ test('two large 16:10 screens occupy most of a solid back wall, with no second b
  const mount={fromPhysical:true,span:5.5,x:1,z:2,yaw:Math.PI,width:1,gap:.14};
  const p=planPhiReceptionRearWallMonitors(mount);
  assert.ok(p);assert.ok(p.coverage>.90);
- assert.equal(p.screenHeight/p.screenWidth,240/384);
+ assert.ok(Math.abs(p.screenHeight/p.screenWidth-240/384)<1e-10);
  assert.ok(p.occupiedWidth<=p.span-.24);
  assert.equal(planPhiReceptionRearWallMonitors({...mount,fromPhysical:false}),null);
  assert.equal(planPhiReceptionRearWallMonitors({...mount,span:2}),null);
