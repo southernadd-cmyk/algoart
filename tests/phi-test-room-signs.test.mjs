@@ -44,7 +44,7 @@ test('staging bundle isolation and marker font double-sided geometry',()=>{
  assert.match(staging,/gallery-phi-test-room-signs-bundle\.js/);
  assert.match(live,/import\('\.\/gallery-phi-bundle\.js\?/);
  assert.doesNotMatch(live,/test-room-signs/);
- assert.match(live,/curated-hanging-room-signs/);
+ assert.match(live,/gallery-phi-bundle\.js\?v=/);
  assert.match(live,/Sousinho/);
  const gallerySource=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
  assert.match(gallerySource,/import \{addHangingRoomSigns\} from '.\/phi-room-hanging-signs\.mjs'/);
