@@ -34,22 +34,22 @@ test('early golden-section positioning keeps painting scale, safety, and room al
  for(const adherence of [0,.65,1]){
   let liveAffinity=0,earlyAffinity=0,moved=0,movedFromZero=0,shrunk=0,grown=0,changedRoom=0,changedWall=0,paintings=0;
   for(const {date} of archive.floors){
-   const st=studies(date),base=buildPhiRendererPlan(date,st,{phiAdherence:adherence});
+   const st=studies(date),live=buildPhiRendererPlan(date,st,{phiAdherence:adherence});
    const zero=buildPhiRendererPlan(date,st,{phiAdherence:0}).exhibition;
    const zeroById=new Map(zero.paintings.map(p=>[p.studyId,p]));
    globalThis.location={search:'?phiPass=early'};
-   const candidate=stagePlan(base.floor,base.circulation,base.physical,st,{phiAdherence:adherence});
+   const candidate=stagePlan(live.floor,live.circulation,live.physical,st,{phiAdherence:adherence});
+   assert.deepEqual(candidate,live.exhibition,date+' test early must match new production');
    globalThis.location={search:'?phiPass=classic'};
-   const classic=stagePlan(base.floor,base.circulation,base.physical,st,{phiAdherence:adherence});
-   assert.deepEqual(classic,base.exhibition,date+' comparison mode matches published curator');
+   const classic=stagePlan(live.floor,live.circulation,live.physical,st,{phiAdherence:adherence});
    globalThis.location={search:'?phiPass=early'};
-   const origById=new Map(base.exhibition.paintings.map(p=>[p.studyId,p]));
+   const origById=new Map(classic.paintings.map(p=>[p.studyId,p]));
    assert.equal(candidate.checks.complete,true,date+' complete');
    assert.equal(candidate.checks.inwardFacing,true,date+' direction');
    assert.equal(candidate.checks.sculptureClearances,true,date+' sculpture clearances');
-   assert.deepEqual(candidate.curation,base.exhibition.curation,date+' grouping');
-   assert.deepEqual(candidate.unplaced,base.exhibition.unplaced,date+' unplaced');
-   assert.deepEqual(candidate.sculptures.map(s=>s.room),base.exhibition.sculptures.map(s=>s.room),date+' sculpture room');
+   assert.deepEqual(candidate.curation,classic.curation,date+' grouping');
+   assert.deepEqual(candidate.unplaced,classic.unplaced,date+' unplaced');
+   assert.deepEqual(candidate.sculptures.map(s=>s.room),classic.sculptures.map(s=>s.room),date+' sculpture room');
    for(const p of candidate.paintings){
     const old=origById.get(p.studyId);
     assert.ok(old,date+' matching painting');
@@ -62,7 +62,7 @@ test('early golden-section positioning keeps painting scale, safety, and room al
     moved+=Number(Math.abs(p.u-old.u)>1e-6);
     paintings++;
    }
-   liveAffinity+=affinity(base.exhibition);earlyAffinity+=affinity(candidate);
+   liveAffinity+=affinity(classic);earlyAffinity+=affinity(candidate);
   }
   totals.push({adherence,paintings,moved,movedFromZero,shrunk,grown,changedRoom,changedWall,
    baseAffinity:+(liveAffinity/paintings).toFixed(4),

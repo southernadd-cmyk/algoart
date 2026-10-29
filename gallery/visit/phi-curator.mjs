@@ -2,6 +2,7 @@
 import {INV_PHI} from './phi-architecture.mjs';
 import {groupPhiExhibition} from './phi-curation-groups.mjs';
 import {refinePhiExhibition} from './phi-curation-refinement.mjs';
+import {preExpandPhiPaintings} from './phi-pre-expansion.mjs';
 
 const EPS=1e-4;
 const pointInRoom=(room,x,z)=>room.pieces.some(p=>x>p.x+EPS&&x<p.x+p.w-EPS&&z>p.z+EPS&&z<p.z+p.h-EPS);
@@ -173,6 +174,8 @@ export function planCuratedPhiExhibition(floor,circulation,physical,studies,{phi
   if(best){const {score,...placed}=best;sculptures.push(placed);roomCounts[best.room]++;}
   else rejected.push(study);
  }
+ // Preserve all wall allocations; position the paintings towards φ first.
+ preExpandPhiPaintings(hang,sculptures,floor,circulation,physical,phiAdherence,expandPhiPaintings);
  expandPhiPaintings(hang,sculptures);
  const curation=groupPhiExhibition(hang.paintings,sculptures,studies);
  const unplaced=[...hang.unplaced,...rejected];

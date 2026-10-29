@@ -7,6 +7,7 @@ on:
       - 'gallery/visit/tower-family-lettering.mjs'
       - 'gallery/visit/gallery-phi.js'
       - 'gallery/visit/phi-curator.mjs'
+      - 'gallery/visit/phi-pre-expansion.mjs'
       - 'gallery/visit/phi-room-hanging-signs.mjs'
       - 'gallery/visit/phi-curation-refinement.mjs'
       - 'gallery/visit/phi-curation-groups.mjs'
