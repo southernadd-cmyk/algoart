@@ -84,9 +84,9 @@ test('staging bundle isolation and marker font double-sided geometry',()=>{
  assert.match(gallerySource,/window\.__phiRoomSigns=exhibitDate===RECEPTION\?\[\]/);
  assert.match(gallerySource,/addHangingRoomSigns\(THREE,scene,phi,elevation,ROOM_HEIGHT\)/);
  assert.match(module,/AlgoArt Marker/);
- assert.match(module,/for\\(const side of \\[-1,1\\]\\)/);
- assert.match(module,/spec\\.faces\\.positive/);
- assert.match(module,/spec\\.faces\\.negative/);
+ assert.ok(module.includes('for(const side of [-1,1])'));
+ assert.ok(module.includes('spec.faces.positive'));
+ assert.ok(module.includes('spec.faces.negative'));
  assert.match(module,/Sousinho/);
 });
 
