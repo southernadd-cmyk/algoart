@@ -23,7 +23,7 @@ test('two φ-shaped panes fit in each screen and present uncropped 8:5 videos',(
  assert.equal(layout.panes.length,2);
  for(const p of layout.panes){
   assert.ok(Math.abs(p.width/p.height-MONITOR_PHI)<1e-10);
-  assert.equal(p.videoWidth/p.videoHeight,384/240);
+  assert.ok(Math.abs(p.videoWidth/p.videoHeight-384/240)<1e-10);
   assert.ok(p.videoWidth<=p.width&&p.videoHeight<=p.height);
   assert.ok(Math.abs(p.x)+p.width/2<=3.1/2);
   assert.ok(Math.abs(p.y)+p.height/2<=3.1/1.6/2);
