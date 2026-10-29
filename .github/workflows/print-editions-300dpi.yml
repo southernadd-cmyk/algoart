@@ -1,0 +1,59 @@
+name: Regenerate five A3 print editions at genuine 300 dpi
+on:
+  push:
+    branches:
+      - print-editions-2026-10-29
+    paths:
+      - .github/workflows/print-editions-300dpi.yml
+      - print-editions/2026-10-29/regenerate-300dpi.mjs
+      - print-editions/2026-10-29/compose-300dpi.py
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  render-and-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install project dependencies and browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Install print/PDF tools
+        run: |
+          python3 -m venv /tmp/printvenv
+          /tmp/printvenv/bin/python -m pip install --quiet pillow reportlab qrcode
+      - name: Regenerate at native 3x resolution from saved artwork settings
+        run: node print-editions/2026-10-29/regenerate-300dpi.mjs
+      - name: Assemble A3 300 dpi PNG and PDF print masters, add original-image QR codes and verify
+        run: /tmp/printvenv/bin/python print-editions/2026-10-29/compose-300dpi.py
+      - name: Store the full set as a downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PROPORTION-PIECE-five-A3-300dpi
+          path: |
+            print-editions/2026-10-29/300dpi/*-A3-300dpi.png
+            print-editions/2026-10-29/300dpi/*-A3-300dpi.pdf
+            print-editions/2026-10-29/300dpi/PROPORTION-PIECE-five-editions-A3-300dpi.pdf
+            print-editions/2026-10-29/300dpi/PROPORTION-PIECE-five-A3-300dpi-print-pack.zip
+            print-editions/2026-10-29/300dpi/print-manifest.json
+            print-editions/2026-10-29/300dpi/README.md
+          retention-days: 90
+          compression-level: 0
+      - name: Commit verified print masters to print-only branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f print-editions/2026-10-29/300dpi
+          ZIP=print-editions/2026-10-29/300dpi/PROPORTION-PIECE-five-A3-300dpi-print-pack.zip
+          if test -f "$ZIP" && test "$(stat -c %s "$ZIP")" -gt 90000000; then
+            git reset -q -- "$ZIP"
+            echo "Oversize all-in-one ZIP available via Actions artifact; individual files in Git"
+          fi
+          git diff --cached --quiet || git commit -m "Publish verified native-rendered 300 dpi A3 print masters"
+          git push origin HEAD:print-editions-2026-10-29
