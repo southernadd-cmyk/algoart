@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -88,6 +89,10 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
    assert.ok(original,'missing baseline painting '+date+'/'+p.studyId);
    const delta=Math.hypot(p.x-original.x,p.z-original.z);
    const wallChanged=p.surfaceId!==original.surfaceId;
+   assert.equal(wallChanged,false,'golden hang cannot change painting wall '+date+'/'+p.studyId);
+   assert.equal(p.room,original.room,'golden hang cannot change painting room '+date+'/'+p.studyId);
+   assert.equal(p.width,original.width,'golden hang cannot resize a painting '+date+'/'+p.studyId);
+   assert.equal(p.height,original.height,'golden hang cannot resize a painting '+date+'/'+p.studyId);
    if(delta>1e-6||wallChanged){
     const change={date,id:p.studyId,delta:+delta.toFixed(3),
      wallChanged,roomChanged:p.room!==original.room,
@@ -99,6 +104,7 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
    const original=baseSculptures.get(p.studyId);
    assert.ok(original,'missing baseline sculpture '+date+'/'+p.studyId);
    const delta=Math.hypot(p.x-original.x,p.z-original.z);
+   assert.equal(p.room,original.room,'golden sculpture cannot change room '+date+'/'+p.studyId);
    if(delta>1e-6){
     const change={date,id:p.studyId,delta:+delta.toFixed(3),roomChanged:p.room!==original.room};
     changedSculptures.push(change);floorSculptures.push(change);
@@ -110,6 +116,9 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
  }
  assert.ok(stagedAffinity>baselineAffinity+1,'new hang must measurably favour golden-section placements');
  assert.ok(modified>0,'at least one floor should differ');
+ assert.equal(changedPaintings.filter(x=>x.wallChanged).length,0,'no painting may change walls');
+ assert.equal(changedPaintings.filter(x=>x.roomChanged).length,0,'no painting may change rooms');
+ assert.equal(changedSculptures.filter(x=>x.roomChanged).length,0,'no sculpture may change rooms');
  const avg=xs=>xs.length?+(xs.reduce((total,x)=>total+x.delta,0)/xs.length).toFixed(3):0;
  const middle=xs=>xs.length?[...xs].map(x=>x.delta).sort((a,b)=>a-b)[Math.floor(xs.length/2)]:0;
  const changedWall=changedPaintings.filter(x=>x.wallChanged);
@@ -129,4 +138,19 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
  }));
 
  delete globalThis.location;
+});
+
+test('both test entry points always load a fresh fingerprinted staging curator',()=>{
+ const entries=['../test/virtual-gallery/index.html','../test/virtual-gallery/full-engine.html'];
+ for(const entry of entries){
+  const source=readFileSync(new URL(entry,import.meta.url),'utf8');
+  assert.match(source,/test-curator-revision\.json\?fresh=/);
+  assert.match(source,/fetch\(manifestURL,\{cache:'no-store'\}\)/);
+  assert.match(source,/shared-curated-signs-'\+revision/);
+  assert.match(source,/tower-layouts\.json\?day=/);
+  assert.match(source,/cache:'no-store',signal:indexController\.signal/);
+ }
+ const manifest=JSON.parse(readFileSync(new URL('../gallery/visit/test-curator-revision.json',import.meta.url),'utf8'));
+ const bundle=readFileSync(new URL('../gallery/visit/gallery-phi-test-room-signs-bundle.js',import.meta.url));
+ assert.equal(manifest.sha256,createHash('sha256').update(bundle).digest('hex'));
 });
