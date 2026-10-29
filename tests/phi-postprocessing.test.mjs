@@ -32,7 +32,10 @@ test('test bundle preserves the gallery asset base for import.meta.url loaders',
  const bundlePath=builder.match(/outfile:'([^']+)'/)[1];
  assert.equal(bundlePath,'gallery/visit/gallery-phi-post-test-bundle.js');
  assert.ok(html.includes('<base href="../../gallery/visit/">'));
- assert.ok(html.includes("import('./gallery-phi-bundle.js?"));
+ assert.ok(html.includes("import('./gallery-phi-test-room-signs-bundle.js?"));
+ const roomSignBundle=new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url);
+ const builderText=readFileSync(roomSignBundle,'utf8');
+ assert.match(builderText,/outfile:\x27gallery\/visit\/gallery-phi-test-room-signs-bundle\.js\x27/);
  assert.ok(!html.includes('phi-post-test-bundle'));
  const base=new URL(bundlePath,'https://example.test/algoart/');
  assert.equal(new URL('./textures/bajwa-floor-tiles/color.webp',base).pathname,
