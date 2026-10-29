@@ -137,7 +137,7 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
  }
  // Third row documents the authoring process and exposes the editable project.
  const infoRow=addTouchDesignerInfoRow(THREE,{root,width,height,gap:wall.gap,rowPitch,camera,
-  previewURL:infoPreviewURL,projectURL,showNetworkPreview:bankId!==1,
+  previewURL:infoPreviewURL,projectURL,showNetworkPreview:false,
   // Same "What is TouchDesigner?" information panel on both banks.
   // Only these two "HERE" lines describe the bank-specific network.
   hereLines:bankId===2?[
