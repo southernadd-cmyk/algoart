@@ -1,5 +1,6 @@
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {advanceLiftDoor} from './phi-lift-motion.mjs';
+import {addPhiDeskHologram} from './phi-desk-hologram.mjs';
 import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
 import {addPhiReceptionLivingMonitor,planPhiReceptionMonitorWall} from './phi-reception-living-monitor.mjs';
@@ -1304,10 +1305,13 @@ function constructPhiTowerShell(){
  // Three-floor geometry chunks preserve frustum culling between tower sections
  // while collapsing thousands of individual meshes into material batches.
  const glassFloors=[];
+ const hologramFloors=[];
  const opaqueFloors=[];
  let floorGroup=null,currentBatch=null,shellTransform=null,staticBoxes=0;
  const append=(w,h,d,x,y,z,mat)=>{
   if(w<=0||h<=0||d<=0)return;
+  const hologramPosition=shellTransform.toWorld(x,z);
+  hologramFloors.at(-1).push([w,h,d,hologramPosition.x,y,hologramPosition.z,shellTransform.theta]);
   staticBoxes++;
   // Transparent panes stay as individually sorted meshes, as in the
   // original renderer; only opaque boxes enter combined buffer geometries.
@@ -1354,6 +1358,7 @@ function constructPhiTowerShell(){
   floorGroup=new THREE.Group();floorGroup.name='phi-archived-floor-glass-'+level;
   shell.add(floorGroup);glassFloors.push(floorGroup);
   currentBatch=new Map();opaqueFloors.push(currentBatch);
+  hologramFloors.push([]);
   shellTransform=wt;
   for(const p of planned.pieces)append(p.w,.25,p.h,p.x+p.w/2,y-.16,p.z+p.h/2,floor);
   const shellWindow=date===RECEPTION?planPhiReceptionWindow(planned.circulation.publicEntrance):null;
@@ -1411,7 +1416,7 @@ function constructPhiTowerShell(){
   }
  });
  scene.add(shell);
- phiTowerShellCache={signature,shell,controller,chunkRoot,glassFloors,
+ phiTowerShellCache={signature,shell,controller,chunkRoot,glassFloors,hologramFloors,shaftGeometry:glazing,
   staticBoxes,ownedMaterials:[shaftGlass,shaftEdgesMaterial]};
  controller.activate(currentFloor);
  updatePhiShellDiagnostics();
@@ -2217,6 +2222,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   resetInspection();
   liftPosition=null;liftDoorThreshold=null;phiLiftPanelPosition=null;liftWasNear=false;liftDoors=[];
   phiReceptionProps=[];phiOutdoorPlants=[];phiReceptionMap=null;phiReceptionDesk=null;phiFurnishingObstacles=[];phiSquareObstacles=[];phiLiftIndicator=null;
+  window.__phiDeskHologram=null;
   liftPickerConsumed=false;
   const previous=new Set(scene.children);
   arrival=null;entranceDoor=null;
@@ -2253,6 +2259,13 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   // deferred fallbacks. Dispose any unused detached objects now.
   if(viaLift)phiSculptureStage.clear();
   if(plan.phi)constructPhiTowerShell();
+  if(currentFloor===0&&phiReceptionDesk&&phiTowerShellCache){
+    const cache=phiTowerShellCache;
+    phiReceptionDesk.hologram=addPhiDeskHologram(THREE,phiReceptionDesk.root,{
+      floorBoxes:cache.hologramFloors,shaftGeometry:cache.shaftGeometry,signature:cache.signature
+    });
+    window.__phiDeskHologram=phiReceptionDesk.hologram?.diagnostics||null;
+  }
   // Give the optimised entrance lamps priority over deferred artworks/visitors.
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
@@ -2847,6 +2860,7 @@ function tick() {
   }));
   entranceDoor?.update(dt,rig.position);
   phiGalleryMusic?.update(rig.position);
+  phiReceptionDesk?.hologram?.update(clock.elapsedTime);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
   updateMovement(dt);
   if(GALLERY_DEBUG)window.__phiLiftState={

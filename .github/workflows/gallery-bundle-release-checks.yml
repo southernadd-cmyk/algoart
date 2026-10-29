@@ -4,6 +4,7 @@ on:
     branches: [main, "release/**"]
     paths:
       - 'tests/phi-idle-work.test.mjs'
+      - 'tests/phi-desk-hologram.test.mjs'
       - 'tests/gallery-public-launch.test.mjs'
       - 'tests/studio-walkthrough-link.test.mjs'
       - 'js/settings-url.js'
@@ -47,7 +48,7 @@ jobs:
       - name: Lift motion, arrival preparation and sculpture staging regression
         run: node --test tests/phi-lift-motion.test.mjs tests/gallery-entry-preparation.test.mjs tests/phi-sculpture-stage.test.mjs
       - name: Monitor scheduling, map invalidation and screen crop regression
-        run: node --test tests/phi-idle-work.test.mjs
+        run: node --test tests/phi-idle-work.test.mjs tests/phi-desk-hologram.test.mjs
       - name: Gallery public launch regression
         run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs tests/gallery-backdrop.test.mjs
       - name: Studio walkthrough links regression
