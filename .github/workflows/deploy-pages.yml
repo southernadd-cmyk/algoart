@@ -8,6 +8,8 @@ on:
     paths:
       - 'index.html'
       - 'test/**'
+      - 'automation/build-phi-test-room-signs.mjs'
+      - 'automation/phi-stage-curation-plugin.mjs'
       - 'css/**'
       - 'fonts/**'
       - 'js/**'
