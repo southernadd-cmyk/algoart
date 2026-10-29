@@ -29,7 +29,7 @@ test('no theme or minority-only themes do not produce misleading signs',()=>{
 test('one sign per curated room just inside the appropriate entry portal',()=>{
  const signs=planHangingRoomSigns(fixture());
  assert.equal(signs.length,2);
- assert.deepEqual(signs.map(s=>s.label),['Room 1 · Marker palette','Room 2 · Oil']);
+ assert.deepEqual(signs.map(s=>s.label),['Room 1 · A Marker Palette','Room 2 · Colour with Weight']);
  assert.ok(signs[0].x>0&&signs[0].x<6);
  assert.ok(signs[1].x>6&&signs[1].x<12);
  assert.equal(signs[0].yaw,Math.PI/2);

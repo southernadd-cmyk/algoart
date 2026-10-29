@@ -1,3 +1,4 @@
+import {nameExhibitionRooms} from './phi-room-names.mjs';
 // SHARED LIVE + TEST — hanging room signage after Sousinho's "Hospital hanging signage"
 // (CC BY 4.0). Adapted from the uploaded GLB to lightweight untextured geometry:
 // rectangular metal panel, two suspension cables, upper fixings and end caps.
@@ -81,32 +82,39 @@ export function planHangingRoomSigns(phi){
       entry.set(adjacent,d);queue.push(adjacent);
     }
   }
+  const names=nameExhibitionRooms(phi.exhibition.curation?.rooms||[]);
   const result=[];
   for(const curated of phi.exhibition.curation?.rooms||[]){
-    const label=roomSignTitle(curated);
+    const name=names.get(curated.room);
+    const label=name?'Room '+(curated.room+1)+' · '+name.title:'';
+    const subtitle=name?.dimension
+      ?name.values.map(v=>themeLabel(name.dimension,v)).join(' / ')
+      :roomSignTitle(curated).split(' · ').slice(1).join(' · ')||'Selected studies';
     const room=rooms[curated.room],door=entry.get(curated.room);
     if(!label||!room||!door||door.width<1.85)continue;
     const spot=insideDoor(room,door);
     if(!spot)continue;
     // No independent obstacles: all hardware clears walking-height completely.
-    result.push({room:curated.room,label,x:spot.x,z:spot.z,
+    result.push({room:curated.room,label,title:name.title,subtitle,x:spot.x,z:spot.z,
       yaw:door.axis==='x'?Math.PI/2:0,
       dimension:curated.theme?.dimension||null,matchCount:curated.theme?.count||0,
       total:curated.studyIds.length});
   }
   return result;
 }
-function markerTexture(THREE,label){
+export function markerTexture(THREE,spec){
   const canvas=document.createElement('canvas');
-  canvas.width=1024;canvas.height=160;
+  canvas.width=1536;canvas.height=320;
   const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,1024,160);
-  // Upper and lowercase, retaining the human marker character of the site.
-  let size=102;
-  do{ctx.font=size+'px "AlgoArt Marker", Georgia, serif';size-=3;}
-  while(ctx.measureText(label).width>960&&size>40);
+  ctx.clearRect(0,0,1536,320);
   ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillStyle='#f0eadc';ctx.fillText(label,512,81);
+  const line=(text,y,size,colour)=>{
+    do{ctx.font=size+'px "AlgoArt Marker", Georgia, serif';size-=2;}
+    while(ctx.measureText(text).width>1440&&size>24);
+    ctx.fillStyle=colour;ctx.fillText(text,768,y);
+  };
+  line(spec.label,109,104,'#f0eadc');
+  line(spec.subtitle,234,62,'#d3cbb9');
   const texture=new THREE.CanvasTexture(canvas);
   texture.colorSpace=THREE.SRGBColorSpace;
   texture.anisotropy=4;
@@ -132,25 +140,24 @@ export function addHangingRoomSigns(THREE,scene,phi,elevation,ceilingHeight){
     root.userData={...spec,attribution:'Sousinho · CC BY 4.0'};
     root.position.set(spec.x,elevation+2.24,spec.z);
     root.rotation.y=spec.yaw;
-    // Supplied Sketchfab sign uses a long, thin metal fascia with two end
-    // cables. Match its 4.25:1.19 silhouette after converting to room scale.
-    mount(root,new THREE.BoxGeometry(1.60,.187,.027),frame,0,.095,0);
-    for(const y of [.018,.172]){
+    // Taller fascia gives the title and factual subtitle distinct lines.
+    mount(root,new THREE.BoxGeometry(1.60,.35,.027),frame,0,.175,0);
+    for(const y of [.008,.342]){
       mount(root,new THREE.BoxGeometry(1.61,.010,.035),metal,0,y,0);
     }
     for(const x of [-.615,.615]){
       // The original model's end wires and ferrules are held in pairs.
-      cable(root,x,.188,.47,.009);
-      mount(root,new THREE.SphereGeometry(.019,8,6),metal,x,.192,0);
-      mount(root,new THREE.CylinderGeometry(.022,.022,.028,10),metal,x,.462,0);
-      cable(root,x,.47,Math.max(.49,ceilingHeight-2.24-.09),.006);
+      cable(root,x,.35,.55,.009);
+      mount(root,new THREE.SphereGeometry(.019,8,6),metal,x,.354,0);
+      mount(root,new THREE.CylinderGeometry(.022,.022,.028,10),metal,x,.542,0);
+      cable(root,x,.55,Math.max(.57,ceilingHeight-2.24-.09),.006);
       mount(root,new THREE.CylinderGeometry(.039,.039,.021,10),metal,x,
-        Math.max(.49,ceilingHeight-2.24-.075),0);
+        Math.max(.57,ceilingHeight-2.24-.075),0);
     }
-    const tex=markerTexture(THREE,spec.label);
+    const tex=markerTexture(THREE,spec);
     const titleMaterial=new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.FrontSide,depthWrite:false});
     for(const side of [-1,1]){
-      const face=mount(root,new THREE.PlaneGeometry(1.5,.15),titleMaterial,0,.095,side*.017);
+      const face=mount(root,new THREE.PlaneGeometry(1.5,.3125),titleMaterial,0,.175,side*.017);
       if(side<0)face.rotation.y=Math.PI;
     }
     scene.add(root);

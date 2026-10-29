@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {buildPhiRendererPlan} from '../gallery/visit/phi-full-engine-adapter.mjs';
+import {nameExhibitionRooms} from '../gallery/visit/phi-room-names.mjs';
 import {planHangingRoomSigns,roomSignTitle} from '../gallery/visit/phi-room-hanging-signs.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const archive=JSON.parse(read('../gallery/tower-layouts.json'));
@@ -29,6 +30,18 @@ test('diagnose every archived floor’s curated hanging-room sign counts',()=>{
   const themes=rooms.filter(r=>r.theme);
   const eligible=rooms.filter(r=>roomSignTitle(r));
   const signs=planHangingRoomSigns(phi);
+  const names=nameExhibitionRooms(rooms);
+  assert.equal(new Set([...names.values()].map(n=>n.title)).size,names.size);
+  assert.deepEqual(nameExhibitionRooms(structuredClone(rooms)),names);
+  for(const room of rooms){
+   const name=names.get(room.room);
+   if(name?.dimension){
+    const entries=room.composition[name.dimension];
+    assert.ok(entries.every(e=>name.values.includes(e.value)));
+    assert.equal(entries.reduce((n,e)=>n+e.count,0),room.studyIds.length);
+   }
+  }
+  assert.ok(signs.every(s=>s.subtitle&&s.title));
   const placed=new Set(signs.map(s=>s.room));
   const misses=eligible.filter(r=>!placed.has(r.room)).map(r=>({room:r.room+1,
     theme:r.theme.dimension+':'+r.theme.value,matching:r.theme.count,
