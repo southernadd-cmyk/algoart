@@ -79,6 +79,8 @@ export function refineStageExhibition(exhibition,floor,circulation,physical){
   let best=p.u,bestScore=wallPhiPreference(w,p.u);
   for(const target of phi)for(const step of [1,.8,.6,.4,.2,.1]){
    const u=p.u+(target-p.u)*STAGING_PHI_ADHERENCE*step;
+   // Keep shifts compositional rather than re-hanging across an entire long wall.
+   if(Math.abs(u-p.u)>1.5)continue;
    if(!paintingFits(p,w,u))continue;
    const affinity=wallPhiPreference(w,u);
    const score=affinity-Math.abs(u-p.u)*.04;
