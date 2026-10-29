@@ -28,7 +28,8 @@ const setup=[
   '   rig.rotation.y=yaw;camera.rotation.x=pitch;},',
   ' yaw:()=>yaw,pitch:()=>pitch,',
   ' clearInputs:()=>{pressed.clear();touchPressed.clear();lookPressed.clear();},',
-  ' cancelInspect:()=>resetInspection()',
+  ' cancelInspect:()=>resetInspection(),',
+  ' openLift:()=>openLift()',
   '}));',
   ''
 ].join('\n');
