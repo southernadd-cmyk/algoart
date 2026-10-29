@@ -3,6 +3,8 @@
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {build} from 'esbuild';
+import {createHash} from 'node:crypto';
+import {writeFile} from 'node:fs/promises';
 import {stageCurationPlugin} from './phi-stage-curation-plugin.mjs';
 const dir=resolve(process.cwd(),'gallery/visit');
 let source=await readFile(resolve(dir,'gallery-phi.js'),'utf8');
@@ -17,6 +19,8 @@ replace("import * as THREE from 'three';",
 // current URL semantics, and test assets still load from gallery/visit/.
 replace("history.replaceState(null,'',date===RECEPTION?location.pathname:'?date='+date);",
  "history.replaceState(null,'',stagingFloorUrl(location.href,date,RECEPTION));");
+// The staging archive can be updated after publication; never force-cache its HTML.
+replace('fetchGalleryText(url,{cache}),',"fetchGalleryText(url,{cache:'no-store'}),");
 
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
@@ -25,4 +29,7 @@ await build({
  plugins:[stageCurationPlugin()],
  logLevel:'warning'
 });
-console.log('Built staging bundle with phi-weighted curation, accurate material traits, signs and test-safe lift routing.');
+const bundle=await readFile(resolve(dir,'gallery-phi-test-room-signs-bundle.js'));
+const sha256=createHash('sha256').update(bundle).digest('hex');
+await writeFile(resolve(dir,'test-curator-revision.json'),JSON.stringify({sha256})+'\\n');
+console.log('Built test-only phi curation bundle, revision '+sha256.slice(0,12));
