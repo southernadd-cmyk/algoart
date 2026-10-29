@@ -1,5 +1,6 @@
 name: Deploy ALGO ART to Pages
 # Deployment refresh: restore the test tower to the live baseline.
+# The guided-tour experiment is built only for the test tower entry point.
 
 on:
   push:
