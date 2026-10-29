@@ -47,7 +47,7 @@ test('reception tour button is genuinely clickable and opens the lift',()=>{
  const oldDocument=globalThis.document;
  const makeNode=()=>({
    hidden:true,style:{},textContent:'',disabled:false,
-   events:{},
+   events:{},setAttribute(){},
    addEventListener(type,callback){this.events[type]=callback;},
    click(){this.events.click?.({});}
  });
