@@ -91,6 +91,9 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
    if(source.origin!==activeManifest.origin ||
       !source.pathname.startsWith(new URL('.',activeManifest).pathname))
      throw new Error('TouchDesigner media must be same-origin');
+   // Cache-bust updated six-screen films by the verified manifest digest.
+   if(typeof manifest.atlas?.sha256==='string'&&/^[0-9a-f]{64}$/.test(manifest.atlas.sha256))
+    source.searchParams.set('v',manifest.atlas.sha256.slice(0,16));
    setState('loading-export');
    const element=document.createElement('video');
    video=element;

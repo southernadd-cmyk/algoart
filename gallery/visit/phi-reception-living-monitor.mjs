@@ -68,7 +68,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,options){
   manifestURL:new URL('./touchdesigner/bank-two/six-screen.json',import.meta.url),
   previewURL:new URL('./touchdesigner/td-network-loop.webp',import.meta.url),
   infoPreviewURL:new URL('./touchdesigner/phi-net-model.webm',import.meta.url),
-  projectURL:new URL('./touchdesigner/phi_net.toe',import.meta.url)});
+  projectURL:new URL('./touchdesigner/phi_net.toe?v=2a047229344c7566',import.meta.url)});
  if(!first||!second){first?.dispose();second?.dispose();return null;}
  const rearRoom=options.rearRoom;
  if(rearRoom){

@@ -35,6 +35,8 @@ test('one player and texture feed six distinct crops, pause together and restore
   media.update(true);await new Promise(resolve=>setImmediate(resolve));
   media.update(true);await new Promise(resolve=>setImmediate(resolve));
   assert.equal(videos.length,1);assert.equal(requests.length,1);
+  assert.ok(videos[0].src.endsWith('?v='+manifest.atlas.sha256.slice(0,16)),
+   'Published film URL should follow the manifest digest rather than cache a previous version');
   assert.equal(media.diagnostics().state,'playing-export');assert.equal(videos[0].playCalls,1);
   assert.ok(screens.every(s=>s.material===screens[0].material&&s.material.map.image===videos[0]));
   const regions=screens.map(s=>{

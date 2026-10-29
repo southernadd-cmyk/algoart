@@ -14,7 +14,7 @@ test('new film sources, model movie and TouchDesigner project exist',async()=>{
   assert.ok((await stat(new URL(name,base))).size>10000,name+' missing or empty');
  const monitor=await readFile(new URL('../gallery/visit/phi-reception-living-monitor.mjs',import.meta.url),'utf8');
  assert.match(monitor,/phi-net-model\.webm/);
- assert.match(monitor,/phi_net\.toe/);
+ assert.ok(monitor.includes('phi_net.toe?v=2a047229344c7566'));
 });
 
 test('the published six-screen atlas has the correct framing and verified bytes',async()=>{
