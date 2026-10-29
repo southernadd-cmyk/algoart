@@ -1,12 +1,13 @@
 {
   "version": 1,
   "date": "2026-10-29",
-  "count": 5,
+  "count": 6,
   "series": [
     "Radiant Systems",
     "Connected Fields",
     "Recursive Divisions",
-    "Constructed Forms"
+    "Constructed Forms",
+    "Growth Systems"
   ],
   "entries": [
     {
@@ -251,6 +252,56 @@
         "grain": 24
       },
       "altText": "Action painting from PROPORTION PIECE's Constructed Forms system, seed ACL-20261029-01-08495. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
+    },
+    {
+      "id": "2026-10-29-ACP01",
+      "title": "Growth Systems — Action Painting Study 06",
+      "orientation": "portrait",
+      "material": "action",
+      "seed": "ACP-20261029-01-66825",
+      "mode": "organic",
+      "series": "Growth Systems",
+      "imageFile": "2026-10-29-action-portrait-01-organic-ACP-20261029-01-66825.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACP-20261029-01-66825&mode=organic&fmt=portrait&el=45&den=67&cx=76&neg=34&phi=98&rec=5&spi=55&ga=93&nest=48&pen=broad&th=8&wob=49&od=4&op=85&pr=44&dry=27&curve=68&shape=80&overlap=42&rot=85&ln=1&ci=1&re=1&po=1&ar=1&pal=pastel&cols=9&sat=80&bri=49&paper=%23f5f0e6&grain=28&material=action-v4&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "organic",
+        "orientation": "portrait",
+        "series": "Growth Systems",
+        "seed": "ACP-20261029-01-66825",
+        "elements": 45,
+        "density": 67,
+        "complexity": 76,
+        "negativeSpace": 34,
+        "phiStrength": 98,
+        "recursion": 5,
+        "spiralInfluence": 55,
+        "goldenAngle": 93,
+        "nesting": 48,
+        "pen": "broad",
+        "thickness": 8,
+        "wobble": 49,
+        "overdraw": 4,
+        "opacity": 85,
+        "pressure": 44,
+        "dryness": 27,
+        "curveBias": 68,
+        "shapeAmount": 80,
+        "overlap": 42,
+        "rotation": 85,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "pastel",
+        "colourCount": 9,
+        "saturation": 80,
+        "brightness": 49,
+        "paper": "#f5f0e6",
+        "grain": 28
+      },
+      "altText": "Action painting from PROPORTION PIECE's Growth Systems system, seed ACP-20261029-01-66825. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
