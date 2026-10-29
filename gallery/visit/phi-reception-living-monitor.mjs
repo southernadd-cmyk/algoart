@@ -1,5 +1,6 @@
 import {createTouchDesignerMonitorMedia,TOUCHDESIGNER_SIX_SCREEN_MANIFEST} from './phi-touchdesigner-media.mjs';
 import {addTouchDesignerInfoRow} from './phi-touchdesigner-info-row.mjs';
+import {addPhiReceptionRearWallMonitors} from './phi-reception-rear-wall-monitors.mjs';
 
 // Two three-monitor rows on the reception backroom's real wall, also used live.
 // Coordinates stay in the untransformed phi layout; the gallery transforms
@@ -58,20 +59,34 @@ export function planPhiReceptionMonitorBanks(room,lift,physicalWalls=[]){
 export function addPhiReceptionLivingMonitor(THREE,scene,options){
  const mounts=planPhiReceptionMonitorBanks(options.room,options.lift,options.physicalWalls);
  if(!mounts.length)return null;
- const first=addMonitorBank(THREE,scene,{...options,mount:mounts[0]});
- const second=addMonitorBank(THREE,scene,{...options,mount:mounts[1],bankId:2,
+ // The two large displays in the OTHER backroom mirror monitor 3 (top-right)
+ // from each original bank, without opening any extra video decoders.
+ let rearWall=null;
+ const remoteVisitorNearby=()=>rearWall?.isNearby()===true;
+ const first=addMonitorBank(THREE,scene,{...options,mount:mounts[0],remoteVisitorNearby});
+ const second=addMonitorBank(THREE,scene,{...options,mount:mounts[1],bankId:2,remoteVisitorNearby,
   manifestURL:new URL('./touchdesigner/bank-two/six-screen.json',import.meta.url),
   previewURL:new URL('./touchdesigner/td-network-loop.webp',import.meta.url),
   infoPreviewURL:new URL('./touchdesigner/phi-net-model.webm',import.meta.url),
   projectURL:new URL('./touchdesigner/phi_net.toe',import.meta.url)});
  if(!first||!second){first?.dispose();second?.dispose();return null;}
+ const rearRoom=options.rearRoom;
+ if(rearRoom){
+  const rearMount=planPhiReceptionMonitorWall(rearRoom,options.lift,options.physicalWalls);
+  rearWall=addPhiReceptionRearWallMonitors(THREE,scene,{
+   wall:rearMount,elevation:options.elevation,camera:options.camera,
+   sourceScreens:[first.thirdPanelScreen,second.thirdPanelScreen]
+  });
+ }
  const disposeFirst=first.dispose;
- first.bankCount=2;first.totalScreenCount=18;
+ first.bankCount=2;first.totalScreenCount=18+(rearWall?.screenCount||0);
+ first.largeScreenCount=rearWall?.screenCount||0;
  first.banks=[first.root,second.root];
+ Object.defineProperty(first,'rearWallDiagnostics',{get:()=>rearWall?.diagnostics||null});
  Object.defineProperty(first,'secondBankDiagnostics',{get:()=>({mount:second.mount,screenCount:second.screenCount,media:second.mediaDiagnostics,info:second.infoDiagnostics})});
- first.dispose=()=>{disposeFirst();second.dispose();};return first;
+ first.dispose=()=>{rearWall?.dispose();disposeFirst();second.dispose();};return first;
 }
-function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera,mount,bankId=1,manifestURL=TOUCHDESIGNER_SIX_SCREEN_MANIFEST,previewURL=null,infoPreviewURL,projectURL}){
+function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera,mount,bankId=1,manifestURL=TOUCHDESIGNER_SIX_SCREEN_MANIFEST,previewURL=null,infoPreviewURL,projectURL,remoteVisitorNearby}){
  // phi.world is deliberately NOT required here: it is assigned only after
  // constructPhiGallery returns. Requiring it silently removed every monitor.
  const wall=mount||planPhiReceptionMonitorWall(room,lift,physicalWalls);
@@ -222,10 +237,11 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
   if(time-last<150)return; // At most 6-7 frames per second.
   root.getWorldPosition(monitorPosition);
   const distance=camera.getWorldPosition(cameraPosition).distanceTo(monitorPosition);
-  media.update(distance<11);
+  const active=distance<11||remoteVisitorNearby?.()===true;
+  media.update(active);
   infoRow.update(time,distance<11);
-  if(distance<11)loadSource();
-  if(distance>11||media.usingExport)return;
+  if(active)loadSource();
+  if(!active||media.usingExport)return;
   last=time;
   canvases.forEach((ctx,i)=>{
    draw(ctx,i%3,(time-origin)*.001);textures[i].needsUpdate=true;
@@ -233,7 +249,7 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
   draws++;
  }
  frameId=requestAnimationFrame(tick);
- return {root,mount:wall,screenCount:9,rowCount:3,get drawCount(){return draws;},
+ return {root,mount:wall,screenCount:9,rowCount:3,thirdPanelScreen:screens[2],get drawCount(){return draws;},
   get infoDiagnostics(){return infoRow.diagnostics;},
   get mediaDiagnostics(){return media.diagnostics();},
   get watercolourDiagnostics(){return media.diagnostics();},

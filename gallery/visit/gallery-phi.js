@@ -1,7 +1,7 @@
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
-import {addPhiReceptionLivingMonitor} from './phi-reception-living-monitor.mjs';
+import {addPhiReceptionLivingMonitor,planPhiReceptionMonitorWall} from './phi-reception-living-monitor.mjs';
 import {addPhiTranslationAreaSign,addPhiTowerLiftSign} from './phi-translation-area-sign.mjs';
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
@@ -1846,8 +1846,17 @@ function constructPhiGallery(layout,studies){
    }))).filter(p=>p.width>=2.5&&p.depth>=2.5&&(!foyer||p.room!==phi.floor.mergedRooms.indexOf(foyer)))
      .sort((a,b)=>a.area-b.area)[0];
    const monitorRoom=furnishing.backrooms?.[0]||fallback;
+   // A separate, genuinely different room gets only TWO large screens,
+   // reproducing the rightmost animation from each existing 3×3 bank.
+   // Prefer the other reception backroom with its own uninterrupted solid wall.
+   const rearRoom=(furnishing.backrooms||[]).find(candidate=>
+    candidate!==monitorRoom &&
+    Math.hypot(candidate.x-monitorRoom.x,candidate.z-monitorRoom.z)>
+      Math.max(2.2,Math.min(candidate.width,candidate.depth)) &&
+    planPhiReceptionMonitorWall(candidate,furnishing.lift,phi.physical.walls)?.fromPhysical);
    if(monitorRoom)phiReceptionLivingMonitor=addPhiReceptionLivingMonitor(THREE,scene,{
-    room:monitorRoom,lift:furnishing.lift,physicalWalls:phi.physical.walls,elevation,camera
+    room:monitorRoom,rearRoom:rearRoom||null,lift:furnishing.lift,
+    physicalWalls:phi.physical.walls,elevation,camera
    });
    // Always expose placement diagnostics on test; this needs to be
    // verifiable even when debug mode is disabled.
@@ -1857,6 +1866,8 @@ function constructPhiGallery(layout,studies){
     bankCount:phiReceptionLivingMonitor?.bankCount||0,
     totalScreenCount:phiReceptionLivingMonitor?.totalScreenCount||0,
     get secondBank(){return phiReceptionLivingMonitor?.secondBankDiagnostics||null;},
+    get rearWall(){return phiReceptionLivingMonitor?.rearWallDiagnostics||null;},
+    largeScreenCount:phiReceptionLivingMonitor?.largeScreenCount||0,
     rowCount:phiReceptionLivingMonitor?.rowCount||0,
     wall:phiReceptionLivingMonitor?.mount||null,
     localPosition:phiReceptionLivingMonitor?.root.position.toArray()||null,
