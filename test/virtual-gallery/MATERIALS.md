@@ -9,7 +9,7 @@ Current live/test reception mixes [ambientCG Bricks055](https://ambientcg.com/vi
 | Gallery concrete | [Concrete Floor](https://polyhaven.com/a/concrete_floor) | Smooth pale concrete for main exhibition floors and glazed footbridges |
 | Timber rooms | [Wood Floor](https://polyhaven.com/a/wood_floor) | Three subtly different matte timber finishes, built from one shared 1K image |
 
-**Licences:** Poly Haven and ambientCG are CC0; ShareTextures Decorative Wall 2 is listed as CC0; Aman Bajwa tiles and many model props are CC BY 4.0. These descriptions are not blanket permissions for all gallery assets: the Sketchfab Standard lift and HDRMAPS background present separate issues noted below and in the audit.
+**Licences:** Poly Haven and ambientCG are CC0; ShareTextures Decorative Wall 2 is listed as CC0; Aman Bajwa tiles and many model props are CC BY 4.0. The project owner has confirmed with the Sketchfab lift creator that the current gallery use and hosting are allowed. The retired HDRMAPS JPG has been removed from the current site source.
 
 ## Performance and lifecycle
 
@@ -56,17 +56,7 @@ The GLB's original metadata and names were examined locally:
 - sliding positions produce an approximately 1.22 m clear gap and 0.2 mm
   centre seam when closed
 
-**Update 29 October 2026:** The GLB is now present in the public GitHub repository, contrary to the older statement below. Public standalone distribution requires permission beyond the documented Sketchfab Standard licence; see the audit. The optional
-loader expects `test/virtual-gallery/models/elevator-game-ready.glb`.
-If absent or blocked it silently leaves the existing functional elevator
-visible. Once an appropriately authorised deployment of the GLB is
-available at that location, the real mesh replaces the fallback and
-inherits the existing proximity and floor-travel animation.
-
-The Free Standard terms permit incorporating the model in larger works
-but prohibit distribution/access as a stand-alone asset. Public GitHub
-Pages hosts raw binary files openly; confirm redistribution permission
-before placing the GLB in that public path.
+**Update 29 October 2026:** The project owner has checked with Big5shadow and confirmed that the existing use and hosting of the lift inside PROPORTION PIECE are within the agreed licence. The model remains available in both live and test towers with no loader, hosting or visual changes. If it fails to load, the functional procedural lift remains the fallback.
 
 The model is low-polygon (~5,300 triangles) and ~296 KiB. It loads on
 demand after the floor scene is ready and its geometry is reused after
