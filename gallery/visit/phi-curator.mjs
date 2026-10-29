@@ -1,6 +1,6 @@
-// Curatorial geometry adapter for the experimental phi gallery.
-// Pure data, metres. Does not modify the live exhibition.
+// Shared live/test curator: safe geometry followed by thematic assignment.
 import {INV_PHI} from './phi-architecture.mjs';
+import {groupPhiExhibition} from './phi-curation-groups.mjs';
 
 const EPS=1e-4;
 const pointInRoom=(room,x,z)=>room.pieces.some(p=>x>p.x+EPS&&x<p.x+p.w-EPS&&z>p.z+EPS&&z<p.z+p.h-EPS);
@@ -172,9 +172,10 @@ export function planCuratedPhiExhibition(floor,circulation,physical,studies){
   else rejected.push(study);
  }
  expandPhiPaintings(hang,sculptures);
+ const curation=groupPhiExhibition(hang.paintings,sculptures,studies);
  const unplaced=[...hang.unplaced,...rejected];
  const ids=[...hang.paintings,...sculptures].map(a=>a.studyId);
- return {...hang,sculptures,unplaced,roomCounts,checks:{...hang.checks,
+ return {...hang,sculptures,unplaced,roomCounts,curation,checks:{...hang.checks,
    unique:new Set(ids).size===ids.length,
    complete:unplaced.length===0&&ids.length===studies.length,
    sculptureCount:sculptures.length,
@@ -186,3 +187,4 @@ export function planCuratedPhiExhibition(floor,circulation,physical,studies){
   return ok;
  }
 }
+
