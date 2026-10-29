@@ -59,8 +59,8 @@ export function planPhiReceptionMonitorBanks(room,lift,physicalWalls=[]){
 export function addPhiReceptionLivingMonitor(THREE,scene,options){
  const mounts=planPhiReceptionMonitorBanks(options.room,options.lift,options.physicalWalls);
  if(!mounts.length)return null;
- // The two large displays in the OTHER backroom mirror monitor 3 (top-right)
- // from each original bank, without opening any extra video decoders.
+ // Two oversized displays rotate between the third columns of both video rows
+ // per existing bank, without extra video downloads or decoders.
  let rearWall=null;
  const remoteVisitorNearby=()=>rearWall?.isNearby()===true;
  const first=addMonitorBank(THREE,scene,{...options,mount:mounts[0],remoteVisitorNearby});
@@ -75,7 +75,9 @@ export function addPhiReceptionLivingMonitor(THREE,scene,options){
   const rearMount=planPhiReceptionMonitorWall(rearRoom,options.lift,options.physicalWalls);
   rearWall=addPhiReceptionRearWallMonitors(THREE,scene,{
    wall:rearMount,elevation:options.elevation,camera:options.camera,
-   sourceScreens:[first.thirdPanelScreen,second.thirdPanelScreen]
+   sourceScreens:[first.thirdPanelScreen,first.sixthPanelScreen,
+                  second.thirdPanelScreen,second.sixthPanelScreen],
+   playbackLoops:[()=>first.playbackLoop,()=>second.playbackLoop]
   });
  }
  const disposeFirst=first.dispose;
@@ -249,7 +251,8 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
   draws++;
  }
  frameId=requestAnimationFrame(tick);
- return {root,mount:wall,screenCount:9,rowCount:3,thirdPanelScreen:screens[2],get drawCount(){return draws;},
+ return {root,mount:wall,screenCount:9,rowCount:3,thirdPanelScreen:screens[2],sixthPanelScreen:screens[5],
+  get playbackLoop(){return media.playbackLoop;},get drawCount(){return draws;},
   get infoDiagnostics(){return infoRow.diagnostics;},
   get mediaDiagnostics(){return media.diagnostics();},
   get watercolourDiagnostics(){return media.diagnostics();},

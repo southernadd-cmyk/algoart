@@ -31,9 +31,14 @@ export function validateTouchDesignerSixScreen(data){
   panelHeight:a.panelHeight,columns:a.columns,rows:a.rows};
 }
 
+export function hasTouchDesignerVideoLooped(previousTime,currentTime){
+ return Number.isFinite(previousTime)&&Number.isFinite(currentTime)&&
+  previousTime-currentTime>.5;
+}
 export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCHDESIGNER_TRIPTYCH_MANIFEST,followActiveIndex=true}){
  let state='fallback',started=false,disposed=false,video=null,texture=null,material=null,activeManifest=manifestURL;
  let playerActive=false,playerStarting=false,lastError='',originalUVs=[];
+ let playbackLoop=0,lastPlaybackTime=0;
  const setState=next=>{state=next;};
  const diag=()=>({state,error:lastError,videoReady:!!video&&video.readyState>=2,playing:playerActive,manifest:activeManifest.pathname});
  const restore=()=>{
@@ -50,6 +55,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   if(texture){texture.dispose();texture=null;}
   if(material){material.dispose();material=null;}
   playerActive=false;playerStarting=false;
+  playbackLoop=0;lastPlaybackTime=0;
  };
  const fail=error=>{
   if(disposed)return;
@@ -134,6 +140,11 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   if(disposed)return;
   if(nearby&&!started)void start();
   if(!video||state==='fallback'||state==='awaiting-export')return;
+  if(video.readyState>=2){
+   const time=video.currentTime;
+   if(hasTouchDesignerVideoLooped(lastPlaybackTime,time))playbackLoop++;
+   lastPlaybackTime=time;
+  }
   if(nearby && !playerActive && !playerStarting && video.readyState>=2){
    // Avoid duplicate play() requests while the first autoplay promise settles.
    playerStarting=true;
@@ -147,5 +158,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   restore();
   setState('disposed');
  }
- return {update,dispose,diagnostics:diag,get usingExport(){return state==='playing-export'||state==='export-ready';}};
+ return {update,dispose,diagnostics:diag,
+  get playbackLoop(){return playbackLoop;},
+  get usingExport(){return state==='playing-export'||state==='export-ready';}};
 }
