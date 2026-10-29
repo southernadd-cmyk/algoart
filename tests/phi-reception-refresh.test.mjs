@@ -50,3 +50,20 @@ test('live and test share charcoal exterior brick on reception feature walls, wi
  }
  assert.doesNotMatch(staging,/Vintage Framed World Map|Small succulent in planter/);
 });
+
+test('live and test entry pages expose the licence review and credits pages explain unresolved redistribution risks',()=>{
+ for(const path of ['../gallery/visit/index.html','../test/virtual-gallery/index.html','../test/virtual-gallery/full-engine.html']){
+  const html=readFileSync(new URL(path,import.meta.url),'utf8');
+  assert.match(html,/Credits and licence notes/);
+  assert.match(html,/credits\.html#licence-review/);
+ }
+ for(const path of ['../gallery/visit/credits.html','../test/virtual-gallery/credits.html']){
+  const html=readFileSync(new URL(path,import.meta.url),'utf8');
+  const review=html.indexOf('id="licence-review"');
+  const models=html.indexOf('<h2>Scene models</h2>');
+  assert.ok(review>0 && review<models,'Licence restrictions should precede long attribution list');
+  for(const term of ['Sketchfab Standard','HDRMAPS terms','028.jpg','048.jpg','active-versus-archived asset audit']){
+   assert.ok(html.includes(term),'Missing licensing context: '+term);
+  }
+ }
+});
