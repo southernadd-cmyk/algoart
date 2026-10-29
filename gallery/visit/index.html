@@ -36,7 +36,7 @@
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
-<link rel="preload" href="./textures/OfficeCeiling001_Color.jpg" as="image">
+<link rel="preload" href="./textures/OfficeCeiling001_Color.jpg" as="image" crossorigin="anonymous">
 
 
 <script>
@@ -72,7 +72,7 @@
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
     window.__galleryStage='Importing bundled JavaScript';
-    await import('./gallery-phi-bundle.js?v=golden-four-panel-split-v2-20261029');
+    await import('./gallery-phi-bundle.js?v=translation-sign-elevation-fix-20261029');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
