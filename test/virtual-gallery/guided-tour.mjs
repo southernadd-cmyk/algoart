@@ -184,12 +184,20 @@ export function createGuidedTour(getContext){
   }
   function label(){
     const c=state();
-    trigger.disabled=!c.phi||!c.entered||c.xr||c.liftTravelling||c.date===c.reception;
-    trigger.title=c.date===c.reception?'Take the lift to a daily exhibition to start a tour':'Guided tour of this floor';
+    // Keep this entry point actionable on reception AND after a lift ride.
+    // Previously refresh() ran during travel, set disabled=true, and nothing
+    // reliably cleared it when the doors finished opening.
+    trigger.disabled=false;
+    const onReception=c.date===c.reception;
+    trigger.title=onReception
+      ?'Open the lift to choose a floor for a guided tour'
+      :'Guided tour of this floor';
     if(mode==='idle'){
-      title.textContent='Tour this exhibition floor';
-      meta.textContent='A guided walk between its paintings and sculptures';
-      toggle.textContent='Start tour';
+      title.textContent=onReception?'Choose an exhibition floor':'Tour this exhibition floor';
+      meta.textContent=onReception
+        ?'Use the lift to visit a daily exhibition, then start its guided tour.'
+        :'A guided walk between its paintings and sculptures';
+      toggle.textContent=onReception?'Open lift':'Start tour';
       progress.style.width='0%';
     }else if(mode==='complete'){
       title.textContent='End of this floor’s tour';
@@ -219,8 +227,15 @@ export function createGuidedTour(getContext){
   }
   function begin(){
     const c=state();
-    if(!c.entered||c.xr||c.liftTravelling||!c.phi||c.date===c.reception){
-      title.textContent='Select a dated gallery floor using the lift';
+    if(c.date===c.reception&&c.entered&&!c.liftTravelling){
+      stop();
+      c.openLift();
+      return;
+    }
+    if(!c.entered||c.xr||c.liftTravelling||!c.phi){
+      title.textContent=!c.entered?'Enter the tower first'
+        :c.liftTravelling?'The lift is still arriving':'Tour unavailable in this mode';
+      meta.textContent='The guided walk is available on each dated exhibition floor.';
       panel.hidden=false;return;
     }
     floorKey=c.date;
@@ -265,8 +280,19 @@ export function createGuidedTour(getContext){
   }
   trigger.addEventListener('click',()=>{
     const c=state();
-    if(c.date===c.reception||!c.entered){panel.hidden=false;label();return;}
-    panel.hidden=false;if(mode==='idle')begin();else label();
+    // From reception, make the toolbar shortcut useful instead of disabled:
+    // open the existing calendar so a visitor can choose a dated art floor.
+    if(c.entered&&c.date===c.reception&&!c.liftTravelling&&!c.xr){
+      c.openLift();return;
+    }
+    panel.hidden=false;
+    if(!c.entered||c.liftTravelling||c.xr){
+      title.textContent=!c.entered?'Enter the tower to begin'
+        :c.liftTravelling?'The lift is still arriving':'Tour is not available in VR yet';
+      meta.textContent='Choose a dated exhibition floor when you are ready.';
+      toggle.textContent='Start tour';
+    }else if(mode==='idle')begin();
+    else label();
     document.exitPointerLock?.();
   });
   panel.addEventListener('click',event=>{
