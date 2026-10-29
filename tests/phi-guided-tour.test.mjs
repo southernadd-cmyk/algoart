@@ -20,5 +20,5 @@ test('unreachable artworks are excluded safely',()=>{
 });
 test('golden-angle floor bounds are calculated in rotated world coordinates',()=>{
  const phi={floor:{root:{x:-8,z:-3,w:16,h:6}},world:{toWorld:(x,z)=>({x:-z+2,z:x+5})}};
- assert.deepEqual(tourWorldBounds(phi),{x:-3,z:-3,w:6,h:16});
+ assert.deepEqual(tourWorldBounds(phi),{x:-1,z:-3,w:6,h:16});
 });
