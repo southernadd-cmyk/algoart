@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createTowerGraffiti} from '../gallery/visit/exterior-graffiti.mjs?v=atlas-first-20261027';
-test('graffiti=off bypasses planning, scene objects, textures and paint work',()=>{
- const previous=globalThis.location;globalThis.location={search:'?graffiti=off'};
+for(const search of ['', '?graffiti=off'])test(search+' bypasses planning, scene objects, textures and paint work',()=>{
+ const previous=globalThis.location;globalThis.location={search};
  try{
   const forbidden=new Proxy({}, {get(){throw Error('Graphics or scene work attempted');}});
   const manager=createTowerGraffiti(forbidden,{brick:forbidden,planner(){throw Error('Planner called');}});

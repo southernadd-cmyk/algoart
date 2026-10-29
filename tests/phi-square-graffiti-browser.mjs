@@ -28,7 +28,7 @@ try{
    const map=new THREE.DataTexture(new Uint8Array([160,120,90,255]),1,1);map.colorSpace=THREE.SRGBColorSpace;map.needsUpdate=true;
    const brick=new THREE.MeshStandardMaterial({color:'#9d7255',map,roughness:1});brick.userData.tileMeters=2;
    const scene=new THREE.Scene();scene.add(new THREE.HemisphereLight(0xffffff,0xffffff,3));
-   const square=createPhiSquare(THREE,{brick,concrete:brick,lowPower});
+   const square=createPhiSquare(THREE,{brick,concrete:brick,lowPower,graffitiEnabled:true});
    const {root}=square.addTo(scene,{doorway:{x:0,z:0},outward:{x:0,z:1}});
    const deadline=performance.now()+30000;
    while(square.diagnostics().pending&&performance.now()<deadline)await new Promise(resolve=>setTimeout(resolve,50));

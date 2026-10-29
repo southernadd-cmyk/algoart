@@ -97,7 +97,7 @@ export function clearOfPhiSquare(obstacles,x,z,radius=.38){
   return Math.abs(local.x)>p.width/2+radius||Math.abs(local.z)>p.depth/2+radius;
  });
 }
-export function createPhiSquare(THREE,{brick,concrete,lowPower=false,graffitiEnabled=new URLSearchParams(globalThis.location?.search||'').get('graffiti')!=='off'}){
+export function createPhiSquare(THREE,{brick,concrete,lowPower=false,graffitiEnabled=new URLSearchParams(globalThis.location?.search||'').get('graffiti')==='on'}){
  const objects=planPhiSquare(),marks=graffitiEnabled?planSquareTags(objects):[],managers=['brick','concrete'].map(material=>createTowerGraffiti(THREE,{
   brick:material==='brick'?brick:concrete,lowPower,kind:'exterior',enabled:graffitiEnabled,
   atlasBase:'square/'+(globalThis.__phiReceptionTestRefresh?'':'live/')+material,

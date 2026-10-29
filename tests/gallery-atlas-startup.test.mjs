@@ -9,7 +9,7 @@ async function fixture(baked,run){
  globalThis.document={baseURI:'https://example.org/gallery/visit/',createElement:()=>({width:0,height:0,getContext:()=>({clearRect(){},drawImage(){},save(){},restore(){},beginPath(){},rect(){},clip(){},translate(){},scale(){}})})};
  globalThis.Image=class{naturalWidth=32;naturalHeight=32;decode(){return Promise.resolve();}};
  globalThis.fetch=url=>{assert.ok(String(url).startsWith('https://example.org/gallery/visit/graffiti-assets/'),'Atlas URL must use the document base, including on test');return new Promise(resolve=>resolveFetch=resolve);};
- const manager=createTowerGraffiti(THREE,{brick:new THREE.MeshStandardMaterial(),planner:()=>[mark],keyFor:()=> 'fixture',atlasPrefix:'',paintTag:()=>paints++,atlasPlanner:()=>[{size:32,height:32,page:0,entries:[{mark,x:0,y:0,width:16,height:16}]}]});
+ const manager=createTowerGraffiti(THREE,{enabled:true,brick:new THREE.MeshStandardMaterial(),planner:()=>[mark],keyFor:()=> 'fixture',atlasPrefix:'',paintTag:()=>paints++,atlasPlanner:()=>[{size:32,height:32,page:0,entries:[{mark,x:0,y:0,width:16,height:16}]}]});
  try{
   manager.addTo(new THREE.Group(),[],0);
   for(let i=0;i<5;i++)manager.paintNext();

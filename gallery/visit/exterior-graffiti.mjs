@@ -84,7 +84,7 @@ export function graffitiGeometry(THREE,entries,size,currentFloor,tileMeters=2,at
  geometry.setAttribute('wallUv',new THREE.Float32BufferAttribute(wallUv,2));
  geometry.setIndex(indices);geometry.computeBoundingSphere();return geometry;
 }
-export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExteriorGraffiti,keyFor=towerGraffitiKey,kind='exterior',atlasBase=null,atlasPlanner=planGraffitiAtlases,atlasPrefix=null,paintTag=null,enabled=new URLSearchParams(globalThis.location?.search||'').get('graffiti')!=='off'}={}){
+export function createTowerGraffiti(THREE,{brick,lowPower=false,planner=planExteriorGraffiti,keyFor=towerGraffitiKey,kind='exterior',atlasBase=null,atlasPlanner=planGraffitiAtlases,atlasPrefix=null,paintTag=null,enabled=new URLSearchParams(globalThis.location?.search||'').get('graffiti')==='on'}={}){
  if(!enabled)return {addTo(){return null;},paintNext(){},snapshot(){return [];},dispose(){},
   get diagnostics(){return {disabled:true,marks:0,painted:0,pending:0,paintSteps:0,pages:0,baked:false,bakeLoading:false,totalPaintMs:0,maxPaintMs:0,errors:[]};}};
  let generation=0;

@@ -45,7 +45,7 @@ Licence: https://creativecommons.org/licenses/by/4.0/ . User-visible source link
 
 ## Exterior reception roof
 
-**HB old house part 4** by **Orphan RTG** ([author](https://sketchfab.com/orphanrtg)), [original source](https://sketchfab.com/3d-models/hb-old-house-part-4-a9dd50cc901146b893d52f56b5ccce69). [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Title, author, source and licence confirmed by the uploaded GLB metadata. Wall below the roof removed; scanned roof geometry simplified to 15,000 triangles with original photographic UVs and texture retained. Two fitted copies form the reception roof; supporting gables and eaves added. Derivative: `models/reception-old-house-roof.glb`.
+**Chinese roof. Low poly model.** by **KSmodels** ([author](https://sketchfab.com/KSmodels)), [source](https://sketchfab.com/3d-models/chinese-roof-low-poly-model-783448e879ac4f3c84beb6c836a1b241). [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribution confirmed by uploaded GLB metadata. Original 754-triangle geometry retained, three textures compressed to WebP, alpha rendering set to cutout, and two copies fitted to reception. Matching brick infill follows the underside profile; a ridge cap closes the join. Asset: `models/reception-chinese-roof.glb`.
 
 ## Reception floor tiles
 
