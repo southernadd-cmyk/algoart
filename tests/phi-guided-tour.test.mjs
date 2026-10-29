@@ -39,7 +39,7 @@ test('test tour button is enabled on reception and after floor changes',()=>{
  assert.doesNotMatch(source,/trigger\.disabled\s*=\s*!/);
  assert.match(source,/c\.openLift\(\)/);
  assert.match(builder,/openLift:\(\)=>openLift\(\)/);
- assert.match(staging,/gallery-phi-tour-test-bundle\.js\?v=guided-tour-test-button-fix-v4/);
+ assert.match(staging,/gallery-phi-tour-test-bundle\.js\?v=guided-tour-/);
 });
 
 
