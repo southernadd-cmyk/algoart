@@ -4,11 +4,11 @@ const PREVIEW=new URL('./touchdesigner/td-network-loop.webp',import.meta.url);
 const LOGO=new URL('./touchdesigner/touchdesigner-logo.png',import.meta.url);
 const PROJECT=new URL('./touchdesigner/pp_translation_room_watercolour.toe',import.meta.url);
 
-export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,camera,studyDescription=null}){
+export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,camera,studyDescription=null,previewURL=PREVIEW,projectURL=PROJECT}){
  const material=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.32,roughness:.48});
  const lamp=new THREE.MeshBasicMaterial({color:0x66c59d,toneMapped:false});
  const textures=[],screens=[],contexts=[],groups=[];
- let image=null,logo=null,attempted=false,disposed=false,available=false,availabilityChecked=false,frame=0,last=0;
+ let image=null,video=null,videoPlayPending=false,logo=null,attempted=false,disposed=false,available=false,availabilityChecked=false,frame=0,last=0;
  const statuses={preview:'not-requested',logo:'not-requested',project:'not-checked'};
  function text(ctx,t,x,y,size=18,color='#eee9da',weight='normal',family='Arial, sans-serif'){
   ctx.fillStyle=color;ctx.font=weight+' '+size+'px '+family;ctx.fillText(t,x,y);
@@ -20,9 +20,11 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
  function draw(index){
   const c=contexts[index];base(c);
   if(index===0){
-   if(image?.complete&&image.naturalWidth){
-    const scale=Math.min(384/image.naturalWidth,240/image.naturalHeight);
-    c.drawImage(image,(384-image.naturalWidth*scale)/2,(240-image.naturalHeight*scale)/2,image.naturalWidth*scale,image.naturalHeight*scale);
+   if((video?.readyState>=2&&video.videoWidth)||(image?.complete&&image.naturalWidth)){
+    const source=video?.readyState>=2&&video.videoWidth?video:image;
+    const sw=source.videoWidth||source.naturalWidth,sh=source.videoHeight||source.naturalHeight;
+    const scale=Math.min(384/sw,240/sh);
+    c.drawImage(source,(384-sw*scale)/2,(240-sh*scale)/2,sw*scale,sh*scale);
     c.fillStyle='rgba(12,15,20,.75)';c.fillRect(0,210,384,30);
     text(c,'TOUCHDESIGNER · LIVE NETWORK',12,230,13,'#f8f3ea','bold');
    }else{
@@ -87,16 +89,25 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
  function load(){
   if(attempted||disposed)return;
   attempted=true;
-  image=new Image();image.decoding='async';
-  image.onload=()=>{statuses.preview='ready';if(!disposed)draw(0)};
-  image.onerror=()=>{statuses.preview='not-found';if(!disposed)draw(0)};
-  statuses.preview='loading';image.src=PREVIEW.href;
+  if(previewURL.pathname.toLowerCase().endsWith('.webm')){
+   video=document.createElement('video');video.muted=true;video.defaultMuted=true;
+   video.playsInline=true;video.loop=true;video.preload='metadata';
+   video.setAttribute('playsinline','');
+   video.addEventListener('loadeddata',()=>{statuses.preview='ready';if(!disposed)draw(0)});
+   video.addEventListener('error',()=>{statuses.preview='not-found';if(!disposed)draw(0)});
+   statuses.preview='loading';video.src=previewURL.href;video.load();
+  }else{
+   image=new Image();image.decoding='async';
+   image.onload=()=>{statuses.preview='ready';if(!disposed)draw(0)};
+   image.onerror=()=>{statuses.preview='not-found';if(!disposed)draw(0)};
+   statuses.preview='loading';image.src=previewURL.href;
+  }
   logo=new Image();logo.decoding='async';
   logo.onload=()=>{statuses.logo='ready';if(!disposed)draw(2)};
   logo.onerror=()=>{statuses.logo='not-found';if(!disposed)draw(2)};
   statuses.logo='loading';logo.src=LOGO.href;
   // Do not advertise a download that is a 404.
-  fetch(PROJECT,{method:'HEAD',cache:'no-store'}).then(r=>{
+  fetch(projectURL,{method:'HEAD',cache:'no-store'}).then(r=>{
    if(disposed)return;available=r.ok;availabilityChecked=true;
    statuses.project=available?'ready':'not-found';draw(2);
   }).catch(()=>{if(disposed)return;availabilityChecked=true;statuses.project='not-found';draw(2)});
@@ -104,7 +115,14 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
  function update(time,close){
   if(disposed)return;
   if(close)load();
-  if(!close||!image?.complete||!image.naturalWidth)return;
+  if(!close&&video&&!video.paused)video.pause();
+  if(close&&video?.readyState>=2&&video.paused&&!videoPlayPending){
+   videoPlayPending=true;
+   Promise.resolve(video.play()).then(()=>{videoPlayPending=false}).catch(()=>{
+    videoPlayPending=false;statuses.preview='playback-blocked';
+   });
+  }
+  if(!close||(!(video?.readyState>=2&&video.videoWidth)&&!(image?.complete&&image.naturalWidth)))return;
   if(time-last<150)return; // max 7 canvas uploads/sec, only near the screens.
   last=time;frame++;draw(0);
  }
@@ -127,12 +145,13 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
   if(!ray.intersectObject(screens[2],false).length)return;
   e.preventDefault();
   // Open the actual downloadable .toe only on the real pointer gesture.
-  window.open(PROJECT.href,'_blank','noopener,noreferrer');
+  window.open(projectURL.href,'_blank','noopener,noreferrer');
  }
  document.addEventListener('pointerup',onClick,true);
- return {screens,groups,get diagnostics(){return {...statuses,framesDrawn:frame,downloadReady:available,checked:availabilityChecked}},
+ return {screens,groups,get diagnostics(){return {...statuses,framesDrawn:frame,previewKind:video?'webm':'webp',videoTime:video?.currentTime??null,downloadReady:available,checked:availabilityChecked}},
   update,dispose(){
    disposed=true;document.removeEventListener('pointerup',onClick,true);
+   if(video){video.pause();video.removeAttribute('src');video.load();video=null;}
    textures.forEach(t=>t.dispose());
    screens.forEach(x=>{x.material.dispose();x.geometry.dispose()});
    groups.forEach(group=>{group.children.forEach(x=>{if(x.geometry&&!screens.includes(x))x.geometry.dispose()});root.remove(group)});

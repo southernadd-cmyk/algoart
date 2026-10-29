@@ -61,7 +61,9 @@ export function addPhiReceptionLivingMonitor(THREE,scene,options){
  const first=addMonitorBank(THREE,scene,{...options,mount:mounts[0]});
  const second=addMonitorBank(THREE,scene,{...options,mount:mounts[1],bankId:2,
   manifestURL:new URL('./touchdesigner/bank-two/six-screen.json',import.meta.url),
-  previewURL:new URL('./touchdesigner/td-network-loop.webp',import.meta.url)});
+  previewURL:new URL('./touchdesigner/td-network-loop.webp',import.meta.url),
+  infoPreviewURL:new URL('./touchdesigner/phi-net-model.webm',import.meta.url),
+  projectURL:new URL('./touchdesigner/phi_net.toe',import.meta.url)});
  if(!first||!second){first?.dispose();second?.dispose();return null;}
  const disposeFirst=first.dispose;
  first.bankCount=2;first.totalScreenCount=18;
@@ -69,7 +71,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,options){
  Object.defineProperty(first,'secondBankDiagnostics',{get:()=>({mount:second.mount,screenCount:second.screenCount,media:second.mediaDiagnostics,info:second.infoDiagnostics})});
  first.dispose=()=>{disposeFirst();second.dispose();};return first;
 }
-function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera,mount,bankId=1,manifestURL=TOUCHDESIGNER_SIX_SCREEN_MANIFEST,previewURL=null}){
+function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera,mount,bankId=1,manifestURL=TOUCHDESIGNER_SIX_SCREEN_MANIFEST,previewURL=null,infoPreviewURL,projectURL}){
  // phi.world is deliberately NOT required here: it is assigned only after
  // constructPhiGallery returns. Requiring it silently removed every monitor.
  const wall=mount||planPhiReceptionMonitorWall(room,lift,physicalWalls);
@@ -119,6 +121,7 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
  }
  // Third row documents the authoring process and exposes the editable project.
  const infoRow=addTouchDesignerInfoRow(THREE,{root,width,height,gap:wall.gap,rowPitch,camera,
+  previewURL:infoPreviewURL,projectURL,
   studyDescription:bankId===2?{title:'RUNNING IN TOUCHDESIGNER',lines:[
    'A scan of the painting becomes a mesh.',
    'Its marks rise; the paper remains flat.',

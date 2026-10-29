@@ -1,0 +1,110 @@
+name: Build TouchDesigner second monitor bank
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-touchdesigner-bank-two.yml'
+      - 'gallery/visit/touchdesigner/phi-net-AA-20261005-03-55769-organic-oil-v6-triptych.webm'
+      - 'gallery/visit/touchdesigner/phi-net-AA-20261005-03-55769-scribble-action-v4-triptych.webm'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: touchdesigner-bank-two
+  cancel-in-progress: false
+
+jobs:
+  combine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Install video tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -n 1
+      - name: Verify the new source triptychs
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          directory=Path('gallery/visit/touchdesigner')
+          names=['phi-net-AA-20261005-03-55769-organic-oil-v6-triptych.webm',
+                 'phi-net-AA-20261005-03-55769-scribble-action-v4-triptych.webm']
+          for name in names:
+              path=directory/name
+              result=json.loads(subprocess.check_output(['ffprobe','-v','error','-select_streams','v:0',
+                '-show_entries','stream=codec_name,width,height,r_frame_rate:format=duration',
+                '-of','json',str(path)]))
+              stream=result['streams'][0]
+              duration=float(result['format']['duration'])
+              print(name,stream,'duration',duration)
+              assert (stream['width'],stream['height'])==(1152,240), 'Expected 3 x 384 by 240 input'
+              assert 19 <= duration <= 21.5, 'Unexpected clip duration'
+          PY
+      - name: Combine both films into six correctly cropped panels
+        run: |
+          set -euo pipefail
+          dir=gallery/visit/touchdesigner
+          ffmpeg -hide_banner -loglevel error -y \
+            -i "$dir/phi-net-AA-20261005-03-55769-organic-oil-v6-triptych.webm" \
+            -i "$dir/phi-net-AA-20261005-03-55769-scribble-action-v4-triptych.webm" \
+            -filter_complex '[0:v]fps=24,tpad=stop_mode=clone:stop_duration=1,trim=duration=20,setpts=PTS-STARTPTS,format=yuv420p[upper];[1:v]fps=24,tpad=stop_mode=clone:stop_duration=1,trim=duration=20,setpts=PTS-STARTPTS,format=yuv420p[lower];[upper][lower]vstack=inputs=2[v]' \
+            -map '[v]' -frames:v 480 -an -c:v libvpx-vp9 -b:v 0 -crf 33 \
+            -deadline good -cpu-used 4 -row-mt 1 -threads 4 -pix_fmt yuv420p \
+            "$dir/bank-two/six-screen-installation.webm"
+      - name: Verify the combined film and publish the manifest
+        run: |
+          python3 - <<'PY'
+          import json,subprocess,hashlib
+          from pathlib import Path
+          base=Path('gallery/visit/touchdesigner/bank-two')
+          movie=base/'six-screen-installation.webm'
+          probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-count_frames',
+           '-select_streams','v:0','-show_entries',
+           'stream=codec_name,width,height,r_frame_rate,nb_read_frames:format=duration',
+           '-of','json',str(movie)]))
+          video=probe['streams'][0]
+          assert video['codec_name']=='vp9',video
+          assert (video['width'],video['height'])==(1152,480),video
+          assert video['r_frame_rate']=='24/1',video
+          assert int(video['nb_read_frames'])==480,video
+          assert abs(float(probe['format']['duration'])-20)<0.1,probe
+          for row in range(2):
+           for col in range(3):
+            subprocess.run(['ffmpeg','-v','error','-i',str(movie),'-vf',
+               f'crop=384:240:{col*384}:{row*240}',
+               '-frames:v','1','-f','null','-'],check=True,stdout=subprocess.DEVNULL)
+          metadata=json.loads((base/'six-screen.json').read_text())
+          metadata.update(status='published',title='Translation Study II',
+            description='Two 20-second TouchDesigner triptychs stacked into one six-panel film.',
+            sources=[{'row':0,'file':'../phi-net-AA-20261005-03-55769-organic-oil-v6-triptych.webm'},
+                     {'row':1,'file':'../phi-net-AA-20261005-03-55769-scribble-action-v4-triptych.webm'}],
+            credits='Original TouchDesigner triptychs and the phi_net.toe editable project.')
+          metadata['atlas'].update(codec='vp9',fps=24,durationSeconds=20,
+             sha256=hashlib.sha256(movie.read_bytes()).hexdigest(),sizeBytes=movie.stat().st_size)
+          (base/'six-screen.json').write_text(json.dumps(metadata,indent=2)+'\n')
+          print('Verified atlas:',metadata['atlas'])
+          PY
+      - name: Test six-panel playback mapping and independently verified bytes
+        run: |
+          npm ci
+          node --test tests/phi-touchdesigner-six-screen.test.mjs tests/phi-monitor-banks.test.mjs tests/phi-monitor-bank-two.test.mjs
+      - name: Publish the WebM and manifest together
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gallery/visit/touchdesigner/bank-two/six-screen-installation.webm gallery/visit/touchdesigner/bank-two/six-screen.json
+          if git diff --cached --quiet; then
+            echo 'The combined film is already current'
+          else
+            git commit -m 'Publish verified TouchDesigner second six-screen atlas'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi

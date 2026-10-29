@@ -1,17 +1,22 @@
 # Translation Study II — second monitor bank
 
-The second 3 × 3 bank is beside the original installation. Its upper two rows
-currently show the existing `../td-network-loop.webp`; the third row repeats
-the current network preview, explanation and project download as placeholders.
-The original bank retains its published six-screen film.
+This bank follows the same 3 × 3 arrangement as the first installation.
+Its upper six panels use one 1152 × 480, 24 fps, 20-second VP9 WebM
+(`six-screen-installation.webm`), with the uploaded organic oil triptych
+in the top 240 pixels and scribble/action triptych underneath. Each of the
+six monitors UV-crops one 384 × 240 cell from that one playing texture.
 
-When the two new triptychs are ready, combine them into a 1152 × 480 WebM
-(top triptych in the top 240 pixels, second triptych in the bottom 240 pixels).
-Each row is cropped into three 384 × 240 screens. Put that file here as
-`six-screen-installation.webm`, verify all six crops and playback, then update
-`six-screen.json` to `status: published`, recording the actual frame rate,
-size and SHA-256. The second bank uses this manifest independently and will
-switch from its WebP fallback to one shared video decoder and texture.
+GitHub Actions builds the film from the actual source WebMs in the parent
+directory, validates the frame count, dimensions, all six crops and SHA-256,
+and publishes this bank's independent manifest. The first bank is unchanged.
+Until verification succeeds, the second bank keeps its WebP fallback.
 
-Update the information-row assets/project if new authoring files are supplied.
-Both banks load media only when approached and release resources on departure.
+The third information row uses the uploaded `../phi-net-model.webm` as its
+lazily loaded looping model/network video, the curatorial study description,
+and `../phi_net.toe` for the independent downloadable TouchDesigner project.
+The project download is shown only after its URL responds successfully.
+Media remain lazy and pause outside the visitor proximity threshold.
+
+Build: `.github/workflows/build-touchdesigner-bank-two.yml`.
+Completion triggers a Pages deployment so token-authored media commits are
+published as well as source changes.
