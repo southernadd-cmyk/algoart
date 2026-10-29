@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {clearTourLine,findTourPath,tourWorldBounds} from '../test/virtual-gallery/guided-tour.mjs';
+import {clearTourLine,findTourPath,tourWorldBounds,createGuidedTour} from '../test/virtual-gallery/guided-tour.mjs';
 
 test('route walks through a door rather than through a separating wall',()=>{
  const root={x:0,z:0,w:10,h:8};
@@ -40,4 +40,50 @@ test('test tour button is enabled on reception and after floor changes',()=>{
  assert.match(source,/c\.openLift\(\)/);
  assert.match(builder,/openLift:\(\)=>openLift\(\)/);
  assert.match(staging,/gallery-phi-tour-test-bundle\.js\?v=guided-tour-test-button-fix-v4/);
+});
+
+
+test('reception tour button is genuinely clickable and opens the lift',()=>{
+ const oldDocument=globalThis.document;
+ const makeNode=()=>({
+   hidden:true,style:{},textContent:'',disabled:false,
+   events:{},
+   addEventListener(type,callback){this.events[type]=callback;},
+   click(){this.events.click?.({});}
+ });
+ const trigger=makeNode(),panel=makeNode(),top={insertBefore(el){assert.equal(el,trigger);}};
+ const ui=new Map([
+   ['#testTourTitle',makeNode()],['#testTourMeta',makeNode()],
+   ['[data-tour=toggle]',makeNode()],['#testTourProgress',makeNode()],
+   ['[data-tour=back]',makeNode()],['[data-tour=next]',makeNode()]
+ ]);
+ panel.querySelector=selector=>ui.get(selector);
+ const doc={
+   querySelector:selector=>selector==='.topbar .top-actions'?top:null,
+   createElement:tag=>tag==='button'?trigger:panel,
+   body:{appendChild(){}},
+   addEventListener(){},
+   exitPointerLock(){}
+ };
+ let liftOpens=0;
+ let date='__phi_reception__';
+ const getContext=()=>({
+   phi:{floor:{root:{x:0,z:0,w:10,h:8}}},date,
+   reception:'__phi_reception__',entered:true,xr:false,liftTravelling:false,
+   openLift(){liftOpens++;},artExhibits:[],
+   rig:{position:{x:1,z:1}}
+ });
+ try{
+   globalThis.document=doc;
+   const tour=createGuidedTour(getContext);
+   tour.refresh();
+   assert.equal(trigger.disabled,false,'button must not have native disabled state in reception');
+   trigger.click();
+   assert.equal(liftOpens,1,'reception click opens the floor selector');
+   date='2026-10-28';
+   tour.refresh();
+   assert.equal(trigger.disabled,false,'button must remain enabled after a lift trip');
+   trigger.click();
+   assert.equal(panel.hidden,false,'dated-floor click opens the tour controls');
+ }finally{globalThis.document=oldDocument;}
 });
