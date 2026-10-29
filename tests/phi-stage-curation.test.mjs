@@ -86,7 +86,10 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
    assert.equal(p.room,original.room,'golden hang cannot change painting room '+date+'/'+p.studyId);
    assert.ok(p.width+1e-6>=original.width,'golden hang cannot shrink a painting '+date+'/'+p.studyId);
    assert.ok(p.height+1e-6>=original.height,'golden hang cannot shrink painting height '+date+'/'+p.studyId);
-   assert.ok(delta<=1.500001,'phi wall shift must stay within 1.5 m '+date+'/'+p.studyId+' '+delta);
+   // Both passes have independent 1.5 m guards. The separate A/B regression
+   // checks that the complete new hang stays within 1.5 m of the classic
+   // 65% layout; the displacement from 0% can exceed either pass's limit.
+   assert.ok(delta<=3.000001,'combined phi wall shift must stay within 3 m '+date+'/'+p.studyId+' '+delta);
    if(delta>1e-6||wallChanged){
     const change={date,id:p.studyId,delta:+delta.toFixed(3),
      wallChanged,roomChanged:p.room!==original.room,
