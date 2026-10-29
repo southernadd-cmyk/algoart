@@ -64,6 +64,7 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
  const on=await stagedModule(65);
  const archive=JSON.parse(readFileSync(new URL('../gallery/tower-layouts.json',import.meta.url)));
  let baselineAffinity=0,stagedAffinity=0,modified=0,paintings=0,sculptures=0;
+ const changedPaintings=[],changedSculptures=[],perFloor=[];
  for(const {date} of archive.floors){
   const studies=archivedStudies(date);
   const live=buildPhiRendererPlan(date,studies);
@@ -79,9 +80,53 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
   baselineAffinity+=affinity(base);stagedAffinity+=affinity(stage);
   paintings+=stage.paintings.length;sculptures+=stage.sculptures.length;
   if(JSON.stringify(placements(base))!==JSON.stringify(placements(stage)))modified++;
+  const basePaintings=new Map(base.paintings.map(p=>[p.studyId,p]));
+  const baseSculptures=new Map(base.sculptures.map(p=>[p.studyId,p]));
+  const floorPaintings=[],floorSculptures=[];
+  for(const p of stage.paintings){
+   const original=basePaintings.get(p.studyId);
+   assert.ok(original,'missing baseline painting '+date+'/'+p.studyId);
+   const delta=Math.hypot(p.x-original.x,p.z-original.z);
+   const wallChanged=p.surfaceId!==original.surfaceId;
+   if(delta>1e-6||wallChanged){
+    const change={date,id:p.studyId,delta:+delta.toFixed(3),
+     wallChanged,roomChanged:p.room!==original.room,
+     sameWall:!wallChanged,alongWall:!wallChanged?+Math.abs(p.u-original.u).toFixed(3):null};
+    changedPaintings.push(change);floorPaintings.push(change);
+   }
+  }
+  for(const p of stage.sculptures){
+   const original=baseSculptures.get(p.studyId);
+   assert.ok(original,'missing baseline sculpture '+date+'/'+p.studyId);
+   const delta=Math.hypot(p.x-original.x,p.z-original.z);
+   if(delta>1e-6){
+    const change={date,id:p.studyId,delta:+delta.toFixed(3),roomChanged:p.room!==original.room};
+    changedSculptures.push(change);floorSculptures.push(change);
+   }
+  }
+  perFloor.push({date,paintings:stage.paintings.length,movedPaintings:floorPaintings.length,
+   paintingsChangedWall:floorPaintings.filter(x=>x.wallChanged).length,
+   sculptures:stage.sculptures.length,movedSculptures:floorSculptures.length});
  }
  assert.ok(stagedAffinity>baselineAffinity+1,'new hang must measurably favour golden-section placements');
  assert.ok(modified>0,'at least one floor should differ');
+ const avg=xs=>xs.length?+(xs.reduce((total,x)=>total+x.delta,0)/xs.length).toFixed(3):0;
+ const middle=xs=>xs.length?[...xs].map(x=>x.delta).sort((a,b)=>a-b)[Math.floor(xs.length/2)]:0;
+ const changedWall=changedPaintings.filter(x=>x.wallChanged);
+ const sameWall=changedPaintings.filter(x=>x.sameWall);
  console.log('stage curation:',{paintings,sculptures,modified,baselineAffinity,stagedAffinity});
+ console.log('REAL POSITION DIFFERENCES '+JSON.stringify({
+  paintings,paintingsMoved:changedPaintings.length,paintingsUnchanged:paintings-changedPaintings.length,
+  paintingsChangedWall:changedWall.length,paintingsSameWallShift:sameWall.length,
+  paintingsChangedRoom:changedPaintings.filter(x=>x.roomChanged).length,
+  avgPaintingMoveMetres:avg(changedPaintings),medianPaintingMoveMetres:middle(changedPaintings),
+  maxPaintingMoveMetres:Math.max(0,...changedPaintings.map(x=>x.delta)),
+  avgSameWallShiftMetres:avg(sameWall),medianSameWallShiftMetres:middle(sameWall),
+  sculptures,sculpturesMoved:changedSculptures.length,
+  sculpturesChangedRoom:changedSculptures.filter(x=>x.roomChanged).length,
+  avgSculptureMoveMetres:avg(changedSculptures),maxSculptureMoveMetres:Math.max(0,...changedSculptures.map(x=>x.delta)),
+  perFloor
+ }));
+
  delete globalThis.location;
 });
