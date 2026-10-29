@@ -193,7 +193,7 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
     const v=(original.getY(i)-bounds.minV)/(bounds.maxV-bounds.minV);
     const x=bounds.left+(bounds.right-bounds.left)*u;
     const y=bounds.bottom+(bounds.top-bounds.bottom)*v;
-    if(dest.getX(i)!==x||dest.getY(i)!==y){dest.setXY(i,x,y);changed=true;}
+    if(Math.abs(dest.getX(i)-x)>1e-7||Math.abs(dest.getY(i)-y)>1e-7){dest.setXY(i,x,y);changed=true;}
    }
    if(changed)dest.needsUpdate=true;
   }
