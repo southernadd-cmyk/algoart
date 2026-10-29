@@ -21,39 +21,37 @@ function studiesFor(date){
   };
  });
 }
-test('diagnose every archived floor’s curated hanging-room sign counts',()=>{
+test('every archived doorway gets a correctly directed sign',()=>{
  const report=[];
  for(const {date} of archive.floors){
-  const studies=studiesFor(date);
-  const phi=buildPhiRendererPlan(date,studies);
-  const rooms=phi.exhibition.curation.rooms;
-  const themes=rooms.filter(r=>r.theme);
-  const eligible=rooms.filter(r=>roomSignTitle(r));
-  const signs=planHangingRoomSigns(phi);
-  const names=nameExhibitionRooms(rooms);
+  const phi=buildPhiRendererPlan(date,studiesFor(date));
+  const names=nameExhibitionRooms(phi.exhibition.curation.rooms);
   assert.equal(new Set([...names.values()].map(n=>n.title)).size,names.size);
-  assert.deepEqual(nameExhibitionRooms(structuredClone(rooms)),names);
-  for(const room of rooms){
-   const name=names.get(room.room);
-   if(name?.dimension){
-    const entries=room.composition[name.dimension];
-    assert.ok(entries.every(e=>name.values.includes(e.value)));
-    assert.equal(entries.reduce((n,e)=>n+e.count,0),room.studyIds.length);
+  const signs=planHangingRoomSigns(phi);
+  const seen=new Set();
+  for(const sign of signs){
+   const id=[sign.axis,sign.at,sign.centre].join('|');
+   assert.ok(!seen.has(id),'duplicate doorway sign '+date+' '+id);
+   seen.add(id);
+   assert.ok(sign.faces.positive.label&&sign.faces.negative.label);
+   assert.ok(sign.faces.positive.subtitle&&sign.faces.negative.subtitle);
+   for(const side of ['positive','negative']){
+    const target=side==='positive'?sign.minusRoom:sign.plusRoom;
+    const face=sign.faces[side];
+    assert.equal(face.room,target<0?null:target,'wrong doorway destination '+date+' '+id+' '+side);
+    if(target>=0){
+     assert.equal(face.label,'Room '+(target+1)+' · '+(names.get(target)?.title||'Gallery'));
+    }
    }
   }
-  assert.ok(signs.every(s=>s.subtitle&&s.title));
-  const placed=new Set(signs.map(s=>s.room));
-  const misses=eligible.filter(r=>!placed.has(r.room)).map(r=>({room:r.room+1,
-    theme:r.theme.dimension+':'+r.theme.value,matching:r.theme.count,
-    total:r.studyIds.length}));
-  report.push({date,artworks:studies.length,rooms:rooms.length,
-    themed:themes.length,eligible:eligible.length,signs:signs.length,
-    titles:signs.map(s=>s.label),misses});
-  assert.ok(signs.length<=eligible.length,'Sign count must not exceed eligible rooms on '+date);
-  assert.equal(new Set(signs.map(s=>s.room)).size,signs.length,'One sign per room on '+date);
+  const interRoom=signs.filter(s=>s.kind==='room');
+  assert.equal(interRoom.length,phi.circulation.doors.length,'missing inter-room sign '+date);
+  const named=new Set(signs.flatMap(s=>[s.faces.positive.room,s.faces.negative.room]).filter(Number.isInteger));
+  const reachable=new Set(phi.circulation.doors.flatMap(d=>[d.a,d.b]));
+  for(const room of reachable)assert.ok(named.has(room),'room has no directional sign '+date+'/'+room);
+  report.push({date,artworks:studiesFor(date).length,rooms:names.size,
+   doorways:signs.length,interRoom:interRoom.length,bridgeSigns:signs.filter(s=>s.kind==='bridge').length});
  }
- console.log('PHI_ROOM_SIGN_COUNTS_BEGIN');
- for(const row of report)console.log(JSON.stringify(row));
- console.log('PHI_ROOM_SIGN_COUNTS_END');
+ console.log('PHI_DIRECTIONAL_ROOM_SIGNS '+JSON.stringify(report));
  assert.equal(report.length,archive.floors.length);
 });

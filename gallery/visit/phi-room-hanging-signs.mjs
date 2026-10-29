@@ -63,44 +63,65 @@ function insideDoor(room,door,margin=.55){
   if(inside(room,b.x,b.z))return b;
   return null;
 }
+const roomAt=(rooms,door,side,step=.55)=>{
+ const x=door.axis==='x'?door.at+side*step:door.centre;
+ const z=door.axis==='z'?door.at+side*step:door.centre;
+ return rooms.findIndex(room=>inside(room,x,z));
+};
+const roomCaption=(room,names)=>{
+ if(room<0)return null;
+ const name=names.get(room);
+ return name?{
+  room,label:'Room '+(room+1)+' · '+name.title,
+  title:name.title,
+  subtitle:name.dimension?name.values.map(v=>themeLabel(name.dimension,v)).join(' / '):'Selected studies'
+ }:{
+  room,label:'Room '+(room+1)+' · Gallery',title:'Gallery',
+  subtitle:'Exhibition space'
+ };
+};
+const passageCaption=kind=>kind==='lift'
+ ?{room:null,label:'Archive lift',title:'Archive lift',subtitle:'Other exhibition floors'}
+ :{room:null,label:'Glass walkway',title:'Glass walkway',subtitle:'Across the gallery'};
+/** One physical sign per doorway. The +axis-facing face names the -axis room
+ * and vice versa: a visitor always reads the room they are about to enter. */
 export function planHangingRoomSigns(phi){
-  const rooms=phi.floor.mergedRooms;
-  const doorways=phi.circulation.doors;
-  const liftDoor=phi.circulation.lift?.portal;
-  // Start the one-sign-per-room layout at the lift landing. Each other room
-  // receives the doorway through which a visitor would first reach it.
-  const root=liftDoor?rooms.findIndex(r=>insideDoor(r,liftDoor)):0;
-  const start=root<0?0:root;
-  const queue=[start],seen=new Set(queue),entry=new Map();
-  if(liftDoor)entry.set(start,liftDoor);
-  while(queue.length){
-    const current=queue.shift();
-    for(const d of doorways){
-      const adjacent=d.a===current?d.b:d.b===current?d.a:-1;
-      if(adjacent<0||seen.has(adjacent))continue;
-      seen.add(adjacent);
-      entry.set(adjacent,d);queue.push(adjacent);
-    }
-  }
-  const names=nameExhibitionRooms(phi.exhibition.curation?.rooms||[]);
-  const result=[];
-  for(const curated of phi.exhibition.curation?.rooms||[]){
-    const name=names.get(curated.room);
-    const label=name?'Room '+(curated.room+1)+' · '+name.title:'';
-    const subtitle=name?.dimension
-      ?name.values.map(v=>themeLabel(name.dimension,v)).join(' / ')
-      :roomSignTitle(curated).split(' · ').slice(1).join(' · ')||'Selected studies';
-    const room=rooms[curated.room],door=entry.get(curated.room);
-    if(!label||!room||!door||door.width<1.85)continue;
-    const spot=insideDoor(room,door);
-    if(!spot)continue;
-    // No independent obstacles: all hardware clears walking-height completely.
-    result.push({room:curated.room,label,title:name.title,subtitle,x:spot.x,z:spot.z,
-      yaw:door.axis==='x'?Math.PI/2:0,
-      dimension:curated.theme?.dimension||null,matchCount:curated.theme?.count||0,
-      total:curated.studyIds.length});
-  }
-  return result;
+ const rooms=phi.floor.mergedRooms;
+ const names=nameExhibitionRooms(phi.exhibition.curation?.rooms||[]);
+ const result=[],used=new Set();
+ const passages=[
+  ...(phi.circulation.doors||[]).map(door=>({door,kind:'room'})),
+  ...(phi.circulation.bridgePortals||[]).map(door=>({door,
+   kind:door===phi.circulation.lift?.portal||(
+    door.axis===phi.circulation.lift?.portal?.axis&&
+    Math.abs(door.at-phi.circulation.lift.portal.at)<.001&&
+    Math.abs(door.centre-phi.circulation.lift.portal.centre)<.001
+   )?'lift':'bridge'}))
+ ];
+ const lift=phi.circulation.lift?.portal;
+ if(lift&&!passages.some(p=>p.kind==='lift'))passages.push({door:lift,kind:'lift'});
+ for(const {door,kind} of passages){
+  if(!door||!['x','z'].includes(door.axis)||door.width<1.85)continue;
+  const key=[door.axis,door.at.toFixed(3),door.centre.toFixed(3)].join('|');
+  if(used.has(key))continue;
+  used.add(key);
+  const plusRoom=roomAt(rooms,door,1),minusRoom=roomAt(rooms,door,-1);
+  if(plusRoom===minusRoom)continue;
+  // The face seen from the positive side points into the negative side.
+  const positive=roomCaption(minusRoom,names)||passageCaption(kind);
+  const negative=roomCaption(plusRoom,names)||passageCaption(kind);
+  if(!positive||!negative)continue;
+  result.push({
+   id:'passage-'+result.length,kind,
+   x:door.axis==='x'?door.at:door.centre,
+   z:door.axis==='z'?door.at:door.centre,
+   yaw:door.axis==='x'?Math.PI/2:0,
+   axis:door.axis,at:door.at,centre:door.centre,
+   plusRoom,minusRoom,
+   faces:{positive,negative}
+  });
+ }
+ return result;
 }
 export function markerTexture(THREE,spec){
   const canvas=document.createElement('canvas');
@@ -136,7 +157,7 @@ export function addHangingRoomSigns(THREE,scene,phi,elevation,ceilingHeight){
   };
   for(const spec of descriptions){
     const root=new THREE.Group();
-    root.name='test-room-hanging-sign-'+(spec.room+1);
+    root.name='room-doorway-directional-sign-'+spec.id;
     root.userData={...spec,attribution:'Sousinho · CC BY 4.0'};
     root.position.set(spec.x,elevation+2.24,spec.z);
     root.rotation.y=spec.yaw;
@@ -154,11 +175,15 @@ export function addHangingRoomSigns(THREE,scene,phi,elevation,ceilingHeight){
       mount(root,new THREE.CylinderGeometry(.039,.039,.021,10),metal,x,
         Math.max(.57,ceilingHeight-2.24-.075),0);
     }
-    const tex=markerTexture(THREE,spec);
-    const titleMaterial=new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.FrontSide,depthWrite:false});
+    // Independent canvases: from either side the visible text describes the
+    // room across the threshold, never the room the visitor is leaving.
     for(const side of [-1,1]){
+      const descriptor=side>0?spec.faces.positive:spec.faces.negative;
+      const tex=markerTexture(THREE,descriptor);
+      const titleMaterial=new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.FrontSide,depthWrite:false});
       const face=mount(root,new THREE.PlaneGeometry(1.5,.3125),titleMaterial,0,.175,side*.017);
       if(side<0)face.rotation.y=Math.PI;
+      face.userData={targetRoom:descriptor.room,label:descriptor.label};
     }
     scene.add(root);
   }

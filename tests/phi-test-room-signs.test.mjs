@@ -26,14 +26,47 @@ test('no theme or minority-only themes do not produce misleading signs',()=>{
  assert.equal(roomSignTitle({room:0,studyIds:[1,2,3,4,5],theme:{dimension:'material',value:'oil',count:2}}),'');
  assert.equal(roomSignTitle({room:0,studyIds:[1,2,3],theme:null}),'');
 });
-test('one sign per curated room just inside the appropriate entry portal',()=>{
+test('two directional faces name the room beyond each doorway',()=>{
  const signs=planHangingRoomSigns(fixture());
- assert.equal(signs.length,2);
- assert.deepEqual(signs.map(s=>s.label),['Room 1 · A Marker Palette','Room 2 · Colour with Weight']);
- assert.ok(signs[0].x>0&&signs[0].x<6);
- assert.ok(signs[1].x>6&&signs[1].x<12);
- assert.equal(signs[0].yaw,Math.PI/2);
- assert.equal(signs[1].yaw,Math.PI/2);
+ assert.equal(signs.length,2,'one inner doorway and one lift entrance');
+ const inner=signs.find(s=>s.kind==='room');
+ const lift=signs.find(s=>s.kind==='lift');
+ assert.equal(inner.x,6);assert.equal(inner.z,4);
+ assert.equal(inner.yaw,Math.PI/2);
+ // +x side is room 2: walking -x means entering room 1.
+ assert.equal(inner.plusRoom,1);assert.equal(inner.minusRoom,0);
+ assert.equal(inner.faces.positive.label,'Room 1 · A Marker Palette');
+ assert.equal(inner.faces.negative.label,'Room 2 · Colour with Weight');
+ assert.equal(lift.faces.positive.label,'Room 1 · A Marker Palette');
+ assert.equal(lift.faces.negative.label,'Archive lift');
+});
+test('z-axis and reversed a/b identifiers still name the destination',()=>{
+ const phi={
+  floor:{mergedRooms:[
+   {pieces:[{x:0,z:0,w:8,h:6}]},{pieces:[{x:0,z:6,w:8,h:6}]}
+  ]},
+  circulation:{doors:[{axis:'z',at:6,centre:4,width:2.4,a:1,b:0}]},
+  exhibition:{curation:{rooms:[
+   {room:0,studyIds:[1,2],composition:{engine:[{value:'growth',count:2}],material:[],palette:[]}},
+   {room:1,studyIds:[3,4],composition:{engine:[{value:'field',count:2}],material:[],palette:[]}}
+  ]}}
+ };
+ const signs=planHangingRoomSigns(phi);
+ assert.equal(signs.length,1);
+ const doorway=signs[0];assert.equal(doorway.yaw,0);
+ assert.equal(doorway.plusRoom,1);assert.equal(doorway.minusRoom,0);
+ assert.equal(doorway.faces.positive.label,'Room 1 · Branching Orders');
+ assert.equal(doorway.faces.negative.label,'Room 2 · Around a Centre');
+});
+test('glass walkways get a named gallery-facing side without duplicate signs',()=>{
+ const phi=fixture();
+ const bridge={axis:'x',at:12,centre:4,width:2.4};
+ phi.circulation.bridgePortals=[bridge,{...bridge}];
+ const signs=planHangingRoomSigns(phi);
+ assert.equal(signs.length,3);
+ const pass=signs.find(s=>s.kind==='bridge');
+ assert.equal(pass.faces.positive.label,'Room 2 · Colour with Weight');
+ assert.equal(pass.faces.negative.label,'Glass walkway');
 });
 test('staging bundle isolation and marker font double-sided geometry',()=>{
  const builder=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
@@ -51,7 +84,9 @@ test('staging bundle isolation and marker font double-sided geometry',()=>{
  assert.match(gallerySource,/window\.__phiRoomSigns=exhibitDate===RECEPTION\?\[\]/);
  assert.match(gallerySource,/addHangingRoomSigns\(THREE,scene,phi,elevation,ROOM_HEIGHT\)/);
  assert.match(module,/AlgoArt Marker/);
- assert.match(module,/for\(const side of \[-1,1\]\)/);
+ assert.match(module,/for\\(const side of \\[-1,1\\]\\)/);
+ assert.match(module,/spec\\.faces\\.positive/);
+ assert.match(module,/spec\\.faces\\.negative/);
  assert.match(module,/Sousinho/);
 });
 
