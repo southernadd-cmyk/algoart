@@ -27,7 +27,9 @@ test('four rightmost animations cycle across two large screens via existing atla
  assert.match(source,/remoteVisitorNearby/);
  assert.match(rear,/pairs=\\[\\[sourceScreens\\[0\\],sourceScreens\\[1\\]\\],\\[sourceScreens\\[2\\],sourceScreens\\[3\\]\\]\\]/);
  assert.match(rear,/selectedSource/);
- assert.doesNotMatch(rear,/createTouchDesignerMonitorMedia|new THREE\\.VideoTexture|createElement\\(['"]video/);
+ assert.equal(rear.includes('createTouchDesignerMonitorMedia'),false);
+ assert.equal(rear.includes('new THREE.VideoTexture'),false);
+ assert.equal(rear.includes("createElement('video'"),false);
 });
 test('two films in each bank alternate only at full video loop boundaries',()=>{
  assert.deepEqual(Array.from({length:6},(_,i)=>selectPhiRearWallSource(i)),[0,1,0,1,0,1]);
