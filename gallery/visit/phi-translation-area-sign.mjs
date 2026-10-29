@@ -95,10 +95,10 @@ export function addPhiTranslationAreaSign(THREE,scene,{entrance,gramophone,eleva
  place.distanceToDoor=Math.hypot(place.x-place.door.x,place.z-place.door.z);
  place.distanceToGramophone=Math.hypot(place.x-place.gramophone.x,place.z-place.gramophone.z);
  return buildPhiTranslationAreaSign(THREE,scene,place,{
-  name:'phi-translation-area-doorway-sign',rotation:place.yaw+Math.PI
+  name:'phi-translation-area-doorway-sign',rotation:place.yaw+Math.PI,elevation
  });
 }
-function buildPhiTranslationAreaSign(THREE,scene,place,{name,rotation}){
+function buildPhiTranslationAreaSign(THREE,scene,place,{name,rotation,elevation=0}){
  const root=new THREE.Group();
  root.name=name;
  root.userData.kind='gallery-label';
@@ -209,7 +209,7 @@ export function addPhiLargeMonitorDoorSign(THREE,scene,{
  // lettering as the existing Translation Area sign. Its front faces the foyer.
  return buildPhiTranslationAreaSign(THREE,scene,{
   ...place,yaw:place.yaw
- },{name:'phi-translation-area-large-monitor-entrance-sign',rotation:place.yaw});
+ },{name:'phi-translation-area-large-monitor-entrance-sign',rotation:place.yaw,elevation});
 }
 
 // A second copy of the same credited A-frame, beside reception's lift.
