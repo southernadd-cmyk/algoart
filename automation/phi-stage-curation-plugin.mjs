@@ -7,16 +7,13 @@ function replaceExactly(source,before,after,label){
  return source.replace(before,after);
 }
 export function instrumentStageCurator(source){
- source="import {STAGING_PHI_ADHERENCE,wallPhiPreference,sculpturePhiPreference} from '../../test/virtual-gallery/phi-curation-stage.mjs';\n"+source;
- source=replaceExactly(source,
-  'Math.abs(u-wall.centre)*.04;',
-  'Math.abs(u-wall.centre)*.04*(1-STAGING_PHI_ADHERENCE)+STAGING_PHI_ADHERENCE*wallPhiPreference(wall,u)*1.1;',
-  'painting position');
- source=replaceExactly(source,
-  'score:clearance*.35+Math.min(3,Math.hypot(x-lift.x,z-lift.z))*.1',
-  'score:clearance*.35+Math.min(3,Math.hypot(x-lift.x,z-lift.z))*.1+STAGING_PHI_ADHERENCE*sculpturePhiPreference(fx,fz)*.95',
-  'sculpture position');
- return source;
+ source="import {refineStageExhibition} from '../../test/virtual-gallery/phi-curation-stage.mjs';\n"+source;
+ return replaceExactly(source,
+  'return {...hang,sculptures,unplaced,roomCounts,curation,checks:{...hang.checks,',
+  'return refineStageExhibition({...hang,sculptures,unplaced,roomCounts,curation,checks:{...hang.checks,',
+  'freeze original room and wall allocations')
+  .replace('sculptureClearances:sculptures.every(s=>safeWithoutSelf(s))}};',
+   'sculptureClearances:sculptures.every(s=>safeWithoutSelf(s))}},floor,circulation,physical);');
 }
 export function instrumentStageGroups(source){
  source="import {stageMaterial} from '../../test/virtual-gallery/phi-curation-stage.mjs';\n"+source;
