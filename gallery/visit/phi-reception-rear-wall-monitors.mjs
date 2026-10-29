@@ -104,13 +104,19 @@ function coverPanelUV(original,aspect){
 
 export function planPhiReceptionRearWallMonitors(wall){
  if(!wall?.fromPhysical||!Number.isFinite(wall.span)||wall.span<2.65)return null;
- const edge=.13,gap=.14,limitHeight=3.7;
+ // Give the pair room to breathe: around 45 cm of exposed wall on
+ // either side and 26 cm between screens on a typical 5.5 m wall.
+ // Scale the clearances on unusually narrow walls instead of removing them.
+ const edge=Math.min(.45,wall.span*.085);
+ const gap=Math.min(.26,wall.span*.052);
+ const limitHeight=3.7;
  const screenWidth=Math.min((wall.span-2*edge-gap)/2,limitHeight*VIDEO_ASPECT);
  const screenHeight=screenWidth/VIDEO_ASPECT;
  if(screenWidth<.9)return null;
+ const occupiedWidth=2*screenWidth+gap;
  return {...wall,screenWidth,screenHeight,gap,
-  occupiedWidth:2*screenWidth+gap,
-  coverage:(2*screenWidth+gap)/wall.span};
+  occupiedWidth,sideClearance:(wall.span-occupiedWidth)/2,
+  coverage:occupiedWidth/wall.span};
 }
 
 export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,camera,sourceScreens}){
