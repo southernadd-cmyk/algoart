@@ -14,13 +14,16 @@ try{
   assert.equal(data.hologram.floorCount,data.exterior.otherFloors+1);
   assert.ok(data.hologram.boxes>100);assert.ok(data.hologram.drawCalls<=8);
   assert.equal(data.hologram.source,'actual tower shell');
-  await page.locator('#enter').click();
-  await page.evaluate(()=>{document.exitPointerLock?.();window.__phiReceptionPreview.show('desk');});
-  await page.screenshot({path:'phi-tower-results/hologram/'+name+'-desk.png'});
-  await page.evaluate(()=>window.__phiReceptionPreview.hologram());
-  await page.screenshot({path:'phi-tower-results/hologram/'+name+'-detail.png'});
-  assert.deepEqual(errors,[]);
   await writeFile('phi-tower-results/hologram/'+name+'.json',JSON.stringify(data,null,2));
-  console.log(name,JSON.stringify(data));await page.close();
+  console.log(name,JSON.stringify(data));
+  await page.locator('#enter').click();
+  // Read the WebGL buffer in the same task as its explicit debug render.
+  // This also works on software GPU runners whose compositor capture stalls.
+  const deskImage=await page.evaluate(()=>{document.exitPointerLock?.();window.__phiReceptionPreview.show('desk');return document.getElementById('world').toDataURL('image/png');});
+  await writeFile('phi-tower-results/hologram/'+name+'-desk.png',Buffer.from(deskImage.split(',')[1],'base64'));
+  const detailImage=await page.evaluate(()=>{window.__phiReceptionPreview.hologram();return document.getElementById('world').toDataURL('image/png');});
+  await writeFile('phi-tower-results/hologram/'+name+'-detail.png',Buffer.from(detailImage.split(',')[1],'base64'));
+  assert.deepEqual(errors,[]);
+  await page.close();
  }
 }finally{await browser.close();}
