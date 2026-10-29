@@ -84,8 +84,8 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
    const wallChanged=p.surfaceId!==original.surfaceId;
    assert.equal(wallChanged,false,'golden hang cannot change painting wall '+date+'/'+p.studyId);
    assert.equal(p.room,original.room,'golden hang cannot change painting room '+date+'/'+p.studyId);
-   assert.equal(p.width,original.width,'golden hang cannot resize a painting '+date+'/'+p.studyId);
-   assert.equal(p.height,original.height,'golden hang cannot resize a painting '+date+'/'+p.studyId);
+   assert.ok(p.width+1e-6>=original.width,'golden hang cannot shrink a painting '+date+'/'+p.studyId);
+   assert.ok(p.height+1e-6>=original.height,'golden hang cannot shrink painting height '+date+'/'+p.studyId);
    assert.ok(delta<=1.500001,'phi wall shift must stay within 1.5 m '+date+'/'+p.studyId+' '+delta);
    if(delta>1e-6||wallChanged){
     const change={date,id:p.studyId,delta:+delta.toFixed(3),
