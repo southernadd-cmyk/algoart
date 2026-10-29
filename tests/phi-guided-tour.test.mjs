@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {clearTourLine,findTourPath,tourWorldBounds} from '../test/virtual-gallery/guided-tour.mjs';
 
 test('route walks through a door rather than through a separating wall',()=>{
@@ -27,4 +28,16 @@ test('unreachable artworks are excluded safely',()=>{
 test('golden-angle floor bounds are calculated in rotated world coordinates',()=>{
  const phi={floor:{root:{x:-8,z:-3,w:16,h:6}},world:{toWorld:(x,z)=>({x:-z+2,z:x+5})}};
  assert.deepEqual(tourWorldBounds(phi),{x:-1,z:-3,w:6,h:16});
+});
+
+
+test('test tour button is enabled on reception and after floor changes',()=>{
+ const source=readFileSync(new URL('../test/virtual-gallery/guided-tour.mjs',import.meta.url),'utf8');
+ const builder=readFileSync(new URL('../automation/build-test-guided-tour.mjs',import.meta.url),'utf8');
+ const staging=readFileSync(new URL('../test/virtual-gallery/full-engine.html',import.meta.url),'utf8');
+ assert.match(source,/trigger\.disabled=false/);
+ assert.doesNotMatch(source,/trigger\.disabled\s*=\s*!/);
+ assert.match(source,/c\.openLift\(\)/);
+ assert.match(builder,/openLift:\(\)=>openLift\(\)/);
+ assert.match(staging,/gallery-phi-tour-test-bundle\.js\?v=guided-tour-test-button-fix-v4/);
 });
