@@ -59,8 +59,8 @@ export function planPhiReceptionMonitorBanks(room,lift,physicalWalls=[]){
 export function addPhiReceptionLivingMonitor(THREE,scene,options){
  const mounts=planPhiReceptionMonitorBanks(options.room,options.lift,options.physicalWalls);
  if(!mounts.length)return null;
- // Two oversized displays rotate between the third columns of both video rows
- // per existing bank, without extra video downloads or decoders.
+ // Two oversized displays each show BOTH third-column films simultaneously
+ // inside φ-proportioned rectangles, reusing existing video atlas textures.
  let rearWall=null;
  const remoteVisitorNearby=()=>rearWall?.isNearby()===true;
  const first=addMonitorBank(THREE,scene,{...options,mount:mounts[0],remoteVisitorNearby});
@@ -76,8 +76,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,options){
   rearWall=addPhiReceptionRearWallMonitors(THREE,scene,{
    wall:rearMount,elevation:options.elevation,camera:options.camera,
    sourceScreens:[first.thirdPanelScreen,first.sixthPanelScreen,
-                  second.thirdPanelScreen,second.sixthPanelScreen],
-   playbackLoops:[()=>first.playbackLoop,()=>second.playbackLoop]
+                  second.thirdPanelScreen,second.sixthPanelScreen]
   });
  }
  const disposeFirst=first.dispose;
