@@ -1,0 +1,90 @@
+{
+  "artworks": [
+    {
+      "day": "2026-10-29",
+      "filename": "2026-10-29-02-network-AA-20261029-02-92804.jpg",
+      "slug": "01-marker-connected-fields",
+      "material": "marker",
+      "label": "Marker",
+      "engine": "Connected Fields",
+      "seed": "AA-20261029-02-92804",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=8&seed=AA-20261029-02-92804&mode=network&el=35&den=53&cx=72&neg=16&phi=84&rec=4&spi=44&ga=86&nest=51&pen=paint&th=7&wob=27&od=2&op=88&pr=66&dry=17&curve=42&shape=81&overlap=28&rot=81&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=8&sat=84&bri=51&paper=%23f5f0e6&grain=14&sheet=phi",
+      "imageUrl": "https://southernadd-cmyk.github.io/algoart/gallery/2026-10-29/2026-10-29-02-network-AA-20261029-02-92804.jpg",
+      "export": {
+        "bytes": 1077518,
+        "seconds": 0,
+        "version": 8,
+        "orientation": "landscape"
+      }
+    },
+    {
+      "day": "2026-10-26",
+      "filename": "2026-10-26-watercolor-landscape-01-spiral-AWL-20261026-01-82491.jpg",
+      "slug": "02-tissue-golden-trajectories",
+      "material": "tissue",
+      "label": "Tissue & Graphite",
+      "engine": "Golden Trajectories",
+      "seed": "AWL-20261026-01-82491",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=8&seed=AWL-20261026-01-82491&mode=spiral&el=63&den=57&cx=73&neg=26&phi=89&rec=5&spi=86&ga=92&nest=31&pen=dry&th=10&wob=22&od=2&op=66&pr=48&dry=20&curve=58&shape=71&overlap=65&rot=69&ln=1&ci=1&re=1&po=1&ar=1&pal=primary&cols=5&sat=93&bri=45&paper=%23f5f0e6&grain=19&tissue=7&sheet=phi",
+      "imageUrl": "https://southernadd-cmyk.github.io/algoart/gallery/2026-10-26/2026-10-26-watercolor-landscape-01-spiral-AWL-20261026-01-82491.jpg",
+      "export": {
+        "bytes": 6983817,
+        "seconds": 1,
+        "version": 8,
+        "orientation": "landscape"
+      }
+    },
+    {
+      "day": "2026-10-28",
+      "filename": "2026-10-28-watercolour-portrait-01-rects-CWP-20261028-01-36906.jpg",
+      "slug": "03-watercolour-recursive-divisions",
+      "material": "watercolour",
+      "label": "Watercolour",
+      "engine": "Recursive Divisions",
+      "seed": "CWP-20261028-01-36906",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=CWP-20261028-01-36906&mode=rects&fmt=portrait&el=42&den=58&cx=55&neg=32&phi=95&rec=8&spi=23&ga=99&nest=27&pen=broad&th=7&wob=26&od=4&op=87&pr=60&dry=39&curve=15&shape=80&overlap=62&rot=57&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=8&sat=71&bri=53&paper=%23f5f0e6&grain=26&material=watercolour-v2s&fit=0&sheet=phi",
+      "imageUrl": "https://southernadd-cmyk.github.io/algoart/gallery/2026-10-28/2026-10-28-watercolour-portrait-01-rects-CWP-20261028-01-36906.jpg",
+      "export": {
+        "bytes": 13240775,
+        "seconds": 4,
+        "version": 9,
+        "orientation": "portrait"
+      }
+    },
+    {
+      "day": "2026-10-18",
+      "filename": "2026-10-18-oil-portrait-01-geometric-OP-20261018-01-11851.jpg",
+      "slug": "04-oil-constructed-forms",
+      "material": "oil",
+      "label": "Oil Paint",
+      "engine": "Constructed Forms",
+      "seed": "OP-20261018-01-11851",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=OP-20261018-01-11851&mode=geometric&fmt=portrait&el=46&den=46&cx=73&neg=22&phi=93&rec=8&spi=55&ga=87&nest=22&pen=paint&th=13&wob=36&od=2&op=70&pr=54&dry=14&curve=27&shape=82&overlap=34&rot=88&ln=1&ci=1&re=1&po=1&ar=1&pal=mono&cols=4&sat=84&bri=59&paper=%23f5f0e6&grain=19&material=oil-v4&sheet=phi",
+      "imageUrl": "https://southernadd-cmyk.github.io/algoart/gallery/2026-10-18/2026-10-18-oil-portrait-01-geometric-OP-20261018-01-11851.jpg",
+      "export": {
+        "bytes": 3715960,
+        "seconds": 64,
+        "version": 9,
+        "orientation": "portrait"
+      }
+    },
+    {
+      "day": "2026-10-25",
+      "filename": "2026-10-25-action-portrait-01-burst-ACP-20261025-01-74763.jpg",
+      "slug": "05-action-radiant-systems",
+      "material": "action",
+      "label": "Action Painting",
+      "engine": "Radiant Systems",
+      "seed": "ACP-20261025-01-74763",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACP-20261025-01-74763&mode=burst&fmt=portrait&el=56&den=64&cx=62&neg=23&phi=92&rec=7&spi=54&ga=100&nest=46&pen=broad&th=11&wob=35&od=4&op=87&pr=53&dry=32&curve=39&shape=81&overlap=47&rot=87&ln=1&ci=1&re=1&po=1&ar=1&pal=golden&cols=7&sat=76&bri=56&paper=%23f5f0e6&grain=14&material=action-v2&sheet=phi",
+      "imageUrl": "https://southernadd-cmyk.github.io/algoart/gallery/2026-10-25/2026-10-25-action-portrait-01-burst-ACP-20261025-01-74763.jpg",
+      "export": {
+        "bytes": 11766574,
+        "seconds": 1,
+        "version": 9,
+        "orientation": "portrait"
+      }
+    }
+  ],
+  "export": "Native seeded 3x engine output; no interpolation; 300ppi when placed at 3x logical size"
+}
