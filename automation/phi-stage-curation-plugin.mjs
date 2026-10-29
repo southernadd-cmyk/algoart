@@ -21,10 +21,10 @@ export function instrumentStageCurator(source){
 export function instrumentStageGroups(source){
  source="import {stageMaterial} from '../../test/virtual-gallery/phi-curation-stage.mjs';\n"+source;
  return replaceExactly(source,
-  `  const material=/^oil-v\\d+$/.test(explicit)?'oil':/^action-v\\d+$/.test(explicit)?'action':
-    /^watercolour-v/.test(explicit)?'watercolour':
-    params.tissue||params.watercolor||params.oil||savedMaterial==='watercolor'?'tissue':savedMaterial;`,
-  '  const material=stageMaterial(params,savedMaterial,explicit);',
+  ` const material=/^oil-v\\d+$/.test(explicit)?'oil':/^action-v\\d+$/.test(explicit)?'action':
+   /^watercolour-v/.test(explicit)?'watercolour':
+   params.tissue||params.watercolor||params.oil||savedMaterial==='watercolor'?'tissue':savedMaterial;`,
+  ' const material=stageMaterial(params,savedMaterial,explicit);',
   'material classification');
 }
 export function stageCurationPlugin(){
