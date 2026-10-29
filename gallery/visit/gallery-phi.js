@@ -2472,7 +2472,7 @@ window.addEventListener('keyup',(e)=>{
 });
 window.addEventListener('blur',()=>{pressed.clear();lookPressed.clear();});
 document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){pressed.clear();lookPressed.clear();}
+  if(document.hidden){pressed.clear();lookPressed.clear();phiFrameLast=0;}
 });
 window.addEventListener('mousemove',(e)=>{
   if (!renderer || document.pointerLockElement !== canvas || renderer.xr.isPresenting) return;
@@ -2557,7 +2557,16 @@ function drawPhiMap(){
  ctx.fillStyle='#d9c68c';ctx.fillRect(X(l.x)-6,Z(l.z)-6,12,12);ctx.fillStyle='#27352e';ctx.font='bold 10px sans-serif';ctx.fillText('L',X(l.x)-3,Z(l.z)+4);
  ctx.fillStyle='#d25436';ctx.save();ctx.translate(X(localVisitor.x),Z(localVisitor.z));ctx.rotate(-yaw+(phi.world?.theta||0));ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-6,5);ctx.lineTo(6,5);ctx.closePath();ctx.fill();ctx.restore();
 }
+let lastMapView=null;
 function drawMap(){
+  const mapCanvas=$('floorMap');
+  if(!plan||!mapCanvas)return;
+  // Preserve the exact map while stationary. Invalidate on every real view,
+  // floor, mode or canvas-size change, including lift travel and resize.
+  const view=[plan,plan.phi?.world,phiMapMode,mapCanvas.width,mapCanvas.height,
+    rig.position.x,rig.position.z,yaw,exhibitDate,currentFloor,liftPosition?.x,liftPosition?.z];
+  if(lastMapView&&view.every((value,i)=>value===lastMapView[i]))return;
+  lastMapView=view;
   if(plan?.phi)return drawPhiMap();
   const element=$('floorMap');
   if(!element||!plan)return;
@@ -2793,7 +2802,9 @@ function measurePhiPerformance(now){
  if(!phiPerformanceTest||!renderer||renderer.xr.isPresenting)return;
  if(phiFrameLast){
   const ms=now-phiFrameLast;
-  if(ms>0&&ms<180){phiPerf.samples.push(ms);if(phiPerf.samples.length>90)phiPerf.samples.shift();}
+  // Keep long stalls in the diagnostics: filtering them out hid the very
+  // stutters this display is meant to measure. Tab suspension is excluded.
+  if(ms>0&&!document.hidden){phiPerf.samples.push(ms);if(phiPerf.samples.length>90)phiPerf.samples.shift();}
  }
  phiFrameLast=now;
  if(now-phiPerf.lastPublish>1200&&phiPerf.samples.length>=30){
@@ -2803,6 +2814,7 @@ function measurePhiPerformance(now){
   const current=renderer.getPixelRatio();
   Object.assign(phiPerf,{medianFrameMs:+median.toFixed(1),p95FrameMs:+p95.toFixed(1),
    fps:Math.round(1000/median),pixelRatio:renderer.getPixelRatio(),
+   maxFrameMs:+ordered.at(-1).toFixed(1),framesOver50ms:ordered.filter(ms=>ms>50).length,
    quality:renderer.getPixelRatio()<phiBaseRatio?'adaptive':'full',
    drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
    geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,
@@ -2868,6 +2880,7 @@ Promise.race([
   document.fonts.load('42px "AlgoArt Marker"'),
   new Promise(resolve=>setTimeout(resolve,1600))
 ]).catch(error=>console.warn('Marker font fallback:',error)).finally(load);
+
 
 
 

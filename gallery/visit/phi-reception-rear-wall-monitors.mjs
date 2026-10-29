@@ -186,13 +186,18 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
  const eye=new THREE.Vector3(),screenPosition=new THREE.Vector3();
  const isNearby=()=>camera.getWorldPosition(eye).distanceTo(root.getWorldPosition(screenPosition))<11;
  function sync(){
-  for(const {face,source} of videoFaces){
+  for(const entry of videoFaces){
+   const {face,source}=entry;
    if(face.material!==source.material)face.material=source.material;
    const dest=face.geometry.getAttribute('uv'),original=source.geometry.getAttribute('uv');
    if(dest.count!==original.count)continue;
+   // Playback changes pixels, not atlas coordinates. Recalculate the exact
+   // same crop only when the source attribute is replaced or updated.
+   if(entry.uvSource===original&&entry.uvVersion===original.version)continue;
    const targetAspect=face.geometry.parameters.width/face.geometry.parameters.height;
    const bounds=coverPanelUV(original,targetAspect);
    if(!bounds)continue;
+   entry.uvSource=original;entry.uvVersion=original.version;
    let changed=false;
    for(let i=0;i<dest.count;i++){
     const u=(original.getX(i)-bounds.minU)/(bounds.maxU-bounds.minU);
@@ -260,3 +265,4 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
   }
  };
 }
+

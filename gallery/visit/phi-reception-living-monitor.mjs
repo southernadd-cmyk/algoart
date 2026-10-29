@@ -236,6 +236,9 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
   if(disposed)return;
   frameId=requestAnimationFrame(tick);
   if(time-last<150)return; // At most 6-7 frames per second.
+  // Advance even when exported video is playing or the visitor is elsewhere.
+  // Those early returns must not turn proximity/media checks into 60 Hz work.
+  last=time;
   root.getWorldPosition(monitorPosition);
   const distance=camera.getWorldPosition(cameraPosition).distanceTo(monitorPosition);
   const active=distance<11||remoteVisitorNearby?.()===true;
@@ -243,7 +246,6 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
   infoRow.update(time,distance<11);
   if(active)loadSource();
   if(!active||media.usingExport)return;
-  last=time;
   canvases.forEach((ctx,i)=>{
    draw(ctx,i%3,(time-origin)*.001);textures[i].needsUpdate=true;
   });
@@ -266,3 +268,4 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
   }
  };
 }
+
