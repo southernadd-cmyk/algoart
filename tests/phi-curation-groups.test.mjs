@@ -8,6 +8,9 @@ test('traits use saved palette and recognise current paint versions',()=>{
  assert.deepEqual(studyCurationTraits({href:'?mode=field&pal=earth&material=oil-v5',material:{type:'oil'}}),
   {engine:'field',material:'oil',palette:'earth'});
  assert.equal(studyCurationTraits({href:'?material=action-v3',material:{type:'action'}}).material,'action');
+ assert.equal(studyCurationTraits({href:'?oil=1',material:'oil'}).material,'oil');
+ assert.equal(studyCurationTraits({href:'?watercolor=1',material:'watercolor'}).material,'watercolour');
+ assert.equal(studyCurationTraits({href:'?tissue=1',material:'tissue'}).material,'tissue');
  assert.deepEqual(studyCurationTraits({}),{engine:'',material:'',palette:''});
 });
 for(const dimension of ['engine','material','palette'])test(dimension+' alone can form mixed painting/sculpture groups',()=>{

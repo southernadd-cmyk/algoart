@@ -2,21 +2,13 @@ import {createHash} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {build} from 'esbuild';
-import {stageCurationPlugin} from '../automation/phi-stage-curation-plugin.mjs';
+import {planCuratedPhiExhibition} from '../gallery/visit/phi-curator.mjs';
 import {buildPhiRendererPlan} from '../gallery/visit/phi-full-engine-adapter.mjs';
 import {wallPhiPreference,sculpturePhiPreference,stageMaterial} from '../test/virtual-gallery/phi-curation-stage.mjs';
 
-async function stagedModule(percent){
- const bundle=await build({
-  stdin:{contents:"export {planCuratedPhiExhibition} from './gallery/visit/phi-curator.mjs'; export {studyCurationTraits} from './gallery/visit/phi-curation-groups.mjs';",
-   sourcefile:'stage-curation-fixture.js',resolveDir:process.cwd(),loader:'js'},
-  bundle:true,format:'esm',platform:'node',target:'es2022',write:false,
-  plugins:[stageCurationPlugin()],logLevel:'silent'
- });
- globalThis.location={search:'?phiHang='+percent};
- const data=Buffer.from(bundle.outputFiles[0].text).toString('base64');
- return import('data:text/javascript;base64,'+data+'#stage-'+percent);
+function stagedModule(percent){
+ return {planCuratedPhiExhibition:(floor,circulation,physical,studies)=>
+  planCuratedPhiExhibition(floor,circulation,physical,studies,{phiAdherence:percent/100})};
 }
 const placements=x=>({
  paintings:x.paintings.map(p=>({room:p.room,surfaceId:p.surfaceId,u:p.u,x:p.x,z:p.z})),
@@ -71,7 +63,8 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
   const live=buildPhiRendererPlan(date,studies);
   const base=off.planCuratedPhiExhibition(live.floor,live.circulation,live.physical,studies);
   const stage=on.planCuratedPhiExhibition(live.floor,live.circulation,live.physical,studies);
-  assert.deepEqual(placements(base),placements(live.exhibition),'0% must match original placement '+date);
+  assert.deepEqual(placements(base),placements(buildPhiRendererPlan(date,studies,{phiAdherence:0}).exhibition),'0% must preserve pre-phi placement '+date);
+  assert.deepEqual(placements(stage),placements(live.exhibition),'65% must match live gallery placement '+date);
   assert.equal(stage.checks.complete,true,'no unplaced artworks '+date);
   assert.equal(stage.checks.inwardFacing,true,'inward facing '+date);
   assert.equal(stage.checks.sculptureClearances,true,'sculpture clearance '+date);

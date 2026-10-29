@@ -1,3 +1,4 @@
+import {classifyStudyMaterial} from './phi-curation-refinement.mjs';
 // Theme-aware assignment to already validated exhibition positions.
 // Never move a wall, pedestal, doorway or viewing corridor.
 const dimensions=['engine','material','palette'];
@@ -7,9 +8,7 @@ export function studyCurationTraits(study){
  try{if(study.href)params=Object.fromEntries(new URL(study.href,'https://example.invalid').searchParams);}catch{}
  const explicit=value(params.material);
  const savedMaterial=value(study.material?.type||study.material);
- const material=/^oil-v\d+$/.test(explicit)?'oil':/^action-v\d+$/.test(explicit)?'action':
-   /^watercolour-v/.test(explicit)?'watercolour':
-   params.tissue||params.watercolor||params.oil||savedMaterial==='watercolor'?'tissue':savedMaterial;
+ const material=classifyStudyMaterial(params,savedMaterial,explicit);
  return {engine:value(study.engine||params.mode),material,
    palette:value(study.palette||params.pal||params.palette)};
 }

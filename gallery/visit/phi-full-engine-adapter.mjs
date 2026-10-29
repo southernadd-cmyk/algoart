@@ -7,7 +7,7 @@ import {planPhiCirculation} from './phi-circulation.mjs';
 import {buildPhysicalPhiFloor,WALK_RADIUS} from './phi-physical.mjs';
 import {planCuratedPhiExhibition} from './phi-curator.mjs?v=wall-sized-paintings-20261026';
 
-export function buildPhiRendererPlan(date,studies,{variation=0}={}){
+export function buildPhiRendererPlan(date,studies,{variation=0,phiAdherence=.65}={}){
  const planningDate=date==='__phi_reception__'?'2026-10-05':date;
  const subdivision=planPhiFloor(planningDate,{artworks:studies.length,variation});
  const {plan:floor,bridges,voids}=planPhiBridges(subdivision);
@@ -32,7 +32,7 @@ export function buildPhiRendererPlan(date,studies,{variation=0}={}){
    circulation.publicEntrance=entrance;
  }
  const physical=buildPhysicalPhiFloor(floor,circulation);
- const exhibition=planCuratedPhiExhibition(floor,circulation,physical,studies);
+ const exhibition=planCuratedPhiExhibition(floor,circulation,physical,studies,{phiAdherence});
  const pieces=floor.mergedRooms.flatMap((room,i)=>room.pieces.map(p=>({...p,room:i})));
  const portals=[...circulation.doors,...circulation.bridgePortals];
  // Do not shrink individual golden cells: their internal seams are not walls.
