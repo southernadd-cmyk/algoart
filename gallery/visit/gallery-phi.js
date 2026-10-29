@@ -1,4 +1,5 @@
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
+import {advanceLiftDoor} from './phi-lift-motion.mjs';
 import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
 import {addPhiReceptionLivingMonitor,planPhiReceptionMonitorWall} from './phi-reception-living-monitor.mjs';
@@ -770,8 +771,8 @@ function animateLiftDoors(dt){
     if(distance<3.3)liftDoorTarget=0;
     else if(distance>3.8)liftDoorTarget=1;
   }else if(liftTravelling)liftDoorTarget=1;
-  liftDoorClosure+=(liftDoorTarget-liftDoorClosure)*Math.min(1,dt*3.5);
-  if(Math.abs(liftDoorTarget-liftDoorClosure)<.002)liftDoorClosure=liftDoorTarget;
+  // Frame-rate independent easing; a delayed preparation frame must not snap the leaves.
+  liftDoorClosure=advanceLiftDoor(liftDoorClosure,liftDoorTarget,dt);
   for(const leaf of liftDoors)
     leaf.position.copy(leaf.userData.open).lerp(leaf.userData.closed,liftDoorClosure);
 }
@@ -996,6 +997,17 @@ async function travelLift(date,index){
    await loadEdition(date,{viaLift:true,prepared});
   }
   clearPhiMovingCabin();
+  // Build queued exhibits and warm the destination GPU resources with the
+  // physical doors still shut. Opening must not be the first render/upload.
+  // Bound optional artwork downloads so a slow network cannot hold the lift.
+  const preparation=await waitForGalleryEntry({
+   loading:{pending:0},timeout:4000,
+   isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0||
+    towerGraffiti.diagnostics.pending||interiorGraffiti.diagnostics.pending||phiSquare.diagnostics().pending,
+   pump:processDeferredGallery
+  });
+  const warmed=await warmGalleryEntry({renderer,scene,camera});
+  if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date};
   if(xrRide)closeXRLift();
   else{
    liftReturnFocus=null;canvas.focus({preventScroll:true});
@@ -2804,12 +2816,17 @@ function tick() {
   if (!renderer) return;
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
   const paintSlot=phiFrameSerial++%3;
-  if(paintSlot===0&&towerGraffiti.diagnostics.pending)towerGraffiti.paintNext();
-  else if(paintSlot===1&&interiorGraffiti.diagnostics.pending)interiorGraffiti.paintNext();
-  else phiSquare.paintNext();
+  const doorsMoving=liftArrivalOpening||Math.abs(liftDoorTarget-liftDoorClosure)>.002;
+  // Canvas painting and its texture uploads compete with the door animation.
+  // Resume them once the leaves stop, including ordinary approach openings.
+  if(!doorsMoving){
+   if(paintSlot===0&&towerGraffiti.diagnostics.pending)towerGraffiti.paintNext();
+   else if(paintSlot===1&&interiorGraffiti.diagnostics.pending)interiorGraffiti.paintNext();
+   else phiSquare.paintNext();
+  }
   // Finish lift motion before building expensive portrait geometry. In XR
   // this same renderer loop still owns all deferred artwork construction.
-  if(!liftTravelling&&!liftArrivalOpening&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
+  if(!liftTravelling&&!doorsMoving&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
   animateLiftDoors(elapsed);
   updatePhiCabinRide(dt);
   if(phiLiftIndicator)paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({
