@@ -68,7 +68,7 @@ jobs:
           node automation/validate-phi-archive.mjs
           node --test tests/phi-translation-area-sign-runtime.test.mjs tests/phi-large-monitor-door-sign.test.mjs tests/phi-reception-rear-wall-monitors.test.mjs tests/phi-monitor-banks.test.mjs tests/phi-monitor-bank-two.test.mjs tests/phi-shell-cache.test.mjs tests/phi-sculpture-stage.test.mjs tests/gramophone-record.test.mjs tests/phi-reception-refresh.test.mjs tests/phi-reception-window.test.mjs tests/phi-touchdesigner-phase-one.test.mjs tests/phi-touchdesigner-six-screen.test.mjs tests/gallery-speakers.test.mjs
           node --test tests/gallery-public-launch.test.mjs tests/phi-full-engine-adapter.test.mjs tests/phi-presentation.test.mjs
-          node --test tests/phi-lift-motion.test.mjs tests/gallery-entry-preparation.test.mjs tests/phi-curation-groups.test.mjs
+          node --test tests/phi-lift-motion.test.mjs tests/gallery-entry-preparation.test.mjs tests/phi-curation-groups.test.mjs tests/phi-stage-curation.test.mjs
           node --test tests/phi-gallery-topbar.test.mjs
           node --check gallery/visit/gallery-bundle.js
           node --check gallery/visit/gallery-phi-bundle.js

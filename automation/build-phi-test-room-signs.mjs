@@ -3,6 +3,7 @@
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {build} from 'esbuild';
+import {stageCurationPlugin} from './phi-stage-curation-plugin.mjs';
 const dir=resolve(process.cwd(),'gallery/visit');
 let source=await readFile(resolve(dir,'gallery-phi.js'),'utf8');
 const replace=(before,after)=>{
@@ -21,6 +22,7 @@ await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
  outfile:'gallery/visit/gallery-phi-test-room-signs-bundle.js',
+ plugins:[stageCurationPlugin()],
  logLevel:'warning'
 });
-console.log('Built staging bundle with shared curated signs and test-safe lift routing.');
+console.log('Built staging bundle with phi-weighted curation, accurate material traits, signs and test-safe lift routing.');
