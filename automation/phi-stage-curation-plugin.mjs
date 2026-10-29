@@ -30,8 +30,8 @@ export function instrumentStageGroups(source){
 export function stageCurationPlugin(){
  return {name:'staging-phi-curation-only',setup(builder){
   for(const [filter,transform] of [
-   [/[/\\]phi-curator\\.mjs$/,instrumentStageCurator],
-   [/[/\\]phi-curation-groups\\.mjs$/,instrumentStageGroups]
+   [/[/\\]phi-curator\.mjs$/,instrumentStageCurator],
+   [/[/\\]phi-curation-groups\.mjs$/,instrumentStageGroups]
   ])builder.onLoad({filter},async({path})=>({
    contents:transform(await readFile(path,'utf8')),
    loader:'js',resolveDir:dirname(path)
