@@ -93,6 +93,7 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
    assert.equal(p.room,original.room,'golden hang cannot change painting room '+date+'/'+p.studyId);
    assert.equal(p.width,original.width,'golden hang cannot resize a painting '+date+'/'+p.studyId);
    assert.equal(p.height,original.height,'golden hang cannot resize a painting '+date+'/'+p.studyId);
+   assert.ok(delta<=1.500001,'phi wall shift must stay within 1.5 m '+date+'/'+p.studyId+' '+delta);
    if(delta>1e-6||wallChanged){
     const change={date,id:p.studyId,delta:+delta.toFixed(3),
      wallChanged,roomChanged:p.room!==original.room,
@@ -105,6 +106,7 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
    assert.ok(original,'missing baseline sculpture '+date+'/'+p.studyId);
    const delta=Math.hypot(p.x-original.x,p.z-original.z);
    assert.equal(p.room,original.room,'golden sculpture cannot change room '+date+'/'+p.studyId);
+   assert.ok(delta<=1.600001,'phi sculpture shift must stay within 1.6 m '+date+'/'+p.studyId);
    if(delta>1e-6){
     const change={date,id:p.studyId,delta:+delta.toFixed(3),roomChanged:p.room!==original.room};
     changedSculptures.push(change);floorSculptures.push(change);
