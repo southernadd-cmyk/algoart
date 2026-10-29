@@ -85,7 +85,7 @@ test('every archived edition links to its exact 3D floor',()=>{
       'Missing floor link on '+date);
   const legacy=read(resolve('test/virtual-gallery/index.html'));
   assert.doesNotMatch(legacy,/location\.replace\(/);
-  assert.match(legacy,/gallery-phi-bundle\.js/);
+  assert.match(legacy,/gallery-phi-test-room-signs-bundle\.js/);
   assert.match(legacy,/<base href="\.\.\/\.\.\/gallery\/visit\/">/);
 });
 

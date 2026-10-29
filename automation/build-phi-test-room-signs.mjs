@@ -10,12 +10,17 @@ const replace=(before,after)=>{
  source=source.replace(before,after);
 };
 replace("import * as THREE from 'three';",
-  "import {addHangingRoomSigns} from '../../test/virtual-gallery/phi-room-hanging-signs.mjs';\nimport * as THREE from 'three';");
+  "import {addHangingRoomSigns} from '../../test/virtual-gallery/phi-room-hanging-signs.mjs';\nimport {stagingFloorUrl} from '../../test/virtual-gallery/phi-stage-routing.mjs';\nimport * as THREE from 'three';");
 replace(" const byId=new Map(studies.map(study=>[study.id,study]));",
   " if(exhibitDate!==RECEPTION){\n"+
   "  window.__testRoomSigns=addHangingRoomSigns(THREE,scene,phi,elevation,ROOM_HEIGHT);\n"+
   " }else window.__testRoomSigns=[];\n"+
   " const byId=new Map(studies.map(study=>[study.id,study]));");
+// Only the staging bundle is patched. The live gallery continues to use its
+// current URL semantics, and test assets still load from gallery/visit/.
+replace("history.replaceState(null,'',date===RECEPTION?location.pathname:'?date='+date);",
+ "history.replaceState(null,'',stagingFloorUrl(location.href,date,RECEPTION));");
+
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
