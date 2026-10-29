@@ -1,4 +1,5 @@
 name: Rebuild gallery bundle
+# Refresh generated gallery bundles after first-installation layout update.
 on:
   workflow_dispatch:
   push:
