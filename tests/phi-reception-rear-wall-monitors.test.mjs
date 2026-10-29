@@ -16,15 +16,16 @@ test('two large 16:10 screens occupy most of a solid back wall, with no second b
  assert.equal(planPhiReceptionRearWallMonitors({...mount,span:2}),null);
 });
 
-test('two φ-shaped panes fit in each screen and present uncropped 8:5 videos',()=>{
+test('two φ-shaped panes fit in each screen with edge-to-edge golden video faces',()=>{
  const layout=planPhiGoldenScreenSplit(3.1,3.1/1.6);
  assert.ok(layout);
  assert.ok(Math.abs(layout.split-MONITOR_INV_PHI)<1e-12);
  assert.equal(layout.panes.length,2);
  for(const p of layout.panes){
   assert.ok(Math.abs(p.width/p.height-MONITOR_PHI)<1e-10);
-  assert.ok(Math.abs(p.videoWidth/p.videoHeight-384/240)<1e-10);
-  assert.ok(p.videoWidth<=p.width&&p.videoHeight<=p.height);
+  assert.ok(Math.abs(p.videoWidth/p.videoHeight-MONITOR_PHI)<1e-10);
+  assert.equal(p.videoWidth,p.width,'video must fill golden width without a border');
+  assert.equal(p.videoHeight,p.height,'video must fill golden height without letterboxing');
   assert.ok(Math.abs(p.x)+p.width/2<=3.1/2);
   assert.ok(Math.abs(p.y)+p.height/2<=3.1/1.6/2);
  }
@@ -75,6 +76,22 @@ test('repeated video panels are batched into two meshes and reuse panel six text
  assert.match(src,/mosaics\.push\(\{face:mosaic,source:pair\[1\]/);
  assert.match(src,/if\(key===mosaic\.uvKey\)continue/);
  assert.ok(!src.includes("new THREE.VideoTexture"));
+ assert.ok(!src.includes("createElement('video'"));
+});
+
+test('all recursive and main video edges are borderless and share source atlas UVs',async()=>{
+ const src=await readFile(new URL('../gallery/visit/phi-reception-rear-wall-monitors.mjs',import.meta.url),'utf8');
+ assert.match(src,/const videoWidth=w,videoHeight=h/);
+ assert.match(src,/const bleed=\.001/);
+ assert.match(src,/tile\.x-tile\.width\/2-bleed/);
+ assert.match(src,/tile\.y-tile\.height\/2-bleed/);
+ assert.match(src,/coverPanelUV\(original,targetAspect\)/);
+ assert.match(src,/coverPanelUV\(sourceUV,aspect\)/);
+ assert.ok(!src.includes('golden-video-frame'),'remove decorative outlines');
+ assert.ok(!src.includes('trimMaterial'),'no extra line material');
+ assert.ok(!src.includes('const inset=Math.min(.002'),'no tile-level gutters');
+ assert.match(src,/visibleVideoBorders:false/);
+ assert.ok(!src.includes('new THREE.VideoTexture'));
  assert.ok(!src.includes("createElement('video'"));
 });
 
