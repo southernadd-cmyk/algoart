@@ -6,14 +6,23 @@ import {planPhiReception} from '../gallery/visit/phi-reception-layout.mjs';
 import {planPhiReceptionMonitorWall} from '../gallery/visit/phi-reception-living-monitor.mjs';
 import {planPhiReceptionRearWallMonitors,planPhiGoldenScreenSplit,planPhiRecursiveVideoFill,MONITOR_PHI,MONITOR_INV_PHI} from '../gallery/visit/phi-reception-rear-wall-monitors.mjs';
 
-test('two large 16:10 screens occupy most of a solid back wall, with no second bank',()=>{
+test('two big 16:10 rear-wall screens leave visible wall clearance without a second bank',()=>{
  const mount={fromPhysical:true,span:5.5,x:1,z:2,yaw:Math.PI,width:1,gap:.14};
  const p=planPhiReceptionRearWallMonitors(mount);
- assert.ok(p);assert.ok(p.coverage>.90);
+ assert.ok(p);
  assert.ok(Math.abs(p.screenHeight/p.screenWidth-240/384)<1e-10);
- assert.ok(p.occupiedWidth<=p.span-.24);
+ assert.ok(p.screenWidth>2,'each screen must remain large');
+ assert.ok(p.screenWidth<2.2,'reduce the formerly oversized pair by about 15%');
+ assert.ok(p.coverage>.80&&p.coverage<.86,'leave a visible breathing margin');
+ assert.ok(p.sideClearance>=.45-1e-10,'keep at least 45cm of wall at both ends');
+ assert.ok(p.gap>=.25,'leave space between screens');
+ assert.ok(Math.abs(2*p.sideClearance+p.occupiedWidth-p.span)<1e-10);
  assert.equal(planPhiReceptionRearWallMonitors({...mount,fromPhysical:false}),null);
  assert.equal(planPhiReceptionRearWallMonitors({...mount,span:2}),null);
+ // On a narrower but valid wall, retain a smaller margin rather than
+ // hiding the entire monitor installation.
+ const narrow=planPhiReceptionRearWallMonitors({...mount,span:2.8});
+ assert.ok(narrow&&narrow.sideClearance>=.2&&narrow.screenWidth>.9);
 });
 
 test('two φ-shaped panes fit in each screen with edge-to-edge golden video faces',()=>{
