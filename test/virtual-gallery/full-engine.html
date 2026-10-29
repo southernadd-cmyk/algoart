@@ -22,7 +22,7 @@
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./gallery.css?v=accessibility-20261023">
 <link rel="stylesheet" href="./phi-gallery.css?v=public-phi-20261026">
-<link rel="stylesheet" href="../../test/virtual-gallery/guided-tour.css?v=guided-tour-test-v1-20261029">
+<link rel="stylesheet" href="../../test/virtual-gallery/guided-tour.css?v=guided-tour-test-button-fix-v4-20261029">
 <style>
 /* The fixed canvas must never cover the keyboard/mouse lift fallback. */
 #world{z-index:0}
@@ -72,7 +72,7 @@
     window.__galleryStage='Importing bundled JavaScript';
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
-    await import('./gallery-phi-tour-test-bundle.js?v=guided-tour-test-v3-20261029');
+    await import('./gallery-phi-tour-test-bundle.js?v=guided-tour-test-button-fix-v4-20261029');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
