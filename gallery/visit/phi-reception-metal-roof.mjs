@@ -1,101 +1,52 @@
-// Simplified metal roof surface reconstructed from Abandoned Scans' uploaded
-// Sketchfab GLB, with roof height samples derived directly from its mesh.
-// Mesh has been reduced to 18 × 13 samples, flattened to sit on the external
-// reception roof, and given a neutral dark metal finish (original large
-// urban-scene photographic texture intentionally omitted).
-// Original: https://sketchfab.com/3d-models/just-a-metal-roof-for-your-project-20fc70469ccd441bb4c9732b3b6886eb
-// Author: Abandoned Scans; licence: CC BY 4.0.
-const ROOF_HEIGHT_SAMPLE='aFBPTk5OTU5MTk9PT1hgamFLllxPTk5OTU5NTlJZZHBwZU5Jo4VWT05OTU5QV2WAko17Xk1JpaSEVk5OUVhjdpjWxqmNblRKpaWkh2lhaoyTyMDHvKmRd19OpqWmqKqmvrK22L6vnox5ZlRKqKirr7W9x8G8s6CNemlZT0pJs7G2ur7CwbWklIBrW1FNTEtKur7BxcO5rpiAb15UT01NTExKt8TFva2flXVgVVFRT01NTUxLsbatm4h1ZFdSUVFRUE5NTUxMn5mJdmRVUlNRUVFRUU9NTU1MmIhnWVBJS1JRUVFRUU9OTU1N';
-const NX=18,NZ=13;
-export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHeight=5.2}){
+import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
+import {loadPhiDecorAsset} from './phi-model-assets.mjs';
+// HB old house part 4 — Orphan RTG, CC BY 4.0. The original scanned
+// roof slope is trimmed above its wall and reused on both sides of the ridge.
+const roofURL=new URL('./models/reception-old-house-roof.glb',import.meta.url).href;
+export function addPhiReceptionMetalRoof(THREE,scene,{bounds,elevation,ceilingHeight=5.2,brick}){
  if(!bounds)return null;
- const {minX,maxX,minZ,maxZ}=bounds;
- const width=maxX-minX,depth=maxZ-minZ;
+ const {minX,maxX,minZ,maxZ}=bounds,width=maxX-minX,depth=maxZ-minZ;
  if(!(width>3&&depth>3))return null;
- const raw=Uint8Array.from(atob(ROOF_HEIGHT_SAMPLE),c=>c.charCodeAt(0));
- if(raw.length!==NX*NZ)throw Error('Uploaded roof height sample is invalid');
- const positions=[],uv=[],indices=[];
- const eaveOverhang=.95,frontOverhang=1.55;
- const roofW=width+2*eaveOverhang,roofD=depth+frontOverhang+.7;
- for(let row=0;row<NZ;row++)for(let col=0;col<NX;col++){
-  const u=col/(NX-1),v=row/(NZ-1);
-  // Raise a real, visible ridge over the reception; retain fine variations
-  // from the CC BY scan. The eaves extend beyond the black-brick wall.
-  const ridge=1-Math.abs(u*2-1);
-  const h=.12+ridge*1.55+Math.pow(raw[row*NX+col]/255,1.3)*.065;
-  positions.push((u-.5)*roofW,h,(v-.5)*roofD-frontOverhang*.5+.35);
-  uv.push(u,v);
- }
- for(let row=0;row<NZ-1;row++)for(let col=0;col<NX-1;col++){
-  const a=row*NX+col,b=a+1,c=a+NX,d=c+1;
-  indices.push(a,c,b,b,c,d);
- }
- const geo=new THREE.BufferGeometry();
- geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
- geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
- geo.setIndex(indices);geo.computeVertexNormals();
- const metal=new THREE.MeshStandardMaterial({color:'#a9adb1',metalness:.32,roughness:.58,
-   side:THREE.DoubleSide});
- const group=new THREE.Group();group.name='phi-exterior-reception-metal-roof';
- // Eaves clear the existing facade sign; the ridge is deliberately taller.
- group.position.set((minX+maxX)/2,elevation+ceilingHeight+.62,(minZ+maxZ)/2);
- const surface=new THREE.Mesh(geo,metal);
- surface.name='abandoned-scans-reduced-roof-relief';
- surface.receiveShadow=true;group.add(surface);
- // Slim standing seams and clear fascia make the shallow metal pitched
- // silhouette readable against the dark brickwork at street level.
- const flashing=new THREE.MeshStandardMaterial({color:'#333c40',metalness:.53,roughness:.59});
- const seamMaterial=new THREE.MeshStandardMaterial({color:'#b0b5b2',metalness:.62,roughness:.53});
- const eaveY=.10,roofRise=1.55;
- for(const side of [-1,1]){
-  const eave=new THREE.Mesh(new THREE.BoxGeometry(.13,.16,roofD+.12),flashing);
-  eave.position.set(side*roofW/2,eaveY,-frontOverhang*.5+.35);
-  group.add(eave);
- }
- for(const side of [-1,1]){
-  // Edge trim follows the two pitched slopes via a short faceted line.
-  const z=side*roofD/2-frontOverhang*.5+.35;
-  for(let i=0;i<2;i++){
-   const x=(i===0?-roofW/4:roofW/4);
-   const y=(eaveY+roofRise+.12)/2;
-   const length=Math.hypot(roofW/2,roofRise);
-   const trim=new THREE.Mesh(new THREE.BoxGeometry(length,.09,.12),flashing);
-   trim.position.set(x,y,z);
-   trim.rotation.z=(i===0?1:-1)*Math.atan2(roofRise,roofW/2);
-   group.add(trim);
-  }
- }
- for(let j=1;j<9;j++){
-  const v=j/9,z=(v-.5)*roofD-frontOverhang*.5+.35;
-  for(let i=0;i<2;i++){
-   const line=new THREE.Mesh(new THREE.BoxGeometry(roofW/2,.025,.035),seamMaterial);
-   line.position.set(i===0?-roofW/4:roofW/4,eaveY+roofRise/2,z);
-   line.rotation.z=(i===0?1:-1)*Math.atan2(roofRise,roofW/2);
-   group.add(line);
-  }
- }
- // Visible structural support: narrow steel posts rise from the masonry top
- // to the canopy's underside. They sit just inside the facade corners,
- // avoiding the entrance opening and preserving the dramatic overhang.
- const support=new THREE.MeshStandardMaterial({color:'#414a4b',metalness:.64,roughness:.49});
- const eaveAbsolute=elevation+ceilingHeight+.62+.12;
- const wallTop=elevation+ceilingHeight-.05;
- const supportHeight=Math.max(.4,eaveAbsolute-wallTop);
- for(const x of [-1,1])for(const z of [-1,1]){
-  const post=new THREE.Mesh(new THREE.BoxGeometry(.24,supportHeight,.24),support);
-  post.position.set(x*(width/2-.75),wallTop-group.position.y+supportHeight/2,
-   z*(depth/2-.85));
-  post.name='metal-roof-masonry-support';
-  group.add(post);
- }
- // A continuous support rail along the building's external rear wall
- // makes the canopy meet the reception structure instead of floating.
- const rear=new THREE.Mesh(new THREE.BoxGeometry(width-.9,.22,.24),support);
- rear.position.set(0,wallTop-group.position.y+.11,depth/2-.16);
- rear.name='metal-roof-rear-wall-connection';group.add(rear);
+ const roofW=width+1.9,roofD=depth+2.25,rise=2.8,eave=.72;
+ const group=new THREE.Group();group.name='phi-exterior-reception-old-house-roof';
+ group.position.set((minX+maxX)/2,elevation+ceilingHeight,(minZ+maxZ)/2-.425);
+ group.userData.attribution='HB old house part 4 · Orphan RTG · CC BY 4.0';
  scene.add(group);
- group.userData.modelLoaded=true;
- group.userData.attribution='Abandoned Scans · Just a metal roof for your project · CC BY 4.0';
- group.userData.sourceMethod='reduced uploaded GLB geometry; neutral metal material';
+ // Brick gables follow the roof pitch and sit directly on the existing
+ // end walls. World-scaled UVs keep their courses the same size as reception.
+ const masonry=brick||new THREE.MeshStandardMaterial({color:'#383938',roughness:.94});
+ const wallEave=eave+rise*(1-width/roofW),wallDepth=.265;
+ const gable=new THREE.Shape();gable.moveTo(-width/2,0);gable.lineTo(width/2,0);
+ gable.lineTo(width/2,wallEave);gable.lineTo(0,eave+rise-.04);gable.lineTo(-width/2,wallEave);gable.closePath();
+ const gableGeo=new THREE.ExtrudeGeometry(gable,{depth:wallDepth,bevelEnabled:false});
+ const pos=gableGeo.attributes.position,uv=gableGeo.attributes.uv,tile=masonry.userData.tileMeters||1.05;
+ for(let i=0;i<uv.count;i++)uv.setXY(i,(pos.getX(i)+group.position.x)/tile,(pos.getY(i)+group.position.y)/tile);
+ for(const side of [-1,1]){
+  const face=new THREE.Mesh(gableGeo,masonry);face.position.z=side*depth/2+.425-wallDepth/2;
+  face.name='old-house-roof-brick-gable';face.receiveShadow=true;group.add(face);
+  const geo=tiledBoxUvs(new THREE.BoxGeometry(wallDepth,wallEave,depth),wallDepth,wallEave,depth,tile);
+  const band=new THREE.Mesh(geo,masonry);
+  band.position.set(side*width/2,wallEave/2,.425);band.name='old-house-roof-brick-eaves';band.receiveShadow=true;group.add(band);
+ }
+ // A narrow ridge cap closes the irregular cut edge between the two scans.
+ const capMaterial=new THREE.MeshStandardMaterial({color:'#868982',roughness:.9,side:THREE.DoubleSide});
+ for(const side of [-1,1]){
+  const cap=new THREE.Mesh(new THREE.PlaneGeometry(.72,roofD),capMaterial);
+  cap.rotation.set(-Math.PI/2,side*Math.atan2(rise,roofW/2),0);
+  cap.position.set(side*.30,eave+rise-.015,0);cap.name='old-house-roof-ridge-cap';group.add(cap);
+ }
+ loadPhiDecorAsset(roofURL).then(source=>{
+  if(!group.parent||group.userData.galleryDisposed)return;
+  const box=new THREE.Box3().setFromObject(source),size=box.getSize(new THREE.Vector3()),centre=box.getCenter(new THREE.Vector3());
+  for(const side of [-1,1]){
+   const slope=new THREE.Group(),model=source.clone(true),fit=new THREE.Group();
+   model.position.add(new THREE.Vector3(-centre.x,-box.min.y,-centre.z));fit.add(model);
+   fit.scale.set(roofD/size.x,rise/size.y,(roofW/2+.08)/size.z);
+   slope.add(fit);slope.rotation.y=side*Math.PI/2;
+   slope.position.set(side*roofW/4,eave,0);slope.name='orphan-rtg-scanned-roof-slope';
+   slope.traverse(o=>{if(o.isMesh)o.receiveShadow=true;});group.add(slope);
+  }
+  group.userData.modelLoaded=true;
+ }).catch(error=>{group.userData.loadError=String(error);console.warn('Reception roof unavailable',error);});
  return group;
 }

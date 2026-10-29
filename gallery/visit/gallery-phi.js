@@ -1738,7 +1738,7 @@ function constructPhiGallery(layout,studies){
    minZ:Math.min(...phi.pieces.map(p=>p.z)),
    maxZ:Math.max(...phi.pieces.map(p=>p.z+p.h))
   };
-  addPhiReceptionMetalRoof(THREE,scene,{bounds:roofBounds,elevation,ceilingHeight:ROOM_HEIGHT});
+  addPhiReceptionMetalRoof(THREE,scene,{bounds:roofBounds,elevation,ceilingHeight:ROOM_HEIGHT,brick:galleryFinish.exteriorBrick});
   addPhiFrontage(THREE,entranceDoor.root,{concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs});
   const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
     halfWidth:30,halfDepth:29,level:elevation};
