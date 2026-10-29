@@ -74,7 +74,7 @@ test('repeated video panels are batched into two meshes and reuse panel six text
  assert.match(src,/mosaic\.userData\.sourcePanel=6/);
  assert.match(src,/new THREE.Mesh\(mosaicGeometry,pair\[1\]\.material\)/);
  assert.match(src,/mosaics\.push\(\{face:mosaic,source:pair\[1\]/);
- assert.match(src,/if\(key===mosaic\.uvKey\)continue/);
+ assert.match(src,/if\(!initial\|\|initial\.key===mosaic\.uvKey\)continue/);
  assert.ok(!src.includes("new THREE.VideoTexture"));
  assert.ok(!src.includes("createElement('video'"));
 });
