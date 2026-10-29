@@ -4,7 +4,7 @@ const PREVIEW=new URL('./touchdesigner/td-network-loop.webp',import.meta.url);
 const LOGO=new URL('./touchdesigner/touchdesigner-logo.png',import.meta.url);
 const PROJECT=new URL('./touchdesigner/pp_translation_room_watercolour.toe',import.meta.url);
 
-export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,camera}){
+export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,camera,studyDescription=null}){
  const material=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.32,roughness:.48});
  const lamp=new THREE.MeshBasicMaterial({color:0x66c59d,toneMapped:false});
  const textures=[],screens=[],contexts=[],groups=[];
@@ -30,6 +30,12 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
     text(c,'A working node-based visual model',25,116,17,'#d3cbbd');
     text(c,statuses.preview==='not-found'?'ANIMATION FILE PENDING':'Network walkthrough',25,164,14,'#86cfb1');
    }
+  }else if(index===1&&studyDescription){
+   c.fillStyle='#25363b';c.fillRect(0,0,384,5);
+   text(c,studyDescription.title,18,39,21,'#f4eee4','bold');
+   studyDescription.lines.forEach((line,i)=>text(c,line,18,70+i*20,16,'#f1e6d1'));
+   c.fillStyle='#31454a';c.fillRect(15,207,354,1);
+   text(c,'PAINTING → MESH → TWO VIEWS',18,229,15,'#a9d5bd','bold');
   }else if(index===1){
    c.fillStyle='#25363b';c.fillRect(0,0,384,5);
    text(c,'WHAT IS TOUCHDESIGNER?',18,39,23,'#f4eee4','bold');
