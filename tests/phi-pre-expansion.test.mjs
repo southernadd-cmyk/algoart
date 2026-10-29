@@ -18,9 +18,9 @@ async function stagedPlanner(){
 }
 function studies(date){
  const html=readFileSync(new URL('../gallery/'+date+'/index.html',import.meta.url),'utf8');
- return [...html.matchAll(/<article\\b[\\s\\S]*?<\\/article>/g)].map(([card],id)=>{
-  const w=Number(card.match(/<img[^>]*width="(\\d+)"/)?.[1]);
-  const h=Number(card.match(/<img[^>]*height="(\\d+)"/)?.[1]);
+ return [...html.matchAll(/<article\b[\s\S]*?<\/article>/g)].map(([card],id)=>{
+  const w=Number(card.match(/<img[^>]*width="(\d+)"/)?.[1]);
+  const h=Number(card.match(/<img[^>]*height="(\d+)"/)?.[1]);
   return {id,portrait:/data-orientation="portrait"/.test(card)||h>w,aspect:w/h||1.4,
    href:card.match(/class="remix" href="([^"]+)"/)?.[1]?.replaceAll('&amp;','&'),
    material:card.match(/data-material="([^"]+)"/)?.[1]};
