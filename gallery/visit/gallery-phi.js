@@ -174,7 +174,6 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
 let receptionWallMaterial=null;
-let receptionPaintedPlasterMaterial=null;
 const towerGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.exteriorBrick,lowPower:galleryFinish.lowPower});
 const interiorGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.wall,lowPower:galleryFinish.lowPower,
  planner:planInteriorGraffiti,keyFor:interiorGraffitiKey,kind:'interior'});
@@ -1454,7 +1453,8 @@ function constructPhiGallery(layout,studies){
  // Every floor, enclosure and collision surface comes from the same phi plan.
  const plaster=galleryFinish?.interiorWall||wall;
  if(exhibitDate===RECEPTION&&!receptionWallMaterial)receptionWallMaterial=createReceptionWallMaterial(THREE,{lowPower:galleryFinish.lowPower});
- if(exhibitDate===RECEPTION&&!receptionPaintedPlasterMaterial)receptionPaintedPlasterMaterial=createReceptionWallMaterial(THREE,{lowPower:galleryFinish.lowPower,finish:'painted-plaster'});
+ // Reuse the exact charcoal Bricks055 material already loaded for the tower exterior.
+  const receptionBlackBrickMaterial=galleryFinish.exteriorBrick;
  const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;
  const receptionWindow=exhibitDate===RECEPTION?planPhiReceptionWindow(phi.circulation.publicEntrance):null;
  if(receptionWindow)addPhiReceptionWindow(THREE,scene,{opening:receptionWindow,elevation,brick:galleryFinish.exteriorBrick});
@@ -1469,7 +1469,7 @@ function constructPhiGallery(layout,studies){
  for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,receptionWindow,ROOM_HEIGHT)){
   const len=part.hi-part.lo;if(len<.04)continue;
   const centre=(part.lo+part.hi)/2,centreY=elevation+part.bottom+part.height/2;
-  const finish=foyer&&w.axis==='z'&&Math.abs(w.at-rearWallAt)<.001&&foyer.pieces.some(p=>Math.abs(p.z+p.h-w.at)<.001&&w.hi>p.x&&w.lo<p.x+p.w)?receptionPaintedPlasterMaterial:roomWall;
+  const finish=foyer&&w.axis==='z'&&Math.abs(w.at-rearWallAt)<.001&&foyer.pieces.some(p=>Math.abs(p.z+p.h-w.at)<.001&&w.hi>p.x&&w.lo<p.x+p.w)?receptionBlackBrickMaterial:roomWall;
   const mesh=w.axis==='x'
    ?staticBlock(.19,part.height,len,w.at,centreY,centre,finish)
    :staticBlock(len,part.height,.19,centre,centreY,w.at,finish);
@@ -1477,13 +1477,13 @@ function constructPhiGallery(layout,studies){
    // Explicit reception wall faces. BoxGeometry material order:
    // +X, -X, +Y, -Y, +Z, -Z. The blue wallpaper is retained
    // on -X and +Z; the opposite +X and -Z faces receive
-   // painted plaster. Never infer finishes from lights.
+   // charcoal-black brick. Never infer finishes from lights.
    // Reuse the existing mesh/groups rather than cloning geometry or
    // layering coplanar meshes (avoids z-fighting and extra geometry).
    mesh.material=[
-    receptionPaintedPlasterMaterial,receptionWallMaterial,
+    receptionBlackBrickMaterial,receptionWallMaterial,
     receptionWallMaterial,receptionWallMaterial,
-    receptionWallMaterial,receptionPaintedPlasterMaterial
+    receptionWallMaterial,receptionBlackBrickMaterial
    ];
   }
  }

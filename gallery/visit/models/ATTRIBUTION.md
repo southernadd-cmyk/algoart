@@ -1,4 +1,6 @@
-# Gallery visitor models
+# Gallery model attributions (historical source inventory)
+
+This file includes **retired** model assets as well as currently-used ones. For the main live/test tower, consult [the active attribution audit](../ASSET-AUDIT.md) and [public credits](../credits.html). Presence of a GLB in this folder does not mean it is displayed.
 
 **Human Models Set - Male/Female (Rigged)** by **lzyassoul**. [Original Sketchfab model](https://sketchfab.com/3d-models/human-models-set-malefemale-rigged-7311fcfdc03e4234900eeced42a1e669). Licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
@@ -18,11 +20,11 @@ The `human-male-female-rigged.glb` file is converted from the **lzyassoul** sour
 
 Licence: https://creativecommons.org/licenses/by/4.0/ . User-visible source links and licence credits are at ../credits.html and in the reception's three framed credit panels.
 
-## Outdoor planting
+## Archived outdoor succulent (not used by current tower)
 
 **FREE >> Small succulent in planter** by **GrrHero**, [Sketchfab source](https://sketchfab.com/3d-models/free-small-succulent-in-planter-7ff3e67f02bc4a11857c21520200fbdf), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Geometry reduced from 150,136 to 15,009 triangles; embedded textures resized to 1024px and recompressed. Scale and orientation adjusted for four outdoor planters. The original author, source and licence are retained in the GLB metadata.
 
-## Reception world map
+## Archived reception world map (replaced with PROPORTION PIECE art)
 
 **Vintage Framed World Map** by **My Name Is This**, [Sketchfab source](https://sketchfab.com/3d-models/vintage-framed-world-map-d09886ee76e74457a765498984dc04a0), [author](https://sketchfab.com/profileFromHere), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Geometry centred and oriented for wall display; scale and materials adjusted for gallery lighting. Original texture pixels retained. Attribution is also recorded in the embedded GLB metadata, the reception credits collection and ../credits.html.
 

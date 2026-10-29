@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {buildPhiRendererPlan} from '../gallery/visit/phi-full-engine-adapter.mjs';import {planPhiReception} from '../gallery/visit/phi-reception-layout.mjs';
 import {planPhiReceptionMonitorWall} from '../gallery/visit/phi-reception-living-monitor.mjs';
@@ -30,4 +31,22 @@ test('test reception locates three living monitors on a solid backroom wall faci
   assert.ok(dot>=0,'Screens must face towards the lift');
   assert.ok((3*mount.width+2*mount.gap)<=mount.span-.20,'All three screens must fit without overlapping a doorway');
  }finally{delete globalThis.__phiReceptionTestRefresh;}
+});
+
+
+test('live and test share charcoal exterior brick on reception feature walls, with truthful active credits',()=>{
+ const src=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
+ const wallpaper=readFileSync(new URL('../gallery/visit/reception-wall-material.mjs',import.meta.url),'utf8');
+ const panels=readFileSync(new URL('../gallery/visit/phi-reception-decor.mjs',import.meta.url),'utf8');
+ const live=readFileSync(new URL('../gallery/visit/credits.html',import.meta.url),'utf8');
+ const staging=readFileSync(new URL('../test/virtual-gallery/credits.html',import.meta.url),'utf8');
+ assert.match(src,/const receptionBlackBrickMaterial=galleryFinish\.exteriorBrick;/);
+ assert.ok(src.includes('receptionBlackBrickMaterial,receptionWallMaterial'));
+ assert.ok(src.includes('receptionWallMaterial,receptionBlackBrickMaterial'));
+ assert.doesNotMatch(wallpaper,/ambientcg-painted-plaster-007|PaintedPlaster007/);
+ for(const page of [panels,live,staging]){
+  assert.match(page,/Bricks055/);
+  assert.doesNotMatch(page,/PaintedPlaster007/);
+ }
+ assert.doesNotMatch(staging,/Vintage Framed World Map|Small succulent in planter/);
 });

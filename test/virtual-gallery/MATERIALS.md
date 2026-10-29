@@ -1,15 +1,15 @@
 # Virtual gallery architectural materials and entrance
 
-The exhibition architecture uses restrained, reusable **CC0 1.0** photographic textures from [Poly Haven](https://polyhaven.com/license), all requested at **1K**. No ShareTextures assets are redistributed by the repository.
+Current live/test reception mixes [ambientCG Bricks055](https://ambientcg.com/view?id=Bricks055) charcoal-black brick with [ShareTextures Decorative Wall 2](https://www.sharetextures.com/textures/wall/decorative_wall_2) wallpaper and [Aman Bajwa](https://sketchfab.com/3d-models/pbr-floor-tiles-material-4f30f4ab3cf4461d8f0460c236fd9309) floor tiles. Upper gallery plaster and most floors use Poly Haven textures. The historical table below originally described an earlier prototype; see [the active-source audit](../../gallery/visit/ASSET-AUDIT.md) and [current test credits](./credits.html).
 
 | Surface | Source | Gallery treatment |
 | --- | --- | --- |
 | Interior plaster | [Plastered Wall 02](https://polyhaven.com/a/plastered_wall_02) | Low contrast warm off-white; .15 normal strength on desktop |
-| Exterior brick | [Brick Wall 02](https://polyhaven.com/a/brick_wall_02) | Photographic brick/mortar relief, neutralised to soft buff colour; .11 normal strength on desktop |
+| Exterior and reception black brick | [Bricks055](https://ambientcg.com/view?id=Bricks055) by ambientCG, CC0 | Shared charcoal-adapted brick material on exterior and selected reception faces |
 | Gallery concrete | [Concrete Floor](https://polyhaven.com/a/concrete_floor) | Smooth pale concrete for main exhibition floors and glazed footbridges |
 | Timber rooms | [Wood Floor](https://polyhaven.com/a/wood_floor) | Three subtly different matte timber finishes, built from one shared 1K image |
 
-**Licence:** CC0. Source credits are for provenance; attribution is not legally required.
+**Licences:** Poly Haven and ambientCG are CC0; ShareTextures Decorative Wall 2 is listed as CC0; Aman Bajwa tiles and many model props are CC BY 4.0. These descriptions are not blanket permissions for all gallery assets: the Sketchfab Standard lift and HDRMAPS background present separate issues noted below and in the audit.
 
 ## Performance and lifecycle
 
@@ -56,7 +56,7 @@ The GLB's original metadata and names were examined locally:
 - sliding positions produce an approximately 1.22 m clear gap and 0.2 mm
   centre seam when closed
 
-**The GLB is not uploaded to GitHub by this code change.** The optional
+**Update 29 October 2026:** The GLB is now present in the public GitHub repository, contrary to the older statement below. Public standalone distribution requires permission beyond the documented Sketchfab Standard licence; see the audit. The optional
 loader expects `test/virtual-gallery/models/elevator-game-ready.glb`.
 If absent or blocked it silently leaves the existing functional elevator
 visible. Once an appropriately authorised deployment of the GLB is
