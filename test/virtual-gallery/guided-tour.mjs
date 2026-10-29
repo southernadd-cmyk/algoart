@@ -7,6 +7,18 @@ const clamp = (x,lo,hi) => Math.max(lo,Math.min(hi,x));
 const shortestTurn = (a,b) => Math.atan2(Math.sin(b-a),Math.cos(b-a));
 const lerpAngle = (a,b,maxStep) => a+clamp(shortestTurn(a,b),-maxStep,maxStep);
 
+// Build route bounds in world space; every dated floor is rotated by the
+// golden angle, so local axis-aligned bounds cannot be used for grid search.
+export function tourWorldBounds(phi){
+  const r=phi.floor.root;
+  const corners=[[r.x,r.z],[r.x+r.w,r.z],[r.x,r.z+r.h],[r.x+r.w,r.z+r.h]]
+    .map(([x,z])=>phi.world?phi.world.toWorld(x,z):{x,z});
+  const xs=corners.map(p=>p.x),zs=corners.map(p=>p.z);
+  const minX=Math.min(...xs),maxX=Math.max(...xs);
+  const minZ=Math.min(...zs),maxZ=Math.max(...zs);
+  return {x:minX,z:minZ,w:maxX-minX,h:maxZ-minZ};
+}
+
 export function clearTourLine(a,b,walkable,spacing=.2){
   const d=distance(a,b);
   const n=Math.max(1,Math.ceil(d/spacing));
@@ -145,7 +157,7 @@ export function createGuidedTour(getContext){
   function planStops(c){
     if(!c.phi||!c.artExhibits.length)return [];
     const remaining=c.artExhibits.filter(a=>a.study&&!a.study.credits);
-    const selected=[],root=c.phi.floor.root;
+    const selected=[],root=tourWorldBounds(c.phi);
     const safe=(x,z)=>isSafe(x,z,c);
     let from={x:c.rig.position.x,z:c.rig.position.z};
     while(remaining.length&&selected.length<16){
@@ -153,8 +165,8 @@ export function createGuidedTour(getContext){
       let chosen=null;
       // Try multiple viewing positions; the geometric shortest choice may
       // be separated by a wall despite looking near in Euclidean distance.
-      for(const art of remaining){
-        for(const spot of stopForArt(art,c,from)){
+      for(const art of remaining.slice(0,6)){
+        for(const spot of stopForArt(art,c,from).slice(0,3)){
           const path=findTourPath(from,spot,safe,root);
           if(path){
             const length=path.slice(1).reduce((sum,p,i)=>sum+distance(p,path[i]),0);
@@ -200,7 +212,7 @@ export function createGuidedTour(getContext){
     if(!stops[index]||!c.phi)return false;
     const target=stops[index].spot;
     const safe=(x,z)=>isSafe(x,z,c);
-    const path=findTourPath(here,target,safe,c.phi.floor.root);
+    const path=findTourPath(here,target,safe,tourWorldBounds(c.phi));
     if(!path)return false;
     leg=path;at=1;hold=0;mode='playing';
     return true;
