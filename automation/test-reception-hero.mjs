@@ -13,9 +13,11 @@ try{
   o.name==='phi-reception-church-window'&&o.userData.modelLoaded),{timeout:65000});
  const windowFaces=await page.evaluate(()=>{
   const root=window.__PP_EXPORT_SCENE__.scene.children.find(o=>o.name==='phi-reception-church-window');
-  return !!root?.getObjectByName('church-window-exterior')&&!!root?.getObjectByName('church-window-interior');
+  let exterior=0,interior=0,borders=0;
+  root?.traverse(o=>{if(o.name==='church-window-exterior')exterior++;if(o.name==='church-window-interior')interior++;if(o.name.startsWith('phi-window-pale-jointed-masonry-'))borders++;});
+  return root?.userData.windowCount===3&&exterior===3&&interior===3&&borders===6;
  });
- if(!windowFaces)throw Error('Reception window must load on both faces');
+ if(!windowFaces)throw Error('All three reception windows and masonry borders must load on both faces');
  const before=await page.evaluate(()=>{
   const x=window.__PP_EXPORT_SCENE__;
   if(!x)throw Error('Missing scene diagnostic');
