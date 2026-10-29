@@ -50,7 +50,7 @@ replace('function openLift(){\n',
 await build({
   stdin:{contents:src,resolveDir:root,sourcefile:'gallery-phi-tour-test.js',loader:'js'},
   bundle:true,minify:true,format:'esm',platform:'browser',target:'es2022',
-  outfile:'test/virtual-gallery/gallery-phi-tour-bundle.js',
+  outfile:'gallery/visit/gallery-phi-tour-test-bundle.js',
   logLevel:'warning'
 });
 console.log('Built test-only tour bundle without modifying production bundles.');
