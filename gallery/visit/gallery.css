@@ -111,13 +111,14 @@ body .algo-global-header.gallery-global-header{
   top:72px;
   z-index:5;
   min-height:49px;
+  justify-content:flex-end;
   padding:7px clamp(15px,2.5vw,35px);
   background:rgba(237,235,228,.94);
   backdrop-filter:none;
 }
 .topbar .identity{align-items:center;gap:12px}
 .topbar .section-name{font-size:15px}
-.topbar .top-actions{flex-wrap:nowrap}
+.topbar .top-actions{flex-wrap:nowrap;margin-left:auto}
 .topbar .top-actions button,.topbar .top-actions>a{white-space:nowrap}
 .plan-view{top:143px}
 @media(max-width:850px){

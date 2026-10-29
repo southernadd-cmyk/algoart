@@ -141,7 +141,6 @@ window.addEventListener('load',()=>{
   <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../">daily gallery</a><a data-algo-nav href="../../about/">about this project</a></nav>
 </header>
 <div class="topbar" role="group" aria-label="Virtual exhibition controls">
-  <div class="identity"><span class="section-name">Virtual gallery</span><span class="floor-indicator" id="floorIndicator" aria-live="polite">–</span></div>
   <div class="top-actions">
     <button id="openLift" type="button">Lift · Floors</button>
     <a id="archiveLink" href="../">View 2D gallery</a>
@@ -149,6 +148,8 @@ window.addEventListener('load',()=>{
     <div id="xr-controls" aria-label="Virtual reality controls"></div>
   </div>
 </div>
+<!-- Retain the scripting hook without showing redundant floor information. -->
+<span id="floorIndicator" hidden></span>
 <script>
 // Position the welcome screen below the *actual* site header and exhibition
 // controls (including when the VR button or viewport changes their height).
