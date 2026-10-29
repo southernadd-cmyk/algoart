@@ -80,7 +80,7 @@ export function addPhiReceptionLivingMonitor(THREE,scene,options){
   });
  }
  const disposeFirst=first.dispose;
- first.bankCount=2;first.totalScreenCount=18+(rearWall?.screenCount||0);
+ first.bankCount=2;first.totalScreenCount=first.screenCount+second.screenCount+(rearWall?.screenCount||0);
  first.largeScreenCount=rearWall?.screenCount||0;
  first.banks=[first.root,second.root];
  Object.defineProperty(first,'rearWallDiagnostics',{get:()=>rearWall?.diagnostics||null});
@@ -137,7 +137,7 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
  }
  // Third row documents the authoring process and exposes the editable project.
  const infoRow=addTouchDesignerInfoRow(THREE,{root,width,height,gap:wall.gap,rowPitch,camera,
-  previewURL:infoPreviewURL,projectURL,
+  previewURL:infoPreviewURL,projectURL,showNetworkPreview:bankId!==1,
   // Same "What is TouchDesigner?" information panel on both banks.
   // Only these two "HERE" lines describe the bank-specific network.
   hereLines:bankId===2?[
@@ -250,7 +250,7 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
   draws++;
  }
  frameId=requestAnimationFrame(tick);
- return {root,mount:wall,screenCount:9,rowCount:3,thirdPanelScreen:screens[2],sixthPanelScreen:screens[5],
+ return {root,mount:wall,screenCount:6+infoRow.panelCount,rowCount:3,thirdPanelScreen:screens[2],sixthPanelScreen:screens[5],
   get playbackLoop(){return media.playbackLoop;},get drawCount(){return draws;},
   get infoDiagnostics(){return infoRow.diagnostics;},
   get mediaDiagnostics(){return media.diagnostics();},
