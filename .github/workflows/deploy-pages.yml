@@ -60,6 +60,8 @@ jobs:
           npm run gallery:bundle
           npm run gallery:bundle:phi
           npm run gallery:bundle:post-test
+          node automation/build-test-guided-tour.mjs
+          node --check test/virtual-gallery/gallery-phi-tour-bundle.js
           node --test tests/phi-postprocessing.test.mjs
       - name: Validate public gallery before uploading the site
         run: |
