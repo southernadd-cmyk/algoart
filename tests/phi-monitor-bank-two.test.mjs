@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile,stat} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {validateTouchDesignerSixScreen} from '../gallery/visit/phi-touchdesigner-media.mjs';
-import {getTouchDesignerHereLines} from '../gallery/visit/phi-touchdesigner-info-row.mjs';
+import {getTouchDesignerHereLines,getTouchDesignerInfoPanelIndices} from '../gallery/visit/phi-touchdesigner-info-row.mjs';
 const base=new URL('../gallery/visit/touchdesigner/',import.meta.url);
 const second=new URL('bank-two/six-screen.json',base);
 
@@ -48,4 +48,22 @@ test('both info panels share the original layout and only the phi-net HERE copy 
  assert.equal(info.includes('studyDescription'),false,'No separate design on bank two');
  assert.ok(info.includes("text(c,'WHAT IS TOUCHDESIGNER?',18,39,23"));
  assert.ok(info.includes("text(c,'PROPORTION PIECE · TRANSLATION ROOM',18,225,11"));
+});
+
+test('the first installation omits only the left network panel in its bottom row',async()=>{
+ assert.deepEqual(getTouchDesignerInfoPanelIndices(false),[1,2],
+  'middle explanation and right-hand project download must keep their positions');
+ assert.deepEqual(getTouchDesignerInfoPanelIndices(true),[0,1,2],
+  'second installation retains its model preview');
+ const room=await readFile(new URL('../gallery/visit/phi-reception-living-monitor.mjs',import.meta.url),'utf8');
+ const info=await readFile(new URL('../gallery/visit/phi-touchdesigner-info-row.mjs',import.meta.url),'utf8');
+ assert.match(room,/showNetworkPreview:bankId!==1/);
+ assert.match(room,/screenCount:6\+infoRow\.panelCount/);
+ assert.match(room,/first\.totalScreenCount=first\.screenCount\+second\.screenCount/);
+ assert.match(info,/group\.position\.set\(\(i-1\)\*\(width\+gap\),-2\*rowPitch,0\)/);
+ assert.match(info,/screens\[i\]=face/);
+ assert.match(info,/ray\.intersectObject\(screens\[2\],false\)/,
+  'right-hand download must remain clickable');
+ assert.match(info,/if\(showNetworkPreview && previewURL\.pathname/,
+  'do not load unused network-video assets for first installation');
 });
