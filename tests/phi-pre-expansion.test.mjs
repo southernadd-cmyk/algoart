@@ -70,5 +70,9 @@ test('early golden-section positioning keeps painting scale, safety, and room al
  }
  console.log('EARLY_PHI_COMPARISON '+JSON.stringify(totals));
  assert.ok(totals.every(r=>r.changedRoom===0&&r.changedWall===0&&r.shrunk===0));
+ const approved=totals.find(r=>r.adherence===.65);
+ assert.ok(approved.earlyAffinity>approved.baseAffinity+.1,'live phi affinity should clearly improve over the earlier hang');
+ assert.ok(approved.grown>0,'pre-expansion should permit some previously constrained frames to grow');
+ assert.ok(approved.movedFromZero>0,'live gallery must retain a visibly golden hang');
  delete globalThis.location;
 });
