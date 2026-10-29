@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "status": "unpublished",
+  "status": "published",
   "title": "Translation Study II",
-  "description": "Second monitor bank prepared for two forthcoming triptychs. Existing network WebP is used as a temporary preview.",
+  "description": "Two 20-second TouchDesigner triptychs stacked into one six-panel film.",
   "atlas": {
     "file": "six-screen-installation.webm",
     "layout": "grid",
@@ -13,6 +13,21 @@
     "panelHeight": 240,
     "width": 1152,
     "height": 480,
-    "fps": 24
-  }
+    "fps": 24,
+    "codec": "vp9",
+    "durationSeconds": 20,
+    "sha256": "4b9f395a1d6478b69c0daaff5845ba9b2e65d0a78881dd8c7c2cae81ad385f07",
+    "sizeBytes": 15846450
+  },
+  "sources": [
+    {
+      "row": 0,
+      "file": "../phi-net-AA-20261005-03-55769-organic-oil-v6-triptych.webm"
+    },
+    {
+      "row": 1,
+      "file": "../phi-net-AA-20261005-03-55769-scribble-action-v4-triptych.webm"
+    }
+  ],
+  "credits": "Original TouchDesigner triptychs and the phi_net.toe editable project."
 }
