@@ -1,4 +1,4 @@
-// TEST TOWER ONLY — hanging room signage after Sousinho's "Hospital hanging signage"
+// SHARED LIVE + TEST — hanging room signage after Sousinho's "Hospital hanging signage"
 // (CC BY 4.0). Adapted from the uploaded GLB to lightweight untextured geometry:
 // rectangular metal panel, two suspension cables, upper fixings and end caps.
 // Original: https://sketchfab.com/3d-models/hospital-hanging-signage-74157aae9eb746d9a0cfe7f9c5c7f83f

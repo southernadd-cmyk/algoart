@@ -1,10 +1,10 @@
-// Diagnostic for the test-only hanging signs, using exactly the same archive
+// Diagnostic for shared live/test hanging signs, using the same archive
 // metadata and geometry planner as the running tower.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {buildPhiRendererPlan} from '../gallery/visit/phi-full-engine-adapter.mjs';
-import {planHangingRoomSigns,roomSignTitle} from '../test/virtual-gallery/phi-room-hanging-signs.mjs';
+import {planHangingRoomSigns,roomSignTitle} from '../gallery/visit/phi-room-hanging-signs.mjs';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const archive=JSON.parse(read('../gallery/tower-layouts.json'));
 function studiesFor(date){

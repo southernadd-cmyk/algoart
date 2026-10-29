@@ -22,6 +22,7 @@ import {planPhiReception} from './phi-reception-layout.mjs?v=gallery-reception-2
 import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,renderPhiFurniture,addPhiFrontage,addPhiReceptionMap} from './phi-reception-decor.mjs?v=baked-radiant-painting-20261027';
 import {planPhiFurnishings} from './phi-furnishings.mjs?v=larger-reception-desk-20261026';
 import {buildPhiRendererPlan} from './phi-full-engine-adapter.mjs?v=public-adapter-20261026';
+import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
@@ -1589,6 +1590,11 @@ function constructPhiGallery(layout,studies){
   block(b.axis==='x'?b.length:b.width,.045,b.axis==='z'?b.length:b.width,
     b.axis==='x'?mid:b.centre,elevation+3.1,b.axis==='z'?mid:b.centre,walkwayGlassMaterials.glass);
  }
+ // Curator-selected double-sided hanging titles belong to the exhibition,
+ // not the reception. Add in floor-local space before the floor's golden
+ // rotation is applied to new scene objects.
+ window.__phiRoomSigns=exhibitDate===RECEPTION?[]
+  :addHangingRoomSigns(THREE,scene,phi,elevation,ROOM_HEIGHT);
  const byId=new Map(studies.map(study=>[study.id,study]));
  const loader=new THREE.TextureLoader();
  for(const p of phi.exhibition.paintings){

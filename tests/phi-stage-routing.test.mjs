@@ -24,14 +24,15 @@ test('both staging HTML entries import the test bundle, not live production',()=
  const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
  for(const path of ['../test/virtual-gallery/index.html','../test/virtual-gallery/full-engine.html']){
   const html=read(path);
-  assert.match(html,/import\('\.\/gallery-phi-test-room-signs-bundle\.js\?v=staging-floor-routing-/);
+  assert.match(html,/import\('\.\/gallery-phi-test-room-signs-bundle\.js\?v=shared-curated-signs-/);
   assert.doesNotMatch(html,/await import\('\.\/gallery-phi-bundle\.js/);
   assert.match(html,/<base href="\.\.\/\.\.\/gallery\/visit\/">/);
  }
  const builder=read('../automation/build-phi-test-room-signs.mjs');
  assert.match(builder,/stagingFloorUrl\(location\.href,date,RECEPTION\)/);
  assert.match(builder,/history\.replaceState/);
- assert.match(builder,/addHangingRoomSigns/);
+ assert.doesNotMatch(builder,/addHangingRoomSigns/);
  const production=read('../gallery/visit/gallery-phi.js');
  assert.doesNotMatch(production,/stagingFloorUrl/);
+ assert.match(production,/addHangingRoomSigns/);
 });

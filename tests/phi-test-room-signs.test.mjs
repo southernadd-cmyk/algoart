@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {roomSignTitle,planHangingRoomSigns} from '../test/virtual-gallery/phi-room-hanging-signs.mjs';
+import {roomSignTitle,planHangingRoomSigns} from '../gallery/visit/phi-room-hanging-signs.mjs';
 
 const fixture=()=>({
  floor:{mergedRooms:[
@@ -37,13 +37,19 @@ test('one sign per curated room just inside the appropriate entry portal',()=>{
 });
 test('staging bundle isolation and marker font double-sided geometry',()=>{
  const builder=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
- const module=readFileSync(new URL('../test/virtual-gallery/phi-room-hanging-signs.mjs',import.meta.url),'utf8');
+ const module=readFileSync(new URL('../gallery/visit/phi-room-hanging-signs.mjs',import.meta.url),'utf8');
  const live=readFileSync(new URL('../gallery/visit/index.html',import.meta.url),'utf8');
  const staging=readFileSync(new URL('../test/virtual-gallery/full-engine.html',import.meta.url),'utf8');
  assert.match(builder,/gallery-phi-test-room-signs-bundle\.js/);
  assert.match(staging,/gallery-phi-test-room-signs-bundle\.js/);
  assert.match(live,/import\('\.\/gallery-phi-bundle\.js\?/);
  assert.doesNotMatch(live,/test-room-signs/);
+ assert.match(live,/curated-hanging-room-signs/);
+ assert.match(live,/Sousinho/);
+ const gallerySource=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(gallerySource,/import \{addHangingRoomSigns\} from '.\/phi-room-hanging-signs\.mjs'/);
+ assert.match(gallerySource,/window\.__phiRoomSigns=exhibitDate===RECEPTION\?\[\]/);
+ assert.match(gallerySource,/addHangingRoomSigns\(THREE,scene,phi,elevation,ROOM_HEIGHT\)/);
  assert.match(module,/AlgoArt Marker/);
  assert.match(module,/for\(const side of \[-1,1\]\)/);
  assert.match(module,/Sousinho/);
