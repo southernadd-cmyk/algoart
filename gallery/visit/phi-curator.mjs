@@ -43,8 +43,9 @@ function widthFor(study){
  return Math.min(2.45,Math.max(1.3,Number(study.displayWidth)||2.15),3.0*aspect);
 }
 /**
- * Candidate scoring: strongly prefer long feature walls, good doorway
- * visibility, generous spacing and a mild golden-section offset.
+ * Candidate scoring: favour long feature walls, doorway visibility,
+ * spacing and central hang positions. Golden-section offsets are applied
+ * separately after wall and room allocation (before/after expansion on test).
  * Existing room assignment is deliberately not assumed.
  */
 export function planCuratedPhiArtwork(floor,circulation,physical,studies){

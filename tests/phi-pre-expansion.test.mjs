@@ -32,11 +32,17 @@ test('early golden-section positioning keeps painting scale, safety, and room al
  const stagePlan=await stagedPlanner();
  const totals=[];
  for(const adherence of [0,.65,1]){
-  let liveAffinity=0,earlyAffinity=0,moved=0,shrunk=0,changedRoom=0,changedWall=0,paintings=0;
+  let liveAffinity=0,earlyAffinity=0,moved=0,movedFromZero=0,shrunk=0,grown=0,changedRoom=0,changedWall=0,paintings=0;
   for(const {date} of archive.floors){
    const st=studies(date),base=buildPhiRendererPlan(date,st,{phiAdherence:adherence});
+   const zero=buildPhiRendererPlan(date,st,{phiAdherence:0}).exhibition;
+   const zeroById=new Map(zero.paintings.map(p=>[p.studyId,p]));
    globalThis.location={search:'?phiPass=early'};
    const candidate=stagePlan(base.floor,base.circulation,base.physical,st,{phiAdherence:adherence});
+   globalThis.location={search:'?phiPass=classic'};
+   const classic=stagePlan(base.floor,base.circulation,base.physical,st,{phiAdherence:adherence});
+   assert.deepEqual(classic,base.exhibition,date+' comparison mode matches published curator');
+   globalThis.location={search:'?phiPass=early'};
    const origById=new Map(base.exhibition.paintings.map(p=>[p.studyId,p]));
    assert.equal(candidate.checks.complete,true,date+' complete');
    assert.equal(candidate.checks.inwardFacing,true,date+' direction');
@@ -49,13 +55,16 @@ test('early golden-section positioning keeps painting scale, safety, and room al
     assert.ok(old,date+' matching painting');
     changedRoom+=Number(p.room!==old.room);changedWall+=Number(p.surfaceId!==old.surfaceId);
     if(p.width+1e-6<old.width){shrunk++;assert.fail(date+' painting '+p.studyId+' shrank '+old.width+' -> '+p.width);}
+    assert.ok(p.height+1e-6>=old.height,date+' painting height shrank');
+    grown+=Number(p.width>old.width+1e-6);
+    movedFromZero+=Number(Math.abs(p.u-zeroById.get(p.studyId).u)>1e-6);
     assert.ok(Math.abs(p.u-old.u)<=1.500001,date+' exceeds overall movement limit');
     moved+=Number(Math.abs(p.u-old.u)>1e-6);
     paintings++;
    }
    liveAffinity+=affinity(base.exhibition);earlyAffinity+=affinity(candidate);
   }
-  totals.push({adherence,paintings,moved,shrunk,changedRoom,changedWall,
+  totals.push({adherence,paintings,moved,movedFromZero,shrunk,grown,changedRoom,changedWall,
    baseAffinity:+(liveAffinity/paintings).toFixed(4),
    earlyAffinity:+(earlyAffinity/paintings).toFixed(4)});
  }
