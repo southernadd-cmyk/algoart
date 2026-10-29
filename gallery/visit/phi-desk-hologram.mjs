@@ -1,4 +1,4 @@
-import {appendTowerBoxBatches} from './tower-box-batches.mjs';
+import {appendTowerBoxBatches} from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 
 // Consume the exact boxes emitted by the real tower shell, including every
 // floor (the full-size shell hides the active floor, this model must not).

@@ -194,6 +194,11 @@ if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnosti
  preview(){const frame=phiSquare.viewpoint();if(!frame)return;const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(frame.position);view.lookAt(frame.target);renderer.setAnimationLoop(null);renderer.render(scene,view);},
  resume(){renderer.setAnimationLoop(tick);}};
 if(GALLERY_DEBUG)window.__phiReceptionPreview={
+ hologram(){const object=phiReceptionDesk?.root;if(!object?.parent)return;
+  object.updateWorldMatrix(true,true);const view=new THREE.PerspectiveCamera(48,camera.aspect,.02,210);
+  view.position.copy(object.localToWorld(new THREE.Vector3(.25,1.95,-2.05)));
+  view.lookAt(object.localToWorld(new THREE.Vector3(.25,1.62,-.06)));
+  renderer.setAnimationLoop(null);renderer.render(scene,view);},
  speaker(kind='room'){const object=kind==='lift'?window.__phiCeilingSpeakers?.lift:window.__phiCeilingSpeakers?.rooms[0];if(!object?.parent)return;
   const view=new THREE.PerspectiveCamera(50,camera.aspect,.02,50);object.updateWorldMatrix(true,false);
   view.position.copy(object.localToWorld(new THREE.Vector3(.45,-.6,.45)));view.lookAt(object.getWorldPosition(new THREE.Vector3()));
