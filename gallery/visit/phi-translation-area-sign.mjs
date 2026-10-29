@@ -3,18 +3,14 @@
 // Four instances in the upload were reduced to one; original triangle topology preserved.
 export const TRANSLATION_SIGN_TEXT={
  title:'THE TRANSLATION AREA',
- subtitle:'Studies in transformation',
  lines:[
-  'One image.',
-  'Three interpretations.',
-  '',
-  'Source, translation',
-  'and emergence.',
-  '',
-  'An experiment in',
-  'marks becoming motion.'
+  'Four images from',
+  'PROPORTION PIECE,',
+  'reinterpreted through',
+  'TouchDesigner as',
+  'moving digital artworks.'
  ],
- footer:'PROPORTION PIECE  ×  TOUCHDESIGNER'
+ symbol:'φ'
 };
 const MESH='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YQBfAGEAYABiAGIAYwBhAGMAYgBkAGQAZQBjAGUAZABmAGYAZwBlAGcAZgBoAGgAaQBnAG0AagBrAGsAbABtAG8AbgBtAG0AbABvAHEAcABvAG8AbABxAGsAcgBxAHEAbABrAHYAcwB0AHQAdQB2AHgAcwB2AHYAdwB4AHoAcwB4AHgAeQB6AHQAcwB6AHoAewB0AH8AfAB9AH0AfgB/AIMAgACBAIEAggCDAIcAhACFAIUAhgCHAIsAiACJAIkAigCLAI8AjACNAI0AjgCPAJMAkACRAJEAkgCTAJcAlACVAJUAlgCXAJsAmACZAJkAmgCbAJ8AnACdAJ0AngCfAKMAoAChAKEAogCjAKcApAClAKUApgCnAKsAqACpAKkAqgCrAK8ArACtAK0ArgCvALMAsACxALEAsgCzALcAtAC1ALUAtgC3ALsAuAC5ALkAugC7AL8AvAC9AL0AvgC/AMMAwADBAMEAwgDDAMcAxADFAMUAxgDHAMsAyADJAMkAygDLAM8AzADNAM0AzgDPANMA0ADRANEA0gDTANcA1ADVANUA1gDXANYA1QDYANgA2QDWANkA2ADaANoA2wDZANsA2gDcANwA3QDbAN0A3ADeAN4A3wDdAN8A3gDgAOAA4QDfAOEA4ADiAOIA4wDhAOMA4gDkAOQA5QDjAOkA5gDnAOcA6ADpAOsA6gDpAOkA6ADrAO0A7ADrAOsA6ADtAOcA7gDtAO0A6ADnAPIA7wDwAPAA8QDyAPQA7wDyAPIA8wD0APYA7wD0APQA9QD2APAA7wD2APYA9wDwAA==';
 // Entrance-side placement is tied to the actual public glass doorway and
@@ -119,13 +115,11 @@ function buildPhiTranslationAreaSign(THREE,scene,place,{name,rotation,elevation=
  ctx.fillText('THE TRANSLATION',cw/2,175,cw-95);
  ctx.fillText('AREA',cw/2,255,cw-95);
  ctx.strokeStyle='#d7c6a7';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(90,310);ctx.lineTo(cw-90,310);ctx.stroke();
- ctx.fillStyle='#d9c9aa';ctx.font='italic 40px Georgia, serif';
- ctx.fillText('Studies in transformation',cw/2,390,cw-70);
- ctx.fillStyle='#f0eadc';ctx.font='45px Georgia, serif';
- const lines=['One image,','three interpretations.','','Source / translation /','emergence.','','An experiment in','marks becoming motion.'];
- lines.forEach((line,i)=>{if(line)ctx.fillText(line,cw/2,500+i*100,cw-100)});
- ctx.strokeStyle='#d7c6a7';ctx.beginPath();ctx.moveTo(100,1325);ctx.lineTo(cw-100,1325);ctx.stroke();
- ctx.font='26px Arial, sans-serif';ctx.fillText('PROPORTION PIECE  ×  TOUCHDESIGNER',cw/2,1390,cw-70);
+ // Both A-frame signs share this canvas. Keep the caption short and the φ prominent.
+ ctx.fillStyle='#f0eadc';ctx.font='50px Georgia, serif';
+ TRANSLATION_SIGN_TEXT.lines.forEach((line,i)=>ctx.fillText(line,cw/2,440+i*105,cw-100));
+ ctx.fillStyle='#d9c9aa';ctx.font='310px Georgia, serif';
+ ctx.fillText(TRANSLATION_SIGN_TEXT.symbol,cw/2,1250,cw-100);
  const texture=new THREE.CanvasTexture(canvas);
  texture.colorSpace=THREE.SRGBColorSpace;
  texture.anisotropy=4;
