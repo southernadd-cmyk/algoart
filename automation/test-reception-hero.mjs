@@ -9,6 +9,13 @@ try{
  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled,{timeout:65000});
  await page.locator('#enter').click();
  await page.waitForFunction(()=>window.__phiReceptionHeroTest?.loaded===true,{timeout:65000});
+ await page.waitForFunction(()=>window.__PP_EXPORT_SCENE__?.scene.children.some(o=>
+  o.name==='phi-reception-church-window'&&o.userData.modelLoaded),{timeout:65000});
+ const windowFaces=await page.evaluate(()=>{
+  const root=window.__PP_EXPORT_SCENE__.scene.children.find(o=>o.name==='phi-reception-church-window');
+  return !!root?.getObjectByName('church-window-exterior')&&!!root?.getObjectByName('church-window-interior');
+ });
+ if(!windowFaces)throw Error('Reception window must load on both faces');
  const before=await page.evaluate(()=>{
   const x=window.__PP_EXPORT_SCENE__;
   if(!x)throw Error('Missing scene diagnostic');

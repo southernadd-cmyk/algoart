@@ -1,3 +1,4 @@
+import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
 import {addPhiReceptionLivingMonitor} from './phi-reception-living-monitor.mjs';
@@ -1343,11 +1344,14 @@ function constructPhiTowerShell(){
   currentBatch=new Map();opaqueFloors.push(currentBatch);
   shellTransform=wt;
   for(const p of planned.pieces)append(p.w,.25,p.h,p.x+p.w/2,y-.16,p.z+p.h/2,floor);
-  for(const w of planned.physical.walls){
-   const len=w.hi-w.lo;if(len<.03)continue;
-   if(w.axis==='x')append(.20,ROOM_HEIGHT,len,w.at,y+ROOM_HEIGHT/2,(w.lo+w.hi)/2,masonry);
-   else append(len,ROOM_HEIGHT,.20,(w.lo+w.hi)/2,y+ROOM_HEIGHT/2,w.at,masonry);
+  const shellWindow=date===RECEPTION?planPhiReceptionWindow(planned.circulation.publicEntrance):null;
+  for(const w of planned.physical.walls)for(const part of receptionWindowWallParts(w,shellWindow,ROOM_HEIGHT)){
+   const len=part.hi-part.lo;if(len<.03)continue;
+   const height=part.height,centreY=y+part.bottom+height/2,c=(part.lo+part.hi)/2;
+   if(w.axis==='x')append(.20,height,len,w.at,centreY,c,masonry);
+   else append(len,height,.20,c,centreY,w.at,masonry);
   }
+  if(shellWindow)addPhiReceptionWindow(THREE,floorGroup,{opening:shellWindow,elevation:y,brick:masonry});
   for(const p of planned.pieces)append(p.w,.18,p.h,p.x+p.w/2,y+ROOM_HEIGHT+.09,p.z+p.h/2,cap);
   for(const b of planned.bridges){
    const mid=(b.from+b.to)/2;
@@ -1439,6 +1443,8 @@ function constructPhiGallery(layout,studies){
  if(exhibitDate===RECEPTION&&!receptionWallMaterial)receptionWallMaterial=createReceptionWallMaterial(THREE,{lowPower:galleryFinish.lowPower});
  if(exhibitDate===RECEPTION&&!receptionPaintedPlasterMaterial)receptionPaintedPlasterMaterial=createReceptionWallMaterial(THREE,{lowPower:galleryFinish.lowPower,finish:'painted-plaster'});
  const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;
+ const receptionWindow=exhibitDate===RECEPTION?planPhiReceptionWindow(phi.circulation.publicEntrance):null;
+ if(receptionWindow)addPhiReceptionWindow(THREE,scene,{opening:receptionWindow,elevation,brick:galleryFinish.exteriorBrick});
  // The main foyer's rear wall faces the wallpapered entrance wall.
  // Follow its physical segments so door openings and the outer brick stay intact.
  const foyer=exhibitDate===RECEPTION?[...phi.floor.mergedRooms].sort((a,b)=>b.area-a.area)[0]:null;
@@ -1447,12 +1453,13 @@ function constructPhiGallery(layout,studies){
    const slab=staticBlock(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,roomFloor);
    if(roomFloor===receptionTilePreview)alignReceptionTileUvs(slab);
  }
- for(const w of phi.physical.walls){
-  const len=w.hi-w.lo;if(len<.04)continue;
+ for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,receptionWindow,ROOM_HEIGHT)){
+  const len=part.hi-part.lo;if(len<.04)continue;
+  const centre=(part.lo+part.hi)/2,centreY=elevation+part.bottom+part.height/2;
   const finish=foyer&&w.axis==='z'&&Math.abs(w.at-rearWallAt)<.001&&foyer.pieces.some(p=>Math.abs(p.z+p.h-w.at)<.001&&w.hi>p.x&&w.lo<p.x+p.w)?receptionPaintedPlasterMaterial:roomWall;
   const mesh=w.axis==='x'
-   ?staticBlock(.19,ROOM_HEIGHT,len,w.at,elevation+ROOM_HEIGHT/2,(w.lo+w.hi)/2,finish)
-   :staticBlock(len,ROOM_HEIGHT,.19,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT/2,w.at,finish);
+   ?staticBlock(.19,part.height,len,w.at,centreY,centre,finish)
+   :staticBlock(len,part.height,.19,centre,centreY,w.at,finish);
   if(exhibitDate===RECEPTION&&finish===receptionWallMaterial){
    // Explicit reception wall faces. BoxGeometry material order:
    // +X, -X, +Y, -Y, +Z, -Z. The blue wallpaper is retained
@@ -1508,19 +1515,19 @@ function constructPhiGallery(layout,studies){
  }
  // Architectural plaster inside; metre-tiled brick veneer only on exterior faces.
  const inCell=(x,z)=>phi.pieces.some(p=>x>=p.x-.0001&&x<=p.x+p.w+.0001&&z>=p.z-.0001&&z<=p.z+p.h+.0001);
- for(const w of phi.physical.walls){
-  const len=w.hi-w.lo;if(len<.05)continue;
-  const c=(w.lo+w.hi)/2,offset=.24;
+ for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,receptionWindow,ROOM_HEIGHT)){
+  const len=part.hi-part.lo;if(len<.05)continue;
+  const c=(part.lo+part.hi)/2,offset=.24,centreY=elevation+part.bottom+part.height/2;
   if(w.axis==='x'){
    const left=inCell(w.at-offset,c),right=inCell(w.at+offset,c);
    if(left===right)continue;
    const side=left?1:-1;
-   staticBlock(.035,ROOM_HEIGHT,len,w.at+side*.113,elevation+ROOM_HEIGHT/2,c,galleryFinish.exteriorBrick);
+   staticBlock(.035,part.height,len,w.at+side*.113,centreY,c,galleryFinish.exteriorBrick);
   }else{
    const north=inCell(c,w.at-offset),south=inCell(c,w.at+offset);
    if(north===south)continue;
    const side=north?1:-1;
-   staticBlock(len,ROOM_HEIGHT,.035,c,elevation+ROOM_HEIGHT/2,w.at+side*.113,galleryFinish.exteriorBrick);
+   staticBlock(len,part.height,.035,c,centreY,w.at+side*.113,galleryFinish.exteriorBrick);
   }
  }
  // Architectural finish follows the actual phi rooms. Keep the office
