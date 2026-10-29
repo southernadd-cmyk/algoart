@@ -11,6 +11,8 @@ on:
       - 'automation/build-phi-test-room-signs.mjs'
       - 'automation/phi-stage-curation-plugin.mjs'
       - 'tests/phi-stage-curation.test.mjs'
+      - 'tests/phi-test-room-signs.test.mjs'
+      - 'tests/phi-room-sign-counts.test.mjs'
       - 'css/**'
       - 'fonts/**'
       - 'js/**'
