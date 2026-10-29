@@ -10,6 +10,7 @@ on:
       - 'test/**'
       - 'automation/build-phi-test-room-signs.mjs'
       - 'automation/phi-stage-curation-plugin.mjs'
+      - 'tests/phi-stage-curation.test.mjs'
       - 'css/**'
       - 'fonts/**'
       - 'js/**'
