@@ -20,12 +20,12 @@ test('two large 16:10 screens occupy most of a solid back wall, with no second b
 test('four rightmost animations cycle across two large screens via existing atlas playback',async()=>{
  const source=await readFile(new URL('../gallery/visit/phi-reception-living-monitor.mjs',import.meta.url),'utf8');
  const rear=await readFile(new URL('../gallery/visit/phi-reception-rear-wall-monitors.mjs',import.meta.url),'utf8');
- assert.match(source,/thirdPanelScreen:screens\\[2\\],sixthPanelScreen:screens\\[5\\]/);
+ assert.ok(source.includes('thirdPanelScreen:screens[2],sixthPanelScreen:screens[5]'));
  assert.match(source,/first.thirdPanelScreen,first.sixthPanelScreen/);
  assert.match(source,/second.thirdPanelScreen,second.sixthPanelScreen/);
  assert.match(source,/playbackLoops:/);
  assert.match(source,/remoteVisitorNearby/);
- assert.match(rear,/pairs=\\[\\[sourceScreens\\[0\\],sourceScreens\\[1\\]\\],\\[sourceScreens\\[2\\],sourceScreens\\[3\\]\\]\\]/);
+ assert.ok(rear.includes('pairs=[[sourceScreens[0],sourceScreens[1]],[sourceScreens[2],sourceScreens[3]]]'));
  assert.match(rear,/selectedSource/);
  assert.equal(rear.includes('createTouchDesignerMonitorMedia'),false);
  assert.equal(rear.includes('new THREE.VideoTexture'),false);
