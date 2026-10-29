@@ -9,7 +9,7 @@ Current live/test reception mixes [ambientCG Bricks055](https://ambientcg.com/vi
 | Gallery concrete | [Concrete Floor](https://polyhaven.com/a/concrete_floor) | Smooth pale concrete for main exhibition floors and glazed footbridges |
 | Timber rooms | [Wood Floor](https://polyhaven.com/a/wood_floor) | Three subtly different matte timber finishes, built from one shared 1K image |
 
-**Licences:** Poly Haven and ambientCG are CC0; ShareTextures Decorative Wall 2 is listed as CC0; Aman Bajwa tiles and many model props are CC BY 4.0. The project owner has confirmed with the Sketchfab lift creator that the current gallery use and hosting are allowed. The retired HDRMAPS JPG has been removed from the current site source.
+**Licences:** Poly Haven and ambientCG are CC0; ShareTextures Decorative Wall 2 is listed as CC0; Aman Bajwa tiles and many model props are CC BY 4.0. Lift: Big5shadow — Sketchfab Standard. The retired HDRMAPS JPG is no longer included in the current site source.
 
 ## Performance and lifecycle
 
@@ -56,7 +56,7 @@ The GLB's original metadata and names were examined locally:
 - sliding positions produce an approximately 1.22 m clear gap and 0.2 mm
   centre seam when closed
 
-**Update 29 October 2026:** The project owner has checked with Big5shadow and confirmed that the existing use and hosting of the lift inside PROPORTION PIECE are within the agreed licence. The model remains available in both live and test towers with no loader, hosting or visual changes. If it fails to load, the functional procedural lift remains the fallback.
+The model is available in both towers. If it does not load, the procedural lift remains the fallback.
 
 The model is low-polygon (~5,300 triangles) and ~296 KiB. It loads on
 demand after the floor scene is ready and its geometry is reused after

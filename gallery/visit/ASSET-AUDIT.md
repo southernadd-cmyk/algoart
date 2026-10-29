@@ -22,7 +22,7 @@ Date: 29 October 2026. Scope: the **live gallery** (`gallery/visit/index.html`) 
 | `twin-surface-spotlight.glb` | [Innerscene](https://www.innerscene.com/tools/library/3d-parts/twin-spot-twin-surface-spotlight-68df1e43) | CC0 |
 | `quaternius-{male,female}-meshopt.glb` | [Quaternius](https://quaternius.com/) | CC0 |
 | `human-male-female-rigged-optimized.glb` (fallback) | [lzyassoul](https://sketchfab.com/3d-models/human-models-set-malefemale-rigged-7311fcfdc03e4234900eeced42a1e669) | CC BY 4.0 |
-| `elevator-game-ready.glb` (optional) | [Big5shadow](https://sketchfab.com/3d-models/elevator-game-ready-e0ec659e907c4a35a840df99f8cd25be) | **Sketchfab Standard**; project owner confirmed existing gallery use and hosting directly with creator |
+| `elevator-game-ready.glb` (optional) | [Big5shadow](https://sketchfab.com/3d-models/elevator-game-ready-e0ec659e907c4a35a840df99f8cd25be) | **Sketchfab Standard** |
 | Embedded A-frame sign geometry | [clon6767, Chalkboard_sign_V1](https://sketchfab.com/3d-models/chalkboard-sign-v1-d989e2cf9a0744cb8bcb90c2560bb409) | CC BY 4.0; geometry preserved in `phi-translation-area-sign.mjs` |
 | Procedurally rebuilt hanging room signs | [Hospital hanging signage](https://sketchfab.com/3d-models/hospital-hanging-signage-74157aae9eb746d9a0cfe7f9c5c7f83f) | Source module attributes to Sousinho, CC BY 4.0; **independent verification pending** |
 
@@ -52,8 +52,7 @@ Date: 29 October 2026. Scope: the **live gallery** (`gallery/visit/index.html`) 
 
 ## Follow-up risks (not solved by credits alone)
 
-1. **Resolved: Sketchfab lift use confirmed.** The project owner contacted the model's creator and confirmed that current use and hosting in PROPORTION PIECE are within the licence. Both the existing model and loader are retained, with no changes to how visitors see or use the lift. Source: https://sketchfab.com/licenses.
-2. **Resolved: removed unused HDRMAPS JPG.** Deleted `test/virtual-gallery/assets/jedlina-zdroj-1k.jpg` from the current branch and subsequent Pages site build. Older Git commits can still retain historical copies; neither active tower loads it.
+1. **Lift model:** Big5shadow — Sketchfab Standard.\n2. **Resolved: removed unused HDRMAPS JPG.** Deleted `test/virtual-gallery/assets/jedlina-zdroj-1k.jpg` from the current branch and subsequent Pages site build. Older Git commits can still retain historical copies; neither active tower loads it.
 3. **Medium: unverified OpenGameArt pack.** Resolve author, original URL, and licence for `028.jpg` and `048.jpg`; they are currently loaded. Provide exact asset and licence links once recovered.
 4. **Medium: room-sign provenance.** The `phi-room-hanging-signs.mjs` source claims Sousinho / CC BY 4.0, but the original model metadata should be checked to establish author and licence conclusively.
 

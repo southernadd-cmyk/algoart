@@ -51,20 +51,16 @@ test('live and test share charcoal exterior brick on reception feature walls, wi
  assert.doesNotMatch(staging,/Vintage Framed World Map|Small succulent in planter/);
 });
 
-test('live and test credits explain confirmed lift permission and retired HDRMAPS asset',()=>{
+test('live and test credits contain only concise source, creator and licence attributions',()=>{
  for(const path of ['../gallery/visit/index.html','../test/virtual-gallery/index.html','../test/virtual-gallery/full-engine.html']){
   const html=readFileSync(new URL(path,import.meta.url),'utf8');
-  assert.match(html,/Credits and licence notes/);
-  assert.match(html,/credits\.html#licence-review/);
+  assert.match(html,/>Credits<\/a>/);
+  assert.doesNotMatch(html,/credits\\.html#licence-review|Credits and licence notes/);
  }
  for(const path of ['../gallery/visit/credits.html','../test/virtual-gallery/credits.html']){
   const html=readFileSync(new URL(path,import.meta.url),'utf8');
-  const review=html.indexOf('id="licence-review"');
-  const models=html.indexOf('<h2>Scene models</h2>');
-  assert.ok(review>0 && review<models,'Licence restrictions should precede long attribution list');
-  for(const term of ['Sketchfab Standard','permitted use confirmed','removed from the current site source','028.jpg','048.jpg','active-versus-archived asset audit']){
-   assert.ok(html.includes(term),'Missing licensing context: '+term);
-  }
+  for(const term of ['Elevator — Game Ready','Big5shadow','Sketchfab Standard','Bricks055','Decorative Wall 2','CC BY 4.0','OpenGameArt','Three.js'])assert.ok(html.includes(term),'Missing attribution: '+term);
+  assert.doesNotMatch(html,/licence-review|permission|confirmed directly|permitted use confirmed|HDRMAPS|active-versus-archived|licence notes|original world map|Mr\./i);
  }
 });
 
