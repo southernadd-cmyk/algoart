@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile,stat} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {validateTouchDesignerSixScreen} from '../gallery/visit/phi-touchdesigner-media.mjs';
+import {getTouchDesignerHereLines} from '../gallery/visit/phi-touchdesigner-info-row.mjs';
 const base=new URL('../gallery/visit/touchdesigner/',import.meta.url);
 const second=new URL('bank-two/six-screen.json',base);
 
@@ -31,4 +32,20 @@ test('the published six-screen atlas has the correct framing and verified bytes'
   assert.equal(manifest.status,'unpublished');
   assert.equal(validateTouchDesignerSixScreen(manifest),null);
  }
+});
+
+test('both info panels share the original layout and only the phi-net HERE copy differs',async()=>{
+ assert.deepEqual(getTouchDesignerHereLines(),[
+  'HERE: SOURCE → CONTOURS →',
+  'DISPLACEMENT + FEEDBACK'
+ ]);
+ const custom=['HERE: SCAN → RAISED PHI NET','GOLDEN ANGLE · 1/φ STEPS · 2 VIEWS'];
+ assert.deepEqual(getTouchDesignerHereLines(custom),custom);
+ const monitor=await readFile(new URL('../gallery/visit/phi-reception-living-monitor.mjs',import.meta.url),'utf8');
+ assert.match(monitor,/hereLines:bankId===2/);
+ for(const line of custom)assert.ok(monitor.includes(line));
+ const info=await readFile(new URL('../gallery/visit/phi-touchdesigner-info-row.mjs',import.meta.url),'utf8');
+ assert.equal(info.includes('studyDescription'),false,'No separate design on bank two');
+ assert.ok(info.includes("text(c,'WHAT IS TOUCHDESIGNER?',18,39,23"));
+ assert.ok(info.includes("text(c,'PROPORTION PIECE · TRANSLATION ROOM',18,225,11"));
 });

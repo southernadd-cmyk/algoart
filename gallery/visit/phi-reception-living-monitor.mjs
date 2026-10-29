@@ -122,15 +122,12 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
  // Third row documents the authoring process and exposes the editable project.
  const infoRow=addTouchDesignerInfoRow(THREE,{root,width,height,gap:wall.gap,rowPitch,camera,
   previewURL:infoPreviewURL,projectURL,
-  studyDescription:bankId===2?{title:'RUNNING IN TOUCHDESIGNER',lines:[
-   'A scan of the painting becomes a mesh.',
-   'Its marks rise; the paper remains flat.',
-   'The same surface appears as a gold net',
-   'on black and in the painting’s own colour.',
-   'Both rotate by the golden angle,',
-   'advance in steps of 1/φ, then return',
-   'to face the viewer. A 20-second loop.'
-  ]}:null});
+  // Same "What is TouchDesigner?" information panel on both banks.
+  // Only these two "HERE" lines describe the bank-specific network.
+  hereLines:bankId===2?[
+   'HERE: SCAN → RAISED PHI NET',
+   'GOLDEN ANGLE · 1/φ STEPS · 2 VIEWS'
+  ]:null});
  scene.add(root);
  // One 1152x480 atlas preserves both triptychs with one player and texture.
  const media=createTouchDesignerMonitorMedia(THREE,{

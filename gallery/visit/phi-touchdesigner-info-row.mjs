@@ -4,12 +4,18 @@ const PREVIEW=new URL('./touchdesigner/td-network-loop.webp',import.meta.url);
 const LOGO=new URL('./touchdesigner/touchdesigner-logo.png',import.meta.url);
 const PROJECT=new URL('./touchdesigner/pp_translation_room_watercolour.toe',import.meta.url);
 
-export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,camera,studyDescription=null,previewURL=PREVIEW,projectURL=PROJECT}){
+export function getTouchDesignerHereLines(customLines=null){
+ const standard=['HERE: SOURCE → CONTOURS →','DISPLACEMENT + FEEDBACK'];
+ return Array.isArray(customLines)&&customLines.length===2&&customLines.every(line=>typeof line==='string'&&line.trim())?customLines:standard;
+}
+
+export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,camera,hereLines=null,previewURL=PREVIEW,projectURL=PROJECT}){
  const material=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.32,roughness:.48});
  const lamp=new THREE.MeshBasicMaterial({color:0x66c59d,toneMapped:false});
  const textures=[],screens=[],contexts=[],groups=[];
  let image=null,video=null,videoPlayPending=false,logo=null,attempted=false,disposed=false,available=false,availabilityChecked=false,frame=0,last=0;
  const statuses={preview:'not-requested',logo:'not-requested',project:'not-checked'};
+ const [hereLine1,hereLine2]=getTouchDesignerHereLines(hereLines);
  function text(ctx,t,x,y,size=18,color='#eee9da',weight='normal',family='Arial, sans-serif'){
   ctx.fillStyle=color;ctx.font=weight+' '+size+'px '+family;ctx.fillText(t,x,y);
  }
@@ -32,12 +38,6 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
     text(c,'A working node-based visual model',25,116,17,'#d3cbbd');
     text(c,statuses.preview==='not-found'?'ANIMATION FILE PENDING':'Network walkthrough',25,164,14,'#86cfb1');
    }
-  }else if(index===1&&studyDescription){
-   c.fillStyle='#25363b';c.fillRect(0,0,384,5);
-   text(c,studyDescription.title,18,39,21,'#f4eee4','bold');
-   studyDescription.lines.forEach((line,i)=>text(c,line,18,70+i*20,16,'#f1e6d1'));
-   c.fillStyle='#31454a';c.fillRect(15,207,354,1);
-   text(c,'PAINTING → MESH → TWO VIEWS',18,229,15,'#a9d5bd','bold');
   }else if(index===1){
    c.fillStyle='#25363b';c.fillRect(0,0,384,5);
    text(c,'WHAT IS TOUCHDESIGNER?',18,39,23,'#f4eee4','bold');
@@ -45,8 +45,8 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
    text(c,'by Derivative, used to create',18,106,18,'#f1e6d1');
    text(c,'real-time interactive artwork.',18,130,18,'#f1e6d1');
    c.fillStyle='#31454a';c.fillRect(15,151,354,1);
-   text(c,'HERE: SOURCE → CONTOURS →',18,178,17,'#a9d5bd','bold');
-   text(c,'DISPLACEMENT + FEEDBACK',18,202,17,'#a9d5bd','bold');
+   text(c,hereLine1,18,178,17,'#a9d5bd','bold');
+   text(c,hereLine2,18,202,17,'#a9d5bd','bold');
    text(c,'PROPORTION PIECE · TRANSLATION ROOM',18,225,11,'#c4b5a1');
   }else{
    c.fillStyle='#f8f8f8';c.fillRect(0,0,384,149);
