@@ -1,11 +1,12 @@
 {
   "version": 1,
   "date": "2026-10-29",
-  "count": 4,
+  "count": 5,
   "series": [
     "Radiant Systems",
     "Connected Fields",
-    "Recursive Divisions"
+    "Recursive Divisions",
+    "Constructed Forms"
   ],
   "entries": [
     {
@@ -201,6 +202,55 @@
         "grain": 15
       },
       "altText": "Abstract algorithmic marker artwork from PROPORTION PIECE’s Radiant Systems series. 2 radiating hubs organise 59 outward marks, concentrating visual energy around the centre."
+    },
+    {
+      "id": "2026-10-29-ACL01",
+      "title": "Constructed Forms — Action Painting Study 05",
+      "orientation": "landscape",
+      "material": "action",
+      "seed": "ACL-20261029-01-08495",
+      "mode": "geometric",
+      "series": "Constructed Forms",
+      "imageFile": "2026-10-29-action-landscape-01-geometric-ACL-20261029-01-08495.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACL-20261029-01-08495&mode=geometric&el=45&den=49&cx=56&neg=27&phi=93&rec=6&spi=63&ga=92&nest=55&pen=paint&th=6&wob=44&od=5&op=68&pr=60&dry=31&curve=36&shape=49&overlap=44&rot=96&ln=1&ci=1&re=1&po=1&ar=1&pal=cmyk&cols=10&sat=82&bri=56&paper=%23f5f0e6&grain=24&material=action-v4&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "geometric",
+        "series": "Constructed Forms",
+        "seed": "ACL-20261029-01-08495",
+        "elements": 45,
+        "density": 49,
+        "complexity": 56,
+        "negativeSpace": 27,
+        "phiStrength": 93,
+        "recursion": 6,
+        "spiralInfluence": 63,
+        "goldenAngle": 92,
+        "nesting": 55,
+        "pen": "paint",
+        "thickness": 6,
+        "wobble": 44,
+        "overdraw": 5,
+        "opacity": 68,
+        "pressure": 60,
+        "dryness": 31,
+        "curveBias": 36,
+        "shapeAmount": 49,
+        "overlap": 44,
+        "rotation": 96,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "cmyk",
+        "colourCount": 10,
+        "saturation": 82,
+        "brightness": 56,
+        "paper": "#f5f0e6",
+        "grain": 24
+      },
+      "altText": "Action painting from PROPORTION PIECE's Constructed Forms system, seed ACL-20261029-01-08495. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
