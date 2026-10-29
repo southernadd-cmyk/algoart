@@ -43,8 +43,8 @@ jobs:
       - name: Install gallery test dependencies
         run: npm install --no-save --package-lock=false
       # Run the focused regression before the expensive gallery tests.
-      - name: Lift sculpture staging and cancellation regression
-        run: node --test tests/phi-sculpture-stage.test.mjs
+      - name: Lift motion, arrival preparation and sculpture staging regression
+        run: node --test tests/phi-lift-motion.test.mjs tests/gallery-entry-preparation.test.mjs tests/phi-sculpture-stage.test.mjs
       - name: Gallery public launch regression
         run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs tests/gallery-backdrop.test.mjs
       - name: Studio walkthrough links regression
@@ -60,7 +60,7 @@ jobs:
         run: |
           node --check gallery/visit/gallery-bundle.js
           test -s gallery/visit/gallery-bundle.js
-          grep -q 'gallery-phi-bundle.js' test/virtual-gallery/index.html
+          grep -q 'gallery-phi-test-room-signs-bundle.js' test/virtual-gallery/index.html
           if grep -q 'location.replace' test/virtual-gallery/index.html; then exit 1; fi
 
 
