@@ -94,11 +94,16 @@ export function addPhiTranslationAreaSign(THREE,scene,{entrance,gramophone,eleva
  place.backwardOffsetMetres=2;
  place.distanceToDoor=Math.hypot(place.x-place.door.x,place.z-place.door.z);
  place.distanceToGramophone=Math.hypot(place.x-place.gramophone.x,place.z-place.gramophone.z);
+ return buildPhiTranslationAreaSign(THREE,scene,place,{
+  name:'phi-translation-area-doorway-sign',rotation:place.yaw+Math.PI
+ });
+}
+function buildPhiTranslationAreaSign(THREE,scene,place,{name,rotation}){
  const root=new THREE.Group();
- root.name='phi-translation-area-doorway-sign';
+ root.name=name;
  root.userData.kind='gallery-label';
  root.position.set(place.x,elevation+.016,place.z);
- root.rotation.y=place.yaw+Math.PI; // Face the Translation Area; retain exact approved position.
+ root.rotation.y=rotation; // The original sign keeps its approved 180-degree facing.
  root.scale.setScalar(place.scale);
  const mesh=new THREE.Mesh(meshGeometry(THREE),
   new THREE.MeshStandardMaterial({color:'#80614a',roughness:.94,side:THREE.DoubleSide}));
@@ -138,6 +143,73 @@ export function addPhiTranslationAreaSign(THREE,scene,{entrance,gramophone,eleva
   mesh.geometry.dispose();mesh.material.dispose();
   panel.geometry.dispose();panel.material.dispose();texture.dispose();
  }};
+}
+
+// Place an identical Translation Area sign OUTSIDE the door to the room
+// with the two large screens, specifically on the main-reception side.
+// Circulation's a/b room indices identify the *real* connecting door;
+// guessing the nearest door risks placing a sign in the wrong backroom.
+export function planPhiLargeMonitorDoorSign({
+ rearRoom,foyerRoomIndex,doors=[],floor,physicalWalls=[],scale=TRANSLATION_SIGN_SCALE
+}={}){
+ if(!rearRoom||!Number.isInteger(rearRoom.room)||!Number.isInteger(foyerRoomIndex)||
+    rearRoom.room===foyerRoomIndex||!floor?.mergedRooms?.[foyerRoomIndex])return null;
+ const door=doors.find(d=>(d.a===rearRoom.room&&d.b===foyerRoomIndex)||
+                           (d.b===rearRoom.room&&d.a===foyerRoomIndex));
+ if(!door||!Number.isFinite(door.centre)||!Number.isFinite(door.at)||
+    !Number.isFinite(door.width)||!['x','z'].includes(door.axis))return null;
+ const foyer=floor.mergedRooms[foyerRoomIndex];
+ const inFoyer=(x,z,margin=.46)=>foyer.pieces.some(p=>
+  x>=p.x+margin&&x<=p.x+p.w-margin&&z>=p.z+margin&&z<=p.z+p.h-margin);
+ const x0=door.axis==='x'?door.at:door.centre;
+ const z0=door.axis==='z'?door.at:door.centre;
+ const lateral=door.width/2+(.42*scale)/2+.38;
+ const normalOptions=door.axis==='x'?[{x:-1,z:0},{x:1,z:0}]:
+                                     [{x:0,z:-1},{x:0,z:1}];
+ const normal=normalOptions.find(n=>inFoyer(x0+n.x*1,z0+n.z*1,.40));
+ if(!normal)return null; // Never place the sign on the monitor-room side.
+ const tangent=door.axis==='x'?{x:0,z:1}:{x:1,z:0};
+ const candidates=[-1,1].map(side=>({
+  x:x0+normal.x*.95+tangent.x*lateral*side,
+  z:z0+normal.z*.95+tangent.z*lateral*side,
+  side
+ }));
+ // A-frame footprint plus a walking margin must be inside the foyer,
+ // not inside a wall, the doorway, or the separate monitor room.
+ const safety=.45;
+ const wallDistance=p=>physicalWalls.reduce((best,w)=>{
+  const offset=w.axis==='x'?Math.abs(p.x-w.at):Math.abs(p.z-w.at);
+  const coordinate=w.axis==='x'?p.z:p.x;
+  const spanGap=Math.max(w.lo-coordinate,0,coordinate-w.hi);
+  return Math.min(best,Math.hypot(offset,spanGap));
+ },Infinity);
+ const safe=candidates.filter(p=>inFoyer(p.x,p.z,safety)&&
+                                    wallDistance(p)>.52);
+ if(!safe.length)return null;
+ safe.sort((a,b)=>wallDistance(b)-wallDistance(a));
+ const chosen=safe[0];
+ const placement={
+  ...chosen,yaw:Math.atan2(normal.x,normal.z),normal,
+  scale,zone:'reception-large-monitor-room-door',
+  door:{x:x0,z:z0},doorAxis:door.axis,doorWidth:door.width,
+  doorRooms:[door.a,door.b],rearRoom:rearRoom.room,
+  foyerRoom:foyerRoomIndex,lateralClearance:lateral-door.width/2-(.42*scale)/2,
+  distanceToDoor:Math.hypot(chosen.x-x0,chosen.z-z0)
+ };
+ return placement;
+}
+export function addPhiLargeMonitorDoorSign(THREE,scene,{
+ rearRoom,foyerRoomIndex,doors,floor,physicalWalls,elevation=0
+}={}){
+ const place=planPhiLargeMonitorDoorSign({
+  rearRoom,foyerRoomIndex,doors,floor,physicalWalls
+ });
+ if(!place)return null;
+ // Reuse the same approved uploaded 152-face A-frame and the same canvas
+ // lettering as the existing Translation Area sign. Its front faces the foyer.
+ return buildPhiTranslationAreaSign(THREE,scene,{
+  ...place,yaw:place.yaw
+ },{name:'phi-translation-area-large-monitor-entrance-sign',rotation:place.yaw});
 }
 
 // A second copy of the same credited A-frame, beside reception's lift.

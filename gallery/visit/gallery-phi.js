@@ -2,7 +2,7 @@ import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} f
 import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
 import {addPhiReceptionLivingMonitor,planPhiReceptionMonitorWall} from './phi-reception-living-monitor.mjs';
-import {addPhiTranslationAreaSign,addPhiTowerLiftSign} from './phi-translation-area-sign.mjs';
+import {addPhiTranslationAreaSign,addPhiTowerLiftSign,addPhiLargeMonitorDoorSign} from './phi-translation-area-sign.mjs';
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
 import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
@@ -1858,6 +1858,25 @@ function constructPhiGallery(layout,studies){
     room:monitorRoom,rearRoom:rearRoom||null,lift:furnishing.lift,
     physicalWalls:phi.physical.walls,elevation,camera
    });
+   // Place the matching A-frame in the MAIN reception outside the actual
+   // doorway leading to the second backroom, not inside either monitor room.
+   const monitorDoorSign=addPhiLargeMonitorDoorSign(THREE,scene,{
+    rearRoom:rearRoom||null,foyerRoomIndex:furnishing.desk?.room??phi.floor.mergedRooms.indexOf(foyer),
+    doors:phi.circulation.doors,floor:phi.floor,
+    physicalWalls:phi.physical.walls,elevation
+   });
+   if(monitorDoorSign)phiSquareObstacles.push({
+    x:monitorDoorSign.placement.x,z:monitorDoorSign.placement.z,
+    width:.42*monitorDoorSign.placement.scale+.08,
+    depth:.34*monitorDoorSign.placement.scale+.08,
+    yaw:monitorDoorSign.placement.yaw,kind:'large-monitor-room-translation-sign'
+   });
+   window.__phiLargeMonitorEntranceSignDiagnostics={
+    rearRoom:rearRoom||null,placed:!!monitorDoorSign,
+    placement:monitorDoorSign?.placement||null,
+    meshFaces:monitorDoorSign?.meshFaces||0,
+    get visible(){return !!scene.getObjectByName('phi-translation-area-large-monitor-entrance-sign');}
+   };
    // Always expose placement diagnostics on test; this needs to be
    // verifiable even when debug mode is disabled.
    window.__phiLivingMonitorDiagnostics={
