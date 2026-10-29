@@ -1,8 +1,8 @@
 // PROPORTION PIECE — second backroom, two large split-screen monitors.
 // Each displays the rightmost video of BOTH rows in its original monitor bank.
-// Golden-section (1/φ) layout: two truly φ-aspect rectangular frames, one
-// large and one small, in an asymmetric composition. The 384×240 videos are
-// fitted inside their golden frames without cropping or distorting the art.
+// Golden-section (1/φ) layout: two borderless φ-aspect video panes, one
+// large and one small, with seamlessly abutting recursive copies in the gaps.
+// Source footage is center-cropped by <1.2% to fit each golden main pane.
 // Both original six-panel video atlases/textures remain the only decoders.
 export const MONITOR_PHI=(1+Math.sqrt(5))/2;
 export const MONITOR_INV_PHI=1/MONITOR_PHI;
@@ -16,13 +16,11 @@ export function planPhiGoldenScreenSplit(width,height){
  const leftColumn=usableWidth*MONITOR_INV_PHI;
  const rightColumn=usableWidth-leftColumn;
  const pane=(side,columnW)=>{
-  // A golden rectangle is φ times as wide as high, and both fit the
-  // monitor's usable bounds. Keep the underlying video in its native 8:5.
+  // Match each face to its entire golden rectangle. The source UVs are
+  // center-cropped in sync(), not letterboxed or distorted.
   const w=Math.min(columnW,(height-2*margin)*MONITOR_PHI);
   const h=w/MONITOR_PHI;
-  const inset=Math.min(.018,w*.036);
-  const videoWidth=Math.min(w-2*inset,(h-2*inset)*VIDEO_ASPECT);
-  const videoHeight=videoWidth/VIDEO_ASPECT;
+  const videoWidth=w,videoHeight=h;
   const x=side===0
    ?-width/2+margin+leftColumn/2
    : width/2-margin-rightColumn/2;
@@ -84,6 +82,26 @@ export function planPhiRecursiveVideoFill(width,height,panes,{maxDepth=5,maxTile
  return tiles;
 }
 
+// Fit a 384×240 panel into any rectangular tile without stretching, and stay
+// half a source pixel inside its atlas cell to avoid neighbouring-panel bleed.
+function coverPanelUV(original,aspect){
+ let minU=Infinity,maxU=-Infinity,minV=Infinity,maxV=-Infinity;
+ for(let j=0;j<original.count;j++){
+  minU=Math.min(minU,original.getX(j));maxU=Math.max(maxU,original.getX(j));
+  minV=Math.min(minV,original.getY(j));maxV=Math.max(maxV,original.getY(j));
+ }
+ if(!(maxU>minU&&maxV>minV))return null;
+ const rangeU=maxU-minU,rangeV=maxV-minV;
+ let u0=0,u1=1,v0=0,v1=1;
+ if(aspect>VIDEO_ASPECT){const f=VIDEO_ASPECT/aspect;v0=(1-f)/2;v1=1-v0;}
+ else {const f=aspect/VIDEO_ASPECT;u0=(1-f)/2;u1=1-u0;}
+ // One half-pixel from a 384 × 240 panel, independent of atlas size.
+ const edgeU=rangeU/(2*384),edgeV=rangeV/(2*240);
+ const left=minU+u0*rangeU+edgeU,right=minU+u1*rangeU-edgeU;
+ const bottom=minV+v0*rangeV+edgeV,top=minV+v1*rangeV-edgeV;
+ return {minU,maxU,minV,maxV,left,right,bottom,top,key:[minU,maxU,minV,maxV].join(',')};
+}
+
 export function planPhiReceptionRearWallMonitors(wall){
  if(!wall?.fromPhysical||!Number.isFinite(wall.span)||wall.span<2.65)return null;
  const edge=.13,gap=.14,limitHeight=3.7;
@@ -112,7 +130,6 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
  root.rotation.y=plan.yaw;
  const bezelMaterial=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.34,roughness:.46});
  const matteMaterial=new THREE.MeshBasicMaterial({color:0x101819,toneMapped:false,side:THREE.DoubleSide});
- const trimMaterial=new THREE.MeshBasicMaterial({color:0xbca36c,toneMapped:false,side:THREE.DoubleSide});
  const videoFaces=[],mosaics=[],ownedGeometry=[];
  pairs.forEach((pair,bankIndex)=>{
   const unit=new THREE.Group();unit.name='large-monitor-'+(bankIndex+1);
@@ -126,9 +143,11 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
   // panel 6 of the same existing atlas, so this adds NO decoder or texture.
   const positions=[];
   for(const tile of recursiveTiles){
-   const inset=Math.min(.002,Math.min(tile.width,tile.height)*.07);
-   const x0=tile.x-tile.width/2+inset,x1=tile.x+tile.width/2-inset;
-   const y0=tile.y-tile.height/2+inset,y1=tile.y+tile.height/2-inset;
+   // Slight overscan prevents subpixel cracks from exposing the dark matte
+   // when antialiasing rounds neighbouring triangle edges differently.
+   const bleed=.001;
+   const x0=tile.x-tile.width/2-bleed,x1=tile.x+tile.width/2+bleed;
+   const y0=tile.y-tile.height/2-bleed,y1=tile.y+tile.height/2+bleed;
    // Two front-facing triangles (top-left, bottom-left, top-right, etc).
    positions.push(x0,y1,0,x0,y0,0,x1,y1,0,
                   x0,y0,0,x1,y0,0,x1,y1,0);
@@ -138,17 +157,14 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
   mosaicGeometry.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(recursiveTiles.length*12),2));
   const mosaic=new THREE.Mesh(mosaicGeometry,pair[1].material);
   mosaic.name='recursive-smallest-video-mosaic';
-  mosaic.position.z=.052; // Behind gold frames, in front of the black matte.
+  mosaic.position.z=.052; // Behind both full-bleed main videos; in front of matte.
   mosaic.userData.sourcePanel=6;
   mosaic.userData.tileCount=recursiveTiles.length;
   unit.add(mosaic);ownedGeometry.push(mosaicGeometry);
   mosaics.push({face:mosaic,source:pair[1],uvKey:''});
   composition.panes.forEach((pane,rowIndex)=>{
-   const frame=new THREE.Mesh(new THREE.PlaneGeometry(pane.width,pane.height),trimMaterial);
-   frame.position.set(pane.x,pane.y,.053);frame.name='golden-video-frame';
-   unit.add(frame);ownedGeometry.push(frame.geometry);
-   // Each source mesh has its own live UV crop (top-right or middle-right)
-   // within the shared 3×2 WebM atlas. Borrow the original material and UVs.
+   // Full-bleed golden video plane: no coloured frame, letterbox or inset.
+   // Each source mesh has its live UV crop within the shared 3×2 atlas.
    const face=new THREE.Mesh(new THREE.PlaneGeometry(pane.videoWidth,pane.videoHeight),pair[rowIndex].material);
    face.name='large-monitor-video-pane';
    face.position.set(pane.x,pane.y,.057);
@@ -168,9 +184,15 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
    if(face.material!==source.material)face.material=source.material;
    const dest=face.geometry.getAttribute('uv'),original=source.geometry.getAttribute('uv');
    if(dest.count!==original.count)continue;
+   const targetAspect=face.geometry.parameters.width/face.geometry.parameters.height;
+   const bounds=coverPanelUV(original,targetAspect);
+   if(!bounds)continue;
    let changed=false;
    for(let i=0;i<dest.count;i++){
-    const x=original.getX(i),y=original.getY(i);
+    const u=(original.getX(i)-bounds.minU)/(bounds.maxU-bounds.minU);
+    const v=(original.getY(i)-bounds.minV)/(bounds.maxV-bounds.minV);
+    const x=bounds.left+(bounds.right-bounds.left)*u;
+    const y=bounds.bottom+(bounds.top-bounds.bottom)*v;
     if(dest.getX(i)!==x||dest.getY(i)!==y){dest.setXY(i,x,y);changed=true;}
    }
    if(changed)dest.needsUpdate=true;
@@ -184,24 +206,14 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
    if(face.material!==source.material)face.material=source.material;
    const sourceUV=source.geometry.getAttribute('uv');
    if(!sourceUV||sourceUV.count<4)continue;
-   let minU=Infinity,maxU=-Infinity,minV=Infinity,maxV=-Infinity;
-   for(let j=0;j<sourceUV.count;j++){
-    minU=Math.min(minU,sourceUV.getX(j));maxU=Math.max(maxU,sourceUV.getX(j));
-    minV=Math.min(minV,sourceUV.getY(j));maxV=Math.max(maxV,sourceUV.getY(j));
-   }
-   const key=[minU,maxU,minV,maxV].join(',');
-   if(key===mosaic.uvKey)continue;
-   mosaic.uvKey=key;
+   const initial=coverPanelUV(sourceUV,VIDEO_ASPECT);
+   if(!initial||initial.key===mosaic.uvKey)continue;
+   mosaic.uvKey=initial.key;
    const dest=face.geometry.getAttribute('uv');
    for(let i=0;i<recursiveTiles.length;i++){
     const tile=recursiveTiles[i],aspect=tile.width/tile.height;
-    // Cover each tile without stretching. Only the small duplicates crop;
-    // the two main golden-framed versions remain fully uncropped.
-    let u0=0,u1=1,v0=0,v1=1;
-    if(aspect>VIDEO_ASPECT){const scale=VIDEO_ASPECT/aspect;v0=(1-scale)/2;v1=1-v0;}
-    else {const scale=aspect/VIDEO_ASPECT;u0=(1-scale)/2;u1=1-u0;}
-    const left=minU+(maxU-minU)*u0,right=minU+(maxU-minU)*u1;
-    const bottom=minV+(maxV-minV)*v0,top=minV+(maxV-minV)*v1;
+    // Each repeat fills its tile without aspect distortion or atlas bleed.
+    const {left,right,bottom,top}=coverPanelUV(sourceUV,aspect);
     const j=i*6;
     dest.setXY(j,left,top);dest.setXY(j+1,left,bottom);
     dest.setXY(j+2,right,top);dest.setXY(j+3,left,bottom);
@@ -227,6 +239,7 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
    sourcePanels:[3,6],sourceBanks:[1,2],layout:'progressive golden video recursion',
    recursiveTilesPerScreen:recursiveTiles.length,recursiveVideoTiles:2*recursiveTiles.length,
    recursiveMeshCount:mosaics.length,recursiveSourcePanel:6,
+   seamlessTiles:true,visibleVideoBorders:false,
    ratio:composition.ratio,split:composition.split,
    paneSizes:composition.panes.map(p=>({width:p.width,height:p.height,
     sourcePanel:p.sourcePanel})),
@@ -236,7 +249,7 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
    if(disposed)return;
    disposed=true;cancelAnimationFrame(frameId);scene.remove(root);
    ownedGeometry.forEach(g=>g.dispose());
-   bezelMaterial.dispose();matteMaterial.dispose();trimMaterial.dispose();
+   bezelMaterial.dispose();matteMaterial.dispose();
    // Borrowed video materials / video textures belong to the original banks.
   }
  };
