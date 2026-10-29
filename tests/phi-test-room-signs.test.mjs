@@ -37,8 +37,8 @@ test('two directional faces name the room beyond each doorway',()=>{
  assert.equal(inner.plusRoom,1);assert.equal(inner.minusRoom,0);
  assert.equal(inner.faces.positive.label,'Room 1 · A Marker Palette');
  assert.equal(inner.faces.negative.label,'Room 2 · Colour with Weight');
- assert.equal(lift.faces.positive.label,'Room 1 · A Marker Palette');
- assert.equal(lift.faces.negative.label,'Archive lift');
+ assert.equal(lift.faces.positive.label,'Archive lift');
+ assert.equal(lift.faces.negative.label,'Room 1 · A Marker Palette');
 });
 test('z-axis and reversed a/b identifiers still name the destination',()=>{
  const phi={
