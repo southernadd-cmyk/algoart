@@ -50,14 +50,14 @@ test('both info panels share the original layout and only the phi-net HERE copy 
  assert.ok(info.includes("text(c,'PROPORTION PIECE · TRANSLATION ROOM',18,225,11"));
 });
 
-test('the first installation omits only the left network panel in its bottom row',async()=>{
+test('both installations omit the bottom-left network panel, retaining middle and right',async()=>{
  assert.deepEqual(getTouchDesignerInfoPanelIndices(false),[1,2],
   'middle explanation and right-hand project download must keep their positions');
  assert.deepEqual(getTouchDesignerInfoPanelIndices(true),[0,1,2],
-  'second installation retains its model preview');
+  'optional preview mode is still supported by the helper');
  const room=await readFile(new URL('../gallery/visit/phi-reception-living-monitor.mjs',import.meta.url),'utf8');
  const info=await readFile(new URL('../gallery/visit/phi-touchdesigner-info-row.mjs',import.meta.url),'utf8');
- assert.match(room,/showNetworkPreview:bankId!==1/);
+ assert.match(room,/previewURL:infoPreviewURL,projectURL,showNetworkPreview:false/);
  assert.match(room,/screenCount:6\+infoRow\.panelCount/);
  assert.match(room,/first\.totalScreenCount=first\.screenCount\+second\.screenCount/);
  assert.match(info,/group\.position\.set\(\(i-1\)\*\(width\+gap\),-2\*rowPitch,0\)/);
@@ -65,5 +65,5 @@ test('the first installation omits only the left network panel in its bottom row
  assert.match(info,/ray\.intersectObject\(screens\[2\],false\)/,
   'right-hand download must remain clickable');
  assert.match(info,/if\(showNetworkPreview && previewURL\.pathname/,
-  'do not load unused network-video assets for first installation');
+  'do not load unused network-video assets for either installation');
 });
