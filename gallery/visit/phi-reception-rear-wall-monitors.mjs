@@ -34,6 +34,56 @@ export function planPhiGoldenScreenSplit(width,height){
   panes:[pane(0,leftColumn),pane(1,rightColumn)]};
 }
 
+
+/**
+ * Partition every unused part of the display with progressive φ subdivisions.
+ * All tiles are calculated at mount time; this function never touches video
+ * playback or creates any Three.js resources.
+ */
+export function planPhiRecursiveVideoFill(width,height,panes,{maxDepth=5,maxTiles=96,minSide=.13}={}){
+ if(!(width>0&&height>0)||!Array.isArray(panes))return [];
+ const rect=(x0,y0,x1,y1)=>({x0,y0,x1,y1});
+ let unused=[rect(-width/2,-height/2,width/2,height/2)];
+ for(const pane of panes){
+  if(!pane||!(pane.width>0&&pane.height>0))return [];
+  const cut=rect(pane.x-pane.width/2,pane.y-pane.height/2,
+                 pane.x+pane.width/2,pane.y+pane.height/2);
+  const remaining=[];
+  for(const r of unused){
+   const x0=Math.max(r.x0,cut.x0),y0=Math.max(r.y0,cut.y0);
+   const x1=Math.min(r.x1,cut.x1),y1=Math.min(r.y1,cut.y1);
+   if(x1<=x0||y1<=y0){remaining.push(r);continue;}
+   if(y0>r.y0)remaining.push(rect(r.x0,r.y0,r.x1,y0));
+   if(y1<r.y1)remaining.push(rect(r.x0,y1,r.x1,r.y1));
+   if(x0>r.x0)remaining.push(rect(r.x0,y0,x0,y1));
+   if(x1<r.x1)remaining.push(rect(x1,y0,r.x1,y1));
+  }
+  unused=remaining;
+ }
+ const tiles=[];
+ const visit=(r,depth,reverse)=>{
+  const w=r.x1-r.x0,h=r.y1-r.y0;
+  if(w<=0||h<=0)return;
+  // A bounded tessellation: split the longest edge at 1/φ and stop before
+  // screen-space fragments turn into unnecessary geometry.
+  if(depth>=maxDepth||Math.min(w,h)<minSide||tiles.length+2*(maxDepth-depth)>=maxTiles){
+   tiles.push({x:(r.x0+r.x1)/2,y:(r.y0+r.y1)/2,width:w,height:h,depth});
+   return;
+  }
+  if(w>=h){
+   const split=r.x0+w*(reverse?1-MONITOR_INV_PHI:MONITOR_INV_PHI);
+   visit(rect(r.x0,r.y0,split,r.y1),depth+1,!reverse);
+   visit(rect(split,r.y0,r.x1,r.y1),depth+1,reverse);
+  }else{
+   const split=r.y0+h*(reverse?1-MONITOR_INV_PHI:MONITOR_INV_PHI);
+   visit(rect(r.x0,r.y0,r.x1,split),depth+1,!reverse);
+   visit(rect(r.x0,split,r.x1,r.y1),depth+1,reverse);
+  }
+ };
+ unused.forEach((r,i)=>visit(r,0,i%2===1));
+ return tiles;
+}
+
 export function planPhiReceptionRearWallMonitors(wall){
  if(!wall?.fromPhysical||!Number.isFinite(wall.span)||wall.span<2.65)return null;
  const edge=.13,gap=.14,limitHeight=3.7;
@@ -52,17 +102,18 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
  const pairs=[[sourceScreens[0],sourceScreens[1]],[sourceScreens[2],sourceScreens[3]]];
  const composition=planPhiGoldenScreenSplit(plan.screenWidth-.034,plan.screenHeight-.034);
  if(!composition)return null;
+ const recursiveTiles=planPhiRecursiveVideoFill(plan.screenWidth-.034,plan.screenHeight-.034,composition.panes);
  const root=new THREE.Group();
  root.name='phi-reception-two-large-rear-wall-monitors';
  root.userData.kind='phi-rear-wall-two-large-monitors';
  root.userData.sourcePanels=[3,6];
- root.userData.layout='simultaneous golden rectangles';
+ root.userData.layout='simultaneous golden rectangles and progressive video recursion';
  root.position.set(plan.x,elevation+2.55,plan.z);
  root.rotation.y=plan.yaw;
  const bezelMaterial=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.34,roughness:.46});
  const matteMaterial=new THREE.MeshBasicMaterial({color:0x101819,toneMapped:false,side:THREE.DoubleSide});
  const trimMaterial=new THREE.MeshBasicMaterial({color:0xbca36c,toneMapped:false,side:THREE.DoubleSide});
- const videoFaces=[],ownedGeometry=[];
+ const videoFaces=[],mosaics=[],ownedGeometry=[];
  pairs.forEach((pair,bankIndex)=>{
   const unit=new THREE.Group();unit.name='large-monitor-'+(bankIndex+1);
   unit.position.x=(bankIndex-.5)*(plan.screenWidth+plan.gap);
@@ -70,6 +121,28 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
   bezel.name='large-monitor-bezel';unit.add(bezel);ownedGeometry.push(bezel.geometry);
   const base=new THREE.Mesh(new THREE.PlaneGeometry(plan.screenWidth-.024,plan.screenHeight-.024),matteMaterial);
   base.name='golden-split-matte';base.position.z=.050;unit.add(base);ownedGeometry.push(base.geometry);
+
+  // One batched mesh per display for every small video copy. The source is
+  // panel 6 of the same existing atlas, so this adds NO decoder or texture.
+  const positions=[];
+  for(const tile of recursiveTiles){
+   const inset=Math.min(.002,Math.min(tile.width,tile.height)*.07);
+   const x0=tile.x-tile.width/2+inset,x1=tile.x+tile.width/2-inset;
+   const y0=tile.y-tile.height/2+inset,y1=tile.y+tile.height/2-inset;
+   // Two front-facing triangles (top-left, bottom-left, top-right, etc).
+   positions.push(x0,y1,0,x0,y0,0,x1,y1,0,
+                  x0,y0,0,x1,y0,0,x1,y1,0);
+  }
+  const mosaicGeometry=new THREE.BufferGeometry();
+  mosaicGeometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  mosaicGeometry.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(recursiveTiles.length*12),2));
+  const mosaic=new THREE.Mesh(mosaicGeometry,pair[1].material);
+  mosaic.name='recursive-smallest-video-mosaic';
+  mosaic.position.z=.052; // Behind gold frames, in front of the black matte.
+  mosaic.userData.sourcePanel=6;
+  mosaic.userData.tileCount=recursiveTiles.length;
+  unit.add(mosaic);ownedGeometry.push(mosaicGeometry);
+  mosaics.push({face:mosaic,source:pair[1],uvKey:''});
   composition.panes.forEach((pane,rowIndex)=>{
    const frame=new THREE.Mesh(new THREE.PlaneGeometry(pane.width,pane.height),trimMaterial);
    frame.position.set(pane.x,pane.y,.053);frame.name='golden-video-frame';
@@ -102,6 +175,40 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
    }
    if(changed)dest.needsUpdate=true;
   }
+
+  // Source UV coordinates change once the asynchronously loaded video atlas
+  // replaces the fallback canvas. Only rewrite the merged geometry at that
+  // transition: never upload 68 sets of UVs every animation frame.
+  for(const mosaic of mosaics){
+   const {face,source}=mosaic;
+   if(face.material!==source.material)face.material=source.material;
+   const sourceUV=source.geometry.getAttribute('uv');
+   if(!sourceUV||sourceUV.count<4)continue;
+   let minU=Infinity,maxU=-Infinity,minV=Infinity,maxV=-Infinity;
+   for(let j=0;j<sourceUV.count;j++){
+    minU=Math.min(minU,sourceUV.getX(j));maxU=Math.max(maxU,sourceUV.getX(j));
+    minV=Math.min(minV,sourceUV.getY(j));maxV=Math.max(maxV,sourceUV.getY(j));
+   }
+   const key=[minU,maxU,minV,maxV].join(',');
+   if(key===mosaic.uvKey)continue;
+   mosaic.uvKey=key;
+   const dest=face.geometry.getAttribute('uv');
+   for(let i=0;i<recursiveTiles.length;i++){
+    const tile=recursiveTiles[i],aspect=tile.width/tile.height;
+    // Cover each tile without stretching. Only the small duplicates crop;
+    // the two main golden-framed versions remain fully uncropped.
+    let u0=0,u1=1,v0=0,v1=1;
+    if(aspect>VIDEO_ASPECT){const scale=VIDEO_ASPECT/aspect;v0=(1-scale)/2;v1=1-v0;}
+    else {const scale=aspect/VIDEO_ASPECT;u0=(1-scale)/2;u1=1-u0;}
+    const left=minU+(maxU-minU)*u0,right=minU+(maxU-minU)*u1;
+    const bottom=minV+(maxV-minV)*v0,top=minV+(maxV-minV)*v1;
+    const j=i*6;
+    dest.setXY(j,left,top);dest.setXY(j+1,left,bottom);
+    dest.setXY(j+2,right,top);dest.setXY(j+3,left,bottom);
+    dest.setXY(j+4,right,bottom);dest.setXY(j+5,right,top);
+   }
+   dest.needsUpdate=true;
+  }
  }
  sync();
  let disposed=false,last=0,frameId=0;
@@ -115,13 +222,16 @@ export function addPhiReceptionRearWallMonitors(THREE,scene,{wall,elevation,came
   if(isNearby())sync();
  }
  frameId=requestAnimationFrame(tick);
- return {root,screenCount:2,videoPaneCount:4,isNearby,
+ return {root,screenCount:2,videoPaneCount:4,recursiveTilesPerScreen:recursiveTiles.length,isNearby,
   get diagnostics(){return {placed:!disposed,screenCount:2,videoPaneCount:4,
-   sourcePanels:[3,6],sourceBanks:[1,2],layout:'simultaneous golden rectangles',
+   sourcePanels:[3,6],sourceBanks:[1,2],layout:'progressive golden video recursion',
+   recursiveTilesPerScreen:recursiveTiles.length,recursiveVideoTiles:2*recursiveTiles.length,
+   recursiveMeshCount:mosaics.length,recursiveSourcePanel:6,
    ratio:composition.ratio,split:composition.split,
    paneSizes:composition.panes.map(p=>({width:p.width,height:p.height,
     sourcePanel:p.sourcePanel})),
-   mount:plan,sharedVideoMaterials:videoFaces.map(p=>p.face.material===p.source.material)};},
+   mount:plan,sharedVideoMaterials:videoFaces.map(p=>p.face.material===p.source.material),
+   sharedRecursiveMaterials:mosaics.map(p=>p.face.material===p.source.material)};},
   dispose(){
    if(disposed)return;
    disposed=true;cancelAnimationFrame(frameId);scene.remove(root);
