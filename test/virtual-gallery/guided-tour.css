@@ -1,5 +1,5 @@
 /* Test-only guided tour. Never linked from /gallery/visit/. */
-.topbar #testGuidedTour{background:#c8af77;color:#263a30;border-color:#b99d64;font-weight:600}
+.topbar #testGuidedTour{cursor:pointer;touch-action:manipulation;background:#c8af77;color:#263a30;border-color:#b99d64;font-weight:600}
 .topbar #testGuidedTour:disabled{opacity:.6;cursor:not-allowed}
 #testTourPanel{position:fixed;z-index:39;left:16px;bottom:93px;width:min(346px,calc(100vw - 32px));padding:15px 17px 12px;color:#24392d;background:#f3f0e5f5;border:1px solid #a8aa98;border-radius:9px;box-shadow:0 9px 36px #11221c4a;font:14px/1.45 system-ui,sans-serif}
 #testTourPanel[hidden]{display:none!important}
