@@ -11,7 +11,13 @@ test('route walks through a door rather than through a separating wall',()=>{
  const path=findTourPath(start,end,safe,root);
  assert.ok(path&&path.length>2,'should find a route around the solid wall sections');
  for(let i=1;i<path.length;i++)assert.ok(clearTourLine(path[i-1],path[i],safe), 'no leg crosses a wall');
- assert.ok(path.some(p=>p.z>3&&p.z<5),'route goes through the available door');
+ const crossesDoor=path.slice(1).some((p,i)=>{
+   const a=path[i];
+   if((a.x-5)*(p.x-5)>0||a.x===p.x)return false;
+   const z=a.z+(5-a.x)/(p.x-a.x)*(p.z-a.z);
+   return z>=3&&z<=5;
+ });
+ assert.ok(crossesDoor,'route passes through the available door');
 });
 test('unreachable artworks are excluded safely',()=>{
  const root={x:0,z:0,w:10,h:8};
