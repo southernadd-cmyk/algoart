@@ -1,6 +1,5 @@
 name: Deploy ALGO ART to Pages
 # Deployment refresh: restore the test tower to the live baseline.
-# The guided-tour experiment is built only for the test tower entry point.
 
 on:
   push:
@@ -61,9 +60,7 @@ jobs:
           npm run gallery:bundle
           npm run gallery:bundle:phi
           npm run gallery:bundle:post-test
-          node automation/build-test-guided-tour.mjs
-          node --check gallery/visit/gallery-phi-tour-test-bundle.js
-          node --test tests/phi-guided-tour.test.mjs tests/phi-postprocessing.test.mjs
+          node --test tests/phi-postprocessing.test.mjs
       - name: Validate public gallery before uploading the site
         run: |
           node automation/validate-phi-archive.mjs
