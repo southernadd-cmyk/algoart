@@ -1854,6 +1854,9 @@ function constructPhiGallery(layout,studies){
    window.__phiLivingMonitorDiagnostics={
     selectedRoom:monitorRoom||null,placed:!!phiReceptionLivingMonitor,
     screenCount:phiReceptionLivingMonitor?.screenCount||0,
+    bankCount:phiReceptionLivingMonitor?.bankCount||0,
+    totalScreenCount:phiReceptionLivingMonitor?.totalScreenCount||0,
+    get secondBank(){return phiReceptionLivingMonitor?.secondBankDiagnostics||null;},
     rowCount:phiReceptionLivingMonitor?.rowCount||0,
     wall:phiReceptionLivingMonitor?.mount||null,
     localPosition:phiReceptionLivingMonitor?.root.position.toArray()||null,

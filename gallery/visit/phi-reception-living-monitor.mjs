@@ -46,13 +46,37 @@ export function planPhiReceptionMonitorWall(room, lift, physicalWalls=[]) {
  };
 }
 
-export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWalls=[],elevation,camera}){
+// Keep both banks on the proven solid wall, with a clear central gap.
+export function planPhiReceptionMonitorBanks(room,lift,physicalWalls=[]){
+ const wall=planPhiReceptionMonitorWall(room,lift,physicalWalls);if(!wall)return [];
+ const bankGap=.38,width=Math.min(wall.width,(wall.span-.54-bankGap-4*wall.gap)/6);
+ const bankWidth=3*width+2*wall.gap,offset=(bankWidth+bankGap)/2;
+ return [-1,1].map(side=>({...wall,width,
+  x:wall.x+Math.cos(wall.yaw)*side*offset,
+  z:wall.z-Math.sin(wall.yaw)*side*offset}));
+}
+export function addPhiReceptionLivingMonitor(THREE,scene,options){
+ const mounts=planPhiReceptionMonitorBanks(options.room,options.lift,options.physicalWalls);
+ if(!mounts.length)return null;
+ const first=addMonitorBank(THREE,scene,{...options,mount:mounts[0]});
+ const second=addMonitorBank(THREE,scene,{...options,mount:mounts[1],bankId:2,
+  manifestURL:new URL('./touchdesigner/bank-two/six-screen.json',import.meta.url),
+  previewURL:new URL('./touchdesigner/td-network-loop.webp',import.meta.url)});
+ if(!first||!second){first?.dispose();second?.dispose();return null;}
+ const disposeFirst=first.dispose;
+ first.bankCount=2;first.totalScreenCount=18;
+ first.banks=[first.root,second.root];
+ Object.defineProperty(first,'secondBankDiagnostics',{get:()=>({mount:second.mount,screenCount:second.screenCount,media:second.mediaDiagnostics,info:second.infoDiagnostics})});
+ first.dispose=()=>{disposeFirst();second.dispose();};return first;
+}
+function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera,mount,bankId=1,manifestURL=TOUCHDESIGNER_SIX_SCREEN_MANIFEST,previewURL=null}){
  // phi.world is deliberately NOT required here: it is assigned only after
  // constructPhiGallery returns. Requiring it silently removed every monitor.
- const wall=planPhiReceptionMonitorWall(room,lift,physicalWalls);
+ const wall=mount||planPhiReceptionMonitorWall(room,lift,physicalWalls);
  if(!wall)return null;
  const root=new THREE.Group();
- root.name='phi-reception-three-living-monitors';
+ root.name=bankId===1?'phi-reception-three-living-monitors':'phi-reception-monitor-bank-two';
+ root.userData.bankId=bankId;
  root.userData.kind='reception-nine-living-monitors';
  root.userData.mount={...wall};
  // Raise the stacked display to fit three full rows within the 5.2m room.
@@ -98,12 +122,12 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
  scene.add(root);
  // One 1152x480 atlas preserves both triptychs with one player and texture.
  const media=createTouchDesignerMonitorMedia(THREE,{
-  screens,manifestURL:TOUCHDESIGNER_SIX_SCREEN_MANIFEST,followActiveIndex:false
+  screens,manifestURL,followActiveIndex:false
  });
 
  // Show the actual, reproducible study on monitor one even before an
  // authentic TouchDesigner export is available. Load only when approached.
- const sourceImageURL=new URL('../2026-10-27/2026-10-27-oil-landscape-02-spiral-OL-20261027-02-57201.jpg',import.meta.url);
+ const sourceImageURL=previewURL||new URL('../2026-10-27/2026-10-27-oil-landscape-02-spiral-OL-20261027-02-57201.jpg',import.meta.url);
  let sourceImage=null,sourceRequested=false;
  function loadSource(){
   if(sourceRequested)return;
@@ -122,6 +146,16 @@ export function addPhiReceptionLivingMonitor(THREE,scene,{room,lift,physicalWall
   ctx.globalAlpha=1;
   ctx.fillStyle='#f5f0e6';
   ctx.fillRect(0,0,w,h);
+  if(previewURL){
+   if(sourceImage){
+    const scale=Math.min(w/sourceImage.width,h/sourceImage.height),dw=sourceImage.width*scale,dh=sourceImage.height*scale;
+    ctx.drawImage(sourceImage,(w-dw)/2,(h-dh)/2,dw,dh);
+   }else{
+    ctx.fillStyle='#31545c';ctx.font='bold 20px Arial';ctx.fillText('TRANSLATION STUDY II',28,105);
+    ctx.font='16px Arial';ctx.fillText('New animations forthcoming',28,137);
+   }
+   return;
+  }
   if(index===0 && sourceImage){
    const scale=Math.min(w/sourceImage.width,h/sourceImage.height);
    const dw=sourceImage.width*scale,dh=sourceImage.height*scale;
