@@ -1,5 +1,5 @@
-// A third reception row: authentic TouchDesigner network preview, explanation,
-// and a clickable .toe project download. No loading or image decoding at startup.
+// Reception information row: optional network preview, fixed-position explanation
+// and clickable .toe project download. Media remains deferred until approached.
 const PREVIEW=new URL('./touchdesigner/td-network-loop.webp',import.meta.url);
 const LOGO=new URL('./touchdesigner/touchdesigner-logo.png',import.meta.url);
 const PROJECT=new URL('./touchdesigner/pp_translation_room_watercolour.toe',import.meta.url);
@@ -9,10 +9,15 @@ export function getTouchDesignerHereLines(customLines=null){
  return Array.isArray(customLines)&&customLines.length===2&&customLines.every(line=>typeof line==='string'&&line.trim())?customLines:standard;
 }
 
-export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,camera,hereLines=null,previewURL=PREVIEW,projectURL=PROJECT}){
+export function getTouchDesignerInfoPanelIndices(showNetworkPreview=true){
+ return showNetworkPreview?[0,1,2]:[1,2];
+}
+
+export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,camera,hereLines=null,previewURL=PREVIEW,projectURL=PROJECT,showNetworkPreview=true}){
  const material=new THREE.MeshStandardMaterial({color:0x181a1c,metalness:.32,roughness:.48});
  const lamp=new THREE.MeshBasicMaterial({color:0x66c59d,toneMapped:false});
  const textures=[],screens=[],contexts=[],groups=[];
+ const panelIndices=getTouchDesignerInfoPanelIndices(showNetworkPreview);
  let image=null,video=null,videoPlayPending=false,logo=null,attempted=false,disposed=false,available=false,availabilityChecked=false,frame=0,last=0;
  const statuses={preview:'not-requested',logo:'not-requested',project:'not-checked'};
  const [hereLine1,hereLine2]=getTouchDesignerHereLines(hereLines);
@@ -65,7 +70,7 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
   }
   textures[index].needsUpdate=true;
  }
- for(let i=0;i<3;i++){
+ for(const i of panelIndices){
   const group=new THREE.Group();
   group.name='living-monitor-'+(i+7);
   group.position.set((i-1)*(width+gap),-2*rowPitch,0);
@@ -81,22 +86,22 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
   group.add(face);
   const indicator=new THREE.Mesh(new THREE.BoxGeometry(.024,.012,.006),lamp);
   indicator.position.set(width/2-.047,-height/2+.014,.042);group.add(indicator);
-  root.add(group);groups.push(group);screens.push(face);contexts.push(ctx);textures.push(texture);
+  root.add(group);groups.push(group);screens[i]=face;contexts[i]=ctx;textures[i]=texture;
  }
- for(let i=0;i<3;i++)draw(i);
+ for(const i of panelIndices)draw(i);
  const pos=new THREE.Vector3(),eye=new THREE.Vector3(),ray=new THREE.Raycaster();
  function near(distance=11){return root.getWorldPosition(pos).distanceTo(camera.getWorldPosition(eye))<distance;}
  function load(){
   if(attempted||disposed)return;
   attempted=true;
-  if(previewURL.pathname.toLowerCase().endsWith('.webm')){
+  if(showNetworkPreview && previewURL.pathname.toLowerCase().endsWith('.webm')){
    video=document.createElement('video');video.muted=true;video.defaultMuted=true;
    video.playsInline=true;video.loop=true;video.preload='metadata';
    video.setAttribute('playsinline','');
    video.addEventListener('loadeddata',()=>{statuses.preview='ready';if(!disposed)draw(0)});
    video.addEventListener('error',()=>{statuses.preview='not-found';if(!disposed)draw(0)});
    statuses.preview='loading';video.src=previewURL.href;video.load();
-  }else{
+  }else if(showNetworkPreview){
    image=new Image();image.decoding='async';
    image.onload=()=>{statuses.preview='ready';if(!disposed)draw(0)};
    image.onerror=()=>{statuses.preview='not-found';if(!disposed)draw(0)};
@@ -122,7 +127,7 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
     videoPlayPending=false;statuses.preview='playback-blocked';
    });
   }
-  if(!close||(!(video?.readyState>=2&&video.videoWidth)&&!(image?.complete&&image.naturalWidth)))return;
+  if(!showNetworkPreview||!close||(!(video?.readyState>=2&&video.videoWidth)&&!(image?.complete&&image.naturalWidth)))return;
   if(time-last<150)return; // max 7 canvas uploads/sec, only near the screens.
   last=time;frame++;draw(0);
  }
@@ -148,7 +153,10 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
   window.open(projectURL.href,'_blank','noopener,noreferrer');
  }
  document.addEventListener('pointerup',onClick,true);
- return {screens,groups,get diagnostics(){return {...statuses,framesDrawn:frame,previewKind:video?'webm':'webp',videoTime:video?.currentTime??null,downloadReady:available,checked:availabilityChecked}},
+ return {screens,groups,panelCount:groups.length,panelIndices,
+  get diagnostics(){return {...statuses,visiblePanelIndices:panelIndices,visiblePanelCount:groups.length,
+   framesDrawn:frame,previewKind:showNetworkPreview?(video?'webm':'webp'):'none',
+   videoTime:video?.currentTime??null,downloadReady:available,checked:availabilityChecked}},
   update,dispose(){
    disposed=true;document.removeEventListener('pointerup',onClick,true);
    if(video){video.pause();video.removeAttribute('src');video.load();video=null;}
