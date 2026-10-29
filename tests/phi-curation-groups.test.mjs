@@ -48,6 +48,16 @@ for(const {date} of archive.floors)test('thematic curation preserves real archiv
  assert.deepEqual(geometry(curated.exhibition),geometry(baseline.exhibition),'All geometry must remain identical');
  assert.deepEqual(curated.exhibition,buildPhiRendererPlan(date,studies).exhibition);
  assert.ok(curated.exhibition.curation.score+1e-9>=curated.exhibition.curation.baselineScore);
+ for(const room of curated.exhibition.curation.rooms){
+  for(const dimension of ['material','engine','palette']){
+   const actual=new Map();
+   for(const placement of [...curated.exhibition.paintings,...curated.exhibition.sculptures].filter(p=>p.room===room.room)){
+    const trait=studyCurationTraits(studies[placement.studyId])[dimension];
+    actual.set(trait,(actual.get(trait)||0)+1);
+   }
+   assert.deepEqual(new Map(room.composition[dimension].map(v=>[v.value,v.count])),actual);
+  }
+ }
  for(const p of curated.exhibition.paintings)assert.ok(Math.abs(p.width/p.height-studies[p.studyId].aspect)<1e-6);
  if(date==='2026-10-29'){
   assert.ok(curated.exhibition.curation.score>curated.exhibition.curation.baselineScore);

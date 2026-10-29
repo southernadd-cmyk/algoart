@@ -14,18 +14,39 @@ const ENGINE_NAMES={
   recursive:'Recursive divisions',organic:'Organic forms',construct:'Constructed forms'
 };
 const pretty=value=>String(value||'').replace(/[-_]+/g,' ').trim().replace(/\b[a-z]/g,c=>c.toUpperCase());
+const themeLabel=(dimension,value)=>{
+  if(dimension==='material')return MATERIAL_NAMES[value]||pretty(value);
+  if(dimension==='engine')return ENGINE_NAMES[value]||pretty(value)+' engine';
+  if(dimension==='palette')return pretty(value)+' palette';
+  return '';
+};
 export function roomSignTitle(room){
-  const theme=room?.theme;
-  if(!theme||!theme.dimension||!theme.value)return '';
-  const count=Number(theme.count)||0;
-  if(count<2||count/Math.max(1,room.studyIds?.length||0)<.5)return '';
-  const v=theme.value;
+  const total=room?.studyIds?.length||0;
+  if(!total)return '';
   let label='';
-  if(theme.dimension==='material')label=MATERIAL_NAMES[v]||pretty(v);
-  if(theme.dimension==='palette')label=(pretty(v)+' palette');
-  if(theme.dimension==='engine')label=ENGINE_NAMES[v]||pretty(v)+' engine';
-  if(!label)return '';
-  return 'Room '+(room.room+1)+' · '+label;
+  const composition=room.composition;
+  if(composition){
+    // A name describes every displayed work, not the curator's majority.
+    // Prefer a shared material, then a shared engine or palette.
+    for(const dimension of ['material','engine','palette']){
+      const entries=composition[dimension]||[];
+      if(entries.length===1&&entries[0].value&&entries[0].count===total){
+        label=themeLabel(dimension,entries[0].value);break;
+      }
+    }
+    if(!label){
+      const materials=composition.material||[];
+      const complete=materials.every(m=>m.value)&&materials.reduce((n,m)=>n+m.count,0)===total;
+      label=complete&&materials.length===2
+        ?materials.map(m=>themeLabel('material',m.value)).join(' / ')
+        :complete&&materials.length>2?'Mixed materials':'Mixed studies';
+    }
+  }else{
+    // Older plans must not turn a partial theme into an exclusive room title.
+    const theme=room.theme;
+    if(theme?.value&&Number(theme.count)===total)label=themeLabel(theme.dimension,theme.value);
+  }
+  return label?'Room '+(room.room+1)+' · '+label:'';
 }
 const inside=(room,x,z,margin=.05)=>room?.pieces?.some(p=>
   x>=p.x+margin&&x<=p.x+p.w-margin&&
@@ -70,7 +91,7 @@ export function planHangingRoomSigns(phi){
     // No independent obstacles: all hardware clears walking-height completely.
     result.push({room:curated.room,label,x:spot.x,z:spot.z,
       yaw:door.axis==='x'?Math.PI/2:0,
-      dimension:curated.theme.dimension,matchCount:curated.theme.count,
+      dimension:curated.theme?.dimension||null,matchCount:curated.theme?.count||0,
       total:curated.studyIds.length});
   }
   return result;

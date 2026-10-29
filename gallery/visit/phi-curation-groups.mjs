@@ -73,5 +73,19 @@ export function groupPhiExhibition(paintings,sculptures,studies){
   swap(...best);current=bestScore;swaps++;
  }
  return {version:1,method:'engine-material-palette',baselineScore,score:current,swaps,
-  rooms:rooms.map(describe)};
+  rooms:rooms.map(room=>{
+   const description=describe(room);
+   // Count the final placements, including sculptures, independently of the
+   // majority theme used to optimise assignment.
+   const composition=Object.fromEntries(dimensions.map(d=>{
+    const counts=new Map();
+    for(const id of description.studyIds){
+     const key=traits.get(id)?.[d]||'';
+     counts.set(key,(counts.get(key)||0)+1);
+    }
+    return [d,[...counts].map(([value,count])=>({value,count}))
+     .sort((a,b)=>b.count-a.count||a.value.localeCompare(b.value))];
+   }));
+   return {...description,composition};
+  })};
 }
