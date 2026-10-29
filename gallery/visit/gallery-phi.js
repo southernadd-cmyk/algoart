@@ -196,8 +196,8 @@ if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnosti
 if(GALLERY_DEBUG)window.__phiReceptionPreview={
  hologram(){const object=phiReceptionDesk?.root;if(!object?.parent)return;
   object.updateWorldMatrix(true,true);const view=new THREE.PerspectiveCamera(48,camera.aspect,.02,210);
-  view.position.copy(object.localToWorld(new THREE.Vector3(.25,1.95,-2.05)));
-  view.lookAt(object.localToWorld(new THREE.Vector3(.25,1.62,-.06)));
+  view.position.copy(object.localToWorld(new THREE.Vector3(1.55,1.95,-2.40)));
+  view.lookAt(object.localToWorld(new THREE.Vector3(1.55,1.62,-.40)));
   renderer.setAnimationLoop(null);renderer.render(scene,view);},
  speaker(kind='room'){const object=kind==='lift'?window.__phiCeilingSpeakers?.lift:window.__phiCeilingSpeakers?.rooms[0];if(!object?.parent)return;
   const view=new THREE.PerspectiveCamera(50,camera.aspect,.02,50);object.updateWorldMatrix(true,false);

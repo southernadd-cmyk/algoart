@@ -5,7 +5,9 @@ import {appendTowerBoxBatches} from './tower-box-batches.mjs?v=preserve-metre-uv
 export function addPhiDeskHologram(THREE,desk,{floorBoxes,shaftGeometry,signature='',maxHeight=.95,maxWidth=.72}={}){
  if(!desk||!floorBoxes?.length||!floorBoxes.some(f=>f.length))return null;
  const root=new THREE.Group();root.name='phi-reception-tower-hologram';
- root.position.set(.25,1.126,-.06);desk.add(root);
+ // The front sign faces -Z; its initial R is on the desk's +X side.
+ // Keep the projector inside the rounded counter, in front of the task lamp.
+ root.position.set(1.55,1.126,-.40);desk.add(root);
  const solid=new THREE.MeshBasicMaterial({color:'#182c31'});
  // No extra lights, shadow passes, textures, render targets or animation loop.
  const surface=new THREE.MeshBasicMaterial({color:'#46dccc',transparent:true,opacity:.065,

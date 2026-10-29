@@ -13,6 +13,7 @@ test('desk hologram includes every exact floor box and keeps the source yaw, dim
  const h=addPhiDeskHologram(THREE,desk,{floorBoxes,signature:'two floors'});
  try{
   assert.equal(h.root.parent,desk);assert.equal(h.diagnostics.floorCount,2);assert.equal(h.diagnostics.boxes,4);
+  assert.deepEqual(h.root.position.toArray(),[1.55,1.126,-.40],'front corner on the R side of the Reception sign');
   const mesh=h.model.children.find(o=>o.name==='archived-tower-static-batch');
   const pos=mesh.geometry.getAttribute('position'),unit=new THREE.BoxGeometry(1,1,1).getAttribute('position');
   floorBoxes.flat().forEach(([w,height,d,x,y,z,yaw],i)=>{
