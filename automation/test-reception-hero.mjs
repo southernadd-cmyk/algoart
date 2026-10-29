@@ -19,9 +19,9 @@ try{
  const before=await page.evaluate(()=>{
   const x=window.__PP_EXPORT_SCENE__;
   if(!x)throw Error('Missing scene diagnostic');
-  const statue=x.scene.getObjectByName('phi-reception-growth-systems-baked-test');
-  if(!statue)throw Error('Baked sculpture missing from scene');
-  return {x:x.rig.position.x,z:x.rig.position.z,children:statue.children.length};
+  const statues=(window.__phiReceptionHeroTest?.copies||[]).map(copy=>x.scene.getObjectByName(copy.name));
+  if(statues.length!==2||statues.some(statue=>!statue))throw Error('Permanent reception sculptures missing from scene');
+  return {x:x.rig.position.x,z:x.rig.position.z,children:statues.reduce((n,statue)=>n+statue.children.length,0)};
  });
  await page.keyboard.down('w');
  await page.waitForTimeout(1700);
@@ -30,5 +30,5 @@ try{
  const moved=Math.hypot(after.x-before.x,after.z-before.z);
  if(moved<.15)throw Error('WASD movement regression: only '+moved+' metres');
  if(errors.length)console.warn('Browser page errors:',errors.slice(0,5));
- console.log('PASS: baked sculpture attached, move distance',moved.toFixed(2),'m');
+ console.log('PASS: both church-window faces and permanent sculptures attached; move distance',moved.toFixed(2),'m');
 }finally{await browser.close();}
