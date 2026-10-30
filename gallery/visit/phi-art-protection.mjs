@@ -1,7 +1,8 @@
 import {ShaderPass} from 'postprocessing';
 // Paintings and traced sculpture marks are drawn with their original materials.
 export const ART_LAYER=9,OPAQUE_DEPTH_LAYER=8;
-export function isArt(o){return !!(o?.isMesh&&(o.userData?.phiArtOriginal||o.userData?.study));}
+const ART_DISPLAYS=new Set(['monitor-screen','large-monitor-video-pane','recursive-smallest-video-mosaic']);
+export function isArt(o){return !!(o?.isMesh&&(o.userData?.phiArtOriginal||o.userData?.study||ART_DISPLAYS.has(o.name)));}
 export function isOpaqueOccluder(o){
  if(!o?.isMesh||isArt(o))return false;
  const materials=Array.isArray(o.material)?o.material:[o.material];
