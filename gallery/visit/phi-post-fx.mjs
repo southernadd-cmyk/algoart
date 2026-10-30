@@ -156,7 +156,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
  function sync(){
   presetSelect.value=preset;
   const visible=preset!=='original';
-  controlsWrap.hidden=!visible;reset.disabled=!visible;compare.disabled=!visible;
+  controlsWrap.style.display=visible?'grid':'none';reset.disabled=!visible;compare.disabled=!visible;
   compare.textContent=bypass?'Reapply effects':'Show original';
   if(!visible)return;
   const cfg=settings[preset];
