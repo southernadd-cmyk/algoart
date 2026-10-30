@@ -1,4 +1,7 @@
 import {alignedScorePoint} from './phi-gramophone-score-map.mjs';
+import {ASAP_DEBUSSY_SOURCE,asapDebussyScorePoint} from './phi-gramophone-asap-debussy.mjs';
+const scorePoint=(src,fraction,duration)=>src===ASAP_DEBUSSY_SOURCE?
+ asapDebussyScorePoint(src,fraction,duration):alignedScorePoint(src,fraction,duration);
 // Test-tower listening experiment. The recording is never processed or edited:
 // these are mathematical reference points, not claims about score landmarks.
 export const PHI=(1+Math.sqrt(5))/2;
@@ -14,6 +17,7 @@ export const PHI_LISTENING_MARKERS=Object.freeze([
 // Repeated measures are not counted again; audio anchors come from the separate score map.
 export const WRITTEN_SCORE_BARS=Object.freeze({
  './audio/debussy-reflets-dans-leau.ogg':94,
+ [ASAP_DEBUSSY_SOURCE]:94,
  './audio/mozart-k545-allegro.ogg':73
 });
 export function scorePositionsForTrack(src,markers=PHI_LISTENING_MARKERS){
@@ -94,7 +98,7 @@ export function createGramophonePhiTimeline({panel,record}){
    cell.className='record-phi-score-cell '+marker.level;cell.disabled=true;
    cell.setAttribute('aria-label','Listen from the aligned score '+marker.label+' position');
    cell.addEventListener('click',()=>{
-     const point=alignedScorePoint(record.state().track?.src,marker.fraction,activeDuration());
+     const point=scorePoint(record.state().track?.src,marker.fraction,activeDuration());
      if(!point?.verified)return;
      audio.currentTime=Math.max(0,point.time-LISTEN_LEAD_IN_SECONDS);
      if(!record.state().playing)void record.play();
@@ -117,7 +121,7 @@ export function createGramophonePhiTimeline({panel,record}){
  externalReference.append(independentLink);details.append(externalReference);
 
  const hint=document.createElement('small');
- hint.textContent='Choose a marker to hear the preceding 8 seconds. Score times are computationally cross-checked against this exact performance, not manually certified. Uncertain markers cannot be selected. No cues are added.';
+ hint.textContent='Choose a marker to hear the preceding 8 seconds. Debussy uses published performance downbeats; Mozart uses score-to-audio analysis independently checked at musical sections. No cues are added.';
  details.append(hint);section.append(details);
  // The new UI lives under the normal transport, within the existing panel.
  const toggle=panel.querySelector('.record-toggle');
@@ -166,8 +170,10 @@ export function createGramophonePhiTimeline({panel,record}){
    const points=timelineForDuration(duration);
    const score=scorePositionsForTrack(selected?.src);
    const aligned=PHI_LISTENING_MARKERS.map(marker=>
-     alignedScorePoint(selected?.src,marker.fraction,actual));
-   evidence.textContent=selected?.src==='./audio/debussy-reflets-dans-leau.ogg'?
+     scorePoint(selected?.src,marker.fraction,actual));
+   evidence.textContent=selected?.src===ASAP_DEBUSSY_SOURCE?
+     'Debussy: the 94 score downbeats were published for this precise MAESTRO 2008 performance in the ASAP dataset. Choose a position to hear the preceding musical context.':
+     selected?.src==='./audio/debussy-reflets-dans-leau.ogg'?
      'Debussy: the 94-bar score has been matched computationally to this Giorgi Latso recording, but an independently annotated version of this exact performance has not been found.':
      selected?.src==='./audio/mozart-k545-allegro.ogg'?
      'Mozart: this Robin Alciatore performance omits repeats. Independent research places the development at 0:51.27 and recapitulation at 1:13.10, agreeing with our mapping near these landmarks.':'';
@@ -175,7 +181,8 @@ export function createGramophonePhiTimeline({panel,record}){
      'https://audiolabs.github.io/trackswitch.js/use-cases/repeated-section/':
      'https://github.com/fosfrancesco/asap-dataset/tree/master/Debussy/Images_Book_1/1_Reflets_dans_lEau';
    independentLink.textContent=selected?.src==='./audio/mozart-k545-allegro.ogg'?
-     'External alignment of this recording':'Annotated alternative performances (not this recording)';
+     'External alignment of this recording':selected?.src===ASAP_DEBUSSY_SOURCE?
+     'Published score annotations for this recording':'Annotated alternative performances (not this recording)';
    const bars=score[0]?.bars;
    scoreTitle.textContent=bars?'Written score · '+bars+' bars · aligned to this recording':
      'Written score · bar count unavailable';
@@ -189,8 +196,9 @@ export function createGramophonePhiTimeline({panel,record}){
          (point.verified?'':' · needs review'):
        marker.label+' · awaiting verified audio';
      cell.title=point?
+       (point.evidence?point.evidence+'; click for an eight-second lead-in.':
        'Two alignment methods differ around this point by '+point.disagreement.toFixed(2)+
-       ' seconds. '+(point.verified?'Click for an eight-second lead-in.':'Not seekable until reviewed.'):
+       ' seconds. '+(point.verified?'Click for an eight-second lead-in.':'Not seekable until reviewed.')):
        'Play the correct recording to load its score alignment';
      const line=scoreLines[i];
      line.hidden=!point;
