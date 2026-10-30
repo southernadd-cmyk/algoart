@@ -1,7 +1,7 @@
 // Test-gallery-only overlay. The original Aman Bajwa cube-tile colour,
 // normal and roughness textures are not modified or replaced.
 // A precomputed Penrose P3 five-grid atlas introduces no geometry/draw calls.
-const INLAY_URL=new URL('./textures/reception-penrose-inlay.svg',import.meta.url).href;
+const INLAY_URL=new URL('./textures/reception-penrose-inlay.svg?v=bold-brass-v2-20261030',import.meta.url).href;
 export function installReceptionPenroseInlay(THREE,material,pieces,{lowPower=false}={}){
  if(material.userData.penroseInlayInstalled||!pieces?.length)return material;
  const minX=Math.min(...pieces.map(p=>p.x)),maxX=Math.max(...pieces.map(p=>p.x+p.w));
