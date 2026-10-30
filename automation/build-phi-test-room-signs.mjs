@@ -80,6 +80,13 @@ await build({
     if(contents.split(oldPalette).length!==2)throw Error('Visitor fallback palette anchor changed');
     contents=contents.replace(oldPalette,newPalette);
    }
+   // If the primary low-poly figures fail and the legacy rig loads, its
+   // original brightly coloured GLB material must not reintroduce purple.
+   // Re-shade its selected mesh without changing the skeleton or model.
+   const oldRig=' for(const mesh of allMeshes)mesh.visible=mesh===selected;';
+   if(contents.split(oldRig).length!==2)throw Error('Legacy visitor rig anchor changed');
+   contents=contents.replace(oldRig,oldRig+
+    "\\n selected.material=new THREE.MeshStandardMaterial({color:'#b7b5ae',roughness:.86,metalness:.02,vertexColors:false,side:THREE.DoubleSide});");
    return {contents,loader:'js',resolveDir:dir};
   });
  }
