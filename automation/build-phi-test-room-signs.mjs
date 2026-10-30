@@ -25,10 +25,10 @@ replace('fetchGalleryText(url,{cache}),',"fetchGalleryText(url,{cache:'no-store'
 
 // Keep the baseline/phi comparison UI exclusive to staging.
 replace("import * as THREE from 'three';",
- "import {createPhiLightingComparison} from '../../test/virtual-gallery/phi-lighting-comparison.mjs';\nimport * as THREE from 'three';\nconst phiLightingComparison=createPhiLightingComparison();");
+ "import {createPhiLightingComparison} from '../../test/virtual-gallery/phi-lighting-comparison.mjs';\nimport {planPhiRoomLighting} from './phi-room-lighting.mjs';\nimport {planRefinedPhiRoomLighting,refineRoomLightEntries} from '../../test/virtual-gallery/phi-room-lighting-refined.mjs';\nimport * as THREE from 'three';\nconst phiLightingComparison=createPhiLightingComparison({planner:planRefinedPhiRoomLighting,baselinePlanner:planPhiRoomLighting,refined:true});");
 replace(' const staticArchitecture=[];', ' phiLightingComparison.reset();\n const staticArchitecture=[];');
 replace('    applyPhiRoomLighting(phiRoomLightEntries,plan.phi?.world);',
- '    for(const entry of phiRoomLightEntries)phiLightingComparison.register(entry);\n    phiLightingComparison.finish(plan.phi?.world);');
+ '    for(const entry of refineRoomLightEntries(phiRoomLightEntries,plan.phi))phiLightingComparison.register(entry);\n    phiLightingComparison.finish(plan.phi?.world);');
 
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
