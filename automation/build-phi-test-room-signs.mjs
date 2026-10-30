@@ -84,6 +84,23 @@ replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
 replace('    applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);',
  '    for(const entry of refineRoomLightEntries(phiRoomLightEntries,plan.phi))phiLightingComparison.register(entry);\n    phiLightingComparison.finish(plan.phi?.world);');
 
+
+// TEST ONLY: the phi-proportion reception desk and bench; live still uses the
+// existing furniture until the architectural concept is approved.
+replace("import * as THREE from 'three';",
+ "import {addPhiGoldenReceptionDesk,addPhiGoldenReceptionBench} from './phi-reception-phi-furniture-study.mjs';\nimport * as THREE from 'three';");
+replace(
+ 'phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone,timber:galleryFinish.timberSmoked,trims:architecturalBronzeStudy});',
+ 'phiReceptionDesk=addPhiGoldenReceptionDesk(THREE,scene,furnishing,elevation);'
+);
+replace(
+ 'renderPhiFurniture(THREE,scene,furniture,{concrete:galleryFinish.stone,timber},elevation);',
+ "if(exhibitDate===RECEPTION){\n"+
+ "  renderPhiFurniture(THREE,scene,{...furniture,benches:[]},{concrete:galleryFinish.stone,timber},elevation);\n"+
+ "  for(const bench of furniture.benches)addPhiGoldenReceptionBench(THREE,scene,bench,elevation);\n"+
+ " }else renderPhiFurniture(THREE,scene,furniture,{concrete:galleryFinish.stone,timber},elevation);"
+);
+
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
