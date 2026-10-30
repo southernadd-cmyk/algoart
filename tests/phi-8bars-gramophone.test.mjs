@@ -85,3 +85,48 @@ test('the production source stays on the original two records',()=>{
  assert.match(builder,/8bars-gramophone-staging-only/);
  assert.match(builder,/phi-gramophone-test-controller/);
 });
+
+
+test('Compose another replaces only the third tune with a new deterministic 8bars seed',async()=>{
+ const seen=[],old=create8barsGoldenTrack({
+  render:async()=>new Blob(['original'],{type:'audio/wav'})
+ });
+ const audio=new Media();
+ const record=createPhiTestGramophoneRecord({
+  audio,tracks:[...RECEPTION_RECORD,old],
+  makeGoldenTrack:(seed,edition)=>{
+   seen.push({seed,edition});
+   return create8barsGoldenTrack({seed,edition,render:async({seed:renderedSeed})=>{
+    assert.equal(renderedSeed,seed);
+    return new Blob([seed],{type:'audio/wav'});
+   }});
+  }
+ });
+ const historic0=record.tracks[0],historic1=record.tracks[1];
+ const result=record.composeAnother();await result;
+ assert.equal(record.state().index,2);
+ assert.equal(record.state().edition,2);
+ assert.equal(record.state().playing,true);
+ assert.equal(record.tracks[0],historic0);
+ assert.equal(record.tracks[1],historic1);
+ assert.notEqual(record.tracks[2],old);
+ assert.equal(record.tracks[2].title,'Golden Frequency · study 2');
+ assert.equal(seen[0].seed,GOLDEN_STUDY.seed+'-variation-2');
+ const firstUrl=audio.src;
+ await record.composeAnother();
+ assert.equal(record.state().edition,3);
+ assert.equal(record.tracks[2].title,'Golden Frequency · study 3');
+ assert.equal(seen[1].seed,GOLDEN_STUDY.seed+'-variation-3');
+ assert.notEqual(firstUrl,audio.src);
+ assert.equal(record.tracks.length,3);
+ assert.equal(audio.loop,true);
+ record.dispose();
+});
+
+test('the staging build exposes a real button and keeps the live music panel isolated',()=>{
+ const builder=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
+ assert.match(builder,/Compose another/);
+ assert.match(builder,/record\\.composeAnother\\(\\)/);
+ assert.match(builder,/record-compose/);
+ assert.match(builder,/trackButtons\\.forEach/);
+});
