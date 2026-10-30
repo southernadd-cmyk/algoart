@@ -160,7 +160,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
   if(dofPass){
    const active=!!focus&&!inXR;
    dofPass.enabled=active;stats.focusActive=active;
-   if(active)dof.target.copy(focus);
+   if(active){if(!dof.target)dof.target=new THREE.Vector3();dof.target.copy(focus);}
   }else stats.focusActive=false;
   try{
    if(mode==='original'){renderer.autoClear=true;renderer.render(scene,camera);}
