@@ -16,6 +16,18 @@ test('three tunable presets and an unprocessed original, with clamped numeric sl
  assert.equal(result.grain,PHI_FX_DEFAULTS.architectural.grain);
  assert.throws(()=>phiFXSettings('alien'),/Unknown/);
 });
+test('approved architectural settings are retained exactly',()=>{
+ const approved={
+  brightness:-.14,contrast:-.19,saturation:.25,bloomIntensity:1.4,
+  bloomThreshold:.825,bloomRadius:.3,aoIntensity:1.2,aoRadius:.22,
+  vignette:.475,vignetteOffset:.525,grain:.04,bokeh:1.5,focusRange:2.6,
+  glowMode:'all',dofMode:'off',aoSamples:16
+ };
+ assert.deepEqual(PHI_FX_DEFAULTS.architectural,approved);
+ assert.deepEqual(phiFXSettings('architectural'),approved);
+ assert.deepEqual(JSON.parse(phiFXExport('architectural',approved)).values,approved);
+});
+
 test('export contains complete values that the user can paste back into chat',()=>{
  const values=phiFXSettings('photographic',{bokeh:5,aoIntensity:2.5,glowMode:'installations'});
  const payload=JSON.parse(phiFXExport('photographic',values,{pixelRatio:1.6}));
