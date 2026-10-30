@@ -107,7 +107,7 @@ try{
  assert(!pageHTML.includes('social-card.png'));
  assert(!/<meta\s+http-equiv=["']refresh/i.test(pageHTML),
    'A crawler-visible meta refresh would lead Threads to GitHub Pages');
- assert(pageHTML.includes('&amp;pv=2'),
+ assert(pageHTML.includes('&amp;pv=4'),
    'A cached unversioned OG canonical could defeat the Threads fix');
  const imageURL=pageHTML.match(/property="og:image" content="([^"]+)"/)?.[1];
  assert(imageURL&&imageURL.includes('/share/image?c='));
