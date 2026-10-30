@@ -37,7 +37,7 @@ await build({
     text=text.replace(before,after);
    };
    swap("import {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';",
-    "import {createGramophonePhiTimeline} from './phi-gramophone-timeline.mjs';\nimport {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';");
+    "import {createGramophonePhiTimeline} from './phi-gramophone-timeline.mjs';\nimport {createGramophoneRecord} from './gramophone-record-asap-test.mjs';");
    swap("let opened=false,trackButtons=[];",
     "let opened=false,trackButtons=[],goldenTimeline=null;");
    swap("trackButtons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===s.index)));",
