@@ -1,12 +1,13 @@
 {
   "version": 1,
   "date": "2026-10-30",
-  "count": 5,
+  "count": 6,
   "series": [
     "Golden Trajectories",
     "Recursive Divisions",
     "Orbital Studies",
-    "Automatic Marks"
+    "Automatic Marks",
+    "Radiant Systems"
   ],
   "entries": [
     {
@@ -251,6 +252,56 @@
         "grain": 12
       },
       "altText": "Action painting from PROPORTION PIECE's Automatic Marks system, seed ACL-20261030-01-80125. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
+    },
+    {
+      "id": "2026-10-30-ACP01",
+      "title": "Radiant Systems — Action Painting Study 06",
+      "orientation": "portrait",
+      "material": "action",
+      "seed": "ACP-20261030-01-17643",
+      "mode": "burst",
+      "series": "Radiant Systems",
+      "imageFile": "2026-10-30-action-portrait-01-burst-ACP-20261030-01-17643.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACP-20261030-01-17643&mode=burst&fmt=portrait&el=54&den=62&cx=67&neg=36&phi=93&rec=5&spi=90&ga=92&nest=58&pen=scribble&th=10&wob=36&od=2&op=64&pr=49&dry=18&curve=55&shape=80&overlap=41&rot=81&ln=1&ci=1&re=1&po=1&ar=1&pal=golden&cols=8&sat=79&bri=47&paper=%23f5f0e6&grain=24&material=action-v4&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "burst",
+        "orientation": "portrait",
+        "series": "Radiant Systems",
+        "seed": "ACP-20261030-01-17643",
+        "elements": 54,
+        "density": 62,
+        "complexity": 67,
+        "negativeSpace": 36,
+        "phiStrength": 93,
+        "recursion": 5,
+        "spiralInfluence": 90,
+        "goldenAngle": 92,
+        "nesting": 58,
+        "pen": "scribble",
+        "thickness": 10,
+        "wobble": 36,
+        "overdraw": 2,
+        "opacity": 64,
+        "pressure": 49,
+        "dryness": 18,
+        "curveBias": 55,
+        "shapeAmount": 80,
+        "overlap": 41,
+        "rotation": 81,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "golden",
+        "colourCount": 8,
+        "saturation": 79,
+        "brightness": 47,
+        "paper": "#f5f0e6",
+        "grain": 24
+      },
+      "altText": "Action painting from PROPORTION PIECE's Radiant Systems system, seed ACP-20261030-01-17643. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
