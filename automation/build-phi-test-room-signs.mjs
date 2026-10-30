@@ -45,3 +45,6 @@ const bundle=await readFile(resolve(dir,'gallery-phi-test-room-signs-bundle.js')
 const sha256=createHash('sha256').update(bundle).digest('hex');
 await writeFile(resolve(dir,'test-curator-revision.json'),JSON.stringify({sha256}));
 console.log('Built test-only phi curation bundle, revision '+sha256.slice(0,12));
+// The isolated review uses the same dialog module and real audio without WebGL.
+await build({entryPoints:['gallery/visit/phi-gramophone-music.mjs'],bundle:true,minify:true,
+ platform:'browser',format:'esm',target:'es2022',outfile:'gallery/visit/phi-gramophone-preview.js',logLevel:'warning'});
