@@ -27,6 +27,16 @@ replace('fetchGalleryText(url,{cache}),',"fetchGalleryText(url,{cache:'no-store'
 replace("import * as THREE from 'three';",
  "import {createPhiLightingComparison} from '../../test/virtual-gallery/phi-lighting-comparison.mjs';\nimport {planPhiRoomLighting} from './phi-room-lighting.mjs';\nimport {planRefinedPhiRoomLighting,refineRoomLightEntries} from './phi-room-lighting-refined.mjs';\nimport * as THREE from 'three';\nconst phiLightingComparison=createPhiLightingComparison({planner:planRefinedPhiRoomLighting,baselinePlanner:planPhiRoomLighting,refined:true});");
 replace(' const staticArchitecture=[];', ' phiLightingComparison.reset();\n const staticArchitecture=[];');
+// Architectural camera study: use ?camera=wide to restore original 76°.
+// Keep locomotion, collision checks, near/far clipping and frame pacing.
+replace('const camera = new THREE.PerspectiveCamera(76,',
+  "const phiCameraFov=new URLSearchParams(location.search).get('camera')==='wide'?76:60;\\nconst phiArtworkStudyEnabled=new URLSearchParams(location.search).get('art')!=='original';\\nif(GALLERY_DEBUG)window.__phiVisualStudy={cameraFov:phiCameraFov,artColourStudy:phiArtworkStudyEnabled};\\nconst camera = new THREE.PerspectiveCamera(phiCameraFov,");
+// Existing artwork uses MeshBasicMaterial deliberately; in one curated
+// room, bypass the renderer's global tone mapping for source-faithful art
+// colour and a brighter image relative to the matte physical surrounds.
+// Other rooms retain the exact original behaviour; no new light or geometry.
+replace('face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide});',
+  'face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide,toneMapped:!(phiArtworkStudyEnabled&&p.room===frameStudyRoom)});');
 // TEST ONLY: two shared architectural metal finishes, with no textures,
 // additional geometry, lights, shadows or post-processing.
 replace('const join=galleryFinish.trims;\nsetSculptureArchitecturalMaterials(',
