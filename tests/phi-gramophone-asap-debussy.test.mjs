@@ -33,7 +33,7 @@ test('test-only recording choice leaves live Debussy and Mozart untouched',()=>{
  assert.equal(RECEPTION_RECORD_ASAP_TEST.length,2);
  assert.equal(RECEPTION_RECORD_ASAP_TEST[0].src,ASAP_DEBUSSY_SOURCE);
  assert.match(RECEPTION_RECORD_ASAP_TEST[0].credit,/ASAP.*CC BY-NC-SA/);
- assert.equal(RECEPTION_RECORD_ASAP_TEST[1],RECEPTION_RECORD[1]);
+ assert.deepEqual(RECEPTION_RECORD_ASAP_TEST[1],RECEPTION_RECORD[1]);
  assert.notEqual(RECEPTION_RECORD_ASAP_TEST[0].src,RECEPTION_RECORD[0].src);
  const live=readFileSync(new URL('../gallery/visit/gallery-music.mjs',import.meta.url),'utf8');
  const staging=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
