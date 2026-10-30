@@ -10,7 +10,7 @@ const MODES={field:'Orbital Studies',spiral:'Golden Trajectories',
 rects:'Recursive Divisions',burst:'Radiant Systems',network:'Connected Fields',
 organic:'Growth Systems',geometric:'Constructed Forms',scribble:'Automatic Marks'};
 const MATERIALS={'oil-v1':'Oil Paint','oil-v2':'Oil Paint','oil-v3':'Oil Paint',
-'oil-v4':'Oil Paint','oil-v5':'Oil Paint','watercolour-v2r':'Watercolour',
+'oil-v4':'Oil Paint','oil-v5':'Oil Paint','oil-v6':'Oil Paint','oil-v7':'Oil Paint','watercolour-v2r':'Watercolour',
 'watercolour-v2s':'Watercolour','watercolour-v2t':'Watercolour',
 'action-v1':'Action Painting','action-v2':'Action Painting','action-v3':'Action Painting'};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -143,4 +143,5 @@ export default {
  }
 };
 export const testing={decodeToken,jpegDimensions,html};
+
 

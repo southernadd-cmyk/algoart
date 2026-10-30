@@ -1,4 +1,4 @@
-name: Oil V5 production release checks
+name: Oil production release checks
 on:
   push:
     branches: [release/oil-pigment-v5]
@@ -33,5 +33,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: oil-v5-release-results
-          path: oil-v5-release-results/
+          name: oil-v7-release-results
+          path: oil-v7-release-results/
+

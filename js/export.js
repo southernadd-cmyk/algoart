@@ -58,7 +58,8 @@ A.preparePNG=function(settings,scale){
         (actionVersion===4?A.renderActionPaintingV4:actionVersion===3?A.renderActionPaintingV3:A.renderActionPainting)(out,compositionSettings,scale,false,{version:actionVersion});
       }
       else if(settings.oilPaintRender){
-        const oilRenderer=settings.oilPaintRevision==='v6'?A.renderOilPaintV6:
+        const oilRenderer=settings.oilPaintRevision==='v7'?A.renderOilPaintV7:
+          settings.oilPaintRevision==='v6'?A.renderOilPaintV6:
            settings.oilPaintRevision==='v5'?A.renderOilPaintV5:
           settings.oilPaintRevision==='v4'?A.renderOilPaintV4:
           settings.oilPaintRevision==='v3'?A.renderOilPaintV3:
@@ -160,4 +161,5 @@ A.exportSVG=function(settings){
 };
 
 })(window.AlgoArt);
+
 

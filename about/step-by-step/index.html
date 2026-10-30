@@ -84,6 +84,8 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <script src="../../js/oil-pigment.js?v=20261025-oil-v5-release"></script>
 <script src="../../js/oil-paint-v5.js?v=20261025-oil-v5-release"></script>
 <script src="../../js/oil-paint-v6.js?v=20261025-oil-v6-release"></script>
+<script src="../../js/oil-brush-v7.js?v=20261030-oil-v7"></script>
+<script src="../../js/oil-paint-v7.js?v=20261030-oil-v7"></script>
 <script src="../../js/action-painting-v1.js"></script>
 <script src="../../js/action-painting-v3.js?v=20261025-v3-release"></script>
 <script src="../../js/action-painting-v4.js?v=20261025-v4-release"></script>
@@ -112,7 +114,7 @@ const incoming=new URLSearchParams(location.search);
 function selectedRevision(){
  const original=incoming.get('material')||'',material=selectedMaterial();
  if(material==='action')return /^action-v[1234]$/.test(original)?original:'action-v4';
- if(material==='oil')return /^oil-v[1-6]$/.test(original)?original:'oil-v6';
+ if(material==='oil')return /^oil-v[1-7]$/.test(original)?original:'oil-v7';
  if(material==='watercolour')return /^watercolour-v2[rst]$/.test(original)?original:'watercolour-v2s';
  if(material==='tissue')return 'tissue-'+(Number(incoming.get('tissue'))||(incoming.has('watercolor')||incoming.has('oil')?1:7));
  return 'marker';
@@ -281,7 +283,7 @@ function captureMaterialStages(s){
  const originalCapture=A.materialStageCapture;
  try{
   A.materialStageCapture=(name,source)=>{
-   const labels={'tissue-planes':'Broad tissue areas','tissue-glazes':'Translucent overlapping glazes','tissue-ribbons':'Main coloured tissue ribbons','tissue-pale':'Pale tissue and torn edges','tissue-pigment':'Small pigment and fibre details','tissue-surface':'The textured tissue surface','tissue-graphite-finished':'Completed graphite linework','watercolour-broad':'Broad pigment deposits before paper transport','watercolour-hero':'Structural pigment before paper transport','watercolour-wash':'Pigment transported through paper','watercolour-dry':'First dry marks','watercolour-accents':'Final accents and granulation','oil-ground':'Oil ground prepared','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added','oil-primary-fields':'Primary coloured oil fields','oil-territories':'Territory brush deposits','oil-paint-masses':'Loaded paint masses','oil-gestures':'Directional bristle gestures','oil-before-relief':'Completed brush deposits before surface lighting','oil-after-relief':'Bristle ridges under surface lighting'};
+   const labels={'oil-v7-ground':'Oil ground prepared','oil-v7-territories-and-masses':'Painted areas and loaded brushwork','oil-v7-before-relief':'All paint deposits before surface lighting','oil-v7-after-relief':'The unified paint surface under lighting','tissue-planes':'Broad tissue areas','tissue-glazes':'Translucent overlapping glazes','tissue-ribbons':'Main coloured tissue ribbons','tissue-pale':'Pale tissue and torn edges','tissue-pigment':'Small pigment and fibre details','tissue-surface':'The textured tissue surface','tissue-graphite-finished':'Completed graphite linework','watercolour-broad':'Broad pigment deposits before paper transport','watercolour-hero':'Structural pigment before paper transport','watercolour-wash':'Pigment transported through paper','watercolour-dry':'First dry marks','watercolour-accents':'Final accents and granulation','oil-ground':'Oil ground prepared','oil-paint-base':'Painted shapes and brush deposits','oil-paint-connections':'Connected brushwork added','oil-primary-fields':'Primary coloured oil fields','oil-territories':'Territory brush deposits','oil-paint-masses':'Loaded paint masses','oil-gestures':'Directional bristle gestures','oil-before-relief':'Completed brush deposits before surface lighting','oil-after-relief':'Bristle ridges under surface lighting'};
    const phase=name.startsWith('watercolour-')?name.replace(/-\d+$/,'').replace(/-(broad|hero|detail|dry|fine-ink)-.*$/,'-$1'):
     name.startsWith('tissue-')?name.replace(/-\d+$/,'').replace(/-(plane|glaze|ribbon|detail)-.*$/,'-$1'):
     name.startsWith('oil-field-')?'oil-field-'+name.split('-')[2]:
@@ -301,6 +303,8 @@ function captureMaterialStages(s){
      name.startsWith('tissue-fine-mark-')?'Building fine pigment and fibre marks':
      name.startsWith('tissue-pale-piece-')?'Laying pale torn tissue':
      name.startsWith('tissue-graphite-')?'Drawing graphite lines':
+     name.startsWith('oil-v7-source-')?'Adding source brushstrokes':
+     name.startsWith('oil-v7-field-')?'Painting connected colour fields':
      name.startsWith('oil-source-stroke-')?'Adding the first source brushstrokes':
      name.startsWith('oil-field-')?'Connected field brushwork':
      name.replace(/-\d+$/,'').replace(/-/g,' '));
@@ -322,6 +326,7 @@ function captureMaterialStages(s){
    else if(version==='oil-v2'&&A.renderOilPaintV2)A.renderOilPaintV2(target,s,renderScale,false);
    else if(version==='oil-v3'&&A.renderOilPaintV3)A.renderOilPaintV3(target,s,renderScale,false);
    else if(version==='oil-v4')A.renderOilPaintV4(target,s,renderScale,false);
+   else if(version==='oil-v7')A.renderOilPaintV7(target,s,renderScale,false);
    else if(version==='oil-v6')A.renderOilPaintV6(target,s,renderScale,false);
     else A.renderOilPaintV5(target,s,renderScale,false);
   }
@@ -422,3 +427,4 @@ function captureMaterialStages(s){
 function showMaterialExplanation(){const material=selectedMaterial();$('materialExplanation').textContent=material==='action'?'Action Painting: the canvas shows actual progressively added paint layers from the material renderer.':material==='marker'?'Marker: each step reveals an actual recorded pen pass.' :material==='oil'?'Captured stages from the real Oil renderer at 0.45× resolution for a faster walkthrough; the studio retains full quality. '+descriptions[material]:'Captured stages from the actual material renderer. '+descriptions[material];}
 $('regenerate').onclick=generate;$('engine').onchange=generate;$('orientation').onchange=generate;$('step').oninput=e=>{playing=false;++token;advance(+e.target.value)};$('prev').onclick=()=>{playing=false;++token;advance(i-1)};$('next').onclick=()=>{playing=false;++token;advance(i+1)};$('all').onclick=()=>{playing=false;++token;advance(stepTotal())};$('play').onclick=()=>{if(playing){playing=false;++token;$('play').textContent='Play';return;}playing=true;$('play').textContent='Pause';const own=++token;function tick(){if(!playing||own!==token)return;if(i>=stepTotal()){playing=false;$('play').textContent='Play';return;}advance(i+1);setTimeout(tick,Math.max(15,3000/Math.max(stepTotal(),1)));}tick();};generate();
 </script></body></html>
+
