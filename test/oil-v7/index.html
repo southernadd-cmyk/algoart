@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oil V7 study — PROPORTION PIECE</title>
+<style>
+@font-face{font-family:Marker;src:url('../../fonts/AlgoArt-Marker-Regular.woff2') format('woff2');font-display:swap}h1{font-family:Marker,system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:#f5f0e6;color:#292c2c;font:16px/1.5 system-ui,sans-serif}main{max-width:1500px;margin:auto;padding:26px}header{border-bottom:2px solid;padding-bottom:18px}h1{font-size:clamp(25px,4vw,46px);margin:0}h1 span{color:#8b593c}p{max-width:75ch;margin:9px 0}a{color:inherit}form{display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin:22px 0}label{display:grid;gap:5px;font-size:14px}input,select,button{font:inherit;padding:8px;border:1px solid #777;background:#fffaf2;color:inherit;border-radius:3px}input[type=range]{padding:10px 0}button{cursor:pointer;background:#293f3e;color:#fff}button:disabled{opacity:.6;cursor:wait}.works{display:grid;grid-template-columns:1fr 1fr;gap:22px}figure{margin:0}figcaption{display:flex;justify-content:space-between;margin-bottom:10px;font-size:18px}canvas{display:block;width:100%;height:auto;background:#f5f0e6;box-shadow:0 3px 15px #30271925}.status{min-height:26px}small{color:#555}details{margin-top:24px}pre{white-space:pre-wrap}button.secondary{background:transparent;color:#293f3e}@media(max-width:760px){main{padding:16px}.works{grid-template-columns:1fr}input{max-width:100%}}
+</style>
+<main>
+<header><a href="../../">PROPORTION PIECE</a><h1>Oil, reconsidered. <span>V7 study</span></h1><p>The same composition, painted two ways. Compare the existing V6 with a new oil surface: pigment, bristles and relief developed together.</p></header>
+<form id="controls">
+<label>Seed<input id="seed" value="OIL-V7-STUDY-01"></label>
+<label>Composition<select id="mode"><option value="field">Orbital / Field</option><option value="spiral">Golden Trajectories</option><option value="rects">Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic" selected>Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
+<label>Format<select id="orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label>
+<label>Density <output id="densityValue">53</output><input id="density" type="range" min="0" max="100" value="53"></label>
+<button id="compare" type="submit">Compare V6 / V7</button><button id="another" type="button" class="secondary">Another</button><button id="download" type="button" class="secondary" disabled>Download V7 PNG</button>
+</form>
+<p id="status" class="status" role="status" aria-live="polite">Preparing the first comparison…</p>
+<div class="works"><figure><figcaption>Oil V6 <small id="time6"></small></figcaption><canvas id="v6" role="img" aria-label="Oil V6 painting"></canvas></figure><figure><figcaption>Oil V7 <small id="time7"></small></figcaption><canvas id="v7" role="img" aria-label="Oil V7 painting"></canvas></figure></div>
+<p><small>V7 is an experimental material. Paint marks and mixing differ from V6. Timings describe this device and composition.</small></p>
+<details><summary>Study measurements</summary><pre id="measurements"></pre></details>
+</main>
+<script src="../../js/random.js"></script>
+<script src="../../js/phi.js"></script>
+<script src="../../js/palettes.js"></script>
+<script src="../../js/marker.js"></script>
+<script src="../../js/phi-sheet-fit.js"></script>
+<script src="../../js/generator.js"></script>
+<script src="../../js/oil-surface.js"></script>
+<script src="../../js/oil-paint-v2.js"></script>
+<script src="../../js/oil-paint-v3.js"></script>
+<script src="../../js/oil-render.js"></script>
+<script src="../../js/oil-material.js"></script>
+<script src="../../js/oil-v1-core-a.js"></script>
+<script src="../../js/oil-v1-core-b.js"></script>
+<script src="../../js/oil-v1-core-c.js"></script>
+<script src="../../js/oil-paint-v1.js"></script>
+<script src="../../js/oil-brush-v2.js"></script>
+<script src="../../js/oil-brush-v3.js"></script>
+<script src="../../js/cpu-canvas.js"></script>
+<script src="../../js/cpu-material-versions.js"></script>
+<script src="../../js/oil-pigment.js"></script>
+<script src="../../js/oil-paint-v5.js"></script>
+<script src="../../js/oil-paint-v6.js"></script>
+<script src="../../js/oil-brush-v7.js"></script>
+<script src="../../js/oil-paint-v7.js"></script>
+<script>
+'use strict';
+const A=window.AlgoArt;A.rendererVersion=9;
+const defaults={"seed":"OIL-V7-STUDY-01","mode":"organic","orientation":"landscape","pen":"fine","paper":"#f5f0e6","palette":"golden","elements":36,"density":53,"complexity":71,"negativeSpace":41,"phiStrength":91,"recursion":4,"spiralInfluence":63,"goldenAngle":93,"nesting":44,"thickness":13,"wobble":32,"overdraw":3,"opacity":70,"pressure":36,"dryness":19,"curveBias":91,"shapeAmount":68,"overlap":65,"rotation":91,"colourCount":4,"saturation":86,"brightness":59,"grain":13,"lines":true,"circles":true,"rectangles":true,"polygons":true,"arcs":true};
+window.oilV7Defaults=defaults;
+const $=id=>document.getElementById(id);
+const query=new URLSearchParams(location.search);
+for(const key of ['seed','mode','orientation','density'])if(query.has(key))$(key).value=query.get(key);
+let revision=0,dragTimer,fullReady=false;
+const frame=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+function settings(){return {...defaults,seed:$('seed').value||defaults.seed,mode:$('mode').value,orientation:$('orientation').value,density:Number($('density').value)};}
+function busy(value){for(const id of ['compare','another','mode','orientation','seed'])$(id).disabled=value;}
+async function compare(event){
+ if(event)event.preventDefault();
+ const token=++revision;clearTimeout(dragTimer);busy(true);fullReady=false;$('download').disabled=true;
+ try{
+  const s=settings();$('densityValue').value=s.density;
+  $('status').textContent='Painting V7…';await frame();
+  if(token!==revision)return;
+  const t7=performance.now(),meta=A.renderOilPaintV7($('v7'),s,1,false),ms7=performance.now()-t7;
+  $('time7').textContent=(ms7/1000).toFixed(2)+' s';
+  $('status').textContent='Painting the V6 comparison…';await frame();
+  if(token!==revision)return;
+  const t6=performance.now();A.renderOilPaintV6($('v6'),s,1,false);const ms6=performance.now()-t6;
+  $('time6').textContent=(ms6/1000).toFixed(2)+' s';
+  $('status').textContent=ms7<ms6?'V7 rendered '+(ms6/ms7).toFixed(2)+'× faster in this comparison.':'Comparison ready. V7 was '+(ms7/ms6).toFixed(2)+'× the V6 render time in this comparison.';
+  $('measurements').textContent=JSON.stringify({v6Ms:ms6,v7Ms:ms7,...meta.work},null,2);
+  fullReady=true;$('download').disabled=false;
+  const q=new URLSearchParams({seed:s.seed,mode:s.mode,orientation:s.orientation,density:s.density});history.replaceState(null,'','?'+q);
+ }catch(e){$('status').textContent='The study could not render: '+e.message;throw e;}
+ finally{busy(false);}
+}
+$('controls').addEventListener('submit',compare);
+$('another').onclick=()=>{$('seed').value='OIL-V7-'+Math.floor(Math.random()*1e8);compare();};
+$('density').addEventListener('input',()=>{
+ const token=++revision;fullReady=false;$('download').disabled=true;$('densityValue').value=$('density').value;
+ clearTimeout(dragTimer);dragTimer=setTimeout(async()=>{
+  $('status').textContent='V7 preview — release the slider for the finished comparison.';await frame();
+  if(token!==revision)return;
+  A.renderOilPaintV7($('v7'),settings(),.35,false);$('time7').textContent='Preview';
+ },90);
+});
+$('density').addEventListener('change',compare);
+$('download').onclick=()=>{
+ if(!fullReady)return;
+ $('v7').toBlob(blob=>{if(!blob)return;const a=document.createElement('a'),url=URL.createObjectURL(blob);
+ a.href=url;a.download='proportion-piece-'+settings().seed.replace(/[^a-z0-9_-]/gi,'-')+'-oil-v7.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);},'image/png');
+};
+if(!query.has('manual'))compare();
+</script></html>

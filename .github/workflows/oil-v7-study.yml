@@ -1,0 +1,35 @@
+name: Oil V7 study
+on:
+  push:
+    branches: [study/oil-v7]
+  pull_request:
+    paths:
+      - 'js/oil-paint-v7.js'
+      - 'test/oil-v7/**'
+      - 'tests/oil-v7-browser.mjs'
+      - '.github/workflows/oil-v7-study.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: node --check js/oil-paint-v7.js
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-v7-http.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/test/oil-v7/ >/dev/null && break; sleep 1; done
+          node tests/oil-v7-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-v7-comparisons
+          path: oil-v7-results/
+
