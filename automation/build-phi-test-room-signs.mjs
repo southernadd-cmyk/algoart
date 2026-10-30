@@ -49,6 +49,7 @@ await build({
   });
  }
 }],
+ logLevel:'warning'
 });
 const bundle=await readFile(resolve(dir,'gallery-phi-test-room-signs-bundle.js'));
 const sha256=createHash('sha256').update(bundle).digest('hex');
