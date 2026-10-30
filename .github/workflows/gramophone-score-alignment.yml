@@ -7,7 +7,7 @@ on:
       - '.github/workflows/gramophone-score-alignment.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   analyse:
     runs-on: ubuntu-latest
@@ -23,6 +23,19 @@ jobs:
       - name: Match digitized scores against exact gallery OGGs
         run: |
           python automation/align-gramophone-scores.py --track both --out gramophone-alignment-candidates.json
+      - name: Preserve alignment candidate for independent inspection
+        if: success()
+        run: |
+          mkdir -p automation/alignment-evidence
+          cp gramophone-alignment-candidates.json automation/alignment-evidence/gramophone-candidates.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add automation/alignment-evidence/gramophone-candidates.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Record unpublished gramophone score alignment candidates"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
