@@ -1,4 +1,4 @@
-import {applyPhiRoomLighting} from './phi-room-lighting.mjs';
+import {applyRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs';
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {advanceLiftDoor} from './phi-lift-motion.mjs';
 import {addPhiDeskHologram} from './phi-desk-hologram.mjs';
@@ -2252,7 +2252,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   try{
     constructPhiGallery(plan,studyList);
     if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);
-    applyPhiRoomLighting(phiRoomLightEntries,plan.phi?.world);
+    applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
     phiGalleryMusic.setEmitters(phiSpeakerEmitters);
   }catch(error){
     // Remove partially constructed destination objects before recovery.

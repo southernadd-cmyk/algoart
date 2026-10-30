@@ -27,11 +27,11 @@ export function createPhiLightingComparison({planner=planPhiRoomLighting,baselin
   for(const button of panel.querySelectorAll('button')){
    button.setAttribute('aria-pressed',String(button.dataset.mode===mode));
    button.disabled=!ready||count===0;
-   if(refined)button.textContent=button.dataset.mode==='phi'?'Refined φ':'Live φ';
+   if(refined)button.textContent=button.dataset.mode==='phi'?'Live φ':'Previous φ';
   }
   panel.querySelector('p').textContent=!ready?'Preparing lighting…':!count?'Take the lift to a gallery floor to compare lighting.':mode==='phi'
    ?(refined?`${count} lights · entrance-led placement · smooth area balance · smaller offsets in narrow rooms.`:`${count} room lights · golden-division positions · 1:φ room balance. Same total intensity settings.`)
-   :(refined?`${count} lights · currently approved live φ lighting. Press B to compare in place.`:`${count} room lights · original positions and balance. Switch while standing in the same place.`);
+   :(refined?`${count} lights · previous φ lighting. Press B to compare in place.`:`${count} room lights · original positions and balance. Switch while standing in the same place.`);
  }
  const api={
   reset(){entries=[];ready=false;apply();},
@@ -51,6 +51,6 @@ export function createPhiLightingComparison({planner=planPhiRoomLighting,baselin
   event.preventDefault();api.setMode(mode==='phi'?'current':'phi');
  });
  panel.title='Press B to compare lighting while walking. φ divides each room’s main ceiling rectangle at 38.2% and 61.8%. Larger rooms receive the primary intensity. Settings sum equally; this does not imply equal perceived brightness.';
- if(refined)panel.title='Press B to compare live and refined φ lighting. Refined pools lean away from the main entrance; area weights vary continuously from 1 to φ. Same light count and total intensity settings.';
+ if(refined)panel.title='Press B to compare previous and current live φ lighting. Refined pools lean away from the main entrance; area weights vary continuously from 1 to φ. Same light count and total intensity settings.';
  globalThis.__phiLightingComparison=api;apply();return api;
 }

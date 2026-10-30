@@ -62,9 +62,10 @@ test('all archived lit rooms have an entrance, safe placement and preserved tota
  console.log('REFINED_LIGHTING_AUDIT',JSON.stringify({floors:archive.floors.length,rooms:report.length,reducedOffsets:report.filter(r=>r.offsetScale<1).length,smallest:report.slice(0,5)}));
  assert.ok(report.length>0);
 });
-test('refinement is confined to staging; production lighting source remains pinned',()=>{
+test('production uses the approved shared refinement; previous lighting remains a test comparison',()=>{
  const live=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
- assert.ok(!live.includes('phi-room-lighting-refined'));
+ assert.ok(live.includes("import {applyRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs'"));
+ assert.ok(live.includes('applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);'));
  const build=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
  assert.ok(build.includes('baselinePlanner:planPhiRoomLighting'));
  assert.ok(build.includes('planner:planRefinedPhiRoomLighting'));
@@ -92,4 +93,19 @@ test('comparison switches between actual live and refined plans, with exact reve
   close(refined.totalPower,live.totalPower);assert.equal(refined.count,live.count);
   api.setMode('current');assert.deepEqual(api.inspect(),live);
  }finally{globalThis.document=oldDoc;globalThis.window=oldWin;delete globalThis.__phiLightingComparison;}
+});
+
+import {applyRefinedPhiRoomLighting} from '../gallery/visit/phi-room-lighting-refined.mjs';
+test('live application exactly matches the approved refinement on a rotated floor',()=>{
+ const cell={x:0,z:0,w:4,h:9};
+ const phi={floor:{mergedRooms:[{pieces:[cell]}]},circulation:{lift:{portal:{axis:'x',at:0,centre:2}},doors:[]},bridges:[],world:{toWorld:(x,z)=>({x:z+21,z:-x-9})}};
+ const p=phi.world.toWorld(2,4.5),light=new THREE.SpotLight(0xfff3df,12),mount=new THREE.Group(),fallback=new THREE.Group();
+ light.position.set(p.x,8,p.z);light.target.position.set(p.x,5,p.z);mount.position.set(p.x,8.2,p.z);fallback.position.set(p.x,8.1,p.z);
+ const entries=[{cell,power:12,light,mount,fallback}];
+ const expected=planRefinedPhiRoomLighting(refineRoomLightEntries(entries,phi),phi.world.toWorld);
+ assert.deepEqual(applyRefinedPhiRoomLighting(entries,phi),expected);
+ close(light.position.x,expected[0].x);close(light.position.z,expected[0].z);close(light.intensity,expected[0].power);
+ close(light.target.position.x,light.position.x);close(mount.position.z,light.position.z);close(fallback.position.x,light.position.x);
+ assert.equal(light.position.y,8);assert.equal(light.target.position.y,5);assert.equal(light.castShadow,false);
+ assert.deepEqual(applyRefinedPhiRoomLighting([],phi),[]);
 });
