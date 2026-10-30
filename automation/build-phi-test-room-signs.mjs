@@ -79,6 +79,9 @@ replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
 // TEST ONLY: simple A/B. Live gallery renderer is unchanged.
 replace("import * as THREE from 'three';",
  "import {createPhiPostFX} from './phi-post-fx.mjs';\nimport * as THREE from 'three';");
+// Give only source paintings a test-only protection layer. Sculpture marks carry userData.study.
+replace('  face.position.set(p.x,centreY,p.z);',
+ '  face.userData.phiArtOriginal=true;\n  face.position.set(p.x,centreY,p.z);');
 replace('const wall=galleryFinish.wall;',
  'const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera);\nconst wall=galleryFinish.wall;');
 replace('  renderer.setSize(innerWidth,innerHeight);',

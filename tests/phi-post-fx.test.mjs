@@ -67,3 +67,17 @@ test('installations-only glow selection excludes artwork',()=>{
 test('performance metrics retain frame spikes',()=>{
  assert.deepEqual(phiFXSummary([...Array(19).fill(16),64,250]),{median:16,p95:64,stalls:2,count:21});
 });
+
+test('original artwork pixels restored after architectural processing',()=>{
+ const builder=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
+ const live=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
+ const fx=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
+ const mask=readFileSync(new URL('../gallery/visit/phi-art-protection.mjs',import.meta.url),'utf8');
+ assert.match(builder,/phiArtOriginal=true/);
+ assert.doesNotMatch(live,/phiArtOriginal|createArtProtection/);
+ assert.match(fx,/compositor.addPass\(artProtection.pass\)/);
+ assert.match(fx,/artProtection.capture\(\)/);
+ assert.match(fx,/e.fullPass.enabled=false/);
+ assert.match(mask,/camera.layers.set\(ART_LAYER\)/);
+ assert.match(mask,/originalPixel=texture2D\(originalBuffer,vUv\)/);
+});

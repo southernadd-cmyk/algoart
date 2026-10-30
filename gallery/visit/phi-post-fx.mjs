@@ -4,6 +4,7 @@ import {
  SSAOEffect,BrightnessContrastEffect,HueSaturationEffect,VignetteEffect,
  NoiseEffect,DepthOfFieldEffect,ToneMappingEffect,ToneMappingMode
 } from 'postprocessing';
+import {createArtProtection} from './phi-art-protection.mjs';
 
 export const PHI_FX_PRESETS=Object.freeze(['original','architectural','luminous','photographic']);
 export const PHI_FX_CONTROLS=Object.freeze([
@@ -80,7 +81,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
  const settings=Object.fromEntries(Object.keys(PHI_FX_DEFAULTS).map(p=>[p,phiFXSettings(p)]));
  const stats=window.__phiPostFX={preset:'original',active:false,errors:[],frames,summaries:{},
   selectedGlowMeshes:0,focusActive:false,settings,renderer:'original'};
- let preset='original',bypass=false,composer=null,effects=null,selection=null,dofPass=null;
+ let preset='original',bypass=false,composer=null,effects=null,selection=null,dofPass=null,artProtection=null;
  let previous=0,lastMode='',lastUI=0,lastGlowScan=0,selectedIds='';
  // A small, collapsible workshop: all sliders are native, keyboard-accessible and live.
  const panel=document.createElement('details');panel.id='phi-post-fx';panel.open=true;
@@ -116,7 +117,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
   input.addEventListener('change',()=>{if(preset==='original')return;settings[preset][key]=key==='aoSamples'?Number(input.value):input.value;apply();});
   label.append(input);selectors.append(label);return input;
  };
- const glowSelect=makeSelect('Glow target','glowMode',[['off','None'],['all','Entire scene'],['installations','Hologram & installations only']]);
+ const glowSelect=makeSelect('Glow target','glowMode',[['off','None'],['all','All installations (art protected)'],['installations','Hologram & installations only']]);
  const dofSelect=makeSelect('Depth of field','dofMode',[['off','Off'],['inspection','Only when inspecting artwork'],['preview','Preview throughout the room']]);
  const samplesSelect=makeSelect('AO samples (higher = slower)','aoSamples',[[4,'4 — fast'],[6,'6 — balanced'],[8,'8 — detailed'],[12,'12 — high'],[16,'16 — maximum']].map(([v,t])=>[String(v),t]));
  controlsWrap.append(selectors);
@@ -193,6 +194,8 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
   const vignette=new VignetteEffect({eskil:false}),grain=new NoiseEffect({premultiply:false});
   compositor.addPass(new EffectPass(camera,colour,sat,grain,vignette,
    new ToneMappingEffect({mode:ToneMappingMode.NEUTRAL})));
+  artProtection=createArtProtection(THREE,renderer,scene,camera);
+  compositor.addPass(artProtection.pass);
   compositor.setSize(innerWidth,innerHeight,false);
   // Until explicitly enabled, expensive depth and bloom passes stay dormant.
   normals.enabled=false;aoPass.enabled=false;fullPass.enabled=false;
@@ -209,8 +212,9 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
    glow.intensity=s.bloomIntensity;glow.luminanceMaterial.threshold=s.bloomThreshold;
    glow.mipmapBlurPass.radius=s.bloomRadius;
   }
-  e.fullPass.enabled=s.glowMode==='all'&&s.bloomIntensity>0;
-  e.selectedPass.enabled=s.glowMode==='installations'&&s.bloomIntensity>0;
+  // Never let whole-scene bloom spread halos from the painting paper.
+  e.fullPass.enabled=false;
+  e.selectedPass.enabled=s.glowMode!=='off'&&s.bloomIntensity>0;
   e.ao.intensity=s.aoIntensity;e.ao.ssaoMaterial.radius=s.aoRadius;e.ao.samples=s.aoSamples;
   e.normals.enabled=e.aoPass.enabled=s.aoIntensity>0;
   e.dof.bokehScale=s.bokeh;e.dof.cocMaterial.focusRange=s.focusRange;
@@ -274,7 +278,8 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
   }
   try{
    if(!on){renderer.autoClear=true;renderer.render(scene,camera);}
-   else{renderer.autoClear=false;composer.render(dt);renderer.autoClear=true;}
+   else{artProtection.capture();stats.protectedArtworkMeshes=artProtection.stats.protectedMeshes;
+    renderer.autoClear=false;composer.render(dt);renderer.autoClear=true;}
   }catch(error){
    stats.errors.push(String(error));console.error('[FX lab] original renderer fallback',error);
    preset='original';bypass=false;stats.active=false;
@@ -291,7 +296,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
    lastUI=now;
   }
  }
- function resize(w,h){composer?.setSize(w,h,false);}
+ function resize(w,h){composer?.setSize(w,h,false);artProtection?.resize(w,h);}
  document.addEventListener('visibilitychange',()=>{previous=0;});
  const requested=new URLSearchParams(location.search).get('fx');
  if(requested==='on')setPreset('architectural');
