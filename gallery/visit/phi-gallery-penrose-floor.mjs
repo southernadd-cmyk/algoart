@@ -1,4 +1,4 @@
-// Muted Penrose P3 floors for selected TEST exhibition rooms only.
+// Muted Penrose P3 floors for selected exhibition rooms in live and test.
 // Existing PBR concrete floors are retained. UV-aligned inlays add no geometry.
 const URL_INLAY=new URL('./textures/reception-penrose-inlay.svg?v=bold-brass-v2-20261030',import.meta.url).href;
 function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}

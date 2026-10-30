@@ -14,11 +14,8 @@ const replace=(before,after)=>{
 };
 // Signs are shared in the production source; only navigation differs on test.
 replace("import * as THREE from 'three';",
-  "import {stagingFloorUrl} from '../../test/virtual-gallery/phi-stage-routing.mjs';\nimport {chooseGalleryPenroseRooms,prepareGalleryPenroseMaterial,pieceRoomIndex} from './phi-gallery-penrose-floor.mjs';\nimport * as THREE from 'three';");
-// The approved reception Penrose inlay now comes from the shared live source.
-// The test-only gallery finish selects just one or two exhibition rooms per day.
-replace(" for(const p of phi.pieces){\n   const slab=staticBlock(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,roomFloor);\n   if(roomFloor===receptionTilePreview)alignReceptionTileUvs(slab);\n }",
- " const galleryPenroseRooms=exhibitDate===RECEPTION?[]:chooseGalleryPenroseRooms(phi.floor.mergedRooms,exhibitDate);\n const galleryPenroseMaterial=galleryPenroseRooms.length\n  ?prepareGalleryPenroseMaterial(THREE,galleryFinish.floor,phi.pieces,{lowPower:galleryFinish.lowPower})\n  :null;\n if(GALLERY_DEBUG)window.__phiGalleryPenrose={date:exhibitDate,rooms:galleryPenroseRooms,kind:'subtle five-grid rhombs',ready:galleryPenroseMaterial?.userData?.galleryPenrose?.status||'not-used'};\n for(const p of phi.pieces){\n   const selected=galleryPenroseMaterial&&galleryPenroseRooms.includes(pieceRoomIndex(p,phi.floor.mergedRooms));\n   const finish=selected?galleryPenroseMaterial:roomFloor;\n   const slab=staticBlock(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,finish);\n   if(finish===receptionTilePreview||selected)alignReceptionTileUvs(slab);\n }");
+  "import {stagingFloorUrl} from '../../test/virtual-gallery/phi-stage-routing.mjs';\nimport * as THREE from 'three';");
+// Approved Penrose floor treatments are now shared by live and test galleries.
 // Only the staging bundle is patched. The live gallery continues to use its
 // current URL semantics, and test assets still load from gallery/visit/.
 replace("history.replaceState(null,'',date===RECEPTION?location.pathname:'?date='+date);",

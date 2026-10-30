@@ -10,6 +10,7 @@ import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
 import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
 import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
 import {installReceptionPenroseInlay} from './reception-penrose-inlay.mjs';
+import {chooseGalleryPenroseRooms,prepareGalleryPenroseMaterial,pieceRoomIndex} from './phi-gallery-penrose-floor.mjs';
 import {planGallerySpeakers,addGalleryCeilingSpeaker} from './gallery-speakers.mjs?v=distributed-record-20261027';
 import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=distributed-record-20261027';
 import {addPhiReceptionMetalRoof} from './phi-reception-metal-roof.mjs';
@@ -1474,9 +1475,18 @@ function constructPhiGallery(layout,studies){
  // Follow its physical segments so door openings and the outer brick stay intact.
  const foyer=exhibitDate===RECEPTION?[...phi.floor.mergedRooms].sort((a,b)=>b.area-a.area)[0]:null;
  const rearWallAt=foyer?Math.max(...foyer.pieces.map(p=>p.z+p.h)):null;
+ // Selected exhibition rooms get the approved, muted Penrose stone/brass
+ // inlay. Reception retains its separate stronger graphite/brass treatment.
+ const galleryPenroseRooms=exhibitDate===RECEPTION?[]:chooseGalleryPenroseRooms(phi.floor.mergedRooms,exhibitDate);
+ const galleryPenroseMaterial=galleryPenroseRooms.length
+  ?prepareGalleryPenroseMaterial(THREE,galleryFinish.floor,phi.pieces,{lowPower:galleryFinish.lowPower})
+  :null;
+ if(GALLERY_DEBUG)window.__phiGalleryPenrose={date:exhibitDate,rooms:galleryPenroseRooms,kind:'subtle five-grid rhombs',ready:galleryPenroseMaterial?.userData?.galleryPenrose?.status||'not-used'};
  for(const p of phi.pieces){
-   const slab=staticBlock(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,roomFloor);
-   if(roomFloor===receptionTilePreview)alignReceptionTileUvs(slab);
+   const selected=galleryPenroseMaterial&&galleryPenroseRooms.includes(pieceRoomIndex(p,phi.floor.mergedRooms));
+   const finish=selected?galleryPenroseMaterial:roomFloor;
+   const slab=staticBlock(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,finish);
+   if(finish===receptionTilePreview||selected)alignReceptionTileUvs(slab);
  }
  for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,receptionWindow,ROOM_HEIGHT)){
   const len=part.hi-part.lo;if(len<.04)continue;
