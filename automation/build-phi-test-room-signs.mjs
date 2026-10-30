@@ -23,6 +23,15 @@ replace("history.replaceState(null,'',date===RECEPTION?location.pathname:'?date=
 // The staging archive can be updated after publication; never force-cache its HTML.
 replace('fetchGalleryText(url,{cache}),',"fetchGalleryText(url,{cache:'no-store'}),");
 
+// Lighting experiment exists only in the staging bundle. Keep production source intact.
+replace("import * as THREE from 'three';",
+ "import {createPhiLightingComparison} from '../../test/virtual-gallery/phi-lighting-comparison.mjs';\nimport * as THREE from 'three';\nconst phiLightingComparison=createPhiLightingComparison();");
+replace(' const staticArchitecture=[];', ' phiLightingComparison.reset();\n const staticArchitecture=[];');
+replace('  scene.add(light,light.target);\n }\n // Put visible portal frames',
+ '  scene.add(light,light.target);\n  if(exhibitDate!==RECEPTION)phiLightingComparison.register({light,mount,fallback,cell:{...cell},power:light.intensity});\n }\n // Put visible portal frames');
+replace('    if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);',
+ '    if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);\n    phiLightingComparison.finish(plan.phi?.world);');
+
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
