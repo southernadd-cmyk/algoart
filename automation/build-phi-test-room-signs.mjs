@@ -45,6 +45,12 @@ await build({
            "problem.textContent=s.loading?'Preparing the 8bars study…':s.problem;toggle.textContent=s.loading?'Cancel preparation':s.playing?'Pause record':'Play record';");
       swap("When it finishes, the next begins; both repeat through the gallery and lift speakers.",
            "The two historical records play in sequence. Golden Frequency loops independently. Sound uses the gallery and lift speakers.");
+      swap('<div class="record-tracks" role="group" aria-label="Choose a recording"></div>',
+           '<div class="record-tracks" role="group" aria-label="Choose a recording"></div><button type="button" class="record-compose">Compose another</button>');
+      swap("trackButtons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===s.index)));",
+           "trackButtons.forEach((button,i)=>{button.setAttribute('aria-pressed',String(i===s.index));if(record.tracks[i]?.goldenStudy)button.textContent=record.tracks[i].composer+' — '+record.tracks[i].title;});panel.querySelector('.record-compose').disabled=!!s.loading;");
+      swap("toggle.addEventListener('click',()=>record.toggle());",
+           "toggle.addEventListener('click',()=>record.toggle());panel.querySelector('.record-compose').addEventListener('click',()=>record.composeAnother());");
       return {contents:text,loader:'js',resolveDir:dir};
     });
   }
