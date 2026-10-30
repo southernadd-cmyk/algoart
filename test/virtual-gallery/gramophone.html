@@ -2,10 +2,10 @@
 const params=new URLSearchParams(location.search);
 if(params.has('screen')){
  const nav=document.createElement('nav');nav.innerHTML='<a href="?screen=desktop">Desktop</a><a href="?screen=phone">Phone</a><a href="?screen=short">Short landscape</a>';nav.querySelectorAll('a').forEach(a=>a.setAttribute('href',location.pathname+a.getAttribute('href')));document.body.append(nav);
- const frame=document.createElement('iframe'),size={desktop:[1280,900],phone:[390,844],short:[844,390]}[params.get('screen')]||[1280,900];frame.width=size[0];frame.height=size[1];frame.src=location.pathname+'?embedded';frame.title='Actual gramophone modal';document.body.append(frame);
+ const frame=document.createElement('iframe'),size={desktop:[1280,900],phone:[390,844],short:[844,390]}[params.get('screen')]||[1280,900];frame.width=size[0];frame.height=size[1];frame.src=location.pathname+'?embedded&revision=dialog-v3-20261030';frame.title='Actual gramophone modal';document.body.append(frame);
 }else{
  document.body.innerHTML='<div class="top-actions"><span>PROPORTION PIECE · gallery bar (layer test)</span></div><canvas id="world" tabindex="0"></canvas><p class="preview-label">Isolated test of the tower’s actual listening modal. No WebGL required.</p>';
- const {createPhiGalleryMusic}=await import('./phi-gramophone-preview.js');
+ const {createPhiGalleryMusic}=await import('./phi-gramophone-preview.js?v=dialog-v3-20261030');
  const music=createPhiGalleryMusic({Vector3:class {constructor(){this.x=0;this.y=0;this.z=0;}}},{canvas:document.querySelector('#world'),debug:true});
  music.open();
 }
