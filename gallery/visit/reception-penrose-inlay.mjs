@@ -14,7 +14,15 @@ export function installReceptionPenroseInlay(THREE,material,pieces,{lowPower=fal
   receptionPenroseSpan:{value:span},
   receptionPenroseBaseRepeat:{value:material.userData.tileMeters||1.8}
  };
- const texture=new THREE.TextureLoader().load(INLAY_URL,undefined,undefined,error=>console.warn('Penrose inlay unavailable; retaining reception square tiles',error));
+ const inlayInfo={kind:'five-grid Penrose P3 rhombs',span,centre:[centre.x,centre.y],status:'loading'};
+ material.userData.penroseInlay=inlayInfo;
+ const texture=new THREE.TextureLoader().load(INLAY_URL,()=>{
+  inlayInfo.status='loaded';
+  if(globalThis.__phiReceptionPenroseTest)console.info('[Reception Penrose] texture loaded');
+ },undefined,error=>{
+  inlayInfo.status='failed';
+  console.warn('Penrose inlay unavailable; retaining reception square tiles',error);
+ });
  texture.colorSpace=THREE.SRGBColorSpace;
  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
  texture.anisotropy=lowPower?1:4;
@@ -35,7 +43,11 @@ export function installReceptionPenroseInlay(THREE,material,pieces,{lowPower=fal
                    0.5-(inlayXZ.y-receptionPenroseCentre.y)/receptionPenroseSpan);
  if(all(greaterThanEqual(inlayUV,vec2(0.0)))&&all(lessThanEqual(inlayUV,vec2(1.0)))){
   vec4 bronze=texture2D(receptionPenroseMap,inlayUV);
-  diffuseColor.rgb=mix(diffuseColor.rgb,bronze.rgb,0.8*bronze.a);
+  // Graphite on light cube tiles, warm metal on darker cube tiles.
+  float baseLuma=dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722));
+  float darkTile=1.0-smoothstep(0.25,0.56,baseLuma);
+  vec3 adaptiveInlay=mix(bronze.rgb,max(bronze.rgb,vec3(0.89,0.67,0.34)),darkTile*0.94);
+  diffuseColor.rgb=mix(diffuseColor.rgb,adaptiveInlay,clamp(bronze.a,0.0,1.0));
  }
 #endif`);
   shader.fragmentShader=shader.fragmentShader.replace('void main() {',`uniform sampler2D receptionPenroseMap;
@@ -44,9 +56,9 @@ uniform float receptionPenroseSpan;
 uniform float receptionPenroseBaseRepeat;
 void main() {`);
  };
- material.customProgramCacheKey=()=>String(oldCacheKey?.()||'')+'|reception-penrose-v1';
+ material.customProgramCacheKey=()=>String(oldCacheKey?.()||'')+'|reception-penrose-v2-bold';
  material.userData.penroseInlayInstalled=true;
- material.userData.penroseInlay={kind:'five-grid Penrose P3 rhombs',span,centre:[centre.x,centre.y]};
+ // inlayInfo above tracks the texture load state.
  material.needsUpdate=true;
  return material;
 }
