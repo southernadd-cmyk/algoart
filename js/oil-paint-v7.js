@@ -9,6 +9,126 @@ const hex=c=>'rgb('+c.map(v=>Math.round(clamp(v,0,255))).join(',')+')';
 const rng=s=>A.makeR(String(s));
 const shifted=(p,a,d)=>({x:p.x+Math.cos(a)*d,y:p.y+Math.sin(a)*d});
 const blend=(a,b,t)=>A.oilPigmentActive.tone(a,b,t);
+const sourceBrush=(()=>{const minmax=clamp,lerp=(a,b,t)=>a+(b-a)*t;
+function hexRGB(h){
+  var m=String(h).match(/^#([\da-f]{6})$/i);
+  return m?[0,2,4].map(function(i){return parseInt(m[1].slice(i,i+2),16)}):null;
+}
+function sourceRGB(str){
+  var rgb=hexRGB(str);if(rgb)return rgb;
+  var m=String(str||'').match(/^rgb\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)\s*\)$/i);
+  if(m)return [+m[1],+m[2],+m[3]];
+  m=String(str||'').match(/^hsl\(\s*([\d.]+)(?:deg)?(?:\s+|,\s*)([\d.]+)%(?:\s+|,\s*)([\d.]+)%/i);
+  if(!m)return null;
+  var h=((+m[1]%360)+360)%360/60,s=+m[2]/100,l=+m[3]/100;
+  var chroma=(1-Math.abs(2*l-1))*s,x=chroma*(1-Math.abs(h%2-1)),offset=l-chroma/2;
+  var t=h<1?[chroma,x,0]:h<2?[x,chroma,0]:h<3?[0,chroma,x]:
+    h<4?[0,x,chroma]:h<5?[x,0,chroma]:[chroma,0,x];
+  return t.map(function(v){return Math.round((v+offset)*255)});
+}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function between(a,b,t){return{x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)}}
+function tangent(a,b){return Math.atan2(b.y-a.y,b.x-a.x)}
+function shift(p,angle,amount){return{x:p.x+Math.cos(angle)*amount,y:p.y+Math.sin(angle)*amount}}
+function hash(x,y,s){
+  var n=(Math.imul(x,374761393)^Math.imul(y,668265263)^s)|0;
+  n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295;
+}
+
+/* Smooth, continuous canvas tooth. Earlier (x>>1,y>>1) hash produced
+ * conspicuous square cells in close-up: no raster-aligned block noise. */
+function smoothTooth(x,y,seed){
+  var gx=x/5.5,gy=y/5.5,ix=Math.floor(gx),iy=Math.floor(gy),
+      fx=gx-ix,fy=gy-iy;
+  fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);
+  return lerp(lerp(hash(ix,iy,seed),hash(ix+1,iy,seed),fx),
+    lerp(hash(ix,iy+1,seed),hash(ix+1,iy+1,seed),fx),fy);
+}
+
+function parsePath(src){
+  var t=String(src.d||'').match(/[MLC]|[-+]?(?:\d*\.?\d+)(?:e[-+]?\d+)?/gi)||[];
+  var pts=[],i=0,cmd='',prev=null;
+  function next(){return +t[i++]}
+  while(i<t.length&&pts.length<950){
+    if(/^[MLC]$/.test(t[i])){cmd=t[i++];continue}
+    if(cmd==='M'||cmd==='L'){
+      if(i+1>=t.length)break;prev={x:next(),y:next()};pts.push(prev);cmd='L';
+    }else if(cmd==='C'&&prev){
+      if(i+5>=t.length)break;
+      var a={x:next(),y:next()},b={x:next(),y:next()},c={x:next(),y:next()},from=prev;
+      var n=Math.max(6,Math.min(16,Math.ceil(dist(from,c)/15)));
+      for(var j=1;j<=n;j++){
+        var u=j/n,v=1-u;
+        pts.push({x:v*v*v*from.x+3*v*v*u*a.x+3*v*u*u*b.x+u*u*u*c.x,
+          y:v*v*v*from.y+3*v*v*u*a.y+3*v*u*u*b.y+u*u*u*c.y});
+      }
+      prev=c;cmd='L';
+    }else break;
+  }
+  if(src.transform){
+    var m=String(src.transform).match(/[-+]?(?:\d*\.?\d+)(?:e[-+]?\d+)?/gi);
+    if(m&&m.length===6){m=m.map(Number);
+      pts=pts.map(function(p){return{x:m[0]*p.x+m[2]*p.y+m[4],y:m[1]*p.x+m[3]*p.y+m[5]}});
+    }
+  }
+  return pts;
+}
+function sample(points,step){
+  if(points.length<2)return[];
+  var result=[points[0]],carry=0;
+  for(var i=1;i<points.length&&result.length<1500;i++){
+    var a=points[i-1],b=points[i],d=dist(a,b);
+    if(d<.05)continue;
+    var walked=step-carry;
+    while(walked<d&&result.length<1499){result.push(between(a,b,walked/d));walked+=step}
+    carry=d-(walked-step);
+    if(carry>=step)carry%=step;
+  }
+  if(dist(result[result.length-1],points[points.length-1])>1)result.push(points[points.length-1]);
+  return result;
+}
+function getChains(paths){
+  var chains=[],seen=new Set(),sourceCount=paths.length;
+  for(var i=0;i<paths.length;i++){
+    var src=paths[i],rgb=sourceRGB(src.stroke),pts=parsePath(src);
+    if(!rgb||pts.length<2)continue;
+    var len=0;for(var j=1;j<pts.length;j++)len+=dist(pts[j-1],pts[j]);
+    if(len<6)continue;
+    var first=pts[0],last=pts[pts.length-1];
+    var id=[Math.round(first.x/4),Math.round(first.y/4),Math.round(last.x/4),
+      Math.round(last.y/4),Math.round(len/12),rgb.join(':')].join('|');
+    if(seen.has(id))continue;seen.add(id);
+    chains.push({pts:sample(pts,7),rgb:rgb,width:src.width||4,
+      length:len,sourceIndex:i,first:first,last:last});
+  }
+  // Dense V1 lost strokes after hard 115-long/145-short limits.
+  // Retain source draw order after ranking by visible length/weight.
+  // The bounded cap is for predictable browser memory/runtime, not a
+  // silent compositional rewrite. Expose the retained/dropped counts.
+  var limit=540;
+  if(chains.length>limit){
+    var ranked=chains.map(function(c){
+      return {c:c,score:Math.sqrt(c.length)*(2+Math.min(c.width,15))+
+        (c.length<75?25:0)};
+    }).sort(function(a,b){return b.score-a.score||a.c.sourceIndex-b.c.sourceIndex});
+    chains=ranked.slice(0,limit).map(function(x){return x.c});
+    chains.sort(function(a,b){return a.sourceIndex-b.sourceIndex});
+  }
+  chains.sourceCount=sourceCount;
+  chains.eligibleCount=seen.size;
+  chains.droppedCount=seen.size-chains.length;
+  return chains;
+}
+function sourceBrushProfile(ch,mode,r,setting){
+  if(['flat','filbert','dry','knife'].includes(setting))return setting;
+  if(mode==='rects'||mode==='geometric')return r.chance(.28)?'knife':'flat';
+  if(mode==='organic'||mode==='spiral')return r.chance(.84)?'filbert':'flat';
+  if(mode==='scribble'||mode==='burst')return r.chance(.35)?'dry':'filbert';
+  if(mode==='network')return r.chance(.70)?'filbert':'dry';
+  return r.chance(.56)?'filbert':'flat';
+}
+
+return {getChains,profile:sourceBrushProfile};})();
 function massContour(area){
  const out=new Path2D(),pts=area.contour||[];
  if(pts.length){out.moveTo(pts[0].x,pts[0].y);for(const p of pts.slice(1))out.lineTo(p.x,p.y);out.closePath();}
@@ -41,6 +161,78 @@ function physicalEdgePath(area,material){
   out.closePath();
   return out;
 }
+
+function oilTerritory(ctx,mask,cell,rgb,sourceSeed,painter){
+  var shape=massContour(cell),r=rng(sourceSeed+'|v5c-oil'),
+      margin=Math.min(cell.width,cell.height)*.13,
+      start=cell.box.x+margin,end=cell.box.x+cell.box.w-margin,
+      top=cell.box.y+margin,bottom=cell.box.y+cell.box.h-margin,
+      dx=end-start,dy=bottom-top,count=Math.max(2,Math.min(6,
+        Math.round(dy/Math.max(22,cell.height*.23)))),
+      deposits=0;
+  // The underlying block is driven by the actual φ-cell footprint.
+  // Loaded bristles break up the surface; not just a texture on a polygon.
+  ctx.save();mask.save();
+  ctx.clip(shape);mask.clip(shape);
+  ctx.globalAlpha=A.oilOpaquePaint===true?1:.77;ctx.fillStyle=hex(blend(rgb,[243,225,198],.08));ctx.fill(shape);
+  mask.globalAlpha=.46;mask.fillStyle='#fff';mask.fill(shape);
+  for(var i=0;i<count;i++){
+    var y=top+(i+.5)*dy/count,
+        reverse=i%2===1,
+        jitter=r.range(-cell.height*.018,cell.height*.018),
+        p1={x:reverse?end:start,y:y+jitter},
+        p2={x:reverse?start:end,y:y+jitter},
+        mid={x:(p1.x+p2.x)/2,y:y+r.range(-5,5)},
+        width=Math.min(cell.height*.39,Math.max(12,dy/count*1.26));
+    painter(ctx,mask,[p1,mid,p2],width,rgb,
+      i%3===0?'flat':'filbert',r,{thickness:.95,drag:.4,bristles:.9});
+    deposits++;
+  }
+  ctx.restore();mask.restore();return deposits;
+}
+
+
+function oilGuideTerritory(ctx,mask,cell,painter){
+  var r=rng(cell.seed+'|v5d-oil-guide'),shape=massContour(cell),
+      base=cell.rgb,axis=cell.axis||[],deposits=0,
+      kind=cell.kind,halfWidth=clamp(
+        kind==='constructed-focal-form'?Math.min(cell.width,cell.height)*.36:
+        kind==='trajectory-ribbon'?Math.min(cell.width,cell.height)*.32:
+        Math.min(cell.width,cell.height)*.42,12,48);
+  ctx.save();mask.save();
+  ctx.clip(shape);mask.clip(shape);
+  // A restrained under-layer is *material-specific*; actual bristle
+  // contact breaks up the top paint volume and controls its lighting.
+  ctx.globalAlpha=A.oilOpaquePaint===true?1:(kind==='constructed-focal-form'?.54:.56);
+  ctx.fillStyle=hex(blend(base,[241,225,205],.08));
+  ctx.fill(shape);
+  mask.globalAlpha=.29;mask.fillStyle='#fff';mask.fill(shape);
+  var strokes=[];
+  if(axis.length>1){
+    var stride=Math.max(1,Math.floor((axis.length-1)/6));
+    for(var i=0;i<axis.length-1;i+=stride){
+      var pts=axis.slice(i,Math.min(axis.length,i+stride+2));
+      if(pts.length>1)strokes.push(pts);
+    }
+  }else{
+    var len=Math.min(cell.width,cell.height)*.45,
+        v={x:cell.x,y:cell.y},a=cell.angle||0;
+    strokes.push([shifted(v,a,-len),v,shifted(v,a,len)]);
+  }
+  strokes.slice(0,9).forEach(function(pts,i){
+    // Caution: all geometry comes from the actual source guide; no
+    // background-fill polygons or invented complete spiral enclosure.
+    var width=halfWidth*r.range(.82,1.17),
+        colour=blend(base,i%3===0?[241,224,200]:[53,45,41],
+          i%3===0?.055:.018);
+    painter(ctx,mask,pts,width,colour,
+      kind==='constructed-focal-form'?'flat':'filbert',
+      r,{thickness:.87,drag:.56,bristles:.93});
+    deposits++;
+  });
+  ctx.restore();mask.restore();return deposits;
+}
+
 
 function oilColourField(ctx,mask,area,painter,plan,progress){
   const poly=physicalEdgePath(area,'oil'),r=rng(area.seed+'|v5j-source-bristle'),
@@ -193,7 +385,7 @@ function pigmentHistory(width,height,model,voids){
    if(selected<0||weight<.2)return rgb;
    pickups++;
    const k=selected*3;
-   return model.mix(rgb,[colours[k],colours[k+1],colours[k+2]],Math.min(.20,weight*.16));
+   return model.mix(rgb,[colours[k],colours[k+1],colours[k+2]],Math.min(.10,weight*.08));
   },
   deposit(points,width,rgb){
    const radius=Math.min(5,Math.max(0,Math.floor(width/(cell*2))));
@@ -248,7 +440,7 @@ function lightSurface(pig,mask,stats){
   finalReadbacks:2,strokeReadbacks:0,lightingCacheBytes:7*w*8+optical.byteLength});
 }
 A.renderOilPaintV7=function(target,settings,scale=1,reveal=false){
- if(!A.captureCompositionV5||!A.oilPaintV4ETest?.drawContactBrushV3||!A.oilPigment)
+ if(!A.captureCompositionV5||!A.oilPaintV4ETest?.drawContactBrushV7||!A.oilPigment)
   throw Error('Oil V7 requires the source planner, V3 contact brush and V5 pigments');
  if(!(Number.isFinite(scale)&&scale>0&&scale<=8))throw Error('Oil V7 scale must be >0 and <=8');
  const saved={},keys=['oilPigmentActive','oilStageDRefinement','oilStageCScale','oilStageCStats','oilOpaquePaint'];
@@ -260,7 +452,7 @@ A.renderOilPaintV7=function(target,settings,scale=1,reveal=false){
   meta=A.renderViaCPUCanvas(canvas=>{
    const model=A.oilPigment.createModel();
    A.oilPigmentActive=model;A.oilOpaquePaint=true;A.oilStageDRefinement=true;A.oilStageCScale=scale;A.oilStageCStats={};
-   A.oilPaintV4ETest.resetToothSlot('cpu');
+   A.oilPaintV4ETest.resetV7ToothSlot('cpu');
    const opts={phiFraming:A.phiFramingEnabled===true,maxRegions:28};
    const capture=A.captureCompositionV5(settings,opts);
    const plan=A.planCompositionV5FromSource(capture,settings,opts);
@@ -283,38 +475,63 @@ A.renderOilPaintV7=function(target,settings,scale=1,reveal=false){
     pig.clip(clip,'evenodd');mask.clip(clip,'evenodd');
    }
    const history=pigmentHistory(plan.width,plan.height,model,plan.protectedVoids);
-   const physical=A.oilPaintV4ETest.drawContactBrushV3;
+   const physical=A.oilPaintV4ETest.drawContactBrushV7;
+   let transfer=true;
    const paint=(ctx,height,points,width,rgb,profile,r,options)=>{
-    const colour=history.colour(points,rgb);
+    const colour=transfer?history.colour(points,rgb):rgb;
     const result=physical(ctx,height,points,width,colour,profile,r,options);
-    history.deposit(points,width,colour);stats.brushCalls++;
+    if(transfer)history.deposit(points,width,colour);stats.brushCalls++;
     return result;
    };
    const checkpoint=name=>{if(A.materialStageCapture)A.materialStageCapture(name,canvas);};
    checkpoint('oil-v7-ground');
-   let chains=capture.chains.filter(c=>c.length>=6&&c.pts.length>=2);
-   stats.eligibleChains=chains.length;
-   if(chains.length>540){
-    chains=chains.map(c=>({c,score:Math.sqrt(c.length)*(2+Math.min(c.width,15))+(c.length<75?25:0)}))
-     .sort((a,b)=>b.score-a.score||a.c.sourceIndex-b.c.sourceIndex).slice(0,540)
-     .map(x=>x.c).sort((a,b)=>a.sourceIndex-b.sourceIndex);
-   }
-   stats.sourceChains=chains.length;stats.droppedChains=stats.eligibleChains-chains.length;
+   const chains=sourceBrush.getChains(capture.paths);
+   stats.eligibleChains=chains.eligibleCount;stats.sourceChains=chains.length;stats.droppedChains=chains.droppedCount;
    const r=rng(settings.seed+'|oil-v7|'+settings.mode);
    const paintStart=performance.now();
    for(let i=0;i<chains.length;i++){
     const c=chains[i],width=clamp(6+c.width*1.8,9,58)*1.828*r.range(.90,1.08);
-    const profile=['rects','geometric'].includes(settings.mode)?(r.chance(.28)?'knife':'flat'):
-     r.chance(.22)?'dry':'filbert';
+    const profile=sourceBrush.profile(c,settings.mode,r);
     paint(pig,mask,c.pts,width,model.mapRGB(c.rgb),profile,r,{thickness:.9,drag:.72,bristles:.92});
     if(i<12||((i+1)%Math.max(1,Math.ceil(chains.length/10))===0))checkpoint('oil-v7-source-'+(i+1));
    }
+   transfer=false;
    stats.fieldStrokes=0;
    for(const area of plan.connectedFields){
     const field={...area,paintRgb:model.mapRGB(area.paintRgb||area.rgb),
      paintPalette:(area.paintPalette||area.palette||[area.rgb]).map(c=>model.mapRGB(c))};
     stats.fieldStrokes+=oilColourField(pig,mask,field,paint,plan);
     checkpoint('oil-v7-field-'+area.id);
+   }
+   stats.territoryStrokes=0;stats.paintedTerritories=0;stats.regionStrokes=0;
+   if(!plan.connectedFields.length){
+    for(const original of plan.territories||[]){
+     if(original.role!=='painted')continue;
+     const cell={...original,rgb:model.mapRGB(original.rgb)};
+     stats.territoryStrokes+=cell.kind==='rect-cell'?
+      oilTerritory(pig,mask,cell,cell.rgb,cell.seed,paint):oilGuideTerritory(pig,mask,cell,paint);
+     stats.paintedTerritories++;
+    }
+    for(let i=0;i<plan.regions.length;i++){
+     if(plan.sourceGuideKind==='rects'&&i%4!==0)continue;
+     if(plan.guideStats&&(plan.guideStats.branches||plan.guideStats.ribbons||plan.guideStats.constructed)&&i%3!==0)continue;
+     const a={...plan.regions[i],rgb:model.mapRGB(plan.regions[i].rgb)},rr=rng(a.seed+'|oil-v5'),area=massContour(a);
+     pig.globalAlpha=1;pig.fillStyle=hex(blend(a.rgb,[243,228,205],.075));pig.fill(area);
+     mask.globalAlpha=.46;mask.fillStyle='#fff';mask.fill(area);
+     for(let k=0;k<2;k++){
+      const offset=(k-.5)*a.width*.31,c=shifted(a,a.angle+PI/2,offset),len=a.length*(k===0?1.03:.65);
+      paint(pig,mask,[shifted(c,a.angle,-len*.5),shifted(c,a.angle,rr.range(-3,3)),shifted(c,a.angle,len*.5)],
+       a.width*(k===0?1.35:.82),a.rgb,['filbert','flat','knife'][i%3],rr,{thickness:.94,drag:.35,bristles:.9});
+      stats.regionStrokes++;
+     }
+    }
+    for(const a of plan.gestures){
+     const rr=rng(a.seed+'|oil-v5'),rgb=model.mapRGB(a.rgb);
+     paint(pig,mask,[shifted(a,a.angle,-a.length*.5),{x:a.x,y:a.y},shifted(a,a.angle,a.length*.5)],
+      Math.max(9,a.width*1.3),blend(rgb,[245,225,196],.08),'filbert',rr,{thickness:.72,drag:.6,bristles:.9});
+     stats.regionStrokes++;
+    }
+    checkpoint('oil-v7-territories-and-masses');
    }
    stats.connectionStrokes=0;
    for(const area of plan.connectedFields){

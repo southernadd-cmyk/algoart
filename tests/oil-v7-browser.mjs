@@ -11,12 +11,33 @@ page.on('pageerror',e=>errors.push(e.message));
 try{
  await page.goto(root+'test/oil-v7/?manual=1');
  await page.waitForFunction(()=>typeof window.AlgoArt?.renderOilPaintV7==='function');
+ await page.evaluate(()=>{
+  const A=window.AlgoArt,core=A.oilPaintV4ETest;
+  A.withCPUCanvases(()=>{
+   A.oilStageDRefinement=true;A.oilStageCScale=1;
+   try{for(const profile of ['flat','filbert','dry','knife']){
+    const images=[];
+    for(const version of [3,7]){
+     core[version===3?'resetToothSlot':'resetV7ToothSlot']('cpu');
+     const c=document.createElement('canvas'),m=document.createElement('canvas');c.width=m.width=280;c.height=m.height=220;
+     core['drawContactBrushV'+version](c.getContext('2d'),m.getContext('2d'),[{x:35,y:65},{x:130,y:140},{x:235,y:75}],42,[50,95,180],profile,A.makeR('V7-BRUSH-PARITY'),{thickness:.9,drag:.72});
+     images.push(c.toDataURL()+'|'+m.toDataURL());
+    }
+    if(images[0]!==images[1])throw Error('V7 brush changed V3 silhouettes: '+profile);
+   }}finally{delete A.oilStageDRefinement;delete A.oilStageCScale;}
+  });
+ });
  const modes=['field','spiral','rects','burst','network','organic','geometric','scribble'];
  const run=async(mode,orientation,scale)=>page.evaluate(({mode,orientation,scale})=>{
   const A=window.AlgoArt,s={...window.oilV7Defaults,seed:'OIL-V7-COMPARE-'+mode,mode,orientation};
   function hash(c){let h=2166136261;const data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(const b of data)h=Math.imul(h^b,16777619);return h>>>0;}
-  function render(n){const c=document.createElement('canvas'),start=performance.now(),meta=A['renderOilPaintV'+n](c,s,scale,false);
-   const ms=performance.now()-start;return {ms,meta,c,hash:hash(c)};}
+  function render(n){
+   const c=document.createElement('canvas'),proto=CanvasRenderingContext2D.prototype,original=proto.getImageData;
+   let reads=0,meta;proto.getImageData=function(...args){reads++;return original.apply(this,args);};
+   const start=performance.now();
+   try{meta=A['renderOilPaintV'+n](c,s,scale,false);}finally{proto.getImageData=original;}
+   const ms=performance.now()-start;return {ms,meta,c,reads,hash:hash(c)};
+  }
   // Alternate order after one warm-up of each version.
   render(6);render(7);
   const six=[],seven=[];let a,b;const hashes=[];
@@ -39,6 +60,10 @@ try{
    legacyStable:a.hash===repeat.hash,sourceSame:sourceKey(a.meta)===sourceKey(b.meta),
    dimensions,paintCoverage:painted/(dimensions[0]*dimensions[1]),stats:b.meta.work,
    legacyPhases:a.meta.sourceMeta?.phases,adapterPlanFields:b.meta.plan.connectedFields.length,
+   actualReadbacks:b.reads,
+   baselineCoverage:(()=>{let n=0;const d=a.c.getContext('2d').getImageData(0,0,...dimensions).data;
+    for(let i=0;i<d.length;i+=4)if(Math.abs(d[i]-245)+Math.abs(d[i+1]-240)+Math.abs(d[i+2]-230)>45)n++;
+    return n/(dimensions[0]*dimensions[1]);})(),
    png6:a.c.toDataURL(),png7:b.c.toDataURL()};
  },{mode,orientation,scale});
  for(const [i,mode] of modes.entries()){
@@ -51,6 +76,9 @@ try{
    assert(report.legacyStable,'V7 must not alter V6 output: '+mode);
    assert(report.sourceSame,'Source composition metadata must be preserved: '+mode);
    assert(report.paintCoverage>.01&&report.paintCoverage<.98,'Painting has meaningful occupied and blank areas: '+mode);
+   assert(report.paintCoverage>report.baselineCoverage*.5,'V7 must retain painted areas, not hollow outlines: '+mode);
+   assert.equal(report.actualReadbacks,2,'Only two final canvas reads, no per-stroke readbacks');
+   if(mode==='rects')assert(report.stats.paintedTerritories>0,'Rectangle fills must be painted');
    assert.equal(report.stats.lightingPasses,1);assert.equal(report.stats.strokeReadbacks,0);
    const size=orientation==='portrait'?[1000,1400]:[1400,1000];
    assert.deepEqual(report.dimensions,size.map(x=>Math.round(x*scale)));
