@@ -44,5 +44,5 @@ test('unmatched Debussy reference performances cannot validate Giorgi Latso time
  assert.match(asap,/Reflets_dans_lEau/);
  // Externally cross-validated two anchor points for Mozart only.
  const ui=readFileSync(new URL('../gallery/visit/phi-gramophone-timeline.mjs',import.meta.url),'utf8');
- assert.match(ui,/automatically cross-checked|computationally cross-checked/);
+ assert.match(ui,/Mozart uses score-to-audio analysis independently checked|Independent research places the development/);
 });
