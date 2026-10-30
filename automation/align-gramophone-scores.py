@@ -172,6 +172,42 @@ def align(score, audio):
     }
 
 
+
+def align_tempo_regularized(score, audio, duration, score_upsample=3):
+    """Independent DTW with explicit local tempo and global drift constraints.
+
+    Score and audio are each placed on an equal-length high-resolution grid.
+    Allowed paths use (1,1), (1,2), (2,1); jumps carry a penalty.
+    This disallows 0.2-second bars inside a 3-second local average.
+    """
+    from scipy.ndimage import gaussian_filter1d
+    n=score.shape[1]*score_upsample
+    score_dense=np.repeat(score, score_upsample, axis=1)
+    audio_smooth=gaussian_filter1d(audio, .55, axis=1)
+    target=np.linspace(0,audio.shape[1]-1,n)
+    lo=np.floor(target).astype(int)
+    hi=np.minimum(audio.shape[1]-1,lo+1)
+    w=(target-lo)[None,:]
+    audio_dense=audio_smooth[:,lo]*(1-w)+audio_smooth[:,hi]*w
+    audio_dense/=np.maximum(1e-5,np.linalg.norm(audio_dense,axis=0))
+    # Explicit steps preserve local tempo while tolerating phrase-level rubato.
+    steps=np.asarray([[1,1],[1,2],[2,1]],dtype=int)
+    cost, path=librosa.sequence.dtw(
+        X=score_dense,Y=audio_dense,metric='cosine',backtrack=True,
+        step_sizes_sigma=steps,weights_mul=np.array([1.,1.12,1.12]),
+        global_constraints=True,band_rad=.22)
+    path=path[::-1]
+    mapping=defaultdict(list)
+    for si,ai in path:
+        mapping[int(si)].append(int(ai))
+    x=np.array(sorted(mapping),dtype=float)
+    t=np.array([np.median(mapping[int(i)])*duration/(n-1) for i in x])
+    times=np.interp(np.arange(n),x,t)
+    cosines=np.sum(score_dense[:,path[:,0]]*audio_dense[:,path[:,1]],axis=0)
+    return {'time':np.maximum.accumulate(times),'similarity':float(np.mean(cosines)),
+            'cost':float(cost[-1,-1])/len(path),'pathLength':int(len(path))}
+
+
 def run(kind):
     dataset = DATASETS[kind]
     base = Path(__file__).resolve().parent.parent
@@ -187,16 +223,35 @@ def run(kind):
     for scenario, order in order_scenarios(kind).items():
         score, starts, beats = build_score_chroma(order, bars, notes)
         result = align(score, audio)
+        constrained = align_tempo_regularized(score, audio, duration)
         locations = []
+        constrained_locations = []
         for occurrence, bar, qb in starts:
             ix = min(score.shape[1]-1, round(qb/QB_STEP))
+            occurrence_id=sum(1 for prev in starts[:occurrence] if prev[1]==bar)+1
             locations.append({
-                "bar":bar, "occurrence":sum(1 for prev in starts[:occurrence] if prev[1]==bar)+1,
+                "bar":bar, "occurrence":occurrence_id,
                 "time":round(float(result["time"][ix]), 2)
+            })
+            constrained_ix=min(score.shape[1]*3-1,ix*3)
+            constrained_locations.append({
+                "bar":bar, "occurrence":occurrence_id,
+                "time":round(float(constrained["time"][constrained_ix]),2)
             })
         # The framewise time vector is used to extract bar anchors, but must not
         # be serialized in the compact candidate report.
         result.pop('time', None)
+        constrained.pop('time', None)
+        disagreements=[abs(a["time"]-b["time"])
+            for a,b in zip(locations,constrained_locations)]
+        result['regularized']={
+            'similarity':constrained['similarity'],
+            'cost':constrained['cost'],
+            'barStarts':constrained_locations,
+            'medianDisagreementSeconds':round(float(np.median(disagreements)),2),
+            'maxDisagreementSeconds':round(float(np.max(disagreements)),2),
+            'disagreementsOver2Seconds':sum(x>2 for x in disagreements)
+        }
         # Relative performance rate: detect clearly implausible repeat hypotheses
         # by how much musical score has to be compressed into the actual audio.
         seconds_per_qb = duration / beats
@@ -208,7 +263,7 @@ def run(kind):
             "secondsPerQuarterbeat":round(seconds_per_qb, 3),
             "barStarts":locations
         })
-        print(f"  {scenario}: score {beats:.1f} qb, {seconds_per_qb:.3f} sec/qb, match {result['similarity']:.3f}, cost {result['cost']:.3f}",flush=True)
+        print(f"  {scenario}: {seconds_per_qb:.3f}sec/qb, matches free={result['similarity']:.3f} constrained={constrained['similarity']:.3f}; median difference={result['regularized']['medianDisagreementSeconds']:.2f}s; over2s={result['regularized']['disagreementsOver2Seconds']}",flush=True)
         candidates.append(result)
     # Prefer match quality on full scored-to-played sequences, but save every
     # scenario so repeat ambiguities are auditable and NOT automatically certified.
