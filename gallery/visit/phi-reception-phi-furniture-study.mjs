@@ -1,5 +1,4 @@
 // Test-gallery-only architectural reception furniture: no stone, timber, or added lights.
-import {addPhiOfficeChair} from './phi-office-reception.mjs?v=gallery-reception-20261027';
 export const PHI=(1+Math.sqrt(5))/2;
 export function phiFurnitureDimensions(){
  const width=3.9,depth=width/(PHI*PHI),main=width/PHI;
@@ -57,10 +56,8 @@ export function addPhiGoldenReceptionDesk(T,scene,reception,elevation){
   box(T,store,'storage-phi-seam',.014,.76,.025,-.51+1.02/PHI,.49,-.373,m.bronze);
   box(T,store,'storage-lip',1.06,.045,.75,0,.943,0,m.ink);
  }
- // Retain the staff chair and its obstacle, but no standing staff figure.
- addPhiOfficeChair(T,root);
- return {root,ready:Promise.resolve([]),
-  obstacles:[cabinet,{x:desk.x-.55,z:desk.z+1.65,width:.85,depth:.85,yaw:0,kind:'chair'}].filter(Boolean)};
+ // Keep the staff side empty, without the former white task chair.
+ return {root,ready:Promise.resolve([]),obstacles:[cabinet].filter(Boolean)};
 }
 export function addPhiGoldenReceptionBench(T,scene,placement,elevation){
  const {width,depth,main,minor}=phiFurnitureDimensions().bench;

@@ -18,7 +18,7 @@ import {addPhiReceptionMetalRoof} from './phi-reception-metal-roof.mjs';
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
-import {addPhiReceptionDesk} from './phi-reception-desk.mjs?v=gallery-reception-20261027';
+import {addPhiGoldenReceptionDesk,addPhiGoldenReceptionBench} from './phi-reception-phi-furniture-study.mjs';
 import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
 import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=entry-performance-20261027';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
@@ -1447,7 +1447,10 @@ function queuePhiFurnishings(phi,furnishings,elevation){
  deferredGalleryJobs.unshift(()=>{
   const convert=p=>({...p,...phi.world.toWorld(p.x,p.z),rotation:(p.rotation||0)+phi.world.theta,yaw:(p.yaw||0)+phi.world.theta});
   const furniture={benches:furnishings.benches.map(convert),people:furnishings.people.map(convert)};
-  renderPhiFurniture(THREE,scene,furniture,{concrete:galleryFinish.stone,timber},elevation);
+  if(exhibitDate===RECEPTION){
+   renderPhiFurniture(THREE,scene,{...furniture,benches:[]},{concrete:galleryFinish.stone,timber},elevation);
+   for(const bench of furniture.benches)addPhiGoldenReceptionBench(THREE,scene,bench,elevation);
+  }else renderPhiFurniture(THREE,scene,furniture,{concrete:galleryFinish.stone,timber},elevation);
   const cs=Math.abs(Math.cos(phi.world.theta)),sn=Math.abs(Math.sin(phi.world.theta));
   phiFurnishingObstacles=furnishings.obstacles.map(p=>({...convert(p),width:p.width*cs+p.depth*sn,depth:p.width*sn+p.depth*cs}));
  });
@@ -1855,7 +1858,7 @@ function constructPhiGallery(layout,studies){
    depth:.34*towerLiftSign.placement.scale+.08,
    yaw:towerLiftSign.placement.yaw,kind:'daily-tower-lift-chalkboard'
   });
-  phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone,timber:galleryFinish.timberSmoked,trims:galleryFinish.trims});
+  phiReceptionDesk=addPhiGoldenReceptionDesk(THREE,scene,furnishing,elevation);
   if(phiReceptionDesk)phiSquareObstacles.push(...phiReceptionDesk.obstacles);
   if(globalThis.__phiReceptionTestRefresh&&furnishing.desk){
    phiReceptionGramophone=addPhiReceptionGramophone(THREE,scene,{furnishing,elevation,camera,canvas,timber:galleryFinish.timberSmoked||galleryFinish.timber,trims:galleryFinish.trims,music:phiGalleryMusic,debug:GALLERY_DEBUG});

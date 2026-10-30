@@ -73,8 +73,6 @@ replace('const join=galleryFinish.trims;\nsetSculptureArchitecturalMaterials(',
 // to work with the existing proportional light placement.
 replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;',
   ' if(exhibitDate===RECEPTION&&receptionWallMaterial){receptionWallMaterial.roughness=.94;receptionWallMaterial.normalScale.set(.32,.32);}\n const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;');
-// The desk's details refer to the bronze floor without editing that floor.
-replace('trims:galleryFinish.trims});','trims:architecturalBronzeStudy});');
 // Pilot the framed artworks in exactly one artwork-rich gallery room on
 // each dated floor. No paintings or sculpture placements are changed.
 replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;',
@@ -84,22 +82,6 @@ replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
 replace('    applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);',
  '    for(const entry of refineRoomLightEntries(phiRoomLightEntries,plan.phi))phiLightingComparison.register(entry);\n    phiLightingComparison.finish(plan.phi?.world);');
 
-
-// TEST ONLY: the phi-proportion reception desk and bench; live still uses the
-// existing furniture until the architectural concept is approved.
-replace("import * as THREE from 'three';",
- "import {addPhiGoldenReceptionDesk,addPhiGoldenReceptionBench} from './phi-reception-phi-furniture-study.mjs';\nimport * as THREE from 'three';");
-replace(
- 'phiReceptionDesk=addPhiReceptionDesk(THREE,scene,furnishing,elevation,{concrete:galleryFinish.stone,timber:galleryFinish.timberSmoked,trims:architecturalBronzeStudy});',
- 'phiReceptionDesk=addPhiGoldenReceptionDesk(THREE,scene,furnishing,elevation);'
-);
-replace(
- 'renderPhiFurniture(THREE,scene,furniture,{concrete:galleryFinish.stone,timber},elevation);',
- "if(exhibitDate===RECEPTION){\n"+
- "  renderPhiFurniture(THREE,scene,{...furniture,benches:[]},{concrete:galleryFinish.stone,timber},elevation);\n"+
- "  for(const bench of furniture.benches)addPhiGoldenReceptionBench(THREE,scene,bench,elevation);\n"+
- " }else renderPhiFurniture(THREE,scene,furniture,{concrete:galleryFinish.stone,timber},elevation);"
-);
 
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
