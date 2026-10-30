@@ -1,5 +1,5 @@
 // Test-gallery-only architectural reception furniture: no stone, timber, or added lights.
-import {addPhiOfficeChair} from './phi-office-reception.mjs';
+import {addPhiOfficeChair} from './phi-office-reception.mjs?v=gallery-reception-20261027';
 export const PHI=(1+Math.sqrt(5))/2;
 export function phiFurnitureDimensions(){
  const width=3.9,depth=width/(PHI*PHI),main=width/PHI;
