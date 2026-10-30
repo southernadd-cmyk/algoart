@@ -40,11 +40,10 @@ export function alignedScorePoint(src,fraction,audioDuration,{maximumDisagreemen
  const diff0=map.differences[i];
  const diff1=i+1<map.scoreBars?map.differences[i+1]:map.differences[i];
  const disagreement=diff0*(1-w)+diff1*w;
- // Certify the interpolated position only if the two methods agree within
- // tolerance and at least one neighbouring anchor is independently sound.
- // Conservatively mark ambiguous spans as needing manual review.
- const verified=disagreement<=maximumDisagreement&&
-   (diff0<=maximumDisagreement||diff1<=maximumDisagreement);
+ // Both neighbouring score-bar anchors must agree: an interpolated average
+ // must never hide one grossly misaligned boundary. This certifies agreement
+ // between automated methods, NOT a human-audited musical correspondence.
+ const verified=diff0<=maximumDisagreement&&diff1<=maximumDisagreement;
  return {fraction,time,completedBars:completed,
   withinBar:i+1,scoreBars:map.scoreBars,disagreement,verified,
   confidence:verified?(disagreement<=.5?'strong':'moderate'):'needs-review',
