@@ -13,9 +13,9 @@ export const GOLDEN_STUDY = Object.freeze({
 
 const EIGHT_BARS_BASE = 'https://southernadd-cmyk.github.io/8bars/';
 
-export function planGoldenStudy(compose) {
+export function planGoldenStudy(compose,{seed=GOLDEN_STUDY.seed}={}) {
   const piece = compose({
-    seed:GOLDEN_STUDY.seed, key:'A', mode:'minor',
+    seed, key:'A', mode:'minor',
     style:'ambient', engine:'melodic', bpm:GOLDEN_STUDY.bpm,
     density:.39, swing:0
   });
@@ -47,7 +47,8 @@ export function encodeWav(audio) {
 export async function render8barsGoldenStudy({
   importModule=(path)=>import(EIGHT_BARS_BASE+path),
   fetchSample=(url)=>fetch(url,{cache:'force-cache'}),
-  AudioContextClass=globalThis.OfflineAudioContext
+  AudioContextClass=globalThis.OfflineAudioContext,
+  seed=GOLDEN_STUDY.seed
 }={}) {
   if(!AudioContextClass)throw Error('Offline audio rendering is not supported in this browser');
   const [engine,library,map]=await Promise.all([
@@ -55,7 +56,7 @@ export async function render8barsGoldenStudy({
     importModule('sounds.js'),
     importModule('sample-map.js')
   ]);
-  const {events}=planGoldenStudy(engine.composeWithEngine);
+  const {events}=planGoldenStudy(engine.composeWithEngine,{seed});
   const samples={
     lead:library.nearestSample('pianoSoft',72),
     pad:library.nearestSample('harmonium',60),
@@ -132,18 +133,18 @@ export async function render8barsGoldenStudy({
   return encodeWav(rendered);
 }
 
-export function create8barsGoldenTrack({render=render8barsGoldenStudy}={}) {
+export function create8barsGoldenTrack({render=render8barsGoldenStudy,seed=GOLDEN_STUDY.seed,edition=1}={}) {
   let url=null,pending=null,released=false;
   return {
-    title:'Golden Frequency · 20-second φ study',
+    title:'Golden Frequency · study '+edition,
     composer:'8bars × PROPORTION PIECE',
     credit:'Original 8bars-generated arrangement · recorded instrumental samples; pitch comparison at 1:φ',
-    goldenStudy:true,repeat:true,
+    goldenStudy:true,repeat:true,seed,edition,
     get src(){if(!url)throw Error('The golden study is not prepared');return url;},
     async prepare(){
       if(released)throw Error('Record has been disposed');
       if(url)return url;
-      if(!pending)pending=Promise.resolve().then(()=>render()).then(blob=>{
+      if(!pending)pending=Promise.resolve().then(()=>render({seed})).then(blob=>{
         if(released)return null;
         if(!blob||!blob.size)throw Error('Empty composition');
         url=URL.createObjectURL(blob);
