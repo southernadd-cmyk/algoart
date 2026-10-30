@@ -75,7 +75,7 @@ jobs:
           npm run gallery:bundle:post-test
           node automation/build-phi-test-room-signs.mjs
           node --check gallery/visit/gallery-phi-test-room-signs-bundle.js
-          node --test tests/phi-room-names.test.mjs tests/phi-test-room-signs.test.mjs tests/phi-reception-penrose.test.mjs tests/phi-gallery-penrose.test.mjs tests/phi-stage-routing.test.mjs tests/phi-postprocessing.test.mjs tests/phi-room-sign-counts.test.mjs
+          node --test tests/phi-room-names.test.mjs tests/phi-test-room-signs.test.mjs tests/phi-reception-penrose.test.mjs tests/phi-gallery-penrose.test.mjs tests/phi-stage-routing.test.mjs tests/phi-postprocessing.test.mjs tests/phi-room-sign-counts.test.mjs tests/phi-post-fx.test.mjs
       - name: Validate public gallery before uploading the site
         run: |
           node automation/validate-phi-archive.mjs
