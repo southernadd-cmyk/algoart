@@ -14,10 +14,8 @@ const replace=(before,after)=>{
 };
 // Signs are shared in the production source; only navigation differs on test.
 replace("import * as THREE from 'three';",
-  "import {stagingFloorUrl} from '../../test/virtual-gallery/phi-stage-routing.mjs';\nimport {installReceptionPenroseInlay} from './reception-penrose-inlay.mjs';\nimport * as THREE from 'three';");
-// Only the staging bundle receives this inlay: the live source/bundle remains unchanged.
-replace("if(globalThis.__phiReceptionTilePreview&&!receptionTilePreview)receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});",
- "if(globalThis.__phiReceptionTilePreview&&!receptionTilePreview)receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});\n if(exhibitDate===RECEPTION&&globalThis.__phiReceptionPenroseTest&&receptionTilePreview)installReceptionPenroseInlay(THREE,receptionTilePreview,phi.pieces,{lowPower:galleryFinish.lowPower});");
+  "import {stagingFloorUrl} from '../../test/virtual-gallery/phi-stage-routing.mjs';\nimport * as THREE from 'three';");
+// The approved reception Penrose inlay now comes from the shared live source.
 // Only the staging bundle is patched. The live gallery continues to use its
 // current URL semantics, and test assets still load from gallery/visit/.
 replace("history.replaceState(null,'',date===RECEPTION?location.pathname:'?date='+date);",

@@ -9,6 +9,7 @@ import {createReceptionWallMaterial} from './reception-wall-material.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
 import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
 import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
+import {installReceptionPenroseInlay} from './reception-penrose-inlay.mjs';
 import {planGallerySpeakers,addGalleryCeilingSpeaker} from './gallery-speakers.mjs?v=distributed-record-20261027';
 import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=distributed-record-20261027';
 import {addPhiReceptionMetalRoof} from './phi-reception-metal-roof.mjs';
@@ -1453,6 +1454,7 @@ function constructPhiGallery(layout,studies){
  const staticArchitecture=[];
  const staticBlock=(...args)=>{const mesh=block(...args);staticArchitecture.push(mesh);return mesh;};
  if(globalThis.__phiReceptionTilePreview&&!receptionTilePreview)receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});
+ if(exhibitDate===RECEPTION&&receptionTilePreview)installReceptionPenroseInlay(THREE,receptionTilePreview,phi.pieces,{lowPower:galleryFinish.lowPower});
  const roomFloor=(exhibitDate===RECEPTION&&receptionTilePreview)||galleryFinish.floor;
  if(GALLERY_DEBUG)window.__phiReceptionTiles=roomFloor===receptionTilePreview?receptionTilePreview:null;
  if(!phiGalleryMusic)phiGalleryMusic=createPhiGalleryMusic(THREE,{canvas,debug:GALLERY_DEBUG});

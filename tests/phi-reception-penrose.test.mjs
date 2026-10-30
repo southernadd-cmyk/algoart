@@ -3,11 +3,16 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {installReceptionPenroseInlay} from '../gallery/visit/reception-penrose-inlay.mjs';
 const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
-test('Penrose inlay is isolated to the test bundle and test page',()=>{
- assert.match(read('../automation/build-phi-test-room-signs.mjs'),/installReceptionPenroseInlay/);
- assert.match(read('../test/virtual-gallery/full-engine.html'),/__phiReceptionPenroseTest=true/);
- assert.doesNotMatch(read('../gallery/visit/index.html'),/__phiReceptionPenroseTest/);
- assert.doesNotMatch(read('../gallery/visit/gallery-phi.js'),/installReceptionPenroseInlay/);
+test('approved Penrose inlay loads on live and test reception using one shared implementation',()=>{
+ const production=read('../gallery/visit/gallery-phi.js');
+ const builder=read('../automation/build-phi-test-room-signs.mjs');
+ const live=read('../gallery/visit/index.html');
+ const staging=read('../test/virtual-gallery/full-engine.html');
+ assert.match(production,/import \{installReceptionPenroseInlay\} from '.\/reception-penrose-inlay.mjs'/);
+ assert.match(production,/if\(exhibitDate===RECEPTION&&receptionTilePreview\)installReceptionPenroseInlay/);
+ assert.match(live,/__phiReceptionTilePreview=true/);
+ assert.match(staging,/__phiReceptionTilePreview=true/);
+ assert.doesNotMatch(builder,/replace\("if\(globalThis\.__phiReceptionTilePreview/);
 });
 test('the 5-grid rhombs have the expected golden-frequency limit',()=>{
  const svg=read('../gallery/visit/textures/reception-penrose-inlay.svg');
