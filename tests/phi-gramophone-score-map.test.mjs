@@ -29,9 +29,11 @@ test('four golden divisions are crosschecked and mapped to the real recording ti
   const points=PHI_LISTENING_MARKERS.map(marker=>alignedScorePoint(key,marker.fraction,x.duration));
   assert.equal(points.length,4);
   for(let i=0;i<4;i++){
-   assert.ok(points[i].verified,'golden division not cross-checked: '+key+' '+i);
+   const expectedCrossChecked=key===debussy&&i===0?false:true;
+   assert.equal(points[i].verified,expectedCrossChecked,
+     'golden division cross-check status: '+key+' '+i);
    assert.ok(points[i].time>0&&points[i].time<x.duration);
-   assert.ok(points[i].disagreement<=2);
+   if(expectedCrossChecked)assert.ok(points[i].disagreement<=2);
    if(i)assert.ok(points[i].time>points[i-1].time);
   }
   assert.equal(alignedScorePoint(key,.618,x.duration+8),null,
@@ -45,6 +47,14 @@ test('four golden divisions are crosschecked and mapped to the real recording ti
    'Debussy score and time positions should be meaningfully different');
  assert.ok(Math.abs(mp[2]-133.878*PHI_LISTENING_MARKERS[2].fraction)<1.5);
 });
+test('a low interpolated disagreement cannot conceal one bad adjacent bar',()=>{
+ const x=GRAMOPHONE_SCORE_MAP[debussy];
+ const point=alignedScorePoint(debussy,PHI_LISTENING_MARKERS[0].fraction,x.duration);
+ assert.ok(point.disagreement<2,'weighted disagreement alone appears acceptable');
+ assert.equal(point.verified,false,'a divergent neighbouring bar disables the seek');
+ assert.equal(point.confidence,'needs-review');
+});
+
 test('unverified Debussy bars cannot masquerade as verified alignment points',()=>{
  // Bar 91-93 time estimates differ substantially between independent DTW runs.
  const x=GRAMOPHONE_SCORE_MAP[debussy];
