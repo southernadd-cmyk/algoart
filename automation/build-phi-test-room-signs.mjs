@@ -31,7 +31,7 @@ await build({
   setup(builder){
     // Alter ONLY the test build's copy of the music panel.
     // Live gallery-music.mjs and its production bundle remain untouched.
-    builder.onLoad({filter:/gallery-music[.]mjs$/,async({path})=>{
+    builder.onLoad({filter:/gallery-music[.]mjs$/},async({path})=>{
       let text=await readFile(path,'utf8');
       const swap=(oldText,newText)=>{
         if(text.split(oldText).length!==2)throw Error('Gramophone staging anchor changed: '+oldText.slice(0,70));
