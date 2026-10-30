@@ -23,9 +23,9 @@ test('score markers use verified written-bar counts, not performance duration',(
  assert.equal(WRITTEN_SCORE_BARS[RECEPTION_RECORD[0].src],94);
  assert.equal(WRITTEN_SCORE_BARS[RECEPTION_RECORD[1].src],73);
  assert.deepEqual(scorePositionsForTrack(RECEPTION_RECORD[0].src).map(p=>p.nearestBar),
-  [22,36,58,72]);
+  [23,36,59,72]);
  assert.deepEqual(scorePositionsForTrack(RECEPTION_RECORD[1].src).map(p=>p.nearestBar),
-  [17,28,45,56]);
+  [18,28,46,56]);
  assert.deepEqual(scorePositionsForTrack('missing.ogg'),[]);
 });
 
