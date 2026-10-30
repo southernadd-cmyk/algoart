@@ -1,6 +1,6 @@
 // Staging-only gramophone controller. Historical records stay intact.
 // The third record is an on-demand 8bars study; visitors can replace it.
-import {RECEPTION_RECORD} from './gramophone-record.mjs';
+import {RECEPTION_RECORD} from './gramophone-record.mjs?v=selectable-tracks-20261027';
 import {GOLDEN_STUDY,create8barsGoldenTrack} from './phi-8bars-record.mjs';
 
 export function createPhiTestGramophoneRecord({
