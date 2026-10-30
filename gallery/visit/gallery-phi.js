@@ -1965,13 +1965,12 @@ function constructPhiGallery(layout,studies){
     get visible(){return !!scene.getObjectByName('phi-translation-area-doorway-sign');}
    };
   }
-  // Permanent reception installation: two pre-baked Growth Systems sculptures
+  // Permanent reception installation: one pre-baked Growth Systems sculpture
   // at the visitor-approved exact local coordinates. Do not involve any
   // curator, door, furniture or collision placement rules.
   if(exhibitDate===RECEPTION){
    const placements=[
-    {x:4.411915702544714,z:-0.6555802049181754,yawOffset:0},
-    {x:0.30772021302065866,z:-2.943824927389186,yawOffset:Math.PI/2}
+    {x:4.411915702544714,z:-0.6555802049181754,yawOffset:0}
    ];
    fetch(new URL('./data/reception-growth-systems.json',import.meta.url))
     .then(response=>{
@@ -1989,8 +1988,7 @@ function constructPhiGallery(layout,studies){
       image:new URL('./data/reception-growth-systems.png',import.meta.url).href,
       prebuilt:{desktop:bake.qualities.desktop,mobile:bake.qualities.mobile}
      };
-     // All copies share the first copy's facing, with the second exactly
-     // 90 degrees counter-clockwise; world theta applies to both equally.
+     // Keep the remaining sculpture facing the entrance in world space.
      const world=phi.world;
      const baseYaw=Math.atan2(
       furnishing.entrance.x-placements[0].x,
