@@ -23,10 +23,6 @@ replace("history.replaceState(null,'',date===RECEPTION?location.pathname:'?date=
 // The staging archive can be updated after publication; never force-cache its HTML.
 replace('fetchGalleryText(url,{cache}),',"fetchGalleryText(url,{cache:'no-store'}),");
 
-// Keep the baseline/phi comparison UI exclusive to staging.
-replace("import * as THREE from 'three';",
- "import {createPhiLightingComparison} from '../../test/virtual-gallery/phi-lighting-comparison.mjs';\nimport {planPhiRoomLighting} from './phi-room-lighting.mjs';\nimport {planRefinedPhiRoomLighting,refineRoomLightEntries} from './phi-room-lighting-refined.mjs';\nimport * as THREE from 'three';\nconst phiLightingComparison=createPhiLightingComparison({planner:planRefinedPhiRoomLighting,baselinePlanner:planPhiRoomLighting,refined:true});");
-replace(' const staticArchitecture=[];', ' phiLightingComparison.reset();\n const staticArchitecture=[];');
 // TEST ONLY: warm matte plaster under the existing bronze Penrose shader.
 // The material's CanvasTexture keeps USE_MAP and the existing metre-aligned UVs.
 replace('let receptionTilePreview=null;', `
@@ -79,9 +75,18 @@ replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.st
   " const frameRoomCounts=new Map();\n for(const p of phi.exhibition.paintings)frameRoomCounts.set(p.room,(frameRoomCounts.get(p.room)||0)+1);\n const frameStudyRoom=exhibitDate===RECEPTION?-1:([...frameRoomCounts].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]?.[0]??-1);\n if(GALLERY_DEBUG)window.__phiArchitecturalFrameStudy={room:frameStudyRoom,paintings:frameRoomCounts.get(frameStudyRoom)||0};\n for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;");
 replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
   'p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,p.room===frameStudyRoom?architecturalFrameStudy:join);');
-replace('    applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);',
- '    for(const entry of refineRoomLightEntries(phiRoomLightEntries,plan.phi))phiLightingComparison.register(entry);\n    phiLightingComparison.finish(plan.phi?.world);');
 
+// TEST ONLY: simple A/B. Live gallery renderer is unchanged.
+replace("import * as THREE from 'three';",
+ "import {createPhiPostFX} from './phi-post-fx.mjs';\nimport * as THREE from 'three';");
+replace('const wall=galleryFinish.wall;',
+ 'const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera);\nconst wall=galleryFinish.wall;');
+replace('  renderer.setSize(innerWidth,innerHeight);',
+ '  renderer.setSize(innerWidth,innerHeight);\n  phiPostFX.resize(innerWidth,innerHeight);');
+replace("  if(!$('lift').hidden){renderer.render(scene,camera);return;}",
+ "  if(!$('lift').hidden){phiPostFX.render(dt);return;}");
+replace('  renderer.render(scene,camera);\n  if(GALLERY_DEBUG)window.__phiGraffitiStats',
+ '  phiPostFX.render(dt);\n  if(GALLERY_DEBUG)window.__phiGraffitiStats');
 
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
