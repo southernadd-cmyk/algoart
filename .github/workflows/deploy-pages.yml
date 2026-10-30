@@ -14,6 +14,7 @@ on:
       - 'tests/phi-pre-expansion.test.mjs'
       - 'tests/phi-test-room-signs.test.mjs'
       - 'tests/phi-room-sign-counts.test.mjs'
+      - 'tests/phi-reception-penrose.test.mjs'
       - 'tests/phi-gramophone-timeline.test.mjs'
       - 'tests/phi-gramophone-score-map.test.mjs'
       - 'css/**'
