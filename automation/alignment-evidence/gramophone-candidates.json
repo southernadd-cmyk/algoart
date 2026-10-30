@@ -2,7 +2,7 @@
   "debussy": {
     "status": "candidate_REQUIRES_musical_verification",
     "track": "debussy",
-    "sourceScore": "DCMLab/debussy_images l110-01_images_reflets (CC BY-NC-SA 4.0)",
+    "sourceScore": "DCMLab/debussy_images l110-01_images_reflets (CC BY-NC-SA 4.0), corrected to 94 original bars using WJEC guidance",
     "scoreURL": "https://github.com/DCMLab/debussy_images",
     "audioFile": "gallery/visit/audio/debussy-reflets-dans-leau.ogg",
     "audioSha256": "3c8c436cda4efa2fd6af616ef14394d002194c94652c8b3517fe2b1eab57647d",
@@ -12,15 +12,15 @@
     "algorithm": "librosa chroma_cqt 12-bin + global cosine DTW; no hand-audited anchors",
     "candidateScenarios": [
       {
-        "cost": 0.19113280142274444,
+        "cost": 0.1911328018648592,
         "similarity": 0.8088672161102295,
         "medianSimilarity": 0.8370323181152344,
         "pathLength": 3587,
         "scoreFrames": 380,
         "audioFrames": 3584,
         "regularized": {
-          "similarity": 0.8269277814002858,
-          "cost": 0.19309420231916766,
+          "similarity": 0.8269277808162119,
+          "cost": 0.19309420297501076,
           "barStarts": [
             {
               "bar": 1,
@@ -140,371 +140,366 @@
             {
               "bar": 24,
               "occurrence": 1,
-              "time": 87.24
+              "time": 88.99
             },
             {
               "bar": 25,
               "occurrence": 1,
-              "time": 88.99
+              "time": 90.74
             },
             {
               "bar": 26,
               "occurrence": 1,
-              "time": 90.74
+              "time": 94.4
             },
             {
               "bar": 27,
               "occurrence": 1,
-              "time": 94.4
+              "time": 97.47
             },
             {
               "bar": 28,
               "occurrence": 1,
-              "time": 97.47
+              "time": 100.1
             },
             {
               "bar": 29,
               "occurrence": 1,
-              "time": 100.1
+              "time": 101.85
             },
             {
               "bar": 30,
               "occurrence": 1,
-              "time": 101.85
+              "time": 104.48
             },
             {
               "bar": 31,
               "occurrence": 1,
-              "time": 104.48
+              "time": 107.99
             },
             {
               "bar": 32,
               "occurrence": 1,
-              "time": 107.99
+              "time": 111.49
             },
             {
               "bar": 33,
               "occurrence": 1,
-              "time": 111.49
+              "time": 115.44
             },
             {
               "bar": 34,
               "occurrence": 1,
-              "time": 115.44
+              "time": 119.24
             },
             {
               "bar": 35,
               "occurrence": 1,
-              "time": 119.24
+              "time": 124.21
             },
             {
               "bar": 36,
               "occurrence": 1,
-              "time": 124.21
+              "time": 129.91
             },
             {
               "bar": 37,
               "occurrence": 1,
-              "time": 129.91
+              "time": 134.0
             },
             {
               "bar": 38,
               "occurrence": 1,
-              "time": 134.0
+              "time": 137.07
             },
             {
               "bar": 39,
               "occurrence": 1,
-              "time": 137.07
+              "time": 140.57
             },
             {
               "bar": 40,
               "occurrence": 1,
-              "time": 140.57
+              "time": 143.64
             },
             {
               "bar": 41,
               "occurrence": 1,
-              "time": 143.64
+              "time": 147.59
             },
             {
               "bar": 42,
               "occurrence": 1,
-              "time": 147.59
+              "time": 150.66
             },
             {
               "bar": 43,
               "occurrence": 1,
-              "time": 150.66
+              "time": 152.85
             },
             {
               "bar": 44,
               "occurrence": 1,
-              "time": 152.85
+              "time": 156.36
             },
             {
               "bar": 45,
               "occurrence": 1,
-              "time": 156.36
+              "time": 158.55
             },
             {
               "bar": 46,
               "occurrence": 1,
-              "time": 158.55
+              "time": 160.74
             },
             {
               "bar": 47,
               "occurrence": 1,
-              "time": 160.74
+              "time": 162.93
             },
             {
               "bar": 48,
               "occurrence": 1,
-              "time": 162.93
+              "time": 165.12
             },
             {
               "bar": 49,
               "occurrence": 1,
-              "time": 165.12
+              "time": 168.19
             },
             {
               "bar": 50,
               "occurrence": 1,
-              "time": 168.19
+              "time": 169.94
             },
             {
               "bar": 51,
               "occurrence": 1,
-              "time": 169.94
+              "time": 172.58
             },
             {
               "bar": 52,
               "occurrence": 1,
-              "time": 172.58
+              "time": 175.21
             },
             {
               "bar": 53,
               "occurrence": 1,
-              "time": 175.21
+              "time": 177.4
             },
             {
               "bar": 54,
               "occurrence": 1,
-              "time": 177.4
+              "time": 180.47
             },
             {
               "bar": 55,
               "occurrence": 1,
-              "time": 180.47
+              "time": 182.66
             },
             {
               "bar": 56,
               "occurrence": 1,
-              "time": 182.66
+              "time": 184.56
             },
             {
               "bar": 57,
               "occurrence": 1,
-              "time": 184.56
+              "time": 186.75
             },
             {
               "bar": 58,
               "occurrence": 1,
-              "time": 186.75
+              "time": 188.94
             },
             {
               "bar": 59,
               "occurrence": 1,
-              "time": 188.94
+              "time": 191.57
             },
             {
               "bar": 60,
               "occurrence": 1,
-              "time": 191.57
+              "time": 194.64
             },
             {
               "bar": 61,
               "occurrence": 1,
-              "time": 194.64
+              "time": 196.39
             },
             {
               "bar": 62,
               "occurrence": 1,
-              "time": 196.39
+              "time": 199.9
             },
             {
               "bar": 63,
               "occurrence": 1,
-              "time": 199.9
+              "time": 202.09
             },
             {
               "bar": 64,
               "occurrence": 1,
-              "time": 202.09
+              "time": 204.28
             },
             {
               "bar": 65,
               "occurrence": 1,
-              "time": 204.28
+              "time": 209.54
             },
             {
               "bar": 66,
               "occurrence": 1,
-              "time": 209.54
+              "time": 214.51
             },
             {
               "bar": 67,
               "occurrence": 1,
-              "time": 214.51
+              "time": 218.9
             },
             {
               "bar": 68,
               "occurrence": 1,
-              "time": 218.9
+              "time": 225.62
             },
             {
               "bar": 69,
               "occurrence": 1,
-              "time": 225.62
+              "time": 229.71
             },
             {
               "bar": 70,
               "occurrence": 1,
-              "time": 229.71
+              "time": 236.43
             },
             {
               "bar": 71,
               "occurrence": 1,
-              "time": 236.43
+              "time": 242.28
             },
             {
               "bar": 72,
               "occurrence": 1,
-              "time": 242.28
+              "time": 248.12
             },
             {
               "bar": 73,
               "occurrence": 1,
-              "time": 248.12
+              "time": 251.63
             },
             {
               "bar": 74,
               "occurrence": 1,
-              "time": 251.63
+              "time": 255.14
             },
             {
               "bar": 75,
               "occurrence": 1,
-              "time": 255.14
+              "time": 257.77
             },
             {
               "bar": 76,
               "occurrence": 1,
-              "time": 257.77
+              "time": 261.86
             },
             {
               "bar": 77,
               "occurrence": 1,
-              "time": 261.86
+              "time": 264.05
             },
             {
               "bar": 78,
               "occurrence": 1,
-              "time": 264.05
+              "time": 268.0
             },
             {
               "bar": 79,
               "occurrence": 1,
-              "time": 268.0
+              "time": 270.63
             },
             {
               "bar": 80,
               "occurrence": 1,
-              "time": 270.63
+              "time": 275.89
             },
             {
               "bar": 81,
               "occurrence": 1,
-              "time": 275.89
+              "time": 280.42
             },
             {
               "bar": 82,
               "occurrence": 1,
-              "time": 280.42
+              "time": 283.48
             },
             {
               "bar": 83,
               "occurrence": 1,
-              "time": 283.48
+              "time": 286.99
             },
             {
               "bar": 84,
               "occurrence": 1,
-              "time": 286.99
+              "time": 289.18
             },
             {
               "bar": 85,
               "occurrence": 1,
-              "time": 289.18
+              "time": 291.38
             },
             {
               "bar": 86,
               "occurrence": 1,
-              "time": 291.38
+              "time": 293.71
             },
             {
               "bar": 87,
               "occurrence": 1,
-              "time": 293.71
+              "time": 298.24
             },
             {
               "bar": 88,
               "occurrence": 1,
-              "time": 298.24
+              "time": 301.31
             },
             {
               "bar": 89,
               "occurrence": 1,
-              "time": 301.31
+              "time": 303.94
             },
             {
               "bar": 90,
               "occurrence": 1,
-              "time": 303.94
+              "time": 306.57
             },
             {
               "bar": 91,
               "occurrence": 1,
-              "time": 306.57
+              "time": 309.79
             },
             {
               "bar": 92,
               "occurrence": 1,
-              "time": 309.79
+              "time": 313.29
             },
             {
               "bar": 93,
               "occurrence": 1,
-              "time": 313.29
+              "time": 317.68
             },
             {
               "bar": 94,
               "occurrence": 1,
-              "time": 317.68
-            },
-            {
-              "bar": 95,
-              "occurrence": 1,
               "time": 324.69
             }
           ],
-          "medianDisagreementSeconds": 0.79,
+          "medianDisagreementSeconds": 0.76,
           "maxDisagreementSeconds": 16.15,
-          "disagreementsOver2Seconds": 23
+          "disagreementsOver2Seconds": 22
         },
         "scenario": "unrepeated",
-        "barsPlayed": 95,
-        "writtenBars": 95,
+        "barsPlayed": 94,
+        "writtenBars": 94,
         "quarterbeatsPlayed": 189.5,
         "secondsPerQuarterbeat": 1.757,
         "barStarts": [
@@ -626,360 +621,355 @@
           {
             "bar": 24,
             "occurrence": 1,
-            "time": 96.41
+            "time": 96.78
           },
           {
             "bar": 25,
             "occurrence": 1,
-            "time": 96.78
+            "time": 96.97
           },
           {
             "bar": 26,
             "occurrence": 1,
-            "time": 96.97
+            "time": 97.34
           },
           {
             "bar": 27,
             "occurrence": 1,
-            "time": 97.34
+            "time": 97.85
           },
           {
             "bar": 28,
             "occurrence": 1,
-            "time": 97.85
+            "time": 102.82
           },
           {
             "bar": 29,
             "occurrence": 1,
-            "time": 102.82
+            "time": 103.47
           },
           {
             "bar": 30,
             "occurrence": 1,
-            "time": 103.47
+            "time": 104.4
           },
           {
             "bar": 31,
             "occurrence": 1,
-            "time": 104.4
+            "time": 111.97
           },
           {
             "bar": 32,
             "occurrence": 1,
-            "time": 111.97
+            "time": 116.24
           },
           {
             "bar": 33,
             "occurrence": 1,
-            "time": 116.24
+            "time": 117.21
           },
           {
             "bar": 34,
             "occurrence": 1,
-            "time": 117.21
+            "time": 119.35
           },
           {
             "bar": 35,
             "occurrence": 1,
-            "time": 119.35
+            "time": 126.41
           },
           {
             "bar": 36,
             "occurrence": 1,
-            "time": 126.41
+            "time": 130.64
           },
           {
             "bar": 37,
             "occurrence": 1,
-            "time": 130.64
+            "time": 133.84
           },
           {
             "bar": 38,
             "occurrence": 1,
-            "time": 133.84
+            "time": 135.23
           },
           {
             "bar": 39,
             "occurrence": 1,
-            "time": 135.23
+            "time": 140.06
           },
           {
             "bar": 40,
             "occurrence": 1,
-            "time": 140.06
+            "time": 149.16
           },
           {
             "bar": 41,
             "occurrence": 1,
-            "time": 149.16
+            "time": 150.09
           },
           {
             "bar": 42,
             "occurrence": 1,
-            "time": 150.09
+            "time": 150.79
           },
           {
             "bar": 43,
             "occurrence": 1,
-            "time": 150.79
+            "time": 153.53
           },
           {
             "bar": 44,
             "occurrence": 1,
-            "time": 153.53
+            "time": 154.55
           },
           {
             "bar": 45,
             "occurrence": 1,
-            "time": 154.55
+            "time": 158.55
           },
           {
             "bar": 46,
             "occurrence": 1,
-            "time": 158.55
+            "time": 160.87
           },
           {
             "bar": 47,
             "occurrence": 1,
-            "time": 160.87
+            "time": 162.91
           },
           {
             "bar": 48,
             "occurrence": 1,
-            "time": 162.91
+            "time": 165.05
           },
           {
             "bar": 49,
             "occurrence": 1,
-            "time": 165.05
+            "time": 165.42
           },
           {
             "bar": 50,
             "occurrence": 1,
-            "time": 165.42
+            "time": 165.79
           },
           {
             "bar": 51,
             "occurrence": 1,
-            "time": 165.79
+            "time": 166.63
           },
           {
             "bar": 52,
             "occurrence": 1,
-            "time": 166.63
+            "time": 175.64
           },
           {
             "bar": 53,
             "occurrence": 1,
-            "time": 175.64
+            "time": 178.65
           },
           {
             "bar": 54,
             "occurrence": 1,
-            "time": 178.65
+            "time": 180.28
           },
           {
             "bar": 55,
             "occurrence": 1,
-            "time": 180.28
+            "time": 180.65
           },
           {
             "bar": 56,
             "occurrence": 1,
-            "time": 180.65
+            "time": 184.46
           },
           {
             "bar": 57,
             "occurrence": 1,
-            "time": 184.46
+            "time": 187.62
           },
           {
             "bar": 58,
             "occurrence": 1,
-            "time": 187.62
+            "time": 189.06
           },
           {
             "bar": 59,
             "occurrence": 1,
-            "time": 189.06
+            "time": 192.17
           },
           {
             "bar": 60,
             "occurrence": 1,
-            "time": 192.17
+            "time": 195.6
           },
           {
             "bar": 61,
             "occurrence": 1,
-            "time": 195.6
+            "time": 197.18
           },
           {
             "bar": 62,
             "occurrence": 1,
-            "time": 197.18
+            "time": 199.41
           },
           {
             "bar": 63,
             "occurrence": 1,
-            "time": 199.41
+            "time": 202.39
           },
           {
             "bar": 64,
             "occurrence": 1,
-            "time": 202.39
+            "time": 204.34
           },
           {
             "bar": 65,
             "occurrence": 1,
-            "time": 204.34
+            "time": 210.23
           },
           {
             "bar": 66,
             "occurrence": 1,
-            "time": 210.23
+            "time": 214.6
           },
           {
             "bar": 67,
             "occurrence": 1,
-            "time": 214.6
+            "time": 221.43
           },
           {
             "bar": 68,
             "occurrence": 1,
-            "time": 221.43
+            "time": 227.23
           },
           {
             "bar": 69,
             "occurrence": 1,
-            "time": 227.23
+            "time": 229.83
           },
           {
             "bar": 70,
             "occurrence": 1,
-            "time": 229.83
+            "time": 241.58
           },
           {
             "bar": 71,
             "occurrence": 1,
-            "time": 241.58
+            "time": 245.48
           },
           {
             "bar": 72,
             "occurrence": 1,
-            "time": 245.48
+            "time": 249.99
           },
           {
             "bar": 73,
             "occurrence": 1,
-            "time": 249.99
+            "time": 251.33
           },
           {
             "bar": 74,
             "occurrence": 1,
-            "time": 251.33
+            "time": 254.12
           },
           {
             "bar": 75,
             "occurrence": 1,
-            "time": 254.12
+            "time": 257.37
           },
           {
             "bar": 76,
             "occurrence": 1,
-            "time": 257.37
+            "time": 263.04
           },
           {
             "bar": 77,
             "occurrence": 1,
-            "time": 263.04
+            "time": 264.61
           },
           {
             "bar": 78,
             "occurrence": 1,
-            "time": 264.61
+            "time": 266.94
           },
           {
             "bar": 79,
             "occurrence": 1,
-            "time": 266.94
+            "time": 272.56
           },
           {
             "bar": 80,
             "occurrence": 1,
-            "time": 272.56
+            "time": 276.41
           },
           {
             "bar": 81,
             "occurrence": 1,
-            "time": 276.41
+            "time": 281.24
           },
           {
             "bar": 82,
             "occurrence": 1,
-            "time": 281.24
+            "time": 283.79
           },
           {
             "bar": 83,
             "occurrence": 1,
-            "time": 283.79
+            "time": 286.95
           },
           {
             "bar": 84,
             "occurrence": 1,
-            "time": 286.95
+            "time": 289.41
           },
           {
             "bar": 85,
             "occurrence": 1,
-            "time": 289.41
+            "time": 291.55
           },
           {
             "bar": 86,
             "occurrence": 1,
-            "time": 291.55
+            "time": 294.61
           },
           {
             "bar": 87,
             "occurrence": 1,
-            "time": 294.61
+            "time": 298.52
           },
           {
             "bar": 88,
             "occurrence": 1,
-            "time": 298.52
+            "time": 302.65
           },
           {
             "bar": 89,
             "occurrence": 1,
-            "time": 302.65
+            "time": 305.2
           },
           {
             "bar": 90,
             "occurrence": 1,
-            "time": 305.2
+            "time": 310.59
           },
           {
             "bar": 91,
             "occurrence": 1,
-            "time": 310.59
+            "time": 323.13
           },
           {
             "bar": 92,
             "occurrence": 1,
-            "time": 323.13
+            "time": 329.44
           },
           {
             "bar": 93,
             "occurrence": 1,
-            "time": 329.44
-          },
-          {
-            "bar": 94,
-            "occurrence": 1,
             "time": 332.05
           },
           {
-            "bar": 95,
+            "bar": 94,
             "occurrence": 1,
             "time": 332.42
           }
@@ -990,7 +980,7 @@
     "examples": [
       {
         "fraction": 0.23606798,
-        "scoreBarApprox": 23.19,
+        "scoreBarApprox": 22.95,
         "nearestWrittenBar": 23,
         "candidateRecordingTimes": [
           84.89
@@ -998,24 +988,24 @@
       },
       {
         "fraction": 0.38196601,
-        "scoreBarApprox": 36.9,
+        "scoreBarApprox": 36.52,
         "nearestWrittenBar": 37,
         "candidateRecordingTimes": [
-          130.64
+          133.84
         ]
       },
       {
         "fraction": 0.61803399,
-        "scoreBarApprox": 59.1,
-        "nearestWrittenBar": 59,
+        "scoreBarApprox": 58.48,
+        "nearestWrittenBar": 58,
         "candidateRecordingTimes": [
           189.06
         ]
       },
       {
         "fraction": 0.76393202,
-        "scoreBarApprox": 72.81,
-        "nearestWrittenBar": 73,
+        "scoreBarApprox": 72.05,
+        "nearestWrittenBar": 72,
         "candidateRecordingTimes": [
           249.99
         ]
@@ -1042,15 +1032,15 @@
     "algorithm": "librosa chroma_cqt 12-bin + global cosine DTW; no hand-audited anchors",
     "candidateScenarios": [
       {
-        "cost": 0.17852833684528754,
+        "cost": 0.17852833702768162,
         "similarity": 0.8214716911315918,
         "medianSimilarity": 0.8602844476699829,
         "pathLength": 1450,
         "scoreFrames": 585,
         "audioFrames": 1442,
         "regularized": {
-          "similarity": 0.8771783618859604,
-          "cost": 0.13662720703854264,
+          "similarity": 0.8771783616793556,
+          "cost": 0.13662720726518,
           "barStarts": [
             {
               "bar": 1,
@@ -1796,15 +1786,15 @@
         ]
       },
       {
-        "cost": 0.1893161985145915,
+        "cost": 0.18931619867936708,
         "similarity": 0.8106837868690491,
         "medianSimilarity": 0.8511664867401123,
         "pathLength": 1642,
         "scoreFrames": 809,
         "audioFrames": 1442,
         "regularized": {
-          "similarity": 0.7528057068720383,
-          "cost": 0.2762541675910631,
+          "similarity": 0.7528057065588798,
+          "cost": 0.27625416794497004,
           "barStarts": [
             {
               "bar": 1,
@@ -2830,15 +2820,15 @@
         ]
       },
       {
-        "cost": 0.20369037859848863,
+        "cost": 0.20369037867745543,
         "similarity": 0.7963095903396606,
         "medianSimilarity": 0.8342877626419067,
         "pathLength": 1740,
         "scoreFrames": 945,
         "audioFrames": 1442,
         "regularized": {
-          "similarity": 0.7131823981454914,
-          "cost": 0.3207117851937033,
+          "similarity": 0.7131823978414892,
+          "cost": 0.3207117855347503,
           "barStarts": [
             {
               "bar": 1,
@@ -4034,15 +4024,15 @@
         ]
       },
       {
-        "cost": 0.21035836868357283,
+        "cost": 0.21035836875784428,
         "similarity": 0.7896416187286377,
         "medianSimilarity": 0.8275249600410461,
         "pathLength": 1932,
         "scoreFrames": 1169,
         "audioFrames": 1442,
         "regularized": {
-          "similarity": 0.6791853837085392,
-          "cost": 0.35902469129291753,
+          "similarity": 0.6791853834133045,
+          "cost": 0.35902469162328954,
           "barStarts": [
             {
               "bar": 1,
