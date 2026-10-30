@@ -11,7 +11,7 @@ export const PHI_LISTENING_MARKERS=Object.freeze([
 ].map(item=>Object.freeze({...item,label:(item.fraction*100).toFixed(1)+'%'})));
 
 // Written scores: Debussy 94 bars (standard numbering); Mozart K.545/1 73 bars.
-// Repeated measures are not counted again, and no score-to-recording map is inferred.
+// Repeated measures are not counted again; audio anchors come from the separate score map.
 export const WRITTEN_SCORE_BARS=Object.freeze({
  './audio/debussy-reflets-dans-leau.ogg':94,
  './audio/mozart-k545-allegro.ogg':73
@@ -20,7 +20,7 @@ export function scorePositionsForTrack(src,markers=PHI_LISTENING_MARKERS){
  const bars=WRITTEN_SCORE_BARS[src];
  if(!bars)return [];
  return markers.map(m=>({...m,bars,position:m.fraction*bars,
-   nearestBar:Math.round(m.fraction*bars)}));
+   nearestBar:Math.min(bars,Math.floor(m.fraction*bars)+1)}));
 }
 
 export const LISTEN_LEAD_IN_SECONDS=8;
@@ -112,7 +112,7 @@ export function createGramophonePhiTimeline({panel,record}){
  const evidence=document.createElement('small');evidence.className='record-phi-evidence';
  details.append(evidence);
  const hint=document.createElement('small');
- hint.textContent='Select a time or score marker to listen from 8 seconds before the event. Score markers use a cross-checked alignment for these exact recordings; uncertain positions cannot be selected. Nothing is added to the music.';
+ hint.textContent='Choose a marker to hear the preceding 8 seconds. Score times are computationally cross-checked against this exact performance, not manually certified. Uncertain markers cannot be selected. No cues are added.';
  details.append(hint);section.append(details);
  // The new UI lives under the normal transport, within the existing panel.
  const toggle=panel.querySelector('.record-toggle');
@@ -139,6 +139,7 @@ export function createGramophonePhiTimeline({panel,record}){
  .record-phi-score-cell{font:12px/1.45 Arial,sans-serif;text-align:left;color:#263831;cursor:pointer}
  .record-phi-score-cell:focus-visible{outline:3px solid #c79750;outline-offset:3px}
  .record-phi-score-cell:disabled{opacity:.6;cursor:not-allowed}
+ .record-phi-score-bar .record-phi-marker.uncertain{background:#998f80;opacity:.5;width:2px;border-left:1px dashed #594f44;}
  .record-phi-score-cell.moderate{border-style:dashed}
  .record-phi-score-bar .record-phi-marker[hidden]{display:none}
  .record-phi-score-title{font-weight:bold;margin-top:4px}
@@ -172,6 +173,7 @@ export function createGramophonePhiTimeline({panel,record}){
      const point=aligned[i],marker=PHI_LISTENING_MARKERS[i];
      cell.disabled=!point?.verified;
      cell.classList.toggle('moderate',point?.confidence==='moderate');
+     cell.setAttribute('aria-label',point?.verified?'Listen from 8 seconds before score position '+marker.label:'Score position '+marker.label+' needs manual review; seeking is disabled');
      cell.textContent=point?
        marker.label+' · bar '+point.withinBar+' · '+formatRecordTime(point.time)+
          (point.verified?'':' · needs review'):
@@ -182,6 +184,7 @@ export function createGramophonePhiTimeline({panel,record}){
        'Play the correct recording to load its score alignment';
      const line=scoreLines[i];
      line.hidden=!point;
+     line.classList.toggle('uncertain',!!point&&!point.verified);
      if(point&&duration>0){
        line.style.left=(point.time/duration*100)+'%';
        line.title=marker.label+' of written bars · '+formatRecordTime(point.time)+' in recording';
