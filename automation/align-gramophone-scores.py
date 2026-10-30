@@ -194,7 +194,10 @@ def run(kind):
                 "bar":bar, "occurrence":sum(1 for prev in starts[:occurrence] if prev[1]==bar)+1,
                 "time":round(float(result["time"][ix]), 2)
             })
-        # The framewise time vector is used to extract bar anchors, but must not\n        # be serialized in the compact candidate report.\n        result.pop('time', None)\n        # Relative performance rate: detect clearly implausible repeat hypotheses
+        # The framewise time vector is used to extract bar anchors, but must not
+        # be serialized in the compact candidate report.
+        result.pop('time', None)
+        # Relative performance rate: detect clearly implausible repeat hypotheses
         # by how much musical score has to be compressed into the actual audio.
         seconds_per_qb = duration / beats
         result.update({
