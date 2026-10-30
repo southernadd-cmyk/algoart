@@ -9,6 +9,19 @@ export const PHI_LISTENING_MARKERS=Object.freeze([
  {fraction:1-INV_PHI**3,level:'secondary'}
 ].map(item=>Object.freeze({...item,label:(item.fraction*100).toFixed(1)+'%'})));
 
+// Written scores: Debussy 94 bars (standard numbering); Mozart K.545/1 73 bars.
+// Repeated measures are not counted again, and no score-to-recording map is inferred.
+export const WRITTEN_SCORE_BARS=Object.freeze({
+ './audio/debussy-reflets-dans-leau.ogg':94,
+ './audio/mozart-k545-allegro.ogg':73
+});
+export function scorePositionsForTrack(src,markers=PHI_LISTENING_MARKERS){
+ const bars=WRITTEN_SCORE_BARS[src];
+ if(!bars)return [];
+ return markers.map(m=>({...m,bars,position:m.fraction*bars,
+   nearestBar:Math.round(m.fraction*bars)}));
+}
+
 export const LISTEN_LEAD_IN_SECONDS=8;
 
 export function timelineForDuration(duration,markers=PHI_LISTENING_MARKERS){
@@ -69,8 +82,19 @@ export function createGramophonePhiTimeline({panel,record}){
    jumps.append(button);return button;
  });
  details.append(jumps);
+ const scoreTitle=document.createElement('small');
+ scoreTitle.className='record-phi-score-title';
+ details.append(scoreTitle);
+ const scoreRow=document.createElement('div');
+ scoreRow.className='record-phi-score-markers';
+ const scoreCells=PHI_LISTENING_MARKERS.map(marker=>{
+   const cell=document.createElement('span');
+   cell.className='record-phi-score-cell '+marker.level;
+   scoreRow.append(cell);return cell;
+ });
+ details.append(scoreRow);
  const hint=document.createElement('small');
- hint.textContent='Select a position to listen from 8 seconds before its marker. No cues are added to the recording.';
+ hint.textContent='Time markers seek back 8 seconds. Score markers show approximate written-bar positions; they cannot seek without alignment to this performance. No cues are added.';
  details.append(hint);section.append(details);
  // The new UI lives under the normal transport, within the existing panel.
  const toggle=panel.querySelector('.record-toggle');
@@ -91,6 +115,10 @@ export function createGramophonePhiTimeline({panel,record}){
  .record-phi-jumps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
  .record-phi-jumps button{background:#e5e0d3;color:#263831;border:1px solid #b9ab90;text-align:left;font:13px/1.4 Arial,sans-serif;padding:7px 9px}
  .record-phi-jumps button.primary{border-color:#896f44}
+ .record-phi-score-markers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font:12px/1.5 Arial,sans-serif}
+ .record-phi-score-cell{padding:6px 8px;border-left:2px solid #a88851;background:#eee9dd}
+ .record-phi-score-cell.primary{border-left-width:4px;border-left-color:#76562d}
+ .record-phi-score-title{font-weight:bold;margin-top:4px}
  .record-phi-current{font-variant-numeric:tabular-nums}
  `;
  document.head.append(style);
@@ -107,6 +135,15 @@ export function createGramophonePhiTimeline({panel,record}){
    const actual=activeDuration();
    if(actual)duration=actual;
    const points=timelineForDuration(duration);
+   const score=scorePositionsForTrack(selected?.src);
+   const bars=score[0]?.bars;
+   scoreTitle.textContent=bars?'Written score · '+bars+' bars (not recording time)':
+     'Written score · bar count unavailable';
+   scoreCells.forEach((cell,i)=>{
+     const point=score[i],marker=PHI_LISTENING_MARKERS[i];
+     cell.textContent=point?marker.label+' · near bar '+point.nearestBar:
+       marker.label+' · unverified';
+   });
    buttons.forEach((button,i)=>{
      const point=points[i];button.disabled=!point;
      button.textContent=point?point.label+' · '+formatRecordTime(point.time):
@@ -131,7 +168,7 @@ export function createGramophonePhiTimeline({panel,record}){
  for(const name of events)audio.addEventListener(name,name==='timeupdate'?render:update);
  update();
  return {
-   markers:PHI_LISTENING_MARKERS,update,
+   markers:PHI_LISTENING_MARKERS,scorePositionsForTrack,update,
    dispose(){
      disposed=true;
      for(const name of events)audio.removeEventListener(name,name==='timeupdate'?render:update);
