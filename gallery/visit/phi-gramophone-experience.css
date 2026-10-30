@@ -1,6 +1,6 @@
 
 /* PROPORTION PIECE | test-only golden listening exhibit */
-.gramophone-panel:has(.phi-listen){--phi-panel-width:min(536px,calc(100vw - 26px),calc((100dvh - 110px)/1.618033989));width:var(--phi-panel-width);height:calc(var(--phi-panel-width)*1.618033989);aspect-ratio:1 / 1.618033989;max-height:none;bottom:25px;padding:18px 22px}
+.gramophone-panel:has(.phi-listen){--phi-panel-width:min(860px,calc(100vw - 48px),calc((100dvh - 110px)*1.618033989));width:var(--phi-panel-width);height:calc(var(--phi-panel-width)/1.618033989);aspect-ratio:1.618033989 / 1;max-height:none;bottom:25px;padding:18px 22px}
 .phi-listen{--phi-ink:#34463d;--phi-gold:#ac793d;display:grid;gap:12px;margin:16px 0 6px;padding-top:16px;border-top:1px solid #b4bcae;color:var(--phi-ink);font:14px/1.45 Georgia,serif}
 .phi-listen[hidden],.phi-listen-stage[hidden]{display:none}
 .phi-listen h3{font:normal clamp(26px,4vw,36px)/1.14 "AlgoArt Marker",Georgia,serif;margin:5px 0 8px;letter-spacing:-.01em}
@@ -48,7 +48,7 @@
 .phi-listen-sources summary{cursor:pointer;color:#455f51}
 .phi-listen-sources p{margin:9px 0}
 .phi-listen-sources a{color:#3c6351;text-decoration:underline;text-underline-offset:3px}
-@media(max-width:600px){.gramophone-panel:has(.phi-listen){right:10px;bottom:95px;--phi-panel-width:min(calc(100vw - 20px),calc((100dvh - 170px)/1.618033989));max-height:none;padding:14px}.phi-listen{gap:10px}.phi-listen-figure{padding:9px}.phi-listen-action{padding:10px!important}.phi-listen-action strong{font-size:20px}}
+@media(max-width:600px){.gramophone-panel:has(.phi-listen){right:10px;bottom:95px;--phi-panel-width:min(calc(100vw - 20px),calc((100dvh - 170px)*1.618033989));max-height:none;padding:14px}.phi-listen{gap:10px}.phi-listen-figure{padding:9px}.phi-listen-action{padding:10px!important}.phi-listen-action strong{font-size:20px}}
 @media(prefers-reduced-motion:reduce){.phi-listen *{transition:none!important;animation:none!important}}
 
 .phi-listen-both{width:100%;padding:12px!important;font:700 11px Arial,sans-serif!important;letter-spacing:.06em;cursor:pointer}
