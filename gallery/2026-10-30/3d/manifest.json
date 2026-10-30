@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-10-30-01-spiral-AA-20261030-01-03093.jpg": {
+      "desktop": "3d/2026-10-30-01-spiral-AA-20261030-01-03093-1100.webp",
+      "mobile": "3d/2026-10-30-01-spiral-AA-20261030-01-03093-640.webp"
+    },
+    "2026-10-30-02-rects-AA-20261030-02-25474.jpg": {
+      "desktop": "3d/2026-10-30-02-rects-AA-20261030-02-25474-1100.webp",
+      "mobile": "3d/2026-10-30-02-rects-AA-20261030-02-25474-640.webp"
+    },
+    "2026-10-30-portrait-01-field-AP-20261030-01-72940.jpg": {
+      "desktop": "3d/2026-10-30-portrait-01-field-AP-20261030-01-72940-1100.webp",
+      "mobile": "3d/2026-10-30-portrait-01-field-AP-20261030-01-72940-640.webp"
+    },
+    "2026-10-30-portrait-02-spiral-AP-20261030-02-50559.jpg": {
+      "desktop": "3d/2026-10-30-portrait-02-spiral-AP-20261030-02-50559-1100.webp",
+      "mobile": "3d/2026-10-30-portrait-02-spiral-AP-20261030-02-50559-640.webp"
+    },
+    "2026-10-30-watercolor-landscape-01-rects-AWL-20261030-01-51052.jpg": {
+      "desktop": "3d/2026-10-30-watercolor-landscape-01-rects-AWL-20261030-01-51052-1100.webp",
+      "mobile": "3d/2026-10-30-watercolor-landscape-01-rects-AWL-20261030-01-51052-640.webp"
+    },
+    "2026-10-30-watercolor-landscape-02-burst-AWL-20261030-02-67029.jpg": {
+      "desktop": "3d/2026-10-30-watercolor-landscape-02-burst-AWL-20261030-02-67029-1100.webp",
+      "mobile": "3d/2026-10-30-watercolor-landscape-02-burst-AWL-20261030-02-67029-640.webp"
+    },
+    "2026-10-30-watercolor-portrait-01-spiral-AWP-20261030-01-66888.jpg": {
+      "desktop": "3d/2026-10-30-watercolor-portrait-01-spiral-AWP-20261030-01-66888-1100.webp",
+      "mobile": "3d/2026-10-30-watercolor-portrait-01-spiral-AWP-20261030-01-66888-640.webp"
+    },
+    "2026-10-30-watercolor-portrait-02-rects-AWP-20261030-02-79697.jpg": {
+      "desktop": "3d/2026-10-30-watercolor-portrait-02-rects-AWP-20261030-02-79697-1100.webp",
+      "mobile": "3d/2026-10-30-watercolor-portrait-02-rects-AWP-20261030-02-79697-640.webp"
+    },
+    "2026-10-30-watercolour-landscape-01-field-CWL-20261030-01-50861.jpg": {
+      "desktop": "3d/2026-10-30-watercolour-landscape-01-field-CWL-20261030-01-50861-1100.webp",
+      "mobile": "3d/2026-10-30-watercolour-landscape-01-field-CWL-20261030-01-50861-640.webp"
+    },
+    "2026-10-30-watercolour-landscape-02-spiral-CWL-20261030-02-97816.jpg": {
+      "desktop": "3d/2026-10-30-watercolour-landscape-02-spiral-CWL-20261030-02-97816-1100.webp",
+      "mobile": "3d/2026-10-30-watercolour-landscape-02-spiral-CWL-20261030-02-97816-640.webp"
+    },
+    "2026-10-30-watercolour-portrait-01-scribble-CWP-20261030-01-19379.jpg": {
+      "desktop": "3d/2026-10-30-watercolour-portrait-01-scribble-CWP-20261030-01-19379-1100.webp",
+      "mobile": "3d/2026-10-30-watercolour-portrait-01-scribble-CWP-20261030-01-19379-640.webp"
+    },
+    "2026-10-30-watercolour-portrait-02-field-CWP-20261030-02-36046.jpg": {
+      "desktop": "3d/2026-10-30-watercolour-portrait-02-field-CWP-20261030-02-36046-1100.webp",
+      "mobile": "3d/2026-10-30-watercolour-portrait-02-field-CWP-20261030-02-36046-640.webp"
+    },
+    "2026-10-30-oil-landscape-01-spiral-OL-20261030-01-42408.jpg": {
+      "desktop": "3d/2026-10-30-oil-landscape-01-spiral-OL-20261030-01-42408-1100.webp",
+      "mobile": "3d/2026-10-30-oil-landscape-01-spiral-OL-20261030-01-42408-640.webp"
+    },
+    "2026-10-30-oil-landscape-02-organic-OL-20261030-02-77605.jpg": {
+      "desktop": "3d/2026-10-30-oil-landscape-02-organic-OL-20261030-02-77605-1100.webp",
+      "mobile": "3d/2026-10-30-oil-landscape-02-organic-OL-20261030-02-77605-640.webp"
+    },
+    "2026-10-30-oil-portrait-01-organic-OP-20261030-01-18764.jpg": {
+      "desktop": "3d/2026-10-30-oil-portrait-01-organic-OP-20261030-01-18764-1100.webp",
+      "mobile": "3d/2026-10-30-oil-portrait-01-organic-OP-20261030-01-18764-640.webp"
+    },
+    "2026-10-30-oil-portrait-02-geometric-OP-20261030-02-79169.jpg": {
+      "desktop": "3d/2026-10-30-oil-portrait-02-geometric-OP-20261030-02-79169-1100.webp",
+      "mobile": "3d/2026-10-30-oil-portrait-02-geometric-OP-20261030-02-79169-640.webp"
+    },
+    "2026-10-30-action-landscape-01-scribble-ACL-20261030-01-80125.jpg": {
+      "desktop": "3d/2026-10-30-action-landscape-01-scribble-ACL-20261030-01-80125-1100.webp",
+      "mobile": "3d/2026-10-30-action-landscape-01-scribble-ACL-20261030-01-80125-640.webp"
+    },
+    "2026-10-30-action-portrait-01-burst-ACP-20261030-01-17643.jpg": {
+      "desktop": "3d/2026-10-30-action-portrait-01-burst-ACP-20261030-01-17643-1100.webp",
+      "mobile": "3d/2026-10-30-action-portrait-01-burst-ACP-20261030-01-17643-640.webp"
+    }
+  }
+}
