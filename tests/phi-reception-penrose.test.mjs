@@ -15,8 +15,8 @@ test('the 5-grid rhombs have the expected golden-frequency limit',()=>{
  assert.ok(thick>200&&thin>120);
  assert.ok(Math.abs(thick/thin-(1+Math.sqrt(5))/2)<0.15);
  assert.match(svg,/viewBox="-16 -16 32 32"/);
- assert.match(svg,/stroke-width="\\.095"/);
- assert.match(svg,/stroke-width="\\.033"/);
+ assert.ok(svg.includes('stroke-width=".095"'));
+ assert.ok(svg.includes('stroke-width=".033"'));
  assert.match(svg,/stroke="#29221a"/);
  assert.match(svg,/stroke="#e6b965"/);
 });
