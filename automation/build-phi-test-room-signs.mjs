@@ -26,7 +26,29 @@ await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
  outfile:'gallery/visit/gallery-phi-test-room-signs-bundle.js',
- plugins:[stageCurationPlugin()],
+ plugins:[stageCurationPlugin(),{
+  name:'8bars-gramophone-staging-only',
+  setup(builder){
+    // Alter ONLY the test build's copy of the music panel.
+    // Live gallery-music.mjs and its production bundle remain untouched.
+    builder.onLoad({filter:/[/\\]gallery-music\\.mjs$/},async({path})=>{
+      let text=await readFile(path,'utf8');
+      const swap=(oldText,newText)=>{
+        if(text.split(oldText).length!==2)throw Error('Gramophone staging anchor changed: '+oldText.slice(0,70));
+        text=text.replace(oldText,newText);
+      };
+      swap("import {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';",
+           "import {createPhiTestGramophoneRecord as createGramophoneRecord} from './phi-gramophone-test-controller.mjs';");
+      swap("interpretation.textContent=s.track.composer==='Claude Debussy'?",
+           "interpretation.textContent=s.track.goldenStudy?'An original 20-second study composed by 8bars: 5+3 phrasing, a change at 61.8%, and two sampled notes with an exact 1:φ frequency relationship. Does it sound harmonious?':s.track.composer==='Claude Debussy'?");
+      swap("problem.textContent=s.problem;toggle.textContent=s.playing?'Pause record':'Play record';",
+           "problem.textContent=s.loading?'Preparing the 8bars study…':s.problem;toggle.textContent=s.loading?'Cancel preparation':s.playing?'Pause record':'Play record';");
+      swap("When it finishes, the next begins; both repeat through the gallery and lift speakers.",
+           "The two historical records play in sequence. Golden Frequency loops independently. Sound uses the gallery and lift speakers.");
+      return {contents:text,loader:'js',resolveDir:dir};
+    });
+  }
+}],
  logLevel:'warning'
 });
 const bundle=await readFile(resolve(dir,'gallery-phi-test-room-signs-bundle.js'));
