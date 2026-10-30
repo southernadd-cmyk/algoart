@@ -24,7 +24,7 @@ import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=entr
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs?v=gallery-reception-20261027';
-import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,renderPhiFurniture,addPhiFrontage,addPhiReceptionMap} from './phi-reception-decor.mjs?v=baked-radiant-painting-20261027';
+import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,renderPhiFurniture,addPhiFrontage,addPhiReceptionMap} from './phi-reception-decor.mjs?v=artist-poster-20261030';
 import {planPhiFurnishings} from './phi-furnishings.mjs?v=larger-reception-desk-20261026';
 import {buildPhiRendererPlan} from './phi-full-engine-adapter.mjs?v=public-adapter-20261026';
 import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';

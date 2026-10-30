@@ -109,15 +109,33 @@ export const RECEPTION_CREDITS=[
  {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Plaza plants — Nicholas-3D','Reception art — PROPORTION PIECE','Magazine cabinet — JFN','Paper debris — Sousinho','Cardboard boxes —','NotAnotherApocalypticCo.','','Scene models: CC BY 4.0','Meshes and textures optimised.','Chalkboard — clon6767 · CC BY 4.0','Pub sign — johhny3D · CC BY 4.0','Window — MWOgier · CC BY 4.0','Hanging signs — Sousinho · CC BY 4.0','Fittings — dylanheyes · CC BY 4.0']},
  {title:'Materials and fittings',lines:['Wallpaper: Decorative Wall 2','ShareTextures · M. Tolga Arslan · CC0','Feature wall: Bricks055 charcoal','ambientCG · CC0','Gallery: plastered_wall_02','Poly Haven · CC0','Ceiling: OfficeCeiling001','Brick: Bricks055 · ambientCG · CC0','Roof: KSmodels · CC BY 4.0','Floor: Aman Bajwa · CC BY 4.0','Scan adapted; textures optimised.','Full credits and licences online.']}
 ];
+export const RECEPTION_AUTHORSHIP={title:'Artistic direction',lines:[
+ 'Adam Clement',
+ 'φ is a chosen constraint.',
+ 'Adam shapes the rules, reviews the',
+ 'results and decides what to keep,',
+ 'change or leave out.'
+]};
 export function addPhiReceptionCredits(THREE,scene,placement,elevation){
  const exhibits=[];if(!placement)return exhibits;
- for(const [i,credit] of RECEPTION_CREDITS.entries()){
+ for(const [i,credit] of [...RECEPTION_CREDITS,RECEPTION_AUTHORSHIP].entries()){
+  const authorship=credit===RECEPTION_AUTHORSHIP;
   const canvas=document.createElement('canvas');canvas.width=640;canvas.height=880;const g=canvas.getContext('2d');
   g.fillStyle='#eee9dc';g.fillRect(0,0,640,880);g.fillStyle='#344638';g.font='42px "AlgoArt Marker", Georgia';g.fillText(credit.title,40,88,560);
   g.strokeStyle='#b7b4a2';g.beginPath();g.moveTo(40,120);g.lineTo(600,120);g.stroke();g.font='25px Georgia';credit.lines.forEach((line,n)=>g.fillText(line,40,185+n*Math.min(58,650/Math.max(1,credit.lines.length-1)),560));
+  if(authorship){
+   canvas.width=960;canvas.height=600;
+   g.fillStyle='#eee9dc';g.fillRect(0,0,960,600);g.fillStyle='#344638';
+   g.font='54px "AlgoArt Marker", Georgia';g.fillText(credit.title,60,100,840);
+   g.strokeStyle='#b7b4a2';g.beginPath();g.moveTo(60,132);g.lineTo(900,132);g.stroke();
+   g.font='42px Georgia';g.fillText(credit.lines[0],60,204,840);
+   g.font='34px Georgia';credit.lines.slice(1).forEach((line,n)=>g.fillText(line,60,300+n*64,840));
+  }
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-  const group=new THREE.Group();group.name='phi-reception-credit-'+i;const width=.68,height=.94;
-  group.position.set(placement.x+(placement.axis==='z'?(i-1)*.83:0),elevation+1.65,placement.z+(placement.axis==='x'?(i-1)*.83:0));
+  const group=new THREE.Group();group.name=authorship?'phi-reception-authorship':'phi-reception-credit-'+i;
+  const width=authorship?1.05:.68,height=authorship?.65625:.94;
+  const offset=authorship?0:(i-1)*.83;
+  group.position.set(placement.x+(placement.axis==='z'?offset:0),elevation+(authorship?2.62:1.65),placement.z+(placement.axis==='x'?offset:0));
   group.rotation.y=placement.axis==='x'?(placement.normal.x>0?Math.PI/2:-Math.PI/2):(placement.normal.z>0?0:Math.PI);
   group.add(new THREE.Mesh(new THREE.BoxGeometry(width+.06,height+.06,.045),new THREE.MeshStandardMaterial({color:'#3d493b',roughness:.78})));
   const face=new THREE.Mesh(new THREE.PlaneGeometry(width,height),new THREE.MeshBasicMaterial({map:texture}));face.position.z=.026;group.add(face);scene.add(group);
