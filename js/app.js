@@ -1151,9 +1151,20 @@ var exportBusy=false,preparedPNGURL=null,pngGeneration=0,mobilePNGDownloadCount=
 function clearPreparedPNG(){
   pngGeneration++;
   if(preparedPNGURL){
-    // Allow an in-flight browser download to finish consuming the old URL.
-    var oldURL=preparedPNGURL;
-    setTimeout(function(){URL.revokeObjectURL(oldURL)},60000);
+    // Give every prepared file a fresh native download link. Mobile browsers
+    // can retain download state on an anchor after its first activation.
+    var oldURL=preparedPNGURL,oldLink=$('pngDownload');
+    var nextLink=oldLink.cloneNode(true);
+    nextLink.removeAttribute('href');
+    nextLink.removeAttribute('download');
+    oldLink.replaceWith(nextLink);
+    // Keep the activated link and URL intact while the browser consumes them.
+    oldLink.removeAttribute('id');
+    oldLink.setAttribute('aria-hidden','true');
+    oldLink.tabIndex=-1;
+    oldLink.style.cssText='position:fixed;left:-10000px;width:1px;height:1px';
+    document.body.appendChild(oldLink);
+    setTimeout(function(){oldLink.remove();URL.revokeObjectURL(oldURL)},60000);
     preparedPNGURL=null;
   }
   $('pngReady').hidden=true;
