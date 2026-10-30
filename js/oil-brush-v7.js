@@ -73,7 +73,7 @@ function tintedTooth(ctx,level,color){
  return pattern;
 }
 function depositToothed(pig,mask,path,color,opacity,height,level,box){
- for(const [ctx,alpha,col] of [[pig,opacity,color],[mask,height,[255,255,255]]]){
+ for(const [ctx,alpha,col] of [[pig,opacity,color],[mask,height,color]]){
   ctx.save();
   const pattern=tintedTooth(ctx,level,col);
   pattern.setTransform(ctx.getTransform().inverse());
