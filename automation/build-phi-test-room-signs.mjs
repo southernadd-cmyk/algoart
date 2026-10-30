@@ -27,6 +27,22 @@ replace('fetchGalleryText(url,{cache}),',"fetchGalleryText(url,{cache:'no-store'
 replace("import * as THREE from 'three';",
  "import {createPhiLightingComparison} from '../../test/virtual-gallery/phi-lighting-comparison.mjs';\nimport {planPhiRoomLighting} from './phi-room-lighting.mjs';\nimport {planRefinedPhiRoomLighting,refineRoomLightEntries} from './phi-room-lighting-refined.mjs';\nimport * as THREE from 'three';\nconst phiLightingComparison=createPhiLightingComparison({planner:planRefinedPhiRoomLighting,baselinePlanner:planPhiRoomLighting,refined:true});");
 replace(' const staticArchitecture=[];', ' phiLightingComparison.reset();\n const staticArchitecture=[];');
+// TEST ONLY: two shared architectural metal finishes, with no textures,
+// additional geometry, lights, shadows or post-processing.
+replace('const join=galleryFinish.trims;\nsetSculptureArchitecturalMaterials(',
+  "const join=galleryFinish.trims;\nconst architecturalBronzeStudy=new THREE.MeshStandardMaterial({color:'#806b53',metalness:.38,roughness:.64});\nconst architecturalFrameStudy=new THREE.MeshStandardMaterial({color:'#344452',metalness:.24,roughness:.73});\narchitecturalBronzeStudy.userData.galleryPersistent=true;\narchitecturalFrameStudy.userData.galleryPersistent=true;\nsetSculptureArchitecturalMaterials(");
+// Preserve reception's original blue wallpaper map; soften its normal relief
+// to work with the existing proportional light placement.
+replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;',
+  ' if(exhibitDate===RECEPTION&&receptionWallMaterial){receptionWallMaterial.roughness=.94;receptionWallMaterial.normalScale.set(.32,.32);}\n const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;');
+// The desk's details refer to the bronze floor without editing that floor.
+replace('trims:galleryFinish.trims});','trims:architecturalBronzeStudy});');
+// Pilot the framed artworks in exactly one artwork-rich gallery room on
+// each dated floor. No paintings or sculpture placements are changed.
+replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;',
+  " const frameRoomCounts=new Map();\n for(const p of phi.exhibition.paintings)frameRoomCounts.set(p.room,(frameRoomCounts.get(p.room)||0)+1);\n const frameStudyRoom=exhibitDate===RECEPTION?-1:([...frameRoomCounts].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]?.[0]??-1);\n if(GALLERY_DEBUG)window.__phiArchitecturalFrameStudy={room:frameStudyRoom,paintings:frameRoomCounts.get(frameStudyRoom)||0};\n for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;");
+replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
+  'p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,p.room===frameStudyRoom?architecturalFrameStudy:join);');
 replace('    applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);',
  '    for(const entry of refineRoomLightEntries(phiRoomLightEntries,plan.phi))phiLightingComparison.register(entry);\n    phiLightingComparison.finish(plan.phi?.world);');
 
