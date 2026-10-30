@@ -1,3 +1,4 @@
+import {alignedScorePoint} from './phi-gramophone-score-map.mjs';
 // Test-tower listening experiment. The recording is never processed or edited:
 // these are mathematical reference points, not claims about score landmarks.
 export const PHI=(1+Math.sqrt(5))/2;
@@ -50,7 +51,7 @@ export function createGramophonePhiTimeline({panel,record}){
  const details=document.createElement('div');
  details.className='record-phi-details';details.hidden=true;
  const explanation=document.createElement('small');
- explanation.textContent='Four nested golden-ratio divisions. These are listening references, not confirmed structural events in the music.';
+ explanation.textContent='Compare the same four golden-ratio positions in written bars and in elapsed recording time. They need not coincide.';
  details.append(explanation);
  const timeHeading=document.createElement('small');timeHeading.textContent='Recording time · percentage of duration';details.append(timeHeading);
  const bar=document.createElement('div');
@@ -89,21 +90,29 @@ export function createGramophonePhiTimeline({panel,record}){
  const scoreRow=document.createElement('div');
  scoreRow.className='record-phi-score-markers';
  const scoreCells=PHI_LISTENING_MARKERS.map(marker=>{
-   const cell=document.createElement('span');
-   cell.className='record-phi-score-cell '+marker.level;
+   const cell=document.createElement('button');cell.type='button';
+   cell.className='record-phi-score-cell '+marker.level;cell.disabled=true;
+   cell.setAttribute('aria-label','Listen from the aligned score '+marker.label+' position');
+   cell.addEventListener('click',()=>{
+     const point=alignedScorePoint(record.state().track?.src,marker.fraction,activeDuration());
+     if(!point?.verified)return;
+     audio.currentTime=Math.max(0,point.time-LISTEN_LEAD_IN_SECONDS);
+     if(!record.state().playing)void record.play();
+     render();
+   });
    scoreRow.append(cell);return cell;
  });
  details.append(scoreRow);
  const scoreBar=document.createElement('div');scoreBar.className='record-phi-bar record-phi-score-bar';
- for(const marker of PHI_LISTENING_MARKERS){
+ const scoreLines=PHI_LISTENING_MARKERS.map(marker=>{
    const line=document.createElement('div');line.className='record-phi-marker '+marker.level;
-   line.style.left=(marker.fraction*100)+'%';scoreBar.append(line);
- }
+   line.hidden=true;scoreBar.append(line);return line;
+ });
  details.append(scoreBar);
  const evidence=document.createElement('small');evidence.className='record-phi-evidence';
  details.append(evidence);
  const hint=document.createElement('small');
- hint.textContent='Time markers seek back 8 seconds. Score markers show approximate written-bar positions; they cannot seek without alignment to this performance. No cues are added.';
+ hint.textContent='Select a time or score marker to listen from 8 seconds before the event. Score markers use a cross-checked alignment for these exact recordings; uncertain positions cannot be selected. Nothing is added to the music.';
  details.append(hint);section.append(details);
  // The new UI lives under the normal transport, within the existing panel.
  const toggle=panel.querySelector('.record-toggle');
@@ -127,6 +136,11 @@ export function createGramophonePhiTimeline({panel,record}){
  .record-phi-score-markers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font:12px/1.5 Arial,sans-serif}
  .record-phi-score-cell{padding:6px 8px;border-left:2px solid #a88851;background:#eee9dd}
  .record-phi-score-cell.primary{border-left-width:4px;border-left-color:#76562d}
+ .record-phi-score-cell{font:12px/1.45 Arial,sans-serif;text-align:left;color:#263831;cursor:pointer}
+ .record-phi-score-cell:focus-visible{outline:3px solid #c79750;outline-offset:3px}
+ .record-phi-score-cell:disabled{opacity:.6;cursor:not-allowed}
+ .record-phi-score-cell.moderate{border-style:dashed}
+ .record-phi-score-bar .record-phi-marker[hidden]{display:none}
  .record-phi-score-title{font-weight:bold;margin-top:4px}
  .record-phi-current{font-variant-numeric:tabular-nums}
  `;
@@ -145,17 +159,33 @@ export function createGramophonePhiTimeline({panel,record}){
    if(actual)duration=actual;
    const points=timelineForDuration(duration);
    const score=scorePositionsForTrack(selected?.src);
+   const aligned=PHI_LISTENING_MARKERS.map(marker=>
+     alignedScorePoint(selected?.src,marker.fraction,actual));
    evidence.textContent=selected?.src==='./audio/debussy-reflets-dans-leau.ogg'?
      'Research example: Debussy’s strongest climax occurs around bar 58, near 61.8% of the 94-bar score.':
      selected?.src==='./audio/mozart-k545-allegro.ogg'?
      'Formal example: Mozart’s 28-bar exposition ends near 38.2% of the 73-bar written movement. Repeats may change how this sits in recorded time.':'';
    const bars=score[0]?.bars;
-   scoreTitle.textContent=bars?'Written score · '+bars+' bars (not recording time)':
+   scoreTitle.textContent=bars?'Written score · '+bars+' bars · aligned to this recording':
      'Written score · bar count unavailable';
    scoreCells.forEach((cell,i)=>{
-     const point=score[i],marker=PHI_LISTENING_MARKERS[i];
-     cell.textContent=point?marker.label+' · near bar '+point.nearestBar:
-       marker.label+' · unverified';
+     const point=aligned[i],marker=PHI_LISTENING_MARKERS[i];
+     cell.disabled=!point?.verified;
+     cell.classList.toggle('moderate',point?.confidence==='moderate');
+     cell.textContent=point?
+       marker.label+' · bar '+point.withinBar+' · '+formatRecordTime(point.time)+
+         (point.verified?'':' · needs review'):
+       marker.label+' · awaiting verified audio';
+     cell.title=point?
+       'Two alignment methods differ around this point by '+point.disagreement.toFixed(2)+
+       ' seconds. '+(point.verified?'Click for an eight-second lead-in.':'Not seekable until reviewed.'):
+       'Play the correct recording to load its score alignment';
+     const line=scoreLines[i];
+     line.hidden=!point;
+     if(point&&duration>0){
+       line.style.left=(point.time/duration*100)+'%';
+       line.title=marker.label+' of written bars · '+formatRecordTime(point.time)+' in recording';
+     }
    });
    buttons.forEach((button,i)=>{
      const point=points[i];button.disabled=!point;
