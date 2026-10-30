@@ -86,7 +86,7 @@ replace('  renderer.setSize(innerWidth,innerHeight);',
 replace("  if(!$('lift').hidden){renderer.render(scene,camera);return;}",
  "  if(!$('lift').hidden){phiPostFX.render(dt,null);return;}");
 replace('  renderer.render(scene,camera);\n  if(GALLERY_DEBUG)window.__phiGraffitiStats',
- '  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);\n  if(GALLERY_DEBUG)window.__phiGraffitiStats');
+ "  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);\n  if(GALLERY_DEBUG)window.__phiGraffitiStats");
 
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
