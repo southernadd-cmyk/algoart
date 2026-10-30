@@ -30,7 +30,7 @@ replace(' const staticArchitecture=[];', ' phiLightingComparison.reset();\n cons
 // Architectural camera study: use ?camera=wide to restore original 76°.
 // Keep locomotion, collision checks, near/far clipping and frame pacing.
 replace('const camera = new THREE.PerspectiveCamera(76,',
-  "const phiCameraFov=new URLSearchParams(location.search).get('camera')==='wide'?76:60;\\nconst phiArtworkStudyEnabled=new URLSearchParams(location.search).get('art')!=='original';\\nif(GALLERY_DEBUG)window.__phiVisualStudy={cameraFov:phiCameraFov,artColourStudy:phiArtworkStudyEnabled};\\nconst camera = new THREE.PerspectiveCamera(phiCameraFov,");
+  "const phiCameraFov=new URLSearchParams(location.search).get('camera')==='wide'?76:60;\nconst phiArtworkStudyEnabled=new URLSearchParams(location.search).get('art')!=='original';\nif(GALLERY_DEBUG)window.__phiVisualStudy={cameraFov:phiCameraFov,artColourStudy:phiArtworkStudyEnabled};\nconst camera = new THREE.PerspectiveCamera(phiCameraFov,");
 // Existing artwork uses MeshBasicMaterial deliberately; in one curated
 // room, bypass the renderer's global tone mapping for source-faithful art
 // colour and a brighter image relative to the matte physical surrounds.
