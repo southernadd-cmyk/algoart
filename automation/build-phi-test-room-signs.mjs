@@ -65,7 +65,21 @@ await build({
  const lightness=family<.382?.49+unit()*.10:family<.764?.34+unit()*.09:.24+unit()*.07;`);
    const finish='roughness:.92,metalness:0,';
    if(contents.split(finish).length!==2)throw Error('Visitor finish build anchor changed');
-   contents=contents.replace(finish,'roughness:.78,metalness:.08,');
+   contents=contents.replace(finish,'roughness:.86,metalness:.02,');
+   // Placeholder figures are visible during a slow model load (and remain if
+   // the models fail). Previously these retained their unrelated clothing
+   // palette, producing the prototype look before the rigged figures arrive.
+   // Keep the exact shapes, poses, placement and draw-call budget.
+   const placeholderFinishes=[
+    ["'#bd8a6f','#e1b293','#78533f','#c99c80','#9c6f55'","'#d8d4cb','#cac4b8','#c9c7c1','#d6d0c2','#bcbab3'"],
+    ["'#687984','#9b776b','#808c75','#b5aca0','#49565c'","'#a9a69e','#9f9f99','#bab8ad','#8b8f8c','#c5c1b6'"],
+    ["'#38302b','#6c5240','#262b2b','#a07d53','#5b4b42'","'#b0ada4','#999992','#a6a79f','#c0bcb3','#979d9b'"],
+    ["'#3b454c','#625c5b','#52534e','#434f5a','#68685d'","'#818481','#a29f97','#959791','#7b7d79','#ada99e'"]
+   ];
+   for(const [oldPalette,newPalette] of placeholderFinishes){
+    if(contents.split(oldPalette).length!==2)throw Error('Visitor fallback palette anchor changed');
+    contents=contents.replace(oldPalette,newPalette);
+   }
    return {contents,loader:'js',resolveDir:dir};
   });
  }
