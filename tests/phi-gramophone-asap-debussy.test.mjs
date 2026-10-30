@@ -59,9 +59,9 @@ test('each golden-score division seeks the annotated Debussy performance',()=>{
 });
 
 test('test interface includes recording, score and license attribution',()=>{
- const timeline=readFileSync(new URL('../gallery/visit/phi-gramophone-timeline.mjs',import.meta.url),'utf8');
+ const timeline=readFileSync(new URL('../gallery/visit/phi-gramophone-experience.mjs',import.meta.url),'utf8');
  assert.match(timeline,/asapDebussyScorePoint/);
- assert.match(timeline,/recordingRights/);
+ assert.match(timeline,/provenance/);
  assert.match(timeline,/creativecommons\.org\/licenses\/by-nc-sa\/4\.0/);
- assert.match(timeline,/published performance downbeats|published score annotations|94 score downbeats/);
+ assert.match(timeline,/ASAP-annotated score downbeats/);
 });

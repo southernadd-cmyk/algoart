@@ -11,8 +11,10 @@ test('the visible study uses one recording clock for both positions',()=>{
  assert.ok(p?.score?.verified);
  assert.equal(p.score.confidence,'published');
  assert.ok(Math.abs(p.score.time-157.63)<.2);
- assert.equal(p.time.time,PHI_LISTENING_MARKERS[2].fraction*duration);
- assert.ok(Math.abs(p.gapSeconds-(-20.23))<.5);
+ assert.ok(Math.abs(p.time.time-174.15)<.1);
+ assert.equal(p.time.start,.916667);
+ assert.equal(p.time.end,281.210938);
+ assert.ok(Math.abs(p.gapSeconds-(-16.52))<.5);
  assert.ok(Math.abs((p.score.time-LISTEN_LEAD_IN_SECONDS)-149.63)<.2);
  assert.equal(comparePhiPositions(ASAP_DEBUSSY_SOURCE,.618,NaN),null);
 });
@@ -47,4 +49,43 @@ test('new experience is test-only with shared timeline, progressive reveal, refl
  assert.match(css,/phi-listen-figure/);
  assert.match(css,/max-width:600px/);
  assert.doesNotMatch(production,/phi-gramophone-experience|ASAP_DEBUSSY_SOURCE/);
+});
+
+test('paired listening plays score then clock, stops, and cancels on track change',async()=>{
+ const {createGramophonePhiTimeline}=await import('../gallery/visit/phi-gramophone-experience.mjs');
+ class Element extends EventTarget{
+  constructor(){super();this.children=[];this.dataset={};this.attributes={};}
+  append(...items){this.children.push(...items);}
+  setAttribute(k,v){this.attributes[k]=v;}
+  querySelector(){return null;}
+  remove(){}
+ }
+ const previous=globalThis.document;
+ globalThis.document={createElement:()=>new Element(),createElementNS:()=>new Element(),head:new Element(),baseURI:'https://example.org/gallery/visit/'};
+ try{
+  const audio=new Element();audio.src='https://example.org/gallery/visit/audio/debussy-reflets-asap-kleisen.ogg';
+  audio.duration=287.775625;audio.currentTime=0;audio.seeking=false;
+  const track={src:ASAP_DEBUSSY_SOURCE};let playing=false,pauses=0;
+  const record={audio,state:()=>({track,playing}),play:async()=>{playing=true;},pause:()=>{playing=false;pauses++;}};
+  const panel=new Element(),ui=createGramophonePhiTimeline({panel,record});
+  const all=e=>[e,...e.children.filter(x=>x instanceof Element).flatMap(all)];
+  const both=all(panel).find(e=>e.className==='phi-listen-both');
+  const p=comparePhiPositions(track.src,PHI_LISTENING_MARKERS[2].fraction,audio.duration);
+  both.dispatchEvent(new Event('click'));
+  assert.equal(audio.currentTime,p.score.time-8);assert.equal(playing,true);
+  audio.currentTime=p.score.time+4;audio.dispatchEvent(new Event('timeupdate'));
+  assert.equal(audio.currentTime,p.time.time-8);
+  audio.currentTime=p.time.time+4;audio.dispatchEvent(new Event('timeupdate'));
+  assert.equal(pauses,1);assert.equal(playing,false);
+  both.dispatchEvent(new Event('click'));audio.src='https://example.org/other.ogg';ui.update();
+  const before=audio.currentTime;audio.currentTime+=20;audio.dispatchEvent(new Event('timeupdate'));
+  assert.equal(audio.currentTime,before+20,'stale comparison must not seek the replacement recording');
+  ui.dispose();
+ }finally{globalThis.document=previous;}
+});
+
+test('Debussy clock proportions exclude a changed encoder tail',()=>{
+ const f=PHI_LISTENING_MARKERS[2].fraction;
+ assert.equal(comparePhiPositions(ASAP_DEBUSSY_SOURCE,f,286).time.time,
+  comparePhiPositions(ASAP_DEBUSSY_SOURCE,f,288).time.time);
 });

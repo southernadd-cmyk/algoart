@@ -47,16 +47,16 @@ test('recording marker durations are independent of score and seek with a lead-i
 
 test('staging gallery has both musical and performance time references without modifying sound',()=>{
  const builder=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
- const timeline=readFileSync(new URL('../gallery/visit/phi-gramophone-timeline.mjs',import.meta.url),'utf8');
+ const timeline=readFileSync(new URL('../gallery/visit/phi-gramophone-experience.mjs',import.meta.url),'utf8');
  const music=readFileSync(new URL('../gallery/visit/gallery-music.mjs',import.meta.url),'utf8');
  assert.match(builder,/gramophone-phi-time-markers-test-only/);
  assert.match(builder,/createGramophonePhiTimeline/);
  assert.match(builder,/goldenTimeline\?\.dispose\(\)/);
- assert.match(timeline,/Reveal φ listening positions/);
- assert.match(timeline,/Written score/);
- assert.match(timeline,/record-phi-score-bar/);
+ assert.match(timeline,/Reveal the golden divisions/);
+ assert.match(timeline,/HEAR THE SCORE/);
+ assert.match(timeline,/phi-listen-figure/);
  assert.match(timeline,/loadedmetadata/);
- assert.match(timeline,/currentTime=point\.listenFrom/);
+ assert.match(timeline,/time-LISTEN_LEAD_IN_SECONDS/);
  assert.doesNotMatch(timeline,/AudioContext|BiquadFilter|spectrum/);
  assert.doesNotMatch(builder,/gramophone-phi-spectrum-staging-only|record-phi-spectrum/);
  assert.doesNotMatch(music,/phi-gramophone-timeline|phi-gramophone-spectrum/);

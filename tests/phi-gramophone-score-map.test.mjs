@@ -67,10 +67,10 @@ test('unverified Debussy bars cannot masquerade as verified alignment points',()
 test('only the test tower imports the score map, preserving two original recordings',()=>{
  const builder=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
  const music=readFileSync(new URL('../gallery/visit/gallery-music.mjs',import.meta.url),'utf8');
- const timeline=readFileSync(new URL('../gallery/visit/phi-gramophone-timeline.mjs',import.meta.url),'utf8');
+ const timeline=readFileSync(new URL('../gallery/visit/phi-gramophone-experience.mjs',import.meta.url),'utf8');
  assert.match(builder,/createGramophonePhiTimeline/);
  assert.match(timeline,/alignedScorePoint/);
- assert.match(timeline,/scoreLines/);
- assert.match(timeline,/currentTime=Math.max\(0,point.time-LISTEN_LEAD_IN_SECONDS\)/);
+ assert.match(timeline,/scoreDot/);
+ assert.match(timeline,/time-LISTEN_LEAD_IN_SECONDS/);
  assert.doesNotMatch(music,/phi-gramophone-score-map|phi-gramophone-timeline/);
 });

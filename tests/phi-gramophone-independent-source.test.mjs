@@ -43,6 +43,6 @@ test('unmatched Debussy reference performances cannot validate Giorgi Latso time
  const asap='https://github.com/fosfrancesco/asap-dataset/tree/master/Debussy/Images_Book_1/1_Reflets_dans_lEau';
  assert.match(asap,/Reflets_dans_lEau/);
  // Externally cross-validated two anchor points for Mozart only.
- const ui=readFileSync(new URL('../gallery/visit/phi-gramophone-timeline.mjs',import.meta.url),'utf8');
- assert.match(ui,/Mozart uses score-to-audio analysis independently checked|Independent research places the development/);
+ const ui=readFileSync(new URL('../gallery/visit/phi-gramophone-experience.mjs',import.meta.url),'utf8');
+ assert.match(ui,/individual bar positions are not externally certified/);
 });
