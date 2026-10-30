@@ -26,7 +26,7 @@ export function createGramophonePhiSpectrum(audio,{
    try{
      const media=ctx.createMediaElementSource(audio);
      const original=ctx.createGain(),processed=ctx.createGain(),master=ctx.createGain();
-     original.gain.value=1;processed.gain.value=0;master.gain.value=.92;
+     original.gain.value=1;processed.gain.value=0;master.gain.value=1;
      media.connect(original);original.connect(master);
      let tail=media;
      const nodes=[];
@@ -51,7 +51,7 @@ export function createGramophonePhiSpectrum(audio,{
    const now=context.currentTime;
    dry.gain.cancelScheduledValues(now);wet.gain.cancelScheduledValues(now);
    dry.gain.setTargetAtTime(enabled?0:1,now,.035);
-   wet.gain.setTargetAtTime(enabled?1:0,now,.035);
+   wet.gain.setTargetAtTime(enabled?.72:0,now,.035);
    return enabled;
  }
  return {
