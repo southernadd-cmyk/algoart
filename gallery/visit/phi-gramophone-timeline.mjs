@@ -111,6 +111,11 @@ export function createGramophonePhiTimeline({panel,record}){
  details.append(scoreBar);
  const evidence=document.createElement('small');evidence.className='record-phi-evidence';
  details.append(evidence);
+ const externalReference=document.createElement('small');
+ const independentLink=document.createElement('a');independentLink.target='_blank';
+ independentLink.rel='noopener noreferrer';independentLink.textContent='Independent annotation source';
+ externalReference.append(independentLink);details.append(externalReference);
+
  const hint=document.createElement('small');
  hint.textContent='Choose a marker to hear the preceding 8 seconds. Score times are computationally cross-checked against this exact performance, not manually certified. Uncertain markers cannot be selected. No cues are added.';
  details.append(hint);section.append(details);
@@ -163,9 +168,14 @@ export function createGramophonePhiTimeline({panel,record}){
    const aligned=PHI_LISTENING_MARKERS.map(marker=>
      alignedScorePoint(selected?.src,marker.fraction,actual));
    evidence.textContent=selected?.src==='./audio/debussy-reflets-dans-leau.ogg'?
-     'Research example: Debussy’s strongest climax occurs around bar 58, near 61.8% of the 94-bar score.':
+     'Debussy: the 94-bar score has been matched computationally to this Giorgi Latso recording, but an independently annotated version of this exact performance has not been found.':
      selected?.src==='./audio/mozart-k545-allegro.ogg'?
-     'Formal example: Mozart’s 28-bar exposition ends near 38.2% of the 73-bar written movement. Repeats may change how this sits in recorded time.':'';
+     'Mozart: this Robin Alciatore performance omits repeats. Independent research places the development at 0:51.27 and recapitulation at 1:13.10, agreeing with our mapping near these landmarks.':'';
+   independentLink.href=selected?.src==='./audio/mozart-k545-allegro.ogg'?
+     'https://audiolabs.github.io/trackswitch.js/use-cases/repeated-section/':
+     'https://github.com/fosfrancesco/asap-dataset/tree/master/Debussy/Images_Book_1/1_Reflets_dans_lEau';
+   independentLink.textContent=selected?.src==='./audio/mozart-k545-allegro.ogg'?
+     'External alignment of this recording':'Annotated alternative performances (not this recording)';
    const bars=score[0]?.bars;
    scoreTitle.textContent=bars?'Written score · '+bars+' bars · aligned to this recording':
      'Written score · bar count unavailable';
