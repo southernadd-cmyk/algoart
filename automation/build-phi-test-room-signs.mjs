@@ -35,6 +35,25 @@ await build({
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
  outfile:'gallery/visit/gallery-phi-test-room-signs-bundle.js',
  plugins:[stageCurationPlugin(),{
+ name:'architectural-visitor-palette-test-only',
+ setup(builder){
+  builder.onLoad({filter:/[/\\]visitors[.]mjs$/},async({path})=>{
+   let contents=await readFile(path,'utf8');
+   const before='const hue=unit(),saturation=.13+unit()*.23,lightness=.30+unit()*.27;';
+   if(contents.split(before).length!==2)throw Error('Visitor palette build anchor changed');
+   // Three related finishes: warm stone, muted bronze and charcoal.
+   // Preserve the existing identity seed, geometry, poses and visitor budget.
+   contents=contents.replace(before,`const family=unit();
+ const hue=.075+unit()*.035;
+ const saturation=family<.382?.08+unit()*.06:family<.764?.24+unit()*.10:.025+unit()*.035;
+ const lightness=family<.382?.49+unit()*.10:family<.764?.34+unit()*.09:.24+unit()*.07;`);
+   const finish='roughness:.92,metalness:0,';
+   if(contents.split(finish).length!==2)throw Error('Visitor finish build anchor changed');
+   contents=contents.replace(finish,'roughness:.78,metalness:.08,');
+   return {contents,loader:'js',resolveDir:dir};
+  });
+ }
+},{
  name:'gramophone-phi-time-markers-test-only',
  setup(builder){
   builder.onLoad({filter:/gallery-music[.]mjs$/},async({path})=>{
