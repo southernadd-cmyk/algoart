@@ -1,0 +1,2854 @@
+{
+  "debussy": {
+    "status": "candidate_REQUIRES_musical_verification",
+    "track": "debussy",
+    "sourceScore": "DCMLab/debussy_images l110-01_images_reflets (CC BY-NC-SA 4.0)",
+    "scoreURL": "https://github.com/DCMLab/debussy_images",
+    "audioFile": "gallery/visit/audio/debussy-reflets-dans-leau.ogg",
+    "audioSha256": "3c8c436cda4efa2fd6af616ef14394d002194c94652c8b3517fe2b1eab57647d",
+    "notesSha256": "90956ebad423f034f31ee2223300a6648261538ea638846f3cfe72f06b9ec816",
+    "measuresSha256": "290ffb3eb60cd114edf835258841f7d095bf07e8e4279b1cfa13067649a356de",
+    "audioDuration": 332.875,
+    "algorithm": "librosa chroma_cqt 12-bin + global cosine DTW; no hand-audited anchors",
+    "candidateScenarios": [
+      {
+        "cost": 0.19113280142274444,
+        "similarity": 0.8088672161102295,
+        "medianSimilarity": 0.8370323181152344,
+        "pathLength": 3587,
+        "scoreFrames": 380,
+        "audioFrames": 3584,
+        "scenario": "unrepeated",
+        "barsPlayed": 95,
+        "writtenBars": 95,
+        "quarterbeatsPlayed": 189.5,
+        "secondsPerQuarterbeat": 1.757,
+        "barStarts": [
+          {
+            "bar": 1,
+            "occurrence": 1,
+            "time": 0.0
+          },
+          {
+            "bar": 2,
+            "occurrence": 1,
+            "time": 7.94
+          },
+          {
+            "bar": 3,
+            "occurrence": 1,
+            "time": 11.42
+          },
+          {
+            "bar": 4,
+            "occurrence": 1,
+            "time": 13.75
+          },
+          {
+            "bar": 5,
+            "occurrence": 1,
+            "time": 16.53
+          },
+          {
+            "bar": 6,
+            "occurrence": 1,
+            "time": 22.8
+          },
+          {
+            "bar": 7,
+            "occurrence": 1,
+            "time": 25.77
+          },
+          {
+            "bar": 8,
+            "occurrence": 1,
+            "time": 26.94
+          },
+          {
+            "bar": 9,
+            "occurrence": 1,
+            "time": 30.56
+          },
+          {
+            "bar": 10,
+            "occurrence": 1,
+            "time": 37.62
+          },
+          {
+            "bar": 11,
+            "occurrence": 1,
+            "time": 41.29
+          },
+          {
+            "bar": 12,
+            "occurrence": 1,
+            "time": 44.58
+          },
+          {
+            "bar": 13,
+            "occurrence": 1,
+            "time": 48.48
+          },
+          {
+            "bar": 14,
+            "occurrence": 1,
+            "time": 53.45
+          },
+          {
+            "bar": 15,
+            "occurrence": 1,
+            "time": 56.42
+          },
+          {
+            "bar": 16,
+            "occurrence": 1,
+            "time": 60.65
+          },
+          {
+            "bar": 17,
+            "occurrence": 1,
+            "time": 66.04
+          },
+          {
+            "bar": 18,
+            "occurrence": 1,
+            "time": 70.96
+          },
+          {
+            "bar": 19,
+            "occurrence": 1,
+            "time": 73.47
+          },
+          {
+            "bar": 20,
+            "occurrence": 1,
+            "time": 78.11
+          },
+          {
+            "bar": 21,
+            "occurrence": 1,
+            "time": 81.22
+          },
+          {
+            "bar": 22,
+            "occurrence": 1,
+            "time": 82.8
+          },
+          {
+            "bar": 23,
+            "occurrence": 1,
+            "time": 84.89
+          },
+          {
+            "bar": 24,
+            "occurrence": 1,
+            "time": 96.41
+          },
+          {
+            "bar": 25,
+            "occurrence": 1,
+            "time": 96.78
+          },
+          {
+            "bar": 26,
+            "occurrence": 1,
+            "time": 96.97
+          },
+          {
+            "bar": 27,
+            "occurrence": 1,
+            "time": 97.34
+          },
+          {
+            "bar": 28,
+            "occurrence": 1,
+            "time": 97.85
+          },
+          {
+            "bar": 29,
+            "occurrence": 1,
+            "time": 102.82
+          },
+          {
+            "bar": 30,
+            "occurrence": 1,
+            "time": 103.47
+          },
+          {
+            "bar": 31,
+            "occurrence": 1,
+            "time": 104.4
+          },
+          {
+            "bar": 32,
+            "occurrence": 1,
+            "time": 111.97
+          },
+          {
+            "bar": 33,
+            "occurrence": 1,
+            "time": 116.24
+          },
+          {
+            "bar": 34,
+            "occurrence": 1,
+            "time": 117.21
+          },
+          {
+            "bar": 35,
+            "occurrence": 1,
+            "time": 119.35
+          },
+          {
+            "bar": 36,
+            "occurrence": 1,
+            "time": 126.41
+          },
+          {
+            "bar": 37,
+            "occurrence": 1,
+            "time": 130.64
+          },
+          {
+            "bar": 38,
+            "occurrence": 1,
+            "time": 133.84
+          },
+          {
+            "bar": 39,
+            "occurrence": 1,
+            "time": 135.23
+          },
+          {
+            "bar": 40,
+            "occurrence": 1,
+            "time": 140.06
+          },
+          {
+            "bar": 41,
+            "occurrence": 1,
+            "time": 149.16
+          },
+          {
+            "bar": 42,
+            "occurrence": 1,
+            "time": 150.09
+          },
+          {
+            "bar": 43,
+            "occurrence": 1,
+            "time": 150.79
+          },
+          {
+            "bar": 44,
+            "occurrence": 1,
+            "time": 153.53
+          },
+          {
+            "bar": 45,
+            "occurrence": 1,
+            "time": 154.55
+          },
+          {
+            "bar": 46,
+            "occurrence": 1,
+            "time": 158.55
+          },
+          {
+            "bar": 47,
+            "occurrence": 1,
+            "time": 160.87
+          },
+          {
+            "bar": 48,
+            "occurrence": 1,
+            "time": 162.91
+          },
+          {
+            "bar": 49,
+            "occurrence": 1,
+            "time": 165.05
+          },
+          {
+            "bar": 50,
+            "occurrence": 1,
+            "time": 165.42
+          },
+          {
+            "bar": 51,
+            "occurrence": 1,
+            "time": 165.79
+          },
+          {
+            "bar": 52,
+            "occurrence": 1,
+            "time": 166.63
+          },
+          {
+            "bar": 53,
+            "occurrence": 1,
+            "time": 175.64
+          },
+          {
+            "bar": 54,
+            "occurrence": 1,
+            "time": 178.65
+          },
+          {
+            "bar": 55,
+            "occurrence": 1,
+            "time": 180.28
+          },
+          {
+            "bar": 56,
+            "occurrence": 1,
+            "time": 180.65
+          },
+          {
+            "bar": 57,
+            "occurrence": 1,
+            "time": 184.46
+          },
+          {
+            "bar": 58,
+            "occurrence": 1,
+            "time": 187.62
+          },
+          {
+            "bar": 59,
+            "occurrence": 1,
+            "time": 189.06
+          },
+          {
+            "bar": 60,
+            "occurrence": 1,
+            "time": 192.17
+          },
+          {
+            "bar": 61,
+            "occurrence": 1,
+            "time": 195.6
+          },
+          {
+            "bar": 62,
+            "occurrence": 1,
+            "time": 197.18
+          },
+          {
+            "bar": 63,
+            "occurrence": 1,
+            "time": 199.41
+          },
+          {
+            "bar": 64,
+            "occurrence": 1,
+            "time": 202.39
+          },
+          {
+            "bar": 65,
+            "occurrence": 1,
+            "time": 204.34
+          },
+          {
+            "bar": 66,
+            "occurrence": 1,
+            "time": 210.23
+          },
+          {
+            "bar": 67,
+            "occurrence": 1,
+            "time": 214.6
+          },
+          {
+            "bar": 68,
+            "occurrence": 1,
+            "time": 221.43
+          },
+          {
+            "bar": 69,
+            "occurrence": 1,
+            "time": 227.23
+          },
+          {
+            "bar": 70,
+            "occurrence": 1,
+            "time": 229.83
+          },
+          {
+            "bar": 71,
+            "occurrence": 1,
+            "time": 241.58
+          },
+          {
+            "bar": 72,
+            "occurrence": 1,
+            "time": 245.48
+          },
+          {
+            "bar": 73,
+            "occurrence": 1,
+            "time": 249.99
+          },
+          {
+            "bar": 74,
+            "occurrence": 1,
+            "time": 251.33
+          },
+          {
+            "bar": 75,
+            "occurrence": 1,
+            "time": 254.12
+          },
+          {
+            "bar": 76,
+            "occurrence": 1,
+            "time": 257.37
+          },
+          {
+            "bar": 77,
+            "occurrence": 1,
+            "time": 263.04
+          },
+          {
+            "bar": 78,
+            "occurrence": 1,
+            "time": 264.61
+          },
+          {
+            "bar": 79,
+            "occurrence": 1,
+            "time": 266.94
+          },
+          {
+            "bar": 80,
+            "occurrence": 1,
+            "time": 272.56
+          },
+          {
+            "bar": 81,
+            "occurrence": 1,
+            "time": 276.41
+          },
+          {
+            "bar": 82,
+            "occurrence": 1,
+            "time": 281.24
+          },
+          {
+            "bar": 83,
+            "occurrence": 1,
+            "time": 283.79
+          },
+          {
+            "bar": 84,
+            "occurrence": 1,
+            "time": 286.95
+          },
+          {
+            "bar": 85,
+            "occurrence": 1,
+            "time": 289.41
+          },
+          {
+            "bar": 86,
+            "occurrence": 1,
+            "time": 291.55
+          },
+          {
+            "bar": 87,
+            "occurrence": 1,
+            "time": 294.61
+          },
+          {
+            "bar": 88,
+            "occurrence": 1,
+            "time": 298.52
+          },
+          {
+            "bar": 89,
+            "occurrence": 1,
+            "time": 302.65
+          },
+          {
+            "bar": 90,
+            "occurrence": 1,
+            "time": 305.2
+          },
+          {
+            "bar": 91,
+            "occurrence": 1,
+            "time": 310.59
+          },
+          {
+            "bar": 92,
+            "occurrence": 1,
+            "time": 323.13
+          },
+          {
+            "bar": 93,
+            "occurrence": 1,
+            "time": 329.44
+          },
+          {
+            "bar": 94,
+            "occurrence": 1,
+            "time": 332.05
+          },
+          {
+            "bar": 95,
+            "occurrence": 1,
+            "time": 332.42
+          }
+        ]
+      }
+    ],
+    "selectedForReview": "unrepeated",
+    "examples": [
+      {
+        "fraction": 0.23606798,
+        "scoreBarApprox": 23.19,
+        "nearestWrittenBar": 23,
+        "candidateRecordingTimes": [
+          84.89
+        ]
+      },
+      {
+        "fraction": 0.38196601,
+        "scoreBarApprox": 36.9,
+        "nearestWrittenBar": 37,
+        "candidateRecordingTimes": [
+          130.64
+        ]
+      },
+      {
+        "fraction": 0.61803399,
+        "scoreBarApprox": 59.1,
+        "nearestWrittenBar": 59,
+        "candidateRecordingTimes": [
+          189.06
+        ]
+      },
+      {
+        "fraction": 0.76393202,
+        "scoreBarApprox": 72.81,
+        "nearestWrittenBar": 73,
+        "candidateRecordingTimes": [
+          249.99
+        ]
+      }
+    ],
+    "caveats": [
+      "DTW does not itself certify the correspondence at individual bars.",
+      "Different performances and Mozart repeat choices change all timestamps.",
+      "Piano rubato and sustain can shift apparent chord onsets.",
+      "Written-score fraction is not elapsed-time fraction.",
+      "Bar counts follow the DCMLab transcription, not the previous UI guess."
+    ]
+  },
+  "mozart": {
+    "status": "candidate_REQUIRES_musical_verification",
+    "track": "mozart",
+    "sourceScore": "DCMLab/mozart_piano_sonatas K545-1 (CC BY-NC-SA 4.0)",
+    "scoreURL": "https://github.com/DCMLab/mozart_piano_sonatas",
+    "audioFile": "gallery/visit/audio/mozart-k545-allegro.ogg",
+    "audioSha256": "27c63f441129af6d244714a2d3fff5a427b5cb46bcf362137ee0fff29bc0fa50",
+    "notesSha256": "6e67611704cf0ecb83d10ee574f2095180b30a0b121ff8ed983d30e51cde0551",
+    "measuresSha256": "ba453205a0c39871ce01f1f4d84df4e9c7ae3d686a29f783a02702c5143643f4",
+    "audioDuration": 133.878,
+    "algorithm": "librosa chroma_cqt 12-bin + global cosine DTW; no hand-audited anchors",
+    "candidateScenarios": [
+      {
+        "cost": 0.17852833684528754,
+        "similarity": 0.8214716911315918,
+        "medianSimilarity": 0.8602844476699829,
+        "pathLength": 1450,
+        "scoreFrames": 585,
+        "audioFrames": 1442,
+        "scenario": "no_repeats",
+        "barsPlayed": 73,
+        "writtenBars": 73,
+        "quarterbeatsPlayed": 292.0,
+        "secondsPerQuarterbeat": 0.458,
+        "barStarts": [
+          {
+            "bar": 1,
+            "occurrence": 1,
+            "time": 0.0
+          },
+          {
+            "bar": 2,
+            "occurrence": 1,
+            "time": 3.72
+          },
+          {
+            "bar": 3,
+            "occurrence": 1,
+            "time": 5.48
+          },
+          {
+            "bar": 4,
+            "occurrence": 1,
+            "time": 7.2
+          },
+          {
+            "bar": 5,
+            "occurrence": 1,
+            "time": 9.01
+          },
+          {
+            "bar": 6,
+            "occurrence": 1,
+            "time": 10.4
+          },
+          {
+            "bar": 7,
+            "occurrence": 1,
+            "time": 11.98
+          },
+          {
+            "bar": 8,
+            "occurrence": 1,
+            "time": 13.75
+          },
+          {
+            "bar": 9,
+            "occurrence": 1,
+            "time": 15.42
+          },
+          {
+            "bar": 10,
+            "occurrence": 1,
+            "time": 17.18
+          },
+          {
+            "bar": 11,
+            "occurrence": 1,
+            "time": 18.9
+          },
+          {
+            "bar": 12,
+            "occurrence": 1,
+            "time": 20.43
+          },
+          {
+            "bar": 13,
+            "occurrence": 1,
+            "time": 22.76
+          },
+          {
+            "bar": 14,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 15,
+            "occurrence": 1,
+            "time": 25.96
+          },
+          {
+            "bar": 16,
+            "occurrence": 1,
+            "time": 27.86
+          },
+          {
+            "bar": 17,
+            "occurrence": 1,
+            "time": 29.49
+          },
+          {
+            "bar": 18,
+            "occurrence": 1,
+            "time": 31.21
+          },
+          {
+            "bar": 19,
+            "occurrence": 1,
+            "time": 32.97
+          },
+          {
+            "bar": 20,
+            "occurrence": 1,
+            "time": 34.83
+          },
+          {
+            "bar": 21,
+            "occurrence": 1,
+            "time": 36.78
+          },
+          {
+            "bar": 22,
+            "occurrence": 1,
+            "time": 38.59
+          },
+          {
+            "bar": 23,
+            "occurrence": 1,
+            "time": 40.12
+          },
+          {
+            "bar": 24,
+            "occurrence": 1,
+            "time": 42.07
+          },
+          {
+            "bar": 25,
+            "occurrence": 1,
+            "time": 45.14
+          },
+          {
+            "bar": 26,
+            "occurrence": 1,
+            "time": 45.6
+          },
+          {
+            "bar": 27,
+            "occurrence": 1,
+            "time": 47.32
+          },
+          {
+            "bar": 28,
+            "occurrence": 1,
+            "time": 49.13
+          },
+          {
+            "bar": 29,
+            "occurrence": 1,
+            "time": 51.64
+          },
+          {
+            "bar": 30,
+            "occurrence": 1,
+            "time": 52.99
+          },
+          {
+            "bar": 31,
+            "occurrence": 1,
+            "time": 54.8
+          },
+          {
+            "bar": 32,
+            "occurrence": 1,
+            "time": 56.56
+          },
+          {
+            "bar": 33,
+            "occurrence": 1,
+            "time": 58.28
+          },
+          {
+            "bar": 34,
+            "occurrence": 1,
+            "time": 60.0
+          },
+          {
+            "bar": 35,
+            "occurrence": 1,
+            "time": 61.67
+          },
+          {
+            "bar": 36,
+            "occurrence": 1,
+            "time": 63.44
+          },
+          {
+            "bar": 37,
+            "occurrence": 1,
+            "time": 65.11
+          },
+          {
+            "bar": 38,
+            "occurrence": 1,
+            "time": 66.92
+          },
+          {
+            "bar": 39,
+            "occurrence": 1,
+            "time": 68.73
+          },
+          {
+            "bar": 40,
+            "occurrence": 1,
+            "time": 70.68
+          },
+          {
+            "bar": 41,
+            "occurrence": 1,
+            "time": 72.63
+          },
+          {
+            "bar": 42,
+            "occurrence": 1,
+            "time": 74.68
+          },
+          {
+            "bar": 43,
+            "occurrence": 1,
+            "time": 76.72
+          },
+          {
+            "bar": 44,
+            "occurrence": 1,
+            "time": 78.85
+          },
+          {
+            "bar": 45,
+            "occurrence": 1,
+            "time": 80.62
+          },
+          {
+            "bar": 46,
+            "occurrence": 1,
+            "time": 82.43
+          },
+          {
+            "bar": 47,
+            "occurrence": 1,
+            "time": 84.1
+          },
+          {
+            "bar": 48,
+            "occurrence": 1,
+            "time": 85.82
+          },
+          {
+            "bar": 49,
+            "occurrence": 1,
+            "time": 87.35
+          },
+          {
+            "bar": 50,
+            "occurrence": 1,
+            "time": 89.12
+          },
+          {
+            "bar": 51,
+            "occurrence": 1,
+            "time": 90.6
+          },
+          {
+            "bar": 52,
+            "occurrence": 1,
+            "time": 92.42
+          },
+          {
+            "bar": 53,
+            "occurrence": 1,
+            "time": 94.27
+          },
+          {
+            "bar": 54,
+            "occurrence": 1,
+            "time": 95.81
+          },
+          {
+            "bar": 55,
+            "occurrence": 1,
+            "time": 97.52
+          },
+          {
+            "bar": 56,
+            "occurrence": 1,
+            "time": 99.29
+          },
+          {
+            "bar": 57,
+            "occurrence": 1,
+            "time": 100.96
+          },
+          {
+            "bar": 58,
+            "occurrence": 1,
+            "time": 102.91
+          },
+          {
+            "bar": 59,
+            "occurrence": 1,
+            "time": 104.86
+          },
+          {
+            "bar": 60,
+            "occurrence": 1,
+            "time": 106.67
+          },
+          {
+            "bar": 61,
+            "occurrence": 1,
+            "time": 108.44
+          },
+          {
+            "bar": 62,
+            "occurrence": 1,
+            "time": 110.25
+          },
+          {
+            "bar": 63,
+            "occurrence": 1,
+            "time": 111.92
+          },
+          {
+            "bar": 64,
+            "occurrence": 1,
+            "time": 113.59
+          },
+          {
+            "bar": 65,
+            "occurrence": 1,
+            "time": 115.73
+          },
+          {
+            "bar": 66,
+            "occurrence": 1,
+            "time": 117.4
+          },
+          {
+            "bar": 67,
+            "occurrence": 1,
+            "time": 119.3
+          },
+          {
+            "bar": 68,
+            "occurrence": 1,
+            "time": 121.21
+          },
+          {
+            "bar": 69,
+            "occurrence": 1,
+            "time": 122.97
+          },
+          {
+            "bar": 70,
+            "occurrence": 1,
+            "time": 124.74
+          },
+          {
+            "bar": 71,
+            "occurrence": 1,
+            "time": 126.27
+          },
+          {
+            "bar": 72,
+            "occurrence": 1,
+            "time": 128.17
+          },
+          {
+            "bar": 73,
+            "occurrence": 1,
+            "time": 129.94
+          }
+        ]
+      },
+      {
+        "cost": 0.1893161985145915,
+        "similarity": 0.8106837868690491,
+        "medianSimilarity": 0.8511664867401123,
+        "pathLength": 1642,
+        "scoreFrames": 809,
+        "audioFrames": 1442,
+        "scenario": "exposition_repeat",
+        "barsPlayed": 101,
+        "writtenBars": 73,
+        "quarterbeatsPlayed": 404.0,
+        "secondsPerQuarterbeat": 0.331,
+        "barStarts": [
+          {
+            "bar": 1,
+            "occurrence": 1,
+            "time": 0.0
+          },
+          {
+            "bar": 2,
+            "occurrence": 1,
+            "time": 3.72
+          },
+          {
+            "bar": 3,
+            "occurrence": 1,
+            "time": 5.48
+          },
+          {
+            "bar": 4,
+            "occurrence": 1,
+            "time": 7.2
+          },
+          {
+            "bar": 5,
+            "occurrence": 1,
+            "time": 9.01
+          },
+          {
+            "bar": 6,
+            "occurrence": 1,
+            "time": 10.4
+          },
+          {
+            "bar": 7,
+            "occurrence": 1,
+            "time": 11.98
+          },
+          {
+            "bar": 8,
+            "occurrence": 1,
+            "time": 13.75
+          },
+          {
+            "bar": 9,
+            "occurrence": 1,
+            "time": 15.42
+          },
+          {
+            "bar": 10,
+            "occurrence": 1,
+            "time": 17.18
+          },
+          {
+            "bar": 11,
+            "occurrence": 1,
+            "time": 18.9
+          },
+          {
+            "bar": 12,
+            "occurrence": 1,
+            "time": 20.43
+          },
+          {
+            "bar": 13,
+            "occurrence": 1,
+            "time": 22.76
+          },
+          {
+            "bar": 14,
+            "occurrence": 1,
+            "time": 24.24
+          },
+          {
+            "bar": 15,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 16,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 17,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 18,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 19,
+            "occurrence": 1,
+            "time": 25.26
+          },
+          {
+            "bar": 20,
+            "occurrence": 1,
+            "time": 25.73
+          },
+          {
+            "bar": 21,
+            "occurrence": 1,
+            "time": 26.1
+          },
+          {
+            "bar": 22,
+            "occurrence": 1,
+            "time": 26.84
+          },
+          {
+            "bar": 23,
+            "occurrence": 1,
+            "time": 26.94
+          },
+          {
+            "bar": 24,
+            "occurrence": 1,
+            "time": 27.03
+          },
+          {
+            "bar": 25,
+            "occurrence": 1,
+            "time": 27.21
+          },
+          {
+            "bar": 26,
+            "occurrence": 1,
+            "time": 27.59
+          },
+          {
+            "bar": 27,
+            "occurrence": 1,
+            "time": 28.33
+          },
+          {
+            "bar": 28,
+            "occurrence": 1,
+            "time": 29.26
+          },
+          {
+            "bar": 1,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 2,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 3,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 4,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 5,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 6,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 7,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 8,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 9,
+            "occurrence": 2,
+            "time": 29.63
+          },
+          {
+            "bar": 10,
+            "occurrence": 2,
+            "time": 29.72
+          },
+          {
+            "bar": 11,
+            "occurrence": 2,
+            "time": 29.72
+          },
+          {
+            "bar": 12,
+            "occurrence": 2,
+            "time": 29.72
+          },
+          {
+            "bar": 13,
+            "occurrence": 2,
+            "time": 29.91
+          },
+          {
+            "bar": 14,
+            "occurrence": 2,
+            "time": 31.16
+          },
+          {
+            "bar": 15,
+            "occurrence": 2,
+            "time": 31.3
+          },
+          {
+            "bar": 16,
+            "occurrence": 2,
+            "time": 31.3
+          },
+          {
+            "bar": 17,
+            "occurrence": 2,
+            "time": 31.3
+          },
+          {
+            "bar": 18,
+            "occurrence": 2,
+            "time": 31.39
+          },
+          {
+            "bar": 19,
+            "occurrence": 2,
+            "time": 32.97
+          },
+          {
+            "bar": 20,
+            "occurrence": 2,
+            "time": 34.83
+          },
+          {
+            "bar": 21,
+            "occurrence": 2,
+            "time": 36.78
+          },
+          {
+            "bar": 22,
+            "occurrence": 2,
+            "time": 38.59
+          },
+          {
+            "bar": 23,
+            "occurrence": 2,
+            "time": 40.12
+          },
+          {
+            "bar": 24,
+            "occurrence": 2,
+            "time": 42.07
+          },
+          {
+            "bar": 25,
+            "occurrence": 2,
+            "time": 45.14
+          },
+          {
+            "bar": 26,
+            "occurrence": 2,
+            "time": 45.6
+          },
+          {
+            "bar": 27,
+            "occurrence": 2,
+            "time": 47.32
+          },
+          {
+            "bar": 28,
+            "occurrence": 2,
+            "time": 49.13
+          },
+          {
+            "bar": 29,
+            "occurrence": 1,
+            "time": 51.64
+          },
+          {
+            "bar": 30,
+            "occurrence": 1,
+            "time": 52.99
+          },
+          {
+            "bar": 31,
+            "occurrence": 1,
+            "time": 54.8
+          },
+          {
+            "bar": 32,
+            "occurrence": 1,
+            "time": 56.56
+          },
+          {
+            "bar": 33,
+            "occurrence": 1,
+            "time": 58.28
+          },
+          {
+            "bar": 34,
+            "occurrence": 1,
+            "time": 60.0
+          },
+          {
+            "bar": 35,
+            "occurrence": 1,
+            "time": 61.67
+          },
+          {
+            "bar": 36,
+            "occurrence": 1,
+            "time": 63.44
+          },
+          {
+            "bar": 37,
+            "occurrence": 1,
+            "time": 65.11
+          },
+          {
+            "bar": 38,
+            "occurrence": 1,
+            "time": 66.92
+          },
+          {
+            "bar": 39,
+            "occurrence": 1,
+            "time": 68.73
+          },
+          {
+            "bar": 40,
+            "occurrence": 1,
+            "time": 70.68
+          },
+          {
+            "bar": 41,
+            "occurrence": 1,
+            "time": 72.63
+          },
+          {
+            "bar": 42,
+            "occurrence": 1,
+            "time": 74.68
+          },
+          {
+            "bar": 43,
+            "occurrence": 1,
+            "time": 76.72
+          },
+          {
+            "bar": 44,
+            "occurrence": 1,
+            "time": 78.85
+          },
+          {
+            "bar": 45,
+            "occurrence": 1,
+            "time": 80.62
+          },
+          {
+            "bar": 46,
+            "occurrence": 1,
+            "time": 82.43
+          },
+          {
+            "bar": 47,
+            "occurrence": 1,
+            "time": 84.1
+          },
+          {
+            "bar": 48,
+            "occurrence": 1,
+            "time": 85.82
+          },
+          {
+            "bar": 49,
+            "occurrence": 1,
+            "time": 87.35
+          },
+          {
+            "bar": 50,
+            "occurrence": 1,
+            "time": 89.12
+          },
+          {
+            "bar": 51,
+            "occurrence": 1,
+            "time": 90.6
+          },
+          {
+            "bar": 52,
+            "occurrence": 1,
+            "time": 92.42
+          },
+          {
+            "bar": 53,
+            "occurrence": 1,
+            "time": 94.27
+          },
+          {
+            "bar": 54,
+            "occurrence": 1,
+            "time": 95.81
+          },
+          {
+            "bar": 55,
+            "occurrence": 1,
+            "time": 97.52
+          },
+          {
+            "bar": 56,
+            "occurrence": 1,
+            "time": 99.29
+          },
+          {
+            "bar": 57,
+            "occurrence": 1,
+            "time": 100.96
+          },
+          {
+            "bar": 58,
+            "occurrence": 1,
+            "time": 102.91
+          },
+          {
+            "bar": 59,
+            "occurrence": 1,
+            "time": 104.86
+          },
+          {
+            "bar": 60,
+            "occurrence": 1,
+            "time": 106.67
+          },
+          {
+            "bar": 61,
+            "occurrence": 1,
+            "time": 108.44
+          },
+          {
+            "bar": 62,
+            "occurrence": 1,
+            "time": 110.25
+          },
+          {
+            "bar": 63,
+            "occurrence": 1,
+            "time": 111.92
+          },
+          {
+            "bar": 64,
+            "occurrence": 1,
+            "time": 113.59
+          },
+          {
+            "bar": 65,
+            "occurrence": 1,
+            "time": 115.73
+          },
+          {
+            "bar": 66,
+            "occurrence": 1,
+            "time": 117.4
+          },
+          {
+            "bar": 67,
+            "occurrence": 1,
+            "time": 119.3
+          },
+          {
+            "bar": 68,
+            "occurrence": 1,
+            "time": 121.21
+          },
+          {
+            "bar": 69,
+            "occurrence": 1,
+            "time": 122.97
+          },
+          {
+            "bar": 70,
+            "occurrence": 1,
+            "time": 124.74
+          },
+          {
+            "bar": 71,
+            "occurrence": 1,
+            "time": 126.27
+          },
+          {
+            "bar": 72,
+            "occurrence": 1,
+            "time": 128.17
+          },
+          {
+            "bar": 73,
+            "occurrence": 1,
+            "time": 129.94
+          }
+        ]
+      },
+      {
+        "cost": 0.20369037859848863,
+        "similarity": 0.7963095903396606,
+        "medianSimilarity": 0.8342877626419067,
+        "pathLength": 1740,
+        "scoreFrames": 945,
+        "audioFrames": 1442,
+        "scenario": "second_repeat",
+        "barsPlayed": 118,
+        "writtenBars": 73,
+        "quarterbeatsPlayed": 472.0,
+        "secondsPerQuarterbeat": 0.284,
+        "barStarts": [
+          {
+            "bar": 1,
+            "occurrence": 1,
+            "time": 0.0
+          },
+          {
+            "bar": 2,
+            "occurrence": 1,
+            "time": 3.72
+          },
+          {
+            "bar": 3,
+            "occurrence": 1,
+            "time": 5.48
+          },
+          {
+            "bar": 4,
+            "occurrence": 1,
+            "time": 7.2
+          },
+          {
+            "bar": 5,
+            "occurrence": 1,
+            "time": 9.01
+          },
+          {
+            "bar": 6,
+            "occurrence": 1,
+            "time": 10.4
+          },
+          {
+            "bar": 7,
+            "occurrence": 1,
+            "time": 11.98
+          },
+          {
+            "bar": 8,
+            "occurrence": 1,
+            "time": 13.75
+          },
+          {
+            "bar": 9,
+            "occurrence": 1,
+            "time": 15.42
+          },
+          {
+            "bar": 10,
+            "occurrence": 1,
+            "time": 17.18
+          },
+          {
+            "bar": 11,
+            "occurrence": 1,
+            "time": 18.9
+          },
+          {
+            "bar": 12,
+            "occurrence": 1,
+            "time": 20.43
+          },
+          {
+            "bar": 13,
+            "occurrence": 1,
+            "time": 22.76
+          },
+          {
+            "bar": 14,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 15,
+            "occurrence": 1,
+            "time": 25.96
+          },
+          {
+            "bar": 16,
+            "occurrence": 1,
+            "time": 27.86
+          },
+          {
+            "bar": 17,
+            "occurrence": 1,
+            "time": 29.49
+          },
+          {
+            "bar": 18,
+            "occurrence": 1,
+            "time": 31.21
+          },
+          {
+            "bar": 19,
+            "occurrence": 1,
+            "time": 32.97
+          },
+          {
+            "bar": 20,
+            "occurrence": 1,
+            "time": 34.83
+          },
+          {
+            "bar": 21,
+            "occurrence": 1,
+            "time": 36.78
+          },
+          {
+            "bar": 22,
+            "occurrence": 1,
+            "time": 38.59
+          },
+          {
+            "bar": 23,
+            "occurrence": 1,
+            "time": 40.12
+          },
+          {
+            "bar": 24,
+            "occurrence": 1,
+            "time": 42.07
+          },
+          {
+            "bar": 25,
+            "occurrence": 1,
+            "time": 45.14
+          },
+          {
+            "bar": 26,
+            "occurrence": 1,
+            "time": 45.6
+          },
+          {
+            "bar": 27,
+            "occurrence": 1,
+            "time": 47.32
+          },
+          {
+            "bar": 28,
+            "occurrence": 1,
+            "time": 49.13
+          },
+          {
+            "bar": 29,
+            "occurrence": 1,
+            "time": 51.64
+          },
+          {
+            "bar": 30,
+            "occurrence": 1,
+            "time": 52.99
+          },
+          {
+            "bar": 31,
+            "occurrence": 1,
+            "time": 54.8
+          },
+          {
+            "bar": 32,
+            "occurrence": 1,
+            "time": 56.56
+          },
+          {
+            "bar": 33,
+            "occurrence": 1,
+            "time": 58.28
+          },
+          {
+            "bar": 34,
+            "occurrence": 1,
+            "time": 60.0
+          },
+          {
+            "bar": 35,
+            "occurrence": 1,
+            "time": 61.67
+          },
+          {
+            "bar": 36,
+            "occurrence": 1,
+            "time": 63.44
+          },
+          {
+            "bar": 37,
+            "occurrence": 1,
+            "time": 65.11
+          },
+          {
+            "bar": 38,
+            "occurrence": 1,
+            "time": 66.92
+          },
+          {
+            "bar": 39,
+            "occurrence": 1,
+            "time": 68.73
+          },
+          {
+            "bar": 40,
+            "occurrence": 1,
+            "time": 70.68
+          },
+          {
+            "bar": 41,
+            "occurrence": 1,
+            "time": 72.63
+          },
+          {
+            "bar": 42,
+            "occurrence": 1,
+            "time": 74.68
+          },
+          {
+            "bar": 43,
+            "occurrence": 1,
+            "time": 76.72
+          },
+          {
+            "bar": 44,
+            "occurrence": 1,
+            "time": 78.85
+          },
+          {
+            "bar": 45,
+            "occurrence": 1,
+            "time": 80.62
+          },
+          {
+            "bar": 46,
+            "occurrence": 1,
+            "time": 82.43
+          },
+          {
+            "bar": 47,
+            "occurrence": 1,
+            "time": 84.1
+          },
+          {
+            "bar": 48,
+            "occurrence": 1,
+            "time": 85.54
+          },
+          {
+            "bar": 49,
+            "occurrence": 1,
+            "time": 86.29
+          },
+          {
+            "bar": 50,
+            "occurrence": 1,
+            "time": 86.75
+          },
+          {
+            "bar": 51,
+            "occurrence": 1,
+            "time": 87.21
+          },
+          {
+            "bar": 52,
+            "occurrence": 1,
+            "time": 87.21
+          },
+          {
+            "bar": 53,
+            "occurrence": 1,
+            "time": 87.21
+          },
+          {
+            "bar": 54,
+            "occurrence": 1,
+            "time": 87.4
+          },
+          {
+            "bar": 55,
+            "occurrence": 1,
+            "time": 88.14
+          },
+          {
+            "bar": 56,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 57,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 58,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 59,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 60,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 61,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 62,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 63,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 64,
+            "occurrence": 1,
+            "time": 88.51
+          },
+          {
+            "bar": 65,
+            "occurrence": 1,
+            "time": 88.61
+          },
+          {
+            "bar": 66,
+            "occurrence": 1,
+            "time": 88.7
+          },
+          {
+            "bar": 67,
+            "occurrence": 1,
+            "time": 88.98
+          },
+          {
+            "bar": 68,
+            "occurrence": 1,
+            "time": 89.44
+          },
+          {
+            "bar": 69,
+            "occurrence": 1,
+            "time": 89.72
+          },
+          {
+            "bar": 70,
+            "occurrence": 1,
+            "time": 89.91
+          },
+          {
+            "bar": 71,
+            "occurrence": 1,
+            "time": 90.09
+          },
+          {
+            "bar": 72,
+            "occurrence": 1,
+            "time": 90.19
+          },
+          {
+            "bar": 73,
+            "occurrence": 1,
+            "time": 90.19
+          },
+          {
+            "bar": 29,
+            "occurrence": 2,
+            "time": 90.56
+          },
+          {
+            "bar": 30,
+            "occurrence": 2,
+            "time": 90.56
+          },
+          {
+            "bar": 31,
+            "occurrence": 2,
+            "time": 90.56
+          },
+          {
+            "bar": 32,
+            "occurrence": 2,
+            "time": 91.39
+          },
+          {
+            "bar": 33,
+            "occurrence": 2,
+            "time": 91.58
+          },
+          {
+            "bar": 34,
+            "occurrence": 2,
+            "time": 91.58
+          },
+          {
+            "bar": 35,
+            "occurrence": 2,
+            "time": 91.77
+          },
+          {
+            "bar": 36,
+            "occurrence": 2,
+            "time": 92.04
+          },
+          {
+            "bar": 37,
+            "occurrence": 2,
+            "time": 92.04
+          },
+          {
+            "bar": 38,
+            "occurrence": 2,
+            "time": 92.6
+          },
+          {
+            "bar": 39,
+            "occurrence": 2,
+            "time": 93.16
+          },
+          {
+            "bar": 40,
+            "occurrence": 2,
+            "time": 93.62
+          },
+          {
+            "bar": 41,
+            "occurrence": 2,
+            "time": 93.62
+          },
+          {
+            "bar": 42,
+            "occurrence": 2,
+            "time": 94.09
+          },
+          {
+            "bar": 43,
+            "occurrence": 2,
+            "time": 94.46
+          },
+          {
+            "bar": 44,
+            "occurrence": 2,
+            "time": 95.11
+          },
+          {
+            "bar": 45,
+            "occurrence": 2,
+            "time": 95.11
+          },
+          {
+            "bar": 46,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 47,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 48,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 49,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 50,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 51,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 52,
+            "occurrence": 2,
+            "time": 95.57
+          },
+          {
+            "bar": 53,
+            "occurrence": 2,
+            "time": 96.13
+          },
+          {
+            "bar": 54,
+            "occurrence": 2,
+            "time": 96.78
+          },
+          {
+            "bar": 55,
+            "occurrence": 2,
+            "time": 97.52
+          },
+          {
+            "bar": 56,
+            "occurrence": 2,
+            "time": 99.29
+          },
+          {
+            "bar": 57,
+            "occurrence": 2,
+            "time": 100.96
+          },
+          {
+            "bar": 58,
+            "occurrence": 2,
+            "time": 102.91
+          },
+          {
+            "bar": 59,
+            "occurrence": 2,
+            "time": 104.86
+          },
+          {
+            "bar": 60,
+            "occurrence": 2,
+            "time": 106.67
+          },
+          {
+            "bar": 61,
+            "occurrence": 2,
+            "time": 108.44
+          },
+          {
+            "bar": 62,
+            "occurrence": 2,
+            "time": 110.25
+          },
+          {
+            "bar": 63,
+            "occurrence": 2,
+            "time": 111.92
+          },
+          {
+            "bar": 64,
+            "occurrence": 2,
+            "time": 113.59
+          },
+          {
+            "bar": 65,
+            "occurrence": 2,
+            "time": 115.73
+          },
+          {
+            "bar": 66,
+            "occurrence": 2,
+            "time": 117.4
+          },
+          {
+            "bar": 67,
+            "occurrence": 2,
+            "time": 119.3
+          },
+          {
+            "bar": 68,
+            "occurrence": 2,
+            "time": 121.21
+          },
+          {
+            "bar": 69,
+            "occurrence": 2,
+            "time": 122.97
+          },
+          {
+            "bar": 70,
+            "occurrence": 2,
+            "time": 124.74
+          },
+          {
+            "bar": 71,
+            "occurrence": 2,
+            "time": 126.27
+          },
+          {
+            "bar": 72,
+            "occurrence": 2,
+            "time": 128.17
+          },
+          {
+            "bar": 73,
+            "occurrence": 2,
+            "time": 129.94
+          }
+        ]
+      },
+      {
+        "cost": 0.21035836868357283,
+        "similarity": 0.7896416187286377,
+        "medianSimilarity": 0.8275249600410461,
+        "pathLength": 1932,
+        "scoreFrames": 1169,
+        "audioFrames": 1442,
+        "scenario": "both_repeats",
+        "barsPlayed": 146,
+        "writtenBars": 73,
+        "quarterbeatsPlayed": 584.0,
+        "secondsPerQuarterbeat": 0.229,
+        "barStarts": [
+          {
+            "bar": 1,
+            "occurrence": 1,
+            "time": 0.0
+          },
+          {
+            "bar": 2,
+            "occurrence": 1,
+            "time": 3.72
+          },
+          {
+            "bar": 3,
+            "occurrence": 1,
+            "time": 5.48
+          },
+          {
+            "bar": 4,
+            "occurrence": 1,
+            "time": 7.2
+          },
+          {
+            "bar": 5,
+            "occurrence": 1,
+            "time": 9.01
+          },
+          {
+            "bar": 6,
+            "occurrence": 1,
+            "time": 10.4
+          },
+          {
+            "bar": 7,
+            "occurrence": 1,
+            "time": 11.98
+          },
+          {
+            "bar": 8,
+            "occurrence": 1,
+            "time": 13.75
+          },
+          {
+            "bar": 9,
+            "occurrence": 1,
+            "time": 15.42
+          },
+          {
+            "bar": 10,
+            "occurrence": 1,
+            "time": 17.18
+          },
+          {
+            "bar": 11,
+            "occurrence": 1,
+            "time": 18.9
+          },
+          {
+            "bar": 12,
+            "occurrence": 1,
+            "time": 20.43
+          },
+          {
+            "bar": 13,
+            "occurrence": 1,
+            "time": 22.76
+          },
+          {
+            "bar": 14,
+            "occurrence": 1,
+            "time": 24.24
+          },
+          {
+            "bar": 15,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 16,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 17,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 18,
+            "occurrence": 1,
+            "time": 24.33
+          },
+          {
+            "bar": 19,
+            "occurrence": 1,
+            "time": 25.26
+          },
+          {
+            "bar": 20,
+            "occurrence": 1,
+            "time": 25.73
+          },
+          {
+            "bar": 21,
+            "occurrence": 1,
+            "time": 26.1
+          },
+          {
+            "bar": 22,
+            "occurrence": 1,
+            "time": 26.84
+          },
+          {
+            "bar": 23,
+            "occurrence": 1,
+            "time": 26.94
+          },
+          {
+            "bar": 24,
+            "occurrence": 1,
+            "time": 27.03
+          },
+          {
+            "bar": 25,
+            "occurrence": 1,
+            "time": 27.21
+          },
+          {
+            "bar": 26,
+            "occurrence": 1,
+            "time": 27.59
+          },
+          {
+            "bar": 27,
+            "occurrence": 1,
+            "time": 28.33
+          },
+          {
+            "bar": 28,
+            "occurrence": 1,
+            "time": 29.26
+          },
+          {
+            "bar": 1,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 2,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 3,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 4,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 5,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 6,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 7,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 8,
+            "occurrence": 2,
+            "time": 29.44
+          },
+          {
+            "bar": 9,
+            "occurrence": 2,
+            "time": 29.63
+          },
+          {
+            "bar": 10,
+            "occurrence": 2,
+            "time": 29.72
+          },
+          {
+            "bar": 11,
+            "occurrence": 2,
+            "time": 29.72
+          },
+          {
+            "bar": 12,
+            "occurrence": 2,
+            "time": 29.72
+          },
+          {
+            "bar": 13,
+            "occurrence": 2,
+            "time": 29.91
+          },
+          {
+            "bar": 14,
+            "occurrence": 2,
+            "time": 31.16
+          },
+          {
+            "bar": 15,
+            "occurrence": 2,
+            "time": 31.3
+          },
+          {
+            "bar": 16,
+            "occurrence": 2,
+            "time": 31.3
+          },
+          {
+            "bar": 17,
+            "occurrence": 2,
+            "time": 31.3
+          },
+          {
+            "bar": 18,
+            "occurrence": 2,
+            "time": 31.39
+          },
+          {
+            "bar": 19,
+            "occurrence": 2,
+            "time": 32.97
+          },
+          {
+            "bar": 20,
+            "occurrence": 2,
+            "time": 34.83
+          },
+          {
+            "bar": 21,
+            "occurrence": 2,
+            "time": 36.78
+          },
+          {
+            "bar": 22,
+            "occurrence": 2,
+            "time": 38.59
+          },
+          {
+            "bar": 23,
+            "occurrence": 2,
+            "time": 40.12
+          },
+          {
+            "bar": 24,
+            "occurrence": 2,
+            "time": 42.07
+          },
+          {
+            "bar": 25,
+            "occurrence": 2,
+            "time": 45.14
+          },
+          {
+            "bar": 26,
+            "occurrence": 2,
+            "time": 45.6
+          },
+          {
+            "bar": 27,
+            "occurrence": 2,
+            "time": 47.32
+          },
+          {
+            "bar": 28,
+            "occurrence": 2,
+            "time": 49.13
+          },
+          {
+            "bar": 29,
+            "occurrence": 1,
+            "time": 51.64
+          },
+          {
+            "bar": 30,
+            "occurrence": 1,
+            "time": 52.99
+          },
+          {
+            "bar": 31,
+            "occurrence": 1,
+            "time": 54.8
+          },
+          {
+            "bar": 32,
+            "occurrence": 1,
+            "time": 56.56
+          },
+          {
+            "bar": 33,
+            "occurrence": 1,
+            "time": 58.28
+          },
+          {
+            "bar": 34,
+            "occurrence": 1,
+            "time": 60.0
+          },
+          {
+            "bar": 35,
+            "occurrence": 1,
+            "time": 61.67
+          },
+          {
+            "bar": 36,
+            "occurrence": 1,
+            "time": 63.44
+          },
+          {
+            "bar": 37,
+            "occurrence": 1,
+            "time": 65.11
+          },
+          {
+            "bar": 38,
+            "occurrence": 1,
+            "time": 66.92
+          },
+          {
+            "bar": 39,
+            "occurrence": 1,
+            "time": 68.73
+          },
+          {
+            "bar": 40,
+            "occurrence": 1,
+            "time": 70.68
+          },
+          {
+            "bar": 41,
+            "occurrence": 1,
+            "time": 72.63
+          },
+          {
+            "bar": 42,
+            "occurrence": 1,
+            "time": 74.68
+          },
+          {
+            "bar": 43,
+            "occurrence": 1,
+            "time": 76.72
+          },
+          {
+            "bar": 44,
+            "occurrence": 1,
+            "time": 78.85
+          },
+          {
+            "bar": 45,
+            "occurrence": 1,
+            "time": 80.62
+          },
+          {
+            "bar": 46,
+            "occurrence": 1,
+            "time": 82.43
+          },
+          {
+            "bar": 47,
+            "occurrence": 1,
+            "time": 84.1
+          },
+          {
+            "bar": 48,
+            "occurrence": 1,
+            "time": 85.54
+          },
+          {
+            "bar": 49,
+            "occurrence": 1,
+            "time": 86.29
+          },
+          {
+            "bar": 50,
+            "occurrence": 1,
+            "time": 86.75
+          },
+          {
+            "bar": 51,
+            "occurrence": 1,
+            "time": 87.21
+          },
+          {
+            "bar": 52,
+            "occurrence": 1,
+            "time": 87.21
+          },
+          {
+            "bar": 53,
+            "occurrence": 1,
+            "time": 87.21
+          },
+          {
+            "bar": 54,
+            "occurrence": 1,
+            "time": 87.4
+          },
+          {
+            "bar": 55,
+            "occurrence": 1,
+            "time": 88.14
+          },
+          {
+            "bar": 56,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 57,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 58,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 59,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 60,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 61,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 62,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 63,
+            "occurrence": 1,
+            "time": 88.24
+          },
+          {
+            "bar": 64,
+            "occurrence": 1,
+            "time": 88.51
+          },
+          {
+            "bar": 65,
+            "occurrence": 1,
+            "time": 88.61
+          },
+          {
+            "bar": 66,
+            "occurrence": 1,
+            "time": 88.7
+          },
+          {
+            "bar": 67,
+            "occurrence": 1,
+            "time": 88.98
+          },
+          {
+            "bar": 68,
+            "occurrence": 1,
+            "time": 89.44
+          },
+          {
+            "bar": 69,
+            "occurrence": 1,
+            "time": 89.72
+          },
+          {
+            "bar": 70,
+            "occurrence": 1,
+            "time": 89.91
+          },
+          {
+            "bar": 71,
+            "occurrence": 1,
+            "time": 90.09
+          },
+          {
+            "bar": 72,
+            "occurrence": 1,
+            "time": 90.19
+          },
+          {
+            "bar": 73,
+            "occurrence": 1,
+            "time": 90.19
+          },
+          {
+            "bar": 29,
+            "occurrence": 2,
+            "time": 90.56
+          },
+          {
+            "bar": 30,
+            "occurrence": 2,
+            "time": 90.56
+          },
+          {
+            "bar": 31,
+            "occurrence": 2,
+            "time": 90.56
+          },
+          {
+            "bar": 32,
+            "occurrence": 2,
+            "time": 91.39
+          },
+          {
+            "bar": 33,
+            "occurrence": 2,
+            "time": 91.58
+          },
+          {
+            "bar": 34,
+            "occurrence": 2,
+            "time": 91.58
+          },
+          {
+            "bar": 35,
+            "occurrence": 2,
+            "time": 91.77
+          },
+          {
+            "bar": 36,
+            "occurrence": 2,
+            "time": 92.04
+          },
+          {
+            "bar": 37,
+            "occurrence": 2,
+            "time": 92.04
+          },
+          {
+            "bar": 38,
+            "occurrence": 2,
+            "time": 92.6
+          },
+          {
+            "bar": 39,
+            "occurrence": 2,
+            "time": 93.16
+          },
+          {
+            "bar": 40,
+            "occurrence": 2,
+            "time": 93.62
+          },
+          {
+            "bar": 41,
+            "occurrence": 2,
+            "time": 93.62
+          },
+          {
+            "bar": 42,
+            "occurrence": 2,
+            "time": 94.09
+          },
+          {
+            "bar": 43,
+            "occurrence": 2,
+            "time": 94.46
+          },
+          {
+            "bar": 44,
+            "occurrence": 2,
+            "time": 95.11
+          },
+          {
+            "bar": 45,
+            "occurrence": 2,
+            "time": 95.11
+          },
+          {
+            "bar": 46,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 47,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 48,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 49,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 50,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 51,
+            "occurrence": 2,
+            "time": 95.48
+          },
+          {
+            "bar": 52,
+            "occurrence": 2,
+            "time": 95.57
+          },
+          {
+            "bar": 53,
+            "occurrence": 2,
+            "time": 96.13
+          },
+          {
+            "bar": 54,
+            "occurrence": 2,
+            "time": 96.78
+          },
+          {
+            "bar": 55,
+            "occurrence": 2,
+            "time": 97.52
+          },
+          {
+            "bar": 56,
+            "occurrence": 2,
+            "time": 99.29
+          },
+          {
+            "bar": 57,
+            "occurrence": 2,
+            "time": 100.96
+          },
+          {
+            "bar": 58,
+            "occurrence": 2,
+            "time": 102.91
+          },
+          {
+            "bar": 59,
+            "occurrence": 2,
+            "time": 104.86
+          },
+          {
+            "bar": 60,
+            "occurrence": 2,
+            "time": 106.67
+          },
+          {
+            "bar": 61,
+            "occurrence": 2,
+            "time": 108.44
+          },
+          {
+            "bar": 62,
+            "occurrence": 2,
+            "time": 110.25
+          },
+          {
+            "bar": 63,
+            "occurrence": 2,
+            "time": 111.92
+          },
+          {
+            "bar": 64,
+            "occurrence": 2,
+            "time": 113.59
+          },
+          {
+            "bar": 65,
+            "occurrence": 2,
+            "time": 115.73
+          },
+          {
+            "bar": 66,
+            "occurrence": 2,
+            "time": 117.4
+          },
+          {
+            "bar": 67,
+            "occurrence": 2,
+            "time": 119.3
+          },
+          {
+            "bar": 68,
+            "occurrence": 2,
+            "time": 121.21
+          },
+          {
+            "bar": 69,
+            "occurrence": 2,
+            "time": 122.97
+          },
+          {
+            "bar": 70,
+            "occurrence": 2,
+            "time": 124.74
+          },
+          {
+            "bar": 71,
+            "occurrence": 2,
+            "time": 126.27
+          },
+          {
+            "bar": 72,
+            "occurrence": 2,
+            "time": 128.17
+          },
+          {
+            "bar": 73,
+            "occurrence": 2,
+            "time": 129.94
+          }
+        ]
+      }
+    ],
+    "selectedForReview": "no_repeats",
+    "examples": [
+      {
+        "fraction": 0.23606798,
+        "scoreBarApprox": 18.0,
+        "nearestWrittenBar": 18,
+        "candidateRecordingTimes": [
+          31.21
+        ]
+      },
+      {
+        "fraction": 0.38196601,
+        "scoreBarApprox": 28.5,
+        "nearestWrittenBar": 29,
+        "candidateRecordingTimes": [
+          51.64
+        ]
+      },
+      {
+        "fraction": 0.61803399,
+        "scoreBarApprox": 45.5,
+        "nearestWrittenBar": 45,
+        "candidateRecordingTimes": [
+          80.62
+        ]
+      },
+      {
+        "fraction": 0.76393202,
+        "scoreBarApprox": 56.0,
+        "nearestWrittenBar": 56,
+        "candidateRecordingTimes": [
+          99.29
+        ]
+      }
+    ],
+    "caveats": [
+      "DTW does not itself certify the correspondence at individual bars.",
+      "Different performances and Mozart repeat choices change all timestamps.",
+      "Piano rubato and sustain can shift apparent chord onsets.",
+      "Written-score fraction is not elapsed-time fraction.",
+      "Bar counts follow the DCMLab transcription, not the previous UI guess."
+    ]
+  }
+}
