@@ -40,9 +40,11 @@ export function alignedScorePoint(src,fraction,audioDuration,{maximumDisagreemen
  const diff0=map.differences[i];
  const diff1=i+1<map.scoreBars?map.differences[i+1]:map.differences[i];
  const disagreement=diff0*(1-w)+diff1*w;
- // Individual poor matches cannot masquerade as independent verification,
- // even if an interpolated average happens to be below the threshold.
- const verified=diff0<=maximumDisagreement&&diff1<=maximumDisagreement;
+ // Certify the interpolated position only if the two methods agree within
+ // tolerance and at least one neighbouring anchor is independently sound.
+ // Conservatively mark ambiguous spans as needing manual review.
+ const verified=disagreement<=maximumDisagreement&&
+   (diff0<=maximumDisagreement||diff1<=maximumDisagreement);
  return {fraction,time,completedBars:completed,
   withinBar:i+1,scoreBars:map.scoreBars,disagreement,verified,
   confidence:verified?(disagreement<=.5?'strong':'moderate'):'needs-review',
