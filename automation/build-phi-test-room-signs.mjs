@@ -86,7 +86,7 @@ await build({
    const oldRig=' for(const mesh of allMeshes)mesh.visible=mesh===selected;';
    if(contents.split(oldRig).length!==2)throw Error('Legacy visitor rig anchor changed');
    contents=contents.replace(oldRig,oldRig+
-    "\\n selected.material=new THREE.MeshStandardMaterial({color:'#b7b5ae',roughness:.86,metalness:.02,vertexColors:false,side:THREE.DoubleSide});");
+    "\n selected.material=new THREE.MeshStandardMaterial({color:'#b7b5ae',roughness:.86,metalness:.02,vertexColors:false,side:THREE.DoubleSide});");
    return {contents,loader:'js',resolveDir:dir};
   });
  }
