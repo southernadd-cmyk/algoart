@@ -39,7 +39,7 @@ test('test-only recording choice leaves live Debussy and Mozart untouched',()=>{
  const staging=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
  assert.match(live,/gramophone-record\.mjs\?v=selectable-tracks/);
  assert.doesNotMatch(live,/gramophone-record-asap-test|phi-gramophone-asap-debussy/);
- assert.match(staging,/gramophone-record-asap-test\.mjs/);
+ assert.match(readFileSync(new URL('../gallery/visit/phi-gramophone-music.mjs',import.meta.url),'utf8'),/gramophone-record-asap-test\.mjs/);
 });
 
 test('each golden-score division seeks the annotated Debussy performance',()=>{

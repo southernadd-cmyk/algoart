@@ -23,6 +23,10 @@ replace("history.replaceState(null,'',date===RECEPTION?location.pathname:'?date=
 // The staging archive can be updated after publication; never force-cache its HTML.
 replace('fetchGalleryText(url,{cache}),',"fetchGalleryText(url,{cache:'no-store'}),");
 
+// Do not keep walking behind the modal, including held touch/gamepad input.
+replace('function updateMovement(dt) {',
+ 'function updateMovement(dt) {\n  if(phiGalleryMusic?.isOpen?.()){pressed.clear();lookPressed.clear();touchPressed.clear();return;}');
+
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
@@ -31,22 +35,7 @@ await build({
  name:'gramophone-phi-time-markers-test-only',
  setup(builder){
   builder.onLoad({filter:/gallery-music[.]mjs$/},async({path})=>{
-   let text=await readFile(path,'utf8');
-   const swap=(before,after)=>{
-    if(text.split(before).length!==2)throw Error('φ timeline staging anchor changed: '+before.slice(0,80));
-    text=text.replace(before,after);
-   };
-   swap("import {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';",
-    "import {createGramophonePhiTimeline} from './phi-gramophone-experience.mjs';\nimport {createGramophoneRecord} from './gramophone-record-asap-test.mjs';");
-   swap("let opened=false,trackButtons=[];",
-    "let opened=false,trackButtons=[],goldenTimeline=null;");
-   swap("trackButtons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===s.index)));",
-    "trackButtons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===s.index)));goldenTimeline?.update();");
-   swap(" const position=new THREE.Vector3();",
-    " goldenTimeline=createGramophonePhiTimeline({panel,record});\n const position=new THREE.Vector3();");
-   swap("  dispose(){record.dispose();",
-    "  dispose(){goldenTimeline?.dispose();record.dispose();");
-   return {contents:text,loader:'js',resolveDir:dir};
+   return {contents:"export {createPhiGalleryMusic} from './phi-gramophone-music.mjs';",loader:'js',resolveDir:dir};
   });
  }
 }],

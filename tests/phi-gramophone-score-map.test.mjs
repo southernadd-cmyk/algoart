@@ -68,7 +68,7 @@ test('only the test tower imports the score map, preserving two original recordi
  const builder=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
  const music=readFileSync(new URL('../gallery/visit/gallery-music.mjs',import.meta.url),'utf8');
  const timeline=readFileSync(new URL('../gallery/visit/phi-gramophone-experience.mjs',import.meta.url),'utf8');
- assert.match(builder,/createGramophonePhiTimeline/);
+ assert.match(builder,/phi-gramophone-music/);
  assert.match(timeline,/alignedScorePoint/);
  assert.match(timeline,/scoreDot/);
  assert.match(timeline,/time-LISTEN_LEAD_IN_SECONDS/);

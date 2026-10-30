@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Gramophone modal review · PROPORTION PIECE</title><style>@font-face{font-family:'AlgoArt Marker';src:url('../../fonts/AlgoArt-Marker-Regular.woff2') format('woff2')}*{box-sizing:border-box}body{margin:0;background:#c5c7bc;color:#304136;font:14px Georgia,serif}nav{padding:12px}a{color:inherit;margin-right:20px}iframe{display:block;border:0;margin:12px auto;background:#c5c7bc}.top-actions{position:fixed;z-index:99999;top:0;left:0;right:0;padding:18px;background:#304136;color:#fff;display:flex;justify-content:space-between}.top-actions button{padding:8px}#world{display:block;width:100vw;height:100dvh;background:linear-gradient(145deg,#bfc7b8,#777e6d)}.preview-label{position:fixed;bottom:18px;left:18px}</style></head><body><script type="module">
+const params=new URLSearchParams(location.search);
+if(params.has('screen')){
+ const nav=document.createElement('nav');nav.innerHTML='<a href="?screen=desktop">Desktop</a><a href="?screen=phone">Phone</a><a href="?screen=short">Short landscape</a>';document.body.append(nav);
+ const frame=document.createElement('iframe'),size={desktop:[1280,900],phone:[390,844],short:[844,390]}[params.get('screen')]||[1280,900];frame.width=size[0];frame.height=size[1];frame.src='?embedded';frame.title='Actual gramophone modal';document.body.append(frame);
+}else{
+ document.body.innerHTML='<div class="top-actions"><span>PROPORTION PIECE · gallery bar (layer test)</span></div><canvas id="world" tabindex="0"></canvas><p class="preview-label">Isolated test of the tower’s actual listening modal. No WebGL required.</p>';
+ const {createPhiGalleryMusic}=await import('../../gallery/visit/phi-gramophone-music.mjs');
+ const music=createPhiGalleryMusic({Vector3:class {constructor(){this.x=0;this.y=0;this.z=0;}}},{canvas:document.querySelector('#world'),debug:true});
+ music.open();
+}
+</script></body></html>

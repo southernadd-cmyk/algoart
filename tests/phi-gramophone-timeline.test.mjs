@@ -50,9 +50,9 @@ test('staging gallery has both musical and performance time references without m
  const timeline=readFileSync(new URL('../gallery/visit/phi-gramophone-experience.mjs',import.meta.url),'utf8');
  const music=readFileSync(new URL('../gallery/visit/gallery-music.mjs',import.meta.url),'utf8');
  assert.match(builder,/gramophone-phi-time-markers-test-only/);
- assert.match(builder,/createGramophonePhiTimeline/);
- assert.match(builder,/goldenTimeline\?\.dispose\(\)/);
- assert.match(timeline,/Reveal the golden divisions/);
+ assert.match(builder,/phi-gramophone-music/);
+ assert.match(readFileSync(new URL('../gallery/visit/phi-gramophone-music.mjs',import.meta.url),'utf8'),/goldenTimeline.dispose\(\)/);
+ assert.match(timeline,/CHOOSE A PROPORTION/);
  assert.match(timeline,/HEAR THE SCORE/);
  assert.match(timeline,/phi-listen-figure/);
  assert.match(timeline,/loadedmetadata/);
