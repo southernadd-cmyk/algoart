@@ -36,11 +36,11 @@ await build({
     text=text.replace(from,to);
    };
    swap("import {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';",
-     "import {createGramophonePhiSpectrum} from './phi-gramophone-spectrum.mjs';\\nimport {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';");
+     "import {createGramophonePhiSpectrum} from './phi-gramophone-spectrum.mjs';\nimport {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';");
    swap(" const position=new THREE.Vector3();",
-     " const phiSpectrum=createGramophonePhiSpectrum(record.audio);\\n const phiButton=document.createElement('button');phiButton.type='button';phiButton.className='record-phi-spectrum';phiButton.textContent='Hear φ spectrum';phiButton.setAttribute('aria-pressed','false');toggle.insertAdjacentElement('afterend',phiButton);\\n const phiInfo=document.createElement('small');phiInfo.textContent='Test the same recording through six frequency bands separated by φ. Original pitch and timing are preserved.';phiButton.insertAdjacentElement('afterend',phiInfo);\\n const position=new THREE.Vector3();");
+     " const phiSpectrum=createGramophonePhiSpectrum(record.audio);\n const phiButton=document.createElement('button');phiButton.type='button';phiButton.className='record-phi-spectrum';phiButton.textContent='Hear φ spectrum';phiButton.setAttribute('aria-pressed','false');toggle.insertAdjacentElement('afterend',phiButton);\n const phiInfo=document.createElement('small');phiInfo.textContent='Test the same recording through six frequency bands separated by φ. Original pitch and timing are preserved.';phiButton.insertAdjacentElement('afterend',phiInfo);\n const position=new THREE.Vector3();");
    swap(" toggle.addEventListener('click',()=>record.toggle());",
-     " toggle.addEventListener('click',()=>record.toggle());\\n phiButton.addEventListener('click',async()=>{phiButton.disabled=true;try{const active=await phiSpectrum.toggle();phiButton.setAttribute('aria-pressed',String(active));phiButton.textContent=active?'Hear original recording':'Hear φ spectrum';problem.textContent='';}catch(error){problem.textContent=error?.message||'The φ spectrum is unavailable';}finally{phiButton.disabled=false;}});");
+     " toggle.addEventListener('click',()=>record.toggle());\n phiButton.addEventListener('click',async()=>{phiButton.disabled=true;try{const active=await phiSpectrum.toggle();phiButton.setAttribute('aria-pressed',String(active));phiButton.textContent=active?'Hear original recording':'Hear φ spectrum';problem.textContent='';}catch(error){problem.textContent=error?.message||'The φ spectrum is unavailable';}finally{phiButton.disabled=false;}});");
    swap("  dispose(){record.dispose();",
      "  dispose(){phiSpectrum.dispose();record.dispose();");
    return {contents:text,loader:'js',resolveDir:dir};
