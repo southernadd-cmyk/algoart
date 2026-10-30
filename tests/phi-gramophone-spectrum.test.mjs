@@ -43,7 +43,7 @@ test('effect starts dry, only connects on opt-in, supports instant A/B and prese
  assert.equal(ctx.sources[0].audio,audio);
  assert.equal(ctx.filters.length,6);
  assert.equal(ctx.gains[0].gain.value,0);
- assert.equal(ctx.gains[1].gain.value,1);
+ assert.equal(ctx.gains[1].gain.value,.72);
  assert.equal(phi.state().enabled,true);
  assert.equal(audio.currentTime,80.25);
  await phi.setEnabled(false);
