@@ -27,27 +27,28 @@ await build({
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
  outfile:'gallery/visit/gallery-phi-test-room-signs-bundle.js',
  plugins:[stageCurationPlugin(),{
- name:'gramophone-phi-spectrum-staging-only',
+ name:'gramophone-phi-time-markers-test-only',
  setup(builder){
   builder.onLoad({filter:/gallery-music[.]mjs$/},async({path})=>{
    let text=await readFile(path,'utf8');
-   const swap=(from,to)=>{
-    if(text.split(from).length!==2)throw Error('φ spectrum staging anchor changed: '+from.slice(0,85));
-    text=text.replace(from,to);
+   const swap=(before,after)=>{
+    if(text.split(before).length!==2)throw Error('φ timeline staging anchor changed: '+before.slice(0,80));
+    text=text.replace(before,after);
    };
    swap("import {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';",
-     "import {createGramophonePhiSpectrum} from './phi-gramophone-spectrum.mjs';\nimport {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';");
+    "import {createGramophonePhiTimeline} from './phi-gramophone-timeline.mjs';\nimport {createGramophoneRecord} from './gramophone-record.mjs?v=selectable-tracks-20261027';");
+   swap("let opened=false,trackButtons=[];",
+    "let opened=false,trackButtons=[],goldenTimeline=null;");
+   swap("trackButtons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===s.index)));",
+    "trackButtons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===s.index)));goldenTimeline?.update();");
    swap(" const position=new THREE.Vector3();",
-     " const phiSpectrum=createGramophonePhiSpectrum(record.audio);\n const phiButton=document.createElement('button');phiButton.type='button';phiButton.className='record-phi-spectrum';phiButton.textContent='Hear φ spectrum';phiButton.setAttribute('aria-pressed','false');toggle.insertAdjacentElement('afterend',phiButton);\n const phiInfo=document.createElement('small');phiInfo.textContent='Test the same recording through six frequency bands separated by φ. Original pitch and timing are preserved.';phiButton.insertAdjacentElement('afterend',phiInfo);\n const position=new THREE.Vector3();");
-   swap(" toggle.addEventListener('click',()=>record.toggle());",
-     " toggle.addEventListener('click',()=>record.toggle());\n phiButton.addEventListener('click',async()=>{phiButton.disabled=true;try{const active=await phiSpectrum.toggle();phiButton.setAttribute('aria-pressed',String(active));phiButton.textContent=active?'Hear original recording':'Hear φ spectrum';problem.textContent='';}catch(error){problem.textContent=error?.message||'The φ spectrum is unavailable';}finally{phiButton.disabled=false;}});");
+    " goldenTimeline=createGramophonePhiTimeline({panel,record});\n const position=new THREE.Vector3();");
    swap("  dispose(){record.dispose();",
-     "  dispose(){phiSpectrum.dispose();record.dispose();");
+    "  dispose(){goldenTimeline?.dispose();record.dispose();");
    return {contents:text,loader:'js',resolveDir:dir};
   });
  }
 }],
- logLevel:'warning'
 });
 const bundle=await readFile(resolve(dir,'gallery-phi-test-room-signs-bundle.js'));
 const sha256=createHash('sha256').update(bundle).digest('hex');
