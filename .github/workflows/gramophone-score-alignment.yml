@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: gramophone-score-alignment-main
+  cancel-in-progress: true
 jobs:
   analyse:
     runs-on: ubuntu-latest
@@ -26,14 +29,17 @@ jobs:
       - name: Preserve alignment candidate for independent inspection
         if: success()
         run: |
-          mkdir -p automation/alignment-evidence
-          cp gramophone-alignment-candidates.json automation/alignment-evidence/gramophone-candidates.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Base the update on the latest main BEFORE copying regenerated
+          # evidence, so simultaneous source edits cannot cause rebase conflicts.
+          git fetch origin main
+          git checkout -B gramophone-evidence origin/main
+          mkdir -p automation/alignment-evidence
+          cp gramophone-alignment-candidates.json automation/alignment-evidence/gramophone-candidates.json
           git add automation/alignment-evidence/gramophone-candidates.json
           if ! git diff --cached --quiet; then
             git commit -m "Record unpublished gramophone score alignment candidates"
-            git pull --rebase origin main
             git push origin HEAD:main
           fi
       - uses: actions/upload-artifact@v4
