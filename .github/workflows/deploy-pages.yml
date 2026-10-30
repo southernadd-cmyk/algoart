@@ -18,6 +18,7 @@ on:
       - 'tests/phi-gallery-penrose.test.mjs'
       - 'tests/phi-gramophone-timeline.test.mjs'
       - 'tests/phi-gramophone-score-map.test.mjs'
+      - 'tests/phi-gramophone-asap-debussy.test.mjs'
       - 'tests/phi-gramophone-independent-source.test.mjs'
       - 'css/**'
       - 'fonts/**'
@@ -40,7 +41,7 @@ on:
   # Commits pushed by the bundle-sync workflow's GITHUB_TOKEN do not
   # trigger push workflows. Deploy when that workflow finishes instead.
   workflow_run:
-    workflows: ['Synchronise deployed gallery bundle', 'Build TouchDesigner second monitor bank']
+    workflows: ['Synchronise deployed gallery bundle', 'Build TouchDesigner second monitor bank', 'Import annotated Debussy recording for test tower']
     types: [completed]
     branches: [main]
 
@@ -77,7 +78,7 @@ jobs:
       - name: Validate public gallery before uploading the site
         run: |
           node automation/validate-phi-archive.mjs
-          node --test tests/phi-translation-area-sign-runtime.test.mjs tests/phi-large-monitor-door-sign.test.mjs tests/phi-reception-rear-wall-monitors.test.mjs tests/phi-monitor-banks.test.mjs tests/phi-monitor-bank-two.test.mjs tests/phi-shell-cache.test.mjs tests/phi-sculpture-stage.test.mjs tests/gramophone-record.test.mjs tests/phi-gramophone-timeline.test.mjs tests/phi-gramophone-score-map.test.mjs tests/phi-gramophone-independent-source.test.mjs tests/phi-reception-refresh.test.mjs tests/phi-reception-window.test.mjs tests/phi-touchdesigner-phase-one.test.mjs tests/phi-touchdesigner-six-screen.test.mjs tests/gallery-speakers.test.mjs
+          node --test tests/phi-translation-area-sign-runtime.test.mjs tests/phi-large-monitor-door-sign.test.mjs tests/phi-reception-rear-wall-monitors.test.mjs tests/phi-monitor-banks.test.mjs tests/phi-monitor-bank-two.test.mjs tests/phi-shell-cache.test.mjs tests/phi-sculpture-stage.test.mjs tests/gramophone-record.test.mjs tests/phi-gramophone-timeline.test.mjs tests/phi-gramophone-score-map.test.mjs tests/phi-gramophone-asap-debussy.test.mjs tests/phi-gramophone-independent-source.test.mjs tests/phi-reception-refresh.test.mjs tests/phi-reception-window.test.mjs tests/phi-touchdesigner-phase-one.test.mjs tests/phi-touchdesigner-six-screen.test.mjs tests/gallery-speakers.test.mjs
           node --test tests/gallery-public-launch.test.mjs tests/phi-full-engine-adapter.test.mjs tests/phi-presentation.test.mjs
           node --test tests/phi-lift-motion.test.mjs tests/gallery-entry-preparation.test.mjs tests/phi-curation-groups.test.mjs tests/phi-stage-curation.test.mjs tests/phi-pre-expansion.test.mjs
           node --test tests/phi-gallery-topbar.test.mjs
