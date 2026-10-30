@@ -25,9 +25,9 @@ DATASETS = {
         "notes": "https://raw.githubusercontent.com/DCMLab/debussy_images/main/notes/l110-01_images_reflets.tsv",
         "measures": "https://raw.githubusercontent.com/DCMLab/debussy_images/main/measures/l110-01_images_reflets.tsv",
         "audio": "gallery/visit/audio/debussy-reflets-dans-leau.ogg",
-        "score": "DCMLab/debussy_images l110-01_images_reflets (CC BY-NC-SA 4.0)",
+        "score": "DCMLab/debussy_images l110-01_images_reflets (CC BY-NC-SA 4.0), corrected to 94 original bars using WJEC guidance",
         "source": "https://github.com/DCMLab/debussy_images",
-        "barCount": 95
+        "barCount": 94
     },
     "mozart": {
         "notes": "https://raw.githubusercontent.com/DCMLab/mozart_piano_sonatas/main/notes/K545-1.notes.tsv",
@@ -89,9 +89,43 @@ def parse_notes(note_rows, measure_rows):
     return bars, events
 
 
+
+def canonical_debussy_bars(bars, notes):
+    """Undo the spurious mid-cadenza barline in transcriptions of Reflets.
+
+    WJEC's analysis notes that the autograph and Durand original count 94 bars.
+    Some editions insert a barline inside bar 23, yielding 95. The DCMLab
+    transcription has 95 measures. Merge its 23 and 24, and renumber later
+    bars while preserving the source's musical note timings exactly.
+    See https://resource.download.wjec.co.uk/vtc/2015-16/15-16_24/Debussy-Reflects.pdf
+    """
+    assert len(bars)==95 and bars[22]["bar"]==23 and bars[23]["bar"]==24
+    merged=dict(bars[22])
+    merged["length"]+=bars[23]["length"]
+    # Both originals share the same underlying score-local coordinate system.
+    second_offset=bars[22]["length"]
+    notes[merged["mc"]]=notes[bars[22]["mc"]]+[
+        (onset+second_offset,duration,pitch)
+        for onset,duration,pitch in notes[bars[23]["mc"]]
+    ]
+    corrected=[]
+    for b in bars:
+        if b["bar"]==24:
+            continue
+        adjusted=dict(merged if b["bar"]==23 else b)
+        if adjusted["bar"]>24:
+            adjusted["bar"]-=1
+        corrected.append(adjusted)
+    assert len(corrected)==94
+    assert corrected[-1]["bar"]==94
+    assert abs(sum(b["length"] for b in corrected) -
+               sum(b["length"] for b in bars))<1e-7
+    return corrected,notes
+
+
 def order_scenarios(kind):
     if kind == "debussy":
-        return {"unrepeated": list(range(1, 96))}
+        return {"unrepeated": list(range(1, 95))}
     # Mozart's first repeat finishes at bar 28; the second ends at bar 73.
     # Examine interpretations with neither, one, or both written repeats.
     return {
@@ -216,6 +250,8 @@ def run(kind):
     note_rows, note_hash = fetch_tsv(dataset["notes"])
     measure_rows, measure_hash = fetch_tsv(dataset["measures"])
     bars, notes = parse_notes(note_rows, measure_rows)
+    if kind == 'debussy':
+        bars, notes = canonical_debussy_bars(bars, notes)
     assert len(bars) == dataset["barCount"], f"Score size mismatch: {len(bars)}"
     audio, duration, digest = extract_chroma(audio_path)
     print(f"{kind}: {len(bars)} written bars, {len(note_rows)} score notes, audio {duration:.2f}s sha256={digest[:16]}", flush=True)
