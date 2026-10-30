@@ -119,6 +119,11 @@ export function createGramophonePhiTimeline({panel,record}){
  const independentLink=document.createElement('a');independentLink.target='_blank';
  independentLink.rel='noopener noreferrer';independentLink.textContent='Independent annotation source';
  externalReference.append(independentLink);details.append(externalReference);
+ const recordingRights=document.createElement('small');
+ recordingRights.className='record-phi-rights';
+ recordingRights.hidden=true;
+ recordingRights.innerHTML='Test recording: MAESTRO 2008 piano performance, annotated by <a href="https://github.com/fosfrancesco/asap-dataset" target="_blank" rel="noopener noreferrer">ASAP (Foscarin et al.)</a>; converted from the <a href="https://huggingface.co/datasets/ddPn08/maestro-v3.0.0" target="_blank" rel="noopener noreferrer">MAESTRO WAV</a> to Ogg Opus for gallery playback. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>.';
+ details.append(recordingRights);
 
  const hint=document.createElement('small');
  hint.textContent='Choose a marker to hear the preceding 8 seconds. Debussy uses published performance downbeats; Mozart uses score-to-audio analysis independently checked at musical sections. No cues are added.';
@@ -177,6 +182,7 @@ export function createGramophonePhiTimeline({panel,record}){
      'Debussy: the 94-bar score has been matched computationally to this Giorgi Latso recording, but an independently annotated version of this exact performance has not been found.':
      selected?.src==='./audio/mozart-k545-allegro.ogg'?
      'Mozart: this Robin Alciatore performance omits repeats. Independent research places the development at 0:51.27 and recapitulation at 1:13.10, agreeing with our mapping near these landmarks.':'';
+   recordingRights.hidden=selected?.src!==ASAP_DEBUSSY_SOURCE;
    independentLink.href=selected?.src==='./audio/mozart-k545-allegro.ogg'?
      'https://audiolabs.github.io/trackswitch.js/use-cases/repeated-section/':
      'https://github.com/fosfrancesco/asap-dataset/tree/master/Debussy/Images_Book_1/1_Reflets_dans_lEau';
