@@ -52,6 +52,7 @@ export function createGramophonePhiTimeline({panel,record}){
  const explanation=document.createElement('small');
  explanation.textContent='Four nested golden-ratio divisions. These are listening references, not confirmed structural events in the music.';
  details.append(explanation);
+ const timeHeading=document.createElement('small');timeHeading.textContent='Recording time · percentage of duration';details.append(timeHeading);
  const bar=document.createElement('div');
  bar.className='record-phi-bar';bar.setAttribute('role','img');
  bar.setAttribute('aria-label','Progress and four golden-section markers');
@@ -93,6 +94,14 @@ export function createGramophonePhiTimeline({panel,record}){
    scoreRow.append(cell);return cell;
  });
  details.append(scoreRow);
+ const scoreBar=document.createElement('div');scoreBar.className='record-phi-bar record-phi-score-bar';
+ for(const marker of PHI_LISTENING_MARKERS){
+   const line=document.createElement('div');line.className='record-phi-marker '+marker.level;
+   line.style.left=(marker.fraction*100)+'%';scoreBar.append(line);
+ }
+ details.append(scoreBar);
+ const evidence=document.createElement('small');evidence.className='record-phi-evidence';
+ details.append(evidence);
  const hint=document.createElement('small');
  hint.textContent='Time markers seek back 8 seconds. Score markers show approximate written-bar positions; they cannot seek without alignment to this performance. No cues are added.';
  details.append(hint);section.append(details);
@@ -136,6 +145,10 @@ export function createGramophonePhiTimeline({panel,record}){
    if(actual)duration=actual;
    const points=timelineForDuration(duration);
    const score=scorePositionsForTrack(selected?.src);
+   evidence.textContent=selected?.src==='./audio/debussy-reflets-dans-leau.ogg'?
+     'Research example: Debussy’s strongest climax occurs around bar 58, near 61.8% of the 94-bar score.':
+     selected?.src==='./audio/mozart-k545-allegro.ogg'?
+     'Formal example: Mozart’s 28-bar exposition ends near 38.2% of the 73-bar written movement. Repeats may change how this sits in recorded time.':'';
    const bars=score[0]?.bars;
    scoreTitle.textContent=bars?'Written score · '+bars+' bars (not recording time)':
      'Written score · bar count unavailable';
