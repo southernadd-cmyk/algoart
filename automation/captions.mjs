@@ -45,7 +45,7 @@ export function makeCaptions(item) {
   const strategy = strategyName(item.stats, item.mode);
   const watercolour=item.material==='watercolour';
   const oil=item.material==='oil',action=item.material==='action';
-  const heading=`${item.series.toUpperCase()} / ${strategy}${action?(item.shareUrl?.includes('material=action-v4')?' / ACTION PAINTING V4':item.shareUrl?.includes('material=action-v3')?' / ACTION PAINTING V3':item.shareUrl?.includes('material=action-v2')?' / ACTION PAINTING V2':' / ACTION PAINTING V1'):oil?(item.shareUrl?.includes('material=oil-v6')?' / OIL PAINT V6':item.shareUrl?.includes('material=oil-v5')?' / OIL PAINT V5':item.shareUrl?.includes('material=oil-v4')?' / OIL PAINT V4':item.shareUrl?.includes('material=oil-v3')?' / OIL PAINT V3':' / OIL PAINT V1'):watercolour?' / WATERCOLOUR V2S':
+  const heading=`${item.series.toUpperCase()} / ${strategy}${action?(item.shareUrl?.includes('material=action-v4')?' / ACTION PAINTING V4':item.shareUrl?.includes('material=action-v3')?' / ACTION PAINTING V3':item.shareUrl?.includes('material=action-v2')?' / ACTION PAINTING V2':' / ACTION PAINTING V1'):oil?(item.shareUrl?.includes('material=oil-v7')?' / OIL PAINT V7':item.shareUrl?.includes('material=oil-v6')?' / OIL PAINT V6':item.shareUrl?.includes('material=oil-v5')?' / OIL PAINT V5':item.shareUrl?.includes('material=oil-v4')?' / OIL PAINT V4':item.shareUrl?.includes('material=oil-v3')?' / OIL PAINT V3':' / OIL PAINT V1'):watercolour?' / WATERCOLOUR V2S':
     item.material==='watercolor'?' / TISSUE & GRAPHITE':''}`;
   const format = item.settings.orientation === 'portrait' ? 'Portrait study · ' : '';
   const watercolor = item.material === 'watercolor';
@@ -118,4 +118,5 @@ export function makeCaptions(item) {
         `Generated from seed ${item.seed} using golden-ratio composition rules and imperfect ${item.settings.pen} marker strokes.`
   };
 }
+
 

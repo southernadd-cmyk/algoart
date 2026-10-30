@@ -91,7 +91,7 @@ try{
    'Selected artwork link is too long for Bluesky');
  assert([...art.intents.threadsCaption].length<500,
    'Versioned Threads artwork link is too long');
- assert.equal(art.intents.threadsPreviewURL,art.intents.previewURL+'&pv=2',
+ assert.equal(art.intents.threadsPreviewURL,art.intents.previewURL+'&pv=4',
    'Threads must get a fresh cache key');
  assert.equal(art.intents.bluesky.includes(encodeURIComponent(art.intents.caption)),true,
    'The working Bluesky share must remain unchanged');
@@ -189,3 +189,4 @@ try{
  assert.deepEqual(errs,[]);
  console.log('PASS: Instagram removed; authentic deterministic A.stroke logos; Marker font; exact OG social links, Unicode seed, Bluesky limit, restored source settings and mobile layout');
 }finally{await browser.close()}
+
