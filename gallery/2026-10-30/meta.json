@@ -1,11 +1,12 @@
 {
   "version": 1,
   "date": "2026-10-30",
-  "count": 4,
+  "count": 5,
   "series": [
     "Golden Trajectories",
     "Recursive Divisions",
-    "Orbital Studies"
+    "Orbital Studies",
+    "Automatic Marks"
   ],
   "entries": [
     {
@@ -201,6 +202,55 @@
         "grain": 21
       },
       "altText": "Abstract algorithmic marker artwork from PROPORTION PIECE’s Golden Trajectories series. The composition follows a crop trajectory through the upper centre, with forms distributed along the path rather than on a regular grid."
+    },
+    {
+      "id": "2026-10-30-ACL01",
+      "title": "Automatic Marks — Action Painting Study 05",
+      "orientation": "landscape",
+      "material": "action",
+      "seed": "ACL-20261030-01-80125",
+      "mode": "scribble",
+      "series": "Automatic Marks",
+      "imageFile": "2026-10-30-action-landscape-01-scribble-ACL-20261030-01-80125.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACL-20261030-01-80125&mode=scribble&el=46&den=37&cx=56&neg=31&phi=93&rec=7&spi=19&ga=87&nest=25&pen=felt&th=11&wob=41&od=5&op=84&pr=32&dry=8&curve=21&shape=52&overlap=33&rot=86&ln=1&ci=1&re=1&po=1&ar=1&pal=pastel&cols=5&sat=71&bri=47&paper=%23f5f0e6&grain=12&material=action-v4&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "scribble",
+        "series": "Automatic Marks",
+        "seed": "ACL-20261030-01-80125",
+        "elements": 46,
+        "density": 37,
+        "complexity": 56,
+        "negativeSpace": 31,
+        "phiStrength": 93,
+        "recursion": 7,
+        "spiralInfluence": 19,
+        "goldenAngle": 87,
+        "nesting": 25,
+        "pen": "felt",
+        "thickness": 11,
+        "wobble": 41,
+        "overdraw": 5,
+        "opacity": 84,
+        "pressure": 32,
+        "dryness": 8,
+        "curveBias": 21,
+        "shapeAmount": 52,
+        "overlap": 33,
+        "rotation": 86,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "pastel",
+        "colourCount": 5,
+        "saturation": 71,
+        "brightness": 47,
+        "paper": "#f5f0e6",
+        "grain": 12
+      },
+      "altText": "Action painting from PROPORTION PIECE's Automatic Marks system, seed ACL-20261030-01-80125. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
