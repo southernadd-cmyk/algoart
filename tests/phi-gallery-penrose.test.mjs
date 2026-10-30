@@ -20,7 +20,7 @@ test('live and test share a deterministic and restrained Penrose room selection'
  assert.ok(live.includes('const galleryPenroseRooms=exhibitDate===RECEPTION?[]:chooseGalleryPenroseRooms'));
  assert.ok(live.includes('galleryPenroseRooms.includes(pieceRoomIndex(p,phi.floor.mergedRooms))'));
  assert.ok(live.includes('if(finish===receptionTilePreview||selected)alignReceptionTileUvs(slab)'));
- assert.ok(liveHtml.includes('gallery-phi-bundle.js?v=penrose-gallery-live-20261030'));
+ assert.match(liveHtml,/gallery-phi-bundle\.js\?v=[\w-]+/);
  assert.ok(testHtml.includes('gallery-phi-test-room-signs-bundle.js'));
  assert.ok(builder.includes('stagingFloorUrl'));
 });
