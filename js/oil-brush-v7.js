@@ -1,5 +1,5 @@
-// Oil V7 brush: V3 silhouettes and RNG order, with unused batched colour
-// calculations omitted. Independent scratch caches preserve legacy brush state.
+// Oil V7 brush: V3 silhouettes and RNG order, with direct tooth-pattern
+// fills and unused colour calculations omitted. Legacy brushes are unchanged.
 // ALGO/ART Oil Paint V3 production cached tooth compositing contacts — not a released material.
 // Only Oil V2 activates this renderer. V1 keeps its historical paths/pixels.
 // Source mathematics, seeded palettes, protected voids and marks are unchanged.
@@ -51,43 +51,35 @@ function cachedToothPattern(ctx,level){
   const slot=toothSlot();
   return slot.patterns[level]||(slot.patterns[level]=ctx.createPattern(toothStencil(level),'repeat'));
 }
+// Fill the original hair contours directly with canvas-space tooth. The old
+// implementation copied the entire stroke bounding rectangle for each tone
+// band; a closed frame could copy most of the sheet six times per stroke.
+// The repeating tile is 30px at every output scale, matching the old stencil.
+function tintedTooth(ctx,level,color){
+ const slot=toothSlot();
+ if(!slot.tinted)slot.tinted=new Map();
+ const key=level+'|'+color.join(',');
+ let pattern=slot.tinted.get(key);
+ if(pattern)return pattern;
+ const tile=document.createElement('canvas');tile.width=tile.height=30;
+ const g=tile.getContext('2d'),img=g.createImageData(30,30),threshold=.32+.075*level;
+ for(let y=0;y<30;y++)for(let x=0;x<30;x++){
+  const i=(y*30+x)*4,tooth=.5+.5*Math.cos(x*2*Math.PI/5)*Math.cos(y*2*Math.PI/6);
+  img.data[i]=color[0];img.data[i+1]=color[1];img.data[i+2]=color[2];
+  img.data[i+3]=Math.round(clamp((tooth-threshold)*5,0,1)*255);
+ }
+ g.putImageData(img,0,0);pattern=ctx.createPattern(tile,'repeat');
+ if(slot.tinted.size>=256)slot.tinted.clear();slot.tinted.set(key,pattern);
+ return pattern;
+}
 function depositToothed(pig,mask,path,color,opacity,height,level,box){
-  const W=pig.canvas.width,H=pig.canvas.height;
-  const x=clamp(Math.floor(box.x),0,W),y=clamp(Math.floor(box.y),0,H);
-  const right=clamp(Math.ceil(box.x+box.w),x,W);
-  const bottom=clamp(Math.ceil(box.y+box.h),y,H);
-  const w=right-x,h=bottom-y;if(w<=0||h<=0)return;
-  const slot=toothSlot();
-  // Allocate only the stroke bounding box, not the entire artwork.
-  if(!slot.scratch||slot.scratch.width<w||slot.scratch.height<h){
-    // Both slots use the historical resize rule. Growing to the larger of
-    // old/new sizes was tested and CHANGES pixels (scratch size affects
-    // anti-aliasing at its edge), so V4 must not alter it.
-    slot.scratch=document.createElement('canvas');
-    slot.scratch.width=w;slot.scratch.height=h;
-    slot.ctx=slot.scratch.getContext('2d');
-    slot.patterns.length=0;
-  }
-  const toothScratch=slot.scratch;
-  const s=slot.ctx,m=pig.getTransform();
-  s.setTransform(1,0,0,1,-x,-y);
-  s.globalAlpha=1;s.globalCompositeOperation='source-over';
-  s.clearRect(x,y,w,h);
-  s.setTransform(m.a,m.b,m.c,m.d,m.e-x,m.f-y);
-  s.fillStyle='#fff';s.fill(path);
-  s.setTransform(1,0,0,1,-x,-y);
-  s.globalCompositeOperation='destination-in';
-  s.fillStyle=cachedToothPattern(s,level);
-  s.fillRect(x,y,w,h);
-  s.globalCompositeOperation='source-in';
-  s.fillStyle=css(color);s.fillRect(x,y,w,h);
-  s.globalCompositeOperation='source-over';
-  for(const [ctx,alpha] of [[pig,opacity],[mask,height]]){
-    ctx.save();ctx.setTransform(1,0,0,1,0,0);
-    ctx.globalAlpha=clamp(alpha,0,1);
-    ctx.drawImage(toothScratch,0,0,w,h,x,y,w,h);
-    ctx.restore();
-  }
+ for(const [ctx,alpha,col] of [[pig,opacity,color],[mask,height,[255,255,255]]]){
+  ctx.save();
+  const pattern=tintedTooth(ctx,level,col);
+  pattern.setTransform(ctx.getTransform().inverse());
+  ctx.globalAlpha=clamp(alpha,0,1);ctx.fillStyle=pattern;ctx.fill(path);
+  ctx.restore();
+ }
 }
 function deposit(pig,mask,path,color,opacity,height){
   // A true paint footprint: BOTH pigment and height originate in the exact

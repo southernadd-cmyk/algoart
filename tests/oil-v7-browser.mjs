@@ -21,9 +21,17 @@ try{
      core[version===3?'resetToothSlot':'resetV7ToothSlot']('cpu');
      const c=document.createElement('canvas'),m=document.createElement('canvas');c.width=m.width=280;c.height=m.height=220;
      core['drawContactBrushV'+version](c.getContext('2d'),m.getContext('2d'),[{x:35,y:65},{x:130,y:140},{x:235,y:75}],42,[50,95,180],profile,A.makeR('V7-BRUSH-PARITY'),{thickness:.9,drag:.72});
-     images.push(c.toDataURL()+'|'+m.toDataURL());
+     images.push([c,m].map(canvas=>canvas.getContext('2d').getImageData(0,0,280,220).data));
     }
-    if(images[0]!==images[1])throw Error('V7 brush changed V3 silhouettes: '+profile);
+    let total=0,large=0,count=0;
+    for(let layer=0;layer<2;layer++)for(let i=0;i<images[0][layer].length;i++){
+     const diff=Math.abs(images[0][layer][i]-images[1][layer][i]);total+=diff;if(diff>12)large++;count++;
+    }
+    // The direct pattern removes intermediate alpha quantisation. Contours
+    // and tooth frequency stay fixed; tiny antialias/rounding differences
+    // are expected. Large differences must remain under 0.5% of bytes.
+    if(total/count>.75||large/count>.005)throw Error('V7 direct tooth differs excessively: '+profile+' mean '+total/count+' large '+large/count);
+    console.log('V7_BRUSH_FIDELITY '+profile+' mean '+total/count+' large '+large/count);
    }}finally{delete A.oilStageDRefinement;delete A.oilStageCScale;}
   });
  });
