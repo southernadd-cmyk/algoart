@@ -1,8 +1,20 @@
 import {ShaderPass} from 'postprocessing';
 // Paintings and traced sculpture marks are drawn with their original materials.
-export const ART_LAYER=9;
+export const ART_LAYER=9,OPAQUE_DEPTH_LAYER=8;
 export function isArt(o){return !!(o?.isMesh&&(o.userData?.phiArtOriginal||o.userData?.study));}
-export function markArt(scene){let count=0;scene.traverse(o=>{if(isArt(o)){o.layers.enable(ART_LAYER);count++;}});return count;}
+export function isOpaqueOccluder(o){
+ if(!o?.isMesh||isArt(o))return false;
+ const materials=Array.isArray(o.material)?o.material:[o.material];
+ return materials.length>0&&materials.every(m=>m&&!m.transparent&&!m.alphaTest&&m.depthTest!==false);
+}
+export function markArt(scene){
+ let count=0;
+ scene.traverse(o=>{
+  if(isArt(o)){o.layers.enable(ART_LAYER);count++;}
+  else if(isOpaqueOccluder(o))o.layers.enable(OPAQUE_DEPTH_LAYER);
+ });
+ return count;
+}
 export function createArtProtection(T,renderer,scene,camera){
  const samples=Math.min(2,renderer.capabilities.maxSamples||0);
  function make(name,srgb=false){const t=new T.WebGLRenderTarget(1,1,{
@@ -37,7 +49,7 @@ void main(){
    renderer.autoClear=true;renderer.setRenderTarget(original);renderer.render(scene,camera);
    scene.background=null;renderer.setRenderTarget(mask);renderer.setClearColor(0,1);
    renderer.clear(true,true,true);renderer.autoClear=false;
-   scene.overrideMaterial=depth;camera.layers.set(0);renderer.render(scene,camera);
+   scene.overrideMaterial=depth;camera.layers.set(OPAQUE_DEPTH_LAYER);renderer.render(scene,camera);
    scene.overrideMaterial=paint;camera.layers.set(ART_LAYER);renderer.render(scene,camera);
   }finally{
    scene.overrideMaterial=override;scene.background=bg;camera.layers.mask=layers;
