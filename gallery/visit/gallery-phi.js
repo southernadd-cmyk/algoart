@@ -7,7 +7,7 @@ import {addPhiReceptionLivingMonitor,planPhiReceptionMonitorWall} from './phi-re
 import {addPhiTranslationAreaSign,addPhiTowerLiftSign,addPhiLargeMonitorDoorSign} from './phi-translation-area-sign.mjs';
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
-import {createPhiGalleryMusic} from './gallery-music.mjs?v=music-controls-only-20261027';
+import {createPhiGalleryMusic} from './phi-gramophone-music.mjs';
 import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
 import {installReceptionPenroseInlay} from './reception-penrose-inlay.mjs';
 import {chooseGalleryPenroseRooms,prepareGalleryPenroseMaterial,pieceRoomIndex} from './phi-gallery-penrose-floor.mjs';
@@ -2691,6 +2691,7 @@ function phiDoorBlocked(x,z){
    Math.abs(p.x-entrance.centre)>.63&&Math.abs(p.x-entrance.centre)<1.8;
 }
 function updateMovement(dt) {
+  if(phiGalleryMusic?.isOpen?.()){pressed.clear();lookPressed.clear();touchPressed.clear();return;}
   if (!plan || !welcome.hidden || !$('lift').hidden) return;
   // Look remains responsive during physical travel; only translation is locked.
   // Never snap the rig back to the old floor while its cabin is moving.

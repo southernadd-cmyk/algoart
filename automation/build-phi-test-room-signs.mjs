@@ -23,10 +23,6 @@ replace("history.replaceState(null,'',date===RECEPTION?location.pathname:'?date=
 // The staging archive can be updated after publication; never force-cache its HTML.
 replace('fetchGalleryText(url,{cache}),',"fetchGalleryText(url,{cache:'no-store'}),");
 
-// Do not keep walking behind the modal, including held touch/gamepad input.
-replace('function updateMovement(dt) {',
- 'function updateMovement(dt) {\n  if(phiGalleryMusic?.isOpen?.()){pressed.clear();lookPressed.clear();touchPressed.clear();return;}');
-
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
