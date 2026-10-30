@@ -1,3 +1,4 @@
+import {applyPhiRoomLighting} from './phi-room-lighting.mjs';
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {advanceLiftDoor} from './phi-lift-motion.mjs';
 import {addPhiDeskHologram} from './phi-desk-hologram.mjs';
@@ -511,6 +512,7 @@ for(const material of [...Object.values(galleryFinish),dark,frame,skylightGlass,
   if(material?.isMaterial)material.userData.galleryPersistent=true;
 }
 const exhibitLightTargets=[];
+const phiRoomLightEntries=[];
 const exhibitSpotPool=Array.from({length:5},()=>{
   const light=new THREE.SpotLight('#fff6e8',0,9,.42,.76,1.7);
   scene.add(light,light.target);
@@ -1452,6 +1454,7 @@ function queuePhiFurnishings(phi,furnishings,elevation){
 }
 function constructPhiGallery(layout,studies){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
+ phiRoomLightEntries.length=0;
  const staticArchitecture=[];
  const staticBlock=(...args)=>{const mesh=block(...args);staticArchitecture.push(mesh);return mesh;};
  if(globalThis.__phiReceptionTilePreview&&!receptionTilePreview)receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});
@@ -1595,6 +1598,7 @@ function constructPhiGallery(layout,studies){
   light.position.set(centre.x,elevation+ROOM_HEIGHT-.2,centre.z);
   light.target.position.set(centre.x,elevation+1.1,centre.z);
   scene.add(light,light.target);
+  if(exhibitDate!==RECEPTION)phiRoomLightEntries.push({light,mount,fallback,cell:{...cell},power:light.intensity});
  }
  // Put visible portal frames on the exact holes created in the collision walls.
  for(const d of [...phi.circulation.doors,...phi.circulation.bridgePortals]){
@@ -2248,6 +2252,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   try{
     constructPhiGallery(plan,studyList);
     if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);
+    applyPhiRoomLighting(phiRoomLightEntries,plan.phi?.world);
     phiGalleryMusic.setEmitters(phiSpeakerEmitters);
   }catch(error){
     // Remove partially constructed destination objects before recovery.

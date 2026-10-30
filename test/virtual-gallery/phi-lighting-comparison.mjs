@@ -1,18 +1,6 @@
-// Test-tower experiment. Source lighting, meshes and artwork stay unchanged.
-export const PHI=(1+Math.sqrt(5))/2;
-export function planPhiRoomLighting(entries,toWorld=(x,z)=>({x,z})){
- const ranked=entries.map((entry,index)=>({entry,index})).sort((a,b)=>b.entry.cell.w*b.entry.cell.h-a.entry.cell.w*a.entry.cell.h||a.index-b.index);
- const primary=new Set(ranked.slice(0,Math.ceil(entries.length/2)).map(row=>row.index));
- const weights=entries.map((_,i)=>primary.has(i)?PHI:1);
- const total=entries.reduce((sum,entry)=>sum+entry.power,0);
- const scale=total/(weights.reduce((sum,w)=>sum+w,0)||1);
- return entries.map((entry,i)=>{
-  const {cell}=entry;
-  const fx=i%2?1/PHI:1-1/PHI, fz=1-fx;
-  const point=toWorld(cell.x+cell.w*fx,cell.z+cell.h*fz);
-  return {x:point.x,z:point.z,power:weights[i]*scale,primary:primary.has(i)};
- });
-}
+// Test-only comparison; both modes share the production lighting planner.
+import {planPhiRoomLighting} from '../../gallery/visit/phi-room-lighting.mjs';
+export {PHI,planPhiRoomLighting} from '../../gallery/visit/phi-room-lighting.mjs';
 export function createPhiLightingComparison(){
  let entries=[],world=(x,z)=>({x,z}),mode='current',ready=false;
  const panel=document.createElement('fieldset');

@@ -66,3 +66,28 @@ test('switching restores exact light, target and fixture positions across floor 
   delete globalThis.__phiLightingComparison;
  }
 });
+
+import {applyPhiRoomLighting} from '../gallery/visit/phi-room-lighting.mjs';
+test('live lighting matches the approved planner on rotated floors and preserves fixture offsets',()=>{
+ const world={toWorld:(x,z)=>({x:z+21,z:-x-9})};
+ const lights=entries.map(entry=>{
+  const point=world.toWorld(entry.cell.x+entry.cell.w/2,entry.cell.z+entry.cell.h/2);
+  const light=new THREE.SpotLight(0xfff3df,12);
+  const mount=new THREE.Group(),fallback=new THREE.Group();
+  light.position.set(point.x,9,point.z);light.target.position.set(point.x,6,point.z);
+  mount.position.set(point.x,9.2,point.z);fallback.position.set(point.x,9.1,point.z);
+  return {...entry,light,mount,fallback};
+ });
+ const planned=planPhiRoomLighting(lights,world.toWorld);
+ applyPhiRoomLighting(lights,world);
+ lights.forEach((entry,i)=>{
+  assert.ok(Math.abs(entry.light.position.x-planned[i].x)<1e-10);
+  assert.ok(Math.abs(entry.light.position.z-planned[i].z)<1e-10);
+  assert.equal(entry.light.intensity,planned[i].power);
+  assert.equal(entry.mount.position.x,entry.light.position.x);
+  assert.equal(entry.fallback.position.z,entry.light.position.z);
+  assert.equal(entry.light.target.position.y,6);
+  assert.equal(entry.light.castShadow,false);
+ });
+ assert.deepEqual(applyPhiRoomLighting([],world),[]);
+});
