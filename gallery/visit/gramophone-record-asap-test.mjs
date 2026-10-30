@@ -1,7 +1,7 @@
 // Test tower only: retain the existing Mozart performance, but substitute the
 // fully annotated ASAP/MAESTRO 2008 performance of Debussy's Reflets dans l'eau.
 // Production gallery-music.mjs still imports the original gramophone-record.mjs.
-import {createGramophoneRecord as makeRecord,RECEPTION_RECORD} from './gramophone-record.mjs';
+import {createGramophoneRecord as makeRecord,RECEPTION_RECORD} from './gramophone-record.mjs?v=selectable-tracks-20261027';
 export const RECEPTION_RECORD_ASAP_TEST=Object.freeze([
  Object.freeze({
   ...RECEPTION_RECORD[0],
