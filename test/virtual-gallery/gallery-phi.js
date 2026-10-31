@@ -188,7 +188,8 @@ try {
 const phiStartupLoading=trackGalleryLoading(THREE.DefaultLoadingManager);
 const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
-  startAfter:window.__galleryEarly?.tower
+  startAfter:window.__galleryEarly?.tower,
+  renderer // Test-only optional KTX2 decoding; live material bank is untouched.
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
