@@ -35,6 +35,7 @@ import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
+import {createPhiGpuProfiler} from './phi-gpu-profiler.mjs';
 import {installPhiShadowRenderProbe} from './phi-shadow-render-probe.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {installPhiComposerPassProfiler} from './phi-postfx-pass-profiler.mjs';
@@ -202,6 +203,9 @@ if(phiTextureBenchCache)THREE.DefaultLoadingManager.setURLModifier(
   url=>phiTextureBenchCache.stamp(url)
 );
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
+// TEST ONLY: opt-in asynchronous GPU timings alongside CPU render timings.
+const phiGpuProfiler=createPhiGpuProfiler(renderer,{enabled:new URLSearchParams(location.search).has('gpuprofile')});
+if(phiGpuProfiler)window.__phiGpuProfile=phiGpuProfiler;
 // Match the approved live 16-mesh reveal by default; ?liftstage=0 is the control.
 const phiStageArrival=new URLSearchParams(location.search).get('liftstage')!=='0';
 // The reliable two-rAF spacing stays in place for all fixed batch sizes.
@@ -3171,7 +3175,7 @@ function tick() {
   phiReceptionDesk?.hologram?.update(clock.elapsedTime);
   if(!$('lift').hidden){
    const renderAt=phiLiftProfiler?.state.active||(phiStageArrival&&phiLiftBatchMode!=='legacy')?performance.now():null;
-   phiPostFX.render(dt,null);
+   phiGpuProfiler?.begin();   try{phiPostFX.render(dt,null);}   finally{phiGpuProfiler?.end();}
    const renderMs=renderAt===null?null:performance.now()-renderAt;
    if(phiLiftProfiler?.state.active&&renderMs!==null)phiLiftProfiler.record('render-frame',renderMs);
    phiArrivalMeshes.renderedFrame(renderMs);
@@ -3199,7 +3203,7 @@ function tick() {
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
   const renderAt=phiLiftProfiler?.state.active||(phiStageArrival&&phiLiftBatchMode!=='legacy')?performance.now():null;
-  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
+  phiGpuProfiler?.begin();  try{phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);}  finally{phiGpuProfiler?.end();}
   const renderMs=renderAt===null?null:performance.now()-renderAt;
   if(phiLiftProfiler?.state.active&&renderMs!==null)phiLiftProfiler.record('render-frame',renderMs);
   phiArrivalMeshes.renderedFrame(renderMs);
