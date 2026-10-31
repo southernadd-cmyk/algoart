@@ -203,14 +203,14 @@ if(phiTextureBenchCache)THREE.DefaultLoadingManager.setURLModifier(
 );
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
 const phiStageArrival=new URLSearchParams(location.search).get('liftstage')==='1';
-// Legacy 20 meshes / two rAF callbacks remains the A/B control.
-// ?liftbatch=adaptive: one completed render per batch, dynamically sized.
-// ?liftbatch=8/12/16/20/24/32: fixed size, one completed render per batch.
+// The reliable two-rAF spacing stays in place for all fixed batch sizes.
+// ?liftbatch=16 uses the original method with smaller groups.
+// ?liftbatch=adaptive is retained as an explicitly opt-in failed experiment;
+// software-renderer benchmarks showed it added large delays. Never default.
 const phiLiftBatchChoice=new URLSearchParams(location.search).get('liftbatch');
 const phiLiftBatchFixed=[8,12,16,20,24,32].includes(Number(phiLiftBatchChoice))
  ?Number(phiLiftBatchChoice):null;
-const phiLiftBatchMode=phiLiftBatchChoice==='adaptive'?'adaptive':
- phiLiftBatchFixed!==null?'render':'legacy';
+const phiLiftBatchMode=phiLiftBatchChoice==='adaptive'?'adaptive':'legacy';
 const phiLiftBatchSize=phiLiftBatchMode==='adaptive'?12:phiLiftBatchFixed??20;
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
