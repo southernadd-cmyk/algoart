@@ -1829,24 +1829,6 @@ function constructPhiGallery(layout,studies){
   deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
   const square=phiSquare.addTo(scene,{doorway,outward,elevation});phiSquareObstacles.push(...square.obstacles);
   window.__phiPlaza={centre:plaza.centre,benchCount:8,monumentCount:2,visitorSlots:2,tagWalls:square.walls,squareMonumentCount:square.monuments,tags:square.tags};
-  // Exterior marker-font sign, mounted above the public doorway on the
-  // reception facade and transformed with the rest of the ground floor.
-  if(entrance){
-   const plaque=document.createElement('canvas');plaque.width=1536;plaque.height=176;
-   const lettering=plaque.getContext('2d');
-   lettering.fillStyle='#303f39';lettering.fillRect(0,0,1536,176);
-   lettering.fillStyle='#f2efe3';lettering.textAlign='center';
-   lettering.font='120px "AlgoArt Marker", Georgia, serif';
-   lettering.fillText('PROPORTION PIECE',768,128,1440);
-   const map=new THREE.CanvasTexture(plaque);map.colorSpace=THREE.SRGBColorSpace;
-   const markerSign=new THREE.Mesh(new THREE.PlaneGeometry(7.4,.85),
-    new THREE.MeshBasicMaterial({map,side:THREE.DoubleSide}));
-   markerSign.position.set(doorway.x,elevation+ROOM_HEIGHT+.15,doorway.z-.14);
-   markerSign.rotation.y=Math.PI; // Canvas front must face south towards the square.
-   markerSign.name='phi-exterior-marker-sign';
-   scene.add(markerSign);
-   window.__phiExteriorSign=true;
-  }
   // Permit visitors to exit the lobby onto the open paved square.
   phi.plaza=plaza;
   phi.arrivalDoor=doorway;
