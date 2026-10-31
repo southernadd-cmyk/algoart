@@ -120,3 +120,10 @@ test('artwork protection mask consumes compositor source depth without architect
  const normalRender=fx.indexOf('compositor.addPass(normals)');
  assert.ok(originalRender>=0&&originalRender<maskRender&&maskRender<normalRender);
 });
+
+test('empty floors skip selective bloom without disabling it when returning to reception',()=>{
+ const fx=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
+ assert.match(fx,/found\.length&&cfg\.glowMode!=='off'&&cfg\.bloomIntensity>0/);
+ assert.match(fx,/if\(on&&selection&&now-lastGlowScan>1400\)/);
+ assert.doesNotMatch(fx,/if\(on&&effects\?\.selectedPass\.enabled&&now-lastGlowScan/);
+});

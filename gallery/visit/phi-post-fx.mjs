@@ -174,6 +174,12 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   const found=phiGlowTargets(scene),ids=found.map(o=>o.id).join(',');
   if(ids!==selectedIds){selection.set(found);selectedIds=ids;}
   stats.selectedGlowMeshes=found.length;
+  // Empty daily floors contain no installation sources. Skip the entire
+  // selective-bloom pass, not merely its output: no visible effect is lost.
+  if(effects?.selectedPass&&preset!=='original'){
+   const cfg=settings[preset];
+   effects.selectedPass.enabled=!!(found.length&&cfg.glowMode!=='off'&&cfg.bloomIntensity>0);
+  }
  };
  function build(){
   const compositor=new EffectComposer(renderer,{frameBufferType:THREE.HalfFloatType,multisampling:0});
@@ -271,7 +277,9 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
    if(elapsed>0&&elapsed<1000){const bucket=frames[mode];bucket.push(elapsed);if(bucket.length>240)bucket.shift();}
   }
   previous=now;lastMode=mode;
-  if(on&&effects?.selectedPass.enabled&&now-lastGlowScan>1400){scanGlow();lastGlowScan=now;}
+  // Re-scan even when the pass is disabled, so returning to reception
+  // automatically restores installation glow.
+  if(on&&selection&&now-lastGlowScan>1400){scanGlow();lastGlowScan=now;}
   if(effects?.focusPass){
    const s=settings[preset],dofEnabled=on&&s&&(s.dofMode==='preview'||(s.dofMode==='inspection'&&!!focus))&&s.bokeh>0;
    effects.focusPass.enabled=!!dofEnabled;stats.focusActive=!!dofEnabled;
