@@ -332,7 +332,7 @@ test('final warmup skips only already uploaded textures and retains complete com
 test('test-only reuse A/B switch leaves original painting fidelity and door interlock intact',()=>{
  const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
  assert.match(src,/get\('liftreuse'\)==='1'/);
- assert.match(src,/get\('liftpipeline'\)!=='0'/);
+ assert.match(src,/get\('liftpipeline'\)==='1'/);
  assert.match(src,/const phiUploadPainting=texture=>\{renderer\.initTexture\(texture\);phiAlreadyUploaded\.add\(texture\);\}/);
  assert.match(src,/alreadyUploaded:phiIsUploaded/);
  assert.match(src,/isAlreadyUploaded:phiIsUploaded/);
