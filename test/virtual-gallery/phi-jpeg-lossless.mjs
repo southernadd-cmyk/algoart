@@ -14,9 +14,14 @@ export function createJPEGParityBank(THREE,renderer){
   const date=path.match(/\/gallery\/(\d{4}-\d{2}-\d{2}\/[^/]+\.jpe?g)$/i);
   const release=path.match(/\/gallery\/release-art\/([^/]+\.jpe?g)$/i);
   const local=path.match(/\/test\/virtual-gallery\/([^?]+\.jpe?g)$/i);
+  // Test HTML deliberately has <base href="../../gallery/visit/">, so
+  // original relative JPEG paths resolve to live's mirrored assets.
+  // Always map their KTX2 equivalents to the isolated TEST-only files.
+  const mirrored=path.match(/\/gallery\/visit\/((?:textures|assets)\/[^?#]+\.jpe?g)$/i);
   if(date){asset='gallery/'+date[1];artwork=true;}
   else if(release){asset='gallery/release-art/'+release[1];artwork=true;}
   else if(local)asset='test/virtual-gallery/'+local[1];
+  else if(mirrored)asset='test/virtual-gallery/'+mirrored[1];
   else if(url.hostname==='dl.polyhaven.org'){
    const name=path.split('/').at(-1)?.replace(/\.jpe?g$/i,'');
    if(poly.has(name))asset='external/'+name;
