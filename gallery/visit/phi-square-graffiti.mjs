@@ -5,6 +5,7 @@ import {createTowerGraffiti,paintExteriorUnderstroke} from './exterior-graffiti.
 import {planSquareWallAtlases,paintSquareWall,SQUARE_ATLAS_PREFIX} from './square-graffiti-atlas.mjs';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 import {Reflector} from 'three/addons/objects/Reflector.js';
+import {PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs';
 export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-wall-bake-v7':'phi-square-live-wall-bake-v10')+'|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
@@ -228,6 +229,7 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false,graffitiEna
       piece(3.2,.44,3.2/((1+Math.sqrt(5))/2),0,.22,0,paving);
       piece(2.78,.07,2.78/((1+Math.sqrt(5))/2),0,.47,0,brickwork);
       piece(3.15,.11,.42,0,.52,-.65,paving);
+      if(PHI_EXTERIOR_PLANTING_ENABLED){
       // The planted seats use varied low shrubs rather than identical stone-like
       // icosahedrons. Geometry/materials are shared across all four beds.
       const foliage=[
@@ -265,12 +267,13 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false,graffitiEna
         leaf.rotation.z=Math.cos(a)*.38;group.add(leaf);
        }
       }
+      }
      }
     }
    }
    for(const manager of managers)manager.addTo(root,[],0);
    parent.add(root);activeRoot=root;
-   if(globalThis.__phiReceptionTestRefresh)globalThis.__phiSquarePlantDiagnostics={revision:'visible-tall-beds-20261027',tallStems:root.userData.tallPlantStemCount||0,plantedBeds:4,visible:root.visible,worldY:root.position.y};
+   if(globalThis.__phiReceptionTestRefresh)globalThis.__phiSquarePlantDiagnostics={revision:'visible-tall-beds-20261027',tallStems:root.userData.tallPlantStemCount||0,plantedBeds:PHI_EXTERIOR_PLANTING_ENABLED?4:0,visible:root.visible,worldY:root.position.y};
    const obstacles=objects.map(o=>{const p=rotate(o.x,o.z,root.rotation.y);return {...o,x:p.x+doorway.x,z:p.z+doorway.z,yaw:o.yaw+root.rotation.y};});
    if(globalThis.__phiReceptionTestRefresh){
     for(const x of [-13.8,13.8])for(const z of [8,21]){
