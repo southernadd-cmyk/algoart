@@ -91,6 +91,23 @@ replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;'
 // The CSM finish applies to all frames, regardless of room.
 replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;',
   " const frameRoomCounts=new Map();\n for(const p of phi.exhibition.paintings)frameRoomCounts.set(p.room,(frameRoomCounts.get(p.room)||0)+1);\n const frameStudyRoom=exhibitDate===RECEPTION?-1:([...frameRoomCounts].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]?.[0]??-1);\n if(GALLERY_DEBUG)window.__phiArchitecturalFrameStudy={room:frameStudyRoom,paintings:frameRoomCounts.get(frameStudyRoom)||0};\n for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;");
+
+// Bounded lighting review: keep phi fixtures; cache one sun and one room map.
+replace("import * as THREE from 'three';",
+ "import {createPhiLightingStudy} from '../../test/virtual-gallery/phi-lighting-study.mjs';\nimport * as THREE from 'three';");
+replace("scene.add(new THREE.HemisphereLight('#eaf1ff', '#72796f', 1.08));",
+ "const phiLightingOriginal=new URLSearchParams(location.search).get('lighting')==='original';\nscene.add(new THREE.HemisphereLight('#eaf1ff', '#72796f', phiLightingOriginal?1.08:.90));");
+replace("const sun = new THREE.DirectionalLight('#fff5e5', 2.20);",
+ "const sun = new THREE.DirectionalLight('#fff5e5', phiLightingOriginal?2.20:2.35);");
+replace('const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});',
+ 'const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});\nconst phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;');
+replace('const light=new THREE.SpotLight(0xfff3df,12,12,.66,.8,1.5);',
+ "const light=new THREE.SpotLight(0xfff3df,phiLightingOriginal?12:14,12,phiLightingOriginal?.66:.70,phiLightingOriginal?.8:.90,1.5);light.name='phi-shadow-room-light';");
+replace('power:17});','power:phiLightingOriginal?17:19});');
+replace('    applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);',
+ '    applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);\n    phiLightingStudy?.editionChanged(elevation);');
+replace('function tick() {','function tick() {\n  phiLightingStudy?.update();');
+
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
