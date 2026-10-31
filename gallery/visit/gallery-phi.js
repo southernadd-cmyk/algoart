@@ -1,3 +1,4 @@
+import {planPoolSculptures} from './phi-pool-composition.mjs';
 import {createPhiLightingStudy} from './phi-room-lighting-renderer.mjs';
 import {addPhiRoomLuminaire} from './phi-room-luminaires.mjs';
 import {createPhiFrameStudyMaterial} from './phi-frame-material.mjs';
@@ -1806,19 +1807,14 @@ function constructPhiGallery(layout,studies){
     lowPower:galleryFinish.lowPower,protectedLayouts:[],approach,plaza});
   const outdoor=addPhiOutdoorPlants(THREE,scene,exterior.plaza||plaza,scene.children.filter(o=>!beforeLandscape.has(o)));
   phiOutdoorPlants=outdoor.holders;phiSquareObstacles.push(...outdoor.obstacles);
-  // The two original roof landmarks now stand on the paved forecourt in
-  // front of the long south-facing brick façade, to one side of the public
-  // entrance. They face arriving visitors and leave the doorway approach clear.
+  // Pool-centred sculpture composition: phi-related radii and golden-angle separation.
   if(currentFloor===0){
    const monuments=addPermanentPlazaSculptures(scene,plaza);
-   const offsets=[6.9,14.1]; // Metres along the frontage, away from the door
-   const facadeDistance=4.7; // Metres outward onto the paving, not roof height
-   const face=Math.atan2(outward.x,outward.z);
+   const placements=planPoolSculptures({doorway,outward});
    monuments.forEach((m,i)=>{
-    const x=doorway.x+transverse.x*offsets[i]+outward.x*facadeDistance;
-    const z=doorway.z+transverse.z*offsets[i]+outward.z*facadeDistance;
+    const {x,z,yaw}=placements[i];
     m.position.set(x,elevation,z);
-    m.rotation.y=face+(i===0?.10:-.10);
+    m.rotation.y=yaw;
     // These are wide, fixed ground-level works. Use normal rectangular
     // collision bounds rather than letting visitors walk through the frames.
     // Preserve a generous corridor in front of the reception doorway.

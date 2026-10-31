@@ -1,3 +1,4 @@
+import {POOL_COMPOSITION} from './phi-pool-composition.mjs';
 // Exterior square graffiti consists only of lowercase phi marks, with eight
 // lettering forms and independently varied writer profiles on golden-angle spirals.
 import {createTag,LETTERING_FORMS,HANDS,VERSION,PHI} from '../../test/graffiti/tag-engine.mjs?v=sprayed-throwups-v7';
@@ -127,7 +128,7 @@ export function createPhiSquare(THREE,{brick,concrete,lowPower=false,graffitiEna
     };
     // A shallow reflecting pool at the golden-spiral core. No extra texture downloads.
     // The basin is offset from the entrance sightline, with a continuous solid rim.
-    const cx=3,cz=18,w=7.4,d=w/((1+Math.sqrt(5))/2);
+    const {x:cx,z:cz,width:w,depth:d}=POOL_COMPOSITION;
     // Lightweight procedural water: sky/architecture-toned glints, two ripple scales,
     // and angle-dependent reflectance. No render target, texture fetch, or extra light.
     const water=new THREE.ShaderMaterial({
