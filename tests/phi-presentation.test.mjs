@@ -83,12 +83,12 @@ test('square objects leave the entrance, frontage benches and central route clea
  assert.equal(clearOfPhiSquare([diagonal],1,-1),false);assert.equal(clearOfPhiSquare([diagonal],1,1),true);
 });
 
-import {planPhiOutdoorPlants,addPhiOutdoorPlants} from '../gallery/visit/phi-outdoor-plants.mjs';
+import {planPhiOutdoorPlants,addPhiOutdoorPlants,PHI_EXTERIOR_PLANTING_ENABLED} from '../gallery/visit/phi-outdoor-plants.mjs';
 import {planPhiReception} from '../gallery/visit/phi-reception-layout.mjs';
 import {fitPhiWallModel} from '../gallery/visit/phi-model-assets.mjs';
 import {planCuratedPhiArtwork} from '../gallery/visit/phi-curator.mjs';
 function glbMetadata(name){const b=readFileSync(new URL('../gallery/visit/models/'+name,import.meta.url));assert.equal(b.readUInt32LE(8),b.length);return {bytes:b.length,doc:JSON.parse(b.subarray(20,20+b.readUInt32LE(12)).toString())};}
-test('outdoor source plants are optimised, credited, and replace original planting groups',async()=>{
+test('exterior plant assets remain reusable and active planting switch is respected',async()=>{
  const asset=glbMetadata('plants-scene-gallery-optimized.glb');assert.ok(asset.bytes<6000000);assert.match(asset.doc.asset.extras.author,/Nicholas-3D/);assert.match(asset.doc.asset.extras.license,/CC-BY-4.0/);
  assert.ok(asset.doc.meshes.reduce((n,m)=>n+m.primitives.reduce((a,p)=>a+asset.doc.accessors[p.indices].count/3,0),0)<50000);
  const plaza={centre:{x:0,z:0},outward:{x:0,z:1},transverse:{x:1,z:0},halfWidth:30,level:0};
@@ -103,6 +103,13 @@ test('outdoor source plants are optimised, credited, and replace original planti
  const bench=new THREE.Mesh(new THREE.BoxGeometry(1.2,.57,2.7),new THREE.MeshBasicMaterial());bench.position.set(placements[0].x,.2,placements[0].z);landscape.add(bench);
  const source=new THREE.Group();source.add(new THREE.Mesh(new THREE.BoxGeometry(1,2,1),new THREE.MeshBasicMaterial()));
  const result=addPhiOutdoorPlants(THREE,scene,plaza,[landscape],{loadModel:()=>Promise.resolve(source)});await result.ready;
+ if(!PHI_EXTERIOR_PLANTING_ENABLED){
+  assert.deepEqual(result.holders,[]);
+  assert.deepEqual(result.obstacles,[]);
+  assert.equal(scene.children.length,1,'No exterior plant holders are introduced');
+  assert.equal(bench.visible,true,'Original seating is retained');
+  return;
+ }
  assert.ok(originals.every(o=>!o.visible));assert.equal(bench.visible,true);assert.ok(result.holders.every(o=>o.userData.modelLoaded&&o.userData.replaced===4));
  scene.updateMatrixWorld(true);
  for(const holder of result.holders){
