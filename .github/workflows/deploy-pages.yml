@@ -83,6 +83,9 @@ jobs:
         run: |
           npm run gallery:bundle
           npm run gallery:bundle:phi
+          # The test URL has its own bundle; rebuild it rather than serving stale doors.
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
           npm run gallery:bundle:post-test
           node automation/build-phi-test-room-signs.mjs
           node --check gallery/visit/gallery-phi-test-room-signs-bundle.js

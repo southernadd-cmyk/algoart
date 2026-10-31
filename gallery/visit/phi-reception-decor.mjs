@@ -1,7 +1,7 @@
 import {addPhiPubSign} from './phi-pub-sign.mjs';
 import {addPhiOfficeFrontage} from './phi-office-reception.mjs?v=gallery-reception-20261027';
 import {loadPhiDecorAsset as asset,fitPhiDecorAsset as fit} from './phi-model-assets.mjs';
-import {createGothicSurroundShape} from './phi-gothic-door-profile.mjs';
+import {createGothicSurroundShape,GOTHIC_DOOR_OUTLINE} from './phi-gothic-door-profile.mjs';
 import {renderVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 // Optional shared CC-BY props for the experimental reception. Loading never
 // blocks the floor planner or lift. Credits are installed separately below.
@@ -80,6 +80,29 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMat
  for(const x of [-1.46,1.46]){const jamb=new THREE.Mesh(new THREE.BoxGeometry(.28,5.2,.34),stone);jamb.position.set(x,2.6,.045);root.add(jamb);}
  const width=2.147,hinges=[new THREE.Group(),new THREE.Group()];
  const fallbackMaterial=new THREE.MeshStandardMaterial({color:'#514132',roughness:.85});
+ // The removed exterior sign used to conceal the point above the movable
+ // 3.8 m leaves. Fill that opening with fixed timber, not a new sign.
+ // Interpolate against the same measured arch outline as the stone surround:
+ // the head overlaps the surround slightly so neither side shows daylight.
+ const headBottom=3.76;
+ const shoulder=GOTHIC_DOOR_OUTLINE.findIndex(([x,y])=>x<0&&y>=headBottom);
+ const [sx,sy]=GOTHIC_DOOR_OUTLINE[shoulder-1];
+ const [ex,ey]=GOTHIC_DOOR_OUTLINE[shoulder];
+ const headHalfWidth=-(sx+(ex-sx)*(headBottom-sy)/(ey-sy));
+ const upperShape=new THREE.Shape();
+ upperShape.moveTo(-headHalfWidth-.025,headBottom);
+ for(const [x,y] of GOTHIC_DOOR_OUTLINE){
+  if(y>headBottom)upperShape.lineTo(x*1.025,y>=4.5?y+.015:y);
+ }
+ upperShape.lineTo(headHalfWidth+.025,headBottom);
+ upperShape.closePath();
+ const upperHead=new THREE.Mesh(
+  new THREE.ExtrudeGeometry(upperShape,{depth:.15,bevelEnabled:false,steps:1}),
+  fallbackMaterial
+ );
+ upperHead.position.z=-.075;
+ upperHead.name='phi-gothic-fixed-pointed-door-head';
+ root.add(upperHead);
  const fallback=[];
  hinges.forEach((hinge,i)=>{hinge.position.x=(i?1:-1)*width/2;root.add(hinge);
   const leaf=new THREE.Mesh(new THREE.BoxGeometry(width/2-.04,3.8,.09),fallbackMaterial);leaf.position.set((i?-1:1)*width/4,1.9,0);hinge.add(leaf);fallback.push(leaf);
