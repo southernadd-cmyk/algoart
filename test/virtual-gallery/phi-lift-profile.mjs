@@ -19,8 +19,12 @@ export function createPhiLiftProfiler({enabled=false,now=()=>performance.now()}=
    ...(details?{details}: {})});
  }
  function tick(){
+  // After door release, keep the finished visit immutable. Previously this
+  // recorded post-visit spikes under 'doors-opening' indefinitely and could
+  // make the journey appear much longer than it actually was.
+  if(!state.active||!state.current)return;
   const at=now(),visit=state.current;
-  if(visit&&lastTick){
+  if(lastTick){
    const delta=at-lastTick;
    if(delta>=80){
     visit.frames.push({at,elapsedMs:+(at-visit.start).toFixed(1),
