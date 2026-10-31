@@ -19,7 +19,7 @@ import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
 import {addPhiGoldenReceptionDesk,addPhiGoldenReceptionBench} from './phi-reception-phi-furniture-study.mjs';
-import {addPhiOutdoorPlants} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
+import {addPhiOutdoorPlants,PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
 import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=entry-performance-20261027';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
@@ -1166,12 +1166,14 @@ function createGalleryArrival(room){
     }
   };
   for(const sideSign of [-1,1]){
-    const bed=doorway.clone().addScaledVector(outward,8).addScaledVector(transverse,sideSign*4.65);
-    place(1.75,.56,1.75,bed.x,room.y+.20,bed.z,galleryFinish.stone);
-    addPlanterShadow(bed.x,bed.z);
-    const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.87,1),
-      new THREE.MeshStandardMaterial({color:'#526d55',roughness:1,flatShading:true}));
-    shrub.position.set(bed.x,room.y+1.02,bed.z);scene.add(shrub);
+    if(PHI_EXTERIOR_PLANTING_ENABLED){
+      const bed=doorway.clone().addScaledVector(outward,8).addScaledVector(transverse,sideSign*4.65);
+      place(1.75,.56,1.75,bed.x,room.y+.20,bed.z,galleryFinish.stone);
+      addPlanterShadow(bed.x,bed.z);
+      const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.87,1),
+        new THREE.MeshStandardMaterial({color:'#526d55',roughness:1,flatShading:true}));
+      shrub.position.set(bed.x,room.y+1.02,bed.z);scene.add(shrub);
+    }
     const lamp=doorway.clone().addScaledVector(outward,3.2).addScaledVector(transverse,sideSign*3.25);
     // Retain these two simple meshes only until the shared detailed GLB
     // arrives; fit the new cast-iron model to the actual entrance floor.
