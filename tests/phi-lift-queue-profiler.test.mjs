@@ -254,3 +254,87 @@ test('painting arrival gate runs before door release, without reducing source fi
  assert.match(source,/const sources=\[url,study\.image\]/);
  assert.match(source,/texture\.colorSpace=THREE\.SRGBColorSpace/);
 });
+
+test('pre-uploaded painting maps complete the door interlock without duplicate GPU work or frames',async()=>{
+ const image={width:1400,height:1000},texture={isTexture:true,image};
+ const attached={parent:{},userData:{},material:{map:texture}};
+ let uploads=0,frames=0;
+ const successfullyUploaded=new WeakSet([texture]);
+ const gate=createPhiPaintingArrivalGate({
+  date:'2026-10-30',expected:1,
+  alreadyUploaded:tex=>successfullyUploaded.has(tex),
+  upload:()=>{uploads++;},
+  nextFrame:async()=>{frames++;}
+ });
+ gate.register('painting',attached).ready(texture);
+ const report=await gate.wait({timeoutMs:10});
+ assert.equal(report.complete,true);
+ assert.equal(report.reused,1);
+ assert.equal(report.arrivalUploads,0);
+ assert.equal(uploads,0);
+ assert.equal(frames,0);
+ assert.equal(attached.material.map,texture,'Source painting is unchanged');
+});
+
+test('a marked texture on a missing or different wall still fails closed',async()=>{
+ const texture={isTexture:true,image:{width:1400,height:1000}};
+ const gate=createPhiPaintingArrivalGate({
+  date:'2026-10-30',expected:1,
+  alreadyUploaded:()=>true,upload:()=>{throw Error('Must not upload');},
+  nextFrame:async()=>{}
+ });
+ const face={parent:{},userData:{},material:{map:null}};
+ gate.register('detached',face).ready(texture);
+ await assert.rejects(gate.wait(),/Painting could not be prepared/);
+ assert.equal(gate.stats().reused,0);
+ assert.equal(gate.stats().complete,false);
+});
+
+test('a painting without prior verified GPU upload still uploads normally',async()=>{
+ const texture={isTexture:true,image:{width:1400,height:1000}};
+ const face={parent:{},userData:{},material:{map:texture}};
+ let uploads=0,frames=0;
+ const gate=createPhiPaintingArrivalGate({
+  date:'2026-10-31',expected:1,alreadyUploaded:()=>false,
+  nextFrame:async()=>{frames++;},upload:()=>{uploads++;}
+ });
+ gate.register('fallback',face).ready(texture);
+ const report=await gate.wait();
+ assert.equal(report.reused,0);
+ assert.equal(report.arrivalUploads,1);
+ assert.equal(uploads,1);
+ assert.ok(frames>=1);
+});
+
+test('final warmup skips only already uploaded textures and retains complete compilation/render',async()=>{
+ const reused={isTexture:true,image:{width:1400,height:1000}};
+ const fresh={isTexture:true,image:{width:64,height:64}};
+ const uploaded=new WeakSet([reused]);
+ const steps=[],stages=[];
+ const scene={traverse:fn=>fn({material:{map:reused,normalMap:fresh}})};
+ await warmGalleryEntry({
+  scene,camera:{},renderer:{
+   compileAsync:async()=>steps.push('compile'),
+   initTexture:texture=>{steps.push(texture===fresh?'upload:fresh':'upload:duplicate');uploaded.add(texture);},
+   render:()=>steps.push('render')
+  },
+  isAlreadyUploaded:texture=>uploaded.has(texture),
+  markUploaded:texture=>uploaded.add(texture),
+  nextFrame:async()=>steps.push('frame'),
+  onStage:(name,details)=>stages.push({name,details})
+ });
+ assert.deepEqual(steps,['compile','frame','upload:fresh','render','frame']);
+ assert.equal(stages.at(-1).details.skippedUploads,1);
+ assert.equal(stages.at(-1).details.attemptedUploads,1);
+ assert.equal(stages.at(-1).details.failedUploads,0);
+});
+
+test('test-only reuse A/B switch leaves original painting fidelity and door interlock intact',()=>{
+ const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(src,/get\('liftreuse'\)!=='0'/);
+ assert.match(src,/const phiUploadPainting=texture=>\{renderer\.initTexture\(texture\);phiAlreadyUploaded\.add\(texture\);\}/);
+ assert.match(src,/alreadyUploaded:phiIsUploaded/);
+ assert.match(src,/isAlreadyUploaded:phiIsUploaded/);
+ assert.match(src,/if\(!phiPaintingGate\?\.stats\(\)\.complete/);
+ assert.match(src,/texture\.colorSpace=THREE\.SRGBColorSpace/);
+});
