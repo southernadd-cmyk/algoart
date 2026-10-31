@@ -1,3 +1,5 @@
+import {createPhiLightingStudy} from './phi-room-lighting-renderer.mjs';
+import {addPhiRoomLuminaire} from './phi-room-luminaires.mjs';
 import {createPhiFrameStudyMaterial} from './phi-frame-material.mjs';
 import {applyRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs';
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
@@ -127,10 +129,10 @@ const xrPickerRay=new THREE.Raycaster();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#c2cbc5');
 scene.fog = new THREE.Fog('#c2cbc5', 48, 165);
-// Contrast-balanced, shadow-map-free daylight. Keep the existing two lights:
-// no extra draw calls, lights, shadow render targets or post-processing passes.
-scene.add(new THREE.HemisphereLight('#eaf1ff', '#72796f', 1.08));
-const sun = new THREE.DirectionalLight('#fff5e5', 2.20);
+// Approved daylight and room illumination with cached, bounded shadow maps.
+const phiLightingOriginal=new URLSearchParams(location.search).get('lighting')==='original';
+scene.add(new THREE.HemisphereLight('#eaf1ff', '#72796f', phiLightingOriginal?1.08:1.18));
+const sun = new THREE.DirectionalLight('#fff5e5', phiLightingOriginal?2.20:2.35);
 sun.position.set(-18, 30, 12);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(76, window.innerWidth / Math.max(1, window.innerHeight), 0.07, 210);
@@ -178,6 +180,7 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
   startAfter:window.__galleryEarly?.tower
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
+const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
 let receptionWallMaterial=null;
@@ -584,7 +587,7 @@ function hangArt(room, study, hang) {
    loadArtworkTexture(study.image, artworkMaterial,{preferred:study.imageOptimized});
   const lamp=base.clone().addScaledVector(normal,1.35);
   lamp.y=Math.min(room.y+ROOM_HEIGHT-.35,hang.y+height*.66+1.25);
-  exhibitLight(room,lamp,base,{beam:Math.max(.28,Math.min(.56,Math.atan(width/2/1.45)*1.25)),power:17});
+  exhibitLight(room,lamp,base,{beam:Math.max(.28,Math.min(.56,Math.atan(width/2/1.45)*1.25)),power:phiLightingOriginal?17:19});
 
   const labelWidth = Math.min(2.06, Math.max(1.48, width * .73));
   const caption = new THREE.Mesh(
@@ -1596,6 +1599,7 @@ function constructPhiGallery(layout,studies){
  // Share the production spotlight fixture loader, limiting fixtures to
  // larger merged rooms rather than the many phi subdivision cells.
  const lightRooms=phi.floor.mergedRooms.filter(r=>r.pieces?.length);
+ if(!phiLightingOriginal)for(const room of lightRooms)addPhiRoomLuminaire(THREE,scene,room,elevation,ROOM_HEIGHT);
  for(const room of lightRooms.slice(0,galleryFinish.lowPower?3:7)){
   const cell=[...room.pieces].sort((a,b)=>b.w*b.h-a.w*a.h)[0];
   if(!cell||cell.w<3||cell.h<3)continue;
@@ -1603,7 +1607,7 @@ function constructPhiGallery(layout,studies){
   const mount=new THREE.Group();mount.position.copy(centre);scene.add(mount);
   const fallback=block(.66,.12,.28,centre.x,centre.y-.1,centre.z,join);
   placeTwinSpotlight(THREE,mount,new THREE.Vector3(centre.x,elevation+1.45,centre.z),fallback);
-  const light=new THREE.SpotLight(0xfff3df,12,12,.66,.8,1.5);
+  const light=new THREE.SpotLight(0xfff3df,phiLightingOriginal?12:14,12,phiLightingOriginal?.66:.70,phiLightingOriginal?.8:.90,1.5);light.name='phi-shadow-room-light';
   light.position.set(centre.x,elevation+ROOM_HEIGHT-.2,centre.z);
   light.target.position.set(centre.x,elevation+1.1,centre.z);
   scene.add(light,light.target);
@@ -2264,6 +2268,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
     constructPhiGallery(plan,studyList);
     if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);
     applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
+    phiLightingStudy?.editionChanged(elevation);
     phiGalleryMusic.setEmitters(phiSpeakerEmitters);
   }catch(error){
     // Remove partially constructed destination objects before recovery.
@@ -2870,6 +2875,7 @@ function measurePhiPerformance(now){
 }
 let phiFrameSerial=0;
 function tick() {
+  phiLightingStudy?.update();
  measurePhiPerformance(performance.now());
   if (!renderer) return;
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
