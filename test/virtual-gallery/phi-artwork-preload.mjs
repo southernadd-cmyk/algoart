@@ -6,7 +6,7 @@ export function decodePhiArtworkImage(url) {
   image.onload=()=>Promise.resolve(typeof image.decode==='function'?image.decode():undefined)
    .catch(()=>{}).then(()=>resolve(image));
   image.onerror=()=>reject(new Error('Painting image unavailable: '+url));
-  image.src=url;
+  image.src=globalThis.__phiJPEGCacheBench?.stamp(url)||url;
  });
 }
 export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concurrency=3}={}){
