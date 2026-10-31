@@ -7,14 +7,17 @@ function dateLabel(date){
  if(!labels.has(date))labels.set(date,dateFormat.format(new Date(date+'T12:00:00Z')));
  return labels.get(date);
 }
-export function phiLiftIndicatorState({height,spacing=6.2,dates,currentFloor=0,targetFloor=null,phase='idle'}){
+export function phiLiftIndicatorState({height,spacing=6.2,dates,currentFloor=0,targetFloor=null,phase='idle',paintings=null}){
  const floor=phase==='moving'?Math.max(0,Math.min(dates.length-1,Math.round(height/spacing))):currentFloor;
  const date=dates[floor];
  const primary=floor===0?'G · Reception':floor+' · '+dateLabel(date);
  let secondary='Archive lift';
  if(phase!=='idle'&&targetFloor!==null){
   const target=targetFloor===0?'Reception':dateLabel(dates[targetFloor])+' · Floor '+targetFloor;
-  secondary=phase==='preparing'?'Preparing '+target:(targetFloor>currentFloor?'Ascending to ':'Descending to ')+target;
+  secondary=phase==='paintings'&&paintings
+   ?'Paintings '+paintings.ready+' / '+paintings.expected
+   :phase==='preparing'?'Preparing '+target
+   :(targetFloor>currentFloor?'Ascending to ':'Descending to ')+target;
  }
  return {floor,date,primary,secondary,phase,font:'AlgoArt Marker'};
 }
