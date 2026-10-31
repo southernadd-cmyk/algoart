@@ -6,6 +6,9 @@ on:
     paths:
       - '.github/workflows/phi-lift-readiness-browser.yml'
       - 'tests/phi-lift-readiness-browser.mjs'
+      - 'test/virtual-gallery/gallery-phi.js'
+      - 'test/virtual-gallery/phi-painting-arrival-gate.mjs'
+      - 'test/virtual-gallery/phi-lift-painting-gpu.mjs'
 permissions:
   contents: read
 jobs:
