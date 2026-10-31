@@ -1068,7 +1068,8 @@ async function travelLift(date,index){
    pump:processDeferredGallery
   });
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
-  const warmed=await warmGalleryEntry({renderer,scene,camera});
+  const warmed=await warmGalleryEntry({renderer,scene,camera,
+   onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
   phiLiftProfiler?.mark('texture-upload-and-compile-finished',warmed);
   if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date};
   if(xrRide)closeXRLift();
