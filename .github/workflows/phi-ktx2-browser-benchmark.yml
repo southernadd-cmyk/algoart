@@ -1,0 +1,30 @@
+name: Benchmark test tower JPEG vs KTX2
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-ktx2-browser-benchmark.yml'
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Install Chromium browser
+        run: npx playwright install chromium
+      - name: Run alternating browser A/B sessions against deployed TEST only
+        run: node tests/phi-ktx2-browser-benchmark.mjs
+      - name: Upload benchmark JSON and comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phi-ktx2-benchmark-results
+          path: phi-ktx2-benchmark-results/
+          if-no-files-found: warn
