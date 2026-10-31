@@ -1,0 +1,52 @@
+name: Cache-controlled original JPEG mirrors (TEST only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-jpeg-benchmark-mirrors.yml'
+permissions:
+  contents: write
+jobs:
+  originals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download five unchanged Poly Haven JPEG sources to test only
+        run: |
+          set -euo pipefail
+          root=test/virtual-gallery/ktx2-lossless/external-jpeg
+          mkdir -p "$root"
+          for spec in \
+            'plastered_wall_02/plastered_wall_02_diff_1k.jpg' \
+            'plastered_wall_02/plastered_wall_02_nor_gl_1k.jpg' \
+            'concrete_floor/concrete_floor_diff_1k.jpg' \
+            'concrete_floor/concrete_floor_nor_gl_1k.jpg' \
+            'wood_floor/wood_floor_diff_1k.jpg'; do
+            file="${spec##*/}"
+            curl --fail --location --retry 3 --silent --show-error \
+              "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/$spec" \
+              -o "$root/$file"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          files=list(Path('test/virtual-gallery/ktx2-lossless/external-jpeg').glob('*.jpg'))
+          assert len(files)==5
+          for f in files:
+            with Image.open(f) as image: image.verify()
+            print(f.name,f.stat().st_size)
+          PY
+      - name: Commit TEST-only original JPEG mirrors
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add test/virtual-gallery/ktx2-lossless/external-jpeg/
+          if ! git diff --cached --quiet; then
+            git commit -m 'Mirror five original Poly Haven JPEGs for fair cold-cache test only'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
