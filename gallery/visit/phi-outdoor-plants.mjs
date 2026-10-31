@@ -1,4 +1,6 @@
 import {loadPhiDecorAsset,fitPhiDecorAsset} from './phi-model-assets.mjs';
+// Restore later by setting this flag true. Original models and placement logic remain intact.
+export const PHI_EXTERIOR_PLANTING_ENABLED=false;
 const PHI=(1+Math.sqrt(5))/2;
 const PLANTER_DEPTH=1.6,PLANTER_WIDTH=PLANTER_DEPTH*PHI,SOIL_Y=.443;
 export function planPhiOutdoorPlants(plaza){
@@ -48,6 +50,8 @@ function fitPlant(THREE,model,height){
  plant.name='phi-individual-source-plant';return plant;
 }
 export function addPhiOutdoorPlants(THREE,scene,plaza,landscapeRoots,{loadModel=()=>loadPhiDecorAsset(new URL('./models/plants-scene-gallery-optimized.glb',import.meta.url).href)}={}){
+ // Disabled planting creates no meshes, collisions or model downloads.
+ if(!PHI_EXTERIOR_PLANTING_ENABLED)return {holders:[],obstacles:[],ready:Promise.resolve([])};
  const placements=planPhiOutdoorPlants(plaza),holders=[],source=loadModel();
  const backups=new Set(),oldPositions=previousPlacements(plaza);
  for(const root of landscapeRoots)root.traverse(o=>{if([...placements,...oldPositions].some(p=>isOriginalPlant(o,p)))backups.add(o);});
