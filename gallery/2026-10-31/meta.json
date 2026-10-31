@@ -1,12 +1,13 @@
 {
   "version": 1,
   "date": "2026-10-31",
-  "count": 5,
+  "count": 6,
   "series": [
     "Constructed Forms",
     "Automatic Marks",
     "Growth Systems",
-    "Recursive Divisions"
+    "Recursive Divisions",
+    "Golden Trajectories"
   ],
   "entries": [
     {
@@ -251,6 +252,56 @@
         "grain": 26
       },
       "altText": "Action painting from PROPORTION PIECE's Recursive Divisions system, seed ACL-20261031-01-31428. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
+    },
+    {
+      "id": "2026-10-31-ACP01",
+      "title": "Golden Trajectories — Action Painting Study 06",
+      "orientation": "portrait",
+      "material": "action",
+      "seed": "ACP-20261031-01-59888",
+      "mode": "spiral",
+      "series": "Golden Trajectories",
+      "imageFile": "2026-10-31-action-portrait-01-spiral-ACP-20261031-01-59888.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACP-20261031-01-59888&mode=spiral&fmt=portrait&el=37&den=49&cx=56&neg=35&phi=88&rec=6&spi=35&ga=92&nest=46&pen=felt&th=11&wob=34&od=6&op=85&pr=49&dry=20&curve=0&shape=56&overlap=51&rot=58&ln=1&ci=1&re=1&po=1&ar=1&pal=cmyk&cols=7&sat=76&bri=51&paper=%23f5f0e6&grain=19&material=action-v4&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "spiral",
+        "orientation": "portrait",
+        "series": "Golden Trajectories",
+        "seed": "ACP-20261031-01-59888",
+        "elements": 37,
+        "density": 49,
+        "complexity": 56,
+        "negativeSpace": 35,
+        "phiStrength": 88,
+        "recursion": 6,
+        "spiralInfluence": 35,
+        "goldenAngle": 92,
+        "nesting": 46,
+        "pen": "felt",
+        "thickness": 11,
+        "wobble": 34,
+        "overdraw": 6,
+        "opacity": 85,
+        "pressure": 49,
+        "dryness": 20,
+        "curveBias": 0,
+        "shapeAmount": 56,
+        "overlap": 51,
+        "rotation": 58,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "cmyk",
+        "colourCount": 7,
+        "saturation": 76,
+        "brightness": 51,
+        "paper": "#f5f0e6",
+        "grain": 19
+      },
+      "altText": "Action painting from PROPORTION PIECE's Golden Trajectories system, seed ACP-20261031-01-59888. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
