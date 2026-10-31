@@ -37,7 +37,7 @@ export function createPhiLiftProfiler({enabled=false,now=()=>performance.now()}=
  // Measure CPU-side work inside the update loop. The existing frame-gap
  // recorder also catches asynchronous GPU and browser/compositor stalls.
  // Keep only aggregates and the 20 worst spikes to bound memory.
- function record(name,ms){
+ function record(name,ms,details=null){
   if(!state.active||!state.current||!Number.isFinite(ms)||ms<0)return;
   const visit=state.current;
   const entry=visit.operations[name]??={count:0,totalMs:0,maxMs:0,over16ms:0,over50ms:0};
@@ -47,7 +47,7 @@ export function createPhiLiftProfiler({enabled=false,now=()=>performance.now()}=
   if(ms>=16)entry.over16ms++;
   if(ms>=50)entry.over50ms++;
   if(ms>=40){
-   visit.operationSpikes.push({name,ms:+ms.toFixed(1),stage:visit.stages.at(-1)?.name});
+   visit.operationSpikes.push({name,ms:+ms.toFixed(1),stage:visit.stages.at(-1)?.name,...(details?{details}:{})});
    visit.operationSpikes.sort((a,b)=>b.ms-a.ms);
    if(visit.operationSpikes.length>20)visit.operationSpikes.length=20;
   }
