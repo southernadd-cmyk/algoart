@@ -83,9 +83,9 @@ test('every archived edition links to its exact 3D floor',()=>{
   for(const {date} of archive.days)
     assert.ok(read(resolve(gallery,date,'index.html')).includes('../visit/?date='+date),
       'Missing floor link on '+date);
-  const legacy=read(resolve('test/virtual-gallery/index.html'));
+  const legacy=read(resolve('test/virtual-gallery/index.html')); // Restored test entry loads its own copy of the live bundle.
   assert.doesNotMatch(legacy,/location\.replace\(/);
-  assert.match(legacy,/gallery-phi-test-room-signs-bundle\.js/);
+  assert.match(legacy,/test\/virtual-gallery\/gallery-phi-bundle\.js/);
   assert.match(legacy,/<base href="\.\.\/\.\.\/gallery\/visit\/">/);
 });
 
