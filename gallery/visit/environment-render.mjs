@@ -1,6 +1,7 @@
 // Procedural exterior for the daily museum. Small draw-call budget: one
 // terrain mesh, one gradient sky and one softly drawn distant-city strip.
 import {buildEnvironmentPlan} from './environment-v1.mjs';
+import {PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs';
 import {addProceduralBackdrop} from './procedural-backdrop.mjs?v=daytime-restored-20261027';
 import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 
@@ -204,6 +205,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
         box(1.2,.57,2.7,along,across,.20,stoneEdge);
         box(.92,.13,2.35,along,across,.55,paving);
       }
+      if(PHI_EXTERIOR_PLANTING_ENABLED){
       for(const along of [-13,12]){
         const across=side*(p.halfWidth-4.6);
         box(1.75,.69,1.75,along,across,.22,stoneEdge);
@@ -214,6 +216,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
           shrub.scale.set(1.2,.75,1);
           square.add(shrub);
         }
+      }
       }
       for(const along of [-15,0,15]){
         const across=side*(p.halfWidth-1.5);
