@@ -3009,10 +3009,17 @@ function tick() {
   if(!liftTravelling&&!doorsMoving&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
   animateLiftDoors(elapsed);
   updatePhiCabinRide(dt);
-  if(phiLiftIndicator)paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({
+  if(phiLiftIndicator){
+   const paintingProgress=phiPaintingGate?.stats();
+   const awaitingPaintings=liftTravelling&&window.__phiLiftRide?.status==='arrived'&&
+    paintingProgress?.date===archiveDates[phiLiftTarget];
+   paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({
     height:rig.position.y,spacing:FLOOR_SPACING,dates:archiveDates,currentFloor,
-    targetFloor:phiLiftTarget,phase:phiRideState||window.__phiLiftRide?.status==='arrived'?'moving':liftTravelling?'preparing':'idle'
-  }));
+    targetFloor:phiLiftTarget,
+    phase:awaitingPaintings?'paintings':phiRideState?'moving':liftTravelling?'preparing':'idle',
+    paintings:awaitingPaintings?paintingProgress:null
+   }));
+  }
   entranceDoor?.update(dt,rig.position);
   phiGalleryMusic?.update(rig.position);
   phiReceptionDesk?.hologram?.update(clock.elapsedTime);
