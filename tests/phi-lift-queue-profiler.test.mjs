@@ -478,7 +478,7 @@ test('test-only composer probe attributes exact existing enabled pass CPU calls'
  assert.ok(!records.some(([name])=>name.includes('OffPass')));
  profiler.dispose();
  assert.equal(composer.render(.032),'rendered');
- assert.equal(records.length,6,'Disposed composer instrumentation does not add more entries');
+ assert.equal(records.length,3,'Disposed composer instrumentation does not add more entries');
 });
 
 test('disabled post-FX probe has no runtime mutation or instrumentation',()=>{
