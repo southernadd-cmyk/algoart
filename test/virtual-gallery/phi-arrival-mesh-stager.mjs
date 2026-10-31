@@ -37,7 +37,7 @@ export function createPhiArrivalMeshStager({nextFrame,now=()=>performance.now()}
   return stats();
  }
  function stats(){return {date,active:running,total:entries.length,shown,hidden:entries.length-shown,batches:[...batches]};}
- async function reveal({batchSize=20,onBatch=()=>{}}={}){
+ async function reveal({batchSize=20,onBatch=()=>{},onBatchStart=()=>{}}={}){
   if(!running)return stats();
   if(!Number.isInteger(batchSize)||batchSize<1)throw TypeError('Invalid scene batch size');
   const version=generation;
@@ -52,6 +52,7 @@ export function createPhiArrivalMeshStager({nextFrame,now=()=>performance.now()}
     }
    }
    const before=now();
+   onBatchStart({index:batches.length,count:section.length,paintings:painting,total:entries.length,shown:index+section.length});
    // Ensure a complete animation/render turn occurs before introducing
    // another batch. Each batch may reveal a new shader/texture variant.
    await nextFrame();
