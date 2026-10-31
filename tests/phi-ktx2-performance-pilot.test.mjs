@@ -8,7 +8,7 @@ const materials=readFileSync('test/virtual-gallery/architectural-materials.mjs',
 const live=readFileSync('gallery/visit/gallery-phi.js','utf8');
 const liveMaterials=readFileSync('gallery/visit/architectural-materials.mjs','utf8');
 
-test('test-only movement and artwork focus reuse hotpath scratch vectors',()=>{
+test('live and test movement and artwork focus reuse hotpath scratch vectors',()=>{
  assert.match(source,/const phiFrameVectors=/);
  assert.match(source,/const eye=camera\.getWorldPosition\(phiFrameVectors\.eye\)/);
  assert.match(source,/const toward=phiFrameVectors\.exhibitDirection\.copy\(exhibit\.position\)\.sub\(eye\)/);
@@ -21,7 +21,7 @@ test('test-only KTX2 pilot is opt-in and can fall back to the source JPEG',()=>{
  assert.match(materials,/brick-normal-ktx2-pilot/);
  assert.match(materials,/fallback-jpg/);
  assert.match(materials,/normal\('brick-normal',MATERIAL_SOURCES\.brick\.normal,\[exteriorBrick\],\.19\)/);
- assert.doesNotMatch(live,/phiFrameVectors/);
+ assert.match(live,/const phiFrameVectors=/);
  assert.doesNotMatch(liveMaterials,/__phiKTX2Pilot/);
 });
 
