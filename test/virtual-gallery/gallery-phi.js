@@ -1722,7 +1722,10 @@ function constructPhiGallery(layout,studies){
   caption.position.set(p.x,centreY-height/2-.24,p.z);
   caption.rotation.copy(face.rotation);scene.add(caption);
   const url=jpegExactStudy?study.image:(study.imageOptimized||study.image);
-  if(url)deferredGalleryJobs.push(()=>{
+  // Attach preloaded painting maps before optional sculptures, furnishings
+  // and visitors. This does not draw/upload them while doors animate; it
+  // prevents complete downloaded floors waiting behind other deferred work.
+  if(url)deferredGalleryJobs.unshift(()=>{
    const apply=texture=>{
     if(!face.parent||face.userData.galleryDisposed){texture.dispose();return;}
     texture.colorSpace=THREE.SRGBColorSpace;
