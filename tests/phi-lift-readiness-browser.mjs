@@ -58,7 +58,9 @@ try{
    paintingReadyBeforeDoor:at('paintings-gpu-ready')>=0&&
     at('doors-opening')>at('paintings-gpu-ready'),
    stages:stages.map(s=>({name:s.name,elapsedMs:s.elapsedMs})),
-   frameStalls:visit?.frames?.slice(0,15)||[]
+   frameStalls:visit?.frames?.slice(0,120)||[],
+   cpuOperations:visit?.operations||null,
+   cpuOperationSpikes:visit?.operationSpikes||[]
   };
  });
  Object.assign(report,result,{uncaughtPageErrors:errors});
