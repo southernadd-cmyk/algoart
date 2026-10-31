@@ -161,7 +161,8 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     // instead of the hand-drawn canvas paving. Keep the existing map as a
     // synchronous fallback when a texture request fails or is still loading.
     if(globalThis.__phiReceptionTestRefresh){
-      new THREE.TextureLoader().load('./textures/open-game-art/028.jpg',texture=>{
+      const source='./textures/open-game-art/028.jpg';
+      const use=texture=>{
         texture.colorSpace=THREE.SRGBColorSpace;
         texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
         texture.repeat.set(p.halfWidth*2/4,p.halfDepth*2/4);
@@ -169,7 +170,12 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
         paving.map=texture;
         paving.color.set('#ffffff');
         paving.needsUpdate=true;
-      },undefined,error=>console.warn('Uploaded plaza paving unavailable; retaining original',error));
+      };
+      const original=()=>new THREE.TextureLoader().load(source,use,undefined,
+        error=>console.warn('Uploaded plaza paving unavailable; retaining original',error));
+      const bank=globalThis.__phiJPEGLosslessBank;
+      if(bank?.resolve(source))bank.load(source,{color:true}).then(use).catch(original);
+      else original();
     }
     const stoneMap=surfaceTexture(THREE,'stone');
     const stoneEdge=new THREE.MeshStandardMaterial({map:stoneMap,color:'#e4dfd5',roughness:.94});
