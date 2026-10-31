@@ -29,7 +29,7 @@ export async function waitForGalleryEntry({loading,isBusy,pump,nextFrame=gallery
  }
  return {timedOut:true,ms:now()-start};
 }
-export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryPreparationFrame,onStage=null}){
+export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryPreparationFrame,onStage=null,isAlreadyUploaded=()=>false,markUploaded=()=>{}}){
  const timer=()=>performance.now();
  const totalStart=timer(),slowUploads=[];
  let then=timer();
@@ -43,11 +43,16 @@ export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryP
  const traversalMs=timer()-then;
  // Always use exactly the approved GPU work and renderer order; only
  // record stage timing when ?liftprofile=1 has explicitly enabled it.
- then=timer();let batch=0,failedUploads=0;
+ then=timer();let batch=0,failedUploads=0,skippedUploads=0,attemptedUploads=0;
  for(const texture of textures){
+  // Only bypass work when this same renderer previously completed the
+  // upload successfully. Never skip a shader compile, material, or image.
+  if(isAlreadyUploaded(texture)){skippedUploads++;continue;}
   if(batch++%4===0)await nextFrame();
   const started=onStage?timer():0;
-  try{renderer.initTexture(texture);}catch(error){failedUploads++;console.warn('Gallery texture warm-up skipped',error);}
+  attemptedUploads++;
+  try{renderer.initTexture(texture);markUploaded(texture);}
+  catch(error){failedUploads++;console.warn('Gallery texture warm-up skipped',error);}
   if(onStage){
    const ms=timer()-started;
    if(ms>=40)slowUploads.push({ms:+ms.toFixed(1),width:texture.image?.width||0,
@@ -63,6 +68,6 @@ export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryP
  if(onStage)onStage('warmup-details',{compileMs:+compileMs.toFixed(1),
   traversalMs:+traversalMs.toFixed(1),uploadMs:+uploadMs.toFixed(1),
   finalRenderMs:+finalRenderMs.toFixed(1),totalMs:+(timer()-totalStart).toFixed(1),
-  failedUploads,slowUploads:slowUploads.sort((a,b)=>b.ms-a.ms).slice(0,12)});
+  failedUploads,skippedUploads,attemptedUploads,slowUploads:slowUploads.sort((a,b)=>b.ms-a.ms).slice(0,12)});
  return diagnostic;
 }
