@@ -331,10 +331,74 @@ test('final warmup skips only already uploaded textures and retains complete com
 
 test('test-only reuse A/B switch leaves original painting fidelity and door interlock intact',()=>{
  const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
- assert.match(src,/get\('liftreuse'\)!=='0'/);
+ assert.match(src,/get\('liftreuse'\)==='1'/);
+ assert.match(src,/get\('liftpipeline'\)!=='0'/);
  assert.match(src,/const phiUploadPainting=texture=>\{renderer\.initTexture\(texture\);phiAlreadyUploaded\.add\(texture\);\}/);
  assert.match(src,/alreadyUploaded:phiIsUploaded/);
  assert.match(src,/isAlreadyUploaded:phiIsUploaded/);
  assert.match(src,/if\(!phiPaintingGate\?\.stats\(\)\.complete/);
  assert.match(src,/texture\.colorSpace=THREE\.SRGBColorSpace/);
+});
+
+test('test pipeline starts decoding subsequent images even with two long pending GPU uploads',async()=>{
+ const decoded=[],preparers=[];
+ const preloader=createPhiArtworkPreloader(
+  async url=>{decoded.push(url);return {url};},
+  {
+   concurrency:2,releaseAfterDecode:true,
+   prepare:image=>new Promise(resolve=>preparers.push({image,resolve}))
+  }
+ );
+ preloader.start('2026-10-20',['a.jpg','b.jpg','c.jpg','d.jpg']);
+ for(let i=0;i<35;i++)await Promise.resolve();
+ assert.deepEqual(decoded,['a.jpg','b.jpg','c.jpg','d.jpg'],
+  'Download/decode slots must release before GPU upload completion');
+ assert.equal(preparers.length,4);
+ assert.equal(preloader.stats().decoded,4);
+ assert.equal(preloader.stats().preparing,4);
+ assert.equal(preloader.stats().loading,0);
+ const awaiting=preloader.take('2026-10-20','a.jpg');
+ for(const item of preparers)item.resolve({isTexture:true,image:item.image});
+ const texture=await awaiting;
+ assert.equal(texture.image.url,'a.jpg');
+ assert.equal(preloader.stats().preparing,0);
+ preloader.clear();
+});
+
+test('pipeline A/B baseline keeps the download slots occupied until GPU upload finishes',async()=>{
+ const decoded=[],preparers=[];
+ const preloader=createPhiArtworkPreloader(
+  async url=>{decoded.push(url);return {url};},
+  {
+   concurrency:2,releaseAfterDecode:false,
+   prepare:image=>new Promise(resolve=>preparers.push({image,resolve}))
+  }
+ );
+ preloader.start('2026-10-20',['a.jpg','b.jpg','c.jpg','d.jpg']);
+ for(let i=0;i<35;i++)await Promise.resolve();
+ assert.deepEqual(decoded,['a.jpg','b.jpg']);
+ assert.equal(preloader.stats().loading,2);
+ preparers[0].resolve({isTexture:true,image:preparers[0].image});
+ for(let i=0;i<35;i++)await Promise.resolve();
+ assert.deepEqual(decoded,['a.jpg','b.jpg','c.jpg']);
+ preloader.clear();
+ for(const item of preparers.slice(1))item.resolve(null);
+});
+
+test('clearing pipeline session prevents late GPU completions from opening stale floors',async()=>{
+ let prepareFinished;
+ let disposed=0;
+ const preloader=createPhiArtworkPreloader(
+  async url=>({url}),
+  {releaseAfterDecode:true,prepare:()=>new Promise(resolve=>prepareFinished=resolve),
+   dispose:value=>value?.dispose?.()}
+ );
+ preloader.start('old',['a.jpg']);
+ for(let i=0;i<20;i++)await Promise.resolve();
+ const claim=preloader.take('old','a.jpg');
+ preloader.clear();
+ prepareFinished({isTexture:true,dispose:()=>disposed++});
+ assert.equal(await claim,null);
+ for(let i=0;i<10;i++)await Promise.resolve();
+ assert.equal(disposed,1);
 });
