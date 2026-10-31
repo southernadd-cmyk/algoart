@@ -16,7 +16,7 @@ export function installPhiComposerPassProfiler({enabled=false,record,now=()=>per
  const original=Composer?.prototype?.render;
  if(typeof original!=='function')return {enabled:true,installed:false};
  const wrapped=new WeakSet();
- let installed=false;
+ let installed=false,active=true;
  try{
   Composer.prototype.render=function(...args){
    const passes=Array.isArray(this.passes)?this.passes:[];
@@ -25,12 +25,14 @@ export function installPhiComposerPassProfiler({enabled=false,record,now=()=>per
     if(!pass||wrapped.has(pass)||typeof pass.render!=='function')continue;
     const call=pass.render,name=passName(pass,i);
     pass.render=function(...passArgs){
+     if(!active)return call.apply(this,passArgs);
      const began=now();
      try{return call.apply(this,passArgs);}
      finally{record(name,now()-began);}
     };
     wrapped.add(pass);
    }
+   if(!active)return original.apply(this,args);
    const began=now();
    try{return original.apply(this,args);}
    finally{record('postfx-composer-total',now()-began);}
@@ -45,6 +47,7 @@ export function installPhiComposerPassProfiler({enabled=false,record,now=()=>per
   // Only restore the prototype if this exact installation remains current.
   // Already-instrumented pass wrappers are inert when the lift recorder
   // declines calls outside an active visit.
+  active=false;
   if(installed&&Composer.prototype.render!==original){
    Composer.prototype.render=original;
   }
