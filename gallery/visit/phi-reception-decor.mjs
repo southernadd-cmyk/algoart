@@ -106,7 +106,7 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMat
 
 export const RECEPTION_CREDITS=[
  {title:'The gallery',lines:['PROPORTION PIECE','Daily generative art and architecture','','Built with Three.js','Three.js authors · MIT licence','','Visitors: Quaternius · CC0','Street lamps: Poly Haven · CC0']},
- {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Plaza plants — Nicholas-3D','Reception art — PROPORTION PIECE','Magazine cabinet — JFN','Paper debris — Sousinho','Cardboard boxes —','NotAnotherApocalypticCo.','','Scene models: CC BY 4.0','Meshes and textures optimised.','Chalkboard — clon6767 · CC BY 4.0','Pub sign — johhny3D · CC BY 4.0','Window — MWOgier · CC BY 4.0','Hanging signs — Sousinho · CC BY 4.0','Fittings — dylanheyes · CC BY 4.0']},
+ {title:'Scene models',lines:['Door — Maria Stashko','Pothos plant — AllQuad','Reception art — PROPORTION PIECE','Magazine cabinet — JFN','Paper debris — Sousinho','Cardboard boxes —','NotAnotherApocalypticCo.','','Scene models: CC BY 4.0','Meshes and textures optimised.','Chalkboard — clon6767 · CC BY 4.0','Pub sign — johhny3D · CC BY 4.0','Window — MWOgier · CC BY 4.0','Hanging signs — Sousinho · CC BY 4.0','Fittings — dylanheyes · CC BY 4.0']},
  {title:'Materials and fittings',lines:['Wallpaper: Decorative Wall 2','ShareTextures · M. Tolga Arslan · CC0','Feature wall: Bricks055 charcoal','ambientCG · CC0','Gallery: plastered_wall_02','Poly Haven · CC0','Ceiling: OfficeCeiling001','Brick: Bricks055 · ambientCG · CC0','Roof: KSmodels · CC BY 4.0','Floor: Aman Bajwa · CC BY 4.0','Scan adapted; textures optimised.','Full credits and licences online.']}
 ];
 export const RECEPTION_AUTHORSHIP={title:'Artistic direction',lines:[
