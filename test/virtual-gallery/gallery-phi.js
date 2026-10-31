@@ -203,6 +203,15 @@ if(phiTextureBenchCache)THREE.DefaultLoadingManager.setURLModifier(
 );
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
 const phiStageArrival=new URLSearchParams(location.search).get('liftstage')==='1';
+// Legacy 20 meshes / two rAF callbacks remains the A/B control.
+// ?liftbatch=adaptive: one completed render per batch, dynamically sized.
+// ?liftbatch=8/12/16/20/24/32: fixed size, one completed render per batch.
+const phiLiftBatchChoice=new URLSearchParams(location.search).get('liftbatch');
+const phiLiftBatchFixed=[8,12,16,20,24,32].includes(Number(phiLiftBatchChoice))
+ ?Number(phiLiftBatchChoice):null;
+const phiLiftBatchMode=phiLiftBatchChoice==='adaptive'?'adaptive':
+ phiLiftBatchFixed!==null?'render':'legacy';
+const phiLiftBatchSize=phiLiftBatchMode==='adaptive'?12:phiLiftBatchFixed??20;
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
 // Retired the lossless KTX2 test conversion; keep the original JPEG option.
@@ -1163,7 +1172,7 @@ async function travelLift(date,index){
   if(phiStageArrival){
    phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
    const revealed=await phiArrivalMeshes.reveal({
-    batchSize:20,
+    mode:phiLiftBatchMode,batchSize:phiLiftBatchSize,
     onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
     onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
    });
@@ -3097,9 +3106,11 @@ function tick() {
   phiGalleryMusic?.update(rig.position);
   phiReceptionDesk?.hologram?.update(clock.elapsedTime);
   if(!$('lift').hidden){
-   const renderAt=phiLiftProfiler?.state.active?performance.now():null;
+   const renderAt=phiLiftProfiler?.state.active||(phiStageArrival&&phiLiftBatchMode!=='legacy')?performance.now():null;
    phiPostFX.render(dt,null);
-   if(renderAt!==null)phiLiftProfiler.record('render-frame',performance.now()-renderAt);
+   const renderMs=renderAt===null?null:performance.now()-renderAt;
+   if(phiLiftProfiler?.state.active&&renderMs!==null)phiLiftProfiler.record('render-frame',renderMs);
+   phiArrivalMeshes.renderedFrame(renderMs);
    return;
   }
   updateMovement(dt);
@@ -3123,9 +3134,11 @@ function tick() {
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
-  const renderAt=phiLiftProfiler?.state.active?performance.now():null;
+  const renderAt=phiLiftProfiler?.state.active||(phiStageArrival&&phiLiftBatchMode!=='legacy')?performance.now():null;
   phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
-  if(renderAt!==null)phiLiftProfiler.record('render-frame',performance.now()-renderAt);
+  const renderMs=renderAt===null?null:performance.now()-renderAt;
+  if(phiLiftProfiler?.state.active&&renderMs!==null)phiLiftProfiler.record('render-frame',renderMs);
+  phiArrivalMeshes.renderedFrame(renderMs);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={tower:towerGraffiti.diagnostics,interior:interiorGraffiti.diagnostics,square:phiSquare.diagnostics()};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
 }
