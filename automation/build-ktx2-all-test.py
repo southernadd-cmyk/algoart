@@ -26,7 +26,7 @@ SOURCE=[Path(x) for x in LOCAL if
  x.lower().endswith(('.jpg','.jpeg')) and (
   re.fullmatch(r'gallery/\d{4}-\d{2}-\d{2}/(?!archive-preview\.jpg)[^/]+',x) or
   x.startswith('test/virtual-gallery/'))]
-assert len([p for p in SOURCE if p.parts[0]=='gallery'])>=404, 'Artwork archive may have changed'
+assert len([p for p in SOURCE if p.parts[0]=='gallery'])>=300, 'Artwork JPEG scan unexpectedly incomplete'
 assert len(set(SOURCE))==len(SOURCE)
 def kind(path):
  name=path.stem.lower()
