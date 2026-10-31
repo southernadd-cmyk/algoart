@@ -5,6 +5,7 @@ import {resolve} from 'node:path';
 import {build} from 'esbuild';
 import {createHash} from 'node:crypto';
 import {writeFile} from 'node:fs/promises';
+import {n8aoTestPlugin} from './phi-n8ao-test-plugin.mjs';
 import {stageCurationPlugin} from './phi-stage-curation-plugin.mjs';
 const dir=resolve(process.cwd(),'gallery/visit');
 let source=await readFile(resolve(dir,'gallery-phi.js'),'utf8');
@@ -100,7 +101,7 @@ await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
  outfile:'gallery/visit/gallery-phi-test-room-signs-bundle.js',
- plugins:[stageCurationPlugin(),{
+ plugins:[stageCurationPlugin(),n8aoTestPlugin(),{
  name:'architectural-visitor-palette-test-only',
  setup(builder){
   builder.onLoad({filter:/[/\\]visitors[.]mjs$/},async({path})=>{
