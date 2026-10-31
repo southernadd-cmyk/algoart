@@ -61,8 +61,8 @@ test('loading changes are isolated to test, retain A/B switches and preload iden
 
 test('cold-start archive metadata runs during font load but rendered labels remain font-gated',()=>{
  const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
- assert.match(src,/const phiMarkerReady=Promise\\.race/);
- assert.match(src,/await phiMarkerReady;\\s*await loadEdition/);
- assert.doesNotMatch(src,/\\.finally\\(load\\)/);
- assert.match(src,/\\nload\\(\\);/);
+ assert.match(src,/const phiMarkerReady=Promise\.race/);
+ assert.match(src,/await phiMarkerReady;\s*await loadEdition/);
+ assert.doesNotMatch(src,/\.finally\(load\)/);
+ assert.match(src,/\nload\(\);/);
 });
