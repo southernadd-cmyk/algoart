@@ -1,0 +1,29 @@
+name: KTX2 texture-only GPU-upload benchmark
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-ktx2-texture-microbench.yml'
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Compare JPEG and KTX2 decode, GPU upload, steady rendering
+        run: node tests/phi-ktx2-texture-microbenchmark.mjs
+      - name: Save detailed comparison results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phi-ktx2-microbench-results
+          path: phi-ktx2-microbench-results/
+          if-no-files-found: warn
