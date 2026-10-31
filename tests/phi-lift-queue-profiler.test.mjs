@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createPhiLiftProfiler} from '../test/virtual-gallery/phi-lift-profile.mjs';
 import {installPhiShadowRenderProbe} from '../test/virtual-gallery/phi-shadow-render-probe.mjs';
 import {createPhiArrivalMeshStager} from '../test/virtual-gallery/phi-arrival-mesh-stager.mjs';
+import {createPhiArrivalMeshStager as createLivePhiArrivalMeshStager} from '../gallery/visit/phi-arrival-mesh-stager.mjs';
 import {installPhiComposerPassProfiler} from '../test/virtual-gallery/phi-postfx-pass-profiler.mjs';
 import {warmGalleryEntry} from '../test/virtual-gallery/gallery-entry-preparation.mjs';
 import {createPhiArtworkPreloader} from '../test/virtual-gallery/phi-artwork-preload.mjs';
@@ -566,7 +567,14 @@ test('scene batch feature is opt-in and all artwork is prepared before scene rev
  assert.match(src,/phiArrivalMeshes\.restore\(\)/);
  assert.ok(src.indexOf('await phiPaintingGate.wait(')<src.indexOf('await phiArrivalMeshes.reveal('));
  assert.ok(src.indexOf('await phiArrivalMeshes.reveal(')<src.indexOf('setLiftDoors(false);',src.indexOf('await phiPaintingGate.wait(')));
- assert.doesNotMatch(live,/phiArrivalMeshes|createPhiArrivalMeshStager/);
+ assert.match(live,/createPhiArrivalMeshStager\(/);
+ assert.match(live,/const staged=phiArrivalMeshes\.start\(date,editionObjects,\{exclude:phiLiftCabin\}\)/);
+ assert.match(live,/batchSize:16/);
+ assert.match(live,/phiArrivalMeshes\.restore\(\)/);
+ assert.ok(live.indexOf("phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady)")<
+  live.indexOf("await phiArrivalMeshes.reveal("));
+ assert.ok(live.indexOf("await phiArrivalMeshes.reveal(")<
+  live.indexOf("setLiftDoors(false);",live.indexOf("await phiPaintingGate.wait(")));
 });
 
 test('shadow-map probe measures synchronous shader and shadow preparation without replacing rendering',()=>{
@@ -721,4 +729,61 @@ test('fixed-size test choices never enable rejected one-render adaptive pacing',
  const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
  assert.match(src,/phiLiftBatchMode=phiLiftBatchChoice==='adaptive'\?'adaptive':'legacy'/);
  assert.match(src,/\[8,12,16,20,24,32\]\.includes\(Number\(phiLiftBatchChoice\)\)/);
+});
+
+test('approved production 16-mesh staging preserves paintings, lighting, cabin and visibility',async()=>{
+ let frames=0;
+ const stager=createLivePhiArrivalMeshStager({nextFrame:async()=>frames++});
+ function group(name,children=[]){
+  const root={name,visible:true,userData:{},children,
+   traverse(fn){fn(this);for(const child of children)child.traverse?.(fn)||(!child.traverse&&fn(child));}};
+  for(const child of children)child.parent=root;
+  return root;
+ }
+ const cabins=[{isMesh:true,visible:true,userData:{},name:'lift doors'}];
+ const cabin=group('cabin',cabins);
+ const meshes=Array.from({length:35},(_,i)=>({
+  name:'art or room '+i,isMesh:true,visible:i!==10,
+  userData:{phiArtOriginal:i===15,sourcePixels:1400*1000},
+  material:{map:{source:'untouched'}}}));
+ const originalMaterials=meshes.map(x=>x.material);
+ const room=group('room',meshes);
+ const queued=stager.start('2026-10-09',[room,cabin],{exclude:cabin});
+ assert.equal(queued.total,34);
+ assert.equal(cabins[0].visible,true);
+ assert.equal(meshes[15].visible,false);
+ const events=[];
+ const report=await stager.reveal({batchSize:16,onBatchStart:info=>events.push(info)});
+ assert.deepEqual(report.batches.map(x=>x.count),[16,16,2]);
+ assert.equal(frames,6);
+ assert.equal(report.hidden,0);
+ assert.equal(events.reduce((n,e)=>n+e.paintings,0),1);
+ meshes.forEach((mesh,i)=>{
+  assert.equal(mesh.visible,i!==10);
+  assert.equal(mesh.material,originalMaterials[i]);
+  assert.equal(mesh.material.map.source,'untouched');
+ });
+ stager.restore();
+ assert.equal(meshes[10].visible,false);
+ assert.equal(cabins[0].visible,true);
+});
+
+test('approved production staging rollback restores hidden destination before error recovery',async()=>{
+ const stager=createLivePhiArrivalMeshStager({nextFrame:async()=>{stager.restore();}});
+ const mesh={isMesh:true,visible:true,userData:{},parent:{},name:'original painting'};
+ const root={traverse(fn){fn(this);fn(mesh);}};
+ stager.start('2026-10-09',[root]);
+ await assert.rejects(stager.reveal(),/cancelled/);
+ assert.equal(mesh.visible,true);
+ assert.equal(stager.stats().hidden,0);
+});
+
+test('live engine uses fixed 16-mesh pacing without failed adaptive or diagnostic instrumentation',()=>{
+ const live=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
+ const productionStage=readFileSync(new URL('../gallery/visit/phi-arrival-mesh-stager.mjs',import.meta.url),'utf8');
+ assert.match(live,/batchSize:16/);
+ assert.match(live,/phiArrivalMeshes\.start\(date,editionObjects,\{exclude:phiLiftCabin\}\)/);
+ assert.doesNotMatch(live,/phiLiftBatchMode|liftstage|liftbatch|installPhiComposerPassProfiler|installPhiShadowRenderProbe/);
+ assert.doesNotMatch(productionStage,/mode===|'adaptive'|renderedFrame|pendingRender/);
+ assert.match(productionStage,/await nextFrame\(\);await nextFrame\(\);/);
 });
