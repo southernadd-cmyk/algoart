@@ -8,6 +8,7 @@ import {writeFile} from 'node:fs/promises';
 import {bvhTestPlugin} from './phi-bvh-test-plugin.mjs';
 import {n8aoTestPlugin} from './phi-n8ao-test-plugin.mjs';
 import {stageCurationPlugin} from './phi-stage-curation-plugin.mjs';
+import {instrumentPhotorealSource,phiPhotorealTestPlugin,patchPhotorealVisitors} from './phi-photoreal-test-plugin.mjs';
 const dir=resolve(process.cwd(),'gallery/visit');
 let source=await readFile(resolve(dir,'gallery-phi.js'),'utf8');
 const replace=(before,after)=>{
@@ -92,11 +93,12 @@ replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;'
 replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;',
   " const frameRoomCounts=new Map();\n for(const p of phi.exhibition.paintings)frameRoomCounts.set(p.room,(frameRoomCounts.get(p.room)||0)+1);\n const frameStudyRoom=exhibitDate===RECEPTION?-1:([...frameRoomCounts].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]?.[0]??-1);\n if(GALLERY_DEBUG)window.__phiArchitecturalFrameStudy={room:frameStudyRoom,paintings:frameRoomCounts.get(frameStudyRoom)||0};\n for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;");
 
+source=instrumentPhotorealSource(source);
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
  outfile:'gallery/visit/gallery-phi-test-room-signs-bundle.js',
- plugins:[stageCurationPlugin(),n8aoTestPlugin(),bvhTestPlugin(),{
+ plugins:[stageCurationPlugin(),n8aoTestPlugin(),bvhTestPlugin(),phiPhotorealTestPlugin(),{
  name:'architectural-visitor-palette-test-only',
  setup(builder){
   builder.onLoad({filter:/[/\\]visitors[.]mjs$/},async({path})=>{
@@ -133,6 +135,7 @@ await build({
    if(contents.split(oldRig).length!==2)throw Error('Legacy visitor rig anchor changed');
    contents=contents.replace(oldRig,oldRig+
     "\n selected.material=new THREE.MeshStandardMaterial({color:'#b7b5ae',roughness:.86,metalness:.02,vertexColors:false,side:THREE.DoubleSide});");
+   contents=patchPhotorealVisitors(contents);
    return {contents,loader:'js',resolveDir:dir};
   });
  }
