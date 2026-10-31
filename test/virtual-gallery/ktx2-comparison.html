@@ -26,6 +26,7 @@ small{color:#9caeaa}#status{font-weight:600;color:#e5d6ad}
 <p>This comparison runs inside your browser, on the actual test tower. It alternates two JPEG and two KTX2 sessions, visiting reception and one gallery floor with the same viewport. KTX2 changes only three architectural maps; artwork and live remain untouched.</p>
 <div class="controls">
 <button id="run">Run four-session comparison</button>
+<button id="coldRun">Run four cold-network starts</button>
 <button id="copy" disabled>Copy results as JSON</button>
 <a href="./full-engine.html?ktx2=multi" target="_blank" rel="noopener">Open three-map KTX2 test</a>
 <span id="status">Ready</span>
@@ -35,7 +36,8 @@ small{color:#9caeaa}#status{font-weight:600;color:#e5d6ad}
 <tbody id="results"></tbody>
 </table>
 <div class="pane"><iframe id="tower" title="Benchmark gallery" loading="eager" allow="fullscreen"></iframe></div>
-<p><small>For useful hardware results, keep this tab visible and avoid resizing it during the run. FPS is inferred from animation frame intervals; performance is sensitive to background apps, browser throttling and GPU drivers. The first visit may populate caches. The page does not upload or transmit results.</small></p>
+<p><strong>For a genuinely cold network comparison on your Radeon:</strong> open this page in desktop Chrome or Edge, press F12, choose <strong>Network → Disable cache</strong>, and <strong>keep DevTools open</strong> while clicking “Run four cold-network starts”. The page verifies that the texture files were transferred in each run; any cached transfers are flagged rather than counted as cold. You may need to reload the page after enabling Disable cache.</p>
+<p><small>Cold-network mode disables neither browser shader caches nor GPU caches; it is not equivalent to restarting Chrome with a fresh profile. Other network resources may also influence startup. For the full-gallery frame comparison use the regular button; cold mode measures startup only to avoid unnecessary loading on slow connections. Nothing is uploaded.</small></p>
 <pre id="diagnostics" aria-live="polite"></pre>
 <script>
 const $$=id=>document.getElementById(id);
@@ -87,10 +89,10 @@ async function journey(win){
   return {status:'arrived',floor:win.__phiLiftState.floor};
  }catch(error){return {status:'failed',error:String(error)};}
 }
-async function single(mode,index){
+async function single(mode,index,coldMode=false){
  const frame=$$('tower');
  frame.src='about:blank';await delay(350);
- const src='./full-engine.html?debug=1'+(mode==='multi'?'&ktx2=multi':'')+'&bench='+index;
+ const src='./full-engine.html?debug=1'+(mode==='multi'?'&ktx2=multi':'')+'&bench='+index+(coldMode?'&coldbench=1':'');
  const started=performance.now();
  frame.src=src;
  await new Promise((resolve,reject)=>{
@@ -107,6 +109,26 @@ async function single(mode,index){
   ['fallback-jpg','partial-fallback'].includes(win.__phiKTX2Pilot?.status),65000,'texture readiness');
  const texture={...win.__phiKTX2Pilot};
  if(texture.status!==expected)throw Error('Texture pilot not fully loaded: '+JSON.stringify(texture));
+ const names=['Bricks055_NormalGL','Bricks055_Roughness','OfficeCeiling001_NormalGL'];
+ const suffix=mode==='multi'?'.ktx2':'.jpg';
+ if(coldMode)await waitFor(()=>{
+  const entries=win.performance.getEntriesByType('resource');
+  return names.every(name=>entries.some(e=>e.name.includes('/'+name+suffix)&&e.responseEnd>0));
+ },50000,'three architectural texture transfers');
+ const textureReadyMs=Math.round(performance.now()-started);
+ const entries=win.performance.getEntriesByType('resource');
+ const textureRequests=names.map(name=>{
+  const file=name+suffix;
+  const entry=entries.filter(e=>e.name.includes('/'+file)).at(-1);
+  return entry?{name:file,transferSize:entry.transferSize,encodedBodySize:entry.encodedBodySize,
+    durationMs:+entry.duration.toFixed(1),responseEndMs:+entry.responseEnd.toFixed(1)}
+    :{name:file,missing:true};
+ });
+ const verifiedNetworkCold=textureRequests.every(e=>!e.missing&&e.transferSize>0);
+ if(coldMode)return {index,mode,readyMs,textureReadyMs,texture,textureRequests,
+  verifiedNetworkCold,gpu:getGpu(win),width:win.innerWidth,height:win.innerHeight,
+  devicePixelRatio:win.devicePixelRatio,networkResourceCount:entries.length,
+  warning:verifiedNetworkCold?null:'At least one texture was cached or its transfer timing is unavailable.'};
  win.document.querySelector('#enter').click();
  await waitFor(()=>win.document.querySelector('#welcome')?.hidden===true,12000,'enter');
  await delay(2500);
@@ -114,7 +136,7 @@ async function single(mode,index){
  const lift=await journey(win);
  const gallery=lift.status==='arrived'?(await delay(2500),await sample(win,9000)):null;
  return {
-  index,mode,readyMs,texture,reception,gallery,lift,
+  index,mode,readyMs,textureReadyMs,texture,textureRequests,verifiedNetworkCold,reception,gallery,lift,
   gpu:getGpu(win),
   resources:win.__phiRenderStats||null,
   memory:win.performance?.memory?.usedJSHeapSize||null,
@@ -122,33 +144,40 @@ async function single(mode,index){
   pageErrors:win.__galleryStartupError||null
  };
 }
-$$('run').addEventListener('click',async()=>{
- $$('run').disabled=true;$$('copy').disabled=true;results.length=0;$$('results').innerHTML='';
- $$('diagnostics').textContent='';
+async function runComparison(coldMode){
+ $$('run').disabled=true;$$('coldRun').disabled=true;$$('copy').disabled=true;
+ results.length=0;$$('results').innerHTML='';$$('diagnostics').textContent='';
  for(let i=0;i<runs.length;i++){
-  const mode=runs[i];$$('status').textContent='Run '+(i+1)+'/4 · '+mode;
-  log('Starting '+(i+1)+' of 4: '+mode);
+  const mode=runs[i];$$('status').textContent=(coldMode?'Cold-network ':'')+'run '+(i+1)+'/4 · '+mode;
+  log('Starting '+(i+1)+' of 4: '+mode+(coldMode?' (HTTP network cold check)':''));
   try{
-   const result=await single(mode,i+1);results.push(result);
+   const result=await single(mode,i+1,coldMode);results.push(result);
    const cell=x=>x?x.medianMs+' / '+x.p95Ms+' ms':'—';
    const tr=document.createElement('tr');
-   for(const value of [i+1,mode,result.readyMs+' ms',cell(result.reception),cell(result.gallery),result.texture.status]){
+   for(const value of [i+1,mode,result.readyMs+' ms',
+      coldMode?('Texture resources: '+result.textureReadyMs+' ms'):cell(result.reception),
+      coldMode?(result.verifiedNetworkCold?'Network transferred':'CACHE HIT / UNKNOWN'):cell(result.gallery),
+      result.texture.status]){
     const td=document.createElement('td');td.textContent=value;tr.appendChild(td);
    }
-   $$('results').appendChild(tr);
-   log(JSON.stringify(result));
+   $$('results').appendChild(tr);log(JSON.stringify(result));
   }catch(error){
-   const failure={index:i+1,mode,error:String(error)};results.push(failure);log('FAILED '+JSON.stringify(failure));
-   const row=document.createElement('tr');const td=document.createElement('td');
-   td.colSpan=6;td.textContent='Run '+(i+1)+' failed: '+String(error);row.appendChild(td);$$('results').appendChild(row);
+   const failure={index:i+1,mode,error:String(error)};results.push(failure);
+   log('FAILED '+JSON.stringify(failure));
+   const row=document.createElement('tr'),td=document.createElement('td');
+   td.colSpan=6;td.textContent='Run '+(i+1)+' failed: '+String(error);
+   row.appendChild(td);$$('results').appendChild(row);
   }
   await delay(1000);
  }
- $$('status').textContent='Finished · '+results.filter(r=>!r.error).length+'/4 completed';
- $$('run').disabled=false;$$('copy').disabled=false;
-});
+ const passed=results.filter(r=>!r.error&&(!coldMode||r.verifiedNetworkCold)).length;
+ $$('status').textContent='Finished · '+passed+'/4 '+(coldMode?'network-cold verified':'completed');
+ $$('run').disabled=false;$$('coldRun').disabled=false;$$('copy').disabled=false;
+}
+$$('run').addEventListener('click',()=>runComparison(false));
+$$('coldRun').addEventListener('click',()=>runComparison(true));
 $$('copy').addEventListener('click',()=>{
- const data=JSON.stringify({benchmark:'PROPORTION PIECE hardware KTX2 three-map test',date:new Date().toISOString(),
+ const data=JSON.stringify({benchmark:'PROPORTION PIECE KTX2 three-map test (cold HTTP status included where available)',date:new Date().toISOString(),
  environment:{userAgent:navigator.userAgent},sequence:runs,results},null,2);
  navigator.clipboard.writeText(data).then(()=>{$$('status').textContent='Copied JSON';}).catch(()=>{log(data);});
 });
