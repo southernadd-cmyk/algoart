@@ -12,7 +12,7 @@ try{
  const page=await browser.newPage({viewport:{width:1100,height:720},deviceScaleFactor:1});
  const errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
- await page.goto(gallery+'?debug=1&jpegformat=lossless&coldbench=1&benchcache=cold&benchseed='+seed,
+ await page.goto(gallery+'?debug=1&liftprofile=1&jpegformat=lossless&coldbench=1&benchcache=cold&benchseed='+seed,
   {waitUntil:'domcontentloaded',timeout:60000});
  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled||!!window.__galleryStartupError,
   null,{timeout:105000});
@@ -37,7 +37,9 @@ try{
   return {paintings:info.paintings,paintingsLoaded:info.paintingsLoaded,
    preload:stats,bank:{requested:bank.requested,loaded:bank.loaded,failed:bank.failed,
    artworks:bank.artworks,failures:bank.failures?.slice(0,8)},
-   lift:window.__phiLiftPreparation||null,stage:window.__galleryStage||'',
+   lift:window.__phiLiftPreparation||null,
+   liftProfile:window.__phiLiftProfile?.visits?.at(-1)||null,
+   stage:window.__galleryStage||'',
    errors:window.__phiLiftError||null,
    jpgResources:resources.filter(x=>/\\.(jpg|ktx2)(\\?|$)/.test(x.name)).length,
    taggedAssets:resources.filter(x=>x.name.includes('phiBenchAsset=')).length};
@@ -60,10 +62,12 @@ try{
    cached:matched.filter(x=>x.transferSize===0).length,
    bytes:matched.reduce((s,x)=>s+x.transferSize,0),fallback:textures.failed,
    artworks:textures.artworks,architecture:textures.architectural,
+   liftProfile:window.__phiLiftProfile?.visits?.at(-1)||null,
    mirror:matched.some(x=>x.name.includes('/ktx2-lossless/external-jpeg/'))};
  },seed);
  console.log('COLD_BENCH_REAL_GALLERY '+JSON.stringify(result));
  assert.ok(result.paintings>0&&result.paintingsLoaded===result.paintings);
+ assert.ok(result.liftProfile?.stages.some(x=>x.name==='warmup-details'),'Lift warmup profiling must record shader/GPU stages');
  assert.ok(result.matched>=10,'At least ten cold tagged texture requests');
  assert.ok(result.unique>=10);
  assert.ok(result.transferred>=8,'Cold image requests must actually transfer bytes');
