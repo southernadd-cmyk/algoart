@@ -1,4 +1,5 @@
 import {galleryPreparationFrame} from '../../gallery/visit/gallery-entry-preparation.mjs';
+export {galleryPreparationFrame};
 export {trackGalleryLoading,waitForGalleryEntry} from '../../gallery/visit/gallery-entry-preparation.mjs';
 
 // Both startup and lift arrival already wait for bounded asset preparation.
