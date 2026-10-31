@@ -12,6 +12,7 @@ on:
       - 'test/virtual-gallery/phi-room-geometry-stage.mjs'
       - 'test/virtual-gallery/phi-lift-profile.mjs'
       - 'test/virtual-gallery/phi-postfx-pass-profiler.mjs'
+      - 'test/virtual-gallery/phi-shadow-render-probe.mjs'
       - 'test/virtual-gallery/phi-painting-arrival-gate.mjs'
       - 'test/virtual-gallery/phi-lift-indicator.mjs'
 permissions:
