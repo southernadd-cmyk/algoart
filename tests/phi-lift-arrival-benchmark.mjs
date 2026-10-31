@@ -4,10 +4,14 @@ import {mkdir,writeFile} from 'node:fs/promises';
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage']});
 const quantile=(a,q)=>a.length?[...a].sort((x,y)=>x-y)[Math.min(a.length-1,Math.floor((a.length-1)*q))]:null;
 const n=x=>typeof x==='number'?+x.toFixed(1):null;
-const cases=[['live','gallery/visit/'],['test','test/virtual-gallery/full-engine.html']];
+const cases=[
+ ['live','gallery/visit/',''],
+ ['test-control','test/virtual-gallery/full-engine.html','&liftstage=1&liftbatch=16&liftpipeline=0&liftwarmrender=1'],
+ ['test-optimised','test/virtual-gallery/full-engine.html','&liftstage=1&liftbatch=16&liftpipeline=1&liftwarmrender=0']
+];
 const destinations=['2026-10-20','2026-10-30'];
 const results=[];
-async function benchmark(label,path){
+async function benchmark(label,path,query=''){
  const context=await browser.newContext({viewport:{width:1280,height:800},deviceScaleFactor:1});
  const page=await context.newPage(),errors=[];
  page.on('pageerror',error=>errors.push(String(error)));
@@ -20,7 +24,7 @@ async function benchmark(label,path){
  });
  try{
   const started=Date.now();
-  await page.goto('http://127.0.0.1:4173/'+path+'?debug=1&liftprofile=1',{waitUntil:'domcontentloaded',timeout:60000});
+  await page.goto('http://127.0.0.1:4173/'+path+'?debug=1&liftprofile=1'+query,{waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled||!!window.__galleryStartupError,null,{timeout:185000});
   const error=await page.evaluate(()=>window.__galleryStartupError||'');
   if(error)throw Error('Startup error '+error);
@@ -53,6 +57,7 @@ async function benchmark(label,path){
    const frames=after.frames.map(x=>x.ms),stalls=after.frames.filter(x=>x.ms>=80);
    const stages=after.profile?.stages||[];
    const stage=k=>stages.find(x=>x.name===k)?.elapsedMs??null;
+   const warmDetails=stages.find(x=>x.name==='warmup-details')?.details||{};
    const sceneStart=stage('ride-finished'),sceneEnd=stage('floor-construction-finished'),doorsOpen=stage('doors-opening');
    const record={label,date,floor,elapsedMs:n(after.now-before),frameCount:frames.length,
     frameP50Ms:n(quantile(frames,.5)),frameP95Ms:n(quantile(frames,.95)),maxFrameMs:n(Math.max(0,...frames)),
@@ -62,8 +67,9 @@ async function benchmark(label,path){
     arrivalToDoorMs:sceneStart==null||doorsOpen==null?null:n(doorsOpen-sceneStart),
     loaded:after.info?.paintingsLoaded,total:after.info?.paintings,
     gpuPrep:after.prep?.paintingGPU||null,
-    warmup:{compileMs:after.prep?.compileMs,uploadMs:after.prep?.uploadMs,totalMs:after.prep?.totalMs,
-     failedUploads:after.prep?.failedUploads,timedOut:after.prep?.timedOut},
+    warmup:{compileMs:warmDetails.compileMs,uploadMs:warmDetails.uploadMs,totalMs:warmDetails.totalMs,
+     finalRenderMs:warmDetails.finalRenderMs,skipFinalRender:warmDetails.skipFinalRender,
+     failedUploads:warmDetails.failedUploads,timedOut:after.prep?.timedOut},
     stageNames:stages.map(x=>x.name),error:after.error};
    rides.push(record);console.log('LIFT_JOURNEY '+JSON.stringify(record));
   }
@@ -71,8 +77,8 @@ async function benchmark(label,path){
  }finally{await context.close()}
 }
 try{
- for(const [label,path] of cases){
-  try{results.push(await benchmark(label,path))}
+ for(const [label,path,query] of cases){
+  try{results.push(await benchmark(label,path,query))}
   catch(error){results.push({label,error:String(error)});console.error('BENCHMARK_FAILURE '+label+' '+String(error))}
  }
  await mkdir('phi-benchmark-results',{recursive:true});
