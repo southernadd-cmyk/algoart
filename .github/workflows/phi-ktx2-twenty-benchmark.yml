@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/phi-ktx2-twenty-benchmark.yml'
       - 'test/virtual-gallery/ktx2-20/manifest.json'
+      - 'test/virtual-gallery/ktx2-20-stress.mjs'
 permissions:
   contents: write
   actions: write
