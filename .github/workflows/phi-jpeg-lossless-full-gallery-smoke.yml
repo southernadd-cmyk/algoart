@@ -1,0 +1,22 @@
+name: Verify every-JPEG lossless KTX2 gallery visit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-jpeg-lossless-full-gallery-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Check reception and archive paintings as raw lossless KTX2
+        run: node tests/phi-jpeg-lossless-full-gallery-smoke.mjs
