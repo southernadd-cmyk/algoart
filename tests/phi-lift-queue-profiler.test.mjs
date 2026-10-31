@@ -6,10 +6,13 @@ import {warmGalleryEntry} from '../test/virtual-gallery/gallery-entry-preparatio
 import {createPhiArtworkPreloader} from '../test/virtual-gallery/phi-artwork-preload.mjs';
 import {createPhiLiftPaintingGPUPreparer} from '../test/virtual-gallery/phi-lift-painting-gpu.mjs';
 import {createPhiRoomGeometryStager} from '../test/virtual-gallery/phi-room-geometry-stage.mjs';
+import {createPhiPaintingArrivalGate} from '../test/virtual-gallery/phi-painting-arrival-gate.mjs';
+import {phiLiftIndicatorState} from '../test/virtual-gallery/phi-lift-indicator.mjs';
 
 test('completed artwork jobs are prioritized ahead of optional deferred furnishing jobs',()=>{
  const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
- assert.match(src,/if\(url\)deferredGalleryJobs\.unshift\(\(\)=>\{/);
+ assert.match(src,/if\(viaLift\)attachPainting\(\)/);
+ assert.match(src,/else deferredGalleryJobs\.unshift\(attachPainting\)/);
  assert.match(src,/const warmed=phiArtworkPreloader\.take\(exhibitDate,url\)/);
  assert.match(src,/texture-upload-and-compile-finished/);
  assert.match(src,/phiLiftProfiler\?\.tick\(\)/);
@@ -167,4 +170,87 @@ test('test gallery hands prepared room dimensions to original geometry construct
  assert.match(source,/phiRoomGeometryStage\.start\(date,roomShapes\)/);
  assert.match(source,/phiRoomGeometryStage\.take\(exhibitDate,w,h,d\)\|\|new THREE\.BoxGeometry\(w,h,d\)/);
  assert.match(source,/phiRoomGeometryStage\.clear\(\)/);
+});
+
+test('doors cannot release until all painting maps are actually attached and GPU uploaded',async()=>{
+ let time=0,uploads=0;
+ const gate=createPhiPaintingArrivalGate({
+  date:'2026-10-22',expected:2,
+  nextFrame:async()=>{time+=1;},
+  upload:texture=>{assert.equal(texture.isTexture,true);uploads++},
+  now:()=>time
+ });
+ const wall=()=>({parent:{},userData:{},material:{map:null}});
+ const a=wall(),b=wall(),paintA=gate.register('A',a),paintB=gate.register('B',b);
+ const textureA={isTexture:true,image:{width:32,height:32}};
+ const textureB={isTexture:true,image:{width:64,height:64}};
+ a.material.map=textureA;paintA.ready(textureA);
+ await Promise.resolve();await Promise.resolve();await Promise.resolve();
+ assert.equal(gate.stats().complete,false);
+ b.material.map=textureB;paintB.ready(textureB);
+ const result=await gate.wait({timeoutMs:1000});
+ assert.equal(result.ready,2);
+ assert.equal(result.expected,2);
+ assert.equal(uploads,2);
+ assert.equal(result.complete,true);
+});
+
+test('a painting missing its attached map cannot be counted as ready',async()=>{
+ let time=0;
+ const gate=createPhiPaintingArrivalGate({
+  date:'2026-10-20',expected:1,nextFrame:async()=>{time++;},
+  upload:()=>{},now:()=>time
+ });
+ const face={parent:{},userData:{},material:{map:null}};
+ gate.register('unattached',face).ready({isTexture:true,image:{width:8,height:8}});
+ await assert.rejects(gate.wait({timeoutMs:1000}),/Painting could not be prepared/);
+ assert.equal(gate.stats().ready,0);
+});
+
+test('missing and failed paintings fail closed rather than opening incomplete exhibitions',async()=>{
+ let time=0;
+ const create=()=>createPhiPaintingArrivalGate({
+  date:'2026-10-30',expected:1,nextFrame:async()=>{time+=3;},
+  upload:()=>{},now:()=>time
+ });
+ const unregistered=create();
+ await assert.rejects(unregistered.wait(),/Expected 1 paintings, registered 0/);
+ const broken=create();
+ broken.register('broken',{parent:{},userData:{},material:{map:null}}).fail(Error('404'));
+ await assert.rejects(broken.wait(),/404/);
+ const stalled=create();
+ stalled.register('stall',{parent:{},userData:{},material:{map:null}});
+ await assert.rejects(stalled.wait({timeoutMs:10}),/timed out: 0\/1 ready/);
+});
+
+test('cancelled editions cannot release the lift or upload stale artwork',async()=>{
+ let uploads=0;
+ const gate=createPhiPaintingArrivalGate({
+  date:'2026-10-25',expected:1,nextFrame:async()=>{},
+  upload:()=>uploads++
+ });
+ const face={parent:{},userData:{},material:{map:null}};
+ gate.register('A',face);
+ gate.cancel();
+ await assert.rejects(gate.wait({timeoutMs:10}),/cancelled/);
+ assert.equal(uploads,0);
+});
+
+test('lift wall indicator displays actual painting readiness count while stopped',()=>{
+ const state=phiLiftIndicatorState({
+  height:12.4,spacing:6.2,dates:['__phi_reception__','2026-10-20','2026-10-30'],
+  currentFloor:2,targetFloor:2,phase:'paintings',
+  paintings:{ready:7,expected:9}
+ });
+ assert.match(state.secondary,/Paintings 7 \/ 9/);
+});
+
+test('painting arrival gate runs before door release, without reducing source fidelity',()=>{
+ const source=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(source,/await phiPaintingGate\.wait\(/);
+ assert.match(source,/phiLiftProfiler\?\.mark\('paintings-gpu-ready'/);
+ assert.match(source,/if\(!phiPaintingGate\?\.stats\(\)\.complete/);
+ assert.match(source,/renderer\.initTexture\(texture\)/);
+ assert.match(source,/const sources=\[url,study\.image\]/);
+ assert.match(source,/texture\.colorSpace=THREE\.SRGBColorSpace/);
 });
