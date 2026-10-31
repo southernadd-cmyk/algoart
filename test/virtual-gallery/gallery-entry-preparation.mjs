@@ -29,7 +29,7 @@ export async function waitForGalleryEntry({loading,isBusy,pump,nextFrame=gallery
  }
  return {timedOut:true,ms:now()-start};
 }
-export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryPreparationFrame,onStage=null,isAlreadyUploaded=()=>false,markUploaded=()=>{}}){
+export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryPreparationFrame,onStage=null,isAlreadyUploaded=()=>false,markUploaded=()=>{},skipFinalRender=false}){
  const timer=()=>performance.now();
  const totalStart=timer(),slowUploads=[];
  let then=timer();
@@ -61,13 +61,14 @@ export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryP
  }
  const uploadMs=timer()-then;
  then=timer();
- renderer.render(scene,camera);
+ if(!skipFinalRender)renderer.render(scene,camera);
  const finalRenderMs=timer()-then;
  await nextFrame();
  const diagnostic={textures:textures.size};
  if(onStage)onStage('warmup-details',{compileMs:+compileMs.toFixed(1),
   traversalMs:+traversalMs.toFixed(1),uploadMs:+uploadMs.toFixed(1),
   finalRenderMs:+finalRenderMs.toFixed(1),totalMs:+(timer()-totalStart).toFixed(1),
-  failedUploads,skippedUploads,attemptedUploads,slowUploads:slowUploads.sort((a,b)=>b.ms-a.ms).slice(0,12)});
+  failedUploads,skippedUploads,attemptedUploads,skipFinalRender,
+  slowUploads:slowUploads.sort((a,b)=>b.ms-a.ms).slice(0,12)});
  return diagnostic;
 }
