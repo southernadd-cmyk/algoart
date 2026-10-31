@@ -1,0 +1,43 @@
+name: Verify and build TEST tower GPU profiling
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'test/virtual-gallery/gallery-phi.js'
+      - 'test/virtual-gallery/phi-gpu-profiler.mjs'
+      - 'tests/phi-gpu-profiler.test.mjs'
+      - '.github/workflows/test-gpu-profiling.yml'
+permissions:
+  contents: write
+concurrency:
+  group: test-tower-gpu-profiling
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Test non-blocking GPU probe
+        run: node --test tests/phi-gpu-profiler.test.mjs
+      - name: Build TEST bundle without altering live
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+      - name: Publish generated TEST bundle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/virtual-gallery/gallery-phi-bundle.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Build test tower GPU profiling experiment"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
