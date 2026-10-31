@@ -1,0 +1,35 @@
+name: Verify test lift batch reveal and painting interlock
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-lift-batch-reveal-browser.yml'
+permissions:
+  contents: read
+jobs:
+  test-batched-scene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build test-only scene while preserving published gallery
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+          node --test tests/phi-lift-queue-profiler.test.mjs
+      - name: Start local gallery
+        run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-stage-browser.log 2>&1 &
+      - name: Verify batched scene is complete and every painting GPU ready before doors open
+        run: PHI_LIFT_STAGE=1 node tests/phi-lift-readiness-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-lift-batched-scene-browser
+          path: phi-lift-readiness-results/
+          if-no-files-found: ignore
