@@ -13,8 +13,8 @@ export function instrumentPhotorealSource(source){
   'const phiPhotoreal=photorealEnabled()&&renderer?createPhotorealEnvironment({THREE,renderer,scene,finishes:galleryFinish,postFX:phiPostFX}):null;\ninstallPhotorealComparison(photorealEnabled());\nconst wall=galleryFinish.wall;');
  source=replaceOnce(source,'function createReceptionPlasterFloorMaterial(THREE,{lowPower=false}={}){',
   'function createReceptionPlasterFloorMaterial(THREE,{lowPower=false}={}){\n if(photorealEnabled())return createPhotorealReceptionFloor(THREE,{lowPower});');
- source=replaceOnce(source,'function block(w, h, d, x, y, z, material = wall) {\n  const geometry=new THREE.BoxGeometry(w,h,d);',
-  'function block(w, h, d, x, y, z, material = wall) {\n  const geometry=photorealEnabled()?photorealBox(w,h,d):new THREE.BoxGeometry(w,h,d);');
+ source=replaceOnce(source,'function block(w, h, d, x, y, z, material = wall) {\n  const geometry=phiRoomGeometryStage.take(exhibitDate,w,h,d)||new THREE.BoxGeometry(w,h,d);',
+  'function block(w, h, d, x, y, z, material = wall) {\n  const geometry=photorealEnabled()?photorealBox(w,h,d):(phiRoomGeometryStage.take(exhibitDate,w,h,d)||new THREE.BoxGeometry(w,h,d));');
  source=replaceOnce(source,'  phiLightingStudy?.update();','  phiLightingStudy?.update();\n  phiPhotoreal?.update();');
  source=replaceOnce(source,'    phiLightingStudy?.editionChanged(elevation);',
   '    phiLightingStudy?.editionChanged(elevation);\n    phiPhotoreal?.editionChanged();');
