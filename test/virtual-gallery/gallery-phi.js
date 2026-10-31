@@ -36,6 +36,7 @@ import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
+import {createPhiRoomGeometryStager} from './phi-room-geometry-stage.mjs';
 import {createTextureBenchCache} from './phi-jpeg-benchmark-cache.mjs';
 import {decodePhiArtworkImage} from './phi-artwork-preload.mjs';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
@@ -262,8 +263,15 @@ const roofFinish=galleryFinish.plinth;
 const ceilingFinish=galleryFinish.ceiling;
 const skylightGlass = new THREE.MeshPhysicalMaterial({color:'#d5e1df',metalness:.06,roughness:.22,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false});
 
+const phiRoomGeometryStage=createPhiRoomGeometryStager({
+ create:(w,h,d)=>new THREE.BoxGeometry(w,h,d),
+ schedule:callback=>requestAnimationFrame(callback),
+ dispose:geometry=>geometry.dispose()
+});
+if(GALLERY_DEBUG)window.__phiRoomGeometryStage=()=>phiRoomGeometryStage.stats();
+
 function block(w, h, d, x, y, z, material = wall) {
-  const geometry=new THREE.BoxGeometry(w,h,d);
+  const geometry=phiRoomGeometryStage.take(exhibitDate,w,h,d)||new THREE.BoxGeometry(w,h,d);
   if(material.userData?.tileMeters)
     tiledBoxUvs(geometry,w,h,d,material.userData.tileMeters);
   const mesh=new THREE.Mesh(geometry,material);
@@ -1046,6 +1054,21 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('edition-metadata-ready',{paintings:prepared.nextPlan.phi.exhibition.paintings.length});
   // Begin downloads after metadata validation, before the physical journey.
   const byId=new Map(prepared.studies.map(study=>[study.id,study]));
+  // Box geometries for room slabs, enclosure walls, ceilings and trims are
+  // allocated off-scene, one per frame, during this journey. The existing
+  // construction code still owns the materials, UVs and mesh placement.
+  const phi=prepared.nextPlan.phi;
+  const roomShapes=[
+   ...phi.pieces.flatMap(p=>[[p.w,.28,p.h],[p.w,.18,p.h]]),
+   ...phi.physical.walls.flatMap(w=>{
+    const len=w.hi-w.lo;
+    if(len<=.04)return [];
+    return w.axis==='x'
+     ?[[.19,ROOM_HEIGHT,len],[.035,ROOM_HEIGHT,len],[.13,.16,len],[.065,.13,len]]
+     :[[len,ROOM_HEIGHT,.19],[len,ROOM_HEIGHT,.035],[len,.16,.13],[len,.13,.065]];
+   })
+  ];
+  phiRoomGeometryStage.start(date,roomShapes);
   liftPaintingGPU.start(date);
   phiArtworkPreloader.start(date,prepared.nextPlan.phi.exhibition.paintings
    .map(p=>byId.get(p.studyId)).filter(Boolean)
@@ -1061,14 +1084,15 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('doors-closed');
   if(plan?.phi){
    await startPhiCabinRide(index);
-   phiLiftProfiler?.mark('ride-finished',{paintingGPU:liftPaintingGPU.stats(),sculptures:phiSculptureStage.stats()});
+   phiLiftProfiler?.mark('ride-finished',{paintingGPU:liftPaintingGPU.stats(),roomGeometry:phiRoomGeometryStage.stats(),sculptures:phiSculptureStage.stats()});
    // The shared shaft and the other levels remain in the 3D scene for the ride.
    // Replace detailed room contents only after the cabin reaches its landing.
    await loadEdition(date,{viaLift:true,prepared});
   }else{
    await loadEdition(date,{viaLift:true,prepared});
   }
-  phiLiftProfiler?.mark('floor-construction-finished',{paintings:window.__phiFullEngine?.paintings});
+  phiLiftProfiler?.mark('floor-construction-finished',{paintings:window.__phiFullEngine?.paintings,roomGeometry:phiRoomGeometryStage.stats()});
+  phiRoomGeometryStage.clear();
   clearPhiMovingCabin();
   // Build queued exhibits and warm the destination GPU resources with the
   // physical doors still shut. Opening must not be the first render/upload.
@@ -1102,6 +1126,7 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('failure',{message:String(error?.message||error)});
   phiArtworkPreloader.clear();
   phiSculptureStage.clear();
+  phiRoomGeometryStage.clear();
   if(exhibitDate!==departure.date){
    try{await loadEdition(departure.date,{rollback:true});}
    catch(recoveryError){console.error('[Phi lift] departure recovery failed',recoveryError);}
