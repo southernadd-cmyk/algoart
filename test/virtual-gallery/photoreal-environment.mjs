@@ -89,7 +89,7 @@ export function createPhotorealEnvironment({THREE,renderer,scene,finishes,postFX
    }
   }
  }
- return {stats,update,editionChanged(){lastScan=-Infinity;update();}};
+ return {stats,update,prepare(){lastScan=-Infinity;update();},editionChanged(){lastScan=-Infinity;update();}};
 }
 
 export function refinePhotorealGlass(material){

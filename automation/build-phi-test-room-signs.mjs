@@ -5,6 +5,7 @@ import {resolve} from 'node:path';
 import {build} from 'esbuild';
 import {createHash} from 'node:crypto';
 import {writeFile} from 'node:fs/promises';
+import {instrumentWarmupSource,warmupTestPlugin} from './phi-warmup-test-plugin.mjs';
 import {bvhTestPlugin} from './phi-bvh-test-plugin.mjs';
 import {n8aoTestPlugin} from './phi-n8ao-test-plugin.mjs';
 import {stageCurationPlugin} from './phi-stage-curation-plugin.mjs';
@@ -94,11 +95,12 @@ replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.st
   " const frameRoomCounts=new Map();\n for(const p of phi.exhibition.paintings)frameRoomCounts.set(p.room,(frameRoomCounts.get(p.room)||0)+1);\n const frameStudyRoom=exhibitDate===RECEPTION?-1:([...frameRoomCounts].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]?.[0]??-1);\n if(GALLERY_DEBUG)window.__phiArchitecturalFrameStudy={room:frameStudyRoom,paintings:frameRoomCounts.get(frameStudyRoom)||0};\n for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;");
 
 source=instrumentPhotorealSource(source);
+source=instrumentWarmupSource(source);
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
  outfile:'gallery/visit/gallery-phi-test-room-signs-bundle.js',
- plugins:[stageCurationPlugin(),n8aoTestPlugin(),bvhTestPlugin(),phiPhotorealTestPlugin(),{
+ plugins:[warmupTestPlugin(),stageCurationPlugin(),n8aoTestPlugin(),bvhTestPlugin(),phiPhotorealTestPlugin(),{
  name:'architectural-visitor-palette-test-only',
  setup(builder){
   builder.onLoad({filter:/[/\\]visitors[.]mjs$/},async({path})=>{
