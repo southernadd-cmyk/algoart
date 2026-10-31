@@ -47,7 +47,7 @@ export function createJPEGParityBank(THREE,renderer){
   const begin=performance.now();
   try{
    const loader=await getLoader();
-   const texture=await loader.loadAsync(target.url);
+   const texture=await loader.loadAsync(globalThis.__phiJPEGCacheBench?.stamp(target.url)||target.url);
    // DataTexture, never hardware-block-compressed: guarantees exact base
    // RGBA8 texels, unlike Basis ETC1S/UASTC.
    if(!texture.isDataTexture||texture.isCompressedTexture||
