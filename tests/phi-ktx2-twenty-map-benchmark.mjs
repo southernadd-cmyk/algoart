@@ -82,7 +82,8 @@ window.runTwenty=async mode=>{
   for(const m of materials)m.dispose();
   for(const g of geometries)g.dispose();
   for(const t of textures)t.dispose();
-  basis?.dispose();renderer.dispose();canvas.remove();
+  basis?.dispose();renderer.dispose();
+  // Retain the last rendered pixels for an optional diagnostic screenshot.
   return result;
  }catch(e){
   for(const m of materials)m.dispose();for(const g of geometries)g.dispose();
