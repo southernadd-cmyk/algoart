@@ -24,7 +24,7 @@ export function readGLB(file){
  let binary=null,ptr=20+jsonLen;
  while(ptr+8<=data.length){
   const length=data.readUInt32LE(ptr),kind=data.toString('utf8',ptr+4,ptr+8);
-  if(kind==='BIN\\0')binary=data.subarray(ptr+8,ptr+8+length);
+  if(kind.startsWith('BIN'))binary=data.subarray(ptr+8,ptr+8+length);
   ptr+=8+length;
  }
  const imageHashes=[];
@@ -83,11 +83,11 @@ export function packAssets({base=process.cwd(),binary=join(base,'node_modules/.b
   report.candidates.push({name:candidate.name,optimized,reason:optimized?undefined:reason,
    originalBytes:sourceBytes,stagedBytes:outputBytes,
    savingsBytes:sourceBytes-outputBytes,savingsPercent:Number((100*(sourceBytes-outputBytes)/sourceBytes).toFixed(1)),...meta});
-  process.stdout.write(candidate.name+': '+(optimized?'gltfpack':'source fallback')+' '+sourceBytes+' -> '+outputBytes+' bytes'+(reason?' ('+reason+')':'')+'\\n');
+  process.stdout.write(candidate.name+': '+(optimized?'gltfpack':'source fallback')+' '+sourceBytes+' -> '+outputBytes+' bytes'+(reason?' ('+reason+')':'')+'\n');
  }
  const reportFile=join(output,'report.json');
- writeFileSync(reportFile,JSON.stringify(report,null,2)+'\\n');
- process.stdout.write('Pilot report: '+reportFile+'\\n');
+ writeFileSync(reportFile,JSON.stringify(report,null,2)+'\n');
+ process.stdout.write('Pilot report: '+reportFile+'\n');
  return report;
 }
 if(process.argv[1]&&resolve(process.argv[1])===resolve(new URL(import.meta.url).pathname)){

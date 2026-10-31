@@ -15,18 +15,18 @@ const replace=(before,after)=>{
 // An opt-in A/B for three staging GLBs. The original URLs and live build
 // are never rewritten. This operates through the default GLTFLoader manager.
 replace("import * as THREE from 'three';",
- "import * as THREE from 'three';\\n"+
- "const phiGltfpackCandidates=new Set(['plants-scene-gallery-optimized.glb','modern-reception-fittings.glb','pothos-plant.glb']);\\n"+
- "const phiGltfpackPilot=new URLSearchParams(location.search).get('models')==='gltfpack';\\n"+
- "window.__phiGltfpackPilot={enabled:phiGltfpackPilot,redirected:[]};\\n"+
- "if(phiGltfpackPilot){THREE.DefaultLoadingManager.setURLModifier(url=>{\\n"+
- "  try{const u=new URL(url,location.href);const base=u.pathname.split('/').pop();\\n"+
- "   if(phiGltfpackCandidates.has(base)&&u.pathname.includes('/gallery/visit/models/')){\\n"+
- "    u.pathname=u.pathname.replace('/gallery/visit/models/','/gallery/visit/models/gltfpack/');\\n"+
- "    window.__phiGltfpackPilot.redirected.push(base);return u.href;\\n"+
- "   }\\n"+
- "  }catch(error){console.warn('[gltfpack pilot]',error);}return url;\\n"+
- "});}\\n");
+ "import * as THREE from 'three';\n"+
+ "const phiGltfpackCandidates=new Set(['plants-scene-gallery-optimized.glb','modern-reception-fittings.glb','pothos-plant.glb']);\n"+
+ "const phiGltfpackPilot=new URLSearchParams(location.search).get('models')==='gltfpack';\n"+
+ "window.__phiGltfpackPilot={enabled:phiGltfpackPilot,redirected:[]};\n"+
+ "if(phiGltfpackPilot){THREE.DefaultLoadingManager.setURLModifier(url=>{\n"+
+ "  try{const u=new URL(url,location.href);const base=u.pathname.split('/').pop();\n"+
+ "   if(phiGltfpackCandidates.has(base)&&u.pathname.includes('/gallery/visit/models/')){\n"+
+ "    u.pathname=u.pathname.replace('/gallery/visit/models/','/gallery/visit/models/gltfpack/');\n"+
+ "    window.__phiGltfpackPilot.redirected.push(base);return u.href;\n"+
+ "   }\n"+
+ "  }catch(error){console.warn('[gltfpack pilot]',error);}return url;\n"+
+ "});}\n");
 // Signs are shared in the production source; only navigation differs on test.
 replace("import * as THREE from 'three';",
   "import {stagingFloorUrl} from '../../test/virtual-gallery/phi-stage-routing.mjs';\nimport * as THREE from 'three';");
