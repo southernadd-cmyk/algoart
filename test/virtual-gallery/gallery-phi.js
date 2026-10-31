@@ -1120,17 +1120,6 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('floor-construction-finished',{paintings:window.__phiFullEngine?.paintings,roomGeometry:phiRoomGeometryStage.stats()});
   phiRoomGeometryStage.clear();
   clearPhiMovingCabin();
-  // Test A/B: render the exact destination objects progressively while the
-  // cabin doors remain shut. All objects are restored before door release.
-  if(phiStageArrival){
-   phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
-   const revealed=await phiArrivalMeshes.reveal({
-    batchSize:20,
-    onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
-    onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
-   });
-   phiLiftProfiler?.mark('scene-reveal-finished',revealed);
-  }
   // Paintings are mandatory. The old four-second generic timeout could open
   // onto blank frames; the door interlock now checks attached GPU textures.
   phiLiftProfiler?.mark('paintings-waiting',phiPaintingGate?.stats());
@@ -1144,6 +1133,18 @@ async function travelLift(date,index){
    }
   });
   phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady);
+  // Keep new destination meshes hidden while all source paintings upload
+  // successfully; then reveal the original meshes in bounded render batches.
+  // No shader, texture resolution, painting pixels or materials are changed.
+  if(phiStageArrival){
+   phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
+   const revealed=await phiArrivalMeshes.reveal({
+    batchSize:20,
+    onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
+    onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
+   });
+   phiLiftProfiler?.mark('scene-reveal-finished',revealed);
+  }
   const preparation=await waitForGalleryEntry({
    loading:{pending:0},timeout:4000,
    isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0||
