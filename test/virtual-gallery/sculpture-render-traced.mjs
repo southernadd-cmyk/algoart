@@ -26,15 +26,31 @@ const thicknessProfiles={
   oil:{ink:.16,pigment:.23,amplify:3.8,roughness:.42,painted:true,opacity:1},
   action:{ink:.15,pigment:.20,amplify:3.2,roughness:.51,painted:true,opacity:1}
 };
-function getImage(img,quality){
-  const canvas=document.createElement('canvas');
+async function getImage(img,quality){
   const cap=quality==='mobile'?480:quality==='vr'?600:850;
   const scale=Math.min(1,cap/Math.max(img.naturalWidth,img.naturalHeight));
-  canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
-  canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const width=Math.max(1,Math.round(img.naturalWidth*scale));
+  const height=Math.max(1,Math.round(img.naturalHeight*scale));
+  // The source image is already a pre-sized WebP when published. Any final
+  // sculpture-resolution resize can happen off-thread, leaving only the
+  // required pigment pixel readback on the main thread.
+  let bitmap=null;
+  if(scale<1 && typeof createImageBitmap==='function'){
+    try{
+      bitmap=await createImageBitmap(img,{
+        resizeWidth:width,resizeHeight:height,resizeQuality:'high'
+      });
+    }catch{ /* Older browsers can use the standard canvas fallback. */ }
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=height;
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
-  ctx.drawImage(img,0,0,canvas.width,canvas.height);
-  return {canvas,pixels:ctx.getImageData(0,0,canvas.width,canvas.height)};
+  try{
+    ctx.drawImage(bitmap||img,0,0,width,height);
+    return {canvas,pixels:ctx.getImageData(0,0,width,height)};
+  }finally{
+    bitmap?.close?.();
+  }
 }
 function colouredMaterial(stroke,type,cache){
   const color=String(stroke.stroke||'#313632');
@@ -220,7 +236,75 @@ function buildMaterialReliefs(image,study,quality,core,onArtworkMesh){
   }
   return created;
 }
-export function createPortraitSculpture({scene,study,placement,quality,labelTexture,onArtworkMesh}){
+// Publishing-time sculpture packs contain the ACTUAL traced polygons, depths
+// and source colours from this renderer. No browser SVG regeneration, connected
+// component search, or silhouette tracing is needed when a pack is present.
+async function renderPreparedReliefs({entries,core,study,onArtworkMesh,onFirstMesh}){
+  if(!Array.isArray(entries)||!entries.length)return false;
+  const type=study.material?.type||'marker';
+  const profile=thicknessProfiles[type];
+  const needPaint=entries.some(entry=>entry.kind==='paint');
+  let paint=null,sideCache=new Map(),inkCache=new Map();
+  if(needPaint){
+    const source=study.imageOptimized||study.image;
+    const image=await new Promise((resolve,reject)=>{
+      const img=new Image();img.crossOrigin='anonymous';img.decoding='async';
+      img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Prepared pigment texture unavailable'));
+      img.src=source;
+    });
+    // A cancelled lift may have disposed this off-screen sculpture while
+    // its pigment image was still downloading. Do not build into that pivot.
+    if(core.parent?.userData.galleryDisposed)return false;
+    const canvas=document.createElement('canvas');
+    canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+    canvas.getContext('2d',{willReadFrequently:true}).drawImage(image,0,0);
+    const paper=study.material?.params?.paper||'#f5f0e6';
+    const atlas=paintTexture(canvas,type,paper);
+    paint=new THREE.MeshStandardMaterial({
+      map:atlas,roughness:profile.roughness,metalness:type==='oil'?.035:0,
+      transparent:true,opacity:profile.opacity,alphaTest:.14,
+      depthWrite:type==='oil'||type==='action',side:THREE.DoubleSide
+    });
+  }
+  if(core.parent?.userData.galleryDisposed)return false;
+  let created=0;
+  for(const entry of entries){
+    if(!Array.isArray(entry.points)||entry.points.length<3 ||
+       entry.points.length>500 || !Number.isFinite(entry.depth)||!Number.isFinite(entry.z))continue;
+    const shape=makeShape(entry.points.map(p=>({x:p[0],y:p[1]})));
+    if(!shape)continue;
+    let cap,side;
+    if(entry.kind==='paint'){
+      if(!paint)continue;
+      cap=paint;
+      if(!sideCache.has(entry.side)){
+        sideCache.set(entry.side,new THREE.MeshStandardMaterial({
+          color:entry.side,roughness:profile.roughness,metalness:0,
+          transparent:type==='tissue'||type==='watercolour',
+          opacity:type==='tissue'?.68:type==='watercolour'?.83:1
+        }));
+      }
+      side=sideCache.get(entry.side);
+    }else{
+      const key=entry.color+'|'+entry.opacity;
+      if(!inkCache.has(key))inkCache.set(key,new THREE.MeshStandardMaterial({
+        color:entry.color,roughness:profile.roughness,
+        metalness:type==='oil'?.07:0,
+        transparent:type==='tissue'||type==='watercolour',
+        opacity:entry.opacity,side:THREE.DoubleSide
+      }));
+      cap=side=inkCache.get(key);
+    }
+    const obj=solid(shape,entry.depth,cap,side,entry.z,study);
+    core.add(obj);onArtworkMesh?.(obj);created++;
+    if(created===1)onFirstMesh?.();
+    // Even precomputed polygon extrusion needs work; amortise it over frames.
+    if(created%8===0)await new Promise(requestAnimationFrame);
+    if(core.parent?.userData.galleryDisposed)return true;
+  }
+  return created>0;
+}
+export function createPortraitSculpture({scene,study,placement,quality,labelTexture,onArtworkMesh,onComplete}){
   const pivot=new THREE.Group();
   pivot.name='Traced material sculpture: '+study.seed;
   pivot.position.set(placement.x,placement.y,placement.z);
@@ -259,12 +343,21 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
   pivot.add(core);
   const placeholder=new THREE.Mesh(new THREE.BoxGeometry(.045,1.24,.045),transientMaterial);
   core.add(placeholder);
+  const buildLive=()=>{
   const materials=new Map();
   const img=new Image();img.crossOrigin='anonymous';img.decoding='async';
   const bitmap=new Promise((resolve,reject)=>{
-    img.onload=()=>{if(pivot.userData.galleryDisposed){resolve(null);return;}try{resolve(getImage(img,quality))}catch(err){reject(err)}};
-    img.onerror=()=>reject(Error('Could not load the actual archived portrait image'));
-    img.src=study.image;
+    const sources=[study.imageOptimized,study.image].filter(Boolean);
+    let index=0;
+    img.onload=async()=>{
+      if(pivot.userData.galleryDisposed){resolve(null);return;}
+      try{resolve(await getImage(img,quality));}catch(err){reject(err);}
+    };
+    img.onerror=()=>{
+      if(index<sources.length)img.src=sources[index++];
+      else reject(Error('Could not load the archived portrait image'));
+    };
+    img.src=sources[index++];
   });
   const lines=vectorForStudy(study);
   let pigmentCount=0,strokeCount=0,loaded=0,removed=false;
@@ -304,6 +397,23 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
     }
     if(!strokeCount && !pigmentCount)
       console.warn('No traceable source geometry for',study.seed);
+    onComplete?.({strokeCount,pigmentCount,prepared:false});
   });
+  };
+  const prepared=study.prebuilt?.[quality];
+  if(Array.isArray(prepared)&&prepared.length){
+    renderPreparedReliefs({
+      entries:prepared,core,study,onArtworkMesh,onFirstMesh:()=>{
+        core.remove(placeholder);placeholder.geometry.dispose();
+      }
+    }).then(success=>{
+      if(!success && !pivot.userData.galleryDisposed)buildLive();
+      else if(success && !pivot.userData.galleryDisposed)
+        onComplete?.({strokeCount:0,pigmentCount:prepared.length,prepared:true});
+    }).catch(error=>{
+      console.warn('Prepared sculpture failed; regenerating from source',study.seed,error);
+      if(!pivot.userData.galleryDisposed)buildLive();
+    });
+  }else buildLive();
   return {pivot,study};
 }

@@ -1,0 +1,80 @@
+/* Test-only listening exhibit. Native top layer, landscape golden rectangle. */
+.phi-gramophone-dialog{--ink:#2d4037;--gold:#996e39;--paper:#f3efe5;--phi-width:min(1120px,calc(100vw - 32px),calc((100dvh - 32px)*1.618033989));box-sizing:border-box;position:fixed;inset:0;margin:auto;width:var(--phi-width);height:calc(var(--phi-width)/1.618033989);aspect-ratio:1.618033989 / 1;max-width:none;max-height:none;padding:0;border:1px solid #b4b5a6;border-radius:3px;background:var(--paper);color:var(--ink);box-shadow:0 24px 100px #0006;font:14px/1.5 Georgia,serif;overflow:hidden}
+.phi-gramophone-dialog::backdrop{background:#101b17b8;backdrop-filter:blur(4px)}
+.phi-gramophone-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr)}
+.phi-gramophone-dialog *{box-sizing:border-box;min-width:0}
+.phi-gramophone-dialog [hidden]{display:none!important}
+.phi-gramophone-dialog h2,.phi-gramophone-dialog h3,.phi-gramophone-dialog p{margin:0}
+.phi-gramophone-dialog button,.phi-gramophone-dialog input,.phi-gramophone-dialog summary{font:inherit}
+.phi-gramophone-dialog button{cursor:pointer;white-space:normal}
+.phi-gramophone-dialog button:disabled{opacity:.5;cursor:not-allowed}
+.phi-gramophone-dialog :is(button,input,summary,a):focus-visible{outline:3px solid #b98951;outline-offset:3px}
+.phi-record-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 24px;border-bottom:1px solid #c8c9bb;background:var(--paper)}
+.phi-record-overline{display:block;font:700 10px/1.4 Arial,sans-serif;letter-spacing:.12em;color:#647466}
+.phi-record-header h2{font:normal 31px/1.15 "AlgoArt Marker",Georgia,serif;margin-top:3px}
+.phi-record-header h2 i{font-family:Georgia,serif;font-weight:normal;color:var(--gold)}
+.phi-gramophone-dialog .record-close{flex:none;display:flex;align-items:center;gap:14px;min-height:44px;padding:8px 12px;border:1px solid #9ca99b;background:transparent;color:var(--ink);font:12px Arial,sans-serif;border-radius:2px}
+.phi-gramophone-dialog .record-close span{font:25px/1 Arial,sans-serif}
+.phi-gramophone-dialog .record-choice{display:none}
+.phi-record-body{display:grid;grid-template-columns:minmax(0,38.2fr) minmax(0,61.8fr);min-height:0}
+.phi-record-sidebar,.phi-record-study{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:24px}
+.phi-record-sidebar{display:flex;flex-direction:column;gap:22px;background:#e6e7dc;border-right:1px solid #c8c9bb}
+.phi-gramophone-dialog .record-tracks{display:grid;gap:8px;margin-top:10px}
+.phi-gramophone-dialog .record-tracks button{display:grid;gap:3px;width:100%;text-align:left;padding:12px 14px;border:1px solid #aab4a5;background:transparent;color:var(--ink)}
+.phi-gramophone-dialog .record-tracks strong{font:700 15px/1.3 Arial,sans-serif}
+.phi-gramophone-dialog .record-tracks span{font:12px/1.4 Georgia,serif}
+.phi-gramophone-dialog .record-tracks button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#f7f1e6}
+.phi-gramophone-dialog .record-track{font:normal 23px/1.25 "AlgoArt Marker",Georgia,serif;margin-bottom:8px}
+.phi-gramophone-dialog .record-interpretation,.phi-record-context{font:13px/1.6 Georgia,serif;color:#526255}
+.phi-record-transport{display:grid;gap:12px}
+.phi-gramophone-dialog .record-toggle{padding:13px 16px;min-height:44px;border:0;background:var(--ink);color:#fff;font:700 12px Arial,sans-serif}
+.phi-record-transport label{display:flex;align-items:center;gap:14px;font:12px Arial,sans-serif}
+.phi-record-transport input{width:100%;accent-color:var(--ink);min-height:32px}
+.phi-gramophone-dialog .record-error:empty{display:none}
+.phi-gramophone-dialog .record-error{font:12px/1.5 Arial,sans-serif;color:#9c3e29}
+.phi-gramophone-dialog .record-credit{margin-top:auto;font:11px/1.6 Arial,sans-serif;color:#657063}
+.phi-listen{display:grid;gap:14px}
+.phi-listen-ratios{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.phi-listen-ratios button{min-height:44px;padding:10px 4px;border:1px solid #a9b09f;background:transparent;color:var(--ink);font:700 12px/1.3 Arial,sans-serif}
+.phi-listen-ratios button[aria-pressed=true]{background:var(--gold);border-color:var(--gold);color:#fff}
+.phi-listen-moment{display:grid;gap:5px}
+.phi-listen-moment h3{font:normal 25px/1.2 "AlgoArt Marker",Georgia,serif}
+.phi-listen-question{font:13px/1.55 Georgia,serif;color:#526255}
+.phi-listen-figure{margin:0;padding:14px;background:#e9e5d8;border:1px solid #c8c1ae}
+.phi-listen-fighead{display:flex;justify-content:space-between;gap:12px;font:700 9px/1.4 Arial,sans-serif;color:#647164;letter-spacing:.04em}
+.phi-listen-figure svg{display:block;width:100%;height:110px;margin:8px 0 4px}
+.phi-listen-axis{stroke:#b1baab;stroke-linecap:round;stroke-width:4}
+.phi-listen-score-dot{fill:#ac793d;stroke:#e9e5d8;stroke-width:2.5}
+.phi-listen-time-dot{fill:#39584f;stroke:#e9e5d8;stroke-width:2.5}
+.phi-listen-connection{stroke:#a57943;stroke-width:1.7;stroke-dasharray:5 4}
+.phi-listen-playhead{stroke:#263b31;stroke-width:1.6;opacity:.65}
+.phi-listen-label{font:700 10px Arial,sans-serif;fill:#576c5b;letter-spacing:1px}
+.phi-listen-figfoot{font:13px/1.5 Arial,sans-serif;color:#77572e;text-align:center}
+.phi-listen-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.phi-listen-actions.single{grid-template-columns:1fr}
+.phi-listen-action{display:grid;gap:6px;align-content:start;min-height:105px;padding:14px;text-align:left;border:1px solid #b8baa9;border-top:3px solid #ac793d;background:#f8f5ec;color:var(--ink)}
+.phi-listen-action.time{border-top-color:#39584f}
+.phi-listen-action span{font:700 10px/1.4 Arial,sans-serif;letter-spacing:.08em}
+.phi-listen-action strong{font:normal 27px/1.2 Georgia,serif;font-variant-numeric:tabular-nums}
+.phi-listen-action small{font:11px/1.5 Arial,sans-serif;color:#5d6c5e}
+.phi-listen-note{font:13px/1.6 Georgia,serif;color:#45594b}
+.phi-listen-instruction{font:12px/1.6 Georgia,serif;color:#657366}
+.phi-listen-sources{padding-top:14px;border-top:1px solid #c4c9b9;font:12px/1.6 Georgia,serif;color:#5d6d5e}
+.phi-listen-sources summary{min-height:32px;cursor:pointer;color:var(--ink)}
+.phi-listen-sources p{margin:10px 0}
+.phi-listen-sources a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:600px){
+ .phi-gramophone-dialog{--phi-width:min(calc(100vw - 16px),calc((100dvh - 16px)*1.618033989));font-size:13px}
+ .phi-record-header{padding:9px 12px;gap:8px}.phi-record-header h2{font-size:23px}.phi-record-header .phi-record-overline{font-size:8px;letter-spacing:.08em}
+ .phi-gramophone-dialog .record-close{gap:7px;padding:7px 8px}
+ .phi-record-body{display:block;overflow-y:auto;overscroll-behavior:contain}
+ .phi-record-sidebar,.phi-record-study{overflow:visible;scrollbar-gutter:auto;padding:16px}
+ .phi-record-sidebar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;border-right:0;border-bottom:1px solid #c8c9bb}
+ .phi-gramophone-dialog .record-tracks{display:none}
+ .phi-gramophone-dialog .record-choice{display:block;width:100%;margin-top:8px;min-height:44px;padding:7px 4px;border:1px solid #aab4a5;border-radius:0;background:#f3efe5;color:var(--ink);font:12px Arial,sans-serif}
+ .phi-record-sidebar>.phi-record-transport{grid-column:2;grid-row:1;gap:6px}
+ .phi-record-sidebar>:is(.phi-record-intro,.phi-record-context,.record-credit){grid-column:1/-1}
+ .phi-record-transport label{gap:5px;font-size:11px}.phi-record-transport input{min-height:28px}
+ .phi-gramophone-dialog .record-tracks button{padding:10px}.phi-gramophone-dialog .record-tracks strong{font-size:13px}
+ .phi-listen{gap:14px}.phi-listen-figure{padding:10px}.phi-listen-action{padding:10px}
+}

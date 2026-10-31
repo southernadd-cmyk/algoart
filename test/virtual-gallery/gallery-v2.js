@@ -4,20 +4,23 @@ import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGH
 import { planGalleryHangs } from './hanging-v3.mjs?v=reserve-glazed-door-walls-20261022';
 import { planGallerySculptures,clearOfSculptures,validateSculpturePlacement } from './sculptures.mjs';
 import {addPermanentPlazaSculptures} from './plaza-monuments.mjs';
-import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=portrait-reference-fix-20261022';
+import { createPortraitSculpture, setSculptureArchitecturalMaterials } from './sculpture-render-traced.mjs?v=prebaked-sculptures-20261023';
 import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
 import {placeCastIronStreetLamp,enableDetailedStreetLamps} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
 import {loadPrebuiltTower,prebuiltTowerMatches,renderPrebuiltTower} from './prebuilt-tower.mjs?v=solid-facades-v2-20261022';
+import {createTowerGraffiti} from './exterior-graffiti.mjs?v=atlas-first-20261027';
+import {planInteriorGraffiti,interiorGraffitiKey} from './interior-graffiti-plan.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
-import { createExteriorLandscape } from './environment-render.mjs?v=soft-horizon-feather-20261022';
+import { createExteriorLandscape } from './environment-render.mjs?v=daytime-restored-20261027';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
 
-console.info('[Gallery performance] initial JavaScript module evaluated',Math.round(performance.now())+'ms since navigation');
+const GALLERY_DEBUG=new URLSearchParams(location.search).has('debug');
+if(GALLERY_DEBUG)console.info('[Gallery performance] initial JavaScript module evaluated',Math.round(performance.now())+'ms since navigation');
 const $ = (id) => document.getElementById(id);
 const canvas = $('world');
 const status = $('status');
@@ -49,7 +52,6 @@ let liftTravelling=false;
 let liftReturnFocus=null;
 let editionObjects=[];
 let deferredGalleryJobs=[];
-let deferredGalleryVersion=0;
 let deferredGalleryRunning=false;
 let liftDoors=[];
 let liftDoorClosure=0;
@@ -74,13 +76,14 @@ scene.add(new THREE.HemisphereLight('#f6f7f5', '#92998c', 1.15));
 const sun = new THREE.DirectionalLight('#fff9f0', 1.65);
 sun.position.set(-18, 30, 12);
 scene.add(sun);
-const camera = new THREE.PerspectiveCamera(76, 1, 0.07, 210);
+const camera = new THREE.PerspectiveCamera(76, window.innerWidth / Math.max(1, window.innerHeight), 0.07, 210);
 camera.rotation.order = 'YXZ';
 camera.position.set(0, 1.68, 0);
 const rig = new THREE.Group();
 scene.add(rig);
 rig.add(camera);
 rig.rotation.y = yaw;
+if(new URLSearchParams(location.search).has('svg-export'))window.__PP_EXPORT_SCENE__={scene,camera,rig,THREE:{Vector3:THREE.Vector3,Matrix4:THREE.Matrix4,Box3:THREE.Box3}};
 
 let renderer;
 try {
@@ -96,6 +99,7 @@ try {
   $('xr-controls').appendChild(xrButton);
   renderer.xr.addEventListener('sessionstart', () => {
     welcome.hidden=true;resetInspection();$('lift').hidden=true;
+    startDeferredGallery();
   });
   renderer.xr.addEventListener('sessionend',()=>{
     closeXRLift();xrTurnLatched=false;liftWasNear=false;
@@ -106,7 +110,8 @@ try {
     rig.add(controller); // Controllers share the headset's locomotion transform.
   }
 } catch (err) {
-  errorBox.textContent = 'This device cannot initialise a WebGL gallery: ' + err.message;
+  console.error('[Gallery startup] WebGL unavailable',err);
+  errorBox.textContent = 'The virtual gallery cannot run on this device. Please use the 2D gallery below.';
   errorBox.hidden = false;
 }
 
@@ -115,6 +120,20 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
   startAfter:window.__galleryEarly?.tower
 });
 const wall=galleryFinish.wall;
+const towerGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.exteriorBrick,lowPower:galleryFinish.lowPower});
+const interiorGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.wall,lowPower:galleryFinish.lowPower,
+ planner:planInteriorGraffiti,keyFor:interiorGraffitiKey,kind:'interior'});
+if(GALLERY_DEBUG){const debugWriting=(manager,inside=false)=>({
+ diagnostics:()=>manager.diagnostics,
+ marks:()=>manager.snapshot(currentFloor),
+ preview(index){
+  const mark=manager.snapshot(currentFloor)[index];if(!mark)return;
+  const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210),p=mark.position,n=mark.normal;
+  const distance=inside?Math.max(2,mark.width*1.8):Math.max(3.8,mark.width*1.2);
+  view.position.set(p.x+n.x*distance,p.y+.12,p.z+n.z*distance);view.lookAt(p.x,p.y,p.z);
+  renderer.setAnimationLoop(null);renderer.render(scene,view);
+ }
+});window.__galleryGraffiti=debugWriting(towerGraffiti);window.__galleryInteriorGraffiti=debugWriting(interiorGraffiti,true);}
 const floor=galleryFinish.floor;
 const timber=galleryFinish.timber;
 const stone=galleryFinish.stone;
@@ -247,115 +266,123 @@ function addBridge(hall) {
   scene.add(createGlassWalkway(THREE,hall.start,hall.end,DOOR_WIDTH,
     walkwayGlassMaterials,{lowPower:galleryFinish.lowPower}));
 }
-// Temporary diagnostic for the unexplained entrance overlay.
-// Aim the central reticle at the stripe and press P; identifies the precise mesh.
-window.addEventListener('keydown',event=>{
- if(event.key.toLowerCase()!=='p'||event.repeat||event.target?.closest?.('input,textarea,select'))return;
- const ray=new THREE.Raycaster();
- ray.setFromCamera(new THREE.Vector2(0,0),camera);
- const hits=ray.intersectObjects(scene.children,true);
- const description=hits.slice(0,4).map((hit,i)=>{
-  const object=hit.object;
-  const world=new THREE.Box3().setFromObject(object);
-  const dimensions=world.getSize(new THREE.Vector3());
-  const centre=world.getCenter(new THREE.Vector3());
-  const material=Array.isArray(object.material)?object.material[0]:object.material;
-  return [i,object.name||'(unnamed)',object.type,object.geometry?.type,
-    'size='+dimensions.toArray().map(n=>n.toFixed(2)).join(','),
-    'at='+centre.toArray().map(n=>n.toFixed(2)).join(','),
-    'material='+String(material?.name||material?.uuid||'none'),
-    'parent='+String(object.parent?.name||object.parent?.type)].join(' | ');
- }).join('\n');
- console.info('Gallery reticle inspection:',description);
- window.prompt('Gallery surface under reticle (copy this text):',description||'No mesh intersection');
-});
 // Restrict simultaneous downloads/decodes on phones; artwork is never omitted.
 const mobileImages=matchMedia('(pointer:coarse)').matches;
 const artworkQueue=[];
 let artworkActive=0;
-function scheduleArtwork(task){
-  artworkQueue.push(task);
-  const drain=()=>{
-    while(artworkActive<(mobileImages?3:8)&&artworkQueue.length){
-      const next=artworkQueue.shift();
-      artworkActive++;
-      Promise.resolve().then(next).finally(()=>{artworkActive--;drain();});
-    }
-  };
-  drain();
+function scheduleArtwork(task,material){
+ artworkQueue.push({task,material});
+ const drain=()=>{
+  while(artworkActive<(mobileImages?3:8)&&artworkQueue.length){
+   let best=0,distance=Infinity;
+   for(let i=0;i<artworkQueue.length;i++){
+    const item=artworkQueue[i],p=item.material.userData.galleryPosition;
+    if(item.material.userData.galleryDisposed)continue;
+    const d=p?rig.position.distanceToSquared(p):Infinity;
+    if(d<distance){distance=d;best=i;}
+   }
+   const next=artworkQueue.splice(best,1)[0];
+   artworkActive++;
+   Promise.resolve().then(next.task).finally(()=>{artworkActive--;drain();});
+  }
+ };
+ drain();
 }
 // Failed image requests are retried after transient network/deployment errors.
 // Only current-edition materials may be retried after a tab regains focus.
 const failedArtworkLoads=new Map();
 window.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible')return;
-  for(const [material,url] of [...failedArtworkLoads]){
+  for(const [material,request] of [...failedArtworkLoads]){
     if(material.userData.galleryDisposed){failedArtworkLoads.delete(material);continue;}
     failedArtworkLoads.delete(material);
-    loadArtworkTexture(url,material);
+    loadArtworkTexture(request.url,material,{preferred:request.preferred});
   }
 });
-function loadArtworkTexture(url, material) {
- scheduleArtwork(()=>new Promise(resolve=>{
-  let finished=false;
-  const finish=()=>{if(!finished){finished=true;resolve();}};
-  const source=new URL(url,location.href);
-  // Published archive images also exist in the public repository. Try the
-  // independently served CDN if Pages returns an error or cannot decode one.
-  const galleryPath=source.pathname.match(/\/gallery\/(\d{4}-\d{2}-\d{2}\/[^/]+\.(?:jpe?g|png|webp))$/i);
-  const fallback=galleryPath
-    ?'https://cdn.jsdelivr.net/gh/southernadd-cmyk/algoart@main/gallery/'+galleryPath[1]
-    :null;
-  // GitHub Releases reject cross-origin canvas reads. Route release
-  // artwork via a CORS-capable image cache instead of retrying github.com.
-  const isRelease=source.hostname==='github.com'&&source.pathname.includes('/releases/download/');
-  const proxiedRelease=isRelease
-    ?'https://wsrv.nl/?url='+encodeURIComponent(source.href)+'&w='+(mobileImages?640:1100)+'&output=jpg'
-    :null;
-  const requests=isRelease
-    ?[proxiedRelease,proxiedRelease+'&q=88']
-    :[source.href,source.href+(source.search?'&':'?')+'galleryRetry=1'];
-  if(fallback)requests.push(fallback);
-  let index=0;
-  function attempt(){
-   if(material.userData.galleryDisposed){finish();return;}
-   if(index>=requests.length){
-    material.color.set('#c9ad9b');material.needsUpdate=true;
-    failedArtworkLoads.set(material,url);
-    console.warn('Artwork failed at Pages and CDN:',url);
-    finish();return;
-   }
-   const candidate=requests[index++];
-   const image=new Image();
-   image.crossOrigin='anonymous';
-   image.decoding='async';
-   image.onload=()=>{
-    if(material.userData.galleryDisposed){finish();return;}
-    try{
-     if(!image.naturalWidth||!image.naturalHeight)throw Error('Empty image');
-     const maxSize=mobileImages?640:1100;
-     const scale=Math.min(1,maxSize/Math.max(image.naturalWidth,image.naturalHeight));
-     const canvas=document.createElement('canvas');
-     canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
-     canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
-     canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
-     const texture=new THREE.CanvasTexture(canvas);
-     texture.colorSpace=THREE.SRGBColorSpace;
-     texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
-     if(material.map)material.map.dispose();
-     material.map=texture;material.color.set('#ffffff');material.needsUpdate=true;
-     failedArtworkLoads.delete(material);
-     finish();
-    }catch(error){
-     console.warn('Artwork could not be decoded:',candidate,error);
-     setTimeout(attempt,400);
+function loadArtworkTexture(url,material,{preferred=null}={}){
+  scheduleArtwork(()=>new Promise(resolve=>{
+    let finished=false;
+    const finish=()=>{if(!finished){finished=true;resolve();}};
+    const source=new URL(url,document.baseURI);
+    // Use 1100px desktop / 640px mobile images from the dated floor's
+    // manifest. The source JPEG remains the fallback for older exhibitions.
+    const galleryPath=source.pathname.match(/\/gallery\/(\d{4}-\d{2}-\d{2}\/[^/]+\.(?:jpe?g|png|webp))$/i);
+    const cdnFallback=galleryPath
+      ?'https://cdn.jsdelivr.net/gh/southernadd-cmyk/algoart@main/gallery/'+galleryPath[1]
+      :null;
+    const isRelease=source.hostname==='github.com'&&source.pathname.includes('/releases/download/');
+    const releaseProxy=isRelease
+      ?'https://wsrv.nl/?url='+encodeURIComponent(source.href)+'&w='+(mobileImages?640:1100)+'&output=jpg'
+      :null;
+    const requests=[
+      ...(preferred?[preferred]:[]),
+      ...(isRelease?[releaseProxy]:[source.href]),
+      ...(isRelease?[releaseProxy+'&q=88']:[source.href+(source.search?'&':'?')+'galleryRetry=1']),
+      ...(cdnFallback?[cdnFallback]:[])
+    ];
+    let index=0;
+    function attempt(){
+      if(material.userData.galleryDisposed){finish();return;}
+      if(index>=requests.length){
+        material.color.set('#c9ad9b');material.needsUpdate=true;
+        failedArtworkLoads.set(material,{url,preferred});
+        console.warn('Artwork could not be loaded:',url);
+        finish();return;
+      }
+      const candidate=requests[index++];
+      const image=new Image();
+      image.crossOrigin='anonymous';
+      image.decoding='async';
+      image.onload=async()=>{
+        if(material.userData.galleryDisposed){finish();return;}
+        let bitmap=null;
+        try{
+          if(!image.naturalWidth||!image.naturalHeight)throw Error('Empty image');
+          const maxSize=mobileImages?640:1100;
+          // Published WebPs are already at the correct size: no main-thread
+          // canvas allocation or drawImage operation is needed for the wall.
+          // On historical floors, try off-thread ImageBitmap resizing before
+          // falling back to an unresized GPU texture on older browsers.
+          if(candidate!==preferred &&
+             Math.max(image.naturalWidth,image.naturalHeight)>maxSize &&
+             typeof createImageBitmap==='function'){
+            const scale=maxSize/Math.max(image.naturalWidth,image.naturalHeight);
+            try{
+              bitmap=await createImageBitmap(image,{
+                resizeWidth:Math.max(1,Math.round(image.naturalWidth*scale)),
+                resizeHeight:Math.max(1,Math.round(image.naturalHeight*scale)),
+                resizeQuality:'high'
+              });
+            }catch(error){
+              if(GALLERY_DEBUG)console.warn('ImageBitmap resize unavailable',error);
+            }
+          }
+          if(material.userData.galleryDisposed){
+            bitmap?.close?.();finish();return;
+          }
+          const texture=new THREE.Texture(bitmap||image);
+          if(bitmap)texture.userData.galleryBitmap=bitmap;
+          texture.colorSpace=THREE.SRGBColorSpace;
+          texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
+          texture.needsUpdate=true;
+          if(material.map){
+            material.map.dispose();
+            material.map.userData.galleryBitmap?.close?.();
+          }
+          material.map=texture;material.color.set('#ffffff');material.needsUpdate=true;
+          failedArtworkLoads.delete(material);
+          finish();
+        }catch(error){
+          bitmap?.close?.();
+          console.warn('Artwork could not be decoded:',candidate,error);
+          setTimeout(attempt,400);
+        }
+      };
+      image.onerror=()=>{if(GALLERY_DEBUG)console.warn('Artwork request failed:',candidate);setTimeout(attempt,400);};
+      image.src=candidate;
     }
-   };
-   image.onerror=()=>{console.warn('Artwork request failed:',candidate);setTimeout(attempt,400);};
-   image.src=candidate;
-  }
-  attempt();
- }));
+    attempt();
+  }),material);
 }
 // Stage 2: landscape images occupy walls. Portraits become freestanding
 // layered engine-specific sculptures, with a clear walking route around them.
@@ -431,7 +458,8 @@ function hangArt(room, study, hang) {
   artwork.userData.study = study;
   scene.add(artwork);
   artExhibits.push({study,position:artwork.position.clone(),normal:normal.clone()});
-  loadArtworkTexture(study.image, artworkMaterial);
+  artworkMaterial.userData.galleryPosition=artwork.position.clone();
+   loadArtworkTexture(study.image, artworkMaterial,{preferred:study.imageOptimized});
   const lamp=base.clone().addScaledVector(normal,1.35);
   lamp.y=Math.min(room.y+ROOM_HEIGHT-.35,hang.y+height*.66+1.25);
   exhibitLight(room,lamp,base,{beam:Math.max(.28,Math.min(.56,Math.atan(width/2/1.45)*1.25)),power:17});
@@ -844,13 +872,12 @@ async function fetchGalleryText(url,{timeoutMs=18000,...options}={}){
   }finally{clearTimeout(timeout);}
 }
 async function loadArchiveDates(){
-  const res=await fetchGalleryText('../../gallery/',{cache:'no-store'});
+  // Never scrape dated links from the human-facing gallery index.
+  const res=await fetchGalleryText('../archive.json',{cache:'no-store'});
   if(!res.ok)throw new Error('Could not load the gallery archive.');
-  const doc=new DOMParser().parseFromString(res.text,'text/html');
-  const discovered=[...doc.querySelectorAll('a[href]')]
-    .map(a=>a.getAttribute('href')?.match(/(?:^|\/)\d{4}-\d{2}-\d{2}(?=\/|$)/)?.[0]?.replace(/^\//,''))
-    .filter(Boolean);
-  const dates=[...new Set(discovered)].sort();
+  const archive=JSON.parse(res.text);
+  const dates=[...new Set((archive.days||[]).map(day=>day.date)
+    .filter(date=>/^\d{4}-\d{2}-\d{2}$/.test(date)))].sort();
   if(!dates.length)throw new Error('No dated galleries found in archive.');
   return dates;
 }
@@ -924,26 +951,30 @@ function onArrivalPath(x,z){
   const along=dx*arrival.outward.x+dz*arrival.outward.z;
   const across=Math.abs(dx*arrival.outward.z-dz*arrival.outward.x);
   // Overlap the room footprint slightly to make crossing the threshold continuous.
-  return along>=-1.0&&along<=arrival.pathLength+1.5&&across<=arrival.halfWidth;
+  // The public plaza is 46m across and 38m deep, not merely the entrance route.
+  // Retain the narrower threshold overlap so visitors cannot cross solid facade walls.
+  const doorway=along>=-1.0&&along<=1.0&&across<=1.45;
+  // Exterior paving does not make the solid gallery walls walkable.
+  const blocked=plan.rooms.some(room=>
+    Math.abs(x-room.x)<room.width/2+.48&&
+    Math.abs(z-room.z)<room.depth/2+.48&&!doorway);
+  const plaza=along>=0&&along<=37.55&&across<=22.55&&!blocked;
+  return plaza||doorway;
 }
 // Stage costly exhibits across frames so the exterior is usable immediately.
 function startDeferredGallery(){
   if(deferredGalleryRunning||!deferredGalleryJobs.length)return;
   deferredGalleryRunning=true;
-  const version=deferredGalleryVersion;
-  const step=()=>{
-    if(version!==deferredGalleryVersion){deferredGalleryRunning=false;return;}
-    const job=deferredGalleryJobs.shift();
-    if(!job){deferredGalleryRunning=false;updateExhibitLighting();
-      return;}
-    try{
-      const previous=new Set(scene.children);
-      job();
-      for(const object of scene.children)if(!previous.has(object))editionObjects.push(object);
-    }catch(error){console.warn('Deferred gallery asset failed',error);}
-    requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
+}
+function processDeferredGallery(){
+  if(!deferredGalleryRunning)return;
+  const job=deferredGalleryJobs.shift();
+  if(!job){deferredGalleryRunning=false;updateExhibitLighting();return;}
+  try{
+    const previous=new Set(scene.children);
+    job();
+    for(const object of scene.children)if(!previous.has(object))editionObjects.push(object);
+  }catch(error){console.warn('Deferred gallery asset failed',error);}
 }
 function constructGallery(layout, studies) {
   const entry=layout.rooms[0];
@@ -955,6 +986,7 @@ function constructGallery(layout, studies) {
     entry.entranceWall=['south','east','west','north'].find(side=>side!==entry.liftWall&&!entry.doors.includes(side));
   }
   const hangs=planGalleryHangs(layout,studies);
+  if(GALLERY_DEBUG)window.__galleryInteriorGraffiti.artWalls=hangs.map(h=>({roomIndex:h.roomIndex,surface:h.surface}));
   const sculptures=planGallerySculptures(layout,studies);
   validateSculpturePlacement(layout,sculptures);
   sculpturePlacements.push(...sculptures);
@@ -963,8 +995,11 @@ function constructGallery(layout, studies) {
   // Lightweight, locally generated buff brick: no network texture request.
   // Shared CC0 1K scan: reuse the existing material across all wall faces.
   exteriorBrick=galleryFinish.exteriorBrick;
+  const occupiedArchitecture=new THREE.Box3();
   for(const room of layout.rooms){
+    const firstRoomObject=scene.children.length;
     addRoom(room,room.index,layout.rooms.length);
+    for(const object of scene.children.slice(firstRoomObject))occupiedArchitecture.expandByObject(object);
     for(const hanging of hangs.filter(h=>h.roomIndex===room.index))
       deferredGalleryJobs.push(()=>hangArt(room,byId.get(hanging.studyId),hanging));
     for(const placement of sculptures.filter(p=>p.roomIndex===room.index)){
@@ -985,6 +1020,11 @@ function constructGallery(layout, studies) {
     planVisitors(layout,hangs,sculptures,{lowPower:galleryFinish.lowPower})));
   if(hangs.length+sculptures.length!==studies.length)
     throw new Error('An archived study was omitted from the exhibition');
+  // The complete hanging plan is available before deferred images load.
+  // Exclude every wall face with a planned painting, then add small signatures
+  // only on this occupied floor's inward-facing plaster surfaces.
+  const writingLayout={...layout,rooms:layout.rooms.map(room=>({...room,y:Math.round((room.y-currentFloor*FLOOR_SPACING)*1e6)/1e6}))};
+  interiorGraffiti.addTo(scene,{layout:writingLayout,hangs,level:currentFloor},currentFloor);
   for(const hall of layout.corridors)addBridge(hall);
   // Compute the entire tower footprint before placing any nearby buildings.
   // Upper-storey projections are protected even where the ground floor is empty.
@@ -1016,8 +1056,9 @@ function constructGallery(layout, studies) {
       outward,transverse:{x:outward.z,z:-outward.x},
       halfWidth:23,halfDepth:19,level:groundEntry.y};
   })():null;
-  createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower,
+  const exteriorPlan=createExteriorLandscape(THREE,scene,layout,studies,{lowPower:galleryFinish.lowPower,
     protectedLayouts:exteriorFloorPlans.map(f=>f.plan),approach:entryApproach,plaza:entryPlaza});
+  if(GALLERY_DEBUG)window.__galleryBackdrop={...exteriorPlan.backdrop};
   // Safety invariant: the exterior is a single paved square. No narrow,
   // longitudinal deck/stripe may overlay the centre of the entrance approach.
   // This catches both the former 29m approach slab and the 38m centre-strip
@@ -1040,7 +1081,7 @@ function constructGallery(layout, studies) {
         scene.remove(mesh);discarded.push({along,cross,depth});
       }
     }
-    if(discarded.length)console.info('Removed entrance overlay strip',discarded);
+    if(discarded.length&&GALLERY_DEBUG)console.info('Removed entrance overlay strip',discarded);
   }
   if(entryPlaza)addPermanentPlazaSculptures(scene,entryPlaza);
   if(entryPlaza)deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,entryPlaza));
@@ -1077,7 +1118,7 @@ function constructGallery(layout, studies) {
           walkwayGlassMaterials,{lowPower:galleryFinish.lowPower}));
       }
       usingBaked=true;
-      console.info('Prepared tower loaded',{
+      GALLERY_DEBUG&&console.info('Prepared tower loaded',{
         batches:rendered.batchCount,bridges:rendered.bridges.length,
         elapsedMs:Math.round(performance.now()-t0)
       });
@@ -1177,16 +1218,27 @@ function constructGallery(layout, studies) {
     }
   }
   const towerStats=appendTowerBoxBatches(THREE,tower,towerBoxes);
-  console.info('Archived tower prepared',{
+  GALLERY_DEBUG&&console.info('Archived tower prepared',{
     boxes:towerStats.totalBoxes,batches:towerStats.batchCount,
     elapsedMs:Math.round(performance.now()-towerBuildStart)
   });
   }
+  // The same exterior placement is used for the occupied room geometry,
+  // the prepared archive and its procedural fallback. Current-floor room
+  // heights are normalised before planning, so lift travel cannot reshuffle it.
+  const graffitiFloors=[...exteriorFloorPlans,{level:currentFloor,plan:{...layout,
+    rooms:layout.rooms.map(room=>({...room,y:Math.round((room.y-currentFloor*FLOOR_SPACING)*1e6)/1e6}))}}].sort((a,b)=>a.level-b.level);
+  try{towerGraffiti.addTo(tower,graffitiFloors,currentFloor);}
+  catch(error){console.warn('Exterior writing could not be prepared',error);}
   scene.add(tower);
   // Verify the full exterior tower exists in the scene before exposing Enter.
   // This reports missing geometry separately from a camera/framing problem.
   tower.updateMatrixWorld(true);
   const towerBounds=new THREE.Box3().setFromObject(tower);
+  // The occupied floor is built separately from the archived tower batch.
+  // Include its actual shell when checking the roofline, especially when
+  // visiting the highest floor without any upper-storey paint overlays.
+  towerBounds.union(occupiedArchitecture);
   const expectedTop=(archiveDates.length-1)*FLOOR_SPACING+ROOM_HEIGHT;
   const actualTop=towerBounds.max.y;
   const towerSummary={
@@ -1197,10 +1249,10 @@ function constructGallery(layout, studies) {
     maximumY:Math.round(actualTop*10)/10,
     expectedMaximumY:Math.round(expectedTop*10)/10
   };
-  console.info('[Gallery tower geometry]',towerSummary);
+  GALLERY_DEBUG&&console.info('[Gallery tower geometry]',towerSummary);
   if(towerBounds.isEmpty()||actualTop<expectedTop-2){
     console.error('[Gallery tower geometry] Missing upper floors',towerSummary);
-    status.textContent='Tower geometry incomplete: check console';
+    status.textContent='Part of the gallery tower could not be prepared.';
   }
   const first=layout.rooms[0];
   if(currentFloor===0 && first.entranceWall)createGalleryArrival(first);
@@ -1211,7 +1263,7 @@ function constructGallery(layout, studies) {
   rig.rotation.y=yaw;
   drawMap();
 }
-function readArchive(html, url) {
+function readArchive(html, url, textureManifest={}) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   return [...doc.querySelectorAll('article.art-card')].map((card, i) => {
     const img=card.querySelector('.art-image-link img');
@@ -1219,16 +1271,20 @@ function readArchive(html, url) {
     if (!img || !link) return null;
     const href = new URL(link.getAttribute('href'), url).href;
     const seed = card.querySelector('dd')?.textContent.trim() || new URL(href).searchParams.get('seed') || '';
+    const filename=decodeURIComponent(new URL(img.getAttribute('src'),url).pathname.split('/').pop());
+    const variant=textureManifest[filename]?.[mobileImages?'mobile':'desktop'];
     return {
       id: i,
       title: card.querySelector('h2')?.textContent.trim() || 'Untitled drawing',
       seed,
+      imageFile:filename,
+      imageOptimized:variant?new URL(variant,url).href:null,
       image: (() => {
         const original=new URL(img.getAttribute('src'),url);
         // Release download URLs are blocked for canvas/WebGL by CORS.
         // Gallery release art is mirrored into same-origin Pages assets.
         if(original.hostname==='github.com' && original.pathname.includes('/southernadd-cmyk/algoart/releases/download/')){
-          return new URL('../../gallery/release-art/'+original.pathname.split('/').pop(),location.href).href;
+          return new URL('../release-art/'+original.pathname.split('/').pop(),document.baseURI).href;
         }
         return original.href;
       })(),
@@ -1241,16 +1297,33 @@ function readArchive(html, url) {
   }).filter(Boolean);
 }
 async function latestDate() {
-  const res = await fetch('../../gallery/', {cache:'no-store'});
-  if (!res.ok) throw new Error('Could not load the daily archive.');
-  const doc = new DOMParser().parseFromString(await res.text(),'text/html');
-  const href = doc.querySelector('.day-card a')?.getAttribute('href') || '';
-  const found = href.match(/\d{4}-\d{2}-\d{2}/);
-  if (!found) throw new Error('No daily editions were found.');
-  return found[0];
+  const dates=await loadArchiveDates();
+  return dates.at(-1);
 }
 function readableDate(date) {
   return new Intl.DateTimeFormat('en-GB',{dateStyle:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
+}
+// One compressed polygon pack per edition. A missing/corrupt pack is safe:
+// the original portrait generator remains available as the fallback.
+async function loadSculpturePack(date,cache){
+  if(typeof DecompressionStream!=='function')return {};
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),7000);
+  try{
+    const url=new URL('../'+date+'/3d/sculptures.json.gz',document.baseURI);
+    const response=await fetch(url,{cache,signal:controller.signal});
+    if(!response.ok||!response.body)return {};
+    const inflated=response.body.pipeThrough(new DecompressionStream('gzip'));
+    const parsed=JSON.parse(await Promise.race([
+      new Response(inflated).text(),
+      new Promise((_,reject)=>controller.signal.addEventListener('abort',()=>reject(new DOMException('Sculpture pack timeout','AbortError')),{once:true}))
+    ]));
+    return parsed.version===1&&parsed.date===date&&parsed.studies&&
+      typeof parsed.studies==='object'?parsed.studies:{};
+  }catch(error){
+    if(GALLERY_DEBUG)console.warn('Offline sculpture pack unavailable',date,error);
+    return {};
+  }finally{clearTimeout(timer);}
 }
 async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   // Preserve the last valid edition so a failed floor construction can be
@@ -1260,13 +1333,34 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   const previousYaw=yaw,previousPitch=pitch;
   if(!renderer)return;
   const editionStart=performance.now();
-  const url = new URL('../../gallery/'+date+'/', location.href);
+  const url = new URL('../'+date+'/', document.baseURI);
   // Previous daily editions never change; allow normal browser caching.
   // Today's edition can still be updated by the publishing job.
   const today=new Date().toISOString().slice(0,10);
-  const res=await fetchGalleryText(url,{cache:date===today?'no-cache':'force-cache'});
+  // Fetch the per-floor texture manifest alongside the dated HTML; older
+  // archive floors have no manifest yet and continue working unchanged.
+  const cache=date===today?'no-cache':'force-cache';
+  const [res,textureManifest,sculpturePack]=await Promise.all([
+    fetchGalleryText(url,{cache}),
+    fetchGalleryText(new URL('3d/manifest.json',url),{cache,timeoutMs:5000})
+      .then(response=>{
+        if(!response.ok)return {};
+        const parsed=JSON.parse(response.text);
+        return parsed.version===1 && parsed.images && typeof parsed.images==='object'
+          ?parsed.images:{};
+      }).catch(error=>{
+        if(GALLERY_DEBUG)console.warn('3D texture manifest unavailable:',date,error);
+        return {};
+      }),
+    loadSculpturePack(date,cache)
+  ]);
   if(!res.ok)throw new Error('The edition for '+readableDate(date)+' is not available.');
-  const studies=readArchive(res.text,res.url);
+  const studies=readArchive(res.text,res.url,textureManifest);
+  for(const study of studies){
+    if(study.portrait&&sculpturePack[study.imageFile]){
+      study.prebuilt=sculpturePack[study.imageFile];
+    }
+  }
   if(!studies.length)throw new Error('No artworks for this edition');
   const nextPlan=buildLayout(date,studies.length,studies);
   const nextFloor=archiveDates.indexOf(date);
@@ -1296,10 +1390,10 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     }
     material.dispose();
   }
-  for(const texture of staleTextures)texture.dispose();
+  for(const texture of staleTextures){texture.dispose();texture.userData.galleryBitmap?.close?.();}
   for(const geometry of staleGeometries)geometry.dispose();
   failedArtworkLoads.clear();
-  deferredGalleryVersion++;deferredGalleryJobs=[];deferredGalleryRunning=false;
+  deferredGalleryJobs=[];deferredGalleryRunning=false;
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
   exhibitLightTargets.length=0;
   resetInspection();
@@ -1332,7 +1426,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     }
     throw error;
   }
-  console.info('[Gallery performance] scene construction',Math.round(performance.now()-constructionStart)+'ms','floors',archiveDates.length,'prebuilt',!!prebuiltTowerMatches(prebuiltTower,archiveDates,towerFloorSignatures));
+  GALLERY_DEBUG&&console.info('[Gallery performance] scene construction',Math.round(performance.now()-constructionStart)+'ms','floors',archiveDates.length,'prebuilt',!!prebuiltTowerMatches(prebuiltTower,archiveDates,towerFloorSignatures));
   // Give the optimised entrance lamps priority over deferred artworks/visitors.
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
@@ -1353,21 +1447,21 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
     history.replaceState(null,'','?date='+date);
   }
   $('liftMonth').value=date.slice(0,7);
-  $('archiveLink').href='../../gallery/'+date+'/';
-  $('welcomeArchive').href='../../gallery/'+date+'/';
+  $('archiveLink').href='../'+date+'/';
+  $('welcomeArchive').href='../'+date+'/';
   const floorName=nextFloor===0?'Ground floor':'Floor '+nextFloor;
   $('startFloor').textContent=floorName+' · '+readableDate(date);
   $('floorIndicator').textContent=nextFloor===0?'G':String(nextFloor);
   $('floorIndicator').setAttribute('aria-label','Current archive floor: '+floorName);
   status.textContent=floorName+' · '+readableDate(date)+' · '+studies.length+' works · '+sculpturePlacements.length+' sculptures';
   enter.disabled=false;enter.textContent='Enter the gallery';
-  console.info('[Gallery performance] edition ready',Math.round(performance.now()-editionStart)+'ms',date);
+  GALLERY_DEBUG&&console.info('[Gallery performance] edition ready',Math.round(performance.now()-editionStart)+'ms',date);
 }
 async function load(){
   const startupStart=performance.now();
   const progress=message=>{
     if(enter.disabled)enter.textContent=message;
-    console.info('[Gallery startup]',message,Math.round(performance.now()-startupStart)+'ms');
+    if(GALLERY_DEBUG)console.info('[Gallery startup]',message,Math.round(performance.now()-startupStart)+'ms');
   };
   try{
     progress('Loading tower data…');
@@ -1377,10 +1471,10 @@ async function load(){
     // Fetch tower index and prepared geometry together.
     const cacheDay=window.__galleryEarly?.day||new Date().toLocaleDateString('en-CA',{timeZone:'Europe/London'});
     const bakedPromise=loadPrebuiltTower(
-      '../../gallery/tower-geometry.bin.gz?schema=2&day='+cacheDay,window.__galleryEarly?.tower);
+      '../tower-geometry.bin.gz?schema=2&day='+cacheDay,window.__galleryEarly?.tower);
     const towerIndexPromise=(window.__galleryEarly?.index
       ?window.__galleryEarly.index.then(async response=>({ok:response.ok,text:response.ok?await response.text():''}))
-      :fetchGalleryText('../../gallery/tower-layouts.json?day='+cacheDay,{timeoutMs:7000}))
+      :fetchGalleryText('../tower-layouts.json?day='+cacheDay,{timeoutMs:7000}))
       .then(response=>{
         if(!response.ok)return new Map();
         const data=JSON.parse(response.text);
@@ -1393,16 +1487,18 @@ async function load(){
       towerIndexPromise,bakedPromise
     ]);
     progress('Building exhibition…');
-    console.info('[Gallery performance] tower metadata and geometry fetched',Math.round(performance.now()-startupStart)+'ms','prebuilt',!!prebuiltTower);
+    GALLERY_DEBUG&&console.info('[Gallery performance] tower metadata and geometry fetched',Math.round(performance.now()-startupStart)+'ms','prebuilt',!!prebuiltTower);
     archiveDates=towerFloorSignatures.size
       ?[...towerFloorSignatures.keys()].sort()
       :await loadArchiveDates();
     const qp=new URLSearchParams(location.search).get('date');
     await loadEdition(qp&&archiveDates.includes(qp)?qp:archiveDates[0]);
-    console.info('[Gallery performance] enter available',Math.round(performance.now()-startupStart)+'ms');
+    GALLERY_DEBUG&&console.info('[Gallery performance] enter available',Math.round(performance.now()-startupStart)+'ms');
   }catch(e){
-    enter.textContent='Gallery unavailable';errorBox.textContent=e.message;
-    errorBox.hidden=false;console.error(e);
+    console.error('[Gallery startup] Failed to prepare exhibition',e);
+    enter.textContent='Gallery unavailable';
+    errorBox.textContent='The virtual gallery could not load. Please reload or continue in the 2D gallery below.';
+    errorBox.hidden=false;
   }
 }
 
@@ -1427,7 +1523,10 @@ function showInfo(exhibit){
     $('infoImage').src=study.image;
     $('infoImage').alt=study.title;
     $('infoTitle').textContent=study.title;
-    $('infoSeed').textContent=study.seed;
+    const medium=({marker:'Marker',tissue:'Tissue & graphite',watercolour:'Watercolour',oil:'Oil paint',action:'Action painting'})[study.material?.type]||'Drawing';
+    const composition=(study.engine||'composition').replace(/[-_]/g,' ');
+    $('infoMeta').textContent=[medium,composition,study.portrait?'portrait sculpture':'landscape study'].join(' · ');
+    $('infoSeed').textContent='Seed '+study.seed;
     $('openArt').href=study.href;
   }
   currentInfoExhibit=exhibit;
@@ -1569,47 +1668,71 @@ function drawMap(){
   if(!element||!plan)return;
   const ctx=element.getContext('2d');
   const w=element.width,h=element.height;
+  const visitorX=rig.position.x,visitorZ=rig.position.z;
   ctx.clearRect(0,0,w,h);
-  const bounds=plan.rooms.reduce((p,r)=>({
-    minX:Math.min(p.minX,r.x-r.width/2),maxX:Math.max(p.maxX,r.x+r.width/2),
-    minZ:Math.min(p.minZ,r.z-r.depth/2),maxZ:Math.max(p.maxZ,r.z+r.depth/2)
-  }),{minX:Infinity,maxX:-Infinity,minZ:Infinity,maxZ:-Infinity});
-  // The lift cabin sits outside its gallery wall, so include it in the map extent.
-  if(liftPosition){
-    bounds.minX=Math.min(bounds.minX,liftPosition.x-1.2);
-    bounds.maxX=Math.max(bounds.maxX,liftPosition.x+1.2);
-    bounds.minZ=Math.min(bounds.minZ,liftPosition.z-1.2);
-    bounds.maxZ=Math.max(bounds.maxZ,liftPosition.z+1.2);
+  // Rotate the floor plan around the viewer, but fit the visible architecture
+  // rather than reserving half the map for the viewer's position.
+  const rotation=yaw,cs=Math.cos(rotation),sn=Math.sin(rotation);
+  const project=(x,z)=>{
+    const dx=x-visitorX,dz=z-visitorZ;
+    return {x:dx*cs-dz*sn,y:dx*sn+dz*cs};
+  };
+  const vertices=[];
+  for(const room of plan.rooms){
+    const x0=room.x-room.width/2,x1=room.x+room.width/2;
+    const z0=room.z-room.depth/2,z1=room.z+room.depth/2;
+    for(const x of [x0,x1])for(const z of [z0,z1])vertices.push(project(x,z));
   }
-  const scale=Math.min((w-28)/(bounds.maxX-bounds.minX+2),(h-28)/(bounds.maxZ-bounds.minZ+2));
-  const px=x=>(x-(bounds.minX+bounds.maxX)/2)*scale+w/2;
-  const pz=z=>(z-(bounds.minZ+bounds.maxZ)/2)*scale+h/2;
+  for(const hall of plan.corridors){
+    vertices.push(project(hall.start.x,hall.start.z),project(hall.end.x,hall.end.z));
+  }
+  // The lift cabin is outside its gallery wall. Include it in the fitted
+  // footprint so its symbol cannot be clipped when the plan rotates.
+  if(liftPosition)vertices.push(project(liftPosition.x,liftPosition.z));
+  if(!vertices.length)return;
+  const minX=Math.min(...vertices.map(p=>p.x)),maxX=Math.max(...vertices.map(p=>p.x));
+  const minY=Math.min(...vertices.map(p=>p.y)),maxY=Math.max(...vertices.map(p=>p.y));
+  const padding=12;
+  const scale=Math.min((w-2*padding)/Math.max(1,maxX-minX),(h-2*padding)/Math.max(1,maxY-minY));
+  const offsetX=w/2-(minX+maxX)*scale/2,offsetY=h/2-(minY+maxY)*scale/2;
+  const point=(x,z)=>{const p=project(x,z);return {x:offsetX+p.x*scale,y:offsetY+p.y*scale};};
   ctx.lineWidth=7;ctx.lineCap='round';ctx.strokeStyle='#999789';
   for(const hall of plan.corridors){
-    ctx.beginPath();ctx.moveTo(px(hall.start.x),pz(hall.start.z));
-    ctx.lineTo(px(hall.end.x),pz(hall.end.z));ctx.stroke();
+    const start=point(hall.start.x,hall.start.z),end=point(hall.end.x,hall.end.z);
+    ctx.beginPath();ctx.moveTo(start.x,start.y);
+    ctx.lineTo(end.x,end.y);ctx.stroke();
   }
   for(const room of plan.rooms){
-    const x=px(room.x-room.width/2),y=pz(room.z-room.depth/2);
-    ctx.fillStyle='#e6e4d8';ctx.strokeStyle='#474b43';ctx.lineWidth=1.2;
-    ctx.fillRect(x,y,room.width*scale,room.depth*scale);
-    ctx.strokeRect(x,y,room.width*scale,room.depth*scale);
+    const x0=room.x-room.width/2,x1=room.x+room.width/2;
+    const z0=room.z-room.depth/2,z1=room.z+room.depth/2;
+    const corners=[[x0,z0],[x1,z0],[x1,z1],[x0,z1]].map(([x,z])=>point(x,z));
+    ctx.beginPath();ctx.moveTo(corners[0].x,corners[0].y);
+    for(let i=1;i<corners.length;i++)ctx.lineTo(corners[i].x,corners[i].y);
+    ctx.closePath();ctx.fillStyle='#e6e4d8';ctx.strokeStyle='#474b43';
+    ctx.lineWidth=1.2;ctx.fill();ctx.stroke();
   }
-  // Lift location is generated for this floor, not assumed to be identical
-  // across the tower. Draw it before the visitor so their arrow stays visible.
+  const marker=point(visitorX,visitorZ);
+  ctx.beginPath();ctx.moveTo(marker.x,marker.y-9);ctx.lineTo(marker.x-5,marker.y+5);
+  ctx.lineTo(marker.x+5,marker.y+5);ctx.closePath();
+  ctx.fillStyle='#d25232';ctx.fill();
+  // Draw the lift using its placed world position, not the room plan: the
+  // lift is constructed after the rooms and can move between editions.
   if(liftPosition){
-    const x=px(liftPosition.x),y=pz(liftPosition.z);
-    ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);
-    ctx.fillStyle='#334d43';ctx.fill();
-    ctx.lineWidth=1.5;ctx.strokeStyle='#f6f3e9';ctx.stroke();
-    ctx.fillStyle='#ffffff';ctx.font='bold 10px Arial, sans-serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('L',x,y+.5);
+    const lift=point(liftPosition.x,liftPosition.z);
+    // A compact outlined square remains legible on mobile without changing
+    // the map's size or its viewer-relative orientation.
+    ctx.save();
+    ctx.fillStyle='#f6d77d';
+    ctx.strokeStyle='#303a35';
+    ctx.lineWidth=1.8;
+    ctx.fillRect(lift.x-5,lift.y-5,10,10);
+    ctx.strokeRect(lift.x-5,lift.y-5,10,10);
+    ctx.fillStyle='#303a35';
+    ctx.font='bold 9px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('L',lift.x,lift.y+.5);
+    ctx.restore();
   }
-  ctx.save();
-  ctx.translate(px(rig.position.x),pz(rig.position.z));
-  ctx.rotate(-yaw);
-  ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-5,5);ctx.lineTo(5,5);ctx.closePath();
-  ctx.fillStyle='#d25232';ctx.fill();ctx.restore();
 }
 
 function updateMovement(dt) {
@@ -1650,7 +1773,12 @@ function updateMovement(dt) {
     let dx,dz;
     if(renderer.xr.isPresenting){
       // Head-relative locomotion follows where the visitor actually looks.
-      const forward=renderer.xr.getCamera(camera).getWorldDirection(new THREE.Vector3());
+      // The XR camera has no rig parent. Its world-direction getter rebuilds
+      // its matrix without our locomotion rotation, making forward sideways
+      // on rotated entrances. Rotate its local headset direction by our yaw.
+      const forward=new THREE.Vector3(0,0,-1)
+        .transformDirection(renderer.xr.getCamera(camera).matrix)
+        .applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
       forward.y=0;forward.normalize();
       dx=(forward.x*ahead-forward.z*side)*dt*speed;
       dz=(forward.z*ahead+forward.x*side)*dt*speed;
@@ -1708,9 +1836,20 @@ function detectArt(elapsed) {
   const text='Floor '+(currentFloor===0?'G':currentFloor)+(current>=0?' · Gallery '+(current+1):' · Walkway');
   if(status.textContent!==text)status.textContent=text;
 }
+let frameSerial=0;
 function tick() {
   if (!renderer) return;
-  const dt=Math.min(clock.getDelta(),.055);
+  const frameDebug=typeof GALLERY_DEBUG!=='undefined'&&GALLERY_DEBUG;
+  const frameStart=frameDebug?performance.now():0;
+  const rawDelta=clock.getDelta();
+  const dt=Math.min(rawDelta,.055);
+  // Spread canvas painting across frames. This avoids pairing two costly
+  // graffiti atlas writes with artwork geometry construction in one tick.
+  if((frameSerial++&1)===0)towerGraffiti.paintNext();
+  else interiorGraffiti.paintNext();
+  // Only construct a deferred exhibit on frames that were already inexpensive.
+  // XR still uses this animation loop, rather than window requestAnimationFrame.
+  if(dt<.030||(frameSerial%8===0))processDeferredGallery();
   animateLiftDoors(dt);
   entranceDoor?.update(dt,rig.position);
   if(!$('lift').hidden){renderer.render(scene,camera);return;}
@@ -1719,6 +1858,14 @@ function tick() {
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
   renderer.render(scene,camera);
+  if(frameDebug){
+    const spent=performance.now()-frameStart;
+    if(spent>34){
+      window.__galleryFrameSpikes??=[];
+      window.__galleryFrameSpikes.push({ms:Math.round(spent),deltaMs:Math.round(rawDelta*1000),deferred:deferredGalleryJobs.length,frame:frameSerial});
+      if(window.__galleryFrameSpikes.length>60)window.__galleryFrameSpikes.shift();
+    }
+  }
 }
 if(renderer)renderer.setAnimationLoop(tick);
 // Ensure canvas-rendered entrance and lift signs use the actual marker font.
@@ -1727,3 +1874,5 @@ Promise.race([
   document.fonts.load('42px "AlgoArt Marker"'),
   new Promise(resolve=>setTimeout(resolve,1600))
 ]).catch(error=>console.warn('Marker font fallback:',error)).finally(load);
+
+

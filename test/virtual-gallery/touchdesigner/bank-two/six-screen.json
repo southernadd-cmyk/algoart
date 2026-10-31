@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "status": "published",
+  "title": "Translation Study II",
+  "description": "Two 20-second TouchDesigner triptychs stacked into one six-panel film.",
+  "atlas": {
+    "file": "six-screen-installation.webm",
+    "layout": "grid",
+    "columns": 3,
+    "rows": 2,
+    "panelCount": 6,
+    "panelWidth": 384,
+    "panelHeight": 240,
+    "width": 1152,
+    "height": 480,
+    "fps": 24,
+    "codec": "vp9",
+    "durationSeconds": 20,
+    "sha256": "3708a9b1a1f5f951ac64e5039c8445d3333e09ab0799b023af3e74e7bfe7c49b",
+    "sizeBytes": 9374458
+  },
+  "sources": [
+    {
+      "row": 0,
+      "file": "../phi-net-AA-20261005-03-55769-organic-oil-v6-triptych.webm"
+    },
+    {
+      "row": 1,
+      "file": "../phi-net-AA-20261005-03-55769-scribble-action-v4-triptych.webm"
+    }
+  ],
+  "credits": "Original TouchDesigner triptychs and the phi_net.toe editable project."
+}

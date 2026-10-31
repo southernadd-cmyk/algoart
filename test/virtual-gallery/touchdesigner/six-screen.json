@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "status": "published",
+  "atlas": {
+    "file": "six-screen-installation.webm",
+    "codec": "vp9",
+    "layout": "grid",
+    "columns": 3,
+    "rows": 2,
+    "panelCount": 6,
+    "panelWidth": 384,
+    "panelHeight": 240,
+    "width": 1152,
+    "height": 480,
+    "fps": 24,
+    "durationSeconds": 20,
+    "sha256": "b81a9d6745946ec084685d1071865549153def29342aedddd9afb1f7da52f80f",
+    "sizeBytes": 6763921
+  },
+  "sources": [
+    {
+      "row": 0,
+      "manifest": "phase-one.json"
+    },
+    {
+      "row": 1,
+      "manifest": "watercolour-burst.json"
+    }
+  ],
+  "credits": "Two original TouchDesigner triptychs combined spatially for one shared six-screen player."
+}

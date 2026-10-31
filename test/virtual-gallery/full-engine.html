@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#e8e4da">
 <meta name="robots" content="noindex,nofollow">
 <base href="../../gallery/visit/">
+<!-- Test tower: local gallery engine/assets; live archive data resolves through the base URL. -->
 <link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/test/virtual-gallery/full-engine.html">
 <meta name="description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
 <meta property="og:type" content="website">
@@ -20,8 +21,8 @@
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/walk-the-tower-golden.png">
 <title>Virtual Exhibition | PROPORTION PIECE</title>
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./gallery.css?v=accessibility-20261023">
-<link rel="stylesheet" href="./phi-gallery.css?v=public-phi-20261026">
+<link rel="stylesheet" href="../../test/virtual-gallery/gallery.css?v=accessibility-20261023">
+<link rel="stylesheet" href="../../test/virtual-gallery/phi-gallery.css?v=public-phi-20261026">
 <style>
 /* The fixed canvas must never cover the keyboard/mouse lift fallback. */
 #world{z-index:0}
@@ -37,7 +38,7 @@
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
-<link rel="preload" href="./textures/OfficeCeiling001_Color.jpg" as="image" crossorigin="anonymous">
+<link rel="preload" href="../../test/virtual-gallery/textures/OfficeCeiling001_Color.jpg" as="image" crossorigin="anonymous">
 
 
 <script>
@@ -47,7 +48,7 @@
  // Keep the early index request bounded even before the application imports.
  const indexController=new AbortController();
  const indexTimer=setTimeout(()=>indexController.abort(),7000);
- early.index=fetch('../tower-layouts.json?day='+day,{cache:'no-store',signal:indexController.signal}).then(async response=>{
+ early.index=fetch('../tower-layouts.json?day='+day,{cache:'no-cache',signal:indexController.signal}).then(async response=>{
    if(!response.ok)return {ok:false,text:async()=>''};
    const body=await response.text();
    return {ok:true,text:async()=>body};
@@ -68,22 +69,12 @@
     // Use the approved reception, gramophone and golden-spiral square.
     globalThis.__phiReceptionTestRefresh=true;
     globalThis.__phiReceptionTilePreview=true;
-    globalThis.__phiReceptionPenroseTest=true;
-    window.__galleryStage='Importing bundled JavaScript';
+    // Same three reception backroom monitors already verified in the test tower.
+    // The WebM is lazy-loaded only when a visitor approaches their wall.
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
-    let revision=String(Date.now());
-    try{
-      // Immutable-by-hash script URL; refresh the tiny manifest every visit.
-      // A stale page cannot silently keep loading an old test curator.
-      const manifestURL=new URL('./test-curator-revision.json?fresh='+Date.now(),document.baseURI);
-      const response=await fetch(manifestURL,{cache:'no-store'});
-      if(!response.ok)throw Error('Test curator manifest HTTP '+response.status);
-      const manifest=await response.json();
-      if(!/^[a-f0-9]{64}$/.test(manifest.sha256))throw Error('Invalid curator revision');
-      revision=manifest.sha256;
-    }catch(error){console.warn('Test curator revision unavailable; requesting uncached bundle',error);}
-    await import('./gallery-phi-test-room-signs-bundle.js?v=shared-curated-signs-'+revision);
+    window.__galleryStage='Importing bundled JavaScript';
+    await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=architectural-room-luminaires-20261031');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);

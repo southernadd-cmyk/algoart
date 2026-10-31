@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "status": "published",
+  "artwork": {
+    "title": "Golden Trajectories — Oil Paint Study 14",
+    "seed": "OL-20261027-02-57201",
+    "date": "2026-10-27",
+    "series": "Golden Trajectories",
+    "sourceImage": "../../2026-10-27/2026-10-27-oil-landscape-02-spiral-OL-20261027-02-57201.jpg",
+    "editorUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=OL-20261027-02-57201&mode=spiral&el=46&den=63&cx=73&neg=27&phi=97&rec=4&spi=55&ga=94&nest=41&pen=dry&th=7&wob=41&od=5&op=74&pr=35&dry=37&curve=62&shape=58&overlap=52&rot=96&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=8&sat=82&bri=61&paper=%23f5f0e6&grain=28&material=oil-v6&sheet=phi",
+    "phiStrength": 97,
+    "goldenAngle": 94,
+    "spiralInfluence": 55,
+    "settings": {
+      "phiStrength": 97,
+      "goldenAngle": 94,
+      "spiralInfluence": 55,
+      "recursion": 4,
+      "density": 63,
+      "colourCount": 8
+    }
+  },
+  "triptych": {
+    "file": "phase-one-triptych.webm",
+    "codec": "vp9",
+    "layout": "horizontal",
+    "panelCount": 3,
+    "panelWidth": 384,
+    "panelHeight": 240,
+    "width": 1152,
+    "height": 240,
+    "fps": 24,
+    "durationSeconds": 20,
+    "sha256": "d64dd7eda6c7bbb62ce90a19c8543791b455d16989a875fa4b7a72914c0ff9d0",
+    "sizeBytes": 3384087
+  },
+  "panels": [
+    "source",
+    "translation",
+    "emergence"
+  ],
+  "credits": "Generated using TouchDesigner from a PROPORTION PIECE source study."
+}

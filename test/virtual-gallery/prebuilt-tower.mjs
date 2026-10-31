@@ -9,8 +9,10 @@ export async function loadPrebuiltTower(url,earlyResponse=null){
    if(typeof DecompressionStream!=='function')return null;
    const response=await Promise.race([earlyResponse||fetch(url,{cache:'no-cache',signal:controller.signal}),new Promise((_,reject)=>controller.signal.addEventListener('abort',()=>reject(new DOMException('Timeout','AbortError')),{once:true}))]);
    if(!response.ok||!response.body)return null;
-   const bytes=await new Response(response.body.pipeThrough(new DecompressionStream('gzip')))
-     .arrayBuffer();
+   const bytes=await Promise.race([
+     new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer(),
+     new Promise((_,reject)=>controller.signal.addEventListener('abort',()=>reject(new DOMException('Timeout','AbortError')),{once:true}))
+   ]);
    if(bytes.byteLength<8||bytes.byteLength>100_000_000)return null;
    const view=new DataView(bytes);
    const length=view.getUint32(0,true);

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "status": "published",
+  "artwork": {
+    "title": "Radiant Systems — Watercolour Burst",
+    "seed": "AA-20261005-03-55769",
+    "series": "Radiant Systems",
+    "mode": "burst",
+    "material": "watercolour-v2s",
+    "editorUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=AA-20261005-03-55769&mode=burst&el=36&den=53&cx=71&neg=41&phi=91&rec=4&spi=63&ga=93&nest=44&pen=fine&th=13&wob=32&od=3&op=70&pr=36&dry=19&curve=91&shape=68&overlap=65&rot=91&ln=1&ci=1&re=1&po=1&ar=1&pal=golden&cols=4&sat=86&bri=59&paper=%23f5f0e6&grain=13&material=watercolour-v2s&fit=0",
+    "settings": {
+      "phiStrength": 91,
+      "goldenAngle": 93,
+      "spiralInfluence": 63,
+      "palette": "golden"
+    }
+  },
+  "triptych": {
+    "file": "watercolour-burst-AA-20261005-03-55769-triptych.webm",
+    "codec": "vp9",
+    "layout": "horizontal",
+    "panelCount": 3,
+    "panelWidth": 384,
+    "panelHeight": 240,
+    "width": 1152,
+    "height": 240,
+    "fps": 24,
+    "durationSeconds": 20,
+    "sha256": "dfba634571fd77cbf7c7e8666b73cfb6aa16b29f33c88ad77bb1019a59a884da",
+    "sizeBytes": 4867895
+  },
+  "panels": [
+    "source",
+    "translation",
+    "emergence"
+  ],
+  "credits": "Rendered in TouchDesigner from a PROPORTION PIECE watercolour study."
+}

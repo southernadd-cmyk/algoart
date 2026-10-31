@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Offline sculpture geometry builder</title>
+<body>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {createPortraitSculpture} from './sculpture-render-traced.mjs';
+import {resolveStudyMaterial} from './study-material.mjs';
+
+const round=(v)=>Math.round(v*10000)/10000;
+// Fallback only for studies whose normal vector/pigment tracing produced no shapes.
+// Build shallow coloured strips from the actual archived painting pixels.
+async function rasterReliefFallback(urls){
+  const image=new Image();
+  image.crossOrigin='anonymous';
+  let loaded=false;
+  for(const url of urls.filter(Boolean)){
+    try{
+      await new Promise((resolve,reject)=>{
+        image.onload=resolve;image.onerror=reject;image.src=url;
+      });
+      loaded=true;break;
+    }catch{}
+  }
+  if(!loaded)throw Error('No archived image available for sculpture raster fallback');
+  const cols=36,rows=48,canvas=document.createElement('canvas');
+  canvas.width=cols;canvas.height=rows;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(image,0,0,cols,rows);
+  const pixels=ctx.getImageData(0,0,cols,rows).data;
+  const result=[];
+  const pixel=(x,y)=>Array.from(pixels.slice((y*cols+x)*4,(y*cols+x)*4+3));
+  const bg=pixel(0,0);
+  const hex=rgb=>'#'+rgb.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+  // Horizontal colour runs preserve composition without introducing invented marks.
+  for(let y=0;y<rows;y++){
+    let start=-1,previous=null;
+    const flush=end=>{
+      if(start<0)return;
+      const left=(start/cols-.5)*2.0,right=(end/cols-.5)*2.0;
+      const top=(.5-y/rows)*2.8,bottom=(.5-(y+1)/rows)*2.8;
+      result.push({kind:'paint',points:[[left,bottom],[right,bottom],[right,top],[left,top]],
+        depth:.025,z:0,color:hex(previous),side:hex(previous),opacity:1});
+      start=-1;
+    };
+    for(let x=0;x<=cols;x++){
+      const rgb=x<cols?pixel(x,y):null;
+      const marked=rgb&&Math.max(...rgb.map((v,i)=>Math.abs(v-bg[i])))>32
+        && (Math.max(...rgb)-Math.min(...rgb)>12 || Math.min(...rgb)<170);
+      const quant=marked?rgb.map(v=>Math.round(v/32)*32>255?255:Math.round(v/32)*32):null;
+      if(start>=0&&(!marked||quant.some((v,i)=>v!==previous[i])))flush(x);
+      if(marked&&start<0){start=x;previous=quant;}
+    }
+  }
+  if(!result.length)throw Error('Archived image had no distinguishable marks');
+  return result;
+}
+window.bakeStudy=async(item,quality)=>{
+  if(!['desktop','mobile'].includes(quality))throw Error('Unknown sculpture quality');
+  const archiveUrl=new URL('../'+item.date+'/',location.href);
+  const study={
+    seed:item.seed,
+    title:item.title||'Artwork',
+    href:item.shareUrl,
+    image:item.imageUrl||new URL(item.imageFile,archiveUrl).href,
+    imageOptimized:item.imageUrl||new URL('3d/'+item.imageFile.replace(/\.[^.]+$/,'')+'-'+(quality==='mobile'?'640':'1100')+'.webp',archiveUrl).href,
+    material:resolveStudyMaterial(item.shareUrl,item.material||'marker')
+  };
+  const entries=[];
+  let finished=false;
+  const done=new Promise((resolve,reject)=>{
+    const fail=setTimeout(()=>reject(Error('Timed out tracing '+study.seed)),70000);
+    const scene=new THREE.Scene();
+    createPortraitSculpture({
+      scene,study,quality,placement:{x:0,y:0,z:0,yaw:0},
+      labelTexture:()=>{
+        const canvas=document.createElement('canvas');
+        canvas.width=4;canvas.height=4;
+        return new THREE.CanvasTexture(canvas);
+      },
+      onArtworkMesh(mesh){
+        const {shapes,options}=mesh.geometry.parameters||{};
+        const shape=Array.isArray(shapes)?shapes[0]:shapes;
+        if(!shape||!options)throw Error('Missing extrusion source outline for '+study.seed);
+        const points=shape.getPoints().map(p=>[round(p.x),round(p.y)]);
+        const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+        const cap=mats[0],side=mats[1]||cap;
+        entries.push({
+          kind:cap?.map?'paint':'ink',
+          points,
+          depth:round(options.depth),
+          z:round(mesh.position.z+options.depth/2),
+          color:'#'+cap.color.getHexString(),
+          side:'#'+side.color.getHexString(),
+          opacity:round(cap.opacity)
+        });
+      },
+      async onComplete(result){
+        if(finished)return;finished=true;clearTimeout(fail);
+        if(!entries.length || (result.strokeCount+result.pigmentCount)<1){
+          try{
+            const fallback=await rasterReliefFallback([study.imageOptimized,study.image]);
+            entries.push(...fallback);
+            console.warn('Raster-derived sculpture fallback for '+study.seed);
+          }catch(error){reject(Error('No baked shapes for '+study.seed+': '+error.message));return;}
+        }
+        resolve({seed:study.seed,quality,entries});
+      }
+    });
+  });
+  return await done;
+};
+window.bakerReady=true;
+</script>
+</body>
+</html>

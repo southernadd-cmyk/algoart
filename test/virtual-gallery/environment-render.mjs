@@ -1,14 +1,15 @@
 // Procedural exterior for the daily museum. Small draw-call budget: one
-// terrain mesh, one sky shell and batched instanced plants/stone.
+// terrain mesh, one gradient sky and one softly drawn distant-city strip.
 import {buildEnvironmentPlan} from './environment-v1.mjs';
-import { loadSquarePanorama } from './panorama-backdrop.mjs?v=soft-exterior-panorama-20261022';
+import {PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
+import {addProceduralBackdrop} from './procedural-backdrop.mjs?v=daytime-restored-20261027';
 import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 
 const PALETTES={
   meadow:{horizon:'#cbd5cc',zenith:'#b1c8cf',terrain:['#7c9077','#9eab86','#71856e'],trees:['#536d54','#667b58','#79906b'],stone:['#b2b3a6','#9b9f91']},
   heath:{horizon:'#d4cdbf',zenith:'#b1c6cc',terrain:['#918d73','#b0a785','#7d896f'],trees:['#61705b','#758168','#8e997b'],stone:['#b6aea0','#999b8e']},
   grove:{horizon:'#cbd5cc',zenith:'#abc7cc',terrain:['#768978','#99a58a','#6e8277'],trees:['#496856','#5f7c62','#849b7c'],stone:['#b5b4ac','#949e97']},
-  urban:{horizon:'#c9d0d1',zenith:'#b9cbd4',terrain:['#90928b','#a9aaa0','#80837d'],trees:['#5b735f','#72826c','#889383'],stone:['#b1b1a9','#90948e']}
+  urban:{horizon:'#e1edf2',zenith:'#91c4e8',terrain:['#90928b','#a9aaa0','#80837d'],trees:['#5b735f','#72826c','#889383'],stone:['#b1b1a9','#90948e']}
 };
 
 // Offline-safe procedural exterior textures; seeded architecture retains stable
@@ -94,49 +95,18 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     skyColors[i*3]=skyC.r;skyColors[i*3+1]=skyC.g;skyColors[i*3+2]=skyC.b;
   }
   skyGeo.setAttribute('color',new THREE.BufferAttribute(skyColors,3));
-  // High-altitude cloud texture, deterministic for the daily seed. It is
-  // local and cached in a canvas: no network dependency on a sky provider.
-  const cloudCanvas=document.createElement('canvas');
-  cloudCanvas.width=384;cloudCanvas.height=192;
-  const cloudCtx=cloudCanvas.getContext('2d');
-  const img=cloudCtx.createImageData(384,192);
-  const hash=(x,y,k)=>{let n=Math.imul(x+1301,374761393)+Math.imul(y+733,668265263)+k;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295;};
-  const noise2=(x,y,k)=>{
-    const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
-    const sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);
-    const a=hash(ix,iy,k)*(1-sx)+hash(ix+1,iy,k)*sx;
-    const b=hash(ix,iy+1,k)*(1-sx)+hash(ix+1,iy+1,k)*sx;
-    return a*(1-sy)+b*sy;
-  };
-  for(let y=0;y<192;y++)for(let x=0;x<384;x++){
-    const lat=y/191;
-    // Latitude zero is zenith in this projection; avoid clouding the horizon.
-    const band=Math.sin(Math.PI*Math.max(0,Math.min(1,(lat-.08)/.86)));
-    const n=.53*noise2(x/66,y/42,plan.seed)+.31*noise2(x/27,y/21,plan.seed)+.16*noise2(x/9,y/9,plan.seed);
-    const alpha=Math.pow(Math.max(0,(n-.46)/.30),1.4)*.55*Math.max(0,band);
-    const idx=(y*384+x)*4;
-    img.data[idx]=247;img.data[idx+1]=247;img.data[idx+2]=242;
-    img.data[idx+3]=Math.floor(Math.min(.7,alpha)*255);
-  }
-  cloudCtx.putImageData(img,0,0);
-  const cloudMap=new THREE.CanvasTexture(cloudCanvas);
-  cloudMap.colorSpace=THREE.SRGBColorSpace;
-  cloudMap.wrapS=THREE.RepeatWrapping;
   const sky=new THREE.Mesh(skyGeo,new THREE.MeshBasicMaterial({
     vertexColors:true,side:THREE.BackSide,depthWrite:false,fog:false
   }));
-  const clouds=new THREE.Mesh(new THREE.SphereGeometry(176.8,40,22),
-    new THREE.MeshBasicMaterial({map:cloudMap,transparent:true,side:THREE.BackSide,depthWrite:false,fog:false}));
   sky.position.set(plan.centerX,layout.rooms[0].y,plan.centerZ);
   sky.renderOrder=-5;
   scene.add(sky);
-  clouds.position.copy(sky.position);
-  scene.add(clouds);
   scene.background=color(palette.horizon);
-  scene.fog=new THREE.Fog(color(palette.horizon),75,Math.max(164,layout.rooms[0].y+230));
-  // Optional progressive HDRI-derived panorama. The procedural sky remains visible
-  // until a self-hosted, mobile-sized panorama has successfully loaded.
-  loadSquarePanorama(THREE,scene,{sky,clouds,lowPower});
+  // Distance haze belongs to the cards, keeping the actual gallery clear.
+  // The photograph also disabled scene fog once it had finished loading.
+  scene.fog=null;
+  plan.backdrop=addProceduralBackdrop(THREE,scene,{centerX:plan.centerX,centerZ:plan.centerZ,
+    groundY:plaza?.level||0,lowPower});
 
   // Terrain gently rises only outside the actual footprint and approach bridges.
   // Heights are sampled from the SAME function as all the planted instances.
@@ -144,7 +114,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
   const groundGeo=new THREE.PlaneGeometry(plan.size,plan.size,segments,segments);
   groundGeo.rotateX(-Math.PI/2);
   const position=groundGeo.getAttribute('position');
-  // The world has a finite terrain mesh while the sky / panorama extends
+  // The world has a finite terrain mesh while the sky and distant cards extend
   // indefinitely. Fade the ground's outer ~30% into the actual background
   // instead of exposing a hard, square edge at the horizon. Three.js uses
   // four-component vertex colours as RGB + alpha on transparent materials.
@@ -187,6 +157,20 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
     const pavingMap=surfaceTexture(THREE,'paving');
     pavingMap.repeat.set(p.halfDepth*2/6,p.halfWidth*2/6);
     const paving=new THREE.MeshStandardMaterial({map:pavingMap,color:'#eee9e1',roughness:.94});
+    // Staging square: reuse the previously uploaded CC0 OpenGameArt floor scan
+    // instead of the hand-drawn canvas paving. Keep the existing map as a
+    // synchronous fallback when a texture request fails or is still loading.
+    if(globalThis.__phiReceptionTestRefresh){
+      new THREE.TextureLoader().load('./textures/open-game-art/028.jpg',texture=>{
+        texture.colorSpace=THREE.SRGBColorSpace;
+        texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+        texture.repeat.set(p.halfWidth*2/4,p.halfDepth*2/4);
+        texture.anisotropy=lowPower?1:4;
+        paving.map=texture;
+        paving.color.set('#ffffff');
+        paving.needsUpdate=true;
+      },undefined,error=>console.warn('Uploaded plaza paving unavailable; retaining original',error));
+    }
     const stoneMap=surfaceTexture(THREE,'stone');
     const stoneEdge=new THREE.MeshStandardMaterial({map:stoneMap,color:'#e4dfd5',roughness:.94});
     const bronze=new THREE.MeshStandardMaterial({color:'#424a49',metalness:.42,roughness:.52});
@@ -221,6 +205,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
         box(1.2,.57,2.7,along,across,.20,stoneEdge);
         box(.92,.13,2.35,along,across,.55,paving);
       }
+      if(PHI_EXTERIOR_PLANTING_ENABLED){
       for(const along of [-13,12]){
         const across=side*(p.halfWidth-4.6);
         box(1.75,.69,1.75,along,across,.22,stoneEdge);
@@ -231,6 +216,7 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
           shrub.scale.set(1.2,.75,1);
           square.add(shrub);
         }
+      }
       }
       for(const along of [-15,0,15]){
         const across=side*(p.halfWidth-1.5);
@@ -253,3 +239,4 @@ export function createExteriorLandscape(THREE,scene,layout,studies,{lowPower=fal
   // No distant blocks compete with the tower or consume mobile draw calls.
   return plan;
 }
+

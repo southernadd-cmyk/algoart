@@ -1,6 +1,6 @@
-# Gallery model attributions (historical test assets)
+# Gallery model attributions (historical source inventory)
 
-The independent test tower now shares the live renderer. This list includes old test-only files. See the [active attribution audit](../../../gallery/visit/ASSET-AUDIT.md) and [current test credits](../credits.html).
+This file includes **retired** model assets as well as currently-used ones. For the main live/test tower, consult [the active attribution audit](../ASSET-AUDIT.md) and [public credits](../credits.html). Presence of a GLB in this folder does not mean it is displayed.
 
 **Human Models Set - Male/Female (Rigged)** by **lzyassoul**. [Original Sketchfab model](https://sketchfab.com/3d-models/human-models-set-malefemale-rigged-7311fcfdc03e4234900eeced42a1e669). Licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
@@ -32,3 +32,23 @@ Licence: https://creativecommons.org/licenses/by/4.0/ . User-visible source link
 
 - **Art Magazines on Old Cabinet (Scaniverse LIDAR)** by **JFN**, [source](https://sketchfab.com/3d-models/art-magazines-on-old-cabinet-scaniverse-lidar-9868923cd16b4c4db3bd834d8e18fe2e), [author](https://sketchfab.com/db4), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Unused UV sets removed, texture resized and recompressed, scale adjusted for display.
 - **Paper debris** by **Sousinho**, [source](https://sketchfab.com/3d-models/paper-debris-457624d2526744d8890d50d811ef45d7), [author](https://sketchfab.com/sousinho), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Textures resized and recompressed; selected paper objects rescaled and arranged around the reception desk.
+
+## Test gallery reception office fittings
+
+**Minimalistic Modern Office** by **dylanheyes**, [source](https://sketchfab.com/3d-models/minimalistic-modern-office-5540183da1c7452f810f8de33734879a), [author](https://sketchfab.com/dylanheyes), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Task chair, preparation table and wall lights selected from the uploaded office; transforms baked, unused UV sets removed, textures resized and recompressed, materials adjusted. The existing Gothic entrance door is retained.
+
+## Reception gramophone
+
+**Grammaphone** by **josephineburns**, [source](https://sketchfab.com/3d-models/grammaphone-b1a1c0eb77254acd81f94f38e6569c6a), [author](https://sketchfab.com/josephineburns), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Uploaded model repackaged as GLB; original geometry and colours retained, scaled for display.
+
+## Gallery and lift ceiling speakers
+
+**Ceiling Speaker** by **spy_dogg**, [source](https://sketchfab.com/3d-models/ceiling-speaker-58580cd22a144b64b2aa9873d429a0b5), [author](https://sketchfab.com/chives1996), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Transforms baked for a downward-facing recessed grille, texture resized and recompressed, scale calibrated for room and lift ceilings. The same cached model is reused across floors.
+
+## Exterior reception roof
+
+**Chinese roof. Low poly model.** by **KSmodels** ([author](https://sketchfab.com/KSmodels)), [source](https://sketchfab.com/3d-models/chinese-roof-low-poly-model-783448e879ac4f3c84beb6c836a1b241). [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribution confirmed by uploaded GLB metadata. Original 754-triangle geometry retained, three textures compressed to WebP, alpha rendering set to cutout, and two copies fitted to reception. Matching brick infill follows the underside profile; a ridge cap closes the join. Asset: `models/reception-chinese-roof.glb`.
+
+## Reception floor tiles
+
+**PBR Floor Tiles Material** by **Aman Bajwa**, [source](https://sketchfab.com/3d-models/pbr-floor-tiles-material-4f30f4ab3cf4461d8f0460c236fd9309), [author](https://sketchfab.com/7bajwa), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Colour, roughness and normal maps extracted from the uploaded GLB and recompressed as WebP; roughness taken from the packed map's green channel, normal strength reduced, and repeat calibrated for reception. Used on both the live and test towers.

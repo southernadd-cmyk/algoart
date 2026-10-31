@@ -35,6 +35,7 @@ a{color:inherit}
 .info-body{padding:23px;position:relative;flex:1}
 .info h2{font-family:Georgia,serif;font-weight:normal;font-size:23px;line-height:1.16;margin:9px 12px 10px 0}
 .info p{font-size:12px;color:#565d57;margin:0 0 19px}
+.info .info-meta{font-weight:600;line-height:1.5;margin-bottom:5px}
 .info a{display:inline-block;font-size:13px;text-underline-offset:3px}
 .info-close{position:absolute;right:9px;top:6px;border:0;background:transparent;font-size:22px}
 .status{position:fixed;z-index:3;left:25px;bottom:25px;background:rgba(242,239,232,.84);padding:10px 13px;font-size:12px;max-width:58vw;pointer-events:none}
@@ -64,7 +65,8 @@ a{color:inherit}
 #liftMonth{width:100%;font-size:16px;padding:9px;background:white;border:1px solid #aab0a9}
 .lift-weekdays,.lift-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center}
 .lift-weekdays{margin:19px 0 7px;font-size:11px;color:#777}.lift-days button{aspect-ratio:1;border:1px solid #d6d5ce;background:#e9e7e2;color:#999;font-size:13px}
-.lift-days button.lift-available{background:#a03933;color:#fff;border-color:#92322c;font-weight:700}
+.lift-days button.lift-available{position:relative;background:#a03933;color:#fff;border-color:#92322c;font-weight:700}
+.lift-days button.lift-available::after{content:'';position:absolute;bottom:2px;left:50%;width:4px;height:4px;border-radius:50%;transform:translateX(-50%);background:#fff}
 .lift-days button.lift-available:hover,.lift-days button.lift-available:focus-visible{background:#762b26;outline:2px solid #292c29;outline-offset:2px}
 .lift-days button.lift-current{box-shadow:inset 0 0 0 3px #f4dfad}
 .lift-note{margin:17px 0 0}#liftTravel{font-weight:700;color:#373f3a}
@@ -96,3 +98,80 @@ a{color:inherit}
 /* A visible, non-intrusive focus boundary for keyboard explorers. */
 #world:focus-visible{outline:3px solid #e9bc76;outline-offset:-5px}
 .info button:focus-visible,.info a:focus-visible,.lift-panel button:focus-visible,#liftMonth:focus-visible,.enter:focus-visible,.welcome a:focus-visible{outline:3px solid #314d40;outline-offset:3px}
+
+
+/* The virtual exhibition shares the real site header instead of inventing a
+   second navigation. Keep it visible over the 3D canvas and welcome screen. */
+body .algo-global-header.gallery-global-header{
+  position:fixed!important;
+  top:0!important;left:0!important;right:0!important;
+  z-index:10!important;
+}
+.topbar{
+  top:72px;
+  z-index:5;
+  min-height:49px;
+  justify-content:flex-end;
+  padding:7px clamp(15px,2.5vw,35px);
+  background:rgba(237,235,228,.94);
+  backdrop-filter:none;
+}
+.topbar .identity{align-items:center;gap:12px}
+.topbar .section-name{font-size:15px}
+.topbar .top-actions{flex-wrap:nowrap;margin-left:auto}
+.topbar .top-actions button,.topbar .top-actions>a{white-space:nowrap}
+.plan-view{top:143px}
+@media(max-width:850px){
+  .topbar{top:92px;align-items:center;gap:10px;padding:7px 12px}
+  .topbar .identity{display:flex;align-items:center;gap:8px}
+  .topbar .section-name{display:none}
+  .topbar .top-actions{max-width:none;flex:1;flex-wrap:nowrap;justify-content:flex-end;gap:6px}
+  .topbar .top-actions button,.topbar .top-actions>a{padding:6px 8px}
+  .plan-view{top:156px}
+}
+@media(max-width:480px){
+  .topbar .top-actions>a{display:none}
+  .plan-view{top:150px}
+}
+
+
+/* Welcome starts below the shared header and its gallery controls. The
+   measured offset also handles browser zoom, wrapping, and XR controls. */
+:root{--gallery-ui-bottom:132px}
+.welcome{
+  top:var(--gallery-ui-bottom);
+  bottom:0;
+  align-items:safe center;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  pointer-events:auto;
+  padding-block:12px;
+}
+.welcome-content{
+  width:min(640px,100%);
+  padding:clamp(16px,2.2vw,30px) clamp(22px,4.5vw,68px);
+  margin-block:auto;
+}
+.welcome h1{
+  font-size:clamp(40px,4.2vw,66px);
+  line-height:1.04;
+  margin-bottom:18px;
+}
+.welcome .eyebrow{margin-bottom:12px}
+.welcome p{line-height:1.5;margin-bottom:13px;max-width:480px}
+.welcome .shortcuts{line-height:1.48}
+.welcome .enter{margin:16px 0 12px;padding:12px 20px}
+.plan-view{top:calc(var(--gallery-ui-bottom) + 18px)}
+@media(max-width:850px){
+  :root{--gallery-ui-bottom:152px}
+  .welcome-content{padding:20px 25px}
+  .welcome h1{font-size:clamp(36px,8vw,54px);margin-bottom:15px}
+  .welcome .shortcuts{font-size:11px}
+}
+@media(max-width:480px){
+  .welcome{padding-block:8px}
+  .welcome-content{padding:14px 20px 22px}
+  .welcome h1{font-size:clamp(35px,10vw,47px)}
+  .welcome p{font-size:13px;line-height:1.48}
+  .welcome .shortcuts{font-size:11px}
+}

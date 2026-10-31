@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROPORTION PIECE — phi architecture study</title>
+<style>
+body{font-family:Georgia,serif;background:#eae6db;color:#26332c;margin:0;padding:24px}main{max-width:1100px;margin:auto}h1{font-weight:normal;font-size:2rem}p{line-height:1.5}header{display:flex;gap:16px;flex-wrap:wrap;align-items:end;margin-bottom:20px}label{display:grid;gap:7px}input{font:inherit;padding:8px;background:#faf9f3;border:1px solid #a09c8d}button{padding:10px 18px;border:1px solid #26332c;background:transparent;font:inherit;cursor:pointer}.views{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}figure{margin:0}svg{width:100%;background:#f8f5ec;border:1px solid #a09c8d}figcaption{padding-top:9px}#facts{margin-top:15px}small{display:block;color:#63665d}
+canvas{display:block;width:100%;height:470px;touch-action:none;background:#f5f2e9;border:1px solid #a09c8d} @media(max-width:700px){canvas{height:360px}} .touch-pad{display:none;grid-template-columns:repeat(3,54px);gap:7px;justify-content:center;margin:12px auto;touch-action:none;user-select:none}.touch-pad button{width:54px;height:54px;padding:0;border:1px solid #65746c;border-radius:10px;background:#ede8dc;font:25px Georgia;touch-action:none;user-select:none}.touch-pad button:active{background:#aebfaf}.touch-pad .forward{grid-column:2}.touch-pad .left{grid-column:1;grid-row:2}.touch-pad .back{grid-column:2;grid-row:2}.touch-pad .right{grid-column:3;grid-row:2}@media(pointer:coarse){.touch-pad.is-walking{display:grid}}</style></head><body><main><h1>phi architecture study</h1><p>A standalone architecture experiment, now scaled to the exhibition: 18 artworks generate an approximately 31 × 19 metre golden footprint and four rooms. Golden cells can merge or become voids crossed by glass bridges. No live tower geometry has been replaced.</p>
+<header><label>Exhibition date<input id="date" type="date" value="2026-10-26"></label><label>Archived artworks<input id="artworks" type="number" min="1" max="60" value="18" readonly></label><label>Variation<input id="variation" type="number" min="0" value="0"></label><button id="draw">Generate floor</button></header>
+<div class="views"><figure><svg id="geometry" viewBox="0 0 700 470" role="img" aria-label="Golden subdivision diagram"></svg><figcaption>Mathematical subdivisions</figcaption></figure><figure><svg id="rooms" viewBox="0 0 700 470" role="img" aria-label="Candidate exhibition rooms"></svg><figcaption>Merged gallery rooms</figcaption></figure></div><figure style="margin-top:24px"><button id="walkToggle" type="button" style="margin-bottom:12px">Walk inside</button><p style="margin:4px 0 12px">In walk mode: hold the on-screen arrows (or use WASD / arrow keys) to move. Drag on the 3D view only to look around. Switch back to orbit to inspect the whole floor.</p><canvas id="threePreview" aria-label="Three dimensional rendered phi gallery and glazed bridges"></canvas><div class="touch-pad" id="touchPad" aria-label="Movement controls"><button class="forward" data-move="w" aria-label="Move forward">↑</button><button class="left" data-move="a" aria-label="Move left">←</button><button class="back" data-move="s" aria-label="Move backward">↓</button><button class="right" data-move="d" aria-label="Move right">→</button></div><figcaption>Three.js geometry — real wall openings, glass deck and rails; drag to orbit, scroll to zoom.</figcaption></figure><figure style="margin-top:24px"><canvas id="preview3d" aria-label="Orbitable three-dimensional gallery and glass walkway preview"></canvas><figcaption>3D architectural study — drag to orbit; wheel to zoom. Glass decks and railings are provisional.</figcaption></figure><p id="facts"></p><small>Physical study: blue-grey strips are glass walkways across open voids; dark lines are walls, openings are doorways, tan square is the lift datum and terracotta blocks are provisional sculpture footprints. Artwork allocation uses the dated archive identities and true portrait/landscape split; panels and sculpture plinths are placeholders for actual artwork textures and forms.</small></main>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script><script type="module">
+import {planPhiFloor} from './phi-architecture.mjs';
+import {planPhiCirculation} from './phi-circulation.mjs';
+import {buildPhysicalPhiFloor} from './phi-physical.mjs';
+import {planPhiBridges} from './phi-bridges.mjs';
+import {planPhiArtwork} from './phi-artwork.mjs';
+import {loadPhiArchive} from './phi-archive.mjs';
+import {mountPhi3D} from './phi-3d-preview.mjs?v=touch-20261026';
+import {mountPhiThree} from './phi-three.mjs?v=real-sculpture-20261026';
+const preview3d=mountPhi3D(document.getElementById('preview3d'));
+const threePreview=mountPhiThree(document.getElementById('threePreview'));
+document.getElementById('walkToggle').addEventListener('click',e=>{const walking=e.currentTarget.textContent==='Walk inside';threePreview.setWalkMode(walking);document.getElementById('touchPad').classList.toggle('is-walking',walking);e.currentTarget.textContent=walking?'Return to orbit':'Walk inside';});
+const pad=document.getElementById('touchPad');
+for(const button of pad.querySelectorAll('[data-move]')){
+ const key=button.dataset.move;
+ const press=e=>{if(e.cancelable)e.preventDefault();button.setPointerCapture(e.pointerId);threePreview.setTouchDirection(key,true);};
+ const release=e=>{threePreview.setTouchDirection(key,false);};
+ button.addEventListener('pointerdown',press);
+ button.addEventListener('pointerup',release);
+ button.addEventListener('pointercancel',release);
+ button.addEventListener('lostpointercapture',release);
+}
+window.addEventListener('blur',()=>threePreview.clearTouchDirections());
+const NS='http://www.w3.org/2000/svg',el=id=>document.getElementById(id);
+function shape(svg,name,attrs){const n=document.createElementNS(NS,name);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);svg.appendChild(n);return n;}
+function paint(svg,plan,showRooms,circulation,physical,voids,artwork){
+ svg.textContent='';const {root}=plan;
+ const scale=Math.min(660/root.w,420/root.h),ox=20-root.x*scale,oy=20-root.z*scale;
+ const rect=(r,fill,stroke='none')=>shape(svg,'rect',{x:ox+r.x*scale,y:oy+r.z*scale,width:r.w*scale,height:r.h*scale,fill,stroke,'stroke-width':1.6});
+ if(!showRooms){
+  plan.rooms.forEach((r,i)=>rect(r,i%2?'#e2dccd':'#c6bea9','#5d675e'));
+  return;
+ }
+ for(const v of voids)rect(v,'#e5eeed','#729a9b');
+ const colour=['#aebdaf','#c4b9a3','#b0b9b5','#d3bdac','#a7bdba','#c9cbb1','#b4b0c2'];
+ const map=new Map(plan.mergedRooms.flatMap((room,i)=>room.cells.map(id=>[id,i])));
+ plan.rooms.forEach(r=>rect(r,colour[map.get(r.id)%colour.length]));
+ for(const v of voids)rect(v,'#e5eeed','#729a9b');
+ // Draw only exterior room boundaries, suppressing former subdivision edges.
+ const eps=.00001;
+ for(const r of plan.rooms){
+  const roomIndex=map.get(r.id),edges=[
+   {x1:r.x,y1:r.z,x2:r.x+r.w,y2:r.z},
+   {x1:r.x+r.w,y1:r.z,x2:r.x+r.w,y2:r.z+r.h},
+   {x1:r.x,y1:r.z+r.h,x2:r.x+r.w,y2:r.z+r.h},
+   {x1:r.x,y1:r.z,x2:r.x,y2:r.z+r.h}
+  ];
+  for(const e of edges){
+   let cuts=[0,1];
+   for(const other of plan.rooms){
+    if(other===r||map.get(other.id)===roomIndex)continue;
+    // Nonmatching neighbours do not affect boundary calculation.
+   }
+   // A neighbouring cell in the same room erases its shared edge.
+   const covered=plan.rooms.some(other=>other!==r&&map.get(other.id)===roomIndex&&(
+    (Math.abs(e.x1-e.x2)<eps&&Math.abs(other.x+other.w-e.x1)<eps&&Math.max(e.y1,other.z)<Math.min(e.y2,other.z+other.h)-eps)||
+    (Math.abs(e.x1-e.x2)<eps&&Math.abs(other.x-e.x1)<eps&&Math.max(e.y1,other.z)<Math.min(e.y2,other.z+other.h)-eps)||
+    (Math.abs(e.y1-e.y2)<eps&&Math.abs(other.z+other.h-e.y1)<eps&&Math.max(e.x1,other.x)<Math.min(e.x2,other.x+other.w)-eps)||
+    (Math.abs(e.y1-e.y2)<eps&&Math.abs(other.z-e.y1)<eps&&Math.max(e.x1,other.x)<Math.min(e.x2,other.x+other.w)-eps)
+   ));
+   if(!covered)shape(svg,'line',{x1:ox+e.x1*scale,y1:oy+e.y1*scale,x2:ox+e.x2*scale,y2:oy+e.y2*scale,stroke:'#394c41','stroke-width':2.7});
+  }
+ }
+ // Glass decks are translucent blue-grey strips crossing retained golden voids.
+ for(const b of circulation.bridges||[]){const x=b.axis==='x'?b.from:b.centre-b.width/2,z=b.axis==='x'?b.centre-b.width/2:b.from;
+  shape(svg,'rect',{x:ox+x*scale,y:oy+z*scale,width:(b.axis==='x'?b.length:b.width)*scale,height:(b.axis==='x'?b.width:b.length)*scale,fill:'#8bbfc5','fill-opacity':'.7',stroke:'#4b8790','stroke-width':1.5});}
+ // Physical walls are drawn from actual collision geometry, including doorway cutouts.
+ for(const w of physical.walls){shape(svg,'line',{x1:ox+(w.axis==='x'?w.at:w.lo)*scale,y1:oy+(w.axis==='x'?w.lo:w.at)*scale,x2:ox+(w.axis==='x'?w.at:w.hi)*scale,y2:oy+(w.axis==='x'?w.hi:w.at)*scale,stroke:'#2b3932','stroke-width':3.3});}
+ for(const p of physical.sculptures){shape(svg,'rect',{x:ox+(p.x-p.width/2)*scale,y:oy+(p.z-p.depth/2)*scale,width:p.width*scale,height:p.depth*scale,fill:'#a26f54',stroke:'#fff','stroke-width':1});}
+ if(artwork){for(const p of artwork.paintings){const w=p.width*scale;shape(svg,'line',{x1:ox+(p.axis==='x'?p.at:p.u-p.width/2)*scale,y1:oy+(p.axis==='x'?p.u-p.width/2:p.at)*scale,x2:ox+(p.axis==='x'?p.at:p.u+p.width/2)*scale,y2:oy+(p.axis==='x'?p.u+p.width/2:p.at)*scale,stroke:'#f8eee0','stroke-width':6});}for(const p of artwork.sculptures){shape(svg,'circle',{cx:ox+p.x*scale,cy:oy+p.z*scale,r:7,fill:'#a26f54',stroke:'#fff','stroke-width':1.5});}}
+ // Mark circulation openings and permanent lift datum on the merged plan.
+ for(const d of circulation.doors){
+  const k=d.width*scale/2,x=d.axis==='x'?ox+d.at*scale:ox+d.centre*scale,y=d.axis==='x'?oy+d.centre*scale:oy+d.at*scale;
+  shape(svg,'line',{x1:d.axis==='x'?x:x-k,y1:d.axis==='x'?y-k:y,x2:d.axis==='x'?x:x+k,y2:d.axis==='x'?y+k:y,stroke:'#f8f5ec','stroke-width':7});
+  shape(svg,'circle',{cx:x,cy:y,r:3,fill:'#a26848'});
+ }
+ shape(svg,'rect',{x:ox+(circulation.lift.x-1.1)*scale,y:oy+(circulation.lift.z-1.1)*scale,width:2.2*scale,height:2.2*scale,fill:'#756f60',stroke:'#fff','stroke-width':1.4});
+ for(const room of plan.mergedRooms){
+  const cx=room.pieces.reduce((a,p)=>a+(p.x+p.w/2)*p.w*p.h,0)/room.area;
+  const cy=room.pieces.reduce((a,p)=>a+(p.z+p.h/2)*p.w*p.h,0)/room.area;
+  const text=shape(svg,'text',{x:ox+cx*scale,y:oy+cy*scale,'text-anchor':'middle','font-size':14,fill:'#233d32'});
+  text.textContent=room.id.replace('gallery-','room ');
+ }
+}
+let requestId=0;
+async function draw(){const request=++requestId;el('facts').textContent='Loading archived artworks…';try{const date=el('date').value;const studies=await loadPhiArchive(date);if(request!==requestId)return;el('artworks').value=studies.length;const plan=planPhiFloor(date,{artworks:studies.length,variation:Number(el('variation').value)});const result=planPhiBridges(plan),floor=result.plan,circulation=planPhiCirculation(floor);circulation.bridges=result.bridges;circulation.bridgePortals=result.bridges.flatMap(b=>[{axis:b.axis,at:b.from,centre:b.centre,width:b.width},{axis:b.axis,at:b.to,centre:b.centre,width:b.width}]);const physical=buildPhysicalPhiFloor(floor,circulation);const artwork=planPhiArtwork(floor,circulation,physical,studies);paint(el('geometry'),plan,false,circulation,physical,result.voids,artwork);paint(el('rooms'),floor,true,circulation,physical,result.voids,artwork);preview3d.setModel({floor,circulation,physical,voids:result.voids});threePreview.setModel({floor,circulation,physical,artwork,studies});el('facts').textContent=artwork.paintings.length+' paintings · '+artwork.sculptures.length+' sculptures · '+artwork.unplaced.length+' unplaced · '+date+' actual archive · '+plan.root.w.toFixed(1)+' × '+plan.root.h.toFixed(1)+' m · '+plan.stats.totalCells+' cells · '+plan.stats.mergedCount+' merged rooms from '+plan.stats.totalCells+' golden cells · '+circulation.doors.length+' doors · '+result.bridges.length+' glass walkways · '+result.voids.length+' retained voids · '+(circulation.connected?'all rooms connected':'DISCONNECTED: '+circulation.reachable+'/'+circulation.roomCount)+' · '+circulation.wallSegments.length+' hanging-wall segments · '+physical.wallCount+' solid wall segments · '+(Object.values(physical.checks).every(Boolean)?'physical clearances pass':'PHYSICAL CLEARANCE WARNING')+' · φ = '+plan.phi.toFixed(9);}catch(e){el('facts').textContent=e.message;}}
+el('draw').addEventListener('click',draw);draw();
+</script></body></html>
