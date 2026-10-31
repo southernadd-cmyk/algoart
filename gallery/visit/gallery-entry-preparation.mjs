@@ -29,19 +29,40 @@ export async function waitForGalleryEntry({loading,isBusy,pump,nextFrame=gallery
  }
  return {timedOut:true,ms:now()-start};
 }
-export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryPreparationFrame}){
+export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryPreparationFrame,onStage=null}){
+ const timer=()=>performance.now();
+ const totalStart=timer(),slowUploads=[];
+ let then=timer();
  if(renderer.compileAsync)await renderer.compileAsync(scene,camera);
+ const compileMs=timer()-then;
+ then=timer();
  const textures=new Set();
  scene.traverse(object=>{for(const material of [].concat(object.material||[])){
   for(const value of Object.values(material))if(value?.isTexture&&!value.isRenderTargetTexture)textures.add(value);
  }});
- // Warm the full scene, including textures in rooms outside the starting view.
- // Each upload happens behind the welcome screen, with UI time between them.
- let batch=0;
+ const traversalMs=timer()-then;
+ // Always use exactly the approved GPU work and renderer order; only
+ // record stage timing when ?liftprofile=1 has explicitly enabled it.
+ then=timer();let batch=0,failedUploads=0;
  for(const texture of textures){
   if(batch++%4===0)await nextFrame();
-  try{renderer.initTexture(texture);}catch(error){console.warn('Gallery texture warm-up skipped',error);}
+  const started=onStage?timer():0;
+  try{renderer.initTexture(texture);}catch(error){failedUploads++;console.warn('Gallery texture warm-up skipped',error);}
+  if(onStage){
+   const ms=timer()-started;
+   if(ms>=40)slowUploads.push({ms:+ms.toFixed(1),width:texture.image?.width||0,
+    height:texture.image?.height||0,format:texture.format||null});
+  }
  }
- renderer.render(scene,camera);await nextFrame();
- return {textures:textures.size};
+ const uploadMs=timer()-then;
+ then=timer();
+ renderer.render(scene,camera);
+ const finalRenderMs=timer()-then;
+ await nextFrame();
+ const diagnostic={textures:textures.size};
+ if(onStage)onStage('warmup-details',{compileMs:+compileMs.toFixed(1),
+  traversalMs:+traversalMs.toFixed(1),uploadMs:+uploadMs.toFixed(1),
+  finalRenderMs:+finalRenderMs.toFixed(1),totalMs:+(timer()-totalStart).toFixed(1),
+  failedUploads,slowUploads:slowUploads.sort((a,b)=>b.ms-a.ms).slice(0,12)});
+ return diagnostic;
 }
