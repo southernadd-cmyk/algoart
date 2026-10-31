@@ -1,7 +1,7 @@
 // Procedural exterior for the daily museum. Small draw-call budget: one
 // terrain mesh, one gradient sky and one softly drawn distant-city strip.
 import {buildEnvironmentPlan} from './environment-v1.mjs';
-import {PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs';
+import {PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
 import {addProceduralBackdrop} from './procedural-backdrop.mjs?v=daytime-restored-20261027';
 import {placeCastIronStreetLamp} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 
