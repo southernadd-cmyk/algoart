@@ -1,0 +1,36 @@
+name: Benchmark destination lift preparation (test vs live)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-lift-arrival-benchmark.yml'
+      - 'tests/phi-lift-arrival-benchmark.mjs'
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build the current production and test source bundles locally
+        run: |
+          npm run gallery:bundle:phi
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+      - name: Start local site server
+        run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-lift-benchmark-http.log 2>&1 &
+      - name: Measure equivalent journeys in both builds
+        run: node tests/phi-lift-arrival-benchmark.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-lift-arrival-benchmark
+          path: phi-benchmark-results/
+          if-no-files-found: ignore
