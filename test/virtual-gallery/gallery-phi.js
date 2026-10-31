@@ -434,17 +434,19 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
   return texture;
  },
  upload:texture=>renderer.initTexture(texture),
- // Keep departure acceleration and arrival braking smooth. One painting
- // upload every two frames at steady speed; complete the rest at the landing.
+ // During motion, upload one painting every two frames and avoid cabin
+ // acceleration/braking. At the landing use every frame: no reason to
+ // leave the doors shut for additional idle render frames.
  nextFrame:()=>new Promise(resolve=>{
   const frame=()=>{
    const ride=window.__phiLiftRide;
    const steady=ride?.status==='moving'&&ride.progress>=.12&&ride.progress<=.82;
    const landed=ride?.status==='arrived'||ride?.status==='failed';
-   if(!liftTravelling||steady||landed)resolve();
+   if(!liftTravelling||landed)resolve();
+   else if(steady)requestAnimationFrame(resolve);
    else requestAnimationFrame(frame);
   };
-  requestAnimationFrame(()=>requestAnimationFrame(frame));
+  requestAnimationFrame(frame);
  })
 });
 const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
@@ -1103,7 +1105,9 @@ async function travelLift(date,index){
   // onto blank frames; the door interlock now checks attached GPU textures.
   phiLiftProfiler?.mark('paintings-waiting',phiPaintingGate?.stats());
   const paintingReady=await phiPaintingGate.wait({
-   timeoutMs:50000,
+   // Slow software renderers may need much longer than a hardware GPU.
+   // Never substitute a blank painting when the deadline is reached.
+   timeoutMs:90000,
    onProgress:info=>{
     if(window.__phiLiftRide)window.__phiLiftRide.paintings={ready:info.ready,total:info.expected};
     if(GALLERY_DEBUG)window.__phiLiftPaintings=info;
