@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Twenty-texture KTX2 test · PROPORTION PIECE</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif;background:#161b1b;color:#eeeae0}
+*{box-sizing:border-box}body{margin:0 auto;max-width:1200px;padding:clamp(12px,3vw,30px)}
+h1{font-size:clamp(24px,3vw,35px);font-weight:600;margin:0 0 8px}
+p{max-width:90ch;color:#bfcac7;line-height:1.55}
+a{color:#d8ccac}button{background:#c6b890;border:0;border-radius:4px;color:#181b18;padding:12px 17px;font-size:14px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0}
+#study{width:100%;height:clamp(220px,54vw,650px);display:block;background:#b5b9b3;border:1px solid #465351}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:10px 7px;border-bottom:1px solid #394542}th{color:#d9ceb0}
+pre{max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:#aebcb8}
+small{color:#aabbb7}
+</style>
+</head>
+<body>
+<h1>20 architectural textures · JPEG versus KTX2</h1>
+<p>Controlled 20-texture comparison using source JPEG/WebP files and the matching compressed KTX2 candidates. These are <strong>twenty distinct architectural texture assets</strong>, including optional photoreal materials. The current tower uses eight of the candidates directly, so this is a scaling stress test rather than a claim that all twenty are visible in a normal visit.</p>
+<p id="files">Checking candidate manifest…</p>
+<div class="controls">
+<button id="start" type="button">Run four-session 20-texture comparison</button>
+<button id="copy" type="button" disabled>Copy results JSON</button>
+<a href="./full-engine.html?ktx2=20" target="_blank" rel="noopener">View compressed architectural tower</a>
+<span id="status">Ready</span>
+</div>
+<table><thead><tr><th>Run</th><th>Mode</th><th>Load + decode</th><th>First GPU upload</th><th>Combined</th><th>Compressed GPU bytes</th></tr></thead><tbody id="rows"></tbody></table>
+<canvas id="study" width="1000" height="650" aria-label="Five-by-four material comparison grid"></canvas>
+<p><small>Measurements depend on network and GPU conditions; every texture URL receives a unique network cache identifier per run. JPEG/WebP GPU-memory use cannot be read directly by WebGL, so that column reports only compressed KTX2 block bytes. The test preserves full source resolution and does not alter live, the generated artwork or actual gallery textures.</small></p>
+<pre id="log" aria-live="polite"></pre>
+<script defer src="./ktx2-20-stress-bundle.js"></script>
+</body>
+</html>
