@@ -11,13 +11,13 @@ const browser=await chromium.launch({headless:true,args:[
  '--no-sandbox','--enable-webgl','--use-angle=swiftshader',
  '--enable-unsafe-swiftshader','--disable-dev-shm-usage'
 ]});
-const report={date,environment:'Chromium SwiftShader software WebGL',liftreuse:process.env.PHI_LIFT_REUSE??'default'};
+const report={date,environment:'Chromium SwiftShader software WebGL',liftreuse:process.env.PHI_LIFT_REUSE??'default',liftstage:process.env.PHI_LIFT_STAGE??'default'};
 try{
  const page=await browser.newPage({viewport:{width:1280,height:800}});
  const errors=[];
  page.on('pageerror',error=>errors.push(String(error)));
  await page.goto(base+'/'+(process.env.PHI_LIFT_TARGET==='live'?'gallery/visit/':'test/virtual-gallery/full-engine.html')+
-  '?debug=1&liftprofile=1'+(process.env.PHI_LIFT_REUSE==null?'':'&liftreuse='+process.env.PHI_LIFT_REUSE),
+  '?debug=1&liftprofile=1'+(process.env.PHI_LIFT_REUSE==null?'':'&liftreuse='+process.env.PHI_LIFT_REUSE)+(process.env.PHI_LIFT_STAGE==null?'':'&liftstage='+process.env.PHI_LIFT_STAGE),
   {waitUntil:'domcontentloaded',timeout:60000});
  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled||
    !!window.__galleryStartupError,null,{timeout:180000});
@@ -57,6 +57,9 @@ try{
     +(elapsed('doors-opening')-elapsed('ride-finished')).toFixed(1),
    paintingReadyBeforeDoor:at('paintings-gpu-ready')>=0&&
     at('doors-opening')>at('paintings-gpu-ready'),
+   sceneRevealCompleted:at('scene-reveal-finished')>=0&&at('doors-opening')>at('scene-reveal-finished'),
+   sceneRevealMs:elapsed('scene-reveal-finished')==null||elapsed('scene-reveal-start')==null?null:
+    +(elapsed('scene-reveal-finished')-elapsed('scene-reveal-start')).toFixed(1),
    stages:stages.map(s=>({name:s.name,elapsedMs:s.elapsedMs})),
    frameStalls:visit?.frames?.slice(0,120)||[],
    cpuOperations:visit?.operations||null,
@@ -76,6 +79,7 @@ try{
  assert.equal(result.gate?.complete,true,'Painting gate fully ready');
  assert.equal(result.gate?.failures.length,0,'No painting loads failed');
  assert.equal(result.paintingReadyBeforeDoor,true,'Opening strictly after GPU-ready stage');
+ if(process.env.PHI_LIFT_STAGE==='1')assert.equal(result.sceneRevealCompleted,true,'Door cannot open until all render meshes have been revealed');
  assert.deepEqual(errors,[],'No uncaught JavaScript errors');
  console.log('LIFT_PAINTING_ARRIVAL_PASS');
 }finally{await browser.close()}
