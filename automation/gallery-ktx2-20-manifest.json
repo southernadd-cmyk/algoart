@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "description": "20 unique TEST-only architectural texture candidates. Only nine are normally requested by the current tower; optional files belong to experimental material systems, not artwork.",
+  "root": "test/virtual-gallery",
+  "output": "test/virtual-gallery/ktx2-20",
+  "textures": [
+    {
+      "id": "brick-color",
+      "source": "textures/Bricks055_Color.jpg",
+      "kind": "color",
+      "usage": "active"
+    },
+    {
+      "id": "brick-normal",
+      "source": "textures/Bricks055_NormalGL.jpg",
+      "kind": "normal",
+      "usage": "active"
+    },
+    {
+      "id": "brick-roughness",
+      "source": "textures/Bricks055_Roughness.jpg",
+      "kind": "roughness",
+      "usage": "active"
+    },
+    {
+      "id": "ceiling-color",
+      "source": "textures/OfficeCeiling001_Color.jpg",
+      "kind": "color",
+      "usage": "active"
+    },
+    {
+      "id": "ceiling-normal",
+      "source": "textures/OfficeCeiling001_NormalGL.jpg",
+      "kind": "normal",
+      "usage": "active"
+    },
+    {
+      "id": "ceiling-roughness",
+      "source": "textures/OfficeCeiling001_Roughness.jpg",
+      "kind": "roughness",
+      "usage": "active"
+    },
+    {
+      "id": "decorative-wall-color",
+      "source": "textures/sharetextures-decorative-wall-2/color.webp",
+      "kind": "color",
+      "usage": "reception"
+    },
+    {
+      "id": "decorative-wall-normal",
+      "source": "textures/sharetextures-decorative-wall-2/normal.webp",
+      "kind": "normal",
+      "usage": "reception"
+    },
+    {
+      "id": "decorative-wall-roughness",
+      "source": "textures/sharetextures-decorative-wall-2/roughness.webp",
+      "kind": "roughness",
+      "usage": "reception"
+    },
+    {
+      "id": "plaster-color",
+      "source": "textures/ambientcg-painted-plaster-007/color.webp",
+      "kind": "color",
+      "usage": "optional"
+    },
+    {
+      "id": "plaster-normal",
+      "source": "textures/ambientcg-painted-plaster-007/normal.webp",
+      "kind": "normal",
+      "usage": "optional"
+    },
+    {
+      "id": "plaster-roughness",
+      "source": "textures/ambientcg-painted-plaster-007/roughness.webp",
+      "kind": "roughness",
+      "usage": "optional"
+    },
+    {
+      "id": "floor-tiles-color",
+      "source": "textures/bajwa-floor-tiles/color.webp",
+      "kind": "color",
+      "usage": "optional"
+    },
+    {
+      "id": "floor-tiles-normal",
+      "source": "textures/bajwa-floor-tiles/normal.webp",
+      "kind": "normal",
+      "usage": "optional"
+    },
+    {
+      "id": "floor-tiles-roughness",
+      "source": "textures/bajwa-floor-tiles/roughness.webp",
+      "kind": "roughness",
+      "usage": "optional"
+    },
+    {
+      "id": "concrete-color",
+      "source": "photoreal-assets/concrete_floor-color.webp",
+      "kind": "color",
+      "usage": "optional"
+    },
+    {
+      "id": "concrete-normal",
+      "source": "photoreal-assets/concrete_floor-normal.webp",
+      "kind": "normal",
+      "usage": "optional"
+    },
+    {
+      "id": "concrete-roughness",
+      "source": "photoreal-assets/concrete_floor-roughness.webp",
+      "kind": "roughness",
+      "usage": "optional"
+    },
+    {
+      "id": "wood-color",
+      "source": "photoreal-assets/wood_floor-color.webp",
+      "kind": "color",
+      "usage": "optional"
+    },
+    {
+      "id": "wood-normal",
+      "source": "photoreal-assets/wood_floor-normal.webp",
+      "kind": "normal",
+      "usage": "optional"
+    }
+  ]
+}
