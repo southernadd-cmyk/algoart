@@ -202,7 +202,8 @@ if(phiTextureBenchCache)THREE.DefaultLoadingManager.setURLModifier(
   url=>phiTextureBenchCache.stamp(url)
 );
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
-const phiStageArrival=new URLSearchParams(location.search).get('liftstage')==='1';
+// Match the approved live 16-mesh reveal by default; ?liftstage=0 is the control.
+const phiStageArrival=new URLSearchParams(location.search).get('liftstage')!=='0';
 // The reliable two-rAF spacing stays in place for all fixed batch sizes.
 // ?liftbatch=16 uses the original method with smaller groups.
 // ?liftbatch=adaptive is retained as an explicitly opt-in failed experiment;
@@ -211,7 +212,7 @@ const phiLiftBatchChoice=new URLSearchParams(location.search).get('liftbatch');
 const phiLiftBatchFixed=[8,12,16,20,24,32].includes(Number(phiLiftBatchChoice))
  ?Number(phiLiftBatchChoice):null;
 const phiLiftBatchMode=phiLiftBatchChoice==='adaptive'?'adaptive':'legacy';
-const phiLiftBatchSize=phiLiftBatchMode==='adaptive'?12:phiLiftBatchFixed??20;
+const phiLiftBatchSize=phiLiftBatchMode==='adaptive'?12:phiLiftBatchFixed??16;
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
 // Retired the lossless KTX2 test conversion; keep the original JPEG option.
