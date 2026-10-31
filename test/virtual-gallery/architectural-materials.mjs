@@ -262,7 +262,18 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // TEST ONLY, opt in with ?ktx2=1. Preserve the untouched source JPG as
   // the default and as a fallback for unavailable/unsupported KTX2 assets.
   // Normal maps stay linear, and are not packed into XY-only normal mode.
-  const ktxMode=new URLSearchParams(location.search).get('ktx2');
+  const benchParams=new URLSearchParams(location.search);
+  // Test-only, texture-cold A/B. Distinct URLs guarantee fresh HTTP transfers
+  // for these three architectural maps, even when the rest of the gallery is
+  // warm in the same browser session. No production cache behaviour changes.
+  const coldTextureSeed=benchParams.get('coldseed')||null;
+  const textureURL=url=>{
+    if(!coldTextureSeed)return url;
+    const resource=new URL(url,document.baseURI);
+    resource.searchParams.set('ktxCold',coldTextureSeed);
+    return resource.href;
+  };
+  const ktxMode=benchParams.get('ktx2');
   const ktxPilot=!!renderer&&!lowPower&&ktxMode==='1';
   const ktxMulti=!!renderer&&!lowPower&&ktxMode==='multi';
   const ktxDiagnostics=globalThis.__phiKTX2Pilot={
@@ -280,7 +291,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
         .detectSupport(renderer);
       try{
         const texture=await transcoder.loadAsync(
-          new URL('../../test/virtual-gallery/textures/Bricks055_NormalGL.ktx2',document.baseURI).href
+          textureURL('../../test/virtual-gallery/textures/Bricks055_NormalGL.ktx2')
         );
         texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
         texture.anisotropy=2;
@@ -295,10 +306,10 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     }).catch(error=>{
       ktxDiagnostics.status='fallback-jpg';
       ktxDiagnostics.error=String(error?.message||error);
-      normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
+      normal('brick-normal',textureURL(MATERIAL_SOURCES.brick.normal),[exteriorBrick],.19);
     });
-  }else if(!ktxMulti)normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
-  if(!ktxMulti)loader.load(MATERIAL_SOURCES.brick.roughness,texture=>{
+  }else if(!ktxMulti)normal('brick-normal',textureURL(MATERIAL_SOURCES.brick.normal),[exteriorBrick],.19);
+  if(!ktxMulti)loader.load(textureURL(MATERIAL_SOURCES.brick.roughness),texture=>{
     texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
     exteriorBrick.roughnessMap=texture;
     exteriorBrick.needsUpdate=true;
@@ -317,7 +328,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     diagnostics.loaded.push('ambientcg-office-ceiling-color');
   },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-color'));
   if(!lowPower&&!ktxMulti){
-    loader.load(ceilingDir+'NormalGL.jpg',texture=>{
+    loader.load(textureURL(ceilingDir+'NormalGL.jpg'),texture=>{
       texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
       ceiling.normalMap=texture;
       ceiling.normalScale=new THREE.Vector2(.18,.18);
@@ -344,9 +355,9 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     ];
     const fallback=entry=>{
       if(entry.property==='normalMap'){
-        normal(entry.name,entry.source,[entry.material],entry.strength);
+        normal(entry.name,textureURL(entry.source),[entry.material],entry.strength);
       }else{
-        loader.load(entry.source,texture=>{
+        loader.load(textureURL(entry.source),texture=>{
           texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
           entry.material[entry.property]=texture;entry.material.needsUpdate=true;
           diagnostics.loaded.push(entry.name+'-fallback');
@@ -363,7 +374,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
           const started=performance.now();
           try{
             const texture=await transcoder.loadAsync(
-              new URL('../../test/virtual-gallery/textures/'+entry.file+'.ktx2',document.baseURI).href);
+              textureURL('../../test/virtual-gallery/textures/'+entry.file+'.ktx2'));
             texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.anisotropy=2;
             if(!texture.isCompressedTexture)throw new Error('Decoded asset is not GPU compressed');
             entry.material[entry.property]=texture;
