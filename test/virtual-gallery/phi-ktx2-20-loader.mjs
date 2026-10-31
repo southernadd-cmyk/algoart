@@ -3,7 +3,8 @@
 // reserved for the separate 20-map stress test. Never rewrite artwork maps.
 export function createKTX20Bank(THREE,{renderer,lowPower=false,startAfter=null}={}){
  const params=new URLSearchParams(location.search);
- if(params.get('ktx2')!=='20'||!renderer||lowPower)return null;
+ const mode=params.get('ktx2');
+ if(!['20','selective'].includes(mode)||!renderer||lowPower)return null;
  const coldseed=params.get('coldseed');
  const makeURL=id=>{
   const url=new URL('../../test/virtual-gallery/ktx2-20/'+id+'.ktx2',document.baseURI);
@@ -11,9 +12,12 @@ export function createKTX20Bank(THREE,{renderer,lowPower=false,startAfter=null}=
   return url.href;
  };
  const diagnostics=globalThis.__phiKTX20={
-  mode:'twenty',candidateCount:20,sceneCandidates:8,
+  mode:mode==='selective'?'selective':'twenty',candidateCount:20,
+  sceneCandidates:mode==='selective'?2:8,
   status:'preparing',loaded:0,failed:0,assets:{},
-  note:'Core brick color remains JPEG-tinted to preserve original appearance; optional assets are not automatically loaded'
+  note:mode==='selective'
+   ?'Only brick normal and brick roughness use KTX2; other scene maps and all artwork retain their original paths'
+   :'Core brick color remains JPEG-tinted to preserve original appearance; optional assets are not automatically loaded'
  };
  const loaderPromise=Promise.resolve(startAfter).catch(()=>{}).then(async()=>{
   const {KTX2Loader}=await import('three/addons/loaders/KTX2Loader.js');
