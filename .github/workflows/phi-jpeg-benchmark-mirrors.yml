@@ -37,7 +37,7 @@ jobs:
           assert len(files)==5
           for f in files:
             with f.open('rb') as stream:
-              assert stream.read(3)==b'\\xff\\xd8\\xff',f
+              assert stream.read(3)==bytes([255,216,255]),f
             print(f.name,f.stat().st_size)
           PY
       - name: Commit TEST-only original JPEG mirrors
