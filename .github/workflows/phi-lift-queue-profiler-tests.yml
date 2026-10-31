@@ -11,6 +11,7 @@ on:
       - 'test/virtual-gallery/phi-lift-painting-gpu.mjs'
       - 'test/virtual-gallery/phi-room-geometry-stage.mjs'
       - 'test/virtual-gallery/phi-lift-profile.mjs'
+      - 'test/virtual-gallery/phi-postfx-pass-profiler.mjs'
       - 'test/virtual-gallery/phi-painting-arrival-gate.mjs'
       - 'test/virtual-gallery/phi-lift-indicator.mjs'
 permissions:
@@ -24,4 +25,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: npm ci
       - run: node --test tests/phi-lift-queue-profiler.test.mjs
