@@ -2,6 +2,7 @@ import {readFileSync,existsSync} from 'node:fs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {buildPhiRendererPlan} from '../gallery/visit/phi-full-engine-adapter.mjs';import {planPhiReception} from '../gallery/visit/phi-reception-layout.mjs';
 import {planPhiReceptionMonitorWall} from '../gallery/visit/phi-reception-living-monitor.mjs';
+import {planPhiReceptionWindow,RECEPTION_WINDOW_BORDER} from '../gallery/visit/phi-reception-window.mjs';
 test('the test reception poster is visually left of the map and workrooms stay out of the public foyer',()=>{
  globalThis.__phiReceptionTestRefresh=true;
  try{
@@ -13,6 +14,28 @@ test('the test reception poster is visually left of the map and workrooms stay o
   for(const [dx,dz] of [[-.625,-.425],[-.625,.425],[.625,-.425],[.625,.425]])assert.ok(p.canWalk(position.x+dx,position.z+dz),'Gramophone must fit its room');
   assert.ok(Math.hypot(position.x-r.entrance.x,position.z-r.entrance.z)>3);
  }finally{delete globalThis.__phiReceptionTestRefresh;}
+});
+
+test('all four reception credit posters remain on the original wall and move toward the windows at φ',()=>{
+ const p=buildPhiRendererPlan('__phi_reception__',Array.from({length:10},(_,i)=>({id:String(i),portrait:i%3===0,aspect:i%3===0?.75:1.4})));
+ const placement=planPhiReception(p.floor,p.circulation,p.physical).credits;
+ const door=p.circulation.publicEntrance;
+ const first=planPhiReceptionWindow(door)?.windows?.[0];
+ assert.ok(placement&&first,'Reception must have both credits and its front windows');
+ assert.equal(placement.axis,'z','Posters must remain on their original z-axis wall');
+ assert.equal(placement.normal.z,1,'Posters must retain their original inward-facing normal');
+ assert.ok(Math.abs(placement.z-(door.at+.15))<.1,'The same front wall depth is maintained');
+ const direction=Math.sign(first.x-door.centre);
+ const groupHalfWidth=.83+.68/2+.03;
+ const doorEdge=door.centre+direction*door.width/2;
+ const windowEdge=first.x-direction*(first.width/2+RECEPTION_WINDOW_BORDER);
+ const start=doorEdge+direction*(groupHalfWidth+.32);
+ const end=windowEdge-direction*(groupHalfWidth+.32);
+ const fraction=(placement.x-start)/(end-start);
+ assert.ok(Math.abs(fraction-1/((1+Math.sqrt(5))/2))<.025,'Credits should occupy the golden division of usable solid wall');
+ assert.ok((placement.x-doorEdge)*direction>groupHalfWidth+.25,'Credit poster group must clear door');
+ assert.ok((windowEdge-placement.x)*direction>groupHalfWidth+.25,'Credit poster group must clear nearest window arch');
+ assert.ok(Math.abs(first.x-placement.x)<Math.abs(door.centre-placement.x),'Credit posters must be nearer to the windows than the door');
 });
 
 test('test reception locates three living monitors on a solid backroom wall facing the lift',()=>{
