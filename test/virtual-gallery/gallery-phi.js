@@ -6,7 +6,7 @@ import {applyRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs';
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {advanceLiftDoor} from './phi-lift-motion.mjs';
 import {addPhiDeskHologram} from './phi-desk-hologram.mjs';
-import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry} from './gallery-entry-preparation.mjs';
+import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry,galleryPreparationFrame} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
 import {addPhiReceptionLivingMonitor,planPhiReceptionMonitorWall} from './phi-reception-living-monitor.mjs';
 import {addPhiTranslationAreaSign,addPhiTowerLiftSign,addPhiLargeMonitorDoorSign} from './phi-translation-area-sign.mjs';
@@ -36,6 +36,7 @@ import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
+import {createPhiPaintingArrivalGate} from './phi-painting-arrival-gate.mjs';
 import {createPhiRoomGeometryStager} from './phi-room-geometry-stage.mjs';
 import {createTextureBenchCache} from './phi-jpeg-benchmark-cache.mjs';
 import {decodePhiArtworkImage} from './phi-artwork-preload.mjs';
@@ -97,6 +98,7 @@ let liftReturnFocus=null;
 let editionObjects=[];
 let deferredGalleryJobs=[];
 let deferredGalleryRunning=false;
+let phiPaintingGate=null;
 let liftDoors=[];
 let liftDoorClosure=0;
 let liftDoorTarget=0;
@@ -432,14 +434,17 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
   return texture;
  },
  upload:texture=>renderer.initTexture(texture),
- // Never upload while the lift doors are closing; serialize uploads
- // one per animation frame once the door leaves have settled.
+ // Keep departure acceleration and arrival braking smooth. One painting
+ // upload every two frames at steady speed; complete the rest at the landing.
  nextFrame:()=>new Promise(resolve=>{
   const frame=()=>{
-   if(!liftTravelling||liftDoorClosure>=.998||window.__phiLiftRide?.status==='failed')resolve();
+   const ride=window.__phiLiftRide;
+   const steady=ride?.status==='moving'&&ride.progress>=.12&&ride.progress<=.82;
+   const landed=ride?.status==='arrived'||ride?.status==='failed';
+   if(!liftTravelling||steady||landed)resolve();
    else requestAnimationFrame(frame);
   };
-  requestAnimationFrame(frame);
+  requestAnimationFrame(()=>requestAnimationFrame(frame));
  })
 });
 const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
@@ -1094,9 +1099,17 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('floor-construction-finished',{paintings:window.__phiFullEngine?.paintings,roomGeometry:phiRoomGeometryStage.stats()});
   phiRoomGeometryStage.clear();
   clearPhiMovingCabin();
-  // Build queued exhibits and warm the destination GPU resources with the
-  // physical doors still shut. Opening must not be the first render/upload.
-  // Bound optional artwork downloads so a slow network cannot hold the lift.
+  // Paintings are mandatory. The old four-second generic timeout could open
+  // onto blank frames; the door interlock now checks attached GPU textures.
+  phiLiftProfiler?.mark('paintings-waiting',phiPaintingGate?.stats());
+  const paintingReady=await phiPaintingGate.wait({
+   timeoutMs:50000,
+   onProgress:info=>{
+    if(window.__phiLiftRide)window.__phiLiftRide.paintings={ready:info.ready,total:info.expected};
+    if(GALLERY_DEBUG)window.__phiLiftPaintings=info;
+   }
+  });
+  phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady);
   const preparation=await waitForGalleryEntry({
    loading:{pending:0},timeout:4000,
    isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0||
@@ -1106,8 +1119,11 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
   const warmed=await warmGalleryEntry({renderer,scene,camera,
    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
-  phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats()});
-  if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date,paintingGPU:liftPaintingGPU.stats()};
+  phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate?.stats()});
+  if(!phiPaintingGate?.stats().complete ||
+     window.__phiFullEngine?.paintingsLoaded!==window.__phiFullEngine?.paintings)
+   throw new Error('Painting readiness changed during final warm-up');
+  if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate.stats(),paintingWaitMs:paintingReady.elapsedMs};
   if(xrRide)closeXRLift();
   else{
    liftReturnFocus=null;canvas.focus({preventScroll:true});
@@ -1558,7 +1574,7 @@ function queuePhiFurnishings(phi,furnishings,elevation){
   phiFurnishingObstacles=furnishings.obstacles.map(p=>({...convert(p),width:p.width*cs+p.depth*sn,depth:p.width*sn+p.depth*cs}));
  });
 }
-function constructPhiGallery(layout,studies){
+function constructPhiGallery(layout,studies,{viaLift=false}={}){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
  phiRoomLightEntries.length=0;
  const staticArchitecture=[];
@@ -2297,6 +2313,12 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   if(!renderer)return;
   const editionStart=performance.now();
   const {studies,nextPlan,nextFloor,elevation,reception}=prepared||await preparePhiEdition(date);
+  phiPaintingGate?.cancel();
+  phiPaintingGate=createPhiPaintingArrivalGate({
+   date,expected:nextPlan.phi.exhibition.paintings.length,
+   upload:texture=>renderer.initTexture(texture),
+   nextFrame:galleryPreparationFrame
+  });
   // Dispose *all* edition-owned GPU resources, including artwork maps and
   // procedural canvas textures, but not materials/geometry shared across floors.
   phiReceptionGramophone?.dispose();phiReceptionGramophone=null;
@@ -2339,7 +2361,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   const constructionStart=performance.now();
   const sceneBeforeConstruction=new Set(scene.children);
   try{
-    constructPhiGallery(plan,studyList);
+    constructPhiGallery(plan,studyList,{viaLift});
     if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);
     applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
     phiLightingStudy?.editionChanged(elevation);
