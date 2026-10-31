@@ -105,11 +105,36 @@ replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
 replace('phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);',
  "phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);\n  const receptionArtFrame=phiReceptionMap?.getObjectByName('reception-watercolour-frame');if(receptionArtFrame)receptionArtFrame.material=architecturalFrameStudy;");
 
+
+// Use the same shared finish on doorway jambs/headers, never on moving leaves.
+const doorFrameStart=source.indexOf(' // Put visible portal frames on the exact holes');
+const doorFrameEnd=source.indexOf(' for(const b of phi.bridges)',doorFrameStart);
+if(doorFrameStart<0||doorFrameEnd<0)throw Error('Door frame study anchors changed');
+const doorFrameSection=source.slice(doorFrameStart,doorFrameEnd);
+source=source.slice(0,doorFrameStart)+doorFrameSection.replaceAll(',join);',',architecturalFrameStudy);')+source.slice(doorFrameEnd);
+replace("const portal=new THREE.MeshStandardMaterial({color:'#d4d2ca',roughness:.89});",
+ 'const portal=architecturalFrameStudy;');
+replace('surroundMaterial:galleryFinish.stone','surroundMaterial:architecturalFrameStudy');
+replace('block(.07,2.7,.16,l.portal.at-.12,elevation+1.38,l.z+side*1.12,bronze);',
+ 'block(.07,2.7,.16,l.portal.at-.12,elevation+1.38,l.z+side*1.12,architecturalFrameStudy);');
+replace('block(.12,.23,2.5,l.portal.at-.12,elevation+2.93,l.z,brushed);',
+ 'block(.12,.23,2.5,l.portal.at-.12,elevation+2.93,l.z,architecturalFrameStudy);');
+
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
  outfile:'gallery/visit/gallery-phi-test-room-signs-bundle.js',
  plugins:[stageCurationPlugin(),n8aoTestPlugin(),bvhTestPlugin(),{
+ name:'gothic-door-frame-csm-test-only',setup(builder){
+  builder.onLoad({filter:/[/\\]phi-reception-decor[.]mjs$/},async({path})=>{
+   let contents=await readFile(path,'utf8');
+   const anchor='  root.add(fixed);';
+   if(contents.split(anchor).length!==2)throw Error('Gothic fixed-frame anchor changed');
+   contents=contents.replace(anchor,'  fixed.traverse(mesh=>{if(mesh.isMesh)mesh.material=stone;});'+anchor);
+   return {contents,loader:'js',resolveDir:dir};
+  });
+ }
+},{
  name:'architectural-visitor-palette-test-only',
  setup(builder){
   builder.onLoad({filter:/[/\\]visitors[.]mjs$/},async({path})=>{
