@@ -1,0 +1,22 @@
+name: Smoke cache-busted full gallery JPEG/KTX2 visit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-jpeg-benchmark-asset-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Verify cold image requests and complete destination floor
+        run: node tests/phi-jpeg-benchmark-asset-smoke.mjs
