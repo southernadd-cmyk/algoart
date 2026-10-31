@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Selectively compressed tower: entry and lift frame spikes · PROPORTION PIECE</title>
+<title>Lossless KTX2 full-gallery pixel-exact benchmark · PROPORTION PIECE</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif;background:#161c1b;color:#f2eee6}
 *{box-sizing:border-box}body{max-width:1180px;margin:auto;padding:clamp(12px,2.5vw,30px)}
@@ -146,7 +146,7 @@ async function run(){
    $('rows').appendChild(tr);
    note(JSON.stringify({index:r.index,mode:r.mode,readyMs:r.readyMs,
     reception:r.phases.reception,lift:r.phases.liftAndLoading,gallery:r.phases.gallery,
-    total:r.phases.total,floor:r.floor,texture:r.texture?.status||'baseline'}));
+    total:r.phases.total,floor:r.floor,texture:r.texture?{loaded:r.texture.loaded,artworks:r.texture.artworks,failed:r.texture.failed}:'baseline'}));
   }catch(error){
    results.push({index:index+1,mode,error:String(error)});
    const row=document.createElement('tr');const cell=document.createElement('td');
@@ -163,7 +163,7 @@ $('run').addEventListener('click',run);
 $('copy').addEventListener('click',()=>{
  const payload={benchmark:'PROPORTION PIECE all-JPEG lossless KTX2 pixel-identical full-tower entry/lift/arrival frame spikes',
   timestamp:new Date().toISOString(),userAgent:navigator.userAgent,
-  caveat:'Same actual tower, script-controlled entry and lift, warm brick maps. RAF intervals measure wall-clock scheduling and can include throttling.',
+  caveat:'Same actual tower, original JPEG compared with byte-exact raw KTX2. Lossless files total 356.8MB versus 73.5MB original. RAF intervals include scheduling and can include throttling.',
   sequence,results};
  const txt=JSON.stringify(payload,null,2);
  navigator.clipboard.writeText(txt).then(()=>{$('status').textContent='Results copied';})
