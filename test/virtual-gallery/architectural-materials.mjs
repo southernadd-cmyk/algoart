@@ -262,10 +262,14 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // TEST ONLY, opt in with ?ktx2=1. Preserve the untouched source JPG as
   // the default and as a fallback for unavailable/unsupported KTX2 assets.
   // Normal maps stay linear, and are not packed into XY-only normal mode.
-  const ktxPilot=!!renderer&&!lowPower&&new URLSearchParams(location.search).get('ktx2')==='1';
+  const ktxMode=new URLSearchParams(location.search).get('ktx2');
+  const ktxPilot=!!renderer&&!lowPower&&ktxMode==='1';
+  const ktxMulti=!!renderer&&!lowPower&&ktxMode==='multi';
   const ktxDiagnostics=globalThis.__phiKTX2Pilot={
-    requested:new URLSearchParams(location.search).get('ktx2')==='1',
-    enabled:ktxPilot,asset:'Bricks055_NormalGL',status:ktxPilot?'preparing':'off'
+    requested:ktxMode==='1'||ktxMode==='multi',enabled:ktxPilot||ktxMulti,
+    mode:ktxMulti?'multi':ktxPilot?'single':'off',
+    asset:'Bricks055_NormalGL',status:ktxPilot||ktxMulti?'preparing':'off',
+    assets:{}
   };
   if(ktxPilot){
     Promise.resolve(ready).catch(()=>{}).then(async()=>{
@@ -293,8 +297,8 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
       ktxDiagnostics.error=String(error?.message||error);
       normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
     });
-  }else normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
-  loader.load(MATERIAL_SOURCES.brick.roughness,texture=>{
+  }else if(!ktxMulti)normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
+  if(!ktxMulti)loader.load(MATERIAL_SOURCES.brick.roughness,texture=>{
     texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
     exteriorBrick.roughnessMap=texture;
     exteriorBrick.needsUpdate=true;
@@ -312,7 +316,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     ceiling.needsUpdate=true;
     diagnostics.loaded.push('ambientcg-office-ceiling-color');
   },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-color'));
-  if(!lowPower){
+  if(!lowPower&&!ktxMulti){
     loader.load(ceilingDir+'NormalGL.jpg',texture=>{
       texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
       ceiling.normalMap=texture;
@@ -327,6 +331,66 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     ceiling.needsUpdate=true;
     diagnostics.loaded.push('ambientcg-office-ceiling-roughness');
   },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-roughness'));
+  // A/B TEST ONLY: three normal/roughness maps, never paintings or colour
+  // scans. Original JPGs remain the baseline and independent per-map fallbacks.
+  if(ktxMulti){
+    const assets=[
+      {name:'brick-normal',file:'Bricks055_NormalGL',source:MATERIAL_SOURCES.brick.normal,
+       material:exteriorBrick,property:'normalMap',strength:.19},
+      {name:'brick-roughness',file:'Bricks055_Roughness',source:MATERIAL_SOURCES.brick.roughness,
+       material:exteriorBrick,property:'roughnessMap'},
+      {name:'ceiling-normal',file:'OfficeCeiling001_NormalGL',source:ceilingDir+'NormalGL.jpg',
+       material:ceiling,property:'normalMap',strength:.18}
+    ];
+    const fallback=entry=>{
+      if(entry.property==='normalMap'){
+        normal(entry.name,entry.source,[entry.material],entry.strength);
+      }else{
+        loader.load(entry.source,texture=>{
+          texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+          entry.material[entry.property]=texture;entry.material.needsUpdate=true;
+          diagnostics.loaded.push(entry.name+'-fallback');
+        },undefined,()=>diagnostics.failed.push(entry.name+'-fallback'));
+      }
+    };
+    Promise.resolve(ready).catch(()=>{}).then(async()=>{
+      const {KTX2Loader}=await import('three/addons/loaders/KTX2Loader.js');
+      const transcoder=new KTX2Loader()
+        .setTranscoderPath(new URL('../../test/virtual-gallery/basis/',document.baseURI).href)
+        .setWorkerLimit(2).detectSupport(renderer);
+      try{
+        await Promise.all(assets.map(async entry=>{
+          const started=performance.now();
+          try{
+            const texture=await transcoder.loadAsync(
+              new URL('../../test/virtual-gallery/textures/'+entry.file+'.ktx2',document.baseURI).href);
+            texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.anisotropy=2;
+            if(!texture.isCompressedTexture)throw new Error('Decoded asset is not GPU compressed');
+            entry.material[entry.property]=texture;
+            if(entry.property==='normalMap')entry.material.normalScale=new THREE.Vector2(entry.strength,entry.strength);
+            entry.material.needsUpdate=true;
+            ktxDiagnostics.assets[entry.name]={
+              status:'loaded',ms:Math.round(performance.now()-started),
+              compressed:true,mipLevels:texture.mipmaps?.length||0,
+              bytes:texture.mipmaps?.reduce((sum,m)=>sum+(m.data?.byteLength||0),0)||0
+            };
+            diagnostics.loaded.push('ktx2-'+entry.name);
+          }catch(error){
+            ktxDiagnostics.assets[entry.name]={status:'fallback-jpg',error:String(error?.message||error)};
+            fallback(entry);
+          }
+        }));
+      }finally{transcoder.dispose();}
+      ktxDiagnostics.status=assets.every(e=>ktxDiagnostics.assets[e.name]?.status==='loaded')?'loaded':'partial-fallback';
+      ktxDiagnostics.compressedCount=assets.filter(e=>ktxDiagnostics.assets[e.name]?.status==='loaded').length;
+    }).catch(error=>{
+      ktxDiagnostics.status='fallback-jpg';ktxDiagnostics.error=String(error?.message||error);
+      for(const entry of assets)if(!ktxDiagnostics.assets[entry.name]){
+        ktxDiagnostics.assets[entry.name]={status:'fallback-jpg',error:ktxDiagnostics.error};
+        fallback(entry);
+      }
+    });
+  }
   // Use the CC0 Poly Haven plaster for both wall and plinth to avoid remote duplication.
   // Local colour scans are preferred from the outset. Canvas fallback materials
   // keep the exhibition usable even if an optional scan is unavailable.
