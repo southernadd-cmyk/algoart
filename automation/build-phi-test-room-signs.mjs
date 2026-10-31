@@ -76,21 +76,6 @@ replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.st
 replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
   'p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,p.room===frameStudyRoom?architecturalFrameStudy:join);');
 
-// TEST ONLY: simple A/B. Live gallery renderer is unchanged.
-replace("import * as THREE from 'three';",
- "import {createPhiPostFX} from './phi-post-fx.mjs';\nimport * as THREE from 'three';");
-// Give only source paintings a test-only protection layer. Sculpture marks carry userData.study.
-replace('  face.position.set(p.x,centreY,p.z);',
- '  face.userData.phiArtOriginal=true;\n  face.position.set(p.x,centreY,p.z);');
-replace('const wall=galleryFinish.wall;',
- 'const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera);\nconst wall=galleryFinish.wall;');
-replace('  renderer.setSize(innerWidth,innerHeight);',
- '  renderer.setSize(innerWidth,innerHeight);\n  phiPostFX.resize(innerWidth,innerHeight);');
-replace("  if(!$('lift').hidden){renderer.render(scene,camera);return;}",
- "  if(!$('lift').hidden){phiPostFX.render(dt,null);return;}");
-replace('  renderer.render(scene,camera);\n  if(GALLERY_DEBUG)window.__phiGraffitiStats',
- "  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);\n  if(GALLERY_DEBUG)window.__phiGraffitiStats");
-
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',

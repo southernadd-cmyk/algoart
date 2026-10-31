@@ -28,6 +28,7 @@ import {addPhiReceptionDecor,addPhiReceptionCredits,createPhiGothicEntrance,rend
 import {planPhiFurnishings} from './phi-furnishings.mjs?v=larger-reception-desk-20261026';
 import {buildPhiRendererPlan} from './phi-full-engine-adapter.mjs?v=public-adapter-20261026';
 import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
+import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
@@ -175,6 +176,7 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
   startAfter:window.__galleryEarly?.tower
 });
+const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
 let receptionWallMaterial=null;
@@ -1645,6 +1647,7 @@ function constructPhiGallery(layout,studies){
     p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);
   const face=new THREE.Mesh(new THREE.PlaneGeometry(p.width,height),
     new THREE.MeshBasicMaterial({color:0xdedacf,side:THREE.FrontSide}));
+  face.userData.phiArtOriginal=true;
   face.position.set(p.x,centreY,p.z);
   if(p.axis==='x')face.rotation.y=p.normal.x>0?Math.PI/2:-Math.PI/2;
   else if(p.normal.z<0)face.rotation.y=Math.PI;
@@ -2386,6 +2389,7 @@ function resize() {
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
+  phiPostFX.resize(innerWidth,innerHeight);
 }
 window.addEventListener('resize',resize);
 
@@ -2885,7 +2889,7 @@ function tick() {
   entranceDoor?.update(dt,rig.position);
   phiGalleryMusic?.update(rig.position);
   phiReceptionDesk?.hologram?.update(clock.elapsedTime);
-  if(!$('lift').hidden){renderer.render(scene,camera);return;}
+  if(!$('lift').hidden){phiPostFX.render(dt,null);return;}
   updateMovement(dt);
   if(GALLERY_DEBUG)window.__phiLiftState={
     floor:currentFloor,date:exhibitDate,travelling:liftTravelling,
@@ -2907,7 +2911,7 @@ function tick() {
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
-  renderer.render(scene,camera);
+  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={tower:towerGraffiti.diagnostics,interior:interiorGraffiti.diagnostics,square:phiSquare.diagnostics()};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
 }

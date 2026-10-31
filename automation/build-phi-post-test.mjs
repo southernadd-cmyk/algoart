@@ -4,6 +4,8 @@ import {fileURLToPath} from 'node:url';
 
 // Transform only the staging build. The live source and bundle remain unchanged.
 export function instrumentPhiSource(source){
+ // The live source already owns the approved composer; never double-inject.
+ if(source.includes("createPhiPostFX(THREE,renderer,scene,camera"))return source;
  const replace=(before,after)=>{
   if(source.split(before).length!==2)throw new Error('Post-processing integration anchor changed: '+before.slice(0,80));
   source=source.replace(before,after);
