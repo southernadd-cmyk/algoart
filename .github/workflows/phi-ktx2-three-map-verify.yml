@@ -22,6 +22,8 @@ jobs:
         run: node tests/phi-ktx2-multi-browser-smoke.mjs
       - name: Run controlled three-map JPEG vs KTX2 comparison
         run: node tests/phi-ktx2-three-texture-microbench.mjs
+      - name: Verify uncached per-texture URLs in JPEG and KTX2 browser sessions
+        run: node tests/phi-ktx2-cache-bust-smoke.mjs
       - name: Save benchmark JSON
         if: always()
         uses: actions/upload-artifact@v4
