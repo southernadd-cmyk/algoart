@@ -95,11 +95,13 @@ test('source capture reuses compositor original pass instead of rerendering full
    fx.indexOf('compositor.addPass(artProtection.pass)'));
 });
 
-test('live FX has automatic frame budget and safe touch fallback',()=>{
- const text=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
- assert.match(text,/if\(production\)panel.hidden=true/);
- assert.match(text,/effects.ao.samples=8/);
- assert.match(text,/effects.selectedPass.enabled=false/);
- assert.match(text,/bypass=true;performanceStep=3/);
- assert.match(text,/coarse&&!forced/);
+test('live postprocessing remains stable without performance or mobile fallback',()=>{
+ const code=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
+ assert.match(code,/if\(production\)panel.hidden=true/);
+ assert.match(code,/stats.performanceTier='fixed Architectural'/);
+ assert.match(code,/if\(requested==='original'\)setPreset\('original'\)/);
+ assert.doesNotMatch(code,/performanceStep|lastPerformanceCheck|coarse&&!forced/);
+ assert.doesNotMatch(code,/effects\.ao\.samples=8|bypass=true;performanceStep/);
+ assert.match(code,/architectural:\{brightness:-\.14,contrast:-\.19,saturation:\.25/);
+ assert.match(code,/aoSamples:16/);
 });

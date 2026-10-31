@@ -83,7 +83,6 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   selectedGlowMeshes:0,focusActive:false,settings,renderer:'original'};
  let preset='original',bypass=false,composer=null,effects=null,selection=null,dofPass=null,artProtection=null;
  let previous=0,lastMode='',lastUI=0,lastGlowScan=0,selectedIds='';
- let performanceStep=0,lastPerformanceCheck=0;
  // A small, collapsible workshop: all sliders are native, keyboard-accessible and live.
  const panel=document.createElement('details');panel.id='phi-post-fx';panel.open=true;
  panel.style.cssText='position:fixed;right:12px;top:110px;z-index:80;width:min(340px,calc(100vw - 24px));max-height:calc(100dvh - 135px);overflow:auto;background:#f0ece5f5;color:#263b42;border:1px solid #827964;border-radius:6px;box-shadow:0 5px 24px #1b26252b;font:12px/1.45 system-ui,sans-serif';
@@ -289,21 +288,6 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
    renderer.setRenderTarget(null);renderer.autoClear=true;
    renderer.render(scene,camera);sync();message.textContent='Post-processing error: '+String(error);
   }
-  if(production&&on&&mode==='architectural'&&!document.hidden&&
-     frames[mode].length>=120&&now-lastPerformanceCheck>3500){
-   lastPerformanceCheck=now;
-   const current=phiFXSummary(frames[mode]);
-   if(current&&(current.median>31||current.p95>47)){
-    if(performanceStep===0){
-     effects.ao.samples=8;performanceStep=1;stats.performanceTier='8-sample AO';
-    }else if(performanceStep===1){
-     effects.selectedPass.enabled=false;performanceStep=2;stats.performanceTier='AO only';
-    }else{
-     bypass=true;performanceStep=3;stats.active=false;stats.performanceTier='original';
-    }
-    stats.reason='Slow frame-time adaptation';frames[mode].length=0;previous=0;
-   }
-  }
   if(now-lastUI>1250){
    for(const p of PHI_FX_PRESETS)stats.summaries[p]=phiFXSummary(frames[p]);
    const value=stats.summaries[mode],base=stats.summaries.original;
@@ -318,11 +302,12 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
  document.addEventListener('visibilitychange',()=>{previous=0;});
  const requested=new URLSearchParams(location.search).get('fx');
  if(production){
-  const coarse=matchMedia('(pointer:coarse)').matches;
-  const forced=requested==='on'||requested==='architectural';
-  if(requested==='original'||(coarse&&!forced))setPreset('original');
+  // Keep the chosen art direction consistently: no automatic frame-rate
+  // degradation or device-specific switch to the original renderer.
+  // ?fx=original remains an intentional, manual comparison override.
+  if(requested==='original')setPreset('original');
   else setPreset('architectural');
-  stats.performanceTier=coarse&&!forced?'original on touch':'full, adaptive';
+  stats.performanceTier='fixed Architectural';
  }else if(requested==='on')setPreset('architectural');
  else if(PHI_FX_PRESETS.includes(requested))setPreset(requested);
  else setPreset('original');
