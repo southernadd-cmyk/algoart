@@ -14,6 +14,8 @@ on:
       - 'test/virtual-gallery/phi-postfx-pass-profiler.mjs'
       - 'test/virtual-gallery/phi-shadow-render-probe.mjs'
       - 'test/virtual-gallery/phi-arrival-mesh-stager.mjs'
+      - 'gallery/visit/gallery-phi.js'
+      - 'gallery/visit/phi-arrival-mesh-stager.mjs'
       - 'test/virtual-gallery/phi-painting-arrival-gate.mjs'
       - 'test/virtual-gallery/phi-lift-indicator.mjs'
 permissions:
