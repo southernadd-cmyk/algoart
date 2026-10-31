@@ -1,0 +1,29 @@
+name: KTX2 test tower cold-start A/B benchmark
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-ktx2-cold-start.yml'
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Run four fresh browser context / disabled HTTP-cache starts
+        run: node tests/phi-ktx2-cold-start-browser.mjs
+      - name: Save results including failed or cache-hit runs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phi-ktx2-cold-start-results
+          path: phi-ktx2-cold-start-results/
+          if-no-files-found: warn
