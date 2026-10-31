@@ -16,6 +16,7 @@ on:
       - 'tests/phi-room-sign-counts.test.mjs'
       - 'tests/phi-reception-penrose.test.mjs'
       - 'tests/phi-gallery-penrose.test.mjs'
+      - 'tests/phi-exterior-plants-disabled.test.mjs'
       - 'tests/phi-gramophone-timeline.test.mjs'
       - 'tests/phi-gramophone-score-map.test.mjs'
       - 'tests/phi-gramophone-asap-debussy.test.mjs'
