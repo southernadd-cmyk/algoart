@@ -472,8 +472,8 @@ test('test-only composer probe attributes exact existing enabled pass CPU calls'
  assert.equal(profiler.installed,true);
  assert.equal(composer.render(.016),'rendered');
  assert.deepEqual(calls,[['render',.016],['ao',.016]]);
- assert.ok(records.some(([name,ms])=>name==='postfx-pass:0:RenderPass'&&ms===42));
- assert.ok(records.some(([name,ms])=>name==='postfx-pass:1:N8AOPostPass'&&ms===12));
+ assert.ok(records.some(([name,ms])=>name==='postfx-pass:0:scene-render'&&ms===42));
+ assert.ok(records.some(([name,ms])=>name==='postfx-pass:1:artwork-copy'&&ms===12));
  assert.ok(records.some(([name,ms])=>name==='postfx-composer-total'&&ms===54));
  assert.ok(!records.some(([name])=>name.includes('OffPass')));
  profiler.dispose();
