@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createPhiLiftProfiler} from '../test/virtual-gallery/phi-lift-profile.mjs';
+import {createPhiArrivalMeshStager} from '../test/virtual-gallery/phi-arrival-mesh-stager.mjs';
 import {installPhiComposerPassProfiler} from '../test/virtual-gallery/phi-postfx-pass-profiler.mjs';
 import {warmGalleryEntry} from '../test/virtual-gallery/gallery-entry-preparation.mjs';
 import {createPhiArtworkPreloader} from '../test/virtual-gallery/phi-artwork-preload.mjs';
@@ -498,4 +499,71 @@ test('post-FX pass profiling is staging-only and source paintings remain protect
  assert.match(testSource,/enabled:!!phiLiftProfiler/);
  assert.match(testSource,/phiPostFX\.render\(dt/);
  assert.doesNotMatch(liveSource,/installPhiComposerPassProfiler|phi-postfx-pass-profiler/);
+});
+
+test('test scene staging keeps lift cabin visible and restores original mesh visibility',async()=>{
+ let frames=0;
+ const stager=createPhiArrivalMeshStager({nextFrame:async()=>{frames++;}});
+ const group=(name,children=[])=>{
+  const obj={name,visible:true,children,parent:null,userData:{},traverse(fn){
+   fn(this);for(const child of this.children)child.traverse?child.traverse(fn):fn(child);
+  }};
+  for(const child of children)child.parent=obj;
+  return obj;
+ };
+ const mesh=(name,art=false)=>({name,isMesh:true,visible:true,userData:{phiArtOriginal:art}});
+ const cabinMesh=mesh('cabin door'),cabin=group('cabin',[cabinMesh]);
+ const painting=mesh('painting',true),paintingRoot=group('paintingRoot',[painting]);
+ const wall=mesh('wall'),frame=mesh('frame'),unshown=mesh('originally hidden');
+ unshown.visible=false;
+ const room=group('room',[wall,frame,unshown]);
+ const started=stager.start('2026-10-09',[cabin,paintingRoot,room],{exclude:cabin});
+ assert.equal(started.total,3);
+ assert.equal(painting.visible,false);
+ assert.equal(wall.visible,false);
+ assert.equal(frame.visible,false);
+ assert.equal(cabinMesh.visible,true,'physical cabin and doors must never disappear');
+ assert.equal(unshown.visible,false);
+ const stages=[];
+ const completed=await stager.reveal({batchSize:1,
+  onBatchStart:info=>stages.push(info),
+ });
+ assert.equal(completed.hidden,0);
+ assert.equal(completed.shown,3);
+ assert.equal(frames,6,'allow two real animation-frame turns per batch');
+ assert.equal(stages.length,3);
+ assert.equal(stages.reduce((sum,s)=>sum+s.paintings,0),1);
+ assert.equal(painting.visible,true);
+ assert.equal(wall.visible,true);
+ assert.equal(unshown.visible,false);
+ stager.restore();
+ assert.equal(painting.visible,true);
+ assert.equal(wall.visible,true);
+ assert.equal(unshown.visible,false);
+});
+
+test('cancelled scene staging restores every surviving painting and wall',async()=>{
+ let trigger=null;
+ const stager=createPhiArrivalMeshStager({nextFrame:async()=>trigger?.()});
+ const room={visible:true,userData:{},children:[],traverse(fn){fn(this);for(const child of this.children)fn(child)}};
+ const art=Array.from({length:3},(_,i)=>({isMesh:true,parent:room,visible:true,
+  userData:{phiArtOriginal:i===0}}));
+ room.children.push(...art);
+ stager.start('2026-10-09',[room]);
+ trigger=()=>{trigger=null;stager.restore();};
+ await assert.rejects(stager.reveal({batchSize:1}),/cancelled/);
+ assert.equal(stager.stats().hidden,0);
+ assert.ok(art.every(mesh=>mesh.visible===true));
+});
+
+test('scene batch feature is opt-in and all artwork is prepared before scene reveal and door opening',()=>{
+ const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
+ const live=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(src,/get\('liftstage'\)==='1'/);
+ assert.match(src,/exclude:phiLiftCabin/);
+ assert.match(src,/await phiArrivalMeshes\.reveal/);
+ assert.match(src,/phiArrivalMeshes\.restore\(\)/);
+ assert.ok(src.indexOf('await phiPaintingGate.wait(')<src.indexOf('await phiArrivalMeshes.reveal('));
+ assert.ok(src.indexOf('await phiArrivalMeshes.reveal(')<src.indexOf('setLiftDoors(false);',src.indexOf('await phiPaintingGate.wait(')));
+ assert.doesNotMatch(live,/phiArrivalMeshes|createPhiArrivalMeshStager/);
 });
