@@ -1,0 +1,6 @@
+{
+  "status": "blocked",
+  "reason": "Artwork must remain pixel-identical: ETC1S/UASTC are lossy. Do not publish converted archival JPEG artwork.",
+  "artworkKTX2Enabled": false,
+  "generated": false
+}
