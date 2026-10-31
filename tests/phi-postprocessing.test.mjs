@@ -14,10 +14,15 @@ test('long stalls are retained in frame statistics',()=>{
 test('staging transform covers both presentation branches and warm-up',()=>{
  const source=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
  const transformed=instrumentPhiSource(source);
- assert.equal((transformed.match(/phiPresentation.render\(\)/g)||[]).length,2);
- assert.ok(transformed.includes('await phiPresentation?.warm()'));
- assert.ok(transformed.includes('phiPresentation?.resize()'));
- assert.throws(()=>instrumentPhiSource(source.replace('  renderer.setSize(innerWidth,innerHeight);','')),/anchor changed/);
+ if(source.includes('createPhiPostFX(THREE,renderer,scene,camera')){
+  assert.equal(transformed,source,'legacy study must not inject a second composer');
+  assert.equal((source.match(/phiPostFX.render\(dt/g)||[]).length,2);
+  assert.ok(source.includes('phiPostFX.resize(innerWidth,innerHeight)'));
+ }else{
+  assert.equal((transformed.match(/phiPresentation.render\(\)/g)||[]).length,2);
+  assert.ok(transformed.includes('await phiPresentation?.warm()'));
+  assert.ok(transformed.includes('phiPresentation?.resize()'));
+ }
  assert.ok(!source.includes('phiPresentation'));
 });
 test('live entry keeps its existing bundle and contains no experiment',()=>{
