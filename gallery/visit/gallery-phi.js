@@ -35,6 +35,7 @@ import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
+import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
 import {createPhiPaintingArrivalGate} from './phi-painting-arrival-gate.mjs';
 import {createPhiRoomGeometryStager} from './phi-room-geometry-stage.mjs';
@@ -192,6 +193,8 @@ try {
 }
 
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
+// Approved fixed 16 original meshes per two frames; no adaptive scheduling.
+const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
 const phiStartupLoading=trackGalleryLoading(THREE.DefaultLoadingManager);
 const galleryFinish=createArchitecturalMaterials(THREE,{
@@ -1104,6 +1107,15 @@ async function travelLift(date,index){
    }
   });
   phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady);
+  // The paintings are already GPU-ready. Restore the original destination
+  // renderables over successive frames while the cabin doors remain closed.
+  phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
+  const revealed=await phiArrivalMeshes.reveal({
+   batchSize:16,
+   onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
+   onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
+  });
+  phiLiftProfiler?.mark('scene-reveal-finished',revealed);
   const preparation=await waitForGalleryEntry({
    loading:{pending:0},timeout:4000,
    isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0||
@@ -1137,6 +1149,7 @@ async function travelLift(date,index){
   phiArtworkPreloader.clear();
   phiSculptureStage.clear();
   phiRoomGeometryStage.clear();
+  phiArrivalMeshes.restore();
   if(exhibitDate!==departure.date){
    try{await loadEdition(departure.date,{rollback:true});}
    catch(recoveryError){console.error('[Phi lift] departure recovery failed',recoveryError);}
@@ -2318,6 +2331,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   const previousYaw=yaw,previousPitch=pitch;
   if(!renderer)return;
   const editionStart=performance.now();
+  phiArrivalMeshes.restore();
   const {studies,nextPlan,nextFloor,elevation,reception}=prepared||await preparePhiEdition(date);
   phiPaintingGate?.cancel();
   phiPaintingGate=createPhiPaintingArrivalGate({
@@ -2408,6 +2422,12 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object)&&object!==phiTowerShellCache?.shell);
+  // Only new destination renderables are temporarily hidden. Never hide the
+  // physical cabin, its doors or indicator, or alter any textures or materials.
+  if(viaLift){
+   const staged=phiArrivalMeshes.start(date,editionObjects,{exclude:phiLiftCabin});
+   phiLiftProfiler?.mark('scene-reveal-queued',staged);
+  }
   // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
   startDeferredGallery();
   if(!viaLift && nextFloor===0 && plan.phi?.plaza){
