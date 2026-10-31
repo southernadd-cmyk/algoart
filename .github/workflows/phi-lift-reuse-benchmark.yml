@@ -1,0 +1,54 @@
+name: Compare test lift arrival GPU reuse A/B
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-lift-reuse-benchmark.yml'
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 11
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build staging gallery without touching production
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+          node --test tests/phi-lift-queue-profiler.test.mjs
+      - name: Start local site
+        run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-reuse-comparison-http.log 2>&1 &
+      - name: Baseline - repeat every GPU texture upload
+        run: PHI_LIFT_REUSE=0 node tests/phi-lift-readiness-browser.mjs
+      - name: Treatment - reuse previously uploaded GPU textures
+        run: PHI_LIFT_REUSE=1 node tests/phi-lift-readiness-browser.mjs
+      - name: Print verified upload counts and arrival timing
+        if: always()
+        run: |
+          node --input-type=module -e "
+          import {readFileSync,existsSync} from 'node:fs';
+          const dir='phi-lift-readiness-results/';
+          for(const key of ['0','1']){
+            const path=dir+'arrival-'+key+'.json';
+            if(!existsSync(path)){console.log('Missing completed journey',key);continue;}
+            const r=JSON.parse(readFileSync(path,'utf8'));
+            console.log('A/B mode '+key+': '+JSON.stringify({
+              status:r.status,gate:r.gate,paintingGpu:r.paintingGpu,
+              waitMs:r.paintingWaitMs,warmupMs:r.finalWarmupMs,
+              arrivalMs:r.arrivalDelayMs,textureWarmup:r.warmup,
+              framesOver80ms:r.frameStalls?.length
+            }));
+          }"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-lift-reuse-ab
+          path: phi-lift-readiness-results/
+          if-no-files-found: ignore
