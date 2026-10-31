@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/phi-ktx2-selective-gallery.yml'
+      - 'tests/phi-ktx2-selective-gallery-smoke.mjs'
 permissions:
   contents: read
 jobs:
