@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
+import {addPhiRoomLuminaire} from '../test/virtual-gallery/phi-room-luminaires.mjs';
 import {createPhiLightingStudy,staticPhiShadowCaster} from '../test/virtual-gallery/phi-lighting-study.mjs';
 globalThis.location={search:''};globalThis.window={};
 function setup(){
@@ -27,4 +28,16 @@ test('floor changes translate the sun and target together, preserving its direct
 });
 test('manual original comparison leaves shadow rendering disabled',()=>{
  location.search='?lighting=original';const {renderer,study}=setup();study.update(0);assert.equal(renderer.shadowMap.enabled,undefined);assert.equal(study.stats.enabled,false);location.search='';
+});
+
+test('visible fittings cover all rooms while four fill lights illuminate transformed fixture positions',()=>{
+ const {scene,study}=setup();
+ for(let i=0;i<12;i++)addPhiRoomLuminaire(THREE,scene,{pieces:[{x:i*6,z:0,w:5,h:5}]},0,4);
+ study.update(0);
+ assert.equal(study.stats.luminaires,12);
+ const fills=scene.children.filter(o=>o.name==='phi-pooled-room-fill');
+ assert.equal(fills.length,4);assert.ok(fills.every(o=>o.intensity>0&&!o.castShadow));
+ const fitting=scene.children.find(o=>o.name==='phi-room-ceiling-luminaire');
+ assert.equal(fitting.children.length,2);assert.equal(fitting.children[1].material.toneMapped,false);
+ assert.equal(fills[0].position.y,fitting.position.y-.22);
 });

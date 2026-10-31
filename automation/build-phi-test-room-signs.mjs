@@ -92,11 +92,16 @@ replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;'
 replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;',
   " const frameRoomCounts=new Map();\n for(const p of phi.exhibition.paintings)frameRoomCounts.set(p.room,(frameRoomCounts.get(p.room)||0)+1);\n const frameStudyRoom=exhibitDate===RECEPTION?-1:([...frameRoomCounts].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]?.[0]??-1);\n if(GALLERY_DEBUG)window.__phiArchitecturalFrameStudy={room:frameStudyRoom,paintings:frameRoomCounts.get(frameStudyRoom)||0};\n for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;");
 
+// Visible ceiling fittings throughout the rooms; illumination uses four pooled fill lights.
+replace("import * as THREE from 'three';",
+ "import {addPhiRoomLuminaire} from '../../test/virtual-gallery/phi-room-luminaires.mjs';\nimport * as THREE from 'three';");
+replace(' for(const room of lightRooms.slice(0,galleryFinish.lowPower?3:7)){',
+ ' if(!phiLightingOriginal)for(const room of lightRooms)addPhiRoomLuminaire(THREE,scene,room,elevation,ROOM_HEIGHT);\n for(const room of lightRooms.slice(0,galleryFinish.lowPower?3:7)){');
 // Bounded lighting review: keep phi fixtures; cache one sun and one room map.
 replace("import * as THREE from 'three';",
  "import {createPhiLightingStudy} from '../../test/virtual-gallery/phi-lighting-study.mjs';\nimport * as THREE from 'three';");
 replace("scene.add(new THREE.HemisphereLight('#eaf1ff', '#72796f', 1.08));",
- "const phiLightingOriginal=new URLSearchParams(location.search).get('lighting')==='original';\nscene.add(new THREE.HemisphereLight('#eaf1ff', '#72796f', phiLightingOriginal?1.08:.90));");
+ "const phiLightingOriginal=new URLSearchParams(location.search).get('lighting')==='original';\nscene.add(new THREE.HemisphereLight('#eaf1ff', '#72796f', phiLightingOriginal?1.08:1.18));");
 replace("const sun = new THREE.DirectionalLight('#fff5e5', 2.20);",
  "const sun = new THREE.DirectionalLight('#fff5e5', phiLightingOriginal?2.20:2.35);");
 replace('const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});',
