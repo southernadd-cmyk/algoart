@@ -10,7 +10,7 @@ permissions:
   actions: write
 concurrency:
   group: gallery-ktx2-20-assets
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   convert:
     runs-on: ubuntu-latest
