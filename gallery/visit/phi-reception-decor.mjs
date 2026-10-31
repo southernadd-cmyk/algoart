@@ -89,7 +89,7 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMat
   const model=source.clone(true);
   const fixed=model.getObjectByName('Entrance_Frame'),left=model.getObjectByName('Entrance_Left'),right=model.getObjectByName('Entrance_Right');
   if(!fixed||!left||!right)return;
-  root.add(fixed);
+  fixed.traverse(mesh=>{if(mesh.isMesh)mesh.material=stone;});  root.add(fixed);
   [left,right].forEach((leaf,i)=>{leaf.position.x-=hinges[i].position.x;hinges[i].add(leaf);fallback[i].visible=false;});
   root.userData.modelLoaded=true;
  }).catch(error=>console.warn('Main entrance door fallback',error));

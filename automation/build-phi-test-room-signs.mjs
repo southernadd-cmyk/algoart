@@ -73,9 +73,6 @@ let receptionTilePreview=null;`);
 replace('receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});',
  'receptionTilePreview=createReceptionPlasterFloorMaterial(THREE,{lowPower:galleryFinish.lowPower});');
 
-// Shader study applies to every painting frame in the test tower.
-replace("import * as THREE from 'three';",
- "import {createPhiFrameStudyMaterial} from '../../test/virtual-gallery/phi-csm-material.mjs';\nimport * as THREE from 'three';");
 // Architectural camera study: use ?camera=wide to restore original 76°.
 // Keep locomotion, collision checks, near/far clipping and frame pacing.
 replace('const camera = new THREE.PerspectiveCamera(76,',
@@ -86,10 +83,6 @@ replace('const camera = new THREE.PerspectiveCamera(76,',
 // Other rooms retain the exact original behaviour; no new light or geometry.
 replace('face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide});',
   'face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide,toneMapped:!(phiArtworkStudyEnabled&&p.room===frameStudyRoom)});');
-// TEST ONLY: two shared architectural metal finishes, with no textures,
-// additional geometry, lights, shadows or post-processing.
-replace('const join=galleryFinish.trims;\nsetSculptureArchitecturalMaterials(',
-  "const join=galleryFinish.trims;\nconst architecturalBronzeStudy=new THREE.MeshStandardMaterial({color:'#806b53',metalness:.38,roughness:.64});\nconst phiCSMEnabled=new URLSearchParams(location.search).get('csm')!=='0';\nconst architecturalFrameStudy=createPhiFrameStudyMaterial(THREE,{enabled:phiCSMEnabled});\nwindow.__phiCSMStudy={enabled:phiCSMEnabled,target:'all painting frames'};\narchitecturalBronzeStudy.userData.galleryPersistent=true;\narchitecturalFrameStudy.userData.galleryPersistent=true;\nsetSculptureArchitecturalMaterials(");
 // Preserve reception's original blue wallpaper map; soften its normal relief
 // to work with the existing proportional light placement.
 replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;',
@@ -98,43 +91,11 @@ replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;'
 // The CSM finish applies to all frames, regardless of room.
 replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;',
   " const frameRoomCounts=new Map();\n for(const p of phi.exhibition.paintings)frameRoomCounts.set(p.room,(frameRoomCounts.get(p.room)||0)+1);\n const frameStudyRoom=exhibitDate===RECEPTION?-1:([...frameRoomCounts].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]?.[0]??-1);\n if(GALLERY_DEBUG)window.__phiArchitecturalFrameStudy={room:frameStudyRoom,paintings:frameRoomCounts.get(frameStudyRoom)||0};\n for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;");
-replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
-  'p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,architecturalFrameStudy);');
-
-// Include the separate baked watercolour frame in reception.
-replace('phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);',
- "phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);\n  const receptionArtFrame=phiReceptionMap?.getObjectByName('reception-watercolour-frame');if(receptionArtFrame)receptionArtFrame.material=architecturalFrameStudy;");
-
-
-// Use the same shared finish on doorway jambs/headers, never on moving leaves.
-const doorFrameStart=source.indexOf(' // Put visible portal frames on the exact holes');
-const doorFrameEnd=source.indexOf(' for(const b of phi.bridges)',doorFrameStart);
-if(doorFrameStart<0||doorFrameEnd<0)throw Error('Door frame study anchors changed');
-const doorFrameSection=source.slice(doorFrameStart,doorFrameEnd);
-source=source.slice(0,doorFrameStart)+doorFrameSection.replaceAll(',join);',',architecturalFrameStudy);')+source.slice(doorFrameEnd);
-replace("const portal=new THREE.MeshStandardMaterial({color:'#d4d2ca',roughness:.89});",
- 'const portal=architecturalFrameStudy;');
-replace('surroundMaterial:galleryFinish.stone','surroundMaterial:architecturalFrameStudy');
-replace('block(.07,2.7,.16,l.portal.at-.12,elevation+1.38,l.z+side*1.12,bronze);',
- 'block(.07,2.7,.16,l.portal.at-.12,elevation+1.38,l.z+side*1.12,architecturalFrameStudy);');
-replace('block(.12,.23,2.5,l.portal.at-.12,elevation+2.93,l.z,brushed);',
- 'block(.12,.23,2.5,l.portal.at-.12,elevation+2.93,l.z,architecturalFrameStudy);');
-
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
  bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
  outfile:'gallery/visit/gallery-phi-test-room-signs-bundle.js',
  plugins:[stageCurationPlugin(),n8aoTestPlugin(),bvhTestPlugin(),{
- name:'gothic-door-frame-csm-test-only',setup(builder){
-  builder.onLoad({filter:/[/\\]phi-reception-decor[.]mjs$/},async({path})=>{
-   let contents=await readFile(path,'utf8');
-   const anchor='  root.add(fixed);';
-   if(contents.split(anchor).length!==2)throw Error('Gothic fixed-frame anchor changed');
-   contents=contents.replace(anchor,'  fixed.traverse(mesh=>{if(mesh.isMesh)mesh.material=stone;});'+anchor);
-   return {contents,loader:'js',resolveDir:dir};
-  });
- }
-},{
  name:'architectural-visitor-palette-test-only',
  setup(builder){
   builder.onLoad({filter:/[/\\]visitors[.]mjs$/},async({path})=>{

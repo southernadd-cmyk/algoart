@@ -1,3 +1,4 @@
+import {createPhiFrameStudyMaterial} from './phi-frame-material.mjs';
 import {applyRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs';
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {advanceLiftDoor} from './phi-lift-motion.mjs';
@@ -222,6 +223,7 @@ const floor=galleryFinish.floor;
 const timber=galleryFinish.timber;
 const stone=galleryFinish.stone;
 const join=galleryFinish.trims;
+const architecturalFrameStudy=createPhiFrameStudyMaterial(THREE,{enabled:new URLSearchParams(location.search).get('csm')!=='0'});
 setSculptureArchitecturalMaterials({plinth:galleryFinish.plinth,metal:galleryFinish.trims});
 const dark = new THREE.MeshStandardMaterial({color: '#393b35', metalness: .16, roughness: .74});
 const bridgeSurface=galleryFinish.stoneBridge;
@@ -655,7 +657,7 @@ function addArchiveLift(room){
     return mesh;
   };
   // Quiet stone-and-bronze portal with a recessed shadow reveal.
-  const portal=new THREE.MeshStandardMaterial({color:'#d4d2ca',roughness:.89});
+  const portal=architecturalFrameStudy;
   const bronze=new THREE.MeshStandardMaterial({color:'#424b47',metalness:.58,roughness:.43});
   part(width,.14,depth,0,.035,0,rubber);
   part(width,.14,depth,0,height,0,brushed);
@@ -1612,11 +1614,11 @@ function constructPhiGallery(layout,studies){
   if(d.public)continue;
   const half=d.width/2,head=elevation+3.1;
   if(d.axis==='x'){
-   for(const side of [-1,1])block(.21,3.1,.17,d.at,elevation+1.55,d.centre+side*half,join);
-   block(.21,.23,d.width+.18,d.at,head,d.centre,join);
+   for(const side of [-1,1])block(.21,3.1,.17,d.at,elevation+1.55,d.centre+side*half,architecturalFrameStudy);
+   block(.21,.23,d.width+.18,d.at,head,d.centre,architecturalFrameStudy);
   }else{
-   for(const side of [-1,1])block(.17,3.1,.21,d.centre+side*half,elevation+1.55,d.at,join);
-   block(d.width+.18,.23,.21,d.centre,head,d.at,join);
+   for(const side of [-1,1])block(.17,3.1,.21,d.centre+side*half,elevation+1.55,d.at,architecturalFrameStudy);
+   block(d.width+.18,.23,.21,d.centre,head,d.at,architecturalFrameStudy);
   }
  }
  for(const b of phi.bridges){
@@ -1646,7 +1648,7 @@ function constructPhiGallery(layout,studies){
   const study=byId.get(p.studyId);if(!study)continue;
   const height=p.height,centreY=elevation+p.y;
   block(p.axis==='x'?.08:p.width+.10,height+.10,p.axis==='x'?p.width+.10:.08,
-    p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);
+    p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,architecturalFrameStudy);
   const face=new THREE.Mesh(new THREE.PlaneGeometry(p.width,height),
     new THREE.MeshBasicMaterial({color:0xdedacf,side:THREE.FrontSide}));
   face.userData.phiArtOriginal=true;
@@ -1770,8 +1772,8 @@ function constructPhiGallery(layout,studies){
  }
  cabinBlock(2.6,.1,2.6,l.x,elevation+3.02,l.z,brushed);
  // Portal surrounds reproduce the existing archive lift's bronze/metal trim.
- for(const side of [-1,1])block(.07,2.7,.16,l.portal.at-.12,elevation+1.38,l.z+side*1.12,bronze);
- block(.12,.23,2.5,l.portal.at-.12,elevation+2.93,l.z,brushed);
+ for(const side of [-1,1])block(.07,2.7,.16,l.portal.at-.12,elevation+1.38,l.z+side*1.12,architecturalFrameStudy);
+ block(.12,.23,2.5,l.portal.at-.12,elevation+2.93,l.z,architecturalFrameStudy);
 
  if(currentFloor===0){
   // Reuse the production square, furnishings, monuments and seated visitors.
@@ -1780,7 +1782,7 @@ function constructPhiGallery(layout,studies){
   const outward=entrance?{x:0,z:-1}:{x:-1,z:0};
   const transverse={x:outward.z,z:-outward.x};
   const doorway=entrance?{x:entrance.centre,z:entrance.at}:{x:l.x-1.45,z:l.z};
-  entranceDoor=createPhiGothicEntrance(THREE,{doorway,outward,level:elevation,surroundMaterial:galleryFinish.stone});scene.add(entranceDoor.root);
+  entranceDoor=createPhiGothicEntrance(THREE,{doorway,outward,level:elevation,surroundMaterial:architecturalFrameStudy});scene.add(entranceDoor.root);
   // A true exterior roof cap fitted to the full ground-floor footprint,
   // not a canopy hanging off the doorway. This is transformed together with
   // the active floor, while the original interior ceiling remains untouched.
@@ -2027,6 +2029,7 @@ function constructPhiGallery(layout,studies){
   }
 
   phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);
+  const receptionArtFrame=phiReceptionMap?.getObjectByName('reception-watercolour-frame');if(receptionArtFrame)receptionArtFrame.material=architecturalFrameStudy;
   const credits=addPhiReceptionCredits(THREE,scene,furnishing.credits,elevation);
   artExhibits.push(...credits);window.__phiReceptionCredits={count:credits.length,placement:furnishing.credits};
   window.__phiReception={growingPoster:furnishing.signage[1],creditPlacement:furnishing.credits,worldMap:furnishing.worldMap,desk:!!furnishing.desk,information:furnishing.signage.length>0,
