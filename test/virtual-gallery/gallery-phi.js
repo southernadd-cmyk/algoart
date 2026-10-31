@@ -190,7 +190,7 @@ try {
   errorBox.hidden = false;
 }
 
-// TEST ONLY: original JPEG versus pixel-identical KTX2/Zstd JPEGs.
+// TEST ONLY: retain deterministic JPEG cache diagnostics without the retired lossless KTX2 loader.
 const phiTextureBenchCache=createTextureBenchCache(location.search,document.baseURI,location.origin);
 window.__phiJPEGCacheBench=phiTextureBenchCache;
 if(phiTextureBenchCache)THREE.DefaultLoadingManager.setURLModifier(
