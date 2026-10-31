@@ -1,0 +1,59 @@
+name: Build pixel-identical KTX2 for all JPEGs on TEST
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'automation/build-lossless-jpeg-ktx2-test.py'
+      - '.github/workflows/gallery-lossless-ktx2-full.yml'
+permissions:
+  contents: write
+concurrency:
+  group: full-lossless-ktx2-conversion
+  cancel-in-progress: true
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install reproducible lossless image dependencies
+        run: python -m pip install Pillow==11.3.0 zstandard==0.23.0
+      - name: Install verified Khronos KTX encoder
+        run: |
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/ktx.deb" \
+            https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb
+          echo "ca635ed489d8bf54fac8d7687056c651193de0740830a7738cc034adc63e3027  $RUNNER_TEMP/ktx.deb" | sha256sum -c
+          sudo dpkg --install "$RUNNER_TEMP/ktx.deb" || { sudo apt-get update && sudo apt-get install -fy; }
+          command -v toktx
+      - name: Create EVERY artwork and architectural JPEG as exact RGBA KTX2
+        run: python3 automation/build-lossless-jpeg-ktx2-test.py
+      - name: Block publishing unless ALL JPEG pixel comparisons are identical
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          m=json.loads(Path('test/virtual-gallery/ktx2-lossless/manifest.json').read_text())
+          assert m['artworkCount']>=404,m['artworkCount']
+          assert m['count']>=420,m['count']
+          assert m['allPixelIdentical'] and all(e['pixelSha256']==e['ktxPixelSha256'] for e in m['entries'])
+          assert len(m['entries'])==m['count']
+          print('ALL_PIXEL_IDENTICAL_PASS',m['count'],m['artworkCount'],m['sourceBytes'],m['ktx2Bytes'])
+          PY
+      - name: Commit lossless KTX2 test files only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add test/virtual-gallery/ktx2-lossless/
+          if ! git diff --cached --quiet; then
+            git commit -m 'Add pixel-identical KTX2 equivalents for all gallery JPEGs on test only'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
