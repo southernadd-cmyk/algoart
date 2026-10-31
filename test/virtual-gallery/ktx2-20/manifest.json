@@ -1,0 +1,244 @@
+{
+  "format": "PROPORTION PIECE architecture KTX2-20 pilot",
+  "scope": "test only",
+  "count": 20,
+  "totals": {
+    "active": {
+      "count": 6,
+      "originalBytes": 4169431,
+      "ktx2Bytes": 2516558
+    },
+    "reception": {
+      "count": 3,
+      "originalBytes": 305894,
+      "ktx2Bytes": 775960
+    },
+    "optional": {
+      "count": 11,
+      "originalBytes": 1974148,
+      "ktx2Bytes": 4630325
+    }
+  },
+  "textures": [
+    {
+      "id": "brick-color",
+      "source": "textures/Bricks055_Color.jpg",
+      "kind": "color",
+      "usage": "active",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 1430939,
+      "ktx2Bytes": 241514,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "brick-normal",
+      "source": "textures/Bricks055_NormalGL.jpg",
+      "kind": "normal",
+      "usage": "active",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 1831741,
+      "ktx2Bytes": 1259365,
+      "codec": "UASTC+Zstd"
+    },
+    {
+      "id": "brick-roughness",
+      "source": "textures/Bricks055_Roughness.jpg",
+      "kind": "roughness",
+      "usage": "active",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 635629,
+      "ktx2Bytes": 215989,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "ceiling-color",
+      "source": "textures/OfficeCeiling001_Color.jpg",
+      "kind": "color",
+      "usage": "active",
+      "width": 768,
+      "height": 768,
+      "sourceBytes": 29291,
+      "ktx2Bytes": 33170,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "ceiling-normal",
+      "source": "textures/OfficeCeiling001_NormalGL.jpg",
+      "kind": "normal",
+      "usage": "active",
+      "width": 768,
+      "height": 768,
+      "sourceBytes": 176213,
+      "ktx2Bytes": 689200,
+      "codec": "UASTC+Zstd"
+    },
+    {
+      "id": "ceiling-roughness",
+      "source": "textures/OfficeCeiling001_Roughness.jpg",
+      "kind": "roughness",
+      "usage": "active",
+      "width": 768,
+      "height": 768,
+      "sourceBytes": 65618,
+      "ktx2Bytes": 77320,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "decorative-wall-color",
+      "source": "textures/sharetextures-decorative-wall-2/color.webp",
+      "kind": "color",
+      "usage": "reception",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 78132,
+      "ktx2Bytes": 97634,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "decorative-wall-normal",
+      "source": "textures/sharetextures-decorative-wall-2/normal.webp",
+      "kind": "normal",
+      "usage": "reception",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 118390,
+      "ktx2Bytes": 582881,
+      "codec": "UASTC+Zstd"
+    },
+    {
+      "id": "decorative-wall-roughness",
+      "source": "textures/sharetextures-decorative-wall-2/roughness.webp",
+      "kind": "roughness",
+      "usage": "reception",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 109372,
+      "ktx2Bytes": 95445,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "plaster-color",
+      "source": "textures/ambientcg-painted-plaster-007/color.webp",
+      "kind": "color",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 160682,
+      "ktx2Bytes": 230244,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "plaster-normal",
+      "source": "textures/ambientcg-painted-plaster-007/normal.webp",
+      "kind": "normal",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 451910,
+      "ktx2Bytes": 1347080,
+      "codec": "UASTC+Zstd"
+    },
+    {
+      "id": "plaster-roughness",
+      "source": "textures/ambientcg-painted-plaster-007/roughness.webp",
+      "kind": "roughness",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 117590,
+      "ktx2Bytes": 199769,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "floor-tiles-color",
+      "source": "textures/bajwa-floor-tiles/color.webp",
+      "kind": "color",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 193870,
+      "ktx2Bytes": 228490,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "floor-tiles-normal",
+      "source": "textures/bajwa-floor-tiles/normal.webp",
+      "kind": "normal",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 108840,
+      "ktx2Bytes": 388326,
+      "codec": "UASTC+Zstd"
+    },
+    {
+      "id": "floor-tiles-roughness",
+      "source": "textures/bajwa-floor-tiles/roughness.webp",
+      "kind": "roughness",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 162854,
+      "ktx2Bytes": 198147,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "concrete-color",
+      "source": "photoreal-assets/concrete_floor-color.webp",
+      "kind": "color",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 307836,
+      "ktx2Bytes": 227606,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "concrete-normal",
+      "source": "photoreal-assets/concrete_floor-normal.webp",
+      "kind": "normal",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 247736,
+      "ktx2Bytes": 1182667,
+      "codec": "UASTC+Zstd"
+    },
+    {
+      "id": "concrete-roughness",
+      "source": "photoreal-assets/concrete_floor-roughness.webp",
+      "kind": "roughness",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 54442,
+      "ktx2Bytes": 131126,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "wood-color",
+      "source": "photoreal-assets/wood_floor-color.webp",
+      "kind": "color",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 153664,
+      "ktx2Bytes": 209209,
+      "codec": "ETC1S"
+    },
+    {
+      "id": "wood-normal",
+      "source": "photoreal-assets/wood_floor-normal.webp",
+      "kind": "normal",
+      "usage": "optional",
+      "width": 1024,
+      "height": 1024,
+      "sourceBytes": 14724,
+      "ktx2Bytes": 287661,
+      "codec": "UASTC+Zstd"
+    }
+  ]
+}
