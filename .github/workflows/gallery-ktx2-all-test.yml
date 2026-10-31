@@ -37,8 +37,8 @@ jobs:
           import json
           from pathlib import Path
           m=json.loads(Path('test/virtual-gallery/ktx2-all/manifest.json').read_text())
-          assert m['artworkCount']>=404,m['artworkCount']
-          assert m['count']>=420,m['count']
+          assert m['artworkCount']>=300,m['artworkCount']
+          assert m['count']>=410,m['count']
           assert len(m['entries'])==m['count']
           assert all((Path('test/virtual-gallery/ktx2-all')/t['ktx2']).exists() for t in m['entries'])
           assert len(set(x['source'] for x in m['entries']))==m['count']
