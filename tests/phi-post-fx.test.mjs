@@ -79,7 +79,7 @@ test('original artwork pixels restored after architectural processing',()=>{
  assert.match(fx,/artProtection.capture\(\)/);
  assert.match(fx,/e.fullPass.enabled=false/);
  assert.match(mask,/camera.layers.set\(ART_LAYER\)/);
- assert.match(mask,/unmodified=texture2D\(originalBuffer,vUv\)/);
+ assert.ok(mask.includes('unmodified=texture2D(originalBuffer,vUv)'));
 });
 
 // The source artwork comes from the existing compositor render, never a
