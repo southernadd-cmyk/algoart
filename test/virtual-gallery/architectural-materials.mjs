@@ -276,6 +276,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   };
   const ktxMode=benchParams.get('ktx2');
   const ktx20Bank=createKTX20Bank(THREE,{renderer,lowPower,startAfter:ready});
+  const ktx20Wide=ktx20Bank?.diagnostics.mode==='twenty';
   globalThis.__phiKTX20Bank=ktx20Bank;
   const ktxPilot=!!renderer&&!lowPower&&ktxMode==='1';
   const ktxMulti=!!renderer&&!lowPower&&ktxMode==='multi';
@@ -322,7 +323,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // during gallery start. Optional maps can fail independently; the roof
   // remains solid and navigable throughout.
   const ceilingDir='./textures/OfficeCeiling001_';
-  if(!ktx20Bank)loader.load(ceilingDir+'Color.jpg',texture=>{
+  if(!ktx20Wide)loader.load(ceilingDir+'Color.jpg',texture=>{
     texture.colorSpace=THREE.SRGBColorSpace;
     texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
     texture.anisotropy=lowPower?1:2;
@@ -330,7 +331,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     ceiling.needsUpdate=true;
     diagnostics.loaded.push('ambientcg-office-ceiling-color');
   },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-color'));
-  if(!lowPower&&!ktxMulti&&!ktx20Bank){
+  if(!lowPower&&!ktxMulti&&!ktx20Wide){
     loader.load(textureURL(ceilingDir+'NormalGL.jpg'),texture=>{
       texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
       ceiling.normalMap=texture;
@@ -339,7 +340,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
       diagnostics.loaded.push('ambientcg-office-ceiling-normal');
     },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-normal'));
   }
-  if(!ktx20Bank)loader.load(ceilingDir+'Roughness.jpg',texture=>{
+  if(!ktx20Wide)loader.load(ceilingDir+'Roughness.jpg',texture=>{
     texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
     ceiling.roughnessMap=texture;
     ceiling.needsUpdate=true;
@@ -411,13 +412,16 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // maps are used by reception wallpaper; eleven optional maps are tested
   // separately and never preloaded into the tower.
   if(ktx20Bank){
-    const choices=[
+    const choices=(ktx20Wide?[
       ['brick-normal',MATERIAL_SOURCES.brick.normal,exteriorBrick,'normalMap',.19,false],
       ['brick-roughness',MATERIAL_SOURCES.brick.roughness,exteriorBrick,'roughnessMap',0,false],
       ['ceiling-color',ceilingDir+'Color.jpg',ceiling,'map',0,true],
       ['ceiling-normal',ceilingDir+'NormalGL.jpg',ceiling,'normalMap',.18,false],
       ['ceiling-roughness',ceilingDir+'Roughness.jpg',ceiling,'roughnessMap',0,false]
-    ];
+    ]:[
+      ['brick-normal',MATERIAL_SOURCES.brick.normal,exteriorBrick,'normalMap',.19,false],
+      ['brick-roughness',MATERIAL_SOURCES.brick.roughness,exteriorBrick,'roughnessMap',0,false]
+    ]);
     for(const [id,source,material,property,strength,color] of choices){
       const apply=texture=>{
         texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
