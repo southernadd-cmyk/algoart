@@ -2,6 +2,18 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-10-31",
+      "cover": "2026-10-31-01-geometric-AA-20261031-01-40914.jpg",
+      "coverOrientation": "landscape",
+      "count": 4,
+      "series": [
+        "Constructed Forms",
+        "Automatic Marks",
+        "Orbital Studies",
+        "Golden Trajectories"
+      ]
+    },
+    {
       "date": "2026-10-30",
       "cover": "2026-10-30-01-spiral-AA-20261030-01-03093.jpg",
       "coverOrientation": "landscape",
