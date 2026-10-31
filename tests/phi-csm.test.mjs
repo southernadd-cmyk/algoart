@@ -15,9 +15,10 @@ test('CSM extends standard PBR with the identical approved base colour and physi
  assert.match(shader.fragmentShader,/roughnessFactor/);
  assert.match(PHI_FRAME_FRAGMENT,/fwidth/);assert.doesNotMatch(PHI_FRAME_FRAGMENT,/uniform float.*time|csm_FragColor|discard/);
 });
-test('live is isolated; baseline switch is scoped to the existing frame-study room',()=>{
+test('live is isolated; every painting frame uses the shader-study material',()=>{
  const live=readFileSync('gallery/visit/gallery-phi.js','utf8'),builder=readFileSync('automation/build-phi-test-room-signs.mjs','utf8');
  assert.doesNotMatch(live,/createPhiFrameStudyMaterial|phiCSMEnabled/);
  assert.match(builder,/get\('csm'\)!=='0'/);
- assert.match(builder,/p.room===frameStudyRoom\?architecturalFrameStudy:join/);
+ assert.match(builder,/'p.x-p.normal.x\*\.06,centreY,p.z-p.normal.z\*\.06,architecturalFrameStudy\);'/);
+ assert.doesNotMatch(builder,/p.room===frameStudyRoom\?architecturalFrameStudy:join/);
 });

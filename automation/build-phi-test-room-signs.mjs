@@ -73,7 +73,7 @@ let receptionTilePreview=null;`);
 replace('receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});',
  'receptionTilePreview=createReceptionPlasterFloorMaterial(THREE,{lowPower:galleryFinish.lowPower});');
 
-// Shader study is limited to the existing one-room frame sample.
+// Shader study applies to every painting frame in the test tower.
 replace("import * as THREE from 'three';",
  "import {createPhiFrameStudyMaterial} from '../../test/virtual-gallery/phi-csm-material.mjs';\nimport * as THREE from 'three';");
 // Architectural camera study: use ?camera=wide to restore original 76°.
@@ -89,7 +89,7 @@ replace('face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.Front
 // TEST ONLY: two shared architectural metal finishes, with no textures,
 // additional geometry, lights, shadows or post-processing.
 replace('const join=galleryFinish.trims;\nsetSculptureArchitecturalMaterials(',
-  "const join=galleryFinish.trims;\nconst architecturalBronzeStudy=new THREE.MeshStandardMaterial({color:'#806b53',metalness:.38,roughness:.64});\nconst phiCSMEnabled=new URLSearchParams(location.search).get('csm')!=='0';\nconst architecturalFrameStudy=createPhiFrameStudyMaterial(THREE,{enabled:phiCSMEnabled});\nwindow.__phiCSMStudy={enabled:phiCSMEnabled,target:'sample-room ink-blue frames'};\narchitecturalBronzeStudy.userData.galleryPersistent=true;\narchitecturalFrameStudy.userData.galleryPersistent=true;\nsetSculptureArchitecturalMaterials(");
+  "const join=galleryFinish.trims;\nconst architecturalBronzeStudy=new THREE.MeshStandardMaterial({color:'#806b53',metalness:.38,roughness:.64});\nconst phiCSMEnabled=new URLSearchParams(location.search).get('csm')!=='0';\nconst architecturalFrameStudy=createPhiFrameStudyMaterial(THREE,{enabled:phiCSMEnabled});\nwindow.__phiCSMStudy={enabled:phiCSMEnabled,target:'all painting frames'};\narchitecturalBronzeStudy.userData.galleryPersistent=true;\narchitecturalFrameStudy.userData.galleryPersistent=true;\nsetSculptureArchitecturalMaterials(");
 // Preserve reception's original blue wallpaper map; soften its normal relief
 // to work with the existing proportional light placement.
 replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;',
@@ -99,7 +99,7 @@ replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;'
 replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;',
   " const frameRoomCounts=new Map();\n for(const p of phi.exhibition.paintings)frameRoomCounts.set(p.room,(frameRoomCounts.get(p.room)||0)+1);\n const frameStudyRoom=exhibitDate===RECEPTION?-1:([...frameRoomCounts].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]?.[0]??-1);\n if(GALLERY_DEBUG)window.__phiArchitecturalFrameStudy={room:frameStudyRoom,paintings:frameRoomCounts.get(frameStudyRoom)||0};\n for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;");
 replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
-  'p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,p.room===frameStudyRoom?architecturalFrameStudy:join);');
+  'p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,architecturalFrameStudy);');
 
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
