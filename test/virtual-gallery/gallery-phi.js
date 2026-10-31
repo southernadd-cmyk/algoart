@@ -126,6 +126,16 @@ let xrLiftPanel=null;
 let xrFloorChoice=0;
 let xrTurnLatched=false;
 const xrPickerRay=new THREE.Raycaster();
+// TEST-only reusable working vectors. These checks run during movement and
+// artwork focus; allocating per candidate can cause avoidable GC stalls.
+const phiFrameVectors={
+  xrForward:new THREE.Vector3(),
+  worldUp:new THREE.Vector3(0,1,0),
+  eye:new THREE.Vector3(),
+  viewDirection:new THREE.Vector3(),
+  exhibitDirection:new THREE.Vector3(),
+  faceDirection:new THREE.Vector3()
+};
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#c2cbc5');
@@ -2745,9 +2755,9 @@ function updateMovement(dt) {
       // The XR camera has no rig parent. Its world-direction getter rebuilds
       // its matrix without our locomotion rotation, making forward sideways
       // on rotated entrances. Rotate its local headset direction by our yaw.
-      const forward=new THREE.Vector3(0,0,-1)
+      const forward=phiFrameVectors.xrForward.set(0,0,-1)
         .transformDirection(renderer.xr.getCamera(camera).matrix)
-        .applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
+        .applyAxisAngle(phiFrameVectors.worldUp,yaw);
       forward.y=0;forward.normalize();
       dx=(forward.x*ahead-forward.z*side)*dt*speed;
       dz=(forward.z*ahead+forward.x*side)*dt*speed;
@@ -2778,16 +2788,16 @@ function detectArt(elapsed) {
     if(!$('info').hidden)resetInspection();
     return;
   }
-  const eye=camera.getWorldPosition(new THREE.Vector3());
+  const eye=camera.getWorldPosition(phiFrameVectors.eye);
   if(dismissedExhibit && eye.distanceTo(dismissedExhibit.position)>4.5) dismissedExhibit=null;
-  const looking=camera.getWorldDirection(new THREE.Vector3());
+  const looking=camera.getWorldDirection(phiFrameVectors.viewDirection);
   let selected=null,score=-Infinity;
   for(const exhibit of artExhibits){
-    const toward=exhibit.position.clone().sub(eye);
+    const toward=phiFrameVectors.exhibitDirection.copy(exhibit.position).sub(eye);
     const horizontal=Math.hypot(toward.x,toward.z);
     if(horizontal>3.6 || toward.length()>4.1)continue;
     // Wall works must be approached from inside the room, not through a wall.
-    if(exhibit.normal && eye.clone().sub(exhibit.position).dot(exhibit.normal)<.2)continue;
+    if(exhibit.normal && phiFrameVectors.faceDirection.copy(eye).sub(exhibit.position).dot(exhibit.normal)<.2)continue;
     const alignment=looking.dot(toward.normalize());
     if(alignment<.76)continue;
     const value=alignment*2-horizontal*.13;
