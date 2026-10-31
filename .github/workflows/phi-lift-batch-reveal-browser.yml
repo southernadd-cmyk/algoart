@@ -25,8 +25,10 @@ jobs:
           node --test tests/phi-lift-queue-profiler.test.mjs
       - name: Start local gallery
         run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-stage-browser.log 2>&1 &
-      - name: Verify batched scene is complete and every painting GPU ready before doors open
+      - name: Verify legacy 20-mesh control — door interlock and original paintings
         run: PHI_LIFT_STAGE=1 node tests/phi-lift-readiness-browser.mjs
+      - name: Verify render-aware adaptive batches — same interlock and original paintings
+        run: PHI_LIFT_STAGE=1 PHI_LIFT_BATCH=adaptive node tests/phi-lift-readiness-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
