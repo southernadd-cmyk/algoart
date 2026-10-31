@@ -1,3 +1,4 @@
+# KTX2-20 manifest and assets are present; verify the published test tower.
 name: Verify KTX2-20 and build hardware stress page
 on:
   workflow_dispatch:
