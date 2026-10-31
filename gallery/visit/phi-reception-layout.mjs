@@ -70,14 +70,13 @@ export function planPhiReception(floor,circulation,physical){
    const windowEdge=firstWindow.x-direction*(firstWindow.width/2+RECEPTION_WINDOW_BORDER);
    const startX=doorEdge+direction*(groupHalfWidth+safeGap);
    const endX=windowEdge-direction*(groupHalfWidth+safeGap);
-   const wallMin=creditWall.lo+groupHalfWidth+.10;
-   const wallMax=creditWall.hi-groupHalfWidth-.10;
-   if(direction!==0&&(endX-startX)*direction>0&&wallMax>=wallMin){
+   // The entrance-to-window masonry remains continuous even where the
+   // curator splits its surface into shorter booking/hanging segments.
+   // Therefore use the actual door/window openings, not the art-surface
+   // subsegment bounds, when positioning these four small posters.
+   if(direction!==0&&(endX-startX)*direction>0){
     const phi=(1+Math.sqrt(5))/2;
-    const goldenX=startX+(endX-startX)/phi;
-    const candidate=Math.max(wallMin,Math.min(wallMax,goldenX));
-    // Never cover the entrance, its return wall or a window opening.
-    if((candidate-startX)*direction>=0&&(endX-candidate)*direction>=0)credits.x=candidate;
+    credits.x=startX+(endX-startX)/phi;
    }
   }
  }
