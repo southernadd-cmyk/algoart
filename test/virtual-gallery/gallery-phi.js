@@ -35,6 +35,7 @@ import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
+import {installPhiComposerPassProfiler} from './phi-postfx-pass-profiler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
 import {createPhiPaintingArrivalGate} from './phi-painting-arrival-gate.mjs';
 import {createPhiRoomGeometryStager} from './phi-room-geometry-stage.mjs';
@@ -207,6 +208,11 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
   startAfter:window.__galleryEarly?.tower,
   renderer // Existing architectural materials and original images remain untouched.
+});
+// Test-only deep probe: enabled exclusively by ?liftprofile=1.
+installPhiComposerPassProfiler({
+ enabled:!!phiLiftProfiler,
+ record:(name,ms)=>phiLiftProfiler?.record(name,ms)
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
