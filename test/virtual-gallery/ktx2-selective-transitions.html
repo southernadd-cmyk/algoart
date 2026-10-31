@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Selectively compressed tower: entry and lift frame spikes · PROPORTION PIECE</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif;background:#161c1b;color:#f2eee6}
+*{box-sizing:border-box}body{max-width:1180px;margin:auto;padding:clamp(12px,2.5vw,30px)}
+h1{font-size:clamp(21px,3vw,32px);font-weight:600;letter-spacing:-.025em;margin:0 0 8px}
+p{color:#b9c8c4;max-width:95ch;line-height:1.55}
+a{color:#e4d4af}button{border:0;border-radius:5px;padding:12px 17px;background:#c6b990;color:#222;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:17px 0}
+iframe{width:100%;height:min(60vh,630px);display:block;border:1px solid #53635c;background:#c5cbc5}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:14px 0}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #43524b}th{color:#e4d4af}
+pre{max-height:250px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:#aebfb8;font-size:12px}
+small{color:#9badac}
+</style></head><body>
+<h1>Selective KTX2 · reception and lift stutter</h1>
+<p>Compare the original test gallery with a selective configuration using <strong>only compressed brick normal and roughness maps</strong>. All paintings, wall colour treatment, ceiling and reception wallpaper retain the same original asset paths. Four controlled runs alternate <strong>Original → KTX2 → KTX2 → Original</strong>.</p>
+<div class="controls">
+<button id="run">Measure four gallery visits</button>
+<button id="copy" disabled>Copy frame-time results JSON</button>
+<a href="./full-engine.html?ktx2=selective" target="_blank" rel="noopener">Open selective test tower</a>
+<span id="status" aria-live="polite">Ready</span>
+</div>
+<table><thead><tr>
+<th>Run</th><th>Mode</th><th>Reception p95 / max</th><th>Lift &amp; loading p95 / max</th><th>Gallery p95 / max</th><th>Spikes &gt;50ms / &gt;100ms</th>
+</tr></thead><tbody id="rows"></tbody></table>
+<iframe id="tower" title="Actual test gallery frame-time benchmark" allow="fullscreen"></iframe>
+<p><small>Recorded with requestAnimationFrame in the gallery iframe, including blocking work during the transition. The lift stage includes floor construction and arrival. Runs use the same viewport and script, but cannot guarantee the same GPU scheduling or network conditions. Both variants await their brick maps before entering, so this measures scene execution and texture upload rather than cold download speed. Reception is sampled for 8 seconds and the destination gallery for 7 seconds. No results are uploaded.</small></p>
+<pre id="log"></pre>
+<script>
+const $=id=>document.getElementById(id);
+const sequence=['jpeg','selective','selective','jpeg'];
+const results=[];
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+function note(str){$('log').textContent+=str+'\n';$('log').scrollTop=$('log').scrollHeight;}
+async function waitFor(check,timeout=90000,label='condition'){
+ const start=performance.now();
+ while(performance.now()-start<timeout){try{if(check())return;}catch{}
+  await delay(80);}
+ throw Error('Timed out: '+label);
+}
+function framesMonitor(win){
+ let active=true,last=0;
+ const frames=[],marks=[];
+ function tick(t){
+  if(!active)return;
+  if(last)frames.push({ms:t-last,at:performance.now()});
+  last=t;win.requestAnimationFrame(tick);
+ }
+ win.requestAnimationFrame(tick);
+ return {mark:label=>marks.push({label,at:performance.now()}),
+  finish:()=>{active=false;marks.push({label:'end',at:performance.now()});return {frames,marks};}};
+}
+function stats(data){
+ const values=data.map(x=>x.ms).filter(x=>x>0&&Number.isFinite(x)).sort((a,b)=>a-b);
+ if(!values.length)return null;
+ const percentile=p=>+values[Math.min(values.length-1,Math.floor((values.length-1)*p))].toFixed(2);
+ return {frames:values.length,medianMs:percentile(.5),p95Ms:percentile(.95),
+  p99Ms:percentile(.99),maxMs:+values.at(-1).toFixed(2),
+  over50:values.filter(x=>x>50).length,over100:values.filter(x=>x>100).length,
+  over250:values.filter(x=>x>250).length,
+  worstMs:values.slice(-6).reverse().map(x=>+x.toFixed(1))};
+}
+function groups(capture){
+ const marks=Object.fromEntries(capture.marks.map(x=>[x.label,x.at]));
+ const during=(from,to)=>stats(capture.frames.filter(x=>x.at>=marks[from]&&x.at<marks[to]));
+ return {entry:during('enter','reception'),
+  reception:during('reception','lift'),
+  liftAndLoading:during('lift','arrived'),
+  gallery:during('arrived','end'),
+  total:stats(capture.frames)};
+}
+function gpu(win){
+ try{const gl=win.document.querySelector('#world')?.getContext('webgl2');
+  const ext=gl?.getExtension('WEBGL_debug_renderer_info');
+  return ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl?.getParameter(gl.RENDERER)||null;
+ }catch{return null;}
+}
+async function one(mode,index){
+ const frame=$('tower');
+ frame.src='about:blank';await delay(350);
+ const start=performance.now();
+ frame.src='./full-engine.html?debug=1&stutterbench='+index+(mode==='selective'?'&ktx2=selective':'');
+ await new Promise((resolve,reject)=>{
+  const timeout=setTimeout(()=>reject(Error('Gallery iframe navigation timeout')),90000);
+  frame.addEventListener('load',()=>{clearTimeout(timeout);resolve();},{once:true});
+ });
+ const win=frame.contentWindow;
+ await waitFor(()=>win.document.querySelector('#enter')?.disabled===false||
+  !!win.__galleryStartupError,100000,'exhibition preparation');
+ if(win.__galleryStartupError)throw Error(String(win.__galleryStartupError));
+ const readyMs=Math.round(performance.now()-start);
+ if(mode==='selective')await waitFor(()=>['loaded','partial-fallback'].includes(win.__phiKTX20?.status),
+  90000,'selective texture readiness');
+ else await waitFor(()=>{
+  const resources=win.performance.getEntriesByType('resource');
+  return ['Bricks055_NormalGL.jpg','Bricks055_Roughness.jpg'].every(n=>
+   resources.some(x=>x.name.includes('/'+n)&&x.responseEnd>0));
+ },90000,'baseline brick maps');
+ const texture=mode==='selective'?JSON.parse(JSON.stringify(win.__phiKTX20||{})):null;
+ if(mode==='selective'&&(texture.status!=='loaded'||texture.loaded!==2||texture.failed!==0))
+  throw Error('Selective textures not both compressed: '+JSON.stringify(texture));
+ await delay(600);
+ const errors=[];
+ const monitor=framesMonitor(win);
+ try{
+  monitor.mark('enter');
+  win.document.querySelector('#enter').click();
+  await waitFor(()=>win.document.querySelector('#welcome')?.hidden===true,15000,'enter gallery');
+  await delay(2400);
+  monitor.mark('reception');
+  await delay(8000);
+  const doc=win.document;
+  doc.querySelector('#openLift').click();
+  await waitFor(()=>doc.querySelector('#lift')?.hidden===false,8000,'lift panel');
+  const dateButton=await (async()=>{
+   await waitFor(()=>doc.querySelector('#liftDays button.lift-available:not(.lift-current)'),15000,'dated floor');
+   return doc.querySelector('#liftDays button.lift-available:not(.lift-current)');
+  })();
+  monitor.mark('lift');
+  dateButton.click();
+  await waitFor(()=>win.__phiLiftState?.floor>0&&!win.__phiLiftState?.travelling,110000,'lift arrival');
+  const floor=win.__phiLiftState.floor;
+  monitor.mark('arrived');
+  await delay(7000);
+  const capture=monitor.finish();
+  return {index,mode,readyMs,texture,floor,gpu:gpu(win),
+    phases:groups(capture),frameMarkers:capture.marks.map(x=>x.label),
+    renderStats:win.__phiRenderStats||null,errors};
+ }catch(error){monitor.finish();throw error;}
+}
+async function run(){
+ $('run').disabled=true;$('copy').disabled=true;$('rows').textContent='';$('log').textContent='';
+ results.length=0;
+ for(const [index,mode] of sequence.entries()){
+  $('status').textContent='Visit '+(index+1)+'/4: '+mode;
+  note('Starting '+mode+' visit '+(index+1));
+  try{
+   const r=await one(mode,index+1);results.push(r);
+   const fmt=v=>v? v.p95Ms+' / '+v.maxMs+' ms':'—';
+   const spikes=r.phases.total;
+   const cells=[index+1,mode,fmt(r.phases.reception),fmt(r.phases.liftAndLoading),
+    fmt(r.phases.gallery),spikes.over50+' / '+spikes.over100];
+   const tr=document.createElement('tr');
+   for(const value of cells){const td=document.createElement('td');td.textContent=value;tr.appendChild(td);}
+   $('rows').appendChild(tr);
+   note(JSON.stringify({index:r.index,mode:r.mode,readyMs:r.readyMs,
+    reception:r.phases.reception,lift:r.phases.liftAndLoading,gallery:r.phases.gallery,
+    total:r.phases.total,floor:r.floor,texture:r.texture?.status||'baseline'}));
+  }catch(error){
+   results.push({index:index+1,mode,error:String(error)});
+   const row=document.createElement('tr');const cell=document.createElement('td');
+   cell.colSpan=6;cell.textContent='Run '+(index+1)+' failed: '+String(error);
+   row.appendChild(cell);$('rows').appendChild(row);
+   note('ERROR '+String(error));
+  }
+  await delay(1000);
+ }
+ $('run').disabled=false;$('copy').disabled=false;
+ $('status').textContent='Finished: '+results.filter(x=>!x.error).length+'/4 completed';
+}
+$('run').addEventListener('click',run);
+$('copy').addEventListener('click',()=>{
+ const payload={benchmark:'PROPORTION PIECE full-tower selective KTX2 entry/lift/arrival frame spikes',
+  timestamp:new Date().toISOString(),userAgent:navigator.userAgent,
+  caveat:'Same actual tower, script-controlled entry and lift, warm brick maps. RAF intervals measure wall-clock scheduling and can include throttling.',
+  sequence,results};
+ const txt=JSON.stringify(payload,null,2);
+ navigator.clipboard.writeText(txt).then(()=>{$('status').textContent='Results copied';})
+  .catch(()=>note(txt));
+});
+</script></body></html>
