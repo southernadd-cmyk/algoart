@@ -5,7 +5,7 @@ import {createTowerGraffiti,paintExteriorUnderstroke} from './exterior-graffiti.
 import {planSquareWallAtlases,paintSquareWall,SQUARE_ATLAS_PREFIX} from './square-graffiti-atlas.mjs';
 import {tiledBoxUvs} from './architectural-materials.mjs?v=ambientcg-ceiling-20261022';
 import {Reflector} from 'three/addons/objects/Reflector.js';
-import {PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs';
+import {PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
 export const PHI_SQUARE_REVISION=(globalThis.__phiReceptionTestRefresh?'phi-square-spiral-wall-bake-v7':'phi-square-live-wall-bake-v10')+'|sprayed-throwups-v'+VERSION;
 export const SQUARE_TAG_COUNTS=Object.freeze([1,3,5,8]);
 export const SQUARE_TAG_FORMS=Object.freeze(Object.keys(LETTERING_FORMS));
