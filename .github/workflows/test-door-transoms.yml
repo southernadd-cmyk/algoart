@@ -1,0 +1,41 @@
+name: Build test gallery frosted door transoms
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'test/virtual-gallery/gallery-phi.js'
+      - '.github/workflows/test-door-transoms.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: test-gallery-transom-bundle
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Compile only the TEST gallery (leave live untouched)
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+          node --test tests/phi-lift-motion.test.mjs tests/gallery-entry-preparation.test.mjs
+      - name: Commit generated test bundle only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/virtual-gallery/gallery-phi-bundle.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Build test tower with frosted glass transoms"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
