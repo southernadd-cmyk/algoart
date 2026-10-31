@@ -499,10 +499,10 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
 });
 const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
  concurrency:mobileImages?2:4,
- // In the TEST pipeline, image download slots are freed after decoding.
- // GPU uploads remain serialized one per scheduled frame. ?liftpipeline=1
- // opts into the experimental early-release behavior.
- releaseAfterDecode:new URLSearchParams(location.search).get('liftpipeline')==='1',
+ // TEST: overlap the next image download/decode with the prior image's
+ // serialized GPU preparation. ?liftpipeline=0 restores the former behavior.
+ // No bitmap resampling, texture substitutions or rendering changes.
+ releaseAfterDecode:new URLSearchParams(location.search).get('liftpipeline')!=='0',
  prepare:(image,context)=>liftPaintingGPU.prepare(image,context),
  dispose:texture=>texture?.dispose?.()
 });
@@ -1186,6 +1186,10 @@ async function travelLift(date,index){
   });
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
   const warmed=await warmGalleryEntry({renderer,scene,camera,
+   // The completed staged reveal has already painted the original scene
+   // through the production post-FX renderer. Avoid a second uncomposited
+   // whole-scene render here; default/non-staged paths still perform it.
+   skipFinalRender:phiStageArrival&&phiArrivalMeshes.stats().batches.length>0,
    isAlreadyUploaded:phiIsUploaded,markUploaded:texture=>phiAlreadyUploaded.add(texture),
    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
   phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate?.stats()});
