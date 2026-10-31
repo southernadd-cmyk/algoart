@@ -2584,6 +2584,9 @@ async function load(){
       :await loadArchiveDates();
     archiveDates.unshift(RECEPTION);
     const qp=new URLSearchParams(location.search).get('date');
+    // Begin floor metadata work during font loading, but preserve the
+    // completed marker font before any scene labels are painted.
+    await phiMarkerReady;
     await loadEdition(qp&&archiveDates.includes(qp)?qp:RECEPTION);
     GALLERY_DEBUG&&console.info('[Gallery performance] enter available',Math.round(performance.now()-startupStart)+'ms');
   }catch(e){
@@ -3150,10 +3153,13 @@ function tick() {
 if(renderer)renderer.setAnimationLoop(tick);
 // Ensure canvas-rendered entrance and lift signs use the actual marker font.
 // The font is local; do not hold startup indefinitely if it cannot load.
-Promise.race([
+const phiMarkerReady=Promise.race([
   document.fonts.load('42px "AlgoArt Marker"'),
   new Promise(resolve=>setTimeout(resolve,1600))
-]).catch(error=>console.warn('Marker font fallback:',error)).finally(load);
+]).catch(error=>console.warn('Marker font fallback:',error));
+// Metadata requests and font downloading now overlap. Scene construction
+// itself still waits for phiMarkerReady, preserving the original lettering.
+load();
 
 
 
