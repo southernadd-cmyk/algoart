@@ -1,0 +1,35 @@
+name: Verify test lift opens only with every painting ready
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-lift-readiness-browser.yml'
+      - 'tests/phi-lift-readiness-browser.mjs'
+permissions:
+  contents: read
+jobs:
+  painting-interlock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Bundle latest staging source without modifying live
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+      - name: Launch local site
+        run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-lift-interlock-http.log 2>&1 &
+      - name: Verify all paintings are GPU ready at door opening
+        run: node tests/phi-lift-readiness-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-lift-readiness-results
+          path: phi-lift-readiness-results/
+          if-no-files-found: ignore
