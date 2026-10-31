@@ -1281,6 +1281,13 @@ function onArrivalPath(x,z){
   return plaza||doorway;
 }
 // Stage costly exhibits across frames so the exterior is usable immediately.
+if(GALLERY_DEBUG)window.__phiDeferredGallery=()=>({
+ pendingJobs:deferredGalleryJobs.length,running:deferredGalleryRunning,
+ liftTravelling,liftArrivalOpening,liftDoorClosure,liftDoorTarget,
+ paintings:window.__phiFullEngine?.paintings,
+ paintingsLoaded:window.__phiFullEngine?.paintingsLoaded,
+ preloader:phiArtworkPreloader.stats()
+});
 function startDeferredGallery(){
   releaseInteriorAssets();
   if(deferredGalleryRunning||!deferredGalleryJobs.length)return;
