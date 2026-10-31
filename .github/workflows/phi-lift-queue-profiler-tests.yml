@@ -11,6 +11,8 @@ on:
       - 'test/virtual-gallery/phi-lift-painting-gpu.mjs'
       - 'test/virtual-gallery/phi-room-geometry-stage.mjs'
       - 'test/virtual-gallery/phi-lift-profile.mjs'
+      - 'test/virtual-gallery/phi-painting-arrival-gate.mjs'
+      - 'test/virtual-gallery/phi-lift-indicator.mjs'
 permissions:
   contents: read
 jobs:
