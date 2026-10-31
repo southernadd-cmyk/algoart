@@ -119,7 +119,7 @@ async function one(mode,index,condition,{primer=false}={}){
   :'warm-'+startedSession+'-'+mode;
  frame.src='about:blank';await delay(180);
  const start=performance.now();
- const target='./full-engine.html?debug=1&coldbench=1&stutterbench='+index
+ const target='./full-engine.html?debug=1&liftprofile=1&coldbench=1&stutterbench='+index
   +'&jpegformat='+(mode==='lossless'?'lossless':'original')
   +'&benchcache='+condition+'&benchseed='+encodeURIComponent(seed);
  const ready=new Promise((resolve,reject)=>{
@@ -193,6 +193,8 @@ async function one(mode,index,condition,{primer=false}={}){
    floor,date:win.__phiFullEngine?.date,paintings:counts,
    texture:finalTexture,network:net,gpu:gpu(win),
    phases:groups(capture),frameMarkers:capture.marks.map(x=>x.label),
+   liftProfile:win.__phiLiftProfile?.visits?.at(-1)||null,
+   deferredQueue:win.__phiDeferredGallery?.()||null,
    errors:[],valid:net.evidence&&counts.actual===counts.expected&&(!finalTexture||finalTexture.failed===0)};
  }catch(error){monitor.finish();throw error;}
 }
@@ -247,12 +249,18 @@ async function run(condition){
     cacheEvidence:r.network.evidence,lift:r.phases.liftAndLoading,
     gallery:r.phases.gallery,valid:r.valid}));
   }catch(error){
-   const result={index,mode,condition,error:String(error),valid:false};
+   const win=$('tower').contentWindow;
+   let diagnostic=null;
+   try{diagnostic={deferredQueue:win.__phiDeferredGallery?.()||null,
+    liftProfile:win.__phiLiftProfile?.visits?.at(-1)||null,
+    texture:win.__phiJPEGLossless?{requested:win.__phiJPEGLossless.requested,
+     loaded:win.__phiJPEGLossless.loaded,failed:win.__phiJPEGLossless.failed}:null};}catch{}
+   const result={index,mode,condition,error:String(error),diagnostic,valid:false};
    results.push(result);
    const row=document.createElement('tr'),cell=document.createElement('td');
    cell.colSpan=9;cell.textContent='Run '+index+' invalid: '+String(error);
    row.appendChild(cell);$('rows').appendChild(row);
-   note('ERROR '+String(error));
+   note('ERROR '+String(error)+' '+JSON.stringify(diagnostic));
   }
  }
  $('cold').disabled=false;$('warm').disabled=false;$('copy').disabled=false;
