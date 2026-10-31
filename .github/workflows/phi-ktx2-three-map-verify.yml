@@ -1,0 +1,31 @@
+name: Verify three-map KTX2 in test tower and compare textures
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-ktx2-three-map-verify.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Verify deployed test tower actually loads all three KTX2 textures
+        run: node tests/phi-ktx2-multi-browser-smoke.mjs
+      - name: Run controlled three-map JPEG vs KTX2 comparison
+        run: node tests/phi-ktx2-three-texture-microbench.mjs
+      - name: Save benchmark JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phi-ktx2-three-map-results
+          path: phi-ktx2-three-map-results/
+          if-no-files-found: warn
