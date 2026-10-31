@@ -1,7 +1,10 @@
+// Defined once: shadow-surface scans may visit thousands of objects.
+const validPhiShadowMaterial=m=>!!m&&(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial||m.isMeshPhongMaterial||m.isMeshLambertMaterial)&&(!m.transparent||m.alphaTest>0);
 export function isPhiShadowSurface(object){
  if(!object.isMesh||object.isReflector||object.name==='phi-spiral-reflecting-water')return false;
- const materials=[].concat(object.material||[]);
- return materials.length>0&&materials.every(m=>(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial||m.isMeshPhongMaterial||m.isMeshLambertMaterial)&&(!m.transparent||m.alphaTest>0));
+ return Array.isArray(object.material)
+  ?object.material.length>0&&object.material.every(validPhiShadowMaterial)
+  :validPhiShadowMaterial(object.material);
 }
 export function staticPhiShadowCaster(mesh){
  if(!isPhiShadowSurface(mesh)||mesh.isSkinnedMesh)return false;
@@ -22,16 +25,24 @@ export function createPhiLightingStudy({THREE,renderer,scene,camera,sun}){
  shadow.bias=-.00008;shadow.normalBias=.025;shadow.camera.near=.15;shadow.camera.far=14;
  const fillLights=Array.from({length:4},()=>{const light=new THREE.PointLight('#fff0d6',0,12,2);light.name='phi-pooled-room-fill';light.castShadow=false;scene.add(light);return light;});
  const viewer=new THREE.Vector3(),point=new THREE.Vector3();
+ // Reuse fixed-size insertion buffers instead of allocating and sorting
+ // every luminaire's world-position vector on each lighting update.
+ const closestRoots=[null,null,null,null];
+ const closestDistances=[Infinity,Infinity,Infinity,Infinity];
  let roomLights=[],luminaires=[],selected=null,previousShadow=null,lastScan=-Infinity,lastPick=-Infinity,signature=-1,force=true;
  function refresh(light){light.shadow.needsUpdate=true;renderer.shadowMap.needsUpdate=true;stats.refreshes++;}
  function update(now=performance.now()){
   if(force||now-lastScan>1500){
-   lastScan=now;roomLights=[];luminaires=[];let nextSignature=0,casters=0;
+   lastScan=now;roomLights.length=0;luminaires.length=0;let nextSignature=0,casters=0;
    scene.traverse(mesh=>{
     if(mesh.isSpotLight&&mesh.name==='phi-shadow-room-light')roomLights.push(mesh);
     if(mesh.userData.phiRoomLuminaire)luminaires.push(mesh);
     if(!isPhiShadowSurface(mesh))return;
-    if(!mesh.receiveShadow){mesh.receiveShadow=true;for(const material of [].concat(mesh.material))material.needsUpdate=true;}
+    if(!mesh.receiveShadow){
+     mesh.receiveShadow=true;
+     if(Array.isArray(mesh.material)){for(const material of mesh.material)material.needsUpdate=true;}
+     else if(mesh.material)mesh.material.needsUpdate=true;
+    }
     mesh.castShadow=staticPhiShadowCaster(mesh);
     if(mesh.castShadow){casters++;nextSignature=(Math.imul(nextSignature,31)+mesh.id+mesh.geometry.id)|0;}
    });
@@ -39,11 +50,24 @@ export function createPhiLightingStudy({THREE,renderer,scene,camera,sun}){
    stats.casters=casters;stats.luminaires=luminaires.length;force=false;
   }
   if(now-lastPick<250)return;lastPick=now;camera.getWorldPosition(viewer);
-  const ranked=luminaires.map(root=>({root,position:root.getWorldPosition(new THREE.Vector3())})).sort((a,b)=>a.position.distanceToSquared(viewer)-b.position.distanceToSquared(viewer));
-  fillLights.forEach((light,i)=>{const entry=ranked[i];if(!entry){light.intensity=0;return;}
-   light.position.copy(entry.position);light.position.y-=.22;
-   light.intensity=entry.root.userData.phiRoomLuminaire.power/(i===0?1:1.61803398875);
-   light.distance=entry.root.userData.phiRoomLuminaire.distance;
+  closestRoots.fill(null);closestDistances.fill(Infinity);
+  for(const root of luminaires){
+   const dist=root.getWorldPosition(point).distanceToSquared(viewer);
+   for(let i=0;i<closestRoots.length;i++){
+    if(dist>=closestDistances[i])continue;
+    for(let j=closestRoots.length-1;j>i;j--){
+     closestRoots[j]=closestRoots[j-1];closestDistances[j]=closestDistances[j-1];
+    }
+    closestRoots[i]=root;closestDistances[i]=dist;
+    break;
+   }
+  }
+  fillLights.forEach((light,i)=>{
+   const root=closestRoots[i];
+   if(!root){light.intensity=0;return;}
+   light.position.copy(root.getWorldPosition(point));light.position.y-=.22;
+   light.intensity=root.userData.phiRoomLuminaire.power/(i===0?1:1.61803398875);
+   light.distance=root.userData.phiRoomLuminaire.distance;
   });
   let nearest=null,distance=Infinity;
   for(const light of roomLights){const d=light.getWorldPosition(point).distanceToSquared(viewer);if(d<distance&&light.intensity>0){distance=d;nearest=light;}}
