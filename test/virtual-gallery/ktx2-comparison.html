@@ -26,7 +26,7 @@ small{color:#9caeaa}#status{font-weight:600;color:#e5d6ad}
 <p>This comparison runs inside your browser, on the actual test tower. It alternates two JPEG and two KTX2 sessions, visiting reception and one gallery floor with the same viewport. KTX2 changes only three architectural maps; artwork and live remain untouched.</p>
 <div class="controls">
 <button id="run">Run four-session comparison</button>
-<button id="coldRun">Run four cold-network starts</button>
+<button id="coldRun">Run four texture-cold starts</button>
 <button id="copy" disabled>Copy results as JSON</button>
 <a href="./full-engine.html?ktx2=multi" target="_blank" rel="noopener">Open three-map KTX2 test</a>
 <span id="status">Ready</span>
@@ -36,8 +36,8 @@ small{color:#9caeaa}#status{font-weight:600;color:#e5d6ad}
 <tbody id="results"></tbody>
 </table>
 <div class="pane"><iframe id="tower" title="Benchmark gallery" loading="eager" allow="fullscreen"></iframe></div>
-<p><strong>For a genuinely cold network comparison on your Radeon:</strong> open this page in desktop Chrome or Edge, press F12, choose <strong>Network → Disable cache</strong>, and <strong>keep DevTools open</strong> while clicking “Run four cold-network starts”. The page verifies that the texture files were transferred in each run; any cached transfers are flagged rather than counted as cold. You may need to reload the page after enabling Disable cache.</p>
-<p><small>Cold-network mode disables neither browser shader caches nor GPU caches; it is not equivalent to restarting Chrome with a fresh profile. Other network resources may also influence startup. For the full-gallery frame comparison use the regular button; cold mode measures startup only to avoid unnecessary loading on slow connections. Nothing is uploaded.</small></p>
+<p><strong>For a fair texture download comparison:</strong> select <strong>Run four texture-cold starts</strong> on your AMD Radeon. Each of the three architectural map URLs gets a fresh one-time cache identifier, so the browser must request the actual texture bytes on every run. Each result is checked for nonzero network transfer. No DevTools setting is required.</p>
+<p><small>This is a <strong>texture-cold network comparison</strong>, not a completely cold browser process: other site files, shaders and GPU caches may remain warm. To measure a truly fresh whole-gallery visit, reopen Chrome with a new temporary profile each time. Both tests remain sensitive to changing connection speed. For FPS use the regular button; texture-cold mode measures startup only. Nothing is uploaded.</small></p>
 <pre id="diagnostics" aria-live="polite"></pre>
 <script>
 const $$=id=>document.getElementById(id);
@@ -92,7 +92,9 @@ async function journey(win){
 async function single(mode,index,coldMode=false){
  const frame=$$('tower');
  frame.src='about:blank';await delay(350);
- const src='./full-engine.html?debug=1'+(mode==='multi'?'&ktx2=multi':'')+'&bench='+index+(coldMode?'&coldbench=1':'');
+ const coldSeed=coldMode?(Date.now()+'-'+index+'-'+Math.round(performance.now())):null;
+ const src='./full-engine.html?debug=1'+(mode==='multi'?'&ktx2=multi':'')+
+   '&bench='+index+(coldMode?'&coldbench=1&coldseed='+encodeURIComponent(coldSeed):'');
  const started=performance.now();
  frame.src=src;
  await new Promise((resolve,reject)=>{
