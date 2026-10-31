@@ -27,10 +27,23 @@ try{
  await page.locator('#liftDays button.lift-available:not(.lift-current)').first().evaluate(el=>el.click());
  await page.waitForFunction(()=>window.__phiLiftState?.floor>0&&!window.__phiLiftState?.travelling,
   null,{timeout:125000});
- await page.waitForFunction(()=>{
+ const completed=await page.waitForFunction(()=>{
   const info=window.__phiFullEngine;
   return info?.paintings>0&&info.paintingsLoaded===info.paintings;
- },null,{timeout:125000});
+ },null,{timeout:65000}).then(()=>true,()=>false);
+ const audit=await page.evaluate(()=>{
+  const info=window.__phiFullEngine||{},stats=window.__phiArtworkPreload?.()||{};
+  const bank=window.__phiJPEGLossless||{},resources=performance.getEntriesByType('resource');
+  return {paintings:info.paintings,paintingsLoaded:info.paintingsLoaded,
+   preload:stats,bank:{requested:bank.requested,loaded:bank.loaded,failed:bank.failed,
+   artworks:bank.artworks,failures:bank.failures?.slice(0,8)},
+   lift:window.__phiLiftPreparation||null,stage:window.__galleryStage||'',
+   errors:window.__phiLiftError||null,
+   jpgResources:resources.filter(x=>/\\.(jpg|ktx2)(\\?|$)/.test(x.name)).length,
+   taggedAssets:resources.filter(x=>x.name.includes('phiBenchAsset=')).length};
+ });
+ console.log('COLD_BENCH_LOADING_DIAGNOSTICS '+JSON.stringify({completed,audit,errors}));
+ assert.ok(completed,'All wall paintings must finish; diagnostics above show the bottleneck');
  const result=await page.evaluate(seed=>{
   const entries=performance.getEntriesByType('resource');
   const matched=entries.filter(entry=>{
