@@ -86,6 +86,15 @@ jobs:
           node --check gallery/visit/gallery-bundle.js
           node --check gallery/visit/gallery-phi-bundle.js
 
+      # Optional TEST-only assets are added to the Pages artifact. Any missing
+      # tool or fidelity failure causes an exact-source copy and a report, not a
+      # modification of the production model paths.
+      - name: Install gltfpack for staged model A/B
+        run: npm install --no-save --package-lock=false gltfpack@1.3.0 || echo "gltfpack unavailable; pilot will use original copies"
+      - name: Build and validate optional gltfpack assets
+        run: |
+          node automation/build-gltfpack-pilot.mjs
+          node --test tests/gltfpack-pilot.test.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
