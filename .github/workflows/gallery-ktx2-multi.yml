@@ -1,0 +1,57 @@
+name: Build multi-map KTX2 test comparison
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - automation/gallery-ktx2-multi.trigger
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: phi-ktx2-multi-assets
+  cancel-in-progress: false
+jobs:
+  compress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Install pinned Khronos encoder
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/ktx.deb" https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb
+          echo "ca635ed489d8bf54fac8d7687056c651193de0740830a7738cc034adc63e3027  $RUNNER_TEMP/ktx.deb" | sha256sum -c
+          sudo dpkg -i "$RUNNER_TEMP/ktx.deb" || { sudo apt-get update; sudo apt-get install -fy; }
+      - name: Compress linear roughness and normal maps without resizing
+        run: |
+          set -euo pipefail
+          for texture in Bricks055_Roughness OfficeCeiling001_NormalGL; do
+            toktx --t2 --genmipmap --encode uastc --uastc_quality 2 \
+              --assign_oetf linear --assign_primaries none \
+              "test/virtual-gallery/textures/${texture}.ktx2" \
+              "test/virtual-gallery/textures/${texture}.jpg"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          header=bytes.fromhex('ab4b5458203230bb0d0a1a0a')
+          for name in ('Bricks055_Roughness','OfficeCeiling001_NormalGL'):
+            path=Path('test/virtual-gallery/textures')/(name+'.ktx2')
+            assert path.stat().st_size>128, path
+            assert path.read_bytes()[:12]==header, path
+            print(name, path.stat().st_size, 'bytes')
+          PY
+      - name: Publish only test-only KTX2 assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add test/virtual-gallery/textures/Bricks055_Roughness.ktx2 test/virtual-gallery/textures/OfficeCeiling001_NormalGL.ktx2
+          if ! git diff --cached --quiet; then
+            git commit -m 'Add two test-only KTX2 architectural maps for three-texture comparison'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+          gh workflow run deploy-pages.yml --ref main
