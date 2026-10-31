@@ -32,7 +32,7 @@ test('all four reception credit posters remain on the original wall and move tow
  const start=doorEdge+direction*(groupHalfWidth+.32);
  const end=windowEdge-direction*(groupHalfWidth+.32);
  const fraction=(placement.x-start)/(end-start);
- assert.ok(Math.abs(fraction-1/((1+Math.sqrt(5))/2))<.025,'Credits should occupy the golden division of usable solid wall');
+ assert.ok(Math.abs(fraction-1/((1+Math.sqrt(5))/2))<.025,'Credits should occupy the golden division of usable solid wall: '+JSON.stringify({placement,door,first,doorEdge,windowEdge,start,end,fraction}));
  assert.ok((placement.x-doorEdge)*direction>groupHalfWidth+.25,'Credit poster group must clear door');
  assert.ok((windowEdge-placement.x)*direction>groupHalfWidth+.25,'Credit poster group must clear nearest window arch');
  assert.ok(Math.abs(first.x-placement.x)<Math.abs(door.centre-placement.x),'Credit posters must be nearer to the windows than the door');
