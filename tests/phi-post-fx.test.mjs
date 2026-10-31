@@ -40,10 +40,10 @@ test('controls update live effect values rather than rebuilding for every slider
  const builder=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
  const live=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
  const src=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
- assert.match(builder,/phiPostFX.render\(dt,null\)/);
- assert.match(builder,/currentInfoExhibit.position:null/);
+ assert.match(live,/phiPostFX.render\(dt,null\)/);
+ assert.match(live,/currentInfoExhibit.position:null/);
  assert.doesNotMatch(builder,/phiLightingComparison|createPhiLightingComparison/);
- assert.doesNotMatch(live,/createPhiPostFX|phiPostFX/);
+ assert.match(live,/createPhiPostFX\(THREE,renderer,scene,camera,\{production:true\}\)/);
  for(const tag of ['NormalPass','SSAOEffect','SelectiveBloomEffect','BloomEffect','DepthOfFieldEffect','ToneMappingEffect'])
   assert.ok(src.includes('new '+tag),'missing '+tag);
  assert.match(src,/ToneMappingMode.NEUTRAL/);
@@ -73,13 +73,13 @@ test('original artwork pixels restored after architectural processing',()=>{
  const live=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
  const fx=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
  const mask=readFileSync(new URL('../gallery/visit/phi-art-protection.mjs',import.meta.url),'utf8');
- assert.match(builder,/phiArtOriginal=true/);
- assert.doesNotMatch(live,/phiArtOriginal|createArtProtection/);
+ assert.match(live,/phiArtOriginal=true/);
+ assert.doesNotMatch(builder,/phiArtOriginal=true/);
  assert.match(fx,/compositor.addPass\(artProtection.pass\)/);
  assert.match(fx,/artProtection.capture\(\)/);
  assert.match(fx,/e.fullPass.enabled=false/);
  assert.match(mask,/camera.layers.set\(ART_LAYER\)/);
- assert.match(mask,/originalPixel=texture2D\(originalBuffer,vUv\)/);
+ assert.match(mask,/unmodified=texture2D\(originalBuffer,vUv\)/);
 });
 
 // The source artwork comes from the existing compositor render, never a
@@ -93,4 +93,13 @@ test('source capture reuses compositor original pass instead of rerendering full
  assert.match(fx,/compositor\.addPass\(artProtection\.copyPass\)/);
  assert.ok(fx.indexOf('compositor.addPass(artProtection.copyPass)')<
    fx.indexOf('compositor.addPass(artProtection.pass)'));
+});
+
+test('live FX has automatic frame budget and safe touch fallback',()=>{
+ const text=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
+ assert.match(text,/if\(production\)panel.hidden=true/);
+ assert.match(text,/effects.ao.samples=8/);
+ assert.match(text,/effects.selectedPass.enabled=false/);
+ assert.match(text,/bypass=true;performanceStep=3/);
+ assert.match(text,/coarse&&!forced/);
 });
