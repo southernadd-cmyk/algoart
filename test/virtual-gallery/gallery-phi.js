@@ -35,6 +35,7 @@ import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createJPEGParityBank} from './phi-jpeg-lossless.mjs';
+import {createTextureBenchCache} from './phi-jpeg-benchmark-cache.mjs';
 import {decodePhiArtworkImage} from './phi-artwork-preload.mjs';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
@@ -188,6 +189,11 @@ try {
 }
 
 // TEST ONLY: original JPEG versus pixel-identical KTX2/Zstd JPEGs.
+const phiTextureBenchCache=createTextureBenchCache(location.search,document.baseURI,location.origin);
+window.__phiJPEGCacheBench=phiTextureBenchCache;
+if(phiTextureBenchCache)THREE.DefaultLoadingManager.setURLModifier(
+  url=>phiTextureBenchCache.stamp(url)
+);
 const jpegFormat=new URLSearchParams(location.search).get('jpegformat');
 const jpegExactStudy=jpegFormat==='original'||jpegFormat==='lossless';
 const jpegParityBank=createJPEGParityBank(THREE,renderer);
@@ -527,7 +533,7 @@ function loadArtworkTexture(url,material,{preferred=null}={}){
         }
       };
       image.onerror=()=>{if(GALLERY_DEBUG)console.warn('Artwork request failed:',candidate);setTimeout(attempt,400);};
-      image.src=candidate;
+      image.src=phiTextureBenchCache?.stamp(candidate)||candidate;
     }
     if(jpegParityBank?.resolve(source.href)){
       jpegParityBank.load(source.href,{color:true}).then(texture=>{
