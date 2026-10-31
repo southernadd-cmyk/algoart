@@ -39,6 +39,7 @@ try{
    artworks:bank.artworks,failures:bank.failures?.slice(0,8)},
    lift:window.__phiLiftPreparation||null,
    liftProfile:window.__phiLiftProfile?.visits?.at(-1)||null,
+   deferredQueue:window.__phiDeferredGallery?.()||null,
    stage:window.__galleryStage||'',
    errors:window.__phiLiftError||null,
    jpgResources:resources.filter(x=>/\\.(jpg|ktx2)(\\?|$)/.test(x.name)).length,
