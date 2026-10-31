@@ -81,3 +81,16 @@ test('original artwork pixels restored after architectural processing',()=>{
  assert.match(mask,/camera.layers.set\(ART_LAYER\)/);
  assert.match(mask,/originalPixel=texture2D\(originalBuffer,vUv\)/);
 });
+
+// The source artwork comes from the existing compositor render, never a
+// duplicate full-gallery scene render.
+test('source capture reuses compositor original pass instead of rerendering full scene',()=>{
+ const f=readFileSync(new URL('../gallery/visit/phi-art-protection.mjs',import.meta.url),'utf8');
+ const fx=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
+ assert.match(f,/new CopyPass\(original,true\)/);
+ assert.match(f,/renderer\.render\(scene,camera\)/);
+ assert.doesNotMatch(f,/renderer\.setRenderTarget\(original\);renderer\.render\(scene,camera\)/);
+ assert.match(fx,/compositor\.addPass\(artProtection\.copyPass\)/);
+ assert.ok(fx.indexOf('compositor.addPass(artProtection.copyPass)')<
+   fx.indexOf('compositor.addPass(artProtection.pass)'));
+});

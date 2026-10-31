@@ -177,6 +177,8 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
  function build(){
   const compositor=new EffectComposer(renderer,{frameBufferType:THREE.HalfFloatType,multisampling:0});
   compositor.addPass(new RenderPass(scene,camera));
+  artProtection=createArtProtection(THREE,renderer,scene,camera);
+  compositor.addPass(artProtection.copyPass);
   // Normal pass corrects the missing normal-buffer setup in the earlier AO experiment.
   const normals=new NormalPass(scene,camera,{resolutionScale:.5});
   const ao=new SSAOEffect(camera,normals.texture,{samples:6,rings:6,resolutionScale:.5,intensity:0,radius:.2});
@@ -194,7 +196,6 @@ export function createPhiPostFX(THREE,renderer,scene,camera){
   const vignette=new VignetteEffect({eskil:false}),grain=new NoiseEffect({premultiply:false});
   compositor.addPass(new EffectPass(camera,colour,sat,grain,vignette,
    new ToneMappingEffect({mode:ToneMappingMode.NEUTRAL})));
-  artProtection=createArtProtection(THREE,renderer,scene,camera);
   compositor.addPass(artProtection.pass);
   compositor.setSize(innerWidth,innerHeight,false);
   // Until explicitly enabled, expensive depth and bloom passes stay dormant.
