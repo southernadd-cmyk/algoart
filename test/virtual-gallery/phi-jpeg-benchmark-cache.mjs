@@ -11,9 +11,16 @@ export function createTextureBenchCache(search,baseHref,origin){
   if(typeof source!=='string'||!IMAGE_SOURCE.test(source))return source;
   let url;
   try{url=new URL(source,baseHref)}catch{return source}
-  // External texture CDNs can support queries too, but making their URLs
-  // unstable risks third-party signed/proxied releases. Only same-origin
-  // JPEG/KTX2 assets enter a VERIFIED cold sample.
+  // Mirror the five original Poly Haven JPEGs into TEST for fair comparison
+  // against their same-origin lossless KTX2 equivalents. Both variants then
+  // obey the same cache identity. All mirrors are original JPEG bytes.
+  if(url.hostname==='dl.polyhaven.org'){
+   const basename=url.pathname.split('/').at(-1)?.replace(/\.jpe?g$/i,'');
+   const allowed=['plastered_wall_02_diff_1k','plastered_wall_02_nor_gl_1k',
+    'concrete_floor_diff_1k','concrete_floor_nor_gl_1k','wood_floor_diff_1k'];
+   if(allowed.includes(basename))
+    url=new URL('./ktx2-lossless/external-jpeg/'+basename+'.jpg',import.meta.url);
+  }
   if(url.origin!==origin)return source;
   url.searchParams.set('phiBenchAsset',seed);
   assets.add(url.pathname);
