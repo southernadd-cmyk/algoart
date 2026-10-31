@@ -1,0 +1,23 @@
+name: Verify all-JPEG lossless KTX2 browser pixel parity
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-jpeg-lossless-browser.yml'
+      - 'tests/phi-jpeg-lossless-all-browser.mjs'
+permissions:
+  contents: read
+jobs:
+  pixel-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Test exact original-JPEG browser pixels against lossless KTX2
+        run: node tests/phi-jpeg-lossless-all-browser.mjs
