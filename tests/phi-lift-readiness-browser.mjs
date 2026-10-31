@@ -11,12 +11,13 @@ const browser=await chromium.launch({headless:true,args:[
  '--no-sandbox','--enable-webgl','--use-angle=swiftshader',
  '--enable-unsafe-swiftshader','--disable-dev-shm-usage'
 ]});
-const report={date,environment:'Chromium SwiftShader software WebGL'};
+const report={date,environment:'Chromium SwiftShader software WebGL',liftreuse:process.env.PHI_LIFT_REUSE??'default'};
 try{
  const page=await browser.newPage({viewport:{width:1280,height:800}});
  const errors=[];
  page.on('pageerror',error=>errors.push(String(error)));
- await page.goto(base+'/'+(process.env.PHI_LIFT_TARGET==='live'?'gallery/visit/':'test/virtual-gallery/full-engine.html')+'?debug=1&liftprofile=1',
+ await page.goto(base+'/'+(process.env.PHI_LIFT_TARGET==='live'?'gallery/visit/':'test/virtual-gallery/full-engine.html')+
+  '?debug=1&liftprofile=1'+(process.env.PHI_LIFT_REUSE==null?'':'&liftreuse='+process.env.PHI_LIFT_REUSE),
   {waitUntil:'domcontentloaded',timeout:60000});
  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled||
    !!window.__galleryStartupError,null,{timeout:180000});
@@ -47,6 +48,11 @@ try{
    gate,
    paintPreload:window.__phiArtworkPreload?.()||null,
    paintingGpu:window.__phiLiftPaintingGPU?.()||null,
+   warmup:stages.find(s=>s.name==='warmup-details')?.details||null,
+   paintingWaitMs:elapsed('paintings-gpu-ready')==null||elapsed('paintings-waiting')==null?null:
+    +(elapsed('paintings-gpu-ready')-elapsed('paintings-waiting')).toFixed(1),
+   finalWarmupMs:elapsed('texture-upload-and-compile-finished')==null||elapsed('deferred-pump-finished')==null?null:
+    +(elapsed('texture-upload-and-compile-finished')-elapsed('deferred-pump-finished')).toFixed(1),
    arrivalDelayMs:elapsed('doors-opening')==null||elapsed('ride-finished')==null?null:
     +(elapsed('doors-opening')-elapsed('ride-finished')).toFixed(1),
    paintingReadyBeforeDoor:at('paintings-gpu-ready')>=0&&
@@ -57,7 +63,7 @@ try{
  });
  Object.assign(report,result,{uncaughtPageErrors:errors});
  await mkdir('phi-lift-readiness-results',{recursive:true});
- await writeFile('phi-lift-readiness-results/arrival.json',JSON.stringify(report,null,2));
+ await writeFile('phi-lift-readiness-results/arrival'+(process.env.PHI_LIFT_REUSE==null?'':'-'+process.env.PHI_LIFT_REUSE)+'.json',JSON.stringify(report,null,2));
  console.log('LIFT_PAINTING_ARRIVAL_REPORT '+JSON.stringify(report));
  assert.equal(result.error,null,'Lift reported preparation failure');
  assert.equal(result.status,'opening','Doors must open only after preparation');
