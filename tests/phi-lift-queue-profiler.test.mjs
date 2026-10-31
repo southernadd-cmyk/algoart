@@ -701,3 +701,24 @@ test('test-only adaptive batch is opt-in and waits for a completed postFX render
  assert.match(testSource,/mode:phiLiftBatchMode,batchSize:phiLiftBatchSize/);
  assert.doesNotMatch(live,/liftbatch|phiLiftBatchMode|renderedFrame/);
 });
+
+test('fixed batch 16 keeps two real rAF turns and restores complete artwork unchanged',async()=>{
+ let frames=0;
+ const stager=createPhiArrivalMeshStager({nextFrame:async()=>{frames++;}});
+ const parent={visible:true,userData:{},children:[],traverse(fn){fn(this);for(const child of this.children)fn(child)}};
+ const mesh=Array.from({length:33},(_,i)=>({isMesh:true,parent,visible:true,
+  userData:{phiArtOriginal:i===15}}));
+ parent.children.push(...mesh);
+ stager.start('2026-10-09',[parent]);
+ const report=await stager.reveal({mode:'legacy',batchSize:16});
+ assert.equal(frames,6);
+ assert.deepEqual(report.batches.map(x=>x.count),[16,16,1]);
+ assert.equal(report.batches.reduce((n,b)=>n+b.paintings,0),1);
+ assert.ok(mesh.every(x=>x.visible),'all original mesh visibility must return');
+});
+
+test('fixed-size test choices never enable rejected one-render adaptive pacing',()=>{
+ const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(src,/phiLiftBatchMode=phiLiftBatchChoice==='adaptive'\?'adaptive':'legacy'/);
+ assert.match(src,/\[8,12,16,20,24,32\]\.includes\(Number\(phiLiftBatchChoice\)\)/);
+});
