@@ -623,3 +623,81 @@ test('shadow diagnostics are test-only and retain exact live shader and shadow s
  assert.match(testSource,/shadowRefreshes:phiLightingStudy\?\.stats\?\.refreshes/);
  assert.doesNotMatch(live,/installPhiShadowRenderProbe|phi-shadow-render-probe/);
 });
+
+test('render-aware adaptive lift batches show every mesh and wait for exactly one completed render',async()=>{
+ let scheduledFrames=0;
+ const stager=createPhiArrivalMeshStager({nextFrame:async()=>{scheduledFrames++;}});
+ const parent={visible:true,userData:{},children:[],traverse(fn){fn(this);for(const child of this.children)fn(child)}};
+ const art=Array.from({length:50},(_,i)=>({isMesh:true,visible:true,parent,
+  userData:{phiArtOriginal:i===16},name:'mesh'+i}));
+ parent.children.push(...art);
+ stager.start('2026-10-09',[parent]);
+ const started=[],completed=[];
+ const pending=stager.reveal({mode:'adaptive',batchSize:12,minBatch:6,maxBatch:24,
+  onBatchStart:x=>started.push(x),onBatch:x=>completed.push(x)});
+ assert.equal(started[0].count,12);
+ assert.equal(stager.stats().shown,0,'must not claim a batch complete before scene render');
+ assert.equal(art.filter(x=>x.visible).length,12);
+ const frames=[100,8,10,120,12,9,8,10,8];
+ for(const ms of frames){
+  stager.renderedFrame(ms);
+  for(let k=0;k<8;k++)await Promise.resolve();
+  if(!stager.stats().active)break;
+ }
+ const result=await pending;
+ assert.equal(result.shown,50);
+ assert.equal(result.hidden,0);
+ assert.equal(art.every(x=>x.visible),true);
+ assert.equal(scheduledFrames,0,'adaptive mode must not add any idle rAF waits');
+ assert.equal(started[0].count,12);
+ assert.equal(started[1].count,6,'slow scene render halves the following batch');
+ assert.equal(started[2].count,10,'fast scene render grows the following batch');
+ assert.equal(completed.length,started.length);
+ assert.equal(completed.reduce((sum,x)=>sum+x.paintings,0),1);
+ assert.ok(completed.every(x=>Number.isFinite(x.renderMs)));
+ assert.ok(result.batches.length<50);
+});
+
+test('one-render-per-batch fixed size never changes shaders, paintings or original visibility',async()=>{
+ let frames=0;
+ const stager=createPhiArrivalMeshStager({nextFrame:async()=>frames++});
+ const parent={visible:true,userData:{},children:[],traverse(fn){fn(this);for(const x of this.children)fn(x)}};
+ const meshes=Array.from({length:27},(_,i)=>({isMesh:true,visible:true,parent,userData:{phiArtOriginal:i===13}}));
+ parent.children.push(...meshes);
+ stager.start('2026-10-09',[parent]);
+ const done=stager.reveal({mode:'render',batchSize:8});
+ let completed=0;
+ while(stager.stats().active&&completed<10){
+  stager.renderedFrame(16);
+  for(let k=0;k<5;k++)await Promise.resolve();
+  completed++;
+ }
+ const result=await done;
+ assert.equal(frames,0);
+ assert.deepEqual(result.batches.map(x=>x.count),[8,8,8,3]);
+ assert.equal(result.hidden,0);
+ assert.ok(meshes.every(x=>x.visible));
+});
+
+test('render-aware reveal cancellation resolves its pending render and restores original art',async()=>{
+ const stager=createPhiArrivalMeshStager({nextFrame:async()=>{}});
+ const parent={visible:true,userData:{},children:[],traverse(fn){fn(this);for(const x of this.children)fn(x)}};
+ const art={isMesh:true,parent,visible:true,userData:{phiArtOriginal:true}};
+ parent.children=[art];
+ stager.start('2026-10-09',[parent]);
+ const pending=stager.reveal({mode:'adaptive',batchSize:6});
+ stager.restore();
+ await assert.rejects(pending,/cancelled/);
+ assert.equal(art.visible,true);
+ assert.equal(stager.stats().hidden,0);
+});
+
+test('test-only adaptive batch is opt-in and waits for a completed postFX render',()=>{
+ const testSource=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
+ const live=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(testSource,/get\('liftbatch'\)/);
+ assert.match(testSource,/phiLiftBatchChoice==='adaptive'/);
+ assert.match(testSource,/phiArrivalMeshes\.renderedFrame\(renderMs\)/);
+ assert.match(testSource,/mode:phiLiftBatchMode,batchSize:phiLiftBatchSize/);
+ assert.doesNotMatch(live,/liftbatch|phiLiftBatchMode|renderedFrame/);
+});
