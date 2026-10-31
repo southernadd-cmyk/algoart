@@ -4,11 +4,17 @@
 // can be attributed to RenderPass, N8AO or an EffectPass rather than guessed at.
 import {EffectComposer} from 'postprocessing';
 
+// The production composer is minified in deployed bundles, so JavaScript
+// constructor.name is not a reliable identifier. Names follow the explicit
+// addPass order in gallery/visit/phi-post-fx.mjs; preserve indices as well.
+const STAGE_NAMES=[
+ 'scene-render','artwork-copy','artwork-mask','normal-prepass','ssao',
+ 'n8ao','full-bloom','installation-bloom','depth-of-field','colour-grading',
+ 'artwork-restore'
+];
 function passName(pass,index){
- const ctor=pass?.constructor?.name||'UnknownPass';
- const effectNames=pass?.effects?
-  Array.from(pass.effects,fx=>fx?.constructor?.name||'effect').join('+'):'';
- return 'postfx-pass:'+index+':'+ctor+(effectNames?'('+effectNames+')':'');
+ const stable=STAGE_NAMES[index]||pass?.constructor?.name||'unknown-pass';
+ return 'postfx-pass:'+index+':'+stable;
 }
 
 export function installPhiComposerPassProfiler({enabled=false,record,now=()=>performance.now(),Composer=EffectComposer}={}){
