@@ -25,3 +25,14 @@ test('warm-up compiles final materials and uploads each shared texture once befo
  const result=await warmGalleryEntry({renderer,scene,camera:{},nextFrame:async()=>calls.push('yield')});
  assert.equal(result.textures,1);assert.deepEqual(calls,['compile','yield','upload','render','yield']);
 });
+
+test('completed staged lift reveal skips only the redundant final render',async()=>{
+ const operations=[],painting={isTexture:true,image:{width:32,height:32}};
+ const scene={traverse(fn){fn({material:{map:painting}});}};
+ const renderer={async compileAsync(){operations.push('compile');},
+  initTexture(t){assert.equal(t,painting);operations.push('upload');},
+  render(){operations.push('render');}};
+ await warmGalleryEntry({renderer,scene,camera:{},skipFinalRender:true,
+  nextFrame:async()=>operations.push('frame')});
+ assert.deepEqual(operations,['compile','frame','upload','frame']);
+});

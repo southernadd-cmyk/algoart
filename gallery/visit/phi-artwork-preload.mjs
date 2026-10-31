@@ -9,7 +9,7 @@ export function decodePhiArtworkImage(url) {
   image.src=globalThis.__phiJPEGCacheBench?.stamp(url)||url;
  });
 }
-export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concurrency=3,prepare=null,dispose=()=>{}}={}){
+export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concurrency=3,prepare=null,dispose=()=>{},releaseAfterDecode=false}={}){
  let current=null;
  const limit=Math.max(1,Math.floor(concurrency));
  const clear=()=>{
@@ -31,21 +31,40 @@ export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concu
    const entry={url,promise,finish,state:'queued',claimed:false,value:null};
    entries.set(url,entry);queue.push(entry);
   }
-  const session={date,entries,queue,active:0,cancelled:false};
+  const session={date,entries,queue,active:0,preparing:0,decoded:0,cancelled:false};
   current=session;
   const pump=()=>{
    if(session.cancelled)return;
    while(session.active<limit&&queue.length){
     const entry=queue.shift();
     entry.state='loading';session.active++;
+    let downloadReleased=false;
+    const releaseDownload=()=>{
+     if(downloadReleased)return;
+     downloadReleased=true;
+     session.active=Math.max(0,session.active-1);
+     pump();
+    };
     Promise.resolve().then(()=>loadImage(entry.url))
-     .then(image=>prepare?prepare(image,{date,url:entry.url,isCancelled:()=>session.cancelled}):image)
+     .then(image=>{
+      session.decoded++;
+      entry.state='preparing';
+      // Allow a new download after decode; the GPU upload remains serialised.
+      // Previously a long GPU upload prevented later image requests from
+      // starting, even though the network/decode stage had finished.
+      if(releaseAfterDecode)releaseDownload();
+      if(session.cancelled)return null;
+      session.preparing++;
+      return Promise.resolve().then(()=>prepare?prepare(image,{
+       date,url:entry.url,isCancelled:()=>session.cancelled
+      }):image).finally(()=>{session.preparing--;});
+     })
      .then(value=>{
       if(session.cancelled){dispose(value);entry.finish(null);return;}
       entry.state='ready';entry.value=value;entry.finish(value);
      },()=>{
       entry.state='failed';entry.finish(null);
-     }).finally(()=>{session.active--;pump();});
+     }).finally(releaseDownload);
    }
   };
   pump();
@@ -58,7 +77,7 @@ export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concu
  const stats=()=>current?{
   date:current.date,total:current.entries.size,
   ready:[...current.entries.values()].filter(x=>x.state==='ready').length,
-  loading:current.active,pending:current.queue.length
+  loading:current.active,decoded:current.decoded,preparing:current.preparing,pending:current.queue.length
  }:{date:null,total:0,ready:0,loading:0,pending:0};
  return {start,take,clear,stats};
 }

@@ -444,6 +444,9 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
 });
 const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
  concurrency:mobileImages?2:4,
+ // Preserve exact painting textures; overlap image decoding with GPU preparation.
+ // ?liftpipeline=0 retains the original sequence for a diagnostic comparison.
+ releaseAfterDecode:new URLSearchParams(location.search).get('liftpipeline')!=='0',
  prepare:(image,context)=>liftPaintingGPU.prepare(image,context),
  dispose:texture=>texture?.dispose?.()
 });
@@ -1124,6 +1127,10 @@ async function travelLift(date,index){
   });
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
   const warmed=await warmGalleryEntry({renderer,scene,camera,
+   // The staged reveal already painted the original destination meshes.
+   // ?liftwarmrender=1 restores the extra full-scene render for comparison.
+   skipFinalRender:phiArrivalMeshes.stats().batches.length>0&&
+    new URLSearchParams(location.search).get('liftwarmrender')!=='1',
    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
   phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate?.stats()});
   if(!phiPaintingGate?.stats().complete ||
@@ -2506,6 +2513,8 @@ async function load(){
       :await loadArchiveDates();
     archiveDates.unshift(RECEPTION);
     const qp=new URLSearchParams(location.search).get('date');
+    // Fetch archive metadata during font loading; scene labels still wait.
+    await phiMarkerReady;
     await loadEdition(qp&&archiveDates.includes(qp)?qp:RECEPTION);
     GALLERY_DEBUG&&console.info('[Gallery performance] enter available',Math.round(performance.now()-startupStart)+'ms');
   }catch(e){
@@ -3059,10 +3068,12 @@ function tick() {
 if(renderer)renderer.setAnimationLoop(tick);
 // Ensure canvas-rendered entrance and lift signs use the actual marker font.
 // The font is local; do not hold startup indefinitely if it cannot load.
-Promise.race([
+const phiMarkerReady=Promise.race([
   document.fonts.load('42px "AlgoArt Marker"'),
   new Promise(resolve=>setTimeout(resolve,1600))
-]).catch(error=>console.warn('Marker font fallback:',error)).finally(load);
+]).catch(error=>console.warn('Marker font fallback:',error));
+// Start tower metadata loading immediately; hold actual scene construction for the font.
+load();
 
 
 

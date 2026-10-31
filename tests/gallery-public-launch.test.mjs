@@ -97,3 +97,17 @@ test('production visitor models use the bundled Meshopt decoder',()=>{
   const bundle=read(resolve(root,'gallery-phi-bundle.js'));
   assert.ok(!bundle.includes('cdn.jsdelivr.net/npm/meshoptimizer'));
 });
+
+test('production lift keeps painting readiness and uses approved loading overlap',()=>{
+ const app=read(resolve(root,'gallery-phi.js'));
+ const html=read(resolve(root,'index.html'));
+ const preloader=read(resolve(root,'phi-artwork-preload.mjs'));
+ assert.ok(app.includes("get('liftpipeline')!=='0'"));
+ assert.ok(app.includes("get('liftwarmrender')!=='1'"));
+ assert.ok(app.includes('phiPaintingGate.wait'));
+ assert.ok(app.includes('await phiMarkerReady;'));
+ assert.ok(preloader.includes('releaseAfterDecode'));
+ const preload=html.match(/rel="modulepreload" href="([^"]+)"/)?.[1];
+ const imported=html.match(/await import\('([^']+)'\)/)?.[1];
+ assert.equal(preload,imported);
+});
