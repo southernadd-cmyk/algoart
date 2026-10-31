@@ -425,6 +425,12 @@ const phiSculptureStage=createPhiSculptureStager({
  }
 });
 if(GALLERY_DEBUG)window.__phiSculptureStage=()=>phiSculptureStage.stats();
+// TEST A/B: ?liftreuse=0 retains redundant uploads as the control.
+// Only textures successfully uploaded on this renderer may be reused.
+const phiReuseLiftUploads=new URLSearchParams(location.search).get('liftreuse')!=='0';
+const phiAlreadyUploaded=new WeakSet();
+const phiUploadPainting=texture=>{renderer.initTexture(texture);phiAlreadyUploaded.add(texture);};
+const phiIsUploaded=texture=>phiReuseLiftUploads&&phiAlreadyUploaded.has(texture);
 // Prepare only the destination floor's paintings while the lift travels.
 const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
  makeTexture:image=>{
@@ -433,7 +439,7 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
   texture.needsUpdate=true;
   return texture;
  },
- upload:texture=>renderer.initTexture(texture),
+ upload:phiUploadPainting,
  // During motion, upload one painting every two frames and avoid cabin
  // acceleration/braking. At the landing use every frame: no reason to
  // leave the doors shut for additional idle render frames.
@@ -1122,12 +1128,15 @@ async function travelLift(date,index){
   });
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
   const warmed=await warmGalleryEntry({renderer,scene,camera,
+   isAlreadyUploaded:phiIsUploaded,markUploaded:texture=>phiAlreadyUploaded.add(texture),
    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
   phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate?.stats()});
   if(!phiPaintingGate?.stats().complete ||
      window.__phiFullEngine?.paintingsLoaded!==window.__phiFullEngine?.paintings)
    throw new Error('Painting readiness changed during final warm-up');
-  if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate.stats(),paintingWaitMs:paintingReady.elapsedMs};
+  if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date,
+   reuseUploaded:phiReuseLiftUploads,paintingGPU:liftPaintingGPU.stats(),
+   paintings:phiPaintingGate.stats(),paintingWaitMs:paintingReady.elapsedMs};
   if(xrRide)closeXRLift();
   else{
    liftReturnFocus=null;canvas.focus({preventScroll:true});
@@ -2339,7 +2348,8 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   phiPaintingGate?.cancel();
   phiPaintingGate=createPhiPaintingArrivalGate({
    date,expected:nextPlan.phi.exhibition.paintings.length,
-   upload:texture=>renderer.initTexture(texture),
+   upload:phiUploadPainting,
+   alreadyUploaded:phiIsUploaded,
    nextFrame:galleryPreparationFrame
   });
   // Dispose *all* edition-owned GPU resources, including artwork maps and
