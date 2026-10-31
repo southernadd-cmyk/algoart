@@ -1189,7 +1189,8 @@ async function travelLift(date,index){
    // The completed staged reveal has already painted the original scene
    // through the production post-FX renderer. Avoid a second uncomposited
    // whole-scene render here; default/non-staged paths still perform it.
-   skipFinalRender:phiStageArrival&&phiArrivalMeshes.stats().batches.length>0,
+   skipFinalRender:phiStageArrival&&phiArrivalMeshes.stats().batches.length>0&&
+    new URLSearchParams(location.search).get('liftwarmrender')!=='1',
    isAlreadyUploaded:phiIsUploaded,markUploaded:texture=>phiAlreadyUploaded.add(texture),
    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
   phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate?.stats()});
