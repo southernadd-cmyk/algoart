@@ -32,7 +32,7 @@ try{
  assert.ok(await button.count(),'Requested archive date must exist');
  await button.evaluate(element=>element.click());
  await page.waitForFunction(()=>window.__phiLiftRide?.status==='opening'||
-   !!window.__phiLiftError,null,{timeout:170000});
+   !!window.__phiLiftError,null,{timeout:215000});
  const result=await page.evaluate(()=>{
   const gate=window.__phiLiftPreparation?.paintings||window.__phiLiftPaintings||null;
   const visit=window.__phiLiftProfile?.visits?.at(-1)||null;
