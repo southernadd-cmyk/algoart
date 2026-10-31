@@ -20,7 +20,7 @@ export function createReceptionWallMaterial(THREE,{lowPower=false}={}){
    if(seed)url.searchParams.set('ktxCold',seed);
    loader.load(url.href,texture=>{apply(texture);resolve();},undefined,()=>resolve());
   });
-  if(bank&&!lowPower){
+  if(bank?.diagnostics.mode==='twenty'&&!lowPower){
    // Use KTX2 only when explicitly requested. Original WebP remains an
    // independent per-map fallback; the shared bank provides diagnostics.
    pending.push(bank.load('decorative-wall-'+file,{color})
