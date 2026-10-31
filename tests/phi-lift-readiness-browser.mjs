@@ -16,7 +16,7 @@ try{
  const page=await browser.newPage({viewport:{width:1280,height:800}});
  const errors=[];
  page.on('pageerror',error=>errors.push(String(error)));
- await page.goto(base+'/test/virtual-gallery/full-engine.html?debug=1&liftprofile=1',
+ await page.goto(base+'/'+(process.env.PHI_LIFT_TARGET==='live'?'gallery/visit/':'test/virtual-gallery/full-engine.html')+'?debug=1&liftprofile=1',
   {waitUntil:'domcontentloaded',timeout:60000});
  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled||
    !!window.__galleryStartupError,null,{timeout:180000});
