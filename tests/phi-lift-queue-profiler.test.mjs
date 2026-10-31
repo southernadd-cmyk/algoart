@@ -5,6 +5,7 @@ import {createPhiLiftProfiler} from '../test/virtual-gallery/phi-lift-profile.mj
 import {warmGalleryEntry} from '../test/virtual-gallery/gallery-entry-preparation.mjs';
 import {createPhiArtworkPreloader} from '../test/virtual-gallery/phi-artwork-preload.mjs';
 import {createPhiLiftPaintingGPUPreparer} from '../test/virtual-gallery/phi-lift-painting-gpu.mjs';
+import {createPhiRoomGeometryStager} from '../test/virtual-gallery/phi-room-geometry-stage.mjs';
 
 test('completed artwork jobs are prioritized ahead of optional deferred furnishing jobs',()=>{
  const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
@@ -118,4 +119,52 @@ test('painting preloader disposes only unclaimed GPU maps on destination change'
  assert.equal(owned.image.url,'a.jpg');
  assert.deepEqual(disposed,['b.jpg']);
  assert.equal(loader.stats().date,'2026-10-23');
+});
+
+test('destination room geometries are created off-scene, at most one per scheduled frame',()=>{
+ const pending=[],disposed=[];
+ let builds=0;
+ const stage=createPhiRoomGeometryStager({
+  schedule:callback=>pending.push(callback),
+  create:(w,h,d)=>({w,h,d,id:++builds}),
+  dispose:geometry=>disposed.push(geometry.id)
+ });
+ stage.start('2026-10-22',[[4,.28,6],[4,.18,6],[4,.28,6]]);
+ assert.equal(stage.stats().created,0);
+ pending.shift()();
+ assert.equal(stage.stats().created,1);
+ assert.equal(stage.stats().pending,2);
+ const slab=stage.take('2026-10-22',4,.28,6);
+ assert.deepEqual([slab.w,slab.h,slab.d],[4,.28,6]);
+ pending.shift()();pending.shift()();
+ assert.equal(builds,3);
+ assert.equal(stage.stats().used,1);
+ assert.equal(stage.stats().ready,2);
+ assert.equal(stage.take('other',4,.28,6),null);
+ stage.clear();
+ assert.deepEqual(disposed,[3,2]);
+ assert.equal(stage.stats().ready,0);
+});
+
+test('cancelling staged geometry prevents leftover scheduled work from building',()=>{
+ const callbacks=[],disposed=[];
+ const stage=createPhiRoomGeometryStager({
+  schedule:callback=>callbacks.push(callback),
+  create:(w,h,d)=>({w,h,d}),
+  dispose:geometry=>disposed.push(geometry)
+ });
+ stage.start('old',[[1,2,3],[4,5,6]]);
+ callbacks.shift()();
+ stage.start('new',[]);
+ assert.equal(disposed.length,1);
+ callbacks.shift()();
+ assert.equal(stage.stats().created,0);
+ assert.equal(stage.stats().pending,0);
+});
+
+test('test gallery hands prepared room dimensions to original geometry constructor',()=>{
+ const source=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(source,/phiRoomGeometryStage\.start\(date,roomShapes\)/);
+ assert.match(source,/phiRoomGeometryStage\.take\(exhibitDate,w,h,d\)\|\|new THREE\.BoxGeometry\(w,h,d\)/);
+ assert.match(source,/phiRoomGeometryStage\.clear\(\)/);
 });
