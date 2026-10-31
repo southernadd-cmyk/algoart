@@ -12,6 +12,11 @@ const replace=(before,after)=>{
  if(source.split(before).length!==2)throw Error('Room-signs build anchor changed: '+before.slice(0,75));
  source=source.replace(before,after);
 };
+// Performance instrumentation belongs exclusively to the test bundle.
+replace("import * as THREE from 'three';",
+ "import {mountPhiThreePerf} from '../../test/virtual-gallery/phi-three-perf.mjs';\nimport * as THREE from 'three';");
+replace('  renderer.setSize(window.innerWidth, window.innerHeight);',
+ '  renderer.setSize(window.innerWidth, window.innerHeight);\n  mountPhiThreePerf(renderer);');
 // An opt-in A/B for three staging GLBs. The original URLs and live build
 // are never rewritten. This operates through the default GLTFLoader manager.
 replace("import * as THREE from 'three';",

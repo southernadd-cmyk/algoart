@@ -34,9 +34,10 @@
     "gallery:bundle:post-test": "node automation/build-phi-post-test.mjs"
   },
   "devDependencies": {
-    "playwright": "1.64.0",
     "esbuild": "0.25.12",
+    "playwright": "1.64.0",
+    "postprocessing": "6.39.5",
     "three": "0.180.0",
-    "postprocessing": "6.39.5"
+    "three-perf": "1.0.11"
   }
 }
