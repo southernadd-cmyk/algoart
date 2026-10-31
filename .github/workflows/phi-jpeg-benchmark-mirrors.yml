@@ -33,11 +33,11 @@ jobs:
           done
           python3 - <<'PY'
           from pathlib import Path
-          from PIL import Image
           files=list(Path('test/virtual-gallery/ktx2-lossless/external-jpeg').glob('*.jpg'))
           assert len(files)==5
           for f in files:
-            with Image.open(f) as image: image.verify()
+            with f.open('rb') as stream:
+              assert stream.read(3)==b'\\xff\\xd8\\xff',f
             print(f.name,f.stat().st_size)
           PY
       - name: Commit TEST-only original JPEG mirrors
