@@ -47,7 +47,7 @@ jobs:
           from pathlib import Path
           p=Path('test/virtual-gallery/textures/Bricks055_NormalGL.ktx2')
           assert p.stat().st_size>256
-          assert p.read_bytes()[:12]==b'\\xabKTX 20\\xbb\\r\\n\\x1a\\n'
+          assert p.read_bytes()[:12]==bytes.fromhex('ab4b5458203230bb0d0a1a0a'), 'Invalid KTX2 container identifier'
           assert Path('test/virtual-gallery/basis/basis_transcoder.wasm').stat().st_size>1024
           print('Test-only KTX2 normal map:',p.stat().st_size,'bytes')
           PY
