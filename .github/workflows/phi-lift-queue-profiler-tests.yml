@@ -6,6 +6,11 @@ on:
     paths:
       - '.github/workflows/phi-lift-queue-profiler-tests.yml'
       - 'tests/phi-lift-queue-profiler.test.mjs'
+      - 'test/virtual-gallery/gallery-phi.js'
+      - 'test/virtual-gallery/phi-artwork-preload.mjs'
+      - 'test/virtual-gallery/phi-lift-painting-gpu.mjs'
+      - 'test/virtual-gallery/phi-room-geometry-stage.mjs'
+      - 'test/virtual-gallery/phi-lift-profile.mjs'
 permissions:
   contents: read
 jobs:
