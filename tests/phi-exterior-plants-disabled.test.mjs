@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {PHI_EXTERIOR_PLANTING_ENABLED,addPhiOutdoorPlants} from '../gallery/visit/phi-outdoor-plants.mjs';
-import {RECEPTION_CREDITS} from '../gallery/visit/phi-reception-decor.mjs';
 
 test('exterior plants are disabled without loading the GLB or creating obstacles',async()=>{
  assert.equal(PHI_EXTERIOR_PLANTING_ENABLED,false);
@@ -28,8 +27,9 @@ test('exterior planters and foliage are opt-in, while benches and lanterns remai
 });
 
 test('unused outdoor plant credit is absent; indoor Pothos remains attributed',()=>{
- assert.ok(RECEPTION_CREDITS.some(entry=>entry.lines.includes('Pothos plant — AllQuad')));
- assert.ok(RECEPTION_CREDITS.every(entry=>!entry.lines.some(line=>/Plaza plants|Nicholas-3D/.test(line))));
+ const wall=readFileSync(new URL('../gallery/visit/phi-reception-decor.mjs',import.meta.url),'utf8');
+ assert.match(wall,/Pothos plant — AllQuad/);
+ assert.doesNotMatch(wall,/Plaza plants|Nicholas-3D/);
  for(const path of ['../gallery/visit/credits.html','../test/virtual-gallery/credits.html']){
   const html=readFileSync(new URL(path,import.meta.url),'utf8');
   assert.doesNotMatch(html,/Plants Scene Free!|Nicholas-3D|sketchfab.com\/Nicholas01/);
