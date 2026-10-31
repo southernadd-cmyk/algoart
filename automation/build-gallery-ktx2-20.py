@@ -31,9 +31,9 @@ for item in DATA['textures']:
             # Normals keep high-fidelity 4x4 UASTC blocks (plus lossless Zstd).
             # Color and roughness use high-quality ETC1S for browser transfers.
             # Do not encode normals as sRGB or use two-channel normal mode.
-            codec=(['--encode','uastc','--uastc_quality','4','--zcmp','18']
+            codec=(['--encode','uastc','--uastc_quality','3','--zcmp','6']
                    if kind=='normal' else
-                   ['--encode','etc1s','--clevel','5','--qlevel','235'])
+                   ['--encode','etc1s','--clevel','2','--qlevel','225'])
             oetf='srgb' if kind=='color' else 'linear'
             cmd=['toktx','--t2','--genmipmap',*codec,'--assign_oetf',oetf,
                  '--assign_primaries','none',str(dest),str(tmp)]
