@@ -21,7 +21,7 @@ import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=distri
 import {addPhiReceptionMetalRoof} from './phi-reception-metal-roof.mjs';
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
-import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-preload-20261026';
+import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-gpu-test-20261031';
 import {addPhiGoldenReceptionDesk,addPhiGoldenReceptionBench} from './phi-reception-phi-furniture-study.mjs';
 import {addPhiOutdoorPlants,PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
 import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=entry-performance-20261027';
@@ -34,8 +34,8 @@ import {buildPhiRendererPlan} from './phi-full-engine-adapter.mjs?v=public-adapt
 import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
-import {createJPEGParityBank} from './phi-jpeg-lossless.mjs';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
+import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
 import {createTextureBenchCache} from './phi-jpeg-benchmark-cache.mjs';
 import {decodePhiArtworkImage} from './phi-artwork-preload.mjs';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
@@ -197,15 +197,13 @@ if(phiTextureBenchCache)THREE.DefaultLoadingManager.setURLModifier(
 );
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
-const jpegFormat=new URLSearchParams(location.search).get('jpegformat');
-const jpegExactStudy=jpegFormat==='original'||jpegFormat==='lossless';
-const jpegParityBank=createJPEGParityBank(THREE,renderer);
-window.__phiJPEGLosslessBank=jpegParityBank;
+// Retired the lossless KTX2 test conversion; keep the original JPEG option.
+const jpegExactStudy=new URLSearchParams(location.search).get('jpegformat')==='original';
 const phiStartupLoading=trackGalleryLoading(THREE.DefaultLoadingManager);
 const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
   startAfter:window.__galleryEarly?.tower,
-  renderer // Test-only optional KTX2 decoding; live material bank is untouched.
+  renderer // Existing architectural materials and original images remain untouched.
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
@@ -418,13 +416,33 @@ const phiSculptureStage=createPhiSculptureStager({
 });
 if(GALLERY_DEBUG)window.__phiSculptureStage=()=>phiSculptureStage.stats();
 // Prepare only the destination floor's paintings while the lift travels.
-const phiArtworkPreloader=createPhiArtworkPreloader(
- jpegParityBank
-  ?url=>jpegParityBank.resolve(url)
-    ?jpegParityBank.load(url,{color:true}).catch(()=>decodePhiArtworkImage(url))
-    :decodePhiArtworkImage(url)
-  :undefined,{concurrency:mobileImages?2:4});
-if(GALLERY_DEBUG)window.__phiArtworkPreload=()=>phiArtworkPreloader.stats();
+const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
+ makeTexture:image=>{
+  const texture=new THREE.Texture(image);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.needsUpdate=true;
+  return texture;
+ },
+ upload:texture=>renderer.initTexture(texture),
+ // Never upload while the lift doors are closing; serialize uploads
+ // one per animation frame once the door leaves have settled.
+ nextFrame:()=>new Promise(resolve=>{
+  const frame=()=>{
+   if(!liftTravelling||liftDoorClosure>=.998||window.__phiLiftRide?.status==='failed')resolve();
+   else requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+ })
+});
+const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
+ concurrency:mobileImages?2:4,
+ prepare:(image,context)=>liftPaintingGPU.prepare(image,context),
+ dispose:texture=>texture?.dispose?.()
+});
+if(GALLERY_DEBUG){
+ window.__phiArtworkPreload=()=>phiArtworkPreloader.stats();
+ window.__phiLiftPaintingGPU=()=>liftPaintingGPU.stats();
+}
 const artworkQueue=[];
 let artworkActive=0;
 function scheduleArtwork(task,material){
@@ -538,14 +556,7 @@ function loadArtworkTexture(url,material,{preferred=null}={}){
       image.onerror=()=>{if(GALLERY_DEBUG)console.warn('Artwork request failed:',candidate);setTimeout(attempt,400);};
       image.src=phiTextureBenchCache?.stamp(candidate)||candidate;
     }
-    if(jpegParityBank?.resolve(source.href)){
-      jpegParityBank.load(source.href,{color:true}).then(texture=>{
-        if(material.userData.galleryDisposed){texture.dispose();finish();return;}
-        if(material.map){material.map.dispose();material.map.userData.galleryBitmap?.close?.();}
-        material.map=texture;material.color.set('#ffffff');material.needsUpdate=true;
-        failedArtworkLoads.delete(material);finish();
-      }).catch(()=>attempt());
-    }else attempt();
+    attempt();
   }),material);
 }
 // Stage 2: landscape images occupy walls. Portraits become freestanding
@@ -1035,6 +1046,7 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('edition-metadata-ready',{paintings:prepared.nextPlan.phi.exhibition.paintings.length});
   // Begin downloads after metadata validation, before the physical journey.
   const byId=new Map(prepared.studies.map(study=>[study.id,study]));
+  liftPaintingGPU.start(date);
   phiArtworkPreloader.start(date,prepared.nextPlan.phi.exhibition.paintings
    .map(p=>byId.get(p.studyId)).filter(Boolean)
    .map(study=>jpegExactStudy?study.image:(study.imageOptimized||study.image)).filter(Boolean));
@@ -1049,7 +1061,7 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('doors-closed');
   if(plan?.phi){
    await startPhiCabinRide(index);
-   phiLiftProfiler?.mark('ride-finished');
+   phiLiftProfiler?.mark('ride-finished',{paintingGPU:liftPaintingGPU.stats(),sculptures:phiSculptureStage.stats()});
    // The shared shaft and the other levels remain in the 3D scene for the ride.
    // Replace detailed room contents only after the cabin reaches its landing.
    await loadEdition(date,{viaLift:true,prepared});
@@ -1070,8 +1082,8 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
   const warmed=await warmGalleryEntry({renderer,scene,camera,
    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
-  phiLiftProfiler?.mark('texture-upload-and-compile-finished',warmed);
-  if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date};
+  phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats()});
+  if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date,paintingGPU:liftPaintingGPU.stats()};
   if(xrRide)closeXRLift();
   else{
    liftReturnFocus=null;canvas.focus({preventScroll:true});
@@ -1735,10 +1747,7 @@ function constructPhiGallery(layout,studies){
    };
    const fallback=source=>{
     if(!face.parent||face.userData.galleryDisposed)return;
-    if(jpegParityBank?.resolve(source)){
-      jpegParityBank.load(source,{color:true}).then(apply).catch(()=>
-       loader.load(source,apply,undefined,error=>console.warn('Phi painting failed to load',study.id,error)));
-    }else loader.load(source,apply,undefined,error=>console.warn('Phi painting failed to load',study.id,error));
+    loader.load(source,apply,undefined,error=>console.warn('Phi painting failed to load',study.id,error));
    };
    // Reuse the decoded lift image instead of issuing another image request.
    const warmed=phiArtworkPreloader.take(exhibitDate,url);
