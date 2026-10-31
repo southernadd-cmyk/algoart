@@ -402,3 +402,34 @@ test('clearing pipeline session prevents late GPU completions from opening stale
  for(let i=0;i<10;i++)await Promise.resolve();
  assert.equal(disposed,1);
 });
+
+test('lift profiler separates synchronous lighting/render work from frame gaps',()=>{
+ let time=10;
+ const profiler=createPhiLiftProfiler({enabled:true,now:()=>time});
+ profiler.begin('2026-10-20',0,16);
+ profiler.record('lighting-update',3.5);
+ profiler.record('render-frame',18);
+ profiler.record('render-frame',75.2);
+ profiler.record('render-frame',88.5);
+ time+=100;
+ profiler.tick();time+=100;
+ profiler.tick();
+ profiler.finish();
+ const visit=profiler.state.visits.at(-1);
+ assert.equal(visit.operations['lighting-update'].count,1);
+ assert.equal(visit.operations['render-frame'].count,3);
+ assert.equal(visit.operations['render-frame'].over50ms,2);
+ assert.equal(visit.operations['render-frame'].maxMs,88.5);
+ assert.deepEqual(visit.operationSpikes.map(v=>v.ms),[88.5,75.2]);
+ assert.equal(visit.frames.length,1);
+ assert.equal(visit.frames[0].deltaMs,100);
+});
+
+test('staging profiler probes lighting and postprocessing without changing shaders or painting source',()=>{
+ const source=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(source,/phiLiftProfiler\.record\('lighting-update'/);
+ assert.match(source,/phiLiftProfiler\.record\('render-frame'/);
+ assert.match(source,/phiPostFX\.render\(dt,/);
+ assert.match(source,/get\('liftpipeline'\)==='1'/);
+ assert.match(source,/get\('liftreuse'\)==='1'/);
+});
