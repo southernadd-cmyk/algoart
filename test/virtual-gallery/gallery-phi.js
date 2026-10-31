@@ -3009,7 +3009,9 @@ function measurePhiPerformance(now){
 let phiFrameSerial=0;
 function tick() {
   phiLiftProfiler?.tick();
+  const phiLightingT=phiLiftProfiler?.state.active?performance.now():null;
   phiLightingStudy?.update();
+  if(phiLightingT!==null)phiLiftProfiler.record('lighting-update',performance.now()-phiLightingT);
  measurePhiPerformance(performance.now());
   if (!renderer) return;
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
@@ -3041,7 +3043,12 @@ function tick() {
   entranceDoor?.update(dt,rig.position);
   phiGalleryMusic?.update(rig.position);
   phiReceptionDesk?.hologram?.update(clock.elapsedTime);
-  if(!$('lift').hidden){phiPostFX.render(dt,null);return;}
+  if(!$('lift').hidden){
+   const renderAt=phiLiftProfiler?.state.active?performance.now():null;
+   phiPostFX.render(dt,null);
+   if(renderAt!==null)phiLiftProfiler.record('render-frame',performance.now()-renderAt);
+   return;
+  }
   updateMovement(dt);
   if(GALLERY_DEBUG)window.__phiLiftState={
     floor:currentFloor,date:exhibitDate,travelling:liftTravelling,
@@ -3063,7 +3070,9 @@ function tick() {
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
+  const renderAt=phiLiftProfiler?.state.active?performance.now():null;
   phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
+  if(renderAt!==null)phiLiftProfiler.record('render-frame',performance.now()-renderAt);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={tower:towerGraffiti.diagnostics,interior:interiorGraffiti.diagnostics,square:phiSquare.diagnostics()};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
 }
