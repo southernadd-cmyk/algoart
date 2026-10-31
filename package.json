@@ -39,6 +39,7 @@
     "playwright": "1.64.0",
     "postprocessing": "6.39.5",
     "three": "0.180.0",
+    "three-custom-shader-material": "6.4.0",
     "three-mesh-bvh": "0.9.17",
     "three-perf": "1.0.11"
   }

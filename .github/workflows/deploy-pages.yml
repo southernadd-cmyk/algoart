@@ -13,6 +13,7 @@ on:
       - 'automation/phi-n8ao-test-plugin.mjs'
       - 'automation/phi-bvh-test-plugin.mjs'
       - 'tests/phi-mesh-bvh.test.mjs'
+      - 'tests/phi-csm.test.mjs'
       - 'tests/phi-n8ao.test.mjs'
       - 'tests/phi-stage-curation.test.mjs'
       - 'tests/phi-pre-expansion.test.mjs'
@@ -81,7 +82,7 @@ jobs:
           npm run gallery:bundle:post-test
           node automation/build-phi-test-room-signs.mjs
           node --check gallery/visit/gallery-phi-test-room-signs-bundle.js
-          node --test tests/phi-exterior-plants-disabled.test.mjs tests/phi-n8ao.test.mjs tests/phi-three-perf.test.mjs tests/phi-mesh-bvh.test.mjs
+          node --test tests/phi-exterior-plants-disabled.test.mjs tests/phi-n8ao.test.mjs tests/phi-three-perf.test.mjs tests/phi-mesh-bvh.test.mjs tests/phi-csm.test.mjs
           node --test tests/phi-room-names.test.mjs tests/phi-test-room-signs.test.mjs tests/phi-reception-penrose.test.mjs tests/phi-gallery-penrose.test.mjs tests/phi-stage-routing.test.mjs tests/phi-postprocessing.test.mjs tests/phi-room-sign-counts.test.mjs tests/phi-post-fx.test.mjs
       - name: Validate public gallery before uploading the site
         run: |

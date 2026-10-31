@@ -73,6 +73,9 @@ let receptionTilePreview=null;`);
 replace('receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});',
  'receptionTilePreview=createReceptionPlasterFloorMaterial(THREE,{lowPower:galleryFinish.lowPower});');
 
+// Shader study is limited to the existing one-room frame sample.
+replace("import * as THREE from 'three';",
+ "import {createPhiFrameStudyMaterial} from '../../test/virtual-gallery/phi-csm-material.mjs';\nimport * as THREE from 'three';");
 // Architectural camera study: use ?camera=wide to restore original 76°.
 // Keep locomotion, collision checks, near/far clipping and frame pacing.
 replace('const camera = new THREE.PerspectiveCamera(76,',
@@ -86,7 +89,7 @@ replace('face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.Front
 // TEST ONLY: two shared architectural metal finishes, with no textures,
 // additional geometry, lights, shadows or post-processing.
 replace('const join=galleryFinish.trims;\nsetSculptureArchitecturalMaterials(',
-  "const join=galleryFinish.trims;\nconst architecturalBronzeStudy=new THREE.MeshStandardMaterial({color:'#806b53',metalness:.38,roughness:.64});\nconst architecturalFrameStudy=new THREE.MeshStandardMaterial({color:'#344452',metalness:.24,roughness:.73});\narchitecturalBronzeStudy.userData.galleryPersistent=true;\narchitecturalFrameStudy.userData.galleryPersistent=true;\nsetSculptureArchitecturalMaterials(");
+  "const join=galleryFinish.trims;\nconst architecturalBronzeStudy=new THREE.MeshStandardMaterial({color:'#806b53',metalness:.38,roughness:.64});\nconst phiCSMEnabled=new URLSearchParams(location.search).get('csm')!=='0';\nconst architecturalFrameStudy=createPhiFrameStudyMaterial(THREE,{enabled:phiCSMEnabled});\nwindow.__phiCSMStudy={enabled:phiCSMEnabled,target:'sample-room ink-blue frames'};\narchitecturalBronzeStudy.userData.galleryPersistent=true;\narchitecturalFrameStudy.userData.galleryPersistent=true;\nsetSculptureArchitecturalMaterials(");
 // Preserve reception's original blue wallpaper map; soften its normal relief
 // to work with the existing proportional light placement.
 replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;',
