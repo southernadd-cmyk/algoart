@@ -425,9 +425,9 @@ const phiSculptureStage=createPhiSculptureStager({
  }
 });
 if(GALLERY_DEBUG)window.__phiSculptureStage=()=>phiSculptureStage.stats();
-// TEST A/B: ?liftreuse=0 retains redundant uploads as the control.
+// TEST A/B: ?liftreuse=1 opts into skipping redundant uploads (not proven faster).
 // Only textures successfully uploaded on this renderer may be reused.
-const phiReuseLiftUploads=new URLSearchParams(location.search).get('liftreuse')!=='0';
+const phiReuseLiftUploads=new URLSearchParams(location.search).get('liftreuse')==='1';
 const phiAlreadyUploaded=new WeakSet();
 const phiUploadPainting=texture=>{renderer.initTexture(texture);phiAlreadyUploaded.add(texture);};
 const phiIsUploaded=texture=>phiReuseLiftUploads&&phiAlreadyUploaded.has(texture);
@@ -457,6 +457,10 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
 });
 const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
  concurrency:mobileImages?2:4,
+ // In the TEST pipeline, image download slots are freed after decoding.
+ // GPU uploads remain serialized one per scheduled frame. ?liftpipeline=0
+ // restores the old download-slot behavior for a direct comparison.
+ releaseAfterDecode:new URLSearchParams(location.search).get('liftpipeline')!=='0',
  prepare:(image,context)=>liftPaintingGPU.prepare(image,context),
  dispose:texture=>texture?.dispose?.()
 });
