@@ -38,7 +38,7 @@ import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
 import {createPhiPaintingArrivalGate} from './phi-painting-arrival-gate.mjs';
 import {createPhiRoomGeometryStager} from './phi-room-geometry-stage.mjs';
-import {decodePhiArtworkImage} from './phi-artwork-preload.mjs';
+import {decodePhiArtworkImage} from './phi-artwork-preload.mjs?v=lift-gpu-live-20261031';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
 import { planGalleryHangs } from './hanging-v3.mjs?v=reserve-glazed-door-walls-20261022';
