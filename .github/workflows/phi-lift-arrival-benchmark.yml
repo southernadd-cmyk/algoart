@@ -6,6 +6,9 @@ on:
     paths:
       - '.github/workflows/phi-lift-arrival-benchmark.yml'
       - 'tests/phi-lift-arrival-benchmark.mjs'
+      - 'test/virtual-gallery/gallery-phi.js'
+      - 'test/virtual-gallery/gallery-entry-preparation.mjs'
+      - 'tests/phi-loading-overlap.test.mjs'
 permissions:
   contents: read
 jobs:
@@ -18,6 +21,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
+      - run: node --test tests/phi-loading-overlap.test.mjs
       - run: npx playwright install --with-deps chromium
       - name: Build the current production and test source bundles locally
         run: |
