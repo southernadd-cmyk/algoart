@@ -458,9 +458,9 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
 const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
  concurrency:mobileImages?2:4,
  // In the TEST pipeline, image download slots are freed after decoding.
- // GPU uploads remain serialized one per scheduled frame. ?liftpipeline=0
- // restores the old download-slot behavior for a direct comparison.
- releaseAfterDecode:new URLSearchParams(location.search).get('liftpipeline')!=='0',
+ // GPU uploads remain serialized one per scheduled frame. ?liftpipeline=1
+ // opts into the experimental early-release behavior.
+ releaseAfterDecode:new URLSearchParams(location.search).get('liftpipeline')==='1',
  prepare:(image,context)=>liftPaintingGPU.prepare(image,context),
  dispose:texture=>texture?.dispose?.()
 });
