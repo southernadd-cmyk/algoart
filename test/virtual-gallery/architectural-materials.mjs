@@ -154,7 +154,7 @@ export function tiledBoxUvs(geometry,w,h,d,tileMeters=2.5){
   uv.needsUpdate=true;
   return geometry;
 }
-export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=null}={}){
+export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=null,renderer=null}={}){
   const textureLoader=new THREE.TextureLoader();
   // Neutral canvas maps are ready immediately; external textures must not
   // compete with the early tower download on slow/mobile connections.
@@ -259,7 +259,41 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // A real scanned 1K brick and subtle OpenGL normal relief replace the flat
   // procedural exterior tile. Both requests are optional; geometry is unchanged.
   scan('brick-color',MATERIAL_SOURCES.brick.diffuse,'brick-black',[exteriorBrick]);
-  normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
+  // TEST ONLY, opt in with ?ktx2=1. Preserve the untouched source JPG as
+  // the default and as a fallback for unavailable/unsupported KTX2 assets.
+  // Normal maps stay linear, and are not packed into XY-only normal mode.
+  const ktxPilot=!!renderer&&!lowPower&&new URLSearchParams(location.search).get('ktx2')==='1';
+  const ktxDiagnostics=globalThis.__phiKTX2Pilot={
+    requested:new URLSearchParams(location.search).get('ktx2')==='1',
+    enabled:ktxPilot,asset:'Bricks055_NormalGL',status:ktxPilot?'preparing':'off'
+  };
+  if(ktxPilot){
+    Promise.resolve(ready).catch(()=>{}).then(async()=>{
+      const {KTX2Loader}=await import('three/addons/loaders/KTX2Loader.js');
+      const transcoder=new KTX2Loader()
+        .setTranscoderPath(new URL('../../test/virtual-gallery/basis/',document.baseURI).href)
+        .setWorkerLimit(2)
+        .detectSupport(renderer);
+      try{
+        const texture=await transcoder.loadAsync(
+          new URL('../../test/virtual-gallery/textures/Bricks055_NormalGL.ktx2',document.baseURI).href
+        );
+        texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+        texture.anisotropy=2;
+        exteriorBrick.normalMap=texture;
+        exteriorBrick.normalScale=new THREE.Vector2(.19,.19);
+        exteriorBrick.needsUpdate=true;
+        ktxDiagnostics.status='loaded';
+        ktxDiagnostics.compressed=!!texture.isCompressedTexture;
+        ktxDiagnostics.mipLevels=texture.mipmaps?.length||0;
+        diagnostics.loaded.push('brick-normal-ktx2-pilot');
+      }finally{transcoder.dispose();}
+    }).catch(error=>{
+      ktxDiagnostics.status='fallback-jpg';
+      ktxDiagnostics.error=String(error?.message||error);
+      normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
+    });
+  }else normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
   loader.load(MATERIAL_SOURCES.brick.roughness,texture=>{
     texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
     exteriorBrick.roughnessMap=texture;
