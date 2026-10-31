@@ -157,18 +157,31 @@ export function tiledBoxUvs(geometry,w,h,d,tileMeters=2.5){
 }
 export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=null,renderer=null}={}){
   const textureLoader=new THREE.TextureLoader();
+  const jpegLossless=globalThis.__phiJPEGLosslessBank||null;
   // Neutral canvas maps are ready immediately; external textures must not
   // compete with the early tower download on slow/mobile connections.
   const ready=startAfter
     ?Promise.race([Promise.resolve(startAfter).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))])
     :null;
   const loader={
-    load(...args){
-      if(!ready)return textureLoader.load(...args);
-      ready.then(()=>textureLoader.load(...args)).catch(error=>console.warn('Optional gallery texture unavailable',error));
+    load(url,onLoad,onProgress,onError){
+      const original=()=>textureLoader.load(url,onLoad,onProgress,onError);
+      const target=jpegLossless?.resolve(url);
+      if(target){
+        const start=ready||Promise.resolve();
+        start.catch(()=>{}).then(()=>jpegLossless.load(url,{
+          color:!/normal|nor_gl|roughness/i.test(url)
+        })).then(onLoad).catch(()=>{
+          try{original()}catch(error){onError?.(error)}
+        });
+        return null;
+      }
+      if(!ready)return original();
+      ready.then(original).catch(error=>console.warn('Optional gallery texture unavailable',error));
       return null;
     }
   };
+  const sourceImage=tex=>tex?.isDataTexture?jpegLossless.toCanvas(tex):tex?.image;
   const make=(color,roughness,tileMeters,metalness=0)=>{
     const material=new THREE.MeshStandardMaterial({color,roughness,metalness});
     material.userData.tileMeters=tileMeters;
@@ -219,7 +232,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   function scan(slot,url,mode,targets){
     loader.load(url,imageTexture=>{
       try{
-        const next=tx(tintScan(imageTexture.image,mode,lowPower?384:768));
+        const next=tx(tintScan(sourceImage(imageTexture),mode,lowPower?384:768));
         for(const material of targets) {
           if(locallyLoaded.has(material))continue;
           material.map=next;material.needsUpdate=true;
@@ -247,7 +260,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   normal('floor-normal',MATERIAL_SOURCES.floors.normal,[floor,stoneBridge],.21);
   loader.load(MATERIAL_SOURCES.timber.diffuse,source=>{
     try{
-      const base=tintScan(source.image,'timber',lowPower?384:1024);
+      const base=tintScan(sourceImage(source),'timber',lowPower?384:1024);
       const maps=[base,tintTimber(base,1),tintTimber(base,2)];
       for(let i=0;i<timberVariants.length;i++){
         timberVariants[i].map=tx(maps[i]);
@@ -450,7 +463,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   ]){
     loader.load(url,texture=>{
       try {
-        const next=tx(tintScan(texture.image,mode,lowPower?384:768));
+        const next=tx(tintScan(sourceImage(texture),mode,lowPower?384:768));
         for(const target of targets){target.map=next;target.needsUpdate=true;locallyLoaded.add(target);}
         diagnostics.loaded.push(slot);texture.dispose();
       }catch(_){diagnostics.failed.push(slot);}
