@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createPhiLiftProfiler} from '../test/virtual-gallery/phi-lift-profile.mjs';
+import {installPhiShadowRenderProbe} from '../test/virtual-gallery/phi-shadow-render-probe.mjs';
 import {createPhiArrivalMeshStager} from '../test/virtual-gallery/phi-arrival-mesh-stager.mjs';
 import {installPhiComposerPassProfiler} from '../test/virtual-gallery/phi-postfx-pass-profiler.mjs';
 import {warmGalleryEntry} from '../test/virtual-gallery/gallery-entry-preparation.mjs';
@@ -566,4 +567,59 @@ test('scene batch feature is opt-in and all artwork is prepared before scene rev
  assert.ok(src.indexOf('await phiPaintingGate.wait(')<src.indexOf('await phiArrivalMeshes.reveal('));
  assert.ok(src.indexOf('await phiArrivalMeshes.reveal(')<src.indexOf('setLiftDoors(false);',src.indexOf('await phiPaintingGate.wait(')));
  assert.doesNotMatch(live,/phiArrivalMeshes|createPhiArrivalMeshStager/);
+});
+
+test('shadow-map probe measures synchronous shader and shadow preparation without replacing rendering',()=>{
+ let time=100;
+ const result={target:'original'};
+ const shadowMap={render(...args){time+=230;return result;}};
+ const original=shadowMap.render;
+ const events=[];
+ const probe=installPhiShadowRenderProbe({enabled:true,renderer:{shadowMap},
+  now:()=>time,record:(name,ms)=>events.push({name,ms})});
+ assert.equal(probe.stats.installed,true);
+ assert.equal(shadowMap.render(['sun','spot']),result);
+ assert.equal(probe.stats.calls,1);
+ assert.equal(probe.stats.maxMs,230);
+ assert.equal(probe.stats.last.lights,2);
+ assert.deepEqual(events,[{name:'shadow-map-render',ms:230}]);
+ probe.dispose();
+ assert.equal(shadowMap.render,original);
+ assert.equal(shadowMap.render(),result);
+ assert.equal(probe.stats.calls,1,'no measurements after disposal');
+});
+
+test('inactive shadow profiler does not wrap WebGL renderer',()=>{
+ let called=0;
+ const shadowMap={render(){called++;}};
+ const original=shadowMap.render;
+ const probe=installPhiShadowRenderProbe({enabled:false,renderer:{shadowMap}});
+ assert.equal(probe.stats.installed,false);
+ assert.equal(shadowMap.render,original);
+ shadowMap.render();
+ assert.equal(called,1);
+});
+
+test('stalled scene render preserves lightweight shadow and geometry snapshot',()=>{
+ let clock=0;
+ const profile=createPhiLiftProfiler({enabled:true,now:()=>clock});
+ profile.begin('2026-10-09',0,5);
+ profile.record('postfx-pass:0:scene-render',4480,{
+  shadow:{ms:4000,at:4000,lights:2},
+  shadowCalls:7,shaderPrograms:25,drawCalls:355,sceneRoots:80
+ });
+ clock+=5000;
+ profile.finish();
+ const spike=profile.state.visits[0].operationSpikes[0];
+ assert.equal(spike.details.shadow.ms,4000);
+ assert.equal(spike.details.shaderPrograms,25);
+ assert.equal(spike.stage,'selection');
+});
+
+test('shadow diagnostics are test-only and retain exact live shader and shadow setup',()=>{
+ const testSource=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
+ const live=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(testSource,/installPhiShadowRenderProbe\(/);
+ assert.match(testSource,/shadowRefreshes:phiLightingStudy\?\.stats\?\.refreshes/);
+ assert.doesNotMatch(live,/installPhiShadowRenderProbe|phi-shadow-render-probe/);
 });
