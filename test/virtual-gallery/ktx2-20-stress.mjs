@@ -103,7 +103,7 @@ async function start(){
     const row=document.createElement('tr');
     for(const v of [i+1,mode,value.loadDecodeMs+' ms',
       value.firstUploadMs+' ms',value.totalMs+' ms',
-      (value.estimatedCompressedGpuBytes/1048576).toFixed(2)+' MiB']){
+      value.estimatedCompressedGpuBytes==null?'—':(value.estimatedCompressedGpuBytes/1048576).toFixed(2)+' MiB']){
      const cell=document.createElement('td');cell.textContent=v;row.appendChild(cell);
     }
     $('rows').appendChild(row);
