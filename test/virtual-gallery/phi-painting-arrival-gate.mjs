@@ -2,13 +2,13 @@
 // furnishings or a short, unrelated scene-loading timeout. Each painting is
 // ready only once its attached map has successfully passed renderer.initTexture.
 export function createPhiPaintingArrivalGate({
- date,expected,upload,nextFrame,now=()=>performance.now()
+ date,expected,upload,nextFrame,alreadyUploaded=()=>false,now=()=>performance.now()
 }){
  if(!Number.isInteger(expected)||expected<0)throw new TypeError('Expected painting count required');
  if(typeof upload!=='function'||typeof nextFrame!=='function')
   throw new TypeError('Painting arrival gate requires upload and frame callbacks');
  const entries=new Map(),errors=[];
- let ready=0,cancelled=false,uploadTail=Promise.resolve();
+ let ready=0,reused=0,arrivalUploads=0,cancelled=false,uploadTail=Promise.resolve();
  const register=(id,face)=>{
   if(cancelled||entries.has(id))throw new Error('Duplicate or stale painting: '+id);
   const entry={id,face,state:'pending',error:null};
@@ -17,6 +17,19 @@ export function createPhiPaintingArrivalGate({
    ready(texture){
     if(cancelled||entry.state!=='pending'){texture?.dispose?.();return;}
     entry.state='uploading';
+    const invalid=()=>cancelled||!face.parent||face.userData?.galleryDisposed||
+      face.material?.map!==texture||!texture?.isTexture||!texture.image;
+    const failure=error=>{
+     entry.state='failed';entry.error=String(error?.message||error);
+     errors.push({id,message:entry.error});
+    };
+    // A texture successfully uploaded by the same renderer during the journey
+    // needs no second GPU call or arrival animation frame. It still must be
+    // attached to a valid wall before it can count toward door readiness.
+    try{
+     if(invalid())throw Error('Painting texture missing from its wall');
+     if(alreadyUploaded(texture)){entry.state='ready';ready++;reused++;return;}
+    }catch(error){failure(error);return;}
     const task=uploadTail.then(async()=>{
      await nextFrame();
      if(cancelled||!face.parent||face.userData?.galleryDisposed){
@@ -25,15 +38,10 @@ export function createPhiPaintingArrivalGate({
       return;
      }
      try{
-      if(face.material?.map!==texture||!texture?.isTexture||!texture.image)
-       throw Error('Painting texture missing from its wall');
+      if(invalid())throw Error('Painting texture missing from its wall');
       upload(texture);
-      entry.state='ready';ready++;
-     }catch(error){
-      entry.state='failed';
-      entry.error=String(error?.message||error);
-      errors.push({id,message:entry.error});
-     }
+      entry.state='ready';ready++;arrivalUploads++;
+     }catch(error){failure(error);}
     });
     uploadTail=task.catch(()=>{});
    },
@@ -45,7 +53,7 @@ export function createPhiPaintingArrivalGate({
    }
   };
  };
- const stats=()=>({date,expected,registered:entries.size,ready,
+ const stats=()=>({date,expected,registered:entries.size,ready,reused,arrivalUploads,
   pending:[...entries.values()].filter(e=>e.state!=='ready'&&e.state!=='failed').map(e=>e.id),
   failures:[...errors],complete:ready===expected&&entries.size===expected});
  const wait=async({pump=()=>{},timeoutMs=50000,onProgress=()=>{}}={})=>{
