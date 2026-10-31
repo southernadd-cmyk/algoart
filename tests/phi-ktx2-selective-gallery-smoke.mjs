@@ -54,7 +54,7 @@ try{
   await page.locator('#enter').click();
   await page.waitForFunction(()=>document.querySelector('#welcome')?.hidden===true,null,{timeout:15000});
   await page.waitForTimeout(2400);
-  await page.locator('#world').screenshot({path:folder+'/'+mode+'-reception.png',timeout:15000});
+  await page.screenshot({path:folder+'/'+mode+'-reception.png',animations:'disabled',timeout:20000});
   const button=page.locator('#openLift');
   await button.evaluate(el=>el.click());
   await page.waitForFunction(()=>document.querySelector('#lift')?.hidden===false,null,{timeout:10000});
@@ -63,7 +63,7 @@ try{
   await page.waitForFunction(()=>window.__phiLiftState?.floor>0&&!window.__phiLiftState?.travelling,
    null,{timeout:110000});
   await page.waitForTimeout(2200);
-  await page.locator('#world').screenshot({path:folder+'/'+mode+'-gallery.png',timeout:15000});
+  await page.screenshot({path:folder+'/'+mode+'-gallery.png',animations:'disabled',timeout:20000});
   const state=await page.evaluate(()=>({floor:window.__phiLiftState?.floor,
    gpu:(()=>{const gl=document.querySelector('#world')?.getContext('webgl2');const ext=gl?.getExtension('WEBGL_debug_renderer_info');
     return ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl?.getParameter(gl.RENDERER)})(),
