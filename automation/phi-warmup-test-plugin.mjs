@@ -5,9 +5,9 @@ export function instrumentWarmupSource(source){
  const before="from './gallery-entry-preparation.mjs'";
  if(source.split(before).length!==2)throw Error('Test entry preparation import changed');
  source=source.replace(before,"from '../../test/virtual-gallery/phi-entry-warmup.mjs'");
- const call='warmGalleryEntry({renderer,scene,camera})';
+ const call='warmGalleryEntry({renderer,scene,camera';
  if(source.split(call).length!==3)throw Error('Expected startup and lift warm-up calls');
- return source.replaceAll(call,'warmGalleryEntry({renderer,scene,camera,prepare:()=>{phiPhotoreal?.prepare();phiLightingStudy?.prepare?.();},shadowStats:phiLightingStudy?.stats})');
+ return source.replaceAll(call,'warmGalleryEntry({renderer,scene,camera,prepare:()=>{phiPhotoreal?.prepare();phiLightingStudy?.prepare?.();},shadowStats:phiLightingStudy?.stats');
 }
 export function instrumentShadowPreparation(source){
  const before='return {stats,update,editionChanged};';
