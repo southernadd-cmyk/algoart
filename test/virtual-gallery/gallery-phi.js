@@ -35,6 +35,7 @@ import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createJPEGParityBank} from './phi-jpeg-lossless.mjs';
+import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
 import {createTextureBenchCache} from './phi-jpeg-benchmark-cache.mjs';
 import {decodePhiArtworkImage} from './phi-artwork-preload.mjs';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
@@ -194,6 +195,8 @@ window.__phiJPEGCacheBench=phiTextureBenchCache;
 if(phiTextureBenchCache)THREE.DefaultLoadingManager.setURLModifier(
   url=>phiTextureBenchCache.stamp(url)
 );
+const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
+if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
 const jpegFormat=new URLSearchParams(location.search).get('jpegformat');
 const jpegExactStudy=jpegFormat==='original'||jpegFormat==='lossless';
 const jpegParityBank=createJPEGParityBank(THREE,renderer);
@@ -1003,6 +1006,7 @@ function clearPhiMovingCabin(){
 async function travelLift(date,index){
  if(liftTravelling)return;
  liftTravelling=true;
+ phiLiftProfiler?.begin(date,currentFloor,index);
  phiLiftTarget=index;
  const xrRide=renderer.xr.isPresenting;
  $('lift').hidden=true;
@@ -1028,6 +1032,7 @@ async function travelLift(date,index){
   // Fetch and validate while still at the departure floor. A failed request
   // must never strand the visitor at an elevation with the old floor loaded.
   const prepared=await preparePhiEdition(date);
+  phiLiftProfiler?.mark('edition-metadata-ready',{paintings:prepared.nextPlan.phi.exhibition.paintings.length});
   // Begin downloads after metadata validation, before the physical journey.
   const byId=new Map(prepared.studies.map(study=>[study.id,study]));
   phiArtworkPreloader.start(date,prepared.nextPlan.phi.exhibition.paintings
@@ -1041,14 +1046,17 @@ async function travelLift(date,index){
     placement:{...p,y:prepared.elevation,yaw:0}}))
    .filter(item=>item.study));
   while(liftDoorClosure<.998)await new Promise(resolve=>setTimeout(resolve,30));
+  phiLiftProfiler?.mark('doors-closed');
   if(plan?.phi){
    await startPhiCabinRide(index);
+   phiLiftProfiler?.mark('ride-finished');
    // The shared shaft and the other levels remain in the 3D scene for the ride.
    // Replace detailed room contents only after the cabin reaches its landing.
    await loadEdition(date,{viaLift:true,prepared});
   }else{
    await loadEdition(date,{viaLift:true,prepared});
   }
+  phiLiftProfiler?.mark('floor-construction-finished',{paintings:window.__phiFullEngine?.paintings});
   clearPhiMovingCabin();
   // Build queued exhibits and warm the destination GPU resources with the
   // physical doors still shut. Opening must not be the first render/upload.
@@ -1059,7 +1067,9 @@ async function travelLift(date,index){
     towerGraffiti.diagnostics.pending||interiorGraffiti.diagnostics.pending||phiSquare.diagnostics().pending,
    pump:processDeferredGallery
   });
+  phiLiftProfiler?.mark('deferred-pump-finished',preparation);
   const warmed=await warmGalleryEntry({renderer,scene,camera});
+  phiLiftProfiler?.mark('texture-upload-and-compile-finished',warmed);
   if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date};
   if(xrRide)closeXRLift();
   else{
@@ -1073,8 +1083,10 @@ async function travelLift(date,index){
   liftWasNear=true;
   liftPickerConsumed=true;
   setLiftDoors(false);
+  phiLiftProfiler?.finish({warmup:warmed,preparation});
   if(window.__phiLiftRide)window.__phiLiftRide.status='opening';
  }catch(error){
+  phiLiftProfiler?.mark('failure',{message:String(error?.message||error)});
   phiArtworkPreloader.clear();
   phiSculptureStage.clear();
   if(exhibitDate!==departure.date){
@@ -2892,6 +2904,7 @@ function measurePhiPerformance(now){
 }
 let phiFrameSerial=0;
 function tick() {
+  phiLiftProfiler?.tick();
   phiLightingStudy?.update();
  measurePhiPerformance(performance.now());
   if (!renderer) return;
