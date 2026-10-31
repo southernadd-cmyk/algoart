@@ -1,6 +1,7 @@
 // Reception furniture and signage share the physical walls and clearances
 // used by the phi exhibition curator. Coordinates are local to the floor.
 import {exhibitionSurfaces} from './phi-curator.mjs?v=wall-sized-paintings-20261026';
+import {planPhiReceptionWindow,RECEPTION_WINDOW_BORDER} from './phi-reception-window.mjs';
 const distSegment=(x,z,a,b)=>{
  const dx=b.x-a.x,dz=b.z-a.z,t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/(dx*dx+dz*dz||1)));
  return Math.hypot(x-a.x-t*dx,z-a.z-t*dz);
@@ -56,6 +57,30 @@ export function planPhiReception(floor,circulation,physical){
   .filter(w=>w.room===desk.room&&w.axis==='z'&&w.normal.z>0&&w.at<desk.z-2&&w.length>=2.34)
   .sort((a,b)=>Number(b.centre>start.x)-Number(a.centre>start.x)||Math.abs(a.centre-desk.x)-Math.abs(b.centre-desk.x))[0]:null;
  const credits=creditWall?{x:creditWall.centre,z:creditWall.at+.15,axis:creditWall.axis,normal:creditWall.normal}:null;
+ // Move the four posters together toward the windows, remaining on their
+ // original front wall. Centre the group at the golden division (61.8%) of
+ // the available span between the door and the first arched window.
+ if(credits&&entrance.axis==='z'&&creditWall.axis==='z'&&Math.abs(creditWall.at-entrance.at)<.10){
+  const firstWindow=planPhiReceptionWindow(entrance)?.windows?.[0];
+  if(firstWindow){
+   const direction=Math.sign(firstWindow.x-entrance.centre);
+   const groupHalfWidth=.83+.68/2+.03; // Three portrait credits plus centred authorship.
+   const safeGap=.32;
+   const doorEdge=entrance.centre+direction*entrance.width/2;
+   const windowEdge=firstWindow.x-direction*(firstWindow.width/2+RECEPTION_WINDOW_BORDER);
+   const startX=doorEdge+direction*(groupHalfWidth+safeGap);
+   const endX=windowEdge-direction*(groupHalfWidth+safeGap);
+   const wallMin=creditWall.lo+groupHalfWidth+.10;
+   const wallMax=creditWall.hi-groupHalfWidth-.10;
+   if(direction!==0&&(endX-startX)*direction>0&&wallMax>=wallMin){
+    const phi=(1+Math.sqrt(5))/2;
+    const goldenX=startX+(endX-startX)/phi;
+    const candidate=Math.max(wallMin,Math.min(wallMax,goldenX));
+    // Never cover the entrance, its return wall or a window opening.
+    if((candidate-startX)*direction>=0&&(endX-candidate)*direction>=0)credits.x=candidate;
+   }
+  }
+ }
  if(credits&&signage.length>1)signage[1]={...credits,width:2.65,height:1.3,centreY:3.25,room:desk.room};
  // Place the existing Growing Tower poster on the blank wall to the left
  // of the world map in the test reception, rather than duplicating it.
