@@ -1742,6 +1742,61 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
    block(d.width+.18,.23,.21,d.centre,head,d.at,architecturalFrameStudy);
   }
  }
+ // Frosted glazed transoms close the space ABOVE each existing portal frame;
+ // the 3.1 m doorway below remains unobstructed. The public entrance already
+ // has a transom and the archive lift has its own solid permanent header.
+ // Only two instanced draw calls are added, regardless of door count.
+ const transomDoors=[...phi.circulation.doors,...phi.circulation.bridgePortals]
+  .filter(door=>!door.public&&door.width>.4);
+ if(transomDoors.length){
+  const sill=3.1+.23/2+.012;
+  const top=ROOM_HEIGHT-.09;
+  const glassHeight=top-sill,centreY=elevation+(sill+top)/2;
+  const glassMaterial=new THREE.MeshStandardMaterial({
+   color:'#d6e0dc',roughness:.96,metalness:0,
+   transparent:true,opacity:.82,depthWrite:false,side:THREE.DoubleSide
+  });
+  const glass=new THREE.InstancedMesh(
+   new THREE.BoxGeometry(1,1,1),glassMaterial,transomDoors.length);
+  glass.name='phi-door-frosted-transoms';
+  const trims=new THREE.InstancedMesh(
+   new THREE.BoxGeometry(1,1,1),architecturalFrameStudy,transomDoors.length*4);
+  trims.name='phi-door-transom-mullions';
+  const matrix=new THREE.Matrix4();
+  const put=(mesh,index,x,y,z,w,h,d)=>{
+   matrix.makeScale(w,h,d);
+   matrix.setPosition(x,y,z);
+   mesh.setMatrixAt(index,matrix);
+  };
+  let trimIndex=0;
+  for(let i=0;i<transomDoors.length;i++){
+   const door=transomDoors[i],isX=door.axis==='x';
+   const width=door.width-.095,half=width/2;
+   const cx=isX?door.at:door.centre,cz=isX?door.centre:door.at;
+   put(glass,i,cx,centreY,cz,
+    isX?.032:width,glassHeight,isX?width:.032);
+   // The single delicate horizontal division follows the golden ratio.
+   const mullionY=elevation+sill+glassHeight/PHI;
+   for(const side of [-1,1]){
+    const shift=side*half;
+    put(trims,trimIndex++,cx+(isX?0:shift),centreY,
+     cz+(isX?shift:0),isX?.105:.055,glassHeight,
+     isX?.055:.105);
+   }
+   for(const y of [mullionY,elevation+top]){
+    put(trims,trimIndex++,cx,y,cz,
+     isX?.105:width+.08,.052,isX?width+.08:.105);
+   }
+  }
+  glass.instanceMatrix.needsUpdate=true;
+  trims.instanceMatrix.needsUpdate=true;
+  const transoms=new THREE.Group();transoms.name='phi-door-transom-system';
+  transoms.add(glass,trims);scene.add(transoms);
+  if(GALLERY_DEBUG)window.__phiDoorTransoms={
+   count:transomDoors.length,sill,top,glassHeight,
+   drawCalls:2,entranceUnchanged:true,liftUnchanged:true
+  };
+ }
  for(const b of phi.bridges){
   const mid=(b.from+b.to)/2;
   block(b.axis==='x'?b.length:b.width,.16,b.axis==='z'?b.length:b.width,
