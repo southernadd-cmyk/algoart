@@ -1,0 +1,37 @@
+name: Verify cold/warm JPEG-KTX2 gallery benchmark
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'test/virtual-gallery/phi-jpeg-benchmark-cache.mjs'
+      - 'test/virtual-gallery/ktx2-lossless-all-comparison.html'
+      - 'tests/phi-jpeg-benchmark-cold-warm.test.mjs'
+      - '.github/workflows/phi-jpeg-benchmark-cache-tests.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/phi-jpeg-benchmark-cold-warm.test.mjs
+      - name: Verify all local and external benchmark URLs use controlled identity
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          const cache=readFileSync('test/virtual-gallery/phi-jpeg-benchmark-cache.mjs','utf8');
+          const gallery=readFileSync('test/virtual-gallery/gallery-phi.js','utf8');
+          const loader=readFileSync('test/virtual-gallery/phi-jpeg-lossless.mjs','utf8');
+          const preload=readFileSync('test/virtual-gallery/phi-artwork-preload.mjs','utf8');
+          if(!cache.includes('external-jpeg/'))throw Error('Poly Haven JPEG mirrors missing from cache helper');
+          if(!gallery.includes('setURLModifier'))throw Error('Three.js loader requests not tagged');
+          if(!gallery.includes('phiTextureBenchCache?.stamp(candidate)'))throw Error('Artwork fallback requests not tagged');
+          if(!loader.includes('phiJPEGCacheBench?.stamp'))throw Error('KTX2 assets not tagged');
+          if(!preload.includes('phiJPEGCacheBench?.stamp'))throw Error('Lift-preloaded artwork not tagged');
+          console.log('ASSET_CACHE_IDENTITY_PASS');
+          JS
