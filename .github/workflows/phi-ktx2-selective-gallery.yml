@@ -1,0 +1,29 @@
+name: Verify selective brick KTX2 in real test gallery
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-ktx2-selective-gallery.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Verify original and selective gallery entrance, lift, and two compressed maps
+        run: node tests/phi-ktx2-selective-gallery-smoke.mjs
+      - name: Retain both original and selective reception/gallery snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phi-ktx2-selective-gallery-screenshots
+          path: phi-ktx2-selective-gallery-results/
+          if-no-files-found: warn
