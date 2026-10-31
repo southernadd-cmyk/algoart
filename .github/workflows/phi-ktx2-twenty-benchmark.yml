@@ -1,0 +1,63 @@
+name: Verify KTX2-20 and build hardware stress page
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-ktx2-twenty-benchmark.yml'
+permissions:
+  contents: write
+  actions: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Bundle browser hardware stress comparison
+        run: |
+          npx esbuild test/virtual-gallery/ktx2-20-stress.mjs --bundle --minify --format=iife --platform=browser --target=es2022 --outfile=test/virtual-gallery/ktx2-20-stress-bundle.js
+      - name: Validate twenty compressed assets exist
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync,statSync} from 'node:fs';
+          const m=JSON.parse(readFileSync('test/virtual-gallery/ktx2-20/manifest.json'));
+          if(m.count!==20||m.textures.length!==20)throw Error('Expected exactly 20 KTX2 assets');
+          for(const t of m.textures){
+            const file='test/virtual-gallery/ktx2-20/'+t.id+'.ktx2';
+            if(statSync(file).size<128)throw Error('Invalid '+file);
+          }
+          console.log('TWENTY_FILES_PASS',JSON.stringify(m.totals));
+          JS
+      - run: npx playwright install chromium
+      - name: Run 20-map JPEG vs KTX2 scaling benchmark
+        run: node tests/phi-ktx2-twenty-map-benchmark.mjs
+      - name: Verify deployed real tower uses its eight KTX2 architectural maps
+        run: node tests/phi-ktx2-twenty-gallery-smoke.mjs
+      - name: Save benchmark measurements and visual comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phi-ktx2-twenty-map-results
+          path: phi-ktx2-twenty-map-results/
+          if-no-files-found: ignore
+      - name: Publish test-only benchmark page
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add test/virtual-gallery/ktx2-20-stress-bundle.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Publish test-only twenty-architecture-texture GPU benchmark bundle'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+          gh workflow run deploy-pages.yml --ref main
