@@ -113,16 +113,24 @@ async function single(mode,index,coldMode=false){
  },65000,'texture readiness');
  const texture={...(mode==='twenty'?win.__phiKTX20:win.__phiKTX2Pilot)};
  if(texture.status!==expected)throw Error('Texture pilot not fully loaded: '+JSON.stringify(texture));
- const names=['Bricks055_NormalGL','Bricks055_Roughness','OfficeCeiling001_NormalGL'];
- const suffix=mode==='twenty'?'.ktx2':'.jpg';
+ const files=mode==='twenty'
+  ?['ktx2-20/brick-normal.ktx2','ktx2-20/brick-roughness.ktx2',
+     'ktx2-20/ceiling-color.ktx2','ktx2-20/ceiling-normal.ktx2',
+     'ktx2-20/ceiling-roughness.ktx2','ktx2-20/decorative-wall-color.ktx2',
+     'ktx2-20/decorative-wall-normal.ktx2','ktx2-20/decorative-wall-roughness.ktx2']
+  :['textures/Bricks055_NormalGL.jpg','textures/Bricks055_Roughness.jpg',
+     'textures/OfficeCeiling001_Color.jpg','textures/OfficeCeiling001_NormalGL.jpg',
+     'textures/OfficeCeiling001_Roughness.jpg',
+     'textures/sharetextures-decorative-wall-2/color.webp',
+     'textures/sharetextures-decorative-wall-2/normal.webp',
+     'textures/sharetextures-decorative-wall-2/roughness.webp'];
  if(coldMode)await waitFor(()=>{
   const entries=win.performance.getEntriesByType('resource');
-  return names.every(name=>entries.some(e=>e.name.includes('/'+name+suffix)&&e.responseEnd>0));
- },50000,'three architectural texture transfers');
+  return files.every(file=>entries.some(e=>e.name.includes('/'+file)&&e.responseEnd>0));
+ },75000,'eight architectural texture transfers');
  const textureReadyMs=Math.round(performance.now()-started);
  const entries=win.performance.getEntriesByType('resource');
- const textureRequests=names.map(name=>{
-  const file=name+suffix;
+ const textureRequests=files.map(file=>{
   const entry=entries.filter(e=>e.name.includes('/'+file)).at(-1);
   return entry?{name:file,transferSize:entry.transferSize,encodedBodySize:entry.encodedBodySize,
     durationMs:+entry.duration.toFixed(1),responseEndMs:+entry.responseEnd.toFixed(1)}
