@@ -138,17 +138,15 @@ test('0% exactly preserves original geometry; 65% preserves safety and improves 
  delete globalThis.location;
 });
 
-test('both test entry points always load a fresh fingerprinted staging curator',()=>{
+test('both restored test entries load a local copy of the live gallery and the archive data',()=>{
  const entries=['../test/virtual-gallery/index.html','../test/virtual-gallery/full-engine.html'];
  for(const entry of entries){
   const source=readFileSync(new URL(entry,import.meta.url),'utf8');
-  assert.match(source,/test-curator-revision\.json\?fresh=/);
-  assert.match(source,/fetch\(manifestURL,\{cache:'no-store'\}\)/);
-  assert.match(source,/shared-curated-signs-'\+revision/);
+  assert.match(source,/<base href="\.\.\/\.\.\/gallery\/visit\/">/);
+  assert.match(source,/await import\('\.\.\/\.\.\/test\/virtual-gallery\/gallery-phi-bundle\.js\?v=/);
+  assert.doesNotMatch(source,/gallery-phi-test-room-signs-bundle\.js/);
   assert.match(source,/tower-layouts\.json\?day=/);
-  assert.match(source,/cache:'no-store',signal:indexController\.signal/);
  }
- const manifest=JSON.parse(readFileSync(new URL('../gallery/visit/test-curator-revision.json',import.meta.url),'utf8'));
- const bundle=readFileSync(new URL('../gallery/visit/gallery-phi-test-room-signs-bundle.js',import.meta.url));
- assert.equal(manifest.sha256,createHash('sha256').update(bundle).digest('hex'));
+ const bundle=readFileSync(new URL('../test/virtual-gallery/gallery-phi-bundle.js',import.meta.url));
+ assert.ok(bundle.byteLength>100000,'Restored local test gallery bundle is missing or unexpectedly small');
 });
