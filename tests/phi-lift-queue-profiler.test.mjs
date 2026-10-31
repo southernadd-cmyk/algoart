@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createPhiLiftProfiler} from '../test/virtual-gallery/phi-lift-profile.mjs';
+import {installPhiComposerPassProfiler} from '../test/virtual-gallery/phi-postfx-pass-profiler.mjs';
 import {warmGalleryEntry} from '../test/virtual-gallery/gallery-entry-preparation.mjs';
 import {createPhiArtworkPreloader} from '../test/virtual-gallery/phi-artwork-preload.mjs';
 import {createPhiLiftPaintingGPUPreparer} from '../test/virtual-gallery/phi-lift-painting-gpu.mjs';
@@ -432,4 +433,69 @@ test('staging profiler probes lighting and postprocessing without changing shade
  assert.match(source,/phiPostFX\.render\(dt,/);
  assert.match(source,/get\('liftpipeline'\)==='1'/);
  assert.match(source,/get\('liftreuse'\)==='1'/);
+});
+
+test('lift profile stops collecting frame spikes once doors have opened',()=>{
+ let time=100;
+ const profiler=createPhiLiftProfiler({enabled:true,now:()=>time});
+ profiler.begin('2026-10-15',0,11);
+ profiler.tick();time+=100;profiler.tick();
+ profiler.finish();
+ const visit=profiler.state.visits.at(-1),saved=visit.frames.length;
+ time+=20000;profiler.tick();
+ assert.equal(visit.frames.length,saved);
+ assert.equal(visit.summary.largestFrameGapMs,100);
+ assert.equal(visit.summary.ms,100);
+ assert.equal(visit.stages.at(-1).name,'doors-opening');
+ assert.ok(visit.frames.every(frame=>frame.elapsedMs<=visit.summary.ms));
+});
+
+test('test-only composer probe attributes exact existing enabled pass CPU calls',()=>{
+ let clock=0;
+ class Composer{
+  constructor(passes){this.passes=passes;}
+  render(dt){
+   for(const pass of this.passes)if(pass.enabled!==false)pass.render(dt);
+   return 'rendered';
+  }
+ }
+ const calls=[];
+ const render={constructor:{name:'RenderPass'},enabled:true,render(dt){calls.push(['render',dt]);clock+=42;}};
+ const ao={constructor:{name:'N8AOPostPass'},enabled:true,render(dt){calls.push(['ao',dt]);clock+=12;}};
+ const disabled={constructor:{name:'OffPass'},enabled:false,render(){throw Error('disabled pass executed');}};
+ const composer=new Composer([render,ao,disabled]);
+ const records=[];
+ const profiler=installPhiComposerPassProfiler({
+  enabled:true,Composer,now:()=>clock,
+  record:(name,ms)=>records.push([name,ms])
+ });
+ assert.equal(profiler.installed,true);
+ assert.equal(composer.render(.016),'rendered');
+ assert.deepEqual(calls,[['render',.016],['ao',.016]]);
+ assert.ok(records.some(([name,ms])=>name==='postfx-pass:0:RenderPass'&&ms===42));
+ assert.ok(records.some(([name,ms])=>name==='postfx-pass:1:N8AOPostPass'&&ms===12));
+ assert.ok(records.some(([name,ms])=>name==='postfx-composer-total'&&ms===54));
+ assert.ok(!records.some(([name])=>name.includes('OffPass')));
+ profiler.dispose();
+ assert.equal(composer.render(.032),'rendered');
+ assert.equal(records.length,6,'Disposed composer instrumentation does not add more entries');
+});
+
+test('disabled post-FX probe has no runtime mutation or instrumentation',()=>{
+ class Composer{render(){return 123;}}
+ const original=Composer.prototype.render;
+ const diag=installPhiComposerPassProfiler({
+  enabled:false,Composer,record:()=>{throw Error('Disabled probe must not be called');}
+ });
+ assert.equal(diag.installed,false);
+ assert.equal(Composer.prototype.render,original);
+});
+
+test('post-FX pass profiling is staging-only and source paintings remain protected',()=>{
+ const testSource=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
+ const liveSource=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
+ assert.match(testSource,/installPhiComposerPassProfiler\(/);
+ assert.match(testSource,/enabled:!!phiLiftProfiler/);
+ assert.match(testSource,/phiPostFX\.render\(dt/);
+ assert.doesNotMatch(liveSource,/installPhiComposerPassProfiler|phi-postfx-pass-profiler/);
 });
