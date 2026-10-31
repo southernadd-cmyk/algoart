@@ -34,6 +34,8 @@ import {buildPhiRendererPlan} from './phi-full-engine-adapter.mjs?v=public-adapt
 import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
+import {createJPEGParityBank} from './phi-jpeg-lossless.mjs';
+import {decodePhiArtworkImage} from './phi-artwork-preload.mjs';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
 import { planGalleryHangs } from './hanging-v3.mjs?v=reserve-glazed-door-walls-20261022';
@@ -185,6 +187,11 @@ try {
   errorBox.hidden = false;
 }
 
+// TEST ONLY: original JPEG versus pixel-identical KTX2/Zstd JPEGs.
+const jpegFormat=new URLSearchParams(location.search).get('jpegformat');
+const jpegExactStudy=jpegFormat==='original'||jpegFormat==='lossless';
+const jpegParityBank=createJPEGParityBank(THREE,renderer);
+window.__phiJPEGLosslessBank=jpegParityBank;
 const phiStartupLoading=trackGalleryLoading(THREE.DefaultLoadingManager);
 const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
@@ -402,7 +409,12 @@ const phiSculptureStage=createPhiSculptureStager({
 });
 if(GALLERY_DEBUG)window.__phiSculptureStage=()=>phiSculptureStage.stats();
 // Prepare only the destination floor's paintings while the lift travels.
-const phiArtworkPreloader=createPhiArtworkPreloader(undefined,{concurrency:mobileImages?2:4});
+const phiArtworkPreloader=createPhiArtworkPreloader(
+ jpegParityBank
+  ?url=>jpegParityBank.resolve(url)
+    ?jpegParityBank.load(url,{color:true}).catch(()=>decodePhiArtworkImage(url))
+    :decodePhiArtworkImage(url)
+  :undefined,{concurrency:mobileImages?2:4});
 if(GALLERY_DEBUG)window.__phiArtworkPreload=()=>phiArtworkPreloader.stats();
 const artworkQueue=[];
 let artworkActive=0;
@@ -432,7 +444,7 @@ window.addEventListener('visibilitychange',()=>{
   for(const [material,request] of [...failedArtworkLoads]){
     if(material.userData.galleryDisposed){failedArtworkLoads.delete(material);continue;}
     failedArtworkLoads.delete(material);
-    loadArtworkTexture(request.url,material,{preferred:request.preferred});
+    loadArtworkTexture(request.url,material,{preferred:jpegExactStudy?null:request.preferred});
   }
 });
 function loadArtworkTexture(url,material,{preferred=null}={}){
@@ -517,7 +529,14 @@ function loadArtworkTexture(url,material,{preferred=null}={}){
       image.onerror=()=>{if(GALLERY_DEBUG)console.warn('Artwork request failed:',candidate);setTimeout(attempt,400);};
       image.src=candidate;
     }
-    attempt();
+    if(jpegParityBank?.resolve(source.href)){
+      jpegParityBank.load(source.href,{color:true}).then(texture=>{
+        if(material.userData.galleryDisposed){texture.dispose();finish();return;}
+        if(material.map){material.map.dispose();material.map.userData.galleryBitmap?.close?.();}
+        material.map=texture;material.color.set('#ffffff');material.needsUpdate=true;
+        failedArtworkLoads.delete(material);finish();
+      }).catch(()=>attempt());
+    }else attempt();
   }),material);
 }
 // Stage 2: landscape images occupy walls. Portraits become freestanding
@@ -596,7 +615,7 @@ function hangArt(room, study, hang) {
   scene.add(artwork);
   artExhibits.push({study,position:artwork.position.clone(),normal:normal.clone()});
   artworkMaterial.userData.galleryPosition=artwork.position.clone();
-   loadArtworkTexture(study.image, artworkMaterial,{preferred:study.imageOptimized});
+   loadArtworkTexture(study.image, artworkMaterial,{preferred:jpegExactStudy?null:study.imageOptimized});
   const lamp=base.clone().addScaledVector(normal,1.35);
   lamp.y=Math.min(room.y+ROOM_HEIGHT-.35,hang.y+height*.66+1.25);
   exhibitLight(room,lamp,base,{beam:Math.max(.28,Math.min(.56,Math.atan(width/2/1.45)*1.25)),power:phiLightingOriginal?17:19});
@@ -1007,7 +1026,7 @@ async function travelLift(date,index){
   const byId=new Map(prepared.studies.map(study=>[study.id,study]));
   phiArtworkPreloader.start(date,prepared.nextPlan.phi.exhibition.paintings
    .map(p=>byId.get(p.studyId)).filter(Boolean)
-   .map(study=>study.imageOptimized||study.image).filter(Boolean));
+   .map(study=>jpegExactStudy?study.image:(study.imageOptimized||study.image)).filter(Boolean));
   // Prepare a detached pedestal and traced portrait relief each animation
   // frame while the lift is closing and moving. This is never in the live
   // scene until the destination has been constructed and rotated.
@@ -1676,7 +1695,7 @@ function constructPhiGallery(layout,studies){
     new THREE.MeshBasicMaterial({map:labelTexture(study.title,study.seed),side:THREE.FrontSide}));
   caption.position.set(p.x,centreY-height/2-.24,p.z);
   caption.rotation.copy(face.rotation);scene.add(caption);
-  const url=study.imageOptimized||study.image;
+  const url=jpegExactStudy?study.image:(study.imageOptimized||study.image);
   if(url)deferredGalleryJobs.push(()=>{
    const apply=texture=>{
     if(!face.parent||face.userData.galleryDisposed){texture.dispose();return;}
@@ -1687,14 +1706,17 @@ function constructPhiGallery(layout,studies){
    };
    const fallback=source=>{
     if(!face.parent||face.userData.galleryDisposed)return;
-    loader.load(source,apply,undefined,error=>console.warn('Phi painting failed to load',study.id,error));
+    if(jpegParityBank?.resolve(source)){
+      jpegParityBank.load(source,{color:true}).then(apply).catch(()=>
+       loader.load(source,apply,undefined,error=>console.warn('Phi painting failed to load',study.id,error)));
+    }else loader.load(source,apply,undefined,error=>console.warn('Phi painting failed to load',study.id,error));
    };
    // Reuse the decoded lift image instead of issuing another image request.
    const warmed=phiArtworkPreloader.take(exhibitDate,url);
    if(warmed)warmed.then(image=>{
     if(!face.parent||face.userData.galleryDisposed)return;
     if(!image){fallback(study.image||url);return;}
-    const texture=new THREE.Texture(image);
+    const texture=image?.isTexture?image:new THREE.Texture(image);
     texture.needsUpdate=true;
     apply(texture);
    });
