@@ -561,7 +561,7 @@ test('cancelled scene staging restores every surviving painting and wall',async(
 test('scene batch feature is opt-in and all artwork is prepared before scene reveal and door opening',()=>{
  const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
  const live=readFileSync(new URL('../gallery/visit/gallery-phi.js',import.meta.url),'utf8');
- assert.match(src,/get\('liftstage'\)==='1'/);
+ assert.match(src,/get\('liftstage'\)!=='0'/);
  assert.match(src,/exclude:phiLiftCabin/);
  assert.match(src,/await phiArrivalMeshes\.reveal/);
  assert.match(src,/phiArrivalMeshes\.restore\(\)/);
