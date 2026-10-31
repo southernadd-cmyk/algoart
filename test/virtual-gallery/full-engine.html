@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#e8e4da">
 <meta name="robots" content="noindex,nofollow">
 <base href="../../gallery/visit/">
+<script>
+// Reserve enough resource timing entries for the explicitly requested cold
+// network comparison; the full tower otherwise exceeds the default buffer.
+if(new URLSearchParams(location.search).has('coldbench'))performance.setResourceTimingBufferSize(2500);
+</script>
 <!-- Test tower: local gallery engine/assets; live archive data resolves through the base URL. -->
 <link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/test/virtual-gallery/full-engine.html">
 <meta name="description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
