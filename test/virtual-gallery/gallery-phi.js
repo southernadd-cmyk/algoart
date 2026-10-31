@@ -35,6 +35,7 @@ import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
+import {installPhiShadowRenderProbe} from './phi-shadow-render-probe.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {installPhiComposerPassProfiler} from './phi-postfx-pass-profiler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
@@ -213,12 +214,35 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
   renderer // Existing architectural materials and original images remain untouched.
 });
 // Test-only deep probe: enabled exclusively by ?liftprofile=1.
+// Capture state only for expensive scene renders, not on normal frames.
+let phiShadowProbe=null;
 installPhiComposerPassProfiler({
  enabled:!!phiLiftProfiler,
- record:(name,ms)=>phiLiftProfiler?.record(name,ms)
+ record:(name,ms)=>{
+  const details=name==='postfx-pass:0:scene-render'&&ms>=40?{
+   shadow:phiShadowProbe?.stats?.last||null,
+   shadowCalls:phiShadowProbe?.stats?.calls||0,
+   shadowRefreshes:phiLightingStudy?.stats?.refreshes||0,
+   shadowMapNeedsUpdate:!!renderer?.shadowMap?.needsUpdate,
+   shadowMapEnabled:!!renderer?.shadowMap?.enabled,
+   shaderPrograms:renderer?.info?.programs?.length??null,
+   drawCalls:renderer?.info?.render?.calls??null,
+   triangles:renderer?.info?.render?.triangles??null,
+   textures:renderer?.info?.memory?.textures??null,
+   geometries:renderer?.info?.memory?.geometries??null,
+   sceneRoots:scene.children.length,
+   cabinY:+rig.position.y.toFixed(2),
+   rideStatus:window.__phiLiftRide?.status||null
+  }:null;
+  phiLiftProfiler?.record(name,ms,details);
+ }
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
+phiShadowProbe=installPhiShadowRenderProbe({
+ renderer,enabled:!!phiLiftProfiler,
+ record:(name,ms)=>phiLiftProfiler?.record(name,ms)
+});
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
 let receptionWallMaterial=null;
