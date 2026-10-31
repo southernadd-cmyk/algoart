@@ -256,6 +256,30 @@ const toggleGalleryFallback=()=>{galleryFallback.hidden=galleryError.hidden;};
 new MutationObserver(toggleGalleryFallback).observe(galleryError,{attributes:true,attributeFilter:['hidden']});
 toggleGalleryFallback();
 </script>
+<script>
+// An export button appears only when GPU profiling is explicitly requested.
+if(new URLSearchParams(location.search).has('gpuprofile')){
+ document.addEventListener('DOMContentLoaded',()=>{
+  const button=document.createElement('button');
+  button.type='button';
+  button.textContent='Copy GPU profile';
+  button.style.cssText='position:fixed;right:12px;bottom:12px;z-index:120;background:#344452;color:#fff;border:1px solid #ddd;border-radius:5px;padding:10px 14px;font:13px system-ui;cursor:pointer';
+  button.addEventListener('click',async()=>{
+   const stats=window.__phiGpuProfile?.snapshot();
+   if(!stats){button.textContent='Profile not ready';return;}
+   const report={...stats,frame:window.__phiPerformance?{
+    medianFrameMs:window.__phiPerformance.medianFrameMs,
+    p95FrameMs:window.__phiPerformance.p95FrameMs,
+    maxFrameMs:window.__phiPerformance.maxFrameMs,
+    framesOver50ms:window.__phiPerformance.framesOver50ms}:null};
+   try{await navigator.clipboard.writeText(JSON.stringify(report,null,2));
+    button.textContent='GPU profile copied';
+   }catch{button.textContent='Use __phiGpuProfile.snapshot() in console';}
+  });
+  document.body.append(button);
+ });
+}
+</script>
 </body>
 </html>
 
