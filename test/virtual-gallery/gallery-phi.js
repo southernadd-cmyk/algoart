@@ -1775,32 +1775,51 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   caption.position.set(p.x,centreY-height/2-.24,p.z);
   caption.rotation.copy(face.rotation);scene.add(caption);
   const url=jpegExactStudy?study.image:(study.imageOptimized||study.image);
-  // Attach preloaded painting maps before optional sculptures, furnishings
-  // and visitors. This does not draw/upload them while doors animate; it
-  // prevents complete downloaded floors waiting behind other deferred work.
-  if(url)deferredGalleryJobs.unshift(()=>{
+  if(!url)throw new Error('Exhibition painting has no image: '+study.id);
+  const gate=phiPaintingGate.register(study.id,face);
+  const paintingState=window.__phiFullEngine;
+  const attachPainting=()=>{
    const apply=texture=>{
-    if(!face.parent||face.userData.galleryDisposed){texture.dispose();return;}
+    if(!face.parent||face.userData.galleryDisposed){texture?.dispose?.();return;}
     texture.colorSpace=THREE.SRGBColorSpace;
     face.material.dispose();
     face.material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide});
-    window.__phiFullEngine.paintingsLoaded++;
+    paintingState.paintingsLoaded++;
+    gate.ready(texture);
    };
-   const fallback=source=>{
+   // Try the optimized image first, then the original JPEG/WebP if needed.
+   // Bound network attempts; a permanent failure is reported to the lift.
+   const sources=[url,study.image].filter((value,i,array)=>value&&array.indexOf(value)===i);
+   const fallback=(i=0)=>{
     if(!face.parent||face.userData.galleryDisposed)return;
-    loader.load(source,apply,undefined,error=>console.warn('Phi painting failed to load',study.id,error));
+    if(i>=sources.length){gate.fail(new Error('Neither optimized nor original image could load'));return;}
+    let completed=false,loaded=null;
+    const finish=(ok,texture)=>{
+     if(completed)return;
+     completed=true;clearTimeout(timer);
+     if(ok)apply(texture);
+     else{loaded?.dispose?.();fallback(i+1);}
+    };
+    const timer=setTimeout(()=>finish(false,null),16000);
+    try{
+     loaded=loader.load(sources[i],
+      texture=>{if(completed){texture.dispose();return;}finish(true,texture);},
+      undefined,()=>finish(false,null));
+    }catch(error){finish(false,null);}
    };
-   // Reuse the decoded lift image instead of issuing another image request.
    const warmed=phiArtworkPreloader.take(exhibitDate,url);
-   if(warmed)warmed.then(image=>{
-    if(!face.parent||face.userData.galleryDisposed)return;
-    if(!image){fallback(study.image||url);return;}
-    const texture=image?.isTexture?image:new THREE.Texture(image);
-    texture.needsUpdate=true;
+   if(warmed)warmed.then(texture=>{
+    if(!face.parent||face.userData.galleryDisposed){texture?.dispose?.();return;}
+    if(!texture){fallback();return;}
+    if(!texture.isTexture){texture=new THREE.Texture(texture);texture.needsUpdate=true;}
     apply(texture);
-   });
-   else fallback(url); // Direct links and cold starts work as before.
-  });
+   },()=>fallback());
+   else fallback();
+  };
+  // During a lift visit, begin attaching all paintings as soon as their walls
+  // exist. Do not place mandatory work behind optional furniture or visitors.
+  if(viaLift)attachPainting();
+  else deferredGalleryJobs.unshift(attachPainting);
   artExhibits.push({study,position:face.position.clone(),normal:new THREE.Vector3(p.normal.x,0,p.normal.z)});
  }
  for(const p of phi.exhibition.sculptures){
