@@ -1,4 +1,5 @@
-// Test-tower post-processing lab. No changes to the live renderer or phi lights.
+import {N8AOPostPass} from 'n8ao';
+// Shared approved Architectural rendering; comparison controls are exposed on test only.
 import {
  EffectComposer,RenderPass,NormalPass,EffectPass,BloomEffect,SelectiveBloomEffect,
  SSAOEffect,BrightnessContrastEffect,HueSaturationEffect,VignetteEffect,
@@ -83,6 +84,8 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   selectedGlowMeshes:0,focusActive:false,settings,renderer:'original'};
  let preset='original',bypass=false,composer=null,effects=null,selection=null,dofPass=null,artProtection=null;
  let previous=0,lastMode='',lastUI=0,lastGlowScan=0,selectedIds='';
+ let aoProvider=new URLSearchParams(location.search).get('ao')==='ssao'?'ssao':'n8ao';
+ stats.aoProvider=aoProvider;
  // A small, collapsible workshop: all sliders are native, keyboard-accessible and live.
  const panel=document.createElement('details');panel.id='phi-post-fx';panel.open=true;
  panel.style.cssText='position:fixed;right:12px;top:110px;z-index:80;width:min(340px,calc(100vw - 24px));max-height:calc(100dvh - 135px);overflow:auto;background:#f0ece5f5;color:#263b42;border:1px solid #827964;border-radius:6px;box-shadow:0 5px 24px #1b26252b;font:12px/1.45 system-ui,sans-serif';
@@ -156,6 +159,19 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
  const message=small('div','','font-size:11px;color:#526269');message.setAttribute('role','status');body.append(message);
  document.body.append(panel);
  if(production)panel.hidden=true;
+ panel.open=false;
+ const aoLabel=small('label','Ambient occlusion comparison','display:grid;gap:4px;font-weight:600');
+ const aoSelect=document.createElement('select');aoSelect.setAttribute('aria-label','Ambient occlusion provider');
+ for(const [value,text] of [['n8ao','N8AO · half resolution'],['ssao','Existing SSAO']]){
+  const option=document.createElement('option');option.value=value;option.textContent=text;aoSelect.append(option);
+ }
+ aoSelect.value=aoProvider;aoLabel.append(aoSelect);selectors.prepend(aoLabel);
+ selectors.append(small('p','N8AO radius is in metres; SSAO uses its own scale. Equal values do not imply identical shadows. Compare from the same viewpoint.','margin:0;font-size:11px'));
+ aoSelect.addEventListener('change',()=>{
+  aoProvider=aoSelect.value;stats.aoProvider=aoProvider;
+  for(const bucket of Object.values(frames))bucket.length=0;
+  stats.summaries={};previous=0;lastMode='';apply();
+ });
  function sync(){
   presetSelect.value=preset;
   const visible=preset!=='original';
@@ -192,6 +208,12 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   const ao=new SSAOEffect(camera,normals.texture,{samples:6,rings:6,resolutionScale:.5,intensity:0,radius:.2});
   const aoPass=new EffectPass(camera,ao);
   compositor.addPass(normals);compositor.addPass(aoPass);
+  const n8ao=new N8AOPostPass(scene,camera,innerWidth,innerHeight);
+  n8ao.configuration.halfRes=true;
+  n8ao.configuration.depthAwareUpsampling=true;
+  n8ao.configuration.gammaCorrection=false;
+  n8ao.configuration.accumulate=false;
+  compositor.addPass(n8ao);
   const fullBloom=new BloomEffect({mipmapBlur:true,levels:4,intensity:0,luminanceThreshold:.5,radius:.7});
   const fullPass=new EffectPass(camera,fullBloom);compositor.addPass(fullPass);
   const selectedBloom=new SelectiveBloomEffect(scene,camera,{mipmapBlur:true,levels:4,
@@ -210,7 +232,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   // Until explicitly enabled, expensive depth and bloom passes stay dormant.
   normals.enabled=false;aoPass.enabled=false;fullPass.enabled=false;
   selectedPass.enabled=false;focusPass.enabled=false;
-  return {compositor,effects:{normals,ao,aoPass,fullBloom,fullPass,selectedBloom,selectedPass,dof,focusPass,colour,sat,vignette,grain}};
+  return {compositor,effects:{normals,ao,aoPass,n8ao,fullBloom,fullPass,selectedBloom,selectedPass,dof,focusPass,colour,sat,vignette,grain}};
  }
  function apply(){
   if(!composer||!effects||preset==='original')return;
@@ -226,7 +248,12 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   e.fullPass.enabled=false;
   e.selectedPass.enabled=s.glowMode!=='off'&&s.bloomIntensity>0;
   e.ao.intensity=s.aoIntensity;e.ao.ssaoMaterial.radius=s.aoRadius;e.ao.samples=s.aoSamples;
-  e.normals.enabled=e.aoPass.enabled=s.aoIntensity>0;
+  e.normals.enabled=e.aoPass.enabled=s.aoIntensity>0&&aoProvider==='ssao';
+  e.n8ao.enabled=s.aoIntensity>0&&aoProvider==='n8ao';
+  e.n8ao.configuration.intensity=s.aoIntensity;
+  e.n8ao.configuration.aoRadius=s.aoRadius;
+  e.n8ao.configuration.aoSamples=s.aoSamples;
+  stats.aoConfiguration={provider:aoProvider,radius:s.aoRadius,intensity:s.aoIntensity,samples:s.aoSamples,halfRes:true};
   e.dof.bokehScale=s.bokeh;e.dof.cocMaterial.focusRange=s.focusRange;
   e.focusPass.enabled=false;
   if(e.selectedPass.enabled)scanGlow();
@@ -255,7 +282,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   settings[preset]=phiFXSettings(preset);apply();sync();message.textContent='Preset restored.';});
  function currentJSON(){return phiFXExport(preset==='original'?'architectural':preset,
   settings[preset==='original'?'architectural':preset],
-  {active:preset!=='original'&&!bypass,frames:stats.summaries[preset]||null,
+  {ao:stats.aoConfiguration,active:preset!=='original'&&!bypass,frames:stats.summaries[preset]||null,
    original:stats.summaries.original||null,pixelRatio:renderer.getPixelRatio(),
    selectedGlowMeshes:stats.selectedGlowMeshes});
  }

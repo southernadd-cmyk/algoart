@@ -8,7 +8,9 @@ test('test transform retains the approved presets and artwork protection',()=>{
  const defaults=s=>s.slice(s.indexOf('export const PHI_FX_DEFAULTS'),s.indexOf('export function phiFXSettings'));
  assert.equal(defaults(patched),defaults(original));
  assert.match(patched,/compositor.addPass\(artProtection.pass\)/);
- assert.doesNotMatch(original,/N8AOPostPass|aoProvider/);
+ assert.match(original,/N8AOPostPass/);
+ assert.match(original,/if\(production\)panel.hidden=true/);
+ assert.match(patched,/panel.hidden=false/);
 });
 test('AO providers are mutually exclusive, and comparison resets timing history',()=>{
  const enabled=patched.match(/e.normals.enabled=e.aoPass.enabled=.*;\n  e.n8ao.enabled=.*;/)[0];
