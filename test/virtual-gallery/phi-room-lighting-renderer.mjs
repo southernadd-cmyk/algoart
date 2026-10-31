@@ -1,9 +1,10 @@
+// Defined once: shadow-surface scans may visit thousands of objects.
+const validPhiShadowMaterial=m=>!!m&&(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial||m.isMeshPhongMaterial||m.isMeshLambertMaterial)&&(!m.transparent||m.alphaTest>0);
 export function isPhiShadowSurface(object){
  if(!object.isMesh||object.isReflector||object.name==='phi-spiral-reflecting-water')return false;
- const valid=m=>!!m&&(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial||m.isMeshPhongMaterial||m.isMeshLambertMaterial)&&(!m.transparent||m.alphaTest>0);
  return Array.isArray(object.material)
-  ?object.material.length>0&&object.material.every(valid)
-  :valid(object.material);
+  ?object.material.length>0&&object.material.every(validPhiShadowMaterial)
+  :validPhiShadowMaterial(object.material);
 }
 export function staticPhiShadowCaster(mesh){
  if(!isPhiShadowSurface(mesh)||mesh.isSkinnedMesh)return false;
