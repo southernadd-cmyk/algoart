@@ -6,51 +6,16 @@ on:
     paths:
       - 'automation/ktx2-all.trigger'
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: full-gallery-ktx2-archive-generation
   cancel-in-progress: true
 jobs:
-  encode:
+  fidelity-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python -m pip install Pillow==11.3.0
-      - name: Install verified Khronos KTX encoder
+      - name: Enforce pixel-exact artwork requirement
         run: |
-          curl --fail --location --retry 3 -o "$RUNNER_TEMP/ktx.deb" \
-            https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb
-          echo "ca635ed489d8bf54fac8d7687056c651193de0740830a7738cc034adc63e3027  $RUNNER_TEMP/ktx.deb" | sha256sum -c
-          sudo dpkg --install "$RUNNER_TEMP/ktx.deb" || { sudo apt-get update && sudo apt-get install -fy; }
-          command -v toktx
-      - name: Convert all JPEG sources into test-only KTX2 equivalents
-        run: python3 automation/build-ktx2-all-test.py
-      - name: Validate complete artwork and architectural conversion
-        run: |
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          m=json.loads(Path('test/virtual-gallery/ktx2-all/manifest.json').read_text())
-          assert m['artworkCount']>=300,m['artworkCount']
-          assert m['count']>=410,m['count']
-          assert len(m['entries'])==m['count']
-          assert all((Path('test/virtual-gallery/ktx2-all')/t['ktx2']).exists() for t in m['entries'])
-          assert len(set(x['source'] for x in m['entries']))==m['count']
-          print('KTX_ALL_CHECK_PASS',m['count'],m['artworkCount'])
-          PY
-      - name: Publish compressed assets without changing live sources
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add test/virtual-gallery/ktx2-all/
-          if ! git diff --cached --quiet; then
-            git commit -m 'Add KTX2 counterparts for all gallery JPEG textures (test only)'
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
+          echo "Lossy Basis ETC1S and UASTC cannot reproduce JPEG decoded pixels exactly."
+          echo "Full artwork conversion disabled; archive JPEGs must remain byte-for-byte untouched."
+          echo "KTX2 conversions will not be published until a lossless, verified pipeline exists."
