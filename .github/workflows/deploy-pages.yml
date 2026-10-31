@@ -23,6 +23,7 @@ on:
       - 'tests/phi-pre-expansion.test.mjs'
       - 'tests/phi-test-room-signs.test.mjs'
       - 'tests/phi-room-sign-counts.test.mjs'
+      - 'tests/phi-reception-refresh.test.mjs'
       - 'tests/phi-reception-penrose.test.mjs'
       - 'tests/phi-gallery-penrose.test.mjs'
       - 'tests/phi-exterior-plants-disabled.test.mjs'
