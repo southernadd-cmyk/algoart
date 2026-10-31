@@ -11,13 +11,13 @@ const browser=await chromium.launch({headless:true,args:[
  '--no-sandbox','--enable-webgl','--use-angle=swiftshader',
  '--enable-unsafe-swiftshader','--disable-dev-shm-usage'
 ]});
-const report={date,environment:'Chromium SwiftShader software WebGL',liftreuse:process.env.PHI_LIFT_REUSE??'default',liftstage:process.env.PHI_LIFT_STAGE??'default'};
+const report={date,environment:'Chromium SwiftShader software WebGL',liftreuse:process.env.PHI_LIFT_REUSE??'default',liftstage:process.env.PHI_LIFT_STAGE??'default',liftbatch:process.env.PHI_LIFT_BATCH??'legacy'};
 try{
  const page=await browser.newPage({viewport:{width:1280,height:800}});
  const errors=[];
  page.on('pageerror',error=>errors.push(String(error)));
  await page.goto(base+'/'+(process.env.PHI_LIFT_TARGET==='live'?'gallery/visit/':'test/virtual-gallery/full-engine.html')+
-  '?debug=1&liftprofile=1'+(process.env.PHI_LIFT_REUSE==null?'':'&liftreuse='+process.env.PHI_LIFT_REUSE)+(process.env.PHI_LIFT_STAGE==null?'':'&liftstage='+process.env.PHI_LIFT_STAGE),
+  '?debug=1&liftprofile=1'+(process.env.PHI_LIFT_REUSE==null?'':'&liftreuse='+process.env.PHI_LIFT_REUSE)+(process.env.PHI_LIFT_STAGE==null?'':'&liftstage='+process.env.PHI_LIFT_STAGE)+(process.env.PHI_LIFT_BATCH==null?'':'&liftbatch='+process.env.PHI_LIFT_BATCH),
   {waitUntil:'domcontentloaded',timeout:60000});
  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled||
    !!window.__galleryStartupError,null,{timeout:180000});
@@ -60,6 +60,9 @@ try{
    sceneRevealCompleted:at('scene-reveal-finished')>=0&&at('doors-opening')>at('scene-reveal-finished'),
    sceneRevealMs:elapsed('scene-reveal-finished')==null||elapsed('scene-reveal-start')==null?null:
     +(elapsed('scene-reveal-finished')-elapsed('scene-reveal-start')).toFixed(1),
+   sceneBatches:stages.find(s=>s.name==='scene-reveal-finished')?.details?.batches||[],
+   worstFrameGapMs:visit?.summary?.largestFrameGapMs??null,
+   totalLiftMs:visit?.summary?.ms??null,
    stages:stages.map(s=>({name:s.name,elapsedMs:s.elapsedMs})),
    frameStalls:visit?.frames?.slice(0,120)||[],
    cpuOperations:visit?.operations||null,
@@ -68,7 +71,7 @@ try{
  });
  Object.assign(report,result,{uncaughtPageErrors:errors});
  await mkdir('phi-lift-readiness-results',{recursive:true});
- await writeFile('phi-lift-readiness-results/arrival'+(process.env.PHI_LIFT_REUSE==null?'':'-'+process.env.PHI_LIFT_REUSE)+'.json',JSON.stringify(report,null,2));
+ await writeFile('phi-lift-readiness-results/arrival'+(process.env.PHI_LIFT_REUSE==null?'':'-'+process.env.PHI_LIFT_REUSE)+(process.env.PHI_LIFT_BATCH==null?'':'-'+process.env.PHI_LIFT_BATCH)+'.json',JSON.stringify(report,null,2));
  console.log('LIFT_PAINTING_ARRIVAL_REPORT '+JSON.stringify(report));
  assert.equal(result.error,null,'Lift reported preparation failure');
  assert.equal(result.status,'opening','Doors must open only after preparation');
