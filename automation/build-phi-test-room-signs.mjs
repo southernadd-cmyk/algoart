@@ -94,12 +94,16 @@ replace('const join=galleryFinish.trims;\nsetSculptureArchitecturalMaterials(',
 // to work with the existing proportional light placement.
 replace(' const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;',
   ' if(exhibitDate===RECEPTION&&receptionWallMaterial){receptionWallMaterial.roughness=.94;receptionWallMaterial.normalScale.set(.32,.32);}\n const roomWall=exhibitDate===RECEPTION?receptionWallMaterial:plaster;');
-// Pilot the framed artworks in exactly one artwork-rich gallery room on
-// each dated floor. No paintings or sculpture placements are changed.
+// Room selection below is retained only for the independent artwork-colour study.
+// The CSM finish applies to all frames, regardless of room.
 replace(' for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;',
   " const frameRoomCounts=new Map();\n for(const p of phi.exhibition.paintings)frameRoomCounts.set(p.room,(frameRoomCounts.get(p.room)||0)+1);\n const frameStudyRoom=exhibitDate===RECEPTION?-1:([...frameRoomCounts].sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0]?.[0]??-1);\n if(GALLERY_DEBUG)window.__phiArchitecturalFrameStudy={room:frameStudyRoom,paintings:frameRoomCounts.get(frameStudyRoom)||0};\n for(const p of phi.exhibition.paintings){\n  const study=byId.get(p.studyId);if(!study)continue;");
 replace('p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,join);',
   'p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,architecturalFrameStudy);');
+
+// Include the separate baked watercolour frame in reception.
+replace('phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);',
+ "phiReceptionMap=addPhiReceptionMap(THREE,scene,furnishing.worldMap,elevation);\n  const receptionArtFrame=phiReceptionMap?.getObjectByName('reception-watercolour-frame');if(receptionArtFrame)receptionArtFrame.material=architecturalFrameStudy;");
 
 await build({
  stdin:{contents:source,sourcefile:'gallery-phi-test-room-signs.js',resolveDir:dir,loader:'js'},
