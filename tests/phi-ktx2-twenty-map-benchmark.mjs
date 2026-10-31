@@ -23,7 +23,7 @@ const stat=samples=>{
 };
 window.runTwenty=async mode=>{
  const canvas=document.createElement('canvas');document.body.appendChild(canvas);
- const renderer=new THREE.WebGLRenderer({canvas,antialias:false});
+ const renderer=new THREE.WebGLRenderer({canvas,antialias:false,preserveDrawingBuffer:true});
  renderer.setPixelRatio(1);renderer.setSize(1000,650);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  const gl=renderer.getContext();
