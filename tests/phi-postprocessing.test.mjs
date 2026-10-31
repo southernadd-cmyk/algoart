@@ -31,13 +31,13 @@ test('live entry keeps its existing bundle and contains no experiment',()=>{
  assert.ok(!live.includes('phi-post-test-bundle'));
 });
 
-test('test bundle preserves the gallery asset base for import.meta.url loaders',()=>{
+test('restored test entry preserves the live archive base and uses a local bundle',()=>{
  const builder=readFileSync(new URL('../automation/build-phi-post-test.mjs',import.meta.url),'utf8');
  const html=readFileSync(new URL('../test/virtual-gallery/full-engine.html',import.meta.url),'utf8');
  const bundlePath=builder.match(/outfile:'([^']+)'/)[1];
  assert.equal(bundlePath,'gallery/visit/gallery-phi-post-test-bundle.js');
  assert.ok(html.includes('<base href="../../gallery/visit/">'));
- assert.ok(html.includes("import('./gallery-phi-test-room-signs-bundle.js?"));
+ assert.ok(html.includes("import('../../test/virtual-gallery/gallery-phi-bundle.js?"));
  const roomSignBundle=new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url);
  const builderText=readFileSync(roomSignBundle,'utf8');
  assert.match(builderText,/outfile:\x27gallery\/visit\/gallery-phi-test-room-signs-bundle\.js\x27/);

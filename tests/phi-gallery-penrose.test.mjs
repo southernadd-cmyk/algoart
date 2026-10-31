@@ -21,7 +21,7 @@ test('live and test share a deterministic and restrained Penrose room selection'
  assert.ok(live.includes('galleryPenroseRooms.includes(pieceRoomIndex(p,phi.floor.mergedRooms))'));
  assert.ok(live.includes('if(finish===receptionTilePreview||selected)alignReceptionTileUvs(slab)'));
  assert.match(liveHtml,/gallery-phi-bundle\.js\?v=[\w-]+/);
- assert.ok(testHtml.includes('gallery-phi-test-room-signs-bundle.js'));
+ assert.ok(testHtml.includes('../../test/virtual-gallery/gallery-phi-bundle.js'));
  assert.ok(builder.includes('stagingFloorUrl'));
 });
 test('subtle finish keeps original PBR maps and a single shared material',()=>{

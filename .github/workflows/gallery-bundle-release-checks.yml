@@ -64,7 +64,7 @@ jobs:
         run: |
           node --check gallery/visit/gallery-bundle.js
           test -s gallery/visit/gallery-bundle.js
-          grep -q 'gallery-phi-test-room-signs-bundle.js' test/virtual-gallery/index.html
+          grep -q 'test/virtual-gallery/gallery-phi-bundle.js' test/virtual-gallery/index.html
           if grep -q 'location.replace' test/virtual-gallery/index.html; then exit 1; fi
 
 

@@ -68,13 +68,13 @@ test('glass walkways get a named gallery-facing side without duplicate signs',()
  assert.equal(pass.faces.positive.label,'Room 2 · Colour with Weight');
  assert.equal(pass.faces.negative.label,'Glass walkway');
 });
-test('staging bundle isolation and marker font double-sided geometry',()=>{
+test('staging page isolation and marker font double-sided geometry',()=>{
  const builder=readFileSync(new URL('../automation/build-phi-test-room-signs.mjs',import.meta.url),'utf8');
  const module=readFileSync(new URL('../gallery/visit/phi-room-hanging-signs.mjs',import.meta.url),'utf8');
  const live=readFileSync(new URL('../gallery/visit/index.html',import.meta.url),'utf8');
  const staging=readFileSync(new URL('../test/virtual-gallery/full-engine.html',import.meta.url),'utf8');
  assert.match(builder,/gallery-phi-test-room-signs-bundle\.js/);
- assert.match(staging,/gallery-phi-test-room-signs-bundle\.js/);
+ assert.match(staging,/test\/virtual-gallery\/gallery-phi-bundle\.js/);
  assert.match(live,/import\('\.\/gallery-phi-bundle\.js\?/);
  assert.doesNotMatch(live,/test-room-signs/);
  assert.match(live,/gallery-phi-bundle\.js\?v=/);

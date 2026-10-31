@@ -20,11 +20,11 @@ test('direct dated floor links and short test-tower entry both retain identity',
   assert.equal(next,'/algoart/test/virtual-gallery/'+name+'?date=2026-10-29');
  }
 });
-test('both staging HTML entries import the test bundle, not live production',()=>{
+test('both staging HTML entries import a test-local copy of the live bundle',()=>{
  const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
  for(const path of ['../test/virtual-gallery/index.html','../test/virtual-gallery/full-engine.html']){
   const html=read(path);
-  assert.match(html,/import\('\.\/gallery-phi-test-room-signs-bundle\.js\?v=shared-curated-signs-/);
+  assert.match(html,/import\('\.\.\/\.\.\/test\/virtual-gallery\/gallery-phi-bundle\.js\?v=/);
   assert.doesNotMatch(html,/await import\('\.\/gallery-phi-bundle\.js/);
   assert.match(html,/<base href="\.\.\/\.\.\/gallery\/visit\/">/);
  }
