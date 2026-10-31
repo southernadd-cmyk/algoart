@@ -1,4 +1,4 @@
-name: Verify test lift opens only with every painting ready
+name: Verify lift paintings ready before doors open (test and live)
 on:
   workflow_dispatch:
   push:
@@ -9,6 +9,14 @@ on:
       - 'test/virtual-gallery/gallery-phi.js'
       - 'test/virtual-gallery/phi-painting-arrival-gate.mjs'
       - 'test/virtual-gallery/phi-lift-painting-gpu.mjs'
+      - 'gallery/visit/index.html'
+      - 'gallery/visit/gallery-phi.js'
+      - 'gallery/visit/phi-lift-painting-gpu.mjs'
+      - 'gallery/visit/phi-painting-arrival-gate.mjs'
+      - 'gallery/visit/phi-artwork-preload.mjs'
+      - 'gallery/visit/gallery-entry-preparation.mjs'
+      - 'gallery/visit/phi-room-geometry-stage.mjs'
+      - 'gallery/visit/phi-lift-indicator.mjs'
 permissions:
   contents: read
 jobs:
@@ -34,5 +42,30 @@ jobs:
         if: always()
         with:
           name: phi-lift-readiness-results
+          path: phi-lift-readiness-results/
+          if-no-files-found: ignore
+
+  live-painting-interlock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Bundle production gallery independently
+        run: |
+          npm run gallery:bundle:phi
+          node --check gallery/visit/gallery-phi-bundle.js
+      - name: Launch local site
+        run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-live-lift-interlock-http.log 2>&1 &
+      - name: Verify live lift uploads all paintings before doors open
+        run: PHI_LIFT_TARGET=live node tests/phi-lift-readiness-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-live-lift-readiness-results
           path: phi-lift-readiness-results/
           if-no-files-found: ignore
