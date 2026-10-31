@@ -180,6 +180,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   compositor.addPass(new RenderPass(scene,camera));
   artProtection=createArtProtection(THREE,renderer,scene,camera);
   compositor.addPass(artProtection.copyPass);
+  compositor.addPass(artProtection.maskPass);
   // Normal pass corrects the missing normal-buffer setup in the earlier AO experiment.
   const normals=new NormalPass(scene,camera,{resolutionScale:.5});
   const ao=new SSAOEffect(camera,normals.texture,{samples:6,rings:6,resolutionScale:.5,intensity:0,radius:.2});
@@ -198,6 +199,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   compositor.addPass(new EffectPass(camera,colour,sat,grain,vignette,
    new ToneMappingEffect({mode:ToneMappingMode.NEUTRAL})));
   compositor.addPass(artProtection.pass);
+  artProtection.setSceneDepth(compositor.inputBuffer.depthTexture);
   compositor.setSize(innerWidth,innerHeight,false);
   // Until explicitly enabled, expensive depth and bloom passes stay dormant.
   normals.enabled=false;aoPass.enabled=false;fullPass.enabled=false;
@@ -280,8 +282,8 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   }
   try{
    if(!on){renderer.autoClear=true;renderer.render(scene,camera);}
-   else{artProtection.capture();stats.protectedArtworkMeshes=artProtection.stats.protectedMeshes;
-    renderer.autoClear=false;composer.render(dt);renderer.autoClear=true;}
+   else{renderer.autoClear=false;composer.render(dt);renderer.autoClear=true;
+    stats.protectedArtworkMeshes=artProtection.stats.protectedMeshes;}
   }catch(error){
    stats.errors.push(String(error));console.error('[FX lab] original renderer fallback',error);
    preset='original';bypass=false;stats.active=false;

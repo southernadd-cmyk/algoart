@@ -76,9 +76,10 @@ test('original artwork pixels restored after architectural processing',()=>{
  assert.match(live,/phiArtOriginal=true/);
  assert.doesNotMatch(builder,/phiArtOriginal=true/);
  assert.match(fx,/compositor.addPass\(artProtection.pass\)/);
- assert.match(fx,/artProtection.capture\(\)/);
+ assert.match(fx,/compositor.addPass\(artProtection.maskPass\)/);
  assert.match(fx,/e.fullPass.enabled=false/);
  assert.match(mask,/camera.layers.set\(ART_LAYER\)/);
+ assert.match(mask,/originalDepth=texture2D\(sceneDepth,gl_FragCoord.xy\/resolution\).r/);
  assert.ok(mask.includes('unmodified=texture2D(originalBuffer,vUv)'));
 });
 
@@ -104,4 +105,18 @@ test('live postprocessing remains stable without performance or mobile fallback'
  assert.doesNotMatch(code,/effects\.ao\.samples=8|bypass=true;performanceStep/);
  assert.match(code,/architectural:\{brightness:-\.14,contrast:-\.19,saturation:\.25/);
  assert.match(code,/aoSamples:16/);
+});
+
+test('artwork protection mask consumes compositor source depth without architecture redraw',()=>{
+ const mask=readFileSync(new URL('../gallery/visit/phi-art-protection.mjs',import.meta.url),'utf8');
+ const fx=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
+ assert.match(mask,/new Pass\('PhiArtworkVisibilityMask'\)/);
+ assert.match(mask,/maskPass.needsSwap=false/);
+ assert.match(mask,/renderer.render\(scene,camera\)/);
+ assert.doesNotMatch(mask,/camera.layers.set\(OPAQUE_DEPTH_LAYER\)/);
+ assert.match(fx,/artProtection.setSceneDepth\(compositor.inputBuffer.depthTexture\)/);
+ const originalRender=fx.indexOf('compositor.addPass(new RenderPass(scene,camera))');
+ const maskRender=fx.indexOf('compositor.addPass(artProtection.maskPass)');
+ const normalRender=fx.indexOf('compositor.addPass(normals)');
+ assert.ok(originalRender>=0&&originalRender<maskRender&&maskRender<normalRender);
 });
