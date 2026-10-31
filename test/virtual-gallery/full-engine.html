@@ -43,7 +43,20 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
-<link rel="preload" href="../../test/virtual-gallery/textures/OfficeCeiling001_Color.jpg" as="image" crossorigin="anonymous">
+<script>
+// The early ceiling preload must use the same URL/cache identity as the
+// Three.js image request, otherwise a "cold" benchmark warms it before entry.
+(()=>{
+ const q=new URLSearchParams(location.search);
+ const href=new URL('../../test/virtual-gallery/textures/OfficeCeiling001_Color.jpg',document.baseURI);
+ const seed=q.get('benchseed')||'';
+ if(['cold','warm'].includes(q.get('benchcache'))&&/^[A-Za-z0-9_-]{8,96}$/.test(seed))
+  href.searchParams.set('phiBenchAsset',seed);
+ const preload=document.createElement('link');
+ preload.rel='preload';preload.as='image';preload.crossOrigin='anonymous';
+ preload.href=href.href;document.head.appendChild(preload);
+})();
+</script>
 
 
 <script>
