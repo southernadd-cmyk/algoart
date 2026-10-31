@@ -29,18 +29,36 @@ async function run(mode,index){
  const meshes=[],textures=[];
  try{
   if(mode==='ktx2')loader=new KTX2Loader().setTranscoderPath('./basis/').setWorkerLimit(2).detectSupport(renderer);
-  const loaded=await Promise.all(manifest.textures.map(async entry=>{
+  // All-settled keeps the 20-file comparison informative when a single
+  // connection drops. Identify the exact asset and dispose successful loads
+  // before reporting a failed run; never silently retry a timed benchmark.
+  const loadReports=new Array(manifest.textures.length);
+  const settled=await Promise.allSettled(manifest.textures.map(async (entry,i)=>{
    const file=mode==='ktx2'?root+'ktx2-20/'+entry.id+'.ktx2':
     root+entry.source;
-   const texture=mode==='ktx2'
-    ?await loader.loadAsync(file+suffix)
-    :await new THREE.TextureLoader().loadAsync(file+suffix);
-   if(mode==='ktx2'&&!texture.isCompressedTexture)throw Error(entry.id+' is not GPU-compressed');
-   texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-   if(entry.kind==='color')texture.colorSpace=THREE.SRGBColorSpace;
-   return texture;
+   const requestedURL=file+suffix;
+   const begin=performance.now();
+   try{
+    const texture=mode==='ktx2'
+     ?await loader.loadAsync(requestedURL)
+     :await new THREE.TextureLoader().loadAsync(requestedURL);
+    if(mode==='ktx2'&&!texture.isCompressedTexture)throw Error('not GPU-compressed');
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    if(entry.kind==='color')texture.colorSpace=THREE.SRGBColorSpace;
+    loadReports[i]={id:entry.id,source:file,status:'loaded',
+     durationMs:+(performance.now()-begin).toFixed(1)};
+    return texture;
+   }catch(error){
+    loadReports[i]={id:entry.id,source:file,status:'failed',
+     durationMs:+(performance.now()-begin).toFixed(1),error:String(error)};
+    throw error;
+   }
   }));
-  textures.push(...loaded);
+  for(const value of settled)if(value.status==='fulfilled')textures.push(value.value);
+  const failed=loadReports.filter(r=>r.status==='failed');
+  if(failed.length){
+   throw Error('Texture fetch/decode failures: '+failed.map(r=>r.id+' ('+r.source+'): '+r.error).join('; '));
+  }
   const decoded=performance.now();
   for(let i=0;i<20;i++){
    const entry=manifest.textures[i],tex=textures[i],color=entry.kind==='color';
@@ -75,6 +93,7 @@ async function run(mode,index){
    estimatedCompressedGpuBytes:mode==='ktx2'
     ?textureInfo.reduce((s,x)=>s+(x.gpuBlockBytes||0),0):null,
    rendererTextures:renderer.info.memory.textures,
+   assetLoads:loadReports,
    textures:textureInfo
   };
  }finally{
