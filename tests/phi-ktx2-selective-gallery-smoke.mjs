@@ -1,5 +1,6 @@
 // Compare the real test tower with two selective architectural KTX2 maps.
-// Never change live. Capture matching snapshots for manual visual inspection.
+// Never change live. Compare real lift traversal and renderer diagnostics;
+// software WebGL full-gallery screenshots are too slow to capture reliably.
 import {chromium} from 'playwright';
 import {mkdir,writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
@@ -54,7 +55,8 @@ try{
   await page.locator('#enter').click();
   await page.waitForFunction(()=>document.querySelector('#welcome')?.hidden===true,null,{timeout:15000});
   await page.waitForTimeout(2400);
-  await page.screenshot({path:folder+'/'+mode+'-reception.png',animations:'disabled',timeout:20000});
+  const receptionRender=await page.evaluate(()=>window.__phiRenderStats||null);
+  assert.ok(receptionRender,'Reception rendered at least one frame');
   const button=page.locator('#openLift');
   await button.evaluate(el=>el.click());
   await page.waitForFunction(()=>document.querySelector('#lift')?.hidden===false,null,{timeout:10000});
@@ -63,13 +65,14 @@ try{
   await page.waitForFunction(()=>window.__phiLiftState?.floor>0&&!window.__phiLiftState?.travelling,
    null,{timeout:110000});
   await page.waitForTimeout(2200);
-  await page.screenshot({path:folder+'/'+mode+'-gallery.png',animations:'disabled',timeout:20000});
+  const galleryRender=await page.evaluate(()=>window.__phiRenderStats||null);
+  assert.ok(galleryRender,'Gallery rendered at least one frame');
   const state=await page.evaluate(()=>({floor:window.__phiLiftState?.floor,
    gpu:(()=>{const gl=document.querySelector('#world')?.getContext('webgl2');const ext=gl?.getExtension('WEBGL_debug_renderer_info');
     return ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl?.getParameter(gl.RENDERER)})(),
    render:window.__phiRenderStats||null,ktx:window.__phiKTX20||null}));
   assert.deepEqual(errors,[],'No unhandled page errors');
-  records.push({mode,diag,network,errors,state});
+  records.push({mode,diag,network,errors,state,receptionRender,galleryRender});
   console.log('SELECTIVE_GALLERY_SMOKE '+JSON.stringify({mode,diag,requests:network.length,
    floor:state.floor,gpu:state.gpu,errors}));
   await page.close();
