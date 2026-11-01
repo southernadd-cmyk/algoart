@@ -9,6 +9,15 @@ try{
  const page=await browser.newPage({viewport:{width:960,height:620},deviceScaleFactor:1});
  await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:30000});
  const result=await page.evaluate(async()=>{
+  // This isolated fixture has no gallery import map; install the same
+  // package resolution that the real gallery's bundle supplies.
+  const map=document.createElement('script');
+  map.type='importmap';
+  map.textContent=JSON.stringify({imports:{
+   three:'/node_modules/three/build/three.module.js',
+   'three/':'/node_modules/three/'
+  }});
+  document.head.appendChild(map);
   const THREE=await import('/node_modules/three/build/three.module.js');
   const {batchPhiStaticArchitecture}=await import('/test/virtual-gallery/phi-static-architecture.mjs');
   const W=640,H=400;
