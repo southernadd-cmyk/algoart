@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/phi-gpu-revisit-audit.yml'
       - 'tests/phi-gpu-revisit-audit-browser.mjs'
+      - 'tests/phi-lift-queue-profiler.test.mjs'
 permissions:
   contents: read
 jobs:
