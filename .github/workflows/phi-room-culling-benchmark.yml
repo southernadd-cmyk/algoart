@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/phi-room-culling-benchmark.yml'
+      - 'tests/phi-room-culling-browser-benchmark.mjs'
 permissions:
   contents: read
 jobs:
