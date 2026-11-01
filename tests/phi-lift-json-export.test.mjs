@@ -16,7 +16,7 @@ test('export attributes an actual measured blocking operation, not last stage',(
    {name:'doors-opening',elapsedMs:360},{name:'doors-fully-open',elapsedMs:400}]
  };
  const report=buildLiftBenchmarkReport({active:false,visits:[visit]},{userAgent:'unit-test'});
- assert.equal(report.version,4);
+ assert.equal(report.version,5);
  const exported=report.journeys[0];
  assert.equal(exported.status,'completed');
  assert.equal(exported.direction,'G → 28');
@@ -65,4 +65,20 @@ test('Chromium long-animation-frame source attribution beats stage-only guessing
  });
  assert.equal(v.worstFrames[0].attribution.status,'browser script-function attribution');
  assert.equal(v.worstFrames[0].attribution.functionName,'buildSculptureGeometry');
+});
+
+test('attribution prefers a measured expensive named render pass over its outer frame wrapper',()=>{
+ const x=summariseLiftVisit({
+  fromFloor:0,toFloor:27,date:'2026-10-31',summary:{ms:10000},
+  frameMs:[8000],frames:[{elapsedMs:9000,deltaMs:8000,stage:'paintings-waiting'}],
+  stages:[{name:'paintings-waiting',elapsedMs:999},{name:'doors-fully-open',elapsedMs:10000}],
+  operations:[
+   {name:'render-frame-postfx',elapsedMs:1001,durationMs:7980},
+   {name:'pass-main-scene',elapsedMs:1003,durationMs:7600},
+   {name:'pass-n8ao',elapsedMs:8604,durationMs:200}
+  ],longTasks:[]
+ });
+ assert.equal(x.worstFrames[0].attribution.status,'observed render-pass blocking');
+ assert.equal(x.worstFrames[0].attribution.operation,'pass-main-scene');
+ assert.equal(x.worstFrames[0].matchingOperations[0].name,'render-frame-postfx');
 });
