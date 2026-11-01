@@ -1,9 +1,9 @@
-name: Install test-tower visitor knowledge
+name: Rebuild test gallery visitor chat
 on:
   push:
     branches: [main]
     paths:
-      - 'test/virtual-gallery/visitor-knowledge.part10'
+      - 'test/virtual-gallery/phi-visitor-chat.mjs'
 permissions:
   contents: write
 jobs:
@@ -16,37 +16,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install exact provided visitor modules
-        run: |
-          node --input-type=module <<'NODE'
-          import {readFileSync,writeFileSync} from 'node:fs';
-          import {brotliDecompressSync} from 'node:zlib';
-          const raw=Array.from({length:10},(_,i)=>i+1).map(i=>readFileSync('test/virtual-gallery/visitor-knowledge.part'+i,'utf8').trim()).join('');
-          const files=JSON.parse(brotliDecompressSync(Buffer.from(raw,'base64')).toString('utf8'));
-          const expected=['phi-visitor-knowledge.mjs','phi-visitor-chat.mjs','phi-visitor-chat.test.mjs'];
-          if(Object.keys(files).sort().join(',')!==expected.sort().join(','))throw Error('Unexpected source files');
-          for(const name of expected)writeFileSync('test/virtual-gallery/'+name,files[name]);
-          NODE
-      - name: Run chatbot tests
+      - name: Run updated chatbot tests
         run: node --test test/virtual-gallery/phi-visitor-chat.test.mjs
-      - name: Install dependencies
+      - name: Install bundle dependencies
         run: npm ci --ignore-scripts
-      - name: Rebuild test-tower browser bundle only
+      - name: Rebuild TEST tower
         run: npx esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
-      - name: Refresh test bundle URLs
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('test/virtual-gallery/full-engine.html')
-          s=p.read_text()
-          s=s.replace('gallery-phi-bundle.js?v=all-visitors-20261101-53afe3','gallery-phi-bundle.js?v=visitor-knowledge-20261101')
-          if s==p.read_text():raise SystemExit('Missing cache key')
-          p.write_text(s)
-          PY
-      - name: Publish only test-tower files
+      - name: Commit TEST bundle only
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add test/virtual-gallery/phi-visitor-knowledge.mjs test/virtual-gallery/phi-visitor-chat.mjs test/virtual-gallery/phi-visitor-chat.test.mjs test/virtual-gallery/gallery-phi-bundle.js test/virtual-gallery/full-engine.html
-          git commit -m 'Deploy expanded visitor knowledge to test tower'
-          git push
+          git add test/virtual-gallery/gallery-phi-bundle.js
+          if ! git diff --staged --quiet; then
+            git commit -m 'Publish tested visitor chat discovery bundle'
+            git push
+          fi
