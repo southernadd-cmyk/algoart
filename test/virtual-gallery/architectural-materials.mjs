@@ -164,8 +164,8 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   const materialWebPStatus=window.__phiMaterialWebP={
     enabled:materialWebP,attempted:[],loaded:[],fallback:[],scope:'brick and named exterior models only'
   };
-  const webpMaterialURL=url=>materialWebP&&/Bricks055_(?:Color|NormalGL|Roughness)\\.jpg(?:$|[?#])/i.test(url)
-   ?url.replace(/\\.jpg(?=$|[?#])/i,'.webp'):url;
+  const webpMaterialURL=url=>materialWebP&&/Bricks055_(?:Color|NormalGL|Roughness)\.jpg(?:$|[?#])/i.test(url)
+   ?url.replace(/\.jpg(?=$|[?#])/i,'.webp'):url;
   // Neutral canvas maps are ready immediately; external textures must not
   // compete with the early tower download on slow/mobile connections.
   const ready=startAfter
