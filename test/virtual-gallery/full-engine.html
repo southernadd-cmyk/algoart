@@ -40,7 +40,7 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
 
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=12">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
-<link rel="modulepreload" href="../../test/virtual-gallery/gallery-phi-bundle.js?v=frame-batch-ab-20261101">
+<link rel="modulepreload" href="../../test/virtual-gallery/gallery-phi-bundle.js?v=room-culling-ab-20261101">
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
@@ -93,7 +93,7 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
     window.__galleryStage='Importing bundled JavaScript';
-    await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=frame-batch-ab-20261101');
+    await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=room-culling-ab-20261101');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -269,6 +269,7 @@ if(new URLSearchParams(location.search).has('gpuprofile')){
    if(!stats){button.textContent='Profile not ready';return;}
    const report={...stats,captionBatch:window.__phiCaptionBatches||null,
     frameBatch:window.__phiFrameBatches||null,
+    roomVisibility:window.__phiRoomVisibility?.()||null,
     lift:window.__phiLiftProfile?.state?.visits?.at(-1)?.summary||null,
     frame:window.__phiPerformance?{
     medianFrameMs:window.__phiPerformance.medianFrameMs,
