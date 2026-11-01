@@ -4,7 +4,7 @@ import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {dirname,resolve,join} from 'node:path';
 import {buildPhiRendererPlan} from '../test/virtual-gallery/phi-full-engine-adapter.mjs';
-import {compilePhiRoomPackage,phiRoomPackageFingerprint}
+import {compilePhiRoomPackage,compilePhiSharedArchitecture,phiRoomPackageFingerprint}
  from '../test/virtual-gallery/phi-compiled-room-package.mjs';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
@@ -32,12 +32,18 @@ for(let room=0;room<roomCount;room++){
  rooms.push({room,url:filename,bytes:Buffer.byteLength(body),
   pieces:pack.pieces,triangles:Object.values(pack.geometries).reduce((n,g)=>n+g.triangles,0)});
 }
+const shared=compilePhiSharedArchitecture(phi,date,elevation);
+const sharedBody=JSON.stringify(shared);
+await writeFile(join(dest,'shared.json'),sharedBody+'\n');
 const manifest={version:1,date,elevation,fingerprint,
- roomCount,rooms,scope:'room floor and ceiling surfaces only',
+ roomCount,rooms,shared:{url:'shared.json',bytes:Buffer.byteLength(sharedBody),
+  wallBoxes:shared.wallBoxes,veneerBoxes:shared.veneerBoxes,trimBoxes:shared.trimBoxes,
+  triangles:Object.values(shared.geometries).reduce((n,g)=>n+g.triangles,0)},
+ scope:'all static solid architecture; room floor and ceiling surfaces streamed separately',
  materialTiling:'exact vertex/normal/UV reconstruction; no material substitution'};
 await writeFile(join(dest,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
 console.log('PHI_PRECOMPILED_ARCHITECTURE '+JSON.stringify({
- date,roomCount,elevation,bytes:rooms.reduce((sum,r)=>sum+r.bytes,0),
- triangles:rooms.reduce((sum,r)=>sum+r.triangles,0),
+ date,roomCount,elevation,bytes:rooms.reduce((sum,r)=>sum+r.bytes,0)+manifest.shared.bytes,
+ triangles:rooms.reduce((sum,r)=>sum+r.triangles,0)+manifest.shared.triangles,
  fingerprintValid:true,output:dest
 }));
