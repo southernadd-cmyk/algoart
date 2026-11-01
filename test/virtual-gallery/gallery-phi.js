@@ -144,7 +144,7 @@ const RECEPTION='__phi_reception__';
 let plan = null;
 let studyList = [];
 // Conversation anchors are tied to actual visitors on this current floor.
-let phiVisitorSpeakers=[],phiVisitorNearest=null,visitorChat=null;
+let phiVisitorSpeakers=[],phiVisitorNearest=null,phiVisitorNearestKnowledge=null,visitorChat=null;
 let touchPointer = null;
 let touchX = 0, touchY = 0;
 let xrLiftPanel=null;
@@ -2976,7 +2976,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
   exhibitLightTargets.length=0;
   resetInspection();
-  phiVisitorSpeakers=[];phiVisitorNearest=null;visitorChat?.close();
+  phiVisitorSpeakers=[];phiVisitorNearest=null;phiVisitorNearestKnowledge=null;visitorChat?.close();
   liftPosition=null;liftDoorThreshold=null;phiLiftPanelPosition=null;liftWasNear=false;liftDoors=[];
   phiReceptionProps=[];phiOutdoorPlants=[];phiReceptionMap=null;phiReceptionDesk=null;phiFurnishingObstacles=[];phiSquareObstacles=[];phiLiftIndicator=null;
   window.__phiDeskHologram=null;
@@ -3199,9 +3199,11 @@ function updateVisitorChatPrompt(){
  }
  if(chat.open&&chat.speaker&&
   Math.hypot(rig.position.x-chat.speaker.x,rig.position.z-chat.speaker.z)>3.4)chat.close();
- phiVisitorNearest=nearest;
- const name=!chat.open&&nearest?phiVisitorKnowledge(nearest).name:null;
- chat.showPrompt(name);
+ if(nearest!==phiVisitorNearest){
+  phiVisitorNearest=nearest;
+  phiVisitorNearestKnowledge=nearest?phiVisitorKnowledge(nearest):null;
+ }
+ chat.showPrompt(!chat.open?phiVisitorNearestKnowledge?.name:null);
  if(GALLERY_DEBUG)window.__phiVisitorChat={
   speakers:phiVisitorSpeakers.length,nearest:nearest?.index??null,open:chat.open,
   floor:currentFloor};
