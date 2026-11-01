@@ -667,7 +667,10 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
    const ride=window.__phiLiftRide;
    const steady=ride?.status==='moving'&&ride.progress>=.12&&ride.progress<=.82;
    const landed=ride?.status==='arrived'||ride?.status==='failed';
-   if(!liftTravelling||landed)resolve();
+   // While the elastic cabin creeps, painting GPU uploads must continue.
+   // Otherwise the painting gate can never release the cabin to land.
+   const overlapHolding=phiRideState?.elastic&&ride?.status==='moving'&&ride.progress>.82;
+   if(!liftTravelling||landed||overlapHolding)resolve();
    else if(steady)requestAnimationFrame(resolve);
    else requestAnimationFrame(frame);
   };
