@@ -29,11 +29,16 @@ export async function waitForGalleryEntry({loading,isBusy,pump,nextFrame=gallery
  }
  return {timedOut:true,ms:now()-start};
 }
-export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryPreparationFrame,onStage=null,skipFinalRender=false}){
+export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryPreparationFrame,onStage=null,onOperation=null,skipFinalRender=false}){
  const timer=()=>performance.now();
  const totalStart=timer(),slowUploads=[];
  let then=timer();
- if(renderer.compileAsync)await renderer.compileAsync(scene,camera);
+ if(renderer.compileAsync){
+  const submitStart=timer();
+  const pending=renderer.compileAsync(scene,camera);
+  onOperation?.('shader-compile-submit',submitStart,timer()-submitStart);
+  await pending;
+ }
  const compileMs=timer()-then;
  then=timer();
  const textures=new Set();
@@ -41,13 +46,16 @@ export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryP
   for(const value of Object.values(material))if(value?.isTexture&&!value.isRenderTargetTexture)textures.add(value);
  }});
  const traversalMs=timer()-then;
+ onOperation?.('gather-scene-textures',then,traversalMs);
  // Always use exactly the approved GPU work and renderer order; only
  // record stage timing when ?liftprofile=1 has explicitly enabled it.
  then=timer();let batch=0,failedUploads=0;
  for(const texture of textures){
   if(batch++%4===0)await nextFrame();
-  const started=onStage?timer():0;
+  const started=onOperation||onStage?timer():0;
   try{renderer.initTexture(texture);}catch(error){failedUploads++;console.warn('Gallery texture warm-up skipped',error);}
+  if(onOperation)onOperation('gpu-upload-warmup',started,timer()-started,{
+   width:texture.image?.width||0,height:texture.image?.height||0});
   if(onStage){
    const ms=timer()-started;
    if(ms>=40)slowUploads.push({ms:+ms.toFixed(1),width:texture.image?.width||0,
@@ -58,6 +66,7 @@ export async function warmGalleryEntry({renderer,scene,camera,nextFrame=galleryP
  then=timer();
  if(!skipFinalRender)renderer.render(scene,camera);
  const finalRenderMs=timer()-then;
+ if(!skipFinalRender)onOperation?.('render-warmup-final',then,finalRenderMs);
  await nextFrame();
  const diagnostic={textures:textures.size};
  if(onStage)onStage('warmup-details',{compileMs:+compileMs.toFixed(1),
