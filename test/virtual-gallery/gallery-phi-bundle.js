@@ -5906,7 +5906,7 @@ const KNOWLEDGE=[
   answers:[
    'People argued about that in 1965 too. Someone wrote the rules, chose the seeds, tuned it by eye and curated what’s shown — so there’s a lot of human choice in it, just not in each mark.'],
   take:{enthusiast:'I think so, obviously, or I wouldn’t keep coming back.',sceptic:'I’m still deciding. Ask me again upstairs.',regular:'I think the editor is where it becomes yours, too.'},
-  next:'instructions'}
+  next:'instructions'},
  // --------------------------------------------- building the daily tower
  {id:'tower-build',
   keys:['how was the tower built','how is the tower built','how do you build the tower','tower construction','how was this building designed','tower design','tower architecture','building geometry'],
