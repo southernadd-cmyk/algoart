@@ -1117,8 +1117,7 @@ async function travelLift(date,index){
   phiLiftProfiler?.mark('scene-reveal-finished',revealed);
   const preparation=await waitForGalleryEntry({
    loading:{pending:0},timeout:4000,
-   isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0||
-    false,
+   isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0,
    pump:processDeferredGallery
   });
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
@@ -2568,8 +2567,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
     enter.textContent='Preparing gallery…';
     const prepared=await waitForGalleryEntry({
       loading:phiStartupLoading,
-      isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0||
-        false,
+      isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0,
       pump:processDeferredGallery
     });
     const warmed=await warmGalleryEntry({renderer,scene,camera});
