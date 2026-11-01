@@ -218,6 +218,9 @@ const phiStageArrival=new URLSearchParams(location.search).get('liftstage')!=='0
 // TEST ONLY: overlap destination shader compilation with painting GPU readiness.
 // Never changes a material, pass, geometry, or texture; ?earlycompile=0 baseline.
 const phiEarlyShaderCompile=new URLSearchParams(location.search).get('earlycompile')==='1';
+// TEST ONLY: compile destination shaders including originally hidden meshes.
+// Does not change final scene, stage batching, lighting or post-processing.
+const phiRevealCompile=new URLSearchParams(location.search).get('revealcompile')==='1';
 // TEST ONLY: A/B test whether receiver-side shadow state can be applied
 // without forcing an unnecessary material invalidation. Default OFF.
 const phiShadowReceiverFast=new URLSearchParams(location.search).get('shadowreceiverfast')==='1';
@@ -1360,6 +1363,27 @@ async function travelLift(date,index){
    enabled:phiEarlyShaderCompile,started:earlyShader.started,
    ms:earlyShader.ms,error:earlyShader.error
   };
+  // Compile the actual destination shader variants only after its complete
+  // original painting textures are attached and GPU-ready. The synchronous
+  // visibility window restores every hidden mesh before any await / frame.
+  if(phiRevealCompile&&phiStageArrival&&renderer.compileAsync){
+   const started=performance.now();
+   const diagnostic={enabled:true,attempted:false,meshes:0,ms:null,error:null};
+   phiLiftProfiler?.mark('reveal-compile-start');
+   try{
+    const job=phiArrivalMeshes.compileHiddenDestination(()=>renderer.compileAsync(scene,camera));
+    diagnostic.attempted=job.attempted;
+    diagnostic.meshes=job.count;
+    if(job.promise)await job.promise;
+   }catch(error){
+    // Keep established mandatory compile and door/painting interlocks.
+    diagnostic.error=String(error?.message||error);
+   }finally{
+    diagnostic.ms=+(performance.now()-started).toFixed(1);
+    if(GALLERY_DEBUG)window.__phiRevealCompile=diagnostic;
+    phiLiftProfiler?.mark('reveal-compile-finished',diagnostic);
+   }
+  }
   // Keep new destination meshes hidden while all source paintings upload
   // successfully; then reveal the original meshes in bounded render batches.
   // No shader, texture resolution, painting pixels or materials are changed.
