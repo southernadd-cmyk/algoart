@@ -32,8 +32,9 @@ jobs:
           import {dirname} from 'node:path';
           import {createHash} from 'node:crypto';
           import {brotliDecompressSync} from 'node:zlib';
-          const raw=Array.from({length:7},(_,i)=>i+1).map(i=>
-            readFileSync('.chat-v2-staging/part-'+i+'.txt','utf8').trim()).join('');
+          const sources=[...Array.from({length:6},(_,i)=>'.chat-v2-staging/part-'+(i+1)+'.txt'),
+            ...'abcde'.split('').map(letter=>'.chat-v2-staging/part-7'+letter+'.txt')];
+          const raw=sources.map(file=>readFileSync(file,'utf8').trim()).join('');
           const digest=createHash('sha256').update(raw).digest('hex');
           if(digest!=='ec8c371ed7ef305783ac3d3ef6ed25468a4f2e955856cc30a8315a1350139061')
            throw Error('v2 payload hash mismatch: '+digest);
@@ -71,15 +72,20 @@ jobs:
           anchor='  roomCount:phi?.floor.mergedRooms.length||0});'
           if s.count(anchor)!=1:raise SystemExit('Floor context anchor changed')
           s=s.replace(anchor,'  roomCount:phi?.floor.mergedRooms.length||0,\n  floorDates:archiveDates.filter(date=>date!==RECEPTION)});')
-          # The gallery archive is not located under /test/.
-          s=s.replace("new URL('../'+(reception?", "new URL('../../gallery/'+(reception?")
+          # Keep the original live engine's archive fetches via document.baseURI.
+          # The test page gets a production-gallery base, while the JS bundle
+          # and CSS are explicitly pinned to test/virtual-gallery.
           js.write_text(s)
           for name in ('index.html','full-engine.html'):
             p=root/name
             html=p.read_text()
-            html=html.replace("../tower-layouts.json", "../../gallery/tower-layouts.json")
-            html=html.replace('href="../"', 'href="../../gallery/"')
-            html=html.replace('gallery-phi-bundle.js?v=live-chat-v1-20261101','gallery-phi-bundle.js?v=test-chat-v2-20261101')
+            html=html.replace('<head>', '<head>\n<base href="../../gallery/visit/">',1)
+            for asset in ('gallery.css','phi-gallery.css','phi-visitor-chat.css'):
+              html=html.replace('href="./'+asset, 'href="../../test/virtual-gallery/'+asset)
+            html=html.replace('gallery-phi-bundle.js?v=live-chat-v1-20261101', 'gallery-phi-bundle.js?v=test-chat-v2-20261101')
+            html=html.replace('href="./gallery-phi-bundle.js?', 'href="../../test/virtual-gallery/gallery-phi-bundle.js?')
+            html=html.replace("import('./gallery-phi-bundle.js?", "import('../../test/virtual-gallery/gallery-phi-bundle.js?")
+            html=html.replace('<meta name="viewport"','<meta name="robots" content="noindex,nofollow">\n<meta name="viewport"',1)
             if 'chat-v2' not in html and 'gallery-phi-bundle.js?v=test-chat-v2-20261101' not in html:
               raise SystemExit('Missing test bundle reference')
             p.write_text(html)
