@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/phi-fx-lift-pass-audit.yml'
+      - 'tests/phi-fx-lift-pass-audit.mjs'
 permissions:
   contents: read
 jobs:
