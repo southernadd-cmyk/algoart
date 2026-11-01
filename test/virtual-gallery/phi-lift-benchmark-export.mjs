@@ -177,7 +177,8 @@ export function installLiftBenchmarkUI(){
    devicePixelRatio:devicePixelRatio||1,
    threeRevision:window.__phiLiftState?.threeRevision||null,
    renderPixelRatio:window.__phiPerformance?.pixelRatio??null,
-   webglTrace:window.__phiGLTrace||{enabled:false}
+   webglTrace:window.__phiGLTrace||{enabled:false},
+   shaderErrorChecks:window.__phiShaderChecks??null
   });
  }
  function update(){
