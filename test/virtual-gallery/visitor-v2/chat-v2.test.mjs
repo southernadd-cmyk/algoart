@@ -172,7 +172,7 @@ test('the More topics chip exposes the whole supported knowledge catalogue witho
  assert.ok(questions.includes('What is generative art?'));
  assert.ok(questions.includes('Why?'));
  assert.equal(new Set(questions).size,questions.length);
- const reception=buildVisitorKnowledge({reception:true,works:[],visitorIndex:100,roomIndex:0,floor:0});
+ const reception={reception:true,works:[]};
  assert.ok(!topicGroupsFor(reception,{}).flatMap(g=>g.topics).some(t=>t.question==='Compare the first and the last'));
  assert.match(V2_CSS,/visitor-chat-topic-heading/);
 });
