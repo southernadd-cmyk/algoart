@@ -1,0 +1,38 @@
+name: Matched TEST lift shadow-priming A/B audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-shadow-prime-audit.yml'
+      - 'tests/phi-shadow-prime-audit.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: phi-test-shadow-prime-audit
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Compile current TEST tower source only
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-shadow-prime-http.log 2>&1 &
+      - name: Run matched lift-shadow A/B sequence without changing live
+        run: node tests/phi-shadow-prime-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-shadow-prime-audit
+          path: phi-shadow-prime-audit/results.json
+          if-no-files-found: ignore
