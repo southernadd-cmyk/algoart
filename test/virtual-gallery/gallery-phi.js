@@ -59,6 +59,7 @@ import { createExteriorLandscape } from './environment-render.mjs?v=daytime-rest
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
 import {buildVisitorKnowledge as buildVisitorKnowledgeV1,createVisitorChatUI as createVisitorChatUIV1} from './phi-visitor-chat.mjs';
 import {buildVisitorKnowledge as buildVisitorKnowledgeV2,createVisitorChatUI as createVisitorChatUIV2} from './visitor-v2/chat-v2.mjs';
+import {nearestVisitorOnFloor} from './phi-visitor-selection.mjs';
 // Independent preview: plain TEST runs v1; ?chat=v2 opts into v2.
 const VISITOR_CHAT_V2=new URLSearchParams(location.search).get('chat')==='v2';
 const buildVisitorKnowledge=VISITOR_CHAT_V2?buildVisitorKnowledgeV2:buildVisitorKnowledgeV1;
@@ -2886,10 +2887,11 @@ function virtualVisitorAtCurrentRoom(){
 }
 function talkToNearestVisitor({allowAnywhere=false,visitor=null}={}){
  if(liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting||!plan?.phi)return;
- // Reception conversations belong to the actual seated visitor, not a
- // synthetic visitor at the player's location.
- const actual=visitor||phiVisitorNearest||(currentFloor===0&&phiVisitorSpeakers.length
-  ?phiVisitorSpeakers.find(person=>person.seat)||phiVisitorSpeakers[0]:null);
+ // The toolbar chooses the closest current-floor visitor when clicked.
+ // The T prompt retains the proximity radius; tapping a person selects them.
+ const actual=visitor||(allowAnywhere
+  ?nearestVisitorOnFloor(phiVisitorSpeakers,rig.position)
+  :phiVisitorNearest);
  let speaker=actual||(allowAnywhere?virtualVisitorAtCurrentRoom():null);
  if(!speaker)return;
  // A click or toolbar conversation must not close simply because the visitor
