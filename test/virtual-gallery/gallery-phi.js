@@ -1368,7 +1368,9 @@ async function travelLift(date,index){
   // visibility window restores every hidden mesh before any await / frame.
   if(phiRevealCompile&&phiStageArrival&&renderer.compileAsync){
    const started=performance.now();
-   const diagnostic={enabled:true,attempted:false,meshes:0,ms:null,error:null};
+   const diagnostic={enabled:true,attempted:false,meshes:0,ms:null,error:null,
+    shaderProgramsBefore:renderer.info?.programs?.length??null,
+    shaderProgramsAfter:null};
    phiLiftProfiler?.mark('reveal-compile-start');
    try{
     const job=phiArrivalMeshes.compileHiddenDestination(()=>renderer.compileAsync(scene,camera));
@@ -1380,6 +1382,7 @@ async function travelLift(date,index){
     diagnostic.error=String(error?.message||error);
    }finally{
     diagnostic.ms=+(performance.now()-started).toFixed(1);
+    diagnostic.shaderProgramsAfter=renderer.info?.programs?.length??null;
     if(GALLERY_DEBUG)window.__phiRevealCompile=diagnostic;
     phiLiftProfiler?.mark('reveal-compile-finished',diagnostic);
    }
