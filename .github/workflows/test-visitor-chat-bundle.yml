@@ -1,9 +1,6 @@
 name: Build test visitor chat
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'test/virtual-gallery/full-engine.html'
+  workflow_dispatch:
 permissions:
   contents: write
 concurrency:
