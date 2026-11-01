@@ -15,6 +15,23 @@ try{
   const context=await browser.newContext({viewport:{width:1160,height:750},deviceScaleFactor:1});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(String(e)));
+  // Record the display actually carried by the visible moving cabin, not
+  // only the new destination indicator allocated during construction.
+  await page.addInitScript(()=>{
+   window.__phiIndicatorSamples=[];
+   function observe(){
+    const ride=window.__phiLiftRide,state=window.__phiLiftState;
+    if(ride?.status==='moving'&&state?.indicator){
+     const samples=window.__phiIndicatorSamples;
+     if(samples.length<4000)samples.push({
+      y:state.y,progress:ride.progress,primary:state.indicator.primary,
+      secondary:state.indicator.secondary
+     });
+    }
+    requestAnimationFrame(observe);
+   }
+   requestAnimationFrame(observe);
+  });
   const row={overlap,status:'failed',start:Date.now()};
   try{
    await page.goto(BASE+'/test/virtual-gallery/full-engine.html?debug=1&liftprofile=1&liftoverlap='+overlap,
@@ -48,7 +65,10 @@ try{
      overlayStart:stage('ride-construction-start'),destinationReady:stage('destination-ready-in-ride'),
      paintingReady:stage('paintings-gpu-ready'),doorsOpening:stage('doors-opening'),
      error:window.__phiLiftError||null,
-     graffiti:window.__phiGraffitiStats||null
+     graffiti:window.__phiGraffitiStats||null,
+     // A floor indicator must not remain at G once the cabin is clearly
+     // above ground. This caught the original overlapping-cabin regression.
+     indicatorSamples:window.__phiIndicatorSamples||[]
     };
    });
    row.tripMs=Date.now()-rideBegan;
@@ -61,6 +81,11 @@ try{
    if(details.gate?.complete!==true)throw Error('Painting GPU gate not complete');
    if(details.cabin?.floor!==targetFloor)throw Error('Wrong arrival floor');
    if(details.cabin?.doorCount<2)throw Error('Destination cabin door leaves missing');
+   const actualRide=details.indicatorSamples.filter(x=>Number.isFinite(x.y)&&x.progress>=.15);
+   const upper=actualRide.filter(x=>x.y>12.4);
+   if(!upper.length)throw Error('No moving-cabin indicator samples from above the ground floor');
+   const wrong=upper.filter(x=>x.primary?.startsWith('G · Reception'));
+   if(wrong.length)throw Error('Moving cabin indicator reverted to G · Reception above ground: '+JSON.stringify(wrong.slice(0,3)));
    if(details.paintingReady===null||details.doorsOpening===null||
       details.paintingReady>=details.doorsOpening)throw Error('Doors opened before paintings');
    if(overlap==='1'){
