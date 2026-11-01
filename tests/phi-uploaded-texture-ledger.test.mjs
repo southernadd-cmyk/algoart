@@ -37,3 +37,17 @@ test('a different texture with the same image has not uploaded to this renderer'
  assert.equal(ledger.has(first),true);
  assert.equal(ledger.has(second),false);
 });
+
+test('invalidate all uploads after a WebGL context reset, without retaining textures',()=>{
+ const ledger=createPhiUploadedTextureLedger();
+ const a=new THREE.Texture(),b=new THREE.Texture();
+ ledger.mark(a);ledger.mark(b);
+ assert.equal(ledger.has(a),true);
+ assert.equal(ledger.has(b),true);
+ ledger.invalidateAll();
+ assert.equal(ledger.has(a),false);
+ assert.equal(ledger.has(b),false);
+ assert.equal(ledger.stats().contextInvalidations,1);
+ ledger.mark(a);assert.equal(ledger.has(a),true);
+ assert.equal(ledger.has(b),false);
+});
