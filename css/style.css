@@ -2476,3 +2476,132 @@ button{font-family:Georgia,serif}
   overflow-x:hidden!important;
  }
 }
+
+/* Mobile welcome layout (2026-11-01): one readable column, unambiguous actions,
+   and natural page scrolling. Keep desktop layout and editor untouched. */
+@media (max-width:590px) {
+  .editorial-welcome {
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+  }
+  .editorial-welcome .welcome-composition {
+    width:min(calc(100% - 32px),420px)!important;
+    max-width:420px!important;
+    height:auto!important;
+    min-height:100dvh!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding:clamp(14px,2.5dvh,26px) 0 calc(24px + env(safe-area-inset-bottom))!important;
+    box-sizing:border-box;
+  }
+  .editorial-welcome .welcome-layout {
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    flex:0 0 auto!important;
+    gap:clamp(14px,2.5dvh,22px)!important;
+    width:100%!important;
+    min-height:0!important;
+  }
+  .editorial-welcome .welcome-left {
+    align-self:stretch!important;
+    min-width:0!important;
+    max-width:100%!important;
+    width:100%!important;
+  }
+  .editorial-welcome .intro-card {
+    width:calc(100% - 8px)!important;
+    margin:0 auto!important;
+    padding:clamp(16px,4.8vw,22px) clamp(14px,4.5vw,21px)!important;
+    box-sizing:border-box!important;
+  }
+  .editorial-welcome .intro-copy {
+    padding:0!important;
+    max-width:100%!important;
+  }
+  .editorial-welcome #introTitle {
+    font-size:clamp(16px,4.4vw,19px)!important;
+    line-height:1.35!important;
+    margin:0 0 13px!important;
+  }
+  .editorial-welcome .intro-thesis {
+    font-size:clamp(11.5px,3.05vw,13px)!important;
+    line-height:1.65!important;
+    white-space:normal!important;
+    letter-spacing:0!important;
+    overflow-wrap:normal;
+    margin:0 0 15px!important;
+  }
+  .editorial-welcome .score-note {
+    font-size:clamp(11.5px,3.05vw,13px)!important;
+    line-height:1.6!important;
+    white-space:normal!important;
+    margin:0 0 11px!important;
+  }
+  .editorial-welcome .score-date {
+    font-size:clamp(10.5px,2.85vw,12px)!important;
+    line-height:1.55!important;
+    white-space:normal!important;
+    margin:0!important;
+  }
+  .editorial-welcome .welcome-description {
+    font-size:clamp(15px,3.8vw,17px)!important;
+    line-height:1.45!important;
+    margin:16px 2px 13px!important;
+    max-width:100%;
+  }
+  .editorial-welcome .intro-actions {
+    display:grid!important;
+    grid-template-columns:minmax(0,1.18fr) minmax(0,1fr)!important;
+    gap:3px 16px!important;
+    align-items:stretch!important;
+    margin:0!important;
+  }
+  .editorial-welcome .intro-actions #introEnter {
+    grid-column:1 / -1;
+    justify-self:start;
+    min-height:48px!important;
+    width:auto!important;
+    font-size:clamp(25px,6vw,30px)!important;
+    line-height:1.35!important;
+    cursor:pointer;
+  }
+  .editorial-welcome .intro-actions .welcome-gallery-link {
+    display:flex!important;
+    align-items:center!important;
+    min-height:44px!important;
+    padding:4px 0!important;
+    font:italic clamp(13px,3.45vw,15px)/1.35 Georgia,serif!important;
+    text-decoration:underline!important;
+    text-decoration-color:rgba(75,60,43,.4)!important;
+    text-underline-offset:4px;
+    overflow-wrap:normal;
+  }
+  .editorial-welcome .welcome-right {
+    align-self:center!important;
+    max-width:100%!important;
+    margin:0 auto!important;
+  }
+  .editorial-welcome .welcome-right img,
+  .editorial-welcome .welcome-right.welcome-portrait img,
+  .editorial-welcome .welcome-right.welcome-landscape img {
+    max-height:min(31dvh,310px)!important;
+    object-fit:contain!important;
+  }
+  .editorial-welcome .welcome-right figcaption {
+    font-size:13px!important;
+    line-height:1.4!important;
+    margin-top:9px!important;
+    padding-top:0!important;
+  }
+}
+@media (max-width:345px) {
+  .editorial-welcome .intro-actions {
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:0!important;
+  }
+  .editorial-welcome .intro-actions #introEnter {grid-column:1}
+  .editorial-welcome .intro-actions .welcome-gallery-link {min-height:40px!important}
+}
