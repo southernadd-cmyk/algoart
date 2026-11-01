@@ -271,14 +271,37 @@ export function createVisitorChatUI({onClose}={}){
  const panel=document.createElement('aside');panel.className='visitor-chat';panel.hidden=true;
  panel.setAttribute('aria-label','Conversation with a gallery visitor');
  panel.innerHTML='<div class="visitor-chat-head"><h2></h2><button class="visitor-chat-close" type="button" aria-label="End conversation">×</button></div>'+
-  '<div class="visitor-chat-log" role="log" aria-live="polite"></div><div class="visitor-chat-chips"></div>'+
+  '<div class="visitor-chat-log" role="log" aria-live="polite"></div><div class="visitor-chat-chips"><div class="visitor-chip-quick"></div><details class="visitor-topic-browser"><summary>Browse all topics</summary><div class="visitor-topic-groups"></div></details></div>'+
   '<form class="visitor-chat-form"><input type="text" maxlength="160" autocomplete="off" aria-label="Ask a visitor" placeholder="Ask about this room, the art, φ…"><button type="submit">Ask</button></form>';
  document.body.append(prompt,panel);
  const title=panel.querySelector('h2'),log=panel.querySelector('.visitor-chat-log');
- const chips=panel.querySelector('.visitor-chat-chips'),form=panel.querySelector('form'),input=panel.querySelector('input');
+ const chips=panel.querySelector('.visitor-chip-quick'),browser=panel.querySelector('.visitor-topic-browser'),groups=panel.querySelector('.visitor-topic-groups'),form=panel.querySelector('form'),input=panel.querySelector('input');
  let knowledge=null,speaker=null,state={};
  const add=(who,value)=>{const p=document.createElement('p');p.className='visitor-chat-'+who;p.textContent=value;log.append(p);log.scrollTop=log.scrollHeight;};
- const ask=value=>{if(!knowledge||!value.trim())return;add('you',value.trim());const response=answerVisitor(value,knowledge,state);state=response.state;add('them',response.text);};
+ const ask=value=>{if(!knowledge||!value.trim())return;add('you',value.trim());const response=answerVisitor(value,knowledge,state);state=response.state;add('them',response.text);renderChips();};
+ const renderChips=()=>{
+  chips.replaceChildren();
+  for(const label of visitorSuggestions(knowledge,state)){
+   const b=document.createElement('button');b.type='button';b.textContent=label;
+   b.addEventListener('click',()=>{ask(label);input.focus({preventScroll:true});});chips.append(b);
+  }
+  for(const b of groups.querySelectorAll('button[data-topic]'))
+   b.classList.toggle('visitor-topic-seen',!!state.seen?.[b.dataset.topic]?.length);
+ };
+ const buildBrowser=()=>{
+  groups.replaceChildren();
+  for(const {category,topics} of visitorTopicCatalog()){
+   const section=document.createElement('details');
+   const heading=document.createElement('summary');heading.textContent=category+' ('+topics.length+')';
+   const buttons=document.createElement('div');buttons.className='visitor-topic-options';
+   for(const topic of topics){
+    const b=document.createElement('button');b.type='button';b.dataset.topic=topic.id;b.textContent=topic.question;
+    b.addEventListener('click',()=>{browser.open=false;ask(topic.question);input.focus({preventScroll:true});});
+    buttons.append(b);
+   }
+   section.append(heading,buttons);groups.append(section);
+  }
+ };
  form.addEventListener('submit',e=>{e.preventDefault();ask(input.value);input.value='';input.focus({preventScroll:true});});
  const close=()=>{panel.hidden=true;knowledge=null;speaker=null;prompt.hidden=true;onClose?.();};
  panel.querySelector('.visitor-chat-close').addEventListener('click',close);
@@ -290,8 +313,9 @@ export function createVisitorChatUI({onClose}={}){
   showPrompt(name){if(panel.hidden&&name){if(prompt.textContent!=='Chat')prompt.textContent='Chat';prompt.hidden=false;}else prompt.hidden=true;},
   start(who,k){
    speaker=who;knowledge=k;state={};title.textContent=k.name;
-   log.replaceChildren();chips.replaceChildren();add('them','Hello. I am '+k.name+'. Ask me about this room, the art or PROPORTION PIECE.');
-   for(const label of visitorSuggestions(k)){const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',()=>{ask(label);input.focus({preventScroll:true});});chips.append(b);}
+   log.replaceChildren();browser.open=false;buildBrowser();
+   add('them','Hello. I am '+k.name+'. '+(k.outside?'Ask me how the gallery grows from each day’s images.':'Ask me about this room, the art or PROPORTION PIECE.'));
+   renderChips();
    prompt.hidden=true;panel.hidden=false;input.focus({preventScroll:true});
   },
   close
