@@ -1,0 +1,62 @@
+name: TEST precompiled architecture and room streaming A/B
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/test-compiled-architecture-benchmark.yml'
+      - 'tests/phi-compiled-architecture-browser-benchmark.mjs'
+      - 'test/virtual-gallery/gallery-phi-bundle.js'
+      - 'test/virtual-gallery/precompiled/2026-10-20/manifest.json'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: test-compiled-architecture-ab
+  cancel-in-progress: false
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-architecture-http.log 2>&1 &
+      - name: Compare original, compiled and room-streamed gallery frames
+        run: node tests/phi-compiled-architecture-browser-benchmark.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-compiled-architecture-browser-benchmark
+          path: phi-compiled-architecture-benchmark/
+          if-no-files-found: ignore
+      - name: Publish measurement report without overwriting newer sources
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          source_sha=$(git rev-parse HEAD:test/virtual-gallery/gallery-phi.js)
+          bundle_sha=$(git rev-parse HEAD:test/virtual-gallery/gallery-phi-bundle.js)
+          manifest_sha=$(git rev-parse HEAD:test/virtual-gallery/precompiled/2026-10-20/manifest.json)
+          mkdir -p test/virtual-gallery
+          cp phi-compiled-architecture-benchmark/results.json test/virtual-gallery/compiled-architecture-benchmark.json
+          git add test/virtual-gallery/compiled-architecture-benchmark.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record test tower compiled architecture A/B benchmark"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/gallery-phi.js)" == "$source_sha" ]] || { echo 'TEST source changed; refusing stale performance report'; exit 1; }
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/gallery-phi-bundle.js)" == "$bundle_sha" ]] || { echo 'TEST bundle changed; refusing stale performance report'; exit 1; }
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/precompiled/2026-10-20/manifest.json)" == "$manifest_sha" ]] || { echo 'Room manifest changed; refusing stale report'; exit 1; }
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 2
+          done
+          echo 'Unable to publish measurements without conflict'
+          exit 1
