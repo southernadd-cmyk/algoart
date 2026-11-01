@@ -16,7 +16,7 @@ test('export attributes an actual measured blocking operation, not last stage',(
    {name:'doors-opening',elapsedMs:360},{name:'doors-fully-open',elapsedMs:400}]
  };
  const report=buildLiftBenchmarkReport({active:false,visits:[visit]},{userAgent:'unit-test'});
- assert.equal(report.version,3);
+ assert.equal(report.version,4);
  const exported=report.journeys[0];
  assert.equal(exported.status,'completed');
  assert.equal(exported.direction,'G → 28');
@@ -50,4 +50,19 @@ test('profiler samples synchronous operation and finishes after physical doors f
  assert.equal(p.state.current.summary.operationTotals['build-floor-meshes'].count,1);
  assert.equal(p.state.current.operations[0].durationMs,25);
  assert.equal(p.state.current.stages.at(-1).name,'doors-fully-open');
+});
+
+test('Chromium long-animation-frame source attribution beats stage-only guessing',()=>{
+ const v=summariseLiftVisit({
+  fromFloor:0,toFloor:28,date:'2026-11-01',summary:{ms:300},
+  frameMs:[120],frames:[{elapsedMs:240,deltaMs:120,stage:'paintings-waiting'}],
+  stages:[{name:'paintings-waiting',elapsedMs:100}],
+  operations:[],longTasks:[],
+  longAnimationFrames:[{
+   elapsedMs:130,durationMs:95,blockingDurationMs:50,
+   scripts:[{functionName:'buildSculptureGeometry',sourcePath:'/gallery-phi.js',durationMs:70}]
+  }]
+ });
+ assert.equal(v.worstFrames[0].attribution.status,'browser script-function attribution');
+ assert.equal(v.worstFrames[0].attribution.functionName,'buildSculptureGeometry');
 });
