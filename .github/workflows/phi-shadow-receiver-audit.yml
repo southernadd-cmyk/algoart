@@ -1,0 +1,38 @@
+name: TEST scene-render receiver shader A/B
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-shadow-receiver-audit.yml'
+      - 'tests/phi-shadow-receiver-invalidation.test.mjs'
+      - 'tests/phi-shadow-receiver-audit.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify original shadow and material state parity
+        run: node --test tests/phi-shadow-receiver-invalidation.test.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Compile TEST source (no changes to live)
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-shadow-receiver-http.log 2>&1 &
+      - name: Compare matched arrival journeys and unchanged shadow states
+        run: node tests/phi-shadow-receiver-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-shadow-receiver-audit
+          path: phi-shadow-receiver-audit/results.json
+          if-no-files-found: ignore
