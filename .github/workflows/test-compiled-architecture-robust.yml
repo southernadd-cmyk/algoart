@@ -1,0 +1,60 @@
+name: TEST robust compiled architecture A/B (ABCCBA)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/test-compiled-architecture-robust.yml'
+      - 'tests/phi-compiled-architecture-robust-benchmark.mjs'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: test-compiled-architecture-robust
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-compiled-robust-http.log 2>&1 &
+      - name: Run six paired gallery visits and pixel-difference measurements
+        continue-on-error: true
+        run: node tests/phi-compiled-architecture-robust-benchmark.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-compiled-architecture-robust
+          path: phi-compiled-architecture-robust/
+          if-no-files-found: ignore
+      - name: Save results with strict source and bundle version checks
+        if: always()
+        run: |
+          test -f phi-compiled-architecture-robust/results.json || { echo 'No benchmark result'; exit 1; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          source_sha=$(git rev-parse HEAD:test/virtual-gallery/gallery-phi.js)
+          bundle_sha=$(git rev-parse HEAD:test/virtual-gallery/gallery-phi-bundle.js)
+          manifest_sha=$(git rev-parse HEAD:test/virtual-gallery/precompiled/2026-10-20/manifest.json)
+          cp phi-compiled-architecture-robust/results.json test/virtual-gallery/compiled-architecture-robust-benchmark.json
+          git add test/virtual-gallery/compiled-architecture-robust-benchmark.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record robust paired TEST precompiled architecture benchmark"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/gallery-phi.js)" == "$source_sha" ]] || exit 1
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/gallery-phi-bundle.js)" == "$bundle_sha" ]] || exit 1
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/precompiled/2026-10-20/manifest.json)" == "$manifest_sha" ]] || exit 1
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 2
+          done
+          exit 1
