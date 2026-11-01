@@ -43,7 +43,7 @@ export function describeWork(w){
 }
 export function buildVisitorKnowledge(input){
  const seed=hash((input.date||'reception')+':'+input.roomIndex+':'+input.visitorIndex);
- return {...input,seed,persona:TYPES[seed%3],name:NAMES[(seed>>>3)%NAMES.length]};
+ return {...input,outside:!!input.reception&&(input.outside===true||input.visitorIndex>=100),seed,persona:TYPES[seed%3],name:NAMES[(seed>>>3)%NAMES.length]};
 }
 const ORDINALS={first:0,'1st':0,second:1,'2nd':1,third:2,'3rd':2,fourth:3,'4th':3,last:-1};
 export function resolveWork(question,k,state={}){
@@ -110,7 +110,7 @@ function titleNamed(question,k){
   (/\d+\s*$/.test(w.title)&&new RegExp('\\b(study|number|no)\\s*0*'+Number(w.title.match(/(\d+)\s*$/)[1])+'\\b').test(ws.join(' '))));
 }
 function tryLine(k){
- return k.reception?'Ask me about Fibonacci, Penrose tiles or the gramophone.':'Ask me about Fibonacci, the Parthenon myth, or artists who worked with rules.';
+ return k.outside?'Try how this tower was built or how a day’s images become a floor.':k.reception?'Ask me about Fibonacci, Penrose tiles or the gramophone.':'Ask me about Fibonacci, the Parthenon myth, or artists who worked with rules.';
 }
 function phiOpinion(k){
  if(k.persona==='enthusiast')return 'I think φ carries more than you would expect. It guides divisions, scale and spacing, but materials and chance play a part too. Make up your own mind.';
@@ -140,11 +140,15 @@ export function answerVisitor(question,k,state={}){
  const kb=matchKnowledge(line);
  const aboutWork=work&&(/\b(this|that)\b/.test(line)||titleNamed(question,k));
  const fromTopic=(topic,fallbackLast=true,hits=[])=>{
-  const answer=knowledgeAnswer(topic,k.persona,state.seen,hits);
-  if(answer){next.seen=answer.seen;next.topic=topic.id;return reply(answer.text);}
-  const on=topic.next&&knowledgeTopic(topic.next);
-  if(on&&!(state.seen||{})[on.id])return fromTopic(on,false);
-  next.topic=topic.id;
+  // Knowledge chains can circle back: do not recurse forever.
+  const traversed=new Set();
+  while(topic&&!traversed.has(topic.id)){
+   traversed.add(topic.id);
+   const answer=knowledgeAnswer(topic,k.persona,next.seen||state.seen,hits);
+   if(answer){next.seen=answer.seen;next.topic=topic.id;return reply(answer.text);}
+   topic=topic.next&&knowledgeTopic(topic.next);hits=[];
+  }
+  next.topic=state.topic||null;
   return reply(fallbackLast?'That’s about all I know on that. '+tryLine(k):tryLine(k));
  };
  // Phrase keys ("is this art") are specific enough to win even with "this".
@@ -230,7 +234,7 @@ export function createVisitorChatUI({onClose}={}){
   prompt,
   get open(){return !panel.hidden;},
   get speaker(){return speaker;},
-  showPrompt(name){if(panel.hidden&&name){if(prompt.textContent!=='T · Talk to '+name)prompt.textContent='T · Talk to '+name;prompt.hidden=false;}else prompt.hidden=true;},
+  showPrompt(name){if(panel.hidden&&name){if(prompt.textContent!=='Chat')prompt.textContent='Chat';prompt.hidden=false;}else prompt.hidden=true;},
   start(who,k){
    speaker=who;knowledge=k;state={};title.textContent=k.name;
    log.replaceChildren();chips.replaceChildren();add('them','Hello. I am '+k.name+'. Ask me about this room, the art or PROPORTION PIECE.');
