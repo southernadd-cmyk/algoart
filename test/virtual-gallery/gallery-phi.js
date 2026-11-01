@@ -395,6 +395,12 @@ if(new URLSearchParams(location.search).get('roomcullbench')==='1'){
    return phiRoomVisibilityCuller.update(local,{safe:true});
   },
   culling(){return window.__phiRoomVisibility?.()??null;},
+  // Same scene, camera and artwork: toggle lookup strategy for paired A/B.
+  compiled(enabled){
+   phiRoomVisibilityCuller?.setCompiledEnabled(!!enabled);
+   const local=plan?.phi?.world?.toLocal(rig.position.x,rig.position.z);
+   return phiRoomVisibilityCuller?.update(local,{safe:true})||null;
+  },
   look(angle){yaw=angle;pitch=0;rig.rotation.y=yaw;camera.rotation.x=pitch;},
   // Direct scene-only render avoids full-screen post-FX timing dominating the
   // paired room-occlusion measurement. This probe is TEST-only.
