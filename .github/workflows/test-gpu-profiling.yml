@@ -47,6 +47,7 @@ jobs:
         run: |
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
           node --check test/virtual-gallery/gallery-phi-bundle.js
+          node --input-type=module -e "import fs from 'node:fs'; const s=fs.readFileSync('test/virtual-gallery/gallery-phi-bundle.js','utf8');if(!s.includes('visibilitycells')||!s.includes('cell-limit'))process.exit(1)"
           node --input-type=module -e "import fs from 'node:fs';if(!fs.readFileSync('test/virtual-gallery/gallery-phi-bundle.js','utf8').includes('__phiRoomVisibility'))process.exit(1)"
       - name: Publish generated TEST bundle
         run: |
@@ -60,7 +61,7 @@ jobs:
           original_room_batches=$(git rev-parse HEAD:test/virtual-gallery/phi-room-batch-study.mjs)
           original_upload_ledger=$(git rev-parse HEAD:test/virtual-gallery/phi-uploaded-texture-ledger.mjs)
           original_lighting=$(git rev-parse HEAD:test/virtual-gallery/phi-room-lighting-renderer.mjs)
-          git add test/virtual-gallery/gallery-phi-bundle.js
+          git add test/virtual-gallery/gallery-phi-bundle.js test/virtual-gallery/pvs-benchmark.json
           if ! git diff --cached --quiet; then
             git commit -m "Build test tower GPU profiling experiment"
             # A concurrent push can occur after fetch. Retry safely: always
