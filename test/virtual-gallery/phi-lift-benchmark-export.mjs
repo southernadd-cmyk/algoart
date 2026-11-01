@@ -11,6 +11,7 @@ export function summariseLiftVisit(v){
  const stages=rows(v);
  const operations=v.operations||[];
  const buckets=[
+  ['gl-','timed WebGL API / driver call'],
   ['pass-','named post-processing or scene-render pass'],
   ['render-frame-postfx','complete postprocessing / WebGL render submission'],
   ['gpu-upload','texture upload / GPU driver submission'],
@@ -40,7 +41,12 @@ export function summariseLiftVisit(v){
   // of the stalled frame; otherwise the root remains the whole render call.
   const namedPass=observed.filter(op=>op.name.startsWith('pass-'))
    .sort((a,b)=>b.overlapMs-a.overlapMs)[0]||null;
-  const likely=namedPass&&namedPass.overlapMs>=Math.max(10,frame.deltaMs*.35)?
+  // Narrow opt-in WebGL tracing can isolate one driver call from the full
+  // scene-render pass. Never claim a cause if individual GL calls are cheap.
+  const glCall=observed.filter(op=>op.name.startsWith('gl-'))
+   .sort((a,b)=>b.overlapMs-a.overlapMs)[0]||null;
+  const likely=glCall&&glCall.overlapMs>=Math.max(10,frame.deltaMs*.25)?
+   glCall:namedPass&&namedPass.overlapMs>=Math.max(10,frame.deltaMs*.35)?
    namedPass:largest;
   const longFrames=(v.longAnimationFrames||[]).filter(item=>{
    const start=item.elapsedMs,end=start+item.durationMs;
@@ -51,7 +57,8 @@ export function summariseLiftVisit(v){
    .sort((a,b)=>b.durationMs-a.durationMs)[0]||null;
   const measuredBlock=likely&&likely.overlapMs>=Math.min(8,frame.deltaMs*.25);
   const attribution=measuredBlock?
-   {status:likely.name.startsWith('pass-')?'observed render-pass blocking':'observed synchronous blocking',
+   {status:likely.name.startsWith('gl-')?'observed WebGL driver-call blocking':
+    likely.name.startsWith('pass-')?'observed render-pass blocking':'observed synchronous blocking',
     operation:likely.name,category:likely.category,overlapMs:likely.overlapMs}:
    script?{status:'browser script-function attribution',functionName:script.functionName,
     sourcePath:script.sourcePath,durationMs:script.durationMs}:
@@ -99,6 +106,8 @@ export function summariseLiftVisit(v){
      maxMs:round(value.maxMs),category:category(name)}])),
   operationSpikes:[...operations].sort((a,b)=>b.durationMs-a.durationMs).slice(0,80)
    .map(op=>({...op,category:category(op.name)})),
+  webglCallSpikes:operations.filter(op=>op.name.startsWith('gl-'))
+   .sort((a,b)=>b.durationMs-a.durationMs).slice(0,80),
   worstFrames:[...(v.frames||[])].sort((a,b)=>b.deltaMs-a.deltaMs).slice(0,60)
    .map(spikeAttribution),
   longTasks:[...(v.longTasks||[])].sort((a,b)=>b.durationMs-a.durationMs).slice(0,40),
@@ -110,9 +119,9 @@ export function buildLiftBenchmarkReport(state,environment={}){
  const visits=state?.visits||[];
  return {
   format:'PROPORTION PIECE — test tower lift benchmark',
-  version:5,exportedAt:new Date().toISOString(),environment,
+  version:6,exportedAt:new Date().toISOString(),environment,
   summary:{journeys:visits.length,completed:visits.filter(v=>v.summary&&!rows(v).some(s=>s.name==='failure')).length,
-   recording:!!state?.active,attributionNote:'Named render-pass timings identify which active scene, shadow, AO, bloom, art-protection or grading pass blocks the JS render call. Operation overlaps identify measured blockers; Chromium Long Animation Frames can reveal functions. WebGL render and texture upload calls can include driver wait and do not prove pure GPU time. Unattributed gaps need a browser trace.',route:'Reception G → top exhibition → reception G'},
+   recording:!!state?.active,attributionNote:'Named render-pass timings identify which active scene, AO, bloom, artwork protection or grading pass blocks rendering. Optional ?gltrace=1 measures specific slow WebGL API calls. Operation overlaps identify measured blockers; Chromium Long Animation Frames can reveal functions. WebGL render and texture upload calls can include driver wait and do not prove pure GPU time. Unattributed gaps need a browser trace.',route:'Reception G → top exhibition → reception G'},
   journeys:visits.map(summariseLiftVisit)
  };
 }
@@ -167,7 +176,8 @@ export function installLiftBenchmarkUI(){
    userAgent:navigator.userAgent,viewport:{width:innerWidth,height:innerHeight},
    devicePixelRatio:devicePixelRatio||1,
    threeRevision:window.__phiLiftState?.threeRevision||null,
-   renderPixelRatio:window.__phiPerformance?.pixelRatio??null
+   renderPixelRatio:window.__phiPerformance?.pixelRatio??null,
+   webglTrace:window.__phiGLTrace||{enabled:false}
   });
  }
  function update(){
