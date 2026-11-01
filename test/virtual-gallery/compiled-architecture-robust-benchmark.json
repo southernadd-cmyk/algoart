@@ -1,0 +1,752 @@
+{
+  "date": "2026-10-20",
+  "environment": "Ubuntu Chromium SwiftShader (software WebGL)",
+  "method": "ABCCBA: two independent visits per mode; same floor, two viewpoints; four warmed direct scene frames per viewpoint; per-pixel PNG comparisons and short full-postFX frame sampling",
+  "summary": {
+    "original": {
+      "runs": 2,
+      "loadMsMedian": 6761,
+      "byRoom": [
+        {
+          "room": 0,
+          "sceneP50MsMedian": 3.2,
+          "sceneP95MsMedian": 5.3,
+          "callsMedian": 74,
+          "trianglesMedian": 62874,
+          "differences": [
+            null,
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 407714078
+            }
+          ]
+        },
+        {
+          "room": 3,
+          "sceneP50MsMedian": 10.4,
+          "sceneP95MsMedian": 10.8,
+          "callsMedian": 244,
+          "trianglesMedian": 88280,
+          "differences": [
+            null,
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 320127301
+            }
+          ]
+        }
+      ]
+    },
+    "precompiled": {
+      "runs": 2,
+      "loadMsMedian": 6950,
+      "byRoom": [
+        {
+          "room": 0,
+          "sceneP50MsMedian": 4.3,
+          "sceneP95MsMedian": 6.5,
+          "callsMedian": 76,
+          "trianglesMedian": 62826,
+          "differences": [
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 407714078
+            },
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 407714078
+            }
+          ]
+        },
+        {
+          "room": 3,
+          "sceneP50MsMedian": 8.9,
+          "sceneP95MsMedian": 9.1,
+          "callsMedian": 247,
+          "trianglesMedian": 88220,
+          "differences": [
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 320127301
+            },
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 320127301
+            }
+          ]
+        }
+      ]
+    },
+    "streamed": {
+      "runs": 2,
+      "loadMsMedian": 6859,
+      "byRoom": [
+        {
+          "room": 0,
+          "sceneP50MsMedian": 5.5,
+          "sceneP95MsMedian": 7.7,
+          "callsMedian": 76,
+          "trianglesMedian": 62730,
+          "differences": [
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 407714078
+            },
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 407714078
+            }
+          ]
+        },
+        {
+          "room": 3,
+          "sceneP50MsMedian": 4.9,
+          "sceneP95MsMedian": 5,
+          "callsMedian": 247,
+          "trianglesMedian": 88124,
+          "differences": [
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 320127301
+            },
+            {
+              "pixels": 576000,
+              "changedPixels": 576000,
+              "changedPercent": 100,
+              "changedChannels": 2304000,
+              "maxChannelDelta": 255,
+              "sumDelta": 320127301
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "stableOriginal": false,
+  "originalDrift": [
+    {
+      "pixels": 576000,
+      "changedPixels": 576000,
+      "changedPercent": 100,
+      "changedChannels": 2304000,
+      "maxChannelDelta": 255,
+      "sumDelta": 407714078
+    },
+    {
+      "pixels": 576000,
+      "changedPixels": 576000,
+      "changedPercent": 100,
+      "changedChannels": 2304000,
+      "maxChannelDelta": 255,
+      "sumDelta": 320127301
+    }
+  ],
+  "parity": [
+    {
+      "run": 2,
+      "mode": "precompiled",
+      "room": 0,
+      "changedPercent": 100,
+      "changedPixels": 576000,
+      "exact": false
+    },
+    {
+      "run": 2,
+      "mode": "precompiled",
+      "room": 3,
+      "changedPercent": 100,
+      "changedPixels": 576000,
+      "exact": false
+    },
+    {
+      "run": 3,
+      "mode": "streamed",
+      "room": 0,
+      "changedPercent": 100,
+      "changedPixels": 576000,
+      "exact": false
+    },
+    {
+      "run": 3,
+      "mode": "streamed",
+      "room": 3,
+      "changedPercent": 100,
+      "changedPixels": 576000,
+      "exact": false
+    },
+    {
+      "run": 4,
+      "mode": "streamed",
+      "room": 0,
+      "changedPercent": 100,
+      "changedPixels": 576000,
+      "exact": false
+    },
+    {
+      "run": 4,
+      "mode": "streamed",
+      "room": 3,
+      "changedPercent": 100,
+      "changedPixels": 576000,
+      "exact": false
+    },
+    {
+      "run": 5,
+      "mode": "precompiled",
+      "room": 0,
+      "changedPercent": 100,
+      "changedPixels": 576000,
+      "exact": false
+    },
+    {
+      "run": 5,
+      "mode": "precompiled",
+      "room": 3,
+      "changedPercent": 100,
+      "changedPixels": 576000,
+      "exact": false
+    }
+  ],
+  "results": [
+    {
+      "mode": "original",
+      "run": 1,
+      "status": "complete",
+      "startupMs": 6904,
+      "views": [
+        {
+          "room": 0,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 5,
+          "sceneRenderP95Ms": 5.3,
+          "sceneRenderMaxMs": 7,
+          "fullFxFrames": 1,
+          "fullFxP50Ms": 3176.4,
+          "fullFxP95Ms": 3176.4,
+          "sceneCalls": 74,
+          "triangles": 62874,
+          "hidden": 0,
+          "hash": "d32358336064f2247b84f029bdcea6f6f6976ae08478eb481cc6727127b13103",
+          "difference": null,
+          "compiled": {
+            "active": false
+          }
+        },
+        {
+          "room": 3,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 16.5,
+          "sceneRenderP95Ms": 16.5,
+          "sceneRenderMaxMs": 21.3,
+          "fullFxFrames": 1,
+          "fullFxP50Ms": 19.2,
+          "fullFxP95Ms": 19.2,
+          "sceneCalls": 244,
+          "triangles": 88280,
+          "hidden": 0,
+          "hash": "4acc98a3ef881dd0a234f67879b5d4445f259da0c932e7f46343a868a8131154",
+          "difference": null,
+          "compiled": {
+            "active": false
+          }
+        }
+      ],
+      "errors": []
+    },
+    {
+      "mode": "precompiled",
+      "run": 2,
+      "status": "complete",
+      "startupMs": 7695,
+      "views": [
+        {
+          "room": 0,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 4.3,
+          "sceneRenderP95Ms": 6.5,
+          "sceneRenderMaxMs": 8.9,
+          "fullFxFrames": 2,
+          "fullFxP50Ms": 13,
+          "fullFxP95Ms": 13,
+          "sceneCalls": 76,
+          "triangles": 62826,
+          "hidden": 0,
+          "hash": "a27736fde8a7574d9b9ab836369b4d41a065712ef5e20248073e37dd80641496",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 407714078
+          },
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": false,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 4,
+            "replaced": 4,
+            "directRooms": 4,
+            "bytes": 43284,
+            "originalMeshesDisposed": 0,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "fallbackRooms": [],
+            "shared": true,
+            "remaining": 0
+          }
+        },
+        {
+          "room": 3,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 14.8,
+          "sceneRenderP95Ms": 15.5,
+          "sceneRenderMaxMs": 28.8,
+          "fullFxFrames": 3,
+          "fullFxP50Ms": 37.5,
+          "fullFxP95Ms": 37.5,
+          "sceneCalls": 247,
+          "triangles": 88220,
+          "hidden": 0,
+          "hash": "4acc98a3ef881dd0a234f67879b5d4445f259da0c932e7f46343a868a8131154",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 320127301
+          },
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": false,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 4,
+            "replaced": 4,
+            "directRooms": 4,
+            "bytes": 43284,
+            "originalMeshesDisposed": 0,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "fallbackRooms": [],
+            "shared": true,
+            "remaining": 0
+          }
+        }
+      ],
+      "errors": []
+    },
+    {
+      "mode": "streamed",
+      "run": 3,
+      "status": "complete",
+      "startupMs": 6859,
+      "views": [
+        {
+          "room": 0,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 5.5,
+          "sceneRenderP95Ms": 8.7,
+          "sceneRenderMaxMs": 8.8,
+          "fullFxFrames": 0,
+          "fullFxP50Ms": null,
+          "fullFxP95Ms": null,
+          "sceneCalls": 76,
+          "triangles": 62730,
+          "hidden": 0,
+          "hash": "a27736fde8a7574d9b9ab836369b4d41a065712ef5e20248073e37dd80641496",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 407714078
+          },
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": true,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 1,
+            "replaced": 1,
+            "directRooms": 1,
+            "bytes": 13408,
+            "originalMeshesDisposed": 0,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0
+            ],
+            "fallbackRooms": [
+              1,
+              2,
+              3
+            ],
+            "shared": true,
+            "remaining": 3
+          }
+        },
+        {
+          "room": 3,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 16.1,
+          "sceneRenderP95Ms": 16.1,
+          "sceneRenderMaxMs": 17,
+          "fullFxFrames": 4,
+          "fullFxP50Ms": 21.9,
+          "fullFxP95Ms": 23.5,
+          "sceneCalls": 247,
+          "triangles": 88124,
+          "hidden": 0,
+          "hash": "4acc98a3ef881dd0a234f67879b5d4445f259da0c932e7f46343a868a8131154",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 320127301
+          },
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": true,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 2,
+            "replaced": 2,
+            "directRooms": 1,
+            "bytes": 17776,
+            "originalMeshesDisposed": 2,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0,
+              3
+            ],
+            "fallbackRooms": [
+              1,
+              2,
+              3
+            ],
+            "shared": true,
+            "remaining": 2
+          }
+        }
+      ],
+      "errors": []
+    },
+    {
+      "mode": "streamed",
+      "run": 4,
+      "status": "complete",
+      "startupMs": 7142,
+      "views": [
+        {
+          "room": 0,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 5.5,
+          "sceneRenderP95Ms": 7.7,
+          "sceneRenderMaxMs": 7.8,
+          "fullFxFrames": 1,
+          "fullFxP50Ms": 3946.6,
+          "fullFxP95Ms": 3946.6,
+          "sceneCalls": 76,
+          "triangles": 62730,
+          "hidden": 0,
+          "hash": "a27736fde8a7574d9b9ab836369b4d41a065712ef5e20248073e37dd80641496",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 407714078
+          },
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": true,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 1,
+            "replaced": 1,
+            "directRooms": 1,
+            "bytes": 13408,
+            "originalMeshesDisposed": 0,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0
+            ],
+            "fallbackRooms": [
+              1,
+              2,
+              3
+            ],
+            "shared": true,
+            "remaining": 3
+          }
+        },
+        {
+          "room": 3,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 4.9,
+          "sceneRenderP95Ms": 5,
+          "sceneRenderMaxMs": 6.6,
+          "fullFxFrames": 7,
+          "fullFxP50Ms": 20.3,
+          "fullFxP95Ms": 28.5,
+          "sceneCalls": 247,
+          "triangles": 88124,
+          "hidden": 0,
+          "hash": "4acc98a3ef881dd0a234f67879b5d4445f259da0c932e7f46343a868a8131154",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 320127301
+          },
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": true,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 2,
+            "replaced": 2,
+            "directRooms": 1,
+            "bytes": 17776,
+            "originalMeshesDisposed": 2,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0,
+              3
+            ],
+            "fallbackRooms": [
+              1,
+              2,
+              3
+            ],
+            "shared": true,
+            "remaining": 2
+          }
+        }
+      ],
+      "errors": []
+    },
+    {
+      "mode": "precompiled",
+      "run": 5,
+      "status": "complete",
+      "startupMs": 6950,
+      "views": [
+        {
+          "room": 0,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 5.8,
+          "sceneRenderP95Ms": 6.5,
+          "sceneRenderMaxMs": 6.5,
+          "fullFxFrames": 1,
+          "fullFxP50Ms": 3610.1,
+          "fullFxP95Ms": 3610.1,
+          "sceneCalls": 76,
+          "triangles": 62826,
+          "hidden": 0,
+          "hash": "53efbbf9ba414d7464fe8a4b8c4c0e1d1cd630f8b4713e2d4e8932f1748b45b7",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 407714078
+          },
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": false,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 4,
+            "replaced": 4,
+            "directRooms": 4,
+            "bytes": 43284,
+            "originalMeshesDisposed": 0,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "fallbackRooms": [],
+            "shared": true,
+            "remaining": 0
+          }
+        },
+        {
+          "room": 3,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 8.9,
+          "sceneRenderP95Ms": 9.1,
+          "sceneRenderMaxMs": 17.6,
+          "fullFxFrames": 5,
+          "fullFxP50Ms": 43,
+          "fullFxP95Ms": 43.9,
+          "sceneCalls": 247,
+          "triangles": 88220,
+          "hidden": 0,
+          "hash": "4acc98a3ef881dd0a234f67879b5d4445f259da0c932e7f46343a868a8131154",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 320127301
+          },
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": false,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 4,
+            "replaced": 4,
+            "directRooms": 4,
+            "bytes": 43284,
+            "originalMeshesDisposed": 0,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "fallbackRooms": [],
+            "shared": true,
+            "remaining": 0
+          }
+        }
+      ],
+      "errors": []
+    },
+    {
+      "mode": "original",
+      "run": 6,
+      "status": "complete",
+      "startupMs": 6761,
+      "views": [
+        {
+          "room": 0,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 3.2,
+          "sceneRenderP95Ms": 8.5,
+          "sceneRenderMaxMs": 8.6,
+          "fullFxFrames": 0,
+          "fullFxP50Ms": null,
+          "fullFxP95Ms": null,
+          "sceneCalls": 74,
+          "triangles": 62874,
+          "hidden": 0,
+          "hash": "a27736fde8a7574d9b9ab836369b4d41a065712ef5e20248073e37dd80641496",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 407714078
+          },
+          "compiled": {
+            "active": false
+          }
+        },
+        {
+          "room": 3,
+          "renderCount": 4,
+          "sceneRenderP50Ms": 10.4,
+          "sceneRenderP95Ms": 10.8,
+          "sceneRenderMaxMs": 12.1,
+          "fullFxFrames": 6,
+          "fullFxP50Ms": 36.4,
+          "fullFxP95Ms": 41.2,
+          "sceneCalls": 244,
+          "triangles": 88280,
+          "hidden": 0,
+          "hash": "4acc98a3ef881dd0a234f67879b5d4445f259da0c932e7f46343a868a8131154",
+          "difference": {
+            "pixels": 576000,
+            "changedPixels": 576000,
+            "changedPercent": 100,
+            "changedChannels": 2304000,
+            "maxChannelDelta": 255,
+            "sumDelta": 320127301
+          },
+          "compiled": {
+            "active": false
+          }
+        }
+      ],
+      "errors": []
+    }
+  ],
+  "warnings": [
+    "Software-rendered measurements are not native GPU FPS",
+    "Dynamic artwork, lights or deferred loads can change across independent sessions",
+    "If baseline differs from itself, cross-mode image parity is inconclusive",
+    "This is an architectural experiment, not entire-gallery scene streaming"
+  ]
+}
