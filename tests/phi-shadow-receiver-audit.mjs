@@ -1,5 +1,5 @@
-// TEST-only two-trial screening A/B: same edition, original settings/artwork.
-// Does NOT assert performance from one pair or claim pixel identity.
+// TEST-only matched six-journey cross-over on two original archive editions.
+// A single pair is noisy; do not treat SwiftShader timings as hardware FPS.
 import {chromium} from 'playwright';
 import {mkdir,writeFile} from 'node:fs/promises';
 const browser=await chromium.launch({headless:true,args:[
@@ -9,7 +9,11 @@ const browser=await chromium.launch({headless:true,args:[
 const base='http://127.0.0.1:4173/test/virtual-gallery/full-engine.html';
 const results=[];
 try{
- for(const [mode,fast] of [['control',0],['receiver-only',1]]){
+ const trials=[['2026-10-20',0],['2026-10-20',1],
+  ['2026-10-30',1],['2026-10-30',0],
+  ['2026-10-20',1],['2026-10-20',0]];
+ for(const [index,[date,fast]] of trials.entries()){
+  const mode=fast?'receiver-only':'control';
   const page=await browser.newPage({viewport:{width:1100,height:700},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(String(err)));
@@ -25,7 +29,7 @@ try{
    }
    requestAnimationFrame(sample);
   });
-  const data={mode,fast,status:'failed'};
+  const data={index:index+1,date,mode,fast,status:'failed'};
   try{
    const query=new URLSearchParams({
     fx:'architectural',debug:1,liftprofile:1,liftbatch:16,liftstage:1,
@@ -42,10 +46,10 @@ try{
    await page.locator('#openLift').evaluate(e=>e.click());
    await page.locator('#liftMonth').evaluate((e,value)=>{
     e.value=value;e.dispatchEvent(new Event('change',{bubbles:true}));
-   },'2026-10');
-   const date=page.locator('#liftDays button[title^="2026-10-20"]');
-   await date.getAttribute('title',{timeout:15000});
-   await date.evaluate(e=>e.click());
+   },date.slice(0,7));
+   const target=page.locator('#liftDays button[title^="'+date+'"]');
+   await target.getAttribute('title',{timeout:15000});
+   await target.evaluate(e=>e.click());
    await page.waitForFunction(()=>window.__phiLiftRide?.status==='opening'||window.__phiLiftError,
     null,{timeout:210000});
    const audit=await page.evaluate(()=>{
@@ -84,40 +88,78 @@ try{
     throw Error('receiver toggle did not match experiment');
    if(errors.length)throw Error('browser errors: '+errors.join('; '));
    data.status='complete';
+   // Evidence images from the actual tower are useful for human inspection,
+   // but moving time-based art means they are not suitable for exact-pixel CI.
+   if(index<4){
+    try{
+     await page.waitForFunction(()=>window.__phiLiftState?.doorClosure<.015,
+      null,{timeout:30000});
+     await mkdir('phi-shadow-receiver-audit',{recursive:true});
+     await page.locator('#world').screenshot({
+      path:'phi-shadow-receiver-audit/gallery-'+date+'-'+mode+'.png',
+      timeout:35000});
+     data.screenshot='gallery-'+date+'-'+mode+'.png';
+    }catch(error){data.screenshotError=String(error);}
+   }
    console.log('PHI_RECEIVER_TRIAL '+JSON.stringify({
-    mode,status:data.status,totalMs:data.totalMs,afterRideMs:data.afterRideMs,
+    index:data.index,date,mode,status:data.status,totalMs:data.totalMs,afterRideMs:data.afterRideMs,
     frames:data.frames,scene:data.scene,shadows:data.shadows,
     lighting:data.lighting,paintings:data.paintings,postfx:data.postfx,
     renderer:data.renderer,errors:data.errors
    }));
   }catch(error){
    data.failure=String(error);
-   console.error('PHI_RECEIVER_FAILURE '+JSON.stringify({mode,error:data.failure,errors}));
+   console.error('PHI_RECEIVER_FAILURE '+JSON.stringify({index:data.index,date,mode,error:data.failure,errors}));
   }finally{results.push(data);await page.close();}
  }
- const control=results[0],fast=results[1];
- const differences=['receivers','casters'].map(key=>[
-  key,control.lighting?.[key],fast.lighting?.[key]]);
- const visualState={paintingsMatch:control.paintings?.loaded===fast.paintings?.loaded
-   &&control.paintings?.total===fast.paintings?.total,
-  sameLightAndShadowCounts:control.lighting?.roomLight!=null&&fast.lighting?.roomLight!=null
-   &&control.lighting?.shadowMaps===fast.lighting?.shadowMaps
-   &&control.lighting?.casters===fast.lighting?.casters,
-  samePostFX:JSON.stringify(control.postfx)===JSON.stringify(fast.postfx),
-  rendererMemory:{control:control.renderer,fast:fast.renderer}};
- const comparison={date:'2026-10-20',environment:'GitHub Actions Chromium SwiftShader, relative only',
-  note:'Screening only: single A/B pair is not sufficient to establish a performance benefit or pixel identity.',
-  results,visualState,differences};
+ const success=results.filter(r=>r.status==='complete');
+ const byDate={};
+ for(const trial of success){
+  const target=byDate[trial.date]??={control:[],experimental:[]};
+  target[trial.fast?'experimental':'control'].push(trial);
+ }
+ const describe=rows=>{
+  const get=fn=>{
+   const list=rows.map(fn).filter(Number.isFinite).sort((a,b)=>a-b);
+   if(!list.length)return null;
+   return {n:list.length,min:list[0],median:list[Math.floor((list.length-1)/2)],
+    max:list.at(-1),mean:+(list.reduce((a,b)=>a+b,0)/list.length).toFixed(1)};
+  };
+  return {n:rows.length,
+   journeyMs:get(x=>x.totalMs),arrivalMs:get(x=>x.afterRideMs),
+   worstFrameMs:get(x=>x.frames?.maxMs),p95FrameMs:get(x=>x.frames?.p95Ms),
+   over100:get(x=>x.frames?.over100),
+   sceneTotalMs:get(x=>x.scene?.totalMs),sceneMaxMs:get(x=>x.scene?.maxMs),
+   shadowTotalMs:get(x=>x.shadows?.totalMs),
+   materialInvalidations:get(x=>x.lighting?.receiverMaterialInvalidations)};
+ };
+ const groupSummaries=Object.fromEntries(Object.entries(byDate).map(([date,groups])=>[
+  date,{control:describe(groups.control),experimental:describe(groups.experimental)}
+ ]));
+ const checks={
+  allSucceeded:results.length===trials.length&&success.length===trials.length,
+  paintingsComplete:success.every(r=>r.paintings?.total>0&&r.paintings.loaded===r.paintings.total),
+  postFXPreserved:success.every(r=>r.postfx?.active&&r.postfx?.preset==='architectural'
+   &&r.postfx?.renderer==='pmndrs'),
+  shadowCountsConsistent:Object.values(byDate).every(g=>{
+   const all=[...g.control,...g.experimental];
+   return all.every(r=>r.lighting?.casters===all[0]?.lighting?.casters
+    &&r.lighting?.shadowMaps===all[0]?.lighting?.shadowMaps);
+  }),
+  receiverSwitch:success.every(r=>
+   r.lighting?.skipReceiverMaterialInvalidation===!!r.fast),
+  eachModeEachDate:Object.values(byDate).every(g=>g.control.length>0&&g.experimental.length>0)
+ };
+ const comparison={
+  version:2,environment:'GitHub Actions Chromium SwiftShader software GPU; relative only',
+  note:'Six cross-over trials; original architectural renderer. Real gallery screenshots are documentary, not pixel-comparable due to time-based installations. See deterministic fixture for exact pixel check.',
+  schedule:trials.map(([date,fast])=>({date,mode:fast?'receiver-only':'control'})),
+  results,checks,groupSummaries};
  await mkdir('phi-shadow-receiver-audit',{recursive:true});
  await writeFile('phi-shadow-receiver-audit/results.json',JSON.stringify(comparison,null,2));
- console.log('PHI_RECEIVER_SUMMARY '+JSON.stringify({
-  controls:[control.status,fast.status],visualState,
-  totalMs:[control.totalMs,fast.totalMs],afterRideMs:[control.afterRideMs,fast.afterRideMs],
-  worstFrameMs:[control.frames?.maxMs,fast.frames?.maxMs],
-  p95Ms:[control.frames?.p95Ms,fast.frames?.p95Ms],
-  materialInvalidations:[control.lighting?.receiverMaterialInvalidations,
-   fast.lighting?.receiverMaterialInvalidations]}));
- if(results.some(x=>x.status!=='complete')||!visualState.paintingsMatch||
-    !visualState.sameLightAndShadowCounts||!visualState.samePostFX)
-  process.exitCode=1;
+ console.log('PHI_RECEIVER_CROSSOVER '+JSON.stringify({checks,groupSummaries,
+  trials:results.map(r=>({i:r.index,date:r.date,mode:r.mode,status:r.status,
+   totalMs:r.totalMs,arrivalMs:r.afterRideMs,worstMs:r.frames?.maxMs,
+   screenshot:r.screenshot||null}))}));
+ if(Object.values(checks).some(v=>!v))process.exitCode=1;
 }finally{await browser.close();}
