@@ -4,6 +4,13 @@ export const PHI_FRAME_VERTEX=`
 varying vec3 vPhiFramePosition;
 void main(){vPhiFramePosition=position;}
 `;
+// Instanced painting frames use a shared unit cube, but the visible brushed
+// pigment still samples the EXACT original local BoxGeometry dimensions.
+export const PHI_FRAME_INSTANCED_VERTEX=`
+attribute vec3 phiFrameDimensions;
+varying vec3 vPhiFramePosition;
+void main(){vPhiFramePosition=position*phiFrameDimensions;}
+`;
 export const PHI_FRAME_FRAGMENT=`
 varying vec3 vPhiFramePosition;
 float phiBand(float phase){
@@ -21,12 +28,17 @@ void main(){
  csm_Roughness=clamp(roughness+grain*0.045,0.0,1.0);
 }
 `;
-export function createPhiFrameStudyMaterial(THREE,{enabled=true}={}){
+export function createPhiFrameStudyMaterial(THREE,{enabled=true,instanced=false}={}){
  const properties={color:'#344452',metalness:.24,roughness:.73};
  const material=enabled?new CustomShaderMaterial({baseMaterial:THREE.MeshStandardMaterial,
-  ...properties,vertexShader:PHI_FRAME_VERTEX,fragmentShader:PHI_FRAME_FRAGMENT,
-  cacheKey:()=> 'phi-brushed-frame-v1'}):new THREE.MeshStandardMaterial(properties);
- material.name=enabled?'Ink-blue brushed frame · CSM test':'Ink-blue frame · baseline';
- material.userData.galleryPersistent=true;
+  ...properties,vertexShader:instanced?PHI_FRAME_INSTANCED_VERTEX:PHI_FRAME_VERTEX,
+  fragmentShader:PHI_FRAME_FRAGMENT,
+  cacheKey:()=> instanced?'phi-brushed-frame-instanced-v1':'phi-brushed-frame-v1'})
+  :new THREE.MeshStandardMaterial(properties);
+ material.name=enabled?(instanced?'Ink-blue brushed frame · instanced CSM test':'Ink-blue brushed frame · CSM test')
+  :'Ink-blue frame · baseline';
+ // Only the original global frame material is shared across floors.
+ // Each instanced copy is disposed when its date is removed from the scene.
+ material.userData.galleryPersistent=!instanced;
  return material;
 }
