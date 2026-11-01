@@ -38,6 +38,7 @@ import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
 import {attachPhiWebGLCallTrace} from './phi-webgl-call-trace.mjs';
+import {configurePhiShaderErrorChecks} from './phi-shader-checks.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
@@ -188,6 +189,10 @@ if(new URLSearchParams(location.search).has('svg-export'))window.__PP_EXPORT_SCE
 let renderer;
 try {
   renderer = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'});
+  // TEST ONLY: the new hardware benchmark identified 25.1 s spent in
+  // getProgramInfoLog sync checks during the cold lift ride. Avoid diagnostic
+  // GPU round-trips; ?shaderchecks=1 restores the default for comparison.
+  window.__phiShaderChecks=configurePhiShaderErrorChecks(renderer,location.search);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, matchMedia('(pointer:coarse)').matches ? 1.35 : 1.7));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
