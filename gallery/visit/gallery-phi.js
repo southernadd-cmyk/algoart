@@ -12,6 +12,7 @@ import {addPhiReceptionLivingMonitor,planPhiReceptionMonitorWall} from './phi-re
 import {addPhiTranslationAreaSign,addPhiTowerLiftSign,addPhiLargeMonitorDoorSign} from './phi-translation-area-sign.mjs';
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
+import {batchPhiPaintingCaptions} from './phi-caption-batch.mjs';
 import {createPhiGalleryMusic} from './phi-gramophone-music.mjs';
 import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
 import {installReceptionPenroseInlay} from './reception-penrose-inlay.mjs';
@@ -1820,6 +1821,7 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   :addHangingRoomSigns(THREE,scene,phi,elevation,ROOM_HEIGHT);
  const byId=new Map(studies.map(study=>[study.id,study]));
  const loader=new THREE.TextureLoader();
+ const phiCaptionCandidates=[];
  for(const p of phi.exhibition.paintings){
   const study=byId.get(p.studyId);if(!study)continue;
   const height=p.height,centreY=elevation+p.y;
@@ -1836,6 +1838,7 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
     new THREE.MeshBasicMaterial({map:labelTexture(study.title,study.seed),side:THREE.FrontSide}));
   caption.position.set(p.x,centreY-height/2-.24,p.z);
   caption.rotation.copy(face.rotation);scene.add(caption);
+  phiCaptionCandidates.push(caption);
   const url=(study.imageOptimized||study.image);
   if(!url)throw new Error('Exhibition painting has no image: '+study.id);
   const gate=phiPaintingGate.register(study.id,face);
@@ -1884,6 +1887,13 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   else deferredGalleryJobs.unshift(attachPainting);
   artExhibits.push({study,position:face.position.clone(),normal:new THREE.Vector3(p.normal.x,0,p.normal.z)});
  }
+ // Approved painting-caption batching is enabled on live by default.
+ // ?captionbatch=0 preserves the original caption path for fast rollback.
+ const batchCaptions=new URLSearchParams(location.search).get('captionbatch')!=='0';
+ window.__phiCaptionBatches=batchCaptions
+  ?batchPhiPaintingCaptions(THREE,scene,phiCaptionCandidates,{maxTextureSize:renderer.capabilities.maxTextureSize})
+  :{active:false,original:phiCaptionCandidates.length,batched:phiCaptionCandidates.length,
+   drawCallsSaved:0,baseline:true};
  for(const p of phi.exhibition.sculptures){
   const study=byId.get(p.studyId);if(!study)continue;
   const placement={...p,y:elevation,yaw:0};
