@@ -202,6 +202,9 @@ const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationF
 // Approved conservative occlusion. ?roomcull=0 restores baseline immediately.
 // Never enable per-room geometry/texture batching on the live gallery.
 const phiRoomCullingEnabled=new URLSearchParams(location.search).get('roomcull')!=='0';
+// Live: merge immovable opaque gallery portal surrounds by their original
+// material and vertex/normal/UV buffers. ?portalbatch=0 is a rollback switch.
+const phiPortalBatchEnabled=new URLSearchParams(location.search).get('portalbatch')!=='0';
 window.__phiRoomVisibility=()=>phiRoomVisibilityCuller?.snapshot()||{enabled:false,reason:'room culling disabled or reception'};
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
 const phiStartupLoading=trackGalleryLoading(THREE.DefaultLoadingManager);
@@ -1743,18 +1746,33 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   scene.add(light,light.target);
   if(exhibitDate!==RECEPTION)phiRoomLightEntries.push({light,mount,fallback,cell:{...cell},power:light.intensity});
  }
- // Put visible portal frames on the exact holes created in the collision walls.
+ // Keep portal frames exactly aligned to the existing collision-wall
+ // openings. Only these original, opaque, immovable surround meshes are
+ // registered for the already-proven UV-preserving architecture merger.
+ const portalFrameCandidates=[];
+ const portalBlock=(...args)=>{
+  const mesh=block(...args);
+  if(phiPortalBatchEnabled)portalFrameCandidates.push(mesh);
+  return mesh;
+ };
  for(const d of [...phi.circulation.doors,...phi.circulation.bridgePortals]){
   if(d.public)continue;
   const half=d.width/2,head=elevation+3.1;
   if(d.axis==='x'){
-   for(const side of [-1,1])block(.21,3.1,.17,d.at,elevation+1.55,d.centre+side*half,architecturalFrameStudy);
-   block(.21,.23,d.width+.18,d.at,head,d.centre,architecturalFrameStudy);
+   for(const side of [-1,1])portalBlock(.21,3.1,.17,d.at,elevation+1.55,d.centre+side*half,architecturalFrameStudy);
+   portalBlock(.21,.23,d.width+.18,d.at,head,d.centre,architecturalFrameStudy);
   }else{
-   for(const side of [-1,1])block(.17,3.1,.21,d.centre+side*half,elevation+1.55,d.at,architecturalFrameStudy);
-   block(d.width+.18,.23,.21,d.centre,head,d.at,architecturalFrameStudy);
+   for(const side of [-1,1])portalBlock(.17,3.1,.21,d.centre+side*half,elevation+1.55,d.at,architecturalFrameStudy);
+   portalBlock(d.width+.18,.23,.21,d.centre,head,d.at,architecturalFrameStudy);
   }
  }
+ const portalBatchResult=phiPortalBatchEnabled
+  ?batchPhiStaticArchitecture(THREE,scene,portalFrameCandidates)
+  :{originalMeshes:0,batches:0,savedDrawCalls:0};
+ if(GALLERY_DEBUG)window.__phiPortalFrameBatches={
+  active:phiPortalBatchEnabled,original:portalFrameCandidates.length,
+  ...portalBatchResult
+ };
  // Frosted glazed transoms close the space ABOVE each existing portal frame;
  // the 3.1 m doorway below remains unobstructed. The public entrance already
  // has a transom and the archive lift has its own solid permanent header.
