@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildVisitorKnowledge,answerVisitor,greetVisitor,overhear,session,suggestionsFor,V2_CSS} from './chat-v2.mjs';
+import {buildVisitorKnowledge,answerVisitor,greetVisitor,overhear,session,suggestionsFor,topicGroupsFor,MORE_TOPICS_LABEL,TOPICS_PER_PAGE,V2_CSS} from './chat-v2.mjs';
 import {resetSession} from './mind.mjs';
 import {infer,proof} from './rules.mjs';
 import {buildGraph,findPath} from './graph.mjs';
@@ -156,4 +156,23 @@ test('v2 suggestion chips are fully visible without a nested scrolling area',()=
  assert.match(V2_CSS,/@media\(max-height:570px\)/);
  const k=make(0);
  assert.ok(suggestionsFor(k,{}).length<=4);
+});
+
+test('the More topics chip exposes the whole supported knowledge catalogue without scrolling',()=>{
+ const groups=topicGroupsFor(make(),{lastRoute:{kind:'graph'}});
+ assert.equal(MORE_TOPICS_LABEL,'More topics…');
+ assert.equal(TOPICS_PER_PAGE,4);
+ assert.equal(groups.length,7);
+ const names=groups.map(g=>g.category);
+ assert.ok(names.includes('Golden ratio & nature'));
+ assert.ok(names.includes('Art history & evidence'));
+ assert.ok(names.includes('Simulated materials & forms'));
+ const questions=groups.flatMap(g=>g.topics.map(t=>t.question));
+ assert.ok(questions.includes('Is the nautilus shell golden?'));
+ assert.ok(questions.includes('What is generative art?'));
+ assert.ok(questions.includes('Why?'));
+ assert.equal(new Set(questions).size,questions.length);
+ const reception=buildVisitorKnowledge({reception:true,works:[],visitorIndex:100,roomIndex:0,floor:0});
+ assert.ok(!topicGroupsFor(reception,{}).flatMap(g=>g.topics).some(t=>t.question==='Compare the first and the last'));
+ assert.match(V2_CSS,/visitor-chat-topic-heading/);
 });
