@@ -215,6 +215,9 @@ const phiGpuProfiler=createPhiGpuProfiler(renderer,{enabled:new URLSearchParams(
 if(phiGpuProfiler)window.__phiGpuProfile=phiGpuProfiler;
 // Match the approved live 16-mesh reveal by default; ?liftstage=0 is the control.
 const phiStageArrival=new URLSearchParams(location.search).get('liftstage')!=='0';
+// TEST ONLY: overlap destination shader compilation with painting GPU readiness.
+// Never changes a material, pass, geometry, or texture; ?earlycompile=0 baseline.
+const phiEarlyShaderCompile=new URLSearchParams(location.search).get('earlycompile')==='1';
 // The reliable two-rAF spacing stays in place for all fixed batch sizes.
 // ?liftbatch=16 uses the original method with smaller groups.
 // ?liftbatch=adaptive is retained as an explicitly opt-in failed experiment;
@@ -1314,16 +1317,46 @@ async function travelLift(date,index){
   // Paintings are mandatory. The old four-second generic timeout could open
   // onto blank frames; the door interlock now checks attached GPU textures.
   phiLiftProfiler?.mark('paintings-waiting',phiPaintingGate?.stats());
+  // Preparation-only A/B experiment. Only compile the fully assigned
+  // destination's current shaders after every image has attached to a wall.
+  // This work used to begin in warmGalleryEntry after staged scene reveal.
+  const earlyShader={started:false,promise:null,ms:null,error:null};
+  const maybeCompileEarly=info=>{
+   if(!phiEarlyShaderCompile||earlyShader.started||!renderer?.compileAsync||
+      !info?.expected||window.__phiFullEngine?.paintingsLoaded!==info.expected)return;
+   earlyShader.started=true;
+   phiLiftProfiler?.mark('shader-precompile-start',{paintings:info.expected});
+   const began=performance.now();
+   earlyShader.promise=Promise.resolve()
+    .then(()=>renderer.compileAsync(scene,camera))
+    .then(()=>{
+     earlyShader.ms=+(performance.now()-began).toFixed(1);
+     phiLiftProfiler?.mark('shader-precompile-finished',{ms:earlyShader.ms});
+    })
+    .catch(error=>{
+     earlyShader.error=String(error?.message||error);
+     phiLiftProfiler?.mark('shader-precompile-failed',{error:earlyShader.error});
+     // Keep the established mandatory compile in warmGalleryEntry as fallback.
+    });
+  };
   const paintingReady=await phiPaintingGate.wait({
    // Slow software renderers may need much longer than a hardware GPU.
    // Never substitute a blank painting when the deadline is reached.
    timeoutMs:90000,
    onProgress:info=>{
+    maybeCompileEarly(info);
     if(window.__phiLiftRide)window.__phiLiftRide.paintings={ready:info.ready,total:info.expected};
     if(GALLERY_DEBUG)window.__phiLiftPaintings=info;
    }
   });
   phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady);
+  // Conclude the same shader work before the destination is revealed, so
+  // the first visible post-FX render doesn't compile the same shaders again.
+  if(earlyShader.promise)await earlyShader.promise;
+  if(GALLERY_DEBUG)window.__phiEarlyShaderCompile={
+   enabled:phiEarlyShaderCompile,started:earlyShader.started,
+   ms:earlyShader.ms,error:earlyShader.error
+  };
   // Keep new destination meshes hidden while all source paintings upload
   // successfully; then reveal the original meshes in bounded render batches.
   // No shader, texture resolution, painting pixels or materials are changed.
