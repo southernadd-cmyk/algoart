@@ -66,7 +66,8 @@ export function compilePhiRoomPackage(phi,date,elevation,room){
   geometries:Object.fromEntries([...grouped].map(([name,parts])=>[name,packedGeometry(parts)]))};
 }
 export function decodePhiRoomPackage(THREE,pack,materials){
- if(pack?.version!==PHI_ROOM_PACKAGE_VERSION||!Number.isInteger(pack.room))throw Error('Invalid package');
+ if(pack?.version!==PHI_ROOM_PACKAGE_VERSION&&pack?.version!==1)throw Error('Invalid package version');
+ if(!Number.isInteger(pack.room)&&pack.scope!=='shared')throw Error('Invalid package');
  const meshes=[];
  try{
   for(const [key,data] of Object.entries(pack.geometries||{})){
@@ -79,7 +80,7 @@ export function decodePhiRoomPackage(THREE,pack,materials){
    geometry.setIndex(data.index);
    geometry.computeBoundingBox();geometry.computeBoundingSphere();
    const mesh=new THREE.Mesh(geometry,materials[key]);
-   mesh.name='phi-precompiled-'+pack.room+'-'+key;
+   mesh.name='phi-precompiled-'+(pack.scope==='shared'?'shared':pack.room)+'-'+key;
    meshes.push(mesh);
   }
   return meshes;
