@@ -1,24 +1,19 @@
 <!doctype html>
 <html lang="en">
 <head>
+<base href="../../gallery/visit/">
 <meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#e8e4da">
-<meta name="robots" content="noindex,nofollow">
-<base href="../../gallery/visit/">
-<script>
-// Reserve enough resource timing entries for the explicitly requested cold
-// network comparison; the full tower otherwise exceeds the default buffer.
-if(new URLSearchParams(location.search).has('coldbench'))performance.setResourceTimingBufferSize(2500);
-</script>
-<!-- Test tower: local gallery engine/assets; live archive data resolves through the base URL. -->
-<link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/test/virtual-gallery/full-engine.html">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://southernadd-cmyk.github.io/algoart/gallery/visit/">
 <meta name="description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PROPORTION PIECE">
 <meta property="og:title" content="Virtual Exhibition | PROPORTION PIECE">
 <meta property="og:description" content="Explore PROPORTION PIECE in three dimensions. Walk through an evolving gallery tower with one exhibition floor for every daily collection of generative artworks.">
-<meta property="og:url" content="https://southernadd-cmyk.github.io/algoart/test/virtual-gallery/full-engine.html">
+<meta property="og:url" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/">
 <meta property="og:image" content="https://southernadd-cmyk.github.io/algoart/gallery/visit/walk-the-tower-golden.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Virtual Exhibition | PROPORTION PIECE">
@@ -28,7 +23,7 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../test/virtual-gallery/gallery.css?v=accessibility-20261023">
 <link rel="stylesheet" href="../../test/virtual-gallery/phi-gallery.css?v=public-phi-20261026">
-<link rel="stylesheet" href="../../test/virtual-gallery/phi-visitor-chat.css?v=visitor-discovery-20261101-v1">
+<link rel="stylesheet" href="../../test/virtual-gallery/phi-visitor-chat.css?v=live-chat-v1-20261101">
 <style>
 /* PROPORTION PIECE — one consistent toolbar, grouping actions by purpose. */
 #world{z-index:0}
@@ -111,24 +106,12 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
 
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=12">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
-<link rel="modulepreload" href="../../test/virtual-gallery/gallery-phi-bundle.js?v=visitor-discovery-20261101-v1">
+<!-- Verified production room occlusion; use ?roomcull=0 to disable without changing artwork. -->
+<link rel="modulepreload" href="../../test/virtual-gallery/gallery-phi-bundle.js?v=test-chat-v2-20261101">
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
-<script>
-// The early ceiling preload must use the same URL/cache identity as the
-// Three.js image request, otherwise a "cold" benchmark warms it before entry.
-(()=>{
- const q=new URLSearchParams(location.search);
- const href=new URL('../../test/virtual-gallery/textures/OfficeCeiling001_Color.jpg',document.baseURI);
- const seed=q.get('benchseed')||'';
- if(['cold','warm'].includes(q.get('benchcache'))&&/^[A-Za-z0-9_-]{8,96}$/.test(seed))
-  href.searchParams.set('phiBenchAsset',seed);
- const preload=document.createElement('link');
- preload.rel='preload';preload.as='image';preload.crossOrigin='anonymous';
- preload.href=href.href;document.head.appendChild(preload);
-})();
-</script>
+<link rel="preload" href="./textures/OfficeCeiling001_Color.jpg" as="image" crossorigin="anonymous">
 
 
 <script>
@@ -164,7 +147,7 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
     window.__galleryStage='Importing bundled JavaScript';
-    await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=visitor-discovery-20261101-v1');
+    await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=test-chat-v2-20261101');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -379,10 +362,10 @@ window.addEventListener('load',()=>{
     <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
     <p>A new collection. A new floor. Every day.</p>
     <p>Each daily collection occupies its own floor. Step inside a gallery shaped by the golden ratio. Discover drawings on the walls and sculptures made from their lines, then take the archive lift to another day.</p>
-    <details class="visit-controls"><summary>How to explore</summary><p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, Artwork details appear when you pause nearby; L opens the lift calendar. Select Chat to ask about the exhibition, or press T near a gallery visitor. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p><p class="shortcuts">Hanging room signs adapted from <a href="https://sketchfab.com/3d-models/hospital-hanging-signage-74157aae9eb746d9a0cfe7f9c5c7f83f" target="_blank" rel="noopener">Hospital hanging signage by Sousinho</a>, CC BY 4.0.</p></details>
+    <details class="visit-controls"><summary>How to explore</summary><p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, Artwork details appear when you pause nearby; L opens the lift calendar. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p><p class="shortcuts">Hanging room signs adapted from <a href="https://sketchfab.com/3d-models/hospital-hanging-signage-74157aae9eb746d9a0cfe7f9c5c7f83f" target="_blank" rel="noopener">Hospital hanging signage by Sousinho</a>, CC BY 4.0.</p></details>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
     <a id="welcomeArchive" href="../">See the original 2D edition ↗</a>
-    <p class="credits-link"><a href="../../test/virtual-gallery/credits.html">Credits</a></p>
+    <p class="credits-link"><a href="./credits.html">Credits</a></p>
   </div>
 </section>
 <div class="error" id="error" hidden role="alert"></div>
@@ -393,35 +376,6 @@ const galleryFallback=document.getElementById('galleryErrorFallback');
 const toggleGalleryFallback=()=>{galleryFallback.hidden=galleryError.hidden;};
 new MutationObserver(toggleGalleryFallback).observe(galleryError,{attributes:true,attributeFilter:['hidden']});
 toggleGalleryFallback();
-</script>
-<script>
-// An export button appears only when GPU profiling is explicitly requested.
-if(new URLSearchParams(location.search).has('gpuprofile')){
- document.addEventListener('DOMContentLoaded',()=>{
-  const button=document.createElement('button');
-  button.type='button';
-  button.textContent='Copy GPU profile';
-  button.style.cssText='position:fixed;right:12px;bottom:12px;z-index:120;background:#344452;color:#fff;border:1px solid #ddd;border-radius:5px;padding:10px 14px;font:13px system-ui;cursor:pointer';
-  button.addEventListener('click',async()=>{
-   const stats=window.__phiGpuProfile?.snapshot();
-   if(!stats){button.textContent='Profile not ready';return;}
-   const report={...stats,captionBatch:window.__phiCaptionBatches||null,
-    frameBatch:window.__phiFrameBatches||null,
-    roomVisibility:window.__phiRoomVisibility?.()||null,
-    roomBatches:window.__phiRoomBatches?.()||null,
-    lift:window.__phiLiftProfile?.state?.visits?.at(-1)?.summary||null,
-    frame:window.__phiPerformance?{
-    medianFrameMs:window.__phiPerformance.medianFrameMs,
-    p95FrameMs:window.__phiPerformance.p95FrameMs,
-    maxFrameMs:window.__phiPerformance.maxFrameMs,
-    framesOver50ms:window.__phiPerformance.framesOver50ms}:null};
-   try{await navigator.clipboard.writeText(JSON.stringify(report,null,2));
-    button.textContent='GPU profile copied';
-   }catch{button.textContent='Use __phiGpuProfile.snapshot() in console';}
-  });
-  document.body.append(button);
- });
-}
 </script>
 </body>
 </html>

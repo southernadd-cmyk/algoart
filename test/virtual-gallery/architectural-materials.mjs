@@ -1,4 +1,3 @@
-import {createKTX20Bank} from './phi-ktx2-20-loader.mjs';
 // PROPORTION PIECE virtual gallery — CC0 architectural material bank.
 // Real photographic maps from Poly Haven; see MATERIALS.md in this directory.
 // No dependency on the Poly Haven API at runtime. The static 1K files are
@@ -155,51 +154,20 @@ export function tiledBoxUvs(geometry,w,h,d,tileMeters=2.5){
   uv.needsUpdate=true;
   return geometry;
 }
-export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=null,renderer=null}={}){
+export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=null}={}){
   const textureLoader=new THREE.TextureLoader();
-  const jpegLossless=globalThis.__phiJPEGLosslessBank||null;
-  // TEST-only opt-in. Only photographic *architecture* material assets change.
-  // Artwork image URLs, dimensions, shaders and geometry remain unchanged.
-  const materialWebP=new URLSearchParams(location.search).get('materialwebp')==='1';
-  const materialWebPStatus=window.__phiMaterialWebP={
-    enabled:materialWebP,attempted:[],loaded:[],fallback:[],scope:'brick and named exterior models only'
-  };
-  const webpMaterialURL=url=>materialWebP&&/Bricks055_(?:Color|NormalGL|Roughness)\.jpg(?:$|[?#])/i.test(url)
-   ?url.replace(/\.jpg(?=$|[?#])/i,'.webp'):url;
   // Neutral canvas maps are ready immediately; external textures must not
   // compete with the early tower download on slow/mobile connections.
   const ready=startAfter
     ?Promise.race([Promise.resolve(startAfter).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))])
     :null;
   const loader={
-    load(url,onLoad,onProgress,onError){
-      const selected=webpMaterialURL(url);
-      if(selected!==url)materialWebPStatus.attempted.push(selected);
-      const original=()=>textureLoader.load(selected,texture=>{
-        if(selected!==url)materialWebPStatus.loaded.push(selected);
-        onLoad?.(texture);
-      },onProgress,error=>{
-        if(selected!==url){
-          materialWebPStatus.fallback.push(url);
-          textureLoader.load(url,onLoad,onProgress,onError);
-        }else onError?.(error);
-      });
-      const target=jpegLossless?.resolve(url);
-      if(target){
-        const start=ready||Promise.resolve();
-        start.catch(()=>{}).then(()=>jpegLossless.load(url,{
-          color:!/normal|nor_gl|roughness/i.test(url)
-        })).then(onLoad).catch(()=>{
-          try{original()}catch(error){onError?.(error)}
-        });
-        return null;
-      }
-      if(!ready)return original();
-      ready.then(original).catch(error=>console.warn('Optional gallery texture unavailable',error));
+    load(...args){
+      if(!ready)return textureLoader.load(...args);
+      ready.then(()=>textureLoader.load(...args)).catch(error=>console.warn('Optional gallery texture unavailable',error));
       return null;
     }
   };
-  const sourceImage=tex=>tex?.isDataTexture?jpegLossless.toCanvas(tex):tex?.image;
   const make=(color,roughness,tileMeters,metalness=0)=>{
     const material=new THREE.MeshStandardMaterial({color,roughness,metalness});
     material.userData.tileMeters=tileMeters;
@@ -250,7 +218,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   function scan(slot,url,mode,targets){
     loader.load(url,imageTexture=>{
       try{
-        const next=tx(tintScan(sourceImage(imageTexture),mode,lowPower?384:768));
+        const next=tx(tintScan(imageTexture.image,mode,lowPower?384:768));
         for(const material of targets) {
           if(locallyLoaded.has(material))continue;
           material.map=next;material.needsUpdate=true;
@@ -278,7 +246,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   normal('floor-normal',MATERIAL_SOURCES.floors.normal,[floor,stoneBridge],.21);
   loader.load(MATERIAL_SOURCES.timber.diffuse,source=>{
     try{
-      const base=tintScan(sourceImage(source),'timber',lowPower?384:1024);
+      const base=tintScan(source.image,'timber',lowPower?384:1024);
       const maps=[base,tintTimber(base,1),tintTimber(base,2)];
       for(let i=0;i<timberVariants.length;i++){
         timberVariants[i].map=tx(maps[i]);
@@ -291,60 +259,8 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // A real scanned 1K brick and subtle OpenGL normal relief replace the flat
   // procedural exterior tile. Both requests are optional; geometry is unchanged.
   scan('brick-color',MATERIAL_SOURCES.brick.diffuse,'brick-black',[exteriorBrick]);
-  // TEST ONLY, opt in with ?ktx2=1. Preserve the untouched source JPG as
-  // the default and as a fallback for unavailable/unsupported KTX2 assets.
-  // Normal maps stay linear, and are not packed into XY-only normal mode.
-  const benchParams=new URLSearchParams(location.search);
-  // Test-only, texture-cold A/B. Distinct URLs guarantee fresh HTTP transfers
-  // for these three architectural maps, even when the rest of the gallery is
-  // warm in the same browser session. No production cache behaviour changes.
-  const coldTextureSeed=benchParams.get('coldseed')||null;
-  const textureURL=url=>{
-    if(!coldTextureSeed)return url;
-    const resource=new URL(url,document.baseURI);
-    resource.searchParams.set('ktxCold',coldTextureSeed);
-    return resource.href;
-  };
-  const ktxMode=benchParams.get('ktx2');
-  const ktx20Bank=createKTX20Bank(THREE,{renderer,lowPower,startAfter:ready});
-  const ktx20Wide=ktx20Bank?.diagnostics.mode==='twenty';
-  globalThis.__phiKTX20Bank=ktx20Bank;
-  const ktxPilot=!!renderer&&!lowPower&&ktxMode==='1';
-  const ktxMulti=!!renderer&&!lowPower&&ktxMode==='multi';
-  const ktxDiagnostics=globalThis.__phiKTX2Pilot={
-    requested:ktxMode==='1'||ktxMode==='multi',enabled:ktxPilot||ktxMulti,
-    mode:ktxMulti?'multi':ktxPilot?'single':'off',
-    asset:'Bricks055_NormalGL',status:ktxPilot||ktxMulti?'preparing':'off',
-    assets:{}
-  };
-  if(ktxPilot){
-    Promise.resolve(ready).catch(()=>{}).then(async()=>{
-      const {KTX2Loader}=await import('three/addons/loaders/KTX2Loader.js');
-      const transcoder=new KTX2Loader()
-        .setTranscoderPath(new URL('../../test/virtual-gallery/basis/',document.baseURI).href)
-        .setWorkerLimit(2)
-        .detectSupport(renderer);
-      try{
-        const texture=await transcoder.loadAsync(
-          textureURL('../../test/virtual-gallery/textures/Bricks055_NormalGL.ktx2')
-        );
-        texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-        texture.anisotropy=2;
-        exteriorBrick.normalMap=texture;
-        exteriorBrick.normalScale=new THREE.Vector2(.19,.19);
-        exteriorBrick.needsUpdate=true;
-        ktxDiagnostics.status='loaded';
-        ktxDiagnostics.compressed=!!texture.isCompressedTexture;
-        ktxDiagnostics.mipLevels=texture.mipmaps?.length||0;
-        diagnostics.loaded.push('brick-normal-ktx2-pilot');
-      }finally{transcoder.dispose();}
-    }).catch(error=>{
-      ktxDiagnostics.status='fallback-jpg';
-      ktxDiagnostics.error=String(error?.message||error);
-      normal('brick-normal',textureURL(MATERIAL_SOURCES.brick.normal),[exteriorBrick],.19);
-    });
-  }else if(!ktxMulti&&!ktx20Bank)normal('brick-normal',textureURL(MATERIAL_SOURCES.brick.normal),[exteriorBrick],.19);
-  if(!ktxMulti&&!ktx20Bank)loader.load(textureURL(MATERIAL_SOURCES.brick.roughness),texture=>{
+  normal('brick-normal',MATERIAL_SOURCES.brick.normal,[exteriorBrick],.19);
+  loader.load(MATERIAL_SOURCES.brick.roughness,texture=>{
     texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
     exteriorBrick.roughnessMap=texture;
     exteriorBrick.needsUpdate=true;
@@ -354,7 +270,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   // during gallery start. Optional maps can fail independently; the roof
   // remains solid and navigable throughout.
   const ceilingDir='./textures/OfficeCeiling001_';
-  if(!ktx20Wide)loader.load(ceilingDir+'Color.jpg',texture=>{
+  loader.load(ceilingDir+'Color.jpg',texture=>{
     texture.colorSpace=THREE.SRGBColorSpace;
     texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
     texture.anisotropy=lowPower?1:2;
@@ -362,8 +278,8 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     ceiling.needsUpdate=true;
     diagnostics.loaded.push('ambientcg-office-ceiling-color');
   },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-color'));
-  if(!lowPower&&!ktxMulti&&!ktx20Wide){
-    loader.load(textureURL(ceilingDir+'NormalGL.jpg'),texture=>{
+  if(!lowPower){
+    loader.load(ceilingDir+'NormalGL.jpg',texture=>{
       texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
       ceiling.normalMap=texture;
       ceiling.normalScale=new THREE.Vector2(.18,.18);
@@ -371,106 +287,12 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
       diagnostics.loaded.push('ambientcg-office-ceiling-normal');
     },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-normal'));
   }
-  if(!ktx20Wide)loader.load(ceilingDir+'Roughness.jpg',texture=>{
+  loader.load(ceilingDir+'Roughness.jpg',texture=>{
     texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
     ceiling.roughnessMap=texture;
     ceiling.needsUpdate=true;
     diagnostics.loaded.push('ambientcg-office-ceiling-roughness');
   },undefined,()=>diagnostics.failed.push('ambientcg-office-ceiling-roughness'));
-  // A/B TEST ONLY: three normal/roughness maps, never paintings or colour
-  // scans. Original JPGs remain the baseline and independent per-map fallbacks.
-  if(ktxMulti){
-    const assets=[
-      {name:'brick-normal',file:'Bricks055_NormalGL',source:MATERIAL_SOURCES.brick.normal,
-       material:exteriorBrick,property:'normalMap',strength:.19},
-      {name:'brick-roughness',file:'Bricks055_Roughness',source:MATERIAL_SOURCES.brick.roughness,
-       material:exteriorBrick,property:'roughnessMap'},
-      {name:'ceiling-normal',file:'OfficeCeiling001_NormalGL',source:ceilingDir+'NormalGL.jpg',
-       material:ceiling,property:'normalMap',strength:.18}
-    ];
-    const fallback=entry=>{
-      if(entry.property==='normalMap'){
-        normal(entry.name,textureURL(entry.source),[entry.material],entry.strength);
-      }else{
-        loader.load(textureURL(entry.source),texture=>{
-          texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-          entry.material[entry.property]=texture;entry.material.needsUpdate=true;
-          diagnostics.loaded.push(entry.name+'-fallback');
-        },undefined,()=>diagnostics.failed.push(entry.name+'-fallback'));
-      }
-    };
-    Promise.resolve(ready).catch(()=>{}).then(async()=>{
-      const {KTX2Loader}=await import('three/addons/loaders/KTX2Loader.js');
-      const transcoder=new KTX2Loader()
-        .setTranscoderPath(new URL('../../test/virtual-gallery/basis/',document.baseURI).href)
-        .setWorkerLimit(2).detectSupport(renderer);
-      try{
-        await Promise.all(assets.map(async entry=>{
-          const started=performance.now();
-          try{
-            const texture=await transcoder.loadAsync(
-              textureURL('../../test/virtual-gallery/textures/'+entry.file+'.ktx2'));
-            texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.anisotropy=2;
-            if(!texture.isCompressedTexture)throw new Error('Decoded asset is not GPU compressed');
-            entry.material[entry.property]=texture;
-            if(entry.property==='normalMap')entry.material.normalScale=new THREE.Vector2(entry.strength,entry.strength);
-            entry.material.needsUpdate=true;
-            ktxDiagnostics.assets[entry.name]={
-              status:'loaded',ms:Math.round(performance.now()-started),
-              compressed:true,mipLevels:texture.mipmaps?.length||0,
-              bytes:texture.mipmaps?.reduce((sum,m)=>sum+(m.data?.byteLength||0),0)||0
-            };
-            diagnostics.loaded.push('ktx2-'+entry.name);
-          }catch(error){
-            ktxDiagnostics.assets[entry.name]={status:'fallback-jpg',error:String(error?.message||error)};
-            fallback(entry);
-          }
-        }));
-      }finally{transcoder.dispose();}
-      ktxDiagnostics.status=assets.every(e=>ktxDiagnostics.assets[e.name]?.status==='loaded')?'loaded':'partial-fallback';
-      ktxDiagnostics.compressedCount=assets.filter(e=>ktxDiagnostics.assets[e.name]?.status==='loaded').length;
-    }).catch(error=>{
-      ktxDiagnostics.status='fallback-jpg';ktxDiagnostics.error=String(error?.message||error);
-      for(const entry of assets)if(!ktxDiagnostics.assets[entry.name]){
-        ktxDiagnostics.assets[entry.name]={status:'fallback-jpg',error:ktxDiagnostics.error};
-        fallback(entry);
-      }
-    });
-  }
-  // Opt-in twenty-candidate experiment: five maps directly used by this
-  // architectural bank. The sixth core source (brick colour) must remain JPG
-  // because tintScan() adjusts it before rendering. Three additional KTX2
-  // maps are used by reception wallpaper; eleven optional maps are tested
-  // separately and never preloaded into the tower.
-  if(ktx20Bank){
-    const choices=(ktx20Wide?[
-      ['brick-normal',MATERIAL_SOURCES.brick.normal,exteriorBrick,'normalMap',.19,false],
-      ['brick-roughness',MATERIAL_SOURCES.brick.roughness,exteriorBrick,'roughnessMap',0,false],
-      ['ceiling-color',ceilingDir+'Color.jpg',ceiling,'map',0,true],
-      ['ceiling-normal',ceilingDir+'NormalGL.jpg',ceiling,'normalMap',.18,false],
-      ['ceiling-roughness',ceilingDir+'Roughness.jpg',ceiling,'roughnessMap',0,false]
-    ]:[
-      ['brick-normal',MATERIAL_SOURCES.brick.normal,exteriorBrick,'normalMap',.19,false],
-      ['brick-roughness',MATERIAL_SOURCES.brick.roughness,exteriorBrick,'roughnessMap',0,false]
-    ]);
-    for(const [id,source,material,property,strength,color] of choices){
-      const apply=texture=>{
-        texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-        texture.anisotropy=2;
-        if(color)texture.colorSpace=THREE.SRGBColorSpace;
-        material[property]=texture;
-        if(property==='normalMap')material.normalScale=new THREE.Vector2(strength,strength);
-        material.needsUpdate=true;
-      };
-      ktx20Bank.load(id,{color}).then(texture=>{
-        apply(texture);diagnostics.loaded.push('ktx20-'+id);
-      }).catch(()=>{
-        loader.load(textureURL(source),texture=>{
-          apply(texture);diagnostics.loaded.push('ktx20-fallback-'+id);
-        },undefined,()=>diagnostics.failed.push('ktx20-fallback-'+id));
-      });
-    }
-  }
   // Use the CC0 Poly Haven plaster for both wall and plinth to avoid remote duplication.
   // Local colour scans are preferred from the outset. Canvas fallback materials
   // keep the exhibition usable even if an optional scan is unavailable.
@@ -481,7 +303,7 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
   ]){
     loader.load(url,texture=>{
       try {
-        const next=tx(tintScan(sourceImage(texture),mode,lowPower?384:768));
+        const next=tx(tintScan(texture.image,mode,lowPower?384:768));
         for(const target of targets){target.map=next;target.needsUpdate=true;locallyLoaded.add(target);}
         diagnostics.loaded.push(slot);texture.dispose();
       }catch(_){diagnostics.failed.push(slot);}

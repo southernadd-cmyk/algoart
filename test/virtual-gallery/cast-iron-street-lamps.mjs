@@ -9,17 +9,9 @@ async function loadStreetLamp(THREE){
    sharedLamp=import('three/addons/loaders/GLTFLoader.js')
      .then(({GLTFLoader})=>new Promise((resolve,reject)=>{
        const loader=new GLTFLoader();
-     // Preserve the original optimised GLB as a reliable fallback.
-     // The optional WebP file has unchanged geometry and shared PBR materials.
-     const original='./models/polyhaven-street-lamp-01-optimized.glb';
-     const webp=new URLSearchParams(location.search).get('materialwebp')==='1';
-     const candidate=webp?'./models/polyhaven-street-lamp-01-webp.glb':original;
-     loader.load(candidate,gltf=>resolve(gltf.scene),undefined,error=>{
-       if(webp){
-         console.warn('TEST lamp WebP unavailable; using original optimised GLB',error);
-         loader.load(original,gltf=>resolve(gltf.scene),undefined,reject);
-       }else reject(error);
-     });
+     // The full-resolution original is 6.9 MB: never fetch it as a fallback.
+     loader.load('./models/polyhaven-street-lamp-01-optimized.glb',
+       gltf=>resolve(gltf.scene),undefined,reject);
      }))
      .then(scene=>{
        scene.traverse(node=>{

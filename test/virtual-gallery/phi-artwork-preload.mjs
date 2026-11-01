@@ -49,7 +49,7 @@ export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concu
      .then(image=>{
       session.decoded++;
       entry.state='preparing';
-      // Only the TEST pipeline releases a download/decoding slot here.
+      // Allow a new download after decode; the GPU upload remains serialised.
       // Previously a long GPU upload prevented later image requests from
       // starting, even though the network/decode stage had finished.
       if(releaseAfterDecode)releaseDownload();

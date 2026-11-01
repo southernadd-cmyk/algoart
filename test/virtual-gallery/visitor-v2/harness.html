@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Visitor chat v2 — test bench · PROPORTION PIECE</title>
+<link rel="stylesheet" href="../phi-visitor-chat.css">
+<style>
+:root{--paper:#f3f0e9;--ink:#242c28;--rule:#b6b3a8;--muted:#5d655f;--panel:#e9e7de}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#1c201e;--ink:#e6e3da;--rule:#4a504c;--muted:#a5aaa3;--panel:#262b28}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 Arial,Helvetica,sans-serif}
+body{padding:max(20px,env(safe-area-inset-top,0px)) 20px max(20px,env(safe-area-inset-bottom,0px))}
+h1{font:normal 28px/1.15 Georgia,serif;margin:0 0 4px}
+.lede{color:var(--muted);margin:0 0 18px;max-width:62ch}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:18px}
+.controls label{display:flex;flex-direction:column;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);gap:4px}
+select,button{font:14px Arial,sans-serif;padding:8px 10px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);border-radius:2px}
+button{cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;max-width:1500px;padding-bottom:420px}
+section{border:1px solid var(--rule);background:var(--panel);padding:14px 16px;min-width:0}
+section h2{font:normal 18px Georgia,serif;margin:0 0 8px}
+ul{margin:0;padding-left:18px}
+li{margin:0 0 5px}
+.mono{font:12px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;overflow-x:auto}
+.works li small{color:var(--muted)}
+.tag{display:inline-block;border:1px solid var(--rule);padding:0 6px;margin:0 4px 4px 0;font-size:12px}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<h1>Visitor chat v2 — test bench</h1>
+<p class="lede">Talk to the v2 rule-based visitors using a real daily collection, without walking the tower. Rooms here are grouped by material for testing; in the tower the curator decides. The panels show what’s in the visitor’s head.</p>
+<div class="controls">
+ <label>Day<select id="day"></select></label>
+ <label>Room<select id="room"></select></label>
+ <label>Visitor<select id="visitor"><option value="0">Visitor 1</option><option value="1">Visitor 2</option><option value="2">Visitor 3</option><option value="3">Visitor 4</option></select></label>
+ <label>Overhear<select id="overhear"><option value="1">With another visitor</option><option value="0">Alone</option></select></label>
+ <button id="talk" type="button">Talk</button>
+ <button id="reset" type="button">Forget this visit</button>
+</div>
+<div class="grid">
+ <section><h2>The room</h2><ul class="works" id="works"></ul></section>
+ <section><h2>Frame</h2><div id="frame" class="mono"></div></section>
+ <section><h2>Rules fired (forward chaining)</h2><ul id="fired"></ul></section>
+ <section><h2>Derived facts</h2><ul id="derived"></ul></section>
+ <section><h2>Shared visit memory</h2><div id="session" class="mono"></div></section>
+ <section><h2>Try</h2><p class="muted">What have you noticed? · Why? (then why again) · Compare the first and the last · How is this connected to Fibonacci? · How is Debussy connected to the tower? · What’s your favourite? · I’m Sam · Where have you come from? · Does the Parthenon use φ? · Who was Vera Molnár?</p><p class="muted">Tick “Reasoning” in the chat panel to see each turn’s trace. Tell one visitor what you think matters more, then talk to another.</p></section>
+</div>
+<script type="module">
+import {buildVisitorKnowledge,createVisitorChatUI,memorySummary,session,RULES} from './chat-v2.mjs';
+import {resetSession} from './mind.mjs';
+import {resolveStudyMaterial} from '../study-material.mjs';
+const $=id=>document.getElementById(id);
+const base='../../../gallery/';
+let entries=[],rooms=[],date=null,chat=null;
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function loadDays(){
+ const archive=await (await fetch(base+'archive.json')).json();
+ const days=archive.days.map(d=>d.date).sort().reverse();
+ $('day').innerHTML=days.map(d=>`<option>${d}</option>`).join('');
+ await loadDay(days[0]);
+}
+async function loadDay(d){
+ date=d;
+ const meta=await (await fetch(base+d+'/meta.json')).json();
+ entries=meta.entries.map(e=>({studyId:e.id,title:e.title,seed:e.seed,engine:e.mode,
+  material:resolveStudyMaterial(e.shareUrl,e.material||'marker').type,href:e.shareUrl,
+  portrait:e.orientation==='portrait',palette:e.settings?.palette,phi:e.settings?.phiStrength}));
+ const groups=new Map();
+ for(const w of entries){if(!groups.has(w.material))groups.set(w.material,[]);groups.get(w.material).push(w);}
+ rooms=[];
+ for(const [m,ws] of groups)for(let i=0;i<ws.length;i+=5)rooms.push({name:'Room '+(rooms.length+1)+' · '+m,material:m,works:ws.slice(i,i+5)});
+ $('room').innerHTML=rooms.map((r,i)=>`<option value="${i}">${esc(r.name)} (${r.works.length})</option>`).join('');
+ render();
+}
+function knowledgeFor(roomIndex,visitorIndex){
+ const r=rooms[roomIndex];
+ const archiveDays=[...$('day').options].map(o=>o.value).sort();
+ return buildVisitorKnowledge({date,readableDate:new Intl.DateTimeFormat('en-GB',{dateStyle:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')),
+  floor:archiveDays.indexOf(date)+1,floorCount:archiveDays.length,reception:false,roomIndex,
+  roomName:{title:r.name.replace(/^Room \d+ · /,'').replace(/^./,c=>c.toUpperCase())+' room',dimension:'material',values:[r.material]},
+  works:r.works,visitorIndex,facing:r.works[0],floorWorks:entries.length,floorSculptures:0,roomCount:rooms.length,floorDates:archiveDays});
+}
+function render(){
+ const k=knowledgeFor(+$('room').value||0,+$('visitor').value);
+ $('works').innerHTML=k.works.map(w=>`<li>${esc(w.title)}<br><small>${w.engine} · ${w.material} · φ ${w.phi}</small></li>`).join('');
+ $('frame').textContent=`name: ${k.name}\ntemperament: ${k.persona}\ncame up from: ${k.from?'floor '+k.from:'—'}\nseed: ${k.seed}\ngraph: ${k.graph.nodes.size} nodes, ${k.graph.edges.length} links`;
+ const m=memorySummary(k);
+ const named=new Map(RULES.map(r=>[r.id,r]));
+ $('fired').innerHTML=m.fired.length?[...new Set(m.fired)].map(id=>`<li><span class="tag">${id}</span>${esc(named.get(id).name)}</li>`).join(''):'<li class="muted">Nothing fired.</li>';
+ $('derived').innerHTML=m.derived.map(d=>`<li>${esc(d)}</li>`).join('')||'<li class="muted">None.</li>';
+ renderSession();
+}
+function renderSession(){
+ $('session').textContent=`your name: ${session.userName||'—'}\nyour views: ${session.views.map(v=>v.view+' (told '+v.told+')').join(', ')||'—'}\ninterests: ${Object.entries(session.interests).map(([k,n])=>k+'×'+n).join(', ')||'—'}\nvisitors met: ${session.met.join(', ')||'—'}`;
+}
+$('day').addEventListener('change',e=>loadDay(e.target.value));
+$('room').addEventListener('change',render);
+$('visitor').addEventListener('change',render);
+$('reset').addEventListener('click',()=>{resetSession();renderSession();});
+$('talk').addEventListener('click',()=>{
+ chat??=createVisitorChatUI({onClose:renderSession});
+ const room=+$('room').value,v=+$('visitor').value;
+ const others=$('overhear').value==='1'?[knowledgeFor(room,(v+1)%4)]:[];
+ chat.start({index:v},knowledgeFor(room,v),{others});
+ renderSession();
+});
+document.addEventListener('submit',()=>setTimeout(renderSession,0),true);
+document.addEventListener('click',e=>{if(e.target.closest('.visitor-chat-chips'))setTimeout(renderSession,0);});
+loadDays().catch(err=>{$('works').innerHTML='<li>Couldn’t load the gallery data: '+esc(err.message)+'. Open this page from the site (or a local server at the repo root).</li>';});
+</script>
+</body>
+</html>

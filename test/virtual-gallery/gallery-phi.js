@@ -23,7 +23,7 @@ import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=distri
 import {addPhiReceptionMetalRoof} from './phi-reception-metal-roof.mjs';
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
-import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-gpu-test-20261031';
+import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-gpu-live-20261031';
 import {addPhiGoldenReceptionDesk,addPhiGoldenReceptionBench} from './phi-reception-phi-furniture-study.mjs';
 import {addPhiOutdoorPlants,PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
 import {createPhiSquare,clearOfPhiSquare} from './phi-square-no-graffiti.mjs';
@@ -37,21 +37,12 @@ import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
-import {createPhiGpuProfiler} from './phi-gpu-profiler.mjs';
-import {installPhiShadowRenderProbe} from './phi-shadow-render-probe.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
-import {compilePhiVisibilityCells} from './phi-visibility-cell-index.mjs';
-import {preparePhiCompiledRoomStream} from './phi-compiled-room-stream.mjs';
-import {decodePhiRoomPackage} from './phi-compiled-room-package.mjs';
-import {createPhiRoomBatchStudy,packPhiRoomPaintingGroups} from './phi-room-batch-study.mjs';
-import {installPhiComposerPassProfiler} from './phi-postfx-pass-profiler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
-import {createPhiUploadedTextureLedger} from './phi-uploaded-texture-ledger.mjs';
 import {createPhiPaintingArrivalGate} from './phi-painting-arrival-gate.mjs';
 import {createPhiRoomGeometryStager} from './phi-room-geometry-stage.mjs';
-import {createTextureBenchCache} from './phi-jpeg-benchmark-cache.mjs';
-import {decodePhiArtworkImage} from './phi-artwork-preload.mjs';
+import {decodePhiArtworkImage} from './phi-artwork-preload.mjs?v=lift-gpu-live-20261031';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { buildLayout, footprintAt, canStand, DOOR_WIDTH, DOOR_HEIGHT, ROOM_HEIGHT, PHI } from './layout-v2.mjs';
 import { planGalleryHangs } from './hanging-v3.mjs?v=reserve-glazed-door-walls-20261022';
@@ -66,7 +57,12 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=daytime-restored-20261027';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
-import {buildVisitorKnowledge,createVisitorChatUI} from './phi-visitor-chat.mjs';
+import {buildVisitorKnowledge as buildVisitorKnowledgeV1,createVisitorChatUI as createVisitorChatUIV1} from './phi-visitor-chat.mjs';
+import {buildVisitorKnowledge as buildVisitorKnowledgeV2,createVisitorChatUI as createVisitorChatUIV2} from './visitor-v2/chat-v2.mjs';
+// Independent preview: plain TEST runs v1; ?chat=v2 opts into v2.
+const VISITOR_CHAT_V2=new URLSearchParams(location.search).get('chat')==='v2';
+const buildVisitorKnowledge=VISITOR_CHAT_V2?buildVisitorKnowledgeV2:buildVisitorKnowledgeV1;
+const createVisitorChatUI=VISITOR_CHAT_V2?createVisitorChatUIV2:createVisitorChatUIV1;
 import {nameExhibitionRooms} from './phi-room-names.mjs';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
@@ -109,9 +105,6 @@ let liftTravelling=false;
 let liftReturnFocus=null;
 let editionObjects=[];
 let phiRoomVisibilityCuller=null;
-let phiCompiledRoomStream=null;
-let phiRoomStreamSerial=0;
-let phiRoomBatchStudy=null;
 let deferredGalleryJobs=[];
 let deferredGalleryRunning=false;
 let phiPaintingGate=null;
@@ -136,6 +129,8 @@ let phiSquareObstacles=[];
 let phiRideState=null;
 let phiRideCameraActive=false;
 let phiRideHidden=[];
+// Keep the furnished reception visible to the exterior lift camera until arrival.
+let phiRideRetainedReception=null;
 let phiLiftPanelPosition=null;
 let liftCabinPosition=null;
 let liftDoorThreshold=null;
@@ -153,7 +148,6 @@ function registerPhiPhysicalVisitor({index,x,y,z,seat=false,room=-1}){
  if(phiVisitorSpeakers.some(person=>person.index===index))return;
  phiVisitorSpeakers.push({index,x,y,z,local,seat,room,physical:true});
 }
-
 let touchPointer = null;
 let touchX = 0, touchY = 0;
 let xrLiftPanel=null;
@@ -219,234 +213,24 @@ try {
   errorBox.hidden = false;
 }
 
-// TEST ONLY: retain deterministic JPEG cache diagnostics without the retired lossless KTX2 loader.
-const phiTextureBenchCache=createTextureBenchCache(location.search,document.baseURI,location.origin);
-window.__phiJPEGCacheBench=phiTextureBenchCache;
-if(phiTextureBenchCache)THREE.DefaultLoadingManager.setURLModifier(
-  url=>phiTextureBenchCache.stamp(url)
-);
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
-// TEST ONLY: opt-in asynchronous GPU timings alongside CPU render timings.
-const phiGpuProfiler=createPhiGpuProfiler(renderer,{enabled:new URLSearchParams(location.search).has('gpuprofile')});
-if(phiGpuProfiler)window.__phiGpuProfile=phiGpuProfiler;
-// Match the approved live 16-mesh reveal by default; ?liftstage=0 is the control.
-const phiStageArrival=new URLSearchParams(location.search).get('liftstage')!=='0';
-// TEST ONLY: overlap destination preparation with the ride; default remains old behaviour.
-// Run ?liftoverlap=1 to opt in, ?liftoverlap=0 for comparison.
-const phiOverlapRide=new URLSearchParams(location.search).get('liftoverlap')==='1';
-// TEST ONLY: overlap destination shader compilation with painting GPU readiness.
-// Never changes a material, pass, geometry, or texture; ?earlycompile=0 baseline.
-const phiEarlyShaderCompile=new URLSearchParams(location.search).get('earlycompile')==='1';
-// TEST ONLY: compile destination shaders including originally hidden meshes.
-// Does not change final scene, stage batching, lighting or post-processing.
-const phiRevealCompile=new URLSearchParams(location.search).get('revealcompile')==='1';
-// TEST ONLY: A/B test whether receiver-side shadow state can be applied
-// without forcing an unnecessary material invalidation. Default OFF.
-const phiShadowReceiverFast=new URLSearchParams(location.search).get('shadowreceiverfast')==='1';
-// TEST ONLY: merge only fixed, opaque portal surrounds sharing the same
-// original material. Moving doors, glass, art and lights stay separate.
-const phiPortalBatchEnabled=new URLSearchParams(location.search).get('portalbatch')==='1';
-// The reliable two-rAF spacing stays in place for all fixed batch sizes.
-// ?liftbatch=16 uses the original method with smaller groups.
-// ?liftbatch=adaptive is retained as an explicitly opt-in failed experiment;
-// software-renderer benchmarks showed it added large delays. Never default.
-const phiLiftBatchChoice=new URLSearchParams(location.search).get('liftbatch');
-const phiLiftBatchFixed=[8,12,16,20,24,32].includes(Number(phiLiftBatchChoice))
- ?Number(phiLiftBatchChoice):null;
-const phiLiftBatchMode=phiLiftBatchChoice==='adaptive'?'adaptive':'legacy';
-const phiLiftBatchSize=phiLiftBatchMode==='adaptive'?12:phiLiftBatchFixed??16;
+// Approved fixed 16 original meshes per two frames; no adaptive scheduling.
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
-// TEST ONLY: ?roomcull=1 enables conservative solid-wall visibility checks.
-const phiRoomCullingEnabled=new URLSearchParams(location.search).get('roomcull')==='1';
-// Single archived-floor visibility-cell experiment; opt-in, TEST only.
-const phiVisibilityCellDate='2026-10-20';
-const phiVisibilityCellsEnabled=new URLSearchParams(location.search).get('visibilitycells')==='1';
-// TEST ONLY: opt-in precompiled real room geometry and on-demand room loading.
-const phiCompiledArchEnabled=new URLSearchParams(location.search).get('compiledarch')==='1';
-const phiRoomStreamEnabled=new URLSearchParams(location.search).get('roomstream')==='1';
-const phiCompiledArchDate='2026-10-20';
-window.__phiCompiledArchitecture=()=>phiCompiledRoomStream?.stats()||{active:false};
-const phiRoomBatchEnabled=new URLSearchParams(location.search).get('roombatch')==='1';
-window.__phiRoomBatches=()=>phiRoomBatchStudy?.snapshot()||{active:false};
-window.__phiRoomVisibility=()=>phiRoomVisibilityCuller?.snapshot()||{enabled:false,reason:'room culling not active'};
+// Approved conservative occlusion. ?roomcull=0 restores baseline immediately.
+// Never enable per-room geometry/texture batching on the live gallery.
+const phiRoomCullingEnabled=new URLSearchParams(location.search).get('roomcull')!=='0';
+// Live: merge immovable opaque gallery portal surrounds by their original
+// material and vertex/normal/UV buffers. ?portalbatch=0 is a rollback switch.
+const phiPortalBatchEnabled=new URLSearchParams(location.search).get('portalbatch')!=='0';
+window.__phiRoomVisibility=()=>phiRoomVisibilityCuller?.snapshot()||{enabled:false,reason:'room culling disabled or reception'};
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
-// Retired the lossless KTX2 test conversion; keep the original JPEG option.
-const jpegExactStudy=new URLSearchParams(location.search).get('jpegformat')==='original';
 const phiStartupLoading=trackGalleryLoading(THREE.DefaultLoadingManager);
 const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
-  startAfter:window.__galleryEarly?.tower,
-  renderer // Existing architectural materials and original images remain untouched.
-});
-// Test-only deep probe: enabled exclusively by ?liftprofile=1.
-// Capture state only for expensive scene renders, not on normal frames.
-let phiShadowProbe=null;
-installPhiComposerPassProfiler({
- enabled:!!phiLiftProfiler,
- record:(name,ms)=>{
-  const details=name==='postfx-pass:0:scene-render'&&ms>=40?{
-   shadow:phiShadowProbe?.stats?.last||null,
-   shadowCalls:phiShadowProbe?.stats?.calls||0,
-   shadowRefreshes:phiLightingStudy?.stats?.refreshes||0,
-   shadowMapNeedsUpdate:!!renderer?.shadowMap?.needsUpdate,
-   shadowMapEnabled:!!renderer?.shadowMap?.enabled,
-   shaderPrograms:renderer?.info?.programs?.length??null,
-   drawCalls:renderer?.info?.render?.calls??null,
-   triangles:renderer?.info?.render?.triangles??null,
-   textures:renderer?.info?.memory?.textures??null,
-   geometries:renderer?.info?.memory?.geometries??null,
-   sceneRoots:scene.children.length,
-   cabinY:+rig.position.y.toFixed(2),
-   rideStatus:window.__phiLiftRide?.status||null
-  }:null;
-  phiLiftProfiler?.record(name,ms,details);
- }
+  startAfter:window.__galleryEarly?.tower
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
- // TEST-ONLY resource audit: observe completed renderer uploads without
- // changing scheduling, materials, texture data or the lift. WebGL implicit
- // uploads are NOT instrumented; renderer.info exposes live memory counters.
- if(new URLSearchParams(location.search).get('gpuvisitbench')==='1'){
-  const originalInitTexture=renderer.initTexture.bind(renderer);
-  const tracked=new Set(),disposed=new Set();
-  const audit={explicitUploadCalls:0,distinctExplicitTextures:0,
-   repeatedTextureCalls:0,disposeEvents:0,uploadDurationsMs:[],
-   maxExplicitUploadMs:0,earliest:null};
-  renderer.initTexture=texture=>{
-   const id=texture?.id;
-   if(id!==undefined){
-    if(tracked.has(id))audit.repeatedTextureCalls++;
-    else{
-     tracked.add(id);audit.distinctExplicitTextures++;
-     texture.addEventListener?.('dispose',()=>{
-      if(!disposed.has(id)){disposed.add(id);audit.disposeEvents++;}
-     });
-    }
-   }
-   const began=performance.now();
-   try{return originalInitTexture(texture);}
-   finally{
-    const ms=performance.now()-began;
-    audit.explicitUploadCalls++;
-    audit.maxExplicitUploadMs=Math.max(audit.maxExplicitUploadMs,ms);
-    if(audit.uploadDurationsMs.length<250)audit.uploadDurationsMs.push(+ms.toFixed(2));
-   }
-  };
-  window.__phiGpuVisitAudit={
-   snapshot(){
-    const memory=renderer.info.memory||{};
-    const active=window.__phiFullEngine||{};
-    const profile=window.__phiLiftProfile;
-    return {
-     date:active.date||null,paintings:active.paintings??null,
-     paintingsLoaded:active.paintingsLoaded??null,
-     geometries:memory.geometries??null,textures:memory.textures??null,
-     shaderPrograms:renderer.info.programs?.length??null,
-     drawsLastPass:renderer.info.render.calls,trianglesLastPass:renderer.info.render.triangles,
-     sceneRoots:scene.children.length,
-     explicitUploadCalls:audit.explicitUploadCalls,
-     distinctExplicitTextures:audit.distinctExplicitTextures,
-     repeatedTextureCalls:audit.repeatedTextureCalls,
-     disposeEvents:audit.disposeEvents,
-     maxExplicitUploadMs:+audit.maxExplicitUploadMs.toFixed(2),
-     samples:[...audit.uploadDurationsMs],
-     paintingGPU:liftPaintingGPU.stats(),
-     artworkPreload:phiArtworkPreloader.stats(),
-     sculptures:phiSculptureStage.stats(),
-     liftPreparation:window.__phiLiftPreparation||null,
-     reuseEnabled:phiReuseLiftUploads,
-     uploadLedger:phiUploadedTextureLedger.stats(),
-     completedVisits:profile?.visits?.length||0
-    };
-   }
-  };
- }
-
-// TEST-ONLY repeatable browser benchmark. The mode has no effect on production,
-// artwork pixels or normal tower visits and does not touch the live module.
-if(new URLSearchParams(location.search).get('roomcullbench')==='1'){
- const renderOriginal=phiPostFX.render.bind(phiPostFX);
- const rendererOriginal=renderer.render.bind(renderer);
- const metrics=[],maxSamples=900;
- let sceneCalls=0,sceneTriangles=0,sceneRenderPasses=0;
- // Three.js resets renderer.info between composer render passes. Capture
- // calls directly after rendering the actual 3D scene; final-screen passes
- // otherwise report a meaningless single fullscreen triangle.
- renderer.render=(...args)=>{
-  const value=rendererOriginal(...args);
-  if(args[0]===scene){
-   sceneCalls+=renderer.info.render.calls;
-   sceneTriangles+=renderer.info.render.triangles;
-   sceneRenderPasses++;
-  }
-  return value;
- };
- phiPostFX.render=(...args)=>{
-  const begun=performance.now();
-  sceneCalls=0;sceneTriangles=0;sceneRenderPasses=0;
-  const value=renderOriginal(...args);
-  metrics.push({ms:performance.now()-begun,sceneCalls,sceneTriangles,sceneRenderPasses,
-   hidden:phiRoomVisibilityCuller?.snapshot().hidden??0});
-  if(metrics.length>maxSamples)metrics.splice(0,metrics.length-maxSamples);
-  return value;
- };
- window.__phiRoomCullBench={
-  reset(){metrics.length=0;},
-  sample(){return metrics.slice();},
-  spots(){
-   const phi=plan?.phi;if(!phi?.world)return [];
-   return phi.floor.mergedRooms.map((room,index)=>{
-    const piece=[...(room.pieces||[])].sort((a,b)=>b.w*b.h-a.w*a.h)[0];
-    if(!piece)return null;
-    const center={x:piece.x+piece.w/2,z:piece.z+piece.h/2};
-    const world=phi.world.toWorld(center.x,center.z);
-    return {room:index,local:center,world:{...world,y:currentFloor*FLOOR_SPACING},area:piece.w*piece.h};
-   }).filter(Boolean);
-  },
-  move(room){
-   const spot=this.spots().find(s=>s.room===room);
-   if(!spot)return null;
-   rig.position.set(spot.world.x,spot.world.y,spot.world.z);
-   pressed.clear();touchPressed.clear();lookPressed.clear();
-   yaw=.5;pitch=0;rig.rotation.y=yaw;camera.rotation.x=pitch;
-   return spot;
-  },
-  setCulling(enabled){
-   if(!phiRoomVisibilityCuller)return null;
-   phiRoomVisibilityCuller.setEnabled(enabled);
-   const local=plan?.phi?.world?.toLocal(rig.position.x,rig.position.z);
-   return phiRoomVisibilityCuller.update(local,{safe:true});
-  },
-  culling(){return window.__phiRoomVisibility?.()??null;},
-  // Same scene, camera and artwork: toggle lookup strategy for paired A/B.
-  compiled(enabled){
-   phiRoomVisibilityCuller?.setCompiledEnabled(!!enabled);
-   const local=plan?.phi?.world?.toLocal(rig.position.x,rig.position.z);
-   return phiRoomVisibilityCuller?.update(local,{safe:true})||null;
-  },
-  look(angle){yaw=angle;pitch=0;rig.rotation.y=yaw;camera.rotation.x=pitch;},
-  // Direct scene-only render avoids full-screen post-FX timing dominating the
-  // paired room-occlusion measurement. This probe is TEST-only.
-  directSceneRender(){
-   const previous=renderer.info.autoReset;
-   renderer.info.autoReset=false;
-   renderer.info.reset();
-   try{
-    const started=performance.now();
-    renderer.render(scene,camera);
-    return {ms:performance.now()-started,calls:renderer.info.render.calls,
-     triangles:renderer.info.render.triangles,hidden:phiRoomVisibilityCuller?.snapshot().hidden??0};
-   }finally{renderer.info.autoReset=previous;}
-  },
-  paintings(){return window.__phiFullEngine?.paintingsLoaded??0;},
-  expectedPaintings(){return window.__phiFullEngine?.paintings??0;}
- };
-}
-const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun,skipReceiverMaterialInvalidation:phiShadowReceiverFast}):null;
-phiShadowProbe=installPhiShadowRenderProbe({
- renderer,enabled:!!phiLiftProfiler,
- record:(name,ms)=>phiLiftProfiler?.record(name,ms)
-});
+const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
 let receptionWallMaterial=null;
@@ -649,20 +433,6 @@ const phiSculptureStage=createPhiSculptureStager({
  }
 });
 if(GALLERY_DEBUG)window.__phiSculptureStage=()=>phiSculptureStage.stats();
-// TEST A/B: ?liftreuse=1 opts into skipping redundant uploads (not proven faster).
-// Only textures successfully uploaded on this renderer may be reused.
-const phiReuseLiftUploads=new URLSearchParams(location.search).get('liftreuse')==='1';
-// Invalidate on texture.dispose() or a new texture/source version. Previous
-// WeakSet implementation could wrongly skip reuploading a disposed texture.
-const phiUploadedTextureLedger=createPhiUploadedTextureLedger();
-// Invalidate after WebGL context loss and restoration: the renderer may
-// reallocate GPU storage without changing a JavaScript Texture's version.
-renderer?.domElement?.addEventListener('webglcontextlost',()=>phiUploadedTextureLedger.invalidateAll());
-renderer?.domElement?.addEventListener('webglcontextrestored',()=>phiUploadedTextureLedger.invalidateAll());
-const phiUploadPainting=texture=>{
- renderer.initTexture(texture);phiUploadedTextureLedger.mark(texture);
-};
-const phiIsUploaded=texture=>phiReuseLiftUploads&&phiUploadedTextureLedger.has(texture);
 // Prepare only the destination floor's paintings while the lift travels.
 const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
  makeTexture:image=>{
@@ -671,7 +441,7 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
   texture.needsUpdate=true;
   return texture;
  },
- upload:phiUploadPainting,
+ upload:texture=>renderer.initTexture(texture),
  // During motion, upload one painting every two frames and avoid cabin
  // acceleration/braking. At the landing use every frame: no reason to
  // leave the doors shut for additional idle render frames.
@@ -680,8 +450,7 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
    const ride=window.__phiLiftRide;
    const steady=ride?.status==='moving'&&ride.progress>=.12&&ride.progress<=.82;
    const landed=ride?.status==='arrived'||ride?.status==='failed';
-   // While the elastic cabin creeps, painting GPU uploads must continue.
-   // Otherwise the painting gate can never release the cabin to land.
+   // GPU uploads must continue after the elastic hold begins above 82%.
    const overlapHolding=phiRideState?.elastic&&ride?.status==='moving'&&ride.progress>.82;
    if(!liftTravelling||landed||overlapHolding)resolve();
    else if(steady)requestAnimationFrame(resolve);
@@ -690,11 +459,12 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
   requestAnimationFrame(frame);
  })
 });
+// LIVE: prepare destination floor during ride. ?liftoverlap=0 restores the prior method.
+const phiOverlapRide=new URLSearchParams(location.search).get('liftoverlap')!=='0';
 const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
  concurrency:mobileImages?2:4,
- // TEST: overlap the next image download/decode with the prior image's
- // serialized GPU preparation. ?liftpipeline=0 restores the former behavior.
- // No bitmap resampling, texture substitutions or rendering changes.
+ // Preserve exact painting textures; overlap image decoding with GPU preparation.
+ // ?liftpipeline=0 retains the original sequence for a diagnostic comparison.
  releaseAfterDecode:new URLSearchParams(location.search).get('liftpipeline')!=='0',
  prepare:(image,context)=>liftPaintingGPU.prepare(image,context),
  dispose:texture=>texture?.dispose?.()
@@ -731,7 +501,7 @@ window.addEventListener('visibilitychange',()=>{
   for(const [material,request] of [...failedArtworkLoads]){
     if(material.userData.galleryDisposed){failedArtworkLoads.delete(material);continue;}
     failedArtworkLoads.delete(material);
-    loadArtworkTexture(request.url,material,{preferred:jpegExactStudy?null:request.preferred});
+    loadArtworkTexture(request.url,material,{preferred:request.preferred});
   }
 });
 function loadArtworkTexture(url,material,{preferred=null}={}){
@@ -814,7 +584,7 @@ function loadArtworkTexture(url,material,{preferred=null}={}){
         }
       };
       image.onerror=()=>{if(GALLERY_DEBUG)console.warn('Artwork request failed:',candidate);setTimeout(attempt,400);};
-      image.src=phiTextureBenchCache?.stamp(candidate)||candidate;
+      image.src=candidate;
     }
     attempt();
   }),material);
@@ -895,7 +665,7 @@ function hangArt(room, study, hang) {
   scene.add(artwork);
   artExhibits.push({study,position:artwork.position.clone(),normal:normal.clone()});
   artworkMaterial.userData.galleryPosition=artwork.position.clone();
-   loadArtworkTexture(study.image, artworkMaterial,{preferred:jpegExactStudy?null:study.imageOptimized});
+   loadArtworkTexture(study.image, artworkMaterial,{preferred:study.imageOptimized});
   const lamp=base.clone().addScaledVector(normal,1.35);
   lamp.y=Math.min(room.y+ROOM_HEIGHT-.35,hang.y+height*.66+1.25);
   exhibitLight(room,lamp,base,{beam:Math.max(.28,Math.min(.56,Math.atan(width/2/1.45)*1.25)),power:phiLightingOriginal?17:19});
@@ -1223,7 +993,8 @@ function closeLift({returnToCanvas=false}={}){
 // The φ tower has one real, shared vertical shaft at world x=z=0.
 // Unlike the legacy cutscene, this temporary cabin and the player's rig move
 // continuously through the world while the neighbouring floors stay rendered.
-// Follow the moving lift cabin from outside; restore first-person on arrival.
+// The external ride camera tracks the moving cabin instead of a fixed point.
+// Restore the first-person view before the landing doors open.
 const phiRideCameraTarget=new THREE.Vector3();
 const phiRideCameraPosition=new THREE.Vector3();
 const phiRideCameraOffset=new THREE.Vector3(5.2,3.5,8.4);
@@ -1253,7 +1024,7 @@ function startPhiCabinRide(targetFloor,{elastic=false}={}){
  // The shaft's reserved opening allows the other floors to whizz past.
  phiRideHidden=[];
  for(const object of editionObjects){
-  if(object===phiMovingCabin)continue;
+  if(object===phiMovingCabin||currentFloor===0)continue;
   if(object.visible){object.visible=false;phiRideHidden.push(object);}
  }
  const startTheta=phiLiftCabin.rotation.y;
@@ -1332,6 +1103,34 @@ function retirePhiDepartureCabin(){
  }
  for(const geometry of geometries)geometry.dispose();
 }
+function releasePhiRideRetainedReception(){
+ const held=phiRideRetainedReception;
+ if(!held)return;
+ phiRideRetainedReception=null;
+ // These installations own media resources; release them only after the ride.
+ held.gramophone?.dispose();
+ held.livingMonitor?.dispose();
+ const geometries=new Set(),materials=new Set(),textures=new Set();
+ for(const object of held.objects){
+  scene.remove(object);
+  object.traverse?.(child=>{
+   child.userData.galleryDisposed=true;
+   if(child.geometry&&!child.geometry.userData?.sharedVisitorAsset&&!child.geometry.userData?.galleryPersistent)
+    geometries.add(child.geometry);
+   for(const material of Array.isArray(child.material)?child.material:[child.material])
+    if(material?.isMaterial&&!material.userData.galleryPersistent)materials.add(material);
+  });
+ }
+ for(const material of materials){
+  material.userData.galleryDisposed=true;
+  for(const value of Object.values(material))if(value?.isTexture)textures.add(value);
+  material.dispose();
+ }
+ for(const texture of textures){texture.dispose();texture.userData.galleryBitmap?.close?.();}
+ for(const geometry of geometries)geometry.dispose();
+ // Resume normal shell occlusion once the detailed reception is gone.
+ phiTowerShellCache?.controller.activate(currentFloor);
+}
 // Let the per-frame staging (room boxes, sculptures) work during the early
 // ride before the synchronous construction consumes it.
 async function waitForPhiRideStaging(){
@@ -1401,7 +1200,7 @@ async function travelLift(date,index){
   liftPaintingGPU.start(date);
   phiArtworkPreloader.start(date,prepared.nextPlan.phi.exhibition.paintings
    .map(p=>byId.get(p.studyId)).filter(Boolean)
-   .map(study=>jpegExactStudy?study.image:(study.imageOptimized||study.image)).filter(Boolean));
+   .map(study=>(study.imageOptimized||study.image)).filter(Boolean));
   // Prepare a detached pedestal and traced portrait relief each animation
   // frame while the lift is closing and moving. This is never in the live
   // scene until the destination has been constructed and rotated.
@@ -1438,82 +1237,25 @@ async function travelLift(date,index){
   // Paintings are mandatory. The old four-second generic timeout could open
   // onto blank frames; the door interlock now checks attached GPU textures.
   phiLiftProfiler?.mark('paintings-waiting',phiPaintingGate?.stats());
-  // Preparation-only A/B experiment. Only compile the fully assigned
-  // destination's current shaders after every image has attached to a wall.
-  // This work used to begin in warmGalleryEntry after staged scene reveal.
-  const earlyShader={started:false,promise:null,ms:null,error:null};
-  const maybeCompileEarly=info=>{
-   if(!phiEarlyShaderCompile||earlyShader.started||!renderer?.compileAsync||
-      !info?.expected||window.__phiFullEngine?.paintingsLoaded!==info.expected)return;
-   earlyShader.started=true;
-   phiLiftProfiler?.mark('shader-precompile-start',{paintings:info.expected});
-   const began=performance.now();
-   earlyShader.promise=Promise.resolve()
-    .then(()=>renderer.compileAsync(scene,camera))
-    .then(()=>{
-     earlyShader.ms=+(performance.now()-began).toFixed(1);
-     phiLiftProfiler?.mark('shader-precompile-finished',{ms:earlyShader.ms});
-    })
-    .catch(error=>{
-     earlyShader.error=String(error?.message||error);
-     phiLiftProfiler?.mark('shader-precompile-failed',{error:earlyShader.error});
-     // Keep the established mandatory compile in warmGalleryEntry as fallback.
-    });
-  };
   const paintingReady=await phiPaintingGate.wait({
    // Slow software renderers may need much longer than a hardware GPU.
    // Never substitute a blank painting when the deadline is reached.
    timeoutMs:90000,
    onProgress:info=>{
-    maybeCompileEarly(info);
     if(window.__phiLiftRide)window.__phiLiftRide.paintings={ready:info.ready,total:info.expected};
     if(GALLERY_DEBUG)window.__phiLiftPaintings=info;
    }
   });
   phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady);
-  // Conclude the same shader work before the destination is revealed, so
-  // the first visible post-FX render doesn't compile the same shaders again.
-  if(earlyShader.promise)await earlyShader.promise;
-  if(GALLERY_DEBUG)window.__phiEarlyShaderCompile={
-   enabled:phiEarlyShaderCompile,started:earlyShader.started,
-   ms:earlyShader.ms,error:earlyShader.error
-  };
-  // Compile the actual destination shader variants only after its complete
-  // original painting textures are attached and GPU-ready. The synchronous
-  // visibility window restores every hidden mesh before any await / frame.
-  if(phiRevealCompile&&phiStageArrival&&renderer.compileAsync){
-   const started=performance.now();
-   const diagnostic={enabled:true,attempted:false,meshes:0,ms:null,error:null,
-    shaderProgramsBefore:renderer.info?.programs?.length??null,
-    shaderProgramsAfter:null};
-   phiLiftProfiler?.mark('reveal-compile-start');
-   try{
-    const job=phiArrivalMeshes.compileHiddenDestination(()=>renderer.compileAsync(scene,camera));
-    diagnostic.attempted=job.attempted;
-    diagnostic.meshes=job.count;
-    if(job.promise)await job.promise;
-   }catch(error){
-    // Keep established mandatory compile and door/painting interlocks.
-    diagnostic.error=String(error?.message||error);
-   }finally{
-    diagnostic.ms=+(performance.now()-started).toFixed(1);
-    diagnostic.shaderProgramsAfter=renderer.info?.programs?.length??null;
-    if(GALLERY_DEBUG)window.__phiRevealCompile=diagnostic;
-    phiLiftProfiler?.mark('reveal-compile-finished',diagnostic);
-   }
-  }
-  // Keep new destination meshes hidden while all source paintings upload
-  // successfully; then reveal the original meshes in bounded render batches.
-  // No shader, texture resolution, painting pixels or materials are changed.
-  if(phiStageArrival){
-   phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
-   const revealed=await phiArrivalMeshes.reveal({
-    mode:phiLiftBatchMode,batchSize:phiLiftBatchSize,
-    onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
-    onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
-   });
-   phiLiftProfiler?.mark('scene-reveal-finished',revealed);
-  }
+  // The paintings are already GPU-ready. Restore the original destination
+  // renderables over successive frames while the cabin doors remain closed.
+  phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
+  const revealed=await phiArrivalMeshes.reveal({
+   batchSize:16,
+   onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
+   onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
+  });
+  phiLiftProfiler?.mark('scene-reveal-finished',revealed);
   const preparation=await waitForGalleryEntry({
    loading:{pending:0},timeout:4000,
    isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0,
@@ -1521,20 +1263,16 @@ async function travelLift(date,index){
   });
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
   const warmed=await warmGalleryEntry({renderer,scene,camera,
-   // The completed staged reveal has already painted the original scene
-   // through the production post-FX renderer. Avoid a second uncomposited
-   // whole-scene render here; default/non-staged paths still perform it.
-   skipFinalRender:phiStageArrival&&phiArrivalMeshes.stats().batches.length>0&&
+   // The staged reveal already painted the original destination meshes.
+   // ?liftwarmrender=1 restores the extra full-scene render for comparison.
+   skipFinalRender:phiArrivalMeshes.stats().batches.length>0&&
     new URLSearchParams(location.search).get('liftwarmrender')!=='1',
-   isAlreadyUploaded:phiIsUploaded,markUploaded:texture=>phiUploadedTextureLedger.mark(texture),
    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
   phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate?.stats()});
   if(!phiPaintingGate?.stats().complete ||
      window.__phiFullEngine?.paintingsLoaded!==window.__phiFullEngine?.paintings)
    throw new Error('Painting readiness changed during final warm-up');
-  if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date,
-   reuseUploaded:phiReuseLiftUploads,paintingGPU:liftPaintingGPU.stats(),
-   paintings:phiPaintingGate.stats(),paintingWaitMs:paintingReady.elapsedMs};
+  if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate.stats(),paintingWaitMs:paintingReady.elapsedMs};
   if(rideDone){
    // Destination is fully prepared: release the cabin from its creep, then
    // step into the destination cabin (same place, same orientation).
@@ -1542,6 +1280,7 @@ async function travelLift(date,index){
    phiLiftProfiler?.mark('destination-ready-in-ride',{progress:phiRideState?+phiRideState.shown.toFixed(3):1,held:phiRideState?+phiRideState.held.toFixed(2):0});
    await rideDone;
    retirePhiDepartureCabin();
+   releasePhiRideRetainedReception();
    if(phiLiftCabin)phiLiftCabin.visible=true;
    if(liftCabinPosition)rig.position.copy(liftCabinPosition);
    rig.rotation.y=yaw;camera.rotation.x=pitch;
@@ -1569,6 +1308,7 @@ async function travelLift(date,index){
    const ride=phiRideState;phiRideState=null;ride?.resolve?.();
    retirePhiDepartureCabin();
   }
+  releasePhiRideRetainedReception();
   phiArtworkPreloader.clear();
   phiSculptureStage.clear();
   phiRoomGeometryStage.clear();
@@ -1764,13 +1504,6 @@ function onArrivalPath(x,z){
   return plaza||doorway;
 }
 // Stage costly exhibits across frames so the exterior is usable immediately.
-if(GALLERY_DEBUG)window.__phiDeferredGallery=()=>({
- pendingJobs:deferredGalleryJobs.length,running:deferredGalleryRunning,
- liftTravelling,liftArrivalOpening,liftDoorClosure,liftDoorTarget,
- paintings:window.__phiFullEngine?.paintings,
- paintingsLoaded:window.__phiFullEngine?.paintingsLoaded,
- preloader:phiArtworkPreloader.stats()
-});
 function startDeferredGallery(){
   releaseInteriorAssets();
   if(deferredGalleryRunning||!deferredGalleryJobs.length)return;
@@ -1842,7 +1575,7 @@ function transformPhiActiveFloor(before){
 function constructPhiTowerShell(){
  const signature=archiveDates.map(date=>date+':'+(towerFloorSignatures.get(date)?.length||0)).join('|');
  if(phiTowerShellCache?.signature===signature && phiTowerShellCache.shell.parent===scene){
-  phiTowerShellCache.controller.activate(currentFloor);
+  phiTowerShellCache.controller.activate(phiRideRetainedReception?0:currentFloor);
   updatePhiShellDiagnostics();
   return;
  }
@@ -1976,7 +1709,7 @@ function constructPhiTowerShell(){
  scene.add(shell);
  phiTowerShellCache={signature,shell,controller,chunkRoot,glassFloors,hologramFloors,shaftGeometry:glazing,
   staticBoxes,ownedMaterials:[shaftGlass,shaftEdgesMaterial]};
- controller.activate(currentFloor);
+ controller.activate(phiRideRetainedReception?0:currentFloor);
  updatePhiShellDiagnostics();
 }
 function updatePhiShellDiagnostics(){
@@ -1996,18 +1729,17 @@ function queuePhiFurnishings(phi,furnishings,elevation){
  deferredGalleryJobs.unshift(()=>{
   const convert=p=>({...p,...phi.world.toWorld(p.x,p.z),rotation:(p.rotation||0)+phi.world.theta,yaw:(p.yaw||0)+phi.world.theta});
   const furniture={benches:furnishings.benches.map(convert),people:furnishings.people.map(convert)};
-  phiVisitorSpeakers=furnishings.people.map((p,index)=>{
+  const physical=phiVisitorSpeakers.filter(person=>person.physical);
+  phiVisitorSpeakers=[...physical,...furnishings.people.map((p,index)=>{
    const world=phi.world.toWorld(p.x,p.z);
    return {index,x:world.x,z:world.z,y:elevation,local:{x:p.x,z:p.z},
     room:p.roomIndex??p.room,seat:!!p.seat};
-  });
-  // Reception has its own architectural visitor; register a conversation anchor
-  // even when the daily furnishing planner produces no gallery people here.
-  if(exhibitDate===RECEPTION&&!phiVisitorSpeakers.length){
-   const receptionVisitor=furniture.people[0];
-   if(receptionVisitor)phiVisitorSpeakers.push({index:0,x:receptionVisitor.x,z:receptionVisitor.z,
-    y:elevation,local:{x:furnishings.people[0].x,z:furnishings.people[0].z},
-    room:furnishings.people[0].roomIndex??furnishings.people[0].room,seat:!!receptionVisitor.seat});
+  })];
+  // Keep a reception conversation anchor even without ordinary gallery visitors.
+  if(exhibitDate===RECEPTION&&!phiVisitorSpeakers.length&&furniture.people[0]){
+   const p=furnishings.people[0],world=furniture.people[0];
+   phiVisitorSpeakers.push({index:0,x:world.x,z:world.z,y:elevation,
+    local:{x:p.x,z:p.z},room:p.roomIndex??p.room,seat:!!p.seat});
   }
   if(exhibitDate===RECEPTION){
    renderPhiFurniture(THREE,scene,{...furniture,benches:[]},{concrete:galleryFinish.stone,timber},elevation);
@@ -2019,46 +1751,14 @@ function queuePhiFurnishings(phi,furnishings,elevation){
 }
 function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={}){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
- // No culling of reception, transparent/exterior sightlines, architecture, signs,
- // lights or any objects not explicitly registered as room-owned exhibits.
- // Compile the conservative PVS once from the deterministic phi floor plan.
- // Only a proven benchmark result would justify moving this calculation
- // into the daily archive build and publishing precompiled assets.
- const phiVisibilityCells=phiVisibilityCellsEnabled&&phiRoomCullingEnabled&&
-  exhibitDate===phiVisibilityCellDate
-  ?compilePhiVisibilityCells({pieces:phi.pieces,
-    rooms:phi.floor.mergedRooms,walls:phi.physical.walls}):null;
- window.__phiVisibilityCellExperiment=()=>phiVisibilityCells?.stats?.()||
-  {enabled:false,reason:phiVisibilityCellsEnabled?'not-target-floor-or-culling-off':'not-requested',
-   targetDate:phiVisibilityCellDate};
+ // Only individual room-owned artworks are eligible; preserve all shared
+ // architectural batches, door openings, glazing, lighting and installations.
  phiRoomVisibilityCuller=phiRoomCullingEnabled&&exhibitDate!==RECEPTION
   ?createPhiRoomVisibilityCuller({enabled:true,pieces:phi.pieces,
-   rooms:phi.floor.mergedRooms,walls:phi.physical.walls,visibilityCells:phiVisibilityCells}) : null;
- phiRoomBatchStudy=phiRoomBatchEnabled&&exhibitDate!==RECEPTION
-  ?createPhiRoomBatchStudy(THREE,scene,phi.floor.mergedRooms.length,{enabled:true}):null;
+   rooms:phi.floor.mergedRooms,walls:phi.physical.walls}) : null;
  phiRoomLightEntries.length=0;
  const staticArchitecture=[];
- // Precompiled shared walls, brick veneers, cornices and plinths replace ALL
- // equivalent dynamic staticBlock calls. Room-owned surfaces have their own
- // independent stream. In case of a missing package the old path is unchanged.
- const compiledShared=phiCompiledRoomStream?.active?phiCompiledRoomStream.getShared():null;
- const staticBlock=(...args)=>{
-  if(compiledShared)return null;
-  const mesh=block(...args);staticArchitecture.push(mesh);return mesh;
- };
- // Room surfaces only in this first pilot. Shared walls, trims, portals,
- // lights, artwork and shadow settings remain untouched.
- const compiledRooms=phiCompiledRoomStream?.active&&!phiRoomBatchStudy?new Map():null;
- const precompiledReadyRooms=compiledRooms?new Set(
-  phi.floor.mergedRooms.map((_,i)=>i).filter(i=>!!phiCompiledRoomStream.getPack(i))):null;
- const roomSurface=(room,key,...args)=>{
-  if(!compiledRooms)return null;
-  if(!compiledRooms.has(room))compiledRooms.set(room,[]);
-  if(precompiledReadyRooms.has(room))return null; // no BoxGeometry allocated
-  const mesh=block(...args);
-  compiledRooms.get(room).push({mesh,key});
-  return mesh;
- };
+ const staticBlock=(...args)=>{const mesh=block(...args);staticArchitecture.push(mesh);return mesh;};
  if(globalThis.__phiReceptionTilePreview&&!receptionTilePreview)receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});
  if(exhibitDate===RECEPTION&&receptionTilePreview)installReceptionPenroseInlay(THREE,receptionTilePreview,phi.pieces,{lowPower:galleryFinish.lowPower});
  const roomFloor=(exhibitDate===RECEPTION&&receptionTilePreview)||galleryFinish.floor;
@@ -2090,11 +1790,8 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
  for(const p of phi.pieces){
    const selected=galleryPenroseMaterial&&galleryPenroseRooms.includes(pieceRoomIndex(p,phi.floor.mergedRooms));
    const finish=selected?galleryPenroseMaterial:roomFloor;
-   const slab=compiledRooms
-    ?roomSurface(p.room,selected?'penrose':'floor',p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,finish)
-    :(phiRoomBatchStudy?block:staticBlock)(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,finish);
-   if(slab&&(finish===receptionTilePreview||selected))alignReceptionTileUvs(slab);
-   phiRoomBatchStudy?.take(p.room,slab,{architecture:true});
+   const slab=staticBlock(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,finish);
+   if(finish===receptionTilePreview||selected)alignReceptionTileUvs(slab);
  }
  for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,receptionWindow,ROOM_HEIGHT)){
   const len=part.hi-part.lo;if(len<.04)continue;
@@ -2176,12 +1873,8 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
  // Architectural finish follows the actual phi rooms. Keep the office
  // ceiling photographic texture, with trim only at true physical boundaries:
  // subdivided internal cells should not look like a ceiling grid.
- for(const p of phi.pieces){
-  const ceiling=compiledRooms
-   ?roomSurface(p.room,'plaster',p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster)
-   :(phiRoomBatchStudy?block:staticBlock)(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster);
-  phiRoomBatchStudy?.take(p.room,ceiling,{architecture:true});
- }
+ for(const p of phi.pieces)
+  staticBlock(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster);
  for(const w of phi.physical.walls){
   const len=w.hi-w.lo;if(len<.45)continue;
   if(w.axis==='x'){
@@ -2193,27 +1886,6 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   }
  }
  window.__phiArchitectureBatches=batchPhiStaticArchitecture(THREE,scene,staticArchitecture);
- if(compiledShared){
-  const root=new THREE.Group();
-  root.name='phi-precompiled-shared-architecture';
-  for(const mesh of decodePhiRoomPackage(THREE,compiledShared,{
-    plaster,brick:galleryFinish.exteriorBrick,trims:join,plinth:galleryFinish.plinth
-  }))root.add(mesh);
-  scene.add(root);
- }
-
- if(compiledRooms){
-  for(let room=0;room<phi.floor.mergedRooms.length;room++){
-   const records=compiledRooms.get(room)||[];
-   const root=new THREE.Group();
-   root.name='phi-precompiled-room-'+room;
-   for(const {mesh} of records)root.add(mesh);
-   scene.add(root); // receives the unchanged golden-angle floor transform
-   phiCompiledRoomStream.attach(room,root,records,{
-    floor:roomFloor,penrose:galleryPenroseMaterial,plaster
-   });
-  }
- }
  // Share the production spotlight fixture loader, limiting fixtures to
  // larger merged rooms rather than the many phi subdivision cells.
  const lightRooms=phi.floor.mergedRooms.filter(r=>r.pieces?.length);
@@ -2231,8 +1903,9 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   scene.add(light,light.target);
   if(exhibitDate!==RECEPTION)phiRoomLightEntries.push({light,mount,fallback,cell:{...cell},power:light.intensity});
  }
- // Put visible portal frames on the original collision-wall openings.
- // Test-only batches preserve each original vertex, normal, UV and material.
+ // Keep portal frames exactly aligned to the existing collision-wall
+ // openings. Only these original, opaque, immovable surround meshes are
+ // registered for the already-proven UV-preserving architecture merger.
  const portalFrameCandidates=[];
  const portalBlock=(...args)=>{
   const mesh=block(...args);
@@ -2250,14 +1923,12 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
    portalBlock(d.width+.18,.23,.21,d.centre,head,d.at,architecturalFrameStudy);
   }
  }
- const portalBatchStart=phiPortalBatchEnabled?performance.now():0;
  const portalBatchResult=phiPortalBatchEnabled
   ?batchPhiStaticArchitecture(THREE,scene,portalFrameCandidates)
   :{originalMeshes:0,batches:0,savedDrawCalls:0};
  if(GALLERY_DEBUG)window.__phiPortalFrameBatches={
   active:phiPortalBatchEnabled,original:portalFrameCandidates.length,
-  ...portalBatchResult,
-  ms:phiPortalBatchEnabled?+(performance.now()-portalBatchStart).toFixed(1):0
+  ...portalBatchResult
  };
  // Frosted glazed transoms close the space ABOVE each existing portal frame;
  // the 3.1 m doorway below remains unobstructed. The public entrance already
@@ -2339,14 +2010,12 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
  const loader=new THREE.TextureLoader();
  const phiCaptionCandidates=[];
  const phiFrameCandidates=[];
- const phiRoomCaptionCandidates=[],phiRoomFrameCandidates=[];
  for(const p of phi.exhibition.paintings){
   const study=byId.get(p.studyId);if(!study)continue;
   const height=p.height,centreY=elevation+p.y;
   const paintingFrame=block(p.axis==='x'?.08:p.width+.10,height+.10,p.axis==='x'?p.width+.10:.08,
     p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,architecturalFrameStudy);
   phiFrameCandidates.push(paintingFrame);
-  phiRoomFrameCandidates.push({room:p.room,mesh:paintingFrame});
   const face=new THREE.Mesh(new THREE.PlaneGeometry(p.width,height),
     new THREE.MeshBasicMaterial({color:0xdedacf,side:THREE.FrontSide}));
   face.userData.phiArtOriginal=true;
@@ -2354,15 +2023,13 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   if(p.axis==='x')face.rotation.y=p.normal.x>0?Math.PI/2:-Math.PI/2;
   else if(p.normal.z<0)face.rotation.y=Math.PI;
   scene.add(face);
-  if(phiRoomBatchStudy)phiRoomBatchStudy.take(p.room,face);
-  else phiRoomVisibilityCuller?.register(p.room,face);
+  phiRoomVisibilityCuller?.register(p.room,face);
   const caption=new THREE.Mesh(new THREE.PlaneGeometry(1.12,.26),
     new THREE.MeshBasicMaterial({map:labelTexture(study.title,study.seed),side:THREE.FrontSide}));
   caption.position.set(p.x,centreY-height/2-.24,p.z);
   caption.rotation.copy(face.rotation);scene.add(caption);
   phiCaptionCandidates.push(caption);
-  phiRoomCaptionCandidates.push({room:p.room,mesh:caption});
-  const url=jpegExactStudy?study.image:(study.imageOptimized||study.image);
+  const url=(study.imageOptimized||study.image);
   if(!url)throw new Error('Exhibition painting has no image: '+study.id);
   const gate=phiPaintingGate.register(study.id,face);
   const paintingState=window.__phiFullEngine;
@@ -2410,36 +2077,24 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   else deferredGalleryJobs.unshift(attachPainting);
   artExhibits.push({study,position:face.position.clone(),normal:new THREE.Vector3(p.normal.x,0,p.normal.z)});
  }
- // Use the SAME caption and brushed-frame algorithms. The opt-in
- // ?roombatch=1 splits their GPU batches by curator room; ?roombatch=0
- // retains the original floor-wide batching for a measured comparison.
- const batchCaptions=new URLSearchParams(location.search).get('captionbatch')==='1';
- const frameBatchEnabled=new URLSearchParams(location.search).get('framebatch')==='1';
- if(phiRoomBatchStudy){
-  const packed=packPhiRoomPaintingGroups(THREE,scene,phiRoomBatchStudy,{
-   frames:phiRoomFrameCandidates,captions:phiRoomCaptionCandidates,
-   maxTextureSize:renderer.capabilities.maxTextureSize,
-   frameBatchEnabled,captionBatchEnabled:batchCaptions,
-   createFrameMaterial:()=>createPhiFrameStudyMaterial(THREE,{
+ // Approved painting-caption batching is enabled on live by default.
+ // ?captionbatch=0 preserves the original caption path for fast rollback.
+ const batchCaptions=new URLSearchParams(location.search).get('captionbatch')!=='0';
+ window.__phiCaptionBatches=batchCaptions
+  ?batchPhiPaintingCaptions(THREE,scene,phiCaptionCandidates,{maxTextureSize:renderer.capabilities.maxTextureSize})
+  :{active:false,original:phiCaptionCandidates.length,batched:phiCaptionCandidates.length,
+   drawCallsSaved:0,baseline:true};
+ // Approved on live. ?framebatch=0 restores each original painting frame.
+ // Other architectural frames, custom shaders, artwork and lighting are untouched.
+ const frameBatchEnabled=new URLSearchParams(location.search).get('framebatch')!=='0';
+ window.__phiFrameBatches=frameBatchEnabled
+  ?batchPhiPaintingFrames(THREE,scene,phiFrameCandidates,{
+   createMaterial:()=>createPhiFrameStudyMaterial(THREE,{
     enabled:new URLSearchParams(location.search).get('csm')!=='0',instanced:true
    })
-  });
-  window.__phiFrameBatches={active:frameBatchEnabled,...packed.frame,byRoom:true};
-  window.__phiCaptionBatches={active:batchCaptions,...packed.caption,byRoom:true};
- }else{
-  window.__phiCaptionBatches=batchCaptions
-   ?batchPhiPaintingCaptions(THREE,scene,phiCaptionCandidates,{maxTextureSize:renderer.capabilities.maxTextureSize})
-   :{active:false,original:phiCaptionCandidates.length,batched:phiCaptionCandidates.length,
-    drawCallsSaved:0,baseline:true};
-  window.__phiFrameBatches=frameBatchEnabled
-   ?batchPhiPaintingFrames(THREE,scene,phiFrameCandidates,{
-    createMaterial:()=>createPhiFrameStudyMaterial(THREE,{
-     enabled:new URLSearchParams(location.search).get('csm')!=='0',instanced:true
-    })
-   })
-   :{active:false,original:phiFrameCandidates.length,batched:phiFrameCandidates.length,
-    savedDrawCalls:0,baseline:true};
- }
+  })
+  :{active:false,original:phiFrameCandidates.length,batched:phiFrameCandidates.length,
+   savedDrawCalls:0,baseline:true};
  for(const p of phi.exhibition.sculptures){
   const study=byId.get(p.studyId);if(!study)continue;
   const placement={...p,y:elevation,yaw:0};
@@ -2449,8 +2104,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
    // Pivot remains in floor-local coordinates here. The existing
    // transformPhiActiveFloor rotates it with the rest of the exhibition.
    scene.add(staged.pivot);
-   if(phiRoomBatchStudy)phiRoomBatchStudy.take(p.room,staged.pivot);
-   else phiRoomVisibilityCuller?.register(p.room,staged.pivot);
+   phiRoomVisibilityCuller?.register(p.room,staged.pivot);
   }else{
    // Direct date links, slow background tabs and failed preparations still
    // use the original reliable incremental construction path.
@@ -2464,19 +2118,11 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
     const sculpture=createPortraitSculpture({
      scene,study,placement:location,quality:mobileImages?'mobile':'desktop',labelTexture
     });
-    if(!phiRoomBatchStudy?.attachLate(p.room,sculpture?.pivot))
-     phiRoomVisibilityCuller?.register(p.room,sculpture?.pivot);
+    phiRoomVisibilityCuller?.register(p.room,sculpture?.pivot);
    });
   }
   artExhibits.push({study,position:new THREE.Vector3(p.x,elevation+1.5,p.z)});
  }
- if(phiRoomBatchStudy){
-  window.__phiRoomBatchBuild=phiRoomBatchStudy.finish();
-  for(let i=0;i<phi.floor.mergedRooms.length;i++){
-   const root=phiRoomBatchStudy.group(i);
-   if(root?.parent)phiRoomVisibilityCuller?.register(i,root);
-  }
- }else window.__phiRoomBatchBuild={active:false};
  // The shaft landing is an actual collision surface; the full gallery lift UI
  // continues to use liftPosition and liftCabinPosition unchanged.
  const l=phi.circulation.lift;
@@ -2559,15 +2205,13 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   };
   addPhiReceptionMetalRoof(THREE,scene,{bounds:roofBounds,elevation,ceilingHeight:ROOM_HEIGHT,brick:galleryFinish.exteriorBrick});
   addPhiFrontage(THREE,entranceDoor.root,{
-   concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs,
-   onVisitor:(person,parent)=>{
-    // The entrance furniture is parented to the doorway model rather than
-    // directly to the scene, so measure the actual rendered world position.
-    parent.updateWorldMatrix(true,false);
-    const point=parent.localToWorld(new THREE.Vector3(person.x,person.y,person.z));
-    registerPhiPhysicalVisitor({index:100,x:point.x,y:point.y,z:point.z,seat:true});
-   }
-  });
+    concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs,
+    onVisitor:(person,parent)=>{
+     parent.updateWorldMatrix(true,false);
+     const at=parent.localToWorld(new THREE.Vector3(person.x,person.y,person.z));
+     registerPhiPhysicalVisitor({index:100,x:at.x,y:at.y,z:at.z,seat:true});
+    }
+   });
   const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
     halfWidth:30,halfDepth:29,level:elevation};
   const approach={doorway,outward,pathLength:42,halfWidth:3.25};
@@ -2596,14 +2240,12 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
    window.__phiPlazaMonuments=monuments.length;
   }
   deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza,{
-   onVisitor:(figure,person,index)=>{
-    // Register only successfully loaded figures. Lazy models can arrive long
-    // after other furnishing jobs, so never replace the existing registry.
-    figure.updateWorldMatrix(true,false);
-    const at=figure.getWorldPosition(new THREE.Vector3());
-    registerPhiPhysicalVisitor({index:200+index,x:at.x,y:at.y,z:at.z,seat:true});
-   }
-  }));
+    onVisitor:(figure,person,index)=>{
+     figure.updateWorldMatrix(true,false);
+     const at=figure.getWorldPosition(new THREE.Vector3());
+     registerPhiPhysicalVisitor({index:200+index,x:at.x,y:at.y,z:at.z,seat:true});
+    }
+   }));
   const square=phiSquare.addTo(scene,{doorway,outward,elevation});phiSquareObstacles.push(...square.obstacles);
   window.__phiPlaza={centre:plaza.centre,benchCount:8,monumentCount:2,visitorSlots:2,tagWalls:square.walls,squareMonumentCount:square.monuments,tags:square.tags};
   // Permit visitors to exit the lobby onto the open paved square.
@@ -2842,8 +2484,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
  const ink=indicator.getContext('2d');
  const tex=new THREE.CanvasTexture(indicator);tex.colorSpace=THREE.SRGBColorSpace;
  phiLiftIndicator={canvas:indicator,context:ink,texture:tex,last:null};
- // Each cabin owns its indicator; the travelling cabin must remain updated
- // while the hidden destination is built.
+ // Keep the departure indicator updating until the cabin handover.
  cabin.userData.phiLiftIndicator=phiLiftIndicator;
  paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({height:elevation,dates:archiveDates,currentFloor}));
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
@@ -2852,8 +2493,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
  landingSign.position.set(l.portal.at+.13,elevation+3.55,l.z);landingSign.rotation.y=Math.PI/2;scene.add(landingSign);
  for(const side of [-1,1])cabinBlock(.16,3.1,.17,liftFace,elevation+1.55,l.z+side*1.22,join);
  cabinBlock(.19,.24,2.55,liftFace,elevation+3.15,l.z,join);
- // The travelling visitor remains in the *departure* cabin until the swap.
- // Never teleport the camera to the landing during hidden floor construction.
+ // Do not teleport player to destination while cabin is still moving.
  if(!duringRide)rig.position.copy(liftCabinPosition);
  arrival=null;
  if(phi.exhibition.paintings.length+phi.exhibition.sculptures.length!==studies.length)
@@ -2973,10 +2613,7 @@ async function preparePhiEdition(date) {
   const elevation=nextFloor*FLOOR_SPACING;
   for(const room of nextPlan.rooms)room.y+=elevation;
   for(const hall of nextPlan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
-  const compiledArchitecture=phiCompiledArchEnabled&&date===phiCompiledArchDate&&!phiRoomBatchEnabled
-   ?await preparePhiCompiledRoomStream(THREE,{date,phi,elevation,
-     enabled:true,stream:phiRoomStreamEnabled}):null;
-  return {studies,nextPlan,nextFloor,elevation,reception,compiledArchitecture};
+  return {studies,nextPlan,nextFloor,elevation,reception};
 }
 async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duringRide=false}={}) {
   // Destination data is fully checked before any current scene is removed.
@@ -2985,28 +2622,28 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   const previousYaw=yaw,previousPitch=pitch;
   if(!renderer)return;
   const editionStart=performance.now();
-  // Restore all culling-owned visibility before disposing or staging a floor.
+  // Undo hiding before switching floors or staging the next arrival.
   phiRoomVisibilityCuller?.clear();phiRoomVisibilityCuller=null;
-  phiRoomBatchStudy=null;
   phiArrivalMeshes.restore();
-  const {studies,nextPlan,nextFloor,elevation,reception,compiledArchitecture}=prepared||await preparePhiEdition(date);
-  phiCompiledRoomStream?.cancel();
-  phiCompiledRoomStream=compiledArchitecture||null;
+  const {studies,nextPlan,nextFloor,elevation,reception}=prepared||await preparePhiEdition(date);
   phiPaintingGate?.cancel();
   phiPaintingGate=createPhiPaintingArrivalGate({
    date,expected:nextPlan.phi.exhibition.paintings.length,
-   upload:phiUploadPainting,
-   alreadyUploaded:phiIsUploaded,
+   upload:texture=>renderer.initTexture(texture),
    nextFrame:galleryPreparationFrame
   });
   // Dispose *all* edition-owned GPU resources, including artwork maps and
   // procedural canvas textures, but not materials/geometry shared across floors.
-  phiReceptionGramophone?.dispose();phiReceptionGramophone=null;
-  phiReceptionLivingMonitor?.dispose();phiReceptionLivingMonitor=null;
+  const retainReception=duringRide&&currentFloor===0&&date!==RECEPTION;
+  if(retainReception)phiRideRetainedReception={
+   objects:editionObjects.filter(object=>object!==phiMovingCabin),
+   gramophone:phiReceptionGramophone,livingMonitor:phiReceptionLivingMonitor
+  };
+  else{phiReceptionGramophone?.dispose();phiReceptionLivingMonitor?.dispose();}
+  phiReceptionGramophone=null;phiReceptionLivingMonitor=null;
   const staleGeometries=new Set(),staleMaterials=new Set(),staleTextures=new Set();
   for(const object of editionObjects){
-    // During overlap the visitor remains inside the old cabin.
-    if(duringRide&&object===phiMovingCabin)continue;
+    if(retainReception||(duringRide&&object===phiMovingCabin))continue;
     scene.remove(object);
     object.traverse?.(child=>{
       child.userData.galleryDisposed=true;
@@ -3085,9 +2722,9 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object)&&object!==phiTowerShellCache?.shell);
-  // Hide only destination renderables, not the cabin/doors/indicator or
-  // lights. Scene geometry and its final visibility are preserved.
-  if(viaLift&&phiStageArrival){
+  // Only new destination renderables are temporarily hidden. Never hide the
+  // physical cabin, its doors or indicator, or alter any textures or materials.
+  if(viaLift){
    const staged=phiArrivalMeshes.start(date,editionObjects,{exclude:phiLiftCabin});
    phiLiftProfiler?.mark('scene-reveal-queued',staged);
   }
@@ -3104,9 +2741,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
     yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
     rig.rotation.y=yaw;pitch=-.16;camera.rotation.x=pitch;
   }
-  if(duringRide&&phiLiftCabin&&phiLiftCabin!==phiMovingCabin){
-    phiLiftCabin.visible=false;
-  }
+  if(duringRide&&phiLiftCabin&&phiLiftCabin!==phiMovingCabin)phiLiftCabin.visible=false;
   if(viaLift&&liftCabinPosition){
     if(!duringRide)rig.position.copy(liftCabinPosition);
     const towards=plan.phi?new THREE.Vector3(Math.cos(plan.phi.world?.theta||0),0,-Math.sin(plan.phi.world?.theta||0)):new THREE.Vector3(plan.rooms[0].x-liftCabinPosition.x,0,plan.rooms[0].z-liftCabinPosition.z);
@@ -3171,8 +2806,7 @@ async function load(){
       :await loadArchiveDates();
     archiveDates.unshift(RECEPTION);
     const qp=new URLSearchParams(location.search).get('date');
-    // Begin floor metadata work during font loading, but preserve the
-    // completed marker font before any scene labels are painted.
+    // Fetch archive metadata during font loading; scene labels still wait.
     await phiMarkerReady;
     await loadEdition(qp&&archiveDates.includes(qp)?qp:RECEPTION);
     GALLERY_DEBUG&&console.info('[Gallery performance] enter available',Math.round(performance.now()-startupStart)+'ms');
@@ -3195,7 +2829,9 @@ window.addEventListener('resize',resize);
 
 // Information appears when a visitor pauses facing a nearby exhibit.
 // This is not a modal: movement and mouse look continue uninterrupted.
-// Test visitor conversations: draw only on the actual dated exhibition plan.
+// Information appears when a visitor pauses facing a nearby exhibit.
+// This is not a modal: movement and mouse look continue uninterrupted.
+// Live visitor conversations v1: use the currently loaded exhibition plan.
 function phiVisitorKnowledge(speaker){
  const phi=plan?.phi,reception=exhibitDate===RECEPTION;
  const byId=new Map(studyList.map(study=>[study.id,study]));
@@ -3228,7 +2864,8 @@ function phiVisitorKnowledge(speaker){
   roomName,works,visitorIndex:speaker.index,facing,
   floorWorks:phi?(phi.exhibition.paintings.length+phi.exhibition.sculptures.length):0,
   floorSculptures:phi?.exhibition.sculptures.length||0,
-  roomCount:phi?.floor.mergedRooms.length||0});
+  roomCount:phi?.floor.mergedRooms.length||0,
+  floorDates:archiveDates.filter(date=>date!==RECEPTION)});
 }
 function ensureVisitorChat(){
  if(visitorChat)return visitorChat;
@@ -3262,7 +2899,10 @@ function talkToNearestVisitor({allowAnywhere=false,visitor=null}={}){
  const chat=ensureVisitorChat();
  document.exitPointerLock?.();
  pressed.clear();lookPressed.clear();
- chat.start(speaker,phiVisitorKnowledge(speaker));
+  const others=VISITOR_CHAT_V2&&speaker.index>=0?phiVisitorSpeakers
+ .filter(person=>person!==speaker&&person.room===speaker.room)
+ .slice(0,1).map(phiVisitorKnowledge):[];
+chat.start(speaker,phiVisitorKnowledge(speaker),{others});
 }
 function updateVisitorChatPrompt(){
  const chat=ensureVisitorChat();
@@ -3360,7 +3000,7 @@ window.addEventListener('keydown',(e)=>{
       return;
     }
     if(visitorChat?.open){e.preventDefault();visitorChat.close();return;}
-    if(!$('lift').hidden){
+     if(!$('lift').hidden){
       e.preventDefault();closeLift();return;
     }
     if(!$('info').hidden){
@@ -3385,10 +3025,8 @@ window.addEventListener('keydown',(e)=>{
     if(!e.repeat)openLift();
     return;
   }
-  if(e.code==='KeyT'&&phiVisitorNearest){
-    e.preventDefault();if(!e.repeat)talkToNearestVisitor();return;
-  }
-  if(e.code==='KeyE'){
+  if(e.code==='KeyT'&&phiVisitorNearest){e.preventDefault();if(!e.repeat)talkToNearestVisitor();return;}
+   if(e.code==='KeyE'){
     e.preventDefault();
     if(!e.repeat){
       const exhibit=focusCandidate||currentInfoExhibit;
@@ -3803,9 +3441,7 @@ let phiFrameSerial=0;
 let phiRoomVisibilitySerial=0;
 function tick() {
   phiLiftProfiler?.tick();
-  const phiLightingT=phiLiftProfiler?.state.active?performance.now():null;
   phiLightingStudy?.update();
-  if(phiLightingT!==null)phiLiftProfiler.record('lighting-update',performance.now()-phiLightingT);
  measurePhiPerformance(performance.now());
   if (!renderer) return;
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
@@ -3816,9 +3452,7 @@ function tick() {
   if(!liftTravelling&&!doorsMoving&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
   animateLiftDoors(elapsed);
   updatePhiCabinRide(dt);
-  if(phiFrameSerial%6===0)updateVisitorChatPrompt();
-  // Mid-ride construction installs a second indicator for the hidden cabin.
-  // Update the visible departure cabin's texture right up to handover.
+  // Indicator follows the actually visible cabin, not a hidden destination.
   const visibleLiftIndicator=phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator;
   if(visibleLiftIndicator){
    const paintingProgress=phiPaintingGate?.stats();
@@ -3835,15 +3469,8 @@ function tick() {
   entranceDoor?.update(dt,rig.position);
   phiGalleryMusic?.update(rig.position);
   phiReceptionDesk?.hologram?.update(clock.elapsedTime);
-  // Before either normal or modal render, restore any culled works immediately
-  // when entering lift, travel, VR, or progressive scene-reveal states.
-  if(phiCompiledRoomStream?.active&&!liftTravelling&&welcome.hidden&&
-     ++phiRoomStreamSerial%12===0&&plan?.phi?.world){
-   const local=plan.phi.world.toLocal(rig.position.x,rig.position.z);
-   const piece=plan.phi.pieces.find(p=>local.x>=p.x&&local.x<=p.x+p.w&&
-    local.z>=p.z&&local.z<=p.z+p.h);
-   if(piece)phiCompiledRoomStream.request(piece.room);
-  }
+  // 10Hz visibility tests while walking; immediate restore on lift/modal,
+  // travel, VR, unplaced viewer (glass bridge) and staged floor reveal.
   if(phiRoomVisibilityCuller){
    const canCull=!!plan?.phi?.world&&!renderer.xr.isPresenting&&welcome.hidden&&
     !liftTravelling&&!liftArrivalOpening&&!phiArrivalMeshes.stats().active&&$('lift').hidden&&
@@ -3853,14 +3480,7 @@ function tick() {
     phiRoomVisibilityCuller.update(local,{safe:canCull});
    }
   }
-  if(!$('lift').hidden){
-   const renderAt=phiLiftProfiler?.state.active||(phiStageArrival&&phiLiftBatchMode!=='legacy')?performance.now():null;
-   phiGpuProfiler?.begin();   try{phiPostFX.render(dt,null);}   finally{phiGpuProfiler?.end();}
-   const renderMs=renderAt===null?null:performance.now()-renderAt;
-   if(phiLiftProfiler?.state.active&&renderMs!==null)phiLiftProfiler.record('render-frame',renderMs);
-   phiArrivalMeshes.renderedFrame(renderMs);
-   return;
-  }
+  if(!$('lift').hidden){phiPostFX.render(dt,null);return;}
   updateMovement(dt);
   updatePhiRideCamera();
   if(GALLERY_DEBUG)window.__phiLiftState={
@@ -3879,16 +3499,13 @@ function tick() {
     indicatorFont:(phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator)?.context.font
   };
   lastFocusCheck+=dt;mapElapsed+=dt;
+  if(phiFrameSerial%6===0)updateVisitorChatPrompt();
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
-  const renderAt=phiLiftProfiler?.state.active||(phiStageArrival&&phiLiftBatchMode!=='legacy')?performance.now():null;
-  phiGpuProfiler?.begin();  try{phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);}  finally{phiGpuProfiler?.end();}
-  const renderMs=renderAt===null?null:performance.now()-renderAt;
-  if(phiLiftProfiler?.state.active&&renderMs!==null)phiLiftProfiler.record('render-frame',renderMs);
-  phiArrivalMeshes.renderedFrame(renderMs);
+  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={disabled:true,pending:0};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
 }
@@ -3899,8 +3516,7 @@ const phiMarkerReady=Promise.race([
   document.fonts.load('42px "AlgoArt Marker"'),
   new Promise(resolve=>setTimeout(resolve,1600))
 ]).catch(error=>console.warn('Marker font fallback:',error));
-// Metadata requests and font downloading now overlap. Scene construction
-// itself still waits for phiMarkerReady, preserving the original lettering.
+// Start tower metadata loading immediately; hold actual scene construction for the font.
 load();
 
 

@@ -1,4 +1,5 @@
-// TEST ONLY: conservative, room-level visibility for paintings and sculptures.
+// LIVE: approved conservative, room-level visibility for paintings and sculptures.
+// Disable on demand with ?roomcull=0 (default is enabled).
 // All coordinates are in floor-local X/Z. Geometry, materials, artwork and
 // lighting remain exactly as they are; no approximation is rendered instead.
 // A room is hidden ONLY if a single solid wall covers the entire view cone to
@@ -45,14 +46,13 @@ export function phiRoomHiddenBehindSolidWalls(observer,pieces,walls,{margin=.09}
  if(!Array.isArray(pieces)||!pieces.length||!Array.isArray(walls)||!walls.length)return false;
  return pieces.every(piece=>walls.some(wall=>phiSolidWallCoversPiece(observer,piece,wall,{margin})));
 }
-export function createPhiRoomVisibilityCuller({pieces=[],rooms=[],walls=[],enabled=false,visibilityCells=null}={}){
+export function createPhiRoomVisibilityCuller({pieces=[],rooms=[],walls=[],enabled=false}={}){
  // This opt-in never changes renderable materials, transforms, or tree shape.
  const groups=new Map(),hidden=new Map();
  const roomPieces=(rooms||[]).map((room,index)=>
   (room?.pieces||[]).map(piece=>({...piece,room:index})));
  const roomCount=roomPieces.length;
  let checks=0,lastObserver=null,enabledNow=!!enabled,lastCulled=[],registered=0,restored=0;
- let compiledEnabled=!!visibilityCells?.enabled,compiledFastPaths=0,dynamicOcclusionChecks=0;
  const restore=()=>{
   for(const [object,wasVisible] of hidden){
    if(!object.userData?.galleryDisposed)object.visible=wasVisible;
@@ -77,21 +77,9 @@ export function createPhiRoomVisibilityCuller({pieces=[],rooms=[],walls=[],enabl
   const viewerRoom=roomContainingPoint(pieces,worldPoint);
   if(viewerRoom<0){restore();lastObserver=null;return snapshot();}
   const culled=[];
-  // Compiled PVS is an intentionally conservative subset of exact-location
-  // wall occlusion. Uncovered cells retain the original dynamic calculation.
-  const compiledHidden=compiledEnabled?visibilityCells.hiddenRooms(worldPoint,viewerRoom):null;
   for(const [room,objects] of groups){
    // A room containing the viewer must remain visible, even near a seam.
-   let occluded=false;
-   if(room!==viewerRoom){
-    if(compiledHidden?.includes(room)){occluded=true;compiledFastPaths++;}
-    else{
-     // Never weaken the established culling decision to make a benchmark fast.
-     // Rooms not provably hidden by the entire cell use the exact old test.
-     dynamicOcclusionChecks++;
-     occluded=phiRoomHiddenBehindSolidWalls(worldPoint,roomPieces[room],walls);
-    }
-   }
+   const occluded=room!==viewerRoom&&phiRoomHiddenBehindSolidWalls(worldPoint,roomPieces[room],walls);
    if(occluded)culled.push(room);
    for(const object of objects){
     if(object.userData?.galleryDisposed||!object.parent){
@@ -112,10 +100,8 @@ export function createPhiRoomVisibilityCuller({pieces=[],rooms=[],walls=[],enabl
  };
  const snapshot=()=>({enabled:enabledNow,rooms:roomCount,registered,hidden: hidden.size,
   culledRooms:[...lastCulled],visibleGroups:[...groups.keys()].filter(i=>!lastCulled.includes(i)),
-  checks,restored,viewer:lastObserver,compiledEnabled,compiledFastPaths,dynamicOcclusionChecks,
-  visibilityCells:visibilityCells?.stats?.()||null});
+  checks,restored,viewer:lastObserver});
  const setEnabled=value=>{enabledNow=!!value;if(!enabledNow)restore();};
- const setCompiledEnabled=value=>{compiledEnabled=!!value&&!!visibilityCells?.enabled;restore();};
  const clear=()=>{restore();groups.clear();registered=0;lastObserver=null;checks=0;restored=0;};
- return {register,update,restore,clear,setEnabled,setCompiledEnabled,snapshot};
+ return {register,update,restore,clear,setEnabled,snapshot};
 }

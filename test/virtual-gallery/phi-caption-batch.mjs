@@ -20,7 +20,8 @@ export function phiCaptionAtlasUv(u,v,slot,atlas){
   1-(slot.y+atlas.padding+(1-v)*atlas.sourceHeight)/atlas.height];
 }
 
-// TEST-only opt-in. Merge only painting captions, never painting surfaces,
+// Production implementation, adapted from the approved test experiment.
+// Merge only painting captions, never painting surfaces,
 // artwork textures, custom frame shaders, lighting or moving architecture.
 // The original geometry is baked with its local rotation before floor rotation.
 export function batchPhiPaintingCaptions(THREE,scene,captions,{maxTextureSize=4096}={}){

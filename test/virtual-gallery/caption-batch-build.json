@@ -1,0 +1,10 @@
+{
+  "feature": "caption-batching",
+  "enabledByDefault": true,
+  "bundleSha256": "dbe176d86fb811f9491310e5f27f38880b50a307a67b028f6e09d5f9ada0fb27",
+  "sourceRevision": "0b7935503a586b7101f6ee28578542ba12713591",
+  "helperRevision": "30b2827d72f0bec916ab7ffda6aa3cf08481da9d",
+  "buildCheck": "passed",
+  "testCheck": "passed",
+  "version": "live-caption-batch-20261101"
+}

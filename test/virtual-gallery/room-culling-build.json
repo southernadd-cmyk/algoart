@@ -1,0 +1,13 @@
+{
+  "feature": "conservative-room-culling",
+  "defaultEnabled": true,
+  "rollback": "?roomcull=0",
+  "retainedGlobalFrameAndCaptionBatching": true,
+  "rejectedRoomBatching": false,
+  "tests": "passed",
+  "bundle": "passed",
+  "bundleSha256": "51c91f6337744f6079f7a444948b825d217fe02fed4219b12f2cce4b0226bd91",
+  "version": "live-room-culling-51c91f633774",
+  "sourceRevision": "4ed98e239ae4a862621b84038ff6f215e54756b5",
+  "helperRevision": "44196512c8d0383f64c41d8b7e60f9af6c0462ba"
+}

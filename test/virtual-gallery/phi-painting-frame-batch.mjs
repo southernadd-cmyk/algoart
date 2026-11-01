@@ -1,3 +1,4 @@
+// Approved live optimisation (rollback: ?framebatch=0).
 // Only the fixed, opaque painting frames are eligible. Doors, glazing,
 // labels, moving objects and artwork remain separate.
 // Instancing keeps the actual BoxGeometry faces, normals and UVs unchanged.

@@ -11,16 +11,7 @@ export async function loadPhiDecorAsset(url){
   assetURL.pathname=assetURL.pathname.replace('/models/','/models/gltfpack/');
   url=assetURL.href;
  }
- if(!assets.has(url))assets.set(url,(interiorNames.has(url.split('/').pop())?interiorReady:Promise.resolve()).then(()=>import('three/addons/loaders/GLTFLoader.js')).then(async ({GLTFLoader})=>{
-  const loader=new GLTFLoader();
-  // Door WebP experiment uses EXT_meshopt_compression on its buffer data.
-  // The decoder is only downloaded for these explicit TEST-only assets.
-  if(url.includes('-webp.glb')){
-   const {MeshoptDecoder}=await import('three/addons/libs/meshopt_decoder.module.js');
-   loader.setMeshoptDecoder(MeshoptDecoder);
-  }
-  return loader.loadAsync(url);
- }).then(gltf=>{
+ if(!assets.has(url))assets.set(url,(interiorNames.has(url.split('/').pop())?interiorReady:Promise.resolve()).then(()=>import('three/addons/loaders/GLTFLoader.js')).then(({GLTFLoader})=>new GLTFLoader().loadAsync(url)).then(gltf=>{
   gltf.scene.traverse(o=>{if(o.geometry)o.geometry.userData.galleryPersistent=true;
    for(const m of [].concat(o.material||[])){m.userData.galleryPersistent=true;for(const v of Object.values(m))if(v?.isTexture)v.userData.galleryPersistent=true;}
   });return gltf.scene;
