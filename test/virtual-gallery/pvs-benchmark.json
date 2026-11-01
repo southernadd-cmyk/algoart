@@ -6,7 +6,7 @@
   "compiled": {
     "enabled": true,
     "cellCount": 101,
-    "compileMs": 11.28,
+    "compileMs": 6.72,
     "candidateChecks": 303,
     "safeHidden": 15,
     "hits": 0,
@@ -16,8 +16,75 @@
   "probes": 303,
   "dynamicHidden": 144,
   "precomputedHidden": 45,
-  "baselineCpuMs": 11.4,
-  "indexedCpuMs": 0.39,
+  "baselineCpuMs": 10.56,
+  "indexedCpuMs": 0.33,
+  "variants": [
+    {
+      "cellSize": 3,
+      "enabled": true,
+      "cells": 81,
+      "compileMs": 0.79,
+      "lookupCpuMs": 0.35,
+      "hidden": 34,
+      "baselineHidden": 144,
+      "coveragePercent": 23.6,
+      "lookups": 1172,
+      "misses": 40
+    },
+    {
+      "cellSize": 2.5,
+      "enabled": true,
+      "cells": 101,
+      "compileMs": 0.93,
+      "lookupCpuMs": 0.39,
+      "hidden": 45,
+      "baselineHidden": 144,
+      "coveragePercent": 31.3,
+      "lookups": 1212,
+      "misses": 0
+    },
+    {
+      "cellSize": 2,
+      "enabled": true,
+      "cells": 170,
+      "compileMs": 1.71,
+      "lookupCpuMs": 0.16,
+      "hidden": 40,
+      "baselineHidden": 144,
+      "coveragePercent": 27.8,
+      "lookups": 1016,
+      "misses": 196
+    },
+    {
+      "cellSize": 1.5,
+      "enabled": true,
+      "cells": 248,
+      "compileMs": 2.36,
+      "lookupCpuMs": 0.22,
+      "hidden": 62,
+      "baselineHidden": 144,
+      "coveragePercent": 43.1,
+      "lookups": 1020,
+      "misses": 192
+    },
+    {
+      "cellSize": 1,
+      "enabled": true,
+      "cells": 600,
+      "compileMs": 7.13,
+      "lookupCpuMs": 0.46,
+      "hidden": 79,
+      "baselineHidden": 144,
+      "coveragePercent": 54.9,
+      "lookups": 936,
+      "misses": 276
+    },
+    {
+      "cellSize": 0.75,
+      "enabled": false,
+      "reason": "cell-limit"
+    }
+  ],
   "classificationOnly": true,
   "visualBenchmarkRequired": true,
   "caveat": "CPU visibility decision timing only. Does not measure scene render, GPU stalls or user-visible frame rates."
