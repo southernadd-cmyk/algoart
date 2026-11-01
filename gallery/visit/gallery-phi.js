@@ -38,6 +38,7 @@ import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
+import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
 import {createPhiPaintingArrivalGate} from './phi-painting-arrival-gate.mjs';
 import {createPhiRoomGeometryStager} from './phi-room-geometry-stage.mjs';
@@ -98,6 +99,7 @@ let liftWasNear=false;
 let liftTravelling=false;
 let liftReturnFocus=null;
 let editionObjects=[];
+let phiRoomVisibilityCuller=null;
 let deferredGalleryJobs=[];
 let deferredGalleryRunning=false;
 let phiPaintingGate=null;
@@ -197,6 +199,10 @@ try {
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
 // Approved fixed 16 original meshes per two frames; no adaptive scheduling.
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
+// Approved conservative occlusion. ?roomcull=0 restores baseline immediately.
+// Never enable per-room geometry/texture batching on the live gallery.
+const phiRoomCullingEnabled=new URLSearchParams(location.search).get('roomcull')!=='0';
+window.__phiRoomVisibility=()=>phiRoomVisibilityCuller?.snapshot()||{enabled:false,reason:'room culling disabled or reception'};
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
 const phiStartupLoading=trackGalleryLoading(THREE.DefaultLoadingManager);
 const galleryFinish=createArchitecturalMaterials(THREE,{
@@ -1585,6 +1591,11 @@ function queuePhiFurnishings(phi,furnishings,elevation){
 }
 function constructPhiGallery(layout,studies,{viaLift=false}={}){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
+ // Only individual room-owned artworks are eligible; preserve all shared
+ // architectural batches, door openings, glazing, lighting and installations.
+ phiRoomVisibilityCuller=phiRoomCullingEnabled&&exhibitDate!==RECEPTION
+  ?createPhiRoomVisibilityCuller({enabled:true,pieces:phi.pieces,
+   rooms:phi.floor.mergedRooms,walls:phi.physical.walls}) : null;
  phiRoomLightEntries.length=0;
  const staticArchitecture=[];
  const staticBlock=(...args)=>{const mesh=block(...args);staticArchitecture.push(mesh);return mesh;};
@@ -1837,6 +1848,7 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   if(p.axis==='x')face.rotation.y=p.normal.x>0?Math.PI/2:-Math.PI/2;
   else if(p.normal.z<0)face.rotation.y=Math.PI;
   scene.add(face);
+  phiRoomVisibilityCuller?.register(p.room,face);
   const caption=new THREE.Mesh(new THREE.PlaneGeometry(1.12,.26),
     new THREE.MeshBasicMaterial({map:labelTexture(study.title,study.seed),side:THREE.FrontSide}));
   caption.position.set(p.x,centreY-height/2-.24,p.z);
@@ -1917,6 +1929,7 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
    // Pivot remains in floor-local coordinates here. The existing
    // transformPhiActiveFloor rotates it with the rest of the exhibition.
    scene.add(staged.pivot);
+   phiRoomVisibilityCuller?.register(p.room,staged.pivot);
   }else{
    // Direct date links, slow background tabs and failed preparations still
    // use the original reliable incremental construction path.
@@ -1927,9 +1940,10 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
     const location=world
      ?{...placement,...world.toWorld(p.x,p.z),yaw:world.theta}
      :placement;
-    createPortraitSculpture({
+    const sculpture=createPortraitSculpture({
      scene,study,placement:location,quality:mobileImages?'mobile':'desktop',labelTexture
     });
+    phiRoomVisibilityCuller?.register(p.room,sculpture?.pivot);
    });
   }
   artExhibits.push({study,position:new THREE.Vector3(p.x,elevation+1.5,p.z)});
@@ -2417,6 +2431,8 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   const previousYaw=yaw,previousPitch=pitch;
   if(!renderer)return;
   const editionStart=performance.now();
+  // Undo hiding before switching floors or staging the next arrival.
+  phiRoomVisibilityCuller?.clear();phiRoomVisibilityCuller=null;
   phiArrivalMeshes.restore();
   const {studies,nextPlan,nextFloor,elevation,reception}=prepared||await preparePhiEdition(date);
   phiPaintingGate?.cancel();
@@ -3084,6 +3100,7 @@ function measurePhiPerformance(now){
  }
 }
 let phiFrameSerial=0;
+let phiRoomVisibilitySerial=0;
 function tick() {
   phiLiftProfiler?.tick();
   phiLightingStudy?.update();
@@ -3118,6 +3135,17 @@ function tick() {
   entranceDoor?.update(dt,rig.position);
   phiGalleryMusic?.update(rig.position);
   phiReceptionDesk?.hologram?.update(clock.elapsedTime);
+  // 10Hz visibility tests while walking; immediate restore on lift/modal,
+  // travel, VR, unplaced viewer (glass bridge) and staged floor reveal.
+  if(phiRoomVisibilityCuller){
+   const canCull=!!plan?.phi?.world&&!renderer.xr.isPresenting&&welcome.hidden&&
+    !liftTravelling&&!liftArrivalOpening&&!phiArrivalMeshes.stats().active&&$('lift').hidden&&
+    !document.hidden;
+   if(!canCull || ++phiRoomVisibilitySerial%6===0){
+    const local=plan?.phi?.world?.toLocal(rig.position.x,rig.position.z);
+    phiRoomVisibilityCuller.update(local,{safe:canCull});
+   }
+  }
   if(!$('lift').hidden){phiPostFX.render(dt,null);return;}
   updateMovement(dt);
   if(GALLERY_DEBUG)window.__phiLiftState={
