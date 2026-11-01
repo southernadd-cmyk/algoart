@@ -134,6 +134,7 @@ let phiSpeakerEmitters=[];
 let phiFurnishingObstacles=[];
 let phiSquareObstacles=[];
 let phiRideState=null;
+let phiRideCameraActive=false;
 let phiRideHidden=[];
 let phiLiftPanelPosition=null;
 let liftCabinPosition=null;
@@ -1214,12 +1215,32 @@ function closeLift({returnToCanvas=false}={}){
 // The φ tower has one real, shared vertical shaft at world x=z=0.
 // Unlike the legacy cutscene, this temporary cabin and the player's rig move
 // continuously through the world while the neighbouring floors stay rendered.
+// Follow the moving lift cabin from outside; restore first-person on arrival.
+const phiRideCameraTarget=new THREE.Vector3();
+const phiRideCameraPosition=new THREE.Vector3();
+const phiRideCameraOffset=new THREE.Vector3(5.2,3.5,8.4);
+function updatePhiRideCamera(){
+ if(!phiRideCameraActive||renderer.xr.isPresenting||!phiMovingCabin)return;
+ phiMovingCabin.getWorldPosition(phiRideCameraTarget);
+ phiRideCameraTarget.y+=1.55;
+ phiRideCameraPosition.copy(phiRideCameraTarget).add(phiRideCameraOffset);
+ rig.updateWorldMatrix(true,false);
+ camera.position.copy(rig.worldToLocal(phiRideCameraPosition));
+ camera.lookAt(phiRideCameraTarget);
+}
+function resetPhiRideCamera(){
+ if(!phiRideCameraActive)return;
+ phiRideCameraActive=false;
+ camera.position.set(0,1.68,0);
+ camera.rotation.set(pitch,0,0);
+}
 function startPhiCabinRide(targetFloor,{elastic=false}={}){
  const startY=rig.position.y;
  const endY=targetFloor*FLOOR_SPACING;
  // Travel in the same furnished cabin, with its calendar and real doors.
  // The floor's golden-angle orientation is reached gradually during travel.
  phiMovingCabin=phiLiftCabin;
+ phiRideCameraActive=!renderer.xr.isPresenting;
  // Hide only the active exhibition, not the cached architectural tower.
  // The shaft's reserved opening allows the other floors to whizz past.
  phiRideHidden=[];
@@ -1277,6 +1298,7 @@ function updatePhiCabinRide(dt){
  }
  if(window.__phiLiftRide)window.__phiLiftRide.progress=p;
  if(p>=1&&ride.ready){
+  if(!ride.elastic)resetPhiRideCamera();
   phiRideState=null;
   if(window.__phiLiftRide)window.__phiLiftRide.status='arrived';
   ride.resolve();
@@ -1314,6 +1336,7 @@ async function waitForPhiRideStaging(){
  }
 }
 function clearPhiMovingCabin(){
+ resetPhiRideCamera();
  // Restore only still-mounted objects: departure objects are disposed on arrival.
  for(const object of phiRideHidden)if(object.parent)object.visible=true;
  phiRideHidden=[];
@@ -3526,6 +3549,7 @@ function updateMovement(dt) {
   // Look remains responsive during physical travel; only translation is locked.
   // Never snap the rig back to the old floor while its cabin is moving.
   if(liftTravelling){
+    if(phiRideCameraActive){rig.rotation.y=yaw;return;}
     if(!renderer.xr.isPresenting){
       const lookRate=1.65;
       yaw+=(Number(lookPressed.has('turnLeft'))-Number(lookPressed.has('turnRight')))*lookRate*dt;
@@ -3744,6 +3768,7 @@ function tick() {
    return;
   }
   updateMovement(dt);
+  updatePhiRideCamera();
   if(GALLERY_DEBUG)window.__phiLiftState={
     floor:currentFloor,date:exhibitDate,travelling:liftTravelling,
     x:rig.position.x,y:rig.position.y,z:rig.position.z,yaw,pitch,
