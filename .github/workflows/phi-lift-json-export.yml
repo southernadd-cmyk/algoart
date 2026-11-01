@@ -7,6 +7,8 @@ on:
       - 'tests/phi-lift-json-export.test.mjs'
       - 'tests/phi-lift-json-export-browser.mjs'
       - 'test/virtual-gallery/phi-lift-profile.mjs'
+      - 'test/virtual-gallery/phi-webgl-call-trace.mjs'
+      - 'tests/phi-webgl-call-trace.test.mjs'
       - 'test/virtual-gallery/phi-lift-benchmark-export.mjs'
       - 'test/virtual-gallery/gallery-phi.js'
       - 'test/virtual-gallery/gallery-entry-preparation.mjs'
@@ -31,7 +33,7 @@ jobs:
           node --check test/virtual-gallery/phi-lift-profile.mjs
           node --check test/virtual-gallery/phi-lift-benchmark-export.mjs
           node --check test/virtual-gallery/gallery-phi.js
-          node --test tests/phi-lift-json-export.test.mjs
+          node --test tests/phi-lift-json-export.test.mjs tests/phi-webgl-call-trace.test.mjs
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
           node --check test/virtual-gallery/gallery-phi-bundle.js
       - run: npx playwright install --with-deps chromium
