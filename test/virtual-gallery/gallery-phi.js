@@ -2,6 +2,7 @@ import {planPoolSculptures} from './phi-pool-composition.mjs';
 import {createPhiLightingStudy} from './phi-room-lighting-renderer.mjs';
 import {addPhiRoomLuminaire} from './phi-room-luminaires.mjs';
 import {createPhiFrameStudyMaterial} from './phi-frame-material.mjs';
+import {batchPhiPaintingFrames} from './phi-painting-frame-batch.mjs';
 import {applyRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs';
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {advanceLiftDoor} from './phi-lift-motion.mjs';
@@ -1897,11 +1898,13 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
  const byId=new Map(studies.map(study=>[study.id,study]));
  const loader=new THREE.TextureLoader();
  const phiCaptionCandidates=[];
+ const phiFrameCandidates=[];
  for(const p of phi.exhibition.paintings){
   const study=byId.get(p.studyId);if(!study)continue;
   const height=p.height,centreY=elevation+p.y;
-  block(p.axis==='x'?.08:p.width+.10,height+.10,p.axis==='x'?p.width+.10:.08,
+  const paintingFrame=block(p.axis==='x'?.08:p.width+.10,height+.10,p.axis==='x'?p.width+.10:.08,
     p.x-p.normal.x*.06,centreY,p.z-p.normal.z*.06,architecturalFrameStudy);
+  phiFrameCandidates.push(paintingFrame);
   const face=new THREE.Mesh(new THREE.PlaneGeometry(p.width,height),
     new THREE.MeshBasicMaterial({color:0xdedacf,side:THREE.FrontSide}));
   face.userData.phiArtOriginal=true;
@@ -1969,6 +1972,17 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   ?batchPhiPaintingCaptions(THREE,scene,phiCaptionCandidates,{maxTextureSize:renderer.capabilities.maxTextureSize})
   :{active:false,original:phiCaptionCandidates.length,batched:phiCaptionCandidates.length,
    drawCallsSaved:0,baseline:true};
+ // Opt-in test ?framebatch=1. Keep the original full-resolution artwork,
+ // approved CSM fragment shader and every door/frame outside this batch.
+ const frameBatchEnabled=new URLSearchParams(location.search).get('framebatch')==='1';
+ window.__phiFrameBatches=frameBatchEnabled
+  ?batchPhiPaintingFrames(THREE,scene,phiFrameCandidates,{
+   createMaterial:()=>createPhiFrameStudyMaterial(THREE,{
+    enabled:new URLSearchParams(location.search).get('csm')!=='0',instanced:true
+   })
+  })
+  :{active:false,original:phiFrameCandidates.length,batched:phiFrameCandidates.length,
+   savedDrawCalls:0,baseline:true};
  for(const p of phi.exhibition.sculptures){
   const study=byId.get(p.studyId);if(!study)continue;
   const placement={...p,y:elevation,yaw:0};
