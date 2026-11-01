@@ -623,6 +623,10 @@ const phiReuseLiftUploads=new URLSearchParams(location.search).get('liftreuse')=
 // Invalidate on texture.dispose() or a new texture/source version. Previous
 // WeakSet implementation could wrongly skip reuploading a disposed texture.
 const phiUploadedTextureLedger=createPhiUploadedTextureLedger();
+// Invalidate after WebGL context loss and restoration: the renderer may
+// reallocate GPU storage without changing a JavaScript Texture's version.
+renderer?.domElement?.addEventListener('webglcontextlost',()=>phiUploadedTextureLedger.invalidateAll());
+renderer?.domElement?.addEventListener('webglcontextrestored',()=>phiUploadedTextureLedger.invalidateAll());
 const phiUploadPainting=texture=>{
  renderer.initTexture(texture);phiUploadedTextureLedger.mark(texture);
 };
