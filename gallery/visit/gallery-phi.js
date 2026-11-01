@@ -122,6 +122,8 @@ let phiSquareObstacles=[];
 let phiRideState=null;
 let phiRideCameraActive=false;
 let phiRideHidden=[];
+// Keep the furnished reception visible to the exterior lift camera until arrival.
+let phiRideRetainedReception=null;
 let phiLiftPanelPosition=null;
 let liftCabinPosition=null;
 let liftDoorThreshold=null;
@@ -1006,7 +1008,7 @@ function startPhiCabinRide(targetFloor,{elastic=false}={}){
  // The shaft's reserved opening allows the other floors to whizz past.
  phiRideHidden=[];
  for(const object of editionObjects){
-  if(object===phiMovingCabin)continue;
+  if(object===phiMovingCabin||currentFloor===0)continue;
   if(object.visible){object.visible=false;phiRideHidden.push(object);}
  }
  const startTheta=phiLiftCabin.rotation.y;
@@ -1084,6 +1086,34 @@ function retirePhiDepartureCabin(){
   material.dispose();
  }
  for(const geometry of geometries)geometry.dispose();
+}
+function releasePhiRideRetainedReception(){
+ const held=phiRideRetainedReception;
+ if(!held)return;
+ phiRideRetainedReception=null;
+ // These installations own media resources; release them only after the ride.
+ held.gramophone?.dispose();
+ held.livingMonitor?.dispose();
+ const geometries=new Set(),materials=new Set(),textures=new Set();
+ for(const object of held.objects){
+  scene.remove(object);
+  object.traverse?.(child=>{
+   child.userData.galleryDisposed=true;
+   if(child.geometry&&!child.geometry.userData?.sharedVisitorAsset&&!child.geometry.userData?.galleryPersistent)
+    geometries.add(child.geometry);
+   for(const material of Array.isArray(child.material)?child.material:[child.material])
+    if(material?.isMaterial&&!material.userData.galleryPersistent)materials.add(material);
+  });
+ }
+ for(const material of materials){
+  material.userData.galleryDisposed=true;
+  for(const value of Object.values(material))if(value?.isTexture)textures.add(value);
+  material.dispose();
+ }
+ for(const texture of textures){texture.dispose();texture.userData.galleryBitmap?.close?.();}
+ for(const geometry of geometries)geometry.dispose();
+ // Resume normal shell occlusion once the detailed reception is gone.
+ phiTowerShellCache?.controller.activate(currentFloor);
 }
 // Let the per-frame staging (room boxes, sculptures) work during the early
 // ride before the synchronous construction consumes it.
@@ -1234,6 +1264,7 @@ async function travelLift(date,index){
    phiLiftProfiler?.mark('destination-ready-in-ride',{progress:phiRideState?+phiRideState.shown.toFixed(3):1,held:phiRideState?+phiRideState.held.toFixed(2):0});
    await rideDone;
    retirePhiDepartureCabin();
+   releasePhiRideRetainedReception();
    if(phiLiftCabin)phiLiftCabin.visible=true;
    if(liftCabinPosition)rig.position.copy(liftCabinPosition);
    rig.rotation.y=yaw;camera.rotation.x=pitch;
@@ -1261,6 +1292,7 @@ async function travelLift(date,index){
    const ride=phiRideState;phiRideState=null;ride?.resolve?.();
    retirePhiDepartureCabin();
   }
+  releasePhiRideRetainedReception();
   phiArtworkPreloader.clear();
   phiSculptureStage.clear();
   phiRoomGeometryStage.clear();
@@ -1527,7 +1559,7 @@ function transformPhiActiveFloor(before){
 function constructPhiTowerShell(){
  const signature=archiveDates.map(date=>date+':'+(towerFloorSignatures.get(date)?.length||0)).join('|');
  if(phiTowerShellCache?.signature===signature && phiTowerShellCache.shell.parent===scene){
-  phiTowerShellCache.controller.activate(currentFloor);
+  phiTowerShellCache.controller.activate(phiRideRetainedReception?0:currentFloor);
   updatePhiShellDiagnostics();
   return;
  }
@@ -1661,7 +1693,7 @@ function constructPhiTowerShell(){
  scene.add(shell);
  phiTowerShellCache={signature,shell,controller,chunkRoot,glassFloors,hologramFloors,shaftGeometry:glazing,
   staticBoxes,ownedMaterials:[shaftGlass,shaftEdgesMaterial]};
- controller.activate(currentFloor);
+ controller.activate(phiRideRetainedReception?0:currentFloor);
  updatePhiShellDiagnostics();
 }
 function updatePhiShellDiagnostics(){
@@ -2561,11 +2593,16 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   });
   // Dispose *all* edition-owned GPU resources, including artwork maps and
   // procedural canvas textures, but not materials/geometry shared across floors.
-  phiReceptionGramophone?.dispose();phiReceptionGramophone=null;
-  phiReceptionLivingMonitor?.dispose();phiReceptionLivingMonitor=null;
+  const retainReception=duringRide&&currentFloor===0&&date!==RECEPTION;
+  if(retainReception)phiRideRetainedReception={
+   objects:editionObjects.filter(object=>object!==phiMovingCabin),
+   gramophone:phiReceptionGramophone,livingMonitor:phiReceptionLivingMonitor
+  };
+  else{phiReceptionGramophone?.dispose();phiReceptionLivingMonitor?.dispose();}
+  phiReceptionGramophone=null;phiReceptionLivingMonitor=null;
   const staleGeometries=new Set(),staleMaterials=new Set(),staleTextures=new Set();
   for(const object of editionObjects){
-    if(duringRide&&object===phiMovingCabin)continue;
+    if(retainReception||(duringRide&&object===phiMovingCabin))continue;
     scene.remove(object);
     object.traverse?.(child=>{
       child.userData.galleryDisposed=true;
