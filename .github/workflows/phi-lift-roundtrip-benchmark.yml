@@ -1,0 +1,39 @@
+name: Benchmark lift round trip (latest floor and reception)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-lift-roundtrip-benchmark.yml'
+      - 'tests/phi-lift-roundtrip-benchmark.mjs'
+permissions:
+  contents: read
+jobs:
+  roundtrip:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build currently checked-out LIVE source locally (does not deploy)
+        run: |
+          npm run gallery:bundle:phi
+          node --check gallery/visit/gallery-phi-bundle.js
+          node --check tests/phi-lift-roundtrip-benchmark.mjs
+      - name: Serve isolated current source on runner
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-roundtrip-http.log 2>&1 &
+          sleep 2
+      - name: Benchmark G to latest date to G with and without overlapping scene construction
+        run: node tests/phi-lift-roundtrip-benchmark.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-lift-roundtrip-profiles
+          path: phi-lift-roundtrip-results/
+          if-no-files-found: ignore
