@@ -13,6 +13,11 @@ on:
       - 'tests/phi-painting-frame-batch.test.mjs'
       - 'test/virtual-gallery/phi-room-visibility-culler.mjs'
       - 'test/virtual-gallery/phi-visibility-cell-index.mjs'
+      - 'test/virtual-gallery/phi-compiled-room-package.mjs'
+      - 'test/virtual-gallery/phi-compiled-room-stream.mjs'
+      - 'automation/compile-phi-test-architecture.mjs'
+      - 'tests/phi-compiled-room-package.test.mjs'
+      - 'gallery/2026-10-20/meta.json'
       - 'tests/phi-visibility-cell-index.test.mjs'
       - 'tests/phi-visibility-cell-floor-benchmark.test.mjs'
       - 'tests/phi-room-visibility-culler.test.mjs'
@@ -41,8 +46,10 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - name: Bake archived TEST room architecture, with independent room chunks
+        run: node automation/compile-phi-test-architecture.mjs 2026-10-20
       - name: Verify GPU timing and caption geometry batching
-        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-visibility-cell-index.test.mjs tests/phi-visibility-cell-floor-benchmark.test.mjs tests/phi-room-batch-study.test.mjs tests/phi-uploaded-texture-ledger.test.mjs tests/phi-shadow-receiver-invalidation.test.mjs
+        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-visibility-cell-index.test.mjs tests/phi-compiled-room-package.test.mjs tests/phi-visibility-cell-floor-benchmark.test.mjs tests/phi-room-batch-study.test.mjs tests/phi-uploaded-texture-ledger.test.mjs tests/phi-shadow-receiver-invalidation.test.mjs
       - name: Build TEST bundle without altering live
         run: |
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
@@ -58,10 +65,13 @@ jobs:
           original_frame_batch=$(git rev-parse HEAD:test/virtual-gallery/phi-painting-frame-batch.mjs)
           original_room_culler=$(git rev-parse HEAD:test/virtual-gallery/phi-room-visibility-culler.mjs)
           original_visibility_cells=$(git rev-parse HEAD:test/virtual-gallery/phi-visibility-cell-index.mjs)
+          original_compiled_room_package=$(git rev-parse HEAD:test/virtual-gallery/phi-compiled-room-package.mjs)
+          original_compiled_room_stream=$(git rev-parse HEAD:test/virtual-gallery/phi-compiled-room-stream.mjs)
+          original_compiled_arch_builder=$(git rev-parse HEAD:automation/compile-phi-test-architecture.mjs)
           original_room_batches=$(git rev-parse HEAD:test/virtual-gallery/phi-room-batch-study.mjs)
           original_upload_ledger=$(git rev-parse HEAD:test/virtual-gallery/phi-uploaded-texture-ledger.mjs)
           original_lighting=$(git rev-parse HEAD:test/virtual-gallery/phi-room-lighting-renderer.mjs)
-          git add test/virtual-gallery/gallery-phi-bundle.js test/virtual-gallery/pvs-benchmark.json
+          git add test/virtual-gallery/gallery-phi-bundle.js test/virtual-gallery/pvs-benchmark.json test/virtual-gallery/precompiled/2026-10-20/
           if ! git diff --cached --quiet; then
             git commit -m "Build test tower GPU profiling experiment"
             # A concurrent push can occur after fetch. Retry safely: always
@@ -75,6 +85,9 @@ jobs:
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-painting-frame-batch.mjs)" == "$original_frame_batch" ]] || { echo 'Concurrent frame batch changed; refusing outdated bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-room-visibility-culler.mjs)" == "$original_room_culler" ]] || { echo 'Concurrent room culler changed; refusing outdated bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-visibility-cell-index.mjs)" == "$original_visibility_cells" ]] || { echo 'Compiled visibility module changed; refusing stale bundle'; exit 1; }
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-compiled-room-package.mjs)" == "$original_compiled_room_package" ]] || { echo 'Room geometry compiler changed; refusing stale package'; exit 1; }
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-compiled-room-stream.mjs)" == "$original_compiled_room_stream" ]] || { echo 'Room streaming code changed; refusing stale bundle'; exit 1; }
+            [[ "$(git rev-parse HEAD:automation/compile-phi-test-architecture.mjs)" == "$original_compiled_arch_builder" ]] || { echo 'Room archive builder changed; refusing stale package'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-room-batch-study.mjs)" == "$original_room_batches" ]] || { echo 'Room batch implementation changed; aborting obsolete bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-uploaded-texture-ledger.mjs)" == "$original_upload_ledger" ]] || { echo 'Texture upload ledger changed; refusing stale bundle'; exit 1; }
               if git push origin HEAD:main; then
