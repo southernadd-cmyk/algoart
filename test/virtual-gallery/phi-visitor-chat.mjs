@@ -1,5 +1,6 @@
 // Adapted from Claude's rule-based gallery visitor conversation system.
 // No model API, network requests, tracking or dialogue persistence.
+// Test edition: outdoor build questions, progressive chips, full topic catalogue.
 import {matchKnowledge,knowledgeAnswer,knowledgeTopic,FOLLOW_ON,normalise} from './phi-visitor-knowledge.mjs';
 const MATERIALS={
  marker:['marker drawing','uneven ink, pressure, wobble and dry strokes'],
