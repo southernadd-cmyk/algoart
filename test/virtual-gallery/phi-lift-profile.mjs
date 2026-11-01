@@ -74,7 +74,7 @@ export function createPhiLiftProfiler({enabled=false,now=()=>performance.now()}=
  }
  function finish(extra=null){
   if(!state.active||!state.current)return;
-  mark('doors-opening',extra);
+  mark(state.current.stages.some(s=>s.name==='failure')?'finished-after-error':'doors-fully-open',extra);
   const v=state.current,ms=v.frameMs;
   const totals={};
   for(const [name,entry] of Object.entries(v.operationTotals))
