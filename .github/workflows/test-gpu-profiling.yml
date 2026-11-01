@@ -1,4 +1,4 @@
-name: Verify and build TEST tower GPU profiling
+name: Verify and build TEST tower optimisation experiments
 on:
   push:
     branches: [main]
@@ -6,6 +6,8 @@ on:
       - 'test/virtual-gallery/gallery-phi.js'
       - 'test/virtual-gallery/phi-gpu-profiler.mjs'
       - 'tests/phi-gpu-profiler.test.mjs'
+      - 'test/virtual-gallery/phi-caption-batch.mjs'
+      - 'tests/phi-caption-batch.test.mjs'
       - '.github/workflows/test-gpu-profiling.yml'
 permissions:
   contents: write
@@ -25,8 +27,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - name: Test non-blocking GPU probe
-        run: node --test tests/phi-gpu-profiler.test.mjs
+      - name: Verify GPU timing and caption geometry batching
+        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs
       - name: Build TEST bundle without altering live
         run: |
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
