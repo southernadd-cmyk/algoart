@@ -231,7 +231,12 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
   startAfter:window.__galleryEarly?.tower
 });
-const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
+const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{
+ production:true,
+ // Test-only pass timings identify whether giant frame stalls are caused by
+ // main scene, AO, bloom, art-protection or grading work.
+ onRenderStage:phiLiftProfiler?(name,start,duration)=>phiLiftProfiler.recordOperation(name,start,duration):null
+});
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
