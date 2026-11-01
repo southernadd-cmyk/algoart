@@ -158,6 +158,14 @@ export function tiledBoxUvs(geometry,w,h,d,tileMeters=2.5){
 export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=null,renderer=null}={}){
   const textureLoader=new THREE.TextureLoader();
   const jpegLossless=globalThis.__phiJPEGLosslessBank||null;
+  // TEST-only opt-in. Only photographic *architecture* material assets change.
+  // Artwork image URLs, dimensions, shaders and geometry remain unchanged.
+  const materialWebP=new URLSearchParams(location.search).get('materialwebp')==='1';
+  const materialWebPStatus=window.__phiMaterialWebP={
+    enabled:materialWebP,attempted:[],loaded:[],fallback:[],scope:'brick and named exterior models only'
+  };
+  const webpMaterialURL=url=>materialWebP&&/Bricks055_(?:Color|NormalGL|Roughness)\\.jpg(?:$|[?#])/i.test(url)
+   ?url.replace(/\\.jpg(?=$|[?#])/i,'.webp'):url;
   // Neutral canvas maps are ready immediately; external textures must not
   // compete with the early tower download on slow/mobile connections.
   const ready=startAfter
@@ -165,7 +173,17 @@ export function createArchitecturalMaterials(THREE,{lowPower=false,startAfter=nu
     :null;
   const loader={
     load(url,onLoad,onProgress,onError){
-      const original=()=>textureLoader.load(url,onLoad,onProgress,onError);
+      const selected=webpMaterialURL(url);
+      if(selected!==url)materialWebPStatus.attempted.push(selected);
+      const original=()=>textureLoader.load(selected,texture=>{
+        if(selected!==url)materialWebPStatus.loaded.push(selected);
+        onLoad?.(texture);
+      },onProgress,error=>{
+        if(selected!==url){
+          materialWebPStatus.fallback.push(url);
+          textureLoader.load(url,onLoad,onProgress,onError);
+        }else onError?.(error);
+      });
       const target=jpegLossless?.resolve(url);
       if(target){
         const start=ready||Promise.resolve();
