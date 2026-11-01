@@ -431,13 +431,17 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
    const ride=window.__phiLiftRide;
    const steady=ride?.status==='moving'&&ride.progress>=.12&&ride.progress<=.82;
    const landed=ride?.status==='arrived'||ride?.status==='failed';
-   if(!liftTravelling||landed)resolve();
+   // GPU uploads must continue after the elastic hold begins above 82%.
+   const overlapHolding=phiRideState?.elastic&&ride?.status==='moving'&&ride.progress>.82;
+   if(!liftTravelling||landed||overlapHolding)resolve();
    else if(steady)requestAnimationFrame(resolve);
    else requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
  })
 });
+// LIVE: prepare destination floor during ride. ?liftoverlap=0 restores the prior method.
+const phiOverlapRide=new URLSearchParams(location.search).get('liftoverlap')!=='0';
 const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
  concurrency:mobileImages?2:4,
  // Preserve exact painting textures; overlap image decoding with GPU preparation.
@@ -970,7 +974,7 @@ function closeLift({returnToCanvas=false}={}){
 // The φ tower has one real, shared vertical shaft at world x=z=0.
 // Unlike the legacy cutscene, this temporary cabin and the player's rig move
 // continuously through the world while the neighbouring floors stay rendered.
-function startPhiCabinRide(targetFloor){
+function startPhiCabinRide(targetFloor,{elastic=false}={}){
  const startY=rig.position.y;
  const endY=targetFloor*FLOOR_SPACING;
  // Travel in the same furnished cabin, with its calendar and real doors.
@@ -987,7 +991,11 @@ function startPhiCabinRide(targetFloor){
  const targetTheta=targetFloor*(2*Math.PI/(PHI*PHI));
  const turn=Math.atan2(Math.sin(targetTheta-startTheta),Math.cos(targetTheta-startTheta));
  const duration=Math.max(1.8,Math.min(9,Math.abs(endY-startY)/7.0+1));
- phiRideState={startY,endY,startTheta,turn,lastTheta:startTheta,started:performance.now(),elapsed:0,duration,resolve:null};
+ // ready: destination fully built, uploaded and warmed. Until then the cabin
+ // creeps towards the landing instead of stopping with its doors shut.
+ phiRideState={startY,endY,startTheta,turn,lastTheta:startTheta,started:performance.now(),
+  last:performance.now(),elapsed:0,duration,resolve:null,ready:!elastic,elastic,held:0,shown:0,
+  departureFloor:currentFloor};
  window.__phiLiftRide={from:startY,to:endY,progress:0,status:'moving'};
  return new Promise(resolve=>{phiRideState.resolve=resolve;});
 }
@@ -996,8 +1004,27 @@ function updatePhiCabinRide(dt){
  const ride=phiRideState;
  // Navigation clamps long frames to prevent walking through walls. The lift
  // uses elapsed time so a low frame rate cannot stretch a nine-second ride.
- ride.elapsed=Math.min(ride.duration,(performance.now()-ride.started)/1000);
- const p=ride.elapsed/ride.duration;
+ // Destination construction now runs during the ride. Cap each frame's
+ // contribution so a construction/upload hitch can't make the cabin jump.
+ const now=performance.now();
+ const step=ride.elastic
+  ?Math.min(.1,Math.max(0,(now-ride.last)/1000))
+  :Math.max(0,(now-ride.last)/1000);
+ ride.last=now;
+ ride.elapsed=Math.min(ride.duration,ride.elapsed+step);
+ let p=ride.elapsed/ride.duration;
+ const HOLD=.9;
+ if(!ride.ready&&p>HOLD){
+  // Creep asymptotically towards (never reaching) the landing while waiting.
+  ride.held+=step;
+  p=HOLD+(1-HOLD)*.85*(1-Math.exp(-ride.held/2.5));
+ }else if(ride.ready&&ride.held>0){
+  // Destination became ready during the creep: ease the remainder in ~0.7s.
+  ride.settle??={from:ride.shown,t:0};
+  ride.settle.t=Math.min(1,ride.settle.t+step/.7);
+  p=ride.settle.from+(1-ride.settle.from)*ride.settle.t;
+ }
+ ride.shown=p;
  // Accelerate and brake smoothly rather than jumping to a new elevation.
  const smooth=p*p*(3-2*p);
  const y=ride.startY+(ride.endY-ride.startY)*smooth;
@@ -1009,10 +1036,41 @@ function updatePhiCabinRide(dt){
   yaw+=theta-ride.lastTheta;ride.lastTheta=theta;
  }
  if(window.__phiLiftRide)window.__phiLiftRide.progress=p;
- if(p>=1){
+ if(p>=1&&ride.ready){
   phiRideState=null;
   if(window.__phiLiftRide)window.__phiLiftRide.status='arrived';
   ride.resolve();
+ }
+}
+// Overlapped rides keep the departure cabin mounted while the destination is
+// built. Retire it once the visitor has reached the new, identical cabin.
+function retirePhiDepartureCabin(){
+ const old=phiMovingCabin;
+ if(!old||old===phiLiftCabin)return;
+ scene.remove(old);
+ const geometries=new Set(),materials=new Set();
+ old.traverse?.(child=>{
+  child.userData.galleryDisposed=true;
+  if(child.geometry&&!child.geometry.userData?.sharedVisitorAsset&&!child.geometry.userData?.galleryPersistent)
+   geometries.add(child.geometry);
+  for(const material of Array.isArray(child.material)?child.material:[child.material])
+   if(material?.isMaterial&&!material.userData.galleryPersistent)materials.add(material);
+ });
+ for(const material of materials){
+  for(const value of Object.values(material))if(value?.isTexture){value.dispose();value.userData.galleryBitmap?.close?.();}
+  material.dispose();
+ }
+ for(const geometry of geometries)geometry.dispose();
+}
+// Let the per-frame staging (room boxes, sculptures) work during the early
+// ride before the synchronous construction consumes it.
+async function waitForPhiRideStaging(){
+ const started=performance.now();
+ while(phiRideState&&performance.now()-started<4000){
+  const rooms=phiRoomGeometryStage.stats(),sculptures=phiSculptureStage.stats();
+  if(!rooms.pending&&!sculptures.queued)return;
+  if(phiRideState.elapsed/phiRideState.duration>=.5)return;
+  await new Promise(resolve=>setTimeout(resolve,16));
  }
 }
 function clearPhiMovingCabin(){
@@ -1046,6 +1104,7 @@ async function travelLift(date,index){
  if(xrRide)paintXRTravel(index);
  // The actual doors shut while the visitor remains in the cabin.
  setLiftDoors(true);
+ let rideDone=null;
  try{
   // Fetch and validate while still at the departure floor. A failed request
   // must never strand the visitor at an elevation with the old floor loaded.
@@ -1081,7 +1140,19 @@ async function travelLift(date,index){
    .filter(item=>item.study));
   while(liftDoorClosure<.998)await new Promise(resolve=>setTimeout(resolve,30));
   phiLiftProfiler?.mark('doors-closed');
-  if(plan?.phi){
+  if(plan?.phi&&phiOverlapRide&&!xrRide){
+   rideDone=startPhiCabinRide(index,{elastic:true}).then(()=>
+    phiLiftProfiler?.mark('ride-finished',{
+     paintingGPU:liftPaintingGPU.stats(),
+     roomGeometry:phiRoomGeometryStage.stats(),sculptures:phiSculptureStage.stats()
+    }));
+   await waitForPhiRideStaging();
+   phiLiftProfiler?.mark('ride-construction-start',{
+    progress:phiRideState?+(phiRideState.elapsed/phiRideState.duration).toFixed(2):1,
+    roomGeometry:phiRoomGeometryStage.stats(),sculptures:phiSculptureStage.stats()
+   });
+   await loadEdition(date,{viaLift:true,prepared,duringRide:true});
+  }else if(plan?.phi){
    await startPhiCabinRide(index);
    phiLiftProfiler?.mark('ride-finished',{paintingGPU:liftPaintingGPU.stats(),roomGeometry:phiRoomGeometryStage.stats(),sculptures:phiSculptureStage.stats()});
    // The shared shaft and the other levels remain in the 3D scene for the ride.
@@ -1092,7 +1163,7 @@ async function travelLift(date,index){
   }
   phiLiftProfiler?.mark('floor-construction-finished',{paintings:window.__phiFullEngine?.paintings,roomGeometry:phiRoomGeometryStage.stats()});
   phiRoomGeometryStage.clear();
-  clearPhiMovingCabin();
+  if(!rideDone)clearPhiMovingCabin();
   // Paintings are mandatory. The old four-second generic timeout could open
   // onto blank frames; the door interlock now checks attached GPU textures.
   phiLiftProfiler?.mark('paintings-waiting',phiPaintingGate?.stats());
@@ -1132,6 +1203,18 @@ async function travelLift(date,index){
      window.__phiFullEngine?.paintingsLoaded!==window.__phiFullEngine?.paintings)
    throw new Error('Painting readiness changed during final warm-up');
   if(GALLERY_DEBUG)window.__phiLiftPreparation={...preparation,...warmed,date,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate.stats(),paintingWaitMs:paintingReady.elapsedMs};
+  if(rideDone){
+   // Destination is fully prepared: release the cabin from its creep, then
+   // step into the destination cabin (same place, same orientation).
+   if(phiRideState)phiRideState.ready=true;
+   phiLiftProfiler?.mark('destination-ready-in-ride',{progress:phiRideState?+phiRideState.shown.toFixed(3):1,held:phiRideState?+phiRideState.held.toFixed(2):0});
+   await rideDone;
+   retirePhiDepartureCabin();
+   if(phiLiftCabin)phiLiftCabin.visible=true;
+   if(liftCabinPosition)rig.position.copy(liftCabinPosition);
+   rig.rotation.y=yaw;camera.rotation.x=pitch;
+   clearPhiMovingCabin();
+  }
   if(xrRide)closeXRLift();
   else{
    liftReturnFocus=null;canvas.focus({preventScroll:true});
@@ -1148,6 +1231,12 @@ async function travelLift(date,index){
   if(window.__phiLiftRide)window.__phiLiftRide.status='opening';
  }catch(error){
   phiLiftProfiler?.mark('failure',{message:String(error?.message||error)});
+  if(rideDone){
+   // Stop an overlapped ride where it is and drop any orphaned departure
+   // cabin; the recovery below rebuilds the departure floor and its cabin.
+   const ride=phiRideState;phiRideState=null;ride?.resolve?.();
+   retirePhiDepartureCabin();
+  }
   phiArtworkPreloader.clear();
   phiSculptureStage.clear();
   phiRoomGeometryStage.clear();
@@ -1576,7 +1665,7 @@ function queuePhiFurnishings(phi,furnishings,elevation){
   phiFurnishingObstacles=furnishings.obstacles.map(p=>({...convert(p),width:p.width*cs+p.depth*sn,depth:p.width*sn+p.depth*cs}));
  });
 }
-function constructPhiGallery(layout,studies,{viaLift=false}={}){
+function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={}){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
  // Only individual room-owned artworks are eligible; preserve all shared
  // architectural batches, door openings, glazing, lighting and installations.
@@ -2298,6 +2387,8 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
  const ink=indicator.getContext('2d');
  const tex=new THREE.CanvasTexture(indicator);tex.colorSpace=THREE.SRGBColorSpace;
  phiLiftIndicator={canvas:indicator,context:ink,texture:tex,last:null};
+ // Keep the departure indicator updating until the cabin handover.
+ cabin.userData.phiLiftIndicator=phiLiftIndicator;
  paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({height:elevation,dates:archiveDates,currentFloor}));
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
  sign.position.set(liftFace-.16,elevation+2.78,l.z);sign.rotation.y=-Math.PI/2;cabinObject(sign);
@@ -2305,7 +2396,8 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
  landingSign.position.set(l.portal.at+.13,elevation+3.55,l.z);landingSign.rotation.y=Math.PI/2;scene.add(landingSign);
  for(const side of [-1,1])cabinBlock(.16,3.1,.17,liftFace,elevation+1.55,l.z+side*1.22,join);
  cabinBlock(.19,.24,2.55,liftFace,elevation+3.15,l.z,join);
- rig.position.copy(liftCabinPosition);
+ // Do not teleport player to destination while cabin is still moving.
+ if(!duringRide)rig.position.copy(liftCabinPosition);
  arrival=null;
  if(phi.exhibition.paintings.length+phi.exhibition.sculptures.length!==studies.length)
    throw Error('Phi curator omitted artworks');
@@ -2426,7 +2518,7 @@ async function preparePhiEdition(date) {
   for(const hall of nextPlan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
   return {studies,nextPlan,nextFloor,elevation,reception};
 }
-async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={}) {
+async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duringRide=false}={}) {
   // Destination data is fully checked before any current scene is removed.
   const previousDate=exhibitDate;
   const previousPosition=rig?.position?.clone();
@@ -2449,6 +2541,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   phiReceptionLivingMonitor?.dispose();phiReceptionLivingMonitor=null;
   const staleGeometries=new Set(),staleMaterials=new Set(),staleTextures=new Set();
   for(const object of editionObjects){
+    if(duringRide&&object===phiMovingCabin)continue;
     scene.remove(object);
     object.traverse?.(child=>{
       child.userData.galleryDisposed=true;
@@ -2485,7 +2578,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   const constructionStart=performance.now();
   const sceneBeforeConstruction=new Set(scene.children);
   try{
-    constructPhiGallery(plan,studyList,{viaLift});
+    constructPhiGallery(plan,studyList,{viaLift,duringRide});
     if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);
     applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
     phiLightingStudy?.editionChanged(elevation);
@@ -2545,11 +2638,12 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
     yaw=Math.atan2(arrival.outward.x,arrival.outward.z);
     rig.rotation.y=yaw;pitch=-.16;camera.rotation.x=pitch;
   }
+  if(duringRide&&phiLiftCabin&&phiLiftCabin!==phiMovingCabin)phiLiftCabin.visible=false;
   if(viaLift&&liftCabinPosition){
-    rig.position.copy(liftCabinPosition);
+    if(!duringRide)rig.position.copy(liftCabinPosition);
     const towards=plan.phi?new THREE.Vector3(Math.cos(plan.phi.world?.theta||0),0,-Math.sin(plan.phi.world?.theta||0)):new THREE.Vector3(plan.rooms[0].x-liftCabinPosition.x,0,plan.rooms[0].z-liftCabinPosition.z);
     if(!plan.phi){yaw=Math.atan2(-towards.x,-towards.z);pitch=0;}
-    rig.rotation.y=yaw;camera.rotation.x=pitch;
+    if(!duringRide){rig.rotation.y=yaw;camera.rotation.x=pitch;}
     liftWasNear=true;liftPickerConsumed=true;welcome.hidden=true;
     liftDoorClosure=1;liftDoorTarget=1;
     for(const leaf of liftDoors)leaf.position.copy(leaf.userData.closed);
@@ -3115,12 +3209,15 @@ function tick() {
   if(!liftTravelling&&!doorsMoving&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
   animateLiftDoors(elapsed);
   updatePhiCabinRide(dt);
-  if(phiLiftIndicator){
+  // Indicator follows the actually visible cabin, not a hidden destination.
+  const visibleLiftIndicator=phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator;
+  if(visibleLiftIndicator){
    const paintingProgress=phiPaintingGate?.stats();
    const awaitingPaintings=liftTravelling&&window.__phiLiftRide?.status==='arrived'&&
     paintingProgress?.date===archiveDates[phiLiftTarget];
-   paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({
-    height:rig.position.y,spacing:FLOOR_SPACING,dates:archiveDates,currentFloor,
+   paintPhiLiftIndicator(visibleLiftIndicator,phiLiftIndicatorState({
+    height:rig.position.y,spacing:FLOOR_SPACING,dates:archiveDates,
+    currentFloor:phiRideState?.departureFloor??currentFloor,
     targetFloor:phiLiftTarget,
     phase:awaitingPaintings?'paintings':phiRideState?'moving':liftTravelling?'preparing':'idle',
     paintings:awaitingPaintings?paintingProgress:null
@@ -3154,7 +3251,8 @@ function tick() {
     worldMapLoaded:!!phiReceptionMap?.userData.modelLoaded,
     outdoorPlantsLoaded:phiOutdoorPlants.filter(o=>o.userData.modelLoaded).length,
     outdoorPlantsReplaced:phiOutdoorPlants.reduce((n,o)=>n+(o.userData.replaced||0),0),
-    indicator:phiLiftIndicator?.last,indicatorFont:phiLiftIndicator?.context.font
+    indicator:(phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator)?.last,
+    indicatorFont:(phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator)?.context.font
   };
   lastFocusCheck+=dt;mapElapsed+=dt;
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
