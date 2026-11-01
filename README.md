@@ -22,7 +22,12 @@ Five simulated drawing materials give those structures different bodies: **Marke
 
 That distinction is central to the work. The machine cannot literally possess a hand, yet the marks can retain qualities we associate with one. It is the distance between calculated arrangement and imperfect appearance that interests me. A stronger application of φ does not always make a stronger drawing.
 
-<!-- EXHIBITION_IMAGES_AFTER_MARKS -->
+| A rule in lines | A rule in gesture |
+| :--- | :--- |
+| ![Recursive Divisions, an archived portrait drawing in marker from 18 October 2026](gallery/2026-10-18/2026-10-18-portrait-01-rects-AP-20261018-01-09334.jpg) | ![Growth Systems, an archived landscape study in simulated action painting from 18 October 2026](gallery/2026-10-18/2026-10-18-action-landscape-01-organic-ACL-20261018-01-67793.jpg) |
+| *Recursive Divisions · Marker* | *Growth Systems · Action Painting* |
+
+*Both drawings belong to the [18 October 2026 edition](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-18/). The other materials can be explored in the daily archive.*
 
 ## The exhibition is part of the piece
 
@@ -32,13 +37,20 @@ Room shapes are cut using golden-section relationships, then reconciled with the
 
 Some portrait drawings become sculptures, their source geometry reinterpreted as layered volumes, ribbons or strata rather than simply printed onto an object. The square outside, the reception, the lift and the rooms are part of the experience; not every piece of furniture or surface is claimed to arise from φ.
 
-<!-- EXHIBITION_IMAGES_AFTER_ARCHITECTURE -->
+![The actual PROPORTION PIECE virtual exhibition tower, viewed from outside, with the architecture rising around its dated galleries](docs/images/exhibition-tower-2026-11-01.jpg)
+
+*The growing exhibition tower. Fresh screenshot from the current Three.js gallery, captured 1 November 2026.*
 
 In reception, a **Translation Area** extends drawings into moving images using TouchDesigner, while a **gramophone** compares moments in the written score with moments in recorded time. Mozart and Debussy offer different ways of hearing — or failing to hear — a proposed proportion. Nothing is inserted into the recordings to make the mathematics audible. The listener decides what matters.
 
 The other visitors are not just scale figures. They can be spoken to. Their rule-based conversations are grounded in works on the floor, their own observations and disagreements, and a wider body of knowledge about art, proportion and its myths. The **More topics…** chip makes that knowledge discoverable. Their voices are part of the exhibition, but they are not generative language models.
 
-<!-- EXHIBITION_IMAGES_AFTER_GALLERY -->
+| Reception | A listening experiment |
+| :--- | :--- |
+| ![The virtual exhibition's reception, showing its architectural furnishings and illuminated digital tower](docs/images/exhibition-reception-2026-11-01.jpg) | ![The gramophone installation in the virtual exhibition's reception](docs/images/exhibition-gramophone-2026-11-01.jpg) |
+| *An entrance to the accumulating archive.* | *The gramophone asks where proportion falls in music.* |
+
+*Both are documentary screenshots captured from the live exhibition code on 1 November 2026, not illustrative reconstructions.*
 
 ## The visitor can change the work
 
