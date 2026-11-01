@@ -43,6 +43,7 @@ import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
 import {compilePhiVisibilityCells} from './phi-visibility-cell-index.mjs';
 import {preparePhiCompiledRoomStream} from './phi-compiled-room-stream.mjs';
+import {decodePhiRoomPackage} from './phi-compiled-room-package.mjs';
 import {createPhiRoomBatchStudy,packPhiRoomPaintingGroups} from './phi-room-batch-study.mjs';
 import {installPhiComposerPassProfiler} from './phi-postfx-pass-profiler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
@@ -1914,7 +1915,14 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   ?createPhiRoomBatchStudy(THREE,scene,phi.floor.mergedRooms.length,{enabled:true}):null;
  phiRoomLightEntries.length=0;
  const staticArchitecture=[];
- const staticBlock=(...args)=>{const mesh=block(...args);staticArchitecture.push(mesh);return mesh;};
+ // Precompiled shared walls, brick veneers, cornices and plinths replace ALL
+ // equivalent dynamic staticBlock calls. Room-owned surfaces have their own
+ // independent stream. In case of a missing package the old path is unchanged.
+ const compiledShared=phiCompiledRoomStream?.active?phiCompiledRoomStream.getShared():null;
+ const staticBlock=(...args)=>{
+  if(compiledShared)return null;
+  const mesh=block(...args);staticArchitecture.push(mesh);return mesh;
+ };
  // Room surfaces only in this first pilot. Shared walls, trims, portals,
  // lights, artwork and shadow settings remain untouched.
  const compiledRooms=phiCompiledRoomStream?.active&&!phiRoomBatchStudy?new Map():null;
@@ -2062,6 +2070,15 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   }
  }
  window.__phiArchitectureBatches=batchPhiStaticArchitecture(THREE,scene,staticArchitecture);
+ if(compiledShared){
+  const root=new THREE.Group();
+  root.name='phi-precompiled-shared-architecture';
+  for(const mesh of decodePhiRoomPackage(THREE,compiledShared,{
+    plaster,brick:galleryFinish.exteriorBrick,trims:join,plinth:galleryFinish.plinth
+  }))root.add(mesh);
+  scene.add(root);
+ }
+
  if(compiledRooms){
   for(let room=0;room<phi.floor.mergedRooms.length;room++){
    const records=compiledRooms.get(room)||[];
