@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildVisitorKnowledge,answerVisitor,resolveWork,describeWork,visitorSuggestions} from './phi-visitor-chat.mjs';
-import {KNOWLEDGE,matchKnowledge} from './phi-visitor-knowledge.mjs';
+import {buildVisitorKnowledge,answerVisitor,resolveWork,describeWork,visitorSuggestions,visitorTopicCatalog} from './phi-visitor-chat.mjs';
+import {KNOWLEDGE,matchKnowledge,normalise} from './phi-visitor-knowledge.mjs';
 
 const works=[
  {title:'Connected Fields — Study 01',material:'marker',engine:'network',palette:'mono',phi:86,seed:'AA-1',size:3},
@@ -57,4 +57,30 @@ test('φ and art knowledge answers, follows on and stays honest about myths',()=
 });
 test('every knowledge topic is reachable from its own keys',()=>{
  for(const topic of KNOWLEDGE)assert.equal(matchKnowledge(topic.keys[0])?.topic.id,topic.id,topic.id);
+});
+
+test('outdoor reception visitor offers tower and daily floor construction',()=>{
+ const outside=buildVisitorKnowledge({date:'__phi_reception__',reception:true,
+  visitorIndex:100,roomIndex:-1,works:[],floorCount:27});
+ assert.equal(outside.outside,true);
+ assert.deepEqual(visitorSuggestions(outside).slice(0,2),
+  ['How was the tower built?', "How does a day's art become a floor?"]);
+ assert.match(answerVisitor('How was the tower built?',outside,{}).text,/golden-section|floor plan/i);
+ assert.match(answerVisitor("How does a day's art become a floor?",outside,{}).text,/seed|archive/i);
+ assert.match(answerVisitor('What determines the rooms?',outside,{}).text,/curation|material|group/i);
+ assert.match(answerVisitor('How are paintings hung?',outside,{}).text,/wall|doorway/i);
+ assert.match(answerVisitor('How do drawings become sculptures?',outside,{}).text,/portrait/i);
+});
+test('all knowledge has a discoverable chip and follow-up chips change',()=>{
+ const topics=visitorTopicCatalog().flatMap(group=>group.topics);
+ assert.equal(new Set(topics.map(t=>t.id)).size,KNOWLEDGE.length);
+ for(const t of topics)
+  assert.equal(matchKnowledge(normalise(t.question))?.topic.id,t.id,t.question);
+ const outside=buildVisitorKnowledge({reception:true,roomIndex:-1,visitorIndex:100,works:[]});
+ const one=answerVisitor('How was the tower built?',outside,{});
+ assert.equal(one.state.topic,'tower-build');
+ assert.ok(visitorSuggestions(outside,one.state).includes('Tell me more'));
+ const two=answerVisitor('Tell me more',outside,one.state);
+ assert.notEqual(two.text,one.text);
+ assert.notDeepEqual(visitorSuggestions(outside,two.state),visitorSuggestions(outside));
 });
