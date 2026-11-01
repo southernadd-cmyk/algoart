@@ -3222,10 +3222,18 @@ function virtualVisitorAtCurrentRoom(){
  return {index:-1,x:rig.position.x,z:rig.position.z,y:rig.position.y,
   local,room,seat:false,remote:true};
 }
-function talkToNearestVisitor({allowAnywhere=false}={}){
+function talkToNearestVisitor({allowAnywhere=false,visitor=null}={}){
  if(liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting||!plan?.phi)return;
- const speaker=phiVisitorNearest||(allowAnywhere?virtualVisitorAtCurrentRoom():null);
+ // Reception conversations belong to the actual seated visitor, not a
+ // synthetic visitor at the player's location.
+ const actual=visitor||phiVisitorNearest||(currentFloor===0&&phiVisitorSpeakers.length
+  ?phiVisitorSpeakers.find(person=>person.seat)||phiVisitorSpeakers[0]:null);
+ let speaker=actual||(allowAnywhere?virtualVisitorAtCurrentRoom():null);
  if(!speaker)return;
+ // A click or toolbar conversation must not close simply because the visitor
+ // is more than 3.4m away when the panel first appears.
+ if(allowAnywhere&&Math.hypot(rig.position.x-speaker.x,rig.position.z-speaker.z)>3.4)
+  speaker={...speaker,remote:true};
  const chat=ensureVisitorChat();
  document.exitPointerLock?.();
  pressed.clear();lookPressed.clear();
@@ -3235,7 +3243,11 @@ function updateVisitorChatPrompt(){
  const chat=ensureVisitorChat();
  const blocked=liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting;
  const launcher=$('openVisitorChat');
- if(launcher)launcher.disabled=blocked||!plan?.phi;
+ if(launcher){
+  launcher.disabled=blocked||!plan?.phi;
+  const label=currentFloor===0?'Talk · Reception visitor':'Chat · Visitor';
+  if(launcher.textContent!==label)launcher.textContent=label;
+ }
  if(blocked&&chat.open)chat.close();
  let nearest=null,best=2.4;
  if(!blocked)for(const speaker of phiVisitorSpeakers){
@@ -3243,7 +3255,7 @@ function updateVisitorChatPrompt(){
   const distance=Math.hypot(rig.position.x-speaker.x,rig.position.z-speaker.z);
   if(distance<best){best=distance;nearest=speaker;}
  }
- if(chat.open&&chat.speaker&&
+ if(chat.open&&chat.speaker&&!chat.speaker.remote&&
   Math.hypot(rig.position.x-chat.speaker.x,rig.position.z-chat.speaker.z)>3.4)chat.close();
  if(nearest!==phiVisitorNearest){
   phiVisitorNearest=nearest;
@@ -3384,6 +3396,39 @@ window.addEventListener('mousemove',(e)=>{
   yaw -= e.movementX*.0025;
   pitch=Math.max(-1.35,Math.min(1.35,pitch-e.movementY*.0023));
 });
+// Click the rendered visitor directly (also works with mobile taps).
+// Project the person rather than raycasting through shared room geometry.
+let phiVisitorTapStart=null;
+canvas.addEventListener('pointerdown',event=>{
+ phiVisitorTapStart={x:event.clientX,y:event.clientY};
+},{capture:true});
+canvas.addEventListener('click',event=>{
+ if(liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting||
+  !phiVisitorSpeakers.length||visitorChat?.open)return;
+ if(phiVisitorTapStart&&Math.hypot(event.clientX-phiVisitorTapStart.x,
+  event.clientY-phiVisitorTapStart.y)>16)return;
+ const rect=canvas.getBoundingClientRect();
+ if(!rect.width||!rect.height)return;
+ const px=document.pointerLockElement===canvas?rect.left+rect.width/2:event.clientX;
+ const py=document.pointerLockElement===canvas?rect.top+rect.height/2:event.clientY;
+ camera.updateMatrixWorld(true);
+ let selected=null,best=.09;
+ for(const person of phiVisitorSpeakers){
+  if(Math.abs(rig.position.y-person.y)>2||
+   Math.hypot(rig.position.x-person.x,rig.position.z-person.z)>5)continue;
+  const point=new THREE.Vector3(person.x,
+   person.y+(person.seat?1.05:1.35),person.z).project(camera);
+  if(point.z<-1||point.z>1)continue;
+  const x=rect.left+(point.x+1)*rect.width/2;
+  const y=rect.top+(1-point.y)*rect.height/2;
+  const miss=Math.hypot(px-x,py-y)/Math.min(rect.width,rect.height);
+  if(miss<best){selected=person;best=miss;}
+ }
+ if(!selected)return;
+ event.preventDefault();
+ event.stopImmediatePropagation();
+ talkToNearestVisitor({allowAnywhere:true,visitor:selected});
+},{capture:true});
 canvas.addEventListener('click',(event)=>{
   // Synthetic keyboard clicks are not consent to pointer lock.
   if (event.detail>0 && renderer && welcome.hidden && !renderer.xr.isPresenting && matchMedia('(pointer:fine)').matches && document.pointerLockElement!==canvas) canvas.requestPointerLock?.().catch?.(()=>{});
