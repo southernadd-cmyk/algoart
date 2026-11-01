@@ -189,7 +189,7 @@ export function renderPhiFurniture(THREE,parent,plan,{concrete,timber},elevation
  renderVisitors(THREE,root,{benches:[],people:plan.people.map(p=>({...p,y:elevation}))});
  return root;
 }
-export function addPhiFrontage(THREE,root,{concrete,timber,metal,defer}){
+export function addPhiFrontage(THREE,root,{concrete,timber,metal,defer,onVisitor}){
  addPhiPubSign(THREE,root);
  const box=(w,h,d,x,y,z,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);root.add(m);return m;};
  box(2.65,.06,.65,0,-.05,.22,concrete);
@@ -202,7 +202,11 @@ export function addPhiFrontage(THREE,root,{concrete,timber,metal,defer}){
  if(globalThis.__phiReceptionTestRefresh)addPhiOfficeFrontage(THREE,root,oldFixtures);
  const benches=[-1,1].map(side=>({x:side*5.2,z:3.1,rotation:Math.atan2(-side*5.2,-3.1)}));
  const b=benches[0];renderPhiFurniture(THREE,root,{benches,people:[]},{concrete,timber});
- const people=()=>renderVisitors(THREE,root,{benches:[],people:[{...b,y:0,yaw:b.rotation,bodyType:'female',variant:2,scale:1,pose:4,seat:true}]});
+ const people=()=>{
+  const person={...b,y:0,yaw:b.rotation,bodyType:'female',variant:2,scale:1,pose:4,seat:true};
+  renderVisitors(THREE,root,{benches:[],people:[person]});
+  onVisitor?.(person,root);
+ };
  if(defer)defer.push(people);else people();
  return {benches:2,visitors:1};
 }
