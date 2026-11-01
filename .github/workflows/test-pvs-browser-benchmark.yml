@@ -1,0 +1,59 @@
+name: TEST compiled visibility cells browser A/B
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/test-pvs-browser-benchmark.yml'
+      - 'tests/phi-visibility-cell-browser-benchmark.mjs'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: test-phi-pvs-browser-benchmark
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-pvs-http.log 2>&1 &
+      - name: Measure original and compiled PVS on same real floor
+        run: node tests/phi-visibility-cell-browser-benchmark.mjs
+      - name: Publish test-only benchmark without stale overwrite
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          source_sha=$(git rev-parse HEAD:test/virtual-gallery/gallery-phi.js)
+          culler_sha=$(git rev-parse HEAD:test/virtual-gallery/phi-room-visibility-culler.mjs)
+          pvs_sha=$(git rev-parse HEAD:test/virtual-gallery/phi-visibility-cell-index.mjs)
+          bundle_sha=$(git rev-parse HEAD:test/virtual-gallery/gallery-phi-bundle.js)
+          git add test/virtual-gallery/pvs-browser-benchmark.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record PVS test-tower browser A/B benchmark"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/gallery-phi.js)" == "$source_sha" ]] || { echo 'Stale TEST source'; exit 1; }
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-room-visibility-culler.mjs)" == "$culler_sha" ]] || { echo 'Stale TEST culler'; exit 1; }
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-visibility-cell-index.mjs)" == "$pvs_sha" ]] || { echo 'Stale visibility compiler'; exit 1; }
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/gallery-phi-bundle.js)" == "$bundle_sha" ]] || { echo 'Stale TEST bundle'; exit 1; }
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 2
+          done
+          echo 'Could not publish benchmark safely'
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-pvs-browser-benchmark
+          path: test/virtual-gallery/pvs-browser-benchmark.json
+          if-no-files-found: ignore
