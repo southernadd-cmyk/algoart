@@ -1,0 +1,131 @@
+{
+  "date": "2026-10-20",
+  "status": "complete",
+  "environment": "GitHub Actions Ubuntu Chromium SwiftShader software WebGL",
+  "sameScene": true,
+  "methods": "ABBA PVS fast path versus original wall tests, two room viewpoints, unchanged full post-FX",
+  "spots": [
+    {
+      "room": 0,
+      "hidden": 0
+    },
+    {
+      "room": 1,
+      "hidden": 0
+    },
+    {
+      "room": 2,
+      "hidden": 6
+    },
+    {
+      "room": 3,
+      "hidden": 7
+    }
+  ],
+  "samples": [
+    {
+      "room": 3,
+      "originalHidden": 7,
+      "modes": [
+        {
+          "compiled": false,
+          "count": 1,
+          "renderP50Ms": 3851.1,
+          "renderP95Ms": 3851.1,
+          "sceneCalls": 552,
+          "sceneTriangles": 142730,
+          "hidden": 7
+        },
+        {
+          "compiled": true,
+          "count": 3,
+          "renderP50Ms": 13.3,
+          "renderP95Ms": 13.3,
+          "sceneCalls": 552,
+          "sceneTriangles": 142730,
+          "hidden": 7
+        },
+        {
+          "compiled": true,
+          "count": 0,
+          "renderP50Ms": null,
+          "renderP95Ms": null,
+          "sceneCalls": null,
+          "sceneTriangles": null,
+          "hidden": null
+        },
+        {
+          "compiled": false,
+          "count": 0,
+          "renderP50Ms": null,
+          "renderP95Ms": null,
+          "sceneCalls": null,
+          "sceneTriangles": null,
+          "hidden": null
+        }
+      ]
+    },
+    {
+      "room": 2,
+      "originalHidden": 6,
+      "modes": [
+        {
+          "compiled": false,
+          "count": 1,
+          "renderP50Ms": 5628.7,
+          "renderP95Ms": 5628.7,
+          "sceneCalls": 1241,
+          "sceneTriangles": 214142,
+          "hidden": 6
+        },
+        {
+          "compiled": true,
+          "count": 2,
+          "renderP50Ms": 39.7,
+          "renderP95Ms": 39.7,
+          "sceneCalls": 1241,
+          "sceneTriangles": 214142,
+          "hidden": 6
+        },
+        {
+          "compiled": true,
+          "count": 1,
+          "renderP50Ms": 2447.7,
+          "renderP95Ms": 2447.7,
+          "sceneCalls": 1241,
+          "sceneTriangles": 214142,
+          "hidden": 6
+        },
+        {
+          "compiled": false,
+          "count": 1,
+          "renderP50Ms": 30.5,
+          "renderP95Ms": 30.5,
+          "sceneCalls": 1241,
+          "sceneTriangles": 214142,
+          "hidden": 6
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "baseline": {
+      "samples": 3,
+      "p50MeanMs": 3170.1,
+      "p95MeanMs": 3170.1,
+      "sceneCalls": 1011.33,
+      "sceneTriangles": 190338,
+      "hidden": 6.33
+    },
+    "compiled": {
+      "samples": 6,
+      "p50MeanMs": 833.57,
+      "p95MeanMs": 833.57,
+      "sceneCalls": 1011.33,
+      "sceneTriangles": 190338,
+      "hidden": 6.33
+    }
+  },
+  "errors": [],
+  "caveat": "Software WebGL, short samples, not device FPS. Precomputed PVS and original culler must hide exactly the same objects."
+}
