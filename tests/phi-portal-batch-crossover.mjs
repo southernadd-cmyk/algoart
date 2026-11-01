@@ -149,9 +149,17 @@ try{
   sourceOptionsMatch:Object.values(groups).every(g=>{
    const all=[...g.control,...g.batched];
    const pick=key=>all.every(r=>JSON.stringify(r[key])===JSON.stringify(all[0]?.[key]));
+   // One merged draw call replaces N static, still-shadow-casting meshes.
+   // The count of caster OBJECTS must fall by savedDrawCalls, even though
+   // their original triangles and shadow coverage remain identical.
+   const normalCasters=g.control[0]?.light?.casters;
+   const shadowCount=g.control[0]?.light?.shadowMaps;
    return pick('artwork')&&pick('postfx')&&pick('frameBatches')&&pick('captionBatches')&&
-    all.every(r=>r.light?.casters===all[0].light?.casters&&
-     r.light?.shadowMaps===all[0].light?.shadowMaps);
+    Number.isFinite(normalCasters)&&
+    all.every(r=>r.light?.shadowMaps===shadowCount&&
+     r.light?.casters===(r.portalbatch
+      ?normalCasters-r.portal.savedDrawCalls
+      :normalCasters));
   })
  };
  await mkdir('phi-portal-batch-crossover',{recursive:true});
