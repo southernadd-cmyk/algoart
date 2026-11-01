@@ -7,14 +7,14 @@
     {
       "mode": "original",
       "status": "complete",
-      "startupMs": 6065,
+      "startupMs": 5089,
       "rooms": 4,
       "captures": [
         {
           "room": 0,
-          "ms": 2650.5,
-          "calls": 75,
-          "triangles": 62886,
+          "ms": 1238.3999999999942,
+          "calls": 74,
+          "triangles": 62874,
           "hidden": 0,
           "imageHash": "a559d8d74403ea2675f6142ede77b87d837bc322908e69a8a7d304fd1f0cfd43",
           "imageBytes": 786676,
@@ -24,7 +24,7 @@
         },
         {
           "room": 3,
-          "ms": 3022.7000000000116,
+          "ms": 1848.7999999999884,
           "calls": 244,
           "triangles": 88280,
           "hidden": 0,
@@ -94,14 +94,14 @@
     {
       "mode": "precompiled",
       "status": "complete",
-      "startupMs": 5877,
+      "startupMs": 4695,
       "rooms": 4,
       "captures": [
         {
           "room": 0,
-          "ms": 1073.300000000003,
-          "calls": 76,
-          "triangles": 62826,
+          "ms": 2891.100000000035,
+          "calls": 77,
+          "triangles": 62838,
           "hidden": 0,
           "imageHash": "4e562669c1b17652333493cf7fcf172d51cc525b7d7e9888aae9e3bac4318232",
           "imageBytes": 786918,
@@ -130,7 +130,7 @@
         },
         {
           "room": 3,
-          "ms": 2121.2000000000116,
+          "ms": 1531.2000000000116,
           "calls": 247,
           "triangles": 88220,
           "hidden": 0,
@@ -238,12 +238,12 @@
     {
       "mode": "streamed",
       "status": "complete",
-      "startupMs": 5849,
+      "startupMs": 4829,
       "rooms": 4,
       "captures": [
         {
           "room": 0,
-          "ms": 3878.100000000006,
+          "ms": 2544.7000000000116,
           "calls": 77,
           "triangles": 62742,
           "hidden": 0,
@@ -275,7 +275,7 @@
         },
         {
           "room": 3,
-          "ms": 2761.5,
+          "ms": 931.2000000000116,
           "calls": 247,
           "triangles": 88124,
           "hidden": 0,
@@ -389,10 +389,10 @@
     {
       "room": 0,
       "exactPng": false,
-      "originalCalls": 75,
-      "compiledCalls": 76,
-      "originalTriangles": 62886,
-      "compiledTriangles": 62826
+      "originalCalls": 74,
+      "compiledCalls": 77,
+      "originalTriangles": 62874,
+      "compiledTriangles": 62838
     },
     {
       "room": 3,
