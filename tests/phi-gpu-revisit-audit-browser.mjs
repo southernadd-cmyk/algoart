@@ -12,13 +12,23 @@ const browser=await chromium.launch({headless:true,args:[
  '--no-sandbox','--enable-webgl','--use-angle=swiftshader',
  '--enable-unsafe-swiftshader','--disable-dev-shm-usage'
 ]});
-const results=[],errors=[];
+const results=[],errors=[],resourceWarnings=[];
+const reuseUploads=process.env.PHI_GPU_REVISIT_REUSE==='1';
 let startup=null;
 const context=await browser.newContext({viewport:{width:1200,height:760},
  deviceScaleFactor:1,locale:'en-GB',timezoneId:'Europe/London'});
 const page=await context.newPage();
 page.on('pageerror',error=>errors.push(String(error)));
-page.on('console',message=>{if(message.type()==='error')errors.push('console: '+message.text().slice(0,200));});
+page.on('console',message=>{
+ if(message.type()!=='error')return;
+ const line=message.text();
+ if(line.includes('Failed to load resource: the server responded with a status of 404'))
+  resourceWarnings.push('optional missing asset: '+line.slice(0,180));
+ else errors.push('console: '+line.slice(0,200));
+});
+page.on('response',response=>{
+ if(response.status()===404)resourceWarnings.push('404 '+response.url());
+});
 await page.addInitScript(()=>{
  const b=window.__gpuRevisitFrames={active:false,frames:[],last:null};
  function track(t){
@@ -31,7 +41,7 @@ try{
  const url=new URL(base);
  for(const [name,value] of Object.entries({
   debug:1,liftprofile:1,gpuvisitbench:1,liftstage:1,liftbatch:16,
-  captionbatch:1,framebatch:1,roomcull:1,roombatch:0
+  captionbatch:1,framebatch:1,roomcull:1,roombatch:0,liftreuse:reuseUploads?1:0
  }))url.searchParams.set(name,String(value));
  const started=Date.now();
  await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:60000});
@@ -131,11 +141,12 @@ try{
  await mkdir('phi-gpu-revisit-audit',{recursive:true});
  const report={environment:'GitHub Actions Chromium SwiftShader software WebGL',
   method:'Three consecutive lift rides 20 Oct → 30 Oct → 20 Oct in one browser; painting interlock retained',
+  reuseUploads,resourceWarnings,
   limitations:'renderer.info counts are live resources, not GPU byte usage; explicit upload counts exclude implicit uploads; software rendering is not representative GPU FPS.',
   startup,results,errors};
  await writeFile('phi-gpu-revisit-audit/results.json',JSON.stringify(report,null,2));
  console.log('GPU_REVISIT_SUMMARY '+JSON.stringify({
-  visited:results.length,dates:destinations,errors,
+  visited:results.length,dates:destinations,reuseUploads,errors,resourceWarnings,
   memory:results.map(r=>({date:r.date,geometries:r.resourcesAfter?.geometries,
    textures:r.resourcesAfter?.textures,programs:r.resourcesAfter?.shaderPrograms,
    prepared:r.resourcesAfter?.paintingGPU?.prepared,uploaded:r.resourcesAfter?.paintingGPU?.uploaded})),
