@@ -9,6 +9,7 @@
 //   • explanations for all of it, from proof trees and graph paths
 import {coreAnswer,explain as explainV1,intent as intentV1,describeWork,resolveWork,TOPIC_LABELS} from './chat-v1-adapter.mjs';
 import {matchKnowledge,normalise} from '../phi-visitor-knowledge.mjs';
+import {visitorTopicCatalog} from '../phi-visitor-chat.mjs';
 import {infer,observations,opinions,favouriteFact,proof,readSettings,RULES} from './rules.mjs';
 import {buildGraph,findNodes,findPath,edgeSentence,neighbours} from './graph.mjs';
 import {GRAMMAR,expand,rng} from './nlg.mjs';
@@ -300,6 +301,26 @@ export function overhear(a,b){
  return lines;
 }
 
+// Discovery uses the same knowledge catalogue as v1; no duplicate facts.
+export const MORE_TOPICS_LABEL='More topics…';
+export const TOPICS_PER_PAGE=4;
+export function topicGroupsFor(k,state={}){
+ const here=k.outside
+  ?['How was the tower built?', "How does a day's art become a floor?",'What determines the rooms?','How do drawings become sculptures?']
+  :k.reception
+   ?['What is this place?','What are the screens?','What is the gramophone?','Is this AI?']
+   :['What is this room called?','Which works are here?','Tell me about this one','Is the golden ratio enough?'];
+ const talk=['What have you noticed?',"What's your favourite?",'Where did you come from?','How is this connected to Fibonacci?'];
+ if((k.works||[]).length>=2)talk.push('Compare the first and the last');
+ if(state.lastRoute)talk.push('Why?');
+ const topics=questions=>questions.map(question=>({id:question,question}));
+ return [
+  {category:'Here in the gallery',topics:topics(here)},
+  {category:'Talking to visitors',topics:topics(talk)},
+  ...visitorTopicCatalog()
+ ];
+}
+
 export function suggestionsFor(k,state={}){
  if(state.awaiting==='yesno'||state.awaiting==='obs'||state.awaiting==='leaving')return ['Yes','No'];
  if(state.awaiting==='phiOrMaterial')return ['The φ','The material','Both'];
@@ -345,6 +366,9 @@ export const V2_CSS=`.visitor-chat-v2 .visitor-chat-head{display:flex;align-item
 .visitor-chat-v2 .visitor-chat-log{flex:1 1 auto;min-height:96px}
 .visitor-chat-v2 .visitor-chat-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-content:start;max-height:none;min-height:144px;overflow:visible;flex:0 0 auto;padding:12px 15px}
 .visitor-chat-v2 .visitor-chat-chips button{width:100%;min-width:0;min-height:44px;white-space:normal;overflow-wrap:anywhere;font:12px/1.35 Arial,Helvetica,sans-serif;padding:9px 10px}
+.visitor-chat-v2 .visitor-chat-chips .visitor-chat-more{border-color:#8d8066;font-weight:600}
+.visitor-chat-v2 .visitor-chat-topic-heading{grid-column:1/-1;font:12px/1.3 Arial,Helvetica,sans-serif;color:#4b594f;padding:2px 0}
+.visitor-chat-v2 .visitor-chat-chips.visitor-chat-topics-open{gap:6px}
 @media(max-width:620px){
  .visitor-chat.visitor-chat-v2{max-height:min(90dvh,740px);bottom:max(12px,env(safe-area-inset-bottom,0px))}
  .visitor-chat-v2 .visitor-chat-chips{gap:7px;padding:10px 12px;min-height:140px}
@@ -375,6 +399,7 @@ export function createVisitorChatUI({onClose,showReasoning=/[?&]chatdebug=1\b/.t
  toggle.checked=showReasoning;panel.classList.toggle('show-reasoning',showReasoning);
  toggle.addEventListener('change',()=>panel.classList.toggle('show-reasoning',toggle.checked));
  let knowledge=null,speaker=null,state={};
+ let topicView=null,topicPage=0;
  const add=(who,value,trace)=>{
   const p=document.createElement('p');p.className='visitor-chat-'+who;p.textContent=value;log.append(p);
   if(trace){const pre=document.createElement('pre');pre.className='visitor-chat-trace';pre.textContent=trace;log.append(pre);}
@@ -382,10 +407,41 @@ export function createVisitorChatUI({onClose,showReasoning=/[?&]chatdebug=1\b/.t
  };
  const renderChips=()=>{
   chips.replaceChildren();
-  for(const label of suggestionsFor(knowledge,state)){
+  chips.classList.toggle('visitor-chat-topics-open',topicView!==null);
+  const button=(label,click,className='')=>{
    const b=document.createElement('button');b.type='button';b.textContent=label;
-   b.addEventListener('click',()=>{ask(label);input.focus({preventScroll:true});});chips.append(b);
+   if(className)b.className=className;
+   b.addEventListener('click',click);chips.append(b);return b;
+  };
+  const show=(view,page=0)=>{
+   topicView=view;topicPage=page;renderChips();
+   chips.querySelector('button')?.focus({preventScroll:true});
+  };
+  if(topicView===null){
+   for(const label of suggestionsFor(knowledge,state))
+    button(label,()=>{ask(label);input.focus({preventScroll:true});});
+   button(MORE_TOPICS_LABEL,()=>show('categories'), 'visitor-chat-more');
+   return;
   }
+  const groups=topicGroupsFor(knowledge,state);
+  if(topicView==='categories'){
+   for(const group of groups)
+    button(group.category+' ('+group.topics.length+')',()=>show(group.category));
+   button('← Back to chat',()=>show(null),'visitor-chat-more');
+   return;
+  }
+  const group=groups.find(g=>g.category===topicView);
+  if(!group){show('categories');return;}
+  const heading=document.createElement('span');heading.className='visitor-chat-topic-heading';heading.textContent=group.category;
+  chips.append(heading);
+  for(const topic of group.topics.slice(topicPage*TOPICS_PER_PAGE,(topicPage+1)*TOPICS_PER_PAGE))
+   button(topic.question,()=>{
+    topicView=null;topicPage=0;
+    ask(topic.question);input.focus({preventScroll:true});
+   });
+  button('← Categories',()=>show('categories'),'visitor-chat-more');
+  if(group.topics.length>TOPICS_PER_PAGE)
+   button('More in this category →',()=>show(topicView,(topicPage+1)%Math.ceil(group.topics.length/TOPICS_PER_PAGE)),'visitor-chat-more');
  };
  const ask=value=>{
   if(!knowledge||!value.trim())return;
@@ -394,7 +450,7 @@ export function createVisitorChatUI({onClose,showReasoning=/[?&]chatdebug=1\b/.t
   add('them',response.text,traceOf(response,knowledge));renderChips();
  };
  form.addEventListener('submit',e=>{e.preventDefault();ask(input.value);input.value='';input.focus({preventScroll:true});});
- const close=()=>{panel.hidden=true;knowledge=null;speaker=null;prompt.hidden=true;onClose?.();};
+ const close=()=>{panel.hidden=true;knowledge=null;speaker=null;topicView=null;topicPage=0;prompt.hidden=true;onClose?.();};
  panel.querySelector('.visitor-chat-close').addEventListener('click',close);
  input.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();}});
  return {
@@ -404,7 +460,7 @@ export function createVisitorChatUI({onClose,showReasoning=/[?&]chatdebug=1\b/.t
   showPrompt(name){if(panel.hidden&&name){if(prompt.textContent!=='T · Talk to '+name)prompt.textContent='T · Talk to '+name;prompt.hidden=false;}else prompt.hidden=true;},
   start(who,k,{others=[]}={}){
    speaker=who;knowledge=k;title.textContent=k.name;
-   log.replaceChildren();
+   topicView=null;topicPage=0;log.replaceChildren();
    const other=others.find(o=>o.name!==k.name);
    const heard=other&&overhear(k,other);
    if(heard){
