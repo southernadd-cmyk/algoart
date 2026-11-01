@@ -259,6 +259,51 @@ installPhiComposerPassProfiler({
  }
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
+// TEST-ONLY repeatable browser benchmark. The mode has no effect on production,
+// artwork pixels or normal tower visits and does not touch the live module.
+if(new URLSearchParams(location.search).get('roomcullbench')==='1'){
+ const renderOriginal=phiPostFX.render.bind(phiPostFX);
+ const metrics=[],maxSamples=900;
+ phiPostFX.render=(...args)=>{
+  const begun=performance.now();
+  const value=renderOriginal(...args);
+  metrics.push({ms:performance.now()-begun,calls:renderer.info.render.calls,
+   triangles:renderer.info.render.triangles,hidden:phiRoomVisibilityCuller?.snapshot().hidden??0});
+  if(metrics.length>maxSamples)metrics.splice(0,metrics.length-maxSamples);
+  return value;
+ };
+ window.__phiRoomCullBench={
+  reset(){metrics.length=0;},
+  sample(){return metrics.slice();},
+  spots(){
+   const phi=plan?.phi;if(!phi?.world)return [];
+   return phi.floor.mergedRooms.map((room,index)=>{
+    const piece=[...(room.pieces||[])].sort((a,b)=>b.w*b.h-a.w*a.h)[0];
+    if(!piece)return null;
+    const center={x:piece.x+piece.w/2,z:piece.z+piece.h/2};
+    const world=phi.world.toWorld(center.x,center.z);
+    return {room:index,local:center,world:{...world,y:currentFloor*FLOOR_SPACING},area:piece.w*piece.h};
+   }).filter(Boolean);
+  },
+  move(room){
+   const spot=this.spots().find(s=>s.room===room);
+   if(!spot)return null;
+   rig.position.set(spot.world.x,spot.world.y,spot.world.z);
+   pressed.clear();touchPressed.clear();lookPressed.clear();
+   yaw=.5;pitch=0;rig.rotation.y=yaw;camera.rotation.x=pitch;
+   return spot;
+  },
+  setCulling(enabled){
+   if(!phiRoomVisibilityCuller)return null;
+   phiRoomVisibilityCuller.setEnabled(enabled);
+   const local=plan?.phi?.world?.toLocal(rig.position.x,rig.position.z);
+   return phiRoomVisibilityCuller.update(local,{safe:true});
+  },
+  culling(){return window.__phiRoomVisibility?.()??null;},
+  paintings(){return window.__phiFullEngine?.paintingsLoaded??0;},
+  expectedPaintings(){return window.__phiFullEngine?.paintings??0;}
+ };
+}
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
 phiShadowProbe=installPhiShadowRenderProbe({
  renderer,enabled:!!phiLiftProfiler,
