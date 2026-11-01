@@ -107,7 +107,15 @@ export function createPhiGothicEntrance(THREE,{doorway,outward,level,surroundMat
  hinges.forEach((hinge,i)=>{hinge.position.x=(i?1:-1)*width/2;root.add(hinge);
   const leaf=new THREE.Mesh(new THREE.BoxGeometry(width/2-.04,3.8,.09),fallbackMaterial);leaf.position.set((i?-1:1)*width/4,1.9,0);hinge.add(leaf);fallback.push(leaf);
  });
- asset(modelURL('gothic-entrance-door.glb')).then(source=>{
+ const doorOriginal=modelURL('gothic-entrance-door.glb');
+ const doorWebP=new URLSearchParams(location.search).get('materialwebp')==='1';
+ const doorSource=doorWebP
+  ?asset(modelURL('gothic-entrance-door-webp.glb')).catch(error=>{
+    console.warn('TEST WebP doorway unavailable; falling back to original GLB',error);
+    return asset(doorOriginal);
+   })
+  :asset(doorOriginal);
+ doorSource.then(source=>{
   if(!root.parent||root.userData.galleryDisposed)return;
   const model=source.clone(true);
   const fixed=model.getObjectByName('Entrance_Frame'),left=model.getObjectByName('Entrance_Left'),right=model.getObjectByName('Entrance_Right');
