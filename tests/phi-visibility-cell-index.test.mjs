@@ -67,3 +67,23 @@ test('excessively detailed floor plans fall back instead of blocking startup',()
  assert.equal(pvs.enabled,false);
  assert.equal(pvs.hiddenRooms({x:-5.5,z:0},0),null);
 });
+
+test('hybrid compiled fast path matches original culler at interior and edge viewpoints',()=>{
+ const pvs=compile();
+ const indexed=createPhiRoomVisibilityCuller({enabled:true,pieces,rooms,walls:closed,visibilityCells:pvs});
+ const reference=createPhiRoomVisibilityCuller({enabled:true,pieces,rooms,walls:closed});
+ for(const [room,original] of [[0,left],[1,right]]){
+  const a={visible:true,parent:{},userData:{}};
+  const b={visible:true,parent:{},userData:{}};
+  indexed.register(room,a);reference.register(room,b);
+ }
+ for(const piece of pieces)for(let ix=0;ix<=12;ix++)for(let iz=0;iz<=12;iz++){
+  const view={x:piece.x+piece.w*ix/12,z:piece.z+piece.h*iz/12};
+  assert.deepEqual(indexed.update(view).culledRooms,reference.update(view).culledRooms);
+ }
+ indexed.setCompiledEnabled(false);
+ assert.equal(indexed.snapshot().compiledEnabled,false);
+ indexed.update({x:-5.5,z:0});
+ assert.deepEqual(indexed.snapshot().culledRooms,reference.update({x:-5.5,z:0}).culledRooms);
+ indexed.clear();reference.clear();
+});
