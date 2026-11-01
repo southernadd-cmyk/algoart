@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "date": "2026-10-20",
+  "elevation": 99.2,
+  "fingerprint": "{\"v\":1,\"date\":\"2026-10-20\",\"elevation\":99.2,\"pieces\":[[0,-15.3713229,-9.5,7.2573542,7.2573542],[0,-15.3713229,-2.2426458,7.2573542,4.4852916],[0,-15.3713229,2.2426458,7.2573542,4.4852916],[1,-8.1139687,-9.5,4.4852916,11.7426458],[1,-3.6286771,-9.5,4.4852916,7.2573542],[1,0.8566145,-9.5,2.7720626,7.2573542],[1,-3.6286771,-2.2426458,7.2573542,4.4852916],[1,-8.1139687,2.2426458,4.4852916,7.2573542],[2,-15.3713229,6.7279374,7.2573542,2.7720626],[3,3.6286771,-9.5,11.7426458,19]],\"selected\":[0]}",
+  "roomCount": 4,
+  "rooms": [
+    {
+      "room": 0,
+      "url": "room-0.json",
+      "bytes": 13408,
+      "pieces": 3,
+      "triangles": 72
+    },
+    {
+      "room": 1,
+      "url": "room-1.json",
+      "bytes": 20820,
+      "pieces": 5,
+      "triangles": 120
+    },
+    {
+      "room": 2,
+      "url": "room-2.json",
+      "bytes": 4688,
+      "pieces": 1,
+      "triangles": 24
+    },
+    {
+      "room": 3,
+      "url": "room-3.json",
+      "bytes": 4368,
+      "pieces": 1,
+      "triangles": 24
+    }
+  ],
+  "scope": "room floor and ceiling surfaces only",
+  "materialTiling": "exact vertex/normal/UV reconstruction; no material substitution"
+}
