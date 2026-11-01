@@ -1,0 +1,42 @@
+name: TEST lift overlap functional smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/phi-lift-overlap-browser-smoke.mjs'
+      - '.github/workflows/test-lift-overlap-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: test-lift-overlap-browser-smoke
+  cancel-in-progress: false
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build TEST exclusively from currently checked-out source
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+          grep -q liftoverlap test/virtual-gallery/gallery-phi-bundle.js
+      - name: Serve the gallery locally
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-overlap-http.log 2>&1 &
+          sleep 2
+      - name: Verify control and overlapped lift arrivals (functional, not FPS)
+        run: node tests/phi-lift-overlap-browser-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lift-overlap-functional-screenshots-and-results
+          path: phi-lift-overlap-results/
+          if-no-files-found: ignore
