@@ -1,9 +1,6 @@
 name: Rebuild test gallery visitor chat
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'test/virtual-gallery/phi-visitor-chat.mjs'
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
