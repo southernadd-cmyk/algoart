@@ -1,0 +1,34 @@
+name: Architectural lift render-pass profiling TEST
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-fx-lift-pass-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Compile test source only
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/fx-lift-audit-server.log 2>&1 &
+      - name: Compare architectural and unprocessed lift scene passes
+        run: node tests/phi-fx-lift-pass-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-fx-lift-audit
+          path: phi-fx-lift-audit/results.json
+          if-no-files-found: ignore
