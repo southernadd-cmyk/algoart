@@ -26,7 +26,7 @@ async function pageFor(viewport){
  // software-renderer run: this checks that the export button works.
  await page.route('**/gallery-phi-bundle.js*',route=>route.abort());
  await page.goto(base+'/test/virtual-gallery/full-engine.html',{waitUntil:'domcontentloaded'});
- await page.waitForSelector('#phiBenchToggle',{timeout:20000});
+ await page.waitForSelector('#phiBenchToggle',{state:'attached',timeout:20000});
  await page.evaluate(profile=>{window.__phiLiftProfile=profile;},data);
  return {page,context};
 }
