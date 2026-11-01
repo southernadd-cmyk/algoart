@@ -333,12 +333,30 @@ export function memorySummary(k){
 // Same contract as v1's createVisitorChatUI, plus dynamic chips, an
 // overheard exchange and an optional reasoning view (?chatdebug=1 or the
 // "Reasoning" toggle).
-const V2_CSS=`.visitor-chat-v2 .visitor-chat-head{display:flex;align-items:center;gap:10px}
+export const V2_CSS=`.visitor-chat-v2 .visitor-chat-head{display:flex;align-items:center;gap:10px}
 .visitor-chat-v2 .visitor-chat-head h2{flex:1}
 .visitor-chat-reasoning{font-size:11px;letter-spacing:.04em;text-transform:uppercase;opacity:.7;display:flex;gap:4px;align-items:center;cursor:pointer}
 .visitor-chat-aside{font-style:italic;opacity:.72;font-size:12px}
 .visitor-chat-trace{display:none;margin:-6px 0 10px;padding:6px 8px;font:11px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;border-left:2px solid currentColor;opacity:.6}
-.visitor-chat-v2.show-reasoning .visitor-chat-trace{display:block}`;
+.visitor-chat-v2.show-reasoning .visitor-chat-trace{display:block}
+/* Give contextual chips their own visible space. Only the conversation scrolls. */
+.visitor-chat.visitor-chat-v2{max-height:min(86dvh,780px);bottom:max(18px,env(safe-area-inset-bottom,0px))}
+.visitor-chat-v2 .visitor-chat-head,.visitor-chat-v2 .visitor-chat-form{flex-shrink:0}
+.visitor-chat-v2 .visitor-chat-log{flex:1 1 auto;min-height:96px}
+.visitor-chat-v2 .visitor-chat-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-content:start;max-height:none;min-height:144px;overflow:visible;flex:0 0 auto;padding:12px 15px}
+.visitor-chat-v2 .visitor-chat-chips button{width:100%;min-width:0;min-height:44px;white-space:normal;overflow-wrap:anywhere;font:12px/1.35 Arial,Helvetica,sans-serif;padding:9px 10px}
+@media(max-width:620px){
+ .visitor-chat.visitor-chat-v2{max-height:min(90dvh,740px);bottom:max(12px,env(safe-area-inset-bottom,0px))}
+ .visitor-chat-v2 .visitor-chat-chips{gap:7px;padding:10px 12px;min-height:140px}
+ .visitor-chat-v2 .visitor-chat-log{min-height:78px}
+}
+@media(max-height:570px){
+ .visitor-chat.visitor-chat-v2{max-height:calc(100dvh - 14px);bottom:7px}
+ .visitor-chat-v2 .visitor-chat-chips{gap:5px;min-height:0;padding:7px 10px}
+ .visitor-chat-v2 .visitor-chat-chips button{min-height:36px;padding:6px 8px;font-size:11px}
+ .visitor-chat-v2 .visitor-chat-log{min-height:56px}
+}
+`;
 function injectStyles(){
  if(document.getElementById('visitor-chat-v2-css'))return;
  const style=document.createElement('style');style.id='visitor-chat-v2-css';style.textContent=V2_CSS;document.head.append(style);

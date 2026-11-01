@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildVisitorKnowledge,answerVisitor,greetVisitor,overhear,session,suggestionsFor} from './chat-v2.mjs';
+import {buildVisitorKnowledge,answerVisitor,greetVisitor,overhear,session,suggestionsFor,V2_CSS} from './chat-v2.mjs';
 import {resetSession} from './mind.mjs';
 import {infer,proof} from './rules.mjs';
 import {buildGraph,findPath} from './graph.mjs';
@@ -143,4 +143,17 @@ test('repeated what-have-you-noticed turns do not recycle the same experiment',(
   assert.doesNotMatch(a.text,/fair test|Nothing jumps out/);
  }
  assert.equal(facts.filter(id=>['materialTest','naturalExperiment'].includes(k.memory.wm.find(f=>f.id===id)?.pred)).length,1);
+});
+
+test('v2 suggestion chips are fully visible without a nested scrolling area',()=>{
+ assert.match(V2_CSS,/\.visitor-chat-v2 \.visitor-chat-chips\{[^}]*display:grid/);
+ assert.match(V2_CSS,/\.visitor-chat-v2 \.visitor-chat-chips\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(V2_CSS,/\.visitor-chat-v2 \.visitor-chat-chips\{[^}]*max-height:none/);
+ assert.match(V2_CSS,/\.visitor-chat-v2 \.visitor-chat-chips\{[^}]*overflow:visible/);
+ assert.match(V2_CSS,/\.visitor-chat-v2 \.visitor-chat-chips\{[^}]*flex:0 0 auto/);
+ assert.match(V2_CSS,/\.visitor-chat-v2 \.visitor-chat-chips button\{[^}]*min-height:44px/);
+ assert.match(V2_CSS,/@media\(max-width:620px\)/);
+ assert.match(V2_CSS,/@media\(max-height:570px\)/);
+ const k=make(0);
+ assert.ok(suggestionsFor(k,{}).length<=4);
 });

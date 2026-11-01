@@ -6,6 +6,7 @@ on:
       - '.github/workflows/gallery-sync-bundle.yml'
       - 'gallery/visit/tower-family-lettering.mjs'
       - 'gallery/visit/gallery-phi.js'
+      - 'gallery/visit/visitor-v2/**'
       - 'gallery/visit/phi-curator.mjs'
       - 'gallery/visit/phi-pre-expansion.mjs'
       - 'gallery/visit/phi-room-hanging-signs.mjs'
