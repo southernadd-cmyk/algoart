@@ -1,0 +1,408 @@
+{
+  "date": "2026-10-20",
+  "environment": "GitHub Actions Chromium SwiftShader software WebGL",
+  "warning": "Short sequential browser runs; do not use for native hardware frame-rate claims",
+  "method": "Original versus full precompiled versus spatial room streaming, identical archive floor and camera positions, direct scene renders plus PNG hashes",
+  "results": [
+    {
+      "mode": "original",
+      "status": "complete",
+      "startupMs": 6065,
+      "rooms": 4,
+      "captures": [
+        {
+          "room": 0,
+          "ms": 2650.5,
+          "calls": 75,
+          "triangles": 62886,
+          "hidden": 0,
+          "imageHash": "a559d8d74403ea2675f6142ede77b87d837bc322908e69a8a7d304fd1f0cfd43",
+          "imageBytes": 786676,
+          "compiled": {
+            "active": false
+          }
+        },
+        {
+          "room": 3,
+          "ms": 3022.7000000000116,
+          "calls": 244,
+          "triangles": 88280,
+          "hidden": 0,
+          "imageHash": "6dea68749a39a655c6e803cf6335e63f14a501e77776890d85b8af2026f73b53",
+          "imageBytes": 817097,
+          "compiled": {
+            "active": false
+          }
+        }
+      ],
+      "stats": {
+        "compiled": {
+          "active": false
+        },
+        "scene": {
+          "date": "2026-10-20",
+          "roomCount": 4,
+          "wallCount": 31,
+          "artworks": 18,
+          "paintings": 9,
+          "sculptures": 9,
+          "unplaced": 0,
+          "paintingSizes": [
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 3.3852915724960044,
+              "height": 2.4180654089257176
+            },
+            {
+              "width": 3.385291572496005,
+              "height": 2.418065408925718
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 3.385291572496005,
+              "height": 2.418065408925718
+            }
+          ],
+          "paintingsLoaded": 9
+        },
+        "pageErrors": null
+      },
+      "errors": []
+    },
+    {
+      "mode": "precompiled",
+      "status": "complete",
+      "startupMs": 5877,
+      "rooms": 4,
+      "captures": [
+        {
+          "room": 0,
+          "ms": 1073.300000000003,
+          "calls": 76,
+          "triangles": 62826,
+          "hidden": 0,
+          "imageHash": "4e562669c1b17652333493cf7fcf172d51cc525b7d7e9888aae9e3bac4318232",
+          "imageBytes": 786918,
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": false,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 4,
+            "replaced": 4,
+            "directRooms": 4,
+            "bytes": 43284,
+            "originalMeshesDisposed": 0,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "fallbackRooms": [],
+            "shared": true,
+            "remaining": 0
+          }
+        },
+        {
+          "room": 3,
+          "ms": 2121.2000000000116,
+          "calls": 247,
+          "triangles": 88220,
+          "hidden": 0,
+          "imageHash": "6dea68749a39a655c6e803cf6335e63f14a501e77776890d85b8af2026f73b53",
+          "imageBytes": 817097,
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": false,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 4,
+            "replaced": 4,
+            "directRooms": 4,
+            "bytes": 43284,
+            "originalMeshesDisposed": 0,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "fallbackRooms": [],
+            "shared": true,
+            "remaining": 0
+          }
+        }
+      ],
+      "stats": {
+        "compiled": {
+          "date": "2026-10-20",
+          "active": true,
+          "stream": false,
+          "valid": 0,
+          "failed": 0,
+          "loaded": 4,
+          "replaced": 4,
+          "directRooms": 4,
+          "bytes": 43284,
+          "originalMeshesDisposed": 0,
+          "parityFailures": 0,
+          "requestedRooms": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fallbackRooms": [],
+          "shared": true,
+          "remaining": 0
+        },
+        "scene": {
+          "date": "2026-10-20",
+          "roomCount": 4,
+          "wallCount": 31,
+          "artworks": 18,
+          "paintings": 9,
+          "sculptures": 9,
+          "unplaced": 0,
+          "paintingSizes": [
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 3.3852915724960044,
+              "height": 2.4180654089257176
+            },
+            {
+              "width": 3.385291572496005,
+              "height": 2.418065408925718
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 3.385291572496005,
+              "height": 2.418065408925718
+            }
+          ],
+          "paintingsLoaded": 9
+        },
+        "pageErrors": null
+      },
+      "errors": []
+    },
+    {
+      "mode": "streamed",
+      "status": "complete",
+      "startupMs": 5849,
+      "rooms": 4,
+      "captures": [
+        {
+          "room": 0,
+          "ms": 3878.100000000006,
+          "calls": 77,
+          "triangles": 62742,
+          "hidden": 0,
+          "imageHash": "4e562669c1b17652333493cf7fcf172d51cc525b7d7e9888aae9e3bac4318232",
+          "imageBytes": 786918,
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": true,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 1,
+            "replaced": 1,
+            "directRooms": 1,
+            "bytes": 13408,
+            "originalMeshesDisposed": 0,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0
+            ],
+            "fallbackRooms": [
+              1,
+              2,
+              3
+            ],
+            "shared": true,
+            "remaining": 3
+          }
+        },
+        {
+          "room": 3,
+          "ms": 2761.5,
+          "calls": 247,
+          "triangles": 88124,
+          "hidden": 0,
+          "imageHash": "3fde8056df48d6781faae6d621ef9ac0d645ee2fb4e98fc337c3d5f9f0be7c65",
+          "imageBytes": 825721,
+          "compiled": {
+            "date": "2026-10-20",
+            "active": true,
+            "stream": true,
+            "valid": 0,
+            "failed": 0,
+            "loaded": 2,
+            "replaced": 2,
+            "directRooms": 1,
+            "bytes": 17776,
+            "originalMeshesDisposed": 2,
+            "parityFailures": 0,
+            "requestedRooms": [
+              0,
+              3
+            ],
+            "fallbackRooms": [
+              1,
+              2,
+              3
+            ],
+            "shared": true,
+            "remaining": 2
+          }
+        }
+      ],
+      "stats": {
+        "compiled": {
+          "date": "2026-10-20",
+          "active": true,
+          "stream": true,
+          "valid": 0,
+          "failed": 0,
+          "loaded": 2,
+          "replaced": 2,
+          "directRooms": 1,
+          "bytes": 17776,
+          "originalMeshesDisposed": 2,
+          "parityFailures": 0,
+          "requestedRooms": [
+            0,
+            3
+          ],
+          "fallbackRooms": [
+            1,
+            2,
+            3
+          ],
+          "shared": true,
+          "remaining": 2
+        },
+        "scene": {
+          "date": "2026-10-20",
+          "roomCount": 4,
+          "wallCount": 31,
+          "artworks": 18,
+          "paintings": 9,
+          "sculptures": 9,
+          "unplaced": 0,
+          "paintingSizes": [
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 3.3852915724960044,
+              "height": 2.4180654089257176
+            },
+            {
+              "width": 3.385291572496005,
+              "height": 2.418065408925718
+            },
+            {
+              "width": 4.619999999999999,
+              "height": 3.3
+            },
+            {
+              "width": 3.385291572496005,
+              "height": 2.418065408925718
+            }
+          ],
+          "paintingsLoaded": 9
+        },
+        "pageErrors": null
+      },
+      "errors": []
+    }
+  ],
+  "parity": [
+    {
+      "room": 0,
+      "exactPng": false,
+      "originalCalls": 75,
+      "compiledCalls": 76,
+      "originalTriangles": 62886,
+      "compiledTriangles": 62826
+    },
+    {
+      "room": 3,
+      "exactPng": true,
+      "originalCalls": 244,
+      "compiledCalls": 247,
+      "originalTriangles": 88280,
+      "compiledTriangles": 88220
+    }
+  ],
+  "allComplete": true,
+  "geometryParityCheckedSeparately": true
+}
