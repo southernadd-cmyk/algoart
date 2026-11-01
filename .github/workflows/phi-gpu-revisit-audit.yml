@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/phi-gpu-revisit-audit.yml'
+      - 'tests/phi-gpu-revisit-audit-browser.mjs'
 permissions:
   contents: read
 jobs:
@@ -20,7 +21,7 @@ jobs:
       - run: npm ci
       - name: Focused readiness and resource tests
         run: |
-          node --test tests/phi-lift-motion.test.mjs tests/phi-artwork-preload.test.mjs tests/phi-lift-queue-profiler.test.mjs tests/phi-room-visibility-culler.test.mjs
+          node --test tests/phi-lift-motion.test.mjs tests/phi-artwork-preload.test.mjs tests/phi-lift-queue-profiler.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-uploaded-texture-ledger.test.mjs
       - run: npx playwright install --with-deps chromium
       - name: Build TEST only from the current source, leaving live untouched
         run: |
@@ -29,7 +30,7 @@ jobs:
       - name: Serve gallery assets
         run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-gpu-revisit-http.log 2>&1 &
       - name: Profile first and repeat lift journeys
-        run: node tests/phi-gpu-revisit-audit-browser.mjs
+        run: PHI_GPU_REVISIT_REUSE=1 node tests/phi-gpu-revisit-audit-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
