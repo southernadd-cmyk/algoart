@@ -2,7 +2,7 @@
 // Mirrors the archive's portrait/landscape mix and exact deterministic phi planner.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync} from 'node:fs';
 import {performance} from 'node:perf_hooks';
 import {buildPhiRendererPlan} from '../test/virtual-gallery/phi-full-engine-adapter.mjs';
 import {compilePhiVisibilityCells} from '../test/virtual-gallery/phi-visibility-cell-index.mjs';
@@ -55,8 +55,11 @@ test('compiled cells match conservative dynamic visibility on real 20 October fl
   compiledChecksum+=compiled.hiddenRooms(probe.point,probe.room).length;
  const indexedMs=performance.now()-t1;
  assert.ok(compiledChecksum<=baselineChecksum);
- console.log('PVS_REAL_FLOOR '+JSON.stringify({...base,
-  probes:probes.length,dynamicHidden,precomputedHidden,
+ const report={...base,probes:probes.length,dynamicHidden,precomputedHidden,
   baselineCpuMs:+baselineMs.toFixed(2),indexedCpuMs:+indexedMs.toFixed(2),
-  classificationOnly:true,visualBenchmarkRequired:true}));
+  classificationOnly:true,visualBenchmarkRequired:true,
+  caveat:'CPU visibility decision timing only. Does not measure scene render, GPU stalls or user-visible frame rates.'};
+ writeFileSync(new URL('../test/virtual-gallery/pvs-benchmark.json',import.meta.url),
+  JSON.stringify(report,null,2)+'\n');
+ console.log('PVS_REAL_FLOOR '+JSON.stringify(report));
 });
