@@ -52,6 +52,7 @@ export function createPhiRoomVisibilityCuller({pieces=[],rooms=[],walls=[],enabl
   (room?.pieces||[]).map(piece=>({...piece,room:index})));
  const roomCount=roomPieces.length;
  let checks=0,lastObserver=null,enabledNow=!!enabled,lastCulled=[],registered=0,restored=0;
+ let compiledEnabled=!!visibilityCells?.enabled,compiledFastPaths=0,dynamicOcclusionChecks=0;
  const restore=()=>{
   for(const [object,wasVisible] of hidden){
    if(!object.userData?.galleryDisposed)object.visible=wasVisible;
@@ -78,11 +79,19 @@ export function createPhiRoomVisibilityCuller({pieces=[],rooms=[],walls=[],enabl
   const culled=[];
   // Compiled PVS is an intentionally conservative subset of exact-location
   // wall occlusion. Uncovered cells retain the original dynamic calculation.
-  const compiledHidden=visibilityCells?.enabled?visibilityCells.hiddenRooms(worldPoint,viewerRoom):null;
+  const compiledHidden=compiledEnabled?visibilityCells.hiddenRooms(worldPoint,viewerRoom):null;
   for(const [room,objects] of groups){
    // A room containing the viewer must remain visible, even near a seam.
-   const occluded=room!==viewerRoom&&(compiledHidden!==null&&compiledHidden!==undefined
-    ?compiledHidden.includes(room):phiRoomHiddenBehindSolidWalls(worldPoint,roomPieces[room],walls));
+   let occluded=false;
+   if(room!==viewerRoom){
+    if(compiledHidden?.includes(room)){occluded=true;compiledFastPaths++;}
+    else{
+     // Never weaken the established culling decision to make a benchmark fast.
+     // Rooms not provably hidden by the entire cell use the exact old test.
+     dynamicOcclusionChecks++;
+     occluded=phiRoomHiddenBehindSolidWalls(worldPoint,roomPieces[room],walls);
+    }
+   }
    if(occluded)culled.push(room);
    for(const object of objects){
     if(object.userData?.galleryDisposed||!object.parent){
@@ -103,8 +112,10 @@ export function createPhiRoomVisibilityCuller({pieces=[],rooms=[],walls=[],enabl
  };
  const snapshot=()=>({enabled:enabledNow,rooms:roomCount,registered,hidden: hidden.size,
   culledRooms:[...lastCulled],visibleGroups:[...groups.keys()].filter(i=>!lastCulled.includes(i)),
-  checks,restored,viewer:lastObserver,visibilityCells:visibilityCells?.stats?.()||null});
+  checks,restored,viewer:lastObserver,compiledEnabled,compiledFastPaths,dynamicOcclusionChecks,
+  visibilityCells:visibilityCells?.stats?.()||null});
  const setEnabled=value=>{enabledNow=!!value;if(!enabledNow)restore();};
+ const setCompiledEnabled=value=>{compiledEnabled=!!value&&!!visibilityCells?.enabled;restore();};
  const clear=()=>{restore();groups.clear();registered=0;lastObserver=null;checks=0;restored=0;};
- return {register,update,restore,clear,setEnabled,snapshot};
+ return {register,update,restore,clear,setEnabled,setCompiledEnabled,snapshot};
 }
