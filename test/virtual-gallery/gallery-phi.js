@@ -1969,7 +1969,7 @@ function queuePhiFurnishings(phi,furnishings,elevation){
   phiFurnishingObstacles=furnishings.obstacles.map(p=>({...convert(p),width:p.width*cs+p.depth*sn,depth:p.width*sn+p.depth*cs}));
  });
 }
-function constructPhiGallery(layout,studies,{viaLift=false}={}){
+function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={}){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
  // No culling of reception, transparent/exterior sightlines, architecture, signs,
  // lights or any objects not explicitly registered as room-owned exhibits.
@@ -2787,7 +2787,9 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
  landingSign.position.set(l.portal.at+.13,elevation+3.55,l.z);landingSign.rotation.y=Math.PI/2;scene.add(landingSign);
  for(const side of [-1,1])cabinBlock(.16,3.1,.17,liftFace,elevation+1.55,l.z+side*1.22,join);
  cabinBlock(.19,.24,2.55,liftFace,elevation+3.15,l.z,join);
- rig.position.copy(liftCabinPosition);
+ // The travelling visitor remains in the *departure* cabin until the swap.
+ // Never teleport the camera to the landing during hidden floor construction.
+ if(!duringRide)rig.position.copy(liftCabinPosition);
  arrival=null;
  if(phi.exhibition.paintings.length+phi.exhibition.sculptures.length!==studies.length)
    throw Error('Phi curator omitted artworks');
@@ -2976,7 +2978,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   const constructionStart=performance.now();
   const sceneBeforeConstruction=new Set(scene.children);
   try{
-    constructPhiGallery(plan,studyList,{viaLift});
+    constructPhiGallery(plan,studyList,{viaLift,duringRide});
     if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);
     applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
     phiLightingStudy?.editionChanged(elevation);
