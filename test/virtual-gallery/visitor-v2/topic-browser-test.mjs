@@ -75,7 +75,7 @@ function show(chips,group=-1,page=0){
     const form=chips.closest('.visitor-chat-v2')?.querySelector('.visitor-chat-form');
     const input=form?.querySelector('input');
     if(!form||!input)return;
-    input.value=question;
+    input.value=/\?\s*$/.test(question)?question:question+'?';
     form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
     input.focus({preventScroll:true});
    });
