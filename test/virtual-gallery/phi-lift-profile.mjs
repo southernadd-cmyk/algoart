@@ -34,7 +34,7 @@ export function createPhiLiftProfiler({enabled=false,now=()=>performance.now()}=
      functionName:script.sourceFunctionName||null,
      sourcePath:typeof script.sourceURL==='string'?script.sourceURL.split('?')[0]:null,
      durationMs:round(script.duration||0),
-     executionStartMs:round(script.executionStart-v.start),
+     executionStartMs:round((script.executionStart??frame.startTime)-v.start),
      invoker:script.invoker||null
     }));
    v.longAnimationFrames.push({
