@@ -1,7 +1,7 @@
 // Documentary screenshots from the CURRENT live gallery code, run in CI.
 // Not renders, mockups or borrowed images: capture actual browser WebGL frames.
 import {chromium} from 'playwright';
-import {mkdir,stat,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile} from 'node:fs/promises';
 
 const OUT='docs/images';
 const BASE='http://127.0.0.1:4173/gallery/visit/?debug=1';
@@ -40,45 +40,12 @@ try {
  await shot('tower','live architectural exterior',()=>window.__phiReceptionPreview.overview());
  await shot('reception','live reception, hologram and furnishing',()=>window.__phiReceptionPreview.show('desk'));
  await page.evaluate(()=>window.__phiReceptionPreview.resume());
- // Follow the same lift/date controls used by the repo's own full-engine tests.
- const target='2026-10-28';
- await page.locator('#openLift').evaluate(el=>el.click());
- await page.waitForFunction(()=>document.querySelector('#lift')?.hidden===false,null,{timeout:30000});
- await page.locator('#liftMonth').evaluate((el,m)=>{
-  el.value=m;el.dispatchEvent(new Event('change',{bubbles:true}));
- },target.slice(0,7));
- const destination=page.locator('#liftDays button[title^="'+target+'"]');
- await destination.evaluate(el=>el.click());
- await page.waitForFunction(date=>
-  (window.__phiLiftRide?.status==='ready'&&window.__phiFullEngine?.date===date)
-  ||!!window.__phiLiftError,target,{timeout:230000});
- const state=await page.evaluate(()=>({
-  lift:window.__phiLiftState,error:window.__phiLiftError,
-  floor:window.__phiFullEngine
- }));
- if(state.error)throw Error('Lift: '+JSON.stringify(state.error));
- await page.waitForFunction(()=>window.__phiFullEngine?.paintingsLoaded===window.__phiFullEngine?.paintings,
-   null,{timeout:90000});
- // Turn from the landing toward the exit, then walk into the real exhibition.
- const golden=(1+Math.sqrt(5))/2;
- const heading=state.lift.floor*(2*Math.PI/(golden*golden))-Math.PI/2;
- const turn=Math.atan2(Math.sin(heading-state.lift.yaw),Math.cos(heading-state.lift.yaw));
- if(Math.abs(turn)>.11){
-  const key=turn>0?'ArrowLeft':'ArrowRight';
-  await page.keyboard.down(key);
-  try {
-   await page.waitForFunction(heading=>
-    Math.abs(Math.atan2(Math.sin(window.__phiLiftState.yaw-heading),
-                      Math.cos(window.__phiLiftState.yaw-heading)))<.1,
-    heading,{timeout:45000});
-  }finally{await page.keyboard.up(key);}
- }
- await page.keyboard.down('w');
- try{await page.waitForFunction(()=>
-  Math.hypot(window.__phiLiftState.x,window.__phiLiftState.z)>3.25,
-  null,{timeout:60000});}finally{await page.keyboard.up('w');}
- await page.waitForTimeout(1200);
- await shot('gallery','actual paintings on the 28 October 2026 floor',()=>window.__phiReceptionPreview.resume());
+ // Third documentary view: the reception's interactive gramophone exhibit.
+ // An upper-floor visit is deliberately not forced in the software-GPU
+ // screenshot job: it can time out on painting upload even while the live
+ // physical-GPU exhibition remains usable.
+ await shot('gramophone','live reception gramophone installation',()=>window.__phiReceptionPreview.show('gramophone'));
+ await page.evaluate(()=>window.__phiReceptionPreview.resume());
  await writeFile(OUT+'/exhibition-capture-manifest.json',JSON.stringify({
   generatedAt:new Date().toISOString(),commit:process.env.GITHUB_SHA||null,
   note:'Screenshots of actual Three.js render, captured by Chromium using software WebGL. No image synthesis.',
