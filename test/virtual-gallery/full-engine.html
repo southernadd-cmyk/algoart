@@ -28,7 +28,7 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../test/virtual-gallery/gallery.css?v=accessibility-20261023">
 <link rel="stylesheet" href="../../test/virtual-gallery/phi-gallery.css?v=public-phi-20261026">
-<link rel="stylesheet" href="../../test/virtual-gallery/phi-visitor-chat.css?v=visitor-chat-20261101">
+<link rel="stylesheet" href="../../test/virtual-gallery/phi-visitor-chat.css?v=visitor-discovery-20261101-v1">
 <style>
 /* The fixed canvas must never cover the keyboard/mouse lift fallback. */
 #world{z-index:0}
@@ -37,6 +37,10 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
 .lift-panel{z-index:90}
 .lift-animation{z-index:100}
 .lift-arrival{z-index:95}
+/* The chat launcher has one short label on all screen sizes, even though the
+   underlying engine may supply context-specific wording. */
+.topbar #openVisitorChat{font-size:0}
+.topbar #openVisitorChat::after{content:"Chat";font:600 13px Arial,Helvetica,sans-serif}
 /* On phones, prioritise floor selection and conversations. Keep the rest
    available without squeezing five actions into the top toolbar. */
 .mobile-overflow{display:contents}
@@ -79,7 +83,7 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
 
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=12">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
-<link rel="modulepreload" href="../../test/virtual-gallery/gallery-phi-bundle.js?v=visitor-knowledge-20261101">
+<link rel="modulepreload" href="../../test/virtual-gallery/gallery-phi-bundle.js?v=visitor-discovery-20261101-v1">
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
@@ -132,7 +136,7 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
     window.__galleryStage='Importing bundled JavaScript';
-    await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=visitor-knowledge-20261101');
+    await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=visitor-discovery-20261101-v1');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -204,7 +208,7 @@ window.addEventListener('load',()=>{
 <div class="topbar" role="group" aria-label="Virtual exhibition controls">
   <div class="top-actions">
     <button id="openLift" type="button" aria-label="Open lift to choose gallery floor">Lift · Floors</button>
-    <button id="openVisitorChat" type="button" disabled aria-label="Chat with a gallery visitor" title="Ask about the art and the tower">Chat · Visitor</button>
+    <button id="openVisitorChat" type="button" disabled aria-label="Chat">Chat</button>
     <button id="mobileMenuToggle" type="button" aria-label="More gallery controls" aria-expanded="false" aria-controls="mobileOverflow">More <span aria-hidden="true">▾</span></button>
     <div id="mobileOverflow" class="mobile-overflow">
       <a id="archiveLink" href="../">View 2D gallery</a>
