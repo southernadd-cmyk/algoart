@@ -3203,16 +3203,31 @@ function ensureVisitorChat(){
  visitorChat.prompt.addEventListener('click',talkToNearestVisitor);
  return visitorChat;
 }
-function talkToNearestVisitor(){
- if(!phiVisitorNearest||liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting)return;
+// The fixed chat launcher works even when no physical visitor is in range.
+// The contextual visitor uses the viewer's current room, not a distant room.
+function virtualVisitorAtCurrentRoom(){
+ const phi=plan?.phi;
+ if(!phi)return null;
+ const local=phi.world.toLocal(rig.position.x,rig.position.z);
+ const room=phi.floor.mergedRooms.findIndex(r=>r.pieces.some(p=>
+  local.x>=p.x&&local.x<=p.x+p.w&&local.z>=p.z&&local.z<=p.z+p.h));
+ return {index:-1,x:rig.position.x,z:rig.position.z,y:rig.position.y,
+  local,room,seat:false,remote:true};
+}
+function talkToNearestVisitor({allowAnywhere=false}={}){
+ if(liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting||!plan?.phi)return;
+ const speaker=phiVisitorNearest||(allowAnywhere?virtualVisitorAtCurrentRoom():null);
+ if(!speaker)return;
  const chat=ensureVisitorChat();
  document.exitPointerLock?.();
  pressed.clear();lookPressed.clear();
- chat.start(phiVisitorNearest,phiVisitorKnowledge(phiVisitorNearest));
+ chat.start(speaker,phiVisitorKnowledge(speaker));
 }
 function updateVisitorChatPrompt(){
  const chat=ensureVisitorChat();
  const blocked=liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting;
+ const launcher=$('openVisitorChat');
+ if(launcher)launcher.disabled=blocked||!plan?.phi;
  if(blocked&&chat.open)chat.close();
  let nearest=null,best=2.4;
  if(!blocked)for(const speaker of phiVisitorSpeakers){
@@ -3276,6 +3291,7 @@ const isInteractiveFocus=()=>Boolean(document.activeElement?.closest?.(
   'button,a,input,textarea,select,[contenteditable="true"],[role="textbox"]'
 ));
 $('openLift').addEventListener('click',openLift);
+$('openVisitorChat')?.addEventListener('click',()=>talkToNearestVisitor({allowAnywhere:true}));
 $('closeLift').addEventListener('click',()=>closeLift());
 $('lift').addEventListener('keydown',e=>{
   if(e.key!=='Tab')return;
