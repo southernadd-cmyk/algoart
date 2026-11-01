@@ -21,6 +21,33 @@ export function createPhiLiftProfiler({enabled=false,now=()=>performance.now()}=
   }
  });
  try{observer?.observe({entryTypes:['longtask']});}catch{observer?.disconnect();}
+ // Chromium's Long Animation Frames API reports the JS source functions
+ // responsible for blocking long frames when script attribution is available.
+ // It won't identify every GPU/compositor stall; those remain "unattributed".
+ const loafObserver=typeof PerformanceObserver==='undefined'?null:new PerformanceObserver(list=>{
+  const v=state.active?state.current:null;
+  if(!v)return;
+  for(const frame of list.getEntries()){
+   if(frame.startTime<v.start)continue;
+   const scripts=[...(frame.scripts||[])].sort((a,b)=>b.duration-a.duration).slice(0,8)
+    .map(script=>({
+     functionName:script.sourceFunctionName||null,
+     sourcePath:typeof script.sourceURL==='string'?script.sourceURL.split('?')[0]:null,
+     durationMs:round(script.duration||0),
+     executionStartMs:round(script.executionStart-v.start),
+     invoker:script.invoker||null
+    }));
+   v.longAnimationFrames.push({
+    elapsedMs:round(frame.startTime-v.start),durationMs:round(frame.duration),
+    blockingDurationMs:round(frame.blockingDuration||0),scripts
+   });
+   if(v.longAnimationFrames.length>100)v.longAnimationFrames.shift();
+  }
+ });
+ try{
+  if(PerformanceObserver.supportedEntryTypes?.includes('long-animation-frame'))
+   loafObserver?.observe({type:'long-animation-frame',buffered:false});
+ }catch{loafObserver?.disconnect();}
  function begin(date,fromFloor,toFloor){
   if(state.active&&state.current){
    mark('interrupted');state.current.interrupted=true;
@@ -28,7 +55,7 @@ export function createPhiLiftProfiler({enabled=false,now=()=>performance.now()}=
   const at=now();
   const visit={date,fromFloor,toFloor,start:at,
    stages:[{name:'selection',at,elapsedMs:0}],frames:[],frameMs:[],
-   longTasks:[],operations:[],operationTotals:{},summary:null};
+   longTasks:[],longAnimationFrames:[],operations:[],operationTotals:{},summary:null};
   state.visits.push(visit);if(state.visits.length>8)state.visits.shift();
   state.current=visit;state.active=true;lastTick=0;
  }
