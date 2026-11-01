@@ -54,7 +54,7 @@ export async function preparePhiCompiledRoomStream(THREE,{date,phi,elevation,
   return null;
  }
  const packages=new Map(),requests=new Map(),roots=new Map();
- const stats={date,active:true,stream,valid:0,failed:0,loaded:0,replaced:0,
+ const stats={date,active:true,stream,valid:0,failed:0,loaded:0,replaced:0,directRooms:0,
   bytes:0,originalMeshesDisposed:0,parityFailures:0,requestedRooms:[],fallbackRooms:[]};
  let cancelled=false;
  const request=room=>{
@@ -98,7 +98,16 @@ export async function preparePhiCompiledRoomStream(THREE,{date,phi,elevation,
   return true;
  };
  const attach=(room,root,records,materials)=>{
-  if(cancelled||!root?.parent||!records?.length)return false;
+  if(cancelled||!root?.parent||!Array.isArray(records))return false;
+  if(!records.length){
+   const pack=packages.get(room);
+   if(!pack)return false;
+   const meshes=decodePhiRoomPackage(THREE,pack,materials);
+   for(const mesh of meshes)root.add(mesh);
+   roots.set(room,{root,records,materials,swapped:true});
+   stats.replaced++;stats.directRooms++;
+   return true;
+  }
   const rec={root,records,materials,swapped:false};
   roots.set(room,rec);
   const pack=packages.get(room);
