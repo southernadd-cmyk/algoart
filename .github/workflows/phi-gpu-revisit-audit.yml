@@ -1,0 +1,38 @@
+name: Test tower GPU revisit audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-gpu-revisit-audit.yml'
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Focused readiness and resource tests
+        run: |
+          node --test tests/phi-lift-motion.test.mjs tests/phi-artwork-preload.test.mjs tests/phi-lift-queue-profiler.test.mjs tests/phi-room-visibility-culler.test.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Build TEST only from the current source, leaving live untouched
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+      - name: Serve gallery assets
+        run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-gpu-revisit-http.log 2>&1 &
+      - name: Profile first and repeat lift journeys
+        run: node tests/phi-gpu-revisit-audit-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-gpu-revisit-audit
+          path: phi-gpu-revisit-audit/results.json
+          if-no-files-found: ignore
