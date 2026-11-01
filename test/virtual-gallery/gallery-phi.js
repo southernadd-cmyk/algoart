@@ -1993,6 +1993,14 @@ function queuePhiFurnishings(phi,furnishings,elevation){
    return {index,x:world.x,z:world.z,y:elevation,local:{x:p.x,z:p.z},
     room:p.roomIndex??p.room,seat:!!p.seat};
   });
+  // Reception has its own architectural visitor; register a conversation anchor
+  // even when the daily furnishing planner produces no gallery people here.
+  if(exhibitDate===RECEPTION&&!phiVisitorSpeakers.length){
+   const receptionVisitor=furniture.people[0];
+   if(receptionVisitor)phiVisitorSpeakers.push({index:0,x:receptionVisitor.x,z:receptionVisitor.z,
+    y:elevation,local:{x:furnishings.people[0].x,z:furnishings.people[0].z},
+    room:furnishings.people[0].roomIndex??furnishings.people[0].room,seat:!!receptionVisitor.seat});
+  }
   if(exhibitDate===RECEPTION){
    renderPhiFurniture(THREE,scene,{...furniture,benches:[]},{concrete:galleryFinish.stone,timber},elevation);
    for(const bench of furniture.benches)addPhiGoldenReceptionBench(THREE,scene,bench,elevation);
