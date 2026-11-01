@@ -77,7 +77,7 @@ export function phiGlowTargets(scene){
  return out;
 }
 
-export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={}){
+export function createPhiPostFX(THREE,renderer,scene,camera,{production=false,onRenderStage=null}={}){
  const frames=Object.fromEntries(PHI_FX_PRESETS.map(p=>[p,[]]));
  const settings=Object.fromEntries(Object.keys(PHI_FX_DEFAULTS).map(p=>[p,phiFXSettings(p)]));
  const stats=window.__phiPostFX={preset:'original',active:false,errors:[],frames,summaries:{},
@@ -199,7 +199,8 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
  };
  function build(){
   const compositor=new EffectComposer(renderer,{frameBufferType:THREE.HalfFloatType,multisampling:0});
-  compositor.addPass(new RenderPass(scene,camera));
+  const mainScenePass=new RenderPass(scene,camera);
+  compositor.addPass(mainScenePass);
   artProtection=createArtProtection(THREE,renderer,scene,camera);
   compositor.addPass(artProtection.copyPass);
   compositor.addPass(artProtection.maskPass);
@@ -224,11 +225,35 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   const focusPass=new EffectPass(camera,dof);compositor.addPass(focusPass);
   const colour=new BrightnessContrastEffect(),sat=new HueSaturationEffect();
   const vignette=new VignetteEffect({eskil:false}),grain=new NoiseEffect({premultiply:false});
-  compositor.addPass(new EffectPass(camera,colour,sat,grain,vignette,
-   new ToneMappingEffect({mode:ToneMappingMode.NEUTRAL})));
+  const colourAndTonePass=new EffectPass(camera,colour,sat,grain,vignette,
+   new ToneMappingEffect({mode:ToneMappingMode.NEUTRAL}));
+  compositor.addPass(colourAndTonePass);
   compositor.addPass(artProtection.pass);
   artProtection.setSceneDepth(compositor.inputBuffer.depthTexture);
   compositor.setSize(innerWidth,innerHeight,false);
+  // TEST ONLY: time individual composer passes. This wraps the existing
+  // render methods, without changing pass order, shaders, quality or results.
+  // No timers are created for the live gallery (onRenderStage defaults null).
+  if(typeof onRenderStage==='function'){
+   const passMap=[
+    ['main-scene',mainScenePass],
+    ['art-copy',artProtection.copyPass],
+    ['art-mask',artProtection.maskPass],
+    ['normals',normals],['ssao',aoPass],['n8ao',n8ao],
+    ['full-bloom',fullPass],['selective-bloom',selectedPass],
+    ['depth-of-field',focusPass],['colour-and-tone',colourAndTonePass],
+    ['art-composite',artProtection.pass]
+   ];
+   for(const [name,pass] of passMap){
+    if(!pass||typeof pass.render!=='function')continue;
+    const original=pass.render;
+    pass.render=function(...args){
+     const began=performance.now();
+     try{return original.apply(this,args);}
+     finally{onRenderStage('pass-'+name,began,performance.now()-began);}
+    };
+   }
+  }
   // Until explicitly enabled, expensive depth and bloom passes stay dormant.
   normals.enabled=false;aoPass.enabled=false;fullPass.enabled=false;
   selectedPass.enabled=false;focusPass.enabled=false;
