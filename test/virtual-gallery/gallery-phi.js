@@ -26,7 +26,7 @@ import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-
 import {createPhiArtworkPreloader} from './phi-artwork-preload.mjs?v=lift-gpu-test-20261031';
 import {addPhiGoldenReceptionDesk,addPhiGoldenReceptionBench} from './phi-reception-phi-furniture-study.mjs';
 import {addPhiOutdoorPlants,PHI_EXTERIOR_PLANTING_ENABLED} from './phi-outdoor-plants.mjs?v=plant-rows-20261027';
-import {createPhiSquare,clearOfPhiSquare} from './phi-square-graffiti.mjs?v=entry-performance-20261027';
+import {createPhiSquare,clearOfPhiSquare} from './phi-square-no-graffiti.mjs';
 import {phiLiftIndicatorState,paintPhiLiftIndicator} from './phi-lift-indicator.mjs?v=live-marker-20261026';
 import {planPhiLiftShaft} from './phi-lift-shaft.mjs?v=clear-landings-20261026';
 import {planPhiReception} from './phi-reception-layout.mjs?v=gallery-reception-20261027';
@@ -63,8 +63,6 @@ import { createArchitecturalMaterials, tiledBoxUvs } from './architectural-mater
 import {placeTwinSpotlight} from './twin-spotlight-fixture.mjs?v=innerscene-twin-v1-20261022';
 import {placeCastIronStreetLamp,enableDetailedStreetLamps} from './cast-iron-street-lamps.mjs?v=deferred-download-20261022';
 import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-uv-20261022';
-import {createTowerGraffiti} from './exterior-graffiti.mjs?v=atlas-first-20261027';
-import {planInteriorGraffiti,interiorGraffitiKey} from './interior-graffiti-plan.mjs';
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=daytime-restored-20261027';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
@@ -436,20 +434,7 @@ phiShadowProbe=installPhiShadowRenderProbe({
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
 let receptionWallMaterial=null;
-const towerGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.exteriorBrick,lowPower:galleryFinish.lowPower});
-const interiorGraffiti=createTowerGraffiti(THREE,{brick:galleryFinish.wall,lowPower:galleryFinish.lowPower,
- planner:planInteriorGraffiti,keyFor:interiorGraffitiKey,kind:'interior'});
-if(GALLERY_DEBUG){const debugWriting=(manager,inside=false)=>({
- diagnostics:()=>manager.diagnostics,
- marks:()=>manager.snapshot(currentFloor),
- preview(index){
-  const mark=manager.snapshot(currentFloor)[index];if(!mark)return;
-  const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210),p=mark.position,n=mark.normal;
-  const distance=inside?Math.max(2,mark.width*1.8):Math.max(3.8,mark.width*1.2);
-  view.position.set(p.x+n.x*distance,p.y+.12,p.z+n.z*distance);view.lookAt(p.x,p.y,p.z);
-  renderer.setAnimationLoop(null);renderer.render(scene,view);
- }
-});window.__galleryGraffiti=debugWriting(towerGraffiti);window.__galleryInteriorGraffiti=debugWriting(interiorGraffiti,true);}
+// Graffiti is paused. No tag engines, planners, atlases or paint jobs load.
 const phiSquare=createPhiSquare(THREE,{brick:galleryFinish.exteriorBrick,concrete:galleryFinish.floor,lowPower:galleryFinish.lowPower});
 if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnostics(),marks:()=>phiSquare.marks(),
  preview(){const frame=phiSquare.viewpoint();if(!frame)return;const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(frame.position);view.lookAt(frame.target);renderer.setAnimationLoop(null);renderer.render(scene,view);},
@@ -1424,7 +1409,7 @@ async function travelLift(date,index){
   const preparation=await waitForGalleryEntry({
    loading:{pending:0},timeout:4000,
    isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0||
-    towerGraffiti.diagnostics.pending||interiorGraffiti.diagnostics.pending||phiSquare.diagnostics().pending,
+    false,
    pump:processDeferredGallery
   });
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
@@ -2979,7 +2964,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
     const prepared=await waitForGalleryEntry({
       loading:phiStartupLoading,
       isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0||
-        towerGraffiti.diagnostics.pending||interiorGraffiti.diagnostics.pending||phiSquare.diagnostics().pending,
+        false,
       pump:processDeferredGallery
     });
     const warmed=await warmGalleryEntry({renderer,scene,camera});
@@ -3523,15 +3508,8 @@ function tick() {
  measurePhiPerformance(performance.now());
   if (!renderer) return;
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
-  const paintSlot=phiFrameSerial++%3;
+  phiFrameSerial++;
   const doorsMoving=liftArrivalOpening||Math.abs(liftDoorTarget-liftDoorClosure)>.002;
-  // Canvas painting and its texture uploads compete with the door animation.
-  // Resume them once the leaves stop, including ordinary approach openings.
-  if(!doorsMoving){
-   if(paintSlot===0&&towerGraffiti.diagnostics.pending)towerGraffiti.paintNext();
-   else if(paintSlot===1&&interiorGraffiti.diagnostics.pending)interiorGraffiti.paintNext();
-   else phiSquare.paintNext();
-  }
   // Finish lift motion before building expensive portrait geometry. In XR
   // this same renderer loop still owns all deferred artwork construction.
   if(!liftTravelling&&!doorsMoving&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
@@ -3603,7 +3581,7 @@ function tick() {
   const renderMs=renderAt===null?null:performance.now()-renderAt;
   if(phiLiftProfiler?.state.active&&renderMs!==null)phiLiftProfiler.record('render-frame',renderMs);
   phiArrivalMeshes.renderedFrame(renderMs);
-  if(GALLERY_DEBUG)window.__phiGraffitiStats={tower:towerGraffiti.diagnostics,interior:interiorGraffiti.diagnostics,square:phiSquare.diagnostics()};
+  if(GALLERY_DEBUG)window.__phiGraffitiStats={disabled:true,pending:0};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
 }
 if(renderer)renderer.setAnimationLoop(tick);
