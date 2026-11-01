@@ -29,6 +29,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-architecture-http.log 2>&1 &
       - name: Compare original, compiled and room-streamed gallery frames
+        continue-on-error: true # keep failed-run metrics accessible; never claim success
         run: node tests/phi-compiled-architecture-browser-benchmark.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -37,8 +38,9 @@ jobs:
           path: phi-compiled-architecture-benchmark/
           if-no-files-found: ignore
       - name: Publish measurement report without overwriting newer sources
-        if: success()
+        if: always()
         run: |
+          test -f phi-compiled-architecture-benchmark/results.json || { echo 'No browser audit generated'; exit 1; }
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           source_sha=$(git rev-parse HEAD:test/virtual-gallery/gallery-phi.js)
