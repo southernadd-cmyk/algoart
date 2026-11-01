@@ -37,6 +37,7 @@ import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
+import {attachPhiWebGLCallTrace} from './phi-webgl-call-trace.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
@@ -226,6 +227,14 @@ const phiRoomCullingEnabled=new URLSearchParams(location.search).get('roomcull')
 const phiPortalBatchEnabled=new URLSearchParams(location.search).get('portalbatch')!=='0';
 window.__phiRoomVisibility=()=>phiRoomVisibilityCuller?.snapshot()||{enabled:false,reason:'room culling disabled or reception'};
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
+if(renderer&&phiLiftProfiler&&new URLSearchParams(location.search).get('gltrace')==='1'){
+ try{window.__phiGLTrace=attachPhiWebGLCallTrace(renderer.getContext(),phiLiftProfiler);}
+ catch(error){
+  window.__phiGLTrace={enabled:false,error:String(error)};
+  console.warn('[TEST lift WebGL trace] could not attach',error);
+ }
+}
+
 const phiStartupLoading=trackGalleryLoading(THREE.DefaultLoadingManager);
 const galleryFinish=createArchitecturalMaterials(THREE,{
   lowPower:matchMedia('(pointer:coarse), (prefers-reduced-motion: reduce)').matches,
