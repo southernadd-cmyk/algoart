@@ -7,7 +7,7 @@ const browser=await chromium.launch({headless:true,args:[
 ]});
 try{
  const page=await browser.newPage({viewport:{width:960,height:620},deviceScaleFactor:1});
- await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:30000});
+ await page.goto('http://127.0.0.1:4173/__isolated_portal_fixture__.html',{waitUntil:'domcontentloaded',timeout:30000});
  const result=await page.evaluate(async()=>{
   // This isolated fixture has no gallery import map; install the same
   // package resolution that the real gallery's bundle supplies.
@@ -15,6 +15,7 @@ try{
   map.type='importmap';
   map.textContent=JSON.stringify({imports:{
    three:'/node_modules/three/build/three.module.js',
+   'three/addons/':'/node_modules/three/examples/jsm/',
    'three/':'/node_modules/three/'
   }});
   document.head.appendChild(map);
