@@ -128,10 +128,10 @@ try{
  });
  await mkdir('phi-shadow-receiver-late-audit',{recursive:true});
  for(const [name,png] of Object.entries(result.images)){
-  await writeFile('phi-shadow-receiver-audit/'+name+'-fixture.png',
+  await writeFile('phi-shadow-receiver-late-audit/'+name+'-fixture.png',
    Buffer.from(png.split(',')[1],'base64'));
  }
- await writeFile('phi-shadow-receiver-audit/pixel-parity.json',JSON.stringify(result.data,null,2));
+ await writeFile('phi-shadow-receiver-late-audit/pixel-parity.json',JSON.stringify(result.data,null,2));
  console.log('PHI_SHADOW_LATE_PIXEL_PARITY '+JSON.stringify(result.data));
  if(!result.data.exact||
     result.data.control.casters!==result.data.experimental.casters||
