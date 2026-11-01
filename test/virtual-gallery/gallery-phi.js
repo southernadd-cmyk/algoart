@@ -41,6 +41,7 @@ import {createPhiGpuProfiler} from './phi-gpu-profiler.mjs';
 import {installPhiShadowRenderProbe} from './phi-shadow-render-probe.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
+import {compilePhiVisibilityCells} from './phi-visibility-cell-index.mjs';
 import {createPhiRoomBatchStudy,packPhiRoomPaintingGroups} from './phi-room-batch-study.mjs';
 import {installPhiComposerPassProfiler} from './phi-postfx-pass-profiler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
@@ -239,6 +240,9 @@ const phiLiftBatchSize=phiLiftBatchMode==='adaptive'?12:phiLiftBatchFixed??16;
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
 // TEST ONLY: ?roomcull=1 enables conservative solid-wall visibility checks.
 const phiRoomCullingEnabled=new URLSearchParams(location.search).get('roomcull')==='1';
+// Single archived-floor visibility-cell experiment; opt-in, TEST only.
+const phiVisibilityCellDate='2026-10-20';
+const phiVisibilityCellsEnabled=new URLSearchParams(location.search).get('visibilitycells')==='1';
 const phiRoomBatchEnabled=new URLSearchParams(location.search).get('roombatch')==='1';
 window.__phiRoomBatches=()=>phiRoomBatchStudy?.snapshot()||{active:false};
 window.__phiRoomVisibility=()=>phiRoomVisibilityCuller?.snapshot()||{enabled:false,reason:'room culling not active'};
@@ -1879,9 +1883,19 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
  // No culling of reception, transparent/exterior sightlines, architecture, signs,
  // lights or any objects not explicitly registered as room-owned exhibits.
+ // Compile the conservative PVS once from the deterministic phi floor plan.
+ // Only a proven benchmark result would justify moving this calculation
+ // into the daily archive build and publishing precompiled assets.
+ const phiVisibilityCells=phiVisibilityCellsEnabled&&phiRoomCullingEnabled&&
+  exhibitDate===phiVisibilityCellDate
+  ?compilePhiVisibilityCells({pieces:phi.pieces,
+    rooms:phi.floor.mergedRooms,walls:phi.physical.walls}):null;
+ window.__phiVisibilityCellExperiment=()=>phiVisibilityCells?.stats?.()||
+  {enabled:false,reason:phiVisibilityCellsEnabled?'not-target-floor-or-culling-off':'not-requested',
+   targetDate:phiVisibilityCellDate};
  phiRoomVisibilityCuller=phiRoomCullingEnabled&&exhibitDate!==RECEPTION
   ?createPhiRoomVisibilityCuller({enabled:true,pieces:phi.pieces,
-   rooms:phi.floor.mergedRooms,walls:phi.physical.walls}) : null;
+   rooms:phi.floor.mergedRooms,walls:phi.physical.walls,visibilityCells:phiVisibilityCells}) : null;
  phiRoomBatchStudy=phiRoomBatchEnabled&&exhibitDate!==RECEPTION
   ?createPhiRoomBatchStudy(THREE,scene,phi.floor.mergedRooms.length,{enabled:true}):null;
  phiRoomLightEntries.length=0;
