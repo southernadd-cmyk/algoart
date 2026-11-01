@@ -35,16 +35,25 @@ export function summariseLiftVisit(v){
   }).filter(op=>op.overlapMs>0).sort((a,b)=>b.overlapMs-a.overlapMs).slice(0,8);
   const covered=observed.reduce((sum,op)=>sum+op.overlapMs,0);
   const likely=observed[0]||null;
+  const longFrames=(v.longAnimationFrames||[]).filter(item=>{
+   const start=item.elapsedMs,end=start+item.durationMs;
+   return Math.max(gapStart,start)<Math.min(gapEnd,end);
+  }).sort((a,b)=>b.blockingDurationMs-a.blockingDurationMs).slice(0,4);
+  const script=longFrames.flatMap(item=>item.scripts||[])
+   .filter(item=>item.durationMs>=8&&item.functionName)
+   .sort((a,b)=>b.durationMs-a.durationMs)[0]||null;
+  const measuredBlock=likely&&likely.overlapMs>=Math.min(8,frame.deltaMs*.25);
+  const attribution=measuredBlock?
+   {status:'observed synchronous blocking',operation:likely.name,
+    category:likely.category,overlapMs:likely.overlapMs}:
+   script?{status:'browser script-function attribution',functionName:script.functionName,
+    sourcePath:script.sourcePath,durationMs:script.durationMs}:
+   {status:'unattributed',explanation:'No measured operation or browser script function explains this frame gap. Could be GPU-driver wait, GC, compositor, scheduling, or other browser work. Investigate in DevTools Performance.'};
   return {
    elapsedMs:round(frame.elapsedMs),gapMs:round(frame.deltaMs),stageAtEnd:frame.stage,
-   matchingOperations:observed,
-   // In the absence of a recorded blocking call, do not wrongly treat the
-   // nearest phase marker as proof of the cause.
-   attribution:likely&&likely.overlapMs>=Math.min(8,frame.deltaMs*.25)?
-    {status:'observed synchronous blocking',operation:likely.name,category:likely.category,
-      overlapMs:likely.overlapMs}:
-    {status:'unattributed',explanation:'No measured operation explains this frame gap. Inspect browser Performance trace for GC, compositor, GPU driver, scheduling or browser pauses.'},
-   measuredOverlapMs:round(covered)
+   matchingOperations:observed,matchingLongAnimationFrames:longFrames,
+   // Stage names are context, not proof of the cause.
+   attribution,measuredOverlapMs:round(covered)
   };
  };
  const failed=stages.some(x=>x.name==='failure'),interrupted=stages.some(x=>x.name==='interrupted');
@@ -85,16 +94,18 @@ export function summariseLiftVisit(v){
    .map(op=>({...op,category:category(op.name)})),
   worstFrames:[...(v.frames||[])].sort((a,b)=>b.deltaMs-a.deltaMs).slice(0,60)
    .map(spikeAttribution),
-  longTasks:[...(v.longTasks||[])].sort((a,b)=>b.durationMs-a.durationMs).slice(0,40)
+  longTasks:[...(v.longTasks||[])].sort((a,b)=>b.durationMs-a.durationMs).slice(0,40),
+  longAnimationFrames:[...(v.longAnimationFrames||[])]
+   .sort((a,b)=>b.blockingDurationMs-a.blockingDurationMs).slice(0,40)
  };
 }
 export function buildLiftBenchmarkReport(state,environment={}){
  const visits=state?.visits||[];
  return {
   format:'PROPORTION PIECE — test tower lift benchmark',
-  version:3,exportedAt:new Date().toISOString(),environment,
+  version:4,exportedAt:new Date().toISOString(),environment,
   summary:{journeys:visits.length,completed:visits.filter(v=>v.summary&&!rows(v).some(s=>s.name==='failure')).length,
-   recording:!!state?.active,attributionNote:'Operation overlaps identify measured main-thread blockers; WebGL render and texture upload calls include driver wait and cannot separately prove pure GPU time. Unattributed gaps need a browser trace.',route:'Reception G → top exhibition → reception G'},
+   recording:!!state?.active,attributionNote:'Operation overlaps identify measured blockers. Chromium Long Animation Frames may reveal source JS functions. WebGL render and texture upload calls can include driver wait and do not prove pure GPU time. Unattributed gaps need a browser trace.',route:'Reception G → top exhibition → reception G'},
   journeys:visits.map(summariseLiftVisit)
  };
 }
