@@ -8,7 +8,7 @@ const GROUPS=[
   'What is the gramophone?','What are the screens?']],
  ['Conversations',[
   'What have you noticed?', "What's your favourite?",'Where did you come from?',
-  'How is this connected to Fibonacci?','Compare the first and the last','Is the golden ratio enough?']],
+  'How is this connected to Fibonacci?','Is the golden ratio enough?']],
  ['Golden ratio & nature',[
   'What is the golden ratio?','Who discovered phi?','What is Fibonacci?',
   'What is the golden angle?','Is phi everywhere in nature?','Is the nautilus shell golden?',
