@@ -80,38 +80,27 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - name: Refresh generated bundles in deployment workspace
+      # Pages should not depend on archived test experiments (photoreal/CSM,
+      # legacy visitor palette, gltfpack pilots). Those have separate workflows,
+      # and the test tower is deliberately a clean mirror of live plus chat v2.
+      - name: Build live and test gallery bundles
         run: |
           npm run gallery:bundle
           npm run gallery:bundle:phi
-          # The test URL has its own bundle; rebuild it rather than serving stale doors.
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
-          node --check test/virtual-gallery/gallery-phi-bundle.js
-          npm run gallery:bundle:post-test
-          node automation/build-phi-test-room-signs.mjs
-          node --check gallery/visit/gallery-phi-test-room-signs-bundle.js
-          node --test tests/phi-loading-overlap.test.mjs tests/phi-photoreal.test.mjs tests/phi-entry-warmup.test.mjs
-          node --test tests/phi-exterior-plants-disabled.test.mjs tests/phi-n8ao.test.mjs tests/phi-three-perf.test.mjs tests/phi-mesh-bvh.test.mjs tests/phi-csm.test.mjs tests/phi-lighting-study.test.mjs tests/phi-pool-composition.test.mjs
-          node --test tests/phi-room-names.test.mjs tests/phi-test-room-signs.test.mjs tests/phi-reception-penrose.test.mjs tests/phi-gallery-penrose.test.mjs tests/phi-stage-routing.test.mjs tests/phi-postprocessing.test.mjs tests/phi-room-sign-counts.test.mjs tests/phi-post-fx.test.mjs
-      - name: Validate public gallery before uploading the site
-        run: |
-          node automation/validate-phi-archive.mjs
-          node --test tests/phi-translation-area-sign-runtime.test.mjs tests/phi-large-monitor-door-sign.test.mjs tests/phi-reception-rear-wall-monitors.test.mjs tests/phi-monitor-banks.test.mjs tests/phi-monitor-bank-two.test.mjs tests/phi-shell-cache.test.mjs tests/phi-sculpture-stage.test.mjs tests/gramophone-record.test.mjs tests/phi-gramophone-timeline.test.mjs tests/phi-gramophone-score-map.test.mjs tests/phi-gramophone-asap-debussy.test.mjs tests/phi-gramophone-experience.test.mjs tests/phi-gramophone-independent-source.test.mjs tests/phi-reception-refresh.test.mjs tests/phi-reception-window.test.mjs tests/phi-touchdesigner-phase-one.test.mjs tests/phi-touchdesigner-six-screen.test.mjs tests/gallery-speakers.test.mjs
-          node --test tests/gallery-public-launch.test.mjs tests/phi-full-engine-adapter.test.mjs tests/phi-presentation.test.mjs
-          node --test tests/phi-lift-motion.test.mjs tests/gallery-entry-preparation.test.mjs tests/phi-curation-groups.test.mjs tests/phi-stage-curation.test.mjs tests/phi-pre-expansion.test.mjs
-          node --test tests/phi-gallery-topbar.test.mjs
           node --check gallery/visit/gallery-bundle.js
           node --check gallery/visit/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
 
-      # Optional TEST-only assets are added to the Pages artifact. Any missing
-      # tool or fidelity failure causes an exact-source copy and a report, not a
-      # modification of the production model paths.
-      - name: Install gltfpack for staged model A/B
-        run: npm install --no-save --package-lock=false gltfpack@1.3.0 || echo "gltfpack unavailable; pilot will use original copies"
-      - name: Build and validate optional gltfpack assets
+      - name: Verify archive and visitor chat v1/v2 release
         run: |
-          node automation/build-gltfpack-pilot.mjs
-          node --test tests/gltfpack-pilot.test.mjs
+          node automation/validate-phi-archive.mjs
+          node --test test/virtual-gallery/phi-visitor-chat.test.mjs test/virtual-gallery/visitor-v2/chat-v2.test.mjs
+          test -s test/virtual-gallery/visitor-v2/harness.html
+          test -s test/virtual-gallery/full-engine.html
+          grep -q 'visitor-v2/chat-v2.mjs' test/virtual-gallery/gallery-phi.js
+          grep -q 'test-chat-v2-20261101' test/virtual-gallery/full-engine.html
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
