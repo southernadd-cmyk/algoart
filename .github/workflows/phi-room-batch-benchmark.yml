@@ -1,0 +1,37 @@
+name: Benchmark per-room versus whole-floor gallery batches (test)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-room-batch-benchmark.yml'
+permissions:
+  contents: read
+jobs:
+  browser-ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate geometry and visibility logic
+        run: node --test tests/phi-room-batch-study.test.mjs tests/phi-room-visibility-culler.test.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Rebuild only the test gallery bundle
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+      - name: Serve the local gallery
+        run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-room-batch-http.log 2>&1 &
+      - name: Compare whole-floor and grouped culling on identical camera spots
+        run: node tests/phi-room-batch-browser-benchmark.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-room-batch-benchmark
+          path: phi-room-batch-benchmark/results.json
+          if-no-files-found: ignore
