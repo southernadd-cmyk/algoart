@@ -66,6 +66,8 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=daytime-restored-20261027';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
+import {buildVisitorKnowledge,createVisitorChatUI} from './phi-visitor-chat.mjs';
+import {nameExhibitionRooms} from './phi-room-names.mjs';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
@@ -141,6 +143,8 @@ const FLOOR_SPACING=6.2;
 const RECEPTION='__phi_reception__';
 let plan = null;
 let studyList = [];
+// Conversation anchors are tied to actual visitors on this current floor.
+let phiVisitorSpeakers=[],phiVisitorNearest=null,visitorChat=null;
 let touchPointer = null;
 let touchX = 0, touchY = 0;
 let xrLiftPanel=null;
@@ -1961,6 +1965,11 @@ function queuePhiFurnishings(phi,furnishings,elevation){
  deferredGalleryJobs.unshift(()=>{
   const convert=p=>({...p,...phi.world.toWorld(p.x,p.z),rotation:(p.rotation||0)+phi.world.theta,yaw:(p.yaw||0)+phi.world.theta});
   const furniture={benches:furnishings.benches.map(convert),people:furnishings.people.map(convert)};
+  phiVisitorSpeakers=furnishings.people.map((p,index)=>{
+   const world=phi.world.toWorld(p.x,p.z);
+   return {index,x:world.x,z:world.z,y:elevation,local:{x:p.x,z:p.z},
+    room:p.roomIndex??p.room,seat:!!p.seat};
+  });
   if(exhibitDate===RECEPTION){
    renderPhiFurniture(THREE,scene,{...furniture,benches:[]},{concrete:galleryFinish.stone,timber},elevation);
    for(const bench of furniture.benches)addPhiGoldenReceptionBench(THREE,scene,bench,elevation);
@@ -2967,6 +2976,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
   exhibitLightTargets.length=0;
   resetInspection();
+  phiVisitorSpeakers=[];phiVisitorNearest=null;visitorChat?.close();
   liftPosition=null;liftDoorThreshold=null;phiLiftPanelPosition=null;liftWasNear=false;liftDoors=[];
   phiReceptionProps=[];phiOutdoorPlants=[];phiReceptionMap=null;phiReceptionDesk=null;phiFurnishingObstacles=[];phiSquareObstacles=[];phiLiftIndicator=null;
   window.__phiDeskHologram=null;
@@ -3129,6 +3139,74 @@ window.addEventListener('resize',resize);
 
 // Information appears when a visitor pauses facing a nearby exhibit.
 // This is not a modal: movement and mouse look continue uninterrupted.
+// Test visitor conversations: draw only on the actual dated exhibition plan.
+function phiVisitorKnowledge(speaker){
+ const phi=plan?.phi,reception=exhibitDate===RECEPTION;
+ const byId=new Map(studyList.map(study=>[study.id,study]));
+ const paintings=reception||!phi?[]:phi.exhibition.paintings.filter(p=>(p.room??p.roomIndex)===speaker.room)
+  .map(p=>({placement:p,sculpture:false}));
+ const sculptures=reception||!phi?[]:phi.exhibition.sculptures.filter(p=>(p.room??p.roomIndex)===speaker.room)
+  .map(p=>({placement:p,sculpture:true}));
+ const works=[...paintings,...sculptures].map(({placement:p,sculpture})=>{
+  const study=byId.get(p.studyId);if(!study)return null;
+  let query;try{query=new URL(study.href,location.href).searchParams;}catch{query=new URLSearchParams();}
+  return {studyId:study.id,title:study.title,seed:study.seed,
+   material:study.material?.type||study.material||'marker',engine:study.engine,
+   palette:query.get('pal'),phi:query.has('phi')?Number(query.get('phi')):NaN,
+   sculpture,size:(p.width||1)*(p.height||p.depth||1),x:p.x,z:p.z};
+ }).filter(Boolean);
+ let roomName=null;
+ if(!reception&&phi){
+  const curation=phi.exhibition.curation?.rooms||[];
+  // Use the actual hanging-sign title, not a name invented for the chat.
+  roomName=nameExhibitionRooms(curation).get(speaker.room)||null;
+ }
+ const current=(focusCandidate||currentInfoExhibit)?.study;
+ const facing=works.find(w=>w.studyId===current?.id)||
+  [...works].sort((a,b)=>
+   Math.hypot(a.x-speaker.local.x,a.z-speaker.local.z)-
+   Math.hypot(b.x-speaker.local.x,b.z-speaker.local.z))[0]||null;
+ const floorCount=archiveDates.filter(date=>date!==RECEPTION).length;
+ return buildVisitorKnowledge({date:exhibitDate,readableDate:reception?'Ground floor':readableDate(exhibitDate),
+  floor:currentFloor,floorCount,reception,roomIndex:speaker.room,
+  roomName,works,visitorIndex:speaker.index,facing,
+  floorWorks:phi?(phi.exhibition.paintings.length+phi.exhibition.sculptures.length):0,
+  floorSculptures:phi?.exhibition.sculptures.length||0,
+  roomCount:phi?.floor.mergedRooms.length||0});
+}
+function ensureVisitorChat(){
+ if(visitorChat)return visitorChat;
+ visitorChat=createVisitorChatUI({onClose:()=>canvas.focus({preventScroll:true})});
+ visitorChat.prompt.addEventListener('click',talkToNearestVisitor);
+ return visitorChat;
+}
+function talkToNearestVisitor(){
+ if(!phiVisitorNearest||liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting)return;
+ const chat=ensureVisitorChat();
+ document.exitPointerLock?.();
+ pressed.clear();lookPressed.clear();
+ chat.start(phiVisitorNearest,phiVisitorKnowledge(phiVisitorNearest));
+}
+function updateVisitorChatPrompt(){
+ const chat=ensureVisitorChat();
+ const blocked=liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting;
+ if(blocked&&chat.open)chat.close();
+ let nearest=null,best=2.4;
+ if(!blocked)for(const speaker of phiVisitorSpeakers){
+  if(Math.abs(rig.position.y-speaker.y)>2)continue;
+  const distance=Math.hypot(rig.position.x-speaker.x,rig.position.z-speaker.z);
+  if(distance<best){best=distance;nearest=speaker;}
+ }
+ if(chat.open&&chat.speaker&&
+  Math.hypot(rig.position.x-chat.speaker.x,rig.position.z-chat.speaker.z)>3.4)chat.close();
+ phiVisitorNearest=nearest;
+ const name=!chat.open&&nearest?phiVisitorKnowledge(nearest).name:null;
+ chat.showPrompt(name);
+ if(GALLERY_DEBUG)window.__phiVisitorChat={
+  speakers:phiVisitorSpeakers.length,nearest:nearest?.index??null,open:chat.open,
+  floor:currentFloor};
+}
+
 function resetInspection(){
   $('info').hidden=true;
   currentInfoExhibit=null;focusCandidate=null;focusDuration=0;dismissedExhibit=null;
@@ -3195,6 +3273,7 @@ window.addEventListener('keydown',(e)=>{
       document.exitPointerLock?.();
       return;
     }
+    if(visitorChat?.open){e.preventDefault();visitorChat.close();return;}
     if(!$('lift').hidden){
       e.preventDefault();closeLift();return;
     }
@@ -3219,6 +3298,9 @@ window.addEventListener('keydown',(e)=>{
     e.preventDefault();
     if(!e.repeat)openLift();
     return;
+  }
+  if(e.code==='KeyT'&&phiVisitorNearest){
+    e.preventDefault();if(!e.repeat)talkToNearestVisitor();return;
   }
   if(e.code==='KeyE'){
     e.preventDefault();
@@ -3614,6 +3696,7 @@ function tick() {
   if(!liftTravelling&&!doorsMoving&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
   animateLiftDoors(elapsed);
   updatePhiCabinRide(dt);
+  if(phiFrameSerial%6===0)updateVisitorChatPrompt();
   // Mid-ride construction installs a second indicator for the hidden cabin.
   // Update the visible departure cabin's texture right up to handover.
   const visibleLiftIndicator=phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator;
