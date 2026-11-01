@@ -76,16 +76,21 @@ try{
     if(!baselines.has(key))baselines.set(key,snapshot.png);
     let difference=null;
     if(run>0){
-     difference=await page.evaluate(async original=>{
-      const image=new Image();
-      await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=original;});
-      const canvas=document.querySelector('#world');
-      const base=document.createElement('canvas');base.width=canvas.width;base.height=canvas.height;
+     difference=await page.evaluate(async ({original,current})=>{
+      const decode=src=>new Promise((resolve,reject)=>{
+       const image=new Image();image.onload=()=>resolve(image);image.onerror=reject;image.src=src;
+      });
+      // Compare the two captured PNGs, NOT a later WebGL frame.
+      const [image,currentImage]=await Promise.all([decode(original),decode(current)]);
+      const width=image.naturalWidth,height=image.naturalHeight;
+      if(currentImage.naturalWidth!==width||currentImage.naturalHeight!==height)
+       throw Error('Image dimensions differ');
+      const base=document.createElement('canvas');base.width=width;base.height=height;
       const ctx=base.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);
-      const a=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-      const present=document.createElement('canvas');present.width=canvas.width;present.height=canvas.height;
-      const cc=present.getContext('2d',{willReadFrequently:true});cc.drawImage(canvas,0,0);
-      const b=cc.getImageData(0,0,canvas.width,canvas.height).data;
+      const a=ctx.getImageData(0,0,width,height).data;
+      const present=document.createElement('canvas');present.width=width;present.height=height;
+      const cc=present.getContext('2d',{willReadFrequently:true});cc.drawImage(currentImage,0,0);
+      const b=cc.getImageData(0,0,width,height).data;
       let changed=0,changedChannels=0,maxChannelDelta=0,sumDelta=0;
       for(let i=0;i<a.length;i+=4){
        let differs=false;
@@ -95,10 +100,10 @@ try{
        }
        if(differs)changed++;
       }
-      return {pixels:canvas.width*canvas.height,changedPixels:changed,
-       changedPercent:+(100*changed/(canvas.width*canvas.height)).toFixed(5),
+      return {pixels:width*height,changedPixels:changed,
+       changedPercent:+(100*changed/(width*height)).toFixed(5),
        changedChannels,maxChannelDelta,sumDelta};
-     },baselines.get(key));
+     },{original:baselines.get(key),current:snapshot.png});
     }
     await writeFile(root+'/run-'+(run+1)+'-'+mode+'-room-'+room+'.png',png);
     const renderMs=snapshot.frames.map(f=>f.ms);
