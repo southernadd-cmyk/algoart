@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'test/virtual-gallery/gallery-phi.js'
+      - 'test/virtual-gallery/phi-square-no-graffiti.mjs'
+      - 'tests/phi-tower-no-graffiti.test.mjs'
       - 'test/virtual-gallery/phi-gpu-profiler.mjs'
       - 'tests/phi-gpu-profiler.test.mjs'
       - 'test/virtual-gallery/phi-caption-batch.mjs'
@@ -49,7 +51,7 @@ jobs:
       - name: Bake archived TEST room architecture, with independent room chunks
         run: node automation/compile-phi-test-architecture.mjs 2026-10-20
       - name: Verify GPU timing and caption geometry batching
-        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-visibility-cell-index.test.mjs tests/phi-compiled-room-package.test.mjs tests/phi-visibility-cell-floor-benchmark.test.mjs tests/phi-room-batch-study.test.mjs tests/phi-uploaded-texture-ledger.test.mjs tests/phi-shadow-receiver-invalidation.test.mjs
+        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-tower-no-graffiti.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-visibility-cell-index.test.mjs tests/phi-compiled-room-package.test.mjs tests/phi-visibility-cell-floor-benchmark.test.mjs tests/phi-room-batch-study.test.mjs tests/phi-uploaded-texture-ledger.test.mjs tests/phi-shadow-receiver-invalidation.test.mjs
       - name: Build TEST bundle without altering live
         run: |
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
