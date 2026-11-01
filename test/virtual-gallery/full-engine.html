@@ -37,6 +37,42 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
 .lift-panel{z-index:90}
 .lift-animation{z-index:100}
 .lift-arrival{z-index:95}
+/* On phones, prioritise floor selection and conversations. Keep the rest
+   available without squeezing five actions into the top toolbar. */
+.mobile-overflow{display:contents}
+#mobileMenuToggle{display:none}
+.topbar #mobileOverflow>a{display:inline-flex;align-items:center;background:transparent;
+ border:1px solid transparent;padding:8px 11px;text-decoration:underline;
+ text-underline-offset:4px;font-size:12px;min-height:35px;white-space:nowrap}
+@media(max-width:700px){
+ .topbar .top-actions{position:relative;width:100%;margin-left:0;gap:7px;
+  justify-content:space-between}
+ .topbar .top-actions>#openLift,
+ .topbar .top-actions>#openVisitorChat,
+ .topbar .top-actions>#mobileMenuToggle{flex:1 1 0;min-width:0;height:42px;
+  padding:7px 8px;display:inline-flex;align-items:center;justify-content:center;
+  text-align:center}
+ .topbar .top-actions>#openLift{padding-inline:8px}
+ /* The engine changes the chat button's text on reception floors.
+    Use short visual labels without interfering with that update. */
+ .topbar #openLift,.topbar #openVisitorChat{font-size:0}
+ .topbar #openLift::after{content:"Floors";font:600 13px Arial,Helvetica,sans-serif}
+ .topbar #openVisitorChat::after{content:"Chat";font:600 13px Arial,Helvetica,sans-serif}
+ .topbar #mobileMenuToggle{font-size:13px;font-weight:600}
+ #mobileMenuToggle[aria-expanded="true"]{background:#34473c;color:#fff;border-color:#34473c}
+ .topbar #mobileOverflow{display:none;position:absolute;right:0;top:calc(100% + 7px);
+  z-index:40;width:min(260px,calc(100vw - 24px));padding:10px;
+  background:#f1ede4;border:1px solid #a8ada4;
+  box-shadow:0 12px 32px #18251b45;flex-direction:column;gap:7px}
+ .topbar #mobileOverflow.is-open{display:flex}
+ .topbar #mobileOverflow>a,.topbar #mobileOverflow>#fullscreen,
+ .topbar #mobileOverflow>#xr-controls{display:flex;align-items:center;
+  justify-content:center;width:100%;min-height:42px;text-align:center}
+ .topbar #mobileOverflow>a{border:1px solid #b8bcb3;padding:9px 12px;
+  background:#f8f6f0;text-decoration:none}
+ .topbar #mobileOverflow>#fullscreen{display:flex}
+ .topbar #mobileOverflow>#xr-controls>*{width:100%!important;min-height:42px!important}
+}
 </style>
 
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=12">
@@ -165,13 +201,42 @@ window.addEventListener('load',()=>{
 </header>
 <div class="topbar" role="group" aria-label="Virtual exhibition controls">
   <div class="top-actions">
-    <button id="openLift" type="button">Lift · Floors</button>
+    <button id="openLift" type="button" aria-label="Open lift to choose gallery floor">Lift · Floors</button>
     <button id="openVisitorChat" type="button" disabled aria-label="Chat with a gallery visitor" title="Ask about the art and the tower">Chat · Visitor</button>
-    <a id="archiveLink" href="../">View 2D gallery</a>
-    <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
-    <div id="xr-controls" aria-label="Virtual reality controls"></div>
+    <button id="mobileMenuToggle" type="button" aria-label="More gallery controls" aria-expanded="false" aria-controls="mobileOverflow">More <span aria-hidden="true">▾</span></button>
+    <div id="mobileOverflow" class="mobile-overflow">
+      <a id="archiveLink" href="../">View 2D gallery</a>
+      <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
+      <div id="xr-controls" aria-label="Virtual reality controls"></div>
+    </div>
   </div>
 </div>
+<script>
+// Keep secondary actions available on small screens without a second toolbar row.
+(()=>{
+  const toggle=document.getElementById('mobileMenuToggle');
+  const panel=document.getElementById('mobileOverflow');
+  const mobile=matchMedia('(max-width:700px)');
+  const isOpen=()=>panel.classList.contains('is-open');
+  function setOpen(open,returnFocus=false){
+    panel.classList.toggle('is-open',Boolean(open&&mobile.matches));
+    toggle.setAttribute('aria-expanded',String(isOpen()));
+    if(returnFocus)toggle.focus();
+  }
+  toggle.addEventListener('click',()=>setOpen(!isOpen()));
+  document.addEventListener('pointerdown',event=>{
+    if(isOpen()&&!toggle.contains(event.target)&&!panel.contains(event.target))setOpen(false);
+  });
+  panel.addEventListener('click',event=>{
+    // Keep the VR control accessible for an exit action after entering VR.
+    if(event.target.closest('a,#fullscreen'))setOpen(false,true);
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&isOpen()){event.preventDefault();setOpen(false,true);}
+  });
+  mobile.addEventListener?.('change',()=>setOpen(false));
+})();
+</script>
 <!-- Retain the scripting hook without showing redundant floor information. -->
 <span id="floorIndicator" hidden></span>
 <script>
