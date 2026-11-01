@@ -1,0 +1,100 @@
+name: Restore test tower from LIVE and install visitor v2
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.chat-v2-staging/ready.txt'
+permissions:
+  contents: write
+concurrency:
+  group: reset-test-tower-from-live-v2
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mirror current LIVE tower to TEST without modifying LIVE
+        run: |
+          git rm -qr --ignore-unmatch test/virtual-gallery
+          mkdir -p test/virtual-gallery
+          cp -a gallery/visit/. test/virtual-gallery/
+          cp test/virtual-gallery/index.html test/virtual-gallery/full-engine.html
+      - name: Restore v2 sources from verified user ZIP payload
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+          import {dirname} from 'node:path';
+          import {createHash} from 'node:crypto';
+          import {brotliDecompressSync} from 'node:zlib';
+          const raw=Array.from({length:7},(_,i)=>i+1).map(i=>
+            readFileSync('.chat-v2-staging/part-'+i+'.txt','utf8').trim()).join('');
+          const digest=createHash('sha256').update(raw).digest('hex');
+          if(digest!=='ec8c371ed7ef305783ac3d3ef6ed25468a4f2e955856cc30a8315a1350139061')
+           throw Error('v2 payload hash mismatch: '+digest);
+          const files=JSON.parse(brotliDecompressSync(Buffer.from(raw,'base64')).toString('utf8'));
+          if(Object.keys(files).length!==8)throw Error('Unexpected v2 file count');
+          for(const [path,contents] of Object.entries(files)){
+            if(!path.startsWith('test/virtual-gallery/visitor-v2/')||path.includes('..'))
+              throw Error('Unsafe v2 payload path '+path);
+            mkdirSync(dirname(path),{recursive:true});writeFileSync(path,contents);
+          }
+          NODE
+      - name: Wire v1/v2 switch and correct test-only archive paths
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('test/virtual-gallery')
+          js=root/'gallery-phi.js'
+          s=js.read_text()
+          anchor="import {buildVisitorKnowledge,createVisitorChatUI} from './phi-visitor-chat.mjs';"
+          replacement="""import {buildVisitorKnowledge as buildVisitorKnowledgeV1,createVisitorChatUI as createVisitorChatUIV1} from './phi-visitor-chat.mjs';
+          import {buildVisitorKnowledge as buildVisitorKnowledgeV2,createVisitorChatUI as createVisitorChatUIV2} from './visitor-v2/chat-v2.mjs';
+          // Independent preview: plain TEST runs v1; ?chat=v2 opts into v2.
+          const VISITOR_CHAT_V2=new URLSearchParams(location.search).get('chat')==='v2';
+          const buildVisitorKnowledge=VISITOR_CHAT_V2?buildVisitorKnowledgeV2:buildVisitorKnowledgeV1;
+          const createVisitorChatUI=VISITOR_CHAT_V2?createVisitorChatUIV2:createVisitorChatUIV1;"""
+          if s.count(anchor)!=1:raise SystemExit('Chat import anchor changed: refusing to modify')
+          s=s.replace(anchor,replacement)
+          anchor='  chat.start(speaker,phiVisitorKnowledge(speaker));'
+          replacement="""  const others=VISITOR_CHAT_V2&&speaker.index>=0?phiVisitorSpeakers
+           .filter(person=>person!==speaker&&person.room===speaker.room)
+           .slice(0,1).map(phiVisitorKnowledge):[];
+          chat.start(speaker,phiVisitorKnowledge(speaker),{others});"""
+          if s.count(anchor)!=1:raise SystemExit('Chat start anchor changed')
+          s=s.replace(anchor,replacement)
+          anchor='  roomCount:phi?.floor.mergedRooms.length||0});'
+          if s.count(anchor)!=1:raise SystemExit('Floor context anchor changed')
+          s=s.replace(anchor,'  roomCount:phi?.floor.mergedRooms.length||0,\n  floorDates:archiveDates.filter(date=>date!==RECEPTION)});')
+          # The gallery archive is not located under /test/.
+          s=s.replace("new URL('../'+(reception?", "new URL('../../gallery/'+(reception?")
+          js.write_text(s)
+          for name in ('index.html','full-engine.html'):
+            p=root/name
+            html=p.read_text()
+            html=html.replace("../tower-layouts.json", "../../gallery/tower-layouts.json")
+            html=html.replace('href="../"', 'href="../../gallery/"')
+            html=html.replace('gallery-phi-bundle.js?v=live-chat-v1-20261101','gallery-phi-bundle.js?v=test-chat-v2-20261101')
+            if 'chat-v2' not in html and 'gallery-phi-bundle.js?v=test-chat-v2-20261101' not in html:
+              raise SystemExit('Missing test bundle reference')
+            p.write_text(html)
+          PY
+      - name: Run chat regression suites
+        run: |
+          node --test test/virtual-gallery/phi-visitor-chat.test.mjs test/virtual-gallery/visitor-v2/chat-v2.test.mjs
+      - name: Install build dependencies
+        run: npm ci --ignore-scripts
+      - name: Build clean test tower bundle
+        run: npx esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+      - name: Publish TEST only
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A test/virtual-gallery
+          git commit -m 'Restore test tower from live and deploy flag-gated visitor chat v2'
+          git push
