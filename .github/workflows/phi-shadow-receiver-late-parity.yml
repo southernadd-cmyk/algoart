@@ -1,0 +1,31 @@
+name: TEST precompiled shadow receiver pixel parity
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-shadow-receiver-late-parity.yml'
+      - 'tests/phi-shadow-receiver-late-pixel-parity.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-shadow-late-fixture-http.log 2>&1 &
+      - name: Compare pixels after late receiver activation with previously compiled shaders
+        run: node tests/phi-shadow-receiver-late-pixel-parity.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phi-shadow-receiver-late-parity
+          path: phi-shadow-receiver-late-audit/
+          if-no-files-found: ignore
