@@ -319,6 +319,20 @@ if(new URLSearchParams(location.search).get('roomcullbench')==='1'){
    return phiRoomVisibilityCuller.update(local,{safe:true});
   },
   culling(){return window.__phiRoomVisibility?.()??null;},
+  look(angle){yaw=angle;pitch=0;rig.rotation.y=yaw;camera.rotation.x=pitch;},
+  // Direct scene-only render avoids full-screen post-FX timing dominating the
+  // paired room-occlusion measurement. This probe is TEST-only.
+  directSceneRender(){
+   const previous=renderer.info.autoReset;
+   renderer.info.autoReset=false;
+   renderer.info.reset();
+   try{
+    const started=performance.now();
+    renderer.render(scene,camera);
+    return {ms:performance.now()-started,calls:renderer.info.render.calls,
+     triangles:renderer.info.render.triangles,hidden:phiRoomVisibilityCuller?.snapshot().hidden??0};
+   }finally{renderer.info.autoReset=previous;}
+  },
   paintings(){return window.__phiFullEngine?.paintingsLoaded??0;},
   expectedPaintings(){return window.__phiFullEngine?.paintings??0;}
  };
