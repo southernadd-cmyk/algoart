@@ -1,0 +1,1 @@
+visitor-chat-v2 verified source payload; reset test tower from current live then install flag-gated v2
