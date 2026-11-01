@@ -7,12 +7,12 @@
     {
       "mode": "original",
       "status": "complete",
-      "startupMs": 5089,
+      "startupMs": 6083,
       "rooms": 4,
       "captures": [
         {
           "room": 0,
-          "ms": 1238.3999999999942,
+          "ms": 1169.0999999999913,
           "calls": 74,
           "triangles": 62874,
           "hidden": 0,
@@ -24,7 +24,7 @@
         },
         {
           "room": 3,
-          "ms": 1848.7999999999884,
+          "ms": 2984.7000000000116,
           "calls": 244,
           "triangles": 88280,
           "hidden": 0,
@@ -94,12 +94,12 @@
     {
       "mode": "precompiled",
       "status": "complete",
-      "startupMs": 4695,
+      "startupMs": 6348,
       "rooms": 4,
       "captures": [
         {
           "room": 0,
-          "ms": 2891.100000000035,
+          "ms": 2727.399999999994,
           "calls": 77,
           "triangles": 62838,
           "hidden": 0,
@@ -130,7 +130,7 @@
         },
         {
           "room": 3,
-          "ms": 1531.2000000000116,
+          "ms": 2650.6999999999825,
           "calls": 247,
           "triangles": 88220,
           "hidden": 0,
@@ -238,14 +238,14 @@
     {
       "mode": "streamed",
       "status": "complete",
-      "startupMs": 4829,
+      "startupMs": 6560,
       "rooms": 4,
       "captures": [
         {
           "room": 0,
-          "ms": 2544.7000000000116,
-          "calls": 77,
-          "triangles": 62742,
+          "ms": 1657.8999999999942,
+          "calls": 76,
+          "triangles": 62730,
           "hidden": 0,
           "imageHash": "4e562669c1b17652333493cf7fcf172d51cc525b7d7e9888aae9e3bac4318232",
           "imageBytes": 786918,
@@ -275,7 +275,7 @@
         },
         {
           "room": 3,
-          "ms": 931.2000000000116,
+          "ms": 2978.2000000000116,
           "calls": 247,
           "triangles": 88124,
           "hidden": 0,
