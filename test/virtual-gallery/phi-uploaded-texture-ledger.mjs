@@ -4,8 +4,9 @@
 // A texture disposed and later reused must be uploaded again, even if its
 // version number has not changed. Mark only after a successful upload.
 export function createPhiUploadedTextureLedger(){
- const uploaded=new WeakMap(),listeners=new WeakSet();
- const counters={marks:0,cacheHits:0,versionInvalidations:0,disposalInvalidations:0};
+ let uploaded=new WeakMap();
+ const listeners=new WeakSet();
+ const counters={marks:0,cacheHits:0,versionInvalidations:0,disposalInvalidations:0,contextInvalidations:0};
  const version=texture=>Number.isFinite(texture?.version)?texture.version:0;
  const sourceVersion=texture=>Number.isFinite(texture?.source?.version)?texture.source.version:0;
  const valid=texture=>texture&&typeof texture==='object'&&
@@ -32,6 +33,7 @@ export function createPhiUploadedTextureLedger(){
   }
   counters.cacheHits++;return true;
  };
+ const invalidateAll=()=>{uploaded=new WeakMap();counters.contextInvalidations++;};
  const stats=()=>({...counters});
- return {mark,has,stats};
+ return {mark,has,invalidateAll,stats};
 }
