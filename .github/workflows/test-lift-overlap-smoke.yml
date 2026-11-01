@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'tests/phi-lift-overlap-browser-smoke.mjs'
+      - 'test/virtual-gallery/gallery-phi.js'
       - '.github/workflows/test-lift-overlap-smoke.yml'
   workflow_dispatch:
 permissions:
