@@ -3,13 +3,14 @@
 // and UVs. Room-owned surfaces can swap without touching walls, art or lights.
 import * as THREE from 'three';
 import {ROOM_HEIGHT} from './layout-v2.mjs';
+import {receptionWindowWallParts} from './phi-reception-window.mjs';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {chooseGalleryPenroseRooms,pieceRoomIndex} from './phi-gallery-penrose-floor.mjs';
 import {alignReceptionTileUvs} from './reception-tile-preview.mjs';
 import {tiledBoxUvs} from './architectural-materials.mjs';
 
 export const PHI_ROOM_PACKAGE_VERSION=1;
-export const PHI_ROOM_MATERIAL_TILING=Object.freeze({floor:2.25,penrose:2.25,plaster:2.2});
+export const PHI_ROOM_MATERIAL_TILING=Object.freeze({floor:2.25,penrose:2.25,plaster:2.2,brick:1.05,trims:.8,plinth:1.15});
 
 const round=v=>Number(Number(v).toFixed(7));
 export function phiRoomPackageFingerprint(phi,date,elevation){
@@ -83,4 +84,60 @@ export function decodePhiRoomPackage(THREE,pack,materials){
   }
   return meshes;
  }catch(error){meshes.forEach(mesh=>mesh.geometry.dispose());throw error;}
+}
+
+// Static architecture common to every room: complete solid walls, outer brick
+// veneer, cornices and skirtings. Doors, glass, shadows, signs and lighting
+// remain independent. These boxes are the very same as constructPhiGallery.
+export function compilePhiSharedArchitecture(phi,date,elevation){
+ if(date==='__phi_reception__')throw Error('Reception is not a compiled test floor');
+ const grouped=new Map();
+ const add=(material,box)=>{
+  if(!grouped.has(material))grouped.set(material,[]);
+  grouped.get(material).push(surface(box,material));
+ };
+ let wallBoxes=0,veneerBoxes=0,trimBoxes=0;
+ for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,null,ROOM_HEIGHT)){
+  const len=part.hi-part.lo;
+  if(len<.04)continue;
+  const centre=(part.lo+part.hi)/2,centreY=elevation+part.bottom+part.height/2;
+  add('plaster',w.axis==='x'
+   ?[.19,part.height,len,w.at,centreY,centre]
+   :[len,part.height,.19,centre,centreY,w.at]);
+  wallBoxes++;
+ }
+ const inCell=(x,z)=>phi.pieces.some(p=>x>=p.x-.0001&&x<=p.x+p.w+.0001&&
+  z>=p.z-.0001&&z<=p.z+p.h+.0001);
+ for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,null,ROOM_HEIGHT)){
+  const len=part.hi-part.lo;
+  if(len<.05)continue;
+  const c=(part.lo+part.hi)/2,offset=.24,centreY=elevation+part.bottom+part.height/2;
+  if(w.axis==='x'){
+   const left=inCell(w.at-offset,c),right=inCell(w.at+offset,c);
+   if(left===right)continue;
+   const side=left?1:-1;
+   add('brick',[.035,part.height,len,w.at+side*.113,centreY,c]);
+  }else{
+   const north=inCell(c,w.at-offset),south=inCell(c,w.at+offset);
+   if(north===south)continue;
+   const side=north?1:-1;
+   add('brick',[len,part.height,.035,c,centreY,w.at+side*.113]);
+  }
+  veneerBoxes++;
+ }
+ for(const w of phi.physical.walls){
+  const len=w.hi-w.lo;if(len<.45)continue;
+  if(w.axis==='x'){
+   add('trims',[.13,.16,len,w.at,elevation+ROOM_HEIGHT-.035,(w.lo+w.hi)/2]);
+   add('plinth',[.065,.13,len,w.at,elevation+.14,(w.lo+w.hi)/2]);
+  }else{
+   add('trims',[len,.16,.13,(w.lo+w.hi)/2,elevation+ROOM_HEIGHT-.035,w.at]);
+   add('plinth',[len,.13,.065,(w.lo+w.hi)/2,elevation+.14,w.at]);
+  }
+  trimBoxes+=2;
+ }
+ return {version:PHI_ROOM_PACKAGE_VERSION,date,elevation,scope:'shared',
+  fingerprint:phiRoomPackageFingerprint(phi,date,elevation),
+  wallBoxes,veneerBoxes,trimBoxes,
+  geometries:Object.fromEntries([...grouped].map(([name,parts])=>[name,packedGeometry(parts)]))};
 }
