@@ -337,7 +337,10 @@ test('test-only reuse A/B switch leaves original painting fidelity and door inte
  const src=readFileSync(new URL('../test/virtual-gallery/gallery-phi.js',import.meta.url),'utf8');
  assert.match(src,/get\('liftreuse'\)==='1'/);
  assert.match(src,/get\('liftpipeline'\)!=='0'/);
- assert.match(src,/const phiUploadPainting=texture=>\{renderer\.initTexture\(texture\);phiAlreadyUploaded\.add\(texture\);\}/);
+ assert.match(src,/createPhiUploadedTextureLedger/);
+ assert.match(src,/const phiUploadedTextureLedger=createPhiUploadedTextureLedger\(\)/);
+ assert.match(src,/renderer\.initTexture\(texture\);phiUploadedTextureLedger\.mark\(texture\)/);
+ assert.match(src,/const phiIsUploaded=texture=>phiReuseLiftUploads&&phiUploadedTextureLedger\.has\(texture\)/);
  assert.match(src,/alreadyUploaded:phiIsUploaded/);
  assert.match(src,/isAlreadyUploaded:phiIsUploaded/);
  assert.match(src,/if\(!phiPaintingGate\?\.stats\(\)\.complete/);
