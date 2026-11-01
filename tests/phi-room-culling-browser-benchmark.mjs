@@ -15,8 +15,9 @@ const round=x=>Number.isFinite(x)?Math.round(x*100)/100:null;
 const describe=(samples)=>({
  count:samples.length,
  renderMs:{mean:round(avg(samples.map(s=>s.ms))),p50:round(p(samples.map(s=>s.ms),.5)),p95:round(p(samples.map(s=>s.ms),.95)),max:round(Math.max(0,...samples.map(s=>s.ms)))},
- drawCalls:round(avg(samples.map(s=>s.calls))),
- triangles:round(avg(samples.map(s=>s.triangles))),
+ drawCalls:round(avg(samples.map(s=>s.sceneCalls))),
+ triangles:round(avg(samples.map(s=>s.sceneTriangles))),
+ scenePasses:round(avg(samples.map(s=>s.sceneRenderPasses))),
  hidden:round(avg(samples.map(s=>s.hidden)))
 });
 const browser=await chromium.launch({headless:true,args:[
@@ -70,7 +71,8 @@ try{
    const captures=[];
    for(const spot of chosen){
     const rows=[];
-    // ABBA prevents a single steadily warming browser from favouring one mode.
+    // ABBA and per-run medians reduce warm-up and extreme frame-spike bias.
+    // Report all four run samples so the remaining variability is visible.
     for(const on of [false,true,true,false]){
      const state=await page.evaluate(({room,on})=>{
       const bench=window.__phiRoomCullBench;
@@ -88,9 +90,9 @@ try{
     const on=rows.filter(r=>r.mode==='on').flatMap(r=>r.summary.count?[r.summary]:[]);
     captures.push({room:spot.room,area:spot.area,potentialHidden:spot.potentialHidden,
      framesOff:off.reduce((n,x)=>n+x.count,0),framesOn:on.reduce((n,x)=>n+x.count,0),
-     off:{renderMs:round(avg(off.map(x=>x.renderMs.mean))),drawCalls:round(avg(off.map(x=>x.drawCalls))),
+     off:{renderMs:round(avg(off.map(x=>x.renderMs.p50))),renderP95Ms:round(avg(off.map(x=>x.renderMs.p95))),drawCalls:round(avg(off.map(x=>x.drawCalls))),
       triangles:round(avg(off.map(x=>x.triangles)))},
-     on:{renderMs:round(avg(on.map(x=>x.renderMs.mean))),drawCalls:round(avg(on.map(x=>x.drawCalls))),
+     on:{renderMs:round(avg(on.map(x=>x.renderMs.p50))),renderP95Ms:round(avg(on.map(x=>x.renderMs.p95))),drawCalls:round(avg(on.map(x=>x.drawCalls))),
       triangles:round(avg(on.map(x=>x.triangles))),hidden:round(avg(on.map(x=>x.hidden)))},
      runs:rows});
     console.log('ROOM_CULL_SPOT '+JSON.stringify({date,room:spot.room,hidden:spot.potentialHidden,
