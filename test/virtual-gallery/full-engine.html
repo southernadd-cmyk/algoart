@@ -66,10 +66,12 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
   box-shadow:0 12px 32px #18251b45;flex-direction:column;gap:7px}
  .topbar #mobileOverflow.is-open{display:flex}
  .topbar #mobileOverflow>a,.topbar #mobileOverflow>#fullscreen,
+ .topbar #mobileOverflow>button[aria-haspopup="dialog"],
  .topbar #mobileOverflow>#xr-controls{display:flex;align-items:center;
   justify-content:center;width:100%;min-height:42px;text-align:center}
- .topbar #mobileOverflow>a{border:1px solid #b8bcb3;padding:9px 12px;
-  background:#f8f6f0;text-decoration:none}
+ .topbar #mobileOverflow>a,
+ .topbar #mobileOverflow>button[aria-haspopup="dialog"]{border:1px solid #b8bcb3;
+  padding:9px 12px;background:#f8f6f0;text-decoration:none}
  .topbar #mobileOverflow>#fullscreen{display:flex}
  .topbar #mobileOverflow>#xr-controls>*{width:100%!important;min-height:42px!important}
 }
@@ -217,6 +219,23 @@ window.addEventListener('load',()=>{
   const toggle=document.getElementById('mobileMenuToggle');
   const panel=document.getElementById('mobileOverflow');
   const mobile=matchMedia('(max-width:700px)');
+  const actions=document.querySelector('.top-actions');
+  // The listening exhibit adds its own button after the tower loads.
+  // Relocate that existing button, preserving its event listener and dialog.
+  const placeGramophone=()=>{
+    const gramophone=[...actions.children].find(element=>
+      element.matches('button[aria-haspopup="dialog"]')&&
+      element.textContent.trim()==='Gramophone');
+    if(!gramophone)return;
+    gramophone.dataset.gallerySecondary='gramophone';
+    panel.append(gramophone);
+    // When its native dialog closes, restore focus to the visible menu button.
+    document.querySelector('.phi-gramophone-dialog')?.addEventListener('close',()=>{
+      if(mobile.matches){setOpen(false,true);}
+    });
+  };
+  new MutationObserver(placeGramophone).observe(actions,{childList:true});
+  placeGramophone();
   const isOpen=()=>panel.classList.contains('is-open');
   function setOpen(open,returnFocus=false){
     panel.classList.toggle('is-open',Boolean(open&&mobile.matches));
@@ -230,6 +249,9 @@ window.addEventListener('load',()=>{
   panel.addEventListener('click',event=>{
     // Keep the VR control accessible for an exit action after entering VR.
     if(event.target.closest('a,#fullscreen'))setOpen(false,true);
+    // The existing Gramophone button opens its native dialog; dismiss only
+    // the dropdown, not the recording panel.
+    if(event.target.closest('[data-gallery-secondary="gramophone"]'))setOpen(false);
   });
   document.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&isOpen()){event.preventDefault();setOpen(false,true);}
