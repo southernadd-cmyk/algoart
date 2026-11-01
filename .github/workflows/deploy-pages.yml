@@ -95,7 +95,7 @@ jobs:
       - name: Verify archive and visitor chat v1/v2 release
         run: |
           node automation/validate-phi-archive.mjs
-          node --test test/virtual-gallery/phi-visitor-chat.test.mjs test/virtual-gallery/visitor-v2/chat-v2.test.mjs
+          node --test test/virtual-gallery/phi-visitor-chat.test.mjs test/virtual-gallery/visitor-v2/chat-v2.test.mjs test/virtual-gallery/phi-visitor-selection.test.mjs
           test -s test/virtual-gallery/visitor-v2/harness.html
           test -s test/virtual-gallery/full-engine.html
           grep -q 'visitor-v2/chat-v2.mjs' test/virtual-gallery/gallery-phi.js
