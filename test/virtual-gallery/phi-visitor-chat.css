@@ -34,3 +34,16 @@
  .visitor-chat-chips button{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.visitor-chat,.visitor-talk-prompt{transition:none!important}}
+
+/* Context-driven chips and a compact topic index, on desktop and phones. */
+.visitor-chat-chips{display:block;max-height:min(31dvh,240px);overflow-y:auto;overscroll-behavior:contain}
+.visitor-chip-quick{display:flex;gap:6px;flex-wrap:wrap}
+.visitor-topic-browser{margin-top:8px;border-top:1px solid #b6b3a870;padding-top:7px}
+.visitor-topic-browser>summary{cursor:pointer;font-size:12px;color:#334a3d;min-height:26px;outline-offset:3px}
+.visitor-topic-groups{padding:5px 0 3px;display:grid;gap:5px}
+.visitor-topic-groups>details{border:1px solid #c3c8bd;background:#f8f6f0}
+.visitor-topic-groups>details>summary{font:12px/1.4 Arial,sans-serif;padding:8px 10px;cursor:pointer}
+.visitor-topic-options{display:grid;gap:5px;padding:0 7px 8px}
+.visitor-chat .visitor-topic-options button{min-height:34px;text-align:left;font-size:11px}
+.visitor-topic-seen{opacity:.64}
+.visitor-chat-log{min-height:90px}
