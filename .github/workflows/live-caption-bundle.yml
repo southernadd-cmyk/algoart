@@ -1,0 +1,53 @@
+name: Build approved live caption optimisation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gallery/visit/gallery-phi.js'
+      - 'gallery/visit/phi-caption-batch.mjs'
+      - '.github/workflows/live-caption-bundle.yml'
+permissions:
+  contents: write
+concurrency:
+  group: live-caption-bundle-20261101
+  cancel-in-progress: false
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify approved caption batching
+        run: |
+          node --test tests/phi-caption-batch.test.mjs
+          node --check gallery/visit/gallery-phi.js
+          node --check gallery/visit/phi-caption-batch.mjs
+      - name: Build only the live gallery bundle
+        run: |
+          npm run gallery:bundle:phi
+          node --check gallery/visit/gallery-phi-bundle.js
+      - name: Commit generated live bundle without overwriting new source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          original_source=$(git rev-parse HEAD:gallery/visit/gallery-phi.js)
+          original_helper=$(git rev-parse HEAD:gallery/visit/phi-caption-batch.mjs)
+          git add gallery/visit/gallery-phi-bundle.js
+          if git diff --cached --quiet; then
+            echo "Live bundle already up to date."
+            exit 0
+          fi
+          git commit -m "Publish approved live caption batching bundle"
+          git pull --rebase origin main
+          [[ "$(git rev-parse HEAD:gallery/visit/gallery-phi.js)" == "$original_source" ]] || { echo "Live source changed concurrently, aborting stale release"; exit 1; }
+          [[ "$(git rev-parse HEAD:gallery/visit/phi-caption-batch.mjs)" == "$original_helper" ]] || { echo "Caption helper changed concurrently, aborting stale release"; exit 1; }
+          git push origin HEAD:main
