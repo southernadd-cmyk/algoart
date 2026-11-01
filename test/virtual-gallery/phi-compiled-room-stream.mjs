@@ -53,6 +53,19 @@ export async function preparePhiCompiledRoomStream(THREE,{date,phi,elevation,
   console.warn('[TEST compiled rooms] Falling back to original architecture:',error);
   return null;
  }
+ // Shared walls and architectural trims are loaded before changing floors.
+ // If the packet is unavailable, preserve every existing staticBlock() call.
+ let shared=null;
+ try{
+  const pack=await load(new URL('shared.json',base));
+  if(pack?.version!==1||pack.scope!=='shared'||pack.date!==date||
+     pack.elevation!==elevation||pack.fingerprint!==fingerprint||
+     !pack.geometries||!['plaster','brick','trims','plinth'].every(k=>pack.geometries[k]))
+   throw Error('Invalid shared architecture packet');
+  shared=pack;
+ }catch(error){
+  console.warn('[TEST compiled rooms] Shared package unavailable; using original architecture:',error);
+ }
  const packages=new Map(),requests=new Map(),roots=new Map();
  const stats={date,active:true,stream,valid:0,failed:0,loaded:0,replaced:0,directRooms:0,
   bytes:0,originalMeshesDisposed:0,parityFailures:0,requestedRooms:[],fallbackRooms:[]};
@@ -119,10 +132,11 @@ export async function preparePhiCompiledRoomStream(THREE,{date,phi,elevation,
  // reaches them; the original walls/floors remain available at all times.
  if(stream)await request(0);
  else await Promise.all(manifest.rooms.map(({room})=>request(room)));
- const session={manifest,stats:()=>({...stats,remaining:manifest.roomCount-stats.replaced}),
+ const session={manifest,stats:()=>({...stats,shared:!!shared,remaining:manifest.roomCount-stats.replaced}),
+  getShared:()=>shared,
   getPack:room=>packages.get(room)||null,attach,request,
   // Keep the original geometry if the room packet has not arrived yet.
-  cancel:()=>{cancelled=true;roots.clear();requests.clear();packages.clear();},
+  cancel:()=>{cancelled=true;roots.clear();requests.clear();packages.clear();shared=null;},
   get active(){return !cancelled;}
  };
  return session;
