@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'test/virtual-gallery/visitor-knowledge.part4'
+      - 'test/virtual-gallery/visitor-knowledge.part10'
 permissions:
   contents: write
 jobs:
@@ -21,7 +21,7 @@ jobs:
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync} from 'node:fs';
           import {brotliDecompressSync} from 'node:zlib';
-          const raw=[1,2,3,4].map(i=>readFileSync('test/virtual-gallery/visitor-knowledge.part'+i,'utf8').trim()).join('');
+          const raw=Array.from({length:10},(_,i)=>i+1).map(i=>readFileSync('test/virtual-gallery/visitor-knowledge.part'+i,'utf8').trim()).join('');
           const files=JSON.parse(brotliDecompressSync(Buffer.from(raw,'base64')).toString('utf8'));
           const expected=['phi-visitor-knowledge.mjs','phi-visitor-chat.mjs','phi-visitor-chat.test.mjs'];
           if(Object.keys(files).sort().join(',')!==expected.sort().join(','))throw Error('Unexpected source files');
