@@ -276,7 +276,7 @@ const ceilingFinish=galleryFinish.ceiling;
 const skylightGlass = new THREE.MeshPhysicalMaterial({color:'#d5e1df',metalness:.06,roughness:.22,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false});
 
 const phiRoomGeometryStage=createPhiRoomGeometryStager({
- create:(w,h,d)=>new THREE.BoxGeometry(w,h,d),
+ create:(w,h,d)=>phiLiftProfiler?.measure('stage-room-geometry',()=>new THREE.BoxGeometry(w,h,d))??new THREE.BoxGeometry(w,h,d),
  schedule:callback=>requestAnimationFrame(callback),
  dispose:geometry=>geometry.dispose()
 });
@@ -408,10 +408,11 @@ const mobileImages=matchMedia('(pointer:coarse)').matches;
 const phiSculptureWorkshop=new THREE.Group();
 const phiSculptureStage=createPhiSculptureStager({
  schedule:callback=>requestAnimationFrame(callback),
- create:({study,placement})=>createPortraitSculpture({
+ create:({study,placement})=>phiLiftProfiler?phiLiftProfiler.measure('stage-sculpture-build',()=>createPortraitSculpture({
   scene:phiSculptureWorkshop,study,placement,
   quality:mobileImages?'mobile':'desktop',labelTexture
- }),
+ })):createPortraitSculpture({scene:phiSculptureWorkshop,study,placement,
+  quality:mobileImages?'mobile':'desktop',labelTexture}),
  dispose:({pivot})=>{
   if(!pivot)return;
   const geometries=new Set(),materials=new Set(),textures=new Set();
@@ -443,7 +444,8 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
   texture.needsUpdate=true;
   return texture;
  },
- upload:texture=>renderer.initTexture(texture),
+ upload:texture=>phiLiftProfiler?phiLiftProfiler.measure('gpu-upload-painting',()=>renderer.initTexture(texture),{
+   width:texture.image?.width||0,height:texture.image?.height||0}):renderer.initTexture(texture),
  // During motion, upload one painting every two frames and avoid cabin
  // acceleration/braking. At the landing use every frame: no reason to
  // leave the doors shut for additional idle render frames.
@@ -1088,6 +1090,7 @@ function updatePhiCabinRide(dt){
 // Overlapped rides keep the departure cabin mounted while the destination is
 // built. Retire it once the visitor has reached the new, identical cabin.
 function retirePhiDepartureCabin(){
+ const cleanupStarted=performance.now();
  const old=phiMovingCabin;
  if(!old||old===phiLiftCabin)return;
  scene.remove(old);
@@ -1104,8 +1107,11 @@ function retirePhiDepartureCabin(){
   material.dispose();
  }
  for(const geometry of geometries)geometry.dispose();
+ phiLiftProfiler?.recordOperation('dispose-departure-cabin',cleanupStarted,
+  performance.now()-cleanupStarted,{materials:materials.size,geometries:geometries.size});
 }
 function releasePhiRideRetainedReception(){
+ const cleanupStarted=performance.now();
  const held=phiRideRetainedReception;
  if(!held)return;
  phiRideRetainedReception=null;
@@ -1130,6 +1136,9 @@ function releasePhiRideRetainedReception(){
  }
  for(const texture of textures){texture.dispose();texture.userData.galleryBitmap?.close?.();}
  for(const geometry of geometries)geometry.dispose();
+ phiLiftProfiler?.recordOperation('dispose-retained-reception',cleanupStarted,
+  performance.now()-cleanupStarted,{objects:held.objects.length,materials:materials.size,
+    textures:textures.size,geometries:geometries.size});
  // Resume normal shell occlusion once the detailed reception is gone.
  phiTowerShellCache?.controller.activate(currentFloor);
 }
@@ -1517,7 +1526,8 @@ function processDeferredGallery(){
   if(!job){deferredGalleryRunning=false;updateExhibitLighting();return;}
   try{
     const previous=new Set(scene.children);
-    job();
+    if(phiLiftProfiler)phiLiftProfiler.measure('deferred-gallery-job',()=>job());
+    else job();
     for(const object of scene.children)if(!previous.has(object))editionObjects.push(object);
   }catch(error){console.warn('Deferred gallery asset failed',error);}
 }
@@ -2631,11 +2641,13 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   phiPaintingGate?.cancel();
   phiPaintingGate=createPhiPaintingArrivalGate({
    date,expected:nextPlan.phi.exhibition.paintings.length,
-   upload:texture=>renderer.initTexture(texture),
+   upload:texture=>phiLiftProfiler?phiLiftProfiler.measure('gpu-upload-painting',()=>renderer.initTexture(texture),{
+   width:texture.image?.width||0,height:texture.image?.height||0}):renderer.initTexture(texture),
    nextFrame:galleryPreparationFrame
   });
   // Dispose *all* edition-owned GPU resources, including artwork maps and
   // procedural canvas textures, but not materials/geometry shared across floors.
+  const disposalStarted=performance.now();
   const retainReception=duringRide&&currentFloor===0&&date!==RECEPTION;
   if(retainReception)phiRideRetainedReception={
    objects:editionObjects.filter(object=>object!==phiMovingCabin),
@@ -2666,6 +2678,9 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   }
   for(const texture of staleTextures){texture.dispose();texture.userData.galleryBitmap?.close?.();}
   for(const geometry of staleGeometries)geometry.dispose();
+  phiLiftProfiler?.recordOperation('dispose-prior-floor',disposalStarted,
+   performance.now()-disposalStarted,{materials:staleMaterials.size,
+    geometries:staleGeometries.size,textures:staleTextures.size,retainedReception:retainReception});
   failedArtworkLoads.clear();
   deferredGalleryJobs=[];deferredGalleryRunning=false;
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
@@ -2683,9 +2698,14 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   const constructionStart=performance.now();
   const sceneBeforeConstruction=new Set(scene.children);
   try{
-    constructPhiGallery(plan,studyList,{viaLift,duringRide});
-    if(plan.phi)transformPhiActiveFloor(sceneBeforeConstruction);
-    applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
+    if(phiLiftProfiler)phiLiftProfiler.measure('build-floor-meshes',()=>constructPhiGallery(plan,studyList,{viaLift,duringRide}));
+    else constructPhiGallery(plan,studyList,{viaLift,duringRide});
+    if(plan.phi){
+     if(phiLiftProfiler)phiLiftProfiler.measure('transform-floor-meshes',()=>transformPhiActiveFloor(sceneBeforeConstruction));
+     else transformPhiActiveFloor(sceneBeforeConstruction);
+    }
+    if(phiLiftProfiler)phiLiftProfiler.measure('update-room-lights',()=>applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi));
+    else applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
     phiLightingStudy?.editionChanged(elevation);
     phiGalleryMusic.setEmitters(phiSpeakerEmitters);
   }catch(error){
@@ -2712,7 +2732,10 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   // All staged sculpture pivots have either been attached or replaced by
   // deferred fallbacks. Dispose any unused detached objects now.
   if(viaLift)phiSculptureStage.clear();
-  if(plan.phi)constructPhiTowerShell();
+  if(plan.phi){
+   if(phiLiftProfiler)phiLiftProfiler.measure('update-tower-shell',()=>constructPhiTowerShell());
+   else constructPhiTowerShell();
+  }
   if(currentFloor===0&&phiReceptionDesk&&phiTowerShellCache){
     const cache=phiTowerShellCache;
     phiReceptionDesk.hologram=addPhiDeskHologram(THREE,phiReceptionDesk.root,{
@@ -2727,7 +2750,8 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   // Only new destination renderables are temporarily hidden. Never hide the
   // physical cabin, its doors or indicator, or alter any textures or materials.
   if(viaLift){
-   const staged=phiArrivalMeshes.start(date,editionObjects,{exclude:phiLiftCabin});
+   const staged=phiLiftProfiler?phiLiftProfiler.measure('queue-scene-reveal',()=>phiArrivalMeshes.start(date,editionObjects,{exclude:phiLiftCabin})):
+    phiArrivalMeshes.start(date,editionObjects,{exclude:phiLiftCabin});
    phiLiftProfiler?.mark('scene-reveal-queued',staged);
   }
   // A lift arrival needs exhibits promptly; street-level visitors first see the exterior.
@@ -3483,7 +3507,11 @@ function tick() {
     phiRoomVisibilityCuller.update(local,{safe:canCull});
    }
   }
-  if(!$('lift').hidden){phiPostFX.render(dt,null);return;}
+  if(!$('lift').hidden){
+   if(phiLiftProfiler)phiLiftProfiler.measure('render-frame-postfx',()=>phiPostFX.render(dt,null));
+   else phiPostFX.render(dt,null);
+   return;
+  }
   updateMovement(dt);
   updatePhiRideCamera();
   if(GALLERY_DEBUG)window.__phiLiftState={
@@ -3508,7 +3536,10 @@ function tick() {
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
-  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
+  if(phiLiftProfiler)phiLiftProfiler.measure('render-frame-postfx',
+   ()=>phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null),
+   {drawCalls:renderer.info.render.calls});
+  else phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={disabled:true,pending:0};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
 }
