@@ -263,12 +263,27 @@ const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
 // artwork pixels or normal tower visits and does not touch the live module.
 if(new URLSearchParams(location.search).get('roomcullbench')==='1'){
  const renderOriginal=phiPostFX.render.bind(phiPostFX);
+ const rendererOriginal=renderer.render.bind(renderer);
  const metrics=[],maxSamples=900;
+ let sceneCalls=0,sceneTriangles=0,sceneRenderPasses=0;
+ // Three.js resets renderer.info between composer render passes. Capture
+ // calls directly after rendering the actual 3D scene; final-screen passes
+ // otherwise report a meaningless single fullscreen triangle.
+ renderer.render=(...args)=>{
+  const value=rendererOriginal(...args);
+  if(args[0]===scene){
+   sceneCalls+=renderer.info.render.calls;
+   sceneTriangles+=renderer.info.render.triangles;
+   sceneRenderPasses++;
+  }
+  return value;
+ };
  phiPostFX.render=(...args)=>{
   const begun=performance.now();
+  sceneCalls=0;sceneTriangles=0;sceneRenderPasses=0;
   const value=renderOriginal(...args);
-  metrics.push({ms:performance.now()-begun,calls:renderer.info.render.calls,
-   triangles:renderer.info.render.triangles,hidden:phiRoomVisibilityCuller?.snapshot().hidden??0});
+  metrics.push({ms:performance.now()-begun,sceneCalls,sceneTriangles,sceneRenderPasses,
+   hidden:phiRoomVisibilityCuller?.snapshot().hidden??0});
   if(metrics.length>maxSamples)metrics.splice(0,metrics.length-maxSamples);
   return value;
  };
