@@ -27,7 +27,7 @@ function inspectGLB(buffer){
 }
 const report={kind:'TEST exterior material + GLB WebP compression',version:1,
  artworkAssetsChanged:false,modelGeometryChanged:false,assets:[],checks:[],
- technology:'WebP (browser-decoded; not GPU compressed)',timestamp:null};
+ technology:'WebP textures + EXT_meshopt_compression geometry; preserved node hierarchy',timestamp:null};
 for(const [source,target,quality] of entries){
  const src=path.join(base,source),dst=path.join(base,target);
  const bytes=(await fs.stat(src)).size;
@@ -61,8 +61,15 @@ for(const [source,target,requiredNodes] of models){
  const nodeNames=new Set((original.nodes||[]).map(n=>n.name).filter(Boolean));
  for(const node of requiredNodes)if(!nodeNames.has(node))
   throw Error('Original source is missing essential door node '+node);
- execFileSync('./node_modules/.bin/gltf-transform',
-  ['webp',src,dst,'--quality','88'],{stdio:'pipe',timeout:180000});
+ const intermediate=dst+'.stage.glb';
+ try{
+  execFileSync('./node_modules/.bin/gltf-transform',
+   ['webp',src,intermediate,'--quality','82'],{stdio:'pipe',timeout:180000});
+  // These GLBs are substantially geometry, not just textures. Compress
+  // buffers with EXT_meshopt_compression; preserve exact scene node names.
+  execFileSync('./node_modules/.bin/gltf-transform',
+   ['meshopt',intermediate,dst,'--level','medium'],{stdio:'pipe',timeout:180000});
+ }finally{await fs.rm(intermediate,{force:true});}
  const out=await fs.readFile(dst),after=inspectGLB(out);
  const afterNames=new Set((after.nodes||[]).map(n=>n.name).filter(Boolean));
  for(const node of requiredNodes)if(!afterNames.has(node))
@@ -73,6 +80,8 @@ for(const [source,target,requiredNodes] of models){
   throw Error('Compressed GLB changed node count: '+source);
  if((after.accessors||[]).length!==(original.accessors||[]).length)
   throw Error('Compressed GLB changed accessor count: '+source);
+ if(!(after.extensionsRequired||[]).includes('EXT_meshopt_compression'))
+  throw Error('Meshopt buffer compression missing: '+source);
  // This command re-encodes images, not geometry. Any geometry transform
  // should be a separately reviewed experiment.
  if((after.extensionsRequired||[]).includes('EXT_texture_webp')===false&&
