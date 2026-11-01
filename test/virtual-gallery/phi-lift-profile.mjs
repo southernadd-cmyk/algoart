@@ -11,10 +11,12 @@ export function createPhiLiftProfiler({enabled=false,now=()=>performance.now()}=
   return round(sorted[Math.min(sorted.length-1,Math.floor((sorted.length-1)*q))]);
  };
  const observer=typeof PerformanceObserver==='undefined'?null:new PerformanceObserver(list=>{
-  const v=state.active?state.current:null;
-  if(!v)return;
   for(const task of list.getEntries()){
-   if(task.startTime<v.start)continue;
+   const v=[...state.visits].reverse().find(visit=>
+    task.startTime>=visit.start &&
+    (visit.summary?task.startTime<=visit.start+visit.summary.ms:
+     visit===state.current&&state.active));
+   if(!v)continue;
    v.longTasks.push({elapsedMs:round(task.startTime-v.start),durationMs:round(task.duration),
     stage:v.stages.at(-1)?.name||'selection'});
    if(v.longTasks.length>130)v.longTasks.shift();
@@ -25,10 +27,12 @@ export function createPhiLiftProfiler({enabled=false,now=()=>performance.now()}=
  // responsible for blocking long frames when script attribution is available.
  // It won't identify every GPU/compositor stall; those remain "unattributed".
  const loafObserver=typeof PerformanceObserver==='undefined'?null:new PerformanceObserver(list=>{
-  const v=state.active?state.current:null;
-  if(!v)return;
   for(const frame of list.getEntries()){
-   if(frame.startTime<v.start)continue;
+   const v=[...state.visits].reverse().find(visit=>
+    frame.startTime>=visit.start &&
+    (visit.summary?frame.startTime<=visit.start+visit.summary.ms:
+     visit===state.current&&state.active));
+   if(!v)continue;
    const scripts=[...(frame.scripts||[])].sort((a,b)=>b.duration-a.duration).slice(0,8)
     .map(script=>({
      functionName:script.sourceFunctionName||null,
