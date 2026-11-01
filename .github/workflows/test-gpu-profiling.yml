@@ -14,6 +14,7 @@ on:
       - 'test/virtual-gallery/phi-room-visibility-culler.mjs'
       - 'test/virtual-gallery/phi-visibility-cell-index.mjs'
       - 'tests/phi-visibility-cell-index.test.mjs'
+      - 'tests/phi-visibility-cell-floor-benchmark.test.mjs'
       - 'tests/phi-room-visibility-culler.test.mjs'
       - 'test/virtual-gallery/phi-room-batch-study.mjs'
       - 'tests/phi-room-batch-study.test.mjs'
@@ -41,7 +42,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Verify GPU timing and caption geometry batching
-        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-visibility-cell-index.test.mjs tests/phi-room-batch-study.test.mjs tests/phi-uploaded-texture-ledger.test.mjs tests/phi-shadow-receiver-invalidation.test.mjs
+        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-visibility-cell-index.test.mjs tests/phi-visibility-cell-floor-benchmark.test.mjs tests/phi-room-batch-study.test.mjs tests/phi-uploaded-texture-ledger.test.mjs tests/phi-shadow-receiver-invalidation.test.mjs
       - name: Build TEST bundle without altering live
         run: |
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
