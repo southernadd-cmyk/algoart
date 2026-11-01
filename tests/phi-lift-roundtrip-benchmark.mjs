@@ -75,7 +75,7 @@ async function measure(mode){
    return [...new Set((json.days||[]).map(x=>x.date).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort();
   });
   const latest=archive.at(-1);
-  const topFloor=archive.length-1;
+  const topFloor=archive.length;
   if(!latest||topFloor<1)throw Error('No top-floor archive date');
   result.destination={date:latest,floor:topFloor};
   const jobs=[
