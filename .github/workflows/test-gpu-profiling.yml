@@ -38,7 +38,7 @@ jobs:
         run: |
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
           node --check test/virtual-gallery/gallery-phi-bundle.js
-          node --input-type=module -e "import fs from 'node:fs';if(!fs.readFileSync('test/virtual-gallery/gallery-phi-bundle.js','utf8').includes('phiSolidWallCoversPiece'))process.exit(1)"
+          node --input-type=module -e "import fs from 'node:fs';if(!fs.readFileSync('test/virtual-gallery/gallery-phi-bundle.js','utf8').includes('__phiRoomVisibility'))process.exit(1)"
       - name: Publish generated TEST bundle
         run: |
           git config user.name "github-actions[bot]"
