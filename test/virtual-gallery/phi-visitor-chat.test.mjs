@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildVisitorKnowledge,answerVisitor,resolveWork,describeWork,visitorSuggestions} from './phi-visitor-chat.mjs';
+import {KNOWLEDGE,matchKnowledge} from './phi-visitor-knowledge.mjs';
 
 const works=[
  {title:'Connected Fields — Study 01',material:'marker',engine:'network',palette:'mono',phi:86,seed:'AA-1',size:3},
@@ -39,4 +40,21 @@ test('empty reception does not invent exhibited artwork',()=>{
  floorCount:27,roomIndex:0,works:[],floorWorks:0,floorSculptures:0,roomCount:4,visitorIndex:0});
  assert.match(answerVisitor('which works are here?',reception,{}).text,/upstairs/);
  assert.match(answerVisitor('tell me about the gramophone',reception,{}).text,/gramophone/i);
+});
+test('φ and art knowledge answers, follows on and stays honest about myths',()=>{
+ let a=answerVisitor('what is phi?',room,{});
+ assert.match(a.text,/1\.618/);
+ a=answerVisitor('tell me more',room,a.state);
+ assert.match(a.text,/0\.618/);
+ assert.match(answerVisitor('does the parthenon use it?',room,{}).text,/no ancient evidence/);
+ assert.match(answerVisitor('who was vera molnar',room,{}).text,/Molnár/);
+ assert.match(answerVisitor('what about Dürer',room,{}).text,/Dürer/);
+ assert.match(answerVisitor('is this art?',room,{}).text,/1965/);
+ const m=answerVisitor('tell me about the gramophone',room,{});
+ assert.match(answerVisitor('tell me more',room,m.state).text,/Debussy|Howat/);
+ // A named work in the room still beats general knowledge.
+ assert.match(answerVisitor('tell me about connected fields',room,{}).text,/AA-1|Connected Fields/);
+});
+test('every knowledge topic is reachable from its own keys',()=>{
+ for(const topic of KNOWLEDGE)assert.equal(matchKnowledge(topic.keys[0])?.topic.id,topic.id,topic.id);
 });

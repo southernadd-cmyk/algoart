@@ -1,5 +1,6 @@
 // Adapted from Claude's rule-based gallery visitor conversation system.
 // No model API, network requests, tracking or dialogue persistence.
+import {matchKnowledge,knowledgeAnswer,knowledgeTopic,FOLLOW_ON,normalise} from './phi-visitor-knowledge.mjs';
 const MATERIALS={
  marker:['marker drawing','uneven ink, pressure, wobble and dry strokes'],
  tissue:['tissue-and-graphite piece','translucent layers with fine graphite-like marks'],
@@ -27,7 +28,7 @@ const PALETTES={spectrum:'full-spectrum',golden:'golden-angle',marker:'classic m
 const NAMES=['Ines','Tomasz','Ruth','Kwame','Marguerite','Dev','Saoirse','Hugo','Amara','Felix','Noor','Bea'];
 const TYPES=['enthusiast','sceptic','regular'];
 function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
-function words(s){return String(s).toLowerCase().replace(/[‘’']/g,'').replace(/[^a-z0-9φ.\s-]/g,' ').trim().split(/\s+/).filter(Boolean);}
+function words(s){return normalise(s).split(' ').filter(Boolean);}
 function plural(n,s){return n+' '+s+(n===1?'':'s');}
 function join(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a.at(-1);}
 export function describeWork(w){
@@ -98,6 +99,19 @@ function intent(q){
  if(has('project','gallery','artist','adam','what is this place','what’s this place'))return 'project';
  return null;
 }
+const MORE=['more','go on','tell me more','continue','what else','anything else','keep going','another'];
+function isMore(line){
+ const ws=line.split(' ');
+ return ws.length<=5&&MORE.some(m=>(' '+line+' ').includes(' '+m+' '));
+}
+function titleNamed(question,k){
+ const ws=words(question);
+ return (k.works||[]).some(w=>words(w.title).filter(x=>x.length>2&&x!=='study').some(x=>ws.includes(x))||
+  (/\d+\s*$/.test(w.title)&&new RegExp('\\b(study|number|no)\\s*0*'+Number(w.title.match(/(\d+)\s*$/)[1])+'\\b').test(ws.join(' '))));
+}
+function tryLine(k){
+ return k.reception?'Ask me about Fibonacci, Penrose tiles or the gramophone.':'Ask me about Fibonacci, the Parthenon myth, or artists who worked with rules.';
+}
 function phiOpinion(k){
  if(k.persona==='enthusiast')return 'I think φ carries more than you would expect. It guides divisions, scale and spacing, but materials and chance play a part too. Make up your own mind.';
  if(k.persona==='sceptic')return 'I am not convinced φ is what makes these work. The material, the wobble and splashes, may matter more. The project does not claim φ automatically makes things beautiful.';
@@ -120,6 +134,29 @@ export function answerVisitor(question,k,state={}){
  const top=intent(question),work=resolveWork(question,k,state);
  if(work)next.lastWork=work;
  const reply=text=>({text,state:next,work:work||null});
+ // General φ and art knowledge. A specific topic wins unless the question
+ // names a work here or points at one ("this", "it").
+ const line=words(question).join(' ');
+ const kb=matchKnowledge(line);
+ const aboutWork=work&&(/\b(this|that)\b/.test(line)||titleNamed(question,k));
+ const fromTopic=(topic,fallbackLast=true,hits=[])=>{
+  const answer=knowledgeAnswer(topic,k.persona,state.seen,hits);
+  if(answer){next.seen=answer.seen;next.topic=topic.id;return reply(answer.text);}
+  const on=topic.next&&knowledgeTopic(topic.next);
+  if(on&&!(state.seen||{})[on.id])return fromTopic(on,false);
+  next.topic=topic.id;
+  return reply(fallbackLast?'That’s about all I know on that. '+tryLine(k):tryLine(k));
+ };
+ // Phrase keys ("is this art") are specific enough to win even with "this".
+ if(kb&&(kb.score>=2.5||(kb.score>=2&&!aboutWork)))return fromTopic(kb.topic,true,kb.hits);
+ if(isMore(line)){
+  const last=state.topic&&knowledgeTopic(state.topic);
+  if(last)return fromTopic(last);
+  const on=FOLLOW_ON[state.intent];
+  if(on)return fromTopic(knowledgeTopic(on));
+  if(state.lastWork)return reply(describeWork(state.lastWork));
+ }
+ next.intent=top;next.topic=null;
  if(work&&(!top||['list','material','opinion','favourite','link','phi','canvas','export'].includes(top))){
   if(top==='opinion')return reply(k.persona==='sceptic'?'I am not certain the golden ratio explains “'+work.title+'”. What do you think?':'For me, “'+work.title+'” is worth spending time with. Look at the distances between its marks.');
   if(top==='link')return reply('The label for “'+work.title+'” opens its original settings in the 2D editor. Approach it and press E.');
@@ -166,7 +203,7 @@ export function answerVisitor(question,k,state={}){
   case 'export':return reply('The editor can export PNG images and SVG paths, including plotter paths. Share links reopen a study with its settings.');
   case 'canvas':return reply('The main canvas is a practical 7:5 format, not a golden rectangle. The golden ratio operates inside the image.');
  }
- return reply('I only really know the tower and its artworks. '+(k.reception?'Try asking what this place is, or about the gramophone.':'Try asking what this room is called, which works are here, or about the golden ratio.'));
+ return reply('I don’t know about that one. I know this tower, its art, and a fair bit about φ and art history. '+(k.reception?'Try asking what this place is, or about Fibonacci.':'Try asking which works are here, or whether the Parthenon really uses φ.'));
 }
 export function visitorSuggestions(k){
  return k.reception?['What is this place?','What are the screens?','What is the gramophone?','Is this AI?']:
