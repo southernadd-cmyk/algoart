@@ -218,9 +218,9 @@ const phiStageArrival=new URLSearchParams(location.search).get('liftstage')!=='0
 // TEST ONLY: overlap destination shader compilation with painting GPU readiness.
 // Never changes a material, pass, geometry, or texture; ?earlycompile=0 baseline.
 const phiEarlyShaderCompile=new URLSearchParams(location.search).get('earlycompile')==='1';
-// TEST ONLY: opt-in destination shadow-map priming before staged reveal.
-// Identical shadow maps, original paintings and materials; default OFF.
-const phiPrimeArrivalShadows=new URLSearchParams(location.search).get('shadowprime')==='1';
+// TEST ONLY: A/B test whether receiver-side shadow state can be applied
+// without forcing an unnecessary material invalidation. Default OFF.
+const phiShadowReceiverFast=new URLSearchParams(location.search).get('shadowreceiverfast')==='1';
 // The reliable two-rAF spacing stays in place for all fixed batch sizes.
 // ?liftbatch=16 uses the original method with smaller groups.
 // ?liftbatch=adaptive is retained as an explicitly opt-in failed experiment;
@@ -403,7 +403,7 @@ if(new URLSearchParams(location.search).get('roomcullbench')==='1'){
   expectedPaintings(){return window.__phiFullEngine?.paintings??0;}
  };
 }
-const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
+const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun,skipReceiverMaterialInvalidation:phiShadowReceiverFast}):null;
 phiShadowProbe=installPhiShadowRenderProbe({
  renderer,enabled:!!phiLiftProfiler,
  record:(name,ms)=>phiLiftProfiler?.record(name,ms)
@@ -2812,38 +2812,6 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object)&&object!==phiTowerShellCache?.shell);
-  // TEST ONLY, opt-in: move initial shadow-map preparation ahead of staged
-  // visibility changes. Keep the original lights, map resolution, filters,
-  // material parameters and shadow casters without altering the canvas.
-  if(viaLift&&phiStageArrival&&phiPrimeArrivalShadows){
-   const began=performance.now();
-   const state={enabled:true,success:false,ms:null,lights:0,error:null};
-   try{
-    // The ordinary frame tick performs this same caster/nearest-light scan.
-    phiLightingStudy?.update();
-    scene.updateMatrixWorld(true);
-    camera.updateMatrixWorld(true);
-    const lights=[];
-    scene.traverse(object=>{
-     if(object.isLight&&object.castShadow&&object.shadow)lights.push(object);
-    });
-    state.lights=lights.length;
-    if(renderer.shadowMap?.enabled&&typeof renderer.shadowMap.render==='function'&&lights.length){
-     const previousTarget=renderer.getRenderTarget();
-     try{renderer.shadowMap.render(lights,scene,camera);}
-     finally{renderer.setRenderTarget(previousTarget);}
-     state.success=true;
-    }else state.error='Shadow renderer or casting lights unavailable';
-   }catch(error){
-    // An experimental GPU failure must not strand the visitor or remove
-    // mandatory painting checks; normal shadow updates remain available.
-    state.error=String(error?.message||error);
-   }
-   state.ms=+(performance.now()-began).toFixed(1);
-   window.__phiShadowPrime=state;
-   phiLiftProfiler?.mark('shadow-prime-finished',state);
-   phiLiftProfiler?.record('shadow-prime-total',state.ms,state);
-  }
   // Hide only destination renderables, not the cabin/doors/indicator or
   // lights. Scene geometry and its final visibility are preserved.
   if(viaLift&&phiStageArrival){
