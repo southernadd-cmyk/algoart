@@ -3270,8 +3270,8 @@ function updateVisitorChatPrompt(){
  const launcher=$('openVisitorChat');
  if(launcher){
   launcher.disabled=blocked||!plan?.phi;
-  const label=currentFloor===0?'Talk · Reception visitor':'Chat · Visitor';
-  if(launcher.textContent!==label)launcher.textContent=label;
+  // Use the same short label on every floor; do not rewrite the toolbar.
+  if(launcher.textContent!=='Chat')launcher.textContent='Chat';
  }
  if(blocked&&chat.open)chat.close();
  let nearest=null,best=2.4;
