@@ -40,6 +40,7 @@ import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
 import {createPhiGpuProfiler} from './phi-gpu-profiler.mjs';
 import {installPhiShadowRenderProbe} from './phi-shadow-render-probe.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
+import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
 import {installPhiComposerPassProfiler} from './phi-postfx-pass-profiler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
 import {createPhiPaintingArrivalGate} from './phi-painting-arrival-gate.mjs';
@@ -102,6 +103,7 @@ let liftWasNear=false;
 let liftTravelling=false;
 let liftReturnFocus=null;
 let editionObjects=[];
+let phiRoomVisibilityCuller=null;
 let deferredGalleryJobs=[];
 let deferredGalleryRunning=false;
 let phiPaintingGate=null;
@@ -220,6 +222,9 @@ const phiLiftBatchFixed=[8,12,16,20,24,32].includes(Number(phiLiftBatchChoice))
 const phiLiftBatchMode=phiLiftBatchChoice==='adaptive'?'adaptive':'legacy';
 const phiLiftBatchSize=phiLiftBatchMode==='adaptive'?12:phiLiftBatchFixed??16;
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
+// TEST ONLY: ?roomcull=1 enables conservative solid-wall visibility checks.
+const phiRoomCullingEnabled=new URLSearchParams(location.search).get('roomcull')==='1';
+window.__phiRoomVisibility=()=>phiRoomVisibilityCuller?.snapshot()||{enabled:false,reason:'room culling not active'};
 if(phiLiftProfiler)window.__phiLiftProfile=phiLiftProfiler.state;
 // Retired the lossless KTX2 test conversion; keep the original JPEG option.
 const jpegExactStudy=new URLSearchParams(location.search).get('jpegformat')==='original';
@@ -1660,6 +1665,11 @@ function queuePhiFurnishings(phi,furnishings,elevation){
 }
 function constructPhiGallery(layout,studies,{viaLift=false}={}){
  const phi=layout.phi,elevation=currentFloor*FLOOR_SPACING;
+ // No culling of reception, transparent/exterior sightlines, architecture, signs,
+ // lights or any objects not explicitly registered as room-owned exhibits.
+ phiRoomVisibilityCuller=phiRoomCullingEnabled&&exhibitDate!==RECEPTION
+  ?createPhiRoomVisibilityCuller({enabled:true,pieces:phi.pieces,
+   rooms:phi.floor.mergedRooms,walls:phi.physical.walls}) : null;
  phiRoomLightEntries.length=0;
  const staticArchitecture=[];
  const staticBlock=(...args)=>{const mesh=block(...args);staticArchitecture.push(mesh);return mesh;};
@@ -1912,6 +1922,7 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   if(p.axis==='x')face.rotation.y=p.normal.x>0?Math.PI/2:-Math.PI/2;
   else if(p.normal.z<0)face.rotation.y=Math.PI;
   scene.add(face);
+  phiRoomVisibilityCuller?.register(p.room,face);
   const caption=new THREE.Mesh(new THREE.PlaneGeometry(1.12,.26),
     new THREE.MeshBasicMaterial({map:labelTexture(study.title,study.seed),side:THREE.FrontSide}));
   caption.position.set(p.x,centreY-height/2-.24,p.z);
@@ -1992,6 +2003,7 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
    // Pivot remains in floor-local coordinates here. The existing
    // transformPhiActiveFloor rotates it with the rest of the exhibition.
    scene.add(staged.pivot);
+   phiRoomVisibilityCuller?.register(p.room,staged.pivot);
   }else{
    // Direct date links, slow background tabs and failed preparations still
    // use the original reliable incremental construction path.
@@ -2002,9 +2014,10 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
     const location=world
      ?{...placement,...world.toWorld(p.x,p.z),yaw:world.theta}
      :placement;
-    createPortraitSculpture({
+    const sculpture=createPortraitSculpture({
      scene,study,placement:location,quality:mobileImages?'mobile':'desktop',labelTexture
     });
+    phiRoomVisibilityCuller?.register(p.room,sculpture?.pivot);
    });
   }
   artExhibits.push({study,position:new THREE.Vector3(p.x,elevation+1.5,p.z)});
@@ -2492,6 +2505,8 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   const previousYaw=yaw,previousPitch=pitch;
   if(!renderer)return;
   const editionStart=performance.now();
+  // Restore all culling-owned visibility before disposing or staging a floor.
+  phiRoomVisibilityCuller?.clear();phiRoomVisibilityCuller=null;
   phiArrivalMeshes.restore();
   const {studies,nextPlan,nextFloor,elevation,reception}=prepared||await preparePhiEdition(date);
   phiPaintingGate?.cancel();
@@ -3161,6 +3176,7 @@ function measurePhiPerformance(now){
  }
 }
 let phiFrameSerial=0;
+let phiRoomVisibilitySerial=0;
 function tick() {
   phiLiftProfiler?.tick();
   const phiLightingT=phiLiftProfiler?.state.active?performance.now():null;
@@ -3222,6 +3238,16 @@ function tick() {
   };
   lastFocusCheck+=dt;mapElapsed+=dt;
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
+  // Run visibility checks at 10 Hz, not per frame. Never conflict with the
+  // lift's progressive reveal, VR camera movement, reception windows or the
+  // open glass bridges. Those states restore every original object immediately.
+  if(phiRoomVisibilityCuller && (++phiRoomVisibilitySerial%6===0 || !welcome.hidden)){
+   const canCull=!!plan?.phi?.world&&!renderer.xr.isPresenting&&welcome.hidden&&
+    !liftTravelling&&!liftArrivalOpening&&!phiArrivalMeshes.stats().active&&$('lift').hidden&&
+    !document.hidden;
+   const local=plan?.phi?.world?.toLocal(rig.position.x,rig.position.z);
+   phiRoomVisibilityCuller.update(local,{safe:canCull});
+  }
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
