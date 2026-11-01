@@ -2,6 +2,7 @@
 // Compiler runs in Node; browser decodes the same indexed vertices, normals,
 // and UVs. Room-owned surfaces can swap without touching walls, art or lights.
 import * as THREE from 'three';
+import {ROOM_HEIGHT} from './layout-v2.mjs';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {chooseGalleryPenroseRooms,pieceRoomIndex} from './phi-gallery-penrose-floor.mjs';
 import {alignReceptionTileUvs} from './reception-tile-preview.mjs';
@@ -57,7 +58,7 @@ export function compilePhiRoomPackage(phi,date,elevation,room){
   const x=p.x+p.w/2,z=p.z+p.h/2;
   const selected=penrose.has(pieceRoomIndex(p,phi.floor.mergedRooms));
   add(selected?'penrose':'floor',[p.w,.28,p.h,x,elevation-.17,z]);
-  add('plaster',[p.w,.18,p.h,x,elevation+3.6+.10,z]);
+  add('plaster',[p.w,.18,p.h,x,elevation+ROOM_HEIGHT+.10,z]);
  }
  return {version:PHI_ROOM_PACKAGE_VERSION,date,elevation,room,
   fingerprint:phiRoomPackageFingerprint(phi,date,elevation),pieces,
