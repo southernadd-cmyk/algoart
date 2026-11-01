@@ -437,7 +437,7 @@ export function createVisitorChatUI({onClose,showReasoning=/[?&]chatdebug=1\b/.t
   for(const topic of group.topics.slice(topicPage*TOPICS_PER_PAGE,(topicPage+1)*TOPICS_PER_PAGE))
    button(topic.question,()=>{
     topicView=null;topicPage=0;
-    ask(topic.question);input.focus({preventScroll:true});
+    ask(/\?\s*$/.test(topic.question)?topic.question:topic.question+'?');input.focus({preventScroll:true});
    });
   button('← Categories',()=>show('categories'),'visitor-chat-more');
   if(group.topics.length>TOPICS_PER_PAGE)
