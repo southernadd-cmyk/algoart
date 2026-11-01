@@ -27,13 +27,31 @@ jobs:
       - run: npm ci
       - run: npm run gallery:bundle
       - run: npm run gallery:bundle:phi
-      - name: Commit generated bundle only when changed
+      - name: Publish reproducible bundles without conflicting with other sessions
         run: |
-          if ! git diff --quiet -- gallery/visit/gallery-bundle.js gallery/visit/gallery-phi-bundle.js; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # A generated minified bundle cannot be merged usefully. If main
+          # moved, discard ONLY the runner's local output, fetch the current
+          # head and regenerate both bundles from that exact source revision.
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git reset --hard origin/main
+            npm run gallery:bundle
+            npm run gallery:bundle:phi
+            node --check gallery/visit/gallery-phi-bundle.js
+            node --test tests/phi-tower-no-graffiti.test.mjs
             git add gallery/visit/gallery-bundle.js gallery/visit/gallery-phi-bundle.js
-            git commit -m 'Rebuild gallery bundle from current source'
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
+            if git diff --cached --quiet; then
+              echo 'Gallery bundles already match latest sources'
+              exit 0
+            fi
+            git commit -m 'Rebuild gallery bundles from latest source without graffiti'
+            if git push origin HEAD:main; then
+              echo 'Published source-matched gallery bundles'
+              exit 0
+            fi
+            echo 'Concurrent push; regenerating from fresh source'
+          done
+          echo 'Could not publish bundle after rebuilding on latest main'
+          exit 1
