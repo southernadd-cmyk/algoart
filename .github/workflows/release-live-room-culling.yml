@@ -1,0 +1,93 @@
+name: Release verified live room occlusion
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-live-room-culling.yml'
+permissions:
+  contents: write
+concurrency:
+  group: release-live-room-culling
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Prove live helper matches tested logic and verify occlusion regression tests
+        run: |
+          node --test tests/phi-room-visibility-culler.test.mjs
+          node --check gallery/visit/gallery-phi.js
+          node --check gallery/visit/phi-room-visibility-culler.mjs
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const live=fs.readFileSync('gallery/visit/phi-room-visibility-culler.mjs','utf8');
+          const test=fs.readFileSync('test/virtual-gallery/phi-room-visibility-culler.mjs','utf8');
+          const start='const EPS=1e-6;';
+          if(live.slice(live.indexOf(start))!==test.slice(test.indexOf(start)))
+           throw Error('Live culler differs from benchmarked and unit-tested implementation');
+          const source=fs.readFileSync('gallery/visit/gallery-phi.js','utf8');
+          for(const required of [
+           "get('roomcull')!=='0'","phiRoomVisibilityCuller?.register(p.room,face)",
+           "phiRoomVisibilityCuller?.register(p.room,staged.pivot)",
+           "phiRoomVisibilityCuller?.clear();phiRoomVisibilityCuller=null",
+           "get('captionbatch')!=='0'","get('framebatch')!=='0'"
+          ])if(!source.includes(required))throw Error('Missing live culler/batching path: '+required);
+          if(source.includes('phi-room-batch-study'))throw Error('Rejected room grouping unexpectedly in live source');
+          JS
+      - name: Build correct production bundle from latest source and verify
+        run: |
+          npm run gallery:bundle:phi
+          node --check gallery/visit/gallery-phi-bundle.js
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const b=fs.readFileSync('gallery/visit/gallery-phi-bundle.js','utf8');
+          for(const term of ['__phiRoomVisibility','phi-batched-painting-captions',
+           'phi-instanced-painting-frames'])
+           if(!b.includes(term))throw Error('Bundled feature missing: '+term);
+          JS
+      - name: Cache bust both live entry references and record release checks
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import {createHash} from 'node:crypto';
+          import {execFileSync} from 'node:child_process';
+          const page='gallery/visit/index.html';
+          const old=fs.readFileSync(page,'utf8');
+          const regex=/gallery-phi-bundle\.js\?v=[A-Za-z0-9_-]+/g;
+          if((old.match(regex)||[]).length!==2)throw Error('Expected exactly two live bundle URL references');
+          const digest=createHash('sha256').update(fs.readFileSync('gallery/visit/gallery-phi-bundle.js')).digest('hex');
+          const version='live-room-culling-'+digest.slice(0,12);
+          fs.writeFileSync(page,old.replace(regex,'gallery-phi-bundle.js?v='+version));
+          const rev=path=>execFileSync('git',['rev-parse','HEAD:'+path],{encoding:'utf8'}).trim();
+          fs.writeFileSync('gallery/visit/room-culling-build.json',JSON.stringify({
+           feature:'conservative-room-culling',defaultEnabled:true,rollback:'?roomcull=0',
+           retainedGlobalFrameAndCaptionBatching:true,rejectedRoomBatching:false,
+           tests:'passed',bundle:'passed',bundleSha256:digest,version,
+           sourceRevision:rev('gallery/visit/gallery-phi.js'),
+           helperRevision:rev('gallery/visit/phi-room-visibility-culler.mjs')
+          },null,2)+'\n');
+          JS
+      - name: Publish only bundle and cache-busted live page without overwriting newer source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          original_source=$(git rev-parse HEAD:gallery/visit/gallery-phi.js)
+          original_helper=$(git rev-parse HEAD:gallery/visit/phi-room-visibility-culler.mjs)
+          git add gallery/visit/gallery-phi-bundle.js gallery/visit/index.html gallery/visit/room-culling-build.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Release tested room visibility optimisation and refresh production bundle"
+          git pull --rebase origin main
+          [[ "$(git rev-parse HEAD:gallery/visit/gallery-phi.js)" == "$original_source" ]] || { echo 'Concurrent live source update: stop'; exit 1; }
+          [[ "$(git rev-parse HEAD:gallery/visit/phi-room-visibility-culler.mjs)" == "$original_helper" ]] || { echo 'Concurrent culler update: stop'; exit 1; }
+          git push origin HEAD:main
