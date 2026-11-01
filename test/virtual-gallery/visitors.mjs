@@ -558,7 +558,7 @@ export {loadCharacters as loadRiggedCharacterAsset,riggedVisitor as createRigged
  * Place two calibrated real rigged visitors on separate plaza benches.
  * Called after entry to avoid delaying the first outdoor render.
  */
-export function renderPlazaSeatedVisitors(THREE,scene,plaza){
+export function renderPlazaSeatedVisitors(THREE,scene,plaza,{onVisitor}={}){
  if(!plaza)return null;
  const group=new THREE.Group();scene.add(group);
  const positions=[
@@ -567,7 +567,7 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
  ];
  loadCharacters().then(asset=>{
   if(!asset||!group.parent)return;
-  for(const p of positions){
+  for(const [index,p] of positions.entries()){
    const across=p.side*(plaza.halfWidth-2.2);
    const x=plaza.centre.x+plaza.outward.x*p.along+plaza.transverse.x*across;
    const z=plaza.centre.z+plaza.outward.z*p.along+plaza.transverse.z*across;
@@ -580,6 +580,7 @@ export function renderPlazaSeatedVisitors(THREE,scene,plaza){
     const local=new THREE.Vector3(0,0,p.forward).applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
     figure.position.add(local);
     group.add(figure);
+    onVisitor?.(figure,{...person,seat:true},index);
    }catch(error){console.warn('Plaza seated visitor unavailable',p.type,error);}
   }
  });
