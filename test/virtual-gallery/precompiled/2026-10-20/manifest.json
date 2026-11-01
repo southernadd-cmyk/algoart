@@ -34,6 +34,14 @@
       "triangles": 24
     }
   ],
-  "scope": "room floor and ceiling surfaces only",
+  "shared": {
+    "url": "shared.json",
+    "bytes": 231391,
+    "wallBoxes": 31,
+    "veneerBoxes": 18,
+    "trimBoxes": 62,
+    "triangles": 1332
+  },
+  "scope": "all static solid architecture; room floor and ceiling surfaces streamed separately",
   "materialTiling": "exact vertex/normal/UV reconstruction; no material substitution"
 }
