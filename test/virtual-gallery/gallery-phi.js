@@ -1230,7 +1230,8 @@ function startPhiCabinRide(targetFloor,{elastic=false}={}){
  // ready: destination fully built, uploaded and warmed. Until then the cabin
  // creeps towards the landing instead of stopping with its doors shut.
  phiRideState={startY,endY,startTheta,turn,lastTheta:startTheta,started:performance.now(),
-  last:performance.now(),elapsed:0,duration,resolve:null,ready:!elastic,elastic,held:0,shown:0};
+  last:performance.now(),elapsed:0,duration,resolve:null,ready:!elastic,elastic,held:0,shown:0,
+  departureFloor:currentFloor};
  window.__phiLiftRide={from:startY,to:endY,progress:0,status:'moving'};
  return new Promise(resolve=>{phiRideState.resolve=resolve;});
 }
@@ -2776,6 +2777,9 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
  const ink=indicator.getContext('2d');
  const tex=new THREE.CanvasTexture(indicator);tex.colorSpace=THREE.SRGBColorSpace;
  phiLiftIndicator={canvas:indicator,context:ink,texture:tex,last:null};
+ // Each cabin owns its indicator; the travelling cabin must remain updated
+ // while the hidden destination is built.
+ cabin.userData.phiLiftIndicator=phiLiftIndicator;
  paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({height:elevation,dates:archiveDates,currentFloor}));
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.48),new THREE.MeshBasicMaterial({map:tex,side:THREE.FrontSide}));
  sign.position.set(liftFace-.16,elevation+2.78,l.z);sign.rotation.y=-Math.PI/2;cabinObject(sign);
@@ -3608,12 +3612,16 @@ function tick() {
   if(!liftTravelling&&!doorsMoving&&(dt<.030||phiFrameSerial%8===0))processDeferredGallery();
   animateLiftDoors(elapsed);
   updatePhiCabinRide(dt);
-  if(phiLiftIndicator){
+  // Mid-ride construction installs a second indicator for the hidden cabin.
+  // Update the visible departure cabin's texture right up to handover.
+  const visibleLiftIndicator=phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator;
+  if(visibleLiftIndicator){
    const paintingProgress=phiPaintingGate?.stats();
    const awaitingPaintings=liftTravelling&&window.__phiLiftRide?.status==='arrived'&&
     paintingProgress?.date===archiveDates[phiLiftTarget];
-   paintPhiLiftIndicator(phiLiftIndicator,phiLiftIndicatorState({
-    height:rig.position.y,spacing:FLOOR_SPACING,dates:archiveDates,currentFloor,
+   paintPhiLiftIndicator(visibleLiftIndicator,phiLiftIndicatorState({
+    height:rig.position.y,spacing:FLOOR_SPACING,dates:archiveDates,
+    currentFloor:phiRideState?.departureFloor??currentFloor,
     targetFloor:phiLiftTarget,
     phase:awaitingPaintings?'paintings':phiRideState?'moving':liftTravelling?'preparing':'idle',
     paintings:awaitingPaintings?paintingProgress:null
@@ -3661,7 +3669,8 @@ function tick() {
     worldMapLoaded:!!phiReceptionMap?.userData.modelLoaded,
     outdoorPlantsLoaded:phiOutdoorPlants.filter(o=>o.userData.modelLoaded).length,
     outdoorPlantsReplaced:phiOutdoorPlants.reduce((n,o)=>n+(o.userData.replaced||0),0),
-    indicator:phiLiftIndicator?.last,indicatorFont:phiLiftIndicator?.context.font
+    indicator:(phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator)?.last,
+    indicatorFont:(phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator)?.context.font
   };
   lastFocusCheck+=dt;mapElapsed+=dt;
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
