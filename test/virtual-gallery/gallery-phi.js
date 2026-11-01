@@ -1376,7 +1376,11 @@ async function travelLift(date,index){
   while(liftDoorClosure<.998)await new Promise(resolve=>setTimeout(resolve,30));
   phiLiftProfiler?.mark('doors-closed');
   if(plan?.phi&&phiOverlapRide&&!xrRide){
-   rideDone=startPhiCabinRide(index,{elastic:true});
+   rideDone=startPhiCabinRide(index,{elastic:true}).then(()=>
+    phiLiftProfiler?.mark('ride-finished',{
+     paintingGPU:liftPaintingGPU.stats(),
+     roomGeometry:phiRoomGeometryStage.stats(),sculptures:phiSculptureStage.stats()
+    }));
    await waitForPhiRideStaging();
    phiLiftProfiler?.mark('ride-construction-start',{
     progress:phiRideState?+(phiRideState.elapsed/phiRideState.duration).toFixed(2):1,
