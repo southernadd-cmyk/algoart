@@ -1,0 +1,43 @@
+name: Verify test lift JSON profiling & export
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phi-lift-json-export.yml'
+      - 'tests/phi-lift-json-export.test.mjs'
+      - 'tests/phi-lift-json-export-browser.mjs'
+      - 'test/virtual-gallery/phi-lift-profile.mjs'
+      - 'test/virtual-gallery/phi-lift-benchmark-export.mjs'
+      - 'test/virtual-gallery/gallery-phi.js'
+      - 'test/virtual-gallery/gallery-entry-preparation.mjs'
+      - 'test/virtual-gallery/full-engine.html'
+      - 'test/virtual-gallery/index.html'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate profiler, JSON exporter and compiled test tower
+        run: |
+          node --check test/virtual-gallery/phi-lift-profile.mjs
+          node --check test/virtual-gallery/phi-lift-benchmark-export.mjs
+          node --check test/virtual-gallery/gallery-phi.js
+          node --test tests/phi-lift-json-export.test.mjs
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+      - run: npx playwright install --with-deps chromium
+      - name: Serve standalone test tower
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/lift-json-http.log 2>&1 &
+          sleep 2
+      - name: Check desktop export and mobile UI
+        run: node tests/phi-lift-json-export-browser.mjs
