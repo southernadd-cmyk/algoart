@@ -9,6 +9,44 @@ export function summariseLiftVisit(v){
  const pct=q=>ordered.length?round(ordered[Math.floor((ordered.length-1)*q)]):null;
  const count=n=>frames.filter(x=>x>=n).length;
  const stages=rows(v);
+ const operations=v.operations||[];
+ const buckets=[
+  ['render-frame-postfx','postprocessing / WebGL render submission'],
+  ['gpu-upload','texture upload / GPU driver submission'],
+  ['shader-compile','shader compilation submission'],
+  ['stage-sculpture','sculpture geometry generation'],
+  ['stage-room','room geometry generation'],
+  ['build-floor','synchronous destination floor mesh construction'],
+  ['transform-floor','scene coordinate transform'],
+  ['update-tower','tower shell construction'],
+  ['queue-scene','scene reveal preparation'],
+  ['dispose-','geometry / material / texture disposal'],
+  ['deferred-','deferred gallery construction'],
+  ['gather-scene','scene texture traversal'],
+  ['update-room','lighting setup']
+ ];
+ const category=name=>buckets.find(([prefix])=>name.startsWith(prefix))?.[1]||'other recorded synchronous work';
+ const spikeAttribution=frame=>{
+  const gapStart=(frame.elapsedMs||0)-(frame.deltaMs||0),gapEnd=frame.elapsedMs||0;
+  const observed=operations.map(op=>{
+   const opStart=op.elapsedMs,opEnd=opStart+op.durationMs;
+   const overlap=Math.max(0,Math.min(gapEnd,opEnd)-Math.max(gapStart,opStart));
+   return {...op,overlapMs:round(overlap),category:category(op.name)};
+  }).filter(op=>op.overlapMs>0).sort((a,b)=>b.overlapMs-a.overlapMs).slice(0,8);
+  const covered=observed.reduce((sum,op)=>sum+op.overlapMs,0);
+  const likely=observed[0]||null;
+  return {
+   elapsedMs:round(frame.elapsedMs),gapMs:round(frame.deltaMs),stageAtEnd:frame.stage,
+   matchingOperations:observed,
+   // In the absence of a recorded blocking call, do not wrongly treat the
+   // nearest phase marker as proof of the cause.
+   attribution:likely&&likely.overlapMs>=Math.min(8,frame.deltaMs*.25)?
+    {status:'observed synchronous blocking',operation:likely.name,category:likely.category,
+      overlapMs:likely.overlapMs}:
+    {status:'unattributed',explanation:'No measured operation explains this frame gap. Inspect browser Performance trace for GC, compositor, GPU driver, scheduling or browser pauses.'},
+   measuredOverlapMs:round(covered)
+  };
+ };
  const failed=stages.some(x=>x.name==='failure'),interrupted=stages.some(x=>x.name==='interrupted');
  return {
   direction:(v.fromFloor===0?'G':v.fromFloor)+' → '+(v.toFloor===0?'G':v.toFloor),
@@ -39,7 +77,14 @@ export function summariseLiftVisit(v){
   },
   stages:stages.map(s=>({name:s.name,elapsedMs:round(s.elapsedMs),
    ...(s.details==null?{}:{details:s.details})})),
-  worstFrames:[...(v.frames||[])].sort((a,b)=>b.deltaMs-a.deltaMs).slice(0,60),
+  // Measured calls are evidence. Stage names merely indicate when they happened.
+  operationTotals:Object.fromEntries(Object.entries(v.summary?.operationTotals||v.operationTotals||{})
+   .map(([name,value])=>[name,{count:value.count,totalMs:round(value.totalMs),
+     maxMs:round(value.maxMs),category:category(name)}])),
+  operationSpikes:[...operations].sort((a,b)=>b.durationMs-a.durationMs).slice(0,80)
+   .map(op=>({...op,category:category(op.name)})),
+  worstFrames:[...(v.frames||[])].sort((a,b)=>b.deltaMs-a.deltaMs).slice(0,60)
+   .map(spikeAttribution),
   longTasks:[...(v.longTasks||[])].sort((a,b)=>b.durationMs-a.durationMs).slice(0,40)
  };
 }
@@ -47,9 +92,9 @@ export function buildLiftBenchmarkReport(state,environment={}){
  const visits=state?.visits||[];
  return {
   format:'PROPORTION PIECE — test tower lift benchmark',
-  version:2,exportedAt:new Date().toISOString(),environment,
-  summary:{journeys:visits.length,completed:visits.filter(v=>v.summary).length,
-   recording:!!state?.active,route:'Reception G → top exhibition → reception G'},
+  version:3,exportedAt:new Date().toISOString(),environment,
+  summary:{journeys:visits.length,completed:visits.filter(v=>v.summary&&!rows(v).some(s=>s.name==='failure')).length,
+   recording:!!state?.active,attributionNote:'Operation overlaps identify measured main-thread blockers; WebGL render and texture upload calls include driver wait and cannot separately prove pure GPU time. Unattributed gaps need a browser trace.',route:'Reception G → top exhibition → reception G'},
   journeys:visits.map(summariseLiftVisit)
  };
 }
