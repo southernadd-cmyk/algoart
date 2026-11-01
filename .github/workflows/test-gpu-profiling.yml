@@ -17,6 +17,8 @@ on:
       - 'tests/phi-room-batch-study.test.mjs'
       - 'test/virtual-gallery/phi-uploaded-texture-ledger.mjs'
       - 'tests/phi-uploaded-texture-ledger.test.mjs'
+      - 'test/virtual-gallery/phi-room-lighting-renderer.mjs'
+      - 'tests/phi-shadow-receiver-invalidation.test.mjs'
       - '.github/workflows/test-gpu-profiling.yml'
 permissions:
   contents: write
@@ -37,7 +39,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Verify GPU timing and caption geometry batching
-        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-room-batch-study.test.mjs tests/phi-uploaded-texture-ledger.test.mjs
+        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-room-batch-study.test.mjs tests/phi-uploaded-texture-ledger.test.mjs tests/phi-shadow-receiver-invalidation.test.mjs
       - name: Build TEST bundle without altering live
         run: |
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
@@ -53,15 +55,29 @@ jobs:
           original_room_culler=$(git rev-parse HEAD:test/virtual-gallery/phi-room-visibility-culler.mjs)
           original_room_batches=$(git rev-parse HEAD:test/virtual-gallery/phi-room-batch-study.mjs)
           original_upload_ledger=$(git rev-parse HEAD:test/virtual-gallery/phi-uploaded-texture-ledger.mjs)
+          original_lighting=$(git rev-parse HEAD:test/virtual-gallery/phi-room-lighting-renderer.mjs)
           git add test/virtual-gallery/gallery-phi-bundle.js
           if ! git diff --cached --quiet; then
             git commit -m "Build test tower GPU profiling experiment"
-            git pull --rebase origin main
+            # A concurrent push can occur after fetch. Retry safely: always
+            # rebase first, then verify that NONE of our compiled inputs changed.
+            for attempt in 1 2 3 4; do
+              git fetch origin main
+              git rebase origin/main
+              [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-room-lighting-renderer.mjs)" == "$original_lighting" ]] || { echo 'Lighting source changed; refusing stale TEST bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/gallery-phi.js)" == "$original_source" ]] || { echo 'Concurrent test source changed; refusing outdated bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-frame-material.mjs)" == "$original_frame_shader" ]] || { echo 'Concurrent frame shader changed; refusing outdated bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-painting-frame-batch.mjs)" == "$original_frame_batch" ]] || { echo 'Concurrent frame batch changed; refusing outdated bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-room-visibility-culler.mjs)" == "$original_room_culler" ]] || { echo 'Concurrent room culler changed; refusing outdated bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-room-batch-study.mjs)" == "$original_room_batches" ]] || { echo 'Room batch implementation changed; aborting obsolete bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-uploaded-texture-ledger.mjs)" == "$original_upload_ledger" ]] || { echo 'Texture upload ledger changed; refusing stale bundle'; exit 1; }
-            git push origin HEAD:main
+              if git push origin HEAD:main; then
+                echo "Published verified TEST bundle"
+                exit 0
+              fi
+              echo "Concurrent push rejected attempt $attempt; retrying from latest main"
+              sleep 2
+            done
+            echo 'Could not safely publish TEST bundle after retries'
+            exit 1
           fi
