@@ -209,9 +209,62 @@ export function answerVisitor(question,k,state={}){
  }
  return reply('I don’t know about that one. I know this tower, its art, and a fair bit about φ and art history. '+(k.reception?'Try asking what this place is, or about Fibonacci.':'Try asking which works are here, or whether the Parthenon really uses φ.'));
 }
-export function visitorSuggestions(k){
- return k.reception?['What is this place?','What are the screens?','What is the gramophone?','Is this AI?']:
- ['What is this room called?','Which works are here?','Tell me about this one','Is the golden ratio enough?'];
+// Each topic has a question; the drawer makes the entire knowledge base
+// discoverable, while the visible chips adapt to the conversation.
+const DISCOVERY={
+ 'Building the tower':[
+  ['tower-build','How was the tower built?'],
+  ['daily-to-floor',"How does a day's art become a floor?"],
+  ['curation-process','What determines the rooms?'],
+  ['hanging-process','How are paintings hung?'],
+  ['sculpture-translation','How do drawings become sculptures?']],
+ 'Golden ratio & nature':[
+  ['phi-definition','What is the golden ratio?'],['phi-history','Who discovered phi?'],
+  ['fibonacci','What is Fibonacci?'],['golden-angle','What is the golden angle?'],
+  ['nature','Is phi everywhere in nature?'],['nautilus','Is the nautilus shell golden?'],
+  ['golden-rectangle','What is a golden rectangle?'],['penrose-history','Who was Roger Penrose?']],
+ 'Art history & evidence':[
+  ['parthenon','Does the Parthenon use phi?'],['leonardo','Did Leonardo use phi?'],
+  ['modern-artists','Which artists used phi?'],['le-corbusier','What is the Modulor?'],
+  ['preference','Is the golden ratio more beautiful?'],['faces','Do faces follow phi?'],
+  ['phi-music','Is phi used in music?']],
+ 'Art, code & chance':[
+  ['thirds','What is the rule of thirds?'],['composition','How does composition work?'],
+  ['kandinsky','Tell me about Kandinsky'],['generative','What is generative art?'],
+  ['instructions','Tell me about Sol LeWitt'],['chance','How is chance used in art?'],
+  ['is-it-art','Is this art?']],
+ 'Simulated materials & forms':[
+  ['action-painting','What is action painting?'],['watercolour-history','What is watercolour?'],
+  ['oil-history','What is oil paint?'],['relief','What is relief sculpture?']]
+};
+export function visitorTopicCatalog(){
+ return Object.entries(DISCOVERY).map(([category,topics])=>({category,
+  topics:topics.filter(([id])=>knowledgeTopic(id)).map(([id,question])=>({id,question}))}));
+}
+const QUICK={
+ outside:['tower-build','daily-to-floor','curation-process','sculpture-translation'],
+ reception:['tower-build','phi-definition','penrose-history','phi-music'],
+ gallery:['phi-definition','composition','generative','preference']
+};
+export function visitorSuggestions(k,state={}){
+ if(!state.turns&&!state.topic)return k.outside
+  ?['How was the tower built?',"How does a day's art become a floor?",'What determines the rooms?','How do drawings become sculptures?']
+  :k.reception?['What is this place?','What are the screens?','What is the gramophone?','Is this AI?']
+  :['What is this room called?','Which works are here?','Tell me about this one','Is the golden ratio enough?'];
+ const options=[],used=new Set();
+ const add=q=>{if(q&&!used.has(q)){options.push(q);used.add(q);}};
+ const selected=state.topic&&knowledgeTopic(state.topic);
+ if(selected&&(state.seen?.[selected.id]||[]).length<selected.answers.length)add('Tell me more');
+ const all=visitorTopicCatalog().flatMap(group=>group.topics);
+ if(selected?.next){const related=all.find(t=>t.id===selected.next);if(related)add(related.question);}
+ const group=k.outside?'outside':k.reception?'reception':'gallery';
+ const priority=QUICK[group].map(id=>all.find(t=>t.id===id)).filter(Boolean);
+ const remaining=[...priority,...all.filter(t=>!priority.includes(t))];
+ const unread=remaining.filter(t=>!(state.seen?.[t.id]?.length));
+ const read=remaining.filter(t=>state.seen?.[t.id]?.length);
+ const rotated=unread.length?[...unread.slice(state.turns%unread.length),...unread.slice(0,state.turns%unread.length)]:[];
+ for(const topic of [...rotated,...read]){add(topic.question);if(options.length>=4)break;}
+ return options.slice(0,4);
 }
 export function createVisitorChatUI({onClose}={}){
  const prompt=document.createElement('button');prompt.type='button';prompt.className='visitor-talk-prompt';prompt.hidden=true;
