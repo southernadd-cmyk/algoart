@@ -46,6 +46,33 @@ export function createPhiArrivalMeshStager({nextFrame,now=()=>performance.now()}
   return stats();
  }
  function stats(){return {date,active:running,total:entries.length,shown,hidden:entries.length-shown,batches:[...batches]};}
+ // TEST ONLY: compile material variants of the actual staged destination.
+ // The previous precompile skipped these hidden meshes entirely.
+ // compileAsync traverses synchronously and yields a Promise for GPU completion.
+ function compileHiddenDestination(compile){
+  if(!running||!entries.length||typeof compile!=='function')
+   return {attempted:false,promise:null,count:0};
+  const version=generation;
+  let count=0,promise=null;
+  try{
+   for(const entry of entries){
+    if(entry.object&&!entry.object.userData?.galleryDisposed&&entry.object.parent){
+     entry.object.visible=entry.visible;count++;
+    }
+   }
+   promise=compile();
+  }finally{
+   // Restore BEFORE the first async boundary. The visitor never sees the
+   // destination ahead of the 16-mesh stage, even on compiler exceptions.
+   if(version===generation){
+    for(const entry of entries){
+     if(entry.object&&!entry.object.userData?.galleryDisposed&&entry.object.parent)
+      entry.object.visible=false;
+    }
+   }
+  }
+  return {attempted:true,promise:Promise.resolve(promise),count};
+ }
  // Adjust only the number of meshes whose ORIGINAL visibility is restored
  // per render; no render quality/performance tier changes are permitted.
  async function reveal({batchSize=20,mode='legacy',minBatch=6,maxBatch=24,
@@ -96,5 +123,5 @@ export function createPhiArrivalMeshStager({nextFrame,now=()=>performance.now()}
   running=false;
   return stats();
  }
- return {start,reveal,restore,renderedFrame,stats};
+ return {start,reveal,restore,renderedFrame,stats,compileHiddenDestination};
 }
