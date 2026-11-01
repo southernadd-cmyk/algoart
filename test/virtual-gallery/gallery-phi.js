@@ -263,6 +263,63 @@ installPhiComposerPassProfiler({
  }
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
+ // TEST-ONLY resource audit: observe completed renderer uploads without
+ // changing scheduling, materials, texture data or the lift. WebGL implicit
+ // uploads are NOT instrumented; renderer.info exposes live memory counters.
+ if(new URLSearchParams(location.search).get('gpuvisitbench')==='1'){
+  const originalInitTexture=renderer.initTexture.bind(renderer);
+  const tracked=new Set(),disposed=new Set();
+  const audit={explicitUploadCalls:0,distinctExplicitTextures:0,
+   repeatedTextureCalls:0,disposeEvents:0,uploadDurationsMs:[],
+   maxExplicitUploadMs:0,earliest:null};
+  renderer.initTexture=texture=>{
+   const id=texture?.id;
+   if(id!==undefined){
+    if(tracked.has(id))audit.repeatedTextureCalls++;
+    else{
+     tracked.add(id);audit.distinctExplicitTextures++;
+     texture.addEventListener?.('dispose',()=>{
+      if(!disposed.has(id)){disposed.add(id);audit.disposeEvents++;}
+     });
+    }
+   }
+   const began=performance.now();
+   try{return originalInitTexture(texture);}
+   finally{
+    const ms=performance.now()-began;
+    audit.explicitUploadCalls++;
+    audit.maxExplicitUploadMs=Math.max(audit.maxExplicitUploadMs,ms);
+    if(audit.uploadDurationsMs.length<250)audit.uploadDurationsMs.push(+ms.toFixed(2));
+   }
+  };
+  window.__phiGpuVisitAudit={
+   snapshot(){
+    const memory=renderer.info.memory||{};
+    const active=window.__phiFullEngine||{};
+    const profile=window.__phiLiftProfile;
+    return {
+     date:active.date||null,paintings:active.paintings??null,
+     paintingsLoaded:active.paintingsLoaded??null,
+     geometries:memory.geometries??null,textures:memory.textures??null,
+     shaderPrograms:renderer.info.programs?.length??null,
+     drawsLastPass:renderer.info.render.calls,trianglesLastPass:renderer.info.render.triangles,
+     sceneRoots:scene.children.length,
+     explicitUploadCalls:audit.explicitUploadCalls,
+     distinctExplicitTextures:audit.distinctExplicitTextures,
+     repeatedTextureCalls:audit.repeatedTextureCalls,
+     disposeEvents:audit.disposeEvents,
+     maxExplicitUploadMs:+audit.maxExplicitUploadMs.toFixed(2),
+     samples:[...audit.uploadDurationsMs],
+     paintingGPU:liftPaintingGPU.stats(),
+     artworkPreload:phiArtworkPreloader.stats(),
+     sculptures:phiSculptureStage.stats(),
+     liftPreparation:window.__phiLiftPreparation||null,
+     completedVisits:profile?.visits?.length||0
+    };
+   }
+  };
+ }
+
 // TEST-ONLY repeatable browser benchmark. The mode has no effect on production,
 // artwork pixels or normal tower visits and does not touch the live module.
 if(new URLSearchParams(location.search).get('roomcullbench')==='1'){
