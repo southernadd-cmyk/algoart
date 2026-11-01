@@ -188,6 +188,10 @@ if(new URLSearchParams(location.search).has('svg-export'))window.__PP_EXPORT_SCE
 let renderer;
 try {
   renderer = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'});
+  // Measured on the independent TEST tower: synchronous shader diagnostic
+  // queries stalled the lift. This disables error-log checks, not shaders,
+  // materials, post-processing, lighting or rendered artwork.
+  renderer.debug.checkShaderErrors = false;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, matchMedia('(pointer:coarse)').matches ? 1.35 : 1.7));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
