@@ -101,7 +101,7 @@ export const KNOWLEDGE=[
    'You’ll see claims that beautiful faces fit a golden mask, or that height divided by navel height is φ. Real measurements vary a lot from person to person, and the beauty claims haven’t held up well in studies.'],
   next:'preference'},
  {id:'phi-music',
-  keys:['debussy','bartok','bartók','mozart','music theory','composers','composer','howat','lendvai','la mer'],
+  keys:['is phi used in music','phi used in music','debussy','bartok','bartók','mozart','music theory','composers','composer','howat','lendvai','la mer'],
   answers:[
    'Roy Howat’s book Debussy in Proportion argues that Debussy placed key moments at golden-section points — it’s one of the better-argued cases. Ernő Lendvai made similar claims about Bartók.',
    'Mozart is the disputed one: some of his sonata movements split near 0.618, but many don’t, and it may be coincidence. That’s why the gramophone just marks the points and lets you listen.'],
@@ -173,6 +173,40 @@ export const KNOWLEDGE=[
    'People argued about that in 1965 too. Someone wrote the rules, chose the seeds, tuned it by eye and curated what’s shown — so there’s a lot of human choice in it, just not in each mark.'],
   take:{enthusiast:'I think so, obviously, or I wouldn’t keep coming back.',sceptic:'I’m still deciding. Ask me again upstairs.',regular:'I think the editor is where it becomes yours, too.'},
   next:'instructions'}
+ // --------------------------------------------- building the daily tower
+ {id:'tower-build',
+  keys:['how was the tower built','how is the tower built','how do you build the tower','tower construction','how was this building designed','tower design','tower architecture','building geometry'],
+  answers:[
+   'The tower is generated rather than modelled floor by floor. Each edition begins with a floor plan divided at golden-section points. Smaller spaces are merged into walkable rooms and linked with doors and passages.',
+   'The same lift shaft passes through the floors. Walls, frames, glass walkways and lighting are assembled around each plan. It is a working 3D gallery, not just a stack of pictures.',
+   'There is a reception at ground level and one dated exhibition floor above it for each published daily collection. Older editions remain in the archive as the tower grows upwards.'],
+  next:'daily-to-floor'},
+ {id:'daily-to-floor',
+  keys:['how does a days art become a floor','how does a day become a floor','how does each day become an exhibition','how are daily images turned into a gallery','how do images become a floor','from images to gallery','images into the tower','daily collection into a floor','how does a daily edition work'],
+  answers:[
+   'First the day’s studies are generated with reproducible seeds, composition engines and simulated materials, then published in that date’s archive. The gallery reads the edition’s study information rather than inventing a different set of works.',
+   'Next, the dated floor plan creates rooms. A curation pass groups works into rooms using properties such as material, engine or palette, and assigns wall positions. Room names describe the grouping actually chosen.',
+   'Finally, paintings are hung in frames and selected portrait works become layered sculptures. Image loading and room construction happen in stages, especially while the lift travels. The result is a new visitable floor linked to that day’s 2D edition.'],
+  next:'curation-process'},
+ {id:'curation-process',
+  keys:['what determines the rooms','how do you curate the rooms','how are rooms curated','how are works grouped','how is a floor curated','room curation','room grouping','why are these artworks together','how are the rooms named'],
+  answers:[
+   'Rooms are not assigned by a single strict rule. The curation process looks for useful relationships among the day’s works — material, composition engine, palette or combinations — and groups them within the available floor plan.',
+   'A room can mix materials when the works make more sense together by another quality. Its hanging sign should describe the common thread honestly instead of labelling a mixed room “watercolour”.',
+   'Curation is separate from drawing generation. φ helps shape the architecture and refine placement, but a coherent room also needs clear sightlines, sensible groupings and room to look at the work.'],
+  next:'hanging-process'},
+ {id:'hanging-process',
+  keys:['how are paintings hung','how are paintings placed','how do you choose wall positions','how is artwork positioned','hanging process','hanging rules','placement on walls','sightlines','why on this wall'],
+  answers:[
+   'The hanging system chooses real stretches of usable gallery wall. Doors, corners, other artworks and visitor routes constrain where a piece can go.',
+   'A refinement pass nudges placements towards golden-section positions where there is space, then checks clearances again. φ influences the hanging without being allowed to block a doorway or crowd the room.'],
+  next:'sculpture-translation'},
+ {id:'sculpture-translation',
+  keys:['how do drawings become sculptures','how are sculptures made','how do portraits become sculptures','why do images become sculptures','sculpture translation','portrait to sculpture','2d to 3d'],
+  answers:[
+   'Only a subset of portrait-format studies becomes sculpture. Their underlying composition is translated into layered 3D forms rather than simply wrapping the image around a box.',
+   'Different composition families lend themselves to different forms: orbital arrangements, ribbons following trajectories and strata built from divisions. The sculpture keeps a relationship to its source drawing but becomes something you can walk around.'],
+  next:'relief'},
 ];
 
 // Where "tell me more" goes after the tower's own answers (intents in
@@ -180,7 +214,7 @@ export const KNOWLEDGE=[
 export const FOLLOW_ON={
  phi:'preference',how:'generative',project:'instructions',tiles:'penrose-history',music:'phi-music',
  material:'action-painting',canvas:'golden-rectangle',remix:'instructions',ai:'is-it-art',
- room:'composition',tower:'le-corbusier',light:'le-corbusier',sculpture:'relief',export:'generative'
+ room:'curation-process',tower:'tower-build',daily:'daily-to-floor',light:'le-corbusier',sculpture:'sculpture-translation',export:'generative'
 };
 
 // Same normalisation as the chat's words(): accents and apostrophes dropped.
