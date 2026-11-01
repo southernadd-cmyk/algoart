@@ -11,7 +11,8 @@ export function summariseLiftVisit(v){
  const stages=rows(v);
  const operations=v.operations||[];
  const buckets=[
-  ['render-frame-postfx','postprocessing / WebGL render submission'],
+  ['pass-','named post-processing or scene-render pass'],
+  ['render-frame-postfx','complete postprocessing / WebGL render submission'],
   ['gpu-upload','texture upload / GPU driver submission'],
   ['shader-compile','shader compilation submission'],
   ['stage-sculpture','sculpture geometry generation'],
@@ -34,7 +35,13 @@ export function summariseLiftVisit(v){
    return {...op,overlapMs:round(overlap),category:category(op.name)};
   }).filter(op=>op.overlapMs>0).sort((a,b)=>b.overlapMs-a.overlapMs).slice(0,8);
   const covered=observed.reduce((sum,op)=>sum+op.overlapMs,0);
-  const likely=observed[0]||null;
+  const largest=observed[0]||null;
+  // Prefer a named pass only when it accounts for a substantial fraction
+  // of the stalled frame; otherwise the root remains the whole render call.
+  const namedPass=observed.filter(op=>op.name.startsWith('pass-'))
+   .sort((a,b)=>b.overlapMs-a.overlapMs)[0]||null;
+  const likely=namedPass&&namedPass.overlapMs>=Math.max(10,frame.deltaMs*.35)?
+   namedPass:largest;
   const longFrames=(v.longAnimationFrames||[]).filter(item=>{
    const start=item.elapsedMs,end=start+item.durationMs;
    return Math.max(gapStart,start)<Math.min(gapEnd,end);
@@ -44,8 +51,8 @@ export function summariseLiftVisit(v){
    .sort((a,b)=>b.durationMs-a.durationMs)[0]||null;
   const measuredBlock=likely&&likely.overlapMs>=Math.min(8,frame.deltaMs*.25);
   const attribution=measuredBlock?
-   {status:'observed synchronous blocking',operation:likely.name,
-    category:likely.category,overlapMs:likely.overlapMs}:
+   {status:likely.name.startsWith('pass-')?'observed render-pass blocking':'observed synchronous blocking',
+    operation:likely.name,category:likely.category,overlapMs:likely.overlapMs}:
    script?{status:'browser script-function attribution',functionName:script.functionName,
     sourcePath:script.sourcePath,durationMs:script.durationMs}:
    {status:'unattributed',explanation:'No measured operation or browser script function explains this frame gap. Could be GPU-driver wait, GC, compositor, scheduling, or other browser work. Investigate in DevTools Performance.'};
@@ -103,9 +110,9 @@ export function buildLiftBenchmarkReport(state,environment={}){
  const visits=state?.visits||[];
  return {
   format:'PROPORTION PIECE — test tower lift benchmark',
-  version:4,exportedAt:new Date().toISOString(),environment,
+  version:5,exportedAt:new Date().toISOString(),environment,
   summary:{journeys:visits.length,completed:visits.filter(v=>v.summary&&!rows(v).some(s=>s.name==='failure')).length,
-   recording:!!state?.active,attributionNote:'Operation overlaps identify measured blockers. Chromium Long Animation Frames may reveal source JS functions. WebGL render and texture upload calls can include driver wait and do not prove pure GPU time. Unattributed gaps need a browser trace.',route:'Reception G → top exhibition → reception G'},
+   recording:!!state?.active,attributionNote:'Named render-pass timings identify which active scene, shadow, AO, bloom, art-protection or grading pass blocks the JS render call. Operation overlaps identify measured blockers; Chromium Long Animation Frames can reveal functions. WebGL render and texture upload calls can include driver wait and do not prove pure GPU time. Unattributed gaps need a browser trace.',route:'Reception G → top exhibition → reception G'},
   journeys:visits.map(summariseLiftVisit)
  };
 }
