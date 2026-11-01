@@ -55,9 +55,35 @@ test('compiled cells match conservative dynamic visibility on real 20 October fl
   compiledChecksum+=compiled.hiddenRooms(probe.point,probe.room).length;
  const indexedMs=performance.now()-t1;
  assert.ok(compiledChecksum<=baselineChecksum);
+ // Compare cell sizes against the SAME 303 real-floor viewpoints; do not
+ // mistake additional cells or a different sampling density for better culling.
+ const expected=probes.map(dynamic);
+ const variants=[];
+ for(const cellSize of [3,2.5,2,1.5,1,.75]){
+  const index=compilePhiVisibilityCells({pieces:phi.pieces,
+   rooms:phi.floor.mergedRooms,walls:phi.physical.walls,cellSize,maxCells:650});
+  if(!index.enabled){
+   variants.push({cellSize,enabled:false,reason:index.reason});continue;
+  }
+  let hidden=0,hits=0,misses=0;
+  const scanStart=performance.now();
+  for(let pass=0;pass<4;pass++)for(let i=0;i<probes.length;i++){
+   const p=probes[i],actual=index.hiddenRooms(p.point,p.room);
+   if(actual===null){misses++;continue;}
+   hits++;
+   if(pass===0)for(const room of actual)
+    assert.ok(expected[i].includes(room),'PVS overculled at cell size '+cellSize);
+   if(pass===0)hidden+=actual.length;
+  }
+  variants.push({cellSize,enabled:true,cells:index.cellCount,
+   compileMs:+index.compileMs.toFixed(2),lookupCpuMs:+(performance.now()-scanStart).toFixed(2),
+   hidden,baselineHidden:dynamicHidden,
+   coveragePercent:dynamicHidden?+(100*hidden/dynamicHidden).toFixed(1):100,
+   lookups:hits,misses});
+ }
  const report={...base,probes:probes.length,dynamicHidden,precomputedHidden,
   baselineCpuMs:+baselineMs.toFixed(2),indexedCpuMs:+indexedMs.toFixed(2),
-  classificationOnly:true,visualBenchmarkRequired:true,
+  variants,classificationOnly:true,visualBenchmarkRequired:true,
   caveat:'CPU visibility decision timing only. Does not measure scene render, GPU stalls or user-visible frame rates.'};
  writeFileSync(new URL('../test/virtual-gallery/pvs-benchmark.json',import.meta.url),
   JSON.stringify(report,null,2)+'\n');
