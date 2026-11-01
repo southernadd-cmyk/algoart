@@ -13,6 +13,8 @@ on:
       - 'tests/phi-painting-frame-batch.test.mjs'
       - 'test/virtual-gallery/phi-room-visibility-culler.mjs'
       - 'tests/phi-room-visibility-culler.test.mjs'
+      - 'test/virtual-gallery/phi-room-batch-study.mjs'
+      - 'tests/phi-room-batch-study.test.mjs'
       - '.github/workflows/test-gpu-profiling.yml'
 permissions:
   contents: write
@@ -33,7 +35,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Verify GPU timing and caption geometry batching
-        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs
+        run: node --test tests/phi-gpu-profiler.test.mjs tests/phi-caption-batch.test.mjs tests/phi-painting-frame-batch.test.mjs tests/phi-room-visibility-culler.test.mjs tests/phi-room-batch-study.test.mjs
       - name: Build TEST bundle without altering live
         run: |
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
@@ -47,6 +49,7 @@ jobs:
           original_frame_shader=$(git rev-parse HEAD:test/virtual-gallery/phi-frame-material.mjs)
           original_frame_batch=$(git rev-parse HEAD:test/virtual-gallery/phi-painting-frame-batch.mjs)
           original_room_culler=$(git rev-parse HEAD:test/virtual-gallery/phi-room-visibility-culler.mjs)
+          original_room_batches=$(git rev-parse HEAD:test/virtual-gallery/phi-room-batch-study.mjs)
           git add test/virtual-gallery/gallery-phi-bundle.js
           if ! git diff --cached --quiet; then
             git commit -m "Build test tower GPU profiling experiment"
@@ -55,5 +58,6 @@ jobs:
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-frame-material.mjs)" == "$original_frame_shader" ]] || { echo 'Concurrent frame shader changed; refusing outdated bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-painting-frame-batch.mjs)" == "$original_frame_batch" ]] || { echo 'Concurrent frame batch changed; refusing outdated bundle'; exit 1; }
             [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-room-visibility-culler.mjs)" == "$original_room_culler" ]] || { echo 'Concurrent room culler changed; refusing outdated bundle'; exit 1; }
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/phi-room-batch-study.mjs)" == "$original_room_batches" ]] || { echo 'Room batch implementation changed; aborting obsolete bundle'; exit 1; }
             git push origin HEAD:main
           fi
