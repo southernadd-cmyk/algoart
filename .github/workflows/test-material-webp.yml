@@ -1,0 +1,71 @@
+name: TEST material WebP and entrance-model compression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/test-material-webp.yml'
+      - 'automation/build-test-material-webp.mjs'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: test-material-webp-build
+  cancel-in-progress: false
+jobs:
+  encode:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install material/GLB compression tools without touching lockfile
+        run: npm install --no-save --package-lock=false sharp@0.34.5 @gltf-transform/cli@4.5.1
+      - name: Generate brick WebP and re-encode doorway and lamp embedded textures
+        run: node automation/build-test-material-webp.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-material-webp-assets
+          path: |
+            test/virtual-gallery/textures/Bricks055_*.webp
+            test/virtual-gallery/models/gothic-entrance-door-webp.glb
+            test/virtual-gallery/models/polyhaven-street-lamp-01-webp.glb
+            test/virtual-gallery/material-webp-report.json
+          if-no-files-found: ignore
+      - name: Publish opt-in assets only after validation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          builder_sha=$(git rev-parse HEAD:automation/build-test-material-webp.mjs)
+          brick_sha=$(git rev-parse HEAD:test/virtual-gallery/textures/Bricks055_Color.jpg)
+          normal_sha=$(git rev-parse HEAD:test/virtual-gallery/textures/Bricks055_NormalGL.jpg)
+          roughness_sha=$(git rev-parse HEAD:test/virtual-gallery/textures/Bricks055_Roughness.jpg)
+          doorway_sha=$(git rev-parse HEAD:test/virtual-gallery/models/gothic-entrance-door.glb)
+          lamp_sha=$(git rev-parse HEAD:test/virtual-gallery/models/polyhaven-street-lamp-01-optimized.glb)
+          git add test/virtual-gallery/textures/Bricks055_*.webp
+          git add test/virtual-gallery/models/gothic-entrance-door-webp.glb
+          git add test/virtual-gallery/models/polyhaven-street-lamp-01-webp.glb
+          git add test/virtual-gallery/material-webp-report.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Publish verified WebP material and model texture assets on TEST"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo 'Concurrent conflicting asset generation; preserving originals'; exit 1
+            fi
+            [[ "$(git rev-parse HEAD:automation/build-test-material-webp.mjs)" == "$builder_sha" ]] || exit 1
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/textures/Bricks055_Color.jpg)" == "$brick_sha" ]] || exit 1
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/textures/Bricks055_NormalGL.jpg)" == "$normal_sha" ]] || exit 1
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/textures/Bricks055_Roughness.jpg)" == "$roughness_sha" ]] || exit 1
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/models/gothic-entrance-door.glb)" == "$doorway_sha" ]] || exit 1
+            [[ "$(git rev-parse HEAD:test/virtual-gallery/models/polyhaven-street-lamp-01-optimized.glb)" == "$lamp_sha" ]] || exit 1
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 2
+          done
+          exit 1
