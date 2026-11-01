@@ -8,7 +8,8 @@ import {chooseGalleryPenroseRooms,pieceRoomIndex} from '../test/virtual-gallery/
 import {alignReceptionTileUvs} from '../test/virtual-gallery/reception-tile-preview.mjs';
 import {tiledBoxUvs} from '../test/virtual-gallery/architectural-materials.mjs';
 import {ROOM_HEIGHT} from '../test/virtual-gallery/layout-v2.mjs';
-import {compilePhiRoomPackage,decodePhiRoomPackage,phiRoomPackageFingerprint}
+import {receptionWindowWallParts} from '../test/virtual-gallery/phi-reception-window.mjs';
+import {compilePhiRoomPackage,compilePhiSharedArchitecture,decodePhiRoomPackage,phiRoomPackageFingerprint}
  from '../test/virtual-gallery/phi-compiled-room-package.mjs';
 import {preparePhiCompiledRoomStream} from '../test/virtual-gallery/phi-compiled-room-stream.mjs';
 
@@ -107,5 +108,64 @@ test('room 0 bypasses BoxGeometry and room 1 swaps only after exact parity',asyn
  assert.equal(stream.stats().originalMeshesDisposed,original.length);
  stream.cancel();
  for(const root of [preloaded,other])root.traverse(obj=>obj.geometry?.dispose?.());
+ Object.values(materials).forEach(m=>m.dispose());
+});
+
+test('shared compiled walls, exterior brick, cornices and skirtings match the original meshes exactly',()=>{
+ const pack=compilePhiSharedArchitecture(phi,date,elevation);
+ assert.equal(pack.scope,'shared');
+ assert.equal(pack.wallBoxes,phi.physical.walls.length);
+ const byMaterial=new Map();
+ const add=(key,dim,pos)=>{
+  const tile={plaster:2.2,brick:1.05,trims:.8,plinth:1.15}[key];
+  const geo=tiledBoxUvs(new THREE.BoxGeometry(...dim),...dim,tile);
+  const mesh=new THREE.Mesh(geo,new THREE.MeshBasicMaterial());
+  mesh.position.set(...pos);mesh.updateMatrix();
+  const transformed=geo.clone().applyMatrix4(mesh.matrix);
+  geo.dispose();mesh.material.dispose();
+  if(!byMaterial.has(key))byMaterial.set(key,[]);
+  byMaterial.get(key).push(transformed);
+ };
+ for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,null,ROOM_HEIGHT)){
+  const len=part.hi-part.lo;if(len<.04)continue;
+  const c=(part.lo+part.hi)/2,y=elevation+part.bottom+part.height/2;
+  if(w.axis==='x')add('plaster',[.19,part.height,len],[w.at,y,c]);
+  else add('plaster',[len,part.height,.19],[c,y,w.at]);
+ }
+ const inCell=(x,z)=>phi.pieces.some(p=>x>=p.x-.0001&&x<=p.x+p.w+.0001&&z>=p.z-.0001&&z<=p.z+p.h+.0001);
+ for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,null,ROOM_HEIGHT)){
+  const len=part.hi-part.lo;if(len<.05)continue;
+  const c=(part.lo+part.hi)/2,y=elevation+part.bottom+part.height/2;
+  if(w.axis==='x'){
+   const left=inCell(w.at-.24,c),right=inCell(w.at+.24,c);
+   if(left!==right)add('brick',[.035,part.height,len],[w.at+(left?1:-1)*.113,y,c]);
+  }else{
+   const north=inCell(c,w.at-.24),south=inCell(c,w.at+.24);
+   if(north!==south)add('brick',[len,part.height,.035],[c,y,w.at+(north?1:-1)*.113]);
+  }
+ }
+ for(const w of phi.physical.walls){
+  const len=w.hi-w.lo;if(len<.45)continue;
+  const c=(w.lo+w.hi)/2;
+  if(w.axis==='x'){
+   add('trims',[.13,.16,len],[w.at,elevation+ROOM_HEIGHT-.035,c]);
+   add('plinth',[.065,.13,len],[w.at,elevation+.14,c]);
+  }else{
+   add('trims',[len,.16,.13],[c,elevation+ROOM_HEIGHT-.035,w.at]);
+   add('plinth',[len,.13,.065],[c,elevation+.14,w.at]);
+  }
+ }
+ const materials=Object.fromEntries([...byMaterial.keys()].map(k=>[k,new THREE.MeshStandardMaterial()]));
+ const actual=decodePhiRoomPackage(THREE,pack,materials);
+ for(const [key,parts] of byMaterial){
+  const merged=mergeGeometries(parts,false);
+  assert.ok(merged,'baseline merge '+key);
+  const found=actual.find(m=>m.name==='phi-precompiled-shared-'+key);
+  assert.ok(found,'compiled shared '+key);
+  exactArrays(merged,found.geometry);
+  merged.dispose();parts.forEach(g=>g.dispose());
+ }
+ assert.equal(actual.length,byMaterial.size);
+ actual.forEach(m=>m.geometry.dispose());
  Object.values(materials).forEach(m=>m.dispose());
 });
