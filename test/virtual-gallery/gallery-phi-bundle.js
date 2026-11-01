@@ -5729,3 +5729,583 @@ postprocessing/build/index.js:
    * @license Zlib
    *)
 */
+
+/* Test-only visitor chat discovery: source-backed supplemental module. */
+;{
+// General φ and art knowledge for the rule-based gallery visitors.
+// Each topic: keys (words or phrases that identify it), answers (asked again
+// or "tell me more" moves to the next), optional per-temperament take for
+// contested claims, and optional next (what "tell me more" leads to after the
+// last answer). Contested or popular-myth claims are flagged as such: the
+// tower keeps the φ question open, so visitors shouldn't oversell it.
+
+const KNOWLEDGE=[
+ // ---------------------------------------------------------------- φ itself
+ {id:'phi-definition',
+  keys:['what is phi','what is φ','whats phi','whats φ','what is the golden ratio','whats the golden ratio','what is the golden section',
+   'what is the golden mean','define phi','define the golden ratio','what does phi mean','1.618','square root of 5','calculate phi','how do you calculate'],
+  answers:[
+   'φ, the golden ratio, is about 1.618. Split a line so that the whole is to the longer part as the longer part is to the shorter, and that ratio is φ. Exactly, it’s (1 + √5) ÷ 2.',
+   'It has odd habits. Square it and you get φ + 1, about 2.618. Take its reciprocal and you get φ − 1, about 0.618. That 0.618 point is the “golden section” — the tower cuts its floor plans there.',
+   'It can be written as 1 + 1/(1 + 1/(1 + …)) forever. Because that fraction is all ones, φ is the number hardest to approximate with simple fractions — mathematicians sometimes call it the “most irrational” number.'],
+  next:'golden-angle'},
+ {id:'phi-history',
+  keys:['history of phi','history of the golden ratio','who discovered phi','who discovered the golden ratio','who invented the golden ratio','euclid','pacioli','divine proportion','divina proportione','extreme and mean ratio','why is it called phi','why is it called the golden ratio','why φ','why phi','phidias'],
+  answers:[
+   'The earliest clear definition is in Euclid’s Elements, around 300 BC, where it’s called dividing a line in “extreme and mean ratio”. It was geometry for him, not aesthetics.',
+   'In 1509 Luca Pacioli published De Divina Proportione — “the divine proportion” — with polyhedra drawn by Leonardo da Vinci. The name “golden section” came much later, in 1830s Germany.',
+   'The letter φ was suggested in the early 1900s, usually credited to the American mathematician Mark Barr, as a nod to the sculptor Phidias. Whether Phidias ever used it is another matter.'],
+  next:'parthenon'},
+ {id:'fibonacci',
+  keys:['fibonacci','1 1 2 3 5 8','sequence','liber abaci','rabbits','leonardo of pisa'],
+  answers:[
+   'The Fibonacci sequence goes 1, 1, 2, 3, 5, 8, 13, 21… — each number is the sum of the two before. Divide one term by the one before and the answers home in on φ: 8/5 is 1.6, 21/13 is about 1.615.',
+   'Leonardo of Pisa, later nicknamed Fibonacci, brought it to European readers in Liber Abaci in 1202, with a puzzle about breeding rabbits. Indian scholars had found the same numbers centuries earlier while counting rhythms in poetry.',
+   'The artist Mario Merz put Fibonacci numbers into his work in neon from the 1970s — he liked them as a picture of growth. That’s one of the few places in art where the use is beyond doubt.'],
+  next:'nature'},
+ {id:'golden-angle',
+  keys:['golden angle','137.5','137','phyllotaxis','sunflower','seed head','pine cone','pinecone','daisy','leaves'],
+  answers:[
+   'The golden angle is about 137.5° — a full turn divided by φ squared. Many plants place each new seed or leaf about that far round from the last.',
+   'Because φ is so hard to approximate with fractions, seeds at the golden angle never line up in neat rows. They pack evenly, and the spirals you count in a sunflower head are often neighbouring Fibonacci numbers, like 34 and 55.',
+   'The Golden Trajectories system here borrows the golden angle for its curved paths — that’s where φ is most literally “in” some of these drawings.'],
+  next:'nature'},
+ {id:'nature',
+  keys:['nature','natural','everywhere','galaxy','galaxies','hurricane','dna','universe','plants','in nature'],
+  answers:[
+   'Some of it is real — leaf and seed arrangements really do follow the golden angle, for good mechanical reasons. But a lot of “φ is everywhere” is people drawing spirals over photos until something fits.',
+   'Galaxies, hurricanes and DNA come up a lot. Their spirals are roughly logarithmic, but they don’t have a single growth ratio, let alone φ. Lots of things are near 1.6 if you measure loosely enough.'],
+  take:{enthusiast:'I still find the plants astonishing, though.',sceptic:'Which is partly why I doubt it here.',regular:'I try to separate the real cases from the posters.'},
+  next:'nautilus'},
+ {id:'nautilus',
+  keys:['nautilus','shell','shells','snail','golden spiral','logarithmic spiral'],
+  answers:[
+   'A golden spiral grows by φ every quarter-turn. The nautilus shell is the famous example — but when people actually measure nautilus shells, the spiral isn’t golden. It is a logarithmic spiral, just a different one.',
+   'The spiral you see on posters is drawn by fitting quarter-circles inside shrinking golden rectangles. It approximates a true golden spiral, but it’s a construction, not something taken from a shell.'],
+  next:'golden-rectangle'},
+ {id:'golden-rectangle',
+  keys:['golden rectangle','golden rectangles','rectangle ratio','cut off a square','pentagon','pentagram'],
+  answers:[
+   'A golden rectangle has sides in the ratio φ. Cut a square off one end and what’s left is another golden rectangle — you can keep going forever. The canvas here isn’t one, mind: it’s 7:5.',
+   'φ turns up exactly in a regular pentagon: the diagonal is φ times the side. Draw all five diagonals and the star you get, the pentagram, is full of golden ratios. That’s probably how the Greeks first met it.'],
+  next:'phi-history'},
+ {id:'penrose-history',
+  keys:['roger penrose','who was penrose','who is penrose','aperiodic','quasicrystal','quasicrystals','shechtman','kite','dart','rhombs','rhombus','non repeating','never repeats'],
+  answers:[
+   'Roger Penrose found his tilings in the 1970s. Two shapes — here a fat and a thin rhombus — cover a floor forever without the pattern ever repeating.',
+   'In a large Penrose tiling the fat rhombs outnumber the thin ones by φ to 1. And in 1982 Dan Shechtman found crystals with the same kind of order — quasicrystals. He won the Nobel Prize in Chemistry for it in 2011.'],
+  next:'golden-rectangle'},
+ // ---------------------------------------------------------- φ in art/myth
+ {id:'parthenon',
+  keys:['parthenon','greek','greeks','ancient greece','temple','pyramid','pyramids','egypt','great pyramid'],
+  answers:[
+   'The Parthenon is the classic claim. But golden rectangles only fit it if you choose where to draw them — top of the steps or bottom, with the roof or without. There’s no ancient evidence the builders used φ.',
+   'The Great Pyramid gets the same treatment. Some of its proportions are close to φ, but they’re also close to other neat ratios, and nothing written down from Egypt mentions it.'],
+  take:{enthusiast:'I’d still like it to be true.',sceptic:'The tower is more honest about its φ than most famous buildings.',regular:'It’s a good test, though: if you look for φ, you tend to find it.'},
+  next:'leonardo'},
+ {id:'leonardo',
+  keys:['leonardo','da vinci','mona lisa','vitruvian','last supper','renaissance'],
+  answers:[
+   'Leonardo did draw the illustrations for Pacioli’s book on the divine proportion. But there’s no solid evidence he composed the Mona Lisa or anything else with φ — the golden rectangles in diagrams of it are drawn on afterwards.',
+   'The Vitruvian Man is about the proportions Vitruvius described — whole-number fractions of the body — not φ. It gets drafted into the golden-ratio story a lot.'],
+  next:'modern-artists'},
+ {id:'modern-artists',
+  keys:['dali','dalí','sacrament','seurat','mondrian','section dor','section d’or','cubist','cubism','juan gris','villon','modern art','who used phi','who used the golden ratio','which artists'],
+  answers:[
+   'Salvador Dalí’s The Sacrament of the Last Supper, 1955, is one of the clear cases: the canvas is close to a golden rectangle, and a huge dodecahedron — a φ-filled solid — hangs over the table.',
+   'In 1912 a group of Cubists in Paris exhibited as the Section d’Or — “golden section”. The name was a nod to mathematical order; how much they actually measured with it is debated.',
+   'Mondrian and Seurat are often said to have used φ, but neither left good evidence. Mondrian placed his lines by eye, and repainted them until they felt right.'],
+  next:'le-corbusier'},
+ {id:'le-corbusier',
+  keys:['le corbusier','corbusier','modulor','modernist architecture'],
+  answers:[
+   'Le Corbusier did use φ, openly. His Modulor system, published in 1948, scaled a standing man’s height through golden ratios into a set of building measurements.',
+   'He used the Modulor in buildings like the Unité d’Habitation in Marseille. It’s a nice parallel to this tower — a building planned by golden divisions — except his started from the human body.'],
+  next:'preference'},
+ {id:'preference',
+  keys:['beautiful','beauty','prefer','preference','pleasing','attractive','do people like','fechner','fechner','science','proof','prove','is it more beautiful'],
+  answers:[
+   'Gustav Fechner tested it in the 1870s: shown a set of rectangles, people picked ones near the golden ratio more than others. That result made φ famous as “the beautiful proportion”.',
+   'Later studies are much less tidy. Preferences vary with person, context and method, and often land somewhere between about 1.4 and 1.8, not on φ itself. There’s no settled proof that φ is more beautiful.'],
+  take:{enthusiast:'I’d say these rooms are a better experiment than a card of rectangles.',sceptic:'Which is why I think the material matters more here.',regular:'That’s the question the whole place is asking.'},
+  next:'faces'},
+ {id:'faces',
+  keys:['face','faces','body','human body','golden mask','navel','height'],
+  answers:[
+   'You’ll see claims that beautiful faces fit a golden mask, or that height divided by navel height is φ. Real measurements vary a lot from person to person, and the beauty claims haven’t held up well in studies.'],
+  next:'preference'},
+ {id:'phi-music',
+  keys:['is phi used in music','phi used in music','debussy','bartok','bartók','mozart','music theory','composers','composer','howat','lendvai','la mer'],
+  answers:[
+   'Roy Howat’s book Debussy in Proportion argues that Debussy placed key moments at golden-section points — it’s one of the better-argued cases. Ernő Lendvai made similar claims about Bartók.',
+   'Mozart is the disputed one: some of his sonata movements split near 0.618, but many don’t, and it may be coincidence. That’s why the gramophone just marks the points and lets you listen.'],
+  next:'preference'},
+ {id:'thirds',
+  keys:['rule of thirds','thirds','photography','golden section composition'],
+  answers:[
+   'The rule of thirds puts key things a third of the way across, at 0.333. The golden section puts them at 0.382 or 0.618. They’re close, which is one reason it’s hard to prove which one people respond to.',
+   'The phrase “rule of thirds” dates from 1797, from an engraver called John Thomas Smith, writing about landscape painting. Photographers adopted it later.'],
+  next:'composition'},
+ // ------------------------------------------------------------------- art
+ {id:'composition',
+  keys:['composition','balance','focal point','negative space','visual weight','arnheim','good composition'],
+  answers:[
+   'Composition is how the parts of a picture are arranged — where the eye goes first, what balances what, how much empty space there is. Rudolf Arnheim wrote about it as a pull of visual forces in Art and Visual Perception, 1954.',
+   'Empty space counts as much as the marks. Some studies here are sparse on purpose — the gaps are part of the composition, not missing content.'],
+  next:'kandinsky'},
+ {id:'kandinsky',
+  keys:['kandinsky','klee','bauhaus','point and line','pedagogical','hilma','af klint','malevich','black square','abstract','abstraction'],
+  answers:[
+   'Kandinsky and Klee both taught at the Bauhaus and tried to write down rules for abstract composition — Kandinsky’s Point and Line to Plane came out in 1926. They’re early attempts at what the engines here do in code.',
+   'Abstract painting has several starting points: Hilma af Klint was painting abstract works by 1906, Kandinsky around 1910, and Malevich showed his Black Square in 1915.'],
+  next:'generative'},
+ {id:'generative',
+  keys:['generative art','computer art','algorithmic art','vera molnar','molnar','molnár','georg nees','frieder nake','michael noll','manfred mohr','harold cohen','aaron','cybernetic serendipity','plotter art','first computer'],
+  answers:[
+   'Computer-generated art was first exhibited in 1965 — Georg Nees in Stuttgart and A. Michael Noll in New York, with Frieder Nake soon after. They drew with plotters, much like the plotter export here.',
+   'Vera Molnár worked with simple rules and small amounts of randomness from the late 1950s — first by hand, then by computer from 1968. Her squares slowly going out of order are very close in spirit to these drawings.',
+   'In 1968 the ICA in London held Cybernetic Serendipity, the first big show of computer art. And Harold Cohen spent decades from the 1970s teaching his program AARON to draw.'],
+  next:'instructions'},
+ {id:'instructions',
+  keys:['sol lewitt','lewitt','instructions','instruction','conceptual art','conceptual','yoko ono','grapefruit','fluxus','audience','participation'],
+  answers:[
+   'Sol LeWitt’s wall drawings are sets of written instructions that other people carry out — he argued the idea itself works like a machine that makes the art. That’s close to a seed and an engine.',
+   'Yoko Ono’s Grapefruit, 1964, is a book of instruction pieces the reader completes, often only in their head. The editor here works a bit like that: you finish the piece by moving the sliders.'],
+  next:'chance'},
+ {id:'chance',
+  keys:['chance','random','randomness','dada','arp','john cage','cage','accident','luck'],
+  answers:[
+   'Artists were using chance long before computers. Jean Arp made collages around 1916 by letting paper fall, and John Cage composed with coin tosses from the I Ching.',
+   'Here the chance is seeded — it looks random, but the same seed gives the same drawing every time. So it’s chance you can repeat, which Arp couldn’t do.'],
+  next:'generative'},
+ {id:'action-painting',
+  keys:['what is action painting','pollock','jackson pollock','de kooning','rosenberg','drip','drips','abstract expressionism','expressionism'],
+  answers:[
+   'The term “action painting” was coined by the critic Harold Rosenberg in 1952 — the canvas as an arena to act in. Jackson Pollock’s poured and dripped paintings are the best-known examples.',
+   'The action material here imitates pours, pools and splashes. A fair question is whether gesture still means anything when a rule makes it — that’s part of what the project is testing.'],
+  next:'chance'},
+ {id:'watercolour-history',
+  keys:['history of watercolour','what is watercolour','what is watercolor','turner','durer','dürer','transparent','gouache'],
+  answers:[
+   'Watercolour is pigment in a water-soluble binder. It’s transparent, so the white comes from the paper — you plan the lights rather than painting them on.',
+   'Dürer made remarkable watercolours around 1500, and J. M. W. Turner pushed the medium hard in the early 1800s. The simulated version here focuses on drying edges and paper grain.'],
+  next:'oil-history'},
+ {id:'oil-history',
+  keys:['history of oil','what is oil paint','van eyck','eyck','glaze','glazing','impasto','linseed'],
+  answers:[
+   'Oil paint is pigment ground in a drying oil, usually linseed. It dries slowly, so painters can blend, layer and glaze. Jan van Eyck didn’t invent it, but he showed what it could do in the 1430s.',
+   'Thick, textured oil paint is called impasto — you can see the brush in it. The oil material here simulates bristle texture, a bit like that.'],
+  next:'watercolour-history'},
+ {id:'relief',
+  keys:['what is a relief','relief sculpture','bas relief','bas-relief','what is relief'],
+  answers:[
+   'A relief is sculpture that projects from a background rather than standing free — think of the friezes on old buildings, or a coin. The portrait studies here are turned into layered reliefs on plinths.'],
+  next:'composition'},
+ {id:'is-it-art',
+  keys:['is this art','is it art','real art','can a computer make art','can computers make art','who is the artist','is the computer the artist'],
+  answers:[
+   'People argued about that in 1965 too. Someone wrote the rules, chose the seeds, tuned it by eye and curated what’s shown — so there’s a lot of human choice in it, just not in each mark.'],
+  take:{enthusiast:'I think so, obviously, or I wouldn’t keep coming back.',sceptic:'I’m still deciding. Ask me again upstairs.',regular:'I think the editor is where it becomes yours, too.'},
+  next:'instructions'}
+ // --------------------------------------------- building the daily tower
+ {id:'tower-build',
+  keys:['how was the tower built','how is the tower built','how do you build the tower','tower construction','how was this building designed','tower design','tower architecture','building geometry'],
+  answers:[
+   'The tower is generated rather than modelled floor by floor. Each edition begins with a floor plan divided at golden-section points. Smaller spaces are merged into walkable rooms and linked with doors and passages.',
+   'The same lift shaft passes through the floors. Walls, frames, glass walkways and lighting are assembled around each plan. It is a working 3D gallery, not just a stack of pictures.',
+   'There is a reception at ground level and one dated exhibition floor above it for each published daily collection. Older editions remain in the archive as the tower grows upwards.'],
+  next:'daily-to-floor'},
+ {id:'daily-to-floor',
+  keys:['how does a days art become a floor','how does a day become a floor','how does each day become an exhibition','how are daily images turned into a gallery','how do images become a floor','from images to gallery','images into the tower','daily collection into a floor','how does a daily edition work'],
+  answers:[
+   'First the day’s studies are generated with reproducible seeds, composition engines and simulated materials, then published in that date’s archive. The gallery reads the edition’s study information rather than inventing a different set of works.',
+   'Next, the dated floor plan creates rooms. A curation pass groups works into rooms using properties such as material, engine or palette, and assigns wall positions. Room names describe the grouping actually chosen.',
+   'Finally, paintings are hung in frames and selected portrait works become layered sculptures. Image loading and room construction happen in stages, especially while the lift travels. The result is a new visitable floor linked to that day’s 2D edition.'],
+  next:'curation-process'},
+ {id:'curation-process',
+  keys:['what determines the rooms','how do you curate the rooms','how are rooms curated','how are works grouped','how is a floor curated','room curation','room grouping','why are these artworks together','how are the rooms named'],
+  answers:[
+   'Rooms are not assigned by a single strict rule. The curation process looks for useful relationships among the day’s works — material, composition engine, palette or combinations — and groups them within the available floor plan.',
+   'A room can mix materials when the works make more sense together by another quality. Its hanging sign should describe the common thread honestly instead of labelling a mixed room “watercolour”.',
+   'Curation is separate from drawing generation. φ helps shape the architecture and refine placement, but a coherent room also needs clear sightlines, sensible groupings and room to look at the work.'],
+  next:'hanging-process'},
+ {id:'hanging-process',
+  keys:['how are paintings hung','how are paintings placed','how do you choose wall positions','how is artwork positioned','hanging process','hanging rules','placement on walls','sightlines','why on this wall'],
+  answers:[
+   'The hanging system chooses real stretches of usable gallery wall. Doors, corners, other artworks and visitor routes constrain where a piece can go.',
+   'A refinement pass nudges placements towards golden-section positions where there is space, then checks clearances again. φ influences the hanging without being allowed to block a doorway or crowd the room.'],
+  next:'sculpture-translation'},
+ {id:'sculpture-translation',
+  keys:['how do drawings become sculptures','how are sculptures made','how do portraits become sculptures','why do images become sculptures','sculpture translation','portrait to sculpture','2d to 3d'],
+  answers:[
+   'Only a subset of portrait-format studies becomes sculpture. Their underlying composition is translated into layered 3D forms rather than simply wrapping the image around a box.',
+   'Different composition families lend themselves to different forms: orbital arrangements, ribbons following trajectories and strata built from divisions. The sculpture keeps a relationship to its source drawing but becomes something you can walk around.'],
+  next:'relief'},
+];
+
+// Where "tell me more" goes after the tower's own answers (intents in
+// phi-visitor-chat.mjs), so a conversation can move from the room to the ideas.
+const FOLLOW_ON={
+ phi:'preference',how:'generative',project:'instructions',tiles:'penrose-history',music:'phi-music',
+ material:'action-painting',canvas:'golden-rectangle',remix:'instructions',ai:'is-it-art',
+ room:'curation-process',tower:'tower-build',daily:'daily-to-floor',light:'le-corbusier',sculpture:'sculpture-translation',export:'generative'
+};
+
+// Same normalisation as the chat's words(): accents and apostrophes dropped.
+const normalise=text=>String(text).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+ .replace(/[‘’']/g,'').replace(/[^a-z0-9φ.\s-]/g,' ').trim().split(/\s+/).filter(Boolean).join(' ');
+for(const topic of KNOWLEDGE)topic.keys=[...new Set(topic.keys.map(normalise))];
+const byId=new Map(KNOWLEDGE.map(topic=>[topic.id,topic]));
+const knowledgeTopic=id=>byId.get(id)||null;
+
+/** Best-matching topic for a question, how strongly it matched, and the keys hit. */
+function matchKnowledge(line){
+ let best=null;
+ for(const topic of KNOWLEDGE){
+  const hits=topic.keys.filter(key=>(' '+line+' ').includes(' '+key+' '));
+  const score=hits.reduce((n,key)=>n+(key.includes(' ')?2.5:2),0);
+  if(score&&(!best||score>best.score))best={topic,score,hits};
+ }
+ return best;
+}
+
+/** An unused answer from a topic — preferring one that mentions what was
+ *  asked about ("Dürer", "Molnár") — or null once the topic is exhausted. */
+function knowledgeAnswer(topic,persona,seen={},hits=[]){
+ const used=seen[topic.id]||[];
+ const open=topic.answers.map((text,index)=>({text,index})).filter(a=>!used.includes(a.index));
+ if(!open.length)return null;
+ const named=hits.flatMap(key=>key.split(' ')).filter(w=>w.length>3);
+ const pick=open.find(a=>named.some(w=>normalise(a.text).includes(w)))||open[0];
+ let text=pick.text;
+ if(open.length===1&&topic.take?.[persona])text+=' '+topic.take[persona];
+ return {text,seen:{...seen,[topic.id]:[...used,pick.index]}};
+}
+
+// Adapted from Claude's rule-based gallery visitor conversation system.
+// No model API, network requests, tracking or dialogue persistence.
+// Test edition: outdoor build questions, progressive chips, full topic catalogue.
+
+const MATERIALS={
+ marker:['marker drawing','uneven ink, pressure, wobble and dry strokes'],
+ tissue:['tissue-and-graphite piece','translucent layers with fine graphite-like marks'],
+ watercolour:['watercolour','pigment movement, drying edges and paper grain'],
+ oil:['oil painting','heavy paint forms and bristle texture'],
+ action:['action painting','poured gestures, pools and scattered splashes']
+};
+const ENGINES={
+ field:['Orbital Studies','balances arrangements around focal points'],
+ spiral:['Golden Trajectories','follows curved paths influenced by the golden angle'],
+ trajectory:['Golden Trajectories','follows curved paths influenced by the golden angle'],
+ rects:['Recursive Divisions','splits the canvas into unequal rectangles'],
+ burst:['Radiant Systems','sends marks outwards from focal points'],
+ network:['Connected Fields','connects marks into networks'],
+ organic:['Growth Systems','branches and grows in scale'],
+ growth:['Growth Systems','branches and grows in scale'],
+ geometric:['Constructed Forms','arranges geometric shapes of different scales'],
+ construct:['Constructed Forms','arranges geometric shapes of different scales'],
+ scribble:['Automatic Marks','generates loose gestural strokes'],
+ automatic:['Automatic Marks','generates loose gestural strokes']
+};
+const PALETTES={spectrum:'full-spectrum',golden:'golden-angle',marker:'classic marker',
+ cmyk:'CMYK',primary:'primary-colour',neon:'neon',pastel:'pastel',earth:'earth-tone',
+ warm:'warm',cold:'cool',mono:'monochrome'};
+const NAMES=['Ines','Tomasz','Ruth','Kwame','Marguerite','Dev','Saoirse','Hugo','Amara','Felix','Noor','Bea'];
+const TYPES=['enthusiast','sceptic','regular'];
+function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+function words(s){return normalise(s).split(' ').filter(Boolean);}
+function plural(n,s){return n+' '+s+(n===1?'':'s');}
+function join(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a.at(-1);}
+function describeWork(w){
+ const material=MATERIALS[w.material],engine=ENGINES[w.engine],kind=material?.[0]||'drawing';
+ const output=['“'+w.title+'” is '+(/^[aeiou]/.test(kind)?'an ':'a ')+kind+
+  (w.sculpture?' — interpreted here as a sculpture':'')+'.'];
+ if(engine)output.push('It belongs to '+engine[0]+', which '+engine[1]+'.');
+ if(material)output.push('Its '+w.material+' material brings '+material[1]+'.');
+ if(PALETTES[w.palette])output.push('The palette is '+PALETTES[w.palette]+'.');
+ if(Number.isFinite(w.phi))output.push('Its additional φ pull is '+w.phi+' out of 100.');
+ return output.join(' ');
+}
+function buildVisitorKnowledge(input){
+ const seed=hash((input.date||'reception')+':'+input.roomIndex+':'+input.visitorIndex);
+ return {...input,outside:!!input.reception&&(input.outside===true||input.visitorIndex>=100),seed,persona:TYPES[seed%3],name:NAMES[(seed>>>3)%NAMES.length]};
+}
+const ORDINALS={first:0,'1st':0,second:1,'2nd':1,third:2,'3rd':2,fourth:3,'4th':3,last:-1};
+function resolveWork(question,k,state={}){
+ const ws=words(question),line=ws.join(' '),works=k.works||[];
+ if(!works.length)return null;
+ let matched=null,score=0;
+ for(const work of works){
+  const title=words(work.title).filter(w=>w.length>2&&w!=='study');
+  let n=title.filter(w=>ws.includes(w)).length;
+  const number=work.title.match(/(\d+)\s*$/)?.[1];
+  if(number&&new RegExp('\\b(study|number|no)\\s*0*'+Number(number)+'\\b').test(line))n+=2;
+  if(n>score){score=n;matched=work;}
+ }
+ if(matched)return matched;
+ for(const [ordinal,index] of Object.entries(ORDINALS))
+  if(ws.includes(ordinal)&&/\b(one|work|painting|piece|sculpture)\b/.test(line))return works.at(index)||null;
+ for(const material of Object.keys(MATERIALS)){
+  if(ws.some(w=>w.startsWith(material.slice(0,5)))){
+   const hits=works.filter(w=>w.material===material);if(hits.length===1)return hits[0];
+  }
+ }
+ if(/\b(biggest|largest|big one)\b/.test(line))return [...works].sort((a,b)=>(b.size||0)-(a.size||0))[0];
+ if(/\b(this|in front|looking at)\b/.test(line))return k.facing||state.lastWork||null;
+ if(/\b(it|that|its)\b/.test(line))return state.lastWork||k.facing||null;
+ return null;
+}
+function intent(q){
+ const w=new Set(words(q)),line=' '+words(q).join(' ')+' ';
+ const has=(...items)=>items.some(x=>w.has(x)||line.includes(' '+x+' '));
+ if(has('hello','hi','hey','hiya','morning','afternoon'))return 'greeting';
+ if(has('thanks','thank','bye','goodbye','cheers'))return 'thanks';
+ if(has('who are you','your name','are you ai','are you a bot'))return 'who';
+ if(has('how many'))return 'count';
+ if(has('what is this room','what’s this room','whats this room','room called','name of the room','theme','why these together'))return 'room';
+ if(has('which works','what works','whats here','what is here','list','which paintings','what paintings'))return 'list';
+ if(has('favourite','favorite','recommend','best','like most'))return 'favourite';
+ if(has('what do you think','your opinion','do you like','any good'))return 'opinion';
+ if(has('where is the music','gramophone','music','sound','listen','record'))return 'music';
+ if(has('penrose','tiles','tile','floor pattern'))return 'tiles';
+ if(has('light','lighting','lights','lit'))return 'light';
+ if(has('screens','screen','touchdesigner','monitor','translation'))return 'screens';
+ if(has('artificial','midjourney','dalle','is this ai','made by ai'))return 'ai';
+ if(has('watercolour','watercolor','tissue','graphite','marker','oil','action','material','materials','medium','made of'))return 'material';
+ if(has('how was','how were','how is it made','how are they made','algorithm','generated','generative','seed','code','computer','procedural','who made'))return 'how';
+ if(has('golden','φ','phi','1.618','ratio','fibonacci','proportion'))return 'phi';
+ if(has('tower','floor','floors','lift','elevator','building','upstairs','downstairs'))return 'tower';
+ if(has('every day','each day','daily','today','yesterday','date','when'))return 'daily';
+ if(has('remix','editor','slider','sliders','make my own','create','try','own version'))return 'remix';
+ if(has('sculpture','sculptures','statue','plinth'))return 'sculpture';
+ if(has('download','export','print','svg','png','save'))return 'export';
+ if(has('canvas','rectangle','format','shape'))return 'canvas';
+ if(has('website','online','link','url','2d'))return 'link';
+ if(has('project','gallery','artist','adam','what is this place','what’s this place'))return 'project';
+ return null;
+}
+const MORE=['more','go on','tell me more','continue','what else','anything else','keep going','another'];
+function isMore(line){
+ const ws=line.split(' ');
+ return ws.length<=5&&MORE.some(m=>(' '+line+' ').includes(' '+m+' '));
+}
+function titleNamed(question,k){
+ const ws=words(question);
+ return (k.works||[]).some(w=>words(w.title).filter(x=>x.length>2&&x!=='study').some(x=>ws.includes(x))||
+  (/\d+\s*$/.test(w.title)&&new RegExp('\\b(study|number|no)\\s*0*'+Number(w.title.match(/(\d+)\s*$/)[1])+'\\b').test(ws.join(' '))));
+}
+function tryLine(k){
+ return k.outside?'Try how this tower was built or how a day’s images become a floor.':k.reception?'Ask me about Fibonacci, Penrose tiles or the gramophone.':'Ask me about Fibonacci, the Parthenon myth, or artists who worked with rules.';
+}
+function phiOpinion(k){
+ if(k.persona==='enthusiast')return 'I think φ carries more than you would expect. It guides divisions, scale and spacing, but materials and chance play a part too. Make up your own mind.';
+ if(k.persona==='sceptic')return 'I am not convinced φ is what makes these work. The material, the wobble and splashes, may matter more. The project does not claim φ automatically makes things beautiful.';
+ return 'I visit often and still have not decided. How far can the golden ratio govern a composition while its marks remain visibly human? The answer seems different each day.';
+}
+function roomLine(k){
+ if(k.reception)return 'This is reception, the ground floor of the tower.';
+ const n=k.roomName;
+ if(!n?.title)return 'This room does not have a displayed name.';
+ if(n.dimension&&n.values?.length)return 'This room is “'+n.title+'”. The works share '+n.dimension+': '+join(n.values)+'.';
+ return 'This room is “'+n.title+'”. The title describes how the works sit together rather than claiming they are all the same.';
+}
+function listLine(k){
+ if(!k.works?.length)return k.reception?'The exhibition floors are upstairs. Press L to use the lift.':'There are no listed works in this room.';
+ const names=k.works.slice(0,6).map(w=>'“'+w.title+'”');
+ return 'There are '+plural(k.works.length,'work')+' here: '+join(names)+(k.works.length>6?', and more':'')+'. Ask me about any of them.';
+}
+function answerVisitor(question,k,state={}){
+ const next={...state,turns:(state.turns||0)+1};
+ const top=intent(question),work=resolveWork(question,k,state);
+ if(work)next.lastWork=work;
+ const reply=text=>({text,state:next,work:work||null});
+ // General φ and art knowledge. A specific topic wins unless the question
+ // names a work here or points at one ("this", "it").
+ const line=words(question).join(' ');
+ const kb=matchKnowledge(line);
+ const aboutWork=work&&(/\b(this|that)\b/.test(line)||titleNamed(question,k));
+ const fromTopic=(topic,fallbackLast=true,hits=[])=>{
+  // Knowledge chains can circle back: do not recurse forever.
+  const traversed=new Set();
+  while(topic&&!traversed.has(topic.id)){
+   traversed.add(topic.id);
+   const answer=knowledgeAnswer(topic,k.persona,next.seen||state.seen,hits);
+   if(answer){next.seen=answer.seen;next.topic=topic.id;return reply(answer.text);}
+   topic=topic.next&&knowledgeTopic(topic.next);hits=[];
+  }
+  next.topic=state.topic||null;
+  return reply(fallbackLast?'That’s about all I know on that. '+tryLine(k):tryLine(k));
+ };
+ // Phrase keys ("is this art") are specific enough to win even with "this".
+ if(kb&&(kb.score>=2.5||(kb.score>=2&&!aboutWork)))return fromTopic(kb.topic,true,kb.hits);
+ if(isMore(line)){
+  const last=state.topic&&knowledgeTopic(state.topic);
+  if(last)return fromTopic(last);
+  const on=FOLLOW_ON[state.intent];
+  if(on)return fromTopic(knowledgeTopic(on));
+  if(state.lastWork)return reply(describeWork(state.lastWork));
+ }
+ next.intent=top;next.topic=null;
+ if(work&&(!top||['list','material','opinion','favourite','link','phi','canvas','export'].includes(top))){
+  if(top==='opinion')return reply(k.persona==='sceptic'?'I am not certain the golden ratio explains “'+work.title+'”. What do you think?':'For me, “'+work.title+'” is worth spending time with. Look at the distances between its marks.');
+  if(top==='link')return reply('The label for “'+work.title+'” opens its original settings in the 2D editor. Approach it and press E.');
+  if(top==='phi'&&Number.isFinite(work.phi))return reply('Its additional φ pull is '+work.phi+' out of 100. '+phiOpinion(k));
+  return reply(describeWork(work)+(work.seed?' Its seed is '+work.seed+'.':''));
+ }
+ switch(top){
+  case 'greeting':return reply('Hello, I am '+k.name+'. '+(k.reception?'Ask me about the tower or this project.':'Ask me about this room, the artwork, or the project.'));
+  case 'thanks':return reply('Enjoy the rest of the exhibition.');
+  case 'who':return reply('I am '+k.name+', one of the tower’s generated visitors. I answer using rules and facts about this room, not a language model.');
+  case 'room':return reply(roomLine(k));
+  case 'list':return reply(listLine(k));
+  case 'count':{
+   const w=words(question);
+   if(w.some(x=>x.startsWith('floor')||x==='levels'))return reply('The tower has '+plural(k.floorCount,'exhibition floor')+', one per daily collection.');
+   if(w.some(x=>x.startsWith('room')))return reply('This floor has '+plural(k.roomCount,'room')+'.');
+   if(w.some(x=>x.startsWith('sculpt')))return reply('There are '+plural(k.floorSculptures,'sculpture')+' on this floor.');
+   return reply(k.reception?listLine(k):plural(k.works.length,'work')+' in this room, '+plural(k.floorWorks,'work')+' on the floor.');
+  }
+  case 'favourite':{
+   if(!k.works.length)return reply('I would choose something from upstairs.');
+   const fav=k.works[k.seed%k.works.length];next.lastWork=fav;
+   return reply('Today, I keep coming back to “'+fav.title+'”. '+describeWork(fav));
+  }
+  case 'opinion':return reply(state.lastWork?'For me, “'+state.lastWork.title+'” changes when I look at it again.':phiOpinion(k));
+  case 'material':{
+   const counts=new Map();for(const item of k.works)counts.set(item.material,(counts.get(item.material)||0)+1);
+   const parts=[...counts].map(([m,n])=>n+' '+(MATERIALS[m]?.[0]||m));
+   return reply((parts.length?'In this room: '+join(parts)+'. ':'')+'Across the project there are five simulated materials: marker, tissue and graphite, watercolour, oil, and action painting.');
+  }
+  case 'how':return reply('Each work is generated by seeded JavaScript. Eight composition engines guide the arrangement, using φ in divisions, sizes and spacing. Five simulated materials add irregularity. The settings were also tuned by eye.');
+  case 'phi':return reply(phiOpinion(k));
+  case 'project':return reply('PROPORTION PIECE asks: how far can the golden ratio govern a composition while its marks remain visibly human? It does not set out to prove φ makes anything beautiful. Each drawing can be reopened and changed in the editor.');
+  case 'tower':return reply('The tower grows by one exhibition floor per day. Each floor plan uses golden-section cuts and merges them into walkable rooms. '+(k.reception?'The lift takes you upstairs.':'This floor represents '+k.readableDate+'.')+' Press L for the lift.');
+  case 'daily':return reply(k.reception?'A new daily collection adds another floor.':'This floor contains the collection dated '+k.readableDate+'.');
+  case 'remix':return reply('Open any drawing in the editor from its label to alter the seed, composition or material. The editor can export PNG or SVG artwork and share reproducible links.');
+  case 'sculpture':return reply('Some portrait works are reinterpreted as layered sculptures on plinths. '+(k.reception?'They are upstairs.':'There are '+plural(k.floorSculptures,'sculpture')+' on this floor.'));
+  case 'tiles':return reply('Some rooms use Penrose rhombus patterns in the floor. Their non-repeating geometry has a mathematical relationship with φ.');
+  case 'music':return reply('The gramophone in reception explores golden-section markers in music recordings, including Debussy. The recording plays unchanged; whether the markers sound important is for you to decide.');
+  case 'light':return reply('The room lighting follows golden divisions, but not every aspect of the tower is claimed to follow φ.');
+  case 'screens':return reply('The Translation Area in reception explores works translated into moving images using TouchDesigner.');
+  case 'ai':return reply('The artworks come from seeded JavaScript, not an AI image generator. I am a rule-based visitor, too.');
+  case 'link':return reply('Approach a work and press E to see its label and open its 2D editor link.');
+  case 'export':return reply('The editor can export PNG images and SVG paths, including plotter paths. Share links reopen a study with its settings.');
+  case 'canvas':return reply('The main canvas is a practical 7:5 format, not a golden rectangle. The golden ratio operates inside the image.');
+ }
+ return reply('I don’t know about that one. I know this tower, its art, and a fair bit about φ and art history. '+(k.reception?'Try asking what this place is, or about Fibonacci.':'Try asking which works are here, or whether the Parthenon really uses φ.'));
+}
+// Each topic has a question; the drawer makes the entire knowledge base
+// discoverable, while the visible chips adapt to the conversation.
+const DISCOVERY={
+ 'Building the tower':[
+  ['tower-build','How was the tower built?'],
+  ['daily-to-floor',"How does a day's art become a floor?"],
+  ['curation-process','What determines the rooms?'],
+  ['hanging-process','How are paintings hung?'],
+  ['sculpture-translation','How do drawings become sculptures?']],
+ 'Golden ratio & nature':[
+  ['phi-definition','What is the golden ratio?'],['phi-history','Who discovered phi?'],
+  ['fibonacci','What is Fibonacci?'],['golden-angle','What is the golden angle?'],
+  ['nature','Is phi everywhere in nature?'],['nautilus','Is the nautilus shell golden?'],
+  ['golden-rectangle','What is a golden rectangle?'],['penrose-history','Who was Roger Penrose?']],
+ 'Art history & evidence':[
+  ['parthenon','Does the Parthenon use phi?'],['leonardo','Did Leonardo use phi?'],
+  ['modern-artists','Which artists used phi?'],['le-corbusier','What is the Modulor?'],
+  ['preference','Is the golden ratio more beautiful?'],['faces','Do faces follow phi?'],
+  ['phi-music','Is phi used in music?']],
+ 'Art, code & chance':[
+  ['thirds','What is the rule of thirds?'],['composition','How does composition work?'],
+  ['kandinsky','Tell me about Kandinsky'],['generative','What is generative art?'],
+  ['instructions','Tell me about Sol LeWitt'],['chance','How is chance used in art?'],
+  ['is-it-art','Is this art?']],
+ 'Simulated materials & forms':[
+  ['action-painting','What is action painting?'],['watercolour-history','What is watercolour?'],
+  ['oil-history','What is oil paint?'],['relief','What is relief sculpture?']]
+};
+function visitorTopicCatalog(){
+ return Object.entries(DISCOVERY).map(([category,topics])=>({category,
+  topics:topics.filter(([id])=>knowledgeTopic(id)).map(([id,question])=>({id,question}))}));
+}
+const QUICK={
+ outside:['tower-build','daily-to-floor','curation-process','sculpture-translation'],
+ reception:['tower-build','phi-definition','penrose-history','phi-music'],
+ gallery:['phi-definition','composition','generative','preference']
+};
+function visitorSuggestions(k,state={}){
+ if(!state.turns&&!state.topic)return k.outside
+  ?['How was the tower built?',"How does a day's art become a floor?",'What determines the rooms?','How do drawings become sculptures?']
+  :k.reception?['What is this place?','What are the screens?','What is the gramophone?','Is this AI?']
+  :['What is this room called?','Which works are here?','Tell me about this one','Is the golden ratio enough?'];
+ const options=[],used=new Set();
+ const add=q=>{if(q&&!used.has(q)){options.push(q);used.add(q);}};
+ const selected=state.topic&&knowledgeTopic(state.topic);
+ if(selected&&(state.seen?.[selected.id]||[]).length<selected.answers.length)add('Tell me more');
+ const all=visitorTopicCatalog().flatMap(group=>group.topics);
+ if(selected?.next){const related=all.find(t=>t.id===selected.next);if(related)add(related.question);}
+ const group=k.outside?'outside':k.reception?'reception':'gallery';
+ const priority=QUICK[group].map(id=>all.find(t=>t.id===id)).filter(Boolean);
+ const remaining=[...priority,...all.filter(t=>!priority.includes(t))];
+ const unread=remaining.filter(t=>!(state.seen?.[t.id]?.length));
+ const read=remaining.filter(t=>state.seen?.[t.id]?.length);
+ const rotated=unread.length?[...unread.slice(state.turns%unread.length),...unread.slice(0,state.turns%unread.length)]:[];
+ for(const topic of [...rotated,...read]){add(topic.question);if(options.length>=4)break;}
+ return options.slice(0,4);
+}
+function createVisitorChatUI({onClose}={}){
+ const prompt=document.createElement('button');prompt.type='button';prompt.className='visitor-talk-prompt';prompt.hidden=true;
+ const panel=document.createElement('aside');panel.className='visitor-chat';panel.hidden=true;
+ panel.setAttribute('aria-label','Conversation with a gallery visitor');
+ panel.innerHTML='<div class="visitor-chat-head"><h2></h2><button class="visitor-chat-close" type="button" aria-label="End conversation">×</button></div>'+
+  '<div class="visitor-chat-log" role="log" aria-live="polite"></div><div class="visitor-chat-chips"><div class="visitor-chip-quick"></div><details class="visitor-topic-browser"><summary>Browse all topics</summary><div class="visitor-topic-groups"></div></details></div>'+
+  '<form class="visitor-chat-form"><input type="text" maxlength="160" autocomplete="off" aria-label="Ask a visitor" placeholder="Ask about this room, the art, φ…"><button type="submit">Ask</button></form>';
+ document.body.append(prompt,panel);
+ const title=panel.querySelector('h2'),log=panel.querySelector('.visitor-chat-log');
+ const chips=panel.querySelector('.visitor-chip-quick'),browser=panel.querySelector('.visitor-topic-browser'),groups=panel.querySelector('.visitor-topic-groups'),form=panel.querySelector('form'),input=panel.querySelector('input');
+ let knowledge=null,speaker=null,state={};
+ const add=(who,value)=>{const p=document.createElement('p');p.className='visitor-chat-'+who;p.textContent=value;log.append(p);log.scrollTop=log.scrollHeight;};
+ const ask=value=>{if(!knowledge||!value.trim())return;add('you',value.trim());const response=answerVisitor(value,knowledge,state);state=response.state;add('them',response.text);renderChips();};
+ const renderChips=()=>{
+  chips.replaceChildren();
+  for(const label of visitorSuggestions(knowledge,state)){
+   const b=document.createElement('button');b.type='button';b.textContent=label;
+   b.addEventListener('click',()=>{ask(label);input.focus({preventScroll:true});});chips.append(b);
+  }
+  for(const b of groups.querySelectorAll('button[data-topic]'))
+   b.classList.toggle('visitor-topic-seen',!!state.seen?.[b.dataset.topic]?.length);
+ };
+ const buildBrowser=()=>{
+  groups.replaceChildren();
+  for(const {category,topics} of visitorTopicCatalog()){
+   const section=document.createElement('details');
+   const heading=document.createElement('summary');heading.textContent=category+' ('+topics.length+')';
+   const buttons=document.createElement('div');buttons.className='visitor-topic-options';
+   for(const topic of topics){
+    const b=document.createElement('button');b.type='button';b.dataset.topic=topic.id;b.textContent=topic.question;
+    b.addEventListener('click',()=>{browser.open=false;ask(topic.question);input.focus({preventScroll:true});});
+    buttons.append(b);
+   }
+   section.append(heading,buttons);groups.append(section);
+  }
+ };
+ form.addEventListener('submit',e=>{e.preventDefault();ask(input.value);input.value='';input.focus({preventScroll:true});});
+ const close=()=>{panel.hidden=true;knowledge=null;speaker=null;prompt.hidden=true;onClose?.();};
+ panel.querySelector('.visitor-chat-close').addEventListener('click',close);
+ input.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();}});
+ return {
+  prompt,
+  get open(){return !panel.hidden;},
+  get speaker(){return speaker;},
+  showPrompt(name){if(panel.hidden&&name){if(prompt.textContent!=='Chat')prompt.textContent='Chat';prompt.hidden=false;}else prompt.hidden=true;},
+  start(who,k){
+   speaker=who;knowledge={...k,outside:!!k.reception&&(who.index>=100||k.visitorIndex>=100)};k=knowledge;state={};title.textContent=k.name;
+   log.replaceChildren();browser.open=false;buildBrowser();
+   add('them','Hello. I am '+k.name+'. '+(k.outside?'Ask me how the gallery grows from each day’s images.':'Ask me about this room, the art or PROPORTION PIECE.'));
+   renderChips();
+   prompt.hidden=true;panel.hidden=false;input.focus({preventScroll:true});
+  },
+  close
+ };
+}
+
+ME=createVisitorChatUI;
+}
