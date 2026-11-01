@@ -42,6 +42,7 @@ import {installPhiShadowRenderProbe} from './phi-shadow-render-probe.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
 import {compilePhiVisibilityCells} from './phi-visibility-cell-index.mjs';
+import {preparePhiCompiledRoomStream} from './phi-compiled-room-stream.mjs';
 import {createPhiRoomBatchStudy,packPhiRoomPaintingGroups} from './phi-room-batch-study.mjs';
 import {installPhiComposerPassProfiler} from './phi-postfx-pass-profiler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
@@ -107,6 +108,8 @@ let liftTravelling=false;
 let liftReturnFocus=null;
 let editionObjects=[];
 let phiRoomVisibilityCuller=null;
+let phiCompiledRoomStream=null;
+let phiRoomStreamSerial=0;
 let phiRoomBatchStudy=null;
 let deferredGalleryJobs=[];
 let deferredGalleryRunning=false;
@@ -243,6 +246,11 @@ const phiRoomCullingEnabled=new URLSearchParams(location.search).get('roomcull')
 // Single archived-floor visibility-cell experiment; opt-in, TEST only.
 const phiVisibilityCellDate='2026-10-20';
 const phiVisibilityCellsEnabled=new URLSearchParams(location.search).get('visibilitycells')==='1';
+// TEST ONLY: opt-in precompiled real room geometry and on-demand room loading.
+const phiCompiledArchEnabled=new URLSearchParams(location.search).get('compiledarch')==='1';
+const phiRoomStreamEnabled=new URLSearchParams(location.search).get('roomstream')==='1';
+const phiCompiledArchDate='2026-10-20';
+window.__phiCompiledArchitecture=()=>phiCompiledRoomStream?.stats()||{active:false};
 const phiRoomBatchEnabled=new URLSearchParams(location.search).get('roombatch')==='1';
 window.__phiRoomBatches=()=>phiRoomBatchStudy?.snapshot()||{active:false};
 window.__phiRoomVisibility=()=>phiRoomVisibilityCuller?.snapshot()||{enabled:false,reason:'room culling not active'};
@@ -1907,6 +1915,19 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
  phiRoomLightEntries.length=0;
  const staticArchitecture=[];
  const staticBlock=(...args)=>{const mesh=block(...args);staticArchitecture.push(mesh);return mesh;};
+ // Room surfaces only in this first pilot. Shared walls, trims, portals,
+ // lights, artwork and shadow settings remain untouched.
+ const compiledRooms=phiCompiledRoomStream?.active&&!phiRoomBatchStudy?new Map():null;
+ const precompiledReadyRooms=compiledRooms?new Set(
+  phi.floor.mergedRooms.map((_,i)=>i).filter(i=>!!phiCompiledRoomStream.getPack(i))):null;
+ const roomSurface=(room,key,...args)=>{
+  if(!compiledRooms)return null;
+  if(!compiledRooms.has(room))compiledRooms.set(room,[]);
+  if(precompiledReadyRooms.has(room))return null; // no BoxGeometry allocated
+  const mesh=block(...args);
+  compiledRooms.get(room).push({mesh,key});
+  return mesh;
+ };
  if(globalThis.__phiReceptionTilePreview&&!receptionTilePreview)receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});
  if(exhibitDate===RECEPTION&&receptionTilePreview)installReceptionPenroseInlay(THREE,receptionTilePreview,phi.pieces,{lowPower:galleryFinish.lowPower});
  const roomFloor=(exhibitDate===RECEPTION&&receptionTilePreview)||galleryFinish.floor;
@@ -1938,8 +1959,10 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
  for(const p of phi.pieces){
    const selected=galleryPenroseMaterial&&galleryPenroseRooms.includes(pieceRoomIndex(p,phi.floor.mergedRooms));
    const finish=selected?galleryPenroseMaterial:roomFloor;
-   const slab=(phiRoomBatchStudy?block:staticBlock)(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,finish);
-   if(finish===receptionTilePreview||selected)alignReceptionTileUvs(slab);
+   const slab=compiledRooms
+    ?roomSurface(p.room,selected?'penrose':'floor',p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,finish)
+    :(phiRoomBatchStudy?block:staticBlock)(p.w,.28,p.h,p.x+p.w/2,elevation-.17,p.z+p.h/2,finish);
+   if(slab&&(finish===receptionTilePreview||selected))alignReceptionTileUvs(slab);
    phiRoomBatchStudy?.take(p.room,slab,{architecture:true});
  }
  for(const w of phi.physical.walls)for(const part of receptionWindowWallParts(w,receptionWindow,ROOM_HEIGHT)){
@@ -2023,7 +2046,9 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
  // ceiling photographic texture, with trim only at true physical boundaries:
  // subdivided internal cells should not look like a ceiling grid.
  for(const p of phi.pieces){
-  const ceiling=(phiRoomBatchStudy?block:staticBlock)(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster);
+  const ceiling=compiledRooms
+   ?roomSurface(p.room,'plaster',p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster)
+   :(phiRoomBatchStudy?block:staticBlock)(p.w,.18,p.h,p.x+p.w/2,elevation+ROOM_HEIGHT+.10,p.z+p.h/2,plaster);
   phiRoomBatchStudy?.take(p.room,ceiling,{architecture:true});
  }
  for(const w of phi.physical.walls){
@@ -2037,6 +2062,18 @@ function constructPhiGallery(layout,studies,{viaLift=false}={}){
   }
  }
  window.__phiArchitectureBatches=batchPhiStaticArchitecture(THREE,scene,staticArchitecture);
+ if(compiledRooms){
+  for(let room=0;room<phi.floor.mergedRooms.length;room++){
+   const records=compiledRooms.get(room)||[];
+   const root=new THREE.Group();
+   root.name='phi-precompiled-room-'+room;
+   for(const {mesh} of records)root.add(mesh);
+   scene.add(root); // receives the unchanged golden-angle floor transform
+   phiCompiledRoomStream.attach(room,root,records,{
+    floor:roomFloor,penrose:galleryPenroseMaterial,plaster
+   });
+  }
+ }
  // Share the production spotlight fixture loader, limiting fixtures to
  // larger merged rooms rather than the many phi subdivision cells.
  const lightRooms=phi.floor.mergedRooms.filter(r=>r.pieces?.length);
@@ -2774,7 +2811,10 @@ async function preparePhiEdition(date) {
   const elevation=nextFloor*FLOOR_SPACING;
   for(const room of nextPlan.rooms)room.y+=elevation;
   for(const hall of nextPlan.corridors){hall.start.y+=elevation;hall.end.y+=elevation;}
-  return {studies,nextPlan,nextFloor,elevation,reception};
+  const compiledArchitecture=phiCompiledArchEnabled&&date===phiCompiledArchDate&&!phiRoomBatchEnabled
+   ?await preparePhiCompiledRoomStream(THREE,{date,phi,elevation,
+     enabled:true,stream:phiRoomStreamEnabled}):null;
+  return {studies,nextPlan,nextFloor,elevation,reception,compiledArchitecture};
 }
 async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={}) {
   // Destination data is fully checked before any current scene is removed.
@@ -2787,7 +2827,9 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null}={})
   phiRoomVisibilityCuller?.clear();phiRoomVisibilityCuller=null;
   phiRoomBatchStudy=null;
   phiArrivalMeshes.restore();
-  const {studies,nextPlan,nextFloor,elevation,reception}=prepared||await preparePhiEdition(date);
+  const {studies,nextPlan,nextFloor,elevation,reception,compiledArchitecture}=prepared||await preparePhiEdition(date);
+  phiCompiledRoomStream?.cancel();
+  phiCompiledRoomStream=compiledArchitecture||null;
   phiPaintingGate?.cancel();
   phiPaintingGate=createPhiPaintingArrivalGate({
    date,expected:nextPlan.phi.exhibition.paintings.length,
@@ -3494,6 +3536,13 @@ function tick() {
   phiReceptionDesk?.hologram?.update(clock.elapsedTime);
   // Before either normal or modal render, restore any culled works immediately
   // when entering lift, travel, VR, or progressive scene-reveal states.
+  if(phiCompiledRoomStream?.active&&!liftTravelling&&welcome.hidden&&
+     ++phiRoomStreamSerial%12===0&&plan?.phi?.world){
+   const local=plan.phi.world.toLocal(rig.position.x,rig.position.z);
+   const piece=plan.phi.pieces.find(p=>local.x>=p.x&&local.x<=p.x+p.w&&
+    local.z>=p.z&&local.z<=p.z+p.h);
+   if(piece)phiCompiledRoomStream.request(piece.room);
+  }
   if(phiRoomVisibilityCuller){
    const canCull=!!plan?.phi?.world&&!renderer.xr.isPresenting&&welcome.hidden&&
     !liftTravelling&&!liftArrivalOpening&&!phiArrivalMeshes.stats().active&&$('lift').hidden&&
