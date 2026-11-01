@@ -2902,7 +2902,7 @@ function talkToNearestVisitor({allowAnywhere=false,visitor=null}={}){
  document.exitPointerLock?.();
  pressed.clear();lookPressed.clear();
   const others=VISITOR_CHAT_V2&&speaker.index>=0?phiVisitorSpeakers
- .filter(person=>person!==speaker&&person.room===speaker.room)
+ .filter(person=>person!==actual&&person.room===speaker.room)
  .slice(0,1).map(phiVisitorKnowledge):[];
 chat.start(speaker,phiVisitorKnowledge(speaker),{others});
 }
