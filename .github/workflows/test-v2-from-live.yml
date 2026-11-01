@@ -62,7 +62,7 @@ jobs:
           const createVisitorChatUI=VISITOR_CHAT_V2?createVisitorChatUIV2:createVisitorChatUIV1;"""
           if s.count(anchor)!=1:raise SystemExit('Chat import anchor changed: refusing to modify')
           s=s.replace(anchor,replacement)
-          anchor='  chat.start(speaker,phiVisitorKnowledge(speaker));'
+          anchor=' chat.start(speaker,phiVisitorKnowledge(speaker));'
           replacement="""  const others=VISITOR_CHAT_V2&&speaker.index>=0?phiVisitorSpeakers
            .filter(person=>person!==speaker&&person.room===speaker.room)
            .slice(0,1).map(phiVisitorKnowledge):[];
