@@ -57,6 +57,8 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=daytime-restored-20261027';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
+import {buildVisitorKnowledge,createVisitorChatUI} from './phi-visitor-chat.mjs';
+import {nameExhibitionRooms} from './phi-room-names.mjs';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
@@ -132,6 +134,15 @@ const FLOOR_SPACING=6.2;
 const RECEPTION='__phi_reception__';
 let plan = null;
 let studyList = [];
+// Conversation anchors are tied to actual visitors on this current floor.
+let phiVisitorSpeakers=[],phiVisitorNearest=null,phiVisitorNearestKnowledge=null,visitorChat=null;
+// A single registry covers furnished rooms, the frontage bench and the plaza.
+function registerPhiPhysicalVisitor({index,x,y,z,seat=false,room=-1}){
+ if(exhibitDate!==RECEPTION||currentFloor!==0||!plan?.phi?.world)return;
+ const local=plan.phi.world.toLocal(x,z);
+ if(phiVisitorSpeakers.some(person=>person.index===index))return;
+ phiVisitorSpeakers.push({index,x,y,z,local,seat,room,physical:true});
+}
 let touchPointer = null;
 let touchX = 0, touchY = 0;
 let xrLiftPanel=null;
@@ -1713,6 +1724,18 @@ function queuePhiFurnishings(phi,furnishings,elevation){
  deferredGalleryJobs.unshift(()=>{
   const convert=p=>({...p,...phi.world.toWorld(p.x,p.z),rotation:(p.rotation||0)+phi.world.theta,yaw:(p.yaw||0)+phi.world.theta});
   const furniture={benches:furnishings.benches.map(convert),people:furnishings.people.map(convert)};
+  const physical=phiVisitorSpeakers.filter(person=>person.physical);
+  phiVisitorSpeakers=[...physical,...furnishings.people.map((p,index)=>{
+   const world=phi.world.toWorld(p.x,p.z);
+   return {index,x:world.x,z:world.z,y:elevation,local:{x:p.x,z:p.z},
+    room:p.roomIndex??p.room,seat:!!p.seat};
+  })];
+  // Keep a reception conversation anchor even without ordinary gallery visitors.
+  if(exhibitDate===RECEPTION&&!phiVisitorSpeakers.length&&furniture.people[0]){
+   const p=furnishings.people[0],world=furniture.people[0];
+   phiVisitorSpeakers.push({index:0,x:world.x,z:world.z,y:elevation,
+    local:{x:p.x,z:p.z},room:p.roomIndex??p.room,seat:!!p.seat});
+  }
   if(exhibitDate===RECEPTION){
    renderPhiFurniture(THREE,scene,{...furniture,benches:[]},{concrete:galleryFinish.stone,timber},elevation);
    for(const bench of furniture.benches)addPhiGoldenReceptionBench(THREE,scene,bench,elevation);
@@ -2176,7 +2199,14 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
    maxZ:Math.max(...phi.pieces.map(p=>p.z+p.h))
   };
   addPhiReceptionMetalRoof(THREE,scene,{bounds:roofBounds,elevation,ceilingHeight:ROOM_HEIGHT,brick:galleryFinish.exteriorBrick});
-  addPhiFrontage(THREE,entranceDoor.root,{concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs});
+  addPhiFrontage(THREE,entranceDoor.root,{
+    concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs,
+    onVisitor:(person,parent)=>{
+     parent.updateWorldMatrix(true,false);
+     const at=parent.localToWorld(new THREE.Vector3(person.x,person.y,person.z));
+     registerPhiPhysicalVisitor({index:100,x:at.x,y:at.y,z:at.z,seat:true});
+    }
+   });
   const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
     halfWidth:30,halfDepth:29,level:elevation};
   const approach={doorway,outward,pathLength:42,halfWidth:3.25};
@@ -2204,7 +2234,13 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
    }));
    window.__phiPlazaMonuments=monuments.length;
   }
-  deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
+  deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza,{
+    onVisitor:(figure,person,index)=>{
+     figure.updateWorldMatrix(true,false);
+     const at=figure.getWorldPosition(new THREE.Vector3());
+     registerPhiPhysicalVisitor({index:200+index,x:at.x,y:at.y,z:at.z,seat:true});
+    }
+   }));
   const square=phiSquare.addTo(scene,{doorway,outward,elevation});phiSquareObstacles.push(...square.obstacles);
   window.__phiPlaza={centre:plaza.centre,benchCount:8,monumentCount:2,visitorSlots:2,tagWalls:square.walls,squareMonumentCount:square.monuments,tags:square.tags};
   // Permit visitors to exit the lobby onto the open paved square.
@@ -2628,6 +2664,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   editionObjects=[];artExhibits.length=0;sculpturePlacements.length=0;
   exhibitLightTargets.length=0;
   resetInspection();
+  phiVisitorSpeakers=[];phiVisitorNearest=null;phiVisitorNearestKnowledge=null;visitorChat?.close();
   liftPosition=null;liftDoorThreshold=null;phiLiftPanelPosition=null;liftWasNear=false;liftDoors=[];
   phiReceptionProps=[];phiOutdoorPlants=[];phiReceptionMap=null;phiReceptionDesk=null;phiFurnishingObstacles=[];phiSquareObstacles=[];phiLiftIndicator=null;
   window.__phiDeskHologram=null;
@@ -2787,6 +2824,105 @@ window.addEventListener('resize',resize);
 
 // Information appears when a visitor pauses facing a nearby exhibit.
 // This is not a modal: movement and mouse look continue uninterrupted.
+// Information appears when a visitor pauses facing a nearby exhibit.
+// This is not a modal: movement and mouse look continue uninterrupted.
+// Live visitor conversations v1: use the currently loaded exhibition plan.
+function phiVisitorKnowledge(speaker){
+ const phi=plan?.phi,reception=exhibitDate===RECEPTION;
+ const byId=new Map(studyList.map(study=>[study.id,study]));
+ const paintings=reception||!phi?[]:phi.exhibition.paintings.filter(p=>(p.room??p.roomIndex)===speaker.room)
+  .map(p=>({placement:p,sculpture:false}));
+ const sculptures=reception||!phi?[]:phi.exhibition.sculptures.filter(p=>(p.room??p.roomIndex)===speaker.room)
+  .map(p=>({placement:p,sculpture:true}));
+ const works=[...paintings,...sculptures].map(({placement:p,sculpture})=>{
+  const study=byId.get(p.studyId);if(!study)return null;
+  let query;try{query=new URL(study.href,location.href).searchParams;}catch{query=new URLSearchParams();}
+  return {studyId:study.id,title:study.title,seed:study.seed,
+   material:study.material?.type||study.material||'marker',engine:study.engine,
+   palette:query.get('pal'),phi:query.has('phi')?Number(query.get('phi')):NaN,
+   sculpture,size:(p.width||1)*(p.height||p.depth||1),x:p.x,z:p.z};
+ }).filter(Boolean);
+ let roomName=null;
+ if(!reception&&phi){
+  const curation=phi.exhibition.curation?.rooms||[];
+  // Use the actual hanging-sign title, not a name invented for the chat.
+  roomName=nameExhibitionRooms(curation).get(speaker.room)||null;
+ }
+ const current=(focusCandidate||currentInfoExhibit)?.study;
+ const facing=works.find(w=>w.studyId===current?.id)||
+  [...works].sort((a,b)=>
+   Math.hypot(a.x-speaker.local.x,a.z-speaker.local.z)-
+   Math.hypot(b.x-speaker.local.x,b.z-speaker.local.z))[0]||null;
+ const floorCount=archiveDates.filter(date=>date!==RECEPTION).length;
+ return buildVisitorKnowledge({date:exhibitDate,readableDate:reception?'Ground floor':readableDate(exhibitDate),
+  floor:currentFloor,floorCount,reception,roomIndex:speaker.room,
+  roomName,works,visitorIndex:speaker.index,facing,
+  floorWorks:phi?(phi.exhibition.paintings.length+phi.exhibition.sculptures.length):0,
+  floorSculptures:phi?.exhibition.sculptures.length||0,
+  roomCount:phi?.floor.mergedRooms.length||0});
+}
+function ensureVisitorChat(){
+ if(visitorChat)return visitorChat;
+ visitorChat=createVisitorChatUI({onClose:()=>canvas.focus({preventScroll:true})});
+ visitorChat.prompt.addEventListener('click',talkToNearestVisitor);
+ return visitorChat;
+}
+// The fixed chat launcher works even when no physical visitor is in range.
+// The contextual visitor uses the viewer's current room, not a distant room.
+function virtualVisitorAtCurrentRoom(){
+ const phi=plan?.phi;
+ if(!phi)return null;
+ const local=phi.world.toLocal(rig.position.x,rig.position.z);
+ const room=phi.floor.mergedRooms.findIndex(r=>r.pieces.some(p=>
+  local.x>=p.x&&local.x<=p.x+p.w&&local.z>=p.z&&local.z<=p.z+p.h));
+ return {index:-1,x:rig.position.x,z:rig.position.z,y:rig.position.y,
+  local,room,seat:false,remote:true};
+}
+function talkToNearestVisitor({allowAnywhere=false,visitor=null}={}){
+ if(liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting||!plan?.phi)return;
+ // Reception conversations belong to the actual seated visitor, not a
+ // synthetic visitor at the player's location.
+ const actual=visitor||phiVisitorNearest||(currentFloor===0&&phiVisitorSpeakers.length
+  ?phiVisitorSpeakers.find(person=>person.seat)||phiVisitorSpeakers[0]:null);
+ let speaker=actual||(allowAnywhere?virtualVisitorAtCurrentRoom():null);
+ if(!speaker)return;
+ // A click or toolbar conversation must not close simply because the visitor
+ // is more than 3.4m away when the panel first appears.
+ if(allowAnywhere&&Math.hypot(rig.position.x-speaker.x,rig.position.z-speaker.z)>3.4)
+  speaker={...speaker,remote:true};
+ const chat=ensureVisitorChat();
+ document.exitPointerLock?.();
+ pressed.clear();lookPressed.clear();
+ chat.start(speaker,phiVisitorKnowledge(speaker));
+}
+function updateVisitorChatPrompt(){
+ const chat=ensureVisitorChat();
+ const blocked=liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting;
+ const launcher=$('openVisitorChat');
+ if(launcher){
+  launcher.disabled=blocked||!plan?.phi;
+  // Use the same short label on every floor; do not rewrite the toolbar.
+  if(launcher.textContent!=='Chat')launcher.textContent='Chat';
+ }
+ if(blocked&&chat.open)chat.close();
+ let nearest=null,best=2.4;
+ if(!blocked)for(const speaker of phiVisitorSpeakers){
+  if(Math.abs(rig.position.y-speaker.y)>2)continue;
+  const distance=Math.hypot(rig.position.x-speaker.x,rig.position.z-speaker.z);
+  if(distance<best){best=distance;nearest=speaker;}
+ }
+ if(chat.open&&chat.speaker&&!chat.speaker.remote&&
+  Math.hypot(rig.position.x-chat.speaker.x,rig.position.z-chat.speaker.z)>3.4)chat.close();
+ if(nearest!==phiVisitorNearest){
+  phiVisitorNearest=nearest;
+  phiVisitorNearestKnowledge=nearest?phiVisitorKnowledge(nearest):null;
+ }
+ chat.showPrompt(!chat.open?phiVisitorNearestKnowledge?.name:null);
+ if(GALLERY_DEBUG)window.__phiVisitorChat={
+  speakers:phiVisitorSpeakers.length,nearest:nearest?.index??null,open:chat.open,
+  floor:currentFloor};
+}
+
 function resetInspection(){
   $('info').hidden=true;
   currentInfoExhibit=null;focusCandidate=null;focusDuration=0;dismissedExhibit=null;
@@ -2831,6 +2967,7 @@ const isInteractiveFocus=()=>Boolean(document.activeElement?.closest?.(
   'button,a,input,textarea,select,[contenteditable="true"],[role="textbox"]'
 ));
 $('openLift').addEventListener('click',openLift);
+$('openVisitorChat')?.addEventListener('click',()=>talkToNearestVisitor({allowAnywhere:true}));
 $('closeLift').addEventListener('click',()=>closeLift());
 $('lift').addEventListener('keydown',e=>{
   if(e.key!=='Tab')return;
@@ -2853,7 +2990,8 @@ window.addEventListener('keydown',(e)=>{
       document.exitPointerLock?.();
       return;
     }
-    if(!$('lift').hidden){
+    if(visitorChat?.open){e.preventDefault();visitorChat.close();return;}
+     if(!$('lift').hidden){
       e.preventDefault();closeLift();return;
     }
     if(!$('info').hidden){
@@ -2878,7 +3016,8 @@ window.addEventListener('keydown',(e)=>{
     if(!e.repeat)openLift();
     return;
   }
-  if(e.code==='KeyE'){
+  if(e.code==='KeyT'&&phiVisitorNearest){e.preventDefault();if(!e.repeat)talkToNearestVisitor();return;}
+   if(e.code==='KeyE'){
     e.preventDefault();
     if(!e.repeat){
       const exhibit=focusCandidate||currentInfoExhibit;
@@ -2911,6 +3050,39 @@ window.addEventListener('mousemove',(e)=>{
   yaw -= e.movementX*.0025;
   pitch=Math.max(-1.35,Math.min(1.35,pitch-e.movementY*.0023));
 });
+// Click the rendered visitor directly (also works with mobile taps).
+// Project the person rather than raycasting through shared room geometry.
+let phiVisitorTapStart=null;
+canvas.addEventListener('pointerdown',event=>{
+ phiVisitorTapStart={x:event.clientX,y:event.clientY};
+},{capture:true});
+canvas.addEventListener('click',event=>{
+ if(liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting||
+  !phiVisitorSpeakers.length||visitorChat?.open)return;
+ if(phiVisitorTapStart&&Math.hypot(event.clientX-phiVisitorTapStart.x,
+  event.clientY-phiVisitorTapStart.y)>16)return;
+ const rect=canvas.getBoundingClientRect();
+ if(!rect.width||!rect.height)return;
+ const px=document.pointerLockElement===canvas?rect.left+rect.width/2:event.clientX;
+ const py=document.pointerLockElement===canvas?rect.top+rect.height/2:event.clientY;
+ camera.updateMatrixWorld(true);
+ let selected=null,best=.09;
+ for(const person of phiVisitorSpeakers){
+  if(Math.abs(rig.position.y-person.y)>2||
+   Math.hypot(rig.position.x-person.x,rig.position.z-person.z)>5)continue;
+  const point=new THREE.Vector3(person.x,
+   person.y+(person.seat?1.05:1.35),person.z).project(camera);
+  if(point.z<-1||point.z>1)continue;
+  const x=rect.left+(point.x+1)*rect.width/2;
+  const y=rect.top+(1-point.y)*rect.height/2;
+  const miss=Math.hypot(px-x,py-y)/Math.min(rect.width,rect.height);
+  if(miss<best){selected=person;best=miss;}
+ }
+ if(!selected)return;
+ event.preventDefault();
+ event.stopImmediatePropagation();
+ talkToNearestVisitor({allowAnywhere:true,visitor:selected});
+},{capture:true});
 canvas.addEventListener('click',(event)=>{
   // Synthetic keyboard clicks are not consent to pointer lock.
   if (event.detail>0 && renderer && welcome.hidden && !renderer.xr.isPresenting && matchMedia('(pointer:fine)').matches && document.pointerLockElement!==canvas) canvas.requestPointerLock?.().catch?.(()=>{});
@@ -3318,6 +3490,7 @@ function tick() {
     indicatorFont:(phiMovingCabin?.userData?.phiLiftIndicator||phiLiftIndicator)?.context.font
   };
   lastFocusCheck+=dt;mapElapsed+=dt;
+  if(phiFrameSerial%6===0)updateVisitorChatPrompt();
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
   // Keep the preparation overlay responsive without repeatedly drawing the
