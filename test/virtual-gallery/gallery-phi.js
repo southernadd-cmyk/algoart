@@ -146,6 +146,14 @@ let plan = null;
 let studyList = [];
 // Conversation anchors are tied to actual visitors on this current floor.
 let phiVisitorSpeakers=[],phiVisitorNearest=null,phiVisitorNearestKnowledge=null,visitorChat=null;
+// A single registry covers furnished rooms, the frontage bench and the plaza.
+function registerPhiPhysicalVisitor({index,x,y,z,seat=false,room=-1}){
+ if(exhibitDate!==RECEPTION||currentFloor!==0||!plan?.phi?.world)return;
+ const local=plan.phi.world.toLocal(x,z);
+ if(phiVisitorSpeakers.some(person=>person.index===index))return;
+ phiVisitorSpeakers.push({index,x,y,z,local,seat,room,physical:true});
+}
+
 let touchPointer = null;
 let touchX = 0, touchY = 0;
 let xrLiftPanel=null;
@@ -2550,7 +2558,16 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
    maxZ:Math.max(...phi.pieces.map(p=>p.z+p.h))
   };
   addPhiReceptionMetalRoof(THREE,scene,{bounds:roofBounds,elevation,ceilingHeight:ROOM_HEIGHT,brick:galleryFinish.exteriorBrick});
-  addPhiFrontage(THREE,entranceDoor.root,{concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs});
+  addPhiFrontage(THREE,entranceDoor.root,{
+   concrete:galleryFinish.stone,timber,metal:join,defer:deferredGalleryJobs,
+   onVisitor:(person,parent)=>{
+    // The entrance furniture is parented to the doorway model rather than
+    // directly to the scene, so measure the actual rendered world position.
+    parent.updateWorldMatrix(true,false);
+    const point=parent.localToWorld(new THREE.Vector3(person.x,person.y,person.z));
+    registerPhiPhysicalVisitor({index:100,x:point.x,y:point.y,z:point.z,seat:true});
+   }
+  });
   const plaza={centre:{x:doorway.x+outward.x*12,z:doorway.z+outward.z*12},outward,transverse,
     halfWidth:30,halfDepth:29,level:elevation};
   const approach={doorway,outward,pathLength:42,halfWidth:3.25};
@@ -2578,7 +2595,15 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
    }));
    window.__phiPlazaMonuments=monuments.length;
   }
-  deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza));
+  deferredGalleryJobs.push(()=>renderPlazaSeatedVisitors(THREE,scene,plaza,{
+   onVisitor:(figure,person,index)=>{
+    // Register only successfully loaded figures. Lazy models can arrive long
+    // after other furnishing jobs, so never replace the existing registry.
+    figure.updateWorldMatrix(true,false);
+    const at=figure.getWorldPosition(new THREE.Vector3());
+    registerPhiPhysicalVisitor({index:200+index,x:at.x,y:at.y,z:at.z,seat:true});
+   }
+  }));
   const square=phiSquare.addTo(scene,{doorway,outward,elevation});phiSquareObstacles.push(...square.obstacles);
   window.__phiPlaza={centre:plaza.centre,benchCount:8,monumentCount:2,visitorSlots:2,tagWalls:square.walls,squareMonumentCount:square.monuments,tags:square.tags};
   // Permit visitors to exit the lobby onto the open paved square.
