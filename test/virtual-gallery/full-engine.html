@@ -30,54 +30,82 @@ if(new URLSearchParams(location.search).has('coldbench'))performance.setResource
 <link rel="stylesheet" href="../../test/virtual-gallery/phi-gallery.css?v=public-phi-20261026">
 <link rel="stylesheet" href="../../test/virtual-gallery/phi-visitor-chat.css?v=visitor-discovery-20261101-v1">
 <style>
-/* The fixed canvas must never cover the keyboard/mouse lift fallback. */
+/* PROPORTION PIECE — one consistent toolbar, grouping actions by purpose. */
 #world{z-index:0}
-.topbar{z-index:30;pointer-events:auto}
-.topbar .top-actions,.topbar #openLift{position:relative;z-index:31;pointer-events:auto}
-.lift-panel{z-index:90}
-.lift-animation{z-index:100}
-.lift-arrival{z-index:95}
-/* The chat launcher has one short label on all screen sizes, even though the
-   underlying engine may supply context-specific wording. */
-.topbar #openVisitorChat{font-size:0}
-.topbar #openVisitorChat::after{content:"Chat";font:600 13px Arial,Helvetica,sans-serif}
-/* On phones, prioritise floor selection and conversations. Keep the rest
-   available without squeezing five actions into the top toolbar. */
+.topbar{z-index:30;pointer-events:auto;padding:8px clamp(12px,2vw,24px);min-height:60px;
+ background:rgba(240,237,230,.96);border-bottom:1px solid #384b3d30;backdrop-filter:blur(10px)}
+.topbar .top-actions{display:flex;align-items:center;justify-content:space-between;
+ gap:clamp(12px,2vw,24px);width:100%;max-width:none;margin:0;flex-wrap:nowrap;position:relative;z-index:31;pointer-events:auto}
+.topbar .toolbar-primary,.topbar .toolbar-secondary,.topbar .toolbar-utility{
+ display:flex;align-items:center;gap:7px;min-width:0}
+.topbar .toolbar-secondary{margin-inline:auto}
+.topbar .toolbar-utility{margin-left:auto}
 .mobile-overflow{display:contents}
 #mobileMenuToggle{display:none}
-.topbar #mobileOverflow>a{display:inline-flex;align-items:center;background:transparent;
- border:1px solid transparent;padding:8px 11px;text-decoration:underline;
- text-underline-offset:4px;font-size:12px;min-height:35px;white-space:nowrap}
+.topbar .top-actions button,.topbar .top-actions a{
+ box-sizing:border-box;position:relative;display:inline-flex;align-items:center;justify-content:center;
+ min-height:38px;padding:9px 13px;border:1px solid #46594a3e;border-radius:3px;
+ background:transparent;color:#304237;text-decoration:none;white-space:nowrap;
+ font:500 13px/1.2 Arial,Helvetica,sans-serif;letter-spacing:0;box-shadow:none;
+ transition:background .15s,border-color .15s}
+.topbar .top-actions button:hover:not(:disabled),.topbar .top-actions a:hover{
+ background:#fffdfa;border-color:#607665}
+.topbar .top-actions button:focus-visible,.topbar .top-actions a:focus-visible{
+ outline:2px solid #304b3c;outline-offset:3px}
+.topbar .toolbar-primary button{background:#344a3d;color:#fff;border-color:#344a3d;font-weight:600}
+.topbar .toolbar-primary button:hover:not(:disabled){background:#425b4a;color:#fff;border-color:#425b4a}
+.topbar .toolbar-primary button:disabled{opacity:.57;cursor:default}
+.topbar #archiveLink{font-size:13px;text-decoration:none;padding-inline:12px}
+.topbar #openVisitorChat{font-size:13px}
+.topbar #openVisitorChat::after{content:none}
+.topbar #fullscreen{display:inline-flex}
+.topbar #xr-controls{display:flex;align-items:center;min-width:0}
+.topbar #xr-controls>button,.topbar #xr-controls>a{
+ position:static!important;display:inline-flex!important;height:38px!important;min-height:38px!important;
+ padding:8px 12px!important;width:auto!important;max-width:155px!important;
+ border:1px solid #46594a3e!important;border-radius:3px!important;
+ background:transparent!important;color:#304237!important;opacity:1!important;
+ font:500 12px/1.1 Arial,Helvetica,sans-serif!important;text-decoration:none!important;
+ letter-spacing:0!important;box-shadow:none!important;white-space:nowrap!important}
+.topbar #xr-controls[data-vr-unavailable="true"]>button,
+.topbar #xr-controls[data-vr-unavailable="true"]>a{
+ background:#4b5c4d10!important;color:#68736b!important;border-color:#4b5c4d25!important;
+ font-size:11px!important;max-width:155px!important}
+.topbar #xr-controls[data-vr-unavailable="true"]>button:hover,
+.topbar #xr-controls[data-vr-unavailable="true"]>a:hover{background:#4b5c4d10!important}
+.lift-panel{z-index:90}.lift-animation{z-index:100}.lift-arrival{z-index:95}
+@media(max-width:950px) and (min-width:701px){
+ .topbar .top-actions{gap:10px}
+ .topbar .toolbar-primary,.topbar .toolbar-secondary,.topbar .toolbar-utility{gap:5px}
+ .topbar .top-actions button,.topbar .top-actions a{font-size:12px;padding-inline:9px}
+ .topbar #xr-controls>button,.topbar #xr-controls>a{padding-inline:9px!important}
+}
 @media(max-width:700px){
- .topbar .top-actions{position:relative;width:100%;margin-left:0;gap:7px;
-  justify-content:space-between}
- .topbar .top-actions>#openLift,
- .topbar .top-actions>#openVisitorChat,
- .topbar .top-actions>#mobileMenuToggle{flex:1 1 0;min-width:0;height:42px;
-  padding:7px 8px;display:inline-flex;align-items:center;justify-content:center;
-  text-align:center}
- .topbar .top-actions>#openLift{padding-inline:8px}
- /* The engine changes the chat button's text on reception floors.
-    Use short visual labels without interfering with that update. */
- .topbar #openLift,.topbar #openVisitorChat{font-size:0}
- .topbar #openLift::after{content:"Floors";font:600 13px Arial,Helvetica,sans-serif}
- .topbar #openVisitorChat::after{content:"Chat";font:600 13px Arial,Helvetica,sans-serif}
- .topbar #mobileMenuToggle{font-size:13px;font-weight:600}
- #mobileMenuToggle[aria-expanded="true"]{background:#34473c;color:#fff;border-color:#34473c}
- .topbar #mobileOverflow{display:none;position:absolute;right:0;top:calc(100% + 7px);
-  z-index:40;width:min(260px,calc(100vw - 24px));padding:10px;
-  background:#f1ede4;border:1px solid #a8ada4;
-  box-shadow:0 12px 32px #18251b45;flex-direction:column;gap:7px}
+ .topbar{min-height:56px;padding:7px 10px}
+ .topbar .top-actions{width:100%;gap:8px;justify-content:stretch}
+ .topbar .toolbar-primary{display:contents}
+ .topbar .top-actions #openLift,.topbar .top-actions #openVisitorChat,
+ .topbar .top-actions #mobileMenuToggle{
+  display:inline-flex;flex:1 1 0;min-width:0;min-height:42px;padding:9px 8px;
+  font:600 13px/1.2 Arial,Helvetica,sans-serif}
+ .topbar #mobileMenuToggle{background:#f6f3ed;color:#304237;border-color:#46594a3e}
+ .topbar #mobileMenuToggle[aria-expanded="true"]{background:#344a3d;color:#fff;border-color:#344a3d}
+ .topbar #mobileOverflow{position:absolute;right:0;top:calc(100% + 9px);z-index:42;
+  display:none;flex-direction:column;gap:8px;width:min(290px,calc(100vw - 20px));
+  padding:11px;background:#f2eee6;border:1px solid #8c998b;
+  border-radius:4px;box-shadow:0 14px 35px #19261c40}
  .topbar #mobileOverflow.is-open{display:flex}
- .topbar #mobileOverflow>a,.topbar #mobileOverflow>#fullscreen,
- .topbar #mobileOverflow>button[aria-haspopup="dialog"],
- .topbar #mobileOverflow>#xr-controls{display:flex;align-items:center;
-  justify-content:center;width:100%;min-height:42px;text-align:center}
- .topbar #mobileOverflow>a,
- .topbar #mobileOverflow>button[aria-haspopup="dialog"]{border:1px solid #b8bcb3;
-  padding:9px 12px;background:#f8f6f0;text-decoration:none}
- .topbar #mobileOverflow>#fullscreen{display:flex}
- .topbar #mobileOverflow>#xr-controls>*{width:100%!important;min-height:42px!important}
+ .topbar #mobileOverflow .toolbar-secondary,.topbar #mobileOverflow .toolbar-utility{
+  display:flex;flex-direction:column;align-items:stretch;width:100%;gap:7px;margin:0}
+ .topbar #mobileOverflow .toolbar-utility{border-top:1px solid #40544829;padding-top:8px}
+ .topbar #mobileOverflow a,.topbar #mobileOverflow button{width:100%;min-height:42px;
+  padding:10px 12px;font:500 13px/1.2 Arial,Helvetica,sans-serif;background:#f9f7f2;
+  border:1px solid #45584b42;color:#304237}
+ .topbar #mobileOverflow #fullscreen{display:inline-flex}
+ .topbar #mobileOverflow #xr-controls{width:100%;display:flex}
+ .topbar #mobileOverflow #xr-controls>*{width:100%!important;max-width:none!important;min-height:42px!important}
+ .topbar #mobileOverflow [data-gallery-secondary="gramophone"]{order:1}
+ .topbar #mobileOverflow .toolbar-secondary #archiveLink{order:0}
 }
 </style>
 
@@ -207,13 +235,19 @@ window.addEventListener('load',()=>{
 </header>
 <div class="topbar" role="group" aria-label="Virtual exhibition controls">
   <div class="top-actions">
-    <button id="openLift" type="button" aria-label="Open lift to choose gallery floor">Lift · Floors</button>
-    <button id="openVisitorChat" type="button" disabled aria-label="Chat">Chat</button>
+    <div class="toolbar-primary">
+      <button id="openLift" type="button" aria-label="Choose exhibition floor">Floors</button>
+      <button id="openVisitorChat" type="button" disabled aria-label="Chat">Chat</button>
+    </div>
     <button id="mobileMenuToggle" type="button" aria-label="More gallery controls" aria-expanded="false" aria-controls="mobileOverflow">More <span aria-hidden="true">▾</span></button>
     <div id="mobileOverflow" class="mobile-overflow">
-      <a id="archiveLink" href="../">View 2D gallery</a>
-      <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
-      <div id="xr-controls" aria-label="Virtual reality controls"></div>
+      <div class="toolbar-secondary">
+        <a id="archiveLink" href="../">2D Gallery</a>
+      </div>
+      <div class="toolbar-utility">
+        <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
+        <div id="xr-controls" aria-label="Virtual reality controls"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -224,6 +258,17 @@ window.addEventListener('load',()=>{
   const panel=document.getElementById('mobileOverflow');
   const mobile=matchMedia('(max-width:700px)');
   const actions=document.querySelector('.top-actions');
+  const secondary=panel.querySelector('.toolbar-secondary');
+  const xr=document.getElementById('xr-controls');
+  // VRButton is created by Three.js; unsupported browsers get a quiet status,
+  // while available VR retains its real enter/exit control.
+  const updateVrStatus=()=>{
+    const control=xr.querySelector('button,a');
+    const unavailable=!!control&&/not supported|not available|unsupported/i.test(control.textContent);
+    xr.dataset.vrUnavailable=String(unavailable);
+  };
+  new MutationObserver(updateVrStatus).observe(xr,{childList:true,subtree:true,characterData:true});
+  updateVrStatus();
   // The listening exhibit adds its own button after the tower loads.
   // Relocate that existing button, preserving its event listener and dialog.
   const placeGramophone=()=>{
@@ -232,7 +277,7 @@ window.addEventListener('load',()=>{
       element.textContent.trim()==='Gramophone');
     if(!gramophone)return;
     gramophone.dataset.gallerySecondary='gramophone';
-    panel.append(gramophone);
+    secondary.append(gramophone);
     // When its native dialog closes, restore focus to the visible menu button.
     document.querySelector('.phi-gramophone-dialog')?.addEventListener('close',()=>{
       if(mobile.matches){setOpen(false,true);}
@@ -334,7 +379,7 @@ window.addEventListener('load',()=>{
     <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
     <p>A new collection. A new floor. Every day.</p>
     <p>Each daily collection occupies its own floor. Step inside a gallery shaped by the golden ratio. Discover drawings on the walls and sculptures made from their lines, then take the archive lift to another day.</p>
-    <details class="visit-controls"><summary>How to explore</summary><p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, Artwork details appear when you pause nearby; L opens the lift calendar. Select Chat · Visitor to ask about the exhibition, or press T near a gallery visitor. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p><p class="shortcuts">Hanging room signs adapted from <a href="https://sketchfab.com/3d-models/hospital-hanging-signage-74157aae9eb746d9a0cfe7f9c5c7f83f" target="_blank" rel="noopener">Hospital hanging signage by Sousinho</a>, CC BY 4.0.</p></details>
+    <details class="visit-controls"><summary>How to explore</summary><p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, Artwork details appear when you pause nearby; L opens the lift calendar. Select Chat to ask about the exhibition, or press T near a gallery visitor. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p><p class="shortcuts">Hanging room signs adapted from <a href="https://sketchfab.com/3d-models/hospital-hanging-signage-74157aae9eb746d9a0cfe7f9c5c7f83f" target="_blank" rel="noopener">Hospital hanging signage by Sousinho</a>, CC BY 4.0.</p></details>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
     <a id="welcomeArchive" href="../">See the original 2D edition ↗</a>
     <p class="credits-link"><a href="../../test/virtual-gallery/credits.html">Credits</a></p>
