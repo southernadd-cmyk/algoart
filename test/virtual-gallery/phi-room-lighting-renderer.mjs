@@ -13,8 +13,8 @@ export function staticPhiShadowCaster(mesh){
  }
  return true;
 }
-export function createPhiLightingStudy({THREE,renderer,scene,camera,sun}){
- const stats={enabled:true,shadowMaps:2,refreshes:0,casters:0,roomLight:null,luminaires:0,fillLights:4};
+export function createPhiLightingStudy({THREE,renderer,scene,camera,sun,skipReceiverMaterialInvalidation=false}){
+ const stats={enabled:true,shadowMaps:2,refreshes:0,casters:0,roomLight:null,luminaires:0,fillLights:4,receiverUpdates:0,receiverMaterialInvalidations:0,skipReceiverMaterialInvalidation};
  if(new URLSearchParams(location.search).get('lighting')==='original')return {stats:{enabled:false},update(){},editionChanged(){}};
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
  sun.castShadow=true;sun.shadow.autoUpdate=false;sun.shadow.mapSize.set(2048,2048);
@@ -40,8 +40,15 @@ export function createPhiLightingStudy({THREE,renderer,scene,camera,sun}){
     if(!isPhiShadowSurface(mesh))return;
     if(!mesh.receiveShadow){
      mesh.receiveShadow=true;
-     if(Array.isArray(mesh.material)){for(const material of mesh.material)material.needsUpdate=true;}
-     else if(mesh.material)mesh.material.needsUpdate=true;
+     stats.receiverUpdates++;
+     // TEST-only opt-in: the object receiver flag is passed to the
+     // renderer separately from the material. Compare actual shader
+     // programs and output pixels before accepting this path.
+     if(!skipReceiverMaterialInvalidation){
+      if(Array.isArray(mesh.material)){
+       for(const material of mesh.material){material.needsUpdate=true;stats.receiverMaterialInvalidations++;}
+      }else if(mesh.material){mesh.material.needsUpdate=true;stats.receiverMaterialInvalidations++;}
+     }
     }
     mesh.castShadow=staticPhiShadowCaster(mesh);
     if(mesh.castShadow){casters++;nextSignature=(Math.imul(nextSignature,31)+mesh.id+mesh.geometry.id)|0;}
