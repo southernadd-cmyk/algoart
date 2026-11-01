@@ -51,14 +51,14 @@ export const RULES=[
  {id:'mixed-materials',name:'If a room has three or more materials, it is a room of contrasts',
   when:wm=>{const ms=all(wm,'material');const set=new Set(ms.map(f=>f.args[1]));
    return set.size>=3?[{pred:'mixedMaterials',args:[set.size],text:'this room mixes '+set.size+' materials',from:ms}]:[];}},
- {id:'natural-experiment',name:'If two works share a composition system but not a material, they are a natural experiment',
+ {id:'natural-experiment',name:'If two works use the same composition system but different materials, a natural experiment invites comparison (not a controlled test)',
   when:wm=>{const out=[],es=all(wm,'engine');
    for(let i=0;i<es.length;i++)for(let j=i+1;j<es.length;j++){
     const a=es[i].args[0],b=es[j].args[0];
     if(es[i].args[1]!==es[j].args[1])continue;
     const ma=one(wm,'material',a),mb=one(wm,'material',b);
     if(ma&&mb&&ma.args[1]!==mb.args[1])out.push({pred:'naturalExperiment',args:[a,b],
-     text:t(a)+' and '+t(b)+' share a composition system but not a material — a natural experiment',from:[es[i],es[j],ma,mb]});
+     text:t(a)+' and '+t(b)+' share a composition system but use different materials — an interesting comparison, though not a controlled experiment',from:[es[i],es[j],ma,mb]});
    }
    return out.slice(0,2);}},
  {id:'phi-contrast',name:'If φ pull varies by 8 or more across a room, compare the highest and lowest',
@@ -87,9 +87,9 @@ export const RULES=[
   when:wm=>{const ws=all(wm,'work'),ps=all(wm,'portrait');
    return ws.length>=2&&ps.length*2>ws.length?[{pred:'verticalRoom',args:[],text:'most of the work in here is portrait format',from:ps}]:[];}},
  // Second-order rule: an experiment worth doing.
- {id:'material-test',name:'A natural experiment tests whether material matters more than φ',
+ {id:'material-test',name:'A natural experiment raises a question about material; it does not isolate other settings',
   when:wm=>all(wm,'naturalExperiment').slice(0,1).map(f=>({pred:'materialTest',args:f.args,
-   text:'comparing '+t(f.args[0])+' with '+t(f.args[1])+' is a fair test of whether the material matters more than φ',from:[f]}))},
+   text:'comparing '+t(f.args[0])+' with '+t(f.args[1])+' raises a question about what the material changes (other settings may differ too)',from:[f]}))},
  // Temperament rules: only that kind of visitor holds these opinions.
  {id:'enthusiast-tight',persona:'enthusiast',name:'An enthusiast admires a room held tightly by φ',
   when:wm=>all(wm,'tightPhi').map(f=>({pred:'opinion',args:['room'],kind:'opinion',text:'I love this room — it’s φ all the way through and it holds together',from:[f]}))},

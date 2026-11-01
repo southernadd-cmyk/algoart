@@ -12,6 +12,7 @@ import {matchKnowledge,normalise} from '../phi-visitor-knowledge.mjs';
 import {infer,observations,opinions,favouriteFact,proof,readSettings,RULES} from './rules.mjs';
 import {buildGraph,findNodes,findPath,edgeSentence,neighbours} from './graph.mjs';
 import {GRAMMAR,expand,rng} from './nlg.mjs';
+import {visitorNotice} from './noticing.mjs';
 import {session,visitorFrame,stageFor,readName,rememberView,noteInterest,topInterest} from './mind.mjs';
 
 export {session,RULES};
@@ -86,11 +87,7 @@ function compare(question,k,state){
  return {text,route:{kind:'compare',works:[a,b]},work:a};
 }
 function notice(k,state){
- const said=new Set(state.said||[]);
- const next=observations(k.memory).find(f=>!said.has(f.id));
- if(!next)return null;
- const r=rng(k.seed+(state.turns||0));
- return {text:expand(GRAMMAR,said.size?'noticeAgain':'notice',r,{fact:next.text}).replace(/\?$/,'.'),route:{kind:'rule',fact:next.id},said:next.id};
+ return visitorNotice(k,state);
 }
 function favourite(k){
  const f=favouriteFact(k.memory);
@@ -130,6 +127,8 @@ function explainV2(route,k,state,depth){
   case 'compare':
    if(depth===1)return 'Those numbers are straight from each work’s share link — the settings it was made with. I didn’t judge anything, just read them side by side.';
    return 'Underneath, I’m rules. One rule picks the two works — the ones you named, or else the highest and lowest φ pull in the room — and another lists where their settings differ.';
+  case 'noticeContext':
+   return route.context==='reception'?'Each archived day becomes a floor in this gallery; the entrance is where that sequence begins.':'I am describing only the actual room and the work settings available to me.';
   case 'frame':
    if(depth===1)return 'That’s just who I am today — every visitor has a floor they came from, worked out from their seed.';
    return 'Underneath, I’m a frame: slots like name, temperament and starting floor, each filled with a default from my seed.';
@@ -220,7 +219,7 @@ export function answerVisitor(question,k,state={}){
  const top=intentV2(line,question);
  let out=null;
  if(top==='connect')out=connect(question,line,k,base);
- else if(top==='notice')out=notice(k,base)||{text:'Nothing jumps out at me in here — which is a kind of observation too.',route:{kind:'intent',intent:'notice'}};
+ else if(top==='notice')out=notice(k,base);
  else if(top==='compare')out=compare(question,k,base);
  else if(top==='favourite'&&!(resolveWork(question,k,base)&&/\b(this|it)\b/.test(line)))out=favourite(k);
  else if((top==='opinion'||top==='phi')&&!resolveWork(question,k,base))out=top==='opinion'?opinion(k,base):null;
@@ -229,7 +228,7 @@ export function answerVisitor(question,k,state={}){
  else if(top==='help')out=help(k);
  let answer;
  if(out){
-  const said=out.said?[...(base.said||[]),out.said]:base.said;
+  const said=out.said?[...new Set([...(base.said||[]),...(Array.isArray(out.said)?out.said:[out.said])])]:base.said;
   answer={text:out.text,route:out.route,work:out.work||null,state:{...base,turns,said,intent:top,topic:null,lastWork:out.work||base.lastWork}};
  }else{
   answer=coreAnswer(question,k,base);
@@ -253,7 +252,7 @@ export function answerVisitor(question,k,state={}){
  next.stage=stageFor(turns);
  next.lastRoute=r;next.lastAsked=false;
  // Initiative: every third turn or so, the visitor leads.
- const ready=turns>=2&&turns-(base.lastAskTurn??-9)>=3&&!ends(text)&&next.mode!=='farewell';
+ const ready=top!=='notice'&&turns>=2&&turns-(base.lastAskTurn??-9)>=3&&!ends(text)&&next.mode!=='farewell';
  if(ready){
   let ask=null;
   const obs=observations(k.memory).find(f=>!(next.said||[]).includes(f.id));

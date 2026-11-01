@@ -87,3 +87,60 @@ test('visitor initiative and context chips',()=>{
  assert.ok(suggestionsFor(k,{awaiting:'phiOrMaterial'}).includes('The material'));
  assert.ok(suggestionsFor(k,{lastRoute:{kind:'graph'}}).includes('Why?'));
 });
+
+
+test('notice is a grounded, conversational account of a particular pair of works',()=>{
+ resetSession();
+ const k=make(0);
+ const a=answerVisitor('What have you noticed?',k,{});
+ assert.match(a.text,/Radiant Systems.*Study 01/);
+ assert.match(a.text,/Radiant Systems.*Study 02/);
+ assert.match(a.text,/oil paint/);
+ assert.match(a.text,/action painting/);
+ assert.match(a.text,/composition|material|geometry/);
+ assert.doesNotMatch(a.text,/fair test|Have you noticed that|Nothing jumps out/);
+ assert.equal(a.route.kind,'rule');
+ assert.ok(a.state.said.length>=2,'covers related comparison facts rather than repeating them');
+ const b=answerVisitor('What have you noticed?',k,a.state);
+ assert.notEqual(b.route.fact,a.route.fact);
+ assert.doesNotMatch(b.text,/fair test|Have you noticed that/);
+ const why=answerVisitor('Why?',k,b.state);
+ assert.match(why.text,/Because/);
+ assert.match(answerVisitor('why?',k,why.state).text,/My rule/);
+});
+test('different temperaments make specific, grounded observations',()=>{
+ for(const persona of ['regular','sceptic','enthusiast']){
+  const k=make(0);
+  k.persona=persona;k.memory=infer(k.works,persona);
+  const a=answerVisitor('what have you noticed?',k,{});
+  assert.ok(a.text.split(' ').length>=28,persona);
+  assert.doesNotMatch(a.text,/fair test|Nothing jumps out/);
+  assert.equal(a.route.kind,'rule');
+  if(persona==='enthusiast')assert.match(a.text,/φ/);
+  if(persona==='sceptic')assert.match(a.text,/material|geometry/);
+ }
+});
+test('a single-work room and reception avoid invented comparisons',()=>{
+ const single=buildVisitorKnowledge({date:'2026-11-01',floor:1,floorCount:1,roomIndex:0,
+  works:[{studyId:'one',title:'Just One',material:'marker',engine:'field',href:'https://x/?seed=one'}],visitorIndex:1});
+ const a=answerVisitor('what have you noticed?',single,{});
+ assert.match(a.text,/Just One/);assert.match(a.text,/Orbital/);
+ assert.match(answerVisitor('why',single,a.state).text,/mode setting|composition system/);
+ const reception=buildVisitorKnowledge({date:'reception',reception:true,floor:0,floorCount:27,roomIndex:0,works:[],visitorIndex:100});
+ const r=answerVisitor('what have you noticed?',reception,{});
+ assert.match(r.text,/building|floor|tower/);
+ assert.doesNotMatch(r.text,/“.*”|hanging|same material/);
+ assert.match(answerVisitor('why?',reception,r.state).text,/archived day|floor/);
+});
+test('repeated what-have-you-noticed turns do not recycle the same experiment',()=>{
+ const k=make(0);
+ let state={},facts=[];
+ for(let i=0;i<9;i++){
+  const a=answerVisitor('what have you noticed?',k,state);
+  facts.push(a.route.fact||a.route.kind);
+  state=a.state;
+  assert.ok(a.text.length>20);
+  assert.doesNotMatch(a.text,/fair test|Nothing jumps out/);
+ }
+ assert.equal(facts.filter(id=>['materialTest','naturalExperiment'].includes(k.memory.wm.find(f=>f.id===id)?.pred)).length,1);
+});
