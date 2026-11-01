@@ -862,7 +862,11 @@ function animateLiftDoors(dt){
     liftDoorTarget=0;
     if(liftDoorClosure<.025){
       liftArrivalOpening=false;
-      if(window.__phiLiftRide?.status==='opening')window.__phiLiftRide.status='ready';
+      if(window.__phiLiftRide?.status==='opening'){
+       window.__phiLiftRide.status='ready';
+       // Capture the entire physical opening, including any final render stall.
+       phiLiftProfiler?.finish();
+      }
     }
   }else if(liftDoorThreshold&&liftDoors.length&&!liftTravelling){
     const person=renderer?.xr.isPresenting
@@ -1274,6 +1278,7 @@ async function travelLift(date,index){
   });
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
   const warmed=await warmGalleryEntry({renderer,scene,camera,
+   onOperation:phiLiftProfiler?(name,start,duration,details)=>phiLiftProfiler.recordOperation(name,start,duration,details):null,
    // The staged reveal already painted the original destination meshes.
    // ?liftwarmrender=1 restores the extra full-scene render for comparison.
    skipFinalRender:phiArrivalMeshes.stats().batches.length>0&&
@@ -1309,7 +1314,7 @@ async function travelLift(date,index){
   liftWasNear=true;
   liftPickerConsumed=true;
   setLiftDoors(false);
-  phiLiftProfiler?.finish({warmup:warmed,preparation});
+  phiLiftProfiler?.mark('doors-opening',{warmup:warmed,preparation});
   if(window.__phiLiftRide)window.__phiLiftRide.status='opening';
  }catch(error){
   phiLiftProfiler?.mark('failure',{message:String(error?.message||error)});
@@ -1338,6 +1343,7 @@ async function travelLift(date,index){
   console.error('[Phi lift] destination failure', {date,index,atFloor:currentFloor,ride:window.__phiLiftRide},error);
   window.__phiLiftError={message:String(error?.message||error),stack:String(error?.stack||''),date,index};
   window.__phiLiftRide.status='failed';
+  phiLiftProfiler?.finish({failed:true});
   errorBox.textContent='The lift could not reach that floor: '+error.message;
   errorBox.hidden=false;
   if(!xrRide){$('lift').hidden=false;$('closeLift').focus({preventScroll:true});}
