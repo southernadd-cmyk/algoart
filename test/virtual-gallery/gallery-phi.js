@@ -214,7 +214,8 @@ try {
   errorBox.hidden = false;
 }
 
-const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
+// TEST ONLY: record lift trips without needing a special URL parameter.
+const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).get('liftprofile')!=='0'});
 // Approved fixed 16 original meshes per two frames; no adaptive scheduling.
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
 // Approved conservative occlusion. ?roomcull=0 restores baseline immediately.
