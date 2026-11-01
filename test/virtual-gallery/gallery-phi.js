@@ -3213,6 +3213,17 @@ function tick() {
   entranceDoor?.update(dt,rig.position);
   phiGalleryMusic?.update(rig.position);
   phiReceptionDesk?.hologram?.update(clock.elapsedTime);
+  // Before either normal or modal render, restore any culled works immediately
+  // when entering lift, travel, VR, or progressive scene-reveal states.
+  if(phiRoomVisibilityCuller){
+   const canCull=!!plan?.phi?.world&&!renderer.xr.isPresenting&&welcome.hidden&&
+    !liftTravelling&&!liftArrivalOpening&&!phiArrivalMeshes.stats().active&&$('lift').hidden&&
+    !document.hidden;
+   if(!canCull || ++phiRoomVisibilitySerial%6===0){
+    const local=plan?.phi?.world?.toLocal(rig.position.x,rig.position.z);
+    phiRoomVisibilityCuller.update(local,{safe:canCull});
+   }
+  }
   if(!$('lift').hidden){
    const renderAt=phiLiftProfiler?.state.active||(phiStageArrival&&phiLiftBatchMode!=='legacy')?performance.now():null;
    phiGpuProfiler?.begin();   try{phiPostFX.render(dt,null);}   finally{phiGpuProfiler?.end();}
@@ -3238,16 +3249,6 @@ function tick() {
   };
   lastFocusCheck+=dt;mapElapsed+=dt;
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
-  // Run visibility checks at 10 Hz, not per frame. Never conflict with the
-  // lift's progressive reveal, VR camera movement, reception windows or the
-  // open glass bridges. Those states restore every original object immediately.
-  if(phiRoomVisibilityCuller && (++phiRoomVisibilitySerial%6===0 || !welcome.hidden)){
-   const canCull=!!plan?.phi?.world&&!renderer.xr.isPresenting&&welcome.hidden&&
-    !liftTravelling&&!liftArrivalOpening&&!phiArrivalMeshes.stats().active&&$('lift').hidden&&
-    !document.hidden;
-   const local=plan?.phi?.world?.toLocal(rig.position.x,rig.position.z);
-   phiRoomVisibilityCuller.update(local,{safe:canCull});
-  }
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
