@@ -44,6 +44,7 @@ import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
 import {createPhiRoomBatchStudy,packPhiRoomPaintingGroups} from './phi-room-batch-study.mjs';
 import {installPhiComposerPassProfiler} from './phi-postfx-pass-profiler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
+import {createPhiUploadedTextureLedger} from './phi-uploaded-texture-ledger.mjs';
 import {createPhiPaintingArrivalGate} from './phi-painting-arrival-gate.mjs';
 import {createPhiRoomGeometryStager} from './phi-room-geometry-stage.mjs';
 import {createTextureBenchCache} from './phi-jpeg-benchmark-cache.mjs';
@@ -314,6 +315,8 @@ const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
      artworkPreload:phiArtworkPreloader.stats(),
      sculptures:phiSculptureStage.stats(),
      liftPreparation:window.__phiLiftPreparation||null,
+     reuseEnabled:phiReuseLiftUploads,
+     uploadLedger:phiUploadedTextureLedger.stats(),
      completedVisits:profile?.visits?.length||0
     };
    }
@@ -617,9 +620,13 @@ if(GALLERY_DEBUG)window.__phiSculptureStage=()=>phiSculptureStage.stats();
 // TEST A/B: ?liftreuse=1 opts into skipping redundant uploads (not proven faster).
 // Only textures successfully uploaded on this renderer may be reused.
 const phiReuseLiftUploads=new URLSearchParams(location.search).get('liftreuse')==='1';
-const phiAlreadyUploaded=new WeakSet();
-const phiUploadPainting=texture=>{renderer.initTexture(texture);phiAlreadyUploaded.add(texture);};
-const phiIsUploaded=texture=>phiReuseLiftUploads&&phiAlreadyUploaded.has(texture);
+// Invalidate on texture.dispose() or a new texture/source version. Previous
+// WeakSet implementation could wrongly skip reuploading a disposed texture.
+const phiUploadedTextureLedger=createPhiUploadedTextureLedger();
+const phiUploadPainting=texture=>{
+ renderer.initTexture(texture);phiUploadedTextureLedger.mark(texture);
+};
+const phiIsUploaded=texture=>phiReuseLiftUploads&&phiUploadedTextureLedger.has(texture);
 // Prepare only the destination floor's paintings while the lift travels.
 const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
  makeTexture:image=>{
@@ -1338,7 +1345,7 @@ async function travelLift(date,index){
    // whole-scene render here; default/non-staged paths still perform it.
    skipFinalRender:phiStageArrival&&phiArrivalMeshes.stats().batches.length>0&&
     new URLSearchParams(location.search).get('liftwarmrender')!=='1',
-   isAlreadyUploaded:phiIsUploaded,markUploaded:texture=>phiAlreadyUploaded.add(texture),
+   isAlreadyUploaded:phiIsUploaded,markUploaded:texture=>phiUploadedTextureLedger.mark(texture),
    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
   phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate?.stats()});
   if(!phiPaintingGate?.stats().complete ||
