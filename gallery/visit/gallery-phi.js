@@ -57,7 +57,14 @@ import { appendTowerBoxBatches } from './tower-box-batches.mjs?v=preserve-metre-
 import { resolveStudyMaterial } from './study-material.mjs';
 import { createExteriorLandscape } from './environment-render.mjs?v=daytime-restored-20261027';
 import {planVisitors,renderVisitors,renderPlazaSeatedVisitors} from './visitors.mjs?v=arms-forward-v10-20261022';
-import {buildVisitorKnowledge,createVisitorChatUI} from './phi-visitor-chat.mjs';
+import {buildVisitorKnowledge as buildVisitorKnowledgeV1,createVisitorChatUI as createVisitorChatUIV1} from './phi-visitor-chat.mjs';
+import {buildVisitorKnowledge as buildVisitorKnowledgeV2,createVisitorChatUI as createVisitorChatUIV2} from './visitor-v2/chat-v2.mjs';
+import {nearestVisitorOnFloor} from './phi-visitor-selection.mjs';
+// Independent preview: plain TEST runs v1; ?chat=v2 opts into v2.
+// Live v2 by default; ?chat=v1 remains an explicit rollback option.
+const VISITOR_CHAT_V2=new URLSearchParams(location.search).get('chat')!=='v1';
+const buildVisitorKnowledge=VISITOR_CHAT_V2?buildVisitorKnowledgeV2:buildVisitorKnowledgeV1;
+const createVisitorChatUI=VISITOR_CHAT_V2?createVisitorChatUIV2:createVisitorChatUIV1;
 import {nameExhibitionRooms} from './phi-room-names.mjs';
 import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mjs?v=doorway-aligned-glass-20261022';
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
@@ -2859,7 +2866,8 @@ function phiVisitorKnowledge(speaker){
   roomName,works,visitorIndex:speaker.index,facing,
   floorWorks:phi?(phi.exhibition.paintings.length+phi.exhibition.sculptures.length):0,
   floorSculptures:phi?.exhibition.sculptures.length||0,
-  roomCount:phi?.floor.mergedRooms.length||0});
+  roomCount:phi?.floor.mergedRooms.length||0,
+  floorDates:archiveDates.filter(date=>date!==RECEPTION)});
 }
 function ensureVisitorChat(){
  if(visitorChat)return visitorChat;
@@ -2880,10 +2888,11 @@ function virtualVisitorAtCurrentRoom(){
 }
 function talkToNearestVisitor({allowAnywhere=false,visitor=null}={}){
  if(liftTravelling||!welcome.hidden||!$('lift').hidden||renderer.xr.isPresenting||!plan?.phi)return;
- // Reception conversations belong to the actual seated visitor, not a
- // synthetic visitor at the player's location.
- const actual=visitor||phiVisitorNearest||(currentFloor===0&&phiVisitorSpeakers.length
-  ?phiVisitorSpeakers.find(person=>person.seat)||phiVisitorSpeakers[0]:null);
+ // The toolbar chooses the closest current-floor visitor when clicked.
+ // The T prompt retains the proximity radius; tapping a person selects them.
+ const actual=visitor||(allowAnywhere
+  ?nearestVisitorOnFloor(phiVisitorSpeakers,rig.position)
+  :phiVisitorNearest);
  let speaker=actual||(allowAnywhere?virtualVisitorAtCurrentRoom():null);
  if(!speaker)return;
  // A click or toolbar conversation must not close simply because the visitor
@@ -2893,7 +2902,10 @@ function talkToNearestVisitor({allowAnywhere=false,visitor=null}={}){
  const chat=ensureVisitorChat();
  document.exitPointerLock?.();
  pressed.clear();lookPressed.clear();
- chat.start(speaker,phiVisitorKnowledge(speaker));
+  const others=VISITOR_CHAT_V2&&speaker.index>=0?phiVisitorSpeakers
+ .filter(person=>person!==actual&&person.room===speaker.room)
+ .slice(0,1).map(phiVisitorKnowledge):[];
+chat.start(speaker,phiVisitorKnowledge(speaker),{others});
 }
 function updateVisitorChatPrompt(){
  const chat=ensureVisitorChat();
