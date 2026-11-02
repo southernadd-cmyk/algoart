@@ -6,7 +6,7 @@
 const MATERIAL_NAMES={marker:'marker',tissue:'tissue and graphite',watercolour:'watercolour',watercolor:'tissue and graphite',
  oil:'oil',action:'action painting'};
 const matName=m=>MATERIAL_NAMES[m]||m;
-const t=w=>'“'+w.title+'”';
+const t=w=>'“'+(w.displayTitle||w.title)+'”';
 
 /** Settings live in each work's share link; the room plan supplies the rest. */
 export function readSettings(w){
@@ -108,7 +108,7 @@ export const RULES=[
   when:wm=>all(wm,'airyRoom').map(f=>({pred:'opinion',args:['airy'],kind:'opinion',text:'I like how quiet this room is. The empty space is part of it',from:[f]}))}
 ];
 
-const key=f=>f.pred+':'+f.args.map(a=>a?.title??a).join('|');
+const key=f=>f.pred+':'+f.args.map(a=>a&&typeof a==='object'?(a.studyId!=null?'study:'+a.studyId:'work:'+String(a.href||a.seed||a.title)):String(a)).join('|');
 
 /** Run rules to a fixpoint. Returns working memory and the order rules fired. */
 export function infer(works,persona){
