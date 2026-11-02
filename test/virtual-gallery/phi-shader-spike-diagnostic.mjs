@@ -45,15 +45,24 @@ if(enabled){
   for(const name of pnameNames)if(gl[name]===enumValue)return name;
   return typeof enumValue==='number'?'0x'+enumValue.toString(16):String(enumValue);
  };
- // Group the shader fingerprints by compile-time light counts.
+ // Three.js r180 replaces NUM_SPOT_LIGHTS with integer literals before
+ // passing GLSL to WebGL. Parse final uniform array sizes, not old #defines.
  const lightSignature=source=>{
-  const fields=['NUM_DIR_LIGHTS','NUM_POINT_LIGHTS','NUM_SPOT_LIGHTS',
-   'NUM_DIR_LIGHT_SHADOWS','NUM_POINT_LIGHT_SHADOWS','NUM_SPOT_LIGHT_SHADOWS'];
+  const fields=[
+   ['directional','DirectionalLight','directionalLights'],
+   ['point','PointLight','pointLights'],
+   ['spot','SpotLight','spotLights'],
+   ['directionalShadows','DirectionalLightShadow','directionalLightShadows'],
+   ['pointShadows','PointLightShadow','pointLightShadows'],
+   ['spotShadows','SpotLightShadow','spotLightShadows']
+  ];
   const result={};
-  for(const field of fields){
-   const match=source.match(new RegExp('#define\\s+'+field+'\\s+(\\d+)'));
-   if(match)result[field]=Number(match[1]);
+  for(const [name,type,uniform] of fields){
+   const re=new RegExp('\\\\buniform\\\\s+'+type+'\\\\s+'+uniform+'\\\\s*\\\\[\\\\s*(\\\\d+)');
+   const match=source.match(re);
+   if(match)result[name]=Number(match[1]);
   }
+  if(Object.keys(result).length)result.usesShadowMap=/#define\\s+USE_SHADOWMAP\\b/.test(source);
   return Object.keys(result).length?result:null;
  };
  const shaderDetails=item=>item?item.shaders.map(s=>({
