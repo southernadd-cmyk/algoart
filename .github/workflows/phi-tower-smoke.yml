@@ -1,23 +1,6 @@
 name: Phi tower walkthrough smoke
+# Retired automatic trigger: old test tower experiment files were removed.
 on:
-  push:
-    paths:
-      - 'test/virtual-gallery/phi-tower.html'
-      - 'test/virtual-gallery/full-engine.html'
-      - 'gallery/visit/gallery-v2.js'
-      - 'gallery/visit/gallery-phi-test.js'
-      - 'gallery/visit/gallery-phi.js'
-      - 'gallery/visit/gallery-phi-bundle.js'
-      - 'gallery/visit/index.html'
-      - 'tests/phi-public-entry.test.mjs'
-      - 'tests/full-engine-walkthrough.test.mjs'
-      - 'tests/phi-full-engine-adapter.test.mjs'
-      - 'tests/phi-presentation.test.mjs'
-      - 'test/virtual-gallery/phi-full-engine-adapter.mjs'
-      - 'gallery/visit/phi-*.mjs'
-      - 'tests/phi-tower-smoke.mjs'
-      - 'tests/phi-desk-hologram-browser.mjs'
-      - '.github/workflows/phi-tower-smoke.yml'
   workflow_dispatch:
 jobs:
   walkthrough:
