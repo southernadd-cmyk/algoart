@@ -5689,11 +5689,7 @@ void main(){
  // the main scene pass and this artwork-only mask pass.
  float nearest=eyeDistance(originalDepth);
  float artwork=eyeDistance(gl_FragCoord.z);
- // Close to the near plane, depth rasterisation diverges most strongly.
- // Increase tolerance only within 20 cm; preserve tight occlusion elsewhere.
- float closeFactor=1.0-smoothstep(cameraNear,0.20,artwork);
  float tolerance=max(minimumDepthTolerance,nearest*0.0005);
- tolerance=max(tolerance,closeFactor*0.012);
  if(artwork>nearest+tolerance)discard;
  gl_FragColor=vec4(1.);
 }`}),d=new n.ShaderMaterial({toneMapped:!1,depthTest:!1,depthWrite:!1,uniforms:{inputBuffer:{value:null},originalBuffer:{value:r.texture},artworkMask:{value:o.texture},exposure:{value:e.toneMappingExposure}},vertexShader:"varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,1.,1.);}",fragmentShader:`uniform sampler2D inputBuffer,originalBuffer,artworkMask;
