@@ -187,6 +187,7 @@ export function installLiftBenchmarkUI(){
    shaderErrorChecks:window.__phiShaderChecks??null,
    shaderProgramTrace:window.__phiShaderSpikeTrace?.snapshot?.()||{enabled:false},
    shadowShaderReuse:window.__phiShadowShaderReuse||{enabled:new URLSearchParams(location.search).get('shaderreuse')==='1',available:false},
+   realTimeShadows:window.__phiLightingStudy?{enabled:window.__phiLightingStudy.realTimeShadows,shadowMaps:window.__phiLightingStudy.shadowMaps,casters:window.__phiLightingStudy.casters,refreshes:window.__phiLightingStudy.refreshes}:{enabled:new URLSearchParams(location.search).get('shadows')!=='0',available:false},
    earlyDestinationCompile:{enabled:new URLSearchParams(location.search).get('earlycompile')==='1'||!!window.__phiEarlyCompile,details:window.__phiEarlyCompile||null}
   });
  }
