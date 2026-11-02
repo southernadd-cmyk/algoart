@@ -1,4 +1,5 @@
 import {createPhiShadowReceiverMarker} from './phi-shadow-shader-reuse.mjs';
+import {phiRealTimeShadowsEnabled,configurePhiRealTimeShadows} from './phi-shadow-comparison.mjs';
 // Defined once: shadow-surface scans may visit thousands of objects.
 const validPhiShadowMaterial=m=>!!m&&(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial||m.isMeshPhongMaterial||m.isMeshLambertMaterial)&&(!m.transparent||m.alphaTest>0);
 export function isPhiShadowSurface(object){
@@ -16,16 +17,25 @@ export function staticPhiShadowCaster(mesh){
 }
 export function createPhiLightingStudy({THREE,renderer,scene,camera,sun}){
  const shadowReceiver=createPhiShadowReceiverMarker({reuse:new URLSearchParams(location.search).get('shaderreuse')==='1'});
- const stats={enabled:true,shadowMaps:2,refreshes:0,casters:0,roomLight:null,luminaires:0,fillLights:4,shadowShaderReuse:shadowReceiver.stats};
+ const realTimeShadows=phiRealTimeShadowsEnabled(location.search);
+ const stats={enabled:true,shadowMaps:realTimeShadows?2:0,realTimeShadows,
+  refreshes:0,casters:0,roomLight:null,luminaires:0,fillLights:4,shadowShaderReuse:shadowReceiver.stats};
  window.__phiShadowShaderReuse=shadowReceiver.stats;
  if(new URLSearchParams(location.search).get('lighting')==='original')return {stats:{enabled:false},update(){},editionChanged(){}};
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
- sun.castShadow=true;sun.shadow.autoUpdate=false;sun.shadow.mapSize.set(2048,2048);
- sun.shadow.bias=-.00008;sun.shadow.normalBias=.035;
- Object.assign(sun.shadow.camera,{left:-40,right:40,top:40,bottom:-40,near:.5,far:240});sun.shadow.camera.updateProjectionMatrix();
+ configurePhiRealTimeShadows(renderer,sun,{enabled:realTimeShadows,shadowType:THREE.PCFSoftShadowMap});
+ renderer.shadowMap.autoUpdate=false;
+ if(realTimeShadows){sun.shadow.autoUpdate=false;sun.shadow.mapSize.set(2048,2048);}
+ if(realTimeShadows){
+  sun.shadow.bias=-.00008;sun.shadow.normalBias=.035;
+  Object.assign(sun.shadow.camera,{left:-40,right:40,top:40,bottom:-40,near:.5,far:240});
+  sun.shadow.camera.updateProjectionMatrix();
+ }
  const originalSun=sun.position.clone(),originalTarget=sun.target.position.clone();scene.add(sun.target);
- const shadow=new THREE.SpotLight().shadow;shadow.autoUpdate=false;shadow.mapSize.set(1024,1024);
- shadow.bias=-.00008;shadow.normalBias=.025;shadow.camera.near=.15;shadow.camera.far=14;
+ const shadow=realTimeShadows?new THREE.SpotLight().shadow:null;
+ if(shadow){
+  shadow.autoUpdate=false;shadow.mapSize.set(1024,1024);
+  shadow.bias=-.00008;shadow.normalBias=.025;shadow.camera.near=.15;shadow.camera.far=14;
+ }
  const fillLights=Array.from({length:4},()=>{const light=new THREE.PointLight('#fff0d6',0,12,2);light.name='phi-pooled-room-fill';light.castShadow=false;scene.add(light);return light;});
  const viewer=new THREE.Vector3(),point=new THREE.Vector3();
  // Reuse fixed-size insertion buffers instead of allocating and sorting
@@ -33,14 +43,14 @@ export function createPhiLightingStudy({THREE,renderer,scene,camera,sun}){
  const closestRoots=[null,null,null,null];
  const closestDistances=[Infinity,Infinity,Infinity,Infinity];
  let roomLights=[],luminaires=[],selected=null,previousShadow=null,lastScan=-Infinity,lastPick=-Infinity,signature=-1,force=true;
- function refresh(light){light.shadow.needsUpdate=true;renderer.shadowMap.needsUpdate=true;stats.refreshes++;}
+ function refresh(light){if(!realTimeShadows)return;light.shadow.needsUpdate=true;renderer.shadowMap.needsUpdate=true;stats.refreshes++;}
  function update(now=performance.now()){
   if(force||now-lastScan>1500){
    lastScan=now;roomLights.length=0;luminaires.length=0;let nextSignature=0,casters=0;
    scene.traverse(mesh=>{
     if(mesh.isSpotLight&&mesh.name==='phi-shadow-room-light')roomLights.push(mesh);
     if(mesh.userData.phiRoomLuminaire)luminaires.push(mesh);
-    if(!isPhiShadowSurface(mesh))return;
+    if(!realTimeShadows||!isPhiShadowSurface(mesh))return;
     shadowReceiver.mark(mesh);
     mesh.castShadow=staticPhiShadowCaster(mesh);
     if(mesh.castShadow){casters++;nextSignature=(Math.imul(nextSignature,31)+mesh.id+mesh.geometry.id)|0;}
@@ -71,9 +81,9 @@ export function createPhiLightingStudy({THREE,renderer,scene,camera,sun}){
   let nearest=null,distance=Infinity;
   for(const light of roomLights){const d=light.getWorldPosition(point).distanceToSquared(viewer);if(d<distance&&light.intensity>0){distance=d;nearest=light;}}
   if(nearest!==selected){
-   if(selected){selected.castShadow=false;selected.shadow=previousShadow;}
+   if(realTimeShadows&&selected){selected.castShadow=false;selected.shadow=previousShadow;}
    selected=nearest;
-   if(selected){previousShadow=selected.shadow;selected.shadow=shadow;selected.castShadow=true;refresh(selected);}
+   if(realTimeShadows&&selected){previousShadow=selected.shadow;selected.shadow=shadow;selected.castShadow=true;refresh(selected);}
    stats.roomLight=selected?.id??null;
   }
  }
