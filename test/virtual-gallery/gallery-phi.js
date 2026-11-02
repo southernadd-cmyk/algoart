@@ -222,6 +222,10 @@ try {
 
 // TEST ONLY: record lift trips without needing a special URL parameter.
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).get('liftprofile')!=='0'});
+// TEST ONLY: keep the experiment flag stable when lift navigation replaces
+// the URL with ?date=...; off is the exact established production behaviour.
+const phiEarlyCompileEnabled=new URLSearchParams(location.search).get('earlycompile')==='1';
+window.__phiEarlyCompile=null;
 // Approved fixed 16 original meshes per two frames; no adaptive scheduling.
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
 // Approved conservative occlusion. ?roomcull=0 restores baseline immediately.
@@ -1281,6 +1285,36 @@ async function travelLift(date,index){
    }
   });
   phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady);
+  // TEST-ONLY A/B: precompile all staged destination materials with the real
+  // scene lighting/shadows and attached artwork maps before the first reveal.
+  // The staging helper restores every drawable's hidden state synchronously,
+  // before compileAsync can yield to a frame. No rendering preset is changed.
+  if(phiEarlyCompileEnabled&&!xrRide){
+   const began=performance.now();
+   const gl=renderer.getContext();
+   const parallelShaders=!!gl.getExtension?.('KHR_parallel_shader_compile');
+   phiLiftProfiler?.mark('destination-shader-precompile-start',{parallelShaders});
+   let precompile=null;
+   try{
+    if(typeof renderer.compileAsync!=='function')throw Error('compileAsync unavailable');
+    precompile=phiArrivalMeshes.compileHiddenDestination(()=>renderer.compileAsync(scene,camera));
+    const submitMs=performance.now()-began;
+    phiLiftProfiler?.recordOperation('destination-shader-precompile-submit',began,submitMs,
+     {meshes:precompile.count,parallelShaders});
+    if(precompile.promise)await precompile.promise;
+    window.__phiEarlyCompile={attempted:precompile.attempted,meshes:precompile.count,
+     parallelShaders,submitMs:+submitMs.toFixed(1),
+     totalMs:+(performance.now()-began).toFixed(1),completed:true};
+    phiLiftProfiler?.mark('destination-shader-precompile-finished',window.__phiEarlyCompile);
+   }catch(error){
+    // Keep the previous staged reveal + final warm-up if precompilation fails.
+    window.__phiEarlyCompile={attempted:!!precompile?.attempted,
+     meshes:precompile?.count||0,parallelShaders,
+     totalMs:+(performance.now()-began).toFixed(1),
+     completed:false,error:String(error?.message||error)};
+    phiLiftProfiler?.mark('destination-shader-precompile-failed',window.__phiEarlyCompile);
+   }
+  }
   // The paintings are already GPU-ready. Restore the original destination
   // renderables over successive frames while the cabin doors remain closed.
   phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
