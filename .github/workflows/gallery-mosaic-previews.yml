@@ -1,10 +1,5 @@
 name: Prebuild daily gallery mosaic previews
 on:
-  pull_request:
-    paths:
-      - 'automation/build-gallery-previews.py'
-      - '.github/workflows/gallery-mosaic-previews.yml'
-      - 'gallery/**/meta.json'
   workflow_dispatch:
   push:
     branches: [main]
@@ -43,7 +38,6 @@ jobs:
           print(f'Validated {len(files)} preview images')
           PY
       - name: Commit prebuilt previews
-        if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
