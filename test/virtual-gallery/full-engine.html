@@ -107,7 +107,7 @@
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=12">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
 <!-- Verified production room occlusion; use ?roomcull=0 to disable without changing artwork. -->
-<link rel="modulepreload" href="../../test/virtual-gallery/gallery-phi-bundle.js?v=test-chat-v2-phi-lightpool-ab-20261102">
+<link rel="modulepreload" href="../../test/virtual-gallery/gallery-phi-bundle.js?v=test-chat-v2-pointpool-ab-20261102">
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
@@ -155,7 +155,7 @@
       console.warn('[Test tower shader-stall diagnostic unavailable]',diagnosticError);
     }
     window.__galleryStage='Importing bundled JavaScript';
-    await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=test-chat-v2-phi-lightpool-ab-20261102');
+    await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=test-chat-v2-pointpool-ab-20261102');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -216,7 +216,7 @@ window.addEventListener('load',()=>{
 });
 </script>
 <!-- TEST only: collect lift frame spikes and export JSON for desktop browsers. -->
-<script type="module" src="../../test/virtual-gallery/phi-lift-benchmark-export.mjs?v=lightpool-ab-20261102"></script>
+<script type="module" src="../../test/virtual-gallery/phi-lift-benchmark-export.mjs?v=pointpool-ab-20261102"></script>
 </head>
 <body>
 <canvas id="world" tabindex="0" aria-label="Three-dimensional gallery. W A S D to move, arrow keys to look, L for floors. Tab to reach page controls." aria-describedby="hint"></canvas>
