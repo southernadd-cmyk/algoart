@@ -81,8 +81,22 @@ try{
     })()
    }));
    await page.locator('#enter').click({noWaitAfter:true});
-   await page.locator('#openLift').click({noWaitAfter:true});
-   await page.locator('#lift').waitFor({state:'visible',timeout:20000});
+   // The entrance requests browser pointer-lock for real mouse clicks. The
+   // first later Playwright click can be consumed by pointer-lock release,
+   // so open the actual floor panel through its registered click handler.
+   await page.waitForFunction(()=>document.querySelector('#welcome')?.hidden===true &&
+    window.__phiLiftState?.floor===0,null,{timeout:40000});
+   item.receptionState=await page.evaluate(()=>({
+    welcomeHidden:document.querySelector('#welcome').hidden,
+    floor:window.__phiLiftState?.floor,
+    liftPosition:window.__phiLiftState?.x,
+    pointerLocked:!!document.pointerLockElement
+   }));
+   await page.evaluate(async()=>{
+    if(document.pointerLockElement)await document.exitPointerLock?.();
+    document.querySelector('#openLift').click();
+   });
+   await page.locator('#lift').waitFor({state:'visible',timeout:30000});
    await page.locator('#liftMonth').fill(date.slice(0,7));
    await page.locator('#liftMonth').dispatchEvent('change');
    const button=page.locator('#liftDays button').filter({hasText:new RegExp('^'+Number(date.slice(-2))+'$')});
