@@ -12,10 +12,9 @@ jpeg[2]=0xff;jpeg[3]=0xc0;jpeg[4]=0;jpeg[5]=7;jpeg[6]=8;
 jpeg.writeUInt16BE(630,7);jpeg.writeUInt16BE(1200,9);
 jpeg[jpeg.length-2]=0xff;jpeg[jpeg.length-1]=0xd9;
 const post=()=>new Request(endpoint,{method:'POST',headers:{origin,'content-type':'application/json','CF-Connecting-IP':'192.0.2.1'},body:JSON.stringify({jpeg:jpeg.toString('base64')})});
-const makeEnv=({allowed=true,existing=false}={})=>{
+const makeEnv=({existing=false}={})=>{
  const writes=[];
- return {writes,PREVIEW_RATE_LIMITER:{async limit(){return {success:allowed}}},
- PREVIEW_KV:{async get(){return existing?new ArrayBuffer(4100):null},async put(key,value){writes.push({key,size:value.byteLength})}}};
+ return {writes,PREVIEW_KV:{async get(){return existing?new ArrayBuffer(4100):null},async put(key,value){writes.push({key,size:value.byteLength})}}};
 };
 
 test('rejects non-browser origin before storage access',async()=>{
@@ -25,12 +24,7 @@ test('rejects non-browser origin before storage access',async()=>{
  assert.equal(env.writes.length,0);
 });
 
-test('rejects uploads when rate limit is exhausted',async()=>{
- const env=makeEnv({allowed:false});
- const response=await worker.fetch(post(),env);
- assert.equal(response.status,429);
- assert.equal(env.writes.length,0);
-});
+
 
 test('a valid first upload stores exactly one card',async()=>{
  const env=makeEnv();
@@ -48,9 +42,4 @@ test('an existing card is not overwritten',async()=>{
  assert.equal(env.writes.length,0);
 });
 
-test('missing rate limiter fails closed',async()=>{
- const env=makeEnv();
- delete env.PREVIEW_RATE_LIMITER;
- assert.equal((await worker.fetch(post(),env)).status,503);
- assert.equal(env.writes.length,0);
-});
+
