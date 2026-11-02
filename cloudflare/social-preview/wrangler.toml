@@ -7,3 +7,12 @@ workers_dev = true
 [[kv_namespaces]]
 binding = "PREVIEW_KV"
 id = "7dc02116a78744ad959cce0cc8292b42"
+
+# Approximate per-location upload guard, primarily to protect free-tier KV writes.
+[[ratelimits]]
+name = "PREVIEW_RATE_LIMITER"
+namespace_id = "1001"
+
+[ratelimits.simple]
+limit = 10
+period = 60
