@@ -20,7 +20,7 @@ test('Sign sits on the gramophone side of the public GLASS door but not in the d
  assert.ok(p.x>door.centre+door.width/2+.42*TRANSLATION_SIGN_SCALE/2+.25);
  assert.ok(p.x<gramophone.x,'Sign must be BETWEEN the door and gramophone');
  assert.ok(p.z>door.at && p.z<gramophone.z);
- assert.ok(p.lateralClearance>=.29,'Keep the door's walkable opening clear even with larger sign');
+ assert.ok(p.lateralClearance>=.29,"Keep the door's walkable opening clear even with larger sign");
  assert.ok(p.distanceToGramophone>=1.1,'Keep clear of the gramophone cabinet');
  assert.equal(p.yaw,0,'Sign faces visitors inside reception');
 });
