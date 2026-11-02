@@ -16,7 +16,7 @@ test('export attributes an actual measured blocking operation, not last stage',(
    {name:'doors-opening',elapsedMs:360},{name:'doors-fully-open',elapsedMs:400}]
  };
  const report=buildLiftBenchmarkReport({active:false,visits:[visit]},{userAgent:'unit-test'});
- assert.equal(report.version,6);
+ assert.equal(report.version,8);
  const exported=report.journeys[0];
  assert.equal(exported.status,'completed');
  assert.equal(exported.direction,'G → 28');
