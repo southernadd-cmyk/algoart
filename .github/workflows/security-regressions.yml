@@ -1,0 +1,45 @@
+name: Security and editor regression checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'about/step-by-step/**'
+      - 'js/app.js'
+      - 'js/generator.js'
+      - 'js/settings-url.js'
+      - 'js/control-help.js'
+      - 'gallery/visit/phi-translation-area-sign.mjs'
+      - 'tests/step-by-step-svg-attribute-safety.test.mjs'
+      - 'tests/phi-translation-area-sign.test.mjs'
+      - 'tests/mobile-png-download.test.mjs'
+      - 'tests/control-ranges.test.mjs'
+      - '.github/workflows/security-regressions.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify JavaScript syntax
+        run: |
+          node --check tests/phi-translation-area-sign.test.mjs
+          node --check tests/mobile-png-download.test.mjs
+          node --check tests/control-ranges.test.mjs
+          node --check tests/step-by-step-svg-attribute-safety.test.mjs
+      - name: Run targeted regressions
+        run: |
+          node --test tests/phi-translation-area-sign.test.mjs tests/step-by-step-svg-attribute-safety.test.mjs
+          node tests/mobile-png-download.test.mjs
+          node tests/control-ranges.test.mjs
