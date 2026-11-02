@@ -37,7 +37,7 @@ export function createArtProtection(T,renderer,scene,camera){
  const depthMmParam=new URLSearchParams(location.search).get('artdepthmm');
  const requestedDepthMm=depthMmParam===null?NaN:Number(depthMmParam);
  const minimumDepthTolerance=Number.isFinite(requestedDepthMm)
-  ?Math.max(0.002,Math.min(0.02,requestedDepthMm/1000)):0.002;
+  ?Math.max(0.002,Math.min(0.02,requestedDepthMm/1000)):0.010;
  const artworkMaterial=new T.ShaderMaterial({
   side:T.DoubleSide,depthTest:true,depthWrite:true,
   toneMapped:false,transparent:false,
