@@ -40,5 +40,5 @@ test('one long WebGL driver call outranks its parent scene and frame render span
  assert.equal(v.worstFrames[0].attribution.status,'observed WebGL driver-call blocking');
  assert.equal(v.webglCallSpikes[0].durationMs,8130);
  const exportJSON=buildLiftBenchmarkReport({visits:[]});
- assert.equal(exportJSON.version,6);
+ assert.equal(exportJSON.version,8);
 });
