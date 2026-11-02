@@ -20,14 +20,19 @@ export {session,RULES};
 const words=s=>normalise(s).split(' ').filter(Boolean);
 const has=(line,list)=>list.some(x=>(' '+line+' ').includes(' '+x+' '));
 const ends=text=>/\?\s*$/.test(text);
-const t=w=>w.displayTitle?w.displayTitle.replace(w.title,'“'+w.title+'”'):'“'+w.title+'”';
-const TITLE_STOP=new Set(['the','and','with','one','for','from','this','that','study','untitled','drawing','painting','work','piece','in','of','a','an','to']);
+const t=w=>w.displayTitle?(w.displayTitle.includes('“')?w.displayTitle:w.displayTitle.replace(w.title,'“'+w.title+'”')):'“'+w.title+'”';
+const TITLE_STOP=new Set(['the','and','with','one','for','from','this','that','study','untitled','drawing','painting','work','piece','in','of','a','an','to','golden','ratio']);
 
 export function buildVisitorKnowledge(input){
  const works=(input.works||[]).map(w=>({...w,material:w.material==='watercolor'?'tissue':w.material}));
  const counts=new Map();for(const w of works)counts.set(w.title,(counts.get(w.title)||0)+1);
- const labels=new Map();for(const w of works)if(counts.get(w.title)>1){const label=(w.material||w.engine||'work')+' '+w.title;labels.set(label,(labels.get(label)||0)+1);w.displayTitle=label;}
- const used=new Map();for(const w of works)if(w.displayTitle&&labels.get(w.displayTitle)>1){const n=(used.get(w.displayTitle)||0)+1;used.set(w.displayTitle,n);w.displayTitle+=' ('+n+')';}
+ const used=new Map();for(const w of works)if(counts.get(w.title)>1){
+  const n=(used.get(w.title)||0)+1;used.set(w.title,n);
+  const position=['first','second','third','fourth','fifth'][n-1]||n+'th';
+  const includesMaterial=words(w.title).includes(w.material)||words(w.title).includes('watercolor')&&w.material==='watercolour';
+  const sameMaterial=works.some(other=>other!==w&&other.title===w.title&&other.material===w.material);
+  w.displayTitle=sameMaterial||includesMaterial?'the '+position+' “'+w.title+'”':(w.material||w.engine||'work')+' “'+w.title+'”';
+ }
  const frame=visitorFrame(input);
  const k={...input,works,...frame};
  k.memory=infer(works,frame.persona);
@@ -180,6 +185,10 @@ function readAnswer(line,question,k,state){
   if(has(line,YES))return {text:linked?expand(GRAMMAR,'opinionLead',rng(k.seed),{opinion:linked.text}):'Good. It’s the kind of thing you only see in a room together.',route:linked?{kind:'rule',fact:linked.id}:{kind:'answered'}};
   if(has(line,NO))return {text:'Have a look — '+(fact?.args?.[0]?.title?'start with '+t(fact.args[0])+'.':'stand in the middle and turn round slowly.'),route:{kind:'answered'}};
  }
+ if((a==='yesno'||a==='open')&&/^(?:the )?material(?: i think| probably| maybe)?$/.test(line)){
+  rememberView('material',k.name);
+  return {text:REACT.material[p],route:{kind:'answered'},view:'material'};
+ }
  if(a==='yesno'){
   if(has(line,['close','closer','near','up close','back','far','distance','both']))return {text:'Close up it’s all material — wobble and grain. From further back it’s all composition, and that’s the bit φ is meant to control.',route:{kind:'answered'}};
   if(has(line,NO))return {text:REACT.no[p],route:{kind:'answered'}};
@@ -216,9 +225,9 @@ export function answerVisitor(question,k,state={}){
  }
  let base={...state,whyDepth:0};
  // AWAITING — read the reply to the visitor's own question, unless it's a new question.
- if(state.awaiting){
+ if(state.awaiting||state.lastAsked&&/^(?:the )?(?:material|phi|φ)(?: i think| probably| maybe)?$/.test(line)){
   const newQuestion=ends(question)&&(intentV2(line,question)||matchKnowledge(line));
-  const got=!newQuestion&&readAnswer(line,question,k,state);
+  const got=!newQuestion&&readAnswer(line,question,k,state.awaiting?state:{...state,awaiting:'phiOrMaterial'});
   base={...base,awaiting:null,awaitFact:null};
   if(got){
    const next={...base,turns,lastRoute:got.route,lastAsked:false,mode:got.farewell?'farewell':state.mode};
