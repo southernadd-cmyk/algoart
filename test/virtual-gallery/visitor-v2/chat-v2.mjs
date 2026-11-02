@@ -185,6 +185,10 @@ function readAnswer(line,question,k,state){
   if(has(line,YES))return {text:linked?expand(GRAMMAR,'opinionLead',rng(k.seed),{opinion:linked.text}):'Good. It’s the kind of thing you only see in a room together.',route:linked?{kind:'rule',fact:linked.id}:{kind:'answered'}};
   if(has(line,NO))return {text:'Have a look — '+(fact?.args?.[0]?.title?'start with '+t(fact.args[0])+'.':'stand in the middle and turn round slowly.'),route:{kind:'answered'}};
  }
+ if((a==='yesno'||a==='open')&&/^(?:the )?material(?: i think| probably| maybe)?$/.test(line)){
+  rememberView('material',k.name);
+  return {text:REACT.material[p],route:{kind:'answered'},view:'material'};
+ }
  if(a==='yesno'){
   if(has(line,['close','closer','near','up close','back','far','distance','both']))return {text:'Close up it’s all material — wobble and grain. From further back it’s all composition, and that’s the bit φ is meant to control.',route:{kind:'answered'}};
   if(has(line,NO))return {text:REACT.no[p],route:{kind:'answered'}};
