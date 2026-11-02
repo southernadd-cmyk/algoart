@@ -3674,6 +3674,12 @@ function tick() {
   if(phiFrameSerial%6===0)updateVisitorChatPrompt();
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
+  // TEST pointpool A/B: point lights may be added asynchronously between
+  // destination construction and the first open-door frame. Reconcile dark
+  // shader slots in that critical window *before* the scene render. This
+  // prevents transient 7→8 light-count variants from being compiled.
+  // Keep this narrow: no full scene traversal on ordinary gallery frames.
+  if(liftArrivalOpening)phiStablePointLights.sync('pre-render-doors-opening');
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
