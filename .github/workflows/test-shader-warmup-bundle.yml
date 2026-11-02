@@ -1,0 +1,60 @@
+name: Build and verify TEST shader warm-up A/B
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/test-shader-warmup-bundle.yml'
+      - 'test/virtual-gallery/gallery-phi.js'
+      - 'test/virtual-gallery/phi-arrival-mesh-stager.mjs'
+      - 'test/virtual-gallery/full-engine.html'
+      - 'tests/phi-staged-reveal-compile.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: test-shader-warmup-bundle-main
+  cancel-in-progress: false
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify hidden destination visibility is restored synchronously
+        run: node --test tests/phi-staged-reveal-compile.test.mjs
+      - name: Build current TEST bundle only
+        run: |
+          ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+          node --check test/virtual-gallery/gallery-phi-bundle.js
+          grep -q 'destination-shader-precompile' test/virtual-gallery/gallery-phi-bundle.js
+          test -s test/virtual-gallery/gallery-phi-bundle.js
+      - name: Publish only the test bundle with fresh-source retry
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git reset --hard origin/main
+            node --test tests/phi-staged-reveal-compile.test.mjs
+            ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
+            node --check test/virtual-gallery/gallery-phi-bundle.js
+            git add test/virtual-gallery/gallery-phi-bundle.js
+            if git diff --cached --quiet; then
+              echo 'TEST bundle already matches current source'
+              exit 0
+            fi
+            git commit -m 'Build TEST-only early destination shader warm-up bundle'
+            if git push origin HEAD:main; then
+              echo 'Published TEST bundle; production untouched'
+              exit 0
+            fi
+          done
+          echo 'Could not safely publish current TEST bundle'
+          exit 1
