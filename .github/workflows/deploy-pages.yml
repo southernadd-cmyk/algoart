@@ -146,7 +146,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site
           # Publish runtime assets and pages, not CI, source tooling, or node_modules.
-          for dir in about css fonts js gallery press reels test; do
+          for dir in about css fonts js gallery press reels; do
             if [[ -d "$dir" ]]; then cp -a "$dir" "_site/$dir"; fi
           done
           # Root-level static pages, metadata, favicons and verification files.
@@ -156,9 +156,8 @@ jobs:
           test -s _site/index.html
           test -s _site/about/step-by-step/index.html
           test -s _site/gallery/visit/gallery-phi-bundle.js
-          test -s _site/test/virtual-gallery/full-engine.html
-          test -s _site/test/virtual-gallery/gallery-phi-bundle.js
           test -s _site/gallery/visit/index.html
+          if [[ -e _site/test ]]; then echo 'Retired test tower must not be published' >&2; exit 1; fi
           test -s _site/js/generator.js
           test -s _site/css/marker-font.css
           if find _site -type d \\( -name node_modules -o -name .github -o -name automation -o -name .chat-v2-staging \\) | grep -q .; then
