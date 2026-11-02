@@ -186,6 +186,7 @@ export function installLiftBenchmarkUI(){
    webglTrace:window.__phiGLTrace||{enabled:false},
    shaderErrorChecks:window.__phiShaderChecks??null,
    shaderProgramTrace:window.__phiShaderSpikeTrace?.snapshot?.()||{enabled:false},
+   shadowShaderReuse:window.__phiShadowShaderReuse||{enabled:new URLSearchParams(location.search).get('shaderreuse')==='1',available:false},
    earlyDestinationCompile:{enabled:new URLSearchParams(location.search).get('earlycompile')==='1'||!!window.__phiEarlyCompile,details:window.__phiEarlyCompile||null}
   });
  }
