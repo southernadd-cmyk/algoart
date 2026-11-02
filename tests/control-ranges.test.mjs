@@ -25,10 +25,8 @@ assert.doesNotMatch(html,/test\/editorial-(?:copy|pigment)\.js/,
   'Production must not load scripts from test/');
 assert.match(html,/js\/editorial-pigment\.js\?v=/,
   'Keep the editorial pigment behavior as a production script');
-assert.ok(readme.includes('**Current renderer: V'+currentRenderer+'.**'),
-  'README must identify the renderer actually selected by the editor');
-assert.ok(readme.includes('| **V'+currentRenderer+'** |'),
-  'README renderer history must explain the current version');
+// README is deliberately an artist statement; renderer version is defined by the shared settings schema.
+assert.ok(Number.isInteger(currentRenderer)&&currentRenderer>=5,'Current renderer is a supported numbered revision');
 if(currentRenderer>=9){
   assert.match(generator,/A\.rendererVersion>=9&&s\.paper!=null/,
     'V9 must keep chosen paper colour out of the composition RNG');
