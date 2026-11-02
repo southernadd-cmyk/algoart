@@ -33,7 +33,7 @@ function plural(n,s){return n+' '+s+(n===1?'':'s');}
 function join(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a.at(-1);}
 export function describeWork(w){
  const material=MATERIALS[w.material],engine=ENGINES[w.engine],kind=material?.[0]||'drawing';
- const output=['“'+(w.displayTitle||w.title)+'” is '+(/^[aeiou]/.test(kind)?'an ':'a ')+kind+
+ const output=[(w.displayTitle?w.displayTitle.replace(w.title,'“'+w.title+'”'):'“'+w.title+'”')+' is '+(/^[aeiou]/.test(kind)?'an ':'a ')+kind+
   (w.sculpture?' — interpreted here as a sculpture':'')+'.'];
  if(engine)output.push('It belongs to '+engine[0]+', which '+engine[1]+'.');
  if(material)output.push('Its '+w.material+' material brings '+material[1]+'.');
