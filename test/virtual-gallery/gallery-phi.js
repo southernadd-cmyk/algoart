@@ -5,6 +5,7 @@ import {createPhiFrameStudyMaterial} from './phi-frame-material.mjs';
 import {batchPhiPaintingFrames} from './phi-painting-frame-batch.mjs';
 import {applyRefinedPhiRoomLighting,refineRoomLightEntries,planRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs';
 import {PHI_ROOM_POOL_SIZE,PHI_ART_POOL_SIZE,chooseNearestPhiRoomAnchors} from './phi-bounded-light-pool.mjs';
+import {createPhiStablePointLightPool} from './phi-stable-point-lights.mjs';
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {advanceLiftDoor} from './phi-lift-motion.mjs';
 import {addPhiDeskHologram} from './phi-desk-hologram.mjs';
@@ -257,6 +258,11 @@ const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{
  onRenderStage:phiLiftProfiler?(name,start,duration)=>phiLiftProfiler.recordOperation(name,start,duration):null
 });
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
+// TEST experiment: keep seven light-count slots across reception/cabin
+// swaps. Extra slots are truly dark; original lighting and shadows unchanged.
+const phiStablePointLights=createPhiStablePointLightPool({THREE,scene,
+ enabled:new URLSearchParams(location.search).get('pointpool')==='1'});
+window.__phiStablePointLights=phiStablePointLights.stats;
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
 let receptionWallMaterial=null;
@@ -1227,6 +1233,9 @@ function releasePhiRideRetainedReception(){
     textures:textures.size,geometries:geometries.size});
  // Resume normal shell occlusion once the detailed reception is gone.
  phiTowerShellCache?.controller.activate(currentFloor);
+ // The two departing reception lights have now left the scene. Fill their
+ // shader slots before the very next render, including door opening.
+ phiStablePointLights.sync();
 }
 // Let the per-frame staging (room boxes, sculptures) work during the early
 // ride before the synchronous construction consumes it.
@@ -2876,6 +2885,9 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object)&&object!==phiTowerShellCache?.shell);
+  // Add dark spares only AFTER recording edition-owned assets: they must
+  // survive floor cleanup and must never become part of an artwork batch.
+  phiStablePointLights.sync();
   // Only new destination renderables are temporarily hidden. Never hide the
   // physical cabin, its doors or indicator, or alter any textures or materials.
   if(viaLift){
