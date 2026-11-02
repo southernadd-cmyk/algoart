@@ -33,7 +33,7 @@ function plural(n,s){return n+' '+s+(n===1?'':'s');}
 function join(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a.at(-1);}
 export function describeWork(w){
  const material=MATERIALS[w.material],engine=ENGINES[w.engine],kind=material?.[0]||'drawing';
- const output=['“'+w.title+'” is '+(/^[aeiou]/.test(kind)?'an ':'a ')+kind+
+ const output=['“'+(w.displayTitle||w.title)+'” is '+(/^[aeiou]/.test(kind)?'an ':'a ')+kind+
   (w.sculpture?' — interpreted here as a sculpture':'')+'.'];
  if(engine)output.push('It belongs to '+engine[0]+', which '+engine[1]+'.');
  if(material)output.push('Its '+w.material+' material brings '+material[1]+'.');
@@ -45,13 +45,14 @@ export function buildVisitorKnowledge(input){
  const seed=hash((input.date||'reception')+':'+input.roomIndex+':'+input.visitorIndex);
  return {...input,seed,persona:TYPES[seed%3],name:NAMES[(seed>>>3)%NAMES.length]};
 }
+const TITLE_STOP=new Set(['the','and','with','one','for','from','this','that','study','untitled','drawing','painting','work','piece','in','of','a','an','to']);
 const ORDINALS={first:0,'1st':0,second:1,'2nd':1,third:2,'3rd':2,fourth:3,'4th':3,last:-1};
 export function resolveWork(question,k,state={},out={}){
  const ws=words(question),line=ws.join(' '),works=k.works||[];
  if(!works.length)return null;
  let matched=null,score=0;
  for(const work of works){
-  const title=words(work.title).filter(w=>w.length>2&&w!=='study');
+  const title=words(work.title).filter(w=>w.length>2&&!TITLE_STOP.has(w));
   let n=title.filter(w=>ws.includes(w)).length;
   const number=work.title.match(/(\d+)\s*$/)?.[1];
   if(number&&new RegExp('\\b(study|number|no)\\s*0*'+Number(number)+'\\b').test(line))n+=2;
@@ -106,7 +107,7 @@ function isMore(line){
 }
 function titleNamed(question,k){
  const ws=words(question);
- return (k.works||[]).some(w=>words(w.title).filter(x=>x.length>2&&x!=='study').some(x=>ws.includes(x))||
+ return (k.works||[]).some(w=>words(w.title).filter(x=>x.length>2&&!TITLE_STOP.has(x)).some(x=>ws.includes(x))||
   (/\d+\s*$/.test(w.title)&&new RegExp('\\b(study|number|no)\\s*0*'+Number(w.title.match(/(\d+)\s*$/)[1])+'\\b').test(ws.join(' '))));
 }
 function tryLine(k){
