@@ -2,7 +2,7 @@ name: Read-only live reception video diagnosis
 
 on:
   pull_request:
-    paths: ['.github/workflows/probe-reception-live.yml']
+    paths: ['.github/workflows/probe-reception-live.yml', 'tests/probe-reception-browser-video.mjs']
   workflow_dispatch:
 
 permissions:
@@ -86,3 +86,5 @@ jobs:
            await page.close();
           }finally{await browser.close();}
           NODE
+      - name: Compare isolated video and active 3D gallery frame delivery
+        run: node tests/probe-reception-browser-video.mjs
