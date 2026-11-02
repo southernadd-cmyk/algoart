@@ -14,7 +14,7 @@ const NODES=[
  ['pentagon','the regular pentagon','concept',['pentagon','pentagram']],
  ['penrose','Penrose tiling','concept',['penrose','penrose tiling','penrose tiles','tiles','tiling']],
  ['quasicrystals','quasicrystals','concept',['quasicrystal','quasicrystals']],
- ['sunflower','sunflower seed heads','nature',['sunflower','sunflowers','seed head','pine cone','pinecone']],
+ ['sunflower','a sunflower seed head','nature',['sunflower','sunflowers','seed head','pine cone','pinecone']],
  ['nautilus','the nautilus shell','nature',['nautilus','shell']],
  ['parthenon','the Parthenon','building',['parthenon']],
  ['mona-lisa','the Mona Lisa','artwork',['mona lisa']],
