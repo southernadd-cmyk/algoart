@@ -1092,7 +1092,7 @@ function startPhiCabinRide(targetFloor,{elastic=false}={}){
  // The floor's golden-angle orientation is reached gradually during travel.
  phiMovingCabin=phiLiftCabin;
  phiRideCameraActive=!renderer.xr.isPresenting;
- // Keep the departing floor visible throughout the exterior lift animation.
+ // Keep the departing floor visible until the destination is ready and the exterior ride ends.
  phiRideHidden=[];
  const startTheta=phiLiftCabin.rotation.y;
  const targetTheta=targetFloor*(2*Math.PI/(PHI*PHI));
