@@ -58,7 +58,7 @@ if(enabled){
   ];
   const result={};
   for(const [name,type,uniform] of fields){
-   const re=new RegExp('\\\\buniform\\\\s+'+type+'\\\\s+'+uniform+'\\\\s*\\\\[\\\\s*(\\\\d+)');
+   const re=new RegExp('\\buniform\\s+'+type+'\\s+'+uniform+'\\s*\\[\\s*(\\d+)');
    const match=source.match(re);
    if(match)result[name]=Number(match[1]);
   }
