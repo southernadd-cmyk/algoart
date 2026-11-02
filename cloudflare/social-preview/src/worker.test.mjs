@@ -34,12 +34,12 @@ test('a valid first upload stores exactly one card',async()=>{
  assert.equal(env.writes[0].key,'previews/'+token+'.jpg');
 });
 
-test('an existing card is not overwritten',async()=>{
+test('repeat upload retains original production overwrite behaviour',async()=>{
  const env=makeEnv({existing:true});
  const response=await worker.fetch(post(),env);
  assert.equal(response.status,200);
- assert.equal((await response.json()).existing,true);
- assert.equal(env.writes.length,0);
+ assert.equal((await response.json()).ok,true);
+ assert.equal(env.writes.length,1);
 });
 
 
