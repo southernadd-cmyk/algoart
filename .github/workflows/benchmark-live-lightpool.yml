@@ -1,0 +1,40 @@
+name: Benchmark deployed live phi light pool (software WebGL)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/benchmark-live-lightpool.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: benchmark-live-lightpool
+  cancel-in-progress: false
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Install headless Chromium and Linux libraries
+        run: npx playwright install --with-deps chromium
+      - name: Validate benchmark code
+        run: node --check tests/benchmark-live-lightpool.mjs
+      - name: Run LIVE deployed A/B benchmark (on-off-off-on)
+        run: node tests/benchmark-live-lightpool.mjs
+        env:
+          PHI_BENCH_URL: https://southernadd-cmyk.github.io/algoart/gallery/visit/
+          PHI_BENCH_DATE: '2026-10-31'
+          PHI_BENCH_ORDER: on,off,off,on
+      - name: Store performance samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-phi-lightpool-performance
+          path: phi-live-benchmark-results/
+          if-no-files-found: warn
