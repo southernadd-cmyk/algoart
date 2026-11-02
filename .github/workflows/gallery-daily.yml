@@ -35,7 +35,7 @@ jobs:
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
-      SOCIAL_DATE: ${{ inputs.date || '' }}
+      SOCIAL_DATE: ${{ inputs.date || (github.event_name == 'push' && '2026-11-01') || '' }}
 
     steps:
       - name: Checkout
