@@ -5,6 +5,7 @@ import {createPhiFrameStudyMaterial} from './phi-frame-material.mjs';
 import {batchPhiPaintingFrames} from './phi-painting-frame-batch.mjs';
 import {applyRefinedPhiRoomLighting,refineRoomLightEntries,planRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs';
 import {PHI_ROOM_POOL_SIZE,PHI_ART_POOL_SIZE,chooseNearestPhiRoomAnchors} from './phi-bounded-light-pool.mjs';
+import {createPhiStablePointLightPool} from './phi-stable-point-lights.mjs';
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {advanceLiftDoor} from './phi-lift-motion.mjs';
 import {addPhiDeskHologram} from './phi-desk-hologram.mjs';
@@ -238,6 +239,12 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
+// Approved seven-light shader-stable pool. Real lighting, physical shadows and
+// phi placement remain unchanged; dark placeholders only stabilise shader keys.
+// ?pointpool=0 restores the previous live point-light behaviour immediately.
+const phiStablePointLights=createPhiStablePointLightPool({THREE,scene,
+ enabled:new URLSearchParams(location.search).get('pointpool')!=='0'});
+window.__phiStablePointLights=phiStablePointLights.stats;
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
 let receptionWallMaterial=null;
@@ -1195,6 +1202,8 @@ function releasePhiRideRetainedReception(){
  for(const geometry of geometries)geometry.dispose();
  // Resume normal shell occlusion once the detailed reception is gone.
  phiTowerShellCache?.controller.activate(currentFloor);
+ // Reconcile light slots immediately after the retained reception disappears.
+ phiStablePointLights.sync();
 }
 // Let the per-frame staging (room boxes, sculptures) work during the early
 // ride before the synchronous construction consumes it.
@@ -2795,6 +2804,8 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   if(currentFloor===0)enableDetailedStreetLamps();
   updateExhibitLighting();
   editionObjects=scene.children.filter(object=>!previous.has(object)&&object!==phiTowerShellCache?.shell);
+  // Dark placeholder lights are persistent and must not become edition-owned.
+  phiStablePointLights.sync();
   // Only new destination renderables are temporarily hidden. Never hide the
   // physical cabin, its doors or indicator, or alter any textures or materials.
   if(viaLift){
@@ -3576,6 +3587,10 @@ function tick() {
   if(phiFrameSerial%6===0)updateVisitorChatPrompt();
   if(lastFocusCheck>.18){detectArt(lastFocusCheck);updateExhibitLighting();lastFocusCheck=0;}
   if(mapElapsed>.065){drawMap();mapElapsed=0;}
+  // The arrival scene may gain real point lights after floor construction.
+  // Reconcile the zero-intensity placeholders before drawing the opening
+  // doors, avoiding temporary 8-point-light shader variants.
+  if(liftArrivalOpening)phiStablePointLights.sync('pre-render-doors-opening');
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
