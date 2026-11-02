@@ -11,6 +11,8 @@ on:
       - 'tests/phi-shadow-shader-reuse.test.mjs'
       - 'test/virtual-gallery/phi-room-lighting-renderer.mjs'
       - 'test/virtual-gallery/phi-shadow-shader-reuse.mjs'
+      - 'test/virtual-gallery/phi-shadow-comparison.mjs'
+      - 'tests/phi-shadow-comparison.test.mjs'
       - 'test/virtual-gallery/phi-shader-spike-diagnostic.mjs'
       - 'test/virtual-gallery/phi-lift-benchmark-export.mjs'
   workflow_dispatch:
@@ -33,7 +35,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Verify hidden destination visibility is restored synchronously
-        run: node --test tests/phi-staged-reveal-compile.test.mjs tests/phi-shadow-shader-reuse.test.mjs
+        run: node --test tests/phi-staged-reveal-compile.test.mjs tests/phi-shadow-shader-reuse.test.mjs tests/phi-shadow-comparison.test.mjs
       - name: Build current TEST bundle only
         run: |
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
@@ -47,7 +49,7 @@ jobs:
           for attempt in 1 2 3 4; do
             git fetch origin main
             git reset --hard origin/main
-            node --test tests/phi-staged-reveal-compile.test.mjs tests/phi-shadow-shader-reuse.test.mjs
+            node --test tests/phi-staged-reveal-compile.test.mjs tests/phi-shadow-shader-reuse.test.mjs tests/phi-shadow-comparison.test.mjs
             ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
             node --check test/virtual-gallery/gallery-phi-bundle.js
             git add test/virtual-gallery/gallery-phi-bundle.js
@@ -55,7 +57,7 @@ jobs:
               echo 'TEST bundle already matches current source'
               exit 0
             fi
-            git commit -m 'Build TEST-only shader-reuse and early-compile A/B bundle'
+            git commit -m 'Build TEST-only shadows-off shader ablation bundle'
             if git push origin HEAD:main; then
               echo 'Published TEST bundle; production untouched'
               exit 0
