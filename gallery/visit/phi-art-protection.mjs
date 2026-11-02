@@ -33,19 +33,25 @@ export function createArtProtection(T,renderer,scene,camera){
   minFilter:T.LinearFilter,magFilter:T.LinearFilter
  });
  mask.texture.name='artwork-visible-pixels';
+ // Diagnostic only: increase minimum depth tolerance without changing the live default.
+ const depthMmParam=new URLSearchParams(location.search).get('artdepthmm');
+ const requestedDepthMm=depthMmParam===null?NaN:Number(depthMmParam);
+ const minimumDepthTolerance=Number.isFinite(requestedDepthMm)
+  ?Math.max(0.002,Math.min(0.02,requestedDepthMm/1000)):0.002;
  const artworkMaterial=new T.ShaderMaterial({
   side:T.DoubleSide,depthTest:true,depthWrite:true,
   toneMapped:false,transparent:false,
   uniforms:{
    sceneDepth:{value:null},resolution:{value:new T.Vector2(1,1)},
-   cameraNear:{value:camera.near},cameraFar:{value:camera.far}
+   cameraNear:{value:camera.near},cameraFar:{value:camera.far},
+   minimumDepthTolerance:{value:minimumDepthTolerance}
   },
   vertexShader:`void main(){
  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
 }`,
   fragmentShader:`uniform sampler2D sceneDepth;
 uniform vec2 resolution;
-uniform float cameraNear,cameraFar;
+uniform float cameraNear,cameraFar,minimumDepthTolerance;
 // Compare eye-space distances rather than nonlinear device depth.
 float eyeDistance(float depth){
  return (cameraNear*cameraFar)/(cameraFar-(cameraFar-cameraNear)*depth);
@@ -56,7 +62,7 @@ void main(){
  // the main scene pass and this artwork-only mask pass.
  float nearest=eyeDistance(originalDepth);
  float artwork=eyeDistance(gl_FragCoord.z);
- float tolerance=max(0.002,nearest*0.0005);
+ float tolerance=max(minimumDepthTolerance,nearest*0.0005);
  if(artwork>nearest+tolerance)discard;
  gl_FragColor=vec4(1.);
 }`
