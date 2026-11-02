@@ -21,11 +21,11 @@ test('one player and texture feed six distinct crops, pause together and restore
  const oldDocument=globalThis.document,oldFetch=globalThis.fetch;
  const videos=[],requests=[];
  class Video extends EventTarget{
-  constructor(){super();this.readyState=2;this.videoWidth=1152;this.videoHeight=480;this.playCalls=0;this.pauseCalls=0;}
+  constructor(){super();this.readyState=2;this.videoWidth=1152;this.videoHeight=480;this.playCalls=0;this.pauseCalls=0;this.paused=true;this.currentTime=0;}
   setAttribute(){} removeAttribute(){} load(){queueMicrotask(()=>this.dispatchEvent(new Event('loadeddata')));}
-  async play(){this.playCalls++;} pause(){this.pauseCalls++;}
+  async play(){this.playCalls++;this.paused=false;} pause(){this.pauseCalls++;this.paused=true;}
  }
- globalThis.document={createElement(tag){assert.equal(tag,'video');const v=new Video();videos.push(v);return v;}};
+ globalThis.document={hidden:false,createElement(tag){assert.equal(tag,'video');const v=new Video();videos.push(v);return v;}};
  globalThis.fetch=async url=>{requests.push(String(url));return {ok:true,json:async()=>manifest};};
  const screens=Array.from({length:6},()=>new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial()));
  const originals=screens.map(s=>({material:s.material,uv:Array.from(s.geometry.attributes.uv.array)}));
@@ -45,8 +45,23 @@ test('one player and texture feed six distinct crops, pause together and restore
    return [Math.min(...xs),Math.max(...xs),Math.min(...ys),Math.max(...ys)].map(x=>Math.round(x*6)/6);
   });
   assert.deepEqual(regions,[[0,1/3,.5,1],[1/3,2/3,.5,1],[2/3,1,.5,1],[0,1/3,0,.5],[1/3,2/3,0,.5],[2/3,1,0,.5]]);
-  media.update(false);assert.equal(videos[0].pauseCalls,1);assert.equal(media.diagnostics().playing,false);
-  media.update(true);await new Promise(resolve=>setImmediate(resolve));assert.equal(videos[0].playCalls,2);
+  // Distances fluctuate as visitors move between reception's adjacent rooms.
+  // Once lazily started, neither video is allowed to freeze outside 11m.
+  media.update(false);
+  assert.equal(videos[0].pauseCalls,0,'Walking away should not pause a shared atlas');
+  assert.equal(media.diagnostics().playing,true);
+  assert.equal(videos[0].playCalls,1);
+  // Recover if the browser itself pauses an otherwise active video.
+  videos[0].pause();media.update(false);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(videos[0].playCalls,2,'Unexpected pause must resume without proximity');
+  assert.equal(media.diagnostics().playing,true);
+  // A hidden tab may pause for efficiency; return to the visible tab resumes.
+  globalThis.document.hidden=true;media.update(false);
+  assert.equal(media.diagnostics().playing,false);
+  globalThis.document.hidden=false;media.update(false);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(videos[0].playCalls,3);
   media.dispose();
   screens.forEach((s,i)=>{assert.equal(s.material,originals[i].material);assert.deepEqual(Array.from(s.geometry.attributes.uv.array),originals[i].uv);});
   assert.equal(media.diagnostics().state,'disposed');
