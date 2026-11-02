@@ -29,11 +29,21 @@ export function createPhiStablePointLightPool({THREE,scene,enabled=false,target=
   return light;
  }):[];
  const stats={enabled,target,real:0,spares:0,total:0,overCapacity:0,
-  rebalances:0,stable:true,zeroIntensity:true,shadowCastingSpares:0};
- function sync(){
+  rebalances:0,stable:true,zeroIntensity:true,shadowCastingSpares:0,
+  peakReal:0,peakTotal:0,overCapacityEvents:0,lightChanges:[]};
+ function sync(reason='boundary'){
   if(!enabled)return {...stats};
   const real=countVisibleRealPhiPointLights(scene,spares);
   const count=Math.max(0,target-real);
+  const observed=real+spares.filter(light=>light.parent===scene).length;
+  if(real!==stats.real||count!==stats.spares||real>target){
+   // Keep a compact record of *when* a new real light appeared. This is
+   // more meaningful than the final-state snapshot in the previous export.
+   stats.lightChanges.push({reason,real,spares:count,before:observed,
+     after:real+count,overCapacity:Math.max(0,real-target)});
+   if(stats.lightChanges.length>24)stats.lightChanges.shift();
+  }
+  if(real>target)stats.overCapacityEvents++;
   for(let i=0;i<spares.length;i++){
    const light=spares[i],needed=i<count;
    // A blank spare is always present in the light list but contributes no
@@ -46,6 +56,8 @@ export function createPhiStablePointLightPool({THREE,scene,enabled=false,target=
   }
   Object.assign(stats,{real,spares:count,total:real+count,
    overCapacity:Math.max(0,real-target),stable:real<=target,
+   peakReal:Math.max(stats.peakReal,real),
+   peakTotal:Math.max(stats.peakTotal,real+count),
    shadowCastingSpares:0,rebalances:stats.rebalances+1});
   return {...stats};
  }
