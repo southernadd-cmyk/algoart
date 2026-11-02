@@ -4,8 +4,9 @@ import {TRANSLATION_SIGN_TEXT,TRANSLATION_SIGN_SCALE,translationAreaSignPlacemen
 
 test('Curatorial label keeps its exhibition identity',()=>{
  assert.equal(TRANSLATION_SIGN_TEXT.title,'THE TRANSLATION AREA');
- assert.match(TRANSLATION_SIGN_TEXT.subtitle,/transformation/);
- assert.ok(TRANSLATION_SIGN_TEXT.lines.some(line=>/marks becoming motion/.test(line)));
+ assert.ok(TRANSLATION_SIGN_TEXT.lines.some(line=>/TouchDesigner/.test(line)));
+ assert.ok(TRANSLATION_SIGN_TEXT.lines.some(line=>/moving digital artworks/.test(line)));
+ assert.equal(TRANSLATION_SIGN_TEXT.symbol,'φ');
 });
 test('The enlarged original chalkboard is 1.6 metres tall',()=>{
  assert.equal(TRANSLATION_SIGN_SCALE,1.65);
