@@ -30,7 +30,7 @@ export function readName(question){
  const q=String(question).replace(/[\u2018\u2019]/g,"'").trim();
  // Require the introduction to be the complete message: 'call me later'
  // and sentences such as 'I'm tired today' are not names.
- const m=q.match(/^(?:my name is|my name's|call me|i am|i'm|im)\s+([A-Za-z][a-z'-]{1,19})[.!?\s]*$/i);
+ const m=q.match(/^(?:(?:hi|hello|hey|hiya)[\s,!.]+)?(?:my name is|my name's|call me|i am|i'm|im)\s+([A-Za-z][a-z'-]{1,19})[.!?\s]*$/i);
  if(!m)return null;
  const name=m[1];
  if(STOP.has(name.toLowerCase()))return null;
