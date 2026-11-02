@@ -36,6 +36,29 @@ export function createPhiArrivalMeshStager({nextFrame,now=()=>performance.now()}
   return {date,active:running,total:entries.length,shown,
    hidden:entries.length-shown,batches:[...batches]};
  }
+ // TEST ONLY: opt-in precompile with exact destination scene/lighting.
+ // Make previously staged drawables visible solely during the synchronous
+ // invocation of compileAsync(). Its Promise may resolve in later frames, but
+ // ALL visibility changes are undone before we yield to the browser.
+ function compileHiddenDestination(compile){
+  if(!running||!entries.length)return {attempted:false,count:0,promise:null};
+  if(typeof compile!=='function')throw TypeError('Destination compiler callback required');
+  const version=generation;
+  const eligible=entries.filter(({object})=>object?.parent&&!object.userData?.galleryDisposed);
+  if(!eligible.length)return {attempted:false,count:0,promise:null};
+  try{
+   for(const {object,visible} of eligible)object.visible=visible;
+   const result=compile();
+   return {attempted:true,count:eligible.length,
+    promise:Promise.resolve(result).then(value=>{
+     if(version!==generation)throw Error('Destination changed during shader precompile');
+     return value;
+    })};
+  }finally{
+   // Never allow the destination artworks to appear while the lift is moving.
+   for(const {object} of eligible)if(object)object.visible=false;
+  }
+ }
  async function reveal({batchSize=16,onBatch=()=>{},onBatchStart=()=>{}}={}){
   if(!running)return stats();
   if(!Number.isInteger(batchSize)||batchSize<1)throw TypeError('Invalid scene batch size');
@@ -67,5 +90,5 @@ export function createPhiArrivalMeshStager({nextFrame,now=()=>performance.now()}
   running=false;
   return stats();
  }
- return {start,reveal,restore,stats};
+ return {start,reveal,restore,stats,compileHiddenDestination};
 }
