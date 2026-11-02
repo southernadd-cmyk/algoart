@@ -160,7 +160,7 @@ jobs:
           if [[ -e _site/test ]]; then echo 'Retired test tower must not be published' >&2; exit 1; fi
           test -s _site/js/generator.js
           test -s _site/css/marker-font.css
-          if find _site -type d \\( -name node_modules -o -name .github -o -name automation -o -name .chat-v2-staging \\) | grep -q .; then
+          if find _site -type d \( -name node_modules -o -name .github -o -name automation -o -name .chat-v2-staging \) | grep -q .; then
             echo 'Internal directory exposed in Pages artifact' >&2
             exit 1
           fi
