@@ -102,6 +102,13 @@ jobs:
           grep -q 'visitor-v2/chat-v2.mjs' test/virtual-gallery/gallery-phi.js
           grep -q 'gallery-phi-bundle.js?v=test-chat-v2-' test/virtual-gallery/full-engine.html
 
+      - name: Verify recently repaired regression tests
+        run: |
+          node --check tests/phi-translation-area-sign.test.mjs
+          node --test tests/phi-translation-area-sign.test.mjs
+          node tests/mobile-png-download.test.mjs
+          node tests/control-ranges.test.mjs
+
       - name: Verify walkthrough XSS regression
         run: node --test tests/step-by-step-svg-attribute-safety.test.mjs
 
