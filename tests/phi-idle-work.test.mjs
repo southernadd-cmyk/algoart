@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import {addPhiReceptionRearWallMonitors} from '../gallery/visit/phi-reception-rear-wall-monitors.mjs';
 const read=name=>readFileSync(new URL('../gallery/visit/'+name,import.meta.url),'utf8');
 
-test('monitor checks stay throttled with exported video, fallback and distant visitors',()=>{
+test('monitor checks run each animation frame with exported video, fallback and distant visitors',()=>{
  const source=read('phi-reception-living-monitor.mjs');
  const body=source.match(/ function tick\(time\)\{([\s\S]*?)\n \}\n frameId=requestAnimationFrame/)[1];
  for(const [active,usingExport] of [[true,true],[false,false],[true,false]]){
@@ -17,7 +17,7 @@ test('monitor checks stay throttled with exported video, fallback and distant vi
    infoRow:{update(){}},loadSource(){},canvases:[{}, {}, {}],textures:[{}, {}, {}],draw(){draws++;}};
   const tick=new Function('env','with(env){return function tick(time){'+body+'}}')(env);
   for(let frame=0;frame<=60;frame++)tick(frame*1000/60);
-  assert.ok(checks>=6&&checks<=7,`checks=${checks}, active=${active}, export=${usingExport}`);
+  assert.ok(checks>=50&&checks<=61,`checks=${checks}, active=${active}, export=${usingExport}`);
   assert.equal(draws,active&&!usingExport?checks*3:0);
  }
 });
