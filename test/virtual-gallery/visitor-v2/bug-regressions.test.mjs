@@ -36,7 +36,7 @@ test('same title works remain separate facts and have distinct labels',()=>{
  assert.equal(k.memory.wm.filter(f=>f.pred==='handmade').length,2);
  const labels=k.memory.wm.filter(f=>f.pred==='airy').map(f=>f.text);
  assert.notEqual(labels[0],labels[1]);
- assert.match(labels.join(' '),/oil Untitled drawing/);
+ assert.match(labels.join(' '),/oil “Untitled drawing”/);
 });
 test('curly apostrophe and cautious name capture',()=>{
  assert.equal(readName('I’m Sam'),'Sam');
@@ -44,4 +44,14 @@ test('curly apostrophe and cautious name capture',()=>{
  assert.equal(readName('call me later'),null);
  assert.equal(readName("I'm Sam and I like art"),null);
  assert.equal(readName('My name is Alex.'),'Alex');
+});
+
+test('greeting before name is accepted',()=>{
+ assert.equal(readName("Hi, I'm Sam"),'Sam');
+ assert.equal(readName("hello, I’m Alex!"),'Alex');
+});
+test('explicit connection request follows semantic graph',()=>{
+ const k=room([work('a','Study in Blue','oil')]);
+ const r=answerVisitor('How is this connected to Fibonacci?',k);
+ assert.equal(r.route.kind,'graph');
 });
