@@ -6,7 +6,7 @@
 const MATERIAL_NAMES={marker:'marker',tissue:'tissue and graphite',watercolour:'watercolour',watercolor:'tissue and graphite',
  oil:'oil',action:'action painting'};
 const matName=m=>MATERIAL_NAMES[m]||m;
-const t=w=>'“'+(w.displayTitle||w.title)+'”';
+const t=w=>w.displayTitle?w.displayTitle.replace(w.title,'“'+w.title+'”'):'“'+w.title+'”';
 
 /** Settings live in each work's share link; the room plan supplies the rest. */
 export function readSettings(w){
