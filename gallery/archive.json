@@ -2,6 +2,22 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-02",
+      "cover": "2026-11-02-01-organic-AA-20261102-01-53121.jpg",
+      "coverOrientation": "landscape",
+      "count": 18,
+      "series": [
+        "Growth Systems",
+        "Constructed Forms",
+        "Automatic Marks",
+        "Orbital Studies",
+        "Connected Fields",
+        "Radiant Systems",
+        "Golden Trajectories",
+        "Recursive Divisions"
+      ]
+    },
+    {
       "date": "2026-11-01",
       "cover": "2026-11-01-01-network-AA-20261101-01-68688.jpg",
       "coverOrientation": "landscape",
