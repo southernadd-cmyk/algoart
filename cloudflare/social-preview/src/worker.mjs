@@ -113,7 +113,7 @@ export default {
      const storageKey='previews/'+token+'.jpg';
      // Preserve the first accepted preview. KV is eventually consistent, so
      // this is best-effort rather than an atomic first-writer guarantee.
-     if(await env.PREVIEW_KV.get(storageKey))return txt('Preview already exists',409,cors);
+     if(await env.PREVIEW_KV.get(storageKey))return Response.json({ok:true,existing:true},{headers:cors});
      if(!request.headers.get('content-type')?.toLowerCase().startsWith('application/json'))
        return txt('Expected JSON',415,cors);
      if(Number(request.headers.get('content-length')||0)>420000)
