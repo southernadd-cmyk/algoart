@@ -85,6 +85,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
  let preset='original',bypass=false,composer=null,effects=null,selection=null,dofPass=null,artProtection=null;
  let previous=0,lastMode='',lastUI=0,lastGlowScan=0,selectedIds='';
  let aoProvider=new URLSearchParams(location.search).get('ao')==='ssao'?'ssao':'n8ao';
+ const artProtectionEnabled=new URLSearchParams(location.search).get('artprotection')!=='0';
  stats.aoProvider=aoProvider;
  // A small, collapsible workshop: all sliders are native, keyboard-accessible and live.
  const panel=document.createElement('details');panel.id='phi-post-fx';panel.open=true;
@@ -200,9 +201,11 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
  function build(){
   const compositor=new EffectComposer(renderer,{frameBufferType:THREE.HalfFloatType,multisampling:0});
   compositor.addPass(new RenderPass(scene,camera));
-  artProtection=createArtProtection(THREE,renderer,scene,camera);
-  compositor.addPass(artProtection.copyPass);
-  compositor.addPass(artProtection.maskPass);
+  artProtection=artProtectionEnabled?createArtProtection(THREE,renderer,scene,camera):null;
+  if(artProtection){
+   compositor.addPass(artProtection.copyPass);
+   compositor.addPass(artProtection.maskPass);
+  }
   // Normal pass corrects the missing normal-buffer setup in the earlier AO experiment.
   const normals=new NormalPass(scene,camera,{resolutionScale:.5});
   const ao=new SSAOEffect(camera,normals.texture,{samples:6,rings:6,resolutionScale:.5,intensity:0,radius:.2});
@@ -226,8 +229,10 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   const vignette=new VignetteEffect({eskil:false}),grain=new NoiseEffect({premultiply:false});
   compositor.addPass(new EffectPass(camera,colour,sat,grain,vignette,
    new ToneMappingEffect({mode:ToneMappingMode.NEUTRAL})));
-  compositor.addPass(artProtection.pass);
-  artProtection.setSceneDepth(compositor.inputBuffer.depthTexture);
+  if(artProtection){
+   compositor.addPass(artProtection.pass);
+   artProtection.setSceneDepth(compositor.inputBuffer.depthTexture);
+  }
   compositor.setSize(innerWidth,innerHeight,false);
   // Until explicitly enabled, expensive depth and bloom passes stay dormant.
   normals.enabled=false;aoPass.enabled=false;fullPass.enabled=false;
@@ -318,7 +323,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   try{
    if(!on){renderer.autoClear=true;renderer.render(scene,camera);}
    else{renderer.autoClear=false;composer.render(dt);renderer.autoClear=true;
-    stats.protectedArtworkMeshes=artProtection.stats.protectedMeshes;}
+    stats.protectedArtworkMeshes=artProtection?.stats.protectedMeshes||0;}
   }catch(error){
    stats.errors.push(String(error));console.error('[FX lab] original renderer fallback',error);
    preset='original';bypass=false;stats.active=false;
