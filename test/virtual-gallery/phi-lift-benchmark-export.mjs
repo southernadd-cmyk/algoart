@@ -119,9 +119,9 @@ export function buildLiftBenchmarkReport(state,environment={}){
  const visits=state?.visits||[];
  return {
   format:'PROPORTION PIECE — test tower lift benchmark',
-  version:6,exportedAt:new Date().toISOString(),environment,
+  version:7,exportedAt:new Date().toISOString(),environment,
   summary:{journeys:visits.length,completed:visits.filter(v=>v.summary&&!rows(v).some(s=>s.name==='failure')).length,
-   recording:!!state?.active,attributionNote:'Named render-pass timings identify which active scene, AO, bloom, artwork protection or grading pass blocks rendering. Optional ?gltrace=1 measures specific slow WebGL API calls. Operation overlaps identify measured blockers; Chromium Long Animation Frames can reveal functions. WebGL render and texture upload calls can include driver wait and do not prove pure GPU time. Unattributed gaps need a browser trace.',route:'Reception G → top exhibition → reception G'},
+   recording:!!state?.active,attributionNote:'Named render-pass timings identify which active scene, AO, bloom, artwork protection or grading pass blocks rendering. Optional ?gltrace=1 measures slow WebGL API calls. Optional ?shadertrace=1 identifies slow shader-program queries, their parameters and program/shader fingerprints without modifying the rendered scene. Operation overlaps identify measured blockers; Chromium Long Animation Frames can reveal functions. WebGL render and texture upload calls can include driver wait and do not prove pure GPU time. Unattributed gaps need a browser trace.',route:'Reception G → top exhibition → reception G'},
   journeys:visits.map(summariseLiftVisit)
  };
 }
@@ -178,7 +178,8 @@ export function installLiftBenchmarkUI(){
    threeRevision:window.__phiLiftState?.threeRevision||null,
    renderPixelRatio:window.__phiPerformance?.pixelRatio??null,
    webglTrace:window.__phiGLTrace||{enabled:false},
-   shaderErrorChecks:window.__phiShaderChecks??null
+   shaderErrorChecks:window.__phiShaderChecks??null,
+   shaderProgramTrace:window.__phiShaderSpikeTrace?.snapshot?.()||{enabled:false}
   });
  }
  function update(){
