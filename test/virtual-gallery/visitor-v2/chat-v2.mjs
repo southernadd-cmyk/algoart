@@ -20,10 +20,14 @@ export {session,RULES};
 const words=s=>normalise(s).split(' ').filter(Boolean);
 const has=(line,list)=>list.some(x=>(' '+line+' ').includes(' '+x+' '));
 const ends=text=>/\?\s*$/.test(text);
-const t=w=>'“'+w.title+'”';
+const t=w=>'“'+(w.displayTitle||w.title)+'”';
+const TITLE_STOP=new Set(['the','and','with','one','for','from','this','that','study','untitled','drawing','painting','work','piece','in','of','a','an','to']);
 
 export function buildVisitorKnowledge(input){
  const works=(input.works||[]).map(w=>({...w,material:w.material==='watercolor'?'tissue':w.material}));
+ const counts=new Map();for(const w of works)counts.set(w.title,(counts.get(w.title)||0)+1);
+ const labels=new Map();for(const w of works)if(counts.get(w.title)>1){const label=(w.material||w.engine||'work')+' '+w.title;labels.set(label,(labels.get(label)||0)+1);w.displayTitle=label;}
+ const used=new Map();for(const w of works)if(w.displayTitle&&labels.get(w.displayTitle)>1){const n=(used.get(w.displayTitle)||0)+1;used.set(w.displayTitle,n);w.displayTitle+=' ('+n+')';}
  const frame=visitorFrame(input);
  const k={...input,works,...frame};
  k.memory=infer(works,frame.persona);
@@ -33,10 +37,13 @@ export function buildVisitorKnowledge(input){
 
 // ----------------------------------------------------------------- intents
 function intentV2(line,question){
+ // A recognised subject wins over conversational words such as 'help' or 'special'.
+ const kb=matchKnowledge(line);
+ if(kb&&kb.score>=2)return intentV1(question);
  if(has(line,['connected','connection','connect','link between','links','to do with','related to','relate','relationship between']))return 'connect';
  if(has(line,['notice','noticed','interesting','stand out','stands out','special','spot','spotted','what do you see','observe']))return 'notice';
  if(has(line,['compare','comparison','difference between','different from','versus','vs','which is more','which has more']))return 'compare';
- if(has(line,['where have you been','where did you come from','where have you come from','come from','where are you from','which floor','other floors','your visit','been here long','come here often']))return 'whereFrom';
+ if(has(line,['where have you been','where did you come from','where have you come from','where are you from','which floor','other floors','your visit','been here long','come here often']))return 'whereFrom';
  if(has(line,['matters more','more important','what matters']))return 'phiDebate';
  if(has(line,['what can i ask','what can you do','help','what do you know']))return 'help';
  if(has(line,['favourite','favorite','like most','recommend','best one']))return 'favourite';
@@ -69,8 +76,16 @@ function connect(question,line,k,state){
 }
 function compare(question,k,state){
  const works=k.works||[];
- const named=works.filter(w=>words(w.title).filter(x=>x.length>2&&x!=='study').some(x=>words(question).includes(x)));
- const ORD={first:0,second:1,third:2,fourth:3,fifth:4,last:-1},ws=words(question);
+ const ws=words(question);
+ const named=works.filter(w=>words(w.title).filter(x=>x.length>2&&!TITLE_STOP.has(x)).some(x=>ws.includes(x)));
+ // Material/system descriptions can name a second work without its title.
+ for(const material of ['marker','tissue','watercolour','oil','action'])if(ws.includes(material)||material==='watercolour'&&ws.includes('watercolor')){
+  const hit=works.filter(w=>w.material===material);if(hit.length===1&&!named.includes(hit[0]))named.push(hit[0]);
+ }
+ for(const engine of ['field','spiral','rects','burst','network','organic','growth','geometric','construct','scribble','automatic'])if(ws.includes(engine)){
+  const hit=works.filter(w=>w.engine===engine);if(hit.length===1&&!named.includes(hit[0]))named.push(hit[0]);
+ }
+ const ORD={first:0,second:1,third:2,fourth:3,fifth:4,last:-1};
  for(const [word,i] of Object.entries(ORD))if(ws.includes(word)){const w=works.at(i);if(w&&!named.includes(w))named.push(w);}
  let pair=named.length>=2?named.slice(0,2):null;
  const contrast=k.memory.wm.find(f=>f.pred==='phiContrast');
