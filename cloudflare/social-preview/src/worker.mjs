@@ -105,10 +105,6 @@ export default {
        'access-control-allow-headers':'content-type','access-control-max-age':'600'}});
      if(request.method!=='POST')return txt('Method not allowed',405,{...cors,allow:'POST, OPTIONS'});
      if(!data)return txt('Invalid artwork token',400,cors);
-     const storageKey='previews/'+token+'.jpg';
-     // Preserve the first accepted preview. KV is eventually consistent, so
-     // this is best-effort rather than an atomic first-writer guarantee.
-     if(await env.PREVIEW_KV.get(storageKey))return Response.json({ok:true,existing:true},{headers:cors});
      if(!request.headers.get('content-type')?.toLowerCase().startsWith('application/json'))
        return txt('Expected JSON',415,cors);
      if(Number(request.headers.get('content-length')||0)>420000)
@@ -128,8 +124,8 @@ export default {
      const dims=jpegDimensions(bytes);
      if(!dims||dims.width!==1200||dims.height!==630||bytes.length<4000||bytes.length>285000)
        return txt('Invalid JPEG dimensions',400,cors);
-     // Never intentionally overwrite an existing preview.
-     await env.PREVIEW_KV.put(storageKey,bytes.buffer);
+     // Identical artwork token is idempotent. No client-provided storage path.
+     await env.PREVIEW_KV.put('previews/'+token+'.jpg',bytes.buffer);
      return Response.json({ok:true,bytes:bytes.length},{headers:cors});
    }
    if(!['GET','HEAD'].includes(request.method))
