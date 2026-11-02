@@ -37,18 +37,27 @@ export function createArtProtection(T,renderer,scene,camera){
   side:T.DoubleSide,depthTest:true,depthWrite:true,
   toneMapped:false,transparent:false,
   uniforms:{
-   sceneDepth:{value:null},resolution:{value:new T.Vector2(1,1)}
+   sceneDepth:{value:null},resolution:{value:new T.Vector2(1,1)},
+   cameraNear:{value:camera.near},cameraFar:{value:camera.far}
   },
   vertexShader:`void main(){
  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
 }`,
   fragmentShader:`uniform sampler2D sceneDepth;
 uniform vec2 resolution;
+uniform float cameraNear,cameraFar;
+// Compare eye-space distances rather than nonlinear device depth.
+float eyeDistance(float depth){
+ return (cameraNear*cameraFar)/(cameraFar-(cameraFar-cameraNear)*depth);
+}
 void main(){
- // The compositor's main RenderPass depth already includes solid walls and
- // nearer artworks. Only the genuinely visible artwork pixels survive.
  float originalDepth=texture2D(sceneDepth,gl_FragCoord.xy/resolution).r;
- if(gl_FragCoord.z>originalDepth+0.00001)discard;
+ // A small metric tolerance absorbs rasterization differences between
+ // the main scene pass and this artwork-only mask pass.
+ float nearest=eyeDistance(originalDepth);
+ float artwork=eyeDistance(gl_FragCoord.z);
+ float tolerance=max(0.002,nearest*0.0005);
+ if(artwork>nearest+tolerance)discard;
  gl_FragColor=vec4(1.);
 }`
  });
@@ -111,6 +120,8 @@ void main(){
   stats.protectedMeshes=markArt(scene);
   resize(innerWidth,innerHeight);
   shader.uniforms.exposure.value=renderer.toneMappingExposure;
+  artworkMaterial.uniforms.cameraNear.value=camera.near;
+  artworkMaterial.uniforms.cameraFar.value=camera.far;
   const target=renderer.getRenderTarget(),auto=renderer.autoClear,override=scene.overrideMaterial;
   const bg=scene.background,layers=camera.layers.mask;
   const colour=renderer.getClearColor(new T.Color()),alpha=renderer.getClearAlpha();
