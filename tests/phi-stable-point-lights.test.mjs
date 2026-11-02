@@ -74,3 +74,30 @@ test('target is validated',()=>{
  assert.throws(()=>createPhiStablePointLightPool({THREE,scene,enabled:true,target:-1}),RangeError);
  assert.throws(()=>createPhiStablePointLightPool({THREE,scene,enabled:true,target:1.3}),RangeError);
 });
+
+test('a new real point light added after a floor sync is compensated before rendering',()=>{
+ const scene=new THREE.Scene();
+ const real=mount(scene,4);
+ const pool=createPhiStablePointLightPool({THREE,scene,enabled:true});
+ pool.sync('constructed');
+ assert.equal(scene.children.filter(x=>x.isPointLight).length,7);
+ const late=new THREE.PointLight('#eeeecc',3,6,2);
+ late.name='late-loaded-architectural-light';
+ scene.add(late);
+ // Without a new sync Three.js would compile a fresh 8-light shader.
+ assert.equal(scene.children.filter(x=>x.isPointLight).length,8);
+ const result=pool.sync('pre-render-doors-opening');
+ assert.equal(result.real,5);
+ assert.equal(result.spares,2);
+ assert.equal(result.total,7);
+ assert.equal(scene.children.filter(x=>x.isPointLight).length,7);
+ assert.equal(late.intensity,3);
+ assert.equal(pool.stats.peakReal,5);
+ assert.ok(pool.stats.lightChanges.some(x=>
+  x.reason==='pre-render-doors-opening'&&x.before===8&&x.after===7));
+ scene.remove(late);
+ const restored=pool.sync('pre-render-doors-opening');
+ assert.equal(restored.spares,3);
+ assert.equal(restored.total,7);
+ assert.equal(real.length,4);
+});
