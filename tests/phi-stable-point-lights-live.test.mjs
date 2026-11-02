@@ -18,7 +18,7 @@ test('production enables point stabilisation by default with emergency override'
  assert.match(live,/window\.__phiStablePointLights=phiStablePointLights\.stats/);
 });
 test('production balances at all three approved transition sites',()=>{
- assert.match(live,/phiTowerShellCache\?\.controller\.activate\(currentFloor\);\s*\/\/ Reconcile light slots immediately after the retained reception disappears\.\s*phiStablePointLights\.sync\(\)/);
+ assert.match(live,/phiTowerShellCache\?\.controller\.activate\(currentFloor\);\s*\/\/ Reconcile light slots immediately after the retained floor disappears\.\s*phiStablePointLights\.sync\(\)/);
  assert.match(live,/editionObjects=scene\.children\.filter\(object=>!previous\.has\(object\)&&object!==phiTowerShellCache\?\.shell\);\s*\/\/ Dark placeholder lights are persistent and must not become edition-owned\.\s*phiStablePointLights\.sync\(\)/);
  assert.match(live,/if\(liftArrivalOpening\)phiStablePointLights\.sync\('pre-render-doors-opening'\);/);
  assert.ok(live.indexOf("phiStablePointLights.sync('pre-render-doors-opening')")<live.indexOf('phiPostFX.render(dt',live.indexOf("phiStablePointLights.sync('pre-render-doors-opening')")));
