@@ -105,6 +105,38 @@ jobs:
       - name: Verify walkthrough XSS regression
         run: node --test tests/step-by-step-svg-attribute-safety.test.mjs
 
+      - name: Audit duplicate live/test static media
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from hashlib import sha256
+          live=Path('gallery/visit')
+          test=Path('test/virtual-gallery')
+          extensions={'.glb','.gltf','.bin','.mp3','.wav','.ogg','.mp4','.webm','.jpg','.jpeg','.png','.ktx2','.basis'}
+          matches=[]
+          for f in test.rglob('*'):
+              if not f.is_file() or f.suffix.lower() not in extensions:
+                  continue
+              peer=live/f.relative_to(test)
+              if not peer.is_file() or f.stat().st_size!=peer.stat().st_size:
+                  continue
+              def digest(p):
+                  h=sha256()
+                  with p.open('rb') as stream:
+                      for chunk in iter(lambda:stream.read(1048576),b''):
+                          h.update(chunk)
+                  return h.digest()
+              if digest(f)==digest(peer):
+                  matches.append((f.stat().st_size,str(f),str(peer)))
+          matches.sort(reverse=True)
+          total=sum(size for size,_,_ in matches)
+          print(f'Identical media pairs: {len(matches)}; redundant bytes: {total:,} ({total/1048576:.1f} MiB)')
+          print('Largest 25 candidates (not removed; runtime URL resolution must be confirmed):')
+          for size,source,peer in matches[:25]:
+              print(f'{size/1048576:8.2f} MiB  {source}  ==  {peer}')
+          PY
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
