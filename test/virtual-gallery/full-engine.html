@@ -146,6 +146,14 @@
     // The WebM is lazy-loaded only when a visitor approaches their wall.
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
+    // TEST ONLY: optional shader-program stall attribution. Imported before
+    // the gallery bundle so WebGL programs can be identified from creation.
+    // Ordinary visits are unaffected unless ?shadertrace=1 is present.
+    try {
+      await import('../../test/virtual-gallery/phi-shader-spike-diagnostic.mjs?v=shader-stall-20261102');
+    } catch (diagnosticError) {
+      console.warn('[Test tower shader-stall diagnostic unavailable]',diagnosticError);
+    }
     window.__galleryStage='Importing bundled JavaScript';
     await import('../../test/virtual-gallery/gallery-phi-bundle.js?v=test-chat-v2-shaderchecks-20261101');
     window.__galleryStage='Bundle imported; gallery initialising';
