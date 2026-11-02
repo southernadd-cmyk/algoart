@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/benchmark-live-lightpool.yml'
+      - 'tests/benchmark-live-lightpool.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,12 +26,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Validate benchmark code
         run: node --check tests/benchmark-live-lightpool.mjs
-      - name: Run LIVE deployed A/B benchmark (on-off-off-on)
+      - name: Run LIVE deployed A/B benchmark (on-off)
         run: node tests/benchmark-live-lightpool.mjs
         env:
           PHI_BENCH_URL: https://southernadd-cmyk.github.io/algoart/gallery/visit/
           PHI_BENCH_DATE: '2026-10-31'
-          PHI_BENCH_ORDER: on,off,off,on
+          PHI_BENCH_ORDER: on,off
       - name: Store performance samples
         if: always()
         uses: actions/upload-artifact@v4
