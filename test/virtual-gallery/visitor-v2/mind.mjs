@@ -24,16 +24,19 @@ export function visitorFrame({date,roomIndex,visitorIndex,floor,floorDates=[]}){
 export const STAGES=['arriving','looking','comparing','leaving'];
 export function stageFor(turns){return turns<2?'arriving':turns<6?'looking':turns<16?'comparing':'leaving';}
 
-const STOP=new Set(['not','just','looking','here','fine','ok','okay','good','sure','a','an','the','so','very','really','new','back','sorry','afraid','glad','going','still','also','only','visiting','interested','confused','lost']);
+const STOP=new Set(['tired','hungry','happy','sad','busy','late','early','bored','exhausted','angry','cold','hot','sick','ready','later','not','just','looking','here','fine','ok','okay','good','sure','a','an','the','so','very','really','new','back','sorry','afraid','glad','going','still','also','only','visiting','interested','confused','lost']);
 /** "I'm Sam" / "my name is Sam" / "call me Sam" → "Sam". */
 export function readName(question){
- const m=String(question).match(/\b(?:my name is|my name's|call me|i am|i'm|im)\s+([A-Za-z][a-z'-]{1,19})\b/i);
+ const q=String(question).replace(/[\u2018\u2019]/g,"'").trim();
+ // Require the introduction to be the complete message: 'call me later'
+ // and sentences such as 'I'm tired today' are not names.
+ const m=q.match(/^(?:my name is|my name's|call me|i am|i'm|im)\s+([A-Za-z][a-z'-]{1,19})[.!?\s]*$/i);
  if(!m)return null;
  const name=m[1];
  if(STOP.has(name.toLowerCase()))return null;
- if(/^(i am|i'm|im)$/i.test(m[0].split(/\s+/).slice(0,-1).join(' '))&&name[0]!==name[0].toUpperCase())return null;
  return name[0].toUpperCase()+name.slice(1).toLowerCase();
 }
+
 export function rememberView(view,told){
  session.views=session.views.filter(v=>v.view!==view);
  session.views.push({view,told});
