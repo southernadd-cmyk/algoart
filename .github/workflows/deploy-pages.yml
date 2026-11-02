@@ -105,10 +105,36 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Assemble public site only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          # Publish runtime assets and pages, not CI, source tooling, or node_modules.
+          for dir in about css fonts js gallery press reels test; do
+            if [[ -d "$dir" ]]; then cp -a "$dir" "_site/$dir"; fi
+          done
+          # Root-level static pages, metadata, favicons and verification files.
+          find . -maxdepth 1 -type f \\( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.json' -o -name '*.webmanifest' -o -name '*.xml' -o -name '*.txt' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.svg' -o -name '*.ico' -o -name '.nojekyll' \\) -exec cp -t _site -- {} +
+          # Prevent accidental publication of non-runtime files in copied directories.
+          find _site -type d \\( -name node_modules -o -name .git -o -name .github -o -name tests -o -name automation -o -name .chat-v2-staging \\) -prune -exec rm -rf -- {} +
+          test -s _site/index.html
+          test -s _site/about/step-by-step/index.html
+          test -s _site/gallery/visit/gallery-phi-bundle.js
+          test -s _site/test/virtual-gallery/full-engine.html
+          if find _site -type f \\( -name '*.log' -o -name '*-staging.zip' \\) | grep -q .; then
+            echo 'Unexpected development logs or staging archives in Pages artifact' >&2
+            exit 1
+          fi
+          echo "Public artifact size:"
+          du -sh _site
+          echo "Public artifact file count:"
+          find _site -type f | wc -l
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
   deploy:
     needs: build
