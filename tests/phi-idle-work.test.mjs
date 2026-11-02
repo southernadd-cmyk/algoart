@@ -17,7 +17,7 @@ test('monitor checks run each animation frame with exported video, fallback and 
    infoRow:{update(){}},loadSource(){},canvases:[{}, {}, {}],textures:[{}, {}, {}],draw(){draws++;}};
   const tick=new Function('env','with(env){return function tick(time){'+body+'}}')(env);
   for(let frame=0;frame<=60;frame++)tick(frame*1000/60);
-  assert.ok(checks>=50&&checks<=61,`checks=${checks}, active=${active}, export=${usingExport}`);
+  assert.ok(active&&!usingExport?checks>=6&&checks<=7:checks>=50&&checks<=61,`checks=${checks}, active=${active}, export=${usingExport}`);
   assert.equal(draws,active&&!usingExport?checks*3:0);
  }
 });
