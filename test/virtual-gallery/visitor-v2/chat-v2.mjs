@@ -247,7 +247,7 @@ export function answerVisitor(question,k,state={}){
   const said=out.said?[...new Set([...(base.said||[]),...(Array.isArray(out.said)?out.said:[out.said])])]:base.said;
   answer={text:out.text,route:out.route,work:out.work||null,state:{...base,turns,said,intent:top,topic:null,lastWork:out.work||base.lastWork}};
  }else{
-  answer=coreAnswer(question,k,base);
+  answer=coreAnswer(/where does (?:the )?(?:golden ratio|phi|φ) come from/i.test(question)?'history of the golden ratio':question,k,base);
   answer.state.turns=turns;
   if(name&&answer.route.intent==='greeting')answer={...answer,text:'What would you like to know?',route:{kind:'name'}};
   // Nothing matched: try the network for a single thing they named.
