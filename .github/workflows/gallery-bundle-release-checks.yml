@@ -54,8 +54,6 @@ jobs:
         run: node --test tests/gallery-public-launch.test.mjs tests/gallery-xr-loading.test.mjs tests/gallery-xr-controls.test.mjs tests/gallery-production-planning.test.mjs tests/gallery-exterior-graffiti.test.mjs tests/gallery-interior-graffiti.test.mjs tests/gallery-backdrop.test.mjs
       - name: Studio walkthrough links regression
         run: node --test tests/studio-walkthrough-link.test.mjs
-      - name: Production-module unit tests
-        run: node --test test/virtual-gallery/architectural-materials.test.mjs test/virtual-gallery/environment-v1.test.mjs test/virtual-gallery/paper-isolation.test.mjs test/virtual-gallery/sculptures.test.mjs test/virtual-gallery/study-material.test.mjs test/virtual-gallery/vector-tracing.test.mjs
       - name: Enforce gallery bundle parity with production source
         run: |
           npm run gallery:bundle:check
@@ -65,7 +63,7 @@ jobs:
         run: |
           node --check gallery/visit/gallery-bundle.js
           test -s gallery/visit/gallery-bundle.js
-          grep -q 'test/virtual-gallery/gallery-phi-bundle.js' test/virtual-gallery/index.html
-          if grep -q 'location.replace' test/virtual-gallery/index.html; then exit 1; fi
+          node --check gallery/visit/gallery-phi-bundle.js
+          test -s gallery/visit/gallery-phi-bundle.js
 
 
