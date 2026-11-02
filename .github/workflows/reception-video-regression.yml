@@ -1,0 +1,42 @@
+name: Reception video playback regression
+
+on:
+  pull_request:
+    paths:
+      - 'gallery/visit/phi-touchdesigner-media.mjs'
+      - 'gallery/visit/phi-reception-living-monitor.mjs'
+      - 'tests/phi-touchdesigner-six-screen.test.mjs'
+      - '.github/workflows/reception-video-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'gallery/visit/phi-touchdesigner-media.mjs'
+      - 'gallery/visit/phi-reception-living-monitor.mjs'
+      - 'tests/phi-touchdesigner-six-screen.test.mjs'
+      - '.github/workflows/reception-video-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  video-playback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Check source and test syntax
+        run: |
+          node --check gallery/visit/phi-touchdesigner-media.mjs
+          node --check tests/phi-touchdesigner-six-screen.test.mjs
+      - name: Test published media and uninterrupted playback
+        run: node --test tests/phi-touchdesigner-six-screen.test.mjs
+      - name: Verify gallery bundle still builds
+        run: npm run gallery:bundle:phi

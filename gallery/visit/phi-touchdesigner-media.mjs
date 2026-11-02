@@ -39,8 +39,9 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
  let state='fallback',started=false,disposed=false,video=null,texture=null,material=null,activeManifest=manifestURL;
  let playerActive=false,playerStarting=false,lastError='',originalUVs=[];
  let playbackLoop=0,lastPlaybackTime=0;
+ let lastAdvanceTime=0,lastAdvanceAt=0,stallRecoveries=0;
  const setState=next=>{state=next;};
- const diag=()=>({state,error:lastError,videoReady:!!video&&video.readyState>=2,playing:playerActive,manifest:activeManifest.pathname});
+ const diag=()=>({state,error:lastError,videoReady:!!video&&video.readyState>=2,playing:playerActive,paused:video?.paused??null,stallRecoveries,manifest:activeManifest.pathname});
  const restore=()=>{
   screens.forEach((screen,i)=>{
    if(originalUVs[i]){
@@ -55,7 +56,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   if(texture){texture.dispose();texture=null;}
   if(material){material.dispose();material=null;}
   playerActive=false;playerStarting=false;
-  playbackLoop=0;lastPlaybackTime=0;
+  playbackLoop=0;lastPlaybackTime=0;lastAdvanceTime=0;lastAdvanceAt=0;stallRecoveries=0;
  };
  const fail=error=>{
   if(disposed)return;
@@ -141,19 +142,44 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
  }
  function update(nearby){
   if(disposed)return;
+  // Approaching the installation starts the two lazy video decoders once.
+  // Leaving a monitor's 11m radius must NOT pause a film: the large screens
+  // in the next room borrow the same videos, and proximity can fluctuate.
   if(nearby&&!started)void start();
   if(!video||state==='fallback'||state==='awaiting-export')return;
-  if(video.readyState>=2){
-   const time=video.currentTime;
+  const element=video;
+  // Only suspend media when the whole browser tab is hidden. Reception
+  // disposal already stops both players when leaving this floor by lift.
+  if(document.hidden===true){
+   if(playerActive||!element.paused)element.pause();
+   playerActive=false;lastAdvanceAt=0;
+   if(state==='playing-export')setState('export-ready');
+   return;
+  }
+  if(element.readyState>=2){
+   const time=element.currentTime,now=performance.now();
    if(hasTouchDesignerVideoLooped(lastPlaybackTime,time))playbackLoop++;
    lastPlaybackTime=time;
+   if(!lastAdvanceAt){lastAdvanceAt=now;lastAdvanceTime=time;}
+   if(Math.abs(time-lastAdvanceTime)>.025){
+    lastAdvanceAt=now;lastAdvanceTime=time;stallRecoveries=0;
+   }else if(playerActive&&!element.paused&&now-lastAdvanceAt>4000){
+    // Some browsers resolve play() but then stop decoding a detached video.
+    // Retry a bounded number of times; never leave a permanently frozen wall.
+    if(++stallRecoveries>=3){fail(new Error('TouchDesigner playback stalled'));return;}
+    element.pause();playerActive=false;lastAdvanceAt=now;
+   }
   }
-  if(nearby && !playerActive && !playerStarting && video.readyState>=2){
-   // Avoid duplicate play() requests while the first autoplay promise settles.
+  if(!playerStarting&&element.readyState>=2&&(!playerActive||element.paused)){
+   // A successful play() promise isn't proof playback will continue: also
+   // observe paused/currentTime on subsequent ticks for recovery.
    playerStarting=true;
-   video.play().then(()=>{playerStarting=false;if(!disposed){playerActive=true;setState('playing-export');}}).catch(error=>{playerStarting=false;fail(error);});
-  }else if(!nearby&&playerActive){
-   video.pause();playerActive=false;setState('export-ready');
+   Promise.resolve(element.play()).then(()=>{
+    playerStarting=false;
+    if(!disposed&&video===element&&document.hidden!==true){
+     playerActive=true;setState('playing-export');
+    }else if(video===element){element.pause();playerActive=false;}
+   }).catch(error=>{playerStarting=false;if(!disposed&&video===element)fail(error);});
   }
  }
  function dispose(){
