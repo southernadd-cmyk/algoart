@@ -3,7 +3,8 @@ import {createPhiLightingStudy} from './phi-room-lighting-renderer.mjs';
 import {addPhiRoomLuminaire} from './phi-room-luminaires.mjs';
 import {createPhiFrameStudyMaterial} from './phi-frame-material.mjs';
 import {batchPhiPaintingFrames} from './phi-painting-frame-batch.mjs';
-import {applyRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs';
+import {applyRefinedPhiRoomLighting,refineRoomLightEntries,planRefinedPhiRoomLighting} from './phi-room-lighting-refined.mjs';
+import {PHI_ROOM_POOL_SIZE,PHI_ART_POOL_SIZE,chooseNearestPhiRoomAnchors} from './phi-bounded-light-pool.mjs';
 import {planPhiReceptionWindow,receptionWindowWallParts,addPhiReceptionWindow} from './phi-reception-window.mjs';
 import {advanceLiftDoor} from './phi-lift-motion.mjs';
 import {addPhiDeskHologram} from './phi-desk-hologram.mjs';
@@ -626,15 +627,73 @@ fittingGeometry.userData.galleryPersistent=true;
 for(const material of [...Object.values(galleryFinish),dark,frame,skylightGlass,fittingMaterial]){
   if(material?.isMaterial)material.userData.galleryPersistent=true;
 }
+// TEST ONLY: ?lightpool=1 limits changing per-floor lighting to three
+// persistent room spots and three artwork spots. ?lightpool=0 is the exact
+// existing 5-art + up-to-7-room baseline. No materials or paintings change.
+const phiBoundedLightPoolEnabled=new URLSearchParams(location.search).get('lightpool')==='1';
 const exhibitLightTargets=[];
 const phiRoomLightEntries=[];
-const exhibitSpotPool=Array.from({length:5},()=>{
+const phiBoundedRoomAnchors=[];
+const phiRoomSpotAssignments=Array(PHI_ROOM_POOL_SIZE).fill(null);
+const phiRoomSpotPool=phiBoundedLightPoolEnabled?Array.from({length:PHI_ROOM_POOL_SIZE},()=>{
+ const light=new THREE.SpotLight(0xfff3df,0,12,.70,.90,1.5);
+ light.name='phi-shadow-room-light';scene.add(light,light.target);
+ return light;
+}):[];
+const phiBoundedLightPoolStats={enabled:phiBoundedLightPoolEnabled,roomCapacity:phiBoundedLightPoolEnabled?PHI_ROOM_POOL_SIZE:null,
+ artCapacity:phiBoundedLightPoolEnabled?PHI_ART_POOL_SIZE:5,availableRooms:0,activeRooms:0,
+ moves:0,shadowsUpdated:0,selectedRoomIndices:[]};
+window.__phiBoundedLightPool=phiBoundedLightPoolStats;
+const exhibitSpotPool=Array.from({length:phiBoundedLightPoolEnabled?PHI_ART_POOL_SIZE:5},()=>{
   const light=new THREE.SpotLight('#fff6e8',0,9,.42,.76,1.7);
   scene.add(light,light.target);
   return light;
 });
+function preparePhiBoundedRoomLights(phi,elevation){
+ if(!phiBoundedLightPoolEnabled)return;
+ const refined=refineRoomLightEntries(phiBoundedRoomAnchors,phi);
+ const variants=planRefinedPhiRoomLighting(refined,phi.world?.toWorld);
+ for(let i=0;i<refined.length;i++){
+  const entry=refined[i],p=variants[i];
+  const dx=p.x-entry.mount.position.x,dz=p.z-entry.mount.position.z;
+  // Keep the original fixture and its φ-relative shift aligned.
+  for(const object of [entry.mount,entry.fallback]){
+   object.position.x+=dx;object.position.z+=dz;object.updateMatrixWorld(true);
+  }
+  const anchor=phiBoundedRoomAnchors[i];
+  anchor.position=new THREE.Vector3(p.x,elevation+ROOM_HEIGHT-.2,p.z);
+  anchor.target=new THREE.Vector3(p.x,elevation+1.1,p.z);
+  anchor.power=p.power;
+  anchor.roomIndex=entry.roomIndex;
+ }
+ phiBoundedLightPoolStats.availableRooms=phiBoundedRoomAnchors.length;
+ updatePhiBoundedRoomLights();
+}
+function updatePhiBoundedRoomLights(){
+ if(!phiBoundedLightPoolEnabled)return;
+ const closest=chooseNearestPhiRoomAnchors(phiBoundedRoomAnchors,rig.position);
+ for(let i=0;i<phiRoomSpotPool.length;i++){
+  const light=phiRoomSpotPool[i],anchor=closest[i]||null;
+  if(!anchor){light.intensity=0;phiRoomSpotAssignments[i]=null;continue;}
+  if(phiRoomSpotAssignments[i]!==anchor){
+   light.position.copy(anchor.position);
+   light.target.position.copy(anchor.target);
+   light.updateMatrixWorld();light.target.updateMatrixWorld();
+   if(light.castShadow){
+    light.shadow.needsUpdate=true;renderer.shadowMap.needsUpdate=true;
+    phiBoundedLightPoolStats.shadowsUpdated++;
+   }
+   phiRoomSpotAssignments[i]=anchor;
+   phiBoundedLightPoolStats.moves++;
+  }
+  light.intensity=anchor.power;
+ }
+ phiBoundedLightPoolStats.activeRooms=closest.length;
+ phiBoundedLightPoolStats.selectedRoomIndices=closest.map(x=>x.roomIndex);
+}
 function updateExhibitLighting(){
   if(!plan)return;
+  updatePhiBoundedRoomLights();
   const nearest=exhibitLightTargets.slice()
     .sort((a,b)=>a.position.distanceToSquared(rig.position)-b.position.distanceToSquared(rig.position));
   for(let i=0;i<exhibitSpotPool.length;i++){
@@ -1828,6 +1887,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   ?createPhiRoomVisibilityCuller({enabled:true,pieces:phi.pieces,
    rooms:phi.floor.mergedRooms,walls:phi.physical.walls}) : null;
  phiRoomLightEntries.length=0;
+ if(phiBoundedLightPoolEnabled)phiBoundedRoomAnchors.length=0;
  const staticArchitecture=[];
  const staticBlock=(...args)=>{const mesh=block(...args);staticArchitecture.push(mesh);return mesh;};
  if(globalThis.__phiReceptionTilePreview&&!receptionTilePreview)receptionTilePreview=createReceptionTileMaterial(THREE,{lowPower:galleryFinish.lowPower});
@@ -1968,11 +2028,18 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   const mount=new THREE.Group();mount.position.copy(centre);scene.add(mount);
   const fallback=block(.66,.12,.28,centre.x,centre.y-.1,centre.z,join);
   placeTwinSpotlight(THREE,mount,new THREE.Vector3(centre.x,elevation+1.45,centre.z),fallback);
-  const light=new THREE.SpotLight(0xfff3df,phiLightingOriginal?12:14,12,phiLightingOriginal?.66:.70,phiLightingOriginal?.8:.90,1.5);light.name='phi-shadow-room-light';
-  light.position.set(centre.x,elevation+ROOM_HEIGHT-.2,centre.z);
-  light.target.position.set(centre.x,elevation+1.1,centre.z);
-  scene.add(light,light.target);
-  if(exhibitDate!==RECEPTION)phiRoomLightEntries.push({light,mount,fallback,cell:{...cell},power:light.intensity});
+  if(phiBoundedLightPoolEnabled){
+   // Attach one original fixture per candidate room; only the nearest three
+   // are powered by persistent spotlight objects. No new shader light variant
+   // is introduced when the visitor enters another room or changes floors.
+   phiBoundedRoomAnchors.push({mount,fallback,cell:{...cell},power:phiLightingOriginal?12:14});
+  }else{
+   const light=new THREE.SpotLight(0xfff3df,phiLightingOriginal?12:14,12,phiLightingOriginal?.66:.70,phiLightingOriginal?.8:.90,1.5);light.name='phi-shadow-room-light';
+   light.position.set(centre.x,elevation+ROOM_HEIGHT-.2,centre.z);
+   light.target.position.set(centre.x,elevation+1.1,centre.z);
+   scene.add(light,light.target);
+   if(exhibitDate!==RECEPTION)phiRoomLightEntries.push({light,mount,fallback,cell:{...cell},power:light.intensity});
+  }
  }
  // Keep portal frames exactly aligned to the existing collision-wall
  // openings. Only these original, opaque, immovable surround meshes are
@@ -2763,8 +2830,11 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
      if(phiLiftProfiler)phiLiftProfiler.measure('transform-floor-meshes',()=>transformPhiActiveFloor(sceneBeforeConstruction));
      else transformPhiActiveFloor(sceneBeforeConstruction);
     }
-    if(phiLiftProfiler)phiLiftProfiler.measure('update-room-lights',()=>applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi));
-    else applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
+    const applyRoomLights=()=>phiBoundedLightPoolEnabled
+     ?preparePhiBoundedRoomLights(plan.phi,elevation)
+     :applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
+    if(phiLiftProfiler)phiLiftProfiler.measure('update-room-lights',applyRoomLights);
+    else applyRoomLights();
     phiLightingStudy?.editionChanged(elevation);
     phiGalleryMusic.setEmitters(phiSpeakerEmitters);
   }catch(error){
