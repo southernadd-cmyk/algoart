@@ -40,6 +40,7 @@ function intentV2(line,question){
  // A recognised subject wins over conversational words such as 'help' or 'special'.
  const kb=matchKnowledge(line);
  if(kb&&kb.score>=2)return intentV1(question);
+ if(/\b(golden ratio|phi|φ|fibonacci)\b/.test(line)&&has(line,['special','interesting','help']))return intentV1(question);
  if(has(line,['connected','connection','connect','link between','links','to do with','related to','relate','relationship between']))return 'connect';
  if(has(line,['notice','noticed','interesting','stand out','stands out','special','spot','spotted','what do you see','observe']))return 'notice';
  if(has(line,['compare','comparison','difference between','different from','versus','vs','which is more','which has more']))return 'compare';
