@@ -20,7 +20,7 @@ export {session,RULES};
 const words=s=>normalise(s).split(' ').filter(Boolean);
 const has=(line,list)=>list.some(x=>(' '+line+' ').includes(' '+x+' '));
 const ends=text=>/\?\s*$/.test(text);
-const t=w=>'“'+(w.displayTitle||w.title)+'”';
+const t=w=>w.displayTitle?w.displayTitle.replace(w.title,'“'+w.title+'”'):'“'+w.title+'”';
 const TITLE_STOP=new Set(['the','and','with','one','for','from','this','that','study','untitled','drawing','painting','work','piece','in','of','a','an','to']);
 
 export function buildVisitorKnowledge(input){
@@ -38,10 +38,10 @@ export function buildVisitorKnowledge(input){
 // ----------------------------------------------------------------- intents
 function intentV2(line,question){
  // A recognised subject wins over conversational words such as 'help' or 'special'.
+ if(has(line,['connected','connection','connect','link between','links','to do with','related to','relate','relationship between']))return 'connect';
  const kb=matchKnowledge(line);
  if(kb&&kb.score>=2)return intentV1(question);
  if(/\b(golden ratio|phi|φ|fibonacci)\b/.test(line)&&has(line,['special','interesting','help']))return intentV1(question);
- if(has(line,['connected','connection','connect','link between','links','to do with','related to','relate','relationship between']))return 'connect';
  if(has(line,['notice','noticed','interesting','stand out','stands out','special','spot','spotted','what do you see','observe']))return 'notice';
  if(has(line,['compare','comparison','difference between','different from','versus','vs','which is more','which has more']))return 'compare';
  if(has(line,['where have you been','where did you come from','where have you come from','where are you from','which floor','other floors','your visit','been here long','come here often']))return 'whereFrom';
