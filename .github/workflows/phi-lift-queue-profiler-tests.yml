@@ -1,4 +1,5 @@
 name: Verify test lift painting queue priority and profiling
+# Retired automatic trigger: old test tower experiment files were removed.
 on:
   workflow_dispatch:
   push:
