@@ -2,23 +2,6 @@ name: Verify test lift painting queue priority and profiling
 # Retired automatic trigger: old test tower experiment files were removed.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/phi-lift-queue-profiler-tests.yml'
-      - 'tests/phi-lift-queue-profiler.test.mjs'
-      - 'test/virtual-gallery/gallery-phi.js'
-      - 'test/virtual-gallery/phi-artwork-preload.mjs'
-      - 'test/virtual-gallery/phi-lift-painting-gpu.mjs'
-      - 'test/virtual-gallery/phi-room-geometry-stage.mjs'
-      - 'test/virtual-gallery/phi-lift-profile.mjs'
-      - 'test/virtual-gallery/phi-postfx-pass-profiler.mjs'
-      - 'test/virtual-gallery/phi-shadow-render-probe.mjs'
-      - 'test/virtual-gallery/phi-arrival-mesh-stager.mjs'
-      - 'gallery/visit/gallery-phi.js'
-      - 'gallery/visit/phi-arrival-mesh-stager.mjs'
-      - 'test/virtual-gallery/phi-painting-arrival-gate.mjs'
-      - 'test/virtual-gallery/phi-lift-indicator.mjs'
 permissions:
   contents: read
 jobs:
