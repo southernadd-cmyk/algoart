@@ -98,6 +98,12 @@ export function summariseLiftVisit(v){
    remainingRide:between(v,'destination-ready-in-ride','ride-finished'),
    arrival:between(v,'ride-finished','doors-opening')
   },
+  earlyShaderCompile:{
+   enabled:stages.some(s=>s.name.startsWith('destination-shader-precompile-')),
+   result:stages.find(s=>s.name==='destination-shader-precompile-finished')?.details||
+    stages.find(s=>s.name==='destination-shader-precompile-failed')?.details||null,
+   elapsedMs:between(v,'destination-shader-precompile-start','destination-shader-precompile-finished')
+  },
   stages:stages.map(s=>({name:s.name,elapsedMs:round(s.elapsedMs),
    ...(s.details==null?{}:{details:s.details})})),
   // Measured calls are evidence. Stage names merely indicate when they happened.
