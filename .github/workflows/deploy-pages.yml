@@ -102,6 +102,9 @@ jobs:
           grep -q 'visitor-v2/chat-v2.mjs' test/virtual-gallery/gallery-phi.js
           grep -q 'gallery-phi-bundle.js?v=test-chat-v2-' test/virtual-gallery/full-engine.html
 
+      - name: Verify walkthrough XSS regression
+        run: node --test tests/step-by-step-svg-attribute-safety.test.mjs
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
@@ -122,6 +125,14 @@ jobs:
           test -s _site/about/step-by-step/index.html
           test -s _site/gallery/visit/gallery-phi-bundle.js
           test -s _site/test/virtual-gallery/full-engine.html
+          test -s _site/test/virtual-gallery/gallery-phi-bundle.js
+          test -s _site/gallery/visit/index.html
+          test -s _site/js/generator.js
+          test -s _site/css/marker-font.css
+          if find _site -type d \\( -name node_modules -o -name .github -o -name automation -o -name .chat-v2-staging \\) | grep -q .; then
+            echo 'Internal directory exposed in Pages artifact' >&2
+            exit 1
+          fi
           if find _site -type f \( -name '*.log' -o -name '*-staging.zip' \) | grep -q .; then
             echo 'Unexpected development logs or staging archives in Pages artifact' >&2
             exit 1
