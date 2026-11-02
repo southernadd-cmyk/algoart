@@ -133,6 +133,8 @@ for(const [name,key] of Object.entries(editorKeys)){
 }
 if(incomingSettings.mode&&!names[incomingSettings.mode])delete incomingSettings.mode;
 if(incomingSettings.orientation&&!['landscape','portrait'].includes(incomingSettings.orientation))delete incomingSettings.orientation;
+// Restrict URL-provided paper colour before it reaches SVG markup.
+if(incomingSettings.paper&&!/^#[0-9a-f]{6}$/i.test(incomingSettings.paper))delete incomingSettings.paper;
 const editorHome=new URL('../../',location.href);
 let editorURL=new URL(editorHome);
 try{
@@ -205,7 +207,7 @@ if(capturedMaterial()||isAction()){
  return;
 }
 svg.setAttribute('viewBox','0 0 '+w+' '+h);svg.setAttribute('preserveAspectRatio','xMidYMid meet');svg.setAttribute('aria-label',i===0?'Blank paper, ready for the first mark':'Drawing with '+i+' of '+paths.length+' marker passes visible');
-svg.innerHTML='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+s.paper+'"/>'+paths.slice(0,i).map(p=>'<path d="'+esc(p.d)+'" fill="none" stroke="'+esc(p.stroke||'#262626')+'" stroke-width="'+num(p.width||1)+'" stroke-opacity="'+num(p.opacity??1)+'" stroke-linecap="'+esc(p.lineCap||'round')+'" stroke-linejoin="round"'+(p.dash?.length?' stroke-dasharray="'+p.dash.map(num).join(' ')+'" stroke-dashoffset="'+num(p.dashOffset||0)+'"':'')+'/>').join('')+($('phiGuides').checked?phiOverlay(w,h):'');
+svg.innerHTML='<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+esc(s.paper)+'"/>'+paths.slice(0,i).map(p=>'<path d="'+esc(p.d)+'" fill="none" stroke="'+esc(p.stroke||'#262626')+'" stroke-width="'+num(p.width||1)+'" stroke-opacity="'+num(p.opacity??1)+'" stroke-linecap="'+esc(p.lineCap||'round')+'" stroke-linejoin="round"'+(p.dash?.length?' stroke-dasharray="'+p.dash.map(num).join(' ')+'" stroke-dashoffset="'+num(p.dashOffset||0)+'"':'')+'/>').join('')+($('phiGuides').checked?phiOverlay(w,h):'');
 $('step').max=paths.length;$('step').value=i;$('counter').textContent=i+' / '+paths.length+' recorded source passes';
 if(!i){$('svgSource').textContent='No path yet';$('explanation').innerHTML='<h3>First, plan the composition</h3><p>'+explanations[s.mode]+'</p><h3>Then, prepare the pen</h3><p>Coordinates begin at (0, 0) in the top-left. X runs right and Y runs down. A seeded random sequence supplies repeatable wobble, pressure and repeated ink passes.</p>';$('markTitle').textContent='The blank page';$('markText').textContent='The canvas starts empty. Next, the selected engine determines where the first geometry will go.';$('markMath').textContent='φ = (1+√5)/2 = '+num(PHI)+'\nGolden angle = π(3−√5) = 137.5078°';return;}
 const p=paths[i-1],nums=[...(p.d||'').matchAll(/-?\d+(?:\.\d+)?(?:e[-+]?\d+)?/ig)].map(x=>Number(x[0]));const cmd=[...(p.d||'').matchAll(/[MLCQAZ]/ig)].map(x=>x[0]);
