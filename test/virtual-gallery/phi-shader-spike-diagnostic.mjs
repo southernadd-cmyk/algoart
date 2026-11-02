@@ -7,6 +7,7 @@ const enabled=new URLSearchParams(location.search).get('shadertrace')==='1';
 if(enabled){
  const programData=new WeakMap(),shaderData=new WeakMap();
  const calls=[],counts={},failures=[];
+ const lightVariants=new Map();
  let nextProgram=0,nextShader=0,worstCallMs=0;
  const cutoffMs=20,maxCalls=100;
  const round=n=>+n.toFixed(1);
@@ -44,9 +45,21 @@ if(enabled){
   for(const name of pnameNames)if(gl[name]===enumValue)return name;
   return typeof enumValue==='number'?'0x'+enumValue.toString(16):String(enumValue);
  };
+ // Group the shader fingerprints by compile-time light counts.
+ const lightSignature=source=>{
+  const fields=['NUM_DIR_LIGHTS','NUM_POINT_LIGHTS','NUM_SPOT_LIGHTS',
+   'NUM_DIR_LIGHT_SHADOWS','NUM_POINT_LIGHT_SHADOWS','NUM_SPOT_LIGHT_SHADOWS'];
+  const result={};
+  for(const field of fields){
+   const match=source.match(new RegExp('#define\\s+'+field+'\\s+(\\d+)'));
+   if(match)result[field]=Number(match[1]);
+  }
+  return Object.keys(result).length?result:null;
+ };
  const shaderDetails=item=>item?item.shaders.map(s=>({
   id:s.id,type:s.type===35633?'vertex':s.type===35632?'fragment':s.type,
-  hash:s.sourceHash,length:s.sourceLength
+  hash:s.sourceHash,length:s.sourceLength,
+  ...(s.lightCounts?{lightCounts:s.lightCounts}:{})
  })):[];
  const describe=(method,gl,args)=>{
   const p=(method==='getShaderParameter'||method==='compileShader'||method==='shaderSource')?null:programFor(args[0]);
@@ -98,6 +111,13 @@ if(enabled){
     }
     if(method==='shaderSource'&&s&&typeof args[1]==='string'){
      s.sourceLength=args[1].length;s.sourceHash=fnv(args[1]);
+     if(s.type===35632){
+      s.lightCounts=lightSignature(args[1]);
+      const key=JSON.stringify(s.lightCounts||{unspecified:true});
+      const record=lightVariants.get(key)||{lightCounts:s.lightCounts,count:0,uniqueSources:new Set()};
+      record.count++;record.uniqueSources.add(s.sourceHash);
+      lightVariants.set(key,record);
+     }
     }
     // The capture is scoped to an active lift. Program metadata is maintained
     // outside lifts so first-use shader programs can be identified later.
@@ -140,6 +160,9 @@ if(enabled){
    programsObserved:nextProgram,shadersObserved:nextShader,worstCallMs:round(worstCallMs),
    byMethod:Object.fromEntries(Object.entries(counts).map(([name,value])=>
     [name,{...value}])),
+   lightShaderVariants:[...lightVariants.values()].map(x=>({
+    lightCounts:x.lightCounts,count:x.count,uniqueSources:x.uniqueSources.size
+   })).sort((a,b)=>b.count-a.count),
    slowCalls:[...calls].sort((a,b)=>b.durationMs-a.durationMs),
    interpretation:'A long getProgramParameter call indicates CPU/driver blocking at this query, not proof that shader compilation itself consumed the entire interval. Correlate with render-pass and lift-operation intervals.'
   })
