@@ -62,7 +62,11 @@ void main(){
  // the main scene pass and this artwork-only mask pass.
  float nearest=eyeDistance(originalDepth);
  float artwork=eyeDistance(gl_FragCoord.z);
+ // Close to the near plane, depth rasterisation diverges most strongly.
+ // Increase tolerance only within 20 cm; preserve tight occlusion elsewhere.
+ float closeFactor=1.0-smoothstep(cameraNear,0.20,artwork);
  float tolerance=max(minimumDepthTolerance,nearest*0.0005);
+ tolerance=max(tolerance,closeFactor*0.012);
  if(artwork>nearest+tolerance)discard;
  gl_FragColor=vec4(1.);
 }`
