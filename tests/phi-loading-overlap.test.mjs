@@ -18,7 +18,7 @@ test('staged gallery warm-up still compiles and uploads exact textures, but skip
   onStage:(name,value)=>stages.push({name,...value})});
  assert.deepEqual(ops,['compile','frame','upload','frame']);
  assert.equal(stages[0].skipFinalRender,true);
- assert.equal(stages[0].attemptedUploads,1);
+ assert.equal(stages[0].textures,1);
  const normal=[];
  await warmGalleryEntry({
   renderer:{...renderer,render(){normal.push('render');}},
@@ -55,7 +55,7 @@ test('loading changes are isolated to test, retain A/B switches and preload iden
  assert.match(source,/phiPaintingGate\.wait/);
  const page=readFileSync(new URL('../test/virtual-gallery/full-engine.html',import.meta.url),'utf8');
  const preload=page.match(/<link rel="modulepreload" href="([^"]+)"/)?.[1];
- const imported=page.match(/await import\('([^']+)'\)/)?.[1];
+ const imported=[...page.matchAll(/await import\('([^']+)'\)/g)].map(m=>m[1]).find(url=>url.includes('gallery-phi-bundle.js'));
  assert.equal(preload,imported);
 });
 
