@@ -1,35 +1,35 @@
 {
-  "generatedAt": "2026-11-03T14:16:50.644Z",
-  "commit": "08810b0e64d20a5cff321dd3175759f577c23131",
+  "generatedAt": "2026-11-03T14:20:29.097Z",
+  "commit": "8f06763af29be2f4350497462ab343d6785ad9cf",
   "note": "Screenshots of actual Three.js render, captured by Chromium using software WebGL. No image synthesis.",
   "captures": [
     {
       "label": "tower",
       "file": "docs/images/exhibition-tower-2026-11-03.jpg",
-      "bytes": 98542,
+      "bytes": 98558,
       "date": "live architectural exterior",
       "source": "real WebGL frame / gallery-phi-bundle.js"
     },
     {
       "label": "reception",
       "file": "docs/images/exhibition-reception-2026-11-03.jpg",
-      "bytes": 202225,
+      "bytes": 202269,
       "date": "live reception, hologram and furnishing",
       "source": "real WebGL frame / gallery-phi-bundle.js"
     },
     {
       "label": "touchdesigner",
       "file": "docs/images/exhibition-touchdesigner-2026-11-03.jpg",
-      "bytes": 51219,
+      "bytes": 173690,
       "date": "reception TouchDesigner exhibition area",
       "source": "real WebGL frame / gallery-phi-bundle.js",
       "camera": {
         "ok": true,
         "kind": "td",
         "position": [
-          22.830509831248428,
+          22.63050983124843,
           1.7500000000000002,
-          8.542882373436317
+          9.935254915624212
         ],
         "target": [
           26.330509831248428,
@@ -42,7 +42,7 @@
     {
       "label": "gallery-floor",
       "file": "docs/images/exhibition-gallery-floor-2026-11-03.jpg",
-      "bytes": 136794,
+      "bytes": 173415,
       "date": "28 October 2026 upper-floor gallery, visitor looking at a painting",
       "source": "real WebGL frame / gallery-phi-bundle.js",
       "paintings": 9,
