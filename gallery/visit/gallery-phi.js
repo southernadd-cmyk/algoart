@@ -268,13 +268,14 @@ if(GALLERY_DEBUG)window.__phiEditorialCapture={
     const second=phiReceptionLivingMonitor?.banks?.[1];
     if(!first?.parent||!second?.parent)return {ok:false,reason:'TouchDesigner monitor banks not ready'};
     first.updateWorldMatrix(true,false);second.updateWorldMatrix(true,false);
-    const centre=first.getWorldPosition(new THREE.Vector3()).add(
-      second.getWorldPosition(new THREE.Vector3())).multiplyScalar(.5);
+    // Frame the bank showing actual visual studies, not the second bank's
+    // 'animations forthcoming' placeholders.
+    const centre=first.getWorldPosition(new THREE.Vector3());
     const normal=new THREE.Vector3(0,0,1).transformDirection(first.matrixWorld).normalize();
-    const view=new THREE.PerspectiveCamera(63,camera.aspect,.05,130);
-    view.position.copy(centre).addScaledVector(normal,3.7);
+    const view=new THREE.PerspectiveCamera(68,camera.aspect,.05,130);
+    view.position.copy(centre).addScaledVector(normal,3.5);
     view.position.y=centre.y-1.2;
-    const target=centre.clone();target.y=centre.y-.5;
+    const target=centre.clone();target.y=centre.y-.6;
     view.lookAt(target);
     renderer.setAnimationLoop(null);renderer.render(scene,view);
     return {ok:true,kind:'td',position:view.position.toArray(),target:target.toArray(),banks:2};
@@ -284,27 +285,40 @@ if(GALLERY_DEBUG)window.__phiEditorialCapture={
     // Only wall paintings have a front-facing normal; sculptures have none.
     const candidates=artExhibits.filter(a=>a.study?.image&&a.normal?.lengthSq()>.8);
     if(!candidates.length)return {ok:false,reason:'No paintings positioned'};
-    // Choose a real position inside the walkable exhibition, away from the lift.
+    // Prioritise a proper gallery-room view with the frame and wall visible,
+    // not a near-macro view that merely reproduces the source artwork.
     const lift=liftCabinPosition||phiLiftCabin?.position||new THREE.Vector3();
     const options=[];
-    for(const art of candidates)for(const distance of [3,2.7,2.4,2.1]){
-      const eye=art.position.clone().addScaledVector(art.normal.clone().normalize(),distance);
+    for(const art of candidates)for(const distance of [5.5,5,4.5,4,3.6,3.2,2.8]){
+      const normal=art.normal.clone().normalize();
+      const eye=art.position.clone().addScaledVector(normal,distance);
       eye.y=currentFloor*FLOOR_SPACING+1.68;
       if(!plan.phi.canWalk(eye.x,eye.z))continue;
-      options.push({art,eye,distance,liftDistance:Math.hypot(eye.x-lift.x,eye.z-lift.z)});
+      // Must be inside the artwork's own room, not across a separating wall.
+      const local=plan.phi.world.toLocal(eye.x,eye.z);
+      const pieces=plan.phi.floor.mergedRooms[art.room]?.pieces||[];
+      if(!pieces.some(p=>local.x>=p.x+.2&&local.x<=p.x+p.w-.2&&
+        local.z>=p.z+.2&&local.z<=p.z+p.h-.2))continue;
+      const liftDistance=Math.hypot(eye.x-lift.x,eye.z-lift.z);
+      if(liftDistance<4)continue;
+      options.push({art,eye,distance,liftDistance});
     }
-    options.sort((a,b)=>b.liftDistance-a.liftDistance||b.distance-a.distance);
+    // Distance and breathing space around the work matter more than tower height.
+    options.sort((a,b)=>b.distance-a.distance||
+      (a.art.width||3)-(b.art.width||3)||b.liftDistance-a.liftDistance);
     const choice=options[0];
-    if(!choice)return {ok:false,reason:'No safe visitor viewpoint in front of a painting'};
+    if(!choice)return {ok:false,reason:'No walkable in-room camera with space around the painting'};
     const {art,eye,distance}=choice;
-    const view=new THREE.PerspectiveCamera(54,camera.aspect,.05,100);
+    const view=new THREE.PerspectiveCamera(70,camera.aspect,.05,100);
     const target=art.position.clone();
-    // From the physical gallery room, looking at the painting and a little surrounding wall.
+    // The gallery is part of the picture: broad perspective includes frame,
+    // wall surface and room, with the chosen artwork still the focal point.
     phiRoomVisibilityCuller?.restore();
     view.position.copy(eye);view.lookAt(target);
     renderer.setAnimationLoop(null);renderer.render(scene,view);
     return {ok:true,kind:'painting',position:eye.toArray(),target:target.toArray(),
       title:art.study.title,date:exhibitDate,paintings:candidates.length,
+      width:art.width,room:art.room,viewFov:70,
       metresFromPainting:distance,metresFromLift:+choice.liftDistance.toFixed(2)};
   },
   resume(){renderer.setAnimationLoop(tick);}
@@ -2207,7 +2221,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   // exist. Do not place mandatory work behind optional furniture or visitors.
   if(viaLift)attachPainting();
   else deferredGalleryJobs.unshift(attachPainting);
-  artExhibits.push({study,position:face.position.clone(),normal:new THREE.Vector3(p.normal.x,0,p.normal.z)});
+  artExhibits.push({study,position:face.position.clone(),normal:new THREE.Vector3(p.normal.x,0,p.normal.z),room:p.room,width:p.width,height});
  }
  // Approved painting-caption batching is enabled on live by default.
  // ?captionbatch=0 preserves the original caption path for fast rollback.
