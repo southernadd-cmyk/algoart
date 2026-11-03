@@ -4,6 +4,8 @@ import {chromium} from 'playwright';
 import {mkdir,writeFile} from 'node:fs/promises';
 
 const OUT='docs/images';
+// Each automated run writes genuinely new documentary captures under its capture date.
+const CAPTURE_DATE=new Date().toISOString().slice(0,10);
 const BASE='http://127.0.0.1:4173/gallery/visit/?debug=1';
 await mkdir(OUT,{recursive:true});
 const browser=await chromium.launch({headless:true,args:[
@@ -31,7 +33,7 @@ try {
  const shot=async (label,date,viewFn)=>{
   await page.evaluate(viewFn);
   await page.waitForTimeout(350);
-  const file=OUT+'/exhibition-'+label+'-2026-11-01.jpg';
+  const file=OUT+'/exhibition-'+label+'-'+CAPTURE_DATE+'.jpg';
   const bytes=await page.screenshot({path:file,type:'jpeg',quality:86,timeout:90000});
   if(bytes.length<25000)throw Error('Suspiciously small gallery image: '+label+' '+bytes.length);
   record.push({label,file,bytes:bytes.length,date,source:'real WebGL frame / gallery-phi-bundle.js'});
