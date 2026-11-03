@@ -82,7 +82,7 @@ try {
  const galleryBytes=await page.screenshot({path:galleryFile,type:'jpeg',quality:90,timeout:90000});
  if(galleryBytes.length<30000)throw Error('Suspiciously small gallery floor screenshot '+galleryBytes.length);
  record.push({label:'gallery-floor',file:galleryFile,bytes:galleryBytes.length,
-   date:'28 October 2026 upper-floor gallery, visitor looking at a painting',
+   date:'28 October 2026 upper-floor gallery, visitor looking at a painting (sculpture-clear sightline)',
    source:'real WebGL frame / gallery-phi-bundle.js',
    paintings:roomState.paintings,paintingsLoaded:roomState.paintingsLoaded,camera:paintView});
  console.log('CAPTURE '+JSON.stringify(record.at(-1)));
