@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import * as THREE from 'three';
 import {PHI_FX_PRESETS,PHI_FX_CONTROLS,PHI_FX_DEFAULTS,phiFXSettings,phiFXExport,
- phiFXSummary,phiGlowTargets} from '../gallery/visit/phi-post-fx.mjs';
+ phiFXSummary,phiGlowTargets,createStaticGrainEffect} from '../gallery/visit/phi-post-fx.mjs';
+import {BlendFunction} from 'postprocessing';
 
 test('three tunable presets and an unprocessed original, with clamped numeric sliders',()=>{
  assert.deepEqual(PHI_FX_PRESETS,['original','architectural','luminous','photographic']);
@@ -20,7 +21,7 @@ test('approved architectural settings are retained exactly',()=>{
  const approved={
   brightness:-.14,contrast:-.19,saturation:.25,bloomIntensity:1.4,
   bloomThreshold:.825,bloomRadius:.3,aoIntensity:1.2,aoRadius:.22,
-  vignette:.475,vignetteOffset:.525,grain:.04,bokeh:1.5,focusRange:2.6,
+  vignette:.475,vignetteOffset:.525,grain:.032,bokeh:1.5,focusRange:2.6,
   glowMode:'all',dofMode:'off',aoSamples:16
  };
  assert.deepEqual(PHI_FX_DEFAULTS.architectural,approved);
@@ -126,4 +127,16 @@ test('empty floors skip selective bloom without disabling it when returning to r
  assert.match(fx,/found\.length&&cfg\.glowMode!=='off'&&cfg\.bloomIntensity>0/);
  assert.match(fx,/if\(on&&selection&&now-lastGlowScan>1400\)/);
  assert.doesNotMatch(fx,/if\(on&&effects\?\.selectedPass\.enabled&&now-lastGlowScan/);
+});
+
+test('architectural grain is fixed in screen space rather than animated frame-to-frame',()=>{
+ const effect=createStaticGrainEffect(),shader=effect.getFragmentShader();
+ assert.equal(effect.blendMode.blendFunction,BlendFunction.SCREEN);
+ assert.match(shader,/rand\\(uv\\)/);
+ assert.doesNotMatch(shader,/\\btime\\b|\\bdeltaTime\\b/);
+ const source=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
+ assert.doesNotMatch(source,/new NoiseEffect\\(/);
+ assert.match(source,/grain=createStaticGrainEffect\\(\\)/);
+ assert.match(source,/reducedMotion\\?\\.matches\\?0:s\\.grain/);
+ assert.equal(phiFXSettings('architectural',{grain:.032}).grain,.032);
 });

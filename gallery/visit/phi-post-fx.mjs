@@ -3,7 +3,7 @@ import {N8AOPostPass} from 'n8ao';
 import {
  EffectComposer,RenderPass,NormalPass,EffectPass,BloomEffect,SelectiveBloomEffect,
  SSAOEffect,BrightnessContrastEffect,HueSaturationEffect,VignetteEffect,
- NoiseEffect,DepthOfFieldEffect,ToneMappingEffect,ToneMappingMode
+ Effect,BlendFunction,DepthOfFieldEffect,ToneMappingEffect,ToneMappingMode
 } from 'postprocessing';
 import {createArtProtection} from './phi-art-protection.mjs';
 
@@ -19,7 +19,7 @@ export const PHI_FX_CONTROLS=Object.freeze([
  {section:'Depth',key:'aoRadius',label:'Contact shadow radius',min:.01,max:.75,step:.01},
  {section:'Atmosphere',key:'vignette',label:'Edge darkening',min:0,max:1.5,step:.025},
  {section:'Atmosphere',key:'vignetteOffset',label:'Vignette coverage',min:0,max:1,step:.025},
- {section:'Atmosphere',key:'grain',label:'Film grain',min:0,max:.4,step:.01},
+ {section:'Atmosphere',key:'grain',label:'Static film grain',min:0,max:.4,step:.002},
  {section:'Focus',key:'bokeh',label:'Background blur',min:0,max:8,step:.1},
  {section:'Focus',key:'focusRange',label:'Focus range (m)',min:.1,max:8,step:.1}
 ]);
@@ -61,6 +61,16 @@ export function phiFXSummary(samples){
  return {median:+s[Math.floor(s.length*.5)].toFixed(1),p95:+s[Math.floor(s.length*.95)].toFixed(1),
   stalls:s.filter(ms=>ms>50).length,count:s.length};
 }
+// The stock NoiseEffect animates its rand(uv * (1.0 + time)) shader each frame.
+// Use the same SCREEN blend and spatial noise, but remove time entirely so
+// a stationary camera produces the same grain pixels on every frame.
+const STATIC_GRAIN_FRAGMENT=`void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
+ float value=rand(uv);
+ outputColor=vec4(vec3(value),inputColor.a);
+}`;
+export function createStaticGrainEffect(){
+ return new Effect('StaticGrainEffect',STATIC_GRAIN_FRAGMENT,{blendFunction:BlendFunction.SCREEN});
+}
 const glowRoots=new Set(['phi-reception-tower-hologram','phi-reception-three-living-monitors',
  'phi-reception-monitor-bank-two','phi-reception-two-large-rear-wall-monitors']);
 const glowFaces=new Set(['monitor-screen','large-monitor-video-pane','recursive-smallest-video-mosaic',
@@ -86,6 +96,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
  let previous=0,lastMode='',lastUI=0,lastGlowScan=0,selectedIds='';
  let aoProvider=new URLSearchParams(location.search).get('ao')==='ssao'?'ssao':'n8ao';
  const artProtectionEnabled=new URLSearchParams(location.search).get('artprotection')!=='0';
+ const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
  stats.aoProvider=aoProvider;
  // A small, collapsible workshop: all sliders are native, keyboard-accessible and live.
  const panel=document.createElement('details');panel.id='phi-post-fx';panel.open=true;
@@ -226,7 +237,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   const dof=new DepthOfFieldEffect(camera,{focusDistance:3,focusRange:1.5,bokehScale:2,resolutionScale:.5});
   const focusPass=new EffectPass(camera,dof);compositor.addPass(focusPass);
   const colour=new BrightnessContrastEffect(),sat=new HueSaturationEffect();
-  const vignette=new VignetteEffect({eskil:false}),grain=new NoiseEffect({premultiply:false});
+  const vignette=new VignetteEffect({eskil:false}),grain=createStaticGrainEffect();
   compositor.addPass(new EffectPass(camera,colour,sat,grain,vignette,
    new ToneMappingEffect({mode:ToneMappingMode.NEUTRAL})));
   if(artProtection){
@@ -244,7 +255,8 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   const s=settings[preset],e=effects;
   e.colour.brightness=s.brightness;e.colour.contrast=s.contrast;e.sat.saturation=s.saturation;
   e.vignette.darkness=s.vignette;e.vignette.offset=s.vignetteOffset;
-  e.grain.blendMode.opacity.value=s.grain;
+  e.grain.blendMode.opacity.value=reducedMotion?.matches?0:s.grain;
+   stats.grainOpacity=e.grain.blendMode.opacity.value;
   for(const glow of [e.fullBloom,e.selectedBloom]){
    glow.intensity=s.bloomIntensity;glow.luminanceMaterial.threshold=s.bloomThreshold;
    glow.mipmapBlurPass.radius=s.bloomRadius;
@@ -264,6 +276,7 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
   if(e.selectedPass.enabled)scanGlow();
   stats.parameters={...s};
  }
+ reducedMotion?.addEventListener?.('change',apply);
  function setPreset(next){
   if(!PHI_FX_PRESETS.includes(next)||renderer?.xr?.isPresenting)return false;
   if(next!=='original'&&!composer){
