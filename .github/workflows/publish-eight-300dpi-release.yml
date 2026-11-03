@@ -1,0 +1,65 @@
+name: Publish PROPORTION PIECE eight-print archive to GitHub Releases
+on:
+  push:
+    branches: [print/publish-eight-300dpi-20261103]
+    paths: ['.github/workflows/publish-eight-300dpi-release.yml']
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download finished eight-image render (no live changes)
+        uses: actions/download-artifact@v4
+        with:
+          repository: southernadd-cmyk/algoart
+          run-id: 41689980364
+          name: PROPORTION_PIECE_8_IMAGES_300DPI
+          github-token: ${{ github.token }}
+          path: artwork
+      - name: Validate and package exactly eight print-resolution PNG files
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_STORED
+          import struct
+          files=sorted(Path('artwork').glob('*.png'))
+          assert len(files)==8, f'Expected 8 PNGs, got {len(files)}'
+          for p in files:
+              b=p.read_bytes()
+              assert b[:8]==b'\x89PNG\r\n\x1a\n',p.name
+              width,height=struct.unpack('>II',b[16:24])
+              assert (width,height)==(4900,3500),(p.name,width,height)
+              # Verify the print metadata is 11811 pixels per metre (~300 dpi).
+              pos=8
+              has_dpi=False
+              while pos<len(b):
+                  length=struct.unpack('>I',b[pos:pos+4])[0]
+                  kind=b[pos+4:pos+8]
+                  if kind==b'pHYs':
+                      px,py,unit=struct.unpack('>IIB',b[pos+8:pos+17])
+                      has_dpi=(px,py,unit)==(11811,11811,1)
+                      break
+                  pos+=12+length
+              assert has_dpi,f'Missing 300 dpi metadata: {p.name}'
+          target=Path('PROPORTION_PIECE_8_IMAGES_300DPI.zip')
+          with ZipFile(target,'w',ZIP_STORED) as z:
+              for p in files:z.write(p,p.name)
+          with ZipFile(target) as z:
+              assert len(z.namelist())==8
+              assert z.testzip() is None
+          print(f'VALIDATED: {target.name} contains exactly 8 original PNGs, 4900x3500, 300dpi, {target.stat().st_size} bytes')
+          PY
+      - name: Publish one direct-download ZIP as dedicated release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: southernadd-cmyk/algoart
+        shell: bash
+        run: |
+          gh release create proportion-piece-eight-prints-2026-11-03             "PROPORTION_PIECE_8_IMAGES_300DPI.zip"             --target main             --title "PROPORTION PIECE — Eight print-ready compositions (300 dpi)"             --notes "Eight genuine PROPORTION PIECE compositions, one for each composition system. Eight palettes and all five simulated materials are represented across the selection. Each file is a 4900 × 3500 pixel, 300 dpi PNG. One ZIP; no enlargements. Generated directly from the PROPORTION PIECE source renderer."             --latest=false
+          gh release view proportion-piece-eight-prints-2026-11-03 --json url,assets --jq '{url,assets:[.assets[]|{name,size,url}]}'
