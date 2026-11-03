@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PROPORTION PIECE · startup benchmark (TEST)</title>
+<style>
+:root{color-scheme:dark;font:14px system-ui,-apple-system,Segoe UI,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#111;color:#eee}
+header{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 15px;background:#1b1c20;border-bottom:1px solid #393b41}
+header strong{letter-spacing:.04em}header small{color:#aaa}
+button{border:1px solid #797b82;border-radius:5px;background:#30333b;color:white;padding:8px 12px;cursor:pointer}button:hover{background:#414651}button:disabled{opacity:.4}
+main{position:relative;height:calc(100dvh - 62px);min-height:400px}
+iframe{width:100%;height:100%;display:block;border:0;background:#080808}
+aside{position:absolute;top:12px;right:12px;background:#17191df0;border:1px solid #555;border-radius:8px;padding:14px;width:min(360px,calc(100vw - 24px));max-height:75%;overflow:auto;box-shadow:0 8px 30px #0008}
+aside h2{font-size:15px;margin:0 0 8px}aside p{font-size:12px;color:#bbb;line-height:1.5}
+dl{display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0}dt{color:#aaa}dd{margin:0;font-variant-numeric:tabular-nums}
+#status{font-weight:600}pre{max-height:140px;overflow:auto;background:#101115;padding:8px;font:11px ui-monospace,monospace;white-space:pre-wrap}
+@media(max-width:700px){header{gap:6px}header small{display:none}main{height:calc(100dvh - 95px)}}
+</style>
+</head>
+<body>
+<header>
+<strong>PROPORTION PIECE · startup bench</strong><small>TEST ONLY · does not change the live tower</small>
+<button id="start">Run benchmark</button><button id="export" disabled>Export JSON</button><button id="copy" disabled>Copy JSON</button>
+<label><input id="autoclick" type="checkbox"> Enter on ready</label>
+</header>
+<main>
+<iframe id="tower" title="Independent test tower" allow="fullscreen; xr-spatial-tracking"></iframe>
+<aside>
+<h2>Cold / warm startup timing</h2>
+<div id="status" role="status">Select Run benchmark</div>
+<dl id="metrics"></dl>
+<p>For a real cold run, open DevTools → Network → <b>Disable cache</b> (with DevTools open), then click Run. Turn it off and run again for a warm comparison. Changing the URL alone does not clear the browser cache.</p>
+<p>Readiness = the test tower's <b>Enter the gallery</b> button is enabled. Optional auto-enter records the first rendered frames after entry. GPU timing is not measured by this harness.</p>
+<pre id="detail">No run yet.</pre>
+</aside>
+</main>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id), frame=$('tower'), metrics=$('metrics');
+let run=null, last=null, poll=null, timeout=null, raf=0;
+const round=n=>Number.isFinite(n)?Math.round(n*10)/10:null;
+const median=values=>{if(!values.length)return null;const sorted=[...values].sort((a,b)=>a-b);return round(sorted[Math.floor(sorted.length/2)]);};
+const p95=values=>{if(!values.length)return null;const sorted=[...values].sort((a,b)=>a-b);return round(sorted[Math.ceil(sorted.length*.95)-1]);};
+function show(){
+ const data=run||last;if(!data)return;
+ const m=data.metrics||{},f=m.frames||{},rows=[
+ ['Ready since navigation',m.readyMs==null?'—':round(m.readyMs)+' ms'],
+ ['DOM content loaded',m.domContentLoadedMs==null?'—':round(m.domContentLoadedMs)+' ms'],
+ ['Window load',m.loadMs==null?'—':round(m.loadMs)+' ms'],
+ ['First paint',m.firstPaintMs==null?'—':round(m.firstPaintMs)+' ms'],
+ ['First contentful paint',m.firstContentfulPaintMs==null?'—':round(m.firstContentfulPaintMs)+' ms'],
+ ['Module / prep detail',m.entryPreparation?'Captured':'Not exposed'],
+ ['Sampled frames',f.count||0],
+ ['Median / p95 frame',f.count?f.medianMs+' / '+f.p95Ms+' ms':'—'],
+ ['Frames > 50ms',f.over50??'—'],
+ ['Resources / transfer',m.resources?m.resources.count+' / '+Math.round(m.resources.transferBytes/1024)+' KiB':'—']
+ ];
+ metrics.replaceChildren(...rows.flatMap(([k,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=String(v);return[dt,dd];}));
+ $('detail').textContent=data.error||data.notes?.join('\n')||'Ready to export after the run.';
+}
+function clearTimers(){if(poll)clearInterval(poll);if(timeout)clearTimeout(timeout);if(raf)cancelAnimationFrame(raf);poll=timeout=raf=null;}
+function clean(){clearTimers();run=null;}
+function observe(win){
+ const nav=win.performance.getEntriesByType('navigation')[0];
+ const paints=win.performance.getEntriesByType('paint');
+ const resourceEntries=win.performance.getEntriesByType('resource');
+ const res=resourceEntries.map(x=>({name:x.name.replace(win.location.origin,''),type:x.initiatorType,startMs:round(x.startTime),durationMs:round(x.duration),transferBytes:x.transferSize||0,decodedBytes:x.decodedBodySize||0}));
+ const transferBytes=res.reduce((n,x)=>n+x.transferBytes,0),decodedBytes=res.reduce((n,x)=>n+x.decodedBytes,0);
+ const top=res.slice().sort((a,b)=>b.durationMs-a.durationMs).slice(0,20);
+ return {
+  domContentLoadedMs:nav?round(nav.domContentLoadedEventEnd):null,
+  loadMs:nav?round(nav.loadEventEnd):null,
+  responseEndMs:nav?round(nav.responseEnd):null,
+  firstPaintMs:round(paints.find(x=>x.name==='first-paint')?.startTime),
+  firstContentfulPaintMs:round(paints.find(x=>x.name==='first-contentful-paint')?.startTime),
+  entryPreparation:win.__phiEntryPreparation||null,
+  resources:{count:res.length,transferBytes,decodedBytes,topSlowest:top,all:res},
+  navigationType:nav?.type||null
+ };
+}
+function finalize(error){
+ if(!run)return;
+ clearTimers();
+ if(error)run.error=error;
+ try{Object.assign(run.metrics,observe(frame.contentWindow));}
+ catch(e){run.notes.push('Could not read test tower metrics: '+String(e));}
+ const a=run.samples,delta=a.slice(1).map((v,i)=>v-a[i]).filter(v=>v>0);
+ run.metrics.frames={count:delta.length,medianMs:median(delta),p95Ms:p95(delta),maxMs:delta.length?round(Math.max(...delta)):null,over50:delta.filter(v=>v>50).length};
+ run.endedAt=new Date().toISOString();
+ run.elapsedMs=round(performance.now()-run.startedParentTime);
+ delete run.startedParentTime;delete run.samples;
+ last=run;run=null;
+ $('status').textContent=error?'Run ended: '+error:'Run complete — export JSON';
+ $('start').disabled=false;$('export').disabled=false;$('copy').disabled=false;
+ show();
+}
+function captureFrames(){
+ if(!run)return;
+ const w=frame.contentWindow;
+ try{
+  if(w.document.hidden)return;
+  run.samples.push(w.performance.now());
+ }catch(e){return finalize('Test frame became inaccessible');}
+ if(run.samples.length>=151)return finalize(null);
+ raf=requestAnimationFrame(captureFrames);
+}
+function checkReady(){
+ if(!run)return;
+ let w,button;
+ try{w=frame.contentWindow;button=w.document.getElementById('enter');}
+ catch(e){return finalize('Test tower must be on the same origin');}
+ if(!button||button.disabled)return;
+ run.metrics.readyMs=round(w.performance.now());
+ run.metrics.buttonText=button.textContent.trim();
+ run.notes.push('Entry enabled after '+run.metrics.readyMs+' ms.');
+ clearInterval(poll);poll=null;
+ $('status').textContent='Ready — sampling frames';
+ if($('autoclick').checked)button.click();
+ run.samples=[];
+ raf=requestAnimationFrame(captureFrames);
+}
+function start(){
+ clean();$('start').disabled=true;$('export').disabled=true;$('copy').disabled=true;
+ const url=new URL('./full-engine.html',location.href);
+ url.searchParams.set('startupbench',Date.now().toString(36));
+ run={format:'PROPORTION PIECE test startup benchmark',version:1,
+  startedAt:new Date().toISOString(),startedParentTime:performance.now(),
+  target:url.pathname,mode:$('autoclick').checked?'auto-enter':'pre-entry',
+  environment:{userAgent:navigator.userAgent,deviceMemory:navigator.deviceMemory??null,hardwareConcurrency:navigator.hardwareConcurrency??null,screen:{width:screen.width,height:screen.height},dpr:devicePixelRatio},
+  metrics:{},samples:[],notes:['Cold/warm state must be controlled with browser DevTools; resource transfer sizes alone are not a reliable cache classification.','Frame timings are main-thread requestAnimationFrame intervals, not GPU timings.']};
+ $('status').textContent='Loading isolated test tower…';$('detail').textContent='Collecting navigation and readiness';
+ frame.onload=()=>{if(!run)return;poll=setInterval(checkReady,50);checkReady();};
+ timeout=setTimeout(()=>finalize('Readiness timeout after 90 seconds'),90000);
+ frame.src=url.href;
+}
+function exportJson(){if(!last)return;const blob=new Blob([JSON.stringify(last,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='proportion-piece-startup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+$('start').addEventListener('click',start);$('export').addEventListener('click',exportJson);
+$('copy').addEventListener('click',async()=>{if(!last)return;try{await navigator.clipboard.writeText(JSON.stringify(last,null,2));$('status').textContent='Report copied';}catch(e){$('status').textContent='Clipboard blocked: export JSON instead';}});
+window.addEventListener('beforeunload',clearTimers);
+})();
+</script>
+</body>
+</html>
