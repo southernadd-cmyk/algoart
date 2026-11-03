@@ -66,7 +66,7 @@ for(let i=0;i<defs.length;i++){
      const A=window.AlgoArt;
      A.rendererVersion=9;
      A.phiFramingEnabled=false;
-     if(A.watercolourV2sOptions)A.watercolourV2sOptions.fitToSheet=false;
+     if(A.watercolourV2sOptions)A.watercolourV2sOptions.fitToSheet=true;
      const s={...A.readSettings(),...job.defaults,seed:job.spec.seed,mode:job.spec.mode,
        orientation:'landscape',palette:job.spec.palette,paper:'#f5f0e6',
        colourCount:8,saturation:81,brightness:52,
