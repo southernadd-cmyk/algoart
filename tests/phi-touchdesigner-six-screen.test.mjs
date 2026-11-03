@@ -4,6 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import * as THREE from 'three';
 import {createTouchDesignerMonitorMedia,validateTouchDesignerSixScreen,TOUCHDESIGNER_SIX_SCREEN_MANIFEST} from '../gallery/visit/phi-touchdesigner-media.mjs';
+import {initTouchDesignerMotionControl,isTouchDesignerMotionPaused,setTouchDesignerMotionPaused} from '../gallery/visit/phi-touchdesigner-motion.mjs';
 const manifest=JSON.parse(await readFile(TOUCHDESIGNER_SIX_SCREEN_MANIFEST));
 
 test('six-screen atlas has verified bytes and a fixed safe 3 by 2 layout',async()=>{
@@ -19,6 +20,7 @@ test('six-screen atlas has verified bytes and a fixed safe 3 by 2 layout',async(
 
 test('one player and texture feed six distinct crops, pause together and restore both UV axes',async()=>{
  const oldDocument=globalThis.document,oldFetch=globalThis.fetch;
+ setTouchDesignerMotionPaused(false);
  const videos=[],requests=[];
  class Video extends EventTarget{
   constructor(){super();this.readyState=2;this.videoWidth=1152;this.videoHeight=480;this.playCalls=0;this.pauseCalls=0;this.paused=true;this.currentTime=0;}
@@ -62,11 +64,90 @@ test('one player and texture feed six distinct crops, pause together and restore
   globalThis.document.hidden=false;media.update(false);
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(videos[0].playCalls,3);
+  // Explicit pause must not be auto-restarted by the old stall recovery loop.
+  setTouchDesignerMotionPaused(true);
+  assert.equal(videos[0].paused,true,'Pause control must stop video immediately');
+  media.update(false);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(videos[0].playCalls,3,'Paused screens must stay paused');
+  assert.equal(media.diagnostics().motionPaused,true);
+  setTouchDesignerMotionPaused(false);
+  media.update(false);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(videos[0].playCalls,4,'Play control resumes the shared video');
   media.dispose();
   screens.forEach((s,i)=>{assert.equal(s.material,originals[i].material);assert.deepEqual(Array.from(s.geometry.attributes.uv.array),originals[i].uv);});
   assert.equal(media.diagnostics().state,'disposed');
  }finally{
   media.dispose();globalThis.document=oldDocument;globalThis.fetch=oldFetch;
+  setTouchDesignerMotionPaused(null);
   screens.forEach((s,i)=>{s.geometry.dispose();originals[i].material.dispose();});
+ }
+});
+
+test('reduced motion shows a still video frame until Play screens is requested',async()=>{
+ const oldDocument=globalThis.document,oldFetch=globalThis.fetch,oldMatchMedia=globalThis.matchMedia;
+ const queries=[],videos=[];
+ const preference={matches:true,addEventListener(type,handler){if(type==='change')queries.push(handler);}};
+ globalThis.matchMedia=()=>preference;
+ class Video extends EventTarget{
+  constructor(){super();this.readyState=2;this.videoWidth=1152;this.videoHeight=480;this.paused=true;this.currentTime=0;this.playCalls=0;this.pauseCalls=0;}
+  setAttribute(){}removeAttribute(){}load(){queueMicrotask(()=>this.dispatchEvent(new Event('loadeddata')));}
+  async play(){this.playCalls++;this.paused=false;}
+  pause(){this.pauseCalls++;this.paused=true;}
+ }
+ globalThis.document={hidden:false,createElement(tag){assert.equal(tag,'video');const v=new Video();videos.push(v);return v;}};
+ globalThis.fetch=async()=>({ok:true,json:async()=>manifest});
+ setTouchDesignerMotionPaused(null);
+ const screens=Array.from({length:6},()=>new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial()));
+ const originals=screens.map(screen=>screen.material);
+ const media=createTouchDesignerMonitorMedia(THREE,{screens,manifestURL:TOUCHDESIGNER_SIX_SCREEN_MANIFEST,followActiveIndex:false});
+ try{
+  assert.equal(isTouchDesignerMotionPaused(),true);
+  media.update(true);await new Promise(resolve=>setImmediate(resolve));
+  media.update(true);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(videos.length,1);
+  assert.equal(videos[0].playCalls,0,'Do not autoplay for reduced motion');
+  assert.equal(videos[0].paused,true);
+  assert.equal(media.diagnostics().state,'export-ready');
+  assert.ok(screens.every(screen=>screen.material.map?.image===videos[0]),
+   'Keep the decoded first frame on each screen instead of a blank black display');
+  setTouchDesignerMotionPaused(false);
+  media.update(false);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(videos[0].playCalls,1,'Explicit Play screens overrides reduced motion');
+  setTouchDesignerMotionPaused(null);
+  assert.equal(videos[0].paused,true,'Returning to system preference pauses immediately');
+  preference.matches=false;
+  for(const handler of queries)handler();
+  assert.equal(isTouchDesignerMotionPaused(),false,'React to live OS preference changes');
+  media.update(false);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(videos[0].playCalls,2);
+ }finally{
+  media.dispose();globalThis.document=oldDocument;globalThis.fetch=oldFetch;
+  globalThis.matchMedia=oldMatchMedia;setTouchDesignerMotionPaused(false);
+  screens.forEach((screen,i)=>{screen.geometry.dispose();originals[i].dispose();});
+ }
+});
+
+test('accessible screen control reflects reduced motion and toggles without page navigation',()=>{
+ const oldDocument=globalThis.document;
+ const button={dataset:{},attributes:{},handlers:{},textContent:'',
+  setAttribute(key,value){this.attributes[key]=value;},
+  addEventListener(key,handler){this.handlers[key]=handler;}};
+ globalThis.document={readyState:'complete',getElementById(id){return id==='touchDesignerMotionToggle'?button:null;}};
+ try{
+  setTouchDesignerMotionPaused(true);
+  initTouchDesignerMotionControl();
+  assert.equal(button.textContent,'Play screens');
+  assert.equal(button.attributes['aria-label'],'Play TouchDesigner screens');
+  button.handlers.click();
+  assert.equal(button.textContent,'Pause screens');
+  assert.equal(isTouchDesignerMotionPaused(),false);
+  button.handlers.click();
+  assert.equal(isTouchDesignerMotionPaused(),true);
+  initTouchDesignerMotionControl();
+  assert.equal(button.dataset.motionControlReady,'true','Do not install duplicate click handlers');
+ }finally{
+  globalThis.document=oldDocument;setTouchDesignerMotionPaused(false);
  }
 });
