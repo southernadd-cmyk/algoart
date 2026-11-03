@@ -273,7 +273,7 @@ if(GALLERY_DEBUG)window.__phiEditorialCapture={
     const firstCentre=first.getWorldPosition(new THREE.Vector3());
     const midpoint=firstCentre.clone().add(second.getWorldPosition(new THREE.Vector3())).multiplyScalar(.5);
     const normal=new THREE.Vector3(0,0,1).transformDirection(first.matrixWorld).normalize();
-    const view=new THREE.PerspectiveCamera(53,camera.aspect,.05,130);
+    const view=new THREE.PerspectiveCamera(36,camera.aspect,.05,130);
     view.position.copy(midpoint).addScaledVector(normal,3.7);
     view.position.y=midpoint.y-1.2;
     const target=firstCentre.clone();target.y=firstCentre.y-.6;
@@ -302,6 +302,15 @@ if(GALLERY_DEBUG)window.__phiEditorialCapture={
         local.z>=p.z+.2&&local.z<=p.z+p.h-.2))continue;
       const liftDistance=Math.hypot(eye.x-lift.x,eye.z-lift.z);
       if(liftDistance<4)continue;
+      // Sculptures are genuine foreground objects, sometimes loaded after
+      // paintings. Don't photograph THROUGH one to see the framed painting.
+      const dx=art.position.x-eye.x,dz=art.position.z-eye.z,segment=dx*dx+dz*dz;
+      const blocked=sculpturePlacements.some(sc=>{
+        const t=Math.max(0,Math.min(1,((sc.x-eye.x)*dx+(sc.z-eye.z)*dz)/segment));
+        return t>.06&&t<.95&&
+          Math.hypot(sc.x-eye.x-t*dx,sc.z-eye.z-t*dz)<1.9;
+      });
+      if(blocked)continue;
       options.push({art,eye,distance,liftDistance});
     }
     // Distance and breathing space around the work matter more than tower height.
