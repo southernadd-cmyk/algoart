@@ -12,6 +12,7 @@ import {addPhiDeskHologram} from './phi-desk-hologram.mjs';
 import {trackGalleryLoading,waitForGalleryEntry,warmGalleryEntry,galleryPreparationFrame} from './gallery-entry-preparation.mjs';
 let phiReceptionLivingMonitor=null;
 import {addPhiReceptionLivingMonitor,planPhiReceptionMonitorWall} from './phi-reception-living-monitor.mjs';
+import {initTouchDesignerMotionControl} from './phi-touchdesigner-motion.mjs';
 import {addPhiTranslationAreaSign,addPhiTowerLiftSign,addPhiLargeMonitorDoorSign} from './phi-translation-area-sign.mjs';
 import {createReceptionWallMaterial} from './reception-wall-material.mjs';
 import {batchPhiStaticArchitecture} from './phi-static-architecture.mjs';
@@ -72,6 +73,8 @@ import {createWalkwayGlassMaterials,createGlassWalkway} from './walkway-glass.mj
 import {createEntranceDoors} from './entrance-doors.mjs?v=working-double-doors-20261022';
 import {loadGameReadyElevator,fitGameReadyElevator} from './sketchfab-elevator.mjs?v=model-fit-20261022';
 
+// Connect the accessible play/pause button before any reception videos load.
+initTouchDesignerMotionControl();
 const GALLERY_DEBUG=new URLSearchParams(location.search).has('debug');
 // Approved three-floor batching of opaque archived exterior geometry; keep glass individually sorted.
 const PHI_BATCH_SHELL=true;
