@@ -42,12 +42,20 @@ try {
  await shot('tower','live architectural exterior',()=>window.__phiReceptionPreview.overview());
  await shot('reception','live reception, hologram and furnishing',()=>window.__phiReceptionPreview.show('desk'));
  await page.evaluate(()=>window.__phiReceptionPreview.resume());
- // Third documentary view: the reception's interactive gramophone exhibit.
- // An upper-floor visit is deliberately not forced in the software-GPU
- // screenshot job: it can time out on painting upload even while the live
- // physical-GPU exhibition remains usable.
- await shot('gramophone','live reception gramophone installation',()=>window.__phiReceptionPreview.show('gramophone'));
- await page.evaluate(()=>window.__phiReceptionPreview.resume());
+ // Reception's real TouchDesigner backroom: two banks of installed screens.
+ await page.waitForFunction(()=>window.__phiLivingMonitorDiagnostics?.placed===true,
+   null,{timeout:20000});
+ const tdView=await page.evaluate(()=>window.__phiEditorialCapture.td());
+ if(!tdView?.ok||tdView.banks!==2)throw Error('TouchDesigner shot not ready: '+JSON.stringify(tdView));
+ await page.waitForTimeout(450);
+ const tdFile=OUT+'/exhibition-touchdesigner-'+CAPTURE_DATE+'.jpg';
+ const tdBytes=await page.screenshot({path:tdFile,type:'jpeg',quality:90,timeout:90000});
+ if(tdBytes.length<30000)throw Error('Suspiciously small TD screenshot '+tdBytes.length);
+ record.push({label:'touchdesigner',file:tdFile,bytes:tdBytes.length,
+   date:'reception TouchDesigner exhibition area',
+   source:'real WebGL frame / gallery-phi-bundle.js',camera:tdView});
+ console.log('CAPTURE '+JSON.stringify(record.at(-1)));
+ await page.evaluate(()=>window.__phiEditorialCapture.resume());
  // Visit a real dated floor using the same lift UI as gallery visitors.
  // Keep this in the screenshot script; do not expose camera/test hooks in the live app.
  await hideChrome.evaluate(element=>element.remove());
@@ -67,26 +75,24 @@ try {
      state?.date==='2026-10-28'&&!state.travelling&&
      document.querySelector('#lift')?.hidden;
  },null,{timeout:240000});
- // Allow the arrival doors to finish opening; walk into the hanging rooms.
+ // Finish arrival. The debug-only editorial camera places the viewer inside
+ // the walkable gallery, at eye height, directly facing a hanging painting.
  await page.waitForTimeout(1800);
- await page.keyboard.down('w');
- await page.waitForTimeout(2200);
- await page.keyboard.up('w');
- await page.waitForTimeout(700);
- await page.keyboard.down('ArrowRight');
- await page.waitForTimeout(800);
- await page.keyboard.up('ArrowRight');
  const roomState=await page.evaluate(()=>window.__phiFullEngine);
  if(roomState.date!=='2026-10-28'||roomState.paintingsLoaded!==roomState.paintings)
    throw Error('Gallery floor failed the fully loaded artwork check');
+ const paintView=await page.evaluate(()=>window.__phiEditorialCapture.painting());
+ if(!paintView?.ok||paintView.metresFromLift<3)
+   throw Error('Gallery painting viewpoint invalid: '+JSON.stringify(paintView));
  const hideGalleryChrome=await page.addStyleTag({content:'body > *:not(#world){visibility:hidden!important} #world{visibility:visible!important}'});
  await page.waitForTimeout(500);
  const galleryFile=OUT+'/exhibition-gallery-floor-'+CAPTURE_DATE+'.jpg';
  const galleryBytes=await page.screenshot({path:galleryFile,type:'jpeg',quality:90,timeout:90000});
  if(galleryBytes.length<30000)throw Error('Suspiciously small gallery floor screenshot '+galleryBytes.length);
  record.push({label:'gallery-floor',file:galleryFile,bytes:galleryBytes.length,
-   date:'28 October 2026 upper-floor gallery',source:'real WebGL frame / gallery-phi-bundle.js',
-   paintings:roomState.paintings,paintingsLoaded:roomState.paintingsLoaded});
+   date:'28 October 2026 upper-floor gallery, visitor looking at a painting',
+   source:'real WebGL frame / gallery-phi-bundle.js',
+   paintings:roomState.paintings,paintingsLoaded:roomState.paintingsLoaded,camera:paintView});
  console.log('CAPTURE '+JSON.stringify(record.at(-1)));
  await hideGalleryChrome.evaluate(element=>element.remove());
  await writeFile(OUT+'/exhibition-capture-manifest.json',JSON.stringify({
