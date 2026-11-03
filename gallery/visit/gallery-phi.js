@@ -253,6 +253,49 @@ const phiSquare=createPhiSquare(THREE,{brick:galleryFinish.exteriorBrick,concret
 if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnostics(),marks:()=>phiSquare.marks(),
  preview(){const frame=phiSquare.viewpoint();if(!frame)return;const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(frame.position);view.lookAt(frame.target);renderer.setAnimationLoop(null);renderer.render(scene,view);},
  resume(){renderer.setAnimationLoop(tick);}};
+if(GALLERY_DEBUG)window.__phiEditorialCapture={
+  // Debug-only documentary cameras for the CI screenshot workflow.
+  // View an actual installation from within its room; no scene contents are modified.
+  td(){
+    const first=phiReceptionLivingMonitor?.banks?.[0];
+    const second=phiReceptionLivingMonitor?.banks?.[1];
+    if(!first?.parent||!second?.parent)return {ok:false,reason:'TouchDesigner monitor banks not ready'};
+    first.updateWorldMatrix(true,false);second.updateWorldMatrix(true,false);
+    const centre=first.getWorldPosition(new THREE.Vector3()).add(
+      second.getWorldPosition(new THREE.Vector3())).multiplyScalar(.5);
+    const normal=new THREE.Vector3(0,0,1).transformDirection(first.matrixWorld).normalize();
+    const view=new THREE.PerspectiveCamera(63,camera.aspect,.05,130);
+    view.position.copy(centre).addScaledVector(normal,3.7);
+    view.position.y=centre.y-1.2;
+    const target=centre.clone();target.y=centre.y-.5;
+    view.lookAt(target);
+    renderer.setAnimationLoop(null);renderer.render(scene,view);
+    return {ok:true,kind:'td',position:view.position.toArray(),target:target.toArray(),banks:2};
+  },
+  painting(){
+    if(!plan?.phi||exhibitDate===RECEPTION)return {ok:false,reason:'Not on an exhibition floor'};
+    // Only wall paintings have a front-facing normal; sculptures have none.
+    const candidates=artExhibits.filter(a=>a.study?.image&&a.normal?.lengthSq()>.8);
+    if(!candidates.length)return {ok:false,reason:'No paintings positioned'};
+    // Use a properly hung, loaded painting well away from the lift.
+    const lift=liftCabinPosition||phiLiftCabin?.position||new THREE.Vector3();
+    candidates.sort((a,b)=>b.position.distanceToSquared(lift)-a.position.distanceToSquared(lift));
+    const art=candidates[0];
+    const normal=art.normal.clone().normalize();
+    const view=new THREE.PerspectiveCamera(54,camera.aspect,.05,100);
+    const eye=art.position.clone().addScaledVector(normal,2.7);
+    eye.y=currentFloor*FLOOR_SPACING+1.68; // visitor eye height, not lift height
+    const target=art.position.clone();
+    // From the physical gallery room, looking at the painting and a little surrounding wall.
+    phiRoomVisibilityCuller?.restore();
+    view.position.copy(eye);view.lookAt(target);
+    renderer.setAnimationLoop(null);renderer.render(scene,view);
+    return {ok:true,kind:'painting',position:eye.toArray(),target:target.toArray(),
+      title:art.study.title,date:exhibitDate,paintings:candidates.length,
+      metresFromPainting:2.7,metresFromLift:+Math.sqrt(art.position.distanceToSquared(lift)).toFixed(2)};
+  },
+  resume(){renderer.setAnimationLoop(tick);}
+};
 if(GALLERY_DEBUG)window.__phiReceptionPreview={
  hologram(){const object=phiReceptionDesk?.root;if(!object?.parent)return;
   object.updateWorldMatrix(true,true);const view=new THREE.PerspectiveCamera(48,camera.aspect,.02,210);
