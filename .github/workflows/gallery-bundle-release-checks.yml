@@ -46,6 +46,8 @@ jobs:
       - name: Install gallery test dependencies
         run: npm install --no-save --package-lock=false
       # Run the focused regression before the expensive gallery tests.
+      - name: Verify stationary film grain and reduced-motion handling
+        run: node --test tests/phi-post-fx.test.mjs
       - name: Lift motion, arrival preparation and sculpture staging regression
         run: node --test tests/phi-lift-motion.test.mjs tests/gallery-entry-preparation.test.mjs tests/phi-sculpture-stage.test.mjs
       - name: Monitor scheduling, map invalidation and screen crop regression
