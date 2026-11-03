@@ -74,6 +74,31 @@ for(let i=0;i<defs.length;i++){
        thickness:8,wobble:43,overdraw:4,opacity:78,pressure:47,dryness:21,
        shapeAmount:66,overlap:44,rotation:79,grain:20,
        pen:'felt',lines:true,circles:true,rectangles:true,polygons:true,arcs:true};
+     // Watercolour often gives extremely sparse off-sheet compositions for
+     // some seeds. Test native 1x renderings and pick the strongest within this
+     // very same system/material/palette, rather than enlarging a weak result.
+     let selectedSeed=s.seed,visualCoverage=null;
+     if(job.spec.material==='watercolour'){
+       let best=null;
+       for(let k=0;k<18;k++){
+         const candidate={...s,seed:k?job.spec.seed+'-VAR-'+k:job.spec.seed};
+         const tmp=document.createElement('canvas');
+         A.renderWatercolourV2S(tmp,candidate,1,false);
+         const {data}=tmp.getContext('2d').getImageData(0,0,tmp.width,tmp.height);
+         let n=0,minx=tmp.width,maxx=0,miny=tmp.height,maxy=0;
+         for(let y=0;y<tmp.height;y+=7)for(let x=0;x<tmp.width;x+=7){
+           const j=(y*tmp.width+x)*4;
+           const d=Math.max(Math.abs(data[j]-245),Math.abs(data[j+1]-240),Math.abs(data[j+2]-230));
+           if(d>40){n++;minx=Math.min(minx,x);maxx=Math.max(maxx,x);miny=Math.min(miny,y);maxy=Math.max(maxy,y)}
+         }
+         const extent=n?((maxx-minx+7)*(maxy-miny+7))/(tmp.width*tmp.height):0;
+         const density=n/((tmp.width/7)*(tmp.height/7));
+         const score=extent+3*density;
+         if(!best||score>best.score)best={seed:candidate.seed,score,extent,density};
+         tmp.width=1;tmp.height=1;
+       }
+       selectedSeed=best.seed;s.seed=best.seed;visualCoverage=best;
+     }
      const canvas=document.createElement('canvas');
      let info;
      switch(job.spec.material){
@@ -90,7 +115,7 @@ for(let i=0;i<defs.length;i++){
      A.downloadBlob(png,job.name);
      canvas.width=1;canvas.height=1;
      return {w:4900,h:3500,bytes:sz,mode:job.spec.mode,material:job.spec.material,
-       rendererVersion:A.rendererVersion};
+       rendererVersion:A.rendererVersion,selectedSeed,visualCoverage};
    },{spec,defaults:modes[spec.mode],name});
    const dl=await downloadPromise;
    if(dl.suggestedFilename()!==name)throw Error('Unexpected download '+dl.suggestedFilename());
