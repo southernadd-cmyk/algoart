@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-11-03T13:02:05.221Z",
-  "commit": "aacd4e622fff42f7952da84262f85e690f40ceda",
+  "generatedAt": "2026-11-03T13:21:07.276Z",
+  "commit": "7a04d6b5944893a7da67072d112753439f04fbd0",
   "note": "Screenshots of actual Three.js render, captured by Chromium using software WebGL. No image synthesis.",
   "captures": [
     {
       "label": "tower",
       "file": "docs/images/exhibition-tower-2026-11-03.jpg",
-      "bytes": 98555,
+      "bytes": 98561,
       "date": "live architectural exterior",
       "source": "real WebGL frame / gallery-phi-bundle.js"
     },
     {
       "label": "reception",
       "file": "docs/images/exhibition-reception-2026-11-03.jpg",
-      "bytes": 202262,
+      "bytes": 202261,
       "date": "live reception, hologram and furnishing",
       "source": "real WebGL frame / gallery-phi-bundle.js"
     },
@@ -23,6 +23,15 @@
       "bytes": 146591,
       "date": "live reception gramophone installation",
       "source": "real WebGL frame / gallery-phi-bundle.js"
+    },
+    {
+      "label": "gallery-floor",
+      "file": "docs/images/exhibition-gallery-floor-2026-11-03.jpg",
+      "bytes": 360882,
+      "date": "28 October 2026 upper-floor gallery",
+      "source": "real WebGL frame / gallery-phi-bundle.js",
+      "paintings": 9,
+      "paintingsLoaded": 9
     }
   ],
   "nonfatalPageErrors": []
