@@ -1,4 +1,5 @@
 import {createTouchDesignerMonitorMedia,TOUCHDESIGNER_SIX_SCREEN_MANIFEST} from './phi-touchdesigner-media.mjs';
+import {isTouchDesignerMotionPaused} from './phi-touchdesigner-motion.mjs';
 import {addTouchDesignerInfoRow} from './phi-touchdesigner-info-row.mjs';
 import {addPhiReceptionRearWallMonitors} from './phi-reception-rear-wall-monitors.mjs';
 
@@ -242,7 +243,8 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
   media.update(active);
   infoRow.update(time,distance<11);
   if(active)loadSource();
-  if(!active||media.usingExport)return;
+  // A still frame remains visible even when a published export is missing.
+  if(!active||media.usingExport||isTouchDesignerMotionPaused())return;
   last=time;
   canvases.forEach((ctx,i)=>{
    draw(ctx,i%3,(time-origin)*.001);textures[i].needsUpdate=true;
