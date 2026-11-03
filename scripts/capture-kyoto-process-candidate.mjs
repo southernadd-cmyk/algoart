@@ -16,7 +16,7 @@ try{
   await page.goto('http://127.0.0.1:4173/?art='+encodeURIComponent(id),{waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(()=>document.querySelector('#seed')?.value==='ACL-20261102-01-03737' &&
     document.querySelector('#materialStyle')?.value==='action'&&
-    document.querySelector('#mode')?.value==='rects',{timeout:120000});
+    document.querySelector('#mode')?.value==='rects',null,{timeout:120000});
   // Hide the welcome overlay through the real Begin control.
   const intro=page.locator('#introSplash');
   if(await intro.isVisible())await page.locator('#introEnter').click();
