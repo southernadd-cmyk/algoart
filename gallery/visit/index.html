@@ -105,7 +105,7 @@
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=12">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
 <!-- Verified production room occlusion; use ?roomcull=0 to disable without changing artwork. -->
-<link rel="modulepreload" href="./gallery-phi-bundle.js?v=static-grain-reduced-motion-20261103">
+<link rel="modulepreload" href="./gallery-phi-bundle.js?v=td-motion-controls-20261103">
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
@@ -145,7 +145,7 @@
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
     window.__galleryStage='Importing bundled JavaScript';
-    await import('./gallery-phi-bundle.js?v=static-grain-reduced-motion-20261103');
+    await import('./gallery-phi-bundle.js?v=td-motion-controls-20261103');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -224,6 +224,7 @@ window.addEventListener('load',()=>{
     <div id="mobileOverflow" class="mobile-overflow">
       <div class="toolbar-secondary">
         <a id="archiveLink" href="../">2D Gallery</a>
+        <button id="touchDesignerMotionToggle" type="button" aria-label="Pause TouchDesigner screens">Pause screens</button>
       </div>
       <div class="toolbar-utility">
         <button id="fullscreen" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
@@ -360,7 +361,7 @@ window.addEventListener('load',()=>{
     <h1 id="welcomeTitle">Walk into<br>the composition.</h1><p id="startFloor" class="start-floor" aria-live="polite">Locating exhibition floor…</p>
     <p>A new collection. A new floor. Every day.</p>
     <p>Each daily collection occupies its own floor. Step inside a gallery shaped by the golden ratio. Discover drawings on the walls and sculptures made from their lines, then take the archive lift to another day.</p>
-    <details class="visit-controls"><summary>How to explore</summary><p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, Artwork details appear when you pause nearby; L opens the lift calendar. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p><p class="shortcuts">Hanging room signs adapted from <a href="https://sketchfab.com/3d-models/hospital-hanging-signage-74157aae9eb746d9a0cfe7f9c5c7f83f" target="_blank" rel="noopener">Hospital hanging signage by Sousinho</a>, CC BY 4.0.</p></details>
+    <details class="visit-controls"><summary>How to explore</summary><p class="shortcuts">Keyboard: W A S D to walk, arrow keys to look, Shift to walk faster, Pause screens or Play screens in the top controls stops or resumes TouchDesigner motion. Artwork details appear when you pause nearby; L opens the lift calendar. Use Tab, Enter and Escape for buttons and panels. Mouse and touch controls are also available; on a phone, drag to look and use the arrows. VR is available on supported headsets and browsers.</p><p class="shortcuts">Hanging room signs adapted from <a href="https://sketchfab.com/3d-models/hospital-hanging-signage-74157aae9eb746d9a0cfe7f9c5c7f83f" target="_blank" rel="noopener">Hospital hanging signage by Sousinho</a>, CC BY 4.0.</p></details>
     <button id="enter" class="enter" type="button" disabled>Preparing exhibition…</button>
     <a id="welcomeArchive" href="../">See the original 2D edition ↗</a>
     <p class="credits-link"><a href="./credits.html">Credits</a></p>
