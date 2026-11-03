@@ -277,14 +277,20 @@ if(GALLERY_DEBUG)window.__phiEditorialCapture={
     // Only wall paintings have a front-facing normal; sculptures have none.
     const candidates=artExhibits.filter(a=>a.study?.image&&a.normal?.lengthSq()>.8);
     if(!candidates.length)return {ok:false,reason:'No paintings positioned'};
-    // Use a properly hung, loaded painting well away from the lift.
+    // Choose a real position inside the walkable exhibition, away from the lift.
     const lift=liftCabinPosition||phiLiftCabin?.position||new THREE.Vector3();
-    candidates.sort((a,b)=>b.position.distanceToSquared(lift)-a.position.distanceToSquared(lift));
-    const art=candidates[0];
-    const normal=art.normal.clone().normalize();
+    const options=[];
+    for(const art of candidates)for(const distance of [3,2.7,2.4,2.1]){
+      const eye=art.position.clone().addScaledVector(art.normal.clone().normalize(),distance);
+      eye.y=currentFloor*FLOOR_SPACING+1.68;
+      if(!plan.phi.canWalk(eye.x,eye.z))continue;
+      options.push({art,eye,distance,liftDistance:Math.hypot(eye.x-lift.x,eye.z-lift.z)});
+    }
+    options.sort((a,b)=>b.liftDistance-a.liftDistance||b.distance-a.distance);
+    const choice=options[0];
+    if(!choice)return {ok:false,reason:'No safe visitor viewpoint in front of a painting'};
+    const {art,eye,distance}=choice;
     const view=new THREE.PerspectiveCamera(54,camera.aspect,.05,100);
-    const eye=art.position.clone().addScaledVector(normal,2.7);
-    eye.y=currentFloor*FLOOR_SPACING+1.68; // visitor eye height, not lift height
     const target=art.position.clone();
     // From the physical gallery room, looking at the painting and a little surrounding wall.
     phiRoomVisibilityCuller?.restore();
@@ -292,7 +298,7 @@ if(GALLERY_DEBUG)window.__phiEditorialCapture={
     renderer.setAnimationLoop(null);renderer.render(scene,view);
     return {ok:true,kind:'painting',position:eye.toArray(),target:target.toArray(),
       title:art.study.title,date:exhibitDate,paintings:candidates.length,
-      metresFromPainting:2.7,metresFromLift:+Math.sqrt(art.position.distanceToSquared(lift)).toFixed(2)};
+      metresFromPainting:distance,metresFromLift:+choice.liftDistance.toFixed(2)};
   },
   resume(){renderer.setAnimationLoop(tick);}
 };
