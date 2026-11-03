@@ -18,7 +18,7 @@ export function isTouchDesignerMotionPaused(){
 }
 
 function updateButton(){
- if(typeof document==='undefined')return;
+ if(typeof document==='undefined'||typeof document.getElementById!=='function')return;
  const button=document.getElementById('touchDesignerMotionToggle');
  if(!button)return;
  const paused=isTouchDesignerMotionPaused();
