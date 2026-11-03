@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-11-03T14:20:29.097Z",
-  "commit": "8f06763af29be2f4350497462ab343d6785ad9cf",
+  "generatedAt": "2026-11-03T14:26:30.613Z",
+  "commit": "aeb80df1b79e0ebd602452dba9386b3ecd00be39",
   "note": "Screenshots of actual Three.js render, captured by Chromium using software WebGL. No image synthesis.",
   "captures": [
     {
       "label": "tower",
       "file": "docs/images/exhibition-tower-2026-11-03.jpg",
-      "bytes": 98558,
+      "bytes": 98555,
       "date": "live architectural exterior",
       "source": "real WebGL frame / gallery-phi-bundle.js"
     },
     {
       "label": "reception",
       "file": "docs/images/exhibition-reception-2026-11-03.jpg",
-      "bytes": 202269,
+      "bytes": 202253,
       "date": "live reception, hologram and furnishing",
       "source": "real WebGL frame / gallery-phi-bundle.js"
     },
     {
       "label": "touchdesigner",
       "file": "docs/images/exhibition-touchdesigner-2026-11-03.jpg",
-      "bytes": 173690,
+      "bytes": 212340,
       "date": "reception TouchDesigner exhibition area",
       "source": "real WebGL frame / gallery-phi-bundle.js",
       "camera": {
@@ -42,8 +42,8 @@
     {
       "label": "gallery-floor",
       "file": "docs/images/exhibition-gallery-floor-2026-11-03.jpg",
-      "bytes": 173415,
-      "date": "28 October 2026 upper-floor gallery, visitor looking at a painting",
+      "bytes": 123481,
+      "date": "28 October 2026 upper-floor gallery, visitor looking at a painting (sculpture-clear sightline)",
       "source": "real WebGL frame / gallery-phi-bundle.js",
       "paintings": 9,
       "paintingsLoaded": 9,
@@ -51,23 +51,23 @@
         "ok": true,
         "kind": "painting",
         "position": [
-          21.310974997870115,
+          14.216694770384002,
           150.48000000000002,
-          -14.864614044039984
+          -2.4841491105511575
         ],
         "target": [
-          26.08303305718315,
-          150.62903270446287,
-          -12.130119231730859
+          18.988752829697038,
+          151.07000000000002,
+          0.25034570175796667
         ],
-        "title": "Radiant Systems · Watercolour",
+        "title": "Orbital Studies · Tissue & Graphite",
         "date": "2026-10-28",
         "paintings": 9,
-        "width": 3.385291572496005,
-        "room": 2,
+        "width": 4.619999999999999,
+        "room": 0,
         "viewFov": 70,
         "metresFromPainting": 5.5,
-        "metresFromLift": 25.98
+        "metresFromLift": 14.43
       }
     }
   ],
