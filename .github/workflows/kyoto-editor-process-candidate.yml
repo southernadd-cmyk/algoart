@@ -1,0 +1,34 @@
+name: KYOTO genuine editor process candidate
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/capture-kyoto-process-candidate.mjs'
+      - '.github/workflows/kyoto-editor-process-candidate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Serve the unmodified current editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/kyoto-editor-http.log 2>&1 &
+          sleep 2
+      - name: Capture matching genuine artwork and editor process
+        run: node scripts/capture-kyoto-process-candidate.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kyoto-process-candidate-review
+          path: artifacts/kyoto-process-candidate/
+          if-no-files-found: ignore
