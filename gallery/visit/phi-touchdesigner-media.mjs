@@ -131,6 +131,8 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
     throw new Error('Incorrect TouchDesigner video dimensions');
    texture=new THREE.VideoTexture(element);
    texture.colorSpace=THREE.SRGBColorSpace;
+   // Upload the decoded opening frame even when autoplay is suppressed.
+   texture.needsUpdate=true;
    texture.minFilter=THREE.LinearFilter;
    texture.magFilter=THREE.LinearFilter;
    material=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});
