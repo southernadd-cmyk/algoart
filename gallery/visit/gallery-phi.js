@@ -1435,6 +1435,14 @@ async function travelLift(date,index){
    rig.rotation.y=yaw;camera.rotation.x=pitch;
    clearPhiMovingCabin();
   }
+  // When the exterior ride camera cuts back to the cabin, face the
+  // destination doors before they begin to open. Keep XR head tracking free.
+  if(!xrRide&&plan?.phi){
+    yaw=plan.phi.world.theta-Math.PI/2;
+    pitch=0;
+    rig.rotation.y=yaw;
+    camera.rotation.x=pitch;
+  }
   if(xrRide)closeXRLift();
   else{
    liftReturnFocus=null;canvas.focus({preventScroll:true});
