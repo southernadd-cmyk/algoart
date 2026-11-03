@@ -1,3 +1,5 @@
+import {isTouchDesignerMotionPaused} from './phi-touchdesigner-motion.mjs';
+
 // Reception information row: optional network preview, fixed-position explanation
 // and clickable .toe project download. Media remains deferred until approached.
 const PREVIEW=new URL('./touchdesigner/td-network-loop.webp',import.meta.url);
@@ -120,14 +122,17 @@ export function addTouchDesignerInfoRow(THREE,{root,width,height,gap,rowPitch,ca
  function update(time,close){
   if(disposed)return;
   if(close)load();
-  if(!close&&video&&!video.paused)video.pause();
-  if(close&&video?.readyState>=2&&video.paused&&!videoPlayPending){
+  if((!close||isTouchDesignerMotionPaused())&&video&&!video.paused)video.pause();
+  if(close&&!isTouchDesignerMotionPaused()&&video?.readyState>=2&&video.paused&&!videoPlayPending){
    videoPlayPending=true;
-   Promise.resolve(video.play()).then(()=>{videoPlayPending=false}).catch(()=>{
+   Promise.resolve(video.play()).then(()=>{
+    videoPlayPending=false;
+    if(isTouchDesignerMotionPaused()||document.hidden===true)video?.pause();
+   }).catch(()=>{
     videoPlayPending=false;statuses.preview='playback-blocked';
    });
   }
-  if(!showNetworkPreview||!close||(!(video?.readyState>=2&&video.videoWidth)&&!(image?.complete&&image.naturalWidth)))return;
+  if(!showNetworkPreview||!close||isTouchDesignerMotionPaused()||(!(video?.readyState>=2&&video.videoWidth)&&!(image?.complete&&image.naturalWidth)))return;
   if(time-last<150)return; // max 7 canvas uploads/sec, only near the screens.
   last=time;frame++;draw(0);
  }
