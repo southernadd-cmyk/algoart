@@ -254,6 +254,13 @@ if(GALLERY_DEBUG)window.__phiSquareGraffiti={diagnostics:()=>phiSquare.diagnosti
  preview(){const frame=phiSquare.viewpoint();if(!frame)return;const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(frame.position);view.lookAt(frame.target);renderer.setAnimationLoop(null);renderer.render(scene,view);},
  resume(){renderer.setAnimationLoop(tick);}};
 if(GALLERY_DEBUG)window.__phiEditorialCapture={
+  // Load a published floor for documentary photography without an automated lift ride.
+  // This is available only with ?debug=1 and is never called by the visitor UI.
+  async edition(date){
+    if(!archiveDates.includes(date)||date===RECEPTION)throw Error('Unpublished exhibition date: '+date);
+    await loadEdition(date);
+    return {date:exhibitDate,paintings:window.__phiFullEngine?.paintings||0};
+  },
   // Debug-only documentary cameras for the CI screenshot workflow.
   // View an actual installation from within its room; no scene contents are modified.
   td(){
