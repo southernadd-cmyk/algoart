@@ -72,8 +72,9 @@ try {
  if(roomState.date!=='2026-10-28'||roomState.paintingsLoaded!==roomState.paintings)
    throw Error('Gallery floor failed the fully loaded artwork check');
  const paintView=await page.evaluate(()=>window.__phiEditorialCapture.painting());
- if(!paintView?.ok||paintView.metresFromLift<3)
-   throw Error('Gallery painting viewpoint invalid: '+JSON.stringify(paintView));
+ if(!paintView?.ok||paintView.metresFromLift<4||
+   paintView.metresFromPainting<2.8||paintView.viewFov<70)
+   throw Error('Gallery room and painting viewpoint invalid: '+JSON.stringify(paintView));
  const hideGalleryChrome=await page.addStyleTag({content:'body > *:not(#world){visibility:hidden!important} #world{visibility:visible!important}'});
  await page.waitForTimeout(500);
  const galleryFile=OUT+'/exhibition-gallery-floor-'+CAPTURE_DATE+'.jpg';
