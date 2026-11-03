@@ -50,7 +50,8 @@ try {
  await page.waitForTimeout(450);
  const tdFile=OUT+'/exhibition-touchdesigner-'+CAPTURE_DATE+'.jpg';
  const tdBytes=await page.screenshot({path:tdFile,type:'jpeg',quality:90,timeout:90000});
- if(tdBytes.length<30000)throw Error('Suspiciously small TD screenshot '+tdBytes.length);
+ // A frame mostly filled by a wall produces an abnormally small JPEG. Reject it.
+ if(tdBytes.length<90000)throw Error('TD camera obscured or image too empty: '+tdBytes.length);
  record.push({label:'touchdesigner',file:tdFile,bytes:tdBytes.length,
    date:'reception TouchDesigner exhibition area',
    source:'real WebGL frame / gallery-phi-bundle.js',camera:tdView});
