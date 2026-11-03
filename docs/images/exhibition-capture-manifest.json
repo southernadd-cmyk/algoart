@@ -1,37 +1,71 @@
 {
-  "generatedAt": "2026-11-03T13:21:07.276Z",
-  "commit": "7a04d6b5944893a7da67072d112753439f04fbd0",
+  "generatedAt": "2026-11-03T14:11:19.082Z",
+  "commit": "4b90ec485dc730980b4315f4e813854d542d1e14",
   "note": "Screenshots of actual Three.js render, captured by Chromium using software WebGL. No image synthesis.",
   "captures": [
     {
       "label": "tower",
       "file": "docs/images/exhibition-tower-2026-11-03.jpg",
-      "bytes": 98561,
+      "bytes": 98574,
       "date": "live architectural exterior",
       "source": "real WebGL frame / gallery-phi-bundle.js"
     },
     {
       "label": "reception",
       "file": "docs/images/exhibition-reception-2026-11-03.jpg",
-      "bytes": 202261,
+      "bytes": 202233,
       "date": "live reception, hologram and furnishing",
       "source": "real WebGL frame / gallery-phi-bundle.js"
     },
     {
-      "label": "gramophone",
-      "file": "docs/images/exhibition-gramophone-2026-11-03.jpg",
-      "bytes": 146591,
-      "date": "live reception gramophone installation",
-      "source": "real WebGL frame / gallery-phi-bundle.js"
+      "label": "touchdesigner",
+      "file": "docs/images/exhibition-touchdesigner-2026-11-03.jpg",
+      "bytes": 189060,
+      "date": "reception TouchDesigner exhibition area",
+      "source": "real WebGL frame / gallery-phi-bundle.js",
+      "camera": {
+        "ok": true,
+        "kind": "td",
+        "position": [
+          22.63050983124843,
+          1.7500000000000002,
+          9.935254915624212
+        ],
+        "target": [
+          26.330509831248428,
+          2.45,
+          9.935254915624212
+        ],
+        "banks": 2
+      }
     },
     {
       "label": "gallery-floor",
       "file": "docs/images/exhibition-gallery-floor-2026-11-03.jpg",
-      "bytes": 360882,
-      "date": "28 October 2026 upper-floor gallery",
+      "bytes": 80046,
+      "date": "28 October 2026 upper-floor gallery, visitor looking at a painting",
       "source": "real WebGL frame / gallery-phi-bundle.js",
       "paintings": 9,
-      "paintingsLoaded": 9
+      "paintingsLoaded": 9,
+      "camera": {
+        "ok": true,
+        "kind": "painting",
+        "position": [
+          27.24119334715246,
+          150.48000000000002,
+          -19.764774184043254
+        ],
+        "target": [
+          28.28527318457958,
+          151.07000000000002,
+          -21.586832715780957
+        ],
+        "title": "Connected Fields · Watercolour",
+        "date": "2026-10-28",
+        "paintings": 9,
+        "metresFromPainting": 2.1,
+        "metresFromLift": 33.66
+      }
     }
   ],
   "nonfatalPageErrors": []
