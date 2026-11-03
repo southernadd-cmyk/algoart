@@ -2554,7 +2554,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
      if(exhibitDate!==RECEPTION||plan?.phi!==phi||
         !bake.qualities?.desktop?.length)return;
      const study={
-      seed:bake.seed,title:'Growth Systems',href:bake.href,
+      seed:bake.seed,title:'Recursive Divisions',href:bake.href,
       material:{type:'oil',params:{paper:'#f5f0e6'}},
       image:new URL('./data/reception-growth-systems.png',import.meta.url).href,
       prebuilt:{desktop:bake.qualities.desktop,mobile:bake.qualities.mobile}
