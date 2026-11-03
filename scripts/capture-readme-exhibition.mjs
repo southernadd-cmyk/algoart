@@ -29,7 +29,7 @@ try {
   null,{timeout:60000});
  await page.waitForTimeout(2500);
  // Hide only interface chrome, so screenshots show the gallery artwork and architecture.
- await page.addStyleTag({content:'body > *:not(#world){visibility:hidden!important} #world{visibility:visible!important}'});
+ const hideChrome=await page.addStyleTag({content:'body > *:not(#world){visibility:hidden!important} #world{visibility:visible!important}'});
  const shot=async (label,date,viewFn)=>{
   await page.evaluate(viewFn);
   await page.waitForTimeout(350);
@@ -48,11 +48,52 @@ try {
  // physical-GPU exhibition remains usable.
  await shot('gramophone','live reception gramophone installation',()=>window.__phiReceptionPreview.show('gramophone'));
  await page.evaluate(()=>window.__phiReceptionPreview.resume());
+ // Visit a real dated floor using the same lift UI as gallery visitors.
+ // Keep this in the screenshot script; do not expose camera/test hooks in the live app.
+ await hideChrome.evaluate(element=>element.remove());
+ await page.locator('#openLift').evaluate(element=>element.click());
+ await page.locator('#liftMonth').evaluate(element=>{
+   element.value='2026-10';
+   element.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ const day=page.locator('#liftDays button.lift-available[title^="2026-10-28"]');
+ if(await day.count()!==1)throw Error('Expected the published 28 October exhibition floor');
+ await day.evaluate(element=>element.click());
+ await page.waitForFunction(()=>{
+   const floor=window.__phiFullEngine;
+   const state=window.__phiLiftState;
+   return floor?.date==='2026-10-28'&&
+     floor.paintings>0&&floor.paintingsLoaded===floor.paintings&&
+     state?.date==='2026-10-28'&&!state.travelling&&
+     document.querySelector('#lift')?.hidden;
+ },null,{timeout:240000});
+ // Allow the arrival doors to finish opening; walk into the hanging rooms.
+ await page.waitForTimeout(1800);
+ await page.keyboard.down('w');
+ await page.waitForTimeout(2200);
+ await page.keyboard.up('w');
+ await page.waitForTimeout(700);
+ await page.keyboard.down('ArrowRight');
+ await page.waitForTimeout(800);
+ await page.keyboard.up('ArrowRight');
+ const roomState=await page.evaluate(()=>window.__phiFullEngine);
+ if(roomState.date!=='2026-10-28'||roomState.paintingsLoaded!==roomState.paintings)
+   throw Error('Gallery floor failed the fully loaded artwork check');
+ const hideGalleryChrome=await page.addStyleTag({content:'body > *:not(#world){visibility:hidden!important} #world{visibility:visible!important}'});
+ await page.waitForTimeout(500);
+ const galleryFile=OUT+'/exhibition-gallery-floor-'+CAPTURE_DATE+'.jpg';
+ const galleryBytes=await page.screenshot({path:galleryFile,type:'jpeg',quality:90,timeout:90000});
+ if(galleryBytes.length<30000)throw Error('Suspiciously small gallery floor screenshot '+galleryBytes.length);
+ record.push({label:'gallery-floor',file:galleryFile,bytes:galleryBytes.length,
+   date:'28 October 2026 upper-floor gallery',source:'real WebGL frame / gallery-phi-bundle.js',
+   paintings:roomState.paintings,paintingsLoaded:roomState.paintingsLoaded});
+ console.log('CAPTURE '+JSON.stringify(record.at(-1)));
+ await hideGalleryChrome.evaluate(element=>element.remove());
  await writeFile(OUT+'/exhibition-capture-manifest.json',JSON.stringify({
   generatedAt:new Date().toISOString(),commit:process.env.GITHUB_SHA||null,
   note:'Screenshots of actual Three.js render, captured by Chromium using software WebGL. No image synthesis.',
   captures:record,nonfatalPageErrors:errors.slice(0,8)},null,2)+'\n');
- if(record.length!==3)throw Error('Expected three exhibition captures');
+ if(record.length!==4)throw Error('Expected four exhibition captures');
 }finally{
  await page?.close().catch(()=>{});
  await browser.close();
