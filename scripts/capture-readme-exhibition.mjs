@@ -56,28 +56,18 @@ try {
    source:'real WebGL frame / gallery-phi-bundle.js',camera:tdView});
  console.log('CAPTURE '+JSON.stringify(record.at(-1)));
  await page.evaluate(()=>window.__phiEditorialCapture.resume());
- // Visit a real dated floor using the same lift UI as gallery visitors.
- // Keep this in the screenshot script; do not expose camera/test hooks in the live app.
+ // The documentary camera loads the genuine published Three.js floor, but
+ // avoids a long physical lift animation in software WebGL CI.
  await hideChrome.evaluate(element=>element.remove());
- await page.locator('#openLift').evaluate(element=>element.click());
- await page.locator('#liftMonth').evaluate(element=>{
-   element.value='2026-10';
-   element.dispatchEvent(new Event('change',{bubbles:true}));
- });
- const day=page.locator('#liftDays button.lift-available[title^="2026-10-28"]');
- if(await day.count()!==1)throw Error('Expected the published 28 October exhibition floor');
- await day.evaluate(element=>element.click());
+ const floorLoad=await page.evaluate(async()=>window.__phiEditorialCapture.edition('2026-10-28'));
+ if(floorLoad?.date!=='2026-10-28'||floorLoad.paintings<1)
+   throw Error('Published floor did not load: '+JSON.stringify(floorLoad));
  await page.waitForFunction(()=>{
    const floor=window.__phiFullEngine;
-   const state=window.__phiLiftState;
-   return floor?.date==='2026-10-28'&&
-     floor.paintings>0&&floor.paintingsLoaded===floor.paintings&&
-     state?.date==='2026-10-28'&&!state.travelling&&
-     document.querySelector('#lift')?.hidden;
- },null,{timeout:240000});
- // Finish arrival. The debug-only editorial camera places the viewer inside
- // the walkable gallery, at eye height, directly facing a hanging painting.
- await page.waitForTimeout(1800);
+   return floor?.date==='2026-10-28'&&floor.paintings>0&&
+     floor.paintingsLoaded===floor.paintings;
+ },null,{timeout:180000});
+ await page.waitForTimeout(1200);
  const roomState=await page.evaluate(()=>window.__phiFullEngine);
  if(roomState.date!=='2026-10-28'||roomState.paintingsLoaded!==roomState.paintings)
    throw Error('Gallery floor failed the fully loaded artwork check');
