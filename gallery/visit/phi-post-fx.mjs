@@ -26,7 +26,7 @@ export const PHI_FX_CONTROLS=Object.freeze([
 export const PHI_FX_DEFAULTS=Object.freeze({
  // Artist-approved architectural treatment, exported from the test gallery on 2026-10-30.
  architectural:{brightness:-.14,contrast:-.19,saturation:.25,bloomIntensity:1.4,bloomThreshold:.825,bloomRadius:.3,
-  aoIntensity:1.2,aoRadius:.22,vignette:.475,vignetteOffset:.525,grain:.04,bokeh:1.5,focusRange:2.6,glowMode:'all',dofMode:'off',aoSamples:16},
+  aoIntensity:1.2,aoRadius:.22,vignette:.475,vignetteOffset:.525,grain:.032,bokeh:1.5,focusRange:2.6,glowMode:'all',dofMode:'off',aoSamples:16},
  luminous:{brightness:.02,contrast:.10,saturation:.08,bloomIntensity:2.4,bloomThreshold:.20,bloomRadius:.85,
   aoIntensity:.1,aoRadius:.16,vignette:.20,vignetteOffset:.46,grain:.02,bokeh:2,focusRange:1.8,glowMode:'installations',dofMode:'off',aoSamples:6},
  photographic:{brightness:.01,contrast:.16,saturation:-.03,bloomIntensity:.6,bloomThreshold:.65,bloomRadius:.70,
