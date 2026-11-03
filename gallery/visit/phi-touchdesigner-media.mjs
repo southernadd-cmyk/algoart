@@ -1,3 +1,5 @@
+import {isTouchDesignerMotionPaused,subscribeTouchDesignerMotionChange} from './phi-touchdesigner-motion.mjs';
+
 // TouchDesigner output is OPTIONAL and never part of tower startup.
 // A published manifest and a valid browser video are required before replacing
 // the lightweight canvases. The six-screen atlas shares one decoder and texture.
@@ -41,7 +43,15 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
  let playbackLoop=0,lastPlaybackTime=0;
  let lastAdvanceTime=0,lastAdvanceAt=0,stallRecoveries=0;
  const setState=next=>{state=next;};
- const diag=()=>({state,error:lastError,videoReady:!!video&&video.readyState>=2,playing:playerActive,paused:video?.paused??null,stallRecoveries,manifest:activeManifest.pathname});
+ const diag=()=>({state,error:lastError,videoReady:!!video&&video.readyState>=2,playing:playerActive,paused:video?.paused??null,motionPaused:isTouchDesignerMotionPaused(),stallRecoveries,manifest:activeManifest.pathname});
+ const unsubscribeMotion=subscribeTouchDesignerMotionChange(()=>{
+  // Pause immediately on a visitor gesture or OS preference change; do not
+  // wait for the next scene update or reintroduce the old proximity bug.
+  if(!isTouchDesignerMotionPaused()||!video)return;
+  if(!video.paused)video.pause();
+  playerActive=false;lastAdvanceAt=0;
+  if(state==='playing-export')setState('export-ready');
+ });
  const restore=()=>{
   screens.forEach((screen,i)=>{
    if(originalUVs[i]){
@@ -150,7 +160,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
   const element=video;
   // Only suspend media when the whole browser tab is hidden. Reception
   // disposal already stops both players when leaving this floor by lift.
-  if(document.hidden===true){
+  if(document.hidden===true||isTouchDesignerMotionPaused()){
    if(playerActive||!element.paused)element.pause();
    playerActive=false;lastAdvanceAt=0;
    if(state==='playing-export')setState('export-ready');
@@ -176,7 +186,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
    playerStarting=true;
    Promise.resolve(element.play()).then(()=>{
     playerStarting=false;
-    if(!disposed&&video===element&&document.hidden!==true){
+    if(!disposed&&video===element&&document.hidden!==true&&!isTouchDesignerMotionPaused()){
      playerActive=true;setState('playing-export');
     }else if(video===element){element.pause();playerActive=false;}
    }).catch(error=>{playerStarting=false;if(!disposed&&video===element)fail(error);});
@@ -184,6 +194,7 @@ export function createTouchDesignerMonitorMedia(THREE,{screens,manifestURL=TOUCH
  }
  function dispose(){
   disposed=true;
+  unsubscribeMotion();
   restore();
   setState('disposed');
  }
