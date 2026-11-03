@@ -268,14 +268,15 @@ if(GALLERY_DEBUG)window.__phiEditorialCapture={
     const second=phiReceptionLivingMonitor?.banks?.[1];
     if(!first?.parent||!second?.parent)return {ok:false,reason:'TouchDesigner monitor banks not ready'};
     first.updateWorldMatrix(true,false);second.updateWorldMatrix(true,false);
-    // Frame the bank showing actual visual studies, not the second bank's
-    // 'animations forthcoming' placeholders.
-    const centre=first.getWorldPosition(new THREE.Vector3());
+    // The midpoint is the verified unobstructed viewing location. Aim at
+    // the original working bank while avoiding the separating gallery wall.
+    const firstCentre=first.getWorldPosition(new THREE.Vector3());
+    const midpoint=firstCentre.clone().add(second.getWorldPosition(new THREE.Vector3())).multiplyScalar(.5);
     const normal=new THREE.Vector3(0,0,1).transformDirection(first.matrixWorld).normalize();
-    const view=new THREE.PerspectiveCamera(68,camera.aspect,.05,130);
-    view.position.copy(centre).addScaledVector(normal,3.5);
-    view.position.y=centre.y-1.2;
-    const target=centre.clone();target.y=centre.y-.6;
+    const view=new THREE.PerspectiveCamera(53,camera.aspect,.05,130);
+    view.position.copy(midpoint).addScaledVector(normal,3.7);
+    view.position.y=midpoint.y-1.2;
+    const target=firstCentre.clone();target.y=firstCentre.y-.6;
     view.lookAt(target);
     renderer.setAnimationLoop(null);renderer.render(scene,view);
     return {ok:true,kind:'td',position:view.position.toArray(),target:target.toArray(),banks:2};
