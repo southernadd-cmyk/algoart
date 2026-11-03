@@ -132,11 +132,11 @@ test('empty floors skip selective bloom without disabling it when returning to r
 test('architectural grain is fixed in screen space rather than animated frame-to-frame',()=>{
  const effect=createStaticGrainEffect(),shader=effect.getFragmentShader();
  assert.equal(effect.blendMode.blendFunction,BlendFunction.SCREEN);
- assert.match(shader,/rand\\(uv\\)/);
- assert.doesNotMatch(shader,/\\btime\\b|\\bdeltaTime\\b/);
+ assert.match(shader,/rand\(uv\)/);
+ assert.doesNotMatch(shader,/\btime\b|\bdeltaTime\b/);
  const source=readFileSync(new URL('../gallery/visit/phi-post-fx.mjs',import.meta.url),'utf8');
- assert.doesNotMatch(source,/new NoiseEffect\\(/);
- assert.match(source,/grain=createStaticGrainEffect\\(\\)/);
- assert.match(source,/reducedMotion\\?\\.matches\\?0:s\\.grain/);
+ assert.doesNotMatch(source,/new NoiseEffect\(/);
+ assert.match(source,/grain=createStaticGrainEffect\(\)/);
+ assert.match(source,/reducedMotion\?\.matches\?0:s\.grain/);
  assert.equal(phiFXSettings('architectural',{grain:.032}).grain,.032);
 });
