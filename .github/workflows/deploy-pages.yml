@@ -1,5 +1,5 @@
 name: Deploy ALGO ART to Pages
-# Deployment refresh: publish latest gallery and accessibility updates.
+# Deployment refresh: publish latest About-page artist statement and gallery updates.
 
 on:
   push:
