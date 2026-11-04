@@ -58,3 +58,11 @@ test('large screen crop is cached until its source UV changes, preserving the re
   assert.notDeepEqual(Array.from(faces[0].geometry.getAttribute('uv').array),before,'atlas transition refreshes the crop');
  }finally{installation?.dispose();globalThis.requestAnimationFrame=oldRAF;globalThis.cancelAnimationFrame=oldCancel;}
 });
+
+test('reduced-motion screen playback has a keyboard-accessible gallery control',()=>{
+ const html=read('index.html');
+ const motion=read('phi-touchdesigner-motion.mjs');
+ assert.match(html,/<button id="touchDesignerMotionToggle" type="button"/);
+ assert.match(motion,/prefers-reduced-motion: reduce/);
+ assert.match(motion,/addEventListener\('click'/);
+});
