@@ -19,6 +19,7 @@ main{max-width:1350px;margin:auto;padding:65px clamp(20px,4vw,65px) 95px}
 article{max-width:none;margin:0}article>p,article>.note,article>.endlinks{max-width:800px}h1,h2{font-family:"AlgoArt Marker",sans-serif;font-weight:normal;line-height:1.13}
 h1{font-size:clamp(40px,6vw,70px);margin:12px 0 26px}h2{font-size:clamp(27px,3vw,38px);margin:60px 0 18px}
 .kicker{font:16px "AlgoArt Marker",sans-serif;color:var(--rose)}
+.artist-statement{max-width:800px;margin:0 0 32px}.artist-statement h2{font-size:clamp(24px,2.6vw,31px);margin:0 0 14px}.artist-statement p{margin:0 0 20px}
 .lede{font-size:clamp(21px,2.4vw,27px);line-height:1.5}
 p{margin:0 0 1.35em}figure{margin:48px 0 45px;max-width:930px}
 figure img{width:100%;height:auto;display:block;background:#f6f0e5;box-shadow:0 12px 30px #40393120;transform:rotate(.65deg)}
@@ -42,7 +43,10 @@ footer{max-width:1350px;margin:0 auto 45px;padding:18px 22px;border-top:1px soli
 </header><main><article>
 <span class="kicker">NOTES ON THE DRAWING MACHINE</span>
 <h1>ABOUT THIS PROJECT</h1>
-<p class="small">Previously presented as ALGO/ART. The artwork, archive and original links remain the same.</p>
+<section class="artist-statement" aria-labelledby="artist-statement-heading">
+<h2 id="artist-statement-heading">ARTIST STATEMENT</h2>
+<p>I use code to test what happens when a mathematical rule meets the irregular character of a handmade mark. In PROPORTION PIECE, the golden ratio proposes a structure, but it cannot decide whether a drawing works. I am interested in the space between measured order, material unpredictability and the judgement of the person looking.</p>
+</section>
 <p class="lede">PROPORTION PIECE began with a question: how much of a drawing could be organised by a single proportion before it started to feel too orderly?</p>
 <p>The number is φ, approximately 1.618. It turns up in the divisions, distances and directions of these compositions. Sometimes it is obvious. Elsewhere it is buried beneath a tangle of lines, a patch of colour or an expanse of untouched paper.</p>
 <p>The canvas is 1400 × 1000 pixels (or 1000 × 1400 in portrait), not a golden rectangle: φ governs the relationships within the drawing rather than the shape of the page.</p>
@@ -90,5 +94,6 @@ footer{max-width:1350px;margin:0 auto 45px;padding:18px 22px;border-top:1px soli
 <p>What interests me is the space between the measured structure and the marks on the page. The proportions can be exact; the drawing needn't look that way.</p>
 <h2>FOLLOW THE DRAWINGS</h2><p>The daily gallery is generated automatically by the drawing machine, not submitted by visitors. New pieces are created from code each day and shared on Instagram, Threads and Bluesky. Drawings you make in the editor remain yours; they are not added to the daily gallery.</p><div class="social-links" aria-label="Follow PROPORTION PIECE"><a class="social-button" href="https://www.instagram.com/artalgorithm/" target="_blank" rel="noopener noreferrer"><canvas class="social-marker-icon" width="128" height="128" data-social-marker="instagram" aria-hidden="true"></canvas><span class="social-label">Instagram <small>@artalgorithm ↗</small></span></a><a class="social-button" href="https://www.threads.net/@artalgorithm" target="_blank" rel="noopener noreferrer"><canvas class="social-marker-icon" width="128" height="128" data-social-marker="threads" aria-hidden="true"></canvas><span class="social-label">Threads <small>@artalgorithm ↗</small></span></a><a class="social-button" href="https://bsky.app/profile/artalgorithm.bsky.social" target="_blank" rel="noopener noreferrer"><canvas class="social-marker-icon" width="128" height="128" data-social-marker="bluesky" aria-hidden="true"></canvas><span class="social-label">Bluesky <small>artalgorithm.bsky.social ↗</small></span></a></div>
 <p class="endlinks"><a href="../">Try the drawing machine ↗</a> &nbsp; <a href="../gallery/">Browse the gallery ↗</a> &nbsp; <a href="step-by-step/">See how a drawing is made ↗</a></p>
+<p class="small">Previously presented as ALGO/ART. The artwork, archive and original links remain the same.</p>
 </article></main><footer>PROPORTION PIECE — a drawing experiment in proportion, randomness and human judgement.</footer>
 <script src="../js/random.js"></script><script src="../js/marker.js"></script><script src="../js/social-marker-icons.js"></script></body></html>
