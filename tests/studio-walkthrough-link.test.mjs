@@ -35,10 +35,19 @@ test('action paint replay uses real material layers and blank first stage',()=>{
  assert.match(replay,/action-painting-v1\.js/);
  assert.match(replay,/version===4\?A\.renderActionPaintingV4:version===3\?A\.renderActionPaintingV3:A\.renderActionPainting/);
  assert.match(replay,/save\('The blank page',blank\)/);
- assert.match(replay,/const stepTotal=\(\)=>isAction\(\)\|\|capturedMaterial\(\)/);
+ assert.match(replay,/function stepTotal\(\)\{return markerMode\(\)\?markerRanges\.length:Math\.max\(0,materialSteps\.length-1\);\}/);
  assert.match(replay,/onStage:\(label,canvas\)=>save\(label,canvas\)/);
  assert.match(replay,/materialFromURL/);
  assert.match(replay,/id="replayMaterial"/);
  assert.match(replay,/id="continueEditing"/);
 });
 
+
+test('replay steps by level, not by pen pass',()=>{
+ assert.match(replay,/id="stepLevel"/);
+ assert.match(replay,/id="highlightNew"/);
+ assert.match(replay,/const OVERVIEW_STEPS=24, MATERIAL_OVERVIEW_STEPS=12/);
+ assert.match(replay,/levels=\{overview\};levelOrder=\['overview'\]/);
+ assert.match(replay,/materialDistinct=retained/);
+ assert.match(replay,/MATERIAL_FRAME_LIMIT=48/);
+});
