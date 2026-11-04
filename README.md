@@ -2,11 +2,15 @@
 
 *How far can the golden ratio govern a composition while its marks remain visibly human?*
 
-**An ongoing generative artwork in drawing, sculpture, architecture and time.**
+**An ongoing generative artwork by Adam Clement, made in code and unfolding through drawing, sculpture, architecture and time.**
 
 [Enter the drawing machine](https://southernadd-cmyk.github.io/algoart/) · [Walk the exhibition](https://southernadd-cmyk.github.io/algoart/gallery/visit/) · [View the daily archive](https://southernadd-cmyk.github.io/algoart/gallery/) · [About the project](https://southernadd-cmyk.github.io/algoart/about/)
 
-## An invitation, not a proof
+## Artist statement
+
+I use code to test what happens when a mathematical rule meets the irregular character of a hand-drawn mark. In PROPORTION PIECE, the golden ratio proposes a structure, while simulated materials give the marks texture, variation and the appearance of gesture. The images are generated, not drawn by hand. Neither the number nor the machine can decide whether a drawing works. That judgement remains with the person looking.
+
+## The premise
 
 I use the golden ratio, φ (approximately 1.618), not as a guarantee of beauty but as a constraint to test. It has an unusually persistent reputation: a number said to explain the proportions of everything from a painting to a shell. Some of those connections can be demonstrated. Others are stories we have chosen to tell about beauty.
 
@@ -39,7 +43,7 @@ Some portrait drawings become sculptures, their source geometry reinterpreted as
 
 ![The actual PROPORTION PIECE virtual exhibition tower, viewed from outside, with the architecture rising around its dated galleries](docs/images/exhibition-tower-2026-11-01.jpg)
 
-*The growing exhibition tower. Fresh screenshot from the current Three.js gallery, captured 1 November 2026.*
+*The growing exhibition tower, documented in the Three.js gallery on 1 November 2026.*
 
 In reception, a **Translation Area** extends drawings into moving images using TouchDesigner, while a **gramophone** compares moments in the written score with moments in recorded time. Mozart and Debussy offer different ways of hearing — or failing to hear — a proposed proportion. Nothing is inserted into the recordings to make the mathematics audible. The listener decides what matters.
 
@@ -52,19 +56,17 @@ The other visitors are not just scale figures. They can be spoken to. Their rule
 
 *Both are documentary screenshots captured from the live exhibition code on 1 November 2026, not illustrative reconstructions.*
 
-## The visitor can change the work
+## The public drawing machine
 
 The [browser editor](https://southernadd-cmyk.github.io/algoart/) is open and free to use. A seed makes a composition reproducible, but a drawing is not a closed result. Choose another material; change the geometry; pull the influence of φ back; alter the colour of the paper. **Another** makes a new drawing, **Mutate** moves away from the present one, and **Four at once** puts alternatives beside each other. **Show the φ** reveals some of the system beneath the surface.
 
-The canvas is intentionally a practical **7:5 format**, not a golden rectangle. The proportion works *inside* the image. The editor can export PNG, SVG and pen-plotter paths, and preserve a particular drawing through its seed, settings and renderer version. A viewer's experiments are their own; they are not automatically added to the curated daily archive.
+The canvas is intentionally a practical **7:5 format**, not a golden rectangle. The proportion works *inside* the image. The editor can export PNG, SVG and pen-plotter paths, and preserve a particular drawing through its seed, settings and renderer version. The public editor and the published daily archive are separate: visitors can make and save their own drawings, but these are **not** automatically added to the daily editions or the exhibition tower.
 
 The [daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/) continues to accumulate landscape and portrait works. The date of a drawing determines its place in the tower, but not its meaning. New floors do not resolve the question posed by the earliest ones. They keep asking it.
 
 ## An unfinished question
 
-A computer can apply a ratio with perfect consistency. It cannot, by doing so, guarantee that anything worth looking at will appear.
-
-I want PROPORTION PIECE to occupy that gap: between a mathematical system and an aesthetic decision, between the repeated procedure and the individual mark, between the work an algorithm makes and the work a person sees. **The number proposes. The drawing answers — sometimes by disagreeing.**
+The proportions can be exact; the marks need not look that way. New works and floors do not prove that φ makes a drawing beautiful. They keep exposing the distance between a rule and an aesthetic decision. **The number proposes. The drawing answers — sometimes by disagreeing.**
 
 ---
 
@@ -83,7 +85,7 @@ The [calibration audit](CALIBRATION_AUDIT.md) distinguishes exact mathematical r
 
 ### Files and reproduction
 
-The [editor](https://southernadd-cmyk.github.io/algoart/) is a static web application. The exhibition is a bundled Three.js environment with prebuilt geometry, staged floor loading and room-visibility culling. The `gallery/visit/` and `test/virtual-gallery/` directories are separate live and experimental towers.
+The [editor](https://southernadd-cmyk.github.io/algoart/) is a static web application. The public exhibition at `gallery/visit/` is a bundled Three.js environment with prebuilt geometry, staged floor loading and room-visibility culling. `test/virtual-gallery/` is a separate experimental entry point and bundle for testing changes; it is not the public exhibition.
 
 To run the site locally:
 
