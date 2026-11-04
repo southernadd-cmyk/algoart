@@ -29,7 +29,14 @@ try {
  await page.waitForFunction(()=>document.querySelector('#counter')?.textContent?.includes('/'),{timeout:30000});
  for(const material of ['marker','action','tissue','watercolour','oil']){
   await page.selectOption('#replayMaterial',material);
-  await page.waitForFunction(()=>Number(document.querySelector('#step')?.max)>0,{timeout:30000});
+  // Oil yields two animation frames before rendering. Its previous material
+  // keeps the old slider max until capture finishes; wait for the ready signal.
+  await page.waitForFunction(expected=>{
+   const max=Number(document.querySelector('#step')?.max);
+   if(!(max>0))return false;
+   const notice=document.querySelector('#notice')?.textContent||'';
+   return expected!=='oil'||notice.includes('Oil walkthrough ready');
+  },material,{timeout:120000});
   const max=Number(await page.locator('#step').getAttribute('max'));
   assert.ok(max>=1,material+' has no stages');
   await page.locator('#all').click();
