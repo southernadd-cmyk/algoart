@@ -1364,6 +1364,18 @@ function chooseBestLayout(s){
   return{layout:best||[],strategy:strategy,voids:voids,score:bestScore};
 }
 
+// Walkthrough grouping. Labels the strokes that follow so the step-by-step
+// page can replay a drawing by section and element rather than pen pass.
+// Recording metadata only: consumes no randomness and changes no marks.
+function markGroup(section,sectionLabel,id,label,info){
+  if(!A.svgRecorder)return;
+  var g={section:section,sectionLabel:sectionLabel,id:section+'/'+id,label:label};
+  if(info)for(var k in info)if(Object.prototype.hasOwnProperty.call(info,k))g[k]=info[k];
+  A.svgRecorder.group=g;
+}
+function endMarkGroup(){if(A.svgRecorder)A.svgRecorder.group=null;}
+A.markGroup=markGroup;
+
 function drawPlannedElement(ctx,plan,i,s,r,pal,strategy){
   var sh=r.chance(s.shapeAmount/100)?r.pick(enabledShapes(s)):'line';
   var c={x:plan.x,y:plan.y};
@@ -1706,6 +1718,7 @@ function drawFieldV3(ctx,s,r,pal){
   for(var i=0;i<ordered.length;i++){
     var plan=ordered[i];
     var localR=A.makeR(s.seed+'|field-draw-v3|'+result.strategy+'|'+plan._fieldIndex);
+    markGroup('tier-'+plan.tier,plan.tier==='hero'?'Leading shapes':plan.tier==='medium'?'Supporting shapes':'Small shapes','el-'+i,'Shape '+(i+1),{tier:plan.tier});
     drawPlannedElementV3(ctx,plan,plan._fieldIndex,s,localR,pal,result.strategy);
   }
 
@@ -2072,6 +2085,7 @@ function drawSpiralV6(ctx,s,r,pal){
     for(var q=0;q<paths[pa].length;q++){
       var p=paths[pa][q], inside=p.x>-D.ink.drawOutsideMarginPx&&p.x<A.W+D.ink.drawOutsideMarginPx&&p.y>-D.ink.drawOutsideMarginPx&&p.y<A.H+D.ink.drawOutsideMarginPx;
       var sparseGap=family==='SCATTER'&&r.chance(D.ink.scatterGapChance);
+      markGroup('path-'+pa,paths.length>1?'Trajectory '+(pa+1)+' of '+paths.length:'The trajectory','pt-'+q,'Point '+(q+1)+' on the trajectory',{family:family});
       if(inside&&prev&&s.lines&&!sparseGap&&r.chance(A.lerp(D.ink.lineChanceSparse,D.ink.lineChanceDense,crowdFactor(s))))A.drawLine(ctx,prev,p,pal[drawIndex%pal.length],s,r);
       if(inside&&!sparseGap){
         var local=q, tier=(q===Math.round((paths[pa].length-1)*A.INV))?'hero':(q%Math.max(D.tiers.mediumPeriodFloor,Math.round(paths[pa].length*A.INV*D.tiers.mediumPeriodScale))===0?'medium':'small');
@@ -2198,6 +2212,7 @@ function drawRects(ctx,s,r,pal){
     wobble:Math.min(D.ink.maximumWobble,s.wobble)
   });
 
+  markGroup('frame','The outer frame','root','The outer frame');
   if(s.rectangles!==false){
     A.rect(ctx,{x:A.W/2,y:A.H/2},root.w,root.h,0,pal[0],rectStyle,r);
   }
@@ -2206,6 +2221,7 @@ function drawRects(ctx,s,r,pal){
     if(voidMap[i])continue;
 
     var leaf=leaves[i];
+    markGroup('cells','Filling the cells','cell-'+i,'Cell '+(i+1),{depth:leaf.depth,cell:{x:leaf.x,y:leaf.y,w:leaf.w,h:leaf.h}});
     var inset=Math.min(leaf.w,leaf.h)*r.range(D.marks.insetFractionMin,D.marks.insetFractionMax);
     var w=Math.max(D.marks.minimumVisibleSidePx,leaf.w-inset*2);
     var h=Math.max(D.marks.minimumVisibleSidePx,leaf.h-inset*2);
@@ -2429,6 +2445,7 @@ function drawBurst(ctx,s,r,pal){
       };
       guideRays.push({hub:hi,x:p.x,y:p.y});
 
+      markGroup('hub-'+hi,hubs.length>1?'Centre '+(hi+1)+' of '+hubs.length:'The centre','ray-'+local,'Ray '+(local+1),{hub:hi});
       var lineChance=A.lerp(D.ink.lineChanceSparse,D.ink.lineChanceDense,crowd);
       if(variant==='TRIAD')lineChance*=D.ink.triadLineChanceScale;
       if(variant==='SATELLITE'&&hi>0)lineChance*=D.ink.satelliteLineChanceScale;
@@ -2690,6 +2707,7 @@ function drawNetwork(ctx,s,r,pal){
   for(var e=0;e<edges.length;e++){
     var edge=edges[e];
     var style=edge.primary?primaryStyle:secondaryStyle;
+    markGroup(edge.primary?'links-main':'links-extra',edge.primary?'Main connections':'Extra connections','edge-'+e,(edge.primary?'Main':'Extra')+' connection '+(e+1),{primary:!!edge.primary});
     A.drawLine(
       ctx,
       layout[edge.a],
@@ -2703,6 +2721,7 @@ function drawNetwork(ctx,s,r,pal){
   for(var i=0;i<layout.length;i++){
     var node=layout[i];
     var chance=(s.shapeAmount/100)*A.lerp(NETWORK_RENDER_TUNING.nodes.visibleSparse,NETWORK_RENDER_TUNING.nodes.visibleCrowded,crowd);
+    markGroup('nodes','Shapes at the points','node-'+i,'Point '+(i+1),{tier:node.tier});
     if(node.tier==='hero')chance=Math.max(chance,NETWORK_RENDER_TUNING.nodes.heroChanceFloor);
     else if(node.tier==='medium')chance=Math.max(chance,NETWORK_RENDER_TUNING.nodes.mediumChanceFloor);
     else chance*=NETWORK_RENDER_TUNING.nodes.smallChanceScale;
@@ -2876,9 +2895,12 @@ function drawScribble(ctx,s,r,pal){
     }
   }
 
+  var scribbleRun=0;
   for(var ai=0;ai<anchors.length;ai++){
     var anchor=anchors[ai];
     var count=counts[ai];
+    var sectionLabel=anchors.length>1?'Area '+(ai+1)+' of '+anchors.length:'The scribble area';
+    scribbleRun++;
     if(count<=0)continue;
 
     var startAngle=anchor.flow+A.GOLD*(ai+1);
@@ -2939,6 +2961,7 @@ function drawScribble(ctx,s,r,pal){
       q.x=A.clamp(q.x,SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx,A.W-SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx);
       q.y=A.clamp(q.y,SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx,A.H-SCRIBBLE_STROKE_TUNING.avoidance.canvasStrokeInsetPx);
 
+      markGroup('area-'+ai,sectionLabel,'run-'+scribbleRun,'Continuous run '+scribbleRun,{area:ai});
       A.drawLine(ctx,p,q,pal[markIndex%pal.length],style,r);
 
       if(s.arcs&&r.chance((s.shapeAmount/100)*SCRIBBLE_STROKE_TUNING.embellishment.arcProbabilityScale)){
@@ -2961,6 +2984,7 @@ function drawScribble(ctx,s,r,pal){
       var deliberateBreak=runPos>=runLength;
       var stochasticBreak=r.chance(SCRIBBLE_STROKE_TUNING.breaks.spontaneousBreakChance+s.negativeSpace/SCRIBBLE_STROKE_TUNING.breaks.negativeSpaceBreakDivisor);
       if(deliberateBreak||stochasticBreak){
+        scribbleRun++;
         var resetAngle=startAngle+(local+1)*A.GOLD;
         var resetRadius=anchor.radius*r.range(SCRIBBLE_STROKE_TUNING.breaks.resetRadiusLow,SCRIBBLE_STROKE_TUNING.breaks.resetRadiusHigh);
         p={
@@ -2973,6 +2997,7 @@ function drawScribble(ctx,s,r,pal){
       }
     }
 
+    markGroup('area-'+ai,sectionLabel,'finish-'+ai,'Linking and finishing the area',{area:ai});
     if(ai<anchors.length-1&&variant==='RIBBON'&&s.lines&&r.chance(SCRIBBLE_STROKE_TUNING.embellishment.ribbonLinkChance)){
       var next=anchors[ai+1];
       if(!pointInVoid(anchor.x,anchor.y,voids)&&!pointInVoid(next.x,next.y,voids)){
@@ -3214,6 +3239,7 @@ function drawOrganicV8(ctx,s,r,pal){
     }
     if(!free)continue;
     var colour=pal[(node.branch+node.depth)%pal.length];
+    markGroup('gen-'+node.depth,node.depth===0?'The first stems':'Growth generation '+(node.depth+1),'seg-'+segments.length,'Branch '+(segments.length+1),{depth:node.depth,branch:node.branch});
     A.drawLine(ctx,{x:node.x,y:node.y},{x:ex,y:ey},colour,organic,r);
     segments.push({x1:node.x,y1:node.y,x2:ex,y2:ey,depth:node.depth,branch:node.branch});
     if(r.chance(organic.shapeAmount/ORGANIC_TUNING.details.budChanceDivisor)){
@@ -3376,6 +3402,7 @@ function drawGeometric(ctx,s,r,pal){
     var perp=axisAngle+Math.PI/2;
 
     if(s.lines){
+      markGroup('axis','The construction axis','axis','The construction axis');
       A.drawLine(ctx,a1,a2,pal[0],ghostStyle,r);
     }
 
@@ -3491,6 +3518,7 @@ function drawGeometric(ctx,s,r,pal){
     }
 
     if(pointInVoid(item.x,item.y,voids))continue;
+    markGroup('shapes','Placing the shapes','item-'+i,'Shape '+(i+1),{tier:item.tier});
     drawConstructedShape(ctx,item,i,s,r,pal,geometric);
 
     if(s.lines&&variant!=='AXIS'&&item.tier!=='small'&&r.chance(CONSTRUCTED_TUNING.finish.guideBaseChance+s.complexity/CONSTRUCTED_TUNING.finish.guideComplexityDivisor)){
@@ -3972,6 +4000,7 @@ A.render=function(target,s,scale,showGeometry){
     meta=drawField(ctx,s,r,pal);
   }
 
+  endMarkGroup();
   if(showGeometry)A.geometryOverlay(ctx,s,meta);
   if(phiFrame){
     ctx.restore();
