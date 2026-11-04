@@ -4,6 +4,18 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 const base=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
+// The stats caption now displays engine + material; it no longer includes the seed.
+// Wait for the requested seed and the completed render instead of a stale caption.
+async function waitForSeedArtwork(page,seed){
+  await page.waitForFunction(expected=>{
+    const seedInput=document.getElementById('seed');
+    const stats=document.getElementById('statsText');
+    const overlay=document.getElementById('creatingOverlay');
+    return seedInput?.value===expected &&
+      Boolean(stats?.textContent?.trim()) &&
+      overlay?.hidden===true;
+  },seed);
+}
 const browser=await chromium.launch({headless:true});
 try{
   const page=await browser.newPage({viewport:{width:1450,height:960}});
@@ -12,7 +24,7 @@ try{
   const url=new URL(base);
   url.search='?v=9&seed=PHI-SHEET-20261014&mode=field&pal=neon&material=watercolour-v2s&fit=0';
   await page.goto(url.href,{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent.includes('PHI-SHEET'));
+  await waitForSeedArtwork(page,'PHI-SHEET-20261014');
   // Synthetic bounds verify the asymmetric φ rule independently of modes.
   const envelopes=await page.evaluate(()=>{
     const A=window.AlgoArt,w=1400,h=1000;
@@ -112,7 +124,7 @@ try{
     'Fit details should disappear from Describe when Fit to φ is off');
   await page.locator('#closeDescription').click();
   await page.goto(new URL('?v=9&seed=PHI-SHEET-20261014&mode=field&pal=neon&material=watercolour-v2s&fit=1',base).href);
-  await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent.includes('PHI-SHEET'));
+  await waitForSeedArtwork(page,'PHI-SHEET-20261014');
   assert.equal(await page.locator('#phiSheetFit').isChecked(),false);
   assert.equal(await page.locator('#watercolourFit').isChecked(),true);
   assert.deepEqual(errors,[]);

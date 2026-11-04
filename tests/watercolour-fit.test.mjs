@@ -14,7 +14,13 @@ try{
     const url=new URL(base);
     url.search='?v=9&seed=3XHXQ-4616&mode=field&pal=neon&material=watercolour-v2s'+args;
     await page.goto(url.href,{waitUntil:'domcontentloaded'});
-    await page.waitForFunction(()=>document.querySelector('#statsText')?.textContent.includes('3XHXQ-4616'));
+    await page.waitForFunction(expected=>{
+      const seedInput=document.getElementById('seed');
+      const stats=document.getElementById('statsText');
+      const overlay=document.getElementById('creatingOverlay');
+      return seedInput?.value===expected &&
+        Boolean(stats?.textContent?.trim()) && overlay?.hidden===true;
+    },'3XHXQ-4616');
     return new URL(page.url());
   }
   // Old links had implicit fitting; explicit false must not alter them.
