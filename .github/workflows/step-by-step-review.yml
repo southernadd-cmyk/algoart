@@ -1,0 +1,37 @@
+name: Step-by-step walkthrough browser regression
+on:
+  pull_request:
+    paths:
+      - 'about/step-by-step/**'
+      - 'js/generator.js'
+      - 'js/marker.js'
+      - 'tests/material-walkthrough-browser.mjs'
+      - 'tests/walkthrough-levels.test.mjs'
+      - 'tests/studio-walkthrough-link.test.mjs'
+      - '.github/workflows/step-by-step-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  walkthrough:
+    name: Replay algorithms and five-material browser test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Syntax and unit tests
+        run: |
+          node --check js/generator.js
+          node --check js/marker.js
+          node --check tests/material-walkthrough-browser.mjs
+          node --test tests/walkthrough-levels.test.mjs
+          node --test tests/studio-walkthrough-link.test.mjs
+      - name: End-to-end walkthrough test for all five materials
+        timeout-minutes: 12
+        run: node tests/material-walkthrough-browser.mjs
