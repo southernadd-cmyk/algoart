@@ -244,7 +244,11 @@ function addMonitorBank(THREE,scene,{room,lift,physicalWalls=[],elevation,camera
   infoRow.update(time,distance<11);
   if(active)loadSource();
   // A still frame remains visible even when a published export is missing.
-  if(!active||media.usingExport||isTouchDesignerMotionPaused())return;
+  // Keep the normal fallback update throttle while paused: without advancing
+  // last, the otherwise static monitors would be checked every RAF tick.
+  const motionPaused=isTouchDesignerMotionPaused();
+  if(active&&!media.usingExport&&motionPaused)last=time;
+  if(!active||media.usingExport||motionPaused)return;
   last=time;
   canvases.forEach((ctx,i)=>{
    draw(ctx,i%3,(time-origin)*.001);textures[i].needsUpdate=true;
