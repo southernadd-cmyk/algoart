@@ -32,13 +32,20 @@ A.stroke=function(ctx,points,col,s,r,curve){
   var passes=Math.max(1,Math.round(s.overdraw*p[3]));
   var wob=(s.wobble/100)*7*p[2];
   var base=Math.max(.6,s.thickness*p[0]);
+  // Walkthrough metadata only: which mark each recorded pass belongs to, the
+  // mark's shape and the engine's current group. Consumes no randomness, so
+  // rendering is unchanged.
+  var rec=A.svgRecorder;
+  var markId=rec?(rec.markSeq=(rec.markSeq||0)+1):0;
+  var markKind=A._markKind||(curve?'curve':(points.length===2?'line':'path'));
+  A._markKind=null;
 
   function f(v){return A.svgRecorder&&A.svgRecorder.precise?v:Math.round(v*100)/100}
   function record(d,alpha,width,lineCap,dash,dashOffset){
-    if(!A.svgRecorder)return;
-    A.svgRecorder.paths.push({
+    if(!rec)return;
+    rec.paths.push({
       d:d,
-      stroke:A.svgRecorder.precise?ctx.strokeStyle:col,
+      stroke:rec.precise?ctx.strokeStyle:col,
       opacity:alpha,
       width:width,
       lineCap:lineCap,
@@ -46,6 +53,10 @@ A.stroke=function(ctx,points,col,s,r,curve){
       dashOffset:dashOffset||0,
       blend:ctx.globalCompositeOperation
     });
+    // Non-enumerable, so SVG export, plotter output and the renderer-lock
+    // snapshots (which serialise recorded paths) are unchanged.
+    var info={mark:markId,pass:pass,passes:passes,kind:markKind,group:rec.group||null},recorded=rec.paths[rec.paths.length-1];
+    for(var key in info)Object.defineProperty(recorded,key,{value:info[key],enumerable:false,writable:true,configurable:true});
   }
 
   ctx.save();
@@ -116,6 +127,7 @@ A.drawLine=function(ctx,a,b,col,s,r){
 };
 
 A.ellipse=function(ctx,c,rx,ry,rot,col,s,r){
+  A._markKind='ellipse';
   var pts=[],seg=44;
   for(var i=0;i<=seg;i++){
     var a=A.TAU*i/seg,x=Math.cos(a)*rx,y=Math.sin(a)*ry;
@@ -128,6 +140,7 @@ A.ellipse=function(ctx,c,rx,ry,rot,col,s,r){
 };
 
 A.rect=function(ctx,c,w,h,rot,col,s,r){
+  A._markKind='rect';
   var pts=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2],[-w/2,-h/2]].map(function(p){
     return{
       x:c.x+p[0]*Math.cos(rot)-p[1]*Math.sin(rot),
@@ -138,6 +151,7 @@ A.rect=function(ctx,c,w,h,rot,col,s,r){
 };
 
 A.poly=function(ctx,c,rad,n,rot,col,s,r){
+  A._markKind='poly';
   var pts=[];
   for(var i=0;i<=n;i++){
     var a=rot+A.TAU*i/n;
@@ -147,6 +161,7 @@ A.poly=function(ctx,c,rad,n,rot,col,s,r){
 };
 
 A.arc=function(ctx,c,rad,start,sweep,col,s,r){
+  A._markKind='arc';
   var pts=[],seg=26;
   for(var i=0;i<=seg;i++){
     var a=start+sweep*i/seg;
