@@ -1,5 +1,5 @@
 name: Deploy ALGO ART to Pages
-# Deployment refresh: restore the test tower to the live baseline.
+# Deployment refresh: publish latest gallery and accessibility updates.
 
 on:
   push:
