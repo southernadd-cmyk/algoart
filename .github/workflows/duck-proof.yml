@@ -24,8 +24,10 @@ jobs:
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/duck-http.log 2>&1 &
           sleep 4
-      - name: Capture real renderer outputs and low-angle tower
-        run: node scripts/duck-proof-capture.mjs
+      - name: Build isolated capture-only gallery bundle
+        run: npm run gallery:bundle:phi
+      - name: Capture real low-angle exterior tower views
+        run: node scripts/duck-tower-capture-only.mjs
       - name: Preserve outputs and source manifest
         if: always()
         uses: actions/upload-artifact@v4
