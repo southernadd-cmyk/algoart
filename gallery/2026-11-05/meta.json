@@ -1,7 +1,7 @@
 {
   "version": 1,
   "date": "2026-11-05",
-  "count": 4,
+  "count": 5,
   "series": [
     "Orbital Studies",
     "Golden Trajectories",
@@ -201,6 +201,55 @@
         "grain": 16
       },
       "altText": "Abstract algorithmic marker artwork from PROPORTION PIECE’s Orbital Studies series. A field of 56 geometric forms is organised around 2 dominant forms, with smaller marks building rhythm around the centre."
+    },
+    {
+      "id": "2026-11-05-ACL01",
+      "title": "Orbital Studies — Action Painting Study 05",
+      "orientation": "landscape",
+      "material": "action",
+      "seed": "ACL-20261105-01-31774",
+      "mode": "field",
+      "series": "Orbital Studies",
+      "imageFile": "2026-11-05-action-landscape-01-field-ACL-20261105-01-31774.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACL-20261105-01-31774&mode=field&el=36&den=49&cx=70&neg=37&phi=92&rec=8&spi=56&ga=96&nest=36&pen=paint&th=8&wob=30&od=3&op=83&pr=54&dry=10&curve=84&shape=57&overlap=31&rot=87&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=4&sat=66&bri=49&paper=%23f5f0e6&grain=26&material=action-v4&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "field",
+        "series": "Orbital Studies",
+        "seed": "ACL-20261105-01-31774",
+        "elements": 36,
+        "density": 49,
+        "complexity": 70,
+        "negativeSpace": 37,
+        "phiStrength": 92,
+        "recursion": 8,
+        "spiralInfluence": 56,
+        "goldenAngle": 96,
+        "nesting": 36,
+        "pen": "paint",
+        "thickness": 8,
+        "wobble": 30,
+        "overdraw": 3,
+        "opacity": 83,
+        "pressure": 54,
+        "dryness": 10,
+        "curveBias": 84,
+        "shapeAmount": 57,
+        "overlap": 31,
+        "rotation": 87,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "marker",
+        "colourCount": 4,
+        "saturation": 66,
+        "brightness": 49,
+        "paper": "#f5f0e6",
+        "grain": 26
+      },
+      "altText": "Action painting from PROPORTION PIECE's Orbital Studies system, seed ACL-20261105-01-31774. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
