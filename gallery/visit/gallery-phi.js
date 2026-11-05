@@ -347,6 +347,13 @@ if(GALLERY_DEBUG)window.__phiReceptionPreview={
   view.position.copy(object.localToWorld(new THREE.Vector3(.45,-.6,.45)));view.lookAt(object.getWorldPosition(new THREE.Vector3()));
   renderer.setAnimationLoop(null);renderer.render(scene,view);},
  overview(){const view=new THREE.PerspectiveCamera(55,camera.aspect,.1,500);view.position.set(98,74,-130);view.lookAt(4,67,0);renderer.setAnimationLoop(null);renderer.render(scene,view);},
+ // ISOLATED PRINT-CAPTURE BRANCH ONLY. Real gallery WebGL scene from an external ground-level camera.
+ duckExterior(x=18,z=-55,targetY=62,fov=72){
+   const view=new THREE.PerspectiveCamera(fov,camera.aspect,.1,500);
+   view.position.set(x,2.2,z);view.lookAt(4,targetY,0);
+   renderer.setAnimationLoop(null);renderer.render(scene,view);
+   return {position:view.position.toArray(),target:[4,targetY,0],fov};
+ },
  show(kind){const object=kind==='map'?phiReceptionMap:kind==='desk'?phiReceptionDesk?.root:kind==='gramophone'?phiReceptionGramophone?.root:phiOutdoorPlants[0];if(!object?.parent)return;
   object.updateWorldMatrix(true,false);const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);
   const offset=kind==='map'?new THREE.Vector3(0,0,5.7):kind==='desk'?new THREE.Vector3(0,2.3,-6.8):kind==='gramophone'?new THREE.Vector3(-1.5,1.55,-2):new THREE.Vector3(2,1.4,2.7);
