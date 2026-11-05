@@ -1,0 +1,36 @@
+name: Duck A3 real-artwork proof (isolated)
+on:
+  push:
+    branches:
+      - work/duck-a3-proof-20261105
+    paths:
+      - '.github/workflows/duck-proof.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start isolated site server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/duck-http.log 2>&1 &
+          sleep 4
+      - name: Capture real renderer outputs and low-angle tower
+        run: node scripts/duck-proof-capture.mjs
+      - name: Preserve outputs and source manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proportion-piece-duck-real-proof
+          path: duck-proof/
+          if-no-files-found: warn
+          retention-days: 7
