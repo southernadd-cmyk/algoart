@@ -27,11 +27,21 @@ try{
  ];
  const results=[];
  for(const view of views){
-  const pose=await page.evaluate(v=>window.__phiReceptionPreview.duckExterior(v.x,v.z,v.targetY,v.fov),view);
-  await page.waitForTimeout(650);
-  const bytes=await page.screenshot({path:root+'/'+view.file,type:'jpeg',quality:92});
+  // Read the real WebGL frame synchronously in the same task as renderer.render.
+  // This avoids browser-level page screenshots waiting on a disabled animation loop.
+  const capture=await page.evaluate(v=>{
+    const pose=window.__phiReceptionPreview.duckExterior(v.x,v.z,v.targetY,v.fov);
+    const pixels=document.querySelector('#world').toDataURL('image/jpeg',.91);
+    return {pose,pixels};
+  },view);
+  let bytes=Buffer.from(capture.pixels.split(',')[1]||'','base64');
+  if(bytes.length<20000){
+    console.warn('WebGL direct-read too small; trying Chromium screenshot '+view.file+' '+bytes.length);
+    bytes=await page.screenshot({type:'jpeg',quality:88,timeout:120000});
+  }
   if(bytes.length<20000)throw Error('Blank camera '+view.file+' bytes='+bytes.length);
-  results.push({...view,bytes:bytes.length,pose});console.log('TOWER '+view.file+' '+bytes.length);
+  await fs.writeFile(root+'/'+view.file,bytes);
+  results.push({...view,bytes:bytes.length,pose:capture.pose});console.log('TOWER '+view.file+' '+bytes.length);
  }
  await fs.writeFile(root+'/tower-viewpoints.json',JSON.stringify({results,errors},null,2));
 }finally{await page.close().catch(()=>{});await browser.close();}
