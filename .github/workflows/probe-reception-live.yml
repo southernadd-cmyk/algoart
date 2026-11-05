@@ -1,0 +1,90 @@
+name: Read-only live reception video diagnosis
+
+on:
+  pull_request:
+    paths: ['.github/workflows/probe-reception-live.yml', 'tests/probe-reception-browser-video.mjs']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Check what GitHub Pages actually serves
+        run: |
+          node --input-type=module <<'NODE'
+          const base='https://southernadd-cmyk.github.io/algoart/gallery/visit/';
+          for(const [label,path] of [
+           ['index',''],['bundle','gallery-phi-bundle.js?v=reception-video-continuous-20261102'],
+           ['manifest1','touchdesigner/six-screen.json'],['manifest2','touchdesigner/bank-two/six-screen.json'],
+           ['atlas1','touchdesigner/six-screen-installation.webm'],
+           ['atlas2','touchdesigner/bank-two/six-screen-installation.webm']]){
+           try{
+            const res=await fetch(base+path,{signal:AbortSignal.timeout(30000),
+             headers:label.startsWith('atlas')?{range:'bytes=0-31'}:{}});
+            const body=await res.arrayBuffer(),str=label.startsWith('atlas')?'':new TextDecoder().decode(body);
+            console.log('LIVE_ASSET '+JSON.stringify({label,status:res.status,bytes:body.byteLength,
+             type:res.headers.get('content-type'),length:res.headers.get('content-length'),
+             range:res.headers.get('content-range'),lastModified:res.headers.get('last-modified'),
+             cache:res.headers.get('cache-control'),
+             updatedIndex:str.includes('reception-video-continuous-20261102'),
+             updatedBundle:str.includes('TouchDesigner playback stalled'),
+             starts:label==='index'?str.slice(0,80):undefined}));
+           }catch(error){console.error('LIVE_ASSET_ERROR',label,String(error));process.exitCode=1;}
+          }
+          NODE
+      - name: Install Chromium for actual video decode test
+        run: npx playwright install --with-deps chromium
+      - name: Test video decode in Chromium on the live origin
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          const base='https://southernadd-cmyk.github.io/algoart/gallery/visit/';
+          const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required','--no-sandbox']});
+          try{
+           const page=await browser.newPage({viewport:{width:1200,height:800}});
+           page.on('pageerror',e=>console.error('PAGE_ERROR '+e.message));
+           const response=await page.goto(base,{waitUntil:'domcontentloaded',timeout:60000});
+           console.log('PAGE_LOADED '+JSON.stringify({http:response?.status(),url:page.url()}));
+           for(const path of ['touchdesigner/six-screen-installation.webm','touchdesigner/bank-two/six-screen-installation.webm']){
+            const result=await page.evaluate(async src=>{
+             const video=document.createElement('video');video.muted=true;video.defaultMuted=true;
+             video.loop=true;video.playsInline=true;video.preload='auto';
+             const events=[];let frames=0;
+             for(const name of ['loadstart','loadeddata','playing','pause','waiting','stalled','error','suspend','emptied']){
+              video.addEventListener(name,()=>events.push({event:name,at:Math.round(performance.now()),time:video.currentTime,ready:video.readyState}));
+             }
+             video.src=new URL(src,location.href).href;
+             const sample=()=>({time:video.currentTime,paused:video.paused,ready:video.readyState,
+              network:video.networkState,error:video.error?.code,videoWidth:video.videoWidth,videoHeight:video.videoHeight});
+             try{
+              await new Promise((resolve,reject)=>{let t=setTimeout(()=>reject(Error('loadeddata timeout')),20000);
+               video.addEventListener('loadeddata',()=>{clearTimeout(t);resolve()},{once:true});
+               video.addEventListener('error',()=>reject(Error('video error')),{once:true});
+              });
+              const frameCallback=()=>{frames++;if(frames<200)video.requestVideoFrameCallback?.(frameCallback);};
+              video.requestVideoFrameCallback?.(frameCallback);
+              await video.play();const first=sample();
+              await new Promise(r=>setTimeout(r,3500));const second=sample();
+              await new Promise(r=>setTimeout(r,3500));const third=sample();
+              return {src,first,second,third,frames,events,advanced:third.time-first.time>4};
+             }catch(e){return {src,error:String(e),sample:sample(),events,frames};}
+             finally{video.pause();video.removeAttribute('src');video.load();}
+            },path);
+            console.log('CHROMIUM_VIDEO '+JSON.stringify(result));
+           }
+           await page.close();
+          }finally{await browser.close();}
+          NODE
+      - name: Compare isolated video and active 3D gallery frame delivery
+        run: node tests/probe-reception-browser-video.mjs
