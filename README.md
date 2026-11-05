@@ -1,6 +1,6 @@
 # PROPORTION PIECE
 
-*How far can the golden ratio govern a composition while its marks remain visibly human?*
+*How far can the golden ratio govern a composition while its marks retain the irregularity of hand-drawing?*
 
 **An ongoing generative artwork by Adam Clement, made in code and unfolding through drawing, sculpture, architecture and time.**
 
