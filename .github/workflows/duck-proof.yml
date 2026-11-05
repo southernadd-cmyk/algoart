@@ -1,4 +1,4 @@
-name: Duck A3 real-artwork proof (isolated)
+name: Duck A3 marker-palette proof (isolated)
 # Capture-only rerun: direct WebGL frame read avoids screenshot timeout
 on:
   push:
@@ -25,15 +25,13 @@ jobs:
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/duck-http.log 2>&1 &
           sleep 4
-      - name: Build isolated capture-only gallery bundle
-        run: npm run gallery:bundle:phi
-      - name: Capture real low-angle exterior tower views
-        run: node scripts/duck-tower-capture-only.mjs
+      - name: Capture 8 marker systems with genuine palette diversity
+        run: node scripts/duck-palette-capture.mjs
       - name: Preserve outputs and source manifest
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: proportion-piece-duck-real-proof
-          path: duck-proof/
+          name: proportion-piece-duck-multiple-palettes
+          path: duck-palette-proof/
           if-no-files-found: warn
           retention-days: 7
