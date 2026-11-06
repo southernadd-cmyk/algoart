@@ -3,7 +3,7 @@
 export const OIL_PIGMENT_CUTOVER='2026-10-26';
 export const OIL_OPAQUE_CUTOVER='2026-10-26';
 export const OIL_V7_CUTOVER='2026-10-31';
-export const OIL_V8_CUTOVER=null;
+export const OIL_V8_CUTOVER='2026-11-07';
 export function oilVersionForDate(day){
   if(OIL_V8_CUTOVER&&day>=OIL_V8_CUTOVER)return 'oil-v8';
   return day>=OIL_V7_CUTOVER?'oil-v7':day>=OIL_OPAQUE_CUTOVER?'oil-v6':day>=OIL_PIGMENT_CUTOVER?'oil-v5':day>='2026-10-17'?'oil-v4':'oil-v1';
