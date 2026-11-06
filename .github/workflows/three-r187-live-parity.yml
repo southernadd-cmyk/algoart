@@ -1,0 +1,98 @@
+name: Compare live tower Three.js r180 vs r187 (isolated)
+on:
+  push:
+    branches:
+      - experiment/three-r187-20261106
+    paths:
+      - '.github/workflows/three-r187-live-parity.yml'
+      - 'tests/three-r187-live-parity.mjs'
+  workflow_dispatch:
+
+# This experiment NEVER deploys, pushes, or modifies the live Pages build.
+permissions:
+  contents: read
+
+concurrency:
+  group: three-r187-live-parity
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned dependencies for baseline r180
+        run: npm ci --ignore-scripts
+      - name: Build r180 from CURRENT LIVE tower sources
+        run: |
+          node --input-type=module -e "import * as T from 'three'; if(T.REVISION!=='180') process.exit(1); console.log('Baseline Three.js r'+T.REVISION)"
+          ./node_modules/.bin/esbuild gallery/visit/gallery-phi.js \
+            --bundle --minify --format=esm --platform=browser --target=es2022 \
+            --outfile=gallery/visit/gallery-phi-r180-bundle.js
+          node --check gallery/visit/gallery-phi-r180-bundle.js
+      - name: Swap ONLY Three.js to r187 in experimental runner
+        run: |
+          npm install --no-save --package-lock=false --legacy-peer-deps --ignore-scripts three@0.187.0
+          node --input-type=module -e "import * as T from 'three'; if(T.REVISION!=='187') process.exit(1); console.log('Candidate Three.js r'+T.REVISION)"
+      - name: Build r187 from the IDENTICAL live source files
+        run: |
+          ./node_modules/.bin/esbuild gallery/visit/gallery-phi.js \
+            --bundle --minify --format=esm --platform=browser --target=es2022 \
+            --outfile=gallery/visit/gallery-phi-r187-bundle.js
+          node --check gallery/visit/gallery-phi-r187-bundle.js
+      - name: Create two complete live HTML entrypoints in the SAME directory
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const html=readFileSync('gallery/visit/index.html','utf8');
+          const found=html.match(/gallery-phi-bundle\.js/g)||[];
+          if(found.length!==2)throw Error('Production HTML bundle references changed; not safe to clone');
+          for(const version of ['r180','r187']){
+            const name='gallery-phi-'+version+'-bundle.js';
+            const output=html.replace(/gallery-phi-bundle\.js/g,name)
+              .replace('<head>','<head>\n<meta name="robots" content="noindex,nofollow">');
+            writeFileSync('gallery/visit/three-benchmark-'+version+'.html',output);
+          }
+          NODE
+          test -s gallery/visit/three-benchmark-r180.html
+          test -s gallery/visit/three-benchmark-r187.html
+          cmp -s gallery/visit/gallery-phi-r180-bundle.js gallery/visit/gallery-phi-r187-bundle.js && \
+            { echo 'Unexpected identical bundles'; exit 1; } || true
+      - name: Install headless Chromium for controlled software-WebGL comparison
+        run: npx playwright install --with-deps chromium
+      - name: Start static server (original relative paths and media reused)
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/three-r187-test-http.log 2>&1 &
+          sleep 3
+          curl --fail --silent --output /dev/null http://127.0.0.1:4173/gallery/visit/three-benchmark-r180.html
+          curl --fail --silent --output /dev/null http://127.0.0.1:4173/gallery/visit/three-benchmark-r187.html
+      - name: Compare cold entry, room frames, lift stalls, shaders, artwork loading
+        run: |
+          node --check tests/three-r187-live-parity.mjs
+          node tests/three-r187-live-parity.mjs
+        env:
+          PHI_TEST_SERVER: http://127.0.0.1:4173
+          PHI_BENCH_DATE: '2026-10-31'
+      - name: Preserve results, screenshots and both executable builds
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: three-r180-vs-r187-cold-benchmark
+          path: |
+            three-r187-benchmark-results/
+            gallery/visit/gallery-phi-r180-bundle.js
+            gallery/visit/gallery-phi-r187-bundle.js
+            gallery/visit/three-benchmark-r180.html
+            gallery/visit/three-benchmark-r187.html
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Record result location
+        if: always()
+        run: |
+          echo 'Isolated benchmark only — no GitHub Pages deployment, no production updates.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Download the artifact for JSON results and screenshots, including failures.' >> "$GITHUB_STEP_SUMMARY"
