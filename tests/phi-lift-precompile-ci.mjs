@@ -3,14 +3,15 @@ import {chromium} from 'playwright';
 import {mkdir,writeFile,appendFile} from 'node:fs/promises';
 const out='lift-precompile-results';await mkdir(out,{recursive:true});
 const results=[];
-const cases=[['baseline',''],['64','64'],['all','all'],['all','all'],['64','64'],['baseline','']];
+// First valid full round-trip for each variant; reverse-order validation follows only if this passes.
+const cases=[['baseline',''],['64','64'],['all','all']];
 const destinations=['2026-10-20','2026-10-30','__phi_reception__'];
 const quantile=(a,q)=>[...a].sort((x,y)=>x-y)[Math.floor((a.length-1)*q)];
-async function save(){await writeFile(out+'/results.json',JSON.stringify({environment:'Ubuntu Chromium SwiftShader, fresh browser per variant, reversed second round',results},null,2));}
+async function save(){await writeFile(out+'/results.json',JSON.stringify({environment:'Ubuntu Chromium SwiftShader, fresh browser per variant; first full round-trip',results},null,2));}
 for(let run=0;run<cases.length;run++){
- const [variant,flag]=cases[run];const result={run:run+1,variant,rides:[],errors:[]};results.push(result);
+ const [variant,flag]=cases[run];const result={run:run+1,variant,rides:[],errors:[],warnings:[]};results.push(result);
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage']});
- const page=await browser.newPage({viewport:{width:1280,height:800},deviceScaleFactor:1});
+ const page=await browser.newPage({viewport:{width:640,height:400},deviceScaleFactor:1});
  page.on('pageerror',error=>result.errors.push(String(error)));
  await page.addInitScript(()=>{
   window.__benchFrames={active:false,last:0,frames:[]};
@@ -38,22 +39,33 @@ for(let run=0;run<cases.length;run++){
    if(data.error)throw Error(JSON.stringify(data.error));
    const stages=data.profile.stages,stage=n=>stages.find(s=>s.name===n);
    const reveal=stage('scene-reveal-finished')?.details;
+   const compiled=!!stage('destination-precompile-finished');
+   if(compiled!==!!flag)throw Error('Variant did not activate: '+variant+' compiled='+compiled+' url='+page.url());
+   const expectedBatches=flag==='all'?1:Math.ceil((reveal?.total||0)/(flag==='64'?64:16));
+   if(reveal?.batches?.length!==expectedBatches)throw Error('Wrong reveal batch count for '+variant+': '+reveal?.batches?.length+' expected '+expectedBatches);
+   if(new URL(page.url()).searchParams.get('liftcompiletest')!==(flag||null))throw Error('Experiment query flags lost during ride');
    const record={date,ms:data.profile.summary.ms,maxFrameMs:Math.max(0,...data.frames),p95FrameMs:quantile(data.frames,.95),stalls100:data.frames.filter(x=>x>=100).length,
     revealMs:stage('scene-reveal-finished').elapsedMs-stage('scene-reveal-start').elapsedMs,
     reveal:{total:reveal?.total,shown:reveal?.shown,batches:reveal?.batches?.length},
-    warmup:stage('warmup-details')?.details,loaded:data.loaded,total:data.total,preparationTimedOut:data.prep?.timedOut,
+    warmup:stage('warmup-details')?.details,compiled,loaded:data.loaded,total:data.total,preparationTimedOut:data.prep?.timedOut,
     largestStalls:data.profile.summary.frameSpikeStages.sort((a,b)=>b.ms-a.ms).slice(0,8)};
    result.rides.push(record);
    await writeFile(`${out}/${run+1}-${variant}-${date}-profile.json`,JSON.stringify(data.profile,null,2));
    console.log('LIFT_RESULT '+JSON.stringify({run:run+1,variant,...record}));await save();
    if(data.loaded!==data.total||!data.prep?.paintings?.complete||reveal?.hidden!==0)throw Error('Incomplete destination at door opening');
-   await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',null,{timeout:30000});
+   // The render profiler finishes at doors-opening. Some software-rendered
+   // arrivals never transition their debug status to ready despite visible
+   // open doors; record this separately rather than losing the full journey.
+   await page.waitForFunction(()=>window.__phiLiftRide?.status==='ready',null,{timeout:12000}).catch(()=>{});
+   record.doorStatus=await page.evaluate(()=>window.__phiLiftRide?.status||'missing');
+   if(record.doorStatus!=='ready')result.warnings.push(date+': door status '+record.doorStatus+' after 12 seconds');
    await page.screenshot({path:`${out}/${run+1}-${variant}-${date}.png`});
+   await save();
   }
  }catch(error){result.errors.push(String(error));console.error('LIFT_FAILURE '+JSON.stringify(result));await page.screenshot({path:`${out}/${run+1}-${variant}-failure.png`}).catch(()=>{});}
  finally{await browser.close();await save();}
 }
 const rows=results.flatMap(r=>r.rides.map(j=>`| ${r.run} | ${r.variant} | ${j.date} | ${(j.ms/1000).toFixed(2)} | ${j.maxFrameMs.toFixed(0)} | ${(j.revealMs/1000).toFixed(2)} | ${j.loaded}/${j.total} |`));
-const summary=['# Isolated lift precompile comparison','','Software WebGL only; no production deployment. Two rounds, reversed order, fresh browser per variant.','','| Run | Variant | Destination | Journey s | Worst frame ms | Reveal s | Paintings |','|---|---|---|---:|---:|---:|---|',...rows,'','Failures:',...results.filter(r=>r.errors.length).map(r=>`- Run ${r.run} ${r.variant}: ${r.errors.join('; ')}`)].join('\n');
+const summary=['# Isolated lift precompile comparison','','Software WebGL only; no production deployment. First complete round-trip for each variant; fresh browser each time.','','| Run | Variant | Destination | Journey s | Worst frame ms | Reveal s | Paintings |','|---|---|---|---:|---:|---:|---|',...rows,'','Failures:',...results.filter(r=>r.errors.length).map(r=>`- Run ${r.run} ${r.variant}: ${r.errors.join('; ')}`),'','Warnings:',...results.filter(r=>r.warnings.length).map(r=>`- Run ${r.run} ${r.variant}: ${r.warnings.join('; ')}`)].join('\n');
 await writeFile(out+'/SUMMARY.md',summary);if(process.env.GITHUB_STEP_SUMMARY)await appendFile(process.env.GITHUB_STEP_SUMMARY,summary);
 if(results.some(r=>r.errors.length||r.rides.length!==destinations.length))process.exitCode=1;
