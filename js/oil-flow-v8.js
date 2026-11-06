@@ -11,7 +11,7 @@ const modes=new Set(['settle','displace','boundary']);
 /**
  * Deterministic, fixed-step bounded thin-film approximation:
  *  1. Conservative flux along horizontal/vertical neighbouring paint pixels
- *     proportional to height difference * h² (thin-film mobility).
+ *     proportional to height difference * h³ (thin-film mobility).
  *  2. For wet-on-wet variants, each existing brush contact contributes a small
  *     velocity stamp. Existing pigment is advected within already painted cells.
  *  3. Optional meniscus pass transfers relief from each paint's inner pixel to
@@ -56,7 +56,7 @@ A.oilWetFlowV8=function(pig,relief,voids,scale,opts={}){
     if(!occupied[q])continue;
     const b=height[q],diff=a-b;
     if(Math.abs(diff)<.005)continue;
-    const mobile=fluxCoefficient*Math.pow(Math.max(a,b),2);
+    const mobile=fluxCoefficient*Math.pow(Math.max(a,b),3);
     const move=clamp(diff*mobile,-Math.abs(diff)*.28,Math.abs(diff)*.28);
     next[p]-=move;next[q]+=move;transferred+=Math.abs(move);
    }
