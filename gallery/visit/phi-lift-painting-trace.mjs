@@ -101,7 +101,7 @@ export function createPhiPaintingTrace({enabled=false,now=()=>performance.now()}
      atMs:+(e.at-started).toFixed(1),renderMs:+e.ms.toFixed(1),
      before:e.programsBefore,after:e.programsAfter,added:e.addedPrograms,
      newCacheKeys:e.newCacheKeys,
-     lights:e.lights,outputColorSpace:e.outputColorSpace,
+     lights:e.lights,renderableLights:e.renderableLights,lightPool:e.lightPool,outputColorSpace:e.outputColorSpace,
      toneMapping:e.toneMapping,renderTargetAfter:e.renderTargetAfter
     })),
    longTasks:tasks,
