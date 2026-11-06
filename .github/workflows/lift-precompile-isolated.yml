@@ -1,0 +1,40 @@
+name: Isolated lift precompile comparison
+on:
+  push:
+    branches: [test/lift-precompile-20261106]
+    paths:
+      - '.github/workflows/lift-precompile-isolated.yml'
+      - 'tests/phi-lift-precompile-ci.mjs'
+permissions:
+  contents: read
+concurrency:
+  group: lift-precompile-isolated
+  cancel-in-progress: false
+jobs:
+  benchmark:
+    if: github.ref == 'refs/heads/test/lift-precompile-20261106'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Check safeguards and build separate test bundle
+        run: |
+          node --test tests/phi-lift-destination-warmup.test.mjs tests/gallery-entry-preparation.test.mjs tests/phi-lift-motion.test.mjs
+          node automation/build-phi-lift-test.mjs
+          git diff --exit-code -- gallery/visit/index.html gallery/visit/gallery-phi-bundle.js
+      - name: Serve local checkout only
+        run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/lift-test-http.log 2>&1 &
+      - name: Compare variants twice in reverse order
+        run: node tests/phi-lift-precompile-ci.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-lift-precompile-results
+          path: lift-precompile-results/
+          if-no-files-found: warn
