@@ -2935,7 +2935,13 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
     liftWasNear=true;liftPickerConsumed=true;welcome.hidden=true;
     liftDoorClosure=1;liftDoorTarget=1;
     for(const leaf of liftDoors)leaf.position.copy(leaf.userData.closed);
-    history.replaceState(null,'',date===RECEPTION?location.pathname:'?date='+date);
+    // Isolated CI needs its instrumentation switches to survive floor changes.
+    // Production URL behaviour is untouched; only lift-test.html keeps switches.
+    if(location.pathname.endsWith('/lift-test.html')){
+      const preserved=new URLSearchParams(location.search);
+      if(date===RECEPTION)preserved.delete('date');else preserved.set('date',date);
+      history.replaceState(null,'',location.pathname+(preserved.size?'?'+preserved:''));
+    }else history.replaceState(null,'',date===RECEPTION?location.pathname:'?date='+date);
   }
   $('liftMonth').value=(reception?archiveDates[1]:date).slice(0,7);
   $('archiveLink').href='../'+(reception?archiveDates[1]:date)+'/';
