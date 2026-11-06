@@ -6,7 +6,7 @@ import {
   SCHEDULE, PLATFORM_SLOTS, PORTRAIT_SCHEDULE, PORTRAIT_POST_INDICES, MODES, PALETTES, PENS
 } from './config.mjs';
 import { makeCaptions } from './captions.mjs';
-import { oilVersionForDate } from './oil-edition.mjs';
+import { oilVersionForDate, verifyReleasedOilV8 } from './oil-edition.mjs';
 import { socialRendererVersion, archivedLandscapeStudy } from './renderer-state.mjs';
 import { tissueEditionForDate, validateTissueShareUrl } from './tissue-edition.mjs';
 import { appendDailyPhiFraming, dailyPhiFramingForDate } from './phi-framing.mjs';
@@ -170,6 +170,7 @@ const material = process.env.SOCIAL_MATERIAL === 'action' ? 'action' : process.e
   process.env.SOCIAL_MATERIAL === 'watercolour' ? 'watercolour' :
   process.env.SOCIAL_MATERIAL === 'watercolor' ? 'watercolor' : 'marker';
 const watercolor = material === 'watercolor',watercolour = material === 'watercolour',oil = material === 'oil',action=material==='action';
+const oilVersion = oil ? oilVersionForDate(day) : null;
 const tissueEdition = watercolor ? tissueEditionForDate(day) : null;
 const generationCount = action?1:oil || watercolour ? (day >= '2026-10-17' ? Math.max(1, Number(process.env.SOCIAL_COUNT || 1)) : 1) : watercolor ? 2 :
   Math.max(1, Number(process.env.SOCIAL_COUNT || DAILY_COUNT));
@@ -270,7 +271,7 @@ try {
     // the same φ-derived source fit, in their PNG/SVG and exact share URL.
     // Earlier dates and already-frozen gallery/release assets stay untouched.
     const query=appendDailyPhiFraming(
-      queryFor(settings,itemVersion)+(action?'&material='+actionVersionForDate(day):oil?'&material='+ oilVersionForDate(day):watercolour?'&material=watercolour-v2s&fit=0':
+      queryFor(settings,itemVersion)+(action?'&material='+actionVersionForDate(day):oil?'&material='+oilVersion:watercolour?'&material=watercolour-v2s&fit=0':
       watercolor?tissueEdition.suffix:''),day);
     const localUrl = `${LOCAL_URL}?${query}`;
     const shareUrl = `${SITE_URL}?${query}`;
@@ -279,7 +280,7 @@ try {
       if(params.get('material')!==actionVersionForDate(day)||params.get('seed')!==settings.seed||params.get('pal')!==settings.palette)throw Error('Action share URL seed/palette mismatch');}
     if(oil){
       const q=new URL(shareUrl).searchParams;
-      if(q.get('material')!==oilVersionForDate(day)||q.get('seed')!==settings.seed||
+      if(q.get('material')!==oilVersion||q.get('seed')!==settings.seed||
          q.get('pal')!==settings.palette)
         throw Error('Oil image URL does not preserve exact seed and randomly chosen palette');
     }
@@ -292,6 +293,7 @@ try {
 
     const actualVersion=await page.evaluate(()=>window.AlgoArt.rendererVersion);
     if(actualVersion!==itemVersion)throw new Error('Rendered V'+actualVersion+' but requested V'+itemVersion);
+    if(oilVersion==='oil-v8')verifyReleasedOilV8(await page.evaluate(()=>window.AlgoArt.lastOilV8Render));
     if(dailyPhiFramingForDate(day)){
       const frame=await page.evaluate(()=>({
         enabled:!!window.AlgoArt.phiFramingEnabled,

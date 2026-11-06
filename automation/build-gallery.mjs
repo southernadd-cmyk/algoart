@@ -360,11 +360,22 @@ try {
   if (error.code !== 'ENOENT') throw error;
 }
 
+const existingEntries = Array.isArray(existingMeta.entries) ? existingMeta.entries : [];
+if (galleryMaterial === 'oil') {
+  const archivedOil = new Map(existingEntries.filter(entry => entry.material === 'oil').map(entry => [entry.id, entry]));
+  for (const entry of queue.entries) {
+    const previous = archivedOil.get(entry.id);
+    if (previous && new URL(previous.shareUrl).searchParams.get('material') !== new URL(entry.shareUrl).searchParams.get('material')) {
+      throw Error('Cannot change the Oil revision of archived artwork ' + entry.id);
+    }
+  }
+}
+
 const queuedSeeds = new Set(queue.entries.map(entry => entry.seed).filter(Boolean));
 const queuedFiles = new Set(queue.entries.map(entry => entry.imageFile).filter(Boolean));
 const preservedEntries = [];
 
-for (const entry of Array.isArray(existingMeta.entries) ? existingMeta.entries : []) {
+for (const entry of existingEntries) {
   if (queuedSeeds.has(entry.seed) || queuedFiles.has(entry.imageFile)) continue;
   try {
     await fs.access(path.join(dayDir, entry.imageFile));

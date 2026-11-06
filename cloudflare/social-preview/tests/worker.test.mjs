@@ -26,6 +26,14 @@ test('Oil V5 compact links retain the pigment revision and oil metadata',async()
  const response=await worker.fetch(request('/share?c='+v5),env);
  assert.equal(response.status,200);assert.match(await response.text(),/Original Oil Paint composition/);
 });
+test('Oil V8 compact links identify the artwork as Oil Paint',async()=>{
+ const data={...values,material:'oil-v8'};
+ const v8=Buffer.from(keys.map(k=>data[k]||'').join('\x1f')).toString('base64url');
+ assert.equal(testing.decodeToken(v8).material,'oil-v8');
+ const response=await worker.fetch(request('/share?c='+v8),env);
+ assert.equal(response.status,200);
+ assert.match(await response.text(),/Original Oil Paint composition/);
+});
 test('Action V3 compact links retain their exact renderer and paint metadata',async()=>{
  const data={...values,material:'action-v3'};
  const v3=Buffer.from(keys.map(k=>data[k]||'').join('\x1f')).toString('base64url');
