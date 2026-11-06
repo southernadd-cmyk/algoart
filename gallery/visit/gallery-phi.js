@@ -3618,13 +3618,6 @@ function measurePhiPerformance(now){
 }
 let phiFrameSerial=0;
 let phiRoomVisibilitySerial=0;
-function renderPhiGalleryFrame(dt,focus){
- // Floor swaps, hidden cabin lights, and camera layer masks can change which
- // light objects Three.js includes. Balance actual camera-visible slots every
- // frame BEFORE the renderer requests shaders.
- phiStablePointLights.sync('before-render');
- return phiPostFX.render(dt,focus);
-}
 function tick() {
   phiLiftProfiler?.tick();
   phiLightingStudy?.update();
@@ -3667,7 +3660,7 @@ function tick() {
     phiRoomVisibilityCuller.update(local,{safe:canCull});
    }
   }
-  if(!$('lift').hidden){renderPhiGalleryFrame(dt,null);return;}
+  if(!$('lift').hidden){phiStablePointLights.sync('before-render');phiPostFX.render(dt,null);return;}
   updateMovement(dt);
   updatePhiRideCamera();
   if(GALLERY_DEBUG)window.__phiLiftState={
@@ -3696,7 +3689,9 @@ function tick() {
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
-  renderPhiGalleryFrame(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
+  // Only camera-visible real/spare point lights contribute to shader keys.
+  phiStablePointLights.sync('before-render');
+  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={disabled:true,pending:0};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
 }
