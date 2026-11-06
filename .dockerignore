@@ -2,7 +2,7 @@
 **
 !package.json
 !package-lock.json
-!Dockerfile.lift-preview
+!Dockerfile
 !automation/
 !automation/build-phi-lift-test.mjs
 !gallery/
