@@ -63,6 +63,24 @@ try{
   console.log((r.checks.every(x=>x.passed)?'TARGETS PASS ':'TARGETS NOT MET ')+
    s.seed+' '+JSON.stringify(r.checks.map(c=>[c.name,Number(c.value?.toFixed(2)),c.passed])));
  }
+ // Three full-resolution reference samples for the genuinely visual gate.
+ const fullResolution=[];
+ await page.setViewportSize({width:2100,height:1150});
+ for(const seedCase of cases.slice(0,3)){
+  const details=await page.evaluate(async s=>{
+   for(const id of ['seed','mode','palette','orientation','phi','elements'])
+    document.getElementById(id).value=String(s[id]);
+   document.getElementById('quality').value='1';
+   const r=await window.actionPhysicsStudy.run();
+   return {seed:s.seed,checks:r.checks,
+    deposits:{dryBeads:r.panel.v6.stats.dryBeads,
+      slowPools:r.panel.v6.stats.slowPools,
+      speedDroplets:r.panel.v6.stats.speedDroplets}};
+  },seedCase);
+  fullResolution.push(details);
+  await page.screenshot({path:out+'/full-'+seedCase.mode+'.png',fullPage:true});
+  console.log('FULL RES '+seedCase.seed+' '+JSON.stringify(details.checks.map(x=>[x.name,x.value,x.passed])));
+ }
  await page.setViewportSize({width:390,height:850});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Portrait/mobile layout must not clip');
  assert.deepEqual(errors,[],'Browser errors');
@@ -72,7 +90,7 @@ try{
   byGate[k][check.passed?'passed':'failed']++;
   byGate[k].worstDeviation=Math.max(byGate[k].worstDeviation,Math.abs(check.value??Infinity));
  }
- const report={cases:results.length,byGate,allAccepted:results.every(x=>x.checks.every(k=>k.passed)),
+ const report={cases:results.length,fullResolution,byGate,allAccepted:results.every(x=>x.checks.every(k=>k.passed)),
   manualReview:'Pools must be legible at 100% viewing; inspect screenshots/full-resolution page',
   thresholds:{ink:3,heavy:5,saturation:2,pathMass:3,renderOverheadMs:10},results};
  await writeFile(out+'/results.json',JSON.stringify(report,null,2));
