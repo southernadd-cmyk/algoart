@@ -7,6 +7,8 @@ on:
       - 'gallery/visit/gallery-phi.js'
       - 'gallery/visit/phi-stable-point-lights.mjs'
       - 'gallery/visit/phi-lift-destination-warmup.mjs'
+      - 'tests/gallery-public-launch.test.mjs'
+      - 'tests/phi-stable-point-lights-live.test.mjs'
 permissions:
   contents: write
 jobs:
@@ -24,6 +26,8 @@ jobs:
       - run: npm ci
       - name: Verify camera-aware point-light regressions
         run: node --test tests/phi-lift-camera-light-release.test.mjs tests/phi-stable-point-lights-live.test.mjs tests/phi-lift-motion.test.mjs tests/gallery-entry-preparation.test.mjs
+      - name: Verify post-processing and release source contracts
+        run: node --test tests/phi-post-fx.test.mjs tests/gallery-public-launch.test.mjs
       - name: Generate exact production r187/N8AO bundle
         run: |
           npm run gallery:bundle:phi
