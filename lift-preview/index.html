@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>PROPORTION PIECE | Isolated Lift Test Tower</title>
+<style>
+:root{color-scheme:light;font:16px/1.6 system-ui,Arial,sans-serif;background:#ece8df;color:#28382e}
+*{box-sizing:border-box}body{margin:0;min-height:100vh}
+main{max-width:970px;margin:0 auto;padding:clamp(24px,5vw,68px)}
+.eyebrow{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#576b5f;font-weight:700}
+h1{font-weight:500;font-size:clamp(32px,5vw,54px);line-height:1.15;max-width:750px}
+p{max-width:730px}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:17px;margin:30px 0}
+article{background:#f9f7f2;border:1px solid #b7bcb3;padding:22px}
+h2{margin:0 0 8px;font-size:23px;font-weight:550}small{display:block;color:#54675d}
+a.button{display:inline-flex;padding:11px 15px;border:1px solid #304b3c;color:#304b3c;text-decoration:none;margin-top:15px;margin-right:8px;min-height:43px;align-items:center}
+a.button.primary{background:#304b3c;color:#fff}
+a:focus-visible{outline:3px solid #99753a;outline-offset:3px}
+code{background:#fff;padding:1px 5px}
+footer{border-top:1px solid #a5afa5;margin-top:20px;padding-top:17px;color:#44564b}
+</style></head><body><main>
+<div class="eyebrow">Proportion Piece · Experimental / Not Live</div>
+<h1>Lift precompile test tower</h1>
+<p>This is a separate version of the actual virtual gallery. Choose a lift strategy below and ride <strong>Reception → 20 October → 30 October → Reception</strong> on your own AMD graphics hardware.</p>
+<p>Use <strong>Enter manually</strong> to explore with the normal lift. Or <strong>Run measured journey</strong> for the automated three-stop route and an on-screen results panel. The artwork, floors and live website are not changed by these tests.</p>
+<section>
+<article><h2>Baseline</h2><small>Current 16-object/two-frame reveal, followed by whole-scene warm-up.</small>
+<a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1">Enter manually</a>
+<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftbench=1">Run measured journey</a></article>
+<article><h2>64 objects</h2><small>Destination-only precompile and texture upload, then 64 objects per reveal batch.</small>
+<a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=64">Enter manually</a>
+<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=64&amp;liftbench=1">Run measured journey</a></article>
+<article><h2>Single batch</h2><small>Destination-only precompile and texture upload, then the whole floor in one batch.</small>
+<a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all">Enter manually</a>
+<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftbench=1">Run measured journey</a></article>
+</section>
+<footer>Test source: <a href="https://github.com/southernadd-cmyk/algoart/tree/test/lift-precompile-20261106">isolated GitHub branch</a>. Software-renderer benchmark cannot establish AMD performance. Use the same Chrome browser and repeat all three tests separately for a fair comparison.</footer>
+</main></body></html>
