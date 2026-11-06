@@ -4,7 +4,8 @@ async function run(){
  const panel=document.createElement('pre');panel.id='lift-test-results';
  panel.style='position:fixed;z-index:10000;bottom:0;left:0;max-height:40vh;overflow:auto;background:white;color:black;font:12px monospace;padding:8px;max-width:95vw;white-space:pre-wrap';
  document.body.append(panel);
- const results={variant:params.get('liftcompiletest')||'baseline',lightFix:params.get('liftlightfix')==='1',rides:[],errors:[]};
+ const order=params.get('liftbenchorder')==='reverse'?['2026-10-30','2026-10-20','__phi_reception__']:['2026-10-20','2026-10-30','__phi_reception__'];
+ const results={variant:params.get('liftcompiletest')||'baseline',lightFix:params.has('liftlightfix'),lightFixMode:params.get('liftlightfix')||'off',order,rides:[],errors:[]};
  const show=message=>panel.textContent=message+'\n'+JSON.stringify(results,null,2);
  window.addEventListener('error',e=>{if(e.message)results.errors.push(e.message)});
  const wait=async(predicate,timeout=180000)=>{
@@ -21,7 +22,7 @@ async function run(){
   await wait(()=>!document.getElementById('enter').disabled);
   document.getElementById('enter').click();
   await wait(()=>document.getElementById('welcome').hidden);
-  for(const date of ['2026-10-20','2026-10-30','__phi_reception__']){
+  for(const date of order){
    show('Testing journey to '+date);
    document.getElementById('openLift').click();
    await wait(()=>!document.getElementById('lift').hidden,20000);
