@@ -1,0 +1,41 @@
+name: Oil V8 bounded-flow experiment
+on:
+  push:
+    branches: [experiment/oil-v8-bounded-flow-20261106]
+  pull_request:
+    paths:
+      - 'js/oil-flow-v8.js'
+      - 'js/oil-paint-v8.js'
+      - 'test/oil-v8/**'
+      - 'tests/oil-v8*'
+      - '.github/workflows/oil-v8-study.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install chromium
+      - run: |
+          node --check js/oil-flow-v8.js
+          node --check js/oil-paint-v8.js
+          node tests/oil-v8-study-syntax.mjs
+          node tests/oil-v8-flow.test.mjs
+          node tests/oil-v5-release.test.mjs
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-v8-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/test/oil-v8/ >/dev/null && break; sleep 1; done
+      - run: node tests/oil-v8-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oil-v8-bounded-flow-comparisons
+          path: oil-v8-results/
+          if-no-files-found: warn
