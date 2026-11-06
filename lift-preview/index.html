@@ -37,6 +37,11 @@ footer{border-top:1px solid #a5afa5;margin-top:20px;padding-top:17px;color:#4456
 <article><h2>Single batch + 8-light pool</h2><small>Test hypothesis: eliminate the 30 October shader recompile by maintaining eight point-light slots across floors.</small>
 <a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftlightfix=1">Enter manually</a>
 <a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftlightfix=1&amp;liftpainttrace=1&amp;liftbench=1">Run measured journey</a></article>
+<article><h2>Single batch + 8 renderable lights (corrected)</h2>
+<small>Experimental v2: count only camera-visible point lights, and reconcile before every render. Compare against the previous eight-light test.</small>
+<a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftlightfix=2">Enter manually</a>
+<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftlightfix=2&amp;liftpainttrace=1&amp;liftbench=1">Run measured journey</a>
+<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftlightfix=2&amp;liftpainttrace=1&amp;liftbench=1&amp;liftbenchorder=reverse">Run 30 October first</a></article>
 <p><strong>New diagnostics:</strong> The measured-journey reports now include <code>paintingTrace</code>: long browser tasks, slow image resources, decode/upload timings, and painting readiness checkpoints. The timestamps are relative to each ride. A long task overlapping <code>paintings-waiting</code> is a correlation, not proof the painting caused it.</p>
 <footer>Test source: <a href="https://github.com/southernadd-cmyk/algoart/tree/test/lift-precompile-20261106">isolated GitHub branch</a>. Software-renderer benchmark cannot establish AMD performance. Use the same Chrome browser and repeat all three tests separately for a fair comparison.</footer>
 </main></body></html>
