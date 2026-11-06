@@ -16,7 +16,7 @@ export function staticPhiShadowCaster(mesh){
 export function createPhiLightingStudy({THREE,renderer,scene,camera,sun}){
  const stats={enabled:true,shadowMaps:2,refreshes:0,casters:0,roomLight:null,luminaires:0,fillLights:4};
  if(new URLSearchParams(location.search).get('lighting')==='original')return {stats:{enabled:false},update(){},editionChanged(){}};
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;
+ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;renderer.shadowMap.autoUpdate=false;
  sun.castShadow=true;sun.shadow.autoUpdate=false;sun.shadow.mapSize.set(2048,2048);
  sun.shadow.bias=-.00008;sun.shadow.normalBias=.035;
  Object.assign(sun.shadow.camera,{left:-40,right:40,top:40,bottom:-40,near:.5,far:240});sun.shadow.camera.updateProjectionMatrix();

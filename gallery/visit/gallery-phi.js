@@ -88,7 +88,8 @@ const enter = $('enter');
 const pressed = new Set();
 const touchPressed = new Set();
 const lookPressed = new Set();
-const clock = new THREE.Clock();
+const clock = new THREE.Timer();
+clock.connect(document);
 let releaseInteriorAssets;
 deferPhiInteriorAssetsUntil(new Promise(resolve=>releaseInteriorAssets=resolve));
 const artExhibits = [];
@@ -3616,6 +3617,7 @@ function tick() {
   phiLightingStudy?.update();
  measurePhiPerformance(performance.now());
   if (!renderer) return;
+  clock.update();
   const elapsed=clock.getDelta(),dt=Math.min(elapsed,.055);
   phiFrameSerial++;
   const doorsMoving=liftArrivalOpening||Math.abs(liftDoorTarget-liftDoorClosure)>.002;
@@ -3640,7 +3642,7 @@ function tick() {
   }
   entranceDoor?.update(dt,rig.position);
   phiGalleryMusic?.update(rig.position);
-  phiReceptionDesk?.hologram?.update(clock.elapsedTime);
+  phiReceptionDesk?.hologram?.update(clock.getElapsed());
   // 10Hz visibility tests while walking; immediate restore on lift/modal,
   // travel, VR, unplaced viewer (glass bridge) and staged floor reveal.
   if(phiRoomVisibilityCuller){
