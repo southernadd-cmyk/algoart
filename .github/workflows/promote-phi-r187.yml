@@ -1,0 +1,95 @@
+name: Promote verified Three.js r187 N8AO fix to production
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/promote-phi-r187.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: promote-phi-r187-live
+  cancel-in-progress: false
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install approved current dependencies
+        run: npm ci --ignore-scripts
+      - name: Pin r187, keep N8AO 2.0.1 and persist fixed production build command
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const file='package.json', pkg=JSON.parse(readFileSync(file,'utf8'));
+          if(pkg.devDependencies.three!=='0.180.0' || pkg.devDependencies.n8ao!=='2.0.1')
+            throw Error('Unexpected baseline dependencies; refusing production upgrade');
+          pkg.scripts['gallery:bundle:phi']='node automation/build-phi-r187-n8ao-production.mjs';
+          writeFileSync(file,JSON.stringify(pkg,null,2)+'\n');
+          JS
+          npm install --save-dev --save-exact --legacy-peer-deps --ignore-scripts three@0.187.0
+          npm ci --legacy-peer-deps --ignore-scripts
+          node --input-type=module -e "import * as T from 'three';if(T.REVISION!=='187')throw Error('Not r187')"
+      - name: Build reproducible production assets from pinned source
+        run: |
+          npm run gallery:bundle
+          npm run gallery:bundle:phi
+          node --check gallery/visit/gallery-bundle.js
+          node --check gallery/visit/gallery-phi-bundle.js
+          node --test tests/phi-post-fx.test.mjs tests/phi-tower-no-graffiti.test.mjs tests/gallery-public-launch.test.mjs
+          cp gallery/visit/gallery-phi-bundle.js /tmp/phi-r187-first-bundle.js
+          npm run gallery:bundle:phi
+          cmp /tmp/phi-r187-first-bundle.js gallery/visit/gallery-phi-bundle.js
+          # Only the four intended generated/configuration files may change.
+          node --input-type=module <<'JS'
+          import {execFileSync} from 'node:child_process';
+          const files=execFileSync('git',['diff','--name-only'],{encoding:'utf8'}).trim().split('\n').filter(Boolean);
+          const allowed=new Set(['package.json','package-lock.json','gallery/visit/gallery-bundle.js','gallery/visit/gallery-phi-bundle.js']);
+          if(files.some(f=>!allowed.has(f))||!files.includes('package.json')||!files.includes('package-lock.json')||!files.includes('gallery/visit/gallery-phi-bundle.js'))
+            throw Error('Unexpected production diff: '+files.join(', '));
+          console.log('APPROVED_PRODUCTION_DIFF '+files.join(', '));
+          JS
+      - name: Install Chromium for real live-entry browser verification
+        run: npx playwright install --with-deps chromium
+      - name: Serve candidate under the real production URL path
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/r187-production-http.log 2>&1 &
+          sleep 3
+          curl -fsS -o /dev/null http://127.0.0.1:4173/gallery/visit/index.html
+      - name: Require working N8AO and SSAO with no original-renderer fallback
+        run: node tests/phi-r187-production-release-browser.mjs
+        env:
+          PHI_TEST_SERVER: http://127.0.0.1:4173
+      - name: Archive release checks for diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-r187-n8ao-release-verification
+          path: r187-production-release-check/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Commit only validated production files
+        if: success()
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || { echo 'Main advanced; refusing stale promotion' >&2; exit 1; }
+          git add -- package.json package-lock.json gallery/visit/gallery-bundle.js gallery/visit/gallery-phi-bundle.js
+          git commit -m 'Promote verified Three.js r187 with N8AO compatibility fix'
+          git push origin HEAD:main
+      - name: Deploy validated live tower through existing Pages workflow
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
