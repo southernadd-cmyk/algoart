@@ -5,6 +5,7 @@ import {spawnSync} from 'node:child_process';
 import {chromium} from 'playwright';
 import {validateOilItem} from '../automation/oil-slot.mjs';
 import {OIL_V8_CUTOVER,oilVersionForDate,verifyReleasedOilV8} from '../automation/oil-edition.mjs';
+import {rehearseOilV8Edition} from './oil-v8-edition-rehearsal.mjs';
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const out='oil-v7-release-results';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-gpu']});
@@ -135,6 +136,10 @@ try{
   assert.equal(q.entries.length,2);validateOilItem(q.entries[0],edition,orientation);
   for(const entry of q.entries)assert.equal(new URL(entry.shareUrl).searchParams.get('material'),editionMaterial);
   console.log('PASS real daily '+editionMaterial+' '+orientation+' '+q.entries.map(entry=>entry.seed).join(', '));
+ }
+ if(OIL_V8_CUTOVER){
+  const report=await rehearseOilV8Edition(edition,root);
+  await writeFile(out+'/edition-rehearsal.json',JSON.stringify(report,null,2));
  }
  console.log('PASS Oil V8 studio, export, share, archive, walkthrough, mobile and daily release checks.');
 }finally{await browser.close()}

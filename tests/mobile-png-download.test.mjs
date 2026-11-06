@@ -33,7 +33,7 @@ const context = vm.createContext({
     preparePNG: settings => new Promise((resolve, reject) => pending.push({ settings, resolve, reject }))
   },
   actionPaintingEnabled: () => false, oilEnabled: () => false, oilPaintEnabled: () => false,
-  oilPaintV7Enabled: () => false, oilPaintV6Enabled: () => false, oilPaintV5Enabled: () => false, oilPaintV4Enabled: () => false,
+  oilPaintV8Enabled: () => false, oilPaintV7Enabled: () => false, oilPaintV6Enabled: () => false, oilPaintV5Enabled: () => false, oilPaintV4Enabled: () => false,
   oilPaintV3Enabled: () => false, oilPaintV2Enabled: () => false, watercolourEnabled: () => false,
   actionPaintingRevision: 4, watercolourMaterialRevision: 'v2s', watercolourFitToSheet: false,
   tissuePaletteVersion: 7
