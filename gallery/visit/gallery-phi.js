@@ -41,6 +41,7 @@ import {addHangingRoomSigns} from './phi-room-hanging-signs.mjs';
 import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
+import {createPhiPaintingTrace} from './phi-lift-painting-trace.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
 import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
@@ -227,6 +228,7 @@ try {
 }
 
 const phiLiftProfiler=createPhiLiftProfiler({enabled:new URLSearchParams(location.search).has('liftprofile')});
+const phiPaintingTrace=createPhiPaintingTrace({enabled:new URLSearchParams(location.search).get('liftpainttrace')==='1'});
 // Approved fixed 16 original meshes per two frames; no adaptive scheduling.
 const phiArrivalMeshes=createPhiArrivalMeshStager({nextFrame:galleryPreparationFrame});
 // Approved conservative occlusion. ?roomcull=0 restores baseline immediately.
@@ -541,6 +543,7 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
   return texture;
  },
  upload:texture=>renderer.initTexture(texture),
+ onEvent:phiPaintingTrace?.event,
  // During motion, upload one painting every two frames and avoid cabin
  // acceleration/braking. At the landing use every frame: no reason to
  // leave the doors shut for additional idle render frames.
@@ -560,13 +563,15 @@ const liftPaintingGPU=createPhiLiftPaintingGPUPreparer({
 });
 // LIVE: prepare destination floor during ride. ?liftoverlap=0 restores the prior method.
 const phiOverlapRide=new URLSearchParams(location.search).get('liftoverlap')!=='0';
-const phiArtworkPreloader=createPhiArtworkPreloader(decodePhiArtworkImage,{
+const phiArtworkPreloader=createPhiArtworkPreloader(
+ url=>decodePhiArtworkImage(url,{onEvent:phiPaintingTrace?.event}),{
  concurrency:mobileImages?2:4,
  // Preserve exact painting textures; overlap image decoding with GPU preparation.
  // ?liftpipeline=0 retains the original sequence for a diagnostic comparison.
  releaseAfterDecode:new URLSearchParams(location.search).get('liftpipeline')!=='0',
  prepare:(image,context)=>liftPaintingGPU.prepare(image,context),
- dispose:texture=>texture?.dispose?.()
+ dispose:texture=>texture?.dispose?.(),
+ onEvent:phiPaintingTrace?.event
 });
 if(GALLERY_DEBUG){
  window.__phiArtworkPreload=()=>phiArtworkPreloader.stats();
@@ -1350,6 +1355,7 @@ async function travelLift(date,index){
      :[[len,ROOM_HEIGHT,.19],[len,ROOM_HEIGHT,.035],[len,.16,.13],[len,.13,.065]];
    })
   ];
+  phiPaintingTrace?.begin(date);
   phiRoomGeometryStage.start(date,roomShapes);
   liftPaintingGPU.start(date);
   phiArtworkPreloader.start(date,prepared.nextPlan.phi.exhibition.paintings
@@ -1391,6 +1397,9 @@ async function travelLift(date,index){
   // Paintings are mandatory. The old four-second generic timeout could open
   // onto blank frames; the door interlock now checks attached GPU textures.
   phiLiftProfiler?.mark('paintings-waiting',phiPaintingGate?.stats());
+  phiPaintingTrace?.event('paintings-wait-start',{date,expected:phiPaintingGate?.stats().expected,
+   ready:phiPaintingGate?.stats().ready,pending:phiPaintingGate?.stats().pending.length,
+   preload:phiArtworkPreloader.stats(),gpu:liftPaintingGPU.stats()});
   const paintingReady=await phiPaintingGate.wait({
    // Slow software renderers may need much longer than a hardware GPU.
    // Never substitute a blank painting when the deadline is reached.
@@ -1401,6 +1410,8 @@ async function travelLift(date,index){
    }
   });
   phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady);
+  phiPaintingTrace?.event('paintings-wait-end',{date,expected:paintingReady.expected,
+   ready:paintingReady.ready,pending:paintingReady.pending.length,preload:phiArtworkPreloader.stats(),gpu:liftPaintingGPU.stats()});
   const compileTest=new URLSearchParams(location.search).get('liftcompiletest');
   let preparation,warmed;
   const pumpDestination=()=>waitForGalleryEntry({
@@ -2811,6 +2822,7 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   phiPaintingGate=createPhiPaintingArrivalGate({
    date,expected:nextPlan.phi.exhibition.paintings.length,
    upload:texture=>renderer.initTexture(texture),
+   onEvent:phiPaintingTrace?.event,
    nextFrame:galleryPreparationFrame
   });
   // Dispose *all* edition-owned GPU resources, including artwork maps and
