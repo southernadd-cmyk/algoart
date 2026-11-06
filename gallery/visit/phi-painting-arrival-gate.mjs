@@ -2,7 +2,7 @@
 // furnishings or a short, unrelated scene-loading timeout. Each painting is
 // ready only once its attached map has successfully passed renderer.initTexture.
 export function createPhiPaintingArrivalGate({
- date,expected,upload,nextFrame,now=()=>performance.now()
+ date,expected,upload,nextFrame,now=()=>performance.now(),onEvent=null
 }){
  if(!Number.isInteger(expected)||expected<0)throw new TypeError('Expected painting count required');
  if(typeof upload!=='function'||typeof nextFrame!=='function')
@@ -17,6 +17,7 @@ export function createPhiPaintingArrivalGate({
    ready(texture){
     if(cancelled||entry.state!=='pending'){texture?.dispose?.();return;}
     entry.state='uploading';
+    onEvent?.('painting-attach-requested',{date,id});
     const task=uploadTail.then(async()=>{
      await nextFrame();
      if(cancelled||!face.parent||face.userData?.galleryDisposed){
@@ -27,11 +28,14 @@ export function createPhiPaintingArrivalGate({
      try{
       if(face.material?.map!==texture||!texture?.isTexture||!texture.image)
        throw Error('Painting texture missing from its wall');
+      const uploadStarted=now();
       upload(texture);
+      onEvent?.('painting-attach-upload',{date,id,ms:now()-uploadStarted});
       entry.state='ready';ready++;
      }catch(error){
       entry.state='failed';
       entry.error=String(error?.message||error);
+      onEvent?.('painting-attach-failed',{date,id,message:entry.error});
       errors.push({id,message:entry.error});
      }
     });
