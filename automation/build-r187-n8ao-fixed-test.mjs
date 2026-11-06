@@ -29,6 +29,19 @@ let applied=0;
 const plugin={
  name:'n8ao-r187-mrt-texture-fix',
  setup(build){
+  // The Three.js package uses export aliases like "three/addons/".
+  // Esbuild's blanket alias to an absolute folder bypasses those exports;
+  // map them explicitly to the r187 files instead.
+  build.onResolve({filter:/^three(?:\/|$)/},args=>{
+   if(args.path==='three')return {path:resolve(candidateRoot,'build/three.module.js')};
+   if(args.path.startsWith('three/addons/'))
+    return {path:resolve(candidateRoot,'examples/jsm',args.path.slice('three/addons/'.length))};
+   if(args.path.startsWith('three/examples/jsm/'))
+    return {path:resolve(candidateRoot,'examples/jsm',args.path.slice('three/examples/jsm/'.length))};
+   if(args.path.startsWith('three/src/'))
+    return {path:resolve(candidateRoot,'src',args.path.slice('three/src/'.length))};
+   throw Error('Unexpected Three.js subpath in test build: '+args.path);
+  });
   build.onLoad({filter:/[\\/]n8ao[\\/]dist[\\/]N8AO\.js$/},args=>{
    assert.equal(resolve(args.path),n8aoFile,'Unexpected N8AO package path');
    applied++;
@@ -39,7 +52,7 @@ const plugin={
 await build({
  entryPoints:['gallery/visit/gallery-phi.js'],
  bundle:true,minify:true,format:'esm',platform:'browser',target:'es2022',
- outfile:out, alias:{three:candidateRoot},
+ outfile:out,
  plugins:[plugin], logLevel:'info'
 });
 assert.equal(applied,1,'N8AO compatibility patch did not reach the built gallery bundle');
