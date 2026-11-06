@@ -14,7 +14,7 @@ test('production and approved TEST point-light stabilisation implementations mat
  assert.equal(PHI_STABLE_POINT_COUNT,7);
 });
 test('production enables point stabilisation by default with emergency override',()=>{
- assert.match(live,/const phiStablePointLights=createPhiStablePointLightPool\(\{THREE,scene,\s*enabled:new URLSearchParams\(location\.search\)\.get\('pointpool'\)!=='0'\}\)/);
+ assert.match(live,/const phiStablePointLights=createPhiStablePointLightPool\(\{THREE,scene,camera,\s*enabled:new URLSearchParams\(location\.search\)\.get\('pointpool'\)!=='0',\s*target:8,cameraAware:true\}\)/);
  assert.match(live,/window\.__phiStablePointLights=phiStablePointLights\.stats/);
 });
 test('production balances at all three approved transition sites',()=>{
@@ -23,6 +23,7 @@ test('production balances at all three approved transition sites',()=>{
  assert.match(live,/if\(liftArrivalOpening\)phiStablePointLights\.sync\('pre-render-doors-opening'\);/);
  assert.ok(live.indexOf("phiStablePointLights.sync('pre-render-doors-opening')")<live.indexOf('phiPostFX.render(dt',live.indexOf("phiStablePointLights.sync('pre-render-doors-opening')")));
  assert.match(testTower,/if\(liftArrivalOpening\)phiStablePointLights\.sync\('pre-render-doors-opening'\);/);
+ assert.match(live,/phiStablePointLights\.sync\('before-render'\)/);
 });
 test('the three-room plus three-art spotlight pool remains the live default',()=>{
  assert.match(live,/const phiBoundedLightPoolEnabled=new URLSearchParams\(location\.search\)\.get\('lightpool'\)!=='0'/);
