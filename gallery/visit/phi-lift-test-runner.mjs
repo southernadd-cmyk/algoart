@@ -4,7 +4,7 @@ async function run(){
  const panel=document.createElement('pre');panel.id='lift-test-results';
  panel.style='position:fixed;z-index:10000;bottom:0;left:0;max-height:40vh;overflow:auto;background:white;color:black;font:12px monospace;padding:8px;max-width:95vw;white-space:pre-wrap';
  document.body.append(panel);
- const results={variant:params.get('liftcompiletest')||'baseline',rides:[],errors:[]};
+ const results={variant:params.get('liftcompiletest')||'baseline',lightFix:params.get('liftlightfix')==='1',rides:[],errors:[]};
  const show=message=>panel.textContent=message+'\n'+JSON.stringify(results,null,2);
  window.addEventListener('error',e=>{if(e.message)results.errors.push(e.message)});
  const wait=async(predicate,timeout=180000)=>{
@@ -48,6 +48,7 @@ async function run(){
     warmup:profile.stages.find(s=>s.name==='warmup-details')?.details,
     loaded:window.__phiFullEngine?.paintingsLoaded,total:window.__phiFullEngine?.paintings,
     preparationTimedOut:window.__phiLiftPreparation?.timedOut,
+    lightPool:window.__phiStablePointLights?{...window.__phiStablePointLights}:null,
     ...(params.has('liftpainttrace')?{paintingTrace:window.__phiPaintingTrace?.report(date,profile.start,profile.summary.ms)||{error:'trace unavailable'}}:{}),
     largestStalls:profile.summary.frameSpikeStages.sort((a,b)=>b.ms-a.ms).slice(0,5)});
    show('Completed journey to '+date);
