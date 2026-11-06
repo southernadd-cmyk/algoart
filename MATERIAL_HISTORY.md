@@ -2,6 +2,10 @@
 
 This technical record preserves revision details and compatibility rules. See the [README](README.md) for current usage.
 
+## Oil Paint V8
+
+Oil Paint V8 adds directional brushwork to broad paint masses, layered surface relief and irregular canvas weave. Links with `material=oil-v8` replay with all three treatments enabled and surface strength fixed at 60%. The composition revision is independently recorded in `v`, and Oil V1–V7 links retain their original paint renderers.
+
 V9 makes paper colour an independent visual choice. Both Marker and Tissue & Graphite default to the established cream `#f5f0e6`; selecting a different paper colour changes the substrate without changing V9 geometry or its seed-selected pigment palette. The Paper picker persists across materials. Published V1–V8 renderings remain locked, including the fixed cream in Tissue revisions 4–6 under V8 links.
 
 V8 expands Growth Systems with seeded golden-angle root directions, entries at the 38.2% and 61.8% stations on all four edges, and interior-root alternatives. Two to four growth forms appear more often, especially in landscape. Branch lengths diminish by φ, with space-aware turns and a shared segment budget. Other engines retain their V7 output. New social batches use V8; existing editions keep their recorded renderer and media.

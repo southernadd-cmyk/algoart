@@ -90,6 +90,9 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <script src="../../js/oil-paint-v6.js?v=20261025-oil-v6-release"></script>
 <script src="../../js/oil-brush-v7.js?v=20261030-oil-v7"></script>
 <script src="../../js/oil-paint-v7.js?v=20261030-oil-v7"></script>
+<script src="../../js/oil-brush-v8.js?v=20261106-oil-v8"></script>
+<script src="../../js/oil-paint-v8.js?v=20261106-oil-v8"></script>
+<script src="../../js/oil-release.js?v=20261106-oil-v8"></script>
 <script src="../../js/action-painting-v1.js"></script>
 <script src="../../js/action-painting-v3.js?v=20261025-v3-release"></script>
 <script src="../../js/action-painting-v4.js?v=20261025-v4-release"></script>
@@ -118,7 +121,7 @@ const incoming=new URLSearchParams(location.search);
 function selectedRevision(){
  const original=incoming.get('material')||'',material=selectedMaterial();
  if(material==='action')return /^action-v[1234]$/.test(original)?original:'action-v4';
- if(material==='oil')return /^oil-v[1-7]$/.test(original)?original:'oil-v7';
+ if(material==='oil')return /^oil-v[1-8]$/.test(original)?original:A.defaultOilPaintMaterial;
  if(material==='watercolour')return /^watercolour-v2[rst]$/.test(original)?original:'watercolour-v2s';
  if(material==='tissue')return 'tissue-'+(Number(incoming.get('tissue'))||(incoming.has('watercolor')||incoming.has('oil')?1:7));
  return 'marker';
@@ -698,6 +701,7 @@ function captureMaterialStages(s){
    else if(version==='oil-v2'&&A.renderOilPaintV2)A.renderOilPaintV2(target,s,renderScale,false);
    else if(version==='oil-v3'&&A.renderOilPaintV3)A.renderOilPaintV3(target,s,renderScale,false);
    else if(version==='oil-v4')A.renderOilPaintV4(target,s,renderScale,false);
+   else if(version==='oil-v8')A.renderReleasedOilPaintV8(target,s,renderScale,false);
    else if(version==='oil-v7')A.renderOilPaintV7(target,s,renderScale,false);
    else if(version==='oil-v6')A.renderOilPaintV6(target,s,renderScale,false);
     else A.renderOilPaintV5(target,s,renderScale,false);

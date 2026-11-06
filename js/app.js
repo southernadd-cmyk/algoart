@@ -187,23 +187,26 @@ var legacyOilV2Link=false; // Historical Oil v1 links only; never a visible sele
 var oilV4Link=false; // Explicit Oil V4 links retain the previous pigment treatment.
 var oilV5Link=false; // Explicit V5 links preserve the released pigment treatment.
 var oilV6Link=false; // Explicit V6 links retain their recorded paint.
-var oilV7Link=true; // New oil work uses the faster V7 paint surface.
+var oilV7Link=true;
+var defaultOilV8=A.defaultOilPaintMaterial==='oil-v8';
+var oilV8Link=defaultOilV8;
 var actionPaintingRevision=4; // V4 defaults; explicit V1–V3 links stay reproducible.
 function actionPaintingEnabled(){return $('materialStyle').value==='action'}
 function oilEnabled(){return $('materialStyle').value==='tissue'}
 function watercolourEnabled(){return $('materialStyle').value==='watercolour'}
 function oilPaintEnabled(){return $('materialStyle').value==='oil'}
 function oilPaintV2Enabled(){return oilPaintEnabled()&&legacyOilV2Link&&!legacyOilV1Link}
-function oilPaintV3Enabled(){return oilPaintEnabled()&&!legacyOilV1Link&&!legacyOilV2Link&&!oilV4Link&&!oilV5Link&&!oilV6Link&&!oilV7Link}
+function oilPaintV3Enabled(){return oilPaintEnabled()&&!legacyOilV1Link&&!legacyOilV2Link&&!oilV4Link&&!oilV5Link&&!oilV6Link&&!oilV7Link&&!oilV8Link}
 function oilPaintV4Enabled(){return oilPaintEnabled()&&oilV4Link&&!oilV5Link&&!oilV6Link&&!oilV7Link&&!legacyOilV1Link&&!legacyOilV2Link}
 function oilPaintV5Enabled(){return oilPaintEnabled()&&oilV5Link&&!oilV6Link&&!oilV7Link&&!legacyOilV1Link&&!legacyOilV2Link}
 function oilPaintV6Enabled(){return oilPaintEnabled()&&oilV6Link&&!oilV7Link&&!legacyOilV1Link&&!legacyOilV2Link}
-function oilPaintV7Enabled(){return oilPaintEnabled()&&oilV7Link&&!legacyOilV1Link&&!legacyOilV2Link}
+function oilPaintV7Enabled(){return oilPaintEnabled()&&oilV7Link&&!oilV8Link&&!legacyOilV1Link&&!legacyOilV2Link}
+function oilPaintV8Enabled(){return oilPaintEnabled()&&oilV8Link&&!legacyOilV1Link&&!legacyOilV2Link}
 // V2T is V2S drawing code on CPU-backed canvases; it shares V2S's fit/φ rules.
 function watercolourV2SFamily(){return watercolourMaterialRevision==='v2s'||watercolourMaterialRevision==='v2t'}
 function oilPaintV1Enabled(){return legacyOilV1Link===true}
 function materialKey(){return $('materialStyle').value+'|'+
-    (actionPaintingEnabled()?'action-v'+actionPaintingRevision:oilPaintV7Enabled()?'oil-paint-v7':oilPaintV6Enabled()?'oil-paint-v6':oilPaintV5Enabled()?'oil-paint-v5':oilPaintV4Enabled()?'oil-paint-v4':oilPaintV3Enabled()?'oil-paint-v3':oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
+    (actionPaintingEnabled()?'action-v'+actionPaintingRevision:oilPaintV8Enabled()?'oil-paint-v8':oilPaintV7Enabled()?'oil-paint-v7':oilPaintV6Enabled()?'oil-paint-v6':oilPaintV5Enabled()?'oil-paint-v5':oilPaintV4Enabled()?'oil-paint-v4':oilPaintV3Enabled()?'oil-paint-v3':oilPaintV2Enabled()?'oil-paint-v2':oilPaintV1Enabled()?'oil-paint-v1':oilEnabled()?tissuePaletteVersion:watercolourEnabled()?watercolourMaterialRevision:'marker')+
     '|phi:'+phiSheetFraming+'|historic-fit:'+watercolourFitToSheet}
 function syncMaterialNote(){
   var control=$('watercolourFitControl');
@@ -249,6 +252,7 @@ function renderArtwork(target,settings,scale,reveal){
     : actionPaintingRevision===3
     ? A.renderActionPaintingV3(target,settings,scale,reveal,{version:3})
     : A.renderActionPainting(target,settings,scale,reveal,{version:actionPaintingRevision});
+  if(oilPaintV8Enabled())return A.renderReleasedOilPaintV8(target,settings,scale,reveal);
   if(oilPaintV7Enabled())return A.renderOilPaintV7(target,settings,scale,reveal);
   if(oilPaintV6Enabled())return A.renderOilPaintV6(target,settings,scale,reveal);
   if(oilPaintV5Enabled())return A.renderOilPaintV5(target,settings,scale,reveal);
@@ -284,6 +288,7 @@ function settingsToURL(settings){
   if(phiSheetFraming&&!(watercolourEnabled()&&watercolourMaterialRevision==='v2r'))
     params.set('sheet','phi');
   if(actionPaintingEnabled())params.set('material','action-v'+actionPaintingRevision);
+  else if(oilPaintV8Enabled())params.set('material','oil-v8');
   else if(oilPaintV7Enabled())params.set('material','oil-v7');
   else if(oilPaintV6Enabled())params.set('material','oil-v6');
   else if(oilPaintV5Enabled())params.set('material','oil-v5');
@@ -341,7 +346,7 @@ function loadSettingsFromURL(){
     $('materialStyle').value='marker';
     legacyOilV1Link=false;
     legacyOilV2Link=false;
-    oilV4Link=false;oilV5Link=false;oilV6Link=false;oilV7Link=true;
+    oilV4Link=false;oilV5Link=false;oilV6Link=false;oilV7Link=true;oilV8Link=defaultOilV8;
     actionPaintingRevision=4;
     tissuePaletteVersion=7;
     watercolourMaterialRevision='v2s';
@@ -391,7 +396,7 @@ function loadSettingsFromURL(){
   if(['action-v1','action-v2','action-v3','action-v4'].includes(params.get('material'))){
     $('materialStyle').value='action';actionPaintingRevision=Number(params.get('material').slice(-1));found=true;
   }
-  if(['oil-v1','oil-v2','oil-v3','oil-v4','oil-v5','oil-v6','oil-v7'].includes(params.get('material'))){
+  if(['oil-v1','oil-v2','oil-v3','oil-v4','oil-v5','oil-v6','oil-v7','oil-v8'].includes(params.get('material'))){
     $('materialStyle').value='oil';
     legacyOilV1Link=params.get('material')==='oil-v1';
     legacyOilV2Link=params.get('material')==='oil-v2';
@@ -399,6 +404,7 @@ function loadSettingsFromURL(){
     oilV5Link=params.get('material')==='oil-v5';
     oilV6Link=params.get('material')==='oil-v6';
     oilV7Link=params.get('material')==='oil-v7';
+    oilV8Link=params.get('material')==='oil-v8';
     found=true;
   }
 
@@ -589,6 +595,7 @@ function regenerate(){
   A.renderTimings.fullMs=performance.now()-started;
   lastCommittedRenderKey=JSON.stringify([A.rendererVersion,s,materialKey(),tissuePaletteVersion]);
   currentRenderMeta=meta;
+  A.lastOilV8Render=meta.version==='oil-paint-v8'?{version:meta.version,options:meta.options}:null;
   var info=$('phiSheetInfo');
   if(info&&phiSheetFraming){
     var fit=A.lastPhiSheetFrame;
@@ -978,7 +985,7 @@ $('randomise').onclick=function(){
   if(nextMaterials.length)material.value=r.pick(nextMaterials).value;
   legacyOilV1Link=false;
   legacyOilV2Link=false;
-  oilV4Link=false;oilV5Link=false;oilV6Link=false;oilV7Link=true;
+  oilV4Link=false;oilV5Link=false;oilV6Link=false;oilV7Link=true;oilV8Link=defaultOilV8;
   actionPaintingRevision=4;
   tissuePaletteVersion=7;
   watercolourMaterialRevision='v2s';
@@ -1193,7 +1200,7 @@ function savePNG(){
     actionPaintingRender:actionPaintingEnabled(),actionPaintingRevision:actionPaintingRevision,
     oilRender:oilEnabled(),oilPaintRender:oilPaintEnabled(),
     // Previously V3 exported as 'v1', so the PNG was painted by Oil V1.
-    oilPaintRevision:oilPaintV7Enabled()?'v7':oilPaintV6Enabled()?'v6':oilPaintV5Enabled()?'v5':oilPaintV4Enabled()?'v4':oilPaintV3Enabled()?'v3':
+    oilPaintRevision:oilPaintV8Enabled()?'v8':oilPaintV7Enabled()?'v7':oilPaintV6Enabled()?'v6':oilPaintV5Enabled()?'v5':oilPaintV4Enabled()?'v4':oilPaintV3Enabled()?'v3':
       oilPaintV2Enabled()?'v2':'v1',
     watercolourRender:watercolourEnabled(),
     watercolourRevision:watercolourMaterialRevision,
@@ -1418,7 +1425,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     if(e.id==='exportScale'||e.id==='keyboardShortcuts'||e.id==='watercolourFit'||
        e.id==='phiSheetFit'||e.id.indexOf('plotter')===0)return;
     // A material toggle must preserve the selected (including legacy) composer.
-    if(e.id==='materialStyle'){legacyOilV1Link=false;legacyOilV2Link=false;oilV4Link=false;oilV5Link=false;oilV6Link=false;oilV7Link=true;}
+    if(e.id==='materialStyle'){legacyOilV1Link=false;legacyOilV2Link=false;oilV4Link=false;oilV5Link=false;oilV6Link=false;oilV7Link=true;oilV8Link=defaultOilV8;}
     if(e.id==='materialStyle'&&actionPaintingEnabled())actionPaintingRevision=4;
     if(e.id==='materialStyle'&&oilEnabled())tissuePaletteVersion=7;
     if(e.id==='materialStyle'&&watercolourEnabled()){
@@ -1507,9 +1514,10 @@ function loadExactArchivedArtwork(id){
       oilV5Link=archivedWater==='oil-v5';
       oilV6Link=archivedWater==='oil-v6';
       oilV7Link=archivedWater==='oil-v7';
+      oilV8Link=archivedWater==='oil-v8';
       var archivedAction=['action-v1','action-v2','action-v3','action-v4'].includes(archivedWater);
       if(archivedAction)actionPaintingRevision=Number(archivedWater.slice(-1));
-      $('materialStyle').value=archivedAction?'action':['oil-v1','oil-v2','oil-v3','oil-v4','oil-v5','oil-v6','oil-v7'].includes(archivedWater)?'oil':
+      $('materialStyle').value=archivedAction?'action':['oil-v1','oil-v2','oil-v3','oil-v4','oil-v5','oil-v6','oil-v7','oil-v8'].includes(archivedWater)?'oil':
         ['watercolour-v2r','watercolour-v2s','watercolour-v2t'].includes(archivedWater)
         ?'watercolour':archivedTissueVersion>=2||entry.material==='watercolor'||
           archivedMaterialURL.searchParams.get('watercolor')==='1'?'tissue':'marker';

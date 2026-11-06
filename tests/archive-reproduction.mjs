@@ -2,6 +2,7 @@ import {chromium,firefox,webkit} from 'playwright';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {ARTWORK_JPEG_QUALITY} from '../automation/config.mjs';
+import {oilVersionForDate,verifyReleasedOilV8} from '../automation/oil-edition.mjs';
 
 const engine=process.env.ARCHIVE_BROWSER||'chromium';
 const runtime={chromium,firefox,webkit}[engine];
@@ -76,6 +77,8 @@ async function compare(item,bytes,overrideVersion){
   local.search=original.search;
   await page.goto(local.href,{waitUntil:'networkidle'});
   await page.waitForFunction(()=>window.AlgoArt?.lastRenderMeta&&document.getElementById('art')?.width>0);
+  if(original.searchParams.get('material')==='oil-v8')
+    verifyReleasedOilV8(await page.evaluate(()=>window.AlgoArt.lastOilV8Render));
   return page.evaluate(async ({data,expected,limits,overrideVersion,jpegQuality,engine})=>{
     const A=window.AlgoArt,art=document.getElementById('art');
     if(!overrideVersion&&A.rendererVersion!==expected.rendererVersion)throw Error('Actual renderer version does not match recorded version');
@@ -147,6 +150,8 @@ try{
         allIds.add(item.id);
         if(!item.imageFile||!item.settings||!item.shareUrl)throw Error('Incomplete archived state');
         const url=new URL(item.shareUrl);
+        if(queueIndex>=0&&item.material==='oil'&&url.searchParams.get('material')!==oilVersionForDate(meta.date))
+          throw Error('Oil queue revision differs from the edition date policy');
         if(Number(url.searchParams.get('v'))!==item.rendererVersion)throw Error('URL/metadata version mismatch');
         if(url.searchParams.get('seed')!==item.seed||item.settings.seed!==item.seed)throw Error('URL/metadata seed mismatch');
         bytes=await bytesFor(source,item);

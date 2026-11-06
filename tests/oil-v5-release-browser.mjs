@@ -4,6 +4,8 @@ import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {chromium} from 'playwright';
 import {validateOilItem} from '../automation/oil-slot.mjs';
+import {OIL_V8_CUTOVER,oilVersionForDate,verifyReleasedOilV8} from '../automation/oil-edition.mjs';
+import {rehearseOilV8Edition} from './oil-v8-edition-rehearsal.mjs';
 const root=process.env.ALGOART_LOCAL_URL||'http://127.0.0.1:4173/';
 const out='oil-v7-release-results';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-gpu']});
@@ -14,7 +16,7 @@ try{
   localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1');
   localStorage.setItem('algoart-inspector-desktop','open');localStorage.setItem('algoart-inspector-mobile','open');
   window.AlgoArt=window.AlgoArt||{};
-  for(let n=1;n<=7;n++){
+  for(let n=1;n<=8;n++){
    let render;Object.defineProperty(window.AlgoArt,'renderOilPaintV'+n,{configurable:true,
     get(){return render},set(fn){render=function(...args){const meta=fn.apply(this,args);
      if(args[0].id==='art')window.__oilRendered={version:meta.version,seed:args[1].seed};return meta;};}});
@@ -47,49 +49,57 @@ try{
   await page.waitForFunction(()=>window.AlgoArt?.readSettings&&document.querySelector('#creatingOverlay')?.hidden===true);
   if(!await page.locator('#tab-composition').isVisible())await page.locator('#inspectorToggle').click();
   await page.locator('#tab-composition').click();
-  await page.locator('#materialStyle').selectOption('oil');await ready(page,'oil-paint-v7');
-  assert.equal(new URL(page.url()).searchParams.get('material'),'oil-v7','New oil selection uses V7');
+  const defaultRevision=OIL_V8_CUTOVER?'v8':'v7';
+  await page.locator('#materialStyle').selectOption('oil');await ready(page,'oil-paint-'+defaultRevision);
+  assert.equal(new URL(page.url()).searchParams.get('material'),'oil-'+defaultRevision,'New Oil selection uses the release default');
+  if(defaultRevision!=='v8'){
+   q.set('material','oil-v8');
+   await page.goto(root+'?'+q,{waitUntil:'domcontentloaded'});
+   await ready(page,'oil-paint-v8');
+  }
+  verifyReleasedOilV8(await page.evaluate(()=>window.AlgoArt.lastOilV8Render));
   const hash=await pixelHash(page);await openExport(page);
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#savePanel').click()]);
-  assert(download.suggestedFilename().includes('-oil-paint-v7-1x.png'));
+  assert(download.suggestedFilename().includes('-oil-paint-v8-1x.png'));
   assert.equal(await downloadedHash(page,download),hash,'Downloaded PNG matches visible oil '+orientation);
   canonical=page.url();settings=await page.evaluate(()=>window.AlgoArt.readSettings());
   const compact=await page.evaluate(()=>window.AlgoArt.socialShare.compact(location.href,Object.values(window.AlgoArt.PARAM_KEYS)));
   assert(new URL(compact).searchParams.has('c'),'Must exercise the compact token decoder');
-  await page.goto(compact,{waitUntil:'domcontentloaded'});await ready(page,'oil-paint-v7');
-  assert.equal(await pixelHash(page),hash,'Compact V7 link replays exact pixels '+orientation);
-  const replay=await page.locator('#watchDrawing').getAttribute('href');assert.equal(new URL(replay,root).searchParams.get('material'),'oil-v7');
+  await page.goto(compact,{waitUntil:'domcontentloaded'});await ready(page,'oil-paint-v8');
+  assert.equal(await pixelHash(page),hash,'Compact V8 link replays exact pixels '+orientation);
+  const replay=await page.locator('#watchDrawing').getAttribute('href');assert.equal(new URL(replay,root).searchParams.get('material'),'oil-v8');
   results.push({orientation,hash,filename:download.suggestedFilename()});
   await page.screenshot({path:out+'/'+orientation+'.png',fullPage:false});
-  console.log('PASS default V7, visible/download PNG parity and compact replay '+orientation);
+  console.log('PASS Oil default, V8 PNG parity and compact replay '+orientation);
  }
- for(let n=1;n<=6;n++){
+ for(let n=1;n<=7;n++){
   const q=new URLSearchParams(params);q.set('material','oil-v'+n);
   await page.goto(root+'?'+q,{waitUntil:'domcontentloaded'});await ready(page,'oil-paint-v'+n);
   assert.equal(new URL(page.url()).searchParams.get('material'),'oil-v'+n,'Old URL must retain revision');
   console.log('PASS explicit historical studio oil-v'+n);
  }
  // Short gallery links are used by scheduled social posts and the welcome.
- for(const [day,version] of [['2026-10-25','oil-v4'],['2026-10-26','oil-v6']]){
+ for(const [day,version] of [['2026-10-25','oil-v4'],['2026-10-26','oil-v6'],['2026-11-07','oil-v8']]){
   const id=day+'-OP01',url=new URL(canonical);url.searchParams.set('material',version);
   const entry={id,seed:settings.seed,mode:settings.mode,material:'oil',rendererVersion:9,settings,shareUrl:url.href};
   await page.route('**/gallery/'+day+'/meta.json',route=>route.fulfill({json:{date:day,entries:[entry]}}));
   await page.goto(root+'?art='+id,{waitUntil:'domcontentloaded'});await ready(page,'oil-paint-'+version.slice(4));
   assert.equal(new URL(page.url()).searchParams.get('material'),version,'Archive restores complete oil state');
+  if(version==='oil-v8')assert.equal(await pixelHash(page),results.at(-1).hash,'Short V8 archive link replays exact pixels');
   console.log('PASS archived short link '+version);
  }
- // The final teaching frame uses the same V7 treatment as the studio.
+ // The final teaching frame uses the same V8 treatment as the studio.
  const replayPage=await context.newPage();replayPage.on('pageerror',e=>errors.push(e.message));
  const replayURL=new URL('about/step-by-step/',root);replayURL.search=new URL(canonical).search;
  await replayPage.goto(replayURL.href,{waitUntil:'load'});
  await replayPage.waitForFunction(()=>window.__walkthroughTest?.frames().length>2,null,{timeout:180000});
  const differences=await replayPage.evaluate(()=>{
   const A=window.AlgoArt,s=window.__walkthroughTest.settings(),c=document.createElement('canvas');
-  A.renderOilPaintV7(c,s,.45,false);const final=window.__walkthroughTest.frames().at(-1),copy=document.createElement('canvas');
+  A.renderReleasedOilPaintV8(c,s,.45,false);const final=window.__walkthroughTest.frames().at(-1),copy=document.createElement('canvas');
   copy.width=final.width;copy.height=final.height;copy.getContext('2d').drawImage(c,0,0,copy.width,copy.height);
   const a=final.getContext('2d').getImageData(0,0,copy.width,copy.height).data,b=copy.getContext('2d').getImageData(0,0,copy.width,copy.height).data;
   let differences=0;for(let i=0;i<a.length;i++)if(a[i]!==b[i])differences++;return differences;
- });assert.equal(differences,0,'Walkthrough final frame matches V7');console.log('PASS V7 walkthrough final-frame parity');
+ });assert.equal(differences,0,'Walkthrough final frame matches V8');console.log('PASS V8 walkthrough final-frame parity');
  const mobile=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,acceptDownloads:true});
  await mobile.addInitScript(()=>{localStorage.setItem('algoart-intro-seen','1');localStorage.setItem('algoart-ethos-seen','1');localStorage.setItem('algoart-inspector-mobile','open')});
  const mp=await mobile.newPage();mp.on('pageerror',e=>errors.push(e.message));
@@ -97,11 +107,11 @@ try{
  await mp.waitForFunction(()=>document.querySelector('#creatingOverlay')?.hidden===true&&document.querySelector('#materialStyle')?.value==='oil',null,{timeout:180000});
  const mobileHash=await pixelHash(mp);await openExport(mp);await mp.locator('#savePanel').click();
  await mp.locator('#pngDownload').waitFor({state:'visible',timeout:180000});
- assert((await mp.locator('#pngDownload').getAttribute('download')).includes('-oil-paint-v7-1x.png'));
+ assert((await mp.locator('#pngDownload').getAttribute('download')).includes('-oil-paint-v8-1x.png'));
  const [mobileDownload]=await Promise.all([mp.waitForEvent('download'),mp.locator('#pngDownload').click()]);
- assert.equal(await downloadedHash(mp,mobileDownload),mobileHash,'Mobile prepared PNG matches visible V7');
+ assert.equal(await downloadedHash(mp,mobileDownload),mobileHash,'Mobile prepared PNG matches visible V8');
  await mp.locator('#tab-composition').click();
- await mp.locator('#seed').fill('OIL-V7-MOBILE-SECOND');await mp.locator('#seed').press('Tab');
+ await mp.locator('#seed').fill('OIL-V8-MOBILE-SECOND');await mp.locator('#seed').press('Tab');
  await mp.waitForFunction(previous=>{
   if(document.querySelector('#creatingOverlay')?.hidden!==true)return false;
   const c=document.querySelector('#art');let hash=2166136261;
@@ -112,19 +122,25 @@ try{
  await mp.locator('#pngDownload').waitFor({state:'visible',timeout:120000});
  const [secondDownload]=await Promise.all([mp.waitForEvent('download'),mp.locator('#pngDownload').click()]);
  assert.equal(await downloadedHash(mp,secondDownload),await pixelHash(mp),'Second mobile export matches changed artwork');
- console.log('PASS repeated mobile V7 prepare/download parity');
+ console.log('PASS repeated mobile V8 prepare/download parity');
  assert.deepEqual(errors,[],'Studio/replay runtime errors');
  await writeFile(out+'/results.json',JSON.stringify(results,null,2));
- // Use the real generator and validator for tomorrow's new daily oil images.
+ // Use the real generator and validator on the selected release edition.
+ const edition=OIL_V8_CUTOVER||'2026-11-06';
+ const editionMaterial=oilVersionForDate(edition);
  for(const orientation of ['landscape','portrait']){
   const run=spawnSync(process.execPath,['automation/generate-social.mjs'],{encoding:'utf8',timeout:480000,maxBuffer:8e6,
-   env:{...process.env,SOCIAL_DATE:'2026-10-31',SOCIAL_MATERIAL:'oil',SOCIAL_ORIENTATION:orientation,SOCIAL_COUNT:'1',ALGOART_LOCAL_URL:root}});
-  assert.equal(run.status,0,'Daily Oil V7 generation '+orientation+': '+run.stderr+' '+run.stdout.slice(-1500));
-  const q=JSON.parse(await readFile('social-output/2026-10-31/oil/'+orientation+'/queue.json','utf8'));
-  assert.equal(q.entries.length,1);validateOilItem(q.entries[0],'2026-10-31',orientation);
-  assert.equal(new URL(q.entries[0].shareUrl).searchParams.get('material'),'oil-v7');
-  console.log('PASS real daily Oil V7 '+orientation+' '+q.entries[0].seed);
+   env:{...process.env,SOCIAL_DATE:edition,SOCIAL_MATERIAL:'oil',SOCIAL_ORIENTATION:orientation,SOCIAL_COUNT:'2',ALGOART_LOCAL_URL:root}});
+  assert.equal(run.status,0,'Daily Oil generation '+orientation+': '+run.stderr+' '+run.stdout.slice(-1500));
+  const q=JSON.parse(await readFile('social-output/'+edition+'/oil/'+orientation+'/queue.json','utf8'));
+  assert.equal(q.entries.length,2);validateOilItem(q.entries[0],edition,orientation);
+  for(const entry of q.entries)assert.equal(new URL(entry.shareUrl).searchParams.get('material'),editionMaterial);
+  console.log('PASS real daily '+editionMaterial+' '+orientation+' '+q.entries.map(entry=>entry.seed).join(', '));
  }
- console.log('PASS Oil V7 studio/export/link/archive/walkthrough/mobile/daily release checks.');
+ if(OIL_V8_CUTOVER){
+  const report=await rehearseOilV8Edition(edition,root);
+  await writeFile(out+'/edition-rehearsal.json',JSON.stringify(report,null,2));
+ }
+ console.log('PASS Oil V8 studio, export, share, archive, walkthrough, mobile and daily release checks.');
 }finally{await browser.close()}
 
