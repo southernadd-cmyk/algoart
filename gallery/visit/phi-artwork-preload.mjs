@@ -1,15 +1,22 @@
 // Predecode only the selected floor's paintings during the lift journey.
-export function decodePhiArtworkImage(url) {
+export function decodePhiArtworkImage(url,{onEvent=null}={}) {
+ const begun=performance.now();
  return new Promise((resolve,reject)=>{
   const image=new Image();
   image.crossOrigin='anonymous';image.decoding='async';
-  image.onload=()=>Promise.resolve(typeof image.decode==='function'?image.decode():undefined)
-   .catch(()=>{}).then(()=>resolve(image));
-  image.onerror=()=>reject(new Error('Painting image unavailable: '+url));
+  image.onload=()=>{
+   onEvent?.('image-network-loaded',{url,ms:performance.now()-begun});
+   const decodeStart=performance.now();
+   Promise.resolve(typeof image.decode==='function'?image.decode():undefined)
+    .catch(()=>{}).then(()=>{
+     onEvent?.('image-decoded',{url,ms:performance.now()-decodeStart});resolve(image);
+    });
+  };
+  image.onerror=()=>{onEvent?.('image-load-error',{url,ms:performance.now()-begun});reject(new Error('Painting image unavailable: '+url));};
   image.src=globalThis.__phiJPEGCacheBench?.stamp(url)||url;
  });
 }
-export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concurrency=3,prepare=null,dispose=()=>{},releaseAfterDecode=false}={}){
+export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concurrency=3,prepare=null,dispose=()=>{},releaseAfterDecode=false,onEvent=null}={}){
  let current=null;
  const limit=Math.max(1,Math.floor(concurrency));
  const clear=()=>{
@@ -38,6 +45,8 @@ export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concu
    while(session.active<limit&&queue.length){
     const entry=queue.shift();
     entry.state='loading';session.active++;
+    const entryStart=performance.now();
+    onEvent?.('preload-start',{date,url:entry.url});
     let downloadReleased=false;
     const releaseDownload=()=>{
      if(downloadReleased)return;
@@ -62,8 +71,10 @@ export function createPhiArtworkPreloader(loadImage=decodePhiArtworkImage,{concu
      .then(value=>{
       if(session.cancelled){dispose(value);entry.finish(null);return;}
       entry.state='ready';entry.value=value;entry.finish(value);
+      onEvent?.('preload-finished',{date,url:entry.url,ms:performance.now()-entryStart});
      },()=>{
       entry.state='failed';entry.finish(null);
+      onEvent?.('preload-failed',{date,url:entry.url,ms:performance.now()-entryStart});
      }).finally(releaseDownload);
    }
   };
