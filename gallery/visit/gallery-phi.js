@@ -3645,7 +3645,38 @@ let phiFrameSerial=0;
 let phiRoomVisibilitySerial=0;
 function renderTracedPhiFrame(dt,focus){
  if(!phiPaintingTrace)return phiPostFX.render(dt,focus);
- return phiPaintingTrace.measure('postfx-render',()=>phiPostFX.render(dt,focus));
+ // Read the WebGL program-cache count on either side of the real render.
+ // A count increase is evidence of new program variants; no increase does
+ // not exclude an existing program's first link or a GPU synchronisation.
+ const beforePrograms=renderer.info.programs||[];
+ const beforeCount=beforePrograms.length;
+ const began=performance.now();
+ try{return phiPostFX.render(dt,focus);}
+ finally{
+  const ms=performance.now()-began;
+  if(ms>=30)phiPaintingTrace.event('postfx-render',{ms});
+  if(ms>=100){
+   const afterPrograms=renderer.info.programs||[];
+   const afterCount=afterPrograms.length;
+   const added=afterCount>beforeCount?afterPrograms.slice(beforeCount).slice(0,12):[];
+   const lights={};
+   scene.traverse(obj=>{
+    if(obj.isLight){
+     const name=obj.type||'Light';
+     lights[name]=(lights[name]||0)+1;
+    }
+   });
+   phiPaintingTrace.event('postfx-program-snapshot',{
+    ms,programsBefore:beforeCount,programsAfter:afterCount,
+    addedPrograms:afterCount-beforeCount,
+    newCacheKeys:added.map(p=>String(p.cacheKey||p.name||p.id||'unknown').slice(0,600)),
+    outputColorSpace:renderer.outputColorSpace,
+    toneMapping:renderer.toneMapping,
+    renderTargetAfter:renderer.getRenderTarget()?.constructor?.name||'screen',
+    lights
+   });
+  }
+ }
 }
 function tick() {
  const phiTraceTickStart=phiPaintingTrace?performance.now():0;
