@@ -43,7 +43,10 @@ try{
    assert.deepEqual(entry.state.errors,[],'Post FX exceptions present');
    assert.equal(entry.state.globalError,null);
    assert.deepEqual(problems.filter(x=>/original renderer fallback|post-processing error|Cannot read properties of undefined.*length/i.test(x)),[]);
-   await page.screenshot({path:dir+'/'+ao+'.png'});
+   // Screenshot capture can stall under software WebGL; diagnostic only, not a release gate.
+   await page.screenshot({path:dir+'/'+ao+'.png',timeout:3000}).catch(e=>{
+    entry.screenshotWarning=String(e.message||e);
+   });
    entry.pass=true;
   }catch(error){
    entry.error=String(error.stack||error);
