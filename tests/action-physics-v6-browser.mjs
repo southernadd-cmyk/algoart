@@ -79,6 +79,12 @@ try{
   },seedCase);
   fullResolution.push(details);
   await page.screenshot({path:out+'/full-'+seedCase.mode+'.png',fullPage:true});
+  const native=await page.evaluate(()=>{
+   return Object.fromEntries(['v4','v5','v6'].map(k=>[k,
+    document.getElementById(k).toDataURL('image/png').split(',')[1]]));
+  });
+  for(const [version,base64] of Object.entries(native))
+   await writeFile(out+'/native-'+seedCase.mode+'-'+version+'.png',Buffer.from(base64,'base64'));
   console.log('FULL RES '+seedCase.seed+' '+JSON.stringify(details.checks.map(x=>[x.name,x.value,x.passed])));
  }
  await page.setViewportSize({width:390,height:850});
