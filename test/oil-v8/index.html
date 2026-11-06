@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Oil V8 — bounded paint-flow experiment | PROPORTION PIECE</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f0e6;color:#292c2c;font:15px/1.5 system-ui,sans-serif}
+main{max-width:1760px;margin:auto;padding:26px}
+h1{font-weight:450;line-height:1.15;font-size:clamp(28px,4vw,48px);margin:9px 0}
+p{max-width:100ch}a{color:inherit}
+form{display:flex;flex-wrap:wrap;gap:13px;margin:25px 0;align-items:end}
+label{display:grid;gap:5px;font-size:14px}
+input,select,button{font:inherit;min-height:39px;max-width:100%;padding:8px;border:1px solid #777;background:#fffaf2;color:#292c2c;border-radius:3px}
+button{cursor:pointer;background:#293f3e;color:#fff}button:disabled{opacity:.6}
+button.secondary{background:#fffaf2;color:#292c2c}
+#status{min-height:25px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:18px 0}
+figure{margin:0;min-width:0}figcaption{display:grid;gap:4px;margin-bottom:10px;font-weight:600}
+canvas{display:block;width:100%;height:auto;background:#f5f0e6;box-shadow:0 2px 12px #30271922}
+.metrics{white-space:pre-wrap;font:12px/1.5 ui-monospace,Consolas,monospace;color:#4d4b45;padding:10px 0}
+#summary{white-space:pre-wrap;font:13px/1.5 ui-monospace,monospace;max-height:500px;overflow:auto}
+details{margin:25px 0 60px}
+@media(max-width:790px){main{padding:16px}.grid{grid-template-columns:1fr;gap:22px}}
+</style></head><body><main>
+<a href="../../">PROPORTION PIECE studio</a>
+<h1>Oil V8 — paint after placement</h1>
+<p>Four treatments of the <strong>same seeded composition</strong>. Oil V7 is the unchanged reference. V8 first settles the relief with bounded viscous flow, then adds local wet-on-wet colour displacement, then optionally develops small ridges at neighbouring pigment boundaries.</p>
+<p>All flow is restricted to the existing painted footprint; the source marks, φ relationships and protected empty spaces are fixed. This is a study, not the live oil material.</p>
+<form id="controls">
+<label>Seed<input id="seed" value="OIL-V8-STUDY-01"></label>
+<label>Engine<select id="mode"><option value="field">Orbital / Field</option><option value="spiral">Golden Trajectories</option><option value="rects">Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic" selected>Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
+<label>Orientation<select id="orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label>
+<label>φ pull (0–100)<input id="phi" inputmode="numeric" type="number" min="0" max="100" value="91"></label>
+<label>Density (0–100)<input id="density" inputmode="numeric" type="number" min="0" max="100" value="53"></label>
+<label>Elements (2–140)<input id="elements" type="number" min="2" max="140" value="36"></label>
+<label>Resolution<select id="scale"><option value=".30">30% (fast)</option><option value=".50" selected>50% (review)</option><option value="1">100% (print)</option></select></label>
+<button type="submit" id="compare">Render comparison</button>
+<button type="button" id="download" class="secondary" disabled>Download measurements</button>
+</form>
+<p id="status" role="status" aria-live="polite">Ready.</p>
+<section class="grid" id="results">
+<figure><figcaption>Oil V7 <small>Existing surface, unchanged</small></figcaption><canvas id="v7" role="img" aria-label="Oil V7 baseline"></canvas><div class="metrics" id="m7"></div></figure>
+<figure><figcaption>Oil V8 — settling <small>Thickness redistribution only</small></figcaption><canvas id="settle" role="img" aria-label="Oil V8 relief settling"></canvas><div class="metrics" id="ms"></div></figure>
+<figure><figcaption>Oil V8 — displacement <small>Limited brush-contact colour advection</small></figcaption><canvas id="displace" role="img" aria-label="Oil V8 wet pigment displacement"></canvas><div class="metrics" id="md"></div></figure>
+<figure><figcaption>Oil V8 — boundaries <small>Contact displacement and funded paint ridges</small></figcaption><canvas id="boundary" role="img" aria-label="Oil V8 pigment boundaries"></canvas><div class="metrics" id="mb"></div></figure>
+</section>
+<details><summary>Inspect full measurements and integrity checks</summary><pre id="summary"></pre></details>
+</main>
+<script src="../../js/random.js"></script>
+<script src="../../js/phi.js"></script>
+<script src="../../js/palettes.js"></script>
+<script src="../../js/marker.js"></script>
+<script src="../../js/phi-sheet-fit.js"></script>
+<script src="../../js/generator.js"></script>
+<script src="../../js/oil-surface.js"></script>
+<script src="../../js/oil-paint-v2.js"></script>
+<script src="../../js/oil-paint-v3.js"></script>
+<script src="../../js/oil-render.js"></script>
+<script src="../../js/oil-material.js"></script>
+<script src="../../js/oil-v1-core-a.js"></script>
+<script src="../../js/oil-v1-core-b.js"></script>
+<script src="../../js/oil-v1-core-c.js"></script>
+<script src="../../js/oil-paint-v1.js"></script>
+<script src="../../js/oil-brush-v2.js"></script>
+<script src="../../js/oil-brush-v3.js"></script>
+<script src="../../js/cpu-canvas.js"></script>
+<script src="../../js/cpu-material-versions.js"></script>
+<script src="../../js/oil-pigment.js"></script>
+<script src="../../js/oil-paint-v5.js"></script>
+<script src="../../js/oil-paint-v6.js"></script>
+<script src="../../js/oil-brush-v7.js"></script>
+<script src="../../js/oil-paint-v7.js"></script>
+<script src="../../js/oil-flow-v8.js"></script>
+<script src="../../js/oil-paint-v8.js"></script>
+<script>
+'use strict';
+const A=window.AlgoArt;A.rendererVersion=9;
+const defaults={"seed":"OIL-V7-STUDY-01","mode":"organic","orientation":"landscape","pen":"fine","paper":"#f5f0e6","palette":"golden","elements":36,"density":53,"complexity":71,"negativeSpace":41,"phiStrength":91,"recursion":4,"spiralInfluence":63,"goldenAngle":93,"nesting":44,"thickness":13,"wobble":32,"overdraw":3,"opacity":70,"pressure":36,"dryness":19,"curveBias":91,"shapeAmount":68,"overlap":65,"rotation":91,"colourCount":4,"saturation":86,"brightness":59,"grain":13,"lines":true,"circles":true,"rectangles":true,"polygons":true,"arcs":true};
+const $=id=>document.getElementById(id),query=new URLSearchParams(location.search);
+const controls=['seed','mode','orientation','phi','density','elements','scale'];
+for(const id of controls)if(query.has(id))$(id).value=query.get(id);
+function settings(){return {...defaults,
+ seed:$('seed').value.trim()||defaults.seed,mode:$('mode').value,
+ orientation:$('orientation').value,
+ phiStrength:Math.max(0,Math.min(100,+$('phi').value)),
+ density:Math.max(0,Math.min(100,+$('density').value)),
+ elements:Math.max(2,Math.min(140,+$('elements').value))};}
+function hash(data){let h=2166136261;for(const b of data)h=Math.imul(h^b,16777619);return h>>>0;}
+function metrics(canvas){
+ const a=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+ let ink=0,heavy=0,sat=0;
+ for(let i=0;i<a.length;i+=4){
+  const r=a[i],g=a[i+1],b=a[i+2],d=Math.hypot(r-245,g-240,b-230);
+  if(d>22){ink++;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);sat+=mx?(mx-mn)/mx:0;}
+  if(d>85)heavy++;
+ }
+ const n=canvas.width*canvas.height;
+ return {width:canvas.width,height:canvas.height,hash:hash(a),
+  inkCoverage:100*ink/n,heavyCoverage:100*heavy/n,meanSaturation:ink?100*sat/ink:0};
+}
+function protectedPaintDiff(reference,other,rects,scale){
+ const w=reference.width,h=reference.height,
+  a=reference.getContext('2d').getImageData(0,0,w,h).data,
+  b=other.getContext('2d').getImageData(0,0,w,h).data;
+ let differences=0,examined=0;
+ for(const v of rects||[]){
+  const x0=Math.max(0,Math.floor(v.x*scale)),y0=Math.max(0,Math.floor(v.y*scale)),
+   x1=Math.min(w,Math.ceil((v.x+v.w)*scale)),y1=Math.min(h,Math.ceil((v.y+v.h)*scale));
+  for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+   const z=(y*w+x)*4;examined++;
+   if(a[z]!==b[z]||a[z+1]!==b[z+1]||a[z+2]!==b[z+2]||a[z+3]!==b[z+3])differences++;
+  }
+ }
+ return {examined,differences};
+}
+const cases=[['v7',7,null,'m7'],['settle',8,'settle','ms'],['displace',8,'displace','md'],['boundary',8,'boundary','mb']];
+let last=null;
+async function render(){
+ $('compare').disabled=true;$('download').disabled=true;
+ $('status').textContent='Painting identical compositions, then comparing their materials…';
+ await new Promise(ok=>requestAnimationFrame(ok));
+ try{
+  const s=settings(),before=JSON.stringify(s),scale=+$('scale').value,
+    result={settings:s,scale,panels:{},structuralSame:true,voidsSame:true};
+  for(const [id,version,mode,metricId] of cases){
+   const canvas=$(id),start=performance.now();
+   const meta=version===7?A.renderOilPaintV7(canvas,s,scale,false):
+    A.renderOilPaintV8(canvas,s,scale,false,{mode});
+   const timeMs=performance.now()-start,pixel=metrics(canvas);
+   result.panels[id]={timeMs,pixel,
+    flow:meta.work.wetFlow||null,
+    plan:meta.plan,source:{strategy:meta.strategy,guide:meta.guide,voids:meta.voids,
+      phiSheetFrame:meta.phiSheetFrame,sourcePaths:meta.work.sourceChains}};
+   $(''+metricId).textContent='Painted '+pixel.inkCoverage.toFixed(2)+'%  ·  heavy '+pixel.heavyCoverage.toFixed(2)+'%\n'+
+    'Saturation '+pixel.meanSaturation.toFixed(2)+'%  ·  render '+timeMs.toFixed(1)+' ms'+
+    (meta.work.wetFlow?'\nFlow '+meta.work.wetFlow.elapsedMs.toFixed(1)+' ms  ·  shifted colours '+meta.work.wetFlow.colourShiftedPixels+
+     '\nHeight mass error '+meta.work.wetFlow.massErrorPct.toFixed(3)+'%  ·  protected pixels '+meta.work.wetFlow.protectedPixels:'');
+  }
+  if(JSON.stringify(s)!==before)throw Error('Mutated source settings');
+  const baseline=result.panels.v7;
+  const sourceKey=x=>JSON.stringify(x.source);
+  const planKey=x=>JSON.stringify(x.plan);
+  for(const id of ['settle','displace','boundary']){
+   const x=result.panels[id];
+   if(sourceKey(x)!==sourceKey(baseline)||planKey(x)!==planKey(baseline))
+    throw Error('Composition changed in '+id);
+   x.voidComparison=protectedPaintDiff($('v7'),$(id),x.plan.protectedVoids,scale);
+   if(x.voidComparison.differences)throw Error('Protected pixels altered in '+id);
+   if(Math.abs(x.flow.massErrorPct)>.2)throw Error('Relief volume drift in '+id);
+  }
+  // Repeat an unchanged V7 render after all V8 variants to detect scope leaks.
+  const repeat=document.createElement('canvas');A.renderOilPaintV7(repeat,s,scale,false);
+  result.v7ReplayHash=metrics(repeat).hash;
+  if(result.v7ReplayHash!==baseline.pixel.hash)throw Error('V7 replay changed after V8');
+  for(const id of controls)query.set(id,$(id).value);
+  history.replaceState(null,'','?'+query);
+  last=result;
+  const brief=JSON.parse(JSON.stringify(result,(k,v)=>k==='plan'?undefined:v));
+  $('summary').textContent=JSON.stringify(brief,null,2);
+  $('download').disabled=false;
+  $('status').textContent='PASS: same source composition, unchanged protected voids and stable V7 replay. Review actual material differences.';
+  return result;
+ }catch(e){$('status').textContent='Comparison failed: '+e.message;throw e}
+ finally{$('compare').disabled=false;}
+}
+$('controls').addEventListener('submit',e=>{e.preventDefault();render().catch(console.error)});
+$('download').addEventListener('click',()=>{
+ if(!last)return;
+ const safe=JSON.parse(JSON.stringify(last,(k,v)=>k==='plan'?undefined:v));
+ const blob=new Blob([JSON.stringify(safe,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob);
+ const link=document.createElement('a');link.href=url;link.download='oil-v8-study-results.json';link.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+window.oilV8Study={render,settings,metrics,get last(){return last;}};
+if(query.get('manual')!=='1')render().catch(console.error);
+</script></body></html>
