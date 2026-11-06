@@ -3643,7 +3643,13 @@ function measurePhiPerformance(now){
 }
 let phiFrameSerial=0;
 let phiRoomVisibilitySerial=0;
+function renderTracedPhiFrame(dt,focus){
+ if(!phiPaintingTrace)return phiPostFX.render(dt,focus);
+ return phiPaintingTrace.measure('postfx-render',()=>phiPostFX.render(dt,focus));
+}
 function tick() {
+ const phiTraceTickStart=phiPaintingTrace?performance.now():0;
+ try{
   phiLiftProfiler?.tick();
   phiLightingStudy?.update();
  measurePhiPerformance(performance.now());
@@ -3685,7 +3691,7 @@ function tick() {
     phiRoomVisibilityCuller.update(local,{safe:canCull});
    }
   }
-  if(!$('lift').hidden){phiPostFX.render(dt,null);return;}
+  if(!$('lift').hidden){renderTracedPhiFrame(dt,null);return;}
   updateMovement(dt);
   updatePhiRideCamera();
   if(GALLERY_DEBUG)window.__phiLiftState={
@@ -3714,9 +3720,15 @@ function tick() {
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
-  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
+  renderTracedPhiFrame(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={disabled:true,pending:0};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
+ }finally{
+  if(phiPaintingTrace){
+   const duration=performance.now()-phiTraceTickStart;
+   if(duration>=40)phiPaintingTrace.event('animation-tick',{ms:duration});
+  }
+ }
 }
 if(renderer)renderer.setAnimationLoop(tick);
 // Ensure canvas-rendered entrance and lift signs use the actual marker font.
