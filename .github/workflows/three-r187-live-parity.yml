@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: three-r187-live-parity
+  group: three-r187-live-parity-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
