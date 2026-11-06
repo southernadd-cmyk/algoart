@@ -28,6 +28,7 @@ jobs:
       - run: |
           node tests/action-physics-v5.test.mjs
           node tests/action-physics-v6.test.mjs
+          node tests/action-physics-v6-syntax.mjs
           node tests/paint-refinements.test.mjs
           node tests/action-v3-export.test.mjs
       - run: |
