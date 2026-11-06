@@ -131,7 +131,7 @@ function fling(ctx,r,from,to,color,weight,energy,w,h,via,straightSource,material
  var dryBeads=0,speedDroplets=0,slowPools=0,baseRibbon=0,inkRibbon=0,
    beadMass=0,paidMass=0,phase=materialR()*Math.PI*2,
    fast=null,slow=null,slowScore=0,fastSpeed=0,
-   ledger={commonMass:0},previousLedger=ctx.__actionV6Ledger;
+   ledger={commonMass:0},segments=[],previousLedger=ctx.__actionV6Ledger;
  ctx.__actionV6Ledger=ledger;
  ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineCap='round';ctx.lineJoin='round';
  for(var i=1;i<pts.length;i++){
@@ -150,12 +150,12 @@ function fling(ctx,r,from,to,color,weight,energy,w,h,via,straightSource,material
   if(materialR()<dryChance){
    // Fewer, larger, opaque tail beads; the dark edge is thin enough to keep colour.
    var rad=.8+materialR()*Math.min(1.7,Math.max(.8,thickness*.33));
-   ctx.beginPath();ctx.arc(p.x,p.y,rad,0,Math.PI*2);ctx.fill();dryBeads++;
+   segments.push({type:'bead',p:p,radius:rad,alpha:opacity});dryBeads++;
    beadMass+=Math.PI*rad*rad*opacity;
-   if(rad>1.35){ctx.strokeStyle=colourRim(color);ctx.lineWidth=.5;ctx.stroke();ctx.strokeStyle=color;}
   }else{
-   ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(p.x,p.y);ctx.stroke();
-   inkRibbon+=ctx.lineWidth*opacity*speed;
+   // Defer all V6 ribbon strokes until the exact V4 budget is known.
+   // The V4 pools and splatters below still consume identical random calls.
+   segments.push({type:'stroke',p:p,q:q,width:ctx.lineWidth,alpha:opacity,speed:speed});
   }
   // Preserve V4 deposits in content, scale and RNG consumption.
   if(i>3&&i<N-3&&((curvature>.27&&r()<.13)||(speed<2.5&&r()<.15)))
@@ -172,16 +172,39 @@ function fling(ctx,r,from,to,color,weight,energy,w,h,via,straightSource,material
  if(r()<.24){var at=pts[2+Math.floor(r()*(N-4))];pool(ctx,r,at,between(r,-3.14,3.14),weight,color);}
  for(var j=0;j<Math.floor(energy*6);j++){var spot=pts[Math.floor(r()*pts.length)];
    scatter(ctx,r,spot.x,spot.y,2+Math.floor(r()*5),color,between(r,8,40));}
- // All new paint is paid for by the deficit from the exact V4 ribbon widths
- // of this same throw. Common V4 pools and splatter cancel from both budgets.
+ // Price the entire gesture *before* painting its ribbons. Hold 2.5% of
+ // available ribbon pigment for physical deposits; any dry beads are paid first.
+ // Correcting widths here avoids over-budget paths (V5b's critical regression).
+ var nominal=0;
+ for(var m=0;m<segments.length;m++){
+  var seg=segments[m];
+  if(seg.type==='stroke')nominal+=seg.width*seg.alpha*seg.speed;
+ }
+ var ribbonBudget=Math.max(0,baseRibbon-beadMass)*.975,
+     ribbonScale=nominal>0?ribbonBudget/nominal:0;
+ for(m=0;m<segments.length;m++){
+  seg=segments[m];ctx.globalAlpha=seg.alpha;
+  if(seg.type==='bead'){
+   ctx.fillStyle=color;ctx.beginPath();ctx.arc(seg.p.x,seg.p.y,seg.radius,0,Math.PI*2);ctx.fill();
+   if(seg.radius>1.35){
+    ctx.strokeStyle=colourRim(color);ctx.lineWidth=.5;ctx.stroke();ctx.strokeStyle=color;
+   }
+  }else{
+   ctx.strokeStyle=color;ctx.lineWidth=Math.max(.08,seg.width*ribbonScale);
+   ctx.beginPath();ctx.moveTo(seg.q.x,seg.q.y);ctx.lineTo(seg.p.x,seg.p.y);ctx.stroke();
+   inkRibbon+=ctx.lineWidth*seg.alpha*seg.speed;
+  }
+ }
+ // Common V4 deposits are counted on both sides; all extra deposits
+ // are paid from the actual after-taper ribbon shortfall.
  var deficit=Math.max(0,baseRibbon-inkRibbon-beadMass);
  if(deficit>0.0001){
   var slowShare=slow?.38:0,fastShare=fast?.2:0,
       originShare=1-slowShare-fastShare,alpha=.92;
   var originArea=deficit*originShare/alpha;
   var originRadius=Math.sqrt(originArea/Math.PI);
-  paidMass+=paidEllipse(ctx,pts[0],originRadius,originRadius*.92,0,color,alpha,true);
-  // Ellipse area correction for the slightly flattened origin.
+  paidMass+=paidEllipse(ctx,pts[0],originRadius*1.06,originRadius/1.06,0,color,alpha,true);
+  // Origin ellipse has exactly the area allocated in the mass ledger.
   if(slow){
    var slowArea=deficit*slowShare/alpha,slowRadius=Math.sqrt(slowArea/(Math.PI*.72));
    paidMass+=paidEllipse(ctx,slow.p,slowRadius,slowRadius*.72,slow.angle,color,alpha,true);
