@@ -1,0 +1,83 @@
+name: Build and verify isolated Three.js r187 N8AO compatibility fix
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/r187-n8ao-compat-test.yml'
+      - 'automation/build-r187-n8ao-fixed-test.mjs'
+      - 'tests/r187-n8ao-compat-browser.mjs'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: r187-n8ao-compat-test
+  cancel-in-progress: false
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install LOCKED live dependencies without modifying them
+        run: npm ci --ignore-scripts
+      - name: Install r187 in temporary isolated directory
+        run: |
+          mkdir -p "$RUNNER_TEMP/r187-test"
+          npm install --prefix "$RUNNER_TEMP/r187-test" --no-save --package-lock=false --ignore-scripts three@0.187.0
+          node --input-type=module -e "import {readFileSync} from 'node:fs';const f=process.env.RUNNER_TEMP+'/r187-test/node_modules/three/package.json';if(JSON.parse(readFileSync(f)).version!=='0.187.0')process.exit(1)"
+      - name: Generate only the PATCHED r187 test bundle and page
+        run: |
+          THREE_R187_PACKAGE="$RUNNER_TEMP/r187-test/node_modules/three" node automation/build-r187-n8ao-fixed-test.mjs
+          node --check gallery/visit/gallery-phi-r187-n8ao-fixed-bundle.js
+          grep -q 'n8ao' gallery/visit/three-r187-n8ao-fixed.html
+          test -s gallery/visit/gallery-phi-bundle.js
+          # This candidate must not modify ANY existing live file.
+          git diff --exit-code -- gallery/visit/index.html gallery/visit/gallery-phi.js gallery/visit/gallery-phi-bundle.js gallery/visit/phi-post-fx.mjs
+      - name: Install browser for actual WebGL post-processing smoke test
+        run: npx playwright install --with-deps chromium
+      - name: Serve unchanged gallery assets with candidate test page
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/r187-n8ao-smoke.log 2>&1 &
+          sleep 3
+          curl -fsS -o /dev/null http://127.0.0.1:4173/gallery/visit/three-r187-n8ao-fixed.html
+      - name: Verify r187 + N8AO and SSAO do not fall back
+        run: node tests/r187-n8ao-compat-browser.mjs
+        env:
+          PHI_TEST_SERVER: http://127.0.0.1:4173
+      - name: Archive diagnostic screenshots and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r187-n8ao-compatibility-smoke
+          path: r187-n8ao-compat-smoke/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Publish ONLY the two verified test files on main
+        if: success()
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- gallery/visit/gallery-phi-r187-n8ao-fixed-bundle.js gallery/visit/three-r187-n8ao-fixed.html
+          staged="$(git diff --cached --name-only)"
+          printf '%s\n' "$staged"
+          if [[ "$staged" != $'gallery/visit/gallery-phi-r187-n8ao-fixed-bundle.js\ngallery/visit/three-r187-n8ao-fixed.html' ]]; then
+            echo 'Unexpected staged files; refusing to push' >&2
+            exit 1
+          fi
+          git commit -m 'Add independently verified r187 N8AO compatibility test only'
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - name: Request GitHub Pages deployment of existing unchanged live plus test
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
