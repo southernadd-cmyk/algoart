@@ -94,7 +94,16 @@ export function createPhiPaintingTrace({enabled=false,now=()=>performance.now()}
    eventsRecorded:related.length,
    byName,
    checkpoints:related.filter(e=>e.name==='paintings-wait-start'||e.name==='paintings-wait-end').map(snapshot),
-   slowEvents:[...timings].sort((a,b)=>b.ms-a.ms).slice(0,10).map(snapshot),
+   slowEvents:[...timings].filter(e=>e.name!=='postfx-program-snapshot')
+    .sort((a,b)=>b.ms-a.ms).slice(0,10).map(snapshot),
+   programSnapshots:related.filter(e=>e.name==='postfx-program-snapshot')
+    .sort((a,b)=>b.ms-a.ms).slice(0,8).map(e=>({
+     atMs:+(e.at-started).toFixed(1),renderMs:+e.ms.toFixed(1),
+     before:e.programsBefore,after:e.programsAfter,added:e.addedPrograms,
+     newCacheKeys:e.newCacheKeys,
+     lights:e.lights,outputColorSpace:e.outputColorSpace,
+     toneMapping:e.toneMapping,renderTargetAfter:e.renderTargetAfter
+    })),
    longTasks:tasks,
    longAnimationFrames:longAnimationFrames.filter(f=>f.start<=end&&f.end>=started)
     .sort((a,b)=>b.ms-a.ms).slice(0,6).map(f=>({
