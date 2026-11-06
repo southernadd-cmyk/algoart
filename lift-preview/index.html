@@ -24,13 +24,14 @@ footer{border-top:1px solid #a5afa5;margin-top:20px;padding-top:17px;color:#4456
 <section>
 <article><h2>Baseline</h2><small>Current 16-object/two-frame reveal, followed by whole-scene warm-up.</small>
 <a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1">Enter manually</a>
-<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftbench=1">Run measured journey</a></article>
+<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftpainttrace=1&amp;liftbench=1">Run measured journey</a></article>
 <article><h2>64 objects</h2><small>Destination-only precompile and texture upload, then 64 objects per reveal batch.</small>
 <a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=64">Enter manually</a>
-<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=64&amp;liftbench=1">Run measured journey</a></article>
+<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=64&amp;liftpainttrace=1&amp;liftbench=1">Run measured journey</a></article>
 <article><h2>Single batch</h2><small>Destination-only precompile and texture upload, then the whole floor in one batch.</small>
 <a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all">Enter manually</a>
-<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftbench=1">Run measured journey</a></article>
+<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftpainttrace=1&amp;liftbench=1">Run measured journey</a></article>
 </section>
+<p><strong>New diagnostics:</strong> The measured-journey reports now include <code>paintingTrace</code>: long browser tasks, slow image resources, decode/upload timings, and painting readiness checkpoints. The timestamps are relative to each ride. A long task overlapping <code>paintings-waiting</code> is a correlation, not proof the painting caused it.</p>
 <footer>Test source: <a href="https://github.com/southernadd-cmyk/algoart/tree/test/lift-precompile-20261106">isolated GitHub branch</a>. Software-renderer benchmark cannot establish AMD performance. Use the same Chrome browser and repeat all three tests separately for a fair comparison.</footer>
 </main></body></html>
