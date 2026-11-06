@@ -27,7 +27,7 @@ export function createPhiPaintingTrace({enabled=false,now=()=>performance.now()}
       start:frame.startTime,end:frame.startTime+frame.duration,
       ms:+frame.duration.toFixed(1),
       blockingMs:+(frame.blockingDuration||0).toFixed(1),
-      scripts:(frame.scripts||[]).sort((a,b)=>b.duration-a.duration).slice(0,5).map(x=>({
+      scripts:[...(frame.scripts||[])].sort((a,b)=>b.duration-a.duration).slice(0,5).map(x=>({
        at:x.executionStart,ms:+x.duration.toFixed(1),
        invoker:x.invoker||'',function:x.sourceFunctionName||'',
        source:x.sourceURL?.split('/').pop()?.slice(0,95)||''
