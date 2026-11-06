@@ -1,0 +1,38 @@
+name: Oil V8 replacement brush contact laboratory
+on:
+  push:
+    branches: [experiment/oil-v8-replacement-wet-contact-lab-20261106]
+  pull_request:
+    paths:
+      - 'js/oil-v8-wet-contact-lab.js'
+      - 'test/oil-v8-replacement/**'
+      - 'tests/oil-v8-replacement*'
+      - '.github/workflows/oil-v8-replacement-lab.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install chromium
+      - run: |
+          node --check js/oil-v8-wet-contact-lab.js
+          node tests/oil-v8-replacement-syntax.mjs
+          node tests/oil-v5-release.test.mjs
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/oil-v8-replacement-http.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/test/oil-v8-replacement/ >/dev/null && break; sleep 1; done
+      - run: node tests/oil-v8-replacement-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: replacement-oil-v8-real-brush-comparisons
+          path: oil-v8-replacement-results/
+          if-no-files-found: warn
