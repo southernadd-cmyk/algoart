@@ -6,7 +6,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 
 const BASE=process.env.PHI_TEST_SERVER || 'http://127.0.0.1:4173';
 const OUT='three-r187-benchmark-results';
-const ORDER=['r180','r187','r187','r180'];
+const ORDER=['r180','r187'];
 const FILE={r180:'three-benchmark-r180.html',r187:'three-benchmark-r187.html'};
 const TARGET=process.env.PHI_BENCH_DATE || '2026-10-31';
 const round=x=>Number.isFinite(x)?+x.toFixed(1):null;
@@ -31,7 +31,7 @@ try{
   for(let i=0;i<ORDER.length;i++){
     const revision=ORDER[i],run=i+1;
     // Each run gets a new isolated browser context: no HTTP texture/script cache
-    // survives between runs. ABBA order reduces warmed-CPU/GPU order effects.
+    // survives between runs. Single A/B smoke test; additional alternating runs follow only if both pass.
     const context=await browser.newContext({viewport:{width:1280,height:800},
       deviceScaleFactor:1,serviceWorkers:'block'});
     const page=await context.newPage();
@@ -86,7 +86,7 @@ try{
       await page.goto(url,{waitUntil:'domcontentloaded',timeout:90000});
       await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled ||
         !!window.__galleryStartupError || !document.querySelector('#error')?.hidden,
-        null,{timeout:200000});
+        null,{timeout:90000});
       record.readyMs=round(performance.now()-started);
       const startup=await page.evaluate(()=>window.__galleryStartupError||null);
       if(startup)throw Error('Startup error: '+startup);
@@ -126,7 +126,7 @@ try{
         const ride=window.__phiLiftRide,state=window.__phiLiftState;
         return (ride?.status==='ready'&&state?.floor===floor &&
           state?.date===date&&!state?.travelling)||!!window.__phiLiftError;
-      },{floor,date:TARGET},{timeout:235000});
+      },{floor,date:TARGET},{timeout:125000});
       record.liftMs=round(performance.now()-liftStart);
       const after=await page.evaluate(()=>{
         const b=window.__threeBench;b.active=false;
@@ -204,4 +204,4 @@ const report={purpose:'Same live code and assets; Three.js 0.180.0 versus 0.187.
   },allPassed:all.every(x=>x.ok),results:all};
 await writeFile(OUT+'/summary.json',JSON.stringify(report,null,2));
 console.log('THREE_BENCH_SUMMARY '+JSON.stringify({...report,results:undefined}));
-if(!report.allPassed||summaries.r180.passes!==2||summaries.r187.passes!==2)process.exitCode=1;
+if(!report.allPassed||summaries.r180.passes!==1||summaries.r187.passes!==1)process.exitCode=1;
