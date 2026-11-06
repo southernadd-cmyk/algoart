@@ -24,7 +24,11 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci --ignore-scripts
       - name: Compile live tower without test-only engine changes
-        run: npx esbuild gallery/visit/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=gallery/visit/gallery-phi-bundle.js
+        run: |
+          # Must use the pinned Three.js r187 / N8AO compatibility builder.
+          # Raw esbuild silently overwrites a working production shader bundle.
+          npm run gallery:bundle:phi
+          node --check gallery/visit/gallery-phi-bundle.js
       - name: Publish production bundle
         run: |
           git config user.name 'github-actions[bot]'
