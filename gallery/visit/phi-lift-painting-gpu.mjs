@@ -5,7 +5,7 @@ export function createPhiLiftPaintingGPUPreparer({makeTexture,upload,nextFrame,n
  if(!makeTexture||!upload||!nextFrame)throw new TypeError('Painting GPU preparation requires texture, upload and frame callbacks');
  let tail=Promise.resolve(),session={date:null,prepared:0,uploaded:0,failed:0,slowUploads:[]};
  const start=date=>{session={date,prepared:0,uploaded:0,failed:0,slowUploads:[]};};
- const prepare=(image,{date,isCancelled})=>{
+ const prepare=(image,{date,isCancelled,url})=>{
   if(!image||isCancelled())return Promise.resolve(null);
   const texture=makeTexture(image);
   const generation=session;
@@ -24,7 +24,7 @@ export function createPhiLiftPaintingGPUPreparer({makeTexture,upload,nextFrame,n
     console.warn('Destination painting pre-upload skipped',error);
    }
    const ms=now()-began;
-   onEvent?.('painting-preupload',{date,url:context?.url,ms,width:texture.image?.width||0,height:texture.image?.height||0});
+   onEvent?.('painting-preupload',{date,url,ms,width:texture.image?.width||0,height:texture.image?.height||0});
    if(ms>=40 && generation.slowUploads.length<12)
     generation.slowUploads.push({ms:+ms.toFixed(1),width:texture.image?.width||0,height:texture.image?.height||0});
    return texture;
