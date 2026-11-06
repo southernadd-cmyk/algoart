@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Oil V8 replacement — wet-contact brush lab | PROPORTION PIECE</title>
+<style>
+*{box-sizing:border-box}body{background:#f5f0e6;color:#252b2a;font:15px/1.48 system-ui,sans-serif;margin:0}
+main{max-width:1540px;margin:auto;padding:24px}
+h1{font:normal clamp(28px,4vw,48px)/1.12 Georgia,serif;margin:10px 0}
+a{color:inherit}p{max-width:93ch}
+form{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:22px 0}
+label{display:grid;gap:5px}input,button{padding:9px;border:1px solid #aaa;font:inherit;max-width:100%}
+button{background:#24443e;color:#fff;border-color:#24443e;cursor:pointer}button:disabled{opacity:.5}
+#status{min-height:24px}
+.experiment{border-top:1px solid #c6beb1;padding:22px 0}
+.experiment h2{font:normal 24px Georgia,serif;margin:4px 0}
+.experiment p{margin:4px 0 14px}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
+figure{margin:0;min-width:0}
+canvas{background:#f5f0e6;display:block;width:100%;height:auto;box-shadow:0 2px 9px #0002}
+figcaption{font-weight:600;margin:0 0 8px}
+.summary{font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;margin:9px 0}
+#report{font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;overflow:auto}
+@media(max-width:740px){main{padding:12px}.pair{grid-template-columns:1fr;gap:18px}}
+</style></head><body><main>
+<a href="../../">PROPORTION PIECE</a>
+<h1>Oil V8 — replacement wet-paint laboratory</h1>
+<p><strong>Actual V7 bristle footprints, two material behaviours.</strong> The left panel lays down strokes without wet-paint interaction. The right receives exactly those same footprints but processes each loaded contact immediately, moving and mixing existing wet pigment and building raised ridges where contacts meet.</p>
+<p>This is the first controlled laboratory, <strong>not</strong> the full Oil V8 renderer and not the rejected post-render V8 prototype. These test gestures are fixed on purpose. Nothing has changed in the editor, daily gallery or live material.</p>
+<form id="controls"><label>Shared seed <input id="seed" value="OIL-V8-LAB-1618"></label>
+<button type="submit" id="draw">Render five side-by-sides</button>
+<button type="button" id="download" disabled>Download PNG pairs</button></form>
+<p id="status" role="status" aria-live="polite">Ready.</p>
+<div id="scenarios"></div>
+<details><summary>Technical measurements</summary><pre id="report"></pre></details>
+</main>
+<script src="../../js/random.js"></script>
+<script src="../../js/phi.js"></script>
+<script src="../../js/palettes.js"></script>
+<script src="../../js/marker.js"></script>
+<script src="../../js/phi-sheet-fit.js"></script>
+<script src="../../js/generator.js"></script>
+<script src="../../js/oil-surface.js"></script>
+<script src="../../js/oil-paint-v2.js"></script>
+<script src="../../js/oil-paint-v3.js"></script>
+<script src="../../js/oil-render.js"></script>
+<script src="../../js/oil-material.js"></script>
+<script src="../../js/oil-v1-core-a.js"></script>
+<script src="../../js/oil-v1-core-b.js"></script>
+<script src="../../js/oil-v1-core-c.js"></script>
+<script src="../../js/oil-paint-v1.js"></script>
+<script src="../../js/oil-brush-v2.js"></script>
+<script src="../../js/oil-brush-v3.js"></script>
+<script src="../../js/cpu-canvas.js"></script>
+<script src="../../js/cpu-material-versions.js"></script>
+<script src="../../js/oil-pigment.js"></script>
+<script src="../../js/oil-paint-v5.js"></script>
+<script src="../../js/oil-paint-v6.js"></script>
+<script src="../../js/oil-brush-v7.js"></script>
+<script src="../../js/oil-paint-v7.js"></script>
+<script src="../../js/oil-v8-wet-contact-lab.js"></script>
+<script>
+'use strict';
+const A=window.AlgoArt;A.rendererVersion=9;
+const $=id=>document.getElementById(id);
+const q=new URLSearchParams(location.search);
+if(q.has('seed'))$('seed').value=q.get('seed');
+const keys=['single','wet','dry','turn','stops'];
+const target=$('scenarios');
+for(const key of keys){
+ const scene=A.oilV8WetLab.scenarios[key],section=document.createElement('section');
+ section.className='experiment';section.innerHTML=
+  '<h2>'+scene.title+'</h2><p>'+scene.description+'</p>'+
+  '<div class="pair"><figure><figcaption>V7 physical brush — baseline</figcaption><canvas id="'+key+'-v7"></canvas><div class="summary" id="'+key+'-stats7"></div></figure>'+
+  '<figure><figcaption>Replacement V8 — live wet contact</figcaption><canvas id="'+key+'-v8"></canvas><div class="summary" id="'+key+'-stats8"></div></figure></div>';
+ target.appendChild(section);
+}
+function metrics(canvas){
+ const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+ let h=2166136261,ink=0;
+ for(let i=0;i<data.length;i+=4){
+  for(let j=0;j<4;j++)h=Math.imul(h^data[i+j],16777619);
+  if(Math.hypot(data[i]-245,data[i+1]-240,data[i+2]-230)>22)ink++;
+ }
+ return {hash:h>>>0,coverage:100*ink/(canvas.width*canvas.height)};
+}
+function difference(a,b){
+ const x=a.getContext('2d').getImageData(0,0,a.width,a.height).data,
+ y=b.getContext('2d').getImageData(0,0,b.width,b.height).data;
+ let changed=0,large=0;
+ for(let i=0;i<x.length;i+=4){
+  const d=Math.max(Math.abs(x[i]-y[i]),Math.abs(x[i+1]-y[i+1]),Math.abs(x[i+2]-y[i+2]));
+  if(d>12)changed++;if(d>40)large++;
+ }
+ return {changedPixels:changed,changedPct:100*changed/(a.width*a.height),
+  strongPixels:large,strongPct:100*large/(a.width*a.height)};
+}
+let last=null;
+async function render(){
+ $('draw').disabled=true;$('download').disabled=true;
+ $('status').textContent='Rendering genuine physical bristles and sequential wet-paint contacts…';
+ await new Promise(resolve=>requestAnimationFrame(resolve));
+ try{
+  const seed=$('seed').value.trim()||'OIL-V8-LAB-1618',report={seed,cases:{}};
+  for(const key of keys){
+   const a=$(key+'-v7'),b=$(key+'-v8');
+   const base=A.oilV8WetLab.render(a,key,'v7',seed);
+   const wet=A.oilV8WetLab.render(b,key,'v8',seed);
+   report.cases[key]={v7:base,v8:wet,baseline:metrics(a),material:metrics(b),difference:difference(a,b)};
+   $(key+'-stats7').textContent='Coverage '+report.cases[key].baseline.coverage.toFixed(2)+'% · '+base.paintMs.toFixed(1)+' ms';
+   $(key+'-stats8').textContent='Coverage '+report.cases[key].material.coverage.toFixed(2)+'% · '+wet.paintMs.toFixed(1)+' ms'+
+    '\nMixed pixels '+wet.colourMixedPixels+' · moved mass '+wet.displacedMass.toFixed(2)+
+    ' · ridges '+wet.ridgePixels+
+    '\nVisible changes '+report.cases[key].difference.changedPct.toFixed(2)+'% of canvas';
+  }
+  last=report;$('report').textContent=JSON.stringify(report,null,2);
+  $('download').disabled=false;
+  q.set('seed',seed);history.replaceState(null,'','?'+q);
+  $('status').textContent='Rendered five comparisons from identical V7 bristle geometry. Examine wet versus dry crossing.';
+  return report;
+ }catch(e){$('status').textContent='Failed: '+e.message;throw e}
+ finally{$('draw').disabled=false;}
+}
+$('controls').addEventListener('submit',event=>{event.preventDefault();render().catch(console.error)});
+$('download').addEventListener('click',()=>{
+ if(!last)return;
+ for(const key of keys)for(const v of ['v7','v8']){
+  const a=document.createElement('a');a.href=$(key+'-'+v).toDataURL('image/png');
+  a.download='oil-v8-lab-'+key+'-'+v+'.png';a.click();
+ }
+});
+window.oilV8LabStudy={render,metrics,difference,get last(){return last}};
+if(q.get('manual')!=='1')render().catch(console.error);
+</script></body></html>
