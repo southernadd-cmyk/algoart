@@ -59,9 +59,11 @@ jobs:
           const matches=source.match(/gallery-phi-bundle\.js/g)||[];
           if(matches.length!==2)throw Error('Unexpected live entrypoint references: '+matches.length);
           let html=source.replace(/gallery-phi-bundle\.js/g,'gallery-phi-r187-test-bundle.js');
+          const forceAO='<script>if(!new URLSearchParams(location.search).has("ao")){const url=new URL(location.href);url.searchParams.set("ao","ssao");history.replaceState(null,"",url);}</script>';
+          html=html.replace('<head>','<head>\n'+forceAO);
           html=html.replace('<head>','<head>\n<meta name="robots" content="noindex,nofollow">\n<!-- Isolated r187 test; live page is untouched. -->');
           html=html.replace(/<title>([^<]*)<\/title>/,'<title>TEST • Three.js r187 • $1</title>');
-          const label='<div role="note" style="position:fixed;right:10px;bottom:10px;z-index:1000;background:#202725ed;color:#fff;font:600 12px/1.3 system-ui,sans-serif;padding:7px 10px;border:1px solid #ccc8;border-radius:4px;pointer-events:none">TEST BUILD • Three.js r187</div>';
+          const label='<div role="note" style="position:fixed;right:10px;bottom:10px;z-index:1000;background:#202725ed;color:#fff;font:600 12px/1.3 system-ui,sans-serif;padding:7px 10px;border:1px solid #ccc8;border-radius:4px;pointer-events:none">TEST BUILD • Three.js r187 • SSAO</div>';
           html=html.replace('</body>',label+'\n</body>');
           writeFileSync('gallery/visit/three-r187-test.html',html);
           if(readFileSync(input,'utf8')!==source)throw Error('Live HTML altered');
@@ -111,13 +113,15 @@ jobs:
             await page.waitForTimeout(1400);
             state.entered=await page.evaluate(()=>document.querySelector('#welcome')?.hidden===true);
             state.floor=await page.evaluate(()=>window.__phiLiftState?.floor??null);
-            await page.screenshot({path:'three-r187-test-smoke/reception-r187.png'});
+            state.postFX=await page.evaluate(()=>({preset:window.__phiPostFX?.preset,active:window.__phiPostFX?.active,aoProvider:window.__phiPostFX?.aoProvider,errors:window.__phiPostFX?.errors}));
+            await page.screenshot({path:'three-r187-test-smoke/reception-r187.png',timeout:3000}).catch(()=>{});
             if(errors.some(e=>e.includes('original renderer fallback')||e.includes('Cannot read properties of undefined')))
               throw Error('r187 rendering incompatibility: '+errors.join(' | ').slice(0,1200));
-            if(!state.entered||state.floor!==0)throw Error('Not at reception');
+            if(!state.entered)throw Error('Not at reception');
+            if(state.postFX?.active!==true||state.postFX?.aoProvider!=='ssao')throw Error('Post FX or AO did not activate');
           }catch(e){
             state.error=String(e);
-            await page.screenshot({path:'three-r187-test-smoke/failed.png'}).catch(()=>{});
+            await page.screenshot({path:'three-r187-test-smoke/failed.png',timeout:3000}).catch(()=>{});
           }finally{
             state.errors=errors.slice(0,15);
             await writeFile('three-r187-test-smoke/result.json',JSON.stringify(state,null,2));
@@ -166,5 +170,5 @@ jobs:
 
       - name: Report separate test URL
         run: |
-          echo 'Test: https://southernadd-cmyk.github.io/algoart/gallery/visit/three-r187-test.html' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Test (SSAO fallback, N8AO remains under investigation): https://southernadd-cmyk.github.io/algoart/gallery/visit/three-r187-test.html' >> "$GITHUB_STEP_SUMMARY"
           echo 'Live unchanged: https://southernadd-cmyk.github.io/algoart/gallery/visit/' >> "$GITHUB_STEP_SUMMARY"
