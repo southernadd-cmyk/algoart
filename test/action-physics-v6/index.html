@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Action Painting V4 / V5 / V6 — material-physics study</title>
+<style>
+:root{color-scheme:light;background:#f5f0e6;color:#27221c;font-family:Georgia,serif}
+*{box-sizing:border-box}body{max-width:1860px;padding:24px 30px;margin:auto}
+h1{font-weight:normal;font-size:clamp(30px,4vw,54px);margin:0 0 12px}
+p{line-height:1.55;max-width:1060px}
+form{display:flex;flex-wrap:wrap;align-items:end;gap:13px;margin:20px 0}
+label{display:grid;gap:6px;font-size:14px}
+button,select,input{font:inherit;color:inherit;background:#fffaf2;border:1px solid #afa694;padding:8px;min-height:39px}
+button{cursor:pointer}button:disabled{opacity:.5;cursor:wait}
+.check{display:flex;align-items:center;gap:8px}.check input{min-height:auto;width:18px;height:18px}
+.controls{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:18px 0}
+#status{min-height:1.6em;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px;padding-right:6px}
+figure{margin:0;min-width:0}
+.image{position:relative;min-width:0}
+.image canvas.paint{display:block;width:100%;height:auto;background:#f5f0e6;touch-action:none}
+.image canvas.diff{position:absolute;inset:0;display:none;width:100%;height:100%;pointer-events:none}
+figure figcaption{margin:10px 0 0;line-height:1.5}
+.panel-title{font-weight:bold}
+.metrics{white-space:pre-wrap;font:12px/1.55 ui-monospace,Consolas,monospace;color:#51493f;margin:8px 0}
+#summary{margin-top:20px;overflow-x:auto}
+table{border-collapse:collapse;font:13px/1.5 ui-monospace,Consolas,monospace}
+td,th{text-align:left;padding:8px 12px;border-bottom:1px solid #d5ccbd}
+#loupes{display:none;position:fixed;bottom:14px;right:14px;z-index:20;background:#fffaf3ee;border:1px solid #a69c8d;
+ box-shadow:0 5px 22px #0003;padding:10px;max-width:min(93vw,710px)}
+#loupes.visible{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.loupe-item{min-width:0;font:12px ui-monospace,monospace}
+.loupe-item canvas{width:100%;aspect-ratio:1;display:block;background:#f5f0e6}
+a{color:inherit}#raw-json{display:none}
+@media(max-width:1000px){body{padding:16px}.grid{grid-template-columns:1fr 1fr;gap:22px}
+ figure:last-child{grid-column:1/-1;max-width:700px}#loupes{max-width:90vw}}
+@media(max-width:670px){.grid{grid-template-columns:1fr;gap:22px}
+ figure:last-child{grid-column:auto;max-width:none}#loupes{left:7px;right:7px;bottom:7px;max-width:none;padding:5px}}
+</style></head><body>
+<h1>Action Painting: material conservation study</h1>
+<p>This isolated test compares three renderings of <strong>the same φ-governed composition</strong>.
+V4 is the original reference; V5 has stroke taper and dry beads, but loses paint coverage;
+V6 redistributes depleted pigment into origins, curved pools and kinetic droplets.
+Nothing here changes the published archive or the live editor.</p>
+<p><a href="../../">Studio</a> · <a href="../action-physics-v5/">Earlier V4/V5 study</a></p>
+<form id="controls">
+<label>Seed<input id="seed" value="PAINT-STUDY-1618"></label>
+<label>Composition<select id="mode"><option value="field">Orbital Studies</option><option value="spiral">Golden Trajectories</option><option value="rects" selected>Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic">Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
+<label>Palette<select id="palette"><option value="warm" selected>Warm</option><option value="neon">Neon</option><option value="earth">Earth</option><option value="cold">Cold</option><option value="golden">Golden</option><option value="mono">Monochrome</option><option value="pastel">Pastel</option><option value="primary">Primary</option></select></label>
+<label>φ pull 0–100<input id="phi" type="number" min="0" max="100" value="91"></label>
+<label>Elements<input id="elements" type="number" min="1" max="140" value="36"></label>
+<label>Orientation<select id="orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label>
+<label>Render size<select id="quality"><option value=".3">30% fast</option><option value=".5" selected>50% review</option><option value="1">100% full</option></select></label>
+<button type="submit" id="compare">Compare 3 versions</button>
+<button type="button" id="save" disabled>Download results.json</button>
+</form>
+<div class="controls">
+<label class="check"><input type="checkbox" id="difference">Highlight V6 differences from V4 (on third panel)</label>
+<label class="check"><input type="checkbox" id="loupe" checked>2× linked cursor loupe</label>
+</div>
+<p id="status" role="status" aria-live="polite">Ready.</p>
+<main class="grid" id="panels">
+<figure><div class="image"><canvas class="paint" id="v4" aria-label="V4 original paint"></canvas></div>
+<figcaption><span class="panel-title">V4 — reference</span><div id="meta-v4"></div><div class="metrics" id="metrics-v4"></div></figcaption></figure>
+<figure><div class="image"><canvas class="paint" id="v5" aria-label="V5 depleted paint"></canvas></div>
+<figcaption><span class="panel-title">V5 — tapered paint</span><div id="meta-v5"></div><div class="metrics" id="metrics-v5"></div></figcaption></figure>
+<figure><div class="image"><canvas class="paint" id="v6" aria-label="V6 conserved paint"></canvas>
+<canvas class="diff" id="difference-canvas" aria-hidden="true"></canvas></div>
+<figcaption><span class="panel-title">V6 — conserved paint (V5b proposal)</span><div id="meta-v6"></div><div class="metrics" id="metrics-v6"></div></figcaption></figure>
+</main>
+<section id="summary" aria-label="Review metrics"></section>
+<div id="loupes" aria-hidden="true">
+<div class="loupe-item">V4 canvas<canvas id="zoom-v4" width="220" height="220"></canvas></div>
+<div class="loupe-item">V5 canvas<canvas id="zoom-v5" width="220" height="220"></canvas></div>
+<div class="loupe-item">V6 canvas<canvas id="zoom-v6" width="220" height="220"></canvas></div>
+</div>
+<script src="../../js/random.js"></script><script src="../../js/phi.js"></script>
+<script src="../../js/palettes.js"></script><script src="../../js/marker.js"></script>
+<script src="../../js/phi-sheet-fit.js"></script><script src="../../js/generator.js"></script>
+<script src="../../js/oil-pigment.js"></script>
+<script src="../../js/action-painting-v4.js"></script>
+<script src="../../js/action-painting-v5.js"></script>
+<script src="../../js/action-painting-v6.js"></script>
+<script>
+const A=window.AlgoArt,$=id=>document.getElementById(id);
+A.rendererVersion=9;A.phiFramingEnabled=false;
+const q=new URLSearchParams(location.search),IDS=['seed','mode','palette','phi','elements','orientation','quality'];
+for(const id of IDS){const e=$(id),v=q.get(id);if(v!==null &&
+ (['seed','phi','elements'].includes(id)||[...e.options].some(o=>o.value===v)))e.value=v;}
+function settings(){return {
+ seed:$('seed').value.trim()||'PAINT-STUDY-1618',mode:$('mode').value,
+ orientation:$('orientation').value,elements:Math.max(1,Math.min(140,+$('elements').value||1)),
+ density:53,complexity:71,negativeSpace:41,phiStrength:Math.max(0,Math.min(100,+$('phi').value)),
+ recursion:4,spiralInfluence:63,goldenAngle:93,nesting:44,pen:'fine',thickness:13,
+ wobble:32,overdraw:3,opacity:70,pressure:36,dryness:19,curveBias:91,shapeAmount:68,
+ overlap:65,rotation:91,lines:true,circles:true,rectangles:true,polygons:true,arcs:true,
+ palette:$('palette').value,colourCount:5,saturation:86,brightness:59,paper:'#f5f0e6',grain:13
+};}
+// Ink thresholds in RGB-distance units. Use the same thresholds for all versions
+// and keep them in results.json so comparisons remain reproducible.
+const GROUND=[245,240,230],INK_DISTANCE=22,HEAVY_DISTANCE=85;
+function measure(canvas){
+ const {width,height}=canvas,a=canvas.getContext('2d').getImageData(0,0,width,height).data;
+ let ink=0,heavy=0,sat=0,hash=2166136261;
+ for(let i=0;i<a.length;i+=4){
+  const r=a[i],g=a[i+1],b=a[i+2],dist=Math.hypot(r-GROUND[0],g-GROUND[1],b-GROUND[2]);
+  hash=Math.imul(hash^r,16777619);hash=Math.imul(hash^g,16777619);
+  hash=Math.imul(hash^b,16777619);hash=Math.imul(hash^a[i+3],16777619);
+  if(dist>INK_DISTANCE){
+   ink++;if(dist>HEAVY_DISTANCE)heavy++;
+   let mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+   sat+=mx===0?0:(mx-mn)/mx;
+  }
+ }
+ const pixels=width*height;
+ return {width,height,ink,heavy,coverage:ink/pixels*100,
+   heavyCoverage:heavy/pixels*100,meanSaturation:ink?sat/ink*100:0,hash:hash>>>0,
+   thresholds:{inkDistance:INK_DISTANCE,heavyDistance:HEAVY_DISTANCE,ground:GROUND}};
+}
+function pct(base,current){return base===0?(current===0?0:null):100*(current/base-1)}
+function fmt(n){return n===null?'n/a':Number(n).toFixed(2)}
+function classify(name,value,max){return {name,value,target:max,passed:value!==null&&Math.abs(value)<=max}}
+let last=null;
+function renderMetrics(results){
+ for(const name of ['v4','v5','v6']){
+  const p=results.panel[name],c=p.pixel,b=results.panel.v4.pixel;
+  $('meta-'+name).textContent='Render '+p.timeMs.toFixed(1)+' ms';
+  $('metrics-'+name).textContent=
+    'Ink: '+fmt(c.coverage)+'% ('+fmt(pct(b.coverage,c.coverage))+'% vs V4)\n'+
+    'Heavy: '+fmt(c.heavyCoverage)+'% ('+fmt(pct(b.heavyCoverage,c.heavyCoverage))+'% vs V4)\n'+
+    'Saturation: '+fmt(c.meanSaturation)+'% ('+fmt(pct(b.meanSaturation,c.meanSaturation))+'% vs V4)';
+ }
+ const checks=results.checks;
+ let html='<h2>Acceptance measurements</h2><table><thead><tr><th>Check</th><th>Measured</th><th>Target</th><th>Result</th></tr></thead><tbody>';
+ for(const k of checks)html+='<tr><td>'+k.name+'</td><td>'+fmt(k.value)+(k.unit||'%')+
+ '</td><td>≤ '+k.target+(k.unit||'%')+'</td><td>'+(k.passed?'PASS':'NOT MET')+'</td></tr>';
+ html+='</tbody></table><p>Mass is an estimated pigment budget (width × alpha × segment length, plus approximate deposit area).
+ Pixel measurements report actual raster coverage; equal mass does not guarantee equal coverage or perceived opacity.</p>';
+ $('summary').innerHTML=html;
+}
+function updateDiff(){
+ const overlay=$('difference-canvas');overlay.style.display=$('difference').checked?'block':'none';
+ if(!last||!$('difference').checked)return;
+ const old=$('v4'),now=$('v6'),w=now.width,h=now.height;
+ overlay.width=w;overlay.height=h;
+ const a=old.getContext('2d').getImageData(0,0,w,h).data,
+       b=now.getContext('2d').getImageData(0,0,w,h).data,
+       dc=overlay.getContext('2d'),im=dc.createImageData(w,h);
+ for(let i=0;i<a.length;i+=4){
+  const dif=Math.max(Math.abs(a[i]-b[i]),Math.abs(a[i+1]-b[i+1]),Math.abs(a[i+2]-b[i+2]));
+  if(dif>18){im.data[i]=216;im.data[i+1]=24;im.data[i+2]=132;im.data[i+3]=Math.min(210,70+dif);}
+ }
+ dc.putImageData(im,0,0);
+}
+$('difference').addEventListener('change',updateDiff);
+function updateLoupe(event){
+ if(!$('loupe').checked||!last)return;
+ const rect=event.currentTarget.getBoundingClientRect(),u=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width)),
+   v=Math.max(0,Math.min(1,(event.clientY-rect.top)/rect.height));
+ $('loupes').classList.add('visible');
+ for(const name of ['v4','v5','v6']){
+  const src=$(name),out=$('zoom-'+name),ctx=out.getContext('2d'),
+    radius=out.width/4,x=u*src.width,y=v*src.height;
+  ctx.clearRect(0,0,out.width,out.height);
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(src,x-radius,y-radius,2*radius,2*radius,0,0,out.width,out.height);
+ }
+}
+for(const name of ['v4','v5','v6']){
+ const c=$(name);c.addEventListener('pointermove',updateLoupe);
+ c.addEventListener('pointerleave',()=>$('loupes').classList.remove('visible'));
+}
+$('loupe').addEventListener('change',()=>{if(!$('loupe').checked)$('loupes').classList.remove('visible')});
+async function run(){
+ $('compare').disabled=true;$('save').disabled=true;
+ $('status').textContent='Rendering V4, V5 and V6 from the same source composition…';
+ await new Promise(r=>requestAnimationFrame(r));
+ try{
+  const s=settings(),before=JSON.stringify(s),scale=+$('quality').value,panel={},structKeys=[
+   'pathCount','anchorCount','layers','skippedCrowded','bowedSourceThrows','softenedStraightRuns'];
+  for(const name of ['v4','v5','v6']){
+   const canvas=$(name),start=performance.now(),version=+name.slice(1);
+   const meta=A['renderActionPaintingV'+version](canvas,s,scale,false);
+   panel[name]={timeMs:performance.now()-start,pixel:measure(canvas),
+      stats:A['lastActionPaintingStatsV'+version],meta};
+  }
+  if(JSON.stringify(s)!==before)throw Error('Settings mutated');
+  const base=panel.v4,variants=[panel.v5,panel.v6];
+  if(variants.some(p=>JSON.stringify(p.meta)!==JSON.stringify(base.meta)))throw Error('Source composition differs');
+  for(const p of variants)for(const key of structKeys)
+   if(p.stats[key]!==base.stats[key])throw Error('Structural parity failed: '+key);
+  const paths=panel.v6.stats.throwMass||[],worst=paths.reduce((max,p)=>Math.max(max,Math.abs(p.changePercent)),0);
+  const inkDiff=pct(base.pixel.coverage,panel.v6.pixel.coverage),
+    heavyDiff=pct(base.pixel.heavyCoverage,panel.v6.pixel.heavyCoverage),
+    satDiff=pct(base.pixel.meanSaturation,panel.v6.pixel.meanSaturation);
+  const checks=[
+   classify('Ink coverage versus V4',inkDiff,3),
+   classify('Heavy coverage versus V4',heavyDiff,5),
+   classify('Mean saturation versus V4',satDiff,2),
+   classify('Worst per-throw paint budget',worst,3),
+   {...classify('V6 render time overhead',panel.v6.timeMs-base.timeMs,10),unit:' ms'}
+  ];
+  last={settings:s,panel,checks,throws:paths,geometryIdentical:true,
+    structuralDecisionsIdentical:true,reviewRequired:'Pools visible at 100% is a manual visual check'};
+  for(const id of IDS)q.set(id,$(id).value);
+  history.replaceState(null,'','?'+q);
+  renderMetrics(last);updateDiff();$('save').disabled=false;
+  $('status').textContent=checks.every(x=>x.passed)?
+   'Numerical targets pass for this seed; review deposit visibility at full size.':
+   'Composition parity passes; some visual or timing acceptance targets are NOT MET. See measurements below.';
+  return last;
+ }catch(e){$('status').textContent='Comparison failed: '+e.message;throw e}
+ finally{$('compare').disabled=false}
+}
+$('controls').addEventListener('submit',event=>{event.preventDefault();run().catch(console.error)});
+$('save').addEventListener('click',()=>{
+ if(!last)return;
+ const blob=new Blob([JSON.stringify(last,null,2)],{type:'application/json'}),
+   url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='action-v6-results.json';
+ a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+window.actionPhysicsStudy={run,settings,measure,get last(){return last}};
+if(q.get('run')==='1')run().catch(console.error);
+</script></body></html>
