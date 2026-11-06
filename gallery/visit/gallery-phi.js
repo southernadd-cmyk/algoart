@@ -1,3 +1,4 @@
+import {warmPhiLiftDestination} from './phi-lift-destination-warmup.mjs';
 import {planPoolSculptures} from './phi-pool-composition.mjs';
 import {createPhiLightingStudy} from './phi-room-lighting-renderer.mjs';
 import {addPhiRoomLuminaire} from './phi-room-luminaires.mjs';
@@ -1400,27 +1401,39 @@ async function travelLift(date,index){
    }
   });
   phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady);
-  // The paintings are already GPU-ready. Restore the original destination
-  // renderables over successive frames while the cabin doors remain closed.
-  phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
-  const revealed=await phiArrivalMeshes.reveal({
-   batchSize:16,
-   onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
-   onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
-  });
-  phiLiftProfiler?.mark('scene-reveal-finished',revealed);
-  const preparation=await waitForGalleryEntry({
+  const compileTest=new URLSearchParams(location.search).get('liftcompiletest');
+  let preparation,warmed;
+  const pumpDestination=()=>waitForGalleryEntry({
    loading:{pending:0},timeout:4000,
    isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0,
    pump:processDeferredGallery
   });
-  phiLiftProfiler?.mark('deferred-pump-finished',preparation);
-  const warmed=await warmGalleryEntry({renderer,scene,camera,
-   // The staged reveal already painted the original destination meshes.
-   // ?liftwarmrender=1 restores the extra full-scene render for comparison.
-   skipFinalRender:phiArrivalMeshes.stats().batches.length>0&&
-    new URLSearchParams(location.search).get('liftwarmrender')!=='1',
-   onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
+  if(compileTest){
+   preparation=await pumpDestination();
+   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
+   // Include renderables attached by deferred construction, keeping the cabin visible.
+   phiArrivalMeshes.start(date,editionObjects,{exclude:phiLiftCabin});
+   phiLiftProfiler?.mark('destination-precompile-start');
+   warmed=await warmPhiLiftDestination({renderer,scene,camera,objects:editionObjects,
+    nextFrame:galleryPreparationFrame,
+    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
+   phiLiftProfiler?.mark('destination-precompile-finished',warmed);
+  }
+  phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
+  const revealed=await phiArrivalMeshes.reveal({
+   batchSize:compileTest==='all'?Math.max(1,phiArrivalMeshes.stats().total):compileTest?64:16,
+   onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
+   onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
+  });
+  phiLiftProfiler?.mark('scene-reveal-finished',revealed);
+  if(!compileTest){
+   preparation=await pumpDestination();
+   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
+   warmed=await warmGalleryEntry({renderer,scene,camera,
+    skipFinalRender:phiArrivalMeshes.stats().batches.length>0&&
+     new URLSearchParams(location.search).get('liftwarmrender')!=='1',
+    onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
+  }
   phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate?.stats()});
   if(!phiPaintingGate?.stats().complete ||
      window.__phiFullEngine?.paintingsLoaded!==window.__phiFullEngine?.paintings)
