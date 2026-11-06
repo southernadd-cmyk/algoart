@@ -48,6 +48,7 @@ async function run(){
     warmup:profile.stages.find(s=>s.name==='warmup-details')?.details,
     loaded:window.__phiFullEngine?.paintingsLoaded,total:window.__phiFullEngine?.paintings,
     preparationTimedOut:window.__phiLiftPreparation?.timedOut,
+    ...(params.has('liftpainttrace')?{paintingTrace:window.__phiPaintingTrace?.report(date,profile.start,profile.summary.ms)||{error:'trace unavailable'}}:{}),
     largestStalls:profile.summary.frameSpikeStages.sort((a,b)=>b.ms-a.ms).slice(0,5)});
    show('Completed journey to '+date);
    await wait(()=>window.__phiLiftRide?.status==='ready',30000);
