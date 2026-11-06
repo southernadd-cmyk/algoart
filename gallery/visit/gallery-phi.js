@@ -246,11 +246,13 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
-// Approved seven-light shader-stable pool. Real lighting, physical shadows and
-// phi placement remain unchanged; dark placeholders only stabilise shader keys.
-// ?pointpool=0 restores the previous live point-light behaviour immediately.
+// Isolated opt-in experiment: hold eight visible point-light slots across
+// destination changes. The regular seven-slot pool stays the control variant.
+// Spare slots have zero intensity and never cast shadows.
+const phiEightLightTest=new URLSearchParams(location.search).get('liftlightfix')==='1';
 const phiStablePointLights=createPhiStablePointLightPool({THREE,scene,
- enabled:new URLSearchParams(location.search).get('pointpool')!=='0'});
+ enabled:new URLSearchParams(location.search).get('pointpool')!=='0',
+ target:phiEightLightTest?8:7});
 window.__phiStablePointLights=phiStablePointLights.stats;
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
@@ -3659,11 +3661,19 @@ function renderTracedPhiFrame(dt,focus){
    const afterPrograms=renderer.info.programs||[];
    const afterCount=afterPrograms.length;
    const added=afterCount>beforeCount?afterPrograms.slice(beforeCount).slice(0,12):[];
-   const lights={};
+   const lights={},renderableLights={};
    scene.traverse(obj=>{
     if(obj.isLight){
      const name=obj.type||'Light';
      lights[name]=(lights[name]||0)+1;
+    }
+   });
+   // Use Three.js's actual visible-traversal and camera-layer criteria;
+   // raw scene counts include hidden and non-rendered lights.
+   scene.traverseVisible(obj=>{
+    if(obj.isLight&&obj.layers.test(camera.layers)){
+     const name=obj.type||'Light';
+     renderableLights[name]=(renderableLights[name]||0)+1;
     }
    });
    phiPaintingTrace.event('postfx-program-snapshot',{
@@ -3673,7 +3683,13 @@ function renderTracedPhiFrame(dt,focus){
     outputColorSpace:renderer.outputColorSpace,
     toneMapping:renderer.toneMapping,
     renderTargetAfter:renderer.getRenderTarget()?.constructor?.name||'screen',
-    lights
+    lights,renderableLights,lightPool:{
+     target:phiStablePointLights.stats.target,
+     real:phiStablePointLights.stats.real,
+     spares:phiStablePointLights.stats.spares,
+     total:phiStablePointLights.stats.total,
+     overCapacity:phiStablePointLights.stats.overCapacity
+    }
    });
   }
  }
