@@ -32,6 +32,11 @@ footer{border-top:1px solid #a5afa5;margin-top:20px;padding-top:17px;color:#4456
 <a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all">Enter manually</a>
 <a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftpainttrace=1&amp;liftbench=1">Run measured journey</a></article>
 </section>
+<h2>Eight-light stability test</h2>
+<p>The test below uses the same single-batch reveal but holds the point-light pool at eight instead of seven. Unused lights contribute no brightness. Run this against the unmodified Single batch test above. Neither changes the production gallery.</p>
+<article><h2>Single batch + 8-light pool</h2><small>Test hypothesis: eliminate the 30 October shader recompile by maintaining eight point-light slots across floors.</small>
+<a class="button primary" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftlightfix=1">Enter manually</a>
+<a class="button" href="../gallery/visit/lift-test.html?debug=1&amp;liftprofile=1&amp;liftcompiletest=all&amp;liftlightfix=1&amp;liftpainttrace=1&amp;liftbench=1">Run measured journey</a></article>
 <p><strong>New diagnostics:</strong> The measured-journey reports now include <code>paintingTrace</code>: long browser tasks, slow image resources, decode/upload timings, and painting readiness checkpoints. The timestamps are relative to each ride. A long task overlapping <code>paintings-waiting</code> is a correlation, not proof the painting caused it.</p>
 <footer>Test source: <a href="https://github.com/southernadd-cmyk/algoart/tree/test/lift-precompile-20261106">isolated GitHub branch</a>. Software-renderer benchmark cannot establish AMD performance. Use the same Chrome browser and repeat all three tests separately for a fair comparison.</footer>
 </main></body></html>
