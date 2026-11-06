@@ -1,0 +1,170 @@
+name: Publish isolated Three.js r187 test tower (live unchanged)
+on:
+  push:
+    branches:
+      - experiment/three-r187-test-tower-publish-20261106
+    paths:
+      - '.github/workflows/three-r187-test-tower-publish.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: isolated-three-r187-test-publish
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    steps:
+      - name: Checkout CURRENT live source, not experiment
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+
+      - name: Install r187 plus compatible postprocessing in runner ONLY
+        run: |
+          npm install --no-save --package-lock=false --legacy-peer-deps --ignore-scripts three@0.187.0 postprocessing@6.39.6
+          node --input-type=module <<'NODE'
+          import * as THREE from 'three';
+          import {readFileSync} from 'node:fs';
+          const pp=JSON.parse(readFileSync('node_modules/postprocessing/package.json','utf8'));
+          if(THREE.REVISION!=='187')throw Error('Wrong Three.js revision '+THREE.REVISION);
+          if(pp.version!=='6.39.6')throw Error('Wrong postprocessing '+pp.version);
+          console.log('TEST ONLY: Three.js r'+THREE.REVISION+' / postprocessing '+pp.version);
+          NODE
+
+      - name: Build independent r187 bundle
+        run: |
+          ./node_modules/.bin/esbuild gallery/visit/gallery-phi.js \
+            --bundle --minify --format=esm --platform=browser --target=es2022 \
+            --outfile=gallery/visit/gallery-phi-r187-test-bundle.js
+          node --check gallery/visit/gallery-phi-r187-test-bundle.js
+
+      - name: Create test entrypoint with SAME asset paths and isolated bundle
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const input='gallery/visit/index.html';
+          const source=readFileSync(input,'utf8');
+          const matches=source.match(/gallery-phi-bundle\.js/g)||[];
+          if(matches.length!==2)throw Error('Unexpected live entrypoint references: '+matches.length);
+          let html=source.replace(/gallery-phi-bundle\.js/g,'gallery-phi-r187-test-bundle.js');
+          html=html.replace('<head>','<head>\n<meta name="robots" content="noindex,nofollow">\n<!-- Isolated r187 test; live page is untouched. -->');
+          html=html.replace(/<title>([^<]*)<\/title>/,'<title>TEST • Three.js r187 • $1</title>');
+          const label='<div role="note" style="position:fixed;right:10px;bottom:10px;z-index:1000;background:#202725ed;color:#fff;font:600 12px/1.3 system-ui,sans-serif;padding:7px 10px;border:1px solid #ccc8;border-radius:4px;pointer-events:none">TEST BUILD • Three.js r187</div>';
+          html=html.replace('</body>',label+'\n</body>');
+          writeFileSync('gallery/visit/three-r187-test.html',html);
+          if(readFileSync(input,'utf8')!==source)throw Error('Live HTML altered');
+          NODE
+
+      - name: Guard all original live files
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "Tracked live files modified:"; git status --porcelain --untracked-files=no
+            exit 1
+          fi
+          test -s gallery/visit/gallery-phi-r187-test-bundle.js
+          test -s gallery/visit/three-r187-test.html
+          grep -q "gallery-phi-r187-test-bundle.js" gallery/visit/three-r187-test.html
+          grep -q "gallery-phi-bundle.js" gallery/visit/index.html
+
+      - name: Browser smoke test independent gallery and capture image
+        run: |
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/three-r187-preview-http.log 2>&1 &
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          import {mkdir,writeFile} from 'node:fs/promises';
+          await mkdir('three-r187-test-smoke',{recursive:true});
+          const browser=await chromium.launch({headless:true,args:[
+            '--no-sandbox','--enable-webgl','--use-angle=swiftshader',
+            '--enable-unsafe-swiftshader','--disable-dev-shm-usage'
+          ]});
+          const page=await browser.newPage({viewport:{width:1280,height:800}});
+          const errors=[];
+          page.on('pageerror',e=>errors.push('page error: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+          let state={};
+          try{
+            await page.goto('http://127.0.0.1:4173/gallery/visit/three-r187-test.html',
+              {waitUntil:'domcontentloaded',timeout:40000});
+            await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled||
+              !!window.__galleryStartupError||!document.querySelector('#error')?.hidden,
+              null,{timeout:55000});
+            state.enterEnabled=await page.locator('#enter').isEnabled();
+            state.startupError=await page.evaluate(()=>window.__galleryStartupError||null);
+            if(!state.enterEnabled||state.startupError)throw Error('Startup not ready '+state.startupError);
+            await page.locator('#enter').evaluate(el=>el.click());
+            await page.waitForFunction(()=>document.querySelector('#welcome')?.hidden===true,
+              null,{timeout:35000});
+            await page.waitForTimeout(1400);
+            state.entered=await page.evaluate(()=>document.querySelector('#welcome')?.hidden===true);
+            state.floor=await page.evaluate(()=>window.__phiLiftState?.floor??null);
+            await page.screenshot({path:'three-r187-test-smoke/reception-r187.png'});
+            if(errors.some(e=>e.includes('original renderer fallback')||e.includes('Cannot read properties of undefined')))
+              throw Error('r187 rendering incompatibility: '+errors.join(' | ').slice(0,1200));
+            if(!state.entered||state.floor!==0)throw Error('Not at reception');
+          }catch(e){
+            state.error=String(e);
+            await page.screenshot({path:'three-r187-test-smoke/failed.png'}).catch(()=>{});
+          }finally{
+            state.errors=errors.slice(0,15);
+            await writeFile('three-r187-test-smoke/result.json',JSON.stringify(state,null,2));
+            console.log('THREE_R187_TEST_SMOKE '+JSON.stringify(state));
+            await browser.close();
+          }
+          if(state.error)process.exitCode=1;
+          NODE
+
+      - name: Archive smoke evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: three-r187-test-tower-smoke
+          path: three-r187-test-smoke/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Publish ONLY TWO NEW test files; live tower stays identical
+        run: |
+          set -euo pipefail
+          git add -- gallery/visit/three-r187-test.html gallery/visit/gallery-phi-r187-test-bundle.js
+          staged="$(git diff --cached --name-only)"
+          expected="$(printf 'gallery/visit/gallery-phi-r187-test-bundle.js\ngallery/visit/three-r187-test.html')"
+          if [ "$staged" != "$expected" ]; then
+            echo "Unexpected staged files:"; printf '%s\n' "$staged"; exit 1
+          fi
+          if git ls-tree -r --name-only HEAD | grep -Eq '^gallery/visit/(three-r187-test\.html|gallery-phi-r187-test-bundle\.js)$'; then
+            echo 'A test file already exists; refusing to overwrite'; exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Add separate Three.js r187 test page and bundle only'
+          git push origin HEAD:main
+
+      - name: Explicitly request Pages deploy after bot commit
+        run: |
+          curl --fail --silent --show-error -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/deploy-pages.yml/dispatches" \
+            -d '{"ref":"main"}'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report separate test URL
+        run: |
+          echo 'Test: https://southernadd-cmyk.github.io/algoart/gallery/visit/three-r187-test.html' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Live unchanged: https://southernadd-cmyk.github.io/algoart/gallery/visit/' >> "$GITHUB_STEP_SUMMARY"
