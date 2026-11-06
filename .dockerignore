@@ -1,0 +1,18 @@
+# Build only the dedicated lift preview. Prevent copying the 900MB+ repository history.
+**
+!package.json
+!package-lock.json
+!Dockerfile.lift-preview
+!automation/
+!automation/build-phi-lift-test.mjs
+!gallery/
+!gallery/**
+!css/
+!css/**
+!js/
+!js/**
+!fonts/
+!fonts/**
+!lift-preview/
+!lift-preview/**
+!favicon.svg
