@@ -137,7 +137,7 @@ function fling(ctx,r,from,to,color,weight,energy,w,h,via,straightSource,material
  for(var i=1;i<pts.length;i++){
   var p=pts[i],q=pts[i-1],before=pts[Math.max(0,i-2)],after=pts[Math.min(N,i+1)];
   var ax=q.x-before.x,ay=q.y-before.y,bx=after.x-p.x,by=after.y-p.y;
-  var curvature=Math.min(1,Math.abs(Math.atan2(ax*by-ay,ax*bx+ay*by))*3.8);
+  var curvature=Math.min(1,Math.abs(Math.atan2(ax*by-ay*bx,ax*bx+ay*by))*3.8);
   var speed=Math.hypot(p.x-q.x,p.y-q.y);
   // Exactly the same random sequence, thickness and skip branch as V4.
   var thickness=weight*(.3+curvature*.85+Math.min(.55,2/Math.max(2,speed)))*(r()<.05?.6:1);
