@@ -3,7 +3,8 @@
 // Measurements are observational; no artwork/lift scheduling behaviour changes.
 export function createPhiPaintingTrace({enabled=false,now=()=>performance.now()}={}){
  if(!enabled)return null;
- const events=[],longTasks=[];
+ const events=[],longTasks=[],longAnimationFrames=[];
+ const observedLoAF=!!globalThis.PerformanceObserver?.supportedEntryTypes?.includes('long-animation-frame');
  let date=null;
  try{performance.setResourceTimingBufferSize?.(2000);}catch{}
  if(globalThis.PerformanceObserver?.supportedEntryTypes?.includes('longtask')){
@@ -18,11 +19,38 @@ export function createPhiPaintingTrace({enabled=false,now=()=>performance.now()}
    observer.observe({type:'longtask',buffered:true});
   }catch{}
  }
+ if(observedLoAF){
+  try{
+   const observer=new PerformanceObserver(list=>{
+    for(const frame of list.getEntries()){
+     longAnimationFrames.push({
+      start:frame.startTime,end:frame.startTime+frame.duration,
+      ms:+frame.duration.toFixed(1),
+      blockingMs:+(frame.blockingDuration||0).toFixed(1),
+      scripts:(frame.scripts||[]).sort((a,b)=>b.duration-a.duration).slice(0,5).map(x=>({
+       at:x.executionStart,ms:+x.duration.toFixed(1),
+       invoker:x.invoker||'',function:x.sourceFunctionName||'',
+       source:x.sourceURL?.split('/').pop()?.slice(0,95)||''
+      }))
+     });
+    }
+    if(longAnimationFrames.length>110)longAnimationFrames.splice(0,longAnimationFrames.length-110);
+   });
+   observer.observe({type:'long-animation-frame',buffered:true});
+  }catch{}
+ }
  const event=(name,details={})=>{
   const at=now();
   events.push({name,at,date:details.date||date,
    ...details, ...(Number.isFinite(details.ms)?{ms:+details.ms.toFixed(1)}:{})});
   if(events.length>800)events.splice(0,events.length-800);
+ };
+ const measure=(name,call)=>{
+  const started=now();
+  try{return call();}finally{
+   const duration=now()-started;
+   if(duration>=30)event(name,{ms:duration});
+  }
  };
  const begin=nextDate=>{date=nextDate;event('lift-prepare-start',{date});};
  const report=(rideDate,started,elapsed)=>{
@@ -68,10 +96,16 @@ export function createPhiPaintingTrace({enabled=false,now=()=>performance.now()}
    checkpoints:related.filter(e=>e.name==='paintings-wait-start'||e.name==='paintings-wait-end').map(snapshot),
    slowEvents:[...timings].sort((a,b)=>b.ms-a.ms).slice(0,10).map(snapshot),
    longTasks:tasks,
+   longAnimationFrames:longAnimationFrames.filter(f=>f.start<=end&&f.end>=started)
+    .sort((a,b)=>b.ms-a.ms).slice(0,6).map(f=>({
+     atMs:+(f.start-started).toFixed(1),ms:f.ms,blockingMs:f.blockingMs,
+     scripts:f.scripts.map(x=>({...x,atMs:+(x.at-started).toFixed(1),at:undefined}))
+    })),
+   longAnimationFrameAPI:observedLoAF,
    slowImageResources:resources
   };
  };
- const trace={begin,event,report};
+ const trace={begin,event,measure,report};
  globalThis.__phiPaintingTrace=trace;
  return trace;
 }
