@@ -60,3 +60,14 @@ equivalence results are available. In particular, larger batches could concentra
 geometry upload/first-render costs, and asynchronous lighting/material updates
 may still cause shader variants after precompilation. Do not promote without
 actual browser measurements and visual checks, including return to reception.
+
+
+## CI continuation — 6 November 2026
+
+The first workflow run ([42264155751](https://github.com/southernadd-cmyk/algoart/actions/runs/42264155751)) was cancelled after ~21 minutes, with incomplete software-renderer results. Its first floor timings (baseline 142.2 s, 64 147.4 s, all 141.3 s) **do not compare experimental behaviours**: every variant used 16-object reveal batches and skipped destination precompile. The culprit was `loadEdition` rewriting the browser URL during the initial floor load, deleting `liftcompiletest` before `travelLift` read it.
+
+The isolated test page now preserves diagnostic query flags through `loadEdition`. CI asserts the expected precompile stage and actual batch count before counting a result, preventing a false comparison. Software-rendered viewport was reduced from 1280×800 to 640×400. CI now runs an initial full roundtrip per variant rather than two rounds; reverse-order repetition still requires a later verified run.
+
+The first browser run also reached an apparently open door in screenshot while `__phiLiftRide.status` stayed `opening` for 30 seconds. This now becomes an explicitly recorded warning, not a reason to discard measured journeys. It remains an item to verify with a hardware browser and should not be silently treated as a passed door-state check.
+
+The follow-up workflow is [42268158700](https://github.com/southernadd-cmyk/algoart/actions/runs/42268158700). Its results must be reviewed before recommending a production change. The project has **not** deployed or merged the experiment.
