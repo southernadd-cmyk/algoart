@@ -134,8 +134,7 @@ function renderMetrics(results){
  let html='<h2>Acceptance measurements</h2><table><thead><tr><th>Check</th><th>Measured</th><th>Target</th><th>Result</th></tr></thead><tbody>';
  for(const k of checks)html+='<tr><td>'+k.name+'</td><td>'+fmt(k.value)+(k.unit||'%')+
  '</td><td>≤ '+k.target+(k.unit||'%')+'</td><td>'+(k.passed?'PASS':'NOT MET')+'</td></tr>';
- html+='</tbody></table><p>Mass is an estimated pigment budget (width × alpha × segment length, plus approximate deposit area).
- Pixel measurements report actual raster coverage; equal mass does not guarantee equal coverage or perceived opacity.</p>';
+ html+='</tbody></table><p>Mass is an estimated pigment budget (width × alpha × segment length, plus approximate deposit area). Pixel measurements report actual raster coverage; equal mass does not guarantee equal coverage or perceived opacity.</p>';
  $('summary').innerHTML=html;
 }
 function updateDiff(){
