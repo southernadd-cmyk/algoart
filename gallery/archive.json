@@ -2,6 +2,18 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-06",
+      "cover": "2026-11-06-01-spiral-AA-20261106-01-90317.jpg",
+      "coverOrientation": "landscape",
+      "count": 4,
+      "series": [
+        "Golden Trajectories",
+        "Recursive Divisions",
+        "Radiant Systems",
+        "Connected Fields"
+      ]
+    },
+    {
       "date": "2026-11-05",
       "cover": "2026-11-05-01-field-AA-20261105-01-47356.jpg",
       "coverOrientation": "landscape",
