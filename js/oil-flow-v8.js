@@ -30,9 +30,11 @@ A.oilWetFlowV8=function(pig,relief,voids,scale,opts={}){
  let paintedPixels=0,protectedPixels=0,massBefore=0;
  // Convert source-space protected regions to pixel-space bounding rectangles.
  // Protection is also guaranteed by the actual V7 mask's paint eligibility.
+ const lightingHalo=6; // V7 relief lighting samples up to four neighbouring pixels.
  const boxes=(voids||[]).map(v=>({
-   x0:Math.floor(v.x*scale),y0:Math.floor(v.y*scale),
-   x1:Math.ceil((v.x+v.w)*scale),y1:Math.ceil((v.y+v.h)*scale)
+   x0:Math.floor(v.x*scale)-lightingHalo,y0:Math.floor(v.y*scale)-lightingHalo,
+   x1:Math.ceil((v.x+v.w)*scale)+lightingHalo,
+   y1:Math.ceil((v.y+v.h)*scale)+lightingHalo
  }));
  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
   const p=y*w+x,z=p*4,ha=md[z+3]/255;
