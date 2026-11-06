@@ -51,6 +51,6 @@ test('reception integration takes complete data from the real shell, including c
  assert.match(source,/hologramFloors\.at\(-1\)\.push\(\[w,h,d,hologramPosition\.x,y,hologramPosition\.z,shellTransform\.theta\]\)/);
  assert.match(source,/floorBoxes:cache\.hologramFloors,shaftGeometry:cache\.shaftGeometry,signature:cache\.signature/);
  assert.ok(source.indexOf('if(plan.phi)constructPhiTowerShell();')<source.indexOf('phiReceptionDesk.hologram=addPhiDeskHologram'));
- assert.match(source,/phiReceptionDesk\?\.hologram\?\.update\(clock\.elapsedTime\)/);
+ assert.match(source,/phiReceptionDesk\?\.hologram\?\.update\(clock\.getElapsed\(\)\)/);
  assert.equal(addPhiDeskHologram(THREE,new THREE.Group(),{floorBoxes:[]}),null);
 });
