@@ -1,4 +1,5 @@
 name: Promote verified Three.js r187 N8AO fix to production
+# Browser release test now treats screenshots as diagnostics, never as proof of renderer failure.
 on:
   push:
     branches: [main]
