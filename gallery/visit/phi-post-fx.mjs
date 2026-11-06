@@ -244,6 +244,26 @@ export function createPhiPostFX(THREE,renderer,scene,camera,{production=false}={
    compositor.addPass(artProtection.pass);
    artProtection.setSceneDepth(compositor.inputBuffer.depthTexture);
   }
+  // Isolated test tower diagnostics only: name/time each composer pass without
+  // changing its enabled state, draw order, parameters, or render result.
+  // The live gallery never receives this code. Opt-in: ?liftpainttrace=1.
+  if(new URLSearchParams(location.search).get('liftpainttrace')==='1'){
+   const passNames=['scene','artwork-copy','artwork-mask','normal','ssao',
+    'n8ao','full-bloom','selected-bloom','depth-of-field','colour-grade','artwork-restore'];
+   for(const [index,pass] of compositor.passes.entries()){
+    if(!pass||typeof pass.render!=='function')continue;
+    const name=passNames[index]||pass.constructor?.name||'pass-'+index;
+    const originalRender=pass.render;
+    pass.render=function(...args){
+     const start=performance.now();
+     try{return originalRender.apply(this,args);}
+     finally{
+      const ms=performance.now()-start;
+      if(ms>=30)globalThis.__phiPaintingTrace?.event('fx-pass-'+name,{ms});
+     }
+    };
+   }
+  }
   compositor.setSize(innerWidth,innerHeight,false);
   // Until explicitly enabled, expensive depth and bloom passes stay dormant.
   normals.enabled=false;aoPass.enabled=false;fullPass.enabled=false;
