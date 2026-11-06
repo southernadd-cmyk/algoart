@@ -249,10 +249,14 @@ const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,cam
 // Isolated opt-in experiment: hold eight visible point-light slots across
 // destination changes. The regular seven-slot pool stays the control variant.
 // Spare slots have zero intensity and never cast shadows.
-const phiEightLightTest=new URLSearchParams(location.search).get('liftlightfix')==='1';
+const phiLiftLightMode=new URLSearchParams(location.search).get('liftlightfix');
+const phiEightLightTest=phiLiftLightMode==='1'||phiLiftLightMode==='2';
+const phiCameraAwareLightTest=phiLiftLightMode==='2';
 const phiStablePointLights=createPhiStablePointLightPool({THREE,scene,
  enabled:new URLSearchParams(location.search).get('pointpool')!=='0',
- target:phiEightLightTest?8:7});
+ target:phiEightLightTest?8:7,
+ camera:phiCameraAwareLightTest?camera:null,
+ cameraAware:phiCameraAwareLightTest});
 window.__phiStablePointLights=phiStablePointLights.stats;
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
@@ -3646,6 +3650,25 @@ function measurePhiPerformance(now){
 let phiFrameSerial=0;
 let phiRoomVisibilitySerial=0;
 function renderTracedPhiFrame(dt,focus){
+ if(phiCameraAwareLightTest){
+  // The destination and moving cabin can change the camera-visible light set
+  // between construction boundaries. Reconcile immediately before each draw.
+  phiStablePointLights.sync('before-render');
+  if(phiPaintingTrace){
+   let visiblePoints=0,excluded=[];
+   scene.traverseVisible(obj=>{
+    if(obj.isPointLight){
+     if(obj.layers.test(camera.layers))visiblePoints++;
+     else if(excluded.length<6)excluded.push({name:obj.name||'unnamed',layerMask:obj.layers.mask});
+    }
+   });
+   if(visiblePoints!==8){
+    phiPaintingTrace.event('light-count-mismatch',{
+     expected:8,actual:visiblePoints,excluded,lightPool:{...phiStablePointLights.stats}
+    });
+   }
+  }
+ }
  if(!phiPaintingTrace)return phiPostFX.render(dt,focus);
  // Read the WebGL program-cache count on either side of the real render.
  // A count increase is evidence of new program variants; no increase does
