@@ -103,7 +103,11 @@ test('production lift keeps painting readiness and uses approved loading overlap
  const html=read(resolve(root,'index.html'));
  const preloader=read(resolve(root,'phi-artwork-preload.mjs'));
  assert.ok(app.includes("get('liftpipeline')!=='0'"));
- assert.ok(app.includes("get('liftwarmrender')!=='1'"));
+ assert.ok(app.includes('warmPhiLiftDestination({'),'Lift must precompile destination renderables');
+ assert.ok(app.includes('cameraAware:true'),'Point pool must count camera-renderable lights');
+ assert.ok(app.includes("phiStablePointLights.sync('before-render')"),'Point pool must rebalance before every render');
+ assert.ok(app.includes('batchSize:Math.max(1,phiArrivalMeshes.stats().total)'),'Lift must reveal the tested single batch');
+ assert.ok(!app.includes('liftcompiletest')&&!app.includes('phiPaintingTrace'),'Release must exclude lift experiment and profiler');
  assert.ok(app.includes('phiPaintingGate.wait'));
  assert.ok(app.includes('await phiMarkerReady;'));
  assert.ok(preloader.includes('releaseAfterDecode'));

@@ -4,36 +4,37 @@
 // zero-intensity, non-shadow-casting point lights, preserving all real lighting.
 export const PHI_STABLE_POINT_COUNT=7;
 
-export function countVisibleRealPhiPointLights(scene,spares=[]){
+export function countVisibleRealPhiPointLights(scene,spares=[],camera=null){
  const spareSet=new Set(spares);
  let count=0;
  const visit=(object,parentsVisible)=>{
   const visible=parentsVisible&&object.visible!==false;
   if(!visible)return;
-  if(object.isPointLight&&!spareSet.has(object))count++;
+  if(object.isPointLight&&!spareSet.has(object)&&(!camera||object.layers?.test(camera.layers)))count++;
   for(const child of object.children||[])visit(child,visible);
  };
  visit(scene,true);
  return count;
 }
 
-export function createPhiStablePointLightPool({THREE,scene,enabled=false,target=PHI_STABLE_POINT_COUNT}={}){
+export function createPhiStablePointLightPool({THREE,scene,enabled=false,target=PHI_STABLE_POINT_COUNT,camera=null,cameraAware=false}={}){
  if(!Number.isInteger(target)||target<0)throw new RangeError('Stable point light count must be a nonnegative integer');
  if(!THREE?.PointLight||!scene?.add||!scene?.remove)throw new TypeError('Three.js and scene are required');
  const spares=enabled?Array.from({length:target},(_,i)=>{
   const light=new THREE.PointLight(0xffffff,0,0,2);
   light.name='phi-zero-point-light-spare-'+i;
+  if(cameraAware&&camera?.layers)light.layers.mask=camera.layers.mask;
   light.castShadow=false;
   light.visible=true;
   light.intensity=0;
   return light;
  }):[];
- const stats={enabled,target,real:0,spares:0,total:0,overCapacity:0,
+ const stats={enabled,target,cameraAware,real:0,spares:0,total:0,overCapacity:0,
   rebalances:0,stable:true,zeroIntensity:true,shadowCastingSpares:0,
   peakReal:0,peakTotal:0,overCapacityEvents:0,lightChanges:[]};
  function sync(reason='boundary'){
   if(!enabled)return {...stats};
-  const real=countVisibleRealPhiPointLights(scene,spares);
+  const real=countVisibleRealPhiPointLights(scene,spares,cameraAware?camera:null);
   const count=Math.max(0,target-real);
   const observed=real+spares.filter(light=>light.parent===scene).length;
   if(real!==stats.real||count!==stats.spares||real>target){
@@ -50,6 +51,7 @@ export function createPhiStablePointLightPool({THREE,scene,enabled=false,target=
    // illumination and does not cast or receive any shadow maps.
    light.intensity=0;
    light.castShadow=false;
+   if(cameraAware&&camera?.layers)light.layers.mask=camera.layers.mask;
    light.visible=true;
    if(needed&&light.parent!==scene){light.parent?.remove(light);scene.add(light);}
    else if(!needed&&light.parent===scene)scene.remove(light);
