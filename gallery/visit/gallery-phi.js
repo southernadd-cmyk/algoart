@@ -41,6 +41,7 @@ import {createPhiPostFX} from './phi-post-fx.mjs';
 import * as THREE from 'three';
 import {createPhiLiftProfiler} from './phi-lift-profile.mjs';
 import {createPhiArrivalMeshStager} from './phi-arrival-mesh-stager.mjs';
+import {warmPhiLiftDestination} from './phi-lift-destination-warmup.mjs';
 import {createPhiRoomVisibilityCuller} from './phi-room-visibility-culler.mjs';
 import {createPhiLiftPaintingGPUPreparer} from './phi-lift-painting-gpu.mjs';
 import {createPhiPaintingArrivalGate} from './phi-painting-arrival-gate.mjs';
@@ -243,11 +244,13 @@ const galleryFinish=createArchitecturalMaterials(THREE,{
 });
 const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});
 const phiLightingStudy=renderer?createPhiLightingStudy({THREE,renderer,scene,camera,sun}):null;
-// Approved seven-light shader-stable pool. Real lighting, physical shadows and
-// phi placement remain unchanged; dark placeholders only stabilise shader keys.
-// ?pointpool=0 restores the previous live point-light behaviour immediately.
-const phiStablePointLights=createPhiStablePointLightPool({THREE,scene,
- enabled:new URLSearchParams(location.search).get('pointpool')!=='0'});
+// Stabilise actual camera-renderable point lights, not merely visible objects.
+// The eight-slot AMD-tested pool preserves the existing real light values and
+// fills only missing camera-visible slots with zero-intensity spare lights.
+// ?pointpool=0 remains an immediate rollback for the light-pool change.
+const phiStablePointLights=createPhiStablePointLightPool({THREE,scene,camera,
+ enabled:new URLSearchParams(location.search).get('pointpool')!=='0',
+ target:8,cameraAware:true});
 window.__phiStablePointLights=phiStablePointLights.stats;
 const wall=galleryFinish.wall;
 let receptionTilePreview=null;
@@ -1400,27 +1403,30 @@ async function travelLift(date,index){
    }
   });
   phiLiftProfiler?.mark('paintings-gpu-ready',paintingReady);
-  // The paintings are already GPU-ready. Restore the original destination
-  // renderables over successive frames while the cabin doors remain closed.
-  phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
-  const revealed=await phiArrivalMeshes.reveal({
-   batchSize:16,
-   onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
-   onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
-  });
-  phiLiftProfiler?.mark('scene-reveal-finished',revealed);
+  // Pump deferred geometry first, then warm the exact destination renderables
+  // while hidden behind the closed lift doors. This is the tested single-batch
+  // path; it does not alter artwork materials, textures, or geometry.
   const preparation=await waitForGalleryEntry({
    loading:{pending:0},timeout:4000,
    isBusy:()=>deferredGalleryJobs.length>0||artworkQueue.length+artworkActive>0,
    pump:processDeferredGallery
   });
   phiLiftProfiler?.mark('deferred-pump-finished',preparation);
-  const warmed=await warmGalleryEntry({renderer,scene,camera,
-   // The staged reveal already painted the original destination meshes.
-   // ?liftwarmrender=1 restores the extra full-scene render for comparison.
-   skipFinalRender:phiArrivalMeshes.stats().batches.length>0&&
-    new URLSearchParams(location.search).get('liftwarmrender')!=='1',
-   onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null});
+  phiArrivalMeshes.start(date,editionObjects,{exclude:phiLiftCabin});
+  phiLiftProfiler?.mark('destination-precompile-start');
+  const warmed=await warmPhiLiftDestination({
+   renderer,scene,camera,objects:editionObjects,
+   nextFrame:galleryPreparationFrame,
+   onStage:phiLiftProfiler?(name,details)=>phiLiftProfiler.mark(name,details):null
+  });
+  phiLiftProfiler?.mark('destination-precompile-finished',warmed);
+  phiLiftProfiler?.mark('scene-reveal-start',phiArrivalMeshes.stats());
+  const revealed=await phiArrivalMeshes.reveal({
+   batchSize:Math.max(1,phiArrivalMeshes.stats().total),
+   onBatchStart:batch=>phiLiftProfiler?.mark('scene-reveal-batch-start',batch),
+   onBatch:batch=>phiLiftProfiler?.mark('scene-reveal-batch-finished',batch)
+  });
+  phiLiftProfiler?.mark('scene-reveal-finished',revealed);
   phiLiftProfiler?.mark('texture-upload-and-compile-finished',{...warmed,paintingGPU:liftPaintingGPU.stats(),paintings:phiPaintingGate?.stats()});
   if(!phiPaintingGate?.stats().complete ||
      window.__phiFullEngine?.paintingsLoaded!==window.__phiFullEngine?.paintings)
@@ -3612,6 +3618,13 @@ function measurePhiPerformance(now){
 }
 let phiFrameSerial=0;
 let phiRoomVisibilitySerial=0;
+function renderPhiGalleryFrame(dt,focus){
+ // Floor swaps, hidden cabin lights, and camera layer masks can change which
+ // light objects Three.js includes. Balance actual camera-visible slots every
+ // frame BEFORE the renderer requests shaders.
+ phiStablePointLights.sync('before-render');
+ return phiPostFX.render(dt,focus);
+}
 function tick() {
   phiLiftProfiler?.tick();
   phiLightingStudy?.update();
@@ -3654,7 +3667,7 @@ function tick() {
     phiRoomVisibilityCuller.update(local,{safe:canCull});
    }
   }
-  if(!$('lift').hidden){phiPostFX.render(dt,null);return;}
+  if(!$('lift').hidden){renderPhiGalleryFrame(dt,null);return;}
   updateMovement(dt);
   updatePhiRideCamera();
   if(GALLERY_DEBUG)window.__phiLiftState={
@@ -3683,7 +3696,7 @@ function tick() {
   // Keep the preparation overlay responsive without repeatedly drawing the
   // hidden tower while its loaders, shaders and textures are being prepared.
   if(!welcome.hidden&&enter.disabled)return;
-  phiPostFX.render(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
+  renderPhiGalleryFrame(dt,(!$('info').hidden&&currentInfoExhibit?.study&&!currentInfoExhibit.study.credits)?currentInfoExhibit.position:null);
   if(GALLERY_DEBUG)window.__phiGraffitiStats={disabled:true,pending:0};
   if(GALLERY_DEBUG)window.__phiRenderStats={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
 }
