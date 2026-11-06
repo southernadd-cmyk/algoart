@@ -96,6 +96,7 @@ export function createPhiPaintingTrace({enabled=false,now=()=>performance.now()}
    checkpoints:related.filter(e=>e.name==='paintings-wait-start'||e.name==='paintings-wait-end').map(snapshot),
    slowEvents:[...timings].filter(e=>e.name!=='postfx-program-snapshot')
     .sort((a,b)=>b.ms-a.ms).slice(0,10).map(snapshot),
+   lightCountMismatches:related.filter(e=>e.name==='light-count-mismatch').slice(0,10).map(e=>({atMs:+(e.at-started).toFixed(1),expected:e.expected,actual:e.actual,excluded:e.excluded,lightPool:{target:e.lightPool?.target,real:e.lightPool?.real,spares:e.lightPool?.spares}})),
    programSnapshots:related.filter(e=>e.name==='postfx-program-snapshot')
     .sort((a,b)=>b.ms-a.ms).slice(0,8).map(e=>({
      atMs:+(e.at-started).toFixed(1),renderMs:+e.ms.toFixed(1),
