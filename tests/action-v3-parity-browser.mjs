@@ -102,7 +102,8 @@ try{
   const returned=new URL(await replay.locator('#continueEditing').getAttribute('href'));
   assert.equal(returned.searchParams.get('fmt'),orientation==='portrait'?'portrait':null);assert.equal(new URL(replay.url()).searchParams.get('fmt'),orientation==='portrait'?'portrait':null);
   assert.equal(returned.searchParams.get('seed'),seed);assert.equal(returned.searchParams.get('el'),'18');
-  assert.equal(returned.searchParams.get('material'),({action:'action-v4',oil:'oil-v6',watercolour:'watercolour-v2s'})[material]||null);
+  const expectedOil=await replay.evaluate(()=>window.AlgoArt.defaultOilPaintMaterial);
+  assert.equal(returned.searchParams.get('material'),({action:'action-v4',oil:expectedOil,watercolour:'watercolour-v2s'})[material]||null);
   console.log('PASS replay display and return state '+material+' '+orientation);
  }
  await replay.screenshot({path:out+'/portrait-walkthrough.png',fullPage:true});
