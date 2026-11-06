@@ -1,12 +1,15 @@
-name: Action Painting V5 isolated physics study
+name: Action Painting V5–V6 conservation study
 on:
   push:
     branches: [experiment/action-paint-physics-v5-20261106]
   pull_request:
     paths:
       - 'js/action-painting-v5.js'
+      - 'js/action-painting-v6.js'
       - 'tests/action-physics-v5*'
+      - 'tests/action-physics-v6*'
       - 'test/action-physics-v5/**'
+      - 'test/action-physics-v6/**'
       - '.github/workflows/action-physics-v5-study.yml'
   workflow_dispatch:
 permissions:
@@ -24,15 +27,19 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: |
           node tests/action-physics-v5.test.mjs
+          node tests/action-physics-v6.test.mjs
           node tests/paint-refinements.test.mjs
           node tests/action-v3-export.test.mjs
       - run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/action-v5-http.log 2>&1 &
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
       - run: node tests/action-physics-v5-browser.mjs
+      - run: node tests/action-physics-v6-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: action-v5-paint-physics-comparisons
-          path: action-physics-v5-results/
+          name: action-v5-v6-paint-physics-comparisons
+          path: |
+            action-physics-v5-results/
+            action-physics-v6-results/
           if-no-files-found: warn
