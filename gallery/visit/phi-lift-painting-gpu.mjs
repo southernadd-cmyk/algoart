@@ -1,7 +1,7 @@
 // TEST ONLY: move the destination painting's first GPU upload into the lift
 // journey, one texture per animation frame. The source image and texture
 // settings are unchanged; failed pre-uploads retain the normal arrival path.
-export function createPhiLiftPaintingGPUPreparer({makeTexture,upload,nextFrame,now=()=>performance.now()}){
+export function createPhiLiftPaintingGPUPreparer({makeTexture,upload,nextFrame,now=()=>performance.now(),onEvent=null}){
  if(!makeTexture||!upload||!nextFrame)throw new TypeError('Painting GPU preparation requires texture, upload and frame callbacks');
  let tail=Promise.resolve(),session={date:null,prepared:0,uploaded:0,failed:0,slowUploads:[]};
  const start=date=>{session={date,prepared:0,uploaded:0,failed:0,slowUploads:[]};};
@@ -24,6 +24,7 @@ export function createPhiLiftPaintingGPUPreparer({makeTexture,upload,nextFrame,n
     console.warn('Destination painting pre-upload skipped',error);
    }
    const ms=now()-began;
+   onEvent?.('painting-preupload',{date,url:context?.url,ms,width:texture.image?.width||0,height:texture.image?.height||0});
    if(ms>=40 && generation.slowUploads.length<12)
     generation.slowUploads.push({ms:+ms.toFixed(1),width:texture.image?.width||0,height:texture.image?.height||0});
    return texture;
