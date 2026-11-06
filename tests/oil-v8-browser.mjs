@@ -21,7 +21,7 @@ try{
  for(const [index,s] of cases.entries()){
   const r=await page.evaluate(async s=>{
    for(const key of ['seed','mode','orientation','phi','density','elements','scale'])
-    document.getElementById(key).value=String(s[key]);
+    document.getElementById(key).value=key==='scale'?(s.scale===1?'1':Number(s.scale).toFixed(2)):String(s[key]);
    const result=await window.oilV8Study.render();
    return {settings:s,checks:{sourceSame:result.structuralSame,voidsSame:result.voidsSame,
     v7ReplayStable:result.v7ReplayHash===result.panels.v7.pixel.hash},
