@@ -22,7 +22,6 @@ import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-til
 import {installReceptionPenroseInlay} from './reception-penrose-inlay.mjs';
 import {chooseGalleryPenroseRooms,prepareGalleryPenroseMaterial,pieceRoomIndex} from './phi-gallery-penrose-floor.mjs';
 import {planGallerySpeakers,addGalleryCeilingSpeaker} from './gallery-speakers.mjs?v=distributed-record-20261027';
-import {addPhiReceptionGramophone} from './phi-reception-gramophone.mjs?v=distributed-record-20261027';
 import {addPhiReceptionMetalRoof} from './phi-reception-metal-roof.mjs';
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
@@ -2442,14 +2441,10 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   });
   phiReceptionDesk=addPhiGoldenReceptionDesk(THREE,scene,furnishing,elevation);
   if(phiReceptionDesk)phiSquareObstacles.push(...phiReceptionDesk.obstacles);
-  if(globalThis.__phiReceptionTestRefresh&&furnishing.desk){
-   phiReceptionGramophone=addPhiReceptionGramophone(THREE,scene,{furnishing,elevation,camera,canvas,timber:galleryFinish.timberSmoked||galleryFinish.timber,trims:galleryFinish.trims,music:phiGalleryMusic,debug:GALLERY_DEBUG});
-   phiSquareObstacles.push(phiReceptionGramophone.obstacle);
-   phiSpeakerEmitters.push(phiReceptionGramophone.emitter);
-  }
+  // The former gramophone cabinet and its physical listening exhibit are removed.
+  // Music is now an optional toolbar feature; the ceiling speakers remain.
   const captions=[
-   ['PROPORTION PIECE','An algorithmically generated gallery','exhibiting algorithmically generated art.'],
-   ['THE GRAMOPHONE','Listen to Mozart and Debussy.','Can proportion be heard as well as seen?']
+   ['PROPORTION PIECE','An algorithmically generated gallery','exhibiting algorithmically generated art.']
   ];
   for(const [i,item] of furnishing.signage.entries()){
    const paper=document.createElement('canvas');paper.width=1024;paper.height=512;
@@ -2525,17 +2520,21 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
    };
   }
   {
-   // Use the interior glass doorway by the gramophone, never the main entrance.
-   const gramophone=phiReceptionGramophone?.obstacle;
+   // Preserve the independently relevant Translation Area sign at its established
+   // doorway, using the former cabinet coordinates only as a placement reference.
+   const signReference=furnishing.desk?{
+    x:furnishing.desk.x+4.4,z:furnishing.desk.z+2.35,
+    width:1.25,depth:.85
+   }:null;
    const interiorDoors=(phi.circulation.doors||[]).filter(d=>
     (d.axis==='x'||d.axis==='z')&&Number.isFinite(d.at)&&Number.isFinite(d.centre));
    const doorDistance=d=>Math.hypot(
-    (d.axis==='x'?d.at:d.centre)-gramophone.x,
-    (d.axis==='z'?d.at:d.centre)-gramophone.z);
-   const translationDoor=gramophone?interiorDoors.sort((a,b)=>doorDistance(a)-doorDistance(b))[0]:null;
+    (d.axis==='x'?d.at:d.centre)-signReference.x,
+    (d.axis==='z'?d.at:d.centre)-signReference.z);
+   const translationDoor=signReference?interiorDoors.sort((a,b)=>doorDistance(a)-doorDistance(b))[0]:null;
    const installation=addPhiTranslationAreaSign(THREE,scene,{
     entrance:translationDoor,
-    gramophone,
+    gramophone:signReference,
     elevation
    });
    if(installation){
@@ -2607,7 +2606,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   const receptionArtFrame=phiReceptionMap?.getObjectByName('reception-watercolour-frame');if(receptionArtFrame)receptionArtFrame.material=architecturalFrameStudy;
   const credits=addPhiReceptionCredits(THREE,scene,furnishing.credits,elevation);
   artExhibits.push(...credits);window.__phiReceptionCredits={count:credits.length,placement:furnishing.credits};
-  window.__phiReception={growingPoster:furnishing.signage[1],creditPlacement:furnishing.credits,worldMap:furnishing.worldMap,desk:!!furnishing.desk,information:furnishing.signage.length>0,
+  window.__phiReception={growingPoster:null,creditPlacement:furnishing.credits,worldMap:furnishing.worldMap,desk:!!furnishing.desk,information:furnishing.signage.length>0,
     signCount:furnishing.signage.length,plantCount:furnishing.plants.length,credits:credits.length,clearance:furnishing.checks};
  }
  if(exhibitDate!==RECEPTION)queuePhiFurnishings(phi,planPhiFurnishings(phi,{lowPower:galleryFinish.lowPower}),elevation);
