@@ -2449,7 +2449,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   }
   const captions=[
    ['PROPORTION PIECE','An algorithmically generated gallery','exhibiting algorithmically generated art.'],
-   ['THE GROWING TOWER','A new floor of art is added daily.','Choose an exhibition in the archive lift.']
+   ['THE GRAMOPHONE','Listen to Mozart and Debussy.','Can proportion be heard as well as seen?']
   ];
   for(const [i,item] of furnishing.signage.entries()){
    const paper=document.createElement('canvas');paper.width=1024;paper.height=512;
