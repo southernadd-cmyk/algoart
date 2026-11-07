@@ -1,11 +1,12 @@
 {
   "version": 1,
   "date": "2026-11-07",
-  "count": 5,
+  "count": 6,
   "series": [
     "Constructed Forms",
     "Automatic Marks",
-    "Growth Systems"
+    "Growth Systems",
+    "Recursive Divisions"
   ],
   "entries": [
     {
@@ -250,6 +251,56 @@
         "grain": 19
       },
       "altText": "Action painting from PROPORTION PIECE's Automatic Marks system, seed ACL-20261107-01-26588. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
+    },
+    {
+      "id": "2026-11-07-ACP01",
+      "title": "Recursive Divisions — Action Painting Study 06",
+      "orientation": "portrait",
+      "material": "action",
+      "seed": "ACP-20261107-01-16472",
+      "mode": "rects",
+      "series": "Recursive Divisions",
+      "imageFile": "2026-11-07-action-portrait-01-rects-ACP-20261107-01-16472.jpg",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=9&seed=ACP-20261107-01-16472&mode=rects&fmt=portrait&el=29&den=62&cx=53&neg=31&phi=100&rec=8&spi=28&ga=97&nest=35&pen=scribble&th=6&wob=28&od=4&op=67&pr=39&dry=30&curve=7&shape=78&overlap=40&rot=79&ln=1&ci=1&re=1&po=1&ar=1&pal=primary&cols=4&sat=85&bri=52&paper=%23f5f0e6&grain=20&material=action-v4&sheet=phi",
+      "rendererVersion": 9,
+      "settings": {
+        "mode": "rects",
+        "orientation": "portrait",
+        "series": "Recursive Divisions",
+        "seed": "ACP-20261107-01-16472",
+        "elements": 29,
+        "density": 62,
+        "complexity": 53,
+        "negativeSpace": 31,
+        "phiStrength": 100,
+        "recursion": 8,
+        "spiralInfluence": 28,
+        "goldenAngle": 97,
+        "nesting": 35,
+        "pen": "scribble",
+        "thickness": 6,
+        "wobble": 28,
+        "overdraw": 4,
+        "opacity": 67,
+        "pressure": 39,
+        "dryness": 30,
+        "curveBias": 7,
+        "shapeAmount": 78,
+        "overlap": 40,
+        "rotation": 79,
+        "lines": true,
+        "circles": true,
+        "rectangles": true,
+        "polygons": true,
+        "arcs": true,
+        "palette": "primary",
+        "colourCount": 4,
+        "saturation": 85,
+        "brightness": 52,
+        "paper": "#f5f0e6",
+        "grain": 20
+      },
+      "altText": "Action painting from PROPORTION PIECE's Recursive Divisions system, seed ACP-20261107-01-16472. Flowing paint skeins, irregular pools and splashes drawn from golden-ratio source geometry."
     }
   ]
 }
