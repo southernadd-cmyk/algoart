@@ -227,7 +227,7 @@ const DISCOVERY={
  'Art history & evidence':[
   ['parthenon','Does the Parthenon use phi?'],['leonardo','Did Leonardo use phi?'],
   ['modern-artists','Which artists used phi?'],['le-corbusier','What is the Modulor?'],
-  ['preference','Is the golden ratio more beautiful?'],['faces','Do faces follow phi?'],
+  ['preference','Is the golden ratio more beautiful?'],['faces','Do faces follow phi?']
   ],
  'Art, code & chance':[
   ['thirds','What is the rule of thirds?'],['composition','How does composition work?'],
