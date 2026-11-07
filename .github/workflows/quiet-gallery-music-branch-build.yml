@@ -36,6 +36,12 @@ jobs:
           ! grep -Eq "THE GRAMOPHONE|What is the gramophone\?|The gramophone in reception|experiment in golden listening"             about/index.html README.md gallery/visit/index.html             gallery/visit/gallery-phi.js gallery/visit/phi-visitor-chat.mjs             gallery/visit/visitor-v2/chat-v2.mjs gallery/visit/visitor-v2/topic-browser.mjs
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Run visitor, playback, and curator regression tests
+        run: |
+          node --test gallery/visit/phi-visitor-chat.test.mjs
+          node --test gallery/visit/visitor-v2/chat-v2.test.mjs
+          node --test tests/gramophone-record.test.mjs
+          node --test tests/phi-stage-curation.test.mjs
       - name: Build production gallery bundle
         run: npm run gallery:bundle:phi
       - name: Commit the generated bundle only to this feature branch
