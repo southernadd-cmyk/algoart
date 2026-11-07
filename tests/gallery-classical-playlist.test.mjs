@@ -6,12 +6,12 @@ import {resolve,dirname} from 'node:path';
 import {RECEPTION_RECORD_ASAP_TEST} from '../gallery/visit/gramophone-record-asap-test.mjs';
 const dir=resolve(dirname(fileURLToPath(import.meta.url)),'../gallery/visit');
 const additions=new Map([
- ['debussy-la-cathedrale-engloutie.ogg',5000000],
- ['debussy-clair-de-lune.ogg',14000000],
- ['ravel-pavane.ogg',5000000],
- ['satie-gymnopedie-1-macleod.mp3',6500000],
- ['bach-cello-suite-1-prelude.ogg',1700000],
- ['debussy-premiere-arabesque.ogg',14000000]
+ ['debussy-la-cathedrale-engloutie.m4a',600000],
+ ['debussy-clair-de-lune.m4a',600000],
+ ['ravel-pavane.m4a',600000],
+ ['satie-gymnopedie-1-macleod.m4a',600000],
+ ['bach-cello-suite-1-prelude.m4a',600000],
+ ['debussy-premiere-arabesque.m4a',600000]
 ]);
 test('gallery soundtrack contains original two plus six new classical recordings',()=>{
  assert.equal(RECEPTION_RECORD_ASAP_TEST.length,8);
