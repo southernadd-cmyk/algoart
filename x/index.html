@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f1efe9">
+<title>PROPORTION PIECE — X / Daily Post Studio</title>
+<style>
+:root{color-scheme:light;--bg:#f1efe9;--paper:#fffefb;--ink:#20272c;--muted:#687076;--line:#d4d4cd;--deep:#152c3c;--bronze:#9d7953;--soft:#e6e2d8;font-family:Arial,Helvetica,sans-serif}
+*{box-sizing:border-box}
+body{background:var(--bg);margin:0;color:var(--ink)}
+a{color:#214e63;text-underline-offset:3px}
+button,select,input,textarea{font:inherit}
+button{cursor:pointer;border:1px solid var(--deep);border-radius:5px;padding:11px 16px;font-weight:700;background:var(--deep);color:#fff;transition:opacity .15s}
+button:hover:not(:disabled){opacity:.85}button:disabled{opacity:.45;cursor:not-allowed}
+button.secondary{background:transparent;color:var(--ink);border-color:#a1a9a8}
+button.small{font-size:12px;padding:9px 11px}
+button.quiet{color:#315669;background:transparent;border-color:#a5b1b3}
+label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px;color:#555e62}
+input,select{background:#fff;border:1px solid #b7bfbc;border-radius:4px;padding:11px 10px;width:100%;color:var(--ink)}
+:focus-visible{outline:3px solid #9e7752;outline-offset:2px}
+.page{max-width:1260px;margin:auto;padding:28px 28px 90px}
+.top{display:flex;justify-content:space-between;align-items:start;gap:20px;padding:7px 0 24px;border-bottom:1px solid #c8c6bf}
+.brand{font-weight:800;letter-spacing:.14em;font-size:12px}.section-tag{font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:#856845;font-weight:800}
+h1{font-weight:500;letter-spacing:-.06em;line-height:1.08;font-size:clamp(36px,5vw,62px);margin:17px 0 13px}
+.lede{font-size:15px;line-height:1.6;color:#525f60;max-width:760px;margin:0}
+.glyph{font:normal 54px/1 Georgia,serif;color:#ae9275;margin-top:10px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line);padding:22px 0 20px;gap:20px}
+.metric strong{font-size:22px;font-weight:500}.metric span{display:block;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-top:5px}
+.dashboard{display:grid;grid-template-columns:1.2fr 1fr 1.3fr;align-items:end;gap:15px;background:#fbfaf7;border:1px solid #d5d2c9;border-radius:8px;padding:19px;margin-top:27px}
+.action-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:17px}
+#generate{min-width:220px;padding:14px 20px}#status{margin-top:14px;color:#4b5b60;min-height:28px;font-size:13px;line-height:1.5}
+.progress{background:#deddd5;height:5px;overflow:hidden;border-radius:3px;margin-top:11px}.progress>div{height:100%;background:#9d7953;width:0;transition:width .2s}
+.hint{font-size:12px;color:#697175;line-height:1.55}
+.issue{color:#ad432f!important}
+.row-head{display:flex;align-items:end;justify-content:space-between;gap:15px;margin-top:38px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.row-head h2{font-weight:600;font-size:22px;letter-spacing:-.03em;margin:0}
+.works{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:17px;margin-top:20px}
+.work{border:1px solid #d2d3cc;border-radius:7px;background:var(--paper);overflow:hidden;min-width:0}
+.work-preview{background:#e7e4dd;display:flex;justify-content:center;align-items:center;min-height:300px;position:relative;padding:16px}
+.work-preview img{width:auto;max-width:100%;height:330px;max-height:55vh;object-fit:contain;box-shadow:0 3px 16px #27241b16}
+.work-body{padding:19px 20px 20px}.work-number{color:#a07b5a;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.work h3{font-size:19px;line-height:1.2;margin:8px 0 3px;letter-spacing:-.03em;font-weight:600}
+.work-sub{color:#6a7074;font-size:12px;margin-bottom:15px}
+.caption-input{font-size:12.6px;line-height:1.5;padding:12px;width:100%;min-height:185px;border:1px solid #cbd0cc;border-radius:5px;resize:vertical;background:#fcfcfa;color:#1e262a}
+.count{display:flex;justify-content:space-between;font-size:11px;color:#717a78;margin:7px 0 14px}
+.link-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.link-row a{font-size:12px}
+.card-actions{display:flex;flex-wrap:wrap;gap:8px;margin:13px 0 12px}
+.empty{padding:60px 24px;background:#faf9f5;border:1px dashed #c4c6be;border-radius:7px;text-align:center;color:#687078;grid-column:1/-1}
+.empty strong{display:block;font-size:19px;color:#34434b;font-weight:500;margin-bottom:8px}
+.disclaimer{margin-top:32px;border-top:1px solid var(--line);padding-top:18px;font-size:12px;line-height:1.65;color:#6c7478}
+.disclaimer b{color:#434a4a}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+@media(max-width:800px){.page{padding:20px 16px 64px}.dashboard{grid-template-columns:1fr 1fr}.dashboard .wide{grid-column:1/-1}.metrics{gap:7px}.metric strong{font-size:19px}.work-preview img{height:290px}}
+@media(max-width:520px){.dashboard{grid-template-columns:1fr}.dashboard .wide{grid-column:1}.works{grid-template-columns:1fr}.top{padding-bottom:18px}.glyph{font-size:42px}.row-head{align-items:start;flex-direction:column}.action-bar button{width:100%}}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="top"><div><div class="brand">PROPORTION PIECE <span style="color:#aa967a">/</span> STUDIO</div><h1>X / Daily post desk</h1><p class="lede">Make real portrait artwork with the project's five material engines. Each press creates one PNG, a multilingual X caption and a reproducible editor link. Posting to X remains manual and free.</p></div><div class="glyph" aria-hidden="true">φ</div></header>
+<div class="metrics" aria-label="Daily overview"><div class="metric"><strong id="dailyCount">0 / 5</strong><span>Today's images</span></div><div class="metric"><strong>1200 × 1680</strong><span>Portrait export</span></div><div class="metric"><strong>EN · 日本語 · 한국어 · 中文</strong><span>Caption languages</span></div></div>
+<section class="dashboard" aria-label="Generate posts">
+ <div><label for="day">Edition date (UK)</label><input id="day" type="date"></div>
+ <div class="wide"><label for="series">Composition strategy</label><select id="series"><option value="varied">Daily selection — five systems, five materials</option><option value="comparison">One composition — five materials</option></select></div>
+ <div><label for="countTarget">Daily target</label><input id="countTarget" value="Five posts, one click each" readonly aria-label="Five posts, one click each"></div>
+ <div class="wide" style="grid-column:1/-1"><div class="action-bar"><button id="generate" disabled>Loading drawing engines…</button><button id="downloadAll" class="secondary" disabled>Download today's ZIP</button><button id="copyAll" class="secondary" disabled>Copy all captions</button></div><div class="progress" aria-hidden="true"><div id="progressFill"></div></div><div id="status" role="status" aria-live="polite">Loading the original PROPORTION PIECE rendering modules…</div></div>
+</section>
+<section aria-label="Generated posts"><div class="row-head"><div><div class="section-tag">Review / download / publish</div><h2>Today's posts</h2></div><div class="hint">Artwork and captions stay in this browser. Images never upload anywhere.</div></div><div id="works" class="works"><div class="empty"><strong>No posts generated yet.</strong>Press “Generate next post” to create your first piece.</div></div></section>
+<footer class="disclaimer"><b>No automatic posting to X.</b> Download the PNG, then use “Copy post” and upload the image manually on X. The URL in each caption points back to the exact editor settings. Captions describe the system and material process, not unverified details in the picture. Previous posts' settings and small previews are saved locally; full-size PNGs can be regenerated after reopening this page. This is an unlinked, browser-only publishing tool, not a password-protected administration area.</footer>
+</main>
+<script>
+'use strict';
+(function(){
+const LIVE_ROOT='https://southernadd-cmyk.github.io/algoart/';
+const ROOT=/^https?:$/.test(location.protocol)?new URL('../',location.href).href:LIVE_ROOT;
+const SOURCE=['random.js','phi.js','palettes.js','marker.js','phi-sheet-fit.js','generator.js','oil-surface.js','oil-material.js','oil-render.js','watercolour-v2r.js','watercolour-v2s.js','oil-v1-core-a.js','oil-v1-core-b.js','oil-v1-core-c.js','oil-paint-v1.js','oil-brush-v2.js','oil-paint-v2.js','oil-brush-v3.js','oil-paint-v3.js','cpu-canvas.js','cpu-material-versions.js','oil-pigment.js','oil-paint-v5.js','oil-paint-v6.js','oil-brush-v7.js','oil-paint-v7.js','oil-brush-v8.js','oil-paint-v8.js','oil-release.js','action-painting-v1.js','action-painting-v3.js','action-painting-v4.js','social-share.js'];
+const MODES=[['field','Orbital Studies'],['spiral','Golden Trajectories'],['rects','Recursive Divisions'],['burst','Radiant Systems'],['network','Connected Fields'],['organic','Growth Systems'],['geometric','Constructed Forms'],['scribble','Automatic Marks']];
+const MATERIALS=[['marker','Marker'],['tissue','Tissue & Graphite'],['watercolour','Watercolour'],['oil','Oil V8'],['action','Action Painting']];
+const PALETTES=['spectrum','golden','marker','cmyk','primary','neon','pastel','earth','warm','cold','mono'];
+const MODE_DEFAULTS={field:[48,58,62,28,54,45],spiral:[54,55,60,24,84,62],rects:[38,48,66,22,18,12],burst:[50,60,63,24,56,38],network:[42,52,64,26,48,32],organic:[44,54,60,30,58,84],geometric:[30,50,58,34,28,8],scribble:[46,56,66,31,52,72]};
+const PARAMS={seed:'seed',mode:'mode',orientation:'fmt',elements:'el',density:'den',complexity:'cx',negativeSpace:'neg',phiStrength:'phi',recursion:'rec',spiralInfluence:'spi',goldenAngle:'ga',nesting:'nest',pen:'pen',thickness:'th',wobble:'wob',overdraw:'od',opacity:'op',pressure:'pr',dryness:'dry',curveBias:'curve',shapeAmount:'shape',overlap:'overlap',rotation:'rot',lines:'ln',circles:'ci',rectangles:'re',polygons:'po',arcs:'ar',palette:'pal',colourCount:'cols',saturation:'sat',brightness:'bri',paper:'paper',grain:'grain'};
+const PHRASES={
+marker:[['Ink pressure, wobble and dry edges interrupt the calculation.','計算された構図に、揺らぐマーカーの線。','계산된 구도에 불규칙한 마커 선.','精确构图与不规则的马克笔线条。'],['A proportional framework, drawn with imperfect marker strokes.','比例の規則を、不完全なマーカーの線へ。','비율의 규칙을 불완전한 마커 선으로.','比例规则化为带有偏差的马克笔痕迹。']],
+tissue:[['Graphite traces meet translucent layers.','黒鉛の線と透ける色の層。','흑연 선과 반투명한 색의 층.','石墨线条与半透明的色层。'],['The proportions stay; tissue and graphite change the surface.','比例はそのまま、紙と黒鉛が質感を変える。','비율은 그대로, 종이와 흑연이 표면을 바꿉니다.','比例不变，薄纸与石墨改变表面。']],
+watercolour:[['Measured structure, pigment that spreads.','測られた構図に、広がる顔料。','계산된 구도 위로 번지는 안료.','精确的构图，流动的颜料。'],['Watercolour turns geometry into washes and soft boundaries.','幾何学が水彩のにじみへ。','기하학이 수채화의 번짐으로.','几何结构化为水彩的晕染。']],
+oil:[['Proportions translated into layered, textured oil marks.','比率を、重なる油彩の筆跡へ。','비율을 겹겹이 쌓인 유화 붓질로.','比例化为层叠的油画笔触。'],['Oil V8 gives the geometric plan a heavier surface.','幾何学の構成に、厚みのある油彩。','기하학적 구도에 두터운 유화 질감.','几何构图呈现出厚重的油画质感。']],
+action:[['A calculated structure, interpreted as energetic paint gestures.','計算された構図を、勢いのある絵具の動きへ。','계산된 구조를 역동적인 물감 움직임으로.','以充满动势的颜料笔触诠释计算结构。'],['The same proportional rules meet splashes and movement.','比例の規則と、飛び散る絵具。','비율의 규칙과 흩뿌려지는 물감.','比例规则与飞溅的颜料相遇。']]
+};
+const COMPARE=['One set of conditions, five material engines.','同じ初期条件、5つの画材エンジン。','같은 초기 조건, 다섯 가지 재료 엔진.','同一组初始条件，五种媒材引擎。'];
+const $=id=>document.getElementById(id), blobs=new Map();
+let jobs=[],busy=false,ready=false,day='',series='varied';
+function ukDate(){const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const v={};parts.forEach(p=>v[p.type]=p.value);return `${v.year}-${v.month}-${v.day}`;}
+function fnv(s){let h=2166136261>>>0;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+function random(seed){let a=fnv(seed);return ()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};}
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+function settingsFor(seed,mode,palette){const r=random(seed+'|params'),d=MODE_DEFAULTS[mode],j=span=>Math.round((r()*2-1)*span);return{seed,mode,orientation:'portrait',elements:clamp(d[0]+j(8),14,78),density:clamp(d[1]+j(10),28,78),complexity:clamp(d[2]+j(11),35,82),negativeSpace:clamp(d[3]+j(10),12,58),phiStrength:65+Math.floor(r()*34),recursion:4+Math.floor(r()*5),spiralInfluence:clamp(d[4]+j(10),8,95),goldenAngle:85+Math.floor(r()*16),nesting:25+Math.floor(r()*40),pen:['felt','fine','broad','dry','paint','scribble'][Math.floor(r()*6)],thickness:5+Math.floor(r()*9),wobble:22+Math.floor(r()*37),overdraw:2+Math.floor(r()*5),opacity:65+Math.floor(r()*24),pressure:29+Math.floor(r()*38),dryness:8+Math.floor(r()*35),curveBias:clamp(d[5]+j(10),0,96),shapeAmount:49+Math.floor(r()*34),overlap:29+Math.floor(r()*39),rotation:55+Math.floor(r()*46),lines:true,circles:true,rectangles:true,polygons:true,arcs:true,palette,colourCount:4+Math.floor(r()*7),saturation:70+Math.floor(r()*25),brightness:45+Math.floor(r()*17),paper:'#f5f0e6',grain:12+Math.floor(r()*17)};}
+function mkJob(index){const offset=Math.floor(index/5),slot=index%5,h=fnv(day+'|'+offset),mat=MATERIALS[slot],cmp=series==='comparison';const mode=cmp?MODES[h%8]:MODES[(h+[0,3,5,1,7][slot])%8],palette=PALETTES[cmp?h%PALETTES.length:(h+3*slot)%PALETTES.length];const seed=`PP-X-${day.replace(/-/g,'')}-${String(offset+1).padStart(2,'0')}-${cmp?'SHARED':String(slot+1).padStart(2,'0')}`;const s=settingsFor(seed,mode[0],palette);return{index,material:mat[0],materialName:mat[1],mode:mode[0],system:mode[1],settings:s,series,date:day,thumb:'',caption:'',shortURL:'',fullURL:''};}
+function urlFor(job){const p=new URLSearchParams({v:'9'});for(const [name,key]of Object.entries(PARAMS)){let v=job.settings[name];if(v===null||v===undefined)continue;if(typeof v==='boolean')v=v?'1':'0';p.set(key,String(v));}if(job.material==='tissue')p.set('tissue','7');if(job.material==='watercolour'){p.set('material','watercolour-v2s');p.set('fit','0');}if(job.material==='oil')p.set('material','oil-v8');if(job.material==='action')p.set('material','action-v4');const full=new URL('?',LIVE_ROOT);full.search=p.toString();return full.href;}
+function linkFor(job){const full=urlFor(job),A=window.AlgoArt;const compact=A.socialShare.compact(full,Object.values(PARAMS));const token=new URL(compact).searchParams.get('c');if(!token)throw Error('Failed to construct a compact editor URL.');const expanded=A.socialShare.expand(token,Object.values(PARAMS));if(!expanded||new URLSearchParams(new URL(full).search).toString()!==expanded.toString())throw Error('Editor link failed exact round-trip verification.');return{full,compact};}
+function xWeight(s){const urls=/https?:\/\/[^\s]+/g;const replaced=s.replace(urls,'x'.repeat(23));let n=0;for(const c of replaced){const cp=c.codePointAt(0);n+=(cp>0x2E7F||cp===0x200D)?2:1;}return n;}
+function makeCaption(job){const choice=fnv(job.settings.seed+job.material)%2;const p=PHRASES[job.material][choice];const head=`${job.system} / ${job.materialName} · φ${job.settings.phiStrength}%`;let lines=job.series==='comparison'?[head,...COMPARE]:[head,...p];let cap=[...lines,'',job.shortURL,'#GenerativeArt'].join('\n');if(xWeight(cap)>280){lines=job.series==='comparison'?[`${job.materialName} · φ${job.settings.phiStrength}%`,...COMPARE]:[`${job.materialName} · φ${job.settings.phiStrength}%`,...p];cap=[...lines,'',job.shortURL].join('\n');}if(xWeight(cap)>280)throw Error('Caption exceeds X weighted 280-character limit.');return cap;}
+function filename(j){return `${j.date}_X_${String(j.index+1).padStart(2,'0')}_${j.mode}_${j.material}_${j.settings.seed}.png`;}
+function renderOriginal(j){const A=window.AlgoArt,s=j.settings,c=document.createElement('canvas');A.rendererVersion=9;A.phiFramingEnabled=false;if(A.watercolourV2sOptions)A.watercolourV2sOptions.fitToSheet=false;const scale=1.2;
+ if(j.material==='marker')A.render(c,s,scale,false);
+ else if(j.material==='tissue')A.renderOil(c,s,scale,false,7);
+ else if(j.material==='watercolour')A.renderWatercolourV2S(c,s,scale,false);
+ else if(j.material==='oil')A.renderReleasedOilPaintV8(c,s,scale,false);
+ else A.renderActionPaintingV4(c,s,scale,false,{version:4});
+ if(c.width!==1200||c.height!==1680)throw Error(`Portrait render was ${c.width} × ${c.height}; expected 1200 × 1680. No file exported.`);
+ return c;}
+function toBlob(c,type='image/png',quality){return new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('Browser could not encode the image')),type,quality));}
+async function createPNG(j){let c;try{c=renderOriginal(j);const blob=await toBlob(c);const thumb=document.createElement('canvas');thumb.width=220;thumb.height=308;thumb.getContext('2d').drawImage(c,0,0,thumb.width,thumb.height);j.thumb=thumb.toDataURL('image/jpeg',.63);thumb.width=thumb.height=1;return blob;}finally{if(c)c.width=c.height=1;}}
+function storeKey(){return `pp-x-desk-v1:${day}`;}
+function save(){try{localStorage.setItem(storeKey(),JSON.stringify({series,jobs:jobs.map(j=>({...j}))}));}catch(e){$('status').textContent='Generated successfully; local browser storage is full. Download the PNGs and ZIP before closing.';}}
+function restore(){blobs.clear();let s;try{s=JSON.parse(localStorage.getItem(storeKey())||'null');}catch(e){};if(s&&Array.isArray(s.jobs)){jobs=s.jobs.filter(j=>j.settings&&j.settings.orientation==='portrait'&&j.date===day&&j.fullURL);series=s.series==='comparison'?'comparison':'varied';}else{jobs=[];series='varied';}$('series').value=series;draw();}
+function msg(s,error=false){$('status').textContent=s;$('status').classList.toggle('issue',error);}
+function draw(){const n=jobs.length;const goal=Math.min(n,5);$('dailyCount').textContent=`${goal} / 5${n>5?' (+'+(n-5)+')':''}`;$('progressFill').style.width=(goal*20)+'%';$('downloadAll').disabled=!ready||busy||!n;$('copyAll').disabled=!n;$('generate').disabled=!ready||busy;$('generate').textContent=busy?'Rendering…':`Generate ${n>=5?'another':'next'} post${n?` (${n+1})`:''}`;const w=$('works');w.replaceChildren();if(!n){const d=document.createElement('div');d.className='empty';d.innerHTML='<strong>No posts generated yet.</strong>Press “Generate next post” to create your first piece.';w.append(d);return;}for(const j of jobs){const card=document.createElement('article');card.className='work';const preview=document.createElement('div');preview.className='work-preview';const img=document.createElement('img');img.src=j.thumb;img.alt=`${j.system} / ${j.materialName}, portrait generative artwork preview`;img.loading='lazy';preview.append(img);const body=document.createElement('div');body.className='work-body';const nline=document.createElement('div');nline.className='work-number';nline.textContent=`POST ${String(j.index+1).padStart(2,'0')} · ${j.date}`;const name=document.createElement('h3');name.textContent=j.materialName;const sub=document.createElement('div');sub.className='work-sub';sub.textContent=`${j.system} · ${j.settings.palette.toUpperCase()} · seed ${j.settings.seed}`;const ta=document.createElement('textarea');ta.className='caption-input';ta.value=j.caption;ta.setAttribute('aria-label',`Caption for post ${j.index+1}`);const count=document.createElement('div');count.className='count';const countL=document.createElement('span');countL.textContent='Editable caption · four languages';const countR=document.createElement('span');function updateCount(){const size=xWeight(ta.value);countR.textContent=`${size} / 280 weighted X characters`;countR.classList.toggle('issue',size>280);}
+ ta.addEventListener('input',()=>{j.caption=ta.value;updateCount();save();});updateCount();count.append(countL,countR);
+ const actions=document.createElement('div');actions.className='card-actions';const download=document.createElement('button');download.className='small';download.textContent=blobs.has(j.index)?'Download PNG':'Re-render PNG';download.onclick=async()=>{if(busy)return;busy=true;drawButtons(true);try{let b=blobs.get(j.index);if(!b){msg(`Re-rendering post ${j.index+1}...`);b=await createPNG(j);blobs.set(j.index,b);save();}saveFile(b,filename(j));msg(`PNG ready: ${filename(j)}`);}catch(e){msg('Image error: '+e.message,true);}finally{busy=false;drawButtons(false);}};
+ const copy=document.createElement('button');copy.className='small secondary';copy.textContent='Copy post';copy.onclick=()=>copyText(j.caption,copy);
+ const copyURL=document.createElement('button');copyURL.className='small secondary';copyURL.textContent='Copy editor URL';copyURL.onclick=()=>copyText(j.fullURL,copyURL);
+ const intent=document.createElement('button');intent.className='small quiet';intent.textContent='Open draft on X';intent.onclick=()=>window.open('https://x.com/intent/post?text='+encodeURIComponent(j.caption),'_blank','noopener');actions.append(download,copy,copyURL,intent);
+ const link=document.createElement('div');link.className='link-row';const a=document.createElement('a');a.href=j.fullURL;a.target='_blank';a.rel='noopener';a.textContent='Open exact artwork in editor';link.append(a);body.append(nline,name,sub,ta,count,actions,link);card.append(preview,body);w.append(card);}}
+function drawButtons(running){$('generate').disabled=!ready||running;$('downloadAll').disabled=!ready||running||!jobs.length;$('day').disabled=running;$('series').disabled=running;for(const b of document.querySelectorAll('.work button'))b.disabled=running;}
+function nextFrame(){return new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,20)));}
+async function generate(){if(!ready||busy)return;busy=true;const j=mkJob(jobs.length);drawButtons(true);msg(`Rendering post ${j.index+1}: ${j.system} / ${j.materialName}…`);try{await nextFrame();const url=linkFor(j);j.fullURL=url.full;j.shortURL=url.compact;j.caption=makeCaption(j);const blob=await createPNG(j);blobs.set(j.index,blob);jobs.push(j);save();msg(`Post ${j.index+1} ready. Review the actual image, then download and copy its caption.`);}catch(e){msg('Render failed: '+e.message+'. No post was added.',true);console.error(e);}finally{busy=false;draw();}}
+async function copyText(s,button){const original=button.textContent;try{await navigator.clipboard.writeText(s);button.textContent='Copied ✓';}catch(e){const t=document.createElement('textarea');t.value=s;document.body.append(t);t.select();try{if(!document.execCommand('copy'))throw Error('Browser blocked copying');button.textContent='Copied ✓';}catch(err){button.textContent='Select text above';}finally{t.remove();}}setTimeout(()=>button.textContent=original,1400);}
+function saveFile(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);}
+const encoder=new TextEncoder();const CRC_TABLE=(()=>{const a=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;a[n]=c>>>0;}return a;})();
+async function crc32(blob){let c=0xFFFFFFFF;for(let pos=0;pos<blob.size;pos+=1024*1024){const a=new Uint8Array(await blob.slice(pos,pos+1024*1024).arrayBuffer());for(const v of a)c=CRC_TABLE[(c^v)&255]^(c>>>8);}return(c^0xFFFFFFFF)>>>0;}
+async function createZip(files){let local=[],central=[],offset=0,centralLen=0;for(const f of files){const bytes=encoder.encode(f.name),size=f.blob.size,crc=await crc32(f.blob),lh=new Uint8Array(30+bytes.length),x=new DataView(lh.buffer);x.setUint32(0,0x04034b50,true);x.setUint16(4,20,true);x.setUint32(14,crc,true);x.setUint32(18,size,true);x.setUint32(22,size,true);x.setUint16(26,bytes.length,true);lh.set(bytes,30);local.push(lh,f.blob);const ch=new Uint8Array(46+bytes.length),z=new DataView(ch.buffer);z.setUint32(0,0x02014b50,true);z.setUint16(4,20,true);z.setUint16(6,20,true);z.setUint32(16,crc,true);z.setUint32(20,size,true);z.setUint32(24,size,true);z.setUint16(28,bytes.length,true);z.setUint32(42,offset,true);ch.set(bytes,46);central.push(ch);offset+=lh.length+size;centralLen+=ch.length;if(offset>0xFFFFFFFF)throw Error('Archive too large');}const end=new Uint8Array(22),z=new DataView(end.buffer);z.setUint32(0,0x06054b50,true);z.setUint16(8,files.length,true);z.setUint16(10,files.length,true);z.setUint32(12,centralLen,true);z.setUint32(16,offset,true);return new Blob([...local,...central,end],{type:'application/zip'});}
+function csvField(s){return '"'+String(s??'').replace(/"/g,'""')+'"';}
+function manifest(){return 'number,date,system,material,seed,palette,filename,full_editor_url,compact_editor_url,caption,settings_json\r\n'+jobs.map(j=>[j.index+1,j.date,j.system,j.materialName,j.settings.seed,j.settings.palette,filename(j),j.fullURL,j.shortURL,j.caption,JSON.stringify(j.settings)].map(csvField).join(',')).join('\r\n');}
+async function downloadZip(){if(busy||!jobs.length)return;busy=true;drawButtons(true);try{const files=[];for(const j of jobs){msg(`Preparing ${j.index+1} of ${jobs.length} original portrait images…`);await nextFrame();let blob=blobs.get(j.index);if(!blob){blob=await createPNG(j);blobs.set(j.index,blob);}files.push({name:filename(j),blob});}files.push({name:'EDITOR_LINKS_AND_CAPTIONS.csv',blob:new Blob([manifest()],{type:'text/csv;charset=utf-8'})});files.push({name:'POSTS.txt',blob:new Blob([jobs.map(j=>`POST ${j.index+1} — ${j.system} / ${j.materialName}\n${j.caption}`).join('\n\n-----\n\n')],{type:'text/plain;charset=utf-8'})});msg('Packaging ZIP…');const zip=await createZip(files);saveFile(zip,`PROPORTION_PIECE_X_${day}_${jobs.length}_posts.zip`);save();msg(`Downloaded ${jobs.length} original portrait images, captions and editor links.`);}catch(e){msg('ZIP export failed: '+e.message,true);console.error(e);}finally{busy=false;draw();}}
+$('generate').addEventListener('click',generate);$('downloadAll').addEventListener('click',downloadZip);$('copyAll').addEventListener('click',()=>copyText(jobs.map((j,i)=>`POST ${i+1}\n${j.caption}`).join('\n\n-----\n\n'),$('copyAll')));
+$('day').addEventListener('change',()=>{if(busy)return;day=$('day').value||ukDate();restore();msg(jobs.length?`Loaded ${jobs.length} saved posts for ${day}. Downloaded PNGs can be regenerated.`:`Ready to generate five original portrait posts for ${day}.`);});
+$('series').addEventListener('change',()=>{if(busy)return;const val=$('series').value;if(jobs.length){$('series').value=series;msg('Composition strategy is locked after the first post. Choose a date without saved posts to change it.',true);return;}series=val;save();msg('Ready: '+(series==='comparison'?'the five materials will share the same settings':'each post will use a different system and material')+'.');});
+async function load(){try{for(let i=0;i<SOURCE.length;i++){const file=SOURCE[i];msg(`Loading real PROPORTION PIECE drawing engines (${i+1}/${SOURCE.length}): ${file}`);await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=ROOT+'js/'+file;s.onload=resolve;s.onerror=()=>reject(Error('Could not load '+s.src));document.head.append(s);});}const A=window.AlgoArt;for(const name of ['render','renderOil','renderWatercolourV2S','renderReleasedOilPaintV8','renderActionPaintingV4'])if(typeof A?.[name]!=='function')throw Error('Missing original engine '+name);if(!A.socialShare||!A.socialShare.compact)throw Error('Missing compact editor link encoder.');ready=true;draw();msg(jobs.length?`Ready. ${jobs.length} saved posts loaded; use Download to re-render an original PNG.`:'Ready. Click “Generate next post” to create the first portrait artwork.');}catch(e){msg('Cannot load renderer: '+e.message+'. Check internet access or reload.',true);console.error(e);}}
+$('day').value=ukDate();day=$('day').value;restore();load();
+})();
+</script>
+</body>
+</html>
