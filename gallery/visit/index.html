@@ -97,7 +97,7 @@
  .topbar #mobileOverflow #fullscreen{display:inline-flex}
  .topbar #mobileOverflow #xr-controls{width:100%;display:flex}
  .topbar #mobileOverflow #xr-controls>*{width:100%!important;max-width:none!important;min-height:42px!important}
- .topbar #mobileOverflow [data-gallery-secondary="gramophone"]{order:1}
+ .topbar #mobileOverflow [data-gallery-secondary="music"]{order:1}
  .topbar #mobileOverflow .toolbar-secondary #archiveLink{order:0}
 }
 </style>
@@ -105,7 +105,7 @@
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=12">
 <script defer src="../../js/nav-lettering.js?v=2"></script>
 <!-- Verified production room occlusion; use ?roomcull=0 to disable without changing artwork. -->
-<link rel="modulepreload" href="./gallery-phi-bundle.js?v=gramophone-poster-20261107-r2">
+<link rel="modulepreload" href="./gallery-phi-bundle.js?v=quiet-gallery-music-20261107">
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
@@ -137,7 +137,7 @@
   try{
     // Load the app immediately. Serial diagnostic imports were unnecessarily
     // delaying cold start; a single timed import reports the real bottleneck.
-    // Use the approved reception, gramophone and golden-spiral square.
+    // Use the approved reception and golden-spiral square.
     globalThis.__phiReceptionTestRefresh=true;
     globalThis.__phiReceptionTilePreview=true;
     // Same three reception backroom monitors already verified in the test tower.
@@ -145,7 +145,7 @@
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
     window.__galleryStage='Importing bundled JavaScript';
-    await import('./gallery-phi-bundle.js?v=gramophone-poster-20261107-r2');
+    await import('./gallery-phi-bundle.js?v=quiet-gallery-music-20261107');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);
@@ -251,22 +251,20 @@ window.addEventListener('load',()=>{
   };
   new MutationObserver(updateVrStatus).observe(xr,{childList:true,subtree:true,characterData:true});
   updateVrStatus();
-  // The listening exhibit adds its own button after the tower loads.
-  // Relocate that existing button, preserving its event listener and dialog.
-  const placeGramophone=()=>{
-    const gramophone=[...actions.children].find(element=>
+  // The optional music controls join secondary gallery actions, also on mobile.
+  const placeMusic=()=>{
+    const music=[...actions.children].find(element=>
       element.matches('button[aria-haspopup="dialog"]')&&
-      element.textContent.trim()==='Gramophone');
-    if(!gramophone)return;
-    gramophone.dataset.gallerySecondary='gramophone';
-    secondary.append(gramophone);
-    // When its native dialog closes, restore focus to the visible menu button.
-    document.querySelector('.phi-gramophone-dialog')?.addEventListener('close',()=>{
-      if(mobile.matches){setOpen(false,true);}
+      element.textContent.trim()==='Music');
+    if(!music)return;
+    music.dataset.gallerySecondary='music';
+    secondary.append(music);
+    document.querySelector('.phi-gallery-music-dialog')?.addEventListener('close',()=>{
+      if(mobile.matches)setOpen(false,true);
     });
   };
-  new MutationObserver(placeGramophone).observe(actions,{childList:true});
-  placeGramophone();
+  new MutationObserver(placeMusic).observe(actions,{childList:true});
+  placeMusic();
   const isOpen=()=>panel.classList.contains('is-open');
   function setOpen(open,returnFocus=false){
     panel.classList.toggle('is-open',Boolean(open&&mobile.matches));
