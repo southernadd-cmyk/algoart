@@ -2605,3 +2605,62 @@ button{font-family:Georgia,serif}
   .editorial-welcome .intro-actions #introEnter {grid-column:1}
   .editorial-welcome .intro-actions .welcome-gallery-link {min-height:40px!important}
 }
+
+/* Fit to φ: keep the native checkbox accessible, show φ instead of a tick. */
+.material-render-control .phi-fit-control {
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  position:relative;
+  cursor:pointer;
+}
+.material-render-control #phiSheetFit {
+  position:absolute;
+  width:24px;
+  height:24px;
+  margin:0;
+  opacity:0;
+}
+.material-render-control .phi-fit-symbol {
+  display:inline-flex;
+  box-sizing:border-box;
+  flex:0 0 24px;
+  width:24px;
+  height:24px;
+  align-items:center;
+  justify-content:center;
+  border:1px solid var(--soft-ink);
+  border-radius:2px;
+  background:transparent;
+  color:var(--ink);
+  font:700 21px/1 Georgia,serif;
+}
+.material-render-control #phiSheetFit:checked + .phi-fit-symbol::after {
+  content:"φ";
+}
+.material-render-control #phiSheetFit:focus-visible + .phi-fit-symbol {
+  outline:2px solid var(--blue);
+  outline-offset:3px;
+}
+.material-render-control #phiSheetFit:disabled + .phi-fit-symbol,
+.material-render-control #phiSheetFit:disabled ~ .phi-fit-copy {
+  opacity:.5;
+}
+.material-render-control .phi-fit-copy {
+  display:block;
+  flex:1;
+  min-width:0;
+}
+.material-render-control .phi-fit-title {
+  display:block;
+  font-weight:700;
+}
+.material-render-control .phi-fit-explain {
+  display:block;
+  margin-top:3px;
+  font-size:.85em;
+  line-height:1.45;
+  font-style:normal;
+  text-transform:none;
+  letter-spacing:0;
+}
