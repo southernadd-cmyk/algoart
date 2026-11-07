@@ -15,8 +15,7 @@ const GROUPS=[
   'What is a golden rectangle?','Who was Roger Penrose?']],
  ['Art history & evidence',[
   'Does the Parthenon use phi?','Did Leonardo use phi?','Which artists used phi?',
-  'What is the Modulor?','Is the golden ratio more beautiful?','Do faces follow phi?',
-  'How are the rooms organised?']],
+  'What is the Modulor?','Is the golden ratio more beautiful?','Do faces follow phi?']],
  ['Art, code & chance',[
   'What is the rule of thirds?','How does composition work?','Tell me about Kandinsky',
   'What is generative art?','Tell me about Sol LeWitt','How is chance used in art?','Is this art?']],
