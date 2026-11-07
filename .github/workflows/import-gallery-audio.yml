@@ -1,33 +1,53 @@
-name: Import gallery audio and rebuild bundle
+name: Import six classical gallery recordings
 on:
   push:
+    branches: [main]
     paths: ['.github/workflows/import-gallery-audio.yml']
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: gallery-classical-audio-assets
+  cancel-in-progress: false
 jobs:
   import-audio:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: npm
-      - name: Download and verify recordings
+          persist-credentials: true
+      - name: Download six CC classical recordings from Wikimedia Commons
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p gallery/visit/audio
-          curl -fL --retry 5 --retry-delay 2 -A "ProportionPiece/1.0" "https://commons.wikimedia.org/wiki/Special:Redirect/file/Debussy_%2C_Reflets_dans_l%27eau.ogg" -o gallery/visit/audio/debussy-reflets-dans-leau.ogg
-          curl -fL --retry 5 --retry-delay 2 -A "ProportionPiece/1.0" "https://commons.wikimedia.org/wiki/Special:Redirect/file/Wolfgang_Amadeus_Mozart_-_sonata_no._16_in_c_major%2C_k.545_%27sonata_facile%27_-_i._allegro.ogg" -o gallery/visit/audio/mozart-k545-allegro.ogg
-          test "$(wc -c < gallery/visit/audio/debussy-reflets-dans-leau.ogg)" -gt 7000000
-          test "$(wc -c < gallery/visit/audio/mozart-k545-allegro.ogg)" -gt 2000000
-          file gallery/visit/audio/*.ogg
-      - run: npm ci --ignore-scripts
-      - run: npm run gallery:bundle:phi
-      - name: Commit compiled bundle and audio
+          download() {
+            local url="$1" out="$2" min="$3"
+            curl -fL --retry 6 --retry-all-errors --retry-delay 3 --connect-timeout 30 -A "ProportionPieceGallery/1.0 (educational exhibition, https://github.com/southernadd-cmyk/algoart)" "$url" -o "gallery/visit/audio/$out"
+            local size
+            size=$(wc -c < "gallery/visit/audio/$out")
+            test "$size" -gt "$min" || { echo "Invalid audio $out ($size bytes)" >&2; exit 1; }
+            file "gallery/visit/audio/$out"
+          }
+          download 'https://upload.wikimedia.org/wikipedia/commons/7/78/La_Cath%C3%A9drale_engloutie_-_Claude_Debussy_-_performed_by_Ivan_Ilic.ogg' 'debussy-la-cathedrale-engloutie.ogg' 5000000
+          download 'https://upload.wikimedia.org/wikipedia/commons/b/be/Clair_de_lune_%28Claude_Debussy%29_Suite_bergamasque.ogg' 'debussy-clair-de-lune.ogg' 14000000
+          download 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Maurice_Ravel_-_Th%C3%A9r%C3%A8se_Dussaut_-_Pavane_pour_une_infante_d%C3%A9funte.ogg' 'ravel-pavane.ogg' 5000000
+          download 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Gymnopedie_No._1_%28ISRC_USUAN1100787%29.mp3' 'satie-gymnopedie-1-macleod.mp3' 6500000
+          download 'https://upload.wikimedia.org/wikipedia/commons/2/2c/IMSLP173147-PMLP164349-Bach_BWV1007_CelloSuite1_01_darjac.ogg' 'bach-cello-suite-1-prelude.ogg' 1700000
+          download 'https://upload.wikimedia.org/wikipedia/commons/0/0f/Claude_Debussy_-_Premi%C3%A8re_Arabesque_-_Patrizia_Prati.ogg' 'debussy-premiere-arabesque.ogg' 14000000
+      - name: Commit verified audio assets to main without changing live music yet
+        shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add gallery/visit/audio/*.ogg gallery/visit/gallery-phi-bundle.js
-          if ! git diff --cached --quiet; then git commit -m "Host gallery audio and rebuild bundle"; git push; fi
+          git add gallery/visit/audio/debussy-la-cathedrale-engloutie.ogg gallery/visit/audio/debussy-clair-de-lune.ogg gallery/visit/audio/ravel-pavane.ogg gallery/visit/audio/satie-gymnopedie-1-macleod.mp3 gallery/visit/audio/bach-cello-suite-1-prelude.ogg gallery/visit/audio/debussy-premiere-arabesque.ogg
+          if git diff --cached --quiet; then echo 'All six recordings already staged'; exit 0; fi
+          git commit -m "Stage six CC classical recordings for gallery"
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 3
+          done
+          exit 1
