@@ -200,7 +200,7 @@ export function answerVisitor(question,k,state={}){
   case 'remix':return reply('Open any drawing in the editor from its label to alter the seed, composition or material. The editor can export PNG or SVG artwork and share reproducible links.');
   case 'sculpture':return reply('Some portrait works are reinterpreted as layered sculptures on plinths. '+(k.reception?'They are upstairs.':'There are '+plural(k.floorSculptures,'sculpture')+' on this floor.'));
   case 'tiles':return reply('Some rooms use Penrose rhombus patterns in the floor. Their non-repeating geometry has a mathematical relationship with φ.');
-  case 'music':return reply(/\\bgramophone\\b/i.test(question)
+  case 'music':return reply(/\bgramophone\b/i.test(question)
    ? 'The gramophone exhibit has been removed. Optional background music is available from Music in the gallery toolbar, off by default.'
    : 'For optional background music, open Music in the gallery toolbar. It starts off, and the recordings are not presented as part of the golden-ratio experiment.');
   case 'light':return reply('The room lighting follows golden divisions, but not every aspect of the tower is claimed to follow φ.');
