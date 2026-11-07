@@ -45,7 +45,7 @@ Some portrait drawings become sculptures, their source geometry reinterpreted as
 
 *The growing exhibition tower, documented in the Three.js gallery on 1 November 2026.*
 
-In reception, a **Translation Area** extends drawings into moving images using TouchDesigner. Visitors can also opt into quiet background music using the gallery toolbar. The recordings are not offered as evidence for the golden ratio.
+In reception, a **Translation Area** extends drawings into moving images using TouchDesigner. Visitors can also opt into quiet music using the gallery toolbar: the existing Debussy and Mozart recordings (whose proportional readings are interpretative) or three original browser-synthesised φ studies controlling pitch ratios, golden-angle movement and recursive phrase division. Nothing plays or allocates a Web Audio context until requested.
 
 The other visitors are not just scale figures. They can be spoken to. Their rule-based conversations are grounded in works on the floor, their own observations and disagreements, and a wider body of knowledge about art, proportion and its myths. The **More topics…** chip makes that knowledge discoverable. Their voices are part of the exhibition, but they are not generative language models.
 
