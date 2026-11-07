@@ -1,6 +1,4 @@
-// Marker-drawn sketches of Threads' @-spiral and Bluesky's butterfly.
-// Both are inked with ALGO/ART's ACTUAL marker stroke engine, A.stroke,
-// not downloaded brand images, SVG fonts or AI-generated replacements.
+// Social logos inked with the project's marker stroke engine, A.stroke.
 (function(A){
  'use strict';
  function bezier(a,b,c,d,n){
@@ -52,6 +50,17 @@
  const butterfly=[leftUpper,rightUpper,leftLower,rightLower,
    bezier([31.5,32],[30,39],[29,44],[26,47],12),
    bezier([32.5,32],[34,39],[35,44],[38,47],12)];
+ const xLogo=[
+   combine(
+     bezier([11,10],[22,24],[34,41],[46,55],24),
+     bezier([46,55],[49,55],[51,55],[54,55],6),
+     bezier([54,55],[42,40],[30,24],[19,10],24),
+     bezier([19,10],[16,10],[14,10],[11,10],6)
+   ),
+   bezier([51,10],[46,16],[41,22],[35,30],16),
+   bezier([30,35],[25,41],[18,49],[13,55],16)
+ ];
+ const logos={__proto__:null,instagram,threads,bluesky:butterfly,x:xLogo};
  function draw(canvas,kind){
    if(!canvas||!canvas.getContext||!A.stroke||!A.makeR)return false;
    const dpr=2;
@@ -65,7 +74,7 @@
      pressure:31,dryness:17,opacity:89
    };
    const ink=kind==='bluesky'?'#145cb6':'#161613';
-   const paths=kind==='bluesky'?butterfly:kind==='instagram'?instagram:threads;
+   const paths=logos[kind]||threads;
    const oldRecorder=A.svgRecorder;
    // Toolbar sketch marks must never enter an artwork's exported SVG.
    try{
