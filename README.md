@@ -45,16 +45,13 @@ Some portrait drawings become sculptures, their source geometry reinterpreted as
 
 *The growing exhibition tower, documented in the Three.js gallery on 1 November 2026.*
 
-In reception, a **Translation Area** extends drawings into moving images using TouchDesigner, while a **gramophone** compares moments in the written score with moments in recorded time. Mozart and Debussy offer different ways of hearing — or failing to hear — a proposed proportion. Nothing is inserted into the recordings to make the mathematics audible. The listener decides what matters.
+In reception, a **Translation Area** extends drawings into moving images using TouchDesigner. Visitors can also opt into quiet background music using the gallery toolbar. The recordings are not offered as evidence for the golden ratio.
 
 The other visitors are not just scale figures. They can be spoken to. Their rule-based conversations are grounded in works on the floor, their own observations and disagreements, and a wider body of knowledge about art, proportion and its myths. The **More topics…** chip makes that knowledge discoverable. Their voices are part of the exhibition, but they are not generative language models.
 
-| Reception | A listening experiment |
-| :--- | :--- |
-| ![The virtual exhibition's reception, showing its architectural furnishings and illuminated digital tower](docs/images/exhibition-reception-2026-11-01.jpg) | ![The gramophone installation in the virtual exhibition's reception](docs/images/exhibition-gramophone-2026-11-01.jpg) |
-| *An entrance to the accumulating archive.* | *The gramophone asks where proportion falls in music.* |
+![The virtual exhibition's reception, showing its architectural furnishings and illuminated digital tower](docs/images/exhibition-reception-2026-11-01.jpg)
 
-*Both are documentary screenshots captured from the live exhibition code on 1 November 2026, not illustrative reconstructions.*
+*An entrance to the accumulating archive, photographed in the live exhibition on 1 November 2026. The gallery has evolved since this photograph was taken.*
 
 ## The public drawing machine
 
