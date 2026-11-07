@@ -111,7 +111,7 @@ function titleNamed(question,k){
   (/\d+\s*$/.test(w.title)&&new RegExp('\\b(study|number|no)\\s*0*'+Number(w.title.match(/(\d+)\s*$/)[1])+'\\b').test(ws.join(' '))));
 }
 function tryLine(k){
- return k.outside?'Try how this tower was built or how a day’s images become a floor.':k.reception?'Ask me about Fibonacci, Penrose tiles or the gramophone.':'Ask me about Fibonacci, the Parthenon myth, or artists who worked with rules.';
+ return k.outside?'Try how this tower was built or how a day’s images become a floor.':k.reception?'Ask me about Fibonacci, Penrose tiles or how this tower is organised.':'Ask me about Fibonacci, the Parthenon myth, or artists who worked with rules.';
 }
 function phiOpinion(k){
  if(k.persona==='enthusiast')return 'I think φ carries more than you would expect. It guides divisions, scale and spacing, but materials and chance play a part too. Make up your own mind.';
@@ -200,7 +200,7 @@ export function answerVisitor(question,k,state={}){
   case 'remix':return reply('Open any drawing in the editor from its label to alter the seed, composition or material. The editor can export PNG or SVG artwork and share reproducible links.');
   case 'sculpture':return reply('Some portrait works are reinterpreted as layered sculptures on plinths. '+(k.reception?'They are upstairs.':'There are '+plural(k.floorSculptures,'sculpture')+' on this floor.'));
   case 'tiles':return reply('Some rooms use Penrose rhombus patterns in the floor. Their non-repeating geometry has a mathematical relationship with φ.');
-  case 'music':return reply('The gramophone in reception explores golden-section markers in music recordings, including Debussy. The recording plays unchanged; whether the markers sound important is for you to decide.');
+  case 'music':return reply('There is no gramophone exhibit. If you want background music while exploring, open Music in the gallery toolbar. It is optional and starts off; the recordings are not part of the golden-ratio experiment.');
   case 'light':return reply('The room lighting follows golden divisions, but not every aspect of the tower is claimed to follow φ.');
   case 'screens':return reply('The Translation Area in reception explores works translated into moving images using TouchDesigner.');
   case 'ai':return reply('The artworks come from seeded JavaScript, not an AI image generator. I am a rule-based visitor, too.');
@@ -228,7 +228,7 @@ const DISCOVERY={
   ['parthenon','Does the Parthenon use phi?'],['leonardo','Did Leonardo use phi?'],
   ['modern-artists','Which artists used phi?'],['le-corbusier','What is the Modulor?'],
   ['preference','Is the golden ratio more beautiful?'],['faces','Do faces follow phi?'],
-  ['phi-music','Is phi used in music?']],
+  ],
  'Art, code & chance':[
   ['thirds','What is the rule of thirds?'],['composition','How does composition work?'],
   ['kandinsky','Tell me about Kandinsky'],['generative','What is generative art?'],
@@ -244,13 +244,13 @@ export function visitorTopicCatalog(){
 }
 const QUICK={
  outside:['tower-build','daily-to-floor','curation-process','sculpture-translation'],
- reception:['tower-build','phi-definition','penrose-history','phi-music'],
+ reception:['tower-build','phi-definition','penrose-history','curation-process'],
  gallery:['phi-definition','composition','generative','preference']
 };
 export function visitorSuggestions(k,state={}){
  if(!state.turns&&!state.topic)return k.outside
   ?['How was the tower built?',"How does a day's art become a floor?",'What determines the rooms?','How do drawings become sculptures?']
-  :k.reception?['What is this place?','What are the screens?','What is the gramophone?','Is this AI?']
+  :k.reception?['What is this place?','What are the screens?','How are paintings hung?','Is this AI?']
   :['What is this room called?','Which works are here?','Tell me about this one','Is the golden ratio enough?'];
  const options=[],used=new Set();
  const add=q=>{if(q&&!used.has(q)){options.push(q);used.add(q);}};
