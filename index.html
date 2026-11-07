@@ -21,7 +21,7 @@
 <meta name="twitter:title" content="PROPORTION PIECE — Golden-ratio generative drawing system">
 <meta name="twitter:description" content="Eight compositions. Five drawing materials.">
 <meta name="twitter:image" content="https://southernadd-cmyk.github.io/algoart/social-card.png?v=marker-engine-degree-fix-20261018">
-<link rel="stylesheet" href="css/style.css?v=20261101-mobile-welcome-v1">
+<link rel="stylesheet" href="css/style.css?v=20261107-phi-fit-control">
 <link rel="preload" href="fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/marker-font.css?v=20261014-phi-sheet">
 <link rel="stylesheet" href="css/nav-lettering.css?v=12">
@@ -193,7 +193,14 @@
           
           <div class="controls">
             <div class="control material-render-control"><label for="materialStyle">Material</label><select id="materialStyle" aria-label="Drawing material"><option value="marker">Marker drawing</option><option value="tissue">Tissue &amp; Graphite</option><option value="watercolour">Watercolour</option><option value="oil">Oil Paint</option><option value="action">Action Painting</option></select><p class="mini-note" id="materialStyleNote" aria-live="polite">Marker ink can wobble, run dry or change pressure.</p>
-<label class="mini-note"><input id="phiSheetFit" type="checkbox"> Fit to φ</label>
+<label class="mini-note phi-fit-control" for="phiSheetFit">
+  <input id="phiSheetFit" type="checkbox" aria-describedby="phiSheetExplain">
+  <span class="phi-fit-symbol" aria-hidden="true"></span>
+  <span class="phi-fit-copy">
+    <span class="phi-fit-title">Fit to φ</span>
+    <span class="phi-fit-explain" id="phiSheetExplain">Gently resizes and shifts the drawing towards golden-ratio focal points. The seed and underlying marks stay the same.</span>
+  </span>
+</label>
 <p class="mini-note" id="phiSheetInfo" role="status" aria-live="polite">Off · original source geometry and placement.</p>
 <label class="mini-note" id="watercolourFitControl" hidden><input id="watercolourFit" type="checkbox"> Watercolour fit (older links)</label></div>
             <div class="control"><label for="orientation">Canvas format</label><select id="orientation" aria-label="Canvas orientation"><option value="landscape" selected>Landscape · 1400 × 1000</option><option value="portrait">Portrait · 1000 × 1400</option></select></div>
