@@ -27,7 +27,7 @@ export function planPhiReception(floor,circulation,physical){
  entries.sort((a,b)=>b.score-a.score);
  const desk=entries[0]||null;
  // The widest wall behind the desk supports a room-scale world map.
- // Reserve it before placing the two information posters.
+ // Reserve it before placing the single reception information poster.
  const mapWall=desk?surfaces.filter(w=>w.room===desk.room&&w.axis==='z'&&w.normal.z<0&&w.length>=6.8)
   .sort((a,b)=>b.length-a.length)[0]:null;
  const worldMap=mapWall?{x:mapWall.centre,z:mapWall.at+mapWall.normal.z*.14,axis:mapWall.axis,normal:mapWall.normal,width:6.1,height:4.016,centreY:2.65,surface:mapWall.id}:null;
@@ -38,7 +38,7 @@ export function planPhiReception(floor,circulation,physical){
   return Math.hypot(x-start.x,z-start.z)>2.0&&Math.hypot(x-end.x,z-end.z)>2.1&&
    (!desk||Math.hypot(x-desk.x,z-desk.z)>1.7);
  }).sort((a,b)=>b.length-a.length);
- const signage=signs.slice(0,2).map(w=>({
+ const signage=signs.slice(0,1).map(w=>({
    x:w.axis==='x'?w.at+w.normal.x*.14:w.centre,
    z:w.axis==='z'?w.at+w.normal.z*.14:w.centre,
    axis:w.axis,normal:w.normal,width:Math.min(4.4,w.length-.1),room:w.room

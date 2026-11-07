@@ -5,7 +5,7 @@ const GROUPS=[
  ['Around the gallery',[
   'What is this place?','How was the tower built?', "How does a day's art become a floor?",
   'What determines the rooms?','How are paintings hung?','How do drawings become sculptures?',
-  'What is the gramophone?','What are the screens?']],
+  'What are the screens?']],
  ['Conversations',[
   'What have you noticed?', "What's your favourite?",'Where did you come from?',
   'How is this connected to Fibonacci?','Is the golden ratio enough?']],

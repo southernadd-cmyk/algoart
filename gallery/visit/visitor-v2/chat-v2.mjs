@@ -333,7 +333,7 @@ export function topicGroupsFor(k,state={}){
  const here=k.outside
   ?['How was the tower built?', "How does a day's art become a floor?",'What determines the rooms?','How do drawings become sculptures?']
   :k.reception
-   ?['What is this place?','What are the screens?','What is the gramophone?','Is this AI?']
+   ?['What is this place?','What are the screens?','How are paintings hung?','Is this AI?']
    :['What is this room called?','Which works are here?','Tell me about this one','Is the golden ratio enough?'];
  const talk=['What have you noticed?',"What's your favourite?",'Where did you come from?','How is this connected to Fibonacci?'];
  if((k.works||[]).length>=2)talk.push('Compare the first and the last');
