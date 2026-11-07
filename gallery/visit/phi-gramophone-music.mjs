@@ -1,6 +1,7 @@
 // Optional, unobtrusive gallery soundtrack. The former gramophone exhibit
 // has been removed; the same recordings now belong to the visitor controls.
 import {createGramophoneRecord} from './gramophone-record-asap-test.mjs';
+import {PHI_COMPOSITIONS,createPhiCompositionPlayer} from './phi-music-compositions.mjs';
 
 export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
  const panel=document.createElement('dialog');
@@ -10,14 +11,14 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
    <h2 id="phi-gallery-music-title">Gallery music</h2>
    <button type="button" class="music-close" aria-label="Close music controls">Close ×</button>
   </div>
-  <p class="music-intro">An optional soundtrack while you explore. Music is off until you play it.</p>
-  <label class="music-field">Recording <select class="music-choice" aria-label="Choose a recording"></select></label>
+  <p class="music-intro">Quiet, optional music while you explore. Playback starts only when you press Play.</p>
+  <label class="music-field">Piece <select class="music-choice" aria-label="Choose a recording"></select></label>
   <div class="music-transport">
    <button type="button" class="music-toggle">Play</button>
    <label class="music-field">Volume <input class="music-volume" aria-label="Music volume" type="range" min="0" max="0.4" step="0.01" value="0.18"></label>
   </div>
   <p class="music-error" role="status" aria-live="polite"></p>
-  <small class="music-credit"></small>`;
+  <p class="music-explanation"></p>\n  <small class="music-credit"></small>`;
  document.body.append(panel);
  const css=document.createElement('style');
  css.textContent=`
@@ -38,7 +39,7 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
  .phi-gallery-music-dialog .music-toggle{min-width:84px;background:#344a3d;color:#fff}
  .phi-gallery-music-dialog .music-volume{width:100%;margin:4px 0;accent-color:#344a3d}
  .phi-gallery-music-dialog .music-error{min-height:1.1em;margin:4px 0 8px;color:#8a352d}
- .phi-gallery-music-dialog .music-credit{color:#647065}
+ .phi-gallery-music-dialog .music-explanation{margin:12px 0 6px;color:#526458;font:13px/1.45 Arial,Helvetica,sans-serif}\n .phi-gallery-music-dialog .music-credit{color:#647065}
  .phi-gallery-music-dialog button:focus-visible,.phi-gallery-music-dialog select:focus-visible,
  .phi-gallery-music-dialog input:focus-visible{outline:2px solid #304b3c;outline-offset:3px}
  `;
@@ -51,29 +52,43 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
  const toggle=panel.querySelector('.music-toggle');
  const choice=panel.querySelector('.music-choice');
  const volume=panel.querySelector('.music-volume');
- const problem=panel.querySelector('.music-error');
+ const problemEl=panel.querySelector('.music-error');
  const credit=panel.querySelector('.music-credit');
- let previousFocus=null;
- function sync(state){
-  choice.value=String(state.index);
-  toggle.textContent=state.playing?'Pause':'Play';
-  trigger.textContent=state.playing?'Music · On':'Music';
-  trigger.setAttribute('aria-label',state.playing?'Music playing, open controls':'Music off, open controls');
-  problem.textContent=state.problem||'';
-  credit.textContent=state.track.credit||'';
+ const explanation=panel.querySelector('.music-explanation');
+ let previousFocus=null,record=null,procedural=null;
+ let selected=0,playing=false,problem='',intent=0;
+ const tracks=[];
+ function sync(){
+  const track=tracks[selected];
+  if(!track)return;
+  choice.value=String(selected);
+  toggle.textContent=playing?'Pause':'Play';
+  trigger.textContent=playing?'Music · On':'Music';
+  trigger.setAttribute('aria-label',playing?'Music playing, open controls':'Music off, open controls');
+  problemEl.textContent=problem;
+  credit.textContent=track.credit||'';
+  explanation.textContent=track.explanation||'Recorded performance; the connection to φ is interpretative rather than a claim about the original composer’s intentions.';
  }
- // Audio is not constructed, decoded, or fetched until the visitor opens Music.
- let record=null;
+ // Existing performances remain untouched. Original sound studies use Web Audio
+ // only after Play, so opening the toolbar does not allocate an AudioContext.
  function ensureRecord(){
   if(record)return;
-  record=createGramophoneRecord({onChange:sync});
-  record.audio.volume=Number(volume.value);
-  record.tracks.forEach((track,i)=>{
+  record=createGramophoneRecord({onChange:state=>{
+   if(selected<2){
+    selected=state.index;playing=state.playing;problem=state.problem||'';
+    sync();
+   }
+  }});
+  tracks.push(...record.tracks,...PHI_COMPOSITIONS);
+  tracks.forEach((track,i)=>{
    const option=document.createElement('option');option.value=String(i);
-   option.textContent=(track.composer.includes('Debussy')?'Debussy':'Mozart')+' — '+track.title;
+   option.textContent=i<record.tracks.length
+    ?track.composer+' — '+track.title
+    :'Original φ study — '+track.title;
    choice.append(option);
   });
-  sync(record.state());
+  record.audio.volume=Number(volume.value);
+  sync();
  }
  function open(){
   if(panel.open)return;
@@ -89,6 +104,42 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
   (previousFocus?.isConnected?previousFocus:canvas).focus({preventScroll:true});
  }
  const close=()=>{if(panel.open)panel.close();};
+ function pause(){
+  intent++;
+  if(selected<2)record?.pause();
+  else procedural?.stop();
+  playing=false;
+  sync();
+ }
+ async function play(){
+  ensureRecord();
+  const ticket=++intent;
+  problem='';sync();
+  if(selected<record.tracks.length){
+   await record.play();
+   return;
+  }
+  try{
+   if(!procedural)procedural=createPhiCompositionPlayer();
+   await procedural.play(selected-record.tracks.length,Number(volume.value));
+   if(ticket!==intent){procedural.stop();return;}
+   playing=true;sync();
+  }catch(error){
+   if(ticket!==intent)return;
+   playing=false;
+   problem='The original sound study could not play in this browser.';
+   sync();
+  }
+ }
+ function choose(next){
+  if(!Number.isInteger(next)||next<0||next>=tracks.length||next===selected)return;
+  const resume=playing;
+  pause();
+  selected=next;problem='';
+  if(next<record.tracks.length)record.choose(next);
+  sync();
+  if(resume)void play();
+ }
  trigger.addEventListener('click',open);
  panel.querySelector('.music-close').addEventListener('click',close);
  panel.addEventListener('close',closed);
@@ -98,15 +149,21 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
   const bounds=panel.getBoundingClientRect();
   if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)close();
  });
- toggle.addEventListener('click',()=>record?.toggle());
- choice.addEventListener('change',()=>record?.choose(Number(choice.value)));
- volume.addEventListener('input',()=>{if(record)record.audio.volume=Number(volume.value);});
- const hidden=()=>{if(document.hidden)record?.pause();};
+ toggle.addEventListener('click',()=>{if(playing)pause();else void play();});
+ choice.addEventListener('change',()=>choose(Number(choice.value)));
+ volume.addEventListener('input',()=>{
+  if(record)record.audio.volume=Number(volume.value);
+  procedural?.setVolume(Number(volume.value));
+ });
+ const hidden=()=>{if(document.hidden&&playing)pause();};
  document.addEventListener('visibilitychange',hidden);
- if(debug)globalThis.__phiGalleryMusic={state:()=>record?.state()||{playing:false},get record(){return record;},open};
+ if(debug)globalThis.__phiGalleryMusic={
+  state:()=>({index:selected,playing,problem,track:tracks[selected]}),
+  get record(){return record;},get procedural(){return procedural;},open
+ };
  return {open,isOpen:()=>panel.open,
   dispose(){
-   record?.dispose();document.removeEventListener('visibilitychange',hidden);
+   pause();procedural?.dispose();record?.dispose();document.removeEventListener('visibilitychange',hidden);
    panel.removeEventListener('close',closed);panel.remove();trigger.remove();css.remove();
    if(debug)delete globalThis.__phiGalleryMusic;
   }
