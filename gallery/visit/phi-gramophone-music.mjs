@@ -17,7 +17,7 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
    <label class="music-field">Volume <input class="music-volume" aria-label="Music volume" type="range" min="0" max="0.4" step="0.01" value="0.18"></label>
   </div>
   <p class="music-error" role="status" aria-live="polite"></p>
-  <small class="music-credit"></small>`;
+  <small class="music-credit"></small><p><a class="music-source" target="_blank" rel="noopener noreferrer">Source and method</a></p>`;
  document.body.append(panel);
  const css=document.createElement('style');
  css.textContent=`
@@ -53,6 +53,7 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
  const volume=panel.querySelector('.music-volume');
  const problem=panel.querySelector('.music-error');
  const credit=panel.querySelector('.music-credit');
+ const source=panel.querySelector('.music-source');
  let previousFocus=null;
  function sync(state){
   choice.value=String(state.index);
@@ -61,6 +62,8 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
   trigger.setAttribute('aria-label',state.playing?'Music playing, open controls':'Music off, open controls');
   problem.textContent=state.problem||'';
   credit.textContent=state.track.credit||'';
+  source.href=state.track.source||'#';
+  source.hidden=!state.track.source;
  }
  // Audio is not constructed, decoded, or fetched until the visitor opens Music.
  let record=null;
@@ -70,7 +73,7 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
   record.audio.volume=Number(volume.value);
   record.tracks.forEach((track,i)=>{
    const option=document.createElement('option');option.value=String(i);
-   option.textContent=(track.composer.includes('Debussy')?'Debussy':'Mozart')+' — '+track.title;
+   option.textContent=track.composer+' — '+track.title;
    choice.append(option);
   });
   sync(record.state());
