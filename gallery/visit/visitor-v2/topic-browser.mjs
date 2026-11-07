@@ -5,7 +5,7 @@ const GROUPS=[
  ['Around the gallery',[
   'What is this place?','How was the tower built?', "How does a day's art become a floor?",
   'What determines the rooms?','How are paintings hung?','How do drawings become sculptures?',
-  'What is the gramophone?','What are the screens?']],
+  'What are the screens?']],
  ['Conversations',[
   'What have you noticed?', "What's your favourite?",'Where did you come from?',
   'How is this connected to Fibonacci?','Is the golden ratio enough?']],
@@ -16,7 +16,7 @@ const GROUPS=[
  ['Art history & evidence',[
   'Does the Parthenon use phi?','Did Leonardo use phi?','Which artists used phi?',
   'What is the Modulor?','Is the golden ratio more beautiful?','Do faces follow phi?',
-  'Is phi used in music?']],
+  'How are the rooms organised?']],
  ['Art, code & chance',[
   'What is the rule of thirds?','How does composition work?','Tell me about Kandinsky',
   'What is generative art?','Tell me about Sol LeWitt','How is chance used in art?','Is this art?']],
