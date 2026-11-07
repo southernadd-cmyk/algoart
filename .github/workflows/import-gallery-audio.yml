@@ -1,4 +1,4 @@
-name: Import six classical gallery recordings
+name: Optimise six classical gallery recordings and publish
 on:
   push:
     branches: [main]
@@ -6,48 +6,119 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: gallery-classical-audio-assets
   cancel-in-progress: false
 jobs:
-  import-audio:
+  optimise-audio:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
-      - name: Download six CC classical recordings from Wikimedia Commons
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Encode six recordings at 96 kbps stereo AAC and validate duration
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p gallery/visit/audio
-          download() {
-            local url="$1" out="$2" min="$3"
-            curl -fL --retry 6 --retry-all-errors --retry-delay 3 --connect-timeout 30 -A "ProportionPieceGallery/1.0 (educational exhibition, https://github.com/southernadd-cmyk/algoart)" "$url" -o "gallery/visit/audio/$out"
-            local size
-            size=$(wc -c < "gallery/visit/audio/$out")
-            test "$size" -gt "$min" || { echo "Invalid audio $out ($size bytes)" >&2; exit 1; }
-            file "gallery/visit/audio/$out"
-          }
-          download 'https://upload.wikimedia.org/wikipedia/commons/7/78/La_Cath%C3%A9drale_engloutie_-_Claude_Debussy_-_performed_by_Ivan_Ilic.ogg' 'debussy-la-cathedrale-engloutie.ogg' 5000000
-          download 'https://upload.wikimedia.org/wikipedia/commons/b/be/Clair_de_lune_%28Claude_Debussy%29_Suite_bergamasque.ogg' 'debussy-clair-de-lune.ogg' 14000000
-          download 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Maurice_Ravel_-_Th%C3%A9r%C3%A8se_Dussaut_-_Pavane_pour_une_infante_d%C3%A9funte.ogg' 'ravel-pavane.ogg' 5000000
-          download 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Gymnopedie_No._1_%28ISRC_USUAN1100787%29.mp3' 'satie-gymnopedie-1-macleod.mp3' 6500000
-          download 'https://upload.wikimedia.org/wikipedia/commons/2/2c/IMSLP173147-PMLP164349-Bach_BWV1007_CelloSuite1_01_darjac.ogg' 'bach-cello-suite-1-prelude.ogg' 1700000
-          download 'https://upload.wikimedia.org/wikipedia/commons/0/0f/Claude_Debussy_-_Premi%C3%A8re_Arabesque_-_Patrizia_Prati.ogg' 'debussy-premiere-arabesque.ogg' 14000000
-      - name: Commit verified audio assets to main without changing live music yet
+          command -v ffmpeg || { sudo apt-get update -qq; sudo apt-get install -y ffmpeg; }
+          python3 - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          files=[
+            'debussy-la-cathedrale-engloutie.ogg',
+            'debussy-clair-de-lune.ogg',
+            'ravel-pavane.ogg',
+            'satie-gymnopedie-1-macleod.mp3',
+            'bach-cello-suite-1-prelude.ogg',
+            'debussy-premiere-arabesque.ogg',
+          ]
+          audio=Path('gallery/visit/audio')
+          original_total=0;encoded_total=0
+          def duration(p):
+              result=subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',str(p)],text=True)
+              return float(result.strip())
+          for filename in files:
+              src=audio/filename
+              dst=audio/(Path(filename).stem+'.m4a')
+              assert src.is_file(),f'Missing CC source audio: {src}'
+              original_total+=src.stat().st_size
+              subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-i',str(src),'-vn','-map_metadata','-1','-c:a','aac','-b:a','96k','-ar','44100','-movflags','+faststart',str(dst)],check=True)
+              old_d,new_d=duration(src),duration(dst)
+              assert old_d>100 and abs(new_d-old_d)<0.5,(filename,old_d,new_d)
+              assert dst.stat().st_size>600000,(str(dst),dst.stat().st_size)
+              encoded_total+=dst.stat().st_size
+              print(f'{filename}: {src.stat().st_size:,} -> {dst.stat().st_size:,} bytes; {new_d:.1f}s')
+          assert encoded_total<25000000,f'Audio unexpectedly large: {encoded_total:,}'
+          print(f'SIX_AUDIO_ENCODED bytes_before={original_total} bytes_after={encoded_total} saved={original_total-encoded_total}')
+          PY
+      - name: Switch just six gallery track URLs to the smaller files
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add gallery/visit/audio/debussy-la-cathedrale-engloutie.ogg gallery/visit/audio/debussy-clair-de-lune.ogg gallery/visit/audio/ravel-pavane.ogg gallery/visit/audio/satie-gymnopedie-1-macleod.mp3 gallery/visit/audio/bach-cello-suite-1-prelude.ogg gallery/visit/audio/debussy-premiere-arabesque.ogg
-          if git diff --cached --quiet; then echo 'All six recordings already staged'; exit 0; fi
-          git commit -m "Stage six CC classical recordings for gallery"
+          python3 - <<'PY'
+          from pathlib import Path
+          map_names=[
+            'debussy-la-cathedrale-engloutie.ogg',
+            'debussy-clair-de-lune.ogg',
+            'ravel-pavane.ogg',
+            'satie-gymnopedie-1-macleod.mp3',
+            'bach-cello-suite-1-prelude.ogg',
+            'debussy-premiere-arabesque.ogg',
+          ]
+          record=Path('gallery/visit/gramophone-record-asap-test.mjs')
+          tests=Path('tests/gallery-classical-playlist.test.mjs')
+          index=Path('gallery/visit/index.html')
+          r=record.read_text()
+          t=tests.read_text()
+          for name in map_names:
+              new=Path(name).stem+'.m4a'
+              oldsrc="src:'./audio/"+name+"'"
+              assert r.count(oldsrc)==1,(oldsrc,r.count(oldsrc))
+              r=r.replace(oldsrc,"src:'./audio/"+new+"'")
+              assert t.count("['"+name+"',")==1,name
+              import re
+              t,n=re.subn(r"\['"+re.escape(name)+r"',\d+\]","['"+new+"',600000]",t)
+              assert n==1,name
+          record.write_text(r)
+          tests.write_text(t)
+          h=index.read_text()
+          assert h.count('classical-eight-20261107')==2
+          index.write_text(h.replace('classical-eight-20261107','classical-aac-20261107'))
+          print('TRACK_URLS_UPDATED 6, eight-track playlist retained')
+          PY
+      - run: npm ci
+      - name: Validate eight recordings and rebuild exact production bundle
+        run: |
+          node --test tests/gallery-classical-playlist.test.mjs
+          npm run gallery:bundle:phi
+          node --check gallery/visit/gallery-phi-bundle.js
+      - name: Commit optimised files, remove six heavy originals, and request Pages release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -- gallery/visit/audio/debussy-la-cathedrale-engloutie.ogg gallery/visit/audio/debussy-clair-de-lune.ogg gallery/visit/audio/ravel-pavane.ogg gallery/visit/audio/satie-gymnopedie-1-macleod.mp3 gallery/visit/audio/bach-cello-suite-1-prelude.ogg gallery/visit/audio/debussy-premiere-arabesque.ogg
+          git add gallery/visit/audio/*.m4a gallery/visit/gramophone-record-asap-test.mjs tests/gallery-classical-playlist.test.mjs gallery/visit/index.html gallery/visit/gallery-phi-bundle.js
+          git diff --cached --stat
+          if git diff --cached --quiet; then echo 'Already optimised'; exit 0; fi
+          git commit -m 'Optimise six classical audio files for GitHub Pages deployment'
           for attempt in 1 2 3 4; do
             git pull --rebase origin main
-            if git push origin HEAD:main; then exit 0; fi
+            if git push origin HEAD:main; then
+              gh workflow run deploy-pages.yml --ref main
+              echo 'REQUESTED_PAGES_DEPLOYMENT after optimised audio commit'
+              exit 0
+            fi
             sleep 3
           done
+          echo 'Audio optimisation commit was not published' >&2
           exit 1
