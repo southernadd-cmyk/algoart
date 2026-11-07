@@ -91,6 +91,7 @@ jobs:
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
           node --check gallery/visit/gallery-bundle.js
           node --check gallery/visit/gallery-phi-bundle.js
+          node --test tests/gallery-classical-playlist.test.mjs
           node --check test/virtual-gallery/gallery-phi-bundle.js
 
       - name: Verify archive and visitor chat v1/v2 release

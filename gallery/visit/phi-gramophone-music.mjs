@@ -70,7 +70,7 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
   record.audio.volume=Number(volume.value);
   record.tracks.forEach((track,i)=>{
    const option=document.createElement('option');option.value=String(i);
-   option.textContent=(track.composer.includes('Debussy')?'Debussy':'Mozart')+' — '+track.title;
+   option.textContent=track.composer.trim().split(/\s+/).at(-1)+' — '+track.title;
    choice.append(option);
   });
   sync(record.state());
