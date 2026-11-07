@@ -104,7 +104,7 @@ export const KNOWLEDGE=[
   keys:['is phi used in music','phi used in music','debussy','bartok','bartók','mozart','music theory','composers','composer','howat','lendvai','la mer'],
   answers:[
    'Roy Howat’s book Debussy in Proportion argues that Debussy placed key moments at golden-section points — it’s one of the better-argued cases. Ernő Lendvai made similar claims about Bartók.',
-   'Mozart is the disputed one: some of his sonata movements split near 0.618, but many don’t, and it may be coincidence. That’s why the gramophone just marks the points and lets you listen.'],
+   'Mozart is the disputed one: some sonata movements split near 0.618, but many do not. That is not enough evidence that the music was designed around the golden ratio.'],
   next:'preference'},
  {id:'thirds',
   keys:['rule of thirds','thirds','photography','golden section composition'],
