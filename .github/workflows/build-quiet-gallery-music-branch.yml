@@ -1,0 +1,64 @@
+name: Build quiet gallery music branch
+
+on:
+  push:
+    branches:
+      - feature/quiet-gallery-music-20261107
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Validate changed JavaScript
+        run: |
+          node --check gallery/visit/gallery-phi.js
+          node --check gallery/visit/phi-gramophone-music.mjs
+          node --check gallery/visit/phi-visitor-chat.mjs
+          node --check gallery/visit/visitor-v2/chat-v2.mjs
+          node --check gallery/visit/visitor-v2/topic-browser.mjs
+          node --check gallery/visit/phi-reception-layout.mjs
+          node --check gallery/visit/phi-visitor-knowledge.mjs
+      - name: Build production gallery bundle
+        run: npm run gallery:bundle:phi
+      - name: Validate exhibit removal and compiled player
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const main=readFileSync('gallery/visit/gallery-phi.js','utf8');
+          const ui=readFileSync('gallery/visit/phi-gramophone-music.mjs','utf8');
+          const about=readFileSync('about/index.html','utf8');
+          const html=readFileSync('gallery/visit/index.html','utf8');
+          const bundle=readFileSync('gallery/visit/gallery-phi-bundle.js','utf8');
+          assert.ok(bundle.length>200000,'Missing compiled gallery');
+          assert.ok(!main.includes('addPhiReceptionGramophone'),'Physical exhibit still imported');
+          assert.ok(!main.includes('addGalleryCeilingSpeaker'),'Unwanted speaker geometry still loaded');
+          assert.ok(!about.includes('a gramophone'),'About page still describes removed exhibit');
+          assert.ok(ui.includes('let record=null'),'Audio must be created lazily');
+          assert.ok(html.includes("quiet-gallery-music-20261107"),'Gallery must request fresh bundle');
+          console.log('Verified: physical exhibit absent, lazy audio, updated about page, bundle built.');
+          NODE
+      - name: Commit compiled bundle to feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gallery/visit/gallery-phi-bundle.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Build quiet gallery music production bundle"
+            git push origin HEAD:feature/quiet-gallery-music-20261107
+          fi
