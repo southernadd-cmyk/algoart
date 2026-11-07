@@ -1,7 +1,6 @@
 // Optional, unobtrusive gallery soundtrack. The former gramophone exhibit
 // has been removed; the same recordings now belong to the visitor controls.
 import {createGramophoneRecord} from './gramophone-record-asap-test.mjs';
-import {createGallerySpeakerFeed} from './gallery-speakers.mjs?v=distributed-record-20261027';
 
 export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
  const panel=document.createElement('dialog');
@@ -63,18 +62,23 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
   problem.textContent=state.problem||'';
   credit.textContent=state.track.credit||'';
  }
- const record=createGramophoneRecord({onChange:sync});
- record.tracks.forEach((track,i)=>{
-  const option=document.createElement('option');option.value=String(i);
-  option.textContent=(track.composer.includes('Debussy')?'Debussy':'Mozart')+' — '+track.title;
-  choice.append(option);
- });
- const position=new THREE.Vector3();
- const feed=createGallerySpeakerFeed(record,{volume:0.18,positionOf:source=>source.getWorldPosition(position)});
- sync(record.state());
+ // Audio is not constructed, decoded, or fetched until the visitor opens Music.
+ let record=null;
+ function ensureRecord(){
+  if(record)return;
+  record=createGramophoneRecord({onChange:sync});
+  record.audio.volume=Number(volume.value);
+  record.tracks.forEach((track,i)=>{
+   const option=document.createElement('option');option.value=String(i);
+   option.textContent=(track.composer.includes('Debussy')?'Debussy':'Mozart')+' — '+track.title;
+   choice.append(option);
+  });
+  sync(record.state());
+ }
  function open(){
   if(panel.open)return;
   previousFocus=document.activeElement;
+  ensureRecord();
   document.exitPointerLock?.();
   panel.showModal();
   trigger.setAttribute('aria-expanded','true');
@@ -94,16 +98,15 @@ export function createPhiGalleryMusic(THREE,{canvas,debug=false}){
   const bounds=panel.getBoundingClientRect();
   if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)close();
  });
- toggle.addEventListener('click',()=>record.toggle());
- choice.addEventListener('change',()=>record.choose(Number(choice.value)));
- volume.addEventListener('input',()=>feed.setVolume(volume.value));
- const hidden=()=>{if(document.hidden)record.pause();};
+ toggle.addEventListener('click',()=>record?.toggle());
+ choice.addEventListener('change',()=>record?.choose(Number(choice.value)));
+ volume.addEventListener('input',()=>{if(record)record.audio.volume=Number(volume.value);});
+ const hidden=()=>{if(document.hidden)record?.pause();};
  document.addEventListener('visibilitychange',hidden);
- if(debug)globalThis.__phiGalleryMusic={state:record.state,record,open,speakers:feed.snapshot};
- return {record,open,isOpen:()=>panel.open,update:listener=>feed.update(listener),
-  setEmitters:feed.setEmitters,
+ if(debug)globalThis.__phiGalleryMusic={state:()=>record?.state()||{playing:false},get record(){return record;},open};
+ return {open,isOpen:()=>panel.open,
   dispose(){
-   record.dispose();document.removeEventListener('visibilitychange',hidden);
+   record?.dispose();document.removeEventListener('visibilitychange',hidden);
    panel.removeEventListener('close',closed);panel.remove();trigger.remove();css.remove();
    if(debug)delete globalThis.__phiGalleryMusic;
   }
