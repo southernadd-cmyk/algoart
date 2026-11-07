@@ -21,7 +21,6 @@ import {createPhiGalleryMusic} from './phi-gramophone-music.mjs';
 import {createReceptionTileMaterial,alignReceptionTileUvs} from './reception-tile-preview.mjs?v=cube-tiles-20261027';
 import {installReceptionPenroseInlay} from './reception-penrose-inlay.mjs';
 import {chooseGalleryPenroseRooms,prepareGalleryPenroseMaterial,pieceRoomIndex} from './phi-gallery-penrose-floor.mjs';
-import {planGallerySpeakers,addGalleryCeilingSpeaker} from './gallery-speakers.mjs?v=distributed-record-20261027';
 import {addPhiReceptionMetalRoof} from './phi-reception-metal-roof.mjs';
 import {deferPhiInteriorAssetsUntil} from './phi-model-assets.mjs';
 import {createPhiShellChunkController} from './phi-shell-cache.mjs?v=persistent-shell-20261026';
@@ -129,9 +128,7 @@ let phiReceptionProps=[];
 let phiOutdoorPlants=[];
 let phiReceptionMap=null;
 let phiReceptionDesk=null;
-let phiReceptionGramophone=null;
 let phiGalleryMusic=null;
-let phiSpeakerEmitters=[];
 let phiFurnishingObstacles=[];
 let phiSquareObstacles=[];
 let phiRideState=null;
@@ -345,15 +342,11 @@ if(GALLERY_DEBUG)window.__phiReceptionPreview={
   view.position.copy(object.localToWorld(new THREE.Vector3(1.55,1.95,-2.40)));
   view.lookAt(object.localToWorld(new THREE.Vector3(1.55,1.62,-.40)));
   renderer.setAnimationLoop(null);renderer.render(scene,view);},
- speaker(kind='room'){const object=kind==='lift'?window.__phiCeilingSpeakers?.lift:window.__phiCeilingSpeakers?.rooms[0];if(!object?.parent)return;
-  const view=new THREE.PerspectiveCamera(50,camera.aspect,.02,50);object.updateWorldMatrix(true,false);
-  view.position.copy(object.localToWorld(new THREE.Vector3(.45,-.6,.45)));view.lookAt(object.getWorldPosition(new THREE.Vector3()));
-  renderer.setAnimationLoop(null);renderer.render(scene,view);},
  overview(){const view=new THREE.PerspectiveCamera(55,camera.aspect,.1,500);view.position.set(98,74,-130);view.lookAt(4,67,0);renderer.setAnimationLoop(null);renderer.render(scene,view);},
- show(kind){const object=kind==='map'?phiReceptionMap:kind==='desk'?phiReceptionDesk?.root:kind==='gramophone'?phiReceptionGramophone?.root:phiOutdoorPlants[0];if(!object?.parent)return;
+ show(kind){const object=kind==='map'?phiReceptionMap:kind==='desk'?phiReceptionDesk?.root:phiOutdoorPlants[0];if(!object?.parent)return;
   object.updateWorldMatrix(true,false);const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);
-  const offset=kind==='map'?new THREE.Vector3(0,0,5.7):kind==='desk'?new THREE.Vector3(0,2.3,-6.8):kind==='gramophone'?new THREE.Vector3(-1.5,1.55,-2):new THREE.Vector3(2,1.4,2.7);
-  view.position.copy(object.localToWorld(offset));view.lookAt(object.localToWorld(new THREE.Vector3(0,kind==='map'?0:kind==='desk'?.8:kind==='gramophone'?1.1:.6,0)));
+  const offset=kind==='map'?new THREE.Vector3(0,0,5.7):kind==='desk'?new THREE.Vector3(0,2.3,-6.8):new THREE.Vector3(2,1.4,2.7);
+  view.position.copy(object.localToWorld(offset));view.lookAt(object.localToWorld(new THREE.Vector3(0,kind==='map'?0:kind==='desk'?.8:.6,0)));
   renderer.setAnimationLoop(null);renderer.render(scene,view);},
  credits(){const art=artExhibits.find(a=>a.study?.title==='Scene models');if(!art)return;
   const view=new THREE.PerspectiveCamera(55,camera.aspect,.07,210);view.position.copy(art.position).addScaledVector(art.normal,5.1);view.position.y=2.6;view.lookAt(art.position.x,2.6,art.position.z);renderer.setAnimationLoop(null);renderer.render(scene,view);},
@@ -1261,7 +1254,6 @@ function releasePhiRideRetainedFloor(){
  if(!held)return;
  phiRideRetainedFloor=null;
  // Release retained media resources only after the ride.
- held.gramophone?.dispose();
  held.livingMonitor?.dispose();
  const geometries=new Set(),materials=new Set(),textures=new Set();
  for(const object of held.objects){
@@ -1931,9 +1923,6 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
  const roomFloor=(exhibitDate===RECEPTION&&receptionTilePreview)||galleryFinish.floor;
  if(GALLERY_DEBUG)window.__phiReceptionTiles=roomFloor===receptionTilePreview?receptionTilePreview:null;
  if(!phiGalleryMusic)phiGalleryMusic=createPhiGalleryMusic(THREE,{canvas,debug:GALLERY_DEBUG});
- const speakers=planGallerySpeakers(phi.floor.mergedRooms,{elevation,ceilingHeight:ROOM_HEIGHT});
- phiSpeakerEmitters=speakers.map(p=>addGalleryCeilingSpeaker(THREE,scene,p));
- if(GALLERY_DEBUG)window.__phiCeilingSpeakers={roomCount:speakers.length,rooms:phiSpeakerEmitters.slice(),lift:null};
  window.__phiFullEngine={date:exhibitDate,roomCount:phi.floor.mergedRooms.length,wallCount:phi.physical.walls.length,artworks:studies.length,paintings:phi.exhibition.paintings.length,sculptures:phi.exhibition.sculptures.length,unplaced:phi.exhibition.unplaced.length,paintingSizes:phi.exhibition.paintings.map(p=>({width:p.width,height:p.height})),paintingsLoaded:0};
  // Every floor, enclosure and collision surface comes from the same phi plan.
  const plaster=galleryFinish?.interiorWall||wall;
@@ -2301,9 +2290,6 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
  const l=phi.circulation.lift;
  const cabin=new THREE.Group();cabin.name='phi-archive-lift-cabin';
  cabin.position.set(l.x,elevation,l.z);scene.add(cabin);phiLiftCabin=cabin;
- const liftSpeaker=addGalleryCeilingSpeaker(THREE,cabin,{x:.68,y:2.962,z:-.68,diameter:.25,name:'lift-ceiling-speaker'});
- phiSpeakerEmitters.push(liftSpeaker);
- if(GALLERY_DEBUG)window.__phiCeilingSpeakers.lift=liftSpeaker;
  const cabinObject=object=>{
   object.position.sub(cabin.position);cabin.add(object);return object;
  };
@@ -2441,8 +2427,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   });
   phiReceptionDesk=addPhiGoldenReceptionDesk(THREE,scene,furnishing,elevation);
   if(phiReceptionDesk)phiSquareObstacles.push(...phiReceptionDesk.obstacles);
-  // The former gramophone cabinet and its physical listening exhibit are removed.
-  // Music is now an optional toolbar feature; the ceiling speakers remain.
+  // Music is handled by optional toolbar controls; no physical music exhibit.
   const captions=[
    ['PROPORTION PIECE','An algorithmically generated gallery','exhibiting algorithmically generated art.']
   ];
@@ -2521,7 +2506,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
   }
   {
    // Preserve the independently relevant Translation Area sign at its established
-   // doorway, using the former cabinet coordinates only as a placement reference.
+   // doorway. Its reference position is defined relative to the reception desk.
    const signReference=furnishing.desk?{
     x:furnishing.desk.x+4.4,z:furnishing.desk.z+2.35,
     width:1.25,depth:.85
@@ -2547,7 +2532,7 @@ function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={})
     });
    }
    window.__phiTranslationAreaSignDiagnostics={
-    inputs:{entrance:translationDoor,gramophone:gramophone||null},
+    inputs:{entrance:translationDoor,referencePoint:signReference},
     placed:!!installation,placement:installation?.placement||null,
     modelFaces:installation?.meshFaces||0,
     get visible(){return !!scene.getObjectByName('phi-translation-area-doorway-sign');}
@@ -2811,10 +2796,10 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
   if(retainDeparture)phiRideRetainedFloor={
    floor:currentFloor,
    objects:editionObjects.filter(object=>object!==phiMovingCabin),
-   gramophone:phiReceptionGramophone,livingMonitor:phiReceptionLivingMonitor
+   livingMonitor:phiReceptionLivingMonitor
   };
-  else{phiReceptionGramophone?.dispose();phiReceptionLivingMonitor?.dispose();}
-  phiReceptionGramophone=null;phiReceptionLivingMonitor=null;
+  else{phiReceptionLivingMonitor?.dispose();}
+  phiReceptionLivingMonitor=null;
   const staleGeometries=new Set(),staleMaterials=new Set(),staleTextures=new Set();
   for(const object of editionObjects){
     if(retainDeparture||(duringRide&&object===phiMovingCabin))continue;
@@ -2860,7 +2845,6 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
     if(phiBoundedLightPoolEnabled)preparePhiBoundedRoomLights(plan.phi,elevation);
     else applyRefinedPhiRoomLighting(phiRoomLightEntries,plan.phi);
     phiLightingStudy?.editionChanged(elevation);
-    phiGalleryMusic.setEmitters(phiSpeakerEmitters);
   }catch(error){
     // Remove partially constructed destination objects before recovery.
     // Otherwise a failed construction leaves orphaned meshes in the scene.
@@ -3646,7 +3630,6 @@ function tick() {
    }));
   }
   entranceDoor?.update(dt,rig.position);
-  phiGalleryMusic?.update(rig.position);
   phiReceptionDesk?.hologram?.update(clock.getElapsed());
   // 10Hz visibility tests while walking; immediate restore on lift/modal,
   // travel, VR, unplaced viewer (glass bridge) and staged floor reveal.
