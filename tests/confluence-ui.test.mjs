@@ -46,3 +46,14 @@ test('Confluence page must wire portrait controls and fit its canvas, not just s
  assert.ok(ui.includes("figure.style.width = fitted + 'px'"), 'Viewport must constrain figure width');
  assert.ok(page.includes('src="ui.js?v=confluence-'), 'Browser must receive versioned Confluence UI script');
 });
+
+test('Confluence makes response choices algorithmically rather than via a dropdown',()=>{
+ const page=read('../confluence/index.html');
+ const ui=read('../confluence/ui.js');
+ const collab=read('../confluence/collab.js');
+ assert.doesNotMatch(page,/id="response"/);
+ assert.doesNotMatch(page,/Weave around marks|Echo nearby directions|Leave more space/);
+ assert.doesNotMatch(ui,/response\.value|updateResponseHint/);
+ assert.match(collab,/inferResponse\(/);
+ assert.match(ui,/action\.reaction/);
+});

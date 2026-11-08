@@ -17,7 +17,7 @@ function validateState(s){
    /[<>\x00-\x1f]/.test(s.seed)||
    !['portrait','landscape'].includes(s.orientation)||
    typeof s.paper!=='string'||!/^#[0-9a-f]{6}$/i.test(s.paper)||
-   !validNum(s.grain,0,100)||!['weave','echo','space'].includes(s.response)||
+   !validNum(s.grain,0,100)||!(s.response===undefined||['weave','echo','space'].includes(s.response))||
    !validNum(s.strength,0,100)||!validNum(s.collaborationPull,0,100)||
    !VALID_TURNS.has(s.totalTurns)||!Array.isArray(s.artists)||s.artists.length!==3)return false;
  return s.artists.every(a=>{

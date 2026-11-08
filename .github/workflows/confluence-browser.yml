@@ -6,6 +6,7 @@ on:
       - 'confluence/**'
       - 'tests/confluence-browser.test.mjs'
       - 'tests/confluence-material.test.mjs'
+      - 'tests/confluence-adaptive.test.mjs'
       - '.github/workflows/confluence-browser.yml'
   pull_request:
     paths:
@@ -27,6 +28,6 @@ jobs:
       - run: npm ci
       - run: npx playwright install chromium
       - name: Verify native material bridge contracts
-        run: node --test tests/confluence-material.test.mjs
+        run: node --test tests/confluence-material.test.mjs tests/confluence-adaptive.test.mjs
       - name: Verify browser orientation and all five materials
         run: node tests/confluence-browser.test.mjs

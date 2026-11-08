@@ -1,5 +1,6 @@
 import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=studio-06';
 import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt, resolveTurnBudget} from './composition.js?v=confluence-steps-03';
+import {inferResponse} from './adaptive-response.js?v=adaptive-01';
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 export const systems = [
@@ -30,12 +31,6 @@ export function paletteInks(artist, seed) {
   return A.hues({palette: artist.palette, colourCount, saturation, brightness},
     A.makeR(seed + '|palette|' + artist.id));
 }
-
-export const responses = {
-  weave: {gap: 40, overlap: 2.3, alignment: .14},
-  echo: {gap: 22, overlap: 1.0, alignment: 1.20},
-  space: {gap: 120, overlap: 3.4, alignment: 0}
-};
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const pt = (x, y) => ({x, y});
@@ -359,7 +354,7 @@ export function createStudy(seed, slots, paperSettings, collaborationPull = 100,
   return {roster, schedule: primary.turns, primary, equal, sheet, anchors, availableTurns, totalTurns:budget};
 }
 
-export function makeRun(study, strength, mode, {equal = false} = {}) {
+export function makeRun(study, strength, {equal = false} = {}) {
   const programme = equal ? study.equal : study.primary;
   const density = study.anchors.length && strength > 0 ? inkDensity(study.sheet, CELL) : null;
   const artists = new Map(study.roster.map((artist, i) => [artist.id, {
@@ -376,10 +371,16 @@ export function makeRun(study, strength, mode, {equal = false} = {}) {
       const artist = artists.get(entry.id);
       const others = [...artists.values()].filter(other => other !== artist && other.committed > 0);
       const fields = others.map(other => other.field);
-      const response = responses[mode];
-      const context = {fields, response, sheet: study.sheet, mode, gain: strength / 100, density};
-      const selection = strength > 0 ? nextGroup(artist, context, p => artist.anchors.has(key(p))) : {group: entry.group, prioritized: false};
+      // A tentative reading guides which group to draw next. Once chosen,
+      // read the sheet again for that particular group's placement.
+      const initial=inferResponse(artist.pending[0],artist,fields,density,study.sheet);
+      let context={fields,response:initial.response,sheet:study.sheet,mode:initial.mode,
+        gain:strength/100,density};
+      const selection = strength > 0 ? nextGroup(artist, context, p => artist.anchors.has(key(p))) :
+        {group: artist.pending.shift(), prioritized: false};
       const {group, prioritized} = selection;
+      const reaction=inferResponse(group,artist,fields,density,study.sheet);
+      context={...context,response:reaction.response,mode:reaction.mode};
       let placement = {place: artist.pose.place, effort: 0};
       if (strength > 0) {
         const choices = candidates(group, artist, strength, turn);
@@ -409,7 +410,8 @@ export function makeRun(study, strength, mode, {equal = false} = {}) {
       const action = {
         artist, group, placement, plans, contacts, heard: strength > 0 ? others.length : 0,
         changed: placement.effort > 0 || plans.size > 0 || prioritized,
-        reordered: prioritized, pigmentGain: limitPigment(group, placement, context), border: study.sheet.border
+        reordered: prioritized, reaction: reaction.mode, responseEvidence: reaction.evidence,
+        pigmentGain: limitPigment(group, placement, context), border: study.sheet.border
       };
       const footprint = deposit?.(action, strength > 0);
       if (strength > 0) {
