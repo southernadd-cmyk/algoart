@@ -59,6 +59,10 @@ export function importLeadFromURL(params, lead, sheet, catalog) {
     if (params.has(param)) lead.settings[key] = ['1', 'true'].includes(params.get(param));
   }
   if (params.has('pen') && tools.has(params.get('pen'))) lead.settings.pen = params.get('pen');
-  if (params.get('sheet') === 'phi' || params.get('fit') === '1') lead.settings.fit = true;
+  // An explicit Fit to φ switch takes precedence over the legacy sheet
+  // parameter. Solo editor links can contain sheet=phi&fit=0: those drawings
+  // must NOT be reframed when handed to Confluence.
+  if (params.has('fit')) lead.settings.fit = ['1', 'true'].includes(params.get('fit'));
+  else if (params.get('sheet') === 'phi') lead.settings.fit = true;
   return true;
 }
