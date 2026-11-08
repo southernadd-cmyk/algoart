@@ -58,7 +58,11 @@
         // for this artwork. Only Threads gets a new page-cache identity;
         // Bluesky retains its already-working URL.
         threadsPreviewURL=token?previewURL+'&pv=4':previewURL,
-        threadsCaption='PROPORTION PIECE '+threadsPreviewURL;
+        threadsCaption='PROPORTION PIECE '+threadsPreviewURL,
+        // Keep X's crawler on this existing artwork-specific Worker card,
+        // with a fresh cache key so earlier generic previews aren't reused.
+        xPreviewURL=token?previewURL+'&pv=5':previewURL,
+        xCaption='PROPORTION PIECE '+xPreviewURL;
     return{
       fullURL:fullURL,
       artworkURL:shortURL,
@@ -66,6 +70,9 @@
       caption:caption,
       threadsPreviewURL:threadsPreviewURL,
       threadsCaption:threadsCaption,
+      xPreviewURL:xPreviewURL,
+      xCaption:xCaption,
+      x:'https://x.com/intent/tweet?text='+encodeURIComponent(xCaption),
       threads:'https://www.threads.com/intent/post?text='+encodeURIComponent(threadsCaption),
       bluesky:'https://bsky.app/intent/compose?text='+encodeURIComponent(caption)
     };
