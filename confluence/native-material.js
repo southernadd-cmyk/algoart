@@ -36,7 +36,14 @@ function makeChains(traces,area,artist,inkRGB){
 }
 function invoke(A,ctx,material,chains,meta,seed,kit){
   if(material==='tissue'){
-    A.oilMaterial(ctx,ctx.canvas.width,ctx.canvas.height,chains,meta,seed,1,kit);
+    // Enable the approved pencil overlay already present in the material
+    // engine. V7 normally disables it, which made Confluence's Tissue &
+    // Graphite appear almost entirely like diffuse spray-painted colour.
+    const previous=A.confluenceTissueGraphite;
+    try{
+      A.confluenceTissueGraphite=true;
+      A.oilMaterial(ctx,ctx.canvas.width,ctx.canvas.height,chains,meta,seed,1,kit);
+    }finally{A.confluenceTissueGraphite=previous;}
     return;
   }
   // New V2S: source geometry and hue stay exactly where the responding
@@ -88,6 +95,14 @@ export function renderNativeDeposit(ctx,material,traces,artist,area,paper,seed,i
     // responsive mark placement is replaced or flattened.
     const pigmentAlpha=clamp((contrast-2)/13,0,1);
     const edge=cropEdgeFeather(x,y,w,h,area,sheet);
+    if(material==='tissue' && pigmentAlpha>0){
+      // Paper is present in both native outputs. Recover the actual tissue
+      // pigment against the exact blank reference before compositing on the
+      // shared paper. Without this, its colour difference was attenuated
+      // twice, washing out fibres and graphite.
+      for(let c=0;c<3;c++)data.data[p+c]=Math.round(clamp(
+        reference[p+c]+(data.data[p+c]-reference[p+c])/pigmentAlpha,0,255));
+    }
     data.data[p+3]=Math.round(255*pigmentAlpha*edge);
   }
   ctx.putImageData(data,0,0);

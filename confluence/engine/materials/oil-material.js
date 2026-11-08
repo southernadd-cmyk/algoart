@@ -526,7 +526,11 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);
   if(A.materialStageCapture)A.materialStageCapture('tissue-surface',ctx.canvas);
-  var graphitePaths=kit&&kit.revision===3?graphiteOverlay(ctx,chains,seed,quality):0;
+  // Only Confluence opts into graphite with the V7 pigments. The solo
+  // renderer remains byte-for-byte unchanged (this is the lab-local copy).
+  var graphitePaths=kit&&(kit.revision===3||
+      (kit.revision>=7&&A.confluenceTissueGraphite))?
+    graphiteOverlay(ctx,chains,seed,quality):0;
   if(graphitePaths&&A.materialStageCapture)A.materialStageCapture('tissue-graphite-finished',ctx.canvas);
   ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',

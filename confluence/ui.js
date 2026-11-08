@@ -1,5 +1,5 @@
 import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-wash-seams-07';
-import {materials, makePainter} from './materials.js?v=confluence-wash-seams-07';
+import {materials, makePainter} from './materials.js?v=confluence-tissue-sheet-08';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=studio-06';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
@@ -181,6 +181,10 @@ function advance() {
   const action = state.run.next(state.paintShared);
   state.baseline.next(state.paintBaseline);
   state.turn++;
+  if(state.turn===state.study.schedule.length){
+    state.paintShared.finalize?.();
+    state.paintBaseline.finalize?.();
+  }
   if (action.heard) state.read++;
   if (action.plans.size || action.reordered) state.replanned++;
   state.history.unshift(action);
