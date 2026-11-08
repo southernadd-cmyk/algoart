@@ -120,8 +120,8 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       bounds,sheet.paper,[seed,'all-tissue-voices','v7-whole-sheet'].join('|'),
       sourceRGB,sheet);
     surfacePasses.tissue++;
-    // Translucent tissue dye cannot introduce an opaque cream/white rim
-    // over the previous artists' colours. Multiply glazes like real pigment.
+    // Preserve V7's extracted pigment opacity. Normal alpha composition
+    // lets later tissue overlay earlier marks without multiply-blackening.
     layTurn(tissueSurface,tissueTurn,'source-over',bounds);
   }
   function renderActualWatercolour(newMarks,artist){
