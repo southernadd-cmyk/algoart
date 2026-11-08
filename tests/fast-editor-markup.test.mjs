@@ -8,7 +8,12 @@ for(const id of ids)assert.match(html,new RegExp('id="'+id+'"'),'Missing require
 assert.match(html,/id="tab-marker"[^>]*>Marks<\/button>/,'Marks panel label must remain consistent');
 assert.match(html,/id="variations"[^>]*>Four at once<\/button>/);
 assert.match(html,/id="variationsTitle">FOUR AT ONCE<\/strong>/);
-assert.match(html,/id="shuffleVariations">SHOW FOUR MORE<\/button>/);
+assert.match(html,/Same seed and settings · only additional φ pull changes/);
+assert.match(app,/PHI_COMPARISON_STEPS=Object\.freeze\(\[0,38\.2,61\.8,100\]\)/);
+assert.match(app,/Object\.assign\(\{\},base,\{phiStrength:pull\}\)/);
+assert.doesNotMatch(app,/variationSeed\(/);
+assert.match(html,/id="phiStrength"[^>]*step="0\.1"/);
+assert.doesNotMatch(html,/id="shuffleVariations"/);
 assert.match(html,/F four at once · S new seed/);
 assert.match(html,/id="newSeed"[^>]*title="New seed \(S\)"/);
 assert.match(app,/if\(key==='n'\)\$\('randomise'\)\.click\(\)/);

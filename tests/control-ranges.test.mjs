@@ -12,7 +12,7 @@ assert.ok(versionMatch,'Shared settings schema must declare the current renderer
 assert.match(appSource,/var SUPPORTED_RENDERER_VERSIONS=A\.SUPPORTED_RENDERER_VERSIONS/);
 const currentRenderer=Number(versionMatch[1].split(',').at(-1));
 const anotherStart=appSource.indexOf("$('randomise').onclick=function(){");
-const anotherEnd=appSource.indexOf("\nfunction variationSeed(",anotherStart);
+const anotherEnd=appSource.indexOf("\n// Golden-section complements",anotherStart);
 assert(anotherStart>=0&&anotherEnd>anotherStart,'Locate Another handler');
 const anotherHandler=appSource.slice(anotherStart,anotherEnd);
 assert.match(anotherHandler,/querySelectorAll\('\.tab-panel:not\(#panel-export\) select'\)/,

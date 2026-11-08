@@ -10,7 +10,6 @@ var app=$('app');
 var mobileQuery=window.matchMedia('(max-width:700px)');
 var previewTimer=null;
 var modePreviewStateKey=null;
-var variationBatch=0;
 var currentRenderMeta=null;
 var currentDescription=null;
 // Keep the URL parser aligned with the renderer versions implemented in generator.js.
@@ -994,33 +993,32 @@ $('randomise').onclick=function(){
   regenerate();
 };
 
-function variationSeed(base,index,batch){
-  var h=A.hash(base+'|variation|'+batch+'|'+index);
-  return base.split('~')[0]+'-V'+(batch+1)+'-'+String(h%100000).padStart(5,'0');
-}
+// Golden-section complements, retained to one decimal place by the φ slider.
+var PHI_COMPARISON_STEPS=Object.freeze([0,38.2,61.8,100]);
 
 function renderVariations(){
   var base=A.readSettings(),selectedMeta=A.lastRenderMeta,
-      selectedFrame=A.lastPhiSheetFrame,selectedW=A.W,selectedH=A.H;
-  // The overlay is moved under document.body for modal focus management,
-  // so it cannot inherit the portrait canvas aspect from .app.
+      selectedFrame=A.lastPhiSheetFrame,selectedW=A.W,selectedH=A.H,
+      selectedRendererVersion=A.rendererVersion;
+  // The comparison keeps the current artwork's seed, engine, material,
+  // orientation and all other controls, including historical renderer versions.
   $('variationsOverlay').classList.toggle('orientation-portrait',base.orientation==='portrait');
   var cards=document.querySelectorAll('.variation-card');
 
   try{
-  withRendererVersion(CURRENT_RENDERER_VERSION,function(){
-    cards.forEach(function(card,index){
-      var seed=variationSeed(base.seed,index,variationBatch);
-      var settings=Object.assign({},base,{seed:seed});
-      var preview=card.querySelector('canvas');
-      renderArtwork(preview,settings,.28,false);
-      card.dataset.seed=seed;
-      card.querySelector('span').textContent='0'+(index+1)+' / '+seed;
+    withRendererVersion(selectedRendererVersion,function(){
+      cards.forEach(function(card,index){
+        var pull=PHI_COMPARISON_STEPS[index];
+        var settings=Object.assign({},base,{phiStrength:pull});
+        renderArtwork(card.querySelector('canvas'),settings,.28,false);
+        card.dataset.phiPull=String(pull);
+        card.querySelector('span').textContent='φ PULL '+pull+'%';
+        card.setAttribute('aria-label','Apply additional φ pull of '+pull+'%');
+      });
     });
-  });
   }finally{
-    // Previewing four other seeds must never replace the selected
-    // artwork's Reveal guide, φ frame or dimensions.
+    // Rendering the comparison must not replace the selected artwork's
+    // Reveal guide, φ frame, dimensions or main canvas.
     A.lastRenderMeta=selectedMeta;
     A.lastPhiSheetFrame=selectedFrame;
     A.W=selectedW;A.H=selectedH;
@@ -1075,7 +1073,6 @@ document.addEventListener('focusin',function(e){
 
 function openVariations(){
   if(!beginDialog($('variationsOverlay'),$('closeVariations')))return;
-  variationBatch=0;
   renderVariations();
 }
 
@@ -1085,17 +1082,15 @@ function closeVariations(){
 
 $('variations').onclick=openVariations;
 $('closeVariations').onclick=closeVariations;
-$('shuffleVariations').onclick=function(){
-  variationBatch++;
-  renderVariations();
-};
-
 document.querySelectorAll('.variation-card').forEach(function(card){
   card.addEventListener('click',function(){
-    if(!card.dataset.seed)return;
-    useCurrentRenderer();
-    $('seed').value=card.dataset.seed;
+    if(!card.dataset.phiPull)return;
+    var input=$('phiStrength');
+    // Input event updates the control's stored raw value without rounding
+    // the two golden-section steps to whole percent values.
     closeVariations();
+    input.value=card.dataset.phiPull;
+    input.dispatchEvent(new Event('input',{bubbles:true}));
     regenerate();
   });
 });
