@@ -128,46 +128,91 @@ export function makePainter(output, seed, sheet) {
   // Persistent full-paper context: all other materials retain their own
   // composition and blend modes while native tissue grows around them.
   const tissueMarks=[];
-  const tissueSurface=layer(true), paintingWithoutTissue=layer(true), foreignInk=layer(true);
+  const watercolourMarks=[];
+  const tissueSurface=layer(true),watercolourSurface=layer(true);
+  const paintingWithoutTissue=layer(true),foreignInk=layer(true),watercolourForeignInk=layer(true);
+  const watercolourSensor=layer(true);
   size(tissueSurface,sheet.width,sheet.height);
+  size(watercolourSurface,sheet.width,sheet.height);
   size(paintingWithoutTissue,sheet.width,sheet.height);
   size(foreignInk,sheet.width,sheet.height);
+  size(watercolourForeignInk,sheet.width,sheet.height);
   paintingWithoutTissue.drawImage(output.canvas,0,0);
-  let nativePasses=0;
+  let nativePasses=0,watercolourPasses=0;
+  let previousWatercolourCoverage=null;
   function showSheet(){
     output.save();
     output.resetTransform();output.globalAlpha=1;
     output.globalCompositeOperation='source-over';
     output.clearRect(0,0,sheet.width,sheet.height);
     output.drawImage(paintingWithoutTissue.canvas,0,0);
+    // A single shared wash is multiply-composited onto the same paper as
+    // the other materials. It is not a stack of isolated wash rectangles.
+    output.globalCompositeOperation='multiply';
+    output.drawImage(watercolourSurface.canvas,0,0);
+    output.globalCompositeOperation='source-over';
     output.drawImage(tissueSurface.canvas,0,0);
     output.restore();
   }
   function protectGeometry(traces){
-    foreignInk.save();
-    foreignInk.strokeStyle='#000';foreignInk.globalAlpha=.9;
-    foreignInk.lineCap='round';foreignInk.lineJoin='round';
-    for(const trace of traces){
-      if(trace.points.length<2)continue;
-      foreignInk.lineWidth=Math.max(16,trace.width*2.4);
-      foreignInk.beginPath();foreignInk.moveTo(trace.points[0].x,trace.points[0].y);
-      for(let i=1;i<trace.points.length;i++)
-        foreignInk.lineTo(trace.points[i].x,trace.points[i].y);
-      foreignInk.stroke();
+    for(const ctx of [foreignInk,watercolourForeignInk]){
+      ctx.save();
+      ctx.strokeStyle='#000';ctx.globalAlpha=.9;
+      ctx.lineCap='round';ctx.lineJoin='round';
+      for(const trace of traces){
+        if(trace.points.length<2)continue;
+        ctx.lineWidth=Math.max(16,trace.width*2.4);
+        ctx.beginPath();ctx.moveTo(trace.points[0].x,trace.points[0].y);
+        for(let i=1;i<trace.points.length;i++)
+          ctx.lineTo(trace.points[i].x,trace.points[i].y);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
-    foreignInk.restore();
   }
   function protectRaster(ctx,area){
-    foreignInk.save();
-    foreignInk.globalCompositeOperation='source-over';
-    foreignInk.drawImage(ctx.canvas,area.x,area.y,area.w,area.h);
-    foreignInk.restore();
+    for(const mask of [foreignInk,watercolourForeignInk]){
+      mask.save();
+      mask.globalCompositeOperation='source-over';
+      mask.drawImage(ctx.canvas,area.x,area.y,area.w,area.h);
+      mask.restore();
+    }
   }
-  function avoidForeignMarks(ctx){
+  function protectWatercolourAgainstTissue(){
+    // Tissue's shape is visible to subsequent watercolour artists, as well
+    // as to the composition planner's response field.
+    watercolourForeignInk.save();
+    watercolourForeignInk.globalCompositeOperation='source-over';
+    watercolourForeignInk.globalAlpha=.5;
+    watercolourForeignInk.drawImage(tissueSurface.canvas,0,0);
+    watercolourForeignInk.restore();
+  }
+  function watercolourFootprint(){
+    // Read the TRUE native V2S pigment coverage, and report only newly
+    // occupied cells. Re-stamping the entire accumulated sheet on each turn
+    // would cause artificial overcrowding in the response planner.
+    const w=Math.ceil(sheet.width/SAMPLE),h=Math.ceil(sheet.height/SAMPLE);
+    size(watercolourSensor,w,h);
+    watercolourSensor.drawImage(watercolourSurface.canvas,0,0,w,h);
+    const alpha=watercolourSensor.getImageData(0,0,w,h).data;
+    const next=new Uint8Array(w*h);
+    const footprint=[];
+    for(let y=0;y<h;y+=2)for(let x=0;x<w;x+=2){
+      const i=x+y*w,coverage=alpha[i*4+3];
+      if(coverage-(previousWatercolourCoverage?.[i]||0)<14)continue;
+      const point={x:(x+.5)*sheet.width/w,y:(y+.5)*sheet.height/h};
+      footprint.push({point,angle:0,radius:Math.min(8,coverage/32),
+        opacity:Math.min(1,Math.max(.1,(coverage-(previousWatercolourCoverage?.[i]||0))/255))});
+    }
+    for(let i=0;i<next.length;i++)next[i]=alpha[i*4+3];
+    previousWatercolourCoverage=next;
+    return footprint;
+  }
+  function avoidForeignMarks(ctx,mask=foreignInk){
     ctx.save();ctx.resetTransform();
     ctx.globalCompositeOperation='destination-out';
     ctx.filter='blur(15px)';
-    ctx.drawImage(foreignInk.canvas,0,0);
+    ctx.drawImage(mask.canvas,0,0);
     ctx.restore();
   }
   function renderActualTissue(){
@@ -185,6 +230,30 @@ export function makePainter(output, seed, sheet) {
     avoidForeignMarks(tissueSurface);
     showSheet();
   }
+  function renderActualWatercolour(){
+    if(!watercolourMarks.length)return;
+    // Full-sheet V2S is re-run against every source stroke so wet pooling,
+    // drying, bleed, ragged edges and original pigment hues are continuous
+    // across *all* responsive artists. No local crop, no separate tiles.
+    size(watercolourSurface,sheet.width,sheet.height);
+    const representative={settings:{colourCount:Math.min(24,
+      new Set(watercolourMarks.map(t=>t.ink)).size)}};
+    const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
+    renderNativeDeposit(watercolourSurface,'watercolour',watercolourMarks,
+      representative,bounds,sheet.paper,
+      [seed,'all-watercolour-voices','v2s-whole-sheet'].join('|'),sourceRGB,sheet);
+    watercolourPasses++;
+    avoidForeignMarks(watercolourSurface,watercolourForeignInk);
+    // The current paint footprint informs later tissue artists; it must
+    // never be mistaken for opaque paper or a replacement composition.
+    foreignInk.save();
+    foreignInk.globalAlpha=.44;
+    foreignInk.drawImage(watercolourSurface.canvas,0,0);
+    foreignInk.restore();
+    if(tissueMarks.length)avoidForeignMarks(tissueSurface);
+    showSheet();
+  }
+
   function tissueFootprint(traces,gain) {
     // This is the material-aware response field for the *next* artist, not
     // the final raster. Tissue broad pigment reaches beyond the pencil line.
@@ -224,6 +293,7 @@ export function makePainter(output, seed, sheet) {
       protectGeometry(group.traces.map(trace=>({...trace,
         points:plannedPoints(trace.points,placement,plans.get(trace.mark))})));
       if(tissueMarks.length)avoidForeignMarks(tissueSurface);
+      if(watercolourMarks.length)avoidForeignMarks(watercolourSurface,watercolourForeignInk);
       showSheet();
       return;
     }
@@ -237,7 +307,16 @@ export function makePainter(output, seed, sheet) {
         tissueMarks.push({...trace,ink:artistInk(artist,trace.mark)});
       }
       renderActualTissue();
+      protectWatercolourAgainstTissue();
+      if(watercolourMarks.length)avoidForeignMarks(watercolourSurface,watercolourForeignInk);
+      showSheet();
       return observe ? tissueFootprint(traces,action.pigmentGain) : undefined;
+    }
+    if(material==='watercolour'){
+      for(const trace of traces)
+        watercolourMarks.push({...trace,ink:artistInk(artist,trace.mark)});
+      renderActualWatercolour();
+      return observe ? watercolourFootprint() : undefined;
     }
     if (material === 'action') traces = actionTraces(traces);
     const width = output.canvas.width, height = output.canvas.height;
@@ -260,14 +339,8 @@ export function makePainter(output, seed, sheet) {
     }
 
     try {
-      if(material==='tissue'||material==='watercolour'){
-        renderNativeDeposit(pigment,material,traces,artist,area,sheet.paper,
-          [seed,artist.id,group.id,artist.system,'v10'].join('|'),sourceRGB,
-          {width,height});
-        // Native material functions draw in local bitmap coordinates.
-        // Restore the world-to-local transform for paper edge trimming.
-        pigment.setTransform(w/area.w,0,0,h/area.h,-area.x*w/area.w,-area.y*h/area.h);
-      }else{
+      // Oil and action retain their present turn-local pipeline until their
+      // own material-specific parity passes. Tissue/V2S return above.
       for (let i = 0; i < traces.length; i++) {
         const trace = traces[i];
         const width = trace.width * (1 + (overdraw - 2) * .045);
@@ -283,7 +356,6 @@ export function makePainter(output, seed, sheet) {
           A.collabAction(pigment, trace.points, 'rgb(' + oil.mapRGB(sourceRGB(colour)).join(',') + ')',
             width, markSeed, output.canvas.width, height);
         }
-      }
       }
       if (material === 'oil') A.collabOilRelief(pigment, relief, scale);
     } finally {
@@ -303,6 +375,7 @@ export function makePainter(output, seed, sheet) {
     paintingWithoutTissue.restore();
     protectRaster(pigment,area);
     if(tissueMarks.length)avoidForeignMarks(tissueSurface);
+    if(watercolourMarks.length)avoidForeignMarks(watercolourSurface,watercolourForeignInk);
     showSheet();
     if(!observe)return;
     sensor ||= layer(true);
@@ -311,9 +384,12 @@ export function makePainter(output, seed, sheet) {
     return inkOnSheet(pigment, sensor, area, heading, coverage);
   }
 
-  // Native tissue is already visible on each turn, not revealed at Finish.
+  // Both native materials already exist on the canvas on their own turns:
+  // Finish must not introduce another late material reveal.
   deposit.finalize=()=>{};
   deposit.tissueStats=()=>({nativeFullSheetPasses:nativePasses,
     tissueMarks:tissueMarks.length});
+  deposit.watercolourStats=()=>({nativeFullSheetPasses:watercolourPasses,
+    watercolourMarks:watercolourMarks.length});
   return deposit;
 }

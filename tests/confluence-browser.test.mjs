@@ -232,6 +232,39 @@ try{
   assert.equal(stepCalls.shortcuts,0,
     'The old simplified tissue shortcut must never be used: '+JSON.stringify(stepCalls));
   console.log('actual tissue V7 first turn '+JSON.stringify(stepCalls));
+  // All three watercolour artists now share one source-hue V2S wash field,
+  // updated on *every* turn. No cropped native tiles or final surprise.
+  await page.locator('#inspector-toggle').click();
+  for(const tab of ['artist-1','artist-2','artist-3']){
+    await page.locator('#tab-'+tab).click();
+    await page.locator('#roster [data-artist="'+tab.slice(-1)+'"] select[data-field="material"]').selectOption('watercolour');
+  }
+  await page.evaluate(()=>{window.__materialCalls.watercolour=0;});
+  await page.locator('#study-form .draw-actions button[type="submit"]').click();
+  await page.waitForFunction(()=>{
+    const status=document.querySelector('#status')?.textContent||'';
+    if(status.includes('Could not render'))throw Error(status);
+    return document.querySelector('#counter')?.textContent?.trim()==='5 / 5 turns';
+  },undefined,{timeout:120000});
+  const fullWash=await page.evaluate(()=>({
+    calls:window.__materialCalls.watercolour,
+    stats:window.AlgoArt.lastWatercolourExperimentStats
+  }));
+  assert.equal(fullWash.calls,20,
+    'Five all-watercolour turns must invoke full-sheet V2S on both canvases: '+JSON.stringify(fullWash));
+  assert.equal(fullWash.stats?.fitToSheet,false,'V2S must preserve responsive placement');
+  assert.equal(fullWash.stats?.v2sFidelity,true,'V2S source-hue fidelity must remain enabled');
+  assert(fullWash.stats?.sourceHueMatches>0,'V2S lost the artists own pigment hues');
+  console.log('unified watercolour '+JSON.stringify({
+    calls:fullWash.calls,sourceHueMatches:fullWash.stats.sourceHueMatches,
+    washStates:fullWash.stats.washStates,paperFlow:fullWash.stats.paperFlow
+  }));
+  await page.locator('#step').click();
+  await page.waitForFunction(()=>document.querySelector('#counter')?.textContent?.trim()==='1 / 5 turns',
+    undefined,{timeout:25000});
+  const afterStep=await page.evaluate(()=>window.__materialCalls.watercolour);
+  assert.equal(afterStep,24,'Watercolour single Step must call native V2S: '+afterStep);
+
   assert.deepEqual(errors,[],'Confluence material JavaScript errors: '+errors.join('; '));
   console.log('Confluence five-material browser smoke passed');
 }finally{

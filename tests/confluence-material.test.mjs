@@ -84,3 +84,23 @@ test('Tissue can develop without repainting foreign material over wrong paper',(
  assert.match(renderer,/avoidForeignMarks\(tissueSurface\)/);
  assert.match(renderer,/protectRaster\(pigment,area\)/);
 });
+
+test('Watercolour uses native source-hue V2S on one cumulative full-paper surface',()=>{
+ const renderer=read('../confluence/materials.js');
+ const bridge=read('../confluence/native-material.js');
+ const solo=read('../js/watercolour-v2s.js');
+ assert.match(renderer,/const watercolourMarks=\[\]/);
+ assert.match(renderer,/function renderActualWatercolour\(/);
+ assert.match(renderer,/renderNativeDeposit\(watercolourSurface,'watercolour',watercolourMarks/);
+ assert.match(renderer,/watercolourMarks\.push\(\{\.\.\.trace,ink:artistInk/);
+ assert.match(renderer,/renderActualWatercolour\(\)/);
+ assert.match(renderer,/globalCompositeOperation='multiply'/);
+ assert.match(renderer,/watercolourFootprint\(\)/);
+ assert.match(renderer,/previousWatercolourCoverage/);
+ assert.match(renderer,/avoidForeignMarks\(watercolourSurface,watercolourForeignInk\)/);
+ assert.doesNotMatch(renderer,/renderNativeDeposit\(pigment,material/);
+ assert.doesNotMatch(renderer,/A\.collabWatercolour\(/);
+ assert.match(bridge,/A\.watercolourV2sMaterial\(/);
+ assert.match(bridge,/fitToSheet=false/);
+ assert.match(solo,/fidelity:true,fitToSheet:true/);
+});
