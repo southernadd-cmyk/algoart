@@ -1,4 +1,5 @@
-import {artistInk, paint} from './collab.js?v=studio-04';
+import {artistInk, paint} from './collab.js?v=studio-05';
+import {plannedPoints} from './mark-planner.js?v=studio-05';
 
 export const materials = {
   marker: 'Marker',
@@ -99,7 +100,7 @@ export function makePainter(output, seed) {
   }
 
   return function deposit(action, observe) {
-    const {artist, group, placement} = action;
+    const {artist, group, placement, plans} = action;
     const material = artist.material;
     const {opacity, overdraw, dryness} = artist.settings;
     if (material === 'marker') {
@@ -107,7 +108,7 @@ export function makePainter(output, seed) {
       return;
     }
 
-    let traces = group.traces.map(trace => ({...trace, points: trace.points.map(placement.place)}));
+    let traces = group.traces.map(trace => ({...trace, points: plannedPoints(trace.points, placement, plans.get(trace.mark))}));
     if (material === 'action') traces = actionTraces(traces);
     const width = output.canvas.width, height = output.canvas.height;
     const area = box(traces, material, width, height);

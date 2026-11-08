@@ -1,5 +1,5 @@
-import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=studio-04';
-import {materials, makePainter} from './materials.js?v=studio-04';
+import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=studio-05';
+import {materials, makePainter} from './materials.js?v=studio-05';
 import {artistInspector, defaultSettings} from './artist-controls.js';
 
 const byId = id => document.getElementById(id);
@@ -119,7 +119,7 @@ function updateReadout() {
   save.disabled = !ready || !state.turn;
   byId('summary').textContent = ready ? state.study.roster.length === 1
     ? state.turn + ' turns by one artist'
-    : state.changed + ' / ' + state.read + ' turns adjusted after reading marks'
+    : state.replanned + ' / ' + state.read + ' turns replanned from the shared sheet'
     : state.study ? 'No visible marks for these settings' : 'Prepare a study';
   const items = state.history.map(action => {
     const item = document.createElement('li');
@@ -130,9 +130,12 @@ function updateReadout() {
     name.textContent = 'Artist ' + action.artist.number + ' · ' + action.artist.name;
     const detail = document.createElement('span');
     detail.className = 'detail';
+    const influences = action.contacts.map(number => 'Artist ' + number).join(' and ');
     const result = state.study.roster.length === 1 ? 'Solo study'
       : !state.settings.strength ? 'Independent'
       : !action.heard ? 'First mark on paper'
+      : action.plans.size ? 'Replanned from ' + (influences || 'earlier ink')
+      : action.reordered ? 'Chose the next mark from the shared drawing'
       : (action.entered ? 'Found a new position' : action.changed ? 'Adjusted' : 'Held') + ' after reading ' + action.heard +
         (action.heard === 1 ? ' artist' : ' artists');
     detail.textContent = materials[action.artist.material] + ' · ' + action.group.label + ' · ' + result;
@@ -158,7 +161,7 @@ function reset() {
   state.run = makeRun(state.study, settings.strength, settings.response);
   state.baseline = makeRun(state.study, 0, settings.response);
   state.turn = 0;
-  state.changed = 0;
+  state.replanned = 0;
   state.read = 0;
   state.history = [];
 }
@@ -169,7 +172,7 @@ function advance() {
   if (state.study.roster.length > 1) state.baseline.next(state.paintBaseline);
   state.turn++;
   if (action.heard) state.read++;
-  if (action.changed) state.changed++;
+  if (action.plans.size || action.reordered) state.replanned++;
   state.history.unshift(action);
   state.history.length = Math.min(state.history.length, 4);
   return true;

@@ -1,5 +1,4 @@
-const CELL = 16;
-const REACH = 144;
+import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=studio-05';
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 export const systems = [
@@ -123,7 +122,9 @@ function recordArtist(artist, seed, sheet, sourceCanvas) {
     const commands = parsePath(path.d);
     group.paths.push({path, commands});
     // Each pen pass is painted. One centreline per mark is enough for scoring.
-    if (path.pass === 0) group.traces.push({points: samplePath(commands), width: path.width, mark: path.mark});
+    if (path.pass === 0) group.traces.push({
+      points: samplePath(commands), width: path.width, mark: path.mark, kind: path.kind
+    });
   }
 
   for (const group of groups) {
@@ -159,13 +160,16 @@ function recordArtist(artist, seed, sheet, sourceCanvas) {
   return {...artist, groups};
 }
 
-function field({cols, rows}) {
-  return {cols, rows, distances: new Float32Array(cols * rows).fill(REACH),
-    angle: new Float32Array(cols * rows)};
+function field(sheet, owner) {
+  const {cols, rows, width, height} = sheet;
+  const count = cols * rows;
+  return {cols, rows, width, height, owner, distances: new Float32Array(count).fill(REACH),
+    angle: new Float32Array(count), x: new Float32Array(count), y: new Float32Array(count)};
 }
 
 function indexInk(field, point, angle, radius) {
-  const {cols, rows} = field;
+  const {cols, rows, width, height} = field;
+  if (point.x < 0 || point.y < 0 || point.x > width || point.y > height) return;
   const minX = clamp(Math.floor((point.x - REACH) / CELL), 0, cols - 1);
   const maxX = clamp(Math.floor((point.x + REACH) / CELL), 0, cols - 1);
   const minY = clamp(Math.floor((point.y - REACH) / CELL), 0, rows - 1);
@@ -179,13 +183,15 @@ function indexInk(field, point, angle, radius) {
       if (d < field.distances[index]) {
         field.distances[index] = d;
         field.angle[index] = angle;
+        field.x[index] = point.x;
+        field.y[index] = point.y;
       }
     }
   }
 }
 
-function indexTrace(field, trace, place) {
-  const points = trace.points.map(place);
+function indexTrace(field, trace, placement, plan) {
+  const points = plannedPoints(trace.points, placement, plan);
   for (let i = 0; i < points.length; i++) {
     const point = points[i];
     const neighbour = points[i + 1] || points[i - 1] || point;
@@ -360,7 +366,8 @@ export function createStudy(seed, slots, paperSettings) {
 
 export function makeRun(study, strength, mode) {
   const artists = new Map(study.roster.map(artist => [artist.id, {
-    ...artist, field: field(study.sheet), anchors: new Map(), committed: 0, started: false, pose: {place: identity, effort: 0}
+    ...artist, field: field(study.sheet, artist.id), pending: artist.groups.slice(),
+    anchors: new Map(), committed: 0, started: false, pose: {place: identity, effort: 0}
   }]));
   let turn = 0;
   return {
@@ -368,24 +375,26 @@ export function makeRun(study, strength, mode) {
       const entry = study.schedule[turn++];
       if (!entry) return null;
       const artist = artists.get(entry.id);
-      const group = entry.group;
       const others = [...artists.values()].filter(other => other !== artist && other.committed > 0);
+      const fields = others.map(other => other.field);
+      const response = responses[mode];
+      const context = {fields, response, sheet: study.sheet, mode, gain: strength / 100};
+      const selection = strength > 0 ? nextGroup(artist, context, p => artist.anchors.has(key(p))) : {group: entry.group, prioritized: false};
+      const {group, prioritized} = selection;
       let placement = {place: identity, effort: 0};
       let entered = false;
       if (strength > 0) {
-        const foreignFields = others.map(other => other.field);
-        const response = responses[mode];
-        if (!artist.started && foreignFields.length) {
-          artist.pose = entrancePose(group, artist, strength, foreignFields, response, study.sheet);
+        if (!artist.started && fields.length) {
+          artist.pose = entrancePose(group, artist, strength, fields, response, study.sheet);
           entered = artist.pose.effort > 0;
         }
         const choices = candidates(group, artist, strength, turn);
         placement = choices[0];
-        if (foreignFields.length) {
+        if (fields.length) {
           const width = inkRadius(artist, group);
-          let best = judge(group, placement, foreignFields, response, study.sheet, width);
+          let best = judge(group, placement, fields, response, study.sheet, width);
           for (const candidate of choices.slice(1)) {
-            const score = judge(group, candidate, foreignFields, response, study.sheet, width);
+            const score = judge(group, candidate, fields, response, study.sheet, width);
             if (score < best - .005) {
               placement = candidate;
               best = score;
@@ -397,15 +406,20 @@ export function makeRun(study, strength, mode) {
       for (const anchor of group.links || []) {
         if (!artist.anchors.has(key(anchor))) artist.anchors.set(key(anchor), placement.place(anchor));
       }
+      const plans = strength > 0 ? planStrokes(group, artist, placement, context) : new Map();
+      const contacts = [...new Set([...plans.values()].flatMap(plan => plan.contacts))]
+        .map(id => artists.get(id).number);
       const action = {
-        artist, group, placement, heard: strength > 0 ? others.length : 0, changed: entered || placement.effort > 0, entered
+        artist, group, placement, plans, contacts, heard: strength > 0 ? others.length : 0,
+        changed: entered || placement.effort > 0 || plans.size > 0 || prioritized,
+        entered, reordered: prioritized
       };
       const footprint = deposit?.(action, strength > 0);
       if (strength > 0) {
         if (footprint) {
           for (const {point, angle, radius} of footprint) indexInk(artist.field, point, angle, radius);
         } else {
-          for (const trace of group.traces) indexTrace(artist.field, trace, placement.place);
+          for (const trace of group.traces) indexTrace(artist.field, trace, placement, plans.get(trace.mark));
         }
       }
       if (!footprint || footprint.length) artist.committed++;
@@ -430,7 +444,7 @@ export function artistInk(artist, mark) {
 }
 
 export function paint(ctx, action) {
-  const {artist, group, placement} = action;
+  const {artist, group, placement, plans} = action;
   ctx.save();
   ctx.lineJoin = 'round';
   for (const {path, commands} of group.paths) {
@@ -442,9 +456,9 @@ export function paint(ctx, action) {
     ctx.setLineDash(path.dash || []);
     ctx.lineDashOffset = path.dashOffset;
     ctx.beginPath();
-    if (placement.curved) {
-      // Densify the original path before bending a link between two pinned nodes.
-      const [start, ...points] = samplePath(commands).map(placement.place);
+    const plan = plans.get(path.mark);
+    if (placement.curved || plan) {
+      const [start, ...points] = plannedPoints(samplePath(commands), placement, plan);
       ctx.moveTo(start.x, start.y);
       for (const p of points) ctx.lineTo(p.x, p.y);
     } else {
