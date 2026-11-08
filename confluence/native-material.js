@@ -59,14 +59,17 @@ function makeChains(traces,area,artist,inkRGB,material,kit){
 }
 function invoke(A,ctx,material,chains,meta,seed,kit){
   if(material==='tissue'){
-    // Enable the approved pencil overlay already present in the material
-    // engine. V7 normally disables it, which made Confluence's Tissue &
-    // Graphite appear almost entirely like diffuse spray-painted colour.
-    const previous=A.confluenceTissueGraphite;
+    // Use the *same* V8 material flag as the released solo editor. The
+    // local engine contains its matching translucent-scrap, pale-fibre and
+    // graphite stages. Only geometry and batching differ in Confluence.
+    const previous=A.tissueV8LayeredActive;
     try{
-      A.confluenceTissueGraphite=true;
+      A.tissueV8LayeredActive=true;
       A.oilMaterial(ctx,ctx.canvas.width,ctx.canvas.height,chains,meta,seed,1,kit);
-    }finally{A.confluenceTissueGraphite=previous;}
+      A.lastTissueV8Stats={
+        ...A.lastOilMaterialStats,variant:'layered-v8',tissuePaletteVersion:8
+      };
+    }finally{A.tissueV8LayeredActive=previous;}
     return;
   }
   // New V2S: source geometry and hue stay exactly where the responding
