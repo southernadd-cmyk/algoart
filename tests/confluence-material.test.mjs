@@ -68,7 +68,7 @@ test('Every tissue turn uses actual full-sheet V7 rather than a marker-like shim
 test('One tissue surface preserves all artists palettes without duplicating atmosphere',()=>{
  const renderer=read('../confluence/materials.js');
  const native=read('../confluence/native-material.js');
- assert.match(renderer,/tissueMarks\.map\(trace=>trace\.ink\)/);
+ assert.match(renderer,/tissueMarks\.map\((?:trace|t)=>(?:trace|t)\.ink\)/);
  assert.match(renderer,/all-tissue-voices/);
  assert.match(native,/t\.ink \|\| artist\.inks/);
  assert.doesNotMatch(renderer,/tissueArtists = new Map/);
