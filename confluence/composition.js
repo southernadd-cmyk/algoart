@@ -2,9 +2,13 @@ const INV_PHI = (Math.sqrt(5) - 1) / 2;
 const PHI_SHARES = [.5, .5 * INV_PHI, .5 * INV_PHI * INV_PHI];
 const sum = values => values.reduce((total, value) => total + value, 0);
 
-export function turnShares(pull) {
+// The lead moves between the same three artist slots. No palette, source
+// seed, source drawing or artist identity is swapped during a role rotation.
+export function turnShares(pull,leadIndex=0) {
   const mix = pull / 100;
-  return PHI_SHARES.map(share => (1 - mix) / 3 + mix * share);
+  const lead=((leadIndex%3)+3)%3;
+  return PHI_SHARES.map((_,i)=>
+    (1-mix)/3+mix*PHI_SHARES[(i-lead+3)%3]);
 }
 
 function apportion(total, shares, capacities) {
@@ -27,16 +31,17 @@ export function turnBudget(roster) {
   if (roster.length !== 3) throw new Error('Three artists are required.');
   const total = sum(capacities);
   if (capacities.includes(0)) return total;
-  // Choose the largest shared budget the artists can supply at either end
-  // of the slider. The smaller native drawing limits both comparison panels.
-  const maxShare = PHI_SHARES.map(share => Math.max(share, 1 / 3));
-  const limit = Math.min(...capacities.map((capacity, i) => Math.floor(capacity / maxShare[i])));
+  // Keep the selected number of turns stable when visitors rotate the lead:
+  // any one of the three hands might receive the full 50% share. The equal
+  // comparison also needs at least one genuine gesture on every turn.
+  const maximumShare=Math.max(1/3,...PHI_SHARES);
+  const limit=Math.min(...capacities.map(capacity=>Math.floor(capacity/maximumShare)));
   return Math.max(capacities.length, Math.floor(limit / capacities.length) * capacities.length);
 }
 
-export function makeSchedule(roster, total, pull) {
+export function makeSchedule(roster, total, pull,leadIndex=0) {
   const capacities = roster.map(artist => artist.groups.length);
-  const shares = turnShares(pull);
+  const shares = turnShares(pull,leadIndex);
   const counts = apportion(total, shares, capacities);
   const drawn = counts.map(() => 0);
   const turns = [];
