@@ -447,7 +447,8 @@ export function makeRun(study, strength, {equal = false} = {}) {
             // The seed decides when; real indexed stroke positions decide
             // where. Guard against dense pools and disruptive placements.
             if(artist.material==='oil'&&
-              wantsOilContact(study.seed,artist.id,turn,
+              wantsOilContact(study.seed,artist.id,
+                group.fragmentParent||group.id,
                 study.collaborationPull,strength)){
               oilStats.attempts++;
               let chosen=null,contactScore=Infinity;
