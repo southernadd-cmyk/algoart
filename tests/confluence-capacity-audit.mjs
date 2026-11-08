@@ -103,6 +103,7 @@ try{
   assert.deepEqual(specific.systems,['geometric','spiral','organic']);
   assert.equal(specific.firstMaterial,'watercolour');
   assert.equal(specific.firstElements,23);
+  assert.equal(specific.firstFit,false,'Solo fit=0 must remain off after handoff');
   assert.equal(specific.orientation,'portrait');
   assert.equal(specific.turns,55,
     'Sparse Constructed Forms handoff fell back below 55 turns: '+JSON.stringify(specific));
