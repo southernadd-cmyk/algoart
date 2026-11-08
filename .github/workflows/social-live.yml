@@ -556,3 +556,14 @@ jobs:
       orientation: portrait
       live: true
     secrets: inherit
+
+  confluence-social:
+    # The existing 09:00 and 20:30 London runs each add one Confluence post
+    # per configured destination, without changing normal solo publishing.
+    needs: [portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && (needs.portrait-plan.outputs.slot == '0' || needs.portrait-plan.outputs.slot == '2') }}
+    uses: ./.github/workflows/confluence-social.yml
+    with:
+      date: ${{ needs.portrait-plan.outputs.date }}
+      slot: ${{ needs.portrait-plan.outputs.slot }}
+    secrets: inherit
