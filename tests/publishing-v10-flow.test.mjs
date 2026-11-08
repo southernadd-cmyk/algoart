@@ -99,6 +99,27 @@ for(const material of materials){
     assert(subset.some(e=>e.orientation===orientation),
       'Gallery missing '+orientation+' '+material);
 }
+// A later same-day queue rendered with an older engine must NOT repaint
+// already published images, even if it reuses an archived seed and filename.
+const frozen=JSON.parse(fs.readFileSync(archiveFile,'utf8'));
+run('automation/generate-social.mjs',{
+  SOCIAL_MATERIAL:'watercolor',SOCIAL_ORIENTATION:'landscape',
+  SOCIAL_RENDERER_VERSION:'9'
+});
+const changedQueue=JSON.parse(fs.readFileSync(
+  path.join('social-output',DAY,'watercolor','landscape','queue.json'),'utf8'));
+assert(changedQueue.entries.every(e=>e.rendererVersion===9),
+  'Recovery fixture did not produce a genuinely different renderer queue');
+run('automation/build-gallery.mjs',{
+  GALLERY_QUEUE_MATERIAL:'watercolor',GALLERY_QUEUE_ORIENTATION:'landscape'
+});
+const preserved=JSON.parse(fs.readFileSync(archiveFile,'utf8'));
+assert.deepEqual(preserved.entries,frozen.entries,
+  'A later generated queue replaced archived gallery renderer/URL state');
+for(const {item,original} of saved.values())
+  assert.deepEqual(fs.readFileSync(path.join(galleryRoot,item.imageFile)),original,
+    'A later generated queue overwrote existing archive JPEG '+item.id);
+
 assert.deepEqual(fs.readFileSync(historicalPath),historicalBytes,
   'Published V8/V9 historical archive was rewritten');
 console.log('PASS: 12 browser-generated V10 social artworks across five materials and both formats; '+
