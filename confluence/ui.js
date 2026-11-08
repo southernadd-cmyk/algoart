@@ -1,5 +1,5 @@
 import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-wash-seams-07';
-import {materials, makePainter} from './materials.js?v=confluence-live-tissue-10';
+import {materials, makePainter} from './materials.js?v=confluence-v7-progressive-11';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=studio-06';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';

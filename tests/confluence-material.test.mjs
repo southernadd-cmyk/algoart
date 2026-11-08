@@ -50,23 +50,21 @@ test('Native material layers taper at cropped tiles, not at true paper edges',as
  assert.equal(cropEdgeFeather(220,0,440,420,paperEdge,paper),1);
 });
 
-test('Tissue accumulates responsive groups and renders just once per full-sheet artist layer',()=>{
+test('Every tissue turn uses actual full-sheet V7 rather than a marker-like shim',()=>{
  const renderer=read('../confluence/materials.js');
+ const bridge=read('../confluence/native-material.js');
  const ui=read('../confluence/ui.js');
- const lab=read('../confluence/engine/materials/oil-material.js');
- const native=read('../confluence/native-material.js');
- assert.match(renderer,/const tissueMarks = \[\]/);
+ assert.match(renderer,/function renderActualTissue\(/);
+ assert.match(renderer,/renderNativeDeposit\(tissueSurface,'tissue',tissueMarks/);
+ assert.match(renderer,/renderActualTissue\(\)/);
  assert.match(renderer,/tissueMarks\.push\(\{\.\.\.trace,ink:artistInk/);
- assert.match(renderer,/const bounds=\{x:0,y:0,w:sheet\.width,h:sheet\.height\}/);
- assert.match(renderer,/deposit\.finalize = function finalizeTissue/);
+ assert.doesNotMatch(renderer,/collabTissue\(/);
+ assert.doesNotMatch(renderer,/globalAlpha=\.36/);
+ assert.match(renderer,/deposit\.finalize=\(\)=>\{\}/);
+ assert.match(bridge,/A\.oilMaterial\(ctx/);
  assert.match(ui,/state\.paintShared\.finalize\?\.\(\)/);
- assert.match(ui,/state\.paintBaseline\.finalize\?\.\(\)/);
- assert.match(lab,/kit\.revision>=7&&A\.confluenceTissueGraphite/);
- assert.match(native,/A\.confluenceTissueGraphite=true/);
- assert.doesNotMatch(read('../js/oil-material.js'),/confluenceTissueGraphite/,
-    'The main solo renderer must remain untouched');
+ assert.doesNotMatch(read('../js/oil-material.js'),/confluenceTissueGraphite/);
 });
-
 test('One tissue surface preserves all artists palettes without duplicating atmosphere',()=>{
  const renderer=read('../confluence/materials.js');
  const native=read('../confluence/native-material.js');
@@ -77,14 +75,12 @@ test('One tissue surface preserves all artists palettes without duplicating atmo
  assert.doesNotMatch(renderer,/for\(const \{artist,traces,gain,marks\} of tissueArtists/);
 });
 
-test('Tissue is deposited progressively on the shared full-size surface',()=>{
- const material=read('../confluence/materials.js');
- assert.match(material,/const tissueLive = layer\(true\)/);
- assert.match(material,/function progressiveTissue\(/);
- assert.match(material,/progressiveTissue\(traces,artist,action\)/);
- assert.match(material,/avoidForeignMarks\(tissueTurn\)/);
- assert.match(material,/protectGeometry\(group\.traces/);
- assert.match(material,/protectRaster\(pigment,area\)/);
- assert.match(material,/full\.drawImage\(tissueLive\.canvas,0,0\)/);
- assert.match(material,/output\.globalAlpha=\.36/);
+test('Tissue can develop without repainting foreign material over wrong paper',()=>{
+ const renderer=read('../confluence/materials.js');
+ assert.match(renderer,/paintingWithoutTissue\.drawImage\(output\.canvas,0,0\)/);
+ assert.match(renderer,/paint\(paintingWithoutTissue, action\)/);
+ assert.match(renderer,/paintingWithoutTissue\.globalCompositeOperation=material/);
+ assert.match(renderer,/output\.drawImage\(tissueSurface\.canvas,0,0\)/);
+ assert.match(renderer,/avoidForeignMarks\(tissueSurface\)/);
+ assert.match(renderer,/protectRaster\(pigment,area\)/);
 });

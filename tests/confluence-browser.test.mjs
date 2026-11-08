@@ -134,7 +134,8 @@ try{
       // One native artist layer uses two calls (blank & actual), then a
       // second two for φ-baseline. A local patch per drawing turn would
       // call the renderer considerably more often and restart its wash.
-      assert(evidence.calls.tissue<=4,'Tissue still renders per-turn isolated patches: '+JSON.stringify(evidence));
+      assert(evidence.calls.tissue>=4 && evidence.calls.tissue<=20,
+        'Tissue must use a real full-sheet V7 pass for each turn: '+JSON.stringify(evidence));
     }
     if(material==='watercolour')assert(evidence.calls.watercolour>0,'Watercolour never used native V2S');
     console.log('material '+material+' '+JSON.stringify(evidence));
@@ -195,18 +196,26 @@ try{
     palette:window.AlgoArt.lastOilMaterialStats?.inkColours,
     graphite:window.AlgoArt.lastOilMaterialStats?.graphitePaths
   }));
-  assert.equal(sharedSurface.calls,4,'Three tissue artists should generate only one unified material surface per canvas: '+JSON.stringify(sharedSurface));
+  assert.equal(sharedSurface.calls,20,
+    'Five all-tissue turns should produce ten native V7 passes per canvas (paint plus reference): '+JSON.stringify(sharedSurface));
   assert(sharedSurface.palette?.length>=3,'Tissue layer lost distinct original artist colours: '+JSON.stringify(sharedSurface));
   assert(sharedSurface.graphite>0,'Tissue unified layer lost graphite: '+JSON.stringify(sharedSurface));
   console.log('unified tissue '+JSON.stringify(sharedSurface));
-  // Tissue must appear on an actual Step, before any final V7 refinement.
-  // This checks the renderer's action, not pixel-by-pixel image identity.
+  // A manual Step must now run the *native V7* material pipeline, not the
+  // earlier collabTissue ribbon substitute. It is a procedural check only;
+  // the user will judge visual parity in the browser.
   await page.evaluate(()=>{
-    window.__progressiveTissueSteps=0;
-    const original=window.AlgoArt.collabTissue;
-    window.AlgoArt.collabTissue=function(...args){
-      window.__progressiveTissueSteps++;
-      return original.apply(this,args);
+    window.__nativeTissueStepCount=0;
+    window.__legacyTissueCalls=0;
+    const A=window.AlgoArt;
+    const native=A.oilMaterial,shortcut=A.collabTissue;
+    A.oilMaterial=function(...args){
+      window.__nativeTissueStepCount++;
+      return native.apply(this,args);
+    };
+    A.collabTissue=function(...args){
+      window.__legacyTissueCalls++;
+      return shortcut.apply(this,args);
     };
   });
   // The submit handler closes the drawer. Only click Close when it is
@@ -216,9 +225,13 @@ try{
   await page.locator('#step').click();
   await page.waitForFunction(()=>document.querySelector('#counter')?.textContent?.trim()==='1 / 5 turns',
     undefined,{timeout:20000});
-  const stepCount=await page.evaluate(()=>window.__progressiveTissueSteps);
-  assert(stepCount>0,'Tissue remains invisible until the final turn');
-  console.log('progressive tissue first turn '+stepCount);
+  const stepCalls=await page.evaluate(()=>({
+    native:window.__nativeTissueStepCount,shortcuts:window.__legacyTissueCalls
+  }));
+  assert(stepCalls.native>=4,'First Step did not draw full-sheet V7: '+JSON.stringify(stepCalls));
+  assert.equal(stepCalls.shortcuts,0,
+    'The old simplified tissue shortcut must never be used: '+JSON.stringify(stepCalls));
+  console.log('actual tissue V7 first turn '+JSON.stringify(stepCalls));
   assert.deepEqual(errors,[],'Confluence material JavaScript errors: '+errors.join('; '));
   console.log('Confluence five-material browser smoke passed');
 }finally{
