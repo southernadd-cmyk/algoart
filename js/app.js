@@ -1485,12 +1485,22 @@ var requestedArtworkId=new URLSearchParams(location.search).get('art');
 var loadedFromURL=loadSettingsFromURL();
 
 function loadExactArchivedArtwork(id){
-  if(!/^\d{4}-\d{2}-\d{2}-(?:(?:ACL|ACP|WL|WP|CL|CP|OL|OP|P)\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
+  if(!/^\d{4}-\d{2}-\d{2}-(?:(?:ACL|ACP|WL|WP|CL|CP|OL|OP|P|G)\d{2}|\d{2})$/.test(id))return Promise.reject(new Error('Invalid artwork ID'));
   var day=id.slice(0,10);
   return fetch('gallery/'+day+'/meta.json',{cache:'no-store'})
     .then(function(r){if(!r.ok)throw new Error('Archive unavailable');return r.json();})
     .then(function(meta){
       var entry=(Array.isArray(meta.entries)?meta.entries:[]).find(function(e){return e.id===id});
+      if(entry)return entry;
+      // From 9 Nov social-only editions live in a separate index; the
+      // twelve displayed works and the 3D floor do not grow with posts.
+      return fetch('gallery/'+day+'/social-meta.json',{cache:'no-store'})
+        .then(function(r){if(!r.ok)throw new Error('Archived artwork missing: '+id);return r.json();})
+        .then(function(social){
+          return (Array.isArray(social.entries)?social.entries:[]).find(function(e){return e.id===id});
+        });
+    })
+    .then(function(entry){
       if(!entry||!entry.settings||!entry.seed)throw new Error('Archived artwork missing: '+id);
       A.rendererVersion=Number(entry.rendererVersion)||CURRENT_RENDERER_VERSION;
       var archivedMaterialURL=new URL(entry.shareUrl||location.href);
