@@ -76,3 +76,15 @@ test('One tissue surface preserves all artists palettes without duplicating atmo
  assert.doesNotMatch(renderer,/tissueArtists = new Map/);
  assert.doesNotMatch(renderer,/for\(const \{artist,traces,gain,marks\} of tissueArtists/);
 });
+
+test('Tissue is deposited progressively on the shared full-size surface',()=>{
+ const material=read('../confluence/materials.js');
+ assert.match(material,/const tissueLive = layer\(true\)/);
+ assert.match(material,/function progressiveTissue\(/);
+ assert.match(material,/progressiveTissue\(traces,artist,action\)/);
+ assert.match(material,/avoidForeignMarks\(tissueTurn\)/);
+ assert.match(material,/protectGeometry\(group\.traces/);
+ assert.match(material,/protectRaster\(pigment,area\)/);
+ assert.match(material,/full\.drawImage\(tissueLive\.canvas,0,0\)/);
+ assert.match(material,/output\.globalAlpha=\.36/);
+});

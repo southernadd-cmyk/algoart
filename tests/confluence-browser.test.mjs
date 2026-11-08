@@ -199,6 +199,23 @@ try{
   assert(sharedSurface.palette?.length>=3,'Tissue layer lost distinct original artist colours: '+JSON.stringify(sharedSurface));
   assert(sharedSurface.graphite>0,'Tissue unified layer lost graphite: '+JSON.stringify(sharedSurface));
   console.log('unified tissue '+JSON.stringify(sharedSurface));
+  // Tissue must appear on an actual Step, before any final V7 refinement.
+  // This checks the renderer's action, not pixel-by-pixel image identity.
+  await page.evaluate(()=>{
+    window.__progressiveTissueSteps=0;
+    const original=window.AlgoArt.collabTissue;
+    window.AlgoArt.collabTissue=function(...args){
+      window.__progressiveTissueSteps++;
+      return original.apply(this,args);
+    };
+  });
+  await page.locator('#inspector-close').click();
+  await page.locator('#step').click();
+  await page.waitForFunction(()=>document.querySelector('#counter')?.textContent?.trim()==='1 / 5 turns',
+    undefined,{timeout:20000});
+  const stepCount=await page.evaluate(()=>window.__progressiveTissueSteps);
+  assert(stepCount>0,'Tissue remains invisible until the final turn');
+  console.log('progressive tissue first turn '+stepCount);
   assert.deepEqual(errors,[],'Confluence material JavaScript errors: '+errors.join('; '));
   console.log('Confluence five-material browser smoke passed');
 }finally{

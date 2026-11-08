@@ -127,27 +127,90 @@ export function makePainter(output, seed, sheet) {
   // Keep all of each tissue artist's *reactively placed* marks together.
   // The released V7 material needs a whole sheet and multiple related marks,
   // not dozens of independent little canvases with a newly seeded wash.
-  const tissueMarks = []; // chronological, responsive positions from every tissue artist
+  const tissueMarks = []; // All artists' responsive marks for one V7 surface.
   let tissueFinalized = false;
+  // Persistent, full-size buffers: no independently seeded tissue tiles.
+  const tissueLive = layer(true);
+  const tissueTurn = layer(true);
+  const foreignInk = layer(true);
+  size(tissueLive,sheet.width,sheet.height);
+  size(tissueTurn,sheet.width,sheet.height);
+  size(foreignInk,sheet.width,sheet.height);
+  function protectGeometry(traces) {
+    foreignInk.save();
+    foreignInk.strokeStyle = '#000';
+    foreignInk.globalAlpha = .90;
+    foreignInk.lineCap = 'round';
+    foreignInk.lineJoin = 'round';
+    for(const trace of traces){
+      if(trace.points.length<2)continue;
+      foreignInk.lineWidth = Math.max(16,trace.width*2.4);
+      foreignInk.beginPath();
+      foreignInk.moveTo(trace.points[0].x,trace.points[0].y);
+      for(let i=1;i<trace.points.length;i++){
+        const p=trace.points[i];foreignInk.lineTo(p.x,p.y);
+      }
+      foreignInk.stroke();
+    }
+    foreignInk.restore();
+  }
+  function protectRaster(ctx,area) {
+    // Source transparency includes real wash spread, splashes and impasto.
+    foreignInk.save();
+    foreignInk.globalCompositeOperation='source-over';
+    foreignInk.drawImage(ctx.canvas,area.x,area.y,area.w,area.h);
+    foreignInk.restore();
+  }
+  function avoidForeignMarks(layerCtx) {
+    // A soft material exclusion, not a punched-out rectangular hole.
+    // Previously deposited marks retain their authority in the collaboration.
+    layerCtx.save();
+    layerCtx.resetTransform();
+    layerCtx.globalCompositeOperation='destination-out';
+    layerCtx.filter='blur(15px)';
+    layerCtx.drawImage(foreignInk.canvas,0,0);
+    layerCtx.restore();
+  }
+  function progressiveTissue(traces,artist,action) {
+    size(tissueTurn,sheet.width,sheet.height);
+    const opacity=materialOpacity(artist.settings.opacity,action.pigmentGain);
+    for(const trace of traces){
+      if(trace.points.length<2)continue;
+      const colour=sourceRGB(artistInk(artist,trace.mark));
+      const ink='rgb('+colour.join(',')+')';
+      const r=A.makeR([seed,artist.id,action.group.id,trace.mark,'tissue-live'].join('|'));
+      // The V7 engine's torn-contour and fibre treatment draws directly in
+      // full-sheet coordinates, then remains in the evolving painting.
+      const width=Math.min(65,Math.max(13,12+trace.width*3.15));
+      A.collabTissue(tissueTurn,trace.points,width,ink,r);
+    }
+    graphitePreview(traces,action.pigmentGain,tissueTurn);
+    avoidForeignMarks(tissueTurn);
+    for(const ctx of [tissueLive,output]){
+      ctx.save();ctx.globalAlpha=opacity;ctx.globalCompositeOperation='source-over';
+      ctx.drawImage(tissueTurn.canvas,0,0);
+      ctx.restore();
+    }
+  }
 
-  function graphitePreview(traces,opacity) {
+  function graphitePreview(traces,opacity,ctx=output) {
     // A thin live pencil trace lets subsequent artists respond to each turn
     // while the much heavier true tissue material is rendered once at finish.
-    output.save();
-    output.globalCompositeOperation = 'multiply';
-    output.strokeStyle = '#3b3736';
-    output.globalAlpha = Math.min(.38,Math.max(.15,opacity*.33));
-    output.lineJoin = 'round';
-    output.lineCap = 'round';
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = '#3b3736';
+    ctx.globalAlpha = Math.min(.62,Math.max(.29,opacity*.56));
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     for(const trace of traces) {
       if(trace.points.length<2)continue;
-      output.lineWidth=Math.max(.7,Math.min(2.2,trace.width*.23));
-      output.beginPath();
-      output.moveTo(trace.points[0].x,trace.points[0].y);
-      for(const point of trace.points.slice(1))output.lineTo(point.x,point.y);
-      output.stroke();
+      ctx.lineWidth=Math.max(.7,Math.min(2.2,trace.width*.23));
+      ctx.beginPath();
+      ctx.moveTo(trace.points[0].x,trace.points[0].y);
+      for(const point of trace.points.slice(1))ctx.lineTo(point.x,point.y);
+      ctx.stroke();
     }
-    output.restore();
+    ctx.restore();
   }
 
   function tissueFootprint(traces,gain) {
@@ -184,6 +247,10 @@ export function makePainter(output, seed, sheet) {
     const {opacity, overdraw, dryness} = artist.settings;
     if (material === 'marker') {
       paint(output, action);
+      // Marker is visible in true turn order and also reserves the paper
+      // from future spreading tissue, rather than being painted over.
+      protectGeometry(group.traces.map(trace=>({...trace,
+        points:plannedPoints(trace.points,placement,plans.get(trace.mark))})));
       return;
     }
 
@@ -195,7 +262,7 @@ export function makePainter(output, seed, sheet) {
       for(const trace of traces){
         tissueMarks.push({...trace,ink:artistInk(artist,trace.mark)});
       }
-      graphitePreview(traces,action.pigmentGain);
+      progressiveTissue(traces,artist,action);
       return observe ? tissueFootprint(traces,action.pigmentGain) : undefined;
     }
     if (material === 'action') traces = actionTraces(traces);
@@ -267,6 +334,9 @@ export function makePainter(output, seed, sheet) {
     output.globalCompositeOperation = material === 'watercolour' ? 'multiply' : 'source-over';
     output.drawImage(pigment.canvas, area.x, area.y, area.w, area.h);
     output.restore();
+    // The next tissue turn must know which actual paint bodies, splatters,
+    // washes and markers are already on the same sheet.
+    protectRaster(pigment,area);
     if (!observe) return;
     sensor ||= layer(true);
     const p = traces[0].points;
@@ -288,9 +358,17 @@ export function makePainter(output, seed, sheet) {
       new Set(tissueMarks.map(trace=>trace.ink)).size)}};
     renderNativeDeposit(full,'tissue',tissueMarks,representative,bounds,sheet.paper,
       [seed,'all-tissue-voices','v7-whole-sheet'].join('|'),sourceRGB,sheet);
+    // Full-sheet V7 is a gentle final *refinement* of existing tissue,
+    // not a new veil that appears at the end or covers another artist.
+    full.save();
+    full.globalCompositeOperation='destination-in';
+    full.filter='blur(24px)';
+    full.drawImage(tissueLive.canvas,0,0);
+    full.restore();
+    avoidForeignMarks(full);
     output.save();
     output.globalCompositeOperation='source-over';
-    output.globalAlpha=1;
+    output.globalAlpha=.36;
     output.drawImage(full.canvas,0,0);
     output.restore();
   };
