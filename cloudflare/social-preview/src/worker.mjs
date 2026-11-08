@@ -12,7 +12,7 @@ organic:'Growth Systems',geometric:'Constructed Forms',scribble:'Automatic Marks
 const MATERIALS={'oil-v1':'Oil Paint','oil-v2':'Oil Paint','oil-v3':'Oil Paint',
  'oil-v4':'Oil Paint','oil-v5':'Oil Paint','oil-v6':'Oil Paint','oil-v7':'Oil Paint','oil-v8':'Oil Paint','watercolour-v2r':'Watercolour',
 'watercolour-v2s':'Watercolour','watercolour-v2t':'Watercolour',
-'action-v1':'Action Painting','action-v2':'Action Painting','action-v3':'Action Painting'};
+'action-v1':'Action Painting','action-v2':'Action Painting','action-v3':'Action Painting','action-v4':'Action Painting'};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function decodeToken(raw){
  if(typeof raw!=='string'||raw.length<10||raw.length>1500||
@@ -25,7 +25,7 @@ function decodeToken(raw){
    const bytes=Uint8Array.from(binary,x=>x.charCodeAt(0));
    const parts=new TextDecoder('utf-8',{fatal:true}).decode(bytes).split('\x1f');
    if(parts.length!==KEYS.length||parts.some(x=>x.length>250)||
-     !/^[5-9]$/.test(parts[0])||!parts[1]||parts[1].length>80||
+     !/^(?:[5-9]|10)$/.test(parts[0])||!parts[1]||parts[1].length>80||
      !Object.hasOwn(MODES,parts[2])||
      (parts[3]&&!['portrait','landscape'].includes(parts[3]))||
      parts.some(x=>/[\u0000-\u001e\u007f<>]/u.test(x)))return null;
