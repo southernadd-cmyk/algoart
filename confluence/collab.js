@@ -1,4 +1,4 @@
-import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=studio-06';
+import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=rect-cells-02';
 import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt, resolveTurnBudget} from './composition.js?v=confluence-steps-03';
 import {inferResponse} from './adaptive-response.js?v=adaptive-01';
 import {capRectangleFootprint, rectangleInteriors, interiorCandidates} from './rect-collaboration.js?v=rect-cells-01';
