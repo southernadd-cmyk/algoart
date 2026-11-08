@@ -1,6 +1,7 @@
 import {artistInk, paint} from './collab.js?v=confluence-full-source-12';
 import {plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
 import {renderNativeDeposit} from './native-material.js?v=confluence-wash-fast-09';
+import {protectPigmentStack} from './pigment-guard.js?v=dark-stack-01';
 
 export const materials = {
   marker: 'Marker',
@@ -61,6 +62,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   let colourSample;
   const colours = new Map();
   const surfacePasses={tissue:0,watercolour:0,oil:0,action:0};
+  const darkGuard={tissue:0,watercolour:0};
   const coverageHistory={watercolour:null,oil:null,action:null};
 
   // The displayed paper is persistent. Native renderers paint each new
@@ -103,6 +105,16 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     output.globalCompositeOperation=blend;
     output.drawImage(turn.canvas,area.x,area.y);output.restore();
   }
+  function protectDarkStack(turn,area,blend,kind){
+    // Compare the current paper with only this new translucent tile.
+    // Never brighten or recolour old strokes, and never globally reduce
+    // saturation. The first deliberate dark mark is left untouched.
+    const next=turn.getImageData(0,0,area.w,area.h);
+    const previous=output.getImageData(area.x,area.y,area.w,area.h);
+    const protectedPixels=protectPigmentStack(previous,next,blend);
+    if(protectedPixels)turn.putImageData(next,0,0);
+    darkGuard[kind]+=protectedPixels;
+  }
   function materialFootprint(kind,ctx){
     const next=footprintFromSurface(ctx,surfaceSensor,coverageHistory[kind],sheet);
     coverageHistory[kind]=next.coverage;
@@ -120,8 +132,9 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       bounds,sheet.paper,[seed,'all-tissue-voices','v7-whole-sheet'].join('|'),
       sourceRGB,sheet);
     surfacePasses.tissue++;
-    // Preserve V7's extracted pigment opacity. Normal alpha composition
-    // lets later tissue overlay earlier marks without multiply-blackening.
+    // Protect against near-black accumulation from overlapping translucent
+    // dyes, without changing the extracted V7 pigment or solo engine.
+    protectDarkStack(tissueTurn,bounds,'source-over','tissue');
     layTurn(tissueSurface,tissueTurn,'source-over',bounds);
   }
   function renderActualWatercolour(newMarks,artist){
@@ -138,6 +151,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       [seed,'all-watercolour-voices','v2s-whole-sheet'].join('|'),sourceRGB,
       sheet);
     surfacePasses.watercolour++;
+    protectDarkStack(watercolourTurn,bounds,'multiply','watercolour');
     layTurn(watercolourSurface,watercolourTurn,'multiply',bounds);
   }
 
@@ -269,6 +283,6 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     tissueMarks:tissueMarks.length});
   deposit.watercolourStats=()=>({nativeFullSheetPasses:surfacePasses.watercolour,
     watercolourMarks:watercolourMarks.length});
-  deposit.nativeStats=()=>({...surfacePasses});
+  deposit.nativeStats=()=>({...surfacePasses,darkGuard:{...darkGuard}});
   return deposit;
 }
