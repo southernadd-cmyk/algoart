@@ -1,4 +1,4 @@
-import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
+import {CELL, REACH, nextGroup, planStrokes, plannedPoints, selfOverlapAt} from './mark-planner.js?v=confluence-self-repel-04';
 import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt, resolveTurnBudget} from './composition.js?v=confluence-rotate-lead-05';
 import {inferResponse} from './adaptive-response.js?v=adaptive-01';
 import {wantsOilContact,oilContactCandidates,contactFraction} from './oil-contact.js?v=oil-structure-02';
@@ -271,7 +271,7 @@ function candidates(group, artist, strength, turn) {
   return alternatives;
 }
 
-function judge(group, candidate, context, width) {
+export function judge(group, candidate, context, width) {
   const {fields, response, sheet} = context;
   const {width: w, height: h, cols, rows, inset} = sheet;
   let sum = 0;
@@ -295,7 +295,12 @@ function judge(group, candidate, context, width) {
     const contact = clamp((19 - clearance) / 19, 0, 2);
     const next = candidate.place(probe.next);
     const angle = Math.atan2(next.y - p.y, next.x - p.x);
-    sum += Math.abs(clearance - response.gap) / REACH + contact * response.overlap;
+    // Other hands set the desired relationship. Same-hand provisional
+    // strokes contribute only collision avoidance, never attraction to a
+    // preferred gap or their previous direction.
+    const selfContact=selfOverlapAt(p,context.selfField,sheet,width);
+    sum += Math.abs(clearance - response.gap) / REACH +
+      (contact+selfContact)*response.overlap;
     peak = Math.max(peak, contact);
     sum -= Math.abs(Math.cos(angle - heading)) * Math.max(0, 1 - nearest / 94) * response.alignment;
   }
@@ -418,10 +423,10 @@ export function makeRun(study, strength, {equal = false} = {}) {
           throw new Error('Artist '+artist.id+' exhausted marks before completing the schedule');
         const others=[...artists.values()].filter(other=>other!==artist&&other.committed>0);
         const otherFields=others.map(other=>other.field);
-        // Preserve the ordinary committed fields and density. Only this
-        // gesture's planning view includes earlier marks in its own batch.
-        const fields=provisional&&gesture>0
-          ?[...otherFields,provisional.field]:otherFields;
+        // Only OTHER artists belong to response/gap/alignment fields.
+        // Previous same-turn gestures are tracked separately for repulsion.
+        const fields=otherFields;
+        const selfField=provisional&&gesture>0?provisional.field:null;
         const planningDensity=provisional&&gesture>0?{
           at:point=>(density?.at(point)||0)+provisional.density.at(point)
         }:density;
@@ -436,14 +441,16 @@ export function makeRun(study, strength, {equal = false} = {}) {
               intraTurnStats.nearby++;
           }
         }
-        const initial=inferResponse(artist.pending[0],artist,fields,planningDensity,study.sheet);
-        let context={fields,response:initial.response,sheet:study.sheet,
+        // Do not infer echo/space modes from the hand's own provisional
+        // strokes. Its provisional density only affects placement/crowding.
+        const initial=inferResponse(artist.pending[0],artist,fields,density,study.sheet);
+        let context={fields,selfField,response:initial.response,sheet:study.sheet,
           mode:initial.mode,gain:strength/100,density:planningDensity};
         const selection=strength>0
           ? nextGroup(artist,context,p=>artist.anchors.has(key(p)))
           : {group:artist.pending.shift(),prioritized:false};
         const {group,prioritized}=selection;
-        const reaction=inferResponse(group,artist,fields,planningDensity,study.sheet);
+        const reaction=inferResponse(group,artist,fields,density,study.sheet);
         context={...context,response:reaction.response,mode:reaction.mode};
         // Reassembled contours must share the same placement; changing it
         // halfway through would tear a rectangle or connected gesture.
@@ -452,7 +459,7 @@ export function makeRun(study, strength, {equal = false} = {}) {
         if(strength>0&&!savedPlacement){
           const choices=candidates(group,artist,strength,turn);
           placement=choices[0];
-          if(fields.length||density){
+          if(fields.length||density||selfField){
             const width=inkRadius(artist,group);
             let best=judge(group,placement,context,width);
             for(const candidate of choices.slice(1)){
@@ -518,6 +525,7 @@ export function makeRun(study, strength, {equal = false} = {}) {
         const plans=strength>0&&!group.fragmentParent
           ? planStrokes(group,artist,placement,context):new Map();
         const contacts=[...new Set([...plans.values()].flatMap(plan=>plan.contacts))]
+          .filter(id=>id!==artist.id&&artists.has(id))
           .map(id=>artists.get(id).number);
         const pigmentGain=limitPigment(group,placement,context);
         actions.push({
