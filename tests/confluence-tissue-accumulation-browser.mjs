@@ -106,6 +106,16 @@ try{
  assert.equal(measurements.plannedTissueGestures,measurements.sourceGroups);
  assert.equal(measurements.perTurn.stats.nativeFullSheetPasses,27);
  assert.equal(measurements.singleNative.stats.nativeFullSheetPasses,1);
+ assert.equal(measurements.perTurn.stats.artists,1);
+ // An earlier source-over implementation produced 16.03% near-black paper
+ // on this exact saved seed, versus about 1% for the same gestures in one
+ // native V8 pass. The per-artist envelope must prevent that regression.
+ assert(measurements.perTurn.darkPct<3,
+   'Progressive Tissue V8 recreated the near-black mono cloud: '+JSON.stringify(measurements));
+ assert(measurements.perTurn.meanLuma>205,
+   'Repeated atmospheric washes darkened the page: '+JSON.stringify(measurements));
+ assert(measurements.perTurn.greyPct<=measurements.singleNative.greyPct*2,
+   'Tissue haze expanded too far beyond the reference: '+JSON.stringify(measurements));
 }finally{
  if(browser)await browser.close();
  await new Promise(done=>server.close(done));
