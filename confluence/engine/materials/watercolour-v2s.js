@@ -1495,6 +1495,36 @@ function fitMaterialComposition(chains,voids,seed,w,h){
 A.watercolourV2sMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   if(!kit||kit.revision!==6)
     throw new Error('Wet-edge experiment requires current V6 seeded tissue ink kit');
+  // Confluence calls V2S once on empty source geometry to remove the native
+  // paper from each artist's wash. There is no pigment, wetness or diffusion
+  // to compute for that reference. Recreate the *exact* paper field of the
+  // V2S flow model (including tooth/grain, scaling and seeded rotation),
+  // without allocating its five float buffers and doing diffusion passes.
+  // Solo renderings always have paths and therefore retain their full engine.
+  if(chains.length===0){
+    var blankRatio=quality<.30?.32:(quality<.65?.53:(quality<1.5?.78:1.18));
+    var bw=Math.max(1,Math.round(w*blankRatio));
+    var bh=Math.max(1,Math.round(h*blankRatio));
+    var paperCanvas=document.createElement('canvas');
+    paperCanvas.width=bw;paperCanvas.height=bh;
+    var paperCtx=paperCanvas.getContext('2d');
+    var pixels=paperCtx.createImageData(bw,bh),raw=pixels.data;
+    var paperSeed=A.hash(seed+'|paper-flow-v2f')>>>0;
+    var scratch={};
+    for(var by=0;by<bh;by++)for(var bx=0;bx<bw;bx++){
+      var field=materialPaperField(bx,by,blankRatio,paperSeed,scratch);
+      var shade=(field.tooth-.5)*4.8+
+        (Math.round(field.grain*255)/255-.5)*2.4;
+      var offset=(by*bw+bx)*4;
+      for(var c=0;c<3;c++)
+        raw[offset+c]=clamp(Math.round(kit.paperRGB[c]+shade),0,255);
+      raw[offset+3]=255;
+    }
+    paperCtx.putImageData(pixels,0,0);
+    ctx.save();ctx.imageSmoothingEnabled=true;
+    ctx.drawImage(paperCanvas,0,0,w,h);ctx.restore();
+    return;
+  }
   C=coloursForInk(kit);
   Object.keys(C).forEach(function(group){
     C[group]=C[group].map(pigmentInk);
