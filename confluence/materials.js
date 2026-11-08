@@ -215,34 +215,35 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     layTurn(actionSurface,actionTurnSurface);
   }
 
-  function deposit(action, observe) {
-    const {artist, group, placement, plans} = action;
-    const material = artist.material;
-    const {opacity, overdraw, dryness} = artist.settings;
-    if (material === 'marker') {
-      // Actual marker geometry is already a single mark in drawing order.
-      paint(output, action);
+  // One artist turn may now contain several real source gestures.
+  // Plan them individually, then render the complete batch as one native
+  // material deposit. This avoids a full V7/V2S/oil redraw per small stroke.
+  function depositBatch(actions,observe){
+    if(!actions.length)return;
+    const artist=actions[0].artist;
+    const material=artist.material;
+    if(material==='marker'){
+      for(const action of actions)paint(output, action);
       return;
     }
-
-    let traces = group.traces.map(trace => ({...trace, points: plannedPoints(trace.points, placement, plans.get(trace.mark))}));
-    if (material === 'tissue') {
-      // Preserve exactly which artist supplied each stroke and its original
-      // palette hue. A single V7 material surface can then combine the marks
-      // of all three artists without reintroducing per-artist cloud fields.
+    const traces=actions.flatMap(({group,placement,plans})=>
+      group.traces.map(trace=>({...trace,
+        points:plannedPoints(trace.points,placement,plans.get(trace.mark))})));
+    const gain=actions.reduce((sum,action)=>sum+action.pigmentGain,0)/actions.length;
+    if(material==='tissue'){
       const fresh=traces.map(trace=>({...trace,ink:artistInk(artist,trace.mark)}));
       tissueMarks.push(...fresh);
       renderActualTissue(fresh,artist);
-      return observe ? tissueFootprint(traces,action.pigmentGain) : undefined;
+      return observe?tissueFootprint(traces,gain):undefined;
     }
     if(material==='watercolour'){
       const fresh=traces.map(trace=>({...trace,ink:artistInk(artist,trace.mark)}));
       watercolourMarks.push(...fresh);
       renderActualWatercolour(fresh,artist);
-      return observe ? materialFootprint('watercolour',watercolourSurface) : undefined;
+      return observe?materialFootprint('watercolour',watercolourSurface):undefined;
     }
-    // The released oil and action brushes add their physical marks to the
-    // existing sheet without repainting earlier artists' compositions.
+    // Each V8 oil / V4 action call consumes all of this turn's transformed
+    // source paths. Previous artists' marks are never regenerated.
     const entry=traces.map(t=>({...t,ink:artistInk(artist,t.mark),
       system:artist.system,palette:artist.palette,settings:artist.settings}));
     if(material==='oil'){
@@ -257,6 +258,10 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     }
     throw new Error('Unknown Confluence material: '+material);
   }
+  function deposit(action,observe){
+    return depositBatch([action],observe);
+  }
+  deposit.batch=depositBatch;
 
   // Every material is committed on its own turn: Finish adds no surprise.
   deposit.finalize=()=>{};
