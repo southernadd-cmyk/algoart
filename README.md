@@ -4,7 +4,7 @@
 
 **An ongoing generative artwork by Adam Clement, made in code and unfolding through drawing, sculpture, architecture and time.**
 
-[Enter the drawing machine](https://southernadd-cmyk.github.io/algoart/) · [Walk the exhibition](https://southernadd-cmyk.github.io/algoart/gallery/visit/) · [View the daily archive](https://southernadd-cmyk.github.io/algoart/gallery/) · [About the project](https://southernadd-cmyk.github.io/algoart/about/)
+[Enter the drawing machine](https://southernadd-cmyk.github.io/algoart/) · [Explore Confluence](https://southernadd-cmyk.github.io/algoart/confluence/) · [Walk the exhibition](https://southernadd-cmyk.github.io/algoart/gallery/visit/) · [View the daily archive](https://southernadd-cmyk.github.io/algoart/gallery/) · [About the project](https://southernadd-cmyk.github.io/algoart/about/)
 
 ## Artist statement
 
@@ -32,6 +32,14 @@ That distinction is central to the work. The machine cannot literally possess a 
 | *Recursive Divisions · Marker* | *Growth Systems · Action Painting* |
 
 *Both drawings belong to the [18 October 2026 edition](https://southernadd-cmyk.github.io/algoart/gallery/2026-10-18/). The other materials can be explored in the daily archive.*
+
+## Confluence — three procedural artists, one sheet
+
+[Confluence](https://southernadd-cmyk.github.io/algoart/confluence/) is a second drawing studio inside PROPORTION PIECE. Three independent procedural artists, each assigned one composition system and one material, work on the same paper. They are **software drawing procedures**, not other visitors or live collaborators. Each artist's marks are recorded and then spatially adapted in response to what the other hands have drawn.
+
+The visitor can change the **Collaboration φ pull** to distribute turns by golden-ratio proportions or equally, use **Rotate lead** to assign the largest share to another artist, and compare the same seed and starting settings under both schedules. Turn counts govern drawing order and opportunities for response rather than how visually prominent an opaque or translucent material becomes. All three artists' source gestures are used.
+
+The solo editor's **Explore in Confluence** link transfers its seed and drawing controls as the starting settings for Artist 1. It does not open a multiplayer room or preserve a pixel-identical solo artwork: the new shared drawing is a different interpretation. Confluence images are not automatically added to the daily gallery.
 
 ## The exhibition is part of the piece
 
