@@ -106,13 +106,32 @@ try{
     const oil=A.oilMaterial,watercolour=A.watercolourV2sMaterial,
       oilV8=A.renderOilPaintV8,action=A.actionPaintingFromPathsV4,
       shortcutAction=A.collabAction;
+    window.__actionTurnEvidence=[];
+    const actionHistory=new WeakMap();
     A.renderOilPaintV8=function(...args){
       window.__materialCalls.oil++;
       return (window.__nativeOilMeta=oilV8.apply(this,args));
     };
     A.actionPaintingFromPathsV4=function(...args){
       window.__materialCalls.action++;
-      return (window.__nativeActionStats=action.apply(this,args));
+      const canvas=args[0],previous=actionHistory.get(canvas);
+      const result=action.apply(this,args);
+      const pixels=canvas.getContext('2d',{willReadFrequently:true})
+        .getImageData(0,0,canvas.width,canvas.height).data;
+      let erased=0,retained=0,newPixels=0;
+      if(previous){
+        for(let p=3;p<pixels.length;p+=32){
+          if(previous[p]>24&&pixels[p]+5<previous[p])erased++;
+          if(previous[p]>24&&pixels[p]>20)retained++;
+          if(previous[p]<5&&pixels[p]>24)newPixels++;
+        }
+      }
+      window.__actionTurnEvidence.push({
+        append:args[4]?.append,passes:result.passes,paths:args[1]?.length,
+        erased,retained,newPixels,hadPrevious:!!previous
+      });
+      actionHistory.set(canvas,pixels);
+      return (window.__nativeActionStats=result);
     };
     A.collabAction=function(...args){
       window.__materialCalls.shortcutAction++;
@@ -312,7 +331,10 @@ try{
       await page.locator('#roster [data-artist="'+tab.slice(-1)+'"] select[data-field="material"]')
         .selectOption(material);
     }
-    await page.evaluate(()=>{window.__materialCalls.oil=0;window.__materialCalls.action=0;});
+    await page.evaluate(()=>{
+      window.__materialCalls.oil=0;window.__materialCalls.action=0;
+      window.__actionTurnEvidence=[];
+    });
     await page.locator('#study-form .draw-actions button[type="submit"]').click();
     await page.waitForFunction(()=>{
       const status=document.querySelector('#status')?.textContent||'';
@@ -335,13 +357,22 @@ try{
   await allArtistMaterial('action');
   const actionStudy=await page.evaluate(()=>({
     calls:window.__materialCalls.action,shortcut:window.__materialCalls.shortcutAction,
-    stats:window.__nativeActionStats
+    stats:window.__nativeActionStats,turns:window.__actionTurnEvidence
   }));
   assert.equal(actionStudy.calls,10,'All-action study must run the full V4 painter per turn');
   assert.equal(actionStudy.shortcut,0,'All-action study invoked the old one-fling shortcut');
   assert(actionStudy.stats?.pathCount>0,'Action V4 did not receive any transformed source paths');
-  assert.equal(actionStudy.stats?.layers,5,'Action V4 did not run its full layered pass');
-  console.log('all-action V4 '+JSON.stringify(actionStudy));
+  assert.equal(actionStudy.stats?.layers,5,'Action V4 lost its native layer configuration');
+  assert.equal(actionStudy.stats?.passes,1,'Each Confluence turn must add one native V4 pass');
+  assert(actionStudy.turns.every(t=>t.append&&t.passes===1&&t.paths>0),
+    'Action V4 must append new planned strokes, never replay the full painting');
+  assert(actionStudy.turns.filter(t=>t.hadPrevious).length>=6,
+    'Expected multiple additive action turns on both canvases');
+  assert(actionStudy.turns.every(t=>t.erased===0),
+    'Action V4 erased earlier paint during a later turn: '+JSON.stringify(actionStudy.turns));
+  assert(actionStudy.turns.some(t=>t.newPixels>0),
+    'Later Action Painting turns failed to add new painted pixels');
+  console.log('all-action V4 additive turns '+JSON.stringify(actionStudy));
 
   // Tissue, watercolour and oil need to compose without opaque paper tiles.
   if((await page.locator('#inspector-toggle').getAttribute('aria-expanded'))!=='true')
