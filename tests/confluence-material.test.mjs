@@ -6,7 +6,7 @@ test('Confluence tissue/watercolour renderer reuses released solo material inter
  const html=read('../confluence/index.html');
  const materials=read('../confluence/materials.js');
  const bridge=read('../confluence/native-material.js');
- assert.match(html,/js\/oil-render\.js/);
+ assert.match(html,/engine\/materials\/oil-render\.js/);
  assert.match(html,/js\/oil-surface\.js/);
  assert.match(materials,/renderNativeDeposit/);
  assert.match(bridge,/A\.oilMaterial\(/);
@@ -16,13 +16,17 @@ test('Confluence tissue/watercolour renderer reuses released solo material inter
  assert.match(bridge,/sourceRGB/);
  assert.doesNotMatch(bridge,/createLinearGradient|filter.*blur/);
 });
-test('Confluence still uses genuine oil V8 brush, and Action V4 fling',()=>{
+test('Confluence uses full Oil V8 and Action V4 algorithms, not shortcuts',()=>{
  const materials=read('../confluence/materials.js');
+ const oil=read('../confluence/engine/materials/oil-paint-v8.js');
  const action=read('../confluence/engine/materials/action-painting-v4.js');
- assert.match(materials,/drawContactBrushV8/);
- assert.match(materials,/collabOilRelief/);
- assert.match(action,/A\.collabAction/);
+ assert.match(materials,/A\.renderOilPaintV8\(oilSurface\.canvas/);
+ assert.match(materials,/A\.actionPaintingFromPathsV4\(actionSurface\.canvas/);
+ assert.match(oil,/drawContactBrushV8/);
+ assert.match(oil,/oilColourField/);
  assert.match(action,/fling\(ctx,r/);
+ assert.match(action,/var passes=layers\*3/);
+ assert.doesNotMatch(materials,/collabOilRelief|A\.collabAction\(/);
 });
 
 test('Confluence offers only official palettes and defaults to Full Spectrum',async()=>{
@@ -70,7 +74,7 @@ test('One tissue surface preserves all artists palettes without duplicating atmo
  const native=read('../confluence/native-material.js');
  assert.match(renderer,/tissueMarks\.map\((?:trace|t)=>(?:trace|t)\.ink\)/);
  assert.match(renderer,/all-tissue-voices/);
- assert.match(native,/t\.ink \|\| artist\.inks/);
+ assert.match(native,/trace\.ink\|\|artist\.inks/);
  assert.doesNotMatch(renderer,/tissueArtists = new Map/);
  assert.doesNotMatch(renderer,/for\(const \{artist,traces,gain,marks\} of tissueArtists/);
 });
@@ -79,24 +83,24 @@ test('Tissue can develop without repainting foreign material over wrong paper',(
  const renderer=read('../confluence/materials.js');
  assert.match(renderer,/paintingWithoutTissue\.drawImage\(output\.canvas,0,0\)/);
  assert.match(renderer,/paint\(paintingWithoutTissue, action\)/);
- assert.match(renderer,/paintingWithoutTissue\.globalCompositeOperation=material/);
+ assert.match(renderer,/output\.drawImage\(paintingWithoutTissue\.canvas,0,0\)/);
  assert.match(renderer,/output\.drawImage\(tissueSurface\.canvas,0,0\)/);
  assert.match(renderer,/avoidForeignMarks\(tissueSurface\)/);
- assert.match(renderer,/protectRaster\(pigment,area\)/);
+ assert.match(renderer,/reserveForOtherArtists\(ctx\)/);
 });
 
 test('Watercolour uses native source-hue V2S on one cumulative full-paper surface',()=>{
  const renderer=read('../confluence/materials.js');
  const bridge=read('../confluence/native-material.js');
  const solo=read('../js/watercolour-v2s.js');
- assert.match(renderer,/const watercolourMarks=\[\]/);
+ assert.match(renderer,/const tissueMarks=\[\],watercolourMarks=\[\]/);
  assert.match(renderer,/function renderActualWatercolour\(/);
  assert.match(renderer,/renderNativeDeposit\(watercolourSurface,'watercolour',watercolourMarks/);
  assert.match(renderer,/watercolourMarks\.push\(\{\.\.\.trace,ink:artistInk/);
  assert.match(renderer,/renderActualWatercolour\(\)/);
  assert.match(renderer,/globalCompositeOperation='multiply'/);
- assert.match(renderer,/watercolourFootprint\(\)/);
- assert.match(renderer,/previousWatercolourCoverage/);
+ assert.match(renderer,/materialFootprint\('watercolour',watercolourSurface\)/);
+ assert.match(renderer,/coverageHistory=\{watercolour:null,oil:null,action:null\}/);
  assert.match(renderer,/avoidForeignMarks\(watercolourSurface,watercolourForeignInk\)/);
  assert.doesNotMatch(renderer,/renderNativeDeposit\(pigment,material/);
  assert.doesNotMatch(renderer,/A\.collabWatercolour\(/);
