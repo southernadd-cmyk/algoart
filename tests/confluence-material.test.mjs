@@ -20,8 +20,8 @@ test('Confluence uses full Oil V8 and Action V4 algorithms, not shortcuts',()=>{
  const materials=read('../confluence/materials.js');
  const oil=read('../confluence/engine/materials/oil-paint-v8.js');
  const action=read('../confluence/engine/materials/action-painting-v4.js');
- assert.match(materials,/A\.renderOilPaintV8\(oilSurface\.canvas/);
- assert.match(materials,/A\.actionPaintingFromPathsV4\(actionSurface\.canvas/);
+ assert.match(materials,/A\.renderOilPaintV8\(oilTurnSurface\.canvas/);
+ assert.match(materials,/A\.actionPaintingFromPathsV4\(actionTurnSurface\.canvas/);
  assert.match(oil,/drawContactBrushV8/);
  assert.match(oil,/oilColourField/);
  assert.match(action,/fling\(ctx,r/);
@@ -72,9 +72,9 @@ test('Every tissue turn uses actual full-sheet V7 rather than a marker-like shim
  const bridge=read('../confluence/native-material.js');
  const ui=read('../confluence/ui.js');
  assert.match(renderer,/function renderActualTissue\(/);
- assert.match(renderer,/renderNativeDeposit\(tissueSurface,'tissue',tissueMarks/);
- assert.match(renderer,/renderActualTissue\(\)/);
- assert.match(renderer,/tissueMarks\.push\(\{\.\.\.trace,ink:artistInk/);
+ assert.match(renderer,/renderNativeDeposit\(tissueTurn,'tissue',newMarks/);
+ assert.match(renderer,/renderActualTissue\(fresh,artist\)/);
+ assert.match(renderer,/tissueMarks\.push\(\.\.\.fresh\)/);
  assert.doesNotMatch(renderer,/collabTissue\(/);
  assert.doesNotMatch(renderer,/globalAlpha=\.36/);
  assert.match(renderer,/deposit\.finalize=\(\)=>\{\}/);
@@ -92,14 +92,19 @@ test('One tissue surface preserves all artists palettes without duplicating atmo
  assert.doesNotMatch(renderer,/for\(const \{artist,traces,gain,marks\} of tissueArtists/);
 });
 
-test('Tissue can develop without repainting foreign material over wrong paper',()=>{
+test('All materials deposit on one persistent sheet in chronological order',()=>{
  const renderer=read('../confluence/materials.js');
- assert.match(renderer,/paintingWithoutTissue\.drawImage\(output\.canvas,0,0\)/);
- assert.match(renderer,/paint\(paintingWithoutTissue, action\)/);
- assert.match(renderer,/output\.drawImage\(paintingWithoutTissue\.canvas,0,0\)/);
- assert.match(renderer,/output\.drawImage\(tissueSurface\.canvas,0,0\)/);
- assert.match(renderer,/avoidForeignMarks\(tissueSurface\)/);
- assert.match(renderer,/reserveForOtherArtists\(ctx\)/);
+ assert.match(renderer,/paint\(output, action\)/);
+ assert.match(renderer,/layTurn\(tissueSurface,tissueTurn\)/);
+ assert.match(renderer,/layTurn\(watercolourSurface,watercolourTurn,'multiply'\)/);
+ assert.match(renderer,/layTurn\(oilSurface,oilTurnSurface\)/);
+ assert.match(renderer,/layTurn\(actionSurface,actionTurnSurface\)/);
+ assert.match(renderer,/output\.drawImage\(turn\.canvas,0,0\)/);
+ assert.doesNotMatch(renderer,/output\.clearRect\(/);
+ assert.doesNotMatch(renderer,/showSheet\(/);
+ assert.doesNotMatch(renderer,/sourcePaths\(oilMarks\)/);
+ assert.doesNotMatch(renderer,/renderNativeDeposit\(tissueSurface/);
+ assert.doesNotMatch(renderer,/renderNativeDeposit\(watercolourSurface/);
 });
 
 test('Watercolour uses native source-hue V2S on one cumulative full-paper surface',()=>{
@@ -108,13 +113,13 @@ test('Watercolour uses native source-hue V2S on one cumulative full-paper surfac
  const solo=read('../js/watercolour-v2s.js');
  assert.match(renderer,/const tissueMarks=\[\],watercolourMarks=\[\]/);
  assert.match(renderer,/function renderActualWatercolour\(/);
- assert.match(renderer,/renderNativeDeposit\(watercolourSurface,'watercolour',watercolourMarks/);
- assert.match(renderer,/watercolourMarks\.push\(\{\.\.\.trace,ink:artistInk/);
- assert.match(renderer,/renderActualWatercolour\(\)/);
- assert.match(renderer,/globalCompositeOperation='multiply'/);
+ assert.match(renderer,/renderNativeDeposit\(watercolourTurn,'watercolour',newMarks/);
+ assert.match(renderer,/watercolourMarks\.push\(\.\.\.fresh\)/);
+ assert.match(renderer,/renderActualWatercolour\(fresh,artist\)/);
+ assert.match(renderer,/layTurn\(watercolourSurface,watercolourTurn,'multiply'\)/);
  assert.match(renderer,/materialFootprint\('watercolour',watercolourSurface\)/);
  assert.match(renderer,/coverageHistory=\{watercolour:null,oil:null,action:null\}/);
- assert.match(renderer,/avoidForeignMarks\(watercolourSurface,watercolourForeignInk\)/);
+ assert.doesNotMatch(renderer,/avoidForeignMarks\(/);
  assert.doesNotMatch(renderer,/renderNativeDeposit\(pigment,material/);
  assert.doesNotMatch(renderer,/A\.collabWatercolour\(/);
  assert.match(bridge,/A\.watercolourV2sMaterial\(/);
@@ -133,8 +138,8 @@ test('Confluence runs each released material engine on an actual shared full she
   assert.match(index,/js\/oil-v1-core-b\.js/);
   assert.match(index,/js\/oil-v1-core-c\.js/);
   assert.match(index,/engine\/materials\/oil-paint-v8\.js/);
-  assert.match(renderer,/A\.renderOilPaintV8\(oilSurface\.canvas/);
-  assert.match(renderer,/A\.actionPaintingFromPathsV4\(actionSurface\.canvas/);
+  assert.match(renderer,/A\.renderOilPaintV8\(oilTurnSurface\.canvas/);
+  assert.match(renderer,/A\.actionPaintingFromPathsV4\(actionTurnSurface\.canvas/);
   assert.match(brush,/options\.sourceCapture\|\|A\.captureCompositionV5/);
   assert.match(brush,/options\.transparentSheet!==true/);
   assert.match(action,/options\.sourceInks\?\.length/);
@@ -148,5 +153,5 @@ test('Confluence runs each released material engine on an actual shared full she
   assert.doesNotMatch(renderer,/A\.collabTissue\(/);
   assert.doesNotMatch(renderer,/A\.collabOilRelief\(/);
   assert.doesNotMatch(renderer,/function box\(/);
-  assert.match(renderer,/paint\(paintingWithoutTissue, action\)/);
+  assert.match(renderer,/paint\(output, action\)/);
 });
