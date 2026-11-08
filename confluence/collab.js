@@ -2,6 +2,7 @@ import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner
 import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt, resolveTurnBudget} from './composition.js?v=confluence-steps-03';
 import {inferResponse} from './adaptive-response.js?v=adaptive-01';
 import {capRectangleFootprint, rectangleInteriors, interiorCandidates} from './rect-collaboration.js?v=rect-cells-01';
+import {expandRecursiveTurns} from './recursive-turns.js?v=recursive-turns-01';
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 export const systems = [
@@ -144,7 +145,11 @@ function recordArtist(artist, seed, sheet, sourceCanvas) {
       group.pivot = pt(group.cell.x + group.cell.w / 2, group.cell.y + group.cell.h / 2);
     }
   }
-  return {...artist, groups};
+  // Cells are structural containers, not single atomic painting gestures.
+  // Build successive steps from the original recorded paths so Recursive
+  // Divisions can participate in 55+ turns without inventing new rectangles.
+  return {...artist,groups:guide?.type==='rects'?
+    expandRecursiveTurns(groups,samplePath):groups};
 }
 
 function field(sheet, owner) {
@@ -371,7 +376,7 @@ export function makeRun(study, strength, {equal = false} = {}) {
     return [artist.id,{
       ...artist,field:field(study.sheet,artist.id),
       pending:artist.groups.slice(0,programme.counts[i]),
-      anchors:new Map(),committed:0,rectInvited:0,pose:{place}
+      anchors:new Map(),committed:0,rectInvited:0,fragmentPlacements:new Map(),pose:{place}
     }];
   }));
   // The existing rectangle guide is a shared structure, not an exclusion
@@ -398,8 +403,11 @@ export function makeRun(study, strength, {equal = false} = {}) {
       const {group, prioritized} = selection;
       const reaction=inferResponse(group,artist,fields,density,study.sheet);
       context={...context,response:reaction.response,mode:reaction.mode};
-      let placement = {place: artist.pose.place, effort: 0};
-      if (strength > 0) {
+      // All fragments of the same source rectangle retain a common
+      // placement, otherwise successive sides would drift apart.
+      const savedPlacement=group.fragmentParent&&artist.fragmentPlacements.get(group.fragmentParent);
+      let placement = savedPlacement||{place: artist.pose.place, effort: 0};
+      if (strength > 0&&!savedPlacement) {
         const choices = candidates(group, artist, strength, turn);
         placement = choices[0];
         if (fields.length || density) {
@@ -436,14 +444,16 @@ export function makeRun(study, strength, {equal = false} = {}) {
         rectangleUse.set(placement.rectCellId,(rectangleUse.get(placement.rectCellId)||0)+1);
         artist.rectInvited++;
       }
-      if (study.sheet.constrain) {
+      if (study.sheet.constrain&&!savedPlacement) {
         const place = placement.place;
         placement = {...placement, constrain: study.sheet.constrain, place: point => study.sheet.constrain(place(point))};
       }
+      if(group.fragmentParent&&!savedPlacement)
+        artist.fragmentPlacements.set(group.fragmentParent,placement);
       for (const anchor of group.links || []) {
         if (!artist.anchors.has(key(anchor))) artist.anchors.set(key(anchor), placement.place(anchor));
       }
-      const plans = strength > 0 ? planStrokes(group, artist, placement, context) : new Map();
+      const plans = strength > 0&&!group.fragmentParent ? planStrokes(group, artist, placement, context) : new Map();
       const contacts = [...new Set([...plans.values()].flatMap(plan => plan.contacts))]
         .map(id => artists.get(id).number);
       const action = {
