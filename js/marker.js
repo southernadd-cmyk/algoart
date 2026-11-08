@@ -40,13 +40,18 @@ A.stroke=function(ctx,points,col,s,r,curve){
   var markKind=A._markKind||(curve?'curve':(points.length===2?'line':'path'));
   A._markKind=null;
   // V10 colour-coverage schedule. The first N distinct source marks
-  // visit all N requested inks; subsequent marks keep their engine's
-  // family colour three times in four, with one rotating accent.
+  // visit all N requested inks. Subsequent small marks retain their
+  // family ink three in four; medium marks add rotating accents every
+  // other mark, and hero marks receive a legible distinct pigment.
   // Neither the stroke path nor its seeded drawing RNG is touched.
   if(A.rendererVersion>=10&&A._inkRackV10&&A._inkRackV10.length>1){
     var ordinal=A._inkMarkV10++,size=A._inkRackV10.length;
-    if(ordinal<size||(ordinal-size)%4===0){
-      var slot=ordinal<size?ordinal:size+Math.floor((ordinal-size)/4);
+    var tier=rec&&rec.group&&rec.group.tier;
+    var accent=ordinal<size||tier==='hero'||
+      (tier==='medium'&&ordinal%2===0)||
+      (ordinal>=size&&(ordinal-size)%4===0);
+    if(accent){
+      var slot=A._inkAccentV10++;
       col=A._inkRackV10[(A._inkStartV10+slot*A._inkStepV10)%size];
     }
   }
