@@ -62,6 +62,16 @@ async function rasterReliefFallback(urls){
 window.bakeStudy=async(item,quality)=>{
   if(!['desktop','mobile'].includes(quality))throw Error('Unknown sculpture quality');
   const archiveUrl=new URL('../'+item.date+'/',location.href);
+  // Confluence has three independent source engines and mixed materials:
+  // never pass its ?s= link into the single-source SVG tracer.
+  // Extrude the ACTUAL archived pigment from the portrait instead.
+  if(item.material==='confluence'){
+    const image=new URL(item.imageFile,archiveUrl).href;
+    const optimized=new URL('3d/'+item.imageFile.replace(/\\.[^.]+$/,'')+
+      '-'+(quality==='mobile'?'640':'1100')+'.webp',archiveUrl).href;
+    const entries=await rasterReliefFallback([optimized,image]);
+    return {seed:item.seed,quality,entries};
+  }
   const study={
     seed:item.seed,
     title:item.title||'Artwork',
