@@ -2,146 +2,17 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="description" content="An experimental drawing room for PROPORTION PIECE.">
-<meta name="theme-color" content="#e8e1d1">
-<title>Collab Lab — PROPORTION PIECE</title>
-<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
-<link rel="stylesheet" href="style.css?v=studio-06">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Confluence — PROPORTION PIECE</title>
+<link rel="canonical" href="../../confluence/">
+<meta http-equiv="refresh" content="0; url=../../confluence/">
 </head>
-<body>
-<div class="shell">
-  <header class="masthead">
-    <a class="brand" href="../../">PROPORTION PIECE</a>
-    <div class="masthead-links">
-      <span class="edition"><i></i> Studio preview</span>
-      <a class="editor-link" href="../../">Main editor <span aria-hidden="true">↗</span></a>
-    </div>
-  </header>
-  <main>
-    <section class="intro" aria-labelledby="title">
-      <div>
-        <p class="eyebrow">Shared canvas experiment</p>
-        <h1 id="title">Collab Lab<span>.</span></h1>
-      </div>
-      <p>Work solo or put three artists on the same sheet. Give each their own system, palette and material.</p>
-    </section>
-    <section class="studio" aria-label="Collaboration experiment">
-      <aside class="controls" aria-label="Study settings">
-        <form id="study-form">
-          <section id="artists" class="control-section roster-section" aria-labelledby="artist-heading">
-            <div class="roster-heading">
-              <h2 id="artist-heading">Artist roster</h2>
-              <span id="artist-count" class="count-tag">3 artists</span>
-            </div>
-            <p class="hint roster-hint">Choose the same system for different artists to see how they respond.</p>
-            <div class="roster-tools">
-              <div id="counts" class="segmented" role="group" aria-label="Study mode">
-                <button type="button" data-count="1">Solo</button>
-                <button type="button" data-count="3">Three artists</button>
-              </div>
-            </div>
-            <div id="roster" class="roster"></div>
-          </section>
-          <section class="control-section study-settings" aria-labelledby="settings-heading">
-            <h2 id="settings-heading">Drawing settings</h2>
-            <div class="settings-grid">
-              <label for="response" class="field-caption">Response</label>
-              <label for="seed" class="field-caption">Shared seed</label>
-              <select id="response" aria-describedby="response-help">
-                <option value="weave">Weave around marks</option>
-                <option value="echo">Echo nearby directions</option>
-                <option value="space">Leave more space</option>
-              </select>
-              <div class="seed-field">
-                <input id="seed" type="text" value="812034" maxlength="64" required autocomplete="off" spellcheck="false">
-                <button type="button" id="new-seed" aria-label="New seed" title="New seed">↻</button>
-              </div>
-            </div>
-            <label for="strength" class="strength-label">Response strength <output id="strength-value" for="strength">75%</output></label>
-            <input id="strength" type="range" min="0" max="100" value="75" step="5">
-            <p class="hint" id="response-help">Look for gaps beside other artists' marks.</p>
-
-          </section>
-          <details class="sheet-settings">
-            <summary>Shared paper &amp; format</summary>
-            <div class="sheet-fields">
-              <label for="orientation">Format</label>
-              <select id="orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select>
-              <label for="paper">Paper</label>
-              <input id="paper" type="color" value="#f5f0e6">
-              <label for="grain">Paper grain <output id="grain-value" for="grain">11</output></label>
-              <input id="grain" type="range" min="0" max="100" value="11">
-            </div>
-          </details>
-          <div class="draw-actions">
-            <button type="submit" class="primary draw-at-canvas"><span>Draw study</span><span aria-hidden="true">↗</span></button>
-            <p id="roster-status" class="hint" role="status"></p>
-          </div>
-        </form>
-      </aside>
-
-      <section id="drawing" class="work" aria-label="Canvas and playback">
-        <div class="workbar">
-          <div class="canvas-heading"><h2>Drawing board</h2><span id="dimensions" class="mono">1400 × 1000</span><span id="board-pending" class="mono" hidden>Edits pending</span></div>
-          <div class="board-actions">
-            <div class="segmented view-switch" role="group" aria-label="Canvas view">
-              <button type="button" id="single" aria-pressed="true">Shared canvas</button>
-              <button type="button" id="compare" aria-pressed="false">Compare</button>
-            </div>
-            <button type="submit" class="primary board-draw" form="study-form">Draw study</button>
-          </div>
-        </div>
-        <div class="turn-balance" id="turn-balance">
-          <label for="collaboration-pull" class="strength-label">Collaboration φ pull <output id="collaboration-value" for="collaboration-pull">100%</output></label>
-          <input id="collaboration-pull" form="study-form" type="range" min="0" max="100" value="100" step="1" aria-describedby="collaboration-help">
-          <div id="turn-shares" class="turn-shares" aria-label="Target share of turns"></div>
-          <p class="hint" id="collaboration-help">Equal turns at 0%. At 100%, Artist 1 leads and Artists 2 and 3 answer.</p>
-        </div>
-        <div id="canvases" class="canvases">
-          <figure>
-            <div class="sheet"><canvas id="shared" width="1400" height="1000" aria-label="Canvas showing artists responding to one another"></canvas></div>
-            <figcaption><span><span class="dot"></span> <span id="shared-caption">φ-weighted turns</span></span><span id="shared-turns"></span></figcaption>
-          </figure>
-          <figure id="baseline-panel" hidden>
-            <div class="sheet"><canvas id="baseline" width="1400" height="1000" aria-label="The same artists responding with equal turns"></canvas></div>
-            <figcaption><span><span class="dot baseline-dot"></span> Equal turns</span><span id="equal-turns"></span></figcaption>
-          </figure>
-        </div>
-        <div class="transport">
-          <div class="buttons" role="group" aria-label="Playback">
-            <button type="button" id="play" class="primary">Replay</button>
-            <button type="button" id="step">Step</button>
-            <button type="button" id="finish">Finish</button>
-          </div>
-          <span id="counter" class="mono">—</span>
-          <div class="output-actions"><a class="edit-artists" href="#artists">Edit artists</a>
-          <button type="button" id="download" class="text-button">↓ Save PNG</button></div>
-        </div>
-        <div class="progress" role="progressbar" aria-label="Drawing progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress"></span></div>
-        <section class="readout" aria-label="Turn log">
-          <div><h2>Turn log</h2><p id="summary" class="mono">Preparing study</p></div>
-          <ol id="decisions"></ol>
-        </section>
-        <p id="status" class="sr-only" role="status"></p>
-      </section>
-    </section>
-  </main>
-  <footer><span>PROPORTION PIECE / COLLAB LAB</span><p>A studio for shared compositions</p></footer>
-</div>
-<script src="engine/random.js"></script>
-<script src="engine/phi.js"></script>
-<script src="engine/palettes.js"></script>
-<script src="engine/marker.js"></script>
-<script src="engine/phi-sheet-fit.js"></script>
-<script src="engine/generator.js"></script>
-<script src="engine/materials/oil-pigment.js"></script>
-<script src="engine/materials/oil-collab-support.js"></script>
-<script src="engine/materials/oil-brush-v8.js"></script>
-<script src="engine/materials/oil-material.js"></script>
-<script src="engine/materials/watercolour-v2s.js"></script>
-<script src="engine/materials/action-painting-v4.js"></script>
-<script type="module" src="ui.js?v=studio-06-wash"></script>
-</body>
-</html>
+<body><p>The shared drawing studio is now <a id="destination" href="../../confluence/">Confluence</a>.</p>
+<script>
+const destination = new URL("../../confluence/", location.href);
+destination.search = location.search;
+destination.hash = location.hash;
+document.getElementById('destination').href = destination.href;
+location.replace(destination.href);
+</script></body></html>
