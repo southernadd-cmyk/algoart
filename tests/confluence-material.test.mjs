@@ -29,6 +29,19 @@ test('Confluence uses full Oil V8 and Action V4 algorithms, not shortcuts',()=>{
  assert.doesNotMatch(materials,/collabOilRelief|A\.collabAction\(/);
 });
 
+test('Each Action turn appends real V4 throws without regenerating the composition',()=>{
+ const renderer=read('../confluence/materials.js');
+ const engine=read('../confluence/engine/materials/action-painting-v4.js');
+ assert.match(renderer,/renderActualAction\(entry,artist\)/);
+ assert.match(renderer,/append:true/);
+ assert.match(renderer,/passes:1,gesturesPerPass:/);
+ assert.match(renderer,/variant:artist\.id/);
+ assert.doesNotMatch(renderer,/sourcePaths\(actionMarks\)/);
+ assert.match(engine,/if\(!options\.append\|\|target\.width!==targetW/);
+ assert.match(engine,/if\(Number\.isFinite\(options\.passes\)\)/);
+ assert.match(engine,/fling\(ctx,r,a,b,colour/);
+});
+
 test('Confluence offers only official palettes and defaults to Full Spectrum',async()=>{
  const {palettes}=await import('../confluence/collab.js');
  const ui=read('../confluence/ui.js');
