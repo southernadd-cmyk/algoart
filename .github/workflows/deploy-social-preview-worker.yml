@@ -2,6 +2,11 @@ name: Deploy social preview Worker
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'cloudflare/social-preview/**'
+      - '.github/workflows/deploy-social-preview-worker.yml'
 
 permissions:
   contents: read
@@ -22,7 +27,9 @@ jobs:
         with:
           node-version: '22'
       - name: Test social preview Worker
-        run: node --test cloudflare/social-preview/src/worker.test.mjs
+        run: |
+          node --test cloudflare/social-preview/src/worker.test.mjs
+          node --test cloudflare/social-preview/tests/worker.test.mjs
       - name: Verify deployment credentials
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
