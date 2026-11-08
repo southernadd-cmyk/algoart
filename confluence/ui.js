@@ -1,4 +1,4 @@
-import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-intra-turn-16';
+import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-self-repel-17';
 import {materials, makePainter} from './materials.js?v=confluence-pigment-guard-19';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=confluence-rotate-lead-05';
