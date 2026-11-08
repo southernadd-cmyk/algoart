@@ -61,6 +61,25 @@ try{
     console.log(label,JSON.stringify(m));
   }
   await measure('desktop landscape',1400,1000);
+  // Reproduce the pre-initialization state after the app has sized itself:
+  // an uninitialized figure must be invisible, not briefly full-width.
+  const firstFrame=await page.evaluate(()=>{
+    const stage=document.querySelector('#canvases');
+    const figure=stage.querySelector('figure');
+    const canvas=stage.querySelector('#shared');
+    const sized=stage.classList.contains('is-sized');
+    const finalWidth=canvas.getBoundingClientRect().width;
+    stage.classList.remove('is-sized');
+    const hidden=getComputedStyle(figure).visibility;
+    stage.classList.add('is-sized');
+    const restored=getComputedStyle(figure).visibility;
+    return {sized,finalWidth,hidden,restored};
+  });
+  assert.equal(firstFrame.sized,true,'Startup failed to fit the canvas');
+  assert.equal(firstFrame.hidden,'hidden','Unsized paper must never flash full width');
+  assert.equal(firstFrame.restored,'visible','Fitted paper did not become visible');
+  assert(firstFrame.finalWidth>20,'Fitted paper has no width');
+  console.log('Confluence initial-fit flash guard',JSON.stringify(firstFrame));
   await page.locator('#format-portrait').click();
   assert.equal(await page.locator('#orientation').inputValue(),'portrait');
   assert.equal(await page.locator('#format-portrait').getAttribute('aria-pressed'),'true');

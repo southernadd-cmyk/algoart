@@ -288,7 +288,9 @@ function build() {
     byId('drawing').dataset.format = orientation.value;
     byId('dimensions').textContent = width + ' × ' + height;
     syncFormatButtons();
-    queueMicrotask(fitCanvas);
+    // Fit synchronously before starting the expensive initial render.
+    // Delaying to a microtask lets the default 100%-wide figure flash.
+    fitCanvas();
     byId('shared-caption').textContent = state.settings.collaborationPull ? 'φ-weighted turns' : 'Equal turns';
     byId('shared-turns').textContent = state.study.primary.counts.join(' / ') + ' turns';
     byId('equal-turns').textContent = state.study.equal.counts.join(' / ') + ' turns';
@@ -310,6 +312,10 @@ function syncFormatButtons() {
 // Fit within *actual* viewport area, including portrait and side-by-side
 // comparison. This affects CSS display width only; exports remain full pixels.
 function fitCanvas() {
+  // Do not reveal the paper until the stage has measurable dimensions.
+  // Hidden figures still participate in layout; the ResizeObserver retries
+  // if the stage is not yet sized (e.g. mobile browser viewport settling).
+  if (canvases.clientWidth < 20 || canvases.clientHeight < 30) return;
   const count = canvases.classList.contains('comparing') ? 2 : 1;
   const ratio = state.study ? state.study.sheet.width / state.study.sheet.height
     : orientation.value === 'portrait' ? 5 / 7 : 7 / 5;
@@ -322,6 +328,9 @@ function fitCanvas() {
     figure.style.width = fitted + 'px';
     figure.style.maxWidth = fitted + 'px';
   }
+  // The CSS keeps paper hidden until its final display width is set.
+  // This changes visibility, never opacity or the rendered pixels.
+  canvases.classList.add('is-sized');
 }
 
 function setComparison(comparing) {
