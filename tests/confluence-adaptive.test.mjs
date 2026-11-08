@@ -95,3 +95,53 @@ test('Only actual scheduled Recursive Divisions cells invite responding artists'
    'Established network links must not be broken by new cell invitations');
  assert.deepEqual(rectangleInteriors([{...rect,system:'network'}],page),[]);
 });
+
+import {expandRecursiveTurns,sliceStroke} from '../confluence/recursive-turns.js';
+import {turnBudget,fibonacciTurnOptions} from '../confluence/composition.js';
+
+test('Recursive Divisions supports 55 and 89 turns without drawing extra geometry',()=>{
+ const sampler=commands=>commands.map(c=>c.points[0]);
+ const makeGroup=i=>{
+   const x=40+i*7,y=30+i*5;
+   const points=[{x,y},{x:x+180,y},{x:x+180,y:y+130},{x,y:y+130},{x,y}];
+   const commands=points.map((p,j)=>({type:j?'L':'M',points:[p]}));
+   const info={section:'cells'};
+   return {id:'cell-'+i,info,label:'Cell '+i,
+     cell:{x,y,w:180,h:130},pivot:{x:x+90,y:y+65},
+     center:{x:x+90,y:y+65},probes:points.map(p=>({p,next:p})),
+     traces:[{mark:i+1,kind:'rect',width:4,opacity:.8,passes:2,points}],
+     paths:[0,1].map(pass=>({path:{mark:i+1,pass,passes:2,
+       kind:'rect',width:4,opacity:.8,d:'original'},
+       commands}))};
+ };
+ const original=Array.from({length:6},(_,i)=>makeGroup(i));
+ const expanded=expandRecursiveTurns(original,sampler);
+ assert(expanded.length>=56,'Six whole rectangles should support at least 56 genuine gestures');
+ assert(fibonacciTurnOptions(turnBudget(
+   [0,1,2].map(id=>({groups:expanded,id})))).includes(89));
+ assert.equal(new Set(expanded.slice(0,6).map(g=>g.fragmentParent)).size,6,
+   'Initial turns should reach multiple cells instead of one rectangle claiming the paper');
+ for(let i=0;i<6;i++){
+   const parts=expanded.filter(g=>g.fragmentParent==='cell-'+i)
+      .sort((a,b)=>a.fragmentNumber-b.fragmentNumber);
+   const originalLength=original[i].traces[0].points.reduce((sum,p,j,list)=>
+     j?sum+Math.hypot(p.x-list[j-1].x,p.y-list[j-1].y):sum,0);
+   const actual=parts.reduce((sum,g)=>sum+
+     g.traces[0].points.reduce((n,p,j,list)=>
+       j?n+Math.hypot(p.x-list[j-1].x,p.y-list[j-1].y):n,0),0);
+   assert(Math.abs(actual-originalLength)<.001,
+     'The recorded rectangle must be cut, not repeated or shortened');
+   assert(parts.every(p=>p.paths.length===2),
+     'Each source stroke fragment must keep every original ink pass');
+   assert(parts.every(p=>p.traces[0].points.length>=2));
+   assert.equal(parts[0].cell,original[i].cell);
+ }
+ assert.equal(original.length,6,'The source artwork must remain unchanged');
+ const diagonal=[{x:0,y:0},{x:80,y:0},{x:80,y:120}];
+ const pieces=Array.from({length:11},(_,i)=>sliceStroke(diagonal,i/11,(i+1)/11));
+ assert(Math.hypot(pieces[0][0].x,pieces[0][0].y)<.000001);
+ assert.deepEqual(pieces.at(-1).at(-1),diagonal.at(-1));
+ for(let i=1;i<pieces.length;i++)
+   assert(Math.hypot(pieces[i][0].x-pieces[i-1].at(-1).x,
+     pieces[i][0].y-pieces[i-1].at(-1).y)<.00001);
+});
