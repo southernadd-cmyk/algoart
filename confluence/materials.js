@@ -1,5 +1,5 @@
 import {artistInk, paint} from './collab.js?v=confluence-progressive-groups-10';
-import {plannedPoints} from './mark-planner.js?v=rect-cells-02';
+import {plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
 import {renderNativeDeposit} from './native-material.js?v=confluence-wash-fast-09';
 
 export const materials = {
