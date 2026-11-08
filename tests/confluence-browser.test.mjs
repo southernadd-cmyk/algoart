@@ -73,6 +73,8 @@ try{
   await page.locator('#format-portrait').click();
   await measure('mobile portrait',1000,1400);
   assert.deepEqual(errors,[],'Confluence JavaScript errors: '+errors.join('; '));
+  assert.equal(await page.locator('#response').count(),0,
+    'Confluence must not offer a manual response-style selector');
   console.log('Confluence responsive orientation smoke passed');
   // Check each of the five materials in an actual browser. Native tissue and
   // watercolour must call the same released pigment engine as the solo editor;

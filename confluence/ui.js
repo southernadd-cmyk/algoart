@@ -10,7 +10,6 @@ const byId = id => document.getElementById(id);
 const form = byId('study-form');
 const roster = byId('roster');
 const seed = byId('seed');
-const response = byId('response');
 const strength = byId('strength');
 const collaborationPull = byId('collaboration-pull');
 const orientation = byId('orientation');
@@ -29,11 +28,6 @@ const choices = {
   system: systemChoices,
   palette: Object.entries(palettes),
   material: Object.entries(materials)
-};
-const hints = {
-  weave: "Look for gaps beside other artists' marks.",
-  echo: 'Look for nearby marks that run in a similar direction.',
-  space: 'Favour quieter paper and slow the build-up of pigment.'
 };
 
 const artists = systems.slice(0, 3).map((system, index) => ({
@@ -104,7 +98,6 @@ function renderRoster() {
   roster.replaceChildren(...cards);
   byId('artist-count').textContent = '3 artists';
   updateShares();
-  updateResponseHint();
 }
 
 function updateShares() {
@@ -116,10 +109,6 @@ function updateShares() {
     return tag;
   });
   byId('turn-shares').replaceChildren(...bars);
-}
-
-function updateResponseHint() {
-  byId('response-help').textContent = hints[response.value];
 }
 
 function updateReadout() {
@@ -155,7 +144,11 @@ function updateReadout() {
       : action.reordered ? 'Chose the next mark from the shared drawing'
       : (action.changed ? 'Adjusted' : 'Held') + ' after reading ' + action.heard +
         (action.heard === 1 ? ' artist' : ' artists');
-    detail.textContent = materials[action.artist.material] + ' · ' + action.group.label + ' · ' + result;
+    const reaction = action.heard && state.settings.strength
+      ? {weave:'weaving',echo:'echoing',space:'leaving space'}[action.reaction]
+      : null;
+    detail.textContent = materials[action.artist.material] + ' · ' + action.group.label +
+      (reaction?' · '+reaction:'') + ' · ' + result;
     item.append(swatch, name, detail);
     return item;
   });
@@ -175,8 +168,8 @@ function reset() {
   const sheet = state.study.sheet;
   state.paintShared = makePainter(prepareCanvas(shared, settings.seed, sheet), settings.seed, sheet);
   state.paintBaseline = makePainter(prepareCanvas(baseline, settings.seed, sheet), settings.seed, sheet);
-  state.run = makeRun(state.study, settings.strength, settings.response);
-  state.baseline = makeRun(state.study, settings.strength, settings.response, {equal: true});
+  state.run = makeRun(state.study, settings.strength);
+  state.baseline = makeRun(state.study, settings.strength, {equal: true});
   state.turn = 0;
   state.replanned = 0;
   state.read = 0;
@@ -267,7 +260,7 @@ function build() {
   }
   stop();
   try {
-    state.settings = {seed: studySeed, response: response.value, strength: Number(strength.value),
+    state.settings = {seed: studySeed, strength: Number(strength.value),
       collaborationPull: Number(collaborationPull.value)};
     const slots = artists.map(artist => ({...artist, settings: {...artist.settings}}));
     state.study = createStudy(studySeed, slots,
@@ -280,7 +273,7 @@ function build() {
       state.study.availableTurns.at(-1) + ' Fibonacci turns. Step advances one turn at a time.';
     state.snapshot = {
       v: 1, seed: studySeed, orientation: orientation.value,
-      paper: paper.value, grain: Number(grain.value), response: response.value,
+      paper: paper.value, grain: Number(grain.value),
       strength: Number(strength.value), collaborationPull: Number(collaborationPull.value),
       totalTurns: selectedTurns,
       artists: slots.map(({system,palette,material,settings})=>({system,palette,material,settings}))
@@ -360,10 +353,6 @@ roster.addEventListener('change', event => {
   if (!['range', 'text'].includes(event.target.type)) updateArtist(event.target);
 });
 
-response.addEventListener('change', () => {
-  updateResponseHint();
-  syncHint(true);
-});
 for (const input of [orientation, paper, grain]) input.addEventListener('input', () => {
   byId('grain-value').value = grain.value;
   syncFormatButtons();
@@ -439,7 +428,7 @@ save.addEventListener('click', () => {
 
 // The page remains a complete, bookmarkable editor; a shared composition
 // restores all three voices, while a future main-editor handoff imports Artist 1.
-const inputs = {seed, orientation, paper, grain, response, strength, collaborationPull, totalTurns};
+const inputs = {seed, orientation, paper, grain, strength, collaborationPull, totalTurns};
 const params = new URLSearchParams(location.search);
 const restored = restoreSharedState(params, artists, inputs, {systems, palettes, materials});
 const imported = !restored && importLeadFromURL(params, artists[0],
