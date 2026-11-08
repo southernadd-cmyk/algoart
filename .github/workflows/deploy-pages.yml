@@ -39,6 +39,7 @@ on:
       - 'gallery/**'
       - 'press/**'
       - 'about/**'
+      - 'confluence/**'
       - 'reels/**'
       - 'favicon.svg'
       - 'social-card.svg'
@@ -155,7 +156,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site
           # Publish runtime assets and pages, not CI, source tooling, or node_modules.
-          for dir in about css fonts js gallery press reels; do
+          for dir in about confluence css fonts js gallery press reels; do
             if [[ -d "$dir" ]]; then cp -a "$dir" "_site/$dir"; fi
           done
           # Root-level static pages, metadata, favicons and verification files.
@@ -163,6 +164,7 @@ jobs:
           # Prevent accidental publication of non-runtime files in copied directories.
           find _site -type d \( -name node_modules -o -name .git -o -name .github -o -name tests -o -name automation -o -name .chat-v2-staging \) -prune -exec rm -rf -- {} +
           test -s _site/index.html
+          test -s _site/confluence/index.html
           test -s _site/about/step-by-step/index.html
           test -s _site/gallery/visit/gallery-phi-bundle.js
           test -s _site/gallery/visit/index.html
