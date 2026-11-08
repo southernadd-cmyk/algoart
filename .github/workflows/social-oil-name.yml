@@ -10,6 +10,7 @@ on:
       - 'tests/social-caption-rotation.test.mjs'
       - 'tests/oil-daily.test.mjs'
       - 'tests/oil-v8-edition-rehearsal.mjs'
+      - 'tests/oil-v5-release.test.mjs'
       - '.github/workflows/social-oil-name.yml'
   workflow_dispatch:
 permissions:
@@ -29,7 +30,9 @@ jobs:
           node --check automation/oil-slot.mjs
           node --check automation/social-slot.mjs
           node --check automation/portrait-slot.mjs
+          node --check tests/oil-v5-release.test.mjs
       - name: Check public caption labels, limits, deterministic retries and exact links
         run: |
           node --test tests/social-caption-rotation.test.mjs tests/social-caption-limits.test.mjs
           node tests/portrait-captions.test.mjs
+          node tests/oil-v5-release.test.mjs
