@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import worker,{testing} from '../src/worker.mjs';
 const keys=['v','seed','mode','fmt','el','den','cx','neg','phi','rec','spi','ga',
 'nest','pen','th','wob','od','op','pr','dry','curve','shape','overlap','rot','ln',
@@ -77,3 +78,17 @@ test('portrait OG metadata reflects orientation',async()=>{
  assert.match(html,/og:image:height\" content=\"630\"/);
 });
 
+
+// Keep the Worker in sync with editor renderer releases; protect future V11 upgrades.
+test('latest editor renderer version has a working social thumbnail route',async()=>{
+ const settingsSource=readFileSync(new URL('../../../js/settings-url.js',import.meta.url),'utf8');
+ const match=settingsSource.match(/A\.SUPPORTED_RENDERER_VERSIONS=Object\.freeze\((\[[^\]]+\])\)/);
+ assert(match,'Cannot read the editor renderer version list');
+ const latest=Math.max(...JSON.parse(match[1]));
+ const vToken=Buffer.from(keys.map(k=>({...values,v:String(latest),material:'oil-v8'})[k]||'').join('\x1f')).toString('base64url');
+ assert.equal(testing.decodeToken(vToken)?.v,String(latest),
+   'Cloudflare must accept the current editor renderer version');
+ const card=await worker.fetch(request('/share?c='+vToken),env);
+ assert.equal(card.status,200);
+ assert.match(await card.text(),/property="og:image"/);
+});
