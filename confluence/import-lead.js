@@ -22,7 +22,8 @@ function materialFrom(params) {
   if (/^oil(?:-v\d+)?$/.test(name)) return 'oil';
   if (/^watercolour(?:-v2[rs t])?$/.test(name) || name.startsWith('watercolour-')) return 'watercolour';
   if (/^action(?:-v\d+)?$/.test(name)) return 'action';
-  if (params.has('tissue') || params.has('watercolor')) return 'tissue';
+  if (name === 'tissue' || /^tissue-v\d+(?:-layered)?$/.test(name) ||
+      params.has('tissue') || params.has('watercolor')) return 'tissue';
   if (name === 'marker') return 'marker';
   return null;
 }
