@@ -1216,7 +1216,7 @@ function savePNG(){
     watercolourRevision:watercolourMaterialRevision,
     watercolourFitToSheet:watercolourFitToSheet,
     tissuePaletteVersion:tissuePaletteVersion,
-    tissueLayeredV8:tissueLayeredV8
+    tissueLayeredV8:typeof tissueLayeredV8!=='undefined'&&tissueLayeredV8
   });
   if(mobileQuery.matches){
     clearPreparedPNG();
