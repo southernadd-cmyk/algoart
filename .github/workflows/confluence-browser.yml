@@ -12,6 +12,7 @@ on:
       - 'tests/confluence-ui.test.mjs'
       - 'tests/confluence-handoff-browser.mjs'
       - 'tests/confluence-v8-parity-browser.mjs'
+      - 'tests/confluence-tissue-accumulation-browser.mjs'
       - 'index.html'
       - 'js/app.js'
       - 'css/nav-lettering.css'
@@ -28,6 +29,7 @@ on:
       - 'tests/confluence-ui.test.mjs'
       - 'tests/confluence-handoff-browser.mjs'
       - 'tests/confluence-v8-parity-browser.mjs'
+      - 'tests/confluence-tissue-accumulation-browser.mjs'
       - 'index.html'
       - 'js/app.js'
       - 'css/nav-lettering.css'
@@ -61,3 +63,5 @@ jobs:
         run: node tests/confluence-handoff-browser.mjs
       - name: Verify Tissue V8 pixel parity against the solo material engine
         run: node tests/confluence-v8-parity-browser.mjs
+      - name: Measure saved monochrome Tissue atmosphere over 27 turns
+        run: node tests/confluence-tissue-accumulation-browser.mjs
