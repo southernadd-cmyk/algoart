@@ -111,7 +111,7 @@ try{
  await page.locator('#materialStyle').selectOption('oil');
  await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
  assert.equal(await page.locator('#materialStyle').inputValue(),'oil');
- assert.match(page.url(),/material=oil-v7/); // New Oil selections use V7; explicit V1–V6 links remain historical.
+ assert.match(page.url(),/material=oil-v8/); // New selections use released Oil V8; older explicit links remain historical.
  // Persist Oil across randomise; any seed may have no *broad* fields
  // but Reveal and metadata must still work for those valid compositions.
  await page.locator('#randomise').count(); // no-op for older UI ids
