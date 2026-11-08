@@ -47,7 +47,13 @@ export function makeSchedule(roster, total, pull) {
       if (seat < 0 || (i + 1) * (counts[k] - counts[seat]) > (drawn[k] - drawn[seat]) * total) seat = k;
     }
     const artist = roster[seat];
-    turns.push({id: artist.id, group: artist.groups[drawn[seat]++]});
+    // φ decides how often each artist works, not how much of their source
+    // drawing is discarded. Every original group is assigned exactly once
+    // across that artist's allocated number of turns.
+    const before=Math.floor(drawn[seat]*capacities[seat]/counts[seat]);
+    const after=Math.floor((drawn[seat]+1)*capacities[seat]/counts[seat]);
+    turns.push({id:artist.id,groupQuota:after-before});
+    drawn[seat]++;
   }
   return {turns, counts};
 }
