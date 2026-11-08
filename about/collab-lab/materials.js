@@ -108,14 +108,14 @@ export function makePainter(output, seed) {
   const colours = new Map();
   const oil = A.oilPigment.createModel();
 
-  function rgb(css) {
+  function sourceRGB(css) {
     if (!colours.has(css)) {
       colourSample ||= layer(true);
       size(colourSample, 1, 1);
       colourSample.fillStyle = css;
       colourSample.fillRect(0, 0, 1, 1);
       const pixels = colourSample.getImageData(0, 0, 1, 1).data;
-      colours.set(css, oil.mapRGB(Array.from(pixels.slice(0, 3))));
+      colours.set(css, Array.from(pixels.slice(0, 3)));
     }
     return colours.get(css);
   }
@@ -160,14 +160,16 @@ export function makePainter(output, seed) {
         if (material === 'tissue') {
           A.collabTissue(pigment, trace.points, Math.min(55, 9 + width * 2.8), colour, r);
         } else if (material === 'watercolour') {
-          A.collabWatercolour(pigment, trace.points, Math.min(64, 10 + width * 3.7), colour, seed, r);
+          // The wash mixer reads RGB channels. Palette swatches can be CSS HSL.
+          const ink = 'rgb(' + sourceRGB(colour).join(',') + ')';
+          A.collabWatercolour(pigment, trace.points, Math.min(64, 10 + width * 3.7), ink, seed, r);
         } else if (material === 'oil') {
           const profile = dryness >= 65 ? 'dry' : r.pick(['filbert', 'flat', 'knife', 'dry']);
           A.oilPaintV4ETest.drawContactBrushV8(pigment, relief, trace.points,
-            Math.min(65, 10 + width * 3.2), rgb(colour), profile, r,
+            Math.min(65, 10 + width * 3.2), oil.mapRGB(sourceRGB(colour)), profile, r,
             {thickness: .92, drag: Math.min(1, (profile === 'dry' ? .76 : .45) + dryness / 145)});
         } else {
-          A.collabAction(pigment, trace.points, 'rgb(' + rgb(colour).join(',') + ')',
+          A.collabAction(pigment, trace.points, 'rgb(' + oil.mapRGB(sourceRGB(colour)).join(',') + ')',
             width, markSeed, output.canvas.width, height);
         }
       }
