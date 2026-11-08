@@ -83,7 +83,7 @@ try{
             throw Error('One scheduled turn failed to paint all gestures');
           if(summary.drawnGroups>summary.totalGroups)throw Error('Overdrawn source groups');
         }
-        if(run.next(painter)!==null)throw Error('Extra turn outside schedule');
+        if(run.next()!==null)throw Error('Extra turn outside schedule');
         for(const artist of study.roster){
           const expected=new Set(artist.groups);
           const actual=seen.get(artist.id);
