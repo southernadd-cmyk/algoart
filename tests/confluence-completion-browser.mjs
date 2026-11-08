@@ -145,12 +145,15 @@ try{
     const trial=()=>{
       const run=makeRun(feedbackStudy,85);
       const signature=[];
-      let gestures=0;
+      let gestures=0,selfContacts=0;
       for(const entry of feedbackStudy.primary.turns){
         run.next({batch(actions){
           if(actions.length!==entry.groupQuota)throw Error('Incomplete intra-turn batch');
           for(const action of actions){
             gestures++;
+            selfContacts+=action.contacts.filter(id=>id===action.artist.number).length;
+            if(action.contacts.some(id=>id===action.artist.number))
+              throw Error('A hand was reported as responding to itself');
             const p=action.placement.place(action.group.center);
             signature.push([action.artist.id,action.group.id,
               p.x.toFixed(3),p.y.toFixed(3),action.reaction]);
@@ -164,7 +167,7 @@ try{
           );
         }});
       }
-      return {signature,gestures,stats:run.intraTurnDiagnostics()};
+      return {signature,gestures,selfContacts,stats:run.intraTurnDiagnostics()};
     };
     const first=trial(),repeated=trial();
     const expectedDecisions=feedbackStudy.primary.turns
@@ -179,7 +182,8 @@ try{
     results.push({systems:'field/geometric/rects',schedule:'intra-turn',
       complete: first.gestures===feedbackStudy.roster
         .reduce((sum,artist)=>sum+artist.groups.length,0),
-      deterministic:true,decisions:first.stats.decisions,
+      deterministic:true,selfContacts:first.selfContacts,
+      decisions:first.stats.decisions,
       stamps:first.stats.stamped,nearby:first.stats.nearby,
       turnsWithFeedback:first.stats.turns});
     return results;
@@ -193,6 +197,7 @@ try{
   const intra=report.find(row=>row.schedule==='intra-turn');
   assert(intra.complete,'Intra-turn feedback lost source gestures');
   assert(intra.deterministic,'Intra-turn planning did not replay identically');
+  assert.equal(intra.selfContacts,0,'A hand reported itself as an external contact');
   assert(intra.stamps>0&&intra.decisions>0,
     'A multi-gesture turn did not update planning state before the next gesture');
   assert(intra.nearby>0,
