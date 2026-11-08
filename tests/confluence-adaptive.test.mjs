@@ -146,7 +146,7 @@ test('Recursive Divisions supports 55 and 89 turns without drawing extra geometr
      pieces[i][0].y-pieces[i-1].at(-1).y)<.00001);
 });
 
-import {makeSchedule} from '../confluence/composition.js';
+import {makeSchedule,turnShares} from '../confluence/composition.js';
 
 test('φ determines drawing cadence, never truncates any artist source drawing',()=>{
   const counts=[62,73,48];
@@ -244,4 +244,39 @@ test('Dark overlap guard preserves hue and first marks but restrains repeat blac
  assert.deepEqual([...before.data],[245,245,245,255,85,78,73,255]);
  const multiply=guardedAlpha(92,89,80,10,15,12,.8,'multiply');
  assert(multiply<.8,'Watercolour glaze cannot multiply established paint into black');
+});
+
+test('Rotating the lead moves the 27/17/11 shares without changing source work',()=>{
+ const roster=[1,2,3].map(id=>({id,groups:Array.from({length:65},
+   (_,i)=>({id:id+'-'+i}))}));
+ const expected=[[27,17,11],[11,27,17],[17,11,27]];
+ const equal=makeSchedule(roster,55,0,0);
+ for(let lead=0;lead<3;lead++){
+   const programme=makeSchedule(roster,55,100,lead);
+   assert.deepEqual(programme.counts,expected[lead]);
+   assert.deepEqual(makeSchedule(roster,55,0,lead),equal,
+     'Equal-turn comparison must remain unchanged when lead rotates');
+   for(const artist of roster){
+     const delivered=programme.turns.filter(t=>t.id===artist.id)
+       .reduce((n,t)=>n+t.groupQuota,0);
+     assert.equal(delivered,artist.groups.length,
+       'Each rotated lead still completes the identical source drawing');
+   }
+   const shares=turnShares(100,lead);
+   assert.equal(shares.indexOf(Math.max(...shares)),lead);
+   assert.deepEqual(turnShares(0,lead),[1/3,1/3,1/3]);
+ }
+ assert.deepEqual(roster.map(a=>a.id),[1,2,3],
+   'Rotating lead never swaps the systems, palettes or artist identities');
+});
+
+test('Rotating lead preserves a stable available-turn ceiling',()=>{
+ const groups=[42,67,92].map((count,i)=>({id:i,
+   groups:Array.from({length:count},(_,j)=>({id:j}))}));
+ const available=turnBudget(groups);
+ assert(available>=55,'At least 55 turns should survive any lead order');
+ for(let lead=0;lead<3;lead++){
+   const plan=makeSchedule(groups,55,100,lead);
+   assert(plan.counts.every((n,i)=>n<=groups[i].groups.length));
+ }
 });
