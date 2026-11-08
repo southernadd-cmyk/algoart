@@ -1,11 +1,8 @@
-/* Navigation-only custom lowercase marker alphabet. Existing heading font is unchanged. */
-[data-algo-nav]{text-transform:none!important;font-style:normal!important;font-variant:normal!important;letter-spacing:0!important;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none;position:relative;line-height:1}
-[data-algo-nav] .algo-nav-ink{display:block;width:auto;height:23px;max-width:100%;overflow:visible;flex-shrink:1}
-[data-algo-nav] .algo-nav-readable{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-[data-algo-nav]:hover .algo-nav-ink,[data-algo-nav][aria-current="page"] .algo-nav-ink,[data-algo-nav].active .algo-nav-ink{filter:drop-shadow(.5px .5px 0 currentColor)}
+/* Use the same uppercase marker font as the headings, instead of a
+   second, custom lowercase SVG alphabet. Native link text remains accessible. */
+@font-face{font-family:'AlgoArt Marker';src:url('../fonts/AlgoArt-Marker-Regular.woff2?v=kern-v2-20261010') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+[data-algo-nav]{text-transform:uppercase!important;font:normal 15px/1.15 'AlgoArt Marker',sans-serif!important;font-variant-ligatures:contextual;font-feature-settings:"calt" 1;font-kerning:normal;letter-spacing:0!important;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none;position:relative}
 [data-algo-nav]:focus-visible{outline:2px solid currentColor;outline-offset:5px}
-@media(max-width:700px){[data-algo-nav] .algo-nav-ink{height:11px}}
-@media(max-width:390px){[data-algo-nav] .algo-nav-ink{height:10px}}
 
 /* Shared three-link top navigation; typography is exclusively nav-lettering.css. */
 .toolbar .algo-site-nav{display:flex;align-items:center;gap:clamp(8px,1.1vw,22px);margin-left:auto;padding:0 18px;min-width:0}
@@ -23,10 +20,7 @@
 @media(max-width:780px){.site-head nav,body>header:not(.site-head):not(.toolbar):not(.algo-global-header) nav{gap:10px}.site-head nav [data-algo-nav] .algo-nav-ink,body>header:not(.site-head):not(.toolbar):not(.algo-global-header) nav [data-algo-nav] .algo-nav-ink{height:11px}}
 @media(max-width:390px){.site-head nav,body>header:not(.site-head):not(.toolbar):not(.algo-global-header) nav{gap:6px}.site-head nav [data-algo-nav] .algo-nav-ink,body>header:not(.site-head):not(.toolbar):not(.algo-global-header) nav [data-algo-nav] .algo-nav-ink{height:9px}body>header:not(.site-head):not(.toolbar):not(.algo-global-header) .wordmark{font-size:20px}}
 
-/* Reserve the navigation appearance before JS draws the marker strokes.
-   This prevents a serif/uppercase fallback flash; text remains in the DOM for accessibility. */
-[data-algo-nav]:not(:has(.algo-nav-ink)){font-size:0!important;letter-spacing:0!important}
-@supports not selector(:has(*)){[data-algo-nav]{font-size:0!important}}
+/* Native text paints immediately and stays visible without JavaScript. */
 
 /* Compact editor header: keep wordmark and all three links on one mobile row. */
 @media(max-width:760px){
@@ -304,4 +298,67 @@ body .algo-global-header .algo-number-slash{color:#b65368!important}
  body .algo-global-header .algo-site-nav{width:auto!important;justify-content:flex-end!important;gap:9px!important}
  body .algo-global-header .algo-site-nav [data-algo-nav]{flex:0 1 auto!important}
  body .algo-global-header .algo-site-nav .algo-nav-ink{max-width:100%!important}
+}
+
+/* Uppercase site navigation: match the Proportion Piece heading lettering.
+   Scale by available header track; keep all three links readable on phones. */
+body .algo-global-header .algo-site-nav [data-algo-nav]{
+ font:normal 15px/1.15 'AlgoArt Marker',sans-serif!important;
+ text-transform:uppercase!important;
+ font-variant-ligatures:contextual!important;
+ font-feature-settings:"calt" 1!important;
+ font-kerning:normal!important;
+ letter-spacing:0!important;
+ white-space:nowrap!important;
+ flex:0 0 auto!important;
+}
+body .algo-global-header .algo-site-nav [data-algo-nav]:hover,
+body .algo-global-header .algo-site-nav [data-algo-nav][aria-current="page"]{
+ text-decoration:underline!important;
+ text-decoration-thickness:1px!important;
+ text-underline-offset:5px!important;
+}
+@media(min-width:851px) and (max-width:1100px){
+ body .algo-global-header .algo-site-nav [data-algo-nav]{font-size:13px!important}
+}
+@media(max-width:850px){
+ body .algo-global-header .algo-site-nav [data-algo-nav]{font-size:clamp(9px,1.5vw,13px)!important}
+ body .algo-global-header .algo-site-nav{min-width:0!important}
+}
+@media(max-width:390px){
+ body .algo-global-header .algo-site-nav [data-algo-nav]{font-size:9px!important}
+}
+
+/* Narrow phones: a full-width row keeps the longest uppercase link readable.
+   Place the ratio beside the wordmark, the three links on row two, and the
+   question on row three, preserving the existing 92px header height. */
+@media(max-width:450px){
+ body .algo-global-header,body .algo-global-header.toolbar{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:24px 24px 20px!important;
+  height:92px!important;min-height:92px!important;
+  align-content:center!important;row-gap:2px!important;
+  padding:8px 12px!important;
+ }
+ body .algo-global-header .algo-global-brand{
+  grid-column:1!important;grid-row:1!important;justify-self:start!important;align-self:center!important;
+ }
+ body .algo-global-header .algo-global-numbers{
+  display:flex!important;grid-column:1!important;grid-row:1!important;
+  justify-self:end!important;align-self:center!important;
+  font-size:8px!important;gap:4px!important;
+ }
+ body .algo-global-header .algo-site-nav{
+  grid-column:1!important;grid-row:2!important;justify-self:stretch!important;
+  width:100%!important;gap:6px!important;justify-content:space-between!important;
+  align-self:center!important;
+ }
+ body .algo-global-header .algo-site-nav [data-algo-nav]{
+  font-size:clamp(11px,2.8vw,13px)!important;
+ }
+ body .algo-global-header .algo-global-question{
+  grid-column:1!important;grid-row:3!important;align-self:center!important;
+  text-align:left!important;
+ }
 }
