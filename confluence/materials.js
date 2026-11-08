@@ -120,10 +120,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       [seed,'all-watercolour-voices','v2s-whole-sheet'].join('|'),sourceRGB,
       sheet);
     surfacePasses.watercolour++;
-    layTurn(watercolourSurface,watercolourTurn);
-    output.save();output.resetTransform();output.globalAlpha=1;
-    output.globalCompositeOperation='multiply';
-    output.drawImage(watercolourTurn.canvas,0,0);output.restore();
+    layTurn(watercolourSurface,watercolourTurn,'multiply');
   }
 
   function tissueFootprint(traces,gain) {
