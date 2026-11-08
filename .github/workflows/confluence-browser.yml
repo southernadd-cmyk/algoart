@@ -9,6 +9,14 @@ on:
       - 'tests/confluence-completion-browser.mjs'
       - 'tests/confluence-material.test.mjs'
       - 'tests/confluence-adaptive.test.mjs'
+      - 'tests/confluence-ui.test.mjs'
+      - 'tests/confluence-handoff-browser.mjs'
+      - 'index.html'
+      - 'js/app.js'
+      - 'css/nav-lettering.css'
+      - 'gallery/index.html'
+      - 'about/index.html'
+      - 'about/step-by-step/index.html'
       - '.github/workflows/confluence-browser.yml'
   pull_request:
     paths:
@@ -16,6 +24,14 @@ on:
       - 'tests/confluence-browser.test.mjs'
       - 'tests/confluence-capacity-audit.mjs'
       - 'tests/confluence-completion-browser.mjs'
+      - 'tests/confluence-ui.test.mjs'
+      - 'tests/confluence-handoff-browser.mjs'
+      - 'index.html'
+      - 'js/app.js'
+      - 'css/nav-lettering.css'
+      - 'gallery/index.html'
+      - 'about/index.html'
+      - 'about/step-by-step/index.html'
       - '.github/workflows/confluence-browser.yml'
   workflow_dispatch:
 permissions:
@@ -32,10 +48,12 @@ jobs:
       - run: npm ci
       - run: npx playwright install chromium
       - name: Verify native material bridge contracts
-        run: node --test tests/confluence-material.test.mjs tests/confluence-adaptive.test.mjs
+        run: node --test tests/confluence-material.test.mjs tests/confluence-adaptive.test.mjs tests/confluence-ui.test.mjs
       - name: Audit real drawing-turn capacities across all eight systems
         run: node tests/confluence-capacity-audit.mjs
       - name: Verify every artist completes source marks in φ and equal studies
         run: node tests/confluence-completion-browser.mjs
       - name: Verify browser orientation and all five materials
         run: node tests/confluence-browser.test.mjs
+      - name: Verify public Confluence navigation and full-state editor handoff
+        run: node tests/confluence-handoff-browser.mjs
