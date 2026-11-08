@@ -20,6 +20,19 @@ A.hues=function(s,r){
     else if(s.palette==='golden')h=start+i*137.507764;
     else h=arr[i%arr.length];
     var sat=s.saturation,lig=s.brightness;
+    // V10: named palettes are families of pigments, not a short list
+    // repeated verbatim once Colours exceeds their anchor count.
+    // Stay near the selected family's hue, but give additional inks
+    // distinct value/chroma so materials can keep them separate.
+    if(A.rendererVersion>=10&&arr&&s.palette!=='mono'){
+      var cycle=Math.floor(i/arr.length);
+      if(cycle){
+        var direction=cycle%2?1:-1;
+        h=(h+direction*(7+Math.floor((cycle-1)/2)*6)+360)%360;
+        lig=A.clamp(lig+direction*(12+Math.floor((cycle-1)/2)*5),14,86);
+        sat=A.clamp(sat-direction*5,8,100);
+      }
+    }
     if(s.palette==='pastel'){sat=Math.min(sat,72);lig=Math.max(lig,68)}
     if(s.palette==='neon'){sat=Math.max(sat,92);lig=A.clamp(lig,48,62)}
     if(s.palette==='earth'){sat=Math.min(sat,62);lig=A.clamp(lig,34,58)}
