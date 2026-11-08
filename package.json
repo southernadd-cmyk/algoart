@@ -18,6 +18,7 @@
     "test:organic-version": "node tests/organic-version.test.mjs",
     "test:growth-v8": "node tests/growth-v8.test.mjs",
     "test:renderer-lock": "node tests/renderer-lock.test.mjs",
+    "test:palette-coverage": "node tests/palette-coverage-v10.test.mjs",
     "test:oil-render": "node tests/oil-render.test.mjs",
     "test:tissue-colour": "node tests/tissue-colour.test.mjs",
     "test:archive": "node tests/archive-reproduction.mjs",
