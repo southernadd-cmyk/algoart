@@ -27,3 +27,27 @@ jobs:
         run: node tests/control-ranges.test.mjs
       - name: Preserve published V8
         run: node tests/renderer-lock.test.mjs
+
+  material-palette-previews:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Serve isolated editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/palette-server.log 2>&1 &
+          for i in {1..15}; do curl -fsS http://127.0.0.1:4173/ > /dev/null && break || sleep 1; done
+      - name: Render V9 vs V10 across five materials
+        run: node tests/palette-v10-material-previews.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v10-material-palette-comparisons
+          path: preview/palette-v10/
+          if-no-files-found: warn
+          retention-days: 14
