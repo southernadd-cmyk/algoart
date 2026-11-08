@@ -36,7 +36,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
@@ -92,7 +92,11 @@ jobs:
         if: steps.edition.outputs.random == 'true'
         run: node automation/generate-gallery-daily-12.mjs
 
-      - name: Archive twelve-study random gallery
+      - name: Generate four Confluence shared-canvas studies
+        if: steps.edition.outputs.random == 'true'
+        run: node automation/generate-gallery-confluence.mjs
+
+      - name: Archive sixteen-study gallery (12 solo + 4 Confluence)
         if: steps.edition.outputs.random == 'true'
         env:
           GALLERY_QUEUE_MATERIAL: random
@@ -365,8 +369,8 @@ jobs:
           # New materials add artwork without changing the historical batch size.
           # Require the established baseline; do not reject additional material batches.
           if [[ "$DAY" > "2026-11-08" ]]; then
-            test "$COUNT" -eq 12
-            DAY="$DAY" node --input-type=module -e "import fs from 'node:fs';const q=JSON.parse(fs.readFileSync('gallery/'+process.env.DAY+'/meta.json'));if(q.entries.length!==12||new Set(q.entries.map(e=>e.seed)).size!==12||q.entries.some(e=>e.rendererVersion!==10))throw Error('Random daily gallery must have 12 distinct V10 studies')"
+            test "$COUNT" -eq 16
+            DAY="$DAY" node --input-type=module -e "import fs from 'node:fs';const q=JSON.parse(fs.readFileSync('gallery/'+process.env.DAY+'/meta.json'));const solo=q.entries.filter(e=>/-G\\d{2}$/.test(e.id));const con=q.entries.filter(e=>e.material==='confluence');if(q.entries.length!==16||solo.length!==12||con.length!==4||con.filter(e=>e.orientation==='portrait').length!==2||con.filter(e=>e.orientation==='landscape').length!==2||new Set(q.entries.map(e=>e.seed)).size!==16||q.entries.some(e=>e.rendererVersion!==10)||con.some(e=>!new URL(e.shareUrl).searchParams.has('s')))throw Error('Daily gallery needs 12 distinct V10 solo studies plus 4 linked Confluence studies (2 portrait, 2 landscape)')"
             test -s "gallery/$DAY/random-edition.json"
           elif [[ "$DAY" > "2026-10-16" ]]; then
             test "$COUNT" -eq 18
@@ -416,7 +420,7 @@ jobs:
         run: |
           echo "### ALGO/ART daily gallery" >> "$GITHUB_STEP_SUMMARY"
           echo "- Archive: https://southernadd-cmyk.github.io/algoart/gallery/" >> "$GITHUB_STEP_SUMMARY"
-          echo "- 8 Nov: legacy 18-study exhibition restored; 9 Nov onward: 12 seeded random studies across all materials and engines" >> "$GITHUB_STEP_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+          echo "- 8 Nov: legacy 18-study exhibition; 9 Nov onward: 12 solo plus 4 Confluence studies (2 portrait, 2 landscape)" >> "$GITHUB_STEP_SUMMARY"
           echo "- Static HTML + JSON-LD + Open Graph + RSS + sitemap" >> "$GITHUB_STEP_SUMMARY"
 
   archive-check:
