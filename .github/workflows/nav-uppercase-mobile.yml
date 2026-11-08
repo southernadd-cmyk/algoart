@@ -1,0 +1,38 @@
+name: Uppercase navigation mobile fit
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'css/nav-lettering.css'
+      - 'js/nav-lettering.js'
+      - 'index.html'
+      - 'gallery/index.html'
+      - 'about/index.html'
+      - 'tests/nav-uppercase-mobile.test.mjs'
+      - '.github/workflows/nav-uppercase-mobile.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --only-shell chromium
+      - name: Check navigation script
+        run: node --check js/nav-lettering.js && node --check tests/nav-uppercase-mobile.test.mjs
+      - name: Start static preview
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/navigation-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/navigation-http.log; exit 1
+      - name: Verify font and layout across mobile, tablet and desktop
+        run: node tests/nav-uppercase-mobile.test.mjs
