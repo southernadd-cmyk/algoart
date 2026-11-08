@@ -10,7 +10,7 @@ function strategyName(stats, fallback) {
 // full share URL. This keeps Threads/Bluesky within their caption limits.
 export function editorArtworkLink(item) {
   const id=String(item.id||'');
-  if (!/^\d{4}-\d{2}-\d{2}-(?:(?:ACL|ACP|WL|WP|CL|CP|OL|OP|P)\d{2}|\d{2})$/.test(id)) {
+  if (!/^\d{4}-\d{2}-\d{2}-(?:(?:ACL|ACP|WL|WP|CL|CP|OL|OP|P|G)\d{2}|\d{2})$/.test(id)) {
     throw new Error('Cannot link artwork without a valid daily archive ID: '+id);
   }
   const url=new URL(SITE_URL);

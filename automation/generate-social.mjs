@@ -56,6 +56,9 @@ function clamp(v, min, max) {
 }
 
 function settingsFor(day, index, seedSalt = '', orientation = 'landscape') {
+  // The daily 12-work gallery explores the full phi/colour controls without
+  // changing a single existing social post or frozen historical seed.
+  const galleryRandom12=process.env.GALLERY_RANDOM_12==='true';
   const salt = String(seedSalt || '').trim();
   const saltKey = salt ? `|${salt}` : '';
   const portrait = orientation === 'portrait';
@@ -90,10 +93,10 @@ function settingsFor(day, index, seedSalt = '', orientation = 'landscape') {
     density: clamp(modeDefaults.density + int(r, -12, 12), 28, 78),
     complexity: clamp(modeDefaults.complexity + int(r, -11, 13), 35, 82),
     negativeSpace: clamp(modeDefaults.negativeSpace + int(r, -10, 13), 12, 58),
-    phiStrength: int(r, 82, 100),
+    phiStrength: galleryRandom12 ? int(r, 0, 100) : int(r, 82, 100),
     recursion: int(r, 4, 8),
     spiralInfluence: clamp(modeDefaults.spiralInfluence + int(r, -10, 10), 8, 95),
-    goldenAngle: int(r, 86, 100),
+    goldenAngle: galleryRandom12 ? int(r, 0, 100) : int(r, 86, 100),
     nesting: int(r, 22, 62),
     pen: pick(r, PENS),
     thickness: int(r, 5, 13),
@@ -112,9 +115,9 @@ function settingsFor(day, index, seedSalt = '', orientation = 'landscape') {
     polygons: true,
     arcs: true,
     palette: pick(r, PALETTES),
-    colourCount: int(r, 4, 10),
-    saturation: int(r, 64, 94),
-    brightness: int(r, 43, 62),
+    colourCount: galleryRandom12 ? int(r, 1, 14) : int(r, 4, 10),
+    saturation: galleryRandom12 ? int(r, 36, 100) : int(r, 64, 94),
+    brightness: galleryRandom12 ? int(r, 32, 78) : int(r, 43, 62),
     paper: pick(r, ['#f5f0e6', '#f0eadc', '#f7f1e7', '#ece5d5', '#f3eee4']),
     grain: int(r, 10, 28)
   };
