@@ -168,6 +168,14 @@ test('Solo-to-Confluence importer preserves full-state settings for all five cur
    assert.equal(lead.settings.thickness,17);
    assert.equal(lead.settings.phiStrength,38.2);
    assert.equal(lead.settings.fit,true);
+   // Explicit fit=0 beats legacy sheet=phi; real solo-editor links include
+   // this combination and should not reframe Artist 1 behind the scenes.
+   params.set('fit','0');
+   assert.equal(importLeadFromURL(params,lead,inputs,catalog),true);
+   assert.equal(lead.settings.fit,false);
+   params.set('fit','1');
+   assert.equal(importLeadFromURL(params,lead,inputs,catalog),true);
+   assert.equal(lead.settings.fit,true);
    assert.equal(lead.settings.lines,false);
    assert.equal(lead.settings.circles,true);
    assert.equal(lead.settings.rectangles,false);
