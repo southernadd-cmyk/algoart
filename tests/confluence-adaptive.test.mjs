@@ -280,3 +280,52 @@ test('Rotating lead preserves a stable available-turn ceiling',()=>{
    assert(plan.counts.every((n,i)=>n<=groups[i].groups.length));
  }
 });
+
+import {selfOverlapAt,costAt} from '../confluence/mark-planner.js';
+import {judge} from '../confluence/collab.js';
+
+test('Same-hand provisional ink repels nearby marks but cannot attract at any preferred gap',()=>{
+  const sheet={cols:10,rows:10,width:160,height:160,inset:0};
+  const own={owner:1,distances:new Float32Array(100).fill(144),
+    angle:new Float32Array(100).fill(0)};
+  own.distances[3+3*10]=2;
+  // For both scorers, own ink only raises the near collision cost.
+  const near={x:56,y:56};
+  const far={x:88,y:56};
+  const farther={x:120,y:56};
+  assert(selfOverlapAt(near,own,sheet,6)>0);
+  assert.equal(selfOverlapAt(far,own,sheet,6),0);
+  assert.equal(selfOverlapAt(farther,own,sheet,6),0);
+  const context={fields:[],selfField:own,sheet,
+    response:{gap:100,overlap:2.6,alignment:1.2},
+    gain:1,mode:'weave',density:null};
+  const nearCost=costAt(near,0,context,6);
+  const farCost=costAt(far,0,context,6);
+  const fartherCost=costAt(farther,0,context,6);
+  assert(nearCost>farCost,'Own neighbouring mark must discourage collision');
+  assert.equal(farCost,fartherCost,'Own ink cannot create a gap-width attraction');
+  const source={probes:[{p:{x:0,y:0},next:{x:12,y:0}}]};
+  const candidate=at=>({place:p=>({x:p.x+at.x,y:p.y+at.y}),effort:0});
+  const nearJudge=judge(source,candidate(near),context,6);
+  const farJudge=judge(source,candidate(far),context,6);
+  const fartherJudge=judge(source,candidate(farther),context,6);
+  assert(nearJudge>farJudge,'Judge must repel its own fresh ink');
+  assert.equal(farJudge,fartherJudge,
+    'Judge must not reward spacing its own gestures at a fixed distance');
+  const empty={...context,selfField:null};
+  assert.equal(judge(source,candidate(far),empty,6),farJudge,
+    'Without collision, provisional ink has no scoring effect');
+});
+
+test('Self-only proximity does not create a false inter-artist echo',()=>{
+  const contextSheet={cols:10,rows:10,width:160,height:160,inset:0};
+  const self={owner:1,distances:new Float32Array(100).fill(6),
+    angle:new Float32Array(100)};
+  const ownOnly={fields:[],selfField:self,sheet:contextSheet,
+    response:{gap:40,overlap:2.3,alignment:0},
+    mode:'weave',gain:1,density:null};
+  const response=inferResponse(group,artist,ownOnly.fields,null,contextSheet);
+  assert.equal(response.mode,'weave');
+  assert.equal(response.evidence.near,0);
+  assert.equal(response.evidence.aligned,0);
+});
