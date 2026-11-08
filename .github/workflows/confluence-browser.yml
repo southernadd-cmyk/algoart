@@ -11,6 +11,7 @@ on:
       - 'tests/confluence-adaptive.test.mjs'
       - 'tests/confluence-ui.test.mjs'
       - 'tests/confluence-handoff-browser.mjs'
+      - 'tests/confluence-v8-parity-browser.mjs'
       - 'index.html'
       - 'js/app.js'
       - 'css/nav-lettering.css'
@@ -26,6 +27,7 @@ on:
       - 'tests/confluence-completion-browser.mjs'
       - 'tests/confluence-ui.test.mjs'
       - 'tests/confluence-handoff-browser.mjs'
+      - 'tests/confluence-v8-parity-browser.mjs'
       - 'index.html'
       - 'js/app.js'
       - 'css/nav-lettering.css'
@@ -57,3 +59,5 @@ jobs:
         run: node tests/confluence-browser.test.mjs
       - name: Verify public Confluence navigation and full-state editor handoff
         run: node tests/confluence-handoff-browser.mjs
+      - name: Verify Tissue V8 pixel parity against the solo material engine
+        run: node tests/confluence-v8-parity-browser.mjs
