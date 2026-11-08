@@ -3982,6 +3982,7 @@ A.render=function(target,s,scale,showGeometry){
   if(A.rendererVersion>=10){
     A._inkRackV10=pal;
     A._inkMarkV10=0;
+    A._inkAccentV10=0;
     var inkCount=pal.length,inkStep=Math.max(1,Math.round(inkCount*.61803398875));
     function gcd(a,b){while(b){var t=a%b;a=b;b=t}return a}
     while(inkStep<inkCount&&gcd(inkStep,inkCount)!==1)inkStep++;
