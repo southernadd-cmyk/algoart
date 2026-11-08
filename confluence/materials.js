@@ -1,4 +1,4 @@
-import {artistInk, paint} from './collab.js?v=confluence-progressive-groups-10';
+import {artistInk, paint} from './collab.js?v=confluence-full-source-12';
 import {plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
 import {renderNativeDeposit} from './native-material.js?v=confluence-wash-fast-09';
 
