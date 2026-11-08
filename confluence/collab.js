@@ -145,10 +145,13 @@ function recordArtist(artist, seed, sheet, sourceCanvas) {
       group.pivot = pt(group.cell.x + group.cell.w / 2, group.cell.y + group.cell.h / 2);
     }
   }
-  // Cells are structural containers, not single atomic painting gestures.
-  // Build successive steps from the original recorded paths so Recursive
-  // Divisions can participate in 55+ turns without inventing new rectangles.
-  return {...artist,groups:guide?.type==='rects'?
+  // Recursive Divisions cells, Constructed Forms shapes and Automatic
+  // Marks runs each contain multiple real strokes. Split their existing
+  // recorded geometry into genuine sequential drawing gestures rather
+  // than treating a whole shape/run as a single Confluence turn.
+  // This changes only Confluence scheduling, never the solo engines.
+  const progressive=['rects','constructed','scribble'].includes(guide?.type);
+  return {...artist,groups:progressive?
     expandRecursiveTurns(groups,samplePath):groups};
 }
 
