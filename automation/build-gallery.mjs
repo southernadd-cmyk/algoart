@@ -361,6 +361,15 @@ try {
 }
 
 const existingEntries = Array.isArray(existingMeta.entries) ? existingMeta.entries : [];
+if (galleryMaterial === 'oil') {
+  const archivedOil = new Map(existingEntries.filter(entry => entry.material === 'oil').map(entry => [entry.id, entry]));
+  for (const entry of queue.entries) {
+    const previous = archivedOil.get(entry.id);
+    if (previous && new URL(previous.shareUrl).searchParams.get('material') !== new URL(entry.shareUrl).searchParams.get('material')) {
+      throw Error('Cannot change the Oil revision of archived artwork ' + entry.id);
+    }
+  }
+}
 // An archived study is immutable, including its exact renderer version,
 // image bytes and source URL. Daily recovery can fill missing slots, but a
 // freshly generated V10 queue must never repaint existing V8/V9 studies.
@@ -375,15 +384,6 @@ queue.entries = await Promise.all(queue.entries.map(async entry => {
     platforms: entry.platforms || {}
   };
 }));
-if (galleryMaterial === 'oil') {
-  const archivedOil = new Map(existingEntries.filter(entry => entry.material === 'oil').map(entry => [entry.id, entry]));
-  for (const entry of queue.entries) {
-    const previous = archivedOil.get(entry.id);
-    if (previous && new URL(previous.shareUrl).searchParams.get('material') !== new URL(entry.shareUrl).searchParams.get('material')) {
-      throw Error('Cannot change the Oil revision of archived artwork ' + entry.id);
-    }
-  }
-}
 
 const queuedSeeds = new Set(queue.entries.map(entry => entry.seed).filter(Boolean));
 const queuedFiles = new Set(queue.entries.map(entry => entry.imageFile).filter(Boolean));
