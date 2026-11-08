@@ -72,7 +72,7 @@ test('Every Tissue turn contributes progressive native V8 pigment rather than a 
  const bridge=read('../confluence/native-material.js');
  const ui=read('../confluence/ui.js');
  assert.match(renderer,/function renderActualTissue\(/);
- assert.match(renderer,/renderNativeDeposit\(tissueTurn,'tissue',all,representative/);
+ assert.match(renderer,/renderNativeDeposit\(tissueTurn,'tissue',newMarks,representative/);
  assert.match(renderer,/renderActualTissue\(fresh,artist\)/);
  assert.match(renderer,/tissueMarks\.push\(\.\.\.fresh\)/);
  assert.doesNotMatch(renderer,/collabTissue\(/);
@@ -82,18 +82,19 @@ test('Every Tissue turn contributes progressive native V8 pigment rather than a 
  assert.match(ui,/state\.paintShared\.finalize\?\.\(\)/);
  assert.doesNotMatch(read('../js/oil-material.js'),/confluenceTissueGraphite/);
 });
-test('Cumulative Tissue V8 keeps independent artist palettes without duplicating atmosphere',()=>{
+test('Tissue V8 opacity envelopes retain every artist palette without wash stacking',()=>{
  const renderer=read('../confluence/materials.js');
  const native=read('../confluence/native-material.js');
  assert.match(renderer,/tissueHistories=new Map\(\)/);
- assert.match(renderer,/history\.marks\.push\(\.\.\.newMarks\)/);
- assert.match(renderer,/new Set\(all\.map\(t=>t\.ink\)\)/);
- assert.match(renderer,/history\.previous=next/);
- assert.match(renderer,/renderNativeDeposit\(tissueTurn,'tissue',all,representative/);
+ assert.match(renderer,/history=\{coverage:new Uint8Array\(/);
+ assert.match(renderer,/new Set\(newMarks\.map\(t=>t\.ink\)\)/);
+ assert.match(renderer,/history\.coverage\[globalIndex\]=newAlpha/);
+ assert.match(renderer,/newAlpha-oldAlpha/);
+ assert.match(renderer,/renderNativeDeposit\(tissueTurn,'tissue',newMarks,representative/);
  assert.match(renderer,/tissueIncrement\.putImageData\(increment,0,0\)/);
  assert.match(renderer,/\[seed,'tissue-artist',artist\.id,'v8-layered'\]/);
  assert.match(native,/trace\.ink\|\|artist\.inks/);
- assert.doesNotMatch(renderer,/renderNativeDeposit\(tissueTurn,'tissue',newMarks/);
+ assert.doesNotMatch(renderer,/history\.marks\.push\(\.\.\.newMarks\)/);
 });
 
 test('All materials deposit on one persistent sheet in chronological order',()=>{
