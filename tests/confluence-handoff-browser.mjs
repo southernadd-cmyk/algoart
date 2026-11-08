@@ -44,7 +44,8 @@ try{
  const url=new URL(source,origin);
  assert.equal(url.pathname,'/confluence/');
  for(const [key,expected] of state.entries()){
-  if(key==='v')continue;
+  // The solo editor intentionally omits the default Marker material from URLs.
+  if(key==='v'||(key==='material'&&expected==='marker'))continue;
   assert.equal(url.searchParams.get(key),expected,
     'Solo handoff lost '+key+'='+expected);
  }
@@ -55,7 +56,7 @@ try{
  await page.waitForURL(/\/confluence\/\?/,{timeout:45000});
  await page.waitForFunction(()=>
   document.getElementById('shared-seed')?.textContent.includes('CONFLUENCE-INTEGRATION-01'),
-  {timeout:60000});
+  null,{timeout:60000});
  const imported=await page.evaluate(()=>({
   seed:document.getElementById('seed').value,
   paper:document.getElementById('paper').value,
@@ -63,7 +64,6 @@ try{
   grain:document.getElementById('grain').value,
   lead:document.getElementById('lead-index').value,
   note:!document.getElementById('import-note').hidden,
-  first:[...document.querySelectorAll('.artist')][0],
   firstSystem:document.querySelector('.artist[data-artist="1"] select[data-field="system"]')?.value,
   firstMaterial:document.querySelector('.artist[data-artist="1"] select[data-field="material"]')?.value,
   firstPalette:document.querySelector('.artist[data-artist="1"] select[data-field="palette"]')?.value,
