@@ -25,13 +25,29 @@ function inkAt(point, fields, sheet) {
     x: nearest.x[index], y: nearest.y[index]} : {distance, angle: 0};
 }
 
-function costAt(point, heading, context, width) {
+// Provisional marks from this hand can only repel a new mark at close range.
+// They are NOT included in other hands' gap/heading fields: otherwise one
+// artist can be attracted to follow its own drawing.
+export function selfOverlapAt(point,selfField,sheet,width,margin=19){
+  if(!selfField)return 0;
+  const x=clamp(Math.floor(point.x/CELL),0,sheet.cols-1);
+  const y=clamp(Math.floor(point.y/CELL),0,sheet.rows-1);
+  const clearance=selfField.distances[x+y*sheet.cols]-width;
+  return clamp((margin-clearance)/margin,0,2);
+}
+
+export function costAt(point, heading, context, width) {
   const {fields, sheet, response} = context;
   const ink = inkAt(point, fields, sheet);
   const clearance = ink.distance - width;
   const overlap = Math.max(0, 13 - clearance) / 14;
   const alignment = Math.abs(Math.cos(ink.angle - heading)) * Math.max(0, 1 - ink.distance / 88);
-  return Math.abs(clearance - response.gap) / REACH + overlap * response.overlap - alignment * response.alignment + crowdingAt(context, point);
+  // Same-hand ink adds only collision cost, never a preferred distance or
+  // directional alignment. Committed pigment still contributes crowding.
+  const selfOverlap=selfOverlapAt(point,context.selfField,sheet,width);
+  return Math.abs(clearance - response.gap) / REACH +
+    (overlap+selfOverlap)*response.overlap -
+    alignment*response.alignment+crowdingAt(context,point);
 }
 
 export function nextGroup(artist, context, anchors) {
