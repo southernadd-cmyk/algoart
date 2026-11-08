@@ -131,6 +131,39 @@ try{
     await page.locator('#inspector-toggle').click();
     await page.locator('#tab-artist-1').click();
   }
+  // Regression for the screenshot's rectangular colour tiles: a one-turn
+  // native wash must have fully transparent artificial crop boundaries.
+  // Running this in Chromium verifies the mask survives actual V2S/tissue
+  // pigment computation, not merely a mocked math helper.
+  for(const material of ['watercolour','tissue']){
+    const crop=await page.evaluate(async kind=>{
+      const {renderNativeDeposit}=await import('/confluence/native-material.js');
+      const area={x:120,y:125,w:390,h:380};
+      const sheet={width:1400,height:1000};
+      const canvas=document.createElement('canvas');
+      canvas.width=area.w;canvas.height=area.h;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      const points=[{x:280,y:260},{x:310,y:275},{x:340,y:296},{x:385,y:315}];
+      renderNativeDeposit(ctx,kind,
+        [{points,width:6,mark:1}],
+        {inks:['hsl(215 80% 45%)'],settings:{colourCount:3}},
+        area,'#f5f0e6','TEST-SEAM-'+kind,()=>[31,105,220],sheet);
+      const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      const w=canvas.width,h=canvas.height;
+      let edgeMax=0,innerCount=0,inside=0;
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        const a=data[(y*w+x)*4+3];
+        if(x===0||y===0||x===w-1||y===h-1)edgeMax=Math.max(edgeMax,a);
+        if(x>=80&&y>=80&&x<w-80&&y<h-80){
+          inside++;if(a>15)innerCount++;
+        }
+      }
+      return {edgeMax,innerCount,inside};
+    },material);
+    assert.equal(crop.edgeMax,0,material+' crop produced hard rectangular edges: '+JSON.stringify(crop));
+    assert(crop.innerCount>0,material+' lost its native pigment while feathering: '+JSON.stringify(crop));
+    console.log('native crop '+material+' '+JSON.stringify(crop));
+  }
   assert.deepEqual(errors,[],'Confluence material JavaScript errors: '+errors.join('; '));
   console.log('Confluence five-material browser smoke passed');
 }finally{

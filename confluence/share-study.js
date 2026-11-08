@@ -35,8 +35,12 @@ export function restoreSharedState(params, artists, inputs, catalog) {
   const data=fromToken(params.get('s'));
   if (!checkState(data)) return false;
   const possibleSystems = new Set(catalog.systems.map(s=>s.id));
+  // Historical Confluence links may contain the now-retired custom
+  // "signature" palette. Preserve their composition settings while mapping
+  // that palette to the established Full Spectrum palette.
   if(!data.artists.every(a=>possibleSystems.has(a.system) &&
-      Object.hasOwn(catalog.palettes,a.palette) && Object.hasOwn(catalog.materials,a.material)))
+      (a.palette==='signature'||Object.hasOwn(catalog.palettes,a.palette)) &&
+      Object.hasOwn(catalog.materials,a.material)))
     return false;
   inputs.seed.value=data.seed;
   inputs.orientation.value=data.orientation;
@@ -51,7 +55,7 @@ export function restoreSharedState(params, artists, inputs, catalog) {
   // Each property is restricted to a known editor setting, preserving its
   // existing type and widget range. Unknown URL keys are ignored.
   data.artists.forEach((from,i)=>{
-    const to=artists[i];to.system=from.system;to.palette=from.palette;to.material=from.material;
+    const to=artists[i];to.system=from.system;to.palette=from.palette==='signature'?'spectrum':from.palette;to.material=from.material;
     for(const [key,value] of Object.entries(from.settings)){
       if(!Object.hasOwn(to.settings,key))continue;
       const original=to.settings[key];
