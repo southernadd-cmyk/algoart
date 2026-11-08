@@ -1,9 +1,5 @@
-const W = 1400;
-const H = 1000;
 const CELL = 16;
-const REACH = 112;
-const COLS = Math.ceil(W / CELL);
-const ROWS = Math.ceil(H / CELL);
+const REACH = 144;
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 export const systems = [
@@ -29,20 +25,25 @@ export function slotInk(id) {
 
 export function paletteInks(artist, seed) {
   const signature = systems[(artist.id - 1) % systems.length];
+  const {colourCount, saturation, brightness} = artist.settings;
   if (artist.palette === 'signature') {
-    return [signature.ink, 'hsl(' + (signature.hue + 10) + ' 46% 51%)',
-      'hsl(' + (signature.hue - 8) + ' 66% 33%)'];
+    const offsets = [0, 11, -8, 19, -17, 27, -26, 36, -35, 45, -44, 54, -53, 63];
+    return offsets.slice(0, colourCount).map((shift, index) => {
+      const hue = (signature.hue + shift + 360) % 360;
+      const light = clamp(brightness + [0, 8, -7][index % 3], 20, 80);
+      return 'hsl(' + hue + ' ' + saturation + '% ' + light + '%)';
+    });
   }
   const A = window.AlgoArt;
   A.rendererVersion = 10;
-  return A.hues({palette: artist.palette, colourCount: 6, saturation: 68, brightness: 45},
+  return A.hues({palette: artist.palette, colourCount, saturation, brightness},
     A.makeR(seed + '|palette|' + artist.id));
 }
 
 export const responses = {
-  weave: {gap: 35, overlap: 1.7, alignment: 0.22},
-  echo: {gap: 24, overlap: 0.75, alignment: 0.95},
-  space: {gap: 84, overlap: 3.0, alignment: 0}
+  weave: {gap: 40, overlap: 2.3, alignment: .14},
+  echo: {gap: 22, overlap: 1.0, alignment: 1.20},
+  space: {gap: 120, overlap: 3.4, alignment: 0}
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -53,7 +54,7 @@ const same = (a, b) => distance(a, b) < 0.001;
 const identity = point => point;
 
 function parsePath(d) {
-  const tokens = d.trim().split(/\s+/);
+  const tokens = d.match(/[MLC]|[-+]?(?:\d*\.?\d+)(?:[eE][-+]?\d+)?/g);
   const commands = [];
   for (let i = 0; i < tokens.length;) {
     const type = tokens[i++];
@@ -89,28 +90,28 @@ function samplePath(commands) {
   return samples;
 }
 
-function recordArtist(artist, seed, count, sourceCanvas) {
+function recordArtist(artist, seed, sheet, sourceCanvas) {
   const A = window.AlgoArt;
   const recorder = {precise: true, paths: []};
   A.rendererVersion = 10;
   A.svgRecorder = recorder;
+  const {fit, seed: artistSeed, colourCount, saturation, brightness, ...settings} = artist.settings;
+  const previousFit = A.phiFramingEnabled;
   let guide;
   try {
+    A.phiFramingEnabled = fit;
     ({guide} = A.render(sourceCanvas, {
-      seed, mode: artist.system, orientation: 'landscape',
-      elements: Math.round(42 / Math.sqrt(count / 3)), density: 44, complexity: 56, negativeSpace: 47,
-      phiStrength: 76, recursion: count >= 5 ? 3 : 4, spiralInfluence: 71, goldenAngle: 84, nesting: 32,
-      pen: artist.pen, thickness: artist.width, wobble: 21, overdraw: 2, opacity: 77, pressure: 39,
-      dryness: 10, curveBias: 49, shapeAmount: 63, overlap: 56, rotation: 82,
-      lines: true, circles: true, rectangles: true, polygons: true, arcs: true,
+      seed: artistSeed.trim() || seed + '|artist|' + artist.id,
+      mode: artist.system, orientation: sheet.orientation, ...settings,
       palette: 'marker', colourCount: 3, saturation: 68, brightness: 43, paper: '#f5f0e6', grain: 7
     }, 0.12, false));
   } finally {
     A.svgRecorder = null;
+    A.phiFramingEnabled = previousFit;
   }
 
   const groups = [];
-  const branches = guide.type === 'organic' ? guide.segments : [];
+  const branches = guide?.type === 'organic' ? guide.segments : [];
   const branchAnchor = new Map(branches.map((branch, i) => ['seg-' + i, branch]));
   for (const path of recorder.paths) {
     const info = path.group;
@@ -137,45 +138,44 @@ function recordArtist(artist, seed, count, sourceCanvas) {
     );
     const token = group.id.split('/').at(-1);
     const index = Number(token.split('-').at(-1));
-    if (guide.type === 'organic') {
+    if (guide?.type === 'organic') {
       const branch = branchAnchor.get(token);
       if (branch) group.links = [pt(branch.x1, branch.y1), pt(branch.x2, branch.y2)];
     }
-    if (guide.type === 'network') {
+    if (guide?.type === 'network') {
       const edge = guide.edges[index];
       group.links = group.info.section === 'nodes'
         ? [guide.layout[index]]
         : [guide.layout[edge.a], guide.layout[edge.b]];
     }
-    if (guide.type === 'burst' && Number.isInteger(group.info?.hub)) {
+    if (guide?.type === 'burst' && Number.isInteger(group.info?.hub)) {
       group.pivot = guide.hubs[group.info.hub];
     }
-    if (guide.type === 'rects') {
-      group.cell = group.info?.cell || guide.root;
+    if (guide?.type === 'rects') {
+      group.cell = guide.cells[index] || guide.root;
       group.pivot = pt(group.cell.x + group.cell.w / 2, group.cell.y + group.cell.h / 2);
     }
   }
   return {...artist, groups};
 }
 
-function field() {
-  return {
-    distances: new Float32Array(COLS * ROWS).fill(REACH),
-    angle: new Float32Array(COLS * ROWS)
-  };
+function field({cols, rows}) {
+  return {cols, rows, distances: new Float32Array(cols * rows).fill(REACH),
+    angle: new Float32Array(cols * rows)};
 }
 
 function indexInk(field, point, angle, radius) {
-  const minX = clamp(Math.floor((point.x - REACH) / CELL), 0, COLS - 1);
-  const maxX = clamp(Math.floor((point.x + REACH) / CELL), 0, COLS - 1);
-  const minY = clamp(Math.floor((point.y - REACH) / CELL), 0, ROWS - 1);
-  const maxY = clamp(Math.floor((point.y + REACH) / CELL), 0, ROWS - 1);
+  const {cols, rows} = field;
+  const minX = clamp(Math.floor((point.x - REACH) / CELL), 0, cols - 1);
+  const maxX = clamp(Math.floor((point.x + REACH) / CELL), 0, cols - 1);
+  const minY = clamp(Math.floor((point.y - REACH) / CELL), 0, rows - 1);
+  const maxY = clamp(Math.floor((point.y + REACH) / CELL), 0, rows - 1);
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
       const dx = (x + 0.5) * CELL - point.x;
       const dy = (y + 0.5) * CELL - point.y;
       const d = Math.max(0, Math.sqrt(dx * dx + dy * dy) - radius);
-      const index = x + y * COLS;
+      const index = x + y * cols;
       if (d < field.distances[index]) {
         field.distances[index] = d;
         field.angle[index] = angle;
@@ -206,26 +206,30 @@ function transform(origin, dest, angle, scale) {
 
 function candidates(group, artist, strength, turn) {
   const anchors = artist.anchors;
+  const pose = artist.pose.place;
   const fixed = (group.links || []).filter(point => anchors.has(key(point)));
-  const pivot = fixed[0] || group.pivot || group.center;
-  const home = anchors.get(key(pivot)) || pivot;
+  const sourcePivot = fixed[0] || group.pivot || group.center;
+  const pivot = pose(sourcePivot);
+  const home = anchors.get(key(sourcePivot)) || pivot;
   const gain = strength / 100;
-  const alternatives = [];
   if (fixed.length >= 2) {
     const [a, b] = fixed;
     const end = anchors.get(key(b));
     const fromAngle = Math.atan2(b.y - a.y, b.x - a.x);
     const toAngle = Math.atan2(end.y - home.y, end.x - home.x);
     const span = distance(a, b);
-    if (span < 0.001) return [{place: transform(a, home, 0, 1), effort: 0}];
+    if (span < 0.001) {
+      const translate = transform(pivot, home, 0, 1);
+      return [{place: point => translate(pose(point)), effort: 0}];
+    }
     const length = distance(home, end);
     const base = transform(a, home, toAngle - fromAngle, length / span);
-    alternatives.push({place: base, effort: 0});
+    const alternatives = [{place: base, effort: 0}];
     if (length < 0.001) return alternatives;
     const dx = Math.cos(toAngle);
     const dy = Math.sin(toAngle);
     for (const sign of [-1, 1, -0.5, 0.5]) {
-      const amount = Math.min(54, length * 0.23) * gain * sign;
+      const amount = Math.min(114, length * 0.41) * gain * sign;
       const place = point => {
         const p = base(point);
         const t = clamp(((p.x - home.x) * dx + (p.y - home.y) * dy) / length, 0, 1);
@@ -237,38 +241,45 @@ function candidates(group, artist, strength, turn) {
     return alternatives;
   }
 
-  alternatives.push({place: transform(pivot, home, 0, 1), effort: 0});
+  const alternatives = [];
+  function offer(dest, angle, scale, effort) {
+    const local = transform(pivot, dest, angle, scale);
+    alternatives.push({place: point => local(pose(point)), effort});
+  }
+  offer(home, 0, 1, 0);
   if (fixed.length || group.pivot) {
     for (const value of [-1, -0.66, -0.33, 0.33, 0.66, 1]) {
-      const cell = Boolean(group.cell);
-      const maxAngle = cell ? 0.055 : group.pivot ? 0.20 : 0.33;
-      const angle = maxAngle * gain * value;
-      const scale = cell ? 1 - Math.abs(value) * 0.2 * gain : 1 + value * 0.12 * gain;
-      alternatives.push({place: transform(pivot, home, angle, scale), effort: Math.abs(value)});
+      const maxAngle = group.cell ? .10 : .58;
+      const scale = group.cell ? 1 - Math.abs(value) * .27 * gain : 1 + value * .28 * gain;
+      offer(home, maxAngle * gain * value, scale, Math.abs(value));
+      if (!group.cell) offer(home, -maxAngle * gain * value, scale, Math.abs(value));
     }
     return alternatives;
   }
 
-  const radius = (artist.system === 'spiral' ? 95 : 134) * gain;
+  const radius = (artist.system === 'spiral' ? 155 : 235) * gain;
   for (let i = 0; i < 16; i++) {
     const angle = (i + turn * 0.23) * GOLD;
-    const effort = i < 8 ? 0.5 : 1;
+    const effort = i < 8 ? .50 : 1;
     const dest = pt(home.x + Math.cos(angle) * radius * effort, home.y + Math.sin(angle) * radius * effort);
-    alternatives.push({place: transform(pivot, dest, 0, 1), effort});
+    const tilt = Math.sin(angle) * .31 * gain * effort;
+    offer(dest, tilt, 1 - .12 * gain * effort, effort);
   }
   return alternatives;
 }
 
-function judge(group, candidate, others, response) {
+function judge(group, candidate, others, response, sheet, width) {
+  const {width: w, height: h, cols, rows} = sheet;
   let sum = 0;
+  let peak = 0;
   for (const probe of group.probes) {
     const p = candidate.place(probe.p);
-    const outside = Math.max(0, -p.x, p.x - W, -p.y, p.y - H);
-    const oldOutside = Math.max(0, -probe.p.x, probe.p.x - W, -probe.p.y, probe.p.y - H);
-    sum += Math.max(0, outside - oldOutside) * 0.022;
-    const x = clamp(Math.floor(p.x / CELL), 0, COLS - 1);
-    const y = clamp(Math.floor(p.y / CELL), 0, ROWS - 1);
-    const index = x + y * COLS;
+    const outside = Math.max(0, -p.x, p.x - w, -p.y, p.y - h);
+    const oldOutside = Math.max(0, -probe.p.x, probe.p.x - w, -probe.p.y, probe.p.y - h);
+    sum += Math.max(0, outside - oldOutside) * .024;
+    const x = clamp(Math.floor(p.x / CELL), 0, cols - 1);
+    const y = clamp(Math.floor(p.y / CELL), 0, rows - 1);
+    const index = x + y * cols;
     let nearest = REACH;
     let heading = 0;
     for (const other of others) {
@@ -277,23 +288,62 @@ function judge(group, candidate, others, response) {
         heading = other.angle[index];
       }
     }
+    const clearance = nearest - width;
+    const contact = clamp((19 - clearance) / 19, 0, 2);
     const next = candidate.place(probe.next);
     const angle = Math.atan2(next.y - p.y, next.x - p.x);
-    sum += Math.abs(nearest - response.gap) / REACH;
-    sum += Math.max(0, 18 - nearest) / 18 * response.overlap;
-    sum -= Math.abs(Math.cos(angle - heading)) * Math.max(0, 1 - nearest / 65) * response.alignment;
+    sum += Math.abs(clearance - response.gap) / REACH + contact * response.overlap;
+    peak = Math.max(peak, contact);
+    sum -= Math.abs(Math.cos(angle - heading)) * Math.max(0, 1 - nearest / 94) * response.alignment;
   }
-  return sum / group.probes.length + candidate.effort * 0.12;
+  return sum / group.probes.length + peak * response.overlap * .13 + candidate.effort * .09;
 }
 
-export function createStudy(seed, slots) {
+function inkRadius(artist, group) {
+  const width = Math.max(...group.traces.map(trace => trace.width));
+  const media = {marker: .5, tissue: 1.3, watercolour: 1.6, oil: 1.45, action: .65};
+  return Math.min(30, width * media[artist.material]);
+}
+
+function entrancePose(group, artist, strength, others, response, sheet) {
+  const home = pt(sheet.width / 2, sheet.height / 2);
+  const gain = strength / 100;
+  const stride = Math.max(1, Math.ceil(artist.groups.length / 20));
+  const preview = {probes: artist.groups.filter((_, i) => i % stride === 0)
+    .map(mark => ({p: mark.center, next: mark.probes[0].p}))};
+  const radius = Math.min(sheet.width, sheet.height) * .25 * gain;
+  const width = inkRadius(artist, group);
+  const score = candidate => judge(group, candidate, others, response, sheet, width) * .52 +
+    judge(preview, candidate, others, response, sheet, width) * .48;
+  let pose = {place: identity, effort: 0};
+  let best = score(pose);
+  for (let i = 0; i < 12; i++) {
+    const angle = (i + artist.id) * GOLD;
+    const effort = i < 6 ? .62 : 1;
+    const dest = pt(home.x + Math.cos(angle) * radius * effort, home.y + Math.sin(angle) * radius * effort);
+    const candidate = {place: transform(home, dest, Math.sin(angle) * .28 * gain, 1 - .21 * gain * effort), effort};
+    const result = score(candidate);
+    if (result < best - .035) {
+      pose = candidate;
+      best = result;
+    }
+  }
+  return pose;
+}
+
+export function createStudy(seed, slots, paperSettings) {
+  if (slots.length !== 1 && slots.length !== 3) throw new Error('Choose one or three artists.');
+  const portrait = paperSettings.orientation === 'portrait';
+  const width = portrait ? 1000 : 1400;
+  const height = portrait ? 1400 : 1000;
+  const sheet = {...paperSettings, width, height, cols: Math.ceil(width / CELL), rows: Math.ceil(height / CELL)};
   const source = document.createElement('canvas');
   const roster = slots.map((slot, index) => {
     const system = systems.find(candidate => candidate.id === slot.system);
     const artist = {...system, ...slot, number: index + 1, inks: paletteInks(slot, seed), ink: slotInk(slot.id)};
     // Each slot keeps its own random stream and spatial field, including
     // when two slots choose the same system and material.
-    return recordArtist(artist, seed + '|artist|' + slot.id, slots.length, source);
+    return recordArtist(artist, seed, sheet, source);
   });
   const schedule = [];
   const offset = window.AlgoArt.hash(seed + '|collab-order') % roster.length;
@@ -305,12 +355,12 @@ export function createStudy(seed, slots) {
       if (artist.groups[round]) schedule.push({id: artist.id, group: artist.groups[round]});
     }
   }
-  return {roster, schedule};
+  return {roster, schedule, sheet};
 }
 
 export function makeRun(study, strength, mode) {
   const artists = new Map(study.roster.map(artist => [artist.id, {
-    ...artist, field: field(), anchors: new Map(), committed: 0
+    ...artist, field: field(study.sheet), anchors: new Map(), committed: 0, started: false, pose: {place: identity, effort: 0}
   }]));
   let turn = 0;
   return {
@@ -321,27 +371,34 @@ export function makeRun(study, strength, mode) {
       const group = entry.group;
       const others = [...artists.values()].filter(other => other !== artist && other.committed > 0);
       let placement = {place: identity, effort: 0};
+      let entered = false;
       if (strength > 0) {
+        const foreignFields = others.map(other => other.field);
+        const response = responses[mode];
+        if (!artist.started && foreignFields.length) {
+          artist.pose = entrancePose(group, artist, strength, foreignFields, response, study.sheet);
+          entered = artist.pose.effort > 0;
+        }
         const choices = candidates(group, artist, strength, turn);
         placement = choices[0];
-        if (others.length) {
-          const foreignFields = others.map(other => other.field);
-          const response = responses[mode];
-          let best = judge(group, placement, foreignFields, response);
+        if (foreignFields.length) {
+          const width = inkRadius(artist, group);
+          let best = judge(group, placement, foreignFields, response, study.sheet, width);
           for (const candidate of choices.slice(1)) {
-            const score = judge(group, candidate, foreignFields, response);
-            if (score < best - 0.005) {
+            const score = judge(group, candidate, foreignFields, response, study.sheet, width);
+            if (score < best - .005) {
               placement = candidate;
               best = score;
             }
           }
         }
       }
+      artist.started = true;
       for (const anchor of group.links || []) {
         if (!artist.anchors.has(key(anchor))) artist.anchors.set(key(anchor), placement.place(anchor));
       }
       const action = {
-        artist, group, placement, heard: strength > 0 ? others.length : 0, changed: placement.effort > 0
+        artist, group, placement, heard: strength > 0 ? others.length : 0, changed: entered || placement.effort > 0, entered
       };
       const footprint = deposit?.(action, strength > 0);
       if (strength > 0) {
@@ -357,21 +414,19 @@ export function makeRun(study, strength, mode) {
   };
 }
 
-export function prepareCanvas(canvas, seed) {
-  canvas.width = W;
-  canvas.height = H;
+export function prepareCanvas(canvas, seed, sheet) {
+  canvas.width = sheet.width;
+  canvas.height = sheet.height;
   const ctx = canvas.getContext('2d');
   const A = window.AlgoArt;
-  A.W = W;
-  A.H = H;
-  A.paper(ctx, {paper: '#f5f0e6', grain: 11}, A.makeR(seed + '|shared-paper'));
+  A.W = sheet.width;
+  A.H = sheet.height;
+  A.paper(ctx, sheet, A.makeR(seed + '|shared-paper'));
   return ctx;
 }
 
 export function artistInk(artist, mark) {
-  const index = artist.palette === 'signature' ? [0, 0, 0, 1, 2][mark % 5]
-    : (mark - 1) % artist.inks.length;
-  return artist.inks[index];
+  return artist.inks[(mark - 1) % artist.inks.length];
 }
 
 export function paint(ctx, action) {

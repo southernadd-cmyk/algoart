@@ -1,21 +1,22 @@
 import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js';
 import {materials, makePainter} from './materials.js';
+import {artistInspector, defaultSettings} from './artist-controls.js';
 
 const byId = id => document.getElementById(id);
 const form = byId('study-form');
 const roster = byId('roster');
-const add = byId('add-artist');
 const seed = byId('seed');
 const response = byId('response');
 const strength = byId('strength');
+const orientation = byId('orientation');
+const paper = byId('paper');
+const grain = byId('grain');
 const playButton = byId('play');
 const stepButton = byId('step');
 const finishButton = byId('finish');
 const save = byId('download');
 const shared = byId('shared');
 const baseline = byId('baseline');
-const minArtists = 2;
-const maxArtists = 8;
 const systemChoices = systems.map(system => [system.id, system.name]);
 const choices = {
   system: systemChoices,
@@ -28,19 +29,17 @@ const hints = {
   space: "Favour open paper farther from other artists' marks."
 };
 
-let nextId = 1;
-const artists = [];
+let artistCount = 3;
+const artists = systems.slice(0, 3).map((system, index) => ({
+  id: index + 1, system: system.id, palette: 'signature', material: 'marker', settings: defaultSettings(system)
+}));
 const state = {frame: 0, playing: false, finishing: false, history: [], turn: 0};
 
-function newArtist(source) {
-  const system = systems.find(candidate => !artists.some(artist => artist.system === candidate.id)) || systems[0];
-  return {system: system.id, palette: 'signature', material: 'marker', ...source, id: nextId++};
-}
-
 function syncHint(changed) {
-  byId('roster-status').textContent = changed
-    ? 'Settings changed. Draw study to apply them.'
-    : artists.length + ' artists ready.';
+  const status = byId('roster-status');
+  status.dataset.pending = String(changed);
+  byId('board-pending').hidden = !changed;
+  status.textContent = changed ? 'Changes ready to draw' : 'Roster applied';
 }
 
 function showSwatches(holder, artist) {
@@ -67,18 +66,8 @@ function picker(artist, index, key) {
   return field;
 }
 
-function rosterButton(action, text, index, disabled) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.action = action;
-  button.textContent = text;
-  button.setAttribute('aria-label', action + ' artist ' + (index + 1));
-  button.disabled = disabled;
-  return button;
-}
-
-function renderRoster(focusId) {
-  const cards = artists.map((artist, index) => {
+function renderRoster() {
+  const cards = artists.slice(0, artistCount).map((artist, index) => {
     const card = document.createElement('section');
     card.className = 'artist';
     card.dataset.artist = artist.id;
@@ -86,43 +75,39 @@ function renderRoster(focusId) {
     header.className = 'artist-head';
     const title = document.createElement('h3');
     title.id = 'artist-title-' + artist.id;
-    title.textContent = 'Artist ' + String(index + 1).padStart(2, '0');
+    const number = document.createElement('span');
+    number.className = 'artist-number';
+    number.textContent = String(index + 1).padStart(2, '0');
+    title.append(number, 'Artist');
     card.setAttribute('aria-labelledby', title.id);
     const swatches = document.createElement('div');
     swatches.className = 'artist-swatches';
     swatches.setAttribute('aria-hidden', 'true');
     showSwatches(swatches, artist);
-    const tools = document.createElement('div');
-    tools.className = 'artist-tools';
-    tools.append(
-      rosterButton('Duplicate', 'Copy', index, artists.length >= maxArtists),
-      rosterButton('Remove', 'Remove', index, artists.length <= minArtists)
-    );
-    header.append(title, swatches, tools);
+    header.append(title, swatches);
     const fields = document.createElement('div');
     fields.className = 'artist-fields';
     fields.append(picker(artist, index, 'system'), picker(artist, index, 'palette'), picker(artist, index, 'material'));
-    card.append(header, fields);
+    card.append(header, fields, artistInspector(artist));
     return card;
   });
   roster.replaceChildren(...cards);
-  add.disabled = artists.length >= maxArtists;
-  byId('artist-count').textContent = artists.length + ' / ' + maxArtists;
+  byId('artist-count').textContent = artistCount === 1 ? '1 artist' : '3 artists';
   for (const button of byId('counts').querySelectorAll('button')) {
-    button.setAttribute('aria-pressed', Number(button.dataset.count) === artists.length);
+    button.setAttribute('aria-pressed', Number(button.dataset.count) === artistCount);
   }
-  if (focusId) roster.querySelector('[data-artist="' + focusId + '"] select')?.focus();
+  response.disabled = strength.disabled = artistCount === 1;
+  updateResponseHint();
 }
 
-function resize(count) {
-  if (artists.length > count) artists.length = count;
-  while (artists.length < count) artists.push(newArtist());
+function updateResponseHint() {
+  byId('response-help').textContent = artistCount === 1 ? 'Response controls apply to three artists.' : hints[response.value];
 }
 
 function updateReadout() {
   const total = state.study?.schedule.length || 0;
   const progress = total ? Math.floor(state.turn / total * 100) : 0;
-  const ready = Boolean(state.study);
+  const ready = total > 0;
   const complete = state.turn === total;
   byId('counter').textContent = state.turn + ' / ' + total + ' turns';
   byId('progress').style.width = progress + '%';
@@ -132,8 +117,10 @@ function updateReadout() {
   stepButton.disabled = !ready || state.playing;
   finishButton.disabled = !ready || complete || state.finishing;
   save.disabled = !ready || !state.turn;
-  byId('summary').textContent = ready ? state.changed + ' / ' + state.read + ' turns adjusted after reading marks'
-    : 'Prepare a study';
+  byId('summary').textContent = ready ? state.study.roster.length === 1
+    ? state.turn + ' turns by one artist'
+    : state.changed + ' / ' + state.read + ' turns adjusted after reading marks'
+    : state.study ? 'No visible marks for these settings' : 'Prepare a study';
   const items = state.history.map(action => {
     const item = document.createElement('li');
     const swatch = document.createElement('span');
@@ -143,9 +130,10 @@ function updateReadout() {
     name.textContent = 'Artist ' + action.artist.number + ' · ' + action.artist.name;
     const detail = document.createElement('span');
     detail.className = 'detail';
-    const result = !state.settings.strength ? 'Independent'
+    const result = state.study.roster.length === 1 ? 'Solo study'
+      : !state.settings.strength ? 'Independent'
       : !action.heard ? 'First mark on paper'
-      : (action.changed ? 'Adjusted' : 'Held') + ' after reading ' + action.heard +
+      : (action.entered ? 'Found a new position' : action.changed ? 'Adjusted' : 'Held') + ' after reading ' + action.heard +
         (action.heard === 1 ? ' artist' : ' artists');
     detail.textContent = materials[action.artist.material] + ' · ' + action.group.label + ' · ' + result;
     item.append(swatch, name, detail);
@@ -164,8 +152,9 @@ function stop() {
 function reset() {
   stop();
   const settings = state.settings;
-  state.paintShared = makePainter(prepareCanvas(shared, settings.seed), settings.seed);
-  state.paintBaseline = makePainter(prepareCanvas(baseline, settings.seed), settings.seed);
+  const sheet = state.study.sheet;
+  state.paintShared = makePainter(prepareCanvas(shared, settings.seed, sheet), settings.seed);
+  state.paintBaseline = makePainter(prepareCanvas(baseline, settings.seed, sheet), settings.seed);
   state.run = makeRun(state.study, settings.strength, settings.response);
   state.baseline = makeRun(state.study, 0, settings.response);
   state.turn = 0;
@@ -177,7 +166,7 @@ function reset() {
 function advance() {
   if (state.turn >= state.study.schedule.length) return false;
   const action = state.run.next(state.paintShared);
-  state.baseline.next(state.paintBaseline);
+  if (state.study.roster.length > 1) state.baseline.next(state.paintBaseline);
   state.turn++;
   if (action.heard) state.read++;
   if (action.changed) state.changed++;
@@ -190,6 +179,7 @@ function failStudy(error) {
   console.error(error);
   stop();
   state.study = null;
+  state.history = [];
   state.turn = 0;
   updateReadout();
   byId('summary').textContent = 'Could not render this study.';
@@ -256,12 +246,20 @@ function build() {
   }
   stop();
   try {
-    state.settings = {seed: studySeed, response: response.value, strength: Number(strength.value)};
-    state.study = createStudy(studySeed, artists);
+    const solo = artistCount === 1;
+    state.settings = {seed: studySeed, response: response.value, strength: solo ? 0 : Number(strength.value)};
+    const slots = artists.slice(0, artistCount).map(artist => ({...artist, settings: {...artist.settings}}));
+    state.study = createStudy(studySeed, slots, {orientation: orientation.value, paper: paper.value, grain: Number(grain.value)});
+    const {width, height} = state.study.sheet;
+    byId('drawing').dataset.format = orientation.value;
+    byId('dimensions').textContent = width + ' × ' + height;
+    byId('shared-caption').textContent = solo ? 'Solo study' : 'Responsive';
+    byId('compare').disabled = solo;
+    if (solo) setComparison(false);
     reset();
     finish();
     syncHint(false);
-    byId('status').textContent = 'Study prepared with ' + artists.length + ' artists.';
+    byId('status').textContent = solo ? 'Solo study prepared.' : 'Study prepared with three artists.';
   } catch (error) {
     failStudy(error);
   }
@@ -276,46 +274,45 @@ function setComparison(comparing) {
 
 byId('counts').addEventListener('click', event => {
   const button = event.target.closest('button[data-count]');
-  if (!button || Number(button.dataset.count) === artists.length) return;
-  resize(Number(button.dataset.count));
+  if (!button || Number(button.dataset.count) === artistCount) return;
+  artistCount = Number(button.dataset.count);
   renderRoster();
   syncHint(true);
 });
 
-add.addEventListener('click', () => {
-  if (artists.length >= maxArtists) return;
-  const artist = newArtist();
-  artists.push(artist);
-  renderRoster(artist.id);
-  syncHint(true);
-});
+function artistFor(input) {
+  return artists[Number(input.closest('[data-artist]').dataset.artist) - 1];
+}
 
-roster.addEventListener('change', event => {
-  const card = event.target.closest('[data-artist]');
-  const artist = artists.find(entry => entry.id === Number(card.dataset.artist));
-  artist[event.target.dataset.field] = event.target.value;
-  showSwatches(card.querySelector('.artist-swatches'), artist);
-  syncHint(true);
-});
-
-roster.addEventListener('click', event => {
-  const button = event.target.closest('button[data-action]');
-  if (!button) return;
-  const id = Number(button.closest('[data-artist]').dataset.artist);
-  const index = artists.findIndex(entry => entry.id === id);
-  if (button.dataset.action === 'Duplicate' && artists.length < maxArtists) {
-    const copy = newArtist(artists[index]);
-    artists.splice(index + 1, 0, copy);
-    renderRoster(copy.id);
-  } else if (button.dataset.action === 'Remove' && artists.length > minArtists) {
-    artists.splice(index, 1);
-    renderRoster(artists[Math.min(index, artists.length - 1)].id);
+function updateArtist(input) {
+  const artist = artistFor(input);
+  const key = input.dataset.setting;
+  if (key) {
+    artist.settings[key] = input.type === 'range' ? Number(input.value)
+      : input.type === 'checkbox' ? input.checked : input.value;
+    if (input.type === 'range') input.parentElement.querySelector('output').value = input.value;
+  } else {
+    artist[input.dataset.field] = input.value;
+  }
+  if (!key || ['colourCount', 'saturation', 'brightness'].includes(key)) {
+    showSwatches(input.closest('[data-artist]').querySelector('.artist-swatches'), artist);
   }
   syncHint(true);
+}
+
+roster.addEventListener('input', event => {
+  if (['range', 'text'].includes(event.target.type)) updateArtist(event.target);
+});
+roster.addEventListener('change', event => {
+  if (!['range', 'text'].includes(event.target.type)) updateArtist(event.target);
 });
 
 response.addEventListener('change', () => {
-  byId('response-help').textContent = hints[response.value];
+  updateResponseHint();
+  syncHint(true);
+});
+for (const input of [orientation, paper, grain]) input.addEventListener('input', () => {
+  byId('grain-value').value = grain.value;
   syncHint(true);
 });
 strength.addEventListener('input', () => {
@@ -324,7 +321,7 @@ strength.addEventListener('input', () => {
 });
 seed.addEventListener('input', () => syncHint(true));
 seed.addEventListener('change', () => {
-  for (const [index, artist] of artists.entries()) {
+  for (const [index, artist] of artists.slice(0, artistCount).entries()) {
     showSwatches(roster.children[index].querySelector('.artist-swatches'), artist);
   }
 });
@@ -369,6 +366,5 @@ save.addEventListener('click', () => {
   }, 'image/png');
 });
 
-resize(3);
 renderRoster();
 build();

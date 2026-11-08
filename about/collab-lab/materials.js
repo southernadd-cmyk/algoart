@@ -45,7 +45,7 @@ function box(traces, material, width, height) {
   return {x, y, w: right - x, h: bottom - y};
 }
 
-function inkOnSheet(pigment, sensor, area, heading) {
+function inkOnSheet(pigment, sensor, area, heading, opacity) {
   const w = Math.ceil(area.w / SAMPLE);
   const h = Math.ceil(area.h / SAMPLE);
   size(sensor, w, h);
@@ -55,7 +55,7 @@ function inkOnSheet(pigment, sensor, area, heading) {
   const result = [];
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const coverage = read(x, y);
+      const coverage = read(x, y) * opacity;
       if (coverage < 10) continue;
       const dx = read(x + 1, y) - read(x - 1, y);
       const dy = read(x, y + 1) - read(x, y - 1);
@@ -101,6 +101,7 @@ export function makePainter(output, seed) {
   return function deposit(action, observe) {
     const {artist, group, placement} = action;
     const material = artist.material;
+    const {opacity, overdraw, dryness} = artist.settings;
     if (material === 'marker') {
       paint(output, action);
       return;
@@ -130,21 +131,22 @@ export function makePainter(output, seed) {
     try {
       for (let i = 0; i < traces.length; i++) {
         const trace = traces[i];
+        const width = trace.width * (1 + (overdraw - 2) * .045);
         const markSeed = [seed, artist.id, group.id, trace.mark, i, material].join('|');
         const r = A.makeR(markSeed);
         const colour = artistInk(artist, trace.mark);
         if (material === 'tissue') {
-          A.collabTissue(pigment, trace.points, Math.min(55, 9 + trace.width * 2.8), colour, r);
+          A.collabTissue(pigment, trace.points, Math.min(55, 9 + width * 2.8), colour, r);
         } else if (material === 'watercolour') {
-          A.collabWatercolour(pigment, trace.points, Math.min(64, 10 + trace.width * 3.7), colour, seed, r);
+          A.collabWatercolour(pigment, trace.points, Math.min(64, 10 + width * 3.7), colour, seed, r);
         } else if (material === 'oil') {
-          const profile = r.pick(['filbert', 'flat', 'knife', 'dry']);
+          const profile = dryness >= 65 ? 'dry' : r.pick(['filbert', 'flat', 'knife', 'dry']);
           A.oilPaintV4ETest.drawContactBrushV8(pigment, relief, trace.points,
-            Math.min(65, 10 + trace.width * 3.2), rgb(colour), profile, r,
-            {thickness: .92, drag: profile === 'dry' ? .84 : .57});
+            Math.min(65, 10 + width * 3.2), rgb(colour), profile, r,
+            {thickness: .92, drag: Math.min(1, (profile === 'dry' ? .76 : .45) + dryness / 145)});
         } else {
           A.collabAction(pigment, trace.points, 'rgb(' + rgb(colour).join(',') + ')',
-            trace.width, markSeed, width, height);
+            width, markSeed, output.canvas.width, height);
         }
       }
       if (material === 'oil') A.collabOilRelief(pigment, relief, scale);
@@ -156,7 +158,9 @@ export function makePainter(output, seed) {
         delete A.oilPigmentActive;
       }
     }
+    const coverage = 1 - (1 - opacity / 100) ** Math.sqrt(overdraw / 2);
     output.save();
+    output.globalAlpha = coverage;
     output.globalCompositeOperation = material === 'watercolour' ? 'multiply' : 'source-over';
     output.drawImage(pigment.canvas, area.x, area.y, area.w, area.h);
     output.restore();
@@ -164,6 +168,6 @@ export function makePainter(output, seed) {
     sensor ||= layer(true);
     const p = traces[0].points;
     const heading = Math.atan2(p.at(-1).y - p[0].y, p.at(-1).x - p[0].x);
-    return inkOnSheet(pigment, sensor, area, heading);
+    return inkOnSheet(pigment, sensor, area, heading, coverage);
   };
 }
