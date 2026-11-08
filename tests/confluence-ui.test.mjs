@@ -33,3 +33,16 @@ test('social links use Confluence-specific preview storage',()=>{
  assert.match(share,/confluence\/preload/);
  assert.match(share,/window\.open/);
 });
+
+test('Confluence page must wire portrait controls and fit its canvas, not just show buttons',()=>{
+ const page=read('../confluence/index.html');
+ const ui=read('../confluence/ui.js');
+ assert.ok(ui.includes("byId('format-' + format).addEventListener('click'"), 'Format buttons require JS event listeners');
+ assert.ok(ui.includes('orientation.value = format'), 'Format buttons must set portrait or landscape');
+ assert.ok(ui.includes('syncFormatButtons()'), 'Format pressed state must be synchronized');
+ assert.ok(ui.includes("totalTurns.addEventListener('change', build)"), 'Fibonacci choices must redraw');
+ assert.ok(ui.includes('new ResizeObserver(() => fitCanvas())'), 'Canvas must fit available viewport');
+ assert.ok(ui.includes('state.study.sheet.width / state.study.sheet.height'), 'Aspect ratio must come from study');
+ assert.ok(ui.includes("figure.style.width = fitted + 'px'"), 'Viewport must constrain figure width');
+ assert.ok(page.includes('ui.js?v=confluence-fit-20261108'), 'Browser must receive fixed UI script');
+});

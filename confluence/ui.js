@@ -2,7 +2,8 @@ import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} fro
 import {materials, makePainter} from './materials.js?v=confluence-materials-05';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=studio-06';
-import {mountDrawer} from './drawer-ui.js?v=confluence-editorial-02';
+import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
+import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-viewport-04';
 import {importLeadFromURL} from './import-lead.js?v=confluence-01';
 
 const byId = id => document.getElementById(id);
@@ -15,12 +16,14 @@ const collaborationPull = byId('collaboration-pull');
 const orientation = byId('orientation');
 const paper = byId('paper');
 const grain = byId('grain');
+const totalTurns = byId('total-turns');
 const playButton = byId('play');
 const stepButton = byId('step');
 const finishButton = byId('finish');
 const save = byId('download');
 const shared = byId('shared');
 const baseline = byId('baseline');
+const canvases = byId('canvases');
 const systemChoices = systems.map(system => [system.id, system.name]);
 const choices = {
   system: systemChoices,
@@ -43,7 +46,6 @@ function syncHint(changed) {
   status.dataset.pending = String(changed);
   byId('board-pending').hidden = !changed;
   status.textContent = changed ? 'Changes ready to draw' : 'Roster applied';
-  if(state.shareControls) state.shareControls.sync();
 }
 
 function showSwatches(holder, artist) {
@@ -133,6 +135,7 @@ function updateReadout() {
   stepButton.disabled = !ready || state.playing;
   finishButton.disabled = !ready || complete || state.finishing;
   save.disabled = !ready || !state.turn;
+  if (state.shareControls) state.shareControls.sync();
   byId('summary').textContent = ready
     ? state.replanned + ' / ' + state.read + ' turns replanned from the shared sheet'
     : state.study ? 'No visible marks for these settings' : 'Prepare a study';
@@ -199,6 +202,7 @@ function failStudy(error) {
   state.history = [];
   state.turn = 0;
   updateReadout();
+  state.snapshot = null;
   byId('summary').textContent = 'Could not render this study.';
   byId('status').textContent = 'Could not render this study.';
 }
@@ -267,10 +271,25 @@ function build() {
       collaborationPull: Number(collaborationPull.value)};
     const slots = artists.map(artist => ({...artist, settings: {...artist.settings}}));
     state.study = createStudy(studySeed, slots,
-      {orientation: orientation.value, paper: paper.value, grain: Number(grain.value)}, state.settings.collaborationPull);
+      {orientation: orientation.value, paper: paper.value, grain: Number(grain.value)},
+      state.settings.collaborationPull, Number(totalTurns.value));
+    const selectedTurns = state.study.totalTurns;
+    totalTurns.replaceChildren(...state.study.availableTurns.map(count => new Option(count + ' turns', String(count))));
+    totalTurns.value = String(selectedTurns);
+    byId('turn-count-help').textContent = 'The selected systems support up to ' +
+      state.study.availableTurns.at(-1) + ' Fibonacci turns. Step advances one turn at a time.';
+    state.snapshot = {
+      v: 1, seed: studySeed, orientation: orientation.value,
+      paper: paper.value, grain: Number(grain.value), response: response.value,
+      strength: Number(strength.value), collaborationPull: Number(collaborationPull.value),
+      totalTurns: selectedTurns,
+      artists: slots.map(({system,palette,material,settings})=>({system,palette,material,settings}))
+    };
     const {width, height} = state.study.sheet;
     byId('drawing').dataset.format = orientation.value;
     byId('dimensions').textContent = width + ' × ' + height;
+    syncFormatButtons();
+    queueMicrotask(fitCanvas);
     byId('shared-caption').textContent = state.settings.collaborationPull ? 'φ-weighted turns' : 'Equal turns';
     byId('shared-turns').textContent = state.study.primary.counts.join(' / ') + ' turns';
     byId('equal-turns').textContent = state.study.equal.counts.join(' / ') + ' turns';
@@ -283,11 +302,35 @@ function build() {
   }
 }
 
+
+function syncFormatButtons() {
+  for (const format of ['portrait','landscape']) {
+    byId('format-' + format).setAttribute('aria-pressed', String(orientation.value === format));
+  }
+}
+// Fit within *actual* viewport area, including portrait and side-by-side
+// comparison. This affects CSS display width only; exports remain full pixels.
+function fitCanvas() {
+  const count = canvases.classList.contains('comparing') ? 2 : 1;
+  const ratio = state.study ? state.study.sheet.width / state.study.sheet.height
+    : orientation.value === 'portrait' ? 5 / 7 : 7 / 5;
+  const gap = count > 1 ? 16 : 0;
+  const width = Math.max(1, canvases.clientWidth - gap - 12);
+  const height = Math.max(1, canvases.clientHeight - 29);
+  const fitted = Math.max(1, Math.floor(Math.min(width / count, height * ratio)));
+  // Constrain the displayed paper; keep source/export pixels unchanged.
+  for (const figure of canvases.querySelectorAll('figure')) {
+    figure.style.width = fitted + 'px';
+    figure.style.maxWidth = fitted + 'px';
+  }
+}
+
 function setComparison(comparing) {
   byId('single').setAttribute('aria-pressed', !comparing);
   byId('compare').setAttribute('aria-pressed', comparing);
   byId('baseline-panel').hidden = !comparing;
   byId('canvases').classList.toggle('comparing', comparing);
+  queueMicrotask(fitCanvas);
 }
 
 function artistFor(input) {
@@ -323,8 +366,20 @@ response.addEventListener('change', () => {
 });
 for (const input of [orientation, paper, grain]) input.addEventListener('input', () => {
   byId('grain-value').value = grain.value;
+  syncFormatButtons();
   syncHint(true);
 });
+orientation.addEventListener('change', build);
+totalTurns.addEventListener('change', build);
+for (const format of ['landscape','portrait']) {
+  byId('format-' + format).addEventListener('click', () => {
+    if (orientation.value === format) return;
+    orientation.value = format;
+    syncFormatButtons();
+    build();
+  });
+}
+
 collaborationPull.addEventListener('input', () => {
   updateShares();
   syncHint(true);
@@ -356,6 +411,7 @@ form.addEventListener('submit', event => {
 playButton.addEventListener('click', play);
 finishButton.addEventListener('click', finish);
 stepButton.addEventListener('click', () => {
+  if (!state.study) return;
   if (state.turn === state.study.schedule.length) reset();
   try {
     advance();
@@ -381,8 +437,24 @@ save.addEventListener('click', () => {
   }, 'image/png');
 });
 
-const imported = importLeadFromURL(new URLSearchParams(location.search), artists[0], {seed, orientation, paper, grain}, {systems, palettes, materials});
+// The page remains a complete, bookmarkable editor; a shared composition
+// restores all three voices, while a future main-editor handoff imports Artist 1.
+const inputs = {seed, orientation, paper, grain, response, strength, collaborationPull, totalTurns};
+const params = new URLSearchParams(location.search);
+const restored = restoreSharedState(params, artists, inputs, {systems, palettes, materials});
+const imported = !restored && importLeadFromURL(params, artists[0],
+  {seed, orientation, paper, grain}, {systems, palettes, materials});
 byId('import-note').hidden = !imported;
 renderRoster();
 mountDrawer();
+state.shareControls = bindSharing({
+  canvas: shared, ready: () => !!state.study && state.turn === state.study.schedule.length &&
+    !state.playing && !byId('roster-status').dataset.pending?.includes('true') && !!state.snapshot,
+  snapshot: () => state.snapshot
+});
+const viewport = new ResizeObserver(() => fitCanvas());
+viewport.observe(canvases);
+viewport.observe(byId('drawing'));
+window.addEventListener('resize', fitCanvas);
+syncFormatButtons();
 build();
