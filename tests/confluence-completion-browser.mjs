@@ -132,13 +132,71 @@ try{
     }
     results.push({systems:ids.join('/'),schedule:'oil-contact',
       gestures:oilGestures,engaged,diagnostics:oilRun.oilDiagnostics()});
+
+    // A low-turn allocation packs several complete source gestures into
+    // each turn. Verify the real planner observes its provisional same-hand
+    // marks, without painting or double-counting them, and replays exactly.
+    const feedbackSlots=['field','geometric','rects'].map((id,i)=>({
+      id:i+1,system:id,palette:'spectrum',material:i===1?'oil':'marker',
+      settings:defaultSettings({id,pen:'felt',width:7})
+    }));
+    const feedbackStudy=createStudy('2520283841',feedbackSlots,
+      {orientation:'landscape',paper:'#f5f0e6',grain:7},100,13);
+    const trial=()=>{
+      const run=makeRun(feedbackStudy,85);
+      const signature=[];
+      let gestures=0;
+      for(const entry of feedbackStudy.primary.turns){
+        run.next({batch(actions){
+          if(actions.length!==entry.groupQuota)throw Error('Incomplete intra-turn batch');
+          for(const action of actions){
+            gestures++;
+            const p=action.placement.place(action.group.center);
+            signature.push([action.artist.id,action.group.id,
+              p.x.toFixed(3),p.y.toFixed(3),action.reaction]);
+          }
+          return actions.flatMap(action=>
+            action.group.probes.filter((_,i)=>i%Math.max(1,
+              Math.ceil(action.group.probes.length/9))===0).map(probe=>({
+              point:action.placement.place(probe.p),angle:0,
+              radius:9,opacity:.38
+            }))
+          );
+        }});
+      }
+      return {signature,gestures,stats:run.intraTurnDiagnostics()};
+    };
+    const first=trial(),repeated=trial();
+    const expectedDecisions=feedbackStudy.primary.turns
+      .reduce((count,entry)=>count+Math.max(0,entry.groupQuota-1),0);
+    const expectedStamps=feedbackStudy.primary.turns
+      .reduce((count,entry)=>count+(entry.groupQuota>1?entry.groupQuota:0),0);
+    if(JSON.stringify(first)!==JSON.stringify(repeated))
+      throw Error('Intra-turn planning is not deterministic for identical seeds');
+    if(first.stats.decisions!==expectedDecisions||
+       first.stats.stamped!==expectedStamps)
+      throw Error('Gestures in a shared turn did not see their provisional ink');
+    results.push({systems:'field/geometric/rects',schedule:'intra-turn',
+      complete: first.gestures===feedbackStudy.roster
+        .reduce((sum,artist)=>sum+artist.groups.length,0),
+      deterministic:true,decisions:first.stats.decisions,
+      stamps:first.stats.stamped,nearby:first.stats.nearby,
+      turnsWithFeedback:first.stats.turns});
     return results;
   });
   for(const row of report)console.log('COMPLETE_DRAWING '+JSON.stringify(row));
-  assert.equal(report.length,11,'Every mixed-engine schedule must complete plus Oil engagement audit');
-  const oil=report.at(-1);
+  assert.equal(report.length,12,
+    'Every mixed-engine schedule must complete plus Oil and intra-turn audits');
+  const oil=report.find(row=>row.schedule==='oil-contact');
   assert(oil.gestures>0,'Oil never contributed its source gestures');
   assert(oil.engaged>0,'Oil never deliberately connected with existing artist marks');
+  const intra=report.find(row=>row.schedule==='intra-turn');
+  assert(intra.complete,'Intra-turn feedback lost source gestures');
+  assert(intra.deterministic,'Intra-turn planning did not replay identically');
+  assert(intra.stamps>0&&intra.decisions>0,
+    'A multi-gesture turn did not update planning state before the next gesture');
+  assert(intra.nearby>0,
+    'Provisional self-ink never appeared near another same-turn gesture');
 
   // Visitor control test: rotating lead is a single real button interaction.
   // The underlying artist settings and equal-turn canvas must not change.
