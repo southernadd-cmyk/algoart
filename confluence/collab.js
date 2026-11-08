@@ -376,7 +376,7 @@ export function makeRun(study, strength, {equal = false} = {}) {
   }));
   // The existing rectangle guide is a shared structure, not an exclusion
   // zone. Other systems can work *inside its actual transformed cells*.
-  const rectangleCells=mixedRects?rectangleInteriors([...artists.values()],study.sheet):[];
+  const rectangleCells=mixedRects?rectangleInteriors([...artists.values()].map(a=>({...a,groups:a.pending})),study.sheet):[];
   const rectangleUse=new Map();
   const invitationFraction=Math.min(.62,.72*study.collaborationPull/100*strength/100);
 
