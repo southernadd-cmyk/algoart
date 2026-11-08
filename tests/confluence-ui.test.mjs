@@ -59,6 +59,15 @@ test('Compare captions identify each artist, material and turn share',()=>{
  assert.match(css,/#shared-turns,#equal-turns/);
 });
 
+test('Both captions show the exact seed so screenshots remain reproducible',()=>{
+ const page=read('../confluence/index.html');
+ const ui=read('../confluence/ui.js');
+ assert.match(page,/id="shared-seed"/);
+ assert.match(page,/id="equal-seed"/);
+ assert.match(ui,/byId\('shared-seed'\)\.textContent='Seed '\+studySeed/);
+ assert.match(ui,/byId\('equal-seed'\)\.textContent='Seed '\+studySeed/);
+});
+
 test('Confluence makes response choices algorithmically rather than via a dropdown',()=>{
  const page=read('../confluence/index.html');
  const ui=read('../confluence/ui.js');
