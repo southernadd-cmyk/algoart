@@ -1368,12 +1368,18 @@ function chooseBestLayout(s){
 // page can replay a drawing by section and element rather than pen pass.
 // Recording metadata only: consumes no randomness and changes no marks.
 function markGroup(section,sectionLabel,id,label,info){
+  // V10 colour ownership must be identical when Marker is painted
+  // directly and when materials capture its SVG vector source.
+  if(A.rendererVersion>=10)A._renderGroupV10=info||null;
   if(!A.svgRecorder)return;
   var g={section:section,sectionLabel:sectionLabel,id:section+'/'+id,label:label};
   if(info)for(var k in info)if(Object.prototype.hasOwnProperty.call(info,k))g[k]=info[k];
   A.svgRecorder.group=g;
 }
-function endMarkGroup(){if(A.svgRecorder)A.svgRecorder.group=null;}
+function endMarkGroup(){
+  if(A.rendererVersion>=10)A._renderGroupV10=null;
+  if(A.svgRecorder)A.svgRecorder.group=null;
+}
 A.markGroup=markGroup;
 
 function drawPlannedElement(ctx,plan,i,s,r,pal,strategy){
@@ -3976,6 +3982,19 @@ A.render=function(target,s,scale,showGeometry){
     ctx.transform(phiFrame.scale,0,0,phiFrame.scale,phiFrame.tx,phiFrame.ty);
   }
   var pal=A.hues(s,r);
+  // V10: a full palette must be used by the *source marks* before any
+  // material interpretation. This changes colour assignment only; no
+  // geometry RNG calls or composition layout are changed.
+  if(A.rendererVersion>=10){
+    A._inkRackV10=pal;
+    A._inkMarkV10=0;
+    A._inkAccentV10=0;
+    var inkCount=pal.length,inkStep=Math.max(1,Math.round(inkCount*.61803398875));
+    function gcd(a,b){while(b){var t=a%b;a=b;b=t}return a}
+    while(inkStep<inkCount&&gcd(inkStep,inkCount)!==1)inkStep++;
+    A._inkStepV10=inkStep<inkCount?inkStep:1;
+    A._inkStartV10=inkCount?A.hash(s.seed+'|v10-ink-order')%inkCount:0;
+  }
   var meta;
 
   if(s.mode==='field'){

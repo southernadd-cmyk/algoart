@@ -144,7 +144,7 @@ Portrait publishing runs even if the landscape job fails. A failed portrait job 
 
 ### Renderer upgrades and existing editions
 
-The current editor and newly generated Oil, Watercolour and Action studies use the V9 geometry renderer; other material queues resolve their renderer version from the generator settings and existing publication rules. Check `automation/generate-social.mjs` before changing version defaults. An explicit `SOCIAL_RENDERER_VERSION` can select an older supported renderer for test or recovery generation. Landscape jobs reuse archived daily JPEGs, settings, links and renderer versions, including editions created before an upgrade. Portrait jobs reuse their frozen release queue. A renderer update does not rewrite historical editions or change the 09:00, 15:00 and 20:30 Europe/London posting times.
+The current editor and newly generated studies from 8 November 2026 onward use the V10 geometry renderer for improved palette coverage; historical editions keep their recorded V8/V9 geometry renderer and exact archived files. New social studies default to V10, including Oil, Watercolour and Action Painting. Check `automation/generate-social.mjs` before changing version defaults. An explicit `SOCIAL_RENDERER_VERSION` can select an older supported renderer for test or recovery generation. Landscape jobs reuse archived daily JPEGs, settings, links and renderer versions, including editions created before an upgrade. Portrait jobs reuse their frozen release queue. A renderer update does not rewrite historical editions or change the 09:00, 15:00 and 20:30 Europe/London posting times.
 
 
 ## Curated live publishing policy (23 October 2026)

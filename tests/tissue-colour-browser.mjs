@@ -69,7 +69,8 @@ try{
     .getContext('2d').getImageData(3,3,1,1).data).slice(0,3));
   await page.locator('#paper').fill('#20334a');
   await page.waitForFunction(()=>new URL(location.href).searchParams.get('paper')==='#20334a');
-  assert.equal(new URL(page.url()).searchParams.get('v'),'9');
+  assert.equal(new URL(page.url()).searchParams.get('v'),'10',
+    'Editing archived Tissue settings should create a new V10 drawing, not overwrite the V8 link');
   assert.equal(await page.locator('#paper').inputValue(),'#20334a');
   assert.deepEqual(await page.evaluate(()=>window.AlgoArt.lastOilMaterialStats?.inkColours),mono,
     'Changing paper cannot change the seeded ink palette');

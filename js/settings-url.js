@@ -8,5 +8,5 @@ A.PARAM_KEYS=Object.freeze({
   lines:'ln',circles:'ci',rectangles:'re',polygons:'po',arcs:'ar',
   palette:'pal',colourCount:'cols',saturation:'sat',brightness:'bri',paper:'paper',grain:'grain'
 });
-A.SUPPORTED_RENDERER_VERSIONS=Object.freeze([1,2,3,4,5,6,7,8,9]);
+A.SUPPORTED_RENDERER_VERSIONS=Object.freeze([1,2,3,4,5,6,7,8,9,10]);
 })(window.AlgoArt=window.AlgoArt||{});

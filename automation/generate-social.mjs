@@ -266,7 +266,10 @@ try {
     }
     // The cutoff changes only the MATERIAL; V8's settings, daily seed and
     // archive IDs retain the exact same deterministic generation algorithm.
-    const itemVersion=action||oil||watercolour?9:rendererVersion;
+    // Existing dates keep their historical V8/V9 geometry if their image
+    // has not yet been archived; only new studies adopt V10 colour fidelity.
+    const itemVersion=day>='2026-11-08'?rendererVersion:
+      (action||oil||watercolour?9:Math.min(8,rendererVersion));
     // From 15 October all NEW Marker, Tissue and Watercolour editions share
     // the same φ-derived source fit, in their PNG/SVG and exact share URL.
     // Earlier dates and already-frozen gallery/release assets stay untouched.

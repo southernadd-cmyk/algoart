@@ -142,15 +142,18 @@ function pigmentInk(col){
   if(nums.length!==3||nums.some(function(n){return !Number.isFinite(n)}))return col;
   var low=Math.min.apply(null,nums),high=Math.max.apply(null,nums);
   var spread=high-low;
-  if(spread<=111)return col;
+  // V10 retains more separation between chosen pigments. Older
+  // V2S links continue using their historical muted 111-channel gamut.
+  var cap=A.rendererVersion>=10?152:111;
+  if(spread<=cap)return col;
   var neutral=nums[0]*.2126+nums[1]*.7152+nums[2]*.0722;
-  var factor=111/spread;
+  var factor=cap/spread;
   var result=nums.map(function(v){return clamp(Math.round(neutral+(v-neutral)*factor),0,255)});
   // Subdue isolated synthetic-looking cyan/mint while leaving the seed's
   // chromatic relationships intact. Near-monochrome inks are unaffected.
   if(nums[0]<nums[1]*.88&&
     (nums[2]>nums[0]*1.11||nums[1]>nums[2]*1.18)){
-    var earth=[136,129,116],strength=.16;
+    var earth=[136,129,116],strength=A.rendererVersion>=10?.08:.16;
     result=result.map(function(v,i){return Math.round(mix(v,earth[i],strength))});
   }
   return 'rgb('+result.join(',')+')';

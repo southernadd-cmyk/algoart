@@ -69,7 +69,7 @@ for(const c of cases){
     if(material==='watercolour'){
       assert.equal(url.searchParams.get('material'),'watercolour-v2s');
       assert.equal(url.searchParams.get('fit'),'0');
-      assert.equal(entry.rendererVersion,9);
+      assert.equal(entry.rendererVersion,10);
       assert.equal(entry.platforms.instagram.scheduledTime,'15:00');
     }else if(material==='watercolor'){
       assert.equal(url.searchParams.get('tissue'),'7');
@@ -125,16 +125,46 @@ try{
     assert.equal(status.enabled,true);
     assert.equal(status.kind,'phi-sheet');
   }
-  // A bare home URL also loads the most recent daily Marker cover. It
-  // must retain exactly the same source-space framing as its gallery JPEG.
-  const latestMarker=gallery.entries[0]; // The default cover is the first archived study, not a new test seed.
+  // Generated gallery cards use production absolute share URLs. Rewrite
+  // those links to this test server, otherwise the welcome code correctly
+  // refuses the cross-origin URL and cannot prepare the shown artwork.
+  // On live GitHub Pages these are already same-origin.
+  await page.route('**/gallery/'+date+'/',async route=>{
+    const response=await route.fetch();
+    const html=await response.text();
+    const local=new URL(host).href;
+    await route.fulfill({response,body:html.replaceAll(
+      'https://southernadd-cmyk.github.io/algoart/',local)});
+  });
+  // Bare home now selects a RANDOM artwork from the latest gallery for
+  // the introduction. It does not automatically choose gallery.entries[0].
+  // Assert the shown image and the prepared editor resolve to the same
+  // archived work, then Begin opens that very image without losing φ fit.
   await page.goto(host,{waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(seed=>document.getElementById('seed')?.value===seed,
-    latestMarker.seed,{timeout:120000});
-  await page.waitForFunction(()=>new URL(location.href).searchParams.get('sheet')==='phi',
+  await page.waitForFunction(date=>{
+    const img=document.querySelector('#introSplash .welcome-right img');
+    const u=new URL(location.href);
+    return img?.naturalWidth>0&&img.src.includes('/gallery/'+date+'/')&&
+      u.searchParams.get('sheet')==='phi'&&
+      document.getElementById('creatingOverlay')?.hidden===true;
+  },date,{timeout:120000});
+  const welcome=await page.evaluate(()=>({
+    image:document.querySelector('#introSplash .welcome-right img').src,
+    seed:document.getElementById('seed').value,
+    sheet:new URL(location.href).searchParams.get('sheet'),
+    version:new URL(location.href).searchParams.get('v')
+  }));
+  const selected=gallery.entries.find(e=>welcome.image.endsWith('/'+e.imageFile));
+  assert(selected,'The welcome image must be an artwork from the latest daily gallery');
+  assert.equal(welcome.seed,selected.seed,'Welcome preview did not prepare the shown artwork');
+  assert.equal(welcome.sheet,'phi');
+  assert.equal(welcome.version,String(selected.rendererVersion));
+  await page.locator('#introEnter').click();
+  await page.waitForFunction(()=>document.getElementById('introSplash')?.hidden===true,
     null,{timeout:120000});
-  assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi',
-    "Home editor must reproduce the same framed gallery cover");
+  assert.equal(await page.locator('#seed').inputValue(),selected.seed,
+    'Begin did not open the displayed welcome artwork');
+  assert.equal(new URL(page.url()).searchParams.get('sheet'),'phi');
   assert.equal(await page.locator('#phiSheetFit').isChecked(),true);
   assert.deepEqual(errors,[]);
 }finally{await browser.close()}
