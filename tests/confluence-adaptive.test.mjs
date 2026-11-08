@@ -145,3 +145,40 @@ test('Recursive Divisions supports 55 and 89 turns without drawing extra geometr
    assert(Math.hypot(pieces[i][0].x-pieces[i-1].at(-1).x,
      pieces[i][0].y-pieces[i-1].at(-1).y)<.00001);
 });
+
+import {makeSchedule} from '../confluence/composition.js';
+
+test('φ determines drawing cadence, never truncates any artist source drawing',()=>{
+  const counts=[62,73,48];
+  const roster=counts.map((count,i)=>({id:i+1,
+    groups:Array.from({length:count},(_,j)=>({id:i+':'+j}))}));
+  for(const pull of [0,35,62,100]){
+    const programme=makeSchedule(roster,55,pull);
+    assert.equal(programme.turns.length,55);
+    assert.equal(programme.counts.reduce((sum,x)=>sum+x,0),55);
+    assert(programme.counts.every(n=>n>0));
+    for(const artist of roster){
+      const turns=programme.turns.filter(t=>t.id===artist.id);
+      const drawn=turns.reduce((sum,t)=>sum+t.groupQuota,0);
+      assert.equal(drawn,artist.groups.length,
+        'All source gestures must be assigned, including the last one');
+      assert(turns.every(t=>t.groupQuota>0));
+    }
+  }
+  const weighted=makeSchedule(roster,55,100).counts;
+  const equal=makeSchedule(roster,55,0).counts;
+  assert.notDeepEqual(weighted,equal,
+    'φ should still change how often each artist takes a turn');
+});
+
+test('Complete source works even when turns are few compared with source marks',()=>{
+  const counts=[65,56,61],roster=counts.map((count,i)=>({id:i,
+    groups:Array.from({length:count},(_,j)=>({mark:j}))}));
+  for(const total of [5,8,13,21,34,55,89]){
+    if(total>counts.reduce((v,n)=>v+Math.min(n,Math.ceil(total/2)),0))continue;
+    const turns=makeSchedule(roster,total,100);
+    for(const artist of roster)
+      assert.equal(turns.turns.filter(t=>t.id===artist.id)
+        .reduce((n,t)=>n+t.groupQuota,0),artist.groups.length);
+  }
+});
