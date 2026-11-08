@@ -69,7 +69,7 @@ for(const c of cases){
     if(material==='watercolour'){
       assert.equal(url.searchParams.get('material'),'watercolour-v2s');
       assert.equal(url.searchParams.get('fit'),'0');
-      assert.equal(entry.rendererVersion,9);
+      assert.equal(entry.rendererVersion,10);
       assert.equal(entry.platforms.instagram.scheduledTime,'15:00');
     }else if(material==='watercolor'){
       assert.equal(url.searchParams.get('tissue'),'7');
