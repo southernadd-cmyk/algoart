@@ -1312,7 +1312,10 @@ $('copyLink').onclick=copyShareLink;
    // within a landscape JPEG so the complete composition stays visible.
    c.width=1200;c.height=630;
    var ctx=c.getContext('2d');
-   ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,c.width,c.height);
+   // A dark matte makes portrait paper edges legible in the wide social card.
+   // Landscape previews and the artwork's actual paper colour stay unchanged.
+   ctx.fillStyle=src.width<src.height?'#2b3440':'#f5f0e6';
+   ctx.fillRect(0,0,c.width,c.height);
    var scale=Math.min(c.width/src.width,c.height/src.height);
    ctx.drawImage(src,(c.width-src.width*scale)/2,
      (c.height-src.height*scale)/2,
@@ -1372,6 +1375,7 @@ $('copyLink').onclick=copyShareLink;
      var caption='PROPORTION PIECE '+intents.artworkURL;
      return service==='threads'?
        'https://www.threads.com/intent/post?text='+encodeURIComponent(caption):
+       service==='x'?'https://x.com/intent/tweet?text='+encodeURIComponent(caption):
        'https://bsky.app/intent/compose?text='+encodeURIComponent(caption);
    }).then(function(target){
      if(newTab&&!newTab.closed)newTab.location.replace(target);
@@ -1383,6 +1387,7 @@ $('copyLink').onclick=copyShareLink;
  }
  $('shareThreads').addEventListener('click',function(event){sharePostLink(event,'threads')});
  $('shareBluesky').addEventListener('click',function(event){sharePostLink(event,'bluesky')});
+ $('shareX').addEventListener('click',function(event){sharePostLink(event,'x')});
 
 
 var plotterPreviewURL=null;
