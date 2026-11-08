@@ -101,10 +101,44 @@ try{
       if(JSON.stringify(signatures[0])!==JSON.stringify(signatures[1]))
         throw Error('φ/equal comparisons do not finish the same source drawings');
     }
+    // Oil must occasionally choose an actual previous artist's line
+    // over the lowest-crowding location. This is a real planner run, with
+    // minimal response footprints instead of expensive material painting.
+    const ids=['field','geometric','rects'];
+    const oilSlots=ids.map((id,i)=>({id:i+1,system:id,
+      palette:'spectrum',material:i===1?'oil':'marker',
+      settings:defaultSettings({id,pen:'felt',width:6})}));
+    const oilStudy=createStudy('2331044488',oilSlots,
+      {orientation:'landscape',paper:'#f5f0e6',grain:7},100,55);
+    const oilRun=makeRun(oilStudy,90);
+    let engaged=0,oilGestures=0;
+    for(let i=0;i<oilStudy.schedule.length;i++){
+      oilRun.next({batch(actions){
+        for(const action of actions){
+          if(action.artist.material==='oil'){
+            oilGestures++;
+            if(action.placement.oilContact)engaged++;
+          }
+        }
+        return actions.flatMap(action=>{
+          const probes=action.group.probes;
+          const stride=Math.max(1,Math.ceil(probes.length/12));
+          return probes.filter((_,j)=>j%stride===0).map(probe=>({
+            point:action.placement.place(probe.p),
+            angle:0,radius:9,opacity:.35
+          }));
+        });
+      }});
+    }
+    results.push({systems:ids.join('/'),schedule:'oil-contact',
+      gestures:oilGestures,engaged});
     return results;
   });
   for(const row of report)console.log('COMPLETE_DRAWING '+JSON.stringify(row));
-  assert.equal(report.length,10,'Every mixed-engine pair of schedules must complete');
+  assert.equal(report.length,11,'Every mixed-engine schedule must complete plus Oil engagement audit');
+  const oil=report.at(-1);
+  assert(oil.gestures>0,'Oil never contributed its source gestures');
+  assert(oil.engaged>0,'Oil never deliberately connected with existing artist marks');
 }finally{
   if(browser)await browser.close();
   await new Promise(ok=>server.close(ok));
