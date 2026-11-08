@@ -10,7 +10,15 @@ for(const day of ['2026-10-15','2026-10-25','2026-10-26','2026-10-30','2026-10-3
  for(const [k,v] of Object.entries({v:'9',material:version,seed,mode:'organic',pal:'golden',...(orientation==='portrait'?{fmt:'portrait'}:{})}))url.searchParams.set(k,v);
  const item={id:day+'-'+(orientation==='portrait'?'OP':'OL')+'01',material:'oil',rendererVersion:9,seed,mode:'organic',orientation,shareUrl:url.href,series:'Growth Systems',settings:{orientation,palette:'golden',phiStrength:91}};
  validateOilItem(item,day,orientation);
- assert.match(makeCaptions(item).instagram,new RegExp('OIL PAINT V'+version.slice(-1)));
+ // The historical renderer revision belongs in the reproducible artwork URL,
+ // never in the public-facing name of the Oil material.
+ const copy=makeCaptions(item);
+ for(const platform of ['instagram','threads','bluesky']){
+   assert.match(copy[platform],/\/ OIL(?:\n|$)/,platform+' must display Oil');
+   assert.doesNotMatch(copy[platform],/\bOIL(?: PAINT)? V\d+\b/i,platform+' must not display a renderer revision');
+ }
+ assert.equal(new URL(item.shareUrl).searchParams.get('material'),version,
+   'The original Oil revision must remain in the reproducible link');
  const bad=new URL(url);bad.searchParams.set('material',version==='oil-v6'?'oil-v5':'oil-v6');
  assert.throws(()=>validateOilItem({...item,shareUrl:bad.href},day,orientation),/does not reproduce/);
 }
