@@ -324,6 +324,8 @@ function build() {
     byId('shared-caption').textContent = state.settings.collaborationPull ? 'φ-weighted turns' : 'Equal turns';
     renderTurnLegend('shared-turns',state.study.primary.counts,state.study.roster);
     renderTurnLegend('equal-turns',state.study.equal.counts,state.study.roster);
+    byId('shared-seed').textContent='Seed '+studySeed;
+    byId('equal-seed').textContent='Seed '+studySeed;
     reset();
     finish();
     syncHint(false);
