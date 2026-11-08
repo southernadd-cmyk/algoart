@@ -204,7 +204,31 @@ try{
     document.querySelector('#lead-index').value==='0' &&
     document.querySelector('#counter')?.textContent.trim()==='5 / 5 turns');
   assert.equal(await page.locator('#lead-label').textContent(),'A1 leads');
-  console.log('Rotate lead UI, equal-canvas identity and share-state restoration passed');
+
+  // The duplicate toolbar button uses the same lead and redraw state.
+  await page.locator('#rotate-lead-toolbar').click();
+  await page.waitForFunction(()=>
+    document.querySelector('#lead-index').value==='1' &&
+    document.querySelector('#toolbar-lead-label').textContent==='A2' &&
+    document.querySelector('#counter')?.textContent.trim()==='5 / 5 turns');
+  assert.deepEqual((await readUI()).caption,[1,2,2]);
+  assert.deepEqual((await readUI()).equal,initial.equal);
+
+  // The counter is hidden on a narrow phone; its following Rotate lead
+  // button must still be visible, clickable and inside the drawing bar.
+  await page.setViewportSize({width:390,height:844});
+  const toolbar=await page.locator('#rotate-lead-toolbar').boundingBox();
+  const stage=await page.locator('.transport').boundingBox();
+  assert(toolbar&&stage&&toolbar.width>=55,
+    'Rotate lead toolbar button must remain visible on mobile');
+  assert(toolbar.x>=stage.x-1&&toolbar.x+toolbar.width<=stage.x+stage.width+1,
+    'Rotate lead must not be clipped by narrow-screen transport');
+  await page.locator('#rotate-lead-toolbar').click();
+  await page.waitForFunction(()=>
+    document.querySelector('#lead-index').value==='2' &&
+    document.querySelector('#toolbar-lead-label').textContent==='A3');
+  assert.deepEqual((await readUI()).caption,[2,1,2]);
+  console.log('Rotate lead toolbar, mobile layout, equal-canvas identity and share-state restoration passed');
 }finally{
   if(browser)await browser.close();
   await new Promise(ok=>server.close(ok));
