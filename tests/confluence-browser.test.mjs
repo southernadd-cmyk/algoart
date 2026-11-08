@@ -178,7 +178,10 @@ try{
   // All three tissue artists must share ONE V7 atmosphere per canvas.
   // Two calls per canvas (reference + actual) and two canvases (shared
   // and equal-turn comparison) means four, regardless of artist count.
-  await page.locator('#inspector-toggle').click();
+  // The material matrix leaves the drawer open after changing Artist 1.
+  // Do not attempt to click the covered background toggle a second time.
+  if((await page.locator('#inspector-toggle').getAttribute('aria-expanded'))!=='true')
+    await page.locator('#inspector-toggle').click();
   for (const tab of ['artist-1','artist-2','artist-3']){
     await page.locator('#tab-'+tab).click();
     await page.locator('#roster [data-artist="'+tab.slice(-1)+'"] select[data-field="material"]').selectOption('tissue');
