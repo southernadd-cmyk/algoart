@@ -22,7 +22,7 @@ try{
  assert.equal(first,'copyLink');
  const buttons=await page.locator('.social-share-options a').evaluateAll(
   elements=>elements.map(e=>e.id));
- assert.deepEqual(buttons,['shareThreads','shareBluesky']);
+ assert.deepEqual(buttons,['shareThreads','shareBluesky','shareX']);
  assert.match(await page.locator('.social-share-note').textContent(),
   /exact artwork link and its own image preview/);
 
@@ -74,8 +74,8 @@ try{
   };
  });
  assert.match(art.font,/AlgoArt Marker/);
- assert.deepEqual(art.inspect.map(x=>x.kind),['threads','bluesky']);
- for(let i=0;i<2;i++){
+ assert.deepEqual(art.inspect.map(x=>x.kind),['threads','bluesky','x']);
+ for(let i=0;i<3;i++){
    assert(art.inspect[i].opaque>130,'Marker-drawn logo is blank');
    assert.equal(art.inspect[i].png,art.redrawn[i],
      'Social marker logos are not deterministic');
@@ -93,6 +93,10 @@ try{
    'Versioned Threads artwork link is too long');
  assert.equal(art.intents.threadsPreviewURL,art.intents.previewURL+'&pv=4',
    'Threads must get a fresh cache key');
+ assert.equal(art.intents.xPreviewURL,art.intents.previewURL+'&pv=5',
+   'X must get a fresh cache key');
+ assert.equal(new URL(art.intents.x).hostname,'x.com');
+ assert.equal(new URL(art.intents.x).searchParams.get('text'),art.intents.xCaption);
  assert.equal(art.intents.bluesky.includes(encodeURIComponent(art.intents.caption)),true,
    'The working Bluesky share must remain unchanged');
  // Validate the deployed live service supplies actual image-specific
@@ -136,17 +140,17 @@ try{
      const image=Buffer.from(data.jpeg,'base64');
      assert(image.length>15000,'Real selected Oil painting was not uploaded');
      assert.equal(image[0],255);assert.equal(image[1],216);
-     uploads.push({token:new URL(req.url()).searchParams.get('c'),size:image.length});
+     uploads.push({token:new URL(req.url()).searchParams.get('c'),size:image.length,jpeg:data.jpeg});
      await route.fulfill({status:200,contentType:'application/json',
        headers,body:JSON.stringify({ok:true,bytes:image.length})});
    });
- for(const domain of ['www.threads.com','bsky.app']){
+ for(const domain of ['www.threads.com','bsky.app','x.com']){
    await desktop.route('https://'+domain+'/**',route=>route.fulfill({
      status:200,contentType:'text/html',body:'<!doctype html><title>Social draft test</title>'
    }));
  }
  for(const [id,host] of [['shareThreads','www.threads.com'],
-    ['shareBluesky','bsky.app']]){
+    ['shareBluesky','bsky.app'],['shareX','x.com']]){
    const [popup]=await Promise.all([
      page.waitForEvent('popup',{timeout:30000}),
      page.locator('#'+id).click()
@@ -154,12 +158,27 @@ try{
    await popup.waitForURL(u=>u.hostname===host,{timeout:30000});
    const uri=new URL(popup.url());
    assert(uri.searchParams.get('text').includes(
-     id==='shareThreads'?art.intents.threadsPreviewURL:art.intents.previewURL));
+     id==='shareThreads'?art.intents.threadsPreviewURL:
+     id==='shareX'?art.intents.xPreviewURL:art.intents.previewURL));
    assert.match(await page.locator('#socialShareStatus').textContent(),
      /preview prepared/i);
    await popup.close();
  }
- assert.equal(uploads.length,2,'Both services must preload the actual current image');
+ assert.equal(uploads.length,3,'All three services must preload the actual current image');
+ // The portrait composition must show its paper edges against a dark matte.
+ const matte=await page.evaluate(async encoded=>{
+   const img=new Image();
+   img.src='data:image/jpeg;base64,'+encoded;
+   await img.decode();
+   const c=document.createElement('canvas');c.width=1200;c.height=630;
+   const ctx=c.getContext('2d');ctx.drawImage(img,0,0);
+   const pixel=(x,y)=>[...ctx.getImageData(x,y,1,1).data].slice(0,3);
+   return {left:pixel(8,315),right:pixel(1192,315),inside:pixel(400,10)};
+ },uploads[0].jpeg);
+ assert(matte.left.every(v=>v<110)&&matte.right.every(v=>v<110),
+   'Portrait social thumbnail must have a visibly dark outer matte');
+ assert(matte.inside.every(v=>v>160),
+   'Portrait paper must retain its light colour inside the dark matte');
  assert(uploads.every(x=>x.token===new URL(art.intents.artworkURL).searchParams.get('c')),
    'Preloaded image does not match the exact artwork share link');
  await page.goto(art.intents.artworkURL,{waitUntil:'domcontentloaded'});
@@ -184,9 +203,10 @@ try{
  await mp.locator('#tab-export').click();
  assert.equal(await mp.locator('#shareThreads').isVisible(),true);
  assert.equal(await mp.locator('#shareBluesky').isVisible(),true);
+ assert.equal(await mp.locator('#shareX').isVisible(),true);
  assert.equal(await mp.locator('#shareInstagram').count(),0);
  await mobile.close();
  assert.deepEqual(errs,[]);
- console.log('PASS: Instagram removed; authentic deterministic A.stroke logos; Marker font; exact OG social links, Unicode seed, Bluesky limit, restored source settings and mobile layout');
+ console.log('PASS: Threads, Bluesky and X share exact OG artwork previews with dark portrait matte, deterministic Marker icons, Unicode seed, restored settings and mobile layout');
 }finally{await browser.close()}
 
