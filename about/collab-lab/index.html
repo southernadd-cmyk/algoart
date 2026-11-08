@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="An experimental drawing room for PROPORTION PIECE.">
+<meta name="theme-color" content="#e9e5da">
+<title>Collab Lab — PROPORTION PIECE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <a class="brand" href="../../" aria-label="Open the PROPORTION PIECE editor"><span class="phi">φ</span> PROPORTION PIECE</a>
+    <span class="edition">UI TEST <span>02</span></span>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="title">
+      <div>
+        <p class="eyebrow"><span class="dot"></span> SHARED CANVAS EXPERIMENT</p>
+        <h1 id="title">Collab Lab<span>.</span></h1>
+      </div>
+      <p>Put up to eight artists on one sheet. Give each a system, a palette and a material, then watch how they respond to each other.</p>
+    </section>
+    <section class="studio" aria-label="Collaboration experiment">
+      <aside class="controls" aria-label="Study settings">
+        <form id="study-form">
+          <section id="artists" class="control-section" aria-labelledby="artist-heading">
+            <div class="roster-heading">
+              <h2 id="artist-heading"><span>01</span> Artists</h2>
+              <span id="artist-count" class="mono">3 / 8</span>
+            </div>
+            <div id="counts" class="segmented" role="group" aria-label="Roster presets">
+              <button type="button" data-count="3">3 artists</button>
+              <button type="button" data-count="5">5 artists</button>
+              <button type="button" data-count="8">8 artists</button>
+            </div>
+            <div id="roster" class="roster"></div>
+            <button type="button" id="add-artist" class="add-artist">＋ Add artist</button>
+            <p class="hint">Any system can appear more than once.</p>
+          </section>
+          <section class="control-section">
+            <h2><span>02</span> The response</h2>
+            <label for="response" class="sr-only">Response style</label>
+            <select id="response">
+              <option value="weave">Weave around marks</option>
+              <option value="echo">Echo nearby directions</option>
+              <option value="space">Leave more space</option>
+            </select>
+            <label for="strength" class="strength-label">Response strength <output id="strength-value" for="strength">75%</output></label>
+            <input id="strength" type="range" min="0" max="100" value="75" step="5">
+            <p class="hint" id="response-help">Look for gaps beside other artists' marks.</p>
+          </section>
+          <section class="control-section">
+            <h2><span>03</span> The seed</h2>
+            <div class="seed-field">
+              <label class="sr-only" for="seed">Seed</label>
+              <input id="seed" type="text" value="812034" maxlength="64" required autocomplete="off" spellcheck="false">
+              <button type="button" id="new-seed">New seed</button>
+            </div>
+          </section>
+          <div class="draw-actions">
+            <button type="submit" class="primary">Draw study</button>
+            <p id="roster-status" class="hint" role="status"></p>
+          </div>
+        </form>
+      </aside>
+
+      <section id="drawing" class="work" aria-label="Canvas and playback">
+        <div class="workbar">
+          <div class="segmented view-switch" role="group" aria-label="Canvas view">
+            <button type="button" id="single" aria-pressed="true">Shared canvas</button>
+            <button type="button" id="compare" aria-pressed="false">Compare</button>
+          </div>
+          <button type="submit" form="study-form" class="primary draw-at-canvas">Draw study</button>
+        </div>
+        <div id="canvases" class="canvases">
+          <figure>
+            <canvas id="shared" width="1400" height="1000" aria-label="Canvas showing artists responding to one another"></canvas>
+            <figcaption><span><span class="dot"></span> Responsive</span><span id="counter" class="mono">—</span></figcaption>
+          </figure>
+          <figure id="baseline-panel" hidden>
+            <canvas id="baseline" width="1400" height="1000" aria-label="The same seed and roster drawn independently"></canvas>
+            <figcaption><span><span class="dot baseline-dot"></span> Independent</span></figcaption>
+          </figure>
+        </div>
+        <div class="transport">
+          <div class="buttons" role="group" aria-label="Playback">
+            <button type="button" id="play" class="primary">Replay</button>
+            <button type="button" id="step">Step</button>
+            <button type="button" id="finish">Finish</button>
+          </div>
+          <a class="edit-artists" href="#artists">Edit artists</a>
+          <button type="button" id="download" class="text-button">↓ Save PNG</button>
+        </div>
+        <div class="progress" role="progressbar" aria-label="Drawing progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress"></span></div>
+        <section class="readout" aria-label="Turn log">
+          <div><h2>Turn log</h2><p id="summary" class="mono">Preparing study</p></div>
+          <ol id="decisions"></ol>
+        </section>
+        <p id="status" class="sr-only" role="status"></p>
+      </section>
+    </section>
+  </main>
+  <footer><span>PROPORTION PIECE / COLLAB LAB</span><p>Mixed-media studies · Original system geometry with experimental placement</p></footer>
+</div>
+<script src="engine/random.js"></script>
+<script src="engine/phi.js"></script>
+<script src="engine/palettes.js"></script>
+<script src="engine/marker.js"></script>
+<script src="engine/generator.js"></script>
+<script src="engine/materials/oil-pigment.js"></script>
+<script src="engine/materials/oil-collab-support.js"></script>
+<script src="engine/materials/oil-brush-v8.js"></script>
+<script src="engine/materials/oil-material.js"></script>
+<script src="engine/materials/watercolour-v2s.js"></script>
+<script src="engine/materials/action-painting-v4.js"></script>
+<script type="module" src="ui.js"></script>
+</body>
+</html>
