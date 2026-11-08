@@ -100,3 +100,77 @@ test('Rotate lead is an active control and share links retain the selected hand'
  assert.match(share,/data\.leadIndex\?\?0/);
  assert.match(share,/data\.leadIndex>=0 && data\.leadIndex<=2/);
 });
+
+import {importLeadFromURL} from '../confluence/import-lead.js';
+import {defaultSettings} from '../confluence/artist-controls.js';
+
+test('Confluence is a fourth site destination and the solo editor links to its full current state',()=>{
+ const destinations=[
+  ['../index.html','href="confluence/"'],
+  ['../gallery/index.html','href="../confluence/"'],
+  ['../about/index.html','href="../confluence/"'],
+  ['../about/step-by-step/index.html','href="../../confluence/"'],
+  ['../confluence/index.html','href="./" aria-current="page">confluence</a>']
+ ];
+ for(const [path,expected] of destinations){
+   const page=read(path);
+   assert(page.includes(expected),'Missing Confluence nav entry in '+path);
+   assert.equal((page.match(/data-algo-nav/g)||[]).length,4,
+     'Header must contain exactly four nav destinations: '+path);
+ }
+ const root=read('../index.html'),app=read('../js/app.js');
+ assert.match(root,/id="exploreConfluence"/);
+ assert.match(root,/Explore in Confluence/);
+ assert.match(app,/var confluence=\$\('exploreConfluence'\)/);
+ assert.match(app,/var shared=new URL\('confluence\/',location.href\)/);
+ assert.match(app,/shared\.search=params/);
+ assert.doesNotMatch(root,/Draw with others|Three Hands/);
+ const about=read('../about/index.html');
+ assert.match(about,/Three procedural artists/);
+ assert.match(about,/not other visitors/);
+ assert.match(about,/not automatically added to the daily gallery/);
+});
+
+test('Solo-to-Confluence importer preserves full-state settings for all five current materials',()=>{
+ const catalog={
+   systems:['organic','field','rects'].map(id=>({id})),
+   palettes:{warm:'Warm',spectrum:'Full Spectrum'},
+   materials:{marker:'Marker',tissue:'Tissue',watercolour:'Watercolour',
+     oil:'Oil',action:'Action'}
+ };
+ const materials=['marker','tissue-v8','watercolour-v2s','oil-v8','action-v4'];
+ for(const material of materials){
+   const lead={id:1,system:'field',palette:'spectrum',material:'marker',
+     settings:defaultSettings({pen:'felt',width:8})};
+   const inputs={seed:{value:''},orientation:{value:'landscape'},
+     paper:{value:'#f5f0e6'},grain:{value:'0'}};
+   const params=new URLSearchParams({
+     v:'10',seed:'CONFLUENCE-SOURCE-2026',mode:'organic',pal:'warm',
+     material,fmt:'portrait',paper:'#e6d5cc',grain:'27',
+     el:'58',den:'63',cx:'41',neg:'72',phi:'38.2',rec:'5',
+     spi:'61',ga:'84',nest:'22',th:'17',wob:'29',od:'4',
+     op:'57',pr:'48',dry:'32',curve:'39',shape:'64',overlap:'52',
+     rot:'87',cols:'12',sat:'73',bri:'52',pen:'broad',
+     ln:'0',ci:'1',re:'0',po:'1',ar:'0',sheet:'phi'
+   });
+   assert.equal(importLeadFromURL(params,lead,inputs,catalog),true);
+   assert.equal(lead.material,material==='tissue-v8'?'tissue':
+     material.startsWith('watercolour')?'watercolour':
+     material.split('-')[0]);
+   assert.equal(lead.system,'organic');
+   assert.equal(lead.palette,'warm');
+   assert.equal(lead.settings.seed,'CONFLUENCE-SOURCE-2026');
+   assert.equal(lead.settings.colourCount,12);
+   assert.equal(lead.settings.elements,58);
+   assert.equal(lead.settings.negativeSpace,72);
+   assert.equal(lead.settings.thickness,17);
+   assert.equal(lead.settings.phiStrength,38.2);
+   assert.equal(lead.settings.fit,true);
+   assert.equal(lead.settings.lines,false);
+   assert.equal(lead.settings.circles,true);
+   assert.equal(lead.settings.rectangles,false);
+   assert.equal(inputs.orientation.value,'portrait');
+   assert.equal(inputs.paper.value,'#e6d5cc');
+   assert.equal(inputs.grain.value,27);
+ }
+});
