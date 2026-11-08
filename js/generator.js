@@ -1368,12 +1368,18 @@ function chooseBestLayout(s){
 // page can replay a drawing by section and element rather than pen pass.
 // Recording metadata only: consumes no randomness and changes no marks.
 function markGroup(section,sectionLabel,id,label,info){
+  // V10 colour ownership must be identical when Marker is painted
+  // directly and when materials capture its SVG vector source.
+  if(A.rendererVersion>=10)A._renderGroupV10=info||null;
   if(!A.svgRecorder)return;
   var g={section:section,sectionLabel:sectionLabel,id:section+'/'+id,label:label};
   if(info)for(var k in info)if(Object.prototype.hasOwnProperty.call(info,k))g[k]=info[k];
   A.svgRecorder.group=g;
 }
-function endMarkGroup(){if(A.svgRecorder)A.svgRecorder.group=null;}
+function endMarkGroup(){
+  if(A.rendererVersion>=10)A._renderGroupV10=null;
+  if(A.svgRecorder)A.svgRecorder.group=null;
+}
 A.markGroup=markGroup;
 
 function drawPlannedElement(ctx,plan,i,s,r,pal,strategy){
