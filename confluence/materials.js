@@ -124,6 +124,47 @@ export function makePainter(output, seed, sheet) {
   let pigment, relief, sensor, colourSample;
   const colours = new Map();
   const oil = A.oilPigment.createModel();
+  // Keep all of each tissue artist's *reactively placed* marks together.
+  // The released V7 material needs a whole sheet and multiple related marks,
+  // not dozens of independent little canvases with a newly seeded wash.
+  const tissueArtists = new Map();
+  let tissueFinalized = false;
+
+  function graphitePreview(traces,opacity) {
+    // A thin live pencil trace lets subsequent artists respond to each turn
+    // while the much heavier true tissue material is rendered once at finish.
+    output.save();
+    output.globalCompositeOperation = 'multiply';
+    output.strokeStyle = '#3b3736';
+    output.globalAlpha = Math.min(.38,Math.max(.15,opacity*.33));
+    output.lineJoin = 'round';
+    output.lineCap = 'round';
+    for(const trace of traces) {
+      if(trace.points.length<2)continue;
+      output.lineWidth=Math.max(.7,Math.min(2.2,trace.width*.23));
+      output.beginPath();
+      output.moveTo(trace.points[0].x,trace.points[0].y);
+      for(const point of trace.points.slice(1))output.lineTo(point.x,point.y);
+      output.stroke();
+    }
+    output.restore();
+  }
+
+  function tissueFootprint(traces,gain) {
+    // This is the material-aware response field for the *next* artist, not
+    // the final raster. Tissue broad pigment reaches beyond the pencil line.
+    const footprint=[];
+    for(const trace of traces){
+      const points=trace.points,stride=Math.max(1,Math.floor(points.length/110));
+      for(let i=0;i<points.length;i+=stride){
+        const point=points[i],next=points[Math.min(points.length-1,i+1)];
+        footprint.push({point,angle:Math.atan2(next.y-point.y,next.x-point.x),
+          radius:Math.min(52,Math.max(21,trace.width*2.5)),
+          opacity:Math.min(.85,Math.max(.18,gain*.56))});
+      }
+    }
+    return footprint;
+  }
 
   function sourceRGB(css) {
     if (!colours.has(css)) {
@@ -137,7 +178,7 @@ export function makePainter(output, seed, sheet) {
     return colours.get(css);
   }
 
-  return function deposit(action, observe) {
+  function deposit(action, observe) {
     const {artist, group, placement, plans} = action;
     const material = artist.material;
     const {opacity, overdraw, dryness} = artist.settings;
@@ -147,6 +188,18 @@ export function makePainter(output, seed, sheet) {
     }
 
     let traces = group.traces.map(trace => ({...trace, points: plannedPoints(trace.points, placement, plans.get(trace.mark))}));
+    if (material === 'tissue') {
+      let entry=tissueArtists.get(artist.id);
+      if(!entry){
+        entry={artist,traces:[],gain:0,marks:0};
+        tissueArtists.set(artist.id,entry);
+      }
+      entry.traces.push(...traces);
+      entry.gain+=action.pigmentGain;
+      entry.marks++;
+      graphitePreview(traces,action.pigmentGain);
+      return observe ? tissueFootprint(traces,action.pigmentGain) : undefined;
+    }
     if (material === 'action') traces = actionTraces(traces);
     const width = output.canvas.width, height = output.canvas.height;
     const area = box(traces, material, width, height);
@@ -221,5 +274,25 @@ export function makePainter(output, seed, sheet) {
     const p = traces[0].points;
     const heading = Math.atan2(p.at(-1).y - p[0].y, p.at(-1).x - p[0].x);
     return inkOnSheet(pigment, sensor, area, heading, coverage);
+  }
+
+  deposit.finalize = function finalizeTissue() {
+    if(tissueFinalized)return;
+    tissueFinalized=true;
+    for(const {artist,traces,gain,marks} of tissueArtists.values()){
+      if(!traces.length)continue;
+      const full=layer(true);
+      size(full,sheet.width,sheet.height);
+      const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
+      renderNativeDeposit(full,'tissue',traces,artist,bounds,sheet.paper,
+        [seed,artist.id,artist.system,'v7-whole-sheet'].join('|'),sourceRGB,
+        sheet);
+      output.save();
+      output.globalCompositeOperation='source-over';
+      output.globalAlpha=materialOpacity(artist.settings.opacity,gain/marks);
+      output.drawImage(full.canvas,0,0);
+      output.restore();
+    }
   };
+  return deposit;
 }
