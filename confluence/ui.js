@@ -109,6 +109,7 @@ function updateShares() {
   const lead=Number(leadInput.value);
   byId('collaboration-value').value = collaborationPull.value + '%';
   byId('lead-label').textContent = 'A'+(lead+1)+' leads';
+  byId('toolbar-lead-label').textContent='A'+(lead+1);
   byId('collaboration-help').textContent='Equal turns at 0%. At 100%, Artist '+(lead+1)+' leads and the others respond.';
   const roles=['Lead voice','Reply','Counterpoint'];
   for(const [index,card] of [...roster.children].entries()){
@@ -426,11 +427,13 @@ totalTurns.addEventListener('change', () => {
   preferredTurns=Number(totalTurns.value)||55;
   build();
 });
-byId('rotate-lead').addEventListener('click',()=>{
+function rotateLead(){
   leadInput.value=String((Number(leadInput.value)+1)%3);
   updateShares();
   build();
-});
+}
+byId('rotate-lead').addEventListener('click',rotateLead);
+byId('rotate-lead-toolbar').addEventListener('click',rotateLead);
 for (const format of ['landscape','portrait']) {
   byId('format-' + format).addEventListener('click', () => {
     if (orientation.value === format) return;
