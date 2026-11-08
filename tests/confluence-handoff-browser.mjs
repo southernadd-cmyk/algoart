@@ -72,6 +72,8 @@ try{
   orientation:document.getElementById('orientation').value,
   hasV8Renderer:typeof window.AlgoArt?.renderTissueLayeredV8==='function',
   tissueVersion:window.AlgoArt?.lastOilMaterialStats?.tissuePaletteVersion||null,
+  v8Variant:window.AlgoArt?.lastTissueV8Stats?.variant,
+  v8Version:window.AlgoArt?.lastTissueV8Stats?.tissuePaletteVersion,
   hasV8Stats:!!window.AlgoArt?.lastTissueV8Stats
  }));
  assert.equal(imported.material,'tissue','The source Tissue material must transfer');
@@ -79,14 +81,19 @@ try{
  assert.equal(imported.palette,'warm');
  assert.equal(imported.grain,'27');
  assert.equal(imported.orientation,'landscape');
- // Diagnostic: the importer recognises V8 but Confluence currently lacks
- // the solo V8 layered material. Keep the CTA absent until this changes.
+ // The full-sheet solo entry point is deliberately not used: Confluence
+ // paints spatially transformed gestures, but its V8 material stages must
+ // be active. Keep the editor CTA removed pending visual comparison.
  console.log('TISSUE_V8_HANDOFF_AUDIT '+JSON.stringify({
   solo:{material:solo.material,system:solo.mode,renderer:solo.v8},
   confluence:imported
  }));
  assert.equal(imported.hasV8Renderer,false,
-  'Known issue: Confluence still does not load the released Tissue V8 layer');
+  'Do not generate a separate solo sheet in place of Confluence turns');
+ assert.equal(imported.hasV8Stats,true,
+  'Confluence did not execute the released Tissue V8 material stages');
+ assert.equal(imported.v8Variant,'layered-v8');
+ assert.equal(imported.v8Version,8);
  // All four links must remain within the viewport and not overlap at narrow
  // widths; no navigation destination is silently omitted on mobile.
  for(const pathname of ['/confluence/','/','/gallery/','/about/','/about/step-by-step/']){
