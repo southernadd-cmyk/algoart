@@ -169,7 +169,12 @@ function pathStroke(ctx,pts,width,col,alpha){
 }
 function paintRibbon(pig,height,pts,width,r,col,opacity,thickness){
   if(!ribbon(pig,pts,width*.5,r))return;
-  pig.save();pig.globalAlpha=opacity;pig.fillStyle=col;pig.fill();pig.clip();
+  pig.save();
+  // V8 only: translucent scraps deposit less pigment in the broadest washes.
+  // Canvas source-over keeps overlapping hues visible; V7 is unchanged.
+  pig.globalAlpha=A.tissueV8LayeredActive
+    ?opacity*(.72+.28*clamp((thickness-.4)/1.1,0,1)):opacity;
+  pig.fillStyle=col;pig.fill();pig.clip();
   // Dry and wet streaks share the original tangent; the noise is material,
   // not another geometry generator. All stripes remain inside the paint mass.
   var count=Math.round(clamp(width/13,3,9)),i;
@@ -333,6 +338,8 @@ function addLightTissue(pig,height,w,h,chains,voids,seed,quality){
     if(tissueV7Active&&item.sourceRGB)
       pale=lerpHex(sourceTissueHue(item,.76),'#fffaf0',.13);
     var opacity=clamp(.30+item.darkness*.002,.34,.56);
+    // V8 only: pale fibre sheets are sheer, not chalk-white cover-ups.
+    if(A.tissueV8LayeredActive)opacity*=.57;
     pig.globalAlpha=opacity;pig.fillStyle=pale;pig.fill();pig.clip();
     // Fine fibres are inside the scrap, with no added edge halo or blur.
     for(j=0;j<22;j++){
@@ -526,7 +533,11 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);
   if(A.materialStageCapture)A.materialStageCapture('tissue-surface',ctx.canvas);
-  var graphitePaths=kit&&kit.revision===3?graphiteOverlay(ctx,chains,seed,quality):0;
+  // V8 brings the original dry graphite drawing back over V7-source-hue tissue.
+  // Neither V7 nor historical Tissue 8 (CPU-only V7) enters this path.
+  var graphitePaths=kit&&(kit.revision===3||
+    (kit.revision===7&&A.tissueV8LayeredActive))?
+    graphiteOverlay(ctx,chains,seed,quality):0;
   if(graphitePaths&&A.materialStageCapture)A.materialStageCapture('tissue-graphite-finished',ctx.canvas);
   ctx.restore();
   A.lastOilMaterialStats={width:sw,height:sh,chains:chains.length,buffer:'pigment+height',
