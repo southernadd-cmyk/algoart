@@ -60,7 +60,7 @@ for(const name of palettes){
     assert.equal(new Set(next).size,colourCount,
       name+' repeats inks at '+colourCount);
     const hues=next.map(c=>{
-      const parsed=/^hsl\\(([-.\\d]+) ([-.\\d]+)% ([-.\\d]+)%\\)$/.exec(c);
+      const parsed=/^hsl\(([-.\d]+) ([-.\d]+)% ([-.\d]+)%\)$/.exec(c);
       assert(parsed,'Expected parseable source HSL pigment '+name+': '+c);
       return {h:Number(parsed[1]),s:Number(parsed[2]),l:Number(parsed[3])};
     });
