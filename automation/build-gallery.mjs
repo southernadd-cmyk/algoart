@@ -403,6 +403,28 @@ try {
   if (error.code !== 'ENOENT') throw error;
 }
 
+// GitHub's scheduled gallery job can start late. If the 09:00 social
+// workflow already created the day's legacy gallery, migrate those social
+// studies into their own archive BEFORE the twelve-study gallery replaces
+// the displayed index. Compact ?art= links must never break due to timing.
+if(galleryMaterial==='random' && Array.isArray(existingMeta.entries)){
+  const earlySocial=existingMeta.entries.filter(e=>!/-G\d{2}$/.test(e.id));
+  if(earlySocial.length){
+    const socialPath=path.join(dayDir,'social-meta.json');
+    let archived={version:1,date:day,entries:[]};
+    try{archived=JSON.parse(await fs.readFile(socialPath,'utf8'))}
+    catch(error){if(error.code!=='ENOENT')throw error}
+    const byId=new Map(archived.entries.map(e=>[e.id,e]));
+    for(const e of earlySocial){
+      await fs.access(path.join(dayDir,e.imageFile));
+      if(!byId.has(e.id))byId.set(e.id,e);
+    }
+    archived.entries=[...byId.values()].sort((a,b)=>a.id.localeCompare(b.id));
+    await fs.writeFile(socialPath,JSON.stringify(archived,null,2)+'\n');
+    console.log('Protected '+earlySocial.length+
+      ' social works generated before the twelve-study gallery run.');
+  }
+}
 const existingEntries = Array.isArray(existingMeta.entries)
   ? existingMeta.entries.filter(e=>galleryMaterial!=='random'||/\-G\d{2}$/.test(e.id))
   : [];
