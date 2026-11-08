@@ -13,7 +13,7 @@ test('Confluence tissue/watercolour renderer reuses released solo material inter
  assert.match(bridge,/A\.watercolourV2sMaterial\(/);
  assert.match(bridge,/A\.tissueKitFromPaths/);
  assert.match(bridge,/fitToSheet=false/);
- assert.match(bridge,/sourceRGB/);
+ assert.match(bridge,/sourceInk|sourceInk=paths/);
  assert.doesNotMatch(bridge,/createLinearGradient|filter.*blur/);
 });
 test('Confluence uses full Oil V8 and Action V4 algorithms, not shortcuts',()=>{
