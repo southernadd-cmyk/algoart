@@ -5,6 +5,7 @@ import {turnShares} from './composition.js?v=confluence-rotate-lead-05';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
 import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-rotate-lead-08';
 import {importLeadFromURL} from './import-lead.js?v=confluence-fit-precedence-03';
+import {makeGoldenRoster} from './golden-roster.js?v=20261108-phi-mix-01';
 
 const byId = id => document.getElementById(id);
 const form = byId('study-form');
@@ -508,6 +509,21 @@ const restored = restoreSharedState(params, artists, inputs, {systems, palettes,
 if(restored)preferredTurns=Number(totalTurns.value)||55;
 const imported = !restored && importLeadFromURL(params, artists[0],
   {seed, orientation, paper, grain}, {systems, palettes, materials});
+// Fresh studio visits start with a fresh seed. Both direct visits and solo
+// editor handoffs get a golden-ratio distributed roster instead of three
+// fixed marker artists. A restored shared study must never be randomised.
+if (!restored) {
+  if (!imported && !params.has('seed')) {
+    seed.value = String(crypto.getRandomValues(new Uint32Array(1))[0]);
+  }
+  const mix = (params.get('mix') || '').slice(0, 64);
+  const defaults = makeGoldenRoster(seed.value.trim() + '|' + mix, {
+    systems, materials: Object.keys(materials),
+    palettes: Object.keys(palettes), defaultSettings,
+    lead: imported ? artists[0] : null
+  });
+  defaults.forEach((artist, index) => Object.assign(artists[index], artist));
+}
 byId('import-note').hidden = !imported;
 renderRoster();
 mountDrawer();
