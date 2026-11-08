@@ -17,6 +17,14 @@ function run(script,env={}){
  });
  assert.equal(res.status,0,'Failed '+script+':\n'+res.stdout.slice(-2400)+'\n'+res.stderr.slice(-2400));
 }
+// The 09:00 social run may precede a delayed scheduled gallery run.
+// It must remain accessible after the 12-gallery format replaces the page.
+run('automation/generate-social.mjs',{
+ SOCIAL_COUNT:'1',SOCIAL_MATERIAL:'marker',SOCIAL_ORIENTATION:'landscape'
+});
+const morning=JSON.parse(fs.readFileSync(path.join('social-output',day,'queue.json')));
+run('automation/build-gallery.mjs',{GALLERY_QUEUE_MATERIAL:'marker'});
+assert.equal(JSON.parse(fs.readFileSync(path.join(dir,'meta.json'))).entries.length,1);
 run('automation/generate-gallery-daily-12.mjs');
 const q=JSON.parse(fs.readFileSync(path.join('social-output',day,'gallery','queue.json')));
 assert.equal(q.edition,'random-12');
@@ -42,6 +50,11 @@ const m=JSON.parse(fs.readFileSync(path.join(dir,'meta.json')));
 assert.equal(m.count,12);
 assert.equal(m.entries.length,12);
 assert(fs.existsSync(path.join(dir,'random-edition.json')));
+const migrated=JSON.parse(fs.readFileSync(path.join(dir,'social-meta.json')));
+assert(migrated.entries.some(e=>e.id===morning.entries[0].id),
+ 'Early social artwork was not migrated before replacing the gallery');
+assert(fs.existsSync(path.join(dir,morning.entries[0].imageFile)),
+ 'Early social JPEG was lost during 12-gallery migration');
 for(const e of m.entries){
  const jpeg=fs.readFileSync(path.join('social-output',day,'gallery',e.imageFile));
  assert.deepEqual(fs.readFileSync(path.join(dir,e.imageFile)),jpeg,'Gallery binary mismatch');
