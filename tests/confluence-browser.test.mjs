@@ -74,6 +74,65 @@ try{
   await measure('mobile portrait',1000,1400);
   assert.deepEqual(errors,[],'Confluence JavaScript errors: '+errors.join('; '));
   console.log('Confluence responsive orientation smoke passed');
+  // Check each of the five materials in an actual browser. Native tissue and
+  // watercolour must call the same released pigment engine as the solo editor;
+  // both must preserve coloured marks and leave the shared sheet free of
+  // paper-coloured opaque squares.
+  await page.setViewportSize({width:1280,height:850});
+  await page.evaluate(()=>{
+    const A=window.AlgoArt;
+    window.__materialCalls={tissue:0,watercolour:0};
+    const oil=A.oilMaterial,watercolour=A.watercolourV2sMaterial;
+    A.oilMaterial=function(...args){
+      window.__materialCalls.tissue++;
+      return oil.apply(this,args);
+    };
+    A.watercolourV2sMaterial=function(...args){
+      window.__materialCalls.watercolour++;
+      return watercolour.apply(this,args);
+    };
+  });
+  await page.locator('#inspector-toggle').click();
+  await page.locator('#tab-shared').click();
+  await page.locator('#total-turns').selectOption('5');
+  await page.locator('#tab-artist-1').click();
+  const snapshots=[];
+  for(const material of ['marker','tissue','watercolour','oil','action']){
+    await page.locator('#roster [data-artist="1"] select[data-field="material"]').selectOption(material);
+    await page.locator('#study-form .draw-actions button[type="submit"]').click();
+    await page.waitForFunction(()=>{
+      const counter=document.querySelector('#counter')?.textContent?.trim();
+      const status=document.querySelector('#status')?.textContent||'';
+      if(status.includes('Could not render'))throw Error(status);
+      return counter==='5 / 5 turns';
+    },undefined,{timeout:90000});
+    const evidence=await page.evaluate(()=>{
+      const canvas=document.querySelector('#shared');
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      const image=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      const paper=[245,240,230];
+      let painted=0;
+      for(let p=0;p<image.length;p+=20){
+        if(Math.max(Math.abs(image[p]-paper[0]),
+          Math.abs(image[p+1]-paper[1]),
+          Math.abs(image[p+2]-paper[2]))>24)painted++;
+      }
+      return {painted,ratio:painted/(image.length/20),
+        calls:{...window.__materialCalls},stats:{
+          tissue:window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion,
+          wc:window.AlgoArt.lastWatercolourExperimentStats?.referenceMaterial}};
+    });
+    assert(evidence.painted>20,material+' rendered no meaningful marks: '+JSON.stringify(evidence));
+    assert(evidence.ratio<.65,material+' covered most of the sheet: '+JSON.stringify(evidence));
+    if(material==='tissue')assert(evidence.calls.tissue>0,'Tissue never used the native V7 pipeline');
+    if(material==='watercolour')assert(evidence.calls.watercolour>0,'Watercolour never used native V2S');
+    console.log('material '+material+' '+JSON.stringify(evidence));
+    snapshots.push({material,...evidence});
+    await page.locator('#inspector-toggle').click();
+    await page.locator('#tab-artist-1').click();
+  }
+  assert.deepEqual(errors,[],'Confluence material JavaScript errors: '+errors.join('; '));
+  console.log('Confluence five-material browser smoke passed');
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));

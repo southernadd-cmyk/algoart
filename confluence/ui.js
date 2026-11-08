@@ -173,8 +173,8 @@ function reset() {
   stop();
   const settings = state.settings;
   const sheet = state.study.sheet;
-  state.paintShared = makePainter(prepareCanvas(shared, settings.seed, sheet), settings.seed);
-  state.paintBaseline = makePainter(prepareCanvas(baseline, settings.seed, sheet), settings.seed);
+  state.paintShared = makePainter(prepareCanvas(shared, settings.seed, sheet), settings.seed, sheet);
+  state.paintBaseline = makePainter(prepareCanvas(baseline, settings.seed, sheet), settings.seed, sheet);
   state.run = makeRun(state.study, settings.strength, settings.response);
   state.baseline = makeRun(state.study, settings.strength, settings.response, {equal: true});
   state.turn = 0;
