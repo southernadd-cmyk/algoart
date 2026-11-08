@@ -115,9 +115,9 @@ function updateShares() {
   byId('turn-shares').replaceChildren(...bars);
 }
 
-// Make each count traceable to a particular hand. The colour is a sample
-// of that artist's actual seeded palette, while the short material label and
-// A1/A2/A3 identifiers remain unambiguous even with multicolour palettes.
+// Make each count traceable to its hand. Every material may paint with
+// multiple hues, so show a small evenly-spaced sample of the artist's actual
+// seeded palette rather than a misleading single "identity" swatch.
 function renderTurnLegend(id,counts,roster){
   const materialShort={marker:'Marker',tissue:'Tissue',
     watercolour:'Watercolour',oil:'Oil',action:'Action'};
@@ -127,15 +127,22 @@ function renderTurnLegend(id,counts,roster){
     chip.className='turn-artist';
     chip.title='Artist '+(i+1)+' · '+system+' · '+materials[artist.material]+' · '+count+' turns';
     chip.setAttribute('aria-label',chip.title);
-    const sample=document.createElement('span');
-    sample.className='turn-artist-ink';
-    sample.style.backgroundColor=artist.inks?.[0]||artist.ink;
-    sample.setAttribute('aria-hidden','true');
+    const palette=document.createElement('span');
+    palette.className='turn-artist-palette';
+    palette.setAttribute('aria-hidden','true');
+    const inks=artist.inks?.length?artist.inks:[artist.ink];
+    const countShown=Math.min(5,inks.length);
+    for(let j=0;j<countShown;j++){
+      const swatch=document.createElement('span');
+      const index=countShown===1?0:Math.round(j*(inks.length-1)/(countShown-1));
+      swatch.style.backgroundColor=inks[index];
+      palette.append(swatch);
+    }
     const name=document.createElement('span');
     name.textContent='A'+(i+1)+' '+(materialShort[artist.material]||artist.material);
     const amount=document.createElement('strong');
     amount.textContent=String(count);
-    chip.append(sample,name,amount);
+    chip.append(palette,name,amount);
     return chip;
   });
   byId(id).replaceChildren(...chips);
