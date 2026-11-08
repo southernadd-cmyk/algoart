@@ -59,7 +59,7 @@ try {
         throw Error('Confluence shared painter failed');
       return match && Number(match[2])>0 && match[1]===match[2] &&
         document.querySelector('.progress')?.getAttribute('aria-valuenow')==='100';
-    },{timeout:240000});
+    },null,{timeout:240000});
     if(errors.length)throw Error('Confluence page error: '+errors.join(' | ').slice(0,700));
     const output=await page.locator('#shared').evaluate(canvas=>({
       width:canvas.width,height:canvas.height,
