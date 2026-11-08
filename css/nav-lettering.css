@@ -362,3 +362,69 @@ body .algo-global-header .algo-site-nav [data-algo-nav][aria-current="page"]{
   text-align:left!important;
  }
 }
+
+
+/* Confluence adds a fourth destination. Keep every top-level destination
+   visible and tappable; never shrink the labels into an illegible row. */
+@media(min-width:1101px){
+  body .algo-global-header{grid-template-columns:240px minmax(70px,1fr) 560px!important}
+}
+@media(min-width:851px) and (max-width:1100px){
+  body .algo-global-header{grid-template-columns:205px minmax(55px,1fr) 490px!important}
+  body .algo-global-header .algo-site-nav{gap:12px!important}
+}
+@media(max-width:850px){
+  body .algo-global-header,body .algo-global-header.toolbar{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    grid-template-rows:23px 24px 17px!important;
+    height:92px!important;min-height:92px!important;
+    align-content:center!important;row-gap:1px!important;
+  }
+  body .algo-global-header .algo-global-brand{
+    grid-column:1!important;grid-row:1!important;justify-self:start!important
+  }
+  body .algo-global-header .algo-global-numbers{
+    grid-column:2!important;grid-row:1!important;
+    justify-self:end!important;align-self:center!important
+  }
+  body .algo-global-header .algo-site-nav{
+    display:flex!important;grid-column:1/-1!important;grid-row:2!important;
+    width:100%!important;min-width:0!important;
+    justify-content:space-between!important;align-items:center!important;
+    gap:clamp(4px,1.7vw,12px)!important;padding:0!important
+  }
+  body .algo-global-header .algo-site-nav [data-algo-nav]{
+    font-size:clamp(10px,1.55vw,13px)!important;white-space:nowrap!important
+  }
+  body .algo-global-header .algo-global-question{
+    display:block!important;grid-column:1/-1!important;grid-row:3!important;
+    align-self:center!important;text-align:left!important
+  }
+}
+@media(max-width:450px){
+  body .algo-global-header,body .algo-global-header.toolbar{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:24px 46px!important;
+    align-content:center!important;
+    padding:7px 12px!important
+  }
+  body .algo-global-header .algo-global-brand{
+    grid-column:1!important;grid-row:1!important
+  }
+  body .algo-global-header .algo-global-numbers{
+    grid-column:1!important;grid-row:1!important
+  }
+  body .algo-global-header .algo-site-nav{
+    display:grid!important;grid-column:1!important;grid-row:2!important;
+    grid-template-columns:max-content max-content!important;
+    grid-template-rows:repeat(2,20px)!important;
+    justify-content:space-between!important;
+    gap:3px 8px!important;
+  }
+  body .algo-global-header .algo-site-nav [data-algo-nav]{
+    justify-content:flex-start!important;
+    font-size:clamp(10px,2.8vw,12px)!important
+  }
+  body .algo-global-header .algo-global-question{display:none!important}
+}
