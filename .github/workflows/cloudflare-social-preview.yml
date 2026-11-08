@@ -29,4 +29,4 @@ jobs:
         run: |
           node tests/cloudflare-root-config.test.mjs
           node --check cloudflare/social-preview/src/worker.mjs
-          node --test cloudflare/social-preview/tests/worker.test.mjs
+          node --test cloudflare/social-preview/tests/worker.test.mjs cloudflare/social-preview/tests/confluence.test.mjs

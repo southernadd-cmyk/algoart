@@ -1,5 +1,5 @@
 import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=studio-06';
-import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt} from './composition.js?v=studio-06';
+import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt, resolveTurnBudget} from './composition.js?v=confluence-steps-03';
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 export const systems = [
@@ -344,7 +344,7 @@ function limitPigment(group, placement, context) {
   return clamp(1 - Math.max(0, pressure - (context.mode === 'space' ? 1.15 : 1.7)) * .22, .46, 1);
 }
 
-export function createStudy(seed, slots, paperSettings, collaborationPull = 100) {
+export function createStudy(seed, slots, paperSettings, collaborationPull = 100, requestedTurns = 55) {
   if (slots.length !== 3) throw new Error('Confluence requires exactly three artists.');
   const portrait = paperSettings.orientation === 'portrait';
   const width = portrait ? 1000 : 1400;
@@ -362,10 +362,10 @@ export function createStudy(seed, slots, paperSettings, collaborationPull = 100)
     // when two slots choose the same system and material.
     return recordArtist(artist, seed, sheet, source);
   });
-  const budget = turnBudget(roster);
+  const {count:budget, available:availableTurns} = resolveTurnBudget(turnBudget(roster), requestedTurns);
   const equal = makeSchedule(roster, budget, 0);
   const primary = collaborationPull === 0 ? equal : makeSchedule(roster, budget, collaborationPull);
-  return {roster, schedule: primary.turns, primary, equal, sheet, anchors};
+  return {roster, schedule: primary.turns, primary, equal, sheet, anchors, availableTurns, totalTurns:budget};
 }
 
 export function makeRun(study, strength, mode, {equal = false} = {}) {

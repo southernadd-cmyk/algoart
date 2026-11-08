@@ -546,7 +546,10 @@ A.collabTissue=function(ctx,pts,width,colour,r){
   try{
     if(!ribbon(ctx,pts,width*.5,r))return;
     ctx.save();
-    ctx.globalAlpha=.45;
+    // The solo V7 tissue pass combines multiple translucent ink layers.
+    // The shared editor draws an individual shaped scrap: preserve its
+    // saturation and graphite without flattening the artist's ink palette.
+    ctx.globalAlpha=.61;
     ctx.fillStyle=colour;
     ctx.fill();
     ctx.clip();
@@ -557,6 +560,20 @@ A.collabTissue=function(ctx,pts,width,colour,r){
         r.chance(.72)?'#fff9ed':colour,r.range(.12,.42));
     }
     ctx.restore();
+    // Pale fibres are retained, plus a second, shifted sheer-paper edge.
+    if(r.chance(.48)){
+      var displacement=r.range(1.5,4.5);
+      var veil=pts.map(function(p,j){
+        var i=Math.min(pts.length-1,j+1);
+        var prior=pts[Math.max(0,j-1)];
+        return shift(p,angle(prior,pts[i])+PI/2,displacement);
+      });
+      if(ribbon(ctx,veil,width*.20,r)){
+        ctx.save();ctx.globalAlpha=r.range(.13,.24);
+        ctx.fillStyle=lerpHex(colour,'#fffaf0',.65);
+        ctx.fill();ctx.restore();
+      }
+    }
     pathStroke(ctx,pts,r.range(.65,2.25),'#403d36',r.range(.39,.64));
     if(r.chance(.72)){
       var lean=r.range(-2.4,2.4);

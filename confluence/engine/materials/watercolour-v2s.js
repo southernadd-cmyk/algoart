@@ -1622,10 +1622,17 @@ A.collabWatercolour=function(ctx,pts,width,colour,seed,r){
   activeEdgePaperSeed=A.hash(seed+'|collab-paper-flow');
   activeEdgeTextureStats={samples:0,drySamples:0,wickSamples:0,maxDryDisplacement:0,maxWetDisplacement:0};
   try{
-    var pale=lerpHex(colour,'#f5f0e6',.24);
-    var deep=lerpHex(colour,'#322721',.16);
-    paintColourPool(ctx,pts,width,r,pale,deep,r.range(.56,.83),true);
-    if(r.chance(.54))paintRibbon(ctx,null,pts,width*r.range(.48,.68),r,colour,.62,0,'damp',false);
+    // Keep the actual V2S pigment hues rather than pre-paling every wash.
+    // Wet area colour and short dry-brush details reuse V2S's real stroke
+    // functions; these deposits must remain distinct from marker outlines.
+    var pale=lerpHex(colour,'#f5f0e6',.09);
+    var deep=lerpHex(colour,'#322721',.12);
+    paintColourPool(ctx,pts,width,r,pale,deep,r.range(.70,.88),true);
+    if(r.chance(.72))
+      paintRibbon(ctx,null,pts,width*r.range(.50,.75),r,colour,.68,0,'damp',false);
+    if(r.chance(.64))
+      paintThinWatercolourStroke(ctx,pts,Math.max(.75,Math.min(8,width*.13)),
+        deep,r.range(.22,.38),r,.36);
   }finally{
     activeEdgePaperSeed=prior;activeEdgeTextureStats=stats;
   }

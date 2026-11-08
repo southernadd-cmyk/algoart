@@ -20,7 +20,7 @@ export function mountDrawer() {
   tabs.className = 'drawer-tabs';
   tabs.setAttribute('role','tablist');
   tabs.setAttribute('aria-label','Parameter categories');
-  for (const [id, label] of [['artist-1','Artist 1'], ['artist-2','Artist 2'], ['artist-3','Artist 3'], ['shared','Shared']]) {
+  for (const [id, label] of [['artist-1','Artist 1'], ['artist-2','Artist 2'], ['artist-3','Artist 3'], ['shared','Shared'], ['export','Export']]) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'drawer-tab';
@@ -28,7 +28,7 @@ export function mountDrawer() {
     b.dataset.pane = id;
     b.textContent = label;
     b.setAttribute('role','tab');
-    b.setAttribute('aria-controls', id === 'shared' ? 'shared-settings' : 'artists');
+    b.setAttribute('aria-controls', id === 'export' ? 'export-settings' : id === 'shared' ? 'shared-settings' : 'artists');
     tabs.append(b);
   }
   form.insertBefore(tabs, artists);
@@ -41,6 +41,12 @@ export function mountDrawer() {
   sharedSettings.setAttribute('aria-labelledby','tab-shared');
   sharedSettings.append(form.querySelector('.study-settings'), form.querySelector('.sheet-settings'), $('turn-balance'));
   form.insertBefore(sharedSettings, drawActions);
+  const exports = $('drawing').querySelector('.sharing');
+  exports.id = 'export-settings';
+  exports.setAttribute('role','tabpanel');
+  exports.setAttribute('aria-labelledby','tab-export');
+  exports.classList.add('export-panel');
+  form.insertBefore(exports, drawActions);
 
   const rosterHeading = artists.querySelector('.roster-heading');
   if(rosterHeading) rosterHeading.hidden = true;
@@ -58,9 +64,11 @@ export function mountDrawer() {
       if (focus && selected) tab.focus();
     }
     const shared = pane === 'shared';
+    const exporting = pane === 'export';
     sharedSettings.hidden = !shared;
-    artists.hidden = shared;
-    if (!shared) {
+    exports.hidden = !exporting;
+    artists.hidden = shared || exporting;
+    if (!shared && !exporting) {
       artists.setAttribute('aria-labelledby','tab-' + pane);
       for (const card of roster.children) card.hidden = card.dataset.artist !== pane.slice(-1);
     }
@@ -100,6 +108,11 @@ export function mountDrawer() {
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && open) setOpen(false);
   });
+  const shareOpen = $('share-open');
+  if(shareOpen) shareOpen.addEventListener('click', () => {
+    selectPane('export');
+    setOpen(true);
+  });
   const editArtists = $('edit-artists');
   if (editArtists) editArtists.addEventListener('click', () => {
     selectPane('artist-1');
@@ -109,4 +122,5 @@ export function mountDrawer() {
   form.addEventListener('submit', () => setOpen(false, false));
   selectPane('artist-1');
   setOpen(false, false);
+  return {openPane(pane){selectPane(pane);setOpen(true);}};
 }
