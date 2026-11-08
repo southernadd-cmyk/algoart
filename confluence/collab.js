@@ -1,7 +1,7 @@
 import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
 import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt, resolveTurnBudget} from './composition.js?v=confluence-full-source-04';
 import {inferResponse} from './adaptive-response.js?v=adaptive-01';
-import {wantsOilContact,oilContactCandidates,contactFraction} from './oil-contact.js?v=oil-structure-01';
+import {wantsOilContact,oilContactCandidates,contactFraction} from './oil-contact.js?v=oil-structure-02';
 import {capRectangleFootprint, rectangleInteriors, interiorCandidates} from './rect-collaboration.js?v=rect-cells-01';
 import {expandRecursiveTurns} from './recursive-turns.js?v=recursive-turns-01';
 const GOLD = Math.PI * (3 - Math.sqrt(5));
