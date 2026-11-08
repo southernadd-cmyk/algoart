@@ -6,6 +6,7 @@ on:
       - 'js/**'
       - 'tests/palette-coverage-v10.test.mjs'
       - 'tests/publishing-v10-flow.test.mjs'
+      - 'tests/daily-gallery-random-12.test.mjs'
       - 'automation/**'
       - 'index.html'
       - 'package.json'
@@ -47,6 +48,8 @@ jobs:
         run: node tests/palette-v10-material-previews.mjs
       - name: Verify V10 daily/social generation and archived JPEG parity
         run: node tests/publishing-v10-flow.test.mjs
+      - name: Verify twelve random daily artworks and independent social archive
+        run: node tests/daily-gallery-random-12.test.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
