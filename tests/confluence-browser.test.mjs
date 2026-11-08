@@ -83,8 +83,22 @@ try{
   await page.setViewportSize({width:1280,height:850});
   await page.evaluate(()=>{
     const A=window.AlgoArt;
-    window.__materialCalls={tissue:0,watercolour:0};
-    const oil=A.oilMaterial,watercolour=A.watercolourV2sMaterial;
+    window.__materialCalls={tissue:0,watercolour:0,oil:0,action:0,shortcutAction:0};
+    const oil=A.oilMaterial,watercolour=A.watercolourV2sMaterial,
+      oilV8=A.renderOilPaintV8,action=A.actionPaintingFromPathsV4,
+      shortcutAction=A.collabAction;
+    A.renderOilPaintV8=function(...args){
+      window.__materialCalls.oil++;
+      return oilV8.apply(this,args);
+    };
+    A.actionPaintingFromPathsV4=function(...args){
+      window.__materialCalls.action++;
+      return action.apply(this,args);
+    };
+    A.collabAction=function(...args){
+      window.__materialCalls.shortcutAction++;
+      return shortcutAction.apply(this,args);
+    };
     A.oilMaterial=function(...args){
       window.__materialCalls.tissue++;
       return oil.apply(this,args);
@@ -134,10 +148,15 @@ try{
       // One native artist layer uses two calls (blank & actual), then a
       // second two for φ-baseline. A local patch per drawing turn would
       // call the renderer considerably more often and restart its wash.
-      assert(evidence.calls.tissue>=4 && evidence.calls.tissue<=20,
+      assert(evidence.calls.tissue>=2 && evidence.calls.tissue<=20,
         'Tissue must use a real full-sheet V7 pass for each turn: '+JSON.stringify(evidence));
     }
     if(material==='watercolour')assert(evidence.calls.watercolour>0,'Watercolour never used native V2S');
+    if(material==='oil')assert(evidence.calls.oil>0,'Oil never used full V8');
+    if(material==='action'){
+      assert(evidence.calls.action>0,'Action never used full V4');
+      assert.equal(evidence.calls.shortcutAction,0,'Action still used single-fling shortcut');
+    }
     console.log('material '+material+' '+JSON.stringify(evidence));
     snapshots.push({material,...evidence});
     await page.locator('#inspector-toggle').click();
@@ -196,8 +215,8 @@ try{
     palette:window.AlgoArt.lastOilMaterialStats?.inkColours,
     graphite:window.AlgoArt.lastOilMaterialStats?.graphitePaths
   }));
-  assert.equal(sharedSurface.calls,20,
-    'Five all-tissue turns should produce ten native V7 passes per canvas (paint plus reference): '+JSON.stringify(sharedSurface));
+  assert.equal(sharedSurface.calls,10,
+    'Five all-tissue turns should run V7 on the original paper for both canvases: '+JSON.stringify(sharedSurface));
   assert(sharedSurface.palette?.length>=3,'Tissue layer lost distinct original artist colours: '+JSON.stringify(sharedSurface));
   assert(sharedSurface.graphite>0,'Tissue unified layer lost graphite: '+JSON.stringify(sharedSurface));
   console.log('unified tissue '+JSON.stringify(sharedSurface));
@@ -228,7 +247,7 @@ try{
   const stepCalls=await page.evaluate(()=>({
     native:window.__nativeTissueStepCount,shortcuts:window.__legacyTissueCalls
   }));
-  assert(stepCalls.native>=4,'First Step did not draw full-sheet V7: '+JSON.stringify(stepCalls));
+  assert.equal(stepCalls.native,2,'First Step must paint solo V7 on both canvases: '+JSON.stringify(stepCalls));
   assert.equal(stepCalls.shortcuts,0,
     'The old simplified tissue shortcut must never be used: '+JSON.stringify(stepCalls));
   console.log('actual tissue V7 first turn '+JSON.stringify(stepCalls));
@@ -250,8 +269,8 @@ try{
     calls:window.__materialCalls.watercolour,
     stats:window.AlgoArt.lastWatercolourExperimentStats
   }));
-  assert.equal(fullWash.calls,20,
-    'Five all-watercolour turns must invoke full-sheet V2S on both canvases: '+JSON.stringify(fullWash));
+  assert.equal(fullWash.calls,10,
+    'Five all-watercolour turns must paint full-sheet V2S once per canvas: '+JSON.stringify(fullWash));
   assert.equal(fullWash.stats?.fitToSheet,false,'V2S must preserve responsive placement');
   assert.equal(fullWash.stats?.v2sFidelity,true,'V2S source-hue fidelity must remain enabled');
   assert(fullWash.stats?.sourceHueMatches>0,'V2S lost the artists own pigment hues');
@@ -263,7 +282,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('#counter')?.textContent?.trim()==='1 / 5 turns',
     undefined,{timeout:25000});
   const afterStep=await page.evaluate(()=>window.__materialCalls.watercolour);
-  assert.equal(afterStep,24,'Watercolour single Step must call native V2S: '+afterStep);
+  assert.equal(afterStep,12,'Watercolour single Step must call native V2S on both canvases: '+afterStep);
 
   assert.deepEqual(errors,[],'Confluence material JavaScript errors: '+errors.join('; '));
   console.log('Confluence five-material browser smoke passed');

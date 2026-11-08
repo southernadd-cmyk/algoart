@@ -161,9 +161,9 @@ function paintLayerOrder(length,r){
 }
 A.actionPaintingFromPathsV4=function(target,sourcePaths,s,scale,options){options=options||{};scale=scale||1;
 // Derive the study from the same seed and source composition as V3.
-var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v3|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=enamelPalette(s,actionPaintPalette(s,3));
+var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v3|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=enamelPalette(s,options.sourceInks?.length?options.sourceInks:actionPaintPalette(s,3));
 target.width=Math.round(w*scale);target.height=Math.round(h*scale);var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
-ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h);if(!anchors.length)return {pathCount:0,anchorCount:0};
+if(options.transparentSheet!==true){ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h)}if(!anchors.length)return {pathCount:0,anchorCount:0};
 var layers=options.layers||5,density=options.density||1;
 var archetypes=['off-centre knot','double cluster','diagonal band','hooked crescent','edge-loaded','woven strip'];
 var archetype=archetypes[hash(s.seed+'|mass')%archetypes.length];

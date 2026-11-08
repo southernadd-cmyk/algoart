@@ -1,5 +1,5 @@
 import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-wash-seams-07';
-import {materials, makePainter} from './materials.js?v=confluence-v2s-fullsheet-12';
+import {materials, makePainter} from './materials.js?v=confluence-full-materials-13';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=studio-06';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
@@ -166,8 +166,10 @@ function reset() {
   stop();
   const settings = state.settings;
   const sheet = state.study.sheet;
-  state.paintShared = makePainter(prepareCanvas(shared, settings.seed, sheet), settings.seed, sheet);
-  state.paintBaseline = makePainter(prepareCanvas(baseline, settings.seed, sheet), settings.seed, sheet);
+  state.paintShared = makePainter(prepareCanvas(shared, settings.seed, sheet), settings.seed, sheet,
+    {roster:state.study.roster});
+  state.paintBaseline = makePainter(prepareCanvas(baseline, settings.seed, sheet), settings.seed, sheet,
+    {roster:state.study.roster});
   state.run = makeRun(state.study, settings.strength);
   state.baseline = makeRun(state.study, settings.strength, {equal: true});
   state.turn = 0;

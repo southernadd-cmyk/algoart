@@ -21,20 +21,33 @@ export function cropEdgeFeather(x,y,w,h,area,sheet,feather=72){
 }
 
 
-function makeChains(traces,area,artist,inkRGB){
-  const paths=[],chains=[];
-  for(const [i,t] of traces.entries()){
-    const points=t.points.map(p=>({x:p.x-area.x,y:p.y-area.y}));
+// This is the actual solo oil-render.js skeleton, not a simplified
+// Confluence trace adapter. The solo script is cloned with one export only.
+function makeChains(traces,area,artist,inkRGB,material,kit){
+  const paths=[];
+  for(const trace of traces){
+    const points=trace.points||[];
     if(points.length<2)continue;
-    const originalInk=t.ink || artist.inks?.[(t.mark-1)%artist.inks.length];
-    if(!originalInk)continue;
-    const rgb=inkRGB(originalInk);
-    const stroke=rgbString(rgb);
-    paths.push({stroke,width:t.width});
-    const length=points.slice(1).reduce((total,p,j)=>total+distance(p,points[j]),0);
-    chains.push({pts:points,length,width:t.width,sourceRGB:rgb,sourceInk:stroke,sourceIndex:i});
+    const ink=trace.ink||artist.inks?.[(trace.mark-1)%artist.inks.length];
+    if(!ink)continue;
+    const rgb=inkRGB(ink);
+    const d=points.map((p,i)=>(i?'L':'M')+
+      (p.x-area.x).toFixed(3)+' '+(p.y-area.y).toFixed(3)).join(' ');
+    paths.push({d,stroke:rgbString(rgb),width:trace.width,
+      opacity:trace.opacity??1,mark:trace.mark,pass:0});
   }
-  return {paths,chains};
+  const A=window.AlgoArt;
+  if(typeof A.confluenceSoloSkeleton!=='function')
+    throw new Error('Confluence requires solo oil-render.js skeleton');
+  const previous=A.watercolourV2sActive;
+  try{
+    if(material==='watercolour')A.watercolourV2sActive=true;
+    const chains=A.confluenceSoloSkeleton(paths,
+      material==='watercolour'?Math.min(700,paths.length):250,kit);
+    return {paths,chains};
+  }finally{
+    A.watercolourV2sActive=previous;
+  }
 }
 function invoke(A,ctx,material,chains,meta,seed,kit){
   if(material==='tissue'){
@@ -67,17 +80,28 @@ function invoke(A,ctx,material,chains,meta,seed,kit){
   }
 }
 
-export function renderNativeDeposit(ctx,material,traces,artist,area,paper,seed,inkRGB,sheet){
+export function renderNativeDeposit(ctx,material,traces,artist,area,paper,seed,inkRGB,sheet,options={}){
   const A=window.AlgoArt;
   if(!A?.oilMaterial||!A?.watercolourV2sMaterial||!A?.tissueKitFromPaths)
     throw new Error('Confluence requires the released tissue/watercolour renderers');
   if(material!=='tissue'&&material!=='watercolour')throw new Error('Unsupported native material');
-  const {paths,chains}=makeChains(traces,area,artist,inkRGB);
+  // V7 and V2S require the same stroke kit and ranking as solo mode.
+  const paths=traces.map(t=>({stroke:rgbString(inkRGB(
+    t.ink||artist.inks?.[(t.mark-1)%artist.inks.length]||'#252525'))}));
+  const kit=A.tissueKitFromPaths(paths,{paper,
+      colourCount:artist.settings.colourCount},material==='tissue'?7:6);
+  const {chains}=makeChains(traces,area,artist,inkRGB,material,kit);
   if(!chains.length)return;
   const w=ctx.canvas.width,h=ctx.canvas.height;
-  const kit=A.tissueKitFromPaths(paths,{paper,colourCount:artist.settings.colourCount},
-    material==='tissue'?7:6);
   const meta={voids:[]};
+  // When every artist uses this material, there is no second paper layer:
+  // paint directly, identically to the solo engine, retaining every fibre,
+  // pencil groove, paper grain and atmospheric transition.
+  if(options.directPaper===true){
+    ctx.setTransform(1,0,0,1,0,0);
+    invoke(A,ctx,material,chains,meta,seed,kit);
+    return;
+  }
   const blank=document.createElement('canvas');blank.width=w;blank.height=h;
   const background=blank.getContext('2d',{willReadFrequently:true});
   // Both passes share exactly the same seed, pigment kit and paper model.

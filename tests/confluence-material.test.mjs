@@ -104,3 +104,32 @@ test('Watercolour uses native source-hue V2S on one cumulative full-paper surfac
  assert.match(bridge,/fitToSheet=false/);
  assert.match(solo,/fidelity:true,fitToSheet:true/);
 });
+
+test('Confluence runs each released material engine on an actual shared full sheet',()=>{
+  const index=read('../confluence/index.html');
+  const renderer=read('../confluence/materials.js');
+  const bridge=read('../confluence/native-material.js');
+  const brush=read('../confluence/engine/materials/oil-paint-v8.js');
+  const action=read('../confluence/engine/materials/action-painting-v4.js');
+  const skeleton=read('../confluence/engine/materials/oil-render.js');
+  assert.match(index,/js\/oil-v1-core-a\.js/);
+  assert.match(index,/js\/oil-v1-core-b\.js/);
+  assert.match(index,/js\/oil-v1-core-c\.js/);
+  assert.match(index,/engine\/materials\/oil-paint-v8\.js/);
+  assert.match(renderer,/A\.renderOilPaintV8\(oilSurface\.canvas/);
+  assert.match(renderer,/A\.actionPaintingFromPathsV4\(actionSurface\.canvas/);
+  assert.match(brush,/options\.sourceCapture\|\|A\.captureCompositionV5/);
+  assert.match(brush,/options\.transparentSheet!==true/);
+  assert.match(action,/options\.sourceInks\?\.length/);
+  assert.match(action,/options\.transparentSheet!==true/);
+  assert.match(skeleton,/A\.confluenceSoloSkeleton=skeleton/);
+  assert.match(bridge,/A\.confluenceSoloSkeleton\(paths/);
+  assert.match(bridge,/options\.directPaper===true/);
+  assert.match(renderer,/sourcePaths=traces=>/);
+  assert.doesNotMatch(renderer,/A\.collabAction\(/);
+  assert.doesNotMatch(renderer,/A\.collabWatercolour\(/);
+  assert.doesNotMatch(renderer,/A\.collabTissue\(/);
+  assert.doesNotMatch(renderer,/A\.collabOilRelief\(/);
+  assert.doesNotMatch(renderer,/function box\(/);
+  assert.match(renderer,/paint\(paintingWithoutTissue, action\)/);
+});

@@ -37,121 +37,71 @@ function size(ctx, width, height) {
   ctx.clearRect(0, 0, width, height);
 }
 
-function box(traces, material, width, height) {
-  let minX = width, minY = height, maxX = 0, maxY = 0;
-  for (const {points} of traces) {
-    const start = points[0], end = points.at(-1);
-    // The pour's cubic control points can move up to a chord length away
-    // from the source. The extra margin includes its largest scatter.
-    // Native V2S washes can spread beyond the drawn centreline by more
-    // than the previous 75px crop margin. That margin created the visible
-    // rectangular blue tiles in Confluence compositions.
-    const padding = material === 'watercolour' ? 175 :
-      material === 'tissue' ? 145 :
-      material === 'action' ? 70 + Math.hypot(end.x - start.x, end.y - start.y) : 75;
-    for (const {x, y} of points) {
-      minX = Math.min(minX, x - padding);
-      minY = Math.min(minY, y - padding);
-      maxX = Math.max(maxX, x + padding);
-      maxY = Math.max(maxY, y + padding);
-    }
+// Native full-sheet material coverage feeds the response planner. It records
+// *changes*, not the whole accumulated paint field again each turn.
+function footprintFromSurface(ctx,sensor,previous,sheet){
+  const w=Math.ceil(sheet.width/SAMPLE),h=Math.ceil(sheet.height/SAMPLE);
+  size(sensor,w,h);
+  sensor.drawImage(ctx.canvas,0,0,w,h);
+  const image=sensor.getImageData(0,0,w,h).data;
+  const next=new Uint8Array(w*h),footprint=[];
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const i=x+y*w,alpha=image[i*4+3],delta=alpha-(previous?.[i]||0);
+    next[i]=alpha;
+    if(delta<18||((x+y)%2))continue;
+    footprint.push({point:{x:(x+.5)*sheet.width/w,y:(y+.5)*sheet.height/h},
+      angle:0,radius:Math.min(11,Math.max(2,delta/25)),
+      opacity:Math.max(.08,delta/255)});
   }
-  const x = Math.max(0, Math.floor(minX / SAMPLE) * SAMPLE);
-  const y = Math.max(0, Math.floor(minY / SAMPLE) * SAMPLE);
-  const right = Math.min(width, Math.ceil(maxX / SAMPLE) * SAMPLE);
-  const bottom = Math.min(height, Math.ceil(maxY / SAMPLE) * SAMPLE);
-  return {x, y, w: right - x, h: bottom - y};
+  return {footprint,coverage:next};
 }
 
-function inkOnSheet(pigment, sensor, area, heading, opacity) {
-  const w = Math.ceil(area.w / SAMPLE);
-  const h = Math.ceil(area.h / SAMPLE);
-  size(sensor, w, h);
-  sensor.drawImage(pigment.canvas, 0, 0, w, h);
-  const alpha = sensor.getImageData(0, 0, w, h).data;
-  const read = (x, y) => x >= 0 && x < w && y >= 0 && y < h ? alpha[(x + y * w) * 4 + 3] : 0;
-  const result = [];
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const coverage = read(x, y) * opacity;
-      if (coverage < 10) continue;
-      const dx = read(x + 1, y) - read(x - 1, y);
-      const dy = read(x, y + 1) - read(x, y - 1);
-      const angle = Math.abs(dx) + Math.abs(dy) > 10 ? Math.atan2(dx, -dy) : heading;
-      result.push({
-        point: {x: area.x + (x + .5) * area.w / w, y: area.y + (y + .5) * area.h / h},
-        angle, radius: Math.min(6, coverage / 19), opacity: coverage / 255
-      });
-    }
-  }
-  return result;
-}
-
-function softenSheetEdge(ctx, area, width, height, border) {
-  if (!border) return;
-  const feather = 24;
-  const limit = border + feather;
-  function mask(length, horizontal) {
-    const gradient = ctx.createLinearGradient(0, 0, horizontal ? length : 0, horizontal ? 0 : length);
-    gradient.addColorStop(border / length, '#0000');
-    gradient.addColorStop(limit / length, '#000');
-    gradient.addColorStop(1 - limit / length, '#000');
-    gradient.addColorStop(1 - border / length, '#0000');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(area.x, area.y, area.w, area.h);
-  }
-  ctx.save();
-  ctx.globalCompositeOperation = 'destination-in';
-  ctx.globalAlpha = 1;
-  if (area.x < limit || area.x + area.w > width - limit) mask(width, true);
-  if (area.y < limit || area.y + area.h > height - limit) mask(height, false);
-  ctx.restore();
-}
-
-function actionTraces(traces) {
-  // One open pour per source shape. Split closed loops into two pours.
-  return traces.flatMap(trace => {
-    const pts = trace.points;
-    const a = pts[0], b = pts.at(-1);
-    if (pts.length < 6 || Math.hypot(a.x - b.x, a.y - b.y) > 18) return [trace];
-    const mid = Math.floor(pts.length / 2);
-    return [{...trace, points: pts.slice(0, mid + 1)}, {...trace, points: pts.slice(mid)}];
-  });
-}
-
-export function makePainter(output, seed, sheet) {
+export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   const A = window.AlgoArt;
-  let pigment, relief, sensor, colourSample;
+  let colourSample;
   const colours = new Map();
-  const oil = A.oilPigment.createModel();
+  const onlyMaterial=roster.length===3 && roster.every(a=>a.material===roster[0].material)
+    ? roster[0].material : null;
+  const surfacePasses={tissue:0,watercolour:0,oil:0,action:0};
+  const coverageHistory={watercolour:null,oil:null,action:null};
 
   // Persistent full-paper context: all other materials retain their own
   // composition and blend modes while native tissue grows around them.
-  const tissueMarks=[];
-  const watercolourMarks=[];
-  const tissueSurface=layer(true),watercolourSurface=layer(true);
+  const tissueMarks=[],watercolourMarks=[],oilMarks=[],actionMarks=[];
+  const tissueSurface=layer(true),watercolourSurface=layer(true),
+    oilSurface=layer(true),actionSurface=layer(true);
   const paintingWithoutTissue=layer(true),foreignInk=layer(true),watercolourForeignInk=layer(true);
-  const watercolourSensor=layer(true);
-  size(tissueSurface,sheet.width,sheet.height);
-  size(watercolourSurface,sheet.width,sheet.height);
-  size(paintingWithoutTissue,sheet.width,sheet.height);
-  size(foreignInk,sheet.width,sheet.height);
-  size(watercolourForeignInk,sheet.width,sheet.height);
+  const surfaceSensor=layer(true);
+  for(const ctx of [tissueSurface,watercolourSurface,oilSurface,actionSurface,
+    paintingWithoutTissue,foreignInk,watercolourForeignInk])
+    size(ctx,sheet.width,sheet.height);
   paintingWithoutTissue.drawImage(output.canvas,0,0);
-  let nativePasses=0,watercolourPasses=0;
-  let previousWatercolourCoverage=null;
+  const oilActionOrder={oil:0,action:0};
+  let oilActionClock=0;
   function showSheet(){
     output.save();
     output.resetTransform();output.globalAlpha=1;
     output.globalCompositeOperation='source-over';
     output.clearRect(0,0,sheet.width,sheet.height);
+    if(onlyMaterial==='tissue'){
+      output.drawImage(tissueSurface.canvas,0,0);
+      output.restore();return;
+    }
+    if(onlyMaterial==='watercolour'){
+      output.drawImage(watercolourSurface.canvas,0,0);
+      output.restore();return;
+    }
     output.drawImage(paintingWithoutTissue.canvas,0,0);
-    // A single shared wash is multiply-composited onto the same paper as
-    // the other materials. It is not a stack of isolated wash rectangles.
     output.globalCompositeOperation='multiply';
     output.drawImage(watercolourSurface.canvas,0,0);
     output.globalCompositeOperation='source-over';
     output.drawImage(tissueSurface.canvas,0,0);
+    // Both paint materials use their full native layered engine. A later
+    // action/oil turn can physically overpaint an earlier one.
+    for(const kind of ['oil','action'].sort((a,b)=>oilActionOrder[a]-oilActionOrder[b])){
+      if(kind==='oil')output.drawImage(oilSurface.canvas,0,0);
+      else output.drawImage(actionSurface.canvas,0,0);
+    }
     output.restore();
   }
   function protectGeometry(traces){
@@ -187,26 +137,10 @@ export function makePainter(output, seed, sheet) {
     watercolourForeignInk.drawImage(tissueSurface.canvas,0,0);
     watercolourForeignInk.restore();
   }
-  function watercolourFootprint(){
-    // Read the TRUE native V2S pigment coverage, and report only newly
-    // occupied cells. Re-stamping the entire accumulated sheet on each turn
-    // would cause artificial overcrowding in the response planner.
-    const w=Math.ceil(sheet.width/SAMPLE),h=Math.ceil(sheet.height/SAMPLE);
-    size(watercolourSensor,w,h);
-    watercolourSensor.drawImage(watercolourSurface.canvas,0,0,w,h);
-    const alpha=watercolourSensor.getImageData(0,0,w,h).data;
-    const next=new Uint8Array(w*h);
-    const footprint=[];
-    for(let y=0;y<h;y+=2)for(let x=0;x<w;x+=2){
-      const i=x+y*w,coverage=alpha[i*4+3];
-      if(coverage-(previousWatercolourCoverage?.[i]||0)<14)continue;
-      const point={x:(x+.5)*sheet.width/w,y:(y+.5)*sheet.height/h};
-      footprint.push({point,angle:0,radius:Math.min(8,coverage/32),
-        opacity:Math.min(1,Math.max(.1,(coverage-(previousWatercolourCoverage?.[i]||0))/255))});
-    }
-    for(let i=0;i<next.length;i++)next[i]=alpha[i*4+3];
-    previousWatercolourCoverage=next;
-    return footprint;
+  function materialFootprint(kind,ctx){
+    const next=footprintFromSurface(ctx,surfaceSensor,coverageHistory[kind],sheet);
+    coverageHistory[kind]=next.coverage;
+    return next.footprint;
   }
   function avoidForeignMarks(ctx,mask=foreignInk){
     ctx.save();ctx.resetTransform();
@@ -225,9 +159,9 @@ export function makePainter(output, seed, sheet) {
     const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
     renderNativeDeposit(tissueSurface,'tissue',tissueMarks,representative,
       bounds,sheet.paper,[seed,'all-tissue-voices','v7-whole-sheet'].join('|'),
-      sourceRGB,sheet);
-    nativePasses++;
-    avoidForeignMarks(tissueSurface);
+      sourceRGB,sheet,{directPaper:onlyMaterial==='tissue'});
+    surfacePasses.tissue++;
+    if(onlyMaterial!=='tissue')avoidForeignMarks(tissueSurface);
     showSheet();
   }
   function renderActualWatercolour(){
@@ -241,9 +175,11 @@ export function makePainter(output, seed, sheet) {
     const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
     renderNativeDeposit(watercolourSurface,'watercolour',watercolourMarks,
       representative,bounds,sheet.paper,
-      [seed,'all-watercolour-voices','v2s-whole-sheet'].join('|'),sourceRGB,sheet);
-    watercolourPasses++;
-    avoidForeignMarks(watercolourSurface,watercolourForeignInk);
+      [seed,'all-watercolour-voices','v2s-whole-sheet'].join('|'),sourceRGB,
+      sheet,{directPaper:onlyMaterial==='watercolour'});
+    surfacePasses.watercolour++;
+    if(onlyMaterial!=='watercolour')
+      avoidForeignMarks(watercolourSurface,watercolourForeignInk);
     // The current paint footprint informs later tissue artists; it must
     // never be mistaken for opaque paper or a replacement composition.
     foreignInk.save();
@@ -282,6 +218,55 @@ export function makePainter(output, seed, sheet) {
     return colours.get(css);
   }
 
+  // Format the responsive Confluence geometry as genuine marker source
+  // paths, precisely the input type the solo Oil V8 and Action V4 use.
+  const sourcePaths=traces=>traces.filter(t=>t.points.length>=2).map(t=>({
+    d:t.points.map((p,i)=>(i?'L':'M')+p.x.toFixed(3)+' '+p.y.toFixed(3)).join(' '),
+    stroke:t.ink,width:t.width,mark:t.mark,pass:0
+  }));
+  const sourceSettings=(marks,material)=>({
+    ...marks[0]?.settings,
+    // Artist seed must not overwrite the deterministic shared-paint seed.
+    seed:[seed,'confluence',material].join('|'),
+    mode:marks[0]?.system||'field',orientation:sheet.orientation,
+    paper:sheet.paper,palette:marks[0]?.palette||'spectrum',
+    colourCount:Math.min(14,new Set(marks.map(m=>m.ink)).size)
+  });
+  function reserveForOtherArtists(ctx){
+    protectRaster(ctx,{x:0,y:0,w:sheet.width,h:sheet.height});
+    if(tissueMarks.length)avoidForeignMarks(tissueSurface);
+    if(watercolourMarks.length&&onlyMaterial!=='watercolour')
+      avoidForeignMarks(watercolourSurface,watercolourForeignInk);
+  }
+  function renderActualOil(){
+    if(!oilMarks.length)return;
+    if(typeof A.renderOilPaintV8!=='function' ||
+       typeof A.compositionV5Test?.extract!=='function')
+      throw new Error('Confluence requires the complete solo Oil V8 source planner');
+    const paths=sourcePaths(oilMarks),settings=sourceSettings(oilMarks,'oil');
+    const capture={paths,meta:{guide:{type:'confluence'},voids:[],
+      strategy:'collaborative-responsive'},
+      chains:A.compositionV5Test.extract(paths)};
+    A.renderOilPaintV8(oilSurface.canvas,settings,1,false,{
+      masses:true,relief:true,weave:true,amount:.6,
+      sourceCapture:capture,transparentSheet:true});
+    surfacePasses.oil++;oilActionOrder.oil=++oilActionClock;
+    reserveForOtherArtists(oilSurface);
+    showSheet();
+  }
+  function renderActualAction(){
+    if(!actionMarks.length)return;
+    if(typeof A.actionPaintingFromPathsV4!=='function')
+      throw new Error('Confluence requires the complete solo Action V4 engine');
+    const paths=sourcePaths(actionMarks),settings=sourceSettings(actionMarks,'action');
+    const originalInks=[...new Set(actionMarks.map(m=>m.ink))];
+    A.actionPaintingFromPathsV4(actionSurface.canvas,paths,settings,1,{
+      sourceInks:originalInks,transparentSheet:true});
+    surfacePasses.action++;oilActionOrder.action=++oilActionClock;
+    reserveForOtherArtists(actionSurface);
+    showSheet();
+  }
+
   function deposit(action, observe) {
     const {artist, group, placement, plans} = action;
     const material = artist.material;
@@ -316,80 +301,33 @@ export function makePainter(output, seed, sheet) {
       for(const trace of traces)
         watercolourMarks.push({...trace,ink:artistInk(artist,trace.mark)});
       renderActualWatercolour();
-      return observe ? watercolourFootprint() : undefined;
+      return observe ? materialFootprint('watercolour',watercolourSurface) : undefined;
     }
-    if (material === 'action') traces = actionTraces(traces);
-    const width = output.canvas.width, height = output.canvas.height;
-    const area = box(traces, material, width, height);
-    if (area.w <= 0 || area.h <= 0) return [];
-    const scale = RESOLUTION[material];
-    const w = Math.ceil(area.w * scale), h = Math.ceil(area.h * scale);
-    pigment ||= layer(true);
-    size(pigment, w, h);
-    pigment.setTransform(w / area.w, 0, 0, h / area.h, -area.x * w / area.w, -area.y * h / area.h);
-
-    if (material === 'oil') {
-      relief ||= layer(true);
-      size(relief, w, h);
-      relief.setTransform(pigment.getTransform());
-      A.oilV8Weave = true;
-      A.oilStageDRefinement = true;
-      A.oilStageCScale = scale;
-      A.oilPigmentActive = oil;
+    // Neither Oil nor Action use miniature paints or turn-local shortcuts.
+    // Both receive all responding source geometry and render onto the shared
+    // full-size sheet using their complete solo painting algorithms.
+    const entry=traces.map(t=>({...t,ink:artistInk(artist,t.mark),
+      system:artist.system,palette:artist.palette,settings:artist.settings}));
+    if(material==='oil'){
+      oilMarks.push(...entry);
+      renderActualOil();
+      return observe?materialFootprint('oil',oilSurface):undefined;
     }
-
-    try {
-      // Oil and action retain their present turn-local pipeline until their
-      // own material-specific parity passes. Tissue/V2S return above.
-      for (let i = 0; i < traces.length; i++) {
-        const trace = traces[i];
-        const width = trace.width * (1 + (overdraw - 2) * .045);
-        const markSeed = [seed, artist.id, group.id, trace.mark, i, material].join('|');
-        const r = A.makeR(markSeed);
-        const colour = artistInk(artist, trace.mark);
-        if (material === 'oil') {
-          const profile = dryness >= 65 ? 'dry' : r.pick(['filbert', 'flat', 'knife', 'dry']);
-          A.oilPaintV4ETest.drawContactBrushV8(pigment, relief, trace.points,
-            Math.min(65, 10 + width * 3.2), oil.mapRGB(sourceRGB(colour)), profile, r,
-            {thickness: .92, drag: Math.min(1, (profile === 'dry' ? .76 : .45) + dryness / 145)});
-        } else {
-          A.collabAction(pigment, trace.points, 'rgb(' + oil.mapRGB(sourceRGB(colour)).join(',') + ')',
-            width, markSeed, output.canvas.width, height);
-        }
-      }
-      if (material === 'oil') A.collabOilRelief(pigment, relief, scale);
-    } finally {
-      if (material === 'oil') {
-        delete A.oilV8Weave;
-        delete A.oilStageDRefinement;
-        delete A.oilStageCScale;
-        delete A.oilPigmentActive;
-      }
+    if(material==='action'){
+      actionMarks.push(...entry);
+      renderActualAction();
+      return observe?materialFootprint('action',actionSurface):undefined;
     }
-    softenSheetEdge(pigment, area, width, height, action.border);
-    const coverage = materialOpacity(opacity, action.pigmentGain);
-    paintingWithoutTissue.save();
-    paintingWithoutTissue.globalAlpha=coverage;
-    paintingWithoutTissue.globalCompositeOperation=material==='watercolour'?'multiply':'source-over';
-    paintingWithoutTissue.drawImage(pigment.canvas,area.x,area.y,area.w,area.h);
-    paintingWithoutTissue.restore();
-    protectRaster(pigment,area);
-    if(tissueMarks.length)avoidForeignMarks(tissueSurface);
-    if(watercolourMarks.length)avoidForeignMarks(watercolourSurface,watercolourForeignInk);
-    showSheet();
-    if(!observe)return;
-    sensor ||= layer(true);
-    const p = traces[0].points;
-    const heading = Math.atan2(p.at(-1).y - p[0].y, p.at(-1).x - p[0].x);
-    return inkOnSheet(pigment, sensor, area, heading, coverage);
+    throw new Error('Unknown Confluence material: '+material);
   }
 
   // Both native materials already exist on the canvas on their own turns:
   // Finish must not introduce another late material reveal.
   deposit.finalize=()=>{};
-  deposit.tissueStats=()=>({nativeFullSheetPasses:nativePasses,
+  deposit.tissueStats=()=>({nativeFullSheetPasses:surfacePasses.tissue,
     tissueMarks:tissueMarks.length});
-  deposit.watercolourStats=()=>({nativeFullSheetPasses:watercolourPasses,
+  deposit.watercolourStats=()=>({nativeFullSheetPasses:surfacePasses.watercolour,
     watercolourMarks:watercolourMarks.length});
+  deposit.nativeStats=()=>({...surfacePasses});
   return deposit;
 }
