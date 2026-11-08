@@ -1,4 +1,4 @@
-// Oil v1 additional editor links: source 4-Up, φ framing, SVG and plotter.
+// Oil v1 additional editor links: source φ Four, φ framing, SVG and plotter.
 // These actions must work despite Oil's separate material renderer.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
@@ -24,14 +24,21 @@ try{
  await page.locator('#variations').click();
  await page.waitForFunction(()=>document.querySelector('#variationsOverlay')?.hidden===false);
  const cards=await page.evaluate(()=>[...document.querySelectorAll('.variation-card')].map(c=>({
-    seed:c.dataset.seed,canvas:[c.querySelector('canvas')?.width,
+    phiPull:Number(c.dataset.phiPull),
+    label:c.querySelector('span')?.textContent,
+    canvas:[c.querySelector('canvas')?.width,
       c.querySelector('canvas')?.height]})));
- assert.equal(cards.length,4,'Expected four Oil preview variants');
+ assert.equal(cards.length,4,'Expected four Oil φ Four previews');
+ assert.deepEqual(cards.map(card=>card.phiPull),[0,38.2,61.8,100],
+   'φ Four must compare the four golden-section Additional φ pull settings');
  for(const card of cards){
-   assert(card.seed,'Missing actual Oil variation seed');
+   assert.match(card.label,/φ PULL/,
+     'Missing φ-pull label for Oil comparison');
    assert(card.canvas[0]>100&&card.canvas[1]>100,
-     'Unpainted Oil 4-Up thumbnail');
+     'Unpainted Oil φ Four thumbnail');
  }
+ assert.equal(await page.locator('#seed').inputValue(),'V5Q-OIL-D7ADDCCC68',
+   'φ Four must keep the same seed, not generate four new ones');
  await page.locator('#closeVariations').click();
  assert.equal(await page.locator('#materialStyle').inputValue(),'oil');
  assert.equal(await page.evaluate(()=>
@@ -77,6 +84,6 @@ try{
  assert(plotter.preview?.startsWith('blob:'),'Oil plotter preview has no SVG image');
  assert.equal(plotter.material,'oil');
  assert.deepEqual(errors,[],'Oil secondary editor action raised a page error');
- console.log('PASS Oil v1 4-Up, original source metadata after preview, φ framing URL, source SVG download & plotter preview',
+ console.log('PASS Oil v1 φ Four, source metadata after preview, φ framing URL, source SVG download & plotter preview',
    JSON.stringify({cards,phiToggle,svg:dl.suggestedFilename(),plotter}));
 }finally{await browser.close()}
