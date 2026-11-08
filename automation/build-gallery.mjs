@@ -333,11 +333,12 @@ ${urls.map(u => `  <url><loc>${escapeXml(u.loc)}</loc><lastmod>${u.lastmod}</las
 
 const day = process.env.SOCIAL_DATE || dateInZone();
 const galleryOrientation = process.env.GALLERY_QUEUE_ORIENTATION === 'portrait' ? 'portrait' : 'landscape';
-const galleryMaterial=process.env.GALLERY_QUEUE_MATERIAL==='action'?'action':process.env.GALLERY_QUEUE_MATERIAL==='oil'?'oil':
+const galleryMaterial=process.env.GALLERY_QUEUE_MATERIAL==='random'?'random':
+  process.env.GALLERY_QUEUE_MATERIAL==='action'?'action':process.env.GALLERY_QUEUE_MATERIAL==='oil'?'oil':
   process.env.GALLERY_QUEUE_MATERIAL==='watercolour'?'watercolour':
   process.env.GALLERY_QUEUE_MATERIAL==='watercolor'?'watercolor':'marker';
 const queuePath = path.resolve('social-output', day,
-  ...(galleryMaterial==='action'?['action',galleryOrientation]:galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
+  ...(galleryMaterial==='random'?['gallery']:galleryMaterial==='action'?['action',galleryOrientation]:galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
     galleryMaterial==='watercolor'?['watercolor',galleryOrientation]:
     galleryOrientation==='portrait'?['portrait']:[]),'queue.json');
 const queue = JSON.parse(await fs.readFile(queuePath, 'utf8'));
@@ -350,6 +351,48 @@ const galleryRoot = path.resolve('gallery');
 const dayDir = path.join(galleryRoot, day);
 await fs.mkdir(dayDir, { recursive: true });
 
+// From 9 November the displayed gallery consists of exactly twelve
+// independently selected works. Social posts still have exact short ?art=
+// links, but their additional images live in a separate archive index and
+// must NEVER modify the displayed gallery or its 3D floor.
+const randomDate=day>='2026-11-09';
+const randomMarker=path.join(dayDir,'random-edition.json');
+const hasRandomEdition=randomDate && await fs.access(randomMarker).then(()=>true,()=>false);
+if(randomDate && galleryMaterial!=='random' && hasRandomEdition){
+  const socialPath=path.join(dayDir,'social-meta.json');
+  let social={version:1,date:day,entries:[]};
+  try{social=JSON.parse(await fs.readFile(socialPath,'utf8'))}
+  catch(error){if(error.code!=='ENOENT')throw error}
+  const byId=new Map(social.entries.map(item=>[item.id,item]));
+  for(const item of queue.entries){
+    const previous=byId.get(item.id);
+    if(previous){
+      await fs.access(path.join(dayDir,previous.imageFile));
+      continue; // Published exact images and URLs stay immutable.
+    }
+    await fs.copyFile(path.join(path.dirname(queuePath),item.imageFile),
+      path.join(dayDir,item.imageFile));
+    byId.set(item.id,{
+      id:item.id,seed:item.seed,imageFile:item.imageFile,
+      shareUrl:item.shareUrl,rendererVersion:item.rendererVersion,
+      settings:item.settings,orientation:item.orientation||'landscape',
+      material:item.material||'marker'
+    });
+  }
+  social.entries=[...byId.values()].sort((a,b)=>a.id.localeCompare(b.id));
+  await fs.writeFile(socialPath,JSON.stringify(social,null,2)+'\n');
+  console.log('Archived '+queue.entries.length+
+    ' social-only works; twelve-study daily gallery and 3D floor unchanged.');
+  process.exit(0);
+}
+if(galleryMaterial==='random'){
+  if(!randomDate||queue.edition!=='random-12'||queue.entries.length!==12)
+    throw Error('A random daily gallery must contain exactly twelve studies after 8 Nov');
+  if(queue.entries.some(e=>e.rendererVersion!==10||
+      new URL(e.shareUrl).searchParams.get('v')!=='10'))
+    throw Error('Random daily gallery must use renderer V10 for all twelve studies');
+}
+
 // Preserve curated/repaired studies that are already in the day's gallery.
 // The scheduled queue is the canonical source for its own seeds, but it must
 // never erase additional validated studies that were appended later.
@@ -360,7 +403,9 @@ try {
   if (error.code !== 'ENOENT') throw error;
 }
 
-const existingEntries = Array.isArray(existingMeta.entries) ? existingMeta.entries : [];
+const existingEntries = Array.isArray(existingMeta.entries)
+  ? existingMeta.entries.filter(e=>galleryMaterial!=='random'||/\-G\d{2}$/.test(e.id))
+  : [];
 if (galleryMaterial === 'oil') {
   const archivedOil = new Map(existingEntries.filter(entry => entry.material === 'oil').map(entry => [entry.id, entry]));
   for (const entry of queue.entries) {
@@ -414,14 +459,14 @@ function galleryOrder(entry) {
   const tier=entry.material==='action'?8:entry.material==='oil'?6:entry.material==='watercolour'?4:entry.material==='watercolor'?2:0;
   return tier+(orientation==='portrait'?1:0);
 }
-queue.entries.sort((a, b) =>
+if(galleryMaterial!=='random')queue.entries.sort((a, b) =>
   galleryOrder(a) - galleryOrder(b) ||
   String(a.id || a.seed).localeCompare(String(b.id || b.seed))
 );
 
 // From 17 October cap each material at four gallery entries, preferring
 // two landscape and two portrait studies when both are available.
-if (day >= '2026-10-17') {
+if (day >= '2026-10-17' && galleryMaterial!=='random') {
   const materialOf = e => e.material === 'action' ? 'action' : e.material === 'oil' ? 'oil' :
     e.material === 'watercolour' ? 'watercolour' :
     e.material === 'watercolor' ? 'tissue' : 'marker';
@@ -457,7 +502,7 @@ for (const item of queue.entries) {
 
 const keepImages = new Set(queue.entries.map(entry => entry.imageFile));
 for (const existing of await fs.readdir(dayDir)) {
-  if (existing.toLowerCase().endsWith('.jpg') && existing !== 'archive-preview.jpg' && !keepImages.has(existing)) {
+  if (galleryMaterial!=='random' && existing.toLowerCase().endsWith('.jpg') && existing !== 'archive-preview.jpg' && !keepImages.has(existing)) {
     await fs.rm(path.join(dayDir, existing), { force: true });
   }
 }
@@ -530,5 +575,10 @@ await fs.writeFile(path.join(galleryRoot, 'feed.xml'), rss(archive));
 await fs.writeFile(path.resolve('sitemap.xml'), sitemap(archive));
 await fs.writeFile(path.resolve('robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 
+if(galleryMaterial==='random'){
+  await fs.writeFile(randomMarker,JSON.stringify({
+    edition:'random-12',date:day,count:12,rendererVersion:10
+  },null,2)+'\n');
+}
 console.log(`Built PROPORTION PIECE daily gallery for ${day} with ${queue.entries.length} artworks.`);
 console.log(`Gallery URL: ${GALLERY_URL}/${day}/`);
