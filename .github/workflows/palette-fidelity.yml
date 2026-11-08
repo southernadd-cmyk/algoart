@@ -1,6 +1,11 @@
 name: Renderer V10 palette fidelity
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/tissue-v8-release*'
+      - '.github/workflows/palette-fidelity.yml'
   pull_request:
     paths:
       - 'js/**'
