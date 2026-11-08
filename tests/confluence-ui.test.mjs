@@ -40,7 +40,9 @@ test('Confluence page must wire portrait controls and fit its canvas, not just s
  assert.ok(ui.includes("byId('format-' + format).addEventListener('click'"), 'Format buttons require JS event listeners');
  assert.ok(ui.includes('orientation.value = format'), 'Format buttons must set portrait or landscape');
  assert.ok(ui.includes('syncFormatButtons()'), 'Format pressed state must be synchronized');
- assert.ok(ui.includes("totalTurns.addEventListener('change', build)"), 'Fibonacci choices must redraw');
+ assert.ok(ui.includes("totalTurns.addEventListener('change', () => {") &&
+   ui.includes('preferredTurns=Number(totalTurns.value)||55;') &&
+   ui.includes('build();'), 'Fibonacci choices must redraw and remember requested turns');
  assert.ok(ui.includes('new ResizeObserver(() => fitCanvas())'), 'Canvas must fit available viewport');
  assert.ok(ui.includes('state.study.sheet.width / state.study.sheet.height'), 'Aspect ratio must come from study');
  assert.ok(ui.includes("figure.style.width = fitted + 'px'"), 'Viewport must constrain figure width');
