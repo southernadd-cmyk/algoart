@@ -1,6 +1,7 @@
 import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=studio-06';
 import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt, resolveTurnBudget} from './composition.js?v=confluence-steps-03';
 import {inferResponse} from './adaptive-response.js?v=adaptive-01';
+import {capRectangleFootprint, rectangleInteriors, interiorCandidates} from './rect-collaboration.js?v=rect-cells-01';
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 export const systems = [
@@ -351,17 +352,33 @@ export function createStudy(seed, slots, paperSettings, collaborationPull = 100,
   const {count:budget, available:availableTurns} = resolveTurnBudget(turnBudget(roster), requestedTurns);
   const equal = makeSchedule(roster, budget, 0);
   const primary = collaborationPull === 0 ? equal : makeSchedule(roster, budget, collaborationPull);
-  return {roster, schedule: primary.turns, primary, equal, sheet, anchors, availableTurns, totalTurns:budget};
+  return {roster, schedule: primary.turns, primary, equal, sheet, anchors, availableTurns,
+    collaborationPull, totalTurns:budget};
 }
 
 export function makeRun(study, strength, {equal = false} = {}) {
   const programme = equal ? study.equal : study.primary;
   const density = study.anchors.length && strength > 0 ? inkDensity(study.sheet, CELL) : null;
-  const artists = new Map(study.roster.map((artist, i) => [artist.id, {
-    ...artist, field: field(study.sheet, artist.id), pending: artist.groups.slice(0, programme.counts[i]),
-    anchors: new Map(), committed: 0,
-    pose: study.anchors[i] ? anchoredPose(artist, study.anchors[i], study.sheet) : {place: identity}
-  }]));
+  const rectCount=study.roster.filter(artist=>artist.system==='rects').length;
+  const mixedRects=rectCount>0&&rectCount<study.roster.length&&strength>0&&study.collaborationPull>0;
+  const artists = new Map(study.roster.map((artist, i) => {
+    const anchor=study.anchors[i];
+    const initial=anchor?anchoredPose(artist,anchor,study.sheet):{place:identity};
+    const place=mixedRects&&artist.system==='rects'
+      ?capRectangleFootprint(artist.groups,initial.place,anchor,study.sheet,
+        study.collaborationPull,rectCount)
+      :initial.place;
+    return [artist.id,{
+      ...artist,field:field(study.sheet,artist.id),
+      pending:artist.groups.slice(0,programme.counts[i]),
+      anchors:new Map(),committed:0,rectInvited:0,pose:{place}
+    }];
+  }));
+  // The existing rectangle guide is a shared structure, not an exclusion
+  // zone. Other systems can work *inside its actual transformed cells*.
+  const rectangleCells=mixedRects?rectangleInteriors([...artists.values()],study.sheet):[];
+  const rectangleUse=new Map();
+  const invitationFraction=Math.min(.62,.72*study.collaborationPull/100*strength/100);
 
   let turn = 0;
   return {
@@ -395,7 +412,29 @@ export function makeRun(study, strength, {equal = false} = {}) {
               best = score;
             }
           }
+          if(mixedRects&&artist.system!=='rects'){
+            const inside=interiorCandidates(group,artist,rectangleCells,turn,rectangleUse);
+            let bestInside=null,bestInsideScore=Infinity;
+            for(const candidate of inside){
+              // Prefer cells not yet visited. The original proximity and
+              // ink-density scores still reject genuinely overcrowded cells.
+              const score=judge(group,candidate,context,width)+candidate.used*.22-
+                invitationFraction*.43;
+              if(score<bestInsideScore){
+                bestInside=candidate;bestInsideScore=score;
+              }
+            }
+            const owed=artist.rectInvited<Math.ceil((artist.committed+1)*invitationFraction);
+            if(bestInside&&bestInsideScore<best+(owed?1.05:0)){
+              placement=bestInside;
+              best=bestInsideScore;
+            }
+          }
         }
+      }
+      if(placement.rectCellId){
+        rectangleUse.set(placement.rectCellId,(rectangleUse.get(placement.rectCellId)||0)+1);
+        artist.rectInvited++;
       }
       if (study.sheet.constrain) {
         const place = placement.place;
