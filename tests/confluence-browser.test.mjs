@@ -89,11 +89,11 @@ try{
       shortcutAction=A.collabAction;
     A.renderOilPaintV8=function(...args){
       window.__materialCalls.oil++;
-      return oilV8.apply(this,args);
+      return (window.__nativeOilMeta=oilV8.apply(this,args));
     };
     A.actionPaintingFromPathsV4=function(...args){
       window.__materialCalls.action++;
-      return action.apply(this,args);
+      return (window.__nativeActionStats=action.apply(this,args));
     };
     A.collabAction=function(...args){
       window.__materialCalls.shortcutAction++;
@@ -283,6 +283,66 @@ try{
     undefined,{timeout:25000});
   const afterStep=await page.evaluate(()=>window.__materialCalls.watercolour);
   assert.equal(afterStep,12,'Watercolour single Step must call native V2S on both canvases: '+afterStep);
+  // Test each complete material engine with THREE responding artists,
+  // not merely one native artist and two Marker artists.
+  async function allArtistMaterial(material){
+    if((await page.locator('#inspector-toggle').getAttribute('aria-expanded'))!=='true')
+      await page.locator('#inspector-toggle').click();
+    for(const tab of ['artist-1','artist-2','artist-3']){
+      await page.locator('#tab-'+tab).click();
+      await page.locator('#roster [data-artist="'+tab.slice(-1)+'"] select[data-field="material"]')
+        .selectOption(material);
+    }
+    await page.evaluate(()=>{window.__materialCalls.oil=0;window.__materialCalls.action=0;});
+    await page.locator('#study-form .draw-actions button[type="submit"]').click();
+    await page.waitForFunction(()=>{
+      const status=document.querySelector('#status')?.textContent||'';
+      if(status.includes('Could not render'))throw Error(status);
+      return document.querySelector('#counter')?.textContent?.trim()==='5 / 5 turns';
+    },undefined,{timeout:120000});
+  }
+  await allArtistMaterial('oil');
+  const oilStudy=await page.evaluate(()=>({
+    calls:window.__materialCalls.oil,
+    work:window.__nativeOilMeta?.work,
+    plan:window.__nativeOilMeta?.plan
+  }));
+  assert.equal(oilStudy.calls,10,'All-oil study must render solo V8 on every shared/equal turn: '+JSON.stringify(oilStudy));
+  assert(oilStudy.work?.brushCalls>0,'Oil V8 failed to paint source brushes and connected fields');
+  assert(oilStudy.work?.sourceChains>0,'Oil V8 failed to interpret collaborative source paths');
+  console.log('all-oil V8 '+JSON.stringify({calls:oilStudy.calls,
+    sourceChains:oilStudy.work.sourceChains,brushCalls:oilStudy.work.brushCalls,
+    connectedFields:oilStudy.plan?.connectedFields?.length,raisedPixels:oilStudy.work.raisedPixels}));
+  await allArtistMaterial('action');
+  const actionStudy=await page.evaluate(()=>({
+    calls:window.__materialCalls.action,shortcut:window.__materialCalls.shortcutAction,
+    stats:window.__nativeActionStats
+  }));
+  assert.equal(actionStudy.calls,10,'All-action study must run the full V4 painter per turn');
+  assert.equal(actionStudy.shortcut,0,'All-action study invoked the old one-fling shortcut');
+  assert(actionStudy.stats?.pathCount>0,'Action V4 did not receive any transformed source paths');
+  assert.equal(actionStudy.stats?.layers,5,'Action V4 did not run its full layered pass');
+  console.log('all-action V4 '+JSON.stringify(actionStudy));
+
+  // Tissue, watercolour and oil need to compose without opaque paper tiles.
+  if((await page.locator('#inspector-toggle').getAttribute('aria-expanded'))!=='true')
+    await page.locator('#inspector-toggle').click();
+  for(const [n,material] of ['tissue','watercolour','oil'].entries()){
+    await page.locator('#tab-artist-'+(n+1)).click();
+    await page.locator('#roster [data-artist="'+(n+1)+'"] select[data-field="material"]')
+      .selectOption(material);
+  }
+  await page.locator('#study-form .draw-actions button[type="submit"]').click();
+  await page.waitForFunction(()=>{
+    const status=document.querySelector('#status')?.textContent||'';
+    if(status.includes('Could not render'))throw Error(status);
+    return document.querySelector('#counter')?.textContent?.trim()==='5 / 5 turns';
+  },undefined,{timeout:120000});
+  const mixed=await page.evaluate(()=>window.__materialCalls);
+  assert(mixed.tissue>0&&mixed.watercolour>0&&mixed.oil>0,
+    'A mixed-material painting omitted a native engine: '+JSON.stringify(mixed));
+  console.log('mixed native media '+JSON.stringify(mixed));
+
 
   assert.deepEqual(errors,[],'Confluence material JavaScript errors: '+errors.join('; '));
   console.log('Confluence five-material browser smoke passed');
