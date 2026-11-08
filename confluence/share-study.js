@@ -22,7 +22,7 @@ function checkState(data) {
   return data && data.v === 1 && typeof data.seed === 'string' && data.seed.length > 0 && data.seed.length <= 64 &&
     ['portrait','landscape'].includes(data.orientation) && validColor(data.paper) &&
     Number.isFinite(data.grain) && data.grain>=0 && data.grain<=100 &&
-    ['weave','echo','space'].includes(data.response) &&
+    (data.response === undefined || ['weave','echo','space'].includes(data.response)) &&
     Number.isFinite(data.strength) && data.strength>=0 && data.strength<=100 &&
     Number.isFinite(data.collaborationPull) && data.collaborationPull>=0 && data.collaborationPull<=100 &&
     Number.isFinite(data.totalTurns) && data.totalTurns>=5 && data.totalTurns<=2584 &&
@@ -46,7 +46,6 @@ export function restoreSharedState(params, artists, inputs, catalog) {
   inputs.orientation.value=data.orientation;
   inputs.paper.value=data.paper;
   inputs.grain.value=String(data.grain);
-  inputs.response.value=data.response;
   inputs.strength.value=String(data.strength);
   inputs.collaborationPull.value=String(data.collaborationPull);
   if(![...inputs.totalTurns.options].some(o=>o.value===String(data.totalTurns)))

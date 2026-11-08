@@ -7,7 +7,7 @@ const base='https://proportion-piece-social.example.workers.dev';
 const settings={elements:42,colourCount:6,opacity:80,fit:false,seed:''};
 const state={
  v:1,seed:'CONFLUENCE-SEED',orientation:'portrait',paper:'#f5f0e6',grain:11,
- response:'weave',strength:75,collaborationPull:100,totalTurns:13,
+ strength:75,collaborationPull:100,totalTurns:13,
  artists:[
   {system:'field',palette:'signature',material:'marker',settings},
   {system:'rects',palette:'signature',material:'watercolour',settings},
@@ -34,6 +34,8 @@ const upload=(s=state,org=origin)=>new Request(base+'/confluence/preload',{metho
  body:JSON.stringify({state:s,jpeg:jpeg()})});
 test('Confluence state accepts three voices, portrait, and Fibonacci turn counts',()=>{
  assert(testing.validateState(state));
+ assert(testing.validateState({...state,response:'echo'}), 'Old shared links must still open');
+ assert(!testing.validateState({...state,response:'untrusted'}));
  assert(!testing.validateState({...state,totalTurns:12}));
  assert(!testing.validateState({...state,artists:state.artists.slice(0,2)}));
  assert(!testing.validateState({...state,seed:'<script>alert(1)</script>'}));
