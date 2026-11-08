@@ -328,3 +328,37 @@ body .algo-global-header .algo-site-nav [data-algo-nav][aria-current="page"]{
 @media(max-width:390px){
  body .algo-global-header .algo-site-nav [data-algo-nav]{font-size:9px!important}
 }
+
+/* Narrow phones: a full-width row keeps the longest uppercase link readable.
+   Place the ratio beside the wordmark, the three links on row two, and the
+   question on row three, preserving the existing 92px header height. */
+@media(max-width:450px){
+ body .algo-global-header,body .algo-global-header.toolbar{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:24px 24px 20px!important;
+  height:92px!important;min-height:92px!important;
+  align-content:center!important;row-gap:2px!important;
+  padding:8px 12px!important;
+ }
+ body .algo-global-header .algo-global-brand{
+  grid-column:1!important;grid-row:1!important;justify-self:start!important;align-self:center!important;
+ }
+ body .algo-global-header .algo-global-numbers{
+  display:flex!important;grid-column:1!important;grid-row:1!important;
+  justify-self:end!important;align-self:center!important;
+  font-size:8px!important;gap:4px!important;
+ }
+ body .algo-global-header .algo-site-nav{
+  grid-column:1!important;grid-row:2!important;justify-self:stretch!important;
+  width:100%!important;gap:6px!important;justify-content:space-between!important;
+  align-self:center!important;
+ }
+ body .algo-global-header .algo-site-nav [data-algo-nav]{
+  font-size:clamp(11px,2.8vw,13px)!important;
+ }
+ body .algo-global-header .algo-global-question{
+  grid-column:1!important;grid-row:3!important;align-self:center!important;
+  text-align:left!important;
+ }
+}
