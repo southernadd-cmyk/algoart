@@ -334,6 +334,15 @@ function updateURL(settings){
     shared.search=params;
     shared.hash='';
     confluence.href=shared.href;
+    // Each visit can choose new collaborators, without changing Artist 1's
+    // seed, material, palette, system, or drawing settings.
+    confluence.onclick=function(){
+      var variation=new Uint32Array(1);
+      crypto.getRandomValues(variation);
+      var varied=new URL(confluence.href);
+      varied.searchParams.set('mix',variation[0].toString(36));
+      confluence.href=varied.href;
+    };
   }
   try{
     history.replaceState(null,'',url);
