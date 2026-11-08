@@ -12,9 +12,10 @@ for(const name of scripts){
 }
 const A=context.window.AlgoArt;
 A.supportedRendererVersions=[1,2,3,4,5,6,7,8,9,10];
-function canvas(){
+function canvas(strokes){
   const c=new Proxy({},{
     get(obj,key){
+      if(key==='stroke'&&strokes)return ()=>strokes.push(obj.strokeStyle);
       if(key in obj)return obj[key];
       return (...args)=>{};
     },
@@ -69,6 +70,16 @@ for(const mode of ['field','spiral','rects','burst','network',
   if(v10.marks>0)
     assert.equal(v10.inks.size,Math.min(12,v10.marks),
       mode+' unexpected palette collapse');
+  if(mode==='field'){
+    const hero=new Set(v10.paths.filter(p=>p.group?.tier==='hero').map(p=>p.stroke));
+    const heroMarks=new Set(v10.paths.filter(p=>p.group?.tier==='hero').map(p=>p.mark)).size;
+    if(heroMarks>=2)assert.ok(hero.size>=2,'Hero forms still collapse to one hue');
+    const direct=[];
+    A.rendererVersion=10;A.svgRecorder=null;
+    A.render(canvas(direct),v10.state,.1,false);
+    assert.deepEqual(direct,v10.paths.map(p=>p.stroke),
+      'Marker colours differ depending on SVG material capture');
+  }
   if(mode==='network'&&v10.marks>=12){
     const kit=A.tissueKitFromPaths(v10.paths,v10.state,7);
     assert.equal(kit.ink.length,12,
