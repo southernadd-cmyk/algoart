@@ -142,6 +142,8 @@ try{
 
   // Visitor control test: rotating lead is a single real button interaction.
   // The underlying artist settings and equal-turn canvas must not change.
+  await page.locator('#inspector-toggle').click();
+  await page.locator('#tab-shared').click();
   await page.locator('#total-turns').selectOption('5');
   await page.waitForFunction(()=>
     document.querySelector('#counter')?.textContent.trim()==='5 / 5 turns');
