@@ -361,6 +361,20 @@ try {
 }
 
 const existingEntries = Array.isArray(existingMeta.entries) ? existingMeta.entries : [];
+// An archived study is immutable, including its exact renderer version,
+// image bytes and source URL. Daily recovery can fill missing slots, but a
+// freshly generated V10 queue must never repaint existing V8/V9 studies.
+const existingById = new Map(existingEntries.map(entry => [entry.id, entry]));
+queue.entries = await Promise.all(queue.entries.map(async entry => {
+  const archived = existingById.get(entry.id);
+  if (!archived) return entry;
+  await fs.access(path.join(dayDir, archived.imageFile));
+  return {
+    ...archived,
+    copy: { altText: archived.altText || artworkDescription(archived) },
+    platforms: entry.platforms || {}
+  };
+}));
 if (galleryMaterial === 'oil') {
   const archivedOil = new Map(existingEntries.filter(entry => entry.material === 'oil').map(entry => [entry.id, entry]));
   for (const entry of queue.entries) {
@@ -427,7 +441,8 @@ if (day >= '2026-10-17') {
 // Only the freshly generated queue images are copied; preserved gallery
 // studies already exist in dayDir. Sorting must not change that distinction.
 const queuedImageFiles = new Set(
-  queue.entries.filter(item => !preservedEntries.some(old => old.imageFile === item.imageFile))
+  queue.entries.filter(item => !existingById.has(item.id) &&
+    !preservedEntries.some(old => old.imageFile === item.imageFile))
     .map(item => item.imageFile)
 );
 for (const item of queue.entries) {
