@@ -55,6 +55,11 @@ button:disabled{opacity:.43;cursor:default}
 .buttons,.output-actions{display:flex;align-items:center;gap:17px;flex-wrap:wrap}
 .buttons button,.output-actions button{font:16px/1.3 var(--serif);padding:4px 0;color:var(--ink)}
 #counter{font-size:11px;white-space:nowrap}
+.transport .rotate-lead-toolbar{display:inline-flex;gap:6px;align-items:center;
+ flex-shrink:0;white-space:nowrap;font:11px/1.2 var(--mono);color:var(--ink);
+ padding:4px 0;border-bottom:1px solid var(--line)}
+.transport .rotate-lead-toolbar:hover{border-color:currentColor}
+#toolbar-lead-label{font-variant-numeric:tabular-nums;color:var(--muted)}
 .output-actions{margin-left:auto}
 .edit-artists{display:none}
 .progress{order:3;width:min(100%,760px);height:3px;margin:2px auto 0;background:#d6cebf}
@@ -298,6 +303,7 @@ html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
  .transport .buttons,.transport .output-actions{gap:7px;flex-wrap:nowrap}
  .transport .buttons button,.transport .output-actions button{font-size:12px;white-space:nowrap}
  .transport #counter{order:unset;flex:0 1 auto;font-size:9px;margin-left:auto}
+ .transport .rotate-lead-toolbar{font-size:10px;gap:4px;flex-shrink:0}
  .transport #edit-artists{display:none!important}
  #inspector-toggle{position:fixed;top:auto;right:12px;bottom:12px;z-index:50;padding:9px 10px}
  .side-wordmark{display:none}
@@ -311,6 +317,7 @@ html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
  .transport .output-actions #download{display:none}
  .transport .buttons button{font-size:11px}
  #counter{display:none}
+ .transport .rotate-lead-toolbar{font-size:9px;gap:3px}
 }
 @media(max-height:620px){
  .workbar{min-height:29px}
