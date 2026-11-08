@@ -5,9 +5,8 @@ import {extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 
-// Diagnostic while the editor handoff button is removed. Verify the real
-// solo Tissue V8 material and import it through a direct settings URL
-// without exposing a broken user-facing action.
+// Verify real editor-to-Confluence button clicks across all five materials.
+// The shared three-artist composition intentionally differs from solo.
 const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
  '.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8',
@@ -41,8 +40,8 @@ try{
  await page.waitForFunction(()=>
   window.AlgoArt?.lastTissueV8Stats?.variant==='layered-v8',
   null,{timeout:90000});
- assert.equal(await page.locator('#exploreConfluence').count(),0,
-   'Do not restore Explore in Confluence until the Tissue renderer is fixed');
+ assert.equal(await page.locator('#exploreConfluence').count(),1,
+   'Verified Explore in Confluence button is missing');
  const solo=await page.evaluate(()=>({
   seed:document.querySelector('#seed').value,
   material:document.querySelector('#materialStyle').value,
@@ -57,9 +56,13 @@ try{
  const url=new URL(solo.link);
  assert.equal(url.searchParams.get('material'),'tissue-v8',
    'Solo renderer must identify V8 in its saved state');
- // Bypass the hidden button to isolate Confluence's importer/renderer.
- const importedUrl=new URL('/confluence/?'+url.searchParams.toString(),origin);
- await page.goto(importedUrl.href,{waitUntil:'load'});
+ // Click the actual solo-editor control.
+ const importedUrl=new URL(await page.locator('#exploreConfluence').getAttribute('href'),origin);
+ assert.equal(importedUrl.pathname,'/confluence/');
+ assert.equal(importedUrl.searchParams.get('material'),'tissue-v8');
+ assert.equal(importedUrl.searchParams.get('seed'),solo.seed);
+ await page.locator('#exploreConfluence').click();
+ await page.waitForURL(/\/confluence\/\?/,{timeout:90000});
  await page.waitForFunction(()=>
   document.querySelector('#import-note')?.hidden===false &&
   document.querySelector('#seed')?.value==='CONFLUENCE-TISSUE-V8-AUDIT',
@@ -83,7 +86,7 @@ try{
  assert.equal(imported.orientation,'landscape');
  // The full-sheet solo entry point is deliberately not used: Confluence
  // paints spatially transformed gestures, but its V8 material stages must
- // be active. Keep the editor CTA removed pending visual comparison.
+ // be active. Visitors can now evaluate the resulting shared interpretation.
  console.log('TISSUE_V8_HANDOFF_AUDIT '+JSON.stringify({
   solo:{material:solo.material,system:solo.mode,renderer:solo.v8},
   confluence:imported
@@ -114,14 +117,19 @@ try{
      document.querySelector('#seed')?.value===value &&
      document.querySelector('#materialStyle')?.value===kind,
      [seed,expected],{timeout:90000});
-   assert.equal(await page.locator('#exploreConfluence').count(),0,
-     'Broken solo-editor CTA reappeared while testing '+material);
+   assert.equal(await page.locator('#exploreConfluence').count(),1,
+     'Verified solo-editor CTA is missing for '+material);
    const current=new URL(page.url());
    assert.equal(current.searchParams.get('seed'),seed);
    // Marker deliberately uses an omitted default material query value.
    if(material!=='marker')assert.equal(current.searchParams.get('material'),material);
-   await page.goto(origin+'/confluence/?'+current.searchParams.toString(),
-     {waitUntil:'load'});
+   const target=new URL(await page.locator('#exploreConfluence')
+     .getAttribute('href'),origin);
+   assert.equal(target.pathname,'/confluence/');
+   assert.equal(target.searchParams.get('seed'),seed);
+   if(material!=='marker')assert.equal(target.searchParams.get('material'),material);
+   await page.locator('#exploreConfluence').click();
+   await page.waitForURL(/\/confluence\/\?/,{timeout:90000});
    await page.waitForFunction(value=>
      document.querySelector('#import-note')?.hidden===false &&
      document.querySelector('#seed')?.value===value,seed,{timeout:90000});
