@@ -49,3 +49,20 @@ test('Native material layers taper at cropped tiles, not at true paper edges',as
  assert.equal(cropEdgeFeather(0,210,440,420,paperEdge,paper),1);
  assert.equal(cropEdgeFeather(220,0,440,420,paperEdge,paper),1);
 });
+
+test('Tissue accumulates responsive groups and renders just once per full-sheet artist layer',()=>{
+ const renderer=read('../confluence/materials.js');
+ const ui=read('../confluence/ui.js');
+ const lab=read('../confluence/engine/materials/oil-material.js');
+ const native=read('../confluence/native-material.js');
+ assert.match(renderer,/const tissueArtists = new Map\(\)/);
+ assert.match(renderer,/entry\.traces\.push\(\.\.\.traces\)/);
+ assert.match(renderer,/const bounds=\{x:0,y:0,w:sheet\.width,h:sheet\.height\}/);
+ assert.match(renderer,/deposit\.finalize = function finalizeTissue/);
+ assert.match(ui,/state\.paintShared\.finalize\?\.\(\)/);
+ assert.match(ui,/state\.paintBaseline\.finalize\?\.\(\)/);
+ assert.match(lab,/kit\.revision>=7&&A\.confluenceTissueGraphite/);
+ assert.match(native,/A\.confluenceTissueGraphite=true/);
+ assert.doesNotMatch(read('../js/oil-material.js'),/confluenceTissueGraphite/,
+    'The main solo renderer must remain untouched');
+});

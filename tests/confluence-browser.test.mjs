@@ -122,11 +122,20 @@ try{
       return {painted,ratio:painted/(image.length/20),
         calls:{...window.__materialCalls},stats:{
           tissue:window.AlgoArt.lastOilMaterialStats?.tissuePaletteVersion,
+          graphite:window.AlgoArt.lastOilMaterialStats?.graphitePaths,
           wc:window.AlgoArt.lastWatercolourExperimentStats?.referenceMaterial}};
     });
     assert(evidence.painted>20,material+' rendered no meaningful marks: '+JSON.stringify(evidence));
     assert(evidence.ratio<.65,material+' covered most of the sheet: '+JSON.stringify(evidence));
-    if(material==='tissue')assert(evidence.calls.tissue>0,'Tissue never used the native V7 pipeline');
+    if(material==='tissue'){
+      assert(evidence.calls.tissue>0,'Tissue never used the native V7 pipeline');
+      assert.equal(evidence.stats.tissue,7,'Tissue must use native V7');
+      assert(evidence.stats.graphite>0,'Tissue V7 must also render real graphite strokes');
+      // One native artist layer uses two calls (blank & actual), then a
+      // second two for φ-baseline. A local patch per drawing turn would
+      // call the renderer considerably more often and restart its wash.
+      assert(evidence.calls.tissue<=4,'Tissue still renders per-turn isolated patches: '+JSON.stringify(evidence));
+    }
     if(material==='watercolour')assert(evidence.calls.watercolour>0,'Watercolour never used native V2S');
     console.log('material '+material+' '+JSON.stringify(evidence));
     snapshots.push({material,...evidence});
