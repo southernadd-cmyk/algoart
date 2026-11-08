@@ -44,5 +44,5 @@ test('Confluence page must wire portrait controls and fit its canvas, not just s
  assert.ok(ui.includes('new ResizeObserver(() => fitCanvas())'), 'Canvas must fit available viewport');
  assert.ok(ui.includes('state.study.sheet.width / state.study.sheet.height'), 'Aspect ratio must come from study');
  assert.ok(ui.includes("figure.style.width = fitted + 'px'"), 'Viewport must constrain figure width');
- assert.ok(/ui\\.js\\?v=confluence-[a-z0-9-]+/.test(page), 'Browser must receive versioned Confluence UI script');
+ assert.ok(page.includes('src="ui.js?v=confluence-'), 'Browser must receive versioned Confluence UI script');
 });
