@@ -37,7 +37,7 @@ for(let i=0;i<12;i++){
   const env={...process.env,SOCIAL_DATE:day,SOCIAL_COUNT:'1',
     SOCIAL_MATERIAL:material,SOCIAL_ORIENTATION:orientation,
     SOCIAL_SEED_SALT:salt,SOCIAL_FORCE_MODE:mode,
-    SOCIAL_RENDERER_VERSION:'10'};
+    GALLERY_RANDOM_12:'true',SOCIAL_RENDERER_VERSION:'10'};
   // A separate subprocess keeps the already released material generator intact
   // and allows each drawing to choose its material and orientation independently.
   const result=spawnSync(process.execPath,['automation/generate-social.mjs'],{
