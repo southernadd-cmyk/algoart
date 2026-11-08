@@ -177,6 +177,6 @@ test('Tissue V8 per-turn physics mirror the released solo renderer',()=>{
   assert.doesNotMatch(local,/A\.confluenceTissueGraphite/,
     'Legacy V7 graphite bypass must not masquerade as V8');
   const root=read('../index.html');
-  assert.match(root,/id="exploreConfluence"/,
-    'The tested handoff button should be available for visitor visual evaluation');
+  assert.doesNotMatch(root,/id="exploreConfluence"/,
+    'The solo handoff stays hidden until monochrome Tissue accumulation is corrected');
 });
