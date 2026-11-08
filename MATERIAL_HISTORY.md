@@ -2,6 +2,14 @@
 
 This technical record preserves revision details and compatibility rules. See the [README](README.md) for current usage.
 
+## Geometry renderer V10 — palette coverage (8 November 2026)
+
+V10 fixes a mismatch between the **Colours** control and the inks actually supplied to the materials. A requested rack of up to 14 colours is now intentionally represented in the source marks before material rendering. The first N marks visit all N inks (when the drawing contains at least N marks); subsequent marks preserve each engine's colour families for three marks in four while rotating one accent. Named palettes expand repeated anchors into distinct related hues/tones, without changing their identity. The source stroke geometry and composition RNG are unchanged.
+
+The Oil V8 colour-field planner no longer truncates its source-local palette to four pigments on V10 compositions. Tissue & Graphite V7 and Watercolour V2S continue to derive their pigments from recorded source inks. Action Painting V4 keeps its separate paint layers and takes its expanded palette from the shared palette generator.
+
+This is a **new geometry renderer version**, not a retroactive edit to archived work: V1–V9 URLs reproduce their old drawings. The original five material revision identifiers are unchanged. A palette with N available pigments does not guarantee N individually distinguishable pixels in every finished painting: overlaps, transparency, size and pigment mixing remain part of the materials.
+
 ## Oil Paint V8
 
 Oil Paint V8 adds directional brushwork to broad paint masses, layered surface relief and irregular canvas weave. Links with `material=oil-v8` replay with all three treatments enabled and surface strength fixed at 60%. The composition revision is independently recorded in `v`, and Oil V1–V7 links retain their original paint renderers.
