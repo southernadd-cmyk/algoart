@@ -39,7 +39,7 @@ That distinction is central to the work. The machine cannot literally possess a 
 
 The visitor can change the **Collaboration φ pull** to distribute turns by golden-ratio proportions or equally, use **Rotate lead** to assign the largest share to another artist, and compare the same seed and starting settings under both schedules. Turn counts govern drawing order and opportunities for response rather than how visually prominent an opaque or translucent material becomes. All three artists' source gestures are used.
 
-Confluence is a separate generative drawing studio, not a multiplayer room; its shared drawing is a new interpretation rather than a pixel-identical copy of any solo drawing. Confluence images are not automatically added to the daily gallery. The solo-to-Confluence transfer control is temporarily disabled while Tissue & Graphite V8 fidelity is investigated.
+Confluence is a separate generative drawing studio, not a multiplayer room. The solo editor's **Explore in Confluence** link transfers the current drawing's seed and settings into Artist 1. The three artists produce a new spatial interpretation, not a pixel-identical copy of the solo drawing. Confluence images are not automatically added to the daily gallery.
 
 ## The exhibition is part of the piece
 
