@@ -1,12 +1,10 @@
 name: Deploy social preview Worker
 
+# Cloudflare Workers Builds is Git-connected to this repo and performs
+# automatic deploys. This *optional* manual Wrangler route needs GitHub secrets;
+# do not run it on every push when those secrets are not configured.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'cloudflare/social-preview/**'
-      - '.github/workflows/deploy-social-preview-worker.yml'
 
 permissions:
   contents: read
