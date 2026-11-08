@@ -139,6 +139,67 @@ try{
   const oil=report.at(-1);
   assert(oil.gestures>0,'Oil never contributed its source gestures');
   assert(oil.engaged>0,'Oil never deliberately connected with existing artist marks');
+
+  // Visitor control test: rotating lead is a single real button interaction.
+  // The underlying artist settings and equal-turn canvas must not change.
+  await page.locator('#total-turns').selectOption('5');
+  await page.waitForFunction(()=>
+    document.querySelector('#counter')?.textContent.trim()==='5 / 5 turns');
+  const readUI=()=>page.evaluate(()=>({
+    lead:document.querySelector('#lead-index').value,
+    caption:[...document.querySelectorAll('#shared-turns .turn-artist strong')]
+      .map(x=>Number(x.textContent)),
+    equal:[...document.querySelectorAll('#equal-turns .turn-artist strong')]
+      .map(x=>Number(x.textContent)),
+    baseline:document.querySelector('#baseline').toDataURL(),
+    artists:[...document.querySelectorAll('#roster .artist')]
+      .map(card=>[...card.querySelectorAll('.artist-fields select')].map(el=>el.value))
+  }));
+  const initial=await readUI();
+  assert.deepEqual(initial.caption,[3,1,1]);
+  for(const [index,expected] of [[1,[1,3,1]],[2,[1,1,3]],[0,[3,1,1]]]){
+    await page.locator('#rotate-lead').click();
+    await page.waitForFunction(({index,expected})=>
+      Number(document.querySelector('#lead-index').value)===index &&
+      document.querySelector('#counter')?.textContent.trim()==='5 / 5 turns' &&
+      [...document.querySelectorAll('#shared-turns .turn-artist strong')]
+        .map(x=>Number(x.textContent)).join(',')===expected.join(','),
+      {index,expected});
+    const current=await readUI();
+    assert.deepEqual(current.caption,expected);
+    assert.deepEqual(current.equal,initial.equal,'Equal turn counts must be fixed');
+    assert.equal(current.baseline,initial.baseline,
+      'Equal-turn artwork must be pixel-identical after role rotation');
+    assert.deepEqual(current.artists,initial.artists,
+      'Rotating lead cannot change any artist system, material or palette');
+    assert.equal(await page.locator('#lead-label').textContent(),'A'+(index+1)+' leads');
+  }
+  // Role assignment also survives a copied study link, with old links
+  // defaulting to the historical A1 lead.
+  await page.locator('#rotate-lead').click();
+  await page.waitForFunction(()=>
+    document.querySelector('#lead-index').value==='1' &&
+    document.querySelector('#counter')?.textContent.trim()==='5 / 5 turns');
+  await page.context().grantPermissions(['clipboard-read','clipboard-write']);
+  await page.locator('#copy-study-link').click();
+  const url=await page.evaluate(()=>navigator.clipboard.readText());
+  const link=new URL(url),token=link.searchParams.get('s');
+  assert(token,'Copy study link must include full study state');
+  const data=JSON.parse(Buffer.from(token,'base64url').toString('utf8'));
+  assert.equal(data.leadIndex,1);
+  await page.goto(link.href,{waitUntil:'load'});
+  await page.waitForFunction(()=>
+    document.querySelector('#lead-index').value==='1' &&
+    document.querySelector('#counter')?.textContent.trim()==='5 / 5 turns');
+  assert.equal(await page.locator('#lead-label').textContent(),'A2 leads');
+  delete data.leadIndex;
+  link.searchParams.set('s',Buffer.from(JSON.stringify(data)).toString('base64url'));
+  await page.goto(link.href,{waitUntil:'load'});
+  await page.waitForFunction(()=>
+    document.querySelector('#lead-index').value==='0' &&
+    document.querySelector('#counter')?.textContent.trim()==='5 / 5 turns');
+  assert.equal(await page.locator('#lead-label').textContent(),'A1 leads');
+  console.log('Rotate lead UI, equal-canvas identity and share-state restoration passed');
 }finally{
   if(browser)await browser.close();
   await new Promise(ok=>server.close(ok));
