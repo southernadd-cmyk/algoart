@@ -1,4 +1,4 @@
-import {artistInk, paint} from './collab.js';
+import {artistInk, paint} from './collab.js?v=studio-04';
 
 export const materials = {
   marker: 'Marker',

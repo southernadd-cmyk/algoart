@@ -1,5 +1,5 @@
-import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js';
-import {materials, makePainter} from './materials.js';
+import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=studio-04';
+import {materials, makePainter} from './materials.js?v=studio-04';
 import {artistInspector, defaultSettings} from './artist-controls.js';
 
 const byId = id => document.getElementById(id);
