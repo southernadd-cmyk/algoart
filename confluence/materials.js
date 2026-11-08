@@ -70,9 +70,8 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   // that newly deposited pigment is added to the shared picture. This also
   // respects *actual turn order* across different materials.
   const tissueMarks=[],watercolourMarks=[],oilMarks=[],actionMarks=[];
-  // Preserve a cumulative native V8 drawing *per artist*. Repeating the
-  // full V8 atmospheric wash for every small turn (27 times for an A1 lead)
-  // caused the dark monochrome cloud reported by visitors.
+  // Track each artist's maximum native V8 pigment coverage. Confluence
+  // must not repeatedly layer an entire atmospheric wash at every turn.
   const tissueHistories=new Map();
   const tissueIncrement=layer(true);
   let tissueAddedPixels=0,tissueNegativePixels=0;
@@ -130,56 +129,45 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     if(!newMarks.length)return;
     let history=tissueHistories.get(artist.id);
     if(!history){
-      history={marks:[],previous:new Uint8ClampedArray(
-        sheet.width*sheet.height*4)};
+      history={coverage:new Uint8Array(sheet.width*sheet.height)};
       tissueHistories.set(artist.id,history);
     }
-    history.marks.push(...newMarks);
-    const all=history.marks;
-    const area={x:0,y:0,w:sheet.width,h:sheet.height};
+    const area=nativeBounds(newMarks,250);
     const representative={settings:{colourCount:Math.min(14,
-      new Set(all.map(t=>t.ink)).size)}};
-    // The V8 atmosphere is a property of this artist's COMPLETE source
-    // painting, not a new atmospheric background on every short turn.
-    // Use stable full-sheet coordinates and seeded V8 physics so changes
-    // can be compared to the preceding cumulative material image.
+      new Set(newMarks.map(t=>t.ink)).size)}};
     size(tissueTurn,area.w,area.h);
-    renderNativeDeposit(tissueTurn,'tissue',all,representative,
+    renderNativeDeposit(tissueTurn,'tissue',newMarks,representative,
       area,sheet.paper,[seed,'tissue-artist',artist.id,'v8-layered'].join('|'),
       sourceRGB,sheet);
     surfacePasses.tissue++;
+    // Each native V8 turn has its own complete atmospheric wash. Naively
+    // source-over composing those washes multiplies the grey fog by 27.
+    // Instead, each artist maintains the *maximum observed native opacity*
+    // at each paper pixel. Only the positive difference is deposited.
+    // This preserves dense graphite strokes, new pigment colours and
+    // chronological interleaving without repeatedly coating the same paper.
     const current=tissueTurn.getImageData(0,0,area.w,area.h);
     const increment=tissueIncrement.createImageData(area.w,area.h);
-    const next=current.data,old=history.previous,dst=increment.data;
-    // Solve the source-over alpha of the NEW pigment only. Existing tissue
-    // is already on the shared sheet and may have other artists above it:
-    // reapplying the complete V8 layer would darken their work 27 times.
-    // Optical density cannot be subtracted from earlier interleaved paint,
-    // so negative changes in a regenerated native layer are ignored.
-    for(let i=0;i<next.length;i+=4){
-      const previousAlpha=old[i+3]/255;
-      const newAlpha=next[i+3]/255;
-      if(newAlpha<=previousAlpha){
-        if(newAlpha<previousAlpha)tissueNegativePixels++;
+    const next=current.data,dst=increment.data;
+    for(let y=0;y<area.h;y++)for(let x=0;x<area.w;x++){
+      const index=x+y*area.w,p=index*4;
+      const globalIndex=area.x+x+(area.y+y)*sheet.width;
+      const oldAlpha=history.coverage[globalIndex];
+      const newAlpha=next[p+3];
+      if(newAlpha<=oldAlpha){
+        if(newAlpha<oldAlpha)tissueNegativePixels++;
         continue;
       }
-      const alpha=Math.min(1,(newAlpha-previousAlpha)/
-        Math.max(1/255,1-previousAlpha));
+      const alpha=Math.min(255,Math.round(
+        (newAlpha-oldAlpha)*255/Math.max(1,255-oldAlpha)));
       if(alpha<=0)continue;
-      for(let c=0;c<3;c++){
-        const prevMass=previousAlpha*old[i+c];
-        const newMass=newAlpha*next[i+c];
-        dst[i+c]=Math.max(0,Math.min(255,Math.round(
-          (newMass-(1-alpha)*prevMass)/alpha)));
-      }
-      dst[i+3]=Math.round(alpha*255);
+      dst[p]=next[p];dst[p+1]=next[p+1];dst[p+2]=next[p+2];
+      dst[p+3]=alpha;
+      history.coverage[globalIndex]=newAlpha;
       tissueAddedPixels++;
     }
-    history.previous=next;
     size(tissueIncrement,area.w,area.h);
     tissueIncrement.putImageData(increment,0,0);
-    // The existing near-black guard remains local to this incremental
-    // contribution. It never recolours pre-existing graphite.
     protectDarkStack(tissueIncrement,area,'source-over','tissue');
     layTurn(tissueSurface,tissueIncrement,'source-over',area);
   }
