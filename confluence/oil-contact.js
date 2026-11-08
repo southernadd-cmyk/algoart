@@ -34,6 +34,9 @@ export function oilContactCandidates(group,artist,fields,density,sheet,turn){
  if(anchored)return [];
  const base=artist.pose.place;
  const centre=base(group.center);
+ // A real point on the oil stroke, not the shape's empty centre, must
+ // touch the existing line. Otherwise large shapes merely hover nearby.
+ const contactOrigin=base(group.probes[0].p);
  const samples=[];
  const seen=new Set();
  const total=sheet.cols*sheet.rows;
@@ -75,7 +78,7 @@ export function oilContactCandidates(group,artist,fields,density,sheet,turn){
        oilContact:mode,oilTarget:{x:target.x,y:target.y},effort:.72,
        place:p=>{
          const q=base(p);
-         const dx=q.x-centre.x,dy=q.y-centre.y;
+         const dx=q.x-contactOrigin.x,dy=q.y-contactOrigin.y;
          return {x:x+c*dx-s*dy,y:y+s*dx+c*dy};
        }
      });
