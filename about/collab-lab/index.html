@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#e8e1d1">
 <title>Collab Lab — PROPORTION PIECE</title>
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
-<link rel="stylesheet" href="style.css?v=studio-04">
+<link rel="stylesheet" href="style.css?v=studio-06">
 </head>
 <body>
 <div class="shell">
@@ -62,6 +62,7 @@
             <label for="strength" class="strength-label">Response strength <output id="strength-value" for="strength">75%</output></label>
             <input id="strength" type="range" min="0" max="100" value="75" step="5">
             <p class="hint" id="response-help">Look for gaps beside other artists' marks.</p>
+
           </section>
           <details class="sheet-settings">
             <summary>Shared paper &amp; format</summary>
@@ -92,14 +93,20 @@
             <button type="submit" class="primary board-draw" form="study-form">Draw study</button>
           </div>
         </div>
+        <div class="turn-balance" id="turn-balance">
+          <label for="collaboration-pull" class="strength-label">Collaboration φ pull <output id="collaboration-value" for="collaboration-pull">100%</output></label>
+          <input id="collaboration-pull" form="study-form" type="range" min="0" max="100" value="100" step="1" aria-describedby="collaboration-help">
+          <div id="turn-shares" class="turn-shares" aria-label="Target share of turns"></div>
+          <p class="hint" id="collaboration-help">Equal turns at 0%. At 100%, Artist 1 leads and Artists 2 and 3 answer.</p>
+        </div>
         <div id="canvases" class="canvases">
           <figure>
             <div class="sheet"><canvas id="shared" width="1400" height="1000" aria-label="Canvas showing artists responding to one another"></canvas></div>
-            <figcaption><span><span class="dot"></span> <span id="shared-caption">Responsive</span></span></figcaption>
+            <figcaption><span><span class="dot"></span> <span id="shared-caption">φ-weighted turns</span></span><span id="shared-turns"></span></figcaption>
           </figure>
           <figure id="baseline-panel" hidden>
-            <div class="sheet"><canvas id="baseline" width="1400" height="1000" aria-label="The same seed and roster drawn independently"></canvas></div>
-            <figcaption><span><span class="dot baseline-dot"></span> Independent</span></figcaption>
+            <div class="sheet"><canvas id="baseline" width="1400" height="1000" aria-label="The same artists responding with equal turns"></canvas></div>
+            <figcaption><span><span class="dot baseline-dot"></span> Equal turns</span><span id="equal-turns"></span></figcaption>
           </figure>
         </div>
         <div class="transport">
@@ -135,6 +142,6 @@
 <script src="engine/materials/oil-material.js"></script>
 <script src="engine/materials/watercolour-v2s.js"></script>
 <script src="engine/materials/action-painting-v4.js"></script>
-<script type="module" src="ui.js?v=studio-05"></script>
+<script type="module" src="ui.js?v=studio-06"></script>
 </body>
 </html>

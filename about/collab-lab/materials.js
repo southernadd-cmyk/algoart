@@ -1,5 +1,5 @@
-import {artistInk, paint} from './collab.js?v=studio-05';
-import {plannedPoints} from './mark-planner.js?v=studio-05';
+import {artistInk, paint} from './collab.js?v=studio-06';
+import {plannedPoints} from './mark-planner.js?v=studio-06';
 
 export const materials = {
   marker: 'Marker',
@@ -63,11 +63,32 @@ function inkOnSheet(pigment, sensor, area, heading, opacity) {
       const angle = Math.abs(dx) + Math.abs(dy) > 10 ? Math.atan2(dx, -dy) : heading;
       result.push({
         point: {x: area.x + (x + .5) * area.w / w, y: area.y + (y + .5) * area.h / h},
-        angle, radius: Math.min(6, coverage / 19)
+        angle, radius: Math.min(6, coverage / 19), opacity: coverage / 255
       });
     }
   }
   return result;
+}
+
+function softenSheetEdge(ctx, area, width, height, border) {
+  if (!border) return;
+  const feather = 24;
+  const limit = border + feather;
+  function mask(length, horizontal) {
+    const gradient = ctx.createLinearGradient(0, 0, horizontal ? length : 0, horizontal ? 0 : length);
+    gradient.addColorStop(border / length, '#0000');
+    gradient.addColorStop(limit / length, '#000');
+    gradient.addColorStop(1 - limit / length, '#000');
+    gradient.addColorStop(1 - border / length, '#0000');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(area.x, area.y, area.w, area.h);
+  }
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.globalAlpha = 1;
+  if (area.x < limit || area.x + area.w > width - limit) mask(width, true);
+  if (area.y < limit || area.y + area.h > height - limit) mask(height, false);
+  ctx.restore();
 }
 
 function actionTraces(traces) {
@@ -159,7 +180,8 @@ export function makePainter(output, seed) {
         delete A.oilPigmentActive;
       }
     }
-    const coverage = 1 - (1 - opacity / 100) ** Math.sqrt(overdraw / 2);
+    softenSheetEdge(pigment, area, width, height, action.border);
+    const coverage = (1 - (1 - opacity / 100) ** Math.sqrt(overdraw / 2)) * action.pigmentGain;
     output.save();
     output.globalAlpha = coverage;
     output.globalCompositeOperation = material === 'watercolour' ? 'multiply' : 'source-over';

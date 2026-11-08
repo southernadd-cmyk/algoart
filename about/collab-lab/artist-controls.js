@@ -45,7 +45,7 @@ const categories = [
     check('polygons', 'Polygons'), check('arcs', 'Arcs')
   ]],
   ['Colour', [
-    slider('colourCount', 'Colours', 6, 1, 14),
+    slider('colourCount', 'Colours', 3, 1, 14),
     slider('saturation', 'Saturation', 68, 10, 100),
     slider('brightness', 'Brightness', 45, 20, 80)
   ]]

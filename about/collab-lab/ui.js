@@ -1,6 +1,7 @@
-import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=studio-05';
-import {materials, makePainter} from './materials.js?v=studio-05';
-import {artistInspector, defaultSettings} from './artist-controls.js';
+import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=studio-06';
+import {materials, makePainter} from './materials.js?v=studio-06';
+import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
+import {turnShares} from './composition.js?v=studio-06';
 
 const byId = id => document.getElementById(id);
 const form = byId('study-form');
@@ -8,6 +9,7 @@ const roster = byId('roster');
 const seed = byId('seed');
 const response = byId('response');
 const strength = byId('strength');
+const collaborationPull = byId('collaboration-pull');
 const orientation = byId('orientation');
 const paper = byId('paper');
 const grain = byId('grain');
@@ -26,7 +28,7 @@ const choices = {
 const hints = {
   weave: "Look for gaps beside other artists' marks.",
   echo: 'Look for nearby marks that run in a similar direction.',
-  space: "Favour open paper farther from other artists' marks."
+  space: 'Favour quieter paper and slow the build-up of pigment.'
 };
 
 let artistCount = 3;
@@ -97,7 +99,21 @@ function renderRoster() {
     button.setAttribute('aria-pressed', Number(button.dataset.count) === artistCount);
   }
   response.disabled = strength.disabled = artistCount === 1;
+  collaborationPull.disabled = artistCount === 1;
+  byId('turn-balance').hidden = artistCount === 1;
+  updateShares();
   updateResponseHint();
+}
+
+function updateShares() {
+  byId('collaboration-value').value = collaborationPull.value + '%';
+  const bars = turnShares(Number(collaborationPull.value)).map((share, i) => {
+    const tag = document.createElement('span');
+    tag.textContent = 'A' + (i + 1) + ' · ' + (share * 100).toFixed(1) + '%';
+    tag.style.flexGrow = share;
+    return tag;
+  });
+  byId('turn-shares').replaceChildren(...bars);
 }
 
 function updateResponseHint() {
@@ -136,7 +152,7 @@ function updateReadout() {
       : !action.heard ? 'First mark on paper'
       : action.plans.size ? 'Replanned from ' + (influences || 'earlier ink')
       : action.reordered ? 'Chose the next mark from the shared drawing'
-      : (action.entered ? 'Found a new position' : action.changed ? 'Adjusted' : 'Held') + ' after reading ' + action.heard +
+      : (action.changed ? 'Adjusted' : 'Held') + ' after reading ' + action.heard +
         (action.heard === 1 ? ' artist' : ' artists');
     detail.textContent = materials[action.artist.material] + ' · ' + action.group.label + ' · ' + result;
     item.append(swatch, name, detail);
@@ -159,7 +175,7 @@ function reset() {
   state.paintShared = makePainter(prepareCanvas(shared, settings.seed, sheet), settings.seed);
   state.paintBaseline = makePainter(prepareCanvas(baseline, settings.seed, sheet), settings.seed);
   state.run = makeRun(state.study, settings.strength, settings.response);
-  state.baseline = makeRun(state.study, 0, settings.response);
+  state.baseline = makeRun(state.study, settings.strength, settings.response, {equal: true});
   state.turn = 0;
   state.replanned = 0;
   state.read = 0;
@@ -250,13 +266,18 @@ function build() {
   stop();
   try {
     const solo = artistCount === 1;
-    state.settings = {seed: studySeed, response: response.value, strength: solo ? 0 : Number(strength.value)};
+    state.settings = {seed: studySeed, response: response.value, strength: solo ? 0 : Number(strength.value),
+      collaborationPull: Number(collaborationPull.value)};
     const slots = artists.slice(0, artistCount).map(artist => ({...artist, settings: {...artist.settings}}));
-    state.study = createStudy(studySeed, slots, {orientation: orientation.value, paper: paper.value, grain: Number(grain.value)});
+    state.study = createStudy(studySeed, slots,
+      {orientation: orientation.value, paper: paper.value, grain: Number(grain.value)}, state.settings.collaborationPull);
     const {width, height} = state.study.sheet;
     byId('drawing').dataset.format = orientation.value;
     byId('dimensions').textContent = width + ' × ' + height;
-    byId('shared-caption').textContent = solo ? 'Solo study' : 'Responsive';
+    const caption = solo ? 'Solo study' : state.settings.collaborationPull ? 'φ-weighted turns' : 'Equal turns';
+    byId('shared-caption').textContent = caption;
+    byId('shared-turns').textContent = solo ? '' : state.study.primary.counts.join(' / ') + ' turns';
+    byId('equal-turns').textContent = solo ? '' : state.study.equal.counts.join(' / ') + ' turns';
     byId('compare').disabled = solo;
     if (solo) setComparison(false);
     reset();
@@ -318,6 +339,11 @@ for (const input of [orientation, paper, grain]) input.addEventListener('input',
   byId('grain-value').value = grain.value;
   syncHint(true);
 });
+collaborationPull.addEventListener('input', () => {
+  updateShares();
+  syncHint(true);
+});
+collaborationPull.addEventListener('change', build);
 strength.addEventListener('input', () => {
   byId('strength-value').value = strength.value + '%';
   syncHint(true);

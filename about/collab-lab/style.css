@@ -223,3 +223,22 @@ footer p { margin: 0; }
   .board-actions { flex: 1 1 100%; justify-content: space-between; }
   .board-draw { padding-inline: 8px; }
 }
+
+.turn-balance {
+  display: grid; grid-template-columns: minmax(105px, 1.3fr) minmax(100px, 1.3fr) minmax(180px, 1fr);
+  align-items: center; gap: 3px 12px; padding: 8px 13px; border-top: 1px solid var(--line);
+  background: #eee3d5;
+}
+.turn-balance .strength-label { margin: 0; color: var(--ink); }
+.turn-balance .hint { grid-column: 1 / -1; margin: 0; }
+.turn-shares { display: flex; gap: 3px; }
+.turn-shares span { padding: 3px 4px; text-align: center; border-radius: 3px; white-space: nowrap; font: 650 10px/1.3 var(--mono); }
+.turn-shares span:nth-child(1) { background: #dce4ef; color: #224576; }
+.turn-shares span:nth-child(2) { background: #efdfd7; color: #803522; }
+.turn-shares span:nth-child(3) { background: #dde7dc; color: #315a40; }
+figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; }
+
+@media (max-width: 650px) {
+  .turn-balance { grid-template-columns: minmax(140px, 1fr) minmax(65px, 1fr); gap: 5px 8px; padding-inline: 8px; }
+  .turn-shares { grid-column: 1 / -1; }
+}

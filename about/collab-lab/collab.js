@@ -1,4 +1,5 @@
-import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=studio-05';
+import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=studio-06';
+import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt} from './composition.js?v=studio-06';
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 export const systems = [
@@ -26,7 +27,7 @@ export function paletteInks(artist, seed) {
   const signature = systems[(artist.id - 1) % systems.length];
   const {colourCount, saturation, brightness} = artist.settings;
   if (artist.palette === 'signature') {
-    const offsets = [0, 11, -8, 19, -17, 27, -26, 36, -35, 45, -44, 54, -53, 63];
+    const offsets = [0, 7, -7, 14, -14, 21, -21, 28, -28, 35, -35, 42, -42, 49];
     return offsets.slice(0, colourCount).map((shift, index) => {
       const hue = (signature.hue + shift + 360) % 360;
       const light = clamp(brightness + [0, 8, -7][index % 3], 20, 80);
@@ -49,7 +50,6 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const pt = (x, y) => ({x, y});
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const key = ({x, y}) => x.toFixed(4) + ',' + y.toFixed(4);
-const same = (a, b) => distance(a, b) < 0.001;
 const identity = point => point;
 
 function parsePath(d) {
@@ -123,7 +123,7 @@ function recordArtist(artist, seed, sheet, sourceCanvas) {
     group.paths.push({path, commands});
     // Each pen pass is painted. One centreline per mark is enough for scoring.
     if (path.pass === 0) group.traces.push({
-      points: samplePath(commands), width: path.width, mark: path.mark, kind: path.kind
+      points: samplePath(commands), width: path.width, opacity: path.opacity, passes: path.passes, mark: path.mark, kind: path.kind
     });
   }
 
@@ -190,13 +190,14 @@ function indexInk(field, point, angle, radius) {
   }
 }
 
-function indexTrace(field, trace, placement, plan) {
+function indexTrace(field, density, trace, placement, plan, pigmentGain) {
   const points = plannedPoints(trace.points, placement, plan);
   for (let i = 0; i < points.length; i++) {
     const point = points[i];
     const neighbour = points[i + 1] || points[i - 1] || point;
     const angle = Math.atan2(neighbour.y - point.y, neighbour.x - point.x);
     indexInk(field, point, angle, trace.width / 2);
+    density?.stamp(point, trace.width / 2, (1 - (1 - trace.opacity) ** (trace.passes || 1)) * pigmentGain);
   }
 }
 
@@ -274,21 +275,21 @@ function candidates(group, artist, strength, turn) {
   return alternatives;
 }
 
-function judge(group, candidate, others, response, sheet, width) {
-  const {width: w, height: h, cols, rows} = sheet;
+function judge(group, candidate, context, width) {
+  const {fields, response, sheet} = context;
+  const {width: w, height: h, cols, rows, inset} = sheet;
   let sum = 0;
   let peak = 0;
   for (const probe of group.probes) {
     const p = candidate.place(probe.p);
-    const outside = Math.max(0, -p.x, p.x - w, -p.y, p.y - h);
-    const oldOutside = Math.max(0, -probe.p.x, probe.p.x - w, -probe.p.y, probe.p.y - h);
-    sum += Math.max(0, outside - oldOutside) * .024;
+    const outside = Math.max(0, inset - p.x, p.x - w + inset, inset - p.y, p.y - h + inset);
+    sum += outside * .065 + crowdingAt(context, p);
     const x = clamp(Math.floor(p.x / CELL), 0, cols - 1);
     const y = clamp(Math.floor(p.y / CELL), 0, rows - 1);
     const index = x + y * cols;
     let nearest = REACH;
     let heading = 0;
-    for (const other of others) {
+    for (const other of fields) {
       if (other.distances[index] < nearest) {
         nearest = other.distances[index];
         heading = other.angle[index];
@@ -311,38 +312,49 @@ function inkRadius(artist, group) {
   return Math.min(30, width * media[artist.material]);
 }
 
-function entrancePose(group, artist, strength, others, response, sheet) {
-  const home = pt(sheet.width / 2, sheet.height / 2);
-  const gain = strength / 100;
-  const stride = Math.max(1, Math.ceil(artist.groups.length / 20));
-  const preview = {probes: artist.groups.filter((_, i) => i % stride === 0)
-    .map(mark => ({p: mark.center, next: mark.probes[0].p}))};
-  const radius = Math.min(sheet.width, sheet.height) * .25 * gain;
-  const width = inkRadius(artist, group);
-  const score = candidate => judge(group, candidate, others, response, sheet, width) * .52 +
-    judge(preview, candidate, others, response, sheet, width) * .48;
-  let pose = {place: identity, effort: 0};
-  let best = score(pose);
-  for (let i = 0; i < 12; i++) {
-    const angle = (i + artist.id) * GOLD;
-    const effort = i < 6 ? .62 : 1;
-    const dest = pt(home.x + Math.cos(angle) * radius * effort, home.y + Math.sin(angle) * radius * effort);
-    const candidate = {place: transform(home, dest, Math.sin(angle) * .28 * gain, 1 - .21 * gain * effort), effort};
-    const result = score(candidate);
-    if (result < best - .035) {
-      pose = candidate;
-      best = result;
+function anchoredPose(artist, target, sheet) {
+  if (!artist.groups.length) return {place: identity};
+  const centers = artist.groups.map(group => group.center);
+  const origin = pt(
+    centers.reduce((sum, p) => sum + p.x / centers.length, 0),
+    centers.reduce((sum, p) => sum + p.y / centers.length, 0)
+  );
+  let scale = 1;
+  for (const group of artist.groups) {
+    for (const {commands} of group.paths) {
+      for (const {points} of commands) {
+        for (const p of points) {
+          const dx = p.x - origin.x, dy = p.y - origin.y;
+          if (dx < 0) scale = Math.min(scale, (target.x - sheet.inset) / -dx);
+          if (dx > 0) scale = Math.min(scale, (sheet.width - sheet.inset - target.x) / dx);
+          if (dy < 0) scale = Math.min(scale, (target.y - sheet.inset) / -dy);
+          if (dy > 0) scale = Math.min(scale, (sheet.height - sheet.inset - target.y) / dy);
+        }
+      }
     }
   }
-  return pose;
+  return {place: transform(origin, target, 0, scale)};
 }
 
-export function createStudy(seed, slots, paperSettings) {
+function limitPigment(group, placement, context) {
+  if (!context.density) return 1;
+  const loads = group.probes.map(probe => context.density.at(placement.place(probe.p)));
+  const average = loads.reduce((sum, value) => sum + value, 0) / loads.length;
+  const pressure = average * .7 + Math.max(...loads) * .3;
+  return clamp(1 - Math.max(0, pressure - (context.mode === 'space' ? 1.15 : 1.7)) * .22, .46, 1);
+}
+
+export function createStudy(seed, slots, paperSettings, collaborationPull = 100) {
   if (slots.length !== 1 && slots.length !== 3) throw new Error('Choose one or three artists.');
   const portrait = paperSettings.orientation === 'portrait';
   const width = portrait ? 1000 : 1400;
   const height = portrait ? 1400 : 1000;
-  const sheet = {...paperSettings, width, height, cols: Math.ceil(width / CELL), rows: Math.ceil(height / CELL)};
+  const trio = slots.length === 3;
+  const sheet = {...paperSettings, width, height, cols: Math.ceil(width / CELL), rows: Math.ceil(height / CELL),
+    border: trio ? 16 : 0, inset: trio ? Math.min(width, height) * .054 : 0};
+  const anchors = trio ? phiAnchors(sheet, window.AlgoArt.hash(seed + '|phi-anchors') >>> 0) : [];
+  if (trio) sheet.constrain = point => pt(clamp(point.x, sheet.inset, width - sheet.inset),
+    clamp(point.y, sheet.inset, height - sheet.inset));
   const source = document.createElement('canvas');
   const roster = slots.map((slot, index) => {
     const system = systems.find(candidate => candidate.id === slot.system);
@@ -351,50 +363,42 @@ export function createStudy(seed, slots, paperSettings) {
     // when two slots choose the same system and material.
     return recordArtist(artist, seed, sheet, source);
   });
-  const schedule = [];
-  const offset = window.AlgoArt.hash(seed + '|collab-order') % roster.length;
-  const rounds = Math.max(...roster.map(artist => artist.groups.length));
-  for (let round = 0; round < rounds; round++) {
-    // Rotate the lead so every artist gets opportunities to set the terms.
-    for (let seat = 0; seat < roster.length; seat++) {
-      const artist = roster[(offset + round + seat) % roster.length];
-      if (artist.groups[round]) schedule.push({id: artist.id, group: artist.groups[round]});
-    }
-  }
-  return {roster, schedule, sheet};
+  const budget = turnBudget(roster);
+  const equal = makeSchedule(roster, budget, 0);
+  const primary = collaborationPull === 0 ? equal : makeSchedule(roster, budget, collaborationPull);
+  return {roster, schedule: primary.turns, primary, equal, sheet, anchors};
 }
 
-export function makeRun(study, strength, mode) {
-  const artists = new Map(study.roster.map(artist => [artist.id, {
-    ...artist, field: field(study.sheet, artist.id), pending: artist.groups.slice(),
-    anchors: new Map(), committed: 0, started: false, pose: {place: identity, effort: 0}
+export function makeRun(study, strength, mode, {equal = false} = {}) {
+  const programme = equal ? study.equal : study.primary;
+  const density = study.anchors.length && strength > 0 ? inkDensity(study.sheet, CELL) : null;
+  const artists = new Map(study.roster.map((artist, i) => [artist.id, {
+    ...artist, field: field(study.sheet, artist.id), pending: artist.groups.slice(0, programme.counts[i]),
+    anchors: new Map(), committed: 0,
+    pose: study.anchors[i] ? anchoredPose(artist, study.anchors[i], study.sheet) : {place: identity}
   }]));
+
   let turn = 0;
   return {
     next(deposit) {
-      const entry = study.schedule[turn++];
+      const entry = programme.turns[turn++];
       if (!entry) return null;
       const artist = artists.get(entry.id);
       const others = [...artists.values()].filter(other => other !== artist && other.committed > 0);
       const fields = others.map(other => other.field);
       const response = responses[mode];
-      const context = {fields, response, sheet: study.sheet, mode, gain: strength / 100};
+      const context = {fields, response, sheet: study.sheet, mode, gain: strength / 100, density};
       const selection = strength > 0 ? nextGroup(artist, context, p => artist.anchors.has(key(p))) : {group: entry.group, prioritized: false};
       const {group, prioritized} = selection;
-      let placement = {place: identity, effort: 0};
-      let entered = false;
+      let placement = {place: artist.pose.place, effort: 0};
       if (strength > 0) {
-        if (!artist.started && fields.length) {
-          artist.pose = entrancePose(group, artist, strength, fields, response, study.sheet);
-          entered = artist.pose.effort > 0;
-        }
         const choices = candidates(group, artist, strength, turn);
         placement = choices[0];
-        if (fields.length) {
+        if (fields.length || density) {
           const width = inkRadius(artist, group);
-          let best = judge(group, placement, fields, response, study.sheet, width);
+          let best = judge(group, placement, context, width);
           for (const candidate of choices.slice(1)) {
-            const score = judge(group, candidate, fields, response, study.sheet, width);
+            const score = judge(group, candidate, context, width);
             if (score < best - .005) {
               placement = candidate;
               best = score;
@@ -402,7 +406,10 @@ export function makeRun(study, strength, mode) {
           }
         }
       }
-      artist.started = true;
+      if (study.sheet.constrain) {
+        const place = placement.place;
+        placement = {...placement, constrain: study.sheet.constrain, place: point => study.sheet.constrain(place(point))};
+      }
       for (const anchor of group.links || []) {
         if (!artist.anchors.has(key(anchor))) artist.anchors.set(key(anchor), placement.place(anchor));
       }
@@ -411,17 +418,21 @@ export function makeRun(study, strength, mode) {
         .map(id => artists.get(id).number);
       const action = {
         artist, group, placement, plans, contacts, heard: strength > 0 ? others.length : 0,
-        changed: entered || placement.effort > 0 || plans.size > 0 || prioritized,
-        entered, reordered: prioritized
+        changed: placement.effort > 0 || plans.size > 0 || prioritized,
+        reordered: prioritized, pigmentGain: limitPigment(group, placement, context), border: study.sheet.border
       };
       const footprint = deposit?.(action, strength > 0);
       if (strength > 0) {
         if (footprint) {
-          for (const {point, angle, radius} of footprint) indexInk(artist.field, point, angle, radius);
+          for (const {point, angle, radius, opacity = 1} of footprint) {
+            indexInk(artist.field, point, angle, radius);
+            density?.stamp(point, radius, opacity);
+          }
         } else {
-          for (const trace of group.traces) indexTrace(artist.field, trace, placement, plans.get(trace.mark));
+          for (const trace of group.traces) indexTrace(artist.field, density, trace, placement, plans.get(trace.mark), action.pigmentGain);
         }
       }
+      density?.commit();
       if (!footprint || footprint.length) artist.committed++;
       return action;
     }
@@ -449,7 +460,7 @@ export function paint(ctx, action) {
   ctx.lineJoin = 'round';
   for (const {path, commands} of group.paths) {
     ctx.strokeStyle = artistInk(artist, path.mark);
-    ctx.globalAlpha = path.opacity;
+    ctx.globalAlpha = path.opacity * action.pigmentGain;
     ctx.lineWidth = path.width;
     ctx.lineCap = path.lineCap;
     ctx.globalCompositeOperation = path.blend;

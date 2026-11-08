@@ -1,3 +1,4 @@
+import {crowdingAt} from './composition.js?v=studio-06';
 export const CELL = 16;
 export const REACH = 144;
 const GOLD = Math.PI * (3 - Math.sqrt(5));
@@ -30,7 +31,7 @@ function costAt(point, heading, context, width) {
   const clearance = ink.distance - width;
   const overlap = Math.max(0, 13 - clearance) / 14;
   const alignment = Math.abs(Math.cos(ink.angle - heading)) * Math.max(0, 1 - ink.distance / 88);
-  return Math.abs(clearance - response.gap) / REACH + overlap * response.overlap - alignment * response.alignment;
+  return Math.abs(clearance - response.gap) / REACH + overlap * response.overlap - alignment * response.alignment + crowdingAt(context, point);
 }
 
 export function nextGroup(artist, context, anchors) {
@@ -67,7 +68,8 @@ function arcLength(points) {
 }
 
 function inside(point, sheet) {
-  return point.x >= 3 && point.y >= 3 && point.x <= sheet.width - 3 && point.y <= sheet.height - 3;
+  const edge = sheet.inset || 3;
+  return point.x >= edge && point.y >= edge && point.x <= sheet.width - edge && point.y <= sheet.height - edge;
 }
 
 function alongSegment(a, b, fraction) {
@@ -202,7 +204,7 @@ export function planStrokes(group, artist, placement, context) {
 export function plannedPoints(points, placement, plan) {
   const world = points.map(placement.place);
   if (!plan || world.length < 2) return world;
-  if (plan.move) return world.map(plan.move);
+  if (plan.move) return world.map(point => (placement.constrain || (p => p))(plan.move(point)));
   const offsets = plan.offsets;
   let j = 1;
   return world.map((point, i) => {
@@ -212,6 +214,7 @@ export function plannedPoints(points, placement, plan) {
     const t = clamp((fraction - before.fraction) / (after.fraction - before.fraction), 0, 1);
     const eased = t * t * (3 - 2 * t);
     const shift = alongSegment(before, after, eased);
-    return {x: point.x + shift.x, y: point.y + shift.y};
+    const moved = {x: point.x + shift.x, y: point.y + shift.y};
+    return placement.constrain ? placement.constrain(moved) : moved;
   });
 }
