@@ -67,8 +67,8 @@ function groupPiece(source,trace,entries,number,parts,sampler){
 
 // Preserve original cell sequence but let a study develop across all cells
 // instead of using its first 55 turns on a single oversized rectangle.
-// A 56-gesture target permits ≥55 and usually 89 Fibonacci turns even when
-// Recursive Divisions initially recorded only 6–8 whole-cell groups.
+// A 56-gesture target permits 55 Fibonacci turns even for sparse source
+// compositions. Smaller strokes must still be split without creating ink.
 export function expandRecursiveTurns(groups,sampler,target=56){
   if(groups.length>=target||!groups.length)return groups;
   const desired=Math.max(1,Math.ceil(target/groups.length));
@@ -82,10 +82,13 @@ export function expandRecursiveTurns(groups,sampler,target=56){
       let chosen=null,score=0;
       for(const trace of sources){
         const have=portions.get(trace.mark);
-        // A physical gesture needs some visible length. Existing contours
-        // supply the additional turns, not repeated identical dark strokes.
+        // Split the longest remaining piece. A fixed 8px minimum used to
+        // suppress subdivision altogether at low Elements settings, causing
+        // the whole study to collapse from 55 to 8 turns. Even a short source
+        // segment can be drawn progressively; it is NEVER repeated or
+        // geometrically extended. Original stroke coverage stays unchanged.
         const available=routeLength(trace.points)/(have+1);
-        if(available>score&&available>=8){chosen=trace;score=available}
+        if(available>score&&available>EPS){chosen=trace;score=available}
       }
       if(!chosen)break;
       portions.set(chosen.mark,portions.get(chosen.mark)+1);
