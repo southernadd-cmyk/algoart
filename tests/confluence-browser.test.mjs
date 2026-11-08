@@ -209,7 +209,10 @@ try{
       return original.apply(this,args);
     };
   });
-  await page.locator('#inspector-close').click();
+  // The submit handler closes the drawer. Only click Close when it is
+  // actually open; Playwright must not wait on a hidden control.
+  if((await page.locator('#inspector-toggle').getAttribute('aria-expanded'))==='true')
+    await page.locator('#inspector-close').click();
   await page.locator('#step').click();
   await page.waitForFunction(()=>document.querySelector('#counter')?.textContent?.trim()==='1 / 5 turns',
     undefined,{timeout:20000});
