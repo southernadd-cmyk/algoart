@@ -87,6 +87,11 @@ test('Rotate lead is an active control and share links retain the selected hand'
  const html=read('../confluence/index.html');
  const share=read('../confluence/share-study.js');
  assert.match(html,/id="rotate-lead"/);
+ assert.match(html,/<span id="counter"[^>]*>[^<]*<\/span>\s*<button type="button" id="rotate-lead-toolbar"/);
+ assert.match(html,/id="toolbar-lead-label"/);
+ assert.match(ui,/byId\('rotate-lead-toolbar'\)\.addEventListener\('click',rotateLead\)/);
+ assert.match(ui,/byId\('rotate-lead'\)\.addEventListener\('click',rotateLead\)/);
+ assert.match(ui,/byId\('toolbar-lead-label'\)\.textContent='A'\+\(lead\+1\)/);
  assert.match(html,/id="lead-index"/);
  assert.match(ui,/byId\('rotate-lead'\)\.addEventListener\('click'/);
  assert.match(ui,/leadInput\.value=String\(\(Number\(leadInput\.value\)\+1\)%3\)/);
