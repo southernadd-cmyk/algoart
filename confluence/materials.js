@@ -127,7 +127,7 @@ export function makePainter(output, seed, sheet) {
   // Keep all of each tissue artist's *reactively placed* marks together.
   // The released V7 material needs a whole sheet and multiple related marks,
   // not dozens of independent little canvases with a newly seeded wash.
-  const tissueArtists = new Map();
+  const tissueMarks = []; // chronological, responsive positions from every tissue artist
   let tissueFinalized = false;
 
   function graphitePreview(traces,opacity) {
@@ -189,14 +189,12 @@ export function makePainter(output, seed, sheet) {
 
     let traces = group.traces.map(trace => ({...trace, points: plannedPoints(trace.points, placement, plans.get(trace.mark))}));
     if (material === 'tissue') {
-      let entry=tissueArtists.get(artist.id);
-      if(!entry){
-        entry={artist,traces:[],gain:0,marks:0};
-        tissueArtists.set(artist.id,entry);
+      // Preserve exactly which artist supplied each stroke and its original
+      // palette hue. A single V7 material surface can then combine the marks
+      // of all three artists without reintroducing per-artist cloud fields.
+      for(const trace of traces){
+        tissueMarks.push({...trace,ink:artistInk(artist,trace.mark)});
       }
-      entry.traces.push(...traces);
-      entry.gain+=action.pigmentGain;
-      entry.marks++;
       graphitePreview(traces,action.pigmentGain);
       return observe ? tissueFootprint(traces,action.pigmentGain) : undefined;
     }
@@ -279,20 +277,22 @@ export function makePainter(output, seed, sheet) {
   deposit.finalize = function finalizeTissue() {
     if(tissueFinalized)return;
     tissueFinalized=true;
-    for(const {artist,traces,gain,marks} of tissueArtists.values()){
-      if(!traces.length)continue;
-      const full=layer(true);
-      size(full,sheet.width,sheet.height);
-      const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
-      renderNativeDeposit(full,'tissue',traces,artist,bounds,sheet.paper,
-        [seed,artist.id,artist.system,'v7-whole-sheet'].join('|'),sourceRGB,
-        sheet);
-      output.save();
-      output.globalCompositeOperation='source-over';
-      output.globalAlpha=materialOpacity(artist.settings.opacity,gain/marks);
-      output.drawImage(full.canvas,0,0);
-      output.restore();
-    }
+    if(!tissueMarks.length)return;
+    const full=layer(true);
+    size(full,sheet.width,sheet.height);
+    const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
+    // One continuous material field for the entire shared sheet.
+    // Each tissue trace carries the chosen ink of its original artist, so
+    // combining them does not replace individual palettes with a new one.
+    const representative={settings:{colourCount:Math.min(24,
+      new Set(tissueMarks.map(trace=>trace.ink)).size)}};
+    renderNativeDeposit(full,'tissue',tissueMarks,representative,bounds,sheet.paper,
+      [seed,'all-tissue-voices','v7-whole-sheet'].join('|'),sourceRGB,sheet);
+    output.save();
+    output.globalCompositeOperation='source-over';
+    output.globalAlpha=1;
+    output.drawImage(full.canvas,0,0);
+    output.restore();
   };
   return deposit;
 }
