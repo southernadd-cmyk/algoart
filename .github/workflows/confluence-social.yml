@@ -1,0 +1,189 @@
+name: Post Confluence alongside normal social slots
+
+on:
+  workflow_call:
+    inputs:
+      date:
+        type: string
+        required: true
+      slot:
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    if: ${{ inputs.slot == '0' || inputs.slot == '2' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BLUESKY_HANDLE: artalgorithm.bsky.social
+      BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+      SOCIAL_DATE: ${{ inputs.date }}
+      SOCIAL_SLOT: ${{ inputs.slot }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Select exact archived Confluence study
+        id: select
+        run: node automation/select-confluence-social.mjs
+
+      - name: Find monthly media release and completion markers
+        id: markers
+        shell: bash
+        run: |
+          RELEASE_TAG="algoart-social-$(date -u +%Y-%m)"
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --title "PROPORTION PIECE social media" --notes "Media hosting for scheduled PROPORTION PIECE publications."
+          fi
+          ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          for PLATFORM in instagram threads bluesky pinterest; do
+            MARKER="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-$PLATFORM.txt"
+            if printf '%s\n' "$ASSETS" | grep -Fxq "$MARKER"; then
+              DONE=true
+            else
+              DONE=false
+            fi
+            printf '%s_done=%s\n' "$PLATFORM" "$DONE" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Install image preparation runtime
+        run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
+
+      - name: Prepare noncropped Meta and compressed Bluesky JPEGs
+        run: python3 automation/prepare-confluence-media.py "${{ steps.select.outputs.image_path }}" "$SOCIAL_DATE" "${{ steps.select.outputs.orientation }}"
+
+      - name: Host verified artwork on existing monthly release
+        id: host
+        shell: bash
+        run: |
+          PREFIX="pp-confluence-$SOCIAL_DATE-${{ steps.select.outputs.orientation }}"
+          gh release upload "$RELEASE_TAG" "/tmp/$PREFIX-original.jpg" "/tmp/$PREFIX-meta.jpg" "/tmp/$PREFIX-bluesky.jpg" --clobber
+          BASE="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG"
+          echo "original=$BASE/$PREFIX-original.jpg" >> "$GITHUB_OUTPUT"
+          echo "meta=$BASE/$PREFIX-meta.jpg" >> "$GITHUB_OUTPUT"
+          echo "bluesky=$BASE/$PREFIX-bluesky.jpg" >> "$GITHUB_OUTPUT"
+          for NAME in original meta bluesky; do
+            curl -fL --retry 4 --retry-delay 2 -o "/tmp/confluence-check-$NAME.jpg" "$BASE/$PREFIX-$NAME.jpg"
+            test -s "/tmp/confluence-check-$NAME.jpg"
+          done
+
+      - name: Stagger within normal social window
+        if: ${{ steps.markers.outputs.instagram_done != 'true' || steps.markers.outputs.threads_done != 'true' || (env.BLUESKY_APP_PASSWORD != '' && steps.markers.outputs.bluesky_done != 'true') || (vars.PINTEREST_ENABLED == 'true' && steps.markers.outputs.pinterest_done != 'true') }}
+        run: node automation/social-stagger.mjs
+
+      - name: Publish Confluence to Instagram
+        id: instagram
+        if: ${{ steps.markers.outputs.instagram_done != 'true' }}
+        continue-on-error: true
+        env:
+          LIVE_PUBLISHING: 'true'
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          MEDIA_URL: ${{ steps.host.outputs.meta }}
+          CAPTION_B64: ${{ steps.select.outputs.caption_b64 }}
+          ALT_TEXT_B64: ${{ steps.select.outputs.alt_text_b64 }}
+        run: |
+          export CAPTION="$(printf %s "$CAPTION_B64" | base64 --decode)"
+          export ALT_TEXT="$(printf %s "$ALT_TEXT_B64" | base64 --decode)"
+          node automation/publish-instagram.mjs
+
+      - name: Record Confluence Instagram completion
+        if: ${{ steps.instagram.outcome == 'success' && steps.markers.outputs.instagram_done != 'true' }}
+        run: |
+          FILE="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-instagram.txt"
+          printf 'Published Confluence %s on Instagram\n' "${{ steps.select.outputs.study_id }}" > "/tmp/$FILE"
+          gh release upload "$RELEASE_TAG" "/tmp/$FILE" --clobber
+
+      - name: Publish Confluence to Threads
+        id: threads
+        if: ${{ always() && steps.host.outcome == 'success' && steps.markers.outputs.threads_done != 'true' }}
+        continue-on-error: true
+        env:
+          LIVE_PUBLISHING: 'true'
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          MEDIA_URL: ${{ steps.host.outputs.meta }}
+          CAPTION_B64: ${{ steps.select.outputs.caption_b64 }}
+          ALT_TEXT_B64: ${{ steps.select.outputs.alt_text_b64 }}
+        run: |
+          export CAPTION="$(printf %s "$CAPTION_B64" | base64 --decode)"
+          export ALT_TEXT="$(printf %s "$ALT_TEXT_B64" | base64 --decode)"
+          node automation/publish-threads.mjs
+
+      - name: Record Confluence Threads completion
+        if: ${{ steps.threads.outcome == 'success' && steps.markers.outputs.threads_done != 'true' }}
+        run: |
+          FILE="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-threads.txt"
+          printf 'Published Confluence %s on Threads\n' "${{ steps.select.outputs.study_id }}" > "/tmp/$FILE"
+          gh release upload "$RELEASE_TAG" "/tmp/$FILE" --clobber
+
+      - name: Publish Confluence to Bluesky
+        id: bluesky
+        if: ${{ always() && steps.host.outcome == 'success' && env.BLUESKY_APP_PASSWORD != '' && steps.markers.outputs.bluesky_done != 'true' }}
+        continue-on-error: true
+        env:
+          MEDIA_URL: ${{ steps.host.outputs.bluesky }}
+          CAPTION_B64: ${{ steps.select.outputs.caption_b64 }}
+          ALT_TEXT_B64: ${{ steps.select.outputs.alt_text_b64 }}
+        run: |
+          export CAPTION="$(printf %s "$CAPTION_B64" | base64 --decode)"
+          export ALT_TEXT="$(printf %s "$ALT_TEXT_B64" | base64 --decode)"
+          node automation/publish-bluesky.mjs
+
+      - name: Record Confluence Bluesky completion
+        if: ${{ steps.bluesky.outcome == 'success' && steps.markers.outputs.bluesky_done != 'true' }}
+        run: |
+          FILE="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-bluesky.txt"
+          printf 'Published Confluence %s on Bluesky\n' "${{ steps.select.outputs.study_id }}" > "/tmp/$FILE"
+          gh release upload "$RELEASE_TAG" "/tmp/$FILE" --clobber
+
+      - name: Publish Confluence to Pinterest when enabled
+        id: pinterest
+        if: ${{ always() && steps.host.outcome == 'success' && vars.PINTEREST_ENABLED == 'true' && steps.markers.outputs.pinterest_done != 'true' }}
+        continue-on-error: true
+        env:
+          LIVE_PUBLISHING: 'true'
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+          MEDIA_URL: ${{ steps.host.outputs.original }}
+          SHARE_URL: ${{ steps.select.outputs.share_url }}
+          TITLE_B64: ${{ steps.select.outputs.pinterest_title_b64 }}
+          DESC_B64: ${{ steps.select.outputs.pinterest_description_b64 }}
+          ALT_TEXT_B64: ${{ steps.select.outputs.alt_text_b64 }}
+        run: |
+          export PINTEREST_TITLE="$(printf %s "$TITLE_B64" | base64 --decode)"
+          export PINTEREST_DESCRIPTION="$(printf %s "$DESC_B64" | base64 --decode)"
+          export ALT_TEXT="$(printf %s "$ALT_TEXT_B64" | base64 --decode)"
+          node automation/publish-pinterest.mjs
+
+      - name: Record Confluence Pinterest completion
+        if: ${{ steps.pinterest.outcome == 'success' && steps.markers.outputs.pinterest_done != 'true' }}
+        run: |
+          FILE="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-pinterest.txt"
+          printf 'Published Confluence %s on Pinterest\n' "${{ steps.select.outputs.study_id }}" > "/tmp/$FILE"
+          gh release upload "$RELEASE_TAG" "/tmp/$FILE" --clobber
+
+      - name: Verify every configured destination was published or previously completed
+        if: always()
+        shell: bash
+        run: |
+          MISSING=0
+          for PLATFORM in instagram threads bluesky pinterest; do
+            if [ "$PLATFORM" = 'bluesky' ] && [ -z "$BLUESKY_APP_PASSWORD" ]; then continue; fi
+            if [ "$PLATFORM" = 'pinterest' ] && [ "${{ vars.PINTEREST_ENABLED }}" != 'true' ]; then continue; fi
+            MARKER="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-$PLATFORM.txt"
+            if ! gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$MARKER"; then
+              echo "::error::Confluence $PLATFORM post missing for $SOCIAL_DATE"
+              MISSING=1
+            fi
+          done
+          exit "$MISSING"
