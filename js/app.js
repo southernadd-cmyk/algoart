@@ -318,11 +318,22 @@ function updateURL(settings){
   var state=url.slice(url.indexOf('?')+1).split('#')[0];
   var artworkId=A.hash(state).toString(16).toUpperCase().padStart(8,'0');
   document.title=series.title+' · '+settings.seed+' · '+artworkId+' — PROPORTION PIECE';
+  // Hand off the complete current *rendered* settings, not merely its
+  // visible seed. The Confluence importer maps these to Artist 1; the two
+  // other procedural artists remain independently configurable.
+  var params=url.slice(url.indexOf('?')).split('#')[0];
   var watch=$('watchDrawing');
   if(watch){
     var replay=new URL('about/step-by-step/',location.href);
-    replay.search=url.slice(url.indexOf('?')).split('#')[0];
+    replay.search=params;
     watch.href=replay.href;
+  }
+  var confluence=$('exploreConfluence');
+  if(confluence){
+    var shared=new URL('confluence/',location.href);
+    shared.search=params;
+    shared.hash='';
+    confluence.href=shared.href;
   }
   try{
     history.replaceState(null,'',url);
