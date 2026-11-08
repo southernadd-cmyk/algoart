@@ -175,6 +175,27 @@ try{
     assert(crop.innerCount>0,material+' lost its native pigment while feathering: '+JSON.stringify(crop));
     console.log('native crop '+material+' '+JSON.stringify(crop));
   }
+  // All three tissue artists must share ONE V7 atmosphere per canvas.
+  // Two calls per canvas (reference + actual) and two canvases (shared
+  // and equal-turn comparison) means four, regardless of artist count.
+  await page.locator('#inspector-toggle').click();
+  for (const tab of ['artist-1','artist-2','artist-3']){
+    await page.locator('#tab-'+tab).click();
+    await page.locator('#roster [data-artist="'+tab.slice(-1)+'"] select[data-field="material"]').selectOption('tissue');
+  }
+  await page.evaluate(()=>{window.__materialCalls.tissue=0;});
+  await page.locator('#study-form .draw-actions button[type="submit"]').click();
+  await page.waitForFunction(()=>document.querySelector('#counter')?.textContent?.trim()==='5 / 5 turns',
+    undefined,{timeout:90000});
+  const sharedSurface=await page.evaluate(()=>({
+    calls:window.__materialCalls.tissue,
+    palette:window.AlgoArt.lastOilMaterialStats?.inkColours,
+    graphite:window.AlgoArt.lastOilMaterialStats?.graphitePaths
+  }));
+  assert.equal(sharedSurface.calls,4,'Three tissue artists should generate only one unified material surface per canvas: '+JSON.stringify(sharedSurface));
+  assert(sharedSurface.palette?.length>=3,'Tissue layer lost distinct original artist colours: '+JSON.stringify(sharedSurface));
+  assert(sharedSurface.graphite>0,'Tissue unified layer lost graphite: '+JSON.stringify(sharedSurface));
+  console.log('unified tissue '+JSON.stringify(sharedSurface));
   assert.deepEqual(errors,[],'Confluence material JavaScript errors: '+errors.join('; '));
   console.log('Confluence five-material browser smoke passed');
 }finally{

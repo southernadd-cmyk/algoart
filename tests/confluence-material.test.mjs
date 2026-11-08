@@ -55,8 +55,8 @@ test('Tissue accumulates responsive groups and renders just once per full-sheet 
  const ui=read('../confluence/ui.js');
  const lab=read('../confluence/engine/materials/oil-material.js');
  const native=read('../confluence/native-material.js');
- assert.match(renderer,/const tissueArtists = new Map\(\)/);
- assert.match(renderer,/entry\.traces\.push\(\.\.\.traces\)/);
+ assert.match(renderer,/const tissueMarks = \[\]/);
+ assert.match(renderer,/tissueMarks\.push\(\{\.\.\.trace,ink:artistInk/);
  assert.match(renderer,/const bounds=\{x:0,y:0,w:sheet\.width,h:sheet\.height\}/);
  assert.match(renderer,/deposit\.finalize = function finalizeTissue/);
  assert.match(ui,/state\.paintShared\.finalize\?\.\(\)/);
@@ -65,4 +65,14 @@ test('Tissue accumulates responsive groups and renders just once per full-sheet 
  assert.match(native,/A\.confluenceTissueGraphite=true/);
  assert.doesNotMatch(read('../js/oil-material.js'),/confluenceTissueGraphite/,
     'The main solo renderer must remain untouched');
+});
+
+test('One tissue surface preserves all artists palettes without duplicating atmosphere',()=>{
+ const renderer=read('../confluence/materials.js');
+ const native=read('../confluence/native-material.js');
+ assert.match(renderer,/tissueMarks\.map\(trace=>trace\.ink\)/);
+ assert.match(renderer,/all-tissue-voices/);
+ assert.match(native,/t\.ink \|\| artist\.inks/);
+ assert.doesNotMatch(renderer,/tissueArtists = new Map/);
+ assert.doesNotMatch(renderer,/for\(const \{artist,traces,gain,marks\} of tissueArtists/);
 });

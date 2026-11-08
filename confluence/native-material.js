@@ -26,7 +26,9 @@ function makeChains(traces,area,artist,inkRGB){
   for(const [i,t] of traces.entries()){
     const points=t.points.map(p=>({x:p.x-area.x,y:p.y-area.y}));
     if(points.length<2)continue;
-    const rgb=inkRGB(artist.inks[(t.mark-1)%artist.inks.length]);
+    const originalInk=t.ink || artist.inks?.[(t.mark-1)%artist.inks.length];
+    if(!originalInk)continue;
+    const rgb=inkRGB(originalInk);
     const stroke=rgbString(rgb);
     paths.push({stroke,width:t.width});
     const length=points.slice(1).reduce((total,p,j)=>total+distance(p,points[j]),0);
