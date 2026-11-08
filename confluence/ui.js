@@ -115,6 +115,32 @@ function updateShares() {
   byId('turn-shares').replaceChildren(...bars);
 }
 
+// Make each count traceable to a particular hand. The colour is a sample
+// of that artist's actual seeded palette, while the short material label and
+// A1/A2/A3 identifiers remain unambiguous even with multicolour palettes.
+function renderTurnLegend(id,counts,roster){
+  const materialShort={marker:'Marker',tissue:'Tissue',
+    watercolour:'Watercolour',oil:'Oil',action:'Action'};
+  const chips=counts.map((count,i)=>{
+    const artist=roster[i],chip=document.createElement('span');
+    const system=systems.find(item=>item.id===artist.system)?.name||artist.system;
+    chip.className='turn-artist';
+    chip.title='Artist '+(i+1)+' · '+system+' · '+materials[artist.material]+' · '+count+' turns';
+    chip.setAttribute('aria-label',chip.title);
+    const sample=document.createElement('span');
+    sample.className='turn-artist-ink';
+    sample.style.backgroundColor=artist.inks?.[0]||artist.ink;
+    sample.setAttribute('aria-hidden','true');
+    const name=document.createElement('span');
+    name.textContent='A'+(i+1)+' '+(materialShort[artist.material]||artist.material);
+    const amount=document.createElement('strong');
+    amount.textContent=String(count);
+    chip.append(sample,name,amount);
+    return chip;
+  });
+  byId(id).replaceChildren(...chips);
+}
+
 function updateReadout() {
   const total = state.study?.schedule.length || 0;
   const progress = total ? Math.floor(state.turn / total * 100) : 0;
@@ -296,8 +322,8 @@ function build() {
     // Delaying to a microtask lets the default 100%-wide figure flash.
     fitCanvas();
     byId('shared-caption').textContent = state.settings.collaborationPull ? 'φ-weighted turns' : 'Equal turns';
-    byId('shared-turns').textContent = state.study.primary.counts.join(' / ') + ' turns';
-    byId('equal-turns').textContent = state.study.equal.counts.join(' / ') + ' turns';
+    renderTurnLegend('shared-turns',state.study.primary.counts,state.study.roster);
+    renderTurnLegend('equal-turns',state.study.equal.counts,state.study.roster);
     reset();
     finish();
     syncHint(false);
