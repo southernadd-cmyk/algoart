@@ -36,6 +36,7 @@ figcaption{display:flex;justify-content:center;gap:15px;flex-wrap:wrap;margin:9p
 .turn-artist strong{font-weight:600;color:var(--text,#39342c);font-variant-numeric:tabular-nums}
 .turn-artist-ink{display:inline-block;width:8px;height:8px;flex:0 0 8px;border:1px solid rgba(40,35,29,.16)}
 #shared-turns,#equal-turns{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;min-width:0}
+.study-seed{font:10px/1.2 var(--mono);white-space:nowrap;opacity:.8;font-variant-numeric:tabular-nums}
 .workbar{order:1;display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;margin:16px auto 0;width:min(100%,760px);padding:0 0 6px;border-bottom:1px solid var(--line)}
 .canvas-heading{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .canvas-heading h2{margin:0;font:normal 15px/1.1 var(--sans)}
