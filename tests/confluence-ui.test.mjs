@@ -104,7 +104,7 @@ test('Rotate lead is an active control and share links retain the selected hand'
 import {importLeadFromURL} from '../confluence/import-lead.js';
 import {defaultSettings} from '../confluence/artist-controls.js';
 
-test('Confluence remains in public navigation and tested solo-editor handoff is available',()=>{
+test('Confluence remains in public navigation while the solo-editor handoff is under visual investigation',()=>{
  const destinations=[
   ['../index.html','href="confluence/"'],
   ['../gallery/index.html','href="../confluence/"'],
@@ -119,8 +119,7 @@ test('Confluence remains in public navigation and tested solo-editor handoff is 
      'Header must contain exactly four nav destinations: '+path);
  }
  const root=read('../index.html'),app=read('../js/app.js');
- assert.match(root,/id="exploreConfluence"/);
- assert.match(root,/Explore in Confluence/);
+ assert.doesNotMatch(root,/id="exploreConfluence"|Explore in Confluence/);
  assert.match(app,/if\(confluence\)/,
    'Dormant optional link handling must not break the solo editor');
  assert.match(app,/var confluence=\$\('exploreConfluence'\)/);
