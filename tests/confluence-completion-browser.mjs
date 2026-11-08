@@ -183,7 +183,9 @@ try{
     document.querySelector('#lead-index').value==='1' &&
     document.querySelector('#counter')?.textContent.trim()==='5 / 5 turns');
   await page.context().grantPermissions(['clipboard-read','clipboard-write']);
-  await page.locator('#share-open').click();
+  // The Parameters drawer is already open on Shared; switch directly
+  // to Export instead of clicking the covered page-level Share shortcut.
+  await page.locator('#tab-export').click();
   await page.locator('#copy-study-link').click();
   const url=await page.evaluate(()=>navigator.clipboard.readText());
   const link=new URL(url),token=link.searchParams.get('s');
