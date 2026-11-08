@@ -71,7 +71,7 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <script src="../../js/random.js"></script><script src="../../js/phi.js"></script><script src="../../js/palettes.js"></script><script src="../../js/marker.js"></script><script src="../../js/phi-sheet-fit.js"></script><script src="../../js/generator.js"></script>
 <script src="../../js/settings-url.js?v=1"></script>
 <script src="../../js/oil-surface.js"></script>
-<script src="../../js/oil-material.js?v=walkthrough-stages1"></script>
+<script src="../../js/oil-material.js?v=20261108-tissue-v8-release"></script>
 <script src="../../js/oil-render.js"></script>
 <script src="../../js/watercolour-v2r.js"></script>
 <script src="../../js/watercolour-v2s.js?v=walkthrough-stages1"></script>
@@ -85,6 +85,7 @@ Golden angle = π(3 − √5) = 2.399963 radians ≈ 137.508°</div><details cla
 <script src="../../js/oil-paint-v3.js"></script>
 <script src="../../js/cpu-canvas.js"></script>
 <script src="../../js/cpu-material-versions.js"></script>
+<script src="../../js/tissue-v8-layered.js?v=20261108-tissue-v8-release"></script>
 <script src="../../js/oil-pigment.js?v=20261025-oil-v5-release"></script>
 <script src="../../js/oil-paint-v5.js?v=20261025-oil-v5-release"></script>
 <script src="../../js/oil-paint-v6.js?v=20261025-oil-v6-release"></script>
@@ -116,14 +117,14 @@ const capturedMaterial=()=>['tissue','watercolour','oil'].includes(selectedMater
 const actionLayerCount=5;
 const selectedMaterial=()=> $('replayMaterial').value;
 const isAction=()=>selectedMaterial()==='action';
-const materialFromURL=()=>{const m=incoming.get('material')||'';return m.startsWith('action')?'action':m.startsWith('oil')?'oil':m.startsWith('watercolour')?'watercolour':incoming.has('tissue')||incoming.has('watercolor')||incoming.has('oil')?'tissue':'marker'};
+const materialFromURL=()=>{const m=incoming.get('material')||'';return m.startsWith('action')?'action':m.startsWith('oil')?'oil':m.startsWith('watercolour')?'watercolour':m.startsWith('tissue')?'tissue':incoming.has('tissue')||incoming.has('watercolor')||incoming.has('oil')?'tissue':'marker'};
 const incoming=new URLSearchParams(location.search);
 function selectedRevision(){
  const original=incoming.get('material')||'',material=selectedMaterial();
  if(material==='action')return /^action-v[1234]$/.test(original)?original:'action-v4';
  if(material==='oil')return /^oil-v[1-8]$/.test(original)?original:A.defaultOilPaintMaterial;
  if(material==='watercolour')return /^watercolour-v2[rst]$/.test(original)?original:'watercolour-v2s';
- if(material==='tissue')return 'tissue-'+(Number(incoming.get('tissue'))||(incoming.has('watercolor')||incoming.has('oil')?1:7));
+ if(material==='tissue')return ['tissue-v8','tissue-v8-layered'].includes(original)?'tissue-v8':(incoming.has('tissue')?'tissue-'+(Number(incoming.get('tissue'))||7):(incoming.has('watercolor')||incoming.has('oil')?'tissue-1':'tissue-v8'));
  return 'marker';
 }
 function watercolourFit(){return incoming.has('fit')?incoming.get('fit')==='1':/^watercolour-v2[st]$/.test(incoming.get('material')||'')}
@@ -160,7 +161,8 @@ function updateEditLink(){
   else if(value!=null)target.searchParams.set(key,typeof value==='boolean'?(value?'1':'0'):String(value));
  }
  const revision=selectedRevision();
- if(revision==='tissue-1')target.searchParams.set('watercolor','1');
+ if(revision==='tissue-v8')target.searchParams.set('material','tissue-v8');
+ else if(revision==='tissue-1')target.searchParams.set('watercolor','1');
  else if(revision.startsWith('tissue-'))target.searchParams.set('tissue',revision.slice(7));
  else if(revision!=='marker')target.searchParams.set('material',revision);
  if(selectedMaterial()==='watercolour')target.searchParams.set('fit',watercolourFit()?'1':'0');
@@ -688,7 +690,8 @@ function captureMaterialStages(s){
   A.phiFramingEnabled=incoming.get('sheet')==='phi';
   if(selectedMaterial()==='tissue'){
    const revision=Number(selectedRevision().slice(7));
-   if(revision===8&&A.renderTissueV8)A.renderTissueV8(target,s,renderScale,false);
+   if(selectedRevision()==='tissue-v8')A.renderTissueLayeredV8(target,s,renderScale,false);
+   else if(revision===8&&A.renderTissueV8)A.renderTissueV8(target,s,renderScale,false);
    else A.renderOil(target,s,renderScale,false,revision);
   }else if(selectedMaterial()==='watercolour'){
    A.watercolourV2sOptions.fitToSheet=watercolourFit();

@@ -12,7 +12,8 @@ const day='2099-02-04'; // New editions must use the seeded Tissue palette.
 assert.equal(tissueEditionForDate('2026-10-13').suffix,'&watercolor=1');
 assert.equal(tissueEditionForDate('2026-10-14').suffix,'&tissue=6');
 assert.equal(tissueEditionForDate('2026-10-15').suffix,'&tissue=7');
-assert.equal(tissueEditionForDate(day).suffix,'&tissue=7');
+assert.equal(tissueEditionForDate('2026-11-08').suffix,'&tissue=7');
+assert.equal(tissueEditionForDate(day).suffix,'&material=tissue-v8');
 assert.throws(()=>tissueEditionForDate('2026-10-32'));
 const historic=new URL('https://southernadd-cmyk.github.io/algoart/?watercolor=1');
 assert.equal(validateTissueShareUrl('2026-10-13',historic.href).edition,'historical');
@@ -39,7 +40,7 @@ try{
       url.searchParams.set('seed',seed);
       url.searchParams.set('mode','organic');
       if(orientation==='portrait')url.searchParams.set('fmt','portrait');
-      url.searchParams.set('tissue','7');
+      url.searchParams.set('material','tissue-v8');
       const e={
         id,seed,mode:'organic',series:'Growth Systems',orientation,material:'watercolor',
         imageFile:file,instagramImageFile:ig,rendererVersion:8,shareUrl:url.href,
@@ -51,7 +52,7 @@ try{
         assert(e.copy[platform].toLowerCase().includes('tissue & graphite'));
       }
       assert(editorArtworkLink(e).includes('?art='+id));
-      assert.equal(new URL(e.shareUrl).searchParams.get('tissue'),'7');
+      assert.equal(new URL(e.shareUrl).searchParams.get('material'),'tissue-v8');
       assert.equal(validateTissueShareUrl(day,e.shareUrl).edition,'seeded');
       await fs.writeFile(path.join(dir,file),'fake-wash-'+id);
       await fs.writeFile(path.join(dir,ig),'fake-instagram-'+id);

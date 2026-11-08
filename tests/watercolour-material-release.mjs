@@ -37,7 +37,7 @@ try{
 
   await page.locator('#materialStyle').selectOption('tissue');
   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
-  assert.equal(new URL(page.url()).searchParams.get('tissue'),'7');
+  assert.equal(new URL(page.url()).searchParams.get('material'),'tissue-v8');
   const tissueSnapshot=await page.evaluate(()=>{
     const A=window.AlgoArt,settings=A.readSettings(),output=document.createElement('canvas');
     A.renderOil(output,settings,.34,false,6);
@@ -88,7 +88,7 @@ try{
 
   await page.locator('#materialStyle').selectOption('tissue');
   await page.waitForFunction(()=>document.getElementById('creatingOverlay')?.hidden===true,{timeout:180000});
-  assert.equal(new URL(page.url()).searchParams.get('material'),null);
+  assert.equal(new URL(page.url()).searchParams.get('material'),'tissue-v8');
   const tissueReplay=await page.evaluate(()=>{
     const A=window.AlgoArt,output=document.createElement('canvas');
     A.renderOil(output,A.readSettings(),.34,false,6);

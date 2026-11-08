@@ -299,6 +299,11 @@ try {
 
     const actualVersion=await page.evaluate(()=>window.AlgoArt.rendererVersion);
     if(actualVersion!==itemVersion)throw new Error('Rendered V'+actualVersion+' but requested V'+itemVersion);
+    if(watercolor&&tissueEdition.materialVersion==='tissue-v8'){
+      const stats=await page.evaluate(()=>window.AlgoArt.lastTissueV8Stats);
+      if(stats?.variant!=='layered-v8'||stats.tissuePaletteVersion!==8)
+        throw Error('Tissue gallery/social output is not layered V8: '+settings.seed);
+    }
     if(oilVersion==='oil-v8')verifyReleasedOilV8(await page.evaluate(()=>window.AlgoArt.lastOilV8Render));
     if(dailyPhiFramingForDate(day)){
       const frame=await page.evaluate(()=>({

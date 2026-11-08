@@ -62,7 +62,10 @@ for(const material of materials)for(const orientation of ['landscape','portrait'
     assert.equal(item.rendererVersion,10,item.id+' generated with old renderer');
     assert.equal(share.searchParams.get('v'),'10',item.id+' share link not V10');
     assert.equal(share.searchParams.get('seed'),item.seed);
-    if(material==='watercolor')assert.equal(share.searchParams.get('tissue'),'7');
+    if(material==='watercolor'){
+      assert.equal(share.searchParams.get('material'),'tissue-v8');
+      assert.equal(share.searchParams.has('tissue'),false);
+    }
     if(expectedRevisions[material])
       assert.equal(share.searchParams.get('material'),expectedRevisions[material]);
     assert(item.copy.instagram.includes(editorArtworkLink(item)),

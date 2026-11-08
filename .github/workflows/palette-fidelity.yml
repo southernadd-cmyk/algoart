@@ -27,6 +27,8 @@ jobs:
         run: node tests/palette-coverage-v10.test.mjs
       - name: Check control and URL versions
         run: node tests/control-ranges.test.mjs
+      - name: Tissue V8 release contracts
+        run: node tests/tissue-v8-release.test.mjs
       - name: Preserve published V8
         run: node tests/renderer-lock.test.mjs
 
@@ -46,6 +48,8 @@ jobs:
           for i in {1..15}; do curl -fsS http://127.0.0.1:4173/ > /dev/null && break || sleep 1; done
       - name: Render V9 vs V10 across five materials
         run: node tests/palette-v10-material-previews.mjs
+      - name: Tissue V8 live browser and PNG verification
+        run: node tests/tissue-v8-release-browser.mjs
       - name: Verify V10 daily/social generation and archived JPEG parity
         run: node tests/publishing-v10-flow.test.mjs
       - name: Verify twelve random daily artworks and independent social archive

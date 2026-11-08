@@ -178,8 +178,8 @@ function applySettings(settings){
 // New Tissue & Graphite uses composition-derived colour. Historical URLs
 // keep the original fixed pigment palette for archival reproducibility.
 var tissuePaletteVersion=7;
-// Opt-in preview. Numeric tissue=8 remains the archived CPU-backed V7 render.
-var tissueLayeredV8=false;
+// Tissue V8 is the new default; numeric tissue=8 remains archived CPU V7.
+var tissueLayeredV8=true;
 var watercolourMaterialRevision='v2s';
 var watercolourFitToSheet=false; // Legacy watercolour-specific fit.
 var phiSheetFraming=false; // Shared optional φ source-geometry transform.
@@ -304,7 +304,7 @@ function settingsToURL(settings){
     if(watercolourV2SFamily())
       params.set('fit',watercolourFitToSheet?'1':'0');
   }
-  else if(oilEnabled()&&tissueLayeredV8)params.set('material','tissue-v8-layered');
+  else if(oilEnabled()&&tissueLayeredV8)params.set('material','tissue-v8');
   else if(oilEnabled())params.set(tissuePaletteVersion>=2?'tissue':'watercolor',
     String(tissuePaletteVersion>=2?tissuePaletteVersion:1));
   return location.pathname+'?'+params.toString()+location.hash;
@@ -353,7 +353,7 @@ function loadSettingsFromURL(){
     oilV4Link=false;oilV5Link=false;oilV6Link=false;oilV7Link=true;oilV8Link=defaultOilV8;
     actionPaintingRevision=4;
     tissuePaletteVersion=7;
-    tissueLayeredV8=false;
+    tissueLayeredV8=true;
     watercolourMaterialRevision='v2s';
     watercolourFitToSheet=false;
   }
@@ -384,10 +384,11 @@ function loadSettingsFromURL(){
     var tissueRevision=tissueCode==='8'?8:tissueCode==='7'?7:(tissueCode==='6'?6:(tissueCode==='5'?5:(tissueCode==='4'?4:(tissueCode==='3'?3:(tissueCode==='2'?2:1)))));
     $('materialStyle').value=tissueRevision>=2||oldCode==='1'?'tissue':'marker';
     tissuePaletteVersion=tissueRevision;
+    tissueLayeredV8=false; // Historical tissue revisions stay exact.
     found=true;
   }
-  // Layered V8 is preview-only: never reinterpret old ?tissue=8 CPU links.
-  if(params.get('material')==='tissue-v8-layered'){
+  // Preview alias remains valid; numeric tissue=8 is the old CPU renderer.
+  if(['tissue-v8','tissue-v8-layered'].includes(params.get('material'))){
     $('materialStyle').value='tissue';
     tissuePaletteVersion=7;
     tissueLayeredV8=true;
@@ -1000,7 +1001,7 @@ $('randomise').onclick=function(){
   oilV4Link=false;oilV5Link=false;oilV6Link=false;oilV7Link=true;oilV8Link=defaultOilV8;
   actionPaintingRevision=4;
   tissuePaletteVersion=7;
-  tissueLayeredV8=false;
+  tissueLayeredV8=true;
   watercolourMaterialRevision='v2s';
   watercolourFitToSheet=false;
   syncModeCards();
@@ -1214,7 +1215,8 @@ function savePNG(){
     watercolourRender:watercolourEnabled(),
     watercolourRevision:watercolourMaterialRevision,
     watercolourFitToSheet:watercolourFitToSheet,
-    tissuePaletteVersion:tissuePaletteVersion
+    tissuePaletteVersion:tissuePaletteVersion,
+    tissueLayeredV8:tissueLayeredV8
   });
   if(mobileQuery.matches){
     clearPreparedPNG();
@@ -1442,7 +1444,7 @@ document.querySelectorAll('.inspector input, .inspector select').forEach(functio
     if(e.id==='materialStyle'){legacyOilV1Link=false;legacyOilV2Link=false;oilV4Link=false;oilV5Link=false;oilV6Link=false;oilV7Link=true;oilV8Link=defaultOilV8;}
     if(e.id==='materialStyle'&&actionPaintingEnabled())actionPaintingRevision=4;
     if(e.id==='materialStyle'){
-      tissueLayeredV8=false;
+      tissueLayeredV8=true;
       if(oilEnabled())tissuePaletteVersion=7;
     }
     if(e.id==='materialStyle'&&watercolourEnabled()){
@@ -1530,7 +1532,7 @@ function loadExactArchivedArtwork(id){
         (archivedTissueCode==='3'?3:(archivedTissueCode==='2'?2:1)))));
       tissuePaletteVersion=archivedTissueVersion;
       var archivedWater=archivedMaterialURL.searchParams.get('material');
-      tissueLayeredV8=archivedWater==='tissue-v8-layered';
+      tissueLayeredV8=archivedWater==='tissue-v8'||archivedWater==='tissue-v8-layered';
       if(tissueLayeredV8)tissuePaletteVersion=7;
       if(['watercolour-v2r','watercolour-v2s','watercolour-v2t'].includes(archivedWater)){
         watercolourMaterialRevision=archivedWater.slice('watercolour-'.length);

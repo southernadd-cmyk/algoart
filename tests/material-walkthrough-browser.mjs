@@ -99,7 +99,7 @@ try {
     try{
      A.materialStageCapture=null;
      if(material==='action')A.renderActionPaintingV4(studio,s,.32,false,{version:4,layers:5});
-     else if(material==='tissue')A.renderOil(studio,s,1,false,7);
+     else if(material==='tissue')A.renderTissueLayeredV8(studio,s,1,false);
      else if(material==='watercolour')A.renderWatercolourV2S(studio,s,1,false);
      else if(A.defaultOilPaintMaterial==='oil-v8')A.renderReleasedOilPaintV8(studio,s,.45,false);
      else A.renderOilPaintV7(studio,s,.45,false);

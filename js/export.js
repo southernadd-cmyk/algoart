@@ -46,6 +46,7 @@ A.preparePNG=function(settings,scale){
   delete compositionSettings.watercolourRevision;
   delete compositionSettings.watercolourFitToSheet;
   delete compositionSettings.tissuePaletteVersion;
+  delete compositionSettings.tissueLayeredV8;
   var filename='algoart-'+settings.seed+'-'+settings.mode+
     (settings.orientation==='portrait'?'-portrait':'')+
     (settings.actionPaintingRender?'-action-v'+(settings.actionPaintingRevision||2):settings.oilPaintRender?'-oil-paint-'+(settings.oilPaintRevision||'v1'):settings.watercolourRender?'-watercolour-'+(settings.watercolourRevision||'v2r'):settings.oilRender?'-tissue-graphite':'')+'-'+scale+'x.png';
@@ -80,6 +81,8 @@ A.preparePNG=function(settings,scale){
         }
         else A.renderWatercolourV2R(out,compositionSettings,scale,false);
       }
+      else if(settings.oilRender&&settings.tissueLayeredV8===true)
+        A.renderTissueLayeredV8(out,compositionSettings,scale,false);
       else if(settings.oilRender&&settings.tissuePaletteVersion===8)
         A.renderTissueV8(out,compositionSettings,scale,false);
       else if(settings.oilRender)

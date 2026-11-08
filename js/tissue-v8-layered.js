@@ -1,4 +1,4 @@
-// Experimental Tissue & Graphite V8: opt-in layered-pigment treatment.
+// Released Tissue & Graphite V8: layered-pigment treatment.
 // Uses the exact V7 composition, source hues, fibres and paper engine.
 // This is deliberately separate from historical ?tissue=8 (CPU-only V7).
 window.AlgoArt=window.AlgoArt||{};
@@ -11,7 +11,7 @@ A.renderTissueLayeredV8=function(target,settings,scale,reveal){
   A.tissueV8LayeredActive=true;
   try{
     const result=A.renderOil(target,settings,scale,reveal,7);
-    A.lastTissueV8Stats={...A.lastOilMaterialStats,variant:'layered-v8'};
+    A.lastTissueV8Stats={...A.lastOilMaterialStats,variant:'layered-v8',tissuePaletteVersion:8};
     return result;
   }finally{
     A.tissueV8LayeredActive=previous;
