@@ -162,7 +162,12 @@ function paintLayerOrder(length,r){
 A.actionPaintingFromPathsV4=function(target,sourcePaths,s,scale,options){options=options||{};scale=scale||1;
 // Derive the study from the same seed and source composition as V3.
 var w=s.orientation==='portrait'?1000:1400,h=s.orientation==='portrait'?1400:1000,r=random(String(s.seed)+'|'+s.mode+'|action-v3|'+(options.variant||0)),paths=dedupe(sourcePaths),anchors=samplePaths(paths),palette=enamelPalette(s,options.sourceInks?.length?options.sourceInks:actionPaintPalette(s,3));
-target.width=Math.round(w*scale);target.height=Math.round(h*scale);var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
+// In Confluence each turn adds genuine V4 enamel gestures to a persistent
+// transparent layer. Do not resize an existing canvas: setting width or
+// height clears every prior turn, even when the dimensions are unchanged.
+var targetW=Math.round(w*scale),targetH=Math.round(h*scale);
+if(!options.append||target.width!==targetW||target.height!==targetH){target.width=targetW;target.height=targetH;}
+var ctx=target.getContext('2d');ctx.setTransform(scale,0,0,scale,0,0);
 if(options.transparentSheet!==true){ctx.fillStyle=s.paper||'#f5f0e6';ctx.fillRect(0,0,w,h)}if(!anchors.length)return {pathCount:0,anchorCount:0};
 var layers=options.layers||5,density=options.density||1;
 var archetypes=['off-centre knot','double cluster','diagonal band','hooked crescent','edge-loaded','woven strip'];
@@ -181,11 +186,17 @@ paths.sort(function(a,b){return b.pts.length-a.pts.length});
 var cellsX=21,cellsY=15,occupancy=new Uint16Array(cellsX*cellsY);
 function cell(p){return Math.max(0,Math.min(cellsY-1,Math.floor(p.y/h*cellsY)))*cellsX+
  Math.max(0,Math.min(cellsX-1,Math.floor(p.x/w*cellsX)))}
-var passes=layers*3,skipped=0,bowed=0,softened=0,order=paintLayerOrder(palette.length,r);
+var passes=layers*3;
+// The released solo painting still uses all 15 passes. Confluence may
+// deposit one paint pass per artist turn, using precisely the same fling,
+// scatter, pooling, enamel-palette and crowd-control implementations.
+if(Number.isFinite(options.passes))passes=Math.max(1,Math.floor(options.passes));
+var skipped=0,bowed=0,softened=0,order=paintLayerOrder(palette.length,r);
 for(var layer=0;layer<passes;layer++){
  if(layer&&layer%palette.length===0)order=paintLayerOrder(palette.length,r);
  var ix=order[layer%palette.length];
  var colour=palette[ix],count=Math.min(95,Math.floor((7+anchors.length*.065)*density));
+ if(Number.isFinite(options.gesturesPerPass))count=Math.max(1,Math.min(95,Math.floor(options.gesturesPerPass)));
  ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
  for(var i=0;i<count;i++){
   var a,b,via,straight=false,roll=r();
@@ -208,7 +219,7 @@ for(var layer=0;layer<passes;layer++){
  // One real completed layer per checkpoint, not one canvas per gesture.
  if(options.onStage)options.onStage('Paint pass '+(layer+1),target);
 }
-return {pathCount:paths.length,anchorCount:anchors.length,layers:layers,skippedCrowded:skipped,bowedSourceThrows:bowed,softenedStraightRuns:softened,palette:palette.slice()}}
+return {pathCount:paths.length,anchorCount:anchors.length,layers:layers,passes:passes,skippedCrowded:skipped,bowedSourceThrows:bowed,softenedStraightRuns:softened,palette:palette.slice()}}
 A.renderActionPaintingV4=function(target,s,scale,showGeometry,options){scale=scale||1;var prior=A.svgRecorder,rec={precise:true,paths:[],paperMarks:[]},scratch=document.createElement('canvas'),meta;
 try{A.svgRecorder=rec;meta=A.render(scratch,s,Math.min(1,Math.max(.1,scale)),false)}finally{A.svgRecorder=prior}
 var stats=A.actionPaintingFromPathsV4(target,rec.paths,s,scale,options);if(showGeometry)A.geometryOverlay(target.getContext('2d'),s,meta);A.lastRenderMeta=meta;A.lastActionPaintingStatsV4=stats;return meta}
