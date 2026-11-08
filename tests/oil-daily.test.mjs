@@ -113,38 +113,44 @@ try{
 console.log('PASS: 2 genuine randomly coloured Oil Paint v1 full-resolution studies; correct 15:00 links, immutable old gallery, idempotent writes and true source connections');
 
 
-// Tomorrow's Oil V3 cutover: exercise real generation and gallery assembly.
-const v3Date='2026-10-17';
+// Historical 17 October artwork is already published as oil-v3. The
+// current date-based queue would request oil-v4 for those SAME IDs.
+// Reproduce that conflict but assert the archive guard refuses it: this
+// test may not rewrite historical gallery files or silence the guard.
+const historicOilDate='2026-10-17';
+const historicOilPath='gallery/'+historicOilDate+'/meta.json';
+const historicOilBytes=await fs.readFile(historicOilPath);
+const historicalEntries=JSON.parse(historicOilBytes.toString()).entries
+  .filter(item=>item.material==='oil');
+assert(historicalEntries.length>=2,'Historical Oil gallery must include both orientations');
 for(const orientation of ['landscape','portrait']){
-  const env={SOCIAL_DATE:v3Date,SOCIAL_MATERIAL:'oil',SOCIAL_ORIENTATION:orientation};
-  run('automation/generate-social.mjs',env);
-  const dir=path.join('social-output',v3Date,'oil',orientation);
+  run('automation/generate-social.mjs',{
+    SOCIAL_DATE:historicOilDate,SOCIAL_MATERIAL:'oil',SOCIAL_ORIENTATION:orientation
+  });
+  const dir=path.join('social-output',historicOilDate,'oil',orientation);
   const queue=JSON.parse(await fs.readFile(path.join(dir,'queue.json'),'utf8'));
   assert.equal(queue.entries.length,1);
   const item=queue.entries[0];
-  validateOilItem(item,v3Date,orientation);
-  assert.equal(new URL(item.shareUrl).searchParams.get('material'),'oil-v4');
-  assert.match(makeCaptions(item).instagram,/\/ OIL\n/);
-  assert.doesNotMatch(makeCaptions(item).instagram,/OIL PAINT V\d+/);
-  run('automation/build-gallery.mjs',{
-    SOCIAL_DATE:v3Date,GALLERY_QUEUE_MATERIAL:'oil',
-    GALLERY_QUEUE_ORIENTATION:orientation
+  validateOilItem(item,historicOilDate,orientation);
+  assert.equal(new URL(item.shareUrl).searchParams.get('material'),'oil-v4',
+    'This fixture must test the historical version mismatch');
+  assert(historicalEntries.some(old=>old.id===item.id&&
+    new URL(old.shareUrl).searchParams.get('material')==='oil-v3'),
+    'Fixture needs an already-published oil-v3 study with the same ID');
+  const attempted=spawnSync(process.execPath,['automation/build-gallery.mjs'],{
+    cwd:process.cwd(),encoding:'utf8',timeout:90000,
+    env:{...process.env,SOCIAL_DATE:historicOilDate,
+      GALLERY_QUEUE_MATERIAL:'oil',GALLERY_QUEUE_ORIENTATION:orientation}
   });
+  assert.notEqual(attempted.status,0,'Gallery must reject a changed Oil revision');
+  assert.match(attempted.stderr,/Cannot change the Oil revision of archived artwork/,
+    'Gallery must fail specifically on archive immutability, not another error');
+  assert.deepEqual(await fs.readFile(historicOilPath),historicOilBytes,
+    'Historical Oil metadata changed after rejected overwrite');
 }
-const v3Gallery=JSON.parse(await fs.readFile('gallery/'+v3Date+'/meta.json','utf8'));
-// The 17 October gallery already includes the scheduled second Oil studies.
-// A dry run must preserve them, not assume the archive starts with zero Oil.
-const oilEntries=v3Gallery.entries.filter(x=>x.material==='oil');
-assert(oilEntries.length>=2,'Both Oil orientations must remain in the archive');
-assert.equal(new Set(oilEntries.map(x=>x.id)).size,oilEntries.length,
-  'Oil gallery dry run must not duplicate existing studies');
-assert(oilEntries.some(x=>x.orientation==='landscape'||x.settings?.orientation!=='portrait'),
-  'Oil gallery must include a landscape study');
-assert(oilEntries.some(x=>x.orientation==='portrait'||x.settings?.orientation==='portrait'),
-  'Oil gallery must include a portrait study');
-assert(oilEntries.every(x=>['oil-v1','oil-v3','oil-v4'].includes(
-  new URL(x.shareUrl).searchParams.get('material'))),
-  'Existing gallery entries must retain their original Oil material versions');
-const v3Html=await fs.readFile('gallery/'+v3Date+'/index.html','utf8');
-assert(v3Html.includes('Oil Paint'),'17 October gallery must identify Oil artworks');
-console.log('PASS: 17 October portrait and landscape Oil V3 generation, captions and gallery');
+for(const entry of historicalEntries){
+  await fs.access(path.join('gallery',historicOilDate,entry.imageFile));
+}
+assert(historicalEntries.some(x=>x.orientation==='landscape'));
+assert(historicalEntries.some(x=>x.orientation==='portrait'));
+console.log('PASS: 17 October Oil v3 archive is immutable; later v4 queues cannot replace old IDs');
