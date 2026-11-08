@@ -3,7 +3,7 @@ import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt, resolveTur
 import {inferResponse} from './adaptive-response.js?v=adaptive-01';
 import {wantsOilContact,oilContactCandidates,contactFraction} from './oil-contact.js?v=oil-structure-02';
 import {capRectangleFootprint, rectangleInteriors, interiorCandidates} from './rect-collaboration.js?v=rect-cells-01';
-import {expandRecursiveTurns} from './recursive-turns.js?v=recursive-turns-01';
+import {expandRecursiveTurns} from './recursive-turns.js?v=recursive-turns-sparse-02';
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 export const systems = [
