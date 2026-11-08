@@ -340,7 +340,7 @@ function limitPigment(group, placement, context) {
   return clamp(1 - Math.max(0, pressure - (context.mode === 'space' ? 1.15 : 1.7)) * .22, .46, 1);
 }
 
-export function createStudy(seed, slots, paperSettings, collaborationPull = 100, requestedTurns = 55) {
+export function createStudy(seed, slots, paperSettings, collaborationPull = 100, requestedTurns = 55,leadIndex=0) {
   if (slots.length !== 3) throw new Error('Confluence requires exactly three artists.');
   const portrait = paperSettings.orientation === 'portrait';
   const width = portrait ? 1000 : 1400;
@@ -360,9 +360,9 @@ export function createStudy(seed, slots, paperSettings, collaborationPull = 100,
   });
   const {count:budget, available:availableTurns} = resolveTurnBudget(turnBudget(roster), requestedTurns);
   const equal = makeSchedule(roster, budget, 0);
-  const primary = collaborationPull === 0 ? equal : makeSchedule(roster, budget, collaborationPull);
+  const primary = collaborationPull === 0 ? equal : makeSchedule(roster, budget, collaborationPull,leadIndex);
   return {seed,roster, schedule: primary.turns, primary, equal, sheet, anchors, availableTurns,
-    collaborationPull, totalTurns:budget};
+    collaborationPull,leadIndex,totalTurns:budget};
 }
 
 export function makeRun(study, strength, {equal = false} = {}) {
