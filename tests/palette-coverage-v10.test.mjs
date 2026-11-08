@@ -34,8 +34,8 @@ const base={
   colourCount:14,saturation:78,brightness:53,
   paper:'#f5f0e6',grain:0
 };
-function draw(version,mode,colourCount){
-  const state={...base,mode,colourCount};
+function draw(version,mode,colourCount,palette=base.palette){
+  const state={...base,mode,colourCount,palette};
   A.rendererVersion=version;
   A.svgRecorder={precise:true,paths:[],paperMarks:[]};
   A.render(canvas(),state,.1,false);
@@ -59,8 +59,25 @@ for(const name of palettes){
     assert.equal(next.length,colourCount,name+' missing colours at '+colourCount);
     assert.equal(new Set(next).size,colourCount,
       name+' repeats inks at '+colourCount);
-    if(name==='mono')assert(next.every(c=>/ 0% /.test(c)),
-      'Monochrome lost its greys at '+colourCount);
+    const hues=next.map(c=>{
+      const parsed=/^hsl\\(([-.\\d]+) ([-.\\d]+)% ([-.\\d]+)%\\)$/.exec(c);
+      assert(parsed,'Expected parseable source HSL pigment '+name+': '+c);
+      return {h:Number(parsed[1]),s:Number(parsed[2]),l:Number(parsed[3])};
+    });
+    if(name==='mono'){
+      assert(hues.every(c=>c.s===0),'Monochrome must remain neutral grayscale');
+      assert.equal(new Set(hues.map(c=>c.l)).size,colourCount,
+        'Monochrome must offer '+colourCount+' distinct grey values');
+    }else{
+      assert.equal(new Set(hues.map(c=>c.h)).size,colourCount,
+        name+' must use '+colourCount+' distinct hue ANGLES, not value/chroma shifts');
+      for(let i=0;i<hues.length;i++)for(let j=i+1;j<hues.length;j++){
+        const span=Math.abs(hues[i].h-hues[j].h);
+        const circularSeparation=Math.min(span,360-span);
+        assert(circularSeparation>=6-1e-7,
+          name+' '+colourCount+' hues too close: '+hues[i].h+' and '+hues[j].h);
+      }
+    }
   }
   A.rendererVersion=9;
   const old=A.hues({...base,palette:name,colourCount:14},A.makeR('V10-PALETTE'));
@@ -94,5 +111,15 @@ for(const colourCount of [12,14]){
     report.push(mode+': '+v10.inks.size+' inks / '+v10.marks+' marks at '+colourCount);
   }
 }
+// Check every hue family survives every engine at the slider maximum,
+// not only the primary palette used in the single material preview seed.
+for(const palette of palettes){
+  for(const mode of modes){
+    const result=draw(10,mode,14,palette);
+    assert.equal(result.inks.size,Math.min(14,result.marks),
+      palette+'/'+mode+' dropped one of 14 source pigments');
+  }
+}
+console.log('V10 14-hue engine coverage: all 11 palettes × 8 engines. Mono stays 14 greys.');
 console.log('V10 palette coverage 1–14 (all palette families), 12/14 (all modes):',report.join('; '));
 console.log('V9 geometry and previous named palette behavior preserved.');
