@@ -98,7 +98,7 @@ try{
  assert.equal(new URL(art.intents.x).hostname,'x.com');
  assert.equal(new URL(art.intents.x).searchParams.get('text'),art.intents.xCaption);
  assert.equal(art.intents.xCaption,
-   'PROPORTION PIECE — Growth Systems\\n\\n#GenerativeArt #AlgorithmicArt\\n\\n'+art.intents.xPreviewURL,
+   'PROPORTION PIECE — Growth Systems\n\n#GenerativeArt #AlgorithmicArt\n\n'+art.intents.xPreviewURL,
    'X must include the composition title, hashtags and a blank line before its preview link');
  assert(art.intents.xCaption.replace(art.intents.xPreviewURL,'x'.repeat(23)).length<=280,
    'X must fit its 280-character limit with the URL counted as 23 characters');
