@@ -51,7 +51,7 @@ function slugText(value = '') {
   return String(value).replace(/[^a-zA-Z0-9 _./:%+-]/g, '').trim();
 }
 
-function materialLabel(item) { return item.material==='action'?'Action Painting':item.material==='oil'?'Oil Paint':item.material==='watercolour'?'Watercolour':item.material==='watercolor'?'Tissue & Graphite':'Marker'; }
+function materialLabel(item) { return item.material==='confluence'?'Three procedural artists':item.material==='action'?'Action Painting':item.material==='oil'?'Oil Paint':item.material==='watercolour'?'Watercolour':item.material==='watercolor'?'Tissue & Graphite':'Marker'; }
 
 function artworkTitle(item, index) {
   return `${item.series} — ${item.material==='action'?'Action Painting ':item.material==='oil'?'Oil Paint ':item.material==='watercolour'?'Watercolour ':item.material==='watercolor'?'Tissue & Graphite ':''}Study ${String(index + 1).padStart(2, '0')}`;
@@ -63,6 +63,8 @@ function countWord(count) {
 }
 
 function artworkDescription(item) {
+  if(item.material==='confluence')return item.copy?.altText ||
+    'Confluence: three procedural artists work together on a shared drawing, seed '+item.seed+'.';
   const s = item.settings || {};
   return item.material==='action'?`${item.series} Action Painting using seed ${item.seed}, the ${s.palette} palette and geometry-guided flowing paint.`:item.material==='oil'?
     `${item.series} Oil Paint artwork using seed ${item.seed}, ${s.palette} palette, source-connected colour masses and real loaded bristle paint.`:
@@ -74,6 +76,31 @@ function artworkDescription(item) {
 }
 
 function artworkCard(item, index) {
+  if(item.material==='confluence'){
+    const portrait=item.orientation==='portrait';
+    const title='Confluence — Three Artists · Study '+String(index+1).padStart(2,'0');
+    const voices=(item.artists||[]).map(a=>
+      '<li>'+escapeHtml(a.system)+' · '+escapeHtml(a.material)+' · '+escapeHtml(a.palette)+'</li>').join('');
+    return `
+    <article id="${escapeHtml(item.id)}" class="art-card" data-orientation="${portrait?'portrait':'landscape'}" data-material="confluence">
+      <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open this Confluence shared drawing">
+        <img src="${escapeHtml(item.imageFile)}" width="${portrait?1000:1400}" height="${portrait?1400:1000}" loading="lazy" decoding="async" alt="${escapeHtml(artworkDescription(item))}">
+      </a>
+      <div class="art-info">
+        <div class="art-number">${String(index+1).padStart(2,'0')}</div>
+        <div>
+          <h2>Confluence · Three procedural artists</h2>
+          <dl>
+            <div><dt>Seed</dt><dd>${escapeHtml(item.seed)}</dd></div>
+            <div><dt>Format</dt><dd>${portrait?'Portrait · 1000 × 1400':'Landscape · 1400 × 1000'}</dd></div>
+            <div><dt>Composition</dt><dd>Three systems, one shared drawing</dd></div>
+          </dl>
+          <ol class="confluence-voices" aria-label="Artists, materials and palettes">${voices}</ol>
+          <a class="remix" href="${escapeHtml(item.shareUrl)}">Open in Confluence →</a>
+        </div>
+      </div>
+    </article>`;
+  }
   const title = artworkTitle(item, index);
   const s = item.settings || {};
   const alt = item.copy?.altText || artworkDescription(item);
@@ -386,11 +413,19 @@ if(randomDate && galleryMaterial!=='random' && hasRandomEdition){
   process.exit(0);
 }
 if(galleryMaterial==='random'){
-  if(!randomDate||queue.edition!=='random-12'||queue.entries.length!==12)
-    throw Error('A random daily gallery must contain exactly twelve studies after 8 Nov');
-  if(queue.entries.some(e=>e.rendererVersion!==10||
-      new URL(e.shareUrl).searchParams.get('v')!=='10'))
-    throw Error('Random daily gallery must use renderer V10 for all twelve studies');
+  const solo=queue.entries.filter(e=>/-G\\d{2}$/.test(e.id));
+  const confluence=queue.entries.filter(e=>/-C\\d{2}$/.test(e.id));
+  if(!randomDate||queue.edition!=='random-12-confluence-4'||
+     queue.entries.length!==16||solo.length!==12||confluence.length!==4)
+    throw Error('Daily gallery must contain 12 solo and 4 Confluence studies after 8 Nov');
+  if(queue.entries.some(e=>e.rendererVersion!==10 ||
+     (e.material==='confluence'
+       ? !new URL(e.shareUrl).searchParams.has('s')
+       : new URL(e.shareUrl).searchParams.get('v')!=='10')))
+    throw Error('New solo and Confluence studies must use their recorded current renderers');
+  if(confluence.filter(e=>e.orientation==='portrait').length!==2||
+     confluence.filter(e=>e.orientation==='landscape').length!==2)
+    throw Error('Confluence archive needs two portrait and two landscape studies');
 }
 
 // Preserve curated/repaired studies that are already in the day's gallery.
@@ -408,7 +443,7 @@ try {
 // studies into their own archive BEFORE the twelve-study gallery replaces
 // the displayed index. Compact ?art= links must never break due to timing.
 if(galleryMaterial==='random' && Array.isArray(existingMeta.entries)){
-  const earlySocial=existingMeta.entries.filter(e=>!/-G\d{2}$/.test(e.id));
+  const earlySocial=existingMeta.entries.filter(e=>!/(?:-G\d{2}|-C\d{2})$/.test(e.id));
   if(earlySocial.length){
     const socialPath=path.join(dayDir,'social-meta.json');
     let archived={version:1,date:day,entries:[]};
@@ -426,7 +461,7 @@ if(galleryMaterial==='random' && Array.isArray(existingMeta.entries)){
   }
 }
 const existingEntries = Array.isArray(existingMeta.entries)
-  ? existingMeta.entries.filter(e=>galleryMaterial!=='random'||/\-G\d{2}$/.test(e.id))
+  ? existingMeta.entries.filter(e=>galleryMaterial!=='random'||/-(?:G|C)\d{2}$/.test(e.id))
   : [];
 if (galleryMaterial === 'oil') {
   const archivedOil = new Map(existingEntries.filter(entry => entry.material === 'oil').map(entry => [entry.id, entry]));
@@ -538,7 +573,7 @@ const dayMeta = {
     id: item.id,
     title: artworkTitle(item, index),
     orientation: item.orientation || item.settings?.orientation || 'landscape',
-    ...(item.material==='action'?{material:'action'}:item.material==='oil'?{material:'oil'}:item.material==='watercolour'?{material:'watercolour'}:
+    ...(item.material==='confluence'?{material:'confluence',artists:item.artists}:item.material==='action'?{material:'action'}:item.material==='oil'?{material:'oil'}:item.material==='watercolour'?{material:'watercolour'}:
       item.material==='watercolor'?{material:'watercolor'}:{}),
     seed: item.seed,
     mode: item.mode,
@@ -599,7 +634,7 @@ await fs.writeFile(path.resolve('robots.txt'), `User-agent: *\nAllow: /\n\nSitem
 
 if(galleryMaterial==='random'){
   await fs.writeFile(randomMarker,JSON.stringify({
-    edition:'random-12',date:day,count:12,rendererVersion:10
+    edition:'random-12-confluence-4',date:day,count:16,solo:12,confluence:4,rendererVersion:10
   },null,2)+'\n');
 }
 console.log(`Built PROPORTION PIECE daily gallery for ${day} with ${queue.entries.length} artworks.`);
