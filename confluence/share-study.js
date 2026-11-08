@@ -25,6 +25,8 @@ function checkState(data) {
     (data.response === undefined || ['weave','echo','space'].includes(data.response)) &&
     Number.isFinite(data.strength) && data.strength>=0 && data.strength<=100 &&
     Number.isFinite(data.collaborationPull) && data.collaborationPull>=0 && data.collaborationPull<=100 &&
+    (data.leadIndex === undefined || Number.isInteger(data.leadIndex) &&
+      data.leadIndex>=0 && data.leadIndex<=2) &&
     Number.isFinite(data.totalTurns) && data.totalTurns>=5 && data.totalTurns<=2584 &&
     Array.isArray(data.artists) && data.artists.length===3 &&
     data.artists.every(a=>a && typeof a.system==='string' && typeof a.palette==='string' &&
@@ -48,6 +50,8 @@ export function restoreSharedState(params, artists, inputs, catalog) {
   inputs.grain.value=String(data.grain);
   inputs.strength.value=String(data.strength);
   inputs.collaborationPull.value=String(data.collaborationPull);
+  // Existing links without a role field keep the historical A1 lead.
+  inputs.leadIndex.value=String(data.leadIndex??0);
   if(![...inputs.totalTurns.options].some(o=>o.value===String(data.totalTurns)))
     inputs.totalTurns.add(new Option(data.totalTurns+' turns',String(data.totalTurns)));
   inputs.totalTurns.value=String(data.totalTurns);
