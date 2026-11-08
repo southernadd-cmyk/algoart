@@ -1,0 +1,29 @@
+name: Confluence browser viewport smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'confluence/**'
+      - 'tests/confluence-browser.test.mjs'
+      - '.github/workflows/confluence-browser.yml'
+  pull_request:
+    paths:
+      - 'confluence/**'
+      - 'tests/confluence-browser.test.mjs'
+      - '.github/workflows/confluence-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  viewport:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Verify browser portrait/landscape and canvas fit
+        run: node tests/confluence-browser.test.mjs
