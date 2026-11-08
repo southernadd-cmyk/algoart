@@ -123,8 +123,14 @@ export function bindSharing({canvas, ready, snapshot}) {
         else window.open(target,'_blank','noopener');
         setStatus('Opening '+platform+' draft with artwork preview. Nothing has been posted.');
       } catch(error){
-        if(tab && !tab.closed)tab.close();
-        setStatus(error.message+' You can still use Copy link or Save PNG.');
+        // The preview Worker is optional. Preserve the one-click draft when
+        // its deployment credentials or KV service are unavailable.
+        const direct=studyURL(snapshot());
+        const target=socialTarget(platform,direct);
+        if(tab && !tab.closed)tab.location.replace(target);
+        else window.open(target,'_blank','noopener');
+        setStatus('Image preview is unavailable. Opened the '+platform+
+          ' draft with your exact Confluence link; no thumbnail is guaranteed.');
       } finally{sync()}
     });
   }
@@ -138,16 +144,31 @@ export function bindSharing({canvas, ready, snapshot}) {
       setStatus('Could not copy automatically. Select and copy this URL: '+url);
     }
   });
-  $('share-native').addEventListener('click',()=>{
+  $('share-native').addEventListener('click',async()=>{
     if(!ready())return;
     if(!navigator.share){
-      setStatus('Use Save PNG, or share via X, Threads or Bluesky.');
+      setStatus('Your browser does not support sharing images. Use Save PNG instead.');
       return;
     }
     const url=studyURL(snapshot());
-    navigator.share({title:'Confluence — PROPORTION PIECE',text:'Three systems, one shared drawing.',url})
-      .then(()=>setStatus('Shared via your device.'))
-      .catch(()=>setStatus('Share cancelled or unavailable.'));
+    try {
+      const blob=await new Promise((resolve,reject)=>canvas.toBlob(
+        value=>value?resolve(value):reject(new Error('PNG export failed')), 'image/png'));
+      const file=new File([blob],'confluence-'+snapshot().seed.replace(/[^a-zA-Z0-9_-]/g,'_')+'.png',
+        {type:'image/png'});
+      const data={title:'Confluence — PROPORTION PIECE',
+        text:'Three systems, one shared drawing.',url,files:[file]};
+      if(!navigator.canShare?.(data)){
+        // A URL-only share must be clearly described as such, not as an image.
+        await navigator.share({title:data.title,text:data.text,url:data.url});
+        setStatus('Shared the composition link. For the actual image use Save PNG.');
+      }else{
+        await navigator.share(data);
+        setStatus('Shared the Confluence image via your device.');
+      }
+    }catch(error){
+      setStatus('Share cancelled or unavailable. You can still use Save PNG.');
+    }
   });
   sync();
   return {sync};
