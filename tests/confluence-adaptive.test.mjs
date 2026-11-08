@@ -182,3 +182,62 @@ test('Complete source works even when turns are few compared with source marks',
         .reduce((n,t)=>n+t.groupQuota,0),artist.groups.length);
   }
 });
+
+import {wantsOilContact,oilContactCandidates,contactFraction}
+  from '../confluence/oil-contact.js';
+import {guardedAlpha,protectPigmentStack} from '../confluence/pigment-guard.js';
+
+test('Oil contact invitations are seeded, structural, and never forced on every turn',()=>{
+ const sheet={width:320,height:256,cols:20,rows:16,inset:8};
+ const length=sheet.cols*sheet.rows;
+ const field={distances:new Float32Array(length).fill(144),
+   angle:new Float32Array(length),x:new Float32Array(length),
+   y:new Float32Array(length)};
+ for(let y=3;y<13;y++)for(let x=4;x<17;x++){
+   const idx=x+y*sheet.cols;
+   field.distances[idx]=2;
+   field.x[idx]=x*16+8;field.y[idx]=y*16+8;field.angle[idx]=0;
+ }
+ const probes=[{p:{x:135,y:100},next:{x:162,y:100}},
+   {p:{x:162,y:100},next:{x:185,y:100}}];
+ const group={center:{x:160,y:100},probes,traces:[{points:probes.map(x=>x.p)}]};
+ const artist={id:2,pose:{place:p=>p},anchors:new Map()};
+ const options=oilContactCandidates(group,artist,[field],{at:()=>.25},sheet,8);
+ assert(options.length>0,'Oil must have actual existing-ink placements');
+ assert(options.some(c=>c.oilContact==='follow'));
+ assert(options.some(c=>c.oilContact==='cross'));
+ assert(options.every(c=>c.oilTarget.x>0&&c.oilTarget.y>0));
+ const repeated=oilContactCandidates(group,artist,[field],{at:()=>.25},sheet,8);
+ assert.deepEqual(options.map(c=>[c.oilContact,c.oilTarget]),
+   repeated.map(c=>[c.oilContact,c.oilTarget]));
+ assert(options.some(c=>contactFraction(group,c,[field],sheet)>0));
+ const decisions=Array.from({length:100},(_,i)=>
+   wantsOilContact('2331044488',2,i,100,75));
+ assert(decisions.some(Boolean)&&decisions.some(x=>!x));
+ assert(decisions.every((x,i)=>x===wantsOilContact('2331044488',2,i,100,75)));
+ assert.equal(wantsOilContact('2331044488',2,17,0,0),false);
+ assert.deepEqual(oilContactCandidates({...group,cell:{x:0}},artist,[field],null,sheet,8),[]);
+});
+
+test('Dark overlap guard preserves hue and first marks but restrains repeat blackening',()=>{
+ assert.equal(guardedAlpha(245,245,245,0,10,0,1),1,
+   'Dark isolated first marks must remain genuine');
+ const reduced=guardedAlpha(85,78,73,5,12,9,.85);
+ assert(reduced>0&&reduced<.85,'Repeated pigment should be locally limited');
+ assert.equal(guardedAlpha(25,31,24,0,4,1,.9),0,
+   'Further blackening of an already dark location must stop');
+ assert.equal(guardedAlpha(75,70,68,170,130,80,.5),.5,
+   'Lighter layers should stay untouched');
+ const before={data:new Uint8ClampedArray([245,245,245,255,85,78,73,255])};
+ const next={data:new Uint8ClampedArray([0,10,0,240,5,12,9,220])};
+ const original=next.data.slice();
+ const adjusted=protectPigmentStack(before,next);
+ assert.equal(adjusted,1);
+ assert.equal(next.data[3],original[3]);
+ assert(next.data[7]<original[7]);
+ assert.deepEqual([...next.data].filter((_,i)=>i%4!==3),
+   [...original].filter((_,i)=>i%4!==3),'No pigment recolouring');
+ assert.deepEqual([...before.data],[245,245,245,255,85,78,73,255]);
+ const multiply=guardedAlpha(92,89,80,10,15,12,.8,'multiply');
+ assert(multiply<.8,'Watercolour glaze cannot multiply established paint into black');
+});
