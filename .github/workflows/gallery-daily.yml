@@ -75,37 +75,67 @@ jobs:
             [[ "$SOCIAL_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || exit 1
           fi
 
+      - name: Select dated gallery edition format
+        id: edition
+        shell: bash
+        run: |
+          DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const x=Object.fromEntries(p.map(v=>[v.type,v.value]));process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
+          if [[ "$DAY" > "2026-11-08" ]]; then
+            echo "random=true" >> "$GITHUB_OUTPUT"
+            echo "Twelve independent random studies for $DAY"
+          else
+            echo "random=false" >> "$GITHUB_OUTPUT"
+            echo "Legacy eighteen-study edition for $DAY"
+          fi
+
+      - name: Generate twelve independent random gallery studies
+        if: steps.edition.outputs.random == 'true'
+        run: node automation/generate-gallery-daily-12.mjs
+
+      - name: Archive twelve-study random gallery
+        if: steps.edition.outputs.random == 'true'
+        env:
+          GALLERY_QUEUE_MATERIAL: random
+        run: npm run gallery:build
+
       - name: Generate deterministic daily batch
+        if: steps.edition.outputs.random != 'true'
         run: npm run social:generate
 
       - name: Build marker gallery
+        if: steps.edition.outputs.random != 'true'
         run: npm run gallery:build
 
       - name: Generate two landscape watercolor studies
+        if: steps.edition.outputs.random != 'true'
         env:
           SOCIAL_MATERIAL: watercolor
           SOCIAL_ORIENTATION: landscape
         run: npm run social:generate
 
       - name: Archive landscape watercolors
+        if: steps.edition.outputs.random != 'true'
         env:
           GALLERY_QUEUE_MATERIAL: watercolor
           GALLERY_QUEUE_ORIENTATION: landscape
         run: npm run gallery:build
 
       - name: Generate two portrait watercolor studies
+        if: steps.edition.outputs.random != 'true'
         env:
           SOCIAL_MATERIAL: watercolor
           SOCIAL_ORIENTATION: portrait
         run: npm run social:generate
 
       - name: Archive portrait watercolors
+        if: steps.edition.outputs.random != 'true'
         env:
           GALLERY_QUEUE_MATERIAL: watercolor
           GALLERY_QUEUE_ORIENTATION: portrait
         run: npm run gallery:build
 
       - name: Generate daily V2S Watercolour landscape
+        if: steps.edition.outputs.random != 'true'
         env:
           SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: watercolour
@@ -113,12 +143,14 @@ jobs:
         run: npm run social:generate
 
       - name: Archive daily V2S Watercolour landscape
+        if: steps.edition.outputs.random != 'true'
         env:
           GALLERY_QUEUE_MATERIAL: watercolour
           GALLERY_QUEUE_ORIENTATION: landscape
         run: npm run gallery:build
 
       - name: Generate daily V2S Watercolour portrait
+        if: steps.edition.outputs.random != 'true'
         env:
           SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: watercolour
@@ -126,12 +158,14 @@ jobs:
         run: npm run social:generate
 
       - name: Archive daily V2S Watercolour portrait
+        if: steps.edition.outputs.random != 'true'
         env:
           GALLERY_QUEUE_MATERIAL: watercolour
           GALLERY_QUEUE_ORIENTATION: portrait
         run: npm run gallery:build
 
       - name: Generate daily Oil Paint landscape
+        if: steps.edition.outputs.random != 'true'
         env:
           SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: oil
@@ -139,12 +173,14 @@ jobs:
         run: npm run social:generate
 
       - name: Archive daily Oil Paint landscape
+        if: steps.edition.outputs.random != 'true'
         env:
           GALLERY_QUEUE_MATERIAL: oil
           GALLERY_QUEUE_ORIENTATION: landscape
         run: npm run gallery:build
 
       - name: Generate daily Oil Paint portrait
+        if: steps.edition.outputs.random != 'true'
         env:
           SOCIAL_COUNT: '2'
           SOCIAL_MATERIAL: oil
@@ -152,12 +188,14 @@ jobs:
         run: npm run social:generate
 
       - name: Archive daily Oil Paint portrait
+        if: steps.edition.outputs.random != 'true'
         env:
           GALLERY_QUEUE_MATERIAL: oil
           GALLERY_QUEUE_ORIENTATION: portrait
         run: npm run gallery:build
 
       - name: Generate Action Painting landscape
+        if: steps.edition.outputs.random != 'true'
         env:
           SOCIAL_MATERIAL: action
           SOCIAL_ORIENTATION: landscape
@@ -165,12 +203,14 @@ jobs:
         run: npm run social:generate
 
       - name: Archive Action Painting landscape
+        if: steps.edition.outputs.random != 'true'
         env:
           GALLERY_QUEUE_MATERIAL: action
           GALLERY_QUEUE_ORIENTATION: landscape
         run: npm run gallery:build
 
       - name: Generate Action Painting portrait
+        if: steps.edition.outputs.random != 'true'
         env:
           SOCIAL_MATERIAL: action
           SOCIAL_ORIENTATION: portrait
@@ -178,6 +218,7 @@ jobs:
         run: npm run social:generate
 
       - name: Archive Action Painting portrait
+        if: steps.edition.outputs.random != 'true'
         env:
           GALLERY_QUEUE_MATERIAL: action
           GALLERY_QUEUE_ORIENTATION: portrait
@@ -323,7 +364,11 @@ jobs:
           COUNT="$(DAY="$DAY" node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('gallery/'+process.env.DAY+'/meta.json')); console.log(m.entries.length)")"
           # New materials add artwork without changing the historical batch size.
           # Require the established baseline; do not reject additional material batches.
-          if [[ "$DAY" > "2026-10-16" ]]; then
+          if [[ "$DAY" > "2026-11-08" ]]; then
+            test "$COUNT" -eq 12
+            DAY="$DAY" node --input-type=module -e "import fs from 'node:fs';const q=JSON.parse(fs.readFileSync('gallery/'+process.env.DAY+'/meta.json'));if(q.entries.length!==12||new Set(q.entries.map(e=>e.seed)).size!==12||q.entries.some(e=>e.rendererVersion!==10))throw Error('Random daily gallery must have 12 distinct V10 studies')"
+            test -s "gallery/$DAY/random-edition.json"
+          elif [[ "$DAY" > "2026-10-16" ]]; then
             test "$COUNT" -eq 18
             DAY="$DAY" node --input-type=module -e "import fs from 'node:fs';const e=JSON.parse(fs.readFileSync('gallery/'+process.env.DAY+'/meta.json')).entries;for(const [kind,n] of [['marker',4],['watercolor',4],['watercolour',4],['oil',4],['action',2]]) {const found=e.filter(x=>(x.material||'marker')===kind);if(found.length!==n)throw Error(kind+' must have '+n+' studies; got '+found.length)}"
             DAY="$DAY" node --input-type=module -e "import fs from 'node:fs'; const day=process.env.DAY; const m=JSON.parse(fs.readFileSync('gallery/'+day+'/meta.json')); for(const orientation of ['landscape','portrait']) {if(!m.entries.some(e=>e.material==='action' && e.orientation===orientation))throw Error('Missing Action Painting '+orientation+' in '+day)}"
@@ -371,7 +416,7 @@ jobs:
         run: |
           echo "### ALGO/ART daily gallery" >> "$GITHUB_STEP_SUMMARY"
           echo "- Archive: https://southernadd-cmyk.github.io/algoart/gallery/" >> "$GITHUB_STEP_SUMMARY"
-          echo "- From 17 October: four gallery artworks each in Marker, Tissue & Graphite, Watercolour, and Oil Paint" >> "$GITHUB_STEP_SUMMARY"
+          echo "- 8 Nov: legacy 18-study exhibition restored; 9 Nov onward: 12 seeded random studies across all materials and engines" >> "$GITHUB_STEP_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
           echo "- Static HTML + JSON-LD + Open Graph + RSS + sitemap" >> "$GITHUB_STEP_SUMMARY"
 
   archive-check:
