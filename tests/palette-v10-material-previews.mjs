@@ -74,6 +74,52 @@ try{
     console.log('PALETTE 14 COMPARISON '+material+': V9 '+old.occupiedHueBins+
       ' vs V10 '+next.occupiedHueBins+' occupied hue bins');
   }
+  // Audit the browser's ACTUAL painted swatches for every palette, not
+  // just HSL string distinctness or the primary material example.
+  const swatchAudit=await page.evaluate(()=>{
+    const A=window.AlgoArt;
+    const names=['primary','cmyk','warm','cold','earth','marker',
+      'neon','pastel','spectrum','golden','mono'];
+    A.rendererVersion=10;
+    const canvas=document.createElement('canvas');
+    canvas.width=930;canvas.height=names.length*50+20;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#f5f0e6';ctx.fillRect(0,0,canvas.width,canvas.height);
+    const report=[];
+    for(const [row,name] of names.entries()){
+      const inks=A.hues({...A.readSettings(),palette:name,colourCount:14,
+        saturation:82,brightness:53},A.makeR('V10-ALL-PALETTES'));
+      const rgb=[],hueAngles=[];
+      const y=10+row*50;
+      ctx.fillStyle='#24211e';ctx.font='14px sans-serif';
+      ctx.fillText(name.toUpperCase(),10,y+25);
+      for(let i=0;i<14;i++){
+        const x=135+i*56;
+        ctx.fillStyle=inks[i];
+        ctx.fillRect(x,y,53,40);
+        const pixel=ctx.getImageData(x+26,y+20,1,1).data;
+        rgb.push([...pixel.slice(0,3)].join(','));
+        hueAngles.push(Number(/^hsl\(([-.\d]+)/.exec(inks[i])[1]));
+      }
+      if(new Set(rgb).size!==14)
+        throw Error(name+' 14-colour CSS swatches collapsed into duplicate RGB values');
+      if(name!=='mono'){
+        if(new Set(hueAngles).size!==14)
+          throw Error(name+' has fewer than 14 hue angles in the browser');
+        for(let a=0;a<14;a++)for(let b=a+1;b<14;b++){
+          const diff=Math.abs(hueAngles[a]-hueAngles[b]);
+          if(Math.min(diff,360-diff)<6-1e-7)
+            throw Error(name+' has near-duplicate hue angles');
+        }
+      }
+      report.push({palette:name,swatches:rgb.length,uniqueRGB:new Set(rgb).size,
+        distinctHues:new Set(hueAngles).size});
+    }
+    return{png:canvas.toDataURL('image/png').split(',')[1],report};
+  });
+  await writeFile(dir+'/14-colour-all-palettes.png',
+    Buffer.from(swatchAudit.png,'base64'));
+  console.log('PALETTE SWATCH AUDIT',JSON.stringify(swatchAudit.report));
   if(failures.length)throw Error('Page errors: '+failures.join('; '));
   await writeFile(dir+'/report.json',JSON.stringify(report,null,2));
 }finally{await browser.close()}
