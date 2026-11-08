@@ -216,6 +216,10 @@ test('Oil contact invitations are seeded, structural, and never forced on every 
  assert(decisions.some(Boolean)&&decisions.some(x=>!x));
  assert(decisions.every((x,i)=>x===wantsOilContact('2331044488',2,i,100,75)));
  assert.equal(wantsOilContact('2331044488',2,17,0,0),false);
+ const shapes=Array.from({length:20},(_,i)=>
+   wantsOilContact('2331044488',2,'shapes/item-'+i,100,90));
+ assert(shapes.some(Boolean)&&shapes.some(x=>!x),
+   'Nearby shape IDs must not share the same Oil contact decision');
  assert.deepEqual(oilContactCandidates({...group,cell:{x:0}},artist,[field],null,sheet,8),[]);
 });
 
