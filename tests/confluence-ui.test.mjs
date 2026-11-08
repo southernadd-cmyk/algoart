@@ -49,6 +49,16 @@ test('Confluence page must wire portrait controls and fit its canvas, not just s
  assert.ok(page.includes('src="ui.js?v=confluence-'), 'Browser must receive versioned Confluence UI script');
 });
 
+test('Compare captions identify each artist, material and turn share',()=>{
+ const ui=read('../confluence/ui.js');
+ const css=read('../confluence/style.css');
+ assert.match(ui,/function renderTurnLegend\(/);
+ assert.match(ui,/renderTurnLegend\('shared-turns',state\.study\.primary\.counts,state\.study\.roster\)/);
+ assert.match(ui,/renderTurnLegend\('equal-turns',state\.study\.equal\.counts,state\.study\.roster\)/);
+ assert.match(ui,/artist\.inks\?\.\[0\]/);
+ assert.match(css,/#shared-turns,#equal-turns/);
+});
+
 test('Confluence makes response choices algorithmically rather than via a dropdown',()=>{
  const page=read('../confluence/index.html');
  const ui=read('../confluence/ui.js');
