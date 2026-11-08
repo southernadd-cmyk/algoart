@@ -78,6 +78,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   paintingWithoutTissue.drawImage(output.canvas,0,0);
   const oilActionOrder={oil:0,action:0};
   let oilActionClock=0;
+  let actionTurn=0;
   function showSheet(){
     output.save();
     output.resetTransform();output.globalAlpha=1;
@@ -254,14 +255,20 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     reserveForOtherArtists(oilSurface);
     showSheet();
   }
-  function renderActualAction(){
-    if(!actionMarks.length)return;
+  function renderActualAction(newMarks,artist){
+    if(!newMarks.length)return;
     if(typeof A.actionPaintingFromPathsV4!=='function')
       throw new Error('Confluence requires the complete solo Action V4 engine');
-    const paths=sourcePaths(actionMarks),settings=sourceSettings(actionMarks,'action');
-    const originalInks=[...new Set(actionMarks.map(m=>m.ink))];
+    // Each step paints only the responding artist's newly placed geometry.
+    // V4 generates real bowed throws, pools and scatter, but never re-seeds
+    // or redraws the previous turns: their enamel is already on this sheet.
+    const paths=sourcePaths(newMarks),settings=sourceSettings(newMarks,'action');
+    const originalInks=artist.inks?.length?artist.inks:
+      [...new Set(newMarks.map(mark=>mark.ink))];
     A.actionPaintingFromPathsV4(actionSurface.canvas,paths,settings,1,{
-      sourceInks:originalInks,transparentSheet:true});
+      sourceInks:originalInks,transparentSheet:true,append:true,
+      passes:1,gesturesPerPass:Math.max(2,Math.min(5,paths.length*2)),
+      variant:artist.id+'|turn-'+(++actionTurn)});
     surfacePasses.action++;oilActionOrder.action=++oilActionClock;
     reserveForOtherArtists(actionSurface);
     showSheet();
@@ -303,9 +310,9 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       renderActualWatercolour();
       return observe ? materialFootprint('watercolour',watercolourSurface) : undefined;
     }
-    // Neither Oil nor Action use miniature paints or turn-local shortcuts.
-    // Both receive all responding source geometry and render onto the shared
-    // full-size sheet using their complete solo painting algorithms.
+    // Both use the released engines on the shared full-resolution sheet.
+    // Oil currently rebuilds its pigment field; Action adds true V4 throws
+    // only for the newly responding geometry, preserving previous enamel.
     const entry=traces.map(t=>({...t,ink:artistInk(artist,t.mark),
       system:artist.system,palette:artist.palette,settings:artist.settings}));
     if(material==='oil'){
@@ -315,7 +322,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     }
     if(material==='action'){
       actionMarks.push(...entry);
-      renderActualAction();
+      renderActualAction(entry,artist);
       return observe?materialFootprint('action',actionSurface):undefined;
     }
     throw new Error('Unknown Confluence material: '+material);
