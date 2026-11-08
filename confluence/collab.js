@@ -151,7 +151,13 @@ function recordArtist(artist, seed, sheet, sourceCanvas) {
   // recorded geometry into genuine sequential drawing gestures rather
   // than treating a whole shape/run as a single Confluence turn.
   // This changes only Confluence scheduling, never the solo engines.
-  const progressive=['rects','constructed','scribble'].includes(guide?.type);
+  // The usual low-group systems need progressive source gestures; so does
+  // ANY sparse source drawing. A Golden Trajectories study with five long
+  // source groups otherwise caps the entire three-artist study at 8 turns,
+  // even when the other hands have dozens of groups. This only slices the
+  // recorded existing strokes; it never synthesizes or repeats marks.
+  const progressive=['rects','constructed','scribble'].includes(guide?.type) ||
+    groups.length<29;
   return {...artist,groups:progressive?
     expandRecursiveTurns(groups,samplePath):groups};
 }
