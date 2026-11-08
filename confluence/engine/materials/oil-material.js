@@ -514,13 +514,7 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   var pc=layer(),hc=layer(),final=layer();
   var pctx=pc.getContext('2d'),hctx=hc.getContext('2d'),fctx=final.getContext('2d');
   pctx.scale(ratio,ratio);hctx.scale(ratio,ratio);
-  // Confluence's tissue turns must deposit actual translucent V7 pigment,
-  // not a composite of cream paper and paint. Preserve every native ribbon,
-  // torn fibre, relief and graphite pass on the transparent pigment canvas.
-  // Solo/editor tissue still uses precisely its original paper underpainting.
-  if(A.confluenceTissueTransparent&&kit&&kit.revision>=7){
-    // Keep pctx transparent; deposit() draws the original V7 pigment only.
-  }else if(A.oilSurface)A.oilSurface(pctx,w,h,chains,seed,quality,kit);
+  if(A.oilSurface)A.oilSurface(pctx,w,h,chains,seed,quality,kit);
   else{pctx.fillStyle='#f2ebdd';pctx.fillRect(0,0,w,h)}
   hctx.fillStyle='rgb(13,13,13)';hctx.fillRect(0,0,w,h);
   var voids=meta.voids||[];
