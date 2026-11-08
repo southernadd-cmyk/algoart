@@ -39,3 +39,27 @@ test('captions change by artwork but are identical on retries',()=>{
   assert.ok(instagramTags.size>=4,'Instagram must rotate hashtag sets');
   assert.ok(blueskyTags.size>=4,'Bluesky must rotate hashtag sets');
 });
+
+// Public-facing oil medium name never contains a renderer version.
+// Archive and share URLs still retain exact historical material=oil-vN codes.
+test('all Oil versions display simply Oil on every automated caption platform',()=>{
+ for(const version of [1,2,3,4,5,6,7,8,9]){
+  for(const orientation of ['portrait','landscape']){
+   const id='2026-11-08-'+(orientation==='portrait'?'OP01':'OL01');
+   const item={id,material:'oil',orientation,mode:'organic',series:'Growth Systems',
+     seed:'OIL-PUBLIC-NAME',stats:'Growth Systems / Growth',
+     settings:{orientation,phiStrength:61.8,palette:'warm',pen:'fine'},
+     shareUrl:'https://southernadd-cmyk.github.io/algoart/?v=9&material=oil-v'+version};
+   const copy=makeCaptions(item);
+   assert.match(copy.instagram,/\/ OIL\n/,'Instagram heading must use Oil');
+   for(const platform of ['instagram','threads','bluesky']){
+    assert.match(copy[platform],/\/ OIL(?:\n|$)/,platform+' heading must use Oil at v'+version);
+    assert.doesNotMatch(copy[platform],/\bOIL(?: PAINT)? V\d+\b/i,platform+' must not expose the Oil revision');
+    assert.ok(copy[platform].includes(editorArtworkLink(item)),platform+' must retain the exact artwork link');
+   }
+   assert.doesNotMatch(copy.altText,/\bOIL(?: PAINT)? V\d+\b/i,'Alt text must omit Oil revision');
+   assert.equal(new URL(item.shareUrl).searchParams.get('material'),'oil-v'+version,
+     'Underlying reproducible renderer identity must remain intact');
+  }
+ }
+});

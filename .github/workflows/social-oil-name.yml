@@ -1,0 +1,35 @@
+name: Public Oil social naming
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'automation/captions.mjs'
+      - 'automation/oil-slot.mjs'
+      - 'automation/social-slot.mjs'
+      - 'automation/portrait-slot.mjs'
+      - 'tests/social-caption-rotation.test.mjs'
+      - 'tests/oil-daily.test.mjs'
+      - 'tests/oil-v8-edition-rehearsal.mjs'
+      - '.github/workflows/social-oil-name.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify all publisher JavaScript parses
+        run: |
+          node --check automation/captions.mjs
+          node --check automation/oil-slot.mjs
+          node --check automation/social-slot.mjs
+          node --check automation/portrait-slot.mjs
+      - name: Check public caption labels, limits, deterministic retries and exact links
+        run: |
+          node --test tests/social-caption-rotation.test.mjs tests/social-caption-limits.test.mjs
+          node tests/portrait-captions.test.mjs

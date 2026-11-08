@@ -75,7 +75,13 @@ export async function rehearseOilV8Edition(day,editorUrl){
       assert(archived,'Scheduled Oil artwork must be in the same dated gallery');
       assert.equal(selected.share_url,archived.shareUrl);
       assert((await readFile(selected.image_path)).equals(await readFile(path.join(edition,archived.imageFile))));
-      assert.match(Buffer.from(selected.instagram_caption_b64,'base64').toString(),/OIL PAINT V8/);
+      assert.match(Buffer.from(selected.instagram_caption_b64,'base64').toString(),/\/ OIL\n/);
+      for(const platform of ['instagram','threads','bluesky']){
+        const caption=Buffer.from(selected[platform+'_caption_b64'],'base64').toString();
+        assert.doesNotMatch(caption,/OIL PAINT V\d+|OIL V\d+/i,'Public '+platform+' copy must hide engine revisions');
+      }
+      assert.match(Buffer.from(selected.pinterest_title_b64,'base64').toString(),/\bOil\b/);
+      assert.match(Buffer.from(selected.pinterest_description_b64,'base64').toString(),/^Oil study\./);
       if(orientation==='portrait')assert.match(selected.instagram_asset_name,/-instagram\.jpg$/);
       selections.push({orientation,id:archived.id,seed:archived.seed});
     }
