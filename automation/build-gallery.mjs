@@ -160,7 +160,7 @@ function dayPage(queue) {
 <link rel="canonical" href="${canonical}">
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="stylesheet" href="../gallery.css?v=20261013-site-quality">
-<link rel="stylesheet" href="../editorial.css?v=20261017-release">\n<link rel="stylesheet" href="../../css/nav-lettering.css?v=13-uppercase-marker">\n<script defer src="../../js/nav-lettering.js?v=3-uppercase-marker"></script>
+<link rel="stylesheet" href="../editorial.css?v=20261017-release">\n<link rel="stylesheet" href="../../css/nav-lettering.css?v=14-confluence-navigation">\n<script defer src="../../js/nav-lettering.js?v=3-uppercase-marker"></script>
 <link rel="alternate" type="application/rss+xml" title="PROPORTION PIECE Daily Gallery" href="../feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PROPORTION PIECE">
@@ -181,7 +181,7 @@ function dayPage(queue) {
   <div class="algo-global-brand"><a class="brand" href="../../">PROPORTION PIECE</a></div>
   <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
   <p class="algo-global-question">Can one number compose a drawing?</p>
-  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../" aria-current="page">daily gallery</a><a data-algo-nav href="../../about/">about this project</a></nav>
+  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../../">try it out</a><a data-algo-nav href="../../confluence/">confluence</a><a data-algo-nav href="../" aria-current="page">daily gallery</a><a data-algo-nav href="../../about/">about this project</a></nav>
 </header>
 <main>
   <section class="hero">
@@ -250,7 +250,7 @@ function archivePage(archive) {
 <link rel="canonical" href="${GALLERY_URL}/">
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
 <link rel="stylesheet" href="gallery.css?v=20261013-site-quality">
-<link rel="stylesheet" href="editorial.css?v=20261027-gallery-intro-removed">\n<link rel="stylesheet" href="../css/nav-lettering.css?v=13-uppercase-marker">\n<script defer src="../js/nav-lettering.js?v=3-uppercase-marker"></script>
+<link rel="stylesheet" href="editorial.css?v=20261027-gallery-intro-removed">\n<link rel="stylesheet" href="../css/nav-lettering.css?v=14-confluence-navigation">\n<script defer src="../js/nav-lettering.js?v=3-uppercase-marker"></script>
 
 <link rel="alternate" type="application/rss+xml" title="PROPORTION PIECE Daily Gallery" href="feed.xml">
 <meta property="og:type" content="website">
@@ -270,7 +270,7 @@ function archivePage(archive) {
   <div class="algo-global-brand"><a class="brand" href="../">PROPORTION PIECE</a></div>
   <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
   <p class="algo-global-question">Can one number compose a drawing?</p>
-  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../">try it out</a><a data-algo-nav href="./" aria-current="page">daily gallery</a><a data-algo-nav href="../about/">about this project</a></nav>
+  <nav class="algo-site-nav" aria-label="Site navigation"><a data-algo-nav href="../">try it out</a><a data-algo-nav href="../confluence/">confluence</a><a data-algo-nav href="./" aria-current="page">daily gallery</a><a data-algo-nav href="../about/">about this project</a></nav>
 </header>
 <main>
   <section class="visit-band" aria-labelledby="visit-title">
