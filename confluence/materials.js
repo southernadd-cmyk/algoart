@@ -1,6 +1,6 @@
 import {artistInk, paint} from './collab.js?v=studio-06';
 import {plannedPoints} from './mark-planner.js?v=studio-06';
-import {renderNativeDeposit} from './native-material.js?v=confluence-native-06';
+import {renderNativeDeposit} from './native-material.js?v=confluence-wash-seams-07';
 
 export const materials = {
   marker: 'Marker',
@@ -43,7 +43,12 @@ function box(traces, material, width, height) {
     const start = points[0], end = points.at(-1);
     // The pour's cubic control points can move up to a chord length away
     // from the source. The extra margin includes its largest scatter.
-    const padding = material === 'action' ? 70 + Math.hypot(end.x - start.x, end.y - start.y) : 75;
+    // Native V2S washes can spread beyond the drawn centreline by more
+    // than the previous 75px crop margin. That margin created the visible
+    // rectangular blue tiles in Confluence compositions.
+    const padding = material === 'watercolour' ? 175 :
+      material === 'tissue' ? 145 :
+      material === 'action' ? 70 + Math.hypot(end.x - start.x, end.y - start.y) : 75;
     for (const {x, y} of points) {
       minX = Math.min(minX, x - padding);
       minY = Math.min(minY, y - padding);
@@ -165,7 +170,8 @@ export function makePainter(output, seed, sheet) {
     try {
       if(material==='tissue'||material==='watercolour'){
         renderNativeDeposit(pigment,material,traces,artist,area,sheet.paper,
-          [seed,artist.id,group.id,artist.system,'v10'].join('|'),sourceRGB);
+          [seed,artist.id,group.id,artist.system,'v10'].join('|'),sourceRGB,
+          {width,height});
         // Native material functions draw in local bitmap coordinates.
         // Restore the world-to-local transform for paper edge trimming.
         pigment.setTransform(w/area.w,0,0,h/area.h,-area.x*w/area.w,-area.y*h/area.h);

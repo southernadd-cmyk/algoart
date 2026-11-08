@@ -6,6 +6,20 @@
 const clamp=(v,low,high)=>Math.max(low,Math.min(high,v));
 const rgbString=rgb=>'rgb('+rgb.join(',')+')';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+// A finite native material pass is cropped to an offscreen tile for speed.
+// Any pigment reaching its artificial tile edge must taper to zero before
+// compositing. Do not fade edges that coincide with the real paper boundary.
+export function cropEdgeFeather(x,y,w,h,area,sheet,feather=72){
+  let distance=Infinity;
+  if(area.x>0)distance=Math.min(distance,x);
+  if(area.y>0)distance=Math.min(distance,y);
+  if(area.x+area.w<sheet.width)distance=Math.min(distance,w-1-x);
+  if(area.y+area.h<sheet.height)distance=Math.min(distance,h-1-y);
+  if(distance===Infinity)return 1;
+  const t=clamp(distance/feather,0,1);
+  return t*t*(3-2*t);
+}
+
 
 function makeChains(traces,area,artist,inkRGB){
   const paths=[],chains=[];
@@ -44,7 +58,7 @@ function invoke(A,ctx,material,chains,meta,seed,kit){
   }
 }
 
-export function renderNativeDeposit(ctx,material,traces,artist,area,paper,seed,inkRGB){
+export function renderNativeDeposit(ctx,material,traces,artist,area,paper,seed,inkRGB,sheet){
   const A=window.AlgoArt;
   if(!A?.oilMaterial||!A?.watercolourV2sMaterial||!A?.tissueKitFromPaths)
     throw new Error('Confluence requires the released tissue/watercolour renderers');
@@ -64,14 +78,17 @@ export function renderNativeDeposit(ctx,material,traces,artist,area,paper,seed,i
   invoke(A,ctx,material,chains,meta,seed,kit);
   const data=ctx.getImageData(0,0,w,h);
   const reference=background.getImageData(0,0,w,h).data;
-  for(let p=0;p<data.data.length;p+=4){
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const p=(y*w+x)*4;
     const contrast=Math.max(Math.abs(data.data[p]-reference[p]),
       Math.abs(data.data[p+1]-reference[p+1]),
       Math.abs(data.data[p+2]-reference[p+2]));
-    // Keep delicate wicks/fibres, while excluding subtle differences in
-    // the two genuine paper renders outside pigment coverage.
-    const alpha=Math.round(clamp((contrast-2)*255/13,0,255));
-    data.data[p+3]=alpha;
+    // Separate actual pigment from the material's paper model, then feather
+    // offscreen crop boundaries. Neither the pigment colours nor the artist's
+    // responsive mark placement is replaced or flattened.
+    const pigmentAlpha=clamp((contrast-2)/13,0,1);
+    const edge=cropEdgeFeather(x,y,w,h,area,sheet);
+    data.data[p+3]=Math.round(255*pigmentAlpha*edge);
   }
   ctx.putImageData(data,0,0);
 }
