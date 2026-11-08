@@ -1,4 +1,4 @@
-import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-wash-seams-07';
+import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-rect-cells-08';
 import {materials, makePainter} from './materials.js?v=confluence-tissue-source-over-18';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=studio-06';
