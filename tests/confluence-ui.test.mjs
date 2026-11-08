@@ -81,3 +81,17 @@ test('Confluence makes response choices algorithmically rather than via a dropdo
  assert.match(collab,/inferResponse\(/);
  assert.match(ui,/action\.reaction/);
 });
+
+test('Rotate lead is an active control and share links retain the selected hand',()=>{
+ const ui=read('../confluence/ui.js');
+ const html=read('../confluence/index.html');
+ const share=read('../confluence/share-study.js');
+ assert.match(html,/id="rotate-lead"/);
+ assert.match(html,/id="lead-index"/);
+ assert.match(ui,/byId\('rotate-lead'\)\.addEventListener\('click'/);
+ assert.match(ui,/leadInput\.value=String\(\(Number\(leadInput\.value\)\+1\)%3\)/);
+ assert.match(ui,/renderTurnLegend\('equal-turns'/);
+ assert.match(ui,/leadIndex:Number\(leadInput\.value\)/);
+ assert.match(share,/data\.leadIndex\?\?0/);
+ assert.match(share,/data\.leadIndex>=0 && data\.leadIndex<=2/);
+});
