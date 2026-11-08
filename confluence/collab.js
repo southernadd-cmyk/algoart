@@ -378,7 +378,7 @@ export function makeRun(study, strength, {equal = false} = {}) {
       :initial.place;
     return [artist.id,{
       ...artist,field:field(study.sheet,artist.id),
-      pending:artist.groups.slice(0,programme.counts[i]),
+      pending:artist.groups.slice(),
       anchors:new Map(),committed:0,rectInvited:0,fragmentPlacements:new Map(),pose:{place}
     }];
   }));
@@ -391,94 +391,125 @@ export function makeRun(study, strength, {equal = false} = {}) {
   let turn = 0;
   return {
     next(deposit) {
-      const entry = programme.turns[turn++];
-      if (!entry) return null;
-      const artist = artists.get(entry.id);
-      const others = [...artists.values()].filter(other => other !== artist && other.committed > 0);
-      const fields = others.map(other => other.field);
-      // A tentative reading guides which group to draw next. Once chosen,
-      // read the sheet again for that particular group's placement.
-      const initial=inferResponse(artist.pending[0],artist,fields,density,study.sheet);
-      let context={fields,response:initial.response,sheet:study.sheet,mode:initial.mode,
-        gain:strength/100,density};
-      const selection = strength > 0 ? nextGroup(artist, context, p => artist.anchors.has(key(p))) :
-        {group: artist.pending.shift(), prioritized: false};
-      const {group, prioritized} = selection;
-      const reaction=inferResponse(group,artist,fields,density,study.sheet);
-      context={...context,response:reaction.response,mode:reaction.mode};
-      // All fragments of the same source rectangle retain a common
-      // placement, otherwise successive sides would drift apart.
-      const savedPlacement=group.fragmentParent&&artist.fragmentPlacements.get(group.fragmentParent);
-      let placement = savedPlacement||{place: artist.pose.place, effort: 0};
-      if (strength > 0&&!savedPlacement) {
-        const choices = candidates(group, artist, strength, turn);
-        placement = choices[0];
-        if (fields.length || density) {
-          const width = inkRadius(artist, group);
-          let best = judge(group, placement, context, width);
-          for (const candidate of choices.slice(1)) {
-            const score = judge(group, candidate, context, width);
-            if (score < best - .005) {
-              placement = candidate;
-              best = score;
+      const entry=programme.turns[turn++];
+      if(!entry)return null;
+      const artist=artists.get(entry.id);
+      const quota=entry.groupQuota||1;
+      const actions=[];
+      // One public turn can comprise several related drawing gestures.
+      // Plan each gesture separately so each retains a genuine response to
+      // existing work, but render its native material ONCE per artist turn.
+      for(let gesture=0;gesture<quota;gesture++){
+        if(!artist.pending.length)
+          throw new Error('Artist '+artist.id+' exhausted marks before completing the schedule');
+        const others=[...artists.values()].filter(other=>other!==artist&&other.committed>0);
+        const fields=others.map(other=>other.field);
+        const initial=inferResponse(artist.pending[0],artist,fields,density,study.sheet);
+        let context={fields,response:initial.response,sheet:study.sheet,
+          mode:initial.mode,gain:strength/100,density};
+        const selection=strength>0
+          ? nextGroup(artist,context,p=>artist.anchors.has(key(p)))
+          : {group:artist.pending.shift(),prioritized:false};
+        const {group,prioritized}=selection;
+        const reaction=inferResponse(group,artist,fields,density,study.sheet);
+        context={...context,response:reaction.response,mode:reaction.mode};
+        // Reassembled contours must share the same placement; changing it
+        // halfway through would tear a rectangle or connected gesture.
+        const savedPlacement=group.fragmentParent&&artist.fragmentPlacements.get(group.fragmentParent);
+        let placement=savedPlacement||{place:artist.pose.place,effort:0};
+        if(strength>0&&!savedPlacement){
+          const choices=candidates(group,artist,strength,turn);
+          placement=choices[0];
+          if(fields.length||density){
+            const width=inkRadius(artist,group);
+            let best=judge(group,placement,context,width);
+            for(const candidate of choices.slice(1)){
+              const score=judge(group,candidate,context,width);
+              if(score<best-.005){placement=candidate;best=score;}
             }
-          }
-          if(mixedRects&&artist.system!=='rects'){
-            const inside=interiorCandidates(group,artist,rectangleCells,turn,rectangleUse);
-            let bestInside=null,bestInsideScore=Infinity;
-            for(const candidate of inside){
-              // Prefer cells not yet visited. The original proximity and
-              // ink-density scores still reject genuinely overcrowded cells.
-              const score=judge(group,candidate,context,width)+candidate.used*.22-
-                invitationFraction*.43;
-              if(score<bestInsideScore){
-                bestInside=candidate;bestInsideScore=score;
+            if(mixedRects&&artist.system!=='rects'){
+              const inside=interiorCandidates(group,artist,rectangleCells,turn,rectangleUse);
+              let bestInside=null,bestInsideScore=Infinity;
+              for(const candidate of inside){
+                const score=judge(group,candidate,context,width)+candidate.used*.22-
+                  invitationFraction*.43;
+                if(score<bestInsideScore){bestInside=candidate;bestInsideScore=score;}
               }
-            }
-            const owed=artist.rectInvited<Math.ceil((artist.committed+1)*invitationFraction);
-            if(bestInside&&bestInsideScore<best+(owed?1.05:0)){
-              placement=bestInside;
-              best=bestInsideScore;
+              const owed=artist.rectInvited<Math.ceil((artist.committed+gesture+1)*invitationFraction);
+              if(bestInside&&bestInsideScore<best+(owed?1.05:0))
+                placement=bestInside;
             }
           }
         }
-      }
-      if(placement.rectCellId){
-        rectangleUse.set(placement.rectCellId,(rectangleUse.get(placement.rectCellId)||0)+1);
-        artist.rectInvited++;
-      }
-      if (study.sheet.constrain&&!savedPlacement) {
-        const place = placement.place;
-        placement = {...placement, constrain: study.sheet.constrain, place: point => study.sheet.constrain(place(point))};
-      }
-      if(group.fragmentParent&&!savedPlacement)
-        artist.fragmentPlacements.set(group.fragmentParent,placement);
-      for (const anchor of group.links || []) {
-        if (!artist.anchors.has(key(anchor))) artist.anchors.set(key(anchor), placement.place(anchor));
-      }
-      const plans = strength > 0&&!group.fragmentParent ? planStrokes(group, artist, placement, context) : new Map();
-      const contacts = [...new Set([...plans.values()].flatMap(plan => plan.contacts))]
-        .map(id => artists.get(id).number);
-      const action = {
-        artist, group, placement, plans, contacts, heard: strength > 0 ? others.length : 0,
-        changed: placement.effort > 0 || plans.size > 0 || prioritized,
-        reordered: prioritized, reaction: reaction.mode, responseEvidence: reaction.evidence,
-        pigmentGain: limitPigment(group, placement, context), border: study.sheet.border
-      };
-      const footprint = deposit?.(action, strength > 0);
-      if (strength > 0) {
-        if (footprint) {
-          for (const {point, angle, radius, opacity = 1} of footprint) {
-            indexInk(artist.field, point, angle, radius);
-            density?.stamp(point, radius, opacity);
-          }
-        } else {
-          for (const trace of group.traces) indexTrace(artist.field, density, trace, placement, plans.get(trace.mark), action.pigmentGain);
+        if(placement.rectCellId){
+          rectangleUse.set(placement.rectCellId,(rectangleUse.get(placement.rectCellId)||0)+1);
+          artist.rectInvited++;
         }
+        if(study.sheet.constrain&&!savedPlacement){
+          const place=placement.place;
+          placement={...placement,constrain:study.sheet.constrain,
+            place:point=>study.sheet.constrain(place(point))};
+        }
+        if(group.fragmentParent&&!savedPlacement)
+          artist.fragmentPlacements.set(group.fragmentParent,placement);
+        for(const anchor of group.links||[])
+          if(!artist.anchors.has(key(anchor)))artist.anchors.set(key(anchor),placement.place(anchor));
+        const plans=strength>0&&!group.fragmentParent
+          ? planStrokes(group,artist,placement,context):new Map();
+        const contacts=[...new Set([...plans.values()].flatMap(plan=>plan.contacts))]
+          .map(id=>artists.get(id).number);
+        actions.push({
+          artist,group,placement,plans,contacts,heard:strength>0?others.length:0,
+          changed:placement.effort>0||plans.size>0||prioritized,
+          reordered:prioritized,reaction:reaction.mode,responseEvidence:reaction.evidence,
+          pigmentGain:limitPigment(group,placement,context),border:study.sheet.border
+        });
       }
-      density?.commit();
-      if (!footprint || footprint.length) artist.committed++;
-      return action;
+      const observe=strength>0;
+      let footprint;
+      if(deposit?.batch)footprint=deposit.batch(actions,observe);
+      else if(deposit){
+        const contributed=[];
+        for(const action of actions){
+          const result=deposit(action,observe);
+          if(result?.length)contributed.push(...result);
+        }
+        footprint=contributed.length?contributed:undefined;
+      }
+      if(observe){
+        if(footprint?.length){
+          for(const {point,angle,radius,opacity=1} of footprint){
+            indexInk(artist.field,point,angle,radius);
+            density?.stamp(point,radius,opacity);
+          }
+        }else{
+          for(const action of actions)for(const trace of action.group.traces)
+            indexTrace(artist.field,density,trace,action.placement,
+              action.plans.get(trace.mark),action.pigmentGain);
+        }
+        density?.commit();
+      }
+      artist.committed+=actions.length;
+      const last=actions.at(-1);
+      // One history entry and one Step operation per allocated *turn*.
+      // The complete list remains available for audit and progress readout.
+      if(actions.length===1)return {...last,
+        groupIds:[last.group.id],drawnGroups:artist.groups.length-artist.pending.length,
+        totalGroups:artist.groups.length,gestureCount:1};
+      const combinedPlans=new Map();
+      const contacts=new Set();
+      actions.forEach((action,i)=>{
+        for(const [id,plan] of action.plans)combinedPlans.set(i+':'+id,plan);
+        for(const number of action.contacts)contacts.add(number);
+      });
+      return {...last,
+        group:{label:actions.length+' gestures · '+last.group.label},
+        groupIds:actions.map(action=>action.group.id),gestureCount:actions.length,
+        drawnGroups:artist.groups.length-artist.pending.length,
+        totalGroups:artist.groups.length,plans:combinedPlans,
+        contacts:[...contacts],heard:Math.max(...actions.map(a=>a.heard)),
+        changed:actions.some(a=>a.changed),reordered:actions.some(a=>a.reordered)};
+
     }
   };
 }
