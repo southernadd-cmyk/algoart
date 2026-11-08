@@ -12,6 +12,9 @@ on:
       - 'gallery/visit/phi-translation-area-sign.mjs'
       - 'tests/step-by-step-svg-attribute-safety.test.mjs'
       - 'cloudflare/social-preview/src/worker.mjs'
+      - 'cloudflare/social-preview/src/confluence.mjs'
+      - 'confluence/**'
+      - 'tests/confluence-ui.test.mjs'
       - 'cloudflare/social-preview/src/worker.test.mjs'
       - 'cloudflare/social-preview/wrangler.toml'
       - 'tests/phi-translation-area-sign.test.mjs'
@@ -46,4 +49,6 @@ jobs:
           node --test tests/phi-translation-area-sign.test.mjs tests/step-by-step-svg-attribute-safety.test.mjs
           node tests/mobile-png-download.test.mjs
           node tests/control-ranges.test.mjs
-          node --test cloudflare/social-preview/src/worker.test.mjs
+          node --test cloudflare/social-preview/src/worker.test.mjs cloudflare/social-preview/tests/confluence.test.mjs
+          node --test tests/confluence-ui.test.mjs
+          node --check confluence/ui.js confluence/share-study.js confluence/drawer-ui.js

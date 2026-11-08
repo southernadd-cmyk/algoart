@@ -43,6 +43,7 @@ function syncHint(changed) {
   status.dataset.pending = String(changed);
   byId('board-pending').hidden = !changed;
   status.textContent = changed ? 'Changes ready to draw' : 'Roster applied';
+  if(state.shareControls) state.shareControls.sync();
 }
 
 function showSwatches(holder, artist) {

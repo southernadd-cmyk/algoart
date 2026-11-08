@@ -104,3 +104,17 @@ export function crowdingAt(context, point) {
   const excess = Math.max(0, density - .8);
   return Math.min(9, excess * excess) * (context.mode === 'space' ? 2.8 : 1.15);
 }
+
+
+// Minimum five turns keeps all three voices present at any φ allocation.
+export const FIBONACCI_TURNS = Object.freeze([5,8,13,21,34,55,89,144,233,377,610,987,1597,2584]);
+export function fibonacciTurnOptions(capacity){
+  return FIBONACCI_TURNS.filter(n=>n<=capacity);
+}
+export function resolveTurnBudget(capacity,requested){
+  const available=fibonacciTurnOptions(capacity);
+  if(!available.length) throw new Error('Choose systems with at least five available drawing turns.');
+  const asked=Number(requested);
+  if(available.includes(asked))return {count:asked,available};
+  return {count:available.filter(n=>n<=asked).at(-1)||available.at(-1),available};
+}
