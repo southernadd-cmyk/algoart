@@ -1,0 +1,29 @@
+name: Renderer V10 palette fidelity
+
+on:
+  pull_request:
+    paths:
+      - 'js/**'
+      - 'tests/palette-coverage-v10.test.mjs'
+      - 'automation/**'
+      - 'index.html'
+      - 'package.json'
+      - '.github/workflows/palette-fidelity.yml'
+  workflow_dispatch:
+
+jobs:
+  palette-fidelity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test V10 palette coverage
+        run: node tests/palette-coverage-v10.test.mjs
+      - name: Check control and URL versions
+        run: node tests/control-ranges.test.mjs
+      - name: Preserve published V8
+        run: node tests/renderer-lock.test.mjs
