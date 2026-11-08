@@ -68,7 +68,7 @@ export function interiorCandidates(group,artist,cells,turn,used=new Map()){
   for(let i=0;i<cells.length;i++){
     const cell=cells[i];
     const scale=Math.min(1,cell.w*.67/width,cell.h*.67/height);
-    if(scale<.12)continue;
+    if(scale<.06)continue;
     const angle=(turn*.23+artist.number+i)*GOLD;
     const x=cell.x+cell.w*(.5+Math.cos(angle)*.065);
     const y=cell.y+cell.h*(.5+Math.sin(angle)*.065);
