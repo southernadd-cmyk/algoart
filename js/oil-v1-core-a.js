@@ -2692,8 +2692,11 @@ function localPalette(source,centre,sourcePoints,first,reach){
   var maximumColours=A.rendererVersion>=10?14:4;
   for(var i=0;i<hits.length&&palette.length<maximumColours;i++){
     var rgb=hits[i].rgb;
+    // Keep distinct neighbouring V10 pigments instead of merging
+    // them into one field colour merely because their RGBs are close.
+    var separation=A.rendererVersion>=10?22:55;
     if(palette.some(function(a){return Math.hypot(a[0]-rgb[0],
-      a[1]-rgb[1],a[2]-rgb[2])<55}))continue;
+      a[1]-rgb[1],a[2]-rgb[2])<separation}))continue;
     palette.push(rgb);
   }
   return palette;
