@@ -5,8 +5,8 @@ import {extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 
-// Verify real editor-to-Confluence button clicks across all five materials.
-// The shared three-artist composition intentionally differs from solo.
+// Hidden-button diagnostic: compare transfer behaviour directly from editor
+// URLs without exposing a broken solo-to-Confluence control.
 const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
  '.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8',
@@ -40,8 +40,8 @@ try{
  await page.waitForFunction(()=>
   window.AlgoArt?.lastTissueV8Stats?.variant==='layered-v8',
   null,{timeout:90000});
- assert.equal(await page.locator('#exploreConfluence').count(),1,
-   'Verified Explore in Confluence button is missing');
+ assert.equal(await page.locator('#exploreConfluence').count(),0,
+   'Unverified Explore in Confluence button must remain removed');
  const solo=await page.evaluate(()=>({
   seed:document.querySelector('#seed').value,
   material:document.querySelector('#materialStyle').value,
@@ -56,13 +56,9 @@ try{
  const url=new URL(solo.link);
  assert.equal(url.searchParams.get('material'),'tissue-v8',
    'Solo renderer must identify V8 in its saved state');
- // Click the actual solo-editor control.
- const importedUrl=new URL(await page.locator('#exploreConfluence').getAttribute('href'),origin);
- assert.equal(importedUrl.pathname,'/confluence/');
- assert.equal(importedUrl.searchParams.get('material'),'tissue-v8');
- assert.equal(importedUrl.searchParams.get('seed'),solo.seed);
- await page.locator('#exploreConfluence').click();
- await page.waitForURL(/\/confluence\/\?/,{timeout:90000});
+ // Reconstruct the import URL only within this test harness.
+ const importedUrl=new URL('/confluence/?'+url.searchParams.toString(),origin);
+ await page.goto(importedUrl.href,{waitUntil:'load'});
  await page.waitForFunction(()=>
   document.querySelector('#import-note')?.hidden===false &&
   document.querySelector('#seed')?.value==='CONFLUENCE-TISSUE-V8-AUDIT',
@@ -117,19 +113,14 @@ try{
      document.querySelector('#seed')?.value===value &&
      document.querySelector('#materialStyle')?.value===kind,
      [seed,expected],{timeout:90000});
-   assert.equal(await page.locator('#exploreConfluence').count(),1,
-     'Verified solo-editor CTA is missing for '+material);
+   assert.equal(await page.locator('#exploreConfluence').count(),0,
+     'Unverified solo-editor CTA reappeared for '+material);
    const current=new URL(page.url());
    assert.equal(current.searchParams.get('seed'),seed);
    // Marker deliberately uses an omitted default material query value.
    if(material!=='marker')assert.equal(current.searchParams.get('material'),material);
-   const target=new URL(await page.locator('#exploreConfluence')
-     .getAttribute('href'),origin);
-   assert.equal(target.pathname,'/confluence/');
-   assert.equal(target.searchParams.get('seed'),seed);
-   if(material!=='marker')assert.equal(target.searchParams.get('material'),material);
-   await page.locator('#exploreConfluence').click();
-   await page.waitForURL(/\/confluence\/\?/,{timeout:90000});
+   const target=new URL('/confluence/?'+current.searchParams.toString(),origin);
+   await page.goto(target.href,{waitUntil:'load'});
    await page.waitForFunction(value=>
      document.querySelector('#import-note')?.hidden===false &&
      document.querySelector('#seed')?.value===value,seed,{timeout:90000});
