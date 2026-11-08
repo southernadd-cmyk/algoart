@@ -1,5 +1,6 @@
 import {artistInk, paint} from './collab.js?v=studio-06';
 import {plannedPoints} from './mark-planner.js?v=studio-06';
+import {renderNativeDeposit} from './native-material.js?v=confluence-native-06';
 
 export const materials = {
   marker: 'Marker',
@@ -113,7 +114,7 @@ function actionTraces(traces) {
   });
 }
 
-export function makePainter(output, seed) {
+export function makePainter(output, seed, sheet) {
   const A = window.AlgoArt;
   let pigment, relief, sensor, colourSample;
   const colours = new Map();
@@ -162,6 +163,13 @@ export function makePainter(output, seed) {
     }
 
     try {
+      if(material==='tissue'||material==='watercolour'){
+        renderNativeDeposit(pigment,material,traces,artist,area,sheet.paper,
+          [seed,artist.id,group.id,artist.system,'v10'].join('|'),sourceRGB);
+        // Native material functions draw in local bitmap coordinates.
+        // Restore the world-to-local transform for paper edge trimming.
+        pigment.setTransform(w/area.w,0,0,h/area.h,-area.x*w/area.w,-area.y*h/area.h);
+      }else{
       for (let i = 0; i < traces.length; i++) {
         const trace = traces[i];
         const width = trace.width * (1 + (overdraw - 2) * .045);
@@ -184,6 +192,7 @@ export function makePainter(output, seed) {
           A.collabAction(pigment, trace.points, 'rgb(' + oil.mapRGB(sourceRGB(colour)).join(',') + ')',
             width, markSeed, output.canvas.width, height);
         }
+      }
       }
       if (material === 'oil') A.collabOilRelief(pigment, relief, scale);
     } finally {
