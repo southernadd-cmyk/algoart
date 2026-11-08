@@ -1,6 +1,7 @@
 import {CELL, REACH, nextGroup, planStrokes, plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
 import {turnBudget, makeSchedule, phiAnchors, inkDensity, crowdingAt, resolveTurnBudget} from './composition.js?v=confluence-full-source-04';
 import {inferResponse} from './adaptive-response.js?v=adaptive-01';
+import {wantsOilContact,oilContactCandidates,contactFraction} from './oil-contact.js?v=oil-structure-01';
 import {capRectangleFootprint, rectangleInteriors, interiorCandidates} from './rect-collaboration.js?v=rect-cells-01';
 import {expandRecursiveTurns} from './recursive-turns.js?v=recursive-turns-01';
 const GOLD = Math.PI * (3 - Math.sqrt(5));
@@ -360,7 +361,7 @@ export function createStudy(seed, slots, paperSettings, collaborationPull = 100,
   const {count:budget, available:availableTurns} = resolveTurnBudget(turnBudget(roster), requestedTurns);
   const equal = makeSchedule(roster, budget, 0);
   const primary = collaborationPull === 0 ? equal : makeSchedule(roster, budget, collaborationPull);
-  return {roster, schedule: primary.turns, primary, equal, sheet, anchors, availableTurns,
+  return {seed,roster, schedule: primary.turns, primary, equal, sheet, anchors, availableTurns,
     collaborationPull, totalTurns:budget};
 }
 
@@ -438,6 +439,27 @@ export function makeRun(study, strength, {equal = false} = {}) {
               const owed=artist.rectInvited<Math.ceil((artist.committed+gesture+1)*invitationFraction);
               if(bestInside&&bestInsideScore<best+(owed?1.05:0))
                 placement=bestInside;
+            }
+            // Occasionally approach the *actual* marks made by another
+            // artist, instead of treating every occupied area as forbidden.
+            // The seed decides when; real indexed stroke positions decide
+            // where. Guard against dense pools and disruptive placements.
+            if(artist.material==='oil'&&
+              wantsOilContact(study.seed,artist.id,turn,
+                study.collaborationPull,strength)){
+              let chosen=null,contactScore=Infinity;
+              const sites=oilContactCandidates(group,artist,fields,density,
+                study.sheet,turn);
+              for(const candidate of sites){
+                const contact=contactFraction(group,candidate,fields,study.sheet);
+                if(contact<.08)continue;
+                const score=judge(group,candidate,context,width)-contact*.9;
+                if(score<contactScore){
+                  contactScore=score;chosen=candidate;
+                }
+              }
+              const current=judge(group,placement,context,width);
+              if(chosen&&contactScore<current+2.5)placement=chosen;
             }
           }
         }
