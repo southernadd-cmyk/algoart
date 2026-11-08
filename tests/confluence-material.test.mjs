@@ -155,3 +155,28 @@ test('Confluence runs each released material engine on an actual shared full she
   assert.doesNotMatch(renderer,/function box\(/);
   assert.match(renderer,/paint\(output, action\)/);
 });
+
+test('Tissue V8 per-turn physics mirror the released solo renderer',()=>{
+  const native=read('../confluence/native-material.js');
+  const local=read('../confluence/engine/materials/oil-material.js');
+  const released=read('../js/oil-material.js');
+  for(const expression of [
+    'A.tissueV8LayeredActive',
+    'opacity*(.72+.28*clamp((thickness-.4)/1.1,0,1))',
+    'if(A.tissueV8LayeredActive)opacity*=.57',
+    '(kit.revision===7&&A.tissueV8LayeredActive)'
+  ]){
+    assert(released.includes(expression),
+      'Missing canonical Tissue V8 stage: '+expression);
+    assert(local.includes(expression),
+      'Confluence has not ported canonical Tissue V8 stage: '+expression);
+  }
+  assert.match(native,/A\.tissueV8LayeredActive=true/);
+  assert.match(native,/A\.lastTissueV8Stats=/);
+  assert.match(native,/variant:'layered-v8',tissuePaletteVersion:8/);
+  assert.doesNotMatch(local,/A\.confluenceTissueGraphite/,
+    'Legacy V7 graphite bypass must not masquerade as V8');
+  const root=read('../index.html');
+  assert.doesNotMatch(root,/id="exploreConfluence"/,
+    'Do not restore the solo editor CTA before visual acceptance');
+});
