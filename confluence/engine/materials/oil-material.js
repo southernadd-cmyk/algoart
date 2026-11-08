@@ -169,7 +169,12 @@ function pathStroke(ctx,pts,width,col,alpha){
 }
 function paintRibbon(pig,height,pts,width,r,col,opacity,thickness){
   if(!ribbon(pig,pts,width*.5,r))return;
-  pig.save();pig.globalAlpha=opacity;pig.fillStyle=col;pig.fill();pig.clip();
+  pig.save();
+  // Match solo Tissue & Graphite V8's more translucent broad scraps.
+  // Its V7 source geometry, pigment colours and random draws stay intact.
+  pig.globalAlpha=A.tissueV8LayeredActive
+    ?opacity*(.72+.28*clamp((thickness-.4)/1.1,0,1)):opacity;
+  pig.fillStyle=col;pig.fill();pig.clip();
   // Dry and wet streaks share the original tangent; the noise is material,
   // not another geometry generator. All stripes remain inside the paint mass.
   var count=Math.round(clamp(width/13,3,9)),i;
@@ -333,6 +338,8 @@ function addLightTissue(pig,height,w,h,chains,voids,seed,quality){
     if(tissueV7Active&&item.sourceRGB)
       pale=lerpHex(sourceTissueHue(item,.76),'#fffaf0',.13);
     var opacity=clamp(.30+item.darkness*.002,.34,.56);
+    // Solo V8 sheets are sheer rather than chalky opaque highlights.
+    if(A.tissueV8LayeredActive)opacity*=.57;
     pig.globalAlpha=opacity;pig.fillStyle=pale;pig.fill();pig.clip();
     // Fine fibres are inside the scrap, with no added edge halo or blur.
     for(j=0;j<22;j++){
@@ -526,10 +533,10 @@ A.oilMaterial=function(ctx,w,h,chains,meta,seed,quality,kit){
   ctx.save();ctx.imageSmoothingEnabled=true;
   ctx.drawImage(final,0,0,w,h);
   if(A.materialStageCapture)A.materialStageCapture('tissue-surface',ctx.canvas);
-  // Only Confluence opts into graphite with the V7 pigments. The solo
-  // renderer remains byte-for-byte unchanged (this is the lab-local copy).
+  // Tissue V8 uses exactly the solo graphite activation condition.
+  // Historical V7 and non-Tissue materials do not enable this overlay.
   var graphitePaths=kit&&(kit.revision===3||
-      (kit.revision>=7&&A.confluenceTissueGraphite))?
+    (kit.revision===7&&A.tissueV8LayeredActive))?
     graphiteOverlay(ctx,chains,seed,quality):0;
   if(graphitePaths&&A.materialStageCapture)A.materialStageCapture('tissue-graphite-finished',ctx.canvas);
   ctx.restore();
