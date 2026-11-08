@@ -14,7 +14,7 @@ export const systems = [
 ];
 
 export const palettes = {
-  signature: 'Signature ink', spectrum: 'Full Spectrum', golden: 'Golden-angle hues',
+  spectrum: 'Full Spectrum', golden: 'Golden-angle hues',
   marker: 'Classic Markers', cmyk: 'CMYK', primary: 'Primary', neon: 'Neon',
   pastel: 'Pastel', earth: 'Earth', warm: 'Warm', cold: 'Cold', mono: 'Monochrome'
 };
@@ -24,16 +24,7 @@ export function slotInk(id) {
 }
 
 export function paletteInks(artist, seed) {
-  const signature = systems[(artist.id - 1) % systems.length];
   const {colourCount, saturation, brightness} = artist.settings;
-  if (artist.palette === 'signature') {
-    const offsets = [0, 7, -7, 14, -14, 21, -21, 28, -28, 35, -35, 42, -42, 49];
-    return offsets.slice(0, colourCount).map((shift, index) => {
-      const hue = (signature.hue + shift + 360) % 360;
-      const light = clamp(brightness + [0, 8, -7][index % 3], 20, 80);
-      return 'hsl(' + hue + ' ' + saturation + '% ' + light + '%)';
-    });
-  }
   const A = window.AlgoArt;
   A.rendererVersion = 10;
   return A.hues({palette: artist.palette, colourCount, saturation, brightness},

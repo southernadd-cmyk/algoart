@@ -1,9 +1,9 @@
-import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-materials-05';
-import {materials, makePainter} from './materials.js?v=confluence-materials-05';
+import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-wash-seams-07';
+import {materials, makePainter} from './materials.js?v=confluence-wash-seams-07';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=studio-06';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
-import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-viewport-04';
+import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-wash-seams-07';
 import {importLeadFromURL} from './import-lead.js?v=confluence-01';
 
 const byId = id => document.getElementById(id);
@@ -37,7 +37,7 @@ const hints = {
 };
 
 const artists = systems.slice(0, 3).map((system, index) => ({
-  id: index + 1, system: system.id, palette: 'signature', material: 'marker', settings: defaultSettings(system)
+  id: index + 1, system: system.id, palette: 'spectrum', material: 'marker', settings: defaultSettings(system)
 }));
 const state = {frame: 0, playing: false, finishing: false, history: [], turn: 0};
 
