@@ -2686,7 +2686,11 @@ function localPalette(source,centre,sourcePoints,first,reach){
   hits.sort(function(a,b){return a.distance-b.distance||
     b.weight-a.weight||a.index-b.index});
   var palette=[first];
-  for(var i=0;i<hits.length&&palette.length<4;i++){
+  // V10 retains the spatially local source hues without a hard
+  // four-pigment ceiling. Historical geometry V1–V9 keeps its exact
+  // four-colour field interpretation.
+  var maximumColours=A.rendererVersion>=10?14:4;
+  for(var i=0;i<hits.length&&palette.length<maximumColours;i++){
     var rgb=hits[i].rgb;
     if(palette.some(function(a){return Math.hypot(a[0]-rgb[0],
       a[1]-rgb[1],a[2]-rgb[2])<55}))continue;
