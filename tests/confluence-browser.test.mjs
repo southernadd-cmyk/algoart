@@ -332,6 +332,7 @@ try{
     await page.evaluate(()=>{
       window.__materialCalls.oil=0;window.__materialCalls.action=0;
       window.__actionTurnEvidence=[];
+      window.__nativeClears=0;
     });
     await page.locator('#study-form .draw-actions button[type="submit"]').click();
     await page.waitForFunction(()=>{
