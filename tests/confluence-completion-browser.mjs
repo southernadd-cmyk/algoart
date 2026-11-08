@@ -158,8 +158,8 @@ try{
       .map(card=>[...card.querySelectorAll('.artist-fields select')].map(el=>el.value))
   }));
   const initial=await readUI();
-  assert.deepEqual(initial.caption,[3,1,1]);
-  for(const [index,expected] of [[1,[1,3,1]],[2,[1,1,3]],[0,[3,1,1]]]){
+  assert.deepEqual(initial.caption,[2,2,1]);
+  for(const [index,expected] of [[1,[1,2,2]],[2,[2,1,2]],[0,[2,2,1]]]){
     await page.locator('#rotate-lead').click();
     await page.waitForFunction(({index,expected})=>
       Number(document.querySelector('#lead-index').value)===index &&
