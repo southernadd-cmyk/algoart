@@ -43,3 +43,18 @@ test('repeat upload retains original production overwrite behaviour',async()=>{
 });
 
 
+
+// A new renderer version must work on the Worker before publishing it in the editor.
+test('renderer V10 uploads an exact social preview and creates its OG page',async()=>{
+ const version10=Buffer.from(fields.map(k=>({v:'10',seed:'WORKER-V10',mode:'rects',fmt:'landscape',material:'action-v4'})[k]||'').join('\x1f')).toString('base64url');
+ const env=makeEnv();
+ const uploaded=await worker.fetch(new Request(endpoint.replace(token,version10),{
+   method:'POST',headers:{origin,'content-type':'application/json'},
+   body:JSON.stringify({jpeg:jpeg.toString('base64')})
+ }),env);
+ assert.equal(uploaded.status,200);
+ assert.equal(env.writes[0].key,'previews/'+version10+'.jpg');
+ const card=await worker.fetch(new Request('https://example.workers.dev/share?c='+version10),env);
+ assert.equal(card.status,200);
+ assert.match(await card.text(),/Original Action Painting composition/);
+});

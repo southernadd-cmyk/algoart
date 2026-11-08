@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'cloudflare/social-preview/**'
+      - 'js/settings-url.js'
       - 'wrangler.toml'
       - 'tests/cloudflare-root-config.test.mjs'
       - '.github/workflows/cloudflare-social-preview.yml'
