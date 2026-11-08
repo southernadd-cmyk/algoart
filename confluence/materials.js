@@ -70,13 +70,19 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   // that newly deposited pigment is added to the shared picture. This also
   // respects *actual turn order* across different materials.
   const tissueMarks=[],watercolourMarks=[],oilMarks=[],actionMarks=[];
+  // Preserve a cumulative native V8 drawing *per artist*. Repeating the
+  // full V8 atmospheric wash for every small turn (27 times for an A1 lead)
+  // caused the dark monochrome cloud reported by visitors.
+  const tissueHistories=new Map();
+  const tissueIncrement=layer(true);
+  let tissueAddedPixels=0,tissueNegativePixels=0;
   const tissueSurface=layer(true),watercolourSurface=layer(true),
     oilSurface=layer(true),actionSurface=layer(true);
   const tissueTurn=layer(true),watercolourTurn=layer(true),
     oilTurnSurface=layer(true),actionTurnSurface=layer(true);
   const surfaceSensor=layer(true);
   for(const ctx of [tissueSurface,watercolourSurface,oilSurface,actionSurface,
-    tissueTurn,watercolourTurn,oilTurnSurface,actionTurnSurface])
+    tissueTurn,tissueIncrement,watercolourTurn,oilTurnSurface,actionTurnSurface])
     size(ctx,sheet.width,sheet.height);
   let oilTurn=0,actionTurn=0;
   // Compute a local full-resolution V7/V2S work area for each new gesture.
@@ -122,20 +128,60 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   }
   function renderActualTissue(newMarks,artist){
     if(!newMarks.length)return;
-    const bounds=nativeBounds(newMarks,250);
-    size(tissueTurn,bounds.w,bounds.h);
-    const representative={settings:{colourCount:Math.min(24,
-      new Set(newMarks.map(t=>t.ink)).size)}};
-    // One shared seed anchors fibres, tooth and paper texture from turn to
-    // turn. The native V7 paints only the *new* paths on that same paper.
-    renderNativeDeposit(tissueTurn,'tissue',newMarks,representative,
-      bounds,sheet.paper,[seed,'all-tissue-voices','v7-whole-sheet'].join('|'),
+    let history=tissueHistories.get(artist.id);
+    if(!history){
+      history={marks:[],previous:new Uint8ClampedArray(
+        sheet.width*sheet.height*4)};
+      tissueHistories.set(artist.id,history);
+    }
+    history.marks.push(...newMarks);
+    const all=history.marks;
+    const area={x:0,y:0,w:sheet.width,h:sheet.height};
+    const representative={settings:{colourCount:Math.min(14,
+      new Set(all.map(t=>t.ink)).size)}};
+    // The V8 atmosphere is a property of this artist's COMPLETE source
+    // painting, not a new atmospheric background on every short turn.
+    // Use stable full-sheet coordinates and seeded V8 physics so changes
+    // can be compared to the preceding cumulative material image.
+    size(tissueTurn,area.w,area.h);
+    renderNativeDeposit(tissueTurn,'tissue',all,representative,
+      area,sheet.paper,[seed,'tissue-artist',artist.id,'v8-layered'].join('|'),
       sourceRGB,sheet);
     surfacePasses.tissue++;
-    // Protect against near-black accumulation from overlapping translucent
-    // dyes, without changing the extracted V7 pigment or solo engine.
-    protectDarkStack(tissueTurn,bounds,'source-over','tissue');
-    layTurn(tissueSurface,tissueTurn,'source-over',bounds);
+    const current=tissueTurn.getImageData(0,0,area.w,area.h);
+    const increment=tissueIncrement.createImageData(area.w,area.h);
+    const next=current.data,old=history.previous,dst=increment.data;
+    // Solve the source-over alpha of the NEW pigment only. Existing tissue
+    // is already on the shared sheet and may have other artists above it:
+    // reapplying the complete V8 layer would darken their work 27 times.
+    // Optical density cannot be subtracted from earlier interleaved paint,
+    // so negative changes in a regenerated native layer are ignored.
+    for(let i=0;i<next.length;i+=4){
+      const previousAlpha=old[i+3]/255;
+      const newAlpha=next[i+3]/255;
+      if(newAlpha<=previousAlpha){
+        if(newAlpha<previousAlpha)tissueNegativePixels++;
+        continue;
+      }
+      const alpha=Math.min(1,(newAlpha-previousAlpha)/
+        Math.max(1/255,1-previousAlpha));
+      if(alpha<=0)continue;
+      for(let c=0;c<3;c++){
+        const prevMass=previousAlpha*old[i+c];
+        const newMass=newAlpha*next[i+c];
+        dst[i+c]=Math.max(0,Math.min(255,Math.round(
+          (newMass-(1-alpha)*prevMass)/alpha)));
+      }
+      dst[i+3]=Math.round(alpha*255);
+      tissueAddedPixels++;
+    }
+    history.previous=next;
+    size(tissueIncrement,area.w,area.h);
+    tissueIncrement.putImageData(increment,0,0);
+    // The existing near-black guard remains local to this incremental
+    // contribution. It never recolours pre-existing graphite.
+    protectDarkStack(tissueIncrement,area,'source-over','tissue');
+    layTurn(tissueSurface,tissueIncrement,'source-over',area);
   }
   function renderActualWatercolour(newMarks,artist){
     if(!newMarks.length)return;
@@ -280,7 +326,8 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   // Every material is committed on its own turn: Finish adds no surprise.
   deposit.finalize=()=>{};
   deposit.tissueStats=()=>({nativeFullSheetPasses:surfacePasses.tissue,
-    tissueMarks:tissueMarks.length});
+    tissueMarks:tissueMarks.length,artists:tissueHistories.size,
+    addedPixels:tissueAddedPixels,negativePixels:tissueNegativePixels});
   deposit.watercolourStats=()=>({nativeFullSheetPasses:surfacePasses.watercolour,
     watercolourMarks:watercolourMarks.length});
   deposit.nativeStats=()=>({...surfacePasses,darkGuard:{...darkGuard}});
