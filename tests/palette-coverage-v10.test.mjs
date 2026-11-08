@@ -31,11 +31,11 @@ const base={
   pressure:20,dryness:10,curveBias:55,shapeAmount:55,
   overlap:40,rotation:50,lines:true,circles:true,
   rectangles:true,polygons:true,arcs:true,palette:'primary',
-  colourCount:12,saturation:78,brightness:53,
+  colourCount:14,saturation:78,brightness:53,
   paper:'#f5f0e6',grain:0
 };
-function draw(version,mode){
-  const state={...base,mode};
+function draw(version,mode,colourCount){
+  const state={...base,mode,colourCount};
   A.rendererVersion=version;
   A.svgRecorder={precise:true,paths:[],paperMarks:[]};
   A.render(canvas(),state,.1,false);
@@ -45,47 +45,54 @@ function draw(version,mode){
     inks:new Set(paths.map(p=>p.stroke)),
     geometry:paths.map(p=>p.d+'|'+p.width+'|'+p.opacity).join('\n')};
 }
-for(const name of ['primary','cmyk','warm','cold','earth','marker',
-  'neon','pastel','spectrum','golden','mono']){
+const modes=['field','spiral','rects','burst','network',
+  'scribble','organic','geometric'];
+const palettes=['primary','cmyk','warm','cold','earth','marker',
+  'neon','pastel','spectrum','golden','mono'];
+// The Colour slider ranges to FOURTEEN, not twelve. Verify every setting,
+// including the maximum, produces that number of unique source pigments.
+for(const name of palettes){
+  for(let colourCount=1;colourCount<=14;colourCount++){
+    A.rendererVersion=10;
+    const requested={...base,palette:name,colourCount};
+    const next=A.hues(requested,A.makeR('V10-PALETTE'));
+    assert.equal(next.length,colourCount,name+' missing colours at '+colourCount);
+    assert.equal(new Set(next).size,colourCount,
+      name+' repeats inks at '+colourCount);
+    if(name==='mono')assert(next.every(c=>/ 0% /.test(c)),
+      'Monochrome lost its greys at '+colourCount);
+  }
   A.rendererVersion=9;
-  const old=A.hues({...base,palette:name},A.makeR('V10-PALETTE'));
-  A.rendererVersion=10;
-  const next=A.hues({...base,palette:name},A.makeR('V10-PALETTE'));
-  assert.equal(next.length,12,name+' missing colours');
-  assert.equal(new Set(next).size,12,name+' repeats inks at 12');
+  const old=A.hues({...base,palette:name,colourCount:14},A.makeR('V10-PALETTE'));
   if(['primary','cmyk'].includes(name))
-    assert.ok(new Set(old).size<12,name+' V9 baseline changed unexpectedly');
-  if(name==='mono')assert(next.every(c=>/ 0% /.test(c)),'Monochrome lost its greys');
+    assert.ok(new Set(old).size<14,name+' V9 baseline changed unexpectedly');
 }
 const report=[];
-for(const mode of ['field','spiral','rects','burst','network',
-  'scribble','organic','geometric']){
-  const v9=draw(9,mode),v10=draw(10,mode);
-  assert.equal(v10.geometry,v9.geometry,mode+' geometry/opacity changed');
-  assert.equal(v10.paths.length,v9.paths.length,mode+' source count changed');
-  assert.equal(v10.marks,v9.marks,mode+' mark count changed');
-  if(v10.marks>=12){
-    assert.equal(v10.inks.size,12,mode+' is missing requested pigments');
+for(const colourCount of [12,14]){
+  for(const mode of modes){
+    const v9=draw(9,mode,colourCount),v10=draw(10,mode,colourCount);
+    assert.equal(v10.geometry,v9.geometry,mode+' geometry/opacity changed at '+colourCount);
+    assert.equal(v10.paths.length,v9.paths.length,mode+' source count changed');
+    assert.equal(v10.marks,v9.marks,mode+' mark count changed');
+    assert.equal(v10.inks.size,Math.min(colourCount,v10.marks),
+      mode+' palette collapsed at '+colourCount);
+    if(mode==='field'){
+      const hero=new Set(v10.paths.filter(p=>p.group?.tier==='hero').map(p=>p.stroke));
+      const heroMarks=new Set(v10.paths.filter(p=>p.group?.tier==='hero').map(p=>p.mark)).size;
+      if(heroMarks>=2)assert.ok(hero.size>=2,'Hero forms still collapse to one hue');
+      const direct=[];
+      A.rendererVersion=10;A.svgRecorder=null;
+      A.render(canvas(direct),v10.state,.1,false);
+      assert.deepEqual(direct,v10.paths.map(p=>p.stroke),
+        'Marker colours differ depending on SVG material capture at '+colourCount);
+    }
+    if(mode==='network'&&v10.marks>=colourCount){
+      const kit=A.tissueKitFromPaths(v10.paths,v10.state,7);
+      assert.equal(kit.ink.length,colourCount,
+        'Tissue & Graphite received fewer pigments than '+colourCount);
+    }
+    report.push(mode+': '+v10.inks.size+' inks / '+v10.marks+' marks at '+colourCount);
   }
-  if(v10.marks>0)
-    assert.equal(v10.inks.size,Math.min(12,v10.marks),
-      mode+' unexpected palette collapse');
-  if(mode==='field'){
-    const hero=new Set(v10.paths.filter(p=>p.group?.tier==='hero').map(p=>p.stroke));
-    const heroMarks=new Set(v10.paths.filter(p=>p.group?.tier==='hero').map(p=>p.mark)).size;
-    if(heroMarks>=2)assert.ok(hero.size>=2,'Hero forms still collapse to one hue');
-    const direct=[];
-    A.rendererVersion=10;A.svgRecorder=null;
-    A.render(canvas(direct),v10.state,.1,false);
-    assert.deepEqual(direct,v10.paths.map(p=>p.stroke),
-      'Marker colours differ depending on SVG material capture');
-  }
-  if(mode==='network'&&v10.marks>=12){
-    const kit=A.tissueKitFromPaths(v10.paths,v10.state,7);
-    assert.equal(kit.ink.length,12,
-      'Tissue & Graphite received fewer pigments than source drawing');
-  }
-  report.push(mode+': '+v10.inks.size+' inks / '+v10.marks+' source marks');
 }
-console.log('V10 palette coverage:',report.join('; '));
+console.log('V10 palette coverage 1–14 (all palette families), 12/14 (all modes):',report.join('; '));
 console.log('V9 geometry and previous named palette behavior preserved.');
