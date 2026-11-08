@@ -60,135 +60,67 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   const A = window.AlgoArt;
   let colourSample;
   const colours = new Map();
-  const onlyMaterial=roster.length===3 && roster.every(a=>a.material===roster[0].material)
-    ? roster[0].material : null;
   const surfacePasses={tissue:0,watercolour:0,oil:0,action:0};
   const coverageHistory={watercolour:null,oil:null,action:null};
 
-  // Persistent full-paper context: all other materials retain their own
-  // composition and blend modes while native tissue grows around them.
+  // The displayed paper is persistent. Native renderers paint each new
+  // responsive group into a transparent full-sheet turn buffer, and only
+  // that newly deposited pigment is added to the shared picture. This also
+  // respects *actual turn order* across different materials.
   const tissueMarks=[],watercolourMarks=[],oilMarks=[],actionMarks=[];
   const tissueSurface=layer(true),watercolourSurface=layer(true),
     oilSurface=layer(true),actionSurface=layer(true);
-  const paintingWithoutTissue=layer(true),foreignInk=layer(true),watercolourForeignInk=layer(true);
+  const tissueTurn=layer(true),watercolourTurn=layer(true),
+    oilTurnSurface=layer(true),actionTurnSurface=layer(true);
   const surfaceSensor=layer(true);
   for(const ctx of [tissueSurface,watercolourSurface,oilSurface,actionSurface,
-    paintingWithoutTissue,foreignInk,watercolourForeignInk])
+    tissueTurn,watercolourTurn,oilTurnSurface,actionTurnSurface])
     size(ctx,sheet.width,sheet.height);
-  paintingWithoutTissue.drawImage(output.canvas,0,0);
-  const oilActionOrder={oil:0,action:0};
-  let oilActionClock=0;
-  let actionTurn=0;
-  function showSheet(){
-    output.save();
-    output.resetTransform();output.globalAlpha=1;
-    output.globalCompositeOperation='source-over';
-    output.clearRect(0,0,sheet.width,sheet.height);
-    if(onlyMaterial==='tissue'){
-      output.drawImage(tissueSurface.canvas,0,0);
-      output.restore();return;
-    }
-    if(onlyMaterial==='watercolour'){
-      output.drawImage(watercolourSurface.canvas,0,0);
-      output.restore();return;
-    }
-    output.drawImage(paintingWithoutTissue.canvas,0,0);
-    output.globalCompositeOperation='multiply';
-    output.drawImage(watercolourSurface.canvas,0,0);
-    output.globalCompositeOperation='source-over';
-    output.drawImage(tissueSurface.canvas,0,0);
-    // Both paint materials use their full native layered engine. A later
-    // action/oil turn can physically overpaint an earlier one.
-    for(const kind of ['oil','action'].sort((a,b)=>oilActionOrder[a]-oilActionOrder[b])){
-      if(kind==='oil')output.drawImage(oilSurface.canvas,0,0);
-      else output.drawImage(actionSurface.canvas,0,0);
-    }
-    output.restore();
-  }
-  function protectGeometry(traces){
-    for(const ctx of [foreignInk,watercolourForeignInk]){
-      ctx.save();
-      ctx.strokeStyle='#000';ctx.globalAlpha=.9;
-      ctx.lineCap='round';ctx.lineJoin='round';
-      for(const trace of traces){
-        if(trace.points.length<2)continue;
-        ctx.lineWidth=Math.max(16,trace.width*2.4);
-        ctx.beginPath();ctx.moveTo(trace.points[0].x,trace.points[0].y);
-        for(let i=1;i<trace.points.length;i++)
-          ctx.lineTo(trace.points[i].x,trace.points[i].y);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-  }
-  function protectRaster(ctx,area){
-    for(const mask of [foreignInk,watercolourForeignInk]){
-      mask.save();
-      mask.globalCompositeOperation='source-over';
-      mask.drawImage(ctx.canvas,area.x,area.y,area.w,area.h);
-      mask.restore();
-    }
-  }
-  function protectWatercolourAgainstTissue(){
-    // Tissue's shape is visible to subsequent watercolour artists, as well
-    // as to the composition planner's response field.
-    watercolourForeignInk.save();
-    watercolourForeignInk.globalCompositeOperation='source-over';
-    watercolourForeignInk.globalAlpha=.5;
-    watercolourForeignInk.drawImage(tissueSurface.canvas,0,0);
-    watercolourForeignInk.restore();
+  let oilTurn=0,actionTurn=0;
+  // Keep all physical paint at its real 1400x1000 (or 1000x1400) size.
+  // Never erase the finished canvas when a different artist takes a turn.
+  function layTurn(surface,turn,blend='source-over'){
+    surface.save();surface.resetTransform();surface.globalAlpha=1;
+    surface.globalCompositeOperation='source-over';
+    surface.drawImage(turn.canvas,0,0);surface.restore();
+    output.save();output.resetTransform();output.globalAlpha=1;
+    output.globalCompositeOperation=blend;
+    output.drawImage(turn.canvas,0,0);output.restore();
   }
   function materialFootprint(kind,ctx){
     const next=footprintFromSurface(ctx,surfaceSensor,coverageHistory[kind],sheet);
     coverageHistory[kind]=next.coverage;
     return next.footprint;
   }
-  function avoidForeignMarks(ctx,mask=foreignInk){
-    ctx.save();ctx.resetTransform();
-    ctx.globalCompositeOperation='destination-out';
-    ctx.filter='blur(15px)';
-    ctx.drawImage(mask.canvas,0,0);
-    ctx.restore();
-  }
-  function renderActualTissue(){
-    if(!tissueMarks.length)return;
-    // No approximated local scraps: V7 runs on every accumulated reactive
-    // stroke in original artist colours, on the *whole* sheet at every turn.
-    size(tissueSurface,sheet.width,sheet.height);
+  function renderActualTissue(newMarks,artist){
+    if(!newMarks.length)return;
+    size(tissueTurn,sheet.width,sheet.height);
     const representative={settings:{colourCount:Math.min(24,
-      new Set(tissueMarks.map(t=>t.ink)).size)}};
+      new Set(newMarks.map(t=>t.ink)).size)}};
     const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
-    renderNativeDeposit(tissueSurface,'tissue',tissueMarks,representative,
+    // One shared seed anchors fibres, tooth and paper texture from turn to
+    // turn. The native V7 paints only the *new* paths on that same paper.
+    renderNativeDeposit(tissueTurn,'tissue',newMarks,representative,
       bounds,sheet.paper,[seed,'all-tissue-voices','v7-whole-sheet'].join('|'),
-      sourceRGB,sheet,{directPaper:onlyMaterial==='tissue'});
+      sourceRGB,sheet);
     surfacePasses.tissue++;
-    if(onlyMaterial!=='tissue')avoidForeignMarks(tissueSurface);
-    showSheet();
+    layTurn(tissueSurface,tissueTurn);
   }
-  function renderActualWatercolour(){
-    if(!watercolourMarks.length)return;
-    // Full-sheet V2S is re-run against every source stroke so wet pooling,
-    // drying, bleed, ragged edges and original pigment hues are continuous
-    // across *all* responsive artists. No local crop, no separate tiles.
-    size(watercolourSurface,sheet.width,sheet.height);
+  function renderActualWatercolour(newMarks,artist){
+    if(!newMarks.length)return;
+    size(watercolourTurn,sheet.width,sheet.height);
     const representative={settings:{colourCount:Math.min(24,
-      new Set(watercolourMarks.map(t=>t.ink)).size)}};
+      new Set(newMarks.map(t=>t.ink)).size)}};
     const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
-    renderNativeDeposit(watercolourSurface,'watercolour',watercolourMarks,
+    // Native V2S still includes full-paper wet edges, capillary flow and
+    // source hues. Each fresh wash glazes existing paint; earlier washes
+    // are not regenerated, shuffled, recoloured or erased.
+    renderNativeDeposit(watercolourTurn,'watercolour',newMarks,
       representative,bounds,sheet.paper,
       [seed,'all-watercolour-voices','v2s-whole-sheet'].join('|'),sourceRGB,
-      sheet,{directPaper:onlyMaterial==='watercolour'});
+      sheet);
     surfacePasses.watercolour++;
-    if(onlyMaterial!=='watercolour')
-      avoidForeignMarks(watercolourSurface,watercolourForeignInk);
-    // The current paint footprint informs later tissue artists; it must
-    // never be mistaken for opaque paper or a replacement composition.
-    foreignInk.save();
-    foreignInk.globalAlpha=.44;
-    foreignInk.drawImage(watercolourSurface.canvas,0,0);
-    foreignInk.restore();
-    if(tissueMarks.length)avoidForeignMarks(tissueSurface);
-    showSheet();
+    layTurn(watercolourSurface,watercolourTurn,'multiply');
   }
 
   function tissueFootprint(traces,gain) {
@@ -233,45 +165,36 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     paper:sheet.paper,palette:marks[0]?.palette||'spectrum',
     colourCount:Math.min(14,new Set(marks.map(m=>m.ink)).size)
   });
-  function reserveForOtherArtists(ctx){
-    protectRaster(ctx,{x:0,y:0,w:sheet.width,h:sheet.height});
-    if(tissueMarks.length)avoidForeignMarks(tissueSurface);
-    if(watercolourMarks.length&&onlyMaterial!=='watercolour')
-      avoidForeignMarks(watercolourSurface,watercolourForeignInk);
-  }
-  function renderActualOil(){
-    if(!oilMarks.length)return;
+  function renderActualOil(newMarks,artist){
+    if(!newMarks.length)return;
     if(typeof A.renderOilPaintV8!=='function' ||
        typeof A.compositionV5Test?.extract!=='function')
       throw new Error('Confluence requires the complete solo Oil V8 source planner');
-    const paths=sourcePaths(oilMarks),settings=sourceSettings(oilMarks,'oil');
+    const paths=sourcePaths(newMarks),settings=sourceSettings(newMarks,'oil');
+    settings.seed+='|'+artist.id+'|turn-'+(++oilTurn);
     const capture={paths,meta:{guide:{type:'confluence'},voids:[],
       strategy:'collaborative-responsive'},
       chains:A.compositionV5Test.extract(paths)};
-    A.renderOilPaintV8(oilSurface.canvas,settings,1,false,{
+    A.renderOilPaintV8(oilTurnSurface.canvas,settings,1,false,{
       masses:true,relief:true,weave:true,amount:.6,
       sourceCapture:capture,transparentSheet:true});
-    surfacePasses.oil++;oilActionOrder.oil=++oilActionClock;
-    reserveForOtherArtists(oilSurface);
-    showSheet();
+    surfacePasses.oil++;
+    layTurn(oilSurface,oilTurnSurface);
   }
   function renderActualAction(newMarks,artist){
     if(!newMarks.length)return;
     if(typeof A.actionPaintingFromPathsV4!=='function')
       throw new Error('Confluence requires the complete solo Action V4 engine');
-    // Each step paints only the responding artist's newly placed geometry.
-    // V4 generates real bowed throws, pools and scatter, but never re-seeds
-    // or redraws the previous turns: their enamel is already on this sheet.
     const paths=sourcePaths(newMarks),settings=sourceSettings(newMarks,'action');
     const originalInks=artist.inks?.length?artist.inks:
       [...new Set(newMarks.map(mark=>mark.ink))];
-    A.actionPaintingFromPathsV4(actionSurface.canvas,paths,settings,1,{
+    size(actionTurnSurface,sheet.width,sheet.height);
+    A.actionPaintingFromPathsV4(actionTurnSurface.canvas,paths,settings,1,{
       sourceInks:originalInks,transparentSheet:true,append:true,
       passes:1,gesturesPerPass:Math.max(2,Math.min(5,paths.length*2)),
       variant:artist.id+'|turn-'+(++actionTurn)});
-    surfacePasses.action++;oilActionOrder.action=++oilActionClock;
-    reserveForOtherArtists(actionSurface);
-    showSheet();
+    surfacePasses.action++;
+    layTurn(actionSurface,actionTurnSurface);
   }
 
   function deposit(action, observe) {
@@ -279,14 +202,8 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     const material = artist.material;
     const {opacity, overdraw, dryness} = artist.settings;
     if (material === 'marker') {
-      paint(paintingWithoutTissue, action);
-      // Marker is visible in true turn order and also reserves the paper
-      // from future spreading tissue, rather than being painted over.
-      protectGeometry(group.traces.map(trace=>({...trace,
-        points:plannedPoints(trace.points,placement,plans.get(trace.mark))})));
-      if(tissueMarks.length)avoidForeignMarks(tissueSurface);
-      if(watercolourMarks.length)avoidForeignMarks(watercolourSurface,watercolourForeignInk);
-      showSheet();
+      // Actual marker geometry is already a single mark in drawing order.
+      paint(output, action);
       return;
     }
 
@@ -295,29 +212,24 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       // Preserve exactly which artist supplied each stroke and its original
       // palette hue. A single V7 material surface can then combine the marks
       // of all three artists without reintroducing per-artist cloud fields.
-      for(const trace of traces){
-        tissueMarks.push({...trace,ink:artistInk(artist,trace.mark)});
-      }
-      renderActualTissue();
-      protectWatercolourAgainstTissue();
-      if(watercolourMarks.length)avoidForeignMarks(watercolourSurface,watercolourForeignInk);
-      showSheet();
+      const fresh=traces.map(trace=>({...trace,ink:artistInk(artist,trace.mark)}));
+      tissueMarks.push(...fresh);
+      renderActualTissue(fresh,artist);
       return observe ? tissueFootprint(traces,action.pigmentGain) : undefined;
     }
     if(material==='watercolour'){
-      for(const trace of traces)
-        watercolourMarks.push({...trace,ink:artistInk(artist,trace.mark)});
-      renderActualWatercolour();
+      const fresh=traces.map(trace=>({...trace,ink:artistInk(artist,trace.mark)}));
+      watercolourMarks.push(...fresh);
+      renderActualWatercolour(fresh,artist);
       return observe ? materialFootprint('watercolour',watercolourSurface) : undefined;
     }
-    // Both use the released engines on the shared full-resolution sheet.
-    // Oil currently rebuilds its pigment field; Action adds true V4 throws
-    // only for the newly responding geometry, preserving previous enamel.
+    // The released oil and action brushes add their physical marks to the
+    // existing sheet without repainting earlier artists' compositions.
     const entry=traces.map(t=>({...t,ink:artistInk(artist,t.mark),
       system:artist.system,palette:artist.palette,settings:artist.settings}));
     if(material==='oil'){
       oilMarks.push(...entry);
-      renderActualOil();
+      renderActualOil(entry,artist);
       return observe?materialFootprint('oil',oilSurface):undefined;
     }
     if(material==='action'){
@@ -328,8 +240,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     throw new Error('Unknown Confluence material: '+material);
   }
 
-  // Both native materials already exist on the canvas on their own turns:
-  // Finish must not introduce another late material reveal.
+  // Every material is committed on its own turn: Finish adds no surprise.
   deposit.finalize=()=>{};
   deposit.tissueStats=()=>({nativeFullSheetPasses:surfacePasses.tissue,
     tissueMarks:tissueMarks.length});
