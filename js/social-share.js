@@ -45,6 +45,21 @@
       return params;
     }catch(error){return null}
   }
+  function artworkTitle(fullURL,settingKeys){
+    var params=new URL(fullURL).searchParams;
+    if(params.has('c')){
+      var restored=expand(params.get('c'),settingKeys);
+      if(restored)params=restored;
+    }
+    var names={
+      field:'Orbital Studies',spiral:'Golden Trajectories',
+      rects:'Recursive Divisions',burst:'Radiant Systems',
+      network:'Connected Fields',organic:'Growth Systems',
+      geometric:'Constructed Forms',scribble:'Automatic Marks'
+    };
+    var name=names[params.get('mode')];
+    return 'PROPORTION PIECE'+(name?' — '+name:'');
+  }
   function intents(fullURL,settingKeys){
     var shortURL=compact(fullURL,settingKeys),
         // GitHub Pages has one static OG image for every query string.
@@ -62,7 +77,8 @@
         // Keep X's crawler on this existing artwork-specific Worker card,
         // with a fresh cache key so earlier generic previews aren't reused.
         xPreviewURL=token?previewURL+'&pv=5':previewURL,
-        xCaption='PROPORTION PIECE '+xPreviewURL;
+        xCaption=artworkTitle(fullURL,settingKeys)+
+          '\n\n#GenerativeArt #AlgorithmicArt\n\n'+xPreviewURL;
     return{
       fullURL:fullURL,
       artworkURL:shortURL,
