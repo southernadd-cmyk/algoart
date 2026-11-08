@@ -122,7 +122,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     surfacePasses.tissue++;
     // Translucent tissue dye cannot introduce an opaque cream/white rim
     // over the previous artists' colours. Multiply glazes like real pigment.
-    layTurn(tissueSurface,tissueTurn,'multiply',bounds);
+    layTurn(tissueSurface,tissueTurn,'source-over',bounds);
   }
   function renderActualWatercolour(newMarks,artist){
     if(!newMarks.length)return;
