@@ -391,30 +391,59 @@ export function makeRun(study, strength, {equal = false} = {}) {
 
   let turn = 0;
   const oilStats={attempts:0,sites:0,qualified:0,selected:0,rejected:0};
+  const intraTurnStats={turns:0,decisions:0,stamped:0,nearby:0};
   return {
     oilDiagnostics:()=>({...oilStats}),
+    intraTurnDiagnostics:()=>({...intraTurnStats}),
     next(deposit) {
       const entry=programme.turns[turn++];
       if(!entry)return null;
       const artist=artists.get(entry.id);
       const quota=entry.groupQuota||1;
       const actions=[];
+      // Provisional ink is for *planning only*. It makes later gestures in
+      // this turn see earlier gestures from the same hand, even though the
+      // native painter still renders the entire turn as one batch. Never
+      // stamp this provisional ink into the committed material footprint:
+      // the physical renderer provides that footprint once after painting.
+      const provisional=strength>0&&quota>1?{
+        field:field(study.sheet,artist.id),
+        density:inkDensity(study.sheet,CELL)
+      }:null;
+      if(provisional)intraTurnStats.turns++;
       // One public turn can comprise several related drawing gestures.
-      // Plan each gesture separately so each retains a genuine response to
-      // existing work, but render its native material ONCE per artist turn.
+      // Plan them sequentially, retaining one native material pass per turn.
       for(let gesture=0;gesture<quota;gesture++){
         if(!artist.pending.length)
           throw new Error('Artist '+artist.id+' exhausted marks before completing the schedule');
         const others=[...artists.values()].filter(other=>other!==artist&&other.committed>0);
-        const fields=others.map(other=>other.field);
-        const initial=inferResponse(artist.pending[0],artist,fields,density,study.sheet);
+        const otherFields=others.map(other=>other.field);
+        // Preserve the ordinary committed fields and density. Only this
+        // gesture's planning view includes earlier marks in its own batch.
+        const fields=provisional&&gesture>0
+          ?[...otherFields,provisional.field]:otherFields;
+        const planningDensity=provisional&&gesture>0?{
+          at:point=>(density?.at(point)||0)+provisional.density.at(point)
+        }:density;
+        if(provisional&&gesture>0){
+          intraTurnStats.decisions++;
+          const probe=artist.pending[0]?.probes?.[0];
+          if(probe){
+            const p=artist.pose.place(probe.p);
+            const x=clamp(Math.floor(p.x/CELL),0,study.sheet.cols-1);
+            const y=clamp(Math.floor(p.y/CELL),0,study.sheet.rows-1);
+            if(provisional.field.distances[x+y*study.sheet.cols]<REACH)
+              intraTurnStats.nearby++;
+          }
+        }
+        const initial=inferResponse(artist.pending[0],artist,fields,planningDensity,study.sheet);
         let context={fields,response:initial.response,sheet:study.sheet,
-          mode:initial.mode,gain:strength/100,density};
+          mode:initial.mode,gain:strength/100,density:planningDensity};
         const selection=strength>0
           ? nextGroup(artist,context,p=>artist.anchors.has(key(p)))
           : {group:artist.pending.shift(),prioritized:false};
         const {group,prioritized}=selection;
-        const reaction=inferResponse(group,artist,fields,density,study.sheet);
+        const reaction=inferResponse(group,artist,fields,planningDensity,study.sheet);
         context={...context,response:reaction.response,mode:reaction.mode};
         // Reassembled contours must share the same placement; changing it
         // halfway through would tear a rectangle or connected gesture.
@@ -452,11 +481,13 @@ export function makeRun(study, strength, {equal = false} = {}) {
                 study.collaborationPull,strength)){
               oilStats.attempts++;
               let chosen=null,contactScore=Infinity;
-              const sites=oilContactCandidates(group,artist,fields,density,
+              // Oil's contact invitation specifically targets *other*
+              // artists, not this turn's provisional self-ink.
+              const sites=oilContactCandidates(group,artist,otherFields,planningDensity,
                 study.sheet,turn);
               oilStats.sites+=sites.length;
               for(const candidate of sites){
-                const contact=contactFraction(group,candidate,fields,study.sheet);
+                const contact=contactFraction(group,candidate,otherFields,study.sheet);
                 if(contact<.08)continue;
                 oilStats.qualified++;
                 const score=judge(group,candidate,context,width)-contact*.9;
@@ -488,12 +519,20 @@ export function makeRun(study, strength, {equal = false} = {}) {
           ? planStrokes(group,artist,placement,context):new Map();
         const contacts=[...new Set([...plans.values()].flatMap(plan=>plan.contacts))]
           .map(id=>artists.get(id).number);
+        const pigmentGain=limitPigment(group,placement,context);
         actions.push({
           artist,group,placement,plans,contacts,heard:strength>0?others.length:0,
           changed:placement.effort>0||plans.size>0||prioritized,
           reordered:prioritized,reaction:reaction.mode,responseEvidence:reaction.evidence,
-          pigmentGain:limitPigment(group,placement,context),border:study.sheet.border
+          pigmentGain,border:study.sheet.border
         });
+        if(provisional){
+          for(const trace of group.traces)
+            indexTrace(provisional.field,provisional.density,trace,placement,
+              plans.get(trace.mark),pigmentGain);
+          provisional.density.commit();
+          intraTurnStats.stamped++;
+        }
       }
       const observe=strength>0;
       let footprint;
