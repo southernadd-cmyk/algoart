@@ -67,7 +67,8 @@ try{
     'Confluence engine turn-capacity regression: '+JSON.stringify(failures));
 
   // Previously this genuine solo-editor handoff rendered only 8 turns:
-  // Constructed Forms, 23 elements, earth / Watercolour V2S, portrait.
+  // A1 Constructed Forms has enough strokes; A2 Golden Trajectories had
+  // just FIVE recorded groups and capped the entire 55-turn study.
   // The same user settings must keep 55 real, source-preserving turns.
   const actualQuery='v=10&seed=CWP-20261108-02-05196&mode=geometric&fmt=portrait&el=23&den=53&cx=60&neg=47&phi=93&rec=5&spi=20&ga=99&nest=53&pen=felt&th=5&wob=58&od=2&op=80&pr=33&dry=8&curve=1&shape=56&overlap=28&rot=81&ln=1&ci=1&re=1&po=1&ar=1&pal=earth&cols=8&sat=73&bri=49&paper=%23f5f0e6&grain=17&sheet=phi&material=watercolour-v2s&fit=0';
   const specific=await page.evaluate(async query=>{
@@ -96,7 +97,7 @@ try{
       groups:totals,counts:study.primary.counts,consumed,
       turns:study.totalTurns,options:study.availableTurns};
   },actualQuery);
-  console.log('SPARSE_CONSTRUCTED_HANDOFF '+JSON.stringify(specific));
+  console.log('SPARSE_GOLDEN_TRAJECTORIES_HANDOFF '+JSON.stringify(specific));
   assert.equal(specific.imported,true);
   assert.equal(specific.seed,'CWP-20261108-02-05196');
   assert.deepEqual(specific.systems,['geometric','spiral','organic']);
@@ -106,6 +107,8 @@ try{
   assert.equal(specific.turns,55,
     'Sparse Constructed Forms handoff fell back below 55 turns: '+JSON.stringify(specific));
   assert(specific.options.includes(55));
+  assert(specific.groups[1]>=29,
+    'Golden Trajectories still has too few progressive gestures: '+JSON.stringify(specific));
   assert.deepEqual(specific.groups,specific.consumed,
     'Sparse study did not include every recorded gesture');
   assert(specific.counts.every(n=>n>0));
