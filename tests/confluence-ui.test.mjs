@@ -55,7 +55,10 @@ test('Compare captions identify each artist, material and turn share',()=>{
  assert.match(ui,/function renderTurnLegend\(/);
  assert.match(ui,/renderTurnLegend\('shared-turns',state\.study\.primary\.counts,state\.study\.roster\)/);
  assert.match(ui,/renderTurnLegend\('equal-turns',state\.study\.equal\.counts,state\.study\.roster\)/);
- assert.match(ui,/artist\.inks\?\.\[0\]/);
+ assert.match(ui,/artist\.inks\?\.length\?artist\.inks:\[artist\.ink\]/);
+ assert.match(ui,/Math\.min\(5,inks\.length\)/);
+ assert.match(ui,/palette\.append\(swatch\)/);
+ assert.match(css,/\.turn-artist-palette/);
  assert.match(css,/#shared-turns,#equal-turns/);
 });
 
