@@ -13,25 +13,40 @@ A.hues=function(s,r){
     cold:[155,178,196,214,235,258,282],
     mono:[0]
   };
-  var out=[],start=r.range(0,360),arr=maps[s.palette];
+  var out=[],start=r.range(0,360),arr=maps[s.palette],usedHuesV10=[];
   for(var i=0;i<s.colourCount;i++){
     var h;
     if(s.palette==='spectrum')h=start+i*360/s.colourCount;
     else if(s.palette==='golden')h=start+i*137.507764;
     else h=arr[i%arr.length];
     var sat=s.saturation,lig=s.brightness;
-    // V10: named palettes are families of pigments, not a short list
-    // repeated verbatim once Colours exceeds their anchor count.
-    // Stay near the selected family's hue, but give additional inks
-    // distinct value/chroma so materials can keep them separate.
+    // V10: each additional pigment needs its own HUE, not merely a
+    // lighter/darker duplicate of a palette anchor. Keep the original
+    // anchor family, then choose its most distinguishable neighbour
+    // within +/-20 degrees of that anchor. Maximise the smallest
+    // circular gap to every hue already selected (including across 0).
+    // The 14-ink tests enforce >=6 degrees between any two hue angles.
+    // No drawing RNG calls are added; V1-V9 stay byte-for-byte unchanged.
     if(A.rendererVersion>=10&&arr&&s.palette!=='mono'){
       var cycle=Math.floor(i/arr.length);
       if(cycle){
+        var bestHue=h,bestGap=-1,bestShift=Infinity;
+        for(var shift=-20;shift<=20;shift++){
+          var candidate=(h+shift+360)%360,minGap=360;
+          for(var j=0;j<usedHuesV10.length;j++){
+            var gap=Math.abs(candidate-usedHuesV10[j]);
+            minGap=Math.min(minGap,Math.min(gap,360-gap));
+          }
+          if(minGap>bestGap||(minGap===bestGap&&Math.abs(shift)<bestShift)){
+            bestHue=candidate;bestGap=minGap;bestShift=Math.abs(shift);
+          }
+        }
+        h=bestHue;
         var direction=cycle%2?1:-1;
-        h=(h+direction*(7+Math.floor((cycle-1)/2)*6)+360)%360;
         lig=A.clamp(lig+direction*(12+Math.floor((cycle-1)/2)*5),14,86);
         sat=A.clamp(sat-direction*5,8,100);
       }
+      usedHuesV10.push(h);
     }
     if(s.palette==='pastel'){sat=Math.min(sat,72);lig=Math.max(lig,68)}
     if(s.palette==='neon'){sat=Math.max(sat,92);lig=A.clamp(lig,48,62)}
