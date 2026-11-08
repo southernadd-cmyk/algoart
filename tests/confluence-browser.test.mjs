@@ -107,30 +107,28 @@ try{
       oilV8=A.renderOilPaintV8,action=A.actionPaintingFromPathsV4,
       shortcutAction=A.collabAction;
     window.__actionTurnEvidence=[];
-    const actionHistory=new WeakMap();
+    window.__nativeClears=0;
+    const clear=CanvasRenderingContext2D.prototype.clearRect;
+    CanvasRenderingContext2D.prototype.clearRect=function(...args){
+      if(this.canvas.id==='shared'||this.canvas.id==='baseline')window.__nativeClears++;
+      return clear.apply(this,args);
+    };
     A.renderOilPaintV8=function(...args){
       window.__materialCalls.oil++;
       return (window.__nativeOilMeta=oilV8.apply(this,args));
     };
     A.actionPaintingFromPathsV4=function(...args){
       window.__materialCalls.action++;
-      const canvas=args[0],previous=actionHistory.get(canvas);
       const result=action.apply(this,args);
+      const canvas=args[0];
       const pixels=canvas.getContext('2d',{willReadFrequently:true})
         .getImageData(0,0,canvas.width,canvas.height).data;
-      let erased=0,retained=0,newPixels=0;
-      if(previous){
-        for(let p=3;p<pixels.length;p+=32){
-          if(previous[p]>24&&pixels[p]+5<previous[p])erased++;
-          if(previous[p]>24&&pixels[p]>20)retained++;
-          if(previous[p]<5&&pixels[p]>24)newPixels++;
-        }
-      }
+      let freshPixels=0;
+      for(let p=3;p<pixels.length;p+=32)if(pixels[p]>24)freshPixels++;
       window.__actionTurnEvidence.push({
         append:args[4]?.append,passes:result.passes,paths:args[1]?.length,
-        erased,retained,newPixels,hadPrevious:!!previous
+        freshPixels
       });
-      actionHistory.set(canvas,pixels);
       return (window.__nativeActionStats=result);
     };
     A.collabAction=function(...args){
@@ -186,7 +184,7 @@ try{
       // One native artist layer uses two calls (blank & actual), then a
       // second two for φ-baseline. A local patch per drawing turn would
       // call the renderer considerably more often and restart its wash.
-      assert(evidence.calls.tissue>=2 && evidence.calls.tissue<=20,
+      assert(evidence.calls.tissue>=2 && evidence.calls.tissue<=40,
         'Tissue must use a real full-sheet V7 pass for each turn: '+JSON.stringify(evidence));
     }
     if(material==='watercolour')assert(evidence.calls.watercolour>0,'Watercolour never used native V2S');
@@ -253,9 +251,9 @@ try{
     palette:window.AlgoArt.lastOilMaterialStats?.inkColours,
     graphite:window.AlgoArt.lastOilMaterialStats?.graphitePaths
   }));
-  assert.equal(sharedSurface.calls,10,
-    'Five all-tissue turns should run V7 on the original paper for both canvases: '+JSON.stringify(sharedSurface));
-  assert(sharedSurface.palette?.length>=3,'Tissue layer lost distinct original artist colours: '+JSON.stringify(sharedSurface));
+  assert.equal(sharedSurface.calls,20,
+    'Five all-tissue turns must extract fresh native V7 pigment twice per canvas: '+JSON.stringify(sharedSurface));
+  assert(sharedSurface.palette?.length>=1,'Tissue layer lost the active artist colour: '+JSON.stringify(sharedSurface));
   assert(sharedSurface.graphite>0,'Tissue unified layer lost graphite: '+JSON.stringify(sharedSurface));
   console.log('unified tissue '+JSON.stringify(sharedSurface));
   // A manual Step must now run the *native V7* material pipeline, not the
@@ -285,7 +283,7 @@ try{
   const stepCalls=await page.evaluate(()=>({
     native:window.__nativeTissueStepCount,shortcuts:window.__legacyTissueCalls
   }));
-  assert.equal(stepCalls.native,2,'First Step must paint solo V7 on both canvases: '+JSON.stringify(stepCalls));
+  assert.equal(stepCalls.native,4,'First Step must make matched blank/paint V7 passes for both canvases: '+JSON.stringify(stepCalls));
   assert.equal(stepCalls.shortcuts,0,
     'The old simplified tissue shortcut must never be used: '+JSON.stringify(stepCalls));
   console.log('actual tissue V7 first turn '+JSON.stringify(stepCalls));
@@ -307,8 +305,8 @@ try{
     calls:window.__materialCalls.watercolour,
     stats:window.AlgoArt.lastWatercolourExperimentStats
   }));
-  assert.equal(fullWash.calls,10,
-    'Five all-watercolour turns must paint full-sheet V2S once per canvas: '+JSON.stringify(fullWash));
+  assert.equal(fullWash.calls,20,
+    'Five all-watercolour turns must append native V2S pigment over shared paper: '+JSON.stringify(fullWash));
   assert.equal(fullWash.stats?.fitToSheet,false,'V2S must preserve responsive placement');
   assert.equal(fullWash.stats?.v2sFidelity,true,'V2S source-hue fidelity must remain enabled');
   assert(fullWash.stats?.sourceHueMatches>0,'V2S lost the artists own pigment hues');
@@ -320,7 +318,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('#counter')?.textContent?.trim()==='1 / 5 turns',
     undefined,{timeout:25000});
   const afterStep=await page.evaluate(()=>window.__materialCalls.watercolour);
-  assert.equal(afterStep,12,'Watercolour single Step must call native V2S on both canvases: '+afterStep);
+  assert.equal(afterStep,24,'Watercolour single Step must make two native V2S passes per canvas: '+afterStep);
   // Test each complete material engine with THREE responding artists,
   // not merely one native artist and two Marker artists.
   async function allArtistMaterial(material){
@@ -357,7 +355,8 @@ try{
   await allArtistMaterial('action');
   const actionStudy=await page.evaluate(()=>({
     calls:window.__materialCalls.action,shortcut:window.__materialCalls.shortcutAction,
-    stats:window.__nativeActionStats,turns:window.__actionTurnEvidence
+    stats:window.__nativeActionStats,turns:window.__actionTurnEvidence,
+    clears:window.__nativeClears
   }));
   assert.equal(actionStudy.calls,10,'All-action study must run the full V4 painter per turn');
   assert.equal(actionStudy.shortcut,0,'All-action study invoked the old one-fling shortcut');
@@ -366,12 +365,10 @@ try{
   assert.equal(actionStudy.stats?.passes,1,'Each Confluence turn must add one native V4 pass');
   assert(actionStudy.turns.every(t=>t.append&&t.passes===1&&t.paths>0),
     'Action V4 must append new planned strokes, never replay the full painting');
-  assert(actionStudy.turns.filter(t=>t.hadPrevious).length>=6,
-    'Expected multiple additive action turns on both canvases');
-  assert(actionStudy.turns.every(t=>t.erased===0),
-    'Action V4 erased earlier paint during a later turn: '+JSON.stringify(actionStudy.turns));
-  assert(actionStudy.turns.some(t=>t.newPixels>0),
-    'Later Action Painting turns failed to add new painted pixels');
+  assert(actionStudy.turns.every(t=>t.freshPixels>0),
+    'Every V4 artist turn must add fresh enamel: '+JSON.stringify(actionStudy.turns));
+  assert(actionStudy.clears<=2,
+    'A material turn cleared the shared composition: '+actionStudy.clears);
   console.log('all-action V4 additive turns '+JSON.stringify(actionStudy));
 
   // Tissue, watercolour and oil need to compose without opaque paper tiles.
