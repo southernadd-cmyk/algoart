@@ -125,6 +125,17 @@ try{
     assert.equal(status.enabled,true);
     assert.equal(status.kind,'phi-sheet');
   }
+  // Generated gallery cards use production absolute share URLs. Rewrite
+  // those links to this test server, otherwise the welcome code correctly
+  // refuses the cross-origin URL and cannot prepare the shown artwork.
+  // On live GitHub Pages these are already same-origin.
+  await page.route('**/gallery/'+date+'/',async route=>{
+    const response=await route.fetch();
+    const html=await response.text();
+    const local=new URL(host).href;
+    await route.fulfill({response,body:html.replaceAll(
+      'https://southernadd-cmyk.github.io/algoart/',local)});
+  });
   // Bare home now selects a RANDOM artwork from the latest gallery for
   // the introduction. It does not automatically choose gallery.entries[0].
   // Assert the shown image and the prepared editor resolve to the same
