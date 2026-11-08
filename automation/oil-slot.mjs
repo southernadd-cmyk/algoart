@@ -68,7 +68,7 @@ async function main(){
       threads_caption_b64:b64(copy.threads),
       bluesky_caption_b64:b64(copy.bluesky),
       pinterest_title_b64:b64('Oil · '+item.series+' — PROPORTION PIECE'),
-      pinterest_description_b64:b64('Oil Paint study. Open the exact artwork: '+item.shareUrl),
+      pinterest_description_b64:b64('Oil study. Open the exact artwork: '+item.shareUrl),
       alt_text_b64:b64(copy.altText),share_url:item.shareUrl,
       scheduled_time:gate.target_time
     });
