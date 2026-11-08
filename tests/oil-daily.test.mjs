@@ -47,7 +47,8 @@ for(const orientation of ['landscape','portrait']){
   await fs.access(path.join(dir,item.imageFile));
   await fs.access(path.join(dir,item.instagramImageFile||item.imageFile));
   const copy=makeCaptions(item);
-  assert.match(copy.instagram,/OIL PAINT V1/);
+  assert.match(copy.instagram,/\/ OIL\n/);
+  assert.doesNotMatch(copy.instagram,/OIL PAINT V\d+/);
   assert(copy.instagram.includes(item.settings.palette));
   assert(socialGraphemes(copy.threads)<=500);
   assert(socialGraphemes(copy.bluesky)<=300);
@@ -123,7 +124,8 @@ for(const orientation of ['landscape','portrait']){
   const item=queue.entries[0];
   validateOilItem(item,v3Date,orientation);
   assert.equal(new URL(item.shareUrl).searchParams.get('material'),'oil-v4');
-  assert.match(makeCaptions(item).instagram,/OIL PAINT V4/);
+  assert.match(makeCaptions(item).instagram,/\/ OIL\n/);
+  assert.doesNotMatch(makeCaptions(item).instagram,/OIL PAINT V\d+/);
   run('automation/build-gallery.mjs',{
     SOCIAL_DATE:v3Date,GALLERY_QUEUE_MATERIAL:'oil',
     GALLERY_QUEUE_ORIENTATION:orientation
