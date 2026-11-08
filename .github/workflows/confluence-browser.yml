@@ -6,6 +6,7 @@ on:
       - 'confluence/**'
       - 'tests/confluence-browser.test.mjs'
       - 'tests/confluence-capacity-audit.mjs'
+      - 'tests/confluence-completion-browser.mjs'
       - 'tests/confluence-material.test.mjs'
       - 'tests/confluence-adaptive.test.mjs'
       - '.github/workflows/confluence-browser.yml'
@@ -14,6 +15,7 @@ on:
       - 'confluence/**'
       - 'tests/confluence-browser.test.mjs'
       - 'tests/confluence-capacity-audit.mjs'
+      - 'tests/confluence-completion-browser.mjs'
       - '.github/workflows/confluence-browser.yml'
   workflow_dispatch:
 permissions:
@@ -33,5 +35,7 @@ jobs:
         run: node --test tests/confluence-material.test.mjs tests/confluence-adaptive.test.mjs
       - name: Audit real drawing-turn capacities across all eight systems
         run: node tests/confluence-capacity-audit.mjs
+      - name: Verify every artist completes source marks in φ and equal studies
+        run: node tests/confluence-completion-browser.mjs
       - name: Verify browser orientation and all five materials
         run: node tests/confluence-browser.test.mjs
