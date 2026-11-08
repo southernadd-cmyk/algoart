@@ -94,6 +94,55 @@ try{
   'Confluence did not execute the released Tissue V8 material stages');
  assert.equal(imported.v8Variant,'layered-v8');
  assert.equal(imported.v8Version,8);
+ // The four remaining material choices must survive the same real
+ // editor URL state round-trip, not merely pass a unit-level parser test.
+ // The specific Tissue V8 material-physics check runs separately.
+ for(const [material,expected] of [
+   ['marker','marker'],['watercolour-v2s','watercolour'],
+   ['oil-v8','oil'],['action-v4','action']
+ ]){
+   const seed='CONFLUENCE-HANDOFF-'+expected.toUpperCase();
+   const request=new URLSearchParams({
+     v:'10',seed,mode:'burst',material,pal:'warm',
+     fmt:'portrait',el:'42',den:'58',phi:'47.5',th:'12',
+     cols:'8',sat:'64',paper:'#e6d5cc',grain:'27'
+   });
+   await page.goto(origin+'/?'+request.toString(),{waitUntil:'load'});
+   if(await page.locator('#introSplash').isVisible())
+     await page.locator('#introEnter').click();
+   await page.waitForFunction(([value,kind])=>
+     document.querySelector('#seed')?.value===value &&
+     document.querySelector('#materialStyle')?.value===kind,
+     [seed,expected],{timeout:90000});
+   assert.equal(await page.locator('#exploreConfluence').count(),0,
+     'Broken solo-editor CTA reappeared while testing '+material);
+   const current=new URL(page.url());
+   assert.equal(current.searchParams.get('seed'),seed);
+   // Marker deliberately uses an omitted default material query value.
+   if(material!=='marker')assert.equal(current.searchParams.get('material'),material);
+   await page.goto(origin+'/confluence/?'+current.searchParams.toString(),
+     {waitUntil:'load'});
+   await page.waitForFunction(value=>
+     document.querySelector('#import-note')?.hidden===false &&
+     document.querySelector('#seed')?.value===value,seed,{timeout:90000});
+   const after=await page.evaluate(()=>({
+     material:document.querySelector('.artist[data-artist="1"] select[data-field="material"]')?.value,
+     system:document.querySelector('.artist[data-artist="1"] select[data-field="system"]')?.value,
+     palette:document.querySelector('.artist[data-artist="1"] select[data-field="palette"]')?.value,
+     elements:document.querySelector('.artist[data-artist="1"] input[data-setting="elements"]')?.value,
+     colourCount:document.querySelector('.artist[data-artist="1"] input[data-setting="colourCount"]')?.value,
+     paper:document.querySelector('#paper')?.value,
+     orientation:document.querySelector('#orientation')?.value
+   }));
+   assert.equal(after.material,expected);
+   assert.equal(after.system,'burst');
+   assert.equal(after.palette,'warm');
+   assert.equal(after.elements,'42');
+   assert.equal(after.colourCount,'8');
+   assert.equal(after.paper,'#e6d5cc');
+   assert.equal(after.orientation,'portrait');
+   console.log('SOLO_CONFLUENCE_MATERIAL_HANDOFF '+JSON.stringify({material,after}));
+ }
  // All four links must remain within the viewport and not overlap at narrow
  // widths; no navigation destination is silently omitted on mobile.
  for(const pathname of ['/confluence/','/','/gallery/','/about/','/about/step-by-step/']){
