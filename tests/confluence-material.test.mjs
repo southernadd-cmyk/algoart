@@ -95,11 +95,11 @@ test('One tissue surface preserves all artists palettes without duplicating atmo
 test('All materials deposit on one persistent sheet in chronological order',()=>{
  const renderer=read('../confluence/materials.js');
  assert.match(renderer,/paint\(output, action\)/);
- assert.match(renderer,/layTurn\(tissueSurface,tissueTurn\)/);
- assert.match(renderer,/layTurn\(watercolourSurface,watercolourTurn,'multiply'\)/);
+ assert.match(renderer,/layTurn\(tissueSurface,tissueTurn,'source-over',bounds\)/);
+ assert.match(renderer,/layTurn\(watercolourSurface,watercolourTurn,'multiply',bounds\)/);
  assert.match(renderer,/layTurn\(oilSurface,oilTurnSurface\)/);
  assert.match(renderer,/layTurn\(actionSurface,actionTurnSurface\)/);
- assert.match(renderer,/output\.drawImage\(turn\.canvas,0,0\)/);
+ assert.match(renderer,/output\.drawImage\(turn\.canvas,area\.x,area\.y\)/);
  assert.doesNotMatch(renderer,/output\.clearRect\(/);
  assert.doesNotMatch(renderer,/showSheet\(/);
  assert.doesNotMatch(renderer,/sourcePaths\(oilMarks\)/);
@@ -116,7 +116,7 @@ test('Watercolour uses native source-hue V2S on one cumulative full-paper surfac
  assert.match(renderer,/renderNativeDeposit\(watercolourTurn,'watercolour',newMarks/);
  assert.match(renderer,/watercolourMarks\.push\(\.\.\.fresh\)/);
  assert.match(renderer,/renderActualWatercolour\(fresh,artist\)/);
- assert.match(renderer,/layTurn\(watercolourSurface,watercolourTurn,'multiply'\)/);
+ assert.match(renderer,/layTurn\(watercolourSurface,watercolourTurn,'multiply',bounds\)/);
  assert.match(renderer,/materialFootprint\('watercolour',watercolourSurface\)/);
  assert.match(renderer,/coverageHistory=\{watercolour:null,oil:null,action:null\}/);
  assert.doesNotMatch(renderer,/avoidForeignMarks\(/);
