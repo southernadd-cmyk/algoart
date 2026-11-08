@@ -13,6 +13,16 @@ try{
   '?v=9&seed=OIL-PAPER-COLOUR-FIX-20261015&mode=spiral&material=oil-v1&paper=%23f5f0e6',
   {waitUntil:'domcontentloaded',timeout:90000});
  await page.waitForFunction(()=>document.querySelector('#materialStyle')?.value==='oil');
+ assert.equal(new URL(page.url()).searchParams.get('v'),'9',
+   'Historical Oil V9 link must open with its original renderer');
+ // Editing a historical drawing intentionally starts a new V10 rendering.
+ // Test paper equality within one renderer; comparing edited V10 pixels to
+ // immutable V9 pixels would incorrectly declare a valid update a failure.
+ const v10url=new URL(page.url());
+ v10url.searchParams.set('v','10');
+ await page.goto(v10url.href,{waitUntil:'domcontentloaded',timeout:90000});
+ await page.waitForFunction(()=>document.querySelector('#materialStyle')?.value==='oil'&&
+   window.AlgoArt?.rendererVersion===10);
  const result=await page.evaluate(()=>{
   const A=window.AlgoArt,
     base={...A.readSettings(),mode:'spiral',orientation:'portrait',
@@ -93,6 +103,8 @@ try{
  await page.locator('#paper').fill('#f5f0e6');
  await page.waitForFunction(()=>
    new URLSearchParams(location.search).get('paper')==='#f5f0e6');
+ assert.equal(new URL(page.url()).searchParams.get('v'),'10',
+   'Editing paper must never silently return to archived V9');
  assert.equal(await page.locator('#art').evaluate(c=>c.toDataURL()),original,
    'Returning to default cream must restore exact original Oil pixels');
 
