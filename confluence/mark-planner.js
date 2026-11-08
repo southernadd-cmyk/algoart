@@ -181,7 +181,7 @@ function fittedOutline(points, context, width) {
 
 export function planStrokes(group, artist, placement, context) {
   const plans = new Map();
-  if (!context.fields.length || group.info?.section === 'frame') return plans;
+  if (!context.fields.length || group.info?.section === 'frame' || placement.insideRect) return plans;
   const materialWidths = {marker: .5, tissue: 1.2, watercolour: 1.5, oil: 1.4, action: .65};
   for (const trace of group.traces) {
     const points = trace.points.map(placement.place);
