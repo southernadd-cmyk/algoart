@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Tissue &amp; Graphite V8 — Visual Comparison</title>
+<style>
+:root{color-scheme:light; font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#f2efe8;color:#242724}
+header{padding:18px clamp(16px,3vw,40px);background:#222a28;color:#f4f0e7}
+h1{font-size:clamp(20px,2.6vw,32px);letter-spacing:.08em;margin:.2em 0 .4em}
+p{line-height:1.45;max-width:74ch}
+.controls{display:flex;flex-wrap:wrap;align-items:end;gap:14px;padding:16px clamp(16px,3vw,40px)}
+label{display:grid;gap:5px;font-size:13px;font-weight:700}
+input,select,button{font:inherit;padding:9px 12px;border:1px solid #858d87;background:white;color:#222}
+button{background:#28352f;color:white;cursor:pointer}
+button:hover{background:#425a4e}
+.columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:0 clamp(12px,2vw,30px) 24px}
+article{background:#fff;border:1px solid #d2d4cc;min-width:0}
+article header{background:#e2e4db;color:#222;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+h2{font-size:16px;margin:0}
+a{color:inherit}
+iframe{display:block;width:100%;height:min(78vh,800px);border:0;background:#f5f0e6}
+small{font-size:12px;color:#57625b}
+footer{padding:0 24px 20px;font-size:13px}
+@media(max-width:790px){.columns{grid-template-columns:1fr}iframe{height:650px}}
+</style>
+</head>
+<body>
+<header><h1>TISSUE &amp; GRAPHITE / V8 STUDY</h1>
+<p>Compare the released V7 with the experimental layered V8 using identical seeds and settings. V8 retains the composition and source colours, reduces the weight of translucent washes, softens pale overlays and restores graphite marks. The main editor still defaults to V7.</p></header>
+<div class="controls">
+<label>Seed <input id="seed" value="TISSUE-V8-STUDY" maxlength="120" spellcheck="false"></label>
+<label>Composition <select id="mode">
+<option value="field">Orbital / Field</option>
+<option value="spiral">Golden Trajectories</option>
+<option value="rects">Recursive Divisions</option>
+<option value="burst">Radiant Systems</option>
+<option value="network">Connected Fields</option>
+<option value="organic">Growth Systems</option>
+<option value="geometric">Constructed Forms</option>
+<option value="scribble">Automatic Marks</option>
+</select></label>
+<button id="run" type="button">Render both</button>
+<small>The normal editor controls remain available inside each preview.</small>
+</div>
+<main class="columns">
+<article><header><h2>Released Tissue V7</h2><a id="v7-link" target="_blank" rel="noopener">Open full editor</a></header><iframe id="v7" title="Released V7 editor preview" loading="eager"></iframe></article>
+<article><header><h2>Layered Tissue V8 (experimental)</h2><a id="v8-link" target="_blank" rel="noopener">Open full editor</a></header><iframe id="v8" title="Experimental V8 editor preview" loading="eager"></iframe></article>
+</main>
+<footer>Unlisted development comparison. Neither daily gallery nor social-image rendering uses the experimental version.</footer>
+<script>
+(function(){
+  const seed=document.getElementById('seed'),mode=document.getElementById('mode');
+  const params=new URLSearchParams(location.search);
+  if(params.has('seed'))seed.value=params.get('seed');
+  if(params.has('mode')&&Array.from(mode.options).some(x=>x.value===params.get('mode')))mode.value=params.get('mode');
+  function source(version){
+    const p=new URLSearchParams({v:'10',seed:seed.value||'TISSUE-V8-STUDY',mode:mode.value});
+    if(version===7)p.set('tissue','7');
+    else p.set('material','tissue-v8-layered');
+    return '../../?'+p.toString();
+  }
+  function update(){
+    for(const number of [7,8]){
+      const url=source(number);
+      document.getElementById('v'+number+'-link').href=url;
+      document.getElementById('v'+number).src=url;
+    }
+    history.replaceState(null,'','?'+new URLSearchParams({seed:seed.value,mode:mode.value}));
+  }
+  document.getElementById('run').addEventListener('click',update);
+  seed.addEventListener('keydown',e=>{if(e.key==='Enter')update()});
+  update();
+})();
+</script>
+</body>
+</html>
