@@ -167,3 +167,146 @@ footer p{margin:0}
  .readout{font-size:11px}
  .buttons,.output-actions{gap:9px}
 }
+
+
+/* Confluence is identified quietly at the edge, never as a second hero. */
+.shell main{padding-top:76px}
+.side-wordmark{
+ position:absolute;left:clamp(8px,2vw,33px);top:clamp(142px,17vh,230px);
+ writing-mode:vertical-rl;transform:rotate(180deg);
+ font:normal clamp(13px,1.3vw,21px)/1.1 "AlgoArt Marker",sans-serif;
+ letter-spacing:.16em;color:rgba(73,63,50,.17);pointer-events:none;user-select:none;
+}
+.work[data-format=portrait] .canvases:not(.comparing) figure{
+ width:min(100%, 505px, max(285px,calc((100dvh - 260px) * .7142857)));
+}
+.format-switch{padding-right:14px;border-right:1px solid var(--line)}
+.format-switch button[aria-pressed=true]{color:var(--ink)}
+.total-turns-field{margin:12px 0 6px}
+.total-turns-field select{width:100%;margin:4px 0 0}
+.total-turns-field .hint{margin:5px 0 0}
+.sharing{order:5;width:min(100%,760px);margin:17px auto 0;padding:14px 0;border-top:1px solid var(--line)}
+.sharing-intro{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;margin:0 0 10px}
+.sharing-intro span{font:11px/1.3 "Courier New",monospace;letter-spacing:.05em}
+.sharing-intro p{margin:0;color:var(--muted);font:12px/1.5 Georgia,serif}
+.sharing-buttons{display:flex;align-items:center;gap:9px 17px;flex-wrap:wrap}
+.sharing-buttons button{display:inline-flex;align-items:center;gap:5px;font:13px/1.3 "AlgoArt Marker",sans-serif;padding:5px 0}
+.sharing-buttons canvas{width:24px;height:24px;object-fit:contain}
+#sharing-status{margin:6px 0 0;color:var(--muted);font:11px/1.4 "Courier New",monospace;min-height:0}
+#sharing-status:empty{display:none}
+@media(max-width:970px){.board-actions{flex-wrap:wrap}.workbar{align-items:flex-start}}
+@media(max-width:700px){
+ .side-wordmark{display:none}
+ .shell main{padding:60px 12px 25px}
+ .work[data-format=portrait] .canvases:not(.comparing) figure{
+  width:min(100%, 445px, max(200px,calc((100dvh - 260px) * .7142857)));
+ }
+ .format-switch{padding-right:9px}
+ .board-actions{gap:12px}
+ .sharing-intro{display:block}
+ .sharing-intro p{margin-top:4px}
+}
+
+
+/* Single-viewport canvas: same no-page-scroll behaviour as the main editor.
+   The source canvas keeps its portrait/landscape pixel dimensions; only its
+   displayed size changes. The available stage, not viewport-width, dictates fit. */
+html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+.shell{height:100dvh;min-height:0;display:grid;grid-template-rows:var(--confluence-header,72px) minmax(0,1fr)}
+.algo-global-header{grid-row:1;min-height:0}
+.shell main{
+ grid-row:2;display:block;position:relative;height:100%;min-height:0;overflow:hidden;
+ padding:8px clamp(14px,3vw,40px) 9px;
+}
+.studio{height:100%;min-height:0;width:100%;max-width:1320px}
+.work{
+ height:100%;min-height:0;max-width:100%;width:100%;margin:0 auto;
+ display:grid;grid-template-columns:minmax(0,1fr);
+ grid-template-rows:minmax(0,1fr) auto auto 3px auto;align-items:stretch;
+ gap:0;
+}
+.canvases{
+ order:0;min-width:0;min-height:0;height:100%;width:100%;
+ display:flex;gap:16px;align-items:center;justify-content:center;
+ padding:2px 0 5px;background:transparent;overflow:hidden;
+}
+.canvases.comparing{display:flex;gap:16px}
+.canvases figure,.canvases.comparing figure{
+ display:flex;min-width:0;min-height:0;max-width:none;
+ width:100%;height:100%;flex:0 1 auto;flex-direction:column;
+ align-items:center;justify-content:center;
+ margin:0;
+}
+.canvases .sheet{width:100%;flex:0 0 auto;max-height:calc(100% - 25px);min-width:0}
+.canvases .sheet canvas{display:block;width:100%;height:auto}
+.canvases figcaption{flex:0 0 auto;min-height:20px;margin:5px 0 0;font-size:11px}
+.workbar{order:1;margin:0 auto;min-height:36px;width:min(100%,980px);padding:4px 0}
+.transport{order:2;margin:0 auto;min-height:43px;width:min(100%,980px);padding:4px 0}
+.progress{order:3;width:min(100%,980px);margin:0 auto}
+.readout{order:4;width:min(100%,980px);min-width:0;margin:0 auto;padding:0;border:0;display:block}
+.readout>summary{cursor:pointer;font:12px/1.2 "AlgoArt Marker",sans-serif;padding:5px 0 3px;display:flex;justify-content:space-between;gap:10px;list-style:none}
+.readout>summary::-webkit-details-marker{display:none}
+.readout>summary::before{content:"+";margin-right:5px}
+.readout[open]>summary::before{content:"−"}
+.readout #decisions{
+ position:absolute;bottom:35px;left:50%;transform:translateX(-50%);
+ width:min(100%,980px);max-height:min(40dvh,300px);overflow-y:auto;
+ background:#f0ebdf;border:1px solid var(--line);padding:9px 15px;
+ box-shadow:0 4px 22px rgba(35,30,22,.16);z-index:30
+}
+#inspector-toggle{top:10px;right:clamp(14px,3vw,40px);z-index:21}
+.side-wordmark{
+ position:absolute;left:max(8px,calc((100vw - 1435px)/2));
+ top:50%;transform:translateY(-50%) rotate(180deg);font-size:clamp(12px,1.15vw,18px);
+}
+.sharing{display:none} /* Moved into the Export drawer panel by drawer-ui.js. */
+.sharing.export-panel{display:block;order:unset;margin:0;padding:14px 18px;width:auto;overflow-y:auto;min-height:0;border:0}
+.sharing.export-panel .sharing-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sharing.export-panel .sharing-buttons button{display:flex;justify-content:flex-start;gap:10px;min-height:40px;padding:7px 8px;border:1px solid var(--line)}
+.sharing.export-panel .sharing-buttons button:last-child{grid-column:1/-1}
+.sharing.export-panel .sharing-buttons canvas{width:30px;height:30px}
+.sharing.export-panel .sharing-intro{display:block;margin-bottom:14px}
+.sharing.export-panel .sharing-intro p{margin-top:7px}
+.shell footer{display:none}
+@media(max-width:850px){.shell{--confluence-header:92px}}
+@media(max-width:760px){
+ .shell main{padding:5px 10px 6px}
+ .canvases{gap:7px}
+ .canvases figcaption{font-size:9px;min-height:16px}
+ .canvases .sheet{max-height:calc(100% - 20px)}
+ .workbar{padding:2px 0;min-height:33px}
+ .canvas-heading h2{font-size:12px}
+ .workbar .board-actions{gap:5px}
+ .board-actions .segmented{gap:6px}
+ .board-actions .segmented button{font-size:10px;padding:3px 1px}
+ .board-draw{font-size:11px;padding:4px 0}
+ .transport{min-height:36px;gap:8px;flex-wrap:nowrap;overflow:hidden}
+ .transport .buttons,.transport .output-actions{gap:7px;flex-wrap:nowrap}
+ .transport .buttons button,.transport .output-actions button{font-size:12px;white-space:nowrap}
+ .transport #counter{order:unset;flex:0 1 auto;font-size:9px;margin-left:auto}
+ .transport #edit-artists{display:none!important}
+ #inspector-toggle{position:fixed;top:auto;right:12px;bottom:12px;z-index:50;padding:9px 10px}
+ .side-wordmark{display:none}
+}
+@media(max-width:560px){
+ .workbar{flex-wrap:nowrap;gap:6px}
+ .workbar .canvas-heading h2{display:none}
+ .workbar .board-actions{width:100%;justify-content:space-between;flex-wrap:nowrap}
+ .format-switch{padding-right:6px}
+ .board-actions .view-switch button{font-size:10px}
+ .transport .output-actions #download{display:none}
+ .transport .buttons button{font-size:11px}
+ #counter{display:none}
+}
+@media(max-height:620px){
+ .workbar{min-height:29px}
+ .transport{min-height:33px}
+ .readout>summary{padding:3px 0}
+ .canvases figcaption{font-size:9px}
+}
+
+.drawer-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
+.drawer-tabs button{font-size:10px}
+.shared-settings,.export-panel{scrollbar-width:thin}
+.drawer-head{padding:13px 18px}
+@media(max-width:420px){.drawer-tabs button{font-size:9px}}

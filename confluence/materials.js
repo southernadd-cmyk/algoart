@@ -10,7 +10,18 @@ export const materials = {
 };
 
 const SAMPLE = 12;
-const RESOLUTION = {tissue: 1, watercolour: 1, oil: 0.7, action: 1};
+// Paint fibres and relief at the same physical pixel scale as the solo editor.
+// Oil rendered at .7 previously lost the small bristle/tooth relief details.
+const RESOLUTION = {tissue: 1, watercolour: 1, oil: 1, action: 1};
+
+export function materialOpacity(opacity, pigmentGain) {
+  // The per-material native routines already apply their own brush transparency.
+  // Avoid multiplying that by another 77% default layer, which double-faded
+  // tissue, watercolour, action and oil. Still honour the artist's Opacity
+  // slider relative to its 77% neutral default.
+  const normalized = Math.max(0, Math.min(1, opacity / 77));
+  return Math.max(0, Math.min(1, normalized ** .85 * pigmentGain));
+}
 
 function layer(readback = false) {
   return document.createElement('canvas').getContext('2d', {willReadFrequently: readback});
@@ -158,7 +169,8 @@ export function makePainter(output, seed) {
         const r = A.makeR(markSeed);
         const colour = artistInk(artist, trace.mark);
         if (material === 'tissue') {
-          A.collabTissue(pigment, trace.points, Math.min(55, 9 + width * 2.8), colour, r);
+          A.collabTissue(pigment, trace.points, Math.min(55, 9 + width * 2.8),
+            'rgb(' + sourceRGB(colour).join(',') + ')', r);
         } else if (material === 'watercolour') {
           // The wash mixer reads RGB channels. Palette swatches can be CSS HSL.
           const ink = 'rgb(' + sourceRGB(colour).join(',') + ')';
@@ -183,7 +195,7 @@ export function makePainter(output, seed) {
       }
     }
     softenSheetEdge(pigment, area, width, height, action.border);
-    const coverage = (1 - (1 - opacity / 100) ** Math.sqrt(overdraw / 2)) * action.pigmentGain;
+    const coverage = materialOpacity(opacity, action.pigmentGain);
     output.save();
     output.globalAlpha = coverage;
     output.globalCompositeOperation = material === 'watercolour' ? 'multiply' : 'source-over';
