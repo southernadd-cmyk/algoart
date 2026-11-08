@@ -1,0 +1,39 @@
+name: Four at once golden-section comparison
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'js/app.js'
+      - 'tests/four-at-once-phi-pull.test.mjs'
+      - '.github/workflows/four-at-once-phi-pull.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --only-shell chromium
+      - name: Check source contracts
+        run: |
+          node --check js/app.js
+          node --check tests/four-at-once-phi-pull.test.mjs
+          node tests/fast-editor-markup.test.mjs
+          node tests/control-ranges.test.mjs
+      - name: Start editor
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/phi-four-http.log 2>&1 &
+          for i in {1..40}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/phi-four-http.log; exit 1
+      - name: Compare marker and Oil V8 and select φ values
+        run: node tests/four-at-once-phi-pull.test.mjs
