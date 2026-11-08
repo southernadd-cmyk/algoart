@@ -67,12 +67,12 @@ test('Native material layers taper at cropped tiles, not at true paper edges',as
  assert.equal(cropEdgeFeather(220,0,440,420,paperEdge,paper),1);
 });
 
-test('Every tissue turn uses actual full-sheet V7 rather than a marker-like shim',()=>{
+test('Every Tissue turn contributes progressive native V8 pigment rather than a simplified shim',()=>{
  const renderer=read('../confluence/materials.js');
  const bridge=read('../confluence/native-material.js');
  const ui=read('../confluence/ui.js');
  assert.match(renderer,/function renderActualTissue\(/);
- assert.match(renderer,/renderNativeDeposit\(tissueTurn,'tissue',newMarks/);
+ assert.match(renderer,/renderNativeDeposit\(tissueTurn,'tissue',all,representative/);
  assert.match(renderer,/renderActualTissue\(fresh,artist\)/);
  assert.match(renderer,/tissueMarks\.push\(\.\.\.fresh\)/);
  assert.doesNotMatch(renderer,/collabTissue\(/);
@@ -82,20 +82,24 @@ test('Every tissue turn uses actual full-sheet V7 rather than a marker-like shim
  assert.match(ui,/state\.paintShared\.finalize\?\.\(\)/);
  assert.doesNotMatch(read('../js/oil-material.js'),/confluenceTissueGraphite/);
 });
-test('One tissue surface preserves all artists palettes without duplicating atmosphere',()=>{
+test('Cumulative Tissue V8 keeps independent artist palettes without duplicating atmosphere',()=>{
  const renderer=read('../confluence/materials.js');
  const native=read('../confluence/native-material.js');
- assert.match(renderer,/newMarks\.map\(t=>t\.ink\)/);
- assert.match(renderer,/all-tissue-voices/);
+ assert.match(renderer,/tissueHistories=new Map\(\)/);
+ assert.match(renderer,/history\.marks\.push\(\.\.\.newMarks\)/);
+ assert.match(renderer,/new Set\(all\.map\(t=>t\.ink\)\)/);
+ assert.match(renderer,/history\.previous=next/);
+ assert.match(renderer,/renderNativeDeposit\(tissueTurn,'tissue',all,representative/);
+ assert.match(renderer,/tissueIncrement\.putImageData\(increment,0,0\)/);
+ assert.match(renderer,/\[seed,'tissue-artist',artist\.id,'v8-layered'\]/);
  assert.match(native,/trace\.ink\|\|artist\.inks/);
- assert.doesNotMatch(renderer,/tissueArtists = new Map/);
- assert.doesNotMatch(renderer,/for\(const \{artist,traces,gain,marks\} of tissueArtists/);
+ assert.doesNotMatch(renderer,/renderNativeDeposit\(tissueTurn,'tissue',newMarks/);
 });
 
 test('All materials deposit on one persistent sheet in chronological order',()=>{
  const renderer=read('../confluence/materials.js');
  assert.match(renderer,/paint\(output, action\)/);
- assert.match(renderer,/layTurn\(tissueSurface,tissueTurn,'source-over',bounds\)/);
+ assert.match(renderer,/layTurn\(tissueSurface,tissueIncrement,'source-over',area\)/);
  assert.match(renderer,/layTurn\(watercolourSurface,watercolourTurn,'multiply',bounds\)/);
  assert.match(renderer,/layTurn\(oilSurface,oilTurnSurface\)/);
  assert.match(renderer,/layTurn\(actionSurface,actionTurnSurface\)/);
