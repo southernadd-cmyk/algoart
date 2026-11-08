@@ -129,8 +129,8 @@ test('Confluence public navigation and approved solo-editor handoff are both ava
  assert.doesNotMatch(root,/Draw with others|Three Hands/);
  const about=read('../about/index.html');
  assert.match(about,/Three procedural artists/);
- assert.match(about,/not other visitors/);
- assert.match(about,/not automatically added to the daily gallery/);
+ assert.match(about,/not people working together online/);
+ assert.match(about,/not automatically collected in the daily gallery/);
 });
 
 test('Solo-to-Confluence importer preserves full-state settings for all five current materials',()=>{
