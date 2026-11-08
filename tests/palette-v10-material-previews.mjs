@@ -1,4 +1,4 @@
-// Browser contact sheet for V9 vs V10 at the same seed and all five materials.
+// Browser contact sheet for V9 vs V10 at 12 and 14 colours, all five materials.
 // Saves real rendered PNGs and a hue-coverage audit; never publishes artwork.
 import {chromium} from 'playwright';
 import {mkdir,writeFile} from 'node:fs/promises';
@@ -18,12 +18,13 @@ try{
     window.AlgoArt?.renderReleasedOilPaintV8&&
     window.AlgoArt?.renderActionPaintingV4&&
     window.AlgoArt?.renderWatercolourV2S,null,{timeout:300000});
-  for(const version of [9,10]){
-    for(const material of ['marker','tissue','watercolour','oil','action']){
-      const sample=await page.evaluate(async ({version,material})=>{
+  for(const colourCount of [12,14]){
+    for(const version of [9,10]){
+      for(const material of ['marker','tissue','watercolour','oil','action']){
+      const sample=await page.evaluate(async ({version,material,colourCount})=>{
         const A=window.AlgoArt;
         const s={...A.readSettings(),seed:'PALETTE-V10-VISUAL-01',
-          mode:'field',palette:'primary',colourCount:12,
+          mode:'field',palette:'primary',colourCount,
           elements:42,density:65,complexity:70,negativeSpace:35,
           saturation:82,brightness:53,paper:'#f5f0e6',grain:0};
         A.rendererVersion=version;
@@ -55,16 +56,25 @@ try{
         }
         const materialHues=Array.from(buckets).filter(v=>v>chromatic*.006).length;
         return {png:canvas.toDataURL('image/png').split(',')[1],
-          summary:{material,version,ms:Math.round(performance.now()-t0),
+          summary:{material,version,colourCount,ms:Math.round(performance.now()-t0),
           width:canvas.width,height:canvas.height,chromatic,
           occupiedHueBins:materialHues,hueDistribution:Array.from(buckets)}};
-      },{version,material});
-      await writeFile(dir+'/'+version+'-'+material+'.png',Buffer.from(sample.png,'base64'));
+      },{version,material,colourCount});
+      await writeFile(dir+'/'+colourCount+'-'+version+'-'+material+'.png',Buffer.from(sample.png,'base64'));
       report.push(sample.summary);
       console.log('PALETTE VISUAL',JSON.stringify(sample.summary));
+      }
     }
+  }
+  for(const material of ['marker','tissue','watercolour','oil','action']){
+    const old=report.find(row=>row.material===material&&row.version===9&&row.colourCount===14);
+    const next=report.find(row=>row.material===material&&row.version===10&&row.colourCount===14);
+    if(!next||!old||!next.chromatic||!next.occupiedHueBins)
+      throw Error('No visible colour coverage at slider maximum for '+material);
+    console.log('PALETTE 14 COMPARISON '+material+': V9 '+old.occupiedHueBins+
+      ' vs V10 '+next.occupiedHueBins+' occupied hue bins');
   }
   if(failures.length)throw Error('Page errors: '+failures.join('; '));
   await writeFile(dir+'/report.json',JSON.stringify(report,null,2));
 }finally{await browser.close()}
-console.log('PASS 10 real browser material images saved in '+dir);
+console.log('PASS 20 real browser images: five materials at 12 and 14 colours, V9 vs V10, saved in '+dir);
