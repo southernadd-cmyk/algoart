@@ -39,6 +39,17 @@ A.stroke=function(ctx,points,col,s,r,curve){
   var markId=rec?(rec.markSeq=(rec.markSeq||0)+1):0;
   var markKind=A._markKind||(curve?'curve':(points.length===2?'line':'path'));
   A._markKind=null;
+  // V10 colour-coverage schedule. The first N distinct source marks
+  // visit all N requested inks; subsequent marks keep their engine's
+  // family colour three times in four, with one rotating accent.
+  // Neither the stroke path nor its seeded drawing RNG is touched.
+  if(A.rendererVersion>=10&&A._inkRackV10&&A._inkRackV10.length>1){
+    var ordinal=A._inkMarkV10++,size=A._inkRackV10.length;
+    if(ordinal<size||(ordinal-size)%4===0){
+      var slot=ordinal<size?ordinal:size+Math.floor((ordinal-size)/4);
+      col=A._inkRackV10[(A._inkStartV10+slot*A._inkStepV10)%size];
+    }
+  }
 
   function f(v){return A.svgRecorder&&A.svgRecorder.precise?v:Math.round(v*100)/100}
   function record(d,alpha,width,lineCap,dash,dashOffset){
