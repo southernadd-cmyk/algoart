@@ -37,7 +37,10 @@ function costAt(point, heading, context, width) {
 export function nextGroup(artist, context, anchors) {
   const {pending, pose, system} = artist;
   const first = pending[0];
-  if (!context.fields.length || pending.length < 2 || system === 'scribble') return {group: pending.shift(), prioritized: false};
+  // Progressive pieces of one recorded form must stay in source order;
+  // otherwise group re-ranking can draw a late side before its first stroke.
+  if (!context.fields.length || pending.length < 2 || system === 'scribble' ||
+      first?.fragmentParent) return {group: pending.shift(), prioritized: false};
   const section = first.info?.section;
   if (!section || section === 'frame' || section === 'axis') return {group: pending.shift(), prioritized: false};
   let index = 0;
