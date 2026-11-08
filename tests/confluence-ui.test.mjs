@@ -171,6 +171,6 @@ test('Solo-to-Confluence importer preserves full-state settings for all five cur
    assert.equal(lead.settings.rectangles,false);
    assert.equal(inputs.orientation.value,'portrait');
    assert.equal(inputs.paper.value,'#e6d5cc');
-   assert.equal(inputs.grain.value,27);
+   assert.equal(inputs.grain.value,'27');
  }
 });
