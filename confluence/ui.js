@@ -12,6 +12,7 @@ const roster = byId('roster');
 const seed = byId('seed');
 const strength = byId('strength');
 const collaborationPull = byId('collaboration-pull');
+const leadInput = byId('lead-index');
 const orientation = byId('orientation');
 const paper = byId('paper');
 const grain = byId('grain');
@@ -75,7 +76,7 @@ function renderRoster() {
     const card = document.createElement('section');
     card.className = 'artist';
     card.dataset.artist = artist.id;
-    card.dataset.role = index === 0 ? 'lead' : 'response';
+    card.dataset.role = index === Number(leadInput.value) ? 'lead' : 'response';
     const header = document.createElement('div');
     header.className = 'artist-head';
     const title = document.createElement('h3');
@@ -86,7 +87,7 @@ function renderRoster() {
     title.append(number, 'Artist ' + artist.id);
     const role = document.createElement('span');
     role.className = 'artist-role';
-    role.textContent = ['Lead voice', 'Reply', 'Counterpoint'][index];
+    role.textContent = ['Lead voice', 'Reply', 'Counterpoint'][(index-Number(leadInput.value)+3)%3];
     card.setAttribute('aria-labelledby', title.id);
     const swatches = document.createElement('div');
     swatches.className = 'artist-swatches';
@@ -105,8 +106,16 @@ function renderRoster() {
 }
 
 function updateShares() {
+  const lead=Number(leadInput.value);
   byId('collaboration-value').value = collaborationPull.value + '%';
-  const bars = turnShares(Number(collaborationPull.value)).map((share, i) => {
+  byId('lead-label').textContent = 'A'+(lead+1)+' leads';
+  byId('collaboration-help').textContent='Equal turns at 0%. At 100%, Artist '+(lead+1)+' leads and the others respond.';
+  const roles=['Lead voice','Reply','Counterpoint'];
+  for(const [index,card] of [...roster.children].entries()){
+    card.dataset.role=index===lead?'lead':'response';
+    card.querySelector('.artist-role').textContent=roles[(index-lead+3)%3];
+  }
+  const bars = turnShares(Number(collaborationPull.value),lead).map((share, i) => {
     const tag = document.createElement('span');
     tag.textContent = 'A' + (i + 1) + ' · ' + (share * 100).toFixed(1) + '%';
     tag.style.flexGrow = share;
@@ -308,7 +317,7 @@ function build() {
     const slots = artists.map(artist => ({...artist, settings: {...artist.settings}}));
     state.study = createStudy(studySeed, slots,
       {orientation: orientation.value, paper: paper.value, grain: Number(grain.value)},
-      state.settings.collaborationPull, preferredTurns);
+      state.settings.collaborationPull, preferredTurns,Number(leadInput.value));
     const selectedTurns = state.study.totalTurns;
     totalTurns.replaceChildren(...state.study.availableTurns.map(count => new Option(count + ' turns', String(count))));
     totalTurns.value = String(selectedTurns);
@@ -318,7 +327,7 @@ function build() {
       v: 1, seed: studySeed, orientation: orientation.value,
       paper: paper.value, grain: Number(grain.value),
       strength: Number(strength.value), collaborationPull: Number(collaborationPull.value),
-      totalTurns: selectedTurns,
+      leadIndex:Number(leadInput.value),totalTurns: selectedTurns,
       artists: slots.map(({system,palette,material,settings})=>({system,palette,material,settings}))
     };
     const {width, height} = state.study.sheet;
@@ -417,6 +426,11 @@ totalTurns.addEventListener('change', () => {
   preferredTurns=Number(totalTurns.value)||55;
   build();
 });
+byId('rotate-lead').addEventListener('click',()=>{
+  leadInput.value=String((Number(leadInput.value)+1)%3);
+  updateShares();
+  build();
+});
 for (const format of ['landscape','portrait']) {
   byId('format-' + format).addEventListener('click', () => {
     if (orientation.value === format) return;
@@ -485,7 +499,7 @@ save.addEventListener('click', () => {
 
 // The page remains a complete, bookmarkable editor; a shared composition
 // restores all three voices, while a future main-editor handoff imports Artist 1.
-const inputs = {seed, orientation, paper, grain, strength, collaborationPull, totalTurns};
+const inputs = {seed, orientation, paper, grain, strength, collaborationPull, totalTurns,leadIndex:leadInput};
 const params = new URLSearchParams(location.search);
 const restored = restoreSharedState(params, artists, inputs, {systems, palettes, materials});
 if(restored)preferredTurns=Number(totalTurns.value)||55;
