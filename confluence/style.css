@@ -244,7 +244,7 @@ figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap
 }
 
 
-/* Three Hands: keep the longer title legible from desktop down to mobile. */
+/* Confluence: responsive editorial title treatment. */
 .intro > div { min-width: 0; }
 .intro h1 { font-size: clamp(32px, 3.8vw, 58px); line-height: 1.03; letter-spacing: -.045em; }
 .import-note { margin: 8px 0 0; padding: 7px 9px; border-left: 3px solid var(--pigment); background: var(--wall-light); }

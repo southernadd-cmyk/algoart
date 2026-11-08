@@ -2,7 +2,7 @@ import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} fro
 import {materials, makePainter} from './materials.js?v=studio-06-wash';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=studio-06';
-import {importLeadFromURL} from './import-lead.js?v=three-hands-01';
+import {importLeadFromURL} from './import-lead.js?v=confluence-01';
 
 const byId = id => document.getElementById(id);
 const form = byId('study-form');
@@ -368,7 +368,7 @@ stepButton.addEventListener('click', () => {
 byId('single').addEventListener('click', () => setComparison(false));
 byId('compare').addEventListener('click', () => setComparison(true));
 save.addEventListener('click', () => {
-  const filename = 'three-hands-one-canvas-' + state.settings.seed.replace(/[^a-zA-Z0-9_-]/g, '_') + '.png';
+  const filename = 'proportion-piece-confluence-' + state.settings.seed.replace(/[^a-zA-Z0-9_-]/g, '_') + '.png';
   shared.toBlob(blob => {
     if (!blob) return;
     const link = document.createElement('a');

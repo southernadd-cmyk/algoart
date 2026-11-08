@@ -345,7 +345,7 @@ function limitPigment(group, placement, context) {
 }
 
 export function createStudy(seed, slots, paperSettings, collaborationPull = 100) {
-  if (slots.length !== 3) throw new Error('Three Hands requires exactly three artists.');
+  if (slots.length !== 3) throw new Error('Confluence requires exactly three artists.');
   const portrait = paperSettings.orientation === 'portrait';
   const width = portrait ? 1000 : 1400;
   const height = portrait ? 1400 : 1000;
