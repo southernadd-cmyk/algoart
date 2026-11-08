@@ -3,7 +3,7 @@ import {materials, makePainter} from './materials.js?v=confluence-pigment-guard-
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=confluence-rotate-lead-05';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
-import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-wash-seams-07';
+import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-rotate-lead-08';
 import {importLeadFromURL} from './import-lead.js?v=confluence-01';
 
 const byId = id => document.getElementById(id);
