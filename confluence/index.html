@@ -95,7 +95,12 @@
           <label for="collaboration-pull" class="strength-label">Collaboration φ pull <output id="collaboration-value" for="collaboration-pull">100%</output></label>
           <input id="collaboration-pull" form="study-form" type="range" min="0" max="100" value="100" step="1" aria-describedby="collaboration-help">
           <div id="turn-shares" class="turn-shares" aria-label="Target share of turns"></div>
-          <p class="hint" id="collaboration-help">Equal turns at 0%. At 100%, Artist 1 leads and Artists 2 and 3 answer.</p>
+          <div class="lead-controls">
+            <button type="button" id="rotate-lead" aria-label="Rotate lead artist">Rotate lead ↻</button>
+            <span id="lead-label" role="status" aria-live="polite">A1 leads</span>
+          </div>
+          <input type="hidden" id="lead-index" value="0">
+          <p class="hint" id="collaboration-help">Equal turns at 0%. At 100%, Artist 1 leads and the others respond.</p>
         </div>
         <div id="canvases" class="canvases">
           <figure>
