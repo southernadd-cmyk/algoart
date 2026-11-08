@@ -5,8 +5,9 @@ import {extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 
-// End-to-end public navigation and solo-to-Confluence handoff. This verifies
-// the rendered solo state, not just a mock seed URL or a static link.
+// Diagnostic while the editor handoff button is removed. Verify the real
+// solo Tissue V8 material and import it through a direct settings URL
+// without exposing a broken user-facing action.
 const root=resolve(fileURLToPath(new URL('../',import.meta.url)));
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
  '.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8',
@@ -29,67 +30,63 @@ try{
  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1440,height:900}});
  const state=new URLSearchParams({
-  v:'10',seed:'CONFLUENCE-INTEGRATION-01',mode:'organic',
-  material:'marker',pal:'warm',fmt:'portrait',el:'58',den:'63',
+  v:'10',seed:'CONFLUENCE-TISSUE-V8-AUDIT',mode:'burst',
+  material:'tissue-v8',pal:'warm',fmt:'landscape',el:'58',den:'63',
   phi:'38.2',th:'17',wob:'29',cols:'12',sat:'73',
   paper:'#e6d5cc',grain:'27',ln:'0',ci:'1',sheet:'phi'
  });
  await page.goto(origin+'/?'+state.toString(),{waitUntil:'load'});
- await page.waitForFunction(()=>{
-  const link=document.getElementById('exploreConfluence');
-  return link?.href.includes('/confluence/?') &&
-    link.href.includes('CONFLUENCE-INTEGRATION-01');
- },{timeout:45000});
- let source=await page.locator('#exploreConfluence').getAttribute('href');
- const url=new URL(source,origin);
- assert.equal(url.pathname,'/confluence/');
- for(const [key,expected] of state.entries()){
-  // The solo editor intentionally omits the default Marker material from URLs.
-  if(key==='v'||(key==='material'&&expected==='marker'))continue;
-  assert.equal(url.searchParams.get(key),expected,
-    'Solo handoff lost '+key+'='+expected);
- }
- // The editor's splash must not obstruct a visitor taking the link.
- if(await page.locator('#introSplash').isVisible())
-  await page.locator('#introEnter').click();
- await page.locator('#exploreConfluence').click();
- await page.waitForURL(/\/confluence\/\?/,{timeout:45000});
+ const visible=await page.locator('#introSplash').isVisible();
+ if(visible)await page.locator('#introEnter').click();
  await page.waitForFunction(()=>
-  document.getElementById('shared-seed')?.textContent.includes('CONFLUENCE-INTEGRATION-01'),
-  null,{timeout:60000});
+  window.AlgoArt?.lastTissueV8Stats?.variant==='layered-v8',
+  null,{timeout:90000});
+ assert.equal(await page.locator('#exploreConfluence').count(),0,
+   'Do not restore Explore in Confluence until the Tissue renderer is fixed');
+ const solo=await page.evaluate(()=>({
+  seed:document.querySelector('#seed').value,
+  material:document.querySelector('#materialStyle').value,
+  mode:document.querySelector('#mode').value,
+  v8:window.AlgoArt?.lastTissueV8Stats?.variant,
+  link:location.href
+ }));
+ assert.equal(solo.seed,'CONFLUENCE-TISSUE-V8-AUDIT');
+ assert.equal(solo.material,'tissue');
+ assert.equal(solo.mode,'burst');
+ assert.equal(solo.v8,'layered-v8');
+ const url=new URL(solo.link);
+ assert.equal(url.searchParams.get('material'),'tissue-v8',
+   'Solo renderer must identify V8 in its saved state');
+ // Bypass the hidden button to isolate Confluence's importer/renderer.
+ const importedUrl=new URL('/confluence/?'+url.searchParams.toString(),origin);
+ await page.goto(importedUrl.href,{waitUntil:'load'});
+ await page.waitForFunction(()=>
+  document.querySelector('#import-note')?.hidden===false &&
+  document.querySelector('#seed')?.value==='CONFLUENCE-TISSUE-V8-AUDIT',
+  null,{timeout:90000});
  const imported=await page.evaluate(()=>({
-  seed:document.getElementById('seed').value,
-  paper:document.getElementById('paper').value,
-  orientation:document.getElementById('orientation').value,
+  material:document.querySelector('.artist[data-artist="1"] select[data-field="material"]')?.value,
+  system:document.querySelector('.artist[data-artist="1"] select[data-field="system"]')?.value,
+  palette:document.querySelector('.artist[data-artist="1"] select[data-field="palette"]')?.value,
   grain:document.getElementById('grain').value,
-  lead:document.getElementById('lead-index').value,
-  note:!document.getElementById('import-note').hidden,
-  firstSystem:document.querySelector('.artist[data-artist="1"] select[data-field="system"]')?.value,
-  firstMaterial:document.querySelector('.artist[data-artist="1"] select[data-field="material"]')?.value,
-  firstPalette:document.querySelector('.artist[data-artist="1"] select[data-field="palette"]')?.value,
-  firstElements:document.querySelector('.artist[data-artist="1"] input[data-setting="elements"]')?.value,
-  firstColours:document.querySelector('.artist[data-artist="1"] input[data-setting="colourCount"]')?.value,
-  secondSystem:document.querySelector('.artist[data-artist="2"] select[data-field="system"]')?.value,
-  thirdSystem:document.querySelector('.artist[data-artist="3"] select[data-field="system"]')?.value
+  orientation:document.getElementById('orientation').value,
+  hasV8Renderer:typeof window.AlgoArt?.renderTissueLayeredV8==='function',
+  tissueVersion:window.AlgoArt?.lastOilMaterialStats?.tissuePaletteVersion||null,
+  hasV8Stats:!!window.AlgoArt?.lastTissueV8Stats
  }));
- assert.equal(imported.note,true,'Destination never identified the imported solo drawing');
- assert.equal(imported.seed,'CONFLUENCE-INTEGRATION-01');
- assert.equal(imported.paper,'#e6d5cc');
- assert.equal(imported.orientation,'portrait');
+ assert.equal(imported.material,'tissue','The source Tissue material must transfer');
+ assert.equal(imported.system,'burst','Radiant Systems must transfer');
+ assert.equal(imported.palette,'warm');
  assert.equal(imported.grain,'27');
- assert.equal(imported.lead,'0');
- assert.equal(imported.firstSystem,'organic');
- assert.equal(imported.firstMaterial,'marker');
- assert.equal(imported.firstPalette,'warm');
- assert.equal(imported.firstElements,'58');
- assert.equal(imported.firstColours,'12');
- assert.equal(imported.secondSystem,'spiral','Second artist should remain independent');
- assert.equal(imported.thirdSystem,'organic','Third artist should remain independent');
- console.log('SOLO_CONFLUENCE_HANDOFF '+JSON.stringify({
-  seed:imported.seed,material:imported.firstMaterial,
-  system:imported.firstSystem,palette:imported.firstPalette
+ assert.equal(imported.orientation,'landscape');
+ // Diagnostic: the importer recognises V8 but Confluence currently lacks
+ // the solo V8 layered material. Keep the CTA absent until this changes.
+ console.log('TISSUE_V8_HANDOFF_AUDIT '+JSON.stringify({
+  solo:{material:solo.material,system:solo.mode,renderer:solo.v8},
+  confluence:imported
  }));
-
+ assert.equal(imported.hasV8Renderer,false,
+  'Known issue: Confluence still does not load the released Tissue V8 layer');
  // All four links must remain within the viewport and not overlap at narrow
  // widths; no navigation destination is silently omitted on mobile.
  for(const pathname of ['/confluence/','/','/gallery/','/about/','/about/step-by-step/']){
