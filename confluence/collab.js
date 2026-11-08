@@ -390,7 +390,9 @@ export function makeRun(study, strength, {equal = false} = {}) {
   const invitationFraction=Math.min(.62,.72*study.collaborationPull/100*strength/100);
 
   let turn = 0;
+  const oilStats={attempts:0,sites:0,qualified:0,selected:0,rejected:0};
   return {
+    oilDiagnostics:()=>({...oilStats}),
     next(deposit) {
       const entry=programme.turns[turn++];
       if(!entry)return null;
@@ -447,19 +449,24 @@ export function makeRun(study, strength, {equal = false} = {}) {
             if(artist.material==='oil'&&
               wantsOilContact(study.seed,artist.id,turn,
                 study.collaborationPull,strength)){
+              oilStats.attempts++;
               let chosen=null,contactScore=Infinity;
               const sites=oilContactCandidates(group,artist,fields,density,
                 study.sheet,turn);
+              oilStats.sites+=sites.length;
               for(const candidate of sites){
                 const contact=contactFraction(group,candidate,fields,study.sheet);
                 if(contact<.08)continue;
+                oilStats.qualified++;
                 const score=judge(group,candidate,context,width)-contact*.9;
                 if(score<contactScore){
                   contactScore=score;chosen=candidate;
                 }
               }
               const current=judge(group,placement,context,width);
-              if(chosen&&contactScore<current+2.5)placement=chosen;
+              if(chosen&&contactScore<current+2.5){
+                placement=chosen;oilStats.selected++;
+              }else if(chosen)oilStats.rejected++;
             }
           }
         }
