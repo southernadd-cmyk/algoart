@@ -11,6 +11,7 @@ on:
       - 'automation/generate-social.mjs'
       - 'automation/captions.mjs'
       - 'tests/oil-v5-release.test.mjs'
+      - 'tests/plotter-browser.test.mjs'
       - 'automation/action-slot.mjs'
       - 'automation/oil-slot.mjs'
       - 'about/step-by-step/index.html'

@@ -6,6 +6,7 @@ on:
       - 'index.html'
       - 'js/app.js'
       - 'tests/four-at-once-phi-pull.test.mjs'
+      - 'tests/plotter-browser.test.mjs'
       - '.github/workflows/four-at-once-phi-pull.yml'
   workflow_dispatch:
 permissions:
@@ -25,6 +26,7 @@ jobs:
         run: |
           node --check js/app.js
           node --check tests/four-at-once-phi-pull.test.mjs
+          node --check tests/plotter-browser.test.mjs
           node tests/fast-editor-markup.test.mjs
           node tests/control-ranges.test.mjs
       - name: Start editor
@@ -37,3 +39,6 @@ jobs:
           cat /tmp/phi-four-http.log; exit 1
       - name: Compare marker and Oil V8 and select φ values
         run: node tests/four-at-once-phi-pull.test.mjs
+
+      - name: Plotter and φ Four portrait and landscape browser integration
+        run: node tests/plotter-browser.test.mjs
