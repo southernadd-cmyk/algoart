@@ -1,7 +1,7 @@
 import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-rotate-lead-15';
 import {materials, makePainter} from './materials.js?v=confluence-pigment-guard-19';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
-import {turnShares} from './composition.js?v=studio-06';
+import {turnShares} from './composition.js?v=confluence-rotate-lead-05';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
 import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-wash-seams-07';
 import {importLeadFromURL} from './import-lead.js?v=confluence-01';
