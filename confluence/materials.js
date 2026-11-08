@@ -1,4 +1,4 @@
-import {artistInk, paint} from './collab.js?v=studio-06';
+import {artistInk, paint} from './collab.js?v=confluence-recursive-turns-09';
 import {plannedPoints} from './mark-planner.js?v=rect-cells-02';
 import {renderNativeDeposit} from './native-material.js?v=confluence-wash-fast-09';
 
