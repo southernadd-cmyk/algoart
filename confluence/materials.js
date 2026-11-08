@@ -1,6 +1,6 @@
 import {artistInk, paint} from './collab.js?v=confluence-self-repel-17';
 import {plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
-import {renderNativeDeposit} from './native-material.js?v=confluence-wash-fast-09';
+import {renderNativeDeposit} from './native-material.js?v=confluence-tissue-v8-10';
 import {protectPigmentStack} from './pigment-guard.js?v=dark-stack-01';
 
 export const materials = {
