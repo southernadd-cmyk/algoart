@@ -1,5 +1,5 @@
 import {artistInk, paint} from './collab.js?v=studio-06';
-import {plannedPoints} from './mark-planner.js?v=studio-06';
+import {plannedPoints} from './mark-planner.js?v=rect-cells-02';
 import {renderNativeDeposit} from './native-material.js?v=confluence-wash-fast-09';
 
 export const materials = {
