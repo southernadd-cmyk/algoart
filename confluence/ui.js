@@ -2,6 +2,7 @@ import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} fro
 import {materials, makePainter} from './materials.js?v=studio-06-wash';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=studio-06';
+import {mountDrawer} from './drawer-ui.js?v=confluence-editorial-02';
 import {importLeadFromURL} from './import-lead.js?v=confluence-01';
 
 const byId = id => document.getElementById(id);
@@ -382,4 +383,5 @@ save.addEventListener('click', () => {
 const imported = importLeadFromURL(new URLSearchParams(location.search), artists[0], {seed, orientation, paper, grain}, {systems, palettes, materials});
 byId('import-note').hidden = !imported;
 renderRoster();
+mountDrawer();
 build();

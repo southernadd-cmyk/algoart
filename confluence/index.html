@@ -5,30 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="description" content="An experimental drawing room for PROPORTION PIECE.">
-<meta name="theme-color" content="#e8e1d1">
+<meta name="theme-color" content="#ece7d9">
 <title>Confluence — PROPORTION PIECE</title>
 <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-<link rel="stylesheet" href="style.css?v=confluence-01">
+<link rel="stylesheet" href="../css/nav-lettering.css?v=13-uppercase-marker">
+<link rel="stylesheet" href="style.css?v=confluence-editorial-02">
+<script defer src="../js/nav-lettering.js?v=3-uppercase-marker"></script>
 </head>
 <body>
 <div class="shell">
-  <header class="masthead">
-    <a class="brand" href="../">PROPORTION PIECE</a>
-    <div class="masthead-links">
-      <span class="edition"><i></i> Studio preview</span>
-      <a class="editor-link" href="../">Main editor <span aria-hidden="true">↗</span></a>
-    </div>
+  <header class="algo-global-header">
+    <div class="algo-global-brand"><h1 class="brand"><a href="../">PROPORTION PIECE</a></h1></div>
+    <div class="algo-global-numbers" aria-label="Golden ratio and golden angle"><span>1.6180339887</span><span class="algo-number-slash" aria-hidden="true">/</span><span>137.507764°</span></div>
+    <p class="algo-global-question">Can one number compose a drawing?</p>
+    <nav class="algo-site-nav" aria-label="Site navigation">
+      <a data-algo-nav href="../">try it out</a>
+      <a data-algo-nav href="../gallery/">daily gallery</a>
+      <a data-algo-nav href="../about/">about this project</a>
+    </nav>
   </header>
   <main>
     <section class="intro" aria-labelledby="title">
       <div>
-        <p class="eyebrow">PROPORTION PIECE / SHARED DRAWING</p>
+        <p class="eyebrow">A SHARED DRAWING EXPERIMENT</p>
         <h1 id="title">Confluence</h1>
       </div>
       <p>Several systems, one sheet. Each answers what the others leave.</p>
     </section>
+    <button type="button" id="inspector-toggle" aria-controls="confluence-controls" aria-expanded="false"><span>Parameters</span><b aria-hidden="true">+</b></button>
     <section class="studio" aria-label="Three-artist shared drawing studio">
-      <aside class="controls" aria-label="Study settings">
+      <aside class="controls" id="confluence-controls" aria-label="Parameters" aria-hidden="true">
         <form id="study-form">
           <section id="artists" class="control-section roster-section" aria-labelledby="artist-heading">
             <div class="roster-heading">
@@ -111,7 +117,7 @@
             <button type="button" id="finish">Finish</button>
           </div>
           <span id="counter" class="mono">—</span>
-          <div class="output-actions"><a class="edit-artists" href="#artists">Edit artists</a>
+          <div class="output-actions"><button type="button" id="edit-artists" class="edit-artists">Edit artists</button>
           <button type="button" id="download" class="text-button">↓ Save PNG</button></div>
         </div>
         <div class="progress" role="progressbar" aria-label="Drawing progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress"></span></div>
@@ -122,8 +128,9 @@
         <p id="status" class="sr-only" role="status"></p>
       </section>
     </section>
+    <button type="button" class="drawer-scrim" id="drawer-scrim" aria-label="Close parameters" hidden></button>
   </main>
-  <footer><span>PROPORTION PIECE / THREE HANDS - ONE CANVAS</span><p>A studio for shared compositions</p></footer>
+  <footer><span>PROPORTION PIECE / CONFLUENCE</span><p>A studio for shared compositions</p></footer>
 </div>
 <script src="engine/random.js"></script>
 <script src="engine/phi.js"></script>
@@ -137,6 +144,6 @@
 <script src="engine/materials/oil-material.js"></script>
 <script src="engine/materials/watercolour-v2s.js"></script>
 <script src="engine/materials/action-painting-v4.js"></script>
-<script type="module" src="ui.js?v=confluence-01"></script>
+<script type="module" src="ui.js?v=confluence-editorial-02"></script>
 </body>
 </html>
