@@ -1,5 +1,6 @@
-// Accept a future 'Draw this with others' deep link; no main-editor link is exposed yet.
-// Read the same full-state query parameters used by PROPORTION PIECE artwork links.
+// Interpret the solo editor's "Explore in Confluence" full-state link.
+// Artist 1 receives the source drawing's starting settings; Confluence
+// responds to existing marks and need not reproduce its pixels exactly.
 const numeric = {
   elements: ['el', 8, 140], density: ['den', 0, 100], complexity: ['cx', 0, 100],
   negativeSpace: ['neg', 0, 100], phiStrength: ['phi', 0, 100], recursion: ['rec', 1, 9],
