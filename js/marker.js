@@ -46,7 +46,8 @@ A.stroke=function(ctx,points,col,s,r,curve){
   // Neither the stroke path nor its seeded drawing RNG is touched.
   if(A.rendererVersion>=10&&A._inkRackV10&&A._inkRackV10.length>1){
     var ordinal=A._inkMarkV10++,size=A._inkRackV10.length;
-    var tier=rec&&rec.group&&rec.group.tier;
+    var tier=(rec&&rec.group&&rec.group.tier)||
+      (A._renderGroupV10&&A._renderGroupV10.tier);
     var accent=ordinal<size||tier==='hero'||
       (tier==='medium'&&ordinal%2===0)||
       (ordinal>=size&&(ordinal-size)%4===0);
