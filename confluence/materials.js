@@ -77,15 +77,31 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     tissueTurn,watercolourTurn,oilTurnSurface,actionTurnSurface])
     size(ctx,sheet.width,sheet.height);
   let oilTurn=0,actionTurn=0;
-  // Keep all physical paint at its real 1400x1000 (or 1000x1400) size.
-  // Never erase the finished canvas when a different artist takes a turn.
-  function layTurn(surface,turn,blend='source-over'){
+  // Compute a local full-resolution V7/V2S work area for each new gesture.
+  // The released material engines remain untouched. Their native bleed is
+  // allowed an extra 220-250px and is feathered at artificial crop edges.
+  function nativeBounds(traces,padding){
+    let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+    for(const trace of traces)for(const pt of trace.points||[]){
+      left=Math.min(left,pt.x);top=Math.min(top,pt.y);
+      right=Math.max(right,pt.x);bottom=Math.max(bottom,pt.y);
+    }
+    if(!Number.isFinite(left))return {x:0,y:0,w:sheet.width,h:sheet.height};
+    const x=Math.max(0,Math.floor(left-padding));
+    const y=Math.max(0,Math.floor(top-padding));
+    const r=Math.min(sheet.width,Math.ceil(right+padding));
+    const b=Math.min(sheet.height,Math.ceil(bottom+padding));
+    return {x,y,w:Math.max(1,r-x),h:Math.max(1,b-y)};
+  }
+  // Keep the *displayed* physical paper intact, irrespective of material.
+  // Composite the new native pigment at the geometry's real sheet position.
+  function layTurn(surface,turn,blend='source-over',area={x:0,y:0}){
     surface.save();surface.resetTransform();surface.globalAlpha=1;
     surface.globalCompositeOperation='source-over';
-    surface.drawImage(turn.canvas,0,0);surface.restore();
+    surface.drawImage(turn.canvas,area.x,area.y);surface.restore();
     output.save();output.resetTransform();output.globalAlpha=1;
     output.globalCompositeOperation=blend;
-    output.drawImage(turn.canvas,0,0);output.restore();
+    output.drawImage(turn.canvas,area.x,area.y);output.restore();
   }
   function materialFootprint(kind,ctx){
     const next=footprintFromSurface(ctx,surfaceSensor,coverageHistory[kind],sheet);
@@ -94,24 +110,26 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   }
   function renderActualTissue(newMarks,artist){
     if(!newMarks.length)return;
-    size(tissueTurn,sheet.width,sheet.height);
+    const bounds=nativeBounds(newMarks,250);
+    size(tissueTurn,bounds.w,bounds.h);
     const representative={settings:{colourCount:Math.min(24,
       new Set(newMarks.map(t=>t.ink)).size)}};
-    const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
     // One shared seed anchors fibres, tooth and paper texture from turn to
     // turn. The native V7 paints only the *new* paths on that same paper.
     renderNativeDeposit(tissueTurn,'tissue',newMarks,representative,
       bounds,sheet.paper,[seed,'all-tissue-voices','v7-whole-sheet'].join('|'),
       sourceRGB,sheet);
     surfacePasses.tissue++;
-    layTurn(tissueSurface,tissueTurn);
+    // Translucent tissue dye cannot introduce an opaque cream/white rim
+    // over the previous artists' colours. Multiply glazes like real pigment.
+    layTurn(tissueSurface,tissueTurn,'multiply',bounds);
   }
   function renderActualWatercolour(newMarks,artist){
     if(!newMarks.length)return;
-    size(watercolourTurn,sheet.width,sheet.height);
+    const bounds=nativeBounds(newMarks,220);
+    size(watercolourTurn,bounds.w,bounds.h);
     const representative={settings:{colourCount:Math.min(24,
       new Set(newMarks.map(t=>t.ink)).size)}};
-    const bounds={x:0,y:0,w:sheet.width,h:sheet.height};
     // Native V2S still includes full-paper wet edges, capillary flow and
     // source hues. Each fresh wash glazes existing paint; earlier washes
     // are not regenerated, shuffled, recoloured or erased.
@@ -120,7 +138,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       [seed,'all-watercolour-voices','v2s-whole-sheet'].join('|'),sourceRGB,
       sheet);
     surfacePasses.watercolour++;
-    layTurn(watercolourSurface,watercolourTurn,'multiply');
+    layTurn(watercolourSurface,watercolourTurn,'multiply',bounds);
   }
 
   function tissueFootprint(traces,gain) {
