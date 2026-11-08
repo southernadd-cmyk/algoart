@@ -131,7 +131,7 @@ try{
       }});
     }
     results.push({systems:ids.join('/'),schedule:'oil-contact',
-      gestures:oilGestures,engaged});
+      gestures:oilGestures,engaged,diagnostics:oilRun.oilDiagnostics()});
     return results;
   });
   for(const row of report)console.log('COMPLETE_DRAWING '+JSON.stringify(row));
