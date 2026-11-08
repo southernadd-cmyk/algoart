@@ -34,6 +34,10 @@ const artists = systems.slice(0, 3).map((system, index) => ({
   id: index + 1, system: system.id, palette: 'spectrum', material: 'marker', settings: defaultSettings(system)
 }));
 const state = {frame: 0, playing: false, finishing: false, history: [], turn: 0};
+// Remember the user's *requested* number of turns separately from what the
+// current roster can supply. A low-capacity system must not permanently
+// reduce subsequent studies to eight Fibonacci turns.
+let preferredTurns=55;
 
 function syncHint(changed) {
   const status = byId('roster-status');
@@ -271,7 +275,7 @@ function build() {
     const slots = artists.map(artist => ({...artist, settings: {...artist.settings}}));
     state.study = createStudy(studySeed, slots,
       {orientation: orientation.value, paper: paper.value, grain: Number(grain.value)},
-      state.settings.collaborationPull, Number(totalTurns.value));
+      state.settings.collaborationPull, preferredTurns);
     const selectedTurns = state.study.totalTurns;
     totalTurns.replaceChildren(...state.study.availableTurns.map(count => new Option(count + ' turns', String(count))));
     totalTurns.value = String(selectedTurns);
@@ -374,7 +378,10 @@ for (const input of [orientation, paper, grain]) input.addEventListener('input',
   syncHint(true);
 });
 orientation.addEventListener('change', build);
-totalTurns.addEventListener('change', build);
+totalTurns.addEventListener('change', () => {
+  preferredTurns=Number(totalTurns.value)||55;
+  build();
+});
 for (const format of ['landscape','portrait']) {
   byId('format-' + format).addEventListener('click', () => {
     if (orientation.value === format) return;
@@ -446,6 +453,7 @@ save.addEventListener('click', () => {
 const inputs = {seed, orientation, paper, grain, strength, collaborationPull, totalTurns};
 const params = new URLSearchParams(location.search);
 const restored = restoreSharedState(params, artists, inputs, {systems, palettes, materials});
+if(restored)preferredTurns=Number(totalTurns.value)||55;
 const imported = !restored && importLeadFromURL(params, artists[0],
   {seed, orientation, paper, grain}, {systems, palettes, materials});
 byId('import-note').hidden = !imported;
