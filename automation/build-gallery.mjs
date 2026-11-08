@@ -493,7 +493,7 @@ const queuedImageFiles = new Set(
 for (const item of queue.entries) {
   if (!queuedImageFiles.has(item.imageFile)) continue;
   const source = path.resolve('social-output', day,
-    ...(galleryMaterial==='action'?['action',galleryOrientation]:galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
+    ...(galleryMaterial==='random'?['gallery']:galleryMaterial==='action'?['action',galleryOrientation]:galleryMaterial==='oil'?['oil',galleryOrientation]:galleryMaterial==='watercolour'?['watercolour',galleryOrientation]:
       galleryMaterial==='watercolor'?['watercolor',galleryOrientation]:
       galleryOrientation==='portrait'?['portrait']:[]),item.imageFile);
   const dest = path.join(dayDir, item.imageFile);
