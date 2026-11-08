@@ -6,6 +6,14 @@
 const clamp=(v,low,high)=>Math.max(low,Math.min(high,v));
 const rgbString=rgb=>'rgb('+rgb.join(',')+')';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+// Tissue V7 is painted against an opaque cream paper model. A small RGB
+// difference is a light translucent wash, NOT nearly opaque cream paint.
+// Use the subtractive pigment density to recover its low-alpha layer and
+// ignore positive paper highlights that would make white halos over ink.
+export function tissuePigmentAlpha(red,green,blue,paperRed,paperGreen,paperBlue){
+  const absorption=Math.max(0,paperRed-red,paperGreen-green,paperBlue-blue);
+  return clamp((absorption-2)/115,0,1);
+}
 // A finite native material pass is cropped to an offscreen tile for speed.
 // Any pigment reaching its artificial tile edge must taper to zero before
 // compositing. Do not fade edges that coincide with the real paper boundary.
@@ -119,13 +127,15 @@ export function renderNativeDeposit(ctx,material,traces,artist,area,paper,seed,i
     // Separate actual pigment from the material's paper model, then feather
     // offscreen crop boundaries. Neither the pigment colours nor the artist's
     // responsive mark placement is replaced or flattened.
-    const pigmentAlpha=clamp((contrast-2)/13,0,1);
+    const pigmentAlpha=material==='tissue'?
+      tissuePigmentAlpha(data.data[p],data.data[p+1],data.data[p+2],
+        reference[p],reference[p+1],reference[p+2]):
+      clamp((contrast-2)/13,0,1);
     const edge=cropEdgeFeather(x,y,w,h,area,sheet);
     if(material==='tissue' && pigmentAlpha>0){
-      // Paper is present in both native outputs. Recover the actual tissue
-      // pigment against the exact blank reference before compositing on the
-      // shared paper. Without this, its colour difference was attenuated
-      // twice, washing out fibres and graphite.
+      // Recover the tissue pigment colour from the paper reference at the
+      // inferred translucency. Dark graphite remains dense; diffuse tints
+      // have low alpha, so earlier artists are visible through the wash.
       for(let c=0;c<3;c++)data.data[p+c]=Math.round(clamp(
         reference[p+c]+(data.data[p+c]-reference[p+c])/pigmentAlpha,0,255));
     }
