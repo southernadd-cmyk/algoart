@@ -88,6 +88,10 @@ jobs:
             echo "Legacy eighteen-study edition for $DAY"
           fi
 
+      - name: Validate golden roster and Confluence publication selection
+        if: steps.edition.outputs.random == 'true'
+        run: node --test tests/confluence-daily-publishing.test.mjs
+
       - name: Generate twelve independent random gallery studies
         if: steps.edition.outputs.random == 'true'
         run: node automation/generate-gallery-daily-12.mjs
