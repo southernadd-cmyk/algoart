@@ -7,6 +7,7 @@ on:
       - '.github/workflows/archive-storage-audit.yml'
       - 'automation/audit-gallery-storage.cjs'
       - 'automation/audit-release-assets.cjs'
+      - 'automation/propose-gallery-manifests.cjs'
       - 'docs/archive-storage-release-a.md'
   workflow_dispatch:
 
@@ -44,6 +45,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           STORAGE_AUDIT_DIR: ${{ runner.temp }}/archive-storage-inventory
         run: node automation/audit-release-assets.cjs
+
+      - name: Generate proposed immutable V2 manifests without publishing
+        env:
+          STORAGE_AUDIT_DIR: ${{ runner.temp }}/archive-storage-inventory
+        run: node automation/propose-gallery-manifests.cjs
 
       - name: Report audit summary
         if: always()
