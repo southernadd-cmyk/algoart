@@ -1,0 +1,18 @@
+# ISOLATED PROPOSAL — DO NOT DEPLOY UNTIL APPROVED.
+# Separate from repository root wrangler.toml (social-preview Worker).
+# Build source: plan/archive-storage-foundation-20261109 (this file is absent on main).
+# Reuses the EXISTING public-media R2 bucket; private backup is NEVER bound.
+name = "proportion-piece-media"
+main = "src/worker.mjs"
+compatibility_date = "2026-11-09"
+workers_dev = true
+preview_urls = false
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "proportion-piece-media-test"
+
+# Workers Cache is supported on *.workers.dev with Wrangler >=4.69.
+# Only SHA-addressed immutable media gets a cacheable response.
+[cache]
+enabled = true

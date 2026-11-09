@@ -1,0 +1,93 @@
+name: Release B prep — full R2 daily publisher rehearsal (NO LIVE DEPLOY)
+# ONE isolated end-to-end test of 2026-11-09 gallery (12 solo + 4 Confluence).
+# Fresh eager-image probes avoid WebKit lazy-load decode aborts (test-only).
+# This job never commits, pushes main, deploys Pages, or schedules social posts.
+on:
+  push:
+    branches: [plan/archive-storage-foundation-20261109]
+    paths: [.github/workflows/r2-daily-publisher-rehearsal.yml]
+permissions:
+  contents: read
+concurrency:
+  group: pp-r2-daily-publisher-rehearsal
+  cancel-in-progress: false
+jobs:
+  full-daily-rehearsal:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/plan/archive-storage-foundation-20261109' && github.event.head_commit.message == 'Run full isolated R2 daily publisher rehearsal' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    environment:
+      name: archive-media-test
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+      R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+      R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+      R2_MEDIA_BUCKET: proportion-piece-media-test
+      R2_STAGE_SOURCE: live-snapshot
+      R2_STAGE_OUTPUT: /tmp/pp-r2-daily-publisher
+      R2_EDITION_DATE: '2026-11-09'
+      AWS_EC2_METADATA_DISABLED: 'true'
+    steps:
+      - name: Checkout isolated candidate ONLY
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout original, already published media READ-ONLY
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live-snapshot
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser and AWS-S3 test dependencies
+        run: |
+          npm ci --no-audit --no-fund
+          python -m pip install --disable-pip-version-check 'boto3>=1.34,<2' 'requests>=2.31,<3' 'playwright==1.64.0'
+          python -m playwright install --with-deps chromium webkit
+      - name: Compile new phi tower bundle with original filename compatibility
+        run: npm run gallery:bundle:phi
+      - name: Check staging and uploader scripts before any R2 writing
+        run: |
+          node --check automation/prepare-r2-daily.mjs
+          python -m py_compile automation/upload-r2-daily-rehearsal.py automation/test-r2-staged-publisher-browser.py
+          node automation/prepare-r2-daily.mjs
+          node --test tests/r2-daily-publisher-stage.test.mjs
+          test -z "$(git -C live-snapshot status --porcelain)"
+      - name: Upload staged media to existing media bucket ONLY; fail closed on name or hash collisions
+        run: python automation/upload-r2-daily-rehearsal.py stage
+      - name: Verify all 50 assets through LIVE deployed media Worker GET HEAD SHA CORS
+        run: python automation/upload-r2-daily-rehearsal.py verify
+      - name: Open complete staged 2D archive and REAL rebuilt phi tower in Chromium and WebKit
+        run: python automation/test-r2-staged-publisher-browser.py
+      - name: Delete ONLY run-created test assets and verify removal
+        if: always()
+        run: python automation/upload-r2-daily-rehearsal.py cleanup
+      - name: Upload published-state-independent evidence (no artwork bytes)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-future-daily-publisher-full-${{ github.run_id }}
+          path: |
+            /tmp/pp-r2-daily-publisher/media-publication.json
+            /tmp/pp-r2-daily-publisher/upload-verification.json
+            /tmp/pp-r2-daily-publisher/browser-integration.json
+            /tmp/pp-r2-daily-publisher/created-media-keys.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Explicit no-live-change statement
+        if: always()
+        run: |
+          {
+            echo '### Complete future R2 daily publisher rehearsal (isolated)'
+            echo '- 9 November 16-work edition, unchanged original media and share state.'
+            echo '- Real Cloudflare workers.dev media service; every JPEG/WebP/cover/sculpture verified against source hash.'
+            echo '- Published 2D and actual phi tower pages substituted in browser ONLY; source Pages code unchanged.'
+            echo '- All newly uploaded R2 objects removed by run-specific manifest receipts.'
+            echo '- Neither GitHub main, social output, gallery production schedule nor existing backups touched.'
+            echo '- This is a release candidate, NOT approval to change scheduled live publishing.'
+          } >> "$GITHUB_STEP_SUMMARY"

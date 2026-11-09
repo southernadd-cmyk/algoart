@@ -1,0 +1,84 @@
+name: Release A — historical procedural reproduction (isolated)
+# Test-only preservation evidence. Does NOT run production publishing.
+on:
+  push:
+    branches: [plan/archive-storage-foundation-20261109]
+    paths:
+      - .github/workflows/procedural-reproduction-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pp-procedural-reproduction-audit
+  cancel-in-progress: false
+jobs:
+  metadata-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live-snapshot
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test-only JavaScript dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check isolated audit script syntax
+        run: node --check automation/procedural-reproduction-audit.mjs
+      - name: Inventory every published dated edition and validate complete share states
+        env:
+          AUDIT_SOURCE_DIR: live-snapshot
+          AUDIT_REPORT_DIR: procedural-reproduction-report/inventory
+        run: node automation/procedural-reproduction-audit.mjs --inventory
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: procedural-reproduction-inventory
+          path: procedural-reproduction-report/inventory/
+          retention-days: 30
+  historical-browser-pilot:
+    needs: metadata-inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live-snapshot
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test-only JavaScript dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install Chromium test browser
+        run: npx playwright install --with-deps chromium
+      - name: Start read-only snapshot web server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory live-snapshot >/tmp/procedural-audit-server.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: Recreate historical solo and all published Confluence artworks in Chromium
+        env:
+          AUDIT_SOURCE_DIR: live-snapshot
+          AUDIT_REPORT_DIR: procedural-reproduction-report/browser
+          AUDIT_LOCAL_URL: http://127.0.0.1:4173/
+        run: node automation/procedural-reproduction-audit.mjs --pilot
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: procedural-reproduction-browser
+          path: procedural-reproduction-report/browser/
+          retention-days: 30

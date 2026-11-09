@@ -1,0 +1,59 @@
+name: Release A — read-only social-preview KV inventory
+
+# One shot, isolated planning branch, no production Worker deployment.
+# Uses an existing Cloudflare API token if it has Workers KV Storage Read,
+# otherwise fails clearly so a least-privilege read-only token can be supplied.
+on:
+  push:
+    branches:
+      - plan/archive-storage-foundation-20261109
+    paths:
+      - .github/workflows/archive-cloudflare-kv-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/plan/archive-storage-foundation-20261109' && github.event.head_commit.message == 'Run read-only Cloudflare preview KV inventory 2026-11-09' }}
+    environment:
+      name: archive-r2-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up read-only audit dependencies
+        run: |
+          python -m py_compile automation/audit-cloudflare-preview-kv.py
+          python -m pip install --disable-pip-version-check 'requests>=2.31,<3'
+
+      - name: Read and hash preview JPEGs without changing KV
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_KV_READ_TOKEN: ${{ secrets.CF_KV_READ_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+          KV_REPORT_DIR: ${{ runner.temp }}/archive-preview-kv-audit
+        run: python automation/audit-cloudflare-preview-kv.py
+
+      - name: Retain anonymised inventory only, never tokens or images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-a-anonymous-kv-inventory-${{ github.run_id }}
+          path: ${{ runner.temp }}/archive-preview-kv-audit/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Clarify audit scope
+        if: always()
+        run: |
+          echo '### Cloudflare social-preview KV read-only audit' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Lists only previews/ JPEGs; hashes values, anonymises key names.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No KV writes/deletes; no image bytes or share tokens in CI artifacts.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This inventories KV but does not provide a durable offsite media backup.' >> "$GITHUB_STEP_SUMMARY"

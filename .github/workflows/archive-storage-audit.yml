@@ -1,0 +1,74 @@
+name: Release A gallery archive audit (read-only)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-storage-audit.yml'
+      - 'automation/audit-gallery-storage.cjs'
+      - 'automation/audit-release-assets.cjs'
+      - 'automation/propose-gallery-manifests.cjs'
+      - 'docs/archive-storage-release-a.md'
+  workflow_dispatch:
+
+# Never use production credentials or edit the repository.
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    name: Verify immutable gallery and inventory source bytes
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Confirm historical gallery bytes match the approved baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 45f1f7a2768ad66aa282994c877357f51fb2ca7e^{commit}
+          git diff --exit-code 45f1f7a2768ad66aa282994c877357f51fb2ca7e HEAD -- gallery
+          echo "All tracked gallery files are unchanged from the frozen archive baseline."
+
+      - name: Generate SHA-256, media reference and dated edition inventory
+        env:
+          STORAGE_AUDIT_DIR: ${{ runner.temp }}/archive-storage-inventory
+        run: node automation/audit-gallery-storage.cjs
+
+      - name: Inventory public GitHub Release assets and legacy references
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STORAGE_AUDIT_DIR: ${{ runner.temp }}/archive-storage-inventory
+        run: node automation/audit-release-assets.cjs
+
+      - name: Generate proposed immutable V2 manifests without publishing
+        env:
+          STORAGE_AUDIT_DIR: ${{ runner.temp }}/archive-storage-inventory
+        run: node automation/propose-gallery-manifests.cjs
+
+      - name: Report audit summary
+        if: always()
+        shell: bash
+        env:
+          STORAGE_AUDIT_DIR: ${{ runner.temp }}/archive-storage-inventory
+        run: |
+          echo "### PROPORTION PIECE — Release A read-only archive audit" >> "$GITHUB_STEP_SUMMARY"
+          if test -f "$STORAGE_AUDIT_DIR/SUMMARY.md"; then
+            cat "$STORAGE_AUDIT_DIR/SUMMARY.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Inventory did not complete; no artifact should be considered verified." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Retain evidence for review — NOT an offsite backup
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-a-gallery-inventory-${{ github.run_id }}
+          path: ${{ runner.temp }}/archive-storage-inventory/
+          if-no-files-found: warn
+          retention-days: 30
