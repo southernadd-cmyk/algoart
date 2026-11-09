@@ -31,9 +31,9 @@ try{
   await page.waitForFunction(()=>window.bakerReady===true,{timeout:40000});
   for(const date of dates){
     const meta=JSON.parse(await fs.readFile(path.join(root,'gallery',date,'meta.json'),'utf8'));
-    const portraits=meta.entries.filter(item=>
+    const portraits=meta.entries.filter(item=>item.material!=='confluence' && (
       item.orientation==='portrait' ||
-      (item.orientation==null && new URL(item.shareUrl).searchParams.get('fmt')==='portrait'));
+      (item.orientation==null && new URL(item.shareUrl).searchParams.get('fmt')==='portrait')));
     if(!portraits.length){
       console.log(date+': no portrait studies, skipping bake');
       continue;
