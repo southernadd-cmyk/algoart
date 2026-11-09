@@ -1,0 +1,57 @@
+name: Release A — FULL historical reproduction audit (isolated)
+# Explicit, read-only, one-shot audit. No cron, no production publishing.
+on:
+  push:
+    branches: [plan/archive-storage-foundation-20261109]
+    paths:
+      - .github/workflows/procedural-reproduction-full.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pp-procedural-reproduction-full
+  cancel-in-progress: false
+jobs:
+  full-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    steps:
+      - name: Checkout isolated preservation tests
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout all currently published gallery originals READ-ONLY
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live-snapshot
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated test-only tooling
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          node --check automation/procedural-reproduction-audit.mjs
+      - name: Start a read-only local snapshot of current source
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory live-snapshot >/tmp/full-art-audit-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          exit 1
+      - name: Regenerate EVERY published dated artwork and compare with its original
+        env:
+          AUDIT_SOURCE_DIR: live-snapshot
+          AUDIT_REPORT_DIR: procedural-reproduction-report/full
+          AUDIT_LOCAL_URL: http://127.0.0.1:4173/
+        run: node automation/procedural-reproduction-audit.mjs --all
+      - name: Preserve complete reproducibility evidence after success or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-procedural-reproduction
+          path: procedural-reproduction-report/full/
+          retention-days: 45
