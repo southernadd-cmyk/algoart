@@ -2,7 +2,7 @@
 // Source SVG captures the baseline marker composition, NOT the final material
 // render for tissue, watercolour, oil or action painting. Do not treat those
 // SVG strokes as a complete outline of the material-specific paint.
-const MATERIALS=Object.freeze(['marker','tissue','watercolour','oil','action']);
+const MATERIALS=Object.freeze(['marker','tissue','watercolour','oil','action','confluence']);
 const PROFILES=Object.freeze({
   marker:Object.freeze({
     geometry:'recorded-strokes',
@@ -28,6 +28,11 @@ const PROFILES=Object.freeze({
     geometry:'material-render-required',
     surface:'splatter-pools',depthMode:'variable-paint-drops',roughness:.51,opacity:1,
     note:'Paint pools, throws, spills and droplets extend beyond recorded marker paths.'
+  }),
+  confluence:Object.freeze({
+    geometry:'material-render-required',
+    surface:'shared-mixed-media',depthMode:'layered-pigment-relief',roughness:.8,opacity:1,
+    note:'Three distinct source systems and materials: only archived pigment/prepared contours are faithful.'
   })
 });
 export function resolveStudyMaterial(href,galleryMaterial='marker'){
