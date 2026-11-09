@@ -1,4 +1,4 @@
-// Synthetic future-date integration test: 12 gallery artworks and social archive.
+// Synthetic future-date integration test: 12 solo studies, a Confluence pair and an independent social archive.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -45,23 +45,28 @@ for(const e of q.entries){
  assert.equal(editorArtworkLink(e),'https://southernadd-cmyk.github.io/algoart/?art='+e.id);
  assert(fs.statSync(path.join('social-output',day,'gallery',e.imageFile)).size>10000,'No rendered art');
 }
+run('automation/generate-gallery-confluence.mjs');
 run('automation/build-gallery.mjs',{GALLERY_QUEUE_MATERIAL:'random'});
 const m=JSON.parse(fs.readFileSync(path.join(dir,'meta.json')));
-assert.equal(m.count,12);
-assert.equal(m.entries.length,12);
+assert.equal(m.count,14);
+assert.equal(m.entries.length,14);
+const confluence=m.entries.filter(entry=>entry.material==='confluence');
+assert.deepEqual(confluence.map(entry=>entry.orientation).sort(),['landscape','portrait']);
+assert(confluence.every(entry=>new URL(entry.shareUrl).searchParams.has('s')),
+ 'Each Confluence work needs its full shared-canvas state');
 assert(fs.existsSync(path.join(dir,'random-edition.json')));
 const migrated=JSON.parse(fs.readFileSync(path.join(dir,'social-meta.json')));
 assert(migrated.entries.some(e=>e.id===morning.entries[0].id),
  'Early social artwork was not migrated before replacing the gallery');
 assert(fs.existsSync(path.join(dir,morning.entries[0].imageFile)),
- 'Early social JPEG was lost during 12-gallery migration');
+ 'Early social JPEG was lost during daily gallery migration');
 for(const e of m.entries){
  const jpeg=fs.readFileSync(path.join('social-output',day,'gallery',e.imageFile));
  assert.deepEqual(fs.readFileSync(path.join(dir,e.imageFile)),jpeg,'Gallery binary mismatch');
 }
 const galleryBefore=fs.readFileSync(path.join(dir,'meta.json'));
 const imageBefore=new Map(m.entries.map(e=>[e.id,fs.readFileSync(path.join(dir,e.imageFile))]));
-// Simulate a later social-only job; it must not change the gallery twelve.
+// Simulate a later social-only job; it must not change the published edition.
 run('automation/generate-social.mjs',{
  SOCIAL_COUNT:'1',SOCIAL_MATERIAL:'oil',SOCIAL_ORIENTATION:'landscape'
 });
@@ -70,7 +75,7 @@ run('automation/build-gallery.mjs',{
  GALLERY_QUEUE_MATERIAL:'oil',GALLERY_QUEUE_ORIENTATION:'landscape'
 });
 assert.deepEqual(fs.readFileSync(path.join(dir,'meta.json')),galleryBefore,
- 'Social archiving changed the twelve-study gallery');
+ 'Social archiving changed the published edition');
 const savedSocial=JSON.parse(fs.readFileSync(path.join(dir,'social-meta.json')));
 for(const item of social.entries){
  const e=savedSocial.entries.find(x=>x.id===item.id);
@@ -86,4 +91,4 @@ const latest=JSON.parse(fs.readFileSync(path.join(dir,'meta.json')));
 assert.deepEqual(latest.entries,m.entries,'Gallery replay changed the chosen artworks');
 assert.deepEqual(fs.readFileSync('gallery/2026-11-08/meta.json'),nov8,
  'New gallery edition rewrote 8 November history');
-console.log('PASS: twelve distinct V10 studies, six of each format, immutable JPEGs and independent social links.');
+console.log('PASS: twelve distinct solo V10 studies, one Confluence pair, immutable JPEGs and independent social links.');

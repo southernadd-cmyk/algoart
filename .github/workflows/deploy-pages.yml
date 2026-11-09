@@ -196,6 +196,10 @@ jobs:
 
   deploy:
     needs: build
+    # Pages can spend longer than the action's default 10-minute timeout
+    # syncing the full historical gallery. Do not declare a successful
+    # build to be a successful deployment before Pages confirms it.
+    timeout-minutes: 35
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -204,4 +208,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000
 
