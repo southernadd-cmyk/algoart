@@ -1,6 +1,7 @@
 name: Build ALGO ART daily gallery
 
 # Only scheduled or explicit gallery builds may write new gallery assets.
+# 9 Nov recovery: rerun after isolating the Confluence social test output.
 # Editing this workflow on main triggers a controlled daily recovery run.
 # 8 Nov 2026: restore the 18-study archive after external GitHub Release
 # Recovery follow-up: keep 9 originally published editions byte-for-byte
