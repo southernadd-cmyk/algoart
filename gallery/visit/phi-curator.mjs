@@ -5,6 +5,7 @@ import {refinePhiExhibition} from './phi-curation-refinement.mjs';
 import {preExpandPhiPaintings} from './phi-pre-expansion.mjs';
 
 const EPS=1e-4;
+const isConfluenceStudy=study=>study.material==='confluence'||study.material?.type==='confluence';
 const pointInRoom=(room,x,z)=>room.pieces.some(p=>x>p.x+EPS&&x<p.x+p.w-EPS&&z>p.z+EPS&&z<p.z+p.h-EPS);
 const nudge=(w,side,d)=>w.axis==='x'?{x:w.at+side*d,z:(w.lo+w.hi)/2}:{x:(w.lo+w.hi)/2,z:w.at+side*d};
 
@@ -52,10 +53,10 @@ function widthFor(study){
 export function planCuratedPhiArtwork(floor,circulation,physical,studies){
  const surfaces=exhibitionSurfaces(floor,physical);
  const wallPlacements=[],unplaced=[],occupied=new Map();
- const landscapes=studies.filter(s=>!s.portrait);
+ const paintings=studies.filter(s=>!s.portrait||isConfluenceStudy(s));
  const roomCounts=new Array(floor.mergedRooms.length).fill(0);
  const doors=[...circulation.doors,...(circulation.bridgePortals||[])];
- const ordered=[...landscapes].sort((a,b)=>widthFor(b)-widthFor(a)||String(a.id).localeCompare(String(b.id)));
+ const ordered=[...paintings].sort((a,b)=>widthFor(b)-widthFor(a)||String(a.id).localeCompare(String(b.id)));
  for(const study of ordered){
    const width=widthFor(study),aspect=Number(study.aspect)||1.4;
    let best=null;
@@ -92,7 +93,7 @@ export function planCuratedPhiArtwork(floor,circulation,physical,studies){
  const ids=wallPlacements.map(p=>p.studyId);
  return {paintings:wallPlacements,unplaced,surfaces,roomCounts,
    checks:{unique:new Set(ids).size===ids.length,
-     paintingsComplete:wallPlacements.length===landscapes.length,
+     paintingsComplete:wallPlacements.length===paintings.length,
      inwardFacing:wallPlacements.every(p=>pointInRoom(floor.mergedRooms[p.room],
        p.x+p.normal.x*.1,p.z+p.normal.z*.1))}};
 }
@@ -163,7 +164,7 @@ export function planCuratedPhiExhibition(floor,circulation,physical,studies,{phi
    candidates.push({room:i,x,z,score:clearance*.35+Math.min(3,Math.hypot(x-lift.x,z-lift.z))*.1});
   }
  }
- for(const study of studies.filter(s=>s.portrait)){
+ for(const study of studies.filter(s=>s.portrait&&!isConfluenceStudy(s))){
   let best=null;
   for(const candidate of candidates){
    const {room,x,z}=candidate;
