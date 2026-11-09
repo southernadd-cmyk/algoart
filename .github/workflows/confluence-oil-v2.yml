@@ -1,8 +1,9 @@
-name: Confluence Oil renderer v2 preview
+name: Confluence Oil renderer v2 regression
 on:
   push:
     branches:
       - test/confluence-oil-renderer-v2-20261109
+      - main
     paths:
       - 'confluence/**'
       - 'tests/confluence-oil-v2*.mjs'

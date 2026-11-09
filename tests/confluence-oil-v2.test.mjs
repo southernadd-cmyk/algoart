@@ -49,7 +49,7 @@ test('Confluence v1 renderer and frozen shared links remain the implicit default
   const ui=readFileSync(new URL('../confluence/ui.js',import.meta.url),'utf8');
   const materials=readFileSync(new URL('../confluence/materials.js',import.meta.url),'utf8');
   const share=readFileSync(new URL('../confluence/share-study.js',import.meta.url),'utf8');
-  assert.match(ui,/let confluenceRenderer = 1/);
+  assert.match(ui,/let confluenceRenderer = 2/);
   assert.match(ui,/restored\?\(restored\.confluenceRenderer\?\?1\)/);
   assert.match(ui,/confluenceRenderer===2\?\{confluenceRenderer:2\}:\{\}/);
   assert.match(materials,/rendererVersion===2/);

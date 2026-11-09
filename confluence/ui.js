@@ -1,9 +1,9 @@
-import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-edge-margin-01';
-import {materials, makePainter} from './materials.js?v=confluence-edge-margin-01';
+import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-oil-v2-release-01';
+import {materials, makePainter} from './materials.js?v=confluence-oil-v2-release-01';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=confluence-rotate-lead-05';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
-import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-edge-margin-01';
+import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-oil-v2-release-01';
 import {importLeadFromURL} from './import-lead.js?v=confluence-fit-precedence-03';
 import {makeGoldenRoster} from './golden-roster.js?v=20261108-phi-mix-01';
 
@@ -42,7 +42,7 @@ const state = {frame: 0, playing: false, finishing: false, history: [], turn: 0}
 let preferredTurns=55;
 let edgeMargin = true;
 // Opt-in preview; missing version on every historical share means V1.
-let confluenceRenderer = 1;
+let confluenceRenderer = 2;
 
 function syncHint(changed) {
   const status = byId('roster-status');
@@ -353,7 +353,7 @@ function build() {
     finish();
     syncHint(false);
     byId('status').textContent = 'Study prepared with three artists.'+
-      (confluenceRenderer===2?' · Oil renderer v2 (preview)':'');
+      (confluenceRenderer===2?' · Oil renderer v2':'');
   } catch (error) {
     failStudy(error);
   }
@@ -516,7 +516,7 @@ const restored = restoreSharedState(params, artists, inputs, {systems, palettes,
 // A shared study pins its renderer regardless of URL overrides. A fresh
 // opt-in ?cv=2 is for development only; default and older links stay V1.
 confluenceRenderer=restored?(restored.confluenceRenderer??1):
-  params.get('cv')==='2'?2:1;
+  params.get('cv')==='1'?1:2;
 if (restored) {
   preferredTurns=Number(totalTurns.value)||55;
   // Earlier bookmarks have no margin field and keep their original geometry.
