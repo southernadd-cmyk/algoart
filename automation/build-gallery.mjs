@@ -189,7 +189,7 @@ function dayPage(queue) {
 <link rel="canonical" href="${canonical}">
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="stylesheet" href="../gallery.css?v=20261013-site-quality">
-<link rel="stylesheet" href="../editorial.css?v=${confluence.length ? '20261109-confluence-section' : '20261017-release'}">\n<link rel="stylesheet" href="../../css/nav-lettering.css?v=14-confluence-navigation">\n<script defer src="../../js/nav-lettering.js?v=3-uppercase-marker"></script>
+<link rel="stylesheet" href="../editorial.css?v=${confluence.length ? '20261109-confluence-intro' : '20261017-release'}">\n<link rel="stylesheet" href="../../css/nav-lettering.css?v=14-confluence-navigation">\n<script defer src="../../js/nav-lettering.js?v=3-uppercase-marker"></script>
 <link rel="alternate" type="application/rss+xml" title="PROPORTION PIECE Daily Gallery" href="../feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PROPORTION PIECE">
@@ -225,6 +225,7 @@ function dayPage(queue) {
   </section>${confluence.length ? `
   <section class="confluence-edition" aria-labelledby="confluence-heading">
     <h2 id="confluence-heading">Confluence</h2>
+    <p>Three procedural artists share each sheet, taking turns.</p>
     <div class="grid confluence-grid">${confluence.map((item, index) => artworkCard(item, solo.length + index)).join('\n')}
     </div>
   </section>` : ''}

@@ -94,6 +94,7 @@ footer{font-family:var(--editorial-body-font);font-size:13px;line-height:1.5}
 
 .confluence-edition{border-top:1px solid var(--line);padding-top:20px}
 .confluence-edition h2{font-size:clamp(18px,2vw,24px);margin:0}
+.confluence-edition>p{margin:6px 0 0;font:15px/1.6 var(--editorial-body-font);color:var(--soft)}
 .confluence-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.96fr)}
 .confluence-grid .art-card:nth-child(n){grid-column:auto;align-self:start}
 @media(max-width:600px){.confluence-grid{grid-template-columns:minmax(0,1fr)}}
