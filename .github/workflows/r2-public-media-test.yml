@@ -61,8 +61,8 @@ jobs:
       R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
       R2_MEDIA_BUCKET: proportion-piece-media-test
       R2_MEDIA_PUBLIC_URL: ${{ vars.R2_MEDIA_PUBLIC_URL }}
-      R2_MEDIA_TEST_MANIFEST: ${{ runner.temp }}/r2-media-browser/manifest.json
-      R2_MEDIA_BROWSER_REPORT: ${{ runner.temp }}/r2-media-browser/browser-report.json
+      R2_MEDIA_TEST_MANIFEST: /tmp/r2-media-browser/manifest.json
+      R2_MEDIA_BROWSER_REPORT: /tmp/r2-media-browser/browser-report.json
       AWS_EC2_METADATA_DISABLED: 'true'
 
     steps:
@@ -104,7 +104,7 @@ jobs:
         with:
           name: release-a-public-media-browser-${{ github.run_id }}
           path: |
-            ${{ runner.temp }}/r2-media-browser/browser-report.json
+            /tmp/r2-media-browser/browser-report.json
           if-no-files-found: warn
           retention-days: 30
 
