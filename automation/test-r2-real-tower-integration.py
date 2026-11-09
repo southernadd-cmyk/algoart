@@ -124,7 +124,7 @@ async def run():
                     """day => {
                        const s=window.__phiFullEngine;
                        return s && s.date===day && s.artworks===16 && s.paintings>0;
-                    }""", DAY, timeout=150000)
+                    }""", arg=DAY, timeout=150000)
                 await page.wait_for_function(
                     """() => {
                        const s=window.__phiFullEngine;
