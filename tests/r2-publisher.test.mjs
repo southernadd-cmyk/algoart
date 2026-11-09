@@ -95,7 +95,7 @@ test('social publishing waits for the deployed page to use the verified media', 
   const receipt = {schemaVersion: 2, date, count: 1, published: true, stageOnly: false,
     workerBase: MEDIA, mediaAssets};
   let html = '<img src="artwork.jpg">';
-  t.mock.method(globalThis, 'fetch', async address => address.endsWith('.json')
+  t.mock.method(globalThis, 'fetch', async address => new URL(address).pathname.endsWith('.json')
     ? Response.json(receipt) : new Response(html));
   await assert.rejects(waitForPublishedR2Edition(date, {attempts: 1}), /has not deployed/);
   html = '<img src="' + url + '">';

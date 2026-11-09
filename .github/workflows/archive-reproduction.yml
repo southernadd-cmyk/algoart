@@ -63,14 +63,12 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Record browser runtime
         run: npx playwright --version
-      - name: Install browser system dependencies
-        timeout-minutes: 2
+      - name: Install browser and system dependencies
+        id: browser
+        timeout-minutes: 8
         env:
           DEBIAN_FRONTEND: noninteractive
-        run: npx playwright install-deps ${{ matrix.browser }}
-      - name: Download browser runtime
-        timeout-minutes: 2
-        run: npx playwright install ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Start local editor
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/archive-http.log 2>&1 &
@@ -118,7 +116,7 @@ jobs:
             python3 automation/r2-daily-media.py recover "$manifest"
           done
       - name: Reproduce representative archive coverage on PRs; full archive on explicit runs
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
         env:
           ARCHIVE_BROWSER: ${{ matrix.browser }}
           ALGOART_LOCAL_URL: http://127.0.0.1:4173/
@@ -129,7 +127,7 @@ jobs:
             npm run test:archive
           fi
       - name: Reject changed artwork without rejecting JPEG compression
-        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' && matrix.browser == 'chromium' }}
         env:
           ALGOART_LOCAL_URL: http://127.0.0.1:4173/
         run: node tests/archive-jpeg.test.mjs

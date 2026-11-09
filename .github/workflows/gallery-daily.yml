@@ -74,8 +74,8 @@ jobs:
             fi
             MODE=canary
           elif [[ "$DAY" == "$ARMED_DATE" ]]; then
-            echo "::error::This edition date is armed for a manual R2 canary."
-            exit 1
+            echo "This edition date is armed for a manual R2 canary." >> "$GITHUB_STEP_SUMMARY"
+            MODE=hold
           fi
           printf 'date=%s\nmode=%s\n' "$DAY" "$MODE" >> "$GITHUB_OUTPUT"
 

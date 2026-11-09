@@ -41,9 +41,11 @@ export async function waitForPublishedR2Edition(date, {attempts = 30} = {}) {
   let lastError;
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
+      // Pages may cache the previous edition or a pre-deploy 404.
+      const probe = '?r2-check=' + Date.now();
       const [receipt, page] = await Promise.all([
-        get(edition + 'media-publication.json').then(response => response.json()),
-        get(edition).then(response => response.text())
+        get(edition + 'media-publication.json' + probe).then(response => response.json()),
+        get(edition + probe).then(response => response.text())
       ]);
       if (receipt.schemaVersion !== 2 || receipt.date !== date || receipt.published !== true ||
           receipt.stageOnly !== false || receipt.workerBase !== MEDIA ||
