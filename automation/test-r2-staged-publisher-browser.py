@@ -79,8 +79,14 @@ async def run():
                        throw Error('Wrong R2 source '+e.id);
                      if(href!==e.shareUrl)
                        throw Error('Lost original share state '+e.id);
-                     await img.decode();
-                     if(img.naturalWidth<100||img.naturalHeight<100)
+                     // WebKit sometimes aborts decode() on in-flight lazy images.
+                     // Probe the exact original URL with a fresh eager image.
+                     const probe=new Image();
+                     probe.crossOrigin='anonymous';probe.loading='eager';
+                     probe.src=img.src;
+                     try{await probe.decode();}
+                     catch(error){throw Error('Worker image decode '+e.id+': '+error.message);}
+                     if(probe.naturalWidth<100||probe.naturalHeight<100)
                        throw Error('Failed image decode '+e.id);
                    }
                    return {cards:cards.length,complete:true};
@@ -91,8 +97,11 @@ async def run():
                   const img=[...document.querySelectorAll('.day-card img')]
                     .find(x=>x.src.includes('/editions/2026-11-09/cover-'));
                   if(!img)throw Error('Missing R2 cover on archive index');
-                  await img.decode();
-                  return {width:img.naturalWidth,height:img.naturalHeight};
+                   const probe=new Image();
+                   probe.crossOrigin='anonymous';probe.loading='eager';
+                   probe.src=img.src;
+                   await probe.decode();
+                   return {width:probe.naturalWidth,height:probe.naturalHeight};
                 }""")
                 check(cover["width"]>=400 and cover["height"]>=200,"Invalid archive mosaic")
                 res=await page.goto(TOWER_URL,wait_until="domcontentloaded",timeout=60000)
