@@ -167,7 +167,8 @@ async def run():
                                                 ".r2.dev/" in x["url"]]}
                 require(not result["r2RequestFailures"],
                         "Actual tower had a failed R2 texture request")
-                require(not js_errors, "Actual tower page crashed: " + js_errors[0])
+                if js_errors:
+                    raise ValueError("Actual tower page crashed: " + js_errors[0])
                 report["browsers"].append(result)
                 print("ACTUAL TOWER:", browser_name, "16 original studies,",
                       state["paintingsLoaded"], "/", state["paintings"],
