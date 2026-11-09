@@ -19,7 +19,8 @@ function fromToken(raw) {
 }
 const validColor = s => /^#[0-9a-f]{6}$/i.test(s);
 function checkState(data) {
-  return data && data.v === 1 && typeof data.seed === 'string' && data.seed.length > 0 && data.seed.length <= 64 &&
+  return data && data.v === 1 &&
+    (data.confluenceRenderer===undefined||data.confluenceRenderer===1||data.confluenceRenderer===2) && typeof data.seed === 'string' && data.seed.length > 0 && data.seed.length <= 64 &&
     ['portrait','landscape'].includes(data.orientation) && validColor(data.paper) &&
     Number.isFinite(data.grain) && data.grain>=0 && data.grain<=100 &&
     (data.edgeMargin === undefined || data.edgeMargin === true) &&

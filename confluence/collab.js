@@ -145,6 +145,32 @@ function recordArtist(artist, seed, sheet, sourceCanvas) {
       group.cell = guide.cells[index] || guide.root;
       group.pivot = pt(group.cell.x + group.cell.w / 2, group.cell.y + group.cell.h / 2);
     }
+    // Renderer-v2-only provenance. Retain the original SOLO guide's
+    // hierarchy for the committed geometry adapter; v1 never reads this.
+    // Locations must be transformed when each turn is actually placed.
+    if (guide?.type === 'organic' && branchAnchor.has(token)) {
+      const segment=branchAnchor.get(token);
+      group.oilGuide={type:'organic',branch:segment.branch,depth:segment.depth};
+    }
+    if (guide?.type === 'spiral' && Array.isArray(guide.points) && guide.points.length) {
+      const nearest=guide.points.reduce((best,p)=>{
+        const d=distance(p,group.center);
+        return !best||d<best.distance?{distance:d,point:p}:best;
+      },null);
+      group.oilGuide={type:'spiral',arm:nearest.point.arm??0};
+    }
+    if (guide?.type === 'constructed' && Array.isArray(guide.items) && guide.items.length) {
+      const nearest=guide.items.reduce((best,item)=>{
+        if(!Number.isFinite(item.x)||!Number.isFinite(item.y))return best;
+        const d=distance(item,group.center);
+        return !best||d<best.distance?{distance:d,item}:best;
+      },null);
+      if(nearest)group.oilGuide={type:'constructed',
+        tier:nearest.item.tier,size:nearest.item.size};
+    }
+    if (guide?.type === 'rects' && group.cell) {
+      group.oilGuide={type:'rects',depth:group.cell.depth||0};
+    }
   }
   // Recursive Divisions cells, Constructed Forms shapes and Automatic
   // Marks runs each contain multiple real strokes. Split their existing

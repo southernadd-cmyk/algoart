@@ -28,6 +28,9 @@ if(!Array.isArray(queue.entries) || queue.entries.length!==12 ||
 const materials=['marker','tissue','watercolour','oil','action'];
 const count=2*confluencePairCount(day);
 const encoded=record=>Buffer.from(JSON.stringify(record),'utf8').toString('base64url');
+// Preserve the 10 November R2 publishing canary. From the following edition,
+// new shared artwork opts into renderer v2 explicitly; old links remain v1.
+const confluenceRenderer=day>='2026-11-11'?2:1;
 const browser=await chromium.launch({headless:true,args:['--disable-dev-shm-usage']});
 const artwork=[];
 try {
@@ -48,7 +51,8 @@ try {
     const artists=makeGoldenRoster(seed,{systems,materials,
       palettes:Object.keys(palettes),defaultSettings});
     const s={
-      v:1,seed,orientation,paper:'#f5f0e6',grain:11,
+      v:1,...(confluenceRenderer===2?{confluenceRenderer:2}:{}),
+      seed,orientation,paper:'#f5f0e6',grain:11,
       ...(day>FIRST_CONFLUENCE_DATE?{edgeMargin:true}:{}),
       strength:76,collaborationPull:100,leadIndex:0,totalTurns:34,
       artists:artists.map(a=>({
@@ -109,6 +113,7 @@ try {
     artwork.push({
       id,orientation,material:'confluence',generatedAt:new Date().toISOString(),
       seed,mode:'confluence',series:'Confluence',imageFile,shareUrl,rendererVersion:10,
+       confluenceRendererVersion:confluenceRenderer,
       settings:{orientation,phiStrength:76,palette:'Three φ-distributed palettes',
         materials:artists.map(a=>a.material),systems:artists.map(a=>a.system)},
       artists:artists.map(a=>({system:a.system,material:a.material,palette:a.palette})),

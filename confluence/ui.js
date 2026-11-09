@@ -1,9 +1,9 @@
-import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-edge-margin-01';
-import {materials, makePainter} from './materials.js?v=confluence-edge-margin-01';
+import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-oil-v2-release-01';
+import {materials, makePainter} from './materials.js?v=confluence-oil-v2-release-01';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=confluence-rotate-lead-05';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
-import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-edge-margin-01';
+import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-oil-v2-release-01';
 import {importLeadFromURL} from './import-lead.js?v=confluence-fit-precedence-03';
 import {makeGoldenRoster} from './golden-roster.js?v=20261108-phi-mix-01';
 
@@ -41,6 +41,8 @@ const state = {frame: 0, playing: false, finishing: false, history: [], turn: 0}
 // reduce subsequent studies to eight Fibonacci turns.
 let preferredTurns=55;
 let edgeMargin = true;
+// Opt-in preview; missing version on every historical share means V1.
+let confluenceRenderer = 2;
 
 function syncHint(changed) {
   const status = byId('roster-status');
@@ -216,9 +218,9 @@ function reset() {
   const settings = state.settings;
   const sheet = state.study.sheet;
   state.paintShared = makePainter(prepareCanvas(shared, settings.seed, sheet), settings.seed, sheet,
-    {roster:state.study.roster});
+    {roster:state.study.roster,rendererVersion:confluenceRenderer});
   state.paintBaseline = makePainter(prepareCanvas(baseline, settings.seed, sheet), settings.seed, sheet,
-    {roster:state.study.roster});
+    {roster:state.study.roster,rendererVersion:confluenceRenderer});
   state.run = makeRun(state.study, settings.strength);
   state.baseline = makeRun(state.study, settings.strength, {equal: true});
   state.turn = 0;
@@ -327,7 +329,8 @@ function build() {
     byId('turn-count-help').textContent = 'The selected systems support up to ' +
       state.study.availableTurns.at(-1) + ' Fibonacci turns. Step advances one turn at a time.';
     state.snapshot = {
-      v: 1, seed: studySeed, orientation: orientation.value,
+      v: 1, ...(confluenceRenderer===2?{confluenceRenderer:2}:{}),
+      seed: studySeed, orientation: orientation.value,
       ...(edgeMargin ? {edgeMargin: true} : {}),
       paper: paper.value, grain: Number(grain.value),
       strength: Number(strength.value), collaborationPull: Number(collaborationPull.value),
@@ -349,7 +352,8 @@ function build() {
     reset();
     finish();
     syncHint(false);
-    byId('status').textContent = 'Study prepared with three artists.';
+    byId('status').textContent = 'Study prepared with three artists.'+
+      (confluenceRenderer===2?' · Oil renderer v2':'');
   } catch (error) {
     failStudy(error);
   }
@@ -509,6 +513,10 @@ save.addEventListener('click', () => {
 const inputs = {seed, orientation, paper, grain, strength, collaborationPull, totalTurns,leadIndex:leadInput};
 const params = new URLSearchParams(location.search);
 const restored = restoreSharedState(params, artists, inputs, {systems, palettes, materials});
+// A shared study pins its renderer regardless of URL overrides. A fresh
+// opt-in ?cv=2 is for development only; default and older links stay V1.
+confluenceRenderer=restored?(restored.confluenceRenderer??1):
+  params.get('cv')==='1'?1:2;
 if (restored) {
   preferredTurns=Number(totalTurns.value)||55;
   // Earlier bookmarks have no margin field and keep their original geometry.
