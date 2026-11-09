@@ -31,9 +31,9 @@ function responseHeaders(origin) {
   const h = new Headers({
     "X-Content-Type-Options": "nosniff",
     "Cross-Origin-Resource-Policy": "cross-origin",
-    "Vary": "Origin",
+    // Exact fixed origin avoids variant-cache poisoning across Origin headers.
+    "Access-Control-Allow-Origin": PAGES_ORIGIN,
   });
-  if (origin === PAGES_ORIGIN) h.set("Access-Control-Allow-Origin", PAGES_ORIGIN);
   return h;
 }
 function error(status, message, origin) {
