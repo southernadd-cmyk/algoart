@@ -2664,3 +2664,139 @@ button{font-family:Georgia,serif}
   text-transform:none;
   letter-spacing:0;
 }
+
+/* Mobile editor typography and caption clearance (2026-11-09)
+   The studio controls use the same uppercase handmade font as the site navigation.
+   Reserve space for the absolutely positioned caption, and let short mobile
+   viewports scroll rather than letting portrait papers collide with the tools. */
+@media(max-width:760px){
+  .editorial-preview{--header:92px}
+  .editorial-preview main{
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior-y:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .editorial-preview .stage{
+    height:auto!important;
+    min-height:calc(100dvh - var(--header))!important;
+    overflow:visible!important;
+    padding:14px 14px calc(90px + env(safe-area-inset-bottom))!important;
+  }
+  .editorial-preview .canvas-shell{
+    display:flex!important;
+    flex-direction:column!important;
+    flex:0 0 auto!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    width:100%!important;
+    height:auto!important;
+    max-height:none!important;
+    padding:0 0 50px!important;
+  }
+  .editorial-preview .canvas-wrap{flex:0 0 auto!important}
+  .editorial-preview .canvas-wrap .stats{
+    bottom:-30px!important;
+    min-height:17px;
+    max-width:min(460px,calc(100vw - 28px))!important;
+  }
+  .editorial-preview .canvas-wrap .stats #statsText{
+    font-family:"AlgoArt Marker",sans-serif!important;
+    font-style:normal!important;
+    font-weight:400!important;
+    font-size:11px!important;
+    line-height:1.35!important;
+    text-transform:uppercase!important;
+    font-feature-settings:"calt" 1!important;
+  }
+  .editorial-preview .stage>.actions{
+    box-sizing:border-box!important;
+    display:grid!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    align-items:center!important;
+    justify-items:stretch!important;
+    gap:4px 5px!important;
+    width:100%!important;
+    height:auto!important;
+    flex:0 0 auto!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:visible!important;
+  }
+  .editorial-preview .stage>.actions>button{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:42px!important;
+    padding:6px 0!important;
+    font-family:"AlgoArt Marker",sans-serif!important;
+    font-size:clamp(10px,2.8vw,13px)!important;
+    font-style:normal!important;
+    font-weight:400!important;
+    line-height:1.15!important;
+    text-transform:uppercase!important;
+    letter-spacing:0!important;
+    font-feature-settings:"calt" 1!important;
+    white-space:nowrap!important;
+  }
+  /* The visible shortened labels remain, while the full button text remains accessible. */
+  .editorial-preview .stage>.actions>#variations,
+  .editorial-preview .stage>.actions>#geometry{font-size:0!important}
+  .editorial-preview .stage>.actions>#variations::after,
+  .editorial-preview .stage>.actions>#geometry::after{
+    font-family:"AlgoArt Marker",sans-serif!important;
+    font-size:clamp(10px,2.8vw,13px)!important;
+    font-style:normal!important;
+    font-weight:400!important;
+    text-transform:uppercase!important;
+    letter-spacing:0!important;
+    font-feature-settings:"calt" 1!important;
+  }
+  .editorial-preview .stage>.actions>a.gallery-nav,
+  .editorial-preview .stage>.actions>#watchDrawing{
+    grid-column:1/-1!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:36px!important;
+    margin:0!important;
+    padding:6px 0!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    font-family:"AlgoArt Marker",sans-serif!important;
+    font-size:clamp(12px,3.1vw,15px)!important;
+    font-style:normal!important;
+    font-weight:400!important;
+    line-height:1.25!important;
+    text-transform:uppercase!important;
+    letter-spacing:0!important;
+    font-feature-settings:"calt" 1!important;
+    white-space:normal!important;
+    text-align:left!important;
+  }
+  .editorial-preview .inspector .tab{
+    font-family:"AlgoArt Marker",sans-serif!important;
+    font-style:normal!important;
+    font-weight:400!important;
+    text-transform:uppercase!important;
+    letter-spacing:0!important;
+    font-feature-settings:"calt" 1!important;
+  }
+  /* Keep Parameters reachable when a tall portrait requires vertical scrolling. */
+  .editorial-preview #inspectorToggle{
+    position:fixed!important;
+    top:auto!important;
+    right:max(12px,env(safe-area-inset-right))!important;
+    bottom:max(12px,env(safe-area-inset-bottom))!important;
+  }
+}
+@media(max-width:359px){
+  .editorial-preview .stage>.actions{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+}
