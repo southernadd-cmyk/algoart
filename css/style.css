@@ -2670,12 +2670,26 @@ button{font-family:Georgia,serif}
    Reserve space for the absolutely positioned caption, and let short mobile
    viewports scroll rather than letting portrait papers collide with the tools. */
 @media(max-width:760px){
-  .editorial-preview{--header:92px}
-  .editorial-preview main{
-    overflow-y:auto!important;
+  /* Portrait papers can exceed one screen: the DOCUMENT, not an internal
+     fixed-height editor cell, must scroll so every action stays reachable. */
+  html,body{
+    height:auto!important;
+    min-height:100%!important;
     overflow-x:hidden!important;
-    overscroll-behavior-y:contain;
-    -webkit-overflow-scrolling:touch;
+    overflow-y:auto!important;
+  }
+  .editorial-preview{
+    --header:92px;
+    height:auto!important;
+    min-height:100dvh!important;
+    grid-template-rows:var(--header) auto!important;
+    overflow:visible!important;
+  }
+  .editorial-preview main{
+    display:block!important;
+    height:auto!important;
+    min-height:0!important;
+    overflow:visible!important;
   }
   .editorial-preview .stage{
     height:auto!important;
