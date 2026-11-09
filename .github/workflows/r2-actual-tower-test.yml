@@ -1,6 +1,7 @@
 name: Release A — ACTUAL tower R2 route integration (isolated)
 # One-shot on planning branch. Production pages and JS bundles remain UNMODIFIED.
 # Await actual tower readiness after image decoding and shader warmup.
+# Final diagnostics fix: do not index empty JavaScript page-error list.
 on:
   push:
     branches:
