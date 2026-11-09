@@ -130,7 +130,12 @@ async def run():
                        const s=window.__phiFullEngine;
                        return s && s.paintingsLoaded>=s.paintings;
                     }""", timeout=150000)
-                await page.wait_for_timeout(1200)
+                # The production entry gate separately waits for deferred
+                # artwork tasks, GPU warmup and shaders AFTER images load.
+                await page.wait_for_function(
+                    """() => !document.getElementById('enter')?.disabled &&
+                              window.__phiEntryPreparation?.complete === true""",
+                    timeout=110000)
                 state = await page.evaluate("""() => {
                   const s=window.__phiFullEngine||{};
                   return {date:s.date,artworks:s.artworks,paintings:s.paintings,
