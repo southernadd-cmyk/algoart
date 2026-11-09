@@ -2666,7 +2666,7 @@ function readArchive(html, url, textureManifest={}) {
     if (!img || !link) return null;
     const href = new URL(link.getAttribute('href'), url).href;
     const seed = card.querySelector('dd')?.textContent.trim() || new URL(href).searchParams.get('seed') || '';
-    const filename=decodeURIComponent(new URL(img.getAttribute('src'),url).pathname.split('/').pop());
+    const filename=img.dataset.imageFile || decodeURIComponent(new URL(img.getAttribute('src'),url).pathname.split('/').pop());
     const variant=textureManifest[filename]?.[mobileImages?'mobile':'desktop'];
     return {
       id: i,
@@ -2675,6 +2675,8 @@ function readArchive(html, url, textureManifest={}) {
       imageFile:filename,
       imageOptimized:variant?new URL(variant,url).href:null,
       image: (() => {
+        // The dual-write edition keeps a same-origin fallback for R2 textures.
+        if(img.dataset.imageFile)return new URL(filename,url).href;
         const original=new URL(img.getAttribute('src'),url);
         // Release download URLs are blocked for canvas/WebGL by CORS.
         // Gallery release art is mirrored into same-origin Pages assets.

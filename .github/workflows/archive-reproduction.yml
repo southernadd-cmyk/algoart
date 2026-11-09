@@ -20,6 +20,8 @@ on:
       - 'js/plotter.js'
       - 'js/export.js'
       - 'automation/config.mjs'
+      - 'automation/r2-gallery-media.mjs'
+      - 'automation/r2-daily-media.py'
       - 'tests/archive-reproduction.mjs'
       - 'tests/archive-jpeg.test.mjs'
       - 'gallery/*/meta.json'
@@ -107,6 +109,14 @@ jobs:
           name: procedural-oil-previews
           path: oil-check-results/
           retention-days: 14
+      - name: Verify published R2 assets and their Pages recovery copies
+        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for manifest in gallery/*/media-publication.json; do
+            python3 automation/r2-daily-media.py recover "$manifest"
+          done
       - name: Reproduce representative archive coverage on PRs; full archive on explicit runs
         if: ${{ !cancelled() }}
         env:

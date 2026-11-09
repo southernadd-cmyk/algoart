@@ -6,6 +6,7 @@ import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {makeCaptions} from './captions.mjs';
 import {selectedSocialJobs} from './social-publish-policy.mjs';
+import {readArchivedJpeg} from './r2-gallery-media.mjs';
 
 export const EVENING_MATERIAL_ROTATION=Object.freeze([
   'watercolour','oil','action','watercolor','marker'
@@ -55,11 +56,16 @@ async function main(){
   const item=selectEveningThreadsArtwork(archive.entries,date);
   const imagePath=path.resolve(folder,item.imageFile);
   if(!imagePath.startsWith(folder+path.sep))throw Error('Unsafe archive image path');
-  const file=await fs.stat(imagePath);
-  if(!file.isFile()||file.size<100)throw Error('Archive media unavailable '+item.imageFile);
+  if(item.media){
+    await readArchivedJpeg(folder,item);
+  }else{
+    const file=await fs.stat(imagePath);
+    if(!file.isFile()||file.size<100)throw Error('Archive media unavailable '+item.imageFile);
+  }
   const copy=makeCaptions(item);
   const values={
     image_path:imagePath,
+    media_url:item.media?.original||'',
     asset_name:'algoart-'+date+'-evening-threads.jpg',
     caption_b64:Buffer.from(copy.threads).toString('base64'),
     alt_text_b64:Buffer.from(item.altText||copy.altText).toString('base64'),

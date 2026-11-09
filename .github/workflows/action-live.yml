@@ -103,6 +103,13 @@ jobs:
         run: |
           FORCE_ACTION_SLOT="${{ inputs.slot }}" node automation/action-slot.mjs gate
 
+      - name: Require the live edition for the armed R2 date
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
+        uses: ./.github/actions/wait-for-r2-gallery
+        with:
+          date: ${{ steps.gate.outputs.date }}
+          canary_date: ${{ vars.PP_R2_CANARY_DATE }}
+
       - name: Ensure media release and check duplicate markers
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
         id: state
