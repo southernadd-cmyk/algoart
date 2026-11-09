@@ -1,0 +1,73 @@
+name: Release B prep — stage future R2 gallery pages WITHOUT publishing
+on:
+  push:
+    branches:
+      - plan/archive-storage-foundation-20261109
+    paths:
+      - .github/workflows/r2-daily-publisher-stage.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      R2_STAGE_SOURCE: live-snapshot
+      R2_STAGE_OUTPUT: /tmp/pp-r2-daily-stage
+      R2_EDITION_DATE: '2026-11-09'
+    steps:
+      - name: Checkout isolated staging code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout published sample archive READ-ONLY
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live-snapshot
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate isolated code syntax
+        run: |
+          node --check automation/prepare-r2-daily.mjs
+          node --check gallery/visit/gallery-phi.js
+          node --check gallery/visit/gallery-v2.js
+          node --check automation/build-gallery.mjs
+      - name: Prepare complete R2 media and public gallery staging bundle OUTSIDE source
+        run: node automation/prepare-r2-daily.mjs
+      - name: Check all metadata, share URLs, gallery cards, tower texture manifest and archive cover paths
+        run: node --test tests/r2-daily-publisher-stage.test.mjs
+      - name: Prove original published edition is unchanged
+        run: |
+          git -C live-snapshot status --porcelain | tee /tmp/pp-r2-source-status
+          test ! -s /tmp/pp-r2-source-status
+          git status --porcelain | tee /tmp/pp-r2-branch-status
+          test ! -s /tmp/pp-r2-branch-status
+      - name: Upload only non-live publication-plan evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-daily-publisher-stage-${{ github.run_id }}
+          path: |
+            /tmp/pp-r2-daily-stage/media-publication.json
+            /tmp/pp-r2-daily-stage/gallery/2026-11-09/meta.json
+            /tmp/pp-r2-daily-stage/gallery/2026-11-09/3d/manifest.json
+            /tmp/pp-r2-daily-stage/gallery/2026-11-09/index.html
+            /tmp/pp-r2-daily-stage/gallery/index.html
+            /tmp/pp-r2-daily-stage/gallery/archive.json
+          if-no-files-found: warn
+          retention-days: 21
+      - name: Summarise scope
+        if: always()
+        run: |
+          {
+            echo '### R2 daily publishing preparation, NO LIVE CHANGE'
+            echo '- All output generated under /tmp, outside gallery and the deployment tree.'
+            echo '- First sample: historical 9 Nov edition with 12 solo + 4 Confluence, verified publication metadata.'
+            echo '- No R2 writes, no worker deployment, no gallery/pages commit or social publication.'
+            echo '- Older gallery image references and archived share URLs are not rewritten.'
+            echo '- Future scheduled publisher remains unchanged; separate user approval required before cutover.'
+          } >> "$GITHUB_STEP_SUMMARY"
