@@ -3,7 +3,7 @@ name: Release A — one 16-work R2 edition migration rehearsal
 # Run ONE time on isolated branch; no live publishing, uploads or deletions.
 # R2 media-only bucket and dedicated archive-media-test credentials are reused.
 # Permanent objects and private archive bucket never touched.
-# Corrected offline rehearsal role guard; retry after no uploads on first run.
+# Corrected offline rehearsal role guard and Firefox detached image-decoding regression.
 on:
   push:
     branches:
