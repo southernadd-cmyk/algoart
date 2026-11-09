@@ -2666,7 +2666,8 @@ function readArchive(html, url, textureManifest={}) {
     if (!img || !link) return null;
     const href = new URL(link.getAttribute('href'), url).href;
     const seed = card.querySelector('dd')?.textContent.trim() || new URL(href).searchParams.get('seed') || '';
-    const filename=decodeURIComponent(new URL(img.getAttribute('src'),url).pathname.split('/').pop());
+    const filename=img.getAttribute('data-image-file') ||
+      decodeURIComponent(new URL(img.getAttribute('src'),url).pathname.split('/').pop());
     const variant=textureManifest[filename]?.[mobileImages?'mobile':'desktop'];
     return {
       id: i,
