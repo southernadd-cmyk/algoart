@@ -6,6 +6,7 @@ on:
     paths:
       - 'confluence/**'
       - 'tests/confluence-oil-v2*.mjs'
+      - 'tests/confluence-oil-v1-parity-browser.mjs'
       - '.github/workflows/confluence-oil-v2.yml'
   pull_request:
     paths:
@@ -21,6 +22,18 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      # This commit is the last live V1 renderer before the v2 prototype.
+      # Pin it permanently; a moving main comparison would be meaningless.
+      - uses: actions/checkout@v4
+        with:
+          ref: f3f69af24b16e13680870c0528f8ac2577b361e5
+          path: .baseline-v1
+          sparse-checkout: |
+            confluence
+            js
+            css
+            fonts
+            favicon.svg
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -28,6 +41,8 @@ jobs:
       - run: npx playwright install chromium
       - name: Validate renderer pinning and semantic geometry
         run: node --test tests/confluence-oil-v2.test.mjs
+      - name: Assert frozen V1 canvas pixels match the canonical old renderer
+        run: node tests/confluence-oil-v1-parity-browser.mjs
       - name: Verify native oil filled areas and legacy link compatibility
         run: node tests/confluence-oil-v2-browser.mjs
       - name: Publish visual evidence for review
