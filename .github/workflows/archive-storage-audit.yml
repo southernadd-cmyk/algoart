@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/archive-storage-audit.yml'
       - 'automation/audit-gallery-storage.cjs'
+      - 'automation/audit-release-assets.cjs'
       - 'docs/archive-storage-release-a.md'
   workflow_dispatch:
 
