@@ -2712,7 +2712,11 @@ button{font-family:Georgia,serif}
   .editorial-preview .stage>.actions{
     box-sizing:border-box!important;
     display:grid!important;
-    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    /* Clear the inherited named grid areas and fixed row tracks. */
+    grid-template-areas:none!important;
+    grid-template-rows:none!important;
+    grid-auto-rows:minmax(42px,auto)!important;
     align-items:center!important;
     justify-items:stretch!important;
     gap:4px 5px!important;
@@ -2722,6 +2726,12 @@ button{font-family:Georgia,serif}
     margin:0!important;
     padding:0!important;
     overflow:visible!important;
+  }
+  /* Reset all legacy per-item grid placement and order rules. */
+  .editorial-preview .stage>.actions>*{
+    grid-area:auto!important;
+    order:0!important;
+    min-width:0!important;
   }
   .editorial-preview .stage>.actions>button{
     display:inline-flex!important;
@@ -2793,10 +2803,5 @@ button{font-family:Georgia,serif}
     top:auto!important;
     right:max(12px,env(safe-area-inset-right))!important;
     bottom:max(12px,env(safe-area-inset-bottom))!important;
-  }
-}
-@media(max-width:359px){
-  .editorial-preview .stage>.actions{
-    grid-template-columns:repeat(3,minmax(0,1fr))!important;
   }
 }
