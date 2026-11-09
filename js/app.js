@@ -1614,7 +1614,11 @@ function loadWelcomeArtworks(){
     });
   }).then(function(result){
     var day=new DOMParser().parseFromString(result.page,'text/html');
+    var soloEditorPath=new URL('./',location.href).pathname;
     return Array.prototype.map.call(day.querySelectorAll('.art-card'),function(card){
+      // The gallery contains both solo-editor drawings and Confluence works.
+      // The introduction must offer only solo artwork that can open in this editor.
+      if(card.getAttribute('data-material')==='confluence')return null;
       var img=card.querySelector('.art-image-link img[src]');
       var heading=card.querySelector('.art-info h2');
       if(!img||!heading)return null;
@@ -1622,7 +1626,8 @@ function loadWelcomeArtworks(){
       if(imageUrl.origin!==location.origin)return null;
       var link=card.querySelector('.art-image-link[href]');
       var artUrl=link?new URL(link.getAttribute('href'),result.url):null;
-      return {src:imageUrl.href,alt:img.alt||'An PROPORTION PIECE gallery drawing',title:heading.textContent.trim(),orientation:card.getAttribute('data-orientation')||(artUrl&&artUrl.searchParams.get('fmt')==='portrait'?'portrait':'landscape'),width:Number(img.getAttribute('width'))||0,height:Number(img.getAttribute('height'))||0,artUrl:artUrl&&artUrl.origin===location.origin?artUrl.href:null};
+      if(!artUrl||artUrl.origin!==location.origin||artUrl.pathname!==soloEditorPath)return null;
+      return {src:imageUrl.href,alt:img.alt||'A PROPORTION PIECE solo drawing',title:heading.textContent.trim(),orientation:card.getAttribute('data-orientation')||(artUrl.searchParams.get('fmt')==='portrait'?'portrait':'landscape'),width:Number(img.getAttribute('width'))||0,height:Number(img.getAttribute('height'))||0,artUrl:artUrl.href};
     }).filter(Boolean);
   }).catch(function(){return [];});
   return welcomeArtworkPromise;
