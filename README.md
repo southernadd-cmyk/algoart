@@ -69,7 +69,7 @@ The [browser editor](https://southernadd-cmyk.github.io/algoart/) is open and fr
 
 The canvas is intentionally a practical **7:5 format**, not a golden rectangle. The proportion works *inside* the image. The editor can export PNG, SVG and pen-plotter paths, and preserve a particular drawing through its seed, settings and renderer version. The public editor and the published daily archive are separate: visitors can make and save their own drawings, but these are **not** automatically added to the daily editions or the exhibition tower.
 
-The [daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/) continues to accumulate landscape and portrait works. The date of a drawing determines its place in the tower, but not its meaning. New floors do not resolve the question posed by the earliest ones. They keep asking it.
+From 9 November 2026, each daily [gallery](https://southernadd-cmyk.github.io/algoart/gallery/) floor contains twelve independent solo studies **and four Confluence collaborations** (two portraits, two landscapes). Confluence's three procedural voices use golden-ratio distributed systems, materials and palettes, and each published study links back to its exact shared drawing. These are generated specifically for the daily edition; visitors' own shared studies remain private unless they choose to share them. The daily gallery continues to accumulate landscape and portrait works. The date of a drawing determines its place in the tower, but not its meaning. New floors do not resolve the question posed by the earliest ones. They keep asking it.
 
 ## An unfinished question
 
