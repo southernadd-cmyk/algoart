@@ -52,8 +52,9 @@ test("all seeds, exact share links, options, renderer revisions and Confluence s
     assert(media.original.startsWith(worker+"/editions/"+date+"/"));
     assert(media.desktop.includes("/desktop-"));
     assert(media.mobile.includes("/mobile-"));
-    assert(dayPage.includes('href="'+entry.shareUrl.replaceAll("&","&amp;")+'"') ||
-      originalDayPage.includes('href="'+entry.shareUrl.replaceAll("&","&amp;")+'"') === false);
+    const originalShare='href="'+entry.shareUrl.replaceAll("&","&amp;")+'"';
+    assert(originalDayPage.includes(originalShare), "source share link missing "+entry.id);
+    assert(dayPage.includes(originalShare), "staging changed original share URL "+entry.id);
     if(entry.material==="confluence")assert(new URL(entry.shareUrl).searchParams.get("s"));
   }
 });
