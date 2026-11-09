@@ -14,7 +14,11 @@
 - Historic GitHub Pages **media URLs must keep resolving**; do not delete historic originals or rewrite old public share links.
 - All changes in this plan are proposed; the current GitHub Pages site, 3D tower bundle and daily publishing job remain untouched.
 
-## Cloudflare custom domain (user-owned zone required)
+## No-domain path confirmed as available (9 November 2026)
+
+The artist does NOT have a Cloudflare-managed domain, and buying a domain is NOT a prerequisite. A separate read-only Cloudflare Worker on the free workers.dev hostname can serve immutable R2 media through a binding to the EXISTING proportion-piece-media-test bucket. The full proposal, safety and offline 10/10 result are at docs/archive-r2-free-workers-dev.md. The Worker has NOT been deployed; the private archive bucket and existing social Worker must stay untouched.
+
+## Optional alternative: Cloudflare custom domain (only if acquired later)
 
 The R2 development `.r2.dev` origin is rate-limited and has no standard Cloudflare cache controls. Do not use it in future permanent media URLs.
 
@@ -87,8 +91,8 @@ Social preview images, OpenGraph and RSS should use the permanent custom domain 
 - [x] 564/564 procedural reproductions visually matched in Chromium.
 - [x] 50/50 test-media bytes, MIME, CORS, Chromium & WebKit WebGL image upload and 3-browser 2D gallery.
 - [x] Verify actual phi tower bundled loader via browser-only R2 substitution: https://github.com/southernadd-cmyk/algoart/actions/runs/42632940706 (16/16 studies; 8/8 wall paintings loaded; 16 distinct R2 WebP texture requests in Chromium and WebKit; all 50 temporary objects cleaned).
-- [ ] User selects a domain in an eligible Cloudflare zone; connect it to existing public media bucket.
-- [ ] HTTPS custom-domain CDN, cache behavior, WAF and CORS check.
+- [ ] Deploy and validate the standalone free workers.dev media Worker OR, optionally, connect a user-owned Cloudflare custom domain. User has no Cloudflare-managed domain; no purchase required.
+- [ ] Verify HTTPS, Workers Cache HIT, exact CORS, public MIME/SHA-256 and 3D image loading on actual workers.dev URL (or custom-domain CDN if chosen later).
 - [ ] Decide whether tower sculpture packs stay in GitHub or gain a new public R2 resolver.
 - [ ] Test production publisher switch on staging branch, no live changes.
 - [ ] Explicit separate user approval for Release B / production publishing switch.
