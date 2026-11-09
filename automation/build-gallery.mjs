@@ -413,8 +413,8 @@ if(randomDate && galleryMaterial!=='random' && hasRandomEdition){
   process.exit(0);
 }
 if(galleryMaterial==='random'){
-  const solo=queue.entries.filter(e=>/-G\\d{2}$/.test(e.id));
-  const confluence=queue.entries.filter(e=>/-C\\d{2}$/.test(e.id));
+  const solo=queue.entries.filter(e=>/-G\d{2}$/.test(e.id));
+  const confluence=queue.entries.filter(e=>/-C\d{2}$/.test(e.id));
   if(!randomDate||queue.edition!=='random-12-confluence-4'||
      queue.entries.length!==16||solo.length!==12||confluence.length!==4)
     throw Error('Daily gallery must contain 12 solo and 4 Confluence studies after 8 Nov');
