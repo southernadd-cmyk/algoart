@@ -52,7 +52,7 @@ test('two scheduled Confluence posts select the correct archived formats without
     const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../automation/select-confluence-social.mjs');
     for(const [slot,expected] of [['0',entries[0]],['2',entries[1]]]){
       const result=spawnSync(process.execPath,[script],{
-        cwd:dir,env:{...process.env,SOCIAL_DATE:day,SOCIAL_SLOT:slot},
+        cwd:dir,env:{...process.env,SOCIAL_DATE:day,SOCIAL_SLOT:slot,GITHUB_OUTPUT:''},
         encoding:'utf8'});
       assert.equal(result.status,0,result.stderr);
       const record=JSON.parse(result.stdout);
