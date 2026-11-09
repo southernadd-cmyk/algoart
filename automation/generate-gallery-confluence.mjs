@@ -68,13 +68,30 @@ try {
         document.querySelector('.progress')?.getAttribute('aria-valuenow')==='100';
     },null,{timeout:240000});
     if(errors.length)throw Error('Confluence page error: '+errors.join(' | ').slice(0,700));
-    const output=await page.locator('#shared').evaluate(canvas=>({
-      width:canvas.width,height:canvas.height,
-      jpeg:canvas.toDataURL('image/jpeg',.86)
-    }));
+    const output=await page.locator('#shared').evaluate(canvas=>{
+      const check=document.createElement('canvas');
+      check.width=96;check.height=96;
+      const ctx=check.getContext('2d',{willReadFrequently:true});
+      ctx.drawImage(canvas,0,0,96,96);
+      const pixels=ctx.getImageData(0,0,96,96).data;
+      let marked=0,min=255,max=0;
+      for(let p=0;p<pixels.length;p+=4){
+        const r=pixels[p],g=pixels[p+1],b=pixels[p+2];
+        const luminance=(r+g+b)/3;
+        min=Math.min(min,luminance);max=Math.max(max,luminance);
+        if(Math.max(Math.abs(r-245),Math.abs(g-240),Math.abs(b-230))>35)marked++;
+      }
+      return {
+        width:canvas.width,height:canvas.height,
+        coverage:marked/9216,contrast:max-min,
+        jpeg:canvas.toDataURL('image/jpeg',.86)
+      };
+    });
     const expected=orientation==='portrait'?[1000,1400]:[1400,1000];
     if(output.width!==expected[0]||output.height!==expected[1])
       throw Error('Wrong Confluence canvas dimensions for '+seed);
+    if(output.coverage<.003||output.contrast<30)
+      throw Error('Confluence image is too empty to archive ('+seed+'; coverage='+output.coverage.toFixed(4)+')');
     const image=Buffer.from(output.jpeg.split(',')[1],'base64');
     if(image.byteLength<15000)throw Error('Suspiciously empty Confluence image '+seed);
     const id=day+'-C'+String(i+1).padStart(2,'0');
