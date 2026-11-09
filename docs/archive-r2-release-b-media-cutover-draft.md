@@ -86,7 +86,7 @@ Social preview images, OpenGraph and RSS should use the permanent custom domain 
 
 - [x] 564/564 procedural reproductions visually matched in Chromium.
 - [x] 50/50 test-media bytes, MIME, CORS, Chromium & WebKit WebGL image upload and 3-browser 2D gallery.
-- [ ] Verify actual phi tower bundled loader via browser-only R2 substitution.
+- [x] Verify actual phi tower bundled loader via browser-only R2 substitution: https://github.com/southernadd-cmyk/algoart/actions/runs/42632940706 (16/16 studies; 8/8 wall paintings loaded; 16 distinct R2 WebP texture requests in Chromium and WebKit; all 50 temporary objects cleaned).
 - [ ] User selects a domain in an eligible Cloudflare zone; connect it to existing public media bucket.
 - [ ] HTTPS custom-domain CDN, cache behavior, WAF and CORS check.
 - [ ] Decide whether tower sculpture packs stay in GitHub or gain a new public R2 resolver.
