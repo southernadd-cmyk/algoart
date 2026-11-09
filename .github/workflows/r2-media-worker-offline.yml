@@ -1,0 +1,40 @@
+name: Release A — free workers.dev R2 media gateway tests (NO DEPLOY)
+on:
+  push:
+    branches:
+      - plan/archive-storage-foundation-20261109
+    paths:
+      - .github/workflows/r2-media-worker-offline.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guard-and-functional-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify only EXISTING media-only bucket is bound, never private recovery
+        run: |
+          grep -Fq 'bucket_name = "proportion-piece-media-test"' cloudflare/media-read-only/wrangler.toml
+          ! grep -Fq 'proportion-piece-archive-test' cloudflare/media-read-only/wrangler.toml
+          ! grep -Eq '\.(put|delete|list)\(' cloudflare/media-read-only/src/worker.mjs
+          grep -Fq 'workers_dev = true' cloudflare/media-read-only/wrangler.toml
+          grep -Fq 'enabled = true' cloudflare/media-read-only/wrangler.toml
+          node --check cloudflare/media-read-only/src/worker.mjs
+          node --check tests/r2-media-worker.test.mjs
+      - name: Test read-only media API, SHA-only paths, exact CORS, cache and failures
+        run: node --test tests/r2-media-worker.test.mjs
+      - name: Confirm no cloud, DNS, site deployment or social Worker changed
+        run: |
+          echo '### READ-ONLY R2 media Workers.dev gateway — offline checks' >> "$GITHUB_STEP_SUMMARY"
+          echo '- No Cloudflare credentials used, no deployment performed.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Existing public bucket reused; PRIVATE archive bucket never bound.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Root wrangler.toml and social-preview Worker remain unchanged.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Custom-domain purchase NOT required for an initial hobby-scale workers.dev address.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Live routing and cache HIT/MISS are not verified until explicit Worker deployment and a real test object.' >> "$GITHUB_STEP_SUMMARY"
