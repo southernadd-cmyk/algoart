@@ -91,6 +91,52 @@ try{
   await measure('mobile landscape',1400,1000);
   await page.locator('#format-portrait').click();
   await measure('mobile portrait',1000,1400);
+  // Regression for narrow phones: every playback, format, export and
+  // Parameters control must be fully visible and unobstructed. The old
+  // nowrap/overflow:hidden toolbar silently clipped buttons.
+  for(const [width,height] of [[320,660],[390,844],[560,720],[760,760]]){
+    await page.setViewportSize({width,height});
+    await page.waitForTimeout(100);
+    const layout=await page.evaluate(()=>{
+      const ids=['format-landscape','format-portrait','single','compare',
+        'play','step','finish','rotate-lead-toolbar','download',
+        'share-open','inspector-toggle'];
+      const buttons=ids.map(id=>{
+        const el=document.getElementById(id);
+        const r=el.getBoundingClientRect();
+        const point=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+        return {id,left:r.left,right:r.right,top:r.top,bottom:r.bottom,
+          width:r.width,height:r.height,visible:getComputedStyle(el).visibility,
+          clickable:point===el||el.contains(point)};
+      });
+      const rect=id=>{
+        const r=document.querySelector(id).getBoundingClientRect();
+        return {top:r.top,bottom:r.bottom};
+      };
+      return {width:innerWidth,height:innerHeight,
+        pageWidth:document.documentElement.scrollWidth,
+        buttons,workbar:rect('.workbar'),transport:rect('.transport'),
+        readout:rect('#turn-log')};
+    });
+    assert(layout.pageWidth<=width+2,'Mobile horizontal overflow '+JSON.stringify(layout));
+    for(const b of layout.buttons){
+      assert(b.width>=15&&b.height>=20&&b.visible==='visible' &&
+        b.left>=-1&&b.right<=width+1&&b.top>=-1&&b.bottom<=height+1&&b.clickable,
+        'Mobile control hidden/clipped/covered at '+width+'px: '+JSON.stringify(b));
+    }
+    assert(layout.workbar.bottom<=layout.transport.top+2,
+      'Mobile workbar overlaps playback at '+width+'px: '+JSON.stringify(layout));
+    assert(layout.transport.bottom<=layout.readout.top+2,
+      'Mobile playback overlaps turn log at '+width+'px: '+JSON.stringify(layout));
+    console.log('Confluence mobile controls '+width+'px passed');
+  }
+  await page.setViewportSize({width:320,height:660});
+  await page.locator('#inspector-toggle').click();
+  assert.equal(await page.locator('#inspector-toggle').getAttribute('aria-expanded'),'true');
+  await page.locator('#tab-export').click();
+  await page.locator('#inspector-close').click();
+  assert.equal(await page.locator('#inspector-toggle').getAttribute('aria-expanded'),'false');
+  await page.setViewportSize({width:390,height:844});
   assert.deepEqual(errors,[],'Confluence JavaScript errors: '+errors.join('; '));
   assert.equal(await page.locator('#response').count(),0,
     'Confluence must not offer a manual response-style selector');

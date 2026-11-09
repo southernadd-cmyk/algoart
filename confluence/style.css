@@ -331,3 +331,88 @@ html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
 .shared-settings,.export-panel{scrollbar-width:thin}
 .drawer-head{padding:13px 18px}
 @media(max-width:420px){.drawer-tabs button{font-size:9px}}
+
+
+/* Mobile control layout: all actions remain in the viewport and participate
+   in document flow. Do not return to a fixed Parameters overlay or clip the
+   transport bar: those hide real controls on narrow portrait devices. */
+@media(max-width:760px){
+ .workbar{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:auto auto;gap:4px 8px;align-items:center;
+  min-height:0;padding:3px 0 6px;overflow:visible;
+ }
+ .workbar .canvas-heading{grid-column:1;grid-row:1;min-width:0}
+ .workbar .canvas-heading h2{display:none}
+ .workbar #inspector-toggle{
+  grid-column:2;grid-row:1;position:static;inset:auto;z-index:auto;
+  margin:0;min-height:36px;padding:6px 10px;
+  font-size:12px;white-space:nowrap;
+ }
+ .workbar .board-actions{
+  grid-column:1/-1;grid-row:2;display:flex;width:100%;min-width:0;
+  flex-wrap:wrap;justify-content:flex-start;gap:6px 12px;
+ }
+ .workbar .board-actions .segmented button,.workbar .board-draw{min-height:32px}
+ .transport{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:auto auto;gap:2px 10px;align-items:center;
+  min-height:0;overflow:visible;padding:4px 0 5px;
+ }
+ .transport .buttons{
+  grid-column:1;grid-row:1;display:flex;min-width:0;
+  align-items:center;gap:12px;flex-wrap:nowrap;
+ }
+ .transport #counter{
+  grid-column:2;grid-row:1;order:unset;display:block;
+  flex:none;margin:0;font-size:10px;white-space:nowrap;text-align:right;
+ }
+ .transport .rotate-lead-toolbar{
+  grid-column:1;grid-row:2;justify-self:start;min-width:0;
+  white-space:nowrap;font-size:10px;
+ }
+ .transport .output-actions{
+  grid-column:2;grid-row:2;justify-self:end;display:flex;
+  gap:12px;flex-wrap:nowrap;margin:0;
+ }
+ .transport .output-actions #download{display:inline-block}
+ .transport .buttons button,.transport .output-actions button{
+  min-height:32px;font-size:13px;white-space:nowrap;
+ }
+}
+@media(max-width:560px){
+ .workbar .board-actions{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:auto auto;column-gap:10px;row-gap:0;
+  align-items:center;
+ }
+ .workbar .format-switch{
+  grid-column:1;grid-row:1;justify-content:flex-start;
+  padding-right:0;border-right:0;
+ }
+ .workbar .view-switch{grid-column:1;grid-row:2;justify-content:flex-start}
+ .workbar .board-draw{
+  grid-column:2;grid-row:1/span 2;align-self:stretch;
+  display:flex;align-items:center;justify-content:center;
+  padding:5px 10px;min-width:82px;background:var(--strong);color:#fff;
+  font-size:12px;
+ }
+ .workbar .board-draw:hover{background:#51493f;text-decoration:none}
+ .workbar .board-actions .segmented button{
+  font-size:11px;white-space:nowrap;
+ }
+ .transport .buttons button,.transport .output-actions button{font-size:13px}
+ .transport .rotate-lead-toolbar{font-size:10px}
+ .transport .output-actions{gap:10px}
+}
+@media(max-width:355px){
+ .shell main{padding-left:7px;padding-right:7px}
+ .workbar .board-actions{column-gap:5px}
+ .workbar .board-actions .segmented{gap:5px}
+ .workbar .board-draw{min-width:75px;padding-inline:6px}
+ .transport{column-gap:4px}
+ .transport .buttons{gap:6px}
+ .transport .output-actions{gap:6px}
+ .transport .buttons button,.transport .output-actions button{font-size:12px}
+ .transport #counter{font-size:9px}
+}
