@@ -82,7 +82,7 @@ jobs:
   build:
     needs: plan
     if: needs.plan.outputs.mode == 'legacy' || needs.plan.outputs.mode == 'canary'
-    environment: ${{ needs.plan.outputs.mode == 'canary' && 'archive-media-publish' || 'gallery-daily' }}
+    environment: ${{ needs.plan.outputs.mode == 'canary' && 'archive-media-test' || 'gallery-daily' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
