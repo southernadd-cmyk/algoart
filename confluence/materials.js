@@ -2,7 +2,7 @@ import {artistInk, paint} from './collab.js?v=confluence-oil-v2-release-01';
 import {plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
 import {renderNativeDeposit} from './native-material.js?v=confluence-tissue-v8-10';
 import {protectPigmentStack} from './pigment-guard.js?v=dark-stack-01';
-import {committedOilV2Evidence,oilV2PlanCapture,oilV2FallbackFields} from './oil-v2-geometry.js?v=confluence-oil-v2-release-01';
+import {committedOilV2Evidence,oilV2PlanCapture,oilV2FallbackFields} from './oil-v2-geometry.js?v=confluence-oil-v2-hsl-fill-02';
 
 export const materials = {
   marker: 'Marker',

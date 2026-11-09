@@ -10,10 +10,33 @@ function hash(text){
   for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619);}
   return h>>>0;
 }
-const rgb=s=>{
-  const m=String(s||'').match(/^#([0-9a-f]{6})$/i);
-  return m?[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)):[80,70,65];
-};
+// Confluence's paletteInks() uses AlgoArt.hues(), which returns CSS HSL
+// strings (not hex). The first v2 release silently mapped *every* HSL ink
+// to a constant brown [80,70,65], so all filled masses were brown even as
+// the native brushstrokes retained their correct original colours.
+// Match the native Oil V8 sourceRGB conversion and reject unknown formats
+// rather than substituting another plausible-but-wrong pigment.
+export function oilV2SourceRGB(ink){
+  const value=String(ink??'').trim();
+  let m=value.match(/^#([0-9a-f]{6})$/i);
+  if(m)return [0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16));
+  m=value.match(/^#([0-9a-f]{3})$/i);
+  if(m)return [...m[1]].map(c=>parseInt(c+c,16));
+  m=value.match(/^rgb\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)\s*\)$/i);
+  if(m)return [+m[1],+m[2],+m[3]].map(c=>clamp(c,0,255));
+  m=value.match(/^hsl\(\s*([-+]?\d+(?:\.\d+)?)(?:deg)?(?:\s+|,\s*)(\d+(?:\.\d+)?)%(?:\s+|,\s*)(\d+(?:\.\d+)?)%\s*\)$/i);
+  if(m){
+    const h=((+m[1]%360)+360)%360/60;
+    const sat=clamp(+m[2],0,100)/100, light=clamp(+m[3],0,100)/100;
+    const chroma=(1-Math.abs(2*light-1))*sat;
+    const x=chroma*(1-Math.abs(h%2-1)),offset=light-chroma/2;
+    const channels=h<1?[chroma,x,0]:h<2?[x,chroma,0]:
+      h<3?[0,chroma,x]:h<4?[0,x,chroma]:
+      h<5?[x,0,chroma]:[chroma,0,x];
+    return channels.map(c=>Math.round((c+offset)*255));
+  }
+  throw new TypeError('Unsupported Confluence oil-v2 source pigment '+value);
+}
 function bounds(points){
   const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
   const x=Math.min(...xs),y=Math.min(...ys);
@@ -179,7 +202,7 @@ export function oilV2FallbackFields(groups,sheet,seed){
     if(area<8500||area>sheet.width*sheet.height*.15||box.w<55||box.h<55)continue;
     const ids=[a.id,b.id].sort(),name='CV2-'+hash(seed+'|'+ids.join('|'));
     if(fields.some(x=>x.guideIds.some(id=>ids.includes(id))))continue;
-    const palette=[rgb(a.ink),rgb(b.ink)];
+    const palette=[oilV2SourceRGB(a.ink),oilV2SourceRGB(b.ink)];
     fields.push({id:name,kind:'guide-chain-colour-mass',role:'supporting',
       guideIds:ids,contour,box,x:center.x,y:center.y,width:box.w,height:box.h,
       area,palette,rgb:palette[0],paintRgb:palette[0],paintPalette:palette,

@@ -1,5 +1,5 @@
 import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-oil-v2-release-01';
-import {materials, makePainter} from './materials.js?v=confluence-oil-v2-release-01';
+import {materials, makePainter} from './materials.js?v=confluence-oil-v2-hsl-fill-02';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=confluence-rotate-lead-05';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
