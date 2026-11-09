@@ -45,7 +45,7 @@ test('Confluence oil v2 transforms recorded physical points with progressive pla
   assert.equal(records[0].fragmentNumber,1);
   assert.equal(records[0].guide.branch,3);
 });
-test('Confluence v1 renderer and frozen shared links remain the implicit default',()=>{
+test('Older shared studies stay v1; fresh studies and post-canary editions use v2',()=>{
   const ui=readFileSync(new URL('../confluence/ui.js',import.meta.url),'utf8');
   const materials=readFileSync(new URL('../confluence/materials.js',import.meta.url),'utf8');
   const share=readFileSync(new URL('../confluence/share-study.js',import.meta.url),'utf8');
@@ -54,6 +54,8 @@ test('Confluence v1 renderer and frozen shared links remain the implicit default
   assert.match(ui,/confluenceRenderer===2\?\{confluenceRenderer:2\}:\{\}/);
   assert.match(materials,/rendererVersion===2/);
   assert.match(share,/data\.confluenceRenderer===undefined/);
-  assert.doesNotMatch(readFileSync(new URL('../automation/generate-gallery-confluence.mjs',import.meta.url),'utf8'),
-    /confluenceRenderer:2/);
+  const daily=readFileSync(new URL('../automation/generate-gallery-confluence.mjs',import.meta.url),'utf8');
+  assert.match(daily,/day>='2026-11-11'\?2:1/);
+  assert.match(daily,/confluenceRenderer===2\?\{confluenceRenderer:2\}:\{\}/);
+  assert.match(ui,/params\.get\('cv'\)==='1'\?1:2/);
 });
