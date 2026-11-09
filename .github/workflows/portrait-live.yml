@@ -93,6 +93,13 @@ jobs:
         run: |
           FORCE_PORTRAIT_SLOT="${{ inputs.slot }}" node automation/portrait-slot.mjs gate
 
+      - name: Require the live edition for the armed R2 date
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
+        uses: ./.github/actions/wait-for-r2-gallery
+        with:
+          date: ${{ steps.gate.outputs.date }}
+          canary_date: ${{ vars.PP_R2_CANARY_DATE }}
+
       - name: Ensure media release and check duplicate markers
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
         id: state
@@ -256,6 +263,10 @@ jobs:
         if: steps.gate.outputs.should_run == 'true' && github.ref == 'refs/heads/main' && inputs.live == true
         shell: bash
         run: |
+          if [[ -s "gallery/${{ steps.gate.outputs.date }}/media-publication.json" ]]; then
+            test -s "gallery/${{ steps.gate.outputs.date }}/archive-preview.jpg"
+            exit 0
+          fi
           python -m pip install 'Pillow==11.3.0'
           python automation/build-gallery-previews.py --date "${{ steps.gate.outputs.date }}" --force
           test -s "gallery/${{ steps.gate.outputs.date }}/archive-preview.jpg"

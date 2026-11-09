@@ -2,7 +2,6 @@ name: Build ALGO ART daily gallery
 
 # Only scheduled or explicit gallery builds may write new gallery assets.
 # 9 Nov recovery: rerun after isolating the Confluence social test output.
-# Editing this workflow on main triggers a controlled daily recovery run.
 # 8 Nov 2026: restore the 18-study archive after external GitHub Release
 # Recovery follow-up: keep 9 originally published editions byte-for-byte
 # and fill only the 9 missing studies; rebuild matching page and 3D assets.
@@ -14,7 +13,6 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/workflows/gallery-daily.yml'
       - 'gallery/visit/exterior-graffiti-plan.mjs'
   schedule:
     # Early morning UTC; the generator resolves the calendar day in Europe/London.
@@ -25,6 +23,11 @@ on:
         description: 'Edition to recover (YYYY-MM-DD); blank uses London today'
         required: false
         type: string
+      r2_canary:
+        description: 'Publish the armed new edition from R2 with Pages copies for rollback'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -35,13 +38,60 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      date: ${{ steps.plan.outputs.date }}
+      mode: ${{ steps.plan.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: gallery
+          persist-credentials: false
+      - name: Select the dated publication or recovery path
+        id: plan
+        shell: bash
+        env:
+          REQUESTED_DATE: ${{ inputs.date }}
+          CANARY_REQUESTED: ${{ inputs.r2_canary }}
+          ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+        run: |
+          TODAY="$(TZ=Europe/London date +%F)"
+          DAY="${REQUESTED_DATE:-$TODAY}"
+          [[ "$DAY" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && "$(date -d "$DAY" +%F)" == "$DAY" ]]
+          MODE=legacy
+          if [[ -f "gallery/$DAY/media-publication.json" ]]; then
+            MODE=recover
+          elif [[ "$CANARY_REQUESTED" == true ]]; then
+            [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$REQUESTED_DATE" == "$TODAY" &&
+               "$DAY" == "$ARMED_DATE" && "$DAY" > "2026-11-09" ]]
+            if [[ -e "gallery/$DAY/meta.json" ]]; then
+              echo "::error::The canary requires a new edition date."
+              exit 1
+            fi
+            MODE=canary
+          elif [[ "$DAY" == "$ARMED_DATE" ]]; then
+            echo "This edition date is armed for a manual R2 canary." >> "$GITHUB_STEP_SUMMARY"
+            MODE=hold
+          fi
+          printf 'date=%s\nmode=%s\n' "$DAY" "$MODE" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: plan
+    if: needs.plan.outputs.mode == 'legacy' || needs.plan.outputs.mode == 'canary'
+    environment: ${{ needs.plan.outputs.mode == 'canary' && 'archive-media-test' || 'gallery-daily' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
       ALGOART_LOCAL_URL: http://127.0.0.1:4173/
-      SOCIAL_DATE: ${{ inputs.date || '' }}
+      SOCIAL_DATE: ${{ needs.plan.outputs.date }}
+      R2_EDITION_DATE: ${{ needs.plan.outputs.date }}
+      R2_STAGE_OUTPUT: /tmp/pp-r2-edition-${{ github.run_id }}
+      R2_CANARY: ${{ needs.plan.outputs.mode == 'canary' }}
 
     steps:
       - name: Checkout
@@ -391,11 +441,40 @@ jobs:
           fi
           echo "Verified gallery/$DAY with $COUNT actual artwork entries."
 
+      - name: Prepare the verified edition overlay and upload immutable R2 media
+        if: env.R2_CANARY == 'true'
+        env:
+          PP_R2_CANARY_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: |
+          node automation/prepare-r2-daily.mjs
+          python3 -m pip install --break-system-packages 'boto3>=1.37,<2'
+          python3 automation/r2-daily-media.py upload "$R2_STAGE_OUTPUT/media-publication.json"
+
+      - name: Check staged 2D gallery and real tower before committing
+        if: env.R2_CANARY == 'true'
+        run: |
+          npx playwright install --with-deps webkit
+          node tests/r2-gallery-browser.mjs
+
+      - name: Save the media inventory and delivery verification
+        if: ${{ always() && env.R2_CANARY == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-canary-${{ needs.plan.outputs.date }}
+          path: |
+            ${{ env.R2_STAGE_OUTPUT }}/media-publication.json
+            ${{ env.R2_STAGE_OUTPUT }}/upload-verification.json
+          if-no-files-found: warn
+
       - name: Persist gallery archive
         id: gallery_commit
         shell: bash
         run: |
-          rm -rf node_modules social-output
+          rm -rf social-output
           # npm install can modify the tracked lockfile. Restore it before rebase.
           git restore --worktree package-lock.json
           git config user.name "github-actions[bot]"
@@ -407,6 +486,16 @@ jobs:
           else
             DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const x=Object.fromEntries(p.map(v=>[v.type,v.value])); process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
             git commit -m "Publish ALGO ART daily gallery $DAY"
+            if [[ "$R2_CANARY" == true ]]; then
+              node automation/activate-r2-daily.mjs
+              git add "gallery/$DAY" gallery/index.html gallery/archive.json gallery/feed.xml
+              git commit -m "Serve $DAY daily gallery media from R2"
+              # Keep both commits atomic. A concurrent main update must abort
+              # this canary so it cannot overwrite another gallery publisher.
+              git push origin HEAD:main
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             # Daily assets are regenerated deterministically by this job. When
             # another gallery build updated binary atlases concurrently, keep
             # this build's version during the rebase instead of failing.
@@ -424,6 +513,12 @@ jobs:
         run: |
           gh workflow run deploy-pages.yml --ref main
 
+      - name: Verify the deployed canary and its social source
+        if: env.R2_CANARY == 'true'
+        run: |
+          node automation/verify-r2-gallery-ready.mjs "$SOCIAL_DATE"
+          node tests/r2-gallery-browser.mjs --live
+
       - name: Summary
         if: always()
         shell: bash
@@ -433,9 +528,31 @@ jobs:
           echo "- 9 Nov: 12 solo studies and 4 Confluence studies. From 10 Nov: 12 solo studies and one Confluence portrait and landscape." >> "$GITHUB_STEP_SUMMARY"
           echo "- Static HTML + JSON-LD + Open Graph + RSS + sitemap" >> "$GITHUB_STEP_SUMMARY"
 
+  recover:
+    needs: plan
+    if: needs.plan.outputs.mode == 'recover'
+    runs-on: ubuntu-latest
+    env:
+      EDITION_DATE: ${{ needs.plan.outputs.date }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the frozen R2 edition and its local rollback copies
+        run: python3 automation/r2-daily-media.py recover "gallery/$EDITION_DATE/media-publication.json"
+      - name: Redispatch Pages when an operator requested recovery
+        if: github.event_name == 'workflow_dispatch'
+        run: gh workflow run deploy-pages.yml --ref main
+      - name: Verify Pages has the complete edition
+        run: node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"
+
   archive-check:
-    needs: build
-    if: ${{ needs.build.result == 'success' }}
+    needs: [build, recover]
+    if: ${{ !cancelled() && (needs.build.result == 'success' || needs.recover.result == 'success') }}
     uses: ./.github/workflows/archive-reproduction.yml
     with:
       checkout_ref: main

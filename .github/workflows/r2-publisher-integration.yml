@@ -1,0 +1,59 @@
+name: Verify R2 publisher integration
+
+on:
+  push:
+    branches: [release/r2-daily-social-integration-20261109]
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/r2-publisher-integration.yml'
+      - '.github/workflows/gallery-daily.yml'
+      - '.github/actions/wait-for-r2-gallery/**'
+      - 'automation/*r2*.mjs'
+      - 'automation/r2-daily-media.py'
+      - 'tests/r2-*.mjs'
+      - 'tests/test_r2_daily_media.py'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      R2_EDITION_DATE: '2026-11-09'
+      R2_STAGE_OUTPUT: /tmp/r2-integration-fixture-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test immutable uploads, recovery, social readiness and exact rollback
+        run: |
+          python -m pip install --disable-pip-version-check 'boto3>=1.37,<2'
+          python -m unittest discover -s tests -p test_r2_daily_media.py
+          node --test tests/r2-publisher.test.mjs tests/confluence-daily-publishing.test.mjs tests/social-publish-policy.test.mjs tests/gallery-public-launch.test.mjs
+      - name: Build the staged gallery and tower using the frozen historical fixture
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium webkit
+          npm run gallery:bundle:phi
+          node automation/prepare-r2-daily.mjs
+      - name: Open the staged gallery and tower in Chromium and WebKit with local media fixtures
+        run: node tests/r2-gallery-browser.mjs --fixture
+      - name: Reproduce the exact archived edition including Confluence
+        env:
+          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/r2-editor.log 2>&1 &
+          for attempt in {1..20}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node tests/archive-reproduction.mjs --edition "$R2_EDITION_DATE"

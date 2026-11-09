@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {ARTWORK_JPEG_QUALITY} from '../automation/config.mjs';
 import {oilVersionForDate,verifyReleasedOilV8} from '../automation/oil-edition.mjs';
+import {readArchivedJpeg} from '../automation/r2-gallery-media.mjs';
 
 const engine=process.env.ARCHIVE_BROWSER||'chromium';
 const runtime={chromium,firefox,webkit}[engine];
@@ -12,13 +13,16 @@ const output=path.resolve(process.env.ARCHIVE_REPORT_DIR||'archive-check-results
 await fs.mkdir(output,{recursive:true});
 const limits=engine==='chromium'?{mean:2.5,changed:.008}:{mean:4,changed:.02};
 const queueIndex=process.argv.indexOf('--queue');
+const editionIndex=process.argv.indexOf('--edition');
 const sources=[];
 if(queueIndex>=0){
   const file=path.resolve(process.argv[queueIndex+1]);
   sources.push({file,images:path.dirname(file)});
 }else{
+  const edition=editionIndex>=0?process.argv[editionIndex+1]:null;
+  if(editionIndex>=0&&!/^\d{4}-\d{2}-\d{2}$/.test(edition||''))throw Error('Invalid archive edition date');
   for(const day of (await fs.readdir('gallery')).sort()){
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(day))continue;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||(edition&&day!==edition))continue;
     sources.push({file:path.resolve('gallery',day,'meta.json'),images:path.resolve('gallery',day)});
   }
 }
@@ -33,6 +37,7 @@ for(const source of sources){
   for(const item of metadata.entries||[])archiveItems.push({source,item});
 }
 const materialOf=item=>{
+  if(item.material==='confluence')return 'confluence';
   const u=new URL(item.shareUrl);
   const m=u.searchParams.get('material')||item.material||'marker';
   return m.startsWith('watercolour')?'watercolour':
@@ -66,26 +71,41 @@ async function bytesFor(source,item){
     if(!response.ok)throw Error('Missing archived image: HTTP '+response.status);
     return Buffer.from(await response.arrayBuffer());
   }
-  const image=path.resolve(source.images,item.imageFile);
-  if(!image.startsWith(source.images+path.sep))throw Error('Image path escapes archive');
-  return fs.readFile(image);
+  return readArchivedJpeg(source.images,item);
+}
+async function waitForCanvas(confluence){
+  if(confluence){
+    await page.waitForFunction(()=>{
+      const counter=document.getElementById('counter')?.textContent||'';
+      const match=counter.match(/^(\d+)\s*\/\s*(\d+)\s+turns$/);
+      if(document.getElementById('summary')?.textContent==='Could not render this study.')
+        throw Error('Confluence shared painter failed');
+      return match && Number(match[2])>0 && match[1]===match[2] &&
+        document.querySelector('.progress')?.getAttribute('aria-valuenow')==='100';
+    },null,{timeout:240000});
+  }else{
+    await page.waitForFunction(()=>window.AlgoArt?.lastRenderMeta&&document.getElementById('art')?.width>0);
+  }
 }
 async function compare(item,bytes,overrideVersion){
   const original=new URL(item.shareUrl);
+  const confluence=item.material==='confluence';
   if(overrideVersion)original.searchParams.set('v',String(overrideVersion));
-  const local=new URL(base);
+  const local=confluence?new URL('confluence/',base):new URL(base);
   local.search=original.search;
-  await page.goto(local.href,{waitUntil:'networkidle'});
-  await page.waitForFunction(()=>window.AlgoArt?.lastRenderMeta&&document.getElementById('art')?.width>0);
+  await page.goto(local.href,{waitUntil:confluence?'domcontentloaded':'networkidle'});
+  await waitForCanvas(confluence);
   if(original.searchParams.get('material')==='oil-v8')
     verifyReleasedOilV8(await page.evaluate(()=>window.AlgoArt.lastOilV8Render));
-  return page.evaluate(async ({data,expected,limits,overrideVersion,jpegQuality,engine})=>{
-    const A=window.AlgoArt,art=document.getElementById('art');
-    if(!overrideVersion&&A.rendererVersion!==expected.rendererVersion)throw Error('Actual renderer version does not match recorded version');
-    const actual=A.readSettings();
-    if(!overrideVersion)for(const [key,value] of Object.entries(expected.settings)){
-      if(key==='series')continue;
-      if(actual[key]!==value)throw Error('Share URL settings disagree with metadata: '+key);
+  return page.evaluate(async ({data,expected,limits,overrideVersion,jpegQuality,engine,confluence})=>{
+    const A=window.AlgoArt,art=document.getElementById(confluence?'shared':'art');
+    if(!overrideVersion&&!confluence){
+      if(A.rendererVersion!==expected.rendererVersion)throw Error('Actual renderer version does not match recorded version');
+      const actual=A.readSettings();
+      for(const [key,value] of Object.entries(expected.settings)){
+        if(key==='series')continue;
+        if(actual[key]!==value)throw Error('Share URL settings disagree with metadata: '+key);
+      }
     }
     const img=new Image();
     img.src='data:image/jpeg;base64,'+data;
@@ -133,7 +153,8 @@ async function compare(item,bytes,overrideVersion){
       passed:engine==='chromium'?pixelPass:structurePass,
       actualVersion:A.rendererVersion,width:art.width,height:art.height,
       render:art.toDataURL('image/png'),diff:diff.toDataURL('image/png')};
-  },{data:bytes.toString('base64'),expected:item,limits,overrideVersion,jpegQuality:ARTWORK_JPEG_QUALITY,engine});
+  },{data:bytes.toString('base64'),expected:item,limits,overrideVersion,
+    jpegQuality:confluence ? 0.86 : ARTWORK_JPEG_QUALITY,engine,confluence});
 }
 try{
   const allIds=new Set();
@@ -152,21 +173,34 @@ try{
         const url=new URL(item.shareUrl);
         if(queueIndex>=0&&item.material==='oil'&&url.searchParams.get('material')!==oilVersionForDate(meta.date))
           throw Error('Oil queue revision differs from the edition date policy');
-        if(Number(url.searchParams.get('v'))!==item.rendererVersion)throw Error('URL/metadata version mismatch');
-        if(url.searchParams.get('seed')!==item.seed||item.settings.seed!==item.seed)throw Error('URL/metadata seed mismatch');
+        const confluence=item.material==='confluence';
+        if(confluence){
+          const state=JSON.parse(Buffer.from(url.searchParams.get('s')||'', 'base64url'));
+          const roster=state.artists?.map(({system,material,palette})=>({system,material,palette}));
+          if(!url.pathname.endsWith('/confluence/') || state.v!==1 || state.seed!==item.seed ||
+             state.orientation!==item.orientation || roster?.length!==3 ||
+             JSON.stringify(roster)!==JSON.stringify(item.artists))
+            throw Error('Archived Confluence state differs from metadata');
+        }else{
+          if(Number(url.searchParams.get('v'))!==item.rendererVersion)throw Error('URL/metadata version mismatch');
+          if(url.searchParams.get('seed')!==item.seed||item.settings.seed!==item.seed)throw Error('URL/metadata seed mismatch');
+        }
         bytes=await bytesFor(source,item);
         result=await compare(item,bytes);
         row.metrics={mean:result.mean,meanPercentOfChannelRange:+(result.mean/255*100).toFixed(3),changed:result.changed,structural:result.structural,pixelPass:result.pixelPass};
-        const firefoxAction = engine==='firefox' && item.material==='action';
-        if(!result.passed || firefoxAction){
-          // Diagnose a borderline cross-browser archive mismatch without
-          // changing the published reference or relaxing either threshold.
+        // The archive was exported by Chromium. Firefox Action Painting and
+        // WebKit Confluence use browser-dependent raster operations.
+        const browserRaster = (engine==='firefox' && item.material==='action') ||
+          (engine==='webkit' && confluence);
+        if(!result.passed || browserRaster){
+          // Check exact repeat rendering and record the comparison to the
+          // published JPEG with the same pixel thresholds.
           const originalPng=result.render;
-          await page.reload({waitUntil:'networkidle'});
-          await page.waitForFunction(()=>window.AlgoArt?.lastRenderMeta&&document.getElementById('art')?.width>0);
-          const repeat=await page.evaluate(async previous=>{
+          await page.reload({waitUntil:confluence?'domcontentloaded':'networkidle'});
+          await waitForCanvas(confluence);
+          const repeat=await page.evaluate(async ({previous,confluence})=>{
             const first=new Image();first.src=previous;await first.decode();
-            const art=document.getElementById('art');
+            const art=document.getElementById(confluence?'shared':'art');
             const c=document.createElement('canvas');c.width=art.width;c.height=art.height;
             const ctx=c.getContext('2d');ctx.drawImage(first,0,0);
             const a=ctx.getImageData(0,0,c.width,c.height).data;
@@ -174,13 +208,13 @@ try{
             let changedChannels=0,maxDelta=0;
             for(let i=0;i<a.length;i++)if(a[i]!==b[i]){changedChannels++;maxDelta=Math.max(maxDelta,Math.abs(a[i]-b[i]));}
             return {changedChannels,maxDelta};
-          },originalPng);
+          },{previous:originalPng,confluence});
           row.repeatRender=repeat;
           console.error('REPEAT_RENDER '+row.id+' '+JSON.stringify(repeat));
           if(repeat.changedChannels>0)throw Error('Repeat render is not deterministic');
-          if(!firefoxAction)throw Error('Pixel comparison failed');
+          if(!browserRaster)throw Error('Pixel comparison failed');
           row.crossBrowserRasterDifference = !result.passed;
-          if(!result.passed)console.warn('Firefox Action Painting differs from cross-browser JPEG; same-browser repeat is pixel-identical: '+row.id);
+          if(!result.passed)console.warn(engine+' raster differs from the archived Chromium JPEG. Same-browser repeat is pixel-identical: '+row.id);
         }
         row.passed=true;
         // Prove these tolerances reject the known wrong-version regression.

@@ -2,8 +2,10 @@
 // Slot 0 (09:00 London): first portrait. Slot 2 (20:30): first landscape.
 // Every platform receives the same exact picture and gallery permalink.
 import fs from 'node:fs/promises';
+import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {FIRST_CONFLUENCE_DATE, confluencePairCount, hasConfluencePairs} from './confluence-edition.mjs';
+import {readArchivedJpeg} from './r2-gallery-media.mjs';
 
 const date=process.env.SOCIAL_DATE;
 const slot=String(process.env.SOCIAL_SLOT);
@@ -22,8 +24,16 @@ if(!pick||!pick.imageFile||!pick.shareUrl||!Array.isArray(pick.artists)||pick.ar
 const state=new URL(pick.shareUrl);
 if(!state.pathname.endsWith('/confluence/')||!state.searchParams.has('s'))
   throw Error('Confluence social link does not restore the shared study.');
-const imagePath=path.resolve('gallery',date,pick.imageFile);
-await fs.access(imagePath);
+const directory=path.resolve('gallery',date);
+let imagePath=path.join(directory,pick.imageFile);
+if(pick.media){
+  const bytes=await readArchivedJpeg(directory,pick);
+  const temporary=await fs.mkdtemp(path.join(tmpdir(),'pp-confluence-'));
+  imagePath=path.join(temporary,'original.jpg');
+  await fs.writeFile(imagePath,bytes);
+}else{
+  await fs.access(imagePath);
+}
 const galleryUrl='https://southernadd-cmyk.github.io/algoart/gallery/'+date+'/#'+pick.id;
 const caption='PROPORTION PIECE / CONFLUENCE\n'+
   'Three systems. One shared drawing.\n'+
@@ -32,6 +42,7 @@ const caption='PROPORTION PIECE / CONFLUENCE\n'+
 const alt=(pick.altText||'Three procedural artists sharing a Confluence drawing.').slice(0,500);
 const output={
   orientation,date,study_id:pick.id,image_path:imagePath,share_url:galleryUrl,
+  media_url:pick.media?.original||'',
   caption_b64:Buffer.from(caption,'utf8').toString('base64'),
   alt_text_b64:Buffer.from(alt,'utf8').toString('base64'),
   pinterest_title_b64:Buffer.from('PROPORTION PIECE / CONFLUENCE — '+orientation,'utf8').toString('base64'),

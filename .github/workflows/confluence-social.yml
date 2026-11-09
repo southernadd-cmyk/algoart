@@ -31,6 +31,12 @@ jobs:
         with:
           node-version: 22
 
+      - name: Require the live edition for the armed R2 date
+        uses: ./.github/actions/wait-for-r2-gallery
+        with:
+          date: ${{ inputs.date }}
+          canary_date: ${{ vars.PP_R2_CANARY_DATE }}
+
       - name: Select exact archived Confluence study
         id: select
         run: node automation/select-confluence-social.mjs
@@ -64,11 +70,13 @@ jobs:
       - name: Host verified artwork on existing monthly release
         id: host
         shell: bash
+        env:
+          R2_MEDIA_URL: ${{ steps.select.outputs.media_url }}
         run: |
           PREFIX="pp-confluence-$SOCIAL_DATE-${{ steps.select.outputs.orientation }}"
           gh release upload "$RELEASE_TAG" "/tmp/$PREFIX-original.jpg" "/tmp/$PREFIX-meta.jpg" "/tmp/$PREFIX-bluesky.jpg" --clobber
           BASE="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG"
-          echo "original=$BASE/$PREFIX-original.jpg" >> "$GITHUB_OUTPUT"
+          echo "original=${R2_MEDIA_URL:-$BASE/$PREFIX-original.jpg}" >> "$GITHUB_OUTPUT"
           echo "meta=$BASE/$PREFIX-meta.jpg" >> "$GITHUB_OUTPUT"
           echo "bluesky=$BASE/$PREFIX-bluesky.jpg" >> "$GITHUB_OUTPUT"
           for NAME in original meta bluesky; do

@@ -249,7 +249,7 @@ function archivePage(archive) {
   const cards = days.map((day, index) => `
     <article class="day-card">
       <a href="./${day.date}/">
-        <img src="./${day.date}/archive-preview.jpg?v=${encodeURIComponent(day.date)}-${day.count}" width="840" height="600" loading="${index < 2 ? 'eager' : 'lazy'}" decoding="async" ${index === 0 ? 'fetchpriority="high"' : 'fetchpriority="low"'} onerror="this.onerror=null;this.src=\'./${day.date}/${escapeHtml(day.cover)}\'" alt="Recursive Divisions mosaic showing the artworks from ${escapeHtml(displayDate(day.date))}">
+        <img src="${escapeHtml(day.mediaCover || `./${day.date}/archive-preview.jpg?v=${encodeURIComponent(day.date)}-${day.count}`)}" width="840" height="600" loading="${index < 2 ? 'eager' : 'lazy'}" decoding="async" ${index === 0 ? 'fetchpriority="high"' : 'fetchpriority="low"'} onerror="this.onerror=null;this.src=\'./${day.date}/${escapeHtml(day.cover)}\'" alt="Recursive Divisions mosaic showing the artworks from ${escapeHtml(displayDate(day.date))}">
         <div>
           <h2>${escapeHtml(displayDate(day.date))}</h2>
         </div>
@@ -257,7 +257,7 @@ function archivePage(archive) {
     </article>`).join('\n');
 
   const latest = days[0];
-  const latestImage = latest ? `${GALLERY_URL}/${latest.date}/${latest.cover}` : SITE_URL + '/social-card.svg';
+  const latestImage = latest ? latest.mediaCover || `${GALLERY_URL}/${latest.date}/${latest.cover}` : SITE_URL + '/social-card.svg';
   const description = GALLERY_DESCRIPTION;
 
   const structured = {
@@ -343,7 +343,7 @@ ${days.map(day => `<item>
 <guid isPermaLink="true">${GALLERY_URL}/${day.date}/</guid>
 <pubDate>${new Date(day.date + 'T12:00:00Z').toUTCString()}</pubDate>
 <description>${escapeXml(day.count + ' generative studies: ' + day.series.join(', '))}</description>
-</item>`).join('\n')}
+${day.mediaCover ? `<enclosure url="${escapeXml(day.mediaCover)}" length="${day.mediaCoverBytes}" type="image/jpeg"/>\n` : ''}</item>`).join('\n')}
 </channel>
 </rss>`;
 }
@@ -394,6 +394,10 @@ const randomMarker=path.join(dayDir,'random-edition.json');
 const confluenceCount=2*confluencePairCount(day);
 const randomEdition='random-12-confluence-'+confluenceCount;
 const hasRandomEdition=randomDate && await fs.access(randomMarker).then(()=>true,()=>false);
+if (galleryMaterial === 'random' &&
+    await fs.access(path.join(dayDir, 'media-publication.json')).then(() => true, () => false)) {
+  throw Error('Recover the frozen R2 edition through the daily workflow.');
+}
 if(randomDate && galleryMaterial!=='random' && hasRandomEdition){
   const socialPath=path.join(dayDir,'social-meta.json');
   let social={version:1,date:day,entries:[]};

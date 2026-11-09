@@ -26,6 +26,7 @@ concurrency:
 
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -57,6 +58,13 @@ jobs:
             FORCE_SLOT="${{ inputs.slot }}"
           fi
           FORCE_SLOT="$FORCE_SLOT" node automation/social-slot.mjs gate
+
+      - name: Require the live edition for the armed R2 date
+        if: steps.gate.outputs.should_post == 'true'
+        uses: ./.github/actions/wait-for-r2-gallery
+        with:
+          date: ${{ steps.gate.outputs.date }}
+          canary_date: ${{ vars.PP_R2_CANARY_DATE }}
 
       - name: Ensure media release and check duplicate markers
         if: steps.gate.outputs.should_post == 'true'
@@ -225,7 +233,13 @@ jobs:
         id: threads_feature_host
         if: github.ref == 'refs/heads/main' && steps.gate.outputs.slot == '2' && steps.policy.outputs.threads == 'true' && steps.state.outputs.threads_done != 'true'
         shell: bash
+        env:
+          R2_MEDIA_URL: ${{ steps.threads_feature.outputs.media_url }}
         run: |
+          if [[ -n "$R2_MEDIA_URL" ]]; then
+            echo "media_url=$R2_MEDIA_URL" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           ASSET="${{ steps.threads_feature.outputs.asset_name }}"
           cp "${{ steps.threads_feature.outputs.image_path }}" "/tmp/$ASSET"
           gh release upload "$RELEASE_TAG" "/tmp/$ASSET" --clobber
