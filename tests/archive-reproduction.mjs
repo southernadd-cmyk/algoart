@@ -188,10 +188,13 @@ try{
         bytes=await bytesFor(source,item);
         result=await compare(item,bytes);
         row.metrics={mean:result.mean,meanPercentOfChannelRange:+(result.mean/255*100).toFixed(3),changed:result.changed,structural:result.structural,pixelPass:result.pixelPass};
-        const firefoxAction = engine==='firefox' && item.material==='action';
-        if(!result.passed || firefoxAction){
-          // Diagnose a borderline cross-browser archive mismatch without
-          // changing the published reference or relaxing either threshold.
+        // The archive was exported by Chromium. Firefox Action Painting and
+        // WebKit Confluence use browser-dependent raster operations.
+        const browserRaster = (engine==='firefox' && item.material==='action') ||
+          (engine==='webkit' && confluence);
+        if(!result.passed || browserRaster){
+          // Check exact repeat rendering and record the comparison to the
+          // published JPEG with the same pixel thresholds.
           const originalPng=result.render;
           await page.reload({waitUntil:confluence?'domcontentloaded':'networkidle'});
           await waitForCanvas(confluence);
@@ -209,9 +212,9 @@ try{
           row.repeatRender=repeat;
           console.error('REPEAT_RENDER '+row.id+' '+JSON.stringify(repeat));
           if(repeat.changedChannels>0)throw Error('Repeat render is not deterministic');
-          if(!firefoxAction)throw Error('Pixel comparison failed');
+          if(!browserRaster)throw Error('Pixel comparison failed');
           row.crossBrowserRasterDifference = !result.passed;
-          if(!result.passed)console.warn('Firefox Action Painting differs from cross-browser JPEG; same-browser repeat is pixel-identical: '+row.id);
+          if(!result.passed)console.warn(engine+' raster differs from the archived Chromium JPEG. Same-browser repeat is pixel-identical: '+row.id);
         }
         row.passed=true;
         // Prove these tolerances reject the known wrong-version regression.

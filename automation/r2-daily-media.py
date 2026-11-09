@@ -7,6 +7,8 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
+import tempfile
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 BUCKET = "proportion-piece-media-test"
@@ -31,7 +33,7 @@ def check(condition, message):
         raise ValueError(message)
 
 
-def inspect_manifest(manifest_path, published, root):
+def inspect_manifest(manifest_path, published, root, *, restoring=False):
     raw = manifest_path.read_bytes()
     manifest = json.loads(raw)
     check(manifest["schemaVersion"] == 2 and manifest["published"] is published and
@@ -99,7 +101,10 @@ def inspect_manifest(manifest_path, published, root):
             name = {"original": item["originalImageFile"], "cover": "archive-preview.jpg",
                     "sculptures": "3d/sculptures.json.gz"}[role]
             check(source == f"gallery/{day}/{name}", "Unexpected Pages fallback path")
-        data = (root / source).read_bytes()
+        local = root / source
+        if not local.exists() and published and (restoring or manifest.get("pagesFallback") is False):
+            continue
+        data = local.read_bytes()
         check(len(data) == item["bytes"] and len(data) > 1000 and digest(data) == sha256,
               f"Pages fallback differs from the original: {source}")
     expected = {(artwork, role) for artwork in entries_by_id for role in
@@ -113,7 +118,7 @@ class NoRedirects(HTTPRedirectHandler):
         return None
 
 
-def verify_public(assets, opener=None):
+def verify_public(assets, opener=None, *, restore=None):
     opener = opener or build_opener(NoRedirects())
     for item in assets:
         for method in ("GET", "HEAD"):
@@ -128,6 +133,20 @@ def verify_public(assets, opener=None):
                     data = response.read(item["bytes"] + 1)
                     check(len(data) == item["bytes"] and digest(data) == item["sha256"],
                           f"Public bytes differ for {item['key']}")
+        if restore is not None:
+            target = restore / item["sourcePath"]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+
+
+def restore_assets(assets, directory, opener=None):
+    scratch = Path(tempfile.mkdtemp(prefix="pp-r2-restore-", dir=directory))
+    try:
+        verify_public(assets, opener, restore=scratch)
+    except Exception:
+        shutil.rmtree(scratch)
+        raise
+    return scratch
 
 
 def upload_assets(client, assets, root):
@@ -176,20 +195,31 @@ def media_client(day):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("upload", "recover"))
+    parser.add_argument("command", choices=("upload", "recover", "restore"))
     parser.add_argument("manifest", type=Path)
     parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument("--restore-to", type=Path)
     args = parser.parse_args()
 
-    published = args.command == "recover"
-    manifest, manifest_hash = inspect_manifest(args.manifest, published, args.root)
-    if not published:
-        upload_assets(media_client(manifest["date"]), manifest["mediaAssets"], args.root)
-    verify_public(manifest["mediaAssets"])
+    restoring = args.command == "restore"
+    check(restoring == (args.restore_to is not None), "Restore requires a scratch parent directory")
+    if restoring:
+        check(not args.restore_to.resolve().is_relative_to(args.root.resolve()),
+              "Restore directory must be outside the checkout")
+    published = args.command != "upload"
+    manifest, manifest_hash = inspect_manifest(args.manifest, published, args.root, restoring=restoring)
+    if restoring:
+        restored = restore_assets(manifest["mediaAssets"], args.restore_to)
+    else:
+        if not published:
+            upload_assets(media_client(manifest["date"]), manifest["mediaAssets"], args.root)
+        verify_public(manifest["mediaAssets"])
     report = {"date": manifest["date"], "manifestSha256": manifest_hash,
               "verified": len(manifest["mediaAssets"])}
     if not published:
         args.manifest.with_name("upload-verification.json").write_text(json.dumps(report) + "\n")
+    if restoring:
+        report["restoredTo"] = str(restored)
     print(json.dumps(report))
 
 

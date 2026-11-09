@@ -121,7 +121,7 @@ assert(item.test(feedRaw), "RSS item missing for the edition");
 const feed = feedRaw.replace(item, match => match.replace('</item>',
   '<enclosure url="' + cover.url + '" length="' + cover.bytes + '" type="image/jpeg"/>\n</item>'));
 const publication = {
-  schemaVersion:2,published:false,stageOnly:true,
+  schemaVersion:2,published:false,stageOnly:true,pagesFallback:true,
   bucket:BUCKET,workerBase:WORKER_ORIGIN,date,count:meta.count,
   mediaAssets:assets,
   preservedShareUrls:meta.entries.map(({id,shareUrl,rendererVersion,seed,imageFile}) =>

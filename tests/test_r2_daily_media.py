@@ -64,6 +64,19 @@ class MediaTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "metadata mismatch"):
             MEDIA.verify_public([self.asset], opener)
 
+    def test_restore_from_worker_when_source_jpeg_is_missing(self):
+        (self.root / "photo.jpg").unlink()
+        opener = Mock()
+        opener.open.side_effect = lambda request, timeout: PublicResponse(
+            self.data if request.method == "GET" else b"", self.asset, MEDIA.PAGES)
+        restored = MEDIA.restore_assets([self.asset], self.root, opener)
+        self.assertEqual((restored / "photo.jpg").read_bytes(), self.data)
+        self.assertFalse((self.root / "photo.jpg").exists())
+        opener.open.side_effect = lambda *_args, **_kw: PublicResponse(b"z" * 1500, self.asset, MEDIA.PAGES)
+        with self.assertRaisesRegex(ValueError, "Public bytes differ"):
+            MEDIA.restore_assets([self.asset], self.root, opener)
+        self.assertEqual(list(self.root.iterdir()), [restored])
+
 
 if __name__ == "__main__":
     unittest.main()
