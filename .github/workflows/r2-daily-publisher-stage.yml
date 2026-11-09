@@ -44,7 +44,7 @@ jobs:
         run: |
           git -C live-snapshot status --porcelain | tee /tmp/pp-r2-source-status
           test ! -s /tmp/pp-r2-source-status
-          git status --porcelain | tee /tmp/pp-r2-branch-status
+          git status --porcelain --untracked-files=no | tee /tmp/pp-r2-branch-status
           test ! -s /tmp/pp-r2-branch-status
       - name: Upload only non-live publication-plan evidence
         if: always()
