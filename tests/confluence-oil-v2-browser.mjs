@@ -72,6 +72,23 @@ try{
   assert(result.stats?.turns>=4,'v2 did not process oil artists: '+JSON.stringify(result));
   assert(result.stats?.newFields>0,'v2 produced no filled connected oil fields: '+JSON.stringify(result));
   assert(result.stats?.eligibleGroups>=2,'v2 never accumulated distinct real guide groups');
+  // The exact same all-oil source settings in the frozen V1 renderer.
+  // This snapshot is evidence for visual review, NOT a replacement for
+  // the v2 filled-geometry assertion above.
+  await page.goto(origin+'?s='+encode(baseline),{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>{
+    if(document.getElementById('summary')?.textContent==='Could not render this study.')
+      throw Error('Confluence all-oil v1 baseline failed');
+    return document.getElementById('counter')?.textContent?.trim()==='21 / 21 turns';
+  },null,{timeout:220000});
+  const v1=await page.evaluate(()=>{
+    const c=document.getElementById('shared');
+    return{width:c.width,height:c.height,previewLength:c.toDataURL('image/png').length,
+      renderer:document.getElementById('status')?.textContent||''};
+  });
+  assert(!v1.renderer.includes('renderer v2'),'old all-oil share silently switched to v2');
+  await page.locator('#shared').screenshot({path:'confluence-oil-v2-preview/v1-all-oil-landscape.png'});
+  console.log('OIL_V1_BASELINE '+JSON.stringify(v1));
   // Restoration owns the version: an older saved link with no v2 flag must
   // remain on v1, even when somebody appends ?cv=2 to its URL.
   errors.length=0;
