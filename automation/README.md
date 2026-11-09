@@ -183,3 +183,11 @@ social publishing under the curated policy.
 Validate without posting:
 node --test tests/social-publish-policy.test.mjs tests/social-stagger.test.mjs tests/social-caption-rotation.test.mjs tests/social-caption-limits.test.mjs
 The social-pacing-checks.yml workflow runs these tests on relevant changes.
+
+## Confluence daily edition and social additions (from 9 November 2026)
+
+The 04:15 UTC independent gallery build first produces its existing twelve deterministic solo images, then renders four Confluence shared canvases using the native three-artist UI (two portrait, two landscape). The archive contains sixteen entries in total and preserves exact `?s=` shared states, real JPEG images, WebP gallery textures and portrait relief from the archived pixels. These four are *additional* to the usual twelve; visitor-created Confluence drawings are never collected.
+
+The existing 09:00 and 20:30 Europe/London social workflow invokes `confluence-social.yml` for **one Confluence portrait** and **one Confluence landscape** respectively, alongside every destination's existing regular material posts. Instagram, Threads and Bluesky receive separate posts using the actual archived picture, while Pinterest participates only if already enabled. Each account/platform and orientation has its own immutable completion marker on the rolling release; retries skip marked posts. Links lead to the dated gallery card, from which the exact shared study opens in Confluence. X does not currently have a live auto-publisher in this repository and is not automatically posted.
+
+Checks: `node --test tests/confluence-daily-publishing.test.mjs`. The daily workflow runs these before generation and checks sixteen entries, two portraits and two landscapes, archive textures, and sculptures before publishing. The Confluence publisher requires an existing complete gallery; it cannot manufacture unarchived posts.
