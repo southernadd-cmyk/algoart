@@ -54,7 +54,7 @@ export function planSculptureLayers(study,quality='desktop'){
 export function planGallerySculptures(layout,studies){
   const result=[];
   for(const room of layout.rooms){
-    const portraits=studies.slice(room.artStart,room.artEnd).filter(study=>study.portrait);
+    const portraits=studies.slice(room.artStart,room.artEnd).filter(study=>study.portrait&&study.material?.type!=='confluence'&&study.material!=='confluence');
     const rng=makeRandom(seedFromString('PP-PLINTH-LOCATIONS-v1:'+layout.date+':'+room.index+':'+portraits.map(p=>p.seed).join('|')));
     const x=room.width/2-1.32,z=room.depth/2-1.30;
     // Pull sculptures away from tight wall junctions while retaining the
@@ -76,9 +76,9 @@ export function planGallerySculptures(layout,studies){
       });
     }
   }
-  if(result.length!==studies.filter(s=>s.portrait).length||
+  if(result.length!==studies.filter(s=>s.portrait&&s.material?.type!=='confluence'&&s.material!=='confluence').length||
     new Set(result.map(p=>p.studyId)).size!==result.length)
-    throw new Error('Each portrait must have one sculpture');
+    throw new Error('Each sculpture-eligible portrait must have one sculpture');
   return result;
 }
 export function clearOfSculptures(sculptures,x,z,padding=.45){
