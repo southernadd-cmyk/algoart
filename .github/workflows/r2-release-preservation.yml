@@ -1,0 +1,77 @@
+name: Release A — preserve and restore public GitHub Release assets
+
+# Manual one-shot trigger encoded by commit message. No production workflows or
+# GitHub Releases are modified. All backup objects remain PRIVATE in the R2 test bucket.
+on:
+  push:
+    branches:
+      - plan/archive-storage-foundation-20261109
+    paths:
+      - .github/workflows/r2-release-preservation.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proportion-piece-release-a-release-snapshots
+  cancel-in-progress: false
+
+jobs:
+  preserve:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/plan/archive-storage-foundation-20261109' && github.event.head_commit.message == 'Run verified private GitHub Release asset backups 2026-11-09' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    environment:
+      name: archive-r2-test
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        tag:
+          - proportion-piece-eight-prints-2026-11-03
+          - algoart-social-2026-10
+          - algoart-social-2026-11
+          - algoart-social-live
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate read-only backup program and install API clients
+        run: |
+          python -m py_compile automation/r2-github-release-backup.py
+          python -m pip install --disable-pip-version-check 'requests>=2.31,<3' 'boto3>=1.34,<2'
+
+      - name: Download and verify source Release, store privately, then restore and hash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BACKUP_TAG: ${{ matrix.tag }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET || vars.R2_BUCKET || 'proportion-piece-archive-test' }}
+          BACKUP_REPORT_DIR: ${{ runner.temp }}/release-a-release-backup-report
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: python automation/r2-github-release-backup.py
+
+      - name: Save full checksums and asset references as an audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-a-r2-release-${{ matrix.tag }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/release-a-release-backup-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Explain preservation scope
+        if: always()
+        run: |
+          echo '### GitHub Release source-byte preservation: ${{ matrix.tag }}' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Source is public Releases; each asset checked against GitHub SHA-256.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Private R2 immutable snapshot and complete restore are required to pass.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Backup is provisional and shares the Cloudflare provider with future production; KV and independent provider remain outstanding.' >> "$GITHUB_STEP_SUMMARY"
