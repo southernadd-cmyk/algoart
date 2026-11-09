@@ -14,7 +14,7 @@ export async function loadPhiArchive(date){
    new URL('../release-art/'+src.pathname.split('/').pop(),import.meta.url).href:src.href;
   const href=new URL(link.getAttribute('href'),url).href;
   const width=Number(img.getAttribute('width')),height=Number(img.getAttribute('height'));
-  return {id:card.id||date+'-'+(i+1),title:card.querySelector('h2')?.textContent.trim()||'Untitled',
+  return {id:card.id||date+'-'+(i+1),title:card.querySelector('h2, h3')?.textContent.trim()||'Untitled',
    seed:card.querySelector('dd')?.textContent.trim()||new URL(href).searchParams.get('seed')||'',
    portrait:card.dataset.orientation==='portrait'||height>width,
    aspect:width&&height?width/height:1.4,image,href,engine:new URL(href).searchParams.get('mode')||'field',

@@ -111,7 +111,7 @@ try {
     const altText='PROPORTION PIECE Confluence '+orientation+' study: three procedural artists share a drawing. '+
       systemNames.map((name,j)=>name+' in '+materialNames[j]+' ('+paletteNames[j]+' palette)').join('; ')+'.';
     artwork.push({
-      id,orientation,material:'confluence',generatedAt:new Date().toISOString(),
+      id,title:systemNames.join(' · '),orientation,material:'confluence',generatedAt:new Date().toISOString(),
       seed,mode:'confluence',series:'Confluence',imageFile,shareUrl,rendererVersion:10,
        confluenceRendererVersion:confluenceRenderer,
       settings:{orientation,phiStrength:76,palette:'Three φ-distributed palettes',

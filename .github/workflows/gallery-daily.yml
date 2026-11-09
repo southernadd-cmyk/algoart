@@ -413,7 +413,7 @@ jobs:
           import gzip
           sculptures = json.loads(gzip.decompress((Path('gallery') / date / '3d' / 'sculptures.json.gz').read_bytes()))
           assert sculptures['version'] == 1 and sculptures['date'] == date
-          portraits = {entry['imageFile'] for entry in meta['entries'] if entry.get('orientation') == 'portrait'}
+          portraits = {entry['imageFile'] for entry in meta['entries'] if entry.get('orientation') == 'portrait' and entry.get('material') != 'confluence'}
           assert set(sculptures['studies']) == portraits, f'Incomplete sculpture bake: {date}'
           for variants in sculptures['studies'].values():
               for label in ('mobile', 'desktop'):

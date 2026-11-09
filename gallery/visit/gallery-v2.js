@@ -162,8 +162,14 @@ function labelTexture(title, seed) {
   const g = c.getContext('2d');
   g.fillStyle = '#eeeae0'; g.fillRect(0, 0, c.width, c.height);
   g.fillStyle = '#343a36'; g.font = '36px Georgia';
-  const display = title.length > 46 ? title.slice(0, 43) + '…' : title;
-  g.fillText(display, 45, 93, 820);
+  // Full three-system Confluence names fit over two lines, without truncating
+  // the third artist. Historical single-line sculpture/painting titles are unchanged.
+  const systems=title.split(' · ');
+  const lines=systems.length===3
+    ? [systems.slice(0,2).join(' · '),systems[2]]
+    : [title.length > 46 ? title.slice(0, 43) + '…' : title];
+  if(lines.length===2)g.font='30px Georgia';
+  lines.forEach((line,i)=>g.fillText(line,45,lines.length===2?67+i*42:93,820));
   g.font = '24px Arial'; g.fillStyle = '#66675e';
   g.fillText(seed, 46, 147, 820);
   const texture = new THREE.CanvasTexture(c);
@@ -1275,7 +1281,7 @@ function readArchive(html, url, textureManifest={}) {
     const variant=textureManifest[filename]?.[mobileImages?'mobile':'desktop'];
     return {
       id: i,
-      title: card.querySelector('h2')?.textContent.trim() || 'Untitled drawing',
+      title: card.querySelector('h2, h3')?.textContent.trim() || 'Untitled drawing',
       seed,
       imageFile:filename,
       imageOptimized:variant?new URL(variant,url).href:null,
@@ -1358,7 +1364,7 @@ async function loadEdition(date,{viaLift=false,rollback=false}={}) {
   if(!res.ok)throw new Error('The edition for '+readableDate(date)+' is not available.');
   const studies=readArchive(res.text,res.url,textureManifest);
   for(const study of studies){
-    if(study.portrait&&sculpturePack[study.imageFile]){
+    if(study.portrait&&study.material?.type!=='confluence'&&sculpturePack[study.imageFile]){
       study.prebuilt=sculpturePack[study.imageFile];
     }
   }
@@ -1524,9 +1530,9 @@ function showInfo(exhibit){
     $('infoImage').src=study.image;
     $('infoImage').alt=study.title;
     $('infoTitle').textContent=study.title;
-    const medium=({marker:'Marker',tissue:'Tissue & graphite',watercolour:'Watercolour',oil:'Oil paint',action:'Action painting'})[study.material?.type]||'Drawing';
+    const medium=({marker:'Marker',tissue:'Tissue & graphite',watercolour:'Watercolour',oil:'Oil paint',action:'Action painting',confluence:'Confluence'})[study.material?.type]||'Drawing';
     const composition=(study.engine||'composition').replace(/[-_]/g,' ');
-    $('infoMeta').textContent=[medium,composition,study.portrait?'portrait sculpture':'landscape study'].join(' · ');
+    $('infoMeta').textContent=[medium,composition,study.material?.type==='confluence'?(study.portrait?'portrait painting':'landscape painting'):(study.portrait?'portrait sculpture':'landscape study')].join(' · ');
     $('infoSeed').textContent='Seed '+study.seed;
     $('openArt').href=study.href;
   }

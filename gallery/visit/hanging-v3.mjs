@@ -119,10 +119,10 @@ export function planRoomHangs(room,studies,date){
   return result;
 }
 export function planGalleryHangs(layout,studies){
-  // Portraits belong to the sculpture collection; do not hang a flat duplicate.
-  const landscapes=studies.filter(study=>!study.portrait);
+  // Solo portraits become sculptures; Confluence portraits remain wall paintings.
+  const landscapes=studies.filter(study=>!study.portrait||study.material?.type==='confluence'||study.material==='confluence');
   const placements=layout.rooms.flatMap(room=>planRoomHangs(
-    room,studies.slice(room.artStart,room.artEnd).filter(study=>!study.portrait),layout.date
+    room,studies.slice(room.artStart,room.artEnd).filter(study=>!study.portrait||study.material?.type==='confluence'||study.material==='confluence'),layout.date
   ));
   const ids=new Set(placements.map(p=>p.studyId));
   if(placements.length!==landscapes.length||ids.size!==landscapes.length)

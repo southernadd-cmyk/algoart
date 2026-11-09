@@ -45,11 +45,23 @@ for(const {date} of archive.floors)test('thematic curation preserves real archiv
   return {id,portrait:/data-orientation="portrait"/.test(card)||height>width,aspect:width/height||1.4,
    href,material:card.match(/data-material="([^"]+)"/)?.[1]};
  });
- const baseline=buildPhiRendererPlan(date,studies.map(({id,portrait,aspect})=>({id,portrait,aspect})));
+ const baseline=buildPhiRendererPlan(date,studies.map(({id,portrait,aspect,material})=>({id,portrait,aspect,material})));
  const curated=buildPhiRendererPlan(date,studies);
  assert.deepEqual(curated.checks,{connected:true,count:true,unique:true,inwardFacing:true,clearances:true,unplaced:0});
  assert.deepEqual(geometry(curated.exhibition),geometry(baseline.exhibition),'All geometry must remain identical');
  assert.deepEqual(curated.exhibition,buildPhiRendererPlan(date,studies).exhibition);
+ if(date==='2026-11-09'){
+  // Confluence portraits stay paintings; only solo portraits create sculptures.
+  const confluenceIds=studies.filter(s=>s.material==='confluence').map(s=>s.id);
+  assert.equal(confluenceIds.length,4);
+  const wallIds=new Set(curated.exhibition.paintings.map(p=>p.studyId));
+  const statueIds=new Set(curated.exhibition.sculptures.map(p=>p.studyId));
+  for(const id of confluenceIds){
+   assert.ok(wallIds.has(id),'Confluence must hang as a painting: '+id);
+   assert.ok(!statueIds.has(id),'Confluence must not be a sculpture: '+id);
+  }
+ }
+
  assert.ok(curated.exhibition.curation.score+1e-9>=curated.exhibition.curation.baselineScore);
  for(const room of curated.exhibition.curation.rooms){
   for(const dimension of ['material','engine','palette']){
@@ -65,5 +77,20 @@ for(const {date} of archive.floors)test('thematic curation preserves real archiv
  if(date==='2026-10-29'){
   assert.ok(curated.exhibition.curation.score>curated.exhibition.curation.baselineScore);
   console.log('Today’s room themes:',curated.exhibition.curation.rooms.map(r=>({room:r.room,theme:r.theme?.dimension,value:r.theme?.value,related:r.theme?.count,total:r.studyIds.length})));
+ }
+});
+
+test('archived Confluence pieces have the three actual system names as titles',()=>{
+ const date='2026-11-09';
+ const meta=JSON.parse(readFileSync(new URL('../gallery/'+date+'/meta.json',import.meta.url),'utf8'));
+ const html=readFileSync(new URL('../gallery/'+date+'/index.html',import.meta.url),'utf8');
+ const pieces=meta.entries.filter(entry=>entry.material==='confluence');
+ assert.equal(pieces.length,4);
+ for(const piece of pieces){
+  const match=html.match(new RegExp('<article id="'+piece.id+'"[^>]*>[\\s\\S]*?<h3>([^<]+)</h3>'));
+  assert.ok(match,'Gallery card missing for '+piece.id);
+  assert.equal(match[1],piece.title);
+  assert.equal(piece.title.split(' · ').length,3);
+  assert.ok(!piece.title.includes('Untitled'));
  }
 });

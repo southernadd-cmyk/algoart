@@ -15,7 +15,7 @@ const meta = live
   ? await (await fetch(dayUrl + 'meta.json')).json()
   : JSON.parse(await fs.readFile(path.join(stage, 'gallery', date, 'meta.json'), 'utf8'));
 const manifest = live ? null : JSON.parse(await fs.readFile(path.join(stage, 'media-publication.json'), 'utf8'));
-const expectedSculptures = meta.entries.filter(entry => entry.orientation === 'portrait').length;
+const expectedSculptures = meta.entries.filter(entry => entry.orientation === 'portrait' && entry.material !== 'confluence').length;
 
 async function serveCheckout(route) {
   const relative = decodeURIComponent(new URL(route.request().url()).pathname).slice('/algoart/'.length);
