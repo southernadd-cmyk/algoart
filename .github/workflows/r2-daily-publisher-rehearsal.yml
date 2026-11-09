@@ -1,5 +1,6 @@
 name: Release B prep — full R2 daily publisher rehearsal (NO LIVE DEPLOY)
 # ONE isolated end-to-end test of 2026-11-09 gallery (12 solo + 4 Confluence).
+# Fresh eager-image probes avoid WebKit lazy-load decode aborts (test-only).
 # This job never commits, pushes main, deploys Pages, or schedules social posts.
 on:
   push:
