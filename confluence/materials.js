@@ -2,6 +2,7 @@ import {artistInk, paint} from './collab.js?v=confluence-edge-margin-01';
 import {plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
 import {renderNativeDeposit} from './native-material.js?v=confluence-tissue-v8-10';
 import {protectPigmentStack} from './pigment-guard.js?v=dark-stack-01';
+import {committedOilV2Evidence,oilV2PlanCapture,oilV2FallbackFields} from './oil-v2-geometry.js?v=oil-v2-test-01';
 
 export const materials = {
   marker: 'Marker',
@@ -79,7 +80,9 @@ function footprintFromSurface(ctx,sensor,previous,sheet){
   return {footprint,coverage:next};
 }
 
-export function makePainter(output, seed, sheet, {roster=[]} = {}) {
+export function makePainter(output, seed, sheet, {roster=[],rendererVersion=1} = {}) {
+  if(rendererVersion!==1&&rendererVersion!==2)
+    throw new Error('Unsupported Confluence renderer version: '+rendererVersion);
   const A = window.AlgoArt;
   const edgeMask = sheet.edgeMargin ? makeEdgeMask(sheet) : null;
   function taperPigment(ctx, x = 0, y = 0) {
@@ -116,6 +119,12 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     tissueTurn,tissueIncrement,watercolourTurn,oilTurnSurface,actionTurnSurface])
     size(ctx,sheet.width,sheet.height);
   let oilTurn=0,actionTurn=0;
+  // Oil v2 sees committed geometry from previous turns of the SAME hand.
+  // It deposits only the new source brushes and newly discovered colour
+  // areas, never repaints whole previous turns. V1 does not use this state.
+  const oilV2History=new Map(),oilV2Painted=new Map();
+  const oilV2Stats={turns:0,plannedFields:0,newFields:0,newTerritories:0,
+    eligibleGroups:0,guideCounts:null};
   // Compute a local full-resolution V7/V2S work area for each new gesture.
   // The released material engines remain untouched. Their native bleed is
   // allowed an extra 220-250px and is feathered at artificial crop edges.
@@ -265,7 +274,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     paper:sheet.paper,palette:marks[0]?.palette||'spectrum',
     colourCount:Math.min(14,new Set(marks.map(m=>m.ink)).size)
   });
-  function renderActualOil(newMarks,artist){
+  function renderActualOil(newMarks,artist,evidence=[]){
     if(!newMarks.length)return;
     if(typeof A.renderOilPaintV8!=='function' ||
        typeof A.compositionV5Test?.extract!=='function')
@@ -275,9 +284,35 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     const capture={paths,meta:{guide:{type:'confluence'},voids:[],
       strategy:'collaborative-responsive'},
       chains:A.compositionV5Test.extract(paths)};
-    A.renderOilPaintV8(oilTurnSurface.canvas,settings,1,false,{
-      masses:true,relief:true,weave:true,amount:.6,
-      sourceCapture:capture,transparentSheet:true});
+    const options={masses:true,relief:true,weave:true,amount:.6,
+      sourceCapture:capture,transparentSheet:true};
+    let v2;
+    if(rendererVersion===2){
+      const history=(oilV2History.get(artist.id)||[]).concat(evidence);
+      v2=oilV2PlanCapture(history,artist,sheet,seed+'|'+artist.id);
+      const painted=oilV2Painted.get(artist.id)||new Set();
+      // Stable seed ties connected areas to their source guide IDs, rather
+      // than rearranging every prior area on each successive new turn.
+      settings.seed=[seed,'confluence','oil-v2',artist.id].join('|');
+      options.planCapture=v2.capture;
+      options.v2Painted=painted;
+      options.v2FallbackFields=oilV2FallbackFields(v2.groups,sheet,
+        seed+'|'+artist.id);
+    }
+    const result=A.renderOilPaintV8(oilTurnSurface.canvas,settings,1,false,options);
+    if(v2){
+      oilV2History.set(artist.id,(oilV2History.get(artist.id)||[]).concat(evidence));
+      oilV2Painted.set(artist.id,options.v2Painted);
+      oilV2Stats.turns++;
+      oilV2Stats.plannedFields+=result.work?.v2PlannedFields||0;
+      oilV2Stats.newFields+=result.work?.v2NewFields||0;
+      oilV2Stats.newTerritories+=result.work?.v2NewTerritories||0;
+      oilV2Stats.eligibleGroups=Math.max(oilV2Stats.eligibleGroups,v2.groups.length);
+      oilV2Stats.guideCounts=v2.guideCounts;
+      // Diagnostic only. Tests must demand positive actual semantic fields,
+      // not pass merely because the V8 brushes executed.
+      A.lastConfluenceOilV2Stats={...oilV2Stats};
+    }
     taperPigment(oilTurnSurface);
     surfacePasses.oil++;
     layTurn(oilSurface,oilTurnSurface);
@@ -332,7 +367,9 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       system:artist.system,palette:artist.palette,settings:artist.settings}));
     if(material==='oil'){
       oilMarks.push(...entry);
-      renderActualOil(entry,artist);
+      const evidence=rendererVersion===2
+        ?committedOilV2Evidence(actions,artistInk):[];
+      renderActualOil(entry,artist,evidence);
       return observe?materialFootprint('oil',oilSurface):undefined;
     }
     if(material==='action'){
@@ -355,5 +392,6 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   deposit.watercolourStats=()=>({nativeFullSheetPasses:surfacePasses.watercolour,
     watercolourMarks:watercolourMarks.length});
   deposit.nativeStats=()=>({...surfacePasses,darkGuard:{...darkGuard}});
+  deposit.oilV2Stats=()=>rendererVersion===2?{...oilV2Stats}:null;
   return deposit;
 }

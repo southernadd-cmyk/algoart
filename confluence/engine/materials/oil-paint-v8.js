@@ -628,7 +628,34 @@ A.renderOilPaintV8=function(target,settings,scale=1,reveal=false,options={}){
    A.oilPaintV4ETest.resetV8ToothSlot('cpu');
    const opts={phiFraming:A.phiFramingEnabled===true,maxRegions:28};
    const capture=options.sourceCapture||A.captureCompositionV5(settings,opts);
-   const plan=A.planCompositionV5FromSource(capture,settings,opts);
+   const plan=A.planCompositionV5FromSource(options.planCapture||capture,settings,opts);
+   // Confluence renderer v2 plans from committed historical geometry, but
+   // actual source brushwork below remains restricted to the current turn.
+   // V1/solo behaviour is unchanged when planCapture is absent.
+   if(options.planCapture && !plan.connectedFields.length &&
+      Array.isArray(options.v2FallbackFields))
+     plan.connectedFields=options.v2FallbackFields;
+   const semanticFieldCount=plan.connectedFields.length;
+   const newV2Keys=[];
+   if(options.planCapture && options.v2Painted instanceof Set){
+     const key=f=>f.guideIds?.length
+       ?'field|'+[...f.guideIds].sort().join('|')
+       :'field|'+f.id;
+     plan.connectedFields=plan.connectedFields.filter(f=>{
+       const k=key(f);
+       if(options.v2Painted.has(k)||newV2Keys.includes(k))return false;
+       newV2Keys.push(k);return true;
+     });
+     plan.territories=plan.territories.filter(t=>{
+       if(t.role!=='painted')return true;
+       const k='territory|'+(t.guideId||t.id);
+       if(options.v2Painted.has(k)||newV2Keys.includes(k))return false;
+       newV2Keys.push(k);return true;
+     });
+     stats.v2PlannedFields=semanticFieldCount;
+     stats.v2NewFields=plan.connectedFields.length;
+     stats.v2NewTerritories=newV2Keys.filter(k=>k.startsWith('territory|')).length;
+   }
    stats.planMs=performance.now()-started;
    const w=Math.round(plan.width*scale),h=Math.round(plan.height*scale);
    canvas.width=Math.max(1,w);canvas.height=Math.max(1,h);
@@ -686,7 +713,7 @@ A.renderOilPaintV8=function(target,settings,scale=1,reveal=false,options={}){
     checkpoint('oil-v7-field-'+area.id);
    }
    stats.territoryStrokes=0;stats.paintedTerritories=0;stats.regionStrokes=0;
-   if(!plan.connectedFields.length){
+   if(!semanticFieldCount){
     for(const original of plan.territories||[]){
      if(original.role!=='painted')continue;
      const cell={...original,rgb:model.mapRGB(original.rgb)};
@@ -738,6 +765,9 @@ A.renderOilPaintV8=function(target,settings,scale=1,reveal=false,options={}){
     A.W=plan.width;A.H=plan.height;A.geometryOverlay(pig,settings,capture.meta);pig.restore();
    }
    Object.assign(stats,history.stats());
+   // Commit deduplication only after the native paint pass succeeded.
+   if(options.planCapture && options.v2Painted instanceof Set)
+     for(const key of newV2Keys)options.v2Painted.add(key);
    return {...capture.meta,version:'oil-paint-v8',material:'oil',options:{...V8},plan,work:stats,
     pigment:{model:model.name,...model.stats}};
   },target,'oil-paint-v8');

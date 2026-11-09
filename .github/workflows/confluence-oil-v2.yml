@@ -1,0 +1,40 @@
+name: Confluence Oil renderer v2 preview
+on:
+  push:
+    branches:
+      - test/confluence-oil-renderer-v2-20261109
+    paths:
+      - 'confluence/**'
+      - 'tests/confluence-oil-v2*.mjs'
+      - '.github/workflows/confluence-oil-v2.yml'
+  pull_request:
+    paths:
+      - 'confluence/**'
+      - 'tests/confluence-oil-v2*.mjs'
+      - '.github/workflows/confluence-oil-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oil-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Validate renderer pinning and semantic geometry
+        run: node --test tests/confluence-oil-v2.test.mjs
+      - name: Verify native oil filled areas and legacy link compatibility
+        run: node tests/confluence-oil-v2-browser.mjs
+      - name: Publish visual evidence for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: confluence-oil-v2-preview
+          path: confluence-oil-v2-preview/*.png
+          retention-days: 7
+          if-no-files-found: warn
