@@ -24,7 +24,8 @@ const thicknessProfiles={
   tissue:{ink:.018,pigment:.028,amplify:2.3,roughness:.94,painted:true,opacity:.84},
   watercolour:{ink:.012,pigment:.035,amplify:3,roughness:.97,painted:true,opacity:.87},
   oil:{ink:.16,pigment:.23,amplify:3.8,roughness:.42,painted:true,opacity:1},
-  action:{ink:.15,pigment:.20,amplify:3.2,roughness:.51,painted:true,opacity:1}
+  action:{ink:.15,pigment:.20,amplify:3.2,roughness:.51,painted:true,opacity:1},
+  confluence:{ink:.045,pigment:.05,amplify:2.4,roughness:.83,painted:true,opacity:1}
 };
 async function getImage(img,quality){
   const cap=quality==='mobile'?480:quality==='vr'?600:850;
@@ -359,7 +360,10 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
     };
     img.src=sources[index++];
   });
-  const lines=vectorForStudy(study);
+  // A Confluence URL encodes three systems; it cannot be traced by the solo
+  // SVG generator. Trace only the exact archived shared-canvas pigment.
+  const lines=study.material?.type==='confluence'
+    ? Promise.resolve(null) : vectorForStudy(study);
   let pigmentCount=0,strokeCount=0,loaded=0,removed=false;
   const type=study.material?.type||'marker';
   function showIfReady(){
@@ -384,7 +388,7 @@ export function createPortraitSculpture({scene,study,placement,quality,labelText
     // plastic when the finished material only contains pigment elsewhere.
     const reference=await paints;
     if(pivot.userData.galleryDisposed)return;
-    try {strokeCount=buildPathReliefs(vector,study,quality,core,onArtworkMesh,materials,reference);}
+    try {strokeCount=vector?buildPathReliefs(vector,study,quality,core,onArtworkMesh,materials,reference):0;}
     catch(e){console.warn('Vector relief failed',study.seed,e);}
     showIfReady();
   }).catch(err=>{console.warn('Source vector unavailable',study.seed,err);});
