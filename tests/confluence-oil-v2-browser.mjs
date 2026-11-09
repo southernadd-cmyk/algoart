@@ -36,7 +36,7 @@ const baseline={
   totalTurns:21,
   artists:[artist(1,'organic','warm','oil'),
     artist(2,'spiral','spectrum','oil'),
-    artist(3,'constructed','earth','oil')]
+    artist(3,'geometric','earth','oil')]
 };
 let browser;
 try{
@@ -61,6 +61,10 @@ try{
       data:c.toDataURL('image/png').length};
   });
   console.log('OIL_V2_PAINTED_FIELDS '+JSON.stringify(result));
+  // Publish a screenshot even if a later coverage assertion fails, so the
+  // review can inspect what the engine actually painted.
+  await mkdir('confluence-oil-v2-preview',{recursive:true});
+  await page.locator('#shared').screenshot({path:'confluence-oil-v2-preview/v2-all-oil-landscape.png'});
   assert.deepEqual(errors,[],'oil-v2 JavaScript errors: '+errors.join('; '));
   assert.equal(result.width,1400);
   assert.equal(result.height,1000);
@@ -68,8 +72,6 @@ try{
   assert(result.stats?.turns>=4,'v2 did not process oil artists: '+JSON.stringify(result));
   assert(result.stats?.newFields>0,'v2 produced no filled connected oil fields: '+JSON.stringify(result));
   assert(result.stats?.eligibleGroups>=2,'v2 never accumulated distinct real guide groups');
-  await mkdir('confluence-oil-v2-preview',{recursive:true});
-  await page.locator('#shared').screenshot({path:'confluence-oil-v2-preview/v2-all-oil-landscape.png'});
   // Restoration owns the version: an older saved link with no v2 flag must
   // remain on v1, even when somebody appends ?cv=2 to its URL.
   errors.length=0;

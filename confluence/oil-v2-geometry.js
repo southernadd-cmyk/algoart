@@ -95,7 +95,7 @@ function semanticGuide(groups,system,sheet){
     }
     return {type:'spiral',points:points.slice(0,380)};
   }
-  if(system==='constructed'){
+  if(system==='geometric'){
     const items=[];
     for(const group of groups){
       const {box,centre:p}=group;
