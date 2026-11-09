@@ -399,7 +399,7 @@ def self_test():
     assets, edition, textures = source_files()
     assert len(assets) == 50 and len(edition["entries"]) == 16
     assert len(textures["images"]) == 16
-    assert {a[2] for a in assets} == set(EXPECTED)
+    assert {a[2] for a in assets} == {"original", "texture", "cover", "sculptures"}
     for source, mime, *_ in assets:
         validate_source(source, mime, (SOURCE / source).read_bytes())
     print("SELF-TEST PASS: 50 exact sources, 16 images and 32 textures, no private archive access")
