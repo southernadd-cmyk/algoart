@@ -35,9 +35,16 @@ try {
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   for(let i=0;i<4;i++){
+    // A sparse source engine or unexpectedly heavy native paint combination
+    // must not prevent the whole daily gallery reaching publication.
+    // Each fallback has a deterministic, separately bookmarkable seed.
+    let accepted=false;
+    for(let attempt=0;attempt<3;attempt++){
+    try{
     errors.length=0;
     const orientation=formats[i];
-    const seed='CFL-'+day.replaceAll('-','')+'-'+String(i+1).padStart(2,'0');
+    const seed='CFL-'+day.replaceAll('-','')+'-'+String(i+1).padStart(2,'0')+
+      (attempt?'-A'+attempt:'');
     const artists=makeGoldenRoster(seed,{systems,materials,
       palettes:Object.keys(palettes),defaultSettings});
     const s={
@@ -90,6 +97,14 @@ try {
       copy:{altText},platforms:{}
     });
     console.log('Confluence '+id+': '+orientation+' / '+artists.map(a=>a.system+':'+a.material+':'+a.palette).join(', '));
+    accepted=true;
+    break;
+    }catch(error){
+      console.warn('Confluence study '+(i+1)+' candidate '+(attempt+1)+'/3 failed:',String(error));
+      if(attempt===2)throw error;
+    }
+    }
+    if(!accepted)throw Error('Confluence study '+(i+1)+' has no valid rendered candidate.');
   }
 }finally {await browser.close();}
 if(artwork.length!==4||new Set(artwork.map(a=>a.seed)).size!==4||
