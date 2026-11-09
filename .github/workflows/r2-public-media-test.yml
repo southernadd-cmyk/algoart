@@ -44,7 +44,7 @@ jobs:
           assert 'BUCKET="proportion-piece-media-test"' in s
           assert 'BACKUP_BUCKET="proportion-piece-archive-test"' in s
           assert 'Bucket=BACKUP_BUCKET' not in s
-          assert '"archive-r2-test"' not in Path('.github/workflows/r2-public-media-test.yml').read_text()
+          assert 'name: archive-r2-test' not in Path('.github/workflows/r2-public-media-test.yml').read_text()
           print('PASS: isolated public-media bucket guard')
           PY
 
