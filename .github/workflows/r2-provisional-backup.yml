@@ -1,0 +1,77 @@
+name: Release A — provisional off-GitHub snapshot and restore
+
+# One-shot test only. No schedule, no production branch, no publishing changes.
+# Creates an immutable private R2 copy of tracked Git HEAD files and tests
+# byte-perfect restoration; excludes external GitHub Release assets and KV.
+on:
+  push:
+    branches:
+      - plan/archive-storage-foundation-20261109
+    paths:
+      - .github/workflows/r2-provisional-backup.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proportion-piece-release-a-provisional-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot-and-restore:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/plan/archive-storage-foundation-20261109' && github.event.head_commit.message == 'Run provisional archive backup and restore 2026-11-09' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    environment: archive-r2-test
+    steps:
+      - name: Isolated test code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Read-only published repository snapshot
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live-snapshot
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Install runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify script syntax and archive tools
+        run: |
+          python -m py_compile automation/r2-provisional-backup.py
+          python -m py_compile automation/r2-edition-restore-test.py
+          python -m pip install --disable-pip-version-check 'boto3>=1.34,<2' 'Pillow>=10,<13'
+
+      - name: Make immutable R2 snapshot, download, restore and verify every tracked file
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET || vars.R2_BUCKET || 'proportion-piece-archive-test' }}
+          R2_BACKUP_REPORT_DIR: ${{ runner.temp }}/release-a-provisional-backup-report
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: python automation/r2-provisional-backup.py
+
+      - name: Retain audit evidence only; archive persists privately in R2
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-a-provisional-recovery-report-${{ github.run_id }}
+          path: ${{ runner.temp }}/release-a-provisional-backup-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Explain backup status clearly
+        if: always()
+        run: |
+          echo '### Provisional repository snapshot and full restore test' >> "$GITHUB_STEP_SUMMARY"
+          echo 'R2 private test bucket; snapshot object retained if upload succeeds.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Source is a read-only, commit-pinned Git main checkout. Never changes production.' >> "$GITHUB_STEP_SUMMARY"
+          echo '**Not yet final independent backup:** Git history, GitHub Release media, KV, and separate-provider copies remain outstanding.' >> "$GITHUB_STEP_SUMMARY"
