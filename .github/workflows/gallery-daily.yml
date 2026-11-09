@@ -370,7 +370,7 @@ jobs:
           # Require the established baseline; do not reject additional material batches.
           if [[ "$DAY" > "2026-11-08" ]]; then
             test "$COUNT" -eq 16
-            DAY="$DAY" node --input-type=module -e "import fs from 'node:fs';const q=JSON.parse(fs.readFileSync('gallery/'+process.env.DAY+'/meta.json'));const solo=q.entries.filter(e=>/-G\\d{2}$/.test(e.id));const con=q.entries.filter(e=>e.material==='confluence');if(q.entries.length!==16||solo.length!==12||con.length!==4||con.filter(e=>e.orientation==='portrait').length!==2||con.filter(e=>e.orientation==='landscape').length!==2||new Set(q.entries.map(e=>e.seed)).size!==16||q.entries.some(e=>e.rendererVersion!==10)||con.some(e=>!new URL(e.shareUrl).searchParams.has('s')))throw Error('Daily gallery needs 12 distinct V10 solo studies plus 4 linked Confluence studies (2 portrait, 2 landscape)')"
+            DAY="$DAY" node --input-type=module -e "import fs from 'node:fs';const q=JSON.parse(fs.readFileSync('gallery/'+process.env.DAY+'/meta.json'));const solo=q.entries.filter(e=>/-G\d{2}$/.test(e.id));const con=q.entries.filter(e=>e.material==='confluence');if(q.entries.length!==16||solo.length!==12||con.length!==4||con.filter(e=>e.orientation==='portrait').length!==2||con.filter(e=>e.orientation==='landscape').length!==2||new Set(q.entries.map(e=>e.seed)).size!==16||q.entries.some(e=>e.rendererVersion!==10)||con.some(e=>!new URL(e.shareUrl).searchParams.has('s')))throw Error('Daily gallery needs 12 distinct V10 solo studies plus 4 linked Confluence studies (2 portrait, 2 landscape)')"
             test -s "gallery/$DAY/random-edition.json"
           elif [[ "$DAY" > "2026-10-16" ]]; then
             test "$COUNT" -eq 18
