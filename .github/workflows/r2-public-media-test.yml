@@ -5,6 +5,7 @@ name: Release A — public MEDIA-ONLY R2 CORS and WebGL tests
 # This workflow's first launch runs OFFLINE SELF-TESTS ONLY.
 # Real R2 tests require a distinct environment 'archive-media-test' plus
 # an explicit follow-up commit message (no recurring schedule).
+# Real media test authorised after user configured separate environment: 2026-11-09.
 on:
   push:
     branches:
