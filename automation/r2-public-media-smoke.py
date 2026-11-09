@@ -72,9 +72,10 @@ def public_origin():
     hostname=u.hostname.lower()
     if hostname.endswith(".r2.cloudflarestorage.com") or hostname.endswith(".github.io") or hostname=="r2.dev":
         raise ValueError("Refusing a private S3 endpoint or unrelated public origin")
-    # r2.dev is ONLY for disposable test traffic; a custom domain is allowed too.
-    if not (hostname.endswith(".r2.dev") or hostname.endswith(".r2.cloudflarestorage.com")==False):
-        raise ValueError("Invalid media test URL hostname")
+    # Use only disposable r2.dev for this test; production custom-domain checks
+    # are a separate, later release gate.
+    if not hostname.endswith(".r2.dev"):
+        raise ValueError("Test URL must be the media-only r2.dev development URL")
     if "proportion-piece-archive-test" in hostname:
         raise ValueError("Never use the private backup bucket as a public origin")
     return "https://"+hostname
