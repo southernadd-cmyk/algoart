@@ -67,8 +67,10 @@ permissions:
 
 concurrency:
   group: pages
-  # A stale queued deployment must not block the newest live and test update.
-  cancel-in-progress: true
+  # Never interrupt Pages while it is syncing files. A cancelled deployment
+  # may leave the previous site live and subsequent releases unable to land.
+  # Queue newer publishes until the current deployment has completed.
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -196,10 +198,8 @@ jobs:
 
   deploy:
     needs: build
-    # Pages can spend longer than the action's default 10-minute timeout
-    # syncing the full historical gallery. Do not declare a successful
-    # build to be a successful deployment before Pages confirms it.
-    timeout-minutes: 35
+    # The Pages action itself enforces a 600000 ms maximum timeout.
+    # Keep build success distinct from confirmed deployment success.
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -208,6 +208,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          timeout: 1800000
 
