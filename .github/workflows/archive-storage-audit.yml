@@ -38,6 +38,12 @@ jobs:
           STORAGE_AUDIT_DIR: ${{ runner.temp }}/archive-storage-inventory
         run: node automation/audit-gallery-storage.cjs
 
+      - name: Inventory public GitHub Release assets and legacy references
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STORAGE_AUDIT_DIR: ${{ runner.temp }}/archive-storage-inventory
+        run: node automation/audit-release-assets.cjs
+
       - name: Report audit summary
         if: always()
         shell: bash
