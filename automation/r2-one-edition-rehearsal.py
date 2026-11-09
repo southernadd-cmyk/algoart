@@ -265,15 +265,25 @@ GALLERY_JS = r"""async ({entries,assets}) => {
       throw Error('Historical public image/link mismatch '+item.id);
     const target = sources.get(item.imageFile);
     if (!target) throw Error('Missing staged R2 JPEG '+item.id);
-    img.crossOrigin = 'anonymous';
-    img.src = target.url; // DOM-only. Never writes the published page.
-    await img.decode();
+    // Firefox cancels decode() if an already-loading lazy <img> has both
+    // crossOrigin and src changed; decode a fresh eager element before swapping.
+    const replacement = new Image();
+    for (const attr of img.attributes)
+      if (!['src','srcset','crossorigin','loading'].includes(attr.name.toLowerCase()))
+        replacement.setAttribute(attr.name, attr.value);
+    replacement.crossOrigin = 'anonymous';
+    replacement.loading = 'eager';
+    replacement.src = target.url; // Only the ephemeral browser DOM changes.
+    try { await replacement.decode(); }
+    catch(e) { throw Error('R2 gallery JPEG decode '+item.id+' '+target.sourcePath+': '+e.message); }
     const portrait = item.orientation === 'portrait';
-    if (img.naturalWidth !== (portrait ? 1000 : 1400) ||
-        img.naturalHeight !== (portrait ? 1400 : 1000))
+    if (replacement.naturalWidth !== (portrait ? 1000 : 1400) ||
+        replacement.naturalHeight !== (portrait ? 1400 : 1000))
       throw Error('Replaced image has incorrect geometry '+item.id);
+    img.replaceWith(replacement);
     result.push({id:item.id,legacySource:saved,legacyLink:remix.href,
-                 newImageOrigin:new URL(img.src).origin,width:img.naturalWidth,height:img.naturalHeight});
+                 newImageOrigin:new URL(replacement.src).origin,
+                 width:replacement.naturalWidth,height:replacement.naturalHeight});
   }
   return result;
 }"""
@@ -288,7 +298,8 @@ GPU_JS = r"""async assets => {
     const image=new Image();
     image.crossOrigin='anonymous';
     image.src=item.url;
-    await image.decode();
+    try { await image.decode(); }
+    catch(e) { throw Error('R2 WebGL texture decode '+item.sourcePath+': '+e.message); }
     if(image.naturalWidth<100||image.naturalHeight<100)
       throw Error('Failed decode '+item.sourcePath);
     const t=gl.createTexture();
