@@ -3,6 +3,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { TIME_ZONE } from './config.mjs';
 import { FIRST_CONFLUENCE_DATE, confluencePairCount, validateRandomGalleryEdition } from './confluence-edition.mjs';
+import { systems as confluenceSystems } from '../confluence/collab.js';
 
 const SITE_ORIGIN = 'https://southernadd-cmyk.github.io';
 const SITE_PATH = '/algoart';
@@ -54,7 +55,12 @@ function slugText(value = '') {
 
 function materialLabel(item) { return item.material==='confluence'?'Three procedural artists':item.material==='action'?'Action Painting':item.material==='oil'?'Oil Paint':item.material==='watercolour'?'Watercolour':item.material==='watercolor'?'Tissue & Graphite':'Marker'; }
 
+const confluenceNames=new Map(confluenceSystems.map(system=>[system.id,system.name]));
 function artworkTitle(item, index) {
+  if(item.material==='confluence'){
+    const names=(item.artists||[]).map(a=>confluenceNames.get(a.system)||a.system).filter(Boolean);
+    return names.length===3?names.join(' · '):'Confluence piece';
+  }
   return `${item.series} — ${item.material==='action'?'Action Painting ':item.material==='oil'?'Oil Paint ':item.material==='watercolour'?'Watercolour ':item.material==='watercolor'?'Tissue & Graphite ':''}Study ${String(index + 1).padStart(2, '0')}`;
 }
 
@@ -83,13 +89,13 @@ function artworkCard(item, index) {
       '<li>'+escapeHtml(a.system)+' · '+escapeHtml(a.material)+' · '+escapeHtml(a.palette)+'</li>').join('');
     return `
     <article id="${escapeHtml(item.id)}" class="art-card" data-orientation="${portrait?'portrait':'landscape'}" data-material="confluence">
-      <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open this Confluence shared drawing">
+      <a class="art-image-link" href="${escapeHtml(item.shareUrl)}" aria-label="Open ${escapeHtml(artworkTitle(item,index))} in Confluence">
         <img src="${escapeHtml(item.imageFile)}" width="${portrait?1000:1400}" height="${portrait?1400:1000}" loading="lazy" decoding="async" alt="${escapeHtml(artworkDescription(item))}">
       </a>
       <div class="art-info">
         <div class="art-number">${String(index+1).padStart(2,'0')}</div>
         <div>
-          <h3>Three procedural artists</h3>
+          <h3>${escapeHtml(artworkTitle(item,index))}</h3>
           <dl>
             <div><dt>Seed</dt><dd>${escapeHtml(item.seed)}</dd></div>
             <div><dt>Format</dt><dd>${portrait?'Portrait · 1000 × 1400':'Landscape · 1400 × 1000'}</dd></div>
