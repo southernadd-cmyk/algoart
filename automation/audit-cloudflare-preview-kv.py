@@ -75,6 +75,8 @@ def main():
         raise ValueError("KV key enumeration exceeded 100 pages")
     if len({r["name"] for r in key_rows})!=len(key_rows):
         raise ValueError("Duplicate KV key in pagination")
+    if len(key_rows)>5000:
+        raise ValueError("KV preview enumeration exceeds 5,000 keys; reduce audit scope before reading values")
     count=0
     size=0
     anonymous=[]
