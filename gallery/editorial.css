@@ -29,7 +29,7 @@ main{max-width:1350px;padding:0 clamp(20px,4vw,65px)}
 .art-image-link:hover img{transform:rotate(-.35deg)}
 .art-info{display:block;min-height:0}
 .art-info>div:last-child{padding:10px 0 0!important}
-.art-info h2{font:italic 14px/1.4 Georgia,serif!important;letter-spacing:0!important;margin:0 0 4px}
+.art-info :is(h2,h3){font:italic 14px/1.4 Georgia,serif!important;letter-spacing:0!important;margin:0 0 4px}
 .art-info p{display:none}
 .art-number{display:none}
 .art-info dl{border:0;display:block;margin:4px 0 8px}
@@ -54,7 +54,7 @@ footer a:hover{color:#b65368}
 @media(max-width:780px){.site-head{padding:0 18px}.site-head .brand{font-size:24px}.site-head nav{gap:12px}.site-head nav a{font-size:12px!important}main{padding:0 18px}.grid,.day-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:24px 10px}.art-card:nth-child(n),.day-card:nth-child(n){grid-column:span 4}.art-card:nth-child(5n+1),.day-card:nth-child(5n+1){grid-column:span 5}.art-card:nth-child(5n+2),.day-card:nth-child(5n+2){grid-column:span 3}.hero h1{font-size:30px}.art-info h2{font-size:13px!important}footer{margin:0 18px}}
 
 /* Gallery headings use the same hand-drawn marker lettering as ALGO/ART. */
-.hero h1,.day-card h2,.art-info h2,.about h2{
+.hero h1,.day-card h2,.art-info :is(h2,h3),.about h2,.confluence-edition h2{
   font-family:'AlgoArt Marker',monospace!important;
   font-style:normal!important;
   font-weight:400!important;
@@ -91,3 +91,9 @@ footer{font-family:var(--editorial-body-font);font-size:13px;line-height:1.5}
 .hero .visit-day-link a{display:inline-block;font:16px Georgia,serif;color:var(--ink);text-decoration:underline;text-underline-offset:5px}
 .hero .visit-day-link a:focus-visible{outline:3px solid #344d42;outline-offset:4px}
 @media(max-width:720px){.visit-band>a{grid-template-columns:1fr;gap:19px}.visit-band .visit-copy p{margin-bottom:15px}.visit-band .visit-copy h1{font-size:30px}}
+
+.confluence-edition{border-top:1px solid var(--line);padding-top:20px}
+.confluence-edition h2{font-size:clamp(18px,2vw,24px);margin:0}
+.confluence-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.96fr)}
+.confluence-grid .art-card:nth-child(n){grid-column:auto;align-self:start}
+@media(max-width:600px){.confluence-grid{grid-template-columns:minmax(0,1fr)}}

@@ -22,6 +22,7 @@ function checkState(data) {
   return data && data.v === 1 && typeof data.seed === 'string' && data.seed.length > 0 && data.seed.length <= 64 &&
     ['portrait','landscape'].includes(data.orientation) && validColor(data.paper) &&
     Number.isFinite(data.grain) && data.grain>=0 && data.grain<=100 &&
+    (data.edgeMargin === undefined || data.edgeMargin === true) &&
     (data.response === undefined || ['weave','echo','space'].includes(data.response)) &&
     Number.isFinite(data.strength) && data.strength>=0 && data.strength<=100 &&
     Number.isFinite(data.collaborationPull) && data.collaborationPull>=0 && data.collaborationPull<=100 &&
@@ -71,7 +72,7 @@ export function restoreSharedState(params, artists, inputs, catalog) {
   });
   document.getElementById('grain-value').value=inputs.grain.value;
   document.getElementById('strength-value').value=inputs.strength.value+'%';
-  return true;
+  return data;
 }
 function studyURL(snapshot) {
   const url=new URL('./',window.location.href);

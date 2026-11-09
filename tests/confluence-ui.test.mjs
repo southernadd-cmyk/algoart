@@ -130,7 +130,8 @@ test('Confluence public navigation and approved solo-editor handoff are both ava
  const about=read('../about/index.html');
  assert.match(about,/Three procedural artists/);
  assert.match(about,/not people working together online/);
- assert.match(about,/not automatically collected in the daily gallery/);
+ assert.match(about,/The project generates Confluence studies for the <a href="\.\.\/gallery\/">daily gallery<\/a>/);
+ assert.match(about,/corresponding floor of the <a href="\.\.\/gallery\/visit\/">exhibition tower<\/a>/);
 });
 
 test('Solo-to-Confluence importer preserves full-state settings for all five current materials',()=>{

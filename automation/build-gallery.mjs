@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { TIME_ZONE } from './config.mjs';
+import { FIRST_CONFLUENCE_DATE, confluencePairCount, validateRandomGalleryEdition } from './confluence-edition.mjs';
 
 const SITE_ORIGIN = 'https://southernadd-cmyk.github.io';
 const SITE_PATH = '/algoart';
@@ -78,7 +79,6 @@ function artworkDescription(item) {
 function artworkCard(item, index) {
   if(item.material==='confluence'){
     const portrait=item.orientation==='portrait';
-    const title='Confluence — Three Artists · Study '+String(index+1).padStart(2,'0');
     const voices=(item.artists||[]).map(a=>
       '<li>'+escapeHtml(a.system)+' · '+escapeHtml(a.material)+' · '+escapeHtml(a.palette)+'</li>').join('');
     return `
@@ -89,7 +89,7 @@ function artworkCard(item, index) {
       <div class="art-info">
         <div class="art-number">${String(index+1).padStart(2,'0')}</div>
         <div>
-          <h2>Confluence · Three procedural artists</h2>
+          <h3>Three procedural artists</h3>
           <dl>
             <div><dt>Seed</dt><dd>${escapeHtml(item.seed)}</dd></div>
             <div><dt>Format</dt><dd>${portrait?'Portrait · 1000 × 1400':'Landscape · 1400 × 1000'}</dd></div>
@@ -133,6 +133,8 @@ function dayPage(queue) {
   const date = queue.date;
   const pretty = displayDate(date);
   const entries = queue.entries;
+  const confluence = entries.filter(item => item.material === 'confluence');
+  const solo = entries.filter(item => item.material !== 'confluence');
   const series = [...new Set(entries.map(e => e.series))];
   const title = `PROPORTION PIECE Daily Gallery — ${pretty} | Golden Ratio Generative Art`;
   const description = `${entries.length} drawings made on ${pretty}. Different materials, different compositions, and room to make each one your own.`;
@@ -187,7 +189,7 @@ function dayPage(queue) {
 <link rel="canonical" href="${canonical}">
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="stylesheet" href="../gallery.css?v=20261013-site-quality">
-<link rel="stylesheet" href="../editorial.css?v=20261017-release">\n<link rel="stylesheet" href="../../css/nav-lettering.css?v=14-confluence-navigation">\n<script defer src="../../js/nav-lettering.js?v=3-uppercase-marker"></script>
+<link rel="stylesheet" href="../editorial.css?v=${confluence.length ? '20261109-confluence-section' : '20261017-release'}">\n<link rel="stylesheet" href="../../css/nav-lettering.css?v=14-confluence-navigation">\n<script defer src="../../js/nav-lettering.js?v=3-uppercase-marker"></script>
 <link rel="alternate" type="application/rss+xml" title="PROPORTION PIECE Daily Gallery" href="../feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="PROPORTION PIECE">
@@ -219,8 +221,13 @@ function dayPage(queue) {
     <div class="hero-meta"><span>${entries.length} drawings</span><span>Different materials</span><span>Each one can be revisited</span></div>
   </section>
   <section class="grid" aria-label="Artwork generated on ${escapeHtml(pretty)}">
-    ${entries.map(artworkCard).join('\n')}
-  </section>
+    ${solo.map(artworkCard).join('\n')}
+  </section>${confluence.length ? `
+  <section class="confluence-edition" aria-labelledby="confluence-heading">
+    <h2 id="confluence-heading">Confluence</h2>
+    <div class="grid confluence-grid">${confluence.map((item, index) => artworkCard(item, solo.length + index)).join('\n')}
+    </div>
+  </section>` : ''}
   <section class="about">
     <span class="section-no">${String(entries.length + 1).padStart(2, '0')}</span>
     <div>
@@ -378,12 +385,13 @@ const galleryRoot = path.resolve('gallery');
 const dayDir = path.join(galleryRoot, day);
 await fs.mkdir(dayDir, { recursive: true });
 
-// From 9 November the displayed gallery consists of exactly twelve
-// independently selected works. Social posts still have exact short ?art=
-// links, but their additional images live in a separate archive index and
-// must NEVER modify the displayed gallery or its 3D floor.
-const randomDate=day>='2026-11-09';
+// From 9 November the displayed gallery holds twelve solo works and the
+// day's Confluence studies. Additional social works keep their short ?art=
+// links in a separate index without modifying the gallery or its 3D floor.
+const randomDate=day>=FIRST_CONFLUENCE_DATE;
 const randomMarker=path.join(dayDir,'random-edition.json');
+const confluenceCount=2*confluencePairCount(day);
+const randomEdition='random-12-confluence-'+confluenceCount;
 const hasRandomEdition=randomDate && await fs.access(randomMarker).then(()=>true,()=>false);
 if(randomDate && galleryMaterial!=='random' && hasRandomEdition){
   const socialPath=path.join(dayDir,'social-meta.json');
@@ -409,23 +417,12 @@ if(randomDate && galleryMaterial!=='random' && hasRandomEdition){
   social.entries=[...byId.values()].sort((a,b)=>a.id.localeCompare(b.id));
   await fs.writeFile(socialPath,JSON.stringify(social,null,2)+'\n');
   console.log('Archived '+queue.entries.length+
-    ' social-only works; twelve-study daily gallery and 3D floor unchanged.');
+    ' social-only works; daily gallery and 3D floor unchanged.');
   process.exit(0);
 }
 if(galleryMaterial==='random'){
-  const solo=queue.entries.filter(e=>/-G\d{2}$/.test(e.id));
-  const confluence=queue.entries.filter(e=>/-C\d{2}$/.test(e.id));
-  if(!randomDate||queue.edition!=='random-12-confluence-4'||
-     queue.entries.length!==16||solo.length!==12||confluence.length!==4)
-    throw Error('Daily gallery must contain 12 solo and 4 Confluence studies after 8 Nov');
-  if(queue.entries.some(e=>e.rendererVersion!==10 ||
-     (e.material==='confluence'
-       ? !new URL(e.shareUrl).searchParams.has('s')
-       : new URL(e.shareUrl).searchParams.get('v')!=='10')))
-    throw Error('New solo and Confluence studies must use their recorded current renderers');
-  if(confluence.filter(e=>e.orientation==='portrait').length!==2||
-     confluence.filter(e=>e.orientation==='landscape').length!==2)
-    throw Error('Confluence archive needs two portrait and two landscape studies');
+  if(queue.edition!==randomEdition)throw Error('Expected gallery edition '+randomEdition);
+  validateRandomGalleryEdition(day,queue.entries);
 }
 
 // Preserve curated/repaired studies that are already in the day's gallery.
@@ -505,6 +502,7 @@ for (const entry of existingEntries) {
 }
 
 queue.entries = [...queue.entries, ...preservedEntries];
+if(galleryMaterial==='random')validateRandomGalleryEdition(day,queue.entries);
 // Always display the existing landscape set first, then the five portraits.
 // Otherwise each publishing slot flips the gallery order as its own queue
 // becomes the input, producing needless commits and changing the cover.
@@ -634,7 +632,7 @@ await fs.writeFile(path.resolve('robots.txt'), `User-agent: *\nAllow: /\n\nSitem
 
 if(galleryMaterial==='random'){
   await fs.writeFile(randomMarker,JSON.stringify({
-    edition:'random-12-confluence-4',date:day,count:16,solo:12,confluence:4,rendererVersion:10
+    edition:randomEdition,date:day,count:queue.entries.length,solo:12,confluence:confluenceCount,rendererVersion:10
   },null,2)+'\n');
 }
 console.log(`Built PROPORTION PIECE daily gallery for ${day} with ${queue.entries.length} artworks.`);

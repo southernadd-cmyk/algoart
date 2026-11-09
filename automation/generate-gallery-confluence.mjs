@@ -1,11 +1,11 @@
-// Four deterministic shared-canvas studies: two portrait, two landscape.
-// Generated alongside (not instead of) the twelve ordinary daily studies.
+// A deterministic Confluence pair alongside the twelve solo daily studies.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {chromium} from 'playwright';
 import {systems, palettes} from '../confluence/collab.js';
 import {defaultSettings} from '../confluence/artist-controls.js';
 import {makeGoldenRoster} from '../confluence/golden-roster.js';
+import {FIRST_CONFLUENCE_DATE, confluencePairCount, validateRandomGalleryEdition} from './confluence-edition.mjs';
 
 const SITE='https://southernadd-cmyk.github.io/algoart';
 const LOCAL=process.env.ALGOART_LOCAL_URL || 'http://127.0.0.1:4173/';
@@ -15,7 +15,7 @@ const day=process.env.SOCIAL_DATE || (() => {
   }).formatToParts(new Date()).map(({type,value})=>[type,value]));
   return fields.year+'-'+fields.month+'-'+fields.day;
 })();
-if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||day<'2026-11-09')
+if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||day<FIRST_CONFLUENCE_DATE)
   throw Error('Confluence daily editions start 2026-11-09; historical galleries are immutable.');
 
 const out=path.resolve('social-output',day,'gallery');
@@ -26,7 +26,7 @@ if(!Array.isArray(queue.entries) || queue.entries.length!==12 ||
   throw Error('Confluence must append to exactly 12 validated solo gallery studies.');
 
 const materials=['marker','tissue','watercolour','oil','action'];
-const formats=['portrait','landscape','portrait','landscape'];
+const count=2*confluencePairCount(day);
 const encoded=record=>Buffer.from(JSON.stringify(record),'utf8').toString('base64url');
 const browser=await chromium.launch({headless:true,args:['--disable-dev-shm-usage']});
 const artwork=[];
@@ -34,7 +34,7 @@ try {
   const page=await browser.newPage({viewport:{width:1600,height:1200},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  for(let i=0;i<4;i++){
+  for(let i=0;i<count;i++){
     // A sparse source engine or unexpectedly heavy native paint combination
     // must not prevent the whole daily gallery reaching publication.
     // Each fallback has a deterministic, separately bookmarkable seed.
@@ -42,13 +42,14 @@ try {
     for(let attempt=0;attempt<3;attempt++){
     try{
     errors.length=0;
-    const orientation=formats[i];
+    const orientation=i%2===0?'portrait':'landscape';
     const seed='CFL-'+day.replaceAll('-','')+'-'+String(i+1).padStart(2,'0')+
       (attempt?'-A'+attempt:'');
     const artists=makeGoldenRoster(seed,{systems,materials,
       palettes:Object.keys(palettes),defaultSettings});
     const s={
       v:1,seed,orientation,paper:'#f5f0e6',grain:11,
+      ...(day>FIRST_CONFLUENCE_DATE?{edgeMargin:true}:{}),
       strength:76,collaborationPull:100,leadIndex:0,totalTurns:34,
       artists:artists.map(a=>({
         system:a.system,palette:a.palette,material:a.material,settings:a.settings
@@ -124,10 +125,8 @@ try {
     if(!accepted)throw Error('Confluence study '+(i+1)+' has no valid rendered candidate.');
   }
 }finally {await browser.close();}
-if(artwork.length!==4||new Set(artwork.map(a=>a.seed)).size!==4||
-  formats.some((orientation,i)=>artwork[i].orientation!==orientation))
-  throw Error('Confluence edition must contain four distinct studies, 2 portrait and 2 landscape.');
 queue.entries.push(...artwork);
-queue.edition='random-12-confluence-4';
+validateRandomGalleryEdition(day,queue.entries);
+queue.edition='random-12-confluence-'+count;
 await fs.writeFile(queuePath,JSON.stringify(queue,null,2)+'\n');
-console.log('Daily gallery now contains 12 solo + 4 Confluence studies.');
+console.log('Daily gallery now contains 12 solo + '+count+' Confluence studies.');

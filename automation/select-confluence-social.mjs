@@ -3,18 +3,18 @@
 // Every platform receives the same exact picture and gallery permalink.
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {FIRST_CONFLUENCE_DATE, confluencePairCount, hasConfluencePairs} from './confluence-edition.mjs';
 
 const date=process.env.SOCIAL_DATE;
 const slot=String(process.env.SOCIAL_SLOT);
-if(!/^\d{4}-\d{2}-\d{2}$/.test(date||'') || date<'2026-11-09')
+if(!/^\d{4}-\d{2}-\d{2}$/.test(date||'') || date<FIRST_CONFLUENCE_DATE)
   throw Error('Confluence social publication requires a gallery date from 2026-11-09.');
 if(!['0','2'].includes(slot))
   throw Error('Confluence social publishing only runs at standard morning/evening slots.');
 const orientation=slot==='0'?'portrait':'landscape';
 const meta=JSON.parse(await fs.readFile(path.join('gallery',date,'meta.json'),'utf8'));
 const confluence=meta.entries.filter(e=>e.material==='confluence');
-if(confluence.length!==4||confluence.filter(e=>e.orientation==='portrait').length!==2||
-  confluence.filter(e=>e.orientation==='landscape').length!==2)
+if(!hasConfluencePairs(confluence,confluencePairCount(date)))
   throw Error('Daily Confluence archive is incomplete; refuse to publish an unverified image.');
 const pick=confluence.find(e=>e.orientation===orientation);
 if(!pick||!pick.imageFile||!pick.shareUrl||!Array.isArray(pick.artists)||pick.artists.length!==3)
