@@ -1,0 +1,89 @@
+name: Release A — ACTUAL tower R2 route integration (isolated)
+# One-shot on planning branch. Production pages and JS bundles remain UNMODIFIED.
+on:
+  push:
+    branches:
+      - plan/archive-storage-foundation-20261109
+    paths:
+      - .github/workflows/r2-actual-tower-test.yml
+permissions:
+  contents: read
+concurrency:
+  group: pp-r2-real-tower-route
+  cancel-in-progress: false
+jobs:
+  actual-phi-tower:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/plan/archive-storage-foundation-20261109' && github.event.head_commit.message == 'Run actual phi tower R2 route test 2026-11-09' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    environment:
+      name: archive-media-test
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+      R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+      R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+      R2_MEDIA_PUBLIC_URL: ${{ vars.R2_MEDIA_PUBLIC_URL }}
+      R2_MEDIA_BUCKET: proportion-piece-media-test
+      R2_EDITION_REHEARSAL_MANIFEST: /tmp/pp-actual-tower/manifest.json
+      R2_EDITION_REHEARSAL_REPORT: /tmp/pp-actual-tower/edition-report.json
+      R2_TOWER_INTEGRATION_REPORT: /tmp/pp-actual-tower/actual-phi-tower-report.json
+      AWS_EC2_METADATA_DISABLED: 'true'
+    steps:
+      - name: Checkout isolated tests ONLY
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read-only checkout of 9 Nov 16-work published edition
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live-snapshot
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install exact pinned test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check 'boto3>=1.34,<2' 'requests>=2.31,<3' 'playwright==1.64.0'
+          python -m playwright install --with-deps chromium webkit
+      - name: Verify no live deploy, complete edition and safe exact-key cleanup
+        run: |
+          python -m py_compile automation/r2-one-edition-rehearsal.py automation/test-r2-real-tower-integration.py
+          python automation/r2-one-edition-rehearsal.py self-test
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('automation/r2-one-edition-rehearsal.py').read_text()
+          assert 'BUCKET = "proportion-piece-media-test"' in s
+          assert 'PRIVATE_BUCKET = "proportion-piece-archive-test"' in s
+          assert 'Bucket=PRIVATE_BUCKET' not in s
+          assert 'delete_object(Bucket=BUCKET, Key=key)' in s
+          print('PASS: isolated media-only run, exact manifest-key cleanup')
+          PY
+      - name: Upload 50 disposable 9 Nov edition assets to EXISTING MEDIA bucket
+        run: python automation/r2-one-edition-rehearsal.py stage
+      - name: Load the ACTUAL production phi gallery with R2 HTML/manifest injected IN BROWSER ONLY
+        run: python automation/test-r2-real-tower-integration.py
+      - name: Clean up ONLY the 50 exact test objects, even after any failure
+        if: always()
+        run: python automation/r2-one-edition-rehearsal.py cleanup
+      - name: Retain reports, not confidential source or binary artwork
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: actual-phi-r2-route-test-${{ github.run_id }}
+          path: |
+            /tmp/pp-actual-tower/actual-phi-tower-report.json
+            /tmp/pp-actual-tower/manifest.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Record limits
+        if: always()
+        run: |
+          {
+            echo '### Actual production phi gallery R2 route, in-memory test'
+            echo 'Published GitHub Pages HTML / JS and source/texture manifests are unchanged.'
+            echo 'A browser-only route substitution rewrites 9 Nov artwork src and tower WebP manifest paths.'
+            echo 'Same production tower bundle, texture decode, shader and phi exhibition code loads the R2 images.'
+            echo 'Only 50 disposable media-bucket objects were written and manifest-key cleanup is mandatory.'
+            echo 'No custom-domain CDN cache gate and no Quest 3 hardware validation yet.'
+          } >> "$GITHUB_STEP_SUMMARY"
