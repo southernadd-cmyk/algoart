@@ -1,9 +1,9 @@
-import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-any-sparse-19';
-import {materials, makePainter} from './materials.js?v=confluence-tissue-envelope-21';
+import {systems, palettes, paletteInks, createStudy, makeRun, prepareCanvas} from './collab.js?v=confluence-edge-margin-01';
+import {materials, makePainter} from './materials.js?v=confluence-edge-margin-01';
 import {artistInspector, defaultSettings} from './artist-controls.js?v=studio-06';
 import {turnShares} from './composition.js?v=confluence-rotate-lead-05';
 import {mountDrawer} from './drawer-ui.js?v=confluence-viewport-04';
-import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-rotate-lead-08';
+import {restoreSharedState, bindSharing} from './share-study.js?v=confluence-edge-margin-01';
 import {importLeadFromURL} from './import-lead.js?v=confluence-fit-precedence-03';
 import {makeGoldenRoster} from './golden-roster.js?v=20261108-phi-mix-01';
 
@@ -40,6 +40,7 @@ const state = {frame: 0, playing: false, finishing: false, history: [], turn: 0}
 // current roster can supply. A low-capacity system must not permanently
 // reduce subsequent studies to eight Fibonacci turns.
 let preferredTurns=55;
+let edgeMargin = true;
 
 function syncHint(changed) {
   const status = byId('roster-status');
@@ -318,7 +319,7 @@ function build() {
       collaborationPull: Number(collaborationPull.value)};
     const slots = artists.map(artist => ({...artist, settings: {...artist.settings}}));
     state.study = createStudy(studySeed, slots,
-      {orientation: orientation.value, paper: paper.value, grain: Number(grain.value)},
+      {orientation: orientation.value, paper: paper.value, grain: Number(grain.value), edgeMargin},
       state.settings.collaborationPull, preferredTurns,Number(leadInput.value));
     const selectedTurns = state.study.totalTurns;
     totalTurns.replaceChildren(...state.study.availableTurns.map(count => new Option(count + ' turns', String(count))));
@@ -327,6 +328,7 @@ function build() {
       state.study.availableTurns.at(-1) + ' Fibonacci turns. Step advances one turn at a time.';
     state.snapshot = {
       v: 1, seed: studySeed, orientation: orientation.value,
+      ...(edgeMargin ? {edgeMargin: true} : {}),
       paper: paper.value, grain: Number(grain.value),
       strength: Number(strength.value), collaborationPull: Number(collaborationPull.value),
       leadIndex:Number(leadInput.value),totalTurns: selectedTurns,
@@ -460,6 +462,7 @@ seed.addEventListener('change', () => {
   }
 });
 byId('new-seed').addEventListener('click', () => {
+  edgeMargin = true;
   seed.value = String(crypto.getRandomValues(new Uint32Array(1))[0]);
   seed.dispatchEvent(new Event('change'));
   syncHint(true);
@@ -506,7 +509,11 @@ save.addEventListener('click', () => {
 const inputs = {seed, orientation, paper, grain, strength, collaborationPull, totalTurns,leadIndex:leadInput};
 const params = new URLSearchParams(location.search);
 const restored = restoreSharedState(params, artists, inputs, {systems, palettes, materials});
-if(restored)preferredTurns=Number(totalTurns.value)||55;
+if (restored) {
+  preferredTurns=Number(totalTurns.value)||55;
+  // Earlier bookmarks have no margin field and keep their original geometry.
+  edgeMargin = restored.edgeMargin === true;
+}
 const imported = !restored && importLeadFromURL(params, artists[0],
   {seed, orientation, paper, grain}, {systems, palettes, materials});
 // Fresh studio visits start with a fresh seed. Both direct visits and solo

@@ -1,4 +1,4 @@
-import {artistInk, paint} from './collab.js?v=confluence-self-repel-17';
+import {artistInk, paint} from './collab.js?v=confluence-edge-margin-01';
 import {plannedPoints} from './mark-planner.js?v=confluence-progressive-order-03';
 import {renderNativeDeposit} from './native-material.js?v=confluence-tissue-v8-10';
 import {protectPigmentStack} from './pigment-guard.js?v=dark-stack-01';
@@ -38,6 +38,28 @@ function size(ctx, width, height) {
   ctx.clearRect(0, 0, width, height);
 }
 
+// The placement inset leaves room for native pigment to spread. Taper only
+// the outer wash and stray drops so no material hits a hard paper boundary.
+function makeEdgeMask(sheet) {
+  const {width, height, inset} = sheet;
+  const margin = Math.min(width, height) * .03;
+  const fullOpacity = inset * .65;
+  const mask = layer();
+  size(mask, width, height);
+  for (const [x, y] of [[width, 0], [0, height]]) {
+    const span = x || y;
+    const gradient = mask.createLinearGradient(0, 0, x, y);
+    gradient.addColorStop(margin / span, 'transparent');
+    gradient.addColorStop(fullOpacity / span, '#000');
+    gradient.addColorStop(1 - fullOpacity / span, '#000');
+    gradient.addColorStop(1 - margin / span, 'transparent');
+    mask.fillStyle = gradient;
+    mask.fillRect(0, 0, width, height);
+    mask.globalCompositeOperation = 'destination-in';
+  }
+  return mask.canvas;
+}
+
 // Native full-sheet material coverage feeds the response planner. It records
 // *changes*, not the whole accumulated paint field again each turn.
 function footprintFromSurface(ctx,sensor,previous,sheet){
@@ -59,6 +81,16 @@ function footprintFromSurface(ctx,sensor,previous,sheet){
 
 export function makePainter(output, seed, sheet, {roster=[]} = {}) {
   const A = window.AlgoArt;
+  const edgeMask = sheet.edgeMargin ? makeEdgeMask(sheet) : null;
+  function taperPigment(ctx, x = 0, y = 0) {
+    if (!edgeMask) return;
+    ctx.save();
+    ctx.resetTransform();
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(edgeMask, -x, -y);
+    ctx.restore();
+  }
   let colourSample;
   const colours = new Map();
   const surfacePasses={tissue:0,watercolour:0,oil:0,action:0};
@@ -139,6 +171,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     renderNativeDeposit(tissueTurn,'tissue',newMarks,representative,
       area,sheet.paper,[seed,'tissue-artist',artist.id,'v8-layered'].join('|'),
       sourceRGB,sheet);
+    taperPigment(tissueTurn,area.x,area.y);
     surfacePasses.tissue++;
     // Each native V8 turn has its own complete atmospheric wash. Naively
     // source-over composing those washes multiplies the grey fog by 27.
@@ -184,6 +217,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       representative,bounds,sheet.paper,
       [seed,'all-watercolour-voices','v2s-whole-sheet'].join('|'),sourceRGB,
       sheet);
+    taperPigment(watercolourTurn,bounds.x,bounds.y);
     surfacePasses.watercolour++;
     protectDarkStack(watercolourTurn,bounds,'multiply','watercolour');
     layTurn(watercolourSurface,watercolourTurn,'multiply',bounds);
@@ -244,6 +278,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
     A.renderOilPaintV8(oilTurnSurface.canvas,settings,1,false,{
       masses:true,relief:true,weave:true,amount:.6,
       sourceCapture:capture,transparentSheet:true});
+    taperPigment(oilTurnSurface);
     surfacePasses.oil++;
     layTurn(oilSurface,oilTurnSurface);
   }
@@ -259,6 +294,7 @@ export function makePainter(output, seed, sheet, {roster=[]} = {}) {
       sourceInks:originalInks,transparentSheet:true,append:true,
       passes:1,gesturesPerPass:Math.max(2,Math.min(5,paths.length*2)),
       variant:artist.id+'|turn-'+(++actionTurn)});
+    taperPigment(actionTurnSurface);
     surfacePasses.action++;
     layTurn(actionSurface,actionTurnSurface);
   }

@@ -356,8 +356,10 @@ export function createStudy(seed, slots, paperSettings, collaborationPull = 100,
   const portrait = paperSettings.orientation === 'portrait';
   const width = portrait ? 1000 : 1400;
   const height = portrait ? 1400 : 1000;
+  const edgeMargin = paperSettings.edgeMargin ?? true;
+  const shortSide = Math.min(width, height);
   const sheet = {...paperSettings, width, height, cols: Math.ceil(width / CELL), rows: Math.ceil(height / CELL),
-    border: 16, inset: Math.min(width, height) * .054};
+    border: 16, inset: shortSide * (edgeMargin ? .12 : .054), edgeMargin};
   const anchors = phiAnchors(sheet, window.AlgoArt.hash(seed + '|phi-anchors') >>> 0);
   sheet.constrain = point => pt(clamp(point.x, sheet.inset, width - sheet.inset),
     clamp(point.y, sheet.inset, height - sheet.inset));
