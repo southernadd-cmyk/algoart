@@ -105,6 +105,8 @@ try{
   assert.ok(lab.sourceEvidence.visiblePaths>0,'No original marker-engine SVG stroke was translated');
   assert.ok(lab.methods.every(m=>m.sourceOrigin==='original-engine-recorded'));
   assert.ok(lab.methods.every(m=>m.originalPointCount>0));
+  assert.ok(lab.methods.every(m=>m.fineLinePaths>0),
+    'Fine original source marks must not be discarded by the 3D tube budget');
   await page.locator('#focus').selectOption('0');
   await page.locator('#front').click();
   await page.screenshot({path:'/tmp/sculpture-lab-original-marker-front.png',timeout:60000});
