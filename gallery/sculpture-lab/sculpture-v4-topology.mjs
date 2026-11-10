@@ -153,8 +153,8 @@ function watershed(base,w,h,labels,ink,smoothed,distance,pixels,maxSeeds){
     variation+=(smoothed[i]-interiorMean)**2;
   const deviation=Math.sqrt(variation/Math.max(1,interiorN));
   const compactness=4*Math.PI*base.area/Math.max(1,perimeter**2);
-  const signal=paletteParts.length>=2 || deviation>.085 ||
-    (compactness<.48 && contrast>.06);
+  const signal=paletteParts.length>=2 || (deviation>.135 && compactness<.75) ||
+    (compactness<.48 && contrast>.075);
   for(const c of colSeeds)if(signal)add(c,minGap);
   for(const c of peakSeeds)if(signal)add(c,minGap);
   if(chosen.length<2)return [base];
