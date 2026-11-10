@@ -30,6 +30,7 @@ jobs:
         run: |
           node --check gallery/sculpture-lab/sculpture-rules.mjs
           node --check gallery/sculpture-lab/sculpture-csg.mjs
+          node --check gallery/sculpture-lab/source-echo.mjs
           node --check gallery/sculpture-lab/lab-360.mjs
           node --test tests/sculpture-rules.test.mjs
           node --test tests/sculpture-csg.test.mjs
