@@ -40,10 +40,10 @@ function smoothDensity(ink,w,h){
   }
   return out;
 }
-function paletteOf(pixels,mask,limit=9){
+function paletteOf(pixels,mask,ink,limit=9){
   const bins=new Map(),data=pixels.data;
   for(let i=0;i<mask.length;i++){
-    if(!mask[i])continue;
+    if(!mask[i]||ink[i]<.23)continue;
     const k=i*4,red=data[k],green=data[k+1],blue=data[k+2];
     const key=(red>>5)*64+(green>>5)*8+(blue>>5);
     const v=bins.get(key)||{n:0,r:0,g:0,b:0};
@@ -153,8 +153,9 @@ function watershed(base,w,h,labels,ink,smoothed,distance,pixels,maxSeeds){
     variation+=(smoothed[i]-interiorMean)**2;
   const deviation=Math.sqrt(variation/Math.max(1,interiorN));
   const compactness=4*Math.PI*base.area/Math.max(1,perimeter**2);
-  const signal=paletteParts.length>=2 || (deviation>.135 && compactness<.75) ||
-    (compactness<.48 && contrast>.075);
+  // Soft fringe pixels are not independent colours. Only distinct internal
+  // chroma or significant interior density variation can seed a new mass.
+  const signal=paletteParts.length>=2 || (deviation>.095 && compactness<.87);
   for(const c of colSeeds)if(signal)add(c,minGap);
   for(const c of peakSeeds)if(signal)add(c,minGap);
   if(chosen.length<2)return [base];
@@ -217,7 +218,7 @@ export function segmentPainting(pixels,{
   for(let i=0;i<mask.length;i++)solid[i]=mask[i]?0:-1;
   const minBase=Math.max(2,Math.floor(field.cells/(Math.max(1,maxRegions)*PHI*16)));
   const base=components(solid,w,h,minBase);
-  const palette=paletteOf(pixels,mask,9);
+  const palette=paletteOf(pixels,mask,field.ink,9);
   const labels=nearestPalette(pixels,mask,palette);
   const smoothed=smoothDensity(field.ink,w,h);
   const pieces=[];
