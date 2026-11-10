@@ -86,7 +86,7 @@ export function extractRuleMarks(imageData, settings={}) {
   }
   const sections=[];
   for(const group of groups) {
-    if(group.length<=12){sections.push(group);continue;}
+    if(group.length<=4){sections.push(group);continue;}
     const total=group.length;
     const mx=group.reduce((s,t)=>s+t.x,0)/total;
     const my=group.reduce((s,t)=>s+t.y,0)/total;
@@ -97,7 +97,7 @@ export function extractRuleMarks(imageData, settings={}) {
     const vx=Math.cos(theta),vy=Math.sin(theta);
     const sorted=[...group].sort((a,b)=>
       ((a.x-mx)*vx+(a.y-my)*vy)-((b.x-mx)*vx+(b.y-my)*vy));
-    const parts=Math.ceil(group.length/12),each=Math.ceil(group.length/parts);
+    const parts=Math.ceil(group.length/4),each=Math.ceil(group.length/parts);
     for(let i=0;i<sorted.length;i+=each) sections.push(sorted.slice(i,i+each));
   }
   const marks=[];
@@ -123,14 +123,14 @@ export function extractRuleMarks(imageData, settings={}) {
     const kind=ratio>2.0?'stroke':coverage>.42&&section.length>=3?'field':'spot';
     marks.push({
       x,y,color:rgb(...mean),coverage,kind,angle,
-      span:clamp(major*3.45+.13,.16,.83),
-      breadth:clamp(minor*2.65+.105,.10,.52),
+      span:clamp(major*2.2+.09,.10,.52),
+      breadth:clamp(minor*1.6+.060,.055,.29),
       mass:weight,tiles:section.length
     });
   }
   // Prioritise visually important pigment without rearranging its XY.
   marks.sort((a,b)=>b.mass-a.mass || a.y-b.y || a.x-b.x);
-  const chosen=marks.slice(0,64);
+  const chosen=marks.slice(0,100);
   if(!chosen.length)throw new Error('No distinguishable pigment in source drawing');
   return chosen;
 }
@@ -193,13 +193,13 @@ function markPoints(mark,i,depth) {
   const axis=v3(Math.cos(p.angle),Math.sin(p.angle),0);
   const perp=v3(-Math.sin(p.angle),Math.cos(p.angle),0);
   const front=v3(p.x,p.y,.43*depth);
-  const reach=Math.min(.46,p.span*.48);
+  const reach=Math.min(.25,p.span*.48);
   const before=front.clone().addScaledVector(axis,-reach);
   before.z=.31*depth;
   const after=front.clone().addScaledVector(axis,reach);
   after.z=.27*depth;
   const radial=v3(Math.cos(a),Math.sin(a),0);
-  const bend=.22+Math.min(.15,p.span/PHI/3);
+  const bend=.13+Math.min(.12,p.span/PHI/3);
   const side=after.clone().addScaledVector(perp,Math.sin(a)*bend)
     .addScaledVector(radial,.12);
   side.z=-.08*depth;
@@ -214,8 +214,8 @@ function petal(mark,i,depth,group) {
   const mid=p.front.clone().addScaledVector(p.perp,mark.breadth*.15);
   mid.z=.56*depth;
   const controls=[p.before,mid,p.after,p.side,p.rear,p.tail];
-  const width=clamp(mark.breadth*1.0+.095,.17,.49);
-  const thickness=clamp(width/PHI,.10,.30);
+  const width=clamp(mark.breadth*.85+.045,.08,.24);
+  const thickness=clamp(width/PHI,.06,.18);
   const mesh=sweptSolid(controls,width,thickness,mark.color,'φ-curved petal volume');
   mesh.userData.ruleKind='petal';
   group.add(mesh);
@@ -232,7 +232,7 @@ function ribbon(mark,i,depth,group) {
     p.rear,
     p.tail
   ];
-  const width=clamp(mark.breadth*.38+.085,.09,.25);
+  const width=clamp(mark.breadth*.45+.036,.055,.15);
   const mesh=sweptSolid(controls,width,clamp(width/PHI/PHI,.035,.10),mark.color,
     'Golden-angle stroke returning around the sculpture');
   mesh.userData.ruleKind='ribbon';
@@ -242,8 +242,8 @@ function ribbon(mark,i,depth,group) {
 
 function pigment(mark,i,depth,group) {
   const p=markPoints(mark,i,depth);
-  const rx=clamp(mark.span*.42+.065,.10,.36);
-  const ry=clamp(mark.breadth*.57+.065,.10,.30);
+  const rx=clamp(mark.span*.40+.035,.065,.21);
+  const ry=clamp(mark.breadth*.56+.035,.065,.18);
   const rz=clamp((rx+ry)/PHI+.055,.12,.35)*depth;
   const front=p.front.clone();front.z=.24*depth;
   const head=makeBulb(front,[rx,ry,rz],mark.color,'Paint mass interpreted as full 3D volume');
@@ -291,10 +291,10 @@ export function buildRuleSculpture(method,marks,{depth=1}={}) {
   if(!Array.isArray(marks)||!marks.length)throw new Error('Sculpture needs real image-derived marks');
   const group=new THREE.Group();
   group.name='PROPORTION PIECE — RULES / '+method;
-  const n=Math.min(marks.length,64);
+  const n=Math.min(marks.length,96);
   const counts={petal:0,ribbon:0,pigment:0};
   const anchorList=[];
-  const modeMax={petal:42,ribbon:48,pigment:52,hybrid:56}[method];
+  const modeMax={petal:80,ribbon:80,pigment:80,hybrid:85}[method];
   const count=Math.min(n,modeMax);
   for(let i=0;i<count;i++) {
     const mark=marks[i];
