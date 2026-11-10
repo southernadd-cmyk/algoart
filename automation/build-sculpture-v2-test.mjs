@@ -18,7 +18,7 @@ const patched=original.replace(getter,
   'get texture() { return this.textures[0]; }');
 const three=JSON.parse(await readFile('node_modules/three/package.json','utf8'));
 assert.equal(three.version,'0.187.0','Tower and V4.2 must use the same Three runtime');
-let rendererReplacements=0,n8aoReplacements=0;
+let rendererReplacements=0,n8aoReplacements=0,receptionReplacements=0;
 await mkdir(dirname(target),{recursive:true});
 await build({
   entryPoints:['gallery/visit/gallery-phi.js'],
@@ -27,6 +27,29 @@ await build({
   plugins:[{
     name:'sculpture-v2-isolated-preview',
     setup(plugin){
+      plugin.onLoad({filter:/[/\\]gallery[/\\]visit[/\\]gallery-phi\.js$/},async(args)=>{
+        const original=await readFile(args.path,'utf8');
+        const studyAnchor="      seed:bake.seed,title:'Recursive Divisions',href:bake.href,";
+        const exhibitAnchor="      phiReceptionProps.push(built.pivot);";
+        assert.equal(original.split(studyAnchor).length-1,1,
+          'Reception study must have exactly one approved V1 source record');
+        assert.equal(original.split(exhibitAnchor).length-1,1,
+          'Reception plinth must have exactly one registration point');
+        const transformed=original.replace(studyAnchor,
+          "      id:'reception-recursive-divisions-v2',"+
+          "date:'reception',engine:'recursive-divisions',portrait:true,"+
+          "imageFile:'reception-growth-systems.png',receptionPrepared:true,\n"+
+          studyAnchor).replace(exhibitAnchor,
+          exhibitAnchor+"\n"+
+          "      const exhibit={study,position:new THREE.Vector3("+
+          "position.x,elevation+1.65,position.z),sculpture:true};\n"+
+          "      artExhibits.push(exhibit);\n"+
+          "      window.__sculptureV2ReceptionExhibit={"+
+          "title:study.title,seed:study.seed,href:study.href};\n"+
+          "      window.__sculptureV2ReceptionInspect=()=>showInfo(exhibit);");
+        receptionReplacements++;
+        return{contents:transformed,loader:'js',resolveDir:dirname(args.path)};
+      });
       plugin.onLoad({filter:/[/\\]sculpture-render-traced\.mjs$/},async()=>{
         rendererReplacements++;
         return{
@@ -45,6 +68,8 @@ await build({
 });
 assert.equal(rendererReplacements,1,
   'V1 sculpture renderer was not replaced exactly once');
+assert.equal(receptionReplacements,1,
+  'The isolated V2 reception study registration was not inserted once');
 assert.equal(n8aoReplacements,1,
   'N8AO compatibility patch was not included exactly once');
 assert.ok((await readFile(target)).length>200000,
@@ -66,6 +91,7 @@ await mkdir('gallery/sculpture-v2-test',{recursive:true});
 await writeFile('gallery/sculpture-v2-test/index.html',html);
 console.log('SCULPTURE_V2_TEST_BUILT '+JSON.stringify({
   route:'gallery/sculpture-v2-test/',rendererReplacements,n8aoReplacements,
+  receptionReplacements,
   source:'gallery/visit/gallery-phi.js',legacyV1RendererUntouched:true,
   archiveAndDailyBakesUntouched:true,onDemand:false,preparedPacks:true,
   v2Geometry:'sculpture-lab-v4.2.1',pin:'museum'

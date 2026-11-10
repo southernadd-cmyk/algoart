@@ -95,14 +95,22 @@ function encodeMesh(mesh,texture,bumpTexture){
   };
 }
 export async function bakeV2Study({item,date,quality='desktop',method='assembly'}={}){
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date||''))throw Error('Invalid archive date');
+  const reception=item?.receptionOnly===true;
+  if(!(reception?date==='reception':/^\d{4}-\d{2}-\d{2}$/.test(date||'')))
+    throw Error('Invalid V2 study date');
   if(!['desktop','mobile'].includes(quality))throw Error('Invalid quality');
   if(method!=='assembly')throw Error('V2 historical packs are pinned to assembly');
   if(item.material==='confluence')throw Error('Confluence excluded from V2 sculpture bake');
   if(item.orientation!=='portrait')throw Error('Only solo portrait paintings become sculptures');
   if(!item.imageFile||!item.seed)throw Error('Invalid archived study metadata');
+  if(reception&&(item.imageFile!=='reception-growth-systems.png'||
+     item.material!=='oil'||item.seed!=='AA-20261005-03-55769'))
+    throw Error('Reception source must use the approved original study');
   const sourceFile=item.sourceFile||item.imageFile;
-  const image=await imageFromArchive(pictureUrl(date,sourceFile));
+  const sourceUrl=reception
+    ?new URL('../visit/data/reception-growth-systems.png',location.href).href
+    :pictureUrl(date,sourceFile);
+  const image=await imageFromArchive(sourceUrl);
   const pixels=samplePixels(image);
   const profile=resolveStudyMaterial(item.shareUrl||'',item.material||'marker');
   const material=profile.type||'marker';

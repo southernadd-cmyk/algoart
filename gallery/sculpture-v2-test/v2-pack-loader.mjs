@@ -137,10 +137,14 @@ export function disposePreparedV2({body,bumpTexture}){
   }
   bumpTexture?.dispose();
 }
-export async function downloadV2Floor(date,quality,{fetcher=fetch,base=new URL('../',location.href).pathname}={}){
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!['mobile','desktop'].includes(quality))
+export async function downloadV2Floor(date,quality,{
+  fetcher=fetch,base=new URL('../',location.href).pathname,allowReception=false
+}={}){
+  if(!(allowReception&&date==='reception')&&
+     !/^\d{4}-\d{2}-\d{2}$/.test(date)||!['mobile','desktop'].includes(quality))
     throw Error('Invalid V2 floor request');
-  const url=base+date+'/3d/v2/sculptures.'+quality+'.json.gz';
+  const url=base+(date==='reception'?'':date+'/3d/v2/')+
+    'sculptures.'+quality+'.json.gz';
   const response=await fetcher(url);
   if(!response.ok)throw Error('V2 prepared floor '+date+'/'+quality+
     ' not available: HTTP '+response.status);
@@ -156,4 +160,12 @@ export async function downloadV2Floor(date,quality,{fetcher=fetch,base=new URL('
   if(Object.keys(decoded.studies||{}).length!==decoded.expectedPortraits)
     throw Error('V2 prepared floor portrait count mismatch');
   return decoded;
+}
+
+export function downloadV2Reception(quality,{fetcher=fetch}={}){
+  const base=new URL('../',location.href).pathname+
+    'sculpture-v2-test/reception/';
+  return downloadV2Floor('reception',quality,{
+    fetcher,base,allowReception:true
+  });
 }
