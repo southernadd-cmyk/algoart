@@ -2,13 +2,12 @@
 // importing gallery/visit/sculpture-render-traced.mjs and V1 baked packs.
 // This adapter preserves the real tower's createPortraitSculpture contract.
 import * as THREE from 'three';
-import {segmentPainting,V4_METHODS} from './engine/v4-topology.mjs';
-import {buildV4Sculpture,disposeV4Sculpture} from './engine/v4-surface.mjs';
+import {downloadV2Floor,reconstructV2Study,disposePreparedV2}
+  from './v2-pack-loader.mjs';
 import {createHybridSupport,disposeHybridSupport,PLINTH_TOP_LOCAL_Y}
   from '../sculpture-lab/hybrid-supports.mjs';
 import {PEDESTAL_WIDTH,PEDESTAL_DEPTH,PEDESTAL_HEIGHT,SCULPTURE_HEIGHT}
   from '../visit/sculptures.mjs';
-import {resolveStudyMaterial} from '../visit/study-material.mjs';
 
 let pedestalFinish=new THREE.MeshStandardMaterial({color:'#d5d0c4',roughness:.85});
 let edgeFinish=new THREE.MeshStandardMaterial({color:'#454c45',roughness:.48,metalness:.38});
@@ -16,14 +15,12 @@ export function setSculptureArchitecturalMaterials({plinth,metal}={}){
   if(plinth)pedestalFinish=plinth;
   if(metal)edgeFinish=metal;
 }
-const methodParam=typeof location!=='undefined'
-  ?new URLSearchParams(location.search).get('v2method'):null;
-export const V2_TEST_METHOD=V4_METHODS.includes(methodParam)?methodParam:'assembly';
+export const V2_TEST_METHOD='assembly';
 const status={
-  mode:'test-only-dynamic-v2',variant:'v2.0-candidate',
+  mode:'test-only-prepared-v2',variant:'v2.0-prepared-archive',
   geometry:'sculpture-lab-v4.2.1',connector:'pin',method:V2_TEST_METHOD,
   attempted:0,complete:0,failed:0,cancelled:0,byDate:{},
-  builds:[],modelSource:'archived-raster-108x152',
+  builds:[],modelSource:'audited-historical-v2-packs',
   productionUnchanged:true
 };
 if(typeof window!=='undefined')window.__sculptureV2TowerStatus=status;
@@ -57,24 +54,32 @@ function sourceImage(study){
     img.src=urls[next++];
   });
 }
-function sampledPixels(image){
-  const canvas=document.createElement('canvas');
-  canvas.width=108;canvas.height=152;
-  const ctx=canvas.getContext('2d',{willReadFrequently:true});
-  if(!ctx)throw Error('Painting pixel readback unavailable');
-  ctx.drawImage(image,0,0,canvas.width,canvas.height);
-  return ctx.getImageData(0,0,canvas.width,canvas.height);
+// Shared archive requests; only the most recently visited date of each
+// quality remains cached, avoiding retained geometry from all 37 floors.
+const floors=new Map();
+function preparedFloor(date,quality){
+  const key=quality+':'+date;
+  if(floors.has(key))return floors.get(key);
+  for(const k of floors.keys())if(k.startsWith(quality+':'))floors.delete(k);
+  const loading=downloadV2Floor(date,quality).catch(error=>{
+    if(floors.get(key)===loading)floors.delete(key);
+    throw error;
+  });
+  floors.set(key,loading);
+  return loading;
 }
-function bumpFromInk(topology){
-  const w=topology.width,h=topology.height;
-  const rgba=new Uint8Array(w*h*4);
-  for(let i=0;i<w*h;i++){
-    const n=Math.round(Math.max(0,Math.min(1,topology.pigmentInk[i]))*255);
-    const p=i*4;rgba[p]=rgba[p+1]=rgba[p+2]=n;rgba[p+3]=255;
-  }
-  const tex=new THREE.DataTexture(rgba,w,h,THREE.RGBAFormat);
-  tex.colorSpace=THREE.NoColorSpace;
-  tex.flipY=true;tex.needsUpdate=true;return tex;
+function archiveDate(study){
+  const day=String(study.id||'').match(/^(20\\d{2}-\\d{2}-\\d{2})/)?.[1]||
+    String(study.image||'').match(/\\/gallery\\/(20\\d{2}-\\d{2}-\\d{2})\\//)?.[1];
+  if(!day)throw Error('Missing date for prepared V2 sculpture '+study.seed);
+  return day;
+}
+function sourceFileOf(study){
+  if(study.imageFile)return study.imageFile;
+  const filename=String(study.image||'').split('?')[0].split('/').pop();
+  if(!filename||!filename.endsWith('.jpg'))
+    throw Error('Prepared V2 sculpture lacks its original image file');
+  return filename;
 }
 function addPedestal(pivot,study,labelTexture){
   const pedestal=new THREE.Mesh(
@@ -96,10 +101,7 @@ function addPedestal(pivot,study,labelTexture){
 function refuseConfluence(study){
   return study.material==='confluence'||study.material?.type==='confluence';
 }
-/** Exact public renderer interface. Constructs incrementally after image decode.
- * No V1 packs are overwritten. Phase 3 will replace this on-demand test bake
- * with prepared V2 mesh assets for production performance.
- */
+/** Isolated prepared V2 geometry adapter; live V1 is never imported. */
 export function createPortraitSculpture({
   scene,study,placement,quality='desktop',labelTexture,onArtworkMesh,onComplete
 }={}){
@@ -123,39 +125,31 @@ export function createPortraitSculpture({
   count(study,'attempted');
   (async()=>{
     const start=performance.now();
+    const date=archiveDate(study),name=sourceFileOf(study);
+    const requestedQuality=quality==='desktop'?'desktop':'mobile';
+    const floor=await preparedFloor(date,requestedQuality);
+    const prepared=floor.studies[name];
+    if(!prepared)throw Error('Verified V2 pack omits '+date+'/'+name);
+    if(prepared.quality!==requestedQuality||prepared.method!=='assembly'||
+       prepared.coverage!==1||prepared.omittedCells!==0)
+      throw Error('V2 prepared sculpture has invalid source geometry');
     const image=await sourceImage(study);
-    if(pivot.userData.galleryDisposed){
-      count(study,'cancelled');return;
-    }
-    const pixels=sampledPixels(image);
-    const value=study.material?.type||study.material||'marker';
-    const materialInfo=resolveStudyMaterial(study.href||study.shareUrl||'',value);
-    const material=materialInfo.type||'marker';
-    const paper=materialInfo.params?.paper||'#f5f0e6';
-    const topology=segmentPainting(pixels,{material,paper,
-      maxRegions:quality==='desktop'?72:48});
-    if(!topology.regions.length)throw Error('V2 source has no pigment regions');
-    if(topology.omittedCells>0)throw Error('V2 source omitted '+topology.omittedCells+' pigment pixels');
-
+    if(pivot.userData.galleryDisposed){count(study,'cancelled');return;}
     const paintingTexture=new THREE.Texture(image);
     paintingTexture.colorSpace=THREE.SRGBColorSpace;
     paintingTexture.needsUpdate=true;
-    const bumpTexture=bumpFromInk(topology);
-    let body=null,fixture=null,attached=false;
+    let body=null,fixture=null,bumpTexture=null,attached=false;
     try{
-      body=buildV4Sculpture(V2_TEST_METHOD,{
-        topology,texture:paintingTexture,bumpTexture,
-        material,paper,quality:quality==='desktop'?'desktop':'mobile',
-        depth:.85,phiPull:.8,fidelity:.9,connection:.65,strokes:[]
-      });
-      if(body.userData.omittedCells!==0)throw Error('V2 build dropped pigment regions');
+      ({body,bumpTexture}=reconstructV2Study(prepared,paintingTexture));
+      if(body.userData.omittedCells!==0||body.userData.sourceCoverage!==1)
+        throw Error('Prepared V2 geometry omitted source pigment');
       const bounds=new THREE.Box3().setFromObject(body);
       const size=bounds.getSize(new THREE.Vector3());
       if(!Number.isFinite(size.x)||!Number.isFinite(size.y)||!Number.isFinite(size.z))
         throw Error('Non-finite V2 sculpture bounds');
       body.position.y=-.34-bounds.min.y;
       body.updateMatrixWorld(true);
-      fixture=createHybridSupport(body,'pin',{pixels});
+      fixture=createHybridSupport(body,'pin');
       const mount=new THREE.Group();
       // Exact proven museum-pin offset from the isolated hybrid tower.
       mount.position.y=PEDESTAL_HEIGHT+.0125-stage.position.y-PLINTH_TOP_LOCAL_Y;
@@ -174,7 +168,9 @@ export function createPortraitSculpture({
         omittedCells:body.userData.omittedCells,
         triangles:body.userData.polygonTriangles,
         extent:[size.x,size.y,size.z],
-        zLayerExtent:body.userData.zLayerExtent,
+        zLayerExtent:body.userData.zLayerExtent||0,
+        sourceFile:prepared.sourceFile,
+        pixelFallbackRegions:prepared.pixelFallbackRegions||0,
         sourceCoverage:body.userData.sourceCoverage,
         elapsedMs:Math.round(performance.now()-start),
         anchors:fixture.userData.anchorCount,
@@ -186,19 +182,20 @@ export function createPortraitSculpture({
         sculptureV2Texture:true
       });
       count(study,'complete',stats);
-      onComplete?.({strokeCount:0,pigmentCount:stats.regions,prepared:false,v2:true});
+      onComplete?.({strokeCount:0,pigmentCount:stats.regions,prepared:true,v2:true});
     }finally{
       if(!attached){
         if(fixture)disposeHybridSupport(fixture);
-        if(body)disposeV4Sculpture(body);
-        paintingTexture.dispose();bumpTexture.dispose();
+        if(body)disposePreparedV2({body,bumpTexture});
+        else bumpTexture?.dispose();
+        paintingTexture.dispose();
       }
     }
   })().catch(error=>{
     if(pivot.userData.galleryDisposed)return;
     pivot.userData.sculptureV2Error=String(error?.message||error);
     count(study,'failed',{error:pivot.userData.sculptureV2Error});
-    console.warn('[V2 test tower] source model failed',study.seed,error);
+    console.warn('[V2 prepared test tower] source model failed',study.seed,error);
     onComplete?.({strokeCount:0,pigmentCount:0,prepared:false,v2:false});
   });
   return{pivot,study};
