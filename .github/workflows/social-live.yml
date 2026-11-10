@@ -560,9 +560,25 @@ jobs:
       live: true
     secrets: inherit
 
-  action-portrait:
+  action-landscape-retry:
+    # One bounded retry. Frozen media and per-platform completion markers prevent
+    # regeneration or duplicate posts after a partial external publish failure.
     needs: [action-landscape, portrait-plan]
-    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '0' && needs.action-landscape.result == 'success' }}
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.action-landscape.result == 'failure' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '0' }}
+    uses: ./.github/workflows/action-live.yml
+    with:
+      slot: '0'
+      date: ${{ needs.portrait-plan.outputs.date }}
+      orientation: landscape
+      live: true
+      repost_deleted: false
+    secrets: inherit
+
+  action-portrait:
+    # A recovered landscape is sufficient to proceed with the portrait; never
+    # let a transient landscape failure suppress the independent portrait.
+    needs: [action-landscape, action-landscape-retry, portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '0' && (needs.action-landscape.result == 'success' || needs.action-landscape-retry.result == 'success') }}
     uses: ./.github/workflows/action-live.yml
     with:
       slot: '0'
