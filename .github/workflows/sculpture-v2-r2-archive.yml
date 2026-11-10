@@ -67,7 +67,8 @@ jobs:
         run: |
           python3 automation/upload-sculpture-v2-r2.py \
             "$RUNNER_TEMP/v2-historical" "$RUNNER_TEMP/v2-reception" --dry-run
-      - name: Persist assets create-only and read back every original byte
+      - name: Verify permanent R2 storage (create-only, full SHA read-back)
+        # Public Worker delivery is an independent, unactivated release gate.
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
           R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}

@@ -205,9 +205,15 @@ def main():
     parser.add_argument("historical", type=Path)
     parser.add_argument("reception", type=Path)
     parser.add_argument("--dry-run", action="store_true")
+    # The independent public Worker rollout must never make R2 storage look
+    # corrupt. Check public GET only when the separately deployed gateway
+    # has passed its own release gate; this mode does not need R2 credentials.
+    parser.add_argument("--public-only", action="store_true")
     args = parser.parse_args()
+    check(not (args.dry_run and args.public_only),
+          "--dry-run and --public-only cannot be combined")
     entries, catalog = make_catalog(args.historical, args.reception)
-    if not args.dry_run:
+    if not args.dry_run and not args.public_only:
         client = connect()
         client.head_bucket(Bucket=BUCKET)
         for i, entry in enumerate(entries, 1):
@@ -215,6 +221,10 @@ def main():
             print("V2_R2_OBJECT_OK " + json.dumps({
                 "number": i, "total": len(entries), "name": entry["label"],
                 "bytes": entry["bytes"]}), flush=True)
+        print("V2_R2_STORAGE_OK " + json.dumps({
+            "objects": len(entries), "totalBytes": sum(x["bytes"] for x in entries),
+            "readBackVerified": True, "v1Untouched": True}), flush=True)
+    if args.public_only:
         sample_names = {"catalog", "floors/2026-11-10/desktop",
                         "floors/2026-10-22/mobile",
                         "reception/image", "reception/mobile"}
@@ -224,7 +234,8 @@ def main():
         print("V2_R2_PUBLIC_OK " + json.dumps({
             "samples": len(sample_names), "catalog": catalog["catalog"]["url"]}))
     print("V2_R2_ARCHIVE_COMPLETE " + json.dumps({
-        "dryRun": args.dry_run, "objects": len(entries),
+        "dryRun": args.dry_run, "storageVerified": not (args.dry_run or args.public_only),
+        "publicVerified": args.public_only, "objects": len(entries),
         "historicDates": len(catalog["days"]), "models": 534,
         "bytes": sum(a["bytes"] for a in entries),
         "catalog": catalog["catalog"]["url"]}), flush=True)
