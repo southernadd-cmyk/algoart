@@ -273,8 +273,8 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false
   // Recede and narrow the JSCAD bulk rather than projecting broad joined
   // solids through the original drawing's negative space.
   const resemblance=clamp(fidelity,0,1);
-  mesh.position.z-=.15*depth+.19*depth*resemblance;
-  const coreXY=1-.25*resemblance;
+  mesh.position.z-=.24*depth+.31*depth*resemblance;
+  const coreXY=1-.38*resemblance;
   mesh.scale.set(coreXY,coreXY,1);
   group.add(mesh);
   // Only use the heuristic centroid-gesture reconstruction as a fallback.
@@ -308,7 +308,7 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false
     materialContours:contourLayer?.userData.contours||0,
     sourceDetailAnchors:sourceLayer.userData.sourceAnchors||
       exactStrokes.map(a=>({x:a.points[0]?.x,y:a.points[0]?.y,color:a.color})),
-    coreRecess:.15*depth+.19*depth*resemblance,
+    coreRecess:.24*depth+.31*depth*resemblance,
     noImageExtrusion:true,
     noModelInference:true,
     sourceAnchors:selected.map(m=>({x:m.x,y:m.y,color:m.color,kind:m.kind})),
