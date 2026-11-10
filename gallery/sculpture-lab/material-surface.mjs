@@ -197,7 +197,7 @@ export function buildMaterialSculpture(method,imageData,texture,{
     field.ink.set(next);
   }
   const mobile=quality==='mobile';
-  const nx=mobile?60:86,ny=mobile?88:122,nz=mobile?21:28;
+  const nx=mobile?60:(passes?86:82),ny=mobile?88:(passes?122:116),nz=mobile?21:(passes?28:26);
   const sizex=1.88,sizey=2.35;
   const plane=(nx+1)*(ny+1);
   const count=plane*(nz+1);
