@@ -1,22 +1,10 @@
-name: Sculpture Lab 360 rendering validation
+name: Sculpture Lab deterministic 360° rules validation
 on:
-  push:
-    branches:
-      - test/sculpture-lab-360-20261110
-    paths:
-      - 'gallery/sculpture-lab/**'
-      - 'tests/sculpture-360-lab*'
-      - 'tests/sculpture-ai-glb.test.mjs'
-      - 'tests/fixtures/sculpture-ai-cube-glb.mjs'
-      - 'automation/meshy-sculpture-pilot.py'
-      - '.github/workflows/sculpture-360-check.yml'
   pull_request:
     paths:
       - 'gallery/sculpture-lab/**'
-      - 'tests/sculpture-360-lab*'
-      - 'tests/sculpture-ai-glb.test.mjs'
-      - 'tests/fixtures/sculpture-ai-cube-glb.mjs'
-      - 'automation/meshy-sculpture-pilot.py'
+      - 'tests/sculpture-rules.test.mjs'
+      - 'tests/sculpture-360-lab.browser.mjs'
       - '.github/workflows/sculpture-360-check.yml'
   workflow_dispatch:
 
@@ -32,32 +20,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install gallery dependencies and Chromium
+      - name: Install dependencies and Chromium
         run: |
           npm ci
           npx playwright install --with-deps chromium
-      - name: Validate geometric 360 methods
+      - name: Verify deterministic rules engine
         run: |
-          node --check gallery/sculpture-lab/sculpture-360.mjs
+          node --check gallery/sculpture-lab/sculpture-rules.mjs
           node --check gallery/sculpture-lab/lab-360.mjs
-          node --test tests/sculpture-360-lab.test.mjs
-          node --test tests/sculpture-ai-glb.test.mjs
-          python3 automation/meshy-sculpture-pilot.py --date 2026-11-09 --image-file 2026-11-09-G07-oil-rects-portrait.jpg --dry-run
-      - name: Start archived gallery HTTP server
+          node --test tests/sculpture-rules.test.mjs
+          if grep -E -i -n '(meshy|fal\.ai|image.to.3d|aiFiles|resetAI|MESHY_API_KEY)' \
+            gallery/sculpture-lab/index.html gallery/sculpture-lab/lab-360.mjs; then
+            echo "Public sculpture lab must remain rules-only" >&2
+            exit 1
+          fi
+      - name: Start local gallery HTTP server
         run: |
-          python3 -m http.server 4173 >/tmp/sculpture-360-http.log 2>&1 &
+          python3 -m http.server 4173 >/tmp/sculpture-rule-http.log 2>&1 &
           for i in {1..30}; do
             curl -fsS http://127.0.0.1:4173/gallery/sculpture-lab/index.html >/dev/null && exit 0
             sleep 1
           done
-          cat /tmp/sculpture-360-http.log
+          cat /tmp/sculpture-rule-http.log
           exit 1
-      - name: Exercise actual four-sculpture room (desktop and mobile)
+      - name: Verify browser room and 360° camera controls on desktop/mobile
         run: node tests/sculpture-360-lab.browser.mjs
-      - name: Upload sculpture room screenshots
+      - name: Upload test images
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sculpture-lab-360-screenshots
+          name: sculpture-rules-browser-shots
           if-no-files-found: ignore
-          path: /tmp/sculpture-lab-360-*.png
+          path: /tmp/sculpture-lab-rules-*.png
