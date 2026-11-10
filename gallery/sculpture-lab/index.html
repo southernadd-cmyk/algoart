@@ -2,7 +2,7 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#202723">
-<title>PROPORTION PIECE · Sculpture Lab V3 / Anamorphic</title>
+<title>PROPORTION PIECE · Sculpture Lab V4 / Source-derived solids</title>
 <style>
 :root{color-scheme:dark;--ink:#f2e9d8;--dark:#222b27;--line:#83765e;--bronze:#c5a776}
 *{box-sizing:border-box}
@@ -61,17 +61,17 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 </head>
 <body>
 <canvas id="view" aria-label="Four source-derived real XYZ sculptures on gallery plinths"></canvas>
-<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>V3.1 · REFINED SOURCE-ANCHORED SCULPTURE</small></div>
+<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>V4 · REGION INFLATION / MEDIAL SKELETONS</small></div>
 <div id="selectors">
 <label for="day">Archive day</label><select id="day"></select>
 <label for="painting">Source painting</label><select id="painting"></select>
 <label for="focus">View</label>
 <select id="focus" aria-label="Show all sculptures or focus on one">
 <option value="all">Compare four engines</option>
-<option value="0">01 · Source Armature</option>
-<option value="1">02 · Folded Surface</option>
-<option value="2">03 · Pigment Volume</option>
-<option value="3">04 · Anamorphic Hybrid</option>
+<option value="0">01 · Poisson Inflation</option>
+<option value="1">02 · Medial Axis</option>
+<option value="2">03 · Gestural Volume</option>
+<option value="3">04 · Regional Assembly</option>
 </select>
 </div></header>
 <aside id="sourceBox"><img id="thumb" alt="Original archived painting">
@@ -79,7 +79,12 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 <div id="sourceEvidence">Extracting source structure…</div>
 <a id="source" target="_blank" rel="noopener noreferrer">Open source painting</a></aside>
 <aside id="controlsPanel">
-<h2>SOURCE FIDELITY / SPATIAL CONSTRUCTION</h2>
+<h2>TOPOLOGY / SOURCE-DERIVED VOLUME</h2>
+<label for="engineMode">Reconstruction engine</label>
+<select id="engineMode" style="width:100%;max-width:none">
+<option value="v4" selected>V4 · Shape-based inflation</option>
+<option value="v3">V3 · Previous geometry (comparison)</option>
+</select>
 <div class="control"><label for="phi">φ structural pull</label><output id="phiValue">80%</output><input id="phi" type="range" min="0" max="100" value="80" step="5"></div>
 <div class="control"><label for="fidelity">Source fidelity</label><output id="fidelityValue">90%</output><input id="fidelity" type="range" min="50" max="100" value="90" step="5"></div>
 <div class="control"><label for="depth">XYZ spread</label><output id="depthValue">85%</output><input id="depth" type="range" min="40" max="130" value="85" step="5"></div>
@@ -87,9 +92,9 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 <label for="colourMode">Surface character</label>
 <select id="colourMode"><option value="pigment">Source pigment colours</option><option value="bronze">Single patinated bronze</option></select>
 <label class="check"><input type="checkbox" id="showGraph"> Show original pigment anchors</label>
-<p>Original source marks remain fixed head-on. Folded membranes, ribs and solid pigment grow into depth behind them. The measured overlap checks the actual front-view silhouette; a high score is not guaranteed by the slider.</p><p id="frontScore" aria-live="polite">Measuring source overlap…</p>
+<p>V4 solves shape-dependent Poisson and medial-axis fields for each actual pigment region. Holes and separated forms remain separate; recorded strokes are never inferred from pigment outlines. Compare with V3 using the selector. Source overlap alone does not prove sculptural quality.</p><p id="frontScore" aria-live="polite">Measuring source overlap…</p>
 </aside>
-<div id="legend"><span>01 · SOURCE ARMATURE</span><span>02 · FOLDED SURFACE</span><span>03 · PIGMENT VOLUME</span><span>04 · ANAMORPHIC HYBRID</span></div>
+<div id="legend"><span>01 · POISSON INFLATION</span><span>02 · MEDIAL AXIS</span><span>03 · GESTURAL VOLUME</span><span>04 · REGIONAL ASSEMBLY</span></div>
 <button id="settingsToggle" aria-controls="controlsPanel" aria-expanded="false">Sculpture controls</button>
 <div id="cameraControls">
 <button id="front">Front</button><button id="side">Side</button>
@@ -97,6 +102,6 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 <button id="autoRotate" aria-pressed="false">Auto orbit</button>
 </div>
 <div id="help">Drag to orbit · Scroll to zoom · WASD to move · Q/E to turn</div>
-<div id="status" role="status" aria-live="polite">Preparing Sculpture Lab V3…</div>
-<script type="module" src="./lab-v2.mjs?v=3-finish-1"></script>
+<div id="status" role="status" aria-live="polite">Preparing Sculpture Lab V4…</div>
+<script type="module" src="./lab-v2.mjs?v=4-region-inflation-1"></script>
 </body></html>

@@ -5,6 +5,8 @@ on:
     paths:
       - 'gallery/sculpture-lab/**'
       - 'tests/sculpture-v3.test.mjs'
+      - 'tests/sculpture-v4.test.mjs'
+      - 'tests/sculpture-v4-lab.browser.mjs'
       - 'tests/sculpture-v3-finishing.test.mjs'
       - 'tests/sculpture-360-lab.browser.mjs'
       - '.github/workflows/sculpture-360-check.yml'
@@ -51,6 +53,8 @@ jobs:
           node --check gallery/sculpture-lab/lab-360.mjs
           node --check gallery/sculpture-lab/lab-v2.mjs
           node --check gallery/sculpture-lab/sculpture-v3-anamorphic.mjs
+          node --check gallery/sculpture-lab/sculpture-v4-topology.mjs
+          node --check gallery/sculpture-lab/sculpture-v4-surface.mjs
           node --check gallery/sculpture-lab/visible-pigment-contours.mjs
           node --check gallery/sculpture-lab/sculpture-v3-finishing.mjs
           node --check gallery/sculpture-lab/sculpture-v2-features.mjs
@@ -63,6 +67,7 @@ jobs:
           node --test tests/sculpture-recorded-gestures.test.mjs
           node --test tests/sculpture-v2.test.mjs
           node --test tests/sculpture-v3.test.mjs
+          node --test tests/sculpture-v4.test.mjs
           node --test tests/sculpture-v3-finishing.test.mjs
           if grep -E -i -n '(meshy|fal\.ai|image.to.3d|aiFiles|resetAI|MESHY_API_KEY)' \
             gallery/sculpture-lab/index.html gallery/sculpture-lab/lab-v2.mjs; then
@@ -79,7 +84,9 @@ jobs:
           cat /tmp/sculpture-rule-http.log
           exit 1
       - name: Verify browser room and 360° camera controls on desktop/mobile
-        run: node tests/sculpture-360-lab.browser.mjs
+        run: |
+          node tests/sculpture-360-lab.browser.mjs
+          node tests/sculpture-v4-lab.browser.mjs
       - name: Upload test images
         if: always()
         uses: actions/upload-artifact@v4

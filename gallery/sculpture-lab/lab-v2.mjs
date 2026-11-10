@@ -1,4 +1,4 @@
-// PROPORTION PIECE — Sculpture Lab V3: source-anchored anamorphic comparison.
+// PROPORTION PIECE — Sculpture Lab V4: local-source inflation compared with V3.
 // Production tower, archive bakes, and daily publishing do not import this.
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -9,6 +9,8 @@ import {traceVisiblePigmentContours} from './visible-pigment-contours.mjs?v=3-fi
 import {createHybridSupport,disposeHybridSupport} from './hybrid-supports.mjs';
 import {buildSourceFeatures} from './sculpture-v2-features.mjs';
 import {V3_METHODS,buildAnamorphicSculpture,measureFrontSilhouette,disposeAnamorphicSculpture} from './sculpture-v3-anamorphic.mjs?v=3-finish-1';
+import {segmentPainting,V4_METHODS} from './sculpture-v4-topology.mjs';
+import {buildV4Sculpture,disposeV4Sculpture} from './sculpture-v4-surface.mjs';
 
 const $=id=>document.getElementById(id);
 const canvas=$('view'),scene=new THREE.Scene();
@@ -43,7 +45,24 @@ block(.2,6,15,-8.7,3,0,'#c9bfad');
 const sideWall=block(.2,6,15,8.7,3,0,'#c9bfad');
 const centres=[-5.1,-1.7,1.7,5.1],stages=[],active=[],supports=[],debug=[];
 const titles={armature:'SOURCE ARMATURE',fold:'FOLDED SURFACE',
-  mass:'PIGMENT VOLUME',hybrid:'HYBRID / ANAMORPHIC'};
+  mass:'PIGMENT VOLUME',hybrid:'HYBRID / ANAMORPHIC',
+  poisson:'POISSON INFLATION',medial:'MEDIAL AXIS',gesture:'GESTURAL VOLUME',
+  assembly:'REGIONAL ASSEMBLY'};
+const methods=()=> $('engineMode').value==='v3'?V3_METHODS:V4_METHODS;
+const isV4=()=> $('engineMode').value!=='v3';
+const labels=new Array(4);
+function labelMethods(){
+  for(let i=0;i<4;i++){
+    const map=tagTexture(titles[methods()[i]]);
+    labels[i].material.map.dispose();
+    labels[i].material.map=map;labels[i].material.needsUpdate=true;
+    const name=$('focus').options[i+1];
+    if(name)name.textContent=String(i+1).padStart(2,'0')+' · '+
+      titles[methods()[i]].toLowerCase();
+    const legend=$('legend').children[i];
+    if(legend)legend.textContent=String(i+1).padStart(2,'0')+' · '+titles[methods()[i]];
+  }
+}
 function tagTexture(text){
   const c=document.createElement('canvas');c.width=512;c.height=128;
   const ctx=c.getContext('2d');ctx.fillStyle='#283129';ctx.fillRect(0,0,512,128);
@@ -60,11 +79,11 @@ for(let i=0;i<4;i++){
   block(1.69,.045,1.54,x,.76,0,'#38463d',.3);
   const label=new THREE.Mesh(new THREE.PlaneGeometry(1.44,.35),
     new THREE.MeshBasicMaterial({map:tagTexture(titles[V3_METHODS[i]])}));
-  label.position.set(x,.43,.774);scene.add(label);
+  label.position.set(x,.43,.774);scene.add(label);labels.push(label);
   const stage=new THREE.Group();stage.position.set(x,1.60,0);scene.add(stage);stages.push(stage);
 }
 let archive=[],entries=[],currentDate='',selectedImage='';
-let loaded=null,ticket=0,currentGraph=null,currentFeatures=null;
+let loaded=null,ticket=0,currentGraph=null,currentFeatures=null,currentTopology=null;
 const status=s=>{$('status').textContent=s;};
 function uiOptions(){
   return {
@@ -96,7 +115,10 @@ function sourceOverlay(features){
 }
 function clearCandidate(c,s,g){
   if(s)disposeHybridSupport(s);
-  if(c)disposeAnamorphicSculpture(c);
+  if(c){
+    if(c.userData.engine==='region-inflation-v4')disposeV4Sculpture(c);
+    else disposeAnamorphicSculpture(c);
+  }
   if(g)disposeDebug(g);
 }
 function showSelection(){
@@ -128,7 +150,7 @@ function publishStatus(models,scores,features){
       for(let j=0;j<p.count;j+=stride)attr.push(p.getZ(j));
     });
     return {
-      method:V3_METHODS[i],meshCount:m.userData.meshCount,
+      method:methods()[i],meshCount:m.userData.meshCount,
       noImagePlane:m.userData.noImagePlane,
       noSilhouetteExtrusion:m.userData.noSilhouetteExtrusion,
       preservedOriginalXY:m.userData.preservedOriginalXY,
@@ -136,6 +158,13 @@ function publishStatus(models,scores,features){
       sourceBody:m.userData.sourceBody,
       foldedSurfaceCount:m.userData.foldedSurfaceCount,
       rearRibCount:m.userData.rearRibCount,
+      regionCount:m.userData.regionCount,
+      medialRegions:m.userData.medialRegions,
+      poissonRegions:m.userData.poissonRegions,
+      polygonTriangles:m.userData.polygonTriangles,
+      localIndependentSolids:m.userData.localIndependentSolids,
+      sourceCoverage:m.userData.sourceCoverage,
+      originalShapeCount:m.userData.originalShapeCount,
       extent:[size.x,size.y,size.z],
       sourceOverlap:scores[i],
       front:attr.filter(z=>z>.15).length,
@@ -145,12 +174,16 @@ function publishStatus(models,scores,features){
     };
   });
   window.__sculptureLabStatus={
-    ready:true,version:3,engine:'source-anchored-v3',
+    ready:true,version:isV4()?4:3,
+    engine:isV4()?'region-inflation-v4':'source-anchored-v3',
     date:currentDate,imageFile:selectedImage,
     material:features.material,sourceKind:features.sourceKind,
     originalStrokes:loaded?.recordedStrokesCount||0,
     visiblePigmentContours:loaded?.tracedContourCount||0,
     sourcePigmentRegions:features.regions.length,
+    reconstructedRegions:currentTopology?.regions?.length||0,
+    reconstructedSourceCoverage:currentTopology?
+      currentTopology.covered/Math.max(1,currentTopology.pigmented):0,
     methods,options:uiOptions()
   };
   return methods;
@@ -160,13 +193,17 @@ function renderSculptures(){
   const opts=uiOptions(),candidates=[],pins=[],overlays=[],scores=[];
   try{
     for(let i=0;i<4;i++){
-      const model=buildAnamorphicSculpture(V3_METHODS[i],{
-        features:currentFeatures,strokes:loaded.strokes||[],
+      const options={
+        features:currentFeatures,topology:currentTopology,
+        strokes:loaded.strokes||[],
         pixels:loaded.pixels,texture:loaded.texture,
         paper:loaded.paper,material:loaded.material,
         ...opts,colourMode:$('colourMode').value,
         quality:innerWidth<700?'mobile':'desktop'
-      });
+      };
+      const model=isV4()?
+        buildV4Sculpture(V4_METHODS[i],options):
+        buildAnamorphicSculpture(V3_METHODS[i],options);
       candidates.push(model);
       // Independent FRONT silhouette readback. Rear geometry is counted as
       // a mismatch if it spills across original negative space.
@@ -196,13 +233,15 @@ function renderSculptures(){
     const pct=methods.map(m=>m.sourceOverlap?
       Math.round(m.sourceOverlap.iou*100)+'%':'n/a').join(' / ');
     $('frontScore').textContent='Measured front silhouette overlap (IoU): '+pct+
-      ' · 01 Armature / 02 Fold / 03 Pigment / 04 Hybrid';
-    status('V3 source-anchored · '+(loaded.recordedStrokesCount||0)+
+      ' · '+methods().map((x,i)=>String(i+1)+': '+titles[x]).join(' / ');
+    status((isV4()?'V4 region inflation · '+
+      (currentTopology?.regions?.length||0)+' independent pigment regions':
+      'V3 source-anchored')+' · '+(loaded.recordedStrokesCount||0)+
       ' recorded paths / '+(loaded.tracedContourCount||0)+
       ' traced pigment contours · front overlap '+pct);
   }catch(error){
     candidates.forEach((c,i)=>clearCandidate(c,pins[i],overlays[i]));
-    status('V3 construction failed: '+error.message);
+    status((isV4()?'V4':'V3')+' construction failed: '+error.message);
     window.__sculptureLabStatus={ready:false,error:error.message};
     console.error(error);
   }
@@ -236,6 +275,9 @@ async function choosePainting(file){
     const traced=traceVisiblePigmentContours(pixels,{
       material:mat.type,paper,maxPaths:70
     });
+    currentTopology=segmentPainting(pixels,{
+      material:mat.type,paper,maxRegions:32
+    });
     loaded={pixels,texture,material:mat.type,paper,
       strokes:traced,recordedStrokesCount:0,tracedContourCount:traced.length};
     currentFeatures=buildSourceFeatures(pixels,{
@@ -243,8 +285,8 @@ async function choosePainting(file){
     });
     $('thumb').src=url;$('caption').textContent=entry.title||entry.seed;
     $('source').href=entry.shareUrl;
-    $('sourceEvidence').textContent=traced.length+
-      ' contours traced from finished pigment · checking original renderer paths…';
+    $('sourceEvidence').textContent=currentTopology.regions.length+
+      ' independent pigment regions (Poisson / medial reconstruction) · checking engine paths…';
     renderSculptures();
     if(previous?.texture)previous.texture.dispose();
     const link=new URL(location.href);
@@ -310,6 +352,13 @@ for(const key of ['phi','fidelity','depth','connection']){
   $(key).addEventListener('change',renderSculptures);
 }
 $('colourMode').addEventListener('change',renderSculptures);
+$('engineMode').addEventListener('change',()=>{
+  labelMethods();renderSculptures();
+  const url=new URL(location.href);
+  if(isV4())url.searchParams.delete('engine');
+  else url.searchParams.set('engine','v3');
+  history.replaceState(null,'',url);
+});
 $('showGraph').addEventListener('change',()=>{
   for(const group of debug)if(group)group.visible=$('showGraph').checked;
 });
@@ -353,6 +402,8 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 updateOutputs();
+$('engineMode').value=new URLSearchParams(location.search).get('engine')==='v3'?'v3':'v4';
+labelMethods();
 try{
   const response=await fetch('../archive.json');
   if(!response.ok)throw Error('Gallery archive missing');
@@ -367,4 +418,4 @@ try{
   if(innerWidth<740&&window.__sculptureLabStatus?.ready){
     $('focus').value='0';showSelection();focus('threequarter');
   }else focus('threequarter');
-}catch(error){status('Cannot initialise Sculpture Lab v3: '+error.message);console.error(error);}
+}catch(error){status('Cannot initialise Sculpture Lab: '+error.message);console.error(error);}

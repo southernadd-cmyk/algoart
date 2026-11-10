@@ -13,7 +13,7 @@ try{
     if(e.type()==='error'&&/WebGLProgram|shader|VALIDATE_STATUS|compile|link/i.test(e.text()))
       shaderErrors.push(e.text().slice(0,400));
   });
-  await page.goto('http://127.0.0.1:4173/gallery/sculpture-lab/',{
+  await page.goto('http://127.0.0.1:4173/gallery/sculpture-lab/?engine=v3',{
     waitUntil:'domcontentloaded',timeout:45000
   });
   const ready=()=>page.waitForFunction(()=>
