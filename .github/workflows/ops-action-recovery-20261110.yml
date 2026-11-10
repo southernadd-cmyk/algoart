@@ -94,3 +94,5 @@ jobs:
             echo "Verified $MARKER" >> "$GITHUB_STEP_SUMMARY"
           done
           echo 'Action recovery complete; no duplicate completion markers overwritten.' >> "$GITHUB_STEP_SUMMARY"
+
+# Non-publishing preflight invocation, 2026-11-10.
