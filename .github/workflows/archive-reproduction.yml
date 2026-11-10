@@ -46,7 +46,7 @@ jobs:
   reproduce:
     name: Archive / ${{ matrix.browser }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +65,7 @@ jobs:
         run: npx playwright --version
       - name: Install browser and system dependencies
         id: browser
-        timeout-minutes: 8
+        timeout-minutes: 18
         env:
           DEBIAN_FRONTEND: noninteractive
         run: npx playwright install --with-deps ${{ matrix.browser }}
