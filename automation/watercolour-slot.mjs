@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {makeCaptions} from './captions.mjs';
+import {isSupportedSocialPublisherVersion} from './renderer-state.mjs';
 
 const b64=text=>Buffer.from(String(text||''),'utf8').toString('base64');
 function today(){
@@ -20,13 +21,13 @@ export function watercolourSlot(slot){
 }
 export function validateWatercolourItem(item,day,orientation){
   if(!item||item.material!=='watercolour'||item.orientation!==orientation||
-     item.rendererVersion!==9||
+     !isSupportedSocialPublisherVersion(item.rendererVersion)||
      !new RegExp('^'+day+'-'+(orientation==='portrait'?'CP':'CL')+'01$').test(item.id))
     throw Error('Invalid Watercolour V2S artwork identity');
   const link=new URL(item.shareUrl);
   if(link.searchParams.get('material')!=='watercolour-v2s'||
      link.searchParams.get('fit')!=='0'||
-     link.searchParams.get('v')!=='9'||
+     link.searchParams.get('v')!==String(item.rendererVersion)||
      link.searchParams.get('seed')!==item.seed||
      link.searchParams.get('mode')!==item.mode||
      link.searchParams.get('fmt')!==(orientation==='portrait'?'portrait':null)){
