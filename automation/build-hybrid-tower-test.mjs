@@ -6,7 +6,7 @@ import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import assert from 'node:assert/strict';
 
-const target=resolve('gallery/hybrid-tower-test/gallery-phi-bundle.js');
+const target=resolve('gallery/visit/gallery-phi-hybrid-test-bundle.js');
 const replacement=resolve('gallery/hybrid-tower-test/sculpture-render-hybrid.mjs');
 const n8ao=resolve('node_modules/n8ao/dist/N8AO.js');
 const original=readFileSync(n8ao,'utf8');
@@ -45,7 +45,7 @@ let html=live.replace('<head>','<head>\n<base href="../visit/">\n<meta name="rob
 assert.notEqual(html,live);
 const old='./gallery-phi-bundle.js?v=classical-aac-20261107';
 assert.ok(html.includes(old),'Live tower import URL changed; review test build');
-html=html.replaceAll(old,'../hybrid-tower-test/gallery-phi-bundle.js?v=hybrid-pin-test-01');
+html=html.replaceAll(old,'./gallery-phi-hybrid-test-bundle.js?v=hybrid-pin-test-02');
 html=html.replaceAll('Virtual Exhibition | PROPORTION PIECE',
  'Hybrid Sculpture Test Tower | PROPORTION PIECE');
 html=html.replace('</body>','<div role="note" style="position:fixed;z-index:31;right:12px;bottom:12px;pointer-events:none;background:#20302cec;color:#f8f0d8;border:1px solid #b69b62;padding:6px 9px;font:600 11px Arial,Helvetica,sans-serif">TEST TOWER · HYBRID / MUSEUM PIN</div></body>');
