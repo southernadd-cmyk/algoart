@@ -1,3 +1,4 @@
+import {findPublishedThread,publishExistingContainerSafely} from './threads-publish-safety.mjs';
 const LIVE = process.env.LIVE_PUBLISHING === 'true';
 const TOKEN = process.env.THREADS_ACCESS_TOKEN;
 const USER_ID = process.env.THREADS_USER_ID || 'me';
@@ -44,6 +45,12 @@ function mediaNotFound(error) {
 }
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const alreadyPublished=await findPublishedThread({api,userId:USER_ID,text:TEXT});
+if(alreadyPublished){
+  console.log(JSON.stringify({platform:'threads',media_id:alreadyPublished.id,reconciled:true},null,2));
+  process.exit(0);
+}
+
 let container;
 let ready = false;
 
@@ -87,8 +94,8 @@ for (let creationAttempt = 0; creationAttempt < 3 && !ready; creationAttempt++) 
 
 if (!ready) throw new Error('Threads media container did not become ready after 3 attempts.');
 
-const published = await api(`${USER_ID}/threads_publish`, {
-  creation_id: container.id
+const published = await publishExistingContainerSafely({
+  api,userId:USER_ID,containerId:container.id,text:TEXT
 });
 
 console.log(JSON.stringify({ platform: 'threads', media_id: published.id }, null, 2));

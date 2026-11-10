@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 // Dry-run-only regression for frozen social queues. No publishing or archive writes.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -85,5 +86,30 @@ test('publisher retains seed, material, format and identity guards',()=>{
       assert.throws(()=>kind.validate(corrupted,date,orientation),
         /share URL does not reproduce saved artwork/i);
     }
+  }
+});
+
+test('historical Watercolour recovery uses a dated frozen queue and cannot regenerate',()=>{
+  const text=fs.readFileSync('.github/workflows/watercolour-live.yml','utf8');
+  assert.match(text,/Recovery only: frozen historical London edition date/);
+  assert.match(text,/Reject unsafe backdated live dispatches/);
+  assert.match(text,/Require frozen media for a backdated live recovery/);
+  assert.match(text,/steps\.cached\.outputs\.ready/);
+  assert.match(text,/refusing regeneration on recovery/);
+  assert.match(text,/TODAY=.*TZ=Europe\/London date \+%F/);
+  assert.match(text,/steps\.gate\.outputs\.date/);
+  assert.match(text,/id: historical/);
+  for(const name of [
+    "Generate today's artwork batch",
+    "Freeze the complete single-artwork daily watercolour batch",
+    "Build daily gallery and SEO pages",
+    "Publish gallery update to GitHub Pages source",
+    "Explicitly trigger Pages deployment after gallery commit"
+  ]){
+    const found=text.split('      - name: '+name+'\n')[1];
+    assert.ok(found,'Missing workflow step: '+name);
+    const condition=found.split('\n').find(line=>line.trim().startsWith('if: '));
+    assert.match(condition,/steps\.historical\.outputs\.backdated != 'true'/,
+      name+' must be suppressed during backdated social-only replay');
   }
 });

@@ -41,6 +41,11 @@ on:
         options:
           - landscape
           - portrait
+      date:
+        description: 'Recovery only: frozen historical London edition date (YYYY-MM-DD)'
+        type: string
+        required: false
+        default: ''
       live:
         description: 'Allow real posts on main only (never use on feature branch)'
         type: boolean
@@ -103,6 +108,19 @@ jobs:
         run: |
           FORCE_WATERCOLOUR_SLOT="${{ inputs.slot }}" node automation/watercolour-slot.mjs gate
 
+      - name: Identify immutable historical social-only recovery
+        id: historical
+        shell: bash
+        run: |
+          TODAY="$(TZ=Europe/London date +%F)"
+          DATE="${{ steps.gate.outputs.date }}"
+          if [[ "$DATE" < "$TODAY" ]]; then
+            echo 'backdated=true' >> "$GITHUB_OUTPUT"
+            echo 'Historical social recovery: never regenerate images or rewrite the daily gallery.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'backdated=false' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Require the live edition for the armed R2 date
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
         uses: ./.github/actions/wait-for-r2-gallery
@@ -164,6 +182,30 @@ jobs:
           echo "pinterest_marker=$PI_MARKER" >> "$GITHUB_OUTPUT"
           echo "bluesky_marker=$BS_MARKER" >> "$GITHUB_OUTPUT"
 
+      - name: Reject unsafe backdated live dispatches
+        if: github.event_name == 'workflow_dispatch' && inputs.live == true && inputs.date != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          DATE="${{ inputs.date }}"
+          TODAY="$(TZ=Europe/London date +%F)"
+          EARLIEST="$(TZ=Europe/London date -d "$TODAY - 3 days" +%F)"
+          [[ "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || {
+            echo "::error::Recovery date must be YYYY-MM-DD."; exit 1;
+          }
+          [[ "$(date -u -d "$DATE" +%F)" == "$DATE" ]] || {
+            echo "::error::Recovery date is not a valid calendar day."; exit 1;
+          }
+          DATE_SECONDS="$(date -u -d "$DATE" +%s)"
+          START_SECONDS="$(date -u -d "$EARLIEST" +%s)"
+          END_SECONDS="$(date -u -d "$TODAY" +%s)"
+          (( DATE_SECONDS >= START_SECONDS && DATE_SECONDS <= END_SECONDS )) || {
+            echo "::error::Only the last 3 London edition dates may be recovered."; exit 1;
+          }
+          [[ "${DATE:0:7}" == "${TODAY:0:7}" ]] || {
+            echo "::error::Backdated recovery requires this month's immutable media release."; exit 1;
+          }
+
       - name: Restore the one immutable watercolour study built this morning
         id: cached
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
@@ -211,6 +253,18 @@ jobs:
           fi
           echo "ready=$READY" >> "$GITHUB_OUTPUT"
 
+      - name: Require frozen media for a backdated live recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.live == true && inputs.date != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=Europe/London date +%F)"
+          if [[ "${{ steps.gate.outputs.date }}" < "$TODAY" ]]; then
+            [[ "${{ steps.cached.outputs.ready }}" == 'true' ]] || {
+              echo "::error::Frozen dated Watercolour assets missing: refusing regeneration on recovery."; exit 1;
+            }
+          fi
+
       - name: Install Playwright
         if: steps.gate.outputs.should_run == 'true'
         run: |
@@ -229,7 +283,7 @@ jobs:
           exit 1
 
       - name: Generate today's artwork batch
-        if: steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
+        if: steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true' && steps.historical.outputs.backdated != 'true'
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run social:generate
@@ -248,7 +302,7 @@ jobs:
           path: archive-check-results/
 
       - name: Freeze the complete single-artwork daily watercolour batch
-        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true' && steps.historical.outputs.backdated != 'true'
         shell: bash
         run: |
           DATE="${{ steps.gate.outputs.date }}"
@@ -262,14 +316,14 @@ jobs:
           gh release upload "$RELEASE_TAG" "$DIR/watercolour-${{ inputs.orientation }}-$DATE-queue.json" --clobber
 
       - name: Build daily gallery and SEO pages
-        if: steps.gate.outputs.should_run == 'true'
+        if: steps.gate.outputs.should_run == 'true' && steps.historical.outputs.backdated != 'true'
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run gallery:build
 
       - name: Publish gallery update to GitHub Pages source
         id: gallery_commit
-        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true' && steps.historical.outputs.backdated != 'true'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -288,7 +342,7 @@ jobs:
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Explicitly trigger Pages deployment after gallery commit
-        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true' && steps.gallery_commit.outputs.changed == 'true'
+        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true' && steps.gallery_commit.outputs.changed == 'true' && steps.historical.outputs.backdated != 'true'
         continue-on-error: true
         shell: bash
         run: |

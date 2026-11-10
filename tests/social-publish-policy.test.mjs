@@ -118,3 +118,17 @@ test('Pinterest selects portrait studies and evening Threads rotates every avail
     'steps.threads_feature.outputs.alt_text_b64 || steps.select.outputs.alt_text_b64'
   ])assert.ok(main.includes(fragment),'Evening Threads workflow missing: '+fragment);
 });
+
+test('Action recovery retries a failed landscape once and keeps portrait eligible after recovery',()=>{
+  const yaml=readFileSync('.github/workflows/social-live.yml','utf8');
+  const retry=yaml.match(/  action-landscape-retry:\n([\s\S]*?)(?=\n  action-portrait:)/)?.[1];
+  assert.ok(retry,'Action landscape retry must exist');
+  assert.match(retry,/needs\.action-landscape\.result == 'failure'/);
+  assert.match(retry,/uses: \.\/\.github\/workflows\/action-live\.yml/);
+  assert.match(retry,/repost_deleted: false/);
+  assert.match(retry,/orientation: landscape/);
+  const portrait=yaml.match(/  action-portrait:\n([\s\S]*?)(?=\n  confluence-social:)/)?.[1];
+  assert.ok(portrait,'Action portrait must exist');
+  assert.match(portrait,/action-landscape-retry/);
+  assert.match(portrait,/needs\.action-landscape\.result == 'success' \|\| needs\.action-landscape-retry\.result == 'success'/);
+});
