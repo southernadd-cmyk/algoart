@@ -29,7 +29,15 @@ try {
   assert.equal(lab.usesModel,false);
   assert.equal(lab.separatePaintingOverlay,false);
   assert.equal(lab.usesJSCAD,false);
-  assert.deepEqual(lab.methods.map(m=>m.method),['petal','ribbon','pigment','hybrid']);
+  assert.deepEqual(lab.methods.map(m=>m.method),['hybrid','hybrid','hybrid','hybrid']);
+  assert.equal(lab.identicalHybridOnAllPlinths,true);
+  assert.deepEqual(lab.supportVariants,['pin','stem','twin','root']);
+  assert.deepEqual(lab.supports.map(s=>s.variant),['pin','stem','twin','root']);
+  assert.ok(lab.supports.every(s=>s.attachedToActualMesh&&s.supportMeshes>=2));
+  assert.deepEqual(lab.supports.map(s=>s.anchorCount).slice(0,3),[1,1,2]);
+  assert.ok(lab.supports.every(s=>s.feet.every(p=>Math.abs(p[1]-s.plinthTopY)<1e-5)));
+  assert.ok(lab.supports.every(s=>s.anchors.every(p=>p[1]>s.plinthTopY+.09)));
+  assert.ok(lab.methods.every(m=>m.supportVariant===lab.supportVariants[lab.methods.indexOf(m)]));
   assert.ok(lab.methods.every(m=>m.meshes===1),
     'A detached image/line layer or unrelated back sculpture is still visible');
   assert.ok(lab.methods.every(m=>m.sideTextureOnBody===true),
@@ -48,6 +56,11 @@ try {
 
   // Paint texture and bump must be the source image, irrespective of 3D method.
   // Original source canvas is expected to survive mixed oil/tissue materials.
+  await page.locator('#focus').selectOption('all');
+  await page.locator('#front').click();
+  await page.screenshot({path:'/tmp/sculpture-lab-hybrid-supports-four-front.png',timeout:120000});
+  await page.locator('#side').click();
+  await page.screenshot({path:'/tmp/sculpture-lab-hybrid-supports-four-side.png',timeout:120000});
   const oilOption=await page.locator('#painting option').evaluateAll(options=>
     options.find(o=>/oil/i.test(o.value+' '+o.textContent))?.value||'');
   const tissueOption=await page.locator('#painting option').evaluateAll(options=>
@@ -60,7 +73,8 @@ try {
       option,{timeout:100000});
     lab=await report();
     assert.equal(lab.engine,'paint-surface-v1');
-    assert.ok(lab.methods.every(m=>m.meshes===1&&m.sourceTextureOnBody&&m.sideTextureOnBody));
+    assert.ok(lab.methods.every(m=>m.method==='hybrid'&&m.meshes===1&&m.sourceTextureOnBody&&m.sideTextureOnBody));
+    assert.deepEqual(lab.supports.map(s=>s.variant),['pin','stem','twin','root']);
     assert.equal(lab.paintingFinish,name);
     await page.locator('#focus').selectOption('3');
     await page.locator('#front').click();
@@ -84,6 +98,8 @@ try {
   await page.locator('#geometryMode').selectOption('jscad');
   lab=await report();
   assert.equal(lab.engine,'jscad-csg-v1');
+  assert.ok(lab.methods.every(m=>m.method==='hybrid'));
+  assert.equal(lab.supports[2].variant,'twin');
   assert.equal(lab.usesJSCAD,true);
   assert.equal(await page.locator('#sourceMode').isDisabled(),false);
   assert.equal(await page.locator('#resemblance').isDisabled(),false);
@@ -97,10 +113,14 @@ try {
   await page.locator('#geometryMode').selectOption('rules');
   lab=await report();
   assert.equal(lab.engine,'rules-v1');
+  assert.ok(lab.methods.every(m=>m.method==='hybrid'));
+  assert.equal(lab.supports[3].variant,'root');
   await page.locator('#geometryMode').selectOption('surface');
   lab=await report();
   assert.equal(lab.engine,'paint-surface-v1');
   assert.ok(lab.methods.every(m=>m.meshes===1&&m.sourceTextureOnBody));
+  assert.deepEqual(lab.supportVariants,['pin','stem','twin','root']);
+  assert.deepEqual(lab.supports.map(s=>s.variant),['pin','stem','twin','root']);
 
   // Original source capture remains functional for the optional JSCAD study.
   const markerFile=await page.locator('#painting option').evaluateAll(options=>
