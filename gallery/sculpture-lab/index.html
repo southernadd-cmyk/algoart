@@ -103,5 +103,17 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 </div>
 <div id="help">Drag to orbit · Scroll to zoom · WASD to move · Q/E to turn</div>
 <div id="status" role="status" aria-live="polite">Preparing Sculpture Lab V4…</div>
-<script type="module" src="./lab-v2.mjs?v=4-region-inflation-1"></script>
+<script>
+window.addEventListener('error',function(e){
+  if(window.__sculptureLabStatus?.ready)return;
+  const el=document.getElementById('status');
+  if(el)el.textContent='Sculpture Lab startup error: '+(e.message||'unknown JavaScript failure');
+});
+window.addEventListener('unhandledrejection',function(e){
+  if(window.__sculptureLabStatus?.ready)return;
+  const el=document.getElementById('status');
+  if(el)el.textContent='Sculpture Lab could not load: '+(e.reason?.message||String(e.reason));
+});
+</script>
+<script type="module" src="./lab-v2.mjs?v=4-region-inflation-2"></script>
 </body></html>
