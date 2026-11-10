@@ -115,6 +115,11 @@ try{
   lab=await page.evaluate(()=>window.__sculptureLabStatus);
   assert.equal(lab.ready,true,'Mobile CSG room failed: '+JSON.stringify(lab));
   assert.equal(lab.engine,'jscad-csg-v1');
+  assert.equal(await page.locator('#settingsToggle').isVisible(),true);
+  assert.equal(await page.locator('#depth').isVisible(),false);
+  await page.screenshot({path:'/tmp/sculpture-lab-rules-mobile.png',timeout:60000});
+  await page.locator('#settingsToggle').click();
+  assert.equal(await page.locator('#settingsToggle').getAttribute('aria-expanded'),'true');
   assert.equal(await page.locator('#depth').isVisible(),true);
   assert.equal(await page.locator('#geometryMode').isVisible(),true);
   assert.equal(await page.locator('#sourceMode').isVisible(),true);
@@ -122,7 +127,7 @@ try{
   assert.equal(await page.locator('#resemblance').isVisible(),true);
   assert.equal(await page.locator('#back').isVisible(),true);
   assert.deepEqual(errors,[],'Browser errors: '+errors.join('; '));
-  await page.screenshot({path:'/tmp/sculpture-lab-rules-mobile.png',timeout:60000});
+  await page.screenshot({path:'/tmp/sculpture-lab-settings-mobile.png',timeout:60000});
   console.log('JSCAD CSG sculpture lab passed: ',lab.date,lab.seed,
     lab.methods.map(m=>m.method+':'+m.meshes).join(' '));
 }finally{await browser.close();}
