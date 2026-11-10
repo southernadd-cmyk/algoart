@@ -42,7 +42,7 @@ function edgeIncidence(geometry){
     if(keys[0]===keys[1])continue;
     edges.set(key,(edges.get(key)||0)+1);
   }
-  return [...edges.values()];
+  return edges;
 }
 for(const kind of ['circle','ring','crescent','branch','islands']){
   test('Poisson source topology: '+kind,()=>{
@@ -87,8 +87,14 @@ for(const kind of ['circle','ring','crescent','branch','islands']){
         assert.ok(bounds.getSize(new THREE.Vector3()).z>.015);
         for(const m of model.children.filter(o=>o.userData.regionId!==undefined)){
           const counts=edgeIncidence(m.geometry);
-          assert.ok(counts.length>0);
-          assert.ok(counts.every(n=>n===2),
+          const bad=[...counts.entries()].filter(([_,n])=>n!==2);
+          if(bad.length)console.log('NONMANIFOLD',kind,method,
+            'faces',m.geometry.index.count/3,'edges',counts.size,
+            'bad',bad.length,'frequencies',
+            [...new Set(bad.map(x=>x[1]))],
+            'examples',bad.slice(0,12));
+          assert.ok(counts.size>0);
+          assert.equal(bad.length,0,
             kind+' '+method+' has open/nonmanifold mesh edges');
         }
         disposeV4Sculpture(model);
