@@ -14,6 +14,13 @@ on:
       - 'automation/phi-bvh-test-plugin.mjs'
       - 'automation/phi-warmup-test-plugin.mjs'
       - 'tests/phi-entry-warmup.test.mjs'
+      # Preview-only reception artwork assets are baked and staged by Pages.
+      # These changes must trigger a new deployment rather than leave stale art.
+      - 'tests/sculpture-v2-reception.test.mjs'
+      - 'automation/generate-reception-portrait.mjs'
+      - 'automation/build-reception-v2.mjs'
+      - 'automation/build-sculpture-v2-test.mjs'
+      - 'gallery/sculpture-v2-test/**'
       - 'tests/phi-mesh-bvh.test.mjs'
       - 'tests/phi-csm.test.mjs'
       - 'tests/phi-lighting-study.test.mjs'
