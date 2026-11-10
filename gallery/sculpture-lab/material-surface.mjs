@@ -62,139 +62,176 @@ export function materialFinish(material='marker'){
   }
 }
 
-function buildProfile(method,u,v,ink,depth){
-  // Real, variable-thickness sculpture: inner pigment is rounder/fuller than
-  // the edges, which taper into genuinely modelled sidewalls and cavities.
-  const x=(u-.5)*W,y=(v-.5)*H;
-  const strength=Math.sqrt(clamp(ink,0,1));
-  const a=GOLDEN_ANGLE*(v*PHI+u/PHI);
-  const frontZ=depth*(.105+.255*strength+
-    .037*Math.sin(TAU*u*PHI)*Math.sin(TAU*v/PHI));
-  const backZ=-depth*(.14+.42*strength+
-    .032*Math.cos(TAU*v*PHI+u*TAU));
+// The source pigment field defines an implicit, *rounded* physical volume.
+// A changing x/y inverse map develops a twisted/tapered φ-related back.
+// We extract a single smooth isosurface using marching tetrahedra, not a
+// front plane joined to the back by long image-stretched wall strips.
+function undoBackWarp(method,x,y,z,depth){
+  const t=clamp(-z/(depth*.78),0,1);
+  const phase=GOLDEN_ANGLE*(y/H+.5)*PHI+x/PHI;
+  let sx=1,sy=1,dx=0,dy=0;
   if(method==='petal'){
-    const bend=.17*Math.sin(a*PHI);
-    return [[x,y,frontZ],[x*.69+bend,y*.82+.07*Math.cos(a),backZ]];
-  }
-  if(method==='ribbon'){
-    const angle=.27*Math.sin(v*TAU/PHI)*PHI;
-    const backX=(x*Math.cos(angle)-y*.40*Math.sin(angle))*.75;
-    const backY=(x*.25*Math.sin(angle)+y*Math.cos(angle))*.81;
-    return [[x,y,frontZ],[backX+.07*Math.cos(a),backY,backZ*1.10]];
-  }
-  if(method==='pigment'){
-    const lobe=.035*Math.sin(u*TAU*PHI+v*TAU);
-    return [[x,y,frontZ+depth*(.08*strength+lobe)],
-      [x*.85+.065*Math.sin(a),y*.85+.038*Math.cos(a),backZ*1.18]];
-  }
-  if(method==='hybrid'){
-    return [[x,y,frontZ+depth*.025*Math.sin(a)],
-      [x*.76+.14*Math.sin(a),y*.82+.06*Math.cos(a*PHI),backZ*1.12]];
-  }
-  throw Error('Unknown material-sculpture method '+method);
+    sx=1-.23*t;sy=1-.12*t;
+    dx=.19*t*Math.sin(phase*PHI);
+    dy=.06*t*Math.cos(phase);
+  }else if(method==='ribbon'){
+    sx=1-.21*t;sy=1-.21*t;
+    dx=.22*t*Math.sin(phase*1.5);
+    dy=.13*t*Math.sin(phase/PHI+x*3);
+  }else if(method==='pigment'){
+    sx=1-.14*t;sy=1-.13*t;
+    dx=.09*t*Math.sin(phase);
+    dy=.065*t*Math.cos(phase*PHI);
+  }else if(method==='hybrid'){
+    sx=1-.19*t;sy=1-.18*t;
+    dx=.15*t*Math.sin(phase*PHI)+.04*t*Math.cos(y*TAU);
+    dy=.085*t*Math.cos(phase);
+  }else throw Error('Unknown sculptural method '+method);
+  return [(x-dx)/sx,(y-dy)/sy];
 }
-
-function localPigmentRGB(field,pixels,c,r){
-  const {width:w,height:h,ink}=field;
-  let best=-1,bestInk=-1;
-  for(let dy=-2;dy<=1;dy++)for(let dx=-2;dx<=1;dx++){
-    const x=c+dx,y=r+dy;
-    if(x<0||y<0||x>=w||y>=h)continue;
-    const i=y*w+x;
-    if(ink[i]>bestInk){bestInk=ink[i];best=i;}
-  }
-  const k=4*Math.max(0,best);
-  return new THREE.Color().setRGB(
-    pixels.data[k]/255,pixels.data[k+1]/255,pixels.data[k+2]/255,
-    THREE.SRGBColorSpace);
+function fieldAt(field,method,x,y,z,depth){
+  const [sx,sy]=undoBackWarp(method,x,y,z,depth);
+  const u=(sx/W+.5)*field.width-.5;
+  const v=(.5-sy/H)*field.height-.5;
+  if(u<0||v<0||u>field.width-1||v>field.height-1)return -.7;
+  const x0=Math.floor(u),y0=Math.floor(v);
+  const x1=Math.min(field.width-1,x0+1),y1=Math.min(field.height-1,y0+1);
+  const fx=u-x0,fy=v-y0;
+  const at=(cx,cy)=>field.ink[cy*field.width+cx];
+  const a=at(x0,y0)*(1-fx)+at(x1,y0)*fx;
+  const b=at(x0,y1)*(1-fx)+at(x1,y1)*fx;
+  const pigment=a*(1-fy)+b*fy;
+  // High-pigment centres thicken into round masses; dilute tissue washes
+  // produce thin curved films. The falloff in Z prevents planar side walls.
+  const range=z>=0?.54:.72;
+  const profile=z/(range*depth);
+  const thickness=method==='pigment'?.60:method==='ribbon'?.76:.69;
+  return pigment-.092-thickness*profile*profile;
+}
+function normalAt(field,method,x,y,z,depth){
+  const e=.013;
+  const f=(a,b,c)=>fieldAt(field,method,a,b,c,depth);
+  const nx=f(x-e,y,z)-f(x+e,y,z);
+  const ny=f(x,y-e,z)-f(x,y+e,z);
+  const nz=f(x,y,z-e)-f(x,y,z+e);
+  const len=Math.hypot(nx,ny,nz)||1;
+  return [nx/len,ny/len,nz/len];
 }
 
 export function buildMaterialSculpture(method,imageData,texture,{
-  depth=1,material='marker',paper='#f5f0e6'
+  depth=1,material='marker',paper='#f5f0e6',quality='desktop'
 }={}){
   if(!texture?.isTexture)throw Error('Actual archived artwork texture is required');
+  if(!['petal','ribbon','pigment','hybrid'].includes(method))
+    throw Error('Unsupported 360° sculpting method '+method);
   const field=pigmentField(imageData,{material,paper});
-  const w=field.width,h=field.height,stride=w+1,n=stride*(h+1);
-  const position=new Float32Array(n*2*3);
-  const uv=new Float32Array(n*2*2);
-  const colors=new Float32Array(n*2*3);
-  const nodeStrength=(c,r)=>{
-    let sum=0,n=0;
-    for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=0;dx++){
-      const xx=c+dx,yy=r+dy;
-      if(xx<0||yy<0||xx>=w||yy>=h)continue;
-      sum+=field.ink[yy*w+xx];n++;
-    }
-    return n?sum/n:0;
+  const mobile=quality==='mobile';
+  const nx=mobile?64:88,ny=mobile?94:128,nz=mobile?17:23;
+  const sizex=1.88,sizey=2.35;
+  const plane=(nx+1)*(ny+1);
+  const count=plane*(nz+1);
+  const scalars=new Float32Array(count);
+  const gx=(i)=>(i/nx-.5)*sizex;
+  const gy=(j)=>(.5-j/ny)*sizey;
+  const gz=(k)=>(-.79+k/nz*1.42)*depth;
+  const idx=(i,j,k)=>k*plane+j*(nx+1)+i;
+  for(let k=0;k<=nz;k++)for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)
+    scalars[idx(i,j,k)]=fieldAt(field,method,gx(i),gy(j),gz(k),depth);
+  const positions=[],normals=[],uvs=[];
+  const sides={front:0,back:0,side:0};
+  const corners=[
+    [0,0,0],[1,0,0],[1,1,0],[0,1,0],
+    [0,0,1],[1,0,1],[1,1,1],[0,1,1]
+  ];
+  // Tetrahedra split one cube without any ambiguous marching-cubes cases.
+  const tetra=[
+    [0,5,1,6],[0,1,2,6],[0,2,3,6],
+    [0,3,7,6],[0,7,4,6],[0,4,5,6]
+  ];
+  const interpolated=(a,b)=>{
+    const denom=a.value-b.value;
+    const t=clamp(Math.abs(denom)<1e-8?.5:a.value/denom,0,1);
+    return [a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,a.z+(b.z-a.z)*t];
   };
-  for(let r=0;r<=h;r++)for(let c=0;c<=w;c++){
-    const idx=r*stride+c,u=c/w,v=1-r/h;
-    const [front,back]=buildProfile(method,u,v,nodeStrength(c,r),depth);
-    const colour=localPigmentRGB(field,imageData,c,r);
-    for(const [layer,point] of [[0,front],[1,back]]){
-      const p=(layer*n+idx)*3,t=(layer*n+idx)*2;
-      position.set(point,p);
-      uv[t]=u;uv[t+1]=v;
-      colors[p]=colour.r;colors[p+1]=colour.g;colors[p+2]=colour.b;
+  const emit=(points)=>{
+    const shades=points.map(p=>normalAt(field,method,...p,depth));
+    const av=[shades.reduce((s,n)=>s+n[0],0),
+      shades.reduce((s,n)=>s+n[1],0),
+      shades.reduce((s,n)=>s+n[2],0)];
+    const aa=new THREE.Vector3(...points[0]),bb=new THREE.Vector3(...points[1]),
+      cc=new THREE.Vector3(...points[2]);
+    const cross=bb.sub(aa).cross(cc.sub(aa));
+    if(cross.x*av[0]+cross.y*av[1]+cross.z*av[2]<0){
+      [points[1],points[2]]=[points[2],points[1]];
+      [shades[1],shades[2]]=[shades[2],shades[1]];
+    }
+    for(let q=0;q<3;q++){
+      const [x,y,z]=points[q];
+      const [sx,sy]=undoBackWarp(method,x,y,z,depth);
+      positions.push(x,y,z);normals.push(...shades[q]);
+      uvs.push(clamp(sx/W+.5,0,1),clamp(sy/H+.5,0,1));
+    }
+    if(av[2]>.95)sides.front++;
+    else if(av[2]<-.95)sides.back++;
+    else sides.side++;
+  };
+  for(let k=0;k<nz;k++)for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    const cells=corners.map(([di,dj,dk])=>({
+      x:gx(i+di),y:gy(j+dj),z:gz(k+dk),
+      value:scalars[idx(i+di,j+dj,k+dk)]
+    }));
+    let anyIn=false,anyOut=false;
+    for(const c of cells){if(c.value>0)anyIn=true;else anyOut=true;}
+    if(!(anyIn&&anyOut))continue;
+    for(const tet of tetra){
+      const inside=tet.filter(t=>cells[t].value>0);
+      const outside=tet.filter(t=>cells[t].value<=0);
+      if(!inside.length||!outside.length)continue;
+      const cross=(a,b)=>interpolated(cells[a],cells[b]);
+      if(inside.length===1){
+        emit(outside.map(t=>cross(inside[0],t)));
+      }else if(inside.length===3){
+        emit(inside.map(t=>cross(t,outside[0])));
+      }else{
+        const a=cross(inside[0],outside[0]);
+        const b=cross(inside[0],outside[1]);
+        const c=cross(inside[1],outside[0]);
+        const d=cross(inside[1],outside[1]);
+        emit([a,b,c]);emit([b,d,c]);
+      }
     }
   }
-  const front=[],back=[],walls=[];
-  const top=(c,r)=>r*stride+c,bot=(c,r)=>n+top(c,r);
-  const used=(c,r)=>c>=0&&c<w&&r>=0&&r<h&&field.occupancy[r*w+c]===1;
-  const wall=(a,b)=>walls.push(a,b,bot(b%stride,Math.floor(b/stride)),
-    a,bot(b%stride,Math.floor(b/stride)),
-    bot(a%stride,Math.floor(a/stride)));
-  for(let r=0;r<h;r++)for(let c=0;c<w;c++){
-    if(!used(c,r))continue;
-    const tl=top(c,r),tr=top(c+1,r),bl=top(c,r+1),br=top(c+1,r+1);
-    front.push(tl,bl,tr,tr,bl,br);
-    back.push(bot(c,r),bot(c+1,r),bot(c,r+1),
-      bot(c+1,r),bot(c+1,r+1),bot(c,r+1));
-    if(!used(c,r-1))wall(tl,tr);
-    if(!used(c+1,r))wall(tr,br);
-    if(!used(c,r+1))wall(br,bl);
-    if(!used(c-1,r))wall(bl,tl);
-  }
+  if(positions.length<90)throw Error('Source pigment created no closed sculptural mass');
   const geometry=new THREE.BufferGeometry();
-  geometry.setAttribute('position',new THREE.BufferAttribute(position,3));
-  geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));
-  geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
-  geometry.setIndex([...front,...back,...walls]);
-  geometry.addGroup(0,front.length+back.length,0);
-  geometry.addGroup(front.length+back.length,walls.length,1);
-  geometry.computeVertexNormals();
-  // Bump from the SAME image as the pigment colour; a material profile
-  // controls relief and finish rather than replacing oil/tissue with pastel.
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
   const finish=materialFinish(material);
-  const artworkSurface=new THREE.MeshStandardMaterial({
+  const artworkMaterial=new THREE.MeshStandardMaterial({
     map:texture,bumpMap:texture,bumpScale:finish.bumpScale,
     roughness:finish.roughness,metalness:finish.metalness,
     side:THREE.DoubleSide
   });
-  const sculptedEdge=new THREE.MeshStandardMaterial({
-    vertexColors:true,roughness:finish.roughness,metalness:finish.metalness,
-    side:THREE.DoubleSide
-  });
-  for(const m of [artworkSurface,sculptedEdge])m.userData.ppOwned=true;
-  const mesh=new THREE.Mesh(geometry,[artworkSurface,sculptedEdge]);
-  mesh.name='Original material becomes the whole rounded 360° pigment volume';
+  artworkMaterial.userData.ppOwned=true;
+  const mesh=new THREE.Mesh(geometry,artworkMaterial);
+  mesh.name='One continuous paint-textured rounded isosurface; 360° original pigment';
   mesh.userData.ppOwned=true;
   const group=new THREE.Group();
   group.add(mesh);
-  group.name='Source material sculpture / '+method;
+  group.name='Source material sculpted in the round / '+method;
   group.userData={
     engine:MATERIAL_SURFACE_VERSION,method,
     material,sourceAnchored:true,paintedCells:field.cells,
-    paintedFraction:field.cells/(w*h),
-    sourceTextureOnBody:mesh.material[0].map===texture,
+    paintedFraction:field.cells/(field.width*field.height),
+    sourceTextureOnBody:mesh.material.map===texture,
     separatePaintingOverlay:false,
     materialRoughness:finish.roughness,materialBumpScale:finish.bumpScale,
-    volumetricDepth:depth,frontIndices:front.length,
-    backIndices:back.length,wallIndices:walls.length,
+    volumetricDepth:depth,frontIndices:sides.front*3,
+    backIndices:sides.back*3,wallIndices:sides.side*3,
     sourceAnchors:[],sourceTraceCount:field.cells,
     sourceOrigin:'actual-archived-image',
-    noModelInference:true,
-    noImagePlane:true
+    noModelInference:true,noImagePlane:true,
+    curvedSurfaceTriangles:positions.length/9
   };
   return group;
 }
