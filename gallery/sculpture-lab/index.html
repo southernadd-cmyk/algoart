@@ -26,6 +26,17 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 #depth-controls input{width:112px;accent-color:#d7b87e}
 #depth-controls output{width:40px;text-align:right}
 @media(max-width:740px){#depth-controls{bottom:151px;gap:6px;padding:7px;max-width:98vw;flex-wrap:wrap;justify-content:center}#depth-controls label,#depth-controls output{font-size:.64rem}#depth-controls select{max-width:160px;font-size:.6rem;padding:5px}#depth-controls input{width:91px}}
+#settingsToggle{display:none}
+@media(max-width:740px){
+  #settingsToggle{
+    display:block;position:absolute;z-index:4;bottom:150px;left:50%;
+    transform:translateX(-50%);padding:8px 18px;border:1px solid #ad956d;
+    background:#26302df1;color:#f5dfba;font-size:.72rem;cursor:pointer
+  }
+  #depth-controls:not(.expanded){display:none}
+  #depth-controls.expanded{bottom:191px;z-index:4;max-height:45dvh;overflow-y:auto}
+  #original{max-height:156px;overflow-y:auto}
+}
 </style>
 <script src="https://unpkg.com/@jscad/modeling@2.13.0" defer></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script></head>
@@ -34,6 +45,7 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 <div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Petals</option><option value="1">2 · Ribbons</option><option value="2">3 · Pigment</option><option value="3">4 · Hybrid</option></select></div></header>
 <div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>Original V10 mark paths and finished paint contours become coloured 3D gestures; JSCAD shapes the rear.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
 <div id="legend"><span>01 · Golden-angle petals</span><span>02 · Phi ribbons</span><span>03 · Pigment volumes</span><span>04 · Rules hybrid</span></div>
+<button id="settingsToggle" type="button" aria-controls="depth-controls" aria-expanded="false">Sculpture settings</button>
 <div id="depth-controls">
 <label for="geometryMode">Geometry</label>
 <select id="geometryMode" aria-label="Compare JSCAD fused solids to separate rules">
