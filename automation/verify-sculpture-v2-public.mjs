@@ -9,7 +9,7 @@ import {createHash} from 'node:crypto';
 const worker=(process.env.V2_WORKER_URL||'').replace(/\/$/,'');
 const PAGES='https://southernadd-cmyk.github.io';
 const PREFIX='sculptures-v2/v4.2.1-20261110/';
-const CATALOG_SHA='d64db629b4be678e51fd455331ebf4d4b28d9820089aacd27dff730aa2acad8d';
+const CATALOG_SHA='a9a1771413a085e3d73dc19c806c6a86d9026e36e8ba6539d5676bf4dc13892f';
 assert.match(worker,/^https:\/\/proportion-piece-sculpture-v2\.[a-z0-9-]+\.workers\.dev$/);
 const sha=b=>createHash('sha256').update(b).digest('hex');
 async function readAndVerify(path,expectedSha,expectedMime,expectedSize){
@@ -50,7 +50,20 @@ const bytes=await readAndVerify(catalogPath,CATALOG_SHA,'application/json');
 const catalog=JSON.parse(bytes.toString('utf8'));
 assert.equal(catalog.schema,'pp-sculpture-v2-r2-catalog');
 assert.equal(catalog.version,1);
+assert.equal(catalog.worker,worker,'Catalog must advertise the deployed dedicated V2 Worker');
 assert.equal(Object.keys(catalog.days).length,37);
+// Every catalog URL must point at the public Worker actually checked here.
+// Validate the full manifest even though only representative meshes are fetched.
+const allUrls=[
+  ...Object.values(catalog.days).flatMap(day=>Object.values(day.qualities).map(q=>q.url)),
+  ...Object.values(catalog.reception).map(asset=>asset.url)
+];
+assert.equal(allUrls.length,71,'Expected 66 floor packs and 5 reception assets');
+for(const assetUrl of allUrls){
+  assert.equal(new URL(assetUrl).origin,worker,'Catalog contains wrong delivery host');
+  assert.ok(new URL(assetUrl).pathname.slice(1).startsWith(PREFIX),
+    'Catalog references an unexpected R2 namespace');
+}
 assert.equal(catalog.reception.image.bytes>0,true);
 for(const [entry,mime] of [
   [catalog.days['2026-11-10'].qualities.desktop,'application/gzip'],
