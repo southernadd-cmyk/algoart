@@ -177,7 +177,16 @@ jobs:
           DATE="${{ inputs.date }}"
           TODAY="$(TZ=Europe/London date +%F)"
           EARLIEST="$(TZ=Europe/London date -d "$TODAY - 3 days" +%F)"
-          [[ "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && "$DATE" >= "$EARLIEST" && "$DATE" <= "$TODAY" ]] || {
+          [[ "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || {
+            echo "::error::Recovery date must be YYYY-MM-DD."; exit 1;
+          }
+          [[ "$(date -u -d "$DATE" +%F)" == "$DATE" ]] || {
+            echo "::error::Recovery date is not a valid calendar day."; exit 1;
+          }
+          DATE_SECONDS="$(date -u -d "$DATE" +%s)"
+          START_SECONDS="$(date -u -d "$EARLIEST" +%s)"
+          END_SECONDS="$(date -u -d "$TODAY" +%s)"
+          (( DATE_SECONDS >= START_SECONDS && DATE_SECONDS <= END_SECONDS )) || {
             echo "::error::Only the last 3 London edition dates may be recovered."; exit 1;
           }
           [[ "${DATE:0:7}" == "${TODAY:0:7}" ]] || {
