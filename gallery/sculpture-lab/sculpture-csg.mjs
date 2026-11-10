@@ -271,8 +271,8 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false
   // Recede and narrow the JSCAD bulk rather than projecting broad joined
   // solids through the original drawing's negative space.
   const resemblance=clamp(fidelity,0,1);
-  mesh.position.z-=.10*depth+.12*depth*resemblance;
-  const coreXY=1-.14*resemblance;
+  mesh.position.z-=.15*depth+.19*depth*resemblance;
+  const coreXY=1-.25*resemblance;
   mesh.scale.set(coreXY,coreXY,1);
   group.add(mesh);
   const sourceLayer=buildSourceDetailLayer(marks,{depth,fidelity:resemblance});
@@ -285,7 +285,7 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false
     fidelity:clamp(fidelity,0,1),
     sourceTraceCount:sourceLayer.userData.sourceTraceCount,
     sourceDetailAnchors:sourceLayer.userData.sourceAnchors,
-    coreRecess:.10*depth+.12*depth*resemblance,
+    coreRecess:.15*depth+.19*depth*resemblance,
     noImageExtrusion:true,
     noModelInference:true,
     sourceAnchors:selected.map(m=>({x:m.x,y:m.y,color:m.color,kind:m.kind})),
