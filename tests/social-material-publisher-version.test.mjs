@@ -106,10 +106,10 @@ test('historical Watercolour recovery uses a dated frozen queue and cannot regen
     "Publish gallery update to GitHub Pages source",
     "Explicitly trigger Pages deployment after gallery commit"
   ]){
-    const found=text.split('      - name: '+name+'\\n')[1];
+    const found=text.split('      - name: '+name+'\n')[1];
     assert.ok(found,'Missing workflow step: '+name);
-    const condition=found.split('\\n').find(line=>line.trim().startsWith('if: '));
-    assert.match(condition,/steps\\.historical\\.outputs\\.backdated != 'true'/,
+    const condition=found.split('\n').find(line=>line.trim().startsWith('if: '));
+    assert.match(condition,/steps\.historical\.outputs\.backdated != 'true'/,
       name+' must be suppressed during backdated social-only replay');
   }
 });
