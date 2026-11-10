@@ -7,7 +7,7 @@ import {PEDESTAL_WIDTH,PEDESTAL_DEPTH,PEDESTAL_HEIGHT} from './sculptures.mjs';
 import {materialFinish,pigmentField} from '../sculpture-lab/material-surface.mjs';
 import {createHybridSupport,PLINTH_TOP_LOCAL_Y} from '../sculpture-lab/hybrid-supports.mjs';
 
-const PACK_VERSION=2,PACK_FORMAT='hybrid-13b-pos16-normal8-uv16-le';
+const PACK_VERSION=2,PACK_FORMAT='hybrid-indexed-13b-u32-v2';
 const packCache=new Map(),stats={
  mode:'isolated-hybrid-museum-pin-v1',
  loaded:0,failed:0,packsLoaded:0,sculptures:new Set(),errors:[]
@@ -56,7 +56,7 @@ async function geometryPack(date){
 function decodeBakedGeometry(entry){
  if(entry?.format!==PACK_FORMAT||entry.method!=='hybrid'||
     entry.mount!=='museum-pin'||entry.vertices<150||
-    entry.vertices>450000||entry.vertices%3!==0)
+    entry.vertices>220000||entry.indices<150||entry.indices%3!==0)
   throw Error('Unexpected or corrupt baked hybrid geometry');
  const raw=atob(entry.packed||'');
  if(raw.length!==entry.vertices*13)
@@ -76,7 +76,20 @@ function decodeBakedGeometry(entry){
   uv[t]=view.getUint16(k+9,true)/65535;
   uv[t+1]=view.getUint16(k+11,true)/65535;
  }
+ const rawIndices=atob(entry.indexPacked||'');
+ if(rawIndices.length!==entry.indices*4)
+  throw Error('Baked hybrid triangle index stream truncated');
+ const bytesIndices=new Uint8Array(rawIndices.length);
+ for(let i=0;i<rawIndices.length;i++)bytesIndices[i]=rawIndices.charCodeAt(i);
+ const indexView=new DataView(bytesIndices.buffer);
+ const indices=new Uint32Array(entry.indices);
+ for(let i=0;i<entry.indices;i++){
+  const value=indexView.getUint32(i*4,true);
+  if(value>=entry.vertices)throw Error('Baked hybrid triangle index out of bounds');
+  indices[i]=value;
+ }
  const geo=new THREE.BufferGeometry();
+ geo.setIndex(new THREE.BufferAttribute(indices,1));
  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
  geo.setAttribute('normal',new THREE.BufferAttribute(norms,3));
  geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));
