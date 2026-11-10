@@ -32,6 +32,8 @@ jobs:
         run: |
           SOCIAL_DATE=2026-10-18 SOCIAL_MATERIAL=action SOCIAL_COUNT=1 SOCIAL_ORIENTATION=landscape node automation/generate-social.mjs
           SOCIAL_DATE=2026-10-18 SOCIAL_MATERIAL=action SOCIAL_COUNT=1 SOCIAL_ORIENTATION=portrait node automation/generate-social.mjs
+      - name: Validate frozen V9 and V10 selections for all materials
+        run: node --test tests/social-material-publisher-version.test.mjs
       - name: Validate queue, links, images
         run: node tests/action-release-smoke.mjs
       - uses: actions/upload-artifact@v4
