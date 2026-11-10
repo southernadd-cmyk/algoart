@@ -1,0 +1,55 @@
+name: Sculpture Lab 360 rendering validation
+on:
+  push:
+    branches:
+      - test/sculpture-lab-360-20261110
+    paths:
+      - 'gallery/sculpture-lab/**'
+      - 'tests/sculpture-360-lab*'
+      - '.github/workflows/sculpture-360-check.yml'
+  pull_request:
+    paths:
+      - 'gallery/sculpture-lab/**'
+      - 'tests/sculpture-360-lab*'
+      - '.github/workflows/sculpture-360-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  geometry-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install gallery dependencies and Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Validate geometric 360 methods
+        run: |
+          node --check gallery/sculpture-lab/sculpture-360.mjs
+          node --check gallery/sculpture-lab/lab-360.mjs
+          node --test tests/sculpture-360-lab.test.mjs
+      - name: Start archived gallery HTTP server
+        run: |
+          python3 -m http.server 4173 >/tmp/sculpture-360-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/gallery/sculpture-lab/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/sculpture-360-http.log
+          exit 1
+      - name: Exercise actual four-sculpture room (desktop and mobile)
+        run: node tests/sculpture-360-lab.browser.mjs
+      - name: Upload sculpture room screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sculpture-lab-360-screenshots
+          if-no-files-found: ignore
+          path: /tmp/sculpture-lab-360-*.png
