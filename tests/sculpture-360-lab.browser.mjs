@@ -18,15 +18,25 @@ try{
     window.__sculptureLabStatus?.error,undefined,{timeout:90000});
   let lab=await page.evaluate(()=>window.__sculptureLabStatus);
   assert.equal(lab.ready,true,'Sculpture room failed: '+JSON.stringify(lab));
-  assert.equal(lab.engine,'rules-v1');
+  assert.equal(lab.engine,'jscad-csg-v1');
+  assert.equal(lab.usesJSCAD,true);
   assert.equal(lab.usesModel,false);
   assert.equal(lab.usesExtrusion,false);
   assert.deepEqual(lab.methods.map(m=>m.method),['petal','ribbon','pigment','hybrid']);
-  assert.ok(lab.methods.every(m=>m.meshes>2&&m.polys>120));
+  assert.ok(lab.methods.every(m=>m.meshes>=1&&m.polys>120));
+  assert.ok(lab.methods.every(m=>m.csgPolygons>20));
+  assert.ok(lab.methods.some(m=>m.subtractApplied),'CSG should carve actual negative space');
   assert.ok(lab.methods.every(m=>m.extent.every(x=>x>.2)));
   assert.ok(!await page.locator('#aiFiles').count(),'AI upload UI must be gone');
   assert.ok(!await page.locator('#textureMode').count(),'Flat painting mode must be gone');
   assert.equal(await page.locator('#depth').inputValue(),'100');
+  await page.locator('#geometryMode').selectOption('rules');
+  let baseline=await page.evaluate(()=>window.__sculptureLabStatus);
+  assert.equal(baseline.engine,'rules-v1');
+  assert.ok(baseline.methods.every(m=>m.meshes>=2));
+  await page.locator('#geometryMode').selectOption('jscad');
+  lab=await page.evaluate(()=>window.__sculptureLabStatus);
+  assert.equal(lab.engine,'jscad-csg-v1');
   await page.locator('#focus').selectOption('3');
   await page.locator('#front').click();
   await page.screenshot({path:'/tmp/sculpture-lab-rules-front.png',timeout:60000});
@@ -56,11 +66,13 @@ try{
   await page.waitForFunction(()=>window.__sculptureLabStatus?.ready||
     window.__sculptureLabStatus?.error,undefined,{timeout:90000});
   lab=await page.evaluate(()=>window.__sculptureLabStatus);
-  assert.equal(lab.ready,true,'Mobile rules room failed: '+JSON.stringify(lab));
+  assert.equal(lab.ready,true,'Mobile CSG room failed: '+JSON.stringify(lab));
+  assert.equal(lab.engine,'jscad-csg-v1');
   assert.equal(await page.locator('#depth').isVisible(),true);
+  assert.equal(await page.locator('#geometryMode').isVisible(),true);
   assert.equal(await page.locator('#back').isVisible(),true);
   assert.deepEqual(errors,[],'Browser errors: '+errors.join('; '));
   await page.screenshot({path:'/tmp/sculpture-lab-rules-mobile.png',timeout:60000});
-  console.log('Rules sculpture lab passed: ',lab.date,lab.seed,
+  console.log('JSCAD CSG sculpture lab passed: ',lab.date,lab.seed,
     lab.methods.map(m=>m.method+':'+m.meshes).join(' '));
 }finally{await browser.close();}
