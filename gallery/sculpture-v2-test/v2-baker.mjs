@@ -162,6 +162,7 @@ export async function bakeV2Study({item,date,quality='desktop',method='assembly'
       quality,
       regionCount:topology.regions.length,
       groupedSmallIslands:topology.groupedSmallIslands||0,
+      pixelFallbackRegions:sculpture.userData.pixelFallbackRegions||0,
       omittedCells:topology.omittedCells,
       coverage:topology.covered/Math.max(1,topology.pigmented),
       triangleCount:meshes.reduce((n,m)=>n+m.geometry.index.length/3,0),

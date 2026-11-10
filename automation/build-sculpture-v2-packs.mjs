@@ -76,6 +76,33 @@ try{
       }));
     }
   }
+  if(all){
+    const day='2026-10-10',
+      filename='2026-10-10-portrait-01-rects-AP-20261010-01-70606.jpg';
+    const meta=JSON.parse(await readFile(
+      join('gallery',day,'meta.json'),'utf8'));
+    const item=meta.entries.find(x=>x.imageFile===filename);
+    assert.ok(item,'Second historical V2 regression portrait unavailable');
+    for(const quality of qualities){
+      const stem=filename.replace(/\\.[^.]+$/,'');
+      const candidate=join('3d',stem+'-'+
+        (quality==='mobile'?'640':'1100')+'.webp');
+      const sourceFile=await exists(join('gallery',day,candidate))?
+        candidate:filename;
+      const geometry=await page.evaluate(
+        async ({item,date,quality})=>window.bakeV2Study({item,date,quality}),
+        {item:{...item,sourceFile},date:day,quality}
+      );
+      assert.equal(geometry.coverage,1);
+      assert.equal(geometry.omittedCells,0);
+      assert.ok(geometry.meshes.length>=geometry.regionCount);
+      console.log('V2_REGRESSION_OK '+JSON.stringify({
+        date:day,file:filename,quality,regions:geometry.regionCount,
+        triangles:geometry.triangleCount,
+        pixelFallbackRegions:geometry.pixelFallbackRegions
+      }));
+    }
+  }
   for(const day of selected){
     const meta=JSON.parse(await readFile(join('gallery',day,'meta.json'),'utf8'));
     assert.equal(meta.date,day,'Archive date mismatch');
@@ -88,7 +115,7 @@ try{
     const reportDay={date:day,eligible:portraits.length,baked:0,quality:{},errors:[]};
     for(const quality of qualities){
       const studies={};
-      let triangleCount=0,grouped=0;
+      let triangleCount=0,grouped=0,pixelFallbackRegions=0;
       const originals={};
       const records=[];
       const begin=Date.now();
@@ -116,10 +143,12 @@ try{
           studies[item.imageFile]=payload;
           triangleCount+=payload.triangleCount;
           grouped+=payload.groupedSmallIslands;
+          pixelFallbackRegions+=payload.pixelFallbackRegions||0;
           records.push({
             file:item.imageFile,sourceFile,sourceSha256:payload.sourceSha256,
             regions:payload.regionCount,triangles:payload.triangleCount,
-            groupedSmallIslands:payload.groupedSmallIslands
+            groupedSmallIslands:payload.groupedSmallIslands,
+            pixelFallbackRegions:payload.pixelFallbackRegions||0
           });
         }catch(error){
           failed++;
@@ -157,6 +186,7 @@ try{
         expectedSourceCount:portraits.length,
         complete:chosen.length===portraits.length,
         triangleCount,groupedSmallIslands:grouped,
+        pixelFallbackRegions,
         elapsedMs:Date.now()-begin,records
       };
       reportDay.quality[quality]=entry;
@@ -164,7 +194,8 @@ try{
       total+=chosen.length;
       console.log('V2_BAKE_QUALITY '+JSON.stringify({
         date:day,quality,baked:chosen.length,total:portraits.length,
-        triangles:triangleCount,bytes:zip.length,elapsedMs:entry.elapsedMs,
+        triangles:triangleCount,pixelFallbackRegions,
+        bytes:zip.length,elapsedMs:entry.elapsedMs,
         complete:entry.complete
       }));
     }

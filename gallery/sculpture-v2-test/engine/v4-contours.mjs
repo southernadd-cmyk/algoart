@@ -255,6 +255,28 @@ export function subdivideConforming(vertices,triangles,maxEdge=1.8,boundaries=[]
   }
   return triangles;
 }
+// Topology-preserving emergency tessellation of occupied source pixels.
+// Used only if both smooth-cap triangulation variants are non-manifold.
+// Adjacent cells share vertex indices; every source cell gets two cap faces.
+function sourceCellLattice(r){
+  const vertices=[],triangles=[],lookup=new Map();
+  const vertex=(x,y)=>{
+    const k=x+','+y;
+    if(lookup.has(k))return lookup.get(k);
+    const id=vertices.length;lookup.set(k,id);vertices.push({x,y});return id;
+  };
+  for(const cell of r.ids){
+    const x=r.minX+cell%r.rw,y=r.minY+Math.floor(cell/r.rw);
+    const a=vertex(x,y),b=vertex(x+1,y),
+      c=vertex(x+1,y+1),d=vertex(x,y+1);
+    triangles.push([a,b,c],[a,c,d]);
+  }
+  if(triangles.length!==2*r.area)
+    throw Error('V2 lattice does not contain every occupied pigment cell');
+  return{vertices,triangles,boundaries:boundaryLoops(vertices,triangles),
+    boundaryCount:vertices.length,pixelFallback:true};
+}
+
 export function buildPlanarRegion(r,{quality='desktop'}={}){
   const rings=extractContours(r,quality==='mobile'?.75:.5);
   const vertices=[],triangles=[],boundaries=[];
@@ -299,8 +321,20 @@ export function buildPlanarRegion(r,{quality='desktop'}={}){
       return{vertices:originalVertices,triangles:originalFaces,
         boundaries:rim,boundaryCount,triangulationRecovered:true};
     }catch(originalError){
-      throw Error('V2 non-manifold source triangulation; optimized: '+
-        optimizedError.message+'; original: '+originalError.message);
+      // Smooth triangulation cannot represent a rare source contour. Rather
+      // than silently dropping or opening its surface, use the EXACT cells.
+      try{
+        const lattice=sourceCellLattice(r);
+        console.warn('V2_SOURCE_CELL_RECOVERY region='+r.id+
+          ' quality='+quality+' cells='+r.area+
+          ' optimized='+optimizedError.message+
+          ' original='+originalError.message);
+        return lattice;
+      }catch(latticeError){
+        throw Error('V2 source cell triangulation failed; optimized: '+
+          optimizedError.message+'; original: '+originalError.message+
+          '; lattice: '+latticeError.message);
+      }
     }
   }
 }
