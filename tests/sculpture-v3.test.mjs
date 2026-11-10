@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {buildSourceFeatures} from '../gallery/sculpture-lab/sculpture-v2-features.mjs';
+import {traceVisiblePigmentContours} from '../gallery/sculpture-lab/visible-pigment-contours.mjs';
 import {V3_METHODS,buildAnamorphicSculpture,disposeAnamorphicSculpture}
   from '../gallery/sculpture-lab/sculpture-v3-anamorphic.mjs';
 const W=108,H=152;
@@ -30,6 +31,20 @@ const features=buildSourceFeatures(pixels,{material:'marker',strokes,maxGestures
 const tex=new THREE.DataTexture(new Uint8Array(pixels.data),W,H,THREE.RGBAFormat);
 tex.needsUpdate=true;tex.colorSpace=THREE.SRGBColorSpace;
 
+test('V3 traces genuine paint borders when engine vectors are unavailable',()=>{
+  const contours=traceVisiblePigmentContours(pixels,{
+    material:'marker',maxPaths:50
+  });
+  assert.ok(contours.length>=1,'No contours traced from finished pigment');
+  assert.ok(contours.every(c=>c.sourceKind==='pigment-contour'));
+  for(const c of contours)for(const p of c.points){
+    assert.ok(Math.abs(p.x)<=.68&&Math.abs(p.y)<=.95,'Contour escaped source sheet');
+  }
+  const fromVisible=buildSourceFeatures(pixels,{
+    material:'marker',strokes:contours,maxGestures:90
+  });
+  assert.equal(fromVisible.sourceKind,'visible-pigment-contours');
+});
 test('V3 does not shift the original XY stroke coordinates to create sculpture',()=>{
   for(const method of V3_METHODS){
     const model=buildAnamorphicSculpture(method,{
@@ -39,7 +54,7 @@ test('V3 does not shift the original XY stroke coordinates to create sculpture',
     assert.equal(model.userData.engine,'source-anchored-v3');
     assert.equal(model.userData.noImagePlane,true);
     assert.equal(model.userData.preservedOriginalXY,true);
-    const original=model.children.filter(x=>x.name.startsWith('Recorded source mark'));
+    const original=model.children.filter(x=>x.name.startsWith('Source-derived mark'));
     assert.equal(original.length,strokes.length,method+' source stroke retention');
     for(const mesh of original){
       const index=Number(mesh.name.split(' ').at(-1));
