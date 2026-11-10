@@ -226,6 +226,8 @@ export function buildAnamorphicSculpture(kind,{
     sourceBody:body,meshCount:group.children.reduce((v,c)=>v+(c.isMesh?1:c.children.length),0),
     noImagePlane:true,noSilhouetteExtrusion:true,
     extent:[size.x,size.y,size.z],phiStructural:true,
+    foldedSurfaceCount:group.children.filter(c=>c.name.startsWith('Source-anchored folded membrane')).length,
+    rearRibCount:group.children.filter(c=>c.name==='Source-attached rear structural rib').length,
     fidelityTarget:opt.fidelity
   };
   return group;
