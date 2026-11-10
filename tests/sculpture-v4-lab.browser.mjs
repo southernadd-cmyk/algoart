@@ -38,6 +38,9 @@ try{
   for(const m of state.methods){
     assert.ok(m.regionCount>=1,m.method+' missing source-derived regions');
     assert.ok(m.polygonTriangles>0,m.method+' missing true region mesh');
+    assert.ok(m.roundedRimTriangles>0,m.method+' must have beveled contours');
+    assert.equal(m.sourceInkRelief,true);
+    assert.ok(Number.isFinite(m.zLayerExtent));
     assert.equal(m.localIndependentSolids,true);
     assert.ok(m.extent[2]>.012,m.method+' has no rounded 3D depth');
     assert.ok(m.sourceOverlap&&Number.isFinite(m.sourceOverlap.iou));
@@ -50,9 +53,10 @@ try{
   assert.ok(state.methods[0].poissonRegions>=1);
   assert.ok(state.methods[1].medialRegions>=1);
   assert.ok(state.methods[0].poissonRegions!==state.methods[1].poissonRegions);
+  assert.equal(await page.locator('#colourMode option').count(),1,
+    'V4 must retain original pigment only');
   for(const view of ['front','side','back','threequarter']){
     await page.locator('#'+view).click();
-    await page.screenshot({path:'/tmp/sculpture-lab-v4-'+view+'.png',timeout:120000});
   }
   await page.setViewportSize({width:390,height:844});
   await page.reload({waitUntil:'domcontentloaded'});
@@ -64,7 +68,6 @@ try{
   assert.equal(await page.locator('#engineMode').isVisible(),true);
   await page.locator('#focus').selectOption('0');
   await page.locator('#side').click();
-  await page.screenshot({path:'/tmp/sculpture-lab-v4-mobile-side.png',timeout:120000});
   assert.deepEqual(errors,[],'Browser errors: '+errors.join('; '));
   assert.deepEqual(shaderErrors,[],'Shader errors: '+shaderErrors.join('; '));
   console.log('V4 actual source region solids:',

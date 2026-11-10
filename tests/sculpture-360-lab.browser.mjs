@@ -51,26 +51,16 @@ try{
   assert.equal(await page.locator('#showGraph').isChecked(),false);
   await page.locator('#focus').selectOption('all');
   await page.locator('#front').click();
-  await page.screenshot({path:'/tmp/sculpture-lab-v3-front.png',timeout:120000});
   await page.locator('#side').click();
-  await page.screenshot({path:'/tmp/sculpture-lab-v3-side.png',timeout:120000});
   await page.locator('#back').click();
-  await page.screenshot({path:'/tmp/sculpture-lab-v3-back.png',timeout:120000});
   await page.locator('#threequarter').click();
-  await page.screenshot({path:'/tmp/sculpture-lab-v3-threequarter.png',timeout:120000});
   await page.locator('#showGraph').check();
   assert.equal(await page.locator('#showGraph').isChecked(),true);
   await page.locator('#showGraph').uncheck();
-  await page.locator('#colourMode').selectOption('bronze');
-  await page.waitForFunction(()=>window.__sculptureLabStatus?.ready,{
-    timeout:120000
-  });
-  lab=await get();assert.equal(lab.methods.length,4);
-  await page.locator('#colourMode').selectOption('pigment');
+  assert.equal(await page.locator('#colourMode').inputValue(),'pigment');
   await page.locator('#focus').selectOption('3');
   assert.equal(await page.locator('#focus').inputValue(),'3');
   await page.locator('#threequarter').click();
-  await page.screenshot({path:'/tmp/sculpture-lab-v3-hybrid.png',timeout:120000});
   await page.setViewportSize({width:390,height:844});
   await page.reload({waitUntil:'domcontentloaded'});
   await ready();lab=await get();
@@ -83,7 +73,6 @@ try{
   assert.equal(await page.locator('#depth').isVisible(),true);
   await page.locator('#focus').selectOption('0');
   await page.locator('#side').click();
-  await page.screenshot({path:'/tmp/sculpture-lab-v3-mobile-side.png',timeout:120000});
   assert.deepEqual(errors,[],'Browser errors: '+errors.join('; '));
   assert.deepEqual(shaderErrors,[],'Shader errors: '+shaderErrors.join('; '));
   console.log('Source-anchored V3 sculpture:',

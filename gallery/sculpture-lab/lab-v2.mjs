@@ -2,6 +2,7 @@
 // Production tower, archive bakes, and daily publishing do not import this.
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {resolveStudyMaterial} from '../visit/study-material.mjs';
 import {recordOriginalComposition} from './source-bridge.mjs';
 import {prepareOriginalStrokes} from './recorded-gestures.mjs';
@@ -9,8 +10,8 @@ import {traceVisiblePigmentContours} from './visible-pigment-contours.mjs?v=3-fi
 import {createHybridSupport,disposeHybridSupport} from './hybrid-supports.mjs';
 import {buildSourceFeatures} from './sculpture-v2-features.mjs';
 import {V3_METHODS,buildAnamorphicSculpture,measureFrontSilhouette,disposeAnamorphicSculpture} from './sculpture-v3-anamorphic.mjs?v=3-finish-1';
-import {segmentPainting,V4_METHODS} from './sculpture-v4-topology.mjs';
-import {buildV4Sculpture,disposeV4Sculpture} from './sculpture-v4-surface.mjs';
+import {segmentPainting,V4_METHODS} from './sculpture-v4-topology.mjs?v=4.2';
+import {buildV4Sculpture,disposeV4Sculpture} from './sculpture-v4-surface.mjs?v=4.2';
 
 const $=id=>document.getElementById(id);
 const canvas=$('view'),scene=new THREE.Scene();
@@ -21,6 +22,19 @@ renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.55));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.16;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+// PMREM supplies plausible glossy pigment reflections without changing
+// the sculpture's actual source colour or requiring any bronze material.
+if(innerWidth>740){
+  const pmrem=new THREE.PMREMGenerator(renderer);
+  const room=new RoomEnvironment();
+  const env=pmrem.fromScene(room,.04);
+  scene.environment=env.texture;
+  scene.environmentIntensity=.36;
+  room.dispose();
+  pmrem.dispose();
+}
 const camera=new THREE.PerspectiveCamera(49,1,.08,55);
 camera.position.set(0,2.24,12.8);
 const orbit=new OrbitControls(camera,canvas);
@@ -31,13 +45,22 @@ function resize(){renderer.setSize(innerWidth,innerHeight,false);
   camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
 scene.add(new THREE.HemisphereLight('#fff7e9','#72706a',1.65));
-for(const [c,p,intensity] of [['#ffeed6',[-5,7,5],2.2],['#c4d7e3',[4,5,-5],1.25]]){
-  const light=new THREE.DirectionalLight(c,intensity);light.position.set(...p);scene.add(light);
+for(const [idx,[c,p,intensity]] of
+    [['#ffeed6',[-5,7,5],2.2],['#c4d7e3',[4,5,-5],1.25]].entries()){
+  const light=new THREE.DirectionalLight(c,intensity);light.position.set(...p);
+  if(idx===0){
+    light.castShadow=true;light.shadow.mapSize.set(innerWidth<740?512:1024,
+      innerWidth<740?512:1024);
+    Object.assign(light.shadow.camera,{left:-8,right:8,top:6,bottom:-6,
+      near:.5,far:25});
+    light.shadow.bias=-.00008;
+  }
+  scene.add(light);
 }
 function block(w,h,d,x,y,z,col,metalness=0){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
     new THREE.MeshStandardMaterial({color:col,roughness:.79,metalness}));
-  mesh.position.set(x,y,z);scene.add(mesh);return mesh;
+  mesh.position.set(x,y,z);mesh.receiveShadow=true;scene.add(mesh);return mesh;
 }
 block(18,.24,15,0,-.12,0,'#715944',.17);
 const backWall=block(18,6,.20,0,3,-7,'#d4c9b7');
@@ -84,6 +107,18 @@ for(let i=0;i<4;i++){
 }
 let archive=[],entries=[],currentDate='',selectedImage='';
 let loaded=null,ticket=0,currentGraph=null,currentFeatures=null,currentTopology=null;
+function pigmentBumpTexture(topology){
+  const w=topology.width,h=topology.height;
+  const rgba=new Uint8Array(w*h*4);
+  for(let i=0;i<w*h;i++){
+    const grey=Math.round(Math.min(1,Math.max(0,topology.pigmentInk[i]))*255);
+    rgba[i*4]=grey;rgba[i*4+1]=grey;rgba[i*4+2]=grey;rgba[i*4+3]=255;
+  }
+  const t=new THREE.DataTexture(rgba,w,h,THREE.RGBAFormat);
+  t.colorSpace=THREE.NoColorSpace;
+  t.flipY=true;t.needsUpdate=true;
+  return t;
+}
 const status=s=>{$('status').textContent=s;};
 function uiOptions(){
   return {
@@ -165,6 +200,11 @@ function publishStatus(models,scores,features){
       localIndependentSolids:m.userData.localIndependentSolids,
       sourceCoverage:m.userData.sourceCoverage,
       originalShapeCount:m.userData.originalShapeCount,
+      omittedCells:m.userData.omittedCells,
+      roundedRimTriangles:m.userData.roundedRimTriangles,
+      zLayerExtent:m.userData.zLayerExtent,
+      realConnections:m.userData.realConnections,
+      sourceInkRelief:m.userData.sourceInkRelief,
       extent:[size.x,size.y,size.z],
       sourceOverlap:scores[i],
       front:attr.filter(z=>z>.15).length,
@@ -184,6 +224,7 @@ function publishStatus(models,scores,features){
     reconstructedRegions:currentTopology?.regions?.length||0,
     reconstructedSourceCoverage:currentTopology?
       currentTopology.covered/Math.max(1,currentTopology.pigmented):0,
+    omittedPigmentCells:currentTopology?.omittedCells||0,
     methods:methodStats,options:uiOptions()
   };
   return methodStats;
@@ -198,7 +239,8 @@ function renderSculptures(){
         strokes:loaded.strokes||[],
         pixels:loaded.pixels,texture:loaded.texture,
         paper:loaded.paper,material:loaded.material,
-        ...opts,colourMode:$('colourMode').value,
+        bumpTexture:loaded.bumpTexture,
+        ...opts,colourMode:'pigment',
         quality:innerWidth<700?'mobile':'desktop'
       };
       const model=isV4()?
@@ -276,19 +318,22 @@ async function choosePainting(file){
       material:mat.type,paper,maxPaths:70
     });
     currentTopology=segmentPainting(pixels,{
-      material:mat.type,paper,maxRegions:32
+      material:mat.type,paper,maxRegions:72
     });
-    loaded={pixels,texture,material:mat.type,paper,
-      strokes:traced,recordedStrokesCount:0,tracedContourCount:traced.length};
+    loaded={pixels,texture,bumpTexture:pigmentBumpTexture(currentTopology),
+      material:mat.type,paper,strokes:traced,
+      recordedStrokesCount:0,tracedContourCount:traced.length};
     currentFeatures=buildSourceFeatures(pixels,{
       material:mat.type,paper,strokes:traced,maxGestures:90,maxRegions:32
     });
     $('thumb').src=url;$('caption').textContent=entry.title||entry.seed;
     $('source').href=entry.shareUrl;
     $('sourceEvidence').textContent=currentTopology.regions.length+
-      ' independent pigment regions (Poisson / medial reconstruction) · checking engine paths…';
+      ' ink/colour-waterwashed regions · '+
+      (currentTopology.omittedCells||0)+' omitted cells · checking original marks…';
     renderSculptures();
     if(previous?.texture)previous.texture.dispose();
+    if(previous?.bumpTexture)previous.bumpTexture.dispose();
     const link=new URL(location.href);
     link.searchParams.set('date',currentDate);link.searchParams.set('image',file);
     history.replaceState(null,'',link);
@@ -351,7 +396,7 @@ for(const key of ['phi','fidelity','depth','connection']){
   $(key).addEventListener('input',updateOutputs);
   $(key).addEventListener('change',renderSculptures);
 }
-$('colourMode').addEventListener('change',renderSculptures);
+// V4.2 uses source pigments exclusively; no artificial bronze mode.
 $('engineMode').addEventListener('change',()=>{
   labelMethods();renderSculptures();
   const url=new URL(location.href);
