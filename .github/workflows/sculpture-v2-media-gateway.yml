@@ -30,3 +30,23 @@ jobs:
           node --check cloudflare/media-read-only/src/worker.mjs
           node --test tests/sculpture-v2-media-gateway.test.mjs
           test ! -f cloudflare/media-read-only/src/.env
+
+  credential-probe:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: safety
+    runs-on: ubuntu-latest
+    environment: archive-media-test
+    timeout-minutes: 3
+    steps:
+      - name: Check availability of worker-deploy token without revealing credentials
+        env:
+          CF_DEPLOY_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          if [[ -n "$CF_DEPLOY_TOKEN" && -n "$CF_ACCOUNT" ]]; then
+            echo "SCULPTURE_V2_CLOUDFLARE_DEPLOY_TOKEN_READY=true"
+          else
+            echo "SCULPTURE_V2_CLOUDFLARE_DEPLOY_TOKEN_READY=false"
+            echo "::warning::No Cloudflare Workers deploy token is available to this environment. No Worker deployment attempted."
+          fi
