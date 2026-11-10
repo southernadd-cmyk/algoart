@@ -142,6 +142,9 @@ function setTextureControls() {
       mode: el('textureMode').value, blend: strength,
       paintedMeshes: active.map(g => g?.userData.texturedMeshes || 0)
     };
+  if (window.__sculptureLabStatus?.composition)
+    window.__sculptureLabStatus.composition.backingVisible =
+      active.map(g => g?.userData.structuralBacking?.visible ?? false);
 }
 function dataFromImage(image, entry, contours) {
   const material = resolveStudyMaterial(entry.shareUrl, entry.material || 'marker');
@@ -260,7 +263,8 @@ async function choosePainting(filename) {
         paintedMeshes: candidates.map(g => g.userData.texturedMeshes)},
       composition: {sourceAnchored: candidates.map(g => g.userData.sourceAnchored === true),
         frontXYError: candidates.map(g => g.userData.frontXYError ?? null),
-        paintCells: candidates.map(g => g.userData.anchorCells || 0)},
+        paintCells: candidates.map(g => g.userData.anchorCells || 0),
+        backingVisible: candidates.map(g => g.userData.structuralBacking?.visible ?? false)},
       methods: candidates.map(c => ({
         method: c.userData.method, elements: c.userData.elementCounts,
         meshes: (() => { let n = 0; c.traverse(o => { if (o.isMesh) n++; }); return n; })()
