@@ -152,3 +152,24 @@ test('Connection control never creates bridges when disabled',()=>{
     disposeV4Sculpture(disconnected);
   }finally{t.dispose();}
 });
+
+test('Uniform painted circle stays one region; paper halo is excluded',()=>{
+  const topology=segmentPainting(painting('circle'),{material:'marker'});
+  assert.equal(topology.regions.length,1);
+  assert.equal(topology.covered,topology.pigmented);
+});
+test('No silent skipped or omitted regions in synthetic construction',()=>{
+  const pixels=painting('islands');
+  const topology=segmentPainting(pixels,{material:'marker'});
+  const t=texture(pixels);
+  try{
+    for(const method of V4_METHODS){
+      const model=buildV4Sculpture(method,{topology,texture:t});
+      assert.equal(model.userData.omittedCells,0);
+      assert.equal(model.userData.regionCount,topology.regions.length);
+      assert.equal(model.children.filter(x=>x.userData.regionId!==undefined).length,
+        topology.regions.length);
+      disposeV4Sculpture(model);
+    }
+  }finally{t.dispose();}
+});
