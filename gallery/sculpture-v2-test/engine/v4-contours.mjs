@@ -81,7 +81,7 @@ export function extractContours(r,step=.5){
       next=key(other.a.x,other.a.y)===key(next.x,next.y)?other.b:other.a;
       edge=other;
     }
-    if(!closed||coords.length<3||Math.abs(signedArea(coords))<.25)continue;
+    if(!closed||coords.length<3||Math.abs(signedArea(coords))<.025)continue;
     // Remove near-coincident points before Taubin smoothing.
     let p=[];
     for(const c of coords){
@@ -110,7 +110,7 @@ export function extractContours(r,step=.5){
         }
       }
     }
-    if(Math.abs(signedArea(p))>.25)rings.push(p);
+    if(Math.abs(signedArea(p))>.025)rings.push(p);
   }
   return rings.sort((a,b)=>Math.abs(signedArea(b))-Math.abs(signedArea(a)));
 }

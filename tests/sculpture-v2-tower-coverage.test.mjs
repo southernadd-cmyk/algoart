@@ -76,6 +76,35 @@ test('frozen V2 topology retains even isolated micro-islands',async()=>{
       'Expected grouped, not silently discarded, small islands');
   }
 });
+test('single-pixel pigment islands can produce actual closed sculpture geometry',async()=>{
+  const THREE=await import('three');
+  const {segmentPainting}=await import(
+    '../gallery/sculpture-v2-test/engine/v4-topology.mjs');
+  const {buildV4Sculpture,disposeV4Sculpture}=await import(
+    '../gallery/sculpture-v2-test/engine/v4-surface.mjs');
+  const w=108,h=152,data=new Uint8ClampedArray(w*h*4);
+  for(let i=0;i<w*h;i++){
+    data[i*4]=245;data[i*4+1]=240;data[i*4+2]=230;data[i*4+3]=255;
+  }
+  for(const [x,y] of [[12,12],[54,76],[90,130],[18,122],[92,24]]){
+    const k=(y*w+x)*4;
+    data[k]=30;data[k+1]=42;data[k+2]=156;
+  }
+  const pixels={width:w,height:h,data};
+  const topo=segmentPainting(pixels,{material:'marker',maxRegions:48});
+  assert.equal(topo.omittedCells,0);
+  const texture=new THREE.DataTexture(new Uint8Array(data),w,h,THREE.RGBAFormat);
+  texture.needsUpdate=true;
+  try{
+    const group=buildV4Sculpture('medial',{
+      topology:topo,texture,quality:'mobile',material:'marker'
+    });
+    assert.ok(group.userData.polygonTriangles>0);
+    assert.equal(group.userData.omittedCells,0);
+    assert.equal(group.userData.regionCount,topo.regions.length);
+    disposeV4Sculpture(group);
+  }finally{texture.dispose();}
+});
 test('V1 geometry packs are not overwritten by the V2 preview build',async()=>{
   const archive=JSON.parse(await read('gallery/archive.json'));
   const available=archive.days.filter(({date})=>

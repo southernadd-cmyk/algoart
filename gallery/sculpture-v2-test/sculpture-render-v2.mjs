@@ -28,7 +28,13 @@ const status={
 };
 if(typeof window!=='undefined')window.__sculptureV2TowerStatus=status;
 function count(study,state,details={}){
-  const date=study.date||String(study.id||'').slice(0,10)||'reception';
+  const fromId=typeof study.id==='string'?
+    study.id.match(/^20\d{2}-\d{2}-\d{2}/)?.[0]:null;
+  const fromImage=String(study.image||'')
+    .match(/\/gallery\/(20\d{2}-\d{2}-\d{2})\//)?.[1];
+  const date=study.date||fromId||fromImage||
+    (typeof location!=='undefined'?new URLSearchParams(location.search).get('date'):null)||
+    'reception';
   if(!status.byDate[date])
     status.byDate[date]={attempted:0,complete:0,failed:0,cancelled:0};
   status[state]++;status.byDate[date][state]++;

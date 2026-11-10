@@ -54,3 +54,7 @@
   minimum-base threshold. When >48 mobile or >72 desktop regions exist,
   remaining islands are grouped into a final multi-contour region rather
   than omitted. This is the only V2-specific change to frozen lab geometry.
+
+- The V2-only marching-squares minimum area is 0.025 source pixels
+  (rather than the lab's 0.25) so isolated source dots survive contour
+  triangulation. An explicit tiny-island solid test covers this case.
