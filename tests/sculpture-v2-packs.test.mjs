@@ -18,11 +18,42 @@ test('sample packs are independently reconstructable and source-checked',async()
   assert.equal(report.failed,0);
   assert.ok(report.attempted>0,'No sculpture models were baked');
   assert.ok(report.days.length>=1);
-  let total=0;
+  assert.equal(report.days.length,report.sourceDateCount,
+    'A reported archive date is missing');
+  if(report.mode==='historical'){
+    const archived=(await readdir('gallery',{withFileTypes:true}))
+      .filter(x=>x.isDirectory()&&/^\d{4}-\d{2}-\d{2}$/.test(x.name))
+      .map(x=>x.name).sort();
+    assert.deepEqual(report.days.map(x=>x.date).sort(),archived,
+      'The historical archive was not exhaustively visited');
+    assert.deepEqual(report.qualityVariants,['desktop','mobile'],
+      'Historical V2 requires both mesh qualities');
+  }
+  let total=0,expectedEligible=0;
   for(const day of report.days){
+    const source=JSON.parse(await readFile(
+      join('gallery',day.date,'meta.json'),'utf8'));
+    const eligible=source.entries.filter(x=>
+      x.orientation==='portrait'&&x.material!=='confluence').length;
+    assert.equal(day.eligible,eligible,
+      'Historical eligible portrait inventory differs at '+day.date);
+    expectedEligible+=eligible;
+    if(report.mode==='historical'&&eligible)
+      assert.equal(day.baked,eligible,
+        'Incomplete portrait floor at '+day.date);
     const manifestPath=join(root,day.date,'3d','v2','manifest.json');
-    if(!await exists(manifestPath))continue;
+    if(!await exists(manifestPath)){
+      assert.equal(eligible,0,'Eligible floor is missing its V2 manifest: '+day.date);
+      continue;
+    }
     const manifest=JSON.parse(await readFile(manifestPath));
+    assert.equal(manifest.expectedPortraits,eligible);
+    if(report.mode==='historical'){
+      assert.deepEqual(Object.keys(manifest.qualities).sort(),
+        ['desktop','mobile'],'Missing historical quality for '+day.date);
+      for(const entry of Object.values(manifest.qualities))
+        assert.equal(entry.complete,true,'Incomplete historical mesh pack');
+    }
     assert.equal(manifest.version,2);
     assert.equal(manifest.date,day.date);
     for(const [quality,entry] of Object.entries(manifest.qualities)){
@@ -83,6 +114,14 @@ test('sample packs are independently reconstructable and source-checked',async()
     }
   }
   assert.ok(total>0,'No V2 meshes reconstructed from offline packs');
+  assert.equal(total,report.attempted,'Reported output does not match audited models');
+  if(report.mode==='historical')
+    assert.equal(total,expectedEligible*2,
+      'The full archive needs one desktop and one mobile sculpture per portrait');
+  console.log('V2_ARCHIVE_AUDIT_OK '+JSON.stringify({
+    dates:report.days.length,eligiblePortraits:expectedEligible,
+    auditedModels:total,mode:report.mode
+  }));
 });
 test('candidate pack process never alters existing V1 sculpture files',async()=>{
   const report=JSON.parse(await readFile(join(root,'bake-report.json')));

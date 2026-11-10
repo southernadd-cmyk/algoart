@@ -46,6 +46,34 @@ try{
   await page.goto(new URL('gallery/sculpture-v2-test/sculpture-bake.html',base).href,
     {waitUntil:'domcontentloaded',timeout:45000});
   await page.waitForFunction(()=>window.bakeV2Ready===true,null,{timeout:60000});
+  // Regression gate: the first full-archive bake failed on this mobile
+  // oil study. Exercise BOTH source sizes before investing in 37 floors.
+  if(all){
+    const fixtureDay='2026-10-18';
+    const fixtureFile='2026-10-18-oil-portrait-01-geometric-OP-20261018-01-11851.jpg';
+    const fixtureMeta=JSON.parse(await readFile(
+      join('gallery',fixtureDay,'meta.json'),'utf8'));
+    const fixture=fixtureMeta.entries.find(x=>x.imageFile===fixtureFile);
+    assert.ok(fixture,'Historical V2 regression portrait not in archive');
+    for(const fixtureQuality of qualities){
+      const stem=fixtureFile.replace(/\.[^.]+$/,'');
+      const candidate=join('3d',stem+'-'+
+        (fixtureQuality==='mobile'?'640':'1100')+'.webp');
+      const sourceFile=await exists(join('gallery',fixtureDay,candidate))?
+        candidate:fixtureFile;
+      const geometry=await page.evaluate(
+        async ({item,date,quality})=>window.bakeV2Study({item,date,quality}),
+        {item:{...fixture,sourceFile},date:fixtureDay,quality:fixtureQuality}
+      );
+      assert.equal(geometry.coverage,1,'Regression source coverage');
+      assert.equal(geometry.omittedCells,0,'Regression lost pigment');
+      assert.ok(geometry.triangleCount>0,'Regression has no geometry');
+      console.log('V2_REGRESSION_OK '+JSON.stringify({
+        date:fixtureDay,file:fixtureFile,quality:fixtureQuality,
+        regions:geometry.regionCount,triangles:geometry.triangleCount
+      }));
+    }
+  }
   for(const day of selected){
     const meta=JSON.parse(await readFile(join('gallery',day,'meta.json'),'utf8'));
     assert.equal(meta.date,day,'Archive date mismatch');
