@@ -22,23 +22,28 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 @media(max-width:740px){#controls{gap:4px;flex-wrap:wrap}#controls select:last-child{max-width:30vw}#camera-controls{bottom:100px;padding:4px;gap:3px}#camera-controls button{font-size:.62rem;padding:7px 6px}#legend{bottom:60px}#original{max-width:150px}}
 #depth-controls{position:absolute;z-index:3;bottom:174px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:9px;padding:9px 14px;background:#26302dec;border:1px solid #a99772}
 #depth-controls label,#depth-controls output{white-space:nowrap;font-size:.7rem;color:#ead8b4}
-#depth-controls select{font-size:.7rem;padding:7px;max-width:190px}
+#depth-controls select{font-size:.7rem;padding:7px;max-width:215px}
 #depth-controls input{width:112px;accent-color:#d7b87e}
 #depth-controls output{width:40px;text-align:right}
-@media(max-width:740px){#depth-controls{bottom:151px;gap:6px;padding:7px;max-width:98vw;flex-wrap:wrap;justify-content:center}#depth-controls label,#depth-controls output{font-size:.64rem}#depth-controls select{max-width:137px;font-size:.6rem;padding:5px}#depth-controls input{width:91px}}
+@media(max-width:740px){#depth-controls{bottom:151px;gap:6px;padding:7px;max-width:98vw;flex-wrap:wrap;justify-content:center}#depth-controls label,#depth-controls output{font-size:.64rem}#depth-controls select{max-width:160px;font-size:.6rem;padding:5px}#depth-controls input{width:91px}}
 </style>
 <script src="https://unpkg.com/@jscad/modeling@2.13.0" defer></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script></head>
 <body><canvas id="view" aria-label="Four sculpture methods in one three-dimensional test room"></canvas>
 <header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>JSCAD solid modelling × painting-derived rules — no generative AI.</small></div>
 <div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Petals</option><option value="1">2 · Ribbons</option><option value="2">3 · Pigment</option><option value="3">4 · Hybrid</option></select></div></header>
-<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>JSCAD shapes the 3D body; source marks become coloured sculptural gestures rather than flat relief.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
+<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>Original V10 mark paths and finished paint contours become coloured 3D gestures; JSCAD shapes the rear.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
 <div id="legend"><span>01 · Golden-angle petals</span><span>02 · Phi ribbons</span><span>03 · Pigment volumes</span><span>04 · Rules hybrid</span></div>
 <div id="depth-controls">
 <label for="geometryMode">Geometry</label>
 <select id="geometryMode" aria-label="Compare JSCAD fused solids to separate rules">
 <option value="jscad" selected>JSCAD / fused solids</option>
 <option value="rules">Separate rule forms</option>
+</select>
+<label for="sourceMode">Mark source</label>
+<select id="sourceMode" aria-label="Choose original recorded source or raster inference">
+<option value="original" selected>Recorded drawing + paint contours</option>
+<option value="raster">Previous pixel inference</option>
 </select>
 <label for="resemblance" title="Controls how many original painting marks remain visible as 3D gestures">Source resemblance</label>
 <input id="resemblance" type="range" min="0" max="100" step="5" value="85" aria-label="Source painting resemblance">
@@ -48,4 +53,4 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 <output id="depthValue" for="depth">100%</output>
 </div>
 <div id="hint">Drag: orbit · Scroll: zoom · WASD: move · Q/E: turn</div><div id="camera-controls"><button id="front" type="button">Front</button><button id="side" type="button">Side</button><button id="back" type="button">Back</button><button id="orbitToggle" type="button" aria-pressed="false">Auto rotate</button></div><div id="info" role="status" aria-live="polite">Preparing sculpture room…</div>
-<script type="module" src="./lab-360.mjs?v=8-source-fidelity"></script></body></html>
+<script type="module" src="./lab-360.mjs?v=9-recorded-geometry"></script></body></html>
