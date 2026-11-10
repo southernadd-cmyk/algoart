@@ -91,12 +91,21 @@ jobs:
         run: |
           npm run gallery:bundle
           npm run gallery:bundle:phi
-          node automation/build-hybrid-tower-test.mjs
+          # The experimental preview must NEVER gate production Pages,
+          # daily publishing or tomorrow's R2 canary.
+          if ! node automation/build-hybrid-tower-test.mjs; then
+            echo "::warning::Optional hybrid sculpture tower build failed; publishing live gallery unchanged"
+            rm -f gallery/hybrid-tower-test/index.html gallery/visit/gallery-phi-hybrid-test-bundle.js
+          fi
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
           node --check gallery/visit/gallery-bundle.js
           node --check gallery/visit/gallery-phi-bundle.js
-          node --check gallery/visit/gallery-phi-hybrid-test-bundle.js
-          test -s gallery/hybrid-tower-test/index.html
+          if [[ -f gallery/visit/gallery-phi-hybrid-test-bundle.js ]]; then
+            node --check gallery/visit/gallery-phi-hybrid-test-bundle.js || {
+              echo "::warning::Optional hybrid test bundle did not pass syntax; removing test preview"
+              rm -f gallery/hybrid-tower-test/index.html gallery/visit/gallery-phi-hybrid-test-bundle.js
+            }
+          fi
           node --test tests/gallery-classical-playlist.test.mjs
           node --check test/virtual-gallery/gallery-phi-bundle.js
 
