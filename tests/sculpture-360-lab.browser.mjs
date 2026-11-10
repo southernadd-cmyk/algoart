@@ -25,6 +25,9 @@ try {
   assert.ok(lab.methods.every(e => e.meshes > 1));
   assert.equal(lab.texture.mode, 'painted');
   assert.ok(lab.texture.paintedMeshes.every(n => n > 0), 'Not all four sculptures textured');
+  assert.ok(lab.composition.sourceAnchored.every(Boolean), 'The painting is not composition-anchored on all four plinths');
+  assert.ok(lab.composition.paintCells.every(n => n > 10), 'Source pigment geometry missing');
+  assert.ok(lab.composition.frontXYError.every(n => n === 0), 'The image composition is spatially distorted');
   assert.equal(lab.texture.blend, .76);
   await page.locator('#textureMode').selectOption('plain');
   assert.equal((await page.evaluate(() => window.__sculptureLabStatus)).texture.blend, 0);
@@ -36,6 +39,8 @@ try {
   assert.equal(lab.methods[3].elements.pigment > 0, true);
   assert.equal(await page.locator('#legend span').count(), 4);
   await page.locator('#focus').selectOption('3');
+  await page.locator('#front').click();
+  await page.screenshot({path: '/tmp/sculpture-lab-360-source-front.png', fullPage: true});
   await page.locator('#side').click();
   await page.locator('#back').click();
   await page.waitForTimeout(200);
@@ -59,6 +64,7 @@ try {
   const mobile = await page.evaluate(() => window.__sculptureLabStatus);
   assert.equal(mobile.ready, true, 'Mobile render failed: ' + JSON.stringify(mobile));
   assert.ok(mobile.texture.paintedMeshes.every(n => n > 0), 'No textured mobile materials');
+  assert.ok(mobile.composition.sourceAnchored.every(Boolean), 'Mobile source image positions changed');
   assert.equal(await page.locator('#textureMode').isVisible(), true);
   assert.equal(await page.locator('#back').isVisible(), true);
   await page.screenshot({path: '/tmp/sculpture-lab-360-mobile.png', fullPage: true});
