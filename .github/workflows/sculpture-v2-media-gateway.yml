@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.69.0 deploy --config cloudflare/media-read-only/wrangler.toml \
+          npx --yes wrangler@4.160.0 deploy --config cloudflare/media-read-only/wrangler.toml \
             2>&1 | tee "$RUNNER_TEMP/sculpture-v2-wrangler.log"
           url=$(grep -Eo 'https://[a-z0-9.-]+\.workers\.dev' "$RUNNER_TEMP/sculpture-v2-wrangler.log" \
             | grep '^https://proportion-piece-sculpture-v2\.' | tail -n 1 || true)
