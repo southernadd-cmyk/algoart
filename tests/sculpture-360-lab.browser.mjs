@@ -26,12 +26,15 @@ try {
   assert.equal(lab.texture.mode, 'painted');
   assert.ok(lab.texture.paintedMeshes.every(n => n > 0), 'Not all four sculptures textured');
   assert.ok(lab.composition.sourceAnchored.every(Boolean), 'The painting is not composition-anchored on all four plinths');
+  assert.ok(lab.composition.backingVisible.every(v => v === false), 'Free-form clutter remains visible through the painted front');
   assert.ok(lab.composition.paintCells.every(n => n > 10), 'Source pigment geometry missing');
   assert.ok(lab.composition.frontXYError.every(n => n === 0), 'The image composition is spatially distorted');
   assert.equal(lab.texture.blend, .76);
   await page.locator('#textureMode').selectOption('plain');
   assert.equal((await page.evaluate(() => window.__sculptureLabStatus)).texture.blend, 0);
+  assert.ok((await page.evaluate(() => window.__sculptureLabStatus)).composition.backingVisible.every(Boolean));
   await page.locator('#textureMode').selectOption('painted');
+  assert.ok((await page.evaluate(() => window.__sculptureLabStatus)).composition.backingVisible.every(v => v === false));
   await page.locator('#textureStrength').fill('92');
   assert.equal((await page.evaluate(() => window.__sculptureLabStatus)).texture.blend, .92);
   assert.equal(lab.methods[3].elements.petals > 0, true);
