@@ -47,7 +47,9 @@ function cleanPoints(stroke){
   return sampled;
 }
 function sourceMarks(strokes,features){
-  const input=Array.isArray(strokes)&&strokes.length?strokes:(features.gestures||[]);
+  const own=Array.isArray(strokes)?strokes:[];
+  const input=own.length>=3?own:
+    [...own,...(features.gestures||[]).filter(g=>g.source==='pigment-region')];
   return input.map((s,i)=>({...s,points:cleanPoints(s),sourceId:s.sourceIndex??i}))
     .filter(s=>s.points.length>=2)
     .sort((a,b)=>(b.score||b.weight||b.length||0)-(a.score||a.weight||a.length||0))
