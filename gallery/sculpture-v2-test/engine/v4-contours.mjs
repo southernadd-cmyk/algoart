@@ -278,84 +278,85 @@ export function buildPlanarRegion(r,{quality='desktop'}={}){
   if(!triangles.length)throw Error('V4 marching squares triangulation found no surface');
   const boundaryCount=vertices.length;
   delaunayFlip(vertices,triangles);
-  // Preserve the source outlines when the cap triangulation is refined.
-  // Reconstructing the perimeter from triangle *vertices* loses branches at
-  // touching pigment islands (multiple boundary edges can share a vertex).
-  // The resulting open chain previously crashed on historical oil portraits.
   const refined=subdivideConforming(vertices,triangles,
-    quality==='mobile'?2.55:1.8,boundaries);
-  const boundaryEdges=new Map();
-  for(const t of refined)for(let j=0;j<3;j++){
-    const id=ek(t[j],t[(j+1)%3]);
-    boundaryEdges.set(id,(boundaryEdges.get(id)||0)+1);
-  }
-  const rimBoundaries=boundaries.map(({indices,hole})=>{
-    if(indices.length<3)throw Error('V2 refined boundary has fewer than 3 points');
-    const edgeNormals=indices.map((a,j)=>{
-      const b=indices[(j+1)%indices.length];
-      const p=vertices[a],q=vertices[b];
-      if(!p||!q||!Number.isFinite(p.x)||!Number.isFinite(p.y)||
-          !Number.isFinite(q.x)||!Number.isFinite(q.y))
-        throw Error('V2 refined perimeter contains an invalid vertex');
-      if(boundaryEdges.get(ek(a,b))!==1)
-        throw Error('V2 refined perimeter is not a single cap boundary edge');
-      // Outer loops are clockwise and holes anticlockwise: in both cases
-      // the solid is on the right and its outward side normal points left.
-      const nx=p.y-q.y,ny=q.x-p.x,length=Math.hypot(nx,ny);
-      if(length<1e-9)throw Error('V2 refined perimeter has a zero-length edge');
-      return[nx/length,ny/length];
-    });
-    const outward=edgeNormals.map((q,j)=>{
-      const p=edgeNormals[(j+indices.length-1)%indices.length];
-      const x=p[0]+q[0],y=p[1]+q[1],length=Math.hypot(x,y);
-      return length>1e-9?[x/length,y/length]:q;
-    });
-    return{indices,outward,hole};
-  });
-  return{vertices,triangles:refined,boundaries:rimBoundaries,
+    quality==='mobile'?2.55:1.8);
+  // Trace the ACTUAL cap boundary half-edges, not the original outlines:
+  // triangles may pinch at one vertex and each source island must retain
+  // an independently closed, rounded side wall.
+  return{vertices,triangles:refined,boundaries:boundaryLoops(vertices,refined),
     boundaryCount};
 }
 
 export function boundaryLoops(vertices,triangles){
-  const use=new Map(),next=new Map(),third=new Map();
-  for(const t of triangles)for(let e=0;e<3;e++){
-    const k=ek(t[e],t[(e+1)%3]);use.set(k,(use.get(k)||0)+1);
+  const uses=new Map();
+  for(const t of triangles)for(let i=0;i<3;i++){
+    const k=ek(t[i],t[(i+1)%3]);
+    uses.set(k,(uses.get(k)||0)+1);
   }
-  for(const t of triangles)for(let e=0;e<3;e++){
-    const a=t[e],b=t[(e+1)%3];
-    if(use.get(ek(a,b))!==1)continue;
-    next.set(a,b);third.set(a,t[(e+2)%3]);
+  const edges=[],outgoing=new Map();
+  for(const t of triangles)for(let i=0;i<3;i++){
+    let a=t[i],b=t[(i+1)%3],c=t[(i+2)%3];
+    if(uses.get(ek(a,b))!==1)continue;
+    const p=vertices[a],q=vertices[b],inside=vertices[c];
+    if(!p||!q||!inside)throw Error('V2 cap has an invalid boundary triangle');
+    const area=(q.x-p.x)*(inside.y-p.y)-(q.y-p.y)*(inside.x-p.x);
+    if(!Number.isFinite(area)||Math.abs(area)<1e-12)
+      throw Error('V2 cap has a degenerate boundary triangle');
+    // Every edge is oriented with solid on its RIGHT, for external contours
+    // and holes alike. Unlike a vertex->vertex map this supports pinches.
+    if(area>0)[a,b]=[b,a];
+    const edge={id:edges.length,a,b,used:false};
+    edges.push(edge);
+    if(!outgoing.has(a))outgoing.set(a,[]);
+    outgoing.get(a).push(edge);
   }
-  const loops=[],seen=new Set();
-  for(const start of next.keys()){
-    if(seen.has(start))continue;
-    const indices=[],outward=[];
-    let v=start,guard=0;
-    while(!seen.has(v)&&guard++<=next.size){
-      seen.add(v);indices.push(v);v=next.get(v);
-      if(v===undefined)break;
+  if(!edges.length)throw Error('V2 cap has no exterior boundary edges');
+  const loops=[];
+  for(const first of edges){
+    if(first.used)continue;
+    let edge=first,closed=false;
+    const indices=[];
+    for(let guard=0;guard<=edges.length;guard++){
+      if(edge.used)throw Error('V2 boundary edge visited twice');
+      edge.used=true;indices.push(edge.a);
+      if(edge.b===first.a){closed=true;break;}
+      const candidates=(outgoing.get(edge.b)||[]).filter(e=>!e.used);
+      if(!candidates.length)
+        throw Error('V2 cap has an open boundary chain at vertex '+edge.b);
+      if(candidates.length===1){edge=candidates[0];continue;}
+      const p=vertices[edge.a],v=vertices[edge.b];
+      const dx=v.x-p.x,dy=v.y-p.y;
+      // At touching corners choose the rightmost continuation: this keeps
+      // neighbouring paint islands separate instead of merging two loops.
+      const turn=e=>{
+        const q=vertices[e.b],ux=q.x-v.x,uy=q.y-v.y;
+        return Math.atan2(dx*uy-dy*ux,dx*ux+dy*uy);
+      };
+      candidates.sort((a,b)=>turn(a)-turn(b)||a.id-b.id);
+      edge=candidates[0];
     }
-    if(indices.length<3)continue;
-    // Outward normal is away from the triangle on each boundary edge;
-    // the same calculation therefore handles islands and internal holes.
-    const edgeNormal=i=>{
-      const a=vertices[indices[i]],b=vertices[indices[(i+1)%indices.length]],
-        c=vertices[third.get(indices[i])];
-      let nx=b.y-a.y,ny=-(b.x-a.x);const l=Math.hypot(nx,ny)||1;
-      nx/=l;ny/=l;
-      if(nx*(c.x-a.x)+ny*(c.y-a.y)>0){nx=-nx;ny=-ny;}
-      return[nx,ny];
-    };
-    const normals=indices.map((_,i)=>edgeNormal(i));
-    for(let i=0;i<indices.length;i++){
-      const p=normals[(i+indices.length-1)%indices.length],q=normals[i];
-      const x=p[0]+q[0],y=p[1]+q[1],l=Math.hypot(x,y)||1;
-      outward.push([x/l,y/l]);
-    }
+    if(!closed||indices.length<3)
+      throw Error('V2 cap perimeter did not close to a polygon');
+    const normals=indices.map((a,i)=>{
+      const b=indices[(i+1)%indices.length],
+        p=vertices[a],q=vertices[b];
+      if(!p||!q)throw Error('V2 perimeter references missing vertex');
+      const nx=p.y-q.y,ny=q.x-p.x,length=Math.hypot(nx,ny);
+      if(!Number.isFinite(length)||length<1e-12)
+        throw Error('V2 perimeter contains a zero-length edge');
+      return[nx/length,ny/length];
+    });
+    const outward=normals.map((q,i)=>{
+      const p=normals[(i+normals.length-1)%normals.length],
+        x=p[0]+q[0],y=p[1]+q[1],length=Math.hypot(x,y);
+      return length>1e-10?[x/length,y/length]:q;
+    });
     loops.push({indices,outward});
   }
+  if(edges.some(e=>!e.used))throw Error('V2 rim omitted boundary edges');
   return loops;
 }
+
 // Flip interior diagonals before refining, eliminating ear-clipped slivers.
 export function delaunayFlip(vertices,triangles,maxPasses=60){
   const orient=(a,b,c)=>{

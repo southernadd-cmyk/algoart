@@ -129,10 +129,15 @@ export async function bakeV2Study({item,date,quality='desktop',method='assembly'
   bumpTexture.needsUpdate=true;
   let sculpture=null;
   try{
-    sculpture=buildV4Sculpture(method,{
-      topology,texture,bumpTexture,material,paper,
-      quality,depth:.85,phiPull:.8,fidelity:.9,connection:.65,strokes:[]
-    });
+    try{
+      sculpture=buildV4Sculpture(method,{
+        topology,texture,bumpTexture,material,paper,
+        quality,depth:.85,phiPull:.8,fidelity:.9,connection:.65,strokes:[]
+      });
+    }catch(error){
+      throw Error('V2 geometry '+date+'/'+item.imageFile+'/'+quality+
+        ': '+error.message,{cause:error});
+    }
     if(sculpture.userData.omittedCells!==0)
       throw Error('V2 geometry failed source coverage: '+item.imageFile);
     const meshes=[];
