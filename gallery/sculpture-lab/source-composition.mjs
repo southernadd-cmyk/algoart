@@ -20,7 +20,7 @@ export function buildCompositionShell(mask, paintTexture, method) {
   const {width, height, data} = mask;
   if (width < 2 || height < 2 || !data || data.length < width * height * 4)
     throw new Error('The composition shell requires a masked archived painting');
-  const threshold = 18;
+  const threshold = 6; // retain fine strokes after downsampling the transparent paint
   const occupied = new Uint8Array(width * height);
   let paintedCells = 0;
   for (let i = 0; i < width * height; i++) {
@@ -101,7 +101,7 @@ export function buildCompositionShell(mask, paintTexture, method) {
     side: THREE.DoubleSide,
     transparent: true,
     opacity: 1,
-    alphaTest: .085,
+    alphaTest: .025, // fine pigment marks must survive the physical mask
     roughness: .75,
     metalness: .02,
     emissive: '#4c4c4c',
