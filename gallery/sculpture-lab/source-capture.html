@@ -32,9 +32,10 @@
       if(!item.settings||!item.seed||!item.shareUrl ||
           typeof item.settings!=='object')throw Error('Incomplete archive source');
       const url=new URL(item.shareUrl,location.origin);
-      if(url.origin!==location.origin ||
-          url.pathname!=='/algoart/' && url.pathname!=='/')
-        throw Error('Source must be the same-origin original solo editor');
+      const canonical='https://southernadd-cmyk.github.io';
+      if((url.origin!==location.origin && url.origin!==canonical) ||
+         (url.pathname!=='/algoart/' && url.pathname!=='/'))
+        throw Error('Source must be the canonical archived solo editor');
       const rendererVersion=Number(item.rendererVersion||url.searchParams.get('v'));
       if(!Number.isInteger(rendererVersion)||rendererVersion<1||rendererVersion>10)
         throw Error('Unsupported archived renderer version');
