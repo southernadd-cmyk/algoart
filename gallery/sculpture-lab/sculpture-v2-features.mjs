@@ -51,12 +51,14 @@ export function buildSourceFeatures(imageData,{
     orientation:m.angle,kind:m.kind,coverage:m.coverage,
     role:i<5?'primary':i<13?'secondary':'accent'
   }));
+  const recordedCount=strokes.filter(s=>s.sourceKind!=='pigment-contour').length;
   const original=strokes.filter(s=>Array.isArray(s.points)&&s.points.length>1&&
     Number.isFinite(s.points[0].x)&&Number.isFinite(s.points[0].y))
     .map((s,i)=>{
       const points=resample(s.points,19);
       const length=strokeLength(points);
-      return {id:'recorded-'+i,source:'actual-recording',points,
+      return {id:'recorded-'+i,
+        source:s.sourceKind==='pigment-contour'?'visible-pigment-contour':'actual-recording',points,
         color:s.color||pixelColour(imageData,points[0].x,points[0].y),
         width:clamp(s.width||.015,.008,.095),
         length,weight:(s.score||length)*Math.max(.2,s.coverage??1),
@@ -82,7 +84,9 @@ export function buildSourceFeatures(imageData,{
   return {
     version:2,material,paper,sourceWidth:imageData.width,
     sourceHeight:imageData.height,
-    sourceKind:original.length>=3?'recorded-gestures-and-pigment':'pigment-regions',
+    sourceKind:original.length>=3?
+      (recordedCount>=2?'recorded-gestures-and-pigment':'visible-pigment-contours'):
+      'pigment-regions',
     centre:{x:centre.x/(centre.w||1),y:centre.y/(centre.w||1)},
     regions,gestures:chosen.slice(0,maxGestures),
     anchors:regions.slice(0,8).map(r=>({id:r.id,x:r.x,y:r.y,weight:r.weight})),
