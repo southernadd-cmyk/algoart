@@ -21,6 +21,15 @@ on:
       - 'tests/social-caption-rotation.test.mjs'
       - 'tests/social-stagger.test.mjs'
       - 'tests/social-publish-policy.test.mjs'
+  pull_request:
+    paths:
+      - '.github/workflows/social-pacing-checks.yml'
+      - '.github/workflows/social-live.yml'
+      - '.github/workflows/watercolour-live.yml'
+      - 'automation/publish-threads.mjs'
+      - 'automation/threads-publish-safety.mjs'
+      - 'tests/threads-publish-safety.test.mjs'
+      - 'tests/social-publish-policy.test.mjs'
   workflow_dispatch:
 
 permissions:
