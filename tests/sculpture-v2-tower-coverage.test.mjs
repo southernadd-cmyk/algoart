@@ -1,0 +1,66 @@
+// Sculpture V2 test tower: archive coverage and strict production isolation.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
+import {join} from 'node:path';
+const read=async file=>readFile(file,'utf8');
+test('all eligible historical portrait studies have source paintings',async()=>{
+  const archive=JSON.parse(await read('gallery/archive.json'));
+  assert.ok(archive.days.length>=30,'Historical floor count unexpectedly small');
+  const perDate=[];
+  let eligible=0,confluence=0;
+  for(const {date} of archive.days){
+    const meta=JSON.parse(await read(join('gallery',date,'meta.json')));
+    assert.equal(meta.date,date);
+    let count=0;
+    for(const item of meta.entries){
+      if(item.orientation!=='portrait')continue;
+      if(item.material==='confluence'){
+        confluence++;continue;
+      }
+      assert.ok(item.seed&&item.imageFile, date+' source metadata incomplete');
+      assert.ok(existsSync(join('gallery',date,item.imageFile)),
+        date+' missing '+item.imageFile);
+      eligible++;count++;
+    }
+    perDate.push({date,eligible:count});
+  }
+  assert.ok(eligible>40,'No representative portrait sculpture archive');
+  console.log('V2_PREVIEW_ARCHIVE_COVERAGE '+JSON.stringify({
+    floors:perDate.length,eligible,confluenceExcluded:confluence,
+    allOriginalPaintingsPreserved:true,perDate
+  }));
+});
+test('V2 adapter preserves public renderer contract without publishing',async()=>{
+  const source=await read('gallery/sculpture-v2-test/sculpture-render-v2.mjs');
+  const builder=await read('automation/build-sculpture-v2-test.mjs');
+  const v1=await read('gallery/visit/sculpture-render-traced.mjs');
+  const daily=await read('automation/build-gallery-sculptures.mjs');
+  assert.match(source,/export function createPortraitSculpture/);
+  assert.match(source,/export function setSculptureArchitecturalMaterials/);
+  assert.match(source,/buildV4Sculpture/);
+  assert.match(source,/segmentPainting/);
+  assert.match(source,/createHybridSupport\(body,'pin'/);
+  assert.match(source,/galleryDisposed/);
+  assert.match(source,/refuseConfluence/);
+  assert.match(source,/onComplete/);
+  assert.match(source,/omittedCells/);
+  assert.match(builder,/gallery-phi-sculpture-v2-test-bundle\.js/);
+  assert.match(builder,/gallery\/visit\/gallery-phi\.js/);
+  assert.match(builder,/sculpture-render-traced/);
+  assert.match(builder,/replaced exactly once|rendererReplacements,1/);
+  assert.doesNotMatch(v1,/sculpture-v2-test/);
+  assert.doesNotMatch(daily,/sculpture-v2-test/);
+});
+test('V1 geometry packs are not overwritten by the V2 preview build',async()=>{
+  const archive=JSON.parse(await read('gallery/archive.json'));
+  const available=archive.days.filter(({date})=>
+    existsSync(join('gallery',date,'3d','sculptures.json.gz')));
+  assert.ok(available.length>20,'Existing V1 data disappeared');
+  const builder=await read('automation/build-sculpture-v2-test.mjs');
+  assert.doesNotMatch(builder,/writeFile\([^)]*sculptures\.json\.gz/);
+  const live=await read('gallery/visit/index.html');
+  assert.match(live,/gallery-phi-bundle\.js\?v=/);
+  assert.doesNotMatch(live,/sculpture-v2-test-bundle/);
+});
