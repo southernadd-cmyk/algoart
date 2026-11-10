@@ -9,7 +9,7 @@ import re
 from urllib.request import Request, urlopen
 
 BUCKET = "proportion-piece-media-test"
-WORKER = "https://proportion-piece-media.mr-adam-clement.workers.dev"
+WORKER = "https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev"
 ORIGIN = "https://southernadd-cmyk.github.io"
 PREFIX = "sculptures-v2/v4.2.1-20261110"
 CACHE = "public, max-age=31536000, immutable"
