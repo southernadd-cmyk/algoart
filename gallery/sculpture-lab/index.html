@@ -56,11 +56,11 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 </style>
 <script src="https://unpkg.com/@jscad/modeling@2.13.0" defer></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script></head>
-<body><canvas id="view" aria-label="Four sculpture methods in one three-dimensional test room"></canvas>
-<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>The original material becomes a 360° sculpture — no generative AI.</small></div>
-<div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Petals</option><option value="1">2 · Ribbons</option><option value="2">3 · Pigment</option><option value="3">4 · Hybrid</option></select></div></header>
-<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>Material preserved from the original painting on the actual sculpted surfaces. JSCAD remains available as a separate comparison.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
-<div id="legend"><span>01 · Golden-angle petals</span><span>02 · Phi ribbons</span><span>03 · Pigment volumes</span><span>04 · Rules hybrid</span></div>
+<body><canvas id="view" aria-label="Four identical painted hybrid sculptures with different plinth supports"></canvas>
+<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>One source painting · four identical hybrid sculptures · four mounting systems.</small></div>
+<div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Museum pin</option><option value="1">2 · Curved stem</option><option value="2">3 · Twin braces</option><option value="3">4 · Pigment root</option></select></div></header>
+<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>The same hybrid form and original material on each plinth. Four different attachment systems, physically connected to the base.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
+<div id="legend"><span>01 · Straight museum pin</span><span>02 · φ-curved tapered stem</span><span>03 · Twin stabilising braces</span><span>04 · Branched pigment root</span></div>
 <button id="settingsToggle" type="button" aria-controls="depth-controls" aria-expanded="false">Sculpture settings</button>
 <div id="depth-controls">
 <label for="geometryMode">Geometry</label>
@@ -82,4 +82,4 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 <output id="depthValue" for="depth">100%</output>
 </div>
 <div id="hint">Drag: orbit · Scroll: zoom · WASD: move · Q/E: turn</div><div id="camera-controls"><button id="front" type="button">Front</button><button id="side" type="button">Side</button><button id="back" type="button">Back</button><button id="orbitToggle" type="button" aria-pressed="false">Auto rotate</button></div><div id="info" role="status" aria-live="polite">Preparing sculpture room…</div>
-<script type="module" src="./lab-360.mjs?v=10-material-volume"></script></body></html>
+<script type="module" src="./lab-360.mjs?v=11-hybrid-supports"></script></body></html>
