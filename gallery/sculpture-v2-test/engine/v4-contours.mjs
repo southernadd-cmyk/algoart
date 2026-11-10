@@ -277,14 +277,32 @@ export function buildPlanarRegion(r,{quality='desktop'}={}){
   }
   if(!triangles.length)throw Error('V4 marching squares triangulation found no surface');
   const boundaryCount=vertices.length;
+  const sourceTriangles=triangles.map(t=>t.slice());
   delaunayFlip(vertices,triangles);
-  const refined=subdivideConforming(vertices,triangles,
-    quality==='mobile'?2.55:1.8);
-  // Trace the ACTUAL cap boundary half-edges, not the original outlines:
-  // triangles may pinch at one vertex and each source island must retain
-  // an independently closed, rounded side wall.
-  return{vertices,triangles:refined,boundaries:boundaryLoops(vertices,refined),
-    boundaryCount};
+  const edgeLimit=quality==='mobile'?2.55:1.8;
+  const refined=subdivideConforming(vertices,triangles,edgeLimit);
+  // Trace the final cap edges, including touching pigment islands.
+  try{
+    const rim=boundaryLoops(vertices,refined);
+    return{vertices,triangles:refined,boundaries:rim,boundaryCount};
+  }catch(optimizedError){
+    // Flips are optional smoothing; they must never introduce a non-manifold
+    // seam. Retry the original earcut faces with conforming subdivision.
+    const originalVertices=vertices.slice(0,boundaryCount)
+      .map(p=>({x:p.x,y:p.y}));
+    const originalFaces=subdivideConforming(
+      originalVertices,sourceTriangles,edgeLimit);
+    try{
+      const rim=boundaryLoops(originalVertices,originalFaces);
+      console.warn('V2_TRIANGULATION_RECOVERY region='+r.id+
+        ' quality='+quality+' reason='+optimizedError.message);
+      return{vertices:originalVertices,triangles:originalFaces,
+        boundaries:rim,boundaryCount,triangulationRecovered:true};
+    }catch(originalError){
+      throw Error('V2 non-manifold source triangulation; optimized: '+
+        optimizedError.message+'; original: '+originalError.message);
+    }
+  }
 }
 
 export function boundaryLoops(vertices,triangles){

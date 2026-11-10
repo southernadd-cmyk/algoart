@@ -55,6 +55,7 @@ jobs:
           node --check automation/build-sculpture-v2-baker.mjs
           node --check automation/build-sculpture-v2-packs.mjs
           node --check gallery/sculpture-v2-test/v2-baker.mjs
+          node --check gallery/sculpture-v2-test/engine/v4-contours.mjs
           node --check gallery/sculpture-v2-test/v2-pack-loader.mjs
           node --check tests/sculpture-v2-packs.test.mjs
           node automation/build-sculpture-v2-baker.mjs
