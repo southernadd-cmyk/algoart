@@ -180,3 +180,24 @@ test('every 3D method preserves the original painting location at each front-sur
   }
   paintingTexture.dispose();
 });
+
+test('source-anchored sculpture has a real sculpted back but no distracting free-form geometry from the front', () => {
+  const texture = new THREE.Texture();
+  const data = {...study, paintTexture: texture, paintMask: sampleMaskedPainting(), paintStrength: .76};
+  for (const method of METHODS) {
+    const group = buildSculpture(method, data);
+    assert.equal(group.userData.sourceAnchored, true);
+    assert.equal(group.userData.structuralBacking.visible, false);
+    const shell = group.children.find(c => c.userData.compositionShell);
+    assert.ok(shell, method + ': no source paint body');
+    assert.ok(shell.geometry.boundingBox.max.z - shell.geometry.boundingBox.min.z > 1);
+    updatePaintingStrength(group, 0);
+    assert.equal(shell.visible, false);
+    assert.equal(group.userData.structuralBacking.visible, true);
+    updatePaintingStrength(group, .92);
+    assert.equal(shell.visible, true);
+    assert.equal(group.userData.structuralBacking.visible, false);
+    disposeSculpture(group);
+  }
+  texture.dispose();
+});
