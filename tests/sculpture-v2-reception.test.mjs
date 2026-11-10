@@ -9,10 +9,11 @@ const output=resolve(process.env.V2_RECEPTION_OUT||'artifacts/sculpture-v2-recep
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 test('independent reception sculpture is prepared and links to its actual source',async()=>{
   const meta=JSON.parse(await readFile(join(output,'manifest.json'),'utf8'));
-  const original=await readFile('gallery/sculpture-v2-test/reception/recursive-divisions-portrait.png');
-  const source=JSON.parse(await readFile('gallery/sculpture-v2-test/reception/source.json'));
-  const retained=await readFile(join(output,'recursive-divisions-portrait.png'));
-  assert.equal(sha(retained),sha(original));
+  // Runs both after the bake and in a clean Pages checkout. The generated
+  // portrait lives only in the pinned build artifact, never in the repository.
+  const original=await readFile(join(output,'recursive-divisions-portrait.png'));
+  const source=JSON.parse(await readFile(join(output,'source.json')));
+  assert.equal(source.sourceSha256,sha(original));
   assert.equal(original.readUInt32BE(16),1000);
   assert.equal(original.readUInt32BE(20),1400);
   assert.equal(source.orientation,'portrait');
