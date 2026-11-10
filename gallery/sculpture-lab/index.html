@@ -2,7 +2,7 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#202723">
-<title>PROPORTION PIECE · Sculpture Lab / XYZ</title>
+<title>PROPORTION PIECE · Sculpture Lab V3 / Anamorphic</title>
 <style>
 :root{color-scheme:dark;--ink:#f2e9d8;--dark:#222b27;--line:#83765e;--bronze:#c5a776}
 *{box-sizing:border-box}
@@ -61,17 +61,17 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 </head>
 <body>
 <canvas id="view" aria-label="Four source-derived real XYZ sculptures on gallery plinths"></canvas>
-<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>V2 · THE PAINTING AS A SPATIAL COMPOSITION</small></div>
+<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>V3 · SOURCE-ANCHORED ANAMORPHIC SCULPTURE</small></div>
 <div id="selectors">
 <label for="day">Archive day</label><select id="day"></select>
 <label for="painting">Source painting</label><select id="painting"></select>
 <label for="focus">View</label>
 <select id="focus" aria-label="Show all sculptures or focus on one">
 <option value="all">Compare four engines</option>
-<option value="0">01 · Strand / Orbital</option>
-<option value="1">02 · Ribbon / Surface</option>
-<option value="2">03 · Mass / Strata</option>
-<option value="3">04 · Hybrid / Confluence</option>
+<option value="0">01 · Source Armature</option>
+<option value="1">02 · Folded Surface</option>
+<option value="2">03 · Pigment Volume</option>
+<option value="3">04 · Anamorphic Hybrid</option>
 </select>
 </div></header>
 <aside id="sourceBox"><img id="thumb" alt="Original archived painting">
@@ -79,17 +79,17 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 <div id="sourceEvidence">Extracting source structure…</div>
 <a id="source" target="_blank" rel="noopener noreferrer">Open source painting</a></aside>
 <aside id="controlsPanel">
-<h2>SPATIAL CONSTRUCTION</h2>
+<h2>SOURCE FIDELITY / SPATIAL CONSTRUCTION</h2>
 <div class="control"><label for="phi">φ structural pull</label><output id="phiValue">80%</output><input id="phi" type="range" min="0" max="100" value="80" step="5"></div>
-<div class="control"><label for="abstraction">Spatial abstraction</label><output id="abstractionValue">72%</output><input id="abstraction" type="range" min="0" max="100" value="72" step="4"></div>
+<div class="control"><label for="fidelity">Source fidelity</label><output id="fidelityValue">90%</output><input id="fidelity" type="range" min="50" max="100" value="90" step="5"></div>
 <div class="control"><label for="depth">XYZ spread</label><output id="depthValue">85%</output><input id="depth" type="range" min="40" max="130" value="85" step="5"></div>
 <div class="control"><label for="connection">Connection strength</label><output id="connectionValue">65%</output><input id="connection" type="range" min="0" max="100" value="65" step="5"></div>
 <label for="colourMode">Surface character</label>
 <select id="colourMode"><option value="pigment">Source pigment colours</option><option value="bronze">Single patinated bronze</option></select>
-<label class="check"><input type="checkbox" id="showGraph"> Show XYZ composition graph</label>
-<p>Geometry is reconstructed from gestures, masses and their connections. No image plane or silhouette extrusion. A museum pin anchors each piece.</p>
+<label class="check"><input type="checkbox" id="showGraph"> Show original pigment anchors</label>
+<p>Original source marks remain fixed head-on. Folded membranes, ribs and solid pigment grow into depth behind them. The measured overlap checks the actual front-view silhouette; a high score is not guaranteed by the slider.</p><p id="frontScore" aria-live="polite">Measuring source overlap…</p>
 </aside>
-<div id="legend"><span>01 · STRAND / ORBITAL</span><span>02 · RIBBON / SURFACE</span><span>03 · MASS / STRATA</span><span>04 · HYBRID / CONFLUENCE</span></div>
+<div id="legend"><span>01 · SOURCE ARMATURE</span><span>02 · FOLDED SURFACE</span><span>03 · PIGMENT VOLUME</span><span>04 · ANAMORPHIC HYBRID</span></div>
 <button id="settingsToggle" aria-controls="controlsPanel" aria-expanded="false">Sculpture controls</button>
 <div id="cameraControls">
 <button id="front">Front</button><button id="side">Side</button>
@@ -97,6 +97,6 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 <button id="autoRotate" aria-pressed="false">Auto orbit</button>
 </div>
 <div id="help">Drag to orbit · Scroll to zoom · WASD to move · Q/E to turn</div>
-<div id="status" role="status" aria-live="polite">Preparing Sculpture Lab v2…</div>
-<script type="module" src="./lab-v2.mjs?v=2-xyz-first"></script>
+<div id="status" role="status" aria-live="polite">Preparing Sculpture Lab V3…</div>
+<script type="module" src="./lab-v2.mjs?v=3-anamorphic-1"></script>
 </body></html>
