@@ -3,6 +3,7 @@
 // JSCAD builds connected, watertight CSG solids; Three.js only displays them.
 // No flat image planes, raster extrusion, external model generation, or texture wrapping.
 import * as THREE from 'three';
+import {buildSourceDetailLayer} from './source-echo.mjs';
 
 const PHI=(1+Math.sqrt(5))/2;
 const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
@@ -189,7 +190,7 @@ export function jscadSolidToThree(solid,marks,depth,jscad) {
  * Region bodies merge with a common rear spine, so they are not disconnected
  * petals. A cross-cut at the rear produces negative space rather than simply
  * painting a dark spot on a mesh. Hybrid uses actual CSG unions and subtract. */
-export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false}={}) {
+export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false,fidelity=.85}={}) {
   if(!METHODS.includes(method))throw new Error('Invalid CSG method');
   const f=jscadFeatures(jscad);
   const selected=selectCSGMarks(marks,12);
@@ -266,12 +267,25 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false
   const final=useCut?hollowed:joined;
   const mesh=jscadSolidToThree(final,selected,depth,jscad);
   const group=new THREE.Group();
+  // Source-facing detail remains legible in the original image XY.
+  // Recede and narrow the JSCAD bulk rather than projecting broad joined
+  // solids through the original drawing's negative space.
+  const resemblance=clamp(fidelity,0,1);
+  mesh.position.z-=.15*depth+.19*depth*resemblance;
+  const coreXY=1-.25*resemblance;
+  mesh.scale.set(coreXY,coreXY,1);
   group.add(mesh);
+  const sourceLayer=buildSourceDetailLayer(marks,{depth,fidelity:resemblance});
+  group.add(sourceLayer);
   group.name='JSCAD '+method+' / true fused CSG';
   group.userData={
     ...(debugSolid?{rawCSG:final}:{}),
     engine:'jscad-csg-v1',
     method,
+    fidelity:clamp(fidelity,0,1),
+    sourceTraceCount:sourceLayer.userData.sourceTraceCount,
+    sourceDetailAnchors:sourceLayer.userData.sourceAnchors,
+    coreRecess:.15*depth+.19*depth*resemblance,
     noImageExtrusion:true,
     noModelInference:true,
     sourceAnchors:selected.map(m=>({x:m.x,y:m.y,color:m.color,kind:m.kind})),

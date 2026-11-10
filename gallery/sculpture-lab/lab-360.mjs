@@ -132,7 +132,9 @@ function replaceSculptures(marks,entry){
   try{
     for(const method of METHODS){
       const obj=mode==='jscad'
-        ?buildJSCADSculpture(method,marks,jscad,{depth})
+        ?buildJSCADSculpture(method,marks,jscad,{
+          depth,fidelity:Number($('resemblance').value)/100
+        })
         :buildRuleSculpture(method,marks,{depth});
       candidates.push(obj);
     }
@@ -157,6 +159,7 @@ function replaceSculptures(marks,entry){
     seed:entry.seed,
     sourceMarks:marks.map(m=>({x:m.x,y:m.y,kind:m.kind})),
     depth,
+    resemblance:Number($('resemblance').value)/100,
     methods:candidates.map(c=>{
       const box=new THREE.Box3().setFromObject(c);
       const size=box.getSize(new THREE.Vector3());
@@ -172,6 +175,8 @@ function replaceSculptures(marks,entry){
         elementCounts:c.userData.elementCounts||null,
         sourceAnchors:c.userData.sourceAnchors,
         extent:[size.x,size.y,size.z],
+        sourceTraceCount:c.userData.sourceTraceCount||0,
+        sourceDetailAnchors:c.userData.sourceDetailAnchors||[],
         csgPolygons:c.userData.csgPolygons||0,
         subtractApplied:c.userData.subtractApplied||false,
         inputVolume:c.userData.inputVolume||0,
@@ -189,7 +194,7 @@ function rebuild(){
     status('Constructing '+(renderMode()==='jscad'?'fused JSCAD solids':'individual rule solids')+'…');
     replaceSculptures(currentMarks,entry);
     status((renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
-      ' • '+currentMarks.length+' source-derived marks • four 360° sculptures');
+      ' • '+currentMarks.length+' marks • '+(window.__sculptureLabStatus.methods[0].sourceTraceCount||0)+' sculpted source traces');
   }catch(error){
     status('Cannot build '+renderMode()+' sculpture: '+error.message);
     console.error(error);
@@ -216,7 +221,7 @@ async function choosePainting(filename){
     q.searchParams.set('date',currentDate);q.searchParams.set('image',filename);
     history.replaceState(null,'',q);
     status((renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
-      ' • '+marks.length+' classified source marks • φ-driven 3D');
+      ' • '+marks.length+' source marks • '+(window.__sculptureLabStatus.methods[0].sourceTraceCount||0)+' colour-preserving 3D traces');
   } catch(e) {
     window.__sculptureLabStatus={ready:false,error:e.message};
     status('Could not construct sculpture: '+e.message);
@@ -254,6 +259,10 @@ $('orbitToggle').addEventListener('click',()=>{
 $('depth').addEventListener('input',()=>{$('depthValue').textContent=$('depth').value+'%';});
 $('depth').addEventListener('change',rebuild);
 $('geometryMode').addEventListener('change',rebuild);
+$('resemblance').addEventListener('input',()=>{
+  $('resemblanceValue').textContent=$('resemblance').value+'%';
+});
+$('resemblance').addEventListener('change',rebuild);
 const keys=new Set();
 addEventListener('keydown',e=>{if(e.target?.matches('select,button,input,textarea'))return;keys.add(e.key.toLowerCase());});
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));

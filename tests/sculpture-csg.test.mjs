@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import jscad from '@jscad/modeling';
 import {selectCSGMarks,buildJSCADSculpture,disposeJSCADSculpture}
   from '../gallery/sculpture-lab/sculpture-csg.mjs';
+import {selectSourceDetailMarks,buildSourceDetailLayer}
+  from '../gallery/sculpture-lab/source-echo.mjs';
 
 const marks=[
   {x:-.47,y:.52,span:.26,breadth:.13,color:'#ab3228',mass:28,kind:'stroke'},
@@ -66,4 +68,63 @@ test('hybrid forms one physically connected solid, not disconnected meshes group
   assert.equal(components.length,1,
     'CSG union returned '+components.length+' disconnected components');
   disposeJSCADSculpture(sculpture);
+});
+
+test('source-echo selection keeps spatial and colour diversity without rearranging marks',()=>{
+  const expanded=[
+    ...marks,
+    ...marks.map((m,i)=>({...m,x:m.x+.033,y:m.y-.026,
+      mass:m.mass*.55,color:i%3===0?'#f1bb32':m.color}))
+  ];
+  const selected=selectSourceDetailMarks(expanded,20);
+  assert.equal(selected.length,20);
+  assert.ok(selected.some(m=>m.color==='#f1bb32'));
+  assert.ok(selected.every(m=>expanded.includes(m)));
+  assert.deepEqual(selected,selectSourceDetailMarks(expanded,20));
+});
+test('sculpted front details retain image-space mark positions but bend in real 3D',()=>{
+  const layer=buildSourceDetailLayer(marks,{depth:1,fidelity:1});
+  assert.equal(layer.userData.engine,'source-echo-v1');
+  assert.equal(layer.userData.sourceTraceCount,marks.length);
+  assert.ok(layer.children.length>=marks.length);
+  const original=layer.userData.sourceAnchors;
+  assert.ok(original.every(a=>marks.some(m=>m.x===a.x&&m.y===a.y&&m.color===a.color)));
+  let maxDepth=0,frontMeshes=0,hasSourcePosition=false;
+  layer.traverse(obj=>{
+    if(!obj.isMesh)return;
+    assert.ok(!obj.material.map,'Painting must not be an image-textured plane');
+    const box=new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
+    maxDepth=Math.max(maxDepth,box.z);
+    if(obj.userData.originalXY){
+      frontMeshes++;
+      hasSourcePosition ||= marks.some(m=>
+        m.x===obj.userData.originalXY[0]&&m.y===obj.userData.originalXY[1]);
+    }
+  });
+  assert.ok(frontMeshes>=marks.length);
+  const sourceFacing=layer.children.filter(m=>m.userData.sourceFacing);
+  const returns=layer.children.filter(m=>m.userData.returnBranch);
+  assert.equal(sourceFacing.length,marks.length);
+  assert.ok(returns.length<=Math.ceil(marks.length/3));
+  assert.ok(sourceFacing.every(m=>m.material.isMeshBasicMaterial&&
+    m.material.toneMapped===false),'Original pigment colour must remain faithful');
+  assert.equal(hasSourcePosition,true);
+  assert.ok(maxDepth>.6,'Front gestures must be developed in depth, not flat');
+  for(const obj of [...layer.children]){
+    obj.geometry.dispose();obj.material.dispose();
+  }
+});
+test('higher source fidelity preserves more real 3D marks without changing the source composition',()=>{
+  const fine=[
+    ...marks,...marks.map((m,i)=>({...m,x:m.x+.024,y:m.y-.026,mass:9+i*.3})),
+    ...marks.map((m,i)=>({...m,x:m.x-.022,y:m.y+.036,mass:8+i*.3}))
+  ];
+  const low=buildJSCADSculpture('hybrid',fine,jscad,{depth:1,fidelity:0});
+  const high=buildJSCADSculpture('hybrid',fine,jscad,{depth:1,fidelity:1});
+  assert.ok(high.userData.sourceTraceCount>low.userData.sourceTraceCount*2);
+  assert.ok(high.userData.sourceDetailAnchors.every(a=>fine.some(m=>m.x===a.x&&m.y===a.y)));
+  assert.ok(high.userData.coreRecess>low.userData.coreRecess);
+  assert.ok(high.userData.csgPolygons>50);
+  assert.equal(high.userData.noModelInference,true);
+  disposeJSCADSculpture(low);disposeJSCADSculpture(high);
 });
