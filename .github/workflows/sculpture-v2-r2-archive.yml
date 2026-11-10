@@ -1,0 +1,84 @@
+name: Sculpture V2 permanent R2 archive
+
+on:
+  pull_request:
+    paths:
+      - 'automation/upload-sculpture-v2-r2.py'
+      - 'tests/test_sculpture_v2_r2.py'
+      - '.github/workflows/sculpture-v2-r2-archive.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'automation/upload-sculpture-v2-r2.py'
+      - 'tests/test_sculpture_v2_r2.py'
+      - '.github/workflows/sculpture-v2-r2-archive.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sculpture-v2-permanent-r2
+  cancel-in-progress: false
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test permanent-storage uploader without bucket access
+        run: |
+          python3 -m pip install 'boto3>=1.37,<2'
+          python3 -m py_compile automation/upload-sculpture-v2-r2.py
+          python3 -m unittest discover -s tests -p test_sculpture_v2_r2.py -v
+
+  archive:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    env:
+      GH_TOKEN: ${{ github.token }}
+      V2_APPROVED_RUN: '42904867052'
+      V2_RECEPTION_RUN: '42915426552'
+      AWS_EC2_METADATA_DISABLED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Recover previously audited V2 artifact releases
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/v2-historical" "$RUNNER_TEMP/v2-reception"
+          gh run download "$V2_APPROVED_RUN" --repo "$GITHUB_REPOSITORY" \
+            --name sculpture-v2-prepared-packs --dir "$RUNNER_TEMP/v2-historical"
+          gh run download "$V2_RECEPTION_RUN" --repo "$GITHUB_REPOSITORY" \
+            --name sculpture-v2-reception --dir "$RUNNER_TEMP/v2-reception"
+      - name: Independently recheck 534 meshes and portrait source
+        run: |
+          V2_BAKE_OUT="$RUNNER_TEMP/v2-historical" node --test tests/sculpture-v2-packs.test.mjs
+          V2_RECEPTION_OUT="$RUNNER_TEMP/v2-reception" node --test tests/sculpture-v2-reception.test.mjs
+      - name: Verify immutable upload inventory without write privileges
+        run: |
+          python3 automation/upload-sculpture-v2-r2.py \
+            "$RUNNER_TEMP/v2-historical" "$RUNNER_TEMP/v2-reception" --dry-run
+      - name: Persist assets create-only and read back every original byte
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+        run: |
+          python3 -m pip install 'boto3>=1.37,<2'
+          python3 automation/upload-sculpture-v2-r2.py \
+            "$RUNNER_TEMP/v2-historical" "$RUNNER_TEMP/v2-reception"
+      - name: Preserve release catalog from this run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sculpture-v2-r2-release-catalog
+          path: ${{ runner.temp }}/v2-historical/r2-v2-catalog.json
+          if-no-files-found: warn
+          retention-days: 30
