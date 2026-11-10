@@ -28,7 +28,7 @@ for(const date of dates){
  assert.equal(pack.date,date);
  assert.equal(pack.method,'hybrid');
  assert.equal(pack.mount,'museum-pin');
- assert.equal(pack.format,'hybrid-13b-pos16-normal8-uv16-le');
+ assert.equal(pack.format,'hybrid-indexed-13b-u32-v2');
  const html=await fs.readFile(path.join(dir,'index.html'),'utf8');
  const meta=JSON.parse(await fs.readFile(path.join(dir,'meta.json'),'utf8'));
  const cards=[...html.matchAll(/<article\b[^>]*class="[^"]*\bart-card\b[^"]*"[^>]*>[\s\S]*?<\/article>/gi)];
@@ -62,11 +62,15 @@ for(const date of dates){
    assert.equal(obj.sourceImage,filename);
    assert.equal(obj.format,pack.format);
    assert.ok(obj.hasFront&&obj.hasBack&&obj.hasSides);
-   assert.equal(obj.triangles*3,obj.vertices);
-   assert.ok(obj.vertices>=150&&obj.vertices<=450000,
+   assert.equal(obj.triangles*3,obj.indices);
+   assert.ok(obj.vertices>=150&&obj.vertices<=220000,
     'No actual sculptural mesh in '+date+'/'+filename);
    const raw=Buffer.from(obj.packed,'base64');
    assert.equal(raw.length,obj.vertices*13,'Broken vertex byte packing');
+   const indices=Buffer.from(obj.indexPacked||'','base64');
+   assert.equal(indices.length,obj.indices*4,'Broken indexed triangle stream');
+   for(let i=0;i<indices.length;i+=4)
+    assert.ok(indices.readUInt32LE(i)<obj.vertices,'Index outside vertex count');
    assert.ok(obj.max[2]-obj.min[2]>.10,'Baked geometry has no 3D depth');
    totalVariant++;
   }
