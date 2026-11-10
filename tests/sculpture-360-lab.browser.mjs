@@ -27,14 +27,32 @@ try{
   assert.ok(lab.methods.every(m=>m.csgPolygons>20));
   assert.equal(lab.resemblance,.85);
   assert.ok(lab.methods.every(m=>m.sourceTraceCount>0),'No source-following 3D marks');
-  assert.ok(lab.methods.every(m=>m.sourceDetailAnchors.every(a=>
-    lab.sourceMarks.some(s=>s.x===a.x&&s.y===a.y))),
-    '3D gestures have drifted from their source coordinates');
+  assert.equal(lab.sourceMode,'original');
+  assert.ok(lab.sourceEvidence.originalPaths>5,
+    'The original V10 marker generator must supply real recorded source paths: '+
+    JSON.stringify(lab.sourceEvidence));
+  assert.ok(['original-engine-recorded','archived-pigment-contours','sampled-pixels-fallback']
+    .includes(lab.methods[0].sourceOrigin));
+  if(lab.sourceEvidence.material!=='marker')
+    assert.ok(lab.sourceEvidence.archivedMaterialContours>0,
+      'Material-specific contours must come from archived final paint');
+  assert.equal(lab.sourceEvidence.error,null,
+    'Source recorder failed: '+lab.sourceEvidence.error);
   assert.ok(lab.methods.some(m=>m.subtractApplied),'CSG should carve actual negative space');
   assert.ok(lab.methods.every(m=>m.extent.every(x=>x>.2)));
   assert.ok(!await page.locator('#aiFiles').count(),'AI upload UI must be gone');
   assert.ok(!await page.locator('#textureMode').count(),'Flat painting mode must be gone');
   assert.equal(await page.locator('#depth').inputValue(),'100');
+  // Compare the direct renderer recording against the old inferred source.
+  await page.locator('#sourceMode').selectOption('raster');
+  let inferred=await page.evaluate(()=>window.__sculptureLabStatus);
+  assert.equal(inferred.sourceMode,'raster');
+  assert.ok(inferred.methods.every(m=>m.sourceOrigin==='sampled-pixels-fallback'));
+  assert.ok(inferred.methods.every(m=>m.sourceDetailAnchors.every(a=>
+    inferred.sourceMarks.some(s=>s.x===a.x&&s.y===a.y))));
+  await page.locator('#sourceMode').selectOption('original');
+  lab=await page.evaluate(()=>window.__sculptureLabStatus);
+  assert.equal(lab.sourceMode,'original');
   await page.locator('#geometryMode').selectOption('rules');
   let baseline=await page.evaluate(()=>window.__sculptureLabStatus);
   assert.equal(baseline.engine,'rules-v1');
@@ -74,6 +92,22 @@ try{
     lab=await page.evaluate(()=>window.__sculptureLabStatus);
     assert.ok(lab.sourceMarks.length>0);
   }
+  // Verify that a marker portrait preserves *actual* cubic/dashed SVG paths.
+  const markerFile=await page.locator('#painting option').evaluateAll(options=>
+    options.find(o=>o.value.includes('-marker-'))?.value||'');
+  if(!markerFile)throw Error('Need a marker portrait to verify direct vector fidelity');
+  await page.locator('#painting').selectOption(markerFile);
+  await page.waitForFunction(file=>window.__sculptureLabStatus?.ready&&
+    window.__sculptureLabStatus.imageFile===file,markerFile,{timeout:90000});
+  lab=await page.evaluate(()=>window.__sculptureLabStatus);
+  assert.equal(lab.sourceEvidence.material,'marker');
+  assert.ok(lab.sourceEvidence.originalPaths>10);
+  assert.ok(lab.sourceEvidence.visiblePaths>0,'No original marker-engine SVG stroke was translated');
+  assert.ok(lab.methods.every(m=>m.sourceOrigin==='original-engine-recorded'));
+  assert.ok(lab.methods.every(m=>m.originalPointCount>0));
+  await page.locator('#focus').selectOption('0');
+  await page.locator('#front').click();
+  await page.screenshot({path:'/tmp/sculpture-lab-original-marker-front.png',timeout:60000});
   await page.setViewportSize({width:390,height:844});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.__sculptureLabStatus?.ready||
@@ -83,6 +117,8 @@ try{
   assert.equal(lab.engine,'jscad-csg-v1');
   assert.equal(await page.locator('#depth').isVisible(),true);
   assert.equal(await page.locator('#geometryMode').isVisible(),true);
+  assert.equal(await page.locator('#sourceMode').isVisible(),true);
+  assert.ok(lab.sourceEvidence.originalPaths>0,'Mobile archive source capture failed');
   assert.equal(await page.locator('#resemblance').isVisible(),true);
   assert.equal(await page.locator('#back').isVisible(),true);
   assert.deepEqual(errors,[],'Browser errors: '+errors.join('; '));
