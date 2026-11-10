@@ -28,7 +28,7 @@ export function buildCompositionShell(mask, paintTexture, method) {
     if (alpha >= threshold) {occupied[i] = 1; paintedCells++;}
   }
   if (paintedCells < 4) return null;
-  const vertices = [], uvs = [], indices = [];
+  const vertices = [], uvs = [], colours = [], frontIndices = [], sideIndices = [];
   const at = (c, r) => occupied[r * width + c] === 1;
   const front = (x, y, c, r) => {
     const f = .72 + .105 * Math.sin(x * 2.1 * PHI + y * 1.6)
@@ -53,9 +53,10 @@ export function buildCompositionShell(mask, paintTexture, method) {
   };
   // Emitted UVs map the original painting pixel positions to physical XYZ.
   // CSS/image-space top corresponds to THREE's v=1 texture convention.
-  const append = (point, u, v) => {
+  const append = (point, u, v, colour) => {
     vertices.push(point[0], point[1], point[2]);
     uvs.push(u, v);
+    colours.push(colour.r, colour.g, colour.b);
   };
   for (let r = 0; r < height; r++) for (let c = 0; c < width; c++) {
     if (!at(c, r)) continue;
@@ -72,16 +73,20 @@ export function buildCompositionShell(mask, paintTexture, method) {
       [x0, y1, u0, v1, c, r + 1]
     ];
     const begin = vertices.length / 3;
+    const k = (r * width + c) * 4;
+    const colour = new THREE.Color().setRGB(
+      data[k] / 255, data[k + 1] / 255, data[k + 2] / 255, THREE.SRGBColorSpace
+    );
     for (const [x, y, u, v, col, row] of corners)
-      append(front(x, y, col, row), u, v);
+      append(front(x, y, col, row), u, v, colour);
     for (const [x, y, u, v, col, row] of corners)
-      append(back(x, y, col, row), u, v);
+      append(back(x, y, col, row), u, v, colour);
     // Front + rear: full 3D solid surfaces, correctly oriented toward ±Z.
-    indices.push(begin, begin + 2, begin + 1, begin, begin + 3, begin + 2);
-    indices.push(begin + 4, begin + 5, begin + 6, begin + 4, begin + 6, begin + 7);
+    frontIndices.push(begin, begin + 2, begin + 1, begin, begin + 3, begin + 2);
+    sideIndices.push(begin + 4, begin + 5, begin + 6, begin + 4, begin + 6, begin + 7);
     const edge = (a, b) => {
       const next = begin + a, after = begin + b, backA = begin + a + 4, backB = begin + b + 4;
-      indices.push(next, after, backB, next, backB, backA);
+      sideIndices.push(next, after, backB, next, backB, backA);
     };
     // Close all outer boundaries and pigment/paper holes; interior grid edges
     // do not form cross-walls.
@@ -93,7 +98,12 @@ export function buildCompositionShell(mask, paintTexture, method) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(indices);
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colours, 3));
+  geometry.setIndex([...frontIndices, ...sideIndices]);
+  // Only two draw calls: the front wears the actual painting; physically
+  // sculpted sides/back get a *local* paint colour, not 1-pixel rainbow bands.
+  geometry.addGroup(0, frontIndices.length, 0);
+  geometry.addGroup(frontIndices.length, sideIndices.length, 1);
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   const material = new THREE.MeshStandardMaterial({
@@ -110,7 +120,16 @@ export function buildCompositionShell(mask, paintTexture, method) {
     depthWrite: true
   });
   material.userData.sculptureOwned = true;
-  const mesh = new THREE.Mesh(geometry, material);
+  const bodyMaterial = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    side: THREE.DoubleSide,
+    roughness: .67,
+    metalness: .05,
+    transparent: true,
+    opacity: 1
+  });
+  bodyMaterial.userData.sculptureOwned = true;
+  const mesh = new THREE.Mesh(geometry, [material, bodyMaterial]);
   mesh.name = 'Archived painting in place — curved volumetric pigment islands';
   mesh.renderOrder = 5;
   mesh.userData = {
@@ -133,6 +152,7 @@ export function setCompositionShellBlend(group, strength) {
   group.traverse(child => {
     if (!child.userData.compositionShell) return;
     child.visible = opacity > .008;
-    child.material.opacity = Math.min(1, opacity * 1.3);
+    for (const material of Array.isArray(child.material) ? child.material : [child.material])
+      material.opacity = Math.min(1, opacity * 1.3);
   });
 }
