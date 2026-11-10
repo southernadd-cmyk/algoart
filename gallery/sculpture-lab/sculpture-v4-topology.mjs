@@ -101,7 +101,9 @@ function watershed(base,w,h,labels,ink,smoothed,distance,pixels,maxSeeds){
   for(const i of base.cells){const v=smoothed[i];avg+=v;min=Math.min(min,v);max=Math.max(max,v);}
   avg/=base.area;
   const peakSeeds=[],colSeeds=[],local=new Int16Array(w*h).fill(-1);
-  for(const i of base.cells)local[i]=labels[i];
+  // Ignore the paper-coloured fringe, which otherwise produces false
+  // pigment colours in otherwise uniform paintings.
+  for(const i of base.cells)if(distance[i]>1.5&&smoothed[i]>=.35)local[i]=labels[i];
   const paletteParts=components(local,w,h,Math.max(12,Math.floor(base.area*.018)))
     .filter(p=>p.area>=Math.max(15,base.area*.023));
   // Unlike V4.1, coloured watercolour and tissue washes are eligible too.
@@ -251,6 +253,18 @@ function prepareRegion(region,w,h,id,ink,pixels){
     mask[j]=1;ids.push(j);localInk[j]=ink[i];opacity+=ink[i];
     red+=pixels.data[k];green+=pixels.data[k+1];blue+=pixels.data[k+2];
   }
+  // The soft field avoids crossings exactly on pixel edges. Every painted
+  // pixel remains >=0.5, every blank pixel remains <0.5.
+  const soft=new Float32Array(rw*rh);
+  for(let y=0;y<rh;y++)for(let x=0;x<rw;x++){
+    let acc=0,sum=0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const xx=x+dx,yy=y+dy,weight=(dx?1:2)*(dy?1:2);
+      if(xx>=0&&yy>=0&&xx<rw&&yy<rh)acc+=mask[yy*rw+xx]*weight;
+      sum+=weight;
+    }
+    soft[y*rw+x]=.5*acc/sum+.5*mask[y*rw+x];
+  }
   const area=region.area,color='#'+[red,green,blue].map(v=>
     Math.round(v/area).toString(16).padStart(2,'0')).join('');
   const tone=(.2126*red+.7152*green+.0722*blue)/(255*area);
@@ -308,7 +322,7 @@ function prepareRegion(region,w,h,id,ink,pixels){
   for(const i of ids){maxPotential=Math.max(maxPotential,potential[i]);
     maxDistance=Math.max(maxDistance,distance[i]);}
   return{
-    id,width:w,height:h,minX,minY,rw,rh,mask,ids,potential,distance,radius,
+    id,width:w,height:h,minX,minY,rw,rh,mask,soft,ids,potential,distance,radius,
     localInk,area,color,tone,meanInk:opacity/area,
     maxPotential,maxDistance,
     centerX:((region.minX+region.maxX+1)*.5/w-.5)*W,
