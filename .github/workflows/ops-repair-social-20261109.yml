@@ -1,0 +1,141 @@
+name: Recover verified missing 9 November social posts
+
+on:
+  push:
+    branches: [ops/repair-social-20261109]
+    paths: [.github/workflows/ops-repair-social-20261109.yml]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: pp-20261109-social-repair
+  cancel-in-progress: false
+
+jobs:
+  recovery:
+    if: >-
+      github.repository == 'southernadd-cmyk/algoart' &&
+      github.ref == 'refs/heads/ops/repair-social-20261109' &&
+      (github.event.head_commit.message == 'Preflight missing 9 November posts' ||
+       github.event.head_commit.message == 'Dispatch missing 9 November posts')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: algoart-social-2026-11
+      SOCIAL_DATE: '2026-11-09'
+      BLUESKY_HANDLE: artalgorithm.bsky.social
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify original media, exact quotas, canary isolation and configured recovery
+        env:
+          ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+          REQUEST: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          fail(){ echo "::error::$1"; exit 1; }
+          [[ "$(TZ=Europe/London date +%F)" == '2026-11-10' ]] || fail 'One-day recovery window expired.'
+          [[ "$ARMED_DATE" == '2026-11-11' ]] || fail 'R2 canary date changed, abort.'
+          node --input-type=module <<'JS'
+          import {socialPublishDecision} from './automation/social-publish-policy.mjs';
+          const landscape=socialPublishDecision({date:'2026-11-09',slot:'1',job:'watercolour-landscape'});
+          const portrait=socialPublishDecision({date:'2026-11-09',slot:'1',job:'watercolour-portrait'});
+          const expected=(o,p)=>Object.entries(o).every(([k,v])=>v===(k===p));
+          if(!expected(landscape,'bluesky')||!expected(portrait,'instagram'))
+            throw Error('Frozen 9 November publication policy has changed.');
+          JS
+          ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          for asset in watercolour-landscape-2026-11-09-queue.json \
+                       watercolour-portrait-2026-11-09-queue.json \
+                       algoart-2026-11-09-evening-threads.jpg; do
+            grep -Fxq "$asset" <<< "$ASSETS" || fail "Required immutable media missing: $asset"
+          done
+          grep -Eq '^2026-11-09-watercolour-landscape-01-.*\.jpg$' <<< "$ASSETS" || fail 'Landscape original JPEG missing.'
+          grep -Eq '^2026-11-09-watercolour-portrait-01-.*-instagram\.jpg$' <<< "$ASSETS" || fail 'Portrait Instagram JPEG missing.'
+          if [[ "$REQUEST" == 'Preflight missing 9 November posts' ]]; then
+            echo 'Preflight passed; zero posts dispatched.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [[ "$GITHUB_RUN_ATTEMPT" == '1' ]] || fail 'Unsafe workflow rerun rejected.'
+          test -f automation/threads-publish-safety.mjs || fail 'Threads safe publication code not yet merged.'
+          grep -q 'Recovery only: frozen historical London edition date' .github/workflows/watercolour-live.yml || fail 'Dated Watercolour recovery gate not yet merged.'
+          echo 'Approved frozen media and source for 9 November.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Restore only missing Watercolour destinations from their exact dated queues
+        if: github.event.head_commit.message == 'Dispatch missing 9 November posts'
+        run: |
+          set -euo pipefail
+          ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          for spec in 'landscape bluesky' 'portrait instagram'; do
+            read -r ORIENTATION PLATFORM <<< "$spec"
+            MARKER="done-2026-11-09-watercolour-${ORIENTATION}-slot1-${PLATFORM}.txt"
+            if grep -Fxq "$MARKER" <<< "$ASSETS"; then
+              echo "$MARKER already present; no repost." >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            [[ "$(TZ=Europe/London date +%F)" == 2026-11-10 ]]
+            ACTIVE="$(gh run list --workflow watercolour-live.yml --event workflow_dispatch --limit 40 --json status | jq '[.[]|select(.status=="queued" or .status=="in_progress" or .status=="waiting" or .status=="pending")]|length')"
+            [[ "$ACTIVE" == 0 ]] || { echo "::error::Another manual Watercolour publisher is active."; exit 1; }
+            BASE="$(gh run list --workflow watercolour-live.yml --event workflow_dispatch --limit 40 --json databaseId | jq '[.[].databaseId]|max // 0')"
+            gh workflow run watercolour-live.yml --ref main \
+              -f slot=1 -f orientation="$ORIENTATION" -f date=2026-11-09 -f live=true -f repost_deleted=false
+            NEW=''
+            for i in {1..35}; do
+              NEW="$(gh run list --workflow watercolour-live.yml --event workflow_dispatch --limit 40 --json databaseId | jq -r --argjson base "$BASE" '[.[]|select(.databaseId>$base)|.databaseId]|max // empty')"
+              [[ -n "$NEW" ]] && break
+              sleep 6
+            done
+            [[ -n "$NEW" ]] || { echo "::error::Dated Watercolour workflow was not queued."; exit 1; }
+            echo "Watercolour $ORIENTATION: https://github.com/$GITHUB_REPOSITORY/actions/runs/$NEW" >> "$GITHUB_STEP_SUMMARY"
+            gh run watch "$NEW" --exit-status --interval 25
+            ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+            grep -Fxq "$MARKER" <<< "$ASSETS" || { echo "::error::Watercolour $PLATFORM completion marker missing."; exit 1; }
+            echo "Verified $MARKER" >> "$GITHUB_STEP_SUMMARY"
+          done
+      - name: Select frozen 9 November evening Threads feature and caption
+        if: github.event.head_commit.message == 'Dispatch missing 9 November posts'
+        id: threads
+        run: node automation/threads-evening-feature.mjs
+      - name: Reconcile or restore missing Threads evening post without duplicates
+        if: github.event.head_commit.message == 'Dispatch missing 9 November posts'
+        env:
+          LIVE_PUBLISHING: 'true'
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          ASSET: ${{ steps.threads.outputs.asset_name }}
+          CAPTION_B64: ${{ steps.threads.outputs.caption_b64 }}
+          ALT_TEXT_B64: ${{ steps.threads.outputs.alt_text_b64 }}
+          ORIGINAL_FILE: ${{ steps.threads.outputs.image_path }}
+        run: |
+          set -euo pipefail
+          MARKER='done-2026-11-09-slot2-threads.txt'
+          ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          if grep -Fxq "$MARKER" <<< "$ASSETS"; then
+            echo "Evening Threads already marked complete; skipping." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [[ "$ASSET" == 'algoart-2026-11-09-evening-threads.jpg' ]] || {
+            echo "::error::Archived evening Threads image selection changed"; exit 1;
+          }
+          grep -Fxq "$ASSET" <<< "$ASSETS"
+          mkdir -p /tmp/pp-social-restore
+          gh release download "$RELEASE_TAG" --pattern "$ASSET" -D /tmp/pp-social-restore
+          cmp "/tmp/pp-social-restore/$ASSET" "$ORIGINAL_FILE" || {
+            echo "::error::Hosted image no longer matches the archived artwork"; exit 1;
+          }
+          export MEDIA_URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/$ASSET"
+          export CAPTION="$(printf '%s' "$CAPTION_B64" | base64 --decode)"
+          export ALT_TEXT="$(printf '%s' "$ALT_TEXT_B64" | base64 --decode)"
+          node automation/publish-threads.mjs
+          printf 'Verified or published the exact archived 9 November evening Threads study\n' > "/tmp/$MARKER"
+          gh release upload "$RELEASE_TAG" "/tmp/$MARKER"
+          echo "Verified $MARKER" >> "$GITHUB_STEP_SUMMARY"
+
+# Initial preflight-only invocation, no publication.
