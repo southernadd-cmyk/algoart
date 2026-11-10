@@ -95,7 +95,7 @@ jobs:
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
           node --check gallery/visit/gallery-bundle.js
           node --check gallery/visit/gallery-phi-bundle.js
-          node --check gallery/hybrid-tower-test/gallery-phi-bundle.js
+          node --check gallery/visit/gallery-phi-hybrid-test-bundle.js
           test -s gallery/hybrid-tower-test/index.html
           node --test tests/gallery-classical-playlist.test.mjs
           node --check test/virtual-gallery/gallery-phi-bundle.js
