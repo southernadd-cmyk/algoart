@@ -108,6 +108,18 @@ jobs:
             echo "::warning::Optional hybrid sculpture tower build failed; publishing live gallery unchanged"
             rm -f gallery/hybrid-tower-test/index.html gallery/visit/gallery-phi-hybrid-test-bundle.js
           fi
+          # Separate opt-in Sculpture V2 preview. NEVER replace live V1 art.
+          # Errors here are warnings, not blockers for gallery publishing.
+          if ! node automation/build-sculpture-v2-test.mjs; then
+            echo "::warning::Optional Sculpture V2 test tower failed to build; keeping live V1"
+            rm -f gallery/sculpture-v2-test/index.html gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
+          fi
+          if [[ -f gallery/visit/gallery-phi-sculpture-v2-test-bundle.js ]]; then
+            node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js || {
+              echo "::warning::Optional Sculpture V2 preview bundle failed syntax check; dropping preview"
+              rm -f gallery/sculpture-v2-test/index.html gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
+            }
+          fi
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
           node --check gallery/visit/gallery-bundle.js
           node --check gallery/visit/gallery-phi-bundle.js
