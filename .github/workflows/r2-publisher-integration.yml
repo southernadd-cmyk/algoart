@@ -1,4 +1,6 @@
 name: Verify R2 publisher integration
+# Test-only branch: run the existing R2 fixture/browser integration unchanged against
+# the merged social publisher changes. This PR must NOT be merged.
 
 on:
   push:
