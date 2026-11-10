@@ -59,3 +59,11 @@ test('depth changes Z but not source-mark selection',()=>{
   assert.deepEqual(low.userData.sourceAnchors,high.userData.sourceAnchors);
   disposeJSCADSculpture(low);disposeJSCADSculpture(high);
 });
+
+test('hybrid forms one physically connected solid, not disconnected meshes grouped under one object',()=>{
+  const sculpture=buildJSCADSculpture('hybrid',marks,jscad,{depth:1,debugSolid:true});
+  const components=jscad.booleans.scission(sculpture.userData.rawCSG);
+  assert.equal(components.length,1,
+    'CSG union returned '+components.length+' disconnected components');
+  disposeJSCADSculpture(sculpture);
+});
