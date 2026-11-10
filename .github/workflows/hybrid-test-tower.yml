@@ -1,0 +1,49 @@
+name: Hybrid museum-pin test tower (isolated)
+on:
+  pull_request:
+    paths:
+      - 'gallery/hybrid-tower-test/**'
+      - 'automation/build-hybrid-tower-test.mjs'
+      - 'tests/hybrid-test-tower*'
+      - '.github/workflows/hybrid-test-tower.yml'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Recreate isolated hybrid tower bundle and HTML
+        run: |
+          node --check gallery/hybrid-tower-test/sculpture-render-hybrid.mjs
+          node --check automation/build-hybrid-tower-test.mjs
+          node automation/build-hybrid-tower-test.mjs
+          node --check gallery/hybrid-tower-test/gallery-phi-bundle.js
+      - name: Validate all archived source paintings (live publishing untouched)
+        run: node --test tests/hybrid-test-tower-coverage.test.mjs
+      - name: Install browser and start archive server
+        run: |
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/hybrid-tower-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/gallery/hybrid-tower-test/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/hybrid-tower-http.log
+          exit 1
+      - name: Browser-check real 3D historical desktop/mobile gallery floors
+        run: node tests/hybrid-test-tower.browser.mjs
+      - name: Save test tower screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hybrid-tower-museum-pin-screenshots
+          path: /tmp/hybrid-tower-*.png
+          if-no-files-found: ignore
