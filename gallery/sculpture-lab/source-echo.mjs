@@ -11,7 +11,7 @@ const vector=(x,y,z)=>new THREE.Vector3(x,y,z);
 
 export function selectSourceDetailMarks(marks,max=48) {
   const candidates=marks.filter(m=>Number.isFinite(m.x)&&Number.isFinite(m.y)&&
-    m.color&&Number.isFinite(m.angle)&&Number.isFinite(m.span)&&Number.isFinite(m.breadth));
+    m.color&&Number.isFinite(m.angle??0)&&Number.isFinite(m.span)&&Number.isFinite(m.breadth));
   if(!candidates.length)return [];
   const ordered=[...candidates].sort((a,b)=>(b.mass||0)-(a.mass||0)||a.y-b.y||a.x-b.x);
   const selected=[ordered[0]],remaining=ordered.slice(1);
@@ -50,7 +50,7 @@ function material(hex,shade=1) {
 }
 
 function returnPath(mark,index,depth,fidelity) {
-  const a=mark.angle,ux=Math.cos(a),uy=Math.sin(a);
+  const a=mark.angle??0,ux=Math.cos(a),uy=Math.sin(a);
   const reach=clamp(mark.span*.45,.025,.19);
   // The *front* line is entirely in source XY, at three separate 3D
   // heights; the return curves inward and around behind the sculpture.
@@ -97,7 +97,7 @@ export function buildSourceDetailLayer(marks,{depth=1,fidelity=.85,maxMarks=80}=
       // its extracted mark covariance, not the golden-angle sequence.
       head.position.set(mark.x,mark.y,.53*depth);
       head.scale.set(rx,ry,rz);
-      head.rotation.z=mark.angle;
+      head.rotation.z=mark.angle??0;
       head.userData.ppOwned=true;
       head.name='Source pigment mass in three dimensions';
       head.userData.originalXY=[mark.x,mark.y];
@@ -110,7 +110,7 @@ export function buildSourceDetailLayer(marks,{depth=1,fidelity=.85,maxMarks=80}=
     mesh.name='Source mark curved into the third dimension';
     mesh.userData.ppOwned=true;
     mesh.userData.originalXY=[mark.x,mark.y];
-    mesh.userData.frontDirection=mark.angle;
+    mesh.userData.frontDirection=mark.angle??0;
     group.add(mesh);strokes++;
   }
   group.userData={
@@ -118,7 +118,7 @@ export function buildSourceDetailLayer(marks,{depth=1,fidelity=.85,maxMarks=80}=
     sourceTraceCount:chosen.length,
     sourceStrokes:strokes,sourceMasses:masses,
     sourceAnchors:chosen.map(m=>({
-      x:m.x,y:m.y,color:m.color,angle:m.angle,kind:m.kind
+      x:m.x,y:m.y,color:m.color,angle:m.angle??0,kind:m.kind
     })),
     allRound:true,noImageExtrusion:true
   };
