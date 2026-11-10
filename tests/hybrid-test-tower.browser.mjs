@@ -51,6 +51,19 @@ try{
       Math.min(window.__phiFullEngine?.sculptures||1,2),null,{timeout:120000});
   }
   assert.deepEqual(errors,[],'Fatal browser errors: '+errors.join('; '));
+  // This is a visual test of the REAL tower, not a welcome-screen capture.
+  await page.waitForFunction(()=>!document.querySelector('#enter')?.disabled,
+    null,{timeout:90000});
+  await page.locator('#enter').click({noWaitAfter:true});
+  await page.waitForFunction(()=>document.querySelector('#welcome')?.hidden,
+    null,{timeout:30000});
+  const sceneReady=await page.evaluate(()=>({
+    date:window.__phiFullEngine?.date,
+    rendered:window.__hybridTowerStatus?.complete,
+    hidden:document.querySelector('#welcome')?.hidden
+  }));
+  assert.equal(sceneReady.hidden,true);
+  assert.ok(sceneReady.rendered>0,'The entry floor has no mounted hybrid sculptures');
   await page.screenshot({
     path:'/tmp/hybrid-tower-'+(config.mobile?'mobile':'desktop')+'.png',
     timeout:60000
