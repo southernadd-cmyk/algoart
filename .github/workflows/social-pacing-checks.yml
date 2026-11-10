@@ -17,6 +17,7 @@ on:
       - 'automation/publish-threads.mjs'
       - 'automation/threads-publish-safety.mjs'
       - 'tests/threads-publish-safety.test.mjs'
+      - 'tests/social-frozen-release.test.mjs'
       - 'automation/threads-evening-feature.mjs'
       - 'tests/social-caption-rotation.test.mjs'
       - 'tests/social-stagger.test.mjs'
@@ -52,3 +53,20 @@ jobs:
             tests/social-publish-policy.test.mjs \
             tests/portrait-captions.test.mjs \
             tests/threads-publish-safety.test.mjs
+      - name: Verify real frozen V10 publishing queues and release assets (read-only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pp-social-frozen
+          gh release view algoart-social-2026-11 --json assets > /tmp/pp-social-frozen/assets.json
+          for entry in \
+            action-landscape-2026-11-10-queue.json \
+            action-portrait-2026-11-10-queue.json \
+            watercolour-landscape-2026-11-09-queue.json \
+            watercolour-portrait-2026-11-09-queue.json \
+            oil-landscape-2026-11-09-queue.json \
+            oil-portrait-2026-11-09-queue.json; do
+            gh release download algoart-social-2026-11 --pattern "$entry" -D /tmp/pp-social-frozen
+          done
+          PP_FROZEN_QUEUE_DIR=/tmp/pp-social-frozen node --test tests/social-frozen-release.test.mjs
