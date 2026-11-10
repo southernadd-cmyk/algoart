@@ -160,10 +160,42 @@ export function buildRecordedSculptureLayer(strokes, {
       group.add(pipe);returns++;
     }
   }
+  // Preserve the less prominent original marks as a *single* 3D line
+  // geometry, instead of dropping them completely or making hundreds more
+  // heavy tubes. Their XY positions are still the exact archived vectors.
+  const fine=strokes.slice(limit,
+    Math.min(strokes.length,quality==='mobile'?145:300));
+  const positions=[],colours=[];
+  for(const stroke of fine){
+    const colour=colourFromCSS(stroke.color);
+    for(let j=1;j<stroke.points.length;j++){
+      for(const k of [j-1,j]){
+        const p=stroke.points[k];
+        positions.push(p.x,p.y,depth*(.558+.015*
+          Math.sin(Math.PI*k/Math.max(1,stroke.points.length-1))));
+        colours.push(colour.r,colour.g,colour.b);
+      }
+    }
+  }
+  if(positions.length){
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
+    const material=new THREE.LineBasicMaterial({
+      vertexColors:true,toneMapped:false,
+      transparent:true,opacity:.8,depthWrite:false
+    });
+    material.userData.ppOwned=true;
+    const ink=new THREE.LineSegments(geometry,material);
+    ink.name='Fine original recorded strokes — one 3D line geometry';
+    ink.userData={ppOwned:true,originalSourceFineLines:true};
+    group.add(ink);
+  }
   group.userData={
     engine:'recorded-source-v1',
     recordedPaths:chosen.length,recordedFront:front,
-    recordedReturns:returns,originalPointCount:chosen.reduce(
+    recordedReturns:returns,fineLinePaths:fine.length,
+    originalPointCount:[...chosen,...fine].reduce(
       (n,s)=>n+s.points.length,0),
     imageSpaceMaxError:0,allRound:true
   };
