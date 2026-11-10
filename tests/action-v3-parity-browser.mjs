@@ -103,7 +103,9 @@ try{
   assert.equal(returned.searchParams.get('fmt'),orientation==='portrait'?'portrait':null);assert.equal(new URL(replay.url()).searchParams.get('fmt'),orientation==='portrait'?'portrait':null);
   assert.equal(returned.searchParams.get('seed'),seed);assert.equal(returned.searchParams.get('el'),'18');
   const expectedOil=await replay.evaluate(()=>window.AlgoArt.defaultOilPaintMaterial);
-  assert.equal(returned.searchParams.get('material'),({action:'action-v4',oil:expectedOil,watercolour:'watercolour-v2s'})[material]||null);
+  // Tissue V8 now uses an explicit material URL, like the other versioned renderers.
+  // The return link must preserve that renderer rather than losing it as marker.
+  assert.equal(returned.searchParams.get('material'),({action:'action-v4',tissue:'tissue-v8',oil:expectedOil,watercolour:'watercolour-v2s'})[material]||null);
   console.log('PASS replay display and return state '+material+' '+orientation);
  }
  await replay.screenshot({path:out+'/portrait-walkthrough.png',fullPage:true});
