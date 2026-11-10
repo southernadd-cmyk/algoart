@@ -56,6 +56,10 @@ for(const kind of ['circle','ring','crescent','branch','islands']){
       assert.ok(r.maxPotential>10,'circle should have a strongly inflated centre');
       const at=regionElevation(r,54,76,'poisson');
       const near=regionElevation(r,76,76,'poisson');
+      console.log('CIRCLE_SOLVER',JSON.stringify({
+        regions:topo.regions.map(x=>({area:x.area,center:[x.centerX,x.centerY],
+          max:x.maxPotential})),at,near,coverage:topo.covered/topo.pigmented
+      }));
       assert.ok(at>near*2,'Poisson height must follow local boundary distance');
     }
     if(kind==='ring'){
