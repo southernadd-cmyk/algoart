@@ -144,7 +144,7 @@ test('every 3D method preserves the original painting location at each front-sur
     assert.equal(shell.userData.paintedCells, expected);
     assert.ok(expected < mask.width * mask.height, 'paper must be empty space');
     assert.ok(shell.userData.depth > 1, 'sculpture needs an actual back and depth');
-    assert.equal(shell.material.map, paintingTexture);
+    assert.equal(shell.material[0].map, paintingTexture);
     const positions = shell.geometry.attributes.position;
     const texcoords = shell.geometry.attributes.uv;
     for (let cell = 0; cell < expected; cell++) {
@@ -173,9 +173,9 @@ test('every 3D method preserves the original painting location at each front-sur
     assert.equal(shell.visible, false, 'plain mode must hide the source painting skin');
     setCompositionShellBlend(root, .76);
     assert.equal(shell.visible, true);
-    assert.ok(shell.material.opacity >= .98);
+    assert.ok(shell.material[0].opacity >= .98);
     root.remove(shell);
-    shell.material.dispose();
+    shell.material.forEach(material => material.dispose());
     shell.geometry.dispose();
   }
   paintingTexture.dispose();
