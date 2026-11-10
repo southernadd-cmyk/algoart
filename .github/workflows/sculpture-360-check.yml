@@ -50,6 +50,7 @@ jobs:
           node --check gallery/sculpture-lab/lab-360.mjs
           node --check gallery/sculpture-lab/lab-v2.mjs
           node --check gallery/sculpture-lab/sculpture-v3-anamorphic.mjs
+          node --check gallery/sculpture-lab/visible-pigment-contours.mjs
           node --check gallery/sculpture-lab/sculpture-v2-features.mjs
           node --check gallery/sculpture-lab/sculpture-v2-graph.mjs
           node --check gallery/sculpture-lab/sculpture-v2-engines.mjs
