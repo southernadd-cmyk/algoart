@@ -39,8 +39,9 @@ test('V2 adapter preserves public renderer contract without publishing',async()=
   const daily=await read('automation/build-gallery-sculptures.mjs');
   assert.match(source,/export function createPortraitSculpture/);
   assert.match(source,/export function setSculptureArchitecturalMaterials/);
-  assert.match(source,/buildV4Sculpture/);
-  assert.match(source,/segmentPainting/);
+  assert.match(source,/downloadV2Floor/);
+  assert.match(source,/reconstructV2Study/);
+  assert.doesNotMatch(source,/segmentPainting\(/);
   assert.match(source,/createHybridSupport\(body,'pin'/);
   assert.match(source,/galleryDisposed/);
   assert.match(source,/refuseConfluence/);

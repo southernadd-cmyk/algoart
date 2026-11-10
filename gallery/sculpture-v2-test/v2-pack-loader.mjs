@@ -137,12 +137,13 @@ export function disposePreparedV2({body,bumpTexture}){
   }
   bumpTexture?.dispose();
 }
-export async function downloadV2Floor(date,quality,{fetcher=fetch,base='/gallery/'}={}){
+export async function downloadV2Floor(date,quality,{fetcher=fetch,base=new URL('../',location.href).pathname}={}){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!['mobile','desktop'].includes(quality))
     throw Error('Invalid V2 floor request');
   const url=base+date+'/3d/v2/sculptures.'+quality+'.json.gz';
   const response=await fetcher(url);
-  if(!response.ok)throw Error('V2 prepared floor not available: '+response.status);
+  if(!response.ok)throw Error('V2 prepared floor '+date+'/'+quality+
+    ' not available: HTTP '+response.status);
   if(typeof DecompressionStream==='undefined')
     throw Error('Browser does not support compressed V2 floor packs');
   const compressed=await response.blob();

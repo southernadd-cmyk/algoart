@@ -5,12 +5,15 @@ on:
     paths:
       - 'gallery/sculpture-v2-test/**'
       - 'automation/build-sculpture-v2-test.mjs'
+      - 'automation/stage-sculpture-v2-preview.mjs'
+      - 'tests/sculpture-v2-packs.test.mjs'
       - 'tests/sculpture-v2-tower*'
       - '.github/workflows/gallery-sculpture-v2-test.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: sculpture-v2-preview
@@ -40,6 +43,16 @@ jobs:
           node automation/build-sculpture-v2-test.mjs
           node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           grep -q 'SCULPTURE V2 TEST TOWER' gallery/sculpture-v2-test/index.html
+      - name: Recover and validate approved historical V2 packs in scratch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V2_APPROVED_RUN: '42904867052'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/sculpture-v2-archive"
+          gh run download "$V2_APPROVED_RUN" --repo "${{ github.repository }}" --name sculpture-v2-prepared-packs --dir "$RUNNER_TEMP/sculpture-v2-archive"
+          V2_BAKE_OUT="$RUNNER_TEMP/sculpture-v2-archive" node --test tests/sculpture-v2-packs.test.mjs
+          node automation/stage-sculpture-v2-preview.mjs "$RUNNER_TEMP/sculpture-v2-archive" gallery
       - name: Install headless browser and start preview server
         run: |
           npx playwright install --with-deps chromium
