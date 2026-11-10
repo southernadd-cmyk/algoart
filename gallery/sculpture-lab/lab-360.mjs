@@ -8,7 +8,7 @@ import {METHODS,PHI,GOLDEN_ANGLE,extractRuleMarks,buildRuleSculpture,disposeRule
 import {buildJSCADSculpture,disposeJSCADSculpture} from './sculpture-csg.mjs';
 import {recordOriginalComposition} from './source-bridge.mjs';
 import {prepareOriginalStrokes} from './recorded-gestures.mjs';
-import {MATERIAL_SURFACE_VERSION,buildMaterialSculpture,disposeMaterialSculpture} from './material-surface.mjs';
+import {MATERIAL_SURFACE_VERSION,pigmentField,buildMaterialSculpture,disposeMaterialSculpture} from './material-surface.mjs';
 
 const $=id=>document.getElementById(id);
 const scene=new THREE.Scene();
@@ -81,7 +81,7 @@ for(let i=0;i<4;i++){
 let currentDate='',chosenImage='',archive=null,entries=[];
 let dateTicket=0,imageTicket=0,currentSourceData=null;
 let archivedMaterialPack=null,packDay='';
-let currentArtworkTexture=null;
+let currentArtworkTexture=null,currentSideTexture=null;
 async function materialContoursFor(day,imageFile,quality='desktop'){
   if(packDay!==day){
     packDay=day;archivedMaterialPack=null;
@@ -108,6 +108,53 @@ async function loadImage(url){
     img.onerror=()=>reject(new Error('Archived source image could not be loaded'));
     img.src=url;
   });
+}
+function localPigmentTexture(pixels,material,paper){
+  // Propagate the actual source pigment into the edge of each mark. Sampling
+  // the JPEG directly on a curved boundary samples PAPER, producing white
+  // ribbons from the side. The front still gets the untouched archive JPEG.
+  const field=pigmentField(pixels,{material,paper});
+  const {width:w,height:h,data}=pixels,n=w*h;
+  const nearest=new Int32Array(n).fill(-1);
+  const queue=new Int32Array(n);
+  let head=0,tail=0;
+  for(let i=0;i<n;i++)if(field.ink[i]>.30){
+    nearest[i]=i;queue[tail++]=i;
+  }
+  if(!tail)for(let i=0;i<n;i++)if(field.ink[i]>.07){
+    nearest[i]=i;queue[tail++]=i;
+  }
+  while(head<tail){
+    const i=queue[head++],x=i%w,y=(i/w)|0;
+    const neighbours=[];
+    if(x>0)neighbours.push(i-1);
+    if(x+1<w)neighbours.push(i+1);
+    if(y>0)neighbours.push(i-w);
+    if(y+1<h)neighbours.push(i+w);
+    for(const j of neighbours)if(nearest[j]<0){
+      nearest[j]=nearest[i];queue[tail++]=j;
+    }
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=w;canvas.height=h;
+  const cx=canvas.getContext('2d',{willReadFrequently:true});
+  const finished=cx.createImageData(w,h);
+  for(let i=0;i<n;i++){
+    const dest=i*4;
+    const source=Math.max(0,nearest[i])*4;
+    const original=field.ink[i]>.48;
+    for(let c=0;c<3;c++)
+      finished.data[dest+c]=original?data[dest+c]:data[source+c];
+    finished.data[dest+3]=255;
+  }
+  cx.putImageData(finished,0,0);
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=THREE.ClampToEdgeWrapping;
+  texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  texture.needsUpdate=true;
+  return texture;
 }
 function featuresFromImage(image,entry) {
   const width=108,height=152;
@@ -160,7 +207,7 @@ function replaceSculptures(marks,entry){
         ?buildMaterialSculpture(method,currentSourceData.pixels,
           currentSourceData.paintTexture,{
           depth,material:currentSourceData.material,paper:currentSourceData.paper,
-          quality:currentSourceData.quality
+          quality:currentSourceData.quality,sideTexture:currentSourceData.sideTexture
         })
         :mode==='jscad'
         ?buildJSCADSculpture(method,marks,jscad,{
@@ -304,9 +351,10 @@ async function choosePainting(filename){
     paintTexture.wrapT=THREE.ClampToEdgeWrapping;
     paintTexture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
     paintTexture.needsUpdate=true;
+    const sideTexture=localPigmentTexture(pixels,material,paper);
     const previousSource=currentSourceData;
     currentSourceData={
-      strokes,materialContours,material,paper,pixels,paintTexture,quality,
+      strokes,materialContours,material,paper,pixels,paintTexture,sideTexture,quality,
       captureKind:capture?'recorded-original-v'+capture.version:'unavailable',
       pathCount:capture?.paths?.length||0,
       captureError
@@ -314,11 +362,13 @@ async function choosePainting(filename){
     try {replaceSculptures(marks,entry);}
     catch(error) {
       currentSourceData=previousSource;
-      paintTexture.dispose();
+      paintTexture.dispose();sideTexture.dispose();
       throw error;
     }
     currentArtworkTexture?.dispose();
+    currentSideTexture?.dispose();
     currentArtworkTexture=paintTexture;
+    currentSideTexture=sideTexture;
     currentMarks=marks;
     $('thumb').src=url;
     $('caption').textContent=entry.title||entry.seed;
