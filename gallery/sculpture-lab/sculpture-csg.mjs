@@ -203,7 +203,10 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1}={}) {
         const m=g.reduce((a,b)=>({x:a.x+b.x/g.length,y:a.y+b.y/g.length}),{x:0,y:0});
         const cost=Math.hypot(mark.x-m.x,mark.y-m.y);
         const colour=new THREE.Color(mark.color);
-        const hue=g.reduce((sum,item)=>sum+colour.distanceTo(new THREE.Color(item.color)),0)/g.length;
+        const hue=g.reduce((sum,item)=>{
+          const c=new THREE.Color(item.color);
+          return sum+Math.hypot(colour.r-c.r,colour.g-c.g,colour.b-c.b);
+        },0)/g.length;
         return {index:i,score:-(cost+hue*.13+g.length*.18)};
       })
       .sort((a,b)=>b.score-a.score)[0].index;
