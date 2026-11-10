@@ -121,8 +121,8 @@ function paintingSurfaceTexture(image, material) {
   // paper becomes empty air; each visible pigment island gets a 3D back,
   // shaped side edges, and a correctly positioned photo-textured front.
   const maskCanvas = document.createElement('canvas');
-  maskCanvas.width = 72;
-  maskCanvas.height = 104;
+  maskCanvas.width = 56;
+  maskCanvas.height = 80;
   const mctx = maskCanvas.getContext('2d', {willReadFrequently: true});
   mctx.drawImage(canvas, 0, 0, maskCanvas.width, maskCanvas.height);
   const mask = mctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
