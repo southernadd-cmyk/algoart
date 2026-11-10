@@ -126,7 +126,8 @@ export function createPortraitSculpture({
     const materialInfo=resolveStudyMaterial(study.href||study.shareUrl||'',value);
     const material=materialInfo.type||'marker';
     const paper=materialInfo.params?.paper||'#f5f0e6';
-    const topology=segmentPainting(pixels,{material,paper,maxRegions:72});
+    const topology=segmentPainting(pixels,{material,paper,
+      maxRegions:quality==='desktop'?72:48});
     if(!topology.regions.length)throw Error('V2 source has no pigment regions');
     if(topology.omittedCells>0)throw Error('V2 source omitted '+topology.omittedCells+' pigment pixels');
 

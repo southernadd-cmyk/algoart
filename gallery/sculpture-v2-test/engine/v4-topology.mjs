@@ -220,7 +220,9 @@ export function segmentPainting(pixels,{
   const w=field.width,h=field.height,mask=field.occupancy;
   const solid=new Int16Array(w*h);
   for(let i=0;i<mask.length;i++)solid[i]=mask[i]?0:-1;
-  const minBase=Math.max(2,Math.floor(field.cells/(Math.max(1,maxRegions)*PHI*16)));
+  // V2 archive compatibility: a single-pixel paint island is still real.
+  // Lab V4.2 omitted these on some older floors.
+  const minBase=1;
   const base=components(solid,w,h,minBase);
   const palette=paletteOf(pixels,mask,field.ink,field.distance,9);
   const labels=nearestPalette(pixels,mask,palette);
@@ -232,12 +234,29 @@ export function segmentPainting(pixels,{
     for(const p of split)pieces.push(p);
   }
   pieces.sort((a,b)=>b.area-a.area||a.minY-b.minY||a.minX-b.minX);
-  const chosen=pieces.slice(0,maxRegions);
+  const cap=Math.max(1,Math.floor(maxRegions));
+  const chosen=pieces.slice(0,cap);
+  // Never drop marks to satisfy a rendering budget. Combine overflow's
+  // disjoint contours into one region mask: the triangulator still builds
+  // distinct surfaces for every island, so no ink is lost.
+  const groupedSmallIslands=Math.max(0,pieces.length-cap);
+  if(groupedSmallIslands && chosen.length){
+    const destination=chosen[chosen.length-1];
+    for(const part of pieces.slice(cap)){
+      destination.cells.push(...part.cells);
+      destination.area+=part.area;
+      destination.minX=Math.min(destination.minX,part.minX);
+      destination.minY=Math.min(destination.minY,part.minY);
+      destination.maxX=Math.max(destination.maxX,part.maxX);
+      destination.maxY=Math.max(destination.maxY,part.maxY);
+    }
+  }
   const regions=chosen.map((r,i)=>prepareRegion(r,w,h,i,field.ink,pixels));
   const covered=regions.reduce((s,r)=>s+r.area,0);
   return{
     width:w,height:h,regions,pigmented:field.cells,covered,
-    omittedCells:Math.max(0,field.cells-covered),omittedRegions:Math.max(0,pieces.length-maxRegions),
+    omittedCells:Math.max(0,field.cells-covered),omittedRegions:0,
+    groupedSmallIslands,
     pigmentInk:field.ink,sourceMask:mask,palette:palette.length,
     separateShapes:base.length,watershipRegions:pieces.length,
     material

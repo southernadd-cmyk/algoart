@@ -53,6 +53,29 @@ test('V2 adapter preserves public renderer contract without publishing',async()=
   assert.doesNotMatch(v1,/sculpture-v2-test/);
   assert.doesNotMatch(daily,/sculpture-v2-test/);
 });
+test('frozen V2 topology retains even isolated micro-islands',async()=>{
+  const {segmentPainting}=await import(
+    '../gallery/sculpture-v2-test/engine/v4-topology.mjs');
+  const w=108,h=152,data=new Uint8ClampedArray(w*h*4);
+  for(let i=0;i<w*h;i++){
+    data[i*4]=245;data[i*4+1]=240;data[i*4+2]=230;data[i*4+3]=255;
+  }
+  for(let y=10;y<140;y+=9)for(let x=8;x<100;x+=9){
+    const j=(y*w+x)*4;
+    data[j]=94;data[j+1]=38;data[j+2]=132;
+  }
+  for(const maxRegions of [48,72]){
+    const topology=segmentPainting({width:w,height:h,data},{
+      material:'marker',maxRegions});
+    assert.ok(topology.pigmented>60,'Missing pigment-island test cells');
+    assert.equal(topology.omittedCells,0);
+    assert.equal(topology.covered,topology.pigmented);
+    assert.ok(topology.regions.length<=maxRegions);
+    assert.equal(topology.omittedRegions,0);
+    assert.ok(topology.groupedSmallIslands>0,
+      'Expected grouped, not silently discarded, small islands');
+  }
+});
 test('V1 geometry packs are not overwritten by the V2 preview build',async()=>{
   const archive=JSON.parse(await read('gallery/archive.json'));
   const available=archive.days.filter(({date})=>
