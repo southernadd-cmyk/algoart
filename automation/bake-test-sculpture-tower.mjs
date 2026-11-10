@@ -81,7 +81,7 @@ try{
   const items=archivePortraits(html,meta);
   const pack={
    version:2,date,method:'hybrid',mount:'museum-pin',
-   format:'hybrid-13b-pos16-normal8-uv16-le',
+   format:'hybrid-indexed-13b-u32-v2',
    portraitCount:items.length,studies:{}
   };
   for(const item of items){
