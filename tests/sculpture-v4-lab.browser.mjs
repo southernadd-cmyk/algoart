@@ -12,6 +12,13 @@ try{
     if(e.type()==='error'&&/WebGLProgram|shader|VALIDATE_STATUS|compile|link/i.test(e.text()))
       shaderErrors.push(e.text().slice(0,400));
   });
+  // A module-load exception should fail fast instead of appearing as a
+  // two-minute page readiness timeout.
+  await page.addInitScript(()=>{
+    window.addEventListener('error',e=>{
+      window.__sculptureLabStartupError=e.message||'JavaScript startup failure';
+    });
+  });
   const ready=()=>page.waitForFunction(()=>window.__sculptureLabStatus?.ready||
     window.__sculptureLabStatus?.error,undefined,{timeout:120000});
   await page.goto('http://127.0.0.1:4173/gallery/sculpture-lab/',{
@@ -19,7 +26,7 @@ try{
   });
   await ready();
   let state=await page.evaluate(()=>window.__sculptureLabStatus);
-  assert.equal(state.ready,true,JSON.stringify(state));
+  assert.equal(state.ready,true,JSON.stringify({state,errors}));
   assert.equal(state.version,4);
   assert.equal(state.engine,'region-inflation-v4');
   assert.equal(await page.locator('#engineMode').inputValue(),'v4');
@@ -51,7 +58,7 @@ try{
   await page.reload({waitUntil:'domcontentloaded'});
   await ready();
   state=await page.evaluate(()=>window.__sculptureLabStatus);
-  assert.equal(state.ready,true,JSON.stringify(state));
+  assert.equal(state.ready,true,JSON.stringify({state,errors}));
   assert.equal(state.version,4);
   await page.locator('#settingsToggle').click();
   assert.equal(await page.locator('#engineMode').isVisible(),true);
