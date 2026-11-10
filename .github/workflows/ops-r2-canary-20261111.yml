@@ -72,3 +72,5 @@ jobs:
           echo "CANARY_RUN_ID=$run_id"
           printf 'Started the [11 November R2 canary](https://github.com/%s/actions/runs/%s).\n' \
             "$GITHUB_REPOSITORY" "$run_id" >> "$GITHUB_STEP_SUMMARY"
+
+# Non-publishing preflight invocation for 11 November 2026.
