@@ -113,11 +113,20 @@ function paintingSurfaceTexture(image, material) {
   context.putImageData(pixels, 0, 0);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.RepeatWrapping; // join the wrap at the back seam
+  texture.wrapS = THREE.ClampToEdgeWrapping; // painting is never tiled or shuffled
   texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
   texture.needsUpdate = true;
-  return texture;
+  // A downsampled, alpha-masked copy determines PHYSICAL pigment geometry:
+  // paper becomes empty air; each visible pigment island gets a 3D back,
+  // shaped side edges, and a correctly positioned photo-textured front.
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = 72;
+  maskCanvas.height = 104;
+  const mctx = maskCanvas.getContext('2d', {willReadFrequently: true});
+  mctx.drawImage(canvas, 0, 0, maskCanvas.width, maskCanvas.height);
+  const mask = mctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+  return {texture, mask};
 }
 function configuredBlend() {
   return el('textureMode').value === 'painted' ?
@@ -147,8 +156,10 @@ function dataFromImage(image, entry, contours) {
     paper: material.params.paper || '#f5f0e6',
     limit: 230
   });
+  const painted = paintingSurfaceTexture(image, material);
   return {samples, contours: prepareSourceContours(contours, 145), seed: entry.seed,
-    paintTexture: paintingSurfaceTexture(image, material), paintStrength: configuredBlend()};
+    paintTexture: painted.texture, paintMask: painted.mask,
+    paintStrength: configuredBlend()};
 }
 function imageFrom(url) {
   return new Promise((resolve, reject) => {
@@ -247,6 +258,9 @@ async function choosePainting(filename) {
       ready: true, date, seed: entry.seed,
       texture: {mode: el('textureMode').value, blend: configuredBlend(),
         paintedMeshes: candidates.map(g => g.userData.texturedMeshes)},
+      composition: {sourceAnchored: candidates.map(g => g.userData.sourceAnchored === true),
+        frontXYError: candidates.map(g => g.userData.frontXYError ?? null),
+        paintCells: candidates.map(g => g.userData.anchorCells || 0)},
       methods: candidates.map(c => ({
         method: c.userData.method, elements: c.userData.elementCounts,
         meshes: (() => { let n = 0; c.traverse(o => { if (o.isMesh) n++; }); return n; })()
