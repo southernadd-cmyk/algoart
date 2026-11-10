@@ -37,7 +37,7 @@ try{
         error:window.__galleryStartupError,
         path:location.pathname
       }));
-      assert.equal(startup.error,undefined,
+      assert.ok(!startup.error,
         'Tower startup error: '+startup.error);
       assert.equal(startup.path,'/gallery/sculpture-v2-test/');
       assert.equal(startup.status?.mode,'test-only-dynamic-v2');
