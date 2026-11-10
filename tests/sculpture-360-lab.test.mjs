@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
+import {buildCompositionShell, setCompositionShellBlend} from '../gallery/sculpture-lab/source-composition.mjs';
 import {
   PHI, GOLDEN_ANGLE, METHODS, hashSeed, extractPigmentSamples, prepareSourceContours,
   buildSculpture, disposeSculpture, applyPaintingTexture, updatePaintingStrength
@@ -68,7 +69,7 @@ for (const method of METHODS) {
     assert.ok(size.x > .34 && size.y > .55 && size.z > .34,
       method + ' must occupy meaningful XYZ volume: ' + size.toArray());
     assert.equal(object.userData.method, method);
-    assert.equal(object.userData.sculptureVersion, 2);
+    assert.equal(object.userData.sculptureVersion, 3);
     if (method === 'hybrid') {
       for (const key of ['petals', 'ribbons', 'pigment'])
         assert.ok(object.userData.elementCounts[key] > 0);
@@ -107,7 +108,7 @@ test('archived painting wraps all three generators and the hybrid without flatte
     mat.onBeforeCompile(shader);
     assert.match(shader.vertexShader, /vPPPaintPosition = position/);
     assert.match(shader.vertexShader, /instanceMatrix/);
-    assert.match(shader.fragmentShader, /atan\(vPPPaintPosition.x/);
+    assert.match(shader.fragmentShader, /vPPPaintPosition.x \/ 1\.34/);
     assert.match(shader.fragmentShader, /diffuseColor.rgb = mix/);
     assert.ok(!shader.fragmentShader.includes('#include <map_fragment>'));
     assert.strictEqual(shader.uniforms.ppPaintBlend, mat.userData.paintBlendUniform);
@@ -120,5 +121,83 @@ test('archived painting wraps all three generators and the hybrid without flatte
     disposeSculpture(object);
   }
   assert.equal(results.length, 4);
+  texture.dispose();
+});
+
+
+function sampleMaskedPainting() {
+  const image = painting();
+  for (let i = 0; i < W * H; i++) {
+    const k = i * 4;
+    const isPaper = image.data[k] === 245 && image.data[k + 1] === 240 && image.data[k + 2] === 230;
+    image.data[k + 3] = isPaper ? 0 : 255;
+  }
+  return image;
+}
+test('every 3D method preserves the original painting location at each front-surface vertex', () => {
+  const mask = sampleMaskedPainting();
+  const paintingTexture = new THREE.Texture();
+  const expected = mask.data.reduce((n, b, i) => n + (i % 4 === 3 && b >= 6 ? 1 : 0), 0);
+  for (const method of METHODS) {
+    const shell = buildCompositionShell(mask, paintingTexture, method);
+    assert.ok(shell, method + ': no composition geometry');
+    assert.equal(shell.userData.paintedCells, expected);
+    assert.ok(expected < mask.width * mask.height, 'paper must be empty space');
+    assert.ok(shell.userData.depth > 1, 'sculpture needs an actual back and depth');
+    assert.equal(shell.material[0].map, paintingTexture);
+    const positions = shell.geometry.attributes.position;
+    const texcoords = shell.geometry.attributes.uv;
+    for (let cell = 0; cell < expected; cell++) {
+      for (let corner = 0; corner < 4; corner++) {
+        const ix = cell * 8 + corner;
+        const x = positions.getX(ix), y = positions.getY(ix);
+        const u = texcoords.getX(ix), v = texcoords.getY(ix);
+        assert.ok(Math.abs(x - (u - .5) * 1.34) < 2e-6,
+          method + ' lost the source horizontal composition');
+        assert.ok(Math.abs(y - (v - .5) * 1.88) < 2e-6,
+          method + ' lost the source vertical composition');
+        assert.ok(positions.getZ(ix) > .45,
+          method + ' has no sculpted front surface');
+      }
+      for (let corner = 4; corner < 8; corner++) {
+        assert.ok(positions.getZ(cell * 8 + corner) < -.5,
+          method + ' has no physically developed backside');
+      }
+    }
+    const originalBack = shell.geometry.attributes.position.getX(4);
+    assert.notEqual(originalBack, shell.geometry.attributes.position.getX(0),
+      method + ' should taper/twist the back, not extrude the original');
+    const root = new THREE.Group();
+    root.add(shell);
+    setCompositionShellBlend(root, 0);
+    assert.equal(shell.visible, false, 'plain mode must hide the source painting skin');
+    setCompositionShellBlend(root, .76);
+    assert.equal(shell.visible, true);
+    assert.ok(shell.material[0].opacity >= .98);
+    root.remove(shell);
+    shell.material.forEach(material => material.dispose());
+    shell.geometry.dispose();
+  }
+  paintingTexture.dispose();
+});
+
+test('source-anchored sculpture has a real sculpted back but no distracting free-form geometry from the front', () => {
+  const texture = new THREE.Texture();
+  const data = {...study, paintTexture: texture, paintMask: sampleMaskedPainting(), paintStrength: .76};
+  for (const method of METHODS) {
+    const group = buildSculpture(method, data);
+    assert.equal(group.userData.sourceAnchored, true);
+    assert.equal(group.userData.structuralBacking.visible, false);
+    const shell = group.children.find(c => c.userData.compositionShell);
+    assert.ok(shell, method + ': no source paint body');
+    assert.ok(shell.geometry.boundingBox.max.z - shell.geometry.boundingBox.min.z > 1);
+    updatePaintingStrength(group, 0);
+    assert.equal(shell.visible, false);
+    assert.equal(group.userData.structuralBacking.visible, true);
+    updatePaintingStrength(group, .92);
+    assert.equal(shell.visible, true);
+    assert.equal(group.userData.structuralBacking.visible, false);
+    disposeSculpture(group);
+  }
   texture.dispose();
 });

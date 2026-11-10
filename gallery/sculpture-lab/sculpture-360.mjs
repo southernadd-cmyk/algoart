@@ -6,6 +6,7 @@
 // This module is laboratory-only; it does not modify production tower geometry.
 import * as THREE from 'three';
 import {estimatePaper, pigmentOpacity} from '../visit/paper-isolation.mjs';
+import {buildCompositionShell, setCompositionShellBlend} from './source-composition.mjs';
 
 export const PHI = (1 + Math.sqrt(5)) / 2;
 export const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // 137.507764°
@@ -131,9 +132,9 @@ export function applyPaintingTexture(group, texture, strength = .76) {
         [
           '#include <color_fragment>', // maintain per-instance pigment colours first
           '#ifdef USE_MAP',
-          'float ppAngle = atan(vPPPaintPosition.x, vPPPaintPosition.z);',
-          'vec2 ppUV = vec2(fract(ppAngle / 6.28318530718 + 0.5),',
-          '  clamp(vPPPaintPosition.y / 1.95 + 0.5, 0.001, 0.999));',
+          '// Project pigment to original painting X/Y; NEVER randomise its image-space location.',
+          'vec2 ppUV = vec2(clamp(vPPPaintPosition.x / 1.34 + 0.5, 0.001, 0.999),',
+          '  clamp(vPPPaintPosition.y / 1.88 + 0.5, 0.001, 0.999));',
           'vec4 ppSwatch = texture2D(map, ppUV);',
           'diffuseColor.rgb = mix(diffuseColor.rgb, ppSwatch.rgb,',
           '  clamp(ppSwatch.a * ppPaintBlend, 0.0, 1.0));',
@@ -141,7 +142,7 @@ export function applyPaintingTexture(group, texture, strength = .76) {
         ].join('\n')
       );
     };
-    material.customProgramCacheKey = () => 'PP360-painted-cylinder-v1';
+    material.customProgramCacheKey = () => 'PP360-source-projected-v2';
     material.needsUpdate = true;
     count++;
   });
@@ -160,6 +161,9 @@ export function updatePaintingStrength(group, strength) {
     if (mat?.userData?.paintBlendUniform) mat.userData.paintBlendUniform.value = next;
   });
   group.userData.textureBlend = next;
+  setCompositionShellBlend(group, next);
+  if (group.userData.structuralBacking)
+    group.userData.structuralBacking.visible = next < .008 || !group.userData.sourceAnchored;
 }
 
 function ownedMaterial(color, opts = {}) {
@@ -419,8 +423,34 @@ export function buildSculpture(method, data) {
   if (method === 'hybrid') result = hybrid(data, group);
   group.userData.method = method;
   group.userData.elementCounts = result;
-  group.userData.sculptureVersion = 2;
-  if (data.paintTexture) applyPaintingTexture(group, data.paintTexture, data.paintStrength ?? .76);
+  group.userData.sculptureVersion = 3;
+  if (data.paintTexture) {
+    // The original generators create genuine rear, side and inner volumes.
+    // Move the former all-around elements BEHIND the source-facing skin,
+    // without changing their individual geometry, scale or orientation.
+    const backing = new THREE.Group();
+    backing.name = method + ' — phi-governed three-dimensional rear';
+    for (const child of [...group.children]) backing.add(child);
+    // Keep the 3D rear within the source silhouette when seen head-on;
+    // its sides and back still occupy the full φ-shaped sculptural depth.
+    backing.scale.set(.78, .80, .86);
+    backing.position.z = -1.17;
+    group.add(backing);
+    group.userData.structuralBacking = backing;
+    applyPaintingTexture(group, data.paintTexture, data.paintStrength ?? .76);
+    // The physical pigment islands preserve the original painting's exact
+    // X/Y placement and texture UV on the front, while their tapered back is
+    // different in each of the four methods.
+    const shell = buildCompositionShell(data.paintMask, data.paintTexture, method);
+    if (shell) {
+      group.add(shell);
+      group.userData.compositionShells = 1;
+      group.userData.sourceAnchored = true;
+      group.userData.anchorCells = shell.userData.paintedCells;
+      group.userData.frontXYError = shell.userData.frontXYError;
+      updatePaintingStrength(group, data.paintStrength ?? .76);
+    }
+  }
   return group;
 }
 

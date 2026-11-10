@@ -113,11 +113,20 @@ function paintingSurfaceTexture(image, material) {
   context.putImageData(pixels, 0, 0);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.RepeatWrapping; // join the wrap at the back seam
+  texture.wrapS = THREE.ClampToEdgeWrapping; // painting is never tiled or shuffled
   texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
   texture.needsUpdate = true;
-  return texture;
+  // A downsampled, alpha-masked copy determines PHYSICAL pigment geometry:
+  // paper becomes empty air; each visible pigment island gets a 3D back,
+  // shaped side edges, and a correctly positioned photo-textured front.
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = 56;
+  maskCanvas.height = 80;
+  const mctx = maskCanvas.getContext('2d', {willReadFrequently: true});
+  mctx.drawImage(canvas, 0, 0, maskCanvas.width, maskCanvas.height);
+  const mask = mctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+  return {texture, mask};
 }
 function configuredBlend() {
   return el('textureMode').value === 'painted' ?
@@ -133,6 +142,9 @@ function setTextureControls() {
       mode: el('textureMode').value, blend: strength,
       paintedMeshes: active.map(g => g?.userData.texturedMeshes || 0)
     };
+  if (window.__sculptureLabStatus?.composition)
+    window.__sculptureLabStatus.composition.backingVisible =
+      active.map(g => g?.userData.structuralBacking?.visible ?? false);
 }
 function dataFromImage(image, entry, contours) {
   const material = resolveStudyMaterial(entry.shareUrl, entry.material || 'marker');
@@ -147,8 +159,10 @@ function dataFromImage(image, entry, contours) {
     paper: material.params.paper || '#f5f0e6',
     limit: 230
   });
+  const painted = paintingSurfaceTexture(image, material);
   return {samples, contours: prepareSourceContours(contours, 145), seed: entry.seed,
-    paintTexture: paintingSurfaceTexture(image, material), paintStrength: configuredBlend()};
+    paintTexture: painted.texture, paintMask: painted.mask,
+    paintStrength: configuredBlend()};
 }
 function imageFrom(url) {
   return new Promise((resolve, reject) => {
@@ -247,6 +261,10 @@ async function choosePainting(filename) {
       ready: true, date, seed: entry.seed,
       texture: {mode: el('textureMode').value, blend: configuredBlend(),
         paintedMeshes: candidates.map(g => g.userData.texturedMeshes)},
+      composition: {sourceAnchored: candidates.map(g => g.userData.sourceAnchored === true),
+        frontXYError: candidates.map(g => g.userData.frontXYError ?? null),
+        paintCells: candidates.map(g => g.userData.anchorCells || 0),
+        backingVisible: candidates.map(g => g.userData.structuralBacking?.visible ?? false)},
       methods: candidates.map(c => ({
         method: c.userData.method, elements: c.userData.elementCounts,
         meshes: (() => { let n = 0; c.traverse(o => { if (o.isMesh) n++; }); return n; })()
@@ -268,7 +286,7 @@ function cameraView(side = 'front') {
   const distance = focus === null ? 13.4 : 4.4;
   const target = new THREE.Vector3(x, focus === null ? 1.57 : 1.67, 0);
   const positions = {
-    front: new THREE.Vector3(x, focus === null ? 3.45 : 2.3, distance),
+    front: new THREE.Vector3(x, target.y, distance), // exact head-on source composition
     side: new THREE.Vector3(x + distance, 2.35, 0),
     back: new THREE.Vector3(x, 2.35, -distance)
   };
@@ -338,6 +356,10 @@ try {
   date = days.includes(query.get('date')) ? query.get('date') : days[0];
   el('day').value = date;
   await chooseDay(date);
+  if (innerWidth < 740 && window.__sculptureLabStatus?.ready) {
+    el('focus').value = '0';
+    cameraView('front');
+  }
 } catch (error) {
   report('Sculpture lab could not open: ' + error.message);
   console.error(error);
