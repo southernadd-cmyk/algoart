@@ -35,8 +35,23 @@ function regionGeometry(r,{mode='poisson',depth=.85,phiPull=.8,
     heightMemo.set(k,v);
     return v;
   }
-  function vertex(x,y){
-    const key=x+','+y;
+  function vertex(x,y,ownerX,ownerY){
+    // Two diagonal painted cells can meet at one lattice corner without
+    // sharing any area. If the region reaches that corner from separate
+    // quadrants, separate vertex identities so two rims don't share one
+    // vertical edge (which would make an otherwise closed mesh non-manifold).
+    const inside=(px,py)=>{
+      if(px<r.minX||px>=r.minX+rw||py<r.minY||py>=r.minY+r.rh)return false;
+      return !!r.mask[(py-r.minY)*rw+(px-r.minX)];
+    };
+    const nw=inside(x-1,y-1),ne=inside(x,y-1);
+    const sw=inside(x-1,y),se=inside(x,y);
+    let sector='';
+    if(nw&&se&&!ne&&!sw)
+      sector=ownerX===x-1&&ownerY===y-1?'nw':'se';
+    else if(ne&&sw&&!nw&&!se)
+      sector=ownerX===x&&ownerY===y-1?'ne':'sw';
+    const key=x+','+y+':'+sector;
     if(vertexMap.has(key))return vertexMap.get(key);
     const xx=(x/w-.5)*W,yy=(.5-y/h)*H,uvx=x/w,uvy=1-y/h;
     const elevation=height(x,y)*volumeScale;
@@ -50,8 +65,8 @@ function regionGeometry(r,{mode='poisson',depth=.85,phiPull=.8,
   }
   for(const i of r.ids){
     const x=i%rw+r.minX,y=((i/rw)|0)+r.minY;
-    const a=vertex(x,y),b=vertex(x+1,y),
-      c=vertex(x+1,y+1),d=vertex(x,y+1);
+    const a=vertex(x,y,x,y),b=vertex(x+1,y,x,y),
+      c=vertex(x+1,y+1,x,y),d=vertex(x,y+1,x,y);
     // The top half-space looks toward the front orthographic camera (+z).
     triTop.push(a[0],d[0],b[0],b[0],d[0],c[0]);
     triBack.push(a[1],b[1],d[1],b[1],c[1],d[1]);
