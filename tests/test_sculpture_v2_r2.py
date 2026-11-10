@@ -14,6 +14,7 @@ spec.loader.exec_module(archive)
 class V2ArchiveTests(unittest.TestCase):
     def test_bucket_and_namespace_do_not_collide_with_v1_or_canary(self):
         self.assertEqual(archive.BUCKET, "proportion-piece-media-test")
+        self.assertEqual(archive.WORKER, "https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev")
         self.assertTrue(archive.PREFIX.startswith("sculptures-v2/"))
         self.assertNotIn("editions/", archive.PREFIX)
         self.assertNotIn("sculptures.json.gz", archive.PREFIX)
