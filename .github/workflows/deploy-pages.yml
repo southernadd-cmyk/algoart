@@ -79,15 +79,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate safe Pages deployment policy
+        run: node --test tests/pages-build-scope.test.mjs tests/verify-pages-live.test.mjs
+      - name: Classify static-only versus gallery changes
+        id: scope
+        env:
+          PAGES_EVENT_NAME: ${{ github.event_name }}
+          PAGES_PUSH_BEFORE: ${{ github.event.before }}
+        run: node automation/pages-build-scope.mjs
       - run: npm ci
       # Pages should not depend on archived test experiments (photoreal/CSM,
       # legacy visitor palette, gltfpack pilots). Those have separate workflows,
       # and the test tower is deliberately a clean mirror of live plus chat v2.
       - name: Build live and test gallery bundles
+        if: steps.scope.outputs.rebuild_gallery == 'true'
         run: |
           npm run gallery:bundle
           npm run gallery:bundle:phi
@@ -220,4 +231,10 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Checkout the deployed release for verification
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify actual live Pages content matches this release
+        run: node automation/verify-pages-live.mjs
 
