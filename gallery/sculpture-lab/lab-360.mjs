@@ -3,9 +3,10 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {resolveStudyMaterial} from '../visit/study-material.mjs';
+import {maskPaper} from '../visit/paper-isolation.mjs';
 import {
   METHODS, GOLDEN_ANGLE, PHI, extractPigmentSamples, prepareSourceContours,
-  buildSculpture, disposeSculpture
+  buildSculpture, disposeSculpture, updatePaintingStrength
 } from './sculpture-360.mjs';
 
 const el = id => document.getElementById(id);
@@ -63,6 +64,7 @@ const centres = [-5.1, -1.7, 1.7, 5.1];
 const names = ['GOLDEN-ANGLE PETALS', 'PHI RIBBONS', 'PIGMENT FIELD', 'COMBINED / HYBRID'];
 const stages = [];
 const active = [];
+let activePaintTexture = null;
 function plaqueTexture(title) {
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 144;
@@ -96,6 +98,42 @@ for (let i = 0; i < 4; i++) {
 
 let date = '', archivePack = null, portraits = [], selected = '';
 let dateGeneration = 0, paintingGeneration = 0;
+function paintingSurfaceTexture(image, material) {
+  // Cap texture resolution for mobile, preserving exact original paint appearance.
+  const longest = matchMedia('(max-width: 740px)').matches ? 560 : 900;
+  const factor = Math.min(1, longest / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * factor));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * factor));
+  const context = canvas.getContext('2d', {willReadFrequently: true});
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+  // Cut out the paper from the painted OVERLAY, not the 3D surface geometry.
+  maskPaper(pixels, material.type, material.params.paper || '#f5f0e6');
+  context.putImageData(pixels, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping; // join the wrap at the back seam
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  texture.needsUpdate = true;
+  return texture;
+}
+function configuredBlend() {
+  return el('textureMode').value === 'painted' ?
+    Number(el('textureStrength').value) / 100 : 0;
+}
+function setTextureControls() {
+  const strength = configuredBlend();
+  for (const group of active) updatePaintingStrength(group, strength);
+  el('textureStrengthValue').textContent = el('textureStrength').value + '%';
+  el('textureStrength').disabled = el('textureMode').value !== 'painted';
+  if (window.__sculptureLabStatus?.ready)
+    window.__sculptureLabStatus.texture = {
+      mode: el('textureMode').value, blend: strength,
+      paintedMeshes: active.map(g => g?.userData.texturedMeshes || 0)
+    };
+}
 function dataFromImage(image, entry, contours) {
   const material = resolveStudyMaterial(entry.shareUrl, entry.material || 'marker');
   const canvas = document.createElement('canvas');
@@ -109,7 +147,8 @@ function dataFromImage(image, entry, contours) {
     paper: material.params.paper || '#f5f0e6',
     limit: 230
   });
-  return {samples, contours: prepareSourceContours(contours, 145), seed: entry.seed};
+  return {samples, contours: prepareSourceContours(contours, 145), seed: entry.seed,
+    paintTexture: paintingSurfaceTexture(image, material), paintStrength: configuredBlend()};
 }
 function imageFrom(url) {
   return new Promise((resolve, reject) => {
@@ -172,16 +211,27 @@ async function choosePainting(filename) {
     if (serial !== paintingGeneration || daySerial !== dateGeneration) return;
     const data = dataFromImage(image, entry, archivePack.studies[entry.imageFile].desktop);
     // Build off-scene; never leave half a sculpture visible on a method failure.
-    const candidates = METHODS.map(method => buildSculpture(method, data));
+    let candidates = [];
+    try {
+      candidates = METHODS.map(method => buildSculpture(method, data));
+    } catch (error) {
+      candidates.forEach(disposeSculpture);
+      data.paintTexture.dispose();
+      throw error;
+    }
     if (serial !== paintingGeneration || daySerial !== dateGeneration) {
       candidates.forEach(disposeSculpture);
+      data.paintTexture.dispose();
       return;
     }
+    const oldPaintTexture = activePaintTexture;
     for (let i = 0; i < 4; i++) {
       if (active[i]) { stages[i].remove(active[i]); disposeSculpture(active[i]); }
       active[i] = candidates[i];
       stages[i].add(candidates[i]);
     }
+    activePaintTexture = data.paintTexture;
+    oldPaintTexture?.dispose();
     el('thumb').src = imageURL;
     el('caption').textContent = entry.title || entry.seed;
     el('source').href = entry.shareUrl;
@@ -194,7 +244,10 @@ async function choosePainting(filename) {
         .map(([name, count]) => count + ' ' + name).join(' + ')).join(' · ');
     report('360° study ready · ' + summary);
     window.__sculptureLabStatus = {
-      ready: true, date, seed: entry.seed, methods: candidates.map(c => ({
+      ready: true, date, seed: entry.seed,
+      texture: {mode: el('textureMode').value, blend: configuredBlend(),
+        paintedMeshes: candidates.map(g => g.userData.texturedMeshes)},
+      methods: candidates.map(c => ({
         method: c.userData.method, elements: c.userData.elementCounts,
         meshes: (() => { let n = 0; c.traverse(o => { if (o.isMesh) n++; }); return n; })()
       }))
@@ -228,6 +281,8 @@ function cameraView(side = 'front') {
 }
 el('day').addEventListener('change', () => { selected = ''; chooseDay(el('day').value); });
 el('painting').addEventListener('change', () => choosePainting(el('painting').value));
+el('textureMode').addEventListener('change', setTextureControls);
+el('textureStrength').addEventListener('input', setTextureControls);
 el('focus').addEventListener('change', () => cameraView('front'));
 for (const direction of ['front', 'side', 'back'])
   el(direction).addEventListener('click', () => cameraView(direction));
@@ -269,6 +324,7 @@ function frame() {
   orbit.update(); renderer.render(scene, camera);
 }
 frame();
+setTextureControls();
 try {
   const archive = await fetch('../archive.json').then(r => {
     if (!r.ok) throw new Error('Gallery day index unavailable');

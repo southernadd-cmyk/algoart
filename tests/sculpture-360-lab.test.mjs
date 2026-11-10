@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {
   PHI, GOLDEN_ANGLE, METHODS, hashSeed, extractPigmentSamples, prepareSourceContours,
-  buildSculpture, disposeSculpture
+  buildSculpture, disposeSculpture, applyPaintingTexture, updatePaintingStrength
 } from '../gallery/sculpture-lab/sculpture-360.mjs';
 
 const W = 90, H = 126;
@@ -81,4 +81,44 @@ test('source contour preparation rejects malformed polygons', () => {
   const traced = prepareSourceContours([...entries, {points: [[0, 0], [1, 1], [NaN, 1]]}]);
   assert.equal(traced.length, 3);
   assert.ok(traced.every(x => x.sourceArea > 0));
+});
+
+test('archived painting wraps all three generators and the hybrid without flattening meshes', () => {
+  const texture = new THREE.Texture();
+  const results = [];
+  for (const method of METHODS) {
+    const object = buildSculpture(method, {...study, paintTexture: texture, paintStrength: .73});
+    assert.ok(object.userData.texturedMeshes > 0, method + ' has no painted surfaces');
+    const painted = [];
+    object.traverse(mesh => {
+      if (mesh.userData.paintable) {
+        assert.ok(mesh.material.map === texture, 'Archived texture not attached');
+        assert.ok(mesh.material.userData.paintBlendUniform);
+        painted.push(mesh.material);
+      }
+    });
+    assert.ok(painted.length > 0);
+    const mat = painted[0];
+    const shader = {
+      uniforms: {},
+      vertexShader: '#include <common>\n#include <begin_vertex>',
+      fragmentShader: '#include <common>\n#include <map_fragment>\n#include <color_fragment>'
+    };
+    mat.onBeforeCompile(shader);
+    assert.match(shader.vertexShader, /vPPPaintPosition = position/);
+    assert.match(shader.vertexShader, /instanceMatrix/);
+    assert.match(shader.fragmentShader, /atan\(vPPPaintPosition.x/);
+    assert.match(shader.fragmentShader, /diffuseColor.rgb = mix/);
+    assert.ok(!shader.fragmentShader.includes('#include <map_fragment>'));
+    assert.strictEqual(shader.uniforms.ppPaintBlend, mat.userData.paintBlendUniform);
+    updatePaintingStrength(object, 0);
+    assert.equal(mat.userData.paintBlendUniform.value, 0, 'plain colour toggle');
+    updatePaintingStrength(object, .92);
+    assert.equal(mat.userData.paintBlendUniform.value, .92, 'real-time painting intensity');
+    assert.ok(object.userData.textureBlend === .92);
+    results.push(object.userData.texturedMeshes);
+    disposeSculpture(object);
+  }
+  assert.equal(results.length, 4);
+  texture.dispose();
 });

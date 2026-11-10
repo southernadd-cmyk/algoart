@@ -20,6 +20,13 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 #camera-controls button:hover,#camera-controls button:focus-visible{background:#53645c;outline-color:#e3c586}
 #controls select:last-child{max-width:145px}
 @media(max-width:740px){#controls{gap:4px;flex-wrap:wrap}#controls select:last-child{max-width:30vw}#camera-controls{bottom:100px;padding:4px;gap:3px}#camera-controls button{font-size:.62rem;padding:7px 6px}#legend{bottom:60px}#original{max-width:150px}}
+#texture-controls{position:absolute;z-index:3;bottom:167px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:9px 12px;background:#26302dec;border:1px solid #a99772;white-space:nowrap}
+#texture-controls label{color:#ead8b4;font-size:.72rem;letter-spacing:.04em}
+#texture-controls select{padding:7px;max-width:200px;font-size:.72rem}
+#texture-controls input{width:125px;accent-color:#d7b87e}
+#texture-controls output{font-size:.72rem;min-width:35px;text-align:right}
+#texture-controls input:disabled{opacity:.35}
+@media(max-width:740px){#texture-controls{bottom:157px;max-width:99vw;gap:4px;padding:7px 6px}#texture-controls label{font-size:.57rem}#texture-controls select{max-width:148px;padding:5px;font-size:.6rem}#texture-controls input{width:72px}#texture-controls output{font-size:.61rem;min-width:28px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script></head>
 <body><canvas id="view" aria-label="Four sculpture methods in one three-dimensional test room"></canvas>
@@ -27,5 +34,15 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 <div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Petals</option><option value="1">2 · Ribbons</option><option value="2">3 · Pigment</option><option value="3">4 · Hybrid</option></select></div></header>
 <div id="original"><img id="thumb" alt="Archived painting"><strong id="caption">Loading…</strong><p>Source painting is unchanged. Sculptures are experimental.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
 <div id="legend"><span>01 · Golden-angle petals</span><span>02 · Phi ribbons</span><span>03 · Volumetric pigment</span><span>04 · Combined hybrid</span></div>
+<div id="texture-controls">
+<label for="textureMode">Surface</label>
+<select id="textureMode" aria-label="Sculpture surface mode">
+<option value="painted" selected>Original painting wrap</option>
+<option value="plain">Source colours only</option>
+</select>
+<label for="textureStrength">Painting</label>
+<input type="range" id="textureStrength" min="0" max="100" step="1" value="76" aria-label="Original painting texture strength">
+<output id="textureStrengthValue" for="textureStrength">76%</output>
+</div>
 <div id="hint">Drag: orbit · Scroll: zoom · WASD: move · Q/E: turn</div><div id="camera-controls"><button id="front" type="button">Front</button><button id="side" type="button">Side</button><button id="back" type="button">Back</button><button id="orbitToggle" type="button" aria-pressed="false">Auto rotate</button></div><div id="info" role="status" aria-live="polite">Preparing sculpture room…</div>
-<script type="module" src="./lab-360.mjs?v=2"></script></body></html>
+<script type="module" src="./lab-360.mjs?v=3-paint-wrap"></script></body></html>
