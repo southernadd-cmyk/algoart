@@ -6,6 +6,12 @@ on:
     paths:
       - 'gallery/sculpture-lab/**'
       - 'tests/sculpture-360-lab*'
+      - 'tests/sculpture-ai-glb.test.mjs'
+      - 'tests/fixtures/sculpture-ai-cube-glb.mjs'
+      - 'automation/meshy-sculpture-pilot.py'
+      - 'tests/sculpture-ai-glb.test.mjs'
+      - 'tests/fixtures/sculpture-ai-cube-glb.mjs'
+      - 'automation/meshy-sculpture-pilot.py'
       - '.github/workflows/sculpture-360-check.yml'
   pull_request:
     paths:
@@ -35,6 +41,8 @@ jobs:
           node --check gallery/sculpture-lab/sculpture-360.mjs
           node --check gallery/sculpture-lab/lab-360.mjs
           node --test tests/sculpture-360-lab.test.mjs
+          node --test tests/sculpture-ai-glb.test.mjs
+          python3 automation/meshy-sculpture-pilot.py --date 2026-11-09 --image-file 2026-11-09-G07-oil-rects-portrait.jpg --dry-run
       - name: Start archived gallery HTTP server
         run: |
           python3 -m http.server 4173 >/tmp/sculpture-360-http.log 2>&1 &
