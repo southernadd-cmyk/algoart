@@ -104,7 +104,7 @@ function makeGroups(rings){
   }));
 }
 const ek=(a,b)=>a<b?a+':'+b:b+':'+a;
-export function subdivideConforming(vertices,triangles,maxEdge=1.8){
+export function subdivideConforming(vertices,triangles,maxEdge=1.8,boundaries=[]){
   for(let pass=0;pass<10;pass++){
     const split=new Set();
     for(const [a,b,c] of triangles)for(const [u,v] of [[a,b],[b,c],[c,a]]){
@@ -133,6 +133,19 @@ export function subdivideConforming(vertices,triangles,maxEdge=1.8){
       else if(m1>=0)next.push([a,m0,c],[m0,m1,c],[m0,b,m1]);
       else next.push([a,m0,m2],[m0,b,c],[m2,m0,c]);
     }
+    // Subdivision of a perimeter edge must also subdivide the wall loop.
+    // Otherwise the rounded rim ends against a longer unsplit edge and
+    // the mesh is open even though every triangle individually looks valid.
+    for(const ring of boundaries){
+      const previous=ring.indices,refined=[];
+      for(let i=0;i<previous.length;i++){
+        const p=previous[i],q=previous[(i+1)%previous.length];
+        refined.push(p);
+        const m=mids.get(ek(p,q));
+        if(m!==undefined)refined.push(m);
+      }
+      ring.indices=refined;
+    }
     triangles=next;
   }
   return triangles;
@@ -159,6 +172,6 @@ export function buildPlanarRegion(r,{quality='desktop'}={}){
   }
   if(!triangles.length)throw Error('V4 marching squares triangulation found no surface');
   const boundaryCount=vertices.length;
-  const refined=subdivideConforming(vertices,triangles,quality==='mobile'?2.55:1.8);
+  const refined=subdivideConforming(vertices,triangles,quality==='mobile'?2.55:1.8,boundaries);
   return{vertices,triangles:refined,boundaries,boundaryCount};
 }
