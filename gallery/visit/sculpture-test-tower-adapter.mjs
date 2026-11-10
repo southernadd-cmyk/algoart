@@ -22,7 +22,8 @@ export function setSculptureArchitecturalMaterials({plinth,metal}={}){
  if(metal)architecturalMetal=metal;
 }
 function archiveDate(study){
- const date=String(study.image||'').match(/\/gallery\/(\d{4}-\d{2}-\d{2})\//)?.[1];
+ const date=String(study.image||'').match(/\/gallery\/(\d{4}-\d{2}-\d{2})\//)?.[1]||
+  String(study.imageFile||'').match(/^(\d{4}-\d{2}-\d{2})/)?.[1];
  if(!date)throw Error('Could not identify dated archive portrait: '+study.seed);
  return date;
 }
