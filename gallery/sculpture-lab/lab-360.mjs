@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {resolveStudyMaterial} from '../visit/study-material.mjs';
 import {maskPaper} from '../visit/paper-isolation.mjs';
+import {parseAIModel, fitModelToPlinth, disposeAIModel} from './ai-glb.mjs';
 import {
   METHODS, GOLDEN_ANGLE, PHI, extractPigmentSamples, prepareSourceContours,
   buildSculpture, disposeSculpture, updatePaintingStrength
@@ -65,6 +66,9 @@ const names = ['GOLDEN-ANGLE PETALS', 'PHI RIBBONS', 'PIGMENT FIELD', 'COMBINED 
 const stages = [];
 const active = [];
 let activePaintTexture = null;
+const importedAI = [null, null, null, null];
+const plinthSigns = [];
+const legend = () => [...el('legend').querySelectorAll('span')];
 function plaqueTexture(title) {
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 144;
@@ -85,7 +89,7 @@ for (let i = 0; i < 4; i++) {
   architecturalBlock(1.72, .04, 1.49, x, .74, 0, '#3a4541', .35);
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.46, .41),
     new THREE.MeshBasicMaterial({map: plaqueTexture(names[i])}));
-  sign.position.set(x, .41, .75); scene.add(sign);
+  sign.position.set(x, .41, .75); scene.add(sign); plinthSigns.push(sign);
   const spotlight = new THREE.SpotLight('#fff2d8', 14, 9, .64, .55, 1.5);
   spotlight.position.set(x, 5.9, 3.2);
   spotlight.target.position.set(x, 1.35, 0);
@@ -97,6 +101,83 @@ for (let i = 0; i < 4; i++) {
 }
 
 let date = '', archivePack = null, portraits = [], selected = '';
+
+function restoreAI(index) {
+  const model = importedAI[index];
+  if (!model) return;
+  disposeAIModel(model.root);
+  importedAI[index] = null;
+  if (active[index]) active[index].visible = true;
+  const plaque = plinthSigns[index];
+  const previous = plaque.material.map;
+  plaque.material.map = plaqueTexture(names[index]);
+  plaque.material.needsUpdate = true;
+  previous?.dispose();
+  legend()[index].textContent = ['01 · Golden-angle petals',
+    '02 · Phi ribbons','03 · Volumetric pigment','04 · Combined hybrid'][index];
+}
+function clearAIModels() {
+  for (let i = 0; i < 4; i++) restoreAI(i);
+  updateAIStatus();
+}
+function updateAIStatus() {
+  const models = importedAI.map((m, i) => m ? {slot: i, name: m.name,
+    meshes: m.meshes, bytes: m.bytes} : null);
+  if (window.__sculptureLabStatus) window.__sculptureLabStatus.aiModels = models;
+  el('resetAI').disabled = models.every(m => !m);
+}
+async function insertAIModel(file, slot) {
+  if (!file?.name?.toLowerCase().endsWith('.glb'))
+    throw new Error('Choose a .glb file exported by an actual 3D generator');
+  if (file.size > 45 * 1024 * 1024)
+    throw new Error('The 3D model exceeds the 45 MB laboratory limit');
+  const sourceDay = date, sourceImage = selected;
+  const root = await parseAIModel(await file.arrayBuffer());
+  try {
+    fitModelToPlinth(root);
+    if (sourceDay !== date || sourceImage !== selected)
+      throw new Error('Source painting changed during import; choose the model again');
+    restoreAI(slot);
+    if (active[slot]) active[slot].visible = false;
+    stages[slot].add(root);
+    const meshes = (() => {let n = 0; root.traverse(o => {if (o.isMesh) n++;});return n;})();
+    importedAI[slot] = {root, name: file.name, meshes, bytes: file.size};
+    const label = 'AI-GENERATED 3D ' + (slot + 1);
+    const plaque = plinthSigns[slot], previous = plaque.material.map;
+    plaque.material.map = plaqueTexture(label);
+    plaque.material.needsUpdate = true;
+    previous?.dispose();
+    legend()[slot].textContent = (slot + 1) + ' · AI-generated GLB';
+    updateAIStatus();
+  } catch(error) {
+    disposeAIModel(root);
+    throw error;
+  }
+}
+el('aiFiles').addEventListener('change', async () => {
+  const files = [...el('aiFiles').files].slice(0, 4);
+  if (!files.length) return;
+  const start = Number(el('aiSlot').value);
+  if (!selected) {report('Choose a source portrait first');return;}
+  report('Loading ' + files.length + ' independent generated 3D model(s)…');
+  try {
+    for (let i = 0; i < files.length; i++)
+      await insertAIModel(files[i], (start + i) % 4);
+    el('focus').value = String(start);
+    cameraView('front');
+    report('True 3D model loaded. Inspect front, side and back against the source painting.');
+  } catch(error) {
+    report('Cannot import 3D model: ' + error.message);
+    console.error(error);
+  } finally {
+    el('aiFiles').value = '';
+  }
+});
+el('resetAI').addEventListener('click', () => {
+  clearAIModels();
+  report('Original procedural comparisons restored; no archived paintings were changed.');
+});
+
 let dateGeneration = 0, paintingGeneration = 0;
 function paintingSurfaceTexture(image, material) {
   // Cap texture resolution for mobile, preserving exact original paint appearance.
@@ -213,6 +294,7 @@ async function chooseDay(day) {
 }
 async function choosePainting(filename) {
   selected = filename;
+  clearAIModels(); // Imported models never silently follow a different source portrait.
   const serial = ++paintingGeneration;
   const daySerial = dateGeneration;
   const entry = portraits.find(e => e.imageFile === filename);
@@ -259,6 +341,7 @@ async function choosePainting(filename) {
     report('360° study ready · ' + summary);
     window.__sculptureLabStatus = {
       ready: true, date, seed: entry.seed,
+      aiModels: importedAI.map((m, i) => m ? {slot: i, name: m.name} : null),
       texture: {mode: el('textureMode').value, blend: configuredBlend(),
         paintedMeshes: candidates.map(g => g.userData.texturedMeshes)},
       composition: {sourceAnchored: candidates.map(g => g.userData.sourceAnchored === true),
