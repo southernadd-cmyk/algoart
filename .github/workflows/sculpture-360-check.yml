@@ -60,4 +60,4 @@ jobs:
         with:
           name: sculpture-rules-browser-shots
           if-no-files-found: ignore
-          path: /tmp/sculpture-lab-rules-*.png
+          path: /tmp/sculpture-lab-*.png
