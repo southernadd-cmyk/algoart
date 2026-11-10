@@ -16,12 +16,20 @@ try{
   await page.goto('http://127.0.0.1:4173/gallery/sculpture-lab/?engine=v3',{
     waitUntil:'domcontentloaded',timeout:45000
   });
+  // A module-load exception should fail fast instead of appearing as a
+  // two-minute page readiness timeout.
+  await page.addInitScript(()=>{
+    window.addEventListener('error',e=>{
+      window.__sculptureLabStartupError=e.message||'JavaScript startup failure';
+    });
+  });
   const ready=()=>page.waitForFunction(()=>
-    window.__sculptureLabStatus?.ready||window.__sculptureLabStatus?.error,
+    window.__sculptureLabStatus?.ready||window.__sculptureLabStatus?.error||
+    window.__sculptureLabStartupError,
     undefined,{timeout:120000});
   const get=()=>page.evaluate(()=>window.__sculptureLabStatus);
   await ready();let lab=await get();
-  assert.equal(lab.ready,true,JSON.stringify(lab));
+  assert.equal(lab.ready,true,JSON.stringify({lab,errors}));
   assert.equal(lab.version,3);assert.equal(lab.engine,'source-anchored-v3');
   assert.ok(lab.sourcePigmentRegions>=1);
   assert.deepEqual(lab.methods.map(m=>m.method),[
