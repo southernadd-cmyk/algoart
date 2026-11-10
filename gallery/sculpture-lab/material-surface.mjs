@@ -135,7 +135,7 @@ function fieldAt(field,method,x,y,z,depth){
   return pigment-.092-thickness*profile*profile;
 }
 export function buildMaterialSculpture(method,imageData,texture,{
-  depth=1,material='marker',paper='#f5f0e6',quality='desktop'
+  depth=1,material='marker',paper='#f5f0e6',quality='desktop',sideTexture=null
 }={}){
   if(!texture?.isTexture)throw Error('Actual archived artwork texture is required');
   if(!['petal','ribbon','pigment','hybrid'].includes(method))
@@ -257,6 +257,33 @@ export function buildMaterialSculpture(method,imageData,texture,{
     side:THREE.DoubleSide
   });
   artworkMaterial.userData.ppOwned=true;
+  if(sideTexture?.isTexture){
+    // On the SAME mesh, keep full source painting texture on the front; as
+    // the real surface bends into an edge/back, use pigment-colour continuation
+    // rather than the paper RGB that surrounds each mark in the source JPEG.
+    // No separate drawing/card, shadow body or second geometry layer.
+    artworkMaterial.onBeforeCompile=shader=>{
+      shader.uniforms.ppSculptureSideTexture={value:sideTexture};
+      shader.vertexShader=shader.vertexShader
+        .replace('#include <common>',
+          '#include <common>\nvarying float vPPOriginalFrontness;')
+        .replace('#include <begin_vertex>',
+          '#include <begin_vertex>\nvPPOriginalFrontness = normal.z;');
+      shader.fragmentShader=shader.fragmentShader
+        .replace('#include <common>',
+          '#include <common>\nvarying float vPPOriginalFrontness;\nuniform sampler2D ppSculptureSideTexture;')
+        .replace('#include <map_fragment>',[
+          '#include <map_fragment>',
+          '#ifdef USE_MAP',
+          'vec4 ppLocalPigment = texture2D(ppSculptureSideTexture, vMapUv);',
+          'float ppAround = 1.0 - smoothstep(0.22, 0.78, vPPOriginalFrontness);',
+          'diffuseColor.rgb = mix(diffuseColor.rgb, ppLocalPigment.rgb, ppAround);',
+          '#endif'
+        ].join('\n'));
+    };
+    artworkMaterial.customProgramCacheKey=()=>'pp-real-paint-iso-v2-side-pigment';
+    artworkMaterial.userData.sideTexture=sideTexture;
+  }
   const mesh=new THREE.Mesh(geometry,artworkMaterial);
   mesh.name='One continuous paint-textured rounded isosurface; 360° original pigment';
   mesh.userData.ppOwned=true;
@@ -268,6 +295,7 @@ export function buildMaterialSculpture(method,imageData,texture,{
     material,sourceAnchored:true,paintedCells:field.cells,
     paintedFraction:field.cells/(field.width*field.height),
     sourceTextureOnBody:mesh.material.map===texture,
+    sideTextureOnBody:mesh.material.userData.sideTexture===sideTexture && !!sideTexture,
     separatePaintingOverlay:false,
     materialRoughness:finish.roughness,materialBumpScale:finish.bumpScale,
     volumetricDepth:depth,frontIndices:sides.front*3,
