@@ -9,14 +9,14 @@ on:
       - 'tests/sculpture-ai-glb.test.mjs'
       - 'tests/fixtures/sculpture-ai-cube-glb.mjs'
       - 'automation/meshy-sculpture-pilot.py'
-      - 'tests/sculpture-ai-glb.test.mjs'
-      - 'tests/fixtures/sculpture-ai-cube-glb.mjs'
-      - 'automation/meshy-sculpture-pilot.py'
       - '.github/workflows/sculpture-360-check.yml'
   pull_request:
     paths:
       - 'gallery/sculpture-lab/**'
       - 'tests/sculpture-360-lab*'
+      - 'tests/sculpture-ai-glb.test.mjs'
+      - 'tests/fixtures/sculpture-ai-cube-glb.mjs'
+      - 'automation/meshy-sculpture-pilot.py'
       - '.github/workflows/sculpture-360-check.yml'
   workflow_dispatch:
 
