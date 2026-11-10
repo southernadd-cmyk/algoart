@@ -40,11 +40,14 @@ export function selectSourceDetailMarks(marks,max=48) {
 }
 
 function material(hex,shade=1) {
-  const m=new THREE.MeshStandardMaterial({
-    color:new THREE.Color(hex).multiplyScalar(shade),
-    metalness:.06,roughness:.56,
-    side:THREE.DoubleSide
-  });
+  const ink=new THREE.Color(hex).multiplyScalar(shade);
+  // Frontal marks retain the source image's actual sRGB colours; shaded
+  // sculptural continuations are separate materials farther behind them.
+  const m=shade>=.99
+    ?new THREE.MeshBasicMaterial({color:ink,toneMapped:false,side:THREE.DoubleSide})
+    :new THREE.MeshStandardMaterial({
+      color:ink,metalness:.03,roughness:.68,side:THREE.DoubleSide
+    });
   m.userData.ppOwned=true;
   return m;
 }
@@ -82,41 +85,53 @@ export function buildSourceDetailLayer(marks,{depth=1,fidelity=.85,maxMarks=80}=
     if(!materialCache.has(key))materialCache.set(key,material(hex,shade));
     return materialCache.get(key);
   }
-  let strokes=0,masses=0;
+  let strokes=0,masses=0,returns=0;
   for(let i=0;i<chosen.length;i++){
     const mark=chosen[i],path=returnPath(mark,i,depth,f);
-    const width=clamp(mark.breadth*.22+.011,.013,.053);
+    const frontRadius=clamp(mark.breadth*.12+.010,.011,.029);
     const isField=mark.kind==='field';
     if(isField || mark.kind==='spot') {
-      const rx=clamp(mark.span*.19+.025,.042,.115);
-      const ry=clamp(mark.breadth*.31+.022,.035,.11);
-      const rz=clamp((rx+ry)/PHI,.04,.115)*depth;
+      const rx=clamp(mark.span*.14+.013,.025,.077);
+      const ry=clamp(mark.breadth*.23+.014,.024,.073);
+      const rz=clamp((rx+ry)/PHI,.028,.075)*depth;
       const head=new THREE.Mesh(new THREE.IcosahedronGeometry(1,1),
         pigment(mark.color));
-      // Image-space orientation is not lost: ellipsoid major axis follows
-      // its extracted mark covariance, not the golden-angle sequence.
-      head.position.set(mark.x,mark.y,.53*depth);
+      head.position.set(mark.x,mark.y,.56*depth);
       head.scale.set(rx,ry,rz);
       head.rotation.z=mark.angle??0;
       head.userData.ppOwned=true;
-      head.name='Source pigment mass in three dimensions';
+      head.name='Small sculptural pigment mark at source XY';
       head.userData.originalXY=[mark.x,mark.y];
       group.add(head);masses++;
     }
-    const curve=new THREE.CatmullRomCurve3(path,false,'centripetal');
-    const thickness=isField ? width*.75 : width;
-    const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,20,thickness,7,false),
+    // A *short* rounded physical stroke reproduces the actual orientation
+    // and position of each source gesture; it bends slightly in Z.
+    // Long return branches no longer drown out the source composition.
+    const frontCurve=new THREE.CatmullRomCurve3(path.slice(0,3),false,'centripetal');
+    const front=new THREE.Mesh(new THREE.TubeGeometry(frontCurve,14,frontRadius,7,false),
       pigment(mark.color));
-    mesh.name='Source mark curved into the third dimension';
-    mesh.userData.ppOwned=true;
-    mesh.userData.originalXY=[mark.x,mark.y];
-    mesh.userData.frontDirection=mark.angle??0;
-    group.add(mesh);strokes++;
+    front.name='Colour-faithful front mark — original XY and direction';
+    front.userData.ppOwned=true;
+    front.userData.originalXY=[mark.x,mark.y];
+    front.userData.frontDirection=mark.angle??0;
+    front.userData.sourceFacing=true;
+    group.add(front);strokes++;
+    // One in three selected marks becomes a narrow 3D return, allowing the
+    // rest to retain whitespace from the actual painting when seen head-on.
+    if(i%3===0){
+      const tailCurve=new THREE.CatmullRomCurve3(path.slice(2),false,'centripetal');
+      const tail=new THREE.Mesh(new THREE.TubeGeometry(tailCurve,15,
+        Math.max(.010,frontRadius*.56),6,false),pigment(mark.color,.82));
+      tail.name='Thin φ-controlled return behind source gesture';
+      tail.userData.ppOwned=true;
+      tail.userData.returnBranch=true;
+      group.add(tail);returns++;
+    }
   }
   group.userData={
     engine:'source-echo-v1',fidelity:f,
     sourceTraceCount:chosen.length,
-    sourceStrokes:strokes,sourceMasses:masses,
+    sourceStrokes:strokes,sourceMasses:masses,returnBranches:returns,
     sourceAnchors:chosen.map(m=>({
       x:m.x,y:m.y,color:m.color,angle:m.angle??0,kind:m.kind
     })),
