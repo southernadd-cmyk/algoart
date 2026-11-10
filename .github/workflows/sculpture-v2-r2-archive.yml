@@ -36,6 +36,8 @@ jobs:
   archive:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: unit
+    # These R2 secrets are scoped to the approved archive environment.
+    environment: archive-media-test
     runs-on: ubuntu-latest
     timeout-minutes: 100
     env:
