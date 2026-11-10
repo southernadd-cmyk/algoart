@@ -1,0 +1,59 @@
+// End-to-end smoke test for the archived-painting 360-degree sculpture room.
+// Run from repository root with an HTTP server on port 4173.
+import assert from 'node:assert/strict';
+import {chromium} from 'playwright';
+
+const browser = await chromium.launch({
+  headless: true,
+  args: ['--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']
+});
+try {
+  const page = await browser.newPage({viewport: {width: 1400, height: 900}});
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', event => {
+    if (event.type() === 'error') console.error('[Browser]', event.text().slice(0, 350));
+  });
+  await page.goto('http://127.0.0.1:4173/gallery/sculpture-lab/', {
+    waitUntil: 'domcontentloaded', timeout: 45000
+  });
+  await page.waitForFunction(() => window.__sculptureLabStatus?.ready ||
+    window.__sculptureLabStatus?.error, {timeout: 90000});
+  let lab = await page.evaluate(() => window.__sculptureLabStatus);
+  assert.equal(lab.ready, true, 'Lab did not construct four sculptures: ' + JSON.stringify(lab));
+  assert.deepEqual(lab.methods.map(e => e.method), ['petal','ribbon','pigment','hybrid']);
+  assert.ok(lab.methods.every(e => e.meshes > 1));
+  assert.equal(lab.methods[3].elements.petals > 0, true);
+  assert.equal(lab.methods[3].elements.ribbons > 0, true);
+  assert.equal(lab.methods[3].elements.pigment > 0, true);
+  assert.equal(await page.locator('#legend span').count(), 4);
+  await page.locator('#focus').selectOption('3');
+  await page.locator('#side').click();
+  await page.locator('#back').click();
+  await page.locator('#orbitToggle').click();
+  assert.equal(await page.locator('#orbitToggle').textContent(), 'Stop rotation');
+  await page.screenshot({path: '/tmp/sculpture-lab-360-desktop.png', fullPage: true});
+  const paintings = await page.locator('#painting option').count();
+  if (paintings >= 2) {
+    const firstSeed = lab.seed;
+    await page.locator('#painting').selectOption({index: 1});
+    await page.waitForFunction(previous =>
+      window.__sculptureLabStatus?.ready && window.__sculptureLabStatus.seed !== previous,
+      firstSeed, {timeout: 90000});
+    lab = await page.evaluate(() => window.__sculptureLabStatus);
+    assert.ok(lab.methods.every(e => e.meshes > 1), 'Re-selection lost a sculpture');
+  }
+  await page.setViewportSize({width: 390, height: 844});
+  await page.reload({waitUntil: 'domcontentloaded'});
+  await page.waitForFunction(() => window.__sculptureLabStatus?.ready ||
+    window.__sculptureLabStatus?.error, {timeout: 90000});
+  const mobile = await page.evaluate(() => window.__sculptureLabStatus);
+  assert.equal(mobile.ready, true, 'Mobile render failed: ' + JSON.stringify(mobile));
+  assert.equal(await page.locator('#back').isVisible(), true);
+  await page.screenshot({path: '/tmp/sculpture-lab-360-mobile.png', fullPage: true});
+  assert.deepEqual(pageErrors, [], 'Browser JS errors: ' + pageErrors.join('; '));
+  console.log('360 sculpture lab smoke passed:', lab.date, lab.seed,
+    lab.methods.map(e => e.method + ':' + e.meshes).join(' '));
+} finally {
+  await browser.close();
+}
