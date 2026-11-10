@@ -25,7 +25,7 @@ jobs:
           node --check gallery/hybrid-tower-test/sculpture-render-hybrid.mjs
           node --check automation/build-hybrid-tower-test.mjs
           node automation/build-hybrid-tower-test.mjs
-          node --check gallery/hybrid-tower-test/gallery-phi-bundle.js
+          node --check gallery/visit/gallery-phi-hybrid-test-bundle.js
       - name: Validate all archived source paintings (live publishing untouched)
         run: node --test tests/hybrid-test-tower-coverage.test.mjs
       - name: Install browser and start archive server
