@@ -40,13 +40,14 @@ try {
   assert.equal(await page.locator('#legend span').count(), 4);
   await page.locator('#focus').selectOption('3');
   await page.locator('#front').click();
-  await page.screenshot({path: '/tmp/sculpture-lab-360-source-front.png', fullPage: true});
+  await page.screenshot({path: '/tmp/sculpture-lab-360-source-front.png', fullPage: true, timeout: 90000});
   await page.locator('#side').click();
   await page.locator('#back').click();
   await page.waitForTimeout(200);
   await page.locator('#orbitToggle').click();
   assert.equal(await page.locator('#orbitToggle').textContent(), 'Stop rotation');
-  await page.screenshot({path: '/tmp/sculpture-lab-360-desktop.png', fullPage: true});
+  await page.locator('#orbitToggle').click(); // freeze before capture in software WebGL
+  await page.screenshot({path: '/tmp/sculpture-lab-360-desktop.png', fullPage: true, timeout: 90000});
   const paintings = await page.locator('#painting option').count();
   if (paintings >= 2) {
     const firstSeed = lab.seed;
@@ -67,7 +68,7 @@ try {
   assert.ok(mobile.composition.sourceAnchored.every(Boolean), 'Mobile source image positions changed');
   assert.equal(await page.locator('#textureMode').isVisible(), true);
   assert.equal(await page.locator('#back').isVisible(), true);
-  await page.screenshot({path: '/tmp/sculpture-lab-360-mobile.png', fullPage: true});
+  await page.screenshot({path: '/tmp/sculpture-lab-360-mobile.png', fullPage: true, timeout: 90000});
   assert.deepEqual(pageErrors, [], 'Browser JS errors: ' + pageErrors.join('; '));
   assert.equal(consoleErrors.filter(e => /shader error|webglprogram|shader compilation/i.test(e)).length, 0,
     'Texture shader compilation errors: ' + consoleErrors.join('; '));
