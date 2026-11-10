@@ -119,12 +119,30 @@ function regionGeometry(r,{mode,method,depth,phiPull,fidelity,
       }
     }
   }
+  // Ear-clipped contours sometimes retain duplicate coplanar triangles
+  // where an ink contour has a touching/collinear run. Remove identical
+  // triangles by actual XYZ (not just vertex index) before calculating normals.
+  const triKey=i=>[pos[i*3],pos[i*3+1],pos[i*3+2]]
+    .map(v=>Math.round(v*1e6)).join(':');
+  const seen=new Set();
+  function dedup(input){
+    const result=[];
+    for(let i=0;i<input.length;i+=3){
+      const k=[triKey(input[i]),triKey(input[i+1]),triKey(input[i+2])]
+        .sort().join('|');
+      if(seen.has(k))continue;
+      seen.add(k);
+      result.push(input[i],input[i+1],input[i+2]);
+    }
+    return result;
+  }
+  const cleanFaces=dedup(faces),cleanRim=dedup(rim);
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
-  geometry.setIndex([...faces,...rim]);
-  geometry.addGroup(0,faces.length,0);
-  geometry.addGroup(faces.length,rim.length,1);
+  geometry.setIndex([...cleanFaces,...cleanRim]);
+  geometry.addGroup(0,cleanFaces.length,0);
+  geometry.addGroup(cleanFaces.length,cleanRim.length,1);
   geometry.computeVertexNormals();
   const anchors=boundaries.flatMap(line=>{
     const spacing=Math.max(1,Math.floor(line.indices.length/24));
@@ -133,8 +151,8 @@ function regionGeometry(r,{mode,method,depth,phiPull,fidelity,
       return new THREE.Vector3(v[0],v[1],z(p,false));
     });
   });
-  return{geometry,anchors,zLayer:offset,triangles:(faces.length+rim.length)/3,
-    roundedRimTriangles:rim.length/3,boundaryLoops:boundaries.length};
+  return{geometry,anchors,zLayer:offset,triangles:(cleanFaces.length+cleanRim.length)/3,
+    roundedRimTriangles:cleanRim.length/3,boundaryLoops:boundaries.length};
 }
 function actualStrokes(group,strokes,depth,material,max){
   let count=0;
