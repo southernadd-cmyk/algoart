@@ -140,7 +140,7 @@ function focus(view='threequarter'){
   camera.position.set(...p);orbit.update();
 }
 function publishStatus(models,scores,features){
-  const methods=models.map((m,i)=>{
+  const methodStats=models.map((m,i)=>{
     const box=new THREE.Box3().setFromObject(m),size=box.getSize(new THREE.Vector3());
     const attr=[];
     m.traverse(o=>{
@@ -184,9 +184,9 @@ function publishStatus(models,scores,features){
     reconstructedRegions:currentTopology?.regions?.length||0,
     reconstructedSourceCoverage:currentTopology?
       currentTopology.covered/Math.max(1,currentTopology.pigmented):0,
-    methods,options:uiOptions()
+    methods:methodStats,options:uiOptions()
   };
-  return methods;
+  return methodStats;
 }
 function renderSculptures(){
   if(!currentFeatures||!loaded)return;
@@ -229,8 +229,8 @@ function renderSculptures(){
       stages[i].add(candidates[i],pins[i],overlays[i]);
     }
     showSelection();
-    const methods=publishStatus(candidates,scores,currentFeatures);
-    const pct=methods.map(m=>m.sourceOverlap?
+    const methodStats=publishStatus(candidates,scores,currentFeatures);
+    const pct=methodStats.map(m=>m.sourceOverlap?
       Math.round(m.sourceOverlap.iou*100)+'%':'n/a').join(' / ');
     $('frontScore').textContent='Measured front silhouette overlap (IoU): '+pct+
       ' · '+methods().map((x,i)=>String(i+1)+': '+titles[x]).join(' / ');
