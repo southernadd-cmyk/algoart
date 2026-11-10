@@ -50,7 +50,7 @@ test('HEAD serves verified V2 metadata without reading bodies',async()=>{
   const r=await gateway.fetch(req(key,'HEAD'),env);
   assert.equal(r.status,200);
   assert.equal(r.headers.get('Content-Type'),'application/gzip');
-  assert.equal((await r.arrayBuffer()).length,0);
+  assert.equal((await r.arrayBuffer()).byteLength,0);
   assert.deepEqual(calls,[['head',key]]);
 });
 test('private backups and all non-whitelisted non-SHA paths are never accessed',async()=>{
