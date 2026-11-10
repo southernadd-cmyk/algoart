@@ -87,6 +87,26 @@ export function extractContours(r,step=.5){
         return{x:c.x*.76+.12*(a.x+b.x),y:c.y*.76+.12*(a.y+b.y)};
       });
     }
+    // Earcut/ShapeUtils may discard collinear contour vertices. If our
+    // rounded walls retain those discarded vertices, edges no longer pair
+    // up with the triangulated caps (non-manifold spikes and overlaps).
+    // Simplify before *both* cap triangulation and rim generation.
+    for(let pass=0;pass<5&&p.length>5;pass++){
+      let changed=false;
+      const candidate=[];
+      for(let i=0;i<p.length;i++){
+        const a=p[(i+p.length-1)%p.length],b=p[i],
+          c=p[(i+1)%p.length];
+        const vx=c.x-a.x,vy=c.y-a.y,span=Math.hypot(vx,vy);
+        const sag=span?Math.abs(vx*(b.y-a.y)-vy*(b.x-a.x))/span:0;
+        const skip=(Math.hypot(b.x-a.x,b.y-a.y)<.16) ||
+          (sag<.035&&span<3.2);
+        if(skip){changed=true;continue;}
+        candidate.push(b);
+      }
+      if(candidate.length<5||!changed)break;
+      p=candidate;
+    }
     if(Math.abs(signedArea(p))>.25)rings.push(p);
   }
   return rings.sort((a,b)=>Math.abs(signedArea(b))-Math.abs(signedArea(a)));
