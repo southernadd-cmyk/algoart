@@ -67,6 +67,6 @@ await writeFile('gallery/sculpture-v2-test/index.html',html);
 console.log('SCULPTURE_V2_TEST_BUILT '+JSON.stringify({
   route:'gallery/sculpture-v2-test/',rendererReplacements,n8aoReplacements,
   source:'gallery/visit/gallery-phi.js',legacyV1RendererUntouched:true,
-  archiveAndDailyBakesUntouched:true,onDemand:true,
+  archiveAndDailyBakesUntouched:true,onDemand:false,preparedPacks:true,
   v2Geometry:'sculpture-lab-v4.2.1',pin:'museum'
 }));

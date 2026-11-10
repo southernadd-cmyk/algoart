@@ -255,6 +255,28 @@ export function subdivideConforming(vertices,triangles,maxEdge=1.8,boundaries=[]
   }
   return triangles;
 }
+// Topology-preserving emergency tessellation of occupied source pixels.
+// Used only if both smooth-cap triangulation variants are non-manifold.
+// Adjacent cells share vertex indices; every source cell gets two cap faces.
+function sourceCellLattice(r){
+  const vertices=[],triangles=[],lookup=new Map();
+  const vertex=(x,y)=>{
+    const k=x+','+y;
+    if(lookup.has(k))return lookup.get(k);
+    const id=vertices.length;lookup.set(k,id);vertices.push({x,y});return id;
+  };
+  for(const cell of r.ids){
+    const x=r.minX+cell%r.rw,y=r.minY+Math.floor(cell/r.rw);
+    const a=vertex(x,y),b=vertex(x+1,y),
+      c=vertex(x+1,y+1),d=vertex(x,y+1);
+    triangles.push([a,b,c],[a,c,d]);
+  }
+  if(triangles.length!==2*r.area)
+    throw Error('V2 lattice does not contain every occupied pigment cell');
+  return{vertices,triangles,boundaries:boundaryLoops(vertices,triangles),
+    boundaryCount:vertices.length,pixelFallback:true};
+}
+
 export function buildPlanarRegion(r,{quality='desktop'}={}){
   const rings=extractContours(r,quality==='mobile'?.75:.5);
   const vertices=[],triangles=[],boundaries=[];
@@ -277,53 +299,124 @@ export function buildPlanarRegion(r,{quality='desktop'}={}){
   }
   if(!triangles.length)throw Error('V4 marching squares triangulation found no surface');
   const boundaryCount=vertices.length;
+  const sourceTriangles=triangles.map(t=>t.slice());
   delaunayFlip(vertices,triangles);
-  const refined=subdivideConforming(vertices,triangles,quality==='mobile'?2.55:1.8);
-  // Construct the actual final perimeter after all edge subdivisions.
-  return{vertices,triangles:refined,boundaries:boundaryLoops(vertices,refined),
-    boundaryCount};
+  const edgeLimit=quality==='mobile'?2.55:1.8;
+  const refined=subdivideConforming(vertices,triangles,edgeLimit);
+  // Trace the final cap edges, including touching pigment islands.
+  try{
+    const rim=boundaryLoops(vertices,refined);
+    return{vertices,triangles:refined,boundaries:rim,boundaryCount};
+  }catch(optimizedError){
+    // Flips are optional smoothing; they must never introduce a non-manifold
+    // seam. Retry the original earcut faces with conforming subdivision.
+    const originalVertices=vertices.slice(0,boundaryCount)
+      .map(p=>({x:p.x,y:p.y}));
+    const originalFaces=subdivideConforming(
+      originalVertices,sourceTriangles,edgeLimit);
+    try{
+      const rim=boundaryLoops(originalVertices,originalFaces);
+      console.warn('V2_TRIANGULATION_RECOVERY region='+r.id+
+        ' quality='+quality+' reason='+optimizedError.message);
+      return{vertices:originalVertices,triangles:originalFaces,
+        boundaries:rim,boundaryCount,triangulationRecovered:true};
+    }catch(originalError){
+      // Smooth triangulation cannot represent a rare source contour. Rather
+      // than silently dropping or opening its surface, use the EXACT cells.
+      try{
+        const lattice=sourceCellLattice(r);
+        console.warn('V2_SOURCE_CELL_RECOVERY region='+r.id+
+          ' quality='+quality+' cells='+r.area+
+          ' optimized='+optimizedError.message+
+          ' original='+originalError.message);
+        return lattice;
+      }catch(latticeError){
+        throw Error('V2 source cell triangulation failed; optimized: '+
+          optimizedError.message+'; original: '+originalError.message+
+          '; lattice: '+latticeError.message);
+      }
+    }
+  }
 }
 
 export function boundaryLoops(vertices,triangles){
-  const use=new Map(),next=new Map(),third=new Map();
-  for(const t of triangles)for(let e=0;e<3;e++){
-    const k=ek(t[e],t[(e+1)%3]);use.set(k,(use.get(k)||0)+1);
+  const uses=new Map();
+  for(const t of triangles)for(let i=0;i<3;i++){
+    const k=ek(t[i],t[(i+1)%3]);
+    uses.set(k,(uses.get(k)||0)+1);
   }
-  for(const t of triangles)for(let e=0;e<3;e++){
-    const a=t[e],b=t[(e+1)%3];
-    if(use.get(ek(a,b))!==1)continue;
-    next.set(a,b);third.set(a,t[(e+2)%3]);
+  const edges=[],adjacent=new Map();
+  for(const t of triangles)for(let i=0;i<3;i++){
+    let a=t[i],b=t[(i+1)%3],c=t[(i+2)%3];
+    if(uses.get(ek(a,b))!==1)continue;
+    const p=vertices[a],q=vertices[b],inside=vertices[c];
+    if(!p||!q||!inside)throw Error('V2 cap has an invalid boundary triangle');
+    const area=(q.x-p.x)*(inside.y-p.y)-(q.y-p.y)*(inside.x-p.x);
+    if(!Number.isFinite(area)||Math.abs(area)<1e-12)
+      throw Error('V2 cap has a degenerate boundary triangle');
+    // Choose an initial direction with the cap interior to the right.
+    if(area>0)[a,b]=[b,a];
+    const edge={id:edges.length,a,b,c,used:false};
+    edges.push(edge);
+    for(const id of [a,b]){
+      if(!adjacent.has(id))adjacent.set(id,[]);
+      adjacent.get(id).push(edge);
+    }
   }
-  const loops=[],seen=new Set();
-  for(const start of next.keys()){
-    if(seen.has(start))continue;
-    const indices=[],outward=[];
-    let v=start,guard=0;
-    while(!seen.has(v)&&guard++<=next.size){
-      seen.add(v);indices.push(v);v=next.get(v);
-      if(v===undefined)break;
+  if(!edges.length)throw Error('V2 cap has no exterior boundary edges');
+  // Traverse by edge identity, not a vertex->successor map. Real artwork
+  // includes touching components and face winding can be inconsistent at
+  // a pinch; both would silently erase a branch in the former algorithm.
+  for(const [id,incidents] of adjacent)if(incidents.length%2)
+    throw Error('V2 cap has a non-manifold open boundary at vertex '+
+      id+' (degree '+incidents.length+')');
+  const loops=[];
+  for(const first of edges){
+    if(first.used)continue;
+    let from=first.a,to=first.b,edge=first,closed=false;
+    const indices=[],edgeNormals=[];
+    for(let guard=0;guard<=edges.length;guard++){
+      if(edge.used)throw Error('V2 cap boundary reused an edge');
+      edge.used=true;indices.push(from);
+      const p=vertices[from],q=vertices[to],inside=vertices[edge.c];
+      let nx=q.y-p.y,ny=-(q.x-p.x);
+      const length=Math.hypot(nx,ny);
+      if(!Number.isFinite(length)||length<1e-12)
+        throw Error('V2 cap has a zero-length perimeter segment');
+      nx/=length;ny/=length;
+      if(nx*(inside.x-p.x)+ny*(inside.y-p.y)>0){nx=-nx;ny=-ny;}
+      edgeNormals.push([nx,ny]);
+      if(to===first.a){closed=true;break;}
+      const available=(adjacent.get(to)||[]).filter(e=>!e.used);
+      if(!available.length)
+        throw Error('V2 cap has an open boundary chain at vertex '+to);
+      const previous=p,current=q,dx=current.x-previous.x,
+        dy=current.y-previous.y;
+      const next=available.map(e=>{
+        const target=e.a===to?e.b:e.a,point=vertices[target],
+          ix=point.x-current.x,iy=point.y-current.y,
+          insidePoint=vertices[e.c];
+        const turn=Math.atan2(dx*iy-dy*ix,dx*ix+dy*iy);
+        const interiorSide=ix*(insidePoint.y-current.y)-
+          iy*(insidePoint.x-current.x);
+        return{e,target,turn,aligned:interiorSide<0};
+      }).sort((u,v)=>Number(v.aligned)-Number(u.aligned)||
+          u.turn-v.turn||u.e.id-v.e.id)[0];
+      edge=next.e;from=to;to=next.target;
     }
-    if(indices.length<3)continue;
-    // Outward normal is away from the triangle on each boundary edge;
-    // the same calculation therefore handles islands and internal holes.
-    const edgeNormal=i=>{
-      const a=vertices[indices[i]],b=vertices[indices[(i+1)%indices.length]],
-        c=vertices[third.get(indices[i])];
-      let nx=b.y-a.y,ny=-(b.x-a.x);const l=Math.hypot(nx,ny)||1;
-      nx/=l;ny/=l;
-      if(nx*(c.x-a.x)+ny*(c.y-a.y)>0){nx=-nx;ny=-ny;}
-      return[nx,ny];
-    };
-    const normals=indices.map((_,i)=>edgeNormal(i));
-    for(let i=0;i<indices.length;i++){
-      const p=normals[(i+indices.length-1)%indices.length],q=normals[i];
-      const x=p[0]+q[0],y=p[1]+q[1],l=Math.hypot(x,y)||1;
-      outward.push([x/l,y/l]);
-    }
+    if(!closed||indices.length<3)
+      throw Error('V2 cap perimeter did not close to a polygon');
+    const outward=edgeNormals.map((q,i)=>{
+      const p=edgeNormals[(i+edgeNormals.length-1)%edgeNormals.length],
+        x=p[0]+q[0],y=p[1]+q[1],length=Math.hypot(x,y);
+      return length>1e-10?[x/length,y/length]:q;
+    });
     loops.push({indices,outward});
   }
+  if(edges.some(e=>!e.used))throw Error('V2 rim omitted boundary edges');
   return loops;
 }
+
 // Flip interior diagonals before refining, eliminating ear-clipped slivers.
 export function delaunayFlip(vertices,triangles,maxPasses=60){
   const orient=(a,b,c)=>{

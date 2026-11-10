@@ -8,7 +8,7 @@ const browser=await chromium.launch({
 try{
   for(const spec of [
     {date:'2026-11-10',quality:'desktop',width:1100,height:740,method:'assembly'},
-    {date:'2026-10-22',quality:'mobile',width:390,height:844,method:'medial'}
+    {date:'2026-10-22',quality:'mobile',width:390,height:844,method:'assembly'}
   ]){
     const page=await browser.newPage({
       viewport:{width:spec.width,height:spec.height},
@@ -40,8 +40,8 @@ try{
       assert.ok(!startup.error,
         'Tower startup error: '+startup.error);
       assert.equal(startup.path,'/gallery/sculpture-v2-test/');
-      assert.equal(startup.status?.mode,'test-only-dynamic-v2');
-      assert.equal(startup.status?.variant,'v2.0-candidate');
+      assert.equal(startup.status?.mode,'test-only-prepared-v2');
+      assert.equal(startup.status?.variant,'v2.0-prepared-archive');
       assert.equal(startup.status?.method,spec.method);
       assert.equal(startup.status?.connector,'pin');
       assert.ok(startup.phi?.roomCount>0&&startup.phi?.sculptures>0,
@@ -53,7 +53,11 @@ try{
       assert.ok(state.attempted>0,'No V2 source sculpture attempted');
       assert.equal(state.failed,0,'V2 sculpture failed: '+JSON.stringify(state.builds));
       assert.ok(state.complete>0,'No V2 sculpture completed');
+      assert.ok(requests.some(url=>url.includes(
+        '/gallery/'+spec.date+'/3d/v2/sculptures.'+spec.quality+'.json.gz')),
+        'Tower did not actually request its prepared mesh pack');
       for(const item of state.builds.filter(item=>item.state==='complete')){
+        assert.equal(item.prepared,true,'Dynamic sculpting used instead of V2 pack');
         assert.ok(item.regions>0,'Missing source pigment regions');
         assert.equal(item.omittedCells,0,'Source pigment omitted');
         assert.ok(item.anchors>=1,'No physical museum pin');

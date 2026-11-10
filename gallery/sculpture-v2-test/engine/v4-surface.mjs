@@ -131,7 +131,8 @@ function regionGeometry(r,{mode,method,depth,phiPull,fidelity,
     });
   });
   return{geometry,anchors,zLayer:offset,triangles:(faces.length+rim.length)/3,
-    roundedRimTriangles:rim.length/3,boundaryLoops:boundaries.length};
+    roundedRimTriangles:rim.length/3,boundaryLoops:boundaries.length,
+    pixelFallback:!!plane.pixelFallback};
 }
 function actualStrokes(group,strokes,depth,material,max,zBase=0){
   let count=0;
@@ -190,7 +191,7 @@ export function buildV4Sculpture(method,{
   const painted=paintMaterial('#ffffff',material,texture,bumpTexture);
   const regions=topology.regions.slice(0,quality==='mobile'?48:72);
   const items=[];
-  let poisson=0,medial=0,triangles=0,rim=0;
+  let poisson=0,medial=0,triangles=0,rim=0,pixelFallbackRegions=0;
   for(const r of regions){
     const type=method==='medial'||method==='gesture'?'medial':
       method==='assembly'&&(r.id%2===1||r.aspect>=1.75)?'medial':'poisson';
@@ -207,6 +208,7 @@ export function buildV4Sculpture(method,{
       sourceInkRelief:true};
     group.add(mesh);
     triangles+=result.triangles;rim+=result.roundedRimTriangles;
+    if(result.pixelFallback)pixelFallbackRegions++;
     items.push({...result,color:r.color});
   }
   const layers=items.map(x=>x.zLayer).sort((a,b)=>a-b);
@@ -231,6 +233,7 @@ export function buildV4Sculpture(method,{
     originalShapeCount:topology.separateShapes,
     omittedCells:omitted,polygonTriangles:triangles,
     roundedRimTriangles:rim,roundedSides:true,
+    pixelFallbackRegions,
     sourceInkRelief:true,localIndependentSolids:true,sourceColourOnFront:true,
     phiStructural:phiPull>0,
     zLayerExtent:Math.max(...items.map(x=>x.zLayer))-
