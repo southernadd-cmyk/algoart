@@ -90,7 +90,7 @@ function originalMarks(group,marks,bronze,quality,surfaceZ){
     const s=marks[i],r=clamp((s.width||.012)*.78,.0038,.043);
     const pts=s.points.map(p=>new THREE.Vector3(p.x,p.y,surfaceZ(p)+.002*(i%4)));
     makeTube(group,pts,r,materialFor(cache,s,bronze),
-      'Recorded source mark '+s.sourceId,Math.max(12,pts.length*2));
+      'Source-derived mark '+s.sourceId,Math.max(12,pts.length*2));
   }
   return count;
 }
