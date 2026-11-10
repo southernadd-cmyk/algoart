@@ -4,7 +4,7 @@ import path from 'node:path';
 import {chromium} from 'playwright';
 import {systems, palettes} from '../confluence/collab.js';
 import {defaultSettings} from '../confluence/artist-controls.js';
-import {makeGoldenRoster} from '../confluence/golden-roster.js';
+import {makeDailyConfluencePlan} from './confluence-daily-variation.mjs';
 import {FIRST_CONFLUENCE_DATE, confluencePairCount, validateRandomGalleryEdition} from './confluence-edition.mjs';
 
 const SITE='https://southernadd-cmyk.github.io/algoart';
@@ -48,13 +48,15 @@ try {
     const orientation=i%2===0?'portrait':'landscape';
     const seed='CFL-'+day.replaceAll('-','')+'-'+String(i+1).padStart(2,'0')+
       (attempt?'-A'+attempt:'');
-    const artists=makeGoldenRoster(seed,{systems,materials,
+    const plan=makeDailyConfluencePlan(day,seed,{systems,materials,
       palettes:Object.keys(palettes),defaultSettings});
+    const artists=plan.artists;
     const s={
       v:1,...(confluenceRenderer===2?{confluenceRenderer:2}:{}),
-      seed,orientation,paper:'#f5f0e6',grain:11,
+      seed,orientation,paper:'#f5f0e6',grain:plan.grain,
       ...(day>FIRST_CONFLUENCE_DATE?{edgeMargin:true}:{}),
-      strength:76,collaborationPull:100,leadIndex:0,totalTurns:34,
+      strength:plan.strength,collaborationPull:plan.collaborationPull,
+      leadIndex:plan.leadIndex,totalTurns:34,
       artists:artists.map(a=>({
         system:a.system,palette:a.palette,material:a.material,settings:a.settings
       }))
@@ -114,7 +116,8 @@ try {
       id,title:systemNames.join(' · '),orientation,material:'confluence',generatedAt:new Date().toISOString(),
       seed,mode:'confluence',series:'Confluence',imageFile,shareUrl,rendererVersion:10,
        confluenceRendererVersion:confluenceRenderer,
-      settings:{orientation,phiStrength:76,palette:'Three φ-distributed palettes',
+      settings:{orientation,phiStrength:plan.strength,collaborationPull:plan.collaborationPull,
+        grain:plan.grain,leadIndex:plan.leadIndex,palette:'Three φ-distributed palettes',
         materials:artists.map(a=>a.material),systems:artists.map(a=>a.system)},
       artists:artists.map(a=>({system:a.system,material:a.material,palette:a.palette})),
       copy:{altText},platforms:{}
