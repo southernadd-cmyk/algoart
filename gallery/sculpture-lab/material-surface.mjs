@@ -108,16 +108,6 @@ function fieldAt(field,method,x,y,z,depth){
   const thickness=method==='pigment'?.60:method==='ribbon'?.76:.69;
   return pigment-.092-thickness*profile*profile;
 }
-function normalAt(field,method,x,y,z,depth){
-  const e=.013;
-  const f=(a,b,c)=>fieldAt(field,method,a,b,c,depth);
-  const nx=f(x-e,y,z)-f(x+e,y,z);
-  const ny=f(x,y-e,z)-f(x,y+e,z);
-  const nz=f(x,y,z-e)-f(x,y,z+e);
-  const len=Math.hypot(nx,ny,nz)||1;
-  return [nx/len,ny/len,nz/len];
-}
-
 export function buildMaterialSculpture(method,imageData,texture,{
   depth=1,material='marker',paper='#f5f0e6',quality='desktop'
 }={}){
@@ -126,7 +116,7 @@ export function buildMaterialSculpture(method,imageData,texture,{
     throw Error('Unsupported 360° sculpting method '+method);
   const field=pigmentField(imageData,{material,paper});
   const mobile=quality==='mobile';
-  const nx=mobile?64:88,ny=mobile?94:128,nz=mobile?17:23;
+  const nx=mobile?60:82,ny=mobile?88:116,nz=mobile?17:20;
   const sizex=1.88,sizey=2.35;
   const plane=(nx+1)*(ny+1);
   const count=plane*(nz+1);
@@ -137,6 +127,24 @@ export function buildMaterialSculpture(method,imageData,texture,{
   const idx=(i,j,k)=>k*plane+j*(nx+1)+i;
   for(let k=0;k<=nz;k++)for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)
     scalars[idx(i,j,k)]=fieldAt(field,method,gx(i),gy(j),gz(k),depth);
+  // One derivative calculation per grid vertex (rather than six expensive
+  // trilinear source samples for EACH output triangle vertex). Smooth normals
+  // interpolate across the tetrahedra so the painted mass has no faceting.
+  const gridNormals=new Float32Array(count*3);
+  const ddx=sizex/nx,ddy=sizey/ny,ddz=1.42*depth/nz;
+  for(let k=0;k<=nz;k++)for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++){
+    const lowX=scalars[idx(Math.max(i-1,0),j,k)];
+    const highX=scalars[idx(Math.min(i+1,nx),j,k)];
+    const lowY=scalars[idx(i,Math.max(j-1,0),k)];
+    const highY=scalars[idx(i,Math.min(j+1,ny),k)];
+    const lowZ=scalars[idx(i,j,Math.max(k-1,0))];
+    const highZ=scalars[idx(i,j,Math.min(k+1,nz))];
+    const xx=-(highX-lowX)/((i===0||i===nx)?ddx:2*ddx);
+    const yy=(highY-lowY)/((j===0||j===ny)?ddy:2*ddy);
+    const zz=-(highZ-lowZ)/((k===0||k===nz)?ddz:2*ddz);
+    const len=Math.hypot(xx,yy,zz)||1;
+    gridNormals.set([xx/len,yy/len,zz/len],idx(i,j,k)*3);
+  }
   const positions=[],normals=[],uvs=[];
   const sides={front:0,back:0,side:0};
   const corners=[
@@ -151,24 +159,30 @@ export function buildMaterialSculpture(method,imageData,texture,{
   const interpolated=(a,b)=>{
     const denom=a.value-b.value;
     const t=clamp(Math.abs(denom)<1e-8?.5:a.value/denom,0,1);
-    return [a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,a.z+(b.z-a.z)*t];
+    const nx=a.normal[0]+(b.normal[0]-a.normal[0])*t;
+    const ny=a.normal[1]+(b.normal[1]-a.normal[1])*t;
+    const nz=a.normal[2]+(b.normal[2]-a.normal[2])*t;
+    const len=Math.hypot(nx,ny,nz)||1;
+    return {
+      point:[a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,a.z+(b.z-a.z)*t],
+      normal:[nx/len,ny/len,nz/len]
+    };
   };
   const emit=(points)=>{
-    const shades=points.map(p=>normalAt(field,method,...p,depth));
+    const shades=points.map(p=>p.normal);
     const av=[shades.reduce((s,n)=>s+n[0],0),
       shades.reduce((s,n)=>s+n[1],0),
       shades.reduce((s,n)=>s+n[2],0)];
-    const aa=new THREE.Vector3(...points[0]),bb=new THREE.Vector3(...points[1]),
-      cc=new THREE.Vector3(...points[2]);
+    const aa=new THREE.Vector3(...points[0].point),
+      bb=new THREE.Vector3(...points[1].point),
+      cc=new THREE.Vector3(...points[2].point);
     const cross=bb.sub(aa).cross(cc.sub(aa));
-    if(cross.x*av[0]+cross.y*av[1]+cross.z*av[2]<0){
+    if(cross.x*av[0]+cross.y*av[1]+cross.z*av[2]<0)
       [points[1],points[2]]=[points[2],points[1]];
-      [shades[1],shades[2]]=[shades[2],shades[1]];
-    }
     for(let q=0;q<3;q++){
-      const [x,y,z]=points[q];
+      const [x,y,z]=points[q].point;
       const [sx,sy]=undoBackWarp(method,x,y,z,depth);
-      positions.push(x,y,z);normals.push(...shades[q]);
+      positions.push(x,y,z);normals.push(...points[q].normal);
       uvs.push(clamp(sx/W+.5,0,1),clamp(sy/H+.5,0,1));
     }
     if(av[2]>.95)sides.front++;
@@ -176,10 +190,14 @@ export function buildMaterialSculpture(method,imageData,texture,{
     else sides.side++;
   };
   for(let k=0;k<nz;k++)for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
-    const cells=corners.map(([di,dj,dk])=>({
-      x:gx(i+di),y:gy(j+dj),z:gz(k+dk),
-      value:scalars[idx(i+di,j+dj,k+dk)]
-    }));
+    const cells=corners.map(([di,dj,dk])=>{
+      const index=idx(i+di,j+dj,k+dk);
+      return {
+        x:gx(i+di),y:gy(j+dj),z:gz(k+dk),
+        value:scalars[index],
+        normal:gridNormals.subarray(index*3,index*3+3)
+      };
+    });
     let anyIn=false,anyOut=false;
     for(const c of cells){if(c.value>0)anyIn=true;else anyOut=true;}
     if(!(anyIn&&anyOut))continue;
