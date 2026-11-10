@@ -1,0 +1,74 @@
+name: Dispatch the 11 November R2 canary
+
+on:
+  push:
+    branches: [ops/r2-canary-2026-11-11]
+    paths: [.github/workflows/ops-r2-canary-20261111.yml]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: pp-r2-canary-2026-11-11
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: >-
+      github.repository == 'southernadd-cmyk/algoart' &&
+      github.ref == 'refs/heads/ops/r2-canary-2026-11-11' &&
+      (github.event.head_commit.message == 'Preflight R2 canary 2026-11-11' ||
+      github.event.head_commit.message == 'Dispatch R2 canary 2026-11-11')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: .github/workflows
+          persist-credentials: false
+
+      - name: Check the armed edition and dispatch the daily workflow once
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUEST: ${{ github.event.head_commit.message }}
+          ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+          CANARY_DATE: '2026-11-11'
+          DAILY_WORKFLOW_BLOB: '419e5685e53caca2751b1f9af72b6d736d5fe850'
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+
+          [[ "$ARMED_DATE" == "$CANARY_DATE" ]] || fail "The repository variable has a different date."
+          [[ "$(git rev-parse HEAD:.github/workflows/gallery-daily.yml)" == "$DAILY_WORKFLOW_BLOB" ]] ||
+            fail "The daily gallery workflow changed after canary verification."
+          [[ -z "$(git ls-tree HEAD -- "gallery/$CANARY_DATE")" ]] ||
+            fail "The canary date already has gallery files on main."
+
+          endpoint="repos/$GITHUB_REPOSITORY/actions/workflows/gallery-daily.yml"
+          [[ "$(gh api "$endpoint" --jq .state)" == active ]] ||
+            fail "The daily gallery workflow is unavailable."
+
+          if [[ "$REQUEST" == "Preflight R2 canary $CANARY_DATE" ]]; then
+            echo "Preflight confirmed the armed date and unpublished edition $CANARY_DATE."
+            exit 0
+          fi
+
+          [[ "$REQUEST" == "Dispatch R2 canary $CANARY_DATE" && "$GITHUB_RUN_ATTEMPT" == 1 ]] ||
+            fail "The dispatch requires its dedicated first-attempt commit."
+          [[ "$(TZ=Europe/London date +%F)" == "$CANARY_DATE" ]] ||
+            fail "The London calendar date has not reached the armed edition or has passed it."
+
+          prior="$(gh api --method GET "$endpoint/runs" -f branch=main -f event=workflow_dispatch \
+            -f "created=>=${CANARY_DATE}T00:00:00Z" --jq .total_count)"
+          [[ "$prior" == 0 ]] || fail "A manual daily gallery run already exists for this time window."
+
+          response="$(jq -nc --arg date "$CANARY_DATE" \
+            '{ref:"main",inputs:{date:$date,r2_canary:"true"}}' |
+            gh api --method POST "$endpoint/dispatches" -H 'X-GitHub-Api-Version: 2026-03-10' --input -)"
+          run_id="$(jq -er '.workflow_run_id | numbers | select(. > 0)' <<< "$response")"
+          echo "CANARY_RUN_ID=$run_id"
+          printf 'Started the [11 November R2 canary](https://github.com/%s/actions/runs/%s).\n' \
+            "$GITHUB_REPOSITORY" "$run_id" >> "$GITHUB_STEP_SUMMARY"
