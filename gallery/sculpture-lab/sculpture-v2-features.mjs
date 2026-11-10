@@ -67,7 +67,8 @@ export function buildSourceFeatures(imageData,{
     .sort((a,b)=>b.weight-a.weight||a.sourceIndex-b.sourceIndex);
   // Spread the gestures across the source rather than overemphasising the
   // strongest ink cluster. Recorded gestures take priority when available.
-  const source=original.length>=3?original:localGestures(marks);
+  const source=original.length>=3?original:
+    [...original,...localGestures(marks)];
   const zones=new Set(),chosen=[];
   for(const g of source){
     const p=g.points[Math.floor(g.points.length/2)];
@@ -84,8 +85,8 @@ export function buildSourceFeatures(imageData,{
   return {
     version:2,material,paper,sourceWidth:imageData.width,
     sourceHeight:imageData.height,
-    sourceKind:original.length>=3?
-      (recordedCount>=2?'recorded-gestures-and-pigment':'visible-pigment-contours'):
+    sourceKind:original.length>=1?
+      (recordedCount>=1?'recorded-gestures-and-pigment':'visible-pigment-contours'):
       'pigment-regions',
     centre:{x:centre.x/(centre.w||1),y:centre.y/(centre.w||1)},
     regions,gestures:chosen.slice(0,maxGestures),
