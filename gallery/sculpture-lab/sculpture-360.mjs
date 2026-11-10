@@ -162,6 +162,8 @@ export function updatePaintingStrength(group, strength) {
   });
   group.userData.textureBlend = next;
   setCompositionShellBlend(group, next);
+  if (group.userData.structuralBacking)
+    group.userData.structuralBacking.visible = next < .008 || !group.userData.sourceAnchored;
 }
 
 function ownedMaterial(color, opts = {}) {
@@ -434,6 +436,7 @@ export function buildSculpture(method, data) {
     backing.scale.set(.78, .80, .86);
     backing.position.z = -1.17;
     group.add(backing);
+    group.userData.structuralBacking = backing;
     applyPaintingTexture(group, data.paintTexture, data.paintStrength ?? .76);
     // The physical pigment islands preserve the original painting's exact
     // X/Y placement and texture UV on the front, while their tapered back is
@@ -445,7 +448,7 @@ export function buildSculpture(method, data) {
       group.userData.sourceAnchored = true;
       group.userData.anchorCells = shell.userData.paintedCells;
       group.userData.frontXYError = shell.userData.frontXYError;
-      setCompositionShellBlend(group, data.paintStrength ?? .76);
+      updatePaintingStrength(group, data.paintStrength ?? .76);
     }
   }
   return group;
