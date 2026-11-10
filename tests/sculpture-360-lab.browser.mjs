@@ -25,6 +25,11 @@ try{
   assert.deepEqual(lab.methods.map(m=>m.method),['petal','ribbon','pigment','hybrid']);
   assert.ok(lab.methods.every(m=>m.meshes>=1&&m.polys>120));
   assert.ok(lab.methods.every(m=>m.csgPolygons>20));
+  assert.equal(lab.resemblance,.85);
+  assert.ok(lab.methods.every(m=>m.sourceTraceCount>0),'No source-following 3D marks');
+  assert.ok(lab.methods.every(m=>m.sourceDetailAnchors.every(a=>
+    lab.sourceMarks.some(s=>s.x===a.x&&s.y===a.y))),
+    '3D gestures have drifted from their source coordinates');
   assert.ok(lab.methods.some(m=>m.subtractApplied),'CSG should carve actual negative space');
   assert.ok(lab.methods.every(m=>m.extent.every(x=>x>.2)));
   assert.ok(!await page.locator('#aiFiles').count(),'AI upload UI must be gone');
@@ -37,6 +42,14 @@ try{
   await page.locator('#geometryMode').selectOption('jscad');
   lab=await page.evaluate(()=>window.__sculptureLabStatus);
   assert.equal(lab.engine,'jscad-csg-v1');
+  const originalTraces=lab.methods[0].sourceTraceCount;
+  await page.locator('#resemblance').fill('10');
+  let reduced=await page.evaluate(()=>window.__sculptureLabStatus);
+  assert.equal(reduced.resemblance,.10);
+  assert.ok(reduced.methods[0].sourceTraceCount<=originalTraces);
+  await page.locator('#resemblance').fill('85');
+  lab=await page.evaluate(()=>window.__sculptureLabStatus);
+  assert.equal(lab.methods[0].sourceTraceCount,originalTraces);
   await page.locator('#focus').selectOption('3');
   await page.locator('#front').click();
   await page.screenshot({path:'/tmp/sculpture-lab-rules-front.png',timeout:60000});
@@ -70,6 +83,7 @@ try{
   assert.equal(lab.engine,'jscad-csg-v1');
   assert.equal(await page.locator('#depth').isVisible(),true);
   assert.equal(await page.locator('#geometryMode').isVisible(),true);
+  assert.equal(await page.locator('#resemblance').isVisible(),true);
   assert.equal(await page.locator('#back').isVisible(),true);
   assert.deepEqual(errors,[],'Browser errors: '+errors.join('; '));
   await page.screenshot({path:'/tmp/sculpture-lab-rules-mobile.png',timeout:60000});
