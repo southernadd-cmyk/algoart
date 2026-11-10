@@ -166,6 +166,7 @@ export function createPortraitSculpture({
       attached=true;
       for(const mesh of body.children)if(mesh.isMesh)onArtworkMesh?.(mesh);
       const stats={
+        prepared:true,
         regions:body.userData.regionCount,
         omittedCells:body.userData.omittedCells,
         triangles:body.userData.polygonTriangles,
