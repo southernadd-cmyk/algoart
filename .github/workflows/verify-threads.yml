@@ -29,3 +29,25 @@ jobs:
 
       - name: Verify token without posting
         run: node automation/verify-threads.mjs
+      # Read-only test for the new publication reconciliation dependency.
+      - name: Verify published Threads timeline is readable (no posting)
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+        run: |
+          node --input-type=module <<'JS'
+          const token=process.env.THREADS_ACCESS_TOKEN;
+          const user=process.env.THREADS_USER_ID||'me';
+          if(!token)throw Error('Missing Threads token');
+          const url=new URL('https://graph.threads.net/v1.0/'+user+'/threads');
+          url.searchParams.set('fields','id,text,timestamp');
+          url.searchParams.set('limit','50');
+          url.searchParams.set('access_token',token);
+          const response=await fetch(url,{method:'GET'});
+          const payload=await response.json();
+          if(!response.ok || payload.error)
+            throw Error('Threads timeline GET rejected: '+response.status+
+              ' code '+(payload?.error?.code||'unavailable'));
+          if(!Array.isArray(payload.data))throw Error('Threads timeline lacks data array');
+          console.log('READ ONLY PASS: Threads timeline GET returned',payload.data.length,'entries');
+          JS
