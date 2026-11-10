@@ -138,11 +138,32 @@ function buildMassGeometry(graph,nodeLimit=10){
   }
   for(let k=0;k<s[2];k++)for(let j=0;j<s[1];j++)for(let i=0;i<s[0];i++)
     field[index(i,j,k)]=value(xyz(i,j,k));
+  // Precompute smooth SDF gradients just once at grid vertices. Interpolated
+  // normals avoid the faceted 'extruded mosaic' appearance and the cost of
+  // evaluating a full spatial graph six more times per output triangle.
+  const gradients=new Float32Array(count*3);
+  const hx=(bounds.x[1]-bounds.x[0])/dims[0];
+  const hy=(bounds.y[1]-bounds.y[0])/dims[1];
+  const hz=(bounds.z[1]-bounds.z[0])/dims[2];
+  for(let k=0;k<s[2];k++)for(let j=0;j<s[1];j++)for(let i=0;i<s[0];i++){
+    const gx=(field[index(Math.min(dims[0],i+1),j,k)]-
+      field[index(Math.max(0,i-1),j,k)])/
+      (hx*(i===0||i===dims[0]?1:2));
+    const gy=(field[index(i,Math.min(dims[1],j+1),k)]-
+      field[index(i,Math.max(0,j-1),k)])/
+      (hy*(j===0||j===dims[1]?1:2));
+    const gz=(field[index(i,j,Math.min(dims[2],k+1))]-
+      field[index(i,j,Math.max(0,k-1))])/
+      (hz*(k===0||k===dims[2]?1:2));
+    const len=Math.hypot(gx,gy,gz)||1;
+    const q=index(i,j,k)*3;
+    gradients[q]=gx/len;gradients[q+1]=gy/len;gradients[q+2]=gz/len;
+  }
   const corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],
     [0,0,1],[1,0,1],[1,1,1],[0,1,1]];
   const tetra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],
     [0,3,7,6],[0,7,4,6],[0,4,5,6]];
-  const positions=[],colours=[];
+  const positions=[],normals=[],colours=[];
   function sampleColour(p){
     let chosen=nodes[0],best=Infinity;
     for(const n of nodes){
@@ -153,30 +174,30 @@ function buildMassGeometry(graph,nodeLimit=10){
     return safeColor(chosen.colour);
   }
   function emit(tri){
-    const p0=new THREE.Vector3(...tri[0]),p1=new THREE.Vector3(...tri[1]),
-      p2=new THREE.Vector3(...tri[2]);
-    const centroid=p0.clone().add(p1).add(p2).multiplyScalar(1/3);
-    const eps=.013,p=centroid.toArray();
-    const normal=new THREE.Vector3(
-      value([p[0]+eps,p[1],p[2]])-value([p[0]-eps,p[1],p[2]]),
-      value([p[0],p[1]+eps,p[2]])-value([p[0],p[1]-eps,p[2]]),
-      value([p[0],p[1],p[2]+eps])-value([p[0],p[1],p[2]-eps])
-    );
-    if(p1.clone().sub(p0).cross(p2.clone().sub(p0)).dot(normal)<0)
+    const p0=new THREE.Vector3(...tri[0].p),p1=new THREE.Vector3(...tri[1].p),
+      p2=new THREE.Vector3(...tri[2].p);
+    const avg=new THREE.Vector3(...tri[0].n).add(new THREE.Vector3(...tri[1].n))
+      .add(new THREE.Vector3(...tri[2].n));
+    if(p1.sub(p0).cross(p2.sub(p0)).dot(avg)<0)
       [tri[1],tri[2]]=[tri[2],tri[1]];
     for(const vertex of tri){
-      positions.push(...vertex);
-      const c=sampleColour(vertex);colours.push(c.r,c.g,c.b);
+      positions.push(...vertex.p);normals.push(...vertex.n);
+      const c=sampleColour(vertex.p);colours.push(c.r,c.g,c.b);
     }
   }
   const crossing=(a,b)=>{
     const t=clamp(a.d/(a.d-b.d),0,1);
-    return [0,1,2].map(d=>a.p[d]+(b.p[d]-a.p[d])*t);
+    const normal=[0,1,2].map(d=>a.n[d]+(b.n[d]-a.n[d])*t);
+    const len=Math.hypot(...normal)||1;
+    return {p:[0,1,2].map(d=>a.p[d]+(b.p[d]-a.p[d])*t),
+      n:normal.map(d=>d/len)};
   };
   for(let k=0;k<dims[2];k++)for(let j=0;j<dims[1];j++)for(let i=0;i<dims[0];i++){
-    const cube=corners.map(([di,dj,dk])=>({
-      p:xyz(i+di,j+dj,k+dk),d:field[index(i+di,j+dj,k+dk)]
-    }));
+    const cube=corners.map(([di,dj,dk])=>{
+      const q=index(i+di,j+dj,k+dk);
+      return {p:xyz(i+di,j+dj,k+dk),d:field[q],
+        n:[gradients[q*3],gradients[q*3+1],gradients[q*3+2]]};
+    });
     if(!cube.some(c=>c.d<0)||!cube.some(c=>c.d>=0))continue;
     for(const tet of tetra){
       const inside=tet.filter(a=>cube[a].d<0),outside=tet.filter(a=>cube[a].d>=0);
@@ -198,7 +219,7 @@ function buildMassGeometry(graph,nodeLimit=10){
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
-  geometry.computeVertexNormals();
+  geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
   return geometry;
 }
 function makeMass(group,graph,source,colourMode,nodeLimit=11){
