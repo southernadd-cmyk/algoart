@@ -2,6 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 export const CURRENT_SOCIAL_RENDERER_VERSION=10;
+// Frozen V9 media remains publishable; new generated studies use V10.
+// Never accept unknown/future versions, even when a URL claims to use one.
+export function isSupportedSocialPublisherVersion(version){
+  return Number.isInteger(version)&&version>=9&&version<=CURRENT_SOCIAL_RENDERER_VERSION;
+}
 export function socialRendererVersion(value=process.env.SOCIAL_RENDERER_VERSION){
   const version=Number(value||CURRENT_SOCIAL_RENDERER_VERSION);
   if(!Number.isInteger(version)||version<1||version>CURRENT_SOCIAL_RENDERER_VERSION){
