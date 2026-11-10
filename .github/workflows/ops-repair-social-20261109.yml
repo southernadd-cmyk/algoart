@@ -141,4 +141,4 @@ jobs:
           gh release upload "$RELEASE_TAG" "/tmp/$MARKER"
           echo "Verified $MARKER" >> "$GITHUB_STEP_SUMMARY"
 
-# Initial preflight-only invocation, no publication.
+# The preflight passed. Dispatch the verified, bounded 9 November replay.
