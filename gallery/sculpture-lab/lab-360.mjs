@@ -8,7 +8,7 @@ import {METHODS,PHI,GOLDEN_ANGLE,extractRuleMarks,buildRuleSculpture,disposeRule
 import {buildJSCADSculpture,disposeJSCADSculpture} from './sculpture-csg.mjs';
 import {recordOriginalComposition} from './source-bridge.mjs';
 import {prepareOriginalStrokes} from './recorded-gestures.mjs';
-import {MATERIAL_SURFACE_VERSION,pigmentField,buildMaterialSculpture,disposeMaterialSculpture} from './material-surface.mjs';
+import {MATERIAL_SURFACE_VERSION,ROUNDED_BODY_PROFILES,pigmentField,buildMaterialSculpture,disposeMaterialSculpture} from './material-surface.mjs';
 import {SUPPORT_VARIANTS,createHybridSupport,disposeHybridSupport} from './hybrid-supports.mjs';
 
 const $=id=>document.getElementById(id);
@@ -53,6 +53,7 @@ block(.2,6,15,-8.7,3,0,'#d3c4b1');
 const rightWall=block(.2,6,15,8.7,3,0,'#d3c4b1');
 const centres=[-5.1,-1.7,1.7,5.1];
 const titles=SUPPORT_VARIANTS.map(s=>'HYBRID · '+s.title.toUpperCase());
+const bodyTitles=['Soft shoulder','Golden spiral','Rounded pebble','Flowing folds'];
 function labelTexture(title){
   const el=document.createElement('canvas');
   el.width=512;el.height=128;
@@ -204,15 +205,20 @@ function replaceSculptures(marks,entry){
     'JSCAD did not load. The rule-only version remains available from the Geometry selector.'
   );
   const depth=Number($('depth').value)/100;
+  const bodyStudy=$('bodyStudy').value;
+  const compareBodies=mode==='surface'&&bodyStudy==='compare';
   const candidates=[],newSupports=[];
   try{
-    for(const variant of SUPPORT_VARIANTS){
+    for(const [index,variant] of SUPPORT_VARIANTS.entries()){
       const method='hybrid';
+      const bodyProfile=compareBodies?ROUNDED_BODY_PROFILES[index]:
+        mode==='surface'?bodyStudy:'original';
       const obj=mode==='surface'
         ?buildMaterialSculpture(method,currentSourceData.pixels,
           currentSourceData.paintTexture,{
           depth,material:currentSourceData.material,paper:currentSourceData.paper,
-          quality:currentSourceData.quality,sideTexture:currentSourceData.sideTexture
+          quality:currentSourceData.quality,sideTexture:currentSourceData.sideTexture,
+          bodyProfile
         })
         :mode==='jscad'
         ?buildJSCADSculpture(method,marks,jscad,{
@@ -226,7 +232,7 @@ function replaceSculptures(marks,entry){
       obj.position.y=-.34-bounds.min.y;
       obj.updateMatrixWorld(true);
       candidates.push(obj);
-      newSupports.push(createHybridSupport(obj,variant.id,{
+      newSupports.push(createHybridSupport(obj,compareBodies?'pin':variant.id,{
         pixels:currentSourceData?.pixels||null
       }));
     }
@@ -242,6 +248,15 @@ function replaceSculptures(marks,entry){
     supports[i]=newSupports[i];
     stages[i].add(candidates[i],newSupports[i]);
   }
+  if(compareBodies){
+    $('focus').querySelectorAll('option').forEach((el,i)=>{if(i>0)el.textContent=i+' · '+bodyTitles[i-1];});
+    $('legend').querySelectorAll('span').forEach((el,i)=>el.textContent=
+      String(i+1).padStart(2,'0')+' · '+bodyTitles[i]+' / museum pin');
+  }else{
+    $('focus').querySelectorAll('option').forEach((el,i)=>{if(i>0)el.textContent=i+' · '+SUPPORT_VARIANTS[i-1].title;});
+    $('legend').querySelectorAll('span').forEach((el,i)=>el.textContent=
+      String(i+1).padStart(2,'0')+' · '+SUPPORT_VARIANTS[i].title);
+  }
   currentEngine=mode==='surface'?MATERIAL_SURFACE_VERSION:
     mode==='jscad'?'jscad-csg-v1':'rules-v1';
   window.__sculptureLabStatus={
@@ -251,8 +266,11 @@ function replaceSculptures(marks,entry){
     usesExtrusion:false,
     usesJSCAD:mode==='jscad',
     usesActualPaintTexture:mode==='surface',
-    identicalHybridOnAllPlinths:true,
-    supportVariants:SUPPORT_VARIANTS.map(v=>v.id),
+    identicalHybridOnAllPlinths:!compareBodies,
+    roundedBodyComparison:compareBodies,
+    bodyStudy,
+    bodyProfiles:candidates.map(c=>c.userData.bodyProfile||'original'),
+    supportVariants:SUPPORT_VARIANTS.map((v,i)=>compareBodies?'pin':v.id),
     supports:newSupports.map(s=>({variant:s.userData.variant,
       anchors:s.userData.anchorPoints,feet:s.userData.plinthPoints,
       plinthTopY:s.userData.plinthTopY,
@@ -287,8 +305,8 @@ function replaceSculptures(marks,entry){
         }
       });
       return {
-        method:c.userData.method,meshes,polys,
-        supportVariant:SUPPORT_VARIANTS[i].id,
+        method:c.userData.method,bodyProfile:c.userData.bodyProfile||'original',meshes,polys,
+        supportVariant:compareBodies?'pin':SUPPORT_VARIANTS[i].id,
         elementCounts:c.userData.elementCounts||null,
         sourceAnchors:c.userData.sourceAnchors,
         extent:[size.x,size.y,size.z],
@@ -441,6 +459,7 @@ $('orbitToggle').addEventListener('click',()=>{
 });
 $('depth').addEventListener('input',()=>{$('depthValue').textContent=$('depth').value+'%';});
 $('depth').addEventListener('change',rebuild);
+$('bodyStudy').addEventListener('change',rebuild);
 $('geometryMode').addEventListener('change',()=>{
   $('resemblance').disabled=renderMode()==='surface';
   $('sourceMode').disabled=renderMode()==='surface';

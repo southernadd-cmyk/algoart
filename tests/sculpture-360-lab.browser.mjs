@@ -30,11 +30,13 @@ try {
   assert.equal(lab.separatePaintingOverlay,false);
   assert.equal(lab.usesJSCAD,false);
   assert.deepEqual(lab.methods.map(m=>m.method),['hybrid','hybrid','hybrid','hybrid']);
-  assert.equal(lab.identicalHybridOnAllPlinths,true);
-  assert.deepEqual(lab.supportVariants,['pin','stem','twin','root']);
-  assert.deepEqual(lab.supports.map(s=>s.variant),['pin','stem','twin','root']);
+  assert.equal(lab.identicalHybridOnAllPlinths,false);
+  assert.equal(lab.roundedBodyComparison,true);
+  assert.deepEqual(lab.bodyProfiles,['shoulder','spiral','pebble','fold']);
+  assert.deepEqual(lab.supportVariants,['pin','pin','pin','pin']);
+  assert.deepEqual(lab.supports.map(s=>s.variant),['pin','pin','pin','pin']);
   assert.ok(lab.supports.every(s=>s.attachedToActualMesh&&s.supportMeshes>=2));
-  assert.deepEqual(lab.supports.map(s=>s.anchorCount).slice(0,3),[1,1,2]);
+  assert.deepEqual(lab.supports.map(s=>s.anchorCount),[1,1,1,1]);
   assert.ok(lab.supports.every(s=>s.feet.every(p=>Math.abs(p[1]-s.plinthTopY)<1e-5)));
   assert.ok(lab.supports.every(s=>s.anchors.every(p=>p[1]>s.plinthTopY+.09)));
   assert.ok(lab.methods.every(m=>m.supportVariant===lab.supportVariants[lab.methods.indexOf(m)]));
@@ -74,7 +76,7 @@ try {
     lab=await report();
     assert.equal(lab.engine,'paint-surface-v1');
     assert.ok(lab.methods.every(m=>m.method==='hybrid'&&m.meshes===1&&m.sourceTextureOnBody&&m.sideTextureOnBody));
-    assert.deepEqual(lab.supports.map(s=>s.variant),['pin','stem','twin','root']);
+    assert.deepEqual(lab.supports.map(s=>s.variant),['pin','pin','pin','pin']);
     assert.equal(lab.paintingFinish,name);
     await page.locator('#focus').selectOption('3');
     await page.locator('#front').click();
@@ -95,6 +97,11 @@ try {
 
   // Keep older modelling experiments explicitly available, never on top of
   // the source painting by default.
+  await page.locator('#bodyStudy').selectOption('original');
+  lab=await report();
+  assert.equal(lab.identicalHybridOnAllPlinths,true);
+  assert.deepEqual(lab.bodyProfiles,['original','original','original','original']);
+  assert.deepEqual(lab.supportVariants,['pin','stem','twin','root']);
   await page.locator('#geometryMode').selectOption('jscad');
   lab=await report();
   assert.equal(lab.engine,'jscad-csg-v1');
@@ -121,6 +128,10 @@ try {
   assert.ok(lab.methods.every(m=>m.meshes===1&&m.sourceTextureOnBody));
   assert.deepEqual(lab.supportVariants,['pin','stem','twin','root']);
   assert.deepEqual(lab.supports.map(s=>s.variant),['pin','stem','twin','root']);
+  await page.locator('#bodyStudy').selectOption('compare');
+  lab=await report();
+  assert.deepEqual(lab.bodyProfiles,['shoulder','spiral','pebble','fold']);
+  assert.deepEqual(lab.supportVariants,['pin','pin','pin','pin']);
 
   // Original source capture remains functional for the optional JSCAD study.
   const markerFile=await page.locator('#painting option').evaluateAll(options=>

@@ -56,11 +56,11 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 </style>
 <script src="https://unpkg.com/@jscad/modeling@2.13.0" defer></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script></head>
-<body><canvas id="view" aria-label="Four identical painted hybrid sculptures with different plinth supports"></canvas>
-<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>One source painting · four identical hybrid sculptures · four mounting systems.</small></div>
-<div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Museum pin</option><option value="1">2 · Curved stem</option><option value="2">3 · Twin braces</option><option value="3">4 · Pigment root</option></select></div></header>
-<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>The same hybrid form and original material on each plinth. Four different attachment systems, physically connected to the base.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
-<div id="legend"><span>01 · Straight museum pin</span><span>02 · φ-curved tapered stem</span><span>03 · Twin stabilising braces</span><span>04 · Branched pigment root</span></div>
+<body><canvas id="view" aria-label="Four source-painted three-dimensional sculptures with four experimental rounded backs"></canvas>
+<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>One source painting · four rounded-body experiments · original museum pins.</small></div>
+<div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Soft shoulder</option><option value="1">2 · Golden spiral</option><option value="2">3 · Rounded pebble</option><option value="3">4 · Flowing folds</option></select></div></header>
+<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>Four experimental rear-volume shapes using the same archived painting and the approved museum pin. Switch Body study to Original mounts to compare the previous supports.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
+<div id="legend"><span>01 · Soft shoulder / museum pin</span><span>02 · Golden spiral / museum pin</span><span>03 · Rounded pebble / museum pin</span><span>04 · Flowing folds / museum pin</span></div>
 <button id="settingsToggle" type="button" aria-controls="depth-controls" aria-expanded="false">Sculpture settings</button>
 <div id="depth-controls">
 <label for="geometryMode">Geometry</label>
@@ -68,6 +68,15 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 <option value="surface" selected>Painted solid · original material</option>
 <option value="jscad">JSCAD / fused solids (legacy study)</option>
 <option value="rules">Separate rule forms</option>
+</select>
+<label for="bodyStudy">Body study</label>
+<select id="bodyStudy" aria-label="Compare rounded body shapes or original mounting studies">
+<option value="compare" selected>Four rounded backs · museum pins</option>
+<option value="shoulder">All · softened shoulders</option>
+<option value="spiral">All · golden-angle spiral</option>
+<option value="pebble">All · rounded pigment masses</option>
+<option value="fold">All · flowing rear folds</option>
+<option value="original">Original bodies · four mounts</option>
 </select>
 <label for="sourceMode">Mark source</label>
 <select id="sourceMode" aria-label="Choose original recorded source or raster inference">
@@ -82,4 +91,4 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 <output id="depthValue" for="depth">100%</output>
 </div>
 <div id="hint">Drag: orbit · Scroll: zoom · WASD: move · Q/E: turn</div><div id="camera-controls"><button id="front" type="button">Front</button><button id="side" type="button">Side</button><button id="back" type="button">Back</button><button id="orbitToggle" type="button" aria-pressed="false">Auto rotate</button></div><div id="info" role="status" aria-live="polite">Preparing sculpture room…</div>
-<script type="module" src="./lab-360.mjs?v=11-hybrid-supports"></script></body></html>
+<script type="module" src="./lab-360.mjs?v=12-rounded-backs"></script></body></html>
