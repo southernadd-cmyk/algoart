@@ -27,13 +27,30 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 #texture-controls output{font-size:.72rem;min-width:35px;text-align:right}
 #texture-controls input:disabled{opacity:.35}
 @media(max-width:740px){#texture-controls{bottom:157px;max-width:99vw;gap:4px;padding:7px 6px}#texture-controls label{font-size:.57rem}#texture-controls select{max-width:148px;padding:5px;font-size:.6rem}#texture-controls input{width:72px}#texture-controls output{font-size:.61rem;min-width:28px}}
+#ai-controls{position:absolute;z-index:3;bottom:224px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;justify-content:center;background:#242e2beb;border:1px solid #b49864;padding:10px 12px;max-width:calc(100vw - 20px)}
+#ai-controls strong{font-size:.73rem;color:#f5d9a9;white-space:nowrap;letter-spacing:.02em}
+#ai-controls .ai-upload{font-size:.74rem;color:#203026;background:#e4bc79;padding:8px 12px;font-weight:700;cursor:pointer;white-space:nowrap}
+#ai-controls #aiFiles{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+#ai-controls #aiFiles:focus-visible + .ai-upload{outline:2px solid white}
+#ai-controls select{max-width:150px;font-size:.72rem;padding:7px}
+#ai-controls button{font-size:.72rem;background:#344540;color:#f5e2c4;border:1px solid #a88b5f;padding:8px;cursor:pointer;white-space:nowrap}
+#ai-controls button:disabled{opacity:.4;cursor:default}
+@media(max-width:740px){#ai-controls{bottom:215px;gap:4px;padding:6px;flex-wrap:wrap;width:min(380px,97vw)}#ai-controls strong{font-size:.6rem}#ai-controls .ai-upload,#ai-controls select,#ai-controls button{font-size:.61rem;padding:6px}#ai-controls select{max-width:110px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script></head>
 <body><canvas id="view" aria-label="Four sculpture methods in one three-dimensional test room"></canvas>
-<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>The same painted composition, sculpted four ways around a φ-governed back.</small></div>
+<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>Compare archival paintings with genuine generated 3D models.</small></div>
 <div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Petals</option><option value="1">2 · Ribbons</option><option value="2">3 · Pigment</option><option value="3">4 · Hybrid</option></select></div></header>
-<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>Front: original painting in place. Sides/back: sculptural translation.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
+<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>Source portrait for comparison. Import true generated GLB meshes to test full 3D reconstruction.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
 <div id="legend"><span>01 · Golden-angle petals</span><span>02 · Phi ribbons</span><span>03 · Volumetric pigment</span><span>04 · Combined hybrid</span></div>
+<div id="ai-controls" aria-label="AI-generated 3D model comparison">
+<strong>AI 3D reconstruction</strong>
+<label for="aiSlot">Replace</label>
+<select id="aiSlot"><option value="0">Plinth 1</option><option value="1">Plinth 2</option><option value="2">Plinth 3</option><option value="3">Plinth 4</option></select>
+<input id="aiFiles" type="file" accept=".glb,model/gltf-binary" multiple aria-label="Import generated 3D GLB models">
+<label class="ai-upload" for="aiFiles">Load GLB model(s)</label>
+<button id="resetAI" type="button" disabled>Restore</button>
+</div>
 <div id="texture-controls">
 <label for="textureMode">Surface</label>
 <select id="textureMode" aria-label="Sculpture surface mode">
@@ -45,4 +62,4 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 <output id="textureStrengthValue" for="textureStrength">76%</output>
 </div>
 <div id="hint">Drag: orbit · Scroll: zoom · WASD: move · Q/E: turn</div><div id="camera-controls"><button id="front" type="button">Front</button><button id="side" type="button">Side</button><button id="back" type="button">Back</button><button id="orbitToggle" type="button" aria-pressed="false">Auto rotate</button></div><div id="info" role="status" aria-live="polite">Preparing sculpture room…</div>
-<script type="module" src="./lab-360.mjs?v=4-source-anchored"></script></body></html>
+<script type="module" src="./lab-360.mjs?v=5-glb-pilot"></script></body></html>
