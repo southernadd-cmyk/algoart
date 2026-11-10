@@ -40,10 +40,12 @@ function smoothDensity(ink,w,h){
   }
   return out;
 }
-function paletteOf(pixels,mask,ink,limit=9){
+function paletteOf(pixels,mask,ink,distance,limit=9){
   const bins=new Map(),data=pixels.data;
   for(let i=0;i<mask.length;i++){
-    if(!mask[i]||ink[i]<.23)continue;
+    // Avoid colours sampled from paper-coloured antialias fringe cells.
+    // Only the INTERIOR carries reliable pigment hue in an archive raster.
+    if(!mask[i]||distance[i]<2||ink[i]<.16)continue;
     const k=i*4,red=data[k],green=data[k+1],blue=data[k+2];
     const key=(red>>5)*64+(green>>5)*8+(blue>>5);
     const v=bins.get(key)||{n:0,r:0,g:0,b:0};
@@ -218,7 +220,7 @@ export function segmentPainting(pixels,{
   for(let i=0;i<mask.length;i++)solid[i]=mask[i]?0:-1;
   const minBase=Math.max(2,Math.floor(field.cells/(Math.max(1,maxRegions)*PHI*16)));
   const base=components(solid,w,h,minBase);
-  const palette=paletteOf(pixels,mask,field.ink,9);
+  const palette=paletteOf(pixels,mask,field.ink,field.distance,9);
   const labels=nearestPalette(pixels,mask,palette);
   const smoothed=smoothDensity(field.ink,w,h);
   const pieces=[];
