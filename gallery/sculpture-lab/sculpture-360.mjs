@@ -91,6 +91,77 @@ export function prepareSourceContours(entries, limit = 140) {
     .sort((a, b) => b.sourceArea - a.sourceArea).slice(0, limit);
 }
 
+// Preserve the 3D geometry and the local paint colour, then lay the original
+// archived pigment over the physical surface. A cylindrical wrap lets the
+// painting continue right round the back instead of appearing on one flat face.
+// Paper alpha becomes blend strength, NOT mesh transparency.
+export function applyPaintingTexture(group, texture, strength = .76) {
+  if (!texture?.isTexture) return 0;
+  let count = 0;
+  group.traverse(mesh => {
+    if (!mesh.isMesh || mesh.userData.paintable !== true) return;
+    const material = mesh.material;
+    if (!material?.isMeshStandardMaterial) return;
+    const blend = {value: clamp(strength, 0, 1)};
+    material.map = texture;
+    material.userData.paintBlendUniform = blend;
+    material.onBeforeCompile = shader => {
+      shader.uniforms.ppPaintBlend = blend;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        '#include <common>\nvarying vec3 vPPPaintPosition;'
+      ).replace(
+        '#include <begin_vertex>',
+        [
+          '#include <begin_vertex>',
+          'vPPPaintPosition = position;',
+          '#ifdef USE_INSTANCING',
+          'vPPPaintPosition = (instanceMatrix * vec4(position, 1.0)).xyz;',
+          '#endif'
+        ].join('\n')
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <common>',
+        '#include <common>\nvarying vec3 vPPPaintPosition;\nuniform float ppPaintBlend;'
+      ).replace(
+        '#include <map_fragment>', // no UV image-plane mapping; the projection is 360°
+        ''
+      ).replace(
+        '#include <color_fragment>',
+        [
+          '#include <color_fragment>', // maintain per-instance pigment colours first
+          '#ifdef USE_MAP',
+          'float ppAngle = atan(vPPPaintPosition.x, vPPPaintPosition.z);',
+          'vec2 ppUV = vec2(fract(ppAngle / 6.28318530718 + 0.5),',
+          '  clamp(vPPPaintPosition.y / 1.95 + 0.5, 0.001, 0.999));',
+          'vec4 ppSwatch = texture2D(map, ppUV);',
+          'diffuseColor.rgb = mix(diffuseColor.rgb, ppSwatch.rgb,',
+          '  clamp(ppSwatch.a * ppPaintBlend, 0.0, 1.0));',
+          '#endif'
+        ].join('\n')
+      );
+    };
+    material.customProgramCacheKey = () => 'PP360-painted-cylinder-v1';
+    material.needsUpdate = true;
+    count++;
+  });
+  group.userData.texturedMeshes = count;
+  group.userData.textureBlend = clamp(strength, 0, 1);
+  return count;
+}
+
+// Switching between painted and unpainted surfaces updates a uniform without
+// re-baking the sculpture or re-compiling the shader.
+export function updatePaintingStrength(group, strength) {
+  if (!group) return;
+  const next = clamp(Number(strength) || 0, 0, 1);
+  group.traverse(obj => {
+    const mat = obj.material;
+    if (mat?.userData?.paintBlendUniform) mat.userData.paintBlendUniform.value = next;
+  });
+  group.userData.textureBlend = next;
+}
+
 function ownedMaterial(color, opts = {}) {
   const mat = new THREE.MeshStandardMaterial({
     color, metalness: .10, roughness: .57, side: THREE.DoubleSide, ...opts
@@ -202,6 +273,7 @@ function petals(data, group, {count = 50, scale = 1, stems = true} = {}) {
       arc: (i % 2 ? -1 : 1) * GOLDEN_ANGLE / (PHI * 2.7)
     }), ownedMaterial(s.color, {roughness: .48 + .14 * (i % 3) / 3}));
     leaf.userData.sculptureAngle = i * GOLDEN_ANGLE;
+    leaf.userData.paintable = true;
     group.add(leaf);
     if (stems && i % 3 === 0) {
       const end = rad(angle).multiplyScalar(.22).addScaledVector(Y, baseY - length * .2);
@@ -265,6 +337,7 @@ function ribbons(data, group, {count = 27, scale = 1, spine = true} = {}) {
     const color = entry.color || entry.side || data.samples[i % data.samples.length]?.color || '#716b60';
     const mesh = new THREE.Mesh(shape, ownedMaterial(color, {roughness: .49, metalness: .13}));
     mesh.userData.sculptureAngle = start;
+    mesh.userData.paintable = true;
     group.add(mesh);built++;
   }
   if (spine) addGoldenSpine(group, data.samples, {radius: .13, turns: PHI});
@@ -282,6 +355,7 @@ function pigment(data, group, {count = 175, scale = 1, connective = true} = {}) 
   const material = ownedMaterial('#ffffff', {roughness: .63, metalness: .06, flatShading: true});
   const mesh = new THREE.InstancedMesh(geometry, material, n);
   mesh.name = 'Painting-derived coloured 3D pigment volumes';
+  mesh.userData.paintable = true;
   const dummy = new THREE.Object3D(), c = new THREE.Color();
   const positions = [];
   for (let i = 0; i < n; i++) {
@@ -346,6 +420,7 @@ export function buildSculpture(method, data) {
   group.userData.method = method;
   group.userData.elementCounts = result;
   group.userData.sculptureVersion = 2;
+  if (data.paintTexture) applyPaintingTexture(group, data.paintTexture, data.paintStrength ?? .76);
   return group;
 }
 
