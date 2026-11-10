@@ -137,7 +137,7 @@ function sampleMaskedPainting() {
 test('every 3D method preserves the original painting location at each front-surface vertex', () => {
   const mask = sampleMaskedPainting();
   const paintingTexture = new THREE.Texture();
-  const expected = mask.data.reduce((n, b, i) => n + (i % 4 === 3 && b > 18 ? 1 : 0), 0);
+  const expected = mask.data.reduce((n, b, i) => n + (i % 4 === 3 && b >= 6 ? 1 : 0), 0);
   for (const method of METHODS) {
     const shell = buildCompositionShell(mask, paintingTexture, method);
     assert.ok(shell, method + ': no composition geometry');
