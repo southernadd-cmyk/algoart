@@ -1,6 +1,6 @@
-# Existing media gateway - public read-only Worker. Private backup is NOT bound.
+# Separate Sculpture V2-only gateway. Does NOT replace existing media Worker. Private backup is NOT bound.
 # This is separate from the root social-preview Worker and GitHub Pages.
-name = "proportion-piece-media"
+name = "proportion-piece-sculpture-v2"
 main = "src/worker.mjs"
 compatibility_date = "2026-11-09"
 workers_dev = true
