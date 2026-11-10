@@ -13,10 +13,12 @@ const FRONT=.69;
 const W=1.34,H=1.88;
 
 function colour(hex,bronze=false){
-  return new THREE.MeshStandardMaterial({
+  const m=new THREE.MeshStandardMaterial({
     color:bronze?'#967c57':hex||'#61513d',roughness:bronze?.43:.66,
     metalness:bronze?.33:.015,side:THREE.DoubleSide
   });
+  m.userData.ppV3Owned=true;
+  return m;
 }
 function cleanPoints(stroke){
   const result=[];
@@ -134,7 +136,7 @@ function foldedMembranes(group,marks,bronze,{fidelity,depth,phiPull,quality}){
     mesh.userData.ppV3Owned=true;group.add(mesh);
   }
 }
-function pigmentBody(group,kind,{pixels,texture,material,paper,depth,quality}){
+function pigmentBody(group,kind,{pixels,texture,material,paper,depth,quality,bronze=false}){
   if(!pixels||!texture)return false;
   // Actual source pigment controls the WHOLE body, not a painted card placed
   // in front of an unrelated sculpture. The rear is a continuous isosurface.
@@ -144,6 +146,13 @@ function pigmentBody(group,kind,{pixels,texture,material,paper,depth,quality}){
     kind==='mass'?'pebble':'shoulder';
   const body=buildMaterialSculpture(mode,pixels,texture,{
     depth:Math.max(.45,depth*.86),material,paper,quality,bodyProfile:profile
+  });
+  if(bronze)body.traverse(o=>{
+    if(o.isMesh&&o.material){
+      o.material.map=null;o.material.bumpMap=null;
+      o.material.color.set('#967c57');o.material.metalness=.33;
+      o.material.roughness=.43;o.material.needsUpdate=true;
+    }
   });
   body.name='Original pigment grown into a three-dimensional surface';
   body.userData.ppV3Owned=true;
@@ -171,7 +180,7 @@ export function buildAnamorphicSculpture(kind,{
   // The Marker engine needs only its exact, continuous vector marks.
   if(kind==='mass'||kind==='hybrid'||material!=='marker'){
     body=pigmentBody(group,kind,{pixels,texture,material,paper,
-      depth:opt.depth,quality});
+      depth:opt.depth,quality,bronze});
   }
   const count=originalMarks(group,marks,bronze,quality);
   if(kind==='armature'){
