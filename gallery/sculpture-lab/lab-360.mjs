@@ -6,6 +6,8 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {resolveStudyMaterial} from '../visit/study-material.mjs';
 import {METHODS,PHI,GOLDEN_ANGLE,extractRuleMarks,buildRuleSculpture,disposeRuleSculpture} from './sculpture-rules.mjs';
 import {buildJSCADSculpture,disposeJSCADSculpture} from './sculpture-csg.mjs';
+import {recordOriginalComposition} from './source-bridge.mjs';
+import {prepareOriginalStrokes} from './recorded-gestures.mjs';
 
 const $=id=>document.getElementById(id);
 const scene=new THREE.Scene();
@@ -76,7 +78,26 @@ for(let i=0;i<4;i++){
   scene.add(stage);stages.push(stage);
 }
 let currentDate='',chosenImage='',archive=null,entries=[];
-let dateTicket=0,imageTicket=0;
+let dateTicket=0,imageTicket=0,currentSourceData=null;
+let archivedMaterialPack=null,packDay='';
+async function materialContoursFor(day,imageFile,quality='desktop'){
+  if(packDay!==day){
+    packDay=day;archivedMaterialPack=null;
+    try {
+      const response=await fetch('../'+day+'/3d/sculptures.json.gz');
+      if(!response.ok)throw Error('No material contour pack');
+      const bytes=new Uint8Array(await response.arrayBuffer());
+      const stream=new Blob([bytes]).stream();
+      const decoded=bytes[0]===0x1f&&bytes[1]===0x8b?
+        stream.pipeThrough(new DecompressionStream('gzip')):stream;
+      archivedMaterialPack=await new Response(decoded).json();
+    }catch(error){
+      console.info('Archived pigment contour pack unavailable; source recording remains available',error.message);
+    }
+  }
+  return archivedMaterialPack?.studies?.[imageFile]?.[quality]||
+    archivedMaterialPack?.studies?.[imageFile]?.desktop||[];
+}
 const status=message=>{$('info').textContent=message;};
 async function loadImage(url){
   return new Promise((resolve,reject)=>{
@@ -97,7 +118,8 @@ function featuresFromImage(image,entry) {
     material:mat.type,
     paper:mat.params.paper||'#f5f0e6'
   });
-  return marks;
+  return {marks,pixels,material:mat.type};
+
 }
 function focus(side='front'){
   const i=$('focus').value;
@@ -133,7 +155,8 @@ function replaceSculptures(marks,entry){
     for(const method of METHODS){
       const obj=mode==='jscad'
         ?buildJSCADSculpture(method,marks,jscad,{
-          depth,fidelity:Number($('resemblance').value)/100
+          depth,fidelity:Number($('resemblance').value)/100,
+          sourceData:$('sourceMode').value==='original'?currentSourceData:null
         })
         :buildRuleSculpture(method,marks,{depth});
       candidates.push(obj);
@@ -160,6 +183,15 @@ function replaceSculptures(marks,entry){
     sourceMarks:marks.map(m=>({x:m.x,y:m.y,kind:m.kind})),
     depth,
     resemblance:Number($('resemblance').value)/100,
+    sourceMode:$('sourceMode').value,
+    sourceEvidence:{
+      kind:currentSourceData?.captureKind||'not-recorded',
+      originalPaths:currentSourceData?.pathCount||0,
+      visiblePaths:currentSourceData?.strokes?.length||0,
+      archivedMaterialContours:currentSourceData?.materialContours?.length||0,
+      material:currentSourceData?.material||null,
+      error:currentSourceData?.captureError||null
+    },
     methods:candidates.map(c=>{
       const box=new THREE.Box3().setFromObject(c);
       const size=box.getSize(new THREE.Vector3());
@@ -176,6 +208,10 @@ function replaceSculptures(marks,entry){
         sourceAnchors:c.userData.sourceAnchors,
         extent:[size.x,size.y,size.z],
         sourceTraceCount:c.userData.sourceTraceCount||0,
+        sourceOrigin:c.userData.sourceOrigin||null,
+        originalPointCount:c.userData.sourceOriginalPoints||0,
+        fineLinePaths:c.userData.fineLinePaths||0,
+        materialContours:c.userData.materialContours||0,
         sourceDetailAnchors:c.userData.sourceDetailAnchors||[],
         csgPolygons:c.userData.csgPolygons||0,
         subtractApplied:c.userData.subtractApplied||false,
@@ -211,7 +247,42 @@ async function choosePainting(filename){
     const url=new URL('../'+encodeURIComponent(currentDate)+'/'+encodeURIComponent(filename),location.href).href;
     const image=await loadImage(url);
     if(ticket!==imageTicket||d!==dateTicket)return;
-    const marks=featuresFromImage(image,entry);
+    const {marks,pixels,material}=featuresFromImage(image,entry);
+    const quality=innerWidth<740?'mobile':'desktop';
+    let capture=null,captureError=null,materialContours=[];
+    // The original generator records compositional strokes. For oil and
+    // watercolour these are validated against final visible pigment, while
+    // the archival contour bake supplies the material-specific shapes.
+    try {
+      [capture,materialContours]=await Promise.all([
+        recordOriginalComposition(entry),
+        material==='marker'?Promise.resolve([]):
+          materialContoursFor(currentDate,filename,quality)
+      ]);
+    } catch(error) {
+      captureError=error.message;
+      console.warn('Original recording unavailable; retaining deterministic raster fallback',error);
+      if(material!=='marker')
+        materialContours=await materialContoursFor(currentDate,filename,quality);
+    }
+    if(ticket!==imageTicket||d!==dateTicket)return;
+    let strokes=[];
+    if(capture){
+      try{
+        strokes=prepareOriginalStrokes(capture,{
+          material,imageData:{...pixels,
+            sourceWidth:capture.width,sourceHeight:capture.height},
+          maxPaths:quality==='mobile'?130:230,
+          minimumCoverage:material==='marker'?0:.27
+        });
+      }catch(error){captureError=error.message;console.warn(error);}
+    }
+    currentSourceData={
+      strokes,materialContours,material,quality,
+      captureKind:capture?'recorded-original-v'+capture.version:'unavailable',
+      pathCount:capture?.paths?.length||0,
+      captureError
+    };
     replaceSculptures(marks,entry);
     currentMarks=marks;
     $('thumb').src=url;
@@ -221,7 +292,8 @@ async function choosePainting(filename){
     q.searchParams.set('date',currentDate);q.searchParams.set('image',filename);
     history.replaceState(null,'',q);
     status((renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
-      ' • '+marks.length+' source marks • '+(window.__sculptureLabStatus.methods[0].sourceTraceCount||0)+' colour-preserving 3D traces');
+      ' • '+marks.length+' pigment regions · '+(window.__sculptureLabStatus.methods[0].sourceTraceCount||0)+
+      ' sculpted strokes · '+window.__sculptureLabStatus.methods[0].sourceOrigin);
   } catch(e) {
     window.__sculptureLabStatus={ready:false,error:e.message};
     status('Could not construct sculpture: '+e.message);
@@ -231,7 +303,7 @@ async function choosePainting(filename){
 async function chooseDate(day){
   currentDate=day;
   const ticket=++dateTicket;
-  ++imageTicket;currentMarks=null;
+  ++imageTicket;currentMarks=null;currentSourceData=null;
   status('Loading gallery portraits from '+day+'…');
   try{
     const response=await fetch('../'+day+'/meta.json');
@@ -259,6 +331,12 @@ $('orbitToggle').addEventListener('click',()=>{
 $('depth').addEventListener('input',()=>{$('depthValue').textContent=$('depth').value+'%';});
 $('depth').addEventListener('change',rebuild);
 $('geometryMode').addEventListener('change',rebuild);
+$('sourceMode').addEventListener('change',rebuild);
+$('settingsToggle').addEventListener('click',()=>{
+  const open=$('depth-controls').classList.toggle('expanded');
+  $('settingsToggle').setAttribute('aria-expanded',String(open));
+  $('settingsToggle').textContent=open?'Hide sculpture settings':'Sculpture settings';
+});
 $('resemblance').addEventListener('input',()=>{
   $('resemblanceValue').textContent=$('resemblance').value+'%';
 });

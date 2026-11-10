@@ -4,6 +4,8 @@
 // No flat image planes, raster extrusion, external model generation, or texture wrapping.
 import * as THREE from 'three';
 import {buildSourceDetailLayer} from './source-echo.mjs';
+import {buildRecordedSculptureLayer,buildMaterialContourLayer,disposeRecordedLayer}
+  from './recorded-gestures.mjs';
 
 const PHI=(1+Math.sqrt(5))/2;
 const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
@@ -190,7 +192,7 @@ export function jscadSolidToThree(solid,marks,depth,jscad) {
  * Region bodies merge with a common rear spine, so they are not disconnected
  * petals. A cross-cut at the rear produces negative space rather than simply
  * painting a dark spot on a mesh. Hybrid uses actual CSG unions and subtract. */
-export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false,fidelity=.85}={}) {
+export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false,fidelity=.85,sourceData=null}={}) {
   if(!METHODS.includes(method))throw new Error('Invalid CSG method');
   const f=jscadFeatures(jscad);
   const selected=selectCSGMarks(marks,12);
@@ -271,21 +273,43 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false
   // Recede and narrow the JSCAD bulk rather than projecting broad joined
   // solids through the original drawing's negative space.
   const resemblance=clamp(fidelity,0,1);
-  mesh.position.z-=.15*depth+.19*depth*resemblance;
-  const coreXY=1-.25*resemblance;
+  mesh.position.z-=.24*depth+.31*depth*resemblance;
+  const coreXY=1-.38*resemblance;
   mesh.scale.set(coreXY,coreXY,1);
   group.add(mesh);
-  const sourceLayer=buildSourceDetailLayer(marks,{depth,fidelity:resemblance});
+  // Only use the heuristic centroid-gesture reconstruction as a fallback.
+  // The recorded original path and material boundary take priority.
+  const exactStrokes=sourceData?.strokes||[];
+  let sourceLayer=exactStrokes.length
+    ?buildRecordedSculptureLayer(exactStrokes,{
+       depth,fidelity:resemblance,quality:sourceData.quality||'desktop'
+     })
+    :buildSourceDetailLayer(marks,{depth,fidelity:resemblance});
   group.add(sourceLayer);
+  let contourLayer=null;
+  if(sourceData?.material!=='marker'&&sourceData?.materialContours?.length){
+    contourLayer=buildMaterialContourLayer(sourceData.materialContours,{
+      depth,fidelity:resemblance,quality:sourceData.quality||'desktop'
+    });
+    if(contourLayer.userData.contours>0)group.add(contourLayer);
+    else disposeRecordedLayer(contourLayer);
+  }
   group.name='JSCAD '+method+' / true fused CSG';
   group.userData={
     ...(debugSolid?{rawCSG:final}:{}),
     engine:'jscad-csg-v1',
     method,
     fidelity:clamp(fidelity,0,1),
-    sourceTraceCount:sourceLayer.userData.sourceTraceCount,
-    sourceDetailAnchors:sourceLayer.userData.sourceAnchors,
-    coreRecess:.15*depth+.19*depth*resemblance,
+    sourceTraceCount:sourceLayer.userData.sourceTraceCount||
+      sourceLayer.userData.recordedFront||0,
+    sourceOrigin:exactStrokes.length?'original-engine-recorded':
+      contourLayer?.userData.contours?'archived-pigment-contours':'sampled-pixels-fallback',
+    sourceOriginalPoints:sourceLayer.userData.originalPointCount||0,
+    fineLinePaths:sourceLayer.userData.fineLinePaths||0,
+    materialContours:contourLayer?.userData.contours||0,
+    sourceDetailAnchors:sourceLayer.userData.sourceAnchors||
+      exactStrokes.map(a=>({x:a.points[0]?.x,y:a.points[0]?.y,color:a.color})),
+    coreRecess:.24*depth+.31*depth*resemblance,
     noImageExtrusion:true,
     noModelInference:true,
     sourceAnchors:selected.map(m=>({x:m.x,y:m.y,color:m.color,kind:m.kind})),

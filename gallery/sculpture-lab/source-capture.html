@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>PROPORTION PIECE · isolated recorded stroke source</title>
+<script src="../../js/random.js"></script>
+<script src="../../js/phi.js"></script>
+<script src="../../js/palettes.js"></script>
+<script src="../../js/marker.js"></script>
+<script src="../../js/phi-sheet-fit.js"></script>
+<script src="../../js/settings-url.js"></script>
+<script src="../../js/generator.js"></script>
+</head><body>
+<script>
+'use strict';
+// Isolated same-origin recording harness for existing archived solo settings.
+// Do not run app.js: it would create UI, share URLs, and unrelated async
+// preview renders. No changes to renderer RNG, source or production gallery.
+(function () {
+  const A=window.AlgoArt;
+  let busy=false;
+  function send(id,data,error) {
+    parent.postMessage({type:'pp-sculpture-vectors-result',id,
+      ...(error?{error:String(error)}:{result:data})},location.origin);
+  }
+  window.addEventListener('message',function(event){
+    if(event.source!==parent||event.origin!==location.origin)return;
+    const msg=event.data;
+    if(msg?.type!=='pp-sculpture-vectors-request')return;
+    if(busy){send(msg.id,null,'Recorder is already drawing');return;}
+    busy=true;
+    try{
+      const item=msg.item||{};
+      if(!item.settings||!item.seed||!item.shareUrl ||
+          typeof item.settings!=='object')throw Error('Incomplete archive source');
+      const url=new URL(item.shareUrl,location.origin);
+      const canonical='https://southernadd-cmyk.github.io';
+      if((url.origin!==location.origin && url.origin!==canonical) ||
+         (url.pathname!=='/algoart/' && url.pathname!=='/'))
+        throw Error('Source must be the canonical archived solo editor');
+      const rendererVersion=Number(item.rendererVersion||url.searchParams.get('v'));
+      if(!Number.isInteger(rendererVersion)||rendererVersion<1||rendererVersion>10)
+        throw Error('Unsupported archived renderer version');
+      A.rendererVersion=rendererVersion;
+      A.phiFramingEnabled=url.searchParams.get('sheet')==='phi';
+      A.svgRecorder={paths:[],background:item.settings.paper,precise:true,markSeq:0};
+      const canvas=document.createElement('canvas');
+      const settings={...item.settings,seed:item.seed};
+      A.render(canvas,settings,1,false);
+      const rec=A.svgRecorder;
+      const paths=rec.paths.filter(p=>p.d&&p.stroke&&Number(p.width)>0)
+        .map(p=>({
+          d:p.d,stroke:p.stroke,width:p.width,opacity:p.opacity,
+          dash:p.dash,dashOffset:p.dashOffset||0,
+          transform:p.transform||null,
+          mark:p.mark??null,kind:p.kind??null,pass:p.pass??0,
+          group:p.group?.kind||p.group?.tier||null
+        }));
+      if(paths.length<1)throw Error('Original engine recorded no strokes');
+      send(msg.id,{
+        version:rendererVersion,seed:item.seed,kind:'original-composition',
+        width:A.W,height:A.H,
+        sheet:A.phiFramingEnabled?'phi':'original',
+        paths
+      });
+    }catch(error){send(msg.id,null,error.message);}
+    finally{A.svgRecorder=null;A.phiFramingEnabled=false;busy=false;}
+  });
+  parent.postMessage({type:'pp-sculpture-vectors-ready'},location.origin);
+})();
+</script>
+</body></html>
