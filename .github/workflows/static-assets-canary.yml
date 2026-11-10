@@ -51,8 +51,8 @@ jobs:
           done
           mkdir -p _site/preview/tissue-v8
           cp test/tissue-v8/index.html _site/preview/tissue-v8/index.html
-          find . -maxdepth 1 -type f \\( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.json' -o -name '*.webmanifest' -o -name '*.xml' -o -name '*.txt' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.svg' -o -name '*.ico' -o -name '.nojekyll' \\) -exec cp -t _site -- {} +
-          find _site -type d \\( -name node_modules -o -name .git -o -name .github -o -name tests -o -name automation -o -name .chat-v2-staging \\) -prune -exec rm -rf -- {} +
+          find . -maxdepth 1 -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.json' -o -name '*.webmanifest' -o -name '*.xml' -o -name '*.txt' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.svg' -o -name '*.ico' -o -name '.nojekyll' \) -exec cp -t _site -- {} +
+          find _site -type d \( -name node_modules -o -name .git -o -name .github -o -name tests -o -name automation -o -name .chat-v2-staging \) -prune -exec rm -rf -- {} +
           test -s _site/index.html
           test -s _site/confluence/index.html
           test -s _site/gallery/visit/gallery-phi-bundle.js
@@ -85,7 +85,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\\.workers\\.dev' /tmp/web-canary-deploy.txt | head -1)"
+          URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\.workers\.dev' /tmp/web-canary-deploy.txt | head -1)"
           test -n "$URL" || { echo "::error::Canary URL not returned by Wrangler"; exit 1; }
           curl --fail --silent --show-error --location --retry 4 "$URL/algoart/" -o /tmp/canary-home.html
           curl --fail --silent --show-error --location --retry 4 "$URL/algoart/gallery/sculpture-lab/" -o /tmp/canary-lab.html
