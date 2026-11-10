@@ -1,7 +1,7 @@
 // PROPORTION PIECE Sculpture Lab V4.2 — genuine source-colour spatial volumes.
 import * as THREE from 'three';
-import {V4_METHODS} from './sculpture-v4-topology.mjs';
-import {buildPlanarRegion,sampleRegion,signedArea} from './sculpture-v4-contours.mjs';
+import {V4_METHODS} from './sculpture-v4-topology.mjs?v=4.2.1';
+import {buildPlanarRegion,sampleRegion} from './sculpture-v4-contours.mjs?v=4.2.1';
 export {V4_METHODS};
 const W=1.34,H=1.88,PHI=(1+Math.sqrt(5))/2;
 const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
@@ -46,11 +46,19 @@ function regionGeometry(r,{mode,method,depth,phiPull,fidelity,
   const pos=[],uv=[],upper=[],lower=[],faces=[],rim=[];
   const offset=regionLayerOffset(r,method,depth,phiPull,count);
   const phase=(r.id+1)*GOLDEN_ANGLE;
-  const sweep=phiPull*(1-.5*fidelity)*depth*
+  let sweep=phiPull*(1-.5*fidelity)*depth*
     (method==='assembly'?.31:method==='gesture'?.23:
       method==='medial'?.19:.13);
-  const theta=phiPull*(method==='assembly'?.40:method==='gesture'?.20:
+  let theta=phiPull*(method==='assembly'?.40:method==='gesture'?.20:
     method==='medial'?.15:.08);
+  // Limit rear sweep/rotation to the inscribed radius of this source region:
+  // otherwise concave shapes can fold the side skin into themselves.
+  const px=(W/r.width+H/r.height)*.5;
+  const extent=.5*Math.hypot(r.rw*W/r.width,r.rh*H/r.height);
+  const allowed=.55*Math.max(1,r.maxDistance)*px;
+  const wanted=Math.abs(theta)*extent+sweep;
+  const cap=wanted>allowed?allowed/wanted:1;
+  sweep*=cap;theta*=cap;
   const c=Math.cos(theta),s=Math.sin(theta);
   const rear=method==='assembly'?1.57:method==='medial'?1.32:
     method==='gesture'?1.21:1.11;
@@ -84,65 +92,36 @@ function regionGeometry(r,{mode,method,depth,phiPull,fidelity,
   for(const ring of boundaries){
     const ids=ring.indices,n=ids.length;
     if(n<3)continue;
-    const points=ids.map(i=>vertices[i]);
-    const winding=signedArea(points)>=0?1:-1;
-    // A common bevel section at every contour vertex joins *both*
-    // adjacent wall faces. Per-edge outward normals left open seams.
-    const normals=points.map((p,i)=>{
-      const before=points[(i+n-1)%n],after=points[(i+1)%n];
-      const l0=Math.hypot(p.x-before.x,p.y-before.y)||1;
-      const l1=Math.hypot(after.x-p.x,after.y-p.y)||1;
-      const tx=(p.x-before.x)/l0+(after.x-p.x)/l1;
-      const ty=(p.y-before.y)/l0+(after.y-p.y)/l1;
-      const len=Math.hypot(tx,ty)||1;
-      return[winding*ty/len,-winding*tx/len];
-    });
-    const layers=points.map((p,i)=>{
+    // One shared column per boundary vertex, with outward-facing normals
+    // computed from the actual refined cap. Covers both holes and exteriors.
+    const columns=[];
+    for(let i=0;i<n;i++){
+      const p=vertices[ids[i]],[nx,ny]=ring.outward[i];
       const f=xy(p,false),b=xy(p,true);
-      const hz=z(p,false)-offset,hb=offset-z(p,true);
-      const [nx,ny]=normals[i],row=[];
+      const above=z(p,false)-offset,below=offset-z(p,true),row=[];
       for(let j=0;j<=nSteps;j++){
-        const angle=Math.PI*j/nSteps,t=j/nSteps;
+        const angle=j/nSteps*Math.PI,t=j/nSteps;
         const bevel=Math.sin(angle)*(quality==='mobile'?.18:.24);
         const x=f[0]*(1-t)+b[0]*t+nx*bevel*W/r.width;
         const y=f[1]*(1-t)+b[1]*t-ny*bevel*H/r.height;
-        const dz=offset+Math.cos(angle)*(angle<=Math.PI/2?hz:hb);
-        row.push(add([x,y],dz,p));
+        const zz=offset+Math.cos(angle)*
+          (angle<=Math.PI*.5?above:below);
+        row.push(add([x,y],zz,p));
       }
-      return row;
-    });
+      columns.push(row);
+    }
     for(let i=0;i<n;i++){
-      const left=layers[i],right=layers[(i+1)%n];
-      for(let j=0;j<nSteps;j++){
-        const a=left[j],b=right[j],c=right[j+1],d=left[j+1];
-        rim.push(a,b,c,a,c,d);
-      }
+      const a=columns[i],b=columns[(i+1)%n];
+      for(let j=0;j<nSteps;j++)
+        rim.push(a[j],b[j],b[j+1],a[j],b[j+1],a[j+1]);
     }
   }
-  // Ear-clipped contours sometimes retain duplicate coplanar triangles
-  // where an ink contour has a touching/collinear run. Remove identical
-  // triangles by actual XYZ (not just vertex index) before calculating normals.
-  const triKey=i=>[pos[i*3],pos[i*3+1],pos[i*3+2]]
-    .map(v=>Math.round(v*1e6)).join(':');
-  const seen=new Set();
-  function dedup(input){
-    const result=[];
-    for(let i=0;i<input.length;i+=3){
-      const k=[triKey(input[i]),triKey(input[i+1]),triKey(input[i+2])]
-        .sort().join('|');
-      if(seen.has(k))continue;
-      seen.add(k);
-      result.push(input[i],input[i+1],input[i+2]);
-    }
-    return result;
-  }
-  const cleanFaces=dedup(faces),cleanRim=dedup(rim);
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
-  geometry.setIndex([...cleanFaces,...cleanRim]);
-  geometry.addGroup(0,cleanFaces.length,0);
-  geometry.addGroup(cleanFaces.length,cleanRim.length,1);
+  geometry.setIndex([...faces,...rim]);
+  geometry.addGroup(0,faces.length,0);
+  geometry.addGroup(faces.length,rim.length,1);
   geometry.computeVertexNormals();
   const anchors=boundaries.flatMap(line=>{
     const spacing=Math.max(1,Math.floor(line.indices.length/24));
@@ -151,10 +130,10 @@ function regionGeometry(r,{mode,method,depth,phiPull,fidelity,
       return new THREE.Vector3(v[0],v[1],z(p,false));
     });
   });
-  return{geometry,anchors,zLayer:offset,triangles:(cleanFaces.length+cleanRim.length)/3,
-    roundedRimTriangles:cleanRim.length/3,boundaryLoops:boundaries.length};
+  return{geometry,anchors,zLayer:offset,triangles:(faces.length+rim.length)/3,
+    roundedRimTriangles:rim.length/3,boundaryLoops:boundaries.length};
 }
-function actualStrokes(group,strokes,depth,material,max){
+function actualStrokes(group,strokes,depth,material,max,zBase=0){
   let count=0;
   for(const s of strokes||[]){
     if(count>=max)break;
@@ -163,7 +142,7 @@ function actualStrokes(group,strokes,depth,material,max){
     const p=s.points.filter(v=>Number.isFinite(v.x)&&Number.isFinite(v.y));
     if(p.length<3)continue;
     const line=p.map((v,i)=>new THREE.Vector3(v.x,v.y,
-      depth*(.17+.22*Math.sin(i/(p.length-1)*Math.PI))));
+      zBase+depth*(.17+.22*Math.sin(i/(p.length-1)*Math.PI))));
     const curve=new THREE.CatmullRomCurve3(line,false,'centripetal');
     const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,
       Math.min(90,Math.max(16,p.length)),clamp((s.width||.009)*.65,.0028,.015),8,false),
@@ -230,8 +209,11 @@ export function buildV4Sculpture(method,{
     triangles+=result.triangles;rim+=result.roundedRimTriangles;
     items.push({...result,color:r.color});
   }
+  const layers=items.map(x=>x.zLayer).sort((a,b)=>a-b);
+  const midLayer=layers.length?layers[layers.length>>1]:0;
   const sourceStrokes=(method==='gesture'||method==='assembly')?
-    actualStrokes(group,strokes,depth,material,quality==='mobile'?10:22):0;
+    actualStrokes(group,strokes,depth,material,
+      quality==='mobile'?10:22,midLayer):0;
   const links=(method==='gesture'||method==='assembly')?
     connectRegions(group,items,connection,material,quality):0;
   const bounds=new THREE.Box3().setFromObject(group);
