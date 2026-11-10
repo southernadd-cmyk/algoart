@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {resolveStudyMaterial} from '../visit/study-material.mjs';
 import {METHODS,PHI,GOLDEN_ANGLE,extractRuleMarks,buildRuleSculpture,disposeRuleSculpture} from './sculpture-rules.mjs';
+import {buildJSCADSculpture,disposeJSCADSculpture} from './sculpture-csg.mjs';
 
 const $=id=>document.getElementById(id);
 const scene=new THREE.Scene();
@@ -47,7 +48,7 @@ block(18,6,.2,0,3,-7,'#d9ccba');
 block(.2,6,15,-8.7,3,0,'#d3c4b1');
 block(.2,6,15,8.7,3,0,'#d3c4b1');
 const centres=[-5.1,-1.7,1.7,5.1];
-const titles=['GOLDEN-ANGLE PETALS','PHI RIBBONS','PIGMENT FORMS','RULE-BASED HYBRID'];
+const titles=['JSCAD PETALS','JSCAD RIBBONS','JSCAD PIGMENT','JSCAD HYBRID'];
 function labelTexture(title){
   const el=document.createElement('canvas');
   el.width=512;el.height=128;
@@ -59,6 +60,9 @@ function labelTexture(title){
   const t=new THREE.CanvasTexture(el);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 const stages=[],active=[];
+let pendingRender=0;
+let currentEngine='';
+const jscad=window.jscadModeling;
 for(let i=0;i<4;i++){
   const x=centres[i];
   block(1.64,.75,1.48,x,.375,0,'#d1c7b6');
@@ -110,43 +114,68 @@ function focus(side='front'){
   camera.position.set(...(positions[side]||positions.front));
   controls.update();
 }
+function renderMode(){
+  return $('geometryMode').value;
+}
+function disposeAny(group){
+  if(!group)return;
+  if(group.userData.engine==='jscad-csg-v1')disposeJSCADSculpture(group);
+  else disposeRuleSculpture(group);
+}
 function replaceSculptures(marks,entry){
-  let candidates=[];
+  const mode=renderMode();
+  if(mode==='jscad'&&!jscad)throw new Error(
+    'JSCAD did not load. The rule-only version remains available from the Geometry selector.'
+  );
+  const depth=Number($('depth').value)/100;
+  const candidates=[];
   try{
-    candidates=METHODS.map(method=>buildRuleSculpture(method,marks,{
-      depth:Number($('depth').value)/100
-    }));
+    for(const method of METHODS){
+      const obj=mode==='jscad'
+        ?buildJSCADSculpture(method,marks,jscad,{depth})
+        :buildRuleSculpture(method,marks,{depth});
+      candidates.push(obj);
+    }
   }catch(e){
-    candidates.forEach(disposeRuleSculpture);
+    candidates.forEach(disposeAny);
     throw e;
   }
   for(let i=0;i<4;i++){
-    const old=active[i];
-    if(old)disposeRuleSculpture(old);
+    if(active[i])disposeAny(active[i]);
     active[i]=candidates[i];
     stages[i].add(candidates[i]);
   }
-  const position=marks.map(m=>({x:m.x,y:m.y,kind:m.kind}));
+  currentEngine=mode==='jscad'?'jscad-csg-v1':'rules-v1';
   window.__sculptureLabStatus={
     ready:true,
-    engine:'rules-v1',
+    engine:currentEngine,
     usesModel:false,
     usesExtrusion:false,
+    usesJSCAD:mode==='jscad',
     date:currentDate,
     imageFile:chosenImage,
     seed:entry.seed,
-    sourceMarks:position,
-    depth:Number($('depth').value)/100,
+    sourceMarks:marks.map(m=>({x:m.x,y:m.y,kind:m.kind})),
+    depth,
     methods:candidates.map(c=>{
       const box=new THREE.Box3().setFromObject(c);
       const size=box.getSize(new THREE.Vector3());
       let meshes=0,polys=0;
-      c.traverse(o=>{if(o.isMesh){meshes++;polys+=o.geometry?.index?.count/3||0;}});
+      c.traverse(o=>{
+        if(o.isMesh){
+          meshes++;
+          polys+=(o.geometry?.index?.count||o.geometry?.attributes?.position?.count||0)/3;
+        }
+      });
       return {
         method:c.userData.method,meshes,polys,
-        elementCounts:c.userData.elementCounts,
+        elementCounts:c.userData.elementCounts||null,
         sourceAnchors:c.userData.sourceAnchors,
-        extent:[size.x,size.y,size.z]
+        extent:[size.x,size.y,size.z],
+        csgPolygons:c.userData.csgPolygons||0,
+        subtractApplied:c.userData.subtractApplied||false,
+        inputVolume:c.userData.inputVolume||0,
+        outputVolume:c.userData.outputVolume||0
       };
     })
   };
@@ -156,8 +185,15 @@ function rebuild(){
   if(!currentMarks)return;
   const entry=entries.find(e=>e.imageFile===chosenImage);
   if(!entry)return;
-  replaceSculptures(currentMarks,entry);
-  status('Rules-only • '+currentMarks.length+' source-derived marks • four 360° sculptures');
+  try{
+    status('Constructing '+(renderMode()==='jscad'?'fused JSCAD solids':'individual rule solids')+'…');
+    replaceSculptures(currentMarks,entry);
+    status((renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
+      ' • '+currentMarks.length+' source-derived marks • four 360° sculptures');
+  }catch(error){
+    status('Cannot build '+renderMode()+' sculpture: '+error.message);
+    console.error(error);
+  }
 }
 async function choosePainting(filename){
   chosenImage=filename;
@@ -179,7 +215,8 @@ async function choosePainting(filename){
     const q=new URL(location.href);
     q.searchParams.set('date',currentDate);q.searchParams.set('image',filename);
     history.replaceState(null,'',q);
-    status('Rules-only • '+marks.length+' classified marks • φ-controlled 3D forms');
+    status((renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
+      ' • '+marks.length+' classified source marks • φ-driven 3D');
   } catch(e) {
     window.__sculptureLabStatus={ready:false,error:e.message};
     status('Could not construct sculpture: '+e.message);
@@ -214,10 +251,9 @@ $('orbitToggle').addEventListener('click',()=>{
   $('orbitToggle').textContent=controls.autoRotate?'Stop rotation':'Auto rotate';
   $('orbitToggle').setAttribute('aria-pressed',String(controls.autoRotate));
 });
-$('depth').addEventListener('input',()=>{
-  $('depthValue').textContent=$('depth').value+'%';
-  rebuild();
-});
+$('depth').addEventListener('input',()=>{$('depthValue').textContent=$('depth').value+'%';});
+$('depth').addEventListener('change',rebuild);
+$('geometryMode').addEventListener('change',rebuild);
 const keys=new Set();
 addEventListener('keydown',e=>{if(e.target?.matches('select,button,input,textarea'))return;keys.add(e.key.toLowerCase());});
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
