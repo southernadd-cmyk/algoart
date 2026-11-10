@@ -1,0 +1,37 @@
+name: Pages deployment safety checks
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/deploy-pages.yml'
+      - '.github/workflows/pages-deploy-policy-check.yml'
+      - 'automation/pages-build-scope.mjs'
+      - 'automation/verify-pages-live.mjs'
+      - 'tests/pages-build-scope.test.mjs'
+      - 'tests/verify-pages-live.test.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-pages.yml'
+      - '.github/workflows/pages-deploy-policy-check.yml'
+      - 'automation/pages-build-scope.mjs'
+      - 'automation/verify-pages-live.mjs'
+      - 'tests/pages-build-scope.test.mjs'
+      - 'tests/verify-pages-live.test.mjs'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify static-only build isolation and failed deployment detection
+        run: |
+          node --check automation/pages-build-scope.mjs
+          node --check automation/verify-pages-live.mjs
+          node --test tests/pages-build-scope.test.mjs tests/verify-pages-live.test.mjs
