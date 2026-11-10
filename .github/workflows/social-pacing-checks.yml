@@ -14,6 +14,9 @@ on:
       - 'automation/captions.mjs'
       - 'automation/social-stagger.mjs'
       - 'automation/social-publish-policy.mjs'
+      - 'automation/publish-threads.mjs'
+      - 'automation/threads-publish-safety.mjs'
+      - 'tests/threads-publish-safety.test.mjs'
       - 'automation/threads-evening-feature.mjs'
       - 'tests/social-caption-rotation.test.mjs'
       - 'tests/social-stagger.test.mjs'
@@ -38,4 +41,5 @@ jobs:
             tests/social-caption-rotation.test.mjs \
             tests/social-caption-limits.test.mjs \
             tests/social-publish-policy.test.mjs \
-            tests/portrait-captions.test.mjs
+            tests/portrait-captions.test.mjs \
+            tests/threads-publish-safety.test.mjs
