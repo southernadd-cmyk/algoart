@@ -305,6 +305,7 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false
     sourceOrigin:exactStrokes.length?'original-engine-recorded':
       contourLayer?.userData.contours?'archived-pigment-contours':'sampled-pixels-fallback',
     sourceOriginalPoints:sourceLayer.userData.originalPointCount||0,
+    fineLinePaths:sourceLayer.userData.fineLinePaths||0,
     materialContours:contourLayer?.userData.contours||0,
     sourceDetailAnchors:sourceLayer.userData.sourceAnchors||
       exactStrokes.map(a=>({x:a.points[0]?.x,y:a.points[0]?.y,color:a.color})),
