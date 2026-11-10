@@ -1,94 +1,102 @@
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PROPORTION PIECE — Sculpture Lab</title>
+<meta name="theme-color" content="#202723">
+<title>PROPORTION PIECE · Sculpture Lab / XYZ</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#242927;color:#ede3d1;font-family:Arial,sans-serif;overflow:hidden}
-#view{width:100vw;height:100dvh;display:block;touch-action:none}
-header{position:absolute;top:0;left:0;right:0;z-index:2;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:16px;background:linear-gradient(#202725f5,#20272511)}
-h1{margin:0;font-size:.85rem;letter-spacing:.13em}header small{display:block;color:#c8b995;font-size:.68rem;margin-top:5px;letter-spacing:.06em}
-select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;border-radius:2px;max-width:260px}
-#controls{display:flex;align-items:center;gap:8px;font-size:.72rem}#original{position:absolute;z-index:2;left:16px;top:90px;width:210px;padding:12px;background:#222c29e8;border-left:2px solid #b99a62;font-size:.75rem;line-height:1.5}
-#original img{width:128px;float:right;margin:0 0 9px 8px;max-height:120px;object-fit:contain}#original a{color:#f2d7aa}
-#legend{position:absolute;bottom:54px;left:50%;transform:translateX(-50%);width:min(860px,90vw);display:grid;grid-template-columns:repeat(4,1fr);gap:5px;pointer-events:none}
-#legend span{background:#26302ce6;border-top:2px solid #c2a16d;text-align:center;padding:8px 3px;font-size:.7rem}
-#info{position:absolute;bottom:12px;right:14px;background:#202825e6;max-width:380px;padding:9px 12px;font-size:.72rem}
-#hint{position:absolute;bottom:12px;left:14px;background:#202825d9;padding:9px;font-size:.72rem}
-@media(max-width:740px){header{display:block;padding:9px 10px;background:#202725f5}h1{font-size:.72rem}#controls{margin-top:9px}select{max-width:39vw;padding:7px;font-size:.67rem}#original{left:10px;top:106px;width:180px;padding:8px;font-size:.65rem}#original img{width:67px}#legend{width:98vw;bottom:62px;gap:2px}#legend span{font-size:.52rem;padding:6px 1px}#hint{bottom:8px;left:8px;font-size:.6rem;max-width:52vw}#info{bottom:8px;right:8px;font-size:.6rem;max-width:42vw}}
-#camera-controls{position:absolute;z-index:2;bottom:102px;left:50%;transform:translateX(-50%);display:flex;gap:6px;background:#26302de8;padding:7px;border:1px solid #917f61}
-#camera-controls button{background:#303b37;color:#efe2c5;border:1px solid #a9966d;padding:9px 12px;font-size:.72rem;cursor:pointer;white-space:nowrap}
-#camera-controls button:hover,#camera-controls button:focus-visible{background:#53645c;outline-color:#e3c586}
-#controls select:last-child{max-width:145px}
-@media(max-width:740px){#controls{gap:4px;flex-wrap:wrap}#controls select:last-child{max-width:30vw}#camera-controls{bottom:100px;padding:4px;gap:3px}#camera-controls button{font-size:.62rem;padding:7px 6px}#legend{bottom:60px}#original{max-width:150px}}
-#depth-controls{position:absolute;z-index:3;bottom:174px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:9px;padding:9px 14px;background:#26302dec;border:1px solid #a99772}
-#depth-controls label,#depth-controls output{white-space:nowrap;font-size:.7rem;color:#ead8b4}
-#depth-controls select{font-size:.7rem;padding:7px;max-width:215px}
-#depth-controls input{width:112px;accent-color:#d7b87e}
-#depth-controls output{width:40px;text-align:right}
-@media(max-width:740px){#depth-controls{bottom:151px;gap:6px;padding:7px;max-width:98vw;flex-wrap:wrap;justify-content:center}#depth-controls label,#depth-controls output{font-size:.64rem}#depth-controls select{max-width:160px;font-size:.6rem;padding:5px}#depth-controls input{width:91px}}
+:root{color-scheme:dark;--ink:#f2e9d8;--dark:#222b27;--line:#83765e;--bronze:#c5a776}
+*{box-sizing:border-box}
+body{margin:0;color:var(--ink);background:#242b28;font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif;overflow:hidden}
+#view{display:block;width:100vw;height:100dvh;touch-action:none}
+button,select,input{font:inherit}
+button,select{background:#27322e;color:var(--ink);border:1px solid #99825d;border-radius:2px}
+button{padding:9px 13px;cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #efd3a3}
+button:hover{background:#425047}
+select{padding:8px;max-width:245px;min-width:0}
+header{z-index:5;position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 18px;background:linear-gradient(#18211ef9,#18211edf 80%,#18211e00)}
+h1{font-size:.85rem;letter-spacing:.15em;margin:0;font-weight:650}
+header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;color:#d9c19a}
+#selectors{display:flex;align-items:center;gap:9px;font-size:.72rem}
+#sourceBox{z-index:4;position:absolute;left:15px;top:94px;width:170px;padding:13px;background:#1b2622ef;border-left:2px solid var(--bronze);box-shadow:0 8px 32px #0004}
+#thumb{display:block;width:100%;height:142px;object-fit:contain;margin:2px auto 9px}
+#caption{display:block;font-size:.78rem;line-height:1.5}
+#sourceEvidence{font-size:.67rem;color:#d2be9c;margin:8px 0}
+#source{color:#f1d5a4;font-size:.73rem}
+#controlsPanel{z-index:4;position:absolute;right:14px;top:94px;width:218px;padding:15px;background:#1b2622ed;border-left:2px solid var(--bronze)}
+#controlsPanel h2{font-size:.73rem;letter-spacing:.12em;margin:0 0 10px}
+.control{display:grid;grid-template-columns:1fr auto;gap:3px;margin:10px 0}
+.control label{font-size:.72rem}
+.control output{font-variant-numeric:tabular-nums;color:#e6cda2;font-size:.7rem}
+.control input[type=range]{grid-column:1/3;width:100%;accent-color:#c4a774}
+#colourMode{width:100%;max-width:none;font-size:.75rem}
+.check{margin-top:12px;display:flex;gap:8px;align-items:center;font-size:.72rem}
+#controlsPanel p{font-size:.67rem;line-height:1.5;color:#c6b9a0}
+#legend{z-index:3;position:absolute;left:50%;transform:translateX(-50%);bottom:100px;display:grid;grid-template-columns:repeat(4,1fr);width:min(750px,82vw);gap:5px;pointer-events:none}
+#legend span{font-size:.72rem;text-align:center;background:#202a25de;padding:10px 4px;border-top:2px solid #bd9e69}
+#cameraControls{position:absolute;z-index:4;left:50%;bottom:45px;transform:translateX(-50%);display:flex;gap:5px;padding:7px;background:#202a25e8;border:1px solid #887655}
+#cameraControls button{font-size:.73rem;white-space:nowrap}
+#status{position:absolute;z-index:3;bottom:7px;right:13px;padding:5px 8px;background:#1c2520da;font-size:.68rem;max-width:63vw}
+#help{position:absolute;z-index:3;bottom:7px;left:13px;padding:5px 8px;background:#1c2520da;font-size:.68rem}
 #settingsToggle{display:none}
-@media(max-width:740px){
-  #settingsToggle{
-    display:block;position:absolute;z-index:4;bottom:150px;left:50%;
-    transform:translateX(-50%);padding:8px 18px;border:1px solid #ad956d;
-    background:#26302df1;color:#f5dfba;font-size:.72rem;cursor:pointer
-  }
-  #depth-controls:not(.expanded){display:none}
-  #depth-controls.expanded{bottom:191px;z-index:4;max-height:45dvh;overflow-y:auto}
-  #original{max-height:156px;overflow-y:auto}
+@media(max-width:900px){
+  header{padding:9px 11px;display:block}h1{font-size:.74rem}#selectors{margin-top:7px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px}
+  #selectors select{width:100%;max-width:none}
+  #sourceBox{top:170px;left:7px;width:110px;padding:7px}
+  #thumb{height:90px;margin-bottom:5px}
+  #caption{font-size:.62rem}
+  #sourceEvidence{font-size:.57rem;max-height:36px;overflow:hidden}
+  #source{font-size:.60rem}
+  #controlsPanel{display:none;top:auto;bottom:154px;left:50%;right:auto;transform:translateX(-50%);width:min(360px,95vw);max-height:47dvh;overflow-y:auto;padding:12px}
+  #controlsPanel.expanded{display:block}
+  #settingsToggle{display:block;position:absolute;z-index:5;bottom:151px;left:50%;transform:translateX(-50%);padding:7px 14px;font-size:.72rem}
+  #legend{width:98vw;bottom:94px;gap:2px}
+  #legend span{font-size:.57rem;padding:7px 2px}
+  #cameraControls{bottom:42px;width:97vw;justify-content:center;padding:5px}
+  #cameraControls button{padding:7px 6px;font-size:.66rem}
+  #help{display:none}#status{max-width:100%;left:8px;right:8px;text-align:center;font-size:.63rem}
 }
-@media(max-width:740px){
-  #original {
-    left:8px;top:clamp(225px,27dvh,295px);width:108px;max-width:108px;
-    max-height:159px;padding:6px 6px 8px;overflow:hidden;
-    background:#222c29d6;border-left-width:2px;text-align:center
-  }
-  #original img {
-    width:84px;height:105px;max-height:105px;float:none;
-    display:block;object-fit:contain;margin:2px auto 4px
-  }
-  #original strong,#original p {display:none}
-  #original a{display:block;font-size:.57rem;line-height:1.25}
-  #controls {display:grid;grid-template-columns:max-content minmax(0,1fr);
-    gap:5px 8px;width:100%;margin-top:8px}
-  #controls select,#controls select:last-child {max-width:none;width:100%;min-width:0}
-}
+@media(max-height:600px){#sourceBox{top:125px}#controlsPanel{top:90px;max-height:60dvh;overflow:auto}#legend{bottom:86px}}
 </style>
-<script src="https://unpkg.com/@jscad/modeling@2.13.0" defer></script>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script></head>
-<body><canvas id="view" aria-label="Four source-painted three-dimensional sculptures with four experimental rounded backs"></canvas>
-<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>One source painting · four rounded-body experiments · original museum pins.</small></div>
-<div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Soft shoulder</option><option value="1">2 · Golden spiral</option><option value="2">3 · Rounded pebble</option><option value="3">4 · Flowing folds</option></select></div></header>
-<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>Four experimental rear-volume shapes using the same archived painting and the approved museum pin. Switch Body study to Original mounts to compare the previous supports.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
-<div id="legend"><span>01 · Soft shoulder / museum pin</span><span>02 · Golden spiral / museum pin</span><span>03 · Rounded pebble / museum pin</span><span>04 · Flowing folds / museum pin</span></div>
-<button id="settingsToggle" type="button" aria-controls="depth-controls" aria-expanded="false">Sculpture settings</button>
-<div id="depth-controls">
-<label for="geometryMode">Geometry</label>
-<select id="geometryMode" aria-label="Compare JSCAD fused solids to separate rules">
-<option value="surface" selected>Painted solid · original material</option>
-<option value="jscad">JSCAD / fused solids (legacy study)</option>
-<option value="rules">Separate rule forms</option>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="view" aria-label="Four source-derived real XYZ sculptures on gallery plinths"></canvas>
+<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>V2 · THE PAINTING AS A SPATIAL COMPOSITION</small></div>
+<div id="selectors">
+<label for="day">Archive day</label><select id="day"></select>
+<label for="painting">Source painting</label><select id="painting"></select>
+<label for="focus">View</label>
+<select id="focus" aria-label="Show all sculptures or focus on one">
+<option value="all">Compare four engines</option>
+<option value="0">01 · Strand / Orbital</option>
+<option value="1">02 · Ribbon / Surface</option>
+<option value="2">03 · Mass / Strata</option>
+<option value="3">04 · Hybrid / Confluence</option>
 </select>
-<label for="bodyStudy">Body study</label>
-<select id="bodyStudy" aria-label="Compare rounded body shapes or original mounting studies">
-<option value="compare" selected>Four rounded backs · museum pins</option>
-<option value="shoulder">All · softened shoulders</option>
-<option value="spiral">All · golden-angle spiral</option>
-<option value="pebble">All · rounded pigment masses</option>
-<option value="fold">All · flowing rear folds</option>
-<option value="original">Original bodies · four mounts</option>
-</select>
-<label for="sourceMode">Mark source</label>
-<select id="sourceMode" aria-label="Choose original recorded source or raster inference">
-<option value="original" selected>Recorded drawing + paint contours</option>
-<option value="raster">Previous pixel inference</option>
-</select>
-<label for="resemblance" title="Adjusts only the optional JSCAD comparison geometry">JSCAD source fidelity</label>
-<input id="resemblance" type="range" min="0" max="100" step="5" value="85" aria-label="Source painting resemblance">
-<output id="resemblanceValue" for="resemblance">85%</output>
-<label for="depth">3D development</label>
-<input id="depth" type="range" min="55" max="150" step="5" value="100" aria-label="Depth of sculptural development">
-<output id="depthValue" for="depth">100%</output>
+</div></header>
+<aside id="sourceBox"><img id="thumb" alt="Original archived painting">
+<strong id="caption">Reading archive…</strong>
+<div id="sourceEvidence">Extracting source structure…</div>
+<a id="source" target="_blank" rel="noopener noreferrer">Open source painting</a></aside>
+<aside id="controlsPanel">
+<h2>SPATIAL CONSTRUCTION</h2>
+<div class="control"><label for="phi">φ structural pull</label><output id="phiValue">80%</output><input id="phi" type="range" min="0" max="100" value="80" step="5"></div>
+<div class="control"><label for="abstraction">Spatial abstraction</label><output id="abstractionValue">72%</output><input id="abstraction" type="range" min="0" max="100" value="72" step="4"></div>
+<div class="control"><label for="depth">XYZ spread</label><output id="depthValue">85%</output><input id="depth" type="range" min="40" max="130" value="85" step="5"></div>
+<div class="control"><label for="connection">Connection strength</label><output id="connectionValue">65%</output><input id="connection" type="range" min="0" max="100" value="65" step="5"></div>
+<label for="colourMode">Surface character</label>
+<select id="colourMode"><option value="pigment">Source pigment colours</option><option value="bronze">Single patinated bronze</option></select>
+<label class="check"><input type="checkbox" id="showGraph"> Show XYZ composition graph</label>
+<p>Geometry is reconstructed from gestures, masses and their connections. No image plane or silhouette extrusion. A museum pin anchors each piece.</p>
+</aside>
+<div id="legend"><span>01 · STRAND / ORBITAL</span><span>02 · RIBBON / SURFACE</span><span>03 · MASS / STRATA</span><span>04 · HYBRID / CONFLUENCE</span></div>
+<button id="settingsToggle" aria-controls="controlsPanel" aria-expanded="false">Sculpture controls</button>
+<div id="cameraControls">
+<button id="front">Front</button><button id="side">Side</button>
+<button id="back">Back</button><button id="threequarter">3/4 view</button>
+<button id="autoRotate" aria-pressed="false">Auto orbit</button>
 </div>
-<div id="hint">Drag: orbit · Scroll: zoom · WASD: move · Q/E: turn</div><div id="camera-controls"><button id="front" type="button">Front</button><button id="side" type="button">Side</button><button id="back" type="button">Back</button><button id="orbitToggle" type="button" aria-pressed="false">Auto rotate</button></div><div id="info" role="status" aria-live="polite">Preparing sculpture room…</div>
-<script type="module" src="./lab-360.mjs?v=12-rounded-backs"></script></body></html>
+<div id="help">Drag to orbit · Scroll to zoom · WASD to move · Q/E to turn</div>
+<div id="status" role="status" aria-live="polite">Preparing Sculpture Lab v2…</div>
+<script type="module" src="./lab-v2.mjs?v=2-xyz-first"></script>
+</body></html>
