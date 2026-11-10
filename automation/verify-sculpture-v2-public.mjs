@@ -15,7 +15,17 @@ const sha=b=>createHash('sha256').update(b).digest('hex');
 async function readAndVerify(path,expectedSha,expectedMime,expectedSize){
   assert.ok(path.startsWith(PREFIX)&&!path.includes('..'),'Unsafe public asset path');
   const url=worker+'/'+path;
-  const response=await fetch(url,{headers:{Origin:PAGES},signal:AbortSignal.timeout(90000)});
+  // Workers.dev routing may take several seconds to become visible to all
+  // edges after Wrangler confirms deployment. Retry only transient 404/503.
+  let response;
+  for(let attempt=0;attempt<12;attempt++){
+    response=await fetch(url,{headers:{Origin:PAGES},signal:AbortSignal.timeout(90000)});
+    if(response.status===200)break;
+    if(![404,502,503,504].includes(response.status)||attempt===11)break;
+    await response.body?.cancel();
+    console.log('V2_WORKER_PROPAGATING '+JSON.stringify({asset:path,attempt:attempt+1,status:response.status}));
+    await new Promise(resolve=>setTimeout(resolve,4000));
+  }
   assert.equal(response.status,200,'Failed GET '+url+' '+response.status);
   assert.equal(response.headers.get('access-control-allow-origin'),PAGES,'Incorrect CORS on '+path);
   assert.equal(response.headers.get('content-type'),expectedMime,'Incorrect MIME on '+path);
