@@ -29,10 +29,12 @@ function inside(point,points){
 }
 export function extractContours(r,step=.5){
   const nx=Math.ceil((r.rw+2)/step),ny=Math.ceil((r.rh+2)/step);
-  const x0=r.minX-1,y0=r.minY-1,nx1=nx+1;
+  // Avoid the exact half-occupancy pixel-edge isovalue.
+  const x0=r.minX-1+step*.27,y0=r.minY-1+step*.41,nx1=nx+1;
+  const field=r.soft||r.mask;
   const grid=new Float32Array(nx1*(ny+1));
   for(let y=0;y<=ny;y++)for(let x=0;x<=nx;x++)
-    grid[y*nx1+x]=sampleRegion(r,r.mask,x0+x*step,y0+y*step);
+    grid[y*nx1+x]=sampleRegion(r,field,x0+x*step,y0+y*step);
   const edges=[],byPoint=new Map();
   function add(a,b){
     if(key(a.x,a.y)===key(b.x,b.y))return;
@@ -80,32 +82,33 @@ export function extractContours(r,step=.5){
       edge=other;
     }
     if(!closed||coords.length<3||Math.abs(signedArea(coords))<.25)continue;
-    let p=coords;
-    for(let pass=0;pass<2;pass++){
+    // Remove near-coincident points before Taubin smoothing.
+    let p=[];
+    for(const c of coords){
+      const last=p[p.length-1];
+      if(!last||Math.hypot(c.x-last.x,c.y-last.y)>=step*.35)p.push(c);
+    }
+    while(p.length>3&&Math.hypot(p[0].x-p[p.length-1].x,
+      p[0].y-p[p.length-1].y)<step*.35)p.pop();
+    if(p.length<3)continue;
+    // Non-shrinking smoothing preserves the exterior/interior proportions.
+    for(let pass=0;pass<4;pass++)for(const f of [.5,-.53]){
       p=p.map((c,i)=>{
         const a=p[(i+p.length-1)%p.length],b=p[(i+1)%p.length];
-        return{x:c.x*.76+.12*(a.x+b.x),y:c.y*.76+.12*(a.y+b.y)};
+        return{x:c.x+f*((a.x+b.x)*.5-c.x),
+          y:c.y+f*((a.y+b.y)*.5-c.y)};
       });
     }
-    // Earcut/ShapeUtils may discard collinear contour vertices. If our
-    // rounded walls retain those discarded vertices, edges no longer pair
-    // up with the triangulated caps (non-manifold spikes and overlaps).
-    // Simplify before *both* cap triangulation and rim generation.
-    for(let pass=0;pass<5&&p.length>5;pass++){
-      let changed=false;
-      const candidate=[];
-      for(let i=0;i<p.length;i++){
-        const a=p[(i+p.length-1)%p.length],b=p[i],
-          c=p[(i+1)%p.length];
-        const vx=c.x-a.x,vy=c.y-a.y,span=Math.hypot(vx,vy);
-        const sag=span?Math.abs(vx*(b.y-a.y)-vy*(b.x-a.x))/span:0;
-        const skip=(Math.hypot(b.x-a.x,b.y-a.y)<.16) ||
-          (sag<.035&&span<3.2);
-        if(skip){changed=true;continue;}
-        candidate.push(b);
+    // Straight diagonal runs must not yield zero-area ear-clipping slivers.
+    for(let changed=true;changed&&p.length>3;){
+      changed=false;
+      for(let i=0;i<p.length&&p.length>3;i++){
+        const a=p[(i+p.length-1)%p.length],c=p[i],b=p[(i+1)%p.length];
+        const twice=Math.abs((c.x-a.x)*(b.y-a.y)-(c.y-a.y)*(b.x-a.x));
+        if(twice<.02*Math.hypot(b.x-a.x,b.y-a.y)){
+          p.splice(i,1);changed=true;i--;
+        }
       }
-      if(candidate.length<5||!changed)break;
-      p=candidate;
     }
     if(Math.abs(signedArea(p))>.25)rings.push(p);
   }
@@ -192,6 +195,90 @@ export function buildPlanarRegion(r,{quality='desktop'}={}){
   }
   if(!triangles.length)throw Error('V4 marching squares triangulation found no surface');
   const boundaryCount=vertices.length;
-  const refined=subdivideConforming(vertices,triangles,quality==='mobile'?2.55:1.8,boundaries);
-  return{vertices,triangles:refined,boundaries,boundaryCount};
+  delaunayFlip(vertices,triangles);
+  const refined=subdivideConforming(vertices,triangles,quality==='mobile'?2.55:1.8);
+  // Construct the actual final perimeter after all edge subdivisions.
+  return{vertices,triangles:refined,boundaries:boundaryLoops(vertices,refined),
+    boundaryCount};
+}
+
+export function boundaryLoops(vertices,triangles){
+  const use=new Map(),next=new Map(),third=new Map();
+  for(const t of triangles)for(let e=0;e<3;e++){
+    const k=ek(t[e],t[(e+1)%3]);use.set(k,(use.get(k)||0)+1);
+  }
+  for(const t of triangles)for(let e=0;e<3;e++){
+    const a=t[e],b=t[(e+1)%3];
+    if(use.get(ek(a,b))!==1)continue;
+    next.set(a,b);third.set(a,t[(e+2)%3]);
+  }
+  const loops=[],seen=new Set();
+  for(const start of next.keys()){
+    if(seen.has(start))continue;
+    const indices=[],outward=[];
+    let v=start,guard=0;
+    while(!seen.has(v)&&guard++<=next.size){
+      seen.add(v);indices.push(v);v=next.get(v);
+      if(v===undefined)break;
+    }
+    if(indices.length<3)continue;
+    // Outward normal is away from the triangle on each boundary edge;
+    // the same calculation therefore handles islands and internal holes.
+    const edgeNormal=i=>{
+      const a=vertices[indices[i]],b=vertices[indices[(i+1)%indices.length]],
+        c=vertices[third.get(indices[i])];
+      let nx=b.y-a.y,ny=-(b.x-a.x);const l=Math.hypot(nx,ny)||1;
+      nx/=l;ny/=l;
+      if(nx*(c.x-a.x)+ny*(c.y-a.y)>0){nx=-nx;ny=-ny;}
+      return[nx,ny];
+    };
+    const normals=indices.map((_,i)=>edgeNormal(i));
+    for(let i=0;i<indices.length;i++){
+      const p=normals[(i+indices.length-1)%indices.length],q=normals[i];
+      const x=p[0]+q[0],y=p[1]+q[1],l=Math.hypot(x,y)||1;
+      outward.push([x/l,y/l]);
+    }
+    loops.push({indices,outward});
+  }
+  return loops;
+}
+// Flip interior diagonals before refining, eliminating ear-clipped slivers.
+export function delaunayFlip(vertices,triangles,maxPasses=60){
+  const orient=(a,b,c)=>{
+    const p=vertices[a],q=vertices[b],r=vertices[c];
+    return(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);
+  };
+  const sign=Math.sign(triangles.reduce((v,t)=>v+orient(...t),0))||1;
+  const inCircle=(a,b,c,d)=>{
+    const [A,B,C,D]=[a,b,c,d].map(i=>vertices[i]);
+    const ax=A.x-D.x,ay=A.y-D.y,bx=B.x-D.x,by=B.y-D.y,
+      cx=C.x-D.x,cy=C.y-D.y;
+    return sign*((ax*ax+ay*ay)*(bx*cy-cx*by)-
+      (bx*bx+by*by)*(ax*cy-cx*ay)+
+      (cx*cx+cy*cy)*(ax*by-bx*ay));
+  };
+  for(let pass=0;pass<maxPasses;pass++){
+    const owner=new Map();
+    triangles.forEach((t,n)=>{for(let e=0;e<3;e++){
+      const k=ek(t[e],t[(e+1)%3]);
+      owner.set(k,(owner.get(k)||[]).concat(n));
+    }});
+    const touched=new Set();let flips=0;
+    for(const [k,list] of owner){
+      if(list.length!==2)continue;
+      const [n,m]=list;if(touched.has(n)||touched.has(m))continue;
+      const t=triangles[n],o=triangles[m];
+      const i=[0,1,2].find(e=>ek(t[e],t[(e+1)%3])===k);
+      const a=t[i],b=t[(i+1)%3],c=t[(i+2)%3];
+      const d=o.find(v=>v!==a&&v!==b);
+      if(!(inCircle(a,b,c,d)>1e-12))continue;
+      const t1=[a,d,c],t2=[d,b,c];
+      if(orient(...t1)*sign<=1e-12||orient(...t2)*sign<=1e-12)
+        continue;
+      triangles[n]=t1;triangles[m]=t2;
+      touched.add(n);touched.add(m);flips++;
+    }
+    if(!flips)break;
+  }
+  return triangles;
 }
