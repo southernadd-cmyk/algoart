@@ -71,7 +71,7 @@ export function fitModelToPlinth(root, {
   root.position.z -= centre.z;
   root.position.y += floor - box.min.y;
   root.updateMatrixWorld(true);
-  return box.getSize(new THREE.Vector3()).multiplyScalar(scale);
+  return box.getSize(new THREE.Vector3());
 }
 
 export function disposeAIModel(root) {
