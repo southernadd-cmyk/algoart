@@ -286,7 +286,7 @@ function cameraView(side = 'front') {
   const distance = focus === null ? 13.4 : 4.4;
   const target = new THREE.Vector3(x, focus === null ? 1.57 : 1.67, 0);
   const positions = {
-    front: new THREE.Vector3(x, focus === null ? 3.45 : 2.3, distance),
+    front: new THREE.Vector3(x, target.y, distance), // exact head-on source composition
     side: new THREE.Vector3(x + distance, 2.35, 0),
     back: new THREE.Vector3(x, 2.35, -distance)
   };
