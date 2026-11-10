@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {makeCaptions} from './captions.mjs';
+import {isSupportedSocialPublisherVersion} from './renderer-state.mjs';
 
 const b64=text=>Buffer.from(String(text||''),'utf8').toString('base64');
 function today(){
@@ -20,12 +21,12 @@ export function actionSlot(slot){
 }
 export function validateActionItem(item,day,orientation){
   if(!item||item.material!=='action'||item.orientation!==orientation||
-     item.rendererVersion!==9||
+     !isSupportedSocialPublisherVersion(item.rendererVersion)||
      !new RegExp('^'+day+'-'+(orientation==='portrait'?'ACP':'ACL')+'01$').test(item.id))
     throw Error('Invalid Action artwork identity');
   const link=new URL(item.shareUrl);
   if(!['action-v1','action-v2','action-v3','action-v4'].includes(link.searchParams.get('material'))||
-     link.searchParams.get('v')!=='9'||
+     link.searchParams.get('v')!==String(item.rendererVersion)||
      link.searchParams.get('seed')!==item.seed||
      link.searchParams.get('mode')!==item.mode||
      link.searchParams.get('fmt')!==(orientation==='portrait'?'portrait':null)){
