@@ -69,3 +69,5 @@ jobs:
           test -s gallery/visit/gallery-phi-bundle.js
 
 
+
+# Read-only parity verification on 2026-11-10; no production publication.
