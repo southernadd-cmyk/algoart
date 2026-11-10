@@ -1,0 +1,96 @@
+name: Isolated static-assets website canary
+# This is NOT production. Runs only on the experimental branch or manually.
+# Do not create a route, domain or redirect from the github.io site.
+on:
+  push:
+    branches: [experiment/cloudflare-static-assets-canary-20261110]
+    paths:
+      - '.github/workflows/static-assets-canary.yml'
+      - 'cloudflare/web-canary/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: independent-static-site-canary
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    if: github.repository == 'southernadd-cmyk/algoart'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Rebuild the current public gallery in isolation
+        run: |
+          npm ci
+          npm run gallery:bundle
+          npm run gallery:bundle:phi
+          if ! node automation/build-hybrid-tower-test.mjs; then
+            echo "::warning::Optional hybrid test tower unavailable; production assets unchanged"
+            rm -f gallery/hybrid-tower-test/index.html gallery/visit/gallery-phi-hybrid-test-bundle.js
+          fi
+          node --check gallery/visit/gallery-bundle.js
+          node --check gallery/visit/gallery-phi-bundle.js
+          node automation/validate-phi-archive.mjs
+          node --test tests/gallery-public-launch.test.mjs
+      - name: Assemble the same public static tree as GitHub Pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          for dir in about confluence css fonts js gallery press reels; do
+            if [[ -d "$dir" ]]; then cp -a "$dir" "_site/$dir"; fi
+          done
+          mkdir -p _site/preview/tissue-v8
+          cp test/tissue-v8/index.html _site/preview/tissue-v8/index.html
+          find . -maxdepth 1 -type f \\( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.json' -o -name '*.webmanifest' -o -name '*.xml' -o -name '*.txt' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.svg' -o -name '*.ico' -o -name '.nojekyll' \\) -exec cp -t _site -- {} +
+          find _site -type d \\( -name node_modules -o -name .git -o -name .github -o -name tests -o -name automation -o -name .chat-v2-staging \\) -prune -exec rm -rf -- {} +
+          test -s _site/index.html
+          test -s _site/confluence/index.html
+          test -s _site/gallery/visit/gallery-phi-bundle.js
+          test -s _site/gallery/sculpture-lab/lab-v2.mjs
+          test -s _site/preview/tissue-v8/index.html
+          test ! -e _site/test
+          python3 - <<'PY'
+          from pathlib import Path
+          files = [p for p in Path('_site').rglob('*') if p.is_file()]
+          oversized = [str(p) for p in files if p.stat().st_size > 25*1024*1024]
+          if len(files) > 20000 or oversized:
+              raise SystemExit(f'Exceeded Cloudflare static asset limits: {len(files)} files; oversized {oversized}')
+          print(f'CANARY STATIC PARITY: {len(files)} files, {sum(p.stat().st_size for p in files):,} bytes; all under Cloudflare file limits')
+          PY
+      - name: Validate isolated Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Missing CLOUDFLARE_API_TOKEN. No public site modified."; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID. No public site modified."; exit 1; }
+      - name: Deploy ONLY the new static-assets canary Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 deploy --config cloudflare/web-canary/wrangler.toml | tee /tmp/web-canary-deploy.txt
+      - name: Check the candidate's homepage, lab, and module
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\\.workers\\.dev' /tmp/web-canary-deploy.txt | head -1)"
+          test -n "$URL" || { echo "::error::Canary URL not returned by Wrangler"; exit 1; }
+          curl --fail --silent --show-error --location --retry 4 "$URL/algoart/" -o /tmp/canary-home.html
+          curl --fail --silent --show-error --location --retry 4 "$URL/algoart/gallery/sculpture-lab/" -o /tmp/canary-lab.html
+          curl --fail --silent --show-error --location --retry 4 "$URL/algoart/gallery/sculpture-lab/lab-v2.mjs" -o /tmp/canary-lab.mjs
+          grep -q 'PROPORTION PIECE' /tmp/canary-home.html
+          grep -q 'Sculpture Lab / XYZ' /tmp/canary-lab.html
+          grep -q 'Sculpture Lab v2' /tmp/canary-lab.mjs
+          echo "STATIC CANARY VERIFIED: $URL/algoart/"
