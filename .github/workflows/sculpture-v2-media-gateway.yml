@@ -1,0 +1,32 @@
+name: Sculpture V2 media gateway route safety
+
+on:
+  pull_request:
+    paths:
+      - 'cloudflare/media-read-only/**'
+      - 'tests/sculpture-v2-media-gateway.test.mjs'
+      - '.github/workflows/sculpture-v2-media-gateway.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'cloudflare/media-read-only/**'
+      - 'tests/sculpture-v2-media-gateway.test.mjs'
+      - '.github/workflows/sculpture-v2-media-gateway.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify read-only legacy and V2 routing
+        run: |
+          node --check cloudflare/media-read-only/src/worker.mjs
+          node --test tests/sculpture-v2-media-gateway.test.mjs
+          test ! -f cloudflare/media-read-only/src/.env
