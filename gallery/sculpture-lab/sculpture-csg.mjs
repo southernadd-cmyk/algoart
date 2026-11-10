@@ -76,14 +76,14 @@ function regionRule(f,mode,region,idx,depth){
     -.19*depth
   ];
   const marks=region.map(m=>ellipsoid([m.x,m.y,.30*depth],[
-    clamp(m.span*.30+.035,.075,.24),
-    clamp(m.breadth*.42+.045,.070,.19),
-    clamp((m.breadth*.33+.065)*depth,.085,.20*depth)
+    clamp(m.span*.24+.030,.055,.17),
+    clamp(m.breadth*.33+.032,.055,.14),
+    clamp((m.breadth*.30+.055)*depth,.067,.17*depth)
   ]));
-  const rear=ellipsoid(shellBack,[.13,.14,.20*depth]);
-  const edge=ellipsoid(shellEdge,[.13,.11,.15*depth]);
+  const rear=ellipsoid(shellBack,[.12,.12,.19*depth]);
+  const edge=ellipsoid(shellEdge,[.10,.09,.13*depth]);
   if(mode==='petal'){
-    const fin=ellipsoid([cx,cy,.45*depth],[.14+avg*.25,.16,.10*depth]);
+    const fin=ellipsoid([cx,cy,.45*depth],[.10+avg*.17,.105,.095*depth]);
     // A connected, curved lobe grows from the genuine front mark positions
     // into a lateral wing, then returns to the rear armature.
     return hullChain(...marks,fin,edge,rear);
@@ -192,26 +192,34 @@ export function jscadSolidToThree(solid,marks,depth,jscad) {
 export function buildJSCADSculpture(method,marks,jscad,{depth=1}={}) {
   if(!METHODS.includes(method))throw new Error('Invalid CSG method');
   const f=jscadFeatures(jscad);
-  const selected=selectCSGMarks(marks,10);
-  const numGroups=Math.min(4,Math.max(2,Math.ceil(selected.length/3)));
-  const groups=Array.from({length:numGroups},()=>[]);
-  for(const mark of selected){
-    // Stable geographic grouping: position and colour, not random turn order.
-    const best=groups
-      .map((g,i)=>{
-        if(!g.length)return {index:i,score:100-i*.1};
-        const m=g.reduce((a,b)=>({x:a.x+b.x/g.length,y:a.y+b.y/g.length}),{x:0,y:0});
-        const cost=Math.hypot(mark.x-m.x,mark.y-m.y);
-        const colour=new THREE.Color(mark.color);
-        const hue=g.reduce((sum,item)=>{
-          const c=new THREE.Color(item.color);
-          return sum+Math.hypot(colour.r-c.r,colour.g-c.g,colour.b-c.b);
-        },0)/g.length;
-        return {index:i,score:-(cost+hue*.13+g.length*.18)};
-      })
-      .sort((a,b)=>b.score-a.score)[0].index;
-    groups[best].push(mark);
+  const selected=selectCSGMarks(marks,12);
+  const numGroups=Math.min(6,Math.max(3,Math.ceil(selected.length/2)));
+  // Farthest-first spatial seeds; avoid connecting unrelated strokes into
+  // huge flat ribbons merely because they share a colour.
+  const centres=[selected[0]];
+  while(centres.length<numGroups&&centres.length<selected.length) {
+    let best=-1, next=null;
+    for(const mark of selected) {
+      if(centres.includes(mark))continue;
+      const distance=Math.min(...centres.map(c=>Math.hypot(
+        mark.x-c.x,mark.y-c.y)));
+      if(distance>best){best=distance;next=mark;}
+    }
+    if(!next)break;
+    centres.push(next);
   }
+  const groups=centres.map(()=>[]);
+  for(const mark of selected) {
+    const colour=new THREE.Color(mark.color);
+    const best=centres.map((centre,i)=>{
+      const c=new THREE.Color(centre.color);
+      const colourDistance=Math.hypot(colour.r-c.r,colour.g-c.g,colour.b-c.b);
+      const spatial=Math.hypot(mark.x-centre.x,mark.y-centre.y);
+      return {i,cost:spatial+colourDistance*.11};
+    }).sort((a,b)=>a.cost-b.cost||a.i-b.i)[0];
+    groups[best.i].push(mark);
+  }
+  // Source position defines region order; golden angle develops only the back.
   // Some regions are larger: no assumption that RGB segmentation yields a
   // specific number of elements across oil, tissue and watercolour.
   const forms=[];
