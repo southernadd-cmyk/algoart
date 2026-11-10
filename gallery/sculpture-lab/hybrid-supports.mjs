@@ -150,7 +150,10 @@ export function createHybridSupport(sculpture,variant,{pixels=null}={}){
   group.name='Hybrid support — '+variant;
   const brass=material('#665e4d',.54,.47);
   const patinated=material('#505a51',.72,.28);
-  const pigment=material(blendPigment(pixels,anchors.central),.83,.10);
+  // Undo the display-only lift when finding the source painting pixel.
+  const localPigmentPoint=anchors.central.clone();
+  localPigmentPoint.y-=sculpture.position.y;
+  const pigment=material(blendPigment(pixels,localPigmentPoint),.83,.10);
   const baseY=PLINTH_TOP_LOCAL_Y+.025;
   const points=[],feet=[];
   const addStem=(base,anchor,style,mat)=>{
