@@ -34,7 +34,11 @@ try{
   assert.ok((await page.locator('#frontScore').textContent()).includes('overlap'));
   assert.ok(lab.methods.every(m=>m.front>0&&m.rear>0));
   assert.ok(lab.methods.every(m=>m.support==='pin'&&m.supportAnchors===1));
-  assert.ok(new Set(lab.methods.map(m=>m.meshCount)).size>=3);
+  const [armature,fold,mass,hybrid]=lab.methods;
+  assert.ok(armature.rearRibCount>0&&armature.foldedSurfaceCount===0);
+  assert.ok(fold.foldedSurfaceCount>0&&fold.rearRibCount===0);
+  assert.ok(mass.sourceBody&&mass.rearRibCount>0);
+  assert.ok(hybrid.foldedSurfaceCount>0&&hybrid.rearRibCount>0);
   assert.equal(await page.locator('#source').count(),1);
   assert.equal(await page.locator('#showGraph').isChecked(),false);
   await page.locator('#focus').selectOption('all');
