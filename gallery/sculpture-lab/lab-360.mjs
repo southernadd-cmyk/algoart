@@ -48,9 +48,9 @@ function block(w,h,d,x,y,z,color,metalness=0) {
   return obj;
 }
 block(18,.24,15,0,-.12,0,'#735d47',.16);
-block(18,6,.2,0,3,-7,'#d9ccba');
+const rearWall=block(18,6,.2,0,3,-7,'#d9ccba');
 block(.2,6,15,-8.7,3,0,'#d3c4b1');
-block(.2,6,15,8.7,3,0,'#d3c4b1');
+const rightWall=block(.2,6,15,8.7,3,0,'#d3c4b1');
 const centres=[-5.1,-1.7,1.7,5.1];
 const titles=SUPPORT_VARIANTS.map(s=>'HYBRID · '+s.title.toUpperCase());
 function labelTexture(title){
@@ -181,7 +181,10 @@ function focus(side='front'){
   $('orbitToggle').setAttribute('aria-pressed','false');
   controls.target.set(x,y,0);
   const positions={
-    front:[x,y,dist],side:[x+dist,y,0],back:[x,y,-dist]
+    front:[x,y,dist],
+    // Full room: three-quarter view keeps all four mountings visible.
+    side:i==='all'?[7.4,y+.70,11.2]:[x+dist,y,0],
+    back:[x,y,-dist]
   };
   camera.position.set(...(positions[side]||positions.front));
   controls.update();
@@ -473,6 +476,10 @@ function frame(now){
     const stepAngle=(keys.has('q')?1:-1)*dt;
     camera.position.sub(controls.target).applyAxisAngle(new THREE.Vector3(0,1,0),stepAngle).add(controls.target);
   }
+  // Outside viewpoints must not look into the OPAQUE backs of the room.
+  // Restore the walls automatically as soon as the camera moves inside.
+  rightWall.visible=camera.position.x<8.55;
+  rearWall.visible=camera.position.z>-6.84;
   controls.update();renderer.render(scene,camera);
 }
 requestAnimationFrame(frame);
