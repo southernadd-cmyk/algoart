@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-11-10-G01-action-field-landscape.jpg": {
+      "desktop": "3d/2026-11-10-G01-action-field-landscape-1100.webp",
+      "mobile": "3d/2026-11-10-G01-action-field-landscape-640.webp"
+    },
+    "2026-11-10-G02-action-field-landscape.jpg": {
+      "desktop": "3d/2026-11-10-G02-action-field-landscape-1100.webp",
+      "mobile": "3d/2026-11-10-G02-action-field-landscape-640.webp"
+    },
+    "2026-11-10-G03-oil-spiral-portrait.jpg": {
+      "desktop": "3d/2026-11-10-G03-oil-spiral-portrait-1100.webp",
+      "mobile": "3d/2026-11-10-G03-oil-spiral-portrait-640.webp"
+    },
+    "2026-11-10-G04-watercolour-burst-portrait.jpg": {
+      "desktop": "3d/2026-11-10-G04-watercolour-burst-portrait-1100.webp",
+      "mobile": "3d/2026-11-10-G04-watercolour-burst-portrait-640.webp"
+    },
+    "2026-11-10-G05-watercolor-organic-portrait.jpg": {
+      "desktop": "3d/2026-11-10-G05-watercolor-organic-portrait-1100.webp",
+      "mobile": "3d/2026-11-10-G05-watercolor-organic-portrait-640.webp"
+    },
+    "2026-11-10-G06-watercolor-burst-landscape.jpg": {
+      "desktop": "3d/2026-11-10-G06-watercolor-burst-landscape-1100.webp",
+      "mobile": "3d/2026-11-10-G06-watercolor-burst-landscape-640.webp"
+    },
+    "2026-11-10-G07-action-spiral-landscape.jpg": {
+      "desktop": "3d/2026-11-10-G07-action-spiral-landscape-1100.webp",
+      "mobile": "3d/2026-11-10-G07-action-spiral-landscape-640.webp"
+    },
+    "2026-11-10-G08-marker-spiral-landscape.jpg": {
+      "desktop": "3d/2026-11-10-G08-marker-spiral-landscape-1100.webp",
+      "mobile": "3d/2026-11-10-G08-marker-spiral-landscape-640.webp"
+    },
+    "2026-11-10-G09-marker-field-portrait.jpg": {
+      "desktop": "3d/2026-11-10-G09-marker-field-portrait-1100.webp",
+      "mobile": "3d/2026-11-10-G09-marker-field-portrait-640.webp"
+    },
+    "2026-11-10-G10-watercolour-rects-landscape.jpg": {
+      "desktop": "3d/2026-11-10-G10-watercolour-rects-landscape-1100.webp",
+      "mobile": "3d/2026-11-10-G10-watercolour-rects-landscape-640.webp"
+    },
+    "2026-11-10-G11-oil-field-portrait.jpg": {
+      "desktop": "3d/2026-11-10-G11-oil-field-portrait-1100.webp",
+      "mobile": "3d/2026-11-10-G11-oil-field-portrait-640.webp"
+    },
+    "2026-11-10-G12-oil-spiral-portrait.jpg": {
+      "desktop": "3d/2026-11-10-G12-oil-spiral-portrait-1100.webp",
+      "mobile": "3d/2026-11-10-G12-oil-spiral-portrait-640.webp"
+    },
+    "2026-11-10-C01-portrait.jpg": {
+      "desktop": "3d/2026-11-10-C01-portrait-1100.webp",
+      "mobile": "3d/2026-11-10-C01-portrait-640.webp"
+    },
+    "2026-11-10-C02-landscape.jpg": {
+      "desktop": "3d/2026-11-10-C02-landscape-1100.webp",
+      "mobile": "3d/2026-11-10-C02-landscape-640.webp"
+    }
+  }
+}

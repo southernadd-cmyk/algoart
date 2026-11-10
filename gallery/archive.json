@@ -2,6 +2,21 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-10",
+      "cover": "2026-11-10-G01-action-field-landscape.jpg",
+      "coverOrientation": "landscape",
+      "count": 14,
+      "series": [
+        "Connected Fields",
+        "Golden Trajectories",
+        "Radiant Systems",
+        "Growth Systems",
+        "Orbital Studies",
+        "Recursive Divisions",
+        "Confluence"
+      ]
+    },
+    {
       "date": "2026-11-09",
       "cover": "2026-11-09-G01-oil-scribble-landscape.jpg",
       "coverOrientation": "landscape",
