@@ -37,19 +37,36 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
   #depth-controls.expanded{bottom:191px;z-index:4;max-height:45dvh;overflow-y:auto}
   #original{max-height:156px;overflow-y:auto}
 }
+@media(max-width:740px){
+  #original {
+    left:8px;top:clamp(225px,27dvh,295px);width:108px;max-width:108px;
+    max-height:159px;padding:6px 6px 8px;overflow:hidden;
+    background:#222c29d6;border-left-width:2px;text-align:center
+  }
+  #original img {
+    width:84px;height:105px;max-height:105px;float:none;
+    display:block;object-fit:contain;margin:2px auto 4px
+  }
+  #original strong,#original p {display:none}
+  #original a{display:block;font-size:.57rem;line-height:1.25}
+  #controls {display:grid;grid-template-columns:max-content minmax(0,1fr);
+    gap:5px 8px;width:100%;margin-top:8px}
+  #controls select,#controls select:last-child {max-width:none;width:100%;min-width:0}
+}
 </style>
 <script src="https://unpkg.com/@jscad/modeling@2.13.0" defer></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}</script></head>
 <body><canvas id="view" aria-label="Four sculpture methods in one three-dimensional test room"></canvas>
-<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>JSCAD solid modelling × painting-derived rules — no generative AI.</small></div>
+<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>The original material becomes a 360° sculpture — no generative AI.</small></div>
 <div id="controls"><label for="day">Date</label><select id="day"></select><label for="painting">Portrait</label><select id="painting"></select><label for="focus">Inspect</label><select id="focus" aria-label="Focus sculpture"><option value="all">Full room</option><option value="0">1 · Petals</option><option value="1">2 · Ribbons</option><option value="2">3 · Pigment</option><option value="3">4 · Hybrid</option></select></div></header>
-<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>Original V10 mark paths and finished paint contours become coloured 3D gestures; JSCAD shapes the rear.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
+<div id="original"><img id="thumb" alt="Original source painting for all four sculptures"><strong id="caption">Loading…</strong><p>Material preserved from the original painting on the actual sculpted surfaces. JSCAD remains available as a separate comparison.</p><a id="source" target="_blank" rel="noopener">Open original</a></div>
 <div id="legend"><span>01 · Golden-angle petals</span><span>02 · Phi ribbons</span><span>03 · Pigment volumes</span><span>04 · Rules hybrid</span></div>
 <button id="settingsToggle" type="button" aria-controls="depth-controls" aria-expanded="false">Sculpture settings</button>
 <div id="depth-controls">
 <label for="geometryMode">Geometry</label>
 <select id="geometryMode" aria-label="Compare JSCAD fused solids to separate rules">
-<option value="jscad" selected>JSCAD / fused solids</option>
+<option value="surface" selected>Painted solid · original material</option>
+<option value="jscad">JSCAD / fused solids (legacy study)</option>
 <option value="rules">Separate rule forms</option>
 </select>
 <label for="sourceMode">Mark source</label>
@@ -57,7 +74,7 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 <option value="original" selected>Recorded drawing + paint contours</option>
 <option value="raster">Previous pixel inference</option>
 </select>
-<label for="resemblance" title="Controls how many original painting marks remain visible as 3D gestures">Source resemblance</label>
+<label for="resemblance" title="Adjusts only the optional JSCAD comparison geometry">JSCAD source fidelity</label>
 <input id="resemblance" type="range" min="0" max="100" step="5" value="85" aria-label="Source painting resemblance">
 <output id="resemblanceValue" for="resemblance">85%</output>
 <label for="depth">3D development</label>
@@ -65,4 +82,4 @@ select{padding:9px;background:#28302d;color:#f4ebd9;border:1px solid #a99772;bor
 <output id="depthValue" for="depth">100%</output>
 </div>
 <div id="hint">Drag: orbit · Scroll: zoom · WASD: move · Q/E: turn</div><div id="camera-controls"><button id="front" type="button">Front</button><button id="side" type="button">Side</button><button id="back" type="button">Back</button><button id="orbitToggle" type="button" aria-pressed="false">Auto rotate</button></div><div id="info" role="status" aria-live="polite">Preparing sculpture room…</div>
-<script type="module" src="./lab-360.mjs?v=9-recorded-geometry"></script></body></html>
+<script type="module" src="./lab-360.mjs?v=10-material-volume"></script></body></html>
