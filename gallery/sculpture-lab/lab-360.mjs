@@ -9,6 +9,7 @@ import {buildJSCADSculpture,disposeJSCADSculpture} from './sculpture-csg.mjs';
 import {recordOriginalComposition} from './source-bridge.mjs';
 import {prepareOriginalStrokes} from './recorded-gestures.mjs';
 import {MATERIAL_SURFACE_VERSION,pigmentField,buildMaterialSculpture,disposeMaterialSculpture} from './material-surface.mjs';
+import {SUPPORT_VARIANTS,createHybridSupport,disposeHybridSupport} from './hybrid-supports.mjs';
 
 const $=id=>document.getElementById(id);
 const scene=new THREE.Scene();
@@ -51,7 +52,7 @@ block(18,6,.2,0,3,-7,'#d9ccba');
 block(.2,6,15,-8.7,3,0,'#d3c4b1');
 block(.2,6,15,8.7,3,0,'#d3c4b1');
 const centres=[-5.1,-1.7,1.7,5.1];
-const titles=['JSCAD PETALS','JSCAD RIBBONS','JSCAD PIGMENT','JSCAD HYBRID'];
+const titles=SUPPORT_VARIANTS.map(s=>'HYBRID · '+s.title.toUpperCase());
 function labelTexture(title){
   const el=document.createElement('canvas');
   el.width=512;el.height=128;
@@ -62,7 +63,7 @@ function labelTexture(title){
   c.fillStyle='#c0b5a0';c.font='19px Arial';c.fillText('φ : 1.618     ·     137.5°',256,93);
   const t=new THREE.CanvasTexture(el);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
-const stages=[],active=[];
+const stages=[],active=[],supports=[];
 let pendingRender=0;
 let currentEngine='';
 const jscad=window.jscadModeling;
@@ -200,9 +201,10 @@ function replaceSculptures(marks,entry){
     'JSCAD did not load. The rule-only version remains available from the Geometry selector.'
   );
   const depth=Number($('depth').value)/100;
-  const candidates=[];
+  const candidates=[],newSupports=[];
   try{
-    for(const method of METHODS){
+    for(const variant of SUPPORT_VARIANTS){
+      const method='hybrid';
       const obj=mode==='surface'
         ?buildMaterialSculpture(method,currentSourceData.pixels,
           currentSourceData.paintTexture,{
@@ -215,16 +217,27 @@ function replaceSculptures(marks,entry){
           sourceData:$('sourceMode').value==='original'?currentSourceData:null
         })
         :buildRuleSculpture(method,marks,{depth});
+      // Every plinth holds the EXACT SAME painted hybrid; translate it only
+      // as a whole to create a visually inspectable support gap.
+      const bounds=new THREE.Box3().setFromObject(obj);
+      obj.position.y=-.34-bounds.min.y;
+      obj.updateMatrixWorld(true);
       candidates.push(obj);
+      newSupports.push(createHybridSupport(obj,variant.id,{
+        pixels:currentSourceData?.pixels||null
+      }));
     }
   }catch(e){
+    newSupports.forEach(disposeHybridSupport);
     candidates.forEach(disposeAny);
     throw e;
   }
   for(let i=0;i<4;i++){
+    if(supports[i])disposeHybridSupport(supports[i]);
     if(active[i])disposeAny(active[i]);
     active[i]=candidates[i];
-    stages[i].add(candidates[i]);
+    supports[i]=newSupports[i];
+    stages[i].add(candidates[i],newSupports[i]);
   }
   currentEngine=mode==='surface'?MATERIAL_SURFACE_VERSION:
     mode==='jscad'?'jscad-csg-v1':'rules-v1';
@@ -235,6 +248,14 @@ function replaceSculptures(marks,entry){
     usesExtrusion:false,
     usesJSCAD:mode==='jscad',
     usesActualPaintTexture:mode==='surface',
+    identicalHybridOnAllPlinths:true,
+    supportVariants:SUPPORT_VARIANTS.map(v=>v.id),
+    supports:newSupports.map(s=>({variant:s.userData.variant,
+      anchors:s.userData.anchorPoints,feet:s.userData.plinthPoints,
+      plinthTopY:s.userData.plinthTopY,
+      anchorCount:s.userData.anchorCount,
+      supportMeshes:s.userData.supportMeshes,
+      attachedToActualMesh:s.userData.attachedToActualMesh})),
     separatePaintingOverlay:false,
     paintingFinish:currentSourceData?.material||null,
     date:currentDate,
@@ -252,7 +273,7 @@ function replaceSculptures(marks,entry){
       material:currentSourceData?.material||null,
       error:currentSourceData?.captureError||null
     },
-    methods:candidates.map(c=>{
+    methods:candidates.map((c,i)=>{
       const box=new THREE.Box3().setFromObject(c);
       const size=box.getSize(new THREE.Vector3());
       let meshes=0,polys=0;
@@ -264,6 +285,7 @@ function replaceSculptures(marks,entry){
       });
       return {
         method:c.userData.method,meshes,polys,
+        supportVariant:SUPPORT_VARIANTS[i].id,
         elementCounts:c.userData.elementCounts||null,
         sourceAnchors:c.userData.sourceAnchors,
         extent:[size.x,size.y,size.z],
@@ -298,7 +320,7 @@ function rebuild(){
   try{
     status('Constructing '+(renderMode()==='surface'?'source-painted 360° volumes':renderMode()==='jscad'?'fused JSCAD solids':'individual rule solids')+'…');
     replaceSculptures(currentMarks,entry);
-    status((renderMode()==='surface'?'Actual paint on 3D geometry':renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
+    status((renderMode()==='surface'?'Four painted hybrid sculptures / four mounting studies':renderMode()==='jscad'?'Four JSCAD hybrid mounts':'Four rule-built hybrid mounts')+
       ' • '+currentMarks.length+' marks • '+(window.__sculptureLabStatus.methods[0].sourceTraceCount||0)+' sculpted source traces');
   }catch(error){
     status('Cannot build '+renderMode()+' sculpture: '+error.message);
@@ -377,7 +399,7 @@ async function choosePainting(filename){
     const q=new URL(location.href);
     q.searchParams.set('date',currentDate);q.searchParams.set('image',filename);
     history.replaceState(null,'',q);
-    status((renderMode()==='surface'?'Source painting textured onto its own 3D shape':renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
+    status((renderMode()==='surface'?'Four identical painted hybrids with four physical mounts':renderMode()==='jscad'?'JSCAD hybrid supports':'Rule hybrid supports')+
       ' • '+marks.length+' pigment regions · '+(window.__sculptureLabStatus.methods[0].sourceTraceCount||0)+
       ' sculpted strokes · '+window.__sculptureLabStatus.methods[0].sourceOrigin);
   } catch(e) {
