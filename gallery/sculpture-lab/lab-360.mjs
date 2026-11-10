@@ -331,6 +331,11 @@ $('depth').addEventListener('input',()=>{$('depthValue').textContent=$('depth').
 $('depth').addEventListener('change',rebuild);
 $('geometryMode').addEventListener('change',rebuild);
 $('sourceMode').addEventListener('change',rebuild);
+$('settingsToggle').addEventListener('click',()=>{
+  const open=$('depth-controls').classList.toggle('expanded');
+  $('settingsToggle').setAttribute('aria-expanded',String(open));
+  $('settingsToggle').textContent=open?'Hide sculpture settings':'Sculpture settings';
+});
 $('resemblance').addEventListener('input',()=>{
   $('resemblanceValue').textContent=$('resemblance').value+'%';
 });
