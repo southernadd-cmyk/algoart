@@ -41,6 +41,11 @@ on:
         options:
           - landscape
           - portrait
+      date:
+        description: 'Recovery only: frozen historical London edition date (YYYY-MM-DD)'
+        type: string
+        required: false
+        default: ''
       live:
         description: 'Allow real posts on main only (never use on feature branch)'
         type: boolean
@@ -164,6 +169,21 @@ jobs:
           echo "pinterest_marker=$PI_MARKER" >> "$GITHUB_OUTPUT"
           echo "bluesky_marker=$BS_MARKER" >> "$GITHUB_OUTPUT"
 
+      - name: Reject unsafe backdated live dispatches
+        if: github.event_name == 'workflow_dispatch' && inputs.live == true && inputs.date != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          DATE="${{ inputs.date }}"
+          TODAY="$(TZ=Europe/London date +%F)"
+          EARLIEST="$(TZ=Europe/London date -d "$TODAY - 3 days" +%F)"
+          [[ "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && "$DATE" >= "$EARLIEST" && "$DATE" <= "$TODAY" ]] || {
+            echo "::error::Only the last 3 London edition dates may be recovered."; exit 1;
+          }
+          [[ "${DATE:0:7}" == "${TODAY:0:7}" ]] || {
+            echo "::error::Backdated recovery requires this month's immutable media release."; exit 1;
+          }
+
       - name: Restore the one immutable watercolour study built this morning
         id: cached
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
@@ -210,6 +230,15 @@ jobs:
             fi
           fi
           echo "ready=$READY" >> "$GITHUB_OUTPUT"
+
+      - name: Require frozen media for a backdated live recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.live == true && inputs.date != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ steps.cached.outputs.ready }}" == 'true' ]] || {
+            echo "::error::Frozen dated Watercolour assets missing: refusing regeneration on recovery."; exit 1;
+          }
 
       - name: Install Playwright
         if: steps.gate.outputs.should_run == 'true'
