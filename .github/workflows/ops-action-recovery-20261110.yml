@@ -96,3 +96,5 @@ jobs:
           echo 'Action recovery complete; no duplicate completion markers overwritten.' >> "$GITHUB_STEP_SUMMARY"
 
 # Non-publishing preflight invocation, 2026-11-10.
+
+# Run the independently verified guarded recovery on 10 November 2026.
