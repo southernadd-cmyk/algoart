@@ -48,8 +48,11 @@ jobs:
           import {socialPublishDecision} from './automation/social-publish-policy.mjs';
           const landscape=socialPublishDecision({date:'2026-11-09',slot:'1',job:'watercolour-landscape'});
           const portrait=socialPublishDecision({date:'2026-11-09',slot:'1',job:'watercolour-portrait'});
-          const expected=(o,p)=>Object.entries(o).every(([k,v])=>v===(k===p));
-          if(!expected(landscape,'bluesky')||!expected(portrait,'instagram'))
+          const targets=['instagram','threads','bluesky','pinterest'];
+          const expected=(o,p,alsoPinterest=false)=>targets.every(k=>o[k]===(k===p || (alsoPinterest&&k==='pinterest')));
+          // Pinterest also selects the portrait but is not enabled in the live
+          // account. Only recover the two configured destinations.
+          if(!expected(landscape,'bluesky')||!expected(portrait,'instagram',true))
             throw Error('Frozen 9 November publication policy has changed.');
           JS
           ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
