@@ -12,6 +12,8 @@ const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const W=1.34,H=1.88;
 export const MATERIAL_SURFACE_VERSION='paint-surface-v1';
+// Experimental profiles are opt-in. Archive/tower callers remain on 'original'.
+export const ROUNDED_BODY_PROFILES=Object.freeze(['shoulder','spiral','pebble','fold']);
 
 export function pigmentField(imageData,{material='marker',paper='#f5f0e6'}={}){
   const {width:w,height:h,data}=imageData||{};
@@ -87,7 +89,7 @@ export function materialFinish(material='marker'){
 // A changing x/y inverse map develops a twisted/tapered φ-related back.
 // We extract a single smooth isosurface using marching tetrahedra, not a
 // front plane joined to the back by long image-stretched wall strips.
-function undoBackWarp(method,x,y,z,depth){
+function undoBackWarp(method,x,y,z,depth,bodyProfile='original') {
   const t=clamp(-z/(depth*.78),0,1);
   const phase=GOLDEN_ANGLE*(y/H+.5)*PHI+x/PHI;
   let sx=1,sy=1,dx=0,dy=0;
@@ -108,10 +110,30 @@ function undoBackWarp(method,x,y,z,depth){
     dx=.15*t*Math.sin(phase*PHI)+.04*t*Math.cos(y*TAU);
     dy=.085*t*Math.cos(phase);
   }else throw Error('Unknown sculptural method '+method);
+  // Change the rear only; painting XY is preserved on the front.
+  if(bodyProfile!=='original'){
+    const u=clamp(t,0,1),ease=u*u*(3-2*u);
+    const golden=GOLDEN_ANGLE*(.5+y/H);
+    if(bodyProfile==='shoulder'){
+      sx*=1-.055*ease;sy*=1-.045*ease;
+      dx+=.025*ease*Math.sin(golden);
+    }else if(bodyProfile==='spiral'){
+      const turn=.46*ease*Math.sin(golden);
+      dx+=turn*y*.33;dy-=turn*x*.36;
+      sx*=1-.09*ease;
+    }else if(bodyProfile==='pebble'){
+      sx*=1+.085*ease;sy*=1+.045*ease;
+      dx+=.032*ease*Math.sin(golden*PHI);
+    }else if(bodyProfile==='fold'){
+      dx+=.12*ease*Math.sin(y*6.1+GOLDEN_ANGLE);
+      dy+=.047*ease*Math.sin(x*8.2+golden);
+      sx*=1-.06*ease;
+    }
+  }
   return [(x-dx)/sx,(y-dy)/sy];
 }
-function fieldAt(field,method,x,y,z,depth){
-  const [sx,sy]=undoBackWarp(method,x,y,z,depth);
+function fieldAt(field,method,x,y,z,depth,bodyProfile='original'){
+  const [sx,sy]=undoBackWarp(method,x,y,z,depth,bodyProfile);
   const u=(sx/W+.5)*field.width-.5;
   const v=(.5-sy/H)*field.height-.5;
   if(u<0||v<0||u>field.width-1||v>field.height-1)return -.7;
@@ -130,34 +152,49 @@ function fieldAt(field,method,x,y,z,depth){
     field.distance[y1*field.width+x1]*fx)*fy;
   const localWidth=Math.min(9,Math.max(0,dist));
   const range=z>=0?.10+.048*localWidth:.14+.055*localWidth;
-  const profile=z/(range*depth);
+  // A fuller rear envelope, shaped by pigment breadth and golden angle.
+  let rearScale=1;
+  if(z<0){
+    const golden=GOLDEN_ANGLE*(.5+sy/H);
+    const breadth=clamp(localWidth/9,0,1);
+    switch(bodyProfile){
+      case 'shoulder': rearScale=1.55+.12*breadth;break;
+      case 'spiral': rearScale=1.43+.18*Math.sin(golden+x*2.3);break;
+      case 'pebble': rearScale=1.85+.20*breadth;break;
+      case 'fold': rearScale=1.53+.16*Math.sin(y*8+golden);break;
+    }
+  }
+  const profile=z/(range*depth*rearScale);
   const thickness=method==='pigment'?.60:method==='ribbon'?.76:.69;
   return pigment-.092-thickness*profile*profile;
 }
 export function buildMaterialSculpture(method,imageData,texture,{
-  depth=1,material='marker',paper='#f5f0e6',quality='desktop',sideTexture=null
+  depth=1,material='marker',paper='#f5f0e6',quality='desktop',sideTexture=null,
+  bodyProfile='original'
 }={}){
+  if(!['original',...ROUNDED_BODY_PROFILES].includes(bodyProfile))
+    throw Error('Unknown rounded body profile '+bodyProfile);
   if(!texture?.isTexture)throw Error('Actual archived artwork texture is required');
   if(!['petal','ribbon','pigment','hybrid'].includes(method))
     throw Error('Unsupported 360° sculpting method '+method);
   const field=pigmentField(imageData,{material,paper});
   const mobile=quality==='mobile';
-  const nx=mobile?60:82,ny=mobile?88:116,nz=mobile?17:20;
+  const nx=mobile?60:82,ny=mobile?88:116,nz=mobile?21:26;
   const sizex=1.88,sizey=2.35;
   const plane=(nx+1)*(ny+1);
   const count=plane*(nz+1);
   const scalars=new Float32Array(count);
   const gx=(i)=>(i/nx-.5)*sizex;
   const gy=(j)=>(.5-j/ny)*sizey;
-  const gz=(k)=>(-.79+k/nz*1.42)*depth;
+  const gz=(k)=>(-1.18+k/nz*1.81)*depth;
   const idx=(i,j,k)=>k*plane+j*(nx+1)+i;
   for(let k=0;k<=nz;k++)for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)
-    scalars[idx(i,j,k)]=fieldAt(field,method,gx(i),gy(j),gz(k),depth);
+    scalars[idx(i,j,k)]=fieldAt(field,method,gx(i),gy(j),gz(k),depth,bodyProfile);
   // One derivative calculation per grid vertex (rather than six expensive
   // trilinear source samples for EACH output triangle vertex). Smooth normals
   // interpolate across the tetrahedra so the painted mass has no faceting.
   const gridNormals=new Float32Array(count*3);
-  const ddx=sizex/nx,ddy=sizey/ny,ddz=1.42*depth/nz;
+  const ddx=sizex/nx,ddy=sizey/ny,ddz=1.81*depth/nz;
   for(let k=0;k<=nz;k++)for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++){
     const lowX=scalars[idx(Math.max(i-1,0),j,k)];
     const highX=scalars[idx(Math.min(i+1,nx),j,k)];
@@ -207,7 +244,7 @@ export function buildMaterialSculpture(method,imageData,texture,{
       [points[1],points[2]]=[points[2],points[1]];
     for(let q=0;q<3;q++){
       const [x,y,z]=points[q].point;
-      const [sx,sy]=undoBackWarp(method,x,y,z,depth);
+      const [sx,sy]=undoBackWarp(method,x,y,z,depth,bodyProfile);
       positions.push(x,y,z);normals.push(...points[q].normal);
       uvs.push(clamp(sx/W+.5,0,1),clamp(sy/H+.5,0,1));
     }
@@ -291,7 +328,7 @@ export function buildMaterialSculpture(method,imageData,texture,{
   group.add(mesh);
   group.name='Source material sculpted in the round / '+method;
   group.userData={
-    engine:MATERIAL_SURFACE_VERSION,method,
+    engine:MATERIAL_SURFACE_VERSION,method,bodyProfile,
     material,sourceAnchored:true,paintedCells:field.cells,
     paintedFraction:field.cells/(field.width*field.height),
     sourceTextureOnBody:mesh.material.map===texture,
