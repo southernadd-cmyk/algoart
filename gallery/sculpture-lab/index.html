@@ -2,7 +2,7 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#202723">
-<title>PROPORTION PIECE · Sculpture Lab V4 / Source-derived solids</title>
+<title>PROPORTION PIECE · Sculpture Lab V4.2 / Spatial pigment sculptures</title>
 <style>
 :root{color-scheme:dark;--ink:#f2e9d8;--dark:#222b27;--line:#83765e;--bronze:#c5a776}
 *{box-sizing:border-box}
@@ -61,7 +61,7 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 </head>
 <body>
 <canvas id="view" aria-label="Four source-derived real XYZ sculptures on gallery plinths"></canvas>
-<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>V4 · REGION INFLATION / MEDIAL SKELETONS</small></div>
+<header><div><h1>PROPORTION PIECE / SCULPTURE LAB</h1><small>V4.2 · PIGMENT VOLUMES / SPATIAL ASSEMBLY</small></div>
 <div id="selectors">
 <label for="day">Archive day</label><select id="day"></select>
 <label for="painting">Source painting</label><select id="painting"></select>
@@ -90,9 +90,9 @@ header small{display:block;font-size:.67rem;letter-spacing:.1em;margin-top:3px;c
 <div class="control"><label for="depth">XYZ spread</label><output id="depthValue">85%</output><input id="depth" type="range" min="40" max="130" value="85" step="5"></div>
 <div class="control"><label for="connection">Connection strength</label><output id="connectionValue">65%</output><input id="connection" type="range" min="0" max="100" value="65" step="5"></div>
 <label for="colourMode">Surface character</label>
-<select id="colourMode"><option value="pigment">Source pigment colours</option><option value="bronze">Single patinated bronze</option></select>
+<select id="colourMode" disabled><option value="pigment">Original pigment colours only</option></select>
 <label class="check"><input type="checkbox" id="showGraph"> Show original pigment anchors</label>
-<p>V4 solves shape-dependent Poisson and medial-axis fields for each actual pigment region. Holes and separated forms remain separate; recorded strokes are never inferred from pigment outlines. Compare with V3 using the selector. Source overlap alone does not prove sculptural quality.</p><p id="frontScore" aria-live="polite">Measuring source overlap…</p>
+<p>V4.2 uses colour and ink-density watershed regions, Poisson/medial inflation, subpixel contours, rounded rims and depth-separated φ layers. Connection strength creates physical bridges. True pigment colours only. Compare with V3; visual judgement remains yours.</p><p id="frontScore" aria-live="polite">Measuring source overlap…</p>
 </aside>
 <div id="legend"><span>01 · POISSON INFLATION</span><span>02 · MEDIAL AXIS</span><span>03 · GESTURAL VOLUME</span><span>04 · REGIONAL ASSEMBLY</span></div>
 <button id="settingsToggle" aria-controls="controlsPanel" aria-expanded="false">Sculpture controls</button>
@@ -115,5 +115,5 @@ window.addEventListener('unhandledrejection',function(e){
   if(el)el.textContent='Sculpture Lab could not load: '+(e.reason?.message||String(e.reason));
 });
 </script>
-<script type="module" src="./lab-v2.mjs?v=4-region-inflation-2"></script>
+<script type="module" src="./lab-v2.mjs?v=4.2.1-claude-geometry"></script>
 </body></html>
