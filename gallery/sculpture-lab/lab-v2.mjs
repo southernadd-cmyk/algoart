@@ -134,6 +134,8 @@ function publishStatus(models,scores,features){
       preservedOriginalXY:m.userData.preservedOriginalXY,
       sourceStrokeCount:m.userData.sourceStrokeCount,
       sourceBody:m.userData.sourceBody,
+      foldedSurfaceCount:m.userData.foldedSurfaceCount,
+      rearRibCount:m.userData.rearRibCount,
       extent:[size.x,size.y,size.z],
       sourceOverlap:scores[i],
       front:attr.filter(z=>z>.15).length,
