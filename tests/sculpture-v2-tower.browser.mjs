@@ -9,7 +9,8 @@ try{
   for(const spec of [
     {date:'2026-11-10',quality:'desktop',width:1100,height:740,method:'assembly'},
     {date:'2026-10-22',quality:'mobile',width:390,height:844,method:'assembly'},
-    {date:'reception',quality:'desktop',width:1100,height:740,method:'assembly'}
+    {date:'reception',quality:'desktop',width:1100,height:740,method:'assembly'},
+    {date:'reception',quality:'mobile',width:390,height:844,method:'assembly'}
   ]){
     const page=await browser.newPage({
       viewport:{width:spec.width,height:spec.height},
@@ -83,8 +84,18 @@ try{
         }));
         assert.equal(panel.title,'Recursive Divisions');
         assert.equal(panel.hidden,false);
-        assert.ok(panel.seed.includes('AA-20261005-03-55769'));
-        assert.ok(panel.href.includes('mode=rects')&&panel.href.includes('seed='));
+        assert.ok(panel.seed.includes('PP-RECEPTION-RECTS-P-20261110'));
+        assert.ok(panel.href.includes('mode=rects')&&
+          panel.href.includes('fmt=portrait')&&
+          panel.href.includes('seed=PP-RECEPTION-RECTS-P-20261110'));
+        const portrait=await page.evaluate(()=>new Promise((resolve,reject)=>{
+          const img=new Image();
+          img.onload=()=>resolve({width:img.naturalWidth,height:img.naturalHeight});
+          img.onerror=()=>reject(Error('Reception portrait PNG unavailable'));
+          img.src='/gallery/sculpture-v2-test/reception/recursive-divisions-portrait.png';
+        }));
+        assert.deepEqual(portrait,{width:1000,height:1400},
+          'Reception V2 image must be a genuinely portrait source');
       }
       assert.deepEqual(errors,[],'Fatal browser errors');
       await page.waitForFunction(()=>

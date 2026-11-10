@@ -9,14 +9,26 @@ const output=resolve(process.env.V2_RECEPTION_OUT||'artifacts/sculpture-v2-recep
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 test('independent reception sculpture is prepared and links to its actual source',async()=>{
   const meta=JSON.parse(await readFile(join(output,'manifest.json'),'utf8'));
-  const original=await readFile('gallery/visit/data/reception-growth-systems.png');
-  const source=JSON.parse(await readFile('gallery/visit/data/reception-growth-systems.json'));
+  const original=await readFile('gallery/sculpture-v2-test/reception/recursive-divisions-portrait.png');
+  const source=JSON.parse(await readFile('gallery/sculpture-v2-test/reception/source.json'));
+  const retained=await readFile(join(output,'recursive-divisions-portrait.png'));
+  assert.equal(sha(retained),sha(original));
+  assert.equal(original.readUInt32BE(16),1000);
+  assert.equal(original.readUInt32BE(20),1400);
+  assert.equal(source.orientation,'portrait');
+  assert.equal(source.engine,'rects');
+  assert.equal(source.schema,'pp-v2-reception-portrait-source');
+  assert.equal(source.sourceSha256,sha(original));
   assert.equal(meta.schema,'pp-v2-reception-source');
   assert.equal(meta.version,2);
   assert.equal(meta.sourceSha256,sha(original));
   assert.equal(meta.seed,source.seed);
   assert.equal(meta.href,source.href);
   assert.match(meta.href,/mode=rects/);
+  assert.match(meta.href,/fmt=portrait/);
+  assert.equal(meta.sourceWidth,1000);
+  assert.equal(meta.sourceHeight,1400);
+  assert.equal(meta.orientation,'portrait');
   assert.deepEqual(Object.keys(meta.quality).sort(),['desktop','mobile']);
   for(const quality of ['desktop','mobile']){
     const spec=meta.quality[quality];
@@ -28,7 +40,7 @@ test('independent reception sculpture is prepared and links to its actual source
     assert.equal(pack.quality,quality);
     assert.equal(pack.expectedPortraits,1);
     assert.equal(pack.complete,true);
-    const item=pack.studies['reception-growth-systems.png'];
+    const item=pack.studies['recursive-divisions-portrait.png'];
     assert.equal(item.seed,source.seed);
     assert.equal(item.coverage,1);
     assert.equal(item.omittedCells,0);
