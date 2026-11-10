@@ -2,6 +2,7 @@
 // Run from repository root with an HTTP server on port 4173.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {testCubeGLB} from './fixtures/sculpture-ai-cube-glb.mjs';
 
 const browser = await chromium.launch({
   headless: true,
@@ -51,6 +52,24 @@ try {
   assert.equal(await page.locator('#orbitToggle').textContent(), 'Stop rotation');
   await page.locator('#orbitToggle').click(); // freeze before capture in software WebGL
   await page.screenshot({path: '/tmp/sculpture-lab-360-desktop.png', fullPage: true, timeout: 90000});
+  // A deliberately labelled TEST cube exercises real GLB parsing, scaling,
+  // display, and restore. It is NEVER presented as an AI-generated output.
+  const fixture = testCubeGLB();
+  await page.locator('#aiSlot').selectOption('0');
+  await page.locator('#aiFiles').setInputFiles({
+    name: 'test-fixture-cube.glb',
+    mimeType: 'model/gltf-binary',
+    buffer: Buffer.from(fixture)
+  });
+  await page.waitForFunction(() => window.__sculptureLabStatus?.aiModels?.[0]?.meshes > 0);
+  assert.equal((await page.evaluate(() => window.__sculptureLabStatus)).aiModels[0].name,
+    'test-fixture-cube.glb');
+  assert.match(await page.locator('#legend span').first().textContent(), /AI-generated GLB/);
+  await page.locator('#side').click();
+  await page.locator('#back').click();
+  await page.locator('#resetAI').click();
+  assert.ok((await page.evaluate(() => window.__sculptureLabStatus)).aiModels.every(v => v === null));
+  assert.match(await page.locator('#legend span').first().textContent(), /Golden-angle petals/);
   const paintings = await page.locator('#painting option').count();
   if (paintings >= 2) {
     const firstSeed = lab.seed;
