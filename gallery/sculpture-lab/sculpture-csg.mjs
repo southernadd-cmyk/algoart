@@ -189,7 +189,7 @@ export function jscadSolidToThree(solid,marks,depth,jscad) {
  * Region bodies merge with a common rear spine, so they are not disconnected
  * petals. A cross-cut at the rear produces negative space rather than simply
  * painting a dark spot on a mesh. Hybrid uses actual CSG unions and subtract. */
-export function buildJSCADSculpture(method,marks,jscad,{depth=1}={}) {
+export function buildJSCADSculpture(method,marks,jscad,{depth=1,debugSolid=false}={}) {
   if(!METHODS.includes(method))throw new Error('Invalid CSG method');
   const f=jscadFeatures(jscad);
   const selected=selectCSGMarks(marks,12);
@@ -231,7 +231,27 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1}={}) {
       type=kinds.includes('stroke')?'ribbon':
         kinds.includes('field')?'petal':'pigment';
     }
-    forms.push(regionRule(f,type,groups[i],i,depth));
+    const regionSolid=regionRule(f,type,groups[i],i,depth);
+    const cx=groups[i].reduce((n,m)=>n+m.x,0)/groups[i].length;
+    const cy=groups[i].reduce((n,m)=>n+m.y,0)/groups[i].length;
+    const ang=i*GOLDEN_ANGLE;
+    const rear=[cx/PHI+Math.cos(ang)*.20,
+      cy/PHI+Math.sin(ang)*.15,-.56*depth];
+    // Join EVERY local sculptural region to a precise joint of the rear
+    // spine. Without this, a boolean union can still contain disconnected
+    // shells, even though Three.js renders it as one mesh.
+    const jointIndex=clamp(Math.round((cy+.675)/1.35*7),0,7);
+    const u=jointIndex/7,theta=u*TAU*PHI;
+    const spineJoint=[
+      Math.cos(theta)*(.07+.06/PHI),
+      (u-.5)*1.35,
+      (-.53-.13*u)*depth
+    ];
+    const bridge=f.hull(
+      f.ellipsoid(rear,[.103,.103,.13*depth]),
+      f.ellipsoid(spineJoint,[.103,.103,.13*depth])
+    );
+    forms.push(f.union(regionSolid,bridge));
   }
   if(!forms.length)throw new Error('Could not construct any CSG bodies');
   const spine=buildSpine(f,depth);
@@ -249,6 +269,7 @@ export function buildJSCADSculpture(method,marks,jscad,{depth=1}={}) {
   group.add(mesh);
   group.name='JSCAD '+method+' / true fused CSG';
   group.userData={
+    ...(debugSolid?{rawCSG:final}:{}),
     engine:'jscad-csg-v1',
     method,
     noImageExtrusion:true,
