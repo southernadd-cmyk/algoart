@@ -89,3 +89,36 @@ test('depth changes sculptural thickness while source XY remains stable',()=>{
   assert.ok(Math.abs(size(b).x-size(a).x)<.05);
   disposeMaterialSculpture(a);disposeMaterialSculpture(b);texture.dispose();
 });
+
+test('experimental rounded backs preserve front paint mapping and keep one continuous mesh',()=>{
+  const texture=new THREE.Texture();
+  const variants=['shoulder','spiral','pebble','fold'];
+  const extents=[];
+  for(const bodyProfile of variants){
+    const group=buildMaterialSculpture('hybrid',pixels,texture,{...opts,bodyProfile});
+    assert.equal(group.children.length,1);
+    assert.equal(group.userData.bodyProfile,bodyProfile);
+    assert.equal(group.userData.sourceTextureOnBody,true);
+    assert.equal(group.userData.separatePaintingOverlay,false);
+    const mesh=group.children[0],positions=mesh.geometry.getAttribute('position');
+    const uv=mesh.geometry.getAttribute('uv');
+    let front=0,rear=0,sides=0;
+    for(let i=0;i<positions.count;i++){
+      const x=positions.getX(i),y=positions.getY(i),z=positions.getZ(i);
+      if(z>.06){
+        front++;
+        assert.ok(Math.abs(x-(uv.getX(i)-.5)*1.34)<3e-6);
+        assert.ok(Math.abs(y-(uv.getY(i)-.5)*1.88)<3e-6);
+      }
+      if(z<-.22)rear++;
+      if(Math.abs(mesh.geometry.getAttribute('normal').getZ(i))<.5)sides++;
+    }
+    assert.ok(front>40&&rear>40&&sides>40,bodyProfile+' lacks a sculpted back');
+    extents.push(new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3()).z);
+    disposeMaterialSculpture(group);
+  }
+  assert.ok(extents.every(z=>z>.5));
+  assert.ok(new Set(extents.map(n=>n.toFixed(3))).size>=3,
+    'Rounded experiments should create visibly different volumes');
+  texture.dispose();
+});
