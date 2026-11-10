@@ -40,14 +40,14 @@ export function buildCompositionShell(mask, paintTexture, method) {
     const t = y / FRAME_HEIGHT + .5;
     const turn = t * TAU / PHI + (c / width) * Math.PI / PHI;
     const modes = {
-      petal: [.71, .115, .74],
-      ribbon: [.56, .205, .83],
-      pigment: [.43, .165, .96],
-      hybrid: [.59, .185, .88]
+      petal: [.88, .045, .76],
+      ribbon: [.79, .080, .86],
+      pigment: [.69, .105, .98],
+      hybrid: [.82, .070, .90]
     };
     const [shrink, twist, depth] = modes[method] || modes.hybrid;
     const xx = shrink * x + twist * Math.sin(turn);
-    const yy = y * (.84 + .08 / PHI) + .09 * Math.sin(turn / PHI + x);
+    const yy = y * (.93 + .03 / PHI) + .045 * Math.sin(turn / PHI + x);
     const zz = -depth + .095 * Math.cos(turn * PHI);
     return [xx, yy, zz];
   };
@@ -106,17 +106,13 @@ export function buildCompositionShell(mask, paintTexture, method) {
   geometry.addGroup(frontIndices.length, sideIndices.length, 1);
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
-  const material = new THREE.MeshStandardMaterial({
+  const material = new THREE.MeshBasicMaterial({
     map: paintTexture,
     side: THREE.DoubleSide,
     transparent: true,
     opacity: 1,
-    alphaTest: .025, // fine pigment marks must survive the physical mask
-    roughness: .75,
-    metalness: .02,
-    emissive: '#4c4c4c',
-    emissiveMap: paintTexture,
-    emissiveIntensity: .30,
+    alphaTest: .025, // retain fine paint in its original location and colour
+    toneMapped: false, // a faithful photograph of the original drawing
     depthWrite: true
   });
   material.userData.sculptureOwned = true;
